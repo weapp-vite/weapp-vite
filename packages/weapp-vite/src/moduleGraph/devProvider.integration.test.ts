@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createDevModuleGraphProvider } from './devProvider'
 import { createLogicalEntryId } from './protocol'
 import { createModuleGraphService } from './service'
+import { normalizeSourceId } from './traversal'
 
 describe('dev module graph provider integration', () => {
   const temporaryDirectories: string[] = []
@@ -23,14 +24,17 @@ describe('dev module graph provider integration', () => {
     const sharedId = path.join(root, 'shared.ts')
     const lazyId = path.join(root, 'lazy.ts')
     const templateId = path.join(root, 'page.wxml')
+    const styleId = path.join(root, 'page.css')
     await Promise.all([
       writeFile(pageId, `import { value } from '@/shared'\nexport const lazy = () => import('./lazy')\nconsole.log(value)\n`, 'utf8'),
       writeFile(sharedId, `export const value = 'shared'\n`, 'utf8'),
       writeFile(lazyId, `export default 'lazy'\n`, 'utf8'),
       writeFile(templateId, '<view>initial</view>\n', 'utf8'),
+      writeFile(styleId, '.page { color: red; }\n', 'utf8'),
     ])
     const moduleGraphService = createModuleGraphService()
     moduleGraphService.replaceEntryDependencies(pageId, 'template', [templateId])
+    moduleGraphService.replaceEntryDependencies(pageId, 'style', [styleId])
     const onChange = vi.fn()
     const provider = await createDevModuleGraphProvider({ moduleGraphService } as any, {
       root,
@@ -46,12 +50,16 @@ describe('dev module graph provider integration', () => {
         getModuleIds: () => [createLogicalEntryId(pageId, 'page')],
       })
 
-      expect(moduleGraphService.collectAffectedEntries(sharedId)).toEqual(new Set([pageId]))
-      expect(moduleGraphService.collectAffectedEntries(lazyId)).toEqual(new Set([pageId]))
-      expect(moduleGraphService.collectAffectedEntries(templateId)).toEqual(new Set([pageId]))
+      const normalizedPageId = normalizeSourceId(pageId)
+      expect(moduleGraphService.collectAffectedEntries(sharedId)).toEqual(new Set([normalizedPageId]))
+      expect(moduleGraphService.collectAffectedEntries(lazyId)).toEqual(new Set([normalizedPageId]))
+      expect(moduleGraphService.collectAffectedEntries(templateId)).toEqual(new Set([normalizedPageId]))
+      expect(moduleGraphService.collectAffectedEntries(styleId)).toEqual(new Set([normalizedPageId]))
 
       await writeFile(templateId, '<view>updated</view>\n', 'utf8')
       await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(templateId))
+      await writeFile(styleId, '.page { color: blue; }\n', 'utf8')
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(styleId))
     }
     finally {
       await provider.close()

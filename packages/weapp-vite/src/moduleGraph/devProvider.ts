@@ -71,7 +71,11 @@ async function isExternalRequest(
   })
 }
 
-function createProviderPlugin(ctx: CompilerContext, config: InlineConfig): Plugin {
+function createProviderPlugin(
+  ctx: CompilerContext,
+  config: InlineConfig,
+  onChange: (file: string) => void,
+): Plugin {
   const npmExternalPackages = new Set(
     ctx.configService?.packageJson
       ? resolveNpmBuildCandidateDependenciesSync(ctx, ctx.configService.packageJson)
@@ -137,6 +141,18 @@ function createProviderPlugin(ctx: CompilerContext, config: InlineConfig): Plugi
       }
       return await transformVueSource(code, id)
     },
+    async handleHotUpdate({ file, read }) {
+      try {
+        await read()
+      }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          return
+        }
+        throw error
+      }
+      onChange(file)
+    },
   }
 }
 
@@ -151,12 +167,12 @@ export async function createDevModuleGraphProvider(
     configFile: false,
     customLogger: createLogger('silent'),
     plugins: [
-      createProviderPlugin(ctx, buildConfig),
+      createProviderPlugin(ctx, buildConfig, onChange),
       ...collectResolverPlugins(buildConfig),
     ],
     server: {
       ...(buildConfig.server ?? {}),
-      hmr: false,
+      hmr: true,
       middlewareMode: true,
     },
     build: {
@@ -166,12 +182,9 @@ export async function createDevModuleGraphProvider(
     },
   })
   ctx.moduleGraphService.bindDevServer(server)
-  const handleChange = (file: string) => onChange(file)
-  server.watcher.on('change', handleChange)
 
   return {
     async close() {
-      server.watcher.off('change', handleChange)
       await server.close()
       ctx.moduleGraphService.bindDevServer(undefined)
     },

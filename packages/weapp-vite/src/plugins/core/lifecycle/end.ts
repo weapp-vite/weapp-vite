@@ -18,19 +18,30 @@ function resolveEntryType(state: CorePluginState, entryId: string) {
   return state.hmrRootInputIds.has(normalizeSourceId(entryId)) ? 'app' as const : 'component' as const
 }
 
-function resolveChangeCause(state: CorePluginState, file: string) {
+function resolveChangeCause(
+  state: CorePluginState,
+  file: string,
+  affectedEntries: Iterable<string>,
+) {
   const normalized = normalizeFsResolvedId(file)
   if (configSuffixes.some(suffix => normalized.endsWith(suffix))) {
     return 'json-sidecar'
   }
   const extension = path.extname(normalized)
   if (watchedCssExts.has(extension)) {
-    return 'style-sidecar'
+    const styleBase = removeExtensionDeep(normalized)
+    const isDirectStyleSidecar = Array.from(affectedEntries).some((entryId) => {
+      return removeExtensionDeep(normalizeFsResolvedId(entryId)) === styleBase
+    })
+    return isDirectStyleSidecar ? 'style-sidecar' : 'css-importer'
   }
   if (watchedTemplateExts.has(extension)) {
     return isLayoutSourcePath(state.ctx.configService.relativeAbsoluteSrcRoot(normalized))
       ? 'layout-dependent'
       : 'sidecar-direct'
+  }
+  if (state.ctx.moduleGraphService.isLogicalLayoutEntry(normalized)) {
+    return 'layout-script'
   }
   if (isLayoutSourcePath(state.ctx.configService.relativeAbsoluteSrcRoot(normalized))) {
     return 'layout-dependent'
@@ -50,9 +61,9 @@ export function createBuildEndHook(state: CorePluginState) {
 
     for (const change of pendingChanges) {
       const affected = state.ctx.moduleGraphService.collectAffectedEntries(change.file)
-      const cause = resolveChangeCause(state, change.file)
+      const cause = resolveChangeCause(state, change.file, affected)
       causes.set(cause, (causes.get(cause) ?? 0) + affected.size)
-      if (cause === 'importer-graph') {
+      if (cause === 'importer-graph' || cause === 'layout-script') {
         metadataOnly = false
       }
       for (const entryId of affected) {

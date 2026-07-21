@@ -829,7 +829,7 @@ onPageScroll(() => {
     expect(loaded).toContain('__wevuUnref(')
   })
 
-  it('buildStart() pre-registers native layout chunks for fallback vue pages', async () => {
+  it('buildStart() registers native layout dependencies without duplicate chunk emission', async () => {
     const pageFile = path.join(tmpDir!, 'pages', 'native', 'index.vue')
     const layoutBase = path.join(tmpDir!, 'layouts', 'native-shell', 'index')
     await fs.ensureDir(path.dirname(pageFile))
@@ -866,7 +866,7 @@ onPageScroll(() => {
     await plugin.buildStart?.call({ emitFile, addWatchFile } as any)
     const realLayoutBase = path.join(await realpath(path.dirname(layoutBase)), 'index')
 
-    expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
+    expect(emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
       type: 'chunk',
       id: `${layoutBase}.ts`,
       fileName: 'layouts/native-shell/index.js',
@@ -879,7 +879,7 @@ onPageScroll(() => {
     ]))
   })
 
-  it('generateBundle() keeps native layout emission asset-only after chunk pre-registration', async () => {
+  it('generateBundle() keeps native layout emission asset-only while core owns scripts', async () => {
     const pageMatcher = {
       markDirty: vi.fn(),
       isPageFile: vi.fn(async () => true),
@@ -938,7 +938,7 @@ onPageScroll(() => {
       ),
     ).resolves.toBeUndefined()
 
-    expect(transformEmitFile).toHaveBeenCalledWith(expect.objectContaining({
+    expect(transformEmitFile).not.toHaveBeenCalledWith(expect.objectContaining({
       type: 'chunk',
       id: `${layoutBase}.ts`,
       fileName: 'layouts/native-shell/index.js',

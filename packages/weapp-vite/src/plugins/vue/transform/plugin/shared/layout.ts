@@ -3,7 +3,6 @@ import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
-import { emitNativeLayoutScriptChunkIfNeeded } from '../../bundle'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
 import { ensureSfcStyleBlocks, isAppEntry, loadTransformPageEntries } from './state'
 
@@ -31,18 +30,6 @@ export async function handleTransformEntryPageLayoutFlow(options: {
   }
 
   await registerResolvedPageLayoutDependencies(options.ctx, options.filename, resolvedLayoutPlan.layouts)
-
-  for (const layout of resolvedLayoutPlan.layouts) {
-    if (layout.kind !== 'native') {
-      continue
-    }
-    await emitNativeLayoutScriptChunkIfNeeded({
-      pluginCtx: options.pluginCtx,
-      layoutBasePath: layout.file,
-      configService,
-      outputExtensions: configService.outputExtensions,
-    })
-  }
 
   return resolvedLayoutPlan
 }

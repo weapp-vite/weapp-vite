@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
-import { createBundleLayoutEmitters, emitAppShellAssetsIfNeeded, emitBundlePageLayoutsIfNeeded, emitNativeLayoutAssetsIfNeeded, emitNativeLayoutScriptChunkIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, emitVueLayoutScriptFallbackIfNeeded, resolveNativeLayoutAssetState, resolveNativeLayoutScriptChunkState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
+import { createBundleLayoutEmitters, emitAppShellAssetsIfNeeded, emitBundlePageLayoutsIfNeeded, emitNativeLayoutAssetsIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, emitVueLayoutScriptFallbackIfNeeded, resolveNativeLayoutAssetState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => '<view><slot /></view>'))
 const collectNativeLayoutAssetsMock = vi.hoisted(() => vi.fn(async () => ({
@@ -16,7 +16,6 @@ const compileVueLikeFileMock = vi.hoisted(() => vi.fn(async () => ({
   template: '<view><slot /></view>',
 })))
 const ensureScriptlessComponentAssetMock = vi.hoisted(() => vi.fn())
-const emitNativeLayoutScriptChunkIfNeededSharedMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@weapp-core/shared/fs')>()
@@ -68,14 +67,6 @@ vi.mock('../../../utils/scriptlessComponent', async (importOriginal) => {
   }
 })
 
-vi.mock('../../../utils/nativeLayout', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../utils/nativeLayout')>()
-  return {
-    ...actual,
-    emitNativeLayoutScriptChunkIfNeeded: emitNativeLayoutScriptChunkIfNeededSharedMock,
-  }
-})
-
 describe('resolveVueLayoutAssetOptions', () => {
   beforeEach(() => {
     readFileMock.mockReset()
@@ -95,7 +86,6 @@ describe('resolveVueLayoutAssetOptions', () => {
       template: '<view><slot /></view>',
     })
     ensureScriptlessComponentAssetMock.mockReset()
-    emitNativeLayoutScriptChunkIfNeededSharedMock.mockReset()
   })
 
   it('resolves layout asset output names from platform extensions', () => {
@@ -200,95 +190,6 @@ describe('resolveVueLayoutAssetOptions', () => {
         js: 'js',
       } as any,
     })).resolves.toBeUndefined()
-  })
-
-  it('resolves native layout script chunk state from layout assets and output options', async () => {
-    collectNativeLayoutAssetsMock.mockResolvedValue({
-      script: '/project/layouts/default/index.js',
-    })
-
-    await expect(resolveNativeLayoutScriptChunkState({
-      layoutBasePath: 'layouts/default/index',
-      configService: {
-        relativeOutputPath: (value: string) => `dist/${value}`,
-      } as any,
-      outputExtensions: {
-        js: 'mjs',
-      } as any,
-    })).resolves.toEqual({
-      fileName: 'dist/layouts/default/index.mjs',
-      scriptId: '/project/layouts/default/index.js',
-    })
-  })
-
-  it('returns undefined for native layout script chunk state when script asset is missing', async () => {
-    collectNativeLayoutAssetsMock.mockResolvedValue({
-      template: '/project/layouts/default/index.wxml',
-    })
-
-    await expect(resolveNativeLayoutScriptChunkState({
-      layoutBasePath: 'layouts/default/index',
-      configService: {
-        relativeOutputPath: (value: string) => `dist/${value}`,
-      } as any,
-      outputExtensions: {
-        js: 'mjs',
-      } as any,
-    })).resolves.toBeUndefined()
-  })
-
-  it('returns undefined for native layout script chunk state when output options cannot be resolved', async () => {
-    await expect(resolveNativeLayoutScriptChunkState({
-      layoutBasePath: 'layouts/default/index',
-      configService: {
-        relativeOutputPath: () => '',
-      } as any,
-      outputExtensions: {
-        js: 'mjs',
-      } as any,
-    })).resolves.toBeUndefined()
-  })
-
-  it('returns early when native layout script chunk state is missing', async () => {
-    collectNativeLayoutAssetsMock.mockResolvedValue({
-      template: '/project/layouts/default/index.wxml',
-    })
-
-    await emitNativeLayoutScriptChunkIfNeeded({
-      pluginCtx: { emitFile: vi.fn() },
-      layoutBasePath: 'layouts/default/index',
-      configService: {
-        relativeOutputPath: (value: string) => `dist/${value}`,
-      } as any,
-      outputExtensions: {
-        js: 'mjs',
-      } as any,
-    })
-
-    expect(emitSfcJsonAssetMock).not.toHaveBeenCalled()
-  })
-
-  it('emits native layout script chunk through shared chunk emitter', async () => {
-    collectNativeLayoutAssetsMock.mockResolvedValue({
-      script: '/project/layouts/default/index.js',
-    })
-
-    await emitNativeLayoutScriptChunkIfNeeded({
-      pluginCtx: { emitFile: vi.fn() },
-      layoutBasePath: 'layouts/default/index',
-      configService: {
-        relativeOutputPath: (value: string) => `dist/${value}`,
-      } as any,
-      outputExtensions: {
-        js: 'mjs',
-      } as any,
-    })
-
-    expect(emitNativeLayoutScriptChunkIfNeededSharedMock).toHaveBeenCalledWith({
-      pluginCtx: expect.anything(),
-      scriptId: '/project/layouts/default/index.js',
-      fileName: 'dist/layouts/default/index.mjs',
-    })
   })
 
   it('emits resolved native layout static assets by asset kind', async () => {

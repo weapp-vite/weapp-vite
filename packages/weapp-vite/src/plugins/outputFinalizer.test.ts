@@ -1,7 +1,7 @@
 import type { OutputBundle } from 'rolldown'
 import { Buffer } from 'node:buffer'
 import { describe, expect, it } from 'vitest'
-import { createOutputFinalizerPlugin, mayNeedTemplateNormalization, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
+import { createOutputFinalizerPlugin, mayNeedTemplateNormalization, normalizeGraphOnlyAssets, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
 
 function createBundleAssetEmitter(bundle: OutputBundle) {
   return (asset: any) => {
@@ -21,6 +21,50 @@ function runGenerateBundle(plugin: ReturnType<typeof createOutputFinalizerPlugin
 }
 
 describe('weapp-vite output finalizer', () => {
+  it('maps graph-only virtual assets back to physical owner outputs', () => {
+    const logicalAsset = '__weapp_vite_external__/graph/weapp-vite:logical-entry:layout:D%3A%2Fproject%2Fsrc%2Flayouts%2Fdefault%2Findex.vue:module.wxss'
+    const sidecarAsset = '__weapp_vite_external__/graph/weapp-vite:sidecar:style:D%3A%2Fproject%2Fsrc%2Fapp.ts:D%3A%2Fproject%2Fsrc%2Fapp.css:module.wxss'
+    const bundle = {
+      [logicalAsset]: {
+        type: 'asset',
+        fileName: logicalAsset,
+        source: '.layout{}',
+      },
+      [sidecarAsset]: {
+        type: 'asset',
+        fileName: sidecarAsset,
+        source: '.app{}',
+      },
+      'layouts/default/index.wxss': {
+        type: 'asset',
+        fileName: 'layouts/default/index.wxss',
+        source: '.old-layout{}',
+      },
+    } as unknown as OutputBundle
+
+    const emitted: any[] = []
+    normalizeGraphOnlyAssets({
+      configService: {
+        outputExtensions: { wxss: 'wxss' },
+        relativeOutputPath: (id: string) => id
+          .replace('D:/project/src/', '')
+          .replace('D:/project/', ''),
+      },
+    } as any, bundle, asset => emitted.push(asset))
+
+    expect(bundle[logicalAsset]).toBeUndefined()
+    expect(bundle[sidecarAsset]).toBeUndefined()
+    expect(bundle['layouts/default/index.wxss']).toMatchObject({
+      source: '.layout{}',
+    })
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        fileName: 'app.wxss',
+        source: '.app{}',
+      }),
+    ])
+  })
+
   it('drops duplicate preprocessor style assets', () => {
     const bundle = {
       'app.scss': {

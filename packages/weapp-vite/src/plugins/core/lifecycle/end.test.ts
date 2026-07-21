@@ -90,4 +90,70 @@ describe('core lifecycle buildEnd hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['importer-graph:1'])
     expect(pluginContext).toBeDefined()
   })
+
+  it('keeps logical layout script changes on the chunk emission path', async () => {
+    const layoutEntry = '/project/src/layouts/default/index.ts'
+    const pageEntry = '/project/src/pages/home/index.ts'
+    const { loadEntry, moduleGraphService, state } = createState(layoutEntry, layoutEntry)
+    const layoutLogicalId = createLogicalEntryId(layoutEntry, 'layout')
+    const pageLogicalId = createLogicalEntryId(pageEntry, 'page')
+    const infos = new Map<string, any>([
+      [layoutEntry, { importers: [layoutLogicalId] }],
+      [layoutLogicalId, { importers: [pageLogicalId], isEntry: true }],
+      [pageLogicalId, { importers: [], isEntry: true }],
+    ])
+    state.resolvedEntryMap.set(pageEntry, { id: pageEntry })
+    moduleGraphService.replaceEntryDependencies(pageEntry, 'layout', [layoutEntry])
+    moduleGraphService.recordChangedFile(layoutEntry, 'update')
+
+    await createBuildEndHook(state).call({
+      getModuleIds: () => infos.keys(),
+      getModuleInfo: (id: string) => infos.get(id),
+    })
+
+    expect(loadEntry).not.toHaveBeenCalled()
+    expect(state.hmrState.lastHmrEntryIds).toEqual(new Set([layoutEntry, pageEntry]))
+    expect(state.hmrState.skipSharedChunkRefresh).toBe(false)
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['layout-script:2'])
+  })
+
+  it('distinguishes direct style sidecars from imported css dependencies', async () => {
+    const entryId = '/project/src/pages/home/index.vue'
+    const importedStyle = '/project/src/pages/home/theme.css'
+    const { moduleGraphService, state } = createState(importedStyle, entryId)
+    const logicalId = createLogicalEntryId(entryId, 'page')
+    const importedSidecarId = createSidecarModuleId(entryId, importedStyle, 'style')
+    const importedSourceId = createSidecarSourceSpecifier(entryId, importedStyle, 'style')
+    const importedInfos = new Map<string, any>([
+      [importedSourceId, { importers: [importedSidecarId] }],
+      [importedSidecarId, { importers: [logicalId] }],
+      [logicalId, { importers: [], isEntry: true }],
+    ])
+    moduleGraphService.recordChangedFile(importedStyle, 'update')
+
+    await createBuildEndHook(state).call({
+      getModuleIds: () => importedInfos.keys(),
+      getModuleInfo: (id: string) => importedInfos.get(id),
+    })
+
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
+
+    const directStyle = '/project/src/pages/home/index.css'
+    const direct = createState(directStyle, entryId)
+    const directSidecarId = createSidecarModuleId(entryId, directStyle, 'style')
+    const directSourceId = createSidecarSourceSpecifier(entryId, directStyle, 'style')
+    const directInfos = new Map<string, any>([
+      [directSourceId, { importers: [directSidecarId] }],
+      [directSidecarId, { importers: [logicalId] }],
+      [logicalId, { importers: [], isEntry: true }],
+    ])
+    direct.moduleGraphService.recordChangedFile(directStyle, 'update')
+
+    await createBuildEndHook(direct.state).call({
+      getModuleIds: () => directInfos.keys(),
+      getModuleInfo: (id: string) => directInfos.get(id),
+    })
+
+    expect(direct.state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
+  })
 })

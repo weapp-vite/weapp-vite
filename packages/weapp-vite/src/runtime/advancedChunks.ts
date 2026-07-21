@@ -1,5 +1,5 @@
 import type { ResolveSharedChunkNameOptions } from './chunkStrategy'
-import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
+import { parseLogicalEntryId, parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { resolveSharedChunkName } from './chunkStrategy'
 
 export type AdvancedChunkNameResolver = (
@@ -42,6 +42,12 @@ export function createAdvancedChunkNameResolver(options: AdvancedChunkResolverOp
 
   return (id, ctx) => {
     if (parseSidecarSourceRequest(id)) {
+      return undefined
+    }
+    const isLogicalEntrySource = ctx.getModuleInfo(id)?.importers?.some((importer) => {
+      return parseLogicalEntryId(importer)?.sourceId === id
+    })
+    if (isLogicalEntrySource) {
       return undefined
     }
     const subPackageRoots = Array.from(getSubPackageRoots())

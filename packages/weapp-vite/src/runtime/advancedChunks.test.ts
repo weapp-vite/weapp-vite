@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createSidecarModuleId, createSidecarSourceSpecifier } from '../moduleGraph/protocol'
+import { createLogicalEntryId, createSidecarModuleId, createSidecarSourceSpecifier } from '../moduleGraph/protocol'
 import { createAdvancedChunkNameResolver } from './advancedChunks'
 import { __clearSharedChunkDiagnosticsForTest, DEFAULT_SHARED_CHUNK_STRATEGY, SHARED_CHUNK_VIRTUAL_PREFIX } from './chunkStrategy'
 
@@ -174,5 +174,23 @@ describe('advanced chunk resolvers', () => {
     })
 
     expect(resolveAdvancedChunkName(sidecarSourceId, ctx)).toBeUndefined()
+  })
+
+  it('leaves logical entry physical sources inside their facade chunks', () => {
+    const resolveAdvancedChunkName = createAdvancedChunkNameResolver({
+      vendorsMatchers: [[/[\\/]node_modules[\\/]/gi]],
+      relativeAbsoluteSrcRoot,
+      getSubPackageRoots: () => [],
+      strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
+      sharedMode: 'path',
+      resolveSharedPath: () => 'layouts/default/index.ts',
+    })
+    const sourceId = `${ROOT}/layouts/default/index.ts`
+    const logicalEntryId = createLogicalEntryId(sourceId, 'layout')
+    const ctx = createCtx({
+      [sourceId]: [logicalEntryId, `${ROOT}/pages/layouts/index.ts`],
+    })
+
+    expect(resolveAdvancedChunkName(sourceId, ctx)).toBeUndefined()
   })
 })

@@ -4,7 +4,6 @@ import { compileTransformEntryResult, createTransformStageMeasurer, ensureSfcSty
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn())
 const registerResolvedPageLayoutDependenciesMock = vi.hoisted(() => vi.fn(async () => {}))
-const emitNativeLayoutScriptChunkIfNeededMock = vi.hoisted(() => vi.fn(async () => {}))
 const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(async (_ctx: any, code: string) => ({
   transformed: false,
   code,
@@ -50,10 +49,6 @@ vi.mock('../pageLayout', async (importOriginal) => {
 
 vi.mock('../../../utils/pageLayout', () => ({
   registerResolvedPageLayoutDependencies: registerResolvedPageLayoutDependenciesMock,
-}))
-
-vi.mock('../bundle', () => ({
-  emitNativeLayoutScriptChunkIfNeeded: emitNativeLayoutScriptChunkIfNeededMock,
 }))
 
 vi.mock('../injectPageFeatures', () => ({
@@ -113,8 +108,6 @@ describe('vue transform plugin shared helpers', () => {
     applyPageLayoutPlanMock.mockReset()
     registerResolvedPageLayoutDependenciesMock.mockReset()
     registerResolvedPageLayoutDependenciesMock.mockResolvedValue(undefined)
-    emitNativeLayoutScriptChunkIfNeededMock.mockReset()
-    emitNativeLayoutScriptChunkIfNeededMock.mockResolvedValue(undefined)
     injectWevuPageFeaturesInJsWithViteResolverMock.mockReset()
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
       transformed: false,
@@ -513,13 +506,6 @@ describe('vue transform plugin shared helpers', () => {
       '/project/src/pages/home/index.vue',
       resolved.layouts,
     )
-    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledTimes(1)
-    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledWith({
-      pluginCtx: expect.anything(),
-      layoutBasePath: '/project/src/layouts/default',
-      configService: { outputExtensions: { js: 'js' } },
-      outputExtensions: { js: 'js' },
-    })
   })
 
   it('returns early from transform entry page layout flow when config service or layout plan is missing', async () => {
@@ -541,10 +527,9 @@ describe('vue transform plugin shared helpers', () => {
 
     expect(applyPageLayoutPlanMock).not.toHaveBeenCalled()
     expect(registerResolvedPageLayoutDependenciesMock).not.toHaveBeenCalled()
-    expect(emitNativeLayoutScriptChunkIfNeededMock).not.toHaveBeenCalled()
   })
 
-  it('registers native layout chunks for entries through shared layout flow', async () => {
+  it('registers native layout dependencies for entries through shared layout flow', async () => {
     resolvePageLayoutPlanMock.mockResolvedValue({
       layouts: [
         { kind: 'native', file: '/project/src/layouts/default' },
@@ -564,7 +549,6 @@ describe('vue transform plugin shared helpers', () => {
 
     expect(applyPageLayoutPlanMock).not.toHaveBeenCalled()
     expect(registerResolvedPageLayoutDependenciesMock).toHaveBeenCalledTimes(1)
-    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledTimes(1)
   })
 
   it('finalizes transform entry scripts through shared diagnostics and injection flow', async () => {
@@ -1131,7 +1115,6 @@ console.log(pages, routeSubPackages)
     expect(collectFallbackPageEntryIds).toHaveBeenCalledTimes(1)
     expect(findFirstResolvedVueLikeEntry).toHaveBeenCalledTimes(2)
     expect(readFile).toHaveBeenCalledWith('/project/src/pages/home/index.vue', 'utf8')
-    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledTimes(1)
   })
 
   it('preloads native layout entries concurrently', async () => {

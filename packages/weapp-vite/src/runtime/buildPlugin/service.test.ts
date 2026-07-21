@@ -657,6 +657,36 @@ describe('runtime buildPlugin service', () => {
     expect(forceFullValues).toEqual([undefined])
   })
 
+  it('classifies imported style changes through their graph-owned entry', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const dirtySummaries: Array<string[] | undefined> = []
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    const ctx = createMockContext()
+    const pageId = '/project/src/pages/logs/index.vue'
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set(pageId, { id: pageId })
+    ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([pageId]))
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockImplementation(async () => {
+        dirtySummaries.push(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)
+        return { output: [] }
+      })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    moduleGraphProviderChange.handler?.('/project/src/pages/logs/hello.css')
+    await waitForMockCalls(buildMock, 2)
+
+    expect(dirtySummaries).toEqual([['css-importer:1']])
+    expect(ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([pageId]))
+  })
+
   it('batches consecutive sidecar snapshot events into one build', async () => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
@@ -718,16 +748,16 @@ describe('runtime buildPlugin service', () => {
         return { output: [] }
       })
     const ctx = createMockContext()
-    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
-      id: '/project/src/pages/logs/index.ts',
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.vue', {
+      id: '/project/src/pages/logs/index.vue',
     })
     ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/about/index.ts', {
       id: '/project/src/pages/about/index.ts',
     })
-    ctx.runtimeState.build.hmr.loadedEntrySet.add('/project/src/pages/logs/index.ts')
+    ctx.runtimeState.build.hmr.loadedEntrySet.add('/project/src/pages/logs/index.vue')
     ctx.runtimeState.build.hmr.loadedEntrySet.add('/project/src/pages/about/index.ts')
     ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([
-      '/project/src/pages/logs/index.ts',
+      '/project/src/pages/logs/index.vue',
     ]))
     const service = createBuildService(ctx)
 
@@ -741,14 +771,48 @@ describe('runtime buildPlugin service', () => {
     await waitForMockCalls(buildMock, 2)
 
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([
-      '/project/src/pages/logs/index.ts',
+      '/project/src/pages/logs/index.vue',
       '/project/src/pages/about/index.ts',
+    ]))
+    expect(ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([
+      '/project/src/pages/logs/index.vue',
     ]))
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.size).toBe(0)
     expect(forceFullValues).toEqual(['1'])
     expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
       build: expect.objectContaining({ emptyOutDir: true }),
     }))
+  })
+
+  it('continues snapshot builds after a transient topology build failure', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockRejectedValueOnce(new Error('transient atomic save'))
+      .mockResolvedValueOnce({ output: [] })
+    const ctx = createMockContext()
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
+      id: '/project/src/pages/logs/index.ts',
+    })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    sidecarWatcher.emit('unlink', '/project/src/pages/logs/index.wxss')
+    await waitForMockCalls(buildMock, 2)
+    await waitForMockCalls(loggerErrorMock, 1)
+
+    sidecarWatcher.emit('add', '/project/src/pages/logs/index.wxss')
+    await waitForMockCalls(buildMock, 3)
+    await waitForMockCalls(loggerSuccessMock, 1)
+
+    expect(buildMock).toHaveBeenCalledTimes(3)
   })
 
   it('ignores vue updates in snapshot sidecar watcher', async () => {

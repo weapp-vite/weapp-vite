@@ -7,12 +7,14 @@ import type { ChunkScriptAnalysisCache } from './rewrite'
 import process from 'node:process'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
+import { parseLogicalEntryId } from '../../../../moduleGraph/protocol'
 import { shouldRewriteBundleNpmImports } from '../../../../platform'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../../runtime/chunkStrategy'
 import { resolveRequestRuntimeOptions } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { resolveNpmBuildCandidateDependencyRecordSync } from '../../../../runtime/npmPlugin/service'
 import { toPosixPath } from '../../../../utils'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
+import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { emitStyleSidecarAsset } from '../../../css'
 import { normalizePreprocessorStyleAssets, pruneUneventedDevHmrChunks } from '../../../outputFinalizer'
 import {
@@ -203,6 +205,20 @@ function collectResolvedImportedChunkIds(
   }
 }
 
+export function isActiveHmrEntryFacade(
+  facadeModuleId: string | null | undefined,
+  activeEntryIds: Set<string> | undefined,
+) {
+  if (!facadeModuleId || !activeEntryIds?.size) {
+    return false
+  }
+  if (activeEntryIds.has(facadeModuleId)) {
+    return true
+  }
+  const sourceId = parseLogicalEntryId(facadeModuleId)?.sourceId
+  return sourceId ? activeEntryIds.has(normalizeFsResolvedId(sourceId)) : false
+}
+
 export function collectActiveHmrImportedChunkIds(bundle: OutputBundle, activeEntryIds?: Set<string>) {
   if (!activeEntryIds?.size) {
     return new Set<string>()
@@ -213,7 +229,7 @@ export function collectActiveHmrImportedChunkIds(bundle: OutputBundle, activeEnt
       continue
     }
     const chunk = output as OutputChunk
-    if (!chunk.facadeModuleId || !activeEntryIds.has(chunk.facadeModuleId)) {
+    if (!isActiveHmrEntryFacade(chunk.facadeModuleId, activeEntryIds)) {
       continue
     }
     const importerFileName = chunk.fileName || bundleFileName
@@ -223,10 +239,24 @@ export function collectActiveHmrImportedChunkIds(bundle: OutputBundle, activeEnt
   return importedChunkIds
 }
 
+export function mergeActiveHmrEntryIds(
+  lastHmrEntryIds: Set<string> | undefined,
+  lastEmittedEntryIds: Set<string> | undefined,
+) {
+  if (!lastHmrEntryIds?.size) {
+    return lastEmittedEntryIds
+  }
+  if (!lastEmittedEntryIds?.size) {
+    return lastHmrEntryIds
+  }
+  return new Set([...lastHmrEntryIds, ...lastEmittedEntryIds])
+}
+
 function resolveActiveHmrEntryIds(state: CorePluginState) {
-  return state.hmrState.lastHmrEntryIds?.size
-    ? state.hmrState.lastHmrEntryIds
-    : state.hmrState.lastEmittedEntryIds
+  return mergeActiveHmrEntryIds(
+    state.hmrState.lastHmrEntryIds,
+    state.hmrState.lastEmittedEntryIds,
+  )
 }
 
 function shouldRewriteDevHmrChunk(
@@ -245,7 +275,7 @@ function shouldRewriteDevHmrChunk(
   }
 
   const chunk = output as OutputChunk
-  if (chunk.facadeModuleId && activeEntryIds.has(chunk.facadeModuleId)) {
+  if (isActiveHmrEntryFacade(chunk.facadeModuleId, activeEntryIds)) {
     return true
   }
   if (state.hmrState.affectedSharedChunkIds?.has(fileName) || state.hmrState.affectedSharedChunkIds?.has(chunk.fileName)) {
@@ -332,8 +362,9 @@ function prunePartialHmrStableSharedChunks(bundle: OutputBundle, state: CorePlug
     }
 
     const chunk = output as OutputChunk
-    if (chunk.facadeModuleId && activeEntryIds?.has(chunk.facadeModuleId)) {
+    if (isActiveHmrEntryFacade(chunk.facadeModuleId, activeEntryIds)) {
       const importerFileName = chunk.fileName || fileName
+      addEmittedChunkFileName(emittedChunkFileNames, fileName, chunk)
       collectResolvedImportedChunkIds(activeImportedChunkIds, importerFileName, chunk.imports)
       collectResolvedImportedChunkIds(activeImportedChunkIds, importerFileName, chunk.dynamicImports)
     }

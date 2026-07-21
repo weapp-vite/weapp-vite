@@ -9,6 +9,7 @@ import type { BuildTarget, MutableCompilerContext } from '../../context'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
 import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import chokidar from 'chokidar'
 import path from 'pathe'
 import { build } from 'vite'
@@ -181,7 +182,10 @@ interface SnapshotBuildBatch {
   startedAt: number
 }
 
-function resolveSnapshotSidecarDirtySummary(filePath: string) {
+function resolveSnapshotSidecarDirtySummary(
+  filePath: string,
+  affectedEntries?: Iterable<string>,
+) {
   const normalizedFile = normalizeFsResolvedId(filePath)
   const configSuffix = configSuffixes.find(suffix => normalizedFile.endsWith(suffix))
   if (configSuffix) {
@@ -189,7 +193,13 @@ function resolveSnapshotSidecarDirtySummary(filePath: string) {
   }
   const ext = path.extname(normalizedFile)
   if (ext && watchedCssExts.has(ext)) {
-    return 'style-sidecar:1'
+    const styleBase = removeExtensionDeep(normalizedFile)
+    const isDirectStyleSidecar = affectedEntries
+      ? Array.from(affectedEntries).some((entryId) => {
+          return removeExtensionDeep(normalizeFsResolvedId(entryId)) === styleBase
+        })
+      : true
+    return isDirectStyleSidecar ? 'style-sidecar:1' : 'css-importer:1'
   }
   if (ext && watchedTemplateExts.has(ext)) {
     return 'sidecar-direct:1'
@@ -1218,6 +1228,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         ctx.runtimeState.build.hmr.dirtyEntrySet.add(entryId)
         ctx.runtimeState.build.hmr.dirtyEntryReasons.set(entryId, 'direct')
         ctx.runtimeState.build.hmr.loadedEntrySet.delete(entryId)
+        if (entryId.endsWith('.vue')) {
+          ctx.runtimeState.build.hmr.dirtyVueEntryIds.add(entryId)
+        }
       }
       ctx.runtimeState.build.hmr.profile = {
         ...ctx.runtimeState.build.hmr.profile,
@@ -1234,6 +1247,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       ctx.runtimeState.build.hmr.dirtyEntrySet.add(entryId)
       ctx.runtimeState.build.hmr.dirtyEntryReasons.set(entryId, dirtyReason)
       ctx.runtimeState.build.hmr.loadedEntrySet.delete(entryId)
+      if (entryId.endsWith('.vue') && dirtyReason !== 'dependency') {
+        ctx.runtimeState.build.hmr.dirtyVueEntryIds.add(entryId)
+      }
       ctx.runtimeState.build.hmr.profile = {
         ...ctx.runtimeState.build.hmr.profile,
         dirtyCount: ctx.runtimeState.build.hmr.dirtyEntrySet.size,
@@ -1261,7 +1277,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       if (devWatcherClosed) {
         return snapshotBuildChain
       }
-      snapshotBuildChain = snapshotBuildChain.then(async () => {
+      const currentSnapshotBuild = snapshotBuildChain.then(async () => {
         if (devWatcherClosed) {
           return
         }
@@ -1279,14 +1295,18 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         const snapshotResolveStartedAt = performance.now()
         const graphAffectedEntries = new Set<string>()
+        const graphAffectedEntriesByFile = new Map<string, Set<string>>()
         for (const batchReason of batchReasons) {
           if (!batchReason.file) {
             continue
           }
-          for (const entryId of ctx.moduleGraphService.collectAffectedEntries(batchReason.file)) {
+          const affectedForFile = ctx.moduleGraphService.collectAffectedEntries(batchReason.file)
+          graphAffectedEntriesByFile.set(normalizeFsResolvedId(batchReason.file), affectedForFile)
+          for (const entryId of affectedForFile) {
             graphAffectedEntries.add(entryId)
           }
         }
+        debug?.(`[module-graph-provider] affected=${graphAffectedEntries.size} files=${batchReasons.length}`)
         recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotResolveMs', performance.now() - snapshotResolveStartedAt)
         const snapshotBuildStartedAt = performance.now()
         const requiresFullRescan = batchReasons.some(batchReason =>
@@ -1309,7 +1329,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             if (!batchReason.file) {
               continue
             }
-            const summary = resolveSnapshotSidecarDirtySummary(batchReason.file).replace(/:\d+$/, '')
+            const summary = resolveSnapshotSidecarDirtySummary(
+              batchReason.file,
+              graphAffectedEntriesByFile.get(normalizeFsResolvedId(batchReason.file)),
+            ).replace(/:\d+$/, '')
             summaryCounts.set(summary, (summaryCounts.get(summary) ?? 0) + 1)
           }
           ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = Array.from(
@@ -1364,7 +1387,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
         }
       })
-      return snapshotBuildChain
+      snapshotBuildChain = currentSnapshotBuild.catch(() => undefined)
+      return currentSnapshotBuild
     }
 
     function resolveSnapshotBatchReason(batch: SnapshotBuildBatch) {
@@ -1421,7 +1445,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           if (isDevOutputFile(id)) {
             return
           }
-          if (!ctx.moduleGraphService.hasModule(id)) {
+          const hasModule = ctx.moduleGraphService.hasModule(id)
+          debug?.(`[module-graph-provider] change=${configService.relativeAbsoluteSrcRoot(id)} module=${hasModule}`)
+          if (!hasModule) {
             return
           }
           const startedAt = performance.now()

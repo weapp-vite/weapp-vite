@@ -4,7 +4,13 @@ import type { CompilerContext } from '../context'
 import type { MpPlatform } from '../types'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
 import { Buffer } from 'node:buffer'
+import {
+  WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX,
+  WEAPP_VITE_SIDECAR_RESOLVED_PREFIX,
+} from '@weapp-core/constants'
 import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
+import path from 'pathe'
+import { parseLogicalEntryId, parseSidecarModuleId } from '../moduleGraph/protocol'
 import { getWxmlPlatformTransformOptions } from '../platform'
 import { changeFileExtension } from '../utils'
 import { handleWxml, scanWxml } from '../wxml'
@@ -38,6 +44,62 @@ type EmitAsset = (asset: EmittedAsset) => void
 interface OutputAssetEntry {
   bundleFileName: string
   output: Extract<OutputBundle[string], { type: 'asset' }>
+}
+
+const GRAPH_ONLY_OUTPUT_MARKERS = [
+  WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX,
+  WEAPP_VITE_SIDECAR_RESOLVED_PREFIX,
+]
+
+function parseGraphOnlyAssetOwner(fileName: string) {
+  for (const marker of GRAPH_ONLY_OUTPUT_MARKERS) {
+    const markerIndex = fileName.indexOf(marker)
+    if (markerIndex < 0) {
+      continue
+    }
+    const request = fileName.slice(markerIndex)
+    const extension = path.extname(request)
+    const moduleId = `${extension ? request.slice(0, -extension.length) : request}.js`
+    return parseLogicalEntryId(moduleId)?.sourceId
+      ?? parseSidecarModuleId(moduleId)?.ownerId
+  }
+}
+
+export function normalizeGraphOnlyAssets(
+  ctx: CompilerContext,
+  bundle: OutputBundle,
+  emitAsset: EmitAsset,
+) {
+  for (const [bundleFileName, output] of Object.entries(bundle)) {
+    if (output?.type !== 'asset') {
+      continue
+    }
+    const fileName = output.fileName || bundleFileName
+    const ownerId = parseGraphOnlyAssetOwner(fileName)
+    if (!ownerId) {
+      continue
+    }
+    delete bundle[bundleFileName]
+    const outputFileName = ctx.configService.relativeOutputPath(
+      changeFileExtension(ownerId, ctx.configService.outputExtensions.wxss),
+    )
+    if (!outputFileName) {
+      continue
+    }
+    const existingOutput = bundle[outputFileName]
+    if (existingOutput?.type === 'asset') {
+      existingOutput.source = output.source
+      existingOutput.fileName = outputFileName
+      continue
+    }
+    if (!existingOutput) {
+      emitAsset({
+        type: 'asset',
+        fileName: outputFileName,
+        source: output.source,
+      })
+    }
+  }
 }
 
 function collectOutputFinalizerAssetEntries(bundle: OutputBundle) {
@@ -264,7 +326,6 @@ export function pruneUnchangedDevHmrOutputs(
       delete bundle[fileName]
       continue
     }
-
     const source = outputSourceToString(output)
     if (isHmrBuild && !shouldForceEmitCurrentHmrChunk && cache.get(fileName) === source) {
       delete bundle[fileName]
@@ -307,6 +368,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
         rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
         stabilizeWevuRuntimeChunkAccess(bundle as unknown as OutputBundle)
         restoreNativePageLayoutOutputs(ctx, outputBundle)
+        normalizeGraphOnlyAssets(ctx, outputBundle, asset => this.emitFile(asset))
         const assetEntries = collectOutputFinalizerAssetEntries(outputBundle)
         normalizePreprocessorStyleAssetEntries(
           outputBundle,

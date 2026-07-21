@@ -48,19 +48,45 @@ describe('dev module graph provider', () => {
     }, onChange)
 
     const config = createServerMock.mock.calls[0]![0]
-    expect(config.server).toMatchObject({ hmr: false, middlewareMode: true })
+    expect(config.server).toMatchObject({ hmr: true, middlewareMode: true })
     expect(config.build).toMatchObject({ watch: undefined, write: false })
     expect(config.plugins).toEqual([expect.objectContaining({ name: 'weapp-vite:module-graph-provider' }), resolver])
     expect(bindDevServer).toHaveBeenCalledWith(server)
-    const handleChange = watcher.on.mock.calls[0]![1]
-    expect(handleChange).not.toBe(onChange)
-    handleChange('/project/src/page.wxml', { size: 1 })
+    const providerPlugin = config.plugins[0] as Plugin
+    const read = vi.fn(async () => '<view />')
+    await (providerPlugin.handleHotUpdate as any)({
+      file: '/project/src/page.wxml',
+      read,
+    })
+    expect(read).toHaveBeenCalled()
     expect(onChange).toHaveBeenCalledWith('/project/src/page.wxml')
+    expect(watcher.on).not.toHaveBeenCalled()
 
     await provider.close()
-    expect(watcher.off).toHaveBeenCalledWith('change', handleChange)
+    expect(watcher.off).not.toHaveBeenCalled()
     expect(close).toHaveBeenCalled()
     expect(bindDevServer).toHaveBeenLastCalledWith(undefined)
+  })
+
+  it('leaves missing-file topology changes to the topology watcher', async () => {
+    const { createDevModuleGraphProvider } = await import('./devProvider')
+    const ctx = {
+      moduleGraphService: {
+        bindDevServer: vi.fn(),
+        getEntryDependencies: vi.fn(() => []),
+      },
+    } as any
+    const onChange = vi.fn()
+    await createDevModuleGraphProvider(ctx, {}, onChange)
+    const config = createServerMock.mock.calls[0]![0]
+    const providerPlugin = config.plugins[0] as Plugin
+    const error = Object.assign(new Error('missing'), { code: 'ENOENT' })
+
+    await expect((providerPlugin.handleHotUpdate as any)({
+      file: '/project/src/page.wxml',
+      read: vi.fn(async () => Promise.reject(error)),
+    })).resolves.toBeUndefined()
+    expect(onChange).not.toHaveBeenCalled()
   })
 
   it('loads logical entry and sidecar modules from stable metadata', async () => {
