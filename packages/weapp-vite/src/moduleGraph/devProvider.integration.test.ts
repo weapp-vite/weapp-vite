@@ -57,9 +57,9 @@ describe('dev module graph provider integration', () => {
       expect(moduleGraphService.collectAffectedEntries(styleId)).toEqual(new Set([normalizedPageId]))
 
       await writeFile(templateId, '<view>updated</view>\n', 'utf8')
-      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(templateId))
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(normalizeSourceId(templateId)))
       await writeFile(styleId, '.page { color: blue; }\n', 'utf8')
-      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(styleId))
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(normalizeSourceId(styleId)))
     }
     finally {
       await provider.close()
