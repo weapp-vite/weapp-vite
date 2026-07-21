@@ -14,7 +14,7 @@ keywords:
 date: 2025-05-06
 ---
 
-![bg](./assets/release4.png)
+![bg](/release4.png)
 
 # `weapp-vite` 发布：重塑小程序开发体验！
 
@@ -61,7 +61,7 @@ date: 2025-05-06
 
 1. 在微信开发者工具中创建一个新的 `js`/`ts` 项目。
 
-![微信开发者工具创建项目界面](../images/create-project.png)
+![微信开发者工具创建项目界面](/images/create-project.png)
 
 2. 确保项目根目录下有 `package.json`，若无则运行 `npm init -y`
 

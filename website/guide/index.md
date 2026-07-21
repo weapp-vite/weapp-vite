@@ -213,7 +213,7 @@ bun open
 
 > 使用 `JS` 基础模板创建项目，依然可以使用 `TypeScript`
 
-![微信开发者工具创建基础项目](../images/create-project.png)
+![微信开发者工具创建基础项目](/images/create-project.png)
 
 > 如果你创建的是 **TS 模板项目**，请在 `vite.config.ts` 或 `weapp-vite.config.ts` 中设置 [`weapp.srcRoot`](../config/paths.md#weapp-srcroot) 为 `'./miniprogram'`。
 
