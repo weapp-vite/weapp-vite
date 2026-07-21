@@ -20,7 +20,6 @@ import {
   filterPluginBundleOutputs,
   flushIndependentBuilds,
   formatBytes,
-  refreshModuleGraph,
   refreshPartialSharedChunkImporters,
   refreshSharedChunkImporters,
   removeImplicitPagePreloads,
@@ -435,6 +434,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
   return async function generateBundle(this: any, _options: any, bundle: any) {
     const startedAt = performance.now()
     try {
+      ctx.moduleGraphService?.bindBuildContext(state, this)
+      ctx.moduleGraphService?.bindPluginContext(this)
       const rolldownBundle = bundle as unknown as OutputBundle
       const scriptAnalysisCache: ChunkScriptAnalysisCache = new WeakMap()
       await flushIndependentBuilds.call(this, state)
@@ -810,12 +811,6 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'generateRewriteMs', performance.now() - rewriteStartedAt)
       state.hmrState.affectedSharedChunkIds?.clear()
 
-      const moduleGraphStartedAt = performance.now()
-      refreshModuleGraph(this, state, rolldownBundle, {
-        mode: state.ctx.configService.isDev && state.hmrState.hasBuiltOnce ? 'merge' : 'replace',
-      })
-      recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'generateModuleGraphMs', performance.now() - moduleGraphStartedAt)
-
       if (configService.weappViteConfig?.debug?.watchFiles) {
         const watcherService = ctx.watcherService
         const watcherRoot = subPackageMeta?.subPackage.root ?? '/'
@@ -835,6 +830,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     }
     finally {
       recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'generateBundleMs', performance.now() - startedAt)
+      if (!subPackageMeta) {
+        ctx.moduleGraphService?.clearPendingChanges()
+      }
     }
   }
 }

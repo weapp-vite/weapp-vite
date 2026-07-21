@@ -8,7 +8,6 @@ const DEFAULT_PLATFORM_ASSET_OPTIONS = {
   scriptModuleExtension: 'wxs',
 }
 
-const addBundleWatchFileMock = vi.hoisted(() => vi.fn())
 const emitCompiledEntryBundleAssetsMock = vi.hoisted(() => vi.fn(() => ({
   shouldEmitComponentJson: false,
 })))
@@ -40,7 +39,6 @@ vi.mock('./layoutAssets', () => ({
 }))
 
 vi.mock('./shared', () => ({
-  addBundleWatchFile: addBundleWatchFileMock,
   emitCompiledEntryBundleAssets: emitCompiledEntryBundleAssetsMock,
   handleCompiledEntryPageLayouts: handleCompiledEntryPageLayoutsMock,
   resolveCompiledEntryEmitState: resolveCompiledEntryEmitStateMock,
@@ -49,7 +47,6 @@ vi.mock('./shared', () => ({
 
 describe('emitCompiledEntry helpers', () => {
   beforeEach(() => {
-    addBundleWatchFileMock.mockReset()
     emitCompiledEntryBundleAssetsMock.mockReset()
     emitCompiledEntryBundleAssetsMock.mockReturnValue({
       shouldEmitComponentJson: false,
@@ -831,7 +828,6 @@ describe('emitCompiledEntry helpers', () => {
       classStyleRuntimeWarned: { value: false },
     } as any, '/project/src/pages/index/index.vue', { isPage: true, result: {} } as any)
 
-    expect(addBundleWatchFileMock).not.toHaveBeenCalled()
     expect(resolveVueBundleAssetContextMock).not.toHaveBeenCalled()
   })
 
@@ -854,7 +850,6 @@ describe('emitCompiledEntry helpers', () => {
       { isPage: true, result: {}, source: '<template />' } as any,
     )
 
-    expect(addBundleWatchFileMock).toHaveBeenCalledWith({}, '/project/src/pages/index/index.vue')
     expect(resolveVueBundleAssetContextMock).toHaveBeenCalledWith(state.ctx.configService)
     expect(handleCompiledEntryPageLayoutsMock).not.toHaveBeenCalled()
     expect(emitCompiledEntryBundleAssetsMock).not.toHaveBeenCalled()

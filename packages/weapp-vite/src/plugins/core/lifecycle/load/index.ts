@@ -9,7 +9,6 @@ import { isCSSRequest } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { getMiniProgramPlatformGlobalKey } from '../../../../utils/miniProgramGlobals'
-import { normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
 import { getCssRealPath, parseRequest } from '../../../utils/parse'
@@ -126,7 +125,6 @@ export function createLoadHook(state: CorePluginState) {
         const parsed = parseRequest(id)
         if (parsed.query.wxss) {
           const realPath = getCssRealPath(parsed)
-          this.addWatchFile(normalizeWatchPath(realPath))
           try {
             const css = await readFileCached(realPath, { checkMtime: configService.isDev })
             return { code: css }

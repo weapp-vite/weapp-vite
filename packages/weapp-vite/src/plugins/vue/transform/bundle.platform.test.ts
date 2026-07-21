@@ -4,6 +4,7 @@ import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createModuleGraphService } from '../../../moduleGraph'
 import { scanWxml } from '../../../wxml'
 import * as wxmlHandleModule from '../../../wxml/handle'
 import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../utils/scriptlessComponent'
@@ -108,6 +109,7 @@ describe('emitVueBundleAssets platform output', () => {
 
     const ctx = {
       configService,
+      moduleGraphService: createModuleGraphService(),
       scanService: {
         independentSubPackageMap: new Map(),
       },
@@ -1017,6 +1019,7 @@ export default {
 
     const ctx = {
       configService,
+      moduleGraphService: createModuleGraphService(),
       scanService: {
         independentSubPackageMap: new Map(),
       },
@@ -1045,7 +1048,7 @@ export default {
       classStyleRuntimeWarned: { value: false },
     })
 
-    expect(addWatchFile).toHaveBeenCalled()
+    expect(addWatchFile).not.toHaveBeenCalled()
     expect(compileJsxFileMock).toHaveBeenCalledTimes(1)
     expect(cached.source).toContain('new jsx source')
     expect(cached.result.script).toBe('/* injected page */')

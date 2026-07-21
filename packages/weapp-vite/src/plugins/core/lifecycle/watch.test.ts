@@ -83,6 +83,16 @@ function createState(overrides: Record<string, any> = {}) {
         invalidateIndependentOutput: vi.fn(),
         requestConfigRestart: vi.fn(),
       },
+      moduleGraphService: {
+        bindBuildContext: vi.fn(),
+        bindPluginContext: vi.fn(),
+        collectAffectedEntries: collectAffectedEntriesMock,
+        getPendingChanges: vi.fn(() => []),
+        hasModule: (id: string) => collectAffectedEntriesMock(id).size > 0,
+        invalidate: collectAffectedEntriesMock,
+        requestTopologyRescan: vi.fn(),
+        consumeTopologyRescan: vi.fn(() => undefined),
+      },
       configService: {
         platform: 'weapp',
         multiPlatform: {
@@ -134,10 +144,7 @@ function createState(overrides: Record<string, any> = {}) {
     loadedEntrySet: new Set<string>(),
     entriesMap: new Map<string, { type: string }>(),
     jsonEmitFilesMap: new Map(),
-    layoutEntryDependents: new Map<string, Set<string>>(),
     markEntryDirty: vi.fn(),
-    moduleImporters: new Map(),
-    entryModuleIds: new Set(),
     hmrState: {
       didEmitAllEntries: false,
       hasBuiltOnce: true,
@@ -146,7 +153,7 @@ function createState(overrides: Record<string, any> = {}) {
       lastEmittedEntryIds: new Set<string>(),
       skipSharedChunkRefresh: false,
     },
-    hmrSharedChunksByModule: new Map(),
+    outputChunksByModule: new Map(),
     hmrSharedChunkImporters: new Map(),
     hmrSharedChunksByEntry: new Map(),
     resolvedEntryMap: new Map(),
@@ -201,6 +208,7 @@ describe('core lifecycle watch hook', () => {
     findJsEntryMock.mockResolvedValue({
       path: '/project/src/pages/hmr/index.ts',
     })
+    collectAffectedEntriesMock.mockReturnValue(new Set(['/project/src/pages/hmr/index.ts']))
     const state = createState()
     const hook = createWatchChangeHook(state)
 
@@ -219,6 +227,7 @@ describe('core lifecycle watch hook', () => {
       '/project/src/pages/hmr/index.ts',
       '/project/src/pages/other/index.ts',
     ]))
+    collectAffectedEntriesMock.mockReturnValue(new Set(['/project/src/pages/hmr/index.ts']))
     const state = createState()
     const hook = createWatchChangeHook(state)
 
@@ -230,30 +239,21 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
   })
 
-  it('does not expand style sidecar updates through stale importer graph records', async () => {
+  it('queries the source graph without widening a direct style sidecar update', async () => {
     const styleId = '/project/src/pages/hmr/index.scss'
     const entryId = '/project/src/pages/hmr/index.ts'
-    const staleImporterId = '/project/src/pages/other/index.ts'
     findJsEntryMock.mockResolvedValue({
       path: entryId,
     })
-    collectAffectedEntriesMock.mockReturnValue(new Set([
-      entryId,
-      staleImporterId,
-    ]))
-    const state = createState({
-      moduleImporters: new Map([
-        [styleId, new Set([entryId, staleImporterId])],
-      ]),
-      entryModuleIds: new Set([entryId, staleImporterId]),
-    })
+    collectAffectedEntriesMock.mockReturnValue(new Set([entryId]))
+    const state = createState()
     const hook = createWatchChangeHook(state)
 
     await hook(styleId, { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
-    expect(collectAffectedEntriesMock).not.toHaveBeenCalled()
+    expect(collectAffectedEntriesMock).toHaveBeenCalledWith(styleId)
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
   })
 
@@ -261,6 +261,7 @@ describe('core lifecycle watch hook', () => {
     findJsEntryMock.mockResolvedValue({
       path: '/project/src/components/x-child/index.ts',
     })
+    collectAffectedEntriesMock.mockReturnValue(new Set(['/project/src/components/x-child/index.ts']))
     const state = createState()
     const hook = createWatchChangeHook(state)
 
@@ -272,6 +273,7 @@ describe('core lifecycle watch hook', () => {
 
   it('maps emitted app side json updates back to the app entry', async () => {
     const appEntry = '/project/src/app.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([appEntry]))
     const state = createState({
       resolvedEntryMap: new Map([
         [appEntry, { id: appEntry }],
@@ -306,6 +308,7 @@ describe('core lifecycle watch hook', () => {
   it('normalizes transient create events on emitted app side json back to updates', async () => {
     vi.mocked(fs.pathExists).mockResolvedValue(true)
     const appEntry = '/project/src/app.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([appEntry]))
     const state = createState({
       resolvedEntryMap: new Map([
         [appEntry, { id: appEntry }],
@@ -339,13 +342,10 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['json-sidecar:1'])
   })
 
-  it('marks css importer vue entries dirty so style-only transform cache can refresh', async () => {
+  it('marks css importer vue entries from the source graph', async () => {
     const dependencyId = '/project/src/pages/index/hello.css'
     const vueEntry = '/project/src/pages/index/index.vue'
-    collectAffectedScriptsAndImportersMock.mockResolvedValue({
-      importers: new Set([vueEntry]),
-      scripts: new Set<string>(),
-    })
+    collectAffectedEntriesMock.mockReturnValue(new Set([vueEntry]))
     collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set([
       '/project/src/pages/other/index.vue',
     ]))
@@ -359,15 +359,12 @@ describe('core lifecycle watch hook', () => {
 
     await hook(dependencyId, { event: 'update' })
 
-    expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
     expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(state.ctx, dependencyId)
-    expect(extractCssImportDependenciesMock.mock.invocationCallOrder[0])
-      .toBeLessThan(collectAffectedScriptsAndImportersMock.mock.invocationCallOrder[0]!)
     expect(state.markEntryDirty).toHaveBeenCalledTimes(1)
-    expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'metadata')
     expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([vueEntry]))
     expect(collectAffectedEntriesFromSharedChunksMock).not.toHaveBeenCalled()
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
   })
 
   it('does not force vue recompilation for dependency-only shared chunk updates', async () => {
@@ -379,16 +376,20 @@ describe('core lifecycle watch hook', () => {
       resolvedEntryMap: new Map([
         [vueEntry, { id: vueEntry }],
       ]),
-      hmrSharedChunksByModule: new Map([
+      outputChunksByModule: new Map([
         [sharedModuleId, new Set(['common.js'])],
       ]),
       hmrSharedChunkImporters: new Map([
         ['common.js', new Set([vueEntry])],
       ]),
     })
+    state.ctx.moduleGraphService.getPendingChanges.mockReturnValue([
+      { event: 'update', file: sharedModuleId },
+    ])
     const hook = createWatchChangeHook(state)
 
     await hook(sharedModuleId, { event: 'update' })
+    await createBuildStartHook(state).call({ addWatchFile: vi.fn() })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'dependency')
     expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set())
@@ -396,14 +397,11 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['shared-chunk-source:1'])
   })
 
-  it('treats created style files as update-like css importers after atomic saves', async () => {
+  it('treats atomic-save style creates as graph-backed sidecar updates', async () => {
     vi.mocked(fs.pathExists).mockResolvedValue(false)
     const dependencyId = '/project/src/pages/index/hello.css'
     const vueEntry = '/project/src/pages/index/index.vue'
-    collectAffectedScriptsAndImportersMock.mockResolvedValue({
-      importers: new Set([vueEntry]),
-      scripts: new Set<string>(),
-    })
+    collectAffectedEntriesMock.mockReturnValue(new Set([vueEntry]))
     const state = createState({
       loadedEntrySet: new Set([vueEntry]),
       resolvedEntryMap: new Map([
@@ -415,13 +413,10 @@ describe('core lifecycle watch hook', () => {
     await hook(dependencyId, { event: 'create' })
 
     expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(state.ctx, dependencyId)
-    expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
-    expect(extractCssImportDependenciesMock.mock.invocationCallOrder[0])
-      .toBeLessThan(collectAffectedScriptsAndImportersMock.mock.invocationCallOrder[0]!)
-    expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(vueEntry, 'metadata')
     expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([vueEntry]))
     expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('create')
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
   })
 
   it('marks same-name vue entry dirty for external style sidecars', async () => {
@@ -447,7 +442,7 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
   })
 
-  it('falls back to resolved entries when created style dependency graph has no importers yet', async () => {
+  it('funnels an untracked style create through controlled topology rescan', async () => {
     vi.mocked(fs.pathExists).mockResolvedValue(false)
     const dependencyId = '/project/src/shared/styles/shared.scss'
     const pageEntry = '/project/src/pages/native/index.ts'
@@ -458,23 +453,27 @@ describe('core lifecycle watch hook', () => {
         [componentEntry, { id: componentEntry }],
       ]),
     })
+    state.ctx.moduleGraphService.consumeTopologyRescan.mockReturnValue({
+      files: new Set([dependencyId]),
+      reasons: new Set(['sidecar-create']),
+    })
     const hook = createWatchChangeHook(state)
 
     await hook(dependencyId, { event: 'create' })
 
     expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(state.ctx, dependencyId)
-    expect(collectAffectedScriptsAndImportersMock).toHaveBeenCalledWith(state.ctx, dependencyId)
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntry, 'dependency')
     expect(state.markEntryDirty).toHaveBeenCalledWith(componentEntry, 'dependency')
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer-fallback:2'])
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['topology-full-rescan:2'])
   })
 
-  it('treats created existing shared templates as update-like wxml importers after atomic saves', async () => {
+  it('treats created existing shared templates as graph-backed updates after atomic saves', async () => {
     vi.mocked(fs.pathExists).mockResolvedValue(true)
     isTemplateMock.mockReturnValue(true)
     const sharedTemplate = '/project/src/shared/templates/card.wxml'
     const importerTemplate = '/project/src/pages/native/index.wxml'
     const importerEntry = '/project/src/pages/native/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([importerEntry]))
     findJsEntryMock.mockImplementation(async (basePath: string) => {
       if (basePath === '/project/src/pages/native/index') {
         return { path: importerEntry }
@@ -493,18 +492,18 @@ describe('core lifecycle watch hook', () => {
     await hook(sharedTemplate, { event: 'create' })
 
     expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith(sharedTemplate)
-    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(sharedTemplate)
     expect(state.markEntryDirty).toHaveBeenCalledWith(importerEntry, 'metadata')
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer-import:1'])
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['sidecar-direct:1'])
   })
 
-  it('walks recursively queued wxml importers without missing later entries', async () => {
+  it('uses the bundler graph for transitive wxml importer updates', async () => {
     vi.mocked(fs.pathExists).mockResolvedValue(true)
     isTemplateMock.mockReturnValue(true)
     const sharedTemplate = '/project/src/shared/templates/root.wxml'
     const intermediateTemplate = '/project/src/shared/templates/intermediate.wxml'
     const importerTemplate = '/project/src/pages/native/index.wxml'
     const importerEntry = '/project/src/pages/native/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([importerEntry]))
     findJsEntryMock.mockImplementation(async (basePath: string) => {
       if (basePath === '/project/src/pages/native/index') {
         return { path: importerEntry }
@@ -534,18 +533,18 @@ describe('core lifecycle watch hook', () => {
 
     await hook(sharedTemplate, { event: 'create' })
 
-    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(sharedTemplate)
-    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(intermediateTemplate)
+    expect(collectAffectedEntriesMock).toHaveBeenCalledWith(sharedTemplate)
     expect(state.markEntryDirty).toHaveBeenCalledWith(importerEntry, 'metadata')
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer-import:1'])
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['sidecar-direct:1'])
   })
 
-  it('keeps include-driven wxml importer updates on the conservative path', async () => {
+  it('keeps include-driven wxml importer updates on the module graph path', async () => {
     vi.mocked(fs.pathExists).mockResolvedValue(true)
     isTemplateMock.mockReturnValue(true)
     const sharedTemplate = '/project/src/shared/templates/partial.wxml'
     const importerTemplate = '/project/src/pages/native/index.wxml'
     const importerEntry = '/project/src/pages/native/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([importerEntry]))
     findJsEntryMock.mockImplementation(async (basePath: string) => {
       if (basePath === '/project/src/pages/native/index') {
         return { path: importerEntry }
@@ -563,16 +562,16 @@ describe('core lifecycle watch hook', () => {
 
     await hook(sharedTemplate, { event: 'create' })
 
-    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(sharedTemplate)
     expect(state.markEntryDirty).toHaveBeenCalledWith(importerEntry, 'metadata')
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer:1'])
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['sidecar-direct:1'])
   })
 
-  it('treats created existing shared wxs files as update-like wxml importers after atomic saves', async () => {
+  it('treats created existing shared wxs files as graph-backed updates after atomic saves', async () => {
     vi.mocked(fs.pathExists).mockResolvedValue(true)
     const sharedWxs = '/project/src/shared/wxs/format.wxs'
     const importerTemplate = '/project/src/pages/native/index.wxml'
     const importerEntry = '/project/src/pages/native/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([importerEntry]))
     findJsEntryMock.mockImplementation(async (basePath: string) => {
       if (basePath === '/project/src/pages/native/index') {
         return { path: importerEntry }
@@ -587,9 +586,8 @@ describe('core lifecycle watch hook', () => {
 
     await hook(sharedWxs, { event: 'create' })
 
-    expect(state.ctx.wxmlService.getImporters).toHaveBeenCalledWith(sharedWxs)
     expect(state.markEntryDirty).toHaveBeenCalledWith(importerEntry, 'metadata')
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['wxml-importer:1'])
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['sidecar-direct:1'])
   })
 
   it('marks html template updates as metadata entry dirties', async () => {
@@ -597,6 +595,7 @@ describe('core lifecycle watch hook', () => {
     findJsEntryMock.mockResolvedValue({
       path: '/project/src/pages/hmr-html/index.ts',
     })
+    collectAffectedEntriesMock.mockReturnValue(new Set(['/project/src/pages/hmr-html/index.ts']))
     const state = createState()
     const hook = createWatchChangeHook(state)
 
@@ -610,6 +609,7 @@ describe('core lifecycle watch hook', () => {
     findJsEntryMock.mockResolvedValue({
       path: '/project/src/components/x-child/index.ts',
     })
+    collectAffectedEntriesMock.mockReturnValue(new Set(['/project/src/components/x-child/index.ts']))
     const state = createState()
     const hook = createWatchChangeHook(state)
 
@@ -1102,6 +1102,7 @@ const count = 1
       path: '/project/src/pages/hmr/index.ts',
     })
     const entryId = '/project/src/pages/hmr/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([entryId]))
     const state = createState({
       resolvedEntryMap: new Map([
         [entryId, { id: entryId }],
@@ -1528,6 +1529,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     findJsEntryMock.mockResolvedValue({
       path: '/project/src/pages/hmr/index.ts',
     })
+    collectAffectedEntriesMock.mockReturnValue(new Set(['/project/src/pages/hmr/index.ts']))
     const state = createState()
     const hook = createWatchChangeHook(state)
 
@@ -1544,6 +1546,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     const entryId = '/project/src/layouts/default.vue'
     const pageEntry = '/project/src/pages/layout-store/index.vue'
     const dataEntry = '/project/src/pages/data/index.vue'
+    collectAffectedEntriesMock.mockReturnValue(new Set([entryId, pageEntry, dataEntry]))
     const state = createState({
       loadedEntrySet: new Set([entryId]),
       resolvedEntryMap: new Map([
@@ -1566,15 +1569,13 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     const pageEntry = '/project/src/pages/layout-a/index.ts'
     const dataEntry = '/project/src/pages/layout-b/index.ts'
     const unrelatedEntry = '/project/src/pages/plain/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([layoutEntry, pageEntry, dataEntry]))
     const state = createState({
       resolvedEntryMap: new Map([
         [layoutEntry, { id: layoutEntry }],
         [pageEntry, { id: pageEntry }],
         [dataEntry, { id: dataEntry }],
         [unrelatedEntry, { id: unrelatedEntry }],
-      ]),
-      layoutEntryDependents: new Map([
-        [layoutEntry, new Set([pageEntry, dataEntry])],
       ]),
     })
     const hook = createWatchChangeHook(state)
@@ -1593,6 +1594,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     findJsEntryMock.mockResolvedValue({
       path: '/project/src/layouts/default/index.ts',
     })
+    collectAffectedEntriesMock.mockReturnValue(new Set(['/project/src/layouts/default/index.ts']))
     const state = createState()
     const hook = createWatchChangeHook(state)
 
@@ -1609,14 +1611,12 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     const layoutEntry = '/project/src/layouts/default/index.ts'
     const pageEntry = '/project/src/pages/layout-a/index.ts'
     const unrelatedEntry = '/project/src/pages/plain/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([layoutEntry, pageEntry]))
     const state = createState({
       resolvedEntryMap: new Map([
         [layoutEntry, { id: layoutEntry }],
         [pageEntry, { id: pageEntry }],
         [unrelatedEntry, { id: unrelatedEntry }],
-      ]),
-      layoutEntryDependents: new Map([
-        [layoutEntry, new Set([pageEntry])],
       ]),
     })
     const hook = createWatchChangeHook(state)
@@ -1636,6 +1636,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     const layoutEntry = '/project/src/layouts/default/index.ts'
     const pageEntry = '/project/src/pages/layout-a/index.ts'
     const unrelatedEntry = '/project/src/pages/plain/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([layoutEntry, pageEntry]))
     findJsEntryMock.mockImplementation(async (basePath: string) => {
       if (basePath === '/project/src/layouts/default/index') {
         return { path: layoutEntry }
@@ -1647,9 +1648,6 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
         [layoutEntry, { id: layoutEntry }],
         [pageEntry, { id: pageEntry }],
         [unrelatedEntry, { id: unrelatedEntry }],
-      ]),
-      layoutEntryDependents: new Map([
-        [layoutEntry, new Set([pageEntry])],
       ]),
     })
     state.ctx.wxmlService.getImporters.mockReturnValue(new Set([layoutTemplate]))
@@ -1670,6 +1668,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     const layoutTemplate = '/project/src/layouts/default/index.wxml'
     const layoutEntry = '/project/src/layouts/default/index.ts'
     const pageEntry = '/project/src/pages/layout-a/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([layoutEntry, pageEntry]))
     findJsEntryMock.mockImplementation(async (basePath: string) => {
       if (basePath === '/project/src/layouts/default/index') {
         return { path: layoutEntry }
@@ -1680,9 +1679,6 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
       resolvedEntryMap: new Map([
         [layoutEntry, { id: layoutEntry }],
         [pageEntry, { id: pageEntry }],
-      ]),
-      layoutEntryDependents: new Map([
-        [layoutEntry, new Set([pageEntry])],
       ]),
     })
     state.ctx.wxmlService.getImporters.mockReturnValue(new Set([layoutTemplate]))
@@ -1701,6 +1697,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     findJsEntryMock.mockResolvedValue({
       path: '/project/src/layouts/default/index.ts',
     })
+    collectAffectedEntriesMock.mockReturnValue(new Set(['/project/src/layouts/default/index.ts']))
     const state = createState()
     const hook = createWatchChangeHook(state)
 
@@ -1712,9 +1709,12 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
   it('marks native layout dependency updates as dependency dirties', async () => {
     const entryId = '/project/src/pages/layouts/index.ts'
     const layoutId = '/project/src/layouts/default/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([layoutId, entryId]))
     const state = createState({
-      layoutEntryDependents: new Map([
-        [layoutId, new Set([entryId])],
+      loadedEntrySet: new Set([layoutId]),
+      resolvedEntryMap: new Map([
+        [layoutId, { id: layoutId }],
+        [entryId, { id: entryId }],
       ]),
     })
     const hook = createWatchChangeHook(state)
@@ -1730,15 +1730,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
       '/project/src/pages/hmr/index.ts',
       '/project/src/pages/store/index.ts',
     ]))
-    const state = createState({
-      moduleImporters: new Map([
-        [dependencyId, new Set(['/project/src/pages/hmr/index.ts'])],
-      ]),
-      entryModuleIds: new Set([
-        '/project/src/pages/hmr/index.ts',
-        '/project/src/pages/store/index.ts',
-      ]),
-    })
+    const state = createState()
     const hook = createWatchChangeHook(state)
 
     await hook(dependencyId, { event: 'update' })
@@ -1758,9 +1750,13 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
       'common.js',
     ]))
     const state = createState()
+    state.ctx.moduleGraphService.getPendingChanges.mockReturnValue([
+      { event: 'update', file: dependencyId },
+    ])
     const hook = createWatchChangeHook(state)
 
     await hook(dependencyId, { event: 'update' })
+    await createBuildStartHook(state).call({ addWatchFile: vi.fn() })
 
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, '/project/src/pages/native/index.ts', 'dependency')
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, '/project/src/components/probe-card/index.ts', 'dependency')
@@ -1774,12 +1770,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     const componentEntry = '/project/src/components/probe-card/index.ts'
     collectAffectedEntriesMock.mockReturnValue(new Set([nativeEntry, componentEntry]))
     collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set([nativeEntry, componentEntry]))
-    const state = createState({
-      moduleImporters: new Map([
-        [dependencyId, new Set([nativeEntry])],
-      ]),
-      entryModuleIds: new Set([nativeEntry, componentEntry]),
-    })
+    const state = createState()
     const hook = createWatchChangeHook(state)
 
     await hook(dependencyId, { event: 'update' })
@@ -1795,15 +1786,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
       '/project/src/pages/hmr/index.ts',
       '/project/src/pages/store/index.ts',
     ]))
-    const state = createState({
-      moduleImporters: new Map([
-        [dependencyId, new Set(['/project/src/pages/hmr/index.ts'])],
-      ]),
-      entryModuleIds: new Set([
-        '/project/src/pages/hmr/index.ts',
-        '/project/src/pages/store/index.ts',
-      ]),
-    })
+    const state = createState()
     const hook = createWatchChangeHook(state)
 
     await hook(dependencyId, { event: 'delete' })
@@ -1820,12 +1803,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     const dependencyId = '/project/src/shared/root-import-hmr.ts'
     const pageEntry = '/project/src/pages/root-import-hmr/index.vue'
     collectAffectedEntriesMock.mockReturnValue(new Set([pageEntry]))
-    const state = createState({
-      moduleImporters: new Map([
-        [dependencyId, new Set([pageEntry])],
-      ]),
-      entryModuleIds: new Set([pageEntry]),
-    })
+    const state = createState()
     const hook = createWatchChangeHook(state)
 
     await hook(dependencyId, { event: 'create' })
@@ -1844,9 +1822,13 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     collectAffectedSharedChunksMock.mockReturnValue(new Set(['common.js']))
     const state = createState()
     state.ctx.runtimeState.build.hmr.sharedChunkSourceModuleIds = new Set([dependencyId])
+    state.ctx.moduleGraphService.getPendingChanges.mockReturnValue([
+      { event: 'update', file: dependencyId },
+    ])
     const hook = createWatchChangeHook(state)
 
     await hook(dependencyId, { event: 'create' })
+    await createBuildStartHook(state).call({ addWatchFile: vi.fn() })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntry, 'dependency')
     expect(state.hmrState.affectedSharedChunkIds).toEqual(new Set(['common.js']))

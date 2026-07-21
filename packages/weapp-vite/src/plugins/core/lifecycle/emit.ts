@@ -80,9 +80,6 @@ export function createRenderStartHook(state: CorePluginState) {
     const startedAt = performance.now()
     try {
       const runtime: WxmlEmitRuntime = {
-        addWatchFile: typeof this.addWatchFile === 'function'
-          ? (id: string) => { this.addWatchFile(normalizeWatchPath(id)) }
-          : undefined,
         emitFile: (asset) => {
           this.emitFile(asset)
         },

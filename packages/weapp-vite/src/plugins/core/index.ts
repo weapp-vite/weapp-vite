@@ -15,7 +15,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
   const hmrSharedChunkImporters = new Map<string, Set<string>>()
   const hmrSharedChunksByEntry = new Map<string, Set<string>>()
   const hmrSharedChunkDependencies = new Map<string, Set<string>>()
-  const hmrSharedChunksByModule = new Map<string, Set<string>>()
+  const outputChunksByModule = new Map<string, Set<string>>()
   const hmrSourceSharedChunks = new Set<string>()
   const hmrRootInputIds = new Set<string>()
   const hmrState = {
@@ -32,7 +32,6 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     jsonEmitFilesMap,
     entriesMap,
     resolvedEntryMap,
-    layoutEntryDependents,
     markEntryDirty,
     emitDirtyEntries,
   } = useLoadEntry(ctx, {
@@ -76,19 +75,16 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     entriesMap,
     jsonEmitFilesMap,
     resolvedEntryMap,
-    layoutEntryDependents,
     requireAsyncEmittedChunks: new Set<string>(),
     pendingIndependentBuilds: [],
     watchFilesSnapshot: [],
     buildTarget,
-    moduleImporters: new Map<string, Set<string>>(),
-    entryModuleIds: new Set<string>(),
     hmrState,
     hmrSharedChunksMode,
     hmrSharedChunkImporters,
     hmrSharedChunksByEntry,
     hmrSharedChunkDependencies,
-    hmrSharedChunksByModule,
+    outputChunksByModule,
     hmrSourceSharedChunks,
     hmrRootInputIds,
   }

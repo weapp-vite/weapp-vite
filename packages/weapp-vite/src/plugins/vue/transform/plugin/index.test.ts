@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createSidecarSourceSpecifier } from '../../../../moduleGraph/protocol'
 
 const preloadNativeLayoutEntriesMock = vi.hoisted(() => vi.fn(async () => {}))
 const loadTransformStyleBlockMock = vi.hoisted(() => vi.fn(async () => null))
@@ -207,6 +208,11 @@ describe('createVueTransformPlugin lifecycle', () => {
 
     const transform = getHookHandler(plugin.transform as any)
     await expect(transform.call({ addWatchFile: vi.fn() } as any, 'code', '/project/src/demo.jsx')).resolves.toBeNull()
+    await expect(transform.call(
+      { addWatchFile: vi.fn() } as any,
+      'export default "<template />"',
+      createSidecarSourceSpecifier('/project/src/demo.vue', '/project/src/demo.vue', 'script'),
+    )).resolves.toBeNull()
     await expect(transform.call({ addWatchFile: vi.fn() } as any, 'code', '/project/src/demo.vue')).resolves.toEqual({
       code: 'transformed',
       map: null,

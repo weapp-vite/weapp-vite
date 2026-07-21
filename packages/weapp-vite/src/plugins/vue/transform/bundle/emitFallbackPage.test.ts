@@ -20,7 +20,6 @@ const handleFallbackPageLayoutsMock = vi.hoisted(() => vi.fn(async ({ emitLayout
 }))
 const emitFallbackPageBundleAssetsMock = vi.hoisted(() => vi.fn())
 const resolveFallbackPageEmitStateMock = vi.hoisted(() => vi.fn(async () => undefined))
-const addBundleWatchFileMock = vi.hoisted(() => vi.fn())
 const resolveVueBundleAssetContextMock = vi.hoisted(() => vi.fn(() => ({
   outputExtensions: { wxml: 'wxml' },
   templateExtension: 'wxml',
@@ -55,7 +54,6 @@ vi.mock('./layoutAssets', () => ({
 }))
 
 vi.mock('./shared', () => ({
-  addBundleWatchFile: addBundleWatchFileMock,
   emitFallbackPageBundleAssets: emitFallbackPageBundleAssetsMock,
   handleFallbackPageLayouts: handleFallbackPageLayoutsMock,
   loadFallbackPageEntryCompilation: loadFallbackPageEntryCompilationMock,
@@ -82,7 +80,6 @@ describe('emitFallbackPage helpers', () => {
     emitFallbackPageBundleAssetsMock.mockReset()
     resolveFallbackPageEmitStateMock.mockReset()
     resolveFallbackPageEmitStateMock.mockResolvedValue(undefined)
-    addBundleWatchFileMock.mockReset()
     resolveVueBundleAssetContextMock.mockReset()
     resolveVueBundleAssetContextMock.mockReturnValue({
       outputExtensions: { wxml: 'wxml' },
@@ -184,7 +181,6 @@ describe('emitFallbackPage helpers', () => {
     await emitFallbackPageAssets({}, state)
 
     expect(resolveVueBundleAssetContextMock).toHaveBeenCalledWith(state.ctx.configService)
-    expect(addBundleWatchFileMock).toHaveBeenCalledWith({}, '/project/src/pages/index/index.vue')
     expect(loadFallbackPageEntryCompilationMock).toHaveBeenCalledTimes(1)
     expect(emitFallbackPageBundleAssetsMock).toHaveBeenCalledTimes(1)
   })
@@ -242,7 +238,6 @@ describe('emitFallbackPage helpers', () => {
 
     await emitFallbackPageAssets({}, state)
 
-    expect(addBundleWatchFileMock).not.toHaveBeenCalled()
     expect(loadFallbackPageEntryCompilationMock).not.toHaveBeenCalled()
   })
 

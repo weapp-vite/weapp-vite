@@ -1,4 +1,5 @@
 import type { OutputBundle } from 'rollup'
+import { realpath } from 'node:fs/promises'
 import os from 'node:os'
 
 import { fs } from '@weapp-core/shared/fs'
@@ -7,6 +8,7 @@ import logger from '../../src/logger'
 import { buildWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from '../../src/plugins/vue/transform/styleRequest'
 import { normalizeWatchPath } from '../../src/utils/path'
 import { callPluginHook } from '../pluginHook'
+import { createTestModuleGraphService } from './moduleGraph'
 
 const compileVueFileMock = vi.fn<
   (source: string, filename: string, options?: any) => Promise<any>
@@ -139,6 +141,7 @@ describe('vue transform plugin', () => {
       autoImportService: {
         resolve: (tag: string) => ({ kind: 'resolver', value: { name: tag, from: `lib/${tag}` } }),
       },
+      moduleGraphService: createTestModuleGraphService(),
       ...overrides,
     }
     return ctx
@@ -714,7 +717,7 @@ export default {}`,
     const addWatchFile = vi.fn()
     const res = await callPluginHook(plugin.transform as any, { addWatchFile } as any, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
-    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(vuePath!))
+    expect(addWatchFile).not.toHaveBeenCalledWith(normalizeWatchPath(vuePath!))
     expect(pageMatcher.markDirty).toHaveBeenCalledTimes(1)
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(injectPageFeaturesMock).toHaveBeenCalledTimes(1)
@@ -861,14 +864,19 @@ onPageScroll(() => {
     const addWatchFile = vi.fn()
 
     await plugin.buildStart?.call({ emitFile, addWatchFile } as any)
+    const realLayoutBase = path.join(await realpath(path.dirname(layoutBase)), 'index')
 
     expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
       type: 'chunk',
       id: `${layoutBase}.ts`,
       fileName: 'layouts/native-shell/index.js',
     }))
-    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(layoutBase))
-    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(`${layoutBase}.ts`))
+    expect(ctx.moduleGraphService.getEntryDependencies(pageFile)).toEqual(expect.arrayContaining([
+      { kind: 'layout', sourceId: `${realLayoutBase}.wxml` },
+      { kind: 'layout', sourceId: `${realLayoutBase}.json` },
+      { kind: 'layout', sourceId: `${realLayoutBase}.wxss` },
+      { kind: 'layout', sourceId: `${realLayoutBase}.ts` },
+    ]))
   })
 
   it('generateBundle() keeps native layout emission asset-only after chunk pre-registration', async () => {
@@ -1349,8 +1357,11 @@ export default autoRoutes
     expect(collectDepsFromToken).toHaveBeenCalledWith(vuePath!, undefined)
     expect(setDeps).toHaveBeenCalledWith(vuePath!, [])
     expect(setWxmlComponentsMap).toHaveBeenCalledWith(vuePath!, ['t-cell'])
-    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/dep/a.vue'))
-    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/dep/b.vue'))
+    expect(addWatchFile).not.toHaveBeenCalled()
+    expect(ctx.moduleGraphService.getEntryDependencies(vuePath!)).toEqual([
+      { kind: 'style', sourceId: '/dep/a.vue' },
+      { kind: 'style', sourceId: '/dep/b.vue' },
+    ])
   })
 
   it('watchChange() ignores non-vue-like ids', async () => {

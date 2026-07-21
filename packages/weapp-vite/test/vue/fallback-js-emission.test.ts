@@ -3,6 +3,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
+import { createTestModuleGraphService } from './moduleGraph'
 
 const { compileVueFileMock, compileJsxFileMock } = vi.hoisted(() => {
   return {
@@ -40,6 +41,7 @@ function createCtx(root: string) {
   const absoluteSrcRoot = path.join(root, 'src')
   const appEntry = { json: { pages: ['pages/demo/index'] } }
   return {
+    moduleGraphService: createTestModuleGraphService(),
     runtimeState: {
       scan: {
         isDirty: false,

@@ -4,11 +4,13 @@ import path from 'pathe'
 import { compileVueFile } from 'wevu/compiler'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { callPluginHook } from '../pluginHook'
+import { createTestModuleGraphService } from './moduleGraph'
 
 function createCtx(root: string, pages: string[] = []) {
   const absoluteSrcRoot = path.join(root, 'src')
   const appEntry = { json: { pages } }
   return {
+    moduleGraphService: createTestModuleGraphService(),
     runtimeState: {
       scan: {
         isDirty: false,

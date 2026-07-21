@@ -5,6 +5,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import { supportedCssLangs, vueExtensions } from '../../../constants'
 import { createDebugger } from '../../../debugger'
+import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { changeFileExtension } from '../../../utils'
 import { recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -25,7 +26,6 @@ interface HmrOptions {
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
   sourceSharedChunks?: Set<string>
-  entryLayoutDependencies?: Map<string, Set<string>>
   setDidEmitAllEntries?: (value: boolean) => void
   setLastEmittedEntries?: (entryIds: Set<string>) => void
   setLastHmrEntries?: (entryIds: Set<string>) => void
@@ -432,8 +432,6 @@ export function useLoadEntry(
   const dirtyEntryReasons = ctx.runtimeState.build.hmr.dirtyEntryReasons as Map<string, DirtyEntryReason>
   const dirtyEntryEventIds = new Map<string, string | undefined>()
   const resolvedEntryMap = ctx.runtimeState.build.hmr.resolvedEntryMap as Map<string, ResolvedId>
-  const layoutEntryDependents = ctx.runtimeState.build.hmr.layoutEntryDependents
-  const entryLayoutDependencies = ctx.runtimeState.build.hmr.entryLayoutDependencies
   const lastActualEmittedEntryIds = new Set<string>()
   const lastChunkEmittedEntryIds = new Set<string>()
   const lastEmittedChunkFileNames = ctx.runtimeState.build.hmr.lastEmittedChunkFileNames ??= new Set<string>()
@@ -474,8 +472,13 @@ export function useLoadEntry(
       && !lastChunkEmittedEntryIds.has(entryId),
     async function preloadAssetOnlyEntry(resolvedId, entryId) {
       if (rootInputIds?.has(entryId)) {
-        await loadEntry.call(this, resolvedId.id, 'app')
-        await this.load(resolvedId)
+        const relativeBase = removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(entryId))
+        const declaredType = entriesMap.get(relativeBase)?.type
+        await loadEntry.call(
+          this,
+          resolvedId.id,
+          declaredType === 'page' ? 'page' : declaredType === 'component' ? 'component' : 'app',
+        )
         return
       }
       if (!shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
@@ -489,6 +492,17 @@ export function useLoadEntry(
       lastEmittedChunkFileNames.add(fileName)
     },
     stats => addChunkEmitStatsSummary(chunkEmitStats, stats),
+    (entryId) => {
+      const relativeBase = removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(entryId))
+      const entryType = ctx.moduleGraphService?.isLogicalLayoutEntry?.(entryId)
+        ? 'layout'
+        : rootInputIds?.has(entryId)
+          ? 'app'
+          : entriesMap.get(relativeBase)?.type === 'page'
+            ? 'page'
+            : 'component'
+      return createLogicalEntryId(entryId, entryType)
+    },
   )
   const applyAutoImports = createAutoImportAugmenter(
     ctx.autoImportService,
@@ -505,35 +519,7 @@ export function useLoadEntry(
     dirtyEntrySet,
     resolvedEntryMap,
     replaceLayoutDependencies(entryId: string, dependencies: Iterable<string>) {
-      const previousDependencies = entryLayoutDependencies.get(entryId)
-      if (previousDependencies) {
-        for (const dependency of previousDependencies) {
-          const dependents = layoutEntryDependents.get(dependency)
-          if (!dependents) {
-            continue
-          }
-          dependents.delete(entryId)
-          if (dependents.size === 0) {
-            layoutEntryDependents.delete(dependency)
-          }
-        }
-      }
-
-      const normalizedDependencies = new Set(dependencies)
-      if (normalizedDependencies.size === 0) {
-        entryLayoutDependencies.delete(entryId)
-        return
-      }
-
-      entryLayoutDependencies.set(entryId, normalizedDependencies)
-      for (const dependency of normalizedDependencies) {
-        let dependents = layoutEntryDependents.get(dependency)
-        if (!dependents) {
-          dependents = new Set<string>()
-          layoutEntryDependents.set(dependency, dependents)
-        }
-        dependents.add(entryId)
-      }
+      ctx.moduleGraphService.replaceEntryDependencies(entryId, 'layout', dependencies)
     },
     normalizeEntry,
     registerJsonAsset,
@@ -560,7 +546,6 @@ export function useLoadEntry(
     loadedEntrySet,
     dirtyEntrySet,
     resolvedEntryMap,
-    layoutEntryDependents,
     jsonEmitFilesMap: jsonEmitManager.map,
     normalizeEntry,
     markEntryDirty(entryId: string, reason: DirtyEntryReason = 'direct') {
@@ -656,6 +641,7 @@ export function useLoadEntry(
         }
         const resolvedId = resolvedEntryMap.get(entryId)
         if (!resolvedId) {
+          debug?.(`hmr unresolved entry ${entryId}`)
           continue
         }
         pending.push(resolvedId)
@@ -710,7 +696,9 @@ export function useLoadEntry(
           addLastEmittedChunkFileName(entryId)
         }
       }
-      let hmrEntryIds = new Set(actualEmittedEntryIds)
+      let hmrEntryIds = new Set(
+        Array.from(actualEmittedEntryIds).filter(entryId => pendingEntryIds.has(entryId)),
+      )
       if (pendingResolution.hmrEntries) {
         hmrEntryIds = pendingResolution.hmrEntries
       }

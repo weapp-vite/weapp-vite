@@ -26,8 +26,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -78,8 +76,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -123,8 +119,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -175,8 +169,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -229,8 +221,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -275,8 +265,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       subPackageMeta: null,
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -342,8 +330,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       subPackageMeta: null,
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -398,8 +384,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -448,8 +432,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -496,8 +478,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -567,8 +547,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -636,8 +614,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -700,8 +676,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       entriesMap: new Map(),
       resolvedEntryMap: new Map([[activeEntry, {}]]),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: true,
@@ -764,8 +738,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       entriesMap: new Map(),
       resolvedEntryMap: new Map([[activeEntry, {}]]),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: true,
@@ -826,8 +798,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       entriesMap: new Map(),
       resolvedEntryMap: new Map([[activeEntry, {}]]),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: true,

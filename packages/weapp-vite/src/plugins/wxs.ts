@@ -8,8 +8,6 @@ import { LRUCache } from 'lru-cache'
 import path from 'pathe'
 import { jsExtensions } from '../constants'
 import { resolveCompilerOutputExtensions } from '../utils/outputExtensions'
-import { normalizeWatchPath } from '../utils/path'
-import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { isScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { scanWxml } from '../wxml'
 import { transformWxsCode } from '../wxs'
@@ -24,24 +22,6 @@ const WXS_SCAN_RELEVANT_HMR_RE = /\.(?:vue|wxml|axml|swan|ttml|jxml|qml|ksml|xhs
 interface WxsPluginState {
   ctx: CompilerContext
   wxsMap: Map<string, { emittedFile: EmittedFile }>
-  wxsFileCache: Map<string, WxsFileCacheEntry>
-  wxsDependencyImporters: Map<string, Set<string>>
-}
-
-interface WxsFileCacheEntry {
-  mtimeMs: number
-  size: number
-  emittedFile: EmittedFile
-  importees: string[]
-}
-
-async function statWxsFile(wxsPath: string) {
-  try {
-    return await fs.stat(wxsPath)
-  }
-  catch {
-    return undefined
-  }
 }
 
 function resolveWxsOutputFileName(
@@ -62,66 +42,27 @@ async function transformWxsFile(
   this: PluginContext,
   state: WxsPluginState,
   wxsPath: string,
-  importerPath?: string,
 ) {
   const { ctx } = state
   const { configService } = ctx
   const { scriptModuleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
-  const normalizedWxsPath = normalizeFsResolvedId(wxsPath)
-  if (importerPath && importerPath !== wxsPath) {
-    const normalizedImporterPath = normalizeFsResolvedId(importerPath)
-    const importers = state.wxsDependencyImporters.get(normalizedWxsPath) ?? new Set<string>()
-    importers.add(normalizedImporterPath)
-    state.wxsDependencyImporters.set(normalizedWxsPath, importers)
+  let rawCode: string
+  try {
+    rawCode = await fs.readFile(wxsPath, 'utf8')
   }
-
-  this.addWatchFile(normalizeWatchPath(wxsPath))
-  const stat = await statWxsFile(wxsPath)
-  if (!stat) {
-    state.wxsFileCache.delete(wxsPath)
+  catch {
     return
   }
-
-  const cached = state.wxsFileCache.get(wxsPath)
-  if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) {
-    state.wxsMap.set(wxsPath, {
-      emittedFile: cached.emittedFile,
-    })
-    await Promise.all(
-      cached.importees.map((importee) => {
-        return transformWxsFile.call(this, state, importee, wxsPath)
-      }),
-    )
-    return
-  }
-
-  const rawCode = await fs.readFile(wxsPath, 'utf8')
-  let code = wxsCodeCache.get(rawCode)
-  let importeePaths: string[] = []
-
-  if (code === undefined) {
-    const { result, importees } = transformWxsCode(rawCode, {
-      filename: wxsPath,
-      extension: scriptModuleExtension,
-    })
-
-    if (typeof result?.code === 'string') {
-      code = result.code
-    }
-
-    const dirname = path.dirname(wxsPath)
-    importeePaths = importees.map(({ source }) => path.resolve(dirname, source))
-    await Promise.all(
-      importeePaths.map((importeePath) => {
-        return transformWxsFile.call(
-          this,
-          state,
-          importeePath,
-          wxsPath,
-        )
-      }),
-    )
-  }
+  const { result, importees } = transformWxsCode(rawCode, {
+    filename: wxsPath,
+    extension: scriptModuleExtension,
+  })
+  const code = wxsCodeCache.get(rawCode) ?? result?.code
+  const dirname = path.dirname(wxsPath)
+  const importeePaths = importees.map(({ source }) => path.resolve(dirname, source))
+  await Promise.all(
+    importeePaths.map(importeePath => transformWxsFile.call(this, state, importeePath)),
+  )
 
   if (code === undefined) {
     return
@@ -136,13 +77,6 @@ async function transformWxsFile(
   state.wxsMap.set(wxsPath, {
     emittedFile,
   })
-  state.wxsFileCache.set(wxsPath, {
-    mtimeMs: stat.mtimeMs,
-    size: stat.size,
-    emittedFile,
-    importees: importeePaths,
-  })
-
   wxsCodeCache.set(rawCode, code)
 }
 
@@ -208,10 +142,8 @@ function shouldScanWxsTokenMap(state: WxsPluginState) {
   if (!hmrProfile.file) {
     return true
   }
-  if (state.wxsDependencyImporters.has(normalizeFsResolvedId(hmrProfile.file))) {
-    return true
-  }
   return WXS_SCAN_RELEVANT_HMR_RE.test(hmrProfile.file)
+    || hmrProfile.dirtyReasonSummary?.some(reason => reason.startsWith('importer-graph:')) === true
 }
 
 function shouldScanFullWxsTokenMap(state: WxsPluginState) {
@@ -222,11 +154,8 @@ function shouldScanFullWxsTokenMap(state: WxsPluginState) {
   if (!hmrProfile.file) {
     return true
   }
-  const normalizedFile = normalizeFsResolvedId(hmrProfile.file)
-  if (state.wxsDependencyImporters.has(normalizedFile)) {
-    return true
-  }
   return WXS_FILE_SUFFIX_RE.test(hmrProfile.file)
+    || hmrProfile.dirtyReasonSummary?.some(reason => reason.startsWith('importer-graph:')) === true
 }
 
 function resolveWxsTokenScanEntries(state: WxsPluginState): Array<[string, any]> {
@@ -285,8 +214,6 @@ export function wxs(ctx: CompilerContext): Plugin[] {
   const state: WxsPluginState = {
     ctx,
     wxsMap: new Map(),
-    wxsFileCache: new Map(),
-    wxsDependencyImporters: new Map(),
   }
 
   return [createWxsPlugin(state)]

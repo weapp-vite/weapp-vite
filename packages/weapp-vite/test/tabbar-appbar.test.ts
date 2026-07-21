@@ -44,14 +44,14 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
     /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-(?:src|templateRef|watch)(?:-[\w-]+)?|src-[\w-]+)\.js["']\)/,
     /var __wevuOptions = \{/,
     /\.[A-Za-z_$][\w$]*\(__wevuOptions\)/,
-    /exports\.default = __wevuOptions/,
+    /(?:exports\.default|module\.exports) = /,
   ],
   'pages/index/vue-setup.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
     /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-(?:src|templateRef|watch)(?:-[\w-]+)?|src-[\w-]+)\.js["']\)/,
     /var __wevuOptions = \{/,
     /\.[A-Za-z_$][\w$]*\(__wevuOptions\)/,
-    /exports\.default = __wevuOptions/,
+    /(?:exports\.default|module\.exports) = /,
   ],
   'weapp-vendors/wevu-shared.js': [
     /__commonJS(?:Min)?/,

@@ -9,7 +9,7 @@ import {
   emitBundlePageLayoutsIfNeeded,
   emitScriptlessComponentJsFallbackIfMissing,
 } from './layoutAssets'
-import { addBundleWatchFile, emitCompiledEntryBundleAssets, handleCompiledEntryPageLayouts, resolveCompiledEntryEmitState, resolveVueBundleAssetContext } from './shared'
+import { emitCompiledEntryBundleAssets, handleCompiledEntryPageLayouts, resolveCompiledEntryEmitState, resolveVueBundleAssetContext } from './shared'
 
 function shouldReplaceAppScriptBundleEntry(options: {
   filename: string
@@ -210,8 +210,6 @@ export async function emitCompiledVueEntryAssets(
   if (!configService) {
     return
   }
-
-  addBundleWatchFile(pluginCtx, filename)
 
   const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache, componentMetaCache }
   const {

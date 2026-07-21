@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createModuleGraphService } from '../moduleGraph'
 import { weappVite } from './core'
 
 const mocked = vi.hoisted(() => {
@@ -81,6 +82,7 @@ describe('weapp-vite:pre load', () => {
 
     const plugins = weappVite({
       currentBuildTarget: 'app',
+      moduleGraphService: createModuleGraphService(),
       configService: {
         absoluteSrcRoot: '/project/src',
         isDev: false,
@@ -107,6 +109,7 @@ describe('weapp-vite:pre load', () => {
 
     const plugins = weappVite({
       currentBuildTarget: 'app',
+      moduleGraphService: createModuleGraphService(),
       configService: {
         absoluteSrcRoot: '/project/src',
         isDev: false,

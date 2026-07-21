@@ -5,6 +5,7 @@ import type { SubPackageStyleEntry } from '../types'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { preprocessCSS } from 'vite'
+import { parseLogicalEntryId } from '../moduleGraph/protocol'
 import { changeFileExtension, isJsOrTs } from '../utils'
 import { getPathExistsTtlMs } from '../utils/cachePolicy'
 import { normalizeWatchPath } from '../utils/path'
@@ -309,6 +310,10 @@ function injectSharedStyleImportsCached(
   return prependSharedStyleImports(css, missingStatements)
 }
 
+function resolveStyleOwnerId(id: string) {
+  return parseLogicalEntryId(id)?.sourceId ?? id
+}
+
 function analyzeBundleStyles(bundle: OutputBundle): BundleStyleAnalysis {
   const facadeChunks: OutputChunk[] = []
   const ownersByCssAsset = new Map<string, Set<string>>()
@@ -329,7 +334,7 @@ function analyzeBundleStyles(bundle: OutputBundle): BundleStyleAnalysis {
     }
     for (const cssAsset of importedCss) {
       const owners = ownersByCssAsset.get(cssAsset) ?? new Set<string>()
-      owners.add(output.facadeModuleId)
+      owners.add(resolveStyleOwnerId(output.facadeModuleId))
       ownersByCssAsset.set(cssAsset, owners)
     }
   }
@@ -402,7 +407,7 @@ async function handleBundleEntry(
   }
 
   const normalizeOwnerId = (id: string) => {
-    return normalizeFsResolvedId(id, { stripLeadingNullByte: true })
+    return normalizeFsResolvedId(resolveStyleOwnerId(id), { stripLeadingNullByte: true })
   }
   const preparedStyleAssets = new Map<string, Promise<PreparedStyleAsset>>()
 
@@ -687,9 +692,10 @@ async function emitSharedStyleImportsForChunks(
       if (!moduleId) {
         return
       }
-      handledModuleIds.add(normalizeFsResolvedId(moduleId))
+      const ownerId = resolveStyleOwnerId(moduleId)
+      handledModuleIds.add(normalizeFsResolvedId(ownerId))
 
-      return prepareSharedStyleImportForModule(sharedStyles, configService, sharedStyleImportCache, moduleId)
+      return prepareSharedStyleImportForModule(sharedStyles, configService, sharedStyleImportCache, ownerId)
     }),
   )
   for (const asset of chunkImportAssets) {

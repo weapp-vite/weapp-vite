@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createModuleGraphService } from '../../../../../moduleGraph'
 import { transformVueLikeFile } from '../transformFile'
 import { tryRefreshJsonOnlyVueCompilation } from './jsonOnly'
 
@@ -87,6 +88,7 @@ definePageJson({ navigationBarTitleText: '旧标题' })
     compilationCache,
     options: {
       ctx: {
+        moduleGraphService: createModuleGraphService(),
         configService: {
           isDev: true,
           platform: 'weapp',

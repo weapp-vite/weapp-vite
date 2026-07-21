@@ -16,11 +16,9 @@ export type {
 export { formatBytes } from './bytes'
 
 export {
-  collectAffectedEntries,
   collectAffectedEntriesFromSharedChunks,
   collectAffectedSharedChunkEntriesAndChunks,
   collectAffectedSharedChunks,
-  refreshModuleGraph,
   refreshPartialSharedChunkImporters,
   refreshSharedChunkImporters,
 } from './graph'

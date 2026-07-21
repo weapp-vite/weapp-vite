@@ -4,6 +4,7 @@ import type { CorePluginState } from '../../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { mayContainPlatformApiIdentifierByText, resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
+import { parseSidecarSourceRequest } from '../../../../moduleGraph/protocol'
 import {
   createInjectRequestGlobalsCode,
   injectRequestGlobalsIntoSfc,
@@ -99,6 +100,9 @@ export function createTransformHook(state: CorePluginState) {
   }
 
   const transform: NonNullable<Plugin['transform']> = async function transform(code, id) {
+    if (parseSidecarSourceRequest(id)) {
+      return null
+    }
     if (!shouldTransformId(id, {
       absoluteSrcRoot: configService.absoluteSrcRoot,
       isEntry: sourceId => state.loadedEntrySet?.has(sourceId) === true

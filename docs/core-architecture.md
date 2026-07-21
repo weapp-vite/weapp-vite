@@ -31,6 +31,7 @@ packages/weapp-vite/
 │   │   └── commands/             # 各个子命令（build, serve, npm 等）
 │   ├── backends/                 # 内部平台后端 contract、registry 与内置 driver
 │   ├── context/                  # 编译器上下文管理
+│   ├── moduleGraph/              # 真实模块图 adapter 与逻辑入口协议
 │   ├── plugins/                  # 核心 Vite 插件
 │   ├── runtime/                  # 运行时服务实现
 │   ├── types/                    # TypeScript 类型定义
@@ -75,8 +76,8 @@ weapp-vite 采用**服务导向架构（Service-Oriented Architecture）**。CLI
 │  │WatcherService│  │AutoImportSvc │  │AutoRoutesSvc │      │
 │  └──────────────┘  └──────────────┘  └──────────────┘      │
 │  ┌──────────────┐  ┌──────────────┐                        │
-│  │ WebService   │  │ RuntimeState │                        │
-│  └──────────────┘  └──────────────┘                        │
+│  │ WebService   │  │ModuleGraphSvc│  │ RuntimeState │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -198,6 +199,7 @@ export function vitePluginWeapp(ctx, subPackageMeta?): Plugin[] {
 
 **核心功能**:
 - 入口加载和模块解析
+- 通过逻辑虚拟入口把 script、template、style、JSON、WXS、layout 与 `usingComponents` 接入真实模块图
 - WXML 文件处理和组件注册
 - Chunk 共享策略（主包与分包之间）
 - 独立分包构建
@@ -326,6 +328,19 @@ Web 运行时服务，用于 H5 平台构建。
 - 在命令结束时关闭 backend 持有的 watcher 或 Vite dev server 资源。
 
 `runtimeTarget.ts` 继续保留公开兼容门面，但其目标解析来自 backend registry。六个小程序平台的标识、别名与静态平台能力仍统一来自 `@weapp-core/shared` 的 `MiniProgramPlatformDescriptor`。
+
+### 12. **ModuleGraphService** (`src/moduleGraph/`)
+
+`ModuleGraphService` 是 `CompilerContext` 内部的 compiler/build infrastructure，不是公开 API，也不是 platform backend。它通过窄 adapter 统一读取两类真实图：
+
+- 构建期 `PluginContext` 的 `getModuleIds()`、`getModuleInfo()`、`resolve()` 与 `load()`。
+- Vite dev server 的只读 `moduleGraph` 查询和模块失效。
+
+源码 import/importer 关系只由 Vite/Rolldown 图持有。app、page、component 与 layout 使用稳定的逻辑虚拟入口；逻辑入口静态导入物理 script，并通过 sidecar virtual module 静态关联 template、style、JSON、WXS、layout 和 `usingComponents`。sidecar source 使用带稳定 marker 的 raw module request，仍经过正常 resolver 链，因此 alias、npm 和 `srcRoot` 外部 linked module 与普通源码依赖采用相同解析语义。
+
+`addWatchFile` 只用于配置依赖、glob/目录拓扑、缺失 sidecar 候选和预处理器 include 等不能合理表示为模块的外部输入。无法直接映射到现有模块的 create/delete 会进入唯一的 topology full rescan 请求，不存在静默全量 fallback。
+
+源码图与输出图分开管理：`ModuleGraphService` 负责源码 importer 追溯和失效；core plugin 只缓存 chunk module membership、chunk imports 与 chunk 到逻辑入口的输出归属。`generateBundle` 不再从 bundle 反推源码 import graph，最终文件仍完全由 Vite/Rolldown emit/generate/write。
 
 ---
 

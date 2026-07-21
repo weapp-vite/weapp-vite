@@ -1,43 +1,17 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { CorePluginState } from './types'
 import path from 'pathe'
+import { parseLogicalEntryId } from '../../../moduleGraph/protocol'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 
-export function collectAffectedEntries(state: CorePluginState, startId: string) {
-  const affected = new Set<string>()
-  const visited = new Set<string>()
-  const queue: string[] = [startId]
-
-  while (queue.length) {
-    const current = queue.shift()!
-    if (visited.has(current)) {
-      continue
-    }
-    visited.add(current)
-
-    if (state.entryModuleIds.has(current) || state.resolvedEntryMap.has(current)) {
-      affected.add(current)
-      continue
-    }
-
-    const importers = state.moduleImporters.get(current)
-    if (!importers || importers.size === 0) {
-      continue
-    }
-
-    for (const importer of importers) {
-      if (!visited.has(importer)) {
-        queue.push(importer)
-      }
-    }
-  }
-
-  return affected
+function resolveSourceEntryId(rawId: string) {
+  const logicalEntry = parseLogicalEntryId(rawId)
+  return normalizeFsResolvedId(logicalEntry?.sourceId ?? rawId)
 }
 
 export function collectAffectedEntriesFromSharedChunks(state: CorePluginState, startId: string) {
   const affected = new Set<string>()
-  const chunkIds = state.hmrSharedChunksByModule.get(normalizeFsResolvedId(startId))
+  const chunkIds = state.outputChunksByModule.get(normalizeFsResolvedId(startId))
   if (!chunkIds?.size) {
     return affected
   }
@@ -59,7 +33,7 @@ export function collectAffectedEntriesFromSharedChunks(state: CorePluginState, s
 
 export function collectAffectedSharedChunks(state: CorePluginState, startId: string) {
   const affected = new Set<string>()
-  const chunkIds = state.hmrSharedChunksByModule.get(normalizeFsResolvedId(startId))
+  const chunkIds = state.outputChunksByModule.get(normalizeFsResolvedId(startId))
   if (!chunkIds?.size) {
     return affected
   }
@@ -74,7 +48,7 @@ export function collectAffectedSharedChunks(state: CorePluginState, startId: str
 export function collectAffectedSharedChunkEntriesAndChunks(state: CorePluginState, startId: string) {
   const affectedEntries = new Set<string>()
   const affectedChunks = new Set<string>()
-  const chunkIds = state.hmrSharedChunksByModule.get(normalizeFsResolvedId(startId))
+  const chunkIds = state.outputChunksByModule.get(normalizeFsResolvedId(startId))
   if (!chunkIds?.size) {
     return {
       affectedChunks,
@@ -101,27 +75,6 @@ export function collectAffectedSharedChunkEntriesAndChunks(state: CorePluginStat
   }
 }
 
-function createModulesByImporter(
-  moduleImporters: Map<string, Set<string>>,
-  onlyImporterIds?: Set<string>,
-) {
-  const modulesByImporter = new Map<string, Set<string>>()
-  for (const [moduleId, importers] of moduleImporters) {
-    for (const importerId of importers) {
-      if (onlyImporterIds && !onlyImporterIds.has(importerId)) {
-        continue
-      }
-      let modules = modulesByImporter.get(importerId)
-      if (!modules) {
-        modules = new Set<string>()
-        modulesByImporter.set(importerId, modules)
-      }
-      modules.add(moduleId)
-    }
-  }
-  return modulesByImporter
-}
-
 function createSharedModulesByChunk(sharedChunksByModule: Map<string, Set<string>>) {
   const modulesByChunk = new Map<string, Set<string>>()
   for (const [moduleId, chunkIds] of sharedChunksByModule) {
@@ -135,162 +88,6 @@ function createSharedModulesByChunk(sharedChunksByModule: Map<string, Set<string
     }
   }
   return modulesByChunk
-}
-
-export function refreshModuleGraph(
-  pluginCtx: { getModuleIds?: () => Iterable<string>, getModuleInfo?: (id: string) => any },
-  state: CorePluginState,
-  bundle?: OutputBundle,
-  options?: { mode?: 'replace' | 'merge' },
-) {
-  const mode = options?.mode ?? 'replace'
-  if (mode === 'replace') {
-    state.moduleImporters.clear()
-    state.entryModuleIds.clear()
-  }
-
-  const addModuleImporter = (moduleId: string, importerId: string) => {
-    const normalizedModuleId = normalizeFsResolvedId(moduleId)
-    const normalizedImporterId = normalizeFsResolvedId(importerId)
-    if (
-      normalizedModuleId === normalizedImporterId
-      || isSkippableResolvedId(normalizedModuleId)
-      || isSkippableResolvedId(normalizedImporterId)
-    ) {
-      return
-    }
-    const importers = state.moduleImporters.get(normalizedModuleId) ?? new Set<string>()
-    importers.add(normalizedImporterId)
-    state.moduleImporters.set(normalizedModuleId, importers)
-  }
-  const removeEntryImporter = (entryId: string, modulesByImporter?: Map<string, Set<string>>) => {
-    const normalizedEntryId = normalizeFsResolvedId(entryId)
-    const moduleIds = modulesByImporter?.get(normalizedEntryId)
-    if (moduleIds) {
-      for (const moduleId of moduleIds) {
-        const importers = state.moduleImporters.get(moduleId)
-        if (!importers) {
-          continue
-        }
-        importers.delete(normalizedEntryId)
-        if (!importers.size) {
-          state.moduleImporters.delete(moduleId)
-        }
-      }
-      return
-    }
-    for (const [moduleId, importers] of state.moduleImporters) {
-      importers.delete(normalizedEntryId)
-      if (!importers.size) {
-        state.moduleImporters.delete(moduleId)
-      }
-    }
-  }
-  const collectChunkModuleIds = (chunk: OutputChunk) => {
-    const moduleIds = new Set<string>()
-    if (Array.isArray(chunk.moduleIds)) {
-      for (const moduleId of chunk.moduleIds) {
-        moduleIds.add(moduleId)
-      }
-    }
-    for (const moduleId of Object.keys(chunk.modules ?? {})) {
-      moduleIds.add(moduleId)
-    }
-    return moduleIds
-  }
-  const collectChunkEntryIds = (chunk: OutputChunk, moduleIds: Set<string>) => {
-    const entryIds = new Set<string>()
-    const addEntryIfTracked = (rawId?: string | null) => {
-      if (!rawId) {
-        return
-      }
-      const entryId = normalizeFsResolvedId(rawId)
-      if (!isSkippableResolvedId(entryId) && state.resolvedEntryMap.has(entryId)) {
-        entryIds.add(entryId)
-      }
-    }
-
-    addEntryIfTracked(chunk.facadeModuleId)
-    for (const moduleId of moduleIds) {
-      addEntryIfTracked(moduleId)
-    }
-
-    return entryIds
-  }
-
-  const shouldScanPluginModuleGraph = mode === 'replace' || !bundle
-  if (
-    shouldScanPluginModuleGraph
-    && typeof pluginCtx.getModuleIds === 'function'
-    && typeof pluginCtx.getModuleInfo === 'function'
-  ) {
-    for (const rawId of pluginCtx.getModuleIds()) {
-      const normalizedId = normalizeFsResolvedId(rawId)
-      if (isSkippableResolvedId(normalizedId)) {
-        continue
-      }
-
-      const info = pluginCtx.getModuleInfo(rawId)
-      if (!info) {
-        continue
-      }
-
-      if (info.isEntry) {
-        state.entryModuleIds.add(normalizedId)
-      }
-
-      const importerIds: string[] = []
-      if (Array.isArray(info.importers)) {
-        importerIds.push(...info.importers)
-      }
-      if (Array.isArray(info.dynamicImporters)) {
-        importerIds.push(...info.dynamicImporters)
-      }
-      for (const importer of importerIds) {
-        addModuleImporter(normalizedId, importer)
-      }
-    }
-  }
-
-  if (!bundle) {
-    return
-  }
-
-  const chunkRecords: Array<{ chunk: OutputChunk, entryIds: Set<string>, moduleIds: Set<string> }> = []
-  for (const output of Object.values(bundle)) {
-    if (output?.type !== 'chunk') {
-      continue
-    }
-    const chunk = output as OutputChunk
-    const moduleIds = collectChunkModuleIds(chunk)
-    const entryIds = collectChunkEntryIds(chunk, moduleIds)
-    if (!entryIds.size) {
-      continue
-    }
-    chunkRecords.push({ chunk, entryIds, moduleIds })
-  }
-
-  if (mode === 'merge') {
-    const removedEntryIds = new Set<string>()
-    for (const { entryIds } of chunkRecords) {
-      for (const entryId of entryIds) {
-        removedEntryIds.add(entryId)
-      }
-    }
-    const modulesByImporter = createModulesByImporter(state.moduleImporters, removedEntryIds)
-    for (const entryId of removedEntryIds) {
-      removeEntryImporter(entryId, modulesByImporter)
-    }
-  }
-
-  for (const { entryIds, moduleIds } of chunkRecords) {
-    for (const entryId of entryIds) {
-      state.entryModuleIds.add(entryId)
-      for (const moduleId of moduleIds) {
-        addModuleImporter(moduleId, entryId)
-      }
-    }
-  }
 }
 
 function appendSharedChunkImporters(
@@ -329,7 +126,7 @@ function appendSharedChunkImporters(
     const trackedImporterIds = new Set<string>()
 
     if (chunk.facadeModuleId) {
-      const entryId = normalizeFsResolvedId(chunk.facadeModuleId)
+      const entryId = resolveSourceEntryId(chunk.facadeModuleId)
       if (chunk.isEntry || state.resolvedEntryMap.has(entryId)) {
         trackedImporterIds.add(entryId)
       }
@@ -337,7 +134,7 @@ function appendSharedChunkImporters(
 
     if (Array.isArray(chunk.moduleIds)) {
       for (const moduleId of chunk.moduleIds) {
-        const normalizedModuleId = normalizeFsResolvedId(moduleId)
+        const normalizedModuleId = resolveSourceEntryId(moduleId)
         if (state.resolvedEntryMap.has(normalizedModuleId)) {
           trackedImporterIds.add(normalizedModuleId)
         }
@@ -382,15 +179,15 @@ function appendSharedChunkImporters(
   }
   const addSharedChunkModule = (moduleId: string, chunkId: string) => {
     state.ctx.runtimeState?.build?.hmr?.sharedChunkSourceModuleIds?.add(moduleId)
-    const current = state.hmrSharedChunksByModule.get(moduleId)
+    const current = state.outputChunksByModule.get(moduleId)
     if (current) {
       current.add(chunkId)
     }
     else {
-      state.hmrSharedChunksByModule.set(moduleId, new Set([chunkId]))
+      state.outputChunksByModule.set(moduleId, new Set([chunkId]))
     }
   }
-  const previousSharedModulesByChunk = createSharedModulesByChunk(state.hmrSharedChunksByModule)
+  const previousSharedModulesByChunk = createSharedModulesByChunk(state.outputChunksByModule)
   const pruneSharedChunkModules = (chunkId: string, nextModuleIds: Set<string>) => {
     if (!nextModuleIds.size) {
       return
@@ -403,13 +200,13 @@ function appendSharedChunkImporters(
       if (nextModuleIds.has(moduleId)) {
         continue
       }
-      const chunkIds = state.hmrSharedChunksByModule.get(moduleId)
+      const chunkIds = state.outputChunksByModule.get(moduleId)
       if (!chunkIds) {
         continue
       }
       chunkIds.delete(chunkId)
       if (chunkIds.size === 0) {
-        state.hmrSharedChunksByModule.delete(moduleId)
+        state.outputChunksByModule.delete(moduleId)
       }
     }
   }
@@ -592,7 +389,7 @@ export function refreshSharedChunkImporters(bundle: OutputBundle, state: CorePlu
   state.hmrSharedChunkImporters.clear()
   state.hmrSharedChunksByEntry.clear()
   state.hmrSharedChunkDependencies.clear()
-  state.hmrSharedChunksByModule.clear()
+  state.outputChunksByModule.clear()
   state.hmrSourceSharedChunks.clear()
   appendSharedChunkImporters(bundle, state)
 }
@@ -610,7 +407,7 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
 
     const chunk = output as OutputChunk
     if (chunk.facadeModuleId) {
-      const entryId = normalizeFsResolvedId(chunk.facadeModuleId)
+      const entryId = resolveSourceEntryId(chunk.facadeModuleId)
       if ((chunk.isEntry || state.resolvedEntryMap.has(entryId)) && entryIds.has(entryId)) {
         refreshedEntryIds.add(entryId)
       }
@@ -618,7 +415,7 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
 
     if (Array.isArray(chunk.moduleIds)) {
       for (const moduleId of chunk.moduleIds) {
-        const normalizedModuleId = normalizeFsResolvedId(moduleId)
+        const normalizedModuleId = resolveSourceEntryId(moduleId)
         if (state.resolvedEntryMap.has(normalizedModuleId) && entryIds.has(normalizedModuleId)) {
           refreshedEntryIds.add(normalizedModuleId)
         }

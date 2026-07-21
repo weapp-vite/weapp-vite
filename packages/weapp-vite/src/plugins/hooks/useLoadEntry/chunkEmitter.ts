@@ -24,6 +24,7 @@ export function createChunkEmitter(
   preloadAssetOnlyEntry?: (this: PluginContext, resolvedId: ResolvedId, entryId: string) => Promise<void>,
   trackEmittedChunkFileName?: (fileName: string) => void,
   trackChunkEmitStats?: (stats: ChunkEmitStats) => void,
+  resolveEntryChunkId: (entryId: string, resolvedId: ResolvedId) => string = (_entryId, resolvedId) => resolvedId.id,
 ) {
   return function emitEntriesChunks(this: PluginContext, resolvedIds: (ResolvedId | null)[]) {
     return resolvedIds.map(async (resolvedId): ChunkEmitTask => {
@@ -39,6 +40,7 @@ export function createChunkEmitter(
       }
 
       const normalizedId = normalizeFsResolvedId(resolvedId.id)
+      const entryChunkId = resolveEntryChunkId(normalizedId, resolvedId)
       const shouldPreload = !loadedEntrySet.has(normalizedId)
       if (!shouldPreload) {
         stats.skippedLoadedCount += 1
@@ -53,7 +55,7 @@ export function createChunkEmitter(
           await preloadAssetOnlyEntry.call(this, resolvedId, normalizedId)
         }
         else {
-          await this.load(resolvedId)
+          await this.load({ id: entryChunkId })
         }
         stats.loadCount += 1
         stats.loadMs += performance.now() - loadStartedAt

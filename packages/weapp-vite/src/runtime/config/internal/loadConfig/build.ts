@@ -41,7 +41,6 @@ export function configureBuildAndPlugins(options: {
 }) {
   const {
     config,
-    pluginOnly,
     oxcRolldownPlugin,
     oxcVitePlugin,
     injectBuiltinAliases,
@@ -100,9 +99,7 @@ export function configureBuildAndPlugins(options: {
     rdTransform.tsconfig = false
   }
   rdOptions.transform = rdTransform
-  if (pluginOnly) {
-    rdOptions.preserveEntrySignatures = 'exports-only'
-  }
+  rdOptions.preserveEntrySignatures ??= 'exports-only'
   if (Array.isArray(rdOptions.output)) {
     rdOptions.output = rdOptions.output.map(output => ({ ...output, format: jsFormat }))
   }

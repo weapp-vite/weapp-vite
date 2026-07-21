@@ -19,12 +19,16 @@ export async function addWatchTarget(
 
   if (existsCache.has(target)) {
     const cached = existsCache.get(target)!
-    addNormalizedWatchFile(pluginCtx, target)
+    if (!cached) {
+      addNormalizedWatchFile(pluginCtx, target)
+    }
     return cached
   }
 
   const exists = await pathExistsCached(target, { ttlMs })
-  addNormalizedWatchFile(pluginCtx, target)
+  if (!exists) {
+    addNormalizedWatchFile(pluginCtx, target)
+  }
 
   existsCache.set(target, exists)
   return exists
@@ -40,7 +44,6 @@ export async function addPredictedWatchTargets(
   await Promise.all(Array.from(new Set(predictions)).map(async (prediction) => {
     if (prediction && prediction === knownExistingPath) {
       existsCache.set(prediction, true)
-      addNormalizedWatchFile(pluginCtx, prediction)
       return
     }
     await addWatchTarget(pluginCtx, prediction, existsCache, ttlMs)

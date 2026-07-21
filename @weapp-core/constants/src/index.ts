@@ -24,6 +24,13 @@ export const REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME = '__wvRGI__'
 
 export const WEAPP_VITE_IMPORT_META_ENV_KEY = '__weappViteImportMetaEnv'
 
+export const WEAPP_VITE_LOGICAL_ENTRY_VIRTUAL_PREFIX = 'virtual:weapp-vite-logical-entry:'
+export const WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX = 'weapp-vite:logical-entry:'
+export const WEAPP_VITE_SIDECAR_VIRTUAL_PREFIX = 'virtual:weapp-vite-sidecar:'
+export const WEAPP_VITE_SIDECAR_RESOLVED_PREFIX = 'weapp-vite:sidecar:'
+export const WEAPP_VITE_SIDECAR_QUERY_MARKER = 'weapp-vite-sidecar'
+export const WEAPP_VITE_SIDECAR_OWNER_QUERY_MARKER = 'weapp-vite-sidecar-owner'
+
 export const WEAPP_VITE_STATEFUL_HMR_DIRECTORY = '__weapp_vite_hmr'
 export const WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE = `${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/control.js`
 export const WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE = `${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/preload.js`

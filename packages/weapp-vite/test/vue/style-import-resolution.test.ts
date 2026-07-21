@@ -9,10 +9,12 @@ import {
   WEAPP_VUE_STYLE_VIRTUAL_PREFIX,
 } from '../../src/plugins/vue/transform/styleRequest'
 import { callPluginHook } from '../pluginHook'
+import { createTestModuleGraphService } from './moduleGraph'
 
 function createCtx(root: string) {
   const absoluteSrcRoot = path.join(root, 'src')
   return {
+    moduleGraphService: createTestModuleGraphService(),
     runtimeState: {
       scan: {
         isDirty: false,

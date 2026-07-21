@@ -17,6 +17,7 @@ function normalizeOutputContent(file: string, content: string) {
   if (file.endsWith('.js')) {
     return normalizeStableNames(content)
       .replace(/^\/\/#region .*\/src\//gm, '//#region <fixture>/src/')
+      .replace(/module\.exports = __wevuOptions;/g, 'exports.default = __wevuOptions;')
       .replace(/\brequire_src_\w+\b/g, 'require_src')
       .replace(/\brequire_templateRef_\w+\b/g, 'require_templateRef')
       .replace(/require\("([^"]*wevu-runtime\.js)"\)\.to\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')

@@ -212,7 +212,6 @@ export async function finalizeTransformCompiledResult(options: {
   sourceMap?: boolean
   scopedSlotModules: Map<string, string>
   emittedScopedSlotChunks: Set<string>
-  addWatchFile: (pluginCtx: any, file: string) => void
   emitScopedSlotChunks: (
     pluginCtx: any,
     relativeBase: string,
@@ -238,7 +237,6 @@ export async function finalizeTransformCompiledResult(options: {
     sourceMap,
     scopedSlotModules,
     emittedScopedSlotChunks,
-    addWatchFile,
     emitScopedSlotChunks,
   } = options
   const transformResult = result as VueTransformResultWithScriptMap
@@ -265,10 +263,8 @@ export async function finalizeTransformCompiledResult(options: {
     registerVueTemplateToken(ctx, filename, result.template)
   }
 
-  if (Array.isArray(result.meta?.sfcSrcDeps) && typeof pluginCtx.addWatchFile === 'function') {
-    for (const dep of result.meta.sfcSrcDeps) {
-      addWatchFile(pluginCtx, dep)
-    }
+  if (Array.isArray(result.meta?.sfcSrcDeps)) {
+    ctx.moduleGraphService.replaceEntryDependencies(filename, 'style', result.meta.sfcSrcDeps)
   }
 
   await finalizeTransformEntryScript({

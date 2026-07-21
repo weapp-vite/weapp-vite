@@ -2,8 +2,7 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
-import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
-import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
+import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
 import { emitNativeLayoutScriptChunkIfNeeded } from '../../bundle'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
 import { ensureSfcStyleBlocks, isAppEntry, loadTransformPageEntries } from './state'
@@ -31,7 +30,7 @@ export async function handleTransformEntryPageLayoutFlow(options: {
     })
   }
 
-  await addResolvedPageLayoutWatchFiles(options.pluginCtx, resolvedLayoutPlan.layouts)
+  await registerResolvedPageLayoutDependencies(options.ctx, options.filename, resolvedLayoutPlan.layouts)
 
   for (const layout of resolvedLayoutPlan.layouts) {
     if (layout.kind !== 'native') {
@@ -248,7 +247,7 @@ export async function loadTransformStyleBlock(options: {
   }
 
   const dependencies = syncVueSfcStyleDependencies(ctx, filename, styles)
-  addNormalizedWatchFiles(options.pluginCtx, dependencies)
+  ctx.moduleGraphService.replaceEntryDependencies(filename, 'style', dependencies)
 
   return {
     code: block.content,
