@@ -97,13 +97,13 @@ describe('core logical entry lifecycle', () => {
       ['template', templatePath],
       ['style', stylePath],
       ['json', jsonPath],
+      ['layout', layoutPath],
       ['script', sourceId],
       ['wxs', wxsPath],
       ['using-component', linkedComponent],
     ] as const) {
       expect(code).toContain(JSON.stringify(createSidecarModuleId(sourceId, dependency, kind)))
     }
-    expect(code).toContain(JSON.stringify(createLogicalEntryId(layoutPath, 'layout')))
   })
 
   it('models a Vue physical source through the script sidecar protocol', async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
-import { createLogicalEntryId, createSidecarModuleId } from './protocol'
+import { createSidecarModuleId } from './protocol'
 
 describe('logical entry module source', () => {
   it('expresses script and native sidecars as static module dependencies', () => {
@@ -21,12 +21,12 @@ describe('logical entry module source', () => {
       ['style', '/project/src/pages/home/index.wxss'],
       ['json', '/project/src/pages/home/index.json'],
       ['wxs', '/project/src/pages/home/filter.wxs'],
+      ['layout', '/project/src/layouts/default.vue'],
       ['script', sourceId],
       ['using-component', '/workspace/ui/card/index.ts'],
     ] as const) {
       expect(code).toContain(JSON.stringify(createSidecarModuleId(sourceId, dependency, kind)))
     }
-    expect(code).toContain(JSON.stringify(createLogicalEntryId('/project/src/layouts/default.vue', 'layout')))
     expect(code).toContain(`export * from ${JSON.stringify(sourceId)};`)
   })
 

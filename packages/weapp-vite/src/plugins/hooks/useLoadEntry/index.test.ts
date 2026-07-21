@@ -1,5 +1,6 @@
 import { fs } from '@weapp-core/shared/fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { parseLogicalEntryId } from '../../../moduleGraph/protocol'
 import { useLoadEntry } from './index'
 
 const loadEntryMock = vi.hoisted(() => vi.fn(async () => ({ code: '' })))
@@ -68,14 +69,14 @@ function createContext() {
 
 function expectEmittedEntry(pluginCtx: { emitFile: ReturnType<typeof vi.fn> }, sourceId: string) {
   const emitted = pluginCtx.emitFile.mock.calls.some(([asset]) => {
-    return asset.type === 'chunk' && asset.id === sourceId
+    return asset.type === 'chunk' && (parseLogicalEntryId(asset.id)?.sourceId ?? asset.id) === sourceId
   })
   expect(emitted).toBe(true)
 }
 
 function countEmittedEntries(pluginCtx: { emitFile: ReturnType<typeof vi.fn> }, sourceId: string) {
   return pluginCtx.emitFile.mock.calls.filter(([asset]) => {
-    return asset.type === 'chunk' && asset.id === sourceId
+    return asset.type === 'chunk' && (parseLogicalEntryId(asset.id)?.sourceId ?? asset.id) === sourceId
   }).length
 }
 

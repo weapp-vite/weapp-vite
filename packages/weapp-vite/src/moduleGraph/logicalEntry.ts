@@ -1,5 +1,5 @@
 import type { LogicalEntryRequest, SidecarModuleKind } from './protocol'
-import { createLogicalEntryId, createSidecarModuleId, createSidecarSourceSpecifier } from './protocol'
+import { createSidecarModuleId, createSidecarSourceSpecifier } from './protocol'
 
 export interface LogicalEntryDependency {
   kind: SidecarModuleKind
@@ -17,9 +17,7 @@ export function createLogicalEntryModuleCode(
     : `import ${source};`]
   const seen = new Set<string>()
   for (const dependency of dependencies) {
-    const dependencyId = dependency.kind === 'layout' && dependency.sourceId.endsWith('.vue')
-      ? createLogicalEntryId(dependency.sourceId, 'layout')
-      : createSidecarModuleId(entry.sourceId, dependency.sourceId, dependency.kind)
+    const dependencyId = createSidecarModuleId(entry.sourceId, dependency.sourceId, dependency.kind)
     if (seen.has(dependencyId)) {
       continue
     }

@@ -169,4 +169,38 @@ describe('createChunkEmitter', () => {
     expect(pluginCtx.load).not.toHaveBeenCalled()
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
   })
+
+  it('uses the same logical entry id for preload and chunk emission', async () => {
+    const physicalId = '/project/src/layouts/default.vue'
+    const logicalId = '\0weapp-vite:logical-entry:layout:default'
+    const emitEntriesChunks = createChunkEmitter(
+      {
+        relativeOutputPath(input: string) {
+          return input.replace('/project/src/', '')
+        },
+      } as any,
+      new Set<string>(),
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      () => logicalId,
+    )
+    const pluginCtx = {
+      emitFile: vi.fn(),
+      load: vi.fn(async () => null),
+    }
+
+    await Promise.all(emitEntriesChunks.call(pluginCtx as any, [{ id: physicalId } as any]))
+
+    expect(pluginCtx.load).toHaveBeenCalledWith({ id: logicalId })
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      id: logicalId,
+      fileName: 'layouts/default.js',
+      preserveSignature: 'exports-only',
+    }))
+  })
 })

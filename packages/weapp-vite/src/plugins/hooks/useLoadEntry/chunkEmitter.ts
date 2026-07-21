@@ -67,7 +67,7 @@ export function createChunkEmitter(
         const emitFileStartedAt = performance.now()
         this.emitFile({
           type: 'chunk',
-          id: resolvedId.id,
+          id: entryChunkId,
           fileName,
           // @ts-ignore
           preserveSignature: 'exports-only',
