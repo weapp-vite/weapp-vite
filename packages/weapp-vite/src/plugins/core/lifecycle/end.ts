@@ -46,6 +46,9 @@ function resolveChangeCause(
   if (isLayoutSourcePath(state.ctx.configService.relativeAbsoluteSrcRoot(normalized))) {
     return 'layout-dependent'
   }
+  if (state.resolvedEntryMap.has(normalized)) {
+    return 'entry-direct'
+  }
   return 'importer-graph'
 }
 
@@ -63,7 +66,7 @@ export function createBuildEndHook(state: CorePluginState) {
       const affected = state.ctx.moduleGraphService.collectAffectedEntries(change.file)
       const cause = resolveChangeCause(state, change.file, affected)
       causes.set(cause, (causes.get(cause) ?? 0) + affected.size)
-      if (cause === 'importer-graph' || cause === 'layout-script') {
+      if (cause === 'entry-direct' || cause === 'importer-graph' || cause === 'layout-script') {
         metadataOnly = false
       }
       for (const entryId of affected) {

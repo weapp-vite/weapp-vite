@@ -91,6 +91,27 @@ describe('core lifecycle buildEnd hook', () => {
     expect(pluginContext).toBeDefined()
   })
 
+  it('keeps direct entry diagnostics when graph traversal resolves the changed entry itself', async () => {
+    const entryId = '/project/src/pages/home/index.ts'
+    const { loadEntry, moduleGraphService, state } = createState(entryId, entryId)
+    const logicalId = createLogicalEntryId(entryId, 'page')
+    const infos = new Map<string, any>([
+      [entryId, { importers: [logicalId] }],
+      [logicalId, { importers: [], isEntry: true }],
+    ])
+    moduleGraphService.recordChangedFile(entryId, 'update')
+
+    await createBuildEndHook(state).call({
+      getModuleIds: () => infos.keys(),
+      getModuleInfo: (id: string) => infos.get(id),
+    })
+
+    expect(loadEntry).not.toHaveBeenCalled()
+    expect(state.hmrState.lastHmrEntryIds).toEqual(new Set([entryId]))
+    expect(state.hmrState.skipSharedChunkRefresh).toBe(false)
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
   it('keeps logical layout script changes on the chunk emission path', async () => {
     const layoutEntry = '/project/src/layouts/default/index.ts'
     const pageEntry = '/project/src/pages/home/index.ts'
