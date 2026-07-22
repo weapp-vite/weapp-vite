@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   resolveProjectAutomatorPort,
 } from 'weapp-ide-cli'
+import { isLikelyRelaunchRetryableError } from '../utils/automator'
 import {
   cleanupTrackedDevProcesses,
   startDevProcess,
@@ -161,7 +162,7 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
       }
     }
     catch (error) {
-      if (!isDevtoolsProtocolTimeout(error)) {
+      if (!isDevtoolsProtocolTimeout(error) && !isLikelyRelaunchRetryableError(error)) {
         throw error
       }
       lastProtocolTimeout = error.message

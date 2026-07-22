@@ -55,6 +55,12 @@ describe('automator', () => {
     expect(isLikelyRelaunchRetryableError(error)).toBe(true)
   })
 
+  it('treats a closed DevTools connection as a retryable relaunch error', () => {
+    const error = new Error('Connection closed, check if wechat web devTools is still running')
+
+    expect(isLikelyRelaunchRetryableError(error)).toBe(true)
+  })
+
   it('treats missing DevTools page metadata as a retryable relaunch error', () => {
     const error = new Error('Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.')
 

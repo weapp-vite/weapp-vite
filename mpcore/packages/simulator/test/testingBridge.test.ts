@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { launch } from '../src/testing'
 import { cleanupTempDirs, createAsyncComponentFixture, createBaseFixture, createComponentFixture, createNavigationFixture, createNestedComponentFixture } from './helpers'
@@ -38,6 +40,78 @@ describe('headless testing bridge', () => {
       status: 'tapped',
       detail: 'tap handled',
     })
+  })
+
+  it('calls host wx methods and supports scoped testing timeouts', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.callWxMethod('setStorageSync', 'testing-bridge', {
+      count: 2,
+      status: 'ready',
+    })
+    await expect(miniProgram.callWxMethodWithOptions('getStorageSync', {
+      timeout: 100,
+    }, 'testing-bridge')).resolves.toEqual({
+      count: 2,
+      status: 'ready',
+    })
+    await miniProgram.callWxMethodWithOptions('removeStorageSync', {
+      timeout: 100,
+    }, 'testing-bridge')
+    await expect(miniProgram.callWxMethod('getStorageSync', 'testing-bridge')).resolves.toBeUndefined()
+    await expect(miniProgram.callWxMethod('missingHostMethod')).rejects.toThrow(
+      'wx.missingHostMethod is not available in headless runtime',
+    )
+
+    const page = await miniProgram.reLaunch('/pages/index/index?source=testing-bridge')
+    expect(page.path).toBe('pages/index/index')
+    expect(page.query).toEqual({
+      source: 'testing-bridge',
+    })
+    await page.callMethodWithOptions('onTap', {
+      routeOnly: true,
+      timeout: 100,
+    })
+    expect(await page.data('__e2eResult.status')).toBe('tapped')
+    await expect(page.callMethodWithOptions('neverResolve', {
+      timeout: 10,
+    })).rejects.toThrow('Timed out calling page method "neverResolve"')
+  })
+
+  it('reLaunches through the host wx navigation boundary', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    fs.writeFileSync(path.join(projectPath, 'dist/app.js'), `
+const hostReLaunch = wx.reLaunch
+wx.reLaunch = function (options) {
+  globalThis.__testingBridgeHostReLaunch = true
+  return hostReLaunch.call(this, options)
+}
+App({})
+`)
+    fs.writeFileSync(path.join(projectPath, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    usedHostReLaunch: false,
+  },
+  onLoad() {
+    this.setData({
+      usedHostReLaunch: globalThis.__testingBridgeHostReLaunch === true,
+    })
+  },
+})
+`)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/index/index')
+
+    expect(await page.data('usedHostReLaunch')).toBe(true)
   })
 
   it('triggers tap bindings from rendered nodes and maps dataset keys', async () => {

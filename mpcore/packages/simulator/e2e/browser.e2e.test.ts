@@ -141,6 +141,35 @@ describe.sequential('simulator browser e2e', () => {
     expect(state.previewMarkup).toContain('page')
   })
 
+  it('keeps wx storage state observable through the browser debug bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('component-lab')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'component-lab' && state.currentRoute === 'pages/lab/index',
+      20_000,
+    )
+    bridge.runPageMethod('storeSnapshot')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => parseJsonString<Record<string, any>>(nextState.pageData).storageSnapshot !== '',
+      20_000,
+    )
+    const pageData = parseJsonString<{ storageSnapshot: string }>(state.pageData)
+    const pageStorageSnapshot = parseJsonString<Record<string, unknown>>(pageData.storageSnapshot)
+    expect(pageStorageSnapshot).toEqual({
+      count: 3,
+      status: 'stable',
+    })
+    expect(parseJsonString<Record<string, unknown>>(state.storageData)).toEqual({
+      'component-lab': {
+        ...pageStorageSnapshot,
+      },
+    })
+  })
+
   it('runs Component() page methods and lifecycles through the browser bridge', async () => {
     const bridge = getBridge()!
     const initialResizeMarker = `resize:${bridge.getState().viewportSize.width}`

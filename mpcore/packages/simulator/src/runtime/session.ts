@@ -327,6 +327,14 @@ export class HeadlessSession {
     return this.pages.slice()
   }
 
+  callWxMethod(methodName: string, ...args: any[]) {
+    const method = this.moduleLoader.wx[methodName as keyof typeof this.moduleLoader.wx]
+    if (typeof method !== 'function') {
+      throw new TypeError(`wx.${methodName} is not available in headless runtime.`)
+    }
+    return Reflect.apply(method, this.moduleLoader.wx, args)
+  }
+
   getCurrentPageNavigationBarTitle() {
     return this.currentPageInstance?.__navigationBarTitle__ ?? null
   }
@@ -843,6 +851,7 @@ export class HeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
 
@@ -864,6 +873,7 @@ export class HeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
 
@@ -883,6 +893,7 @@ export class HeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
 
@@ -941,9 +952,18 @@ export class HeadlessSession {
     }
 
     let nextPage = cachedTarget
+    let shouldRunInitialLifecycles = false
     if (!nextPage) {
       nextPage = this.createFreshPage(target)
       this.tabPages.set(target.routeRecord.route, nextPage)
+      shouldRunInitialLifecycles = true
+    }
+
+    this.pages.length = 0
+    this.pages.push(nextPage)
+    this.currentPageInstance = nextPage
+    if (shouldRunInitialLifecycles) {
+      this.runInitialPageLifecycles(nextPage, target.query)
     }
     else if (current !== nextPage) {
       nextPage.onShow?.()
@@ -951,10 +971,6 @@ export class HeadlessSession {
     }
 
     nextPage.onTabItemTap?.(tabItem)
-
-    this.pages.length = 0
-    this.pages.push(nextPage)
-    this.currentPageInstance = nextPage
     return nextPage
   }
 
@@ -1065,13 +1081,16 @@ export class HeadlessSession {
     pageInstance.createMediaQueryObserver = () => this.createMediaQueryObserver(pageInstance)
     pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
     pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
-    pageInstance.onLoad?.(target.query)
-    pageInstance.onShow?.()
-    pageInstance.onReady?.()
     if (this.isTabBarRoute(target.routeRecord.route)) {
       this.tabPages.set(target.routeRecord.route, pageInstance)
     }
     return pageInstance
+  }
+
+  private runInitialPageLifecycles(pageInstance: HeadlessPageInstance, query: Record<string, string>) {
+    pageInstance.onLoad?.(query)
+    pageInstance.onShow?.()
+    pageInstance.onReady?.()
   }
 
   private isTabBarRoute(route: string) {

@@ -255,6 +255,11 @@ describe('suiteRunner', () => {
     const ideChunkModesLabels = ideChunkModesTasks.map(task => task.label)
     const ideGithubIssuesLabels = ideGithubIssuesTasks.map(task => task.label)
     const coreHmrTask = ideFullTasks.find(task => task.label === 'ide/wevu-runtime.core-hmr.test.ts')
+    const githubIssuesLifecycleTask = ideFullTasks.find(task => task.label === 'ide/github-issues.runtime.lifecycle.test.ts')
+    const githubIssuesPropsTask = ideFullTasks.find(task => task.label === 'ide/github-issues.runtime.props.test.ts')
+    const statefulHmrTask = ideFullTasks.find(task => task.label === 'ide/stateful-hmr.runtime.test.ts')
+    const templateDevOpenAllTask = ideFullTasks.find(task => task.label === 'ide/template-dev-open-all.runtime.test.ts')
+    const templateTailwindDevOpenMultiTask = ideFullTasks.find(task => task.label === 'ide/template-tailwindcss-dev-open-multi.runtime.test.ts')
     const wevuRuntimeTask = ideFullTasks.find(task => task.label === 'ide/wevu-runtime.weapp.test.ts')
 
     expect(ideSmokeTasks.length).toBeLessThan(ideGateTasks.length)
@@ -267,6 +272,11 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
     expect(ideFullLabels).not.toContain('ide/runtimeErrors.test.ts')
+    expect(githubIssuesLifecycleTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
+    expect(githubIssuesPropsTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
+    expect(statefulHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
+    expect(templateDevOpenAllTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
+    expect(templateTailwindDevOpenMultiTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1200000')
     expect(coreHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(wevuRuntimeTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
     expect(ideHeadlessSmokeLabels).toEqual([
@@ -276,6 +286,7 @@ describe('suiteRunner', () => {
     expect(ideHeadlessGateLabels).toContain('ide/app-lifecycle.test.ts')
     expect(ideHeadlessGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/lifecycle-compare.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue705.test.ts')
     expect(ideChunkModesLabels).toEqual([
       'ide/chunk-modes.runtime.duplicate.test.ts',
       'ide/chunk-modes.runtime.extras.test.ts',

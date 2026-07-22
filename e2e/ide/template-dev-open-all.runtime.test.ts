@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   resolveProjectAutomatorPort,
 } from 'weapp-ide-cli'
+import { isLikelyRelaunchRetryableError } from '../utils/automator'
 import {
   cleanupTrackedDevProcesses,
   startDevProcess,
@@ -140,7 +141,11 @@ function isDevtoolsProtocolTimeout(error: unknown) {
   }
   const protocolError = error as Error & { code?: unknown, method?: unknown }
   return protocolError.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    && (protocolError.method === 'App.getCurrentPage' || protocolError.method === 'App.getPageStack')
+    && (
+      protocolError.method === 'App.callFunction'
+      || protocolError.method === 'App.getCurrentPage'
+      || protocolError.method === 'App.getPageStack'
+    )
 }
 
 async function waitForPageText(miniProgram: any, projectPath: string, route: string, text: string, expectedData?: Record<string, unknown>, timeoutMs = 90_000) {
@@ -206,7 +211,7 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
       }
     }
     catch (error) {
-      if (!isDevtoolsProtocolTimeout(error)) {
+      if (!isDevtoolsProtocolTimeout(error) && !isLikelyRelaunchRetryableError(error)) {
         throw error
       }
       lastProtocolTimeout = error.message

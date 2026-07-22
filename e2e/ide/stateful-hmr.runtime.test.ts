@@ -7,7 +7,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
-import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.join(ROOT, 'e2e-apps/stateful-hmr')
@@ -22,7 +22,7 @@ const NATIVE_ROUTE = '/pages/native/index?source=e2e'
 const COMPONENT_ROUTE = '/pages/component/index?source=e2e'
 const WEVU_ROUTE = '/pages/wevu/index?source=e2e'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
-const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
+const POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH'
 
 interface RuntimeState {
   count: number
@@ -38,7 +38,7 @@ let originalComponentSource = ''
 let originalNativeSource = ''
 let originalWevuSource = ''
 let previousAutomatorLaunchMode: string | undefined
-let previousBridgePostConnectRefresh: string | undefined
+let previousPostConnectRefresh: string | undefined
 
 function normalizeFixtureSource(source: string, runtime: 'component' | 'native' | 'wevu'): string {
   if (runtime === 'wevu') {
@@ -153,11 +153,12 @@ async function readClientVersion(): Promise<number> {
 describe.sequential('stateful HMR in real WeChat DevTools', () => {
   beforeAll(async () => {
     previousAutomatorLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-    previousBridgePostConnectRefresh = process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
+    previousPostConnectRefresh = process.env[POST_CONNECT_REFRESH_ENV]
     process.env[AUTOMATOR_LAUNCH_MODE_ENV] = 'direct'
-    delete process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
+    process.env[POST_CONNECT_REFRESH_ENV] = '1'
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()
+    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
     originalComponentSource = normalizeFixtureSource(await fs.readFile(COMPONENT_SOURCE, 'utf8'), 'component')
     originalNativeSource = normalizeFixtureSource(await fs.readFile(NATIVE_SOURCE, 'utf8'), 'native')
     originalWevuSource = normalizeFixtureSource(await fs.readFile(WEVU_SOURCE, 'utf8'), 'wevu')
@@ -185,10 +186,11 @@ describe.sequential('stateful HMR in real WeChat DevTools', () => {
 
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
-      skipWarmup: true,
       timeout: 120_000,
+      warmupRootSelectors: ['.page'],
+      warmupRoute: NATIVE_ROUTE,
     })
-  }, 240_000)
+  }, 600_000)
 
   afterAll(async () => {
     try {
@@ -216,11 +218,11 @@ describe.sequential('stateful HMR in real WeChat DevTools', () => {
     else {
       process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousAutomatorLaunchMode
     }
-    if (previousBridgePostConnectRefresh === undefined) {
-      delete process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
+    if (previousPostConnectRefresh === undefined) {
+      delete process.env[POST_CONNECT_REFRESH_ENV]
     }
     else {
-      process.env[BRIDGE_POST_CONNECT_REFRESH_ENV] = previousBridgePostConnectRefresh
+      process.env[POST_CONNECT_REFRESH_ENV] = previousPostConnectRefresh
     }
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()

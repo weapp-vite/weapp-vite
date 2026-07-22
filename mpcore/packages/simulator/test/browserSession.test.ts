@@ -48,6 +48,45 @@ Page({
     expect(session.renderCurrentPage().wxml).toContain('index')
   })
 
+  it('exposes the active page stack before initial page lifecycles run', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    lifecycleStacks: [],
+  },
+  captureLifecycle(name) {
+    this.data.lifecycleStacks.push({
+      name,
+      routes: getCurrentPages().map(page => page.route),
+    })
+  },
+  onLoad() {
+    this.captureLifecycle('load')
+  },
+  onShow() {
+    this.captureLifecycle('show')
+  },
+  onReady() {
+    this.captureLifecycle('ready')
+  },
+})
+`],
+      ['pages/index/index.wxml', '<view>{{lifecycleStacks}}</view>'],
+    ])
+    const session = createBrowserHeadlessSession({ files })
+
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(page.data.lifecycleStacks).toEqual([
+      { name: 'load', routes: ['pages/index/index'] },
+      { name: 'show', routes: ['pages/index/index'] },
+      { name: 'ready', routes: ['pages/index/index'] },
+    ])
+  })
+
   it('runs Component() pages in browser simulator runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index', 'pages/next/index'] })],

@@ -753,7 +753,24 @@ headlessPage?.wx.removeSavedFile({
 })
 
 const launchResult = launch({ projectPath: '/tmp/project' })
+launchResult.then((session) => {
+  expectType<Promise<unknown>>(session.callWxMethod('getStorageSync', 'probe'))
+  expectType<Promise<unknown>>(session.callWxMethodWithOptions('getStorageSync', {
+    timeout: 1_000,
+  }, 'probe'))
+  session.reLaunch('/pages/index/index').then((page) => {
+    expectType<string>(page.path)
+    expectType<Record<string, string>>(page.query)
+    expectType<Promise<unknown>>(page.callMethodWithOptions('runProbe', {
+      fallback: false,
+      routeOnly: true,
+      timeout: 1_000,
+    }))
+  })
+})
 expectType<Promise<{
+  callWxMethod: <T = unknown>(methodName: string, ...args: any[]) => Promise<T>
+  callWxMethodWithOptions: <T = unknown>(methodName: string, options?: { timeout?: number }, ...args: any[]) => Promise<T>
   currentPage: () => Promise<unknown>
   pageScrollTo: (scrollTop: number) => Promise<void>
   reLaunch: (route: string) => Promise<unknown>

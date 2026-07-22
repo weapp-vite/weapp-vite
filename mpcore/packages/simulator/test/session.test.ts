@@ -173,6 +173,43 @@ Component({
     expect(session.getCurrentPages()).toHaveLength(1)
   })
 
+  it('exposes the active page stack before initial page lifecycles run', () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const pageModulePath = path.join(projectPath, 'dist/pages/index/index.js')
+    writeFixtureFile(pageModulePath, `
+Page({
+  data: {
+    lifecycleStacks: [],
+  },
+  captureLifecycle(name) {
+    this.data.lifecycleStacks.push({
+      name,
+      routes: getCurrentPages().map(page => page.route),
+    })
+  },
+  onLoad() {
+    this.captureLifecycle('load')
+  },
+  onShow() {
+    this.captureLifecycle('show')
+  },
+  onReady() {
+    this.captureLifecycle('ready')
+  },
+})
+`)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(page.data.lifecycleStacks).toEqual([
+      { name: 'load', routes: ['pages/index/index'] },
+      { name: 'show', routes: ['pages/index/index'] },
+      { name: 'ready', routes: ['pages/index/index'] },
+    ])
+  })
+
   it('drives navigateTo and navigateBack with devtools-like lifecycle order', () => {
     const projectPath = createNavigationFixture()
     tempDirs.push(projectPath)

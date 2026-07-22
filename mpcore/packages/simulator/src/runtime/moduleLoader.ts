@@ -5,6 +5,7 @@ import type {
   HeadlessHostLoadContext,
   HeadlessHostRegistries,
   HeadlessPageDefinition,
+  HeadlessWx,
 } from '../host'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -22,6 +23,7 @@ export interface HeadlessModuleLoader {
   executeComponentModule: (filePath: string, id: string) => HeadlessComponentDefinition
   executeAppModule: (filePath: string) => HeadlessAppDefinition
   executePageModule: (filePath: string, route: string) => HeadlessPageDefinition
+  wx: HeadlessWx
 }
 
 interface ModuleCacheEntry {
@@ -164,5 +166,6 @@ export function createModuleLoader(
       }
       return definition
     },
+    wx: executionContext.wx,
   }
 }

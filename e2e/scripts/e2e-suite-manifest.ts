@@ -13,7 +13,13 @@ const HEADLESS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.headless.config.ts')
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
+  ['ide/github-issues.runtime.lifecycle.test.ts', '600000'],
+  ['ide/github-issues.runtime.props.test.ts', '600000'],
+  ['ide/stateful-hmr.runtime.test.ts', '900000'],
+  ['ide/template-dev-open-all.runtime.test.ts', '900000'],
+  ['ide/template-tailwindcss-dev-open-multi.runtime.test.ts', '1200000'],
   ['ide/wevu-runtime.core-hmr.test.ts', '900000'],
+  ['ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts', '900000'],
   ['ide/wevu-runtime.weapp.test.ts', '600000'],
 ])
 const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
@@ -98,6 +104,10 @@ const IDE_GATE_TESTS = [
   'ide/lifecycle-compare.test.ts',
   'ide/wevu-features.runtime.behavior.test.ts',
 ].map(testPath => path.resolve(ROOT, testPath))
+const IDE_HEADLESS_FULL_TESTS = [
+  ...IDE_GATE_TESTS,
+  path.resolve(ROOT, 'ide/github-issues.runtime.issue705.test.ts'),
+]
 export const SKIP_CI_HMR_GUARD_ENV = 'WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD'
 
 interface SuiteTaskFactoryOptions {
@@ -263,7 +273,7 @@ export function getIdeHeadlessGateTasks() {
 }
 
 export function getIdeHeadlessTasks() {
-  return getHeadlessPatternTasks(IDE_GATE_TESTS.map(filePath => toRelativeLabel(filePath)))
+  return getHeadlessPatternTasks(IDE_HEADLESS_FULL_TESTS.map(filePath => toRelativeLabel(filePath)))
 }
 
 export function getIdeGithubIssuesTasks() {

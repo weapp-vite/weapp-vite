@@ -404,6 +404,8 @@ describe.sequential('automator launch resilience', () => {
     expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    expect(execaMock).not.toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.anything())
+    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
   })
 
   it('does not retry launch on login-required error', async () => {
@@ -883,6 +885,8 @@ describe.sequential('automator launch resilience', () => {
     expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    expect(execaMock).not.toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.anything())
+    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
   })
 
   it('ignores async runtime log enable rejection caused by connection closed', async () => {

@@ -12,8 +12,17 @@ describe('stateful hmr session', () => {
 
     expect(isStatefulHmrBoundary('/project/src/pages/index.ts', srcRoot)).toBe(true)
     expect(isStatefulHmrBoundary('/project/src/pages/index.vue', srcRoot)).toBe(true)
+    expect(isStatefulHmrBoundary(
+      '/project/src/pages/index.ts?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Findex.ts&weapp-vite-sidecar=script&lang.js',
+      srcRoot,
+    )).toBe(true)
     expect(isStatefulHmrBoundary('/project/src/pages/index.vue?type=style&lang.css', srcRoot)).toBe(false)
     expect(isStatefulHmrBoundary('/project/src/pages/index.vue?type=template', srcRoot)).toBe(false)
+    expect(isStatefulHmrBoundary(
+      '/project/src/pages/index.json?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Findex.ts&weapp-vite-sidecar=json&lang.js',
+      srcRoot,
+    )).toBe(false)
+    expect(isStatefulHmrBoundary('/project/src-other/pages/index.ts', srcRoot)).toBe(false)
     expect(isStatefulHmrBoundary('/project/src/pages/index.css', srcRoot)).toBe(false)
     expect(isStatefulHmrBoundary('/project/vendor/index.ts', srcRoot)).toBe(false)
   })

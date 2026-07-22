@@ -3,9 +3,13 @@ import type { HeadlessSession } from '../../runtime'
 import type { HeadlessTestingWaitOptions } from '../pageHandle'
 import { HeadlessTestingPageHandle } from '../pageHandle'
 import { HeadlessTestingScopeHandle } from './scope'
-import { normalizeNonEmptyInput, normalizeRoute, pollUntil } from './shared'
+import { normalizeNonEmptyInput, normalizeRoute, pollUntil, runWithTimeout } from './shared'
 
 export { HeadlessTestingScopeHandle } from './scope'
+
+export interface HeadlessTestingProtocolOptions {
+  timeout?: number
+}
 
 export class HeadlessTestingSessionHandle {
   constructor(
@@ -24,6 +28,23 @@ export class HeadlessTestingSessionHandle {
 
   async getCurrentPages() {
     return this.session.getCurrentPages().map((page: any) => new HeadlessTestingPageHandle(this.project, page, this.session))
+  }
+
+  async callWxMethod<T = unknown>(methodName: string, ...args: any[]): Promise<T> {
+    return await this.callWxMethodWithOptions<T>(methodName, {}, ...args)
+  }
+
+  async callWxMethodWithOptions<T = unknown>(
+    methodName: string,
+    options: HeadlessTestingProtocolOptions = {},
+    ...args: any[]
+  ): Promise<T> {
+    const normalizedMethodName = normalizeNonEmptyInput(methodName, 'wx method name')
+    return await runWithTimeout(
+      () => this.session.callWxMethod(normalizedMethodName, ...args) as T,
+      options.timeout,
+      `Timed out calling wx.${normalizedMethodName} in headless testing runtime.`,
+    )
   }
 
   async scopeSnapshot(scopeId: string) {
@@ -70,7 +91,13 @@ export class HeadlessTestingSessionHandle {
   }
 
   async reLaunch(route: string) {
-    const page = this.session.reLaunch(route)
+    this.session.callWxMethod('reLaunch', {
+      url: route,
+    })
+    const page = this.session.getCurrentPages().at(-1)
+    if (!page) {
+      throw new Error(`Failed to reLaunch route "${route}" through the headless wx runtime.`)
+    }
     return new HeadlessTestingPageHandle(this.project, page, this.session)
   }
 

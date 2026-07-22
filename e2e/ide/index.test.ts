@@ -241,8 +241,8 @@ async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: BASE_APP_ROOT,
-      skipRelaunchPageRootCheck: true,
-      skipWarmup: true,
+      warmupRootSelectors: ['#base-index-page'],
+      warmupRoute: INDEX_ROUTE,
     })
   }
   return sharedMiniProgram
@@ -273,15 +273,6 @@ describe.sequential('e2e baseline app', () => {
     const miniProgram = await getSharedMiniProgram()
 
     try {
-      const page = await runAutomatorOp(`reLaunch ${INDEX_ROUTE}`, () => miniProgram.reLaunch(INDEX_ROUTE), {
-        timeoutMs: 20_000,
-        retries: 3,
-        retryDelayMs: 280,
-      })
-      if (!page) {
-        throw new Error('Failed to launch index page')
-      }
-
       const currentPage = await waitForCurrentPage(miniProgram, INDEX_ROUTE)
       if (!currentPage) {
         throw new Error('Failed to resolve current index page')

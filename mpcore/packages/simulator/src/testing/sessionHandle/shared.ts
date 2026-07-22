@@ -50,3 +50,28 @@ export async function pollUntil<T>(
     await waitForDelay(interval)
   }
 }
+
+export async function runWithTimeout<T>(
+  operation: () => T | PromiseLike<T>,
+  timeout: number | undefined,
+  message: string,
+) {
+  if (!Number.isFinite(timeout) || (timeout ?? 0) <= 0) {
+    return await operation()
+  }
+
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      Promise.resolve().then(operation),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), Math.trunc(timeout!))
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+  }
+}

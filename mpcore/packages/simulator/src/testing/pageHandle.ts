@@ -2,6 +2,7 @@ import type { HeadlessProjectDescriptor } from '../project'
 import type { HeadlessPageInstance, HeadlessSession } from '../runtime'
 import { HeadlessTestingNodeHandle, renderPageTree } from '../view'
 import { HeadlessTestingScopeHandle } from './sessionHandle'
+import { normalizeNonEmptyInput, runWithTimeout } from './sessionHandle/shared'
 
 export interface HeadlessTestingWaitOptions {
   interval?: number
@@ -16,6 +17,12 @@ export interface HeadlessTestingWaitForSelectorOptions extends HeadlessTestingWa
   state?: 'attached' | 'detached'
 }
 
+export interface HeadlessTestingPageCallMethodOptions {
+  fallback?: boolean
+  routeOnly?: boolean
+  timeout?: number
+}
+
 const DEFAULT_WAIT_TIMEOUT = 1_000
 const DEFAULT_WAIT_INTERVAL = 10
 
@@ -25,6 +32,14 @@ export class HeadlessTestingPageHandle {
     private readonly page: HeadlessPageInstance,
     private readonly session?: HeadlessSession,
   ) {}
+
+  get path() {
+    return this.page.route
+  }
+
+  get query() {
+    return { ...this.page.options }
+  }
 
   private resolveDataByPath(path?: string) {
     if (!path) {
@@ -70,11 +85,22 @@ export class HeadlessTestingPageHandle {
   }
 
   async callMethod(methodName: string, ...args: any[]) {
-    const method = this.page[methodName]
-    if (typeof method !== 'function') {
-      throw new TypeError(`Method "${methodName}" does not exist on headless page ${this.page.route}.`)
-    }
-    return await method.apply(this.page, args)
+    return await this.callMethodWithOptions(methodName, {}, ...args)
+  }
+
+  async callMethodWithOptions(
+    methodName: string,
+    options: HeadlessTestingPageCallMethodOptions = {},
+    ...args: any[]
+  ) {
+    const normalizedMethodName = normalizeNonEmptyInput(methodName, 'Page method name')
+    return await runWithTimeout(async () => {
+      const method = this.page[normalizedMethodName]
+      if (typeof method !== 'function') {
+        throw new TypeError(`Method "${normalizedMethodName}" does not exist on headless page ${this.page.route}.`)
+      }
+      return await method.apply(this.page, args)
+    }, options.timeout, `Timed out calling page method "${normalizedMethodName}" in headless testing runtime.`)
   }
 
   async data(path?: string) {

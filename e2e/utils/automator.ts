@@ -108,7 +108,7 @@ const ENV_LIST_SPLIT_PATTERN = /[,;\n]/
 const ERROR_CONSOLE_TEXT_PATTERN = /\b(?:TypeError|ReferenceError|SyntaxError|Error|RangeError)\b/
 const WARN_CONSOLE_TEXT_PATTERN = /\b(?:warn(?:ing)?|deprecated|deprecation)\b/i
 const COMPONENT_WARN_PATTERN = /\[Component\]/
-const RELAUNCH_RETRYABLE_PATTERNS = [
+const RELAUNCH_CACHE_RECOVERY_PATTERNS = [
   /Wait timed out after/i,
   /Timeout in raw reLaunch/i,
   /Timeout in warmup reLaunch/i,
@@ -118,7 +118,11 @@ const RELAUNCH_RETRYABLE_PATTERNS = [
   /reLaunch returned empty page/i,
   /timed out waiting page root/i,
   /Failed to find page root/i,
+]
+const RELAUNCH_RETRYABLE_PATTERNS = [
+  ...RELAUNCH_CACHE_RECOVERY_PATTERNS,
   /Execution context was destroyed/i,
+  /Connection closed, check if .*DevTools is still running/i,
   /Target closed/i,
   /DevTools did not respond to protocol method App\.getCurrentPage within \d+ms/i,
   /\bDEVTOOLS_PROTOCOL_TIMEOUT\b/i,
@@ -612,7 +616,7 @@ function isLikelyDevtoolsLaunchCacheStaleMessage(message: string) {
   return isLikelyDevtoolsCompileCacheCorruptionMessage(message)
     || isLikelySimulatorBootErrorMessage(message)
     || LAUNCH_TIMEOUT_PATTERN.test(message)
-    || RELAUNCH_RETRYABLE_PATTERNS.some(pattern => pattern.test(message))
+    || RELAUNCH_CACHE_RECOVERY_PATTERNS.some(pattern => pattern.test(message))
 }
 
 function resolveWechatCliPath(cliPath?: string) {

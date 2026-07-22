@@ -118,6 +118,9 @@ Page({
       })
     })
   },
+  neverResolve() {
+    return new Promise(() => {})
+  },
 })
 `)
   writeText(path.join(root, 'dist/pages/index/index.wxml'), `

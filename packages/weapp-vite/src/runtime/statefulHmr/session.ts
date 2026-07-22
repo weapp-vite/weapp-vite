@@ -14,6 +14,7 @@ import {
 } from '@weapp-core/constants'
 import MagicString from 'magic-string'
 import { createServer, transformWithOxc } from 'vite'
+import { parseSidecarSourceRequest } from '../../moduleGraph/protocol'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { createStatefulHmrControlSource } from './runtimeSource'
@@ -244,11 +245,15 @@ function createWatcherAdapter(server: ViteDevServer, session: StatefulHmrSession
 }
 
 export function isStatefulHmrBoundary(id: string, srcRoot: string): boolean {
-  if (id.includes('?')) {
+  const sidecar = parseSidecarSourceRequest(id)
+  const sourceId = sidecar?.kind === 'script' ? sidecar.sourceId : id.includes('?') ? undefined : id
+  if (!sourceId) {
     return false
   }
-  const cleanId = id.split('?', 1)[0]!
-  return cleanId.startsWith(srcRoot.replaceAll('\\', '/')) && /\.(?:[cm]?[jt]sx?|vue)$/.test(cleanId)
+  const normalizedSourceId = sourceId.replaceAll('\\', '/')
+  const normalizedSrcRoot = srcRoot.replaceAll('\\', '/').replace(/\/$/, '')
+  return normalizedSourceId.startsWith(`${normalizedSrcRoot}/`)
+    && /\.(?:[cm]?[jt]sx?|vue)$/.test(normalizedSourceId)
 }
 
 export function redirectNativeComponentRegistration(code: string): string {

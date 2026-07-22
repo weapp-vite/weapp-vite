@@ -90,7 +90,7 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
   })
 
   it('keeps route state and hook origins synchronized across router and native tab navigation', async (ctx) => {
-    const miniProgram = await getSharedMiniProgram(ctx)
+    let miniProgram = await getSharedMiniProgram(ctx)
     try {
       await Promise.all([
         removeStorage(miniProgram, PUSH_RESULT_STORAGE_KEY),
@@ -110,6 +110,7 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
       if (!issuePage) {
         throw new Error('Failed to launch issue-705 page')
       }
+      miniProgram = await getSharedMiniProgram(ctx)
 
       await issuePage.callMethodWithOptions('_runE2E', {
         timeout: 12_000,
@@ -129,6 +130,7 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
       if (!reloadedIssuePage) {
         throw new Error('Failed to relaunch issue-705 page')
       }
+      miniProgram = await getSharedMiniProgram(ctx)
 
       await reloadedIssuePage.callMethodWithOptions('_runE2E', {
         timeout: 12_000,
