@@ -9,7 +9,8 @@ export function generateEntryModule(
   wxssOptions?: WxssTransformOptions,
   pluginOptions?: WeappWebPluginOptions,
 ) {
-  const runtimePolyfillId = toViteFsImport(resolveRuntimePolyfillPath())
+  const runtimePolyfillId = pluginOptions?.__runtimeProvider?.moduleId
+    ?? toViteFsImport(resolveRuntimePolyfillPath())
   const importLines: string[] = [`import { initializePageRoutes } from '${runtimePolyfillId}'`]
   const bodyLines: string[] = []
 

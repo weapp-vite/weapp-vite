@@ -40,6 +40,15 @@ export interface WeappWebPluginOptions {
       dedupe?: boolean
     }
   }
+  /**
+   * weapp-vite runtime provider 注入的内部绑定。
+   *
+   * @internal
+   */
+  __runtimeProvider?: {
+    moduleId: string
+    hmrAcceptCode?: string
+  }
 }
 
 export interface ModuleMeta {

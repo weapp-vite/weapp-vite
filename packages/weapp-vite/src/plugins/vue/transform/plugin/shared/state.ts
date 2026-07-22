@@ -8,30 +8,13 @@ import path from 'pathe'
 import { getWxmlDirectivePrefix } from '../../../../../platform'
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { toAbsoluteId } from '../../../../../utils/toAbsoluteId'
+import { mayNeedWevuPageFeatureAnalysis } from '../../../../wevuPageFeatureHints'
 import { isVueLikeFile } from '../../shared'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 const TEMPLATE_MUSTACHE_HINT = '{{'
 const TEMPLATE_EVENT_HINT_RE = /\b(?:bind|catch)[A-Za-z:_-]+=/
-const PAGE_FEATURE_HOOK_HINTS = [
-  'onPageScroll',
-  'onPullDownRefresh',
-  'onReachBottom',
-  'onRouteDone',
-  'onTabItemTap',
-  'onResize',
-  'onShareAppMessage',
-  'onShareTimeline',
-  'onAddToFavorites',
-  'onSaveExitState',
-]
 const PAGE_SCROLL_HOOK_HINT = 'onPageScroll'
-const WEVU_RUNTIME_MODULE_HINTS = [
-  '\'wevu\'',
-  '"wevu"',
-  '\'wevu/internal-runtime\'',
-  '"wevu/internal-runtime"',
-]
 
 interface VueTransformCacheEntry {
   result: VueTransformResult
@@ -107,8 +90,7 @@ export function mayNeedTransformSetDataPick(
 }
 
 export function mayNeedTransformPageFeatureInjection(script: string) {
-  return WEVU_RUNTIME_MODULE_HINTS.some(hint => script.includes(hint))
-    || PAGE_FEATURE_HOOK_HINTS.some(hint => script.includes(hint))
+  return mayNeedWevuPageFeatureAnalysis(script)
 }
 
 export function mayNeedTransformPageScrollDiagnostics(script: string) {

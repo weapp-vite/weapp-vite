@@ -1,6 +1,6 @@
 import type { InlineExpressionAsset } from 'wevu/compiler'
 import { WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
-import { buildClassStyleComputedCode, getClassStyleWxsSource, WE_VU_INTERNAL_REACTIVITY_MODULE_ID, WE_VU_INTERNAL_RUNTIME_MODULE_ID, WE_VU_INTERNAL_TEMPLATE_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
+import { buildClassStyleComputedCode, getClassStyleWxsSource, WE_VU_COMPILER_REACTIVITY_MODULE_ID, WE_VU_COMPILER_RUNTIME_MODULE_ID, WE_VU_COMPILER_TEMPLATE_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 
@@ -21,11 +21,11 @@ function buildScopedSlotComponentModule(options?: { computedCode?: string, inlin
   const computedCode = options?.computedCode
   const inlineMapCode = options?.inlineMapCode
   const lines = [
-    `import { ${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent } from '${WE_VU_INTERNAL_RUNTIME_MODULE_ID}';`,
+    `import { ${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent } from '${WE_VU_COMPILER_RUNTIME_MODULE_ID}';`,
   ]
   if (computedCode) {
-    lines.push(`import { normalizeClass as __wevuNormalizeClass, normalizeStyle as __wevuNormalizeStyle } from '${WE_VU_INTERNAL_TEMPLATE_MODULE_ID}';`)
-    lines.push(`import { unref as __wevuUnref } from '${WE_VU_INTERNAL_REACTIVITY_MODULE_ID}';`)
+    lines.push(`import { normalizeClass as __wevuNormalizeClass, normalizeStyle as __wevuNormalizeStyle } from '${WE_VU_COMPILER_TEMPLATE_MODULE_ID}';`)
+    lines.push(`import { unref as __wevuUnref } from '${WE_VU_COMPILER_REACTIVITY_MODULE_ID}';`)
   }
   lines.push(
     'const globalObject = typeof globalThis !== \'undefined\' ? globalThis : undefined;',

@@ -81,6 +81,33 @@ describe('weappWebPlugin', () => {
     expect(code).not.toContain('@weapp-vite/web/runtime/polyfill')
   })
 
+  it('uses the runtime provider module id and HMR hook when supplied', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'weapp-web-runtime-provider-'))
+    const srcRoot = join(root, 'src')
+    await mkdir(srcRoot, { recursive: true })
+    await writeFile(join(srcRoot, 'app.js'), 'App({})')
+    await writeFile(join(srcRoot, 'app.json'), JSON.stringify({ pages: [] }))
+
+    const plugin = weappWebPlugin({
+      srcDir: 'src',
+      __runtimeProvider: {
+        moduleId: 'virtual:weapp-vite/runtime',
+        hmrAcceptCode: 'providerAccept()',
+      },
+    })
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'serve' } as any)
+
+    const entryId = (plugin.resolveId as ((...args: any[]) => any))?.('/@weapp-vite/web/entry') as string
+    const entryCode = (plugin.load as ((...args: any[]) => any))?.call({} as any, entryId) as string
+    const transform = plugin.transform as (code: string, id: string) => Promise<any> | any
+    const result = await transform.call({}, 'App({})', join(srcRoot, 'app.js'))
+
+    expect(entryCode).toContain(`from 'virtual:weapp-vite/runtime'`)
+    expect(result?.code).toContain(`from 'virtual:weapp-vite/runtime'`)
+    expect(result?.code).toContain('providerAccept()')
+    expect(result?.code).not.toContain('import.meta.hot.accept()')
+  })
+
   it('transforms app modules to import runtime polyfill through a Vite fs path', async () => {
     const root = await mkdtemp(join(tmpdir(), 'weapp-web-transform-polyfill-'))
     const srcRoot = join(root, 'src')

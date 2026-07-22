@@ -193,7 +193,8 @@ export default defineComponent({
     expect(parsed.navigationBarTitleText).toBe('JSX 页面')
     expect(parsed.enablePullDownRefresh).toBe(true)
     expect(result.script).not.toContain('definePageJson(')
-    expect(result.script).not.toContain('weapp-vite')
+    expect(result.script).not.toMatch(/from\s*['"]weapp-vite['"]/)
+    expect(result.script).toContain('virtual:weapp-vite/runtime')
     expect(result.meta?.jsonMacroHash).toBeTruthy()
   })
 

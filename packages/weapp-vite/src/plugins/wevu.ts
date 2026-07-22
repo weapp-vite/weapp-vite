@@ -14,33 +14,10 @@ import { toAbsoluteId } from '../utils/toAbsoluteId'
 import { collectOnPageScrollPerformanceWarnings } from './performance/onPageScrollDiagnostics'
 import { readFile as readFileCached } from './utils/cache'
 import { createViteResolverAdapter } from './utils/viteResolverAdapter'
+import { mayNeedWevuPageFeatureAnalysis } from './wevuPageFeatureHints'
 
 const JS_LIKE_SOURCE_RE = /\.[cm]?[jt]sx?$/
 const JS_LIKE_SOURCE_FILTER_RE = /\.[cm]?[jt]sx?(?:\?.*)?$/
-const WEVU_RUNTIME_MODULE_HINTS = [
-  '\'wevu\'',
-  '"wevu"',
-  '\'wevu/internal-runtime\'',
-  '"wevu/internal-runtime"',
-]
-const PAGE_FEATURE_HOOK_HINTS = [
-  'onPageScroll',
-  'onPullDownRefresh',
-  'onReachBottom',
-  'onRouteDone',
-  'onTabItemTap',
-  'onResize',
-  'onShareAppMessage',
-  'onShareTimeline',
-  'onAddToFavorites',
-  'onSaveExitState',
-]
-
-function mayNeedPageFeatureWork(code: string) {
-  return WEVU_RUNTIME_MODULE_HINTS.some(hint => code.includes(hint))
-    || PAGE_FEATURE_HOOK_HINTS.some(hint => code.includes(hint))
-}
-
 export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
   let matcher: ReturnType<typeof createPageEntryMatcher> | null = null
   let scanDirtySynced = false
@@ -116,7 +93,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
           if (!isPageFile) {
             return null
           }
-          if (!mayNeedPageFeatureWork(code)) {
+          if (!mayNeedWevuPageFeatureAnalysis(code)) {
             return null
           }
 

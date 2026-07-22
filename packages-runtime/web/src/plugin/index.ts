@@ -114,6 +114,10 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
 
   const state = createEmptyScanState()
   const wxssOptions = options.wxss
+  const runtimeProvider = options.__runtimeProvider
+  const hmrAcceptCode = runtimeProvider
+    ? runtimeProvider.hmrAcceptCode
+    : 'if (import.meta.hot) { import.meta.hot.accept() }'
 
   const resolveTemplatePath = (raw: string, importer: string) => resolveTemplatePathSync(raw, importer, srcRoot)
   const resolveWxsPath = (raw: string, importer: string) => resolveWxsPathSync(raw, importer, srcRoot)
@@ -239,6 +243,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         cleanId: clean,
         meta,
         enableHmr,
+        runtimeModuleId: runtimeProvider?.moduleId,
+        hmrAcceptCode,
       })
     },
   }

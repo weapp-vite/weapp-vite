@@ -1,3 +1,3 @@
-import { WE_VU_INTERNAL_RUNTIME_MODULE_ID } from '../../../constants'
+import { WE_VU_COMPILER_RUNTIME_MODULE_ID } from '../../../constants'
 
-export const RUNTIME_IMPORT_PATH = WE_VU_INTERNAL_RUNTIME_MODULE_ID
+export const RUNTIME_IMPORT_PATH = WE_VU_COMPILER_RUNTIME_MODULE_ID

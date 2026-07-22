@@ -1,3 +1,4 @@
+import { WEAPP_VITE_RUNTIME_VIRTUAL_IDS } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { compileTransformEntryResult, createTransformStageMeasurer, ensureSfcStyleBlocks, finalizeTransformCompiledResult, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, loadTransformStyleBlock, logTransformFileError, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadNativeLayoutEntries, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
@@ -458,6 +459,9 @@ describe('vue transform plugin shared helpers', () => {
     expect(mayNeedTransformSetDataPick('<view a:if="visible" />', { platform: 'alipay' })).toBe(true)
     expect(mayNeedTransformPageFeatureInjection('export default { onReachBottom() {} }')).toBe(true)
     expect(mayNeedTransformPageFeatureInjection('import { defineComponent } from "wevu"; export default defineComponent({})')).toBe(true)
+    for (const runtimeModuleId of Object.values(WEAPP_VITE_RUNTIME_VIRTUAL_IDS)) {
+      expect(mayNeedTransformPageFeatureInjection(`import { ref } from "${runtimeModuleId}"`)).toBe(true)
+    }
     expect(mayNeedTransformPageFeatureInjection('export default {}')).toBe(false)
     expect(mayNeedTransformPageScrollDiagnostics('export default { onPageScroll() {} }')).toBe(true)
     expect(mayNeedTransformPageScrollDiagnostics('export default {}')).toBe(false)

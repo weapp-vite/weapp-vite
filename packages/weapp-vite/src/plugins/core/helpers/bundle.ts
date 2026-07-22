@@ -2,6 +2,12 @@ import type { OutputAsset, OutputBundle, OutputChunk } from 'rolldown'
 import type { CompilerContext } from '../../../context'
 import type { CorePluginState, RemoveImplicitPagePreloadOptions } from './types'
 import { Buffer } from 'node:buffer'
+import {
+  WEAPP_VITE_RUNTIME_REACTIVITY_VIRTUAL_ID,
+  WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID,
+  WEAPP_VITE_RUNTIME_VIRTUAL_ID,
+  WEAPP_VITE_RUNTIME_VIRTUAL_IDS,
+} from '@weapp-core/constants'
 import { isEmptyObject, isObject } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import path from 'pathe'
@@ -14,7 +20,6 @@ const IMPLICIT_REQUIRE_RE = /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*requir
 const REQUIRE_CALL_RE = /\brequire\((`[^`]+`|'[^']+'|"[^"]+")\)/g
 const WEVU_SRC_CHUNK_RE = /(?:^|\/)wevu-src\.js$/
 const WEVU_VENDOR_RUNTIME_CHUNK_RE = /(?:^|\/)weapp-vendors\/wevu-[^/]+\.js$/
-const WEVU_RUNTIME_IMPORT_HINT_RE = /\bfrom\s*["']wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?["']|\brequire\(\s*(?:`wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?`|'wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?'|"wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?")/
 const WEVU_EXPORT_ALIASES = [
   ['defineComponent', '__wevuDefineComponent'],
   ['createWevuComponent', '__wevuCreateWevuComponent'],
@@ -190,6 +195,19 @@ const WEVU_RUNTIME_MODULE_IDS = [
   ...WEVU_INTERNAL_MODULE_IDS,
 ] as const
 type WevuRuntimeModuleId = (typeof WEVU_RUNTIME_MODULE_IDS)[number]
+const WEVU_RUNTIME_MODULE_ID_PATTERN = [
+  'wevu(?:\\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?',
+  ...Object.values(WEAPP_VITE_RUNTIME_VIRTUAL_IDS)
+    .map(id => id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+].join('|')
+const WEVU_RUNTIME_NAMED_IMPORT_RE = new RegExp(
+  `\\bimport\\s*\\{([^}]*)\\}\\s*from\\s*["'](${WEVU_RUNTIME_MODULE_ID_PATTERN})["'];?`,
+  'g',
+)
+const WEVU_RUNTIME_REQUIRE_RE = new RegExp(
+  `\\brequire\\(\\s*(\`(?:${WEVU_RUNTIME_MODULE_ID_PATTERN})\`|'(?:${WEVU_RUNTIME_MODULE_ID_PATTERN})'|"(?:${WEVU_RUNTIME_MODULE_ID_PATTERN})")\\s*\\)`,
+  'g',
+)
 interface WevuRuntimeChunkUsage {
   chunk: OutputChunk
   runtimeRefs: Set<string>
@@ -626,6 +644,19 @@ function isWevuRuntimeModuleId(value: string): value is WevuRuntimeModuleId {
   return (WEVU_RUNTIME_MODULE_IDS as readonly string[]).includes(value)
 }
 
+function normalizeWevuRuntimeModuleId(value: string): WevuRuntimeModuleId | undefined {
+  if (value === WEAPP_VITE_RUNTIME_VIRTUAL_ID) {
+    return 'wevu/internal-runtime'
+  }
+  if (value === WEAPP_VITE_RUNTIME_REACTIVITY_VIRTUAL_ID) {
+    return 'wevu/internal-reactivity'
+  }
+  if (value === WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID) {
+    return 'wevu/internal-template'
+  }
+  return isWevuRuntimeModuleId(value) ? value : undefined
+}
+
 function resolveWevuInternalChunk(
   bundleOrSnapshot: OutputBundle | BundleChunkSnapshot,
   importNames: Iterable<string>,
@@ -889,7 +920,8 @@ function rewriteRootWevuImport(
 }
 
 function mayContainWevuRuntimeImport(code: string) {
-  return WEVU_RUNTIME_IMPORT_HINT_RE.test(code)
+  return code.includes('wevu')
+    || Object.values(WEAPP_VITE_RUNTIME_VIRTUAL_IDS).some(id => code.includes(id))
 }
 
 export function rewriteWevuInternalRuntimeImports(
@@ -897,8 +929,6 @@ export function rewriteWevuInternalRuntimeImports(
   options: RewriteWevuInternalRuntimeImportsOptions = {},
   snapshot = createBundleChunkSnapshot(bundle),
 ) {
-  const importRe = /\bimport\s*\{([^}]*)\}\s*from\s*["'](wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?)["'];?/g
-  const requireRe = /\brequire\(\s*(`wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?`|'wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?'|"wevu(?:\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?")\s*\)/g
   const runtimeChunkIndex = createWevuRuntimeChunkIndex(bundle, snapshot)
   const currentRuntimeChunk = resolveIndexedWevuInternalChunk(runtimeChunkIndex, WEVU_INTERNAL_RUNTIME_EXPORTS)
   if (currentRuntimeChunk) {
@@ -925,7 +955,7 @@ export function rewriteWevuInternalRuntimeImports(
     const requiredRuntimeFileNames = new Set<string>()
     let containsRootWevuRuntimeExport: boolean | undefined
 
-    rewritten = rewritten.replace(importRe, (full, importClause: string, source: string) => {
+    rewritten = rewritten.replace(WEVU_RUNTIME_NAMED_IMPORT_RE, (full, importClause: string, source: string) => {
       const bindings = parseNamedImportBindings(importClause)
       const importedNames = bindings.map(binding => binding.importedName)
       if (source === 'wevu') {
@@ -941,7 +971,10 @@ export function rewriteWevuInternalRuntimeImports(
         return result.code
       }
 
-      const resolvedInternalModuleId = source as WevuRuntimeModuleId
+      const resolvedInternalModuleId = normalizeWevuRuntimeModuleId(source)
+      if (!resolvedInternalModuleId) {
+        return full
+      }
       const runtimeChunk = resolveWevuRuntimeChunkForModuleId(runtimeChunkIndex, resolvedInternalModuleId, importedNames)
       const rememberedRuntimeFileName = resolveRememberedWevuRuntimeFileName(
         resolvedInternalModuleId,
@@ -960,15 +993,16 @@ export function rewriteWevuInternalRuntimeImports(
       return `const { ${formatNamedRequireBindings(bindings)} } = require(${JSON.stringify(specifier)});`
     })
 
-    rewritten = rewritten.replace(requireRe, (full, rawSpecifier: string) => {
+    rewritten = rewritten.replace(WEVU_RUNTIME_REQUIRE_RE, (full, rawSpecifier: string) => {
       const specifierValue = stripQuotes(rawSpecifier)
       if (specifierValue === 'wevu' && containsRootWevuRuntimeExport === undefined) {
         containsRootWevuRuntimeExport = containsWevuInternalRuntimeExportReference(code)
       }
-      const canUseRememberedRuntime = specifierValue === 'wevu/internal-runtime'
+      const normalizedModuleId = normalizeWevuRuntimeModuleId(specifierValue)
+      const canUseRememberedRuntime = normalizedModuleId === 'wevu/internal-runtime'
         || (specifierValue === 'wevu' && containsRootWevuRuntimeExport === true)
-      const rememberedRuntimeFileName = isWevuRuntimeModuleId(specifierValue)
-        ? options.runtimeFileNames?.get(specifierValue)
+      const rememberedRuntimeFileName = normalizedModuleId
+        ? options.runtimeFileNames?.get(normalizedModuleId)
         : undefined
       const runtimeFileName = canUseRememberedRuntime
         ? (currentRuntimeChunk?.fileName ?? rememberedRuntimeFileName ?? options.runtimeFileName)

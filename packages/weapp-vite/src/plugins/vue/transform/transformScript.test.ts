@@ -101,7 +101,7 @@ export default {}
 `)
 
     expect(result.code).toContain('defineAppSetup')
-    expect(result.code).toContain('from "wevu/internal-runtime";')
+    expect(result.code).toContain('from "virtual:weapp-vite/runtime";')
     expect(result.code).toContain('defineAppSetup((app) => {')
   })
 })
