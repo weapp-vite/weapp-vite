@@ -152,6 +152,11 @@ describe.sequential('HMR layouts matrix (dev watch)', () => {
   it.each(PLATFORM_LIST)('updates layouts matrix for %s', async (platform) => {
     await fs.remove(DIST_ROOT)
 
+    const originalSources = new Map<string, string>()
+    for (const testCase of HMR_CASES) {
+      originalSources.set(testCase.sourcePath, await fs.readFile(testCase.sourcePath, 'utf8'))
+    }
+
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
@@ -204,6 +209,9 @@ describe.sequential('HMR layouts matrix (dev watch)', () => {
     }
     finally {
       await dev.stop(5_000)
+      for (const [sourcePath, source] of originalSources) {
+        await fs.writeFile(sourcePath, source, 'utf8')
+      }
     }
   })
 })
