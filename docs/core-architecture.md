@@ -34,6 +34,7 @@ packages/weapp-vite/
 │   ├── moduleGraph/              # 真实模块图 adapter 与逻辑入口协议
 │   ├── plugins/                  # 核心 Vite 插件
 │   ├── runtime/                  # 运行时服务实现
+│   ├── runtimeProviders/         # 编译产物 runtime contract、registry 与 resolver
 │   ├── types/                    # TypeScript 类型定义
 │   ├── utils/                    # 工具函数
 │   ├── auto-import-components/   # 自动导入组件
@@ -342,6 +343,22 @@ Web 运行时服务，用于 H5 平台构建。
 
 源码图与输出图分开管理：`ModuleGraphService` 负责源码 importer 追溯和失效；core plugin 只缓存 chunk module membership、chunk imports 与 chunk 到逻辑入口的输出归属。`generateBundle` 不再从 bundle 反推源码 import graph，最终文件仍完全由 Vite/Rolldown emit/generate/write。
 
+### 13. **Runtime Provider** (`src/runtimeProviders/`)
+
+Runtime provider 是 backend 与编译器之间的内部运行时绑定层，不是第三方注册 API。backend 决定构建目标和生命周期，编译模式决定当前产物需要哪一种 runtime：
+
+| Provider | Backend | 编译模式 | 注入方式 |
+|----------|---------|----------|----------|
+| `native-miniprogram` | miniprogram | native | 不注入框架 runtime |
+| `wevu-miniprogram` | miniprogram | Vue SFC | 通过稳定虚拟入口注入 wevu runtime |
+| `web-runtime` | web | Web | 通过稳定虚拟入口注入 `@weapp-vite/web/runtime` |
+
+编译器只生成 `virtual:weapp-vite/runtime` 模块族，不直接引用具体 runtime 包路径。`@weapp-core/constants` 持有 contract version 和虚拟 ID，`@weapp-core/shared` 持有跨包 descriptor 类型，`RuntimeProviderRegistry` 根据 backend 与编译模式选择唯一 provider。Vite resolver 再把虚拟入口解析到 provider 声明的 development/production 入口。Web provider 会先按 Node package exports 定位自身物理入口，避免应用 tsconfig alias 把包子路径改写到错误位置，然后仍交给 Vite resolve/load 和 Rolldown bundle。
+
+wevu 保留 runtime、reactivity 与 template 三个语义入口，避免破坏既有 shared chunk 拆分。Web 编译器的 runtime import 与 HMR accept footer 都由 `web-runtime` provider 注入。provider 缺少入口、入口无法解析或 contract version 不匹配时直接报错，不允许静默切换到其他 runtime。
+
+该层只负责模块绑定和 HMR contract，不拥有源码 import graph、output graph 或文件写入。最终 runtime chunk 仍由 Vite/Rolldown 的 resolve、load、emit 和 write 生命周期生成。
+
 ---
 
 ## Chunk 共享策略
@@ -379,6 +396,7 @@ type SharedChunkStrategy = 'hoist' | 'duplicate'
 | `src/types/config.ts` | 329-477 | 配置类型定义 |
 | `src/runtime/buildPlugin.ts` | 31-374 | 构建服务实现 |
 | `src/backends/` | - | 内部平台后端 contract、registry、执行计划与内置 driver |
+| `src/runtimeProviders/` | - | 内部 runtime provider contract、registry、选择与 Vite resolver |
 
 ---
 

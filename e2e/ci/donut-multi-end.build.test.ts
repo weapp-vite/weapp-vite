@@ -2,6 +2,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { collectRuntimeVirtualModuleReferences, readJavaScriptOutput } from '../utils/runtimeProviderOutput'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/donut-multi-end')
@@ -109,6 +110,13 @@ describe.sequential('e2e app: donut-multi-end (build)', () => {
 
     const runtimeMiniappConfig = await readJson<typeof sourceRuntimeMiniappConfig>(path.join(DIST_ROOT, 'app.miniapp.json'))
     expect(runtimeMiniappConfig).toEqual(sourceRuntimeMiniappConfig)
+
+    const javascript = await readJavaScriptOutput(DIST_ROOT)
+    expect(javascript.files.length).toBeGreaterThan(0)
+    expect(collectRuntimeVirtualModuleReferences(javascript.code)).toEqual([])
+    expect(javascript.code).not.toContain('wevu/internal-runtime')
+    expect(javascript.code).not.toContain('__wevu_runtime')
+    expect(javascript.code).not.toContain('setWevuDefaults')
 
     const indexJson = await readJson<{
       usingComponents?: Record<string, string>

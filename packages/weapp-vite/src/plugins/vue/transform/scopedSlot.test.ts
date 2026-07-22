@@ -18,9 +18,9 @@ vi.mock('wevu/compiler', () => ({
   createJsonMerger: createJsonMergerMock,
   buildClassStyleComputedCode: vi.fn(() => '() => ({})'),
   getClassStyleWxsSource: vi.fn(() => 'module.exports = {};'),
-  WE_VU_INTERNAL_REACTIVITY_MODULE_ID: 'wevu/internal-reactivity',
-  WE_VU_INTERNAL_RUNTIME_MODULE_ID: 'wevu/internal-runtime',
-  WE_VU_INTERNAL_TEMPLATE_MODULE_ID: 'wevu/internal-template',
+  WE_VU_COMPILER_REACTIVITY_MODULE_ID: 'virtual:weapp-vite/runtime/reactivity',
+  WE_VU_COMPILER_RUNTIME_MODULE_ID: 'virtual:weapp-vite/runtime',
+  WE_VU_COMPILER_TEMPLATE_MODULE_ID: 'virtual:weapp-vite/runtime/template',
   WE_VU_RUNTIME_APIS: {
     createWevuScopedSlotComponent: 'createWevuScopedSlotComponent',
   },
@@ -376,7 +376,7 @@ describe('scoped slot helpers', () => {
 
     const [virtualId] = Array.from(scopedSlotModules.keys())
     const code = scopedSlotModules.get(virtualId)!
-    expect(code).toContain(`import { createWevuScopedSlotComponent as _createWevuScopedSlotComponent } from 'wevu/internal-runtime';`)
+    expect(code).toContain(`import { createWevuScopedSlotComponent as _createWevuScopedSlotComponent } from 'virtual:weapp-vite/runtime';`)
     expect(code).toContain('createWevuScopedSlotComponent();')
     expect(code).not.toContain('__wevuComputed')
     expect(code).not.toContain('__wevuInlineMap')

@@ -1,8 +1,14 @@
 import type { InlineConfig, PluginOption } from 'vite'
 import type { ResolvedWeappWebConfig } from '../../types'
+import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import { defu } from '@weapp-core/shared'
 import { weappWebPlugin } from '@weapp-vite/web'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
+import {
+  createSelectedRuntimeProviderPlugin,
+  resolveRuntimeProvider,
+  resolveRuntimeProviderHmrFooter,
+} from '../../../../runtimeProviders'
 import { stripRollupOptions } from './inline'
 
 interface MergeWebOptions {
@@ -18,8 +24,14 @@ interface MergeWebOptions {
 export function mergeWebPlugins(
   rawPlugins: InlineConfig['plugins'],
   webPlugin: PluginOption,
+  runtimeProviderPlugin?: PluginOption,
 ) {
   const remaining: PluginOption[] = []
+  const ownedPluginNames = new Set(
+    [webPlugin, runtimeProviderPlugin]
+      .map(option => option && typeof option === 'object' && 'name' in option ? option.name : undefined)
+      .filter((name): name is string => typeof name === 'string'),
+  )
   const collect = (option: PluginOption | undefined) => {
     if (!option) {
       return
@@ -31,7 +43,8 @@ export function mergeWebPlugins(
     if (typeof option === 'object'
       && option !== null
       && 'name' in option
-      && option.name === (webPlugin as { name?: string }).name) {
+      && typeof option.name === 'string'
+      && ownedPluginNames.has(option.name)) {
       return
     }
     remaining.push(option)
@@ -44,7 +57,7 @@ export function mergeWebPlugins(
     collect(rawPlugins)
   }
 
-  return [webPlugin as any, ...remaining] as InlineConfig['plugins']
+  return [runtimeProviderPlugin, webPlugin, ...remaining].filter(Boolean) as InlineConfig['plugins']
 }
 
 export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineConfig | undefined>[]) {
@@ -85,8 +98,16 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
   inline.configFile = false
   inline.mode = inline.mode ?? mode
 
-  const webPlugin = weappWebPlugin(web.pluginOptions)
-  inline.plugins = mergeWebPlugins(inline.plugins, webPlugin)
+  const runtimeProvider = resolveRuntimeProvider('web', 'web')
+  const runtimeProviderPlugin = createSelectedRuntimeProviderPlugin(runtimeProvider, isDev)
+  const webPlugin = weappWebPlugin({
+    ...web.pluginOptions,
+    __runtimeProvider: {
+      moduleId: WEAPP_VITE_RUNTIME_VIRTUAL_ID,
+      hmrAcceptCode: resolveRuntimeProviderHmrFooter(runtimeProvider),
+    },
+  })
+  inline.plugins = mergeWebPlugins(inline.plugins, webPlugin, runtimeProviderPlugin)
 
   inline.build ??= {}
   inline.build.outDir = web.outDir

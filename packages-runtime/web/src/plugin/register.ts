@@ -94,6 +94,8 @@ interface TransformScriptModuleOptions {
   cleanId: string
   meta: ModuleMeta
   enableHmr: boolean
+  runtimeModuleId?: string
+  hmrAcceptCode?: string
 }
 
 export function transformScriptModule({
@@ -101,6 +103,8 @@ export function transformScriptModule({
   cleanId,
   meta,
   enableHmr,
+  runtimeModuleId,
+  hmrAcceptCode,
 }: TransformScriptModuleOptions): null | { code: string, map: SourceMap } {
   const registerName = getRegisterName(meta.kind)
   if (!registerName) {
@@ -124,7 +128,7 @@ export function transformScriptModule({
   let transformed = false
 
   const imports: string[] = []
-  const runtimePolyfillId = toViteFsImport(resolveRuntimePolyfillPath())
+  const runtimePolyfillId = runtimeModuleId ?? toViteFsImport(resolveRuntimePolyfillPath())
   const templateIdent = meta.templatePath ? '__weapp_template__' : undefined
   const styleIdent = meta.stylePath ? '__weapp_style__' : undefined
 
@@ -163,8 +167,8 @@ export function transformScriptModule({
   const prefix = `${imports.join('\n')}\n`
   s.prepend(prefix)
 
-  if (enableHmr) {
-    s.append(`\nif (import.meta.hot) { import.meta.hot.accept() }\n`)
+  if (enableHmr && hmrAcceptCode) {
+    s.append(`\n${hmrAcceptCode}\n`)
   }
 
   return {

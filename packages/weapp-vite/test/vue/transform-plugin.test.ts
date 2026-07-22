@@ -2,6 +2,11 @@ import type { OutputBundle } from 'rollup'
 import { realpath } from 'node:fs/promises'
 import os from 'node:os'
 
+import {
+  WEAPP_VITE_RUNTIME_REACTIVITY_VIRTUAL_ID,
+  WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID,
+  WEAPP_VITE_RUNTIME_VIRTUAL_ID,
+} from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import logger from '../../src/logger'
@@ -822,9 +827,9 @@ onPageScroll(() => {
     const virtualId = '\0weapp-vite:scoped-slot:page.__scoped-slot-default-0'
     const loaded = await callPluginHook(plugin.load as any, {}, virtualId)
     expect(loaded).toEqual(expect.stringContaining('createWevuScopedSlotComponent'))
-    expect(loaded).toContain('from \'wevu/internal-runtime\'')
-    expect(loaded).toContain('from \'wevu/internal-template\'')
-    expect(loaded).toContain('from \'wevu/internal-reactivity\'')
+    expect(loaded).toContain(`from '${WEAPP_VITE_RUNTIME_VIRTUAL_ID}'`)
+    expect(loaded).toContain(`from '${WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID}'`)
+    expect(loaded).toContain(`from '${WEAPP_VITE_RUNTIME_REACTIVITY_VIRTUAL_ID}'`)
     expect(loaded).toContain('unref as __wevuUnref')
     expect(loaded).toContain('__wevuUnref(')
   })

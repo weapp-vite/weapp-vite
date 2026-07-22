@@ -23,7 +23,7 @@ const value = 1
 
     expect(state.transformed).toBe(true)
     expect(state.defineComponentAliases.has('defineComponent')).toBe(true)
-    expect(code).toContain('wevu/internal-runtime')
+    expect(code).toContain('virtual:weapp-vite/runtime')
     expect(code).toContain('useSlots')
     expect(code).toContain('useAttrs')
     expect(code).not.toContain('defineComponent')
@@ -47,8 +47,8 @@ const value = ref(1)
     const code = generate(ast).code
 
     expect(state.transformed).toBe(true)
-    expect(code).toContain('wevu/internal-reactivity')
-    expect(code).toContain('wevu/internal-runtime')
+    expect(code).toContain('virtual:weapp-vite/runtime/reactivity')
+    expect(code).toContain('virtual:weapp-vite/runtime')
     expect(code).toContain('ref')
     expect(code).toContain('onLoad')
     expect(code).toContain(`import { fetch } from 'wevu'`)

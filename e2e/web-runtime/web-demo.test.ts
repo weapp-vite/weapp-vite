@@ -1,16 +1,20 @@
+/* eslint-disable e18e/ban-dependencies -- Web E2E 需要 execa 管理长驻 dev server、采集日志并清理子进程。 */
 import type { ExecaChildProcess } from 'execa'
 import type { Browser, Page } from 'playwright'
 import { existsSync } from 'node:fs'
 import process from 'node:process'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import path from 'pathe'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { collectRuntimeVirtualModuleReferences, readJavaScriptOutput } from '../utils/runtimeProviderOutput'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const WEB_DEMO_ROOT = path.resolve(ROOT, 'apps/weapp-vite-web-demo')
 const CLI_PATH = path.resolve(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
+const WEB_DIST_ROOT = path.join(WEB_DEMO_ROOT, 'dist/web')
 const WEB_HOST = '127.0.0.1'
 const WEB_PORT = Number(process.env.WEAPP_VITE_WEB_E2E_PORT ?? 5180)
 const WEB_URL = `http://${WEB_HOST}:${WEB_PORT}`
@@ -84,54 +88,6 @@ async function stopWebServer(server?: ExecaChildProcess) {
   finally {
     clearTimeout(forceKillTimer)
   }
-}
-
-function isNavigationContextDestroyedError(error: unknown) {
-  if (!(error instanceof Error)) {
-    return false
-  }
-  return /Execution context was destroyed|Cannot find context with specified id|Target page, context or browser has been closed/i.test(error.message)
-}
-
-async function dispatchRuntimeNavigation(
-  page: Page,
-  method: 'navigateTo' | 'navigateBack',
-  payload: Record<string, unknown>,
-) {
-  await expect.poll(async () => {
-    return await page.evaluate(({ method }) => {
-      const wxRuntime = (window as any).wx
-      return typeof wxRuntime?.[method] === 'function'
-    }, { method })
-  }, { timeout: 20_000 }).toBe(true)
-
-  try {
-    await page.evaluate(({ method, payload }) => {
-      const wxRuntime = (window as any).wx
-      const navigate = wxRuntime?.[method]
-      if (typeof navigate !== 'function') {
-        throw new TypeError(`[web-e2e] wx.${method} is unavailable in runtime`)
-      }
-      // 导航触发后立即返回，避免导航导致 evaluate 上下文销毁造成误判。
-      const navigationResult = navigate(payload) as any
-      if (navigationResult && typeof navigationResult.catch === 'function') {
-        navigationResult.catch(() => {})
-      }
-    }, { method, payload })
-  }
-  catch (error) {
-    if (!isNavigationContextDestroyedError(error)) {
-      throw error
-    }
-  }
-}
-
-async function navigateToByRuntime(page: Page, url: string) {
-  await dispatchRuntimeNavigation(page, 'navigateTo', { url })
-}
-
-async function navigateBackByRuntime(page: Page, delta = 1) {
-  await dispatchRuntimeNavigation(page, 'navigateBack', { delta })
 }
 
 type CurrentPageData = Record<string, any> | null
@@ -340,10 +296,25 @@ async function navigateToInteractiveFromHome(page: Page) {
       && typeof snapshot.data.from === 'string'
       && snapshot.data.from === 'index'
       && Array.isArray(snapshot.data.scenarios)
-      && snapshot.data.scenarios.length >= 3
+      && snapshot.data.scenarios.length >= 3,
     )
   }, { timeout: 45_000 }).toBe(true)
 }
+
+describe.sequential('web runtime production build (weapp-vite-web-demo)', () => {
+  it('bundles only the selected web runtime without leaking virtual ids', async () => {
+    await fs.remove(WEB_DIST_ROOT)
+    await execa('node', [CLI_PATH, 'build', WEB_DEMO_ROOT, '--platform', 'h5'], {
+      cwd: ROOT,
+    })
+
+    const javascript = await readJavaScriptOutput(WEB_DIST_ROOT)
+    expect(javascript.files.length).toBeGreaterThan(0)
+    expect(collectRuntimeVirtualModuleReferences(javascript.code)).toEqual([])
+    expect(javascript.code).not.toContain('wevu/internal-runtime')
+    expect(javascript.code).not.toContain('__wevu_runtime')
+  })
+})
 
 describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () => {
   let browser: Browser | undefined
@@ -392,7 +363,7 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
           && snapshot.data
           && snapshot.data.from === 'index'
           && Array.isArray(snapshot.data.scenarios)
-          && snapshot.data.selectedScenarioId === 'component-flow'
+          && snapshot.data.selectedScenarioId === 'component-flow',
         )
       }, { timeout: 45_000 }).toBe(true)
 
@@ -403,7 +374,7 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
           snapshot
           && snapshot.data
           && snapshot.data.hello?.title === 'Hello weapp-vite'
-          && snapshot.data.platform === 'web'
+          && snapshot.data.platform === 'web',
         )
       }, { timeout: 45_000 }).toBe(true)
     }

@@ -3,6 +3,7 @@ import type { AstEngineName } from '../../../ast'
 import type { WeappViteConfig } from '../../../types'
 import type { EncodedSourceMapLike } from '../../../utils/sourcemap'
 import {
+  WEAPP_VITE_RUNTIME_VIRTUAL_ID,
   WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
@@ -60,7 +61,12 @@ export function mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(source: string)
   traverse(ast, {
     ImportDeclaration(path) {
       const sourceValue = path.node.source.value
-      if (sourceValue !== 'wevu' && sourceValue !== 'vue' && sourceValue !== 'wevu/internal-runtime') {
+      if (
+        sourceValue !== 'wevu'
+        && sourceValue !== 'vue'
+        && sourceValue !== 'wevu/internal-runtime'
+        && sourceValue !== WEAPP_VITE_RUNTIME_VIRTUAL_ID
+      ) {
         return
       }
       for (const specifier of path.node.specifiers) {

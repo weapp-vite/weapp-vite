@@ -1,5 +1,6 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
+import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import path from 'pathe'
 import {
   createPageEntryMatcher,
@@ -22,6 +23,8 @@ const WEVU_RUNTIME_MODULE_HINTS = [
   '"wevu"',
   '\'wevu/internal-runtime\'',
   '"wevu/internal-runtime"',
+  `'${WEAPP_VITE_RUNTIME_VIRTUAL_ID}'`,
+  `"${WEAPP_VITE_RUNTIME_VIRTUAL_ID}"`,
 ]
 const PAGE_FEATURE_HOOK_HINTS = [
   'onPageScroll',

@@ -3,6 +3,7 @@ import type { CompilerContext } from '@/context'
 import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import { wrapPlugin } from 'vite-plugin-performance'
 import { resolveWeappAutoRoutesConfig } from '@/autoRoutesConfig'
+import { createSelectedRuntimeProviderPlugin, resolveRuntimeProvider } from '@/runtimeProviders'
 import { asset } from './asset'
 import { autoImport } from './autoImport'
 import { autoRoutes } from './autoRoutes'
@@ -59,8 +60,14 @@ export function vitePluginWeapp(
   subPackageMeta?: SubPackageMetaValue,
 ): Plugin<WeappVitePluginApi>[] {
   const libModeEnabled = ctx.configService?.weappLibConfig?.enabled
-  const groups: Plugin[][] = [[createContextPlugin(ctx)], preflight(ctx), vue(ctx)]
-  if (!libModeEnabled) {
+  const vueEnabled = ctx.configService?.weappViteConfig?.vue?.enable !== false
+  const runtimeProvider = resolveRuntimeProvider('miniprogram', vueEnabled ? 'vue' : 'native')
+  const groups: Plugin[][] = [
+    [createContextPlugin(ctx), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
+    preflight(ctx),
+    vue(ctx, { enable: vueEnabled }),
+  ]
+  if (vueEnabled && !libModeEnabled) {
     groups.push(wevu(ctx))
   }
   const autoRoutesEnabled = resolveWeappAutoRoutesConfig(ctx.configService?.weappViteConfig?.autoRoutes).enabled
