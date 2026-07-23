@@ -1,5 +1,11 @@
 # @weapp-core/shared
 
+## 3.0.6
+
+### Patch Changes
+
+- 🐛 **引入声明式 runtime provider 契约，让原生小程序、wevu Vue SFC 与 Web 构建通过稳定虚拟入口选择各自运行时，并在入口缺失或契约版本不匹配时给出明确诊断。** [#736](https://github.com/weapp-vite/weapp-vite/pull/736) by @sonofmagic
+
 ## 3.0.5
 
 ### Patch Changes

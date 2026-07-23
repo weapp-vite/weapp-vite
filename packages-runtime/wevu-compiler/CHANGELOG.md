@@ -1,5 +1,21 @@
 # @wevu/compiler
 
+## 6.18.5
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b) by @sonofmagic
+  - 默认 catalog 变更键：@vue/language-core, oxc-parser, postcss, rolldown, sass, stylelint, vue-tsc, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+  - 同时适配 Monaco Editor 0.56 的 worker 公开入口，恢复 Dashboard 构建。
+
+- 🐛 **引入声明式 runtime provider 契约，让原生小程序、wevu Vue SFC 与 Web 构建通过稳定虚拟入口选择各自运行时，并在入口缺失或契约版本不匹配时给出明确诊断。** [#736](https://github.com/weapp-vite/weapp-vite/pull/736) by @sonofmagic
+- 📦 Updated 4 dependencies [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/ast@6.18.5`, `rolldown-require@2.0.22`, `@weapp-core/constants@0.1.14`, `@weapp-core/shared@3.0.6`
+
+  </details>
+
 ## 6.18.4
 
 ### Patch Changes

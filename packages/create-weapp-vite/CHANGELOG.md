@@ -1,5 +1,25 @@
 # create-weapp-vite
 
+## 2.5.6
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b) by @sonofmagic
+  - 默认 catalog 变更键：@vue/language-core, oxc-parser, postcss, rolldown, sass, stylelint, vue-tsc, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+  - 同时适配 Monaco Editor 0.56 的 worker 公开入口，恢复 Dashboard 构建。
+
+- 🐛 **修复 Vue SFC 使用裸包路径的 `<style src>` 时，外部样式加载失败并将完整 SFC 源码错误送入 CSS 编译的问题；同时修复 Windows 下 CJS 外部依赖绝对路径中的反斜杠被错误转义，确保 `app.json.ts` 脚本配置可以稳定加载依赖。** [#729](https://github.com/weapp-vite/weapp-vite/pull/729) by @sonofmagic
+
+- 🐛 **支持在 headless 和浏览器模拟器中加载通过 `Component()` 注册的组件式页面，并修复 wevu 创建期 setup 同步状态被原生初始数据覆盖的问题。** [`b9be44a`](https://github.com/weapp-vite/weapp-vite/commit/b9be44a929932241af31cdb284ee6271c6ff8ac3) by @sonofmagic
+
+- 🐛 **使用 Vite/Rolldown 真实模块图追踪静态与动态 import、别名、npm、外部链接源码以及小程序 template、style、JSON、WXS、layout 和 `usingComponents` sidecar 依赖，修复增量构建中 importer 传播不完整、无关入口被重复标脏及 sidecar 新增删除失效不稳定的问题。** [#735](https://github.com/weapp-vite/weapp-vite/pull/735) by @sonofmagic
+
+- 🐛 **引入声明式 runtime provider 契约，让原生小程序、wevu Vue SFC 与 Web 构建通过稳定虚拟入口选择各自运行时，并在入口缺失或契约版本不匹配时给出明确诊断。** [#736](https://github.com/weapp-vite/weapp-vite/pull/736) by @sonofmagic
+
+- 🐛 **修复 stateful HMR 对脚本 sidecar 源文件的边界识别与更新传播，增强 mp core 模拟器的宿主 `wx` 调用、页面方法超时、路由元数据和页面生命周期栈语义，使真实微信开发者工具与 headless 测试在导航及运行时状态上保持一致。** [`86cfba7`](https://github.com/weapp-vite/weapp-vite/commit/86cfba7065ec5bd9915e9023edba3ad7f3a67bb1) by @sonofmagic
+- 📦 **Dependencies** [`9097806`](https://github.com/weapp-vite/weapp-vite/commit/9097806cf6a88144ddb161532dd77bbf78a44ccb)
+  → `@weapp-core/shared@3.0.6`, `@weapp-core/init@6.0.12`
+
 ## 2.5.5
 
 ### Patch Changes

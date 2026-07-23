@@ -1,5 +1,16 @@
 # weapp-ide-cli
 
+## 6.0.0
+
+### Major Changes
+
+- 🚀 **升级 execa 10，并将最低 Node.js 版本提升至 22。** [`4d87781`](https://github.com/weapp-vite/weapp-vite/commit/4d877818a53f168725e25eeaed5e4bc0accfc630) by @sonofmagic
+
+### Patch Changes
+
+- 📦 **Dependencies** [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b)
+  → `@weapp-vite/miniprogram-automator@1.2.8`, `@weapp-core/shared@3.0.6`, `@weapp-vite/devtools-runtime@0.4.9`
+
 ## 5.4.12
 
 ### Patch Changes

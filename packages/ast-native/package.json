@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/ast-native",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "weapp-vite Rust/Oxc native AST analysis prototype",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
