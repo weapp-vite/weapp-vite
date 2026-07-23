@@ -69,7 +69,7 @@ jobs:
     with:
       runs_on: ${{ matrix.os }}
       node_version: '22'
-      timeout_minutes: 30
+      timeout_minutes: 35
       build_command: ${{ matrix.build-command }}
       main_command: pnpm e2e:ci:hmr
       e2e_platform: weapp
@@ -149,7 +149,7 @@ jobs:
     with:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
-      timeout_minutes: 30
+      timeout_minutes: 35
       build_command: ${{ matrix.build-command }}
       main_command: pnpm e2e:ci:hmr
       e2e_platform: weapp

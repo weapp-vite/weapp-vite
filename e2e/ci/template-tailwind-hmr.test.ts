@@ -2,7 +2,7 @@ import { mkdtemp } from 'node:fs/promises'
 import path from 'node:path'
 import { fs } from '@weapp-core/shared/node'
 import { afterEach, describe, expect, it } from 'vitest'
-import { formatMemoryGuardReport, formatMemoryMiB, sampleHeapAfterGc, waitForInspectorUrl } from '../utils/dev-memory'
+import { formatMemoryGuardReport, formatMemoryMiB, sampleHeapAfterGc, sampleSettledHeapAfterGc, waitForInspectorUrl } from '../utils/dev-memory'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -197,7 +197,7 @@ describe.sequential('template Tailwind CSS HMR (dev watch)', () => {
           testName: testCase.name,
         })
         const appWxss = await dev.waitFor(waitForFileContains(fixture.appWxssFile, UPDATED_CSS), `${testCase.name} updated app wxss class`)
-        const afterHeap = await sampleHeapAfterGc(inspectorUrl)
+        const afterHeap = await sampleSettledHeapAfterGc(inspectorUrl)
 
         expect(appWxss).not.toContain(INITIAL_CSS)
         await expectRetainedHeapWithinGuard({

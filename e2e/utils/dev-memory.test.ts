@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { sampleHeapAfterGc } from './dev-memory'
+import { sampleHeapAfterGc, waitForHeapUsageToSettle } from './dev-memory'
 
 class HangingWebSocket extends EventTarget {
   static instances: HangingWebSocket[] = []
@@ -31,6 +31,38 @@ class SilentCommandWebSocket extends EventTarget {
 const originalWebSocket = globalThis.WebSocket
 
 describe('dev-memory inspector sampling', () => {
+  it('waits for transient retained heap usage to settle', async () => {
+    const samples = [
+      { heapUsed: 460, rss: 600 },
+      { heapUsed: 260, rss: 400 },
+      { heapUsed: 262, rss: 402 },
+      { heapUsed: 263, rss: 403 },
+    ]
+    const sampleUsage = vi.fn(async () => samples.shift()!)
+
+    await expect(waitForHeapUsageToSettle(sampleUsage, {
+      intervalMs: 0,
+      maxAttempts: 4,
+      toleranceBytes: 8,
+    })).resolves.toEqual({ heapUsed: 263, rss: 403 })
+    expect(sampleUsage).toHaveBeenCalledTimes(4)
+  })
+
+  it('returns the latest sample when heap usage never settles', async () => {
+    const samples = [
+      { heapUsed: 100, rss: 200 },
+      { heapUsed: 120, rss: 220 },
+      { heapUsed: 140, rss: 240 },
+      { heapUsed: 160, rss: 260 },
+    ]
+
+    await expect(waitForHeapUsageToSettle(async () => samples.shift()!, {
+      intervalMs: 0,
+      maxAttempts: 4,
+      toleranceBytes: 8,
+    })).resolves.toEqual({ heapUsed: 160, rss: 260 })
+  })
+
   it('times out and closes when inspector WebSocket never opens', async () => {
     globalThis.WebSocket = HangingWebSocket as unknown as typeof WebSocket
 

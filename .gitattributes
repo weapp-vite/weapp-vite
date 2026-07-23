@@ -55,6 +55,8 @@ apps/** linguist-vendored
 *.sql             text
 *.styl            text eol=lf
 *.wxss            text eol=lf diff=css
+*.wxml            text eol=lf diff=html
+*.wxs             text eol=lf
 *.tag             text
 *.ts              text eol=lf
 *.tsx             text eol=lf

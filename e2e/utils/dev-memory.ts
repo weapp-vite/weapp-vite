@@ -15,6 +15,15 @@ interface InspectorResponse<T = unknown> {
 
 const INSPECTOR_URL_RE = /Debugger listening on (ws:\/\/\S+)/
 const DEFAULT_INSPECTOR_COMMAND_TIMEOUT_MS = 5_000
+const DEFAULT_HEAP_SETTLEMENT_ATTEMPTS = 6
+const DEFAULT_HEAP_SETTLEMENT_INTERVAL_MS = 500
+const DEFAULT_HEAP_SETTLEMENT_TOLERANCE_BYTES = 8 * 1024 * 1024
+
+export interface HeapSettlementOptions {
+  intervalMs?: number
+  maxAttempts?: number
+  toleranceBytes?: number
+}
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -167,6 +176,50 @@ export async function sampleHeapAfterGc(
   finally {
     socket.close()
   }
+}
+
+export async function waitForHeapUsageToSettle(
+  sampleUsage: () => Promise<DevHeapUsage>,
+  options: HeapSettlementOptions = {},
+) {
+  const intervalMs = options.intervalMs ?? DEFAULT_HEAP_SETTLEMENT_INTERVAL_MS
+  const maxAttempts = options.maxAttempts ?? DEFAULT_HEAP_SETTLEMENT_ATTEMPTS
+  const toleranceBytes = options.toleranceBytes ?? DEFAULT_HEAP_SETTLEMENT_TOLERANCE_BYTES
+  let previous: DevHeapUsage | undefined
+  let stablePairs = 0
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const current = await sampleUsage()
+    if (previous && Math.abs(current.heapUsed - previous.heapUsed) <= toleranceBytes) {
+      stablePairs += 1
+      if (stablePairs >= 2) {
+        return current
+      }
+    }
+    else {
+      stablePairs = 0
+    }
+
+    previous = current
+    if (attempt < maxAttempts - 1) {
+      await sleep(intervalMs)
+    }
+  }
+
+  if (!previous) {
+    throw new Error('Heap settlement requires at least one sample attempt.')
+  }
+  return previous
+}
+
+export function sampleSettledHeapAfterGc(
+  inspectorUrl: string,
+  options: HeapSettlementOptions = {},
+) {
+  return waitForHeapUsageToSettle(
+    () => sampleHeapAfterGc(inspectorUrl),
+    options,
+  )
 }
 
 export function formatMemoryMiB(bytes: number) {
