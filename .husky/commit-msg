@@ -1,4 +1,19 @@
 #!/usr/bin/env sh
 set -e
 
-pnpm exec commitlint --edit "$1"
+repo_root="$(git rev-parse --show-toplevel)"
+workspace_root="$repo_root"
+
+while [ "$workspace_root" != "/" ]; do
+  if [ -x "$workspace_root/node_modules/.bin/commitlint" ]; then
+    break
+  fi
+  workspace_root="$(dirname "$workspace_root")"
+done
+
+if [ ! -x "$workspace_root/node_modules/.bin/commitlint" ]; then
+  echo "commitlint binary not found from $repo_root upward" >&2
+  exit 1
+fi
+
+"$workspace_root/node_modules/.bin/commitlint" --edit "$1"
