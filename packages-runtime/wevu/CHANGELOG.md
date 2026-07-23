@@ -1,5 +1,19 @@
 # wevu
 
+## 6.18.5
+
+### Patch Changes
+
+- 🐛 **支持在 headless 和浏览器模拟器中加载通过 `Component()` 注册的组件式页面，并修复 wevu 创建期 setup 同步状态被原生初始数据覆盖的问题。** [`b9be44a`](https://github.com/weapp-vite/weapp-vite/commit/b9be44a929932241af31cdb284ee6271c6ff8ac3) by @sonofmagic
+
+- 🐛 **引入声明式 runtime provider 契约，让原生小程序、wevu Vue SFC 与 Web 构建通过稳定虚拟入口选择各自运行时，并在入口缺失或契约版本不匹配时给出明确诊断。** [#736](https://github.com/weapp-vite/weapp-vite/pull/736) by @sonofmagic
+- 📦 Updated 5 dependencies [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b)
+  <details><summary>Details</summary>
+
+  `@wevu/compiler@6.18.5`, `@weapp-core/constants@0.1.14`, `@weapp-core/shared@3.0.6`, `@wevu/web-apis@1.2.28`, `@wevu/api@0.2.12`
+
+  </details>
+
 ## 6.18.4
 
 ### Patch Changes

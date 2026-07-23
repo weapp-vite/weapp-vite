@@ -1,5 +1,12 @@
 # @wevu/api
 
+## 0.2.12
+
+### Patch Changes
+
+- 📦 **Dependencies** [`9097806`](https://github.com/weapp-vite/weapp-vite/commit/9097806cf6a88144ddb161532dd77bbf78a44ccb)
+  → `@weapp-core/shared@3.0.6`
+
 ## 0.2.11
 
 ### Patch Changes

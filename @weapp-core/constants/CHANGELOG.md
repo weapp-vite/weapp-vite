@@ -1,5 +1,13 @@
 # @weapp-core/constants
 
+## 0.1.14
+
+### Patch Changes
+
+- 🐛 **使用 Vite/Rolldown 真实模块图追踪静态与动态 import、别名、npm、外部链接源码以及小程序 template、style、JSON、WXS、layout 和 `usingComponents` sidecar 依赖，修复增量构建中 importer 传播不完整、无关入口被重复标脏及 sidecar 新增删除失效不稳定的问题。** [#735](https://github.com/weapp-vite/weapp-vite/pull/735) by @sonofmagic
+
+- 🐛 **引入声明式 runtime provider 契约，让原生小程序、wevu Vue SFC 与 Web 构建通过稳定虚拟入口选择各自运行时，并在入口缺失或契约版本不匹配时给出明确诊断。** [#736](https://github.com/weapp-vite/weapp-vite/pull/736) by @sonofmagic
+
 ## 0.1.13
 
 ### Patch Changes

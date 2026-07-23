@@ -1,5 +1,15 @@
 # @weapp-vite/ast
 
+## 6.18.5
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b) by @sonofmagic
+  - 默认 catalog 变更键：@vue/language-core, oxc-parser, postcss, rolldown, sass, stylelint, vue-tsc, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+  - 同时适配 Monaco Editor 0.56 的 worker 公开入口，恢复 Dashboard 构建。
+- 📦 **Dependencies** [`9097806`](https://github.com/weapp-vite/weapp-vite/commit/9097806cf6a88144ddb161532dd77bbf78a44ccb)
+  → `@weapp-core/shared@3.0.6`
+
 ## 6.18.4
 
 ### Patch Changes

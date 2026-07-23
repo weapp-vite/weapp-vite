@@ -1,5 +1,15 @@
 # @mpcore/simulator
 
+## 0.2.0
+
+### Minor Changes
+
+- ✨ **修复 stateful HMR 对脚本 sidecar 源文件的边界识别与更新传播，增强 mp core 模拟器的宿主 `wx` 调用、页面方法超时、路由元数据和页面生命周期栈语义，使真实微信开发者工具与 headless 测试在导航及运行时状态上保持一致。** [`86cfba7`](https://github.com/weapp-vite/weapp-vite/commit/86cfba7065ec5bd9915e9023edba3ad7f3a67bb1) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **支持在 headless 和浏览器模拟器中加载通过 `Component()` 注册的组件式页面，并修复 wevu 创建期 setup 同步状态被原生初始数据覆盖的问题。** [`b9be44a`](https://github.com/weapp-vite/weapp-vite/commit/b9be44a929932241af31cdb284ee6271c6ff8ac3) by @sonofmagic
+
 ## 0.1.4
 
 ### Patch Changes
