@@ -57,7 +57,6 @@ describe.sequential('HMR html template (dev watch)', () => {
       throw new Error('Failed to insert marker into .html source.')
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -103,7 +102,6 @@ describe.sequential('HMR html template (dev watch)', () => {
     const marker = createHmrMarker('ADD-HTML-TEMPLATE', platform)
     const srcFile = path.join(TEMP_SRC_DIR, 'add-test.html')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',

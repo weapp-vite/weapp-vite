@@ -98,7 +98,6 @@ describe.sequential('HMR shared template and wxs dependencies (dev watch)', () =
     await fs.writeFile(SHARED_HMR_PATHS.hmrPageWxml, sharedHmrPageWxml, 'utf8')
     await fs.writeFile(SHARED_HMR_PATHS.hmrSfcVue, sharedHmrVueSource, 'utf8')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',

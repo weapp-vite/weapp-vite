@@ -36,7 +36,6 @@ describe.sequential('HMR add — page-level file additions (dev watch)', () => {
     const marker = createHmrMarker('ADD-TEMPLATE', platform)
     const srcFile = path.join(TEMP_SRC_DIR, 'add-test.wxml')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       all: true,
@@ -60,7 +59,6 @@ describe.sequential('HMR add — page-level file additions (dev watch)', () => {
     const marker = createHmrMarker('ADD-STYLE', platform)
     const srcFile = path.join(TEMP_SRC_DIR, 'add-test.wxss')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -84,7 +82,6 @@ describe.sequential('HMR add — page-level file additions (dev watch)', () => {
     const marker = createHmrMarker('ADD-SCRIPT', platform)
     const srcFile = path.join(TEMP_SRC_DIR, 'add-test.ts')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -108,7 +105,6 @@ describe.sequential('HMR add — page-level file additions (dev watch)', () => {
     const marker = createHmrMarker('ADD-JSON', platform)
     const srcFile = path.join(TEMP_SRC_DIR, 'add-test.json')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -147,7 +143,6 @@ describe.sequential('HMR add — page-level file additions (dev watch)', () => {
       '</style>',
     ].join('\n')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -177,7 +172,6 @@ describe.sequential('HMR add — component-level file additions (dev watch)', ()
     const srcStyle = path.join(COMP_TEMP_SRC_DIR, 'index.wxss')
     const srcJson = path.join(COMP_TEMP_SRC_DIR, 'index.json')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -209,7 +203,6 @@ describe.sequential('HMR add — component-level file additions (dev watch)', ()
     const srcJson = path.join(COMP_TEMP_SRC_DIR, 'index.json')
     const srcExtraStyle = path.join(COMP_TEMP_SRC_DIR, 'extra.wxss')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',

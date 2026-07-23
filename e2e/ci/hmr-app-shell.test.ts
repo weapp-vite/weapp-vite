@@ -122,7 +122,6 @@ describe.sequential('app shell HMR (dev watch)', () => {
     const updateMarker = createHmrMarker('APP-SHELL', 'weapp')
     const updatedAppSource = originalAppSource.replace(INITIAL_APP_SHELL_MARKER, updateMarker)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       cwd: APP_ROOT,
       env: createDevProcessEnv(),
@@ -160,7 +159,6 @@ describe.sequential('app shell HMR (dev watch)', () => {
 
     await fs.writeFile(TEMPLATE_APP_VUE_PATH, originalAppSource, 'utf8')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', TEMPLATE_ROOT, '--platform', 'weapp', '--skipNpm'], {
       cwd: TEMPLATE_ROOT,
       env: createDevProcessEnv(),

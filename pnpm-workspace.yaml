@@ -114,7 +114,7 @@ allowBuilds:
   bufferutil: false
   cos-wx-sdk-v5: false
   esbuild: false
-  gridstack: set this to true or false
+  gridstack: false
   minidev: false
   msgpackr-extract: false
   oxc-resolver: true

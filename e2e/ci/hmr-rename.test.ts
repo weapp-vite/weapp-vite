@@ -66,7 +66,6 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
     const marker = createHmrMarker('RENAME-TEMPLATE', platform)
     const updatedSource = originalSource.replace('HMR', marker)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       all: true,
@@ -102,7 +101,6 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
     const marker = createHmrMarker('RENAME-STYLE', platform)
     const updatedSource = originalSource.replace('.page {', `.page { /* ${marker} */`)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -137,7 +135,6 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
     const marker = createHmrMarker('RENAME-SCRIPT', platform)
     const updatedSource = replaceHmrScriptName(originalSource, marker)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -175,7 +172,6 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
     nextJson.hmrMarker = marker
     const updatedSource = `${JSON.stringify(nextJson, null, 2)}\n`
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -211,7 +207,6 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
     const marker = createHmrMarker('RENAME-SFC', platform)
     const updatedSource = replaceHmrSfcTitle(originalSource, marker)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',

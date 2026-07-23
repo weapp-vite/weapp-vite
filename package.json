@@ -234,7 +234,7 @@
     "eslint": "catalog:",
     "esrap": "^2.3.0",
     "estree-walker": "catalog:",
-    "execa": "^9.6.1",
+    "execa": "^10.0.0",
     "express": "^5.2.1",
     "fast-glob": "^3.3.3",
     "fast-sort": "^3.4.1",

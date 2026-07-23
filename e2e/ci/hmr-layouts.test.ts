@@ -157,7 +157,6 @@ describe.sequential('HMR layouts matrix (dev watch)', () => {
       originalSources.set(testCase.sourcePath, await fs.readFile(testCase.sourcePath, 'utf8'))
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'pipe',

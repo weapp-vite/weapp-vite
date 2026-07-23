@@ -283,7 +283,6 @@ export function startDevProcess(
 
   child.stdout?.on('data', appendOutput)
   child.stderr?.on('data', appendOutput)
-  child.all?.on('data', appendOutput)
 
   const settledExit: Promise<DevProcessExitInfo> = child
     .then(result => ({
@@ -353,7 +352,7 @@ export function startDevProcess(
     if (typeof child.pid === 'number') {
       await terminatePid(child.pid, forceKillDelayMs)
     }
-    else if (child.exitCode == null) {
+    else if (child.nodeChildProcess.exitCode == null) {
       child.kill('SIGTERM')
     }
     await waitForExitWithTimeout(settledExit, forceKillDelayMs + 1_000)

@@ -1,5 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- Web E2E 需要 execa 管理长驻 dev server、采集日志并清理子进程。 */
-import type { ExecaChildProcess } from 'execa'
+import type { Subprocess } from 'execa'
 import type { Browser, Page } from 'playwright'
 import { existsSync } from 'node:fs'
 import process from 'node:process'
@@ -34,12 +34,12 @@ if (!BROWSER_AVAILABLE) {
   )
 }
 
-async function waitForWebServerReady(server: ExecaChildProcess, logsRef: { value: string }, timeoutMs = 60_000) {
+async function waitForWebServerReady(server: Subprocess, logsRef: { value: string }, timeoutMs = 60_000) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
-    if (server.exitCode !== null) {
+    if (server.nodeChildProcess.exitCode !== null) {
       throw new Error([
-        `[web-e2e] Web dev server exited early with code ${server.exitCode}.`,
+        `[web-e2e] Web dev server exited early with code ${server.nodeChildProcess.exitCode}.`,
         logsRef.value.trim(),
       ].join('\n'))
     }
@@ -59,7 +59,7 @@ async function waitForWebServerReady(server: ExecaChildProcess, logsRef: { value
   ].join('\n'))
 }
 
-function createServerLogger(server: ExecaChildProcess) {
+function createServerLogger(server: Subprocess) {
   const logsRef = { value: '' }
   server.stdout?.on('data', (chunk) => {
     logsRef.value += String(chunk)
@@ -70,13 +70,13 @@ function createServerLogger(server: ExecaChildProcess) {
   return logsRef
 }
 
-async function stopWebServer(server?: ExecaChildProcess) {
-  if (!server || server.exitCode !== null) {
+async function stopWebServer(server?: Subprocess) {
+  if (!server || server.nodeChildProcess.exitCode !== null) {
     return
   }
   server.kill('SIGTERM')
   const forceKillTimer = setTimeout(() => {
-    if (server.exitCode === null) {
+    if (server.nodeChildProcess.exitCode === null) {
       server.kill('SIGKILL')
     }
   }, 5_000)
@@ -318,7 +318,7 @@ describe.sequential('web runtime production build (weapp-vite-web-demo)', () => 
 
 describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () => {
   let browser: Browser | undefined
-  let devServer: ExecaChildProcess | undefined
+  let devServer: Subprocess | undefined
 
   beforeAll(async () => {
     devServer = execa('node', [

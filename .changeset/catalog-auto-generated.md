@@ -1,8 +1,11 @@
 ---
+'@weapp-vite/ast': patch
+'@weapp-vite/ast-native': patch
 '@weapp-vite/dashboard': patch
 '@weapp-vite/miniprogram-automator': patch
 '@weapp-vite/web': patch
 '@wevu/compiler': patch
+'create-weapp-vite': patch
 'weapp-vite': patch
 ---
 

@@ -299,7 +299,6 @@ describe.sequential('external linked Vue component HMR', () => {
   it('updates srcRoot-external Vue components and emits external plain/config deps in dev', async () => {
     await fs.remove(DIST_ROOT)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', [CLI_PATH, 'dev', '.', '--platform', 'weapp', '--skipNpm'], {
       cwd: PROJECT_ROOT,
       env: createDevProcessEnv(),

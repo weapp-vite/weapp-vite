@@ -52,7 +52,6 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
       throw new Error('Failed to insert marker into .wxml source.')
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -105,7 +104,6 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
       throw new Error('Failed to insert marker into .wxss source.')
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -157,7 +155,6 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
       throw new Error('Failed to insert marker into .ts script source.')
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -209,7 +206,6 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
     jsonData.hmrMarker = marker
     const updatedSource = `${JSON.stringify(jsonData, null, 2)}\n`
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -277,7 +273,6 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
       throw new Error('Failed to insert marker into component .wxml source.')
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -330,7 +325,6 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
       throw new Error('Failed to insert marker into component .wxss source.')
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -382,7 +376,6 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
       throw new Error('Failed to insert marker into component .ts script source.')
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -434,7 +427,6 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     jsonData.hmrMarker = marker
     const updatedSource = JSON.stringify(jsonData, null, 2)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -502,7 +494,6 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
       throw new Error('Failed to insert marker into .vue template section.')
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -556,7 +547,6 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
       throw new Error('Failed to insert marker into .vue style section.')
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -611,7 +601,6 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
       throw new Error('Failed to insert marker into .vue script section.')
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
