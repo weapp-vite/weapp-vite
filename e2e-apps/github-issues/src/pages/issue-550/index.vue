@@ -1,16 +1,31 @@
 <script setup lang="ts">
 import { computed } from 'wevu'
-import { useRoute } from 'wevu/router'
+import { useRoute, useRouter } from 'wevu/router'
 
 definePageJson({
   navigationBarTitleText: 'issue-550',
 })
 
 const route = useRoute()
+const router = useRouter()
 const routeName = computed(() => route.name ?? '')
 const routeMatchedName = computed(() => route.matched?.[0]?.name ?? '')
 
-function _runE2E() {
+function routerBack() {
+  return router.back()
+}
+
+function nativeBack() {
+  return wx.navigateBack()
+}
+
+function _runE2E(action?: 'nativeBack' | 'routerBack') {
+  if (action === 'routerBack') {
+    return routerBack()
+  }
+  if (action === 'nativeBack') {
+    return nativeBack()
+  }
   return {
     ok: route.name === 'pages/issue-550/index',
     name: route.name,
@@ -31,6 +46,12 @@ function _runE2E() {
     >
       route name = {{ routeName }}
     </view>
+    <button @tap="routerBack">
+      router back
+    </button>
+    <button @tap="nativeBack">
+      native back
+    </button>
   </view>
 </template>
 

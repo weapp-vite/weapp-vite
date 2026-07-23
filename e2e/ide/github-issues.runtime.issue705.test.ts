@@ -13,6 +13,8 @@ const PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_push_result__'
 const SWITCH_TAB_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_switch_tab_result__'
 const TAB_PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_tab_push_result__'
 const STORAGE_TIMEOUT = 8_000
+const ISSUE_PAGE_PATH = '/pages/issue-705/index'
+const TARGET_PAGE_PATH = '/pages/issue-550/index'
 
 async function removeStorage(miniProgram: any, key: string) {
   await miniProgram.callWxMethodWithOptions('removeStorageSync', {
@@ -78,6 +80,24 @@ async function waitForIssue705TabReady(page: any) {
     await new Promise(resolve => setTimeout(resolve, 200))
   }
   throw new Error(`Timed out waiting for issue #705 tab readiness: ${JSON.stringify(latest)}`)
+}
+
+async function waitForIssue705Page(miniProgram: any) {
+  const page = await waitForCurrentPagePath(miniProgram, ISSUE_PAGE_PATH, STORAGE_TIMEOUT)
+  if (!page || !(await isIssue705PageReady(page))) {
+    throw new Error('Failed to return to issue-705 page')
+  }
+  return page
+}
+
+async function navigateBackFromHost(miniProgram: any) {
+  if (typeof miniProgram.navigateBack === 'function') {
+    await miniProgram.navigateBack()
+    return
+  }
+  await miniProgram.callWxMethodWithOptions('navigateBack', {
+    timeout: 12_000,
+  })
 }
 
 describe.sequential('e2e app: github-issues / issue #705', () => {
@@ -151,6 +171,68 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
       }, 'push').catch(() => undefined)
       const tabPushResult = await waitForStorage(miniProgram, TAB_PUSH_RESULT_STORAGE_KEY)
       expectNavigationResult(tabPushResult, 'pages/issue-705-tab/index')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('restores route state after every back path and allows pushing the same target again', async (ctx) => {
+    let miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      for (const backMode of ['router', 'native', 'system'] as const) {
+        await removeStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
+        const issuePage = await relaunchPage(
+          miniProgram,
+          ISSUE_PAGE_PATH,
+          undefined,
+          30_000,
+          {
+            readiness: isIssue705PageReady,
+          },
+        )
+        if (!issuePage) {
+          throw new Error(`Failed to launch issue-705 page for ${backMode} back`)
+        }
+        miniProgram = await getSharedMiniProgram(ctx)
+
+        await issuePage.callMethodWithOptions('_runE2E', {
+          timeout: 12_000,
+        }, 'push').catch(() => undefined)
+        const firstPushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
+        expect(firstPushResult.failure).toBeNull()
+        expectNavigationResult(firstPushResult, 'pages/issue-705/index')
+
+        const targetPage = await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT)
+        if (!targetPage) {
+          throw new Error(`Failed to navigate to issue-705 target for ${backMode} back`)
+        }
+
+        if (backMode === 'system') {
+          await navigateBackFromHost(miniProgram)
+        }
+        else {
+          await targetPage.callMethodWithOptions('_runE2E', {
+            timeout: 12_000,
+          }, backMode === 'router' ? 'routerBack' : 'nativeBack').catch(() => undefined)
+        }
+
+        const returnedPage = await waitForIssue705Page(miniProgram)
+        const returnedSnapshot = await returnedPage.callMethodWithOptions('_runE2E', {
+          timeout: 5_000,
+        })
+        expect(returnedSnapshot.route.path).toBe('pages/issue-705/index')
+        expect(returnedSnapshot.routerRoute.path).toBe('pages/issue-705/index')
+
+        await removeStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
+        await returnedPage.callMethodWithOptions('_runE2E', {
+          timeout: 12_000,
+        }, 'push').catch(() => undefined)
+        const secondPushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
+        expect(secondPushResult.failure).toBeNull()
+        expectNavigationResult(secondPushResult, 'pages/issue-705/index')
+        expect(await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT)).toBeTruthy()
+      }
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

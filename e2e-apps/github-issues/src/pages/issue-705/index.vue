@@ -22,6 +22,11 @@ function createSnapshot() {
       fullPath: route.fullPath,
       name: route.name,
     },
+    routerRoute: {
+      path: router.currentRoute.path,
+      fullPath: router.currentRoute.fullPath,
+      name: router.currentRoute.name,
+    },
     hooks: hookCalls.slice(),
     failure: lastFailure,
     ready,
@@ -65,15 +70,19 @@ onReady(() => {
   ready = true
 })
 
+async function pushToTarget() {
+  hookCalls.length = 0
+  lastFailure = null
+  wx.setStorageSync(PUSH_RESULT_STORAGE_KEY, {
+    stage: 'started',
+  })
+  await router.push('/pages/issue-550/index')
+  return createSnapshot()
+}
+
 async function _runE2E(action?: 'push' | 'switchTab') {
   if (action === 'push') {
-    hookCalls.length = 0
-    lastFailure = null
-    wx.setStorageSync(PUSH_RESULT_STORAGE_KEY, {
-      stage: 'started',
-    })
-    await router.push('/pages/issue-550/index')
-    return createSnapshot()
+    return pushToTarget()
   }
 
   if (action === 'switchTab') {
@@ -105,6 +114,12 @@ defineExpose({
     <text class="issue705-title">
       issue-705 router route sync
     </text>
+    <button
+      class="issue705-push"
+      @tap="pushToTarget"
+    >
+      push target
+    </button>
   </view>
 </template>
 
@@ -121,5 +136,9 @@ defineExpose({
   font-size: 30rpx;
   font-weight: 700;
   color: #111827;
+}
+
+.issue705-push {
+  margin-top: 24rpx;
 }
 </style>

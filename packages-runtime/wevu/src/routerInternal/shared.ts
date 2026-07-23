@@ -2,6 +2,7 @@ export {
   createRouteLocation,
   parsePathInput,
   resolveCurrentRoute,
+  resolvePageRoute,
 } from './location'
 export {
   collectRouteNamesForRemoval,
