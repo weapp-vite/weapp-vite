@@ -41,7 +41,7 @@ jobs:
       - vscode-extension-vsix-e2e
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup-node-pnpm
         with:
@@ -51,7 +51,7 @@ jobs:
         run: pnpm --dir extensions/vscode run package:dry-run
 
       - name: Upload VSIX artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: vscode-extension-vsix
           path: extensions/vscode/.artifacts/*.vsix
@@ -65,7 +65,7 @@ jobs:
     needs: vscode-extension
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup-node-pnpm
         with:
@@ -84,7 +84,7 @@ jobs:
     needs: vscode-extension
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup-node-pnpm
         with:

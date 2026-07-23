@@ -72,7 +72,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup-node-pnpm
         with:
@@ -118,7 +118,7 @@ jobs:
 
       - name: Upload performance report artifact
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: auto-import-performance-report
           path: ${{ runner.temp }}/auto-import-performance-report
@@ -135,23 +135,23 @@ jobs:
 
     steps:
       - name: Check out head
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: head
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.inputs['templates-head-ref'] || github.sha }}
 
       - name: Check out baseline
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: baseline
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.inputs['templates-baseline-ref'] || github.event.repository.default_branch }}
 
-      - uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
-          version: 11.6.0
+          version: 11.16.0
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
           cache: pnpm
@@ -241,7 +241,7 @@ jobs:
 
       - name: Upload templates performance report artifact
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: templates-performance-report-${{ matrix.os }}
           path: ${{ runner.temp }}/templates-performance-report
