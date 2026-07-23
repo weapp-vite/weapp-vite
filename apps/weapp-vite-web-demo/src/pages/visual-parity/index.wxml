@@ -1,0 +1,73 @@
+<view class="matrix" data-visual-ready="true">
+  <view class="matrix__intro">
+    <text class="matrix__eyebrow">WEB RUNTIME / WEAPP</text>
+    <text class="matrix__title">基础组件视觉矩阵</text>
+    <text class="matrix__caption">同一份 WXML、WXSS 与页面状态</text>
+  </view>
+
+  <view class="matrix__section">
+    <text class="matrix__section-title">排版与 rpx</text>
+    <view class="type-row">
+      <text class="type-row__strong">Text / 32rpx</text>
+      <text class="type-row__muted">辅助文字 / 24rpx</text>
+    </view>
+    <view class="rpx-ruler">
+      <view class="rpx-ruler__half">375rpx</view>
+      <view class="rpx-ruler__half rpx-ruler__half--dark">375rpx</view>
+    </view>
+  </view>
+
+  <view class="matrix__section">
+    <text class="matrix__section-title">Image mode</text>
+    <view class="image-row">
+      <view class="image-cell">
+        <image class="image-cell__preview" src="/logo.png" mode="aspectFit" />
+        <text>aspectFit</text>
+      </view>
+      <view class="image-cell">
+        <image class="image-cell__preview" src="/logo.png" mode="aspectFill" />
+        <text>aspectFill</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="matrix__section">
+    <text class="matrix__section-title">Button</text>
+    <view class="button-row">
+      <button class="matrix-button" type="primary" bindtap="handleButtonTap">主要操作</button>
+      <button class="matrix-button" plain>次要操作</button>
+    </view>
+    <button class="matrix-button matrix-button--disabled" disabled>不可用</button>
+  </view>
+
+  <view class="matrix__section">
+    <text class="matrix__section-title">Input events</text>
+    <input
+      class="matrix-input"
+      value="{{inputValue}}"
+      placeholder="请输入内容"
+      maxlength="20"
+      confirm-type="done"
+      bindinput="handleInput"
+      bindfocus="handleFocus"
+      bindblur="handleBlur"
+      bindconfirm="handleConfirm"
+    />
+    <text class="event-value">{{inputEvent}}</text>
+  </view>
+
+  <view class="matrix__section matrix__section--scroll">
+    <text class="matrix__section-title">Scroll view</text>
+    <scroll-view class="matrix-scroll" scroll-x bindscroll="handleScroll">
+      <view class="matrix-scroll__track">
+        <view class="matrix-scroll__item">A</view>
+        <view class="matrix-scroll__item">B</view>
+        <view class="matrix-scroll__item">C</view>
+        <view class="matrix-scroll__item">D</view>
+      </view>
+    </scroll-view>
+    <text class="event-value">scroll: {{scrollEvent}}</text>
+  </view>
+
+  <view class="matrix__footer">固定在设备视口内</view>
+</view>

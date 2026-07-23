@@ -31,7 +31,7 @@ describe('weappWebPlugin', () => {
     expect(result?.code).toContain('export function useStyle')
   })
 
-  it('injects runtime warning options into entry initializer', async () => {
+  it('injects runtime warning and viewport options into entry initializer', async () => {
     const root = await mkdtemp(join(tmpdir(), 'weapp-web-entry-'))
     const srcRoot = join(root, 'src')
     const pageDir = join(srcRoot, 'pages/index')
@@ -49,6 +49,11 @@ describe('weappWebPlugin', () => {
           level: 'off',
           dedupe: false,
         },
+        viewport: {
+          mode: 'responsive',
+          maxWidth: 414,
+          desktopBreakpoint: 720,
+        },
       },
     })
     await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'build' } as any)
@@ -58,7 +63,8 @@ describe('weappWebPlugin', () => {
 
     const code = (plugin.load as ((...args: any[]) => any))?.call({} as any, entryId) as string
     expect(code).toContain('initializePageRoutes(["pages/index/index"]')
-    expect(code).toContain('"runtime":{"executionMode":"safe","warnings":{"level":"off","dedupe":false}}')
+    expect(code).toContain('"runtime":{"executionMode":"safe","warnings":{"level":"off","dedupe":false},"viewport":{"mode":"responsive","maxWidth":414,"desktopBreakpoint":720}}')
+    expect(code).toContain('"rpx":{"designWidth":750}')
   })
 
   it('loads runtime polyfill from a Vite fs path in virtual entry modules', async () => {

@@ -5,6 +5,7 @@
     "pages/about/index",
     "pages/interactive/index",
     "pages/interactive/detail",
+    "pages/visual-parity/index",
     "pages/product/detail/detail"
   ],
   "window": {},

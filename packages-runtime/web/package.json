@@ -66,6 +66,8 @@
     "lit": "^3.3.3",
     "magic-string": "catalog:",
     "pathe": "catalog:",
+    "postcss": "catalog:",
+    "postcss-selector-parser": "^7.1.4",
     "rolldown": "catalog:",
     "rolldown-require": "workspace:*"
   }

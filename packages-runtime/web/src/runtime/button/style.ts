@@ -9,6 +9,7 @@ weapp-button {
   display: block;
   width: 100%;
   box-sizing: border-box;
+  font-size: 18px;
 }
 
 weapp-button.weapp-btn--mini {
@@ -24,9 +25,8 @@ weapp-button .weapp-btn {
   border-radius: 5px;
   border: 1px solid #d9d9d9;
   padding: 0 16px;
-  height: 44px;
-  line-height: 44px;
-  font-size: 17px;
+  line-height: 2.55555556;
+  font-size: inherit;
   font-weight: 400;
   background-color: #f8f8f8;
   color: #000000;
@@ -94,10 +94,13 @@ weapp-button.button-hover.weapp-btn--plain .weapp-btn {
   background-color: rgba(0, 0, 0, 0.06);
 }
 
+weapp-button.weapp-btn--mini {
+  font-size: 13px;
+}
+
 weapp-button.weapp-btn--mini .weapp-btn {
   height: 32px;
   line-height: 32px;
-  font-size: 13px;
   padding: 0 12px;
   border-radius: 4px;
 }

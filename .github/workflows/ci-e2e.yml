@@ -167,6 +167,8 @@ jobs:
       build_command: pnpm build:pkgs:ci
       main_command: pnpm e2e:web
       install_playwright: true
+      artifact_name: web-runtime-visual-pr
+      artifact_path: .tmp/web-runtime-visual/**
     secrets: inherit
 
   workspace-hmr-pr:
@@ -217,4 +219,6 @@ jobs:
       build_command: pnpm build:pkgs:ci
       main_command: pnpm e2e:web
       install_playwright: true
+      artifact_name: web-runtime-visual-node-${{ matrix.node-version }}
+      artifact_path: .tmp/web-runtime-visual/**
     secrets: inherit

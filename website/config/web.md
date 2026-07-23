@@ -61,6 +61,11 @@ export default defineConfig({
             level: 'warn',
             dedupe: true,
           },
+          viewport: {
+            mode: 'mini-program',
+            maxWidth: 375,
+            desktopBreakpoint: 600,
+          },
         },
       },
       vite: {
@@ -125,6 +130,30 @@ Web 产物输出目录，默认一般是 `dist/web`。
   - `error`
   - `off`
 - `runtime.warnings.dedupe`
+- `runtime.viewport.mode`
+  - `mini-program`：移动端铺满，宽屏下使用居中的设备容器（默认）
+  - `responsive`：保留浏览器全宽布局
+- `runtime.viewport.maxWidth`
+  - 设备容器最大宽度，默认 `375`
+- `runtime.viewport.desktopBreakpoint`
+  - 开始使用居中设备容器的浏览器宽度，默认 `600`
+
+默认视口同时约束页面滚动、导航栏和 `fixed` 元素；`rpx` 也按设备容器宽度计算，而不是按桌面浏览器窗口计算。
+
+## 原生组件与 WXSS
+
+当前会保留并注册这些基础组件的 Web 语义：
+
+- `view`
+- `text`
+- `image`
+- `button`
+- `input`
+- `scroll-view`
+
+`image.mode`、input 常用属性与事件、scroll-view 滚动轴和事件均由运行时适配。WXSS 中的 `page` 会映射为页面组件的 `:host`，上述原生组件类型选择器会映射到对应运行时标签，class、attribute、pseudo 与组合选择器保持不变。
+
+尚未完整支持的已知小程序组件会保持可渲染降级并输出去重告警。Web 运行时仍不等价于微信 DevTools 或真机，视觉发布门禁应以 DevTools 基线为真值。
 
 ### `vite`
 

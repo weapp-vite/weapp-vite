@@ -39,6 +39,14 @@ export interface WeappWebPluginOptions {
       level?: 'off' | 'warn' | 'error'
       dedupe?: boolean
     }
+    /**
+     * Web 页面视口表现。默认使用小程序设备容器，宽屏下居中显示。
+     */
+    viewport?: {
+      mode?: 'mini-program' | 'responsive'
+      maxWidth?: number
+      desktopBreakpoint?: number
+    }
   }
   /**
    * weapp-vite runtime provider 注入的内部绑定。

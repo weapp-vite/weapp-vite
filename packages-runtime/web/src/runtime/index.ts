@@ -2,6 +2,12 @@ export { ensureButtonDefined, setButtonFormConfig } from './button'
 export type { ButtonFormConfig } from './button'
 export { defineComponent } from './component'
 export { getRuntimeExecutionMode, setRuntimeExecutionMode } from './execution'
+export {
+  createInputEventDetail,
+  createScrollEventDetail,
+  ensureNativeComponentsDefined,
+  resolveImageModeStyle,
+} from './nativeComponents'
 export { setNavigationBarMetrics } from './navigationBar'
 export type { NavigationBarMetrics } from './navigationBar'
 export {
@@ -129,5 +135,7 @@ export type { RpxConfig } from './rpx'
 export { injectStyle, removeStyle } from './style'
 export { createTemplate, renderTemplate } from './template'
 export type { TemplateRenderer, TemplateScope } from './template'
+export { getWebViewportWidth, resolveWebViewportConfig, setupWebViewport } from './viewport'
+export type { ResolvedWebViewportConfig, WebViewportConfig } from './viewport'
 export { setRuntimeWarningOptions } from './warning'
 export type { RuntimeWarningLevel, RuntimeWarningOptions } from './warning'

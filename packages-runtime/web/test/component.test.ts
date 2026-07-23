@@ -546,8 +546,7 @@ beforeAll(() => {
 })
 
 function findElementByTag(tagName: string) {
-  const children = (document.body as any).childNodes as Array<HTMLElement>
-  return children.find(node => (node as any).tagName === tagName.toUpperCase()) ?? null
+  return document.querySelector(tagName)
 }
 
 function overrideGlobalProperty(name: string, value: unknown) {
@@ -682,10 +681,9 @@ describe('registerPage integration', () => {
     initializePageRoutes(['pages/index/index', 'pages/second/index'])
     await Promise.resolve()
 
-    const bodyChildren = (document.body as any).childNodes as Array<HTMLElement>
-    expect(bodyChildren.length).toBeGreaterThan(0)
-    const tags = bodyChildren.map(node => (node as any).tagName)
-    expect(tags).toContain('WV-PAGE-PAGES-INDEX-INDEX')
+    const container = document.querySelector('#app')
+    expect(container).toBeTruthy()
+    expect(container?.querySelector('wv-page-pages-index-index')).toBeTruthy()
 
     const firstPage = findElementByTag('wv-page-pages-index-index') as HTMLElement & { data: any }
     expect(firstPage).toBeTruthy()
@@ -701,7 +699,7 @@ describe('registerPage integration', () => {
 
     const shadowRoot = firstPage.shadowRoot as any
     expect(shadowRoot).toBeTruthy()
-    const trigger = (shadowRoot?.querySelectorAll('div') ?? [])
+    const trigger = (shadowRoot?.querySelectorAll('weapp-view') ?? [])
       .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     expect(trigger).toBeTruthy()
     trigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
@@ -728,7 +726,7 @@ describe('registerPage integration', () => {
     expect(onLoad).toHaveBeenCalledTimes(1)
     expect(firstPage.data.count).toBe(2)
 
-    const updatedTrigger = (shadowRoot?.querySelectorAll('div') ?? [])
+    const updatedTrigger = (shadowRoot?.querySelectorAll('weapp-view') ?? [])
       .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     updatedTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(firstPage.data.count).toBe(12)
@@ -777,8 +775,8 @@ describe('registerPage integration', () => {
     expect(page).toBeTruthy()
     expect(onLoad).toHaveBeenCalledTimes(1)
 
-    const firstTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
-      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
+    const firstTrigger = [...(page.shadowRoot?.querySelectorAll('weapp-view') ?? [])]
+      .find(node => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     firstTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(1)
 
@@ -797,8 +795,8 @@ describe('registerPage integration', () => {
     expect(onHotLoad).toHaveBeenCalledTimes(0)
     expect(page.data.count).toBe(1)
 
-    const secondTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
-      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
+    const secondTrigger = [...(page.shadowRoot?.querySelectorAll('weapp-view') ?? [])]
+      .find(node => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     secondTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(6)
 
@@ -815,8 +813,8 @@ describe('registerPage integration', () => {
     await Promise.resolve()
     expect(page.data.count).toBe(6)
 
-    const thirdTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
-      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
+    const thirdTrigger = [...(page.shadowRoot?.querySelectorAll('weapp-view') ?? [])]
+      .find(node => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     thirdTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(8)
   })
