@@ -85,22 +85,29 @@ function getCurrentMiniProgramPage(fallbackPage?: MiniProgramPageLike): MiniProg
   return hasPageRoute(currentPageInstance) ? currentPageInstance : fallbackPage
 }
 
+export function resolvePageRoute(
+  page: MiniProgramPageLike | undefined,
+  queryOverride?: LocationQueryRaw,
+): RouteLocationNormalizedLoaded {
+  if (!page) {
+    return createRouteLocation('', {})
+  }
+
+  const rawPath = typeof page.route === 'string'
+    ? page.route
+    : typeof page.__route__ === 'string'
+      ? page.__route__
+      : ''
+
+  const querySource = queryOverride ?? ((page.options ?? {}) as LocationQueryRaw)
+  const query = normalizeQuery(querySource)
+  return createRouteLocation(rawPath, query, '', undefined, {})
+}
+
 export function resolveCurrentRoute(
   queryOverride?: LocationQueryRaw,
   fallbackPage?: MiniProgramPageLike,
 ): RouteLocationNormalizedLoaded {
   const currentPage = getCurrentMiniProgramPage(fallbackPage)
-  if (!currentPage) {
-    return createRouteLocation('', {})
-  }
-
-  const rawPath = typeof currentPage.route === 'string'
-    ? currentPage.route
-    : typeof currentPage.__route__ === 'string'
-      ? currentPage.__route__
-      : ''
-
-  const querySource = queryOverride ?? ((currentPage.options ?? {}) as LocationQueryRaw)
-  const query = normalizeQuery(querySource)
-  return createRouteLocation(rawPath, query, '', undefined, {})
+  return resolvePageRoute(currentPage, queryOverride)
 }

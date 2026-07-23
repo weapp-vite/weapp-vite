@@ -21,8 +21,13 @@ const mocks = vi.hoisted(() => {
     ensureMiniProgramGlobalPatched: vi.fn(),
     releaseCurrentPageInstance: vi.fn(),
     resolvePageOptions: vi.fn(() => ({ from: 'resolved-options' })),
+    notifyRouteStateSync: vi.fn(),
   }
 })
+
+vi.mock('@/router/routeSync', () => ({
+  notifyRouteStateSync: mocks.notifyRouteStateSync,
+}))
 
 vi.mock('@/runtime/hooks', () => ({
   callHookList: mocks.callHookList,
@@ -115,6 +120,7 @@ describe('runtime: component page lifecycle extra', () => {
     expect(mocks.attachOptionalPageLifecycleHooks).toHaveBeenCalledTimes(1)
     expect(mocks.ensureMiniProgramGlobalPatched).not.toHaveBeenCalled()
     expect(mocks.bindCurrentPageInstance).not.toHaveBeenCalled()
+    expect(mocks.notifyRouteStateSync).not.toHaveBeenCalled()
     expect(mocks.releaseCurrentPageInstance).not.toHaveBeenCalled()
     expect(mocks.setRuntimeSetDataVisibility).toHaveBeenNthCalledWith(1, instance, true)
     expect(mocks.setRuntimeSetDataVisibility).toHaveBeenNthCalledWith(2, instance, false)
@@ -209,6 +215,7 @@ describe('runtime: component page lifecycle extra', () => {
     expect(instance[WEVU_ROUTE_DONE_CALLED_KEY]).toBe(false)
     expect(mocks.ensureMiniProgramGlobalPatched).toHaveBeenCalledTimes(1)
     expect(mocks.bindCurrentPageInstance).toHaveBeenCalledWith(instance)
+    expect(mocks.notifyRouteStateSync).toHaveBeenCalledWith({ page: instance })
     expect(mocks.resolvePageOptions).toHaveBeenCalledWith(instance)
     expect(mocks.mountRuntimeInstance).toHaveBeenCalledTimes(1)
 

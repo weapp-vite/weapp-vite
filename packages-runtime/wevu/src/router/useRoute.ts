@@ -2,7 +2,7 @@ import type { MiniProgramPageLifetime } from '../runtime/types'
 import type { SetupContextRouter } from '../runtime/types/props'
 import type { LocationQueryRaw, RouteLocationNormalizedLoaded } from './types'
 import { reactive, readonly } from '../reactivity'
-import { cloneLocationQuery, cloneRouteLocationRedirectedFrom, cloneRouteMeta, cloneRouteParams, cloneRouteRecordMatchedList, resolveCurrentRoute } from '../routerInternal/shared'
+import { cloneLocationQuery, cloneRouteLocationRedirectedFrom, cloneRouteMeta, cloneRouteParams, cloneRouteRecordMatchedList, resolveCurrentRoute, resolvePageRoute } from '../routerInternal/shared'
 import { getCurrentSetupContext, onLoad, onReady, onRouteDone, onShow, onUnload } from '../runtime/hooks'
 import {
   useNativePageRouter as useNativePageRouterInternal,
@@ -102,6 +102,10 @@ export function createRouteStateController(options: UseRouteOptions = {}): Route
   const unregisterRouteStateSync = registerRouteStateSyncHandler((payload) => {
     if (payload?.route) {
       syncRoute(undefined, payload.route)
+      return
+    }
+    if (payload?.page) {
+      syncRoute(undefined, resolvePageRoute(payload.page))
       return
     }
     if (payload?.url) {

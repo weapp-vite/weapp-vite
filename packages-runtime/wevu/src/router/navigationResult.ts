@@ -72,8 +72,8 @@ export function createNavigationResultController(options: {
   }
 
   async function settleNavigationResult(result: NavigationRunResult): Promise<void | NavigationFailure> {
-    if (!result.failure && result.to) {
-      notifyRouteStateSync({ route: result.to })
+    if (!result.failure) {
+      notifyRouteStateSync(result.to ? { route: result.to } : undefined)
     }
     await emitNavigationAfterEach(result)
     if (result.failure && shouldRejectNavigationFailure(result.failure)) {

@@ -1,6 +1,8 @@
+import type { MiniProgramPageLike } from '../routerInternal/shared'
 import type { RouteLocationNormalizedLoaded } from './types'
 
 export interface RouteStateSyncPayload {
+  page?: MiniProgramPageLike
   route?: RouteLocationNormalizedLoaded
   url?: string
 }
