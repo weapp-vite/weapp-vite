@@ -39,7 +39,7 @@ catalog:
   '@vitejs/plugin-vue': ^6.0.8
   '@vue/compiler-core': ^3.5.40
   '@vue/compiler-dom': ^3.5.40
-  '@vue/language-core': ^3.3.7
+  '@vue/language-core': ^3.3.8
   antd-mini: ^3.4.3
   autoprefixer: ^10.5.4
   bundle-require: ^5.1.0
@@ -60,15 +60,15 @@ catalog:
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.1
   obug: ^2.1.4
-  oxc-parser: ^0.140.0
+  oxc-parser: ^0.141.0
   oxc-walker: ^1.0.0
   pathe: ^2.0.3
   pkg-types: ^2.3.1
-  postcss: ^8.5.20
+  postcss: ^8.5.22
   rolldown: 1.1.5
-  sass: ^1.101.0
+  sass: ^1.101.6
   sass-embedded: ^1.100.0
-  stylelint: ^17.14.0
+  stylelint: ^17.14.1
   tailwind-merge: ^3.6.0
   tailwind-variants: ^3.2.2
   tailwindcss: ^4.3.3
@@ -79,8 +79,8 @@ catalog:
   vite: 8.1.5
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.40
-  vue-tsc: ^3.3.7
-  weapp-tailwindcss: ^5.1.16
+  vue-tsc: ^3.3.8
+  weapp-tailwindcss: ^5.2.0
   zod: ^4.4.3
 
 catalogs:
@@ -94,7 +94,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.15.3
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.1.16
+    weapp-tailwindcss: 5.2.0
 
 gitChecks: false
 

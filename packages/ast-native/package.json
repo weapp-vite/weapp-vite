@@ -47,7 +47,7 @@
     "native:lint": "eslint package.json index.js index.d.ts native.vitest.config.ts test/**/*.test.ts"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.7.3",
+    "@napi-rs/cli": "^3.7.4",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "vitest": "4.1.10"

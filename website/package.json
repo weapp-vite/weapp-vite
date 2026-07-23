@@ -30,7 +30,7 @@
     "echarts": "catalog:",
     "element-plus": "^2.14.3",
     "gridstack": "^12.6.0",
-    "theme-transition": "^2.0.3",
+    "theme-transition": "^2.0.4",
     "vue": "catalog:",
     "vue-echarts": "^8.0.1"
   },
