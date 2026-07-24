@@ -199,6 +199,42 @@ export async function waitForWevuRuntimeChunkContaining(
   throw new Error(`Timed out waiting for wevu runtime chunk under ${distRoot} to contain marker: ${marker}`)
 }
 
+/**
+ * 轮询等待非页面共享 runtime chunk 同时包含指定片段。
+ *
+ * @param distRoot - 小程序产物目录
+ * @param snippets - 期望同时出现的源码片段
+ * @param timeoutMs - 超时时间
+ * @returns 匹配到的共享 chunk 路径和源码
+ */
+export async function waitForWevuSharedRuntimeChunkContaining(
+  distRoot: string,
+  snippets: string[],
+  timeoutMs = 90_000,
+): Promise<WevuVendorChunk> {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    try {
+      return await findWevuRuntimeChunk(
+        distRoot,
+        (code, filePath) => {
+          const normalizedPath = filePath.replaceAll('\\', '/')
+          return !normalizedPath.includes('/pages/')
+            && snippets.every(snippet => code.includes(snippet))
+        },
+        `shared runtime ${snippets.join(' + ')}`,
+      )
+    }
+    catch {
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+
+  throw new Error(
+    `Timed out waiting for shared runtime chunk under ${distRoot} to contain snippets: ${snippets.join(', ')}`,
+  )
+}
+
 export function toRelativeImport(fromFilePath: string, toFilePath: string) {
   const relativePath = path.relative(path.dirname(fromFilePath), toFilePath).replaceAll('\\', '/')
   return relativePath.startsWith('.') ? relativePath : `./${relativePath}`

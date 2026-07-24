@@ -83,10 +83,14 @@ describe('dev-memory inspector sampling', () => {
     try {
       await expect(sampleHeapAfterGc('ws://127.0.0.1:1/devtools/page/1', 10))
         .rejects
-        .toThrow('Timed out waiting for inspector command HeapProfiler.collectGarbage after 10ms.')
+        .toThrow('Timed out waiting for inspector command Runtime.evaluate after 10ms.')
       expect(SilentCommandWebSocket.instances.at(-1)?.send).toHaveBeenCalledWith(JSON.stringify({
         id: 1,
-        method: 'HeapProfiler.collectGarbage',
+        method: 'Runtime.evaluate',
+        params: {
+          expression: 'typeof global.gc === "function" && global.gc(); process.memoryUsage()',
+          returnByValue: true,
+        },
       }))
       expect(SilentCommandWebSocket.instances.at(-1)?.close).toHaveBeenCalledTimes(1)
     }

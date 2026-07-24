@@ -4,7 +4,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, replaceSharedStoreInitialName, resolvePlatforms } from '../utils/hmr-helpers'
-import { findWevuRuntimeChunk, toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
+import { toRelativeImport, waitForWevuSharedRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const SHARED_STORE_SOURCE_PATH = path.join(APP_ROOT, 'src/shared/store.ts')
@@ -21,28 +21,11 @@ function replaceSharedStoreMarker(source: string, marker: string) {
 }
 
 async function waitForSharedStoreRuntimeChunk(marker: string, timeoutMs: number) {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    try {
-      return await findWevuRuntimeChunk(
-        DIST_ROOT,
-        (code, filePath) => {
-          const normalizedPath = filePath.replaceAll('\\', '/')
-          return !normalizedPath.includes('/pages/')
-            && code.includes(marker)
-            && code.includes('useSetupStore')
-            && code.includes('useOptionsStore')
-            && code.includes('getPluginRecords')
-        },
-        `shared store runtime ${marker}`,
-      )
-    }
-    catch {
-      await new Promise(resolve => setTimeout(resolve, 250))
-    }
-  }
-
-  throw new Error(`Timed out waiting for shared store runtime chunk under ${DIST_ROOT} to contain marker: ${marker}`)
+  return await waitForWevuSharedRuntimeChunkContaining(
+    DIST_ROOT,
+    [marker, 'useSetupStore', 'useOptionsStore', 'getPluginRecords'],
+    timeoutMs,
+  )
 }
 
 async function waitForCommonMarkerWithRetry(
@@ -81,7 +64,7 @@ describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
 
     try {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForWevuRuntimeChunkContaining(DIST_ROOT, 'setupCounter', 90_000), `${platform} initial shared runtime`)
+      await dev.waitFor(waitForSharedStoreRuntimeChunk('setupCounter', 90_000), `${platform} initial shared runtime`)
       await dev.waitFor(waitForFile(STORE_PAGE_JS_PATH, 90_000), `${platform} initial store page js`)
       await dev.waitFor(waitForFile(STORE_SHARE_PAGE_JS_PATH, 90_000), `${platform} initial store-share page js`)
 
@@ -127,7 +110,7 @@ describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
 
     try {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForWevuRuntimeChunkContaining(DIST_ROOT, 'setupCounter', 90_000), `${platform} initial shared runtime`)
+      await dev.waitFor(waitForSharedStoreRuntimeChunk('setupCounter', 90_000), `${platform} initial shared runtime`)
 
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, firstUpdatedSource)
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, secondUpdatedSource)
