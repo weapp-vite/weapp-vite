@@ -215,7 +215,10 @@ describe('runtime: component page lifecycle extra', () => {
     expect(instance[WEVU_ROUTE_DONE_CALLED_KEY]).toBe(false)
     expect(mocks.ensureMiniProgramGlobalPatched).toHaveBeenCalledTimes(1)
     expect(mocks.bindCurrentPageInstance).toHaveBeenCalledWith(instance)
-    expect(mocks.notifyRouteStateSync).toHaveBeenCalledWith({ page: instance })
+    expect(mocks.notifyRouteStateSync).toHaveBeenCalledWith({
+      page: instance,
+      source: 'page',
+    })
     expect(mocks.resolvePageOptions).toHaveBeenCalledWith(instance)
     expect(mocks.mountRuntimeInstance).toHaveBeenCalledTimes(1)
 

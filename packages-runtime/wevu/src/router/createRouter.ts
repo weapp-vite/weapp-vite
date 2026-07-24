@@ -1,4 +1,6 @@
 import type { RouteResolveCodec } from '../routerInternal/shared'
+import type { NavigationRunResult } from './navigationResult'
+import type { RouteStateSyncPayload } from './routeSync'
 import type {
   NavigationAfterEach,
   NavigationErrorHandler,
@@ -20,10 +22,12 @@ import {
   resolveNamedRouteLocation,
   resolvePath,
   resolveRouteOptionEntries,
+  snapshotRouteLocation,
   stringifyQuery,
   warnDuplicateRouteEntries,
 } from '../routerInternal/shared'
 import { getMiniProgramGlobalObject } from '../runtime/platform'
+import { runBackNavigationGuards } from './backNavigation'
 import { setActiveRouter } from './instance'
 import { createNavigationApi } from './navigationApi'
 import { createNavigationResultController } from './navigationResult'
@@ -58,6 +62,7 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     .filter(Boolean)
   const tabBarPathSet = new Set(normalizedTabBarEntries)
   const routeRegistry = createRouteRegistry(namedRouteLookup)
+  let managedNavigationCount = 0
   const routerOptions = createRouterOptionsSnapshot(
     normalizedTabBarEntries,
     routeRegistry.getRoutes(),
@@ -103,10 +108,44 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     return enrichRouteRecordState(resolveRouteLocation(rawTo, currentPath, routeResolveCodec))
   }
 
+  let route: Readonly<RouteLocationNormalizedLoaded>
+  let emitObservedNavigationAfterEach: ((result: NavigationRunResult) => Promise<void>) | undefined
+
+  function isExternalBackSync(payload: RouteStateSyncPayload): boolean {
+    return payload.source === 'page'
+      || (payload.source === 'native' && payload.method === 'navigateBack')
+  }
+
+  function beforeRouteStateSync(
+    nextRoute: RouteLocationNormalizedLoaded,
+    payload: RouteStateSyncPayload,
+  ) {
+    if (
+      managedNavigationCount > 0
+      || !isExternalBackSync(payload)
+      || nextRoute.fullPath === route.fullPath
+    ) {
+      return
+    }
+
+    const from = snapshotRouteLocation(route)
+    void runBackNavigationGuards({
+      target: nextRoute,
+      from,
+      nativeRouter,
+      beforeEachGuards,
+      beforeResolveGuards,
+      resolveWithCodec,
+    }).then((result) => {
+      return emitObservedNavigationAfterEach?.(result)
+    })
+  }
+
   const routeController = createRouteStateController({
+    beforeRouteStateSync,
     resolveRoute: enrichRouteRecordState,
   })
-  const route = routeController.route
+  route = routeController.route
 
   function resolve(to: RouteLocationRaw): RouteLocationNormalizedLoaded {
     return resolveWithCodec(to, route.path)
@@ -118,6 +157,7 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     nativeRouter,
     rejectOnError,
   })
+  emitObservedNavigationAfterEach = navigationResultController.emitNavigationAfterEach
 
   const navigationApi = createNavigationApi({
     nativeRouter,
@@ -131,6 +171,16 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     resolveWithCodec,
     settleNavigationResult: navigationResultController.settleNavigationResult,
   })
+
+  async function runManagedNavigation<T>(navigation: () => Promise<T>): Promise<T> {
+    managedNavigationCount += 1
+    try {
+      return await navigation()
+    }
+    finally {
+      managedNavigationCount -= 1
+    }
+  }
 
   function beforeEach(guard: NavigationGuard): () => void {
     beforeEachGuards.add(guard)
@@ -175,11 +225,11 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     isReady(): Promise<void> {
       return readyPromise
     },
-    push: navigationApi.push,
-    replace: navigationApi.replace,
-    back: navigationApi.back,
-    go: navigationApi.go,
-    forward: navigationApi.forward,
+    push: to => runManagedNavigation(() => navigationApi.push(to)),
+    replace: to => runManagedNavigation(() => navigationApi.replace(to)),
+    back: delta => runManagedNavigation(() => navigationApi.back(delta)),
+    go: delta => runManagedNavigation(() => navigationApi.go(delta)),
+    forward: () => runManagedNavigation(() => navigationApi.forward()),
     hasRoute: routeRegistry.hasRoute,
     getRoutes: routeRegistry.getRoutes,
     addRoute: routeRegistry.addRoute,

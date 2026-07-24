@@ -10,11 +10,11 @@ import type {
   RouteLocationRaw,
 } from './types'
 import { snapshotRouteLocation } from '../routerInternal/shared'
+import { resolveBackNavigationTarget, runBackNavigationGuards } from './backNavigation'
 import {
   createNavigationFailure,
   executeNavigationMethod,
   isNavigationFailure,
-  runNavigationGuards,
 } from './navigationCore'
 import { createNavigationRunResult } from './navigationResult'
 import { navigateWithTarget } from './navigationTarget'
@@ -114,63 +114,28 @@ export function createNavigationApi(options: CreateNavigationApiOptions) {
 
   async function back(delta = 1): Promise<void | NavigationFailure> {
     const from = snapshotRouteLocation(route)
-    const beforeEachResult = await runNavigationGuards(beforeEachGuards, {
-      mode: 'back',
+    const target = resolveBackNavigationTarget(delta, from, resolveWithCodec)
+    const guardResult = await runBackNavigationGuards({
+      target,
       from,
       nativeRouter: nativeRouter as any,
-    }, resolveWithCodec)
-    if (beforeEachResult.status === 'failure') {
-      return settleNavigationResult(createNavigationRunResult('back', from, undefined, beforeEachResult.failure))
-    }
-    if (beforeEachResult.status === 'redirect') {
-      return settleNavigationResult(
-        createNavigationRunResult(
-          'back',
-          from,
-          undefined,
-          createNavigationFailure(
-            NavigationFailureType.aborted,
-            undefined,
-            from,
-            'Redirect is not supported in back navigation guards',
-          ),
-        ),
-      )
-    }
-
-    const beforeResolveResult = await runNavigationGuards(beforeResolveGuards, {
-      mode: 'back',
-      from,
-      nativeRouter: nativeRouter as any,
-    }, resolveWithCodec)
-    if (beforeResolveResult.status === 'failure') {
-      return settleNavigationResult(createNavigationRunResult('back', from, undefined, beforeResolveResult.failure))
-    }
-    if (beforeResolveResult.status === 'redirect') {
-      return settleNavigationResult(
-        createNavigationRunResult(
-          'back',
-          from,
-          undefined,
-          createNavigationFailure(
-            NavigationFailureType.aborted,
-            undefined,
-            from,
-            'Redirect is not supported in back navigation guards',
-          ),
-        ),
-      )
+      beforeEachGuards,
+      beforeResolveGuards,
+      resolveWithCodec,
+    })
+    if (guardResult.failure) {
+      return settleNavigationResult(guardResult)
     }
 
     const result = await executeNavigationMethod(
       nativeRouter.navigateBack as (options: Record<string, any>) => unknown,
       { delta },
-      undefined,
+      target,
       from,
     )
     const runResult = isNavigationFailure(result)
-      ? createNavigationRunResult('back', from, undefined, result)
-      : createNavigationRunResult('back', from)
+      ? createNavigationRunResult('back', from, target, result)
+      : guardResult
     return settleNavigationResult(runResult)
   }
 
