@@ -2,7 +2,7 @@ import type { ButtonFormConfig } from '../button'
 import type { ComponentPublicInstance } from '../component'
 import type { NavigationBarMetrics } from '../navigationBar'
 import type { WebViewportConfig } from '../viewport'
-import type { AppLaunchOptions, AppRuntime, ComponentRawOptions, ComponentRecord, PageRawOptions, PageRecord, PageStackEntry, RegisterMeta } from './routeRuntime/options'
+import type { AppLaunchOptions, AppRuntime, ComponentRawOptions, ComponentRecord, NavigateBackOptions, PageRawOptions, PageRecord, PageStackEntry, RegisterMeta, RouteOptions } from './routeRuntime/options'
 import { slugify } from '../../shared/slugify'
 import { setButtonFormConfig } from '../button'
 import { defineComponent } from '../component'
@@ -17,45 +17,26 @@ import {
   resolveCurrentPages,
   resolveFallbackLaunchOptions,
 } from './appState'
-import { mountEntryToDom } from './routeRuntime/dom'
 import {
   augmentPageComponentOptions,
   dispatchPageLifetimeToComponents,
 } from './routeRuntime/lifecycle'
 import {
-
   isRecord,
   normalizeComponentOptions,
   normalizePageOptions,
 } from './routeRuntime/options'
+import { resolveRouteAction } from './routeRuntime/result'
+import { PageStackRuntime } from './routeRuntime/stack'
 import { parsePageUrl } from './routeRuntime/url'
 
 const pageRegistry = new Map<string, PageRecord>()
 const componentRegistry = new Map<string, ComponentRecord>()
-const navigationHistory: PageStackEntry[] = []
 let pageOrder: string[] = []
 let appInstance: AppRuntime | undefined
 let appLaunched = false
 let lastLaunchOptions: AppLaunchOptions | undefined
 let pageResizeBridgeBound = false
-
-function bindPageResizeBridge() {
-  if (pageResizeBridgeBound || typeof window === 'undefined') {
-    return
-  }
-  if (typeof window.addEventListener !== 'function') {
-    return
-  }
-  pageResizeBridgeBound = true
-  window.addEventListener('resize', () => {
-    const pages = resolveCurrentPages<ComponentPublicInstance>(navigationHistory)
-    const current = pages[pages.length - 1]
-    if (!current) {
-      return
-    }
-    dispatchPageLifetimeToComponents(current, 'resize')
-  })
-}
 
 function ensureAppLaunched(entry: PageStackEntry) {
   if (!appInstance || appLaunched) {
@@ -82,36 +63,24 @@ function ensureAppLaunched(entry: PageStackEntry) {
   appLaunched = true
 }
 
-function mountEntry(entry: PageStackEntry) {
-  mountEntryToDom(entry, pageRegistry, ensureAppLaunched)
-}
+const pageStack = new PageStackRuntime(pageRegistry, ensureAppLaunched)
 
-function pushEntry(id: string, query: Record<string, string>) {
-  if (!pageRegistry.has(id)) {
+function bindPageResizeBridge() {
+  if (pageResizeBridgeBound || typeof window === 'undefined') {
     return
   }
-  const entry: PageStackEntry = { id, query }
-  navigationHistory.push(entry)
-  mountEntry(entry)
-}
-
-function replaceEntry(id: string, query: Record<string, string>) {
-  if (!pageRegistry.has(id)) {
+  if (typeof window.addEventListener !== 'function') {
     return
   }
-  const entry: PageStackEntry = { id, query }
-  if (navigationHistory.length) {
-    navigationHistory[navigationHistory.length - 1] = entry
-  }
-  else {
-    navigationHistory.push(entry)
-  }
-  mountEntry(entry)
-}
-
-function relaunchEntry(id: string, query: Record<string, string>) {
-  navigationHistory.length = 0
-  pushEntry(id, query)
+  pageResizeBridgeBound = true
+  window.addEventListener('resize', () => {
+    const pages = resolveCurrentPages<ComponentPublicInstance>(pageStack.entries)
+    const current = pages[pages.length - 1]
+    if (!current) {
+      return
+    }
+    dispatchPageLifetimeToComponents(current, 'resize')
+  })
 }
 
 export function initializePageRoutes(
@@ -148,8 +117,8 @@ export function initializePageRoutes(
   if (options?.form) {
     setButtonFormConfig(options.form)
   }
-  if (!navigationHistory.length) {
-    pushEntry(pageOrder[0], {})
+  if (!pageStack.entries.length) {
+    pageStack.push(pageOrder[0], {})
   }
 }
 
@@ -229,51 +198,32 @@ export function registerApp<T extends AppRuntime | undefined>(options: T, _meta?
   return options
 }
 
-export function navigateTo(options: { url: string }) {
-  if (!options?.url) {
-    return Promise.resolve()
-  }
-  const { id, query } = parsePageUrl(options.url)
-  pushEntry(id, query)
-  return Promise.resolve()
+export function navigateTo(options: RouteOptions) {
+  const { id, query } = parsePageUrl(options?.url ?? '')
+  return resolveRouteAction('navigateTo', options, pageStack.push(id, query))
 }
 
-export function redirectTo(options: { url: string }) {
-  if (!options?.url) {
-    return Promise.resolve()
-  }
-  const { id, query } = parsePageUrl(options.url)
-  replaceEntry(id, query)
-  return Promise.resolve()
+export function redirectTo(options: RouteOptions) {
+  const { id, query } = parsePageUrl(options?.url ?? '')
+  return resolveRouteAction('redirectTo', options, pageStack.replace(id, query))
 }
 
-export function reLaunch(options: { url: string }) {
-  if (!options?.url) {
-    return Promise.resolve()
-  }
-  const { id, query } = parsePageUrl(options.url)
-  relaunchEntry(id, query)
-  return Promise.resolve()
+export function reLaunch(options: RouteOptions) {
+  const { id, query } = parsePageUrl(options?.url ?? '')
+  return resolveRouteAction('reLaunch', options, pageStack.relaunch(id, query))
 }
 
-export function switchTab(options: { url: string }) {
-  return redirectTo(options)
+export function switchTab(options: RouteOptions) {
+  const { id, query } = parsePageUrl(options?.url ?? '')
+  return resolveRouteAction('switchTab', options, pageStack.replace(id, query))
 }
 
-export function navigateBack(options?: { delta?: number }) {
-  if (navigationHistory.length <= 1) {
-    return Promise.resolve()
-  }
-  const delta = Math.max(1, options?.delta ?? 1)
-  const targetIndex = Math.max(0, navigationHistory.length - 1 - delta)
-  const target = navigationHistory[targetIndex]
-  navigationHistory.length = targetIndex
-  pushEntry(target.id, target.query)
-  return Promise.resolve()
+export function navigateBack(options?: NavigateBackOptions) {
+  return resolveRouteAction('navigateBack', options, pageStack.back(options?.delta))
 }
 
 export function getCurrentPagesInternal() {
-  return resolveCurrentPages<ComponentPublicInstance>(navigationHistory)
+  return resolveCurrentPages<ComponentPublicInstance>(pageStack.entries)
 }
 
 export function getAppInstance() {
@@ -284,7 +234,7 @@ export function getLaunchOptionsSync(): AppLaunchOptions {
   if (lastLaunchOptions) {
     return cloneLaunchOptions(lastLaunchOptions)
   }
-  return resolveFallbackLaunchOptions(navigationHistory)
+  return resolveFallbackLaunchOptions(pageStack.entries)
 }
 
 export function getEnterOptionsSync(): AppLaunchOptions {

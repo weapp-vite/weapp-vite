@@ -75,11 +75,18 @@ weappWebPlugin({
 - `swiper` / `swiper-item` 支持 current、item-id、横纵布局、循环、指示点、边距、触摸切换和 autoplay，并发送微信形状的 `change`、`transition`、`animationfinish` 事件；组件断开连接时会停止计时器。
 - 其他已识别但尚未完整适配的原生组件会继续渲染，并输出去重兼容告警。
 
+## 页面栈与生命周期
+
+- `navigateTo` 会保留原页面 DOM、实例和数据，并依次触发原页面 `onHide` 与新页面 `onLoad` / `onShow`。
+- `navigateBack` 只卸载出栈页面，恢复目标页面的同一实例、`onShow` 和页面容器滚动位置，不会重新触发 `onLoad`。
+- `redirectTo` 只替换并卸载当前页面；`reLaunch` 会从栈顶开始卸载全部旧页面后挂载目标页面。
+- `getCurrentPages()` 返回当前所有存活页面；路由 API 支持 `success` / `fail` / `complete` 回调与 Promise 结果。
+
 仓库中的 `pnpm e2e:web:update-baselines` 只用于维护者显式刷新微信 DevTools 视觉基线；普通 `pnpm e2e:web` 只读取已提交基线。
 
 ## TODO
 
 - 更全面的模板语法和原生组件语义
-- 丰富组件属性系统、支持 behaviors / observers
+- 继续扩展组件属性系统和页面级滚动事件
 - 全局 API 兼容层与更精细的样式适配
 - SSR、SEO 友好的页面容器与首屏优化

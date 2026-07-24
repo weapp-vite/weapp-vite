@@ -11,6 +11,7 @@ interface RouteMetaCarrier {
 
 interface PageInstanceState {
   loaded: boolean
+  visible: boolean
 }
 
 interface PageStateCarrier {
@@ -30,7 +31,7 @@ function getRouteMeta(instance: ComponentPublicInstance): RouteMeta | undefined 
 
 function getPageState(instance: ComponentPublicInstance): PageInstanceState {
   const target = instance as PageStateCarrier
-  target[PAGE_STATE_SYMBOL] ??= { loaded: false }
+  target[PAGE_STATE_SYMBOL] ??= { loaded: false, visible: false }
   return target[PAGE_STATE_SYMBOL]!
 }
 
@@ -79,6 +80,26 @@ export function attachRouteMeta(
   carrier.route = meta.id
 }
 
+export function hidePageInstance(instance: ComponentPublicInstance, record: PageRecord) {
+  const state = getPageState(instance)
+  if (!state.visible) {
+    return
+  }
+  dispatchPageLifetimeToComponents(instance, 'hide')
+  record.hooks.onHide?.call(instance)
+  state.visible = false
+}
+
+export function showPageInstance(instance: ComponentPublicInstance, record: PageRecord) {
+  const state = getPageState(instance)
+  if (state.visible || !state.loaded) {
+    return
+  }
+  record.hooks.onShow?.call(instance)
+  dispatchPageLifetimeToComponents(instance, 'show')
+  state.visible = true
+}
+
 export function augmentPageComponentOptions(component: ComponentOptions, record: PageRecord) {
   const lifetimes = component.lifetimes ?? {}
   const originalCreated = lifetimes?.created
@@ -106,12 +127,17 @@ export function augmentPageComponentOptions(component: ComponentOptions, record:
           record.hooks.onLoad?.call(this, meta?.query ?? {})
           state.loaded = true
         }
-        record.hooks.onShow?.call(this)
+        if (meta?.entry.active !== false) {
+          record.hooks.onShow?.call(this)
+          state.visible = true
+        }
       },
       ready(this: ComponentPublicInstance) {
         originalReady?.call(this)
         record.hooks.onReady?.call(this)
-        dispatchPageLifetimeToComponents(this, 'show')
+        if (getPageState(this).visible) {
+          dispatchPageLifetimeToComponents(this, 'show')
+        }
       },
       detached(this: ComponentPublicInstance) {
         originalDetached?.call(this)
@@ -119,11 +145,13 @@ export function augmentPageComponentOptions(component: ComponentOptions, record:
         if (meta?.entry) {
           meta.entry.instance = undefined
         }
-        dispatchPageLifetimeToComponents(this, 'hide')
-        record.hooks.onHide?.call(this)
-        record.hooks.onUnload?.call(this)
         const state = getPageState(this)
+        hidePageInstance(this, record)
+        if (state.loaded) {
+          record.hooks.onUnload?.call(this)
+        }
         state.loaded = false
+        state.visible = false
         record.instances.delete(this)
       },
     },

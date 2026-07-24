@@ -20,8 +20,9 @@ export function createWebViewportStyle(config: ResolvedWebViewportConfig) {
 html,
 body {
   min-width: 0;
-  min-height: 100%;
+  height: 100%;
   margin: 0;
+  overflow: hidden;
 }
 
 body {
@@ -33,9 +34,14 @@ body {
   position: relative;
   box-sizing: border-box;
   width: 100%;
-  min-height: 100dvh;
+  height: 100dvh;
+  min-height: 0;
   margin: 0 auto;
+  overflow: auto;
+  overscroll-behavior: contain;
   background: #ffffff;
+  contain: layout paint;
+  transform: translateZ(0);
 }
 
 @media (min-width: ${breakpoint}) {
@@ -47,11 +53,6 @@ body {
 
   html[data-weapp-viewport-mode="mini-program"] #app {
     width: ${maxWidth};
-    height: 100dvh;
-    min-height: 0;
-    overflow: auto;
-    contain: layout paint;
-    transform: translateZ(0);
   }
 }
 `

@@ -97,6 +97,11 @@ interface CurrentPageSnapshot {
   data: CurrentPageData
 }
 
+interface PageStackSnapshot {
+  routes: Array<string | null>
+  currentData: CurrentPageData
+}
+
 async function readCurrentPageSnapshot(page: Page): Promise<CurrentPageSnapshot | null> {
   return await page.evaluate(() => {
     const runtimeWindow = window as any
@@ -124,6 +129,23 @@ async function readCurrentPageSnapshot(page: Page): Promise<CurrentPageSnapshot 
 async function readCurrentPageData(page: Page): Promise<CurrentPageData> {
   const snapshot = await readCurrentPageSnapshot(page)
   return snapshot?.data ?? null
+}
+
+async function readPageStackSnapshot(page: Page): Promise<PageStackSnapshot | null> {
+  return await page.evaluate(() => {
+    const getCurrentPages = (window as any).getCurrentPages
+    if (typeof getCurrentPages !== 'function') {
+      return null
+    }
+    const stack = getCurrentPages() as any[]
+    const currentPage = stack.at(-1)
+    return {
+      routes: stack.map(page => typeof page.route === 'string' ? page.route : null),
+      currentData: currentPage?.data && typeof currentPage.data === 'object'
+        ? JSON.parse(JSON.stringify(currentPage.data))
+        : null,
+    }
+  })
 }
 
 async function expectCurrentPageData(
@@ -377,6 +399,79 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
           && snapshot.data.platform === 'web',
         )
       }, { timeout: 45_000 }).toBe(true)
+    }
+    finally {
+      await page.close()
+    }
+  })
+
+  it('preserves page instance, lifecycle state and scroll position after navigateBack', async () => {
+    const page = await browser!.newPage()
+    try {
+      await openHomePage(page)
+      await navigateToInteractiveFromHome(page)
+      await setCurrentPageData(page, { preservedMarker: 'interactive-page-state' })
+
+      const scrollTop = await page.evaluate(() => {
+        const runtimeWindow = window as any
+        const stack = runtimeWindow.getCurrentPages() as any[]
+        runtimeWindow.__webE2EInteractivePage = stack.at(-1)
+        const container = document.querySelector('#app') as HTMLElement | null
+        if (!container) {
+          throw new TypeError('[web-e2e] Missing #app page container')
+        }
+        container.scrollTop = Math.min(180, container.scrollHeight - container.clientHeight)
+        return container.scrollTop
+      })
+      expect(scrollTop).toBeGreaterThan(0)
+
+      await expect(page.evaluate(async () => {
+        return await (window as any).wx.navigateTo({
+          url: 'pages/interactive/detail?id=component-flow&from=interactive',
+        })
+      })).resolves.toEqual({ errMsg: 'navigateTo:ok' })
+      await expect.poll(async () => {
+        const snapshot = await readPageStackSnapshot(page)
+        return snapshot?.routes
+      }, { timeout: 45_000 }).toEqual([
+        'pages/index/index',
+        'pages/interactive/index',
+        'pages/interactive/detail',
+      ])
+
+      await expect(page.evaluate(async () => {
+        return await (window as any).wx.navigateBack({ delta: 1 })
+      })).resolves.toEqual({ errMsg: 'navigateBack:ok' })
+      await expect.poll(async () => {
+        const snapshot = await readPageStackSnapshot(page)
+        const log = Array.isArray(snapshot?.currentData?.log) ? snapshot.currentData.log : []
+        return {
+          routes: snapshot?.routes,
+          marker: snapshot?.currentData?.preservedMarker,
+          viewCount: snapshot?.currentData?.viewCount,
+          loadCount: log.filter((item: any) => item?.title === '页面 onLoad').length,
+          showCount: log.filter((item: any) => item?.title === '页面 onShow').length,
+        }
+      }, { timeout: 45_000 }).toEqual({
+        routes: ['pages/index/index', 'pages/interactive/index'],
+        marker: 'interactive-page-state',
+        viewCount: 2,
+        loadCount: 1,
+        showCount: 2,
+      })
+
+      await expect.poll(() => page.evaluate(() => {
+        const runtimeWindow = window as any
+        const currentPage = (runtimeWindow.getCurrentPages() as any[]).at(-1)
+        const container = document.querySelector('#app') as HTMLElement | null
+        return {
+          sameInstance: currentPage === runtimeWindow.__webE2EInteractivePage,
+          scrollTop: container?.scrollTop ?? 0,
+        }
+      })).toEqual({
+        sameInstance: true,
+        scrollTop,
+      })
     }
     finally {
       await page.close()
