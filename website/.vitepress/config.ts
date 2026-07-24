@@ -327,90 +327,61 @@ const blogSidebarItems: DefaultTheme.SidebarItem[] = [
 
 const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
   {
-    text: '总览',
-    collapsed: false,
-    items: [{ text: '周边包总览', link: '/packages/' }],
-  },
-  {
-    text: '工程工具',
+    text: '快速开始',
     collapsed: false,
     items: [
-      {
-        text: 'create-weapp-vite（脚手架）',
-        link: '/packages/create-weapp-vite',
-      },
-      {
-        text: 'weapp-ide-cli（开发者工具 CLI）',
-        link: '/packages/weapp-ide-cli',
-      },
-      {
-        text: 'rolldown-require（配置加载）',
-        link: '/packages/rolldown-require/index.zh',
-      },
-      {
-        text: 'vite-plugin-performance（性能分析）',
-        link: '/packages/vite-plugin-performance',
-      },
+      { text: '周边包总览', link: '/packages/' },
+      { text: 'create-weapp-vite', link: '/packages/create-weapp-vite' },
     ],
   },
   {
-    text: '运行时与编译',
+    text: '工程与交付',
     collapsed: false,
     items: [
-      { text: '@wevu/compiler（编译底座）', link: '/packages/wevu-compiler' },
+      { text: 'weapp-ide-cli', link: '/packages/weapp-ide-cli' },
+      { text: 'rolldown-require', link: '/packages/rolldown-require/index.zh' },
+      { text: 'vite-plugin-performance', link: '/packages/vite-plugin-performance' },
+    ],
+  },
+  {
+    text: '运行时与跨端',
+    collapsed: false,
+    items: [
+      { text: '@wevu/compiler', link: '/packages/wevu-compiler' },
+      { text: '@wevu/api', link: '/packages/weapi/' },
+      { text: '@weapp-vite/web', link: '/packages/web' },
+    ],
+  },
+  {
+    text: 'AI 与编辑器',
+    collapsed: false,
+    items: [
+      { text: '@weapp-vite/mcp', link: '/packages/mcp' },
+      { text: '@weapp-vite/volar', link: '/packages/volar' },
+    ],
+  },
+  {
+    text: '参考手册',
+    collapsed: true,
+    items: [
       {
-        text: '@wevu/api（跨端 API）',
-        collapsed: false,
+        text: 'rolldown-require 中文',
+        collapsed: true,
         items: [
-          { text: '总览', link: '/packages/weapi/' },
-          { text: '兼容总览', link: '/packages/weapi/compat-overview' },
-          { text: 'API 全量清单', link: '/packages/weapi/wx-method-list' },
-          {
-            text: '支付宝兼容矩阵',
-            link: '/packages/weapi/alipay-compat-matrix',
-          },
-          {
-            text: '抖音兼容矩阵',
-            link: '/packages/weapi/douyin-compat-matrix',
-          },
-          { text: '兼容差异说明', link: '/packages/weapi/gap-notes' },
-          {
-            text: '平台独有 API 清单',
-            link: '/packages/weapi/platform-only-methods',
-          },
+          { text: '介绍', link: '/packages/rolldown-require/index.zh' },
+          { text: 'API 与选项', link: '/packages/rolldown-require/options.zh' },
+          { text: '加载流程与缓存', link: '/packages/rolldown-require/cache.zh' },
         ],
       },
-      { text: '@weapp-vite/web（Web 实验运行时）', link: '/packages/web' },
-      { text: '@weapp-vite/volar（IDE 插件）', link: '/packages/volar' },
-    ],
-  },
-  {
-    text: 'AI 与实验',
-    collapsed: false,
-    items: [{ text: '@weapp-vite/mcp（MCP 服务）', link: '/packages/mcp' }],
-  },
-  {
-    text: 'rolldown-require (EN)',
-    collapsed: true,
-    items: [
-      { text: 'Why rolldown-require', link: '/packages/rolldown-require/' },
-      { text: 'API & options', link: '/packages/rolldown-require/options' },
       {
-        text: 'Loading flow & cache',
-        link: '/packages/rolldown-require/cache',
+        text: 'rolldown-require English',
+        collapsed: true,
+        items: [
+          { text: 'Overview', link: '/packages/rolldown-require/' },
+          { text: 'API & options', link: '/packages/rolldown-require/options' },
+          { text: 'Loading flow & cache', link: '/packages/rolldown-require/cache' },
+        ],
       },
-    ],
-  },
-  {
-    text: 'rolldown-require (中文)',
-    collapsed: true,
-    items: [
-      {
-        text: '为什么需要 rolldown-require',
-        link: '/packages/rolldown-require/index.zh',
-      },
-      { text: 'API 与选项', link: '/packages/rolldown-require/options.zh' },
-      { text: '加载流程与缓存', link: '/packages/rolldown-require/cache.zh' },
     ],
   },
 ]
