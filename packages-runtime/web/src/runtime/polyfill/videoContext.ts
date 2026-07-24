@@ -1,4 +1,5 @@
 import type { VideoContext } from './types/platformRuntime'
+import { resolveNativeMediaElement } from '../nativeComponents/mediaRegistry'
 
 function resolveVideoElementById(videoId: string) {
   if (typeof document === 'undefined') {
@@ -7,6 +8,10 @@ function resolveVideoElementById(videoId: string) {
   const normalized = String(videoId ?? '').trim()
   if (!normalized) {
     return undefined
+  }
+  const registered = resolveNativeMediaElement<HTMLVideoElement>('video', normalized)
+  if (registered) {
+    return registered
   }
   const fromId = document.getElementById(normalized)
   if (fromId && 'play' in fromId && 'pause' in fromId) {

@@ -67,6 +67,8 @@ keywords:
 | `slider`                                     | `✅` | 支持范围、步长、颜色、block-size、show-value、disabled、表单值及 changing / change。 |
 | `navigator`                                  | `🟡` | 支持常用 open-type 与 miniProgram bridge，宿主跳转能力取决于 provider。              |
 | `swiper` / `swiper-item`                     | `✅` | 支持受控切换、触摸、循环、指示点、autoplay 与生命周期清理。                          |
+| `canvas`                                     | `🟡` | 真实 2D Canvas；支持 id 定位和常用绘图命令，高级 API 未全量覆盖。                    |
+| `video`                                      | `🟡` | 同步常用属性与微信形状事件；播放和全屏仍受浏览器限制。                               |
 
 ## `wx` API 矩阵（Web bridge）
 
@@ -93,8 +95,8 @@ keywords:
 | `wx.startPullDownRefresh` / `wx.stopPullDownRefresh`                                                     | `🟡` | Web 侧均作为 no-op 成功桥接，便于兼容下拉刷新调用链。                                                   |
 | `wx.hideKeyboard`                                                                                        | `🟡` | 通过 `blur` 当前聚焦输入元素近似桥接收起键盘能力，行为受浏览器焦点模型限制。                            |
 | `wx.pageScrollTo`                                                                                        | `🟡` | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。                                     |
-| `wx.createCanvasContext`                                                                                 | `🟡` | 基于浏览器 2D Canvas 上下文桥接高频绘制命令，绘图状态与高级 API 未全量覆盖。                            |
-| `wx.createVideoContext`                                                                                  | `🟡` | 基于页面 video 元素提供播放控制桥接（`play/pause/seek` 等），不包含原生播放器完整语义。                 |
+| `wx.createCanvasContext`                                                                                 | `🟡` | 跨 Shadow DOM 定位真实 Canvas，支持常用路径、填充和变换；高级 API 未全量覆盖。                          |
+| `wx.createVideoContext`                                                                                  | `🟡` | 跨 Shadow DOM 定位真实 video，并提供 play/pause/seek 等控制；不包含原生播放器完整语义。                 |
 | `wx.createWorker`                                                                                        | `🟡` | 基于浏览器 Worker 桥接消息收发与错误监听（`postMessage/onMessage/onError`），线程模型与真机不完全一致。 |
 | `wx.createSelectorQuery`                                                                                 | `🟡` | 支持 `in/select/selectAll/selectViewport` 与 `boundingClientRect/scrollOffset/fields/node` 高频子集。   |
 | `wx.setClipboardData` / `wx.getClipboardData`                                                            | `🟡` | 依赖浏览器剪贴板权限；失败时会回调 `fail`。                                                             |

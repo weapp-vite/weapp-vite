@@ -29,6 +29,8 @@ describe('compileWxml button mapping', () => {
             <swiper-item item-id="first">First</swiper-item>
             <swiper-item item-id="second">Second</swiper-item>
           </swiper>
+          <canvas canvas-id="parity-canvas" disable-scroll></canvas>
+          <video id="parity-video" src="/clip.mp4" object-fit="cover"></video>
         </view>
       `,
       resolveTemplatePath: () => undefined,
@@ -60,6 +62,10 @@ describe('compileWxml button mapping', () => {
     expect(result.code).not.toContain('data-hover-class=')
     expect(result.code).toContain('weapp-swiper')
     expect(result.code).toContain('weapp-swiper-item')
+    expect(result.code).toContain('weapp-canvas')
+    expect(result.code).toContain('weapp-video')
+    expect(result.code).toContain('canvas-id=')
+    expect(result.code).toContain('object-fit=')
     expect(result.warnings).toBeUndefined()
   })
 

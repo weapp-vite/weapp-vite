@@ -41,6 +41,9 @@ describe('transformWxssToCss', () => {
       slider[disabled] {
         min-height: 80rpx;
       }
+      canvas.stage + video[object-fit="cover"] {
+        display: block;
+      }
     `
     const { css } = transformWxssToCss(input)
     expect(css).toContain(':host > weapp-view.card weapp-text:first-child')
@@ -51,5 +54,6 @@ describe('transformWxssToCss', () => {
     expect(css).toContain('weapp-navigator.link:hover + weapp-swiper > weapp-swiper-item[data-active]')
     expect(css).toContain('weapp-picker[data-mode="selector"] + weapp-picker-view > weapp-picker-view-column')
     expect(css).toContain('weapp-slider[disabled]')
+    expect(css).toContain('weapp-canvas.stage + weapp-video[object-fit="cover"]')
   })
 })

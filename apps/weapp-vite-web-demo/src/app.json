@@ -9,6 +9,7 @@
     "pages/form-parity/index",
     "pages/selection-parity/index",
     "pages/navigation-parity/index",
+    "pages/media-parity/index",
     "pages/tabbar-parity/home",
     "pages/tabbar-parity/settings",
     "pages/product/detail/detail"

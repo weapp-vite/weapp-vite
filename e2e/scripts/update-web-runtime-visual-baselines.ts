@@ -53,6 +53,13 @@ const visualCases = [
     maxDiffRatio: 0.03,
   },
   {
+    id: 'media-matrix',
+    route: '/pages/media-parity/index',
+    baseline: 'media-matrix.png',
+    threshold: 0.18,
+    maxDiffRatio: 0.03,
+  },
+  {
     id: 'app-shell-tabbar',
     route: '/pages/tabbar-parity/home',
     baseline: 'app-shell-tabbar.png',

@@ -2983,6 +2983,14 @@ describe('web runtime wx utility APIs', () => {
     const lineTo = vi.fn()
     const stroke = vi.fn()
     const closePath = vi.fn()
+    const arc = vi.fn()
+    const rect = vi.fn()
+    const fill = vi.fn()
+    const save = vi.fn()
+    const restore = vi.fn()
+    const translate = vi.fn()
+    const rotate = vi.fn()
+    const scale = vi.fn()
     const runtimeContext = {
       clearRect,
       fillRect,
@@ -2993,6 +3001,14 @@ describe('web runtime wx utility APIs', () => {
       lineTo,
       stroke,
       closePath,
+      arc,
+      rect,
+      fill,
+      save,
+      restore,
+      translate,
+      rotate,
+      scale,
       fillStyle: '',
       strokeStyle: '',
       lineWidth: 0,
@@ -3016,6 +3032,15 @@ describe('web runtime wx utility APIs', () => {
       context.lineTo(220, 200)
       context.stroke()
       context.closePath()
+      context.save()
+      context.translate(10, 12)
+      context.rotate(Math.PI / 4)
+      context.scale(2, 3)
+      context.beginPath()
+      context.rect(4, 6, 80, 40)
+      context.arc(44, 26, 20, 0, Math.PI * 2)
+      context.fill()
+      context.restore()
       context.draw()
 
       expect(getContext).toHaveBeenCalledWith('2d')
@@ -3023,11 +3048,19 @@ describe('web runtime wx utility APIs', () => {
       expect(fillRect).toHaveBeenCalledWith(20, 20, 140, 80)
       expect(strokeRect).toHaveBeenCalledWith(20, 120, 200, 90)
       expect(fillText).toHaveBeenCalledWith('WeVU Canvas', 24, 170)
-      expect(beginPath).toHaveBeenCalledTimes(1)
+      expect(beginPath).toHaveBeenCalledTimes(2)
       expect(moveTo).toHaveBeenCalledWith(20, 200)
       expect(lineTo).toHaveBeenCalledWith(220, 200)
       expect(stroke).toHaveBeenCalledTimes(1)
       expect(closePath).toHaveBeenCalledTimes(1)
+      expect(save).toHaveBeenCalledTimes(1)
+      expect(translate).toHaveBeenCalledWith(10, 12)
+      expect(rotate).toHaveBeenCalledWith(Math.PI / 4)
+      expect(scale).toHaveBeenCalledWith(2, 3)
+      expect(rect).toHaveBeenCalledWith(4, 6, 80, 40)
+      expect(arc).toHaveBeenCalledWith(44, 26, 20, 0, Math.PI * 2, false)
+      expect(fill).toHaveBeenCalledTimes(1)
+      expect(restore).toHaveBeenCalledTimes(1)
 
       const done = vi.fn()
       context.draw(true, done)

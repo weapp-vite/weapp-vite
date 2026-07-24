@@ -547,6 +547,92 @@ describeWeb.sequential('web runtime visual parity', () => {
     }
   })
 
+  it('draws canvas content and bridges video controls and media events', async () => {
+    const page = await browser!.newPage({ viewport: { width: 390, height: 753 } })
+    try {
+      await navigateToVisualCase(page, '/pages/media-parity/index')
+
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data?.canvasStatus)
+      }).toBe('绘制完成')
+      const canvasPixel = await page.locator('weapp-canvas canvas').evaluate((element) => {
+        return Array.from((element as HTMLCanvasElement).getContext('2d')!.getImageData(30, 30, 1, 1).data)
+      })
+      expect(canvasPixel).toEqual([11, 127, 91, 255])
+
+      const videoState = await page.locator('weapp-video video').evaluate((element) => {
+        const video = element as HTMLVideoElement
+        let playCount = 0
+        let pauseCount = 0
+        Object.defineProperties(video, {
+          duration: { configurable: true, value: 40 },
+          buffered: {
+            configurable: true,
+            value: { length: 1, end: () => 20 },
+          },
+          play: {
+            configurable: true,
+            value: () => {
+              playCount += 1
+              video.dispatchEvent(new Event('play'))
+              return Promise.resolve()
+            },
+          },
+          pause: {
+            configurable: true,
+            value: () => {
+              pauseCount += 1
+              video.dispatchEvent(new Event('pause'))
+            },
+          },
+        })
+        const context = (window as any).wx.createVideoContext('mediaVideo')
+        context.play()
+        context.pause()
+        context.seek(12)
+        context.playbackRate(1.5)
+        video.dispatchEvent(new Event('timeupdate'))
+        video.dispatchEvent(new Event('progress'))
+        ;(video as any).__mediaTest = { context, getCounts: () => ({ playCount, pauseCount }) }
+        return {
+          playCount,
+          pauseCount,
+          currentTime: video.currentTime,
+          playbackRate: video.playbackRate,
+        }
+      })
+      expect(videoState).toEqual({
+        playCount: 1,
+        pauseCount: 1,
+        currentTime: 12,
+        playbackRate: 1.5,
+      })
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data)
+      }).toMatchObject({
+        videoTime: '12.0 / 40.0',
+        videoBuffered: '50%',
+      })
+      const stoppedState = await page.locator('weapp-video video').evaluate((element) => {
+        const video = element as HTMLVideoElement
+        const testState = (video as any).__mediaTest
+        testState.context.stop()
+        return {
+          ...testState.getCounts(),
+          currentTime: video.currentTime,
+        }
+      })
+      expect(stoppedState).toEqual({
+        playCount: 1,
+        pauseCount: 2,
+        currentTime: 0,
+      })
+    }
+    finally {
+      await page.close()
+    }
+  })
+
   it('keeps tab pages cached and updates the app shell through tabBar APIs', async () => {
     const page = await browser!.newPage({ viewport: { width: 1200, height: 900 } })
     try {

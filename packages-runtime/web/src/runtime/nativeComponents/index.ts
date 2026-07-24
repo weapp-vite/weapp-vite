@@ -1,6 +1,7 @@
 import type { NativeComponentWebTag } from '../../shared/nativeComponents'
 import { NATIVE_COMPONENT_DESCRIPTORS } from '../../shared/nativeComponents'
 import { WeappButton } from '../button'
+import { WeappCanvas } from './canvas'
 import { WeappCheckbox, WeappCheckboxGroup } from './checkbox'
 import { WeappForm } from './form'
 import { WeappImage } from './image'
@@ -17,6 +18,7 @@ import { WeappSwiper } from './swiper'
 import { WeappSwiperItem } from './swiper/item'
 import { WeappSwitch } from './switch'
 import { WeappTextarea } from './textarea'
+import { WeappVideo } from './video'
 
 const constructors = {
   'weapp-view': WeappView,
@@ -40,6 +42,8 @@ const constructors = {
   'weapp-navigator': WeappNavigator,
   'weapp-swiper': WeappSwiper,
   'weapp-swiper-item': WeappSwiperItem,
+  'weapp-canvas': WeappCanvas,
+  'weapp-video': WeappVideo,
 } satisfies Record<NativeComponentWebTag, CustomElementConstructor>
 
 export function ensureNativeComponentsDefined() {
@@ -78,3 +82,8 @@ export {
 } from './swiper/helpers'
 export { createSwitchEventDetail } from './switch'
 export { createTextareaLineChangeDetail } from './textarea'
+export {
+  createVideoProgressDetail,
+  createVideoTimeUpdateDetail,
+  resolveVideoObjectFit,
+} from './video/helpers'
