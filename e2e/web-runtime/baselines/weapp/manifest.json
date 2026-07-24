@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-24T04:01:21.081Z",
+  "generatedAt": "2026-07-24T06:05:09.577Z",
   "device": {
     "windowWidth": 390,
     "windowHeight": 753,
@@ -20,6 +20,13 @@
       "id": "form-matrix",
       "route": "/pages/form-parity/index",
       "baseline": "form-matrix.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03
+    },
+    {
+      "id": "navigation-matrix",
+      "route": "/pages/navigation-parity/index",
+      "baseline": "navigation-matrix.png",
       "threshold": 0.18,
       "maxDiffRatio": 0.03
     },

@@ -156,8 +156,10 @@ Web 产物输出目录，默认一般是 `dist/web`。
 - `checkbox-group` / `checkbox`
 - `radio-group` / `radio`
 - `switch`
+- `navigator`
+- `swiper` / `swiper-item`
 
-`image.mode`、input 常用属性与事件、scroll-view 滚动轴和事件均由运行时适配。表单组件支持带 `name` 控件的值收集、`submit` / `reset`、label 关联、checkbox/radio 聚合及 switch 状态；脚本同步属性不会触发用户 `change` 事件。WXSS 中的 `page` 会映射为页面组件的 `:host`，上述原生组件类型选择器会映射到对应运行时标签，class、attribute、pseudo 与组合选择器保持不变。
+`image.mode`、input 常用属性与事件、scroll-view 滚动轴和事件均由运行时适配。表单组件支持带 `name` 控件的值收集、`submit` / `reset`、label 关联、checkbox/radio 聚合及 switch 状态；脚本同步属性不会触发用户 `change` 事件。`navigator` 复用 Web 页面栈路由，并覆盖常用 open-type 和 `target="miniProgram"` 回调。`swiper` / `swiper-item` 支持受控 current、item-id、横纵布局、循环、指示点、触摸、autoplay 和微信形状的切换事件，断开 DOM 后会停止 autoplay。WXSS 中的 `page` 会映射为页面组件的 `:host`，上述原生组件类型选择器会映射到对应运行时标签，class、attribute、pseudo 与组合选择器保持不变。
 
 尚未完整支持的已知小程序组件会保持可渲染降级并输出去重告警。Web 运行时仍不等价于微信 DevTools 或真机，视觉发布门禁应以 DevTools 基线为真值。
 

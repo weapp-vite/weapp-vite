@@ -33,7 +33,8 @@ describe('transformWxssToCss', () => {
       form[data-state="ready"] > label + checkbox-group checkbox:checked,
       radio-group radio[disabled],
       scroll-view[data-axis="y"] image,
-      textarea:focus + switch {
+      textarea:focus + switch,
+      navigator.link:hover + swiper > swiper-item[data-active] {
         width: 100rpx;
       }
     `
@@ -43,5 +44,6 @@ describe('transformWxssToCss', () => {
     expect(css).toContain('weapp-radio-group weapp-radio[disabled]')
     expect(css).toContain('weapp-scroll-view[data-axis="y"] weapp-image')
     expect(css).toContain('weapp-textarea:focus + weapp-switch')
+    expect(css).toContain('weapp-navigator.link:hover + weapp-swiper > weapp-swiper-item[data-active]')
   })
 })

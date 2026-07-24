@@ -15,6 +15,12 @@
           "scene": null
         },
         {
+          "name": "导航与轮播语义矩阵",
+          "pathName": "pages/navigation-parity/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "NOVA X1 商品详情",
           "pathName": "pages/product/detail/detail",
           "query": "iteration=10",

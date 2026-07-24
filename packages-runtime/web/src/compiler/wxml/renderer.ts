@@ -1,4 +1,5 @@
 import type { RenderElementNode, RenderNode } from './types'
+import { resolveNativeComponentPropertyAttributes } from '../../shared/nativeComponents'
 import {
   hasControlAttribute,
   normalizeTagName,
@@ -176,6 +177,9 @@ export class Renderer {
     const attrs = renderAttributes(attribs, scopeVar, wxsVar, {
       skipControl: true,
       preferProperty: Boolean(customTag),
+      propertyAttributes: customTag
+        ? undefined
+        : resolveNativeComponentPropertyAttributes(node.name ?? ''),
     })
     const childNodes = node.children ?? []
     const children = childNodes

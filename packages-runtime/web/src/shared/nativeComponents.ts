@@ -2,6 +2,7 @@ export interface NativeComponentDescriptor {
   name: string
   webTag: string
   attributes: readonly string[]
+  propertyAttributes?: readonly string[]
   defaultStyle: string
 }
 
@@ -90,6 +91,55 @@ export const NATIVE_COMPONENT_DESCRIPTORS = Object.freeze([
     attributes: ['scroll-x', 'scroll-y', 'scroll-top', 'scroll-left'],
     defaultStyle: 'display: block; box-sizing: border-box;',
   },
+  {
+    name: 'navigator',
+    webTag: 'weapp-navigator',
+    attributes: [
+      'url',
+      'open-type',
+      'delta',
+      'target',
+      'app-id',
+      'path',
+      'extra-data',
+      'version',
+      'short-link',
+      'hover-class',
+      'hover-start-time',
+      'hover-stay-time',
+      'hover-stop-propagation',
+    ],
+    propertyAttributes: ['extra-data'],
+    defaultStyle: 'display: block; box-sizing: border-box;',
+  },
+  {
+    name: 'swiper',
+    webTag: 'weapp-swiper',
+    attributes: [
+      'current',
+      'current-item-id',
+      'autoplay',
+      'interval',
+      'duration',
+      'circular',
+      'vertical',
+      'indicator-dots',
+      'indicator-color',
+      'indicator-active-color',
+      'display-multiple-items',
+      'previous-margin',
+      'next-margin',
+      'disable-touch',
+      'easing-function',
+    ],
+    defaultStyle: 'display: block; box-sizing: border-box; height: 150px; overflow: hidden;',
+  },
+  {
+    name: 'swiper-item',
+    webTag: 'weapp-swiper-item',
+    attributes: ['item-id'],
+    defaultStyle: 'display: block; box-sizing: border-box; width: 100%; height: 100%; overflow: hidden;',
+  },
 ] as const satisfies readonly NativeComponentDescriptor[])
 
 export type SupportedNativeComponentName = typeof NATIVE_COMPONENT_DESCRIPTORS[number]['name']
@@ -102,9 +152,6 @@ const descriptorMap = new Map<string, NativeComponentDescriptor>(
 const KNOWN_UNSUPPORTED_NATIVE_COMPONENTS = new Set([
   'cover-view',
   'cover-image',
-  'navigator',
-  'swiper',
-  'swiper-item',
   'movable-area',
   'movable-view',
   'icon',
@@ -138,6 +185,10 @@ export function getNativeComponentDescriptor(name: string) {
 
 export function resolveNativeComponentWebTag(name: string) {
   return getNativeComponentDescriptor(name)?.webTag
+}
+
+export function resolveNativeComponentPropertyAttributes(name: string) {
+  return getNativeComponentDescriptor(name)?.propertyAttributes ?? []
 }
 
 export function isKnownUnsupportedNativeComponent(name: string) {

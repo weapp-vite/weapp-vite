@@ -363,4 +363,90 @@ describeWeb.sequential('web runtime visual parity', () => {
       await page.close()
     }
   })
+
+  it('navigates declaratively and updates swiper state from controls, touch and autoplay', async () => {
+    const page = await browser!.newPage({ viewport: { width: 390, height: 753 } })
+    try {
+      await navigateToVisualCase(page, '/pages/navigation-parity/index')
+
+      await page.locator('weapp-navigator').click()
+      await expect.poll(async () => {
+        return await page.evaluate(() => {
+          const currentPage = (window as any).getCurrentPages().at(-1)
+          return { route: currentPage?.route, from: currentPage?.data?.from }
+        })
+      }).toEqual({
+        route: 'pages/about/index',
+        from: 'navigation-parity',
+      })
+
+      await page.evaluate(async () => await (window as any).wx.navigateBack())
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.route)
+      }).toBe('pages/navigation-parity/index')
+
+      await page.getByText('下一项', { exact: true }).click()
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data)
+      }).toMatchObject({ current: 2, eventSource: 'programmatic' })
+
+      const viewport = page.locator('weapp-swiper .viewport')
+      const box = await viewport.boundingBox()
+      if (!box) {
+        throw new TypeError('[web-visual] swiper viewport is not visible')
+      }
+      await page.mouse.move(box.x + box.width * 0.75, box.y + box.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2, { steps: 6 })
+      await page.mouse.up()
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data)
+      }).toMatchObject({ current: 0, eventSource: 'touch' })
+
+      await page.locator('weapp-swiper').evaluate((element) => {
+        element.setAttribute('duration', '0')
+        element.setAttribute('interval', '40')
+        element.setAttribute('autoplay', 'true')
+      })
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data?.eventSource)
+      }).toBe('autoplay')
+
+      const autoplayLifecycle = await page.locator('weapp-swiper').evaluate(async (element) => {
+        const parent = element.parentNode
+        const nextSibling = element.nextSibling
+        if (!parent) {
+          throw new TypeError('[web-visual] swiper parent is unavailable')
+        }
+        const readCurrent = () => (window as any).getCurrentPages().at(-1)?.data?.current as number
+        element.remove()
+        const disconnectedCurrent = readCurrent()
+        await new Promise(resolve => setTimeout(resolve, 120))
+        const afterDisconnect = readCurrent()
+        const controlledCurrent = (afterDisconnect + 1) % 3
+        element.setAttribute('current', String(controlledCurrent))
+        parent.insertBefore(element, nextSibling)
+        const activeAfterReconnect = [...element.querySelectorAll('weapp-swiper-item')]
+          .findIndex(item => item.hasAttribute('data-active'))
+        const deadline = Date.now() + 500
+        while (readCurrent() === afterDisconnect && Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, 20))
+        }
+        return {
+          disconnectedCurrent,
+          afterDisconnect,
+          controlledCurrent,
+          activeAfterReconnect,
+          afterReconnect: readCurrent(),
+        }
+      })
+      expect(autoplayLifecycle.afterDisconnect).toBe(autoplayLifecycle.disconnectedCurrent)
+      expect(autoplayLifecycle.activeAfterReconnect).toBe(autoplayLifecycle.controlledCurrent)
+      expect(autoplayLifecycle.afterReconnect).not.toBe(autoplayLifecycle.afterDisconnect)
+      await page.locator('weapp-swiper').evaluate(element => element.removeAttribute('autoplay'))
+    }
+    finally {
+      await page.close()
+    }
+  })
 })
