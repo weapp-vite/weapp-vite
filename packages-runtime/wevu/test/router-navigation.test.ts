@@ -3335,6 +3335,7 @@ describe('router navigation helpers', () => {
 
     setCurrentInstance(instance)
     setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).wx = instance.router
     ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
 
     const router = createRouter({
@@ -3360,6 +3361,78 @@ describe('router navigation helpers', () => {
     expect(navigateTo).toHaveBeenCalledTimes(2)
   })
 
+  it('provides the resolved stack target to router.back guards and hooks', async () => {
+    const pages = [
+      {
+        route: 'pages/page1/index',
+        options: {
+          source: 'back-target',
+        },
+      },
+      {
+        route: 'pages/page2/index',
+        options: {},
+      },
+    ]
+    const navigateBack = vi.fn((options: any) => {
+      pages.pop()
+      options.success?.({})
+    })
+    const guardCalls: any[] = []
+    const afterCalls: any[] = []
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack,
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).wx = instance.router
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const router = createRouter({
+      routes: [
+        {
+          name: 'page1',
+          path: '/pages/page1/index',
+        },
+        {
+          name: 'page2',
+          path: '/pages/page2/index',
+        },
+      ],
+    })
+    notifyRouteStateSync({ page: pages[1] })
+    router.beforeEach((to, from) => {
+      guardCalls.push({ to, from })
+    })
+    router.afterEach((to, from) => {
+      afterCalls.push({ to, from })
+    })
+
+    await expect(router.back()).resolves.toBeUndefined()
+
+    expect(guardCalls).toMatchObject([
+      {
+        from: { path: 'pages/page2/index' },
+        to: {
+          fullPath: '/pages/page1/index?source=back-target',
+          name: 'page1',
+          path: 'pages/page1/index',
+        },
+      },
+    ])
+    expect(afterCalls).toMatchObject(guardCalls)
+    expect(router.currentRoute.fullPath).toBe('/pages/page1/index?source=back-target')
+  })
+
   it('restores currentRoute from the activated page when the host performs back navigation', async () => {
     const page1 = {
       route: 'pages/page1/index',
@@ -3367,7 +3440,7 @@ describe('router navigation helpers', () => {
         source: 'host-back',
       },
     }
-    const pages = [page1]
+    const pages: Array<{ options: Record<string, string>, route: string }> = [page1]
     const navigateTo = vi.fn((options: any) => {
       pages.push({
         route: 'pages/page2/index',
@@ -3403,13 +3476,37 @@ describe('router navigation helpers', () => {
         },
       ],
     })
+    const guardCalls: any[] = []
+    const afterCalls: any[] = []
+    router.beforeEach((to, from) => {
+      guardCalls.push({ to, from })
+    })
+    router.afterEach((to, from) => {
+      afterCalls.push({ to, from })
+    })
 
     await router.push({ name: 'page2' })
     expect(router.currentRoute.path).toBe('pages/page2/index')
+    guardCalls.length = 0
+    afterCalls.length = 0
 
-    notifyRouteStateSync({ page: page1 })
+    notifyRouteStateSync({ page: page1, source: 'page' })
+    await vi.waitFor(() => {
+      expect(afterCalls).toHaveLength(1)
+    })
     expect(router.currentRoute.fullPath).toBe('/pages/page1/index?source=host-back')
     expect(router.currentRoute.name).toBe('page1')
+    expect(guardCalls).toMatchObject([
+      {
+        from: { path: 'pages/page2/index' },
+        to: {
+          fullPath: '/pages/page1/index?source=host-back',
+          name: 'page1',
+          path: 'pages/page1/index',
+        },
+      },
+    ])
+    expect(afterCalls).toMatchObject(guardCalls)
 
     await expect(router.push({ name: 'page2' })).resolves.toBeUndefined()
     expect(navigateTo).toHaveBeenCalledTimes(2)
