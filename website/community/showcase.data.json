@@ -114,5 +114,52 @@
         "relativePath": "cases/wooly99/screenshot-3.jpeg"
       }
     ]
+  },
+  {
+    "id": 5042561272,
+    "slug": "koor",
+    "title": "希尔顿官方预订",
+    "description": "希尔顿荣誉客会在线预订，让旅行尽在掌握！",
+    "sourceCommentUrl": "https://github.com/weapp-vite/weapp-vite/issues/43#issuecomment-5042561272",
+    "createdAt": "2026-07-22T06:18:24Z",
+    "author": "koor",
+    "assets": [
+      {
+        "kind": "cover",
+        "originalUrl": "https://github.com/user-attachments/assets/6eb828c7-314d-4c04-85a8-1a1b00e2f134",
+        "relativePath": "cases/koor/cover.jpeg"
+      }
+    ]
+  },
+  {
+    "id": 5066673877,
+    "slug": "ialtone",
+    "title": "续费管理小程序： 续费鸭",
+    "description": "一个简单的订阅管理小工具，帮你记录会员、提醒扣费、减少忘记取消带来的浪费。",
+    "sourceCommentUrl": "https://github.com/weapp-vite/weapp-vite/issues/43#issuecomment-5066673877",
+    "createdAt": "2026-07-24T06:05:19Z",
+    "author": "ialtone",
+    "assets": [
+      {
+        "kind": "cover",
+        "originalUrl": "https://a1.boltp.com/2026/05/28/6a1845f1db312.png",
+        "relativePath": "cases/ialtone/cover.png"
+      },
+      {
+        "kind": "screenshot",
+        "originalUrl": "https://a1.boltp.com/2026/05/28/6a1845efdaac1.png",
+        "relativePath": "cases/ialtone/screenshot-1.png"
+      },
+      {
+        "kind": "screenshot",
+        "originalUrl": "https://a1.boltp.com/2026/05/28/6a1845eb063af.png",
+        "relativePath": "cases/ialtone/screenshot-2.png"
+      },
+      {
+        "kind": "qrcode",
+        "originalUrl": "https://a1.boltp.com/2026/05/28/6a1848a534de7.png",
+        "relativePath": "cases/ialtone/screenshot-3.png"
+      }
+    ]
   }
 ]
