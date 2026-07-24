@@ -17,6 +17,11 @@ describe('compileWxml button mapping', () => {
             <checkbox-group name="features"><checkbox value="web" checked>Web</checkbox></checkbox-group>
             <radio-group name="channel"><radio value="stable" checked>Stable</radio></radio-group>
             <switch name="enabled" checked />
+            <picker mode="selector" range="{{options}}" value="{{selected}}"><view>Picker</view></picker>
+            <picker-view value="{{pickerValue}}">
+              <picker-view-column><view>Column</view></picker-view-column>
+            </picker-view>
+            <slider value="42" show-value />
           </form>
           <scroll-view scroll-y="{{true}}"><view>Content</view></scroll-view>
           <navigator url="/pages/detail/index" extra-data="{{payload}}" hover-class="nav-active">Detail</navigator>
@@ -42,6 +47,12 @@ describe('compileWxml button mapping', () => {
     expect(result.code).toContain('weapp-radio-group')
     expect(result.code).toContain('weapp-radio')
     expect(result.code).toContain('weapp-switch')
+    expect(result.code).toContain('weapp-picker')
+    expect(result.code).toContain('weapp-picker-view')
+    expect(result.code).toContain('weapp-picker-view-column')
+    expect(result.code).toContain('weapp-slider')
+    expect(result.code).toMatch(/\.range=\$\{ctx\.eval\("options", [^,]+, __wxs_modules\)\}/)
+    expect(result.code).toMatch(/\.value=\$\{ctx\.eval\("pickerValue", [^,]+, __wxs_modules\)\}/)
     expect(result.code).toContain('weapp-scroll-view')
     expect(result.code).toContain('weapp-navigator')
     expect(result.code).toMatch(/\.extraData=\$\{ctx\.eval\("payload", [^,]+, __wxs_modules\)\}/)

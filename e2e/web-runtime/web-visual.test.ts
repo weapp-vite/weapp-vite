@@ -364,6 +364,75 @@ describeWeb.sequential('web runtime visual parity', () => {
     }
   })
 
+  it('updates picker, picker-view and slider values with mini-program detail data', async () => {
+    const page = await browser!.newPage({ viewport: { width: 390, height: 753 } })
+    try {
+      await navigateToVisualCase(page, '/pages/selection-parity/index')
+
+      const pickerViewState = await page.locator('weapp-picker-view-column').evaluateAll((columns) => {
+        return columns.map((column: any) => ({
+          count: column.itemCount,
+          index: column.selectedIndex,
+        }))
+      })
+      expect(pickerViewState).toEqual([
+        { count: 3, index: 1 },
+        { count: 3, index: 2 },
+        { count: 3, index: 1 },
+      ])
+
+      await page.locator('weapp-picker').first().evaluate((element: any) => element.open())
+      await page.locator('weapp-picker select').first().selectOption('2')
+      await page.locator('weapp-picker .toolbar button').nth(1).click()
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data)
+      }).toMatchObject({
+        environmentIndex: 2,
+        environmentLabel: '真机预览',
+        eventSummary: 'picker:environment=2',
+      })
+
+      await page.locator('weapp-picker').first().evaluate((element: any) => element.open())
+      await page.locator('weapp-picker .backdrop').first().click({ position: { x: 4, y: 4 } })
+      await expect.poll(async () => {
+        return await page.locator('weapp-picker .backdrop').first().evaluate((element: HTMLElement) => ({
+          hidden: element.hidden,
+          summary: (window as any).getCurrentPages().at(-1)?.data?.eventSummary,
+        }))
+      }).toEqual({ hidden: true, summary: 'picker:cancel' })
+
+      await page.locator('weapp-picker-view-column').first().evaluate(async (column: any) => {
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+        const scroller = column.shadowRoot?.querySelector('.scroller') as HTMLElement
+        scroller.scrollTop = 0
+        scroller.dispatchEvent(new Event('scroll'))
+      })
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data)
+      }).toMatchObject({
+        pickerViewValue: [0, 2, 1],
+        pickerViewLabel: '小程序 / TypeScript / 生产',
+        eventSummary: 'picker-view=0,2,1',
+      })
+
+      await page.locator('weapp-slider input').first().evaluate((input: HTMLInputElement) => {
+        input.value = '74'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        input.dispatchEvent(new Event('change', { bubbles: true }))
+      })
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data)
+      }).toMatchObject({
+        sliderValue: 74,
+        eventSummary: 'slider=74',
+      })
+    }
+    finally {
+      await page.close()
+    }
+  })
+
   it('navigates declaratively and updates swiper state from controls, touch and autoplay', async () => {
     const page = await browser!.newPage({ viewport: { width: 390, height: 753 } })
     try {
