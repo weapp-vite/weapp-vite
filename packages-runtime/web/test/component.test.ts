@@ -693,6 +693,7 @@ describe('registerPage integration', () => {
 
     const currentPages = (globalThis as any).getCurrentPages?.() ?? []
     expect(currentPages.length).toBe(1)
+    expect(currentPages[0].route).toBe('pages/index/index')
 
     const renderedHTML = firstPage.shadowRoot?.innerHTML ?? ''
     expect(renderedHTML).toContain('data-mp-on-click="increment"')
@@ -739,6 +740,7 @@ describe('registerPage integration', () => {
     expect(onUnload).toHaveBeenCalledTimes(1)
     const secondPage = findElementByTag('wv-page-pages-second-index') as HTMLElement & { data: any }
     expect(secondPage).toBeTruthy()
+    expect(((globalThis as any).getCurrentPages?.() ?? []).at(-1)?.route).toBe('pages/second/index')
     expect(onSecondLoad).toHaveBeenCalledWith(expect.objectContaining({ foo: 'bar' }))
     expect(typeof (globalThis as any).wx.navigateTo).toBe('function')
 

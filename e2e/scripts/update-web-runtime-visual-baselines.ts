@@ -39,6 +39,13 @@ const visualCases = [
     maxDiffRatio: 0.03,
   },
   {
+    id: 'navigation-matrix',
+    route: '/pages/navigation-parity/index',
+    baseline: 'navigation-matrix.png',
+    threshold: 0.18,
+    maxDiffRatio: 0.03,
+  },
+  {
     id: 'product-detail',
     route: '/pages/product/detail/detail?iteration=10',
     baseline: 'product-detail.png',

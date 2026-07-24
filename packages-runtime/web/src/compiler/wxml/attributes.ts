@@ -86,7 +86,11 @@ export function renderAttributes(
   attribs: Record<string, string>,
   scopeVar: string,
   wxsVar: string,
-  options?: { skipControl?: boolean, preferProperty?: boolean },
+  options?: {
+    skipControl?: boolean
+    preferProperty?: boolean
+    propertyAttributes?: readonly string[]
+  },
 ) {
   let buffer = ''
   for (const [rawName, rawValue] of Object.entries(attribs)) {
@@ -105,7 +109,8 @@ export function renderAttributes(
       buffer += ` @${domEvent}=\${ctx.event(${JSON.stringify(event)}, ${handlerExpr}, ${scopeVar}, ${wxsVar}, ${JSON.stringify(flags)})}`
       continue
     }
-    const useProperty = options?.preferProperty && shouldBindAsProperty(rawName)
+    const useProperty = shouldBindAsProperty(rawName)
+      && (options?.preferProperty || options?.propertyAttributes?.includes(rawName))
     const name = useProperty ? normalizePropertyName(rawName) : normalizeAttributeName(rawName)
     const expr = buildExpression(parseInterpolations(rawValue ?? ''), scopeVar, wxsVar)
     buffer += ` ${useProperty ? '.' : ''}${name}=\${${expr}}`

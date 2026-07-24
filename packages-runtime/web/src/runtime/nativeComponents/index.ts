@@ -6,9 +6,12 @@ import { WeappForm } from './form'
 import { WeappImage } from './image'
 import { WeappInput } from './input'
 import { WeappLabel } from './label'
+import { WeappNavigator } from './navigator'
 import { WeappText, WeappView } from './primitives'
 import { WeappRadio, WeappRadioGroup } from './radio'
 import { WeappScrollView } from './scrollView'
+import { WeappSwiper } from './swiper'
+import { WeappSwiperItem } from './swiper/item'
 import { WeappSwitch } from './switch'
 import { WeappTextarea } from './textarea'
 
@@ -27,6 +30,9 @@ const constructors = {
   'weapp-radio': WeappRadio,
   'weapp-switch': WeappSwitch,
   'weapp-scroll-view': WeappScrollView,
+  'weapp-navigator': WeappNavigator,
+  'weapp-swiper': WeappSwiper,
+  'weapp-swiper-item': WeappSwiperItem,
 } satisfies Record<NativeComponentWebTag, CustomElementConstructor>
 
 export function ensureNativeComponentsDefined() {
@@ -49,5 +55,11 @@ export { createInputEventDetail } from './input'
 export { collectRadioGroupValue } from './radio'
 export { createScrollEventDetail } from './scrollView'
 export { NATIVE_COMPONENT_STYLE } from './style'
+export {
+  createSwiperChangeDetail,
+  resolveSwiperIndex,
+  resolveSwiperNumber,
+  resolveSwipeTarget,
+} from './swiper/helpers'
 export { createSwitchEventDetail } from './switch'
 export { createTextareaLineChangeDetail } from './textarea'

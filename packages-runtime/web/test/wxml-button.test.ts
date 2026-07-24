@@ -19,6 +19,11 @@ describe('compileWxml button mapping', () => {
             <switch name="enabled" checked />
           </form>
           <scroll-view scroll-y="{{true}}"><view>Content</view></scroll-view>
+          <navigator url="/pages/detail/index" extra-data="{{payload}}" hover-class="nav-active">Detail</navigator>
+          <swiper current="1" indicator-dots>
+            <swiper-item item-id="first">First</swiper-item>
+            <swiper-item item-id="second">Second</swiper-item>
+          </swiper>
         </view>
       `,
       resolveTemplatePath: () => undefined,
@@ -38,19 +43,25 @@ describe('compileWxml button mapping', () => {
     expect(result.code).toContain('weapp-radio')
     expect(result.code).toContain('weapp-switch')
     expect(result.code).toContain('weapp-scroll-view')
+    expect(result.code).toContain('weapp-navigator')
+    expect(result.code).toMatch(/\.extraData=\$\{ctx\.eval\("payload", [^,]+, __wxs_modules\)\}/)
+    expect(result.code).toContain('hover-class=')
+    expect(result.code).not.toContain('data-hover-class=')
+    expect(result.code).toContain('weapp-swiper')
+    expect(result.code).toContain('weapp-swiper-item')
     expect(result.warnings).toBeUndefined()
   })
 
   it('warns once when a known component uses DOM fallback semantics', () => {
     const result = compileWxml({
       id: '/src/pages/index/index.wxml',
-      source: '<swiper><swiper-item>A</swiper-item><swiper-item>B</swiper-item></swiper>',
+      source: '<movable-area><movable-view>A</movable-view></movable-area>',
       resolveTemplatePath: () => undefined,
       resolveWxsPath: () => undefined,
     })
     expect(result.warnings).toEqual([
-      expect.stringContaining('<swiper>'),
-      expect.stringContaining('<swiper-item>'),
+      expect.stringContaining('<movable-area>'),
+      expect.stringContaining('<movable-view>'),
     ])
   })
 })

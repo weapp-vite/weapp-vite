@@ -114,8 +114,5 @@ export function normalizeAttributeName(name: string) {
   if (name === 'class' || name === 'style' || name.startsWith('data-')) {
     return name
   }
-  if (name === 'hover-class') {
-    return 'data-hover-class'
-  }
   return name.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`)
 }
