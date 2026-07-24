@@ -102,6 +102,7 @@ import {
   preloadSubpackage,
   previewImage,
   previewMedia,
+  redirectTo,
   registerApp,
   registerComponent,
   registerPage,
@@ -639,13 +640,16 @@ describe.skip('defineComponent', () => {
 
 describe('registerPage integration', () => {
   it('mounts pages, wires events, and supports navigation', async () => {
-    const onLoad = vi.fn()
+    const onLoad = vi.fn(function (this: any) {
+      this.markPageLoaded()
+    })
     const onLoadUpdate = vi.fn()
     const onShow = vi.fn()
     const onHide = vi.fn()
     const onUnload = vi.fn()
     const onReady = vi.fn()
     const onSecondLoad = vi.fn()
+    const onSecondHide = vi.fn()
     const onSecondUnload = vi.fn()
 
     registerApp({
@@ -654,9 +658,12 @@ describe('registerPage integration', () => {
 
     const firstTemplate = createTemplate('<view bindtap="increment">{{count}}</view>')
     registerPage({
-      data: () => ({ count: 1 }),
+      data: () => ({ count: 1, loadedByMethod: false }),
       increment(this: any) {
         this.setData({ count: this.data.count + 1 })
+      },
+      markPageLoaded(this: any) {
+        this.setData({ loadedByMethod: true })
       },
       onLoad,
       onShow,
@@ -672,6 +679,7 @@ describe('registerPage integration', () => {
     registerPage({
       data: { title: 'second' },
       onLoad: onSecondLoad,
+      onHide: onSecondHide,
       onUnload: onSecondUnload,
     }, {
       id: 'pages/second/index',
@@ -690,6 +698,8 @@ describe('registerPage integration', () => {
     expect(onLoad).toHaveBeenCalledTimes(1)
     expect(onShow).toHaveBeenCalledTimes(1)
     expect(onReady).toHaveBeenCalledTimes(1)
+    expect(firstPage.data.loadedByMethod).toBe(true)
+    expect(typeof (firstPage as any).markPageLoaded).toBe('function')
 
     const currentPages = (globalThis as any).getCurrentPages?.() ?? []
     expect(currentPages.length).toBe(1)
@@ -726,32 +736,138 @@ describe('registerPage integration', () => {
     expect(onLoadUpdate).toHaveBeenCalledTimes(0)
     expect(onLoad).toHaveBeenCalledTimes(1)
     expect(firstPage.data.count).toBe(2)
+    expect((firstPage as any).markPageLoaded).toBeUndefined()
 
     const updatedTrigger = (shadowRoot?.querySelectorAll('weapp-view') ?? [])
       .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     updatedTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(firstPage.data.count).toBe(12)
 
+    container!.scrollTop = 96
     await navigateTo({ url: 'pages/second/index?foo=bar' })
     await Promise.resolve()
 
-    expect(firstPage.parentNode).toBeNull()
+    expect(firstPage.parentNode).toBe(container)
+    expect(firstPage.hasAttribute('hidden')).toBe(true)
     expect(onHide).toHaveBeenCalledTimes(1)
-    expect(onUnload).toHaveBeenCalledTimes(1)
+    expect(onUnload).toHaveBeenCalledTimes(0)
+    expect(container?.scrollTop).toBe(0)
     const secondPage = findElementByTag('wv-page-pages-second-index') as HTMLElement & { data: any }
     expect(secondPage).toBeTruthy()
-    expect(((globalThis as any).getCurrentPages?.() ?? []).at(-1)?.route).toBe('pages/second/index')
+    const pagesAfterNavigate = (globalThis as any).getCurrentPages?.() ?? []
+    expect(pagesAfterNavigate.map((page: any) => page.route)).toEqual([
+      'pages/index/index',
+      'pages/second/index',
+    ])
     expect(onSecondLoad).toHaveBeenCalledWith(expect.objectContaining({ foo: 'bar' }))
     expect(typeof (globalThis as any).wx.navigateTo).toBe('function')
 
+    container!.scrollTop = 41
     await navigateBack({ delta: 1 })
     await Promise.resolve()
 
     const firstPageAgain = findElementByTag('wv-page-pages-index-index') as HTMLElement & { data: any }
-    expect(firstPageAgain).toBeTruthy()
+    expect(firstPageAgain).toBe(firstPage)
+    expect(firstPageAgain.data.count).toBe(12)
+    expect(firstPageAgain.hasAttribute('hidden')).toBe(false)
+    expect(container?.scrollTop).toBe(96)
     expect(onLoad).toHaveBeenCalledTimes(1)
-    expect(onLoadUpdate).toHaveBeenCalledTimes(1)
+    expect(onLoadUpdate).toHaveBeenCalledTimes(0)
+    expect(onShow).toHaveBeenCalledTimes(2)
+    expect(onSecondHide).toHaveBeenCalledTimes(1)
     expect(onSecondUnload).toHaveBeenCalledTimes(1)
+  })
+
+  it('unloads only pages removed by redirect and relaunch', async () => {
+    const calls: string[] = []
+    const createPage = (id: string) => {
+      registerPage({
+        onLoad() {
+          calls.push(`${id}:load`)
+        },
+        onShow() {
+          calls.push(`${id}:show`)
+        },
+        onHide() {
+          calls.push(`${id}:hide`)
+        },
+        onUnload() {
+          calls.push(`${id}:unload`)
+        },
+      }, {
+        id: `pages/route-${id}/index`,
+        template: createTemplate(`<view>${id}</view>`),
+      })
+    }
+
+    createPage('first')
+    createPage('second')
+    createPage('third')
+    const firstRoute = 'pages/route-first/index'
+    const secondRoute = 'pages/route-second/index'
+    const thirdRoute = 'pages/route-third/index'
+    initializePageRoutes([firstRoute, secondRoute, thirdRoute])
+    await reLaunch({ url: firstRoute })
+    calls.length = 0
+
+    await navigateTo({ url: secondRoute })
+    expect(calls).toEqual([
+      'first:hide',
+      'second:load',
+      'second:show',
+    ])
+    expect((globalThis as any).getCurrentPages().map((page: any) => page.route)).toEqual([
+      firstRoute,
+      secondRoute,
+    ])
+
+    calls.length = 0
+    await redirectTo({ url: thirdRoute })
+    expect(calls).toEqual([
+      'second:hide',
+      'second:unload',
+      'third:load',
+      'third:show',
+    ])
+    expect((globalThis as any).getCurrentPages().map((page: any) => page.route)).toEqual([
+      firstRoute,
+      thirdRoute,
+    ])
+
+    calls.length = 0
+    await reLaunch({ url: secondRoute })
+    expect(calls).toEqual([
+      'third:hide',
+      'third:unload',
+      'first:unload',
+      'second:load',
+      'second:show',
+    ])
+    expect((globalThis as any).getCurrentPages().map((page: any) => page.route)).toEqual([secondRoute])
+
+    const success = vi.fn()
+    const complete = vi.fn()
+    await expect(navigateTo({
+      url: thirdRoute,
+      success,
+      complete,
+    })).resolves.toEqual({ errMsg: 'navigateTo:ok' })
+    expect(success).toHaveBeenCalledWith({ errMsg: 'navigateTo:ok' })
+    expect(complete).toHaveBeenCalledWith({ errMsg: 'navigateTo:ok' })
+
+    const fail = vi.fn()
+    complete.mockClear()
+    await expect(redirectTo({
+      url: 'pages/route-missing/index',
+      fail,
+      complete,
+    })).rejects.toEqual({ errMsg: 'redirectTo:fail page not found' })
+    expect(fail).toHaveBeenCalledWith({ errMsg: 'redirectTo:fail page not found' })
+    expect(complete).toHaveBeenCalledWith({ errMsg: 'redirectTo:fail page not found' })
+    expect((globalThis as any).getCurrentPages().map((page: any) => page.route)).toEqual([
+      secondRoute,
+      thirdRoute,
+    ])
   })
 
   it('keeps active page state during repeated hot updates', async () => {
@@ -1289,7 +1405,7 @@ describe('web runtime wx utility APIs', () => {
     expect(typeof myBridge?.env?.USER_DATA_PATH).toBe('string')
   })
 
-  it('supports route and file system bridge through aliased host globals', () => {
+  it('supports route and file system bridge through aliased host globals', async () => {
     const myBridge = (globalThis as any).my as {
       env?: {
         USER_DATA_PATH?: string
@@ -1311,10 +1427,13 @@ describe('web runtime wx utility APIs', () => {
       'pages/detail/index',
     ])
 
-    myBridge.navigateTo?.({ url: '/pages/detail/index' })
+    await reLaunch({ url: '/pages/home/index' })
+    await myBridge.navigateTo?.({ url: '/pages/detail/index' })
     const currentPages = (globalThis as any).getCurrentPages?.() ?? []
-    expect(currentPages).toHaveLength(1)
-    expect(currentPages[0]).toBeTruthy()
+    expect(currentPages.map((page: any) => page.route)).toEqual([
+      'pages/home/index',
+      'pages/detail/index',
+    ])
 
     const fsManager = myBridge.getFileSystemManager?.()
     const filePath = `${myBridge.env?.USER_DATA_PATH ?? ''}/alias.txt`
@@ -3052,23 +3171,14 @@ describe('web runtime wx utility APIs', () => {
     expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'stopPullDownRefresh:ok' }))
     expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'stopPullDownRefresh:ok' }))
 
-    const scrollTo = vi.fn()
-    const runtimeWindow = (globalThis as any).window
-    const restoreWindow = overrideGlobalProperty('window', {
-      ...runtimeWindow,
-      scrollTo,
-    })
-    try {
-      const scrollResult = await pageScrollTo({
-        scrollTop: 128,
-        duration: 0,
-      }) as { errMsg: string }
-      expect(scrollResult.errMsg).toBe('pageScrollTo:ok')
-      expect(scrollTo).toHaveBeenCalledWith(0, 128)
-    }
-    finally {
-      restoreWindow()
-    }
+    const pageContainer = document.querySelector('#app') as HTMLElement
+    pageContainer.scrollTop = 0
+    const scrollResult = await pageScrollTo({
+      scrollTop: 128,
+      duration: 0,
+    }) as { errMsg: string }
+    expect(scrollResult.errMsg).toBe('pageScrollTo:ok')
+    expect(pageContainer.scrollTop).toBe(128)
   })
 
   it('shows and hides loading overlay', async () => {

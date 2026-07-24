@@ -58,6 +58,19 @@ function normalizeOpenType(value: string): NavigatorOpenType {
   }
 }
 
+function withNavigatorCallbacks<T extends Record<string, unknown>>(options: T, request: NavigatorRequest) {
+  if (request.success) {
+    Object.assign(options, { success: request.success })
+  }
+  if (request.fail) {
+    Object.assign(options, { fail: request.fail })
+  }
+  if (request.complete) {
+    Object.assign(options, { complete: request.complete })
+  }
+  return options
+}
+
 export function executeNavigatorRequest(
   request: NavigatorRequest,
   bridge: NavigatorRuntimeBridge = defaultBridge,
@@ -85,13 +98,13 @@ export function executeNavigatorRequest(
 
   switch (openType) {
     case 'redirect':
-      return bridge.redirectTo({ url: request.url })
+      return bridge.redirectTo(withNavigatorCallbacks({ url: request.url }, request))
     case 'switchtab':
-      return bridge.switchTab({ url: request.url })
+      return bridge.switchTab(withNavigatorCallbacks({ url: request.url }, request))
     case 'relaunch':
-      return bridge.reLaunch({ url: request.url })
+      return bridge.reLaunch(withNavigatorCallbacks({ url: request.url }, request))
     case 'navigateback':
-      return bridge.navigateBack({ delta: request.delta })
+      return bridge.navigateBack(withNavigatorCallbacks({ delta: request.delta }, request))
     case 'exit':
       emitRuntimeWarning('[@weapp-vite/web] navigator open-type="exit" 仅在 target="miniProgram" 时生效', {
         key: 'navigator:self:exit',
@@ -99,7 +112,7 @@ export function executeNavigatorRequest(
       })
       return Promise.resolve()
     default:
-      return bridge.navigateTo({ url: request.url })
+      return bridge.navigateTo(withNavigatorCallbacks({ url: request.url }, request))
   }
 }
 

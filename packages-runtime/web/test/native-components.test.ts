@@ -49,6 +49,9 @@ describe('web native component contracts', () => {
   })
 
   it('routes navigator open types through the existing page stack bridge', async () => {
+    const success = vi.fn()
+    const fail = vi.fn()
+    const complete = vi.fn()
     const bridge = {
       navigateTo: vi.fn(() => Promise.resolve()),
       redirectTo: vi.fn(() => Promise.resolve()),
@@ -64,6 +67,9 @@ describe('web native component contracts', () => {
       openType: 'redirect',
       delta: 1,
       target: 'self',
+      success,
+      fail,
+      complete,
     }, bridge as any)
     await executeNavigatorRequest({
       url: '',
@@ -72,7 +78,12 @@ describe('web native component contracts', () => {
       target: 'self',
     }, bridge as any)
 
-    expect(bridge.redirectTo).toHaveBeenCalledWith({ url: '/pages/detail/index?from=navigator' })
+    expect(bridge.redirectTo).toHaveBeenCalledWith({
+      url: '/pages/detail/index?from=navigator',
+      success,
+      fail,
+      complete,
+    })
     expect(bridge.navigateBack).toHaveBeenCalledWith({ delta: 2 })
   })
 

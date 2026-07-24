@@ -1,5 +1,6 @@
 import type { ComponentOptions, ComponentPublicInstance } from '../../component'
 import type { TemplateRenderer } from '../../template'
+import type { MiniProgramAsyncOptions, MiniProgramBaseResult } from '../types'
 
 export interface RegisterMeta {
   id: string
@@ -28,7 +29,10 @@ export interface ComponentRecord {
 export interface PageStackEntry {
   id: string
   query: Record<string, string>
+  active: boolean
+  element?: HTMLElement & ComponentPublicInstance
   instance?: ComponentPublicInstance
+  scrollTop?: number
 }
 
 export interface RouteMeta {
@@ -51,6 +55,14 @@ export interface AppLaunchOptions {
   scene: number
   query: Record<string, string>
   referrerInfo: Record<string, unknown>
+}
+
+export interface RouteOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
+  url: string
+}
+
+export interface NavigateBackOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
+  delta?: number
 }
 
 type MethodHandler = (this: ComponentPublicInstance, ...args: unknown[]) => unknown

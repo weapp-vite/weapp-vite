@@ -43,6 +43,7 @@ export function createComponentElementClass({
     #state: DataRecord
     #properties: DataRecord
     #methods: Record<string, (event: any) => any>
+    #exposedMethodNames = new Set<string>()
     #isMounted = false
     #renderContext = createRenderContext(this, {})
     #usesLegacyTemplate = false
@@ -271,6 +272,16 @@ export function createComponentElementClass({
           bound[name] = fn.bind(this)
         }
       }
+      for (const name of this.#exposedMethodNames) {
+        if (name in bound) {
+          continue
+        }
+        const descriptor = Object.getOwnPropertyDescriptor(this, name)
+        if (descriptor?.configurable && descriptor.value === this.#methods[name]) {
+          delete (this as unknown as Record<string, unknown>)[name]
+        }
+        this.#exposedMethodNames.delete(name)
+      }
       for (const key of Object.keys(this.#methods)) {
         if (!(key in bound)) {
           delete this.#methods[key]
@@ -278,6 +289,16 @@ export function createComponentElementClass({
       }
       for (const [key, fn] of Object.entries(bound)) {
         this.#methods[key] = fn
+        if (!this.#exposedMethodNames.has(key) && key in this) {
+          continue
+        }
+        Object.defineProperty(this, key, {
+          configurable: true,
+          enumerable: false,
+          writable: true,
+          value: fn,
+        })
+        this.#exposedMethodNames.add(key)
       }
       this.#renderContext = createRenderContext(this, this.#methods)
     }

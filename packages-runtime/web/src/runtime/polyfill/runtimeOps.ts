@@ -5,6 +5,7 @@ import {
   scheduleMicrotask,
 } from './async'
 import { resolveSubPackageName } from './platformRuntime'
+import { getPageContainer } from './routeRuntime/dom'
 
 function resolveScrollTop(value: unknown) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
@@ -13,17 +14,15 @@ function resolveScrollTop(value: unknown) {
   return Math.max(0, value)
 }
 
-function setWindowScrollTop(top: number) {
-  if (typeof window === 'undefined') {
+function setPageScrollTop(top: number) {
+  const container = getPageContainer()
+  if (container) {
+    container.scrollTop = top
     return
   }
-  const runtimeWindow = window as Window & {
-    scrollTo?: (x: number, y: number) => void
+  if (typeof window !== 'undefined') {
+    window.scrollTo?.(0, top)
   }
-  if (typeof runtimeWindow.scrollTo !== 'function') {
-    return
-  }
-  runtimeWindow.scrollTo(0, top)
 }
 
 export function nextTickBridge(callback?: () => void) {
@@ -72,7 +71,7 @@ export function preloadSubpackageBridge(options?: any) {
 export function pageScrollToBridge(options?: any) {
   const targetTop = resolveScrollTop(options?.scrollTop)
   const duration = normalizeDuration(options?.duration, 300)
-  const run = () => setWindowScrollTop(targetTop)
+  const run = () => setPageScrollTop(targetTop)
 
   if (duration <= 0) {
     run()

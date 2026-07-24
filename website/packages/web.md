@@ -71,6 +71,8 @@ export default defineConfig({
 - `image.mode`、input 常用属性与事件、scroll-view 滚动状态和事件已有基础适配
 - `form`、`label`、`textarea`、checkbox/radio group 和 `switch` 支持表单收集、提交、重置及微信形状的交互事件
 - `navigator` 复用页面栈和 mini-program bridge；`swiper` 支持受控状态、触摸、autoplay 及 `change` / `transition` / `animationfinish` 事件
+- `navigateTo` 保活隐藏页面，`navigateBack` 恢复同一实例、数据和滚动位置；`redirectTo` / `reLaunch` 按页面栈语义触发 `onHide` / `onUnload`
+- `getCurrentPages()` 返回全部存活页面，路由 API 同时支持 Promise 与 `success` / `fail` / `complete` 回调
 
 需要保留旧的浏览器全宽行为时，将 `runtime.viewport.mode` 设置为 `responsive`。
 
