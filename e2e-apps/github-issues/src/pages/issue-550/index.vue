@@ -10,21 +10,34 @@ const route = useRoute()
 const router = useRouter()
 const routeName = computed(() => route.name ?? '')
 const routeMatchedName = computed(() => route.matched?.[0]?.name ?? '')
+const BACK_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_back_result__'
+
+function prepareBackProbe() {
+  wx.setStorageSync(BACK_RESULT_STORAGE_KEY, {
+    stage: 'started',
+  })
+}
 
 function routerBack() {
+  prepareBackProbe()
   return router.back()
 }
 
 function nativeBack() {
+  prepareBackProbe()
   return wx.navigateBack()
 }
 
-function _runE2E(action?: 'nativeBack' | 'routerBack') {
+function _runE2E(action?: 'nativeBack' | 'prepareBack' | 'routerBack') {
   if (action === 'routerBack') {
     return routerBack()
   }
   if (action === 'nativeBack') {
     return nativeBack()
+  }
+  if (action === 'prepareBack') {
+    prepareBackProbe()
+    return
   }
   return {
     ok: route.name === 'pages/issue-550/index',

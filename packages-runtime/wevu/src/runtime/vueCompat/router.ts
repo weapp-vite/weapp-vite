@@ -87,7 +87,11 @@ function createScopedRuntimeRouter(rawRouter: RuntimeRouter, basePath?: string):
         url: nextUrl,
         success: (...args: any[]) => {
           if (typeof nextUrl === 'string') {
-            notifyRouteStateSync({ url: nextUrl })
+            notifyRouteStateSync({
+              method: methodName,
+              source: 'native',
+              url: nextUrl,
+            })
           }
           return typeof originalSuccess === 'function'
             ? originalSuccess(...args)
