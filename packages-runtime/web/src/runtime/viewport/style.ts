@@ -31,6 +31,8 @@ body {
 }
 
 #app {
+  --weapp-tab-bar-inset: 0px;
+  --weapp-tab-bar-top-inset: 0px;
   position: relative;
   box-sizing: border-box;
   width: 100%;

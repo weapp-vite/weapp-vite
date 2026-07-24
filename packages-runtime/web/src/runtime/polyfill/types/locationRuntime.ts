@@ -154,10 +154,6 @@ export interface OpenLocationOptions extends MiniProgramAsyncOptions<MiniProgram
   address?: string
 }
 
-export interface TabBarOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
-  animation?: boolean
-}
-
 export interface OpenCustomerServiceChatOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   corpId?: string
   extInfo?: Record<string, any>

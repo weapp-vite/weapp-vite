@@ -27,6 +27,18 @@
           "scene": null
         },
         {
+          "name": "App Shell 与 tabBar 语义矩阵",
+          "pathName": "pages/tabbar-parity/home",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "App Shell tabBar 设置页",
+          "pathName": "pages/tabbar-parity/settings",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "NOVA X1 商品详情",
           "pathName": "pages/product/detail/detail",
           "query": "iteration=10",

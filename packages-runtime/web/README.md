@@ -83,9 +83,19 @@ weappWebPlugin({
 - `navigateTo` 会保留原页面 DOM、实例和数据，并依次触发原页面 `onHide` 与新页面 `onLoad` / `onShow`。
 - `navigateBack` 只卸载出栈页面，恢复目标页面的同一实例、`onShow` 和页面容器滚动位置，不会重新触发 `onLoad`。
 - `redirectTo` 只替换并卸载当前页面；`reLaunch` 会从栈顶开始卸载全部旧页面后挂载目标页面。
-- `getCurrentPages()` 返回当前所有存活页面；路由 API 支持 `success` / `fail` / `complete` 回调与 Promise 结果。
+- `getCurrentPages()` 返回当前活动路由栈；其他 tab 页面可保活但不会混入当前 tab 栈。路由 API 支持 `success` / `fail` / `complete` 回调与 Promise 结果。
+
+## App Shell 与 tabBar
+
+- Vite 插件会读取 `app.json.tabBar`，标准 tabBar 在 Web 侧使用受设备视口约束的 App Shell 渲染；颜色、背景、边框、图标、文字和底部安全区由同一份配置驱动。
+- `switchTab` 只接受 tabBar 路由。切换时关闭非 tab 页面，缓存其他 tab 页面实例；再次切回会恢复原数据并触发 `onShow`，不会重复触发 `onLoad`。
+- `showTabBar` / `hideTabBar` 会真实改变布局；`setTabBarItem`、`setTabBarStyle`、badge 与 red-dot API 会同步更新当前 shell。
+- tabBar 页面与普通页面共享 `#app` 设备容器。页面底部 inset、宽屏居中边界和安全区变量会随 tabBar 显隐同步更新。
+- `tabBar.custom: true` 会保留 tab 路由与 `switchTab` 语义，但不会渲染标准 shell；自定义 tabBar 组件仍需业务侧实现。
 
 仓库中的 `pnpm e2e:web:update-baselines` 只用于维护者显式刷新微信 DevTools 视觉基线；普通 `pnpm e2e:web` 只读取已提交基线。
+
+微信 DevTools 的 `App.captureScreenshot` 只截取页面 WebView，不包含宿主原生导航栏和 tabBar。视觉 manifest 会记录每个页面实际截图视口；标准 tabBar 的高度、安全区、选中态与动态 API 由浏览器行为 E2E 单独验证。
 
 ## TODO
 

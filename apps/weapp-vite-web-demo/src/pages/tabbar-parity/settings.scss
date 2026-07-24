@@ -1,0 +1,50 @@
+page {
+  min-height: 100%;
+  color: #18202a;
+  background: #eef1f4;
+}
+
+.settings-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 16px 14px;
+  background: #eef1f4;
+}
+
+.settings-page__eyebrow,
+.settings-page__title {
+  display: block;
+}
+
+.settings-page__eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  color: #087f5b;
+}
+
+.settings-page__title {
+  margin-top: 5px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.settings-page__panel {
+  padding: 8px 13px;
+  margin-top: 16px;
+  background: #fff;
+  border: 0.5px solid #dce1e7;
+  border-radius: 5px;
+}
+
+.settings-page__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 42px;
+  font-size: 12px;
+  border-bottom: 0.5px solid #e1e5e8;
+}
+
+.settings-page__row:last-child {
+  border-bottom: 0;
+}

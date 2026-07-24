@@ -1,8 +1,10 @@
+import type { WebTabBarConfig } from '../shared/tabBar'
 import type { ComponentEntry, PageEntry, ScanState, WarnFn } from './types'
-import process from 'node:process'
 
+import process from 'node:process'
 import { dirname, extname, join, posix, relative, resolve } from 'pathe'
 import { slugify } from '../shared/slugify'
+import { normalizeWebTabBarConfig } from '../shared/tabBar'
 import { isRecord, readJsonFile, resolveJsonPath, resolveScriptFile, resolveStyleFile, resolveTemplateFile } from './files'
 import { mergeNavigationConfig, pickNavigationConfig } from './navigation'
 import { normalizePath, toPosixId } from './path'
@@ -12,6 +14,19 @@ interface ScanProjectOptions {
   srcRoot: string
   warn?: WarnFn
   state: ScanState
+}
+
+function resolveComponentBase(raw: string, importerDir: string, srcRoot: string) {
+  if (!raw) {
+    return undefined
+  }
+  if (raw.startsWith('.')) {
+    return resolve(importerDir, raw)
+  }
+  if (raw.startsWith('/')) {
+    return resolve(srcRoot, raw.slice(1))
+  }
+  return resolve(srcRoot, raw)
 }
 
 export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) {
@@ -24,6 +39,7 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
 
   let appNavigationDefaults = {}
   let appComponentTags: Record<string, string> = {}
+  let appTabBar: WebTabBarConfig | undefined
 
   const pages = new Map<string, PageEntry>()
   const components = new Map<string, ComponentEntry>()
@@ -132,61 +148,6 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
     state.templateComponentMap.delete(normalizePath(template))
   }
 
-  const appJsonBasePath = join(srcRoot, 'app.json')
-  const appJsonPath = await resolveJsonPath(appJsonBasePath)
-  if (appJsonPath) {
-    const appJson = await readJsonFile(appJsonPath)
-
-    if (appJson) {
-      appComponentTags = await collectComponentTagsFromConfig({
-        json: appJson,
-        importerDir: srcRoot,
-        jsonPath: appJsonPath,
-        warn: reportWarning,
-        resolveComponentScript,
-        getComponentTag,
-        collectComponent,
-        onResolved: (tags) => {
-          appComponentTags = tags
-        },
-      })
-    }
-
-    if (appJson?.pages && Array.isArray(appJson.pages)) {
-      for (const page of appJson.pages) {
-        if (typeof page === 'string') {
-          await collectPage(page)
-        }
-      }
-    }
-
-    if (appJson?.subPackages && Array.isArray(appJson.subPackages)) {
-      for (const pkg of appJson.subPackages) {
-        if (!pkg || typeof pkg !== 'object' || !Array.isArray(pkg.pages)) {
-          continue
-        }
-        const root = typeof pkg.root === 'string' ? pkg.root : ''
-        for (const page of pkg.pages) {
-          if (typeof page !== 'string') {
-            continue
-          }
-          await collectPage(posix.join(root, page))
-        }
-      }
-    }
-
-    const windowConfig = isRecord(appJson?.window) ? appJson.window : undefined
-    appNavigationDefaults = pickNavigationConfig(windowConfig)
-  }
-
-  state.appNavigationDefaults = appNavigationDefaults
-  state.appComponentTags = appComponentTags
-  state.scanResult = {
-    app: appScript,
-    pages: Array.from(pages.values()),
-    components: Array.from(components.values()),
-  }
-
   async function collectPage(pageId: string) {
     const base = join(srcRoot, pageId)
     const script = await resolveScriptFile(base)
@@ -266,17 +227,61 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
 
     state.pageNavigationMap.set(normalizePath(template), { ...appNavigationDefaults })
   }
-}
 
-function resolveComponentBase(raw: string, importerDir: string, srcRoot: string) {
-  if (!raw) {
-    return undefined
+  const appJsonBasePath = join(srcRoot, 'app.json')
+  const appJsonPath = await resolveJsonPath(appJsonBasePath)
+  if (appJsonPath) {
+    const appJson = await readJsonFile(appJsonPath)
+
+    if (appJson) {
+      appComponentTags = await collectComponentTagsFromConfig({
+        json: appJson,
+        importerDir: srcRoot,
+        jsonPath: appJsonPath,
+        warn: reportWarning,
+        resolveComponentScript,
+        getComponentTag,
+        collectComponent,
+        onResolved: (tags) => {
+          appComponentTags = tags
+        },
+      })
+    }
+
+    if (appJson?.pages && Array.isArray(appJson.pages)) {
+      for (const page of appJson.pages) {
+        if (typeof page === 'string') {
+          await collectPage(page)
+        }
+      }
+    }
+
+    if (appJson?.subPackages && Array.isArray(appJson.subPackages)) {
+      for (const pkg of appJson.subPackages) {
+        if (!pkg || typeof pkg !== 'object' || !Array.isArray(pkg.pages)) {
+          continue
+        }
+        const root = typeof pkg.root === 'string' ? pkg.root : ''
+        for (const page of pkg.pages) {
+          if (typeof page !== 'string') {
+            continue
+          }
+          await collectPage(posix.join(root, page))
+        }
+      }
+    }
+
+    const windowConfig = isRecord(appJson?.window) ? appJson.window : undefined
+    appNavigationDefaults = pickNavigationConfig(windowConfig)
+    appTabBar = normalizeWebTabBarConfig(appJson?.tabBar)
   }
-  if (raw.startsWith('.')) {
-    return resolve(importerDir, raw)
+
+  state.appNavigationDefaults = appNavigationDefaults
+  state.appComponentTags = appComponentTags
+  state.scanResult = {
+    app: appScript,
+    pages: Array.from(pages.values()),
+    components: Array.from(components.values()),
+    tabBar: appTabBar,
   }
-  if (raw.startsWith('/')) {
-    return resolve(srcRoot, raw.slice(1))
-  }
-  return resolve(srcRoot, raw)
 }

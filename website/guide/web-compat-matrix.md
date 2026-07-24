@@ -75,8 +75,10 @@ keywords:
 | `wx.navigateTo`                                                                                          | `✅` | 支持基础页面栈推进。                                                                                    |
 | `wx.redirectTo`                                                                                          | `✅` | 支持替换当前页面。                                                                                      |
 | `wx.reLaunch`                                                                                            | `✅` | 支持重建路由栈。                                                                                        |
-| `wx.switchTab`                                                                                           | `🟡` | 当前行为等价于 `redirectTo`。                                                                           |
-| `wx.showTabBar` / `wx.hideTabBar`                                                                        | `🟡` | 当前为 no-op 成功桥接，用于兼容调用链，不改变实际 Web 布局。                                            |
+| `wx.switchTab`                                                                                           | `✅` | 只接受 tabBar 路由；关闭非 tab 页面并缓存其他 tab 页面实例，重复点击不会重跑生命周期。                  |
+| `wx.showTabBar` / `wx.hideTabBar`                                                                        | `✅` | 控制标准 Web App Shell 显隐，并同步页面底部 inset 与安全区布局。                                        |
+| `wx.setTabBarItem` / `wx.setTabBarStyle`                                                                 | `✅` | 动态更新标准 tabBar 的文字、图标、颜色、背景与边框。                                                    |
+| `wx.setTabBarBadge` / `removeTabBarBadge` / `showTabBarRedDot` / `hideTabBarRedDot`                      | `✅` | 支持标准 tabBar badge 与红点状态；非法 index 按微信形状回调和 Promise 失败。                            |
 | `wx.loadSubPackage` / `wx.preloadSubpackage`                                                             | `🟡` | 当前提供 no-op 成功桥接，主要用于兼容分包加载调用链，不执行真实下载与预加载流程。                       |
 | `wx.navigateBack`                                                                                        | `✅` | 支持 `delta` 回退。                                                                                     |
 | `wx.setNavigationBarTitle`                                                                               | `🟡` | 依赖默认导航栏组件存在。                                                                                |
@@ -161,6 +163,8 @@ keywords:
 2. 事件映射与组件标签映射优先覆盖高频场景，未承诺全量等价。
 3. `analyze --platform h5` 目前仅支持 Web 静态配置分析（`weapp.web` 与 `executionMode`），不包含分包体积、源码映射和仪表盘能力。
 4. 运行时告警已支持 `runtime.warnings.level` 与 `runtime.warnings.dedupe`，但当前可观测信息仍以控制台输出为主。
+5. 标准 `app.json.tabBar` 已由 Web App Shell 接管；`tabBar.custom: true` 只保留路由语义，自定义组件本身不会自动移植。
+6. DevTools automator 截图不包含宿主导航栏和 tabBar。视觉 manifest 按 case 记录实际 WebView 视口，tabBar 宿主区域使用浏览器结构、尺寸与交互断言验收。
 
 ## 建议用法
 

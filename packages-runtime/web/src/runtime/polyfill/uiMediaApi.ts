@@ -29,11 +29,15 @@ import type {
   SaveVideoToPhotosAlbumOptions,
   ScanCodeOptions,
   SetClipboardDataOptions,
+  SetTabBarBadgeOptions,
+  SetTabBarItemOptions,
+  SetTabBarStyleOptions,
   ShareMenuOptions,
   ShowActionSheetOptions,
   ShowLoadingOptions,
   ShowModalOptions,
   ShowToastOptions,
+  TabBarIndexOptions,
   TabBarOptions,
 } from './types'
 import {
@@ -69,12 +73,18 @@ import {
 } from './mediaApi'
 import {
   hideTabBarBridge,
+  hideTabBarRedDotBridge,
+  removeTabBarBadgeBridge,
   requestPaymentBridge,
   requestSubscribeMessageBridge,
+  setTabBarBadgeBridge,
+  setTabBarItemBridge,
+  setTabBarStyleBridge,
   showActionSheetBridge,
   showModalBridge,
   showShareMenuBridge,
   showTabBarBridge,
+  showTabBarRedDotBridge,
   updateShareMenuBridge,
 } from './menuApi'
 import {
@@ -137,6 +147,30 @@ export function showTabBar(options?: TabBarOptions) {
 
 export function hideTabBar(options?: TabBarOptions) {
   return hideTabBarBridge(options)
+}
+
+export function setTabBarItem(options: SetTabBarItemOptions) {
+  return setTabBarItemBridge(options)
+}
+
+export function setTabBarStyle(options: SetTabBarStyleOptions) {
+  return setTabBarStyleBridge(options)
+}
+
+export function setTabBarBadge(options: SetTabBarBadgeOptions) {
+  return setTabBarBadgeBridge(options)
+}
+
+export function removeTabBarBadge(options: TabBarIndexOptions) {
+  return removeTabBarBadgeBridge(options)
+}
+
+export function showTabBarRedDot(options: TabBarIndexOptions) {
+  return showTabBarRedDotBridge(options)
+}
+
+export function hideTabBarRedDot(options: TabBarIndexOptions) {
+  return hideTabBarRedDotBridge(options)
 }
 
 export function requestPayment(options?: RequestPaymentOptions) {

@@ -1,9 +1,15 @@
+import type { WebTabBarConfig } from '../../shared/tabBar'
 import type { ButtonFormConfig } from '../button'
 import type { ComponentPublicInstance } from '../component'
 import type { NavigationBarMetrics } from '../navigationBar'
 import type { WebViewportConfig } from '../viewport'
 import type { AppLaunchOptions, AppRuntime, ComponentRawOptions, ComponentRecord, NavigateBackOptions, PageRawOptions, PageRecord, PageStackEntry, RegisterMeta, RouteOptions } from './routeRuntime/options'
 import { slugify } from '../../shared/slugify'
+import {
+  configureTabBar,
+  getTabBarPagePaths,
+  syncTabBarRoute,
+} from '../appShell/tabBar'
 import { setButtonFormConfig } from '../button'
 import { defineComponent } from '../component'
 import { setRuntimeExecutionMode } from '../execution'
@@ -65,6 +71,15 @@ function ensureAppLaunched(entry: PageStackEntry) {
 
 const pageStack = new PageStackRuntime(pageRegistry, ensureAppLaunched)
 
+function performSwitchTab(options: RouteOptions) {
+  const { id, query } = parsePageUrl(options?.url ?? '')
+  const succeeded = pageStack.switchTab(id, query)
+  if (succeeded) {
+    syncTabBarRoute(id)
+  }
+  return resolveRouteAction('switchTab', options, succeeded, 'not a tabBar page')
+}
+
 function bindPageResizeBridge() {
   if (pageResizeBridgeBound || typeof window === 'undefined') {
     return
@@ -89,6 +104,7 @@ export function initializePageRoutes(
     rpx?: { designWidth?: number, varName?: string }
     navigationBar?: NavigationBarMetrics
     form?: ButtonFormConfig
+    tabBar?: WebTabBarConfig
     runtime?: {
       executionMode?: 'compat' | 'safe' | 'strict'
       warnings?: {
@@ -104,6 +120,8 @@ export function initializePageRoutes(
   setupWebViewport(options?.runtime?.viewport)
   ensureNativeComponentsDefined()
   pageOrder = Array.from(new Set(ids))
+  configureTabBar(options?.tabBar, url => performSwitchTab({ url }))
+  pageStack.configureTabPages(getTabBarPagePaths())
   if (!pageOrder.length) {
     return
   }
@@ -118,7 +136,9 @@ export function initializePageRoutes(
     setButtonFormConfig(options.form)
   }
   if (!pageStack.entries.length) {
-    pageStack.push(pageOrder[0], {})
+    if (pageStack.push(pageOrder[0], {})) {
+      syncTabBarRoute(pageOrder[0])
+    }
   }
 }
 
@@ -200,26 +220,41 @@ export function registerApp<T extends AppRuntime | undefined>(options: T, _meta?
 
 export function navigateTo(options: RouteOptions) {
   const { id, query } = parsePageUrl(options?.url ?? '')
-  return resolveRouteAction('navigateTo', options, pageStack.push(id, query))
+  const succeeded = pageStack.push(id, query)
+  if (succeeded) {
+    syncTabBarRoute(id)
+  }
+  return resolveRouteAction('navigateTo', options, succeeded)
 }
 
 export function redirectTo(options: RouteOptions) {
   const { id, query } = parsePageUrl(options?.url ?? '')
-  return resolveRouteAction('redirectTo', options, pageStack.replace(id, query))
+  const succeeded = pageStack.replace(id, query)
+  if (succeeded) {
+    syncTabBarRoute(id)
+  }
+  return resolveRouteAction('redirectTo', options, succeeded)
 }
 
 export function reLaunch(options: RouteOptions) {
   const { id, query } = parsePageUrl(options?.url ?? '')
-  return resolveRouteAction('reLaunch', options, pageStack.relaunch(id, query))
+  const succeeded = pageStack.relaunch(id, query)
+  if (succeeded) {
+    syncTabBarRoute(id)
+  }
+  return resolveRouteAction('reLaunch', options, succeeded)
 }
 
 export function switchTab(options: RouteOptions) {
-  const { id, query } = parsePageUrl(options?.url ?? '')
-  return resolveRouteAction('switchTab', options, pageStack.replace(id, query))
+  return performSwitchTab(options)
 }
 
 export function navigateBack(options?: NavigateBackOptions) {
-  return resolveRouteAction('navigateBack', options, pageStack.back(options?.delta))
+  const succeeded = pageStack.back(options?.delta)
+  if (succeeded) {
+    syncTabBarRoute(pageStack.entries[pageStack.entries.length - 1]?.id ?? '')
+  }
+  return resolveRouteAction('navigateBack', options, succeeded)
 }
 
 export function getCurrentPagesInternal() {

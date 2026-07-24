@@ -1,5 +1,6 @@
 import type { NavigationBarConfig } from '../compiler/wxml'
 import type { WxssTransformOptions } from '../css/wxss'
+import type { WebTabBarConfig } from '../shared/tabBar'
 
 export interface WeappWebPluginOptions {
   wxss?: WxssTransformOptions
@@ -81,6 +82,7 @@ export interface ScanResult {
   app?: string
   pages: PageEntry[]
   components: ComponentEntry[]
+  tabBar?: WebTabBarConfig
 }
 
 export interface ScanState {

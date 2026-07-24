@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-24T14:46:39.112Z",
+  "generatedAt": "2026-07-24T16:21:18.411Z",
   "site": "https://vite.icebreaker.top",
   "count": 271,
   "items": [
@@ -2714,7 +2714,7 @@
         "已知限制",
         "建议用法"
       ],
-      "updatedAt": "2026-07-24",
+      "updatedAt": "2026-07-25",
       "source": "guide/web-compat-matrix.md"
     },
     {
@@ -5884,7 +5884,7 @@
         "视觉与组件适配",
         "能力边界"
       ],
-      "updatedAt": "2026-07-24",
+      "updatedAt": "2026-07-25",
       "source": "packages/web.md"
     },
     {

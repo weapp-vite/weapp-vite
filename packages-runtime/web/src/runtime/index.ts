@@ -1,3 +1,4 @@
+export type { WebTabBarConfig, WebTabBarItem } from './appShell/tabBar'
 export { ensureButtonDefined, setButtonFormConfig } from './button'
 export type { ButtonFormConfig } from './button'
 export { defineComponent } from './component'
@@ -71,6 +72,7 @@ export {
   hideLoading,
   hideNavigationBarLoading,
   hideTabBar,
+  hideTabBarRedDot,
   initializePageRoutes,
   loadSubPackage,
   login,
@@ -100,6 +102,7 @@ export {
   reLaunch,
   removeStorage,
   removeStorageSync,
+  removeTabBarBadge,
   reportAnalytics,
   request,
   requestPayment,
@@ -116,12 +119,16 @@ export {
   setNavigationBarTitle,
   setStorage,
   setStorageSync,
+  setTabBarBadge,
+  setTabBarItem,
+  setTabBarStyle,
   showActionSheet,
   showLoading,
   showModal,
   showNavigationBarLoading,
   showShareMenu,
   showTabBar,
+  showTabBarRedDot,
   showToast,
   startPullDownRefresh,
   stopPullDownRefresh,
