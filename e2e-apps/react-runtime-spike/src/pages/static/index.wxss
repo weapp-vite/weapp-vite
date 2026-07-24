@@ -1,0 +1,15 @@
+.page {
+  padding: 16px;
+}
+
+.title {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.panel {
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #d9d9d9;
+}

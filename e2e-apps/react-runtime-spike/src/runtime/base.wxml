@@ -1,0 +1,93 @@
+<template name="react_root">
+  <block wx:for="{{root.cn}}" wx:key="sid" wx:for-item="child">
+    <template is="react_node_0" data="{{i:child}}" />
+  </block>
+</template>
+
+<template name="react_node_0">
+  <block wx:if="{{i.nn === '#text'}}">{{i.v}}</block>
+  <view wx:elif="{{i.nn === 'view'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" hidden="{{i.p.hidden}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_1" data="{{i:child}}" />
+    </block>
+  </view>
+  <text wx:elif="{{i.nn === 'text'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" hidden="{{i.p.hidden}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_1" data="{{i:child}}" />
+    </block>
+  </text>
+  <button wx:elif="{{i.nn === 'button'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" disabled="{{i.p.disabled}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_1" data="{{i:child}}" />
+    </block>
+  </button>
+  <input wx:elif="{{i.nn === 'input'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" value="{{i.p.value}}" type="{{i.p.type}}" checked="{{i.p.checked}}" disabled="{{i.p.disabled}}" placeholder="{{i.p.placeholder}}" data-sid="{{i.sid}}" bindinput="eh" bindchange="eh" />
+</template>
+
+<template name="react_node_1">
+  <block wx:if="{{i.nn === '#text'}}">{{i.v}}</block>
+  <view wx:elif="{{i.nn === 'view'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" hidden="{{i.p.hidden}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_2" data="{{i:child}}" />
+    </block>
+  </view>
+  <text wx:elif="{{i.nn === 'text'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" hidden="{{i.p.hidden}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_2" data="{{i:child}}" />
+    </block>
+  </text>
+  <button wx:elif="{{i.nn === 'button'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" disabled="{{i.p.disabled}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_2" data="{{i:child}}" />
+    </block>
+  </button>
+  <input wx:elif="{{i.nn === 'input'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" value="{{i.p.value}}" type="{{i.p.type}}" checked="{{i.p.checked}}" disabled="{{i.p.disabled}}" placeholder="{{i.p.placeholder}}" data-sid="{{i.sid}}" bindinput="eh" bindchange="eh" />
+</template>
+
+<template name="react_node_2">
+  <block wx:if="{{i.nn === '#text'}}">{{i.v}}</block>
+  <view wx:elif="{{i.nn === 'view'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" hidden="{{i.p.hidden}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_3" data="{{i:child}}" />
+    </block>
+  </view>
+  <text wx:elif="{{i.nn === 'text'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" hidden="{{i.p.hidden}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_3" data="{{i:child}}" />
+    </block>
+  </text>
+  <button wx:elif="{{i.nn === 'button'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" disabled="{{i.p.disabled}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_3" data="{{i:child}}" />
+    </block>
+  </button>
+  <input wx:elif="{{i.nn === 'input'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" value="{{i.p.value}}" type="{{i.p.type}}" checked="{{i.p.checked}}" disabled="{{i.p.disabled}}" placeholder="{{i.p.placeholder}}" data-sid="{{i.sid}}" bindinput="eh" bindchange="eh" />
+</template>
+
+<template name="react_node_3">
+  <block wx:if="{{i.nn === '#text'}}">{{i.v}}</block>
+  <view wx:elif="{{i.nn === 'view'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" hidden="{{i.p.hidden}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_4" data="{{i:child}}" />
+    </block>
+  </view>
+  <text wx:elif="{{i.nn === 'text'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" hidden="{{i.p.hidden}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_4" data="{{i:child}}" />
+    </block>
+  </text>
+  <button wx:elif="{{i.nn === 'button'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" disabled="{{i.p.disabled}}" data-sid="{{i.sid}}" bindtap="eh">
+    <block wx:for="{{i.cn}}" wx:key="sid" wx:for-item="child">
+      <template is="react_node_4" data="{{i:child}}" />
+    </block>
+  </button>
+  <input wx:elif="{{i.nn === 'input'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" value="{{i.p.value}}" type="{{i.p.type}}" checked="{{i.p.checked}}" disabled="{{i.p.disabled}}" placeholder="{{i.p.placeholder}}" data-sid="{{i.sid}}" bindinput="eh" bindchange="eh" />
+</template>
+
+<template name="react_node_4">
+  <block wx:if="{{i.nn === '#text'}}">{{i.v}}</block>
+  <view wx:elif="{{i.nn === 'view'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" hidden="{{i.p.hidden}}" data-sid="{{i.sid}}" bindtap="eh" />
+  <text wx:elif="{{i.nn === 'text'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" hidden="{{i.p.hidden}}" data-sid="{{i.sid}}" bindtap="eh" />
+  <button wx:elif="{{i.nn === 'button'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" disabled="{{i.p.disabled}}" data-sid="{{i.sid}}" bindtap="eh" />
+  <input wx:elif="{{i.nn === 'input'}}" id="{{i.p.id}}" class="{{i.cl}}" style="{{i.st}}" value="{{i.p.value}}" type="{{i.p.type}}" checked="{{i.p.checked}}" disabled="{{i.p.disabled}}" placeholder="{{i.p.placeholder}}" data-sid="{{i.sid}}" bindinput="eh" bindchange="eh" />
+</template>

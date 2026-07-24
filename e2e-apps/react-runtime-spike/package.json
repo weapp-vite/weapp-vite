@@ -1,0 +1,29 @@
+{
+  "name": "e2e-app-react-runtime-spike",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "wv build",
+    "build:baseline": "wv build --mode baseline",
+    "build:compiler": "wv build --mode react-compiler",
+    "measure": "tsx scripts/measure.tsx",
+    "postinstall": "wv prepare",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc -p .weapp-vite/tsconfig.app.json --noEmit"
+  },
+  "dependencies": {
+    "react": "19.2.7",
+    "react-reconciler": "0.33.0"
+  },
+  "devDependencies": {
+    "@swc/core": "1.15.43",
+    "@types/react": "19.2.17",
+    "@types/react-reconciler": "0.33.0",
+    "@weapp-vite/ast": "workspace:*",
+    "miniprogram-api-typings": "catalog:",
+    "tsx": "^4.23.0",
+    "vite": "catalog:",
+    "vitest": "~4.1.10",
+    "weapp-vite": "workspace:*"
+  }
+}
