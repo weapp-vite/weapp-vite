@@ -84,6 +84,7 @@
     "e2e:parallel": "vitest run -c ./e2e/vitest.e2e.parallel.config.ts",
     "e2e:retail-parity": "vitest run -c ./e2e/vitest.e2e.retail-parity.config.ts",
     "e2e:web": "vitest run -c ./e2e/vitest.e2e.web.config.ts",
+    "e2e:web:update-baselines": "node --import tsx ./e2e/scripts/update-web-runtime-visual-baselines.ts",
     "e2e:runtime-bench": "node --import tsx ./e2e/scripts/run-runtime-bench.ts",
     "benchmark:hmr": "tsx ./scripts/compare-template-hmr.ts",
     "benchmark:hmr:lab": "tsx ./scripts/benchmark-hmr-lab.ts",

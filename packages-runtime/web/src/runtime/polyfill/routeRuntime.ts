@@ -1,13 +1,16 @@
 import type { ButtonFormConfig } from '../button'
 import type { ComponentPublicInstance } from '../component'
 import type { NavigationBarMetrics } from '../navigationBar'
+import type { WebViewportConfig } from '../viewport'
 import type { AppLaunchOptions, AppRuntime, ComponentRawOptions, ComponentRecord, PageRawOptions, PageRecord, PageStackEntry, RegisterMeta } from './routeRuntime/options'
 import { slugify } from '../../shared/slugify'
-import { ensureButtonDefined, setButtonFormConfig } from '../button'
+import { setButtonFormConfig } from '../button'
 import { defineComponent } from '../component'
 import { setRuntimeExecutionMode } from '../execution'
+import { ensureNativeComponentsDefined } from '../nativeComponents'
 import { ensureNavigationBarDefined, setNavigationBarMetrics } from '../navigationBar'
 import { setupRpx } from '../rpx'
+import { setupWebViewport } from '../viewport'
 import { setRuntimeWarningOptions } from '../warning'
 import {
   cloneLaunchOptions,
@@ -45,7 +48,7 @@ function bindPageResizeBridge() {
   }
   pageResizeBridgeBound = true
   window.addEventListener('resize', () => {
-    const pages = getCurrentPagesInternal()
+    const pages = resolveCurrentPages<ComponentPublicInstance>(navigationHistory)
     const current = pages[pages.length - 1]
     if (!current) {
       return
@@ -123,11 +126,14 @@ export function initializePageRoutes(
         level?: 'off' | 'warn' | 'error'
         dedupe?: boolean
       }
+      viewport?: WebViewportConfig
     }
   },
 ) {
   setRuntimeExecutionMode(options?.runtime?.executionMode)
   setRuntimeWarningOptions(options?.runtime?.warnings)
+  setupWebViewport(options?.runtime?.viewport)
+  ensureNativeComponentsDefined()
   pageOrder = Array.from(new Set(ids))
   if (!pageOrder.length) {
     return
@@ -148,7 +154,7 @@ export function initializePageRoutes(
 }
 
 export function registerPage<T extends PageRawOptions | undefined>(options: T, meta: RegisterMeta): T {
-  ensureButtonDefined()
+  ensureNativeComponentsDefined()
   ensureNavigationBarDefined()
   const tag = slugify(meta.id, 'wv-page')
   const template = meta.template ?? (() => '')
@@ -180,7 +186,7 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
 }
 
 export function registerComponent<T extends ComponentRawOptions | undefined>(options: T, meta: RegisterMeta): T {
-  ensureButtonDefined()
+  ensureNativeComponentsDefined()
   const tag = slugify(meta.id, 'wv-component')
   const template = meta.template ?? (() => '')
   const component = normalizeComponentOptions(options)

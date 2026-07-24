@@ -1,0 +1,20 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "基础组件视觉矩阵",
+          "pathName": "pages/visual-parity/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "NOVA X1 商品详情",
+          "pathName": "pages/product/detail/detail",
+          "query": "iteration=10",
+          "scene": null
+        }
+      ]
+    }
+  }
+}

@@ -4,7 +4,7 @@ import { resolveE2EMaxWorkers } from './utils/max-workers'
 
 export default defineConfig({
   test: {
-    include: [path.resolve(import.meta.dirname, './web-runtime/web-demo.test.ts')],
+    include: [path.resolve(import.meta.dirname, './web-runtime/*.test.ts')],
     testTimeout: 180_000,
     hookTimeout: 180_000,
     globals: true,

@@ -7,6 +7,7 @@ import type {
 } from './types'
 
 import { dirname, relative } from 'pathe'
+import { isKnownUnsupportedNativeComponent } from '../../shared/nativeComponents'
 import { TEMPLATE_IMPORT_TAG_NAMES, TEMPLATE_INCLUDE_TAG_NAMES } from '../../shared/wxml'
 
 export function shouldMarkWxsImport(pathname: string) {
@@ -34,6 +35,12 @@ export function collectSpecialNodes(nodes: RenderNode[], context: CollectSpecial
   for (const node of nodes) {
     if (node.type === 'element') {
       const name = node.name ?? ''
+      if (isKnownUnsupportedNativeComponent(name)) {
+        const warning = `[web] 小程序组件 <${name}> 尚未提供完整 Web 语义，当前使用兼容 DOM 降级 (from ${context.sourceId})`
+        if (!context.warnings.includes(warning)) {
+          context.warnings.push(warning)
+        }
+      }
       if (name === 'template' && node.attribs?.name) {
         context.templates.push({
           name: node.attribs.name,

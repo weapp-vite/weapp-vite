@@ -25,8 +25,10 @@ export function generateEntryModule(
   }
 
   const pageOrder = result.pages.map(page => page.id)
-  const rpxConfig = wxssOptions?.designWidth
-    ? { designWidth: wxssOptions.designWidth, varName: wxssOptions.rpxVar }
+  const useRuntimeRpx = wxssOptions?.pxPerRpx === undefined
+    || (typeof wxssOptions.designWidth === 'number' && Number.isFinite(wxssOptions.designWidth))
+  const rpxConfig = useRuntimeRpx
+    ? { designWidth: wxssOptions?.designWidth ?? 750, varName: wxssOptions?.rpxVar }
     : undefined
 
   const initOptions: Record<string, any> = {}
@@ -43,6 +45,9 @@ export function generateEntryModule(
   }
   if (pluginOptions?.runtime?.warnings) {
     runtimeOptions.warnings = pluginOptions.runtime.warnings
+  }
+  if (pluginOptions?.runtime?.viewport) {
+    runtimeOptions.viewport = pluginOptions.runtime.viewport
   }
   if (Object.keys(runtimeOptions).length > 0) {
     initOptions.runtime = runtimeOptions

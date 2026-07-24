@@ -17,7 +17,17 @@ function ensureContainer(): HTMLElement | undefined {
   if (typeof document === 'undefined') {
     return undefined
   }
-  return (document.querySelector('#app') as HTMLElement | null) ?? document.body
+  const existing = document.querySelector('#app') as HTMLElement | null
+  if (existing) {
+    return existing
+  }
+  if (!document.body) {
+    return undefined
+  }
+  const container = document.createElement('div')
+  container.setAttribute('id', 'app')
+  document.body.append(container)
+  return container
 }
 
 export function mountEntryToDom(
@@ -38,6 +48,8 @@ export function mountEntryToDom(
       container.removeChild(container.childNodes[0]!)
     }
     const element = document.createElement(record.tag) as HTMLElement & ComponentPublicInstance
+    element.setAttribute('data-weapp-page', entry.id)
+    element.setAttribute('style', 'display:block;min-height:100%;')
     attachRouteMeta(element, {
       id: entry.id,
       query: entry.query,

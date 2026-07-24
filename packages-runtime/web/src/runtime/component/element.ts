@@ -31,8 +31,14 @@ export function createComponentElementClass({
   runtimeState,
   instances,
 }: CreateComponentElementClassOptions): WeappComponentElementClass {
-  class WeappWebComponent extends BaseElement implements WeappComponentInstance {
-    static observedAttributes = runtimeState.observedAttributes
+  const RuntimeBaseElement = BaseElement as typeof HTMLElement & {
+    readonly observedAttributes?: string[]
+  }
+  class WeappWebComponent extends RuntimeBaseElement implements WeappComponentInstance {
+    static get observedAttributes() {
+      const inherited = super.observedAttributes ?? []
+      return Array.from(new Set([...inherited, ...runtimeState.observedAttributes]))
+    }
 
     #state: DataRecord
     #properties: DataRecord

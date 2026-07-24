@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-23T11:25:14.404Z",
+  "device": {
+    "windowWidth": 390,
+    "windowHeight": 753,
+    "pixelRatio": 3,
+    "safeAreaInsetBottom": 34,
+    "screenshotScale": 2
+  },
+  "cases": [
+    {
+      "id": "component-matrix",
+      "route": "/pages/visual-parity/index",
+      "baseline": "component-matrix.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03
+    },
+    {
+      "id": "product-detail",
+      "route": "/pages/product/detail/detail?iteration=10",
+      "baseline": "product-detail.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.05
+    }
+  ]
+}

@@ -2,13 +2,39 @@ import { describe, expect, it } from 'vitest'
 import { compileWxml } from '../src/compiler/wxml'
 
 describe('compileWxml button mapping', () => {
-  it('replaces button with weapp-button', () => {
+  it('maps supported mini-program components to semantic runtime elements', () => {
     const result = compileWxml({
       id: '/src/pages/index/index.wxml',
-      source: '<button type="primary">OK</button>',
+      source: `
+        <view>
+          <text>Label</text>
+          <image src="/cover.png" mode="aspectFit" />
+          <button type="primary">OK</button>
+          <input value="hello" />
+          <scroll-view scroll-y="{{true}}"><view>Content</view></scroll-view>
+        </view>
+      `,
       resolveTemplatePath: () => undefined,
       resolveWxsPath: () => undefined,
     })
+    expect(result.code).toContain('weapp-view')
+    expect(result.code).toContain('weapp-text')
+    expect(result.code).toContain('weapp-image')
     expect(result.code).toContain('weapp-button')
+    expect(result.code).toContain('weapp-input')
+    expect(result.code).toContain('weapp-scroll-view')
+  })
+
+  it('warns once when a known component uses DOM fallback semantics', () => {
+    const result = compileWxml({
+      id: '/src/pages/index/index.wxml',
+      source: '<swiper><swiper-item>A</swiper-item><swiper-item>B</swiper-item></swiper>',
+      resolveTemplatePath: () => undefined,
+      resolveWxsPath: () => undefined,
+    })
+    expect(result.warnings).toEqual([
+      expect.stringContaining('<swiper>'),
+      expect.stringContaining('<swiper-item>'),
+    ])
   })
 })

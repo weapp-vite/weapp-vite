@@ -42,6 +42,11 @@ export default defineConfig({
       srcDir: 'src',
       runtime: {
         executionMode: 'compat',
+        viewport: {
+          mode: 'mini-program',
+          maxWidth: 375,
+          desktopBreakpoint: 600,
+        },
       },
     }),
   ],
@@ -57,8 +62,18 @@ export default defineConfig({
 - `navigateTo` / `navigateBack` / `getCurrentPages`
 - `request` / `showToast` 等 polyfill API
 
+## 视觉与组件适配
+
+- 默认提供 375px 宽的居中小程序设备视口；移动宽度下自动铺满
+- `rpx` 跟随设备容器宽度和 resize 更新
+- `view`、`text`、`image`、`button`、`input`、`scroll-view` 使用独立运行时标签，不会过早降级为无语义 DOM
+- `page` 和原生组件 WXSS 选择器通过 PostCSS 结构化转换
+- `image.mode`、input 常用属性与事件、scroll-view 滚动状态和事件已有基础适配
+
+需要保留旧的浏览器全宽行为时，将 `runtime.viewport.mode` 设置为 `responsive`。
+
 ## 能力边界
 
 - 支持 `wx:if` / `wx:for` / 插值等常见语法
 - 支持小程序到 DOM 事件桥接（如 `bindtap`）
-- 样式与 API 兼容度仍在持续补齐
+- 未覆盖的原生组件、平台 API 和宿主细节仍需在微信 DevTools / 真机验证
