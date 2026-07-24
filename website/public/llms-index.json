@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-24T08:59:58.564Z",
+  "generatedAt": "2026-07-24T14:46:39.112Z",
   "site": "https://vite.icebreaker.top",
   "count": 271,
   "items": [
@@ -2709,6 +2709,7 @@
         "Web 兼容矩阵 experimental {#web-compat-matrix}",
         "模板语法矩阵",
         "组件选项矩阵",
+        "原生组件矩阵",
         "wx API 矩阵（Web bridge）",
         "已知限制",
         "建议用法"

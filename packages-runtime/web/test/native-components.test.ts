@@ -4,12 +4,19 @@ import {
   collectFormControlValues,
   collectRadioGroupValue,
   createInputEventDetail,
+  createPickerChangeDetail,
   createScrollEventDetail,
+  createSliderEventDetail,
   createSwiperChangeDetail,
   createSwitchEventDetail,
   createTextareaLineChangeDetail,
   ensureNativeComponentsDefined,
+  normalizePickerIndexes,
+  normalizePickerViewValue,
   resolveImageModeStyle,
+  resolvePickerColumns,
+  resolvePickerMode,
+  resolveSliderConfig,
   resolveSwiperIndex,
   resolveSwiperNumber,
   resolveSwipeTarget,
@@ -39,6 +46,10 @@ describe('web native component contracts', () => {
     expect(resolveNativeComponentWebTag('checkbox-group')).toBe('weapp-checkbox-group')
     expect(resolveNativeComponentWebTag('radio')).toBe('weapp-radio')
     expect(resolveNativeComponentWebTag('switch')).toBe('weapp-switch')
+    expect(resolveNativeComponentWebTag('picker')).toBe('weapp-picker')
+    expect(resolveNativeComponentWebTag('picker-view')).toBe('weapp-picker-view')
+    expect(resolveNativeComponentWebTag('picker-view-column')).toBe('weapp-picker-view-column')
+    expect(resolveNativeComponentWebTag('slider')).toBe('weapp-slider')
     expect(resolveNativeComponentWebTag('scroll-view')).toBe('weapp-scroll-view')
     expect(resolveNativeComponentWebTag('navigator')).toBe('weapp-navigator')
     expect(resolveNativeComponentWebTag('swiper')).toBe('weapp-swiper')
@@ -206,6 +217,62 @@ describe('web native component contracts', () => {
     expect(resolveMaxLength('20')).toBe(20)
   })
 
+  it('normalizes picker modes, ranges and event details', () => {
+    expect(resolvePickerMode('multiSelector')).toBe('multiSelector')
+    expect(resolvePickerMode('unsupported')).toBe('selector')
+    expect(resolvePickerColumns([
+      { id: 'native', title: '原生' },
+      { id: 'web', title: 'Web' },
+    ], 'selector', 'title')).toEqual([[
+      { label: '原生', value: { id: 'native', title: '原生' } },
+      { label: 'Web', value: { id: 'web', title: 'Web' } },
+    ]])
+    expect(resolvePickerColumns([['A', 'B'], ['1', '2', '3']], 'multiSelector')).toEqual([
+      [
+        { label: 'A', value: 'A' },
+        { label: 'B', value: 'B' },
+      ],
+      [
+        { label: '1', value: '1' },
+        { label: '2', value: '2' },
+        { label: '3', value: '3' },
+      ],
+    ])
+    expect(normalizePickerIndexes([4, -1], [2, 3])).toEqual([1, 0])
+    expect(createPickerChangeDetail('selector', 1)).toEqual({ value: 1 })
+    expect(createPickerChangeDetail('region', ['浙江省', '杭州市'])).toEqual({
+      value: ['浙江省', '杭州市'],
+      code: ['', ''],
+      postcode: '',
+    })
+  })
+
+  it('normalizes picker-view columns and slider values', () => {
+    expect(normalizePickerViewValue([2, -1, 9], [3, 4, 2])).toEqual([2, 0, 1])
+    expect(normalizePickerViewValue('invalid', [2, 0])).toEqual([0, 0])
+    expect(resolveSliderConfig({
+      min: 10,
+      max: 30,
+      step: 4,
+      value: 27,
+      blockSize: 40,
+    })).toEqual({
+      min: 10,
+      max: 30,
+      step: 4,
+      value: 26,
+      blockSize: 28,
+    })
+    expect(resolveSliderConfig({ max: 0, step: 0, blockSize: 4 })).toEqual({
+      min: 0,
+      max: 100,
+      step: 1,
+      value: 0,
+      blockSize: 12,
+    })
+    expect(createSliderEventDetail(42)).toEqual({ value: 42 })
+  })
+
   it('aggregates checkbox and radio group values with disabled controls filtered', () => {
     expect(collectCheckboxGroupValue([
       { checked: true, disabled: false, value: 'native' },
@@ -305,6 +372,10 @@ describe('web native component contracts', () => {
       'weapp-radio-group',
       'weapp-radio',
       'weapp-switch',
+      'weapp-picker',
+      'weapp-picker-view',
+      'weapp-picker-view-column',
+      'weapp-slider',
       'weapp-scroll-view',
       'weapp-navigator',
       'weapp-swiper',

@@ -37,6 +37,10 @@ describe('transformWxssToCss', () => {
       navigator.link:hover + swiper > swiper-item[data-active] {
         width: 100rpx;
       }
+      picker[data-mode="selector"] + picker-view > picker-view-column,
+      slider[disabled] {
+        min-height: 80rpx;
+      }
     `
     const { css } = transformWxssToCss(input)
     expect(css).toContain(':host > weapp-view.card weapp-text:first-child')
@@ -45,5 +49,7 @@ describe('transformWxssToCss', () => {
     expect(css).toContain('weapp-scroll-view[data-axis="y"] weapp-image')
     expect(css).toContain('weapp-textarea:focus + weapp-switch')
     expect(css).toContain('weapp-navigator.link:hover + weapp-swiper > weapp-swiper-item[data-active]')
+    expect(css).toContain('weapp-picker[data-mode="selector"] + weapp-picker-view > weapp-picker-view-column')
+    expect(css).toContain('weapp-slider[disabled]')
   })
 })

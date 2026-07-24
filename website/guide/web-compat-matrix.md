@@ -54,6 +54,20 @@ keywords:
 | `observerInit`                                   | `✅` | 可配置初始化阶段 observer 触发策略。                             |
 | `relations` / `externalClasses` 等               | `⛔` | 当前未在 runtime `ComponentOptions` 中实现。                     |
 
+## 原生组件矩阵
+
+| 组件                                         | 状态 | 说明                                                                                 |
+| -------------------------------------------- | ---- | ------------------------------------------------------------------------------------ |
+| `view` / `text` / `image`                    | `✅` | 保留组件标签与默认样式；`image.mode` 映射到 object fit / position。                  |
+| `button` / `input` / `textarea`              | `✅` | 支持常用属性、表单协议与微信形状事件。                                               |
+| `form` / `label` / checkbox / radio / switch | `✅` | 支持提交、重置、label 关联、组选值与禁用状态。                                       |
+| `scroll-view`                                | `✅` | 支持横纵轴、初始位置和带 delta 的 scroll 事件。                                      |
+| `picker`                                     | `🟡` | 支持 selector、multiSelector、date、time、region；region 不内置行政区 code 数据。    |
+| `picker-view` / `picker-view-column`         | `✅` | 支持受控 value、滚动吸附、mask / indicator 样式、change / pickstart / pickend。      |
+| `slider`                                     | `✅` | 支持范围、步长、颜色、block-size、show-value、disabled、表单值及 changing / change。 |
+| `navigator`                                  | `🟡` | 支持常用 open-type 与 miniProgram bridge，宿主跳转能力取决于 provider。              |
+| `swiper` / `swiper-item`                     | `✅` | 支持受控切换、触摸、循环、指示点、autoplay 与生命周期清理。                          |
+
 ## `wx` API 矩阵（Web bridge）
 
 | API                                                                                                      | 状态 | 说明                                                                                                    |

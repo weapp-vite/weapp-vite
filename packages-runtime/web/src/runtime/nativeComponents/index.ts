@@ -7,9 +7,12 @@ import { WeappImage } from './image'
 import { WeappInput } from './input'
 import { WeappLabel } from './label'
 import { WeappNavigator } from './navigator'
+import { WeappPicker } from './picker'
+import { WeappPickerView, WeappPickerViewColumn } from './pickerView'
 import { WeappText, WeappView } from './primitives'
 import { WeappRadio, WeappRadioGroup } from './radio'
 import { WeappScrollView } from './scrollView'
+import { WeappSlider } from './slider'
 import { WeappSwiper } from './swiper'
 import { WeappSwiperItem } from './swiper/item'
 import { WeappSwitch } from './switch'
@@ -29,6 +32,10 @@ const constructors = {
   'weapp-radio-group': WeappRadioGroup,
   'weapp-radio': WeappRadio,
   'weapp-switch': WeappSwitch,
+  'weapp-picker': WeappPicker,
+  'weapp-picker-view': WeappPickerView,
+  'weapp-picker-view-column': WeappPickerViewColumn,
+  'weapp-slider': WeappSlider,
   'weapp-scroll-view': WeappScrollView,
   'weapp-navigator': WeappNavigator,
   'weapp-swiper': WeappSwiper,
@@ -52,8 +59,16 @@ export { collectCheckboxGroupValue } from './checkbox'
 export { collectFormControlValues } from './formControl'
 export { resolveImageModeStyle } from './image'
 export { createInputEventDetail } from './input'
+export {
+  createPickerChangeDetail,
+  normalizePickerIndexes,
+  resolvePickerColumns,
+  resolvePickerMode,
+} from './picker/helpers'
+export { normalizePickerViewValue } from './pickerView/helpers'
 export { collectRadioGroupValue } from './radio'
 export { createScrollEventDetail } from './scrollView'
+export { createSliderEventDetail, resolveSliderConfig } from './slider/helpers'
 export { NATIVE_COMPONENT_STYLE } from './style'
 export {
   createSwiperChangeDetail,

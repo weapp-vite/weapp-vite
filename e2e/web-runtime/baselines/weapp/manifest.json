@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-24T06:05:09.577Z",
+  "generatedAt": "2026-07-24T14:39:20.730Z",
   "device": {
     "windowWidth": 390,
     "windowHeight": 753,
     "pixelRatio": 3,
     "safeAreaInsetBottom": 34,
-    "screenshotScale": 1
+    "screenshotScale": 2
   },
   "cases": [
     {
@@ -20,6 +20,13 @@
       "id": "form-matrix",
       "route": "/pages/form-parity/index",
       "baseline": "form-matrix.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03
+    },
+    {
+      "id": "selection-matrix",
+      "route": "/pages/selection-parity/index",
+      "baseline": "selection-matrix.png",
       "threshold": 0.18,
       "maxDiffRatio": 0.03
     },

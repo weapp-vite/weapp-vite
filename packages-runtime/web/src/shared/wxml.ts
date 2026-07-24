@@ -98,9 +98,6 @@ export function normalizeTagName(name: string) {
       return 'div'
     case 'icon':
       return 'span'
-    case 'picker':
-    case 'picker-view':
-      return 'select'
     case 'block':
       return '#fragment'
     case 'slot':

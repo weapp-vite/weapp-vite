@@ -1,0 +1,162 @@
+page {
+  min-height: 100%;
+  color: #18202a;
+  background: #eef1f4;
+}
+
+.selection-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 12px 13.5px;
+  background: #eef1f4;
+}
+
+.selection-page__eyebrow,
+.selection-page__title,
+.selection-page__caption,
+.picker-field__label,
+.picker-field__value,
+.section-heading__title,
+.section-heading__value,
+.event-result__label,
+.event-result__value {
+  display: block;
+}
+
+.selection-page__intro {
+  box-sizing: border-box;
+  height: 60.5px;
+  padding: 2px 2px 10px;
+}
+
+.selection-page__eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 11px;
+  color: #087f5b;
+}
+
+.selection-page__title {
+  margin-top: 3px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.selection-page__caption {
+  margin-top: 3px;
+  font-size: 10.5px;
+  line-height: 13px;
+  color: #66717f;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 6px;
+}
+
+.picker-field,
+.wheel-card,
+.slider-card {
+  box-sizing: border-box;
+  background: #fff;
+  border: 0.5px solid #dce1e7;
+  border-radius: 5px;
+}
+
+.picker-field {
+  height: 42px;
+  padding: 7.5px 9px;
+}
+
+.picker-field__label {
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 11px;
+  color: #72808d;
+}
+
+.picker-field__value {
+  margin-top: 2.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 15px;
+  white-space: nowrap;
+}
+
+.wheel-card,
+.slider-card {
+  padding: 8px 9px;
+  margin-top: 7px;
+}
+
+.wheel-card {
+  height: 129px;
+  margin-top: 6px;
+}
+
+.slider-card {
+  height: 72.5px;
+  overflow: hidden;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 14px;
+}
+
+.section-heading__title {
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.section-heading__value {
+  font-size: 9px;
+  color: #087f5b;
+}
+
+.target-wheel {
+  height: 95px;
+  margin-top: 5px;
+  background: #f7f9f8;
+}
+
+.target-wheel__item {
+  height: 34px;
+  font-size: 10.5px;
+  line-height: 34px;
+  text-align: center;
+}
+
+.release-slider {
+  height: 22px;
+  margin: 0;
+}
+
+.event-result {
+  box-sizing: border-box;
+  height: 39px;
+  padding: 7.5px 9px;
+  margin-top: 7px;
+  background: #18202a;
+  border-radius: 4px;
+}
+
+.event-result__label {
+  font-size: 8.5px;
+  font-weight: 600;
+  line-height: 10px;
+  color: #6ee7b7;
+}
+
+.event-result__value {
+  margin-top: 2.5px;
+  font-size: 9.5px;
+  line-height: 11.5px;
+  color: #fff;
+}
