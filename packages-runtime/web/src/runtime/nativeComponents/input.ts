@@ -1,5 +1,6 @@
 import { getNativeComponentDescriptor } from '../../shared/nativeComponents'
-import { dispatchMiniProgramEvent, readBooleanAttribute, resolveContainingShadowRoot } from './helpers'
+import { connectFormControl, disconnectFormControl } from './formControl'
+import { dispatchMiniProgramEvent, readBooleanAttribute, resolveContainingShadowRoot, resolveMaxLength } from './helpers'
 import { ensureNativeComponentStyle } from './style'
 
 const BaseElement = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement
@@ -23,6 +24,20 @@ export class WeappInput extends BaseElement {
   static observedAttributes = [...getNativeComponentDescriptor('input')!.attributes]
 
   #input?: HTMLInputElement
+  #initialValue = ''
+  #initialValueCaptured = false
+
+  get formControlName() {
+    return this.getAttribute('name') ?? ''
+  }
+
+  get formControlValue() {
+    return this.value
+  }
+
+  get formControlDisabled() {
+    return readBooleanAttribute(this, 'disabled')
+  }
 
   get value() {
     return this.#input?.value ?? this.getAttribute('value') ?? ''
@@ -34,12 +49,25 @@ export class WeappInput extends BaseElement {
 
   connectedCallback() {
     ensureNativeComponentStyle(resolveContainingShadowRoot(this))
+    if (!this.#initialValueCaptured) {
+      this.#initialValue = this.getAttribute('value') ?? ''
+      this.#initialValueCaptured = true
+    }
     this.#ensureStructure()
     this.#syncAttributes()
+    connectFormControl(this)
+    this.#syncFocus()
   }
 
-  attributeChangedCallback() {
+  disconnectedCallback() {
+    disconnectFormControl(this)
+  }
+
+  attributeChangedCallback(name: string) {
     this.#syncAttributes()
+    if (name === 'focus') {
+      this.#syncFocus()
+    }
   }
 
   focus(options?: FocusOptions) {
@@ -48,6 +76,16 @@ export class WeappInput extends BaseElement {
 
   blur() {
     this.#input?.blur()
+  }
+
+  formReset() {
+    if (this.#input) {
+      this.#input.value = this.#initialValue
+    }
+  }
+
+  formActivate() {
+    this.focus()
   }
 
   #ensureStructure() {
@@ -104,11 +142,23 @@ export class WeappInput extends BaseElement {
     this.#input.type = resolveInputType(this)
     this.#input.placeholder = this.getAttribute('placeholder') ?? ''
     this.#input.disabled = readBooleanAttribute(this, 'disabled')
-    const maxlength = Number(this.getAttribute('maxlength') ?? -1)
-    this.#input.maxLength = Number.isFinite(maxlength) && maxlength >= 0 ? maxlength : -1
+    const maxlength = resolveMaxLength(this.getAttribute('maxlength'))
+    if (maxlength === undefined) {
+      this.#input.removeAttribute('maxlength')
+    }
+    else {
+      this.#input.maxLength = maxlength
+    }
     const confirmType = this.getAttribute('confirm-type')
     if (confirmType) {
       this.#input.enterKeyHint = confirmType === 'send' ? 'send' : confirmType as HTMLInputElement['enterKeyHint']
     }
+  }
+
+  #syncFocus() {
+    if (!readBooleanAttribute(this, 'focus')) {
+      return
+    }
+    queueMicrotask(() => this.focus())
   }
 }

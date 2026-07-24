@@ -7,7 +7,7 @@ page {
 .matrix {
   box-sizing: border-box;
   min-height: 100vh;
-  padding: 32rpx 28rpx 150rpx;
+  padding: 32rpx 27rpx 150rpx;
   background: #eef1f4;
 }
 
@@ -115,13 +115,11 @@ page {
 }
 
 .matrix-button {
-  width: 48%;
   margin: 0;
   font-size: 26rpx;
 }
 
 .matrix-button--disabled {
-  width: 100%;
   margin-top: 16rpx;
 }
 

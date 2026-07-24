@@ -8,7 +8,7 @@
 - 事件桥接（如 `bindtap` → `click`），保留 `this.setData`、`this.triggerEvent` 等调用体验
 - 提供宿主中立的小程序桥，并兼容 `wx.navigateTo` / `my.navigateTo` / `tt.navigateTo` 等路由调用，以及 `getCurrentPages`、`onLoad`、`onShow`、`onHide`、`onUnload` 生命周期
 - `App` 级别的 `onLaunch` / `onShow` 回调、`getApp` 全局实例访问
-- 为 `view`、`text`、`image`、`button`、`input`、`scroll-view` 提供保留小程序语义的 Web Components 适配
+- 为 `view`、`text`、`image`、`button`、`input`、`scroll-view` 及常用表单组件提供保留小程序语义的 Web Components 适配
 - 使用 PostCSS 转换 WXSS 选择器，支持 `page`、原生组件类型选择器、组合选择器和伪类
 - `rpx` 根据实际设备容器宽度动态计算；默认宽屏下使用 375px 居中设备视口
 - 提供 Vite 插件，自动把 `.wxml` / `.wxss` 转换为 Web 侧模块
@@ -66,8 +66,11 @@ weappWebPlugin({
 ## 组件兼容
 
 - `image.mode` 会映射到浏览器的 `object-fit` / `object-position`。
-- `input` 同步 `value`、`placeholder`、`disabled`、`password`、`maxlength`，并发送小程序形状的 `input` / `focus` / `blur` / `confirm` 事件。
+- `input` 同步 `name`、`value`、`placeholder`、`disabled`、`password`、`maxlength`、`focus`，并发送小程序形状的 `input` / `focus` / `blur` / `confirm` 事件。
 - `scroll-view` 支持横纵滚动、初始滚动位置及带 `scrollLeft`、`scrollTop`、`deltaX`、`deltaY` 的 `scroll` 事件。
+- `form` 统一收集带 `name` 的可用控件值，支持 `button form-type="submit|reset"`、`submit` / `reset` 事件及初始状态恢复。
+- `label` 支持通过 `for` 关联控件，也支持包裹 `input`、`textarea`、`checkbox`、`radio`、`switch` 触发聚焦或选择。
+- `textarea`、`checkbox-group` / `checkbox`、`radio-group` / `radio`、`switch` 支持常用属性、表单值和微信形状的交互事件；脚本同步属性不会误发 `change`。
 - 其他已识别但尚未完整适配的原生组件会继续渲染，并输出去重兼容告警。
 
 仓库中的 `pnpm e2e:web:update-baselines` 只用于维护者显式刷新微信 DevTools 视觉基线；普通 `pnpm e2e:web` 只读取已提交基线。

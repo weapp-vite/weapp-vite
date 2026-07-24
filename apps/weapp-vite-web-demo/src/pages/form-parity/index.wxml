@@ -1,0 +1,91 @@
+<view class="form-page" data-visual-ready="true">
+  <view class="form-page__intro">
+    <text class="form-page__eyebrow">FORM / NATIVE COMPONENTS</text>
+    <text class="form-page__title">资料偏好</text>
+    <text class="form-page__caption">输入、选择、提交与重置使用同一份页面源码</text>
+  </view>
+
+  <form class="profile-form" bindsubmit="handleSubmit" bindreset="handleReset">
+    <view class="field-grid">
+      <view class="field">
+        <label class="field__label" for="profile-name">姓名</label>
+        <input
+          id="profile-name"
+          class="field__input"
+          name="profileName"
+          value="{{profileName}}"
+          placeholder="请输入姓名"
+          maxlength="20"
+          bindinput="handleNameInput"
+        />
+      </view>
+      <view class="field">
+        <text class="field__label">简介</text>
+        <textarea
+          class="field__textarea"
+          name="bio"
+          value="{{bio}}"
+          placeholder="说说你正在构建什么"
+          maxlength="80"
+          bindinput="handleBioInput"
+        />
+      </view>
+    </view>
+
+    <view class="choice-row">
+      <view class="choice-block">
+        <text class="field__label">能力方向</text>
+        <checkbox-group class="choice-list" name="skills" bindchange="handleSkillsChange">
+          <label class="choice-item">
+            <checkbox value="runtime" checked="{{runtimeChecked}}" color="#087f5b" />
+            <text>Runtime</text>
+          </label>
+          <label class="choice-item">
+            <checkbox value="compiler" checked="{{compilerChecked}}" color="#087f5b" />
+            <text>Compiler</text>
+          </label>
+        </checkbox-group>
+      </view>
+
+      <view class="choice-block">
+        <text class="field__label">发布通道</text>
+        <radio-group class="choice-list" name="channel" bindchange="handleChannelChange">
+          <label class="choice-item">
+            <radio value="stable" checked="{{channel === 'stable'}}" color="#087f5b" />
+            <text>Stable</text>
+          </label>
+          <label class="choice-item">
+            <radio value="preview" checked="{{channel === 'preview'}}" color="#087f5b" />
+            <text>Preview</text>
+          </label>
+        </radio-group>
+      </view>
+    </view>
+
+    <label class="switch-row" for="notify-switch">
+      <view>
+        <text class="switch-row__title">构建通知</text>
+        <text class="switch-row__caption">完成后同步运行结果</text>
+      </view>
+      <switch
+        id="notify-switch"
+        name="notify"
+        checked="{{notify}}"
+        color="#087f5b"
+        bindchange="handleNotifyChange"
+      />
+    </label>
+
+    <input name="disabledField" value="ignored" disabled />
+
+    <view class="form-actions">
+      <button class="form-actions__button" form-type="reset">重置</button>
+      <button class="form-actions__button" type="primary" form-type="submit">提交资料</button>
+    </view>
+  </form>
+
+  <view class="form-result" data-form-result="{{resultState}}">
+    <text class="form-result__label">FORM EVENT</text>
+    <text class="form-result__value">{{resultSummary}}</text>
+  </view>
+</view>

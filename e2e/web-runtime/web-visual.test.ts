@@ -203,6 +203,11 @@ describeWeb.sequential('web runtime visual parity', () => {
   })
 
   it('matches committed WeChat DevTools baselines', async () => {
+    const comparisons: Array<{
+      id: string
+      diffRatio: number
+      maxDiffRatio: number
+    }> = []
     for (const visualCase of manifest.cases) {
       const context = await browser!.newContext({
         viewport: {
@@ -231,11 +236,18 @@ describeWeb.sequential('web runtime visual parity', () => {
           diffOutputPath: diffPath,
           threshold: visualCase.threshold,
         })
-        expect(result.diffRatio, `${visualCase.id} diff ratio`).toBeLessThanOrEqual(visualCase.maxDiffRatio)
+        comparisons.push({
+          id: visualCase.id,
+          diffRatio: result.diffRatio,
+          maxDiffRatio: visualCase.maxDiffRatio,
+        })
       }
       finally {
         await context.close()
       }
+    }
+    for (const comparison of comparisons) {
+      expect(comparison.diffRatio, `${comparison.id} diff ratio`).toBeLessThanOrEqual(comparison.maxDiffRatio)
     }
   })
 
@@ -284,6 +296,68 @@ describeWeb.sequential('web runtime visual parity', () => {
       await expect.poll(async () => {
         return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data.scrollEvent)
       }).toBe('80, 0')
+    }
+    finally {
+      await page.close()
+    }
+  })
+
+  it('submits and resets native form controls with mini-program detail data', async () => {
+    const page = await browser!.newPage({ viewport: { width: 390, height: 753 } })
+    try {
+      await navigateToVisualCase(page, '/pages/form-parity/index')
+
+      await page.locator('weapp-label[for="profile-name"]').click()
+      await expect.poll(async () => {
+        return await page.locator('weapp-input#profile-name input').evaluate((element) => {
+          const root = element.getRootNode()
+          return root instanceof ShadowRoot && root.activeElement === element
+        })
+      }).toBe(true)
+
+      await page.locator('weapp-input#profile-name input').fill('Grace')
+      await page.locator('weapp-textarea textarea').fill('Shipping the web runtime')
+      await page.getByText('Compiler', { exact: true }).click()
+      await page.getByText('Preview', { exact: true }).click()
+      await page.locator('.switch-row__title').click()
+      await page.getByText('提交资料', { exact: true }).click()
+
+      await expect.poll(async () => {
+        return await page.evaluate(() => {
+          const data = (window as any).getCurrentPages().at(-1)?.data
+          if (data?.resultState !== 'submitted') {
+            return { state: data?.resultState, value: null }
+          }
+          return {
+            state: data?.resultState,
+            value: JSON.parse(data.resultSummary),
+          }
+        })
+      }).toEqual({
+        state: 'submitted',
+        value: {
+          profileName: 'Grace',
+          bio: 'Shipping the web runtime',
+          skills: ['runtime', 'compiler'],
+          channel: 'preview',
+          notify: false,
+        },
+      })
+
+      await page.getByText('重置', { exact: true }).click()
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data)
+      }).toMatchObject({
+        profileName: 'Ada',
+        bio: 'Building mini-program tooling',
+        runtimeChecked: true,
+        compilerChecked: false,
+        channel: 'stable',
+        notify: true,
+        resultState: 'reset',
+      })
+      await expect.poll(() => page.locator('weapp-input#profile-name input').inputValue()).toBe('Ada')
+      await expect.poll(() => page.locator('weapp-textarea textarea').inputValue()).toBe('Building mini-program tooling')
     }
     finally {
       await page.close()

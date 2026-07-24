@@ -13,6 +13,8 @@ import { cleanupResidualDevtoolsProcesses } from '../utils/ide-devtools-cleanup'
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.join(ROOT, 'apps/weapp-vite-web-demo')
 const BASELINE_ROOT = path.join(ROOT, 'e2e/web-runtime/baselines/weapp')
+const AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
+const SCREENSHOT_TIMEOUT = 60_000
 
 interface DeviceMetrics {
   windowWidth: number
@@ -26,6 +28,13 @@ const visualCases = [
     id: 'component-matrix',
     route: '/pages/visual-parity/index',
     baseline: 'component-matrix.png',
+    threshold: 0.18,
+    maxDiffRatio: 0.03,
+  },
+  {
+    id: 'form-matrix',
+    route: '/pages/form-parity/index',
+    baseline: 'form-matrix.png',
     threshold: 0.18,
     maxDiffRatio: 0.03,
   },
@@ -75,7 +84,7 @@ async function captureBaselines(miniProgram: MiniProgram, device: DeviceMetrics)
   for (const visualCase of visualCases) {
     await miniProgram.reLaunch(visualCase.route)
     await sleep(1_200)
-    const screenshot = await miniProgram.screenshot({ timeout: 15_000 })
+    const screenshot = await miniProgram.screenshot({ timeout: SCREENSHOT_TIMEOUT })
     const screenshotBuffer = typeof screenshot === 'string'
       ? Buffer.from(screenshot, 'base64')
       : Buffer.from(screenshot)
@@ -98,6 +107,7 @@ async function captureBaselines(miniProgram: MiniProgram, device: DeviceMetrics)
 }
 
 async function main() {
+  process.env[AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH_ENV] = '1'
   await cleanupResidualDevtoolsProcesses()
   await buildMiniProgram()
 
@@ -105,12 +115,12 @@ async function main() {
   try {
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
-      skipWarmup: true,
       timeout: 90_000,
     })
     const device = resolveDeviceMetrics(await miniProgram.evaluate(() => {
       return wx.getSystemInfoSync()
     }))
+    await miniProgram.waitForAppReady(SCREENSHOT_TIMEOUT)
     const screenshotScale = await captureBaselines(miniProgram, device)
     const manifest = {
       version: 1,

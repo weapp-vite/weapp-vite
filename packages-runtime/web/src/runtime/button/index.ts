@@ -1,5 +1,7 @@
+import type { FormConfig } from '../nativeComponents/form'
+import { setFormConfig } from '../nativeComponents/form'
+import { requestContainingFormAction } from '../nativeComponents/formControl'
 import {
-  collectFormValues,
   DEFAULT_HOVER_START,
   DEFAULT_HOVER_STAY,
   getHoverClass,
@@ -11,20 +13,10 @@ import {
 } from './helpers'
 import { ensureButtonStyle } from './style'
 
-interface ButtonFormConfig {
-  preventDefault?: boolean
-}
-
-const DEFAULT_FORM_CONFIG: Required<ButtonFormConfig> = {
-  preventDefault: true,
-}
-
 const NAV_BUTTON_TAG = 'weapp-button'
 const BaseElement = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement
 
-let formConfig: Required<ButtonFormConfig> = { ...DEFAULT_FORM_CONFIG }
-
-class WeappButton extends BaseElement {
+export class WeappButton extends BaseElement {
   static observedAttributes = [
     'type',
     'plain',
@@ -200,26 +192,7 @@ class WeappButton extends BaseElement {
     if (!formType) {
       return
     }
-    const form = this.closest('form') as HTMLFormElement | null
-    if (!form) {
-      return
-    }
-    if (formType === 'submit') {
-      const detail = { value: collectFormValues(form) }
-      const submitEvent = new CustomEvent('submit', {
-        detail,
-        bubbles: true,
-        cancelable: true,
-      })
-      const shouldSubmit = form.dispatchEvent(submitEvent)
-      if (shouldSubmit && !formConfig.preventDefault) {
-        form.submit()
-      }
-      event.preventDefault()
-      return
-    }
-    if (formType === 'reset') {
-      form.reset()
+    if ((formType === 'submit' || formType === 'reset') && requestContainingFormAction(this, formType)) {
       event.preventDefault()
     }
   }
@@ -286,11 +259,8 @@ export function ensureButtonDefined(): void {
   }
 }
 
-export function setButtonFormConfig(next: ButtonFormConfig): void {
-  formConfig = {
-    ...formConfig,
-    ...next,
-  }
+export function setButtonFormConfig(next: FormConfig): void {
+  setFormConfig(next)
 }
 
-export type { ButtonFormConfig }
+export type ButtonFormConfig = FormConfig

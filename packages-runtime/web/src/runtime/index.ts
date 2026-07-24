@@ -5,6 +5,8 @@ export { getRuntimeExecutionMode, setRuntimeExecutionMode } from './execution'
 export {
   createInputEventDetail,
   createScrollEventDetail,
+  createSwitchEventDetail,
+  createTextareaLineChangeDetail,
   ensureNativeComponentsDefined,
   resolveImageModeStyle,
 } from './nativeComponents'

@@ -1,0 +1,163 @@
+page {
+  min-height: 100%;
+  color: #18202a;
+  background: #eef1f4;
+}
+
+.form-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 28rpx 27rpx;
+  background: #eef1f4;
+}
+
+.form-page__eyebrow,
+.form-page__title,
+.form-page__caption,
+.field__label,
+.switch-row__title,
+.switch-row__caption,
+.form-result__label,
+.form-result__value {
+  display: block;
+}
+
+.form-page__intro {
+  padding: 4rpx 4rpx 24rpx;
+}
+
+.form-page__eyebrow {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #087f5b;
+}
+
+.form-page__title {
+  margin-top: 8rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.form-page__caption {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #66717f;
+}
+
+.profile-form {
+  padding: 24rpx;
+  background: #fff;
+  border: 1rpx solid #dce1e7;
+  border-radius: 12rpx;
+}
+
+.field-grid,
+.choice-row {
+  display: flex;
+  gap: 20rpx;
+}
+
+.field,
+.choice-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.field__label {
+  margin-bottom: 12rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #4c5968;
+}
+
+.field__input,
+.field__textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14rpx 16rpx;
+  font-size: 24rpx;
+  background: #f7f8fa;
+  border: 1rpx solid #cfd6de;
+  border-radius: 8rpx;
+}
+
+.field__input {
+  height: 68rpx;
+}
+
+.field__textarea {
+  height: 116rpx;
+  line-height: 1.4;
+}
+
+.choice-row {
+  padding: 22rpx 0;
+  margin-top: 22rpx;
+  border-top: 1rpx solid #e7eaee;
+  border-bottom: 1rpx solid #e7eaee;
+}
+
+.choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.choice-item {
+  display: flex;
+  gap: 8rpx;
+  align-items: center;
+  font-size: 23rpx;
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+}
+
+.switch-row__title {
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.switch-row__caption {
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  color: #7a8592;
+}
+
+.form-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.form-actions__button {
+  flex: 1;
+  margin: 0;
+  font-size: 24rpx;
+}
+
+.form-result {
+  padding: 20rpx 22rpx;
+  margin-top: 20rpx;
+  background: #18202a;
+  border-radius: 8rpx;
+}
+
+.form-result__label {
+  font-size: 18rpx;
+  font-weight: 600;
+  color: #6ee7b7;
+}
+
+.form-result__value {
+  min-height: 32rpx;
+  margin-top: 8rpx;
+  font-size: 20rpx;
+  line-height: 1.4;
+  color: #fff;
+  overflow-wrap: anywhere;
+}

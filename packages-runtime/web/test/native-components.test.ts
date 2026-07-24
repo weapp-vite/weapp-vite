@@ -1,10 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  collectCheckboxGroupValue,
+  collectFormControlValues,
+  collectRadioGroupValue,
   createInputEventDetail,
   createScrollEventDetail,
+  createSwitchEventDetail,
+  createTextareaLineChangeDetail,
   ensureNativeComponentsDefined,
   resolveImageModeStyle,
 } from '../src/runtime/nativeComponents'
+import { connectFormControl, disconnectFormControl, resetFormControls } from '../src/runtime/nativeComponents/formControl'
+import { resolveMaxLength } from '../src/runtime/nativeComponents/helpers'
 import { NATIVE_COMPONENT_STYLE } from '../src/runtime/nativeComponents/style'
 import { setupRpx } from '../src/runtime/rpx'
 import { resolveWebViewportConfig } from '../src/runtime/viewport'
@@ -21,9 +28,15 @@ describe('web native component contracts', () => {
     expect(resolveNativeComponentWebTag('text')).toBe('weapp-text')
     expect(resolveNativeComponentWebTag('image')).toBe('weapp-image')
     expect(resolveNativeComponentWebTag('input')).toBe('weapp-input')
+    expect(resolveNativeComponentWebTag('form')).toBe('weapp-form')
+    expect(resolveNativeComponentWebTag('textarea')).toBe('weapp-textarea')
+    expect(resolveNativeComponentWebTag('checkbox-group')).toBe('weapp-checkbox-group')
+    expect(resolveNativeComponentWebTag('radio')).toBe('weapp-radio')
+    expect(resolveNativeComponentWebTag('switch')).toBe('weapp-switch')
     expect(resolveNativeComponentWebTag('scroll-view')).toBe('weapp-scroll-view')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-view')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-image')
+    expect(NATIVE_COMPONENT_STYLE).toContain('weapp-form { display: inline; box-sizing: border-box; }')
   })
 
   it('maps image modes to browser object fitting', () => {
@@ -54,6 +67,61 @@ describe('web native component contracts', () => {
       deltaX: 12,
       deltaY: 32,
     })
+    expect(createTextareaLineChangeDetail({ value: 'first\nsecond', scrollHeight: 48 })).toEqual({
+      height: 48,
+      heightRpx: 96,
+      lineCount: 2,
+    })
+    expect(createSwitchEventDetail(true)).toEqual({ value: true })
+    expect(resolveMaxLength(null)).toBeUndefined()
+    expect(resolveMaxLength('-1')).toBeUndefined()
+    expect(resolveMaxLength('20')).toBe(20)
+  })
+
+  it('aggregates checkbox and radio group values with disabled controls filtered', () => {
+    expect(collectCheckboxGroupValue([
+      { checked: true, disabled: false, value: 'native' },
+      { checked: false, disabled: false, value: 'vue' },
+      { checked: true, disabled: true, value: 'disabled' },
+    ] as any)).toEqual(['native'])
+    expect(collectRadioGroupValue([
+      { checked: false, disabled: false, value: 'preview' },
+      { checked: true, disabled: false, value: 'stable' },
+    ] as any)).toBe('stable')
+  })
+
+  it('collects registered form controls and resets their internal state', () => {
+    const form = {
+      matches: (selector: string) => selector === 'weapp-form',
+      parentElement: null,
+    } as any
+    const activeReset = vi.fn()
+    const disabledReset = vi.fn()
+    const active = {
+      matches: () => false,
+      parentElement: form,
+      formControlName: 'profile',
+      formControlValue: 'Ada',
+      formControlDisabled: false,
+      formReset: activeReset,
+    } as any
+    const disabled = {
+      matches: () => false,
+      parentElement: form,
+      formControlName: 'ignored',
+      formControlValue: true,
+      formControlDisabled: true,
+      formReset: disabledReset,
+    } as any
+
+    connectFormControl(active)
+    connectFormControl(disabled)
+    expect(collectFormControlValues(form)).toEqual({ profile: 'Ada' })
+    resetFormControls(form)
+    expect(activeReset).toHaveBeenCalledOnce()
+    expect(disabledReset).toHaveBeenCalledOnce()
+    disconnectFormControl(active)
+    disconnectFormControl(disabled)
   })
 
   it('updates rpx from the device container width on resize', () => {
@@ -96,11 +164,19 @@ describe('web native component contracts', () => {
     ensureNativeComponentsDefined()
     ensureNativeComponentsDefined()
     expect(define.mock.calls.map(([name]) => name)).toEqual([
-      'weapp-button',
       'weapp-view',
       'weapp-text',
       'weapp-image',
+      'weapp-button',
       'weapp-input',
+      'weapp-textarea',
+      'weapp-form',
+      'weapp-label',
+      'weapp-checkbox-group',
+      'weapp-checkbox',
+      'weapp-radio-group',
+      'weapp-radio',
+      'weapp-switch',
       'weapp-scroll-view',
     ])
   })
