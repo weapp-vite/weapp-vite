@@ -58,7 +58,7 @@ weapp-button.weapp-btn--plain .weapp-btn {
 }
 
 weapp-button.weapp-btn--plain.weapp-btn--default .weapp-btn {
-  border-color: #b2b2b2;
+  border-color: #a1a1a1;
   color: #353535;
 }
 
@@ -76,7 +76,7 @@ weapp-button.weapp-btn--loading .weapp-btn,
 weapp-button.weapp-btn--disabled .weapp-btn {
   background-color: #f7f7f7;
   border-color: #d9d9d9;
-  color: #9b9b9b;
+  color: #bbbbbb;
   cursor: not-allowed;
 }
 
