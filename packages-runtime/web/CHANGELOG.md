@@ -1,5 +1,19 @@
 # @weapp-vite/web
 
+## 1.4.0
+
+### Minor Changes
+
+- ✨ **为 Web 运行时新增 picker、picker-view、picker-view-column 与 slider 原生组件适配，补齐选择器受控值、表单值、滚动选择、滑块样式及微信形状交互事件，并新增同源选择组件视觉与行为门禁。** [#745](https://github.com/weapp-vite/weapp-vite/pull/745) by @sonofmagic
+
+- ✨ **补齐 form、label、textarea、checkbox、radio 与 switch 的 Web 运行时语义，支持表单值收集、提交、重置、控件关联及微信形状的交互事件。** [#741](https://github.com/weapp-vite/weapp-vite/pull/741) by @sonofmagic
+
+- ✨ **新增常用小程序组件的语义化 Web 适配、结构化 WXSS 选择器转换和默认设备视口，使页面、导航栏、固定元素与 rpx 在浏览器中按小程序容器一致布局。** [#738](https://github.com/weapp-vite/weapp-vite/pull/738) by @sonofmagic
+
+- ✨ **对齐 Web 运行时页面栈与小程序生命周期：页面返回时保留并恢复原实例、数据和滚动位置，补全路由回调与卸载语义。** [#744](https://github.com/weapp-vite/weapp-vite/pull/744) by @sonofmagic
+
+- ✨ **为 Web 运行时新增 navigator、swiper 与 swiper-item 的原生组件适配，补齐声明式页面栈跳转、轮播受控状态、触摸与自动播放事件，并扩展同源页面的微信 DevTools 视觉基线。** [#743](https://github.com/weapp-vite/weapp-vite/pull/743) by @sonofmagic
+
 ## 1.3.37
 
 ### Patch Changes
