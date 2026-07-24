@@ -10,6 +10,8 @@ import {
   createSwiperChangeDetail,
   createSwitchEventDetail,
   createTextareaLineChangeDetail,
+  createVideoProgressDetail,
+  createVideoTimeUpdateDetail,
   ensureNativeComponentsDefined,
   normalizePickerIndexes,
   normalizePickerViewValue,
@@ -20,9 +22,15 @@ import {
   resolveSwiperIndex,
   resolveSwiperNumber,
   resolveSwipeTarget,
+  resolveVideoObjectFit,
 } from '../src/runtime/nativeComponents'
 import { connectFormControl, disconnectFormControl, resetFormControls } from '../src/runtime/nativeComponents/formControl'
 import { resolveMaxLength } from '../src/runtime/nativeComponents/helpers'
+import {
+  registerNativeMediaElement,
+  resolveNativeMediaElement,
+  unregisterNativeMediaElement,
+} from '../src/runtime/nativeComponents/mediaRegistry'
 import { executeNavigatorRequest, resolveNavigatorExtraData } from '../src/runtime/nativeComponents/navigator'
 import { NATIVE_COMPONENT_STYLE } from '../src/runtime/nativeComponents/style'
 import { SWIPER_SHADOW_STYLE } from '../src/runtime/nativeComponents/swiper/style'
@@ -54,6 +62,8 @@ describe('web native component contracts', () => {
     expect(resolveNativeComponentWebTag('navigator')).toBe('weapp-navigator')
     expect(resolveNativeComponentWebTag('swiper')).toBe('weapp-swiper')
     expect(resolveNativeComponentWebTag('swiper-item')).toBe('weapp-swiper-item')
+    expect(resolveNativeComponentWebTag('canvas')).toBe('weapp-canvas')
+    expect(resolveNativeComponentWebTag('video')).toBe('weapp-video')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-view')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-image')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-form { display: inline; box-sizing: border-box; }')
@@ -215,6 +225,35 @@ describe('web native component contracts', () => {
     expect(resolveMaxLength(null)).toBeUndefined()
     expect(resolveMaxLength('-1')).toBeUndefined()
     expect(resolveMaxLength('20')).toBe(20)
+  })
+
+  it('normalizes video sizing and media event details', () => {
+    expect(resolveVideoObjectFit('contain')).toBe('contain')
+    expect(resolveVideoObjectFit('fill')).toBe('fill')
+    expect(resolveVideoObjectFit('cover')).toBe('cover')
+    expect(resolveVideoObjectFit('invalid')).toBe('contain')
+    expect(createVideoTimeUpdateDetail(12.5, 30)).toEqual({
+      currentTime: 12.5,
+      duration: 30,
+    })
+    expect(createVideoProgressDetail(15, 30)).toEqual({ buffered: 50 })
+    expect(createVideoProgressDetail(Number.NaN, 0)).toEqual({ buffered: 0 })
+  })
+
+  it('resolves the latest connected media element and restores duplicate ids on disconnect', () => {
+    const first = {} as HTMLCanvasElement
+    const second = {} as HTMLCanvasElement
+    registerNativeMediaElement('canvas', ['shared', 'first'], first)
+    registerNativeMediaElement('canvas', ['shared'], second)
+
+    expect(resolveNativeMediaElement('canvas', 'shared')).toBe(second)
+    expect(resolveNativeMediaElement('canvas', 'first')).toBe(first)
+
+    unregisterNativeMediaElement(second)
+    expect(resolveNativeMediaElement('canvas', 'shared')).toBe(first)
+
+    unregisterNativeMediaElement(first)
+    expect(resolveNativeMediaElement('canvas', 'shared')).toBeUndefined()
   })
 
   it('normalizes picker modes, ranges and event details', () => {
@@ -380,6 +419,8 @@ describe('web native component contracts', () => {
       'weapp-navigator',
       'weapp-swiper',
       'weapp-swiper-item',
+      'weapp-canvas',
+      'weapp-video',
     ])
   })
 

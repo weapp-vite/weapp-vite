@@ -166,6 +166,18 @@ export const NATIVE_COMPONENT_DESCRIPTORS = Object.freeze([
     attributes: ['item-id'],
     defaultStyle: 'display: block; box-sizing: border-box; width: 100%; height: 100%; overflow: hidden;',
   },
+  {
+    name: 'canvas',
+    webTag: 'weapp-canvas',
+    attributes: ['id', 'canvas-id', 'type', 'disable-scroll', 'width', 'height'],
+    defaultStyle: 'display: block; box-sizing: border-box; width: 300px; height: 150px; overflow: hidden;',
+  },
+  {
+    name: 'video',
+    webTag: 'weapp-video',
+    attributes: ['id', 'src', 'poster', 'autoplay', 'loop', 'muted', 'controls', 'initial-time', 'object-fit'],
+    defaultStyle: 'display: block; box-sizing: border-box; width: 300px; height: 225px; overflow: hidden;',
+  },
 ] as const satisfies readonly NativeComponentDescriptor[])
 
 export type SupportedNativeComponentName = typeof NATIVE_COMPONENT_DESCRIPTORS[number]['name']
@@ -190,12 +202,10 @@ const KNOWN_UNSUPPORTED_NATIVE_COMPONENTS = new Set([
   'page-container',
   'share-element',
   'audio',
-  'video',
   'camera',
   'live-player',
   'live-pusher',
   'map',
-  'canvas',
   'web-view',
   'ad',
   'official-account',

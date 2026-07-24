@@ -27,6 +27,12 @@
           "scene": null
         },
         {
+          "name": "Canvas 与视频语义矩阵",
+          "pathName": "pages/media-parity/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "App Shell 与 tabBar 语义矩阵",
           "pathName": "pages/tabbar-parity/home",
           "query": "",

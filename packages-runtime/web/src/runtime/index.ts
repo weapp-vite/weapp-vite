@@ -8,8 +8,11 @@ export {
   createScrollEventDetail,
   createSwitchEventDetail,
   createTextareaLineChangeDetail,
+  createVideoProgressDetail,
+  createVideoTimeUpdateDetail,
   ensureNativeComponentsDefined,
   resolveImageModeStyle,
+  resolveVideoObjectFit,
 } from './nativeComponents'
 export { setNavigationBarMetrics } from './navigationBar'
 export type { NavigationBarMetrics } from './navigationBar'

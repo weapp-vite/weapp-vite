@@ -1,0 +1,136 @@
+page {
+  min-height: 100%;
+  color: #17212b;
+  background: #eef2f5;
+}
+
+.media-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 28rpx 27rpx;
+  background: #eef2f5;
+}
+
+.media-page__eyebrow,
+.media-page__title,
+.media-page__caption,
+.section-heading__label,
+.section-heading__meta,
+.status-row__label,
+.status-row__value,
+.video-state__label,
+.video-state__value {
+  display: block;
+}
+
+.media-page__intro {
+  padding: 4rpx 4rpx 24rpx;
+}
+
+.media-page__eyebrow {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #087f5b;
+}
+
+.media-page__title {
+  margin-top: 8rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.media-page__caption {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #66717f;
+}
+
+.media-panel {
+  padding: 22rpx;
+  background: #fff;
+  border: 1rpx solid #dce2e8;
+  border-radius: 12rpx;
+}
+
+.media-panel--video {
+  margin-top: 20rpx;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.section-heading__label {
+  font-size: 19rpx;
+  font-weight: 700;
+  color: #52606d;
+}
+
+.section-heading__meta {
+  font-size: 19rpx;
+  color: #8a96a3;
+}
+
+.media-canvas {
+  width: 100%;
+  height: 300rpx;
+  background: #24313d;
+  border-radius: 8rpx;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16rpx;
+}
+
+.status-row__label,
+.video-state__label {
+  font-size: 17rpx;
+  font-weight: 700;
+  color: #7c8996;
+}
+
+.status-row__value,
+.video-state__value {
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  color: #087f5b;
+}
+
+.media-video-frame {
+  position: relative;
+  width: 100%;
+  height: 250rpx;
+  overflow: hidden;
+  background: #17212b;
+  border-radius: 8rpx;
+}
+
+.media-video-runtime {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+.media-video-poster {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.video-state {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16rpx;
+}
+
+.video-state > view {
+  min-width: 140rpx;
+}
