@@ -98,12 +98,6 @@ export function normalizeTagName(name: string) {
       return 'div'
     case 'icon':
       return 'span'
-    case 'textarea':
-      return 'textarea'
-    case 'form':
-      return 'form'
-    case 'label':
-      return 'label'
     case 'picker':
     case 'picker-view':
       return 'select'

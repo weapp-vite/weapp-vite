@@ -9,6 +9,12 @@
           "scene": null
         },
         {
+          "name": "表单组件语义矩阵",
+          "pathName": "pages/form-parity/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "NOVA X1 商品详情",
           "pathName": "pages/product/detail/detail",
           "query": "iteration=10",

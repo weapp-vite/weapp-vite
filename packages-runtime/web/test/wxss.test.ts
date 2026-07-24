@@ -30,12 +30,18 @@ describe('transformWxssToCss', () => {
   it('maps page and native component selectors without changing selector structure', () => {
     const input = `
       page > view.card text:first-child,
-      scroll-view[data-axis="y"] image {
+      form[data-state="ready"] > label + checkbox-group checkbox:checked,
+      radio-group radio[disabled],
+      scroll-view[data-axis="y"] image,
+      textarea:focus + switch {
         width: 100rpx;
       }
     `
     const { css } = transformWxssToCss(input)
     expect(css).toContain(':host > weapp-view.card weapp-text:first-child')
+    expect(css).toContain('weapp-form[data-state="ready"] > weapp-label + weapp-checkbox-group weapp-checkbox:checked')
+    expect(css).toContain('weapp-radio-group weapp-radio[disabled]')
     expect(css).toContain('weapp-scroll-view[data-axis="y"] weapp-image')
+    expect(css).toContain('weapp-textarea:focus + weapp-switch')
   })
 })

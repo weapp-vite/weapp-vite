@@ -8,6 +8,7 @@ const BUTTON_STYLE = `
 weapp-button {
   display: block;
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   font-size: 18px;
 }
@@ -21,11 +22,15 @@ weapp-button .weapp-btn {
   appearance: none;
   -webkit-appearance: none;
   box-sizing: border-box;
-  width: 100%;
+  display: block;
+  width: 184px;
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
   border-radius: 5px;
   border: 1px solid #d9d9d9;
   padding: 0 16px;
-  line-height: 2.55555556;
+  line-height: calc(2.55555556em - 1px);
   font-size: inherit;
   font-weight: 400;
   background-color: #f8f8f8;
@@ -53,7 +58,7 @@ weapp-button.weapp-btn--plain .weapp-btn {
 }
 
 weapp-button.weapp-btn--plain.weapp-btn--default .weapp-btn {
-  border-color: #b2b2b2;
+  border-color: #a1a1a1;
   color: #353535;
 }
 
@@ -71,7 +76,7 @@ weapp-button.weapp-btn--loading .weapp-btn,
 weapp-button.weapp-btn--disabled .weapp-btn {
   background-color: #f7f7f7;
   border-color: #d9d9d9;
-  color: #9b9b9b;
+  color: #bbbbbb;
   cursor: not-allowed;
 }
 
