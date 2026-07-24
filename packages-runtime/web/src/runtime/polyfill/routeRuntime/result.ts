@@ -8,12 +8,13 @@ export function resolveRouteAction(
   action: string,
   options: MiniProgramAsyncOptions<MiniProgramBaseResult> | undefined,
   succeeded: boolean,
+  failureReason = 'page not found',
 ) {
   if (succeeded) {
     return Promise.resolve(callMiniProgramAsyncSuccess(options, {
       errMsg: `${action}:ok`,
     }))
   }
-  const failure = callMiniProgramAsyncFailure(options, `${action}:fail page not found`)
+  const failure = callMiniProgramAsyncFailure(options, `${action}:fail ${failureReason}`)
   return Promise.reject(failure)
 }

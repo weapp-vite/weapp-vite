@@ -32,6 +32,9 @@ export function generateEntryModule(
     : undefined
 
   const initOptions: Record<string, any> = {}
+  if (result.tabBar) {
+    initOptions.tabBar = result.tabBar
+  }
   if (rpxConfig) {
     initOptions.rpx = rpxConfig
   }

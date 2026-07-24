@@ -26,6 +26,10 @@ interface VisualCase {
   baseline: string
   threshold: number
   maxDiffRatio: number
+  viewport?: {
+    width: number
+    height: number
+  }
 }
 
 interface VisualManifest {
@@ -46,6 +50,26 @@ const PLAYWRIGHT_BUNDLED_AVAILABLE = existsSync(PLAYWRIGHT_EXECUTABLE)
 const BROWSER_AVAILABLE = PLAYWRIGHT_BUNDLED_AVAILABLE || Boolean(CHROMIUM_CHANNEL)
 const describeWeb = BROWSER_AVAILABLE ? describe : describe.skip
 
+function isVisualCase(value: unknown): value is VisualCase {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const visualCase = value as Record<string, unknown>
+  const viewport = visualCase.viewport
+  const validViewport = viewport === undefined || (
+    typeof viewport === 'object'
+    && viewport !== null
+    && Number.isFinite((viewport as Record<string, unknown>).width)
+    && Number.isFinite((viewport as Record<string, unknown>).height)
+  )
+  return typeof visualCase.id === 'string'
+    && typeof visualCase.route === 'string'
+    && typeof visualCase.baseline === 'string'
+    && Number.isFinite(visualCase.threshold)
+    && Number.isFinite(visualCase.maxDiffRatio)
+    && validViewport
+}
+
 function parseVisualManifest(value: unknown): VisualManifest {
   if (!value || typeof value !== 'object') {
     throw new TypeError('[web-visual] baseline manifest 必须是对象')
@@ -62,6 +86,7 @@ function parseVisualManifest(value: unknown): VisualManifest {
     || !Number.isFinite(device.screenshotScale)
     || !Number.isFinite(device.safeAreaInsetBottom)
     || !Array.isArray(cases)
+    || !cases.every(isVisualCase)
   ) {
     throw new TypeError('[web-visual] baseline manifest 字段无效')
   }
@@ -211,8 +236,8 @@ describeWeb.sequential('web runtime visual parity', () => {
     for (const visualCase of manifest.cases) {
       const context = await browser!.newContext({
         viewport: {
-          width: manifest.device.windowWidth,
-          height: manifest.device.windowHeight,
+          width: visualCase.viewport?.width ?? manifest.device.windowWidth,
+          height: visualCase.viewport?.height ?? manifest.device.windowHeight,
         },
         deviceScaleFactor: manifest.device.screenshotScale,
       })
@@ -226,6 +251,9 @@ describeWeb.sequential('web runtime visual parity', () => {
           )
         }, manifest.device.safeAreaInsetBottom)
         await hideWebNavigationBar(page)
+        if (visualCase.id === 'app-shell-tabbar') {
+          await page.evaluate(async () => await (window as any).wx.hideTabBar())
+        }
         const current = await page.screenshot({ animations: 'disabled' })
         const currentPath = path.join(OUTPUT_ROOT, `${visualCase.id}.current.png`)
         const diffPath = path.join(OUTPUT_ROOT, `${visualCase.id}.diff.png`)
@@ -513,6 +541,126 @@ describeWeb.sequential('web runtime visual parity', () => {
       expect(autoplayLifecycle.activeAfterReconnect).toBe(autoplayLifecycle.controlledCurrent)
       expect(autoplayLifecycle.afterReconnect).not.toBe(autoplayLifecycle.afterDisconnect)
       await page.locator('weapp-swiper').evaluate(element => element.removeAttribute('autoplay'))
+    }
+    finally {
+      await page.close()
+    }
+  })
+
+  it('keeps tab pages cached and updates the app shell through tabBar APIs', async () => {
+    const page = await browser!.newPage({ viewport: { width: 1200, height: 900 } })
+    try {
+      await navigateToVisualCase(page, '/pages/tabbar-parity/home')
+      await page.evaluate(() => {
+        document.documentElement.style.setProperty('--weapp-safe-area-inset-bottom', '20px')
+      })
+
+      const initialLayout = await page.evaluate(() => {
+        const app = document.querySelector('#app') as HTMLElement
+        const tabBar = document.querySelector('weapp-tab-bar') as HTMLElement
+        const appRect = app.getBoundingClientRect()
+        const tabRect = tabBar.getBoundingClientRect()
+        return {
+          appWidth: appRect.width,
+          inset: getComputedStyle(app).getPropertyValue('--weapp-tab-bar-inset').trim(),
+          tabLeft: tabRect.left,
+          tabRight: tabRect.right,
+          appLeft: appRect.left,
+          appRight: appRect.right,
+        }
+      })
+      expect(initialLayout).toMatchObject({
+        appWidth: 375,
+        inset: 'calc(50px + 20px)',
+      })
+      expect(initialLayout.tabLeft).toBeGreaterThanOrEqual(initialLayout.appLeft)
+      expect(initialLayout.tabRight).toBeLessThanOrEqual(initialLayout.appRight)
+
+      await page.locator('weapp-tab-bar').locator('button').nth(1).click()
+      await expect.poll(async () => {
+        return await page.evaluate(() => {
+          const current = (window as any).getCurrentPages().at(-1)
+          return {
+            route: current?.route,
+            loadCount: current?.data?.loadCount,
+            showCount: current?.data?.showCount,
+          }
+        })
+      }).toEqual({
+        route: 'pages/tabbar-parity/settings',
+        loadCount: 1,
+        showCount: 1,
+      })
+
+      await page.locator('weapp-tab-bar').locator('button').nth(0).click()
+      await expect.poll(async () => {
+        return await page.evaluate(() => {
+          const current = (window as any).getCurrentPages().at(-1)
+          return {
+            route: current?.route,
+            loadCount: current?.data?.loadCount,
+            showCount: current?.data?.showCount,
+          }
+        })
+      }).toEqual({
+        route: 'pages/tabbar-parity/home',
+        loadCount: 1,
+        showCount: 2,
+      })
+
+      await page.locator('weapp-tab-bar').locator('button').nth(0).click()
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data?.showCount)
+      }).toBe(2)
+
+      await page.evaluate(async () => {
+        const wx = (window as any).wx
+        await wx.setTabBarItem({ index: 1, text: '账户' })
+        await wx.setTabBarStyle({ selectedColor: '#d9485f', borderStyle: 'white' })
+        await wx.setTabBarBadge({ index: 1, text: '8' })
+      })
+      await expect.poll(() => page.locator('weapp-tab-bar').locator('button').nth(1).textContent()).toContain('账户')
+      await expect.poll(() => page.locator('weapp-tab-bar').locator('.weapp-tab-bar__badge').textContent()).toBe('8')
+      await expect.poll(async () => {
+        return await page.locator('weapp-tab-bar').evaluate((element) => {
+          return element.style.getPropertyValue('--weapp-tab-bar-selected-color')
+        })
+      }).toBe('#d9485f')
+
+      await page.evaluate(async () => await (window as any).wx.hideTabBar({ animation: true }))
+      await expect.poll(() => page.locator('weapp-tab-bar').evaluate(element => element.hasAttribute('hidden'))).toBe(true)
+      await page.evaluate(async () => await (window as any).wx.showTabBar())
+      await expect.poll(() => page.locator('weapp-tab-bar').evaluate(element => element.hasAttribute('hidden'))).toBe(false)
+
+      await page.evaluate(async () => await (window as any).wx.navigateTo({ url: '/pages/about/index?from=tabbar' }))
+      await expect.poll(async () => page.evaluate(() => (window as any).getCurrentPages().length)).toBe(2)
+      await page.evaluate(async () => await (window as any).wx.switchTab({ url: '/pages/tabbar-parity/home?restored=1' }))
+      await expect.poll(async () => {
+        return await page.evaluate(() => {
+          const pages = (window as any).getCurrentPages()
+          return {
+            length: pages.length,
+            route: pages[0]?.route,
+            loadCount: pages[0]?.data?.loadCount,
+            showCount: pages[0]?.data?.showCount,
+          }
+        })
+      }).toEqual({
+        length: 1,
+        route: 'pages/tabbar-parity/home',
+        loadCount: 1,
+        showCount: 3,
+      })
+
+      await expect(page.evaluate(async () => {
+        try {
+          await (window as any).wx.switchTab({ url: '/pages/about/index' })
+          return 'resolved'
+        }
+        catch (error) {
+          return (error as { errMsg?: string }).errMsg
+        }
+      })).resolves.toBe('switchTab:fail not a tabBar page')
     }
     finally {
       await page.close()

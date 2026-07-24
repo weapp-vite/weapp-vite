@@ -1,0 +1,14 @@
+<view class="settings-page" data-tabbar-settings="true">
+  <text class="settings-page__eyebrow">APP SHELL / SECOND TAB</text>
+  <text class="settings-page__title">运行设置</text>
+  <view class="settings-page__panel">
+    <view class="settings-page__row">
+      <text>Load count</text>
+      <text data-settings-load="{{loadCount}}">{{loadCount}}</text>
+    </view>
+    <view class="settings-page__row">
+      <text>Show count</text>
+      <text data-settings-show="{{showCount}}">{{showCount}}</text>
+    </view>
+  </view>
+</view>

@@ -10,11 +10,24 @@ import { hidePageInstance, showPageInstance } from './lifecycle'
 
 export class PageStackRuntime {
   readonly entries: PageStackEntry[] = []
+  readonly #tabEntries = new Map<string, PageStackEntry>()
+  #tabPageIds = new Set<string>()
 
   constructor(
     private readonly pageRegistry: Map<string, PageRecord>,
     private readonly onMounted: (entry: PageStackEntry) => void,
   ) {}
+
+  configureTabPages(ids: Iterable<string>) {
+    this.#tabPageIds = new Set(ids)
+    for (const [id, entry] of this.#tabEntries) {
+      if (this.#tabPageIds.has(id)) {
+        continue
+      }
+      this.#tabEntries.delete(id)
+      this.#destroy(entry)
+    }
+  }
 
   push(id: string, query: Record<string, string>) {
     if (!this.pageRegistry.has(id)) {
@@ -52,7 +65,45 @@ export class PageStackRuntime {
     for (const entry of previousEntries.reverse()) {
       this.#destroy(entry)
     }
+    for (const entry of this.#tabEntries.values()) {
+      this.#destroy(entry)
+    }
+    this.#tabEntries.clear()
     return this.push(id, query)
+  }
+
+  switchTab(id: string, query: Record<string, string>) {
+    if (!this.#tabPageIds.has(id) || !this.pageRegistry.has(id)) {
+      return false
+    }
+
+    const previousEntries = this.entries.splice(0)
+    let target = previousEntries.find(entry => entry.id === id) ?? this.#tabEntries.get(id)
+    for (const entry of previousEntries.reverse()) {
+      if (entry === target) {
+        continue
+      }
+      if (this.#tabPageIds.has(entry.id)) {
+        this.#hide(entry)
+        this.#tabEntries.set(entry.id, entry)
+      }
+      else {
+        this.#destroy(entry)
+      }
+    }
+
+    if (target) {
+      this.#tabEntries.delete(id)
+      target.query = query
+      this.entries.push(target)
+      this.#show(target)
+      return true
+    }
+
+    target = { id, query, active: true }
+    this.entries.push(target)
+    this.#mount(target)
+    return true
   }
 
   back(delta = 1) {

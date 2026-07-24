@@ -1,0 +1,165 @@
+page {
+  min-height: 100%;
+  color: #18202a;
+  background: #eef1f4;
+}
+
+.shell-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 14px;
+  background: #eef1f4;
+}
+
+.shell-page__eyebrow,
+.shell-page__title,
+.shell-page__caption,
+.metric-card__value,
+.metric-card__label,
+.shell-panel__label,
+.shell-panel__title,
+.event-result__label,
+.event-result__value {
+  display: block;
+}
+
+.shell-page__intro {
+  padding: 2px 2px 14px;
+}
+
+.shell-page__eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 12px;
+  color: #087f5b;
+}
+
+.shell-page__title {
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 28px;
+}
+
+.shell-page__caption {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 16px;
+  color: #66717f;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.metric-card,
+.shell-panel {
+  box-sizing: border-box;
+  background: #fff;
+  border: 0.5px solid #dce1e7;
+  border-radius: 5px;
+}
+
+.metric-card {
+  height: 72px;
+  padding: 13px 11px;
+}
+
+.metric-card--accent {
+  color: #fff;
+  background: #087f5b;
+  border-color: #087f5b;
+}
+
+.metric-card__value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 28px;
+}
+
+.metric-card__label {
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 11px;
+  color: #7a8793;
+}
+
+.metric-card--accent .metric-card__label {
+  color: #b8e4d6;
+}
+
+.shell-panel {
+  padding: 14px;
+  margin-top: 9px;
+}
+
+.shell-panel__label {
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 11px;
+  color: #7a8793;
+}
+
+.shell-panel__title {
+  margin-top: 3px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 22px;
+}
+
+.shell-panel__rule {
+  height: 0.5px;
+  margin: 11px 0 5px;
+  background: #e1e5e8;
+}
+
+.shell-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 31px;
+  font-size: 11px;
+}
+
+.shell-panel__status {
+  font-size: 9px;
+  font-weight: 600;
+  color: #087f5b;
+}
+
+.action-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.action-row button {
+  flex: 1 1 0;
+  margin: 0;
+}
+
+.event-result {
+  box-sizing: border-box;
+  height: 44px;
+  padding: 8px 10px;
+  margin-top: 9px;
+  background: #18202a;
+  border-radius: 4px;
+}
+
+.event-result__label {
+  font-size: 8.5px;
+  font-weight: 600;
+  line-height: 10px;
+  color: #6ee7b7;
+}
+
+.event-result__value {
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 13px;
+  color: #fff;
+}

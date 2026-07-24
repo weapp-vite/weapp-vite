@@ -53,6 +53,13 @@ const visualCases = [
     maxDiffRatio: 0.03,
   },
   {
+    id: 'app-shell-tabbar',
+    route: '/pages/tabbar-parity/home',
+    baseline: 'app-shell-tabbar.png',
+    threshold: 0.18,
+    maxDiffRatio: 0.03,
+  },
+  {
     id: 'product-detail',
     route: '/pages/product/detail/detail?iteration=10',
     baseline: 'product-detail.png',
@@ -95,6 +102,9 @@ async function buildMiniProgram() {
 async function captureBaselines(miniProgram: MiniProgram, device: DeviceMetrics) {
   await fs.mkdir(BASELINE_ROOT, { recursive: true })
   let screenshotScale: number | undefined
+  const capturedCases: Array<(typeof visualCases)[number] & {
+    viewport: { width: number, height: number }
+  }> = []
   for (const visualCase of visualCases) {
     await miniProgram.reLaunch(visualCase.route)
     await sleep(1_200)
@@ -111,13 +121,20 @@ async function captureBaselines(miniProgram: MiniProgram, device: DeviceMetrics)
       throw new TypeError('[web-visual] DevTools 基线截图缩放比例不一致')
     }
     screenshotScale = currentScale
+    capturedCases.push({
+      ...visualCase,
+      viewport: {
+        width: png.width / currentScale,
+        height: png.height / currentScale,
+      },
+    })
     await fs.writeFile(path.join(BASELINE_ROOT, visualCase.baseline), screenshotBuffer)
     process.stdout.write(`[web-visual] updated ${visualCase.baseline} (${device.windowWidth}x${device.windowHeight}@${device.pixelRatio})\n`)
   }
   if (screenshotScale === undefined) {
     throw new TypeError('[web-visual] 未生成任何基线截图')
   }
-  return screenshotScale
+  return { cases: capturedCases, screenshotScale }
 }
 
 async function main() {
@@ -135,15 +152,15 @@ async function main() {
       return wx.getSystemInfoSync()
     }))
     await miniProgram.waitForAppReady(SCREENSHOT_TIMEOUT)
-    const screenshotScale = await captureBaselines(miniProgram, device)
+    const captured = await captureBaselines(miniProgram, device)
     const manifest = {
       version: 1,
       generatedAt: new Date().toISOString(),
       device: {
         ...device,
-        screenshotScale,
+        screenshotScale: captured.screenshotScale,
       },
-      cases: visualCases,
+      cases: captured.cases,
     }
     await fs.writeFile(
       path.join(BASELINE_ROOT, 'manifest.json'),

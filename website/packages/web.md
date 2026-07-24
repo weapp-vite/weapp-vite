@@ -72,7 +72,9 @@ export default defineConfig({
 - `form`、`label`、`textarea`、checkbox/radio group 和 `switch` 支持表单收集、提交、重置及微信形状的交互事件
 - `navigator` 复用页面栈和 mini-program bridge；`swiper` 支持受控状态、触摸、autoplay 及 `change` / `transition` / `animationfinish` 事件
 - `navigateTo` 保活隐藏页面，`navigateBack` 恢复同一实例、数据和滚动位置；`redirectTo` / `reLaunch` 按页面栈语义触发 `onHide` / `onUnload`
-- `getCurrentPages()` 返回全部存活页面，路由 API 同时支持 Promise 与 `success` / `fail` / `complete` 回调
+- `getCurrentPages()` 返回当前活动路由栈，其他保活 tab 页面不会混入当前 tab 栈；路由 API 同时支持 Promise 与 `success` / `fail` / `complete` 回调
+- 读取 `app.json.tabBar` 并在设备容器内渲染标准 App Shell；`switchTab` 缓存 tab 页面、关闭非 tab 页面并保持正确的 `onLoad` / `onShow` 语义
+- `showTabBar` / `hideTabBar`、`setTabBarItem`、`setTabBarStyle`、badge 与 red-dot API 会真实更新布局和视觉状态
 
 需要保留旧的浏览器全宽行为时，将 `runtime.viewport.mode` 设置为 `responsive`。
 
@@ -81,3 +83,5 @@ export default defineConfig({
 - 支持 `wx:if` / `wx:for` / 插值等常见语法
 - 支持小程序到 DOM 事件桥接（如 `bindtap`）
 - 未覆盖的原生组件、平台 API 和宿主细节仍需在微信 DevTools / 真机验证
+- `app.json.tabBar.custom: true` 只保留 tab 路由语义，不自动移植业务自定义 tabBar 组件
+- DevTools 自动化截图只覆盖页面 WebView，不包含宿主原生 tabBar；仓库通过 case 级 WebView 视口基线与独立浏览器行为断言组合验收

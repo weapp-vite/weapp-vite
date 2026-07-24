@@ -11,8 +11,10 @@
 - `navigator` 的声明式跳转与 `wx.navigateTo` 等命令式 API 共用页面栈。验证时同时检查目标 route、query 和 navigateBack 后的页面恢复；`target="miniProgram"` 还要覆盖 success/fail/complete。
 - `navigateTo` 后原页面保持存活并触发 `onHide`；`navigateBack` 恢复同一实例、数据、`onShow` 和 `#app` 滚动位置，不会重跑 `onLoad`。排查返回状态丢失时，同时检查 `getCurrentPages()` 全栈、页面 host 的 `hidden` 状态和容器 `scrollTop`。
 - `redirectTo` 只卸载当前页，`reLaunch` 从栈顶开始卸载所有旧页面。路由目标无效或首页执行 `navigateBack` 时，Promise 应 reject，`fail` / `complete` 应收到对应 `errMsg`。
+- 标准 `app.json.tabBar` 会生成受 `#app` 设备视口约束的 Web App Shell。`switchTab` 只能进入 tab 路由，会卸载非 tab 页面并缓存其他 tab 实例；切回时验证 `onLoad` 不重复、`onShow` 正常递增和 `getCurrentPages()` 只返回当前 tab 栈。
+- `showTabBar` / `hideTabBar` 会同步页面 inset；`setTabBarItem`、`setTabBarStyle`、badge 与 red-dot API 会更新 shell。`tabBar.custom: true` 只保留路由语义，不会自动渲染业务自定义组件。
 - `swiper` 的 current、autoplay、pointer drag 和事件 source 由容器统一管理。视觉用例保持 autoplay 关闭；行为用例应分别验证 programmatic、touch、autoplay，并确认断开 DOM 时计时器停止、重新连接后恢复。
 - WXSS 的 `page` 映射到页面 Shadow DOM 的 `:host`，原生组件类型选择器同步映射到 `weapp-*`；class、attribute、pseudo 与组合结构应保持稳定。
-- 微信 DevTools 视觉基线只通过 `pnpm e2e:web:update-baselines` 显式更新。普通 `pnpm e2e:web` 只消费 manifest 与已提交 PNG，并把 current/diff 写入 `.tmp/web-runtime-visual/`。
+- 微信 DevTools 视觉基线只通过 `pnpm e2e:web:update-baselines` 显式更新。普通 `pnpm e2e:web` 只消费 manifest 与已提交 PNG，并把 current/diff 写入 `.tmp/web-runtime-visual/`。DevTools 截图只包含页面 WebView，manifest 必须按 case 记录实际 viewport；宿主原生 tabBar 不进入 PNG，对应 Web shell 通过浏览器尺寸、边界、选中态和 API 行为断言验收。
 - URL、URLSearchParams、fetch/request globals 需要在目标 runtime 做最小验证；浏览器通过不代表宿主通过。
 - 第三方请求客户端若只在 DevTools 失败，先缩小到宿主构造器兼容问题，再决定 skip、polyfill 或业务修复。
