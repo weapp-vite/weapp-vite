@@ -97,7 +97,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
     const configService = ctx.configService!
     const subPackageRoots = Object.keys(configService.weappViteConfig?.subPackages ?? {})
     const sharedOutput = configService.options.chunksConfigured
-      ? createSharedBuildOutput(configService, () => subPackageRoots)
+      ? createSharedBuildOutput(configService, () => subPackageRoots, { runtime: 'web' })
       : undefined
     return backend.driver.mergeConfig({
       merge: (...backendConfigs) => mergeWeb({

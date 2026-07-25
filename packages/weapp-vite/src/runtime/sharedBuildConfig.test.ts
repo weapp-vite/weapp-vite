@@ -157,16 +157,19 @@ describe('sharedBuildConfig', () => {
     expect(output.minifyInternalExports).toBe(false)
   })
 
-  it('keeps production shared chunk names when they contain hashed dist modules', () => {
-    const output = createSharedBuildOutput(createConfigService(), () => [])
-
-    expect(output.chunkFileNames({
+  it('keeps web shared chunk names without changing miniprogram vendor naming', () => {
+    const miniprogramOutput = createSharedBuildOutput(createConfigService(), () => [])
+    const webOutput = createSharedBuildOutput(createConfigService(), () => [], { runtime: 'web' })
+    const chunk = {
       name: 'common',
       moduleIds: [
         '/project/src/shared/common.ts',
         '/project/node_modules/entities/dist/decode-D3I133J.mjs',
       ],
-    })).toBe('[name].js')
+    }
+
+    expect(miniprogramOutput.chunkFileNames(chunk)).toBe('weapp-vendors/entities-decode.js')
+    expect(webOutput.chunkFileNames(chunk)).toBe('[name].js')
   })
 
   it('isolates request globals modules before generic vendor grouping', () => {
