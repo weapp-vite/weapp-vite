@@ -128,6 +128,34 @@ setWebRuntimeHost({
 - `redirectTo` 只替换并卸载当前页面；`reLaunch` 会从栈顶开始卸载全部旧页面后挂载目标页面。
 - `getCurrentPages()` 返回当前活动路由栈；其他 tab 页面可保活但不会混入当前 tab 栈。路由 API 支持 `success` / `fail` / `complete` 回调与 Promise 结果。
 
+## 页面 Head 与首屏资源
+
+启用 `runtime.seo` 后，页面配置中的 `navigationBarTitleText` 会在路由切换时同步到 `document.title`，并可统一写入 description 与 canonical。`titleTemplate` 使用 `%s` 代表当前页面标题：
+
+```ts
+weappWebPlugin({
+  runtime: {
+    seo: {
+      defaultTitle: '商城',
+      titleTemplate: '%s | Web Demo',
+      description: '小程序页面的 Web 运行时演示。',
+    },
+  },
+})
+```
+
+`resourceHints.links` 会去重注入 `preconnect`、`dns-prefetch`、`prefetch` 或 `preload` 链接，适合声明首屏字体、图片和 API 域名：
+
+```ts
+const runtime = {
+  resourceHints: {
+    links: [{ rel: 'preconnect', href: 'https://cdn.example.com' }],
+  },
+}
+```
+
+Head 管理只在浏览器文档存在时生效，不会把客户端路由误认为完整 SSR；服务端预渲染仍需要后续接入独立的 HTML 入口。
+
 ## App Shell 与 tabBar
 
 - Vite 插件会读取 `app.json.tabBar`，标准 tabBar 在 Web 侧使用受设备视口约束的 App Shell 渲染；颜色、背景、边框、图标、文字和底部安全区由同一份配置驱动。
@@ -145,4 +173,4 @@ setWebRuntimeHost({
 - 更全面的模板语法和原生组件语义
 - 继续扩展组件属性系统和页面级滚动事件
 - 全局 API 兼容层与更精细的样式适配
-- SSR、SEO 友好的页面容器与首屏优化
+- SSR / 服务端预渲染入口

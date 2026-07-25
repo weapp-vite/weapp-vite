@@ -1,3 +1,5 @@
+import { updateWebDocumentTitle } from '../seo'
+
 interface RuntimeWarningOptions {
   key: string
   context: string
@@ -45,6 +47,7 @@ export function createNavigationBarRuntimeBridge(
       }
       if (options?.title !== undefined) {
         bar.setAttribute('title', options.title)
+        updateWebDocumentTitle(options.title)
       }
       return Promise.resolve()
     },

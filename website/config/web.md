@@ -70,6 +70,14 @@ export default defineConfig({
             mode: 'history',
             base: '/mini',
           },
+          seo: {
+            defaultTitle: '商城',
+            titleTemplate: '%s | Web Demo',
+            description: '小程序页面的 Web 运行时演示。',
+          },
+          resourceHints: {
+            links: [{ rel: 'preconnect', href: 'https://cdn.example.com' }],
+          },
         },
       },
       vite: {
@@ -147,6 +155,18 @@ Web 产物输出目录，默认一般是 `dist/web`。
   - `hash`：使用 `#/pages/...`，适合静态托管
 - `runtime.routing.base`
   - Web 项目的部署目录前缀，例如 `/mini`
+- `runtime.seo`
+  - 路由切换时同步 `document.title`、description 和 canonical；`enabled: false` 可关闭
+- `runtime.seo.defaultTitle`
+  - 没有页面标题时使用的默认标题
+- `runtime.seo.titleTemplate`
+  - 标题模板，`%s` 会替换为当前页面标题
+- `runtime.seo.description`
+  - 全站 description meta 内容
+- `runtime.seo.canonical`
+  - 是否维护去掉 query/hash 的 canonical 链接，默认开启
+- `runtime.resourceHints.links`
+  - 去重注入的 `preconnect` / `dns-prefetch` / `prefetch` / `preload` 链接数组
 
 默认视口同时约束页面滚动、导航栏和 `fixed` 元素；`rpx` 也按设备容器宽度计算，而不是按桌面浏览器窗口计算。
 
