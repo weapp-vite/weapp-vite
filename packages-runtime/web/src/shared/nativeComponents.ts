@@ -112,6 +112,25 @@ export const NATIVE_COMPONENT_DESCRIPTORS = Object.freeze([
     defaultStyle: 'display: block; box-sizing: border-box; margin: 10px 18px;',
   },
   {
+    name: 'icon',
+    webTag: 'weapp-icon',
+    attributes: ['type', 'size', 'color'],
+    defaultStyle: 'display: inline-flex; box-sizing: border-box; align-items: center; justify-content: center; vertical-align: middle;',
+  },
+  {
+    name: 'progress',
+    webTag: 'weapp-progress',
+    attributes: ['percent', 'show-info', 'stroke-width', 'color', 'active-color', 'background-color', 'active', 'active-mode', 'duration', 'border-radius', 'font-size'],
+    defaultStyle: 'display: flex; box-sizing: border-box; align-items: center;',
+  },
+  {
+    name: 'rich-text',
+    webTag: 'weapp-rich-text',
+    attributes: ['nodes', 'space', 'user-select'],
+    propertyAttributes: ['nodes'],
+    defaultStyle: 'display: block; box-sizing: border-box;',
+  },
+  {
     name: 'scroll-view',
     webTag: 'weapp-scroll-view',
     attributes: ['scroll-x', 'scroll-y', 'scroll-top', 'scroll-left'],
@@ -212,9 +231,6 @@ const descriptorMap = new Map<string, NativeComponentDescriptor>(
 )
 
 const KNOWN_UNSUPPORTED_NATIVE_COMPONENTS = new Set([
-  'icon',
-  'progress',
-  'rich-text',
   'editor',
   'keyboard-accessory',
   'match-media',

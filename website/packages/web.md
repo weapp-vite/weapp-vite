@@ -78,10 +78,11 @@ export default defineConfig({
 
 - 默认提供 375px 宽的居中小程序设备视口；移动宽度下自动铺满
 - `rpx` 跟随设备容器宽度和 resize 更新
-- `view`、`text`、`image`、`button`、`input`、`scroll-view`、`navigator`、`swiper` / `swiper-item`、`canvas`、`video`、`cover-view` / `cover-image`、`movable-area` / `movable-view` 及常用表单组件使用独立运行时标签，不会过早降级为无语义 DOM
+- `view`、`text`、`image`、`button`、`input`、`scroll-view`、`icon`、`progress`、`rich-text`、`navigator`、`swiper` / `swiper-item`、`canvas`、`video`、`cover-view` / `cover-image`、`movable-area` / `movable-view` 及常用表单组件使用独立运行时标签，不会过早降级为无语义 DOM
 - `page` 和原生组件 WXSS 选择器通过 PostCSS 结构化转换
 - `image.mode`、input 常用属性与事件、scroll-view 滚动状态和事件已有基础适配
 - `form`、`label`、`textarea`、checkbox/radio group 和 `switch` 支持表单收集、提交、重置及微信形状的交互事件
+- `icon` 覆盖九种内建图标类型；`progress` 支持常用视觉属性、按每增长 1% 计时的 active 动画和去重的 `activeend`；`rich-text` 将字符串与节点数组统一转为经过脚本、事件属性、危险 URL 和 CSS 过滤的安全 DOM
 - `navigator` 复用页面栈和 mini-program bridge；`swiper` 支持受控状态、触摸、autoplay 及 `change` / `transition` / `animationfinish` 事件
 - `canvas` 使用真实 2D Canvas 承载高频绘图命令；`video` 同步常用媒体属性、微信形状事件，并允许 `createVideoContext` 跨 Shadow DOM 控制播放器
 - `cover-view` / `cover-image` 保留媒体覆盖层的定位和层级；`movable-area` / `movable-view` 支持边界、方向限制、拖拽及微信形状移动事件

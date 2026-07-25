@@ -1,0 +1,61 @@
+<view class="display-page" data-visual-ready="true">
+  <view class="display-page__intro">
+    <text class="display-page__eyebrow">DISPLAY / NATIVE COMPONENTS</text>
+    <text class="display-page__title">运行状态</text>
+    <text class="display-page__caption">图标、进度与富文本共享同一份页面源码</text>
+  </view>
+
+  <view class="icon-panel">
+    <view class="section-heading">
+      <text class="section-heading__title">系统图标</text>
+      <text class="section-heading__value">9 TYPES</text>
+    </view>
+    <view class="icon-grid">
+      <view class="icon-item" wx:for="{{iconItems}}" wx:key="type">
+        <icon type="{{item.type}}" size="22" color="{{item.type === 'search' || item.type === 'clear' ? '#61717d' : ''}}" />
+        <text class="icon-item__label">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="progress-panel">
+    <view class="section-heading">
+      <text class="section-heading__title">任务进度</text>
+      <text class="section-heading__value" data-progress-event="{{progressEvent}}">{{progressEvent}}</text>
+    </view>
+    <view class="progress-row">
+      <text class="progress-row__label">构建</text>
+      <progress percent="24" stroke-width="5" border-radius="3" active-color="#0b7f5b" background-color="#dce5e1" />
+    </view>
+    <view class="progress-row">
+      <text class="progress-row__label">发布</text>
+      <progress
+        percent="{{progressValue}}"
+        show-info
+        stroke-width="7"
+        border-radius="4"
+        font-size="11"
+        active
+        duration="10"
+        active-mode="backwards"
+        active-color="#0b7f5b"
+        background-color="#dce5e1"
+        bindactiveend="handleProgressActiveEnd"
+      />
+    </view>
+  </view>
+
+  <view class="rich-panel">
+    <view class="section-heading">
+      <text class="section-heading__title">富文本</text>
+      <text class="section-heading__value">SAFE NODES</text>
+    </view>
+    <rich-text class="rich-block" nodes="{{richNodes}}" user-select />
+    <rich-text class="rich-block rich-block--html" nodes="{{richHtml}}" />
+  </view>
+
+  <view class="event-result" data-display-result="{{progressEvent}}">
+    <text class="event-result__label">DISPLAY EVENT</text>
+    <text class="event-result__value">progress={{progressValue}} / {{progressEvent}}</text>
+  </view>
+</view>

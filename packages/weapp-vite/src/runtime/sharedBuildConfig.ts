@@ -397,6 +397,7 @@ function createSharedBuildResolver(
 export function createSharedBuildOutput(
   configService: ConfigService,
   getSubPackageRoots: () => Iterable<string>,
+  options: { runtime?: 'miniprogram' | 'web' } = {},
 ) {
   const { resolveAdvancedChunkName } = createSharedBuildResolver(
     configService,
@@ -432,9 +433,11 @@ export function createSharedBuildOutput(
       if (isRequestGlobalsRuntimeChunk(chunk)) {
         return REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME
       }
-      const stableHashedDistChunkFileName = resolveStableHashedDistChunkFileName(chunk)
-      if (stableHashedDistChunkFileName) {
-        return stableHashedDistChunkFileName
+      if (options.runtime !== 'web') {
+        const stableHashedDistChunkFileName = resolveStableHashedDistChunkFileName(chunk)
+        if (stableHashedDistChunkFileName) {
+          return stableHashedDistChunkFileName
+        }
       }
       return '[name].js'
     },
