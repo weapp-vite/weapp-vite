@@ -6,6 +6,7 @@ import {
   collectRadioGroupValue,
   createInputEventDetail,
   createPickerChangeDetail,
+  createProgressActiveEndDetail,
   createScrollEventDetail,
   createSliderEventDetail,
   createSwiperChangeDetail,
@@ -16,15 +17,23 @@ import {
   ensureNativeComponentsDefined,
   normalizePickerIndexes,
   normalizePickerViewValue,
+  normalizeRichTextNodes,
+  resolveIconColor,
+  resolveIconSize,
+  resolveIconType,
   resolveImageModeStyle,
   resolveMovableDirection,
   resolvePickerColumns,
   resolvePickerMode,
+  resolveProgressAnimationDuration,
+  resolveProgressConfig,
   resolveSliderConfig,
   resolveSwiperIndex,
   resolveSwiperNumber,
   resolveSwipeTarget,
   resolveVideoObjectFit,
+  sanitizeRichTextAttributes,
+  sanitizeRichTextStyle,
 } from '../src/runtime/nativeComponents'
 import { connectFormControl, disconnectFormControl, resetFormControls } from '../src/runtime/nativeComponents/formControl'
 import { resolveMaxLength } from '../src/runtime/nativeComponents/helpers'
@@ -60,6 +69,9 @@ describe('web native component contracts', () => {
     expect(resolveNativeComponentWebTag('picker-view')).toBe('weapp-picker-view')
     expect(resolveNativeComponentWebTag('picker-view-column')).toBe('weapp-picker-view-column')
     expect(resolveNativeComponentWebTag('slider')).toBe('weapp-slider')
+    expect(resolveNativeComponentWebTag('icon')).toBe('weapp-icon')
+    expect(resolveNativeComponentWebTag('progress')).toBe('weapp-progress')
+    expect(resolveNativeComponentWebTag('rich-text')).toBe('weapp-rich-text')
     expect(resolveNativeComponentWebTag('scroll-view')).toBe('weapp-scroll-view')
     expect(resolveNativeComponentWebTag('navigator')).toBe('weapp-navigator')
     expect(resolveNativeComponentWebTag('swiper')).toBe('weapp-swiper')
@@ -72,6 +84,7 @@ describe('web native component contracts', () => {
     expect(resolveNativeComponentWebTag('movable-view')).toBe('weapp-movable-view')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-view')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-image')
+    expect(NATIVE_COMPONENT_STYLE).toContain('weapp-rich-text { display: block;')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-form { display: inline; box-sizing: border-box; }')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-cover-view { position: absolute; z-index: 2;')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-movable-area { position: relative;')
@@ -333,6 +346,94 @@ describe('web native component contracts', () => {
     expect(createSliderEventDetail(42)).toEqual({ value: 42 })
   })
 
+  it('normalizes icon and progress presentation values', () => {
+    expect(resolveIconType('search')).toBe('search')
+    expect(resolveIconType('unsupported')).toBe('success')
+    expect(resolveIconSize('32')).toBe(32)
+    expect(resolveIconSize('-4')).toBe(0)
+    expect(resolveIconColor('warn', '')).toBe('#f76260')
+    expect(resolveIconColor('info', '#123456')).toBe('#123456')
+    expect(resolveProgressConfig({
+      percent: 120,
+      strokeWidth: -1,
+      duration: '240',
+      borderRadius: 8,
+      fontSize: 12,
+      activeMode: 'forwards',
+    })).toEqual({
+      percent: 100,
+      strokeWidth: 0,
+      duration: 240,
+      borderRadius: 8,
+      fontSize: 12,
+      activeMode: 'forwards',
+    })
+    expect(resolveProgressConfig({ percent: -20, activeMode: 'invalid' })).toEqual({
+      percent: 0,
+      strokeWidth: 6,
+      duration: 30,
+      borderRadius: 0,
+      fontSize: 16,
+      activeMode: 'backwards',
+    })
+    expect(resolveProgressAnimationDuration(0, 72, 10)).toBe(720)
+    expect(resolveProgressAnimationDuration(64, 72, 10)).toBe(80)
+    expect(createProgressActiveEndDetail()).toEqual({})
+  })
+
+  it('normalizes rich-text strings and node arrays through the same safe tree', () => {
+    expect(normalizeRichTextNodes('<p class="lead" onclick="bad()">Hello <strong>Web</strong><script>bad()</script></p>')).toEqual([
+      {
+        type: 'element',
+        name: 'p',
+        attrs: { class: 'lead' },
+        children: [
+          { type: 'text', text: 'Hello ' },
+          {
+            type: 'element',
+            name: 'strong',
+            attrs: {},
+            children: [{ type: 'text', text: 'Web' }],
+          },
+        ],
+      },
+    ])
+    expect(normalizeRichTextNodes([{
+      name: 'div',
+      attrs: {
+        'style': 'color: #123456; position: fixed; background-image: url(javascript:bad)',
+        'data-state': 'ready',
+      },
+      children: [{ type: 'text', text: 'Ready' }],
+    }])).toEqual([{
+      type: 'element',
+      name: 'div',
+      attrs: {
+        'style': 'color: #123456',
+        'data-state': 'ready',
+      },
+      children: [{ type: 'text', text: 'Ready' }],
+    }])
+  })
+
+  it('filters dangerous rich-text URLs, event handlers and CSS values', () => {
+    expect(sanitizeRichTextAttributes({
+      href: 'java\nscript:alert(1)',
+      onclick: 'alert(1)',
+      title: 'safe',
+    }, 'a')).toEqual({
+      title: 'safe',
+      rel: 'noopener noreferrer',
+    })
+    expect(sanitizeRichTextAttributes({ src: 'data:text/html,bad', alt: 'cover' }, 'img')).toEqual({ alt: 'cover' })
+    expect(sanitizeRichTextStyle('font-size: 18px; position: fixed; color: red; width: expression(alert(1))')).toBe('font-size: 18px; color: red')
+    expect(sanitizeRichTextStyle({
+      color: 'red',
+      position: 'fixed',
+      width: 'url(javascript:bad)',
+    })).toBe('color: red')
+  })
+
   it('aggregates checkbox and radio group values with disabled controls filtered', () => {
     expect(collectCheckboxGroupValue([
       { checked: true, disabled: false, value: 'native' },
@@ -436,6 +537,9 @@ describe('web native component contracts', () => {
       'weapp-picker-view',
       'weapp-picker-view-column',
       'weapp-slider',
+      'weapp-icon',
+      'weapp-progress',
+      'weapp-rich-text',
       'weapp-scroll-view',
       'weapp-navigator',
       'weapp-swiper',

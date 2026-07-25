@@ -41,6 +41,9 @@ describe('transformWxssToCss', () => {
       slider[disabled] {
         min-height: 80rpx;
       }
+      icon[type="success"] + progress[active] rich-text.note {
+        color: green;
+      }
       canvas.stage + video[object-fit="cover"] {
         display: block;
       }
@@ -58,6 +61,7 @@ describe('transformWxssToCss', () => {
     expect(css).toContain('weapp-navigator.link:hover + weapp-swiper > weapp-swiper-item[data-active]')
     expect(css).toContain('weapp-picker[data-mode="selector"] + weapp-picker-view > weapp-picker-view-column')
     expect(css).toContain('weapp-slider[disabled]')
+    expect(css).toContain('weapp-icon[type="success"] + weapp-progress[active] weapp-rich-text.note')
     expect(css).toContain('weapp-canvas.stage + weapp-video[object-fit="cover"]')
     expect(css).toContain('weapp-cover-view.overlay > weapp-cover-image')
     expect(css).toContain('weapp-movable-area.drag-zone weapp-movable-view.handle')

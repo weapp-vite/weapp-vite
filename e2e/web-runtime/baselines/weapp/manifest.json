@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-25T00:42:46.000Z",
+  "generatedAt": "2026-07-25T07:44:54.105Z",
   "device": {
     "windowWidth": 390,
     "windowHeight": 753,
@@ -35,6 +35,17 @@
       "id": "selection-matrix",
       "route": "/pages/selection-parity/index",
       "baseline": "selection-matrix.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03,
+      "viewport": {
+        "width": 390,
+        "height": 753
+      }
+    },
+    {
+      "id": "display-matrix",
+      "route": "/pages/display-parity/index",
+      "baseline": "display-matrix.png",
       "threshold": 0.18,
       "maxDiffRatio": 0.03,
       "viewport": {

@@ -5,6 +5,7 @@ import { WeappCanvas } from './canvas'
 import { WeappCheckbox, WeappCheckboxGroup } from './checkbox'
 import { WeappCoverImage, WeappCoverView } from './cover'
 import { WeappForm } from './form'
+import { WeappIcon } from './icon'
 import { WeappImage } from './image'
 import { WeappInput } from './input'
 import { WeappLabel } from './label'
@@ -13,7 +14,9 @@ import { WeappNavigator } from './navigator'
 import { WeappPicker } from './picker'
 import { WeappPickerView, WeappPickerViewColumn } from './pickerView'
 import { WeappText, WeappView } from './primitives'
+import { WeappProgress } from './progress'
 import { WeappRadio, WeappRadioGroup } from './radio'
+import { WeappRichText } from './richText'
 import { WeappScrollView } from './scrollView'
 import { WeappSlider } from './slider'
 import { WeappSwiper } from './swiper'
@@ -40,6 +43,9 @@ const constructors = {
   'weapp-picker-view': WeappPickerView,
   'weapp-picker-view-column': WeappPickerViewColumn,
   'weapp-slider': WeappSlider,
+  'weapp-icon': WeappIcon,
+  'weapp-progress': WeappProgress,
+  'weapp-rich-text': WeappRichText,
   'weapp-scroll-view': WeappScrollView,
   'weapp-navigator': WeappNavigator,
   'weapp-swiper': WeappSwiper,
@@ -67,6 +73,7 @@ export function ensureNativeComponentsDefined() {
 
 export { collectCheckboxGroupValue } from './checkbox'
 export { collectFormControlValues } from './formControl'
+export { resolveIconColor, resolveIconSize, resolveIconType } from './icon/helpers'
 export { resolveImageModeStyle } from './image'
 export { createInputEventDetail } from './input'
 export { clampMovablePosition, resolveMovableDirection } from './movable/helpers'
@@ -77,7 +84,17 @@ export {
   resolvePickerMode,
 } from './picker/helpers'
 export { normalizePickerViewValue } from './pickerView/helpers'
+export {
+  createProgressActiveEndDetail,
+  resolveProgressAnimationDuration,
+  resolveProgressConfig,
+} from './progress/helpers'
 export { collectRadioGroupValue } from './radio'
+export {
+  normalizeRichTextNodes,
+  sanitizeRichTextAttributes,
+  sanitizeRichTextStyle,
+} from './richText/helpers'
 export { createScrollEventDetail } from './scrollView'
 export { createSliderEventDetail, resolveSliderConfig } from './slider/helpers'
 export { NATIVE_COMPONENT_STYLE } from './style'

@@ -8,6 +8,7 @@
     "pages/visual-parity/index",
     "pages/form-parity/index",
     "pages/selection-parity/index",
+    "pages/display-parity/index",
     "pages/navigation-parity/index",
     "pages/media-parity/index",
     "pages/layer-parity/index",

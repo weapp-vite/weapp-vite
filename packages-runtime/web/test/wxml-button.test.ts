@@ -22,6 +22,9 @@ describe('compileWxml button mapping', () => {
               <picker-view-column><view>Column</view></picker-view-column>
             </picker-view>
             <slider value="42" show-value />
+            <icon type="success" size="24" color="#09bb07" />
+            <progress percent="{{progressValue}}" show-info active bindactiveend="handleActiveEnd" />
+            <rich-text nodes="{{richNodes}}" user-select />
           </form>
           <scroll-view scroll-y="{{true}}"><view>Content</view></scroll-view>
           <navigator url="/pages/detail/index" extra-data="{{payload}}" hover-class="nav-active">Detail</navigator>
@@ -56,6 +59,11 @@ describe('compileWxml button mapping', () => {
     expect(result.code).toContain('weapp-picker-view')
     expect(result.code).toContain('weapp-picker-view-column')
     expect(result.code).toContain('weapp-slider')
+    expect(result.code).toContain('weapp-icon')
+    expect(result.code).toContain('weapp-progress')
+    expect(result.code).toContain('weapp-rich-text')
+    expect(result.code).toMatch(/\.nodes=\$\{ctx\.eval\("richNodes", [^,]+, __wxs_modules\)\}/)
+    expect(result.code).toContain('@activeend=')
     expect(result.code).toMatch(/\.range=\$\{ctx\.eval\("options", [^,]+, __wxs_modules\)\}/)
     expect(result.code).toMatch(/\.value=\$\{ctx\.eval\("pickerValue", [^,]+, __wxs_modules\)\}/)
     expect(result.code).toContain('weapp-scroll-view')

@@ -5,11 +5,13 @@
 - `runtime.seo` 会在页面栈切换后同步 `document.title`、description 和 canonical；标题默认取页面 `navigationBarTitleText`，`titleTemplate` 用 `%s` 表示页面标题，`enabled: false` 可关闭。
 - `runtime.resourceHints.links` 只在浏览器 Head 中去重注入 `preconnect`、`dns-prefetch`、`prefetch` 和 `preload`，不会改变小程序产物，也不等同于 SSR。
 - `rpx` 按设备容器宽度计算。排查桌面端比例问题时先检查 `#app` 实际宽度和 `--rpx`，不要直接用 `window.innerWidth` 推断。
-- `view`、`text`、`image`、`button`、`input`、`scroll-view`、`form`、`label`、`textarea`、checkbox/radio group、`switch`、`picker`、`picker-view`、`picker-view-column`、`slider`、`navigator`、`swiper` / `swiper-item` 会编译成 `weapp-*` 运行时标签；编写浏览器断言时不要继续假设它们是 `div`、`span`、`img` 或原生表单元素。
+- `view`、`text`、`image`、`button`、`input`、`scroll-view`、`form`、`label`、`textarea`、checkbox/radio group、`switch`、`picker`、`picker-view`、`picker-view-column`、`slider`、`icon`、`progress`、`rich-text`、`navigator`、`swiper` / `swiper-item` 会编译成 `weapp-*` 运行时标签；编写浏览器断言时不要继续假设它们是 `div`、`span`、`img` 或原生表单元素。
 - 表单提交只收集带 `name` 且未禁用的控件；checkbox group 返回数组、radio group 返回单值、switch 返回布尔值。验证 reset 时同时检查控件状态和页面提交结果，不要只检查 DOM attribute。
 - 控件属性同步不会发送用户 `change` 事件。浏览器交互断言应操作 runtime 标签 shadow root 内的原生控件，再校验外层收到的微信事件 `detail`。
 - picker 的动态 `range` / `value` 和 picker-view 的 `value` 通过 property 传递，断言时应检查对象数组没有被字符串化。region 模式只提供文本近似，不应把空 `code` / `postcode` 当作真实行政区数据。
 - picker-view 的受控 value 要在子列 slot 就绪后验证，避免把连接早期的空列 clamp 结果当成最终状态；slider 行为同时覆盖 `changing` 与 `change`。
+- `icon` 断言应覆盖九种内建类型以及 size / color 更新。`progress.duration` 按进度每增长 1% 的毫秒数计算，active 动画每次只发送一个 `activeend`，颜色和 show-info 等更新不应重复触发；视觉截图前要等待动画完成。
+- `rich-text.nodes` 是 property 绑定，节点数组不能被字符串化。字符串与数组都应经过同一安全树；测试需覆盖脚本、`on*` 属性、`javascript:` / 非图片 data URL 和危险 CSS 被过滤，避免直接依赖 `innerHTML` 注入。
 - `navigator` 的声明式跳转与 `wx.navigateTo` 等命令式 API 共用页面栈。验证时同时检查目标 route、query 和 navigateBack 后的页面恢复；`target="miniProgram"` 还要覆盖 success/fail/complete。
 - `navigateTo` 后原页面保持存活并触发 `onHide`；`navigateBack` 恢复同一实例、数据、`onShow` 和 `#app` 滚动位置，不会重跑 `onLoad`。排查返回状态丢失时，同时检查 `getCurrentPages()` 全栈、页面 host 的 `hidden` 状态和容器 `scrollTop`。
 - `App.onLaunch` / `App.onShow` 必须先于首个页面挂载；浏览器 `visibilitychange` 会去重触发 `App.onHide` / `App.onShow`。验证重新进入前台时，分别检查 `getLaunchOptionsSync()` 保留初始入口、`getEnterOptionsSync()` 更新为当前页面。

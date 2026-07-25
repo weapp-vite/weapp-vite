@@ -66,6 +66,9 @@ keywords:
 | `picker`                                     | `🟡` | 支持 selector、multiSelector、date、time、region；region 不内置行政区 code 数据。    |
 | `picker-view` / `picker-view-column`         | `✅` | 支持受控 value、滚动吸附、mask / indicator 样式、change / pickstart / pickend。      |
 | `slider`                                     | `✅` | 支持范围、步长、颜色、block-size、show-value、disabled、表单值及 changing / change。 |
+| `icon`                                       | `✅` | 支持九种内建类型及 size / color，未知类型稳定降级为 success。                        |
+| `progress`                                   | `✅` | 支持常用视觉属性、按每增长 1% 计时的 active 动画及唯一的 activeend 事件。            |
+| `rich-text`                                  | `🟡` | 支持 HTML 字符串与节点数组；过滤脚本、事件属性、危险 URL / CSS，高级排版仍有差异。   |
 | `navigator`                                  | `🟡` | 支持常用 open-type 与 miniProgram bridge，宿主跳转能力取决于 provider。              |
 | `swiper` / `swiper-item`                     | `✅` | 支持受控切换、触摸、循环、指示点、autoplay 与生命周期清理。                          |
 | `canvas`                                     | `🟡` | 真实 2D Canvas；支持 id 定位和常用绘图命令，高级 API 未全量覆盖。                    |

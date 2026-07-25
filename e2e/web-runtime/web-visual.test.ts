@@ -257,6 +257,13 @@ describeWeb.sequential('web runtime visual parity', () => {
         if (visualCase.id === 'app-shell-tabbar') {
           await page.evaluate(async () => await (window as any).wx.hideTabBar())
         }
+        if (visualCase.id === 'display-matrix') {
+          await expect.poll(async () => {
+            return await page.evaluate(() => {
+              return (window as any).getCurrentPages().at(-1)?.data?.progressEvent
+            })
+          }, { timeout: 3_000 }).toBe('activeend')
+        }
         const current = await page.screenshot({ animations: 'disabled' })
         const currentPath = path.join(OUTPUT_ROOT, `${visualCase.id}.current.png`)
         const diffPath = path.join(OUTPUT_ROOT, `${visualCase.id}.diff.png`)
@@ -457,6 +464,114 @@ describeWeb.sequential('web runtime visual parity', () => {
       }).toMatchObject({
         sliderValue: 74,
         eventSummary: 'slider=74',
+      })
+    }
+    finally {
+      await page.close()
+    }
+  })
+
+  it('renders icons, progress state and sanitized rich-text nodes', async () => {
+    const page = await browser!.newPage({ viewport: { width: 390, height: 753 } })
+    try {
+      await navigateToVisualCase(page, '/pages/display-parity/index')
+
+      const icons = await page.locator('weapp-icon').evaluateAll((elements) => {
+        return elements.map((element) => {
+          const icon = element.shadowRoot?.querySelector('.icon')
+          return {
+            type: icon?.classList.item(1),
+            width: getComputedStyle(element).width,
+          }
+        })
+      })
+      const progress = await page.locator('weapp-progress').evaluateAll((elements) => {
+        return elements.map(element => ({
+          percent: (element as HTMLElement).style.getPropertyValue('--weapp-progress-percent'),
+          strokeWidth: (element as HTMLElement).style.getPropertyValue('--weapp-progress-stroke-width'),
+        }))
+      })
+      const richText = await page.locator('weapp-rich-text').evaluateAll((elements) => {
+        return elements.map(element => element.shadowRoot?.querySelector('.content')?.textContent)
+      })
+      await expect.poll(async () => {
+        return await page.evaluate(() => {
+          return (window as any).getCurrentPages().at(-1)?.data?.progressEvent
+        })
+      }, { timeout: 3_000 }).toBe('activeend')
+      const displayState = { icons, progress, richText }
+      expect(displayState.icons).toHaveLength(9)
+      expect(displayState.icons.map(icon => icon.type)).toEqual([
+        'success',
+        'success_no_circle',
+        'info',
+        'warn',
+        'waiting',
+        'cancel',
+        'download',
+        'search',
+        'clear',
+      ])
+      expect(displayState.icons.every(icon => icon.width === '22px')).toBe(true)
+      expect(displayState.progress).toEqual([
+        { percent: '24%', strokeWidth: '5px' },
+        { percent: '72%', strokeWidth: '7px' },
+      ])
+      expect(displayState.richText).toEqual([
+        '节点数组保留结构、样式与文本。',
+        'HTML 字符串同样经过安全节点渲染。',
+      ])
+
+      const securityState = await page.locator('weapp-rich-text').first().evaluate((element: any) => {
+        element.nodes = '<p onclick="bad()" style="color: red; position: fixed"><a href="javascript:bad()">link</a><img src="data:text/html,bad"><script>bad()</script></p>'
+        const content = element.shadowRoot?.querySelector('.content') as HTMLElement
+        const paragraph = content.querySelector('p') as HTMLElement
+        const anchor = content.querySelector('a') as HTMLAnchorElement
+        const image = content.querySelector('img') as HTMLImageElement
+        return {
+          html: content.innerHTML,
+          paragraphStyle: paragraph.getAttribute('style'),
+          clickHandler: paragraph.getAttribute('onclick'),
+          anchorHref: anchor.getAttribute('href'),
+          imageSrc: image.getAttribute('src'),
+          scriptCount: content.querySelectorAll('script').length,
+        }
+      })
+      expect(securityState).toEqual({
+        html: '<p style="color: red"><a rel="noopener noreferrer">link</a><img></p>',
+        paragraphStyle: 'color: red',
+        clickHandler: null,
+        anchorHref: null,
+        imageSrc: null,
+        scriptCount: 0,
+      })
+
+      const activeEndCount = await page.locator('weapp-progress').nth(1).evaluate(async (element) => {
+        let count = 0
+        let resolveActiveEnd: () => void = () => {}
+        const activeEnd = new Promise<void>((resolve) => {
+          resolveActiveEnd = resolve
+        })
+        element.addEventListener('activeend', () => {
+          count += 1
+          resolveActiveEnd()
+        })
+        element.removeAttribute('active')
+        element.setAttribute('percent', '64')
+        element.setAttribute('duration', '1')
+        element.setAttribute('active', 'true')
+        const startInfo = element.shadowRoot?.querySelector('.info')?.textContent
+        await activeEnd
+        const endInfo = element.shadowRoot?.querySelector('.info')?.textContent
+        element.setAttribute('active-color', '#123456')
+        element.setAttribute('show-info', 'true')
+        await new Promise(resolve => setTimeout(resolve, 120))
+        return { count, endInfo, startInfo }
+      })
+      expect(activeEndCount).toEqual({
+        count: 1,
+        endInfo: '64%',
+        startInfo: '0%',
       })
     }
     finally {
