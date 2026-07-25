@@ -19,6 +19,8 @@ const WEB_PORT = Number(process.env.WEAPP_VITE_WEB_PROJECT_E2E_PORT ?? 5173)
 const WEB_URL = `http://${WEB_HOST}:${WEB_PORT}`
 const STARTUP_TIMEOUT = Number(process.env.WEAPP_VITE_WEB_PROJECT_STARTUP_TIMEOUT ?? 90_000)
 const RUNTIME_TIMEOUT = Number(process.env.WEAPP_VITE_WEB_PROJECT_RUNTIME_TIMEOUT ?? 45_000)
+const RUNTIME_STATE_ATTEMPTS = 3
+const TRANSIENT_NAVIGATION_ERROR_RE = /Execution context was destroyed|Cannot find context with specified id|Inspected target navigated or closed/
 
 const PLAYWRIGHT_EXECUTABLE = chromium.executablePath()
 const CHROMIUM_CHANNEL = process.env.WEAPP_VITE_WEB_E2E_CHANNEL
@@ -81,17 +83,30 @@ async function waitForServer(server: Subprocess, logs: { value: string }) {
 }
 
 async function readRuntimeState(page: Page) {
-  return await page.evaluate(() => {
-    const runtimeWindow = window as any
-    const getCurrentPages = runtimeWindow.getCurrentPages
-    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
-    const currentPage = pages.at(-1)
-    return {
-      hasWx: typeof runtimeWindow.wx === 'object',
-      pageCount: document.querySelectorAll('[data-weapp-page]').length,
-      route: typeof currentPage?.route === 'string' ? currentPage.route : null,
+  let lastError: unknown
+  for (let attempt = 0; attempt < RUNTIME_STATE_ATTEMPTS; attempt++) {
+    try {
+      return await page.evaluate(() => {
+        const runtimeWindow = window as any
+        const getCurrentPages = runtimeWindow.getCurrentPages
+        const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+        const currentPage = pages.at(-1)
+        return {
+          hasWx: typeof runtimeWindow.wx === 'object',
+          pageCount: document.querySelectorAll('[data-weapp-page]').length,
+          route: typeof currentPage?.route === 'string' ? currentPage.route : null,
+        }
+      })
     }
-  })
+    catch (error) {
+      lastError = error
+      if (!TRANSIENT_NAVIGATION_ERROR_RE.test(String(error))) {
+        throw error
+      }
+      await page.waitForLoadState('domcontentloaded', { timeout: 5_000 })
+    }
+  }
+  throw lastError
 }
 
 describeWeb.sequential('workspace Web project matrix', async () => {
