@@ -63,6 +63,26 @@ weappWebPlugin({
 
 已有项目需要保留浏览器全宽布局时，设置 `runtime.viewport.mode: 'responsive'`。
 
+## 浏览器路由
+
+默认使用 `memory` 模式，路由只在运行时页面栈内生效。生产站点可以根据部署方式开启地址栏同步：
+
+```ts
+weappWebPlugin({
+  runtime: {
+    routing: {
+      mode: 'history', // 服务端回退到 index.html
+      base: '/mini',
+    },
+  },
+})
+```
+
+- `history` 使用真实路径，支持从 `/mini/pages/detail/index?sku=42` 深链接进入页面，并同步 `navigateTo`、`redirectTo`、`reLaunch`、`switchTab` 和 `navigateBack`。
+- `hash` 使用 `#/pages/detail/index`，适合没有服务端 history fallback 的静态托管。
+- 两种浏览器模式都会响应前进/后退事件并恢复页面栈；`base` 应与部署目录保持一致。
+- 默认 `memory` 保持现有预览与测试行为，不修改浏览器地址栏。
+
 ## 宿主注入
 
 Web Runtime 默认读取浏览器原语；测试容器、沙箱或业务宿主可以在注册页面前注入最小 host：

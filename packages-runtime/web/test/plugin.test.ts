@@ -66,6 +66,10 @@ describe('weappWebPlugin', () => {
           maxWidth: 414,
           desktopBreakpoint: 720,
         },
+        routing: {
+          mode: 'history',
+          base: '/mini',
+        },
       },
     })
     await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'build' } as any)
@@ -76,7 +80,7 @@ describe('weappWebPlugin', () => {
     const code = (plugin.load as ((...args: any[]) => any))?.call({} as any, entryId) as string
     expect(code).toContain('initializePageRoutes(["pages/index/index"]')
     expect(code).toContain('"tabBar":{"color":"#666666","selectedColor":"#07c160","backgroundColor":"#ffffff","borderStyle":"black","position":"bottom","custom":false,"list":[{"pagePath":"pages/index/index","text":"首页","iconPath":"assets/home.png"}]}')
-    expect(code).toContain('"runtime":{"executionMode":"safe","warnings":{"level":"off","dedupe":false},"viewport":{"mode":"responsive","maxWidth":414,"desktopBreakpoint":720}}')
+    expect(code).toContain('"runtime":{"executionMode":"safe","warnings":{"level":"off","dedupe":false},"viewport":{"mode":"responsive","maxWidth":414,"desktopBreakpoint":720},"routing":{"mode":"history","base":"/mini"}}')
     expect(code).toContain('"rpx":{"designWidth":750}')
   })
 

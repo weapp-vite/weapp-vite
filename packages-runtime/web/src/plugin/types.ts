@@ -1,5 +1,6 @@
 import type { NavigationBarConfig } from '../compiler/wxml'
 import type { WxssTransformOptions } from '../css/wxss'
+import type { WebRoutingConfig } from '../runtime/polyfill/routeRuntime/history'
 import type { WebTabBarConfig } from '../shared/tabBar'
 
 export interface WeappWebPluginOptions {
@@ -48,6 +49,8 @@ export interface WeappWebPluginOptions {
       maxWidth?: number
       desktopBreakpoint?: number
     }
+    /** Web 路由与浏览器地址栏同步策略。 */
+    routing?: WebRoutingConfig
   }
   /**
    * weapp-vite runtime provider 注入的内部绑定。

@@ -3,6 +3,7 @@ import type { ButtonFormConfig } from '../button'
 import type { ComponentPublicInstance } from '../component'
 import type { NavigationBarMetrics } from '../navigationBar'
 import type { WebViewportConfig } from '../viewport'
+import type { WebRouteHistoryState, WebRouteTarget, WebRoutingConfig } from './routeRuntime/history'
 import type { AppLaunchOptions, AppRuntime, ComponentRawOptions, ComponentRecord, NavigateBackOptions, PageRawOptions, PageRecord, PageStackEntry, RegisterMeta, RouteOptions } from './routeRuntime/options'
 import { slugify } from '../../shared/slugify'
 import {
@@ -23,6 +24,12 @@ import {
   resolveCurrentPages,
   resolveFallbackLaunchOptions,
 } from './appState'
+import {
+  configureWebRouting,
+  getWebHistoryStack,
+  readWebRouteTarget,
+  syncWebRouting,
+} from './routeRuntime/history'
 import {
   augmentPageComponentOptions,
   dispatchPageLifetimeToComponents,
@@ -71,11 +78,43 @@ function ensureAppLaunched(entry: PageStackEntry) {
 
 const pageStack = new PageStackRuntime(pageRegistry, ensureAppLaunched)
 
+function syncCurrentWebRoute(operation: 'push' | 'replace') {
+  syncWebRouting(pageStack.entries, operation)
+}
+
+function reconcileWebRoute(target: WebRouteTarget | undefined, state: WebRouteHistoryState | undefined) {
+  const currentIds = pageStack.entries.map(entry => entry.id)
+  const historyStack = getWebHistoryStack(state)
+  if (historyStack?.length) {
+    const desiredIds = historyStack.map(entry => entry.id)
+    const samePrefix = desiredIds.every((id, index) => currentIds[index] === id)
+    if (samePrefix && desiredIds.length < currentIds.length) {
+      pageStack.back(currentIds.length - desiredIds.length)
+    }
+    else if (samePrefix && desiredIds.length > currentIds.length) {
+      for (const entry of historyStack.slice(currentIds.length)) {
+        pageStack.push(entry.id, { ...entry.query })
+      }
+    }
+    else if (desiredIds.length) {
+      const last = historyStack[historyStack.length - 1]!
+      pageStack.relaunch(last.id, { ...last.query })
+    }
+    syncTabBarRoute(pageStack.entries[pageStack.entries.length - 1]?.id ?? '')
+    return
+  }
+  if (target && pageRegistry.has(target.id)) {
+    pageStack.relaunch(target.id, { ...target.query })
+    syncTabBarRoute(target.id)
+  }
+}
+
 function performSwitchTab(options: RouteOptions) {
   const { id, query } = parsePageUrl(options?.url ?? '')
   const succeeded = pageStack.switchTab(id, query)
   if (succeeded) {
     syncTabBarRoute(id)
+    syncCurrentWebRoute('push')
   }
   return resolveRouteAction('switchTab', options, succeeded, 'not a tabBar page')
 }
@@ -112,12 +151,14 @@ export function initializePageRoutes(
         dedupe?: boolean
       }
       viewport?: WebViewportConfig
+      routing?: WebRoutingConfig
     }
   },
 ) {
   setRuntimeExecutionMode(options?.runtime?.executionMode)
   setRuntimeWarningOptions(options?.runtime?.warnings)
   setupWebViewport(options?.runtime?.viewport)
+  configureWebRouting(options?.runtime?.routing, ids, reconcileWebRoute)
   ensureNativeComponentsDefined()
   pageOrder = Array.from(new Set(ids))
   configureTabBar(options?.tabBar, url => performSwitchTab({ url }))
@@ -136,8 +177,12 @@ export function initializePageRoutes(
     setButtonFormConfig(options.form)
   }
   if (!pageStack.entries.length) {
-    if (pageStack.push(pageOrder[0], {})) {
-      syncTabBarRoute(pageOrder[0])
+    const initialTarget = readWebRouteTarget(pageOrder)
+    const initialId = initialTarget?.id ?? pageOrder[0]
+    const initialQuery = initialTarget?.query ?? {}
+    if (pageStack.push(initialId, initialQuery)) {
+      syncTabBarRoute(initialId)
+      syncCurrentWebRoute('replace')
     }
   }
 }
@@ -223,6 +268,7 @@ export function navigateTo(options: RouteOptions) {
   const succeeded = pageStack.push(id, query)
   if (succeeded) {
     syncTabBarRoute(id)
+    syncCurrentWebRoute('push')
   }
   return resolveRouteAction('navigateTo', options, succeeded)
 }
@@ -232,6 +278,7 @@ export function redirectTo(options: RouteOptions) {
   const succeeded = pageStack.replace(id, query)
   if (succeeded) {
     syncTabBarRoute(id)
+    syncCurrentWebRoute('replace')
   }
   return resolveRouteAction('redirectTo', options, succeeded)
 }
@@ -241,6 +288,7 @@ export function reLaunch(options: RouteOptions) {
   const succeeded = pageStack.relaunch(id, query)
   if (succeeded) {
     syncTabBarRoute(id)
+    syncCurrentWebRoute('replace')
   }
   return resolveRouteAction('reLaunch', options, succeeded)
 }
@@ -253,6 +301,7 @@ export function navigateBack(options?: NavigateBackOptions) {
   const succeeded = pageStack.back(options?.delta)
   if (succeeded) {
     syncTabBarRoute(pageStack.entries[pageStack.entries.length - 1]?.id ?? '')
+    syncCurrentWebRoute('replace')
   }
   return resolveRouteAction('navigateBack', options, succeeded)
 }
