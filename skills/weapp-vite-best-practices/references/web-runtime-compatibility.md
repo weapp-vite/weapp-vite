@@ -12,6 +12,8 @@
 - picker-view 的受控 value 要在子列 slot 就绪后验证，避免把连接早期的空列 clamp 结果当成最终状态；slider 行为同时覆盖 `changing` 与 `change`。
 - `navigator` 的声明式跳转与 `wx.navigateTo` 等命令式 API 共用页面栈。验证时同时检查目标 route、query 和 navigateBack 后的页面恢复；`target="miniProgram"` 还要覆盖 success/fail/complete。
 - `navigateTo` 后原页面保持存活并触发 `onHide`；`navigateBack` 恢复同一实例、数据、`onShow` 和 `#app` 滚动位置，不会重跑 `onLoad`。排查返回状态丢失时，同时检查 `getCurrentPages()` 全栈、页面 host 的 `hidden` 状态和容器 `scrollTop`。
+- `App.onLaunch` / `App.onShow` 必须先于首个页面挂载；浏览器 `visibilitychange` 会去重触发 `App.onHide` / `App.onShow`。验证重新进入前台时，分别检查 `getLaunchOptionsSync()` 保留初始入口、`getEnterOptionsSync()` 更新为当前页面。
+- 页面滚动由当前栈项持续持有。用户滚动和 `pageScrollTo` 都应同步到对应页面；history/hash 模式会使用 manual scroll restoration，排查滚动跳变时不要再叠加 `window` 级恢复逻辑。
 - `redirectTo` 只卸载当前页，`reLaunch` 从栈顶开始卸载所有旧页面。路由目标无效或首页执行 `navigateBack` 时，Promise 应 reject，`fail` / `complete` 应收到对应 `errMsg`。
 - 标准 `app.json.tabBar` 会生成受 `#app` 设备视口约束的 Web App Shell。`switchTab` 只能进入 tab 路由，会卸载非 tab 页面并缓存其他 tab 实例；切回时验证 `onLoad` 不重复、`onShow` 正常递增和 `getCurrentPages()` 只返回当前 tab 栈。
 - `showTabBar` / `hideTabBar` 会同步页面 inset；`setTabBarItem`、`setTabBarStyle`、badge 与 red-dot API 会更新 shell。`tabBar.custom: true` 只保留路由语义，不会自动渲染业务自定义组件。

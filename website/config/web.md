@@ -196,6 +196,8 @@ Web 产物输出目录，默认一般是 `dist/web`。
 
 Web 页面栈会保留 `navigateTo` 隐藏页面的 DOM、实例、数据和滚动位置。`navigateBack` 恢复同一页面实例并重新触发 `onShow`，不会重复触发 `onLoad`；`redirectTo` 只卸载当前页，`reLaunch` 卸载整个旧页面栈。`getCurrentPages()` 返回所有存活页面，路由 Promise 与 `success` / `fail` / `complete` 回调使用小程序形状的 `errMsg`。
 
+首次页面挂载前会触发 `App.onLaunch` / `App.onShow`，浏览器进入后台或回到前台时通过 `visibilitychange` 去重触发 `App.onHide` / `App.onShow`。`getLaunchOptionsSync()` 始终返回初始入口，`getEnterOptionsSync()` 会在重新进入前台时更新为当前页面。页面容器 `#app` 的滚动位置持续归属于当前栈项；history/hash 路由会关闭浏览器原生滚动恢复，避免窗口和设备容器重复恢复。
+
 尚未完整支持的已知小程序组件会保持可渲染降级并输出去重告警。Web 运行时仍不等价于微信 DevTools 或真机，视觉发布门禁应以 DevTools 基线为真值。
 
 ### `vite`

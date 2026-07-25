@@ -50,6 +50,7 @@ keywords:
 | `methods` / `triggerEvent`                       | `✅` | 支持事件触发与组件方法调用。                                     |
 | `lifetimes`（`created/attached/ready/detached`） | `✅` | 支持基础生命周期。                                               |
 | `pageLifetimes`（`show/hide`）                   | `🟡` | 在页面显示/隐藏时分发到组件；`resize` 依赖浏览器环境。           |
+| `App.onLaunch/onShow/onHide`                     | `✅` | 启动回调先于首屏页面挂载；前后台切换由 visibilitychange 驱动。   |
 | `behaviors`（递归合并）                          | `✅` | 支持递归合并 `data/properties/methods/lifetimes/pageLifetimes`。 |
 | `observerInit`                                   | `✅` | 可配置初始化阶段 observer 触发策略。                             |
 | `relations` / `externalClasses` 等               | `⛔` | 当前未在 runtime `ComponentOptions` 中实现。                     |
@@ -92,7 +93,7 @@ keywords:
 | `wx.setTabBarBadge` / `removeTabBarBadge` / `showTabBarRedDot` / `hideTabBarRedDot`                      | `✅` | 支持标准 tabBar badge 与红点状态；非法 index 按微信形状回调和 Promise 失败。                                                |
 | `wx.loadSubPackage` / `wx.preloadSubpackage`                                                             | `🟡` | 当前提供 no-op 成功桥接，主要用于兼容分包加载调用链，不执行真实下载与预加载流程。                                           |
 | `wx.navigateBack`                                                                                        | `✅` | 支持 `delta` 回退。                                                                                                         |
-| 浏览器深链接与前进/后退                                                                                  | `✅` | `runtime.routing` 支持 `history` / `hash`；默认 `memory`，可按部署目录设置 `base`。                                         |
+| 浏览器深链接与前进/后退                                                                                  | `✅` | `runtime.routing` 支持 `history` / `hash`；页面栈拥有 `#app` 滚动位置并禁用浏览器原生滚动恢复。                             |
 | 页面 Head 与首屏资源提示                                                                                 | `✅` | `runtime.seo` 同步标题、description、canonical；`runtime.resourceHints.links` 去重注入浏览器 Resource Hints，不等同于 SSR。 |
 | `wx.setNavigationBarTitle`                                                                               | `🟡` | 依赖默认导航栏组件存在。                                                                                                    |
 | `wx.setNavigationBarColor`                                                                               | `🟡` | 依赖默认导航栏组件存在。                                                                                                    |
@@ -164,7 +165,7 @@ keywords:
 | `wx.openAppAuthorizeSetting`                                                                             | `🟡` | 提供应用级授权设置结果桥接，可通过预设状态注入授权结果，不触发系统级授权设置页。                                            |
 | `wx.getAppBaseInfo`                                                                                      | `🟡` | 提供浏览器环境下的基础信息近似值（语言、主题、平台等）。                                                                    |
 | `wx.getMenuButtonBoundingClientRect`                                                                     | `🟡` | 返回基于窗口尺寸的启发式胶囊按钮区域，不保证与真机一致。                                                                    |
-| `wx.getLaunchOptionsSync` / `wx.getEnterOptionsSync`                                                     | `🟡` | 返回基于当前 Web runtime 路由推断的启动参数快照。                                                                           |
+| `wx.getLaunchOptionsSync` / `wx.getEnterOptionsSync`                                                     | `🟡` | launch 保留初始入口；重新进入前台时 enter 更新为当前页面，scene/referrerInfo 仍为 Web 近似值。                              |
 | `wx.canIUse`                                                                                             | `🟡` | 支持 API 级能力探测（`wx.xxx`）；复杂组件/样式规则探测未覆盖。                                                              |
 | `getCurrentPages` / `getApp`                                                                             | `✅` | 提供基础桥接能力。                                                                                                          |
 | 其他常见 API（多媒体高级能力等）                                                                         | `⛔` | 尚未内置桥接，需业务层自行兼容。                                                                                            |

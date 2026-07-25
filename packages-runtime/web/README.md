@@ -7,7 +7,7 @@
 - 将小程序 `Page` / `Component` 映射为自定义元素，Shadow DOM 隔离样式与事件
 - 事件桥接（如 `bindtap` → `click`），保留 `this.setData`、`this.triggerEvent` 等调用体验
 - 提供宿主中立的小程序桥，并兼容 `wx.navigateTo` / `my.navigateTo` / `tt.navigateTo` 等路由调用，以及 `getCurrentPages`、`onLoad`、`onShow`、`onHide`、`onUnload` 生命周期
-- `App` 级别的 `onLaunch` / `onShow` 回调、`getApp` 全局实例访问
+- `App` 级别的 `onLaunch` / `onShow` / `onHide` 回调、`getApp` 全局实例访问
 - 为 `view`、`text`、`image`、`button`、`input`、`scroll-view`、`navigator`、`swiper` / `swiper-item`、`canvas`、`video`、`cover-view` / `cover-image`、`movable-area` / `movable-view`、picker、slider 及常用表单组件提供保留小程序语义的 Web Components 适配
 - 使用 PostCSS 转换 WXSS 选择器，支持 `page`、原生组件类型选择器、组合选择器和伪类
 - `rpx` 根据实际设备容器宽度动态计算；默认宽屏下使用 375px 居中设备视口
@@ -123,10 +123,12 @@ setWebRuntimeHost({
 
 ## 页面栈与生命周期
 
+- 首次挂载页面前依次触发 `App.onLaunch` / `App.onShow`；浏览器 `visibilitychange` 会驱动去重的 `App.onHide` / `App.onShow`。`getLaunchOptionsSync()` 保留初始入口，`getEnterOptionsSync()` 在重新进入前台时更新为当前页面。
 - `navigateTo` 会保留原页面 DOM、实例和数据，并依次触发原页面 `onHide` 与新页面 `onLoad` / `onShow`。
-- `navigateBack` 只卸载出栈页面，恢复目标页面的同一实例、`onShow` 和页面容器滚动位置，不会重新触发 `onLoad`。
+- `navigateBack` 只卸载出栈页面，恢复目标页面的同一实例、`onShow` 和页面容器滚动位置，不会重新触发 `onLoad`。当前页持续拥有 `#app` 的滚动状态，用户滚动与 `pageScrollTo` 都会写回对应栈项。
 - `redirectTo` 只替换并卸载当前页面；`reLaunch` 会从栈顶开始卸载全部旧页面后挂载目标页面。
 - `getCurrentPages()` 返回当前活动路由栈；其他 tab 页面可保活但不会混入当前 tab 栈。路由 API 支持 `success` / `fail` / `complete` 回调与 Promise 结果。
+- `history` / `hash` 模式使用 `history.scrollRestoration = 'manual'`，避免浏览器窗口滚动与小程序设备容器同时恢复位置；关闭路由同步时会还原原值。
 
 ## 页面 Head 与首屏资源
 

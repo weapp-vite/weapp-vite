@@ -5,7 +5,7 @@ import type { NavigationBarMetrics } from '../navigationBar'
 import type { WebResourceHintsConfig, WebSeoConfig } from '../seo'
 import type { WebViewportConfig } from '../viewport'
 import type { WebRouteHistoryState, WebRouteTarget, WebRoutingConfig } from './routeRuntime/history'
-import type { AppLaunchOptions, AppRuntime, ComponentRawOptions, ComponentRecord, NavigateBackOptions, PageRawOptions, PageRecord, PageStackEntry, RegisterMeta, RouteOptions } from './routeRuntime/options'
+import type { AppRuntime, ComponentRawOptions, ComponentRecord, NavigateBackOptions, PageRawOptions, PageRecord, RegisterMeta, RouteOptions } from './routeRuntime/options'
 import { slugify } from '../../shared/slugify'
 import {
   configureTabBar,
@@ -21,11 +21,8 @@ import { setupRpx } from '../rpx'
 import { configureWebSeo, setupWebResourceHints, syncWebDocumentHead } from '../seo'
 import { setupWebViewport } from '../viewport'
 import { setRuntimeWarningOptions } from '../warning'
-import {
-  cloneLaunchOptions,
-  resolveCurrentPages,
-  resolveFallbackLaunchOptions,
-} from './appState'
+import { resolveCurrentPages } from './appState'
+import { AppLifecycleRuntime } from './routeRuntime/appLifecycle'
 import {
   configureWebRouting,
   getWebHistoryStack,
@@ -37,7 +34,6 @@ import {
   dispatchPageLifetimeToComponents,
 } from './routeRuntime/lifecycle'
 import {
-  isRecord,
   normalizeComponentOptions,
   normalizePageOptions,
 } from './routeRuntime/options'
@@ -48,37 +44,13 @@ import { parsePageUrl } from './routeRuntime/url'
 const pageRegistry = new Map<string, PageRecord>()
 const componentRegistry = new Map<string, ComponentRecord>()
 let pageOrder: string[] = []
-let appInstance: AppRuntime | undefined
-let appLaunched = false
-let lastLaunchOptions: AppLaunchOptions | undefined
 let pageResizeBridgeBound = false
 
-function ensureAppLaunched(entry: PageStackEntry) {
-  if (!appInstance || appLaunched) {
-    return
-  }
-  const launchOptions: AppLaunchOptions = {
-    path: entry.id,
-    scene: 0,
-    query: entry.query,
-    referrerInfo: {},
-  }
-  lastLaunchOptions = {
-    path: launchOptions.path,
-    scene: launchOptions.scene,
-    query: { ...launchOptions.query },
-    referrerInfo: { ...launchOptions.referrerInfo },
-  }
-  if (typeof appInstance.onLaunch === 'function') {
-    appInstance.onLaunch(launchOptions)
-  }
-  if (typeof appInstance.onShow === 'function') {
-    appInstance.onShow(launchOptions)
-  }
-  appLaunched = true
-}
-
-const pageStack = new PageStackRuntime(pageRegistry, ensureAppLaunched)
+let pageStack: PageStackRuntime
+const appLifecycle = new AppLifecycleRuntime(
+  () => pageStack?.entries[pageStack.entries.length - 1],
+)
+pageStack = new PageStackRuntime(pageRegistry, entry => appLifecycle.ensureLaunched(entry))
 
 function syncCurrentWebDocument() {
   const current = pageStack.entries[pageStack.entries.length - 1]
@@ -176,6 +148,7 @@ export function initializePageRoutes(
   configureWebSeo(options?.runtime?.seo)
   setupWebResourceHints(options?.runtime?.resourceHints)
   configureWebRouting(options?.runtime?.routing, ids, reconcileWebRoute)
+  appLifecycle.bindVisibility()
   ensureNativeComponentsDefined()
   pageOrder = Array.from(new Set(ids))
   configureTabBar(options?.tabBar, url => performSwitchTab({ url }))
@@ -261,25 +234,7 @@ export function registerComponent<T extends ComponentRawOptions | undefined>(opt
 }
 
 export function registerApp<T extends AppRuntime | undefined>(options: T, _meta?: RegisterMeta): T {
-  const resolved = (options ?? {}) as AppRuntime
-  if (appInstance) {
-    const currentGlobal = appInstance.globalData
-    Object.assign(appInstance, resolved)
-    if (isRecord(currentGlobal)) {
-      appInstance.globalData = currentGlobal
-    }
-    else if (!isRecord(appInstance.globalData)) {
-      appInstance.globalData = {}
-    }
-    return options
-  }
-  appInstance = resolved
-  appLaunched = false
-  lastLaunchOptions = undefined
-  if (!isRecord(appInstance.globalData)) {
-    appInstance.globalData = {}
-  }
-  return options
+  return appLifecycle.register(options)
 }
 
 export function navigateTo(options: RouteOptions) {
@@ -330,16 +285,13 @@ export function getCurrentPagesInternal() {
 }
 
 export function getAppInstance() {
-  return appInstance
+  return appLifecycle.instance
 }
 
-export function getLaunchOptionsSync(): AppLaunchOptions {
-  if (lastLaunchOptions) {
-    return cloneLaunchOptions(lastLaunchOptions)
-  }
-  return resolveFallbackLaunchOptions(pageStack.entries)
+export function getLaunchOptionsSync() {
+  return appLifecycle.getLaunchOptions()
 }
 
-export function getEnterOptionsSync(): AppLaunchOptions {
-  return getLaunchOptionsSync()
+export function getEnterOptionsSync() {
+  return appLifecycle.getEnterOptions()
 }

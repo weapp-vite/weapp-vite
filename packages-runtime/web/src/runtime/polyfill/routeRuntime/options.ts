@@ -47,6 +47,7 @@ export interface RouteMeta {
 interface AppLifecycleHooks {
   onLaunch?: (this: AppRuntime, options: AppLaunchOptions) => void
   onShow?: (this: AppRuntime, options: AppLaunchOptions) => void
+  onHide?: (this: AppRuntime) => void
 }
 
 export type AppRuntime = Record<string, unknown> & Partial<AppLifecycleHooks> & {
