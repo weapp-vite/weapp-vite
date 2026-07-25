@@ -2706,4 +2706,25 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(launchPageJs).toMatch(/const\s+\{\s*count,\s*doubled\s*\}\s*=\s*[\w$]+\.[\w$]+\(\s*store\s*\)/)
     expect(resultPageJs).toMatch(/const\s+\{\s*count,\s*doubled\s*\}\s*=\s*[\w$]+\.[\w$]+\(\s*store\s*\)/)
   })
+
+  it('emits callback and Promise require targets inside their subpackage', async () => {
+    await runBuild()
+
+    const appJson = await fs.readJSON(path.join(DIST_ROOT, 'app.json')) as {
+      subPackages?: Array<{ pages?: string[], root?: string }>
+    }
+    const pageJs = await fs.readFile(path.join(DIST_ROOT, 'pages/require-async/index.js'), 'utf-8')
+    const callbackJs = await fs.readFile(path.join(DIST_ROOT, 'subpackages/require-async/callback.js'), 'utf-8')
+    const promiseJs = await fs.readFile(path.join(DIST_ROOT, 'subpackages/require-async/promise.js'), 'utf-8')
+
+    expect(appJson.subPackages).toContainEqual(expect.objectContaining({
+      pages: ['index'],
+      root: 'subpackages/require-async',
+    }))
+    expect(pageJs).toMatch(/require\.async\((['"])\.\.\/\.\.\/subpackages\/require-async\/callback(?:\.js)?\1\)\.then\(/)
+    expect(pageJs).toMatch(/require\.async\((['"])\.\.\/\.\.\/subpackages\/require-async\/promise(?:\.js)?\1\)/)
+    expect(callbackJs).toContain('require-async:callback')
+    expect(promiseJs).toContain('require-async:promise')
+    expect(await fs.pathExists(path.join(DIST_ROOT, 'callback.js'))).toBe(false)
+  })
 })

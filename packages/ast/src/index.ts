@@ -97,13 +97,14 @@ export {
 export {
   collectRequireTokens,
   getRequireAsyncLiteralToken,
+  getRequireCallbackLiteralToken,
   getStaticRequireLiteralValue,
   hasStaticRequireCall,
   isStaticRequireCall,
   mayContainRequireCallByText,
   mayContainStaticRequireLiteral,
 } from './operations/require'
-export type { RequireToken } from './operations/require'
+export type { RequireCallbackToken, RequireToken } from './operations/require'
 export { analyzeScript, analyzeScripts } from './operations/scriptAnalysis'
 export type { ScriptAnalysisBatchInput, ScriptAnalysisOptions, ScriptAnalysisResult } from './operations/scriptAnalysis'
 export {

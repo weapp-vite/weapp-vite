@@ -671,6 +671,20 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/require-async/index",
+          "pathName": "pages/require-async/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/require-async/index",
+          "pathName": "subpackages/require-async/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

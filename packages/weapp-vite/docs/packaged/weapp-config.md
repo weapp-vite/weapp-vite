@@ -48,6 +48,19 @@ export default defineConfig({
 
 `main` 表示主包，`packages/order` 匹配 `app.json.subPackages[].root`。启用后，产物 `app.json.subPackages` 只保留参与 scope 的分包，`preloadRule`、自动路由和 typed router 也会按同一范围裁剪。发布前建议再跑不带 scope 的完整构建。
 
+### 分包异步模块
+
+跨分包 JS 使用微信官方 callback 或 Promise API：
+
+```ts
+require('../../packages/order/modules/price', onLoaded, onError)
+const moduleExport = await require.async('../../packages/order/modules/price')
+```
+
+`weapp-vite` 会把 callback 写法规范化为 `void require.async(path).then(onLoaded, onError)`，并确保静态路径目标作为异步 chunk 输出，避免被当成同步 CommonJS 依赖提升到主包。路径必须是静态相对字面量，目标 root 也必须存在于最终 `app.json.subPackages`；使用自动路由的自定义 root 时，同时声明 `weapp.subPackages.<root>`。
+
+跨包自定义组件不走这套 JS API。组件继续使用 `usingComponents` 与 `componentPlaceholder`，由微信基础库负责下载后的占位替换。
+
 ### `autoImportComponents`
 
 适合用目录扫描自动注册组件的项目。组件重名时要先解决命名冲突，不要让自动引入规则长期处于歧义状态。

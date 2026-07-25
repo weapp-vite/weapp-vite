@@ -54,6 +54,7 @@ import {
   getOxcStaticPropertyName,
   getRenderPropertyFromComponentOptions,
   getRequireAsyncLiteralToken,
+  getRequireCallbackLiteralToken,
   getScriptSetupImportedName,
   getStaticPropertyName,
   getStaticRequireLiteralValue,
@@ -378,6 +379,30 @@ onLoad(() => dep)
       type: 'CallExpression',
       callee: { type: 'Identifier', name: 'require' },
       arguments: [{ type: 'Literal', value: './dep', start: 0, end: 7 }],
+    })).toBeNull()
+    expect(getRequireCallbackLiteralToken({
+      type: 'CallExpression',
+      start: 0,
+      end: 35,
+      callee: { type: 'Identifier', name: 'require' },
+      arguments: [
+        { type: 'Literal', value: './callback', start: 10, end: 22 },
+        { type: 'Identifier', name: 'onLoaded', start: 24, end: 32 },
+      ],
+    })).toEqual({
+      start: 10,
+      end: 22,
+      value: './callback',
+      async: true,
+      callStart: 0,
+      callEnd: 35,
+      successCallbackStart: 24,
+      successCallbackEnd: 32,
+    })
+    expect(getRequireCallbackLiteralToken({
+      type: 'CallExpression',
+      callee: { type: 'Identifier', name: 'require' },
+      arguments: [{ type: 'Literal', value: './sync', start: 0, end: 8 }],
     })).toBeNull()
     expect(mayContainRequireCallByText(`const dep = require('./dep')`)).toBe(true)
     expect(mayContainRequireCallByText('const dep = load("./dep")')).toBe(false)
