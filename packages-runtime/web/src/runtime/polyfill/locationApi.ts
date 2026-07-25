@@ -1,3 +1,4 @@
+import { openRuntimeUrl } from '../host'
 import {
   callMiniProgramAsyncFailure,
   callMiniProgramAsyncSuccess,
@@ -21,13 +22,11 @@ export function makePhoneCallBridge(options?: any) {
     const failure = callMiniProgramAsyncFailure(options, 'makePhoneCall:fail invalid phoneNumber')
     return Promise.reject(failure)
   }
-  if (typeof window !== 'undefined' && typeof window.open === 'function') {
-    try {
-      window.open(`tel:${encodeURIComponent(phoneNumber)}`, '_self')
-    }
-    catch {
-      // ignore browser restrictions and keep API-level success semantics
-    }
+  try {
+    openRuntimeUrl(`tel:${encodeURIComponent(phoneNumber)}`, '_self')
+  }
+  catch {
+    // ignore browser restrictions and keep API-level success semantics
   }
   return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'makePhoneCall:ok' }))
 }

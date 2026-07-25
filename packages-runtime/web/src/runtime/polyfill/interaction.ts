@@ -1,4 +1,5 @@
 import { WEAPP_VITE_WEB_SCAN_CODE_RESULT_KEY } from '@weapp-core/constants'
+import { getRuntimeClipboard } from '../host'
 
 export function resolveScanCodeResult(prompt?: (message: string, defaultValue: string) => unknown) {
   const runtimeGlobal = globalThis as Record<string, unknown>
@@ -16,9 +17,9 @@ export function resolveScanCodeResult(prompt?: (message: string, defaultValue: s
 }
 
 export async function writeClipboardData(data: string) {
-  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
-  if (runtimeNavigator?.clipboard && typeof runtimeNavigator.clipboard.writeText === 'function') {
-    await runtimeNavigator.clipboard.writeText(data)
+  const clipboard = getRuntimeClipboard()
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    await clipboard.writeText(data)
     return
   }
 
@@ -47,9 +48,9 @@ export async function writeClipboardData(data: string) {
 }
 
 export async function readClipboardData() {
-  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
-  if (!runtimeNavigator?.clipboard || typeof runtimeNavigator.clipboard.readText !== 'function') {
+  const clipboard = getRuntimeClipboard()
+  if (!clipboard || typeof clipboard.readText !== 'function') {
     throw new Error('Clipboard API is unavailable in current environment.')
   }
-  return runtimeNavigator.clipboard.readText()
+  return clipboard.readText()
 }

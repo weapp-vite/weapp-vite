@@ -63,6 +63,24 @@ weappWebPlugin({
 
 已有项目需要保留浏览器全宽布局时，设置 `runtime.viewport.mode: 'responsive'`。
 
+## 宿主注入
+
+Web Runtime 默认读取浏览器原语；测试容器、沙箱或业务宿主可以在注册页面前注入最小 host：
+
+```ts
+import { setWebRuntimeHost } from '@weapp-vite/web'
+
+setWebRuntimeHost({
+  fetch: hostFetch,
+  storage: hostStorage,
+  clipboard: hostClipboard,
+  dialogs: hostDialogs,
+  open: hostOpen,
+})
+```
+
+注入对象只覆盖提供的能力，其余能力仍使用浏览器回退。测试结束或宿主卸载时调用 `resetWebRuntimeHost()`。
+
 ## 组件兼容
 
 - `image.mode` 会映射到浏览器的 `object-fit` / `object-position`。
@@ -80,6 +98,7 @@ weappWebPlugin({
 - `video` 同步 src、poster、autoplay、loop、muted、controls、initial-time 与 object-fit；`createVideoContext` 可跨 Shadow DOM 控制对应播放器，并发送微信形状的播放、进度、元信息、错误和全屏事件。
 - `cover-view` / `cover-image` 在媒体或图片上方保留绝对定位与层级；`cover-image` 复用 image 的 mode、src 和 load/error 事件。
 - `movable-area` / `movable-view` 提供裁剪边界、初始 x/y、direction、disabled、out-of-bounds、animation 及 pointer 拖拽，并发送带 x/y/source 的 `change`、`htouchmove`、`vtouchmove` 事件。
+- `setWebRuntimeHost` / `resetWebRuntimeHost` 提供宿主注入边界；网络、存储、剪贴板、对话框和打开链接优先使用注入实现，未注入时回退到浏览器 API。
 - 其他已识别但尚未完整适配的原生组件会继续渲染，并输出去重兼容告警。
 
 ## 页面栈与生命周期

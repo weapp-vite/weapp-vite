@@ -1,3 +1,4 @@
+import { getRuntimeFetch as getHostRuntimeFetch } from '../../host'
 import {
   normalizeFilePath,
   resolveUploadFileBlob,
@@ -49,12 +50,7 @@ function resolveTimeoutSignal(timeout: number) {
 }
 
 export function getRuntimeFetch() {
-  const runtime = globalThis as Record<string, unknown>
-  const maybeFetch = runtime.fetch
-  if (typeof maybeFetch === 'function') {
-    return maybeFetch as typeof fetch
-  }
-  return undefined
+  return getHostRuntimeFetch()
 }
 
 export function normalizeRequestMethod(method?: string) {
