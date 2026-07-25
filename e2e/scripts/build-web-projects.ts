@@ -16,7 +16,7 @@ interface BuildFailure {
 async function buildProject(project: Awaited<ReturnType<typeof discoverWebProjects>>[number]) {
   const result = await execa(
     process.execPath,
-    [CLI_PATH, 'build', project.root, '--platform', 'h5'],
+    [CLI_PATH, 'build', project.root, '--platform', 'web'],
     {
       all: true,
       cwd: ROOT,

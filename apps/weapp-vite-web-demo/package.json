@@ -5,8 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "wv dev",
-    "dev:h5": "wv dev -p h5  --host",
+    "dev:web": "wv dev -p web --host",
     "build": "wv build",
+    "build:web": "wv build -p web",
     "preview": "wv preview",
     "postinstall": "wv prepare",
     "dev:ui": "wv dev --ui",

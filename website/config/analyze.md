@@ -136,7 +136,7 @@ wv analyze --hmr-profile .tmp/weapp-vite-hmr-profile.jsonl --json
 ## Web 平台边界 {#web-platform}
 
 ```bash
-wv analyze --platform h5 --json
+wv analyze --platform web --json
 ```
 
 Web 模式当前只做静态配置分析，覆盖 `weapp.web` 是否启用、`root` / `srcDir` / `outDir` 和 `runtime.executionMode`。它不扫描 Web 产物体积，也不提供分包映射和 dashboard。

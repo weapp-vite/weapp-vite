@@ -19,9 +19,9 @@ describe('Web project matrix', () => {
         await readFile(path.join(project.root, 'package.json'), 'utf8'),
       ) as PackageManifest
       expect.soft(manifest.scripts?.['dev:web'], project.relativeRoot)
-        .toBe('wv dev -p h5 --host')
+        .toBe('wv dev -p web --host')
       expect.soft(manifest.scripts?.['build:web'], project.relativeRoot)
-        .toBe('wv build -p h5')
+        .toBe('wv build -p web')
       await expect.soft(access(path.join(project.root, 'index.html')), project.relativeRoot)
         .resolves
         .toBeUndefined()

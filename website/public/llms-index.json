@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-25T16:56:30.827Z",
+  "generatedAt": "2026-07-25T18:34:58.953Z",
   "site": "https://vite.icebreaker.top",
   "count": 271,
   "items": [
@@ -443,7 +443,7 @@
         "Web 平台边界 {#web-platform}",
         "关联阅读"
       ],
-      "updatedAt": "2026-07-25",
+      "updatedAt": "2026-07-26",
       "source": "config/analyze.md"
     },
     {
@@ -1528,7 +1528,7 @@
         "7) ide setup",
         "8) ide info / ide test-accounts / ide ticket*"
       ],
-      "updatedAt": "2026-07-25",
+      "updatedAt": "2026-07-26",
       "source": "guide/cli.md"
     },
     {
@@ -2715,7 +2715,7 @@
         "已知限制",
         "建议用法"
       ],
-      "updatedAt": "2026-07-25",
+      "updatedAt": "2026-07-26",
       "source": "guide/web-compat-matrix.md"
     },
     {
@@ -5873,7 +5873,7 @@
         "web",
         "@weapp-vite/web",
         "是实验性的",
-        "h5",
+        "browser",
         "运行时与"
       ],
       "headings": [

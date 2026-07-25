@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "wv dev",
-    "dev:web": "wv dev -p h5 --host",
+    "dev:web": "wv dev -p web --host",
     "dev:open": "wv dev -o",
     "build": "wv build",
-    "build:web": "wv build -p h5",
+    "build:web": "wv build -p web",
     "dev:ui": "wv dev --ui",
     "build:ui": "wv build --ui",
     "postinstall": "wv prepare"

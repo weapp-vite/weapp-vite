@@ -178,7 +178,7 @@ keywords:
 1. Web 侧表达式与 WXS 执行依赖动态求值机制，行为与小程序引擎存在差异。
    如需更保守或更严格的行为，可通过 `weapp.web.pluginOptions.runtime.executionMode` 调整为 `safe` 或 `strict`。
 2. 事件映射与组件标签映射优先覆盖高频场景，未承诺全量等价。
-3. `analyze --platform h5` 目前仅支持 Web 静态配置分析（`weapp.web` 与 `executionMode`），不包含分包体积、源码映射和仪表盘能力。
+3. `analyze --platform web` 目前仅支持 Web 静态配置分析（`weapp.web` 与 `executionMode`），不包含分包体积、源码映射和仪表盘能力。
 4. 运行时告警已支持 `runtime.warnings.level` 与 `runtime.warnings.dedupe`，但当前可观测信息仍以控制台输出为主。
 5. 标准 `app.json.tabBar` 已由 Web App Shell 接管；`tabBar.custom: true` 只保留路由语义，自定义组件本身不会自动移植。
 6. DevTools automator 截图不包含宿主导航栏和 tabBar。视觉 manifest 按 case 记录实际 WebView 视口，tabBar 宿主区域使用浏览器结构、尺寸与交互断言验收。
@@ -187,7 +187,7 @@ keywords:
 
 1. 将 Web 运行时作为“开发期预览与调试层”，不要直接等价真机验收。
 2. 新增 Web 能力时，同步更新本矩阵，并补齐单测/E2E 用例。
-3. 需要查看 Web 侧静态分析时，可执行 `wv analyze --platform h5 --json`。
+3. 需要查看 Web 侧静态分析时，可执行 `wv analyze --platform web --json`。
 4. 若业务依赖 `⛔` 能力，建议在业务侧提供平台分支与降级策略。
 
 <style scoped>

@@ -1,7 +1,7 @@
 # Web Runtime Compatibility
 
 - Web runtime 用来验证跨平台渲染和 Web API 适配，不等价于微信 DevTools 或真机。
-- 项目根目录准备引用 `/@weapp-vite/web/entry` 的 `index.html`，并统一提供 `dev:web: wv dev -p h5 --host` 与 `build:web: wv build -p h5`；`-p web` 和 `-p h5` 等价。
+- 项目根目录准备引用 `/@weapp-vite/web/entry` 的 `index.html`，并统一提供 `dev:web: wv dev -p web --host` 与 `build:web: wv build -p web`；`web` 是规范平台名，`h5` 仅作为向后兼容别名保留。
 - 仓库级兼容改动同时运行 `pnpm e2e:web:build-projects` 与 `pnpm e2e:web`：前者覆盖所有 `e2e-apps/*` / `templates/*` 的生产构建，后者使用 Playwright 逐项目验证宿主 API、首屏页面和当前路由。新增项目不应依赖手工维护清单，矩阵会自动发现带 `package.json` 的目录。
 - Web 入口必须先求值 App，再求值页面和组件；依赖 `defineAppSetup()`、`createRouter()`、`provide()` 或 `getApp()` 的首屏代码都以这一顺序为前提。
 - 默认 `runtime.viewport.mode` 为 `mini-program`：移动宽度下铺满，600px 以上使用 375px 居中容器；旧全宽行为显式使用 `responsive`。

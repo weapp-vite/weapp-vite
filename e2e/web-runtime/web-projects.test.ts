@@ -134,7 +134,7 @@ describeWeb.sequential('workspace Web project matrix', async () => {
           return { filename, source: await readFile(filename) }
         }),
       )
-      const command = execa(process.execPath, [CLI_PATH, project.root, '--platform', 'h5', '--host', WEB_HOST], {
+      const command = execa(process.execPath, [CLI_PATH, project.root, '--platform', 'web', '--host', WEB_HOST], {
         cwd: ROOT,
         env: {
           ...process.env,

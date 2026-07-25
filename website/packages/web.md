@@ -8,7 +8,7 @@ keywords:
   - web
   - "@weapp-vite/web"
   - 是实验性的
-  - h5
+  - browser
   - 运行时与
 ---
 
@@ -37,13 +37,13 @@ pnpm add -D @weapp-vite/web
 ```json
 {
   "scripts": {
-    "dev:web": "wv dev -p h5 --host",
-    "build:web": "wv build -p h5"
+    "dev:web": "wv dev -p web --host",
+    "build:web": "wv build -p web"
   }
 }
 ```
 
-`-p web` 与 `-p h5` 等价。App 模块会先于页面和组件求值，确保 App 注册、`defineAppSetup()`、router 和 `onLaunch` 在首个页面挂载前就绪。仓库通过 44 个 `e2e-apps/*` / `templates/*` 项目的生产构建与 Playwright 启动矩阵持续验证该入口。
+`web` 是规范平台名，`h5` 仅作为向后兼容别名保留。App 模块会先于页面和组件求值，确保 App 注册、`defineAppSetup()`、router 和 `onLaunch` 在首个页面挂载前就绪。仓库通过 44 个 `e2e-apps/*` / `templates/*` 项目的生产构建与 Playwright 启动矩阵持续验证该入口。
 
 ## Vite 插件接入
 
