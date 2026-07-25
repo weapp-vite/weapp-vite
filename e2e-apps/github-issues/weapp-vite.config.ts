@@ -97,6 +97,10 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue706.test.ts': [
     'pages/issue-706/**',
   ],
+  'github-issues.runtime.require-async.test.ts': [
+    'pages/require-async/**',
+    'subpackages/require-async/**',
+  ],
   'github-issues.runtime.issue581.test.ts': [
     'pages/issue-581/**',
   ],
@@ -361,6 +365,9 @@ export default defineConfig({
     },
     srcRoot: 'src',
     autoRoutes: resolveGithubIssuesAutoRoutes(),
+    subPackages: {
+      'subpackages/require-async': {},
+    },
     typescript: {
       app: {
         compilerOptions: {

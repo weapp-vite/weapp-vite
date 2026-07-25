@@ -1,0 +1,3 @@
+<view id="require-async-page" class="require-async-page" data-e2e-route="require-async">
+  <text>{{status}}</text>
+</view>

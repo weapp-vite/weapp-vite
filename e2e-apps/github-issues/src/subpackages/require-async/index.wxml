@@ -1,0 +1,3 @@
+<view id="require-async-subpackage-page">
+  <text>{{status}}</text>
+</view>

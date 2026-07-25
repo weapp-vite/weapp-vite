@@ -123,6 +123,51 @@ export default defineConfig({
 })
 ```
 
+## 分包异步化
+
+跨包自定义组件与跨包 JS 模块使用的是两套微信宿主协议，不要混在一起配置。
+
+### 异步加载分包组件
+
+页面或组件通过 `usingComponents` 指向另一个分包的组件，并用 `componentPlaceholder` 声明下载完成前的占位组件：
+
+```jsonc
+{
+  "usingComponents": {
+    "order-card": "/packages/order/components/order-card/index"
+  },
+  "componentPlaceholder": {
+    "order-card": "view"
+  }
+}
+```
+
+`weapp-vite` 会把 `usingComponents` 纳入逻辑模块图，确保只在 JSON 中引用的组件仍按原分包路径输出；线上下载、占位和替换由微信基础库完成。`componentPlaceholder` 的 key 必须与 `usingComponents` 的组件名一致，placeholder 也必须在当前包立即可用。
+
+### 异步加载分包 JS
+
+微信提供 callback 与 Promise 两种写法：
+
+```ts
+require('../../packages/order/modules/price', (moduleExport) => {
+  console.log(moduleExport.formatPrice(100))
+}, (error) => {
+  console.error(error)
+})
+
+const moduleExport = await require.async('../../packages/order/modules/price')
+console.log(moduleExport.formatPrice(100))
+```
+
+构建时，`weapp-vite` 会把 callback 写法规范化为等价的 `void require.async(path).then(success, fail)`，并将两种写法的目标模块作为异步 chunk 输出。这可以避免打包器把 callback `require` 错当成同步 CommonJS 依赖并提升到主包。
+
+需要注意：
+
+- 模块路径必须是静态相对路径字面量，不能使用运行时拼接，也不要使用绝对路径。
+- 目标 root 必须出现在最终 `app.json.subPackages` 中；使用自动路由且 root 不符合默认约定时，同时配置 `weapp.subPackages.<root>`。
+- `import()` 由 `weapp.chunks.dynamicImports` 控制，是打包器动态 chunk，不等同于微信的跨分包 `require.async()`。
+- 发布前检查目标模块仍位于对应分包，并通过真机或 DevTools runtime 验证首次下载，不要只依赖本地文件已齐全的开发预览。
+
 ## 独立分包
 
 独立分包和整个 `app` 是隔离的：它们会在**不同的 Rolldown 上下文**里构建，因此不会和主包/其他分包共享复用的 JS 代码。

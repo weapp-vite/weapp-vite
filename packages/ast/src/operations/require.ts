@@ -11,6 +11,15 @@ export interface RequireToken {
   async?: boolean
 }
 
+export interface RequireCallbackToken extends RequireToken {
+  callEnd: number
+  callStart: number
+  errorCallbackEnd?: number
+  errorCallbackStart?: number
+  successCallbackEnd: number
+  successCallbackStart: number
+}
+
 export function mayContainRequireCallByText(code: string) {
   return code.includes('require(') || code.includes('require (') || code.includes('require`')
 }
@@ -37,6 +46,21 @@ export function getStaticRequireLiteralValue(node: any) {
   return null
 }
 
+function createAsyncRequireToken(node: any): RequireToken | null {
+  const argv0 = node.arguments?.[0]
+  const value = getStaticRequireLiteralValue(argv0)
+  if (!argv0 || value === null) {
+    return null
+  }
+
+  return {
+    start: argv0.start,
+    end: argv0.end,
+    value,
+    async: true,
+  }
+}
+
 /**
  * 收集 `require.async()` 依赖字面量。
  */
@@ -52,32 +76,67 @@ export function getRequireAsyncLiteralToken(node: any): RequireToken | null {
     return null
   }
 
-  const argv0 = node.arguments?.[0]
-  if (!argv0 || argv0.type !== 'Literal' || typeof argv0.value !== 'string') {
+  return createAsyncRequireToken(node)
+}
+
+/**
+ * 收集 `require(path, callback)` 依赖字面量。
+ */
+export function getRequireCallbackLiteralToken(node: any): RequireCallbackToken | null {
+  if (
+    node?.type !== 'CallExpression'
+    || node.callee?.type !== 'Identifier'
+    || node.callee.name !== 'require'
+    || !Array.isArray(node.arguments)
+    || node.arguments.length < 2
+  ) {
+    return null
+  }
+
+  const token = createAsyncRequireToken(node)
+  const successCallback = node.arguments[1]
+  const errorCallback = node.arguments[2]
+  if (!token || !successCallback) {
     return null
   }
 
   return {
-    start: argv0.start,
-    end: argv0.end,
-    value: argv0.value,
-    async: true,
+    ...token,
+    callStart: node.start,
+    callEnd: node.end,
+    successCallbackStart: successCallback.start,
+    successCallbackEnd: successCallback.end,
+    ...(errorCallback
+      ? {
+          errorCallbackStart: errorCallback.start,
+          errorCallbackEnd: errorCallback.end,
+        }
+      : {}),
   }
 }
 
 export function collectRequireTokens(ast: unknown) {
   const requireTokens: RequireToken[] = []
+  const requireCallbackTokens: RequireCallbackToken[] = []
 
   walk(ast as Program, {
     enter(node) {
-      const token = getRequireAsyncLiteralToken(node)
-      if (token) {
-        requireTokens.push(token)
+      const asyncToken = getRequireAsyncLiteralToken(node)
+      if (asyncToken) {
+        requireTokens.push(asyncToken)
+        return
+      }
+
+      const callbackToken = getRequireCallbackLiteralToken(node)
+      if (callbackToken) {
+        requireTokens.push(callbackToken)
+        requireCallbackTokens.push(callbackToken)
       }
     },
   })
 
   return {
+    requireCallbackTokens,
     requireTokens,
   }
 }

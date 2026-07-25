@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-25T07:48:23.003Z",
+  "generatedAt": "2026-07-25T14:26:02.734Z",
   "site": "https://vite.icebreaker.top",
   "count": 271,
   "items": [
@@ -2487,11 +2487,11 @@
         "sharedStrategy = hoist",
         "何时选 duplicate / hoist",
         "精细化参数（按需开启）",
+        "分包异步化",
+        "异步加载分包组件",
+        "异步加载分包 JS",
         "独立分包",
-        "只构建主包和指定分包",
-        "单独开发某个分包（把它当成独立分包）",
-        "分包样式共享",
-        "调试建议"
+        "只构建主包和指定分包"
       ],
       "updatedAt": "2026-07-25",
       "source": "guide/subpackage.md"
