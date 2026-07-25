@@ -137,6 +137,9 @@ async function stopWebServer(server?: Subprocess) {
 
 async function navigateToVisualCase(page: Page, route: string) {
   await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
+  await expect.poll(async () => {
+    return await page.evaluate(() => typeof (window as any).wx?.reLaunch === 'function')
+  }, { timeout: 45_000 }).toBe(true)
   await page.evaluate(async (url) => {
     await (window as any).wx.reLaunch({ url })
   }, route)
