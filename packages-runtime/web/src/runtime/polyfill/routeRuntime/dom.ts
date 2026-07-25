@@ -13,13 +13,23 @@ function applyEntryVisibility(entry: PageStackEntry) {
   if (!element) {
     return
   }
+  const currentStyle = element.getAttribute('style') ?? ''
+  const styleWithoutDisplay = currentStyle
+    .replace(/(?:^|;)\s*display\s*:[^;]*/gi, '')
+    .replace(/^;|;$/g, '')
+  const setDisplay = (display: 'block' | 'none') => {
+    element.setAttribute('style', `${styleWithoutDisplay}${styleWithoutDisplay ? ';' : ''}display:${display};`)
+  }
   element.setAttribute('data-weapp-page-active', entry.active ? 'true' : 'false')
   setEntryScrollOwner(entry, entry.active)
   if (entry.active) {
+    setDisplay('block')
     element.removeAttribute('hidden')
     element.removeAttribute('aria-hidden')
     return
   }
+  // 自定义页面元素挂载时带有内联 display，必须同步清零才能真正隐藏。
+  setDisplay('none')
   element.setAttribute('hidden', '')
   element.setAttribute('aria-hidden', 'true')
 }

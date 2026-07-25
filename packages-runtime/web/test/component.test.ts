@@ -749,6 +749,7 @@ describe('registerPage integration', () => {
 
     expect(firstPage.parentNode).toBe(container)
     expect(firstPage.hasAttribute('hidden')).toBe(true)
+    expect(firstPage.getAttribute('style')).toContain('display:none')
     expect(onHide).toHaveBeenCalledTimes(1)
     expect(onUnload).toHaveBeenCalledTimes(0)
     expect(container?.scrollTop).toBe(0)
@@ -770,6 +771,7 @@ describe('registerPage integration', () => {
     expect(firstPageAgain).toBe(firstPage)
     expect(firstPageAgain.data.count).toBe(12)
     expect(firstPageAgain.hasAttribute('hidden')).toBe(false)
+    expect(firstPageAgain.getAttribute('style')).toContain('display:block')
     expect(container?.scrollTop).toBe(96)
     expect(onLoad).toHaveBeenCalledTimes(1)
     expect(onLoadUpdate).toHaveBeenCalledTimes(0)
