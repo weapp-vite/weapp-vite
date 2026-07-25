@@ -44,6 +44,8 @@
   "typescript.preferences.includePackageJsonAutoImports": "off",
   "javascript.preferences.includePackageJsonAutoImports": "off",
   "search.followSymlinks": false,
+  // Avoid background fetches racing with explicit stage/commit operations.
+  "git.autofetch": false,
   "git.autoRepositoryDetection": "openEditors",
   "git.repositoryScanMaxDepth": 1,
   "git.repositoryScanIgnoredFolders": [
