@@ -295,6 +295,7 @@ function isWorkspaceHmrIgnoredChange(file: string) {
     || file.startsWith('docs/')
     || file.endsWith('.md')
     || isWorkspaceProjectPackageJson(file)
+    || isWorkspaceProjectWebEntry(file)
   )
 }
 
@@ -304,6 +305,15 @@ function isWorkspaceProjectPackageJson(file: string) {
     segments.length === 3
     && isWorkspaceHmrProjectKind(segments[0])
     && segments[2] === 'package.json'
+  )
+}
+
+function isWorkspaceProjectWebEntry(file: string) {
+  const segments = file.split('/')
+  return (
+    segments.length === 3
+    && isWorkspaceHmrProjectKind(segments[0])
+    && segments[2] === 'index.html'
   )
 }
 

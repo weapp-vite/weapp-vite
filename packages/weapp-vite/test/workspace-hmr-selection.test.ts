@@ -221,6 +221,31 @@ describe('workspace HMR changed-file selection', () => {
     ], 'workspace')]).toEqual([])
   })
 
+  it('ignores Web-only project entries for mini-program HMR audits', () => {
+    const changedFiles = [
+      'e2e-apps/base/index.html',
+      'e2e-apps/base/package.json',
+      'templates/weapp-vite-template/index.html',
+      'templates/weapp-vite-template/README.md',
+    ]
+
+    expect([...resolveChangedProjectIds(changedFiles, 'workspace')]).toEqual([])
+    expect(shouldFallbackToSmokeForChangedFiles(changedFiles)).toBe(false)
+  })
+
+  it('keeps mini-program sources and shared runtime changes relevant', () => {
+    expect([...resolveChangedProjectIds([
+      'e2e-apps/base/src/pages/index.ts',
+      'templates/weapp-vite-template/src/pages/index.wxml',
+    ], 'workspace')]).toEqual([
+      'e2e-apps/base',
+      'templates/weapp-vite-template',
+    ])
+    expect(shouldFallbackToSmokeForChangedFiles([
+      'packages-runtime/web/src/plugin/index.ts',
+    ])).toBe(true)
+  })
+
   it('selects representative smoke projects from apps and e2e-apps scope', () => {
     expect([...selectWorkspaceHmrSmokeProjectIds([
       { id: 'apps/hmr-lab', kind: 'apps' },
