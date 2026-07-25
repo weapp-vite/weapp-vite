@@ -52,6 +52,9 @@ export function generateEntryModule(
   if (pluginOptions?.runtime?.viewport) {
     runtimeOptions.viewport = pluginOptions.runtime.viewport
   }
+  if (pluginOptions?.runtime?.routing) {
+    runtimeOptions.routing = pluginOptions.runtime.routing
+  }
   if (Object.keys(runtimeOptions).length > 0) {
     initOptions.runtime = runtimeOptions
   }

@@ -405,6 +405,36 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     }
   })
 
+  it('restores a deep link and page stack on browser back', async () => {
+    const page = await browser!.newPage()
+    try {
+      await page.goto(`${WEB_URL}/pages/interactive/index?from=deep-link`, { waitUntil: 'domcontentloaded' })
+      await expect.poll(async () => {
+        const snapshot = await readCurrentPageSnapshot(page)
+        return snapshot?.route
+      }, { timeout: 45_000 }).toBe('pages/interactive/index')
+      await expect.poll(() => page.evaluate(() => window.location.pathname + window.location.search))
+        .toBe('/pages/interactive/index?from=deep-link')
+
+      await page.evaluate(async () => {
+        await (window as any).wx.navigateTo({
+          url: 'pages/interactive/detail?id=component-flow&from=deep-link',
+        })
+      })
+      await expect.poll(async () => (await readCurrentPageSnapshot(page))?.route, { timeout: 45_000 })
+        .toBe('pages/interactive/detail')
+
+      await page.goBack()
+      await expect.poll(async () => (await readCurrentPageSnapshot(page))?.route, { timeout: 45_000 })
+        .toBe('pages/interactive/index')
+      await expect.poll(async () => page.evaluate(() => window.location.pathname + window.location.search))
+        .toBe('/pages/interactive/index?from=deep-link')
+    }
+    finally {
+      await page.close()
+    }
+  })
+
   it('preserves page instance, lifecycle state and scroll position after navigateBack', async () => {
     const page = await browser!.newPage()
     try {

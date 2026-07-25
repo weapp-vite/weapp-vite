@@ -66,6 +66,10 @@ export default defineConfig({
             maxWidth: 375,
             desktopBreakpoint: 600,
           },
+          routing: {
+            mode: 'history',
+            base: '/mini',
+          },
         },
       },
       vite: {
@@ -137,6 +141,12 @@ Web 产物输出目录，默认一般是 `dist/web`。
   - 设备容器最大宽度，默认 `375`
 - `runtime.viewport.desktopBreakpoint`
   - 开始使用居中设备容器的浏览器宽度，默认 `600`
+- `runtime.routing.mode`
+  - `memory`：只维护 Web Runtime 页面栈，不修改地址栏（默认）
+  - `history`：使用真实路径，支持深链接与浏览器前进/后退
+  - `hash`：使用 `#/pages/...`，适合静态托管
+- `runtime.routing.base`
+  - Web 项目的部署目录前缀，例如 `/mini`
 
 默认视口同时约束页面滚动、导航栏和 `fixed` 元素；`rpx` 也按设备容器宽度计算，而不是按桌面浏览器窗口计算。
 

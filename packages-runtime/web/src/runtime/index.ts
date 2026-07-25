@@ -151,6 +151,18 @@ export {
   uploadFile,
   vibrateShort,
 } from './polyfill'
+export {
+  disposeWebRouting,
+  getWebRoutingConfig,
+  resolveWebRoutingConfig,
+} from './polyfill/routeRuntime/history'
+export type {
+  ResolvedWebRoutingConfig,
+  WebRouteHistoryState,
+  WebRouteTarget,
+  WebRoutingConfig,
+  WebRoutingMode,
+} from './polyfill/routeRuntime/history'
 export { createRenderContext } from './renderContext'
 export type { RenderContext } from './renderContext'
 export { setupRpx } from './rpx'

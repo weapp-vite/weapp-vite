@@ -92,6 +92,7 @@ keywords:
 | `wx.setTabBarBadge` / `removeTabBarBadge` / `showTabBarRedDot` / `hideTabBarRedDot`                      | `✅` | 支持标准 tabBar badge 与红点状态；非法 index 按微信形状回调和 Promise 失败。                            |
 | `wx.loadSubPackage` / `wx.preloadSubpackage`                                                             | `🟡` | 当前提供 no-op 成功桥接，主要用于兼容分包加载调用链，不执行真实下载与预加载流程。                       |
 | `wx.navigateBack`                                                                                        | `✅` | 支持 `delta` 回退。                                                                                     |
+| 浏览器深链接与前进/后退                                                                                  | `✅` | `runtime.routing` 支持 `history` / `hash`；默认 `memory`，可按部署目录设置 `base`。                     |
 | `wx.setNavigationBarTitle`                                                                               | `🟡` | 依赖默认导航栏组件存在。                                                                                |
 | `wx.setNavigationBarColor`                                                                               | `🟡` | 依赖默认导航栏组件存在。                                                                                |
 | `wx.setBackgroundColor` / `wx.setBackgroundTextStyle`                                                    | `🟡` | 提供页面背景与文本样式的近似桥接，基于 DOM 样式设置，不等价小程序原生渲染语义。                         |

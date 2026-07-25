@@ -34,6 +34,13 @@ export default defineConfig({
       },
     },
     web: {
+      pluginOptions: {
+        runtime: {
+          routing: {
+            mode: 'history',
+          },
+        },
+      },
       vite: {
         server: {
           host: webHost ?? '127.0.0.1',

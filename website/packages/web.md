@@ -47,6 +47,10 @@ export default defineConfig({
           maxWidth: 375,
           desktopBreakpoint: 600,
         },
+        routing: {
+          mode: 'history',
+          base: '/mini',
+        },
       },
     }),
   ],
@@ -80,6 +84,15 @@ export default defineConfig({
 - `showTabBar` / `hideTabBar`、`setTabBarItem`、`setTabBarStyle`、badge 与 red-dot API 会真实更新布局和视觉状态
 
 需要保留旧的浏览器全宽行为时，将 `runtime.viewport.mode` 设置为 `responsive`。
+
+## 浏览器路由
+
+默认 `runtime.routing.mode` 为 `memory`，只维护小程序页面栈。部署到生产站点时可选择：
+
+- `history`：使用 `/pages/foo/index` 路径，支持深链接与浏览器前进/后退；服务端需要把未知路径回退到 Web 入口。
+- `hash`：使用 `#/pages/foo/index`，适合静态托管，不需要服务端配置。
+
+`runtime.routing.base` 用于部署在子目录的站点，例如 `/mini`。两种浏览器模式都会把页面栈和地址栏状态同步，未配置时保持原有 `memory` 行为。
 
 ## 宿主注入
 
