@@ -31,6 +31,9 @@ describe('compileWxml button mapping', () => {
           </swiper>
           <canvas canvas-id="parity-canvas" disable-scroll></canvas>
           <video id="parity-video" src="/clip.mp4" object-fit="cover"></video>
+          <cover-view class="overlay">Overlay</cover-view>
+          <cover-image src="/cover.png" mode="aspectFit" />
+          <movable-area><movable-view direction="horizontal">Move</movable-view></movable-area>
         </view>
       `,
       resolveTemplatePath: () => undefined,
@@ -64,21 +67,24 @@ describe('compileWxml button mapping', () => {
     expect(result.code).toContain('weapp-swiper-item')
     expect(result.code).toContain('weapp-canvas')
     expect(result.code).toContain('weapp-video')
+    expect(result.code).toContain('weapp-cover-view')
+    expect(result.code).toContain('weapp-cover-image')
+    expect(result.code).toContain('weapp-movable-area')
+    expect(result.code).toContain('weapp-movable-view')
     expect(result.code).toContain('canvas-id=')
     expect(result.code).toContain('object-fit=')
     expect(result.warnings).toBeUndefined()
   })
 
-  it('warns once when a known component uses DOM fallback semantics', () => {
+  it('keeps newly supported layer and movable components free of fallback warnings', () => {
     const result = compileWxml({
       id: '/src/pages/index/index.wxml',
       source: '<movable-area><movable-view>A</movable-view></movable-area>',
       resolveTemplatePath: () => undefined,
       resolveWxsPath: () => undefined,
     })
-    expect(result.warnings).toEqual([
-      expect.stringContaining('<movable-area>'),
-      expect.stringContaining('<movable-view>'),
-    ])
+    expect(result.code).toContain('weapp-movable-area')
+    expect(result.code).toContain('weapp-movable-view')
+    expect(result.warnings).toBeUndefined()
   })
 })

@@ -137,6 +137,9 @@ async function stopWebServer(server?: Subprocess) {
 
 async function navigateToVisualCase(page: Page, route: string) {
   await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
+  await expect.poll(async () => {
+    return await page.evaluate(() => typeof (window as any).wx?.reLaunch === 'function')
+  }, { timeout: 45_000 }).toBe(true)
   await page.evaluate(async (url) => {
     await (window as any).wx.reLaunch({ url })
   }, route)
@@ -627,6 +630,74 @@ describeWeb.sequential('web runtime visual parity', () => {
         pauseCount: 2,
         currentTime: 0,
       })
+    }
+    finally {
+      await page.close()
+    }
+  })
+
+  it('keeps cover layers above media and emits movable-view drag events', async () => {
+    const page = await browser!.newPage({ viewport: { width: 390, height: 753 } })
+    try {
+      await navigateToVisualCase(page, '/pages/layer-parity/index')
+
+      const layerState = await Promise.all([
+        page.locator('weapp-cover-view').first().evaluate(element => getComputedStyle(element).zIndex),
+        page.locator('weapp-cover-image').first().evaluate(element => ({
+          zIndex: getComputedStyle(element).zIndex,
+          fit: (element.shadowRoot?.querySelector('img') as HTMLImageElement | null)?.style.objectFit,
+        })),
+        page.locator('weapp-movable-area').first().evaluate(element => getComputedStyle(element).overflow),
+        page.locator('weapp-movable-view').first().evaluate(element => getComputedStyle(element).touchAction),
+      ]).then(([coverZIndex, image, areaOverflow, moveTouchAction]) => ({
+        coverZIndex,
+        imageZIndex: image.zIndex,
+        imageFit: image.fit,
+        areaOverflow,
+        moveTouchAction,
+      }))
+      expect(layerState).toEqual({
+        coverZIndex: '2',
+        imageZIndex: '2',
+        imageFit: 'contain',
+        areaOverflow: 'hidden',
+        moveTouchAction: 'none',
+      })
+
+      await page.locator('weapp-cover-view').first().click()
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data?.coverEvent)
+      }).toBe('cover-view: tap')
+
+      const movable = page.locator('weapp-movable-view').first()
+      const box = await movable.boundingBox()
+      if (!box) {
+        throw new TypeError('[web-visual] movable-view is not visible')
+      }
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(box.x + box.width / 2 + 70, box.y + box.height / 2 + 42, { steps: 5 })
+      await page.mouse.up()
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data?.moveEvent)
+      }).toBe('88, 60')
+
+      const directionState = await page.locator('weapp-movable-view').nth(1).evaluate((element) => {
+        const event = new PointerEvent('pointerdown', { bubbles: true, clientX: 0, clientY: 0, pointerId: 2 })
+        element.dispatchEvent(event)
+        element.dispatchEvent(new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 30,
+          clientY: 24,
+          pointerId: 2,
+        }))
+        element.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 2 }))
+        return getComputedStyle(element).touchAction
+      })
+      expect(directionState).toBe('none')
+      await expect.poll(async () => {
+        return await page.evaluate(() => (window as any).getCurrentPages().at(-1)?.data?.axisEvent)
+      }).toBe('horizontal: 62, 0')
     }
     finally {
       await page.close()

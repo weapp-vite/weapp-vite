@@ -44,6 +44,10 @@ describe('transformWxssToCss', () => {
       canvas.stage + video[object-fit="cover"] {
         display: block;
       }
+      cover-view.overlay > cover-image,
+      movable-area.drag-zone movable-view.handle {
+        z-index: 3;
+      }
     `
     const { css } = transformWxssToCss(input)
     expect(css).toContain(':host > weapp-view.card weapp-text:first-child')
@@ -55,5 +59,7 @@ describe('transformWxssToCss', () => {
     expect(css).toContain('weapp-picker[data-mode="selector"] + weapp-picker-view > weapp-picker-view-column')
     expect(css).toContain('weapp-slider[disabled]')
     expect(css).toContain('weapp-canvas.stage + weapp-video[object-fit="cover"]')
+    expect(css).toContain('weapp-cover-view.overlay > weapp-cover-image')
+    expect(css).toContain('weapp-movable-area.drag-zone weapp-movable-view.handle')
   })
 })

@@ -33,6 +33,12 @@
           "scene": null
         },
         {
+          "name": "覆盖层与移动组件语义矩阵",
+          "pathName": "pages/layer-parity/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "App Shell 与 tabBar 语义矩阵",
           "pathName": "pages/tabbar-parity/home",
           "query": "",

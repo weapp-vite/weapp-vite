@@ -60,6 +60,13 @@ const visualCases = [
     maxDiffRatio: 0.03,
   },
   {
+    id: 'layer-matrix',
+    route: '/pages/layer-parity/index',
+    baseline: 'layer-matrix.png',
+    threshold: 0.18,
+    maxDiffRatio: 0.03,
+  },
+  {
     id: 'app-shell-tabbar',
     route: '/pages/tabbar-parity/home',
     baseline: 'app-shell-tabbar.png',

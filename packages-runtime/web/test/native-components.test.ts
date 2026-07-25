@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  clampMovablePosition,
   collectCheckboxGroupValue,
   collectFormControlValues,
   collectRadioGroupValue,
@@ -16,6 +17,7 @@ import {
   normalizePickerIndexes,
   normalizePickerViewValue,
   resolveImageModeStyle,
+  resolveMovableDirection,
   resolvePickerColumns,
   resolvePickerMode,
   resolveSliderConfig,
@@ -64,9 +66,28 @@ describe('web native component contracts', () => {
     expect(resolveNativeComponentWebTag('swiper-item')).toBe('weapp-swiper-item')
     expect(resolveNativeComponentWebTag('canvas')).toBe('weapp-canvas')
     expect(resolveNativeComponentWebTag('video')).toBe('weapp-video')
+    expect(resolveNativeComponentWebTag('cover-view')).toBe('weapp-cover-view')
+    expect(resolveNativeComponentWebTag('cover-image')).toBe('weapp-cover-image')
+    expect(resolveNativeComponentWebTag('movable-area')).toBe('weapp-movable-area')
+    expect(resolveNativeComponentWebTag('movable-view')).toBe('weapp-movable-view')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-view')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-image')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-form { display: inline; box-sizing: border-box; }')
+    expect(NATIVE_COMPONENT_STYLE).toContain('weapp-cover-view { position: absolute; z-index: 2;')
+    expect(NATIVE_COMPONENT_STYLE).toContain('weapp-movable-area { position: relative;')
+  })
+
+  it('normalizes movable directions and keeps views within their area', () => {
+    expect(resolveMovableDirection('horizontal')).toBe('horizontal')
+    expect(resolveMovableDirection('vertical')).toBe('vertical')
+    expect(resolveMovableDirection('none')).toBe('none')
+    expect(resolveMovableDirection('diagonal')).toBe('all')
+    const bounds = { width: 320, height: 240, viewWidth: 80, viewHeight: 60 }
+    expect(clampMovablePosition({ x: -12, y: 300 }, bounds, 'all', false)).toEqual({ x: 0, y: 180 })
+    expect(clampMovablePosition({ x: 160, y: 90 }, bounds, 'horizontal', false)).toEqual({ x: 160, y: 90 })
+    expect(clampMovablePosition({ x: 160, y: 90 }, bounds, 'vertical', false)).toEqual({ x: 160, y: 90 })
+    expect(clampMovablePosition({ x: 160, y: 90 }, bounds, 'none', false)).toEqual({ x: 160, y: 90 })
+    expect(clampMovablePosition({ x: -12, y: 300 }, bounds, 'all', true)).toEqual({ x: -12, y: 300 })
   })
 
   it('routes navigator open types through the existing page stack bridge', async () => {
@@ -421,6 +442,10 @@ describe('web native component contracts', () => {
       'weapp-swiper-item',
       'weapp-canvas',
       'weapp-video',
+      'weapp-cover-view',
+      'weapp-cover-image',
+      'weapp-movable-area',
+      'weapp-movable-view',
     ])
   })
 
