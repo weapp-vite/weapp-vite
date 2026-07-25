@@ -69,7 +69,7 @@
     "pathe": "catalog:",
     "postcss": "catalog:",
     "postcss-selector-parser": "^7.1.4",
-    "rolldown": "catalog:",
+    "rolldown": "1.1.5",
     "rolldown-require": "workspace:*",
     "wevu": "workspace:*"
   }
