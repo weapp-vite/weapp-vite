@@ -1,4 +1,5 @@
 import type { InlineConfig, PluginOption } from 'vite'
+import type { WevuRuntimeAliasMode } from '../../../packageAliases'
 import type { ResolvedWeappWebConfig } from '../../types'
 import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import { defu } from '@weapp-core/shared'
@@ -17,7 +18,7 @@ interface MergeWebOptions {
   mode: string
   isDev: boolean
   applyRuntimePlatform: (runtime: 'miniprogram' | 'web') => void
-  injectBuiltinAliases: (config: InlineConfig) => void
+  injectBuiltinAliases: (config: InlineConfig, wevuRuntime?: WevuRuntimeAliasMode) => void
   getDefineImportMetaEnv: () => Record<string, any>
 }
 
@@ -115,7 +116,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
 
   applyWeappViteHostMeta(inline, 'web', 'web')
   inline.define = defu(inline.define ?? {}, getDefineImportMetaEnv())
-  injectBuiltinAliases(inline)
+  injectBuiltinAliases(inline, 'build')
 
   return inline
 }

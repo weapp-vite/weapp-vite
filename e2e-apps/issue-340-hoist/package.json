@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "wv dev",
+    "dev:web": "wv dev -p web --host",
     "dev:open": "wv dev -o",
     "build": "wv build --platform weapp --skipNpm",
+    "build:web": "wv build -p web",
     "dev:ui": "wv dev --ui",
     "build:ui": "wv build --ui --platform weapp --skipNpm",
     "postinstall": "wv prepare"

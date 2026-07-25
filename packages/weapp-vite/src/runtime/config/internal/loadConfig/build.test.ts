@@ -54,6 +54,26 @@ describe('loadConfig build helpers', () => {
     expect(resolveMultiPlatformProjectConfigHint('swan')).toBe('config/swan/project.swan.json')
   })
 
+  it('uses one built Wevu runtime graph for Web dev aliases', async () => {
+    const root = await createTempProject('weapp-vite-web-wevu-alias-')
+    const injectBuiltinAliases = vi.fn()
+    const config = {}
+
+    configureBuildAndPlugins({
+      config,
+      pluginOnly: false,
+      oxcRolldownPlugin: undefined,
+      oxcVitePlugin: undefined,
+      injectBuiltinAliases,
+      resolvedLibConfig: undefined,
+      cliPlatform: 'h5',
+      projectConfigPath: undefined,
+      cwd: root,
+    })
+
+    expect(injectBuiltinAliases).toHaveBeenCalledWith(config, 'build')
+  })
+
   it('disables Vite OXC transform tsconfig auto discovery by default', async () => {
     const root = await createTempProject('weapp-vite-oxc-tsconfig-')
     await writeFile(path.join(root, 'tsconfig.json'), `${JSON.stringify({ include: ['src/**/*'] }, null, 2)}\n`, 'utf8')

@@ -24,6 +24,17 @@ keywords:
 
 [[toc]]
 
+## CLI 快速运行
+
+无需先在 `weapp.web` 中声明配置即可通过 CLI 临时启用 Web runtime。项目根目录需要有引用 `/@weapp-vite/web/entry` 的 `index.html`：
+
+```bash
+wv dev -p web --host
+wv build -p web
+```
+
+推荐将它们固定为 `dev:web` 和 `build:web` scripts。`web` 是浏览器 runtime 的规范平台名，`h5` 仅作为向后兼容别名保留；未选择 Web 平台时，原有小程序构建行为不变。
+
 ## `weapp.web` {#weapp-web}
 
 - **类型**：

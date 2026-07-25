@@ -7,6 +7,7 @@ interface ResolveWebConfigOptions {
   cwd: string
   srcRoot: string
   config?: WeappWebConfig
+  enableByCli?: boolean
 }
 
 function normalizeSrcDir(root: string, cwd: string, srcRoot: string, config?: WeappWebConfig) {
@@ -37,7 +38,8 @@ function normalizeOutDir(root: string, config?: WeappWebConfig) {
 }
 
 export function resolveWeappWebConfig(options: ResolveWebConfigOptions): ResolvedWeappWebConfig | undefined {
-  const { cwd, srcRoot, config } = options
+  const { cwd, srcRoot, enableByCli } = options
+  const config = options.config ?? (enableByCli ? {} : undefined)
   if (!config) {
     return undefined
   }

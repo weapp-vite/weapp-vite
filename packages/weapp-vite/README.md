@@ -28,6 +28,7 @@
 - ⚡️ **Vite 构建**：带来了 `typescript` / `scss` / `less` 等等的原生支持
 - ♻️ **实验性状态保持 HMR**：微信开发者工具中可保留 Page/Component/wevu 状态并替换 JavaScript 方法
 - 🔌 **插件生态**：Vite 插件生态支持，也可以自定义编写插件，方便扩展
+- 🌐 **实验性 Web Runtime**：同一份原生 WXML/WXSS/TS 或 wevu Vue SFC 源码可通过 `-p web` 启动和构建浏览器版本
 - 🧰 **IDE 命令增强**：可直接透传 `weapp-ide-cli` 全量命令（`preview/upload/config/automator` 等）
 
 ## 快速开始
@@ -47,6 +48,17 @@ export default defineConfig({
 默认仍为 `classic`。实验模式要求微信开发者工具开启热重载；CSS、资源、配置和不兼容更新会自动回退完整构建与当前路由重载。
 
 > 说明：CLI 同时支持完整命令 `weapp-vite` 与简写命令 `wv`，两者等价。下面的示例默认使用 `weapp-vite`，你也可以按个人习惯替换成 `wv`。
+
+### Web 项目
+
+项目根目录提供引用 `/@weapp-vite/web/entry` 的 `index.html` 后，可以直接运行同一份小程序源码：
+
+```bash
+wv dev -p web --host
+wv build -p web
+```
+
+`web` 是浏览器 runtime 的规范平台名，`h5` 仅作为向后兼容别名保留；未选择 Web 平台时不改变现有小程序构建。完整配置和兼容边界见 [Web 运行时配置](https://vite.icebreaker.top/config/web) 与 [`@weapp-vite/web`](https://vite.icebreaker.top/packages/web)。
 
 ### Vue 项目
 

@@ -8,7 +8,8 @@ import _babelTraverse from '@babel/traverse'
 import * as t from '@babel/types'
 
 import MagicString from 'magic-string'
-import { appendInlineQuery, resolveRuntimePolyfillPath, toRelativeImport, toViteFsImport } from './path'
+import { STYLE_QUERY, TEMPLATE_QUERY } from './constants'
+import { appendQuery, resolveRuntimePolyfillPath, toRelativeImport, toViteFsImport } from './path'
 
 type TraverseFunction = typeof _babelTraverse extends (...args: any[]) => any
   ? typeof _babelTraverse
@@ -36,48 +37,29 @@ if (typeof traverseCandidate !== 'function') {
 
 const traverse: TraverseFunction = traverseCandidate
 
-function mapRegisterIdentifier(kind: ModuleMeta['kind']) {
-  if (kind === 'page') {
-    return 'Page'
-  }
-  if (kind === 'component') {
-    return 'Component'
-  }
-  if (kind === 'app') {
-    return 'App'
-  }
-  return ''
-}
-
-function getRegisterName(kind: ModuleMeta['kind']) {
-  if (kind === 'page') {
+function getRegisterName(kind: ModuleMeta['kind'], callee: string) {
+  if (kind === 'page' && (callee === 'Page' || callee === 'Component')) {
     return 'registerPage'
   }
-  if (kind === 'component') {
+  if (kind === 'component' && callee === 'Component') {
     return 'registerComponent'
   }
-  if (kind === 'app') {
+  if (kind === 'app' && callee === 'App') {
     return 'registerApp'
   }
   return undefined
 }
 
-function overwriteCall(
-  path: NodePath<CallExpression>,
+function createRegisterMetaCode(
   meta: ModuleMeta,
-  registerName: string,
   templateIdent: string | undefined,
   styleIdent: string | undefined,
-  s: MagicString,
+  includeKind = false,
 ) {
-  const node = path.node
-  const callee = node.callee
-  if (!t.isIdentifier(callee)) {
-    return
-  }
-  const end = node.end!
-  const insertPosition = end - 1
   const metaParts: string[] = [`id: ${JSON.stringify(meta.id)}`]
+  if (includeKind) {
+    metaParts.push(`kind: ${JSON.stringify(meta.kind)}`)
+  }
   if (templateIdent) {
     metaParts.push(`template: ${templateIdent}`)
   }
@@ -87,7 +69,26 @@ function overwriteCall(
   if (meta.navigationBar) {
     metaParts.push(`navigationBar: ${JSON.stringify(meta.navigationBar)}`)
   }
-  const metaCode = `{ ${metaParts.join(', ')} }`
+  return `{ ${metaParts.join(', ')} }`
+}
+
+function overwriteCall(
+  path: NodePath<CallExpression>,
+  meta: ModuleMeta,
+  registerName: string,
+  templateIdent: string | undefined,
+  styleIdent: string | undefined,
+  s: MagicString,
+  includeKind = false,
+) {
+  const node = path.node
+  const callee = node.callee
+  if (!t.isIdentifier(callee)) {
+    return
+  }
+  const end = node.end!
+  const insertPosition = end - 1
+  const metaCode = createRegisterMetaCode(meta, templateIdent, styleIdent, includeKind)
   s.overwrite(callee.start!, callee.end!, registerName)
   s.appendLeft(insertPosition, `, ${metaCode}`)
 }
@@ -109,11 +110,6 @@ export function transformScriptModule({
   runtimeModuleId,
   hmrAcceptCode,
 }: TransformScriptModuleOptions): null | { code: string, map: SourceMap } {
-  const registerName = getRegisterName(meta.kind)
-  if (!registerName) {
-    return null
-  }
-
   let ast: ReturnType<typeof parse> | undefined
   try {
     ast = parse(code, {
@@ -128,7 +124,18 @@ export function transformScriptModule({
   }
 
   const s = new MagicString(code)
-  let transformed = false
+  const wevuDefineComponentNames = new Set<string>()
+  for (const statement of ast.program.body) {
+    if (!t.isImportDeclaration(statement) || statement.source.value !== 'wevu') {
+      continue
+    }
+    for (const specifier of statement.specifiers) {
+      if (t.isImportSpecifier(specifier)
+        && t.isIdentifier(specifier.imported, { name: 'defineComponent' })) {
+        wevuDefineComponentNames.add(specifier.local.name)
+      }
+    }
+  }
 
   const imports: string[] = []
   const runtimePolyfillId = runtimeModuleId ?? toViteFsImport(resolveRuntimePolyfillPath())
@@ -136,11 +143,12 @@ export function transformScriptModule({
   const styleIdent = meta.stylePath ? '__weapp_style__' : undefined
 
   if (meta.templatePath && templateIdent) {
-    imports.push(`import ${templateIdent} from '${toRelativeImport(cleanId, meta.templatePath)}'`)
+    imports.push(`import ${templateIdent} from '${appendQuery(toRelativeImport(cleanId, meta.templatePath), TEMPLATE_QUERY)}'`)
   }
 
   if (meta.stylePath && styleIdent) {
-    imports.push(`import ${styleIdent} from '${appendInlineQuery(toRelativeImport(cleanId, meta.stylePath))}'`)
+    const styleQuery = meta.stylePath.endsWith('.wxss') ? STYLE_QUERY : 'inline'
+    imports.push(`import ${styleIdent} from '${appendQuery(toRelativeImport(cleanId, meta.stylePath), styleQuery)}'`)
   }
 
   const registerImports = new Set<string>()
@@ -151,24 +159,31 @@ export function transformScriptModule({
         return
       }
       const name = path.node.callee.name
-      if (name === mapRegisterIdentifier(meta.kind)) {
+      if (wevuDefineComponentNames.has(name) && meta.kind !== 'app') {
+        registerImports.add('registerWebWevuComponent')
+        overwriteCall(path, meta, 'registerWebWevuComponent', templateIdent, styleIdent, s, true)
+        return
+      }
+      const registerName = getRegisterName(meta.kind, name)
+      if (registerName) {
         registerImports.add(registerName)
         overwriteCall(path, meta, registerName, templateIdent, styleIdent, s)
-        transformed = true
       }
     },
   })
 
-  if (!transformed) {
-    return null
-  }
+  registerImports.add('installWebModuleRegistration')
 
   if (registerImports.size > 0) {
     imports.unshift(`import { ${Array.from(registerImports).join(', ')} } from '${runtimePolyfillId}'`)
   }
 
-  const prefix = `${imports.join('\n')}\n`
+  const moduleMetaCode = createRegisterMetaCode(meta, templateIdent, styleIdent, true)
+  const restoreIdent = '__weapp_web_restore_registration__'
+  const prefix = `${imports.join('\n')}\nconst ${restoreIdent} = installWebModuleRegistration(${moduleMetaCode})\n`
   s.prepend(prefix)
+
+  s.append(`\n${restoreIdent}()\n`)
 
   if (enableHmr && hmrAcceptCode) {
     s.append(`\n${hmrAcceptCode}\n`)

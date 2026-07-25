@@ -17,6 +17,15 @@
 
 ## 快速开始
 
+在 `weapp-vite` 项目中准备根目录 `index.html` 后，可直接使用同一份小程序源码启动或构建 Web：
+
+```bash
+pnpm wv dev -p web --host
+pnpm wv build -p web
+```
+
+仓库内所有 `e2e-apps/*` 与 `templates/*` 项目统一提供 `pnpm dev:web` 和 `pnpm build:web`。`pnpm e2e:web:build-projects` 会验证全部项目的生产构建，`pnpm e2e:web` 会通过 Playwright 逐项目启动并检查 `wx`、页面容器和当前路由。
+
 ```ts
 import { defineComponent } from '@weapp-vite/web'
 import template from './index.wxml'

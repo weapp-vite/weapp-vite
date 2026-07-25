@@ -64,6 +64,14 @@ export const webRuntimeProvider: RuntimeProvider = {
         development: '@weapp-vite/web/runtime',
         production: '@weapp-vite/web/runtime',
       }),
+      reactivity: Object.freeze({
+        development: 'wevu/internal-reactivity',
+        production: 'wevu/internal-reactivity',
+      }),
+      template: Object.freeze({
+        development: 'wevu/internal-template',
+        production: 'wevu/internal-template',
+      }),
     }),
     capabilities: Object.freeze({
       framework: false,
@@ -78,6 +86,9 @@ export const webRuntimeProvider: RuntimeProvider = {
     contractVersion: WEAPP_VITE_RUNTIME_CONTRACT_VERSION,
   },
   resolveModuleId(entry) {
+    if (entry.kind !== 'runtime') {
+      return entry.moduleId
+    }
     return fileURLToPath(import.meta.resolve(entry.moduleId))
   },
 }

@@ -326,7 +326,7 @@ async function navigateToInteractiveFromHome(page: Page) {
 describe.sequential('web runtime production build (weapp-vite-web-demo)', () => {
   it('bundles only the selected web runtime without leaking virtual ids', async () => {
     await fs.remove(WEB_DIST_ROOT)
-    await execa('node', [CLI_PATH, 'build', WEB_DEMO_ROOT, '--platform', 'h5'], {
+    await execa('node', [CLI_PATH, 'build', WEB_DEMO_ROOT, '--platform', 'web'], {
       cwd: ROOT,
     })
 
@@ -347,7 +347,7 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
       CLI_PATH,
       WEB_DEMO_ROOT,
       '--platform',
-      'h5',
+      'web',
       '--host',
       WEB_HOST,
     ], {

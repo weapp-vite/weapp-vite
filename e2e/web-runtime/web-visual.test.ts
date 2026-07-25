@@ -203,7 +203,7 @@ describeWeb.sequential('web runtime visual parity', () => {
       CLI_PATH,
       WEB_DEMO_ROOT,
       '--platform',
-      'h5',
+      'web',
       '--host',
       WEB_HOST,
     ], {

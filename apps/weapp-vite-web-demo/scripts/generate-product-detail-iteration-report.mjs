@@ -132,7 +132,7 @@ async function compareScreenshots(targetPath, actualPath, diffPath) {
 }
 
 function startDemoServer() {
-  const child = spawn('pnpm', ['--filter', 'weapp-vite-web-demo', 'dev:h5'], {
+  const child = spawn('pnpm', ['--filter', 'weapp-vite-web-demo', 'dev:web'], {
     cwd: repoRoot,
     env: {
       ...process.env,

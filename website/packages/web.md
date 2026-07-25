@@ -8,7 +8,7 @@ keywords:
   - web
   - "@weapp-vite/web"
   - 是实验性的
-  - h5
+  - browser
   - 运行时与
 ---
 
@@ -29,6 +29,21 @@ keywords:
 ```bash
 pnpm add -D @weapp-vite/web
 ```
+
+## 在 weapp-vite 项目中运行
+
+项目根目录提供 `index.html` 后，可直接让 CLI 从原有 `app.json`、WXML/WXSS/TS 或 Vue SFC 源码生成 Web 入口，无需维护第二套路由：
+
+```json
+{
+  "scripts": {
+    "dev:web": "wv dev -p web --host",
+    "build:web": "wv build -p web"
+  }
+}
+```
+
+`web` 是规范平台名，`h5` 仅作为向后兼容别名保留。App 模块会先于页面和组件求值，确保 App 注册、`defineAppSetup()`、router 和 `onLaunch` 在首个页面挂载前就绪。仓库通过 44 个 `e2e-apps/*` / `templates/*` 项目的生产构建与 Playwright 启动矩阵持续验证该入口。
 
 ## Vite 插件接入
 

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-25T14:26:02.734Z",
+  "generatedAt": "2026-07-25T18:34:58.953Z",
   "site": "https://vite.icebreaker.top",
   "count": 271,
   "items": [
@@ -443,7 +443,7 @@
         "Web 平台边界 {#web-platform}",
         "关联阅读"
       ],
-      "updatedAt": "2026-07-25",
+      "updatedAt": "2026-07-26",
       "source": "config/analyze.md"
     },
     {
@@ -1000,6 +1000,7 @@
       ],
       "headings": [
         "Web 运行时配置 experimental {#web-config}",
+        "CLI 快速运行",
         "weapp.web {#weapp-web}",
         "字段说明",
         "enable",
@@ -1009,10 +1010,9 @@
         "pluginOptions",
         "原生组件与 WXSS",
         "vite",
-        "什么时候适合开启",
-        "和截图 / AI 联调的关系"
+        "什么时候适合开启"
       ],
-      "updatedAt": "2026-07-25",
+      "updatedAt": "2026-07-26",
       "source": "config/web.md"
     },
     {
@@ -1528,7 +1528,7 @@
         "7) ide setup",
         "8) ide info / ide test-accounts / ide ticket*"
       ],
-      "updatedAt": "2026-07-25",
+      "updatedAt": "2026-07-26",
       "source": "guide/cli.md"
     },
     {
@@ -2493,7 +2493,7 @@
         "独立分包",
         "只构建主包和指定分包"
       ],
-      "updatedAt": "2026-07-25",
+      "updatedAt": "2026-07-26",
       "source": "guide/subpackage.md"
     },
     {
@@ -2715,7 +2715,7 @@
         "已知限制",
         "建议用法"
       ],
-      "updatedAt": "2026-07-25",
+      "updatedAt": "2026-07-26",
       "source": "guide/web-compat-matrix.md"
     },
     {
@@ -5873,13 +5873,14 @@
         "web",
         "@weapp-vite/web",
         "是实验性的",
-        "h5",
+        "browser",
         "运行时与"
       ],
       "headings": [
         "@weapp-vite/web",
         "何时使用",
         "安装",
+        "在 weapp-vite 项目中运行",
         "Vite 插件接入",
         "运行时能力",
         "视觉与组件适配",
@@ -5888,7 +5889,7 @@
         "宿主注入",
         "能力边界"
       ],
-      "updatedAt": "2026-07-25",
+      "updatedAt": "2026-07-26",
       "source": "packages/web.md"
     },
     {

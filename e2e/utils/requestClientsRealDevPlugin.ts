@@ -82,13 +82,6 @@ async function patchProjectPrivateConfig(projectRoot: string, baseUrl: string) {
   }
 }
 
-async function restoreProjectPrivateConfig(snapshot: { configPath: string, original: string } | null) {
-  if (!snapshot) {
-    return
-  }
-  await writeFile(snapshot.configPath, snapshot.original, 'utf8')
-}
-
 function createBaseUrlModuleSource(baseUrl: string) {
   return [
     '/**',
@@ -112,13 +105,6 @@ async function patchGeneratedBaseUrlModule(projectRoot: string, baseUrl: string)
   }
 }
 
-async function restoreGeneratedBaseUrlModule(snapshot: { filePath: string, original: string } | null) {
-  if (!snapshot) {
-    return
-  }
-  await writeFile(snapshot.filePath, snapshot.original, 'utf8')
-}
-
 /**
  * @description 在 dev 启动时拉起真实请求服务，并自动改写项目启动 query。
  */
@@ -136,16 +122,23 @@ export async function requestClientsRealDevPlugin(
   }
   requestClientsRealDevRuntimeStateMap.set(options.projectRoot, state)
 
+  function restoreSnapshotsSync() {
+    if (state.projectPrivateConfigSnapshot) {
+      writeFileSync(state.projectPrivateConfigSnapshot.configPath, state.projectPrivateConfigSnapshot.original, 'utf8')
+      state.projectPrivateConfigSnapshot = null
+    }
+    if (state.generatedBaseUrlModuleSnapshot) {
+      writeFileSync(state.generatedBaseUrlModuleSnapshot.filePath, state.generatedBaseUrlModuleSnapshot.original, 'utf8')
+      state.generatedBaseUrlModuleSnapshot = null
+    }
+  }
+
   async function cleanup() {
     if (state.cleanupRunning) {
       return
     }
     state.cleanupRunning = true
-
-    await restoreProjectPrivateConfig(state.projectPrivateConfigSnapshot)
-    state.projectPrivateConfigSnapshot = null
-    await restoreGeneratedBaseUrlModule(state.generatedBaseUrlModuleSnapshot)
-    state.generatedBaseUrlModuleSnapshot = null
+    restoreSnapshotsSync()
 
     if (!state.devServerHandle) {
       return
@@ -157,18 +150,8 @@ export async function requestClientsRealDevPlugin(
   }
 
   function cleanupSync() {
-    if (state.cleanupRunning) {
-      return
-    }
     state.cleanupRunning = true
-    if (state.projectPrivateConfigSnapshot) {
-      writeFileSync(state.projectPrivateConfigSnapshot.configPath, state.projectPrivateConfigSnapshot.original, 'utf8')
-      state.projectPrivateConfigSnapshot = null
-    }
-    if (state.generatedBaseUrlModuleSnapshot) {
-      writeFileSync(state.generatedBaseUrlModuleSnapshot.filePath, state.generatedBaseUrlModuleSnapshot.original, 'utf8')
-      state.generatedBaseUrlModuleSnapshot = null
-    }
+    restoreSnapshotsSync()
   }
 
   function registerCleanup() {

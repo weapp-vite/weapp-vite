@@ -2,6 +2,7 @@ import type { RolldownPluginOption } from 'rolldown'
 import type { InlineConfig } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
 import type { SubPackageMetaValue } from '../../../../types'
+import type { WevuRuntimeAliasMode } from '../../../packageAliases'
 import type { LoadConfigResult } from '../../types'
 import { platformBackendRegistry } from '../../../../backends'
 import { createSharedBuildOutput } from '../../../sharedBuildConfig'
@@ -14,7 +15,7 @@ export interface MergeFactoryOptions {
   ctx: MutableCompilerContext
   getOptions: () => LoadConfigResult
   setOptions: (value: LoadConfigResult) => void
-  injectBuiltinAliases: (config: InlineConfig) => void
+  injectBuiltinAliases: (config: InlineConfig, wevuRuntime?: WevuRuntimeAliasMode) => void
   getDefineImportMetaEnv: () => Record<string, any>
   applyRuntimePlatform: (runtime: 'miniprogram' | 'web') => void
   oxcRolldownPlugin: RolldownPluginOption<any> | undefined

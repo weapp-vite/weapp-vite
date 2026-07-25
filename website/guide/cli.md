@@ -65,9 +65,9 @@ wv [root]
 | --------------------------- | ------------------------------------------ |
 | `--skipNpm`                 | 跳过 npm 构建                              |
 | `-o, --open`                | 构建后尝试打开 IDE                         |
-| `-p, --platform <platform>` | 目标平台（`weapp` \| `h5`）                |
+| `-p, --platform <platform>` | 目标平台（`weapp` \| `web`）               |
 | `--project-config <path>`   | 小程序 `project.config.json` 路径          |
-| `--host [host]`             | Web dev server host（`h5` 场景）           |
+| `--host [host]`             | Web dev server host（`web` 场景）          |
 | `--analyze`                 | 启动分包分析仪表盘（实验特性，小程序场景） |
 | `--scope <scope>`           | 局部构建范围，例如 `main,packages/order`   |
 
@@ -91,7 +91,7 @@ wv build [root]
 | --------------------------- | ---------------------------------------------- |
 | `--target <target>`         | 构建目标（默认 `modules`）                     |
 | `--outDir <dir>`            | 输出目录（默认 `dist`）                        |
-| `-p, --platform <platform>` | 目标平台（`weapp` \| `h5`）                    |
+| `-p, --platform <platform>` | 目标平台（`weapp` \| `web`）                   |
 | `--project-config <path>`   | 小程序 `project.config.json` 路径              |
 | `--sourcemap [output]`      | 产出 sourcemap（`true/inline/hidden`）         |
 | `--minify [minifier]`       | 代码压缩开关或压缩器（`false/terser/esbuild`） |
@@ -137,7 +137,7 @@ wv analyze [root]
 | `--report <type>`           | 输出指定报告类型，当前支持 `pr`                                                    |
 | `--budget-check`            | 检查 analyze 预算，超限时返回非 0 退出码                                           |
 | `--output <file>`           | 将分析结果写入文件，格式随 `--json` / `--markdown` / `--report pr` 决定            |
-| `-p, --platform <platform>` | 目标平台（`weapp` \| `h5`）                                                        |
+| `-p, --platform <platform>` | 目标平台（`weapp` \| `web`）                                                       |
 | `--project-config <path>`   | 小程序 `project.config.json` 路径                                                  |
 
 小程序模式下，JSON 结果会包含 `components` 字段，用于展示组件被哪些页面递归引用、组件所属主包/分包、总使用次数，以及主包组件跨分包使用时的优化建议。默认终端摘要会展示组件建议数量和前几条高优先级建议，完整列表可通过 `--json` 或 `--output` 查看。
@@ -152,7 +152,7 @@ wv analyze --markdown --output reports/analyze.md
 wv analyze --report pr --output reports/analyze-pr.md
 wv analyze --budget-check
 wv analyze --hmr-profile .tmp/weapp-vite-hmr-profile.jsonl --json
-wv analyze --platform h5 --json
+wv analyze --platform web --json
 ```
 
 > [!TIP]
@@ -168,9 +168,9 @@ wv open [root]
 
 参数：
 
-| 参数                        | 说明                                    |
-| --------------------------- | --------------------------------------- |
-| `-p, --platform <platform>` | 目标平台（`weapp` \| `h5` \| `alipay`） |
+| 参数                        | 说明                                     |
+| --------------------------- | ---------------------------------------- |
+| `-p, --platform <platform>` | 目标平台（`weapp` \| `web` \| `alipay`） |
 
 说明：
 
@@ -209,7 +209,7 @@ wv ide logs [root]
 说明：
 
 - 该命令是常驻进程，按 `Ctrl+C` 退出。
-- 当前仅支持微信小程序平台，不支持 `alipay` / `h5`。
+- 当前仅支持微信小程序平台，不支持 `alipay` / `web`。
 - 若你只想在开发时自动附加，而不是手动执行此命令，可直接使用 `wv dev --open` 并配合 `weapp.forwardConsole`。
 
 示例：
@@ -485,7 +485,7 @@ wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline 
 wv dev -p weapp
 
 # Web 开发（指定 host）
-wv dev -p h5 --host 0.0.0.0
+wv dev -p web --host 0.0.0.0
 
 # 小程序生产构建（不压缩 + 产出 sourcemap）
 wv build -p weapp --minify false --sourcemap

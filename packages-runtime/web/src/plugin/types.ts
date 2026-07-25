@@ -1,3 +1,4 @@
+import type { VueTransformResult } from 'wevu/compiler'
 import type { NavigationBarConfig } from '../compiler/wxml'
 import type { WxssTransformOptions } from '../css/wxss'
 import type { WebRoutingConfig } from '../runtime/polyfill/routeRuntime/history'
@@ -75,6 +76,8 @@ export interface ModuleMeta {
   templatePath?: string
   stylePath?: string
   navigationBar?: NavigationBarConfig
+  sourceType?: 'native' | 'vue-sfc'
+  componentTags?: Record<string, string>
 }
 
 export interface PageEntry {
@@ -103,7 +106,9 @@ export interface ScanState {
   componentIdMap: Map<string, string>
   appNavigationDefaults: NavigationBarConfig
   appComponentTags: Record<string, string>
+  sfcResults: Map<string, VueTransformResult>
   scanResult: ScanResult
 }
 
 export type WarnFn = (message: string) => void
+export type ResolveWebModuleId = (source: string, importer?: string) => Promise<string | undefined>

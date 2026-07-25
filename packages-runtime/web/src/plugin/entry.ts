@@ -3,6 +3,42 @@ import type { WxssTransformOptions } from '../css/wxss'
 import type { ScanResult, WeappWebPluginOptions } from './types'
 import { relativeModuleId, resolveRuntimePolyfillPath, toViteFsImport } from './path'
 
+export function generateAutoRoutesModule(result: ScanResult) {
+  const pages = result.pages.map(page => page.id)
+  const subPackageMap = new Map<string, string[]>()
+  for (const id of pages) {
+    const pagesSegment = id.indexOf('/pages/')
+    if (pagesSegment <= 0) {
+      continue
+    }
+    const root = id.slice(0, pagesSegment)
+    const route = id.slice(pagesSegment + 1)
+    const routes = subPackageMap.get(root) ?? []
+    routes.push(route)
+    subPackageMap.set(root, routes)
+  }
+  const mainPages = pages.filter(id => !id.includes('/pages/'))
+  const subPackages = [...subPackageMap].map(([root, routes]) => ({ root, pages: routes }))
+  const snapshot = JSON.stringify({ pages: mainPages, entries: pages, subPackages })
+  return [
+    `const routes = ${snapshot}`,
+    `const call = (name, options) => globalThis.wx?.[name]?.(options)`,
+    `export const pages = routes.pages`,
+    `export const entries = routes.entries`,
+    `export const subPackages = routes.subPackages`,
+    `export const miniProgramRouter = {`,
+    `  switchTab: options => call('switchTab', options),`,
+    `  reLaunch: options => call('reLaunch', options),`,
+    `  redirectTo: options => call('redirectTo', options),`,
+    `  navigateTo: options => call('navigateTo', options),`,
+    `  navigateBack: options => call('navigateBack', options),`,
+    `}`,
+    `export const wxRouter = miniProgramRouter`,
+    `export { routes }`,
+    `export default routes`,
+  ].join('\n')
+}
+
 export function generateEntryModule(
   result: ScanResult,
   root: string,
@@ -14,14 +50,14 @@ export function generateEntryModule(
   const importLines: string[] = [`import { initializePageRoutes } from '${runtimePolyfillId}'`]
   const bodyLines: string[] = []
 
+  if (result.app) {
+    importLines.push(`import '${relativeModuleId(root, result.app)}'`)
+  }
   for (const page of result.pages) {
     importLines.push(`import '${relativeModuleId(root, page.script)}'`)
   }
   for (const component of result.components) {
     importLines.push(`import '${relativeModuleId(root, component.script)}'`)
-  }
-  if (result.app) {
-    importLines.push(`import '${relativeModuleId(root, result.app)}'`)
   }
 
   const pageOrder = result.pages.map(page => page.id)

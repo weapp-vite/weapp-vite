@@ -1,3 +1,7 @@
+import { installWebHostGlobals } from './hostGlobals'
+
+installWebHostGlobals()
+
 export type { WebTabBarConfig, WebTabBarItem } from './appShell/tabBar'
 export { ensureButtonDefined, setButtonFormConfig } from './button'
 export type { ButtonFormConfig } from './button'
@@ -14,6 +18,7 @@ export {
   setWebRuntimeHost,
 } from './host'
 export type { WebRuntimeClipboard, WebRuntimeDialogs, WebRuntimeHost, WebRuntimeStorage } from './host'
+export { installWebHostGlobals } from './hostGlobals'
 export {
   createInputEventDetail,
   createScrollEventDetail,
@@ -182,3 +187,5 @@ export { getWebViewportWidth, resolveWebViewportConfig, setupWebViewport } from 
 export type { ResolvedWebViewportConfig, WebViewportConfig } from './viewport'
 export { setRuntimeWarningOptions } from './warning'
 export type { RuntimeWarningLevel, RuntimeWarningOptions } from './warning'
+export { installWebModuleRegistration, registerWebWevuApp, registerWebWevuComponent } from './wevu'
+export * from 'wevu/internal-runtime'
