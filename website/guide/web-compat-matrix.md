@@ -69,6 +69,8 @@ keywords:
 | `swiper` / `swiper-item`                     | `✅` | 支持受控切换、触摸、循环、指示点、autoplay 与生命周期清理。                          |
 | `canvas`                                     | `🟡` | 真实 2D Canvas；支持 id 定位和常用绘图命令，高级 API 未全量覆盖。                    |
 | `video`                                      | `🟡` | 同步常用属性与微信形状事件；播放和全屏仍受浏览器限制。                               |
+| `cover-view` / `cover-image`                 | `✅` | 通过绝对定位和层级覆盖媒体/图片；`cover-image` 支持常用图片属性与事件。              |
+| `movable-area` / `movable-view`              | `🟡` | 支持边界、direction、x/y、拖拽和移动事件；惯性、缩放等高级物理效果尚未实现。         |
 
 ## `wx` API 矩阵（Web bridge）
 

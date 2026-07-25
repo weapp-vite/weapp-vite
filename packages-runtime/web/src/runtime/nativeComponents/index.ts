@@ -3,10 +3,12 @@ import { NATIVE_COMPONENT_DESCRIPTORS } from '../../shared/nativeComponents'
 import { WeappButton } from '../button'
 import { WeappCanvas } from './canvas'
 import { WeappCheckbox, WeappCheckboxGroup } from './checkbox'
+import { WeappCoverImage, WeappCoverView } from './cover'
 import { WeappForm } from './form'
 import { WeappImage } from './image'
 import { WeappInput } from './input'
 import { WeappLabel } from './label'
+import { WeappMovableArea, WeappMovableView } from './movable'
 import { WeappNavigator } from './navigator'
 import { WeappPicker } from './picker'
 import { WeappPickerView, WeappPickerViewColumn } from './pickerView'
@@ -44,6 +46,10 @@ const constructors = {
   'weapp-swiper-item': WeappSwiperItem,
   'weapp-canvas': WeappCanvas,
   'weapp-video': WeappVideo,
+  'weapp-cover-view': WeappCoverView,
+  'weapp-cover-image': WeappCoverImage,
+  'weapp-movable-area': WeappMovableArea,
+  'weapp-movable-view': WeappMovableView,
 } satisfies Record<NativeComponentWebTag, CustomElementConstructor>
 
 export function ensureNativeComponentsDefined() {
@@ -63,6 +69,7 @@ export { collectCheckboxGroupValue } from './checkbox'
 export { collectFormControlValues } from './formControl'
 export { resolveImageModeStyle } from './image'
 export { createInputEventDetail } from './input'
+export { clampMovablePosition, resolveMovableDirection } from './movable/helpers'
 export {
   createPickerChangeDetail,
   normalizePickerIndexes,

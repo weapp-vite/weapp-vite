@@ -178,6 +178,30 @@ export const NATIVE_COMPONENT_DESCRIPTORS = Object.freeze([
     attributes: ['id', 'src', 'poster', 'autoplay', 'loop', 'muted', 'controls', 'initial-time', 'object-fit'],
     defaultStyle: 'display: block; box-sizing: border-box; width: 300px; height: 225px; overflow: hidden;',
   },
+  {
+    name: 'cover-view',
+    webTag: 'weapp-cover-view',
+    attributes: [],
+    defaultStyle: 'position: absolute; z-index: 2; display: block; box-sizing: border-box; pointer-events: auto;',
+  },
+  {
+    name: 'cover-image',
+    webTag: 'weapp-cover-image',
+    attributes: ['src', 'mode', 'lazy-load', 'alt'],
+    defaultStyle: 'position: absolute; z-index: 2; display: block; box-sizing: border-box; width: 100%; height: 100%; overflow: hidden; pointer-events: auto;',
+  },
+  {
+    name: 'movable-area',
+    webTag: 'weapp-movable-area',
+    attributes: [],
+    defaultStyle: 'position: relative; display: block; box-sizing: border-box; overflow: hidden;',
+  },
+  {
+    name: 'movable-view',
+    webTag: 'weapp-movable-view',
+    attributes: ['direction', 'inertia', 'out-of-bounds', 'x', 'y', 'damping', 'friction', 'disabled', 'scale', 'scale-min', 'scale-max', 'scale-value', 'animation'],
+    defaultStyle: 'position: absolute; top: 0; left: 0; display: block; box-sizing: border-box; width: 10px; height: 10px; touch-action: none; user-select: none;',
+  },
 ] as const satisfies readonly NativeComponentDescriptor[])
 
 export type SupportedNativeComponentName = typeof NATIVE_COMPONENT_DESCRIPTORS[number]['name']
@@ -188,10 +212,6 @@ const descriptorMap = new Map<string, NativeComponentDescriptor>(
 )
 
 const KNOWN_UNSUPPORTED_NATIVE_COMPONENTS = new Set([
-  'cover-view',
-  'cover-image',
-  'movable-area',
-  'movable-view',
   'icon',
   'progress',
   'rich-text',
