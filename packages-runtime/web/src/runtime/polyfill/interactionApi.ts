@@ -1,3 +1,4 @@
+import { openRuntimeUrl } from '../host'
 import {
   callMiniProgramAsyncFailure,
   callMiniProgramAsyncSuccess,
@@ -11,9 +12,9 @@ import { getGlobalDialogHandlers } from './ui'
 
 export function openCustomerServiceChatBridge(options?: any) {
   const url = options?.url?.trim() ?? ''
-  if (url && typeof window !== 'undefined' && typeof window.open === 'function') {
+  if (url) {
     try {
-      window.open(url, '_blank', 'noopener,noreferrer')
+      openRuntimeUrl(url, '_blank', 'noopener,noreferrer')
     }
     catch {
       // ignore browser popup restrictions

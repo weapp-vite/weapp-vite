@@ -73,12 +73,17 @@ export default defineConfig({
 - `navigator` 复用页面栈和 mini-program bridge；`swiper` 支持受控状态、触摸、autoplay 及 `change` / `transition` / `animationfinish` 事件
 - `canvas` 使用真实 2D Canvas 承载高频绘图命令；`video` 同步常用媒体属性、微信形状事件，并允许 `createVideoContext` 跨 Shadow DOM 控制播放器
 - `cover-view` / `cover-image` 保留媒体覆盖层的定位和层级；`movable-area` / `movable-view` 支持边界、方向限制、拖拽及微信形状移动事件
+- `setWebRuntimeHost` / `resetWebRuntimeHost` 提供宿主注入边界；网络、存储、剪贴板、对话框和打开链接可由测试容器或业务宿主接管，未注入能力回退到浏览器 API。
 - `navigateTo` 保活隐藏页面，`navigateBack` 恢复同一实例、数据和滚动位置；`redirectTo` / `reLaunch` 按页面栈语义触发 `onHide` / `onUnload`
 - `getCurrentPages()` 返回当前活动路由栈，其他保活 tab 页面不会混入当前 tab 栈；路由 API 同时支持 Promise 与 `success` / `fail` / `complete` 回调
 - 读取 `app.json.tabBar` 并在设备容器内渲染标准 App Shell；`switchTab` 缓存 tab 页面、关闭非 tab 页面并保持正确的 `onLoad` / `onShow` 语义
 - `showTabBar` / `hideTabBar`、`setTabBarItem`、`setTabBarStyle`、badge 与 red-dot API 会真实更新布局和视觉状态
 
 需要保留旧的浏览器全宽行为时，将 `runtime.viewport.mode` 设置为 `responsive`。
+
+## 宿主注入
+
+Web Runtime 默认读取浏览器 API。测试容器、沙箱或业务宿主可以在页面注册前调用 `setWebRuntimeHost()` 注入 `fetch`、`storage`、`clipboard`、`dialogs` 与 `open`；未提供的字段继续使用浏览器回退。宿主卸载时调用 `resetWebRuntimeHost()` 清理注入状态。
 
 ## 能力边界
 

@@ -4,6 +4,17 @@ export type { ButtonFormConfig } from './button'
 export { defineComponent } from './component'
 export { getRuntimeExecutionMode, setRuntimeExecutionMode } from './execution'
 export {
+  getRuntimeClipboard,
+  getRuntimeDialogs,
+  getRuntimeFetch,
+  getRuntimeStorage,
+  getWebRuntimeHost,
+  openRuntimeUrl,
+  resetWebRuntimeHost,
+  setWebRuntimeHost,
+} from './host'
+export type { WebRuntimeClipboard, WebRuntimeDialogs, WebRuntimeHost, WebRuntimeStorage } from './host'
+export {
   createInputEventDetail,
   createScrollEventDetail,
   createSwitchEventDetail,
