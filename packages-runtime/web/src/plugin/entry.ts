@@ -55,6 +55,12 @@ export function generateEntryModule(
   if (pluginOptions?.runtime?.routing) {
     runtimeOptions.routing = pluginOptions.runtime.routing
   }
+  if (pluginOptions?.runtime?.seo) {
+    runtimeOptions.seo = pluginOptions.runtime.seo
+  }
+  if (pluginOptions?.runtime?.resourceHints) {
+    runtimeOptions.resourceHints = pluginOptions.runtime.resourceHints
+  }
   if (Object.keys(runtimeOptions).length > 0) {
     initOptions.runtime = runtimeOptions
   }

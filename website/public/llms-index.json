@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-25T03:11:04.525Z",
+  "generatedAt": "2026-07-25T04:09:20.509Z",
   "site": "https://vite.icebreaker.top",
   "count": 271,
   "items": [
@@ -5884,6 +5884,7 @@
         "运行时能力",
         "视觉与组件适配",
         "浏览器路由",
+        "页面 Head 与首屏资源",
         "宿主注入",
         "能力边界"
       ],

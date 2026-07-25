@@ -1,3 +1,4 @@
+import type { NavigationBarConfig } from '../../../compiler/wxml'
 import type { ComponentOptions, ComponentPublicInstance } from '../../component'
 import type { TemplateRenderer } from '../../template'
 import type { MiniProgramAsyncOptions, MiniProgramBaseResult } from '../types'
@@ -6,6 +7,7 @@ export interface RegisterMeta {
   id: string
   template?: TemplateRenderer
   style?: string
+  navigationBar?: NavigationBarConfig
 }
 
 export interface PageHooks {
@@ -20,6 +22,7 @@ export interface PageRecord {
   tag: string
   hooks: PageHooks
   instances: Set<ComponentPublicInstance>
+  navigationBar?: NavigationBarConfig
 }
 
 export interface ComponentRecord {

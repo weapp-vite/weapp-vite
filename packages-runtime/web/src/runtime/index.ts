@@ -167,6 +167,14 @@ export { createRenderContext } from './renderContext'
 export type { RenderContext } from './renderContext'
 export { setupRpx } from './rpx'
 export type { RpxConfig } from './rpx'
+export {
+  configureWebSeo,
+  resetWebDocumentHead,
+  setupWebResourceHints,
+  syncWebDocumentHead,
+  updateWebDocumentTitle,
+} from './seo'
+export type { WebPageHead, WebResourceHint, WebResourceHintRelation, WebResourceHintsConfig, WebSeoConfig } from './seo'
 export { injectStyle, removeStyle } from './style'
 export { createTemplate, renderTemplate } from './template'
 export type { TemplateRenderer, TemplateScope } from './template'

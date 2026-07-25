@@ -164,6 +164,10 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
     const pageJsonBasePath = join(srcRoot, `${pageId}.json`)
     const pageJsonPath = await resolveJsonPath(pageJsonBasePath)
     const pageJson = pageJsonPath ? await readJsonFile(pageJsonPath) : undefined
+    const navigationConfig = mergeNavigationConfig(
+      appNavigationDefaults,
+      pageJson ? pickNavigationConfig(pageJson) : {},
+    )
 
     state.moduleMeta.set(normalizePath(script), {
       kind: 'page',
@@ -171,6 +175,7 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
       scriptPath: script,
       templatePath: template,
       stylePath: style,
+      navigationBar: Object.keys(navigationConfig).length > 0 ? navigationConfig : undefined,
     })
 
     pages.set(script, {
@@ -217,15 +222,7 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
       return
     }
 
-    if (pageJson) {
-      state.pageNavigationMap.set(
-        normalizePath(template),
-        mergeNavigationConfig(appNavigationDefaults, pickNavigationConfig(pageJson)),
-      )
-      return
-    }
-
-    state.pageNavigationMap.set(normalizePath(template), { ...appNavigationDefaults })
+    state.pageNavigationMap.set(normalizePath(template), navigationConfig)
   }
 
   const appJsonBasePath = join(srcRoot, 'app.json')
@@ -247,6 +244,9 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
         },
       })
     }
+
+    const windowConfig = isRecord(appJson?.window) ? appJson.window : undefined
+    appNavigationDefaults = pickNavigationConfig(windowConfig)
 
     if (appJson?.pages && Array.isArray(appJson.pages)) {
       for (const page of appJson.pages) {
@@ -271,8 +271,6 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
       }
     }
 
-    const windowConfig = isRecord(appJson?.window) ? appJson.window : undefined
-    appNavigationDefaults = pickNavigationConfig(windowConfig)
     appTabBar = normalizeWebTabBarConfig(appJson?.tabBar)
   }
 

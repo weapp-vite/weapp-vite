@@ -435,6 +435,26 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     }
   })
 
+  it('syncs browser head metadata with the active mini-program page', async () => {
+    const page = await browser!.newPage()
+    try {
+      await openHomePage(page)
+      await expect.poll(() => page.title()).toBe('初始模板 | weapp-vite')
+      await expect.poll(() => page.locator('meta[name="description"]').getAttribute('content'))
+        .toBe('原生小程序页面的 Web Runtime 演示。')
+      await expect.poll(() => page.locator('link[rel="preconnect"][href="https://static.example.test"]').count())
+        .toBe(1)
+
+      await navigateToInteractiveFromHome(page)
+      await expect.poll(() => page.title()).toBe('互动场景 | weapp-vite')
+      await page.goBack()
+      await expect.poll(() => page.title()).toBe('初始模板 | weapp-vite')
+    }
+    finally {
+      await page.close()
+    }
+  })
+
   it('preserves page instance, lifecycle state and scroll position after navigateBack', async () => {
     const page = await browser!.newPage()
     try {

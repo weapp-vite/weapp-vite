@@ -52,6 +52,7 @@ describe('weappWebPlugin', () => {
     }))
     await writeFile(join(pageDir, 'index.js'), 'Page({})')
     await writeFile(join(pageDir, 'index.wxml'), '<view>index</view>')
+    await writeFile(join(pageDir, 'index.json'), JSON.stringify({ navigationBarTitleText: '首页' }))
 
     const plugin = weappWebPlugin({
       srcDir: 'src',
@@ -70,6 +71,14 @@ describe('weappWebPlugin', () => {
           mode: 'history',
           base: '/mini',
         },
+        seo: {
+          defaultTitle: '商城',
+          titleTemplate: '%s | Demo',
+          description: '商品详情',
+        },
+        resourceHints: {
+          links: [{ rel: 'preconnect', href: 'https://cdn.example.test' }],
+        },
       },
     })
     await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'build' } as any)
@@ -80,8 +89,14 @@ describe('weappWebPlugin', () => {
     const code = (plugin.load as ((...args: any[]) => any))?.call({} as any, entryId) as string
     expect(code).toContain('initializePageRoutes(["pages/index/index"]')
     expect(code).toContain('"tabBar":{"color":"#666666","selectedColor":"#07c160","backgroundColor":"#ffffff","borderStyle":"black","position":"bottom","custom":false,"list":[{"pagePath":"pages/index/index","text":"首页","iconPath":"assets/home.png"}]}')
-    expect(code).toContain('"runtime":{"executionMode":"safe","warnings":{"level":"off","dedupe":false},"viewport":{"mode":"responsive","maxWidth":414,"desktopBreakpoint":720},"routing":{"mode":"history","base":"/mini"}}')
+    expect(code).toContain('"runtime":{"executionMode":"safe","warnings":{"level":"off","dedupe":false},"viewport":{"mode":"responsive","maxWidth":414,"desktopBreakpoint":720},"routing":{"mode":"history","base":"/mini"},"seo":{"defaultTitle":"商城","titleTemplate":"%s | Demo","description":"商品详情"},"resourceHints":{"links":[{"rel":"preconnect","href":"https://cdn.example.test"}]}}')
     expect(code).toContain('"rpx":{"designWidth":750}')
+    const transformedPage = await (plugin.transform as (code: string, id: string) => Promise<any> | any).call(
+      {},
+      'Page({})',
+      join(pageDir, 'index.js'),
+    )
+    expect(transformedPage?.code).toContain('navigationBar: {"title":"首页"}')
   })
 
   it('loads runtime polyfill from a Vite fs path in virtual entry modules', async () => {

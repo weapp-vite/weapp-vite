@@ -51,6 +51,14 @@ export default defineConfig({
           mode: 'history',
           base: '/mini',
         },
+        seo: {
+          defaultTitle: '商城',
+          titleTemplate: '%s | Web Demo',
+          description: '小程序页面的 Web 运行时演示。',
+        },
+        resourceHints: {
+          links: [{ rel: 'preconnect', href: 'https://cdn.example.com' }],
+        },
       },
     }),
   ],
@@ -93,6 +101,12 @@ export default defineConfig({
 - `hash`：使用 `#/pages/foo/index`，适合静态托管，不需要服务端配置。
 
 `runtime.routing.base` 用于部署在子目录的站点，例如 `/mini`。两种浏览器模式都会把页面栈和地址栏状态同步，未配置时保持原有 `memory` 行为。
+
+## 页面 Head 与首屏资源
+
+`runtime.seo` 会在浏览器路由切换后同步页面 Head：页面 `navigationBarTitleText` 作为当前标题，`titleTemplate` 使用 `%s` 占位；`description` 写入 description meta，默认还会维护去掉 query/hash 的 canonical 链接。设置 `enabled: false` 可关闭。
+
+`runtime.resourceHints.links` 支持去重注入 `preconnect`、`dns-prefetch`、`prefetch` 和 `preload`。它只影响浏览器文档，不改变小程序构建产物，也不等同于 SSR。
 
 ## 宿主注入
 

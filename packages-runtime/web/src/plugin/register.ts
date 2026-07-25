@@ -84,6 +84,9 @@ function overwriteCall(
   if (styleIdent) {
     metaParts.push(`style: ${styleIdent}`)
   }
+  if (meta.navigationBar) {
+    metaParts.push(`navigationBar: ${JSON.stringify(meta.navigationBar)}`)
+  }
   const metaCode = `{ ${metaParts.join(', ')} }`
   s.overwrite(callee.start!, callee.end!, registerName)
   s.appendLeft(insertPosition, `, ${metaCode}`)

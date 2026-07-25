@@ -1,6 +1,7 @@
 import type { NavigationBarConfig } from '../compiler/wxml'
 import type { WxssTransformOptions } from '../css/wxss'
 import type { WebRoutingConfig } from '../runtime/polyfill/routeRuntime/history'
+import type { WebResourceHintsConfig, WebSeoConfig } from '../runtime/seo'
 import type { WebTabBarConfig } from '../shared/tabBar'
 
 export interface WeappWebPluginOptions {
@@ -51,6 +52,10 @@ export interface WeappWebPluginOptions {
     }
     /** Web 路由与浏览器地址栏同步策略。 */
     routing?: WebRoutingConfig
+    /** 页面切换时同步浏览器 Head 的 SEO 配置。 */
+    seo?: WebSeoConfig
+    /** 首屏或关键资源的浏览器 Resource Hints。 */
+    resourceHints?: WebResourceHintsConfig
   }
   /**
    * weapp-vite runtime provider 注入的内部绑定。
@@ -69,6 +74,7 @@ export interface ModuleMeta {
   scriptPath: string
   templatePath?: string
   stylePath?: string
+  navigationBar?: NavigationBarConfig
 }
 
 export interface PageEntry {

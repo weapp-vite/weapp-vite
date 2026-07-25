@@ -2,6 +2,7 @@ import type { WebTabBarConfig } from '../../shared/tabBar'
 import type { ButtonFormConfig } from '../button'
 import type { ComponentPublicInstance } from '../component'
 import type { NavigationBarMetrics } from '../navigationBar'
+import type { WebResourceHintsConfig, WebSeoConfig } from '../seo'
 import type { WebViewportConfig } from '../viewport'
 import type { WebRouteHistoryState, WebRouteTarget, WebRoutingConfig } from './routeRuntime/history'
 import type { AppLaunchOptions, AppRuntime, ComponentRawOptions, ComponentRecord, NavigateBackOptions, PageRawOptions, PageRecord, PageStackEntry, RegisterMeta, RouteOptions } from './routeRuntime/options'
@@ -17,6 +18,7 @@ import { setRuntimeExecutionMode } from '../execution'
 import { ensureNativeComponentsDefined } from '../nativeComponents'
 import { ensureNavigationBarDefined, setNavigationBarMetrics } from '../navigationBar'
 import { setupRpx } from '../rpx'
+import { configureWebSeo, setupWebResourceHints, syncWebDocumentHead } from '../seo'
 import { setupWebViewport } from '../viewport'
 import { setRuntimeWarningOptions } from '../warning'
 import {
@@ -78,8 +80,17 @@ function ensureAppLaunched(entry: PageStackEntry) {
 
 const pageStack = new PageStackRuntime(pageRegistry, ensureAppLaunched)
 
+function syncCurrentWebDocument() {
+  const current = pageStack.entries[pageStack.entries.length - 1]
+  syncWebDocumentHead({
+    route: current?.id,
+    title: current ? pageRegistry.get(current.id)?.navigationBar?.title : undefined,
+  })
+}
+
 function syncCurrentWebRoute(operation: 'push' | 'replace') {
   syncWebRouting(pageStack.entries, operation)
+  syncCurrentWebDocument()
 }
 
 function reconcileWebRoute(target: WebRouteTarget | undefined, state: WebRouteHistoryState | undefined) {
@@ -101,11 +112,13 @@ function reconcileWebRoute(target: WebRouteTarget | undefined, state: WebRouteHi
       pageStack.relaunch(last.id, { ...last.query })
     }
     syncTabBarRoute(pageStack.entries[pageStack.entries.length - 1]?.id ?? '')
+    syncCurrentWebDocument()
     return
   }
   if (target && pageRegistry.has(target.id)) {
     pageStack.relaunch(target.id, { ...target.query })
     syncTabBarRoute(target.id)
+    syncCurrentWebDocument()
   }
 }
 
@@ -152,12 +165,16 @@ export function initializePageRoutes(
       }
       viewport?: WebViewportConfig
       routing?: WebRoutingConfig
+      seo?: WebSeoConfig
+      resourceHints?: WebResourceHintsConfig
     }
   },
 ) {
   setRuntimeExecutionMode(options?.runtime?.executionMode)
   setRuntimeWarningOptions(options?.runtime?.warnings)
   setupWebViewport(options?.runtime?.viewport)
+  configureWebSeo(options?.runtime?.seo)
+  setupWebResourceHints(options?.runtime?.resourceHints)
   configureWebRouting(options?.runtime?.routing, ids, reconcileWebRoute)
   ensureNativeComponentsDefined()
   pageOrder = Array.from(new Set(ids))
@@ -196,6 +213,7 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
   const existing = pageRegistry.get(meta.id)
   if (existing) {
     existing.hooks = normalized.hooks
+    existing.navigationBar = meta.navigationBar
     const component = augmentPageComponentOptions(normalized.component, existing)
     defineComponent(tag, {
       template,
@@ -208,6 +226,7 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
     tag,
     hooks: normalized.hooks,
     instances: new Set(),
+    navigationBar: meta.navigationBar,
   }
   const component = augmentPageComponentOptions(normalized.component, record)
   defineComponent(tag, {
