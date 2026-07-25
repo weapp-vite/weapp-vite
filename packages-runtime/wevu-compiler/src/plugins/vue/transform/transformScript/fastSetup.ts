@@ -94,7 +94,7 @@ function stripCompiledScriptSetupMarkers(optionsSource: string) {
   return optionsSource
     .replace(/^\s*__name:\s*['"][^'"]+['"],?\n?/m, '')
     .replace(/\{\s*expose:\s*__expose\s*\}/g, '{ expose }')
-    .replace(/\b__expose\s*\(\s*\);?/g, 'expose();')
+    .replace(/\b__expose(?=\s*\()/g, 'expose')
     .replace(/^\s*Object\.defineProperty\(\s*__returned__\s*,\s*['"]__isScriptSetup['"]\s*,\s*\{\s*enumerable:\s*false\s*,\s*value:\s*true\s*\}\s*\);?\n?/m, '')
 }
 

@@ -22,7 +22,7 @@ import {
 import { hasLibEntry, resolveWeappLibConfig } from '../../lib'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { resolveWeappWebConfig } from '../web'
-import { configureBuildAndPlugins } from './loadConfig/build'
+import { configureBuildAndPlugins, resolveCliPlatformRuntime } from './loadConfig/build'
 import { formatProjectConfigPath, loadPackageJson, normalizeRelativeDistRoot, resolveProjectConfigPaths } from './loadConfig/shared'
 import { inspectTsconfigPathsUsage } from './tsconfigPaths'
 
@@ -389,6 +389,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       cwd,
       srcRoot,
       config: config.weapp?.web,
+      enableByCli: resolveCliPlatformRuntime(cliPlatform).isWebRuntime,
     })
 
     const {

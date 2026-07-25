@@ -164,12 +164,23 @@ jobs:
       # DevTools baselines are generated on macOS and depend on its system CJK fonts.
       runs_on: macos-latest
       node_version: '24'
-      timeout_minutes: 20
+      timeout_minutes: 35
       build_command: pnpm build:pkgs:ci
       main_command: pnpm e2e:web
       install_playwright: true
       artifact_name: web-runtime-visual-pr
       artifact_path: .tmp/web-runtime-visual/**
+    secrets: inherit
+
+  web-project-builds:
+    name: Web Project Builds (Node 24)
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: '24'
+      timeout_minutes: 45
+      build_command: pnpm build:pkgs:ci
+      main_command: pnpm e2e:web:build-projects
     secrets: inherit
 
   workspace-hmr-pr:
@@ -217,7 +228,7 @@ jobs:
       # Keep screenshot font rasterization aligned with the DevTools baseline host.
       runs_on: macos-latest
       node_version: '${{ matrix.node-version }}'
-      timeout_minutes: 20
+      timeout_minutes: 35
       build_command: pnpm build:pkgs:ci
       main_command: pnpm e2e:web
       install_playwright: true

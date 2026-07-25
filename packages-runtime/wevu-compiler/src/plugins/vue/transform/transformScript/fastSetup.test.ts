@@ -20,6 +20,10 @@ return __returned__
 
 })`
 
+const compiledDefineExposeSource = compiledScriptSetupSource
+  .replace('__expose();', '__expose({ runE2E });')
+  .replace(`const scriptMarker = 'SFC_SCRIPT_MARKER'`, `const scriptMarker = 'SFC_SCRIPT_MARKER'\nconst runE2E = () => scriptMarker`)
+
 describe('transformScript fast compiled script setup path', () => {
   it('rewrites standard compileScript output without Babel generation when sourcemap is disabled', () => {
     const result = transformScript(compiledScriptSetupSource, {
@@ -34,6 +38,33 @@ describe('transformScript fast compiled script setup path', () => {
     expect(result.code).toContain('export default __wevuOptions')
     expect(result.code).not.toContain('from \'vue\'')
     expect(result.code).not.toContain('__isScriptSetup')
+    expect(result.code).not.toContain('__expose')
+  })
+
+  it('rewrites defineExpose calls with arguments on the fast path', () => {
+    const result = transformScript(compiledDefineExposeSource, {
+      isPage: true,
+      sourceMap: false,
+    })
+
+    expect(result.code).toContain('expose({ runE2E })')
+    expect(result.code).not.toContain('__expose')
+  })
+
+  it('rewrites defineExpose calls with arguments on the Babel path', () => {
+    const result = transformScript(compiledDefineExposeSource, {
+      isPage: true,
+      sourceMap: false,
+      inlineExpressions: [
+        {
+          id: 'expr-0',
+          expression: 'scriptMarker',
+          scopeKeys: [],
+        },
+      ],
+    })
+
+    expect(result.code).toMatch(/expose\(\{\s*runE2E\s*\}\)/)
     expect(result.code).not.toContain('__expose')
   })
 

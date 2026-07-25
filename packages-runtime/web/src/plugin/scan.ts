@@ -1,5 +1,5 @@
 import type { WebTabBarConfig } from '../shared/tabBar'
-import type { ComponentEntry, PageEntry, ScanState, WarnFn } from './types'
+import type { ComponentEntry, ModuleMeta, PageEntry, ResolveWebModuleId, ScanState, WarnFn } from './types'
 
 import process from 'node:process'
 import { dirname, extname, join, posix, relative, resolve } from 'pathe'
@@ -9,11 +9,13 @@ import { isRecord, readJsonFile, resolveJsonPath, resolveScriptFile, resolveStyl
 import { mergeNavigationConfig, pickNavigationConfig } from './navigation'
 import { normalizePath, toPosixId } from './path'
 import { collectComponentTagsFromConfig, collectComponentTagsFromJson, mergeComponentTags } from './scanConfig'
+import { compileScannedSfc, discoverWebPageIds } from './scanSfc'
 
 interface ScanProjectOptions {
   srcRoot: string
   warn?: WarnFn
   state: ScanState
+  resolveId?: ResolveWebModuleId
 }
 
 function resolveComponentBase(raw: string, importerDir: string, srcRoot: string) {
@@ -29,13 +31,14 @@ function resolveComponentBase(raw: string, importerDir: string, srcRoot: string)
   return resolve(srcRoot, raw)
 }
 
-export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) {
+export async function scanProject({ srcRoot, warn, state, resolveId }: ScanProjectOptions) {
   state.moduleMeta.clear()
   state.pageNavigationMap.clear()
   state.templateComponentMap.clear()
   state.templatePathSet.clear()
   state.componentTagMap.clear()
   state.componentIdMap.clear()
+  state.sfcResults.clear()
 
   let appNavigationDefaults = {}
   let appComponentTags: Record<string, string> = {}
@@ -56,12 +59,14 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
 
   const appScript = await resolveScriptFile(join(srcRoot, 'app'))
   if (appScript) {
-    state.moduleMeta.set(normalizePath(appScript), {
+    const appMeta: ModuleMeta = {
       kind: 'app',
       id: 'app',
       scriptPath: appScript,
       stylePath: await resolveStyleFile(appScript),
-    })
+      sourceType: appScript.endsWith('.vue') ? 'vue-sfc' : 'native',
+    }
+    state.moduleMeta.set(normalizePath(appScript), appMeta)
   }
 
   const resolveComponentScript = async (raw: string, importerDir: string) => {
@@ -110,31 +115,47 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
       state.templatePathSet.add(normalizePath(template))
     }
 
-    state.moduleMeta.set(normalizePath(script), {
+    const componentMeta: ModuleMeta = {
       kind: 'component',
       id: componentIdPosix,
       scriptPath: script,
       templatePath: template,
       stylePath: style,
-    })
+      sourceType: script.endsWith('.vue') ? 'vue-sfc' : 'native',
+    }
+    state.moduleMeta.set(normalizePath(script), componentMeta)
 
     components.set(script, { script, id: componentIdPosix })
 
     const componentJsonBasePath = `${script.replace(new RegExp(`${extname(script)}$`), '')}.json`
-    const componentTags = await collectComponentTagsFromJson({
-      jsonBasePath: componentJsonBasePath,
-      importerDir: dirname(script),
-      warn: reportWarning,
-      collectFromConfig: (json, nextImporterDir, jsonPath, nextWarn) => collectComponentTagsFromConfig({
-        json,
-        importerDir: nextImporterDir,
-        jsonPath,
-        warn: nextWarn,
-        resolveComponentScript,
-        getComponentTag,
-        collectComponent,
-      }),
-    })
+    const sfcConfig = script.endsWith('.vue')
+      ? (await compileScannedSfc({ filename: script, meta: componentMeta, srcRoot, state, resolveId })).config
+      : undefined
+    const componentTags = sfcConfig
+      ? await collectComponentTagsFromConfig({
+          json: sfcConfig,
+          importerDir: dirname(script),
+          jsonPath: script,
+          warn: reportWarning,
+          resolveComponentScript,
+          getComponentTag,
+          collectComponent,
+        })
+      : await collectComponentTagsFromJson({
+          jsonBasePath: componentJsonBasePath,
+          importerDir: dirname(script),
+          warn: reportWarning,
+          collectFromConfig: (json, nextImporterDir, jsonPath, nextWarn) => collectComponentTagsFromConfig({
+            json,
+            importerDir: nextImporterDir,
+            jsonPath,
+            warn: nextWarn,
+            resolveComponentScript,
+            getComponentTag,
+            collectComponent,
+          }),
+        })
+    componentMeta.componentTags = mergeComponentTags(appComponentTags, componentTags)
 
     if (!template) {
       return
@@ -164,49 +185,66 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
     const pageJsonBasePath = join(srcRoot, `${pageId}.json`)
     const pageJsonPath = await resolveJsonPath(pageJsonBasePath)
     const pageJson = pageJsonPath ? await readJsonFile(pageJsonPath) : undefined
-    const navigationConfig = mergeNavigationConfig(
-      appNavigationDefaults,
-      pageJson ? pickNavigationConfig(pageJson) : {},
-    )
-
-    state.moduleMeta.set(normalizePath(script), {
+    const pageMeta: ModuleMeta = {
       kind: 'page',
       id: toPosixId(pageId),
       scriptPath: script,
       templatePath: template,
       stylePath: style,
-      navigationBar: Object.keys(navigationConfig).length > 0 ? navigationConfig : undefined,
-    })
+      sourceType: script.endsWith('.vue') ? 'vue-sfc' : 'native',
+    }
+
+    const sfcConfig = script.endsWith('.vue')
+      ? (await compileScannedSfc({ filename: script, meta: pageMeta, srcRoot, state, resolveId })).config
+      : undefined
+    const resolvedNavigationConfig = mergeNavigationConfig(
+      appNavigationDefaults,
+      sfcConfig ? pickNavigationConfig(sfcConfig) : pageJson ? pickNavigationConfig(pageJson) : {},
+    )
+    pageMeta.navigationBar = Object.keys(resolvedNavigationConfig).length > 0
+      ? resolvedNavigationConfig
+      : undefined
+    state.moduleMeta.set(normalizePath(script), pageMeta)
 
     pages.set(script, {
       script,
       id: toPosixId(pageId),
     })
 
-    const pageComponentTags = pageJson && pageJsonPath
+    const pageComponentTags = sfcConfig
       ? await collectComponentTagsFromConfig({
-          json: pageJson,
+          json: sfcConfig,
           importerDir: dirname(script),
-          jsonPath: pageJsonPath,
+          jsonPath: script,
           warn: reportWarning,
           resolveComponentScript,
           getComponentTag,
           collectComponent,
         })
-      : await collectComponentTagsFromJson({
-          jsonBasePath: pageJsonBasePath,
-          importerDir: dirname(script),
-          warn: reportWarning,
-          collectFromConfig: (json, importerDir, jsonPath, nextWarn) => collectComponentTagsFromConfig({
-            json,
-            importerDir,
-            jsonPath,
-            warn: nextWarn,
+      : pageJson && pageJsonPath
+        ? await collectComponentTagsFromConfig({
+            json: pageJson,
+            importerDir: dirname(script),
+            jsonPath: pageJsonPath,
+            warn: reportWarning,
             resolveComponentScript,
             getComponentTag,
             collectComponent,
-          }),
-        })
+          })
+        : await collectComponentTagsFromJson({
+            jsonBasePath: pageJsonBasePath,
+            importerDir: dirname(script),
+            warn: reportWarning,
+            collectFromConfig: (json, importerDir, jsonPath, nextWarn) => collectComponentTagsFromConfig({
+              json,
+              importerDir,
+              jsonPath,
+              warn: nextWarn,
+              resolveComponentScript,
+              getComponentTag,
+              collectComponent,
+            }),
+          })
 
     if (template) {
       const mergedTags = mergeComponentTags(appComponentTags, pageComponentTags)
@@ -217,47 +255,57 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
         state.templateComponentMap.delete(normalizePath(template))
       }
     }
+    pageMeta.componentTags = mergeComponentTags(appComponentTags, pageComponentTags)
 
     if (!template) {
       return
     }
 
-    state.pageNavigationMap.set(normalizePath(template), navigationConfig)
+    state.pageNavigationMap.set(normalizePath(template), resolvedNavigationConfig)
   }
 
   const appJsonBasePath = join(srcRoot, 'app.json')
   const appJsonPath = await resolveJsonPath(appJsonBasePath)
-  if (appJsonPath) {
-    const appJson = await readJsonFile(appJsonPath)
-
-    if (appJson) {
-      appComponentTags = await collectComponentTagsFromConfig({
-        json: appJson,
-        importerDir: srcRoot,
-        jsonPath: appJsonPath,
-        warn: reportWarning,
-        resolveComponentScript,
-        getComponentTag,
-        collectComponent,
-        onResolved: (tags) => {
-          appComponentTags = tags
-        },
-      })
+  let appJson = appJsonPath ? await readJsonFile(appJsonPath) : undefined
+  if (appScript?.endsWith('.vue')) {
+    const appMeta = state.moduleMeta.get(normalizePath(appScript))!
+    const sfcConfig = (await compileScannedSfc({ filename: appScript, meta: appMeta, srcRoot, state, resolveId })).config
+    appJson = {
+      ...(sfcConfig ?? {}),
+      ...(appJson ?? {}),
     }
+  }
+  if (appJson) {
+    appComponentTags = await collectComponentTagsFromConfig({
+      json: appJson,
+      importerDir: srcRoot,
+      jsonPath: appJsonPath ?? appScript ?? appJsonBasePath,
+      warn: reportWarning,
+      resolveComponentScript,
+      getComponentTag,
+      collectComponent,
+      onResolved: (tags) => {
+        appComponentTags = tags
+      },
+    })
 
     const windowConfig = isRecord(appJson?.window) ? appJson.window : undefined
     appNavigationDefaults = pickNavigationConfig(windowConfig)
 
-    if (appJson?.pages && Array.isArray(appJson.pages)) {
-      for (const page of appJson.pages) {
-        if (typeof page === 'string') {
-          await collectPage(page)
-        }
-      }
+    const configuredPages = Array.isArray(appJson.pages)
+      ? appJson.pages.filter((page): page is string => typeof page === 'string')
+      : []
+    for (const page of configuredPages.length > 0 ? configuredPages : await discoverWebPageIds(srcRoot)) {
+      await collectPage(page)
     }
 
-    if (appJson?.subPackages && Array.isArray(appJson.subPackages)) {
-      for (const pkg of appJson.subPackages) {
+    const subPackages = Array.isArray(appJson.subPackages)
+      ? appJson.subPackages
+      : Array.isArray(appJson.subpackages)
+        ? appJson.subpackages
+        : []
+    if (subPackages.length > 0) {
+      for (const pkg of subPackages) {
         if (!pkg || typeof pkg !== 'object' || !Array.isArray(pkg.pages)) {
           continue
         }
@@ -272,6 +320,11 @@ export async function scanProject({ srcRoot, warn, state }: ScanProjectOptions) 
     }
 
     appTabBar = normalizeWebTabBarConfig(appJson?.tabBar)
+  }
+  else {
+    for (const page of await discoverWebPageIds(srcRoot)) {
+      await collectPage(page)
+    }
   }
 
   state.appNavigationDefaults = appNavigationDefaults

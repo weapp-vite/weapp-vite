@@ -5,8 +5,10 @@
   "private": true,
   "scripts": {
     "dev": "wv dev",
+    "dev:web": "wv dev -p h5 --host",
     "dev:open": "wv dev -o",
     "build": "wv build",
+    "build:web": "wv build -p h5",
     "pretest:types": "node ./scripts/prepare-type-fixtures.mjs",
     "test:types": "tsd",
     "dev:ui": "wv dev --ui",

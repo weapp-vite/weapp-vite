@@ -2034,6 +2034,9 @@ importers:
       domhandler:
         specifier: ^6.0.1
         version: 6.0.1
+      esbuild:
+        specifier: 'catalog:'
+        version: 0.28.1
       htmlparser2:
         specifier: 'catalog:'
         version: 12.0.0
@@ -2058,6 +2061,9 @@ importers:
       rolldown-require:
         specifier: workspace:*
         version: link:../../packages/rolldown-require
+      wevu:
+        specifier: workspace:*
+        version: link:../wevu
 
   packages-runtime/web-apis:
     dependencies:

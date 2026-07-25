@@ -1,6 +1,10 @@
 import type { Plugin } from 'vite'
 import type { RuntimeProvider } from './types'
-import { WEAPP_VITE_RUNTIME_CONTRACT_VERSION, WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
+import {
+  WEAPP_VITE_RUNTIME_CONTRACT_VERSION,
+  WEAPP_VITE_RUNTIME_VIRTUAL_ID,
+  WEAPP_VITE_RUNTIME_VIRTUAL_IDS,
+} from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createRuntimeProviderPlugin,
@@ -76,6 +80,34 @@ describe('runtime provider plugin', () => {
     expect(resolveRuntimeProviderHmrFooter(webRuntimeProvider))
       .toBe('if (import.meta.hot) { import.meta.hot.accept() }')
     expect(resolveRuntimeProviderHmrFooter(wevuMiniprogramRuntimeProvider)).toBeUndefined()
+  })
+
+  it('keeps web provider framework entries in the same Vite module graph', async () => {
+    const plugin = createRuntimeProviderPlugin(webRuntimeProvider, 'development') as Plugin
+    const resolve = vi.fn(async (id: string) => ({ id: `/resolved/${id}` }))
+
+    await expect((plugin.resolveId as any).call(
+      { resolve },
+      WEAPP_VITE_RUNTIME_VIRTUAL_IDS.reactivity,
+      '/project/src/pages/index.vue',
+    )).resolves.toEqual({ id: '/resolved/wevu/internal-reactivity' })
+    await expect((plugin.resolveId as any).call(
+      { resolve },
+      WEAPP_VITE_RUNTIME_VIRTUAL_IDS.template,
+      '/project/src/pages/index.vue',
+    )).resolves.toEqual({ id: '/resolved/wevu/internal-template' })
+    expect(resolve).toHaveBeenNthCalledWith(
+      1,
+      'wevu/internal-reactivity',
+      '/project/src/pages/index.vue',
+      { skipSelf: true },
+    )
+    expect(resolve).toHaveBeenNthCalledWith(
+      2,
+      'wevu/internal-template',
+      '/project/src/pages/index.vue',
+      { skipSelf: true },
+    )
   })
 
   it('reports provider entry location failures before Vite resolution', async () => {

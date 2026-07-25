@@ -62,6 +62,7 @@
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "domhandler": "^6.0.1",
+    "esbuild": "catalog:",
     "htmlparser2": "catalog:",
     "lit": "^3.3.3",
     "magic-string": "catalog:",
@@ -69,6 +70,7 @@
     "postcss": "catalog:",
     "postcss-selector-parser": "^7.1.4",
     "rolldown": "catalog:",
-    "rolldown-require": "workspace:*"
+    "rolldown-require": "workspace:*",
+    "wevu": "workspace:*"
   }
 }

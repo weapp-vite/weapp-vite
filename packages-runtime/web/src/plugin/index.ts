@@ -1,21 +1,25 @@
 import type { SourceMap } from 'magic-string'
-import type { WeappWebPluginOptions } from './types'
+import type { ResolveWebModuleId, WeappWebPluginOptions } from './types'
+import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 
 import { extname, resolve } from 'pathe'
 import { compileWxml } from '../compiler/wxml'
 import { transformWxsToEsm } from '../compiler/wxs'
 import { transformWxssToCss } from '../css/wxss'
-import { ENTRY_ID, SCRIPT_EXTS, STYLE_EXTS, TEMPLATE_EXTS, TRANSFORM_STYLE_EXTS, WXS_EXTS } from './constants'
-import { generateEntryModule } from './entry'
-import { cleanUrl, isHtmlEntry, isInsideDir, normalizePath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport } from './path'
+import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, SCRIPT_EXTS, SFC_STYLE_QUERY, SFC_TEMPLATE_QUERY, STYLE_EXTS, STYLE_QUERY, TEMPLATE_EXTS, TEMPLATE_QUERY, TRANSFORM_STYLE_EXTS, WXS_EXTS } from './constants'
+import { generateAutoRoutesModule, generateEntryModule } from './entry'
+import { cleanUrl, isHtmlEntry, isInsideDir, normalizePath, resolveRuntimePolyfillPath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport, toViteFsImport } from './path'
 import { transformScriptModule } from './register'
 import { scanProject } from './scan'
 import { createEmptyScanState } from './state'
+import { createInlineStyleModule } from './styleModule'
+import { ensureWebVueSfcResult, generateWebVueSfcStyle, generateWebVueSfcTemplate, transformWebVueSfcScript } from './vueSfc'
 
 interface WebPluginContext {
   warn?: (message: string) => void
   addWatchFile?: (id: string) => void
+  resolve?: (source: string, importer?: string, options?: { skipSelf?: boolean }) => Promise<{ id: string } | null>
 }
 
 type WebTransformResult = { code: string, map: SourceMap | null } | null
@@ -23,6 +27,7 @@ type WebTransformResult = { code: string, map: SourceMap | null } | null
 interface WebResolvedConfig {
   root: string
   command: string
+  createResolver?: () => ResolveWebModuleId
 }
 
 interface WebHmrContext {
@@ -58,59 +63,15 @@ function hasWxsQuery(id: string) {
   return id.includes('?wxs') || id.includes('&wxs')
 }
 
-function createInlineStyleModule(css: string) {
-  const serialized = JSON.stringify(css)
-  return [
-    `const __weapp_injected_styles__ = new Map()`,
-    `function __weapp_createStyleId__(css) {`,
-    `  let hash = 2166136261`,
-    `  for (let i = 0; i < css.length; i++) {`,
-    `    hash ^= css.charCodeAt(i)`,
-    `    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)`,
-    `  }`,
-    `  return 'weapp-web-style-' + (hash >>> 0).toString(36)`,
-    `}`,
-    `function __weapp_removeStyle__(id) {`,
-    `  if (typeof document === 'undefined') {`,
-    `    return`,
-    `  }`,
-    `  const style = __weapp_injected_styles__.get(id)`,
-    `  if (style) {`,
-    `    style.remove()`,
-    `    __weapp_injected_styles__.delete(id)`,
-    `  }`,
-    `}`,
-    `function injectStyle(css, id) {`,
-    `  if (typeof document === 'undefined') {`,
-    `    return () => {}`,
-    `  }`,
-    `  const styleId = id ?? __weapp_createStyleId__(css)`,
-    `  const existing = __weapp_injected_styles__.get(styleId)`,
-    `  if (existing) {`,
-    `    if (existing.textContent !== css) {`,
-    `      existing.textContent = css`,
-    `    }`,
-    `    return () => __weapp_removeStyle__(styleId)`,
-    `  }`,
-    `  const style = document.createElement('style')`,
-    `  style.id = styleId`,
-    `  style.textContent = css`,
-    `  document.head.append(style)`,
-    `  __weapp_injected_styles__.set(styleId, style)`,
-    `  return () => __weapp_removeStyle__(styleId)`,
-    `}`,
-    `const css = ${serialized}`,
-    `export default css`,
-    `export function useStyle(id) {`,
-    `  return injectStyle(css, id)`,
-    `}`,
-  ].join('\n')
+function hasQuery(id: string, query: string) {
+  return id.includes(`?${query}`) || id.includes(`&${query}`)
 }
 
 export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVitePlugin {
   let root = process.cwd()
   let srcRoot = resolve(root, options.srcDir ?? 'src')
   let enableHmr = false
+  let resolveWebModuleId: ResolveWebModuleId | undefined
 
   const state = createEmptyScanState()
   const wxssOptions = options.wxss
@@ -129,31 +90,143 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       root = config.root
       srcRoot = resolve(root, options.srcDir ?? 'src')
       enableHmr = config.command === 'serve'
-      await scanProject({ srcRoot, warn: this.warn?.bind(this), state })
+      resolveWebModuleId = config.createResolver?.()
+      await scanProject({ srcRoot, warn: this.warn?.bind(this), state, resolveId: resolveWebModuleId })
     },
     async buildStart(this: WebPluginContext) {
-      await scanProject({ srcRoot, warn: this.warn?.bind(this), state })
+      if (!resolveWebModuleId && this.resolve) {
+        resolveWebModuleId = async (source, importer) => {
+          const resolved = await this.resolve?.(source, importer, { skipSelf: true })
+          return resolved?.id
+        }
+      }
+      await scanProject({ srcRoot, warn: this.warn?.bind(this), state, resolveId: resolveWebModuleId })
     },
     resolveId(id: string) {
       if (id === '/@weapp-vite/web/entry' || id === '@weapp-vite/web/entry') {
         return ENTRY_ID
       }
+      if (id === AUTO_ROUTES_ID) {
+        return RESOLVED_AUTO_ROUTES_ID
+      }
       return null
     },
-    load(id: string) {
+    async load(this: WebPluginContext, id: string) {
       if (id === ENTRY_ID) {
         return generateEntryModule(state.scanResult, root, wxssOptions, options)
+      }
+      if (id === RESOLVED_AUTO_ROUTES_ID) {
+        return generateAutoRoutesModule(state.scanResult)
+      }
+      if (hasQuery(id, TEMPLATE_QUERY)) {
+        const filename = cleanUrl(id)
+        const source = await readFile(filename, 'utf8')
+        const navigationConfig = state.pageNavigationMap.get(normalizePath(filename))
+        const componentTags = state.templateComponentMap.get(normalizePath(filename))
+        const compiled = compileWxml({
+          id: filename,
+          source,
+          resolveTemplatePath,
+          resolveWxsPath,
+          navigationBar: navigationConfig ? { config: navigationConfig } : undefined,
+          componentTags,
+        })
+        for (const dependency of compiled.dependencies) {
+          this.addWatchFile?.(dependency)
+        }
+        for (const warning of compiled.warnings ?? []) {
+          this.warn?.(warning)
+        }
+        return compiled.code
+      }
+      if (hasWxsQuery(id)) {
+        const filename = cleanUrl(id)
+        const source = await readFile(filename, 'utf8')
+        const compiled = transformWxsToEsm(source, filename, {
+          resolvePath: resolveWxsPath,
+          toImportPath: (resolved, importer) => normalizePath(toRelativeImport(importer, resolved)),
+        })
+        for (const dependency of compiled.dependencies) {
+          this.addWatchFile?.(dependency)
+        }
+        for (const warning of compiled.warnings ?? []) {
+          this.warn?.(warning)
+        }
+        return compiled.code
+      }
+      if (hasQuery(id, STYLE_QUERY)) {
+        const source = await readFile(cleanUrl(id), 'utf8')
+        const { css } = transformWxssToCss(source, wxssOptions)
+        return createInlineStyleModule(css)
+      }
+      if (id.includes(`?${SFC_TEMPLATE_QUERY}`) || id.includes(`&${SFC_TEMPLATE_QUERY}`)) {
+        const filename = cleanUrl(id)
+        const meta = state.moduleMeta.get(normalizePath(filename))
+        if (!meta) {
+          return null
+        }
+        const result = await ensureWebVueSfcResult({ filename, meta, srcRoot, state, resolveId: resolveWebModuleId })
+        const compiled = generateWebVueSfcTemplate(result, meta, filename, srcRoot)
+        for (const dependency of compiled.dependencies) {
+          this.addWatchFile?.(dependency)
+        }
+        for (const warning of compiled.warnings ?? []) {
+          this.warn?.(warning)
+        }
+        return compiled.code
+      }
+      if (id.includes(`?${SFC_STYLE_QUERY}`) || id.includes(`&${SFC_STYLE_QUERY}`)) {
+        const filename = cleanUrl(id)
+        const meta = state.moduleMeta.get(normalizePath(filename))
+        if (!meta) {
+          return null
+        }
+        const result = await ensureWebVueSfcResult({ filename, meta, srcRoot, state, resolveId: resolveWebModuleId })
+        return generateWebVueSfcStyle(result)
       }
       return null
     },
     async handleHotUpdate(this: WebPluginContext, ctx: WebHmrContext) {
       const clean = cleanUrl(ctx.file)
       if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
-        await scanProject({ srcRoot, warn: this.warn?.bind(this), state })
+        await scanProject({ srcRoot, warn: this.warn?.bind(this), state, resolveId: resolveWebModuleId })
       }
     },
-    transform(this: WebPluginContext, code: string, id: string) {
+    async transform(this: WebPluginContext, code: string, id: string) {
       const clean = cleanUrl(id)
+
+      if (
+        hasQuery(id, TEMPLATE_QUERY)
+        || hasWxsQuery(id)
+        || hasQuery(id, STYLE_QUERY)
+        || hasQuery(id, SFC_TEMPLATE_QUERY)
+        || hasQuery(id, SFC_STYLE_QUERY)
+      ) {
+        return null
+      }
+
+      if (clean.endsWith('.vue')) {
+        const meta = state.moduleMeta.get(normalizePath(clean))
+        if (!meta) {
+          return null
+        }
+        const result = await ensureWebVueSfcResult({
+          filename: clean,
+          meta,
+          srcRoot,
+          state,
+          source: code,
+          resolveId: resolveWebModuleId,
+        })
+        return transformWebVueSfcScript({
+          code: result.script ?? '',
+          filename: clean,
+          meta,
+          runtimeModuleId: runtimeProvider?.moduleId ?? toViteFsImport(resolveRuntimePolyfillPath()),
+          enableHmr,
+          hmrAcceptCode,
+        })
+      }
 
       if (isTemplateFile(clean)) {
         if (isHtmlEntry(clean, root)) {

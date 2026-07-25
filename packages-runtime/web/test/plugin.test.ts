@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -50,8 +50,9 @@ describe('weappWebPlugin', () => {
         }],
       },
     }))
-    await writeFile(join(pageDir, 'index.js'), 'Page({})')
+    await writeFile(join(pageDir, 'index.js'), 'Component({})')
     await writeFile(join(pageDir, 'index.wxml'), '<view>index</view>')
+    await writeFile(join(pageDir, 'index.scss'), '.page { width: 750rpx; }')
     await writeFile(join(pageDir, 'index.json'), JSON.stringify({ navigationBarTitleText: '首页' }))
 
     const plugin = weappWebPlugin({
@@ -86,17 +87,21 @@ describe('weappWebPlugin', () => {
     const entryId = (plugin.resolveId as ((...args: any[]) => any))?.('/@weapp-vite/web/entry') as string
     expect(entryId).toBeTruthy()
 
-    const code = (plugin.load as ((...args: any[]) => any))?.call({} as any, entryId) as string
+    const code = await (plugin.load as ((...args: any[]) => any))?.call({} as any, entryId) as string
     expect(code).toContain('initializePageRoutes(["pages/index/index"]')
+    expect(code.indexOf('/src/app.js'))
+      .toBeLessThan(code.indexOf('/src/pages/index/index.js'))
     expect(code).toContain('"tabBar":{"color":"#666666","selectedColor":"#07c160","backgroundColor":"#ffffff","borderStyle":"black","position":"bottom","custom":false,"list":[{"pagePath":"pages/index/index","text":"首页","iconPath":"assets/home.png"}]}')
     expect(code).toContain('"runtime":{"executionMode":"safe","warnings":{"level":"off","dedupe":false},"viewport":{"mode":"responsive","maxWidth":414,"desktopBreakpoint":720},"routing":{"mode":"history","base":"/mini"},"seo":{"defaultTitle":"商城","titleTemplate":"%s | Demo","description":"商品详情"},"resourceHints":{"links":[{"rel":"preconnect","href":"https://cdn.example.test"}]}}')
     expect(code).toContain('"rpx":{"designWidth":750}')
     const transformedPage = await (plugin.transform as (code: string, id: string) => Promise<any> | any).call(
       {},
-      'Page({})',
+      'Component({})',
       join(pageDir, 'index.js'),
     )
+    expect(transformedPage?.code).toContain('registerPage')
     expect(transformedPage?.code).toContain('navigationBar: {"title":"首页"}')
+    expect(transformedPage?.code).toContain('index.scss?inline')
   })
 
   it('loads runtime polyfill from a Vite fs path in virtual entry modules', async () => {
@@ -113,7 +118,7 @@ describe('weappWebPlugin', () => {
     await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'serve' } as any)
 
     const entryId = (plugin.resolveId as ((...args: any[]) => any))?.('/@weapp-vite/web/entry') as string
-    const code = (plugin.load as ((...args: any[]) => any))?.call({} as any, entryId) as string
+    const code = await (plugin.load as ((...args: any[]) => any))?.call({} as any, entryId) as string
 
     expect(code).toMatch(/from '\/@fs\/.*runtime\/(index\.mjs|polyfill\.ts)'/)
     expect(code).not.toContain('@weapp-vite/web/runtime/polyfill')
@@ -136,7 +141,7 @@ describe('weappWebPlugin', () => {
     await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'serve' } as any)
 
     const entryId = (plugin.resolveId as ((...args: any[]) => any))?.('/@weapp-vite/web/entry') as string
-    const entryCode = (plugin.load as ((...args: any[]) => any))?.call({} as any, entryId) as string
+    const entryCode = await (plugin.load as ((...args: any[]) => any))?.call({} as any, entryId) as string
     const transform = plugin.transform as (code: string, id: string) => Promise<any> | any
     const result = await transform.call({}, 'App({})', join(srcRoot, 'app.js'))
 
@@ -162,5 +167,216 @@ describe('weappWebPlugin', () => {
     expect(result?.code).toMatch(/from '\/@fs\/.*runtime\/(index\.mjs|polyfill\.ts)'/)
     expect(result?.code).toContain('registerApp')
     expect(result?.code).not.toContain('@weapp-vite/web/runtime/polyfill')
+  })
+
+  it('installs scoped registration for indirect native component factories', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'weapp-web-indirect-component-'))
+    const srcRoot = join(root, 'src')
+    const componentDir = join(srcRoot, 'components/probe')
+    await mkdir(componentDir, { recursive: true })
+    await writeFile(join(srcRoot, 'app.js'), 'App({})')
+    await writeFile(join(srcRoot, 'app.json'), JSON.stringify({
+      pages: [],
+      usingComponents: {
+        probe: '/components/probe/index',
+      },
+    }))
+    const componentPath = join(componentDir, 'index.ts')
+    const componentSource = `import { ComponentWithComputed } from 'miniprogram-computed'\nComponentWithComputed({ data: {} })`
+    await writeFile(componentPath, componentSource)
+    await writeFile(join(componentDir, 'index.wxml'), '<view>probe</view>')
+
+    const plugin = weappWebPlugin({
+      srcDir: 'src',
+      __runtimeProvider: {
+        moduleId: 'virtual:weapp-vite/runtime',
+      },
+    })
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'serve' } as any)
+
+    const transformed = await (plugin.transform as ((...args: any[]) => any)).call({}, componentSource, componentPath)
+    expect(transformed.code).toContain('installWebModuleRegistration')
+    expect(transformed.code).toContain('kind: "component"')
+    expect(transformed.code).toContain('__weapp_web_restore_registration__()')
+    expect(transformed.code).toContain('ComponentWithComputed({ data: {} })')
+  })
+
+  it('discovers pages without app json and registers aliased Wevu defineComponent calls', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'weapp-web-native-wevu-'))
+    const srcRoot = join(root, 'src')
+    const pageDir = join(srcRoot, 'pages/index')
+    await mkdir(pageDir, { recursive: true })
+    await writeFile(join(srcRoot, 'app.ts'), `import { createApp } from 'wevu'\ncreateApp({})`)
+    const pagePath = join(pageDir, 'index.ts')
+    const pageSource = `import { defineComponent as defineWevuComponent } from 'wevu'\nexport default defineWevuComponent({ data: () => ({ ready: true }) })`
+    await writeFile(pagePath, pageSource)
+    await writeFile(join(pageDir, 'index.wxml'), '<view>{{ ready }}</view>')
+
+    const plugin = weappWebPlugin({
+      srcDir: 'src',
+      __runtimeProvider: {
+        moduleId: 'virtual:weapp-vite/runtime',
+      },
+    })
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'serve' } as any)
+
+    const entryCode = await (plugin.load as ((...args: any[]) => any))?.call({}, '\0@weapp-vite/web/entry') as string
+    expect(entryCode).toContain('/src/pages/index/index.ts')
+    expect(entryCode).toContain('initializePageRoutes(["pages/index/index"]')
+
+    const transformed = await (plugin.transform as ((...args: any[]) => any)).call({}, pageSource, pagePath)
+    expect(transformed.code).toContain('registerWebWevuComponent')
+    expect(transformed.code).toContain('kind: "page"')
+  })
+
+  it('compiles Vue SFC pages into the shared Web runtime registration model', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'weapp-web-sfc-'))
+    const srcRoot = join(root, 'src')
+    const pageDir = join(srcRoot, 'pages/index')
+    await mkdir(pageDir, { recursive: true })
+    await writeFile(join(root, 'index.html'), '<div id="app"></div><script type="module" src="/@weapp-vite/web/entry"></script>')
+    await writeFile(join(srcRoot, 'app.vue'), `
+<script setup lang="ts">
+defineAppJson({ pages: ['pages/index/index'] })
+</script>
+    `.trim())
+    const componentPath = join(srcRoot, 'components/status-card.vue')
+    await mkdir(join(srcRoot, 'components'), { recursive: true })
+    await writeFile(componentPath, `
+<script setup lang="ts">
+defineComponentJson({ component: true })
+const label: string = 'ready'
+</script>
+<template><view>{{ label }}</view></template>
+    `.trim())
+    const pagePath = join(pageDir, 'index.vue')
+    const pageSource = `
+<script setup lang="ts">
+import { ref } from 'wevu'
+import StatusCard from '../../components/status-card.vue'
+definePageJson({ navigationBarTitleText: 'SFC 首页' })
+const count = ref<number>(0)
+</script>
+<template><view class="page"><status-card /><button @tap="count += 1">{{ count }}</button></view></template>
+<style>.page { width: 750rpx; }</style>
+    `.trim()
+    await writeFile(pagePath, pageSource)
+
+    const plugin = weappWebPlugin({
+      srcDir: 'src',
+      __runtimeProvider: {
+        moduleId: 'virtual:weapp-vite/runtime',
+        hmrAcceptCode: 'providerAccept()',
+      },
+    })
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'serve' } as any)
+
+    const entryCode = await (plugin.load as ((...args: any[]) => any))?.call({} as any, '\0@weapp-vite/web/entry') as string
+    expect(entryCode).toContain('/src/pages/index/index.vue')
+    expect(entryCode).toContain('/src/components/status-card.vue')
+    expect(entryCode).toContain('initializePageRoutes(["pages/index/index"]')
+
+    const transformed = await (plugin.transform as ((...args: any[]) => any)).call({}, pageSource, pagePath)
+    expect(transformed.code).toContain('registerWebWevuComponent')
+    expect(transformed.code).toContain(`kind: "page"`)
+    expect(transformed.code).toContain('?weapp-web-sfc-template')
+    expect(transformed.code).toContain('?weapp-web-sfc-style&inline')
+    expect(transformed.code).toContain('providerAccept()')
+    expect(transformed.code).not.toContain('ref<number>')
+
+    const transformedComponent = await (plugin.transform as ((...args: any[]) => any)).call(
+      {},
+      await readFile(componentPath, 'utf8'),
+      componentPath,
+    )
+    expect(transformedComponent.code).toContain('registerWebWevuComponent')
+    expect(transformedComponent.code).not.toContain(': string')
+
+    const templateCode = await (plugin.load as ((...args: any[]) => any))?.call(
+      { warn() {}, addWatchFile() {} },
+      `${pagePath}?weapp-web-sfc-template`,
+    ) as string
+    expect(templateCode).toContain(`import { html } from 'lit'`)
+    expect(templateCode).toContain('weapp-button')
+    expect(templateCode).toContain('SFC 首页')
+
+    const styleCode = await (plugin.load as ((...args: any[]) => any))?.call(
+      {},
+      `${pagePath}?weapp-web-sfc-style&inline`,
+    ) as string
+    expect(styleCode).toContain('calc(var(--rpx) * 750)')
+
+    const styleTransform = await (plugin.transform as ((...args: any[]) => any)).call(
+      {},
+      styleCode,
+      `${pagePath}?weapp-web-sfc-style&inline`,
+    )
+    const templateTransform = await (plugin.transform as ((...args: any[]) => any)).call(
+      {},
+      templateCode,
+      `${pagePath}?weapp-web-sfc-template`,
+    )
+    expect(styleTransform).toBeNull()
+    expect(templateTransform).toBeNull()
+  })
+
+  it('discovers auto-routed SFC pages and exposes them through the web routes module', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'weapp-web-sfc-routes-'))
+    const srcRoot = join(root, 'src')
+    const pageDir = join(srcRoot, 'pages/home')
+    const subPageDir = join(srcRoot, 'packageA/pages/detail')
+    await mkdir(pageDir, { recursive: true })
+    await mkdir(subPageDir, { recursive: true })
+    await writeFile(join(srcRoot, 'app.vue'), `
+<script setup>
+defineAppJson({})
+</script>
+    `.trim())
+    await writeFile(join(pageDir, 'index.vue'), '<template><view>home</view></template>')
+    await writeFile(join(subPageDir, 'index.vue'), '<template><view>detail</view></template>')
+
+    const plugin = weappWebPlugin({ srcDir: 'src' })
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'build' } as any)
+    const routesId = (plugin.resolveId as ((...args: any[]) => any))?.('weapp-vite/auto-routes') as string
+    const routesCode = await (plugin.load as ((...args: any[]) => any))?.call({}, routesId) as string
+
+    expect(routesCode).toContain('"pages/home/index"')
+    expect(routesCode).toContain('"packageA/pages/detail/index"')
+    expect(routesCode).toContain('"root":"packageA"')
+  })
+
+  it('resolves bare package imports used by Vue SFC style src blocks', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'weapp-web-sfc-style-src-'))
+    const srcRoot = join(root, 'src')
+    const pageDir = join(srcRoot, 'pages/index')
+    const packageDir = join(root, 'node_modules/demo-style')
+    await mkdir(pageDir, { recursive: true })
+    await mkdir(packageDir, { recursive: true })
+    await writeFile(join(packageDir, 'package.json'), JSON.stringify({
+      name: 'demo-style',
+      exports: {
+        './theme.css': './theme.css',
+      },
+    }))
+    await writeFile(join(packageDir, 'theme.css'), '.external-style { color: red; }')
+    await writeFile(join(srcRoot, 'app.vue'), '<script setup>defineAppJson({ pages: ["pages/index/index"] })</script>')
+    const pagePath = join(pageDir, 'index.vue')
+    await writeFile(pagePath, '<template><view class="external-style">ready</view></template><style src="demo-style/theme.css"></style>')
+
+    const plugin = weappWebPlugin({ srcDir: 'src' })
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, {
+      root,
+      command: 'build',
+      createResolver: () => async (request: string) => request === 'demo-style/theme.css'
+        ? join(packageDir, 'theme.css')
+        : undefined,
+    } as any)
+    const styleCode = await (plugin.load as ((...args: any[]) => any))?.call(
+      {},
+      `${pagePath}?weapp-web-sfc-style&inline`,
+    ) as string
+
+    expect(styleCode).toContain('.external-style')
+    expect(styleCode).toContain('color: red')
   })
 })

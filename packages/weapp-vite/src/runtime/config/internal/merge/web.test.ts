@@ -78,7 +78,7 @@ describe('runtime config merge web', () => {
     expect(result?.define).toMatchObject({
       'import.meta.env.RUNTIME': '"web"',
     })
-    expect(injectBuiltinAliases).toHaveBeenCalledWith(result)
+    expect(injectBuiltinAliases).toHaveBeenCalledWith(result, 'build')
   })
 
   it('returns undefined when web runtime is disabled', () => {

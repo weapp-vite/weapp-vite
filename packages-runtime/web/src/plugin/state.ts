@@ -10,6 +10,7 @@ export function createEmptyScanState(): ScanState {
     componentIdMap: new Map(),
     appNavigationDefaults: {},
     appComponentTags: {},
+    sfcResults: new Map(),
     scanResult: {
       app: undefined,
       pages: [],

@@ -1,5 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
 import type { OutputExtensions } from '../../platforms/types'
+import type { WevuRuntimeAliasMode } from '../packageAliases'
 import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './types'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
@@ -31,10 +32,10 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   const oxcRuntimeSupport = createOxcRuntimeSupport()
   const aliasManager = createAliasManager(oxcRuntimeSupport.alias, resolveBuiltinPackageAliases())
 
-  function injectBuiltinAliases(config: LoadConfigResult['config']) {
+  function injectBuiltinAliases(config: LoadConfigResult['config'], wevuRuntime?: WevuRuntimeAliasMode) {
     aliasManager.injectBuiltinAliases(config, resolveBuiltinPackageAliases({
       isDev: loadingOptions?.isDev ?? options.isDev,
-      wevuRuntime: config.weapp?.wevu?.runtime,
+      wevuRuntime: wevuRuntime ?? config.weapp?.wevu?.runtime,
     }))
   }
 

@@ -23,6 +23,8 @@
 pnpm install
 pnpm dev
 pnpm build
+pnpm dev:web
+pnpm build:web
 ```
 
 ## 快速验证

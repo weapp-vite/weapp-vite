@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "wv dev",
+    "dev:web": "wv dev -p h5 --host",
     "build": "wv build",
+    "build:web": "wv build -p h5",
     "postinstall": "wv prepare"
   },
   "dependencies": {

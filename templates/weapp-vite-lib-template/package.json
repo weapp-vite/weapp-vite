@@ -17,10 +17,12 @@
   "keywords": [],
   "scripts": {
     "dev": "wv dev",
+    "dev:web": "wv dev -p h5 --host",
     "dev:open": "wv dev -o",
     "dev:ui": "wv dev --ui",
     "dev:open:ui": "wv dev --ui -o",
     "build": "wv build",
+    "build:web": "wv build -p h5",
     "build:lib": "wv build --config weapp-vite.lib.config.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

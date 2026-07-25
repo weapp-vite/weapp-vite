@@ -31,6 +31,22 @@ describe('resolveWeappWebConfig', () => {
     expect(result?.outDir).toBe(path.resolve(cwd, 'dist/web'))
   })
 
+  it('enables the default web config when h5 is selected by the CLI', () => {
+    const cwd = path.resolve(process.cwd(), 'virtual/project')
+    const result = resolveWeappWebConfig({
+      cwd,
+      srcRoot: 'src',
+      enableByCli: true,
+    })
+
+    expect(result).toMatchObject({
+      enabled: true,
+      root: cwd,
+      srcDir: 'src',
+      outDir: path.resolve(cwd, 'dist/web'),
+    })
+  })
+
   it('resolves custom root/srcDir/outDir and preserves plugin options', () => {
     const cwd = path.resolve(process.cwd(), 'virtual/project')
     const root = 'examples/web'
