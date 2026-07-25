@@ -157,6 +157,18 @@ describe('sharedBuildConfig', () => {
     expect(output.minifyInternalExports).toBe(false)
   })
 
+  it('keeps production shared chunk names when they contain hashed dist modules', () => {
+    const output = createSharedBuildOutput(createConfigService(), () => [])
+
+    expect(output.chunkFileNames({
+      name: 'common',
+      moduleIds: [
+        '/project/src/shared/common.ts',
+        '/project/node_modules/entities/dist/decode-D3I133J.mjs',
+      ],
+    })).toBe('[name].js')
+  })
+
   it('isolates request globals modules before generic vendor grouping', () => {
     const resolveName = createChunkNameResolver()
 
