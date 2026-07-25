@@ -9,6 +9,7 @@ import { transformWxsToEsm } from '../compiler/wxs'
 import { transformWxssToCss } from '../css/wxss'
 import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, SCRIPT_EXTS, SFC_STYLE_QUERY, SFC_TEMPLATE_QUERY, STYLE_EXTS, STYLE_QUERY, TEMPLATE_EXTS, TEMPLATE_QUERY, TRANSFORM_STYLE_EXTS, WXS_EXTS } from './constants'
 import { generateAutoRoutesModule, generateEntryModule } from './entry'
+import { wrapPageTemplate } from './layout'
 import { cleanUrl, isHtmlEntry, isInsideDir, normalizePath, resolveRuntimePolyfillPath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport, toViteFsImport } from './path'
 import { transformScriptModule } from './register'
 import { scanProject } from './scan'
@@ -82,6 +83,15 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
 
   const resolveTemplatePath = (raw: string, importer: string) => resolveTemplatePathSync(raw, importer, srcRoot)
   const resolveWxsPath = (raw: string, importer: string) => resolveWxsPathSync(raw, importer, srcRoot)
+  const resolveMetaByTemplate = (filename: string) => {
+    const normalized = normalizePath(filename)
+    for (const meta of state.moduleMeta.values()) {
+      if (meta.templatePath && normalizePath(meta.templatePath) === normalized) {
+        return meta
+      }
+    }
+    return undefined
+  }
 
   return {
     name: '@weapp-vite/web',
@@ -120,7 +130,11 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       }
       if (hasQuery(id, TEMPLATE_QUERY)) {
         const filename = cleanUrl(id)
-        const source = await readFile(filename, 'utf8')
+        let source = await readFile(filename, 'utf8')
+        const pageMeta = resolveMetaByTemplate(filename)
+        if (pageMeta?.kind === 'page' && state.scanResult.layouts.length) {
+          source = wrapPageTemplate(source, state.scanResult.layouts)
+        }
         const navigationConfig = state.pageNavigationMap.get(normalizePath(filename))
         const componentTags = state.templateComponentMap.get(normalizePath(filename))
         const compiled = compileWxml({
@@ -241,11 +255,16 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
             return null
           }
         }
+        let templateSource = code
+        const pageMeta = resolveMetaByTemplate(clean)
+        if (pageMeta?.kind === 'page' && state.scanResult.layouts.length) {
+          templateSource = wrapPageTemplate(code, state.scanResult.layouts)
+        }
         const navigationConfig = state.pageNavigationMap.get(normalizedId)
         const componentTags = state.templateComponentMap.get(normalizedId)
         const { code: compiled, dependencies, warnings } = compileWxml({
           id: clean,
-          source: code,
+          source: templateSource,
           resolveTemplatePath,
           resolveWxsPath,
           navigationBar: navigationConfig ? { config: navigationConfig } : undefined,

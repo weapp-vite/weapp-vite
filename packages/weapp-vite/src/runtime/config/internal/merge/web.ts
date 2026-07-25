@@ -118,5 +118,27 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
   inline.define = defu(inline.define ?? {}, getDefineImportMetaEnv())
   injectBuiltinAliases(inline, 'build')
 
+  // `weapp-vite/runtime` is a public compatibility entry used by native
+  // pages. In the Web target it must enter the selected runtime provider,
+  // otherwise package resolution loads the native-only implementation first.
+  const runtimeAlias = {
+    find: 'weapp-vite/runtime',
+    replacement: WEAPP_VITE_RUNTIME_VIRTUAL_ID,
+  }
+  inline.resolve ??= {}
+  const aliases = inline.resolve.alias
+  if (Array.isArray(aliases)) {
+    inline.resolve!.alias = [
+      runtimeAlias,
+      ...aliases.filter(alias => !(typeof alias === 'object' && alias !== null && 'find' in alias && alias.find === runtimeAlias.find)),
+    ]
+  }
+  else {
+    inline.resolve!.alias = [
+      runtimeAlias,
+      ...Object.entries(aliases ?? {}).map(([find, replacement]) => ({ find, replacement })),
+    ]
+  }
+
   return inline
 }

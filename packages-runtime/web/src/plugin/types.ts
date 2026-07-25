@@ -85,6 +85,15 @@ export interface PageEntry {
   id: string
 }
 
+export interface LayoutEntry {
+  script: string
+  id: string
+  name: string
+  tag: string
+  template?: string
+  style?: string
+}
+
 export interface ComponentEntry {
   script: string
   id: string
@@ -94,6 +103,7 @@ export interface ScanResult {
   app?: string
   pages: PageEntry[]
   components: ComponentEntry[]
+  layouts: LayoutEntry[]
   tabBar?: WebTabBarConfig
 }
 

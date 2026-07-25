@@ -211,6 +211,10 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
   return options
 }
 
+export function getCurrentPageInstance(): ComponentPublicInstance | undefined {
+  return pageStack.entries[pageStack.entries.length - 1]?.instance
+}
+
 export function registerComponent<T extends ComponentRawOptions | undefined>(options: T, meta: RegisterMeta): T {
   ensureNativeComponentsDefined()
   const tag = slugify(meta.id, 'wv-component')

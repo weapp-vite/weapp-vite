@@ -82,6 +82,34 @@ describe('runtime provider plugin', () => {
     expect(resolveRuntimeProviderHmrFooter(wevuMiniprogramRuntimeProvider)).toBeUndefined()
   })
 
+  it('maps the public weapp-vite runtime entry to the web provider', async () => {
+    const plugin = createRuntimeProviderPlugin(webRuntimeProvider, 'production') as Plugin
+    const resolve = vi.fn(async () => ({ id: '/resolved/web-runtime.mjs' }))
+
+    await expect((plugin.resolveId as any).call(
+      { resolve },
+      'weapp-vite/runtime',
+      '/project/src/pages/layouts/index.ts',
+    )).resolves.toEqual({ id: '/resolved/web-runtime.mjs' })
+    expect(resolve).toHaveBeenCalledWith(
+      expect.stringMatching(/packages-runtime[\\/]web[\\/]dist[\\/]runtime[\\/]index\.mjs$/),
+      '/project/src/pages/layouts/index.ts',
+      { skipSelf: true },
+    )
+  })
+
+  it('does not map the public web runtime entry for mini-program providers', async () => {
+    const plugin = createRuntimeProviderPlugin(wevuMiniprogramRuntimeProvider, 'production') as Plugin
+    const resolve = vi.fn()
+
+    await expect((plugin.resolveId as any).call(
+      { resolve },
+      'weapp-vite/runtime',
+      '/project/src/pages/layouts/index.ts',
+    )).resolves.toBeNull()
+    expect(resolve).not.toHaveBeenCalled()
+  })
+
   it('keeps web provider framework entries in the same Vite module graph', async () => {
     const plugin = createRuntimeProviderPlugin(webRuntimeProvider, 'development') as Plugin
     const resolve = vi.fn(async (id: string) => ({ id: `/resolved/${id}` }))

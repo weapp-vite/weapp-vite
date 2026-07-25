@@ -1,10 +1,12 @@
 import type { WebTabBarConfig } from '../shared/tabBar'
-import type { ComponentEntry, ModuleMeta, PageEntry, ResolveWebModuleId, ScanState, WarnFn } from './types'
+import type { ComponentEntry, LayoutEntry, ModuleMeta, PageEntry, ResolveWebModuleId, ScanState, WarnFn } from './types'
 
+import { readdir } from 'node:fs/promises'
 import process from 'node:process'
 import { dirname, extname, join, posix, relative, resolve } from 'pathe'
 import { slugify } from '../shared/slugify'
 import { normalizeWebTabBarConfig } from '../shared/tabBar'
+import { SCRIPT_EXTS } from './constants'
 import { isRecord, readJsonFile, resolveJsonPath, resolveScriptFile, resolveStyleFile, resolveTemplateFile } from './files'
 import { mergeNavigationConfig, pickNavigationConfig } from './navigation'
 import { normalizePath, toPosixId } from './path'
@@ -46,6 +48,20 @@ export async function scanProject({ srcRoot, warn, state, resolveId }: ScanProje
 
   const pages = new Map<string, PageEntry>()
   const components = new Map<string, ComponentEntry>()
+  const layouts = new Map<string, LayoutEntry>()
+
+  async function walk(current: string, files: string[]) {
+    const entries = await readdir(current, { withFileTypes: true })
+    for (const entry of entries) {
+      const pathname = join(current, entry.name)
+      if (entry.isDirectory()) {
+        await walk(pathname, files)
+      }
+      else {
+        files.push(pathname)
+      }
+    }
+  }
 
   const reportWarning = (message: string) => {
     if (warn) {
@@ -264,6 +280,49 @@ export async function scanProject({ srcRoot, warn, state, resolveId }: ScanProje
     state.pageNavigationMap.set(normalizePath(template), resolvedNavigationConfig)
   }
 
+  async function collectLayouts() {
+    const layoutsRoot = join(srcRoot, 'layouts')
+    const files: string[] = []
+    try {
+      await walk(layoutsRoot, files)
+    }
+    catch {
+      return
+    }
+    for (const filename of files.sort()) {
+      const script = SCRIPT_EXTS.includes(extname(filename)) ? filename : undefined
+      if (!script) {
+        continue
+      }
+      const relativePath = relative(layoutsRoot, script).replace(/\\/g, '/')
+      const segments = relativePath.split('/')
+      segments.pop()
+      if (segments[segments.length - 1] === 'index') {
+        segments.pop()
+      }
+      const name = segments.join('/')
+      if (!name) {
+        continue
+      }
+      const id = `layouts/${name}`
+      const template = await resolveTemplateFile(script)
+      const style = await resolveStyleFile(script)
+      const tag = slugify(id, 'wv-component')
+      state.moduleMeta.set(normalizePath(script), {
+        kind: 'component',
+        id,
+        scriptPath: script,
+        templatePath: template,
+        stylePath: style,
+        sourceType: 'native',
+      })
+      layouts.set(script, { script, id, name, tag, template, style })
+      if (template) {
+        state.templatePathSet.add(normalizePath(template))
+      }
+    }
+  }
+
   const appJsonBasePath = join(srcRoot, 'app.json')
   const appJsonPath = await resolveJsonPath(appJsonBasePath)
   let appJson = appJsonPath ? await readJsonFile(appJsonPath) : undefined
@@ -327,12 +386,15 @@ export async function scanProject({ srcRoot, warn, state, resolveId }: ScanProje
     }
   }
 
+  await collectLayouts()
+
   state.appNavigationDefaults = appNavigationDefaults
   state.appComponentTags = appComponentTags
   state.scanResult = {
     app: appScript,
     pages: Array.from(pages.values()),
     components: Array.from(components.values()),
+    layouts: Array.from(layouts.values()),
     tabBar: appTabBar,
   }
 }

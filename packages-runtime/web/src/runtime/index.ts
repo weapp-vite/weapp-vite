@@ -32,6 +32,7 @@ export {
 } from './nativeComponents'
 export { setNavigationBarMetrics } from './navigationBar'
 export type { NavigationBarMetrics } from './navigationBar'
+export { setPageLayout } from './pageLayout'
 export {
   authorize,
   canIUse,

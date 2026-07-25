@@ -11,6 +11,8 @@ const runtimeKindByVirtualId = new Map<string, RuntimeProviderModuleKind>(
     .map(([kind, id]) => [id, kind as RuntimeProviderModuleKind]),
 )
 
+const WEB_RUNTIME_COMPAT_ENTRY = 'weapp-vite/runtime'
+
 export function resolveRuntimeProviderEntry(
   provider: RuntimeProvider,
   kind: RuntimeProviderModuleKind,
@@ -51,7 +53,13 @@ export function createRuntimeProviderPlugin(
     name: `weapp-vite:runtime-provider:${provider.descriptor.id}`,
     enforce: 'pre',
     async resolveId(id, importer) {
+      // 原生页面可能显式导入 `weapp-vite/runtime`。Web 目标没有原生
+      // Page 上下文，必须让该入口跟随 Web provider，而不是加载原生
+      // `setPageLayout` 实现。
       const kind = runtimeKindByVirtualId.get(id)
+        ?? (provider.descriptor.backend === 'web' && id === WEB_RUNTIME_COMPAT_ENTRY
+          ? 'runtime'
+          : undefined)
       if (!kind) {
         return null
       }

@@ -15,6 +15,7 @@ export function createEmptyScanState(): ScanState {
       app: undefined,
       pages: [],
       components: [],
+      layouts: [],
     },
   }
 }

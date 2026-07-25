@@ -79,6 +79,9 @@ describe('runtime config merge web', () => {
       'import.meta.env.RUNTIME': '"web"',
     })
     expect(injectBuiltinAliases).toHaveBeenCalledWith(result, 'build')
+    expect(result?.resolve?.alias).toEqual(expect.arrayContaining([
+      { find: 'weapp-vite/runtime', replacement: 'virtual:weapp-vite/runtime' },
+    ]))
   })
 
   it('returns undefined when web runtime is disabled', () => {

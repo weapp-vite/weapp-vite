@@ -59,6 +59,9 @@ export function generateEntryModule(
   for (const component of result.components) {
     importLines.push(`import '${relativeModuleId(root, component.script)}'`)
   }
+  for (const layout of result.layouts) {
+    importLines.push(`import '${relativeModuleId(root, layout.script)}'`)
+  }
 
   const pageOrder = result.pages.map(page => page.id)
   const useRuntimeRpx = wxssOptions?.pxPerRpx === undefined

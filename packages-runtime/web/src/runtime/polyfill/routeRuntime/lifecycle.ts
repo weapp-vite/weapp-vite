@@ -1,5 +1,6 @@
 import type { ComponentOptions, ComponentPublicInstance } from '../../component'
 import type { PageRecord, RouteMeta } from './options'
+import { WEVU_PAGE_LAYOUT_NAME_KEY, WEVU_PAGE_LAYOUT_PROPS_KEY, WEVU_PAGE_LAYOUT_SETTER_KEY } from '@weapp-core/constants'
 
 const ROUTE_META_SYMBOL = Symbol('@weapp-vite/web:route-meta')
 const PAGE_STATE_SYMBOL = Symbol('@weapp-vite/web:page-state')
@@ -113,6 +114,13 @@ export function augmentPageComponentOptions(component: ComponentOptions, record:
       ...lifetimes,
       created(this: ComponentPublicInstance) {
         originalCreated?.call(this)
+        const target = this as ComponentPublicInstance & Record<string, any>
+        target[WEVU_PAGE_LAYOUT_SETTER_KEY] = (layout: string | false, props?: Record<string, any>) => {
+          target.setData?.({
+            [WEVU_PAGE_LAYOUT_NAME_KEY]: layout === false ? '__wv_no_layout' : layout,
+            [WEVU_PAGE_LAYOUT_PROPS_KEY]: layout === false ? {} : (props ?? {}),
+          })
+        }
         getPageState(this)
         record.instances.add(this)
       },
