@@ -5,7 +5,7 @@ import {
   scheduleMicrotask,
 } from './async'
 import { resolveSubPackageName } from './platformRuntime'
-import { getPageContainer } from './routeRuntime/dom'
+import { getPageContainer, recordActiveEntryScrollPosition } from './routeRuntime/scroll'
 
 function resolveScrollTop(value: unknown) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
@@ -18,6 +18,7 @@ function setPageScrollTop(top: number) {
   const container = getPageContainer()
   if (container) {
     container.scrollTop = top
+    recordActiveEntryScrollPosition()
     return
   }
   if (typeof window !== 'undefined') {

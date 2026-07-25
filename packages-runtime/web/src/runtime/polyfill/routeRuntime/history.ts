@@ -33,6 +33,8 @@ let resolvedConfig = { ...DEFAULT_CONFIG }
 let knownPageIds = new Set<string>()
 let popstateHandler: (() => void) | undefined
 let hashchangeHandler: (() => void) | undefined
+let scrollRestorationHistory: History | undefined
+let previousScrollRestoration: ScrollRestoration | undefined
 
 function normalizeBase(base?: string) {
   if (!base?.trim()) {
@@ -53,6 +55,23 @@ function isBrowserHistoryAvailable() {
   return typeof window !== 'undefined'
     && typeof window.history?.pushState === 'function'
     && typeof window.history?.replaceState === 'function'
+}
+
+function bindManualScrollRestoration() {
+  if (typeof window === 'undefined' || !('scrollRestoration' in window.history)) {
+    return
+  }
+  scrollRestorationHistory = window.history
+  previousScrollRestoration = window.history.scrollRestoration
+  window.history.scrollRestoration = 'manual'
+}
+
+function restoreBrowserScrollRestoration() {
+  if (scrollRestorationHistory && previousScrollRestoration) {
+    scrollRestorationHistory.scrollRestoration = previousScrollRestoration
+  }
+  scrollRestorationHistory = undefined
+  previousScrollRestoration = undefined
 }
 
 function normalizePath(path: string) {
@@ -164,6 +183,7 @@ export function disposeWebRouting() {
   }
   popstateHandler = undefined
   hashchangeHandler = undefined
+  restoreBrowserScrollRestoration()
   resolvedConfig = { ...DEFAULT_CONFIG }
   knownPageIds = new Set()
 }
@@ -179,6 +199,8 @@ export function configureWebRouting(
   if (resolvedConfig.mode === 'memory' || typeof window === 'undefined') {
     return resolvedConfig
   }
+
+  bindManualScrollRestoration()
 
   popstateHandler = () => {
     const state = window.history.state as WebRouteHistoryState | undefined

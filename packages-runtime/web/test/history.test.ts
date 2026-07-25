@@ -36,6 +36,7 @@ function createFakeWindow(initialUrl: string) {
     },
   } as Location
   const history = {
+    scrollRestoration: 'auto',
     get state() {
       return state
     },
@@ -125,6 +126,7 @@ describe('web runtime browser routing', () => {
     const { fakeWindow, listeners } = createFakeWindow('https://example.test/mini/#/pages/index/index')
     withWindow(fakeWindow, () => {
       configureWebRouting({ mode: 'hash', base: '/mini' }, ['pages/index/index'], vi.fn())
+      expect(fakeWindow.history.scrollRestoration).toBe('manual')
       expect(readWebRouteTarget(['pages/index/index'])).toEqual({
         id: 'pages/index/index',
         query: {},
@@ -136,5 +138,6 @@ describe('web runtime browser routing', () => {
     })
     expect(listeners.get('popstate')?.size).toBe(0)
     expect(listeners.get('hashchange')?.size).toBe(0)
+    expect(fakeWindow.history.scrollRestoration).toBe('auto')
   })
 })

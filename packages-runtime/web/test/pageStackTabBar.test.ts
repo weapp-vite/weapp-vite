@@ -11,10 +11,10 @@ const runtimeSpies = vi.hoisted(() => ({
 vi.mock('../src/runtime/polyfill/routeRuntime/dom', () => ({
   captureEntryScrollPosition() {},
   mountEntryToDom(entry: PageStackEntry, _registry: Map<string, PageRecord>, onMounted: (entry: PageStackEntry) => void) {
+    onMounted(entry)
     runtimeSpies.mounted.push(entry.id)
     entry.element = { remove() {} } as unknown as PageStackEntry['element']
     entry.instance = {} as PageStackEntry['instance']
-    onMounted(entry)
   },
   restoreEntryScrollPosition() {},
   setEntryActiveInDom(entry: PageStackEntry, active: boolean) {

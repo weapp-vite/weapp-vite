@@ -1,12 +1,11 @@
 import type { PageRecord, PageStackEntry } from './options'
 import {
-  captureEntryScrollPosition,
   mountEntryToDom,
-  restoreEntryScrollPosition,
   setEntryActiveInDom,
   unmountEntryFromDom,
 } from './dom'
 import { hidePageInstance, showPageInstance } from './lifecycle'
+import { captureEntryScrollPosition, restoreEntryScrollPosition } from './scroll'
 
 export class PageStackRuntime {
   readonly entries: PageStackEntry[] = []
@@ -15,7 +14,7 @@ export class PageStackRuntime {
 
   constructor(
     private readonly pageRegistry: Map<string, PageRecord>,
-    private readonly onMounted: (entry: PageStackEntry) => void,
+    private readonly onBeforeMount: (entry: PageStackEntry) => void,
   ) {}
 
   configureTabPages(ids: Iterable<string>) {
@@ -121,7 +120,7 @@ export class PageStackRuntime {
   }
 
   #mount(entry: PageStackEntry) {
-    mountEntryToDom(entry, this.pageRegistry, this.onMounted)
+    mountEntryToDom(entry, this.pageRegistry, this.onBeforeMount)
   }
 
   #record(entry: PageStackEntry) {

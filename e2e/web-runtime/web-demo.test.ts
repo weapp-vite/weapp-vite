@@ -455,6 +455,81 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     }
   })
 
+  it('bridges App foreground lifecycle and keeps launch and enter options distinct', async () => {
+    const page = await browser!.newPage()
+    try {
+      await openHomePage(page)
+      await navigateToInteractiveFromHome(page)
+
+      const snapshot = await page.evaluate(() => {
+        const runtimeWindow = window as any
+        const ownVisibilityState = Object.getOwnPropertyDescriptor(document, 'visibilityState')
+        const ownHidden = Object.getOwnPropertyDescriptor(document, 'hidden')
+        const setVisibility = (visibilityState: 'hidden' | 'visible') => {
+          Object.defineProperty(document, 'visibilityState', {
+            configurable: true,
+            value: visibilityState,
+          })
+          Object.defineProperty(document, 'hidden', {
+            configurable: true,
+            value: visibilityState === 'hidden',
+          })
+          document.dispatchEvent(new Event('visibilitychange'))
+        }
+
+        try {
+          setVisibility('hidden')
+          setVisibility('hidden')
+          setVisibility('visible')
+          setVisibility('visible')
+          return {
+            lifecycle: JSON.parse(JSON.stringify(runtimeWindow.getApp().globalData.lifecycle)),
+            launchOptions: runtimeWindow.wx.getLaunchOptionsSync(),
+            enterOptions: runtimeWindow.wx.getEnterOptionsSync(),
+          }
+        }
+        finally {
+          if (ownVisibilityState) {
+            Object.defineProperty(document, 'visibilityState', ownVisibilityState)
+          }
+          else {
+            delete (document as any).visibilityState
+          }
+          if (ownHidden) {
+            Object.defineProperty(document, 'hidden', ownHidden)
+          }
+          else {
+            delete (document as any).hidden
+          }
+        }
+      })
+
+      expect(snapshot.lifecycle).toEqual({
+        launchCount: 1,
+        showCount: 2,
+        hideCount: 1,
+        lastShowPath: 'pages/interactive/index',
+        events: [
+          'launch:pages/index/index',
+          'show:pages/index/index',
+          'hide',
+          'show:pages/interactive/index',
+        ],
+      })
+      expect(snapshot.launchOptions).toMatchObject({
+        path: 'pages/index/index',
+        query: {},
+      })
+      expect(snapshot.enterOptions).toMatchObject({
+        path: 'pages/interactive/index',
+        query: { from: 'index' },
+      })
+    }
+    finally {
+      await page.close()
+    }
+  })
+
   it('preserves page instance, lifecycle state and scroll position after navigateBack', async () => {
     const page = await browser!.newPage()
     try {

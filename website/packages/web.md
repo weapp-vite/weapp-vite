@@ -87,6 +87,8 @@ export default defineConfig({
 - `cover-view` / `cover-image` 保留媒体覆盖层的定位和层级；`movable-area` / `movable-view` 支持边界、方向限制、拖拽及微信形状移动事件
 - `setWebRuntimeHost` / `resetWebRuntimeHost` 提供宿主注入边界；网络、存储、剪贴板、对话框和打开链接可由测试容器或业务宿主接管，未注入能力回退到浏览器 API。
 - `navigateTo` 保活隐藏页面，`navigateBack` 恢复同一实例、数据和滚动位置；`redirectTo` / `reLaunch` 按页面栈语义触发 `onHide` / `onUnload`
+- `App.onLaunch` / `App.onShow` 在首个页面挂载前触发，浏览器前后台切换会驱动去重的 `App.onHide` / `App.onShow`；launch options 与重新进入时的 enter options 分开维护
+- `#app` 滚动由当前页面栈项持续持有，用户滚动和 `pageScrollTo` 都会写回页面状态；history/hash 模式禁用浏览器原生滚动恢复以避免双重恢复
 - `getCurrentPages()` 返回当前活动路由栈，其他保活 tab 页面不会混入当前 tab 栈；路由 API 同时支持 Promise 与 `success` / `fail` / `complete` 回调
 - 读取 `app.json.tabBar` 并在设备容器内渲染标准 App Shell；`switchTab` 缓存 tab 页面、关闭非 tab 页面并保持正确的 `onLoad` / `onShow` 语义
 - `showTabBar` / `hideTabBar`、`setTabBarItem`、`setTabBarStyle`、badge 与 red-dot API 会真实更新布局和视觉状态

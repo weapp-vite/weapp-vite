@@ -1,28 +1,12 @@
 import type { ComponentPublicInstance } from '../../component'
 import type { PageRecord, PageStackEntry } from './options'
-import { ensureAppContainer, getAppContainer, onDocumentReady } from '../../appShell/container'
+import { ensureAppContainer, onDocumentReady } from '../../appShell/container'
 import { attachRouteMeta } from './lifecycle'
-
-export function getPageContainer() {
-  return getAppContainer()
-}
-
-export function captureEntryScrollPosition(entry: PageStackEntry) {
-  if (!entry.active) {
-    return
-  }
-  const container = getPageContainer()
-  if (container) {
-    entry.scrollTop = container.scrollTop
-  }
-}
-
-export function restoreEntryScrollPosition(entry: PageStackEntry) {
-  const container = getPageContainer()
-  if (container) {
-    container.scrollTop = entry.scrollTop ?? 0
-  }
-}
+import {
+  bindPageScrollOwner,
+  restoreEntryScrollPosition,
+  setEntryScrollOwner,
+} from './scroll'
 
 function applyEntryVisibility(entry: PageStackEntry) {
   const element = entry.element
@@ -30,6 +14,7 @@ function applyEntryVisibility(entry: PageStackEntry) {
     return
   }
   element.setAttribute('data-weapp-page-active', entry.active ? 'true' : 'false')
+  setEntryScrollOwner(entry, entry.active)
   if (entry.active) {
     element.removeAttribute('hidden')
     element.removeAttribute('aria-hidden')
@@ -45,6 +30,7 @@ export function setEntryActiveInDom(entry: PageStackEntry, active: boolean) {
 }
 
 export function unmountEntryFromDom(entry: PageStackEntry) {
+  setEntryScrollOwner(entry, false)
   const element = entry.element
   if (!element) {
     entry.instance = undefined
@@ -60,7 +46,7 @@ export function unmountEntryFromDom(entry: PageStackEntry) {
 export function mountEntryToDom(
   entry: PageStackEntry,
   pageRegistry: Map<string, PageRecord>,
-  onMounted: (entry: PageStackEntry) => void,
+  onBeforeMount: (entry: PageStackEntry) => void,
 ) {
   const record = pageRegistry.get(entry.id)
   if (!record || entry.element) {
@@ -71,6 +57,8 @@ export function mountEntryToDom(
     if (!container) {
       return
     }
+    bindPageScrollOwner(container)
+    onBeforeMount(entry)
     const element = document.createElement(record.tag) as HTMLElement & ComponentPublicInstance
     element.setAttribute('data-weapp-page', entry.id)
     element.setAttribute('style', 'display:block;min-height:100%;box-sizing:border-box;padding-bottom:var(--weapp-tab-bar-inset, 0px);padding-top:var(--weapp-tab-bar-top-inset, 0px);')
@@ -85,6 +73,7 @@ export function mountEntryToDom(
     if (entry.active) {
       restoreEntryScrollPosition(entry)
     }
-    onMounted(entry)
   })
 }
+
+export { getPageContainer } from './scroll'
