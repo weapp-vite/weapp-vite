@@ -1,7 +1,7 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
-import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { ResolvedAppShell } from '../../appShell'
+import type { VueTransformResultWithScriptMap } from '../shared'
 import type { TransformStageMeasurer, VueCompilationCache, VueHmrStageMeasurer, VueStyleBlocksCache } from './types'
 import { resolveVueSfcStyleIndependentSignature } from '../../../../../utils/file/vueSfcSignature'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
@@ -16,7 +16,7 @@ export async function finalizeVueTransform(options: {
   filename: string
   source: string
   autoRoutesSignature?: string
-  result: VueTransformResult
+  result: VueTransformResultWithScriptMap
   compilationCache: VueCompilationCache
   currentStyleIndependentSignature?: string
   previousStyleSignature?: string

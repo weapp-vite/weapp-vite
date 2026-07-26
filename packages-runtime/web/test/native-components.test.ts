@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { BUTTON_STYLE } from '../src/runtime/button/style'
 import {
   clampMovablePosition,
   collectCheckboxGroupValue,
@@ -36,7 +37,7 @@ import {
   sanitizeRichTextStyle,
 } from '../src/runtime/nativeComponents'
 import { connectFormControl, disconnectFormControl, resetFormControls } from '../src/runtime/nativeComponents/formControl'
-import { resolveMaxLength } from '../src/runtime/nativeComponents/helpers'
+import { dispatchMiniProgramEvent, resolveMaxLength } from '../src/runtime/nativeComponents/helpers'
 import {
   registerNativeMediaElement,
   resolveNativeMediaElement,
@@ -88,6 +89,14 @@ describe('web native component contracts', () => {
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-form { display: inline; box-sizing: border-box; }')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-cover-view { position: absolute; z-index: 2;')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-movable-area { position: relative;')
+  })
+
+  it('keeps native button visuals on the host so component-library classes can override them', () => {
+    expect(BUTTON_STYLE).toContain('weapp-button.weapp-btn--primary {')
+    expect(BUTTON_STYLE).toContain('weapp-button .weapp-btn {')
+    expect(BUTTON_STYLE).toContain('background: transparent;')
+    expect(BUTTON_STYLE).toContain('color: inherit;')
+    expect(BUTTON_STYLE).not.toContain('weapp-button.weapp-btn--primary .weapp-btn')
   })
 
   it('normalizes movable directions and keeps views within their area', () => {
@@ -259,6 +268,22 @@ describe('web native component contracts', () => {
     expect(resolveMaxLength(null)).toBeUndefined()
     expect(resolveMaxLength('-1')).toBeUndefined()
     expect(resolveMaxLength('20')).toBe(20)
+  })
+
+  it('keeps native error events from reaching the global error boundary', () => {
+    const dispatchEvent = vi.fn()
+    dispatchMiniProgramEvent({ dispatchEvent } as unknown as Element, 'error', {
+      errMsg: 'image load failed',
+    }, {
+      bubbles: false,
+      composed: false,
+    })
+
+    const event = dispatchEvent.mock.calls[0]?.[0] as CustomEvent
+    expect(event.type).toBe('error')
+    expect(event.detail).toEqual({ errMsg: 'image load failed' })
+    expect(event.bubbles).toBe(false)
+    expect(event.composed).toBe(false)
   })
 
   it('normalizes video sizing and media event details', () => {

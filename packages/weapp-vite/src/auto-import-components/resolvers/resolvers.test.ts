@@ -1,9 +1,10 @@
 import type { Resolver } from './types'
 import { describe, expect, it } from 'vitest'
-import { TDesignResolver, VantResolver, WeuiResolver } from './index'
+import { TDesignResolver, VantResolver, WeuiResolver, WotUiResolver } from './index'
 import tdesignComponents from './json/tdesign.json'
 import vantComponents from './json/vant.json'
 import weuiComponents from './json/weui.json'
+import wotUiComponents from './json/wotUi.json'
 
 function resolveWithResolver(resolver: Resolver, componentName: string, baseName = componentName) {
   if (typeof resolver.resolve === 'function') {
@@ -135,5 +136,48 @@ describe('WeuiResolver', () => {
       resolve: ({ name }) => ({ key: `weui-${name}`, value: `patched/${name}` }),
     })
     expect(resolveWithResolver(custom, 'weui-dialog')).toEqual({ name: 'weui-dialog', from: 'patched/dialog' })
+  })
+})
+
+describe('WotUiResolver', () => {
+  const resolver = WotUiResolver()
+
+  it('maps all public Wot UI Vue SFC components', () => {
+    expect(Object.keys(resolver.components ?? {})).toHaveLength(99)
+    expect(Object.keys(resolver.components ?? {}).sort()).toEqual([...wotUiComponents].sort())
+    expect(resolveWithResolver(resolver, 'wd-button')).toEqual({
+      name: 'wd-button',
+      from: '@wot-ui/ui/components/wd-button/wd-button.vue',
+      resolvedId: '@wot-ui/ui/components/wd-button/wd-button.vue',
+      sourceType: 'wevu-sfc',
+      typeImport: false,
+    })
+    expect(resolveWithResolver(resolver, 'wd-swiper-nav')).toEqual({
+      name: 'wd-swiper-nav',
+      from: '@wot-ui/ui/components/wd-swiper-nav/wd-swiper-nav.vue',
+      resolvedId: '@wot-ui/ui/components/wd-swiper-nav/wd-swiper-nav.vue',
+      sourceType: 'wevu-sfc',
+      typeImport: false,
+    })
+  })
+
+  it('supports a custom prefix and used-only support files', () => {
+    const custom = WotUiResolver({ prefix: 'wot-' })
+    expect(resolveWithResolver(custom, 'wot-button')?.from).toBe('@wot-ui/ui/components/wd-button/wd-button.vue')
+    expect(resolveWithResolver(custom, 'wd-button')).toBeUndefined()
+    expect(custom.supportFilesStrategy).toBe('used')
+  })
+
+  it('exposes package metadata candidates', () => {
+    expect(resolver.resolveExternalMetadataCandidates?.('@wot-ui/ui/components/wd-button/wd-button.vue')).toEqual({
+      packageName: '@wot-ui/ui',
+      dts: [
+        'components/wd-button/wd-button.d.ts',
+        'components/wd-button/types.d.ts',
+        'components/wd-button/type.d.ts',
+        'global.d.ts',
+      ],
+      js: [],
+    })
   })
 })

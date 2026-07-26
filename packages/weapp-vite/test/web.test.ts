@@ -46,7 +46,7 @@ describe('web integration', () => {
 
   it('skips mergeWeb when web config is disabled', async () => {
     const { ctx, dispose } = await createTestCompilerContext({
-      cwd: getApp('weapp-vite-template'),
+      cwd: getApp('vite-native'),
       isDev: true,
       mode: 'development',
     })

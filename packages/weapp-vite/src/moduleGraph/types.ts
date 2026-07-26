@@ -28,7 +28,8 @@ export interface DevModuleGraph {
   getModuleById: (id: string) => DevModuleNode | undefined
   getModulesByFile: (file: string) => Set<DevModuleNode> | undefined
   idToModuleMap?: Map<string, DevModuleNode>
-  invalidateModule: (module: DevModuleNode) => void
+  // eslint-disable-next-line ts/method-signature-style -- Vite 的回调需要保留方法双变性。
+  invalidateModule(module: DevModuleNode): void
 }
 
 export interface DevServerGraphHost {

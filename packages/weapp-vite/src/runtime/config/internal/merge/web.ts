@@ -1,3 +1,4 @@
+import type { WeappWebPluginOptions } from '@weapp-vite/web/plugin'
 import type { InlineConfig, PluginOption } from 'vite'
 import type { WevuRuntimeAliasMode } from '../../../packageAliases'
 import type { ResolvedWeappWebConfig } from '../../types'
@@ -20,6 +21,8 @@ interface MergeWebOptions {
   applyRuntimePlatform: (runtime: 'miniprogram' | 'web') => void
   injectBuiltinAliases: (config: InlineConfig, wevuRuntime?: WevuRuntimeAliasMode) => void
   getDefineImportMetaEnv: () => Record<string, any>
+  uniApp?: false | { include: string[] }
+  autoImportResolvers?: WeappWebPluginOptions['__autoImportResolvers']
 }
 
 export function mergeWebPlugins(
@@ -103,6 +106,8 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
   const runtimeProviderPlugin = createSelectedRuntimeProviderPlugin(runtimeProvider, isDev)
   const webPlugin = weappWebPlugin({
     ...web.pluginOptions,
+    __uniApp: options.uniApp || undefined,
+    __autoImportResolvers: options.autoImportResolvers,
     __runtimeProvider: {
       moduleId: WEAPP_VITE_RUNTIME_VIRTUAL_ID,
       hmrAcceptCode: resolveRuntimeProviderHmrFooter(runtimeProvider),

@@ -314,6 +314,7 @@ type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
   disableRelaunchSessionRecovery?: boolean
+  launchMode?: 'bridge' | 'direct'
   maxLaunchRetries?: number
   skipRelaunchPageRootCheck?: boolean
   skipWarmup?: boolean
@@ -2595,13 +2596,13 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { disableRelaunchSessionRecovery, maxLaunchRetries, projectConfig, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { disableRelaunchSessionRecovery, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
   const launchAttemptTimeout = Math.max(LAUNCH_ATTEMPT_TIMEOUT, launchTimeout)
   const launchRetries = resolveLaunchRetryCount(maxLaunchRetries)
-  const launchMode = resolveAutomatorLaunchMode()
+  const launchMode = requestedLaunchMode ?? resolveAutomatorLaunchMode()
   const completedRecoverySteps = new Set<string>()
   if (launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE) {
     patchMiniProgramOn()

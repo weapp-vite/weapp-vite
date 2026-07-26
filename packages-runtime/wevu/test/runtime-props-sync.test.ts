@@ -348,11 +348,12 @@ describe('runtime: props sync', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
     await nextTick()
-    inst.setData.mockClear()
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('from-props')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.label).toBe('from-setup:from-props')
+    expect(inst.setData.mock.calls.some(([payload]: [Record<string, unknown>]) => Object.hasOwn(payload, 'x'))).toBe(false)
+    inst.setData.mockClear()
 
     inst.properties.x = 'next-props'
     opts.observers.x.call(inst, 'next-props', 'from-props')
@@ -361,6 +362,7 @@ describe('runtime: props sync', () => {
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('next-props')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.label).toBe('from-setup:next-props')
+    expect(inst.setData.mock.calls.some(([payload]: [Record<string, unknown>]) => Object.hasOwn(payload, 'x'))).toBe(false)
   })
 
   it('syncs compiled props aliases into setup state without shadowing same-name setup bindings', async () => {

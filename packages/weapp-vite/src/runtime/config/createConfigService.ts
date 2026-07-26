@@ -30,10 +30,11 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   let loadingOptions: LoadConfigOptions | undefined
 
   const oxcRuntimeSupport = createOxcRuntimeSupport()
-  const aliasManager = createAliasManager(oxcRuntimeSupport.alias, resolveBuiltinPackageAliases())
+  const aliasManager = createAliasManager(oxcRuntimeSupport.alias, resolveBuiltinPackageAliases({ cwd: options.cwd }))
 
   function injectBuiltinAliases(config: LoadConfigResult['config'], wevuRuntime?: WevuRuntimeAliasMode) {
     aliasManager.injectBuiltinAliases(config, resolveBuiltinPackageAliases({
+      cwd: loadingOptions?.cwd ?? options.cwd,
       isDev: loadingOptions?.isDev ?? options.isDev,
       wevuRuntime: wevuRuntime ?? config.weapp?.wevu?.runtime,
     }))
@@ -141,6 +142,12 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
 
   const resolveExternalOutputPath = (filePath: string) => {
     const normalizedPath = normalizeComparablePath(filePath)
+    const nodeModulesMarker = '/node_modules/'
+    const nodeModulesIndex = normalizedPath.lastIndexOf(nodeModulesMarker)
+    if (nodeModulesIndex >= 0) {
+      const packageRelative = normalizedPath.slice(nodeModulesIndex + nodeModulesMarker.length)
+      return normalizeRelativePath(path.join('__weapp_vite_external__', packageRelative))
+    }
     const normalizedDir = path.dirname(normalizedPath)
     const dirHash = createHash('sha256').update(normalizedDir).digest('hex').slice(0, 10)
     return normalizeRelativePath(path.join('__weapp_vite_external__', dirHash, path.basename(normalizedPath)))

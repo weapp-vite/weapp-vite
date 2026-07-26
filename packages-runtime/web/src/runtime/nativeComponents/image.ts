@@ -56,7 +56,10 @@ export class WeappImage extends BaseElement {
       })
     })
     image.addEventListener('error', () => {
-      dispatchMiniProgramEvent(this, 'error', { errMsg: 'image load failed' })
+      dispatchMiniProgramEvent(this, 'error', { errMsg: 'image load failed' }, {
+        bubbles: false,
+        composed: false,
+      })
     })
     root.append(style, image)
     this.#image = image

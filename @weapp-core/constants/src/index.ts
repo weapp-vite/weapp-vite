@@ -70,6 +70,7 @@ export const WEVU_SLOT_SCOPE_KEY = '__wvSlotScope'
 export const WEVU_SLOT_OWNER_KEY = '__wvOwner'
 export const WEVU_SLOT_OWNER_PROXY_KEY = '__wvOwnerProxy'
 export const WEVU_SLOT_PROPS_DATA_KEY = '__wvSlotPropsData'
+export const WEVU_SLOT_FUNCTION_TOKEN = '__wv_slot_function__'
 export const WEVU_SLOT_NAMES_PROP = 'vueSlots'
 
 export const WEVU_SLOT_OWNER_ATTR = '__wv-owner-id'

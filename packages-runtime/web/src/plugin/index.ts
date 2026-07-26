@@ -1,12 +1,14 @@
 import type { SourceMap } from 'magic-string'
-import type { ResolveWebModuleId, WeappWebPluginOptions } from './types'
+import type { ResolveWebAutoImportTag, ResolveWebModuleId, WeappWebPluginOptions, WebResolvedComponent } from './types'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 
-import { extname, resolve } from 'pathe'
+import { dirname, extname, resolve } from 'pathe'
+import { isUniAppCompatibilityFile, transformUniAppSource } from 'wevu/compiler'
 import { compileWxml } from '../compiler/wxml'
 import { transformWxsToEsm } from '../compiler/wxs'
-import { transformWxssToCss } from '../css/wxss'
+import { createWxssPostcssPlugin, transformWxssToCss } from '../css/wxss'
+import { createWebAssetMiddleware, emitWebAssets } from './assets'
 import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, SCRIPT_EXTS, SFC_STYLE_QUERY, SFC_TEMPLATE_QUERY, STYLE_EXTS, STYLE_QUERY, TEMPLATE_EXTS, TEMPLATE_QUERY, TRANSFORM_STYLE_EXTS, WXS_EXTS } from './constants'
 import { generateAutoRoutesModule, generateEntryModule } from './entry'
 import { wrapPageTemplate } from './layout'
@@ -15,17 +17,33 @@ import { transformScriptModule } from './register'
 import { scanProject } from './scan'
 import { createEmptyScanState } from './state'
 import { createInlineStyleModule } from './styleModule'
-import { ensureWebVueSfcResult, generateWebVueSfcStyle, generateWebVueSfcTemplate, transformWebVueSfcScript } from './vueSfc'
+import { ensureWebVueSfcResult, generateWebVueSfcStyle, generateWebVueSfcTemplate, resolveWebVueSfcStyleLanguage, transformWebVueSfcScript } from './vueSfc'
 
 interface WebPluginContext {
   warn?: (message: string) => void
   addWatchFile?: (id: string) => void
+  emitFile?: (asset: { type: 'asset', fileName: string, source: Uint8Array }) => void
   resolve?: (source: string, importer?: string, options?: { skipSelf?: boolean }) => Promise<{ id: string } | null>
 }
 
 type WebTransformResult = { code: string, map: SourceMap | null } | null
 
-interface WebResolvedConfig {
+interface WebPostcssConfig {
+  plugins?: Array<{ postcssPlugin?: string }>
+  [key: string]: unknown
+}
+
+interface WebCssConfig {
+  postcss?: string | WebPostcssConfig
+}
+
+interface WebUserConfig {
+  css?: {
+    postcss?: string | WebPostcssConfig
+  }
+}
+
+interface WebResolvedConfig extends WebUserConfig {
   root: string
   command: string
   createResolver?: () => ResolveWebModuleId
@@ -35,12 +53,20 @@ interface WebHmrContext {
   file: string
 }
 
+interface WebDevServer {
+  middlewares: {
+    use: (middleware: ReturnType<typeof createWebAssetMiddleware>) => void
+  }
+}
+
 interface WeappWebVitePlugin {
   name: string
   enforce?: 'pre' | 'post'
+  config?: (this: WebPluginContext, config: WebUserConfig) => WebUserConfig | void
   configResolved?: (this: WebPluginContext, config: WebResolvedConfig) => void | Promise<void>
+  configureServer?: (server: WebDevServer) => void
   buildStart?: (this: WebPluginContext) => void | Promise<void>
-  resolveId?: (id: string) => string | null | Promise<string | null>
+  resolveId?: (id: string, importer?: string) => string | null | Promise<string | null>
   load?: (id: string) => string | null | Promise<string | null>
   handleHotUpdate?: (this: WebPluginContext, ctx: WebHmrContext) => void | Promise<void>
   transform?: (
@@ -68,11 +94,44 @@ function hasQuery(id: string, query: string) {
   return id.includes(`?${query}`) || id.includes(`&${query}`)
 }
 
+function resolveSfcStyleSourceFilename(id: string) {
+  const filename = cleanUrl(id)
+  const vueSuffixIndex = filename.lastIndexOf('.vue.')
+  return vueSuffixIndex >= 0
+    ? filename.slice(0, vueSuffixIndex + '.vue'.length)
+    : filename
+}
+
+function createWebCssConfig(
+  config: WebUserConfig,
+  wxssOptions: WeappWebPluginOptions['wxss'],
+  warn?: (message: string) => void,
+): WebCssConfig | undefined {
+  const postcssConfig = config.css?.postcss
+  if (typeof postcssConfig === 'string') {
+    warn?.('[@weapp-vite/web] css.postcss 使用配置文件路径时无法注入 WXSS 转换插件。')
+    return undefined
+  }
+
+  const plugins = postcssConfig?.plugins ?? []
+  if (plugins.some(plugin => plugin.postcssPlugin === 'weapp-vite-web-wxss')) {
+    return undefined
+  }
+
+  return {
+    postcss: {
+      ...postcssConfig,
+      plugins: [...plugins, createWxssPostcssPlugin(wxssOptions)],
+    },
+  }
+}
+
 export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVitePlugin {
   let root = process.cwd()
   let srcRoot = resolve(root, options.srcDir ?? 'src')
   let enableHmr = false
   let resolveWebModuleId: ResolveWebModuleId | undefined
+  let resolveWebAutoImportTag: ResolveWebAutoImportTag | undefined
 
   const state = createEmptyScanState()
   const wxssOptions = options.wxss
@@ -93,15 +152,65 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     return undefined
   }
 
+  const createAutoImportTagResolver = (): ResolveWebAutoImportTag | undefined => {
+    const resolvers = options.__autoImportResolvers
+    if (!resolvers?.length) {
+      return undefined
+    }
+    return async (tag, importer) => {
+      for (const resolver of resolvers) {
+        let matched: WebResolvedComponent | void
+        if (typeof resolver === 'function') {
+          matched = resolver(tag, importer)
+        }
+        else if (typeof resolver.resolve === 'function') {
+          matched = resolver.resolve(tag, importer)
+        }
+        else {
+          const from = resolver.components?.[tag]
+          matched = from ? { name: tag, from } : undefined
+        }
+        if (!matched) {
+          continue
+        }
+        const request = matched.resolvedId ?? matched.from
+        const resolvedId = await resolveWebModuleId?.(request, importer)
+        return {
+          ...matched,
+          resolvedId: resolvedId ?? matched.resolvedId,
+          sourceType: matched.sourceType ?? (resolvedId?.endsWith('.vue') ? 'wevu-sfc' : 'native'),
+        }
+      }
+      return undefined
+    }
+  }
+
+  const scan = (context: WebPluginContext) => scanProject({
+    srcRoot,
+    warn: context.warn?.bind(context),
+    state,
+    resolveId: resolveWebModuleId,
+    resolveAutoImportTag: resolveWebAutoImportTag,
+    uniApp: options.__uniApp,
+  })
+
   return {
     name: '@weapp-vite/web',
     enforce: 'pre',
+    config(this: WebPluginContext, config: WebUserConfig) {
+      const css = createWebCssConfig(config, wxssOptions, this.warn?.bind(this))
+      return css ? { css } : undefined
+    },
     async configResolved(this: WebPluginContext, config: WebResolvedConfig) {
       root = config.root
       srcRoot = resolve(root, options.srcDir ?? 'src')
       enableHmr = config.command === 'serve'
       resolveWebModuleId = config.createResolver?.()
-      await scanProject({ srcRoot, warn: this.warn?.bind(this), state, resolveId: resolveWebModuleId })
+      resolveWebAutoImportTag = createAutoImportTagResolver()
+      await scan(this)
+    },
+    configureServer(server: WebDevServer) {
+      server.middlewares.use(createWebAssetMiddleware(srcRoot))
     },
     async buildStart(this: WebPluginContext) {
       if (!resolveWebModuleId && this.resolve) {
@@ -110,14 +219,27 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           return resolved?.id
         }
       }
-      await scanProject({ srcRoot, warn: this.warn?.bind(this), state, resolveId: resolveWebModuleId })
+      resolveWebAutoImportTag = createAutoImportTagResolver()
+      await scan(this)
+      if (!enableHmr) {
+        await emitWebAssets(this, srcRoot)
+      }
     },
-    resolveId(id: string) {
+    resolveId(id: string, importer?: string) {
       if (id === '/@weapp-vite/web/entry' || id === '@weapp-vite/web/entry') {
         return ENTRY_ID
       }
       if (id === AUTO_ROUTES_ID) {
         return RESOLVED_AUTO_ROUTES_ID
+      }
+      if (hasQuery(id, SFC_STYLE_QUERY)) {
+        const queryIndex = id.indexOf('?')
+        const pathname = queryIndex >= 0 ? id.slice(0, queryIndex) : id
+        const query = queryIndex >= 0 ? id.slice(queryIndex) : ''
+        if (pathname.startsWith('.') && importer) {
+          return `${resolve(dirname(cleanUrl(importer)), pathname)}${query}`
+        }
+        return id
       }
       return null
     },
@@ -179,7 +301,15 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         if (!meta) {
           return null
         }
-        const result = await ensureWebVueSfcResult({ filename, meta, srcRoot, state, resolveId: resolveWebModuleId })
+        const result = await ensureWebVueSfcResult({
+          filename,
+          meta,
+          srcRoot,
+          state,
+          resolveId: resolveWebModuleId,
+          resolveAutoImportTag: resolveWebAutoImportTag,
+          uniApp: options.__uniApp,
+        })
         const compiled = generateWebVueSfcTemplate(result, meta, filename, srcRoot)
         for (const dependency of compiled.dependencies) {
           this.addWatchFile?.(dependency)
@@ -190,12 +320,20 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         return compiled.code
       }
       if (id.includes(`?${SFC_STYLE_QUERY}`) || id.includes(`&${SFC_STYLE_QUERY}`)) {
-        const filename = cleanUrl(id)
+        const filename = resolveSfcStyleSourceFilename(id)
         const meta = state.moduleMeta.get(normalizePath(filename))
         if (!meta) {
           return null
         }
-        const result = await ensureWebVueSfcResult({ filename, meta, srcRoot, state, resolveId: resolveWebModuleId })
+        const result = await ensureWebVueSfcResult({
+          filename,
+          meta,
+          srcRoot,
+          state,
+          resolveId: resolveWebModuleId,
+          resolveAutoImportTag: resolveWebAutoImportTag,
+          uniApp: options.__uniApp,
+        })
         return generateWebVueSfcStyle(result)
       }
       return null
@@ -203,11 +341,24 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     async handleHotUpdate(this: WebPluginContext, ctx: WebHmrContext) {
       const clean = cleanUrl(ctx.file)
       if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
-        await scanProject({ srcRoot, warn: this.warn?.bind(this), state, resolveId: resolveWebModuleId })
+        await scan(this)
       }
     },
     async transform(this: WebPluginContext, code: string, id: string) {
       const clean = cleanUrl(id)
+      let uniAppTransformed = false
+
+      if (
+        options.__uniApp
+        && isUniAppCompatibilityFile(clean, srcRoot, options.__uniApp.include)
+        && !clean.endsWith('.vue')
+      ) {
+        const transformed = transformUniAppSource(code, { filename: clean, target: 'h5' })
+        if (transformed.changed) {
+          code = transformed.code
+          uniAppTransformed = true
+        }
+      }
 
       if (
         hasQuery(id, TEMPLATE_QUERY)
@@ -231,12 +382,15 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           state,
           source: code,
           resolveId: resolveWebModuleId,
+          resolveAutoImportTag: resolveWebAutoImportTag,
+          uniApp: options.__uniApp,
         })
         return transformWebVueSfcScript({
           code: result.script ?? '',
           filename: clean,
           meta,
           runtimeModuleId: runtimeProvider?.moduleId ?? toViteFsImport(resolveRuntimePolyfillPath()),
+          styleLanguage: resolveWebVueSfcStyleLanguage(result, clean),
           enableHmr,
           hmrAcceptCode,
         })
@@ -319,10 +473,12 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       }
 
       if (!SCRIPT_EXTS.some(ext => clean.endsWith(ext))) {
-        return null
+        return uniAppTransformed ? { code, map: null } : null
       }
       if (clean.includes('node_modules')) {
-        return null
+        return options.__uniApp && isUniAppCompatibilityFile(clean, srcRoot, options.__uniApp.include)
+          ? { code, map: null }
+          : null
       }
 
       const meta = state.moduleMeta.get(normalizePath(clean))

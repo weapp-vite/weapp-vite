@@ -1,0 +1,42 @@
+{
+  "description": "Wot UI 全组件兼容验证",
+  "miniprogramRoot": "dist/",
+  "compileType": "miniprogram",
+  "setting": {
+    "postcss": false,
+    "minified": false,
+    "compileHotReLoad": false,
+    "packNpmManually": false,
+    "es6": true,
+    "minifyWXML": true,
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "enhance": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    },
+    "useIsolateContext": false,
+    "useMultiFrameRuntime": false
+  },
+  "simulatorType": "wechat",
+  "srcMiniprogramRoot": "dist/",
+  "libVersion": "3.13.2",
+  "appid": "wxb3d842a4a7e3440d",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {}
+}

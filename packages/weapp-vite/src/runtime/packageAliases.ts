@@ -11,6 +11,7 @@ export interface BuiltinPackageAliasEntry {
 export type WevuRuntimeAliasMode = 'auto' | 'dev' | 'build'
 
 export interface ResolveBuiltinPackageAliasesOptions {
+  cwd?: string
   isDev?: boolean
   wevuRuntime?: WevuRuntimeAliasMode
 }
@@ -25,6 +26,7 @@ interface PackageAliasTarget {
 }
 
 const WEVU_WORKSPACE_PACKAGE_PATH = 'packages-runtime/wevu'
+const PACKAGE_ALIAS_MODULE_DIR = path.dirname(fileURLToPath(import.meta.url))
 
 const PACKAGE_ALIASES: PackageAliasTarget[] = [
   {
@@ -156,8 +158,9 @@ function resolvePackageEntry(
   packageName: string,
   distEntries: string[],
   fallbackWorkspacePackagePath?: string,
+  cwd?: string,
 ) {
-  const packageInfo = safeGetPackageInfoSync(packageName)
+  const packageInfo = safeGetPackageInfoSync(packageName, cwd ? { paths: [cwd] } : undefined)
   if (packageInfo) {
     for (const distEntry of distEntries) {
       const resolvedEntry = path.resolve(packageInfo.rootPath, distEntry)
@@ -171,16 +174,20 @@ function resolvePackageEntry(
     return undefined
   }
 
-  const currentDir = path.dirname(fileURLToPath(import.meta.url))
-  const repoRoot = resolveRepoRoot(currentDir)
-  if (!repoRoot) {
-    return undefined
-  }
-
-  for (const distEntry of distEntries) {
-    const fallbackEntry = path.resolve(repoRoot, fallbackWorkspacePackagePath, distEntry)
-    if (existsSync(fallbackEntry)) {
-      return fallbackEntry
+  const fallbackRoots = new Set([
+    cwd,
+    PACKAGE_ALIAS_MODULE_DIR,
+  ].filter((value): value is string => Boolean(value)))
+  for (const fromDir of fallbackRoots) {
+    const repoRoot = resolveRepoRoot(fromDir)
+    if (!repoRoot) {
+      continue
+    }
+    for (const distEntry of distEntries) {
+      const fallbackEntry = path.resolve(repoRoot, fallbackWorkspacePackagePath, distEntry)
+      if (existsSync(fallbackEntry)) {
+        return fallbackEntry
+      }
     }
   }
 
@@ -193,7 +200,7 @@ export function resolveBuiltinPackageAliases(options: ResolveBuiltinPackageAlias
   for (const target of PACKAGE_ALIASES) {
     const { find, packageName, fallbackWorkspacePackagePath } = target
     const distEntries = resolveWevuRuntimeDistEntries(target, options)
-    const resolvedEntry = resolvePackageEntry(packageName, distEntries, fallbackWorkspacePackagePath)
+    const resolvedEntry = resolvePackageEntry(packageName, distEntries, fallbackWorkspacePackagePath, options.cwd)
     if (!resolvedEntry) {
       continue
     }

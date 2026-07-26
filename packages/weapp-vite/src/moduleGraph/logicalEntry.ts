@@ -11,10 +11,19 @@ export function createLogicalEntryModuleCode(
   dependencies: Iterable<LogicalEntryDependency>,
 ) {
   const source = JSON.stringify(entry.sourceId)
-  const forwardsDefault = entry.type !== 'app' && /\.(?:vue|jsx|tsx)$/.test(entry.sourceId)
-  const imports = [forwardsDefault
-    ? `export { default } from ${source};`
-    : `import ${source};`]
+  const isVueLikeEntry = /\.(?:vue|jsx|tsx)$/.test(entry.sourceId)
+  const delegatesComponentRegistration = entry.type === 'component' && isVueLikeEntry
+  const forwardsDefault = entry.type !== 'app' && isVueLikeEntry
+  const imports = delegatesComponentRegistration
+    ? [
+        `import { createWevuComponent as __weappViteCreateWevuComponent } from "wevu";`,
+        `import __weappViteComponentOptions from ${source};`,
+        `__weappViteCreateWevuComponent(__weappViteComponentOptions);`,
+        `export default __weappViteComponentOptions;`,
+      ]
+    : [forwardsDefault
+        ? `export { default } from ${source};`
+        : `import ${source};`]
   const seen = new Set<string>()
   for (const dependency of dependencies) {
     const dependencyId = createSidecarModuleId(entry.sourceId, dependency.sourceId, dependency.kind)

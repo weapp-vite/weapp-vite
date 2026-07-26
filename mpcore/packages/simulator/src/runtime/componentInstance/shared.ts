@@ -23,6 +23,31 @@ export function cloneValue<T>(value: T) {
   return value
 }
 
+function isStructuralValue(value: unknown) {
+  return value !== null && typeof value === 'object'
+}
+
+export function hasComponentPropertyValueChanged(
+  currentValue: unknown,
+  previousSnapshot: unknown,
+  nextValue: unknown,
+  bindingAffected: boolean,
+) {
+  const identityChanged = !Object.is(currentValue, nextValue)
+  if (!identityChanged && !bindingAffected) {
+    return false
+  }
+  if (!isStructuralValue(currentValue) && !isStructuralValue(nextValue)) {
+    return identityChanged
+  }
+  try {
+    return JSON.stringify(previousSnapshot) !== JSON.stringify(nextValue)
+  }
+  catch {
+    return identityChanged
+  }
+}
+
 export function cloneRecord<T extends Record<string, any>>(value: T) {
   return cloneObject(value)
 }

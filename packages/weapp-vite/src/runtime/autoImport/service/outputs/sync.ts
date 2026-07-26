@@ -226,10 +226,10 @@ export async function syncVueComponentsDefinition(
   settings: VueComponentsSettings,
   options: CommonSyncOptions & {
     resolverComponentsMapRef: { value: Record<string, string> }
-    resolveNavigationImport: (from: string) => string | undefined
+    resolveComponentTypeImport: (componentName: string, from: string) => string | undefined
   },
 ) {
-  const { outputsState, ctx, resolverComponentsMapRef, resolveNavigationImport } = options
+  const { outputsState, ctx, resolverComponentsMapRef, resolveComponentTypeImport } = options
   const configService = requireConfigService(ctx, '写入 components.d.ts 前必须初始化 configService。')
   if (!settings.enabled || !settings.outputPath) {
     if (outputsState.lastVueComponentsOutputPath) {
@@ -278,7 +278,7 @@ export async function syncVueComponentsDefinition(
       if (!from) {
         return undefined
       }
-      return resolveNavigationImport(from)
+      return resolveComponentTypeImport(name, from)
     },
   })
   const vueUnchanged = nextDefinition === outputsState.lastWrittenVueComponentsDefinition && outputPath === outputsState.lastVueComponentsOutputPath

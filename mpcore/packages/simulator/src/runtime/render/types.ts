@@ -20,10 +20,20 @@ export interface RuntimeRenderScope {
   eventBindings?: Map<string, { method: string, stopAfter: boolean }>
   getMethod: (methodName: string) => ((...args: any[]) => any) | undefined
   getScopeId: () => string
+  genericComponents?: Map<string, string>
   hostId?: string
   listenerScopeId?: string
   id?: string
   ownerScopeId?: string
+  slots?: Map<string, RuntimeSlotContent[]>
+}
+
+export interface RuntimeSlotContent {
+  instancePath: string
+  node: DomNodeLike
+  ownerFilePath: string
+  ownerJsonPath: string
+  scope: RuntimeRenderScope
 }
 
 export interface RuntimeComponentRegistryEntry {
@@ -46,6 +56,7 @@ export interface RuntimeRendererContext {
   session: {
     createIntersectionObserver: (scope: any, options?: Record<string, any>) => any
     createMediaQueryObserver: (scope: any) => any
+    requestRender: (callback?: () => void) => void
     selectAllComponentsWithin: (scopeId: string, selector: string) => any[]
     selectComponentWithin: (scopeId: string, selector: string) => any
     selectOwnerComponent: (scopeId: string) => any

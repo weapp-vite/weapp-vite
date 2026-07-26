@@ -70,17 +70,43 @@ export function normalizeComponentDefinition(definition: HeadlessComponentDefini
   return mergedDefinition
 }
 
-function normalizePropertyType(option: unknown) {
+function normalizePropertyConstructor(candidate: unknown) {
+  if (candidate === String || candidate === Number || candidate === Boolean || candidate === Array || candidate === Object) {
+    return candidate
+  }
+  if (typeof candidate !== 'function') {
+    return undefined
+  }
+  if (candidate.name === 'String') {
+    return String
+  }
+  if (candidate.name === 'Number') {
+    return Number
+  }
+  if (candidate.name === 'Boolean') {
+    return Boolean
+  }
+  if (candidate.name === 'Array') {
+    return Array
+  }
+  if (candidate.name === 'Object') {
+    return Object
+  }
+  return undefined
+}
+
+function normalizePropertyType(option: unknown): unknown {
   if (option === null) {
     return null
   }
-  if (option === String || option === Number || option === Boolean || option === Array || option === Object) {
-    return option
+  const constructor = normalizePropertyConstructor(option)
+  if (constructor) {
+    return constructor
   }
   if (!option || typeof option !== 'object' || Array.isArray(option)) {
     return undefined
   }
-  return (option as { type?: unknown }).type
+  return normalizePropertyType((option as { type?: unknown }).type)
 }
 
 function resolvePropertyTypeCandidates(option: unknown) {
@@ -93,7 +119,12 @@ function resolvePropertyTypeCandidates(option: unknown) {
   if (option && typeof option === 'object' && !Array.isArray(option)) {
     const optionalTypes = (option as { optionalTypes?: unknown[] }).optionalTypes
     if (Array.isArray(optionalTypes)) {
-      candidates.push(...optionalTypes)
+      for (const optionalType of optionalTypes) {
+        const normalizedType = normalizePropertyType(optionalType)
+        if (normalizedType !== undefined) {
+          candidates.push(normalizedType)
+        }
+      }
     }
   }
 
@@ -114,7 +145,7 @@ function resolveDefaultValueByType(type: unknown) {
     return []
   }
   if (type === Object) {
-    return {}
+    return null
   }
   if (type === null) {
     return null
@@ -181,9 +212,6 @@ export function coerceComponentPropertyValue(rawValue: unknown, option: unknown)
     if (type === Object && rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)) {
       return rawValue
     }
-    if (type === null) {
-      return rawValue
-    }
   }
 
   if (primaryType === Number) {
@@ -205,7 +233,35 @@ export function coerceComponentPropertyValue(rawValue: unknown, option: unknown)
   if (primaryType === String) {
     return rawValue == null ? '' : String(rawValue)
   }
+  if (fallbackCandidates.includes(null)) {
+    return rawValue
+  }
   return rawValue
+}
+
+function resolvePropertyDefaultValue(option: unknown, definition: HeadlessComponentDefinition) {
+  if (!option || typeof option !== 'object' || Array.isArray(option) || !('value' in option)) {
+    return undefined
+  }
+  const rawDefaultValue = (option as { value?: unknown }).value
+  return cloneValue(typeof rawDefaultValue === 'function'
+    ? rawDefaultValue.call(definition)
+    : rawDefaultValue)
+}
+
+export function normalizeComponentPropertyValue(
+  definition: HeadlessComponentDefinition,
+  key: string,
+  rawValue: unknown,
+) {
+  const option = definition.properties?.[key]
+  if (rawValue == null) {
+    if (option && typeof option === 'object' && !Array.isArray(option) && 'value' in option) {
+      return resolvePropertyDefaultValue(option, definition)
+    }
+    return cloneValue(resolveDefaultValueByType(normalizePropertyType(option)))
+  }
+  return coerceComponentPropertyValue(rawValue, option)
 }
 
 export function resolveInitialProperties(
@@ -217,15 +273,12 @@ export function resolveInitialProperties(
   if (propOptions && typeof propOptions === 'object' && !Array.isArray(propOptions)) {
     for (const [key, option] of Object.entries(propOptions)) {
       if (Object.hasOwn(properties, key)) {
-        resolved[key] = coerceComponentPropertyValue(properties[key], option)
+        resolved[key] = normalizeComponentPropertyValue(definition, key, properties[key])
         continue
       }
 
       if (option && typeof option === 'object' && !Array.isArray(option) && 'value' in option) {
-        const rawDefaultValue = typeof option.value === 'function'
-          ? option.value.call(definition)
-          : option.value
-        resolved[key] = cloneValue(rawDefaultValue)
+        resolved[key] = resolvePropertyDefaultValue(option, definition)
       }
       else {
         resolved[key] = cloneValue(resolveDefaultValueByType(normalizePropertyType(option)))
@@ -240,23 +293,4 @@ export function resolveInitialProperties(
   }
 
   return resolved
-}
-
-function resolvePropertyDefaultValue(option: unknown) {
-  if (!option || typeof option !== 'object' || Array.isArray(option) || !('value' in option)) {
-    return undefined
-  }
-  return cloneValue((option as { value?: unknown }).value)
-}
-
-export function normalizeComponentPropertyValue(
-  definition: HeadlessComponentDefinition,
-  key: string,
-  rawValue: unknown,
-) {
-  const option = definition.properties?.[key]
-  if (rawValue == null) {
-    return resolvePropertyDefaultValue(option)
-  }
-  return coerceComponentPropertyValue(rawValue, option)
 }

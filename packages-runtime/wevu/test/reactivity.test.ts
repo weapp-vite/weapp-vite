@@ -64,6 +64,22 @@ describe('reactivity (root version)', () => {
     expect(isReactive({})).toBe(false)
   })
 
+  it('does not trigger when assigning the same raw object through raw and reactive identities', () => {
+    const raw = { count: 1 }
+    const state = reactive({ value: raw })
+    let runs = 0
+    effect(() => {
+      void state.value
+      runs += 1
+    })
+
+    const observed = state.value
+    state.value = raw
+    state.value = observed
+
+    expect(runs).toBe(1)
+  })
+
   it('keeps frozen plain objects reactive', () => {
     const frozen = Object.freeze({ n: 1 })
     const observed = reactive(frozen)

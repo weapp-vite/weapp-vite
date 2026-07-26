@@ -1,6 +1,8 @@
 export { builtinComponentsSet, isBuiltinComponent } from './auto-import-components/builtin'
 export * from './constants'
 export { compileJsxFile } from './plugins/jsx/compileJsxFile'
+export { isUniAppCompatibilityFile, transformUniAppConditionalCode, transformUniAppSource } from './plugins/uniApp'
+export type { TransformUniAppSourceOptions, UniAppCompatibilityTarget } from './plugins/uniApp'
 
 export {
   clearFileCaches,
@@ -21,7 +23,12 @@ export {
   restoreScriptSrc,
 } from './plugins/utils/vueSfc'
 export type { ReadAndParseSfcOptions, ResolveSfcBlockSrcOptions } from './plugins/utils/vueSfc'
-export { compileVueStyleToWxss as compileStyle, compileVueStyleToWxss } from './plugins/vue/compiler/style'
+export {
+  compileVueStyleToWxss as compileStyle,
+  compileVueStyleToWxss,
+  transformNestedWxssVars,
+  transformVueDeepSelectors,
+} from './plugins/vue/compiler/style'
 export type { StyleCompileOptions, StyleCompileResult } from './plugins/vue/compiler/style'
 export { compileVueTemplateToWxml as compileTemplate, compileVueTemplateToWxml } from './plugins/vue/compiler/template'
 export type { MiniProgramPlatform, TemplateCompileOptions, TemplateCompileResult } from './plugins/vue/compiler/template'

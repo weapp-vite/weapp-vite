@@ -28,7 +28,11 @@ export interface TemplateRefBinding {
 
 type TemplateRefUpdateCallback = () => void
 
-export function updateTemplateRefs(target: InternalRuntimeState, onResolved?: TemplateRefUpdateCallback) {
+export function updateTemplateRefs(
+  target: InternalRuntimeState,
+  onResolved?: TemplateRefUpdateCallback,
+  assignmentTarget: InternalRuntimeState = target,
+) {
   const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as TemplateRefBinding[] | undefined
   if (!bindings || !bindings.length) {
     onResolved?.()
@@ -42,7 +46,7 @@ export function updateTemplateRefs(target: InternalRuntimeState, onResolved?: Te
     onResolved?.()
     return
   }
-  const templateRefMap = getTemplateRefMap(target)
+  const templateRefMap = getTemplateRefMap(assignmentTarget)
   const nodeBindings = bindings.filter(binding => !isComponentRef(binding))
   const componentEntries = bindings
     .filter(binding => isComponentRef(binding))
@@ -52,14 +56,14 @@ export function updateTemplateRefs(target: InternalRuntimeState, onResolved?: Te
     }))
 
   const applyEntries = (entries: Array<{ binding: TemplateRefBinding, value: any }>) => {
-    const refsContainer = ensureRefsContainer(target)
+    const refsContainer = ensureRefsContainer(assignmentTarget)
     const nameEntries = new Map<string, { values: any[], count: number, hasFor: boolean }>()
     const nextNames = new Set<string>()
     const proxy = target.__wevu?.proxy ?? target
     entries.forEach((entry) => {
       const binding = entry.binding
       const value = entry.value
-      const resolved = resolveTemplateRefTarget(target, binding)
+      const resolved = resolveTemplateRefTarget(assignmentTarget, binding, target)
 
       if (resolved.type === 'function') {
         if (binding.inFor && Array.isArray(value)) {
@@ -152,7 +156,11 @@ export function updateTemplateRefs(target: InternalRuntimeState, onResolved?: Te
   })
 }
 
-export function scheduleTemplateRefUpdate(target: InternalRuntimeState, onResolved?: TemplateRefUpdateCallback) {
+export function scheduleTemplateRefUpdate(
+  target: InternalRuntimeState,
+  onResolved?: TemplateRefUpdateCallback,
+  assignmentTarget: InternalRuntimeState = target,
+) {
   const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as TemplateRefBinding[] | undefined
   if (!bindings || !bindings.length) {
     onResolved?.()
@@ -190,22 +198,25 @@ export function scheduleTemplateRefUpdate(target: InternalRuntimeState, onResolv
         }
       })
     }
-    updateTemplateRefs(target, flushCallbacks)
+    updateTemplateRefs(target, flushCallbacks, assignmentTarget)
   })
 }
 
-export function clearTemplateRefs(target: InternalRuntimeState) {
+export function clearTemplateRefs(
+  target: InternalRuntimeState,
+  assignmentTarget: InternalRuntimeState = target,
+) {
   const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as TemplateRefBinding[] | undefined
   if (!bindings || !bindings.length) {
     return
   }
-  const refsContainer = ensureRefsContainer(target)
+  const refsContainer = ensureRefsContainer(assignmentTarget)
   const proxy = target.__wevu?.proxy ?? target
   const nextNames = new Set<string>()
-  const templateRefMap = getTemplateRefMap(target)
+  const templateRefMap = getTemplateRefMap(assignmentTarget)
 
   for (const binding of bindings) {
-    const resolved = resolveTemplateRefTarget(target, binding)
+    const resolved = resolveTemplateRefTarget(assignmentTarget, binding, target)
     const emptyValue = binding.inFor ? markNoSetData([]) : null
     if (resolved.type === 'function') {
       resolved.fn.call(proxy, null)

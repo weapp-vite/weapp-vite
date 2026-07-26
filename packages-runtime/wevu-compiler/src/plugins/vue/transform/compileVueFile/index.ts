@@ -127,7 +127,7 @@ export async function compileVueFile(
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap
 
-  compileStylePhase(parsed.descriptor, filename, result)
+  compileStylePhase(parsed.descriptor, filename, result, options?.style)
 
   await compileConfigPhase({
     descriptor: parsed.descriptor,

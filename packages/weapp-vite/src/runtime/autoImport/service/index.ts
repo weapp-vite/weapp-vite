@@ -86,7 +86,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     syncResolverComponentProps: resolverHelpers.syncResolverComponentProps,
     preloadResolverComponentMetadata: metadataHelpers.preloadResolverComponentMetadata,
     getComponentMetadata: metadataHelpers.getComponentMetadata,
-    resolveNavigationImport: resolverHelpers.resolveNavigationImport,
+    resolveComponentTypeImport: resolverHelpers.resolveComponentTypeImport,
   })
 
   const scheduling = createAutoImportScheduling({

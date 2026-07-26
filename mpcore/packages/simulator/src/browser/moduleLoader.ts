@@ -6,18 +6,16 @@ import type {
   HeadlessHostRegistries,
   HeadlessPageDefinition,
 } from '../host'
+import type { BrowserVirtualFiles } from './virtualFiles'
 import { dirname, join, normalize } from 'pathe'
 import {
   createHeadlessWx,
   registerAppDefinition,
   registerComponentDefinition,
+  registerExportedComponentDefinition,
   registerPageDefinition,
 } from '../host'
-import {
-  type BrowserVirtualFiles,
-  hasBrowserVirtualFile,
-  readBrowserVirtualFile,
-} from './virtualFiles'
+import { hasBrowserVirtualFile, readBrowserVirtualFile } from './virtualFiles'
 
 export interface BrowserModuleLoader {
   executeComponentModule: (filePath: string, id: string) => HeadlessComponentDefinition
@@ -26,6 +24,7 @@ export interface BrowserModuleLoader {
 }
 
 interface ModuleCacheEntry {
+  componentDefinitions: HeadlessComponentDefinition[]
   exports: Record<string, any>
 }
 
@@ -108,16 +107,21 @@ export function createBrowserModuleLoader(
     const resolvedPath = normalize(filePath)
     const cached = moduleCache.get(resolvedPath)
     if (cached) {
-      return cached.exports
+      return cached
     }
 
     const source = readBrowserVirtualFile(files, resolvedPath)
     if (typeof source !== 'string') {
-      throw new Error(`Missing virtual module in browser simulator runtime: ${resolvedPath}`)
+      throw new TypeError(`Missing virtual module in browser simulator runtime: ${resolvedPath}`)
     }
 
-    const module = { exports: {} as Record<string, any> }
+    const module: ModuleCacheEntry = {
+      componentDefinitions: [],
+      exports: {},
+    }
     moduleCache.set(resolvedPath, module)
+    const registeredDefinitionsBefore = new Set(registries.components.values())
+    const requiredComponentDefinitions: HeadlessComponentDefinition[] = []
 
     const previousLoadContext = registries.currentLoadContext
     registries.currentLoadContext = loadContext
@@ -127,15 +131,18 @@ export function createBrowserModuleLoader(
       if (requiredPath.endsWith('.json')) {
         const content = readBrowserVirtualFile(files, requiredPath)
         if (typeof content !== 'string') {
-          throw new Error(`Missing virtual json module in browser simulator runtime: ${requiredPath}`)
+          throw new TypeError(`Missing virtual json module in browser simulator runtime: ${requiredPath}`)
         }
         return JSON.parse(content)
       }
-      return executeModule(requiredPath, null)
+      const requiredModule = executeModule(requiredPath, null)
+      requiredComponentDefinitions.push(...requiredModule.componentDefinitions)
+      return requiredModule.exports
     }
 
     try {
       const contextEntries = Object.entries(executionContext)
+      // eslint-disable-next-line no-new-func -- 浏览器 simulator 需要在隔离上下文执行已编译的 CommonJS 虚拟模块。
       const runtime = new Function(
         ...contextEntries.map(([key]) => key),
         'exports',
@@ -153,7 +160,13 @@ export function createBrowserModuleLoader(
         resolvedPath,
         dirname(resolvedPath),
       )
-      return module.exports
+      const registeredDefinitions = [...registries.components.values()]
+        .filter(definition => !registeredDefinitionsBefore.has(definition))
+      module.componentDefinitions = [...new Set([
+        ...requiredComponentDefinitions,
+        ...registeredDefinitions,
+      ])]
+      return module
     }
     finally {
       registries.currentLoadContext = previousLoadContext
@@ -177,8 +190,14 @@ export function createBrowserModuleLoader(
       return definition
     },
     executeComponentModule(filePath, id) {
-      executeModule(filePath, { kind: 'component', route: id })
+      const loadedModule = executeModule(filePath, { kind: 'component', route: id })
       const definition = registries.components.get(id)
+        ?? registerExportedComponentDefinition(
+          registries,
+          id,
+          loadedModule.exports,
+          loadedModule.componentDefinitions.at(-1),
+        )
       if (!definition) {
         throw new Error(`Component() was not registered for id "${id}" while executing ${normalize(filePath)}.`)
       }

@@ -1,8 +1,8 @@
-interface MiniProgramBaseResultLike {
+export interface MiniProgramBaseResultLike {
   errMsg: string
 }
 
-interface MiniProgramAsyncOptionsLike<SuccessResult extends MiniProgramBaseResultLike> {
+export interface MiniProgramAsyncOptionsLike<SuccessResult extends MiniProgramBaseResultLike> {
   success?: (result: SuccessResult) => void
   fail?: (result: MiniProgramBaseResultLike) => void
   complete?: (result: SuccessResult | MiniProgramBaseResultLike) => void

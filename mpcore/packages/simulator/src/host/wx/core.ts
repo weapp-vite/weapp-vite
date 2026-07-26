@@ -229,6 +229,7 @@ export interface HeadlessWxSelectorQueryNode {
     fields: HeadlessWxSelectorQueryFieldsOption,
     callback?: (result: Record<string, any> | Record<string, any>[] | null) => void,
   ) => HeadlessWxSelectorQuery
+  node: (callback?: (result: Record<string, any> | Record<string, any>[] | null) => void) => HeadlessWxSelectorQuery
   scrollOffset: (callback?: (result: HeadlessWxSelectorQueryScrollOffsetResult | HeadlessWxSelectorQueryScrollOffsetResult[] | null) => void) => HeadlessWxSelectorQuery
 }
 
@@ -292,6 +293,18 @@ export interface HeadlessWxAppBaseInfoResult {
   language: string
   platform: string
   version: string
+}
+
+export interface HeadlessWxDeviceInfoResult {
+  abi: string
+  benchmarkLevel: number
+  brand: string
+  cpuType: string
+  deviceAbi: string
+  memorySize: number
+  model: string
+  platform: string
+  system: string
 }
 
 export interface HeadlessWxWindowInfoResult {

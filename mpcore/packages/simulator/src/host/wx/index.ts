@@ -69,6 +69,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     getSavedFileList: true,
     getAppBaseInfo: { return: { SDKVersion: true, enableDebug: true, host: { env: true }, language: true, platform: true, version: true } },
     getAppBaseInfoSync: { return: { SDKVersion: true, enableDebug: true, host: { env: true }, language: true, platform: true, version: true } },
+    getDeviceInfo: { return: { abi: true, benchmarkLevel: true, brand: true, cpuType: true, deviceAbi: true, memorySize: true, model: true, platform: true, system: true } },
     getEnterOptionsSync: { return: { path: true, query: true, referrerInfo: { appId: true, extraData: true }, scene: true } },
     getLaunchOptionsSync: { return: { path: true, query: true, referrerInfo: { appId: true, extraData: true }, scene: true } },
     getClipboardData: { return: { data: true, errMsg: true } },
@@ -163,6 +164,13 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
           }
           return query
         },
+        node: (callback) => {
+          requests.push({ fields: { node: true }, selector, single, target })
+          if (callback) {
+            callbacks.push(callback)
+          }
+          return query
+        },
         scrollOffset: (callback) => {
           requests.push({ fields: { scrollOffset: true }, selector, single, target })
           if (callback) {
@@ -201,6 +209,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     getSavedFileList: option => invokeWxApi(() => driver.getSavedFileList(option), option),
     getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),
     getAppBaseInfoSync: () => driver.getAppBaseInfoSync(),
+    getDeviceInfo: () => driver.getDeviceInfo(),
     getLaunchOptionsSync: () => driver.getLaunchOptionsSync(),
     getClipboardData: option => invokeWxApi(() => driver.getClipboardData(), option),
     getMenuButtonBoundingClientRect: () => driver.getMenuButtonBoundingClientRect(),

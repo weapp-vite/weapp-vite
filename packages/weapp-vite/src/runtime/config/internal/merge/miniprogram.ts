@@ -218,6 +218,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     : []
   if (npmBuildCandidates.length > 0) {
     const builtinAliases = resolveBuiltinPackageAliases({
+      cwd,
       isDev,
       wevuRuntime: config.weapp?.wevu?.runtime,
     })

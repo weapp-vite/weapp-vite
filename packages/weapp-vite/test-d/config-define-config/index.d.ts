@@ -6,6 +6,7 @@ export interface AutoImportComponentsConfig {
       from: string
       resolvedId?: string
       sourceType?: 'wevu-sfc' | 'native'
+      typeImport?: boolean
     } | void
   }>
 }

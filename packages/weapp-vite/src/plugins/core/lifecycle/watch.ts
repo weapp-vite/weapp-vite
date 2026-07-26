@@ -1,3 +1,4 @@
+import type { PluginContext } from 'rolldown'
 import type { ChangeEvent, SubPackageMetaValue } from '../../../types'
 import type { CorePluginState } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -679,7 +680,7 @@ async function processChangedFile(
 }
 
 export function createWatchChangeHook(state: CorePluginState) {
-  return async function watchChange(id: string, change: { event: ChangeEvent }) {
+  return async function watchChange(this: PluginContext, id: string, change: { event: ChangeEvent }) {
     const startedAt = performance.now()
     const eventId = createHmrProfileEventId()
     const normalizedId = normalizeFsResolvedId(id)

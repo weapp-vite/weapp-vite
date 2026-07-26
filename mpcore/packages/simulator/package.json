@@ -48,6 +48,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@babel/parser": "catalog:",
     "htmlparser2": "catalog:",
     "pathe": "catalog:"
   },

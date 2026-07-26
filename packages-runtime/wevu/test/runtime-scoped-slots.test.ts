@@ -1,5 +1,7 @@
 import {
+  WEVU_INLINE_HANDLER,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_SLOT_FUNCTION_TOKEN,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_OWNER_KEY,
@@ -9,7 +11,7 @@ import {
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createWevuScopedSlotComponent, defineComponent, nextTick } from '@/index'
+import { createWevuScopedSlotComponent, defineComponent, nextTick, ref } from '@/index'
 import { allocateOwnerId, getOwnerSnapshot, updateOwnerSnapshot } from '@/runtime/scopedSlots'
 
 const registeredComponents: Record<string, any>[] = []
@@ -485,6 +487,41 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).toHaveBeenCalledWith({ __wvSlotPropsData: { scope: 3, value: 2 } })
   })
 
+  it('reconstructs function-valued slot props through the provider inline bridge', () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()!
+    const inlineHandler = vi.fn(event => event.detail)
+    const provider = { [WEVU_INLINE_HANDLER]: inlineHandler }
+    const descriptor = [WEVU_SLOT_FUNCTION_TOKEN, 'i3', ['row'], [2]]
+    const inst: any = {
+      properties: {
+        __wvSlotScope: null,
+        __wvSlotProps: ['confirm', descriptor],
+      },
+      selectOwnerComponent: () => provider,
+      setData: vi.fn(),
+    }
+
+    opts.lifetimes.attached.call(inst)
+    const confirm = inst[WEVU_SLOT_PROPS_DATA_KEY].confirm
+
+    expect(confirm('accepted')).toEqual(['accepted'])
+    expect(inlineHandler).toHaveBeenCalledWith(expect.objectContaining({
+      currentTarget: {
+        dataset: {
+          wd: 1,
+          wi: 'i3',
+          wvI0: 2,
+          wvS0: 'row',
+        },
+      },
+      detail: ['accepted'],
+    }))
+    expect(inst.setData).toHaveBeenCalledWith({
+      [WEVU_SLOT_PROPS_DATA_KEY]: { confirm: descriptor },
+    })
+  })
+
   it('refreshes computed bindings after slot props change', () => {
     const computed = {
       __wv_bind_0(this: any) {
@@ -581,6 +618,43 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: ['ALPHA'],
     }))
+  })
+
+  it('writes scoped slot component refs back to the original owner', async () => {
+    createWevuScopedSlotComponent({
+      templateRefs: [
+        { selector: '.__wevu-ref-0', inFor: false, name: 'leaf', kind: 'component' },
+      ],
+    })
+    const opts = registeredComponents.pop()!
+    const ownerId = allocateOwnerId()
+    const leaf = { marker: 'scoped-leaf' }
+    const leafRef = ref<any>(null)
+    const owner: any = {
+      __wevu: {
+        state: {},
+        proxy: {},
+        setupState: { leaf: leafRef },
+      },
+    }
+    updateOwnerSnapshot(ownerId, {}, owner.__wevu.proxy, owner)
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: { [WEVU_SLOT_OWNER_ID_PROP]: ownerId },
+      selectComponent: vi.fn(() => leaf),
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+    opts.lifetimes.ready.call(inst)
+    await nextTick()
+    await nextTick()
+
+    expect(leafRef.value.marker).toBe('scoped-leaf')
+    expect(owner.__wevu.state.$refs.leaf).toBeUndefined()
+
+    opts.lifetimes.detached.call(inst)
+    expect(leafRef.value).toBeNull()
   })
 
   it('keeps slot prop observers on properties', () => {

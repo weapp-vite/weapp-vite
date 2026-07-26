@@ -1,7 +1,7 @@
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { LRUCache } from 'lru-cache'
-import { parse as babelParse, generate } from '../../../../../utils/babel'
+import { parse as babelParse, generate, traverse } from '../../../../../utils/babel'
 
 // 注意：lru-cache@11 要求值类型不能为 null，这里用 false 作为哨兵值。
 const babelExpressionCache = new LRUCache<string, t.Expression | false>({ max: 1024 })
@@ -20,6 +20,63 @@ const BABEL_GENERATE_MINI_PROGRAM_OPTIONS = {
   jsescOption: { quotes: 'single' as const, minimal: true },
 }
 
+function stripPatternTypes(node: any) {
+  if (!node || typeof node !== 'object') {
+    return
+  }
+  if ('typeAnnotation' in node) {
+    node.typeAnnotation = null
+  }
+  if ('optional' in node) {
+    node.optional = false
+  }
+  if (node.type === 'AssignmentPattern') {
+    stripPatternTypes(node.left)
+  }
+  else if (node.type === 'RestElement') {
+    stripPatternTypes(node.argument)
+  }
+  else if (node.type === 'ObjectPattern') {
+    for (const property of node.properties) {
+      stripPatternTypes(property.type === 'RestElement' ? property.argument : property.value)
+    }
+  }
+  else if (node.type === 'ArrayPattern') {
+    for (const element of node.elements) {
+      stripPatternTypes(element)
+    }
+  }
+}
+
+function stripTypeScriptExpression(ast: BabelFile) {
+  traverse(ast, {
+    TSAsExpression(path: any) {
+      path.replaceWith(path.node.expression)
+    },
+    TSNonNullExpression(path: any) {
+      path.replaceWith(path.node.expression)
+    },
+    TSTypeAssertion(path: any) {
+      path.replaceWith(path.node.expression)
+    },
+    Function(path: any) {
+      path.node.typeParameters = null
+      path.node.returnType = null
+      for (const param of path.node.params) {
+        stripPatternTypes(param)
+      }
+    },
+  })
+  return ast
+}
+
+function parseTypeScriptExpression(exp: string) {
+  return stripTypeScriptExpression(babelParse(`(${exp})`, {
+    sourceType: 'module',
+    plugins: ['typescript'],
+  }) as BabelFile)
+}
+
 export function generateExpression(node: t.Expression): string {
   const { code } = generate(node, BABEL_GENERATE_MINI_PROGRAM_OPTIONS)
   return code
@@ -31,10 +88,7 @@ export function parseBabelExpression(exp: string): t.Expression | null {
     return cached === false ? null : cached
   }
   try {
-    const ast = babelParse(`(${exp})`, {
-      sourceType: 'module',
-      plugins: ['typescript'],
-    })
+    const ast = parseTypeScriptExpression(exp)
     const stmt = ast.program.body[0]
     if (!stmt || !('expression' in stmt)) {
       babelExpressionCache.set(exp, false)
@@ -52,10 +106,7 @@ export function parseBabelExpression(exp: string): t.Expression | null {
 
 export function parseBabelExpressionFile(exp: string): { ast: BabelFile, expression: t.Expression } | null {
   try {
-    const ast = babelParse(`(${exp})`, {
-      sourceType: 'module',
-      plugins: ['typescript'],
-    }) as BabelFile
+    const ast = parseTypeScriptExpression(exp)
     const stmt = ast.program.body[0]
     if (!stmt || !('expression' in stmt)) {
       return null
@@ -81,10 +132,7 @@ export function parseInlineHandler(exp: string): InlineHandler | null {
     return cached === false ? null : cached
   }
   try {
-    const ast = babelParse(`(${exp})`, {
-      sourceType: 'module',
-      plugins: ['typescript'],
-    })
+    const ast = parseTypeScriptExpression(exp)
     const stmt = ast.program.body[0]
     if (!stmt || !('expression' in stmt)) {
       return null

@@ -13,6 +13,6 @@ export function refreshOwnerSnapshotFromInstance(instance: InternalRuntimeState)
   }
   const snapshot = runtime.snapshot()
   const propsSource = (instance as any)[WEVU_PROPS_KEY] ?? (instance as any).properties
-  mergeOwnerSnapshotProps(snapshot, propsSource, runtime)
-  updateOwnerSnapshot(ownerId, snapshot, runtime.proxy)
+  mergeOwnerSnapshotProps(snapshot, propsSource)
+  updateOwnerSnapshot(ownerId, snapshot, runtime.proxy, instance)
 }

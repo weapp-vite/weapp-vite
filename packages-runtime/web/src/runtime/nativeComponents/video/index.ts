@@ -96,6 +96,9 @@ export class WeappVideo extends BaseElement {
       event.stopPropagation()
       dispatchMiniProgramEvent(this, 'error', {
         errMsg: video.error?.message || 'video load failed',
+      }, {
+        bubbles: false,
+        composed: false,
       })
     })
     root.append(style, video)

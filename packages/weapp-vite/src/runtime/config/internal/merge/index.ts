@@ -109,6 +109,10 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
         applyRuntimePlatform,
         injectBuiltinAliases,
         getDefineImportMetaEnv,
+        uniApp: configService.weappViteConfig.uniApp,
+        autoImportResolvers: typeof configService.weappViteConfig.autoImportComponents === 'object'
+          ? configService.weappViteConfig.autoImportComponents.resolvers
+          : undefined,
       }, sharedOutput
         ? {
             build: {

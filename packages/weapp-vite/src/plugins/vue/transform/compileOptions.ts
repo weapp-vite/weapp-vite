@@ -7,6 +7,7 @@ import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../logger'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../utils/entryResolve'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
 import { createSfcResolveSrcOptions } from '../../utils/vueSfc'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
 import { createUsingComponentPathResolver } from './usingComponentResolver'
@@ -27,8 +28,26 @@ function hasVueExtension(id: string | undefined) {
   return Boolean(id?.endsWith('.vue'))
 }
 
-export function getCompileVueFileOptionsCacheKey(vuePath: string, isPage: boolean, isApp: boolean) {
-  return `${vuePath}::${isPage ? 'page' : 'component'}::${isApp ? 'app' : 'entry'}`
+export function getCompileVueFileOptionsCacheKey(
+  vuePath: string,
+  isPage: boolean,
+  isApp: boolean,
+  delegatesComponentRegistration = false,
+) {
+  return `${vuePath}::${isPage ? 'page' : 'component'}::${isApp ? 'app' : 'entry'}::${delegatesComponentRegistration ? 'logical-registration' : 'module-registration'}`
+}
+
+function shouldDelegateComponentRegistration(
+  ctx: CompilerContext,
+  vuePath: string,
+  isPage: boolean,
+  isApp: boolean,
+  configService: NonNullable<CompilerContext['configService']>,
+) {
+  return !isPage
+    && !isApp
+    && !configService.weappLibConfig?.enabled
+    && !ctx.moduleGraphService?.isLogicalLayoutEntry?.(vuePath)
 }
 
 export function isVueTransformSourceMapEnabled(configService: NonNullable<CompilerContext['configService']>) {
@@ -73,6 +92,7 @@ function buildCompileVueFileOptions(
   isApp: boolean,
   configService: NonNullable<CompilerContext['configService']>,
   state: CompileOptionsContext,
+  delegatesComponentRegistration: boolean,
 ): CompileVueFileResolvedOptions {
   const importerBaseName = removeExtensionDeep(vuePath)
   const autoImportResolveCache = new Map<string, {
@@ -117,7 +137,6 @@ function buildCompileVueFileOptions(
   const wevuMinify = isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev)
   const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
   const sourceMap = isVueTransformSourceMapEnabled(configService)
-
   async function resolvePotentialVueSfcEntryId(candidate: string | undefined) {
     const trimmed = candidate?.trim()
     if (!trimmed) {
@@ -218,6 +237,7 @@ function buildCompileVueFileOptions(
   return {
     isPage,
     isApp,
+    skipComponentTransform: delegatesComponentRegistration,
     warn: (message: string) => logger.warn(message),
     autoUsingComponents: {
       enabled: true,
@@ -250,9 +270,19 @@ function buildCompileVueFileOptions(
           return undefined
         }
         const sourceInfo = await resolveAutoImportComponentSourceType(match)
+        const stableFrom = sourceInfo.sourceType === 'wevu-sfc'
+          ? usingComponentFromResolvedFile(sourceInfo.resolvedId, configService)
+          : undefined
+        if (stableFrom && sourceInfo.resolvedId) {
+          ctx.runtimeState?.build?.hmr?.externalComponentEntryMap?.set(
+            removeExtensionDeep(stableFrom).replace(/^\/+/, ''),
+            sourceInfo.resolvedId,
+          )
+        }
         return {
           ...match.value,
           ...sourceInfo,
+          ...(stableFrom ? { from: stableFrom } : {}),
         }
       },
     },
@@ -296,13 +326,29 @@ export function createCompileVueFileOptions(
   configService: NonNullable<CompilerContext['configService']>,
   state: CompileOptionsContext,
 ) {
-  const cacheKey = getCompileVueFileOptionsCacheKey(vuePath, isPage, isApp)
+  const delegatesComponentRegistration = shouldDelegateComponentRegistration(
+    ctx,
+    vuePath,
+    isPage,
+    isApp,
+    configService,
+  )
+  const cacheKey = getCompileVueFileOptionsCacheKey(vuePath, isPage, isApp, delegatesComponentRegistration)
   const cached = state.compileOptionsCache?.get(cacheKey)
   if (cached) {
     return cached
   }
 
-  const created = buildCompileVueFileOptions(ctx, pluginCtx, vuePath, isPage, isApp, configService, state)
+  const created = buildCompileVueFileOptions(
+    ctx,
+    pluginCtx,
+    vuePath,
+    isPage,
+    isApp,
+    configService,
+    state,
+    delegatesComponentRegistration,
+  )
   state.compileOptionsCache?.set(cacheKey, created)
   return created
 }

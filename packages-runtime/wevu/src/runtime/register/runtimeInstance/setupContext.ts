@@ -9,6 +9,7 @@ import type {
 } from '../../types'
 import {
   WEVU_NATIVE_INSTANCE_KEY,
+  WEVU_PROPS_KEY,
   WEVU_SETUP_CONTEXT_INSTANCE_KEY,
   WEVU_SLOT_NAMES_PROP,
 } from '@weapp-core/constants'
@@ -223,6 +224,24 @@ export function ensureSetupContextInstance(
   }
 
   const setupInstanceBridge: Record<string, any> = Object.create(null)
+  const resolvePublicValue = (key: PropertyKey) => {
+    const runtimeProxy = runtime?.proxy as Record<PropertyKey, any> | undefined
+    if (runtimeProxy && Reflect.has(runtimeProxy, key)) {
+      return {
+        found: true,
+        value: Reflect.get(runtimeProxy, key),
+      }
+    }
+    const runtimeProps = (runtime?.state as any)?.[WEVU_PROPS_KEY]
+      ?? (target as any)[WEVU_PROPS_KEY]
+    if (runtimeProps && typeof runtimeProps === 'object' && hasOwn(runtimeProps, key)) {
+      return {
+        found: true,
+        value: Reflect.get(runtimeProps, key),
+      }
+    }
+    return { found: false, value: undefined }
+  }
   const resolveSetupBridgeOwner = (methodName: SetupInstanceMethodName) => {
     const owner = resolveRuntimeNativeMethodOwner(runtime, target, methodName)
     if (owner) {
@@ -337,6 +356,17 @@ export function ensureSetupContextInstance(
       if (Reflect.has(bridgeTarget, key)) {
         return Reflect.get(bridgeTarget, key, receiver)
       }
+      if (key === '$el') {
+        return resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
+      }
+      if (key === 'renderRoot' || key === 'shadowRoot') {
+        const nativeOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
+        return (nativeOwner as any)[key]
+      }
+      const publicValue = resolvePublicValue(key)
+      if (publicValue.found) {
+        return publicValue.value
+      }
       const value = (target as any)[key as any]
       if (typeof value === 'function') {
         return value.bind(target)
@@ -344,7 +374,7 @@ export function ensureSetupContextInstance(
       return value
     },
     has(bridgeTarget, key) {
-      return Reflect.has(bridgeTarget, key) || key in (target as any)
+      return Reflect.has(bridgeTarget, key) || resolvePublicValue(key).found || key in (target as any)
     },
     set(bridgeTarget, key, value) {
       if (Reflect.has(bridgeTarget, key)) {

@@ -155,16 +155,19 @@ export class Renderer {
         const listExpr = `ctx.normalizeList(${listExpression})`
         const itemVar = forInfo.itemName
         const indexVar = forInfo.indexName
+        const nestedScopeVar = scopeVar === 'scope'
+          ? '__scope'
+          : `${scopeVar}_nested`
         const scopeExpr = `ctx.createScope(${scopeVar}, { ${itemVar}: ${itemVar}, ${indexVar}: ${indexVar} })`
         const itemRender = this.renderElement(
           node,
-          '__scope',
+          nestedScopeVar,
           wxsVar,
           componentTags,
           { skipFor: true, overrideAttribs: forInfo.restAttribs },
         )
         const keyExpr = `ctx.key(${JSON.stringify(forInfo.key ?? '')}, ${itemVar}, ${indexVar}, ${scopeExpr}, ${wxsVar})`
-        return `repeat(${listExpr}, (${itemVar}, ${indexVar}) => ${keyExpr}, (${itemVar}, ${indexVar}) => { const __scope = ${scopeExpr}; return ${itemRender}; })`
+        return `repeat(${listExpr}, (${itemVar}, ${indexVar}) => ${keyExpr}, (${itemVar}, ${indexVar}) => { const ${nestedScopeVar} = ${scopeExpr}; return ${itemRender}; })`
       }
     }
 
@@ -182,9 +185,9 @@ export class Renderer {
         : resolveNativeComponentPropertyAttributes(node.name ?? ''),
     })
     const childNodes = node.children ?? []
-    const children = childNodes
-      .map(child => `\${${this.renderNode(child, scopeVar, wxsVar, componentTags)}}`)
-      .join('')
+    const children = childNodes.length > 0
+      ? `\${${this.renderNodes(childNodes, scopeVar, wxsVar, componentTags)}}`
+      : ''
     if (SELF_CLOSING_TAGS.has(tagName) && childNodes.length === 0) {
       return `html\`<${tagName}${attrs} />\``
     }

@@ -97,6 +97,8 @@ export default <UserConfig>{
 
 配置完成后，就能直接在 `wxml` 中书写 `<van-button>`、`<t-tabs>` 等标签，构建器会自动补全 `usingComponents`。
 
+外部组件是 uni-app Vue SFC 时，resolver 还需要返回 `sourceType: 'wevu-sfc'` 与真实 `resolvedId`，并用 `weapp.uniApp.include` 明确允许参与方言转换的 npm 包。Wot UI 2.2.0 可以直接使用内置 `WotUiResolver()`；完整配置与兼容矩阵见 [Wot UI 与 uni-app 组件库](/integration/wot-ui)。
+
 如果你希望接入自己的组件库（或对第三方库做二次封装），可以参考：[自定义 Resolver（自动导入组件）](/guide/auto-import-resolver)。
 
 ## 自动生成的辅助文件

@@ -64,7 +64,7 @@ async function transformWxsFile(
     importeePaths.map(importeePath => transformWxsFile.call(this, state, importeePath)),
   )
 
-  if (code === undefined) {
+  if (code == null) {
     return
   }
 

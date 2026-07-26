@@ -8,6 +8,7 @@ import type {
 export interface WeappComponentInstance extends ComponentPublicInstance {
   __weappSync: (nextMethods: ComponentOptions['methods']) => void
   __weappInvokePageLifetime: (type: keyof PageLifeTimeHooks) => void
+  selectOwnerComponent: () => WeappComponentInstance | undefined
 }
 
 export interface CreateComponentElementClassOptions {

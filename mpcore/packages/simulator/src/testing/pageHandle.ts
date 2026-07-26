@@ -95,6 +95,7 @@ export class HeadlessTestingPageHandle {
   ) {
     const normalizedMethodName = normalizeNonEmptyInput(methodName, 'Page method name')
     return await runWithTimeout(async () => {
+      this.session?.renderCurrentPage()
       const method = this.page[normalizedMethodName]
       if (typeof method !== 'function') {
         throw new TypeError(`Method "${normalizedMethodName}" does not exist on headless page ${this.page.route}.`)

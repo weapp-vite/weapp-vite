@@ -26,14 +26,14 @@ export function createPropsSync(options: {
   const propsDerivedKeySet = new Set(propsDerivedKeys ?? [])
   const aliasEntries = Object.entries(propsAliases ?? {})
     .filter(([alias, propName]) => alias && propName)
-  const aliasKeySet = new Set(aliasEntries.map(([alias]) => alias))
-  const directPropsDerivedKeys = [...propsDerivedKeySet]
-    .filter(key => propKeySet.has(key) && !aliasKeySet.has(key))
   const templateRuntimePropKeys = new Set([
     WEVU_SLOT_NAMES_PROP,
     WEVU_SLOT_OWNER_ID_PROP,
     WEVU_SLOT_SCOPE_KEY,
   ])
+  // 原生 properties 已由宿主管理，setup/data 中的同名绑定不能再通过 setData 回写。
+  // 编译协议字段仍需镜像到顶层 data，供 WXML 的 slot 分支直接读取。
+  const directPropsDerivedKeys = propKeys.filter(key => !templateRuntimePropKeys.has(key))
   const syncedAliases = new WeakMap<InternalRuntimeState, Set<string>>()
 
   const isInternalAttrKey = (key: string) => key.startsWith('__wv_')

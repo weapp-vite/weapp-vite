@@ -1,11 +1,12 @@
 import type { HeadlessComponentDefinition } from '../../host'
 import type { HeadlessComponentInstance } from '../componentInstance'
-import type { DomNodeLike, RuntimeComponentRegistryEntry, RuntimeRendererContext, RuntimeRenderScope } from './types'
+import type { DomNodeLike, RuntimeComponentRegistryEntry, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import fs from 'node:fs'
 import path from 'node:path'
 import {
   cloneValue,
   createComponentInstance,
+  hasComponentPropertyValueChanged,
   normalizeComponentPropertyValue,
   runComponentLifecycle,
   runComponentObservers,
@@ -28,10 +29,11 @@ export function resolveComponentRegistryEntry(
   ownerJsonPath: string,
   ownerFilePath: string,
   alias: string,
+  genericComponentBasePath?: string,
 ) {
   // eslint-disable-next-line ts/no-use-before-define
   const usingComponents = resolveUsingComponents(ownerJsonPath, ownerFilePath)
-  const componentBasePath = usingComponents.get(alias)
+  const componentBasePath = genericComponentBasePath ?? usingComponents.get(alias)
   if (!componentBasePath) {
     return null
   }
@@ -49,12 +51,21 @@ export function resolveComponentRegistryEntry(
   } satisfies RuntimeComponentRegistryEntry & { absoluteTemplatePath: string }
 }
 
+function readComponentConfig(jsonPath: string) {
+  try {
+    return JSON.parse(fs.readFileSync(jsonPath, 'utf8')) as Record<string, any>
+  }
+  catch {
+    return {}
+  }
+}
+
 function resolveUsingComponents(
   ownerJsonPath: string,
   ownerFilePath: string,
 ) {
   try {
-    const parsed = JSON.parse(fs.readFileSync(ownerJsonPath, 'utf8')) as Record<string, any>
+    const parsed = readComponentConfig(ownerJsonPath)
     const usingComponents = parsed.usingComponents
     if (!usingComponents || typeof usingComponents !== 'object' || Array.isArray(usingComponents)) {
       return new Map<string, string>()
@@ -75,6 +86,46 @@ function resolveUsingComponents(
   catch {
     return new Map<string, string>()
   }
+}
+
+export function resolveComponentGenerics(
+  context: RuntimeRendererContext,
+  hostNode: DomNodeLike,
+  ownerJsonPath: string,
+  ownerFilePath: string,
+  componentFilePath: string,
+) {
+  const componentJsonPath = path.resolve(
+    context.project.miniprogramRootPath,
+    `${componentFilePath.replace(JS_FILE_RE, '')}.json`,
+  )
+  const componentGenerics = readComponentConfig(componentJsonPath).componentGenerics
+  if (!componentGenerics || typeof componentGenerics !== 'object' || Array.isArray(componentGenerics)) {
+    return undefined
+  }
+
+  const ownerComponents = resolveUsingComponents(ownerJsonPath, ownerFilePath)
+  const resolved = new Map<string, string>()
+  for (const [genericName, definition] of Object.entries(componentGenerics)) {
+    const selectedAlias = hostNode.attribs?.[`generic:${genericName}`]
+    const selectedPath = selectedAlias ? ownerComponents.get(selectedAlias) : undefined
+    if (selectedPath) {
+      resolved.set(genericName, selectedPath)
+      continue
+    }
+
+    const defaultPath = typeof definition === 'object' && definition !== null
+      ? (definition as Record<string, any>).default
+      : undefined
+    if (typeof defaultPath !== 'string' || !defaultPath) {
+      continue
+    }
+    const resolvedDefault = defaultPath.startsWith('/')
+      ? defaultPath.replace(LEADING_SLASH_RE, '')
+      : path.posix.normalize(path.posix.join(path.posix.dirname(componentFilePath), defaultPath))
+    resolved.set(genericName, resolvedDefault.replace(LEADING_SLASH_RE, ''))
+  }
+  return resolved.size > 0 ? resolved : undefined
 }
 
 export function collectComponentEventBindings(hostNode: DomNodeLike) {
@@ -175,8 +226,7 @@ export function syncComponentProperties(
         || changedKey.startsWith(`${bindingExpression}[`)
     })
     const previousSnapshot = instance.__propertySnapshots?.[key]
-    const deepChanged = bindingAffected && JSON.stringify(previousSnapshot) !== JSON.stringify(nextValue)
-    if (instance.properties[key] !== nextValue || deepChanged) {
+    if (hasComponentPropertyValueChanged(instance.properties[key], previousSnapshot, nextValue, bindingAffected)) {
       previousProperties[key] = instance.properties[key]
       instance.properties[key] = nextValue
       changedRootKeys.push(key)
@@ -197,6 +247,8 @@ export function createComponentScope(
   scope: RuntimeRenderScope,
   componentScopeId: string,
   componentInstance: HeadlessComponentInstance,
+  genericComponents?: Map<string, string>,
+  slots?: Map<string, RuntimeSlotContent[]>,
 ): RuntimeRenderScope {
   const ownerScopeId = scope.getScopeId().includes('/') ? scope.getScopeId() : undefined
   return {
@@ -213,27 +265,35 @@ export function createComponentScope(
       return typeof method === 'function' ? method : undefined
     },
     getScopeId: () => componentScopeId,
+    genericComponents,
     hostId: typeof clonedNode.attribs?.id === 'string' ? clonedNode.attribs.id : undefined,
     id: typeof clonedNode.attribs?.id === 'string' ? clonedNode.attribs.id : undefined,
     listenerScopeId: scope.getScopeId(),
     ownerScopeId,
+    slots,
   }
 }
 
 export function resolveComponentProperties(
   clonedNode: DomNodeLike,
   scope: RuntimeRenderScope,
+  definition: HeadlessComponentDefinition,
 ) {
   const nextProperties: Record<string, any> = {}
   const bindingExpressions: Record<string, string | undefined> = {}
+  const declaredProperties = definition.properties ?? {}
   for (const [key, value] of Object.entries(clonedNode.attribs ?? {})) {
-    if (key.startsWith('bind')) {
+    if (key.startsWith('bind') || key.startsWith('generic:')) {
       continue
     }
+    const camelizedKey = key.replace(/-([a-z])/g, (_match, char: string) => char.toUpperCase())
+    const propertyKey = key in declaredProperties || !(camelizedKey in declaredProperties)
+      ? key
+      : camelizedKey
     if (isMustacheOnly(String(value))) {
-      bindingExpressions[key] = String(value).trim().slice(2, -2).trim()
+      bindingExpressions[propertyKey] = String(value).trim().slice(2, -2).trim()
     }
-    nextProperties[key] = resolveComponentAttributeValue(String(value), scope)
+    nextProperties[propertyKey] = resolveComponentAttributeValue(String(value), scope)
   }
   return { nextProperties, bindingExpressions }
 }
@@ -249,13 +309,17 @@ export function createRuntimeComponentInstance(
   const componentInstance = createComponentInstance({
     definition: componentEntry.definition,
     properties: nextProperties,
+    requestRender: callback => context.session.requestRender(callback),
     triggerEvent: buildComponentTrigger(componentScopeId, context, clonedNode),
   })
+  componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
   componentInstance.createMediaQueryObserver = () => context.session.createMediaQueryObserver(componentInstance)
   componentInstance.selectComponent = (selector: string) => context.session.selectComponentWithin(componentScopeId, selector)
   componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector)
-  componentInstance.selectOwnerComponent = () => ownerScopeId ? context.session.selectOwnerComponent(componentScopeId) : null
+  componentInstance.selectOwnerComponent = () => ownerScopeId
+    ? context.componentCache.get(ownerScopeId) ?? null
+    : null
   runComponentLifecycle(componentInstance, 'created')
   runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(nextProperties), {})
   componentInstance.__propertySnapshots = Object.fromEntries(

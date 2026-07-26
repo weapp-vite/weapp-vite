@@ -33,6 +33,69 @@ type RuntimeSetupFunction<
 > = DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
   | DefineAppOptions<D, C, M>['setup']
 
+let vueCompatInstanceUid = 0
+
+function attachVueCompatInstanceView(target: InternalRuntimeState, proxy: Record<string, any>) {
+  const internal = target as Record<string, any>
+  const descriptors: PropertyDescriptorMap = {
+    proxy: {
+      configurable: true,
+      enumerable: false,
+      value: proxy,
+      writable: false,
+    },
+    $: {
+      configurable: true,
+      enumerable: false,
+      value: target,
+      writable: false,
+    },
+    uid: {
+      configurable: true,
+      enumerable: false,
+      value: ++vueCompatInstanceUid,
+      writable: false,
+    },
+    exposed: {
+      configurable: true,
+      enumerable: false,
+      get: () => target[WEVU_EXPOSED_KEY],
+    },
+  }
+  for (const [key, descriptor] of Object.entries(descriptors)) {
+    try {
+      Object.defineProperty(internal, key, descriptor)
+    }
+    catch {
+      if ('value' in descriptor) {
+        internal[key] = descriptor.value
+      }
+    }
+  }
+  const publicDescriptors: PropertyDescriptorMap = {
+    $: {
+      configurable: true,
+      enumerable: false,
+      value: target,
+      writable: false,
+    },
+    $el: {
+      configurable: true,
+      enumerable: false,
+      value: target,
+      writable: false,
+    },
+  }
+  for (const [key, descriptor] of Object.entries(publicDescriptors)) {
+    try {
+      Object.defineProperty(proxy, key, descriptor)
+    }
+    catch {
+      proxy[key] = descriptor.value
+    }
+  }
+}
+
 function normalizeEmitEventName(eventName: string) {
   return eventName.includes(':') ? eventName.replaceAll(':', '-').toLowerCase() : eventName
 }
@@ -119,6 +182,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   }
 
   const setupInstance = ensureSetupContextInstance(target, runtimeWithDefaults)
+  attachVueCompatInstanceView(target, setupInstance as Record<string, any>)
   const slots = createSetupSlotsProxy(props)
   const setupState = runtimeWithDefaults.setupState ?? Object.create(null)
   attachRuntimeSetupState(runtimeState, setupState)

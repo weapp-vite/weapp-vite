@@ -5,6 +5,7 @@ import type {
   HeadlessWxCallbackOption,
   HeadlessWxCanvasContext,
   HeadlessWxCreateIntersectionObserverOption,
+  HeadlessWxDeviceInfoResult,
   HeadlessWxGetAppBaseInfoOption,
   HeadlessWxGetClipboardDataOption,
   HeadlessWxGetClipboardDataResult,
@@ -146,6 +147,7 @@ export interface HeadlessWx {
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getAppBaseInfo: (option?: HeadlessWxGetAppBaseInfoOption) => HeadlessWxAppBaseInfoResult | undefined
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
+  getDeviceInfo: () => HeadlessWxDeviceInfoResult
   getLaunchOptionsSync: () => HeadlessWxLaunchOptions
   getMenuButtonBoundingClientRect: () => HeadlessWxMenuButtonBoundingClientRectResult
   getClipboardData: (option?: HeadlessWxGetClipboardDataOption) => HeadlessWxGetClipboardDataResult | undefined

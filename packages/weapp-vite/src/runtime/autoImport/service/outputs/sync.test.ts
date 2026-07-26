@@ -280,7 +280,7 @@ describe('autoImport outputs sync helpers', () => {
     })
     getTypedComponentsSettingsMock.mockReturnValueOnce({ enabled: true })
 
-    const resolveNavigationImport = vi.fn((from: string) => `resolved:${from}`)
+    const resolveComponentTypeImport = vi.fn((_componentName: string, from: string) => `resolved:${from}`)
     const options = createCommonOptions({
       ctx: {
         configService: {
@@ -302,7 +302,7 @@ describe('autoImport outputs sync helpers', () => {
           ResolverOnly: 'resolver/only',
         },
       },
-      resolveNavigationImport,
+      resolveComponentTypeImport,
     })
 
     await syncVueComponentsDefinition({
@@ -312,8 +312,8 @@ describe('autoImport outputs sync helpers', () => {
     }, options as any)
 
     expect(fsRemoveMock).toHaveBeenCalledWith('/project/types/old-components.d.ts')
-    expect(resolveNavigationImport).toHaveBeenCalledWith('resolver/fallback')
-    expect(resolveNavigationImport).toHaveBeenCalledWith('resolver/only')
+    expect(resolveComponentTypeImport).toHaveBeenCalledWith('Fallback', 'resolver/fallback')
+    expect(resolveComponentTypeImport).toHaveBeenCalledWith('ResolverOnly', 'resolver/only')
     expect(fsOutputFileMock).toHaveBeenCalledWith(
       '/project/types/components.d.ts',
       expect.stringContaining('"localTs":"../src/components/local/index"'),
@@ -378,7 +378,7 @@ describe('autoImport outputs sync helpers', () => {
         lastLayoutTypesOutputPath: resolveLayoutTypesDefaultPath(configService as any),
       },
       resolverComponentsMapRef: { value: {} },
-      resolveNavigationImport: vi.fn(),
+      resolveComponentTypeImport: vi.fn(),
     })
     createVueComponentsDefinitionMock.mockReturnValueOnce('vue-same')
 
@@ -393,7 +393,7 @@ describe('autoImport outputs sync helpers', () => {
   it('logs vue definition write failure', async () => {
     const options = createCommonOptions({
       resolverComponentsMapRef: { value: {} },
-      resolveNavigationImport: vi.fn(),
+      resolveComponentTypeImport: vi.fn(),
     })
     fsOutputFileMock.mockRejectedValueOnce(new Error('vue failed'))
 
@@ -413,7 +413,7 @@ describe('autoImport outputs sync helpers', () => {
         lastWrittenVueComponentsDefinition: 'vue-old',
       },
       resolverComponentsMapRef: { value: {} },
-      resolveNavigationImport: vi.fn(),
+      resolveComponentTypeImport: vi.fn(),
     })
     fsRemoveMock.mockRejectedValueOnce(new Error('remove vue failed'))
 
@@ -505,7 +505,7 @@ describe('autoImport outputs sync helpers', () => {
       outputsState,
       getComponentMetadata,
       resolverComponentsMapRef: { value: {} },
-      resolveNavigationImport: vi.fn(),
+      resolveComponentTypeImport: vi.fn(),
     })
 
     await syncTypedComponentsDefinition({
@@ -547,7 +547,7 @@ describe('autoImport outputs sync helpers', () => {
       getPreparedStateVersion: vi.fn(() => preparedStateVersion.value),
       getComponentMetadata,
       resolverComponentsMapRef: { value: {} },
-      resolveNavigationImport: vi.fn(),
+      resolveComponentTypeImport: vi.fn(),
     })
 
     await syncTypedComponentsDefinition({

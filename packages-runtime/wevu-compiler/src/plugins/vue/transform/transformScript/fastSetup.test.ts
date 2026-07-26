@@ -85,6 +85,22 @@ describe('transformScript fast compiled script setup path', () => {
     expect(result.code).not.toContain('Object.defineProperty(__returned__')
   })
 
+  it('falls back to the Babel path for TypeScript SFC output', () => {
+    const source = compiledScriptSetupSource.replace(
+      `const shared = createSharedLabel('sfc-page')`,
+      `const shared = child.$.exposed!.getShowPop()`,
+    )
+    const result = transformScript(source, {
+      isPage: true,
+      isTypeScript: true,
+      sourceMap: false,
+    })
+
+    expect(result.code).toContain('child.$.exposed.getShowPop()')
+    expect(result.code).not.toContain('exposed!')
+    expect(result.code).not.toContain('Object.defineProperty(__returned__')
+  })
+
   it('allows empty wevu defaults but falls back when defaults need injection', () => {
     const emptyDefaults = transformScript(compiledScriptSetupSource, {
       isPage: true,

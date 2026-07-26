@@ -286,6 +286,7 @@ const communitySidebarItems: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'Tailwindcss 集成', link: '/integration/tailwindcss' },
       { text: 'Vue-mini 集成', link: '/integration/vue-mini' },
+      { text: 'Wot UI 与 uni-app', link: '/integration/wot-ui' },
       { text: 'Tdesign 集成', link: '/integration/tdesign' },
       { text: 'Vant Weapp 集成', link: '/integration/vant' },
       {

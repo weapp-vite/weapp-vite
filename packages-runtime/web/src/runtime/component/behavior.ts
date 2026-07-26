@@ -73,6 +73,12 @@ export function normalizeBehaviors(component: ComponentOptions | undefined) {
     if (source.methods) {
       merged.methods = { ...(merged.methods ?? {}), ...source.methods }
     }
+    if (source.observers) {
+      merged.observers = { ...(merged.observers ?? {}), ...source.observers }
+    }
+    if (source.options) {
+      merged.options = { ...(merged.options ?? {}), ...source.options }
+    }
     if (source.lifetimes) {
       merged.lifetimes = merged.lifetimes ?? {}
       mergeLifetimes(merged.lifetimes, source.lifetimes)

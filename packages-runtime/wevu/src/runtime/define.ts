@@ -1,4 +1,5 @@
 import type { InlineExpressionMap } from './register/inline'
+import type { TemplateRefBinding } from './templateRefs'
 import type {
   ComponentPropsOptions,
   ComponentPublicInstance,
@@ -346,7 +347,11 @@ export function createWevuComponent<
  * @internal
  */
 export function createWevuScopedSlotComponent(
-  overrides?: { computed?: ComputedDefinitions, inlineMap?: InlineExpressionMap },
+  overrides?: {
+    computed?: ComputedDefinitions
+    inlineMap?: InlineExpressionMap
+    templateRefs?: TemplateRefBinding[]
+  },
 ): void {
   const baseOptions = createScopedSlotOptions(overrides)
   createWevuComponent(baseOptions as any)

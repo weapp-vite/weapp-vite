@@ -22,7 +22,7 @@ function cachedResult(overrides: Record<string, any> = {}) {
       styleBlocks: [],
     },
     componentGenerics: {
-      selectable: true,
+      selectable: true as const,
     },
     ...overrides,
   }

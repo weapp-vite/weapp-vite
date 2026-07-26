@@ -1,11 +1,12 @@
 import type { HeadlessPageInstance } from '../../runtime/pageInstance'
-import type { BrowserRenderedPageTree, BrowserRendererContext, BrowserRenderScope, DomNodeLike } from './types'
+import type { BrowserRenderedPageTree, BrowserRendererContext, BrowserRenderScope, BrowserSlotContent, DomNodeLike } from './types'
 import { join } from 'pathe'
 import { runComponentLifecycle } from '../../runtime/componentInstance'
 import {
   createBrowserComponentInstance,
   createComponentScope,
   renderBrowserComponentTemplate,
+  resolveComponentGenerics,
   resolveComponentProperties,
   resolveComponentRegistryEntry,
   syncComponentProperties,
@@ -135,6 +136,49 @@ function renderChildren(
   return renderedChildren
 }
 
+function collectComponentSlots(
+  componentNode: DomNodeLike,
+  scope: BrowserRenderScope,
+  ownerJsonPath: string,
+  ownerFilePath: string,
+  instancePath: string,
+) {
+  const slots = new Map<string, BrowserSlotContent[]>()
+  ;(componentNode.children ?? []).forEach((node, index) => {
+    const slotName = isTagNode(node) && typeof node.attribs?.slot === 'string' && node.attribs.slot.trim()
+      ? node.attribs.slot.trim()
+      : 'default'
+    const entries = slots.get(slotName) ?? []
+    entries.push({
+      instancePath: `${instancePath}/slot-${slotName}/node-${index}`,
+      node,
+      ownerFilePath,
+      ownerJsonPath,
+      scope,
+    })
+    slots.set(slotName, entries)
+  })
+  for (const key of Object.keys(componentNode.attribs ?? {})) {
+    const prefix = 'generic:scoped-slots-'
+    if (!key.startsWith(prefix)) {
+      continue
+    }
+    const slotName = key.slice(prefix.length)
+    const inherited = scope.slots?.get(slotName)
+    if (slotName && inherited?.length && !slots.has(slotName)) {
+      slots.set(slotName, inherited)
+    }
+  }
+  if (componentNode.name?.startsWith('scoped-slots-') && !slots.has('default')) {
+    const slotName = componentNode.name.slice('scoped-slots-'.length)
+    const inherited = scope.slots?.get(slotName)
+    if (inherited?.length) {
+      slots.set('default', inherited)
+    }
+  }
+  return slots
+}
+
 function renderNodeTree(
   node: DomNodeLike,
   scope: BrowserRenderScope,
@@ -150,11 +194,47 @@ function renderNodeTree(
     return clonedNode
   }
 
-  const componentEntry = resolveComponentRegistryEntry(context, ownerJsonPath, ownerFilePath, clonedNode.name)
+  if (clonedNode.name === 'slot') {
+    const slotName = clonedNode.attribs?.name?.trim() || 'default'
+    const projected = scope.slots?.get(slotName) ?? []
+    const children = projected.length
+      ? projected.flatMap(entry => renderNodeVariants(
+          entry.node,
+          entry.scope,
+          context,
+          entry.ownerJsonPath,
+          entry.ownerFilePath,
+          entry.instancePath,
+          seenComponentScopes,
+        ))
+      : renderChildren(
+          clonedNode.children ?? [],
+          scope,
+          context,
+          ownerJsonPath,
+          ownerFilePath,
+          `${instancePath}/slot-fallback-${slotName}`,
+          seenComponentScopes,
+        )
+    return {
+      type: 'tag',
+      name: 'block',
+      attribs: { 'data-sim-scope': scope.getScopeId() },
+      children,
+    }
+  }
+
+  const componentEntry = resolveComponentRegistryEntry(
+    context,
+    ownerJsonPath,
+    ownerFilePath,
+    clonedNode.name,
+    scope.genericComponents?.get(clonedNode.name),
+  )
   if (componentEntry) {
     const componentScopeId = `${instancePath}/${clonedNode.name}`
     const ownerScopeId = scope.getScopeId().includes('/') ? scope.getScopeId() : undefined
-    const { nextProperties, bindingExpressions } = resolveComponentProperties(clonedNode, scope)
+    const { nextProperties, bindingExpressions } = resolveComponentProperties(clonedNode, scope, componentEntry.definition)
 
     let componentInstance = context.componentCache.get(componentScopeId)
     if (!componentInstance) {
@@ -179,7 +259,28 @@ function renderNodeTree(
 
     seenComponentScopes.add(componentScopeId)
 
-    const componentScope = createComponentScope(clonedNode, scope, componentScopeId, componentInstance)
+    const genericComponents = resolveComponentGenerics(
+      context,
+      clonedNode,
+      ownerJsonPath,
+      ownerFilePath,
+      componentEntry.filePath,
+    )
+    const slots = collectComponentSlots(
+      clonedNode,
+      scope,
+      ownerJsonPath,
+      ownerFilePath,
+      componentScopeId,
+    )
+    const componentScope = createComponentScope(
+      clonedNode,
+      scope,
+      componentScopeId,
+      componentInstance,
+      genericComponents,
+      slots,
+    )
     context.componentScopes.set(componentScopeId, componentScope)
 
     const renderedComponentRoot = renderBrowserComponentTemplate(
@@ -192,6 +293,7 @@ function renderNodeTree(
     )
     if (renderedComponentRoot.attribs) {
       renderedComponentRoot.attribs['data-sim-component'] = clonedNode.name
+      renderedComponentRoot.attribs['data-sim-scope'] = componentScopeId
     }
     if (!componentInstance.__ready__) {
       runComponentLifecycle(componentInstance, 'ready')

@@ -291,4 +291,28 @@ require_runtime.so({
     expect(injected.transformed).toBe(false)
     expect(injected.code).toBe(source)
   })
+
+  it('injects delegated Vue component options exported for logical entry registration', () => {
+    const source = `
+const __wevuOptions = {
+  setup() {
+    return {}
+  },
+}
+export default __wevuOptions
+    `.trim()
+
+    const ownerPick = injectScopedSlotOwnerSetDataPickInJs(source, ['state'])
+    expect(ownerPick.transformed).toBe(true)
+    expect(ownerPick.code).toContain('setData')
+    expect(ownerPick.code).toContain('"state"')
+    expect(ownerPick.code).toContain(`"${WEVU_SLOT_OWNER_ID_KEY}"`)
+
+    const hostProperties = injectScopedSlotHostPropertiesInJs(source)
+    expect(hostProperties.transformed).toBe(true)
+    expect(hostProperties.code).toContain('properties')
+    expect(hostProperties.code).toContain(WEVU_SLOT_NAMES_PROP)
+    expect(hostProperties.code).toContain(WEVU_SLOT_OWNER_ID_PROP)
+    expect(hostProperties.code).toContain(WEVU_SLOT_SCOPE_KEY)
+  })
 })

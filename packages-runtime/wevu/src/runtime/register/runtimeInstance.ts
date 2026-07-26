@@ -21,6 +21,7 @@ import {
   WEVU_PROPS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_TEMPLATE_REFS_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
 import { isRef } from '../../reactivity'
@@ -174,19 +175,23 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   })
   const createDeferredAdapter = (instance: InternalRuntimeState): AdapterWithSetData => {
     let pending: Record<string, any> | undefined
+    let pendingCallbacks: Array<() => void> = []
     let enabled = false
     const adapter: AdapterWithSetData = {
-      setData(payload: Record<string, any>) {
+      setData(payload: Record<string, any>, callback?: () => void) {
         if (!enabled) {
           pending = {
             ...(pending ?? {}),
             ...payload,
           }
+          if (callback) {
+            pendingCallbacks.push(callback)
+          }
           return undefined
         }
         const setData = resolveNativeSetData(instance)
         if (setData) {
-          return callNativeSetData(instance, setData, payload)
+          return callNativeSetData(instance, setData, payload, callback)
         }
         return undefined
       },
@@ -195,12 +200,18 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       enabled = true
       if (discardPending) {
         pending = undefined
+        pendingCallbacks = []
       }
       const setData = resolveNativeSetData(instance)
       if (pending && Object.keys(pending).length && setData) {
         const payload = pending
+        const callbacks = pendingCallbacks
         pending = undefined
-        callNativeSetData(instance, setData, payload)
+        pendingCallbacks = []
+        const callback = callbacks.length
+          ? () => callbacks.forEach(callback => callback())
+          : undefined
+        callNativeSetData(instance, setData, payload, callback)
       }
     }
     return adapter
@@ -209,10 +220,10 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const baseAdapter: AdapterWithSetData = options?.deferSetData
     ? createDeferredAdapter(target)
     : {
-        setData(payload: Record<string, any>) {
+        setData(payload: Record<string, any>, callback?: () => void) {
           const setData = resolveNativeSetData(target)
           if (setData) {
-            return callNativeSetData(target, setData, payload)
+            return callNativeSetData(target, setData, payload, callback)
           }
           return undefined
         },
@@ -231,8 +242,8 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     }
     const snapshot = resolveOwnerSnapshot(runtimeRef)
     const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
-    mergeOwnerSnapshotProps(snapshot, propsSource, runtimeRef)
-    updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy)
+    mergeOwnerSnapshotProps(snapshot, propsSource)
+    updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy, target)
   }
   const syncNativeOwnerId = () => {
     if (!shouldFlushNativeOwnerId) {
@@ -263,7 +274,14 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         scheduleTemplateRefUpdate(target)
         return undefined
       }
-      const result = baseAdapter.setData(payload)
+      const hasTemplateRefs = Array.isArray((target as any)[WEVU_TEMPLATE_REFS_KEY])
+        && (target as any)[WEVU_TEMPLATE_REFS_KEY].length > 0
+      const result = hasTemplateRefs
+        ? baseAdapter.setData(payload, () => {
+            refreshOwnerSnapshot()
+            scheduleTemplateRefUpdate(target)
+          })
+        : baseAdapter.setData(payload)
       refreshOwnerSnapshot()
       scheduleTemplateRefUpdate(target)
       return result
@@ -275,7 +293,14 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       }
       const payload = hiddenPendingPayload
       hiddenPendingPayload = undefined
-      const result = baseAdapter.setData(payload)
+      const hasTemplateRefs = Array.isArray((target as any)[WEVU_TEMPLATE_REFS_KEY])
+        && (target as any)[WEVU_TEMPLATE_REFS_KEY].length > 0
+      const result = hasTemplateRefs
+        ? baseAdapter.setData(payload, () => {
+            refreshOwnerSnapshot()
+            scheduleTemplateRefUpdate(target)
+          })
+        : baseAdapter.setData(payload)
       refreshOwnerSnapshot()
       scheduleTemplateRefUpdate(target)
       return result

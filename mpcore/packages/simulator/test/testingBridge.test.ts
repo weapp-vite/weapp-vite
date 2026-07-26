@@ -42,6 +42,19 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('renders component lifecycles before invoking page methods', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({ projectPath })
+
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+
+    await expect(page.callMethod('inspectReadyBeforeSelection')).resolves.toEqual({
+      card: true,
+      ready: true,
+    })
+  })
+
   it('calls host wx methods and supports scoped testing timeouts', async () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)

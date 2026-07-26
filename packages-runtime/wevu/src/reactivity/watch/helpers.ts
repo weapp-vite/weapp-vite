@@ -9,6 +9,7 @@ import { getDeepWatchStrategy } from './types'
 
 interface WatchGetterContext {
   getter: () => any
+  hasReactiveSource: boolean
   isMultiSource: boolean
   isReactiveSource: boolean
 }
@@ -27,8 +28,11 @@ function resolveWatchSource(item: WatchSource<any> | object) {
 }
 
 export function createWatchGetter(source: WatchSources<any>): WatchGetterContext {
-  const isReactiveSource = isReactive(source)
-  const isMultiSource = Array.isArray(source) && !isReactiveSource
+  const isMultiSource = Array.isArray(source)
+  const isReactiveSource = !isMultiSource && isReactive(source)
+  const hasReactiveSource = isMultiSource
+    ? (source as ReadonlyArray<WatchSource<any> | object>).some(item => isReactive(item))
+    : isReactiveSource
   let getter: () => any
 
   if (isMultiSource) {
@@ -50,6 +54,7 @@ export function createWatchGetter(source: WatchSources<any>): WatchGetterContext
 
   return {
     getter,
+    hasReactiveSource,
     isMultiSource,
     isReactiveSource,
   }

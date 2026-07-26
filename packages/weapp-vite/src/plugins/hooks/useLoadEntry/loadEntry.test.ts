@@ -1778,6 +1778,78 @@ describe('createEntryLoader', () => {
     expect(emittedResolvedIds).toContain('/project/src/components/HotCard/index.vue')
   })
 
+  it('materializes bare external Vue auto imports through the bundler resolver', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    const externalComponent = '/project/node_modules/@wot-ui/ui/components/wd-button/wd-button.vue'
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home.json',
+      predictions: [],
+    })
+    const { loader, jsonService, registerJsonAsset, emitEntriesChunks, applyAutoImports, runtimeState, configService } = createLoader({
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+    configService.weappViteConfig = { uniApp: { include: ['@wot-ui/ui'] } }
+    configService.relativeOutputPath.mockImplementation((id: string) => id === externalComponent.replace(/\.vue$/, '')
+      ? '__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button'
+      : id.replace('/project/src/', ''))
+    jsonService.read.mockResolvedValue({})
+    applyAutoImports.mockImplementation((_baseName, json) => {
+      json.usingComponents = {
+        'wd-button': '@wot-ui/ui/components/wd-button/wd-button.vue',
+      }
+      return ['@wot-ui/ui/components/wd-button/wd-button.vue']
+    })
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (source: string) => source.startsWith('@wot-ui/ui/')
+      ? { id: externalComponent }
+      : { id: source }) as any
+
+    await loader.call(pluginCtx, pageScript, 'page')
+
+    const pageJson = registerJsonAsset.mock.calls.find(([payload]) => payload.type === 'page')?.[0].json
+    expect(pageJson.usingComponents['wd-button']).toBe('/__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button')
+    expect(runtimeState.build.hmr.externalComponentEntryMap.get('__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button')).toBe(externalComponent)
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+    expect(emittedResolvedIds).toContain(externalComponent)
+  })
+
+  it('materializes external Vue registrations already produced by SFC compilation', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    const externalComponent = '/project/node_modules/@wot-ui/ui/components/wd-button/wd-button.vue'
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home.json',
+      predictions: [],
+    })
+    const { loader, jsonService, registerJsonAsset, emitEntriesChunks, runtimeState, configService } = createLoader({
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+    configService.weappViteConfig = { uniApp: { include: ['@wot-ui/ui'] } }
+    configService.relativeOutputPath.mockImplementation((id: string) => id === externalComponent.replace(/\.vue$/, '')
+      ? '__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button'
+      : id.replace('/project/src/', ''))
+    jsonService.read.mockResolvedValue({
+      usingComponents: {
+        'wd-button': '@wot-ui/ui/components/wd-button/wd-button.vue',
+      },
+    })
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (source: string) => source.startsWith('@wot-ui/ui/')
+      ? { id: externalComponent }
+      : { id: source }) as any
+
+    await loader.call(pluginCtx, pageScript, 'page')
+
+    const pageJson = registerJsonAsset.mock.calls.find(([payload]) => payload.type === 'page')?.[0].json
+    expect(pageJson.usingComponents['wd-button']).toBe('/__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button')
+    expect(runtimeState.build.hmr.externalComponentEntryMap.get('__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button')).toBe(externalComponent)
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+    expect(emittedResolvedIds).toContain(externalComponent)
+  })
+
   it('reloads pending auto-import entries so generated template assets refresh', async () => {
     const pageScript = '/project/src/pages/home.js'
     mockFindJsonEntry.mockResolvedValue({
@@ -2525,7 +2597,7 @@ import FooBar from '../../components/foo-bar/index.vue'
       if (target === vueEntryPath) {
         return `
 <template>
-  <UiCard />
+  <ui-card />
 </template>
 <script setup lang="ts">
 import UiCard from '@workspace/ui/card'
@@ -2563,7 +2635,7 @@ import UiCard from '@workspace/ui/card'
 
     expect(registerJsonAsset).toHaveBeenCalled()
     const payload = registerJsonAsset.mock.calls[0][0]
-    expect(payload.json.usingComponents.UiCard).toBe('/__weapp_vite_external__/card/index')
+    expect(payload.json.usingComponents['ui-card']).toBe('/__weapp_vite_external__/card/index')
     expect(runtimeState.build.hmr.externalComponentEntryMap.get('__weapp_vite_external__/card/index')).toBe(externalComponent)
     const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
       ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),

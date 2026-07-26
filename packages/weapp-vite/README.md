@@ -29,6 +29,7 @@
 - ♻️ **实验性状态保持 HMR**：微信开发者工具中可保留 Page/Component/wevu 状态并替换 JavaScript 方法
 - 🔌 **插件生态**：Vite 插件生态支持，也可以自定义编写插件，方便扩展
 - 🌐 **实验性 Web Runtime**：同一份原生 WXML/WXSS/TS 或 wevu Vue SFC 源码可通过 `-p web` 启动和构建浏览器版本
+- 🧩 **实验性 uni-app 组件库兼容**：通过显式依赖白名单与 `WotUiResolver()` 在微信小程序和 Web 中使用 Wot UI Vue SFC
 - 🧰 **IDE 命令增强**：可直接透传 `weapp-ide-cli` 全量命令（`preview/upload/config/automator` 等）
 
 ## 快速开始
@@ -124,6 +125,7 @@ function handleClick() {
 - defineConfig 重载说明：[docs/define-config-overloads.md](./docs/define-config-overloads.md)
 - Vite 插件识别 weapp-vite 宿主：https://vite.icebreaker.top/guide/vite-plugin-host
 - MCP 集成使用指南：[docs/mcp.md](./docs/mcp.md)
+- Wot UI 与 uni-app 组件库：[docs/packaged/uni-app-component-libraries.md](./docs/packaged/uni-app-component-libraries.md)
 
 ## AI 项目指引
 
@@ -155,6 +157,7 @@ function handleClick() {
 - `ai-workflows.md`
 - `project-structure.md`
 - `weapp-config.md`
+- `uni-app-component-libraries.md`
 - `wevu-authoring.md`
 - `vue-sfc.md`
 - `troubleshooting.md`

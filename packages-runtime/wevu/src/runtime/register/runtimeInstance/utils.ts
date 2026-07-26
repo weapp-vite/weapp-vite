@@ -15,12 +15,13 @@ import { shallowReactive } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
 import { isNativeBridgeMethod } from '../../nativeBridge'
 
-export type AdapterWithSetData = Required<MiniProgramAdapter> & {
+export type AdapterWithSetData = Omit<Required<MiniProgramAdapter>, 'setData'> & {
+  setData: (payload: Record<string, any>, callback?: () => void) => void | Promise<void> | undefined
   __wevu_enableSetData?: (discardPending?: boolean) => void
   __wevu_setVisibility?: (visible: boolean) => void
 }
 
-export type NativeSetData = (payload: Record<string, any>) => void | Promise<void> | undefined
+export type NativeSetData = (payload: Record<string, any>, callback?: () => void) => void | Promise<void> | undefined
 
 export function attachRuntimeProxyProps(state: Record<string, any>, props: Record<string, any>) {
   try {
@@ -132,9 +133,12 @@ export function callNativeSetData(
   instance: InternalRuntimeState,
   setData: NativeSetData,
   payload: Record<string, any>,
+  callback?: () => void,
 ) {
   try {
-    return setData.call(instance, payload)
+    return callback
+      ? setData.call(instance, payload, callback)
+      : setData.call(instance, payload)
   }
   catch (error) {
     const owner = getRuntimeOwnerLabel(instance)

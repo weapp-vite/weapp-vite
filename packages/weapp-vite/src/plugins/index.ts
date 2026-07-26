@@ -11,6 +11,7 @@ import { weappVite } from './core'
 import { css } from './css'
 import { createOutputFinalizerPlugin } from './outputFinalizer'
 import { preflight } from './preflight'
+import { uniAppCompatibility } from './uniApp'
 import { vue } from './vue'
 import { wevu } from './wevu'
 import { workers } from './workers'
@@ -65,6 +66,7 @@ export function vitePluginWeapp(
   const groups: Plugin[][] = [
     [createContextPlugin(ctx), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
     preflight(ctx),
+    uniAppCompatibility(ctx),
     vue(ctx, { enable: vueEnabled }),
   ]
   if (vueEnabled && !libModeEnabled) {

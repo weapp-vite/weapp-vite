@@ -130,8 +130,65 @@ const EMPTY_STRING_CONCAT_RIGHT_RE = /''\s*\+\s*'/g
 const LEADING_EMPTY_CONCAT_RE = /^\s*''\s*\+\s*/g
 const TRAILING_EMPTY_CONCAT_RE = /\s*\+\s*''\s*$/g
 
+function rewriteVueSlotsExpression(ast: ReturnType<typeof babelParse>) {
+  traverse(ast, {
+    MemberExpression: {
+      exit(path) {
+        const node = path.node
+        if (!t.isIdentifier(node.object, { name: '$slots' })) {
+          return
+        }
+        const access = t.memberExpression(
+          t.identifier('vueSlots'),
+          t.cloneNode(node.property),
+          node.computed,
+        )
+        path.replaceWith(t.logicalExpression('&&', t.identifier('vueSlots'), access))
+        path.skip()
+      },
+    },
+    OptionalMemberExpression: {
+      exit(path) {
+        const node = path.node
+        if (!t.isIdentifier(node.object, { name: '$slots' })) {
+          return
+        }
+        const access = t.memberExpression(
+          t.identifier('vueSlots'),
+          t.cloneNode(node.property),
+          node.computed,
+        )
+        path.replaceWith(t.logicalExpression('&&', t.identifier('vueSlots'), access))
+        path.skip()
+      },
+    },
+    Identifier: {
+      exit(path) {
+        if (!path.isReferencedIdentifier() || path.node.name !== '$slots') {
+          return
+        }
+        const parent = path.parentPath.node
+        if (
+          (t.isMemberExpression(parent) || t.isOptionalMemberExpression(parent))
+          && parent.object === path.node
+        ) {
+          return
+        }
+        path.replaceWith(t.identifier('vueSlots'))
+        path.skip()
+      },
+    },
+  })
+}
+
 export function normalizeWxmlExpression(exp: string): string {
-  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.')) {
+  const hasTypeScriptSyntax = (
+    /\s(?:as|satisfies)\s/.test(exp)
+    || /[\w$)\]]!(?=[.[\s,);:?]|$)/.test(exp)
+    || /^\s*<[^>]+>/.test(exp)
+  )
+  const needsVueSlotsRewrite = exp.includes('$slots')
+  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.') && !hasTypeScriptSyntax && !needsVueSlotsRewrite) {
     return exp
   }
 
@@ -145,7 +202,20 @@ export function normalizeWxmlExpression(exp: string): string {
       return exp
     }
 
+    if (needsVueSlotsRewrite) {
+      rewriteVueSlotsExpression(ast)
+    }
+
     traverse(ast, {
+      TSAsExpression(path) {
+        path.replaceWith(path.node.expression)
+      },
+      TSNonNullExpression(path) {
+        path.replaceWith(path.node.expression)
+      },
+      TSTypeAssertion(path) {
+        path.replaceWith(path.node.expression)
+      },
       OptionalMemberExpression: {
         exit(path) {
           if (isOptionalChainNode(path.parentPath.node)) {

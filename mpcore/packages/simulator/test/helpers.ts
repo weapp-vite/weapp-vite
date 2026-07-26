@@ -355,6 +355,10 @@ Page({
 })
 `)
 
+  for (const page of ['home', 'detail', 'settings', 'profile']) {
+    writeText(path.join(root, `dist/pages/${page}/index.wxml`), `<view>${page}</view>`)
+  }
+
   return root
 }
 
@@ -1853,6 +1857,14 @@ Page({
       })
     })
   },
+  async inspectReadyBeforeSelection() {
+    await Promise.resolve()
+    const card = this.selectComponent('#status-card')
+    return {
+      card: Boolean(card),
+      ready: globalThis.__statusCardReady === true
+    }
+  },
   inspectScopedQuery() {
     const card = this.selectComponent('#status-card')
     wx.createSelectorQuery()
@@ -1936,6 +1948,13 @@ Component({
       blur: '',
       change: '',
       input: ''
+    }
+  },
+  lifetimes: {
+    ready() {
+      Promise.resolve().then(() => {
+        globalThis.__statusCardReady = true
+      })
     }
   },
   methods: {

@@ -137,15 +137,20 @@ const mutableHandlers: ProxyHandler<any> = {
     const isArr = Array.isArray(target)
     const oldLength = isArr ? target.length : 0
     const oldValue = Reflect.get(target, key, receiver)
+    const oldRawValue = isObject(oldValue) ? toRaw(oldValue) : oldValue
+    const rawValue = isObject(value) ? toRaw(value) : value
+    if (Object.is(oldRawValue, rawValue)) {
+      return true
+    }
     const result = Reflect.set(target, key, value, receiver)
-    if (!Object.is(oldValue, value)) {
-      const oldRaw = isObject(oldValue) ? (((oldValue as any)?.[ReactiveFlags.RAW] ?? oldValue) as object) : undefined
+    if (result) {
+      const oldRaw = isObject(oldRawValue) ? oldRawValue as object : undefined
       if (oldRaw) {
         removeParentLink(oldRaw, target, key)
       }
-      if (isObject(value) && !(value as any)[ReactiveFlags.SKIP]) {
+      if (isObject(rawValue) && !(rawValue as any)[ReactiveFlags.SKIP]) {
         const root = rawRootMap.get(target) ?? target
-        const childRaw = ((value as any)?.[ReactiveFlags.RAW] ?? value) as object
+        const childRaw = rawValue as object
         if (!rawRootMap.has(childRaw)) {
           rawRootMap.set(childRaw, root)
         }

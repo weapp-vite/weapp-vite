@@ -1,0 +1,35 @@
+{
+  "name": "e2e-app-wot-ui-compat",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Wot UI 全组件 Web、微信开发者工具与 headless 兼容验证应用",
+  "scripts": {
+    "dev": "wv dev",
+    "dev:web": "wv dev -p web --host 127.0.0.1",
+    "build": "wv build",
+    "build:web": "wv build -p web",
+    "check:components": "node --import tsx scripts/generate-components.ts --check",
+    "generate:components": "node --import tsx scripts/generate-components.ts",
+    "lint": "eslint .",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
+    "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --allow-empty-input",
+    "postinstall": "wv prepare"
+  },
+  "dependencies": {
+    "@wot-ui/ui": "catalog:",
+    "wevu": "workspace:*"
+  },
+  "devDependencies": {
+    "@icebreakers/eslint-config": "catalog:",
+    "@icebreakers/stylelint-config": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "miniprogram-api-typings": "catalog:",
+    "stylelint": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:",
+    "weapp-vite": "workspace:*"
+  }
+}

@@ -62,6 +62,10 @@
       "types": "./dist/auto-import-components/resolvers.d.mts",
       "import": "./dist/auto-import-components/resolvers.mjs"
     },
+    "./resolvers": {
+      "types": "./dist/resolvers.d.mts",
+      "import": "./dist/resolvers.mjs"
+    },
     "./auto-routes": {
       "types": "./dist/auto-routes.d.mts",
       "import": "./dist/auto-routes.mjs"
