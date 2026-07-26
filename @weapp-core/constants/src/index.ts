@@ -23,6 +23,7 @@ export const REQUEST_GLOBAL_BUNDLE_HOST_REF = '__rb'
 export const REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME = '__wvRGI__'
 
 export const WEAPP_VITE_IMPORT_META_ENV_KEY = '__weappViteImportMetaEnv'
+export const WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY = 'weapp_vite_external'
 
 export const WEAPP_VITE_LOGICAL_ENTRY_VIRTUAL_PREFIX = 'virtual:weapp-vite-logical-entry:'
 export const WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX = 'weapp-vite:logical-entry:'

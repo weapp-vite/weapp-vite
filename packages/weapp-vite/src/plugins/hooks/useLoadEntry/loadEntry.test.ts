@@ -1790,7 +1790,7 @@ describe('createEntryLoader', () => {
     })
     configService.weappViteConfig = { uniApp: { include: ['@wot-ui/ui'] } }
     configService.relativeOutputPath.mockImplementation((id: string) => id === externalComponent.replace(/\.vue$/, '')
-      ? '__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button'
+      ? 'weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button'
       : id.replace('/project/src/', ''))
     jsonService.read.mockResolvedValue({})
     applyAutoImports.mockImplementation((_baseName, json) => {
@@ -1807,8 +1807,8 @@ describe('createEntryLoader', () => {
     await loader.call(pluginCtx, pageScript, 'page')
 
     const pageJson = registerJsonAsset.mock.calls.find(([payload]) => payload.type === 'page')?.[0].json
-    expect(pageJson.usingComponents['wd-button']).toBe('/__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button')
-    expect(runtimeState.build.hmr.externalComponentEntryMap.get('__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button')).toBe(externalComponent)
+    expect(pageJson.usingComponents['wd-button']).toBe('/weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button')
+    expect(runtimeState.build.hmr.externalComponentEntryMap.get('weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button')).toBe(externalComponent)
     const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
       ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
     )
@@ -1827,7 +1827,7 @@ describe('createEntryLoader', () => {
     })
     configService.weappViteConfig = { uniApp: { include: ['@wot-ui/ui'] } }
     configService.relativeOutputPath.mockImplementation((id: string) => id === externalComponent.replace(/\.vue$/, '')
-      ? '__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button'
+      ? 'weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button'
       : id.replace('/project/src/', ''))
     jsonService.read.mockResolvedValue({
       usingComponents: {
@@ -1842,8 +1842,8 @@ describe('createEntryLoader', () => {
     await loader.call(pluginCtx, pageScript, 'page')
 
     const pageJson = registerJsonAsset.mock.calls.find(([payload]) => payload.type === 'page')?.[0].json
-    expect(pageJson.usingComponents['wd-button']).toBe('/__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button')
-    expect(runtimeState.build.hmr.externalComponentEntryMap.get('__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button')).toBe(externalComponent)
+    expect(pageJson.usingComponents['wd-button']).toBe('/weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button')
+    expect(runtimeState.build.hmr.externalComponentEntryMap.get('weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button')).toBe(externalComponent)
     const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
       ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
     )
@@ -2610,7 +2610,7 @@ import UiCard from '@workspace/ui/card'
     const { loader, registerJsonAsset, runtimeState, configService, emitEntriesChunks } = createLoader()
     configService.relativeOutputPath = vi.fn((id: string) => {
       if (id.startsWith('/workspace/packages/ui/card')) {
-        return '__weapp_vite_external__/card/index'
+        return 'weapp_vite_external/card/index'
       }
       return id.replace('/project/src/', '')
     })
@@ -2635,8 +2635,8 @@ import UiCard from '@workspace/ui/card'
 
     expect(registerJsonAsset).toHaveBeenCalled()
     const payload = registerJsonAsset.mock.calls[0][0]
-    expect(payload.json.usingComponents['ui-card']).toBe('/__weapp_vite_external__/card/index')
-    expect(runtimeState.build.hmr.externalComponentEntryMap.get('__weapp_vite_external__/card/index')).toBe(externalComponent)
+    expect(payload.json.usingComponents['ui-card']).toBe('/weapp_vite_external/card/index')
+    expect(runtimeState.build.hmr.externalComponentEntryMap.get('weapp_vite_external/card/index')).toBe(externalComponent)
     const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
       ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
     )

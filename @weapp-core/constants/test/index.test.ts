@@ -2,6 +2,7 @@ import {
   APP_PRELUDE_CHUNK_MARKER,
   REQUEST_GLOBAL_BUNDLE_MARKER,
   REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME,
+  WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY,
   WEAPP_VITE_RUNTIME_CONTRACT_VERSION,
   WEAPP_VITE_RUNTIME_REACTIVITY_VIRTUAL_ID,
   WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID,
@@ -35,6 +36,8 @@ describe('@weapp-core/constants', () => {
     expect(REQUEST_GLOBAL_BUNDLE_MARKER).toBe('__wvRGB__')
     expect(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME).toBe('__wvRGI__')
     expect(WEAPP_VITE_RUNTIME_CONTRACT_VERSION).toBe(1)
+    expect(WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY).toBe('weapp_vite_external')
+    expect(WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY).not.toMatch(/^__|__$/)
     expect(WEAPP_VITE_RUNTIME_VIRTUAL_ID).toBe('virtual:weapp-vite/runtime')
     expect(WEAPP_VITE_RUNTIME_REACTIVITY_VIRTUAL_ID).toBe('virtual:weapp-vite/runtime/reactivity')
     expect(WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID).toBe('virtual:weapp-vite/runtime/template')

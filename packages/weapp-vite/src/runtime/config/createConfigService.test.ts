@@ -358,13 +358,13 @@ describe('createConfigService', () => {
     const service = createConfigService(createCtx())
 
     expect(service.relativeOutputPath('/project/node_modules/ui-lib/card/index.vue')).toBe(
-      '__weapp_vite_external__/ui-lib/card/index.vue',
+      'weapp_vite_external/ui-lib/card/index.vue',
     )
     expect(service.relativeOutputPath('/project/node_modules/.pnpm/@wot-ui+ui@2.2.0/node_modules/@wot-ui/ui/components/wd-button/wd-button.vue')).toBe(
-      '__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button.vue',
+      'weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button.vue',
     )
     expect(service.relativeOutputPath('/workspace/packages/ui/card/index.vue')).toMatch(
-      /^__weapp_vite_external__\/[a-f0-9]{10}\/index\.vue$/,
+      /^weapp_vite_external\/[a-f0-9]{10}\/index\.vue$/,
     )
   })
 

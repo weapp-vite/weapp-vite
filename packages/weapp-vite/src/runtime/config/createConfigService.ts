@@ -5,6 +5,7 @@ import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './types
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import process from 'node:process'
+import { WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY } from '@weapp-core/constants'
 import { defu, removeExtensionDeep } from '@weapp-core/shared'
 import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
@@ -146,11 +147,11 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     const nodeModulesIndex = normalizedPath.lastIndexOf(nodeModulesMarker)
     if (nodeModulesIndex >= 0) {
       const packageRelative = normalizedPath.slice(nodeModulesIndex + nodeModulesMarker.length)
-      return normalizeRelativePath(path.join('__weapp_vite_external__', packageRelative))
+      return normalizeRelativePath(path.join(WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY, packageRelative))
     }
     const normalizedDir = path.dirname(normalizedPath)
     const dirHash = createHash('sha256').update(normalizedDir).digest('hex').slice(0, 10)
-    return normalizeRelativePath(path.join('__weapp_vite_external__', dirHash, path.basename(normalizedPath)))
+    return normalizeRelativePath(path.join(WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY, dirHash, path.basename(normalizedPath)))
   }
 
   function setOptions(value: LoadConfigResult) {

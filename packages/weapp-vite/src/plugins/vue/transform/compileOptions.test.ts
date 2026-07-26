@@ -492,7 +492,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
         absoluteSrcRoot: '/project/src',
         weappViteConfig: {},
         relativeOutputPath: (id: string) => id === resolvedVueEntry.replace(/\.vue$/, '')
-          ? '__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button'
+          ? 'weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button'
           : undefined,
       } as any,
       {
@@ -503,11 +503,11 @@ describe('resolveVueTemplatePlatformOptions', () => {
 
     await expect(options.autoImportTags.resolveUsingComponent('wd-button')).resolves.toEqual({
       name: 'wd-button',
-      from: '/__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button',
+      from: '/weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button',
       resolvedId: resolvedVueEntry,
       sourceType: 'wevu-sfc',
     })
-    expect(externalComponentEntryMap.get('__weapp_vite_external__/@wot-ui/ui/components/wd-button/wd-button')).toBe(resolvedVueEntry)
+    expect(externalComponentEntryMap.get('weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button')).toBe(resolvedVueEntry)
   })
 
   it('defaults plain slots to augmented scoped slot compilation', () => {
