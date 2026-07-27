@@ -12,7 +12,7 @@
   },
   "scripts": {
     "dev": "wv dev",
-    "dev:web": "wv dev -p web --host 127.0.0.1",
+    "dev:web": "wv dev -p web --host",
     "build": "wv build",
     "build:web": "wv build -p web",
     "check:components": "node --import tsx scripts/generate-components.ts --check",
