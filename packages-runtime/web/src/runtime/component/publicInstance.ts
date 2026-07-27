@@ -12,6 +12,7 @@ export function resolveComponentPublicInstanceTarget(value: unknown) {
 export function createComponentPublicInstance(
   target: ComponentPublicInstance,
   runtimePrototype: object,
+  resolveComponentMethod?: (key: PropertyKey) => unknown,
 ): ComponentPublicInstance {
   type RuntimeMethod = (...args: any[]) => unknown
   const runtimeMethods = new Map<PropertyKey, { source: RuntimeMethod, bound: RuntimeMethod }>()
@@ -29,12 +30,16 @@ export function createComponentPublicInstance(
           return value
         }
         const cached = runtimeMethods.get(key)
-        if (cached?.source === value) {
+        if (cached && cached.source === value) {
           return cached.bound
         }
         const bound = value.bind(instance)
         runtimeMethods.set(key, { source: value, bound })
         return bound
+      }
+      const componentMethod = resolveComponentMethod?.(key)
+      if (typeof componentMethod === 'function') {
+        return componentMethod
       }
       return typeof key === 'symbol' ? Reflect.get(instance, key, instance) : undefined
     },
@@ -53,6 +58,7 @@ export function createComponentPublicInstance(
     has(instance, key) {
       return Reflect.getOwnPropertyDescriptor(instance, key) !== undefined
         || Reflect.getOwnPropertyDescriptor(runtimePrototype, key) !== undefined
+        || typeof resolveComponentMethod?.(key) === 'function'
         || (typeof key === 'symbol' && Reflect.has(instance, key))
     },
   })

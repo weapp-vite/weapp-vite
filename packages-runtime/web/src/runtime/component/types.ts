@@ -58,6 +58,10 @@ export interface ComponentOptions {
   options?: ComponentBehaviorOptions
 }
 
+export type NormalizedComponentOptions = Omit<ComponentOptions, 'properties'> & {
+  properties?: Record<string, PropertyOption>
+}
+
 export interface DefineComponentOptions {
   id?: string
   template: TemplateRenderer

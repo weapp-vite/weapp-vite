@@ -75,7 +75,7 @@ export function createComponentElementClass({
 
     #state: DataRecord
     #properties: DataRecord
-    #methods: Record<string, (event: any) => any>
+    #methods: Record<string, (event: any) => any> = {}
     #publicInstance: ComponentPublicInstance
     #exposedMethodNames = new Set<string>()
     #isMounted = false
@@ -114,7 +114,11 @@ export function createComponentElementClass({
           get: () => this.#properties,
         },
       })
-      this.#publicInstance = createComponentPublicInstance(this, WeappWebComponent.prototype)
+      this.#publicInstance = createComponentPublicInstance(
+        this,
+        WeappWebComponent.prototype,
+        key => typeof key === 'string' ? this.#methods[key] : undefined,
+      )
       for (const [propName] of runtimeState.propertyEntries) {
         Object.defineProperty(this, propName, {
           configurable: true,
@@ -123,7 +127,6 @@ export function createComponentElementClass({
           set: value => this.#setProperty(propName, value),
         })
       }
-      this.#methods = {}
       this.#syncMethods(runtimeState.componentRef.methods ?? {})
       if (!supportsLit) {
         const host = this as unknown as HTMLElement

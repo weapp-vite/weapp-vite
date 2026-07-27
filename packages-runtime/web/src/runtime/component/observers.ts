@@ -1,7 +1,7 @@
 import type {
-  ComponentOptions,
   ComponentPublicInstance,
   DataRecord,
+  NormalizedComponentOptions,
 } from './types'
 
 function normalizeObserverPattern(pattern: string) {
@@ -54,7 +54,7 @@ function matchesObserverPattern(pattern: string, changedKeys: string[]) {
 }
 
 export function runComponentObservers(
-  component: ComponentOptions,
+  component: NormalizedComponentOptions,
   instance: ComponentPublicInstance,
   changedKeys: string[],
   previousProperties: DataRecord = {},

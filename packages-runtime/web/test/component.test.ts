@@ -1240,6 +1240,51 @@ describe('component observer init', () => {
     expect(behaviorObserver).toHaveBeenCalledWith(1)
     expect(aggregateObserver).toHaveBeenLastCalledWith('after', 1)
   })
+
+  it('resolves component methods that collide with inherited element methods inside observers', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'update')
+    const inheritedUpdate = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'update', {
+      configurable: true,
+      value: inheritedUpdate,
+    })
+
+    try {
+      defineComponent('wv-component-method-collision', {
+        template: createTemplate('<view>{{updated}}</view>'),
+        component: {
+          data: { updated: false },
+          properties: {
+            label: { type: String, value: 'before' },
+          },
+          observers: {
+            label(this: any) {
+              this.update()
+            },
+          },
+          methods: {
+            update(this: any) {
+              this.setData({ updated: true })
+            },
+          },
+        },
+      })
+
+      const element = document.createElement('wv-component-method-collision') as any
+      element.label = 'after'
+
+      expect(element.data.updated).toBe(true)
+      expect(inheritedUpdate).not.toHaveBeenCalled()
+    }
+    finally {
+      if (descriptor) {
+        Object.defineProperty(HTMLElement.prototype, 'update', descriptor)
+      }
+      else {
+        delete (HTMLElement.prototype as any).update
+      }
+    }
+  })
 })
 
 describe('component behaviors', () => {

@@ -3,20 +3,22 @@ import type {
   DataRecord,
   DefineComponentOptions,
   LifeTimeHooks,
+  NormalizedComponentOptions,
   PageLifeTimeHooks,
   PropertyDeclaration,
+  PropertyOption,
 } from './types'
 import { hasOwn } from '../utils/object'
 import { normalizeBehaviors } from './behavior'
 import { cloneValue, hyphenate } from './utils'
 
-type PropertyEntry = [string, PropertyDeclaration]
+type PropertyEntry = [string, PropertyOption]
 
 export interface ComponentRuntimeState {
   id?: string
   templateRef: DefineComponentOptions['template']
   styleRef: string
-  componentRef: ComponentOptions
+  componentRef: NormalizedComponentOptions
   observerInitEnabled: boolean
   propertyEntries: PropertyEntry[]
   observedAttributes: string[]
@@ -25,11 +27,27 @@ export interface ComponentRuntimeState {
   pageLifetimes: PageLifeTimeHooks
 }
 
+function normalizePropertyDeclaration(declaration: PropertyDeclaration): PropertyOption {
+  if (declaration === null || typeof declaration === 'function') {
+    return { type: declaration }
+  }
+  return declaration
+}
+
 function resolveNormalizedComponent(component: ComponentOptions | undefined) {
   const normalized = normalizeBehaviors(component)
+  const resolved = normalized.component ?? component ?? {}
   return {
     warnings: normalized.warnings,
-    component: normalized.component ?? component ?? {},
+    component: {
+      ...resolved,
+      properties: Object.fromEntries(
+        Object.entries(resolved.properties ?? {}).map(([name, declaration]) => [
+          name,
+          normalizePropertyDeclaration(declaration),
+        ]),
+      ),
+    } satisfies NormalizedComponentOptions,
   }
 }
 
@@ -45,7 +63,7 @@ function createDefaultPropertyValues(propertyEntries: PropertyEntry[]) {
   }, {})
 }
 
-function createPropertyEntries(component: ComponentOptions): PropertyEntry[] {
+function createPropertyEntries(component: NormalizedComponentOptions): PropertyEntry[] {
   return Object.entries(component.properties ?? {})
 }
 
