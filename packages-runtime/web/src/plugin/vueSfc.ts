@@ -231,14 +231,16 @@ export function resolveWebVueSfcStyleLanguage(result: VueTransformResult, filena
   const languages = new Set(
     (result.meta?.styleBlocks ?? []).map(style => style.lang?.trim() || 'css'),
   )
-  if (languages.size > 1) {
+  for (const language of languages) {
+    if (!/^[a-z][a-z0-9-]*$/i.test(language)) {
+      throw new Error(`[@weapp-vite/web] Vue SFC 样式语言无效: ${filename} -> ${language}`)
+    }
+  }
+  const preprocessLanguages = [...languages].filter(language => language !== 'css')
+  if (preprocessLanguages.length > 1) {
     throw new Error(`[@weapp-vite/web] Vue SFC 暂不支持混合样式语言: ${filename}`)
   }
-  const language = languages.values().next().value ?? 'css'
-  if (!/^[a-z][a-z0-9-]*$/i.test(language)) {
-    throw new Error(`[@weapp-vite/web] Vue SFC 样式语言无效: ${filename} -> ${language}`)
-  }
-  return language
+  return preprocessLanguages[0] ?? 'css'
 }
 
 export function generateWebVueSfcStyle(result: VueTransformResult) {

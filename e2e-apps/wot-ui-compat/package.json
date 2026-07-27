@@ -4,6 +4,12 @@
   "version": "0.0.0",
   "private": true,
   "description": "Wot UI 全组件 Web、微信开发者工具与 headless 兼容验证应用",
+  "workspaceHmr": {
+    "thresholds": {
+      "maxScenarioMs": 5000,
+      "maxScenarioP95Ms": 5000
+    }
+  },
   "scripts": {
     "dev": "wv dev",
     "dev:web": "wv dev -p web --host 127.0.0.1",

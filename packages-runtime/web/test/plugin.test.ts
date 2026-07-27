@@ -3,8 +3,30 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { weappWebPlugin } from '../src/plugin'
+import { resolveWebVueSfcStyleLanguage } from '../src/plugin/vueSfc'
 
 describe('weappWebPlugin', () => {
+  it('uses one preprocessor for mixed CSS and preprocessed SFC style blocks', () => {
+    expect(resolveWebVueSfcStyleLanguage({
+      meta: {
+        styleBlocks: [
+          { lang: 'css' },
+          { lang: 'scss' },
+          {},
+        ],
+      },
+    } as any, '/src/pages/index.vue')).toBe('scss')
+
+    expect(() => resolveWebVueSfcStyleLanguage({
+      meta: {
+        styleBlocks: [
+          { lang: 'scss' },
+          { lang: 'less' },
+        ],
+      },
+    } as any, '/src/pages/index.vue')).toThrow('Vue SFC 暂不支持混合样式语言')
+  })
+
   it('injects the WXSS PostCSS transform during Vite config resolution', () => {
     const plugin = weappWebPlugin()
     const existingPlugin = { postcssPlugin: 'existing' }

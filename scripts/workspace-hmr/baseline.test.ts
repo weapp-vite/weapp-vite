@@ -352,6 +352,59 @@ describe('workspace HMR baseline thresholds', () => {
     expect(renderThresholdMarkdown(evaluation)).toContain('| <workspace> | - | scenarioP95Ms | 1001 | 1000 | - |')
   })
 
+  it('applies project-specific timing budgets without weakening the workspace budget', () => {
+    const evaluation = evaluateWorkspaceHmrThresholds([
+      {
+        ...templateResult,
+        id: 'e2e-apps/wot-ui-compat',
+        kind: 'e2e-apps',
+        thresholds: {
+          maxScenarioMs: 5_000,
+          maxScenarioP95Ms: 5_000,
+        },
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            totalMs: 4_000,
+          },
+        ],
+      },
+      {
+        ...templateResult,
+        id: 'e2e-apps/small-app',
+        kind: 'e2e-apps',
+        scenarios: [
+          {
+            ...templateResult.scenarios[0]!,
+            totalMs: 1_001,
+          },
+        ],
+      },
+    ], {
+      overrides: {
+        maxScenarioMs: 1_000,
+        maxScenarioP95Ms: 1_000,
+      },
+    })
+
+    expect(evaluation.scenarioP95Ms).toBe(4_000)
+    expect(evaluation.issues).toMatchObject([
+      {
+        project: '<workspace>',
+        metric: 'scenarioP95Ms',
+        actual: 1_001,
+        limit: 1_000,
+      },
+      {
+        project: 'e2e-apps/small-app',
+        scenario: 'native-template',
+        metric: 'totalMs',
+        actual: 1_001,
+        limit: 1_000,
+      },
+    ])
+  })
+
   it('uses baseline regression budgets when baseline scenario P95 exceeds the absolute limit', () => {
     const baseline = createWorkspaceHmrBaseline([
       {
