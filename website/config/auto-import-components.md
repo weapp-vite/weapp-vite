@@ -15,7 +15,7 @@ keywords:
 
 # 自动导入组件配置 {#auto-import-components}
 
-`weapp-vite` 会在构建阶段扫描 WXML 组件标签并自动补齐 `usingComponents`，免去手写 JSON 的负担。支持本地组件与第三方库 Resolver（如 Vant/TDesign）。
+`weapp-vite` 会在构建阶段扫描 WXML 组件标签并自动补齐 `usingComponents`，免去手写 JSON 的负担。支持本地组件与第三方库 Resolver（如 Vant/TDesign），也可以配合实验性的 `weapp.uniApp` 转换外部 Vue SFC 组件库。
 
 [[toc]]
 
@@ -93,3 +93,27 @@ export default defineConfig({
 > 如需排除额外标签（例如占位标签），可以在 `weapp.wxml.excludeComponent` 中过滤。
 
 更多实践示例请参考 [自动引入组件](/guide/auto-import)。
+
+## uni-app Vue 组件库
+
+`autoImportComponents.resolvers` 只负责标签与真实组件入口的映射。组件源码使用 uni-app 条件编译或自由 `uni` 引用时，还需要显式启用 `weapp.uniApp`：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+import { WotUiResolver } from 'weapp-vite/resolvers'
+
+export default defineConfig({
+  weapp: {
+    uniApp: {
+      include: ['@wot-ui/ui'],
+    },
+    autoImportComponents: {
+      resolvers: [WotUiResolver()],
+      vueComponents: true,
+      vueComponentsModule: 'wevu',
+    },
+  },
+})
+```
+
+该能力默认关闭，也不会自动扫描 npm 依赖。完整安装方式、99 组件矩阵和双端边界见 [Wot UI 与 uni-app 组件库](/integration/wot-ui)。

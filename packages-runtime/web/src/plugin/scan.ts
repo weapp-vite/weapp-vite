@@ -1,5 +1,5 @@
 import type { WebTabBarConfig } from '../shared/tabBar'
-import type { ComponentEntry, LayoutEntry, ModuleMeta, PageEntry, ResolveWebModuleId, ScanState, WarnFn } from './types'
+import type { ComponentEntry, LayoutEntry, ModuleMeta, PageEntry, ResolveWebAutoImportTag, ResolveWebModuleId, ScanState, WarnFn } from './types'
 
 import { readdir } from 'node:fs/promises'
 import process from 'node:process'
@@ -9,7 +9,7 @@ import { normalizeWebTabBarConfig } from '../shared/tabBar'
 import { SCRIPT_EXTS } from './constants'
 import { isRecord, readJsonFile, resolveJsonPath, resolveScriptFile, resolveStyleFile, resolveTemplateFile } from './files'
 import { mergeNavigationConfig, pickNavigationConfig } from './navigation'
-import { normalizePath, toPosixId } from './path'
+import { isInsideDir, normalizePath, toPosixId } from './path'
 import { collectComponentTagsFromConfig, collectComponentTagsFromJson, mergeComponentTags } from './scanConfig'
 import { compileScannedSfc, discoverWebPageIds } from './scanSfc'
 
@@ -18,6 +18,8 @@ interface ScanProjectOptions {
   warn?: WarnFn
   state: ScanState
   resolveId?: ResolveWebModuleId
+  resolveAutoImportTag?: ResolveWebAutoImportTag
+  uniApp?: { include: string[] }
 }
 
 function resolveComponentBase(raw: string, importerDir: string, srcRoot: string) {
@@ -30,10 +32,10 @@ function resolveComponentBase(raw: string, importerDir: string, srcRoot: string)
   if (raw.startsWith('/')) {
     return resolve(srcRoot, raw.slice(1))
   }
-  return resolve(srcRoot, raw)
+  return undefined
 }
 
-export async function scanProject({ srcRoot, warn, state, resolveId }: ScanProjectOptions) {
+export async function scanProject({ srcRoot, warn, state, resolveId, resolveAutoImportTag, uniApp }: ScanProjectOptions) {
   state.moduleMeta.clear()
   state.pageNavigationMap.clear()
   state.templateComponentMap.clear()
@@ -87,10 +89,23 @@ export async function scanProject({ srcRoot, warn, state, resolveId }: ScanProje
 
   const resolveComponentScript = async (raw: string, importerDir: string) => {
     const base = resolveComponentBase(raw, importerDir, srcRoot)
-    if (!base) {
-      return undefined
+    if (base) {
+      return resolveScriptFile(base)
     }
-    return resolveScriptFile(base)
+    const importer = join(importerDir, '__weapp_web_using_components__.ts')
+    const resolved = await resolveId?.(raw, importer)
+    return resolved ? resolveScriptFile(resolved) : undefined
+  }
+
+  const getStableComponentId = (script: string) => {
+    const normalized = script.replace(/\\/g, '/')
+    const nodeModulesIndex = normalized.lastIndexOf('/node_modules/')
+    const extension = extname(script)
+    if (nodeModulesIndex >= 0) {
+      const packageRelative = normalized.slice(nodeModulesIndex + '/node_modules/'.length)
+      return `__external__/${packageRelative.slice(0, -extension.length)}`
+    }
+    return toPosixId(relative(srcRoot, script).slice(0, -extension.length))
   }
 
   const getComponentId = (script: string) => {
@@ -98,8 +113,7 @@ export async function scanProject({ srcRoot, warn, state, resolveId }: ScanProje
     if (cached) {
       return cached
     }
-    const idRelative = relative(srcRoot, script).replace(new RegExp(`${extname(script)}$`), '')
-    const componentIdPosix = toPosixId(idRelative)
+    const componentIdPosix = getStableComponentId(script)
     state.componentIdMap.set(script, componentIdPosix)
     return componentIdPosix
   }
@@ -116,14 +130,23 @@ export async function scanProject({ srcRoot, warn, state, resolveId }: ScanProje
   }
 
   const collectComponent = async (componentId: string, importerDir: string) => {
-    const base = resolveComponentBase(componentId, importerDir, srcRoot)
-    const script = base ? await resolveScriptFile(base) : undefined
-    if (!script || components.has(script)) {
+    const script = await resolveComponentScript(componentId, importerDir)
+    if (!script) {
       return
     }
 
-    const idRelative = relative(srcRoot, script).replace(new RegExp(`${extname(script)}$`), '')
-    const componentIdPosix = toPosixId(idRelative)
+    const existing = components.get(script)
+    if (existing) {
+      existing.importId ??= resolveComponentBase(componentId, importerDir, srcRoot)
+        ? undefined
+        : componentId
+      return
+    }
+
+    const componentIdPosix = getStableComponentId(script)
+    const importId = resolveComponentBase(componentId, importerDir, srcRoot)
+      ? (isInsideDir(script, srcRoot) ? undefined : componentIdPosix)
+      : componentId
     const template = await resolveTemplateFile(script)
     const style = await resolveStyleFile(script)
 
@@ -141,11 +164,11 @@ export async function scanProject({ srcRoot, warn, state, resolveId }: ScanProje
     }
     state.moduleMeta.set(normalizePath(script), componentMeta)
 
-    components.set(script, { script, id: componentIdPosix })
+    components.set(script, { script, id: componentIdPosix, importId })
 
     const componentJsonBasePath = `${script.replace(new RegExp(`${extname(script)}$`), '')}.json`
     const sfcConfig = script.endsWith('.vue')
-      ? (await compileScannedSfc({ filename: script, meta: componentMeta, srcRoot, state, resolveId })).config
+      ? (await compileScannedSfc({ filename: script, meta: componentMeta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp })).config
       : undefined
     const componentTags = sfcConfig
       ? await collectComponentTagsFromConfig({
@@ -211,7 +234,7 @@ export async function scanProject({ srcRoot, warn, state, resolveId }: ScanProje
     }
 
     const sfcConfig = script.endsWith('.vue')
-      ? (await compileScannedSfc({ filename: script, meta: pageMeta, srcRoot, state, resolveId })).config
+      ? (await compileScannedSfc({ filename: script, meta: pageMeta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp })).config
       : undefined
     const resolvedNavigationConfig = mergeNavigationConfig(
       appNavigationDefaults,
@@ -328,7 +351,7 @@ export async function scanProject({ srcRoot, warn, state, resolveId }: ScanProje
   let appJson = appJsonPath ? await readJsonFile(appJsonPath) : undefined
   if (appScript?.endsWith('.vue')) {
     const appMeta = state.moduleMeta.get(normalizePath(appScript))!
-    const sfcConfig = (await compileScannedSfc({ filename: appScript, meta: appMeta, srcRoot, state, resolveId })).config
+    const sfcConfig = (await compileScannedSfc({ filename: appScript, meta: appMeta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp })).config
     appJson = {
       ...(sfcConfig ?? {}),
       ...(appJson ?? {}),

@@ -16,11 +16,19 @@ export async function createManagedTsconfigFiles(ctx: MutableCompilerContext): P
   const nodePath = path.join(managedDir, 'tsconfig.node.json')
   const serverPath = path.join(managedDir, 'tsconfig.server.json')
   const sharedEmptyPath = path.join(managedDir, 'tsconfig.shared.empty.d.ts')
+  const uniAppTypesPath = path.join(managedDir, 'uni-app.d.ts')
+  const uniAppEnabled = Boolean(ctx.configService?.weappViteConfig.uniApp)
 
   return [
     {
       path: sharedEmptyPath,
       content: 'export {}\n',
+    },
+    {
+      path: uniAppTypesPath,
+      content: uniAppEnabled
+        ? 'export {}\n\ndeclare global {\n  const uni: typeof wx\n}\n'
+        : 'export {}\n',
     },
     {
       path: sharedPath,

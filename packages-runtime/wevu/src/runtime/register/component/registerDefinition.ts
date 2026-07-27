@@ -24,6 +24,22 @@ import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../../
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 
+function scheduleOwnerTemplateRefUpdate(target: InternalRuntimeState) {
+  const selectOwnerComponent = (target as any).selectOwnerComponent
+  if (typeof selectOwnerComponent !== 'function') {
+    return
+  }
+  try {
+    const owner = selectOwnerComponent.call(target) as InternalRuntimeState | null | undefined
+    if (owner && owner !== target) {
+      scheduleTemplateRefUpdate(owner)
+    }
+  }
+  catch {
+    // 宿主不支持 owner 查询时保持当前组件生命周期正常执行。
+  }
+}
+
 export function registerComponentDefinition<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   runtimeApp: RuntimeApp<D, C, M>
   watch: WatchMap | undefined
@@ -203,6 +219,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
         if (!(this as any)[WEVU_READY_CALLED_KEY]) {
           ;(this as any)[WEVU_READY_CALLED_KEY] = true
           syncWevuPropsFromInstance(this)
+          scheduleOwnerTemplateRefUpdate(this)
           scheduleTemplateRefUpdate(this, () => {
             callHookList(this, 'onReady', args)
             if (typeof (userLifetimes as any).ready === 'function') {
@@ -216,6 +233,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
         }
       },
       detached: function detached(this: InternalRuntimeState, ...args: any[]) {
+        scheduleOwnerTemplateRefUpdate(this)
         callHookList(this, 'onDetached', args)
         if (isPage && typeof (pageLifecycleHooks as any).onUnload === 'function') {
           ;(pageLifecycleHooks as any).onUnload.call(this, ...args)

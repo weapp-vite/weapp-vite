@@ -14,6 +14,7 @@ import type {
 } from './types'
 import { getDefaultMiniProgramRuntimeGlobalKey, getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import { emitRuntimeWarning } from '../warning'
+import { createAnimation } from './animation'
 import {
   callMiniProgramAsyncFailure,
   callMiniProgramAsyncSuccess,
@@ -52,6 +53,7 @@ import {
 import * as runtimeDataApi from './runtimeDataApi'
 import * as uiMediaApi from './uiMediaApi'
 
+export { createAnimation } from './animation'
 export * from './deviceAuthSystemApi'
 
 export {
@@ -184,6 +186,7 @@ if (globalTarget) {
     hideNavigationBarLoading,
     ...uiMediaApi,
     ...deviceAuthSystemApi,
+    createAnimation,
     createRewardedVideoAd,
     createInterstitialAd,
     getExtConfigSync,

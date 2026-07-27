@@ -5,6 +5,7 @@ import type {
   HeadlessWxCallbackOption,
   HeadlessWxCanvasContext,
   HeadlessWxCreateIntersectionObserverOption,
+  HeadlessWxDeviceInfoResult,
   HeadlessWxGetClipboardDataResult,
   HeadlessWxGetNetworkTypeResult,
   HeadlessWxIntersectionObserver,
@@ -390,6 +391,7 @@ export interface HeadlessWxDriverCapabilities {
   createVideoContext: (videoId: string, scope?: Record<string, any>) => HeadlessWxVideoContext
   executeSelectorQuery: (requests: HeadlessWxSelectorQueryRequest[], scope?: Record<string, any>) => unknown[]
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
+  getDeviceInfo: () => HeadlessWxDeviceInfoResult
   getClipboardData: () => HeadlessWxGetClipboardDataResult
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getLaunchOptionsSync: () => HeadlessWxLaunchOptions

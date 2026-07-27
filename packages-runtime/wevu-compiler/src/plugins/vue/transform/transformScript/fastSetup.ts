@@ -10,7 +10,8 @@ const PAGE_META_RE = /\bdefinePageMeta\s*\(/
 function hasMetadataInjectionOptions(options: TransformScriptOptions | undefined) {
   const hasWevuDefaults = options?.wevuDefaults && Object.keys(options.wevuDefaults).length > 0
   return Boolean(
-    options?.isApp
+    options?.isTypeScript
+    || options?.isApp
     || options?.skipComponentTransform
     || options?.minify
     || options?.sourceMap !== false

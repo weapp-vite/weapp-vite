@@ -105,6 +105,7 @@ export interface CanvasContext {
   setFillStyle: (color: string) => void
   setStrokeStyle: (color: string) => void
   setLineWidth: (width: number) => void
+  setLineCap: (lineCap: CanvasLineCap) => void
   setFontSize: (size: number) => void
   fillRect: (x: number, y: number, width: number, height: number) => void
   strokeRect: (x: number, y: number, width: number, height: number) => void

@@ -7,6 +7,9 @@ export function compileStylePhase(
   descriptor: Pick<SFCDescriptor, 'styles'>,
   filename: string,
   result: VueTransformResult,
+  options?: {
+    preserveDeepSelectors?: boolean
+  },
 ) {
   if (descriptor.styles.length === 0) {
     return
@@ -19,6 +22,7 @@ export function compileStylePhase(
       id: scopedId,
       scoped: styleBlock.scoped,
       modules: styleBlock.module,
+      preserveDeepSelectors: options?.preserveDeepSelectors,
     })
   })
 

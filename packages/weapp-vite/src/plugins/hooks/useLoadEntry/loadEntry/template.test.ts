@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { collectScriptSetupImports, collectVueTemplateAutoImportTags } from './template'
+import { collectScriptSetupImports, collectVueTemplateAutoImportTags, collectVueTemplateComponentNames } from './template'
 
 describe('collectVueTemplateAutoImportTags', () => {
   it('collects PascalCase and kebab-case tags', () => {
@@ -25,6 +25,22 @@ describe('collectVueTemplateAutoImportTags', () => {
 })
 
 describe('collectScriptSetupImports', () => {
+  it('matches kebab-case template tags to camel and Pascal script imports', () => {
+    const names = collectVueTemplateComponentNames(
+      '<year-panel /><month-panel />',
+      'calendar-view.vue',
+    )
+
+    expect(names).toEqual(new Set([
+      'year-panel',
+      'yearPanel',
+      'YearPanel',
+      'month-panel',
+      'monthPanel',
+      'MonthPanel',
+    ]))
+  })
+
   it('keeps babel and oxc results aligned', () => {
     const source = `
 import type { FooProps } from './types'

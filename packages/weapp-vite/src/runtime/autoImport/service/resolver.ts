@@ -27,6 +27,7 @@ export interface ResolverHelpers {
   collectStaticResolverComponentsForSupportFiles: () => Record<string, string>
   resolveWithResolvers: (componentName: string, importerBaseName?: string) => ResolvedValue | undefined
   resolveNavigationImport: (from: string) => string | undefined
+  resolveComponentTypeImport: (componentName: string, from: string) => string | undefined
 }
 
 interface ResolverState {
@@ -362,6 +363,14 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
     return undefined
   }
 
+  function resolveComponentTypeImport(componentName: string, from: string) {
+    const resolved = resolveWithResolvers(componentName)
+    if (resolved?.from === from && resolved.typeImport === false) {
+      return undefined
+    }
+    return resolveNavigationImport(from)
+  }
+
   return {
     collectResolverComponents,
     collectRuntimeResolverComponents,
@@ -373,6 +382,7 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
     collectStaticResolverComponentsForSupportFiles,
     resolveWithResolvers,
     resolveNavigationImport,
+    resolveComponentTypeImport,
   }
 }
 

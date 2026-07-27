@@ -15,6 +15,7 @@ interface ResolvedScriptSetupUsingComponent {
   importSource: string
   resolvedId?: string
   from?: string
+  templateTags: string[]
 }
 
 const TEMPLATE_COMPONENT_TAG_HINT_RE = /<\s*(?:[A-Z_$]|[a-z][\w$]*-)/
@@ -23,12 +24,36 @@ function hasTemplateComponentTagHint(source: string) {
   return TEMPLATE_COMPONENT_TAG_HINT_RE.test(source)
 }
 
-export function collectVueTemplateComponentNames(template: string, filename: string) {
-  return collectVueTemplateTags(template, {
+function kebabToCamel(name: string) {
+  return name.replace(/-([a-z0-9])/g, (_, character: string) => character.toUpperCase())
+}
+
+function capitalize(name: string) {
+  return name ? `${name.charAt(0).toUpperCase()}${name.slice(1)}` : name
+}
+
+function collectVueTemplateComponentTagInfo(template: string, filename: string) {
+  const templateTags = collectVueTemplateTags(template, {
     filename,
     warnLabel: '自动 usingComponents',
-    shouldCollect: tag => VUE_COMPONENT_TAG_RE.test(tag),
+    shouldCollect: tag => VUE_COMPONENT_TAG_RE.test(tag) || isAutoImportCandidateTag(tag),
   })
+  const componentNames = new Set<string>()
+  const tagsByComponentName = new Map<string, Set<string>>()
+  for (const tag of templateTags) {
+    const camelName = kebabToCamel(tag)
+    for (const componentName of [tag, camelName, capitalize(camelName)]) {
+      componentNames.add(componentName)
+      const matchedTags = tagsByComponentName.get(componentName) ?? new Set<string>()
+      matchedTags.add(tag)
+      tagsByComponentName.set(componentName, matchedTags)
+    }
+  }
+  return { componentNames, tagsByComponentName }
+}
+
+export function collectVueTemplateComponentNames(template: string, filename: string) {
+  return collectVueTemplateComponentTagInfo(template, filename).componentNames
 }
 
 export function collectVueTemplateAutoImportTags(template: string, filename: string) {
@@ -105,7 +130,8 @@ export async function applyScriptSetupUsingComponents(options: {
     }
 
     if (!errors?.length && descriptor?.scriptSetup && descriptor?.template) {
-      const templateComponentNames = collectVueTemplateComponentNames(descriptor.template.content, vueEntryPath)
+      const templateComponentTagInfo = collectVueTemplateComponentTagInfo(descriptor.template.content, vueEntryPath)
+      const templateComponentNames = templateComponentTagInfo.componentNames
       if (templateComponentNames.size) {
         const astEngine = resolveAstEngine(configService.weappViteConfig)
         const imports = collectScriptSetupImports(descriptor.scriptSetup.content, templateComponentNames, {
@@ -137,10 +163,11 @@ export async function applyScriptSetupUsingComponents(options: {
               importSource,
               resolvedId,
               from: resolvedFrom,
+              templateTags: [...(templateComponentTagInfo.tagsByComponentName.get(localName) ?? [localName])],
             } satisfies ResolvedScriptSetupUsingComponent
           }))
 
-          for (const { localName, importSource, resolvedId, from: resolvedFrom } of resolvedImports) {
+          for (const { importSource, resolvedId, from: resolvedFrom, templateTags } of resolvedImports) {
             let from = resolvedFrom
 
             if (!from && importSource.startsWith('/')) {
@@ -151,13 +178,15 @@ export async function applyScriptSetupUsingComponents(options: {
               continue
             }
 
-            if (Reflect.has(usingComponents, localName) && usingComponents[localName] !== from) {
-              logger.warn(
-                `[自动 usingComponents] 冲突：${vueEntryPath} 中 usingComponents['${localName}']='${usingComponents[localName]}' 将被 <script setup> 导入覆盖为 '${from}'`,
-              )
+            for (const tag of templateTags) {
+              if (Reflect.has(usingComponents, tag) && usingComponents[tag] !== from) {
+                logger.warn(
+                  `[自动 usingComponents] 冲突：${vueEntryPath} 中 usingComponents['${tag}']='${usingComponents[tag]}' 将被 <script setup> 导入覆盖为 '${from}'`,
+                )
+              }
+              usingComponents[tag] = from
             }
 
-            usingComponents[localName] = from
             if (resolvedId) {
               externalComponentEntryMap?.set(removeExtensionDeep(from).replace(/^\/+/, ''), resolvedId)
             }

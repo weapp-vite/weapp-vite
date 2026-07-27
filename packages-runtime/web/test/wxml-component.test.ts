@@ -55,6 +55,28 @@ describe('compileWxml component mapping', () => {
     expect(result.code).not.toContain('s:else')
   })
 
+  it('keeps nested conditional branches mutually exclusive', () => {
+    const result = compileWxml({
+      id: '/src/pages/index/index.wxml',
+      source: `
+<view>
+  <block wx:if="{{type === 'month'}}"><YearPanel /></block>
+  <block wx:else><MonthPanel /></block>
+</view>`,
+      resolveTemplatePath: () => undefined,
+      resolveWxsPath: () => undefined,
+      componentTags: {
+        monthpanel: 'wv-component-month-panel',
+        yearpanel: 'wv-component-year-panel',
+      },
+    })
+
+    expect(result.code).toContain('ctx.eval("type === \'month\'", scope, __wxs_modules) ? html')
+    expect(result.code).toContain(': html`<wv-component-month-panel')
+    expect(result.code).not.toContain('wx:if')
+    expect(result.code).not.toContain('wx:else')
+  })
+
   it('preserves slot attribute binding for custom components', () => {
     const result = compileWxml({
       id: '/src/pages/index/index.wxml',

@@ -30,6 +30,25 @@ export default defineComponent({
     expect(result.script).not.toContain('<view')
   })
 
+  it('leaves JSX component registration to the logical entry when requested', async () => {
+    const source = `
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  render() {
+    return <view>logical entry component</view>
+  },
+})
+`
+
+    const result = await compileJsxFile(source, '/project/src/components/card.tsx', {
+      skipComponentTransform: true,
+    })
+
+    expect(result.script).toContain('export default')
+    expect(result.script).not.toContain('createWevuComponent')
+  })
+
   it('skips json macro metadata when tsx source has no json macro call', async () => {
     const source = `
 import { defineComponent } from 'wevu'

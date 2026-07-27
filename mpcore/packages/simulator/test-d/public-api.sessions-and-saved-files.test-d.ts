@@ -1,4 +1,5 @@
 import type {
+  HeadlessWxDeviceInfoResult,
   HeadlessWxDownloadFileMockDefinition,
   HeadlessWxUploadFileMockDefinition,
 } from '..'
@@ -18,6 +19,10 @@ const browserFiles = createBrowserVirtualFiles([
 ])
 
 const browserSession = createBrowserHeadlessSession({ files: browserFiles })
+expectType<ReturnType<typeof createBrowserHeadlessSession>>(createBrowserHeadlessSession({
+  files: browserFiles,
+  onRender: () => {},
+}))
 browserSession.reLaunch('/pages/index/index')
 const browserPage = browserSession.getCurrentPages()[0]
 
@@ -154,6 +159,8 @@ browserPage?.wx.createCanvasContext('hero-canvas', browserPage).strokeText('canv
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).translate(3, 4)
 
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
+expectType<HeadlessWxDeviceInfoResult>(browserSession.getDeviceInfo())
+expectType<HeadlessWxDeviceInfoResult | undefined>(browserPage?.wx.getDeviceInfo())
 expectType<{ active: boolean, stopCalls: number }>(browserSession.getPullDownRefreshState())
 expectType<{ data: string }>(browserSession.getClipboardData())
 expectType<{ mask: boolean, title: string } | null>(browserSession.getLoading())

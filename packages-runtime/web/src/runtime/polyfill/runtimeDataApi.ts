@@ -24,6 +24,7 @@ import {
   callMiniProgramAsyncSuccess,
 } from './async'
 import { createCanvasContextBridge } from './canvasContext'
+import { createIntersectionObserverBridge } from './intersectionObserver'
 import {
   downloadFileByFetchBridge,
   requestByFetchBridge,
@@ -112,6 +113,17 @@ export function pageScrollTo(options?: PageScrollToOptions) {
 
 export function createSelectorQuery(): SelectorQuery {
   return createSelectorQueryBridge()
+}
+
+export function createIntersectionObserver(
+  component?: unknown,
+  options?: {
+    initialRatio?: number
+    observeAll?: boolean
+    thresholds?: number[]
+  },
+) {
+  return createIntersectionObserverBridge(component, options)
 }
 
 export function createCanvasContext(canvasId: string): CanvasContext {

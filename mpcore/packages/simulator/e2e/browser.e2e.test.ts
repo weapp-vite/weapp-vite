@@ -48,6 +48,7 @@ interface SimulatorE2EApi {
     actionSheetLogs: unknown[]
     currentPageBackground: unknown
     currentPageNavigationBar: unknown
+    deviceInfo: unknown
     directorySnapshot: string[]
     downloadFileLogs: unknown[]
     fileSnapshot: Record<string, string>
@@ -139,6 +140,11 @@ describe.sequential('simulator browser e2e', () => {
     expect(state.currentRoute).toBe('pages/index/index')
     expect(state.pageStack).toEqual(['pages/index/index'])
     expect(state.previewMarkup).toContain('page')
+    expect(getBridge()!.sessionSnapshot().deviceInfo).toMatchObject({
+      brand: 'devtools',
+      model: 'headless-simulator',
+      platform: 'devtools',
+    })
   })
 
   it('keeps wx storage state observable through the browser debug bridge', async () => {

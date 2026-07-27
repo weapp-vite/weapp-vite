@@ -4,9 +4,12 @@ import type {
 } from './elementTypes'
 import type {
   ComponentOptions,
+  ComponentPublicInstance,
   DataRecord,
   PageLifeTimeHooks,
+  TriggerEventOptions,
 } from './types'
+import type { ClassAttributeElement } from './virtualHost'
 import { html } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import { createRenderContext } from '../renderContext'
@@ -19,11 +22,41 @@ import {
   selectRuntimeComponents,
 } from './dom'
 import { bindRuntimeEvents } from './events'
+import { runComponentObservers } from './observers'
+import { createComponentPublicInstance } from './publicInstance'
+import { resolveRelationNodes } from './relations'
+import { createWebSlotsProxy } from './slots'
 import { cloneValue, coerceValue, toCamelCase } from './utils'
+import {
+  clearVirtualHostClasses,
+  clearVirtualHostParts,
+  syncVirtualHostClasses,
+  syncVirtualHostParts,
+} from './virtualHost'
 
 export type { WeappComponentInstance } from './elementTypes'
 export type WeappComponentElementClass = typeof HTMLElement & {
   new (): WeappComponentInstance
+}
+
+function resolveComposedParent(node: Node): Node | undefined {
+  const assignedSlot = (node as Element).assignedSlot
+  if (assignedSlot) {
+    return assignedSlot
+  }
+  if (node.parentNode) {
+    return node.parentNode
+  }
+  const root = node.getRootNode?.()
+  return root instanceof ShadowRoot ? root.host : undefined
+}
+
+function isWeappComponentInstance(value: unknown): value is WeappComponentInstance {
+  return Boolean(
+    value
+    && typeof value === 'object'
+    && typeof (value as WeappComponentInstance).__weappSync === 'function',
+  )
 }
 
 export function createComponentElementClass({
@@ -42,7 +75,8 @@ export function createComponentElementClass({
 
     #state: DataRecord
     #properties: DataRecord
-    #methods: Record<string, (event: any) => any>
+    #methods: Record<string, (event: any) => any> = {}
+    #publicInstance: ComponentPublicInstance
     #exposedMethodNames = new Set<string>()
     #isMounted = false
     #renderContext = createRenderContext(this, {})
@@ -50,6 +84,9 @@ export function createComponentElementClass({
     #readyFired = false
     #observerInitDone = false
     #observedKeys = new Set<string>()
+    #virtualHostClassTokens = new Set<string>()
+    #virtualHostPartTokens = new Set<string>()
+    #virtualHostRootElement: ClassAttributeElement | undefined
     readonly data!: DataRecord
     readonly properties!: DataRecord
 
@@ -60,8 +97,11 @@ export function createComponentElementClass({
         : (runtimeState.componentRef.data ?? {})
       this.#properties = { ...runtimeState.defaultPropertyValues }
       this.#state = { ...cloneValue(this.#properties), ...cloneValue(dataOption) }
-      this.#methods = {}
-      this.#syncMethods(runtimeState.componentRef.methods ?? {})
+      Object.defineProperty(this.#state, '$slots', {
+        configurable: true,
+        enumerable: true,
+        value: createWebSlotsProxy(() => this.#state.vueSlots),
+      })
       Object.defineProperties(this, {
         data: {
           configurable: true,
@@ -74,6 +114,11 @@ export function createComponentElementClass({
           get: () => this.#properties,
         },
       })
+      this.#publicInstance = createComponentPublicInstance(
+        this,
+        WeappWebComponent.prototype,
+        key => typeof key === 'string' ? this.#methods[key] : undefined,
+      )
       for (const [propName] of runtimeState.propertyEntries) {
         Object.defineProperty(this, propName, {
           configurable: true,
@@ -82,6 +127,7 @@ export function createComponentElementClass({
           set: value => this.#setProperty(propName, value),
         })
       }
+      this.#syncMethods(runtimeState.componentRef.methods ?? {})
       if (!supportsLit) {
         const host = this as unknown as HTMLElement
         if (!host.shadowRoot && typeof host.attachShadow === 'function') {
@@ -90,18 +136,18 @@ export function createComponentElementClass({
         ;(this as any).renderRoot = host.shadowRoot ?? host
       }
       instances.add(this)
-      runtimeState.lifetimes.created?.call(this)
+      runtimeState.lifetimes.created?.call(this.#publicInstance)
     }
 
     setData(patch: DataRecord) {
       this.#applyDataPatch(patch)
     }
 
-    triggerEvent(name: string, detail?: any) {
+    triggerEvent(name: string, detail?: any, options: TriggerEventOptions = {}) {
       this.dispatchEvent(new CustomEvent(name, {
         detail,
-        bubbles: true,
-        composed: true,
+        bubbles: options.bubbles ?? false,
+        composed: options.composed ?? false,
       }))
     }
 
@@ -117,6 +163,24 @@ export function createComponentElementClass({
       return selectRuntimeComponents(this, selector)
     }
 
+    getRelationNodes(relationPath: string) {
+      const relation = runtimeState.componentRef.relations?.[relationPath]
+      return relation
+        ? resolveRelationNodes(this, runtimeState.id, relationPath, relation.type)
+        : []
+    }
+
+    selectOwnerComponent() {
+      let current = resolveComposedParent(this)
+      while (current) {
+        if (isWeappComponentInstance(current)) {
+          return current
+        }
+        current = resolveComposedParent(current)
+      }
+      return undefined
+    }
+
     connectedCallback() {
       const superConnected = (BaseElement.prototype as { connectedCallback?: () => void }).connectedCallback
       if (supportsLit && typeof superConnected === 'function') {
@@ -126,7 +190,7 @@ export function createComponentElementClass({
       if (runtimeState.observerInitEnabled) {
         this.#runInitialObservers()
       }
-      runtimeState.lifetimes.attached?.call(this)
+      runtimeState.lifetimes.attached?.call(this.#publicInstance)
       this.#isMounted = true
       if (!supportsLit) {
         this.#renderLegacy()
@@ -140,7 +204,7 @@ export function createComponentElementClass({
       }
       this.#isMounted = false
       instances.delete(this)
-      runtimeState.lifetimes.detached?.call(this)
+      runtimeState.lifetimes.detached?.call(this.#publicInstance)
     }
 
     attributeChangedCallback(attrName: string, oldValue: string | null, newValue: string | null) {
@@ -159,11 +223,12 @@ export function createComponentElementClass({
     }
 
     firstUpdated() {
-      runtimeState.lifetimes.ready?.call(this)
+      runtimeState.lifetimes.ready?.call(this.#publicInstance)
       this.#readyFired = true
     }
 
     updated() {
+      this.#syncVirtualHostClasses()
       if (this.#usesLegacyTemplate) {
         bindRuntimeEvents(resolveRenderRoot(this), this.#methods, this)
       }
@@ -210,6 +275,8 @@ export function createComponentElementClass({
         return
       }
       let changed = false
+      const changedKeys: string[] = []
+      const previousProperties: DataRecord = {}
       for (const [key, value] of Object.entries(patch)) {
         if (this.#state[key] === value) {
           continue
@@ -217,17 +284,20 @@ export function createComponentElementClass({
         const oldValue = this.#state[key]
         this.#state[key] = value
         if (hasOwn(this.#properties, key)) {
+          previousProperties[key] = oldValue
           this.#properties[key] = value
-          const propOption = runtimeState.componentRef.properties?.[key]
-          if (propOption?.observer) {
-            propOption.observer.call(this, value, oldValue)
-            this.#observedKeys.add(key)
-          }
         }
+        changedKeys.push(key)
         changed = true
       }
       if (changed) {
         this.requestUpdate()
+        runComponentObservers(runtimeState.componentRef, this.#publicInstance, changedKeys, previousProperties)
+        for (const key of changedKeys) {
+          if (runtimeState.componentRef.properties?.[key]?.observer) {
+            this.#observedKeys.add(key)
+          }
+        }
       }
     }
 
@@ -243,8 +313,8 @@ export function createComponentElementClass({
       if (this.#isMounted) {
         this.requestUpdate()
       }
+      runComponentObservers(runtimeState.componentRef, this.#publicInstance, [name], { [name]: oldValue })
       if (propOption?.observer) {
-        propOption.observer.call(this, coerced, oldValue)
         this.#observedKeys.add(name)
       }
     }
@@ -259,7 +329,7 @@ export function createComponentElementClass({
           continue
         }
         const value = this.#state[propName]
-        propOption.observer.call(this, value, undefined)
+        propOption.observer.call(this.#publicInstance, value, undefined)
         this.#observedKeys.add(propName)
       }
     }
@@ -269,7 +339,7 @@ export function createComponentElementClass({
       const bound: Record<string, (event: any) => any> = {}
       for (const [name, fn] of Object.entries(resolved)) {
         if (typeof fn === 'function') {
-          bound[name] = fn.bind(this)
+          bound[name] = fn.bind(this.#publicInstance)
         }
       }
       for (const name of this.#exposedMethodNames) {
@@ -311,7 +381,7 @@ export function createComponentElementClass({
     __weappInvokePageLifetime(type: keyof PageLifeTimeHooks) {
       const hook = runtimeState.pageLifetimes[type]
       if (typeof hook === 'function') {
-        hook.call(this)
+        hook.call(this.#publicInstance)
       }
     }
 
@@ -329,10 +399,28 @@ export function createComponentElementClass({
       else {
         root.innerHTML = `${styleMarkup}${String(result)}`
       }
+      this.#syncVirtualHostClasses()
       if (!this.#readyFired) {
-        runtimeState.lifetimes.ready?.call(this)
+        runtimeState.lifetimes.ready?.call(this.#publicInstance)
         this.#readyFired = true
       }
+    }
+
+    #syncVirtualHostClasses() {
+      const host = this as unknown as ClassAttributeElement
+      if (!runtimeState.componentRef.options?.virtualHost) {
+        clearVirtualHostClasses(host, this.#virtualHostClassTokens)
+        clearVirtualHostParts(this.#virtualHostRootElement, this.#virtualHostPartTokens)
+        this.#virtualHostRootElement = undefined
+        return
+      }
+      const root = resolveRenderRoot(this)
+      syncVirtualHostClasses(host, root, this.#virtualHostClassTokens)
+      this.#virtualHostRootElement = syncVirtualHostParts(
+        root,
+        this.#virtualHostRootElement,
+        this.#virtualHostPartTokens,
+      )
     }
   }
 

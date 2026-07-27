@@ -60,6 +60,7 @@ export interface ProjectResult {
   platform: 'weapp' | 'alipay'
   source: string
   startupMs?: number
+  thresholds?: WorkspaceHmrThresholds
   scenarios: ScenarioResult[]
   error?: string
 }

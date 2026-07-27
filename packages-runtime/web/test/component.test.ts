@@ -22,6 +22,7 @@ import {
 import { parseDocument } from 'htmlparser2'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '../src/runtime/component'
+import { createComponentPublicInstance } from '../src/runtime/component/publicInstance'
 import {
   authorize,
   canIUse,
@@ -37,7 +38,9 @@ import {
   clearStorageSync,
   compressImage,
   compressVideo,
+  createAnimation,
   createCanvasContext,
+  createIntersectionObserver,
   createInterstitialAd,
   createRewardedVideoAd,
   createSelectorQuery,
@@ -1036,6 +1039,147 @@ describe('event prefix mapping integration', () => {
 })
 
 describe('component observer init', () => {
+  it('supports native behavior lifetimes and relation node lookup', () => {
+    registerComponent({
+      properties: {
+        column: Number,
+      },
+      behaviors: [{
+        created() {
+          Object.defineProperty(this, '$children', {
+            get: () => this.getRelationNodes('../relation-child/relation-child'),
+          })
+        },
+      } as any],
+      relations: {
+        '../relation-child/relation-child': {
+          type: 'descendant',
+        },
+      },
+    }, {
+      id: 'components/relation-parent/relation-parent',
+      template: createTemplate('<slot />'),
+    })
+    registerComponent({}, {
+      id: 'components/relation-child/relation-child',
+      template: createTemplate('<view>child</view>'),
+    })
+
+    const parent = document.createElement('wv-component-components-relation-parent-relation-parent') as any
+    const child = document.createElement('wv-component-components-relation-child-relation-child')
+    parent.append(child)
+    expect(parent.$children).toEqual([child])
+  })
+
+  it('exports and clears chained animation steps', () => {
+    const animation = createAnimation({ duration: 300, timingFunction: 'linear' })
+      .translateX(24)
+      .opacity(0.5)
+      .step({ delay: 20 })
+      .height('auto')
+      .step()
+
+    expect(animation.export()).toEqual({
+      actions: [
+        {
+          animates: [
+            { type: 'translateX', args: [24] },
+            { type: 'opacity', args: [0.5] },
+          ],
+          option: { duration: 300, timingFunction: 'linear', delay: 20 },
+        },
+        {
+          animates: [{ type: 'height', args: ['auto'] }],
+          option: { duration: 300, timingFunction: 'linear' },
+        },
+      ],
+    })
+    expect(animation.export()).toEqual({ actions: [] })
+  })
+
+  it('keeps component instance fields isolated from readonly DOM properties', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'children')
+    Object.defineProperty(HTMLElement.prototype, 'children', {
+      configurable: true,
+      get: () => ['dom-child'],
+    })
+
+    try {
+      registerComponent({
+        lifetimes: {
+          created() {
+            expect(this.children).toBeUndefined()
+            ;(this as any).children = []
+          },
+        },
+        methods: {
+          appendChildInstance(child: unknown) {
+            ;(this as any).children.push(child)
+          },
+        },
+      }, {
+        id: 'components/readonly-dom-field',
+        template: createTemplate('<view>ready</view>'),
+      })
+
+      const element = document.createElement('wv-component-components-readonly-dom-field') as HTMLElement & {
+        appendChildInstance: (child: unknown) => void
+      }
+      element.appendChildInstance('component-child')
+      expect((element as any).children).toEqual(['component-child'])
+    }
+    finally {
+      if (descriptor) {
+        Object.defineProperty(HTMLElement.prototype, 'children', descriptor)
+      }
+      else {
+        delete (HTMLElement.prototype as any).children
+      }
+    }
+  })
+
+  it('supports shorthand and null property declarations', () => {
+    defineComponent('wv-property-declaration-shorthand', {
+      template: createTemplate('<view>{{title}} {{count}} {{anyValue}}</view>'),
+      component: {
+        properties: {
+          title: String,
+          count: { type: Number, value: 1, optionalTypes: [String] },
+          anyValue: null,
+        },
+      },
+    })
+
+    const element = document.createElement('wv-property-declaration-shorthand') as any
+    document.body.append(element)
+
+    expect(element.properties).toEqual({
+      title: undefined,
+      count: 1,
+      anyValue: undefined,
+    })
+  })
+
+  it('uses WeChat triggerEvent propagation defaults and explicit options', () => {
+    defineComponent('wv-trigger-event-options', {
+      template: createTemplate('<view>event source</view>'),
+      component: {},
+    })
+
+    const element = document.createElement('wv-trigger-event-options') as HTMLElement & {
+      triggerEvent: (name: string, detail?: unknown, options?: { bubbles?: boolean, composed?: boolean }) => void
+    }
+    const events: CustomEvent[] = []
+    element.addEventListener('state', event => events.push(event as CustomEvent))
+
+    element.triggerEvent('state', { value: 1 })
+    element.triggerEvent('state', { value: 2 }, { bubbles: true, composed: true })
+
+    expect(events).toHaveLength(2)
+    expect(events[0]).toMatchObject({ bubbles: false, composed: false, detail: { value: 1 } })
+    expect(events[1]).toMatchObject({ bubbles: true, composed: true, detail: { value: 2 } })
+  })
+
   it('fires observers once when enabled', () => {
     const countObserver = vi.fn()
     const titleObserver = vi.fn()
@@ -1060,6 +1204,86 @@ describe('component observer init', () => {
     expect(titleObserver).toHaveBeenCalledWith('custom', 'default')
     expect(countObserver).toHaveBeenCalledTimes(1)
     expect(countObserver).toHaveBeenCalledWith(1, undefined)
+  })
+
+  it('runs component observers for properties, data, and behavior definitions', () => {
+    const propertyObserver = vi.fn()
+    const aggregateObserver = vi.fn()
+    const behaviorObserver = vi.fn()
+
+    defineComponent('wv-component-observers', {
+      template: createTemplate('<view>{{title}} {{count}}</view>'),
+      component: {
+        behaviors: [{
+          observers: {
+            count: behaviorObserver,
+          },
+        }],
+        data: { count: 0 },
+        properties: {
+          title: { type: String, value: 'before' },
+        },
+        observers: {
+          'title': propertyObserver,
+          'title, count': aggregateObserver,
+        },
+      },
+    })
+
+    const element = document.createElement('wv-component-observers') as any
+    element.title = 'after'
+    expect(behaviorObserver).not.toHaveBeenCalled()
+    expect(propertyObserver).toHaveBeenCalledWith('after')
+    expect(aggregateObserver).toHaveBeenCalledWith('after', 0)
+
+    element.setData({ count: 1 })
+    expect(behaviorObserver).toHaveBeenCalledWith(1)
+    expect(aggregateObserver).toHaveBeenLastCalledWith('after', 1)
+  })
+
+  it('resolves component methods that collide with inherited element methods inside observers', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'update')
+    const inheritedUpdate = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'update', {
+      configurable: true,
+      value: inheritedUpdate,
+    })
+
+    try {
+      defineComponent('wv-component-method-collision', {
+        template: createTemplate('<view>{{updated}}</view>'),
+        component: {
+          data: { updated: false },
+          properties: {
+            label: { type: String, value: 'before' },
+          },
+          observers: {
+            label(this: any) {
+              this.update()
+            },
+          },
+          methods: {
+            update(this: any) {
+              this.setData({ updated: true })
+            },
+          },
+        },
+      })
+
+      const element = document.createElement('wv-component-method-collision') as any
+      element.label = 'after'
+
+      expect(element.data.updated).toBe(true)
+      expect(inheritedUpdate).not.toHaveBeenCalled()
+    }
+    finally {
+      if (descriptor) {
+        Object.defineProperty(HTMLElement.prototype, 'update', descriptor)
+      }
+      else {
+        delete (HTMLElement.prototype as any).update
+      }
+    }
   })
 })
 
@@ -1205,6 +1429,108 @@ describe('component behaviors', () => {
 })
 
 describe('component selector helpers', () => {
+  it('exposes virtual host root classes without replacing caller classes', () => {
+    defineComponent('wv-virtual-host-class', {
+      template: createTemplate('<view class="root {{stateClass}}"></view>'),
+      component: {
+        options: {
+          virtualHost: true,
+          styleIsolation: 'shared',
+        },
+        data: {
+          stateClass: 'is-idle',
+        },
+      },
+    })
+
+    const element = document.createElement('wv-virtual-host-class') as any
+    element.setAttribute('class', 'caller-class root')
+    document.body.append(element)
+
+    expect(element.getAttribute('class')).toBe('caller-class root is-idle')
+    expect(element.shadowRoot?.querySelector('.root')?.getAttribute('part')).toBe('root is-idle')
+
+    element.setData({ stateClass: 'is-active' })
+    expect(element.getAttribute('class')).toBe('caller-class root is-active')
+    expect(element.shadowRoot?.querySelector('.root')?.getAttribute('part')).toBe('root is-active')
+
+    defineComponent('wv-virtual-host-class', {
+      template: createTemplate('<view class="root {{stateClass}}"></view>'),
+      component: {
+        options: {
+          virtualHost: false,
+        },
+      },
+    })
+    expect(element.getAttribute('class')).toBe('caller-class root')
+    expect(element.shadowRoot?.querySelector('.root')?.getAttribute('part')).toBeNull()
+  })
+
+  it('keeps root classes inside non-virtual components', () => {
+    defineComponent('wv-non-virtual-host-class', {
+      template: createTemplate('<view class="root is-active"></view>'),
+      component: {
+        options: {
+          virtualHost: false,
+        },
+      },
+    })
+
+    const element = document.createElement('wv-non-virtual-host-class') as any
+    element.setAttribute('class', 'caller-class')
+    document.body.append(element)
+
+    expect(element.getAttribute('class')).toBe('caller-class')
+  })
+
+  it('exposes compiled Vue slot presence to template expressions', () => {
+    defineComponent('wv-vue-slot-presence', {
+      template: createTemplate(`
+        <view wx:if="{{$slots.default}}"><slot></slot></view>
+        <view wx:else>fallback</view>
+        <view wx:if="{{$slots.header}}"><slot name="header"></slot></view>
+      `),
+      component: {
+        properties: {
+          vueSlots: { type: null, value: null },
+        },
+      },
+    })
+
+    const element = document.createElement('wv-vue-slot-presence') as any
+    element.vueSlots = { default: true }
+    element.append('projected content')
+    document.body.append(element)
+
+    expect(element.shadowRoot?.innerHTML).toContain('<slot')
+    expect(element.shadowRoot?.innerHTML).not.toContain('fallback')
+
+    element.vueSlots = ['header']
+    expect(element.shadowRoot?.innerHTML).toContain('name="header"')
+    expect(element.shadowRoot?.innerHTML).toContain('fallback')
+
+    element.vueSlots = {}
+    expect(element.shadowRoot?.innerHTML).not.toContain('<slot')
+  })
+
+  it('resolves the nearest composed parent component', () => {
+    defineComponent('wv-owner-parent', {
+      template: createTemplate('<slot></slot>'),
+      component: {},
+    })
+    defineComponent('wv-owner-child', {
+      template: createTemplate('<view></view>'),
+      component: {},
+    })
+
+    const parent = document.createElement('wv-owner-parent') as any
+    const child = document.createElement('wv-owner-child') as any
+    parent.append(child)
+    document.body.append(parent)
+
+    expect(child.selectOwnerComponent()).toBe(parent)
+  })
+
   it('provides createSelectorQuery/selectComponent/selectAllComponents on component instance', () => {
     defineComponent('wv-selector-host', {
       template: createTemplate(`
@@ -2433,6 +2759,21 @@ describe('web runtime wx utility APIs', () => {
       await expect(getImageInfo({ src: 'https://example.com/fail.png' })).rejects.toMatchObject({
         errMsg: expect.stringContaining('getImageInfo:fail'),
       })
+      const fail = vi.fn()
+      const complete = vi.fn()
+      await expect(getImageInfo({
+        src: 'https://example.com/fail.png',
+        fail,
+        complete,
+      })).resolves.toMatchObject({
+        errMsg: expect.stringContaining('getImageInfo:fail'),
+      })
+      expect(fail).toHaveBeenCalledWith(expect.objectContaining({
+        errMsg: expect.stringContaining('getImageInfo:fail'),
+      }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({
+        errMsg: expect.stringContaining('getImageInfo:fail'),
+      }))
       await expect(getImageInfo({ src: '' })).rejects.toMatchObject({
         errMsg: expect.stringContaining('getImageInfo:fail'),
       })
@@ -2966,6 +3307,332 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('scopes selector queries through a Vue public instance $el render root', () => {
+    const host = document.createElement('div') as HTMLElement & { renderRoot?: ShadowRoot }
+    const renderRoot = host.attachShadow({ mode: 'open' })
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'vue-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 5,
+      top: 6,
+      right: 35,
+      bottom: 46,
+      width: 30,
+      height: 40,
+      x: 5,
+      y: 6,
+      toJSON: () => ({}),
+    })
+    renderRoot.appendChild(probe)
+    host.renderRoot = renderRoot
+    document.body.appendChild(host)
+
+    const callback = vi.fn()
+    createSelectorQuery()
+      .in({ $el: host })
+      .select('.vue-query-probe')
+      .boundingClientRect(callback)
+      .exec()
+
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      left: 5,
+      top: 6,
+      width: 30,
+      height: 40,
+    }))
+    host.parentNode?.removeChild(host)
+  })
+
+  it('waits for the underlying component host update before a scoped query', async () => {
+    let resolveUpdate!: () => void
+    const updateComplete = new Promise<void>((resolve) => {
+      resolveUpdate = resolve
+    })
+    const host = document.createElement('div') as HTMLElement & {
+      renderRoot?: ShadowRoot
+    }
+    const inheritedPrototype = Object.create(Object.getPrototypeOf(host), {
+      updateComplete: {
+        configurable: true,
+        get: () => updateComplete,
+      },
+    })
+    Object.setPrototypeOf(host, inheritedPrototype)
+    const renderRoot = host.attachShadow({ mode: 'open' })
+    host.renderRoot = renderRoot
+    const publicInstance = createComponentPublicInstance(host as any, {})
+    const callback = vi.fn()
+
+    createSelectorQuery()
+      .in({ $: {}, $el: publicInstance, renderRoot })
+      .select('.deferred-query-probe')
+      .boundingClientRect(callback)
+      .exec()
+
+    expect(callback).not.toHaveBeenCalled()
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'deferred-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 1,
+      top: 2,
+      right: 11,
+      bottom: 12,
+      width: 10,
+      height: 10,
+      x: 1,
+      y: 2,
+      toJSON: () => ({}),
+    })
+    renderRoot.appendChild(probe)
+    resolveUpdate()
+    await updateComplete
+    await Promise.resolve()
+
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      left: 1,
+      top: 2,
+      width: 10,
+      height: 10,
+    }))
+  })
+
+  it('falls back through Vue public instance ancestor roots for sibling selectors', () => {
+    const host = document.createElement('div') as unknown as HTMLElement & {
+      renderRoot?: ShadowRoot
+      getRootNode?: () => ParentNode
+    }
+    const renderRoot = host.attachShadow({ mode: 'open' })
+    host.renderRoot = renderRoot
+    const pageRoot = document.createElement('div')
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'page-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 8,
+      top: 12,
+      right: 48,
+      bottom: 32,
+      width: 40,
+      height: 20,
+      x: 8,
+      y: 12,
+      toJSON: () => ({}),
+    })
+    pageRoot.appendChild(probe)
+    host.getRootNode = () => pageRoot
+
+    const callback = vi.fn()
+    createSelectorQuery()
+      .in({ $: {}, $el: host })
+      .select('.page-query-probe')
+      .boundingClientRect(callback)
+      .exec()
+
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      left: 8,
+      top: 12,
+      width: 40,
+      height: 20,
+    }))
+  })
+
+  it('falls back to the current page root for Vue component selector queries', () => {
+    const host = document.createElement('div') as HTMLElement & { renderRoot?: ShadowRoot }
+    host.renderRoot = host.attachShadow({ mode: 'open' })
+    const page = document.createElement('div') as HTMLElement & { renderRoot?: ShadowRoot }
+    const pageRoot = page.attachShadow({ mode: 'open' })
+    page.renderRoot = pageRoot
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'current-page-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 3,
+      top: 4,
+      right: 23,
+      bottom: 14,
+      width: 20,
+      height: 10,
+      x: 3,
+      y: 4,
+      toJSON: () => ({}),
+    })
+    pageRoot.appendChild(probe)
+    document.body.appendChild(page)
+    const restorePages = overrideGlobalProperty('getCurrentPages', () => [page])
+
+    try {
+      const callback = vi.fn()
+      createSelectorQuery()
+        .in({ $: {}, $el: host })
+        .select('.current-page-query-probe')
+        .boundingClientRect(callback)
+        .exec()
+
+      expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+        left: 3,
+        top: 4,
+        width: 20,
+        height: 10,
+      }))
+    }
+    finally {
+      restorePages()
+      page.parentNode?.removeChild(page)
+    }
+  })
+
+  it('queries the current page root when no selector scope is provided', () => {
+    const page = document.createElement('div') as HTMLElement & { renderRoot?: ShadowRoot }
+    const pageRoot = page.attachShadow({ mode: 'open' })
+    page.renderRoot = pageRoot
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'unscoped-page-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 2,
+      top: 5,
+      right: 14,
+      bottom: 13,
+      width: 12,
+      height: 8,
+      x: 2,
+      y: 5,
+      toJSON: () => ({}),
+    })
+    pageRoot.appendChild(probe)
+    document.body.appendChild(page)
+    const restorePages = overrideGlobalProperty('getCurrentPages', () => [page])
+
+    try {
+      const callback = vi.fn()
+      createSelectorQuery()
+        .select('.unscoped-page-query-probe')
+        .boundingClientRect(callback)
+        .exec()
+
+      expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+        left: 2,
+        top: 5,
+        width: 12,
+        height: 8,
+      }))
+    }
+    finally {
+      restorePages()
+      page.parentNode?.removeChild(page)
+    }
+  })
+
+  it('bridges scoped intersection observers with mini-program margins and entries', () => {
+    const host = document.createElement('div') as HTMLElement & { renderRoot?: ShadowRoot }
+    const renderRoot = host.attachShadow({ mode: 'open' })
+    const probe = document.createElement('div')
+    probe.setAttribute('id', 'intersection-probe')
+    probe.setAttribute('data-role', 'sticky')
+    probe.getBoundingClientRect = () => ({
+      left: 1,
+      top: 2,
+      right: 31,
+      bottom: 42,
+      width: 30,
+      height: 40,
+      x: 1,
+      y: 2,
+      toJSON: () => ({}),
+    })
+    renderRoot.appendChild(probe)
+    host.renderRoot = renderRoot
+
+    let observerCallback: IntersectionObserverCallback | undefined
+    let observerInit: IntersectionObserverInit | undefined
+    const observe = vi.fn()
+    const disconnect = vi.fn()
+    const restoreObserver = overrideGlobalProperty('IntersectionObserver', class {
+      constructor(callback: IntersectionObserverCallback, init?: IntersectionObserverInit) {
+        observerCallback = callback
+        observerInit = init
+      }
+
+      observe = observe
+      disconnect = disconnect
+    })
+
+    try {
+      const callback = vi.fn()
+      const observer = createIntersectionObserver({ $: {}, $el: host }, { thresholds: [0, 0.5] })
+        .relativeToViewport({ top: -24 })
+        .observe('#intersection-probe', callback)
+
+      expect(observe).toHaveBeenCalledWith(probe)
+      expect(observerInit).toMatchObject({
+        root: null,
+        rootMargin: '-24px 0px 0px 0px',
+        threshold: [0, 0.5],
+      })
+      observerCallback?.([{
+        target: probe,
+        intersectionRatio: 0.5,
+        intersectionRect: probe.getBoundingClientRect(),
+        boundingClientRect: probe.getBoundingClientRect(),
+        rootBounds: null,
+        time: 12,
+        isIntersecting: true,
+      } as unknown as IntersectionObserverEntry], {} as IntersectionObserver)
+      expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'intersection-probe',
+        dataset: { role: 'sticky' },
+        intersectionRatio: 0.5,
+      }))
+
+      observer.disconnect()
+      expect(disconnect).toHaveBeenCalledTimes(1)
+    }
+    finally {
+      restoreObserver()
+    }
+  })
+
+  it('waits for the scoped component render before executing selector queries', async () => {
+    const host = document.createElement('div') as HTMLElement & {
+      renderRoot?: ShadowRoot
+      updateComplete?: Promise<void>
+    }
+    const renderRoot = host.attachShadow({ mode: 'open' })
+    let finishRender!: () => void
+    host.updateComplete = new Promise<void>((resolve) => {
+      finishRender = resolve
+    })
+    const callback = vi.fn()
+
+    createSelectorQuery()
+      .in({ $el: host })
+      .select('.late-query-probe')
+      .boundingClientRect(callback)
+      .exec()
+
+    expect(callback).not.toHaveBeenCalled()
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'late-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 1,
+      top: 2,
+      right: 11,
+      bottom: 22,
+      width: 10,
+      height: 20,
+      x: 1,
+      y: 2,
+      toJSON: () => ({}),
+    })
+    renderRoot.appendChild(probe)
+    host.renderRoot = renderRoot
+    finishRender()
+    await host.updateComplete
+    await Promise.resolve()
+
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      width: 10,
+      height: 20,
+    }))
+  })
+
   it('supports createCanvasContext drawing commands', () => {
     const canvas = document.createElement('canvas') as HTMLCanvasElement & {
       width: number
@@ -3014,6 +3681,7 @@ describe('web runtime wx utility APIs', () => {
       fillStyle: '',
       strokeStyle: '',
       lineWidth: 0,
+      lineCap: 'butt',
       font: '',
     } as unknown as CanvasRenderingContext2D
     const getContext = vi.fn(() => runtimeContext)
@@ -3026,6 +3694,7 @@ describe('web runtime wx utility APIs', () => {
       context.fillRect(20, 20, 140, 80)
       context.setStrokeStyle('#f59e0b')
       context.setLineWidth(4)
+      context.setLineCap('round')
       context.strokeRect(20, 120, 200, 90)
       context.setFontSize(20)
       context.fillText('WeVU Canvas', 24, 170)
@@ -3049,6 +3718,7 @@ describe('web runtime wx utility APIs', () => {
       expect(clearRect).toHaveBeenCalledWith(0, 0, 300, 220)
       expect(fillRect).toHaveBeenCalledWith(20, 20, 140, 80)
       expect(strokeRect).toHaveBeenCalledWith(20, 120, 200, 90)
+      expect(runtimeContext.lineCap).toBe('round')
       expect(fillText).toHaveBeenCalledWith('WeVU Canvas', 24, 170)
       expect(beginPath).toHaveBeenCalledTimes(2)
       expect(moveTo).toHaveBeenCalledWith(20, 200)

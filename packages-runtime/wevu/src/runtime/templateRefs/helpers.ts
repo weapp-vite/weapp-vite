@@ -9,9 +9,11 @@ import type {
 import {
   WEVU_EXPOSED_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_READY_CALLED_KEY,
   WEVU_TEMPLATE_REF_MAP_KEY,
 } from '@weapp-core/constants'
-import { isRef } from '../../reactivity'
+import { isRef, markRaw } from '../../reactivity'
+import { ReactiveFlags } from '../../reactivity/reactive'
 import { markNoSetData } from '../noSetData'
 import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
 
@@ -74,19 +76,36 @@ function getExposeProxy(target: any, exposed: Record<string, any>) {
 function mergeComponentRefValue(
   wrapper: Record<string, any>,
   exposed: unknown,
+  resolveCurrent?: () => unknown,
 ) {
-  if (!exposed || typeof exposed !== 'object') {
+  if ((!exposed || typeof exposed !== 'object') && !resolveCurrent) {
     return wrapper
   }
-  const source = exposed as Record<string, any>
+  const source = exposed && typeof exposed === 'object'
+    ? exposed as Record<string, any>
+    : Object.create(null) as Record<string, any>
+  const getSource = () => {
+    const current = resolveCurrent?.()
+    return current && typeof current === 'object'
+      ? current as Record<string, any>
+      : source
+  }
+  markRaw(wrapper)
   const merged = new Proxy(wrapper, {
     get(target, key, receiver) {
+      if (key === ReactiveFlags.RAW) {
+        return target
+      }
+      if (key === ReactiveFlags.IS_REACTIVE || key === ReactiveFlags.IS_READONLY) {
+        return false
+      }
       if (Reflect.has(target, key)) {
         return Reflect.get(target, key, receiver)
       }
-      const value = source[key as keyof typeof source]
+      const currentSource = getSource()
+      const value = currentSource[key as keyof typeof currentSource]
       if (typeof value === 'function') {
-        return value.bind(source)
+        return value.bind(currentSource)
       }
       return value
     },
@@ -94,24 +113,25 @@ function mergeComponentRefValue(
       if (Reflect.has(target, key)) {
         return Reflect.set(target, key, value, receiver)
       }
-      if (key in source) {
-        source[key as keyof typeof source] = value
+      const currentSource = getSource()
+      if (key in currentSource) {
+        currentSource[key as keyof typeof currentSource] = value
         return true
       }
-      source[key as keyof typeof source] = value
+      currentSource[key as keyof typeof currentSource] = value
       return true
     },
     has(target, key) {
-      return Reflect.has(target, key) || key in source
+      return Reflect.has(target, key) || key in getSource()
     },
     ownKeys(target) {
-      return [...new Set([...Reflect.ownKeys(target), ...Reflect.ownKeys(source)])]
+      return [...new Set([...Reflect.ownKeys(target), ...Reflect.ownKeys(getSource())])]
     },
     getOwnPropertyDescriptor(target, key) {
       if (Reflect.has(target, key)) {
         return Object.getOwnPropertyDescriptor(target, key)
       }
-      const descriptor = Object.getOwnPropertyDescriptor(source, key)
+      const descriptor = Object.getOwnPropertyDescriptor(getSource(), key)
       if (!descriptor) {
         return descriptor
       }
@@ -129,6 +149,9 @@ function resolveComponentPublicInstance(value: any) {
     return value ?? null
   }
   const instance = value as any
+  if (instance.__wevu && !instance[WEVU_READY_CALLED_KEY]) {
+    return null
+  }
   const exposed = instance[WEVU_EXPOSED_KEY]
   if (exposed && typeof exposed === 'object') {
     return getExposeProxy(instance, exposed as Record<string, any>)
@@ -160,8 +183,9 @@ export function updateTemplateRefMapValue(
 export function resolveTemplateRefTarget(
   target: InternalRuntimeState,
   binding: TemplateRefBinding,
+  evaluationTarget: InternalRuntimeState = target,
 ): TemplateRefTarget {
-  const proxy = target.__wevu?.proxy ?? target
+  const proxy = evaluationTarget.__wevu?.proxy ?? evaluationTarget
   let resolved: unknown
   if (binding.get) {
     try {
@@ -169,6 +193,12 @@ export function resolveTemplateRefTarget(
     }
     catch {
       resolved = undefined
+    }
+  }
+  if (resolved == null && binding.name) {
+    const setupBinding = target.__wevu?.setupState?.[binding.name]
+    if (isRef(setupBinding) || typeof setupBinding === 'function') {
+      resolved = setupBinding
     }
   }
   if (resolved == null && binding.name) {
@@ -295,7 +325,11 @@ export function resolveComponentRefValue(
       const items = Array.isArray(result) ? result : []
       const merged = items.map((item, index) => {
         const wrapper = createTemplateRefWrapper(target, binding.selector, { multiple: true, index })
-        return mergeComponentRefValue(wrapper as Record<string, any>, resolveComponentPublicInstance(item))
+        const resolveCurrent = () => {
+          const current = instance.selectAllComponents(binding.selector)
+          return resolveComponentPublicInstance(Array.isArray(current) ? current[index] : null)
+        }
+        return mergeComponentRefValue(wrapper as Record<string, any>, resolveComponentPublicInstance(item), resolveCurrent)
       })
       return markNoSetData(merged)
     }
@@ -306,7 +340,15 @@ export function resolveComponentRefValue(
     return wrapper
   }
   const result = instance.selectComponent(binding.selector)
-  return mergeComponentRefValue(wrapper as Record<string, any>, resolveComponentPublicInstance(result))
+  if (!result) {
+    return null
+  }
+  const publicInstance = resolveComponentPublicInstance(result)
+  if (!publicInstance) {
+    return null
+  }
+  const resolveCurrent = () => resolveComponentPublicInstance(instance.selectComponent(binding.selector))
+  return mergeComponentRefValue(wrapper as Record<string, any>, publicInstance, resolveCurrent)
 }
 
 export function buildTemplateRefValue(

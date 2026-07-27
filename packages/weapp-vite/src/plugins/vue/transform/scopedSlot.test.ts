@@ -430,6 +430,41 @@ describe('scoped slot helpers', () => {
     expect(loadScopedSlotModule(virtualId, scopedSlotModules)).toEqual({ code, map: null })
   })
 
+  it('passes scoped slot template ref metadata to the runtime component', () => {
+    const emitFile = vi.fn()
+    const scopedSlotModules = new Map<string, string>()
+    const emittedScopedSlotChunks = new Set<string>()
+    const result: any = {
+      scopedSlotComponents: [
+        {
+          id: 'slot-ref',
+          templateRefs: [
+            {
+              selector: '.__wevu-ref-0',
+              inFor: false,
+              name: 'leaf',
+              kind: 'component',
+            },
+          ],
+        },
+      ],
+    }
+
+    emitScopedSlotChunks(
+      { emitFile },
+      'pages/index/index',
+      result,
+      scopedSlotModules,
+      emittedScopedSlotChunks,
+      { js: 'js' } as any,
+    )
+
+    const [virtualId] = Array.from(scopedSlotModules.keys())
+    const code = scopedSlotModules.get(virtualId)!
+    expect(code).toContain('const __wevuTemplateRefs = [{selector:".__wevu-ref-0",inFor:false,name:"leaf",kind:"component"}];')
+    expect(code).toContain('createWevuScopedSlotComponent({ templateRefs: __wevuTemplateRefs });')
+  })
+
   it('handles scoped slot virtual id helpers and cache guards', () => {
     const moduleMap = new Map<string, string>()
     const virtualId = '\0weapp-vite:scoped-slot:pages/index/index.__scoped-slot-slot-2'

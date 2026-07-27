@@ -108,7 +108,7 @@ async function writeFixtureProject() {
     '            if (componentName === \'ResolverBadge\') {',
     '              return {',
     '                name: componentName,',
-    '                from: \'/__weapp_vite_external__/resolver-ui/ResolverBadge\',',
+    '                from: \'/weapp_vite_external/resolver-ui/ResolverBadge\',',
     '                resolvedId: path.join(projectRoot, \'../packages/resolver-ui/ResolverBadge.vue\'),',
     '              }',
     '            }',
@@ -235,7 +235,7 @@ async function waitForDistJsContains(marker: string, timeoutMs = 90_000) {
 }
 
 async function waitForExternalComponentContains(sourcePath: string, marker: string, timeoutMs = 90_000) {
-  const externalRoot = path.join(DIST_ROOT, '__weapp_vite_external__')
+  const externalRoot = path.join(DIST_ROOT, 'weapp_vite_external')
   const fileName = `${path.basename(sourcePath, '.vue')}.wxml`
   const start = Date.now()
 

@@ -37,6 +37,13 @@ export function shouldFallbackToRuntimeBinding(exp: string): boolean {
       shouldFallback = true
       path.stop()
     },
+    UnaryExpression(path) {
+      if (path.node.operator !== 'typeof') {
+        return
+      }
+      shouldFallback = true
+      path.stop()
+    },
   })
   return shouldFallback
 }

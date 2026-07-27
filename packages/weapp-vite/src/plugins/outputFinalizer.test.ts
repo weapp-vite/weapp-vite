@@ -22,8 +22,8 @@ function runGenerateBundle(plugin: ReturnType<typeof createOutputFinalizerPlugin
 
 describe('weapp-vite output finalizer', () => {
   it('maps graph-only virtual assets back to physical owner outputs', () => {
-    const logicalAsset = '__weapp_vite_external__/graph/weapp-vite:logical-entry:layout:D%3A%2Fproject%2Fsrc%2Flayouts%2Fdefault%2Findex.vue:module.wxss'
-    const sidecarAsset = '__weapp_vite_external__/graph/weapp-vite:sidecar:style:D%3A%2Fproject%2Fsrc%2Fapp.ts:D%3A%2Fproject%2Fsrc%2Fapp.css:module.wxss'
+    const logicalAsset = 'weapp_vite_external/graph/weapp-vite:logical-entry:layout:D%3A%2Fproject%2Fsrc%2Flayouts%2Fdefault%2Findex.vue:module.wxss'
+    const sidecarAsset = 'weapp_vite_external/graph/weapp-vite:sidecar:style:D%3A%2Fproject%2Fsrc%2Fapp.ts:D%3A%2Fproject%2Fsrc%2Fapp.css:module.wxss'
     const bundle = {
       [logicalAsset]: {
         type: 'asset',

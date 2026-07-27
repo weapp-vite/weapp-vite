@@ -1,6 +1,6 @@
 import { WEVU_PUBLIC_RUNTIME_KEY, WEVU_SLOT_NAMES_PROP } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createWevuComponent, defineComponent, mergeModels, useAttrs, useBindModel, useChangeModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, useNativePageRouter, useNativeRouter, usePageScrollThrottle, useSlots, useUpdatePerformanceListener } from '@/index'
+import { createWevuComponent, defineComponent, getCurrentInstance, mergeModels, useAttrs, useBindModel, useChangeModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, useNativePageRouter, useNativeRouter, usePageScrollThrottle, useSlots, useUpdatePerformanceListener } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -19,6 +19,89 @@ beforeEach(() => {
   })
 })
 describe('runtime: vue compat helpers', () => {
+  it('exposes the Vue internal instance proxy, uid and exposed state during setup', () => {
+    let internal: any
+    const focus = vi.fn()
+    defineComponent({
+      setup(_props, { expose }) {
+        internal = getCurrentInstance()
+        expose({ focus })
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      triggerEvent: vi.fn(),
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(internal).toBe(inst)
+    expect(internal.proxy.$).toBe(internal)
+    expect(internal.proxy.$el).toBe(inst)
+    expect(internal.proxy).toBeTruthy()
+    expect(internal.uid).toEqual(expect.any(Number))
+    expect(internal.exposed).toEqual({ focus })
+  })
+
+  it('exposes declared props through the Vue public instance proxy', () => {
+    let internal: any
+    defineComponent({
+      props: {
+        title: { type: String },
+      },
+      setup() {
+        internal = getCurrentInstance()
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      triggerEvent: vi.fn(),
+      properties: {
+        title: 'Child title',
+      },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(internal.proxy.title).toBe('Child title')
+    expect('title' in internal.proxy).toBe(true)
+  })
+
+  it('keeps declared props ahead of same-name native component fields', () => {
+    let internal: any
+    defineComponent({
+      name: 'wd-tab',
+      props: {
+        name: { type: String },
+      },
+      setup() {
+        internal = getCurrentInstance()
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      name: 'wd-tab',
+      setData() {},
+      triggerEvent: vi.fn(),
+      properties: {
+        name: 'first',
+      },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(internal.proxy.name).toBe('first')
+  })
+
   it('mergeModels merges arrays and objects', () => {
     expect(mergeModels([1, 2], [2, 3])).toEqual([1, 2, 3])
     expect(mergeModels({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 })

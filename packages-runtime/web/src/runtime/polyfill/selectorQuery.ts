@@ -6,6 +6,7 @@ import type {
   SelectorQueryTask,
   SelectorTargetDescriptor,
 } from './selectorQueryTypes'
+import { resolveComponentPublicInstanceTarget } from '../component/publicInstance'
 
 function isQueryRoot(value: unknown): value is ParentNode {
   if (!value || typeof value !== 'object') {
@@ -18,8 +19,9 @@ function isQueryRoot(value: unknown): value is ParentNode {
   return typeof target.querySelector === 'function' && typeof target.querySelectorAll === 'function'
 }
 
-function resolveQueryRoot(scope: unknown): ParentNode | undefined {
-  const scoped = scope as {
+function resolveScopedQueryRoot(scope: unknown): ParentNode | undefined {
+  const normalizedScope = resolveComponentPublicInstanceTarget(scope) ?? scope
+  const scoped = normalizedScope as {
     renderRoot?: unknown
     shadowRoot?: unknown
     $el?: unknown
@@ -30,11 +32,43 @@ function resolveQueryRoot(scope: unknown): ParentNode | undefined {
   if (isQueryRoot(scoped?.shadowRoot)) {
     return scoped?.shadowRoot
   }
+  const publicElement = (resolveComponentPublicInstanceTarget(scoped?.$el) ?? scoped?.$el) as {
+    renderRoot?: unknown
+    shadowRoot?: unknown
+  } | undefined
+  if (isQueryRoot(publicElement?.renderRoot)) {
+    return publicElement.renderRoot
+  }
+  if (isQueryRoot(publicElement?.shadowRoot)) {
+    return publicElement.shadowRoot
+  }
   if (isQueryRoot(scoped?.$el)) {
     return scoped?.$el
   }
-  if (isQueryRoot(scope)) {
-    return scope
+  if (isQueryRoot(normalizedScope)) {
+    return normalizedScope
+  }
+  return undefined
+}
+
+function resolveCurrentPageQueryRoot() {
+  const getCurrentPages = (globalThis as {
+    getCurrentPages?: () => unknown[]
+  }).getCurrentPages
+  const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+  return resolveScopedQueryRoot(pages[pages.length - 1])
+}
+
+function resolveQueryRoot(scope: unknown): ParentNode | undefined {
+  const scopedRoot = resolveScopedQueryRoot(scope)
+  if (scopedRoot) {
+    return scopedRoot
+  }
+  if (scope == null) {
+    const currentPageRoot = resolveCurrentPageQueryRoot()
+    if (currentPageRoot) {
+      return currentPageRoot
+    }
   }
   if (typeof document !== 'undefined' && isQueryRoot(document)) {
     return document
@@ -49,6 +83,26 @@ function resolveViewportTarget() {
   return undefined
 }
 
+function resolveUpdateComplete(scope: unknown): PromiseLike<unknown> | undefined {
+  const normalizedScope = resolveComponentPublicInstanceTarget(scope) ?? scope
+  const scoped = normalizedScope as {
+    updateComplete?: unknown
+    $el?: unknown
+  } | undefined
+  const publicElement = (resolveComponentPublicInstanceTarget(scoped?.$el) ?? scoped?.$el) as {
+    updateComplete?: unknown
+  } | undefined
+  const candidate = publicElement?.updateComplete ?? scoped?.updateComplete
+  if (
+    candidate
+    && typeof candidate === 'object'
+    && typeof (candidate as PromiseLike<unknown>).then === 'function'
+  ) {
+    return candidate as PromiseLike<unknown>
+  }
+  return undefined
+}
+
 function resolveQueryTargets(scope: unknown, target: SelectorTargetDescriptor): unknown[] {
   if (target.type === 'viewport') {
     const viewport = resolveViewportTarget()
@@ -58,11 +112,49 @@ function resolveQueryTargets(scope: unknown, target: SelectorTargetDescriptor): 
   if (!root || !target.selector) {
     return []
   }
-  if (target.multiple) {
-    return Array.from(root.querySelectorAll(target.selector))
+  const query = (queryRoot: ParentNode) => {
+    if (target.multiple) {
+      return Array.from(queryRoot.querySelectorAll(target.selector!))
+    }
+    const node = queryRoot.querySelector(target.selector!)
+    return node ? [node] : []
   }
-  const node = root.querySelector(target.selector)
-  return node ? [node] : []
+  const scopedTargets = query(root)
+  if (scopedTargets.length > 0) {
+    return scopedTargets
+  }
+
+  const scopedPublicElement = (scope as { $?: unknown, $el?: unknown } | undefined)?.$el
+  const publicElement = (resolveComponentPublicInstanceTarget(scopedPublicElement) ?? scopedPublicElement) as {
+    getRootNode?: () => unknown
+  } | undefined
+  if (!(scope && typeof scope === 'object' && '$' in scope)) {
+    return []
+  }
+
+  if (typeof publicElement?.getRootNode === 'function') {
+    let ancestorRoot = publicElement.getRootNode()
+    const visited = new Set<unknown>()
+    while (isQueryRoot(ancestorRoot) && !visited.has(ancestorRoot)) {
+      visited.add(ancestorRoot)
+      const ancestorTargets = query(ancestorRoot)
+      if (ancestorTargets.length > 0) {
+        return ancestorTargets
+      }
+      const host = (ancestorRoot as { host?: { getRootNode?: () => unknown } }).host
+      ancestorRoot = host?.getRootNode?.()
+    }
+  }
+
+  const currentPageRoot = resolveCurrentPageQueryRoot()
+  if (currentPageRoot && currentPageRoot !== root) {
+    return query(currentPageRoot)
+  }
+  return []
+}
+
+export function resolveSelectorTargets(scope: unknown, selector: string, multiple = false) {
+  return resolveQueryTargets(scope, { type: 'node', selector, multiple })
 }
 
 function normalizeRectValue(value: unknown) {
@@ -261,13 +353,22 @@ export function createSelectorQueryBridge() {
       return createNodesRef(tasks, queryApi, { type: 'viewport' })
     },
     exec(callback?: (result: any[]) => void) {
-      const result = tasks.map((task) => {
-        const value = runQueryTask(scope, task)
-        task.callback?.(value)
-        return value
-      })
-      callback?.(result)
-      tasks.length = 0
+      const pendingTasks = tasks.splice(0)
+      const run = () => {
+        const result = pendingTasks.map((task) => {
+          const value = runQueryTask(scope, task)
+          task.callback?.(value)
+          return value
+        })
+        callback?.(result)
+      }
+      const updateComplete = resolveUpdateComplete(scope)
+      if (updateComplete) {
+        void Promise.resolve(updateComplete).then(run)
+      }
+      else {
+        run()
+      }
       return queryApi
     },
   }

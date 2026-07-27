@@ -843,6 +843,20 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain(`__wvSlotProps="{{{`)
   })
 
+  it('lowers function-valued scoped slot props to serializable inline tokens', () => {
+    const template = `
+<slot name="actions" :confirm="() => toggleModal('confirm')" />
+    `.trim()
+
+    const result = compileVueTemplateToWxml(template, '/project/src/components/Dialog/index.vue')
+
+    expect(result.warnings).toEqual([])
+    expect(result.code).toContain(`__wvSlotProps="{{['confirm',['__wv_slot_function__','i0',[],[]]]}}"`)
+    expect(result.code).not.toContain('=>')
+    expect(result.inlineExpressions).toHaveLength(1)
+    expect(result.inlineExpressions?.[0]?.expression).toContain('ctx.toggleModal(\'confirm\')')
+  })
+
   it('keeps native slot outlet fallback for scoped named slot props', () => {
     const template = `
 <slot name="main" :list="back.state.list" />
@@ -941,6 +955,35 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.slotKey).toBe('default')
     expect(scopedSlotComponents?.[0]?.template).toContain('<Leaf />')
+  })
+
+  it('assigns template refs inside augmented slots to the scoped slot asset', () => {
+    const template = `
+<Provider>
+  <Leaf ref="leaf" />
+</Provider>
+    `.trim()
+
+    const { code, scopedSlotComponents, templateRefs } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      {
+        scopedSlotsRequireProps: false,
+        wevuComponentTags: ['Provider', 'Leaf'],
+      },
+    )
+
+    expect(code).toContain('generic:scoped-slots-default="')
+    expect(templateRefs).toBeUndefined()
+    expect(scopedSlotComponents?.[0]?.template).toContain('class="__wv-ref-0"')
+    expect(scopedSlotComponents?.[0]?.templateRefs).toEqual([
+      {
+        selector: '.__wv-ref-0',
+        inFor: false,
+        name: 'leaf',
+        kind: 'component',
+      },
+    ])
   })
 
   it('keeps unknown plain default component children native when augmented slots require no props', () => {

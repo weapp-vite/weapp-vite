@@ -64,7 +64,7 @@ function createResolverHelpers(overrides: Record<string, any> = {}) {
     clearSupportFileResolverComponents: vi.fn(() => true),
     collectStaticResolverComponentsForSupportFiles: vi.fn(() => ({})),
     resolveWithResolvers: vi.fn(),
-    resolveNavigationImport: vi.fn(),
+    resolveComponentTypeImport: vi.fn(),
     ...overrides,
   }
 }

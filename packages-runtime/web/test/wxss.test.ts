@@ -66,4 +66,70 @@ describe('transformWxssToCss', () => {
     expect(css).toContain('weapp-cover-view.overlay > weapp-cover-image')
     expect(css).toContain('weapp-movable-area.drag-zone weapp-movable-view.handle')
   })
+
+  it('flattens Vue deep selectors before emitting browser CSS', () => {
+    const input = `
+      .wd-button :deep() .wd-button__loading,
+      .wd-step--finished :deep(.wd-step__icon),
+      page ::v-deep(view.active),
+      .wd-card::v-deep(.wd-card__body) {
+        width: 10rpx;
+      }
+    `
+    const { css } = transformWxssToCss(input)
+
+    expect(css).toContain('.wd-button  .wd-button__loading')
+    expect(css).toContain('.wd-step--finished .wd-step__icon')
+    expect(css).toContain(':host weapp-view.active')
+    expect(css).toContain('.wd-card.wd-card__body')
+    expect(css).not.toContain(':deep')
+    expect(css).not.toContain('::v-deep')
+  })
+
+  it('emits virtual host part selectors for deep rules that target a component root', () => {
+    const { css } = transformWxssToCss(`
+      .wd-img-cropper :deep(.wd-img-cropper__cancel).is-text,
+      .wd-notify :deep() .wd-popup.is-top {
+        color: white;
+      }
+    `)
+
+    expect(css).toContain('.wd-img-cropper .wd-img-cropper__cancel.is-text')
+    expect(css).toContain('.wd-img-cropper .wd-img-cropper__cancel.is-text::part(wd-img-cropper__cancel)')
+    expect(css).toContain('.wd-notify  .wd-popup.is-top')
+    expect(css).toContain('.wd-notify  .wd-popup.is-top::part(wd-popup)')
+  })
+
+  it('places virtual host parts before target pseudo-elements', () => {
+    const { css } = transformWxssToCss(`
+      .wd-picker-view :deep() .wd-picker-view__roller::before {
+        content: '';
+      }
+    `)
+
+    expect(css).toContain('.wd-picker-view  .wd-picker-view__roller::part(wd-picker-view__roller)::before')
+    expect(css).not.toContain('::before::part')
+  })
+
+  it('keeps structural pseudo-classes on the flattened host selector only', () => {
+    const { css } = transformWxssToCss(`
+      .wd-dialog :deep(.wd-dialog__actions-btn:not(:last-child)) {
+        margin-right: 12px;
+      }
+    `)
+
+    expect(css).toContain('.wd-dialog .wd-dialog__actions-btn:not(:last-child)')
+    expect(css).not.toContain('::part')
+  })
+
+  it('does not emit an invalid part branch after a deep target with following siblings', () => {
+    const { css } = transformWxssToCss(`
+      .wd-button :deep(.wd-button__icon) + .wd-button__text {
+        margin-left: 4px;
+      }
+    `)
+
+    expect(css).toContain('.wd-button .wd-button__icon + .wd-button__text')
+    expect(css).not.toContain('::part')
+  })
 })

@@ -82,6 +82,7 @@ const objectConfig = defineConfig({
               name: componentName,
               from: '/components/issue-520/ResolverSlotCard/index',
               sourceType: 'wevu-sfc',
+              typeImport: false,
             }
           },
         },
@@ -192,6 +193,7 @@ expectAssignable<Array<{
     from: string
     resolvedId?: string
     sourceType?: 'wevu-sfc' | 'native'
+    typeImport?: boolean
   } | void
 }> | undefined>(objectConfigResolvers)
 

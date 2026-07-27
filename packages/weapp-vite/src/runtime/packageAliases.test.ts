@@ -171,6 +171,39 @@ describe('runtime package aliases', () => {
     ]))
   })
 
+  it('resolves packages and workspace fallbacks from the target project cwd', () => {
+    getPackageInfoSyncMock.mockReturnValue(undefined)
+    existsSyncMock.mockImplementation((filePath: string) =>
+      filePath === '/worktrees/feature/pnpm-workspace.yaml'
+      || /\/worktrees\/feature\/packages-runtime\/wevu\/dist\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
+    )
+
+    const aliases = resolveBuiltinPackageAliases({ cwd: '/worktrees/feature/apps/demo' })
+
+    expect(getPackageInfoSyncMock).toHaveBeenCalledWith('wevu', {
+      paths: ['/worktrees/feature/apps/demo'],
+    })
+    expect(aliases).toContainEqual({
+      find: 'wevu/internal-reactivity',
+      replacement: '/worktrees/feature/packages-runtime/wevu/dist/internal-reactivity.mjs',
+    })
+  })
+
+  it('falls back to the owning workspace when the target project is outside a workspace', () => {
+    getPackageInfoSyncMock.mockReturnValue(undefined)
+    existsSyncMock.mockImplementation((filePath: string) =>
+      (!filePath.startsWith('/external/project') && filePath.endsWith('/pnpm-workspace.yaml'))
+      || /\/packages-runtime\/wevu\/dist\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
+    )
+
+    const aliases = resolveBuiltinPackageAliases({ cwd: '/external/project' })
+
+    expect(aliases).toContainEqual(expect.objectContaining({
+      find: 'wevu/internal-runtime',
+      replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/internal-runtime\.mjs$/),
+    }))
+  })
+
   it('falls back to workspace dist entry when workspace package lookup is unavailable', () => {
     getPackageInfoSyncMock.mockImplementation((packageName: string) => {
       if (packageName === 'class-variance-authority') {

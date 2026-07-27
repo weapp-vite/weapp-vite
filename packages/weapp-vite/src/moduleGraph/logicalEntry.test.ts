@@ -44,6 +44,20 @@ describe('logical entry module source', () => {
     }, [])).not.toContain('export default')
   })
 
+  it('keeps Vue component registration owned by each logical entry', () => {
+    const entry = {
+      sourceId: '/workspace/node_modules/ui/components/video-preview.vue',
+      type: 'component' as const,
+    }
+    const code = createLogicalEntryModuleCode(entry, [])
+
+    expect(code).toContain('import { createWevuComponent')
+    expect(code).toContain(`import __weappViteComponentOptions from ${JSON.stringify(entry.sourceId)};`)
+    expect(code).toContain('__weappViteCreateWevuComponent(__weappViteComponentOptions);')
+    expect(code).toContain('export default __weappViteComponentOptions;')
+    expect(code).toContain(`export * from ${JSON.stringify(entry.sourceId)};`)
+  })
+
   it('links sidecar modules to inert source requests', () => {
     expect(createSidecarModuleCode(
       '/project/src/pages/home/index.ts',

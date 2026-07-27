@@ -1,5 +1,6 @@
 import type {
   HeadlessWxAppBaseInfoResult,
+  HeadlessWxDeviceInfoResult,
   HeadlessWxMenuButtonBoundingClientRectResult,
   HeadlessWxSystemInfoResult,
   HeadlessWxWindowInfoResult,
@@ -64,6 +65,20 @@ export function deriveAppBaseInfo(systemInfo: HeadlessWxSystemInfoResult): Headl
     language: systemInfo.language,
     platform: systemInfo.platform,
     version: systemInfo.version,
+  }
+}
+
+export function deriveDeviceInfo(systemInfo: HeadlessWxSystemInfoResult): HeadlessWxDeviceInfoResult {
+  return {
+    abi: 'unknown',
+    benchmarkLevel: 1,
+    brand: systemInfo.brand,
+    cpuType: 'unknown',
+    deviceAbi: 'unknown',
+    memorySize: 4096,
+    model: systemInfo.model,
+    platform: systemInfo.platform,
+    system: systemInfo.system,
   }
 }
 

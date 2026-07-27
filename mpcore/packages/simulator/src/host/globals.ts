@@ -120,3 +120,23 @@ export function registerComponentDefinition(registries: HeadlessHostRegistries, 
   registries.components.set(id, definition)
   return definition
 }
+
+export function registerExportedComponentDefinition(
+  registries: HeadlessHostRegistries,
+  id: string,
+  moduleExports: Record<string, any>,
+  registeredDefinition?: HeadlessComponentDefinition,
+) {
+  const exportedDefinition = registeredDefinition ?? moduleExports?.default ?? moduleExports
+  if (
+    !exportedDefinition
+    || typeof exportedDefinition !== 'object'
+    || Array.isArray(exportedDefinition)
+    || Object.keys(exportedDefinition).length === 0
+  ) {
+    return null
+  }
+
+  registries.components.set(id, exportedDefinition)
+  return exportedDefinition as HeadlessComponentDefinition
+}

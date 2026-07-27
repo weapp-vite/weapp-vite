@@ -67,7 +67,25 @@ export interface WeappWebPluginOptions {
     moduleId: string
     hmrAcceptCode?: string
   }
+  /** @internal */
+  __uniApp?: {
+    include: string[]
+  }
+  /** @internal */
+  __autoImportResolvers?: WebComponentResolver[]
 }
+
+export interface WebResolvedComponent {
+  name: string
+  from: string
+  resolvedId?: string
+  sourceType?: 'wevu-sfc' | 'native'
+}
+
+export type WebComponentResolver = {
+  components?: Record<string, string>
+  resolve?: (componentName: string, baseName: string) => WebResolvedComponent | void
+} | ((componentName: string, baseName: string) => WebResolvedComponent | void)
 
 export interface ModuleMeta {
   kind: 'app' | 'page' | 'component'
@@ -97,6 +115,7 @@ export interface LayoutEntry {
 export interface ComponentEntry {
   script: string
   id: string
+  importId?: string
 }
 
 export interface ScanResult {
@@ -122,3 +141,4 @@ export interface ScanState {
 
 export type WarnFn = (message: string) => void
 export type ResolveWebModuleId = (source: string, importer?: string) => Promise<string | undefined>
+export type ResolveWebAutoImportTag = (tag: string, importer: string) => Promise<WebResolvedComponent | undefined>

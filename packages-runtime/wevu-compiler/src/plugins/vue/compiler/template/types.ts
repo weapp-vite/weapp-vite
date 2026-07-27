@@ -16,6 +16,7 @@ export interface ScopedSlotComponentAsset {
   classStyleBindings?: ClassStyleBinding[]
   classStyleWxs?: boolean
   inlineExpressions?: InlineExpressionAsset[]
+  templateRefs?: TemplateRefBinding[]
 }
 
 /**

@@ -1,5 +1,5 @@
 /* eslint-disable ts/no-use-before-define */
-import type { WorkspaceHmrBaseline } from './workspace-hmr/baseline'
+import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-hmr/baseline'
 import { execFile as execFileCallback } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
@@ -28,6 +28,7 @@ interface PackageJson {
   scripts?: Record<string, string>
   workspaceHmr?: {
     runtime?: WorkspaceHmrRuntime
+    thresholds?: WorkspaceHmrThresholds
   }
 }
 
@@ -39,6 +40,7 @@ interface ProjectCase {
   sourceRoot: string
   platform: RuntimePlatform
   hmrRuntime: WorkspaceHmrRuntime
+  thresholds?: WorkspaceHmrThresholds
 }
 
 type RuntimePlatform = 'weapp' | 'alipay'
@@ -126,6 +128,7 @@ interface ProjectResult {
   platform: RuntimePlatform
   source: string
   startupMs?: number
+  thresholds?: WorkspaceHmrThresholds
   scenarios: ScenarioResult[]
   error?: string
 }
@@ -419,6 +422,7 @@ async function discoverProjects(): Promise<ProjectCase[]> {
         sourceRoot,
         platform,
         hmrRuntime: packageJson.workspaceHmr?.runtime === 'stateful' ? 'stateful' : 'standard',
+        thresholds: packageJson.workspaceHmr?.thresholds,
       })
     }
   }
@@ -474,6 +478,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     kind: project.kind,
     platform: project.platform,
     source: formatProjectPath(project.root),
+    thresholds: project.thresholds,
     scenarios: selectedScenarios.map(scenario => ({
       id: scenario.id,
       label: scenario.label,

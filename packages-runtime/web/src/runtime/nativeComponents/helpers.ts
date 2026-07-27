@@ -16,10 +16,15 @@ export function resolveContainingShadowRoot(element: Element) {
   return typeof ShadowRoot !== 'undefined' && root instanceof ShadowRoot ? root : undefined
 }
 
-export function dispatchMiniProgramEvent<T>(element: Element, name: string, detail: T) {
+export function dispatchMiniProgramEvent<T>(
+  element: Element,
+  name: string,
+  detail: T,
+  options: Pick<CustomEventInit<T>, 'bubbles' | 'composed'> = {},
+) {
   element.dispatchEvent(new CustomEvent(name, {
-    bubbles: true,
-    composed: true,
+    bubbles: options.bubbles ?? true,
+    composed: options.composed ?? true,
     detail,
   }))
 }

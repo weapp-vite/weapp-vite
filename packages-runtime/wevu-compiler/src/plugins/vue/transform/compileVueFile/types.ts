@@ -89,6 +89,10 @@ export interface CompileVueFileOptions {
   isPage?: boolean
   isApp?: boolean
   /**
+   * 是否把组件注册交给上层逻辑入口，当前模块仅导出组件选项。
+   */
+  skipComponentTransform?: boolean
+  /**
    * 是否压缩生成的 wevu 脚本输出。
    */
   minify?: boolean
@@ -100,6 +104,12 @@ export interface CompileVueFileOptions {
   autoUsingComponents?: AutoUsingComponentsOptions
   autoImportTags?: AutoImportTagsOptions
   template?: TemplateCompileOptions
+  style?: {
+    /**
+     * 保留 Vue deep 选择器，交由目标平台的最终 CSS 阶段处理。
+     */
+    preserveDeepSelectors?: boolean
+  }
   json?: {
     kind?: 'app' | 'page' | 'component'
     defaults?: JsonConfig['defaults']

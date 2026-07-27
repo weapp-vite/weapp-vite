@@ -19,6 +19,7 @@ export interface HeadlessComponentInstance extends Record<string, any> {
 export interface CreateComponentInstanceOptions {
   definition: HeadlessComponentDefinition
   properties?: Record<string, any>
+  requestRender?: (callback?: () => void) => void
   triggerEvent?: (
     instance: HeadlessComponentInstance,
     eventName: string,

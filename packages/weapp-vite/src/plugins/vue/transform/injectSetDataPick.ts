@@ -46,6 +46,7 @@ export function mayNeedInjectSetDataPickInJs(source: string): boolean {
     || source.includes('defineComponent')
     || source.includes('__wevu_isPage')
     || source.includes('.so(')
+    || source.includes('export default')
 }
 
 /**
@@ -413,6 +414,16 @@ function transformTargetWevuOptionsInJs(
         ? resolveOptionsObjectExpression(firstArg, path.scope)
         : null
       if (resolvedOptions && (isKnownWevuComponentCallee(path.node.callee) || hasCompiledWevuOptionsMarker(resolvedOptions))) {
+        candidateOptions.add(resolvedOptions)
+      }
+    },
+    ExportDefaultDeclaration(path) {
+      const declaration = path.node.declaration
+      if (!t.isExpression(declaration)) {
+        return
+      }
+      const resolvedOptions = resolveOptionsObjectExpression(declaration, path.scope)
+      if (resolvedOptions) {
         candidateOptions.add(resolvedOptions)
       }
     },

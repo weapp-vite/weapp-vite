@@ -20,6 +20,7 @@ const WEB_URL = `http://${WEB_HOST}:${WEB_PORT}`
 const STARTUP_TIMEOUT = Number(process.env.WEAPP_VITE_WEB_PROJECT_STARTUP_TIMEOUT ?? 90_000)
 const RUNTIME_TIMEOUT = Number(process.env.WEAPP_VITE_WEB_PROJECT_RUNTIME_TIMEOUT ?? 45_000)
 const RUNTIME_STATE_ATTEMPTS = 3
+const RUNTIME_STABLE_SAMPLES = 3
 const TRANSIENT_NAVIGATION_ERROR_RE = /Execution context was destroyed|Cannot find context with specified id|Inspected target navigated or closed/
 
 const PLAYWRIGHT_EXECUTABLE = chromium.executablePath()
@@ -27,6 +28,9 @@ const CHROMIUM_CHANNEL = process.env.WEAPP_VITE_WEB_E2E_CHANNEL
 const PLAYWRIGHT_BUNDLED_AVAILABLE = existsSync(PLAYWRIGHT_EXECUTABLE)
 const BROWSER_AVAILABLE = PLAYWRIGHT_BUNDLED_AVAILABLE || Boolean(CHROMIUM_CHANNEL)
 const describeWeb = BROWSER_AVAILABLE ? describe : describe.skip
+const DEDICATED_WEB_PROJECTS = new Set([
+  'e2e-apps/wot-ui-compat',
+])
 const MUTABLE_PROJECT_FILES: Readonly<Record<string, string[]>> = Object.freeze({
   'e2e-apps/request-clients-real': [
     'project.private.config.json',
@@ -109,8 +113,31 @@ async function readRuntimeState(page: Page) {
   throw lastError
 }
 
+async function waitForExpectedRuntimeState(page: Page, expectation: 'runtime' | 'shell') {
+  let runtime: Awaited<ReturnType<typeof readRuntimeState>> | undefined
+  let stableSamples = 0
+
+  await expect.poll(async () => {
+    runtime = await readRuntimeState(page)
+    const matches = expectation === 'shell'
+      ? runtime.hasWx && runtime.pageCount === 0 && runtime.route === null
+      : runtime.hasWx && runtime.pageCount > 0 && Boolean(runtime.route)
+    stableSamples = matches ? stableSamples + 1 : 0
+    return stableSamples
+  }, {
+    interval: 100,
+    timeout: RUNTIME_TIMEOUT,
+  }).toBeGreaterThanOrEqual(RUNTIME_STABLE_SAMPLES)
+
+  if (!runtime) {
+    throw new Error('Web runtime state was not observed.')
+  }
+  return runtime
+}
+
 describeWeb.sequential('workspace Web project matrix', async () => {
-  const projects = await discoverWebProjects(ROOT)
+  const projects = (await discoverWebProjects(ROOT))
+    .filter(project => !DEDICATED_WEB_PROJECTS.has(project.relativeRoot))
   let browser: Browser | undefined
   let server: Subprocess | undefined
 
@@ -162,7 +189,7 @@ describeWeb.sequential('workspace Web project matrix', async () => {
           const context = await browser!.newContext()
           const page = await context.newPage()
           const pageErrors: string[] = []
-          page.on('pageerror', error => pageErrors.push(error.message))
+          page.on('pageerror', error => pageErrors.push(error.stack ?? error.message))
           try {
             await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
             await expect.poll(
@@ -180,30 +207,16 @@ describeWeb.sequential('workspace Web project matrix', async () => {
         const context = await browser!.newContext()
         const page = await context.newPage()
         const pageErrors: string[] = []
-        page.on('pageerror', error => pageErrors.push(error.message))
+        page.on('pageerror', error => pageErrors.push(error.stack ?? error.message))
         try {
           await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
-          if (project.expectation === 'shell') {
-            try {
-              await expect.poll(async () => (await readRuntimeState(page)).hasWx, { timeout: RUNTIME_TIMEOUT })
-                .toBe(true)
-            }
-            catch (error) {
-              throw new Error(`${String(error)}\n${logs.value}\n${pageErrors.join('\n')}`)
-            }
+          let runtime: Awaited<ReturnType<typeof readRuntimeState>>
+          try {
+            runtime = await waitForExpectedRuntimeState(page, project.expectation)
           }
-          else {
-            try {
-              await expect.poll(async () => {
-                const runtime = await readRuntimeState(page)
-                return runtime.hasWx && runtime.pageCount > 0 && Boolean(runtime.route)
-              }, { timeout: RUNTIME_TIMEOUT }).toBe(true)
-            }
-            catch (error) {
-              throw new Error(`${String(error)}\n${logs.value}\n${pageErrors.join('\n')}`)
-            }
+          catch (error) {
+            throw new Error(`${String(error)}\n${logs.value}\n${pageErrors.join('\n')}`)
           }
-          const runtime = await readRuntimeState(page)
           if (project.expectation === 'shell') {
             expect(runtime.pageCount).toBe(0)
             expect(runtime.route).toBeNull()

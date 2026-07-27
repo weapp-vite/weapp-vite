@@ -620,6 +620,7 @@ describe('runtime config merge miniprogram', () => {
     const external = ((result.build as any)?.rolldownOptions?.external ?? []) as RegExp[]
 
     expect(resolveBuiltinPackageAliasesMock).toHaveBeenCalledWith({
+      cwd: '/project',
       isDev: false,
       wevuRuntime: 'dev',
     })

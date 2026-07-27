@@ -170,7 +170,7 @@ describe('createAutoImportAugmenter', () => {
         return {
           value: {
             name: 'ResolverBadge',
-            from: '/__weapp_vite_external__/resolver-ui/ResolverBadge',
+            from: '/weapp_vite_external/resolver-ui/ResolverBadge',
             resolvedId: '/workspace/packages/resolver-ui/ResolverBadge.vue',
           },
         }
@@ -192,10 +192,10 @@ describe('createAutoImportAugmenter', () => {
     const injectedEntries = applyAutoImports('/project/src/pages/index/index', json)
 
     expect(json.usingComponents).toEqual({
-      ResolverBadge: '/__weapp_vite_external__/resolver-ui/ResolverBadge',
+      ResolverBadge: '/weapp_vite_external/resolver-ui/ResolverBadge',
     })
-    expect(injectedEntries).toEqual(['/__weapp_vite_external__/resolver-ui/ResolverBadge'])
-    expect(externalComponentEntryMap.get('__weapp_vite_external__/resolver-ui/ResolverBadge')).toBe(
+    expect(injectedEntries).toEqual(['/weapp_vite_external/resolver-ui/ResolverBadge'])
+    expect(externalComponentEntryMap.get('weapp_vite_external/resolver-ui/ResolverBadge')).toBe(
       '/workspace/packages/resolver-ui/ResolverBadge.vue',
     )
   })

@@ -189,6 +189,7 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
     existing.navigationBar = meta.navigationBar
     const component = augmentPageComponentOptions(normalized.component, existing)
     defineComponent(tag, {
+      id: meta.id,
       template,
       style: meta.style,
       component,
@@ -203,6 +204,7 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
   }
   const component = augmentPageComponentOptions(normalized.component, record)
   defineComponent(tag, {
+    id: meta.id,
     template,
     style: meta.style,
     component,
@@ -222,6 +224,7 @@ export function registerComponent<T extends ComponentRawOptions | undefined>(opt
   const component = normalizeComponentOptions(options)
   if (componentRegistry.has(meta.id)) {
     defineComponent(tag, {
+      id: meta.id,
       template,
       style: meta.style,
       component,
@@ -229,6 +232,7 @@ export function registerComponent<T extends ComponentRawOptions | undefined>(opt
     return options
   }
   defineComponent(tag, {
+    id: meta.id,
     template,
     style: meta.style,
     component,

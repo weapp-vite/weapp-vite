@@ -3,8 +3,48 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { weappWebPlugin } from '../src/plugin'
+import { normalizePath } from '../src/plugin/path'
+import { resolveWebVueSfcStyleLanguage } from '../src/plugin/vueSfc'
 
 describe('weappWebPlugin', () => {
+  it('uses one preprocessor for mixed CSS and preprocessed SFC style blocks', () => {
+    expect(resolveWebVueSfcStyleLanguage({
+      meta: {
+        styleBlocks: [
+          { lang: 'css' },
+          { lang: 'scss' },
+          {},
+        ],
+      },
+    } as any, '/src/pages/index.vue')).toBe('scss')
+
+    expect(() => resolveWebVueSfcStyleLanguage({
+      meta: {
+        styleBlocks: [
+          { lang: 'scss' },
+          { lang: 'less' },
+        ],
+      },
+    } as any, '/src/pages/index.vue')).toThrow('Vue SFC 暂不支持混合样式语言')
+  })
+
+  it('injects the WXSS PostCSS transform during Vite config resolution', () => {
+    const plugin = weappWebPlugin()
+    const existingPlugin = { postcssPlugin: 'existing' }
+    const config = {
+      css: {
+        postcss: {
+          plugins: [existingPlugin],
+        },
+      },
+    }
+    const result = (plugin.config as ((config: any) => any)).call({}, config)
+
+    expect(result.css.postcss.plugins).toHaveLength(2)
+    expect(result.css.postcss.plugins[0]).toBe(existingPlugin)
+    expect(result.css.postcss.plugins[1].postcssPlugin).toBe('weapp-vite-web-wxss')
+  })
+
   it('transforms wxml files to template modules', async () => {
     const plugin = weappWebPlugin()
     const transform = plugin.transform
@@ -280,7 +320,7 @@ const count = ref<number>(0)
     expect(transformed.code).toContain('registerWebWevuComponent')
     expect(transformed.code).toContain(`kind: "page"`)
     expect(transformed.code).toContain('?weapp-web-sfc-template')
-    expect(transformed.code).toContain('?weapp-web-sfc-style&inline')
+    expect(transformed.code).toContain('.vue.css?weapp-web-sfc-style&inline')
     expect(transformed.code).toContain('providerAccept()')
     expect(transformed.code).not.toContain('ref<number>')
 
@@ -302,14 +342,14 @@ const count = ref<number>(0)
 
     const styleCode = await (plugin.load as ((...args: any[]) => any))?.call(
       {},
-      `${pagePath}?weapp-web-sfc-style&inline`,
+      `${pagePath}.css?weapp-web-sfc-style&inline`,
     ) as string
-    expect(styleCode).toContain('calc(var(--rpx) * 750)')
+    expect(styleCode).toContain('750rpx')
 
     const styleTransform = await (plugin.transform as ((...args: any[]) => any)).call(
       {},
       styleCode,
-      `${pagePath}?weapp-web-sfc-style&inline`,
+      `${pagePath}.css?weapp-web-sfc-style&inline`,
     )
     const templateTransform = await (plugin.transform as ((...args: any[]) => any)).call(
       {},
@@ -373,10 +413,157 @@ defineAppJson({})
     } as any)
     const styleCode = await (plugin.load as ((...args: any[]) => any))?.call(
       {},
-      `${pagePath}?weapp-web-sfc-style&inline`,
+      `${pagePath}.css?weapp-web-sfc-style&inline`,
     ) as string
 
     expect(styleCode).toContain('.external-style')
     expect(styleCode).toContain('color: red')
+  })
+
+  it('collects and invalidates recursive external Vue SFC components through auto-import resolvers', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'weapp-web-external-sfc-'))
+    const srcRoot = join(root, 'src')
+    const pageDir = join(srcRoot, 'pages/index')
+    const packageDir = join(root, 'node_modules/@demo/ui')
+    const parentPath = join(packageDir, 'components/wd-parent/wd-parent.vue')
+    const childPath = join(packageDir, 'components/wd-child/wd-child.vue')
+    await mkdir(pageDir, { recursive: true })
+    await mkdir(join(packageDir, 'components/wd-parent'), { recursive: true })
+    await mkdir(join(packageDir, 'components/wd-child'), { recursive: true })
+    await writeFile(join(srcRoot, 'app.vue'), '<script setup>defineAppJson({ pages: ["pages/index/index"] })</script>')
+    await writeFile(join(pageDir, 'index.vue'), '<template><wd-parent /></template>')
+    await writeFile(parentPath, `
+<script setup>
+import { ref } from 'vue'
+const ready = ref(true)
+</script>
+<template>
+<!-- #ifdef H5 -->
+<view><wd-child />{{ ready }}</view>
+<!-- #endif -->
+</template>
+    `.trim())
+    await writeFile(childPath, '<template><view>child-v1</view></template>')
+
+    const componentMap: Record<string, string> = {
+      'wd-parent': '@demo/ui/components/wd-parent/wd-parent.vue',
+      'wd-child': '@demo/ui/components/wd-child/wd-child.vue',
+    }
+    const plugin = weappWebPlugin({
+      srcDir: 'src',
+      __uniApp: { include: ['@demo/ui'] },
+      __autoImportResolvers: [{ components: componentMap }],
+    })
+    const resolvedConfig = {
+      root,
+      command: 'serve',
+      optimizeDeps: { exclude: ['existing-dependency'], include: ['existing-include'] },
+      createResolver: () => async (request: string) => componentMap['wd-parent'] === request
+        ? parentPath
+        : componentMap['wd-child'] === request
+          ? childPath
+          : undefined,
+    }
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, resolvedConfig as any)
+
+    const entryCode = await (plugin.load as ((...args: any[]) => any))?.call({}, '\0@weapp-vite/web/entry') as string
+    expect(entryCode).toContain('import \'/@weapp-vite/web/component/%40demo%2Fui%2Fcomponents%2Fwd-parent%2Fwd-parent.vue\'')
+    expect(entryCode).toContain('import \'/@weapp-vite/web/component/%40demo%2Fui%2Fcomponents%2Fwd-child%2Fwd-child.vue\'')
+    expect(entryCode).not.toContain(packageDir)
+    expect(resolvedConfig.optimizeDeps.exclude).toEqual(['existing-dependency'])
+    expect(resolvedConfig.optimizeDeps.include).toEqual(['existing-include'])
+    expect(await (plugin.resolveId as ((...args: any[]) => any))?.call(
+      {},
+      '/@weapp-vite/web/component/%40demo%2Fui%2Fcomponents%2Fwd-parent%2Fwd-parent.vue',
+    )).toBe(`${parentPath}?weapp-web-component`)
+
+    const parentCode = await (plugin.transform as ((...args: any[]) => any)).call(
+      {},
+      await readFile(parentPath, 'utf8'),
+      parentPath,
+    )
+    expect(parentCode.code).toContain('wevu')
+    expect(parentCode.code).toContain('__external__/@demo/ui/components/wd-parent/wd-parent')
+    const parentTemplate = await (plugin.load as ((...args: any[]) => any))?.call(
+      { warn() {}, addWatchFile() {} },
+      `${parentPath}?weapp-web-sfc-template`,
+    ) as string
+    expect(parentTemplate).toContain('wd-child')
+    expect(parentTemplate).not.toContain('#ifdef')
+
+    await writeFile(childPath, '<template><view>child-v2</view></template>')
+    await (plugin.handleHotUpdate as ((...args: any[]) => any))?.call({ warn() {} }, { file: childPath })
+    const childTemplate = await (plugin.load as ((...args: any[]) => any))?.call(
+      { warn() {}, addWatchFile() {} },
+      `${childPath}?weapp-web-sfc-template`,
+    ) as string
+    expect(childTemplate).toContain('child-v2')
+  })
+
+  it('transforms external native components resolved through the shared component graph', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'weapp-web-external-native-'))
+    const srcRoot = join(root, 'src')
+    const packageDir = join(root, 'node_modules/@demo/ui')
+    const componentPath = join(packageDir, 'icon/index.js')
+    const childPath = join(packageDir, 'badge/index.js')
+    const componentRequest = '@demo/ui/icon/index'
+    const componentSource = 'Component({ properties: { prefix: String } })'
+    const childSource = 'Component({ properties: { count: Number } })'
+    await mkdir(srcRoot, { recursive: true })
+    await mkdir(join(packageDir, 'icon'), { recursive: true })
+    await mkdir(join(packageDir, 'badge'), { recursive: true })
+    await writeFile(join(srcRoot, 'app.js'), 'App({})')
+    await writeFile(join(srcRoot, 'app.json'), JSON.stringify({
+      pages: [],
+      usingComponents: {
+        icon: componentRequest,
+      },
+    }))
+    await writeFile(componentPath, componentSource)
+    await writeFile(join(packageDir, 'icon/index.json'), JSON.stringify({
+      component: true,
+      usingComponents: {
+        badge: '../badge/index',
+      },
+    }))
+    await writeFile(join(packageDir, 'icon/index.wxml'), '<badge count="1" /><view>{{ prefix }}</view>')
+    await writeFile(childPath, childSource)
+    await writeFile(join(packageDir, 'badge/index.wxml'), '<view>{{ count }}</view>')
+
+    const plugin = weappWebPlugin({ srcDir: 'src' })
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, {
+      root,
+      command: 'serve',
+      createResolver: () => async (request: string) => request === componentRequest
+        ? componentPath
+        : undefined,
+    } as any)
+
+    const entryCode = await (plugin.load as ((...args: any[]) => any))?.call({}, '\0@weapp-vite/web/entry') as string
+    const virtualId = `/@weapp-vite/web/component/${encodeURIComponent(componentRequest)}`
+    expect(entryCode).toContain(`import '${virtualId}'`)
+    const childVirtualId = `/@weapp-vite/web/component/${encodeURIComponent('__external__/@demo/ui/badge/index')}`
+    expect(entryCode).toContain(`import '${childVirtualId}'`)
+
+    const resolvedId = await (plugin.resolveId as ((...args: any[]) => any))?.call({}, virtualId) as string
+    expect(resolvedId).toBe(`${componentPath}?weapp-web-component`)
+
+    const transformed = await (plugin.transform as ((...args: any[]) => any)).call(
+      {},
+      componentSource,
+      resolvedId,
+    )
+    expect(transformed.code).toContain('registerComponent')
+    expect(transformed.code).toContain('kind: "component"')
+
+    const childResolvedId = await (plugin.resolveId as ((...args: any[]) => any))?.call({}, childVirtualId) as string
+    expect(childResolvedId).toBe(`${normalizePath(childPath)}?weapp-web-component`)
+    const transformedChild = await (plugin.transform as ((...args: any[]) => any)).call(
+      {},
+      childSource,
+      childResolvedId,
+    )
+    expect(transformedChild.code).toContain('registerComponent')
+    expect(transformedChild.code).toContain('__external__/@demo/ui/badge/index')
   })
 })

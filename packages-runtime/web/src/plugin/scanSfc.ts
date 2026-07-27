@@ -1,4 +1,4 @@
-import type { ModuleMeta, ResolveWebModuleId, ScanState } from './types'
+import type { ModuleMeta, ResolveWebAutoImportTag, ResolveWebModuleId, ScanState } from './types'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'pathe'
 import { SCRIPT_EXTS } from './constants'
@@ -27,6 +27,8 @@ export async function compileScannedSfc(options: {
   srcRoot: string
   state: ScanState
   resolveId?: ResolveWebModuleId
+  resolveAutoImportTag?: ResolveWebAutoImportTag
+  uniApp?: { include: string[] }
 }) {
   const source = await readFile(options.filename, 'utf8')
   const result = await compileWebVueSfc({ ...options, source })

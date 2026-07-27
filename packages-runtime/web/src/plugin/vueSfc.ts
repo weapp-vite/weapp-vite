@@ -1,7 +1,7 @@
 import type { NodePath } from '@babel/traverse'
 import type { CallExpression } from '@babel/types'
 import type { VueTransformResult } from 'wevu/compiler'
-import type { ModuleMeta, ResolveWebModuleId, ScanState } from './types'
+import type { ModuleMeta, ResolveWebAutoImportTag, ResolveWebModuleId, ScanState } from './types'
 import { parse } from '@babel/parser'
 import _babelTraverse from '@babel/traverse'
 import * as t from '@babel/types'
@@ -9,12 +9,10 @@ import { fs } from '@weapp-core/shared/fs'
 import { transform } from 'esbuild'
 import MagicString from 'magic-string'
 import path from 'pathe'
-import { compileVueFile } from 'wevu/compiler'
+import { compileVueFile, isUniAppCompatibilityFile, transformUniAppSource } from 'wevu/compiler'
 import { compileWxml } from '../compiler/wxml'
-import { transformWxssToCss } from '../css/wxss'
 import { resolveScriptFile } from './files'
 import { appendInlineQuery, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport } from './path'
-import { createInlineStyleModule } from './styleModule'
 
 type TraverseFunction = typeof _babelTraverse extends (...args: any[]) => any
   ? typeof _babelTraverse
@@ -51,12 +49,20 @@ export async function compileWebVueSfc(options: {
   srcRoot: string
   state: ScanState
   resolveId?: ResolveWebModuleId
+  resolveAutoImportTag?: ResolveWebAutoImportTag
+  uniApp?: { include: string[] }
 }) {
-  const { source, filename, meta, srcRoot, state, resolveId } = options
+  const { filename, meta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp } = options
+  const source = uniApp && isUniAppCompatibilityFile(filename, srcRoot, uniApp.include)
+    ? transformUniAppSource(options.source, { filename, target: 'h5' }).code
+    : options.source
   const result = await compileVueFile(source, filename, {
     isApp: meta.kind === 'app',
     isPage: meta.kind === 'page',
     sourceMap: false,
+    style: {
+      preserveDeepSelectors: true,
+    },
     json: { kind: meta.kind },
     autoUsingComponents: {
       enabled: true,
@@ -82,6 +88,10 @@ export async function compileWebVueSfc(options: {
         }
       },
     },
+    autoImportTags: {
+      enabled: Boolean(resolveAutoImportTag),
+      resolveUsingComponent: async (tag, importer) => resolveAutoImportTag?.(tag, importer),
+    },
     sfcSrc: {
       resolveId: async (request, importer) => {
         return resolveSfcSrc(request, importer ?? filename, srcRoot, resolveId)
@@ -102,6 +112,8 @@ export async function ensureWebVueSfcResult(options: {
   state: ScanState
   source?: string
   resolveId?: ResolveWebModuleId
+  resolveAutoImportTag?: ResolveWebAutoImportTag
+  uniApp?: { include: string[] }
 }) {
   const cached = options.state.sfcResults.get(options.filename)
   if (cached) {
@@ -138,10 +150,11 @@ export async function transformWebVueSfcScript(options: {
   filename: string
   meta: ModuleMeta
   runtimeModuleId: string
+  styleLanguage: string
   enableHmr: boolean
   hmrAcceptCode?: string
 }) {
-  const { code, filename, meta, runtimeModuleId, enableHmr, hmrAcceptCode } = options
+  const { code, filename, meta, runtimeModuleId, styleLanguage, enableHmr, hmrAcceptCode } = options
   const ast = parse(code, {
     sourceType: 'module',
     plugins: ['typescript', 'jsx'],
@@ -176,7 +189,8 @@ export async function transformWebVueSfcScript(options: {
     imports.push(`import ${templateIdent} from '${toRelativeImport(filename, filename)}?weapp-web-sfc-template'`)
   }
   if (styleIdent) {
-    imports.push(`import ${styleIdent} from '${appendInlineQuery(`${toRelativeImport(filename, filename)}?weapp-web-sfc-style`)}'`)
+    const styleFilename = `${filename}.${styleLanguage}`
+    imports.push(`import ${styleIdent} from '${appendInlineQuery(`${toRelativeImport(filename, styleFilename)}?weapp-web-sfc-style`)}'`)
   }
   s.prepend(`${imports.join('\n')}\n`)
   if (enableHmr && hmrAcceptCode) {
@@ -213,7 +227,22 @@ export function generateWebVueSfcTemplate(
   return compiled
 }
 
+export function resolveWebVueSfcStyleLanguage(result: VueTransformResult, filename: string) {
+  const languages = new Set(
+    (result.meta?.styleBlocks ?? []).map(style => style.lang?.trim() || 'css'),
+  )
+  for (const language of languages) {
+    if (!/^[a-z][a-z0-9-]*$/i.test(language)) {
+      throw new Error(`[@weapp-vite/web] Vue SFC 样式语言无效: ${filename} -> ${language}`)
+    }
+  }
+  const preprocessLanguages = [...languages].filter(language => language !== 'css')
+  if (preprocessLanguages.length > 1) {
+    throw new Error(`[@weapp-vite/web] Vue SFC 暂不支持混合样式语言: ${filename}`)
+  }
+  return preprocessLanguages[0] ?? 'css'
+}
+
 export function generateWebVueSfcStyle(result: VueTransformResult) {
-  const { css } = transformWxssToCss(result.style ?? '')
-  return createInlineStyleModule(css)
+  return result.style ?? ''
 }

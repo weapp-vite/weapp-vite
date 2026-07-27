@@ -1,7 +1,38 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
+import postcss from 'postcss'
+import selectorParser from 'postcss-selector-parser'
+
+export { transformNestedWxssVars } from './wxss'
 
 const CSS_RULE_RE = /([^{]+)(\{[^}]*\})/g
 const CSS_CLASS_RE = /\.([a-z_][\w-]*)(?:\[[^\]]+\])?\s*\{/gi
+
+export function transformVueDeepSelectors(source: string) {
+  if (!source.includes(':deep(') && !source.includes('::v-deep(')) {
+    return source
+  }
+  const root = postcss.parse(source)
+  const processor = selectorParser((selectors) => {
+    selectors.walkPseudos((pseudo) => {
+      if (pseudo.value !== ':deep' && pseudo.value !== '::v-deep') {
+        return
+      }
+      const replacement = pseudo.nodes?.[0]?.nodes.map(node => node.clone()) ?? []
+      if (replacement.length > 0) {
+        pseudo.replaceWith(...replacement)
+      }
+      else {
+        pseudo.remove()
+      }
+    })
+  })
+  root.walkRules((rule) => {
+    if (rule.selector.includes(':deep(') || rule.selector.includes('::v-deep(')) {
+      rule.selector = processor.processSync(rule.selector)
+    }
+  })
+  return root.toString()
+}
 
 /**
  * 样式编译结果。
@@ -21,6 +52,7 @@ export interface StyleCompileOptions {
   scoped?: boolean
   modules?: boolean | string
   preprocessOptions?: Record<string, any>
+  preserveDeepSelectors?: boolean
 }
 
 /**
@@ -130,7 +162,7 @@ export function compileVueStyleToWxss(
   styleBlock: SFCStyleBlock,
   options: StyleCompileOptions,
 ): StyleCompileResult {
-  const { id, scoped, modules } = options
+  const { id, scoped, modules, preserveDeepSelectors } = options
   const source = styleBlock.content
 
   let code = source
@@ -145,12 +177,16 @@ export function compileVueStyleToWxss(
     const moduleName = typeof styleBlock.module === 'string' ? styleBlock.module : '$style'
     const moduleResult = transformCssModules(code, id)
     return {
-      code: moduleResult.code,
+      code: preserveDeepSelectors
+        ? moduleResult.code
+        : transformVueDeepSelectors(moduleResult.code),
       modules: {
         [moduleName]: moduleResult.classes,
       },
     }
   }
 
-  return { code }
+  return {
+    code: preserveDeepSelectors ? code : transformVueDeepSelectors(code),
+  }
 }

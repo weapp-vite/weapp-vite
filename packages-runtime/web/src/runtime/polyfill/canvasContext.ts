@@ -87,6 +87,11 @@ function createCanvasCommandQueue(canvasId: string) {
         ctx.lineWidth = normalizeCanvasNumber(width)
       })
     },
+    setLineCap(lineCap: CanvasLineCap) {
+      pushCommand((ctx) => {
+        ctx.lineCap = lineCap
+      })
+    },
     setFontSize(size: number) {
       pushCommand((ctx) => {
         const normalized = Math.max(1, normalizeCanvasNumber(size))

@@ -16,6 +16,7 @@ import {
   createHeadlessWx,
   registerAppDefinition,
   registerComponentDefinition,
+  registerExportedComponentDefinition,
   registerPageDefinition,
 } from '../host'
 
@@ -27,6 +28,7 @@ export interface HeadlessModuleLoader {
 }
 
 interface ModuleCacheEntry {
+  componentDefinitions: HeadlessComponentDefinition[]
   exports: Record<string, any>
 }
 
@@ -107,12 +109,17 @@ export function createModuleLoader(
     const resolvedPath = path.resolve(filePath)
     const cached = moduleCache.get(resolvedPath)
     if (cached) {
-      return cached.exports
+      return cached
     }
 
     const source = fs.readFileSync(resolvedPath, 'utf8')
-    const module = { exports: {} as Record<string, any> }
+    const module: ModuleCacheEntry = {
+      componentDefinitions: [],
+      exports: {},
+    }
     moduleCache.set(resolvedPath, module)
+    const registeredDefinitionsBefore = new Set(registries.components.values())
+    const requiredComponentDefinitions: HeadlessComponentDefinition[] = []
 
     const previousLoadContext = registries.currentLoadContext
     registries.currentLoadContext = loadContext
@@ -123,7 +130,9 @@ export function createModuleLoader(
         const content = fs.readFileSync(requiredPath, 'utf8')
         return JSON.parse(content)
       }
-      return executeModule(requiredPath, null)
+      const requiredModule = executeModule(requiredPath, null)
+      requiredComponentDefinitions.push(...requiredModule.componentDefinitions)
+      return requiredModule.exports
     }
 
     try {
@@ -135,7 +144,13 @@ export function createModuleLoader(
       )
       const runtime = script.runInNewContext(executionContext)
       runtime(module.exports, module, localRequire, resolvedPath, path.dirname(resolvedPath))
-      return module.exports
+      const registeredDefinitions = [...registries.components.values()]
+        .filter(definition => !registeredDefinitionsBefore.has(definition))
+      module.componentDefinitions = [...new Set([
+        ...requiredComponentDefinitions,
+        ...registeredDefinitions,
+      ])]
+      return module
     }
     finally {
       registries.currentLoadContext = previousLoadContext
@@ -159,8 +174,14 @@ export function createModuleLoader(
       return definition
     },
     executeComponentModule(filePath, id) {
-      executeModule(filePath, { kind: 'component', route: id })
+      const loadedModule = executeModule(filePath, { kind: 'component', route: id })
       const definition = registries.components.get(id)
+        ?? registerExportedComponentDefinition(
+          registries,
+          id,
+          loadedModule.exports,
+          loadedModule.componentDefinitions.at(-1),
+        )
       if (!definition) {
         throw new Error(`Component() was not registered for id "${id}" while executing ${normalize(filePath)}.`)
       }

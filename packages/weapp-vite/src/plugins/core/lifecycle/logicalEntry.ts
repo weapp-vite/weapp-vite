@@ -133,7 +133,7 @@ export function createLogicalEntryResolveHook(state: CorePluginState) {
   return async function resolveId(this: PluginContext, id: string, importer?: string) {
     const resolvedId = resolveVirtualModuleId(id)
     if (resolvedId) {
-      return { id: resolvedId, moduleSideEffects: 'no-treeshake' }
+      return { id: resolvedId, moduleSideEffects: 'no-treeshake' as const }
     }
     const sidecarSource = parseSidecarSourceRequest(id)
     if (!sidecarSource) {
@@ -143,7 +143,7 @@ export function createLogicalEntryResolveHook(state: CorePluginState) {
     const resolved = await state.ctx.moduleGraphService.resolve(id, importer, { skipSelf: true })
     return {
       id: resolved?.id ?? createSidecarSourceSpecifier(sidecarSource.ownerId, sidecarSource.sourceId, sidecarSource.kind),
-      moduleSideEffects: 'no-treeshake',
+      moduleSideEffects: 'no-treeshake' as const,
     }
   }
 }

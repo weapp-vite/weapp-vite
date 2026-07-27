@@ -1,10 +1,13 @@
 import type { InlineExpressionMap } from '../register/inline'
+import type { TemplateRefBinding } from '../templateRefs'
 import type { ComputedDefinitions } from '../types'
 import {
+  WEVU_INLINE_HANDLER,
   WEVU_INLINE_MAP_KEY,
   WEVU_OWNER_HANDLER,
   WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_SLOT_FUNCTION_TOKEN,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_OWNER_KEY,
@@ -12,10 +15,12 @@ import {
   WEVU_SLOT_PROPS_DATA_KEY,
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_SCOPE_KEY,
+  WEVU_TEMPLATE_REFS_KEY,
 } from '@weapp-core/constants'
 import { hasOwn } from '../../utils'
 import { resolveDatasetEventValue, runInlineExpression } from '../register/inline'
-import { getOwnerProxy, getOwnerSnapshot, subscribeOwner } from '../scopedSlots'
+import { getOwnerProxy, getOwnerSnapshot, getOwnerTarget, subscribeOwner } from '../scopedSlots'
+import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 
 const SCOPED_SLOT_SNAPSHOT_OMIT_KEYS = [
   WEVU_SLOT_OWNER_ID_KEY,
@@ -89,6 +94,44 @@ function normalizeSlotBindings(value: unknown): Record<string, any> {
   return value as Record<string, any>
 }
 
+function isSlotFunctionDescriptor(value: unknown): value is [string, string, unknown[], unknown[]] {
+  return Array.isArray(value)
+    && value[0] === WEVU_SLOT_FUNCTION_TOKEN
+    && typeof value[1] === 'string'
+}
+
+function createSlotFunctionProxy(instance: any, descriptor: [string, string, unknown[], unknown[]]) {
+  return (...args: unknown[]) => {
+    const owner = instance?.selectOwnerComponent?.()
+    const handler = owner?.[WEVU_INLINE_HANDLER]
+    if (typeof handler !== 'function') {
+      return undefined
+    }
+    const dataset: Record<string, unknown> = {
+      wd: 1,
+      wi: descriptor[1],
+    }
+    const scopeBindings = Array.isArray(descriptor[2]) ? descriptor[2] : []
+    const indexBindings = Array.isArray(descriptor[3]) ? descriptor[3] : []
+    scopeBindings.forEach((value, index) => dataset[`wvS${index}`] = value)
+    indexBindings.forEach((value, index) => dataset[`wvI${index}`] = value)
+    const event = {
+      type: 'wv-slot-function',
+      detail: args,
+      currentTarget: { dataset },
+      target: { dataset },
+    }
+    return handler.call(owner, event)
+  }
+}
+
+function resolveRuntimeSlotBindings(instance: any, bindings: Record<string, any>) {
+  return Object.fromEntries(Object.entries(bindings).map(([key, value]) => [
+    key,
+    isSlotFunctionDescriptor(value) ? createSlotFunctionProxy(instance, value) : value,
+  ]))
+}
+
 function resolveComputedContext(instance: any) {
   return instance?.__wevu?.proxy
     ?? instance?.[WEVU_PUBLIC_RUNTIME_KEY]?.proxy
@@ -145,13 +188,14 @@ function syncSlotPropsData(
     : instance?.properties?.[WEVU_SLOT_PROPS_KEY]
   const scope = normalizeSlotBindings(scopeSource)
   const slotProps = normalizeSlotBindings(propsSource)
-  const merged = { ...scope, ...slotProps }
+  const snapshot = { ...scope, ...slotProps }
+  const merged = resolveRuntimeSlotBindings(instance, snapshot)
   instance[WEVU_SLOT_PROPS_DATA_KEY] = merged
   const runtimeState = instance?.__wevu?.state
   if (runtimeState && typeof runtimeState === 'object') {
     runtimeState[WEVU_SLOT_PROPS_DATA_KEY] = merged
   }
-  return merged
+  return { merged, snapshot }
 }
 
 function mergeSlotProps(
@@ -159,9 +203,9 @@ function mergeSlotProps(
   computed?: ComputedDefinitions,
   override?: { [WEVU_SLOT_SCOPE_KEY]?: unknown, [WEVU_SLOT_PROPS_KEY]?: unknown },
 ) {
-  const merged = syncSlotPropsData(instance, override)
+  const { snapshot } = syncSlotPropsData(instance, override)
   if (typeof instance?.setData === 'function') {
-    instance.setData({ [WEVU_SLOT_PROPS_DATA_KEY]: merged })
+    instance.setData({ [WEVU_SLOT_PROPS_DATA_KEY]: snapshot })
   }
   flushScopedSlotComputedBindings(instance, computed)
 }
@@ -259,9 +303,18 @@ function createScopedSlotData() {
 }
 
 export function createScopedSlotOptions(
-  overrides?: { computed?: ComputedDefinitions, inlineMap?: InlineExpressionMap },
+  overrides?: {
+    computed?: ComputedDefinitions
+    inlineMap?: InlineExpressionMap
+    templateRefs?: TemplateRefBinding[]
+  },
 ) {
   const scopedSlotComputed = overrides?.computed
+  const templateRefs = overrides?.templateRefs
+  const resolveTemplateRefOwner = (instance: any) => {
+    const ownerId = resolveBoundOwnerId(instance)
+    return ownerId ? getOwnerTarget(ownerId) : undefined
+  }
   const baseOptions = {
     options: {
       virtualHost: true,
@@ -307,8 +360,16 @@ export function createScopedSlotOptions(
       },
       ready(this: any) {
         syncScopedSlotBindings(this, scopedSlotComputed)
+        const owner = resolveTemplateRefOwner(this)
+        if (owner) {
+          scheduleTemplateRefUpdate(this, undefined, owner)
+        }
       },
       detached(this: any) {
+        const owner = resolveTemplateRefOwner(this)
+        if (owner) {
+          clearTemplateRefs(this, owner)
+        }
         if (typeof this.__wvOwnerUnsub === 'function') {
           this.__wvOwnerUnsub()
         }
@@ -351,6 +412,9 @@ export function createScopedSlotOptions(
       ...(baseOptions as any).methods,
       [WEVU_INLINE_MAP_KEY]: overrides.inlineMap,
     }
+  }
+  if (templateRefs?.length) {
+    ;(baseOptions as any)[WEVU_TEMPLATE_REFS_KEY] = templateRefs
   }
 
   return baseOptions

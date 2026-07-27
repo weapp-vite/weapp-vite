@@ -23,6 +23,7 @@ export const REQUEST_GLOBAL_BUNDLE_HOST_REF = '__rb'
 export const REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME = '__wvRGI__'
 
 export const WEAPP_VITE_IMPORT_META_ENV_KEY = '__weappViteImportMetaEnv'
+export const WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY = 'weapp_vite_external'
 
 export const WEAPP_VITE_LOGICAL_ENTRY_VIRTUAL_PREFIX = 'virtual:weapp-vite-logical-entry:'
 export const WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX = 'weapp-vite:logical-entry:'
@@ -70,6 +71,7 @@ export const WEVU_SLOT_SCOPE_KEY = '__wvSlotScope'
 export const WEVU_SLOT_OWNER_KEY = '__wvOwner'
 export const WEVU_SLOT_OWNER_PROXY_KEY = '__wvOwnerProxy'
 export const WEVU_SLOT_PROPS_DATA_KEY = '__wvSlotPropsData'
+export const WEVU_SLOT_FUNCTION_TOKEN = '__wv_slot_function__'
 export const WEVU_SLOT_NAMES_PROP = 'vueSlots'
 
 export const WEVU_SLOT_OWNER_ATTR = '__wv-owner-id'

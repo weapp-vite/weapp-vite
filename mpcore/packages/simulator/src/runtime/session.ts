@@ -23,6 +23,7 @@ import { createHeadlessCanvasContext } from '../view/canvasContext'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
+import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
@@ -32,6 +33,7 @@ import {
   applyResizeToSystemInfo,
   createDefaultSystemInfo,
   deriveAppBaseInfo,
+  deriveDeviceInfo,
   deriveMenuButtonBoundingClientRect,
   deriveWindowInfo,
 } from './systemInfo'
@@ -192,6 +194,14 @@ export class HeadlessSession {
   private readonly pages: HeadlessPageInstance[] = []
   private readonly componentCache = new Map<string, HeadlessComponentInstance>()
   private readonly componentScopes = new Map<string, any>()
+  private readonly selectorQueryScopeSnapshots = new WeakMap<Record<string, any>, {
+    page: HeadlessPageInstance
+    root: ReturnType<typeof renderRuntimePageTree>['root']
+    scopeId: string
+  }>()
+
+  private renderRequestPending = false
+  private readonly renderRequestCallbacks: Array<() => void> = []
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
@@ -262,6 +272,7 @@ export class HeadlessSession {
         getSavedFileList: () => this.wxState.getSavedFileList(),
         getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
+        getDeviceInfo: () => deriveDeviceInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
         getClipboardData: () => this.wxState.getClipboardData(),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
@@ -383,7 +394,7 @@ export class HeadlessSession {
 
   renderCurrentPage() {
     const current = this.requireCurrentPage('renderCurrentPage()')
-    return renderRuntimePageTree({
+    const rendered = renderRuntimePageTree({
       changedPageKeys: current.__lastChangedKeys__ ?? [],
       componentCache: this.componentCache,
       componentScopes: this.componentScopes,
@@ -392,11 +403,41 @@ export class HeadlessSession {
       session: {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
+        requestRender: callback => this.requestRender(callback),
         selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
       },
     }, current)
+    const componentScopePrefix = `page:${stripLeadingSlash(current.route)}`
+    for (const [scopeId, instance] of this.componentCache.entries()) {
+      if (scopeId.startsWith(componentScopePrefix)) {
+        this.selectorQueryScopeSnapshots.set(instance, {
+          page: current,
+          root: rendered.root,
+          scopeId,
+        })
+      }
+    }
+    return rendered
+  }
+
+  requestRender(callback?: () => void) {
+    if (callback) {
+      this.renderRequestCallbacks.push(callback)
+    }
+    if (this.renderRequestPending) {
+      return
+    }
+    this.renderRequestPending = true
+    Promise.resolve().then(() => {
+      this.renderRequestPending = false
+      const callbacks = this.renderRequestCallbacks.splice(0)
+      if (this.currentPageInstance) {
+        this.renderCurrentPage()
+      }
+      callbacks.forEach(cb => cb())
+    })
   }
 
   getScopeSnapshot(scopeId: string) {
@@ -481,6 +522,7 @@ export class HeadlessSession {
     }
 
     const current = this.requireCurrentPage(`scope method "${methodName}"`)
+    this.renderCurrentPage()
     if (normalizedScopeId === `page:${stripLeadingSlash(current.route)}`) {
       const method = current[methodName]
       if (typeof method !== 'function') {
@@ -586,6 +628,10 @@ export class HeadlessSession {
 
   getAppBaseInfo() {
     return deriveAppBaseInfo(this.systemInfo)
+  }
+
+  getDeviceInfo() {
+    return deriveDeviceInfo(this.systemInfo)
   }
 
   getLaunchOptions() {
@@ -1041,12 +1087,36 @@ export class HeadlessSession {
     scope?: Record<string, any>,
   ) {
     const current = this.requireCurrentPage('wx.createSelectorQuery().exec()')
-    if (scope && scope !== current && !Array.from(this.componentCache.values()).includes(scope as HeadlessComponentInstance)) {
+    const nativeScope = resolveSelectorQueryNativeScope(scope, current, this.componentCache.values())
+    const staleScope = scope && !nativeScope
+      ? resolveSelectorQueryScopeSnapshot(scope, this.selectorQueryScopeSnapshots)
+      : null
+    if (scope && !nativeScope && !staleScope) {
       throw new Error('wx.createSelectorQuery().in(component) received an unknown scope in headless runtime.')
     }
+    if (staleScope) {
+      return executeSelectorQueryRequests(requests, {
+        page: staleScope.snapshot.page,
+        resolveContext: (node) => {
+          if (node.name !== 'canvas') {
+            return {
+              type: 'unsupported-context',
+            }
+          }
+          const canvasId = node.attribs?.['canvas-id']
+          return typeof canvasId === 'string' && canvasId
+            ? this.createCanvasContext(canvasId, staleScope.nativeScope)
+            : {
+                type: 'unsupported-context',
+              }
+        },
+        root: resolveSelectorQueryScopeRoot(staleScope.snapshot.root, staleScope.snapshot.scopeId),
+        windowInfo: this.getWindowInfo(),
+      })
+    }
     const rendered = this.renderCurrentPage()
-    const scopeId = scope && scope !== current
-      ? this.getComponentScopeId(scope as HeadlessComponentInstance)
+    const scopeId = nativeScope && nativeScope !== current
+      ? this.getComponentScopeId(nativeScope as HeadlessComponentInstance)
       : null
     return executeSelectorQueryRequests(requests, {
       page: current,
@@ -1058,7 +1128,7 @@ export class HeadlessSession {
         }
         const canvasId = node.attribs?.['canvas-id']
         return typeof canvasId === 'string' && canvasId
-          ? this.createCanvasContext(canvasId, scope)
+          ? this.createCanvasContext(canvasId, nativeScope ?? undefined)
           : {
               type: 'unsupported-context',
             }
@@ -1181,7 +1251,7 @@ export class HeadlessSession {
       return []
     }
 
-    return [...this.componentScopes.entries()]
+    const matches = [...this.componentScopes.entries()]
       .filter(([candidateScopeId, scope]) => {
         if (!candidateScopeId.includes('/')) {
           return false
@@ -1217,6 +1287,11 @@ export class HeadlessSession {
         }
         return true
       })
+
+    const directlyOwned = rootScopeId
+      ? matches.filter(([, scope]) => scope.ownerScopeId === rootScopeId)
+      : []
+    return (directlyOwned.length > 0 ? directlyOwned : matches)
       .map(([candidateScopeId]) => this.componentCache.get(candidateScopeId))
       .filter(Boolean)
   }

@@ -201,6 +201,62 @@ Page({
     })
   })
 
+  it('notifies browser hosts after asynchronous component renders and callbacks', async () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    events: []
+  },
+  handlePulse(event) {
+    this.setData({
+      events: [...this.data.events, event.detail.phase]
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<status-card bind:pulse="handlePulse" />'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+Component({
+  data: {
+    count: 0
+  },
+  methods: {
+    pulse() {
+      this.setData({ count: this.data.count + 1 }, () => {
+        this.triggerEvent('pulse', { phase: 'ready' })
+      })
+    }
+  }
+})
+`],
+      ['components/status-card/index.wxml', '<view>{{count}}</view>'],
+    ])
+    let renderNotifications = 0
+    const session = createBrowserHeadlessSession({
+      files,
+      onRender: () => renderNotifications += 1,
+    })
+    const page = session.reLaunch('/pages/index/index')
+    const card = session.selectComponent('status-card')
+    const scopeId = card ? session.getScopeIdForComponent(card) : undefined
+
+    expect(scopeId).toBeTruthy()
+    session.callScopeMethodDirect(scopeId!, 'pulse')
+    await Promise.resolve()
+
+    expect(page.data.events).toEqual(['ready'])
+    expect(renderNotifications).toBe(1)
+  })
+
   it('tracks delayed request mocks in browser runtime request state', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

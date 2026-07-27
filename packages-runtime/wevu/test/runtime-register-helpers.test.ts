@@ -110,6 +110,7 @@ describe('runtime: register helpers', () => {
       'owner-1',
       expect.objectContaining({ base: true, foo: 'bar' }),
       runtime.proxy,
+      instance,
     )
   })
 })

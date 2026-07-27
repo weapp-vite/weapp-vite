@@ -373,6 +373,24 @@ describe('autoImport resolver helpers', () => {
     expect(helpers.resolveNavigationImport('plain-package')).toBeUndefined()
   })
 
+  it('does not import resolver source into generated types when disabled', () => {
+    const from = '@wot-ui/ui/components/wd-button/wd-button.vue'
+    const state = createState({
+      autoImportComponents: {
+        resolvers: [{
+          resolve(componentName: string) {
+            return componentName === 'wd-button'
+              ? { name: componentName, from, typeImport: false as const }
+              : undefined
+          },
+        }],
+      },
+    })
+
+    const helpers = createResolverHelpers(state)
+    expect(helpers.resolveComponentTypeImport('wd-button', from)).toBeUndefined()
+  })
+
   it('returns undefined when resolver list cannot resolve target component', () => {
     const state = createState({
       autoImportComponents: {

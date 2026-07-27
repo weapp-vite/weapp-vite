@@ -29,6 +29,32 @@ describe('compileVueStyleToWxss', () => {
     })
   })
 
+  it('lowers Vue deep selectors to selectors accepted by WXSS', () => {
+    const result = compileVueStyleToWxss(
+      createStyleBlock(`
+.host :deep() .child, :deep(.dialog:not(:last-child)) {
+  color: red;
+}
+      `.trim()),
+      { id: 'deep-selector' },
+    )
+
+    expect(result.code).toContain('.host')
+    expect(result.code).toContain('.child')
+    expect(result.code).toContain('.dialog:not(:last-child)')
+    expect(result.code).not.toContain(':deep')
+  })
+
+  it('preserves Vue deep selectors for a target-specific final CSS stage', () => {
+    const source = '.host :deep(.child).active { color: red; }'
+    const result = compileVueStyleToWxss(
+      createStyleBlock(source),
+      { id: 'web-deep-selector', preserveDeepSelectors: true },
+    )
+
+    expect(result.code).toBe(source)
+  })
+
   it('adds scoped attribute to plain selectors', () => {
     const result = compileVueStyleToWxss(
       createStyleBlock('.card, .title { color: red; }'),

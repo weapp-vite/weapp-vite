@@ -194,6 +194,8 @@ export function createScopedSlotComponent(
     forIndexSeed: 0,
     inlineExpressions: [],
     inlineExpressionSeed: 0,
+    templateRefs: [],
+    templateRefIndexSeed: 0,
     functionPropPaths: new Set(),
     functionPropNames: context.functionPropNames,
   }
@@ -215,6 +217,7 @@ export function createScopedSlotComponent(
   asset.classStyleBindings = scopedContext.classStyleBindings.length ? scopedContext.classStyleBindings : undefined
   asset.classStyleWxs = scopedContext.classStyleWxs || undefined
   asset.inlineExpressions = scopedContext.inlineExpressions.length ? scopedContext.inlineExpressions : undefined
+  asset.templateRefs = scopedContext.templateRefs.length ? scopedContext.templateRefs : undefined
   return { componentName, slotKey }
 }
 

@@ -38,6 +38,7 @@ const SCOPED_SLOT_GLOBALS = new Set([
   'encodeURIComponent',
   'require',
   'arguments',
+  'vueSlots',
   WEVU_SLOT_OWNER_KEY,
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_PROPS_DATA_KEY,

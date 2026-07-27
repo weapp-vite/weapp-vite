@@ -22,6 +22,20 @@ describe('watch branches', () => {
     stop()
   })
 
+  it('does not invoke a watcher when its derived value remains equal', async () => {
+    const value = ref(0)
+    const logs: boolean[] = []
+    const stop = watch(() => value.value > 0, result => logs.push(result))
+
+    value.value = 1
+    await scheduler.nextTick()
+    value.value = 2
+    await scheduler.nextTick()
+
+    expect(logs).toEqual([true])
+    stop()
+  })
+
   it('watch ref source, not immediate', async () => {
     const r = ref(1)
     const logs: number[] = []
@@ -132,6 +146,33 @@ describe('watch branches', () => {
     a.value = 3
     await Promise.resolve()
     expect(logs).toEqual([[3, 2]])
+    stop()
+  })
+
+  it('passes an empty old-value array to an immediate multi-source watcher', () => {
+    const a = ref(1)
+    const b = ref(2)
+    const oldValues: unknown[] = []
+
+    const stop = watch([a, b], (_value, oldValue) => {
+      oldValues.push(oldValue)
+    }, { immediate: true })
+
+    expect(oldValues).toEqual([[]])
+    stop()
+  })
+
+  it('keeps reactive arrays of sources in multi-source mode', () => {
+    const a = ref(1)
+    const b = ref(2)
+    const sources = reactive([() => a.value, () => b.value])
+    const calls: Array<{ value: number[], oldValue: unknown[] }> = []
+
+    const stop = watch(sources, (value, oldValue) => {
+      calls.push({ value: value as number[], oldValue: oldValue as unknown[] })
+    }, { immediate: true })
+
+    expect(calls).toEqual([{ value: [1, 2], oldValue: [] }])
     stop()
   })
 

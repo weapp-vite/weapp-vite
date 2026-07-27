@@ -1,5 +1,5 @@
 import type { HotUpdateOptions, InlineConfig, Plugin, ViteDevServer } from 'vite'
-import type { CompilerContext } from '../context'
+import type { CompilerContext, MutableCompilerContext } from '../context'
 import { createLogger, createServer, transformWithOxc } from 'vite'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
@@ -12,6 +12,9 @@ import {
 } from './protocol'
 
 const DEV_EXTERNAL_PREFIX = '\0weapp-vite:module-graph-external:'
+
+type DevModuleGraphCompilerContext = Pick<CompilerContext, 'moduleGraphService' | 'runtimeState'>
+  & Pick<MutableCompilerContext, 'configService'>
 
 export interface DevModuleGraphProvider {
   close: () => Promise<void>
@@ -77,7 +80,7 @@ async function isExternalRequest(
 }
 
 function createProviderPlugin(
-  ctx: CompilerContext,
+  ctx: DevModuleGraphCompilerContext,
   config: InlineConfig,
   onChange: (change: DevModuleGraphChange) => void,
 ): Plugin {
@@ -165,7 +168,7 @@ function createProviderPlugin(
 }
 
 export async function createDevModuleGraphProvider(
-  ctx: CompilerContext,
+  ctx: DevModuleGraphCompilerContext,
   buildConfig: InlineConfig,
   onChange: (change: DevModuleGraphChange) => void,
 ): Promise<DevModuleGraphProvider> {

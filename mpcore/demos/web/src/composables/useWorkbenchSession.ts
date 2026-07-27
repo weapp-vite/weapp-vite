@@ -110,7 +110,10 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
   }
 
   function loadSession(label: string, files: BrowserHeadlessSession['files'], scenarioId?: string) {
-    const nextSession = createBrowserHeadlessSession({ files })
+    const nextSession = createBrowserHeadlessSession({
+      files,
+      onRender: touch,
+    })
     primeSession(nextSession)
     session.value = nextSession
     currentScenarioId.value = scenarioId ?? ''
