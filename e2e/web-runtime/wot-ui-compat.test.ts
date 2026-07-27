@@ -13,6 +13,7 @@ import { componentScenarios } from '../../e2e-apps/wot-ui-compat/src/scenarios'
 import { comparePngWithBaseline } from '../../packages/weapp-ide-cli/src/cli/imageDiff'
 import {
   assertNonBlankPng,
+  captureStableScreenshot,
   collectRuntimeIssues,
   initializeWotUiPage,
   navigateToScenario,
@@ -163,7 +164,7 @@ describe.sequential('Wot UI 2.2.0 Web 全组件兼容', () => {
       for (const [index, scenario] of scenarios.entries()) {
         reportProgress('visual', viewport, index, scenario.component)
         await navigateToScenario(page, scenario)
-        const screenshot = await page.screenshot({ animations: 'disabled' })
+        const screenshot = await captureStableScreenshot(page, `${viewport}/${scenario.component}`)
         const baselinePath = path.join(BASELINE_ROOT, viewport, `${scenario.component}.png`)
         const currentPath = path.join(OUTPUT_ROOT, viewport, `${scenario.component}.current.png`)
         const diffPath = path.join(OUTPUT_ROOT, viewport, `${scenario.component}.diff.png`)

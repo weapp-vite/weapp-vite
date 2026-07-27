@@ -6,6 +6,9 @@ import { PNG } from 'pngjs'
 export const WOT_UI_MOBILE_VIEWPORT = { width: 375, height: 812 } as const
 export const WOT_UI_DESKTOP_VIEWPORT = { width: 1280, height: 900 } as const
 const WOT_UI_SCENARIO_TIMEOUT = 20_000
+const WOT_UI_SCREENSHOT_STABILITY_TIMEOUT = 5_000
+const WOT_UI_SCREENSHOT_SAMPLE_INTERVAL = 80
+const WOT_UI_SCREENSHOT_STABLE_SAMPLES = 3
 
 export interface RuntimeIssue {
   type: 'console' | 'pageerror' | 'requestfailed'
@@ -89,7 +92,30 @@ async function waitForStableAssets(page: Page, scenario: ComponentScenario) {
     component: scenario.component,
     timeout: 8_000,
   })
-  await page.waitForTimeout(120)
+}
+
+export async function captureStableScreenshot(page: Page, label: string) {
+  const deadline = Date.now() + WOT_UI_SCREENSHOT_STABILITY_TIMEOUT
+  let previous: Buffer | undefined
+  let consecutiveStableSamples = 1
+  let samples = 0
+
+  while (Date.now() < deadline) {
+    const current = await page.screenshot({ animations: 'disabled' })
+    samples += 1
+    consecutiveStableSamples = previous?.equals(current)
+      ? consecutiveStableSamples + 1
+      : 1
+    if (consecutiveStableSamples >= WOT_UI_SCREENSHOT_STABLE_SAMPLES) {
+      return current
+    }
+    previous = current
+    await page.waitForTimeout(WOT_UI_SCREENSHOT_SAMPLE_INTERVAL)
+  }
+
+  throw new Error(
+    `[wot-ui-web] ${label} 在 ${samples} 次采样后仍未达到连续 ${WOT_UI_SCREENSHOT_STABLE_SAMPLES} 帧像素稳定`,
+  )
 }
 
 export async function initializeWotUiPage(page: Page, webUrl: string) {
