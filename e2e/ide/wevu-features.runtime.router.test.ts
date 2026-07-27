@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import {
+  callRoutePageMethod,
   closeSharedMiniProgram,
   launchIsolatedMiniProgram,
   readPageWxml,
@@ -52,7 +53,12 @@ async function enterRouterSubPage(miniProgram: any) {
   await miniProgram.callWxMethodWithOptions('removeStorageSync', {
     timeout: 2_500,
   }, ROUTER_SUB_READY_STORAGE_KEY).catch(() => {})
-  await indexPage.callMethod('_openSubPage')
+  await callRoutePageMethod(
+    miniProgram,
+    indexPage,
+    '/pages/router-stability/index',
+    '_openSubPage',
+  )
   const subPage = await waitForCurrentPagePath(
     miniProgram,
     '/pages/router-stability/sub/index',
@@ -132,7 +138,12 @@ async function assertRouterActionRoute(
       timeout: 5_000,
     }).catch(() => subPage)
   })
-  let methodResult = await runStep('call-action', () => currentSubPage.callMethod(actionMethod))
+  let methodResult = await runStep('call-action', () => callRoutePageMethod(
+    miniProgram,
+    currentSubPage,
+    '/pages/router-stability/sub/index',
+    actionMethod,
+  ))
   let invoked = await checkNavigated(ROUTER_NAVIGATION_SETTLE_TIMEOUT)
   if (!invoked) {
     process.stdout.write(`[wevu-features:router-action-retry] id=${actionId} reason=navigation-not-observed attempt=2/2\n`)
@@ -150,7 +161,12 @@ async function assertRouterActionRoute(
         timeout: 5_000,
       }).catch(() => retrySubPage)
     })
-    methodResult = await runStep('retry-call-action', () => currentRetryPage.callMethod(actionMethod))
+    methodResult = await runStep('retry-call-action', () => callRoutePageMethod(
+      miniProgram,
+      currentRetryPage,
+      '/pages/router-stability/sub/index',
+      actionMethod,
+    ))
     invoked = await checkNavigated(ROUTER_NAVIGATION_SETTLE_TIMEOUT)
   }
   if (!invoked && methodResult !== true && methodResult?.ok !== true) {
@@ -219,7 +235,12 @@ describe.sequential('e2e app: wevu-features / router', () => {
       throw new Error('Failed to launch router-showcase page')
     }
 
-    const showcaseResult = await showcasePage.callMethod('runE2E')
+    const showcaseResult = await callRoutePageMethod(
+      miniProgram,
+      showcasePage,
+      '/pages/router-showcase/index',
+      'runE2E',
+    )
     expect(showcaseResult?.ok, JSON.stringify(showcaseResult)).toBe(true)
     expect(showcaseResult?.checks?.parseOk).toBe(true)
     expect(showcaseResult?.checks?.stringifyOk).toBe(true)
@@ -239,7 +260,12 @@ describe.sequential('e2e app: wevu-features / router', () => {
       throw new Error('Failed to launch router-dynamic page')
     }
 
-    const dynamicResult = await dynamicPage.callMethod('runE2E')
+    const dynamicResult = await callRoutePageMethod(
+      miniProgram,
+      dynamicPage,
+      '/pages/router-dynamic/index',
+      'runE2E',
+    )
     expect(dynamicResult?.ok, JSON.stringify(dynamicResult)).toBe(true)
     expect(dynamicResult?.checks?.baseRoutesOk).toBe(true)
     expect(dynamicResult?.checks?.addRemoveOk).toBe(true)
@@ -263,7 +289,12 @@ describe.sequential('e2e app: wevu-features / router', () => {
     await miniProgram.callWxMethodWithOptions('removeStorageSync', {
       timeout: 2_500,
     }, ROUTER_TARGET_STORAGE_KEY).catch(() => {})
-    const invoked = await indexPage.callMethod('triggerPageRouterRelativeFromIndex')
+    const invoked = await callRoutePageMethod(
+      miniProgram,
+      indexPage,
+      '/pages/router-stability/index',
+      'triggerPageRouterRelativeFromIndex',
+    )
     expect(invoked).toBe(true)
     const targetProbe = await waitForRouterTarget(
       miniProgram,

@@ -260,7 +260,10 @@ describe('suiteRunner', () => {
     const statefulHmrTask = ideFullTasks.find(task => task.label === 'ide/stateful-hmr.runtime.test.ts')
     const templateDevOpenAllTask = ideFullTasks.find(task => task.label === 'ide/template-dev-open-all.runtime.test.ts')
     const templateTailwindDevOpenMultiTask = ideFullTasks.find(task => task.label === 'ide/template-tailwindcss-dev-open-multi.runtime.test.ts')
+    const templateTailwindTdesignHmrTask = ideFullTasks.find(task => task.label === 'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts')
+    const templateWevuTailwindTdesignHmrTask = ideFullTasks.find(task => task.label === 'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts')
     const wevuRuntimeTask = ideFullTasks.find(task => task.label === 'ide/wevu-runtime.weapp.test.ts')
+    const wotUiCompatTask = ideFullTasks.find(task => task.label === 'ide/wot-ui-compat.runtime.test.ts')
 
     expect(ideSmokeTasks.length).toBeLessThan(ideGateTasks.length)
     expect(ideGateTasks.length).toBeLessThan(ideFullTasks.length)
@@ -277,8 +280,11 @@ describe('suiteRunner', () => {
     expect(statefulHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(templateDevOpenAllTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(templateTailwindDevOpenMultiTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1200000')
+    expect(templateTailwindTdesignHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
+    expect(templateWevuTailwindTdesignHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(coreHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(wevuRuntimeTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
+    expect(wotUiCompatTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
     expect(ideHeadlessSmokeLabels).toEqual([
       'ide/index.test.ts',
       'ide/template-weapp-vite-template.test.ts',

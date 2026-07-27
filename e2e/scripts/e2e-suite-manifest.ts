@@ -10,6 +10,7 @@ const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
 const DEVTOOLS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.devtools.config.ts')
 const HEADLESS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.headless.config.ts')
+const WEB_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.web.config.ts')
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
@@ -18,9 +19,12 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/stateful-hmr.runtime.test.ts', '900000'],
   ['ide/template-dev-open-all.runtime.test.ts', '900000'],
   ['ide/template-tailwindcss-dev-open-multi.runtime.test.ts', '1200000'],
+  ['ide/template-tailwindcss-tdesign-hmr.runtime.test.ts', '900000'],
+  ['ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts', '900000'],
   ['ide/wevu-runtime.core-hmr.test.ts', '900000'],
   ['ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts', '900000'],
   ['ide/wevu-runtime.weapp.test.ts', '600000'],
+  ['ide/wot-ui-compat.runtime.test.ts', '600000'],
 ])
 const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/automator-bridge-wrapper-hmr.runtime.test.ts',
@@ -195,6 +199,14 @@ function createCommandTask(label: string, args: string[]): SuiteTask {
   }
 }
 
+export function getWebTasks() {
+  return [{
+    label: 'web-runtime',
+    command: 'pnpm',
+    args: ['vitest', 'run', '-c', WEB_CONFIG_PATH],
+  }] satisfies SuiteTask[]
+}
+
 export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
   const buildOnlyFiles = fg.sync('ci/**/*.test.ts', {
     cwd: ROOT,
@@ -327,6 +339,11 @@ export function getFullTasks() {
       args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'ci'],
     },
     {
+      label: 'e2e:web',
+      command: 'node',
+      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'web'],
+    },
+    {
       label: 'e2e:ide',
       command: 'node',
       args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'ide-smoke'],
@@ -342,6 +359,11 @@ export function getFullRegressionTasks() {
       args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'ci'],
     },
     {
+      label: 'e2e:web',
+      command: 'node',
+      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'web'],
+    },
+    {
       label: 'e2e:ide:full',
       command: 'node',
       args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'ide-full'],
@@ -354,6 +376,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ci',
     description: 'Miniapp CI e2e baseline with aggregated failure summary',
     tasks: getCiTasks,
+  },
+  'web': {
+    name: 'web',
+    description: 'Web runtime browser and visual regression suite',
+    tasks: getWebTasks,
   },
   'ide': {
     name: 'ide',
@@ -417,12 +444,12 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
   },
   'full': {
     name: 'full',
-    description: 'Default regression entry: ci plus ide smoke',
+    description: 'Default regression entry: ci plus web plus ide smoke',
     tasks: getFullTasks,
   },
   'full-regression': {
     name: 'full-regression',
-    description: 'Full regression entry: ci plus ide full',
+    description: 'Full regression entry: ci plus web plus ide full',
     tasks: getFullRegressionTasks,
   },
   'hmr-shared-chunks-auto': {

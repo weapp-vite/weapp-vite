@@ -160,6 +160,8 @@ for (const jsFormat of JS_FORMATS) {
             throw new Error(`Failed to launch page: ${route}`)
           }
 
+          await expect(waitForRenderedPage(page, route)).resolves.toBeTruthy()
+
           const result = await runPageE2E(page)
           if (result != null) {
             if (!result?.ok) {

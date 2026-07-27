@@ -281,7 +281,7 @@ Page({
       'detail:onLoad:{"from":"home-callback"}',
       'detail:onShow',
       'detail:onReady',
-      'home:navigateTo:success',
+      'home:navigateTo:success:pages/detail/index',
       'home:navigateTo:complete',
     ])
 
@@ -297,7 +297,7 @@ Page({
       'detail:onLoad:{"from":"home-callback"}',
       'detail:onShow',
       'detail:onReady',
-      'home:navigateTo:success',
+      'home:navigateTo:success:pages/detail/index',
       'home:navigateTo:complete',
       'detail:onUnload',
       'home:onShow',

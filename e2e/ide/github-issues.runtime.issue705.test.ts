@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
@@ -67,13 +68,10 @@ function expectNavigationResult(result: any, from: string) {
     },
   ])
   if (result.failure) {
-    // 当前 DevTools 在 Page.callMethod 内导航时可能超时；hooks 参数仍必须正确。
+    // 当前 DevTools 在 Page.callMethod 内可能只丢失导航回包，页面栈仍会成功切换。
     expect(result.failure.cause).toContain('navigateTo:fail timeout')
-    expect(result.route.path).toBe(from)
   }
-  else {
-    expect(result.route.path).toBe('pages/issue-550/index')
-  }
+  expect(result.route.path).toBe('pages/issue-550/index')
 }
 
 async function isIssue705PageReady(page: any) {
@@ -116,6 +114,25 @@ async function navigateBackFromHost(miniProgram: any) {
   })
 }
 
+async function callIssue550BackAction(miniProgram: any, targetPage: any, action: string, timeoutMs: number) {
+  if (typeof miniProgram.evaluateWithOptions !== 'function' && typeof miniProgram.evaluate !== 'function') {
+    return await targetPage.callMethodWithOptions('_runE2E', {
+      timeout: timeoutMs,
+    }, action)
+  }
+  return await callRoutePageMethodWithOptions(
+    miniProgram,
+    TARGET_PAGE_PATH,
+    '_runE2E',
+    {
+      protocolTimeoutMs: timeoutMs,
+      recoveryAttempts: 1,
+      retries: 1,
+    },
+    action,
+  )
+}
+
 describe.sequential('e2e app: github-issues / issue #705', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
@@ -123,7 +140,7 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
 
   afterAll(async () => {
     await closeSharedMiniProgram()
-  })
+  }, 30_000)
 
   it('keeps route state and hook origins synchronized across router and native tab navigation', async (ctx) => {
     let miniProgram = await getSharedMiniProgram(ctx)
@@ -219,7 +236,6 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
           timeout: 12_000,
         }, 'push').catch(() => undefined)
         const firstPushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
-        expect(firstPushResult.failure).toBeNull()
         expectNavigationResult(firstPushResult, 'pages/issue-705/index')
 
         const targetPage = await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT)
@@ -228,15 +244,20 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
         }
 
         if (backMode === 'system') {
-          await targetPage.callMethodWithOptions('_runE2E', {
-            timeout: 5_000,
-          }, 'prepareBack')
+          await callIssue550BackAction(miniProgram, targetPage, 'prepareBack', 5_000)
           await navigateBackFromHost(miniProgram)
         }
         else {
-          await targetPage.callMethodWithOptions('_runE2E', {
-            timeout: 12_000,
-          }, backMode === 'router' ? 'routerBack' : 'nativeBack').catch(() => undefined)
+          const backStart = await callIssue550BackAction(
+            miniProgram,
+            targetPage,
+            backMode === 'router' ? 'routerBack' : 'nativeBack',
+            12_000,
+          )
+          expect(backStart).toEqual({
+            mode: backMode,
+            started: true,
+          })
         }
 
         const returnedPage = await waitForIssue705Page(miniProgram)
@@ -264,7 +285,6 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
           timeout: 12_000,
         }, 'push').catch(() => undefined)
         const secondPushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
-        expect(secondPushResult.failure).toBeNull()
         expectNavigationResult(secondPushResult, 'pages/issue-705/index')
         expect(await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT)).toBeTruthy()
       }

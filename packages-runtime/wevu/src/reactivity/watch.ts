@@ -72,6 +72,7 @@ export function watch(
   const forceTrigger = options.deep === true
     || typeof options.deep === 'number'
     || (options.deep === undefined && watchGetterContext.hasReactiveSource)
+    || watchGetterContext.hasShallowSource
 
   let cleanup: (() => void) | undefined
   const onCleanup: OnCleanup = (fn) => {

@@ -2,6 +2,21 @@ import type { Ref } from './ref'
 import { triggerEffects } from './core'
 import { customRef, isRef } from './ref'
 
+const ShallowRefFlag = '__v_isShallow' as const
+
+function markAsShallowRef<T extends object>(target: T): T {
+  try {
+    Object.defineProperty(target, ShallowRefFlag, {
+      value: true,
+      configurable: true,
+    })
+  }
+  catch {
+    ;(target as any)[ShallowRefFlag] = true
+  }
+  return target
+}
+
 export function shallowRef<T>(value: T): Ref<T>
 export function shallowRef<T>(value: T, defaultValue: T): Ref<T>
 /**
@@ -19,7 +34,7 @@ export function shallowRef<T>(value: T, defaultValue: T): Ref<T>
  * ```
  */
 export function shallowRef<T>(value: T, defaultValue?: T): Ref<T> {
-  return customRef<T>(
+  return markAsShallowRef(customRef<T>(
     (track, trigger) => ({
       get() {
         track()
@@ -34,7 +49,7 @@ export function shallowRef<T>(value: T, defaultValue?: T): Ref<T> {
       },
     }),
     defaultValue,
-  ) as Ref<T>
+  )) as Ref<T>
 }
 
 /**
@@ -44,8 +59,7 @@ export function shallowRef<T>(value: T, defaultValue?: T): Ref<T> {
  * @returns 若为浅层 ref 则返回 true
  */
 export function isShallowRef(r: any): r is Ref<any> {
-  // 目前凡是用 customRef 创建的 ref 都视为“浅层”，因为不会递归包装内部属性
-  return isRef(r) && typeof r.value !== 'function'
+  return isRef(r) && r[ShallowRefFlag] === true
 }
 
 /**

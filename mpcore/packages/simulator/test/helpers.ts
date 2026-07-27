@@ -201,7 +201,9 @@ Page({
   goDetailWithCallbacks() {
     wx.navigateTo({
       url: '../detail/index?from=home-callback',
-      success: () => this.push('home:navigateTo:success'),
+      success: () => {
+        this.push('home:navigateTo:success:' + getCurrentPages().at(-1).route)
+      },
       complete: () => this.push('home:navigateTo:complete'),
     })
   },

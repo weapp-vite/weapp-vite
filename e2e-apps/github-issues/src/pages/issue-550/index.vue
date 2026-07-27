@@ -28,12 +28,28 @@ function nativeBack() {
   return wx.navigateBack()
 }
 
+function scheduleBackForE2E(mode: 'native' | 'router') {
+  prepareBackProbe()
+  setTimeout(() => {
+    if (mode === 'router') {
+      void router.back()
+    }
+    else {
+      void wx.navigateBack()
+    }
+  }, 0)
+  return {
+    mode,
+    started: true,
+  }
+}
+
 function _runE2E(action?: 'nativeBack' | 'prepareBack' | 'routerBack') {
   if (action === 'routerBack') {
-    return routerBack()
+    return scheduleBackForE2E('router')
   }
   if (action === 'nativeBack') {
-    return nativeBack()
+    return scheduleBackForE2E('native')
   }
   if (action === 'prepareBack') {
     prepareBackProbe()

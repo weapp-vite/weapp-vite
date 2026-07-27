@@ -127,6 +127,7 @@ const projects = [
     test: {
       name: 'e2e-hmr-infra',
       include: [
+        'e2e/scripts/e2e-suite-manifest.test.ts',
         'e2e/scripts/hmr-guard-manifest.test.ts',
         'e2e/scripts/run-e2e-suite.test.ts',
         'e2e/scripts/suiteRunner.test.ts',
