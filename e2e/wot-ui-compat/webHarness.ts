@@ -121,7 +121,10 @@ export async function navigateToScenario(page: Page, scenario: ComponentScenario
     route: scenario.route,
     timeout: WOT_UI_SCENARIO_TIMEOUT,
   })
-  await page.locator('#e2e-root').waitFor({ state: 'attached', timeout: 30_000 })
+  await page.locator(`#e2e-root[data-component="${scenario.component}"]`).waitFor({
+    state: 'attached',
+    timeout: 30_000,
+  })
   await waitForStableAssets(page, scenario)
 }
 

@@ -9,7 +9,7 @@ import { normalizeWebTabBarConfig } from '../shared/tabBar'
 import { SCRIPT_EXTS } from './constants'
 import { isRecord, readJsonFile, resolveJsonPath, resolveScriptFile, resolveStyleFile, resolveTemplateFile } from './files'
 import { mergeNavigationConfig, pickNavigationConfig } from './navigation'
-import { normalizePath, toPosixId } from './path'
+import { isInsideDir, normalizePath, toPosixId } from './path'
 import { collectComponentTagsFromConfig, collectComponentTagsFromJson, mergeComponentTags } from './scanConfig'
 import { compileScannedSfc, discoverWebPageIds } from './scanSfc'
 
@@ -131,11 +131,22 @@ export async function scanProject({ srcRoot, warn, state, resolveId, resolveAuto
 
   const collectComponent = async (componentId: string, importerDir: string) => {
     const script = await resolveComponentScript(componentId, importerDir)
-    if (!script || components.has(script)) {
+    if (!script) {
+      return
+    }
+
+    const existing = components.get(script)
+    if (existing) {
+      existing.importId ??= resolveComponentBase(componentId, importerDir, srcRoot)
+        ? undefined
+        : componentId
       return
     }
 
     const componentIdPosix = getStableComponentId(script)
+    const importId = resolveComponentBase(componentId, importerDir, srcRoot)
+      ? (isInsideDir(script, srcRoot) ? undefined : componentIdPosix)
+      : componentId
     const template = await resolveTemplateFile(script)
     const style = await resolveStyleFile(script)
 
@@ -153,7 +164,7 @@ export async function scanProject({ srcRoot, warn, state, resolveId, resolveAuto
     }
     state.moduleMeta.set(normalizePath(script), componentMeta)
 
-    components.set(script, { script, id: componentIdPosix })
+    components.set(script, { script, id: componentIdPosix, importId })
 
     const componentJsonBasePath = `${script.replace(new RegExp(`${extname(script)}$`), '')}.json`
     const sfcConfig = script.endsWith('.vue')

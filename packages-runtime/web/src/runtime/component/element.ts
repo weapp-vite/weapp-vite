@@ -4,6 +4,7 @@ import type {
 } from './elementTypes'
 import type {
   ComponentOptions,
+  ComponentPublicInstance,
   DataRecord,
   PageLifeTimeHooks,
   TriggerEventOptions,
@@ -22,6 +23,8 @@ import {
 } from './dom'
 import { bindRuntimeEvents } from './events'
 import { runComponentObservers } from './observers'
+import { createComponentPublicInstance } from './publicInstance'
+import { resolveRelationNodes } from './relations'
 import { createWebSlotsProxy } from './slots'
 import { cloneValue, coerceValue, toCamelCase } from './utils'
 import {
@@ -73,6 +76,7 @@ export function createComponentElementClass({
     #state: DataRecord
     #properties: DataRecord
     #methods: Record<string, (event: any) => any>
+    #publicInstance: ComponentPublicInstance
     #exposedMethodNames = new Set<string>()
     #isMounted = false
     #renderContext = createRenderContext(this, {})
@@ -98,8 +102,6 @@ export function createComponentElementClass({
         enumerable: true,
         value: createWebSlotsProxy(() => this.#state.vueSlots),
       })
-      this.#methods = {}
-      this.#syncMethods(runtimeState.componentRef.methods ?? {})
       Object.defineProperties(this, {
         data: {
           configurable: true,
@@ -112,6 +114,7 @@ export function createComponentElementClass({
           get: () => this.#properties,
         },
       })
+      this.#publicInstance = createComponentPublicInstance(this, WeappWebComponent.prototype)
       for (const [propName] of runtimeState.propertyEntries) {
         Object.defineProperty(this, propName, {
           configurable: true,
@@ -120,6 +123,8 @@ export function createComponentElementClass({
           set: value => this.#setProperty(propName, value),
         })
       }
+      this.#methods = {}
+      this.#syncMethods(runtimeState.componentRef.methods ?? {})
       if (!supportsLit) {
         const host = this as unknown as HTMLElement
         if (!host.shadowRoot && typeof host.attachShadow === 'function') {
@@ -128,7 +133,7 @@ export function createComponentElementClass({
         ;(this as any).renderRoot = host.shadowRoot ?? host
       }
       instances.add(this)
-      runtimeState.lifetimes.created?.call(this)
+      runtimeState.lifetimes.created?.call(this.#publicInstance)
     }
 
     setData(patch: DataRecord) {
@@ -155,6 +160,13 @@ export function createComponentElementClass({
       return selectRuntimeComponents(this, selector)
     }
 
+    getRelationNodes(relationPath: string) {
+      const relation = runtimeState.componentRef.relations?.[relationPath]
+      return relation
+        ? resolveRelationNodes(this, runtimeState.id, relationPath, relation.type)
+        : []
+    }
+
     selectOwnerComponent() {
       let current = resolveComposedParent(this)
       while (current) {
@@ -175,7 +187,7 @@ export function createComponentElementClass({
       if (runtimeState.observerInitEnabled) {
         this.#runInitialObservers()
       }
-      runtimeState.lifetimes.attached?.call(this)
+      runtimeState.lifetimes.attached?.call(this.#publicInstance)
       this.#isMounted = true
       if (!supportsLit) {
         this.#renderLegacy()
@@ -189,7 +201,7 @@ export function createComponentElementClass({
       }
       this.#isMounted = false
       instances.delete(this)
-      runtimeState.lifetimes.detached?.call(this)
+      runtimeState.lifetimes.detached?.call(this.#publicInstance)
     }
 
     attributeChangedCallback(attrName: string, oldValue: string | null, newValue: string | null) {
@@ -208,7 +220,7 @@ export function createComponentElementClass({
     }
 
     firstUpdated() {
-      runtimeState.lifetimes.ready?.call(this)
+      runtimeState.lifetimes.ready?.call(this.#publicInstance)
       this.#readyFired = true
     }
 
@@ -277,7 +289,7 @@ export function createComponentElementClass({
       }
       if (changed) {
         this.requestUpdate()
-        runComponentObservers(runtimeState.componentRef, this, changedKeys, previousProperties)
+        runComponentObservers(runtimeState.componentRef, this.#publicInstance, changedKeys, previousProperties)
         for (const key of changedKeys) {
           if (runtimeState.componentRef.properties?.[key]?.observer) {
             this.#observedKeys.add(key)
@@ -298,7 +310,7 @@ export function createComponentElementClass({
       if (this.#isMounted) {
         this.requestUpdate()
       }
-      runComponentObservers(runtimeState.componentRef, this, [name], { [name]: oldValue })
+      runComponentObservers(runtimeState.componentRef, this.#publicInstance, [name], { [name]: oldValue })
       if (propOption?.observer) {
         this.#observedKeys.add(name)
       }
@@ -314,7 +326,7 @@ export function createComponentElementClass({
           continue
         }
         const value = this.#state[propName]
-        propOption.observer.call(this, value, undefined)
+        propOption.observer.call(this.#publicInstance, value, undefined)
         this.#observedKeys.add(propName)
       }
     }
@@ -324,7 +336,7 @@ export function createComponentElementClass({
       const bound: Record<string, (event: any) => any> = {}
       for (const [name, fn] of Object.entries(resolved)) {
         if (typeof fn === 'function') {
-          bound[name] = fn.bind(this)
+          bound[name] = fn.bind(this.#publicInstance)
         }
       }
       for (const name of this.#exposedMethodNames) {
@@ -366,7 +378,7 @@ export function createComponentElementClass({
     __weappInvokePageLifetime(type: keyof PageLifeTimeHooks) {
       const hook = runtimeState.pageLifetimes[type]
       if (typeof hook === 'function') {
-        hook.call(this)
+        hook.call(this.#publicInstance)
       }
     }
 
@@ -386,7 +398,7 @@ export function createComponentElementClass({
       }
       this.#syncVirtualHostClasses()
       if (!this.#readyFired) {
-        runtimeState.lifetimes.ready?.call(this)
+        runtimeState.lifetimes.ready?.call(this.#publicInstance)
         this.#readyFired = true
       }
     }

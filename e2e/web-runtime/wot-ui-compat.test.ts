@@ -49,7 +49,7 @@ function reportProgress(phase: 'behavior' | 'visual', viewport: string, index: n
 }
 
 async function waitForServer(server: Subprocess, logs: { value: string }) {
-  const deadline = Date.now() + 60_000
+  const deadline = Date.now() + 120_000
   while (Date.now() < deadline) {
     if (server.nodeChildProcess.exitCode !== null) {
       throw new Error(`[wot-ui-web] dev server 提前退出\n${logs.value}`)

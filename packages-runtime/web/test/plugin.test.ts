@@ -453,20 +453,28 @@ const ready = ref(true)
       __uniApp: { include: ['@demo/ui'] },
       __autoImportResolvers: [{ components: componentMap }],
     })
-    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, {
+    const resolvedConfig = {
       root,
       command: 'serve',
+      optimizeDeps: { exclude: ['existing-dependency'], include: ['existing-include'] },
       createResolver: () => async (request: string) => componentMap['wd-parent'] === request
         ? parentPath
         : componentMap['wd-child'] === request
           ? childPath
           : undefined,
-    } as any)
+    }
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, resolvedConfig as any)
 
     const entryCode = await (plugin.load as ((...args: any[]) => any))?.call({}, '\0@weapp-vite/web/entry') as string
-    expect(entryCode).toContain('/node_modules/@demo/ui/components/wd-parent/wd-parent.vue')
-    expect(entryCode).toContain('/node_modules/@demo/ui/components/wd-child/wd-child.vue')
+    expect(entryCode).toContain('import \'/@weapp-vite/web/component/%40demo%2Fui%2Fcomponents%2Fwd-parent%2Fwd-parent.vue\'')
+    expect(entryCode).toContain('import \'/@weapp-vite/web/component/%40demo%2Fui%2Fcomponents%2Fwd-child%2Fwd-child.vue\'')
     expect(entryCode).not.toContain(packageDir)
+    expect(resolvedConfig.optimizeDeps.exclude).toEqual(['existing-dependency'])
+    expect(resolvedConfig.optimizeDeps.include).toEqual(['existing-include'])
+    expect(await (plugin.resolveId as ((...args: any[]) => any))?.call(
+      {},
+      '/@weapp-vite/web/component/%40demo%2Fui%2Fcomponents%2Fwd-parent%2Fwd-parent.vue',
+    )).toBe(`${parentPath}?weapp-web-component`)
 
     const parentCode = await (plugin.transform as ((...args: any[]) => any)).call(
       {},
@@ -489,5 +497,72 @@ const ready = ref(true)
       `${childPath}?weapp-web-sfc-template`,
     ) as string
     expect(childTemplate).toContain('child-v2')
+  })
+
+  it('transforms external native components resolved through the shared component graph', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'weapp-web-external-native-'))
+    const srcRoot = join(root, 'src')
+    const packageDir = join(root, 'node_modules/@demo/ui')
+    const componentPath = join(packageDir, 'icon/index.js')
+    const childPath = join(packageDir, 'badge/index.js')
+    const componentRequest = '@demo/ui/icon/index'
+    const componentSource = 'Component({ properties: { prefix: String } })'
+    const childSource = 'Component({ properties: { count: Number } })'
+    await mkdir(srcRoot, { recursive: true })
+    await mkdir(join(packageDir, 'icon'), { recursive: true })
+    await mkdir(join(packageDir, 'badge'), { recursive: true })
+    await writeFile(join(srcRoot, 'app.js'), 'App({})')
+    await writeFile(join(srcRoot, 'app.json'), JSON.stringify({
+      pages: [],
+      usingComponents: {
+        icon: componentRequest,
+      },
+    }))
+    await writeFile(componentPath, componentSource)
+    await writeFile(join(packageDir, 'icon/index.json'), JSON.stringify({
+      component: true,
+      usingComponents: {
+        badge: '../badge/index',
+      },
+    }))
+    await writeFile(join(packageDir, 'icon/index.wxml'), '<badge count="1" /><view>{{ prefix }}</view>')
+    await writeFile(childPath, childSource)
+    await writeFile(join(packageDir, 'badge/index.wxml'), '<view>{{ count }}</view>')
+
+    const plugin = weappWebPlugin({ srcDir: 'src' })
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, {
+      root,
+      command: 'serve',
+      createResolver: () => async (request: string) => request === componentRequest
+        ? componentPath
+        : undefined,
+    } as any)
+
+    const entryCode = await (plugin.load as ((...args: any[]) => any))?.call({}, '\0@weapp-vite/web/entry') as string
+    const virtualId = `/@weapp-vite/web/component/${encodeURIComponent(componentRequest)}`
+    expect(entryCode).toContain(`import '${virtualId}'`)
+    const childVirtualId = `/@weapp-vite/web/component/${encodeURIComponent('__external__/@demo/ui/badge/index')}`
+    expect(entryCode).toContain(`import '${childVirtualId}'`)
+
+    const resolvedId = await (plugin.resolveId as ((...args: any[]) => any))?.call({}, virtualId) as string
+    expect(resolvedId).toBe(`${componentPath}?weapp-web-component`)
+
+    const transformed = await (plugin.transform as ((...args: any[]) => any)).call(
+      {},
+      componentSource,
+      resolvedId,
+    )
+    expect(transformed.code).toContain('registerComponent')
+    expect(transformed.code).toContain('kind: "component"')
+
+    const childResolvedId = await (plugin.resolveId as ((...args: any[]) => any))?.call({}, childVirtualId) as string
+    expect(childResolvedId).toBe(`${childPath}?weapp-web-component`)
+    const transformedChild = await (plugin.transform as ((...args: any[]) => any)).call(
+      {},
+      childSource,
+      childResolvedId,
+    )
+    expect(transformedChild.code).toContain('registerComponent')
+    expect(transformedChild.code).toContain('__external__/@demo/ui/badge/index')
   })
 })

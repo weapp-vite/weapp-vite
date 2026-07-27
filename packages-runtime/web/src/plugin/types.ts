@@ -115,6 +115,7 @@ export interface LayoutEntry {
 export interface ComponentEntry {
   script: string
   id: string
+  importId?: string
 }
 
 export interface ScanResult {

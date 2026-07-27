@@ -27,6 +27,9 @@ const CHROMIUM_CHANNEL = process.env.WEAPP_VITE_WEB_E2E_CHANNEL
 const PLAYWRIGHT_BUNDLED_AVAILABLE = existsSync(PLAYWRIGHT_EXECUTABLE)
 const BROWSER_AVAILABLE = PLAYWRIGHT_BUNDLED_AVAILABLE || Boolean(CHROMIUM_CHANNEL)
 const describeWeb = BROWSER_AVAILABLE ? describe : describe.skip
+const DEDICATED_WEB_PROJECTS = new Set([
+  'e2e-apps/wot-ui-compat',
+])
 const MUTABLE_PROJECT_FILES: Readonly<Record<string, string[]>> = Object.freeze({
   'e2e-apps/request-clients-real': [
     'project.private.config.json',
@@ -110,7 +113,8 @@ async function readRuntimeState(page: Page) {
 }
 
 describeWeb.sequential('workspace Web project matrix', async () => {
-  const projects = await discoverWebProjects(ROOT)
+  const projects = (await discoverWebProjects(ROOT))
+    .filter(project => !DEDICATED_WEB_PROJECTS.has(project.relativeRoot))
   let browser: Browser | undefined
   let server: Subprocess | undefined
 
@@ -162,7 +166,7 @@ describeWeb.sequential('workspace Web project matrix', async () => {
           const context = await browser!.newContext()
           const page = await context.newPage()
           const pageErrors: string[] = []
-          page.on('pageerror', error => pageErrors.push(error.message))
+          page.on('pageerror', error => pageErrors.push(error.stack ?? error.message))
           try {
             await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
             await expect.poll(
@@ -180,7 +184,7 @@ describeWeb.sequential('workspace Web project matrix', async () => {
         const context = await browser!.newContext()
         const page = await context.newPage()
         const pageErrors: string[] = []
-        page.on('pageerror', error => pageErrors.push(error.message))
+        page.on('pageerror', error => pageErrors.push(error.stack ?? error.message))
         try {
           await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
           if (project.expectation === 'shell') {

@@ -1,6 +1,7 @@
 import type { WxssTransformOptions } from '../css/wxss'
 
 import type { ScanResult, WeappWebPluginOptions } from './types'
+import { WEB_COMPONENT_PREFIX } from './constants'
 import { relativeModuleId, resolveRuntimePolyfillPath, toViteFsImport } from './path'
 
 export function generateAutoRoutesModule(result: ScanResult) {
@@ -57,7 +58,10 @@ export function generateEntryModule(
     importLines.push(`import '${relativeModuleId(root, page.script)}'`)
   }
   for (const component of result.components) {
-    importLines.push(`import '${relativeModuleId(root, component.script)}'`)
+    const componentImportId = component.importId
+      ? `${WEB_COMPONENT_PREFIX}${encodeURIComponent(component.importId)}`
+      : relativeModuleId(root, component.script)
+    importLines.push(`import '${componentImportId}'`)
   }
   for (const layout of result.layouts) {
     importLines.push(`import '${relativeModuleId(root, layout.script)}'`)

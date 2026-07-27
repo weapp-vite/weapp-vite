@@ -116,9 +116,6 @@ export class Renderer {
       return buildExpression(parts, scopeVar, wxsVar)
     }
     if (node.type === 'element') {
-      if (node.name === 'template' && node.attribs?.is) {
-        return this.renderTemplateInvoke(node, scopeVar, wxsVar)
-      }
       return this.renderElement(node, scopeVar, wxsVar, componentTags)
     }
     return '""'
@@ -128,8 +125,9 @@ export class Renderer {
     node: RenderElementNode,
     scopeVar: string,
     wxsVar: string,
+    overrideAttribs?: Record<string, string>,
   ): string {
-    const attribs = node.attribs ?? {}
+    const attribs = overrideAttribs ?? node.attribs ?? {}
     const isExpr = buildExpression(parseInterpolations(attribs.is ?? ''), scopeVar, wxsVar)
     const dataExpr = attribs.data
       ? buildTemplateDataExpression(attribs.data, scopeVar, wxsVar)
@@ -169,6 +167,10 @@ export class Renderer {
         const keyExpr = `ctx.key(${JSON.stringify(forInfo.key ?? '')}, ${itemVar}, ${indexVar}, ${scopeExpr}, ${wxsVar})`
         return `repeat(${listExpr}, (${itemVar}, ${indexVar}) => ${keyExpr}, (${itemVar}, ${indexVar}) => { const ${nestedScopeVar} = ${scopeExpr}; return ${itemRender}; })`
       }
+    }
+
+    if (node.name === 'template' && attribs.is) {
+      return this.renderTemplateInvoke(node, scopeVar, wxsVar, attribs)
     }
 
     const customTag = resolveComponentTagName(node.name ?? '', componentTags)

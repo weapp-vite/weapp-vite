@@ -23,6 +23,26 @@ describe('compileWxml template data', () => {
     expect(result.code).toContain('ctx.mergeScope')
   })
 
+  it('keeps template invocation semantics with wx:if and object spread', () => {
+    const result = compileWxml({
+      ...baseOptions,
+      source: `
+        <template name="icon">
+          <view>{{name}}</view>
+        </template>
+        <template
+          wx:if="{{iconName}}"
+          is="icon"
+          data="{{tClass: classPrefix + '__icon', name: iconName, ...iconData}}"
+        />
+      `,
+    })
+
+    expect(result.code).toContain('"{ tClass: classPrefix + \'__icon\', name: iconName, ...iconData }"')
+    expect(result.code).toContain('ctx.renderTemplate')
+    expect(result.code).not.toContain('html`<template')
+  })
+
   it('keeps data expression when no shorthand is used', () => {
     const result = compileWxml({
       ...baseOptions,

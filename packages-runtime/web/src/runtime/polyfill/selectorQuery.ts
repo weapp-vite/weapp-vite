@@ -6,6 +6,7 @@ import type {
   SelectorQueryTask,
   SelectorTargetDescriptor,
 } from './selectorQueryTypes'
+import { resolveComponentPublicInstanceTarget } from '../component/publicInstance'
 
 function isQueryRoot(value: unknown): value is ParentNode {
   if (!value || typeof value !== 'object') {
@@ -19,7 +20,8 @@ function isQueryRoot(value: unknown): value is ParentNode {
 }
 
 function resolveScopedQueryRoot(scope: unknown): ParentNode | undefined {
-  const scoped = scope as {
+  const normalizedScope = resolveComponentPublicInstanceTarget(scope) ?? scope
+  const scoped = normalizedScope as {
     renderRoot?: unknown
     shadowRoot?: unknown
     $el?: unknown
@@ -30,7 +32,7 @@ function resolveScopedQueryRoot(scope: unknown): ParentNode | undefined {
   if (isQueryRoot(scoped?.shadowRoot)) {
     return scoped?.shadowRoot
   }
-  const publicElement = scoped?.$el as {
+  const publicElement = (resolveComponentPublicInstanceTarget(scoped?.$el) ?? scoped?.$el) as {
     renderRoot?: unknown
     shadowRoot?: unknown
   } | undefined
@@ -43,8 +45,8 @@ function resolveScopedQueryRoot(scope: unknown): ParentNode | undefined {
   if (isQueryRoot(scoped?.$el)) {
     return scoped?.$el
   }
-  if (isQueryRoot(scope)) {
-    return scope
+  if (isQueryRoot(normalizedScope)) {
+    return normalizedScope
   }
   return undefined
 }
@@ -82,11 +84,15 @@ function resolveViewportTarget() {
 }
 
 function resolveUpdateComplete(scope: unknown): PromiseLike<unknown> | undefined {
-  const scoped = scope as {
+  const normalizedScope = resolveComponentPublicInstanceTarget(scope) ?? scope
+  const scoped = normalizedScope as {
     updateComplete?: unknown
-    $el?: { updateComplete?: unknown }
+    $el?: unknown
   } | undefined
-  const candidate = scoped?.$el?.updateComplete ?? scoped?.updateComplete
+  const publicElement = (resolveComponentPublicInstanceTarget(scoped?.$el) ?? scoped?.$el) as {
+    updateComplete?: unknown
+  } | undefined
+  const candidate = publicElement?.updateComplete ?? scoped?.updateComplete
   if (
     candidate
     && typeof candidate === 'object'
@@ -118,7 +124,8 @@ function resolveQueryTargets(scope: unknown, target: SelectorTargetDescriptor): 
     return scopedTargets
   }
 
-  const publicElement = (scope as { $?: unknown, $el?: unknown } | undefined)?.$el as {
+  const scopedPublicElement = (scope as { $?: unknown, $el?: unknown } | undefined)?.$el
+  const publicElement = (resolveComponentPublicInstanceTarget(scopedPublicElement) ?? scopedPublicElement) as {
     getRootNode?: () => unknown
   } | undefined
   if (!(scope && typeof scope === 'object' && '$' in scope)) {

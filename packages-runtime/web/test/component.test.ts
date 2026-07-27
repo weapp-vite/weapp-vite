@@ -22,6 +22,7 @@ import {
 import { parseDocument } from 'htmlparser2'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '../src/runtime/component'
+import { createComponentPublicInstance } from '../src/runtime/component/publicInstance'
 import {
   authorize,
   canIUse,
@@ -37,6 +38,7 @@ import {
   clearStorageSync,
   compressImage,
   compressVideo,
+  createAnimation,
   createCanvasContext,
   createIntersectionObserver,
   createInterstitialAd,
@@ -1037,6 +1039,127 @@ describe('event prefix mapping integration', () => {
 })
 
 describe('component observer init', () => {
+  it('supports native behavior lifetimes and relation node lookup', () => {
+    registerComponent({
+      properties: {
+        column: Number,
+      },
+      behaviors: [{
+        created() {
+          Object.defineProperty(this, '$children', {
+            get: () => this.getRelationNodes('../relation-child/relation-child'),
+          })
+        },
+      } as any],
+      relations: {
+        '../relation-child/relation-child': {
+          type: 'descendant',
+        },
+      },
+    }, {
+      id: 'components/relation-parent/relation-parent',
+      template: createTemplate('<slot />'),
+    })
+    registerComponent({}, {
+      id: 'components/relation-child/relation-child',
+      template: createTemplate('<view>child</view>'),
+    })
+
+    const parent = document.createElement('wv-component-components-relation-parent-relation-parent') as any
+    const child = document.createElement('wv-component-components-relation-child-relation-child')
+    parent.append(child)
+    expect(parent.$children).toEqual([child])
+  })
+
+  it('exports and clears chained animation steps', () => {
+    const animation = createAnimation({ duration: 300, timingFunction: 'linear' })
+      .translateX(24)
+      .opacity(0.5)
+      .step({ delay: 20 })
+      .height('auto')
+      .step()
+
+    expect(animation.export()).toEqual({
+      actions: [
+        {
+          animates: [
+            { type: 'translateX', args: [24] },
+            { type: 'opacity', args: [0.5] },
+          ],
+          option: { duration: 300, timingFunction: 'linear', delay: 20 },
+        },
+        {
+          animates: [{ type: 'height', args: ['auto'] }],
+          option: { duration: 300, timingFunction: 'linear' },
+        },
+      ],
+    })
+    expect(animation.export()).toEqual({ actions: [] })
+  })
+
+  it('keeps component instance fields isolated from readonly DOM properties', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'children')
+    Object.defineProperty(HTMLElement.prototype, 'children', {
+      configurable: true,
+      get: () => ['dom-child'],
+    })
+
+    try {
+      registerComponent({
+        lifetimes: {
+          created() {
+            expect(this.children).toBeUndefined()
+            ;(this as any).children = []
+          },
+        },
+        methods: {
+          appendChildInstance(child: unknown) {
+            ;(this as any).children.push(child)
+          },
+        },
+      }, {
+        id: 'components/readonly-dom-field',
+        template: createTemplate('<view>ready</view>'),
+      })
+
+      const element = document.createElement('wv-component-components-readonly-dom-field') as HTMLElement & {
+        appendChildInstance: (child: unknown) => void
+      }
+      element.appendChildInstance('component-child')
+      expect((element as any).children).toEqual(['component-child'])
+    }
+    finally {
+      if (descriptor) {
+        Object.defineProperty(HTMLElement.prototype, 'children', descriptor)
+      }
+      else {
+        delete (HTMLElement.prototype as any).children
+      }
+    }
+  })
+
+  it('supports shorthand and null property declarations', () => {
+    defineComponent('wv-property-declaration-shorthand', {
+      template: createTemplate('<view>{{title}} {{count}} {{anyValue}}</view>'),
+      component: {
+        properties: {
+          title: String,
+          count: { type: Number, value: 1, optionalTypes: [String] },
+          anyValue: null,
+        },
+      },
+    })
+
+    const element = document.createElement('wv-property-declaration-shorthand') as any
+    document.body.append(element)
+
+    expect(element.properties).toEqual({
+      title: undefined,
+      count: 1,
+      anyValue: undefined,
+    })
+  })
+
   it('uses WeChat triggerEvent propagation defaults and explicit options', () => {
     defineComponent('wv-trigger-event-options', {
       template: createTemplate('<view>event source</view>'),
@@ -3173,6 +3296,59 @@ describe('web runtime wx utility APIs', () => {
       height: 40,
     }))
     host.parentNode?.removeChild(host)
+  })
+
+  it('waits for the underlying component host update before a scoped query', async () => {
+    let resolveUpdate!: () => void
+    const updateComplete = new Promise<void>((resolve) => {
+      resolveUpdate = resolve
+    })
+    const host = document.createElement('div') as HTMLElement & {
+      renderRoot?: ShadowRoot
+    }
+    const inheritedPrototype = Object.create(Object.getPrototypeOf(host), {
+      updateComplete: {
+        configurable: true,
+        get: () => updateComplete,
+      },
+    })
+    Object.setPrototypeOf(host, inheritedPrototype)
+    const renderRoot = host.attachShadow({ mode: 'open' })
+    host.renderRoot = renderRoot
+    const publicInstance = createComponentPublicInstance(host as any, {})
+    const callback = vi.fn()
+
+    createSelectorQuery()
+      .in({ $: {}, $el: publicInstance, renderRoot })
+      .select('.deferred-query-probe')
+      .boundingClientRect(callback)
+      .exec()
+
+    expect(callback).not.toHaveBeenCalled()
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'deferred-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 1,
+      top: 2,
+      right: 11,
+      bottom: 12,
+      width: 10,
+      height: 10,
+      x: 1,
+      y: 2,
+      toJSON: () => ({}),
+    })
+    renderRoot.appendChild(probe)
+    resolveUpdate()
+    await updateComplete
+    await Promise.resolve()
+
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      left: 1,
+      top: 2,
+      width: 10,
+      height: 10,
+    }))
   })
 
   it('falls back through Vue public instance ancestor roots for sibling selectors', () => {

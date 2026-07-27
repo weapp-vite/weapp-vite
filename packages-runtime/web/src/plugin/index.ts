@@ -9,7 +9,8 @@ import { compileWxml } from '../compiler/wxml'
 import { transformWxsToEsm } from '../compiler/wxs'
 import { createWxssPostcssPlugin, transformWxssToCss } from '../css/wxss'
 import { createWebAssetMiddleware, emitWebAssets } from './assets'
-import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, SCRIPT_EXTS, SFC_STYLE_QUERY, SFC_TEMPLATE_QUERY, STYLE_EXTS, STYLE_QUERY, TEMPLATE_EXTS, TEMPLATE_QUERY, TRANSFORM_STYLE_EXTS, WXS_EXTS } from './constants'
+import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, SCRIPT_EXTS, SFC_STYLE_QUERY, SFC_TEMPLATE_QUERY, STYLE_EXTS, STYLE_QUERY, TEMPLATE_EXTS, TEMPLATE_QUERY, TRANSFORM_STYLE_EXTS, WEB_COMPONENT_PREFIX, WEB_COMPONENT_QUERY, WXS_EXTS } from './constants'
+import { collectExternalComponentOptimizeDeps } from './dependencyScan'
 import { generateAutoRoutesModule, generateEntryModule } from './entry'
 import { wrapPageTemplate } from './layout'
 import { cleanUrl, isHtmlEntry, isInsideDir, normalizePath, resolveRuntimePolyfillPath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport, toViteFsImport } from './path'
@@ -47,6 +48,10 @@ interface WebResolvedConfig extends WebUserConfig {
   root: string
   command: string
   createResolver?: () => ResolveWebModuleId
+  optimizeDeps?: {
+    exclude?: string[]
+    include?: string[]
+  }
 }
 
 interface WebHmrContext {
@@ -132,6 +137,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
   let enableHmr = false
   let resolveWebModuleId: ResolveWebModuleId | undefined
   let resolveWebAutoImportTag: ResolveWebAutoImportTag | undefined
+  const componentImportIdMap = new Map<string, string>()
 
   const state = createEmptyScanState()
   const wxssOptions = options.wxss
@@ -185,14 +191,22 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     }
   }
 
-  const scan = (context: WebPluginContext) => scanProject({
-    srcRoot,
-    warn: context.warn?.bind(context),
-    state,
-    resolveId: resolveWebModuleId,
-    resolveAutoImportTag: resolveWebAutoImportTag,
-    uniApp: options.__uniApp,
-  })
+  const scan = async (context: WebPluginContext) => {
+    await scanProject({
+      srcRoot,
+      warn: context.warn?.bind(context),
+      state,
+      resolveId: resolveWebModuleId,
+      resolveAutoImportTag: resolveWebAutoImportTag,
+      uniApp: options.__uniApp,
+    })
+    componentImportIdMap.clear()
+    for (const component of state.scanResult.components) {
+      if (component.importId) {
+        componentImportIdMap.set(component.importId, component.script)
+      }
+    }
+  }
 
   return {
     name: '@weapp-vite/web',
@@ -208,6 +222,12 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       resolveWebModuleId = config.createResolver?.()
       resolveWebAutoImportTag = createAutoImportTagResolver()
       await scan(this)
+      const componentDependencies = await collectExternalComponentOptimizeDeps(state.scanResult.components)
+      config.optimizeDeps ??= {}
+      config.optimizeDeps.include = Array.from(new Set([
+        ...(config.optimizeDeps.include ?? []),
+        ...componentDependencies,
+      ]))
     },
     configureServer(server: WebDevServer) {
       server.middlewares.use(createWebAssetMiddleware(srcRoot))
@@ -231,6 +251,11 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       }
       if (id === AUTO_ROUTES_ID) {
         return RESOLVED_AUTO_ROUTES_ID
+      }
+      if (id.startsWith(WEB_COMPONENT_PREFIX)) {
+        const request = decodeURIComponent(id.slice(WEB_COMPONENT_PREFIX.length))
+        const resolvedId = componentImportIdMap.get(request)
+        return resolvedId ? `${cleanUrl(resolvedId)}?${WEB_COMPONENT_QUERY}` : null
       }
       if (hasQuery(id, SFC_STYLE_QUERY)) {
         const queryIndex = id.indexOf('?')
@@ -475,7 +500,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       if (!SCRIPT_EXTS.some(ext => clean.endsWith(ext))) {
         return uniAppTransformed ? { code, map: null } : null
       }
-      if (clean.includes('node_modules')) {
+      if (clean.includes('node_modules') && !hasQuery(id, WEB_COMPONENT_QUERY)) {
         return options.__uniApp && isUniAppCompatibilityFile(clean, srcRoot, options.__uniApp.include)
           ? { code, map: null }
           : null

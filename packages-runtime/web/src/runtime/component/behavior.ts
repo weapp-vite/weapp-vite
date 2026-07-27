@@ -50,6 +50,16 @@ function mergePageLifetimes(target: PageLifeTimeHooks, source?: PageLifeTimeHook
   }
 }
 
+function resolveNativeLifetimes(source: ComponentOptions) {
+  const native = source as ComponentOptions & LifeTimeHooks
+  return {
+    created: native.created,
+    attached: native.attached,
+    ready: native.ready,
+    detached: native.detached,
+  }
+}
+
 export function normalizeBehaviors(component: ComponentOptions | undefined) {
   if (!component) {
     return { component: undefined, warnings: [] as string[] }
@@ -86,6 +96,14 @@ export function normalizeBehaviors(component: ComponentOptions | undefined) {
     if (source.pageLifetimes) {
       merged.pageLifetimes = merged.pageLifetimes ?? {}
       mergePageLifetimes(merged.pageLifetimes, source.pageLifetimes)
+    }
+    const nativeLifetimes = resolveNativeLifetimes(source)
+    if (Object.values(nativeLifetimes).some(Boolean)) {
+      merged.lifetimes = merged.lifetimes ?? {}
+      mergeLifetimes(merged.lifetimes, nativeLifetimes)
+    }
+    if (source.relations) {
+      merged.relations = { ...(merged.relations ?? {}), ...source.relations }
     }
   }
 
