@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { weappWebPlugin } from '../src/plugin'
+import { normalizePath } from '../src/plugin/path'
 import { resolveWebVueSfcStyleLanguage } from '../src/plugin/vueSfc'
 
 describe('weappWebPlugin', () => {
@@ -556,7 +557,7 @@ const ready = ref(true)
     expect(transformed.code).toContain('kind: "component"')
 
     const childResolvedId = await (plugin.resolveId as ((...args: any[]) => any))?.call({}, childVirtualId) as string
-    expect(childResolvedId).toBe(`${childPath}?weapp-web-component`)
+    expect(childResolvedId).toBe(`${normalizePath(childPath)}?weapp-web-component`)
     const transformedChild = await (plugin.transform as ((...args: any[]) => any)).call(
       {},
       childSource,

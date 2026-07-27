@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 import { describe, expect, it, vi } from 'vitest'
 import { createWebAssetMiddleware, emitWebAssets, resolveWebAssetRequest } from './assets'
+import { normalizePath } from './path'
 
 describe('Web 小程序静态资源', () => {
   it('只解析 srcRoot 内允许的资源路径', () => {
@@ -60,6 +61,6 @@ describe('Web 小程序静态资源', () => {
       fileName: 'assets/sample.png',
       source: Buffer.from('png'),
     })
-    expect(addWatchFile).toHaveBeenCalledWith(join(assetDir, 'sample.png'))
+    expect(addWatchFile).toHaveBeenCalledWith(normalizePath(join(assetDir, 'sample.png')))
   })
 })
