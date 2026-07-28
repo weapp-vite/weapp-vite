@@ -28,8 +28,8 @@ apps/** linguist-vendored
 *.cmd             text eol=crlf
 *.coffee          text
 *.css             text eol=lf diff=css
-*.htm             text diff=html
-*.html            text diff=html
+*.htm             text eol=lf diff=html
+*.html            text eol=lf diff=html
 *.inc             text
 *.ini             text
 *.js              text eol=lf

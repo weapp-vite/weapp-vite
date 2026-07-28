@@ -531,7 +531,7 @@ const ready = ref(true)
     )
     expect(transformedChild.code).toContain('registerWebWevuComponent')
     expect(transformedChild.code).toContain('__external__/demo-ui/child')
-    expect((plugin.resolveId as ((...args: any[]) => any)).call({}, './child', parentPath)).toBe(childPath)
+    expect((plugin.resolveId as ((...args: any[]) => any)).call({}, './child', parentPath)).toBe(normalizePath(childPath))
 
     const styleCode = await (plugin.load as ((...args: any[]) => any))?.call(
       {},

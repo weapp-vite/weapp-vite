@@ -192,14 +192,14 @@ describe('UviewPlusResolver', () => {
     expect(resolveWithResolver(resolver, 'u-button')).toEqual({
       name: 'u-button',
       from: 'uview-plus/components/u-button/u-button.vue',
-      resolvedId: expect.stringMatching(/uview-plus\/components\/u-button\/u-button\.vue$/),
+      resolvedId: expect.stringMatching(/uview-plus[\\/]components[\\/]u-button[\\/]u-button\.vue$/),
       sourceType: 'wevu-sfc',
       typeImport: false,
     })
     expect(resolveWithResolver(resolver, 'up-button')).toEqual({
       name: 'up-button',
       from: 'uview-plus/components/u-button/u-button.vue',
-      resolvedId: expect.stringMatching(/uview-plus\/components\/u-button\/u-button\.vue$/),
+      resolvedId: expect.stringMatching(/uview-plus[\\/]components[\\/]u-button[\\/]u-button\.vue$/),
       sourceType: 'wevu-sfc',
       typeImport: false,
     })
