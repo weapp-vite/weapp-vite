@@ -22,6 +22,17 @@ interface ScanProjectOptions {
   uniApp?: { include: string[] }
 }
 
+export function getStableWebComponentId(script: string, srcRoot: string) {
+  const normalized = script.replace(/\\/g, '/')
+  const nodeModulesIndex = normalized.lastIndexOf('/node_modules/')
+  const extension = extname(script)
+  if (nodeModulesIndex >= 0) {
+    const packageRelative = normalized.slice(nodeModulesIndex + '/node_modules/'.length)
+    return `__external__/${packageRelative.slice(0, -extension.length)}`
+  }
+  return toPosixId(relative(srcRoot, script).slice(0, -extension.length))
+}
+
 function resolveComponentBase(raw: string, importerDir: string, srcRoot: string) {
   if (!raw) {
     return undefined
@@ -98,14 +109,7 @@ export async function scanProject({ srcRoot, warn, state, resolveId, resolveAuto
   }
 
   const getStableComponentId = (script: string) => {
-    const normalized = script.replace(/\\/g, '/')
-    const nodeModulesIndex = normalized.lastIndexOf('/node_modules/')
-    const extension = extname(script)
-    if (nodeModulesIndex >= 0) {
-      const packageRelative = normalized.slice(nodeModulesIndex + '/node_modules/'.length)
-      return `__external__/${packageRelative.slice(0, -extension.length)}`
-    }
-    return toPosixId(relative(srcRoot, script).slice(0, -extension.length))
+    return getStableWebComponentId(script, srcRoot)
   }
 
   const getComponentId = (script: string) => {

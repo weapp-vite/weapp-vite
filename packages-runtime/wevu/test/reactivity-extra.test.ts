@@ -48,6 +48,46 @@ describe('utils and scheduler', () => {
 
     expect(calls).toEqual([1, 2])
   })
+
+  it('waits for asynchronous work returned by a queued job', async () => {
+    let finish!: () => void
+    const completion = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    let settled = false
+
+    queueJob(() => completion)
+    const tick = nextTick().then(() => {
+      settled = true
+    })
+    await Promise.resolve()
+
+    expect(settled).toBe(false)
+    finish()
+    await tick
+    expect(settled).toBe(true)
+  })
+
+  it('continues queued jobs after an error and recovers the next flush', async () => {
+    const calls: string[] = []
+
+    queueJob(() => {
+      calls.push('failed')
+      throw new Error('scheduler failure')
+    })
+    queueJob(() => {
+      calls.push('continued')
+    })
+
+    await expect(nextTick()).rejects.toThrow('scheduler failure')
+    expect(calls).toEqual(['failed', 'continued'])
+
+    queueJob(() => {
+      calls.push('recovered')
+    })
+    await expect(nextTick()).resolves.toBeUndefined()
+    expect(calls).toEqual(['failed', 'continued', 'recovered'])
+  })
 })
 
 describe('ref and customRef branches', () => {

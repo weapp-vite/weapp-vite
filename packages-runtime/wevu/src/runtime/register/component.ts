@@ -32,7 +32,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     propsDerivedKeys,
     userObservers,
     setupLifecycle,
-    legacyCreated,
+    vueLifecycles,
     isPage,
     features,
     userOnLoad,
@@ -201,7 +201,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     syncWevuPropsFromValues,
     directPropsDerivedKeys,
     isPage,
-    legacyCreated,
+    vueLifecycles,
     getRuntimeOwnerLabel,
   })
 }

@@ -23,9 +23,10 @@ interface ScriptAnalysis {
   importEnd: number
   source: string
   usesFreeUni: boolean
+  virtualHostTrueRanges: Array<{ end: number, start: number }>
 }
 
-const DIRECTIVE_RE = /^\s*(?:(?:\/\/|\/\*+|<!--)\s*)?#(ifdef|ifndef|else|endif)\b(.*)$/
+const DIRECTIVE_TOKEN_RE = /\/\/\s*#(?:ifdef|ifndef|else|endif)\b[^\r\n]*|\/\*+\s*#(?:ifdef|ifndef|else|endif)\b[\s\S]*?\*\/|<!--\s*#(?:ifdef|ifndef|else|endif)\b[\s\S]*?-->/g
 const SCRIPT_EXT_RE = /\.[cm]?[jt]sx?$/i
 const STYLE_EXT_RE = /\.(?:css|less|sass|scss|styl|stylus)$/i
 const UNI_APP_RUNTIME_MODULE = '@dcloudio/uni-app'
@@ -39,11 +40,57 @@ function resolveRuntimeImport(source: string) {
 
 function evaluateCondition(expression: string, defines: ReadonlySet<string>, filename: string, line: number) {
   const normalized = expression.replace(/(?:\*\/|-->)\s*$/, '').trim()
-  const names = normalized.split('||').map(item => item.trim()).filter(Boolean)
-  if (!names.length || names.some(name => !/^[A-Z][A-Z0-9_-]*$/.test(name))) {
+  const tokens = normalized.match(/[A-Z][A-Z0-9_-]*|&&|\|\||[()!]/g) ?? []
+  if (!tokens.length || tokens.join('') !== normalized.replace(/\s/g, '')) {
     throw new Error(`[uni-app] ${filename}:${line} 包含无效的条件表达式 "${normalized}"`)
   }
-  return names.some(name => defines.has(name))
+  let index = 0
+  const parser = {
+    parseAnd(): boolean {
+      let value = parser.parsePrimary()
+      while (tokens[index] === '&&') {
+        index += 1
+        const right = parser.parsePrimary()
+        value = value && right
+      }
+      return value
+    },
+    parseOr(): boolean {
+      let value = parser.parseAnd()
+      while (tokens[index] === '||') {
+        index += 1
+        const right = parser.parseAnd()
+        value = value || right
+      }
+      return value
+    },
+    parsePrimary(): boolean {
+      const token = tokens[index]
+      if (token === '!') {
+        index += 1
+        return !parser.parsePrimary()
+      }
+      if (token === '(') {
+        index += 1
+        const value = parser.parseOr()
+        if (tokens[index] !== ')') {
+          throw new Error(`[uni-app] ${filename}:${line} 包含无效的条件表达式 "${normalized}"`)
+        }
+        index += 1
+        return value
+      }
+      if (!token || !/^[A-Z][A-Z0-9_-]*$/.test(token)) {
+        throw new Error(`[uni-app] ${filename}:${line} 包含无效的条件表达式 "${normalized}"`)
+      }
+      index += 1
+      return defines.has(token)
+    },
+  }
+  const value = parser.parseOr()
+  if (index !== tokens.length) {
+    throw new Error(`[uni-app] ${filename}:${line} 包含无效的条件表达式 "${normalized}"`)
+  }
+  return value
 }
 
 /**
@@ -53,50 +100,54 @@ export function transformUniAppConditionalCode(
   source: string,
   options: TransformUniAppSourceOptions,
 ) {
-  const defines = new Set(options.target === 'h5' ? ['H5'] : ['MP-WEIXIN'])
+  const defines = new Set(options.target === 'h5' ? ['H5', 'VUE3'] : ['MP', 'MP-WEIXIN', 'VUE3'])
   const frames: ConditionalFrame[] = []
   let active = true
   let changed = false
-  let line = 0
-
-  const code = source.replace(/[^\n]*(?:\n|$)/g, (chunk) => {
-    if (!chunk) {
-      return chunk
+  let cursor = 0
+  let line = 1
+  let code = ''
+  for (const match of source.matchAll(DIRECTIVE_TOKEN_RE)) {
+    const offset = match.index
+    const segment = source.slice(cursor, offset)
+    code += active ? segment : segment.replace(/[^\r\n]/g, '')
+    line += segment.split('\n').length - 1
+    const directiveSource = match[0].slice(match[0].indexOf('#'))
+    const directiveMatch = directiveSource.match(/^#(ifdef|ifndef|else|endif)\b/)
+    if (!directiveMatch) {
+      continue
     }
-    line += 1
-    const newline = chunk.endsWith('\n') ? '\n' : ''
-    const content = newline ? chunk.slice(0, -1) : chunk
-    const match = content.match(DIRECTIVE_RE)
-    if (!match) {
-      return active ? chunk : newline
-    }
-
     changed = true
-    const directive = match[1]
+    const directive = directiveMatch[1]
     if (directive === 'ifdef' || directive === 'ifndef') {
-      const condition = evaluateCondition(match[2], defines, options.filename, line)
+      const expression = directiveSource.slice(directiveMatch[0].length)
+      const condition = evaluateCondition(expression, defines, options.filename, line)
       frames.push({ condition, elseSeen: false, parentActive: active })
       active = active && (directive === 'ifdef' ? condition : !condition)
-      return newline
     }
-
-    const frame = frames[frames.length - 1]
-    if (!frame) {
-      throw new Error(`[uni-app] ${options.filename}:${line} 存在未配对的 #${directive}`)
-    }
-    if (directive === 'else') {
-      if (frame.elseSeen) {
-        throw new Error(`[uni-app] ${options.filename}:${line} 同一条件块不能出现多个 #else`)
+    else {
+      const frame = frames[frames.length - 1]
+      if (!frame) {
+        throw new Error(`[uni-app] ${options.filename}:${line} 存在未配对的 #${directive}`)
       }
-      frame.elseSeen = true
-      active = frame.parentActive && !frame.condition
-      return newline
+      if (directive === 'else') {
+        if (frame.elseSeen) {
+          throw new Error(`[uni-app] ${options.filename}:${line} 同一条件块不能出现多个 #else`)
+        }
+        frame.elseSeen = true
+        active = frame.parentActive && !frame.condition
+      }
+      else {
+        frames.pop()
+        active = frame.parentActive
+      }
     }
-
-    frames.pop()
-    active = frame.parentActive
-    return newline
-  })
+    code += match[0].replace(/[^\r\n]/g, '')
+    line += match[0].split('\n').length - 1
+    cursor = offset + match[0].length
+  }
+  const trailing = source.slice(cursor)
+  code += active ? trailing : trailing.replace(/[^\r\n]/g, '')
 
   if (frames.length) {
     throw new Error(`[uni-app] ${options.filename} 存在未闭合的条件编译块`)
@@ -104,9 +155,29 @@ export function transformUniAppConditionalCode(
   return { changed, code }
 }
 
+function normalizeAuxiliaryWxsScripts(source: string) {
+  const wxsBlocks: string[] = []
+  const withoutScripts = source.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (block, attributes: string, content: string) => {
+    const src = attributes.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1]
+    const moduleName = attributes.match(/\bmodule\s*=\s*["']([^"']+)["']/i)?.[1]
+    const isWxs = /\blang\s*=\s*["']wxs["']/i.test(attributes) || src?.endsWith('.wxs')
+    if (!isWxs || !moduleName) {
+      return block
+    }
+    wxsBlocks.push(src
+      ? `<wxs module="${moduleName}" src="${src}" />`
+      : `<wxs module="${moduleName}">${content}</wxs>`)
+    return block.replace(/[^\r\n]/g, '')
+  })
+  if (!wxsBlocks.length) {
+    return source
+  }
+  return withoutScripts.replace(/<template\b[^>]*>/i, match => `${match}\n${wxsBlocks.join('\n')}`)
+}
+
 function analyzeScript(source: string, filename: string): ScriptAnalysis {
   if (!source.trim()) {
-    return { source, importSources: [], importEnd: 0, usesFreeUni: false }
+    return { source, importSources: [], importEnd: 0, usesFreeUni: false, virtualHostTrueRanges: [] }
   }
   const isJsx = /\.[cm]?[jt]sx$/i.test(filename)
   const ast = parse(source, {
@@ -120,6 +191,7 @@ function analyzeScript(source: string, filename: string): ScriptAnalysis {
   const importSources: Array<{ end: number, replacement: string, start: number }> = []
   let importEnd = 0
   let usesFreeUni = false
+  const virtualHostTrueRanges: Array<{ end: number, start: number }> = []
 
   traverse(ast, {
     ImportDeclaration(path: any) {
@@ -151,25 +223,61 @@ function analyzeScript(source: string, filename: string): ScriptAnalysis {
         usesFreeUni = true
       }
     },
+    ObjectProperty(path: any) {
+      const key = path.node.key
+      const isVirtualHost = !path.node.computed && (
+        t.isIdentifier(key, { name: 'virtualHost' })
+        || t.isStringLiteral(key, { value: 'virtualHost' })
+      )
+      if (
+        !isVirtualHost
+        || !t.isBooleanLiteral(path.node.value, { value: true })
+        || !path.parentPath?.isObjectExpression()
+      ) {
+        return
+      }
+      const optionsProperty = path.parentPath.parentPath
+      if (
+        !optionsProperty?.isObjectProperty()
+        || optionsProperty.node.computed
+        || !(
+          t.isIdentifier(optionsProperty.node.key, { name: 'options' })
+          || t.isStringLiteral(optionsProperty.node.key, { value: 'options' })
+        )
+      ) {
+        return
+      }
+      const { start, end } = path.node.value
+      if (typeof start === 'number' && typeof end === 'number') {
+        virtualHostTrueRanges.push({ start, end })
+      }
+    },
   })
 
-  return { source, importSources, importEnd, usesFreeUni }
+  return { source, importSources, importEnd, usesFreeUni, virtualHostTrueRanges }
 }
 
-function renderScript(analysis: ScriptAnalysis, injectUni: boolean) {
+function renderScript(analysis: ScriptAnalysis, injectUni: boolean, disableVirtualHost: boolean) {
   const output = new MagicString(analysis.source)
   for (const source of analysis.importSources) {
     output.overwrite(source.start, source.end, JSON.stringify(source.replacement))
   }
   if (injectUni) {
     const insertion = analysis.importEnd > 0 ? analysis.importEnd : 0
-    output.appendLeft(insertion, `${insertion > 0 ? '\n' : ''}const uni = wx\n`)
+    output.prepend(`import { createUniAppHost as __wevuCreateUniAppHost } from 'wevu/internal-runtime'\n`)
+    output.appendLeft(insertion, `${insertion > 0 ? '\n' : ''}const uni = __wevuCreateUniAppHost(wx)\n`)
+  }
+  if (disableVirtualHost) {
+    for (const range of analysis.virtualHostTrueRanges) {
+      output.overwrite(range.start, range.end, 'false')
+    }
   }
   return output.toString()
 }
 
-function transformVueSfc(source: string, filename: string) {
-  const { descriptor, errors } = parseSfc(source, { filename })
+function transformVueSfc(source: string, filename: string, target: UniAppCompatibilityTarget) {
+  const normalizedSource = normalizeAuxiliaryWxsScripts(source)
+  const { descriptor, errors } = parseSfc(normalizedSource, { filename })
   if (errors.length) {
     const error = errors[0]
     throw new Error(`[uni-app] 解析 ${filename} 失败：${error.message}`)
@@ -181,12 +289,12 @@ function transformVueSfc(source: string, filename: string) {
     return analyzeScript(block!.content, `${filename}.${lang}`)
   })
   const injectIndex = analyses.findIndex(analysis => analysis.usesFreeUni)
-  const output = new MagicString(source)
+  const output = new MagicString(normalizedSource)
 
   for (let index = blocks.length - 1; index >= 0; index -= 1) {
     const block = blocks[index]!
     const analysis = analyses[index]
-    const code = renderScript(analysis, index === injectIndex)
+    const code = renderScript(analysis, index === injectIndex, target === 'mp-weixin')
     output.overwrite(block.loc.start.offset, block.loc.end.offset, code)
   }
   return output.toString()
@@ -206,12 +314,16 @@ export function transformUniAppSource(source: string, options: TransformUniAppSo
         ? 'style'
         : undefined)
   if (blockType === 'sfc') {
-    const code = transformVueSfc(conditional.code, filename)
+    const code = transformVueSfc(conditional.code, filename, options.target)
     return { changed: conditional.changed || code !== source, code }
   }
   if (blockType === 'script') {
     const analysis = analyzeScript(conditional.code, filename)
-    const code = renderScript(analysis, analysis.usesFreeUni)
+    const code = renderScript(
+      analysis,
+      analysis.usesFreeUni,
+      options.target === 'mp-weixin' && filename.endsWith('.vue'),
+    )
     return { changed: conditional.changed || code !== source, code }
   }
   if (blockType === 'style' || blockType === 'template') {

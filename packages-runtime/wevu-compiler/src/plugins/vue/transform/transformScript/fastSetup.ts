@@ -144,7 +144,7 @@ export function tryFastTransformCompiledScriptSetup(
   }
 
   const componentOptions = stripCompiledScriptSetupMarkers(afterImport.slice(openParenIndex + 1, callEnd).trim())
-  const pageMarker = options?.isPage ? ' __wevu_isPage: true,\n' : ''
+  const pageMarker = ` __wevu_isPage: ${options?.isPage === true},\n`
   const code = [
     `import { ${WE_VU_RUNTIME_APIS.createWevuComponent} } from "${RUNTIME_IMPORT_PATH}";`,
     beforeExport.trim(),

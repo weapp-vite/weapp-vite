@@ -20,10 +20,17 @@ async function runE2E() {
   const page = pages[pages.length - 1] as SelectorOwner | undefined
   const parent = page?.selectComponent?.('#e2e-parent') as SelectorOwner | null | undefined
   const slotOwner = parent?.selectComponent?.('scoped-slots-default') as SelectorOwner | null | undefined
+  const parentProxy = (parent as any)?.__wevu?.proxy
+  const registeredChild = Array.isArray(parentProxy?.children)
+    ? parentProxy.children.find((child: any) => ['wd-sticky-box'].includes(child?.$options?.name))
+    : null
   const target = e2eComponent.value
     ?? page?.selectComponent?.('#e2e-component')
     ?? parent?.selectComponent?.('#e2e-component')
     ?? slotOwner?.selectComponent?.('#e2e-component')
+    ?? page?.selectComponent?.('wd-sticky-box')
+    ?? page?.selectComponent?.('wd-sticky-box')
+    ?? registeredChild
     ?? null
   const rendered = target !== null
   scenarioState.value = rendered ? 'pass:render' : 'fail:render'

@@ -20,11 +20,13 @@ import {
   WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PROPS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_RUNTIME_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_TEMPLATE_REFS_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
 import { isRef } from '../../reactivity'
+import { isDeepEqualValue } from '../app/setData/snapshot'
 import { callHookList } from '../hooks'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
 import { allocateOwnerId, attachOwnerSnapshot, mergeOwnerSnapshotProps, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
@@ -32,6 +34,7 @@ import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
 import { attachRuntimeProvideParentContext } from './runtimeInstance/provideContext'
 import {
+  attachRuntimeSlots,
   createNoopWatchStopHandle,
   safeMarkNoSetData,
 } from './runtimeInstance/setupContext'
@@ -276,13 +279,17 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       }
       const hasTemplateRefs = Array.isArray((target as any)[WEVU_TEMPLATE_REFS_KEY])
         && (target as any)[WEVU_TEMPLATE_REFS_KEY].length > 0
-      const result = hasTemplateRefs
-        ? baseAdapter.setData(payload, () => {
+      refreshOwnerSnapshot()
+      if (hasTemplateRefs && resolveNativeSetData(target)) {
+        return new Promise<void>((resolve) => {
+          baseAdapter.setData(payload, () => {
             refreshOwnerSnapshot()
             scheduleTemplateRefUpdate(target)
+            resolve()
           })
-        : baseAdapter.setData(payload)
-      refreshOwnerSnapshot()
+        })
+      }
+      const result = baseAdapter.setData(payload)
       scheduleTemplateRefUpdate(target)
       return result
     },
@@ -295,13 +302,17 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       hiddenPendingPayload = undefined
       const hasTemplateRefs = Array.isArray((target as any)[WEVU_TEMPLATE_REFS_KEY])
         && (target as any)[WEVU_TEMPLATE_REFS_KEY].length > 0
-      const result = hasTemplateRefs
-        ? baseAdapter.setData(payload, () => {
+      refreshOwnerSnapshot()
+      if (hasTemplateRefs && resolveNativeSetData(target)) {
+        return new Promise<void>((resolve) => {
+          baseAdapter.setData(payload, () => {
             refreshOwnerSnapshot()
             scheduleTemplateRefUpdate(target)
+            resolve()
           })
-        : baseAdapter.setData(payload)
-      refreshOwnerSnapshot()
+        })
+      }
+      const result = baseAdapter.setData(payload)
       scheduleTemplateRefUpdate(target)
       return result
     },
@@ -309,6 +320,21 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
 
   const baseMountAdapter = {
     ...(adapter as any),
+  }
+  Object.defineProperty(baseMountAdapter, '__wevu_targetLabel', {
+    configurable: true,
+    enumerable: false,
+    value: targetLabel,
+    writable: false,
+  })
+  const targetProperties = (target as any).properties
+  if (targetProperties && typeof targetProperties === 'object') {
+    Object.defineProperty(baseMountAdapter, '__wevu_initialProps', {
+      configurable: true,
+      enumerable: false,
+      value: targetProperties,
+      writable: false,
+    })
   }
   if (Array.isArray(options?.snapshotOmitKeys) && options.snapshotOmitKeys.length) {
     Object.defineProperty(baseMountAdapter, '__wevu_snapshotOmitKeys', {
@@ -339,8 +365,8 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     value: { [WEVU_SLOT_OWNER_ID_KEY]: ownerId },
     writable: false,
   })
-  const targetProperties = (target as any).properties
-  const shouldDeferInitialSnapshot = Boolean(setup)
+  const shouldDeferInitialSnapshot = Boolean(options?.deferSetData)
+    || Boolean(setup)
     || Boolean(targetProperties && typeof targetProperties === 'object' && Object.keys(targetProperties).length > 0)
   if (shouldDeferInitialSnapshot) {
     Object.defineProperty(baseMountAdapter, '__wevu_deferInitialSnapshot', {
@@ -385,6 +411,12 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     snapshot: (runtime as any)?.snapshot ?? (() => Object.create(null)),
     unmount: (runtime as any)?.unmount ?? (() => {}),
   } satisfies RuntimeInstance<any, any, any>
+  Object.defineProperty(runtimeWithDefaults, '__wevu_initialRuntimeSnapshot', {
+    configurable: true,
+    enumerable: false,
+    value: cloneInitialSnapshotValue(runtimeState),
+    writable: false,
+  })
   const runtimeWithSyncFlush = runtimeWithDefaults as RuntimeInstanceWithSyncFlush<D, C, M>
   const internalRuntimeFields = {
     __wevu_flushSetupSnapshotSync: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_flushSetupSnapshotSync,
@@ -412,16 +444,21 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   })
   target.__wevu = runtimeWithDefaults
   attachPageLayoutSetter(target)
-  ensureRuntimeProps(target, runtimeState as Record<string, any>)
+  const runtimeProps = ensureRuntimeProps(target, runtimeState as Record<string, any>)
+  attachRuntimeSlots(runtimeState as Record<string, any>, runtimeProps)
 
-  attachOwnerSnapshot(target, runtimeWithDefaults as any, ownerId)
+  attachOwnerSnapshot(target, runtimeWithDefaults as any, ownerId, {
+    deferSnapshot: options?.deferSetData,
+  })
   syncNativeOwnerId()
 
-  if (watchMap) {
-    const stops = registerWatches(runtimeWithDefaults, watchMap, target)
-    if (stops.length) {
-      target[WEVU_WATCH_STOPS_KEY] = stops
-    }
+  const watchStops = watchMap
+    ? registerWatches(runtimeWithDefaults, watchMap, target, {
+        deferMissingSourceBaseline: Boolean(setup),
+      })
+    : []
+  if (watchStops.length) {
+    target[WEVU_WATCH_STOPS_KEY] = watchStops
   }
 
   if (setup) {
@@ -436,10 +473,16 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     if (!options?.deferSetData) {
       runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
     }
-    refreshOwnerSnapshot()
+    if (!options?.deferSetData) {
+      refreshOwnerSnapshot()
+    }
+    for (const stop of watchStops) {
+      stop.resume()
+    }
   }
   else if (
-    (target as any).properties
+    !options?.deferSetData
+    && (target as any).properties
     && typeof (target as any).properties === 'object'
     && Object.keys((target as any).properties).length > 0
   ) {
@@ -529,6 +572,7 @@ function syncRuntimeStateFromNativeData(
   if (!runtimeState || typeof runtimeState !== 'object' || !nativeData || typeof nativeData !== 'object') {
     return
   }
+  const initialRuntimeSnapshot = (runtime as any)?.__wevu_initialRuntimeSnapshot as Record<string, any> | undefined
   for (const [key, value] of Object.entries(nativeData)) {
     if (!key || key === 'undefined') {
       continue
@@ -536,14 +580,30 @@ function syncRuntimeStateFromNativeData(
     if (Object.prototype.hasOwnProperty.call(runtimeState, key)) {
       try {
         const setupBinding = setupState?.[key]
+        const runtimeValue = cloneInitialSnapshotValue(value)
         if (!options?.includeSetupState && setupState && Object.prototype.hasOwnProperty.call(setupState, key)) {
           continue
         }
-        if (isRef(setupBinding)) {
-          setupBinding.value = value
+        if (
+          !options?.includeSetupState
+          && initialRuntimeSnapshot
+          && Object.prototype.hasOwnProperty.call(initialRuntimeSnapshot, key)
+          && !isDeepEqualValue(runtimeState[key], initialRuntimeSnapshot[key], 20, { keys: 10_000 })
+        ) {
           continue
         }
-        runtimeState[key] = value
+        if (
+          !options?.includeSetupState
+          && initialRuntimeSnapshot
+          && !Object.prototype.hasOwnProperty.call(initialRuntimeSnapshot, key)
+        ) {
+          continue
+        }
+        if (isRef(setupBinding)) {
+          setupBinding.value = runtimeValue
+          continue
+        }
+        runtimeState[key] = runtimeValue
       }
       catch {
         // DevTools 热更新期间可能带入响应式 state 拒绝写入的临时 data key，跳过即可。
@@ -579,7 +639,8 @@ export function setRuntimeSetDataVisibility(target: InternalRuntimeState, visibl
  */
 export function teardownRuntimeInstance(target: InternalRuntimeState, options?: { skipHooks?: boolean }) {
   const runtime = target.__wevu
-  const ownerId = (target as any)[WEVU_SLOT_OWNER_ID_KEY]
+  const ownerId = (target as any)[WEVU_RUNTIME_OWNER_ID_KEY]
+    ?? (target as any)[WEVU_SLOT_OWNER_ID_KEY]
   if (ownerId) {
     removeOwner(ownerId)
   }

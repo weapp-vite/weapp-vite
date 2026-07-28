@@ -52,6 +52,36 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).not.toHaveBeenCalled()
   })
 
+  it('does not publish equivalent owner snapshots repeatedly', () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()!
+    const ownerId = allocateOwnerId()
+    const proxy = { marker: 'owner' }
+    updateOwnerSnapshot(ownerId, { list: [{ label: 'one' }] }, proxy as any)
+
+    const inst: any = {
+      properties: { __wvOwnerId: ownerId },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+    inst.setData.mockClear()
+
+    updateOwnerSnapshot(ownerId, { list: [{ label: 'one' }] }, proxy as any)
+    expect(inst.setData).not.toHaveBeenCalled()
+
+    updateOwnerSnapshot(ownerId, { list: [{ label: 'two' }] }, proxy as any)
+    expect(inst.setData).toHaveBeenCalledTimes(1)
+    expect(inst.setData).toHaveBeenCalledWith({
+      __wvOwner: { list: [{ label: 'two' }] },
+    })
+
+    inst.setData.mockClear()
+    const nextProxy = { marker: 'next-owner' }
+    updateOwnerSnapshot(ownerId, { list: [{ label: 'two' }] }, nextProxy as any)
+    expect(inst.setData).not.toHaveBeenCalled()
+    expect(inst[WEVU_SLOT_OWNER_PROXY_KEY]).toBe(nextProxy)
+  })
+
   it('keeps owner proxy available for computed bindings', () => {
     const computed = {
       __wv_bind_0(this: any) {
@@ -485,6 +515,55 @@ describe('runtime: scoped slots', () => {
     inst.setData.mockClear()
     slotScopeObserver.call(inst, ['scope', 3])
     expect(inst.setData).toHaveBeenCalledWith({ __wvSlotPropsData: { scope: 3, value: 2 } })
+  })
+
+  it('keeps repeated equivalent slot bindings from scheduling native updates', async () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        return this.__wvSlotPropsData.item
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    const ownerId = allocateOwnerId()
+    const proxy = { cityList: [[{ name: 'Shanghai' }]] }
+    updateOwnerSnapshot(ownerId, { cityList: [[{ name: 'Shanghai' }]] }, proxy as any)
+    const scope = ['item', [{ name: 'Shanghai' }], 'index', 0]
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: {
+        [WEVU_SLOT_OWNER_ID_PROP]: ownerId,
+        [WEVU_SLOT_PROPS_KEY]: [],
+        [WEVU_SLOT_SCOPE_KEY]: scope,
+      },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+    const initialRuntimeScope = inst.__wevu.state[WEVU_SLOT_SCOPE_KEY]
+    inst.setData.mockClear()
+
+    for (let index = 0; index < 10; index++) {
+      const equivalentScope = ['item', [{ name: 'Shanghai' }], 'index', 0]
+      inst.properties[WEVU_SLOT_SCOPE_KEY] = equivalentScope
+      opts.properties[WEVU_SLOT_SCOPE_KEY].observer.call(inst, equivalentScope)
+      opts.observers[WEVU_SLOT_SCOPE_KEY].call(inst, equivalentScope)
+      opts.properties[WEVU_SLOT_OWNER_ID_PROP].observer.call(inst, ownerId)
+      opts.observers[WEVU_SLOT_OWNER_ID_PROP].call(inst, ownerId)
+    }
+    await nextTick()
+
+    expect(inst.setData).not.toHaveBeenCalled()
+    expect(inst.__wevu.state[WEVU_SLOT_SCOPE_KEY]).toBe(initialRuntimeScope)
+
+    const changedScope = ['item', [{ name: 'Beijing' }], 'index', 0]
+    inst.properties[WEVU_SLOT_SCOPE_KEY] = changedScope
+    opts.properties[WEVU_SLOT_SCOPE_KEY].observer.call(inst, changedScope)
+    expect(inst.setData).toHaveBeenCalledWith({
+      [WEVU_SLOT_PROPS_DATA_KEY]: { item: [{ name: 'Beijing' }], index: 0 },
+    })
+    expect(inst.setData).toHaveBeenCalledWith({
+      __wv_bind_0: [{ name: 'Beijing' }],
+    })
   })
 
   it('reconstructs function-valued slot props through the provider inline bridge', () => {

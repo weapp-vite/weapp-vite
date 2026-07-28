@@ -285,11 +285,11 @@ export function rewriteDefaultExport(
     ? hasStaticPropertyInComponentExpression(componentExpr, WEVU_IS_PAGE_KEY, ast.program)
     : false
 
-  if (componentOptionsObject && options?.isPage && !options?.isApp && !hasPageMarker) {
+  if (componentOptionsObject && !options?.isApp && !hasPageMarker) {
     componentOptionsObject.properties.splice(
       0,
       0,
-      t.objectProperty(t.identifier(WEVU_IS_PAGE_KEY), t.booleanLiteral(true)),
+      t.objectProperty(t.identifier(WEVU_IS_PAGE_KEY), t.booleanLiteral(options?.isPage === true)),
     )
     transformed = true
   }

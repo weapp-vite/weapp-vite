@@ -16,12 +16,15 @@ import {
   WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE,
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
   WEVU_CLASS_STYLE_RUNTIME_MODULE,
+  WEVU_COMPONENT_NAME_KEY,
   WEVU_INLINE_MAP_KEY,
   WEVU_PARENT_INSTANCE_KEY,
   WEVU_PROPS_ALIASES_KEY,
   WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PROVIDES_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD,
+  WEVU_RUNTIME_OWNER_ID_KEY,
   WEVU_SETUP_STATE_KEY,
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE,
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_GLOBAL_PATH,
@@ -54,8 +57,11 @@ describe('@weapp-core/constants', () => {
     expect(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY).toBe('__WEAPP_VITE_STATEFUL_HMR_CLIENT__')
     expect(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY).toBe('__WEAPP_VITE_STATEFUL_HMR_BRIDGE__')
     expect(WEVU_CLASS_STYLE_RUNTIME_MODULE).toBe('__weapp_vite')
+    expect(WEVU_COMPONENT_NAME_KEY).toBe('__wevuComponentName')
     expect(WEVU_INLINE_MAP_KEY).toBe('__weapp_vite_inline_map')
     expect(WEVU_PUBLIC_RUNTIME_KEY).toBe('$wevu')
+    expect(WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD).toBe('__weapp_vite_resolvePublicInstance')
+    expect(WEVU_RUNTIME_OWNER_ID_KEY).toBe('__wevuRuntimeOwnerId')
     expect(WEVU_PROVIDES_KEY).toBe('__wevuProvides')
     expect(WEVU_PARENT_INSTANCE_KEY).toBe('__wevuParentInstance')
     expect(WEVU_SETUP_STATE_KEY).toBe('__wevuSetupState')
@@ -64,7 +70,7 @@ describe('@weapp-core/constants', () => {
     expect(WEVU_SLOT_NAMES_PROP).toBe('vueSlots')
     expect(WEVU_SLOT_NAMES_ATTR).toBe('vue-slots')
     expect(WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME).toBe('weapp-slot-wrapper')
-    expect(WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE).toBe('__weapp_vite_slot_wrapper')
-    expect(WEVU_SLOT_FALLBACK_VIRTUAL_HOST_GLOBAL_PATH).toBe('/__weapp_vite_slot_wrapper')
+    expect(WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE).toBe('weapp_vite_internal/slot-wrapper/index')
+    expect(WEVU_SLOT_FALLBACK_VIRTUAL_HOST_GLOBAL_PATH).toBe('/weapp_vite_internal/slot-wrapper/index')
   })
 })

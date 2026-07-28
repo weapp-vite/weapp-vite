@@ -176,6 +176,37 @@ describe.sequential('simulator browser e2e', () => {
     })
   })
 
+  it('runs uni event bus and font APIs in the browser runtime', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('component-lab')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'component-lab' && state.currentRoute === 'pages/lab/index',
+      20_000,
+    )
+    bridge.runPageMethod('runUniCompatibilityLab')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => Boolean(parseJsonString<Record<string, any>>(nextState.pageData).uniCompatibilityInfo),
+      20_000,
+    )
+    const pageData = parseJsonString<{ uniCompatibilityInfo: string }>(state.pageData)
+    expect(parseJsonString(pageData.uniCompatibilityInfo)).toEqual({
+      events: ['on:first', 'once:first', 'on:second'],
+      fontResult: { errMsg: 'loadFontFace:ok' },
+      locale: 'zh-Hans',
+      pixels: 50,
+      safeAreaInsets: {
+        bottom: 0,
+        left: 0,
+        right: 0,
+        top: 20,
+      },
+    })
+  })
+
   it('runs Component() page methods and lifecycles through the browser bridge', async () => {
     const bridge = getBridge()!
     const initialResizeMarker = `resize:${bridge.getState().viewportSize.width}`
@@ -302,6 +333,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('setInvalidBackgroundLab')
     bridge.runPageMethod('startWatchingNetworkLab')
     bridge.runPageMethod('inspectNetworkLab')
+    bridge.runPageMethod('inspectLocationLab')
     bridge.setNetworkType('none')
     bridge.setNetworkType('4g')
     bridge.runPageMethod('stopWatchingNetworkLab')
@@ -403,6 +435,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.backgroundLightInfo
           && pageData.backgroundColorInfo
           && pageData.backgroundInvalidInfo
+          && pageData.locationInfo
           && pageData.networkInitialInfo
           && pageData.networkCurrentInfo
           && Array.isArray(pageData.networkLogs)
@@ -580,6 +613,16 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.backgroundLightInfo).toContain('"errMsg":"setBackgroundTextStyle:ok"')
     expect(pageData.backgroundColorInfo).toContain('"errMsg":"setBackgroundColor:ok"')
     expect(pageData.backgroundInvalidInfo).toContain('"error":"setBackgroundTextStyle:fail invalid textStyle"')
+    expect(parseJsonString(pageData.locationInfo)).toEqual({
+      accuracy: 10,
+      altitude: 0,
+      errMsg: 'getLocation:ok',
+      horizontalAccuracy: 10,
+      latitude: 31.2304,
+      longitude: 121.4737,
+      speed: 0,
+      verticalAccuracy: 0,
+    })
     expect(pageData.networkInitialInfo).toContain('"networkType":"wifi"')
     expect(pageData.networkCurrentInfo).toContain('"networkType":"4g"')
     expect(pageData.networkCurrentInfo).toContain('"isConnected":true')

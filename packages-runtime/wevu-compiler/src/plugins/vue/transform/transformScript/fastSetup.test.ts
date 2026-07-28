@@ -41,6 +41,15 @@ describe('transformScript fast compiled script setup path', () => {
     expect(result.code).not.toContain('__expose')
   })
 
+  it('marks compiled components as non-page on the fast path', () => {
+    const result = transformScript(compiledScriptSetupSource, {
+      isPage: false,
+      sourceMap: false,
+    })
+
+    expect(result.code).toContain('__wevu_isPage: false')
+  })
+
   it('rewrites defineExpose calls with arguments on the fast path', () => {
     const result = transformScript(compiledDefineExposeSource, {
       isPage: true,

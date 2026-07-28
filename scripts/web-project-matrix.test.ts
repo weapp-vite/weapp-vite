@@ -12,7 +12,12 @@ const ROOT = path.resolve(import.meta.dirname, '..')
 describe('Web project matrix', () => {
   it('covers every e2e app and template with standard Web commands and entry', async () => {
     const projects = await discoverWebProjects(ROOT)
-    expect(projects).toHaveLength(45)
+    expect(projects).toHaveLength(46)
+    expect(projects.find(project => project.relativeRoot === 'e2e-apps/uview-plus-compat'))
+      .toMatchObject({
+        kind: 'e2e-app',
+        expectation: 'runtime',
+      })
     expect(projects.find(project => project.relativeRoot === 'e2e-apps/wot-ui-compat'))
       .toMatchObject({
         kind: 'e2e-app',

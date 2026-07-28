@@ -1,7 +1,7 @@
 import type { LayoutHostBinding } from '../../layoutBridge'
 import type { TemplateRefBinding } from '../../templateRefs'
 import type { InternalRuntimeState, MiniProgramComponentRawOptions, PageFeatures } from '../../types'
-import { WEVU_PROPS_ALIASES_KEY, WEVU_PROPS_DERIVED_KEYS_KEY } from '@weapp-core/constants'
+import { WEVU_COMPONENT_NAME_KEY, WEVU_PROPS_ALIASES_KEY, WEVU_PROPS_DERIVED_KEYS_KEY } from '@weapp-core/constants'
 import { hasOwn } from '../../../utils'
 
 interface PreparedComponentOptions {
@@ -17,7 +17,7 @@ interface PreparedComponentOptions {
   propsDerivedKeys: string[] | undefined
   userObservers: Record<string, any> | undefined
   setupLifecycle: 'created' | 'attached'
-  legacyCreated: unknown
+  vueLifecycles: Record<string, unknown>
   isPage: boolean
   features: PageFeatures
   userOnLoad: any
@@ -115,7 +115,9 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
     userOnShareTimeline,
     userOnAddToFavorites,
   ].some(hook => typeof hook === 'function')
-  const isPage = Boolean((rest as any).__wevu_isPage) || Object.keys(features ?? {}).length > 0 || hasPageOnlyHooks
+  const isPage = hasOwn(rest, '__wevu_isPage')
+    ? (rest as any).__wevu_isPage === true
+    : Object.keys(features ?? {}).length > 0 || hasPageOnlyHooks
 
   const restOptions: Record<string, any> = {
     ...(rest as any),
@@ -153,8 +155,13 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
   }
 
   const applyExtraInstanceFields = (instance: InternalRuntimeState) => {
-    if (!extraInstanceFieldEntries.length) {
-      return
+    const componentName = (mpOptions as Record<string, unknown>).name
+    if (typeof componentName === 'string' && componentName) {
+      Object.defineProperty(instance, WEVU_COMPONENT_NAME_KEY, {
+        configurable: true,
+        enumerable: false,
+        value: componentName,
+      })
     }
     for (const [key, value] of extraInstanceFieldEntries) {
       if (hasOwn(instance, key)) {
@@ -188,6 +195,14 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
     'onShareAppMessage',
     'onShareTimeline',
     'onAddToFavorites',
+    'beforeCreate',
+    'created',
+    'beforeMount',
+    'mounted',
+    'beforeUnmount',
+    'beforeDestroy',
+    'unmounted',
+    'destroyed',
   ])
   const topLevelMethods: Record<string, (...args: any[]) => any> = {}
   for (const [key, value] of Object.entries(restOptions)) {
@@ -208,9 +223,22 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
   const userObservers = (restOptions as any).observers as Record<string, any> | undefined
   const setupLifecycle = (restOptions as any).setupLifecycle === 'created' ? 'created' : 'attached'
   delete (restOptions as any).setupLifecycle
-  const legacyCreated = restOptions.created
+  const vueLifecycles = Object.fromEntries(
+    [
+      'beforeCreate',
+      'created',
+      'beforeMount',
+      'mounted',
+      'beforeUnmount',
+      'beforeDestroy',
+      'unmounted',
+      'destroyed',
+    ].map(key => [key, restOptions[key]]),
+  )
   delete restOptions.features
-  delete restOptions.created
+  for (const key of Object.keys(vueLifecycles)) {
+    delete restOptions[key]
+  }
   delete restOptions.onLoad
   delete restOptions.onUnload
   delete restOptions.onShow
@@ -230,7 +258,7 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
     propsDerivedKeys,
     userObservers,
     setupLifecycle,
-    legacyCreated,
+    vueLifecycles,
     isPage,
     features,
     userOnLoad,

@@ -109,6 +109,10 @@ export interface CompileVueFileOptions {
      * 保留 Vue deep 选择器，交由目标平台的最终 CSS 阶段处理。
      */
     preserveDeepSelectors?: boolean
+    /**
+     * 是否在当前阶段改写 scoped 选择器。预处理语言应由最终 CSS 管线完成隔离时可关闭。
+     */
+    transformScoped?: boolean
   }
   json?: {
     kind?: 'app' | 'page' | 'component'

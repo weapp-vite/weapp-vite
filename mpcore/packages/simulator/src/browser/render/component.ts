@@ -12,6 +12,7 @@ import {
   runComponentObservers,
   runComponentPageLifetime,
 } from '../../runtime/componentInstance'
+import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
 import { readBrowserVirtualFile } from '../virtualFiles'
 import {
   CLASS_SPLIT_RE,
@@ -313,6 +314,7 @@ export function createBrowserComponentInstance(
     requestRender: callback => context.session.requestRender(callback),
     triggerEvent: buildComponentTrigger(componentScopeId, context, clonedNode),
   })
+  setSelectorQueryScopeId(componentInstance, componentScopeId)
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
   componentInstance.createMediaQueryObserver = () => context.session.createMediaQueryObserver(componentInstance)
@@ -321,6 +323,7 @@ export function createBrowserComponentInstance(
   componentInstance.selectOwnerComponent = () => ownerScopeId
     ? context.componentCache.get(ownerScopeId) ?? null
     : null
+  context.componentCache.set(componentScopeId, componentInstance)
   runComponentLifecycle(componentInstance, 'created')
   runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(nextProperties), {})
   componentInstance.__propertySnapshots = Object.fromEntries(
@@ -328,7 +331,6 @@ export function createBrowserComponentInstance(
   )
   runComponentLifecycle(componentInstance, 'attached')
   runComponentPageLifetime(componentInstance, 'show')
-  context.componentCache.set(componentScopeId, componentInstance)
   return componentInstance
 }
 

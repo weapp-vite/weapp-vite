@@ -15,12 +15,18 @@ import {
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
   WEVU_PAGE_LAYOUT_SETTER_KEY,
+  WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_READY_CALLED_KEY,
+  WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD,
+  WEVU_RUNTIME_KEY,
+  WEVU_RUNTIME_OWNER_ID_KEY,
+  WEVU_SLOT_OWNER_ID_KEY,
   WEVU_TEMPLATE_REFS_KEY,
 } from '@weapp-core/constants'
 import { callHookList } from '../../hooks'
 import { registerRuntimeLayoutHosts, unregisterRuntimeLayoutHosts } from '../../layoutBridge'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../../pageLayout'
+import { getOwnerProxy } from '../../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 
@@ -60,7 +66,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
   syncWevuPropsFromValues: (instance: InternalRuntimeState, values: Record<string, unknown> | undefined) => void
   directPropsDerivedKeys: string[]
   isPage: boolean
-  legacyCreated: unknown
+  vueLifecycles: Record<string, unknown>
   getRuntimeOwnerLabel: (instance: InternalRuntimeState) => string
 }) {
   const {
@@ -82,9 +88,73 @@ export function registerComponentDefinition<D extends object, C extends Computed
     syncWevuPropsFromInstance,
     directPropsDerivedKeys,
     isPage,
-    legacyCreated,
+    vueLifecycles,
     getRuntimeOwnerLabel,
   } = options
+
+  const resolveRuntime = (instance: InternalRuntimeState) => {
+    const directRuntime = (instance as any).__wevu ?? (instance as any)[WEVU_PUBLIC_RUNTIME_KEY]
+    if (directRuntime) {
+      return directRuntime
+    }
+    const runtimeState = (instance as any).$state
+    if (runtimeState && typeof runtimeState === 'object') {
+      return (runtimeState as any)[WEVU_RUNTIME_KEY]
+    }
+    return undefined
+  }
+
+  const resolveLifecycleOwnerId = (instance: InternalRuntimeState) => (instance as any)[WEVU_RUNTIME_OWNER_ID_KEY]
+    ?? (instance as any)[WEVU_SLOT_OWNER_ID_KEY]
+    ?? (instance as any).data?.[WEVU_SLOT_OWNER_ID_KEY]
+    ?? (instance as any).properties?.[WEVU_SLOT_OWNER_ID_KEY]
+
+  const resolveLifecycleContext = (instance: InternalRuntimeState) => {
+    const runtimeProxy = resolveRuntime(instance)?.proxy
+    if (runtimeProxy) {
+      return runtimeProxy
+    }
+    const ownerId = resolveLifecycleOwnerId(instance)
+    if (typeof ownerId === 'string' && ownerId) {
+      return getOwnerProxy(ownerId) ?? instance
+    }
+    return instance
+  }
+
+  const mountMissingRuntime = (instance: InternalRuntimeState) => {
+    const existing = resolveRuntime(instance)
+    if (existing) {
+      return { runtime: existing, mounted: false }
+    }
+    applyExtraInstanceFields(instance)
+    attachWevuPropKeys(instance)
+    mountRuntimeInstance(instance, runtimeApp, watch, setup, {
+      deferSetData: true,
+      snapshotOmitKeys: directPropsDerivedKeys,
+    })
+    syncWevuPropsFromInstance(instance)
+    enableDeferredSetData(instance)
+    return { runtime: resolveRuntime(instance), mounted: true }
+  }
+
+  const callVueLifecycle = (instance: InternalRuntimeState, name: string, args: any[]) => {
+    const hook = vueLifecycles[name]
+    if (typeof hook === 'function') {
+      return hook.apply(resolveLifecycleContext(instance), args)
+    }
+    return undefined
+  }
+
+  const ensureReadyRuntime = (instance: InternalRuntimeState) => {
+    if (resolveRuntime(instance) || typeof vueLifecycles.mounted !== 'function') {
+      return
+    }
+    const result = mountMissingRuntime(instance)
+    if (result.mounted) {
+      callVueLifecycle(instance, 'created', [])
+      callVueLifecycle(instance, 'beforeMount', [])
+    }
+  }
 
   const pageMethodBridges: Record<string, (...args: any[]) => any> = {}
   const attachRuntimeLayoutHosts = (instance: InternalRuntimeState) => {
@@ -132,11 +202,12 @@ export function registerComponentDefinition<D extends object, C extends Computed
 
   const componentDefinition = {
     ...restOptions,
-    ...pageLifecycleHooks,
+    ...(isPage ? pageLifecycleHooks : {}),
     observers: finalObservers,
     lifetimes: {
       ...userLifetimes,
       created: function created(this: InternalRuntimeState, ...args: any[]) {
+        callVueLifecycle(this, 'beforeCreate', args)
         applyExtraInstanceFields(this)
         if (Array.isArray(templateRefs) && templateRefs.length) {
           Object.defineProperty(this, WEVU_TEMPLATE_REFS_KEY, {
@@ -160,10 +231,6 @@ export function registerComponentDefinition<D extends object, C extends Computed
           }
           syncWevuPropsFromInstance(this)
           attachPageLayoutSetter(this)
-        }
-        // 兼容：若用户使用旧式 created（非 lifetimes.created），在定义 lifetimes.created 后会被覆盖，这里手动补齐调用
-        if (typeof legacyCreated === 'function') {
-          legacyCreated.apply(this, args)
         }
         if (typeof (userLifetimes as any).created === 'function') {
           ;(userLifetimes as any).created.apply(this, args)
@@ -189,6 +256,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
         if (setupLifecycle !== 'created' || !(this as any).__wevu) {
           try {
             mountRuntimeInstance(this, runtimeApp, watch, setup, {
+              deferSetData: true,
               snapshotOmitKeys: directPropsDerivedKeys,
             })
           }
@@ -198,19 +266,24 @@ export function registerComponentDefinition<D extends object, C extends Computed
           }
         }
         syncWevuPropsFromInstance(this)
+        callVueLifecycle(this, 'created', args)
+        callVueLifecycle(this, 'beforeMount', args)
         attachPageLayoutSetter(this)
         attachRuntimeLayoutHosts(this)
-        if (setupLifecycle === 'created') {
-          enableDeferredSetData(this)
-        }
+        enableDeferredSetData(this)
         callHookList(this, 'onAttached', args)
         if (typeof (userLifetimes as any).attached === 'function') {
           ;(userLifetimes as any).attached.apply(this, args)
         }
       },
       ready: function ready(this: InternalRuntimeState, ...args: any[]) {
+        ensureReadyRuntime(this)
         if (isPage && typeof (pageLifecycleHooks as any).onReady === 'function') {
+          const wasReadyCalled = Boolean((this as any)[WEVU_READY_CALLED_KEY])
           ;(pageLifecycleHooks as any).onReady.call(this, ...args)
+          if (!wasReadyCalled) {
+            callVueLifecycle(this, 'mounted', args)
+          }
           if (typeof (userLifetimes as any).ready === 'function') {
             ;(userLifetimes as any).ready.apply(this, args)
           }
@@ -222,6 +295,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
           scheduleOwnerTemplateRefUpdate(this)
           scheduleTemplateRefUpdate(this, () => {
             callHookList(this, 'onReady', args)
+            callVueLifecycle(this, 'mounted', args)
             if (typeof (userLifetimes as any).ready === 'function') {
               ;(userLifetimes as any).ready.apply(this, args)
             }
@@ -233,6 +307,8 @@ export function registerComponentDefinition<D extends object, C extends Computed
         }
       },
       detached: function detached(this: InternalRuntimeState, ...args: any[]) {
+        callVueLifecycle(this, 'beforeUnmount', args)
+        callVueLifecycle(this, 'beforeDestroy', args)
         scheduleOwnerTemplateRefUpdate(this)
         callHookList(this, 'onDetached', args)
         if (isPage && typeof (pageLifecycleHooks as any).onUnload === 'function') {
@@ -240,6 +316,8 @@ export function registerComponentDefinition<D extends object, C extends Computed
           if (typeof (userLifetimes as any).detached === 'function') {
             ;(userLifetimes as any).detached.apply(this, args)
           }
+          callVueLifecycle(this, 'unmounted', args)
+          callVueLifecycle(this, 'destroyed', args)
           return
         }
         clearTemplateRefs(this)
@@ -248,6 +326,8 @@ export function registerComponentDefinition<D extends object, C extends Computed
           delete (this as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY]
         }
         teardownRuntimeInstance(this)
+        callVueLifecycle(this, 'unmounted', args)
+        callVueLifecycle(this, 'destroyed', args)
         if (typeof (userLifetimes as any).detached === 'function') {
           ;(userLifetimes as any).detached.apply(this, args)
         }
@@ -319,6 +399,14 @@ export function registerComponentDefinition<D extends object, C extends Computed
     methods: {
       ...pageMethodBridges,
       ...finalMethods,
+      [WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD]: function resolvePublicInstance(this: InternalRuntimeState) {
+        const result = mountMissingRuntime(this)
+        if (result.mounted) {
+          callVueLifecycle(this, 'created', [])
+          callVueLifecycle(this, 'beforeMount', [])
+        }
+        return result.runtime?.proxy
+      },
     },
     options: finalOptions,
   }

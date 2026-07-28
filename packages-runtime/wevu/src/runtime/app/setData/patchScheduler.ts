@@ -37,7 +37,7 @@ export function runPatchUpdate(options: {
   latestComputedSnapshot: Record<string, any>
   needsFullSnapshot: { value: boolean }
   emitDebug: (info: SetDataDebugInfo) => void
-  runDiffUpdate: (reason?: SetDataDebugInfo['reason']) => void
+  runDiffUpdate: (reason?: SetDataDebugInfo['reason']) => void | Promise<void>
 }) {
   const {
     state,
@@ -82,8 +82,7 @@ export function runPatchUpdate(options: {
       pendingPatchKeys: pendingCount,
       payloadKeys: 0,
     })
-    runDiffUpdate('maxPatchKeys')
-    return
+    return runDiffUpdate('maxPatchKeys')
   }
 
   const seen = new WeakMap<object, any>()
@@ -215,8 +214,7 @@ export function runPatchUpdate(options: {
     needsFullSnapshot.value = true
     pendingPatches.clear()
     dirtyComputedKeys.clear()
-    runDiffUpdate('maxPayloadBytes')
-    return
+    return runDiffUpdate('maxPayloadBytes')
   }
   if (!Object.keys(collapsedPayload).length) {
     return
@@ -237,7 +235,7 @@ export function runPatchUpdate(options: {
   if (typeof currentAdapter.setData === 'function') {
     const result = currentAdapter.setData(collapsedPayload)
     if (result && typeof (result as Promise<any>).then === 'function') {
-      ;(result as Promise<any>).catch(() => {})
+      return (result as Promise<void>).catch(() => {})
     }
   }
   emitDebug({

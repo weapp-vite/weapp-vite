@@ -59,6 +59,7 @@ describe('scoped slot helpers', () => {
     const emitFile = vi.fn()
     const result: any = {
       config: '{ bad json }',
+      style: '.owner { color: red; }',
       scopedSlotComponents: [
         {
           id: 'slot-0',
@@ -90,6 +91,11 @@ describe('scoped slot helpers', () => {
       type: 'asset',
       fileName: 'pages/index/index.__scoped-slot-slot-0.wxml',
       source: '<view/>',
+    })
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'pages/index/index.__scoped-slot-slot-0.wxss',
+      source: `@import './index.wxss';\n`,
     })
     expect(emitFile).toHaveBeenCalledWith({
       type: 'asset',
@@ -323,6 +329,7 @@ describe('scoped slot helpers', () => {
           Existing: '/components/existing',
         },
       }),
+      style: '.owner { color: red; }',
       scopedSlotComponents: [
         {
           id: 'slot-1',
@@ -333,6 +340,7 @@ describe('scoped slot helpers', () => {
     }
     const bundle: Record<string, any> = {
       'pages/index/index.__scoped-slot-slot-1.wxml': { type: 'asset' },
+      'pages/index/index.__scoped-slot-slot-1.wxss': { type: 'asset' },
       'pages/index/index.__scoped-slot-slot-1.json': { type: 'asset' },
     }
 
@@ -350,6 +358,37 @@ describe('scoped slot helpers', () => {
     expect(JSON.parse(result.config).usingComponents).toEqual({
       Existing: '/components/existing',
       ScopedComp: '/pages/index/index.__scoped-slot-slot-1',
+    })
+  })
+
+  it('uses the configured style extension for scoped slot owner styles', () => {
+    const emitFile = vi.fn()
+    const result: any = {
+      config: '{}',
+      style: '.owner { color: red; }',
+      scopedSlotComponents: [
+        {
+          id: 'slot-alipay',
+          componentName: 'ScopedComp',
+          template: '<view/>',
+        },
+      ],
+    }
+
+    emitScopedSlotAssets(
+      { emitFile },
+      {},
+      'components/card/index',
+      result,
+      undefined,
+      undefined,
+      { wxml: 'axml', wxss: 'acss', json: 'json' } as any,
+    )
+
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'components/card/index.__scoped-slot-slot-alipay.acss',
+      source: `@import './index.acss';\n`,
     })
   })
 

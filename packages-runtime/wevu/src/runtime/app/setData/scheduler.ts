@@ -39,6 +39,7 @@ export function createSetDataScheduler(options: {
     maxFlushes: number
     coolDownMs: number
   }
+  targetLabel?: string
   runTracker: () => void
   isMounted: () => boolean
   initialSnapshot?: Record<string, any>
@@ -72,6 +73,7 @@ export function createSetDataScheduler(options: {
     debugWhen,
     debugSampleRate,
     loopWarning,
+    targetLabel,
     runTracker,
     isMounted,
     initialSnapshot,
@@ -276,7 +278,8 @@ export function createSetDataScheduler(options: {
       computedDirtyKeys: includeComputed ? dirtyComputedKeys.size : 0,
       flushCount: flushTimes.length,
       windowMs: loopWarning.sampleWindowMs,
-      message: `疑似运行时更新循环：${flushTimes.length} 次 setData flush/${loopWarning.sampleWindowMs}ms`,
+      targetLabel,
+      message: `${targetLabel ? `${targetLabel} ` : ''}疑似运行时更新循环：${flushTimes.length} 次 setData flush/${loopWarning.sampleWindowMs}ms`,
     })
   }
 
@@ -397,7 +400,7 @@ export function createSetDataScheduler(options: {
     }
   }
 
-  const runDiffUpdate = (reason: SetDataDebugInfo['reason'] = 'diff') => {
+  const runDiffUpdate = (reason: SetDataDebugInfo['reason'] = 'diff'): void | Promise<void> => {
     const diffCollection = setDataStrategy === 'diff' ? collectDiffSnapshot() : undefined
     const snapshot = diffCollection?.snapshot ?? collect()
     const diff = diffCollection
@@ -434,7 +437,7 @@ export function createSetDataScheduler(options: {
     if (typeof currentAdapter.setData === 'function') {
       const result = currentAdapter.setData(diff)
       if (result && typeof (result as Promise<any>).then === 'function') {
-        ;(result as Promise<any>).catch(() => {})
+        return (result as Promise<void>).catch(() => {})
       }
     }
     emitDebug({
@@ -490,10 +493,9 @@ export function createSetDataScheduler(options: {
         || (includeComputed && dirtyComputedKeys.size > 0)
       // setup 返回的 ref/computed 变更不会进入 mutation recorder，patch 信号为空时兜底走 diff。
       if (!hasPatchSignal) {
-        runDiffUpdate('diff')
-        return
+        return runDiffUpdate('diff')
       }
-      runPatchUpdate({
+      return runPatchUpdate({
         state,
         computedRefs,
         dirtyComputedKeys,
@@ -526,7 +528,7 @@ export function createSetDataScheduler(options: {
       })
     }
     else {
-      runDiffUpdate(needsFullSnapshot.value ? 'needsFullSnapshot' : 'diff')
+      return runDiffUpdate(needsFullSnapshot.value ? 'needsFullSnapshot' : 'diff')
     }
   }
 

@@ -323,6 +323,86 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     expect(inst.data.logs).toEqual(['created'])
   })
 
+  it('keeps immediate watch and Vue created mutations over native initial data', async () => {
+    defineComponent({
+      data: () => ({
+        columns: [[]] as string[][],
+        items: ['alpha'],
+        tabList: [] as string[],
+      }),
+      watch: {
+        items: {
+          deep: true,
+          immediate: true,
+          handler(this: any, items: string[]) {
+            this.tabList = [...items]
+          },
+        },
+      },
+      created() {
+        this.columns = Array.from({ length: 2 }, () => [])
+      },
+    } as any)
+    const opts = registeredComponents[0]
+    const setData = vi.fn(function setData(this: any, payload: Record<string, any>) {
+      Object.assign(this.data, payload)
+    })
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : { ...opts.data },
+      properties: {},
+      setData,
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(inst.__wevu.proxy.columns).toHaveLength(2)
+    expect(inst.__wevu.proxy.tabList).toEqual(['alpha'])
+    expect(inst.data.columns).toHaveLength(2)
+    expect(inst.data.tabList).toEqual(['alpha'])
+  })
+
+  it('keeps immediate prop watch mutations when deferred setData is enabled', async () => {
+    defineComponent({
+      props: {
+        show: { type: Boolean, default: false },
+      },
+      data: () => ({
+        inited: false,
+      }),
+      watch: {
+        show: {
+          immediate: true,
+          handler(this: any, show: boolean) {
+            if (show) {
+              this.inited = true
+            }
+          },
+        },
+      },
+    } as any)
+    const opts = registeredComponents[0]
+    const setData = vi.fn(function setData(this: any, payload: Record<string, any>) {
+      Object.assign(this.data, payload)
+    })
+    const inst: any = {
+      data: { inited: false },
+      properties: { show: true },
+      setData,
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(inst.__wevu.proxy.show).toBe(true)
+    expect(inst.__wevu.proxy.inited).toBe(true)
+    expect(inst.data.inited).toBe(true)
+  })
+
   it('drops __typeProps before registering component options', () => {
     defineComponent({
       __typeProps: {} as { label: string },

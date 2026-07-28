@@ -86,4 +86,30 @@ describe('runtimeErrors', () => {
     expect(collector.getSince(marker)[0]).toContain('模板运行时表达式执行失败')
     expect(collector.getSince(marker)[0]).toContain('TypeError: Converting circular structure to JSON')
   })
+
+  it('recognizes DevTools console entries that expose the level as type', () => {
+    const miniProgram = createMiniProgramEmitter()
+    const collector = attachRuntimeErrorCollector(miniProgram)
+    const marker = collector.mark()
+
+    miniProgram.emit('console', {
+      message: {
+        type: 'error',
+        text: 'runtime error from message type',
+      },
+    })
+
+    expect(collector.getSince(marker)).toEqual([
+      '[console:error] runtime error from message type',
+    ])
+  })
+
+  it('supports providers without DevTools runtime event subscriptions', () => {
+    const collector = attachRuntimeErrorCollector({})
+
+    expect(collector.mark()).toBe(0)
+    expect(collector.getAll()).toEqual([])
+    expect(collector.getAllLogs()).toEqual([])
+    expect(() => collector.dispose()).not.toThrow()
+  })
 })

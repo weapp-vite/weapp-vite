@@ -23,7 +23,7 @@ import { createHeadlessCanvasContext } from '../view/canvasContext'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
-import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
+import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
@@ -31,6 +31,7 @@ import { createPageInstance } from './pageInstance'
 import { renderRuntimePageTree } from './render'
 import {
   applyResizeToSystemInfo,
+  createDefaultLocationResult,
   createDefaultSystemInfo,
   deriveAppBaseInfo,
   deriveDeviceInfo,
@@ -275,6 +276,7 @@ export class HeadlessSession {
         getDeviceInfo: () => deriveDeviceInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
         getClipboardData: () => this.wxState.getClipboardData(),
+        getLocation: () => createDefaultLocationResult(),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
         getNetworkType: () => this.wxState.getNetworkType(),
         navigateBack: option => this.navigateBack(option?.delta),
@@ -658,6 +660,10 @@ export class HeadlessSession {
 
   getMenuButtonBoundingClientRect() {
     return deriveMenuButtonBoundingClientRect(this.systemInfo)
+  }
+
+  getLocation() {
+    return createDefaultLocationResult()
   }
 
   getNetworkType() {
@@ -1092,6 +1098,11 @@ export class HeadlessSession {
       ? resolveSelectorQueryScopeSnapshot(scope, this.selectorQueryScopeSnapshots)
       : null
     if (scope && !nativeScope && !staleScope) {
+      if (resolveSelectorQueryScopeId(scope)) {
+        return requests.map(request => request.target === 'viewport'
+          ? { scrollLeft: 0, scrollTop: current.__scrollTop__ ?? 0 }
+          : request.single ? null : [])
+      }
       throw new Error('wx.createSelectorQuery().in(component) received an unknown scope in headless runtime.')
     }
     if (staleScope) {

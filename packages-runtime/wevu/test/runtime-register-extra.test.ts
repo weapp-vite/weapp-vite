@@ -158,7 +158,7 @@ describe('mountRuntimeInstance and teardown', () => {
     await nextTick()
     await nextTick()
 
-    expect(target.__wevu.state.$refs.conditional).toBeNull()
+    expect(target.__wevu.state.$refs?.conditional).toBeUndefined()
     target.selectComponent.mockReturnValue({ open })
     nativeCallback?.()
     await nextTick()
@@ -167,6 +167,53 @@ describe('mountRuntimeInstance and teardown', () => {
     expect(target.__wevu.state.$refs.conditional.open).toBeTypeOf('function')
     target.__wevu.state.$refs.conditional.open()
     expect(open).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits for native setData before resolving nextTick for conditional refs', async () => {
+    const app = createApp({
+      data: () => ({ visible: false }),
+    })
+    let nativeCallback: (() => void) | undefined
+    let rendered = false
+    const conditional = { open: vi.fn() }
+    const target: any = {
+      [WEVU_READY_CALLED_KEY]: true,
+      [WEVU_TEMPLATE_REFS_KEY]: [
+        { selector: '.conditional', inFor: false, name: 'conditional', kind: 'component' },
+      ],
+      data: { visible: false },
+      selectComponent: vi.fn(() => rendered ? conditional : null),
+      setData: vi.fn((payload, callback) => {
+        Object.assign(target.data, payload)
+        nativeCallback = callback
+      }),
+    }
+
+    mountRuntimeInstance(target, app as any, undefined, undefined)
+    target.__wevu.proxy.visible = true
+    let settled = false
+    const tick = nextTick().then(() => {
+      settled = true
+    })
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      if (nativeCallback) {
+        break
+      }
+      await Promise.resolve()
+    }
+
+    expect(settled).toBe(false)
+    expect(nativeCallback).toBeTypeOf('function')
+    expect(target.__wevu.state.$refs?.conditional).toBeUndefined()
+    rendered = true
+    nativeCallback?.()
+    await tick
+    await nextTick()
+
+    expect(settled).toBe(true)
+    expect(target.__wevu.state.$refs.conditional.open).toBeTypeOf('function')
+    target.__wevu.state.$refs.conditional.open()
+    expect(conditional.open).toHaveBeenCalledTimes(1)
   })
 
   it('buffers setData while hidden when suspendWhenHidden is enabled', () => {

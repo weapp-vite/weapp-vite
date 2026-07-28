@@ -5,7 +5,7 @@ import { NodeTypes } from '@vue/compiler-core'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { getBindDirectiveExpression } from '../elements/helpers'
 import { normalizeWxmlExpressionWithContext } from '../expression'
-import { parseBabelExpression } from '../expression/parse'
+import { generateExpression, parseBabelExpression } from '../expression/parse'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { renderMustache } from '../mustache'
 
@@ -82,7 +82,9 @@ function createBindRuntimeAttr(argValue: string, rawExpValue: string, context: T
 }
 
 function createInlineObjectLiteralAttr(argValue: string, rawExpValue: string, context: TransformContext): string {
-  const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context).trim()
+  const normalized = normalizeWxmlExpressionWithContext(rawExpValue, context).trim()
+  const parsed = parseBabelExpression(normalized)
+  const expValue = parsed ? generateExpression(parsed) : normalized
   if (context.mustacheInterpolation === 'spaced') {
     return `${argValue}="${renderMustache(expValue, context)}"`
   }

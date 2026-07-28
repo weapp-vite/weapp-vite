@@ -85,6 +85,26 @@ function hasDirectWevuComponentSlotChild(children: any[], context: TransformCont
   })
 }
 
+function hasExplicitWevuComponentSlotDescendant(children: any[], context: TransformContext): boolean {
+  if (!context.wevuComponentTags?.size) {
+    return false
+  }
+  return children.some((child): boolean => {
+    if (child.type !== NodeTypes.ELEMENT) {
+      return false
+    }
+    const element = child as ElementNode
+    if (
+      element.tag !== 'template'
+      && !isBuiltinTag(resolveTemplateTagName(element.tag, context))
+      && context.wevuComponentTags!.has(element.tag)
+    ) {
+      return true
+    }
+    return hasExplicitWevuComponentSlotDescendant(element.children, context)
+  })
+}
+
 function hasMiniProgramComponentSlotDescendant(children: any[], context: TransformContext): boolean {
   const componentTags = context.miniProgramComponentTags
   if (!componentTags?.size) {
@@ -116,6 +136,16 @@ function hasNativeComponentSlotDescendant(children: any[], context: TransformCon
   })
 }
 
+function hasForwardedSlotOutlet(children: any[]): boolean {
+  return children.some((child) => {
+    if (child.type !== NodeTypes.ELEMENT) {
+      return false
+    }
+    const element = child as ElementNode
+    return element.tag === 'slot' || hasForwardedSlotOutlet(element.children)
+  })
+}
+
 function shouldAugmentPlainSlot(
   decl: ScopedSlotDeclaration,
   context: TransformContext,
@@ -123,6 +153,9 @@ function shouldAugmentPlainSlot(
   hasScopedSlotPropsSibling: boolean,
 ) {
   if (context.scopedSlotsRequireProps) {
+    return false
+  }
+  if (hasForwardedSlotOutlet(decl.children)) {
     return false
   }
   if (context.rewriteScopedSlot && !isWevuComponentTag(ownerNode, context)) {
@@ -134,6 +167,7 @@ function shouldAugmentPlainSlot(
     }
     return context.scopedSlotsCompiler === 'augmented'
       ? hasMiniProgramComponentSlotDescendant(decl.children, context)
+      || hasExplicitWevuComponentSlotDescendant(decl.children, context)
       : hasScopedSlotPropsSibling && hasDirectComponentSlotChild(decl.children, context)
   }
   if (context.scopedSlotsCompiler === 'augmented') {
@@ -141,6 +175,7 @@ function shouldAugmentPlainSlot(
       return true
     }
     return hasMiniProgramComponentSlotDescendant(decl.children, context)
+      || hasExplicitWevuComponentSlotDescendant(decl.children, context)
       || (!isWevuComponentTag(ownerNode, context) && hasNativeComponentSlotDescendant(decl.children, context))
   }
   if (!isWevuComponentTag(ownerNode, context)) {
@@ -546,7 +581,7 @@ export function transformComponentWithSlots(
     }
     const ownerIdExp = context.rewriteScopedSlot
       ? `${WEVU_SLOT_OWNER_ID_PROP} || ${WEVU_SLOT_OWNER_ID_KEY} || ''`
-      : `${WEVU_SLOT_OWNER_ID_PROP} || ${WEVU_SLOT_OWNER_ID_KEY} || ''`
+      : `${WEVU_SLOT_OWNER_ID_KEY} || ''`
     mergedAttrs.push(`${WEVU_SLOT_OWNER_ID_ATTR}="${renderMustache(ownerIdExp, context)}"`)
   }
 

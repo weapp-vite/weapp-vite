@@ -1,13 +1,19 @@
 import type { WritableComputedOptions } from '../../reactivity'
 import type { AppConfig, ComponentPublicInstance, ComputedDefinitions, ExtractMethods, MethodDefinitions } from '../types'
 import {
+  WEVU_COMPONENT_NAME_KEY,
   WEVU_INLINE_MAP_KEY,
   WEVU_NATIVE_INSTANCE_KEY,
+  WEVU_PARENT_INSTANCE_KEY,
   WEVU_PROPS_KEY,
+  WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD,
+  WEVU_RUNTIME_APP_KEY,
   WEVU_RUNTIME_KEY,
 } from '@weapp-core/constants'
 import { isRef, ref, toRaw } from '../../reactivity'
+import { nextTick } from '../../scheduler'
 import { hasOwn } from '../../utils'
+import { normalizeEmitEventName, normalizeEmitPayload } from '../emit'
 import { setComputedValue } from '../internal'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../nativeBridge'
 import { createComputedAccessors } from './computed'
@@ -40,6 +46,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
     computedProxy,
   } = createComputedAccessors({ includeComputed, setDataStrategy })
   const setupMethodVersion = ref(0)
+  const instanceFields = Object.create(null) as Record<PropertyKey, any>
 
   const resolveNativeInstance = (target: object, receiver: object) => {
     const rawTarget = toRaw(target as any) as Record<string, any>
@@ -99,6 +106,60 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
     ;(boundMethods as any)[methodName] = bridge
   }
 
+  const resolveGlobalProperty = (nativeInstance: object | undefined, key: string) => {
+    const seen = new Set<object>()
+    let current = nativeInstance as Record<string, any> | undefined
+    while (current && !seen.has(current)) {
+      seen.add(current)
+      const globalProperties = current[WEVU_RUNTIME_APP_KEY]?.config?.globalProperties
+      if (globalProperties && hasOwn(globalProperties, key)) {
+        return { found: true, value: globalProperties[key] }
+      }
+      current = current[WEVU_PARENT_INSTANCE_KEY]
+    }
+
+    const getAppFn = typeof globalThis !== 'undefined'
+      ? (globalThis as Record<string, any>).getApp
+      : undefined
+    if (typeof getAppFn === 'function') {
+      try {
+        const rootAppInstance = getAppFn()
+        const globalProperties = rootAppInstance?.[WEVU_RUNTIME_APP_KEY]?.config?.globalProperties
+        if (globalProperties && hasOwn(globalProperties, key)) {
+          return { found: true, value: globalProperties[key] }
+        }
+      }
+      catch {
+        // App 尚未初始化时保持普通属性回退语义。
+      }
+    }
+    return { found: false, value: undefined }
+  }
+
+  const resolveParentPublicInstance = (nativeInstance: object | undefined) => {
+    const selectOwnerComponent = nativeInstance && Reflect.get(nativeInstance, 'selectOwnerComponent')
+    if (typeof selectOwnerComponent !== 'function') {
+      return undefined
+    }
+    try {
+      const owner = selectOwnerComponent.call(nativeInstance)
+      if (!owner || typeof owner !== 'object') {
+        return undefined
+      }
+      const resolvePublicInstance = Reflect.get(owner, WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD)
+      if (typeof resolvePublicInstance === 'function') {
+        const publicInstance = resolvePublicInstance.call(owner)
+        if (publicInstance) {
+          return publicInstance
+        }
+      }
+      return owner[WEVU_RUNTIME_KEY]?.proxy ?? owner.__wevu?.proxy ?? owner
+    }
+    catch {
+      return undefined
+    }
+  }
+
   const publicInstance = new Proxy(state as ComponentPublicInstance<D, C, M>, {
     get(target, key, receiver) {
       if (typeof key === 'string') {
@@ -126,6 +187,51 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
         if (key === '$computed') {
           return computedProxy
         }
+        if (key === '$emit') {
+          return (eventName: string, ...args: any[]) => {
+            const nativeInstance = resolveNativeInstance(target as object, receiver as object)
+            const triggerEvent = nativeInstance && Reflect.get(nativeInstance, 'triggerEvent')
+            if (typeof triggerEvent !== 'function') {
+              return undefined
+            }
+            const { detail, options } = normalizeEmitPayload(args)
+            return triggerEvent.call(nativeInstance, normalizeEmitEventName(eventName), detail, options)
+          }
+        }
+        if (key === '$nextTick') {
+          return <T>(fn?: () => T) => fn
+            ? nextTick(() => fn.call(publicInstance))
+            : nextTick<T>()
+        }
+        if (key === '$set') {
+          return (object: Record<PropertyKey, any>, property: PropertyKey, value: any) => {
+            Reflect.set(object, property, value)
+            return value
+          }
+        }
+        if (key === '$delete') {
+          return (object: Record<PropertyKey, any>, property: PropertyKey) => Reflect.deleteProperty(object, property)
+        }
+        if (key === '$slots') {
+          const rawTarget = toRaw(target as any) as Record<string, any>
+          return rawTarget.$slots ?? Object.freeze(Object.create(null))
+        }
+        if (key === '$refs') {
+          const rawTarget = toRaw(target as any) as Record<string, any>
+          return rawTarget.$refs ?? Object.create(null)
+        }
+        if (key === '$parent') {
+          return resolveParentPublicInstance(resolveNativeInstance(target as object, receiver as object))
+        }
+        if (key === '$options') {
+          const nativeInstance = resolveNativeInstance(target as object, receiver as object) as Record<string, any> | undefined
+          return {
+            name: nativeInstance?.[WEVU_COMPONENT_NAME_KEY] ?? nativeInstance?.name ?? nativeInstance?.is,
+          }
+        }
+        if (hasOwn(instanceFields, key)) {
+          return Reflect.get(instanceFields, key)
+        }
         if (hasOwn(boundMethods, key)) {
           return boundMethods[key as keyof ExtractMethods<M>]
         }
@@ -134,6 +240,13 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
         }
         if (hasOwn(appConfig.globalProperties, key)) {
           return (appConfig.globalProperties as any)[key]
+        }
+        const globalProperty = resolveGlobalProperty(
+          resolveNativeInstance(target as object, receiver as object),
+          key,
+        )
+        if (globalProperty.found) {
+          return globalProperty.value
         }
       }
       if (!Reflect.has(target, key)) {
@@ -165,6 +278,9 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
         }
         return Reflect.set(setupState, key, value, receiver)
       }
+      if (hasOwn(instanceFields, key)) {
+        return Reflect.set(instanceFields, key, value)
+      }
       if (Reflect.has(target, key)) {
         const existingValue = Reflect.get(target, key, receiver)
         if (isRef(existingValue) && !isRef(value)) {
@@ -176,20 +292,32 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
         }
         return Reflect.set(target, key, value, receiver)
       }
-      const nativeInstance = resolveNativeInstance(target as object, receiver as object)
-      if (nativeInstance && Reflect.has(nativeInstance, key)) {
-        return Reflect.set(nativeInstance, key, value)
-      }
-      return Reflect.set(target, key, value, receiver)
+      return Reflect.set(instanceFields, key, value)
     },
     has(target, key) {
-      if (key === 'data') {
+      if (
+        key === 'data'
+        || key === '$emit'
+        || key === '$nextTick'
+        || key === '$set'
+        || key === '$delete'
+        || key === '$slots'
+        || key === '$refs'
+        || key === '$parent'
+        || key === '$options'
+      ) {
         return true
       }
       if (typeof key === 'string' && (hasOwn(setupState, key) || (computedRefs as any)[key] || hasOwn(boundMethods, key))) {
         return true
       }
+      if (hasOwn(instanceFields, key)) {
+        return true
+      }
       const nativeInstance = resolveNativeInstance(target as object, target as object)
+      if (typeof key === 'string' && resolveGlobalProperty(nativeInstance, key).found) {
+        return true
+      }
       if (nativeInstance && Reflect.has(nativeInstance, key)) {
         return true
       }
@@ -203,6 +331,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       Reflect.ownKeys(setupState).forEach((key) => {
         keys.add(key as string | symbol)
       })
+      Reflect.ownKeys(instanceFields).forEach(key => keys.add(key))
       Object.keys(boundMethods).forEach(key => keys.add(key))
       Object.keys(computedRefs).forEach(key => keys.add(key))
       return [...keys]
@@ -210,6 +339,9 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
     getOwnPropertyDescriptor(target, key) {
       if (typeof key === 'string' && hasOwn(setupState, key)) {
         return Object.getOwnPropertyDescriptor(setupState, key)
+      }
+      if (hasOwn(instanceFields, key)) {
+        return Object.getOwnPropertyDescriptor(instanceFields, key)
       }
       if (Reflect.has(target, key)) {
         return Object.getOwnPropertyDescriptor(target, key)

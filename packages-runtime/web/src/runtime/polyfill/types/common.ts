@@ -6,6 +6,14 @@ export interface ShowToastOptions extends MiniProgramAsyncOptions<MiniProgramBas
   duration?: number
 }
 
+export interface LoadFontFaceOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
+  family: string
+  source: string
+  global?: boolean
+  scopes?: string[]
+  descriptors?: FontFaceDescriptors
+}
+
 export interface SetClipboardDataOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   data?: string
 }

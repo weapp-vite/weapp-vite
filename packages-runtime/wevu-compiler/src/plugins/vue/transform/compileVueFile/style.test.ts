@@ -30,4 +30,26 @@ describe('compileStylePhase', () => {
     expect(result.script).toContain('__cssModules')
     expect(result.script).toContain('export default {}')
   })
+
+  it('preserves scoped preprocessor syntax when scoped rewriting is deferred', () => {
+    const descriptor = parse(`
+<template><view /></template>
+<style scoped lang="scss">
+.card {
+  color: rgba(0, 0, 0, .7);
+
+  &__title { color: red; }
+}
+</style>
+    `.trim(), { filename: '/project/src/components/card.vue' }).descriptor
+    const result: any = {}
+
+    compileStylePhase(descriptor, '/project/src/components/card.vue', result, {
+      transformScoped: false,
+    })
+
+    expect(result.style).toContain('rgba(0, 0, 0, .7)')
+    expect(result.style).toContain('&__title')
+    expect(result.style).not.toContain('[data-v-')
+  })
 })

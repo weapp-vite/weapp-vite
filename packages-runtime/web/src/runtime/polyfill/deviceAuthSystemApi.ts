@@ -55,7 +55,7 @@ import {
   onNetworkStatusChangeBridge,
   onWindowResizeBridge,
 } from './runtimeCapabilityApi'
-import { resolveDeviceOrientation } from './system'
+import { resolveDeviceOrientation, rpx2px as rpx2pxBridge } from './system'
 import {
   getAccountInfoSyncBridge,
   getAppBaseInfoBridge,
@@ -149,6 +149,12 @@ export function offNetworkStatusChange(callback?: NetworkStatusChangeCallback) {
 export function getWindowInfo(): WindowInfo {
   return getWindowInfoBridge()
 }
+
+export function rpx2px(value: number) {
+  return rpx2pxBridge(value)
+}
+
+export const upx2px = rpx2px
 
 export function onWindowResize(callback: WindowResizeCallback) {
   return onWindowResizeBridge(callback, getWindowInfo)

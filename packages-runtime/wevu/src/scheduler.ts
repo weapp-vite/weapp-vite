@@ -1,6 +1,6 @@
 const resolvedPromise: Promise<void> = Promise.resolve()
 
-type Job = () => void
+type Job = () => void | PromiseLike<void>
 
 const jobQueue = new Set<Job>()
 const deferredJobQueue = new Set<Job>()
@@ -14,10 +14,24 @@ function flushJobs(): void | Promise<void> {
   isFlushing = true
   flushedJobs = new Set()
   let shouldFlushDeferred = false
+  let hasError = false
+  let firstError: unknown
+  const pendingJobs: PromiseLike<void>[] = []
   try {
     jobQueue.forEach((job) => {
       flushedJobs?.add(job)
-      job()
+      try {
+        const result = job()
+        if (result && typeof result.then === 'function') {
+          pendingJobs.push(result)
+        }
+      }
+      catch (error) {
+        if (!hasError) {
+          hasError = true
+          firstError = error
+        }
+      }
     })
   }
   finally {
@@ -31,15 +45,27 @@ function flushJobs(): void | Promise<void> {
       shouldFlushDeferred = true
     }
   }
-  if (shouldFlushDeferred) {
-    return resolvedPromise.then(flushJobs)
+  if (pendingJobs.length || shouldFlushDeferred) {
+    return Promise.all(pendingJobs)
+      .then(() => shouldFlushDeferred ? flushJobs() : undefined)
+      .then(
+        () => {
+          if (hasError) {
+            throw firstError
+          }
+        },
+        (error: unknown) => {
+          throw hasError ? firstError : error
+        },
+      )
+  }
+  if (hasError) {
+    throw firstError
   }
 }
 
 function queueFlush() {
-  const previousFlushPromise = currentFlushPromise ?? resolvedPromise
-  const flushPromise = previousFlushPromise
-    .then(flushJobs)
+  const flushPromise = resolvedPromise.then(flushJobs)
   currentFlushPromise = flushPromise
   const clearCurrentFlushPromise = () => {
     if (currentFlushPromise === flushPromise) {

@@ -22,6 +22,34 @@ const target = 'web'
       .toContain(`const target = 'web'`)
   })
 
+  it('evaluates boolean platform expressions without dynamic code execution', () => {
+    const source = `// #ifdef MP-WEIXIN && (MP-QQ || MP-BAIDU)
+const all = true
+// #else
+const fallback = true
+// #endif
+// #ifndef MP-WEIXIN && MP-QQ && MP-BAIDU
+const notAll = true
+// #endif
+`
+    const result = transformUniAppConditionalCode(source, { filename: 'boolean.ts', target: 'mp-weixin' })
+    expect(result.code).not.toContain('const all')
+    expect(result.code).toContain('const fallback')
+    expect(result.code).toContain('const notAll')
+  })
+
+  it('handles inline conditional boundaries without dropping adjacent code', () => {
+    const source = `/* #ifdef APP-PLUS */ if (native) {
+  runNative()
+} else /* #endif */ if (mini) {
+  runMini()
+}`
+    const result = transformUniAppConditionalCode(source, { filename: 'inline.js', target: 'mp-weixin' })
+    expect(result.code).not.toContain('runNative')
+    expect(result.code).toContain('if (mini)')
+    expect(result.code).toContain('runMini()')
+  })
+
   it('handles template and style comment forms', () => {
     const source = `<template>
 <!-- #ifdef H5 -->
@@ -49,7 +77,42 @@ const platform = computed(() => uni.getSystemInfoSync().platform)
 </script>`
     const result = transformUniAppSource(source, { filename: 'fixture.vue', target: 'mp-weixin' })
     expect(result.code).toMatch(/from ["']wevu["']/)
-    expect(result.code.match(/const uni = wx/g)).toHaveLength(1)
+    expect(result.code).toContain(`from 'wevu/internal-runtime'`)
+    expect(result.code.match(/const uni = __wevuCreateUniAppHost\(wx\)/g)).toHaveLength(1)
+  })
+
+  it('normalizes auxiliary WXS scripts while analyzing the Vue script block', () => {
+    const source = `<template><view /></template>
+<script src="./index.wxs" module="wxs" lang="wxs"></script>
+<script>
+import { ref } from 'vue'
+const value = ref(uni.getSystemInfoSync().platform)
+</script>`
+    const result = transformUniAppSource(source, { filename: 'wxs.vue', target: 'mp-weixin' })
+    expect(result.code).toContain('<wxs module="wxs" src="./index.wxs" />')
+    expect(result.code).not.toContain('lang="wxs"')
+    expect(result.code).toContain(`from "wevu"`)
+    expect(result.code).toContain('const uni = __wevuCreateUniAppHost(wx)')
+  })
+
+  it('keeps Vue parent ownership observable by disabling native virtual hosts on MP-WEIXIN', () => {
+    const source = `<script>
+export default {
+  options: { virtualHost: true, styleIsolation: 'shared' },
+}
+</script>`
+    const miniProgram = transformUniAppSource(source, { filename: 'parent.vue', target: 'mp-weixin' })
+    const web = transformUniAppSource(source, { filename: 'parent.vue', target: 'h5' })
+    const sidecar = transformUniAppSource(`export default { options: { virtualHost: true } }`, {
+      blockType: 'script',
+      filename: 'parent.vue',
+      target: 'mp-weixin',
+    })
+
+    expect(miniProgram.code).toContain(`virtualHost: false`)
+    expect(miniProgram.code).toContain(`styleIsolation: 'shared'`)
+    expect(web.code).toContain(`virtualHost: true`)
+    expect(sidecar.code).toContain(`virtualHost: false`)
   })
 
   it('maps uni-app lifecycle imports to the wevu runtime', () => {
@@ -75,7 +138,7 @@ onHide(() => {})
       filename: '/project/src/page.vue',
       target: 'mp-weixin',
     })
-    expect(script.code).toContain('const uni = wx')
+    expect(script.code).toContain('const uni = __wevuCreateUniAppHost(wx)')
     expect(script.code).toContain('wevu')
     expect(template.code).toContain('<view>wechat</view>')
     expect(template.code).not.toContain('#ifdef')
@@ -91,7 +154,7 @@ export const platform = uni.getSystemInfoSync().platform`
   it('parses generic arrows in TypeScript dependency modules without JSX ambiguity', () => {
     const source = `export const identity = <T>(value: T): T => value\nexport const platform = uni.getSystemInfoSync()`
     const result = transformUniAppSource(source, { filename: '/node_modules/@wot-ui/ui/common/util.ts', target: 'mp-weixin' })
-    expect(result.code).toContain('const uni = wx')
+    expect(result.code).toContain('const uni = __wevuCreateUniAppHost(wx)')
     expect(result.code).toContain('<T>')
   })
 

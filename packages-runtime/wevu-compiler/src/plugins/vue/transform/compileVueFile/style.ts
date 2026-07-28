@@ -9,6 +9,7 @@ export function compileStylePhase(
   result: VueTransformResult,
   options?: {
     preserveDeepSelectors?: boolean
+    transformScoped?: boolean
   },
 ) {
   if (descriptor.styles.length === 0) {
@@ -23,6 +24,7 @@ export function compileStylePhase(
       scoped: styleBlock.scoped,
       modules: styleBlock.module,
       preserveDeepSelectors: options?.preserveDeepSelectors,
+      transformScoped: options?.transformScoped,
     })
   })
 

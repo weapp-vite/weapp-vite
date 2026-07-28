@@ -15,11 +15,12 @@ import {
 } from '@weapp-core/constants'
 import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
+import { normalizeEmitEventName } from '../../emit'
 import { setCurrentInstance, setCurrentSetupContext } from '../../hooks'
 import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runSetupFunction } from '../setup'
 import {
-  createSetupSlotsProxy,
+  attachRuntimeSlots,
   ensureSetupContextInstance,
   normalizeEmitPayload,
   safeMarkNoSetData,
@@ -94,10 +95,6 @@ function attachVueCompatInstanceView(target: InternalRuntimeState, proxy: Record
       proxy[key] = descriptor.value
     }
   }
-}
-
-function normalizeEmitEventName(eventName: string) {
-  return eventName.includes(':') ? eventName.replaceAll(':', '-').toLowerCase() : eventName
 }
 
 function isInternalAttrKey(key: string) {
@@ -183,20 +180,9 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
 
   const setupInstance = ensureSetupContextInstance(target, runtimeWithDefaults)
   attachVueCompatInstanceView(target, setupInstance as Record<string, any>)
-  const slots = createSetupSlotsProxy(props)
+  const slots = attachRuntimeSlots(runtimeState, props)
   const setupState = runtimeWithDefaults.setupState ?? Object.create(null)
   attachRuntimeSetupState(runtimeState, setupState)
-  try {
-    Object.defineProperty(runtimeState, '$slots', {
-      value: slots,
-      configurable: true,
-      enumerable: false,
-      writable: false,
-    })
-  }
-  catch {
-    ;(runtimeState as any).$slots = slots
-  }
 
   const context = safeMarkNoSetData({
     // 与 Vue 3 对齐的 ctx.props

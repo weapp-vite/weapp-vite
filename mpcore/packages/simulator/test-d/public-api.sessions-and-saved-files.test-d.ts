@@ -1,6 +1,7 @@
 import type {
   HeadlessWxDeviceInfoResult,
   HeadlessWxDownloadFileMockDefinition,
+  HeadlessWxGetLocationResult,
   HeadlessWxUploadFileMockDefinition,
 } from '..'
 import { expectType } from 'tsd'
@@ -161,6 +162,11 @@ browserPage?.wx.createCanvasContext('hero-canvas', browserPage).translate(3, 4)
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
 expectType<HeadlessWxDeviceInfoResult>(browserSession.getDeviceInfo())
 expectType<HeadlessWxDeviceInfoResult | undefined>(browserPage?.wx.getDeviceInfo())
+expectType<HeadlessWxGetLocationResult>(browserSession.getLocation())
+expectType<HeadlessWxGetLocationResult | undefined>(browserPage?.wx.getLocation({
+  isHighAccuracy: true,
+  type: 'gcj02',
+}))
 expectType<{ active: boolean, stopCalls: number }>(browserSession.getPullDownRefreshState())
 expectType<{ data: string }>(browserSession.getClipboardData())
 expectType<{ mask: boolean, title: string } | null>(browserSession.getLoading())
@@ -395,6 +401,24 @@ browserPage?.wx.removeSavedFile({
 
 const headlessSession = createHeadlessSession({ projectPath: '/tmp/project' })
 const headlessPage = headlessSession.getCurrentPages()[0]
+
+expectType<{ errMsg: string } | undefined>(headlessPage?.wx.loadFontFace({
+  family: 'uview-icon',
+  source: 'url("headless://font/uview.ttf")',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+}))
+expectType<void>(headlessPage?.wx.$on('grid:update', (index: number) => {
+  expectType<number>(index)
+}))
+expectType<void>(headlessPage?.wx.$once('grid:update', () => {}))
+expectType<void>(headlessPage?.wx.$emit('grid:update', 1))
+expectType<void>(headlessPage?.wx.$off('grid:update'))
+expectType<string | undefined>(headlessPage?.wx.getLocale())
+expectType<number | undefined>(headlessPage?.wx.rpx2px(100))
+expectType<number | undefined>(headlessPage?.wx.upx2px(100))
+expectType<number | undefined>(headlessPage?.wx.getWindowInfo().safeAreaInsets.bottom)
 
 const headlessDownloadMock: HeadlessWxDownloadFileMockDefinition = {
   fileContent: 'downloaded report',

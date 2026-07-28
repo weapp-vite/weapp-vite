@@ -59,7 +59,7 @@ export function shallowRef<T>(value: T, defaultValue?: T): Ref<T> {
  * @returns 若为浅层 ref 则返回 true
  */
 export function isShallowRef(r: any): r is Ref<any> {
-  return isRef(r) && r[ShallowRefFlag] === true
+  return isRef(r) && (r as unknown as Record<string, unknown>)[ShallowRefFlag] === true
 }
 
 /**

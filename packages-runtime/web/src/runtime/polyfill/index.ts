@@ -25,7 +25,10 @@ import {
 } from './background'
 import { createCloudBridge } from './cloud'
 import * as deviceAuthSystemApi from './deviceAuthSystemApi'
+import * as eventBusApi from './eventBus'
 import { WEB_USER_DATA_PATH } from './files'
+import { loadFontFace } from './font'
+import { getLocale } from './locale'
 import { createNavigationBarRuntimeBridge } from './navigationBarRuntime'
 import {
   createInterstitialAdBridge,
@@ -55,6 +58,9 @@ import * as uiMediaApi from './uiMediaApi'
 
 export { createAnimation } from './animation'
 export * from './deviceAuthSystemApi'
+export * from './eventBus'
+export { loadFontFace } from './font'
+export { getLocale } from './locale'
 
 export {
   getEnterOptionsSync,
@@ -186,6 +192,9 @@ if (globalTarget) {
     hideNavigationBarLoading,
     ...uiMediaApi,
     ...deviceAuthSystemApi,
+    ...eventBusApi,
+    loadFontFace,
+    getLocale,
     createAnimation,
     createRewardedVideoAd,
     createInterstitialAd,
