@@ -37,7 +37,7 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
     /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-[\w-]+\.js["']\)/,
     /\.require_other\(\)/,
     /\bPage\(/,
-    /require\.async\(["']\.\/async["']\)/,
+    /require\.async\(["']\.\/async\.js["']\)/,
   ],
   'pages/index/vue.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,

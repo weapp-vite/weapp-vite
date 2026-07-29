@@ -112,7 +112,7 @@ export function rewriteRequireCallbacks(code: string, tokens: RequireCallbackTok
 export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
   const { ctx, requireAsyncEmittedChunks } = state
   const { configService, scanService } = ctx
-  const dynamicImports = configService.weappViteConfig.chunks?.dynamicImports ?? 'preserve'
+  const resolveDynamicImports = () => configService.weappViteConfig?.chunks?.dynamicImports ?? 'preserve'
   let warnedInlineFallback = false
 
   return {
@@ -120,6 +120,7 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
     enforce: 'post',
 
     buildStart() {
+      const dynamicImports = resolveDynamicImports()
       if (dynamicImports === 'inline' && state.buildTarget === 'app' && !warnedInlineFallback) {
         warnedInlineFallback = true
         logger.warn('`weapp.chunks.dynamicImports: "inline"` 已废弃，当前会回退为 `preserve`；请改用 `preserve`，或在微信分包场景使用 `native`。')
@@ -132,6 +133,7 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
       },
       async handler(code, id) {
         try {
+          const dynamicImports = resolveDynamicImports()
           const ast = this.parse(code)
           const {
             dynamicImportTokens,
