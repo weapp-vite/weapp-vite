@@ -52,6 +52,7 @@
     "build:watch": "tsdown -w --sourcemap",
     "build": "tsdown",
     "test": "vitest run",
+    "test:coverage": "cross-env WEAPP_VITE_WEB_COVERAGE_STRICT=1 vitest run --coverage",
     "test:dev": "vitest",
     "typecheck": "tsc --noEmit"
   },
@@ -72,5 +73,8 @@
     "rolldown": "1.1.5",
     "rolldown-require": "workspace:*",
     "wevu": "workspace:*"
+  },
+  "devDependencies": {
+    "happy-dom": "catalog:"
   }
 }

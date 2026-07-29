@@ -98,10 +98,7 @@ const RESERVED_COMPONENT_METHOD_KEYS = new Set([
   'mixins',
 ])
 
-function cloneLifetimes(source?: ComponentOptions['lifetimes']): ComponentOptions['lifetimes'] {
-  if (!source) {
-    return undefined
-  }
+function cloneLifetimes(source: NonNullable<ComponentOptions['lifetimes']>): ComponentOptions['lifetimes'] {
   return {
     ...source,
   }

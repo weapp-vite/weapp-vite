@@ -3,17 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const wpiRequestMock = vi.hoisted(() => vi.fn())
 const wpiConnectSocketMock = vi.hoisted(() => vi.fn())
+const wpiGetAdapterMock = vi.hoisted(() => vi.fn())
+const wpiResolveTargetMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@wevu/api', () => ({
   wpi: {
-    getAdapter: () => ({
-      connectSocket: wpiConnectSocketMock,
-    }),
+    getAdapter: wpiGetAdapterMock,
     request: wpiRequestMock,
-    resolveTarget: () => ({
-      supported: true,
-      target: 'connectSocket',
-    }),
+    resolveTarget: wpiResolveTargetMock,
   },
 }))
 
@@ -134,6 +131,15 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).window
     delete (globalThis as Record<string, any>)[REQUEST_GLOBAL_ACTUALS_KEY]
     wpiConnectSocketMock.mockReset()
+    wpiGetAdapterMock.mockReset()
+    wpiGetAdapterMock.mockReturnValue({
+      connectSocket: wpiConnectSocketMock,
+    })
+    wpiResolveTargetMock.mockReset()
+    wpiResolveTargetMock.mockReturnValue({
+      supported: true,
+      target: 'connectSocket',
+    })
     const { resetMiniProgramNetworkDefaults } = await import('../src')
     resetMiniProgramNetworkDefaults()
   })
@@ -159,6 +165,38 @@ describe('request globals runtime', () => {
     expect(typeof globalThis.crypto.getRandomValues).toBe('function')
     expect(typeof globalThis.Event).toBe('function')
     expect(typeof globalThis.CustomEvent).toBe('function')
+  })
+
+  it('preserves complete existing globals for every install target', async () => {
+    const runtime = await import('../src')
+    const existing = {
+      fetch: vi.fn(),
+      Headers: runtime.HeadersPolyfill,
+      Request: runtime.RequestPolyfill,
+      Response: runtime.ResponsePolyfill,
+      TextEncoder: runtime.TextEncoderPolyfill,
+      TextDecoder: runtime.TextDecoderPolyfill,
+      AbortController: runtime.AbortControllerPolyfill,
+      AbortSignal: runtime.AbortSignalPolyfill,
+      XMLHttpRequest: runtime.XMLHttpRequestPolyfill,
+      WebSocket: runtime.WebSocketPolyfill,
+      atob: runtime.atobPolyfill,
+      btoa: runtime.btoaPolyfill,
+      queueMicrotask: runtime.queueMicrotaskPolyfill,
+      performance: runtime.performancePolyfill,
+      crypto: runtime.cryptoPolyfill,
+      Event: runtime.EventPolyfill,
+      CustomEvent: runtime.CustomEventPolyfill,
+    }
+    for (const [key, value] of Object.entries(existing)) {
+      setGlobalValue(key, value)
+    }
+
+    runtime.installWebRuntimeGlobals()
+
+    for (const [key, value] of Object.entries(existing)) {
+      expect((globalThis as Record<string, any>)[key]).toBe(value)
+    }
   })
 
   it('supports fetch through @wevu/api request bridge without requiring wevu/fetch', async () => {
@@ -1038,9 +1076,139 @@ describe('request globals runtime', () => {
     expect(params.size).toBe(3)
     expect(params.toString()).toBe('a=1&a=0&b=2')
     expect((headers as any).getSetCookie()).toEqual(['session=issue-448'])
+    expect((new globalThis.Headers() as any).getSetCookie()).toEqual([])
     expect(await jsonResponse.json()).toEqual({ ok: true })
     expect(errorResponse.status).toBe(0)
     expect(errorResponse.type).toBe('error')
+    expect((globalThis.URL as any).parse('/missing-base')).toBe(null)
+    expect((globalThis.URL as any).canParse('/missing-base')).toBe(false)
+  })
+
+  it('patches host URLSearchParams size and sort when both helpers are absent', async () => {
+    class MinimalUrlSearchParams {
+      private entriesList: Array<[string, string]>
+
+      constructor(source = '') {
+        this.entriesList = source.split('&').filter(Boolean).map((entry) => {
+          const [key = '', value = ''] = entry.split('=')
+          return [key, value]
+        })
+      }
+
+      append(key: string, value: string) {
+        this.entriesList.push([key, value])
+      }
+
+      delete(key: string) {
+        this.entriesList = this.entriesList.filter(([entryKey]) => entryKey !== key)
+      }
+
+      entries() {
+        return this.entriesList[Symbol.iterator]()
+      }
+
+      forEach(callback: (value: string, key: string) => void) {
+        for (const [key, value] of this.entriesList) {
+          callback(value, key)
+        }
+      }
+
+      toString() {
+        return this.entriesList.map(entry => entry.join('=')).join('&')
+      }
+    }
+
+    setGlobalValue('URLSearchParams', MinimalUrlSearchParams)
+    const { installWebRuntimeGlobals } = await import('../src')
+    installWebRuntimeGlobals({ targets: ['fetch'] })
+    const params = new globalThis.URLSearchParams('b=2&a=1&a=0')
+    expect(params.size).toBe(3)
+    params.sort()
+    expect(params.toString()).toBe('a=1&a=0&b=2')
+    const ascending = new globalThis.URLSearchParams('a=1&b=2')
+    ascending.sort()
+    expect(ascending.toString()).toBe('a=1&b=2')
+  })
+
+  it('replaces constructors with missing prototypes and accepts complete Headers helpers', async () => {
+    const NoPrototypeUrlSearchParams = function NoPrototypeUrlSearchParams() {}
+    NoPrototypeUrlSearchParams.prototype = undefined as never
+    const HeaderWithoutPrototype = (() => undefined) as any
+    setGlobalValue('URLSearchParams', NoPrototypeUrlSearchParams)
+    setGlobalValue('Headers', HeaderWithoutPrototype)
+    const { HeadersPolyfill, installWebRuntimeGlobals, URLSearchParamsPolyfill } = await import('../src')
+    installWebRuntimeGlobals({ targets: ['fetch', 'Headers'] })
+    expect(globalThis.URLSearchParams).toBe(URLSearchParamsPolyfill)
+    expect(globalThis.Headers).toBe(HeadersPolyfill)
+
+    class CompleteHeaders {
+      getSetCookie() {
+        return []
+      }
+    }
+    setGlobalValue('Headers', CompleteHeaders)
+    installWebRuntimeGlobals({ targets: ['Headers'] })
+    expect(globalThis.Headers).toBe(CompleteHeaders as any)
+  })
+
+  it('replaces URL constructors that throw only during relative compatibility checks', async () => {
+    class RelativeThrowingUrl extends URL {
+      constructor(input: string, base?: string) {
+        if (base) {
+          throw new TypeError('relative URLs unsupported')
+        }
+        super(input)
+      }
+    }
+    setGlobalValue('URL', RelativeThrowingUrl)
+    const { installWebRuntimeGlobals, URLPolyfill } = await import('../src')
+    installWebRuntimeGlobals({ targets: ['fetch'] })
+    expect(globalThis.URL).toBe(URLPolyfill)
+  })
+
+  it('falls back when host constructor patches reject property definitions', async () => {
+    class FrozenUrlSearchParams {
+      constructor(_source = '') {}
+
+      entries() {
+        return [][Symbol.iterator]()
+      }
+
+      forEach() {}
+    }
+    Object.freeze(FrozenUrlSearchParams.prototype)
+    const miniHost = {
+      Blob: globalThis.Blob,
+      File: globalThis.File,
+      FormData: globalThis.FormData,
+      URL: globalThis.URL,
+      URLSearchParams: FrozenUrlSearchParams,
+    }
+    ;(globalThis as Record<string, any>).wx = miniHost
+
+    const { installWebRuntimeGlobals, URLSearchParamsPolyfill } = await import('../src')
+    installWebRuntimeGlobals({ targets: ['fetch'] })
+    expect(miniHost.URLSearchParams).toBe(URLSearchParamsPolyfill)
+  })
+
+  it('handles empty installed bindings, rejecting aliases and the abort-only helper', async () => {
+    Object.defineProperty(globalThis, 'global', {
+      configurable: true,
+      get: () => null,
+      set: () => {
+        throw new TypeError('read only alias')
+      },
+    })
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      get: () => null,
+      set: () => undefined,
+    })
+    const { installAbortGlobals, installWebRuntimeGlobals } = await import('../src')
+    expect(() => installWebRuntimeGlobals({ targets: ['fetch'] })).not.toThrow()
+    expect(installAbortGlobals()).toBe(globalThis)
+    expect(typeof globalThis.AbortController).toBe('function')
+    expect(typeof globalThis.AbortSignal).toBe('function')
   })
 
   it('replaces host URL constructors whose relative custom-protocol parsing diverges from Web behavior', async () => {
@@ -1102,6 +1270,339 @@ describe('request globals runtime', () => {
     })
 
     expect(globalThis.performance.now()).toBe(456.75)
+  })
+
+  it('normalizes fetch inputs, headers and body types across request-like callers', async () => {
+    const requestOptions: Array<Record<string, any>> = []
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      requestOptions.push(options)
+      options.success?.({
+        data: new Uint8Array([111, 107]),
+        statusCode: 201,
+        header: [['X-Result', 'first'], ['x-result', 'second']],
+      })
+      return undefined
+    })
+
+    const {
+      fetch: requestGlobalsFetch,
+      FormDataPolyfill,
+      URLPolyfill,
+      URLSearchParamsPolyfill,
+    } = await import('../src')
+
+    const params = new URLSearchParamsPolyfill('query=hello+world')
+    const paramsResponse = await requestGlobalsFetch(new URLPolyfill('https://request-globals.invalid/params'), {
+      body: params,
+      headers: [['X-Client', 'tuple'], []] as any,
+      method: 'POST',
+    })
+    expect(await paramsResponse.text()).toBe('ok')
+    expect(paramsResponse.status).toBe(201)
+    expect(paramsResponse.headers.get('x-result')).toBe('second')
+    expect(requestOptions[0]).toEqual(expect.objectContaining({
+      data: 'query=hello+world',
+      header: {
+        'X-Client': 'tuple',
+        'content-type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      method: 'POST',
+    }))
+
+    const arrayBuffer = Uint8Array.from([1, 2]).buffer
+    await requestGlobalsFetch({
+      url: 'https://request-globals.invalid/request-like-buffer',
+      method: 'POST',
+      headers: { 'X-Array': ['a', 'b'] },
+      clone: () => ({ arrayBuffer: async () => arrayBuffer }),
+    })
+    expect(new Uint8Array(requestOptions[1]?.data)).toEqual(new Uint8Array(arrayBuffer))
+    expect(requestOptions[1]?.header).toEqual({ 'X-Array': 'a, b' })
+
+    await requestGlobalsFetch({
+      url: 'https://request-globals.invalid/request-like-text',
+      method: 'POST',
+      clone: () => ({ text: async () => 'cloned text' }),
+    }, {
+      headers: new Map([['X-Map', 'yes']]),
+    })
+    expect(requestOptions[2]).toEqual(expect.objectContaining({
+      data: 'cloned text',
+      header: {
+        'X-Map': 'yes',
+        'content-type': 'text/plain;charset=UTF-8',
+      },
+    }))
+
+    await requestGlobalsFetch('https://request-globals.invalid/blob', {
+      body: {
+        arrayBuffer: async () => Uint8Array.from([3]).buffer,
+        size: 1,
+        type: 'application/custom',
+      },
+      headers: { 'Content-Type': 'application/explicit' },
+      method: 'POST',
+    })
+    expect(requestOptions[3]?.header).toEqual({ 'Content-Type': 'application/explicit' })
+    expect(new Uint8Array(requestOptions[3]?.data)).toEqual(Uint8Array.from([3]))
+
+    await requestGlobalsFetch('https://request-globals.invalid/object', {
+      body: { value: 1 },
+      headers: 42,
+      method: 'POST',
+    })
+    expect(requestOptions[4]).toEqual(expect.objectContaining({
+      data: '[object Object]',
+      header: {},
+      method: 'POST',
+    }))
+
+    await requestGlobalsFetch('https://request-globals.invalid/unsupported-method', {
+      method: 'unsupported',
+    })
+    expect(requestOptions[5]?.method).toBe('GET')
+
+    await requestGlobalsFetch('https://request-globals.invalid/headers-like', {
+      headers: {
+        forEach(callback: (value: string, key: string) => void) {
+          callback('ignored', ' ')
+          callback('yes', 'X-Headers-Like')
+        },
+      },
+    })
+    expect(requestOptions[6]?.header).toEqual({ 'X-Headers-Like': 'yes' })
+
+    await requestGlobalsFetch({
+      clone: () => ({ text: async () => 'discarded GET body' }),
+      method: 'GET',
+      url: 'https://request-globals.invalid/request-like-get',
+    })
+    expect(requestOptions[7]?.data).toBeUndefined()
+
+    await requestGlobalsFetch('https://request-globals.invalid/params-explicit-type', {
+      body: new URLSearchParamsPolyfill('x=1'),
+      headers: { 'Content-Type': 'x/params' },
+      method: 'POST',
+    })
+    expect(requestOptions[8]?.header).toEqual({ 'Content-Type': 'x/params' })
+
+    const explicitForm = new FormDataPolyfill()
+    explicitForm.append('x', '1')
+    await requestGlobalsFetch('https://request-globals.invalid/form-explicit-type', {
+      body: explicitForm,
+      headers: { 'Content-Type': 'x/form' },
+      method: 'POST',
+    })
+    expect(requestOptions[9]?.header).toEqual({ 'Content-Type': 'x/form' })
+  })
+
+  it('rejects invalid, consumed and body-bearing GET fetch inputs', async () => {
+    const { fetch: requestGlobalsFetch } = await import('../src')
+
+    await expect(requestGlobalsFetch({} as any)).rejects.toThrow('invalid request url')
+    await expect(requestGlobalsFetch('https://request-globals.invalid/get-body', {
+      body: 'invalid',
+    })).rejects.toThrow('GET/HEAD request cannot have body')
+    await expect(requestGlobalsFetch({
+      bodyUsed: true,
+      clone: () => ({}),
+      method: 'POST',
+      url: 'https://request-globals.invalid/consumed',
+    })).rejects.toThrow('request body is already used')
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      options.success?.({ data: '', header: {}, statusCode: 204 })
+    })
+    await expect(requestGlobalsFetch({
+      clone: () => ({}),
+      method: 'POST',
+      url: 'https://request-globals.invalid/no-readable-body',
+    })).resolves.toBeTruthy()
+  })
+
+  it('handles fetch pre-abort, in-flight abort, bridge failures and settled callbacks', async () => {
+    const { AbortControllerPolyfill, fetch: requestGlobalsFetch } = await import('../src')
+    const preAborted = new AbortControllerPolyfill()
+    preAborted.abort()
+    const originalDomException = globalThis.DOMException
+    try {
+      setGlobalValue('DOMException', undefined)
+      await expect(requestGlobalsFetch('https://request-globals.invalid/pre-abort', {
+        signal: preAborted.signal as any,
+      })).rejects.toMatchObject({ name: 'AbortError' })
+    }
+    finally {
+      setGlobalValue('DOMException', originalDomException)
+    }
+
+    let pendingOptions: Record<string, any> | undefined
+    const abortTask = vi.fn()
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      pendingOptions = options
+      return { abort: abortTask }
+    })
+    const controller = new AbortControllerPolyfill()
+    const pending = requestGlobalsFetch('https://request-globals.invalid/in-flight', {
+      signal: controller.signal as any,
+    })
+    await vi.waitFor(() => expect(pendingOptions).toBeDefined())
+    controller.abort()
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    expect(abortTask).toHaveBeenCalledOnce()
+    pendingOptions?.fail?.({ errMsg: 'late failure' })
+    pendingOptions?.success?.({ data: 'late', header: {}, statusCode: 200 })
+
+    let settledAbortListener: (() => void) | undefined
+    const stickySignal = {
+      aborted: false,
+      addEventListener(_type: string, listener: () => void) {
+        settledAbortListener = listener
+      },
+      removeEventListener() {},
+    }
+    wpiRequestMock.mockImplementationOnce((options: Record<string, any>) => {
+      options.success?.({ data: 'done', header: {}, statusCode: 200 })
+    })
+    await expect(requestGlobalsFetch('https://request-globals.invalid/settled-abort', {
+      signal: stickySignal as any,
+    })).resolves.toBeTruthy()
+    expect(() => settledAbortListener?.()).not.toThrow()
+
+    wpiRequestMock.mockImplementationOnce((options: Record<string, any>) => {
+      options.fail?.({ errMsg: 'request:fail simulated' })
+      return { abort: vi.fn() }
+    })
+    await expect(requestGlobalsFetch('https://request-globals.invalid/fail-object')).rejects.toThrow('request:fail simulated')
+
+    wpiRequestMock.mockImplementationOnce((options: Record<string, any>) => {
+      options.fail?.('plain failure')
+      return { abort: vi.fn() }
+    })
+    await expect(requestGlobalsFetch('https://request-globals.invalid/fail-string')).rejects.toThrow('plain failure')
+  })
+
+  it('covers xhr state guards, successful body modes and network failure', async () => {
+    const { HeadersPolyfill, ResponsePolyfill, XMLHttpRequestPolyfill } = await import('../src')
+    const xhr = new XMLHttpRequestPolyfill()
+    expect(xhr.getAllResponseHeaders()).toBe('')
+    expect(xhr.getResponseHeader('x-test')).toBe(null)
+    expect(() => xhr.setRequestHeader('x-test', 'early')).toThrow('invalid readyState')
+    await expect(xhr.send()).rejects.toThrow('invalid readyState')
+    xhr.abort()
+
+    const responseBuffer = Uint8Array.from([1, 2, 3]).buffer
+    const fetchMock = vi.fn().mockResolvedValue(new ResponsePolyfill(responseBuffer, {
+      headers: { 'X-Test': 'yes' },
+      status: 206,
+      statusText: 'Partial',
+      url: 'https://request-globals.invalid/final',
+    }))
+    setGlobalValue('fetch', fetchMock)
+    setGlobalValue('Headers', HeadersPolyfill)
+    xhr.open('', 'https://request-globals.invalid/arraybuffer')
+    xhr.setRequestHeader('X-Request', 'one')
+    xhr.setRequestHeader('X-Request', 'two')
+    xhr.responseType = 'arraybuffer'
+    const states: number[] = []
+    xhr.onreadystatechange = () => states.push(xhr.readyState)
+    await xhr.send()
+    expect(new Uint8Array(xhr.response)).toEqual(Uint8Array.from([1, 2, 3]))
+    expect(xhr.status).toBe(206)
+    expect(xhr.statusText).toBe('Partial')
+    expect(xhr.responseURL).toBe('https://request-globals.invalid/final')
+    expect(xhr.getAllResponseHeaders()).toContain('X-Test: yes')
+    expect(states).toEqual([xhr.HEADERS_RECEIVED, xhr.LOADING, xhr.DONE])
+    expect(fetchMock).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+      headers: { 'X-Request': 'one, two' },
+      method: 'GET',
+    }))
+    expect(() => xhr.setRequestHeader('late', 'no')).toThrow('invalid readyState')
+
+    const emptyJson = new XMLHttpRequestPolyfill()
+    setGlobalValue('fetch', vi.fn().mockResolvedValue(new ResponsePolyfill('', { status: 200 })))
+    emptyJson.open('GET', 'https://request-globals.invalid/empty-json')
+    emptyJson.responseType = 'json'
+    await emptyJson.send()
+    expect(emptyJson.response).toBe(null)
+
+    const failed = new XMLHttpRequestPolyfill()
+    const onerror = vi.fn()
+    const onloadend = vi.fn()
+    setGlobalValue('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+    failed.onerror = onerror
+    failed.onloadend = onloadend
+    failed.open('GET', 'https://request-globals.invalid/offline')
+    await expect(failed.send()).rejects.toThrow('offline')
+    expect(failed.readyState).toBe(failed.DONE)
+    expect(failed.status).toBe(0)
+    expect(onerror).toHaveBeenCalledOnce()
+    expect(onloadend).toHaveBeenCalledOnce()
+  })
+
+  it('covers xhr abort and timeout completion paths', async () => {
+    const { XMLHttpRequestPolyfill } = await import('../src')
+    const abortingFetch = vi.fn((_url: string, init: { signal: AbortSignal }) => new Promise((_resolve, reject) => {
+      init.signal.addEventListener('abort', () => reject(init.signal.reason ?? new Error('aborted')))
+    }))
+    setGlobalValue('fetch', abortingFetch)
+
+    const aborted = new XMLHttpRequestPolyfill()
+    const onabort = vi.fn()
+    aborted.onabort = onabort
+    aborted.open('GET', 'https://request-globals.invalid/abort')
+    const abortedSend = aborted.send()
+    aborted.abort()
+    await abortedSend
+    expect(aborted.readyState).toBe(aborted.DONE)
+    expect(onabort).toHaveBeenCalledOnce()
+
+    vi.useFakeTimers()
+    try {
+      const timedOut = new XMLHttpRequestPolyfill()
+      const ontimeout = vi.fn()
+      timedOut.ontimeout = ontimeout
+      timedOut.timeout = 10
+      timedOut.open('GET', 'https://request-globals.invalid/timeout')
+      const timeoutSend = timedOut.send()
+      await vi.advanceTimersByTimeAsync(10)
+      await timeoutSend
+      expect(timedOut.readyState).toBe(timedOut.DONE)
+      expect(ontimeout).toHaveBeenCalledOnce()
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('uses xhr response defaults and the internal fetch bridge when no global fetch exists', async () => {
+    const { HeadersPolyfill, XMLHttpRequestPolyfill } = await import('../src')
+    const responseWithoutMetadata = {
+      headers: new HeadersPolyfill(),
+      status: 200,
+      statusText: undefined,
+      url: undefined,
+      async arrayBuffer() {
+        return new ArrayBuffer(0)
+      },
+      async text() {
+        return 'plain'
+      },
+    }
+    setGlobalValue('fetch', vi.fn().mockResolvedValue(responseWithoutMetadata))
+    const defaults = new XMLHttpRequestPolyfill()
+    defaults.open('GET', 'https://request-globals.invalid/default-response')
+    await defaults.send()
+    expect(defaults.statusText).toBe('')
+    expect(defaults.responseURL).toBe('https://request-globals.invalid/default-response')
+    expect(defaults.response).toBe('plain')
+
+    delete (globalThis as Record<string, any>).fetch
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      options.success?.({ data: 'internal', header: {}, statusCode: 200 })
+    })
+    const internal = new XMLHttpRequestPolyfill()
+    internal.open('GET', 'https://request-globals.invalid/internal-fetch')
+    await internal.send()
+    expect(internal.responseText).toBe('internal')
   })
 
   it('supports mini-program SocketTask through the injected WebSocket bridge', async () => {
@@ -1330,5 +1831,138 @@ describe('request globals runtime', () => {
         data: expect.any(ArrayBuffer),
       }))
     })
+  })
+
+  it('reports unavailable websocket adapters and invalid socket tasks', async () => {
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({ targets: ['WebSocket'] })
+
+    wpiResolveTargetMock.mockReturnValue(undefined)
+    expect(() => new globalThis.WebSocket('wss://request-globals.invalid/unsupported')).toThrow(/not supported/u)
+
+    wpiResolveTargetMock.mockReturnValue({ supported: false, target: 'connectSocket' })
+    expect(() => new globalThis.WebSocket('wss://request-globals.invalid/unsupported-target')).toThrow(/not supported/u)
+
+    wpiGetAdapterMock.mockReturnValue(undefined)
+    wpiResolveTargetMock.mockReturnValue({ supported: true, target: 'connectSocket' })
+    expect(() => new globalThis.WebSocket('wss://request-globals.invalid/missing-adapter')).toThrow(/not supported/u)
+    wpiGetAdapterMock.mockReturnValue({ connectSocket: wpiConnectSocketMock })
+
+    wpiResolveTargetMock.mockReturnValue({ supported: true, target: 'missingSocketMethod' })
+    expect(() => new globalThis.WebSocket('wss://request-globals.invalid/missing-method')).toThrow(/not supported/u)
+
+    wpiResolveTargetMock.mockReturnValue({ supported: true, target: 'connectSocket' })
+    wpiConnectSocketMock.mockReturnValue(null)
+    expect(() => new globalThis.WebSocket('wss://request-globals.invalid/invalid-task')).toThrow(/SocketTask/u)
+  })
+
+  it('handles websocket connection failure, duplicate runtime events and default close data', async () => {
+    const mockSocket = createMockSocketTask()
+    wpiConnectSocketMock.mockImplementation(() => mockSocket.task)
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({ targets: ['WebSocket'] })
+
+    const socket = new globalThis.WebSocket('wss://request-globals.invalid/connect-failure')
+    const openSpy = vi.fn()
+    const messageSpy = vi.fn()
+    const errorSpy = vi.fn()
+    const closeSpy = vi.fn()
+    socket.onopen = openSpy
+    socket.onmessage = messageSpy
+    socket.onerror = errorSpy
+    socket.onclose = closeSpy
+
+    const connectOptions = wpiConnectSocketMock.mock.calls.at(-1)?.[0]
+    connectOptions.fail({ errMsg: undefined })
+    expect(socket.readyState).toBe(socket.CLOSED)
+    expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({ message: '' }))
+    expect(closeSpy).toHaveBeenCalledWith(expect.objectContaining({
+      code: 1000,
+      reason: '',
+      wasClean: true,
+    }))
+
+    mockSocket.emitOpen()
+    mockSocket.emitMessage({ data: 'ignored' })
+    mockSocket.emitClose({ code: 4001, reason: 'ignored duplicate' })
+    expect(openSpy).not.toHaveBeenCalled()
+    expect(messageSpy).not.toHaveBeenCalled()
+    expect(closeSpy).toHaveBeenCalledOnce()
+  })
+
+  it('covers websocket send and close payload variants and host failures', async () => {
+    const mockSocket = createMockSocketTask()
+    wpiConnectSocketMock.mockImplementation(() => mockSocket.task)
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({ targets: ['WebSocket'] })
+
+    const socket = new globalThis.WebSocket('wss://request-globals.invalid/payloads', 'chat')
+    const errorSpy = vi.fn()
+    const messageSpy = vi.fn()
+    socket.onerror = errorSpy
+    socket.onmessage = messageSpy
+    mockSocket.emitOpen()
+    mockSocket.emitOpen()
+
+    socket.send(Uint8Array.from([1, 2]))
+    socket.send(Uint8Array.from([3, 4]).buffer)
+    expect(mockSocket.sendMock).toHaveBeenCalledTimes(2)
+    expect(mockSocket.sendMock.mock.calls[0]?.[0].data).toBeInstanceOf(ArrayBuffer)
+    expect(mockSocket.sendMock.mock.calls[1]?.[0].data).toBeInstanceOf(ArrayBuffer)
+    mockSocket.sendMock.mock.calls[0]?.[0].fail(new Error('send failed'))
+    expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({ message: 'send failed' }))
+    expect(() => socket.send({} as any)).toThrow(/data must be/u)
+
+    socket.send({
+      arrayBuffer: async () => {
+        throw new Error('blob read failed')
+      },
+      size: 1,
+      type: 'application/octet-stream',
+    } as any)
+    await vi.waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({ message: 'blob read failed' }))
+    })
+
+    socket.send(new globalThis.Blob(['send failure']))
+    await vi.waitFor(() => expect(mockSocket.sendMock).toHaveBeenCalledTimes(3))
+    mockSocket.sendMock.mock.calls[2]?.[0].fail({ errMsg: 'async send failed' })
+    expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({ message: 'async send failed' }))
+
+    mockSocket.emitMessage({ data: 'text message' })
+    expect(messageSpy).toHaveBeenCalledWith(expect.objectContaining({ data: 'text message' }))
+    mockSocket.emitError('unknown host failure' as any)
+    expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({ message: undefined }))
+
+    const originalTextEncoder = globalThis.TextEncoder
+    const originalDomException = globalThis.DOMException
+    try {
+      setGlobalValue('TextEncoder', undefined)
+      setGlobalValue('DOMException', undefined)
+      expect(() => socket.close(2000)).toThrow(/invalid code/u)
+      expect(() => socket.close(3000, '中文')).not.toThrow()
+    }
+    finally {
+      setGlobalValue('TextEncoder', originalTextEncoder)
+      setGlobalValue('DOMException', originalDomException)
+    }
+    mockSocket.closeMock.mock.calls[0]?.[0].fail({ errMsg: 'close failed' })
+    expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({ message: 'close failed' }))
+    socket.close()
+  })
+
+  it('forwards an argument-free websocket close', async () => {
+    const mockSocket = createMockSocketTask()
+    wpiConnectSocketMock.mockImplementation(() => mockSocket.task)
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({ targets: ['WebSocket'] })
+    setGlobalValue('URL', undefined)
+    const socket = new globalThis.WebSocket('wss://request-globals.invalid/default-close')
+    mockSocket.emitOpen()
+    socket.close()
+    expect(mockSocket.closeMock).toHaveBeenCalledWith(expect.objectContaining({
+      code: undefined,
+      reason: undefined,
+    }))
   })
 })

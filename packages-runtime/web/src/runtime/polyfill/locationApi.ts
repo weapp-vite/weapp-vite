@@ -119,7 +119,7 @@ export function getLocationBridge(options?: any) {
       })
   }
   catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+    const message = (error as Error).message
     const failure = callMiniProgramAsyncFailure(options, `getLocation:fail ${message}`)
     return Promise.reject(failure)
   }
@@ -143,11 +143,7 @@ export async function getFuzzyLocationBridge(options?: any) {
     })
   }
   catch (error) {
-    const message = typeof (error as { errMsg?: unknown })?.errMsg === 'string'
-      ? (error as { errMsg: string }).errMsg
-      : error instanceof Error
-        ? error.message
-        : String(error)
+    const message = (error as { errMsg: string }).errMsg
     const failure = callMiniProgramAsyncFailure(options, `getFuzzyLocation:fail ${message}`)
     return Promise.reject(failure)
   }

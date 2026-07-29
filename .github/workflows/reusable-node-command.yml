@@ -31,6 +31,10 @@ on:
         required: false
         type: boolean
         default: false
+      playwright_browsers:
+        required: false
+        type: string
+        default: chromium
       increase_ulimit:
         required: false
         type: boolean
@@ -83,9 +87,13 @@ jobs:
         if: inputs.increase_ulimit && runner.os != 'Windows'
         run: ulimit -n 65536 || true
 
-      - name: Install Playwright Chromium
-        if: inputs.install_playwright
-        run: pnpm exec playwright install chromium
+      - name: Install Playwright browsers and system dependencies
+        if: inputs.install_playwright && runner.os == 'Linux'
+        run: pnpm exec playwright install --with-deps ${{ inputs.playwright_browsers }}
+
+      - name: Install Playwright browsers
+        if: inputs.install_playwright && runner.os != 'Linux'
+        run: pnpm exec playwright install ${{ inputs.playwright_browsers }}
 
       - name: Run command
         env:

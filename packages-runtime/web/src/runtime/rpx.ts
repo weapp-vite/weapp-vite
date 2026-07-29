@@ -37,7 +37,7 @@ export function setupRpx(config?: RpxConfig) {
   }
   const apply = () => applyRpx()
   apply()
-  if (!initialized) {
+  if (!initialized && typeof window !== 'undefined') {
     initialized = true
     window.addEventListener('resize', apply)
   }

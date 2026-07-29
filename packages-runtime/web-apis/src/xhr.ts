@@ -10,13 +10,9 @@ function createProgressEvent(type: string) {
   return { type, lengthComputable: false, loaded: 0, total: 0 }
 }
 
-function createError(type: 'error' | 'timeout' | 'abort') {
-  const error = new Error(type)
-  error.name = type === 'abort'
-    ? 'AbortError'
-    : type === 'timeout'
-      ? 'TimeoutError'
-      : 'NetworkError'
+function createTimeoutError() {
+  const error = new Error('timeout')
+  error.name = 'TimeoutError'
   return error
 }
 
@@ -129,7 +125,7 @@ export class XMLHttpRequestPolyfill extends RequestGlobalsEventTarget {
 
     if (this.timeout > 0) {
       this.timeoutId = setTimeout(() => {
-        controller.abort(createError('timeout'))
+        controller.abort(createTimeoutError())
       }, this.timeout)
     }
 
@@ -165,7 +161,7 @@ export class XMLHttpRequestPolyfill extends RequestGlobalsEventTarget {
       this.finish('load')
     }
     catch (error) {
-      const reason = controller.signal && 'reason' in controller.signal ? controller.signal.reason : undefined
+      const reason = controller.signal.reason
       if ((controller.signal as AbortSignal | undefined)?.aborted) {
         const type = reason instanceof Error && reason.name === 'TimeoutError' ? 'timeout' : 'abort'
         this.finish(type)

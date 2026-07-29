@@ -23,6 +23,7 @@ interface MergeWebOptions {
   getDefineImportMetaEnv: () => Record<string, any>
   uniApp?: false | { include: string[] }
   autoImportResolvers?: WeappWebPluginOptions['__autoImportResolvers']
+  resolveAppConfig?: WeappWebPluginOptions['__resolveAppConfig']
 }
 
 export function mergeWebPlugins(
@@ -100,7 +101,6 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
 
   inline.root = web.root
   inline.configFile = false
-  inline.mode = inline.mode ?? mode
 
   const runtimeProvider = resolveRuntimeProvider('web', 'web')
   const runtimeProviderPlugin = createSelectedRuntimeProviderPlugin(runtimeProvider, isDev)
@@ -108,6 +108,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
     ...web.pluginOptions,
     __uniApp: options.uniApp || undefined,
     __autoImportResolvers: options.autoImportResolvers,
+    __resolveAppConfig: options.resolveAppConfig,
     __runtimeProvider: {
       moduleId: WEAPP_VITE_RUNTIME_VIRTUAL_ID,
       hmrAcceptCode: resolveRuntimeProviderHmrFooter(runtimeProvider),
@@ -115,12 +116,11 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
   })
   inline.plugins = mergeWebPlugins(inline.plugins, webPlugin, runtimeProviderPlugin)
 
-  inline.build ??= {}
   inline.build.outDir = web.outDir
   inline.build.emptyOutDir ??= !isDev
 
   applyWeappViteHostMeta(inline, 'web', 'web')
-  inline.define = defu(inline.define ?? {}, getDefineImportMetaEnv())
+  inline.define = defu(inline.define, getDefineImportMetaEnv())
   injectBuiltinAliases(inline, 'build')
 
   // `weapp-vite/runtime` is a public compatibility entry used by native
@@ -141,7 +141,9 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
   else {
     inline.resolve!.alias = [
       runtimeAlias,
-      ...Object.entries(aliases ?? {}).map(([find, replacement]) => ({ find, replacement })),
+      ...Object.entries(aliases ?? {})
+        .filter(([find]) => find !== runtimeAlias.find)
+        .map(([find, replacement]) => ({ find, replacement })),
     ]
   }
 

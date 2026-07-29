@@ -125,7 +125,7 @@ export function toRelativeImport(from: string, target: string) {
   const fromDir = dirname(from)
   const rel = relative(fromDir, target)
   if (!rel || rel.startsWith('.')) {
-    const fallback = normalizeTemplatePath(target).split('/').pop() ?? ''
+    const fallback = normalizeTemplatePath(target).split('/').pop()!
     return rel || `./${fallback}`
   }
   return `./${rel}`

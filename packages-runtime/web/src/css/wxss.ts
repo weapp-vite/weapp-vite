@@ -109,8 +109,8 @@ function createVirtualHostPartSelector(source: selectorParser.Selector) {
   const targetNodes = parent.nodes.slice(targetStart, targetEnd + 1)
   const targetClass = nestedTargetClass
     ?? targetNodes.find(node => node.type === 'class')?.value
-  const targetNode = parent.nodes[targetEnd]
-  if (!targetClass || !targetNode) {
+  const targetNode = parent.nodes[targetEnd]!
+  if (!targetClass) {
     return undefined
   }
 
@@ -163,9 +163,6 @@ function transformWxssRoot(root: postcss.Root, options?: WxssTransformOptions) {
       )
       .replace(RPX_RE, (_, value: string) => {
         const numeric = Number.parseFloat(value)
-        if (Number.isNaN(numeric)) {
-          return `${value}px`
-        }
         if (useVariable) {
           return `calc(var(${rpxVar}) * ${numeric})`
         }

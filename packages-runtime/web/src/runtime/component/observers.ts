@@ -24,10 +24,7 @@ function resolveObservedValue(instance: ComponentPublicInstance, pattern: string
     .replace(/\[(\d+)\]/g, '.$1')
     .split('.')
     .filter(Boolean)
-  const [root, ...rest] = segments
-  if (!root) {
-    return undefined
-  }
+  const [root, ...rest] = segments as [string, ...string[]]
   let current = hasOwn(instance.properties, root)
     ? instance.properties[root]
     : instance.data[root]

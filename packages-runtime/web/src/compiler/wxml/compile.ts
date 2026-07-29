@@ -27,9 +27,6 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
 
   const expandDependencyTree = (dependencies: string[], importer: string) => {
     for (const target of dependencies) {
-      if (!target) {
-        continue
-      }
       if (dependencyContext.active.has(target)) {
         warnCircularTemplate(dependencyContext, importer, target)
         continue

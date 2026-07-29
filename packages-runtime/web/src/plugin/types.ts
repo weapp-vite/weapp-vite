@@ -73,6 +73,8 @@ export interface WeappWebPluginOptions {
   }
   /** @internal */
   __autoImportResolvers?: WebComponentResolver[]
+  /** @internal */
+  __resolveAppConfig?: (appConfigPath: string) => Promise<Record<string, unknown> | undefined>
 }
 
 export interface WebResolvedComponent {
@@ -132,7 +134,6 @@ export interface ScanState {
   templateComponentMap: Map<string, Record<string, string>>
   templatePathSet: Set<string>
   componentTagMap: Map<string, string>
-  componentIdMap: Map<string, string>
   appNavigationDefaults: NavigationBarConfig
   appComponentTags: Record<string, string>
   sfcResults: Map<string, VueTransformResult>

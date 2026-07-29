@@ -149,6 +149,7 @@ export const NATIVE_COMPONENT_DESCRIPTORS = Object.freeze([
       'extra-data',
       'version',
       'short-link',
+      'aria-label',
       'hover-class',
       'hover-start-time',
       'hover-stay-time',

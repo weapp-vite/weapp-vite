@@ -114,7 +114,7 @@ export function registerServeCommand(cli: CAC) {
               forceReopen: true,
             }),
             platform: configService.platform,
-            projectPath: miniProgramDevActions.projectPath ?? configService.cwd,
+            projectPath: miniProgramDevActions.projectPath,
             rebuild: miniProgramDevActions.rebuild,
             silentStartupHint: true,
             weappViteConfig: configService.weappViteConfig,

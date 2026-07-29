@@ -6,6 +6,7 @@ import { stripVTControlCharacters } from 'node:util'
 /* eslint-disable-next-line e18e/ban-dependencies -- CI 性能对比需要调度两个 checkout 的命令并收集报告。 */
 import { execa } from 'execa'
 import path from 'pathe'
+import { createBenchmarkCheckoutPreparationCommands } from './benchmark-checkout-preparation'
 
 const baselineDirInput = process.env.TEMPLATES_PERF_BASELINE_DIR
 const baselineDir = baselineDirInput ? path.resolve(baselineDirInput) : ''
@@ -59,6 +60,10 @@ async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutR
   await mkdir(hmrReportDir, { recursive: true })
 
   const commit = (await execa('git', ['rev-parse', '--short=8', 'HEAD'], { cwd })).stdout.trim()
+  process.stdout.write(`[templates-perf] ${id} ${commit}: sync generated dependency sources\n`)
+  for (const command of createBenchmarkCheckoutPreparationCommands()) {
+    await run(command.command, command.args, cwd)
+  }
   process.stdout.write(`[templates-perf] ${id} ${commit}: build weapp-vite dependency dist\n`)
   await run('pnpm', ['--filter', 'weapp-vite...', '--if-present', 'build'], cwd)
 

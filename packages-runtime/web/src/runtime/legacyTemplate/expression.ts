@@ -29,21 +29,15 @@ export function normalizeList(value: any): any[] {
 }
 
 export function escapeHtml(value: string) {
+  const entities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    '\'': '&#39;',
+  }
   return value.replace(/[&<>"']/g, (match) => {
-    switch (match) {
-      case '&':
-        return '&amp;'
-      case '<':
-        return '&lt;'
-      case '>':
-        return '&gt;'
-      case '"':
-        return '&quot;'
-      case '\'':
-        return '&#39;'
-      default:
-        return match
-    }
+    return entities[match]
   })
 }
 
@@ -105,9 +99,7 @@ export function evaluateExpression(expression: string, scope: LegacyTemplateScop
         throw new SyntaxError(`[@weapp-vite/web] 无法解析表达式 "${trimmed}": ${reason}`)
       }
     }
-    if (evaluator) {
-      expressionCache.set(trimmed, evaluator)
-    }
+    expressionCache.set(trimmed, evaluator)
   }
   try {
     return evaluator?.(scope)

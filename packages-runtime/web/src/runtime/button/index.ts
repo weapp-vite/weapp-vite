@@ -96,18 +96,12 @@ export class WeappButton extends BaseElement {
 
     if (typeof MutationObserver !== 'undefined') {
       this.#observer = new MutationObserver((records) => {
-        if (!this.#text) {
-          return
-        }
         for (const record of records) {
           for (const node of [...record.addedNodes]) {
             if (isInternalNode(node)) {
               continue
             }
-            if (node === this.#button) {
-              continue
-            }
-            this.#text.appendChild(node)
+            this.#text!.appendChild(node)
           }
         }
       })
@@ -185,9 +179,6 @@ export class WeappButton extends BaseElement {
   }
 
   #handleClick = (event: Event) => {
-    if (isDisabled(this)) {
-      return
-    }
     const formType = this.getAttribute('form-type')
     if (!formType) {
       return

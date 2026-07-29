@@ -177,10 +177,7 @@ function createUrlCanParser(URLConstructor: typeof URLPolyfill) {
 }
 
 function patchUrlConstructor(host: Record<string, any>) {
-  const URLConstructor = host.URL
-  if (typeof URLConstructor !== 'function' || isPlaceholderRequestGlobal(URLConstructor)) {
-    return false
-  }
+  const URLConstructor = host.URL as typeof URLPolyfill
 
   let patched = true
   if (typeof URLConstructor.parse !== 'function') {
@@ -216,7 +213,7 @@ function sortUrlSearchParams(this: URLSearchParams) {
 function patchUrlSearchParamsConstructor(host: Record<string, any>) {
   const URLSearchParamsConstructor = host.URLSearchParams
   const prototype = URLSearchParamsConstructor?.prototype as Record<string, any> | undefined
-  if (typeof URLSearchParamsConstructor !== 'function' || isPlaceholderRequestGlobal(URLSearchParamsConstructor) || !prototype) {
+  if (!prototype) {
     return false
   }
 
@@ -241,7 +238,7 @@ function patchUrlSearchParamsConstructor(host: Record<string, any>) {
 function patchHeadersConstructor(host: Record<string, any>) {
   const HeadersConstructor = host.Headers
   const prototype = HeadersConstructor?.prototype as Record<string, any> | undefined
-  if (typeof HeadersConstructor !== 'function' || isPlaceholderRequestGlobal(HeadersConstructor) || !prototype) {
+  if (!prototype) {
     return false
   }
 
@@ -256,10 +253,7 @@ function patchHeadersConstructor(host: Record<string, any>) {
 }
 
 function patchResponseConstructor(host: Record<string, any>) {
-  const ResponseConstructor = host.Response
-  if (typeof ResponseConstructor !== 'function' || isPlaceholderRequestGlobal(ResponseConstructor)) {
-    return false
-  }
+  const ResponseConstructor = host.Response as typeof ResponsePolyfill
 
   let patched = true
   if (typeof ResponseConstructor.json !== 'function') {
@@ -431,15 +425,10 @@ function syncWeappViteRequestGlobalsActuals(
   host: Record<string, any>,
   targets: WeappInjectWebRuntimeGlobalsTarget[],
 ) {
-  const globalObject = host != null
-    && (typeof host === 'object' || typeof host === 'function')
-    ? host
-    : resolveRequestGlobalsHost()
-
-  let actuals = globalObject[REQUEST_GLOBAL_ACTUALS_KEY]
+  let actuals = host[REQUEST_GLOBAL_ACTUALS_KEY]
   if (!actuals || typeof actuals !== 'object') {
     actuals = Object.create(null)
-    assignHostGlobal(globalObject, REQUEST_GLOBAL_ACTUALS_KEY, actuals)
+    assignHostGlobal(host, REQUEST_GLOBAL_ACTUALS_KEY, actuals)
   }
 
   for (const target of resolveActualBindingTargets(targets)) {

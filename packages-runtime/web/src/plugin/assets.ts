@@ -76,7 +76,7 @@ export function resolveWebAssetRequest(srcRoot: string, requestUrl?: string) {
   }
   let pathname: string
   try {
-    const rawPath = decodeURIComponent(requestUrl.split(/[?#]/, 1)[0] ?? '')
+    const rawPath = decodeURIComponent(requestUrl.split(/[?#]/, 1)[0]!)
     if (rawPath.split('/').includes('..')) {
       return undefined
     }

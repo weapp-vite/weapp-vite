@@ -112,13 +112,6 @@ function mergeHeaderSource(target: HeaderMap, source: unknown) {
     return
   }
 
-  if (typeof (source as HeaderLike).forEach === 'function') {
-    ;(source as HeaderLike).forEach((value, key) => {
-      setHeader(target, key, value)
-    })
-    return
-  }
-
   if (typeof (source as Iterable<HeaderPair>)[Symbol.iterator] === 'function') {
     for (const entry of source as Iterable<HeaderPair>) {
       if (!entry || entry.length < 2) {
@@ -126,6 +119,13 @@ function mergeHeaderSource(target: HeaderMap, source: unknown) {
       }
       setHeader(target, entry[0], entry[1])
     }
+    return
+  }
+
+  if (typeof (source as HeaderLike).forEach === 'function') {
+    ;(source as HeaderLike).forEach((value, key) => {
+      setHeader(target, key, value)
+    })
     return
   }
 
@@ -283,14 +283,12 @@ export function fetch(input: RequestGlobalsFetchInput, init?: RequestGlobalsFetc
 
     return new Promise<Response>((resolve, reject) => {
       let settled = false
-      let aborted = false
       let requestTask: WeapiMiniProgramRequestTask | undefined
 
       function onAbort() {
         if (settled) {
           return
         }
-        aborted = true
         requestTask?.abort()
         settled = true
         if (meta.signal) {
@@ -330,10 +328,6 @@ export function fetch(input: RequestGlobalsFetchInput, init?: RequestGlobalsFetc
           }
           settled = true
           cleanup()
-          if (aborted) {
-            reject(createAbortError())
-            return
-          }
           const message = isObject(error) && typeof error.errMsg === 'string'
             ? error.errMsg
             : String(error)

@@ -1,9 +1,11 @@
 export const WEB_USER_DATA_PATH = '/__weapp_vite_web_user_data__'
 
-interface MemoryFileRecord {
-  kind: 'text' | 'binary'
-  text?: string
-  bytes?: ArrayBuffer
+type MemoryFileRecord = {
+  kind: 'text'
+  text: string
+} | {
+  kind: 'binary'
+  bytes: ArrayBuffer
 }
 
 const memoryFileStorage = new Map<string, MemoryFileRecord>()
@@ -34,10 +36,10 @@ function toArrayBuffer(data: ArrayBuffer | ArrayBufferView) {
   return new Uint8Array(view.buffer, view.byteOffset, view.byteLength).slice().buffer
 }
 
-function decodeArrayBufferToText(buffer: ArrayBuffer, encoding?: string) {
+function decodeArrayBufferToText(buffer: ArrayBuffer, encoding: string) {
   if (typeof TextDecoder === 'function') {
     try {
-      return new TextDecoder(encoding || 'utf-8').decode(new Uint8Array(buffer))
+      return new TextDecoder(encoding).decode(new Uint8Array(buffer))
     }
     catch {
       return new TextDecoder().decode(new Uint8Array(buffer))
@@ -80,9 +82,9 @@ export function readFileSyncInternal(filePath: string, encoding?: string) {
   }
   const normalizedEncoding = normalizeFileEncoding(encoding)
   if (record.kind === 'text') {
-    return record.text ?? ''
+    return record.text
   }
-  const bytes = record.bytes ? cloneArrayBuffer(record.bytes) : new ArrayBuffer(0)
+  const bytes = cloneArrayBuffer(record.bytes)
   if (normalizedEncoding) {
     return decodeArrayBufferToText(bytes, normalizedEncoding)
   }
@@ -90,7 +92,7 @@ export function readFileSyncInternal(filePath: string, encoding?: string) {
 }
 
 export function resolveUploadFileName(filePath: string) {
-  const normalized = filePath.split(/[?#]/)[0] ?? ''
+  const normalized = filePath.split(/[?#]/)[0]
   const segments = normalized.split('/')
   return segments[segments.length - 1] || 'file'
 }
@@ -102,9 +104,9 @@ export async function resolveUploadFileBlob(
   const record = memoryFileStorage.get(filePath)
   if (record) {
     if (record.kind === 'text') {
-      return new Blob([record.text ?? ''], { type: 'text/plain;charset=utf-8' })
+      return new Blob([record.text], { type: 'text/plain;charset=utf-8' })
     }
-    return new Blob([record.bytes ?? new ArrayBuffer(0)])
+    return new Blob([record.bytes])
   }
   if (/^(?:https?:|blob:|data:)/i.test(filePath) && runtimeFetch) {
     try {
@@ -122,12 +124,12 @@ function cloneMemoryFileRecord(record: MemoryFileRecord): MemoryFileRecord {
   if (record.kind === 'text') {
     return {
       kind: 'text',
-      text: record.text ?? '',
+      text: record.text,
     }
   }
   return {
     kind: 'binary',
-    bytes: record.bytes ? cloneArrayBuffer(record.bytes) : new ArrayBuffer(0),
+    bytes: cloneArrayBuffer(record.bytes),
   }
 }
 
@@ -161,13 +163,13 @@ export function resolveOpenDocumentUrl(filePath: string) {
 
   if (record) {
     if (record.kind === 'text') {
-      const text = record.text ?? ''
+      const text = record.text
       if (typeof Blob === 'function' && runtimeUrl?.createObjectURL) {
         return runtimeUrl.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }))
       }
       return `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`
     }
-    const bytes = record.bytes ?? new ArrayBuffer(0)
+    const bytes = record.bytes
     if (typeof Blob === 'function' && runtimeUrl?.createObjectURL) {
       return runtimeUrl.createObjectURL(new Blob([bytes]))
     }

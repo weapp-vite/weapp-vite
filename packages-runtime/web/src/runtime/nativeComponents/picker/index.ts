@@ -182,7 +182,7 @@ export class WeappPicker extends BaseElement {
     const external = this.value
     if (mode === 'selector') {
       const columns = resolvePickerColumns(this.range, mode, this.getAttribute('range-key') ?? undefined)
-      this.#committedValue = normalizePickerIndex(external, columns[0]?.length ?? 0)
+      this.#committedValue = normalizePickerIndex(external, columns[0]!.length)
     }
     else if (mode === 'multiSelector') {
       const columns = resolvePickerColumns(this.range, mode, this.getAttribute('range-key') ?? undefined)

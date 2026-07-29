@@ -29,9 +29,9 @@ export async function readJsonFile(pathname: string) {
       filepath: candidate,
       preserveTemporaryFile: true,
     })
-    const resolved = typeof mod.default === 'function'
-      ? await mod.default()
-      : mod.default
+    const resolved = typeof mod === 'function'
+      ? await mod()
+      : mod
     if (!isRecord(resolved)) {
       return undefined
     }

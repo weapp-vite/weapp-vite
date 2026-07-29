@@ -136,8 +136,8 @@ export class WeappVideo extends BaseElement {
   }
 
   #connectFullscreenListener() {
-    const target = this.ownerDocument ?? (typeof document === 'undefined' ? undefined : document)
-    if (!target || this.#fullscreenTarget === target) {
+    const target = this.ownerDocument
+    if (this.#fullscreenTarget === target) {
       return
     }
     this.#fullscreenTarget?.removeEventListener('fullscreenchange', this.#handleFullscreenChange)
@@ -145,12 +145,12 @@ export class WeappVideo extends BaseElement {
     this.#fullscreenTarget = target
   }
 
-  #handleFullscreenChange = () => {
-    const video = this.#video
-    const target = this.#fullscreenTarget
-    if (!video || !target) {
+  #handleFullscreenChange = (event: Event) => {
+    if (event.target !== this.#fullscreenTarget) {
       return
     }
+    const video = this.#video!
+    const target = this.#fullscreenTarget!
     dispatchMiniProgramEvent(this, 'fullscreenchange', {
       fullScreen: target.fullscreenElement === video,
       direction: resolveVideoDirection(video.videoWidth, video.videoHeight),

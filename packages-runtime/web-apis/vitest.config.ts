@@ -12,6 +12,7 @@ export default defineProject({
     environment: 'node',
     include: [path.join(PACKAGE_DIR, 'test/**/*.test.ts')],
     coverage: createProjectCoverage('packages-runtime/web-apis', {
+      all: true,
       include: [path.join(PACKAGE_DIR, 'src/**/*.ts')],
     }),
   },

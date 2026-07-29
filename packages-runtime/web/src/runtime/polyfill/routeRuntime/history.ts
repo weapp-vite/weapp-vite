@@ -76,7 +76,7 @@ function restoreBrowserScrollRestoration() {
 
 function normalizePath(path: string) {
   const decoded = decodeURIComponent(path || '/')
-  const withoutQuery = decoded.split('?')[0] ?? '/'
+  const withoutQuery = decoded.split('?')[0]!
   const withoutLeading = withoutQuery.replace(/^\/+/, '').replace(/\/+$/, '')
   return withoutLeading.replace(/\.html$/, '')
 }
@@ -115,7 +115,7 @@ function resolveTargetFromUrl(url: URL) {
   if (resolvedConfig.mode === 'hash') {
     const rawHash = url.hash.replace(/^#\/?/, '')
     const [path, query = ''] = rawHash.split('?')
-    const id = resolvePageId(path ?? '')
+    const id = resolvePageId(path)
     return id ? { id, query: parseQuery(query) } : undefined
   }
 

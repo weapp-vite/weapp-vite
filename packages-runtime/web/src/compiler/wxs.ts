@@ -12,7 +12,7 @@ export interface WxsTransformOptions {
 const REQUIRE_RE = /require\(\s*['"]([^'"]+)['"]\s*\)/g
 
 function normalizePath(p: string) {
-  return p.split('\\\\').join('/')
+  return p.replace(/\\/g, '/')
 }
 
 function isPlainWxsScript(pathname: string) {

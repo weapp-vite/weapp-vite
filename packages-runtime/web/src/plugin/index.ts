@@ -202,6 +202,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       state,
       resolveId: resolveWebModuleId,
       resolveAutoImportTag: resolveWebAutoImportTag,
+      resolveAppConfig: options.__resolveAppConfig,
       uniApp: options.__uniApp,
     })
     componentImportIdMap.clear()
@@ -430,7 +431,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           uniApp: options.__uniApp,
         })
         return transformWebVueSfcScript({
-          code: result.script ?? '',
+          code: result.script!,
           filename: clean,
           meta,
           runtimeModuleId: runtimeProvider?.moduleId ?? toViteFsImport(resolveRuntimePolyfillPath()),

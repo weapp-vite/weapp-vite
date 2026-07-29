@@ -195,7 +195,7 @@ export class WeappNavigator extends BaseElement {
     }
     const url = this.getAttribute('url') ?? ''
     this.#anchor.href = url || '#'
-    this.#anchor.setAttribute('aria-label', this.getAttribute('aria-label') ?? this.textContent?.trim() ?? '')
+    this.#anchor.setAttribute('aria-label', this.getAttribute('aria-label') ?? this.textContent.trim())
   }
 
   #bindEvents() {

@@ -76,9 +76,7 @@ export function collectFormControlValues(form: HTMLElement) {
 
 export function resetFormControls(form: HTMLElement) {
   for (const control of controlsByForm.get(form) ?? []) {
-    if (formByControl.get(control) === form) {
-      control.formReset()
-    }
+    control.formReset()
   }
 }
 

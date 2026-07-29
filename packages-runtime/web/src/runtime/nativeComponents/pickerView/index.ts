@@ -106,7 +106,7 @@ export class WeappPickerView extends BaseElement {
     this.#columns = this.#slot.assignedElements({ flatten: true })
       .filter((element): element is WeappPickerViewColumn => element.tagName.toLowerCase() === 'weapp-picker-view-column')
     const next = normalizePickerViewValue(this.value, this.#columns.map(column => column.itemCount))
-    this.#columns.forEach((column, index) => column.setSelectedIndex(next[index] ?? 0))
+    this.#columns.forEach((column, index) => column.setSelectedIndex(next[index]!))
     const itemHeight = this.#columns[0]?.itemHeight
     if (itemHeight) {
       this.style.setProperty('--weapp-picker-view-item-height', `${itemHeight}px`)

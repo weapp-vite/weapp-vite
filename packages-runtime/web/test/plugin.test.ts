@@ -475,7 +475,7 @@ const ready = ref(true)
     expect(await (plugin.resolveId as ((...args: any[]) => any))?.call(
       {},
       '/@weapp-vite/web/component/%40demo%2Fui%2Fcomponents%2Fwd-parent%2Fwd-parent.vue',
-    )).toBe(`${parentPath}?weapp-web-component`)
+    )).toBe(`${normalizePath(parentPath)}?weapp-web-component`)
 
     const parentCode = await (plugin.transform as ((...args: any[]) => any)).call(
       {},
@@ -588,7 +588,7 @@ const ready = ref(true)
     expect(entryCode).toContain(`import '${childVirtualId}'`)
 
     const resolvedId = await (plugin.resolveId as ((...args: any[]) => any))?.call({}, virtualId) as string
-    expect(resolvedId).toBe(`${componentPath}?weapp-web-component`)
+    expect(resolvedId).toBe(`${normalizePath(componentPath)}?weapp-web-component`)
 
     const transformed = await (plugin.transform as ((...args: any[]) => any)).call(
       {},

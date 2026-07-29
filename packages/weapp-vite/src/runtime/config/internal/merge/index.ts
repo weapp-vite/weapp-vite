@@ -43,7 +43,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
     ensureConfigService(ctx)
     const currentOptions = getOptions()
     const configService = ctx.configService!
-    const subPackageRoots = Object.keys(configService.weappViteConfig?.subPackages ?? {})
+    const subPackageRoots = Object.keys(configService.weappViteConfig.subPackages ?? {})
     const sharedOutput = configService.options.chunksConfigured
       ? createSharedBuildOutput(configService, () => subPackageRoots)
       : undefined
@@ -113,6 +113,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
         autoImportResolvers: typeof configService.weappViteConfig.autoImportComponents === 'object'
           ? configService.weappViteConfig.autoImportComponents.resolvers
           : undefined,
+        resolveAppConfig: async () => (await ctx.scanService!.loadAppEntry()).json as Record<string, unknown>,
       }, sharedOutput
         ? {
             build: {

@@ -28,9 +28,19 @@ describe('runtime config merge web', () => {
     ])
   })
 
+  it('accepts a single raw plugin and optional runtime provider', () => {
+    const userPlugin = { name: 'user-plugin' }
+    expect(mergeWebPlugins(userPlugin as any, { name: 'web' } as any)).toEqual([
+      { name: 'web' },
+      userPlugin,
+    ])
+    expect(mergeWebPlugins(undefined, { name: 'web' } as any)).toEqual([{ name: 'web' }])
+  })
+
   it('injects weapp-vite host metadata for web runtime', () => {
     const applyRuntimePlatform = vi.fn()
     const injectBuiltinAliases = vi.fn()
+    const resolveAppConfig = vi.fn()
 
     const result = mergeWeb({
       config: {
@@ -56,6 +66,7 @@ describe('runtime config merge web', () => {
       getDefineImportMetaEnv: () => ({
         'import.meta.env.RUNTIME': '"web"',
       }),
+      resolveAppConfig,
     })
 
     expect(applyRuntimePlatform).toHaveBeenCalledWith('web')
@@ -74,6 +85,7 @@ describe('runtime config merge web', () => {
         moduleId: 'virtual:weapp-vite/runtime',
         hmrAcceptCode: 'if (import.meta.hot) { import.meta.hot.accept() }',
       },
+      __resolveAppConfig: resolveAppConfig,
     }))
     expect(result?.define).toMatchObject({
       'import.meta.env.RUNTIME': '"web"',
@@ -98,5 +110,43 @@ describe('runtime config merge web', () => {
     })
 
     expect(result).toBeUndefined()
+    expect(mergeWeb({
+      config: {} as any,
+      web: undefined,
+      mode: 'development',
+      isDev: true,
+      applyRuntimePlatform: vi.fn(),
+      injectBuiltinAliases: vi.fn(),
+      getDefineImportMetaEnv: () => ({}),
+    })).toBeUndefined()
+  })
+
+  it('normalizes object aliases and removes the existing runtime alias', () => {
+    const result = mergeWeb({
+      config: {
+        resolve: {
+          alias: {
+            'weapp-vite/runtime': '/legacy-runtime',
+            'user': '/user',
+          },
+        },
+      } as any,
+      web: {
+        enabled: true,
+        root: '/project/web',
+        outDir: '/project/dist-web',
+        pluginOptions: {},
+        userConfig: {},
+      } as any,
+      mode: 'development',
+      isDev: true,
+      applyRuntimePlatform: vi.fn(),
+      injectBuiltinAliases: vi.fn(),
+      getDefineImportMetaEnv: () => ({}),
+    })
+    expect(result?.resolve?.alias).toEqual([
+      { find: 'weapp-vite/runtime', replacement: 'virtual:weapp-vite/runtime' },
+      { find: 'user', replacement: '/user' },
+    ])
   })
 })

@@ -20,6 +20,7 @@ import { resolveModalSelection } from '../src/runtime/polyfill/ui'
 describe('web runtime host adapter', () => {
   afterEach(() => {
     resetWebRuntimeHost()
+    vi.unstubAllGlobals()
   })
 
   it('uses injected host primitives without mutating the global environment', () => {
@@ -63,6 +64,45 @@ describe('web runtime host adapter', () => {
 
     expect(getWebRuntimeHost()).toEqual({})
     expect(getRuntimeFetch()).not.toBe(fetch)
+  })
+
+  it('resolves browser globals and forwards optional open features', () => {
+    const fetch = vi.fn()
+    const storage = { getItem: vi.fn() }
+    const clipboard = { readText: vi.fn() }
+    const alert = vi.fn()
+    const confirm = vi.fn()
+    const prompt = vi.fn()
+    const open = vi.fn()
+    vi.stubGlobal('fetch', fetch)
+    vi.stubGlobal('localStorage', storage)
+    vi.stubGlobal('navigator', { clipboard })
+    vi.stubGlobal('alert', alert)
+    vi.stubGlobal('confirm', confirm)
+    vi.stubGlobal('prompt', prompt)
+    vi.stubGlobal('window', { open })
+
+    setWebRuntimeHost(undefined)
+    expect(getRuntimeFetch()).toBe(fetch)
+    expect(getRuntimeStorage()).toBe(storage)
+    expect(getRuntimeClipboard()).toBe(clipboard)
+    expect(getRuntimeDialogs()).toEqual({ alert, confirm, prompt })
+    openRuntimeUrl('/global', '_blank', 'noopener')
+    expect(open).toHaveBeenCalledWith('/global', '_blank', 'noopener')
+
+    const hostOpen = vi.fn()
+    setWebRuntimeHost({ open: hostOpen })
+    openRuntimeUrl('/host', '_self', 'popup')
+    expect(hostOpen).toHaveBeenCalledWith('/host', '_self', 'popup')
+    vi.unstubAllGlobals()
+  })
+
+  it('falls back to a global open function when window is absent', () => {
+    const open = vi.fn()
+    vi.stubGlobal('window', undefined)
+    vi.stubGlobal('open', open)
+    openRuntimeUrl('/global-only', '_blank')
+    expect(open).toHaveBeenCalledWith('/global-only', '_blank')
   })
 
   it('routes runtime I/O bridges through the injected host', async () => {

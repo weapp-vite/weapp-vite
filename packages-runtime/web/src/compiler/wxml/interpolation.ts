@@ -142,9 +142,6 @@ function hasTopLevelColon(expression: string) {
 
 function shouldWrapShorthandObject(expression: string) {
   const trimmed = expression.trim()
-  if (!trimmed) {
-    return false
-  }
   if (trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.startsWith('(')) {
     return false
   }
@@ -156,10 +153,8 @@ export function buildTemplateDataExpression(raw: string, scopeVar: string, wxsVa
   const parts = parseInterpolations(trimmed)
   if (parts.length === 1 && parts[0]?.type === 'expr') {
     const expr = parts[0].value.trim()
-    if (expr) {
-      const normalizedExpr = shouldWrapShorthandObject(expr) ? `{ ${expr} }` : expr
-      return buildExpression([{ type: 'expr', value: normalizedExpr }], scopeVar, wxsVar)
-    }
+    const normalizedExpr = shouldWrapShorthandObject(expr) ? `{ ${expr} }` : expr
+    return buildExpression([{ type: 'expr', value: normalizedExpr }], scopeVar, wxsVar)
   }
   return buildExpression(parseInterpolations(raw), scopeVar, wxsVar)
 }

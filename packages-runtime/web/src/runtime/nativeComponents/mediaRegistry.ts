@@ -19,21 +19,16 @@ export function unregisterNativeMediaElement(element: NativeMediaElement) {
   if (!registration) {
     return
   }
-  const kindElements = mediaElements.get(registration.kind)
+  const kindElements = mediaElements.get(registration.kind)!
   for (const id of registration.ids) {
-    const elements = kindElements?.get(id)
-    if (!elements) {
-      continue
-    }
+    const elements = kindElements.get(id)!
     const index = elements.lastIndexOf(element)
-    if (index >= 0) {
-      elements.splice(index, 1)
-    }
+    elements.splice(index, 1)
     if (elements.length === 0) {
-      kindElements?.delete(id)
+      kindElements.delete(id)
     }
   }
-  if (kindElements?.size === 0) {
+  if (kindElements.size === 0) {
     mediaElements.delete(registration.kind)
   }
   mediaRegistrations.delete(element)
@@ -63,7 +58,7 @@ export function registerNativeMediaElement(
 }
 
 export function resolveNativeMediaElement<T extends NativeMediaElement>(kind: NativeMediaKind, id: string) {
-  const normalizedId = String(id ?? '').trim()
+  const normalizedId = String(id).trim()
   const elements = mediaElements.get(kind)?.get(normalizedId)
   return elements?.[elements.length - 1] as T | undefined
 }

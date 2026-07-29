@@ -64,10 +64,7 @@ function resolveNavigationBarMetrics(): Required<NavigationBarMetrics> & { navHe
   }
 }
 
-function isTransparentColor(value: string | null) {
-  if (!value) {
-    return false
-  }
+function isTransparentColor(value: string) {
   const normalized = value.trim().toLowerCase()
   return normalized === 'transparent'
     || normalized === 'rgba(0,0,0,0)'
@@ -91,10 +88,8 @@ class WeappNavigationBar extends BaseElement {
   #resizeHandler?: () => void
 
   connectedCallback() {
-    if (!this.shadowRoot) {
-      this.attachShadow({ mode: 'open' })
-    }
-    if (this.shadowRoot && !this.shadowRoot.hasChildNodes()) {
+    const root = this.shadowRoot ?? this.attachShadow({ mode: 'open' })
+    if (!root.hasChildNodes()) {
       this.#renderShell()
     }
     navigationBarInstances.add(this)

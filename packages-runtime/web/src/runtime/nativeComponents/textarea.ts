@@ -165,10 +165,7 @@ export class WeappTextarea extends BaseElement {
   }
 
   #updateLineMetrics(emit: boolean) {
-    if (!this.#textarea) {
-      return
-    }
-    const detail = createTextareaLineChangeDetail(this.#textarea)
+    const detail = createTextareaLineChangeDetail(this.#textarea!)
     if (detail.lineCount === this.#lastLineCount && detail.height === this.#lastHeight) {
       return
     }

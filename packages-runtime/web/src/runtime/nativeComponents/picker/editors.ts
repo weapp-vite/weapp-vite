@@ -37,7 +37,7 @@ function renderRangeEditors(options: PickerEditorOptions) {
   const columns = resolvePickerColumns(options.range, options.mode, options.rangeKey)
   const current = options.mode === 'multiSelector'
     ? normalizePickerIndexes(options.value, columns.map(column => column.length))
-    : [normalizePickerIndex(options.value, columns[0]?.length ?? 0)]
+    : [normalizePickerIndex(options.value, columns[0]!.length)]
   return columns.map((column, columnIndex) => {
     const select = document.createElement('select')
     select.size = Math.min(7, Math.max(3, column.length))

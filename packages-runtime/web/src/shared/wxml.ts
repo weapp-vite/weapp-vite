@@ -88,16 +88,6 @@ export function normalizeTagName(name: string) {
     return nativeComponentTag
   }
   switch (name) {
-    case 'cover-view':
-    case 'navigator':
-    case 'swiper':
-    case 'swiper-item':
-    case 'movable-area':
-    case 'movable-view':
-    case 'cover-image':
-      return 'div'
-    case 'icon':
-      return 'span'
     case 'block':
       return '#fragment'
     case 'slot':

@@ -37,7 +37,29 @@ describe('Web host globals', () => {
     const plugin = target.requirePlugin('hello-plugin')
     expect(plugin.sayHello()).toBeUndefined()
     expect(plugin.answer).toBeUndefined()
+    expect(plugin.then).toBeUndefined()
     target.requirePlugin('hello-plugin')
     expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('preserves host-provided globals during repeated installation', () => {
+    const identity = vi.fn((value: unknown) => value)
+    const target = {
+      App: identity,
+      Page: identity,
+      Component: identity,
+      Behavior: identity,
+      defineAppJson: identity,
+      defineComponentJson: identity,
+      definePageJson: identity,
+      definePageMeta: identity,
+      defineSitemapJson: identity,
+      defineThemeJson: identity,
+      requirePlugin: identity,
+    }
+
+    installWebHostGlobals(target)
+
+    expect(Object.values(target).every(value => value === identity)).toBe(true)
   })
 })

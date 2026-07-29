@@ -40,5 +40,32 @@ describe('normalizeWebTabBarConfig', () => {
       list: [{ pagePath: 'pages/home/index', text: '' }],
     })
     expect(normalizeWebTabBarConfig({ list: [] })).toBeUndefined()
+    expect(normalizeWebTabBarConfig(null)).toBeUndefined()
+    expect(normalizeWebTabBarConfig([])).toBeUndefined()
+    expect(normalizeWebTabBarConfig({ list: [[], 'invalid', { pagePath: '   ' }] })).toBeUndefined()
+  })
+
+  it('normalizes explicit colors and optional icon whitespace', () => {
+    expect(normalizeWebTabBarConfig({
+      color: '#111111',
+      selectedColor: '#222222',
+      backgroundColor: '#333333',
+      list: [{
+        pagePath: '/pages/home/index',
+        text: ' Home ',
+        iconPath: ' ',
+        selectedIconPath: 'active.png',
+      }],
+    })).toMatchObject({
+      color: '#111111',
+      selectedColor: '#222222',
+      backgroundColor: '#333333',
+      list: [{
+        pagePath: 'pages/home/index',
+        text: ' Home ',
+        iconPath: undefined,
+        selectedIconPath: 'active.png',
+      }],
+    })
   })
 })

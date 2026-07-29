@@ -1,22 +1,22 @@
 import type { PageRecord, PageStackEntry } from '../src/runtime/polyfill/routeRuntime/options'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const runtimeSpies = vi.hoisted(() => ({
   destroyed: [] as string[],
   hidden: [] as string[],
   mounted: [] as string[],
+  recorded: [] as string[],
+  restored: [] as string[],
   shown: [] as string[],
 }))
 
 vi.mock('../src/runtime/polyfill/routeRuntime/dom', () => ({
-  captureEntryScrollPosition() {},
   mountEntryToDom(entry: PageStackEntry, _registry: Map<string, PageRecord>, onMounted: (entry: PageStackEntry) => void) {
     onMounted(entry)
     runtimeSpies.mounted.push(entry.id)
     entry.element = { remove() {} } as unknown as PageStackEntry['element']
     entry.instance = {} as PageStackEntry['instance']
   },
-  restoreEntryScrollPosition() {},
   setEntryActiveInDom(entry: PageStackEntry, active: boolean) {
     entry.active = active
   },
@@ -24,6 +24,15 @@ vi.mock('../src/runtime/polyfill/routeRuntime/dom', () => ({
     runtimeSpies.destroyed.push(entry.id)
     entry.element = undefined
     entry.instance = undefined
+  },
+}))
+
+vi.mock('../src/runtime/polyfill/routeRuntime/scroll', () => ({
+  captureEntryScrollPosition(entry: PageStackEntry) {
+    runtimeSpies.recorded.push(entry.id)
+  },
+  restoreEntryScrollPosition(entry: PageStackEntry) {
+    runtimeSpies.restored.push(entry.id)
   },
 }))
 
@@ -38,6 +47,12 @@ vi.mock('../src/runtime/polyfill/routeRuntime/lifecycle', () => ({
 
 describe('PageStackRuntime tabBar ownership', async () => {
   const { PageStackRuntime } = await import('../src/runtime/polyfill/routeRuntime/stack')
+
+  beforeEach(() => {
+    for (const values of Object.values(runtimeSpies)) {
+      values.length = 0
+    }
+  })
 
   it('caches tab pages while unloading non-tab pages', () => {
     const registry = new Map<string, PageRecord>([
@@ -72,7 +87,6 @@ describe('PageStackRuntime tabBar ownership', async () => {
   })
 
   it('destroys cached tabs when relaunching', () => {
-    runtimeSpies.destroyed.length = 0
     const registry = new Map<string, PageRecord>([
       ['pages/home/index', { tag: 'home', hooks: {}, instances: new Set() }],
       ['pages/settings/index', { tag: 'settings', hooks: {}, instances: new Set() }],
@@ -89,5 +103,55 @@ describe('PageStackRuntime tabBar ownership', async () => {
       'pages/settings/index',
     ]))
     expect(stack.entries.map(entry => entry.id)).toEqual(['pages/detail/index'])
+  })
+
+  it('covers invalid targets, empty stacks and tab cache reconfiguration', () => {
+    const registry = new Map<string, PageRecord>([
+      ['pages/home/index', { tag: 'home', hooks: {}, instances: new Set() }],
+      ['pages/settings/index', { tag: 'settings', hooks: {}, instances: new Set() }],
+      ['pages/detail/index', { tag: 'detail', hooks: {}, instances: new Set() }],
+    ])
+    const beforeMount = vi.fn()
+    const stack = new PageStackRuntime(registry, beforeMount)
+
+    expect(stack.push('pages/missing/index', {})).toBe(false)
+    expect(stack.replace('pages/missing/index', {})).toBe(false)
+    expect(stack.relaunch('pages/missing/index', {})).toBe(false)
+    expect(stack.back()).toBe(false)
+
+    expect(stack.replace('pages/home/index', { initial: '1' })).toBe(true)
+    expect(stack.entries[0]?.query).toEqual({ initial: '1' })
+    expect(stack.push('pages/detail/index', {})).toBe(true)
+    expect(runtimeSpies.recorded).toContain('pages/home/index')
+    expect(runtimeSpies.hidden).toContain('home')
+    expect(stack.replace('pages/settings/index', {})).toBe(true)
+    expect(runtimeSpies.destroyed).toContain('pages/detail/index')
+    expect(stack.back()).toBe(true)
+    expect(runtimeSpies.restored).toContain('pages/home/index')
+    expect(runtimeSpies.shown).toContain('home')
+
+    runtimeSpies.destroyed.length = 0
+    stack.configureTabPages(['pages/home/index', 'pages/settings/index'])
+    expect(stack.switchTab('pages/settings/index', {})).toBe(true)
+    expect(stack.switchTab('pages/home/index', {})).toBe(true)
+    stack.configureTabPages(['pages/settings/index'])
+    expect(runtimeSpies.destroyed).not.toContain('pages/settings/index')
+    stack.configureTabPages(['pages/home/index'])
+    expect(runtimeSpies.destroyed).toContain('pages/settings/index')
+    expect(beforeMount).toHaveBeenCalled()
+  })
+
+  it('tolerates registry removal between page lifecycle transitions', () => {
+    const registry = new Map<string, PageRecord>([
+      ['pages/home/index', { tag: 'home', hooks: {}, instances: new Set() }],
+      ['pages/detail/index', { tag: 'detail', hooks: {}, instances: new Set() }],
+    ])
+    const stack = new PageStackRuntime(registry, () => {})
+    stack.push('pages/home/index', {})
+    registry.delete('pages/home/index')
+    stack.push('pages/detail/index', {})
+    expect(stack.back()).toBe(true)
+    expect(runtimeSpies.hidden).not.toContain('home')
+    expect(runtimeSpies.shown).not.toContain('home')
   })
 })
