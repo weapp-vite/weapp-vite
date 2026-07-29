@@ -19,6 +19,8 @@ import { isNativeBridgeMethod, markNativeBridgeMethod } from '../../nativeBridge
 import { markNoSetData } from '../../noSetData'
 import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../../platform'
 
+export { normalizeEmitPayload } from '../../emit'
+
 type AdapterWithSetData = Required<MiniProgramAdapter> & {
   __wevu_enableSetData?: () => void
   __wevu_setVisibility?: (visible: boolean) => void
@@ -92,6 +94,22 @@ export function createSetupSlotsProxy(props: Record<string, any>) {
   }) as Record<string, any>
 }
 
+export function attachRuntimeSlots(runtimeState: Record<string, any>, props: Record<string, any>) {
+  const slots = createSetupSlotsProxy(props)
+  try {
+    Object.defineProperty(runtimeState, '$slots', {
+      value: slots,
+      configurable: true,
+      enumerable: false,
+      writable: false,
+    })
+  }
+  catch {
+    runtimeState.$slots = slots
+  }
+  return slots
+}
+
 export function createNoopWatchStopHandle(): WatchStopHandle {
   const stopHandle = (() => {}) as WatchStopHandle
   stopHandle.stop = () => {}
@@ -106,47 +124,6 @@ export function safeMarkNoSetData<T extends object>(value: T): T {
   }
   catch {
     return value
-  }
-}
-
-function isTriggerEventOptions(value: unknown): value is TriggerEventOptions {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return false
-  }
-  return (
-    hasOwn(value, 'bubbles')
-    || hasOwn(value, 'composed')
-    || hasOwn(value, 'capturePhase')
-  )
-}
-
-export function normalizeEmitPayload(args: any[]): { detail: any, options: TriggerEventOptions | undefined } {
-  if (args.length === 0) {
-    return {
-      detail: undefined,
-      options: undefined,
-    }
-  }
-
-  if (args.length === 1) {
-    return {
-      detail: args[0],
-      options: undefined,
-    }
-  }
-
-  const maybeOptions = args[args.length - 1]
-  if (isTriggerEventOptions(maybeOptions)) {
-    const detailArgs = args.slice(0, -1)
-    return {
-      detail: detailArgs.length <= 1 ? detailArgs[0] : detailArgs,
-      options: maybeOptions,
-    }
-  }
-
-  return {
-    detail: args,
-    options: undefined,
   }
 }
 

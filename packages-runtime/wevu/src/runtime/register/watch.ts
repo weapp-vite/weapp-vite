@@ -13,6 +13,10 @@ export type WatchDescriptor = WatchHandler | string | {
 }
 export type WatchMap = Record<string, WatchDescriptor>
 
+interface RegisterWatchesOptions {
+  deferMissingSourceBaseline?: boolean
+}
+
 export function normalizeWatchDescriptor(
   descriptor: WatchDescriptor,
   runtime: RuntimeInstance<any, any, any>,
@@ -84,6 +88,7 @@ export function registerWatches(
   runtime: RuntimeInstance<any, any, any>,
   watchMap: WatchMap,
   instance: InternalRuntimeState,
+  options?: RegisterWatchesOptions,
 ) {
   const stops: WatchStopHandle[] = []
   const proxy = runtime.proxy
@@ -95,6 +100,15 @@ export function registerWatches(
     }
     const getter = createPathGetter(proxy, expression)
     const stopHandle = runtime.watch(getter, normalized.handler, normalized.options)
+    const sourceRoot = expression.split('.')[0]?.trim()
+    if (
+      options?.deferMissingSourceBaseline
+      && !normalized.options.immediate
+      && sourceRoot
+      && !(sourceRoot in proxy)
+    ) {
+      stopHandle.pause()
+    }
     stops.push(stopHandle)
   }
 

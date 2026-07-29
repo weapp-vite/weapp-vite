@@ -50,6 +50,7 @@ export interface StyleCompileResult {
 export interface StyleCompileOptions {
   id: string
   scoped?: boolean
+  transformScoped?: boolean
   modules?: boolean | string
   preprocessOptions?: Record<string, any>
   preserveDeepSelectors?: boolean
@@ -162,13 +163,13 @@ export function compileVueStyleToWxss(
   styleBlock: SFCStyleBlock,
   options: StyleCompileOptions,
 ): StyleCompileResult {
-  const { id, scoped, modules, preserveDeepSelectors } = options
+  const { id, scoped, modules, preserveDeepSelectors, transformScoped = true } = options
   const source = styleBlock.content
 
   let code = source
 
   // 1. 处理 scoped 样式
-  if (scoped || styleBlock.scoped) {
+  if (transformScoped && (scoped || styleBlock.scoped)) {
     code = transformScopedCss(code, id)
   }
 

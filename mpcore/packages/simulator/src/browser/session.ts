@@ -21,6 +21,7 @@ import { runComponentPageLifetime } from '../runtime/componentInstance'
 import { createPageInstance } from '../runtime/pageInstance'
 import {
   applyResizeToSystemInfo,
+  createDefaultLocationResult,
   createDefaultSystemInfo,
   deriveAppBaseInfo,
   deriveDeviceInfo,
@@ -34,7 +35,7 @@ import { createHeadlessCanvasContext } from '../view/canvasContext'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
-import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
+import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
@@ -289,6 +290,7 @@ export class BrowserHeadlessSession {
         getDeviceInfo: () => deriveDeviceInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
         getClipboardData: () => this.wxState.getClipboardData(),
+        getLocation: () => createDefaultLocationResult(),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
         getNetworkType: () => this.wxState.getNetworkType(),
         navigateBack: option => this.navigateBack(option?.delta),
@@ -485,6 +487,10 @@ export class BrowserHeadlessSession {
 
   getMenuButtonBoundingClientRect() {
     return deriveMenuButtonBoundingClientRect(this.systemInfo)
+  }
+
+  getLocation() {
+    return createDefaultLocationResult()
   }
 
   getNetworkType() {
@@ -1233,6 +1239,11 @@ export class BrowserHeadlessSession {
       ? resolveSelectorQueryScopeSnapshot(scope, this.selectorQueryScopeSnapshots)
       : null
     if (scope && !nativeScope && !staleScope) {
+      if (resolveSelectorQueryScopeId(scope)) {
+        return requests.map(request => request.target === 'viewport'
+          ? { scrollLeft: 0, scrollTop: current.__scrollTop__ ?? 0 }
+          : request.single ? null : [])
+      }
       throw new Error('wx.createSelectorQuery().in(component) received an unknown scope in browser simulator runtime.')
     }
     if (staleScope) {

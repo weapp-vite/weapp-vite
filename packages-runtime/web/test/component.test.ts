@@ -24,6 +24,10 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '../src/runtime/component'
 import { createComponentPublicInstance } from '../src/runtime/component/publicInstance'
 import {
+  $emit,
+  $off,
+  $on,
+  $once,
   authorize,
   canIUse,
   checkSession,
@@ -63,6 +67,7 @@ import {
   getFuzzyLocation,
   getImageInfo,
   getLaunchOptionsSync,
+  getLocale,
   getLocation,
   getLogManager,
   getMenuButtonBoundingClientRect,
@@ -84,6 +89,7 @@ import {
   hideLoading,
   hideTabBar,
   initializePageRoutes,
+  loadFontFace,
   loadSubPackage,
   login,
   makePhoneCall,
@@ -116,6 +122,7 @@ import {
   request,
   requestPayment,
   requestSubscribeMessage,
+  rpx2px,
   saveFile,
   saveFileToDisk,
   saveImageToPhotosAlbum,
@@ -136,6 +143,7 @@ import {
   stopPullDownRefresh,
   updateShareMenu,
   uploadFile,
+  upx2px,
   vibrateShort,
 } from '../src/runtime/polyfill'
 import { createTemplate } from '../src/runtime/template'
@@ -1529,6 +1537,29 @@ describe('component selector helpers', () => {
     document.body.append(parent)
 
     expect(child.selectOwnerComponent()).toBe(parent)
+  })
+
+  it('runs setData callbacks after the rendered update completes', async () => {
+    defineComponent('wv-set-data-callback-child', {
+      template: createTemplate('<view></view>'),
+      component: {},
+    })
+    defineComponent('wv-set-data-callback-host', {
+      template: state => state.visible
+        ? '<wv-set-data-callback-child class="late-child"></wv-set-data-callback-child>'
+        : '',
+      component: {
+        data: { visible: false },
+      },
+    })
+
+    const host = document.createElement('wv-set-data-callback-host') as any
+    document.body.append(host)
+
+    const callback = vi.fn(() => host.selectComponent('.late-child'))
+    await host.setData({ visible: true }, callback)
+
+    expect(callback).toHaveReturnedWith(expect.objectContaining({ tagName: 'WV-SET-DATA-CALLBACK-CHILD' }))
   })
 
   it('provides createSelectorQuery/selectComponent/selectAllComponents on component instance', () => {
@@ -4653,6 +4684,42 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('loads a font face into the browser font set', async () => {
+    const loadedFace = { family: 'uicon-iconfont' }
+    const load = vi.fn().mockResolvedValue(loadedFace)
+    const constructorCalls: unknown[][] = []
+    class FontFaceMock {
+      load = load
+
+      constructor(...args: unknown[]) {
+        constructorCalls.push(args)
+      }
+    }
+    const add = vi.fn()
+    const restoreFontFace = overrideGlobalProperty('FontFace', FontFaceMock)
+    const originalFonts = document.fonts
+    Object.defineProperty(document, 'fonts', {
+      configurable: true,
+      value: { add },
+    })
+
+    try {
+      await expect(loadFontFace({
+        family: 'uicon-iconfont',
+        source: 'url("/fonts/uicon.ttf")',
+      })).resolves.toEqual({ errMsg: 'loadFontFace:ok' })
+      expect(constructorCalls).toContainEqual(['uicon-iconfont', 'url("/fonts/uicon.ttf")', undefined])
+      expect(add).toHaveBeenCalledWith(loadedFace)
+    }
+    finally {
+      restoreFontFace()
+      Object.defineProperty(document, 'fonts', {
+        configurable: true,
+        value: originalFonts,
+      })
+    }
+  })
+
   it('writes clipboard by navigator.clipboard when available', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     const runtimeNavigator = (globalThis as any).navigator
@@ -4770,6 +4837,39 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('normalizes the browser locale for uni-app consumers', () => {
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      language: 'zh-TW',
+    })
+    try {
+      expect(getLocale()).toBe('zh-Hant')
+      expect((globalThis as any).wx.getLocale()).toBe('zh-Hant')
+    }
+    finally {
+      restoreNavigator()
+    }
+  })
+
+  it('provides the uni-app event bus contract', () => {
+    const persistent = vi.fn()
+    const once = vi.fn()
+    $on('component:update', persistent)
+    $once('component:update', once)
+
+    $emit('component:update', 1, 'first')
+    $emit('component:update', 2, 'second')
+
+    expect(persistent).toHaveBeenNthCalledWith(1, 1, 'first')
+    expect(persistent).toHaveBeenNthCalledWith(2, 2, 'second')
+    expect(once).toHaveBeenCalledOnce()
+    expect(once).toHaveBeenCalledWith(1, 'first')
+
+    $off('component:update', persistent)
+    $emit('component:update', 3)
+    expect(persistent).toHaveBeenCalledTimes(2)
+    $off()
+  })
+
   it('supports getSystemInfo async wrapper', async () => {
     const restoreNavigator = overrideGlobalProperty('navigator', {
       language: 'zh-CN',
@@ -4856,6 +4956,14 @@ describe('web runtime wx utility APIs', () => {
           height: 844,
         },
       })
+
+      expect(getSystemInfoSync()).toMatchObject({
+        safeAreaInsets: { left: 0, right: 0, top: 0, bottom: 0 },
+        windowTop: 0,
+        windowBottom: 0,
+      })
+      expect(rpx2px(750)).toBe(390)
+      expect(upx2px(375)).toBe(195)
 
       const menuRect = getMenuButtonBoundingClientRect()
       expect(menuRect).toMatchObject({

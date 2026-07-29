@@ -378,6 +378,7 @@ describe('runtime: features & hooks', () => {
   it('Page onLoad bridges to wevu hook', async () => {
     const logs: string[] = []
     defineComponent({
+      __wevu_isPage: true,
       setup() {
         onLoad((query: { a?: string } | undefined) => {
           logs.push(`hook:${query?.a ?? ''}`)

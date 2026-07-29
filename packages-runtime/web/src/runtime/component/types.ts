@@ -79,7 +79,7 @@ export interface TriggerEventOptions {
 export interface ComponentPublicInstance extends HTMLElement {
   readonly data: DataRecord
   readonly properties: DataRecord
-  setData: (patch: DataRecord) => void
+  setData: (patch: DataRecord, callback?: () => void) => void | Promise<void>
   triggerEvent: (name: string, detail?: any, options?: TriggerEventOptions) => void
   createSelectorQuery: () => any
   selectComponent: (selector: string) => ComponentPublicInstance | null

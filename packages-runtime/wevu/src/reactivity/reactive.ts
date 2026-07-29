@@ -2,6 +2,7 @@ import type { MutationKind, MutationOp } from './reactive/mutation'
 import { track, trigger } from './core'
 import { mutationRecorders } from './reactive/mutation'
 import {
+  adoptReactiveRoot,
   bumpAncestorVersions,
   bumpRawVersion,
   getRawVersion,
@@ -117,11 +118,8 @@ const mutableHandlers: ProxyHandler<any> = {
         return res
       }
       // 确保子对象的根引用与当前目标一致，便于版本号级联
-      const parentRoot = rawRootMap.get(target) ?? target
       const childRaw = ((res as any)?.[ReactiveFlags.RAW] ?? res) as object
-      if (!rawRootMap.has(childRaw)) {
-        rawRootMap.set(childRaw, parentRoot)
-      }
+      adoptReactiveRoot(childRaw, target)
       recordParentLink(childRaw, target, key)
       const parentPath = rawPathMap.get(target)
       if (mutationRecorders.size && typeof key === 'string' && parentPath != null && !rawMultiParentSet.has(childRaw)) {
@@ -149,11 +147,8 @@ const mutableHandlers: ProxyHandler<any> = {
         removeParentLink(oldRaw, target, key)
       }
       if (isObject(rawValue) && !(rawValue as any)[ReactiveFlags.SKIP]) {
-        const root = rawRootMap.get(target) ?? target
         const childRaw = rawValue as object
-        if (!rawRootMap.has(childRaw)) {
-          rawRootMap.set(childRaw, root)
-        }
+        adoptReactiveRoot(childRaw, target)
         recordParentLink(childRaw, target, key)
         const parentPath = rawPathMap.get(target)
         if (mutationRecorders.size && typeof key === 'string' && parentPath != null && !rawMultiParentSet.has(childRaw)) {

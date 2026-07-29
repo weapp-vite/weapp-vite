@@ -62,6 +62,7 @@ export async function compileWebVueSfc(options: {
     sourceMap: false,
     style: {
       preserveDeepSelectors: true,
+      transformScoped: false,
     },
     json: { kind: meta.kind },
     autoUsingComponents: {

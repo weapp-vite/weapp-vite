@@ -30,6 +30,12 @@ function parseJsonSafely(source: string | undefined): Record<string, any> | unde
   }
 }
 
+function resolveScopedSlotOwnerStyleImport(relativeBase: string, styleExtension: string) {
+  const normalizedBase = toPosixPath(relativeBase)
+  const ownerName = normalizedBase.slice(normalizedBase.lastIndexOf('/') + 1)
+  return `@import './${ownerName}.${styleExtension}';\n`
+}
+
 function normalizeJsonConfigForPlatform(
   json: Record<string, any>,
   compilerCtx?: Pick<CompilerContext, 'configService'>,
@@ -181,7 +187,8 @@ export function emitScopedSlotAssets(
     return
   }
 
-  const { templateExtension, jsonExtension } = resolveBundleOutputExtensions(outputExtensions)
+  const { templateExtension, styleExtension, jsonExtension } = resolveBundleOutputExtensions(outputExtensions)
+  const hasOwnerStyle = typeof result.style === 'string' && result.style.trim().length > 0
   const configObj = parseJsonSafely(result.config) ?? {}
   const baseUsingComponents: Record<string, string> = (configObj.usingComponents && typeof configObj.usingComponents === 'object' && !Array.isArray(configObj.usingComponents))
     ? { ...configObj.usingComponents }
@@ -195,6 +202,7 @@ export function emitScopedSlotAssets(
     usingComponents[scopedSlot.componentName] = componentPath
 
     const wxmlFile = `${componentBase}.${templateExtension}`
+    const styleFile = `${componentBase}.${styleExtension}`
     const jsonFile = `${componentBase}.${jsonExtension}`
     const scopedUsingComponents = resolveScopedSlotAutoImports(
       compilerCtx,
@@ -209,6 +217,13 @@ export function emitScopedSlotAssets(
 
     if (!bundle[wxmlFile]) {
       ctx.emitFile({ type: 'asset', fileName: wxmlFile, source: scopedSlot.template })
+    }
+    if (hasOwnerStyle && !bundle[styleFile]) {
+      ctx.emitFile({
+        type: 'asset',
+        fileName: styleFile,
+        source: resolveScopedSlotOwnerStyleImport(relativeBase, styleExtension),
+      })
     }
     if (!bundle[jsonFile]) {
       const mergeJson = createJsonMerger(jsonOptions?.mergeStrategy, {

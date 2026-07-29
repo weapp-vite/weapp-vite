@@ -5,6 +5,113 @@ import {
 } from '../src/browser'
 
 describe('BrowserHeadlessSession', () => {
+  it('supports uni event, font, and wevu proxy selector compatibility in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    compatibilitySnapshot: null,
+    scopedRect: null
+  },
+  runCompatibilityProbe() {
+    const events = []
+    const handler = (value) => events.push('on:' + value)
+    wx.$on('probe', handler)
+    wx.$once('probe', value => events.push('once:' + value))
+    wx.$emit('probe', 'first')
+    wx.$emit('probe', 'second')
+    wx.$off('probe', handler)
+    wx.loadFontFace({
+      family: 'uview-icon',
+      source: 'url("headless://font/uview.ttf")',
+      success: (fontResult) => {
+        this.setData({
+          compatibilitySnapshot: {
+            events,
+            fontResult,
+            locale: wx.getLocale(),
+            pixels: wx.rpx2px(100),
+            safeAreaInsets: wx.getWindowInfo().safeAreaInsets
+          }
+        })
+      }
+    })
+    const card = this.selectComponent('#status-card')
+    wx.createSelectorQuery()
+      .in({ __wevuNativeInstance: card })
+      .select('.card-shell')
+      .boundingClientRect((scopedRect) => {
+        this.setData({ scopedRect })
+      })
+      .exec()
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<status-card id="status-card" />'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+Component({
+  data: {
+    attachedRect: null
+  },
+  lifetimes: {
+    attached() {
+      wx.createSelectorQuery()
+        .in({ __wevuNativeInstance: this })
+        .select('.card-shell')
+        .boundingClientRect((attachedRect) => {
+          this.setData({ attachedRect })
+        })
+        .exec()
+    }
+  }
+})
+`],
+      ['components/status-card/index.wxml', '<view class="card-shell" style="left: 6px; top: 9px; width: 30px; height: 20px;">card</view>'],
+    ])
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+
+    page.runCompatibilityProbe()
+
+    expect(page.data.compatibilitySnapshot).toEqual({
+      events: ['on:first', 'once:first', 'on:second'],
+      fontResult: { errMsg: 'loadFontFace:ok' },
+      locale: 'zh-Hans',
+      pixels: 50,
+      safeAreaInsets: {
+        bottom: 0,
+        left: 0,
+        right: 0,
+        top: 20,
+      },
+    })
+    expect(page.data.scopedRect).toEqual({
+      bottom: 29,
+      height: 20,
+      left: 6,
+      right: 36,
+      top: 9,
+      width: 30,
+    })
+    expect(page.selectComponent?.('#status-card')?.data.attachedRect).toEqual({
+      bottom: 29,
+      height: 20,
+      left: 6,
+      right: 36,
+      top: 9,
+      width: 30,
+    })
+  })
+
   it('runs built output from virtual files and renders wxml in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index', 'pages/detail/index'] })],
@@ -1702,7 +1809,7 @@ Page({
     ])
   })
 
-  it('supports getNetworkType and network status change listeners in browser runtime', () => {
+  it('supports deterministic location, getNetworkType and network status change listeners in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
       ['app.js', 'App({})'],
@@ -1711,6 +1818,8 @@ Page({
   data: {
     currentType: '',
     initialType: '',
+    location: null,
+    locationSupported: false,
     logs: []
   },
   push(message) {
@@ -1725,6 +1834,18 @@ Page({
           initialType: result.networkType
         })
         this.push('get:' + result.networkType)
+      }
+    })
+  },
+  inspectLocation() {
+    wx.getLocation({
+      isHighAccuracy: true,
+      type: 'gcj02',
+      success: (result) => {
+        this.setData({
+          location: result,
+          locationSupported: wx.canIUse('getLocation.return.latitude')
+        })
       }
     })
   },
@@ -1750,12 +1871,23 @@ Page({
 
     page.startWatchingNetwork()
     page.inspectNetwork()
+    page.inspectLocation()
     session.setNetworkType('none')
     session.setNetworkType('4g')
     page.stopWatchingNetwork()
     session.setNetworkType('5g')
 
     expect(page.data.initialType).toBe('wifi')
+    expect(page.data.location).toEqual({
+      accuracy: 10,
+      altitude: 0,
+      errMsg: 'getLocation:ok',
+      horizontalAccuracy: 10,
+      latitude: 31.2304,
+      longitude: 121.4737,
+      speed: 0,
+      verticalAccuracy: 0,
+    })
     expect(page.data.currentType).toBe('4g')
     expect(page.data.logs).toEqual([
       'get:wifi',
@@ -1768,6 +1900,8 @@ Page({
       errMsg: 'getNetworkType:ok',
       networkType: '5g',
     })
+    expect(session.getLocation()).toEqual(page.data.location)
+    expect(page.data.locationSupported).toBe(true)
   })
 
   it('supports navigation bar title, color and loading state defaults in browser runtime', () => {

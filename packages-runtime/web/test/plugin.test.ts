@@ -470,7 +470,7 @@ const ready = ref(true)
     expect(entryCode).toContain('import \'/@weapp-vite/web/component/%40demo%2Fui%2Fcomponents%2Fwd-parent%2Fwd-parent.vue\'')
     expect(entryCode).toContain('import \'/@weapp-vite/web/component/%40demo%2Fui%2Fcomponents%2Fwd-child%2Fwd-child.vue\'')
     expect(entryCode).not.toContain(packageDir)
-    expect(resolvedConfig.optimizeDeps.exclude).toEqual(['existing-dependency'])
+    expect(resolvedConfig.optimizeDeps.exclude).toEqual(['existing-dependency', '@demo/ui'])
     expect(resolvedConfig.optimizeDeps.include).toEqual(['existing-include'])
     expect(await (plugin.resolveId as ((...args: any[]) => any))?.call(
       {},
@@ -498,6 +498,48 @@ const ready = ref(true)
       `${childPath}?weapp-web-sfc-template`,
     ) as string
     expect(childTemplate).toContain('child-v2')
+  })
+
+  it('compiles script-imported Vue SFC children and defers scoped Sass rewriting', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'weapp-web-imported-sfc-'))
+    const srcRoot = join(root, 'src')
+    const pageDir = join(srcRoot, 'pages/index')
+    const packageDir = join(root, 'node_modules/demo-ui')
+    const parentPath = join(packageDir, 'parent.vue')
+    const childPath = join(packageDir, 'child.vue')
+    await mkdir(pageDir, { recursive: true })
+    await mkdir(packageDir, { recursive: true })
+    await writeFile(join(srcRoot, 'app.vue'), '<script setup>defineAppJson({ pages: ["pages/index/index"] })</script>')
+    await writeFile(join(pageDir, 'index.vue'), '<template><demo-parent /></template>')
+    await writeFile(parentPath, '<script>import Child from "./child"; export default { components: { Child } }</script><template><child /></template>')
+    await writeFile(childPath, '<template><view class="card"><view class="card__title" /></view></template><style scoped lang="scss">.card { color: rgba(0, 0, 0, .7); &__title { color: red; } }</style>')
+
+    const plugin = weappWebPlugin({
+      srcDir: 'src',
+      __autoImportResolvers: [{ components: { 'demo-parent': 'demo-ui/parent.vue' } }],
+    })
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, {
+      root,
+      command: 'build',
+      createResolver: () => async (request: string) => request === 'demo-ui/parent.vue' ? parentPath : undefined,
+    } as any)
+
+    const transformedChild = await (plugin.transform as ((...args: any[]) => any)).call(
+      {},
+      await readFile(childPath, 'utf8'),
+      childPath,
+    )
+    expect(transformedChild.code).toContain('registerWebWevuComponent')
+    expect(transformedChild.code).toContain('__external__/demo-ui/child')
+    expect((plugin.resolveId as ((...args: any[]) => any)).call({}, './child', parentPath)).toBe(normalizePath(childPath))
+
+    const styleCode = await (plugin.load as ((...args: any[]) => any))?.call(
+      {},
+      `${childPath}.scss?weapp-web-sfc-style&inline`,
+    ) as string
+    expect(styleCode).toContain('rgba(0, 0, 0, .7)')
+    expect(styleCode).toContain('&__title')
+    expect(styleCode).not.toContain('[data-v-')
   })
 
   it('transforms external native components resolved through the shared component graph', async () => {

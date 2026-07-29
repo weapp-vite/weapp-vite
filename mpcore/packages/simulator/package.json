@@ -49,6 +49,7 @@
   },
   "dependencies": {
     "@babel/parser": "catalog:",
+    "@weapp-core/constants": "workspace:*",
     "htmlparser2": "catalog:",
     "pathe": "catalog:"
   },

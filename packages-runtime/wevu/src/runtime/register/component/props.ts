@@ -10,6 +10,7 @@ import {
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { hasOwn } from '../../../utils'
+import { isDeepEqualValue } from '../../app/setData/snapshot'
 import { refreshOwnerSnapshotFromInstance } from '../snapshot'
 
 export function createPropsSync(options: {
@@ -57,6 +58,17 @@ export function createPropsSync(options: {
     return true
   }
 
+  const setPropIfChanged = (target: Record<string, unknown>, key: string, value: unknown) => {
+    if (
+      templateRuntimePropKeys.has(key)
+      && hasOwn(target, key)
+      && isDeepEqualValue(target[key], value, 20, { keys: 10_000 })
+    ) {
+      return false
+    }
+    return setIfChanged(target, key, value)
+  }
+
   const syncTemplateRuntimeProp = (instance: InternalRuntimeState, key: string, value: unknown) => {
     if (!templateRuntimePropKeys.has(key)) {
       return
@@ -65,11 +77,11 @@ export function createPropsSync(options: {
     const runtimeState = (instance as any).__wevu?.state
     try {
       if (runtimeState && typeof runtimeState === 'object') {
-        setIfChanged(runtimeState as Record<string, unknown>, key, value)
+        setPropIfChanged(runtimeState as Record<string, unknown>, key, value)
       }
       const nativeData = (instance as any).data
       if (nativeData && typeof nativeData === 'object') {
-        nativeDataChanged = setIfChanged(nativeData as Record<string, unknown>, key, value)
+        nativeDataChanged = setPropIfChanged(nativeData as Record<string, unknown>, key, value)
       }
     }
     catch {
@@ -225,7 +237,7 @@ export function createPropsSync(options: {
       const next = properties as any
       const currentKeys = Object.keys(propsProxy as any)
       for (const existingKey of currentKeys) {
-        if (!hasOwn(next, existingKey)) {
+        if (!propKeySet.has(existingKey) || !hasOwn(next, existingKey)) {
           try {
             delete (propsProxy as any)[existingKey]
           }
@@ -234,30 +246,19 @@ export function createPropsSync(options: {
           }
         }
       }
-      for (const [k, v] of Object.entries(next)) {
-        const nextValue = pendingPropValues && hasOwn(pendingPropValues, k)
-          ? pendingPropValues[k]
-          : v
+      for (const key of propKeys) {
+        const hasPendingValue = pendingPropValues && hasOwn(pendingPropValues, key)
+        if (!hasPendingValue && !hasOwn(next, key)) {
+          continue
+        }
+        const nextValue = hasPendingValue ? pendingPropValues[key] : next[key]
         try {
-          ;(propsProxy as any)[k] = nextValue
+          setPropIfChanged(propsProxy as Record<string, unknown>, key, nextValue)
         }
         catch {
           // 忽略异常
         }
-        syncTemplateRuntimeProp(instance, k, nextValue)
-      }
-      if (pendingPropValues) {
-        for (const [k, v] of Object.entries(pendingPropValues)) {
-          if (!hasOwn(next, k)) {
-            try {
-              ;(propsProxy as any)[k] = v
-            }
-            catch {
-              // 忽略异常
-            }
-            syncTemplateRuntimeProp(instance, k, v)
-          }
-        }
+        syncTemplateRuntimeProp(instance, key, nextValue)
       }
       syncPropsDerivedKeys(instance, propsProxy as Record<string, unknown>)
       syncSetupStatePropsAliases(instance, propsProxy as Record<string, unknown>)
@@ -284,8 +285,7 @@ export function createPropsSync(options: {
         continue
       }
       try {
-        ;(propsProxy as any)[key] = values[key]
-        changed = true
+        changed = setPropIfChanged(propsProxy as Record<string, unknown>, key, values[key]) || changed
       }
       catch {
         // 忽略 query props 同步失败，保持页面生命周期主链路可用。
@@ -307,7 +307,10 @@ export function createPropsSync(options: {
       return
     }
     try {
-      ;(propsProxy as any)[key] = value
+      if (!setPropIfChanged(propsProxy as Record<string, unknown>, key, value)) {
+        syncTemplateRuntimeProp(instance, key, value)
+        return
+      }
     }
     catch {
       // 忽略异常

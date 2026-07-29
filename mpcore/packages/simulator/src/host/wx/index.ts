@@ -5,9 +5,11 @@ import type {
   HeadlessWxSelectorQueryNode,
   HeadlessWxSelectorQueryRequest,
 } from './core'
+import { createHeadlessUniEventBus } from './eventBus'
 
 export * from './api'
 export * from './core'
+export * from './eventBus'
 export * from './fileSystem'
 export * from './media'
 
@@ -45,6 +47,11 @@ function resolveCapabilityValue(source: Record<string, any>, schema: string) {
 }
 
 export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
+  const eventBus = createHeadlessUniEventBus()
+  const rpx2px = (value: number) => {
+    const width = driver.getWindowInfoSync().windowWidth
+    return Number.isFinite(value) && width > 0 ? value * width / 750 : 0
+  }
   const capabilityTree = {
     canIUse: true,
     canvasToTempFilePath: true,
@@ -61,6 +68,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     createVideoContext: true,
     createSelectorQuery: true,
     getImageInfo: { return: { errMsg: true, height: true, orientation: true, path: true, type: true, width: true } },
+    getLocation: { return: { accuracy: true, altitude: true, errMsg: true, horizontalAccuracy: true, latitude: true, longitude: true, speed: true, verticalAccuracy: true } },
+    getLocale: true,
     getFileInfo: { return: { digest: true, errMsg: true, size: true } },
     openDocument: { return: { errMsg: true } },
     getVideoInfo: { return: { bitrate: true, duration: true, errMsg: true, fps: true, height: true, orientation: true, size: true, type: true, width: true } },
@@ -83,6 +92,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     getSystemInfoSync: { return: { SDKVersion: true, brand: true, language: true, model: true, pixelRatio: true, platform: true, screenHeight: true, screenWidth: true, system: true, version: true, windowHeight: true, windowWidth: true } },
     getWindowInfo: { return: { pixelRatio: true, screenHeight: true, screenWidth: true, statusBarHeight: true, windowHeight: true, windowWidth: true } },
     getWindowInfoSync: { return: { pixelRatio: true, screenHeight: true, screenWidth: true, statusBarHeight: true, windowHeight: true, windowWidth: true } },
+    loadFontFace: { return: { errMsg: true } },
     hideLoading: true,
     hideToast: true,
     downloadFile: true,
@@ -99,6 +109,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     saveVideoToPhotosAlbum: true,
     removeStorage: true,
     removeStorageSync: true,
+    rpx2px: true,
     request: true,
     saveFile: true,
     setBackgroundColor: true,
@@ -127,9 +138,11 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     removeTabBarBadge: true,
     setTabBarBadge: true,
     updateShareMenu: true,
+    upx2px: true,
   }
 
   return {
+    ...eventBus,
     canIUse: schema => typeof schema === 'string' && schema.trim() !== '' && resolveCapabilityValue(capabilityTree, schema.trim()) != null,
     canvasToTempFilePath: option => invokeWxApi(() => driver.canvasToTempFilePath(option), option),
     chooseImage: option => invokeWxApi(() => driver.chooseImage(option ?? {}), option),
@@ -203,6 +216,17 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     getEnterOptionsSync: () => driver.getEnterOptionsSync(),
     getFileInfo: option => invokeWxApi(() => driver.getFileInfo(option), option),
     getImageInfo: option => invokeWxApi(() => driver.getImageInfo(option), option),
+    getLocation: option => invokeWxApi(() => driver.getLocation(option), option),
+    getLocale: () => {
+      const locale = driver.getSystemInfoSync().language.trim().replace('_', '-').toLowerCase()
+      if (locale === 'zh-tw' || locale === 'zh-hk' || locale === 'zh-mo' || locale.startsWith('zh-hant')) {
+        return 'zh-Hant'
+      }
+      if (locale.startsWith('zh')) {
+        return 'zh-Hans'
+      }
+      return locale.split('-')[0] || 'en'
+    },
     getVideoInfo: option => invokeWxApi(() => driver.getVideoInfo(option), option),
     getFileSystemManager: () => driver.getFileSystemManager(),
     getSavedFileInfo: option => invokeWxApi(() => driver.getSavedFileInfo(option), option),
@@ -222,6 +246,12 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     getSystemInfoSync: () => driver.getSystemInfoSync(),
     getWindowInfo: option => invokeWxApi(() => driver.getWindowInfoSync(), option),
     getWindowInfoSync: () => driver.getWindowInfoSync(),
+    loadFontFace: option => invokeWxApi(() => {
+      if (!option || typeof option.family !== 'string' || !option.family.trim() || typeof option.source !== 'string' || !option.source.trim()) {
+        throw new TypeError('loadFontFace:fail invalid options')
+      }
+      return { errMsg: 'loadFontFace:ok' }
+    }, option),
     hideLoading: option => invokeWxApi(() => driver.hideLoading(), option),
     hideToast: () => driver.hideToast(),
     downloadFile: option => driver.downloadFile(option),
@@ -253,6 +283,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       return { errMsg: 'removeStorage:ok' }
     }, option),
     removeStorageSync: key => driver.removeStorageSync(key),
+    rpx2px,
     request: option => driver.request(option),
     saveFile: option => invokeWxApi(() => driver.saveFile(option), option),
     setBackgroundColor: option => invokeWxApi(() => driver.setBackgroundColor(option), option),
@@ -286,5 +317,6 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     removeTabBarBadge: option => invokeWxApi(() => driver.removeTabBarBadge(option), option),
     setTabBarBadge: option => invokeWxApi(() => driver.setTabBarBadge(option), option),
     updateShareMenu: option => invokeWxApi(() => driver.updateShareMenu(option ?? {}), option),
+    upx2px: rpx2px,
   }
 }

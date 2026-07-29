@@ -92,6 +92,24 @@ describe('runtime: register helpers', () => {
     expect(stops).toHaveLength(1)
   })
 
+  it('defers a missing non-immediate setup source baseline', () => {
+    const pause = vi.fn()
+    const resume = vi.fn()
+    const runtime: any = {
+      proxy: {},
+      watch: vi.fn(() => ({ pause, resume })),
+    }
+
+    const stops = registerWatches(runtime, {
+      'injected.value': vi.fn(),
+      'visible': { handler: vi.fn(), immediate: true },
+    }, {} as any, { deferMissingSourceBaseline: true })
+
+    expect(stops).toHaveLength(2)
+    expect(pause).toHaveBeenCalledTimes(1)
+    expect(resume).not.toHaveBeenCalled()
+  })
+
   it('refreshes owner snapshot from instance props', () => {
     const runtime: any = {
       snapshot: () => ({ base: true }),

@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import { isUniAppCompatibilityFile, transformUniAppSource } from 'wevu/compiler'
+import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
 
 const SUPPORTED_SOURCE_RE = /(?:\.vue|\.[cm]?[jt]sx?|\.(?:css|less|sass|scss|styl|stylus))(?:\?.*)?$/i
 
@@ -38,6 +39,7 @@ export function uniAppCompatibility(ctx: CompilerContext): Plugin[] {
       const blockType = resolveVirtualBlockType(id)
       if (
         id.startsWith('\0')
+        || parseSidecarSourceRequest(id)
         || !SUPPORTED_SOURCE_RE.test(id)
         || blockType === null
         || !isUniAppCompatibilityFile(id, configService.absoluteSrcRoot, config.include)

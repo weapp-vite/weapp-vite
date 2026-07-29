@@ -18,6 +18,7 @@ import {
   WEVU_TEMPLATE_REFS_KEY,
 } from '@weapp-core/constants'
 import { hasOwn } from '../../utils'
+import { cloneSnapshotValue, isDeepEqualValue } from '../app/setData/snapshot'
 import { resolveDatasetEventValue, runInlineExpression } from '../register/inline'
 import { getOwnerProxy, getOwnerSnapshot, getOwnerTarget, subscribeOwner } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
@@ -168,11 +169,34 @@ function flushOwnerProxyBindings(instance: any) {
   instance?.__wevu?.__wevu_flushSetupSnapshotSync?.()
 }
 
-function flushScopedSlotComputedBindings(instance: any, computed?: ComputedDefinitions) {
+function flushScopedSlotComputedBindings(
+  instance: any,
+  computed?: ComputedDefinitions,
+  options?: { force?: boolean },
+) {
   flushOwnerProxyBindings(instance)
   const payload = collectComputedPayload(instance, computed)
-  if (payload && Object.keys(payload).length > 0 && typeof instance?.setData === 'function') {
-    instance.setData(payload)
+  if (!payload || typeof instance?.setData !== 'function') {
+    return
+  }
+  const hasPrevious = hasOwn(instance, '__wvScopedSlotComputedSnapshot')
+  const previous = instance.__wvScopedSlotComputedSnapshot ?? {}
+  const next: Record<string, any> = {}
+  const changed: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    next[key] = cloneSnapshotValue(value)
+    if (options?.force || !hasPrevious || !hasOwn(previous, key) || !isDeepEqualValue(previous[key], value, 20, { keys: 10_000 })) {
+      changed[key] = value
+    }
+  }
+  for (const key of Object.keys(previous)) {
+    if (!hasOwn(payload, key)) {
+      changed[key] = null
+    }
+  }
+  instance.__wvScopedSlotComputedSnapshot = next
+  if (Object.keys(changed).length > 0) {
+    instance.setData(changed)
   }
 }
 
@@ -189,13 +213,25 @@ function syncSlotPropsData(
   const scope = normalizeSlotBindings(scopeSource)
   const slotProps = normalizeSlotBindings(propsSource)
   const snapshot = { ...scope, ...slotProps }
-  const merged = resolveRuntimeSlotBindings(instance, snapshot)
+  const snapshotChanged = !hasOwn(instance, '__wvSlotPropsSnapshot')
+    || !isDeepEqualValue(
+      instance.__wvSlotPropsSnapshot ?? {},
+      snapshot,
+      20,
+      { keys: 10_000 },
+    )
+  const merged = snapshotChanged || !instance[WEVU_SLOT_PROPS_DATA_KEY]
+    ? resolveRuntimeSlotBindings(instance, snapshot)
+    : instance[WEVU_SLOT_PROPS_DATA_KEY]
+  if (snapshotChanged) {
+    instance.__wvSlotPropsSnapshot = cloneSnapshotValue(snapshot)
+  }
   instance[WEVU_SLOT_PROPS_DATA_KEY] = merged
   const runtimeState = instance?.__wevu?.state
   if (runtimeState && typeof runtimeState === 'object') {
     runtimeState[WEVU_SLOT_PROPS_DATA_KEY] = merged
   }
-  return { merged, snapshot }
+  return { merged, snapshot, snapshotChanged }
 }
 
 function mergeSlotProps(
@@ -203,14 +239,19 @@ function mergeSlotProps(
   computed?: ComputedDefinitions,
   override?: { [WEVU_SLOT_SCOPE_KEY]?: unknown, [WEVU_SLOT_PROPS_KEY]?: unknown },
 ) {
-  const { snapshot } = syncSlotPropsData(instance, override)
-  if (typeof instance?.setData === 'function') {
+  const { snapshot, snapshotChanged } = syncSlotPropsData(instance, override)
+  if (snapshotChanged && typeof instance?.setData === 'function') {
     instance.setData({ [WEVU_SLOT_PROPS_DATA_KEY]: snapshot })
   }
-  flushScopedSlotComputedBindings(instance, computed)
+  if (snapshotChanged) {
+    flushScopedSlotComputedBindings(instance, computed)
+  }
 }
 
 function setOwnerProxy(instance: any, proxy: any) {
+  if (instance[WEVU_SLOT_OWNER_PROXY_KEY] === proxy) {
+    return false
+  }
   instance[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
   const data = instance?.data
   if (data && typeof data === 'object') {
@@ -230,20 +271,34 @@ function setOwnerProxy(instance: any, proxy: any) {
   if (runtimeState && typeof runtimeState === 'object') {
     runtimeState[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
   }
+  return true
 }
 
 function updateOwnerBindings(instance: any, snapshot: Record<string, any>, proxy: any, computed?: ComputedDefinitions) {
-  setOwnerProxy(instance, proxy)
-  syncSlotPropsData(instance)
-  instance[WEVU_SLOT_OWNER_KEY] = snapshot || {}
-  const runtimeState = instance?.__wevu?.state
-  if (runtimeState && typeof runtimeState === 'object') {
-    runtimeState[WEVU_SLOT_OWNER_KEY] = snapshot || {}
+  const proxyChanged = setOwnerProxy(instance, proxy)
+  const { snapshotChanged: slotPropsChanged } = syncSlotPropsData(instance)
+  const nextOwnerSnapshot = snapshot || {}
+  const ownerChanged = !hasOwn(instance, '__wvOwnerSnapshot')
+    || !isDeepEqualValue(
+      instance.__wvOwnerSnapshot ?? {},
+      nextOwnerSnapshot,
+      20,
+      { keys: 10_000 },
+    )
+  if (ownerChanged) {
+    instance.__wvOwnerSnapshot = cloneSnapshotValue(nextOwnerSnapshot)
+    instance[WEVU_SLOT_OWNER_KEY] = nextOwnerSnapshot
+    const runtimeState = instance?.__wevu?.state
+    if (runtimeState && typeof runtimeState === 'object') {
+      runtimeState[WEVU_SLOT_OWNER_KEY] = nextOwnerSnapshot
+    }
   }
-  if (typeof instance?.setData === 'function') {
-    instance.setData({ [WEVU_SLOT_OWNER_KEY]: snapshot || {} })
+  if (ownerChanged && typeof instance?.setData === 'function') {
+    instance.setData({ [WEVU_SLOT_OWNER_KEY]: nextOwnerSnapshot })
   }
-  flushScopedSlotComputedBindings(instance, computed)
+  if (ownerChanged || proxyChanged || slotPropsChanged) {
+    flushScopedSlotComputedBindings(instance, computed)
+  }
 }
 
 function bindOwner(instance: any, ownerId: string, computed?: ComputedDefinitions) {
@@ -360,6 +415,7 @@ export function createScopedSlotOptions(
       },
       ready(this: any) {
         syncScopedSlotBindings(this, scopedSlotComputed)
+        flushScopedSlotComputedBindings(this, scopedSlotComputed, { force: true })
         const owner = resolveTemplateRefOwner(this)
         if (owner) {
           scheduleTemplateRefUpdate(this, undefined, owner)

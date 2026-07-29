@@ -70,7 +70,7 @@ function normalizeConsoleText(entry: any) {
 
 function resolveConsoleLevel(entry: any): 'debug' | 'info' | 'log' | 'warn' | 'error' {
   const payload = resolveConsolePayload(entry)
-  const level = String(payload?.level ?? '').toLowerCase()
+  const level = String(payload?.level ?? payload?.type ?? '').toLowerCase()
   if (level === 'debug') {
     return 'debug'
   }
@@ -144,8 +144,11 @@ export function attachRuntimeErrorCollector(miniProgram: any): RuntimeErrorColle
     runtimeLogs.push({ seq, text: formatted })
   }
 
-  miniProgram.on('console', onConsole)
-  miniProgram.on('exception', onException)
+  const canSubscribe = typeof miniProgram?.on === 'function'
+  if (canSubscribe) {
+    miniProgram.on('console', onConsole)
+    miniProgram.on('exception', onException)
+  }
 
   return {
     mark() {
@@ -168,8 +171,10 @@ export function attachRuntimeErrorCollector(miniProgram: any): RuntimeErrorColle
       return runtimeLogs.map(entry => entry.text)
     },
     dispose() {
-      miniProgram.removeListener('console', onConsole)
-      miniProgram.removeListener('exception', onException)
+      if (canSubscribe && typeof miniProgram?.removeListener === 'function') {
+        miniProgram.removeListener('console', onConsole)
+        miniProgram.removeListener('exception', onException)
+      }
     },
   }
 }

@@ -13,9 +13,9 @@ import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, SCRIPT_EXTS, SFC_STY
 import { collectExternalComponentOptimizeDeps } from './dependencyScan'
 import { generateAutoRoutesModule, generateEntryModule } from './entry'
 import { wrapPageTemplate } from './layout'
-import { cleanUrl, isHtmlEntry, isInsideDir, normalizePath, resolveRuntimePolyfillPath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport, toViteFsImport } from './path'
+import { cleanUrl, isHtmlEntry, isInsideDir, normalizePath, resolveFileWithExtensionsSync, resolveRuntimePolyfillPath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport, toViteFsImport } from './path'
 import { transformScriptModule } from './register'
-import { scanProject } from './scan'
+import { getStableWebComponentId, scanProject } from './scan'
 import { createEmptyScanState } from './state'
 import { createInlineStyleModule } from './styleModule'
 import { ensureWebVueSfcResult, generateWebVueSfcStyle, generateWebVueSfcTemplate, resolveWebVueSfcStyleLanguage, transformWebVueSfcScript } from './vueSfc'
@@ -97,6 +97,10 @@ function hasWxsQuery(id: string) {
 
 function hasQuery(id: string, query: string) {
   return id.includes(`?${query}`) || id.includes(`&${query}`)
+}
+
+function isUniAppDependency(id: string, includes: readonly string[]) {
+  return includes.some(packageName => id === packageName || id.startsWith(`${packageName}/`))
 }
 
 function resolveSfcStyleSourceFilename(id: string) {
@@ -223,11 +227,16 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       resolveWebAutoImportTag = createAutoImportTagResolver()
       await scan(this)
       const componentDependencies = await collectExternalComponentOptimizeDeps(state.scanResult.components)
+      const uniAppIncludes = options.__uniApp?.include ?? []
       config.optimizeDeps ??= {}
+      config.optimizeDeps.exclude = Array.from(new Set([
+        ...(config.optimizeDeps.exclude ?? []),
+        ...uniAppIncludes,
+      ]))
       config.optimizeDeps.include = Array.from(new Set([
         ...(config.optimizeDeps.include ?? []),
         ...componentDependencies,
-      ]))
+      ])).filter(dependency => !isUniAppDependency(dependency, uniAppIncludes))
     },
     configureServer(server: WebDevServer) {
       server.middlewares.use(createWebAssetMiddleware(srcRoot))
@@ -256,6 +265,12 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         const request = decodeURIComponent(id.slice(WEB_COMPONENT_PREFIX.length))
         const resolvedId = componentImportIdMap.get(request)
         return resolvedId ? `${cleanUrl(resolvedId)}?${WEB_COMPONENT_QUERY}` : null
+      }
+      if (id.startsWith('.') && importer && cleanUrl(importer).endsWith('.vue') && !extname(id)) {
+        const resolvedScript = resolveFileWithExtensionsSync(resolve(dirname(cleanUrl(importer)), id), SCRIPT_EXTS)
+        if (resolvedScript?.endsWith('.vue')) {
+          return resolvedScript
+        }
       }
       if (hasQuery(id, SFC_STYLE_QUERY)) {
         const queryIndex = id.indexOf('?')
@@ -396,10 +411,14 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       }
 
       if (clean.endsWith('.vue')) {
-        const meta = state.moduleMeta.get(normalizePath(clean))
-        if (!meta) {
-          return null
+        const normalized = normalizePath(clean)
+        const meta = state.moduleMeta.get(normalized) ?? {
+          kind: 'component' as const,
+          id: getStableWebComponentId(clean, srcRoot),
+          scriptPath: clean,
+          sourceType: 'vue-sfc' as const,
         }
+        state.moduleMeta.set(normalized, meta)
         const result = await ensureWebVueSfcResult({
           filename: clean,
           meta,

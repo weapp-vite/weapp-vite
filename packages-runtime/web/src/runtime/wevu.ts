@@ -1,5 +1,5 @@
 import type { RegisterMeta } from './polyfill/routeRuntime/options'
-import { createApp, createWevuComponent } from 'wevu/internal-runtime'
+import { createApp, createWevuComponent, takePendingRuntimeAppRegistration } from 'wevu/internal-runtime'
 import { registerApp, registerComponent, registerPage } from './polyfill/routeRuntime'
 
 interface WevuRegisterMeta extends RegisterMeta {
@@ -49,7 +49,14 @@ function withRuntimeConstructor<T>(
  * 将 Wevu App 注册过程接入 Web 页面栈。
  */
 export function registerWebWevuApp(options: Record<string, any>, meta: WevuRegisterMeta): void {
-  withRuntimeConstructor('App', definition => registerApp(definition, meta), () => createApp(options))
+  const pendingRegistration = takePendingRuntimeAppRegistration()
+  withRuntimeConstructor('App', definition => registerApp(definition, meta), () => {
+    if (pendingRegistration) {
+      pendingRegistration.register()
+      return pendingRegistration.app
+    }
+    return createApp(options)
+  })
 }
 
 /**

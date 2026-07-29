@@ -1,0 +1,13 @@
+diff --git a/components/u-slider/u-slider.vue b/components/u-slider/u-slider.vue
+index 3a6fb1df181491a0f7432f1db4b35dacefd8b55d..def8acce354fa94ac001c4b366927c19b73b75e3 100644
+--- a/components/u-slider/u-slider.vue
++++ b/components/u-slider/u-slider.vue
+@@ -180,7 +180,7 @@
+ 		},
+ 		async mounted() {
+ 			if (this.height != '') {
+-				this.sizeLocal = val
++				this.sizeLocal = this.height
+ 			} else {
+ 				this.sizeLocal = this.size
+ 			}

@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { WEVU_NATIVE_INSTANCE_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
 import {
@@ -2343,7 +2344,7 @@ Page({
     ])
   })
 
-  it('supports getNetworkType and network status change listeners', () => {
+  it('supports deterministic location, getNetworkType and network status change listeners', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-network-type-'))
     tempDirs.push(root)
 
@@ -2360,6 +2361,7 @@ Page({
   data: {
     currentType: '',
     initialType: '',
+    location: null,
     logs: []
   },
   push(message) {
@@ -2374,6 +2376,15 @@ Page({
           initialType: result.networkType
         })
         this.push('get:' + result.networkType)
+      }
+    })
+  },
+  inspectLocation() {
+    wx.getLocation({
+      isHighAccuracy: true,
+      type: 'gcj02',
+      success: (result) => {
+        this.setData({ location: result })
       }
     })
   },
@@ -2398,12 +2409,23 @@ Page({
 
     page.startWatchingNetwork()
     page.inspectNetwork()
+    page.inspectLocation()
     session.setNetworkType('none')
     session.setNetworkType('4g')
     page.stopWatchingNetwork()
     session.setNetworkType('5g')
 
     expect(page.data.initialType).toBe('wifi')
+    expect(page.data.location).toEqual({
+      accuracy: 10,
+      altitude: 0,
+      errMsg: 'getLocation:ok',
+      horizontalAccuracy: 10,
+      latitude: 31.2304,
+      longitude: 121.4737,
+      speed: 0,
+      verticalAccuracy: 0,
+    })
     expect(page.data.currentType).toBe('4g')
     expect(page.data.logs).toEqual([
       'get:wifi',
@@ -2414,6 +2436,8 @@ Page({
       errMsg: 'getNetworkType:ok',
       networkType: '5g',
     })
+    expect(session.getLocation()).toEqual(page.data.location)
+    expect(session.callWxMethod('canIUse', 'getLocation.return.latitude')).toBe(true)
   })
 
   it('supports navigation bar title, color and loading state defaults', () => {
@@ -3065,6 +3089,82 @@ Page({
       scrollLeft: 0,
       scrollTop: 64,
     })
+  })
+
+  it('supports uni compatibility APIs with session-local event listeners', () => {
+    const firstProjectPath = createBaseFixture()
+    const secondProjectPath = createBaseFixture()
+    tempDirs.push(firstProjectPath, secondProjectPath)
+    const firstSession = createHeadlessSession({ projectPath: firstProjectPath })
+    const secondSession = createHeadlessSession({ projectPath: secondProjectPath })
+    const logs: string[] = []
+    const persistentHandler = (value: string) => logs.push(`on:${value}`)
+    const onceHandler = (value: string) => logs.push(`once:${value}`)
+    const success = vi.fn()
+    const complete = vi.fn()
+
+    expect(firstSession.callWxMethod('loadFontFace', {
+      complete,
+      family: 'uview-icon',
+      global: true,
+      source: 'url("headless://font/uview.ttf")',
+      success,
+    })).toEqual({ errMsg: 'loadFontFace:ok' })
+    expect(success).toHaveBeenCalledWith({ errMsg: 'loadFontFace:ok' })
+    expect(complete).toHaveBeenCalledWith({ errMsg: 'loadFontFace:ok' })
+    expect(firstSession.callWxMethod('canIUse', 'loadFontFace.return.errMsg')).toBe(true)
+    expect(firstSession.callWxMethod('getLocale')).toBe('zh-Hans')
+    expect(firstSession.callWxMethod('rpx2px', 100)).toBe(50)
+    expect(firstSession.callWxMethod('upx2px', 100)).toBe(50)
+    expect(firstSession.callWxMethod('getWindowInfo')).toMatchObject({
+      safeArea: {
+        bottom: 667,
+        top: 20,
+      },
+      safeAreaInsets: {
+        bottom: 0,
+        top: 20,
+      },
+    })
+
+    firstSession.callWxMethod('$on', 'grid:update', persistentHandler)
+    firstSession.callWxMethod('$once', 'grid:update', onceHandler)
+    firstSession.callWxMethod('$emit', 'grid:update', 'first')
+    firstSession.callWxMethod('$emit', 'grid:update', 'second')
+    secondSession.callWxMethod('$emit', 'grid:update', 'isolated')
+    firstSession.callWxMethod('$off', 'grid:update', persistentHandler)
+    firstSession.callWxMethod('$emit', 'grid:update', 'removed')
+
+    expect(logs).toEqual(['on:first', 'once:first', 'on:second'])
+  })
+
+  it('unwraps a wevu public proxy for scoped selector queries', () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+    const card = page.selectComponent?.('#status-card')
+    const proxy = {
+      $state: {
+        [WEVU_NATIVE_INSTANCE_KEY]: card,
+      },
+    }
+
+    const result = session.callWxMethod('createSelectorQuery')
+      .in(proxy)
+      .select('.card-shell')
+      .boundingClientRect()
+      .exec()
+
+    expect(result).toEqual([{
+      bottom: 0,
+      height: 0,
+      left: 0,
+      right: 0,
+      top: 0,
+      width: 0,
+    }])
   })
 
   it('renders custom components and exposes selectComponent APIs in headless runtime', () => {

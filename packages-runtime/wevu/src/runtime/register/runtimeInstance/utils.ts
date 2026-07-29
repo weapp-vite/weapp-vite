@@ -6,6 +6,7 @@ import type {
 } from '../../types'
 import {
   WEVU_NATIVE_INSTANCE_KEY,
+  WEVU_PROP_KEYS_KEY,
   WEVU_PROPS_KEY,
   WEVU_RUNTIME_KEY,
   WEVU_SETUP_CONTEXT_INSTANCE_KEY,
@@ -146,10 +147,15 @@ export function callNativeSetData(
   }
 }
 
-export function syncRuntimeProps(props: Record<string, any>, mpProperties: Record<string, any>) {
+export function syncRuntimeProps(
+  props: Record<string, any>,
+  mpProperties: Record<string, any>,
+  declaredPropKeys?: readonly string[],
+) {
+  const declaredPropKeySet = declaredPropKeys ? new Set(declaredPropKeys) : undefined
   const currentKeys = Object.keys(props)
   for (const key of currentKeys) {
-    if (!hasOwn(mpProperties, key)) {
+    if (!hasOwn(mpProperties, key) || (declaredPropKeySet && !declaredPropKeySet.has(key))) {
       try {
         delete props[key]
       }
@@ -158,8 +164,11 @@ export function syncRuntimeProps(props: Record<string, any>, mpProperties: Recor
       }
     }
   }
-  for (const [key, value] of Object.entries(mpProperties)) {
-    props[key] = value
+  const nextKeys = declaredPropKeys ?? Object.keys(mpProperties)
+  for (const key of nextKeys) {
+    if (hasOwn(mpProperties, key)) {
+      props[key] = mpProperties[key]
+    }
   }
 }
 
@@ -175,7 +184,10 @@ export function ensureRuntimeProps(
     ? runtimeProps
     : shallowReactive({}) as Record<string, any>
 
-  syncRuntimeProps(props, mpProperties)
+  const declaredPropKeys = Array.isArray((target as any)[WEVU_PROP_KEYS_KEY])
+    ? ((target as any)[WEVU_PROP_KEYS_KEY] as string[])
+    : undefined
+  syncRuntimeProps(props, mpProperties, declaredPropKeys)
   if (runtimeState && typeof runtimeState === 'object') {
     attachRuntimeProxyProps(runtimeState, props)
   }

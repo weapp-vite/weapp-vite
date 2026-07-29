@@ -21,6 +21,7 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/template-tailwindcss-dev-open-multi.runtime.test.ts', '1200000'],
   ['ide/template-tailwindcss-tdesign-hmr.runtime.test.ts', '900000'],
   ['ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts', '900000'],
+  ['ide/uview-plus-compat.runtime.test.ts', '1200000'],
   ['ide/wevu-runtime.core-hmr.test.ts', '900000'],
   ['ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts', '900000'],
   ['ide/wevu-runtime.weapp.test.ts', '600000'],

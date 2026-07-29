@@ -1,5 +1,6 @@
 export * from './tdesign'
 export * from './types'
+export * from './uviewPlus'
 export * from './vant'
 export * from './weui'
 export * from './wotUi'

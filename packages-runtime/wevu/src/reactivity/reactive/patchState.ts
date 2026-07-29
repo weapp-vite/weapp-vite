@@ -29,6 +29,18 @@ export function getRawVersion(target: object) {
   return rawVersionMap.get(target) ?? 0
 }
 
+/**
+ * 将尚未归属父状态树的响应式节点接入父级根节点。
+ * @internal
+ */
+export function adoptReactiveRoot(child: object, parent: object) {
+  const parentRoot = rawRootMap.get(parent) ?? parent
+  const existingRoot = rawRootMap.get(child)
+  if (!existingRoot || existingRoot === child || existingRoot === parent) {
+    rawRootMap.set(child, parentRoot)
+  }
+}
+
 export function bumpAncestorVersions(target: object) {
   const visited = new Set<object>()
   const stack: object[] = [target]

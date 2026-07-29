@@ -139,8 +139,15 @@ export function createComponentElementClass({
       runtimeState.lifetimes.created?.call(this.#publicInstance)
     }
 
-    setData(patch: DataRecord) {
-      this.#applyDataPatch(patch)
+    setData(patch: DataRecord, callback?: () => void) {
+      const changed = this.#applyDataPatch(patch)
+      if (supportsLit && changed) {
+        const updateComplete = (this as unknown as { updateComplete: Promise<boolean> }).updateComplete
+        return updateComplete.then(() => {
+          callback?.()
+        })
+      }
+      callback?.()
     }
 
     triggerEvent(name: string, detail?: any, options: TriggerEventOptions = {}) {
@@ -272,7 +279,7 @@ export function createComponentElementClass({
 
     #applyDataPatch(patch: DataRecord) {
       if (!patch || typeof patch !== 'object') {
-        return
+        return false
       }
       let changed = false
       const changedKeys: string[] = []
@@ -299,6 +306,7 @@ export function createComponentElementClass({
           }
         }
       }
+      return changed
     }
 
     #setProperty(name: string, value: any) {

@@ -3,6 +3,7 @@ import type { HeadlessComponentInstance } from '../componentInstance'
 import type { DomNodeLike, RuntimeComponentRegistryEntry, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import fs from 'node:fs'
 import path from 'node:path'
+import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
 import {
   cloneValue,
   createComponentInstance,
@@ -312,6 +313,7 @@ export function createRuntimeComponentInstance(
     requestRender: callback => context.session.requestRender(callback),
     triggerEvent: buildComponentTrigger(componentScopeId, context, clonedNode),
   })
+  setSelectorQueryScopeId(componentInstance, componentScopeId)
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
   componentInstance.createMediaQueryObserver = () => context.session.createMediaQueryObserver(componentInstance)
@@ -320,13 +322,13 @@ export function createRuntimeComponentInstance(
   componentInstance.selectOwnerComponent = () => ownerScopeId
     ? context.componentCache.get(ownerScopeId) ?? null
     : null
+  context.componentCache.set(componentScopeId, componentInstance)
   runComponentLifecycle(componentInstance, 'created')
   runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(nextProperties), {})
   componentInstance.__propertySnapshots = Object.fromEntries(
     Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
   )
   runComponentLifecycle(componentInstance, 'attached')
-  context.componentCache.set(componentScopeId, componentInstance)
   return componentInstance
 }
 

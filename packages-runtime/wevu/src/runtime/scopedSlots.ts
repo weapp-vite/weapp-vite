@@ -1,6 +1,7 @@
 import type { ComponentPublicInstance, InternalRuntimeState, RuntimeInstance } from './types'
 import {
   WEVU_PROPS_KEY,
+  WEVU_RUNTIME_OWNER_ID_KEY,
   WEVU_SCOPED_SLOT_OWNER_SEED_KEY,
   WEVU_SCOPED_SLOT_OWNER_STORE_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
@@ -11,6 +12,7 @@ import {
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
+import { isDeepEqualValue } from './app/setData/snapshot'
 
 type OwnerSubscriber = (snapshot: Record<string, any>, proxy: ComponentPublicInstance<any, any, any> | undefined) => void
 
@@ -53,11 +55,13 @@ export function updateOwnerSnapshot(
 ) {
   const { ownerStore } = getScopedSlotGlobalStore()
   const record = ownerStore.get(ownerId) ?? { snapshot: {}, proxy, subscribers: new Set() }
+  const snapshotChanged = !isDeepEqualValue(record.snapshot, snapshot, 20, { keys: 10_000 })
+  const proxyChanged = record.proxy !== proxy
   record.snapshot = snapshot
   record.proxy = proxy
   record.target = target ?? record.target
   ownerStore.set(ownerId, record)
-  if (record.subscribers.size) {
+  if ((snapshotChanged || proxyChanged) && record.subscribers.size) {
     for (const subscriber of record.subscribers) {
       try {
         subscriber(snapshot, proxy)
@@ -140,7 +144,16 @@ export function attachOwnerSnapshot(
   target: InternalRuntimeState,
   runtime: RuntimeInstance<any, any, any>,
   ownerId: string,
+  options?: {
+    deferSnapshot?: boolean
+  },
 ) {
+  try {
+    ;(target as any)[WEVU_RUNTIME_OWNER_ID_KEY] = ownerId
+  }
+  catch {
+    // 宿主拒绝扩展实例时继续使用现有引用通道。
+  }
   try {
     ;(runtime.state as any)[WEVU_SLOT_OWNER_ID_KEY] = ownerId
   }
@@ -162,7 +175,7 @@ export function attachOwnerSnapshot(
   catch {
     // 忽略 owner id 同步异常
   }
-  const snapshot = resolveOwnerSnapshot(runtime)
+  const snapshot = options?.deferSnapshot ? {} : resolveOwnerSnapshot(runtime)
   const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
   mergeOwnerSnapshotProps(snapshot, propsSource)
   updateOwnerSnapshot(ownerId, snapshot, runtime.proxy, target)

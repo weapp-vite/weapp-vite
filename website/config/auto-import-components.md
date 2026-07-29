@@ -100,15 +100,15 @@ export default defineConfig({
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
-import { WotUiResolver } from 'weapp-vite/resolvers'
+import { UviewPlusResolver, WotUiResolver } from 'weapp-vite/resolvers'
 
 export default defineConfig({
   weapp: {
     uniApp: {
-      include: ['@wot-ui/ui'],
+      include: ['@wot-ui/ui', 'uview-plus'],
     },
     autoImportComponents: {
-      resolvers: [WotUiResolver()],
+      resolvers: [WotUiResolver(), UviewPlusResolver()],
       vueComponents: true,
       vueComponentsModule: 'wevu',
     },
@@ -116,4 +116,4 @@ export default defineConfig({
 })
 ```
 
-该能力默认关闭，也不会自动扫描 npm 依赖。完整安装方式、99 组件矩阵和双端边界见 [Wot UI 与 uni-app 组件库](/integration/wot-ui)。
+该能力默认关闭，也不会自动扫描 npm 依赖。完整安装与兼容矩阵见 [Wot UI 与 uni-app 组件库](/integration/wot-ui) 和 [uview-plus 与 uni-app 组件库](/integration/uview-plus)。

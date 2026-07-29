@@ -132,6 +132,7 @@ describe('runtime: setData scheduler', () => {
         maxFlushes: 2,
         coolDownMs: 0,
       },
+      targetLabel: 'component:scoped-slot-default',
       runTracker: () => {},
       isMounted: () => true,
     })
@@ -148,6 +149,8 @@ describe('runtime: setData scheduler', () => {
       windowMs: 1000,
       pendingPatchKeys: 0,
       computedDirtyKeys: 0,
+      targetLabel: 'component:scoped-slot-default',
+      message: expect.stringContaining('component:scoped-slot-default'),
     }))
   })
 })

@@ -62,7 +62,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `.weapp-vite` 类型异常：先跑 `wv prepare`
    - 页面 / layout 不对：查 `autoRoutes`、`routeRules`、`definePageMeta`
    - 自动导入异常：查 `autoImportComponents` 与 resolver
-   - Wot UI / uni-app 组件库异常：同时检查 `weapp.uniApp.include`、resolver 的真实 `resolvedId` / `sourceType: 'wevu-sfc'`，以及目标端条件分支
+   - Wot UI / uview-plus / uni-app 组件库异常：同时检查 `weapp.uniApp.include`、resolver 的真实 `resolvedId` / `sourceType: 'wevu-sfc'`，以及目标端条件分支
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`
    - 状态保持 HMR 不生效：确认平台为微信、DevTools 开启服务端口与热重载、`compileHotReLoad: true`，并区分安全 JS/Vue 补丁与 CSS/资源/配置的完整重载回退
@@ -78,7 +78,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 插件项目先确认 `weapp.pluginRoot`，结构变化必须同时检查主应用 `dist/` 和插件 `dist-plugin/`；不要只验证 host 产物。
 - 状态保持 HMR 仅适用于微信小程序：需要 DevTools 服务端口、热重载和 `setting.compileHotReLoad: true`。JS/Vue 安全补丁可保留实例状态；CSS、资源、JSON、配置、边界不兼容或补丁失败时应接受完整构建回退。
 - Web runtime 只验证 Web 语义，不把它当成小程序真机等价环境；请求 globals、URL 和平台 API 兼容问题要分别在目标 runtime 验证。
-- uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 当前以 `@wot-ui/ui@2.2.0` 的真实公开 SFC 清单为兼容基线，不把它泛化成完整 uni-app runtime。
+- uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 与 uview-plus 分别以 `@wot-ui/ui@2.2.0`、`uview-plus@3.8.86` 的 npm 发布包 SFC 清单为兼容基线，不把它们泛化成完整 uni-app runtime。
 - 分包、插件、worker 和 lib mode 的性能判断都先看产物结构与 `wv analyze`，再改 chunk/shared 策略。
 
 ## 参考决策表

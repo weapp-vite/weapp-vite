@@ -16,7 +16,7 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 - 用户问 `definePageMeta` / layout 怎么配。
 - 用户遇到模板兼容或编译错误。
 - 用户遇到 `.weapp-vite` 类型输出、组件声明或 route type 漂移。
-- 用户要在微信小程序与 Web 中使用 Wot UI 等 uni-app Vue SFC 组件库。
+- 用户要在微信小程序与 Web 中使用 Wot UI、uview-plus 等 uni-app Vue SFC 组件库。
 
 ## 不适用场景
 
@@ -59,7 +59,7 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 
 - 不要在一个 SFC 里混多套 JSON 宏。
 - 不要把小程序组件注册当成 Web Vue 组件注册。
-- 不要只配置 Wot UI resolver 而遗漏 `weapp.uniApp.include`，也不要把 npm 依赖自动加入转换范围。
+- 不要只配置 Wot UI 或 uview-plus resolver 而遗漏 `weapp.uniApp.include`，也不要把 npm 依赖自动加入转换范围。uview-plus 应调用 `mount$u()` 并同步 `$u`，不要走 Web 全局组件注册流程。
 - 不要把 `t-*`、`van-*` 等 kebab-case 第三方原生组件的普通默认插槽误判为增强作用域插槽。
 - 不要忽略 `prepare` 和 `.weapp-vite` 产物。
 - 不要在修 SFC 语法时顺手做无关运行时重构。

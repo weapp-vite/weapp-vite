@@ -123,8 +123,8 @@ if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotCom
 var __wevuOptions = {
 	setData: { pick: [
 		"__wvOwnerId",
-		"__wvSlotOwnerId",
 		"vueSlots",
+		"__wvSlotOwnerId",
 		"__wvSlotScope"
 	] },
 	data() {
@@ -165,7 +165,7 @@ exports.default = __wevuOptions;
   }
 }
 ",
-  "pages/index/index.wxml": "<van-tabbar class="van-safe-area-bottom fixed z-10" fixed="{{true}}" route generic:scoped-slots-default="scoped-slot-hash-default-0" vue-slots="{{ {default:true} }}" __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}" />",
+  "pages/index/index.wxml": "<van-tabbar class="van-safe-area-bottom fixed z-10" fixed="{{true}}" route generic:scoped-slots-default="scoped-slot-hash-default-0" vue-slots="{{ {default:true} }}" __wvSlotOwnerId="{{__wvOwnerId || ''}}" />",
   "sitemap.json": "{
   "rules": []
 }

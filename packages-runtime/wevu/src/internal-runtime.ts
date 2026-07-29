@@ -1,5 +1,5 @@
 export { createApp } from './runtime/app'
-
+export { takePendingRuntimeAppRegistration } from './runtime/app/pending'
 export { resetWevuDefaults, setWevuDefaults } from './runtime/defaults'
 export {
   createWevuComponent,
@@ -50,7 +50,6 @@ export {
   setCurrentInstance,
   setCurrentSetupContext,
 } from './runtime/hooks'
-
 export { useIntersectionObserver } from './runtime/intersectionObserver'
 
 export {
@@ -60,6 +59,7 @@ export {
   useLayoutHosts,
   waitForLayoutHost,
 } from './runtime/layoutBridge'
+
 export { isNoSetData, markNoSetData } from './runtime/noSetData'
 export {
   getCurrentPageStackSnapshot,
@@ -98,6 +98,7 @@ export {
   useSelectorFields,
   useSelectorQuery,
 } from './runtime/selectorQuery'
+export { createUniAppHost } from './runtime/uniAppHost'
 export { useUpdatePerformanceListener } from './runtime/updatePerformance'
 export { defineAppSetup, use } from './runtime/use'
 export {

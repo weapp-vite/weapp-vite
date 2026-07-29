@@ -29,6 +29,7 @@ const PLAYWRIGHT_BUNDLED_AVAILABLE = existsSync(PLAYWRIGHT_EXECUTABLE)
 const BROWSER_AVAILABLE = PLAYWRIGHT_BUNDLED_AVAILABLE || Boolean(CHROMIUM_CHANNEL)
 const describeWeb = BROWSER_AVAILABLE ? describe : describe.skip
 const DEDICATED_WEB_PROJECTS = new Set([
+  'e2e-apps/uview-plus-compat',
   'e2e-apps/wot-ui-compat',
 ])
 const MUTABLE_PROJECT_FILES: Readonly<Record<string, string[]>> = Object.freeze({
