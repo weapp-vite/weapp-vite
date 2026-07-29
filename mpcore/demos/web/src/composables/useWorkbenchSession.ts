@@ -149,11 +149,20 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
     }
   }
 
-  function run(action: () => void) {
+  function run(action: () => unknown) {
     const previousRoute = session.value?.getCurrentPages().at(-1)?.route ?? ''
     try {
       errorMessage.value = ''
-      action()
+      const result = action()
+      if (result instanceof Promise) {
+        void result
+          .then(() => syncSelectedScopeAfterRun(previousRoute))
+          .catch((error) => {
+            errorMessage.value = String((error as Error).message ?? error)
+          })
+          .finally(touch)
+        return
+      }
       syncSelectedScopeAfterRun(previousRoute)
     }
     catch (error) {
@@ -206,7 +215,7 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
       if (!page) {
         throw new Error('Cannot call page method without an active browser simulator page.')
       }
-      session.value?.callScopeMethodDirect(`page:${page.route}`, method)
+      return session.value?.callScopeMethodDirect(`page:${page.route}`, method)
     })
   }
 

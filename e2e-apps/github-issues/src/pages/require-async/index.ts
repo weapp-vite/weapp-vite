@@ -1,6 +1,6 @@
 interface RequireAsyncResult {
   marker: string
-  mode: 'callback' | 'promise'
+  mode: 'callback' | 'native' | 'promise'
   ok: boolean
 }
 
@@ -8,7 +8,7 @@ function loadWithCallback() {
   return new Promise<RequireAsyncResult>((resolve) => {
     // 这里刻意覆盖微信小程序原生 callback 版 require API。
     // eslint-disable-next-line ts/no-require-imports
-    require('../../subpackages/require-async/callback', (moduleExport) => {
+    require('../../subpackages/require-async/callback.ts', (moduleExport) => {
       const marker = moduleExport.callbackMarker
       resolve({
         marker,
@@ -26,7 +26,7 @@ function loadWithCallback() {
 }
 
 async function loadWithPromise() {
-  const moduleExport = await require.async('../../subpackages/require-async/promise')
+  const moduleExport = await require.async('../../subpackages/require-async/promise.ts')
   const marker = moduleExport.promiseMarker
   return {
     marker,
@@ -35,13 +35,27 @@ async function loadWithPromise() {
   } satisfies RequireAsyncResult
 }
 
+async function loadWithNativeImport() {
+  const moduleExport = await import('../../subpackages/require-async/import-native.ts')
+  const marker = `${moduleExport.default}:${moduleExport.nativeMarker}:${moduleExport.transitiveMarker}`
+  return {
+    marker,
+    mode: 'native',
+    ok: Boolean(moduleExport.default && moduleExport.nativeMarker && moduleExport.transitiveMarker),
+  } satisfies RequireAsyncResult
+}
+
 Page({
   data: {
     status: 'ready',
   },
-  async _runE2E(mode: 'callback' | 'promise') {
-    return mode === 'callback'
-      ? await loadWithCallback()
-      : await loadWithPromise()
+  async _runE2E(mode: 'callback' | 'native' | 'promise') {
+    if (mode === 'callback') {
+      return await loadWithCallback()
+    }
+    if (mode === 'native') {
+      return await loadWithNativeImport()
+    }
+    return await loadWithPromise()
   },
 })

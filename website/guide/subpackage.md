@@ -159,13 +159,30 @@ const moduleExport = await require.async('../../packages/order/modules/price')
 console.log(moduleExport.formatPrice(100))
 ```
 
-构建时，`weapp-vite` 会把 callback 写法规范化为等价的 `void require.async(path).then(success, fail)`，并将两种写法的目标模块作为异步 chunk 输出。这可以避免打包器把 callback `require` 错当成同步 CommonJS 依赖并提升到主包。
+构建时，`weapp-vite` 会把 callback 写法规范化为等价的 `void require.async(path).then(success, fail)`，并将两种写法的目标模块作为异步 chunk 输出。源码路径带 `.ts` 等扩展名时，调用参数会同步改为实际 `.js` 产物路径。这可以避免打包器把 callback `require` 错当成同步 CommonJS 依赖并提升到主包。
+
+如果希望继续使用标准 `import()` 写法，可以显式启用微信原生分包加载模式：
+
+```ts
+export default defineConfig({
+  weapp: {
+    chunks: {
+      dynamicImports: 'native',
+    },
+  },
+})
+
+const moduleExport = await import('../../packages/order/modules/price.ts')
+```
+
+当静态相对路径跨入 `app.json` 已声明的普通分包时，这个调用会转换为 `require.async('../../packages/order/modules/price.js')`。目标的静态依赖也会留在目标分包。
 
 需要注意：
 
 - 模块路径必须是静态相对路径字面量，不能使用运行时拼接，也不要使用绝对路径。
 - 目标 root 必须出现在最终 `app.json.subPackages` 中；使用自动路由且 root 不符合默认约定时，同时配置 `weapp.subPackages.<root>`。
-- `import()` 由 `weapp.chunks.dynamicImports` 控制，是打包器动态 chunk，不等同于微信的跨分包 `require.async()`。
+- `dynamicImports: 'preserve'` 保留 bundler 动态 chunk；只有显式使用 `native` 时才转换符合条件的跨普通分包 `import()`。
+- 动态表达式、裸模块、同包导入、独立分包目标和非微信平台不会转换。
 - 发布前检查目标模块仍位于对应分包，并通过真机或 DevTools runtime 验证首次下载，不要只依赖本地文件已齐全的开发预览。
 
 ## 独立分包

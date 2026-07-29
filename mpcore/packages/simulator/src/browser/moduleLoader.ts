@@ -28,6 +28,11 @@ interface ModuleCacheEntry {
   exports: Record<string, any>
 }
 
+interface LocalRequire {
+  (request: string): any
+  async: (request: string) => Promise<any>
+}
+
 function createRequireNotFoundError(request: string, importer: string) {
   return new Error(`Cannot resolve require("${request}") from ${normalize(importer)} in browser simulator runtime.`)
 }
@@ -126,7 +131,7 @@ export function createBrowserModuleLoader(
     const previousLoadContext = registries.currentLoadContext
     registries.currentLoadContext = loadContext
 
-    const localRequire = (request: string) => {
+    const localRequire = ((request: string) => {
       const requiredPath = resolveRequiredModulePath(files, resolvedPath, request)
       if (requiredPath.endsWith('.json')) {
         const content = readBrowserVirtualFile(files, requiredPath)
@@ -138,7 +143,8 @@ export function createBrowserModuleLoader(
       const requiredModule = executeModule(requiredPath, null)
       requiredComponentDefinitions.push(...requiredModule.componentDefinitions)
       return requiredModule.exports
-    }
+    }) as LocalRequire
+    localRequire.async = request => Promise.resolve().then(() => localRequire(request))
 
     try {
       const contextEntries = Object.entries(executionContext)

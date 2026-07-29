@@ -147,6 +147,26 @@ describe.sequential('simulator browser e2e', () => {
     })
   })
 
+  it('loads a subpackage module through require.async in the browser demo', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('require-async')
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'require-async' && state.currentRoute === 'pages/index/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('loadAsyncModule')
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => parseJsonString<{ asyncResult: string }>(nextState.pageData).asyncResult.length > 0,
+      20_000,
+    )
+
+    expect(parseJsonString<{ asyncResult: string }>(state.pageData).asyncResult)
+      .toBe('async-default:async-named')
+  })
+
   it('keeps wx storage state observable through the browser debug bridge', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('component-lab')

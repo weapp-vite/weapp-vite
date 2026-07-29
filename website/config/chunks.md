@@ -39,7 +39,7 @@ keywords:
       mode: 'common' | 'path' | 'inline'
     }>
     sharedPathRoot?: string
-    dynamicImports?: 'preserve' | 'inline'
+    dynamicImports?: 'preserve' | 'native' | 'inline'
     logOptimization?: boolean
     forceDuplicatePatterns?: Array<string | RegExp>
     duplicateWarningBytes?: number
@@ -286,9 +286,9 @@ export default defineConfig({
 
 ## `dynamicImports`
 
-- **类型**：`'preserve' | 'inline'`
+- **类型**：`'preserve' | 'native' | 'inline'`
 - **默认值**：`'preserve'`
-- **作用**：控制动态 `import()` 产物是否保留独立 chunk。
+- **作用**：控制动态 `import()` 是否保留 bundler 语义，或在微信普通分包场景使用原生异步加载。
 
 ### `preserve`
 
@@ -306,7 +306,28 @@ export default defineConfig({
 
 - 保留独立动态 chunk；
 - 更符合按需加载的预期；
-- 也是默认推荐值。
+- 也是默认推荐值，适用于 Web 和所有小程序平台。
+
+### `native`
+
+```ts
+export default defineConfig({
+  weapp: {
+    chunks: {
+      dynamicImports: 'native',
+    },
+  },
+})
+```
+
+微信小程序构建中，静态相对路径 `import()` 跨入已声明的普通分包时，会转换为 `require.async()`，目标和它的静态依赖继续输出在该分包内。调用中的 `.ts`、`.tsx`、`.js` 等源码扩展名会统一改写为实际的 `.js` 产物路径。
+
+以下情况仍保留原始动态导入并交给 bundler：
+
+- 动态表达式和裸模块导入；
+- 同包导入或目标不属于已声明分包；
+- 目标属于独立分包；
+- Web、支付宝、抖音等非微信构建。
 
 ### `inline`
 
@@ -320,11 +341,8 @@ export default defineConfig({
 })
 ```
 
-含义：
-
-- 尽量减少动态 import 生成的额外 chunk；
-- 适合想压缩 chunk 数量的项目；
-- 但可能牺牲按需加载边界。
+> [!WARNING]
+> `inline` 已废弃。它与当前始终启用的共享代码拆分冲突，实际会回退为 `preserve` 并输出一次构建警告。请改用 `preserve`，跨微信普通分包时可选择 `native`。
 
 ## `logOptimization`
 

@@ -47,6 +47,36 @@ describe('HeadlessSession', () => {
     expect(session.getCurrentPages()).toHaveLength(1)
   })
 
+  it('loads and caches modules through require.async', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'dist/subpackages/async/target.js'), `
+exports.default = 'async-default'
+exports.named = 'async-named'
+`)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/index/index.js'), `
+Page({
+  async loadAsync() {
+    const first = await require.async('../../subpackages/async/target.js')
+    const second = await require.async('../../subpackages/async/target.js')
+    return {
+      defaultValue: first.default,
+      namedValue: first.named,
+      reused: first === second,
+    }
+  },
+})
+`)
+    const session = createHeadlessSession({ projectPath })
+    const page = session.reLaunch('/pages/index/index')
+
+    await expect(page.loadAsync()).resolves.toEqual({
+      defaultValue: 'async-default',
+      namedValue: 'async-named',
+      reused: true,
+    })
+  })
+
   it('binds page methods to the page instance and applies setData', () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)
