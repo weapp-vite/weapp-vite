@@ -1437,6 +1437,26 @@ describe('component behaviors', () => {
 })
 
 describe('component selector helpers', () => {
+  it('renders empty and non-string legacy template results', () => {
+    defineComponent('wv-legacy-null-template', {
+      style: '.empty { display: none; }',
+      template: () => null as any,
+      component: {},
+    })
+    defineComponent('wv-legacy-object-template', {
+      style: '.object { display: block; }',
+      template: () => ({ kind: 'object' }) as any,
+      component: {},
+    })
+
+    const empty = document.createElement('wv-legacy-null-template') as HTMLElement
+    const object = document.createElement('wv-legacy-object-template') as HTMLElement
+    document.body.append(empty, object)
+
+    expect(empty.shadowRoot?.innerHTML).toBe('<style>.empty { display: none; }</style>')
+    expect(object.shadowRoot?.innerHTML).toBe('<style>.object { display: block; }</style>[object Object]')
+  })
+
   it('exposes virtual host root classes without replacing caller classes', () => {
     defineComponent('wv-virtual-host-class', {
       template: createTemplate('<view class="root {{stateClass}}"></view>'),

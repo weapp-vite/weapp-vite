@@ -51,12 +51,12 @@ function parseAbsoluteUrl(input: string) {
   }
 
   const protocol = match[1] ?? ''
-  const host = match[2] ?? ''
+  const host = match[2]
   const pathname = match[3] || '/'
   const search = match[4] ?? ''
   const hash = match[5] ?? ''
   const hostnameMatch = host.match(HOST_WITH_PORT_REGEXP)
-  const hostname = hostnameMatch?.[1] ?? host
+  const hostname = hostnameMatch![1]
   const port = hostnameMatch?.[2] ?? ''
 
   return {
@@ -85,8 +85,7 @@ function resolveRelativeUrl(input: string, base: string) {
     return `${parsedBase.origin}${input}`
   }
   if (input.startsWith('?') || input.startsWith('#')) {
-    const pathname = parsedBase.pathname || '/'
-    const prefix = `${parsedBase.origin}${pathname}`
+    const prefix = `${parsedBase.origin}${parsedBase.pathname}`
     return `${prefix}${input}`
   }
 
@@ -111,7 +110,7 @@ export class URLSearchParamsPolyfill {
     init?: string | URLSearchParamsPolyfill | Record<string, URLSearchParamValue> | Iterable<[string, string]>,
     private readonly onChange?: () => void,
   ) {
-    if (!init) {
+    if (init == null) {
       return
     }
 
@@ -160,7 +159,7 @@ export class URLSearchParamsPolyfill {
   get(key: string) {
     const normalizedKey = String(key)
     const found = this.entriesStore.find(([entryKey]) => entryKey === normalizedKey)
-    return found?.[1] ?? null
+    return found ? found[1] : null
   }
 
   getAll(key: string) {

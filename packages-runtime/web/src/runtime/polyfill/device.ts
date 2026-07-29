@@ -39,7 +39,7 @@ let cachedBatteryInfo: BatterySnapshot = {
 }
 
 async function readRuntimeBatteryInfoInternal() {
-  const runtimeNavigator = (typeof navigator !== 'undefined' ? navigator : undefined) as (Navigator & {
+  const runtimeNavigator = globalThis.navigator as (Navigator & {
     getBattery?: () => Promise<{ charging?: boolean, level?: number }>
   }) | undefined
   if (runtimeNavigator && typeof runtimeNavigator.getBattery === 'function') {

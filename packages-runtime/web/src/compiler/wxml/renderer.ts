@@ -67,7 +67,7 @@ export class Renderer {
       if (!isConditionalElement(candidate)) {
         break
       }
-      const attribs = candidate.attribs ?? {}
+      const attribs = candidate.attribs!
       if (branches.length === 0 && !hasControlAttribute(attribs, 'if')) {
         break
       }
@@ -96,8 +96,7 @@ export class Renderer {
         continue
       }
       const conditionExpr = resolveControlAttributeValue(attribs, 'if')
-        ?? resolveControlAttributeValue(attribs, 'elif')
-        ?? ''
+        ?? resolveControlAttributeValue(attribs, 'elif')!
       const rendered = this.renderElement(node, scopeVar, wxsVar, componentTags, { overrideAttribs: cleanedAttribs })
       const condition = buildExpression(parseInterpolations(conditionExpr), scopeVar, wxsVar)
       expr = `(${condition} ? ${rendered} : ${expr})`

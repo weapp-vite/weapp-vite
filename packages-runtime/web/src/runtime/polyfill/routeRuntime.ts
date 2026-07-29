@@ -70,7 +70,10 @@ function reconcileWebRoute(target: WebRouteTarget | undefined, state: WebRouteHi
   const historyStack = getWebHistoryStack(state)
   if (historyStack?.length) {
     const desiredIds = historyStack.map(entry => entry.id)
-    const samePrefix = desiredIds.every((id, index) => currentIds[index] === id)
+    const sharedLength = Math.min(desiredIds.length, currentIds.length)
+    const samePrefix = desiredIds
+      .slice(0, sharedLength)
+      .every((id, index) => currentIds[index] === id)
     if (samePrefix && desiredIds.length < currentIds.length) {
       pageStack.back(currentIds.length - desiredIds.length)
     }
@@ -79,7 +82,7 @@ function reconcileWebRoute(target: WebRouteTarget | undefined, state: WebRouteHi
         pageStack.push(entry.id, { ...entry.query })
       }
     }
-    else if (desiredIds.length) {
+    else {
       const last = historyStack[historyStack.length - 1]!
       pageStack.relaunch(last.id, { ...last.query })
     }

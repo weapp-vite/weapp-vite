@@ -115,7 +115,7 @@ export class PageStackRuntime {
     for (const entry of removed.reverse()) {
       this.#destroy(entry)
     }
-    this.#show(this.entries[targetIndex])
+    this.#show(this.entries[targetIndex]!)
     return true
   }
 
@@ -139,10 +139,7 @@ export class PageStackRuntime {
     }
   }
 
-  #show(entry: PageStackEntry | undefined) {
-    if (!entry) {
-      return
-    }
+  #show(entry: PageStackEntry) {
     setEntryActiveInDom(entry, true)
     restoreEntryScrollPosition(entry)
     const record = this.#record(entry)

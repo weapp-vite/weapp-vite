@@ -109,6 +109,7 @@ describe('web runtime document head', () => {
       ],
     })
     syncWebDocumentHead({ route: 'pages/detail/index', title: '详情' })
+    syncWebDocumentHead({ route: 'pages/detail/index', title: '详情' })
 
     expect(documentRef.title).toBe('详情 | Web Demo')
     expect(documentRef.head.querySelectorAll('[data-weapp-web-head="weapp-web-runtime"]').length).toBe(3)
@@ -126,5 +127,85 @@ describe('web runtime document head', () => {
     updateWebDocumentTitle('新标题')
 
     expect(documentRef.title).toBe('新标题')
+  })
+
+  it('handles disabled, missing-document, missing-head, and title fallback states', () => {
+    delete (globalThis as Record<string, unknown>).document
+    delete (globalThis as Record<string, unknown>).window
+    configureWebSeo({ description: 'missing' })
+    syncWebDocumentHead({ title: 'missing' })
+    setupWebResourceHints({ links: [{ href: '/missing.js', rel: 'preload' }] })
+    resetWebDocumentHead()
+
+    const documentRef = new FakeDocument()
+    Object.assign(globalThis, { document: documentRef })
+    configureWebSeo()
+    syncWebDocumentHead({ title: 'disabled' })
+    expect(documentRef.title).toBe('')
+
+    configureWebSeo({ defaultTitle: 'Default', titleTemplate: ' - Web' })
+    syncWebDocumentHead({})
+    expect(documentRef.title).toBe('Default - Web')
+    configureWebSeo({ enabled: true })
+    syncWebDocumentHead({ route: 'pages/home' })
+    expect(documentRef.title).toBe('pages/home')
+    syncWebDocumentHead({})
+
+    const headless = new FakeDocument() as FakeDocument & { head?: FakeElement }
+    headless.head = undefined
+    Object.assign(globalThis, {
+      document: headless,
+      window: { location: { href: 'https://example.test/headless?query=1' } },
+    })
+    configureWebSeo({ description: 'headless' })
+    syncWebDocumentHead({ title: 'Headless' })
+    setupWebResourceHints({ links: [{ href: '/headless.js', rel: 'preload' }] })
+    resetWebDocumentHead()
+  })
+
+  it('handles canonical URL capability and resource hint attribute matrices', () => {
+    const documentRef = new FakeDocument()
+    Object.assign(globalThis, { document: documentRef })
+    configureWebSeo({ canonical: true })
+
+    delete (globalThis as Record<string, unknown>).window
+    syncWebDocumentHead({ title: 'No window' })
+    Object.assign(globalThis, { window: { location: { href: 'not a valid URL' } } })
+    syncWebDocumentHead({ title: 'Invalid URL' })
+    configureWebSeo({ canonical: false })
+    syncWebDocumentHead({ title: 'No canonical' })
+
+    setupWebResourceHints()
+    setupWebResourceHints({ links: [] })
+    setupWebResourceHints({
+      links: [
+        null as any,
+        {} as any,
+        { href: '', rel: 'preload' },
+        { href: '/missing-rel.js', rel: 1 as any },
+        {
+          as: 'script',
+          crossOrigin: 'anonymous',
+          href: '/runtime.js',
+          rel: 'preload',
+          type: 'text/javascript',
+        },
+        {
+          as: 'script',
+          crossOrigin: 'anonymous',
+          href: '/runtime.js',
+          rel: 'preload',
+          type: 'text/javascript',
+        },
+      ],
+    })
+    const link = documentRef.head.querySelector('[href="/runtime.js"]')
+    expect(link).toMatchObject({
+      as: 'script',
+      crossOrigin: 'anonymous',
+      type: 'text/javascript',
+    })
+    resetWebDocumentHead()
+    expect(documentRef.head.children.filter(child => child.removed)).not.toHaveLength(0)
   })
 })

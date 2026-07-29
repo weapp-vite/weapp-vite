@@ -45,6 +45,12 @@ import {
 } from '../src/runtime/nativeComponents/mediaRegistry'
 import { executeNavigatorRequest, resolveNavigatorExtraData } from '../src/runtime/nativeComponents/navigator'
 import { NATIVE_COMPONENT_STYLE } from '../src/runtime/nativeComponents/style'
+import {
+  clampSwiperIndex,
+  resolveSwiperEasing,
+  resolveSwiperLength,
+  resolveSwiperStep,
+} from '../src/runtime/nativeComponents/swiper/helpers'
 import { SWIPER_SHADOW_STYLE } from '../src/runtime/nativeComponents/swiper/style'
 import { setupRpx } from '../src/runtime/rpx'
 import { resolveWebViewportConfig } from '../src/runtime/viewport'
@@ -199,11 +205,20 @@ describe('web native component contracts', () => {
   })
 
   it('resolves swiper item ids, drag thresholds and mini-program event details', () => {
+    expect(clampSwiperIndex(1, 0)).toBe(0)
+    expect(clampSwiperIndex(8, 3)).toBe(2)
     expect(resolveSwiperIndex({
       current: 0,
       currentItemId: 'second',
       itemIds: ['first', 'second', 'third'],
     })).toBe(1)
+    expect(resolveSwiperIndex({
+      current: 2,
+      currentItemId: 'missing',
+      itemIds: ['first', 'second', 'third'],
+    })).toBe(2)
+    expect(resolveSwiperStep(0, 1, 0, true)).toBe(0)
+    expect(resolveSwiperStep(2, 1, 3, false)).toBe(2)
     expect(resolveSwipeTarget({
       current: 1,
       delta: -80,
@@ -227,6 +242,16 @@ describe('web native component contracts', () => {
     expect(resolveSwiperNumber('', 500)).toBe(500)
     expect(resolveSwiperNumber('1200', 500)).toBe(1200)
     expect(resolveSwiperNumber('-1', 500, 16)).toBe(16)
+    expect(resolveSwiperNumber('invalid', 500)).toBe(500)
+    expect(resolveSwiperEasing('linear')).toBe('linear')
+    expect(resolveSwiperEasing('easeInCubic')).toContain('0.55')
+    expect(resolveSwiperEasing('easeOutCubic')).toContain('0.215')
+    expect(resolveSwiperEasing('easeInOutCubic')).toContain('0.645')
+    expect(resolveSwiperEasing('unknown')).toBe('ease')
+    expect(resolveSwiperLength(null)).toBe('0px')
+    expect(resolveSwiperLength('12rpx')).toBe('calc(var(--rpx) * 12)')
+    expect(resolveSwiperLength('.5rpx')).toBe('calc(var(--rpx) * .5)')
+    expect(resolveSwiperLength('8px')).toBe('8px')
     expect(SWIPER_SHADOW_STYLE).toContain(':host([data-vertical]) .track')
     expect(SWIPER_SHADOW_STYLE).not.toContain(':host([vertical])')
   })
@@ -297,6 +322,10 @@ describe('web native component contracts', () => {
     })
     expect(createVideoProgressDetail(15, 30)).toEqual({ buffered: 50 })
     expect(createVideoProgressDetail(Number.NaN, 0)).toEqual({ buffered: 0 })
+    expect(createVideoTimeUpdateDetail(Number.NaN, 30)).toEqual({ currentTime: 0, duration: 30 })
+    expect(createVideoTimeUpdateDetail(1, Number.NaN)).toEqual({ currentTime: 1, duration: 0 })
+    expect(createVideoProgressDetail(1, Number.NaN)).toEqual({ buffered: 0 })
+    expect(createVideoProgressDetail(Number.NaN, 10)).toEqual({ buffered: 0 })
   })
 
   it('resolves the latest connected media element and restores duplicate ids on disconnect', () => {
@@ -343,6 +372,12 @@ describe('web native component contracts', () => {
       code: ['', ''],
       postcode: '',
     })
+    expect(createPickerChangeDetail('region', null)).toEqual({ value: [], code: [], postcode: '' })
+    expect(createPickerChangeDetail('region', [null])).toEqual({ value: [''], code: [''], postcode: '' })
+    expect(resolvePickerColumns([{ name: null }, { name: undefined }], 'selector', 'name'))
+      .toEqual([[{ label: '', value: { name: null } }, { label: '', value: { name: undefined } }]])
+    expect(resolvePickerColumns([undefined, null], 'selector'))
+      .toEqual([[{ label: '', value: undefined }, { label: '', value: null }]])
   })
 
   it('normalizes picker-view columns and slider values', () => {
@@ -378,6 +413,9 @@ describe('web native component contracts', () => {
     expect(resolveIconSize('-4')).toBe(0)
     expect(resolveIconColor('warn', '')).toBe('#f76260')
     expect(resolveIconColor('info', '#123456')).toBe('#123456')
+    expect(resolveIconType(null)).toBe('success')
+    expect(resolveIconSize('invalid')).toBe(23)
+    expect(resolveIconColor('success', null)).toBe('#09bb07')
     expect(resolveProgressConfig({
       percent: 120,
       strokeWidth: -1,

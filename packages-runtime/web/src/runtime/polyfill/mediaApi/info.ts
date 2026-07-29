@@ -27,7 +27,7 @@ export function getImageInfoBridge(options?: any) {
       orientation: 'up',
     }))
     .catch((error) => {
-      const message = error instanceof Error ? error.message : String(error)
+      const message = (error as Error).message
       const failure = callMiniProgramAsyncFailure(options, `getImageInfo:fail ${message}`)
       return typeof options?.fail === 'function' ? failure : Promise.reject(failure)
     })
@@ -66,7 +66,7 @@ export function getVideoInfoBridge(options?: any) {
       })
     })
     .catch((error) => {
-      const message = error instanceof Error ? error.message : String(error)
+      const message = (error as Error).message
       const failure = callMiniProgramAsyncFailure(options, `getVideoInfo:fail ${message}`)
       return Promise.reject(failure)
     })

@@ -87,10 +87,15 @@ export function resolveRuntimeTheme(): 'light' | 'dark' {
   }
 }
 
+function resolveRuntimeWindow() {
+  if (typeof window === 'undefined') {
+    return globalThis
+  }
+  return window
+}
+
 export function readSystemInfoSnapshot() {
-  const runtimeWindow = (typeof window !== 'undefined'
-    ? window
-    : globalThis) as {
+  const runtimeWindow = resolveRuntimeWindow() as {
     innerWidth?: number
     innerHeight?: number
     devicePixelRatio?: number

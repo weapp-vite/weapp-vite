@@ -16,10 +16,8 @@ function stripPageMetaNodes(nodes: RenderNode[]): RenderNode[] {
     }
     if (node.type === 'element' && node.children?.length) {
       const nextChildren = stripPageMetaNodes(node.children)
-      if (nextChildren !== node.children) {
-        stripped.push({ ...node, children: nextChildren })
-        continue
-      }
+      stripped.push({ ...node, children: nextChildren })
+      continue
     }
     stripped.push(node)
   }

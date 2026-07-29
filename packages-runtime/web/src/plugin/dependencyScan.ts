@@ -35,7 +35,7 @@ export async function collectExternalComponentOptimizeDeps(components: Component
     platform: 'browser',
     write: false,
   })
-  const componentImportIds = new Set(components.flatMap(component => component.importId ? [component.importId] : []))
+  const componentImportIds = new Set(components.map(component => component.importId))
   const dependencies = new Set<string>()
   for (const input of Object.values(result.metafile.inputs)) {
     for (const dependency of input.imports) {

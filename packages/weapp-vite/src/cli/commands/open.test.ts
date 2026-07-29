@@ -106,9 +106,12 @@ describe('open cli command', () => {
 
   it('prints latest hmr summary before opening ide when available', async () => {
     const action = createOpenActionHandler()
-    readLatestHmrProfileSummaryMock.mockResolvedValue({
-      line: '[hmr] 最近一次热更新 88.00 ms，update，src/pages/home/index.vue，主耗时 emit 30.00 ms',
-      profilePath: '/workspace/demo/.weapp-vite/hmr-profile.jsonl',
+    readLatestHmrProfileSummaryMock.mockImplementationOnce(async ({ relativeCwd }) => {
+      expect(relativeCwd('/workspace/demo/src/pages/home/index.vue')).toBe('src/pages/home/index.vue')
+      return {
+        line: '[hmr] 最近一次热更新 88.00 ms，update，src/pages/home/index.vue，主耗时 emit 30.00 ms',
+        profilePath: '/workspace/demo/.weapp-vite/hmr-profile.jsonl',
+      }
     })
 
     await action(undefined, {})
@@ -196,5 +199,31 @@ describe('open cli command', () => {
 
     await expect(action(undefined, { platform: 'web' })).rejects.toThrow('`weapp-vite open` 当前仅支持小程序平台。')
     expect(resolveIdeCommandContextMock).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the process cwd and resolved project root', async () => {
+    resolveIdeCommandContextMock.mockResolvedValueOnce({
+      cwd: undefined,
+      platform: 'weapp',
+      projectPath: undefined,
+      mpDistRoot: '/workspace/demo/dist/dev/mp-weixin',
+      weappViteConfig: {},
+    })
+    readLatestHmrProfileSummaryMock.mockImplementationOnce(async ({ relativeCwd }) => {
+      expect(relativeCwd('/outside/file.vue')).toBe('/outside/file.vue')
+      return undefined
+    })
+    resolveIdeProjectRootMock.mockReturnValueOnce('/workspace/demo')
+    const action = createOpenActionHandler()
+
+    await action(undefined, {})
+
+    expect(resolveIdeProjectRootMock).toHaveBeenCalledWith(
+      '/workspace/demo/dist/dev/mp-weixin',
+      expect.any(String),
+    )
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', '/workspace/demo', {
+      trustProject: undefined,
+    })
   })
 })

@@ -127,16 +127,13 @@ export class WeappSlider extends BaseElement {
   }
 
   #syncVisual() {
-    if (!this.#input || !this.#output) {
-      return
-    }
-    const min = this.#input.min ? Number(this.#input.min) : 0
-    const max = this.#input.max ? Number(this.#input.max) : 100
-    const value = this.#input.valueAsNumber
-    const progress = max === min ? 0 : ((value - min) / (max - min)) * 100
-    this.style.setProperty('--weapp-slider-progress', `${Math.min(100, Math.max(0, progress))}%`)
-    this.#output.value = String(value)
-    this.#output.textContent = String(value)
+    const min = Number(this.#input!.min)
+    const max = Number(this.#input!.max)
+    const value = this.#input!.valueAsNumber
+    const progress = ((value - min) / (max - min)) * 100
+    this.style.setProperty('--weapp-slider-progress', `${progress}%`)
+    this.#output!.value = String(value)
+    this.#output!.textContent = String(value)
   }
 }
 

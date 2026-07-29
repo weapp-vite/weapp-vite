@@ -14,15 +14,7 @@ import { compileWxml } from '../compiler/wxml'
 import { resolveScriptFile } from './files'
 import { appendInlineQuery, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport } from './path'
 
-type TraverseFunction = typeof _babelTraverse extends (...args: any[]) => any
-  ? typeof _babelTraverse
-  : typeof _babelTraverse extends { default: infer D }
-    ? D
-    : typeof _babelTraverse
-
-const traverse: TraverseFunction = typeof _babelTraverse === 'function'
-  ? _babelTraverse
-  : (_babelTraverse as any).default
+const traverse = _babelTraverse
 
 async function resolveSfcSrc(
   request: string,
@@ -95,7 +87,7 @@ export async function compileWebVueSfc(options: {
     },
     sfcSrc: {
       resolveId: async (request, importer) => {
-        return resolveSfcSrc(request, importer ?? filename, srcRoot, resolveId)
+        return resolveSfcSrc(request, importer!, srcRoot, resolveId)
       },
     },
   })
@@ -207,7 +199,7 @@ export async function transformWebVueSfcScript(options: {
   })
   return {
     code: transpiled.code,
-    map: transpiled.map ? JSON.parse(transpiled.map) : null,
+    map: JSON.parse(transpiled.map),
   }
 }
 

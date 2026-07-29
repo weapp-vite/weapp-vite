@@ -17,6 +17,14 @@ export default defineProject({
         replacement: path.resolve(__dirname, './src'),
       },
     ],
-    coverage: createProjectCoverage('packages-runtime/web'),
+    coverage: createProjectCoverage('packages-runtime/web', {
+      all: true,
+      include: [path.resolve(__dirname, './src/**/*.ts')],
+      exclude: [
+        '**/dist/**',
+        '**/*.test.ts',
+        '**/*.spec.ts',
+      ],
+    }),
   },
 })

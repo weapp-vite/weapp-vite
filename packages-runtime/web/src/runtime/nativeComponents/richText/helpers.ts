@@ -1,4 +1,4 @@
-import type { ChildNode, DataNode, Element, Node } from 'domhandler'
+import type { DataNode, Element, Node } from 'domhandler'
 import { parseDocument } from 'htmlparser2'
 
 export interface RichTextSourceNode {
@@ -257,19 +257,15 @@ function convertSourceNode(value: unknown): SafeRichTextNode[] {
   }]
 }
 
-function hasChildren(node: Node): node is Node & { children: ChildNode[] } {
-  return Array.isArray((node as Node & { children?: ChildNode[] }).children)
-}
-
 function convertParsedNode(node: Node): SafeRichTextNode[] {
   if (node.type === 'text') {
-    return [{ type: 'text', text: (node as DataNode).data ?? '' }]
+    return [{ type: 'text', text: (node as DataNode).data }]
   }
   if (node.type !== 'tag') {
     return []
   }
   const element = node as Element
-  const children = hasChildren(node) ? node.children.flatMap(convertParsedNode) : []
+  const children = element.children.flatMap(convertParsedNode)
   const name = element.name.toLowerCase()
   if (!ALLOWED_TAGS.has(name)) {
     return children

@@ -53,10 +53,10 @@ export function atobPolyfill(input = '') {
     const char2 = source.charAt(index + 2)
     const char3 = source.charAt(index + 3)
 
-    const sextet0 = BASE64_LOOKUP[char0] ?? 255
-    const sextet1 = BASE64_LOOKUP[char1] ?? 255
-    const sextet2 = char2 === '=' ? 64 : (BASE64_LOOKUP[source.charCodeAt(index + 2)] ?? 255)
-    const sextet3 = char3 === '=' ? 64 : (BASE64_LOOKUP[source.charCodeAt(index + 3)] ?? 255)
+    const sextet0 = BASE64_LOOKUP[char0]
+    const sextet1 = BASE64_LOOKUP[char1]
+    const sextet2 = !char2 || char2 === '=' ? 64 : BASE64_LOOKUP[source.charCodeAt(index + 2)]
+    const sextet3 = !char3 || char3 === '=' ? 64 : BASE64_LOOKUP[source.charCodeAt(index + 3)]
 
     if (sextet0 > 63 || sextet1 > 63 || sextet2 > 64 || sextet3 > 64) {
       throw new TypeError('Failed to execute \'atob\': the input is not correctly encoded')
@@ -65,10 +65,10 @@ export function atobPolyfill(input = '') {
     const triplet = (sextet0 << 18) | (sextet1 << 12) | ((sextet2 & 0x3F) << 6) | (sextet3 & 0x3F)
 
     output += String.fromCharCode((triplet >> 16) & 0xFF)
-    if (char2 !== '=') {
+    if (char2 && char2 !== '=') {
       output += String.fromCharCode((triplet >> 8) & 0xFF)
     }
-    if (char3 !== '=') {
+    if (char3 && char3 !== '=') {
       output += String.fromCharCode(triplet & 0xFF)
     }
   }

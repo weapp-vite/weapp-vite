@@ -1,5 +1,6 @@
+import postcss from 'postcss'
 import { describe, expect, it } from 'vitest'
-import { transformWxssToCss } from '../src/css/wxss'
+import { createWxssPostcssPlugin, transformWxssToCss } from '../src/css/wxss'
 
 describe('transformWxssToCss', () => {
   it('converts rpx units to px', () => {
@@ -12,6 +13,15 @@ describe('transformWxssToCss', () => {
   it('uses the runtime viewport variable by default', () => {
     const { css } = transformWxssToCss('.card { width: 750rpx; }')
     expect(css).toContain('width: calc(var(--rpx) * 750)')
+  })
+
+  it('uses custom runtime variables for finite design widths', () => {
+    const { css } = transformWxssToCss('.card { width: 10rpx; }', {
+      designWidth: 750,
+      pxPerRpx: 0.5,
+      rpxVar: '--custom-rpx',
+    })
+    expect(css).toContain('width: calc(var(--custom-rpx) * 10)')
   })
 
   it('maps safe-area env values to runtime viewport variables', () => {
@@ -131,5 +141,28 @@ describe('transformWxssToCss', () => {
 
     expect(css).toContain('.wd-button .wd-button__icon + .wd-button__text')
     expect(css).not.toContain('::part')
+  })
+
+  it('preserves part payload tags and handles deep selectors without nested nodes', () => {
+    const { css } = transformWxssToCss(`
+      weapp-view::part(view),
+      .host :deep,
+      .host :deep(view),
+      .host :deep(.target:hover) {
+        color: red;
+      }
+    `)
+    expect(css).toContain('weapp-view::part(view)')
+    expect(css).toContain('.host')
+    expect(css).toContain('.target:hover')
+  })
+
+  it('runs through the PostCSS plugin entry', async () => {
+    const plugin = createWxssPostcssPlugin({ pxPerRpx: 0.25 })
+    const root = postcss.root({ nodes: [postcss.rule({ selector: '' })] })
+    plugin.Once(root)
+    const result = await postcss([plugin])
+      .process('.card { width: 8rpx; }', { from: undefined })
+    expect(result.css).toContain('width: 2px')
   })
 })

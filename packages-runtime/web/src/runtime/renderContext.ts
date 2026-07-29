@@ -56,9 +56,7 @@ function evaluateExpression(expression: string, scope: TemplateScope): any {
         throw new SyntaxError(`[@weapp-vite/web] 无法解析表达式 "${trimmed}": ${reason}`)
       }
     }
-    if (evaluator) {
-      expressionCache.set(trimmed, evaluator)
-    }
+    expressionCache.set(trimmed, evaluator)
   }
   try {
     return evaluator?.(scope)

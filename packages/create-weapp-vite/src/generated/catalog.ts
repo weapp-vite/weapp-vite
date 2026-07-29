@@ -29,6 +29,7 @@ export const TEMPLATE_CATALOG = {
   'comment-json': '^5.0.0',
   'estree-walker': '^3.0.3',
   'gm-crypto': '^0.1.12',
+  'happy-dom': '^20.11.1',
   'lru-cache': '^11.5.2',
   'magic-string': '^1.1.0',
   'miniprogram-api-typings': '^5.2.1',

@@ -34,9 +34,9 @@ function normalizePropertyDeclaration(declaration: PropertyDeclaration): Propert
   return declaration
 }
 
-function resolveNormalizedComponent(component: ComponentOptions | undefined) {
+function resolveNormalizedComponent(component: ComponentOptions) {
   const normalized = normalizeBehaviors(component)
-  const resolved = normalized.component ?? component ?? {}
+  const resolved = normalized.component!
   return {
     warnings: normalized.warnings,
     component: {
@@ -64,7 +64,7 @@ function createDefaultPropertyValues(propertyEntries: PropertyEntry[]) {
 }
 
 function createPropertyEntries(component: NormalizedComponentOptions): PropertyEntry[] {
-  return Object.entries(component.properties ?? {})
+  return Object.entries(component.properties)
 }
 
 function createObservedAttributes(propertyEntries: PropertyEntry[]) {

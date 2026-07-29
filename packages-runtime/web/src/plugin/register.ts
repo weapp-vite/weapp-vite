@@ -17,8 +17,7 @@ type TraverseFunction = typeof _babelTraverse extends (...args: any[]) => any
     ? D
     : typeof _babelTraverse
 
-const traverseCandidate: any = (() => {
-  const mod: any = _babelTraverse
+export function resolveBabelTraverse(mod: any): TraverseFunction {
   if (typeof mod === 'function') {
     return mod
   }
@@ -28,14 +27,10 @@ const traverseCandidate: any = (() => {
   if (mod?.traverse && typeof mod.traverse === 'function') {
     return mod.traverse
   }
-  return undefined
-})()
-
-if (typeof traverseCandidate !== 'function') {
   throw new TypeError('[@weapp-vite/web] Failed to resolve @babel/traverse export.')
 }
 
-const traverse: TraverseFunction = traverseCandidate
+const traverse = resolveBabelTraverse(_babelTraverse)
 
 function getRegisterName(kind: ModuleMeta['kind'], callee: string) {
   if (kind === 'page' && (callee === 'Page' || callee === 'Component')) {
@@ -83,13 +78,11 @@ function overwriteCall(
 ) {
   const node = path.node
   const callee = node.callee
-  if (!t.isIdentifier(callee)) {
-    return
-  }
+  const identifier = callee as t.Identifier
   const end = node.end!
   const insertPosition = end - 1
   const metaCode = createRegisterMetaCode(meta, templateIdent, styleIdent, includeKind)
-  s.overwrite(callee.start!, callee.end!, registerName)
+  s.overwrite(identifier.start!, identifier.end!, registerName)
   s.appendLeft(insertPosition, `, ${metaCode}`)
 }
 
@@ -173,10 +166,7 @@ export function transformScriptModule({
   })
 
   registerImports.add('installWebModuleRegistration')
-
-  if (registerImports.size > 0) {
-    imports.unshift(`import { ${Array.from(registerImports).join(', ')} } from '${runtimePolyfillId}'`)
-  }
+  imports.unshift(`import { ${Array.from(registerImports).join(', ')} } from '${runtimePolyfillId}'`)
 
   const moduleMetaCode = createRegisterMetaCode(meta, templateIdent, styleIdent, true)
   const restoreIdent = '__weapp_web_restore_registration__'

@@ -4,6 +4,7 @@ import {
   disposeWebRouting,
   getWebHistoryStack,
   getWebRoutingConfig,
+  getWebRoutingUrl,
   readWebRouteTarget,
   resolveWebRoutingConfig,
   syncWebRouting,
@@ -139,5 +140,93 @@ describe('web runtime browser routing', () => {
     expect(listeners.get('popstate')?.size).toBe(0)
     expect(listeners.get('hashchange')?.size).toBe(0)
     expect(fakeWindow.history.scrollRestoration).toBe('auto')
+  })
+
+  it('handles memory mode, absent browser globals and malformed URLs', () => {
+    disposeWebRouting()
+    expect(readWebRouteTarget(['pages/index/index'])).toBeUndefined()
+    expect(getWebRoutingUrl()).toBeUndefined()
+    expect(configureWebRouting({ mode: 'history' }, ['pages/index/index'], vi.fn())).toEqual({
+      mode: 'history',
+      base: '/',
+    })
+    expect(readWebRouteTarget(['pages/index/index'])).toBeUndefined()
+    expect(readWebRouteTarget(['pages/index/index'], 'https://example.test/%E0%A4%A')).toBeUndefined()
+
+    const OriginalURL = URL
+    vi.stubGlobal('URL', undefined)
+    expect(readWebRouteTarget(['pages/index/index'], 'https://example.test/pages/index')).toBeUndefined()
+    vi.stubGlobal('URL', OriginalURL)
+    disposeWebRouting()
+  })
+
+  it('resolves index shorthand, unknown pages, root bases and mismatched bases', () => {
+    const { fakeWindow } = createFakeWindow('https://example.test/pages/index?from=short')
+    withWindow(fakeWindow, () => {
+      configureWebRouting({ mode: 'history', base: '\\' }, ['pages/index/index'], vi.fn())
+      expect(getWebRoutingConfig()).toEqual({ mode: 'history', base: '/' })
+      expect(readWebRouteTarget(['pages/index/index'])).toEqual({
+        id: 'pages/index/index',
+        query: { from: 'short' },
+      })
+      expect(readWebRouteTarget(['pages/index/index'], 'https://example.test/unknown')).toBeUndefined()
+      expect(readWebRouteTarget(['pages/index/index'], 'https://example.test/outside/pages/index'))
+        .toBeUndefined()
+      syncWebRouting([entry('pages/index/index')], 'push')
+      expect(getWebRoutingUrl()).toBe('/pages/index/index')
+    })
+  })
+
+  it('resolves a known page outside the configured deployment base', () => {
+    const { fakeWindow } = createFakeWindow('https://example.test/outside/pages/index/index')
+    withWindow(fakeWindow, () => {
+      configureWebRouting({ mode: 'history', base: '/mini' }, ['outside/pages/index/index'], vi.fn())
+      expect(readWebRouteTarget(['outside/pages/index/index'])).toEqual({
+        id: 'outside/pages/index/index',
+        query: {},
+      })
+    })
+  })
+
+  it('dispatches hash changes with query state and tolerates missing scroll restoration', () => {
+    const { fakeWindow, listeners } = createFakeWindow('https://example.test/#/pages/index?source=hash')
+    delete (fakeWindow.history as Partial<History>).scrollRestoration
+    withWindow(fakeWindow, () => {
+      const onPopState = vi.fn()
+      configureWebRouting({ mode: 'hash' }, ['pages/index/index'], onPopState)
+      expect(readWebRouteTarget(['pages/index/index'])).toEqual({
+        id: 'pages/index/index',
+        query: { source: 'hash' },
+      })
+      listeners.get('hashchange')?.forEach(listener => listener())
+      expect(onPopState).toHaveBeenCalledWith(
+        { id: 'pages/index/index', query: { source: 'hash' } },
+        undefined,
+      )
+      expect(readWebRouteTarget(['pages/index/index'], 'https://example.test/#/unknown'))
+        .toBeUndefined()
+      syncWebRouting([entry('pages/index/index')], 'replace')
+      expect(fakeWindow.location.hash).toBe('#/pages/index/index')
+    })
+  })
+
+  it('ignores unavailable history APIs, empty stacks and invalid saved state', () => {
+    const { fakeWindow } = createFakeWindow('https://example.test/pages/index/index')
+    const pushState = fakeWindow.history.pushState
+    withWindow(fakeWindow, () => {
+      configureWebRouting({ mode: 'history' }, ['pages/index/index'], vi.fn())
+      syncWebRouting([], 'push')
+      Object.defineProperty(fakeWindow.history, 'pushState', {
+        configurable: true,
+        value: undefined,
+      })
+      syncWebRouting([entry('pages/index/index')], 'push')
+      Object.defineProperty(fakeWindow.history, 'pushState', {
+        configurable: true,
+        value: pushState,
+      })
+      expect(getWebHistoryStack(undefined)).toBeUndefined()
+      expect(getWebHistoryStack({ __weappWebRuntime: { stack: null as any } })).toBeUndefined()
+    })
   })
 })

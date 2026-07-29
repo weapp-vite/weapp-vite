@@ -102,7 +102,7 @@ export class PlatformBackendRegistry {
         raw,
       })
     }
-    const targetKey = normalized ?? ''
+    const targetKey = normalized!
 
     if (RESERVED_COMBINED_TARGETS.has(targetKey)) {
       const entries = this.backends.map(backend => ({

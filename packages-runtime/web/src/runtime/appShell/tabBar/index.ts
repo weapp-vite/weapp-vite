@@ -157,7 +157,7 @@ class WeappTabBar extends BaseElement {
         badge.className = state.redDot
           ? 'weapp-tab-bar__badge weapp-tab-bar__badge--dot'
           : 'weapp-tab-bar__badge'
-        badge.textContent = state.redDot ? '' : state.badge ?? ''
+        badge.textContent = state.redDot ? '' : state.badge!
         iconWrap.append(badge)
       }
       button.append(iconWrap)

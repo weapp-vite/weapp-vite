@@ -92,9 +92,7 @@ export function createComponentElementClass({
 
     constructor() {
       super()
-      const dataOption = typeof runtimeState.componentRef.data === 'function'
-        ? (runtimeState.componentRef.data as () => DataRecord)()
-        : (runtimeState.componentRef.data ?? {})
+      const dataOption = runtimeState.componentRef.data ?? {}
       this.#properties = { ...runtimeState.defaultPropertyValues }
       this.#state = { ...cloneValue(this.#properties), ...cloneValue(dataOption) }
       Object.defineProperty(this.#state, '$slots', {

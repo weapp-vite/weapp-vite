@@ -186,6 +186,19 @@ jobs:
       main_command: pnpm e2e:web:build-projects
     secrets: inherit
 
+  web-browser-smoke:
+    name: Web Browser Smoke (Firefox / WebKit / Node 24)
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: '24'
+      timeout_minutes: 20
+      build_command: pnpm build:pkgs:ci
+      main_command: pnpm e2e:web:browser-smoke
+      install_playwright: true
+      playwright_browsers: firefox webkit
+    secrets: inherit
+
   workspace-hmr-pr:
     if: github.event_name != 'schedule'
     name: Workspace HMR Changed Projects (Node 24)

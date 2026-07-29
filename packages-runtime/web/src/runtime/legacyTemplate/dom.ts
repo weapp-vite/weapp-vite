@@ -70,8 +70,8 @@ export function buildAttributeString(
       if (!handlerName) {
         continue
       }
-      const runtimeEvent = EVENT_KIND_ALIAS[event] ?? event
-      const flags = EVENT_PREFIX_FLAGS[prefix] ?? {}
+      const runtimeEvent = EVENT_KIND_ALIAS[event] || event
+      const flags = EVENT_PREFIX_FLAGS[prefix]!
       result += ` ${MINI_PROGRAM_EVENT_ATTRIBUTE_PREFIX}${runtimeEvent}="${escapeAttribute(handlerName)}"`
       const flagTokens = [
         flags.capture ? 'capture' : '',
@@ -107,7 +107,7 @@ export function isConditionalElement(node: Node): node is Element {
   if (node.type !== 'tag') {
     return false
   }
-  const attribs = (node as Element).attribs ?? {}
+  const attribs = (node as Element).attribs
   return hasControlAttribute(attribs, 'if')
     || hasControlAttribute(attribs, 'elif')
     || hasControlAttribute(attribs, 'else')

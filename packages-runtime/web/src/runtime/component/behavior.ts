@@ -10,10 +10,7 @@ function isPlainObject(value: unknown): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function mergeLifetimes(target: LifeTimeHooks, source?: LifeTimeHooks) {
-  if (!source) {
-    return
-  }
+function mergeLifetimes(target: LifeTimeHooks, source: LifeTimeHooks) {
   const keys: Array<keyof LifeTimeHooks> = ['created', 'attached', 'ready', 'detached']
   for (const key of keys) {
     const next = source[key]
@@ -30,10 +27,7 @@ function mergeLifetimes(target: LifeTimeHooks, source?: LifeTimeHooks) {
   }
 }
 
-function mergePageLifetimes(target: PageLifeTimeHooks, source?: PageLifeTimeHooks) {
-  if (!source) {
-    return
-  }
+function mergePageLifetimes(target: PageLifeTimeHooks, source: PageLifeTimeHooks) {
   const keys: Array<keyof PageLifeTimeHooks> = ['show', 'hide', 'resize']
   for (const key of keys) {
     const next = source[key]

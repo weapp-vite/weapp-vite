@@ -128,7 +128,7 @@ export class WeappSwiper extends BaseElement {
         itemIds,
       })
       if (emitChange && next !== this.#current) {
-        this.#setCurrent(next, '', true)
+        this.#setCurrent(next, '')
         return
       }
       this.#current = next
@@ -137,17 +137,15 @@ export class WeappSwiper extends BaseElement {
   }
 
   #syncVisual(animate: boolean, dragOffset = 0) {
-    if (!this.#viewport || !this.#track) {
-      return
-    }
+    const track = this.#track!
     const vertical = readBooleanAttribute(this, 'vertical')
     const displayCount = Math.max(1, Math.trunc(resolveSwiperNumber(this.getAttribute('display-multiple-items'), 1, 1)))
-    const trackRect = this.#track.getBoundingClientRect()
+    const trackRect = track.getBoundingClientRect()
     this.#itemSize = (vertical ? trackRect.height : trackRect.width) / displayCount
     const offset = -(this.#current * this.#itemSize) + dragOffset
     const duration = animate ? resolveSwiperNumber(this.getAttribute('duration'), 500) : 0
-    this.#track.style.transitionDuration = `${duration}ms`
-    this.#track.style.transform = vertical
+    track.style.transitionDuration = `${duration}ms`
+    track.style.transform = vertical
       ? `translate3d(0, ${offset}px, 0)`
       : `translate3d(${offset}px, 0, 0)`
     this.#items.forEach((item, index) => {
@@ -158,27 +156,27 @@ export class WeappSwiper extends BaseElement {
     this.#syncIndicatorState()
   }
 
-  #setCurrent(next: number, source: SwiperChangeSource, animate: boolean) {
+  #setCurrent(next: number, source: SwiperChangeSource) {
     if (next === this.#current || !this.#items.length) {
-      this.#syncVisual(animate)
+      this.#syncVisual(true)
       return
     }
     this.#current = next
-    this.#syncVisual(animate)
+    this.#syncVisual(true)
     const detail = createSwiperChangeDetail(
       this.#current,
-      this.#items[this.#current]?.getAttribute('item-id') ?? '',
+      this.#items[this.#current]!.getAttribute('item-id') ?? '',
       source,
     )
     dispatchMiniProgramEvent(this, 'change', detail)
-    this.#scheduleAnimationFinish(detail, animate)
+    this.#scheduleAnimationFinish(detail)
   }
 
-  #scheduleAnimationFinish(detail: ReturnType<typeof createSwiperChangeDetail>, animate: boolean) {
+  #scheduleAnimationFinish(detail: ReturnType<typeof createSwiperChangeDetail>) {
     if (this.#animationTimer) {
       clearTimeout(this.#animationTimer)
     }
-    const duration = animate ? resolveSwiperNumber(this.getAttribute('duration'), 500) : 0
+    const duration = resolveSwiperNumber(this.getAttribute('duration'), 500)
     this.#animationTimer = globalThis.setTimeout(() => {
       this.#animationTimer = undefined
       dispatchMiniProgramEvent(this, 'animationfinish', detail)
@@ -186,10 +184,8 @@ export class WeappSwiper extends BaseElement {
   }
 
   #renderIndicators() {
-    if (!this.#indicators || typeof document === 'undefined') {
-      return
-    }
-    this.#indicators.replaceChildren(...this.#items.map(() => {
+    const indicators = this.#indicators!
+    indicators.replaceChildren(...this.#items.map(() => {
       const indicator = document.createElement('span')
       indicator.className = 'indicator'
       return indicator
@@ -198,10 +194,7 @@ export class WeappSwiper extends BaseElement {
   }
 
   #syncIndicatorState() {
-    if (!this.#indicators) {
-      return
-    }
-    ;[...this.#indicators.children].forEach((indicator, index) => {
+    ;[...this.#indicators!.children].forEach((indicator, index) => {
       indicator.setAttribute('data-active', String(index === this.#current))
     })
   }
@@ -218,7 +211,7 @@ export class WeappSwiper extends BaseElement {
     this.#autoplayTimer = globalThis.setTimeout(() => {
       this.#autoplayTimer = undefined
       const next = resolveSwiperStep(this.#current, 1, this.#items.length, true)
-      this.#setCurrent(next, 'autoplay', true)
+      this.#setCurrent(next, 'autoplay')
       this.#restartAutoplay()
     }, interval)
   }
@@ -282,7 +275,7 @@ export class WeappSwiper extends BaseElement {
       itemCount: this.#items.length,
       circular: readBooleanAttribute(this, 'circular'),
     })
-    this.#setCurrent(next, 'touch', true)
+    this.#setCurrent(next, 'touch')
     this.#restartAutoplay()
   }
 

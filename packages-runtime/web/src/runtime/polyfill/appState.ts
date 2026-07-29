@@ -18,7 +18,7 @@ export function cloneLaunchOptions(options: AppLaunchOptions): AppLaunchOptions 
 export function resolveFallbackLaunchOptions(
   navigationHistory: Array<{ id: string, query: Record<string, string> }>,
 ): AppLaunchOptions {
-  const entry = navigationHistory[navigationHistory.length - 1] ?? navigationHistory[0]
+  const entry = navigationHistory[navigationHistory.length - 1]
   if (!entry) {
     return {
       path: '',
