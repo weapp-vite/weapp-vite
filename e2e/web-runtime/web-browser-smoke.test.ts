@@ -15,6 +15,7 @@ const HOST = '127.0.0.1'
 const PORT = Number(process.env.WEAPP_VITE_WEB_BROWSER_SMOKE_PORT ?? 5190)
 const URL = `http://${HOST}:${PORT}`
 const STARTUP_TIMEOUT = 60_000
+const TRANSIENT_NAVIGATION_ERROR_RE = /Execution context was destroyed|Cannot find context with specified id|Inspected target navigated or closed/
 
 const browserTypes: Array<[string, BrowserType]> = [
   ['firefox', firefox],
@@ -62,6 +63,19 @@ async function expectRuntime(page: Page, route: string) {
   }), { timeout: 45_000 }).toEqual({ hasWx: true, route })
 }
 
+async function navigateTo(page: Page, url: string) {
+  try {
+    await page.evaluate((target) => {
+      void (window as any).wx.navigateTo({ url: target })
+    }, url)
+  }
+  catch (error) {
+    if (!TRANSIENT_NAVIGATION_ERROR_RE.test(String(error))) {
+      throw error
+    }
+  }
+}
+
 describe.sequential('web runtime compatibility browser smoke', () => {
   let server: Subprocess | undefined
   const browsers: Browser[] = []
@@ -97,7 +111,7 @@ describe.sequential('web runtime compatibility browser smoke', () => {
     try {
       await page.goto(`${URL}/pages/index/index`, { waitUntil: 'domcontentloaded' })
       await expectRuntime(page, 'pages/index/index')
-      await page.evaluate(() => (window as any).wx.navigateTo({ url: 'pages/form-parity/index' }))
+      await navigateTo(page, 'pages/form-parity/index')
       await expectRuntime(page, 'pages/form-parity/index')
       await page.locator('weapp-input#profile-name input').fill('Grace')
       await page.getByRole('button', { name: '提交资料' }).click()
