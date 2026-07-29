@@ -87,7 +87,7 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/devtools-runtime": "workspace:*",
