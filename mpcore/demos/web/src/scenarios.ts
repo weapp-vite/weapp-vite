@@ -41,6 +41,10 @@ const scenarioCatalog: Record<string, ScenarioMeta> = {
     name: 'Component Page',
     description: '使用 Component() 注册页面，验证组件式页面方法与生命周期。',
   },
+  'require-async': {
+    name: 'Require Async',
+    description: '验证分包模块通过 require.async 异步加载并返回完整导出。',
+  },
 }
 
 const rawScenarioModules = import.meta.glob('./fixtures/**/*', {

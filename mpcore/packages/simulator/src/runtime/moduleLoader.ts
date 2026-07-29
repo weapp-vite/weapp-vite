@@ -32,6 +32,11 @@ interface ModuleCacheEntry {
   exports: Record<string, any>
 }
 
+interface LocalRequire {
+  (request: string): any
+  async: (request: string) => Promise<any>
+}
+
 function createRequireNotFoundError(request: string, importer: string) {
   return new Error(`Cannot resolve require("${request}") from ${normalize(importer)} in headless runtime.`)
 }
@@ -124,7 +129,7 @@ export function createModuleLoader(
     const previousLoadContext = registries.currentLoadContext
     registries.currentLoadContext = loadContext
 
-    const localRequire = (request: string) => {
+    const localRequire = ((request: string) => {
       const requiredPath = resolveRequiredModulePath(resolvedPath, request)
       if (requiredPath.endsWith('.json')) {
         const content = fs.readFileSync(requiredPath, 'utf8')
@@ -133,7 +138,8 @@ export function createModuleLoader(
       const requiredModule = executeModule(requiredPath, null)
       requiredComponentDefinitions.push(...requiredModule.componentDefinitions)
       return requiredModule.exports
-    }
+    }) as LocalRequire
+    localRequire.async = request => Promise.resolve().then(() => localRequire(request))
 
     try {
       const script = new vm.Script(

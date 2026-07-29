@@ -430,22 +430,22 @@ export default defineConfig({
       },
     },
     npm: resolveGithubIssuesNpm(),
-    ...(issue393ChunkModeEnabled
-      ? {
-          chunks: {
+    chunks: {
+      dynamicImports: issue393ChunkModeEnabled ? 'preserve' : 'native',
+      ...(issue393ChunkModeEnabled
+        ? {
             sharedStrategy: 'duplicate',
             sharedMode: 'common',
             sharedPathRoot: 'src',
-            dynamicImports: 'preserve',
             sharedOverrides: [
               {
                 test: /(?:^|\/)debounce(?:\/|$)/,
                 mode: 'path',
               },
             ],
-          },
-        }
-      : {}),
+          }
+        : {}),
+    },
   },
   ...(issue393ChunkModeEnabled
     ? {

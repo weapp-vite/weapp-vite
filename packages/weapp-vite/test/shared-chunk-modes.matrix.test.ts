@@ -159,19 +159,11 @@ function assertDynamicMarker(
   _marker: string,
   actual: string[],
   importerFile: string,
-  mode: DynamicImports,
+  _mode: DynamicImports,
   label: string,
 ) {
-  if (mode === 'preserve') {
-    expect(actual.includes(importerFile), `${label} should not inline`).toBe(false)
-    expect(actual.length, `${label} should emit a chunk`).toBeGreaterThan(0)
-  }
-  else {
-    if (actual.includes(importerFile) && actual.length === 1) {
-      return
-    }
-    expect(actual.length, `${label} should emit a chunk`).toBeGreaterThan(0)
-  }
+  expect(actual.includes(importerFile), `${label} should not inline`).toBe(false)
+  expect(actual.length, `${label} should emit a chunk`).toBeGreaterThan(0)
 }
 
 function caseId(

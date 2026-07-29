@@ -96,6 +96,7 @@ export {
 } from './operations/platformApi'
 export {
   collectRequireTokens,
+  getDynamicImportLiteralToken,
   getRequireAsyncLiteralToken,
   getRequireCallbackLiteralToken,
   getStaticRequireLiteralValue,
@@ -104,7 +105,7 @@ export {
   mayContainRequireCallByText,
   mayContainStaticRequireLiteral,
 } from './operations/require'
-export type { RequireCallbackToken, RequireToken } from './operations/require'
+export type { DynamicImportToken, RequireCallbackToken, RequireToken } from './operations/require'
 export { analyzeScript, analyzeScripts } from './operations/scriptAnalysis'
 export type { ScriptAnalysisBatchInput, ScriptAnalysisOptions, ScriptAnalysisResult } from './operations/scriptAnalysis'
 export {

@@ -112,6 +112,7 @@ const IDE_GATE_TESTS = [
 const IDE_HEADLESS_FULL_TESTS = [
   ...IDE_GATE_TESTS,
   path.resolve(ROOT, 'ide/github-issues.runtime.issue705.test.ts'),
+  path.resolve(ROOT, 'ide/github-issues.runtime.require-async.test.ts'),
 ]
 export const SKIP_CI_HMR_GUARD_ENV = 'WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD'
 
