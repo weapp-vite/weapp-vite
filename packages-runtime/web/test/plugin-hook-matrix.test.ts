@@ -126,7 +126,7 @@ describe('weapp web plugin hook matrix', () => {
 
     const relativeStyle = './standalone.vue.css?weapp-web-sfc-style&inline'
     expect(await resolveId(relativeStyle, join(srcRoot, 'importer.vue')))
-      .toBe(`${join(srcRoot, 'standalone.vue.css')}?weapp-web-sfc-style&inline`)
+      .toBe(`${normalizePath(join(srcRoot, 'standalone.vue.css'))}?weapp-web-sfc-style&inline`)
     const absoluteStyle = `${join(srcRoot, 'standalone.vue.css')}?weapp-web-sfc-style&inline`
     expect(await resolveId(absoluteStyle)).toBe(absoluteStyle)
     expect(await resolveId('standalone.vue.css&weapp-web-sfc-style')).toBe('standalone.vue.css&weapp-web-sfc-style')
@@ -147,9 +147,9 @@ describe('weapp web plugin hook matrix', () => {
     await expect(load.call(context, `${join(pageDir, 'index.wxml')}?weapp-web-template`))
       .resolves
       .toContain('wv-component-layouts-default')
-    expect(addWatchFile).toHaveBeenCalledWith(join(pageDir, 'part.wxml'))
+    expect(addWatchFile).toHaveBeenCalledWith(normalizePath(join(pageDir, 'part.wxml')))
     await expect(load.call(context, `${join(pageDir, 'logic.wxs')}?wxs`)).resolves.toContain(`from 'dep.wxs'`)
-    expect(addWatchFile).toHaveBeenCalledWith(join(pageDir, 'dep.wxs'))
+    expect(addWatchFile).toHaveBeenCalledWith(normalizePath(join(pageDir, 'dep.wxs')))
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('仅支持相对或绝对路径'))
     await expect(load.call({}, `${join(pageDir, 'dep.wxs')}?wxs`)).resolves.toContain('ready')
     await expect(load.call(context, `${join(pageDir, 'index.wxss')}?weapp-web-style`)).resolves.toContain('injectStyle')
@@ -168,7 +168,7 @@ describe('weapp web plugin hook matrix', () => {
     await expect(load.call(context, `${standalonePath}?weapp-web-sfc-template`))
       .resolves
       .toContain(`from './standalone-part.wxml?weapp-web-template'`)
-    expect(addWatchFile).toHaveBeenCalledWith(join(srcRoot, 'standalone-part.wxml'))
+    expect(addWatchFile).toHaveBeenCalledWith(normalizePath(join(srcRoot, 'standalone-part.wxml')))
     await expect(load.call({}, `${standalonePath}?weapp-web-sfc-template`))
       .resolves
       .toContain(`from './standalone-part.wxml?weapp-web-template'`)
@@ -236,7 +236,7 @@ describe('weapp web plugin hook matrix', () => {
     await expect(transform.call(context, await readFile(join(pageDir, 'index.wxml'), 'utf8'), join(pageDir, 'index.wxml')))
       .resolves
       .toMatchObject({ code: expect.stringContaining('wv-component-layouts-default'), map: null })
-    expect(addWatchFile).toHaveBeenCalledWith(join(pageDir, 'part.wxml'))
+    expect(addWatchFile).toHaveBeenCalledWith(normalizePath(join(pageDir, 'part.wxml')))
     await expect(transform.call(context, await readFile(join(componentDir, 'index.wxml'), 'utf8'), join(componentDir, 'index.wxml')))
       .resolves
       .toMatchObject({ code: expect.stringContaining('<camera>'), map: null })

@@ -99,11 +99,13 @@ export async function scanProject({ srcRoot, warn, state, resolveId, resolveAuto
   const resolveComponentScript = async (raw: string, importerDir: string) => {
     const base = resolveComponentBase(raw, importerDir, srcRoot)
     if (base) {
-      return resolveScriptFile(base)
+      const resolved = await resolveScriptFile(base)
+      return resolved ? normalizePath(resolved) : undefined
     }
     const importer = join(importerDir, '__weapp_web_using_components__.ts')
     const resolved = await resolveId?.(raw, importer)
-    return resolved ? resolveScriptFile(resolved) : undefined
+    const script = resolved ? await resolveScriptFile(resolved) : undefined
+    return script ? normalizePath(script) : undefined
   }
 
   const getStableComponentId = (script: string) => {

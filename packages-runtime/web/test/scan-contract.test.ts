@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { normalizePath } from '../src/plugin/path'
 import { getStableWebComponentId, scanProject } from '../src/plugin/scan'
 import { createEmptyScanState } from '../src/plugin/state'
 
@@ -42,6 +43,7 @@ describe('web project scanner contracts', () => {
       usingComponents: {
         empty: '',
         local: '/components/shared/index',
+        localMissing: '/components/missing/index',
         package: 'shared-package',
         packageAgain: 'shared-package',
         unstable: 'unstable-package',
@@ -106,16 +108,17 @@ describe('web project scanner contracts', () => {
       'package-a/pages/detail/index',
     ])
     expect(state.scanResult.components).toEqual(expect.arrayContaining([
-      expect.objectContaining({ script: shared, importId: 'shared-package' }),
-      expect.objectContaining({ script: headless }),
+      expect.objectContaining({ script: normalizePath(shared), importId: 'shared-package' }),
+      expect.objectContaining({ script: normalizePath(headless) }),
     ]))
-    expect(state.scanResult.components.some(component => component.script === unstable)).toBe(false)
+    expect(state.scanResult.components.some(component => component.script === normalizePath(unstable))).toBe(false)
     expect(state.scanResult.layouts).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: 'group' }),
       expect.objectContaining({ name: 'plain' }),
     ]))
     expect(state.appNavigationDefaults).toMatchObject({ title: 'Contract' })
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('empty'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('localMissing'))
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('missing-package'))
   })
 
@@ -164,7 +167,7 @@ describe('web project scanner contracts', () => {
 
     await scanProject({ srcRoot, state, resolveAppConfig })
 
-    expect(resolveAppConfig).toHaveBeenCalledWith(appJsonPath)
+    expect(resolveAppConfig).toHaveBeenCalledWith(normalizePath(appJsonPath))
     expect(state.scanResult.pages.map(page => page.id)).toEqual([
       'pages/index/index',
       'pages/detail/index',

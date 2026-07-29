@@ -9,6 +9,7 @@ import {
   emitWebAssets,
   resolveWebAssetRequest,
 } from '../src/plugin/assets'
+import { normalizePath } from '../src/plugin/path'
 
 const streamRuntime = vi.hoisted(() => ({
   createReadStream: vi.fn(),
@@ -40,14 +41,14 @@ describe('web asset contract', () => {
   it('resolves valid asset URLs and rejects invalid or escaping requests', async () => {
     const root = await createAssetRoot()
     expect(resolveWebAssetRequest(root)).toBeUndefined()
-    expect(resolveWebAssetRequest(root, '/logo.PNG?version=1#image')).toBe(join(root, 'logo.PNG'))
-    expect(resolveWebAssetRequest(root, '/nested%2Fdata.br')).toBe(join(root, 'nested/data.br'))
+    expect(resolveWebAssetRequest(root, '/logo.PNG?version=1#image')).toBe(normalizePath(join(root, 'logo.PNG')))
+    expect(resolveWebAssetRequest(root, '/nested%2Fdata.br')).toBe(normalizePath(join(root, 'nested/data.br')))
     expect(resolveWebAssetRequest(root, '/')).toBeUndefined()
     expect(resolveWebAssetRequest(root, '/readme.txt')).toBeUndefined()
     expect(resolveWebAssetRequest(root, '/../outside.png')).toBeUndefined()
     expect(resolveWebAssetRequest(root, '/%2e%2e/outside.png')).toBeUndefined()
     expect(resolveWebAssetRequest(root, '/%5c..%5coutside.png')).toBeUndefined()
-    expect(resolveWebAssetRequest(root, '/%252e%252e/outside.png')).toBe(join(root, '%2e%2e/outside.png'))
+    expect(resolveWebAssetRequest(root, '/%252e%252e/outside.png')).toBe(normalizePath(join(root, '%2e%2e/outside.png')))
     expect(resolveWebAssetRequest(root, '/%E0%A4%A')).toBeUndefined()
   })
 
@@ -91,7 +92,7 @@ describe('web asset contract', () => {
     await vi.waitFor(() => expect(next).toHaveBeenCalledTimes(3))
 
     middleware({ url: '/logo.PNG' } as IncomingMessage, response, next)
-    await vi.waitFor(() => expect(streamRuntime.createReadStream).toHaveBeenCalledWith(join(root, 'logo.PNG')))
+    await vi.waitFor(() => expect(streamRuntime.createReadStream).toHaveBeenCalledWith(normalizePath(join(root, 'logo.PNG'))))
     expect(response.statusCode).toBe(200)
     expect(headers.get('Content-Length')).toBe('3')
     expect(headers.get('Content-Type')).toBe('image/png')

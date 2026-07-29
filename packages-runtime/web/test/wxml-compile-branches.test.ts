@@ -1,6 +1,6 @@
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, posix, resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { compileWxml } from '../src/compiler/wxml'
 import { createDependencyContext } from '../src/compiler/wxml/dependency'
@@ -27,10 +27,14 @@ vi.mock('../src/compiler/wxml/parser', async (importOriginal) => {
 })
 
 function resolveTemplate(raw: string, importer: string) {
-  return resolve(dirname(importer), raw)
+  return posix.resolve(posix.dirname(importer), raw)
 }
 
-const resolveWxsPath = (raw: string, importer: string) => resolve(dirname(importer), raw)
+const resolveWxsPath = (raw: string, importer: string) => posix.resolve(posix.dirname(importer), raw)
+
+function resolveNativePath(raw: string, importer: string) {
+  return resolve(dirname(importer), raw)
+}
 
 describe('compileWxml branch contract', () => {
   it('handles visited dependencies, query imports and direct-only expansion', () => {
@@ -74,8 +78,8 @@ describe('compileWxml branch contract', () => {
     }
     const result = compileWxml({
       id: entry,
-      resolveTemplatePath: resolveTemplate,
-      resolveWxsPath,
+      resolveTemplatePath: resolveNativePath,
+      resolveWxsPath: resolveNativePath,
       source: dependencies.map(([name]) => `<include src="./${name}" />`).join(''),
     })
     expect(result.warnings).toEqual([
