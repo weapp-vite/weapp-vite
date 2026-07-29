@@ -87,8 +87,12 @@ jobs:
         if: inputs.increase_ulimit && runner.os != 'Windows'
         run: ulimit -n 65536 || true
 
+      - name: Install Playwright browsers and system dependencies
+        if: inputs.install_playwright && runner.os == 'Linux'
+        run: pnpm exec playwright install --with-deps ${{ inputs.playwright_browsers }}
+
       - name: Install Playwright browsers
-        if: inputs.install_playwright
+        if: inputs.install_playwright && runner.os != 'Linux'
         run: pnpm exec playwright install ${{ inputs.playwright_browsers }}
 
       - name: Run command
