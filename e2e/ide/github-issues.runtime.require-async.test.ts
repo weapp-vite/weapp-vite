@@ -11,6 +11,17 @@ import {
 
 const REQUIRE_ASYNC_ROUTE = '/pages/require-async/index'
 
+async function callRequireAsyncPageMethod(miniProgram: any, page: any, mode: 'callback' | 'native' | 'promise') {
+  if (typeof miniProgram.evaluateWithOptions !== 'function' && typeof miniProgram.evaluate !== 'function') {
+    return await page.callMethodWithOptions('_runE2E', {
+      timeout: 30_000,
+    }, mode)
+  }
+  return await callRoutePageMethodWithOptions(miniProgram, REQUIRE_ASYNC_ROUTE, '_runE2E', {
+    protocolTimeoutMs: 30_000,
+  }, mode)
+}
+
 describe.sequential('e2e app: github-issues / require async subpackage modules', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
@@ -20,20 +31,17 @@ describe.sequential('e2e app: github-issues / require async subpackage modules',
     await closeSharedMiniProgram()
   }, 30_000)
 
-  it('loads subpackage modules through callback and Promise APIs', async (ctx) => {
+  it('loads subpackage modules through callback, Promise, and native import APIs', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const page = await relaunchPage(miniProgram, REQUIRE_ASYNC_ROUTE, undefined, 45_000, {
-        readiness: 'route',
+        readiness: async page => Boolean(await page.$('#require-async-page')),
       })
       expect(page).toBeTruthy()
 
-      const callbackResult = await callRoutePageMethodWithOptions(miniProgram, REQUIRE_ASYNC_ROUTE, '_runE2E', {
-        protocolTimeoutMs: 30_000,
-      }, 'callback')
-      const promiseResult = await callRoutePageMethodWithOptions(miniProgram, REQUIRE_ASYNC_ROUTE, '_runE2E', {
-        protocolTimeoutMs: 30_000,
-      }, 'promise')
+      const callbackResult = await callRequireAsyncPageMethod(miniProgram, page, 'callback')
+      const promiseResult = await callRequireAsyncPageMethod(miniProgram, page, 'promise')
+      const nativeResult = await callRequireAsyncPageMethod(miniProgram, page, 'native')
 
       expect(callbackResult).toEqual({
         marker: 'require-async:callback',
@@ -43,6 +51,11 @@ describe.sequential('e2e app: github-issues / require async subpackage modules',
       expect(promiseResult).toEqual({
         marker: 'require-async:promise',
         mode: 'promise',
+        ok: true,
+      })
+      expect(nativeResult).toEqual({
+        marker: 'require-async:native-default:require-async:native-named:require-async:transitive',
+        mode: 'native',
         ok: true,
       })
     }

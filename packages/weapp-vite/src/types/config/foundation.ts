@@ -285,7 +285,12 @@ export type SharedChunkStrategy = 'hoist' | 'duplicate'
 
 export type SharedChunkMode = 'common' | 'path' | 'inline'
 
-export type SharedChunkDynamicImports = 'preserve' | 'inline'
+/**
+ * @deprecated `inline` 当前会回退为 `preserve`，请改用 `preserve` 或 `native`。
+ */
+export type DeprecatedInlineDynamicImports = 'inline'
+
+export type SharedChunkDynamicImports = 'preserve' | 'native' | DeprecatedInlineDynamicImports
 
 export interface SharedChunkOverride {
   test: string | RegExp

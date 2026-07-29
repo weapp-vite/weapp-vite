@@ -11,6 +11,14 @@ export interface RequireToken {
   async?: boolean
 }
 
+export interface DynamicImportToken {
+  callEnd: number
+  callStart: number
+  end: number
+  start: number
+  value: string
+}
+
 export interface RequireCallbackToken extends RequireToken {
   callEnd: number
   callStart: number
@@ -115,12 +123,41 @@ export function getRequireCallbackLiteralToken(node: any): RequireCallbackToken 
   }
 }
 
+/**
+ * 收集静态 `import()` 依赖字面量。
+ */
+export function getDynamicImportLiteralToken(node: any): DynamicImportToken | null {
+  if (node?.type !== 'ImportExpression') {
+    return null
+  }
+
+  const value = getStaticRequireLiteralValue(node.source)
+  if (!node.source || value === null) {
+    return null
+  }
+
+  return {
+    callEnd: node.end,
+    callStart: node.start,
+    end: node.source.end,
+    start: node.source.start,
+    value,
+  }
+}
+
 export function collectRequireTokens(ast: unknown) {
+  const dynamicImportTokens: DynamicImportToken[] = []
   const requireTokens: RequireToken[] = []
   const requireCallbackTokens: RequireCallbackToken[] = []
 
   walk(ast as Program, {
     enter(node) {
+      const dynamicImportToken = getDynamicImportLiteralToken(node)
+      if (dynamicImportToken) {
+        dynamicImportTokens.push(dynamicImportToken)
+        return
+      }
+
       const asyncToken = getRequireAsyncLiteralToken(node)
       if (asyncToken) {
         requireTokens.push(asyncToken)
@@ -136,6 +173,7 @@ export function collectRequireTokens(ast: unknown) {
   })
 
   return {
+    dynamicImportTokens,
     requireCallbackTokens,
     requireTokens,
   }

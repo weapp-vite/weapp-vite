@@ -5,6 +5,39 @@ import {
 } from '../src/browser'
 
 describe('BrowserHeadlessSession', () => {
+  it('loads and caches modules through require.async', async () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  async loadAsync() {
+    const first = await require.async('../../subpackages/async/target.js')
+    const second = await require.async('../../subpackages/async/target.js')
+    return {
+      defaultValue: first.default,
+      namedValue: first.named,
+      reused: first === second,
+    }
+  },
+})
+`],
+      ['pages/index/index.wxml', '<view>async</view>'],
+      ['subpackages/async/target.js', `
+exports.default = 'async-default'
+exports.named = 'async-named'
+`],
+    ])
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    await expect(page.loadAsync()).resolves.toEqual({
+      defaultValue: 'async-default',
+      namedValue: 'async-named',
+      reused: true,
+    })
+  })
+
   it('supports uni event, font, and wevu proxy selector compatibility in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

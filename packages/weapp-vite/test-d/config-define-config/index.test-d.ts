@@ -40,6 +40,9 @@ const objectConfig = defineConfig({
       includeMainPackage: true,
       include: ['main', 'subpackages/item'],
     },
+    chunks: {
+      dynamicImports: 'native' as const,
+    },
     mcp: {
       autoStart: 'ai',
       port: 'auto',
@@ -135,6 +138,7 @@ expectAssignable<string | string[] | {
   includeMainPackage?: boolean
   include?: string[]
 } | undefined>(objectConfig.weapp?.buildScope)
+expectAssignable<'preserve' | 'inline' | 'native' | undefined>(objectConfig.weapp?.chunks?.dynamicImports)
 expectAssignable<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
 expectAssignable<boolean | 'auto' | undefined>(objectConfig.weapp?.vue?.template?.formatWxml)
