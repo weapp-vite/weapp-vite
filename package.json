@@ -86,7 +86,7 @@
     "e2e:parallel": "vitest run -c ./e2e/vitest.e2e.parallel.config.ts",
     "e2e:retail-parity": "vitest run -c ./e2e/vitest.e2e.retail-parity.config.ts",
     "e2e:web": "node --import tsx ./e2e/scripts/run-e2e-suite.ts web",
-    "e2e:web:browser-smoke": "vitest run -c ./e2e/vitest.e2e.web.config.ts ./e2e/web-runtime/web-browser-smoke.test.ts",
+    "e2e:web:browser-smoke": "vitest run -c ./e2e/vitest.e2e.web-browser-smoke.config.ts",
     "e2e:web:build-projects": "node --import tsx ./e2e/scripts/build-web-projects.ts",
     "e2e:web:update-baselines": "node --import tsx ./e2e/scripts/update-web-runtime-visual-baselines.ts",
     "e2e:runtime-bench": "node --import tsx ./e2e/scripts/run-runtime-bench.ts",
