@@ -40,4 +40,16 @@ describe('@weapp-core/shared package exports', () => {
     expect(exports['./fs']).toEqual(expected)
     expect(publishExports['./fs']).toEqual(expected)
   })
+
+  it('declares browser-safe platforms subpath export', () => {
+    const { exports, publishExports } = readExports()
+
+    const expected = {
+      types: './dist/platforms/index.d.ts',
+      import: './dist/platforms/index.js',
+    }
+
+    expect(exports['./platforms']).toEqual(expected)
+    expect(publishExports['./platforms']).toEqual(expected)
+  })
 })
