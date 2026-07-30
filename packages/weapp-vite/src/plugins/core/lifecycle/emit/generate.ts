@@ -97,9 +97,9 @@ function isStableHmrSharedChunk(fileName: string) {
 }
 
 function isRuntimeVendorSharedChunk(fileName: string) {
-  return isWevuStableVendorFileName(fileName)
-    || (fileName.startsWith('weapp-vendors/')
-      && /(?:^|[-/])[\w-]*runtime[\w-]*(?:[-.]|$)/.test(fileName))
+  return !isWevuStableVendorFileName(fileName)
+    && fileName.startsWith('weapp-vendors/')
+    && /(?:^|[-/])[\w-]*runtime[\w-]*(?:[-.]|$)/.test(fileName)
 }
 
 function addEmittedChunkFileName(

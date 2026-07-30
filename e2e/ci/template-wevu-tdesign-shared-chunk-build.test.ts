@@ -2,14 +2,13 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
-import { collectVendorFilesContaining } from '../wevu-runtime.utils'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-template')
 const REGRESSION_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const REGRESSION_DIST_ROOT = path.join(REGRESSION_ROOT, 'dist')
-const WEVU_RUNTIME_MARKER = '__wevu_runtime'
+const WEVU_RUNTIME_VENDOR_PATH = path.join(DIST_ROOT, 'weapp-vendors/wevu-runtime.js')
 const REQUIRE_VENDOR_RE = /require\("([^"]*weapp-vendors\/[^"]+\.js)"\)/g
 const REQUIRE_VENDOR_MEMBER_RE = /require\("([^"]*weapp-vendors\/[^"]+\.js)"\)\.([A-Za-z_$][\w$]*)/g
 const VENDOR_MEMBER_RE = /const\s+([A-Za-z_$][\w$]*)\s*=\s*require\("([^"]*weapp-vendors\/[^"]+\.js)"\)/g
@@ -124,7 +123,10 @@ describe.sequential('template build: wevu tdesign shared chunks', () => {
   }, 120_000)
 
   it('keeps the stable wevu runtime vendor chunk available for DevTools reloads', async () => {
-    expect(await collectVendorFilesContaining(DIST_ROOT, WEVU_RUNTIME_MARKER)).not.toEqual([])
+    expect(await fs.pathExists(WEVU_RUNTIME_VENDOR_PATH)).toBe(true)
+    expect(await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')).toContain(
+      'weapp-vendors/wevu-runtime.js',
+    )
 
     const missingByFile: Record<string, string[]> = {}
     for (const jsPath of await collectDistJsFiles(DIST_ROOT)) {

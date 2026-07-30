@@ -565,7 +565,7 @@ describe('core lifecycle emit hook extra branches', () => {
     )
   })
 
-  it('keeps active runtime vendor chunks during partial dev hmr rebuilds', async () => {
+  it('keeps infrastructure runtimes without emitting partial wevu vendors during hmr', async () => {
     const emittedChunkFileNames = new Set<string>()
     const state = createState({
       subPackageMeta: undefined,
@@ -650,11 +650,11 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['weapp-vendors/weapp-vite-runtime.js']).toBeDefined()
     expect(bundle['weapp-vendors/request-globals-runtime.js']).toBeDefined()
     expect(bundle['weapp-vendors/request-runtime.js']).toBeDefined()
-    expect(bundle['weapp-vendors/wevu-src.js']).toBeDefined()
+    expect(bundle['weapp-vendors/wevu-src.js']).toBeUndefined()
     expect(emittedChunkFileNames.has('weapp-vendors/weapp-vite-runtime.js')).toBe(true)
     expect(emittedChunkFileNames.has('weapp-vendors/request-globals-runtime.js')).toBe(true)
     expect(emittedChunkFileNames.has('weapp-vendors/request-runtime.js')).toBe(true)
-    expect(emittedChunkFileNames.has('weapp-vendors/wevu-src.js')).toBe(true)
+    expect(emittedChunkFileNames.has('weapp-vendors/wevu-src.js')).toBe(false)
   })
 
   it('keeps stable shared chunks when all known importers are emitted in dev hmr', async () => {
