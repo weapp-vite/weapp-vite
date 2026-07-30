@@ -1,3 +1,6 @@
 export * from './launch'
+export * from './logicalSnapshot'
 export * from './pageHandle'
+export * from './pageWait'
+export * from './rendered'
 export * from './sessionHandle'

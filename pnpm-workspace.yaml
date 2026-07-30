@@ -17,7 +17,6 @@ packages:
   - '!packages-runtime/**/test/**'
   - '!benchmarks/**/test/**'
   - '!@weapp-core/**/test/**'
-  - '!mpcore/**/test/**'
 
 catalog:
   '@babel/core': ^8.0.1

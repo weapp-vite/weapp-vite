@@ -29,6 +29,7 @@ describe('page event alignment', () => {
 
     expect(page.data.scrollTop).toBe(120)
     expect(page.data.logs).toEqual([
+      'onRouteDone:{}',
       'onPageScroll:{"scrollTop":120}',
     ])
     expect(page.data.callbacks).toEqual(['success', 'complete'])
@@ -44,6 +45,7 @@ describe('page event alignment', () => {
 
     expect(page.data.scrollTop).toBe(236)
     expect(page.data.logs).toEqual([
+      'onRouteDone:{}',
       'onPageScroll:{"scrollTop":236}',
     ])
     expect(page.data.selectorCallbacks).toEqual(['success', 'complete'])
@@ -69,6 +71,7 @@ describe('page event alignment', () => {
     await miniProgram.pageScrollTo(64)
 
     expect(await page.data('logs')).toEqual([
+      'onRouteDone:{}',
       'onPullDownRefresh',
       'onReachBottom',
       'onResize:{"size":{"windowWidth":375,"windowHeight":667}}',

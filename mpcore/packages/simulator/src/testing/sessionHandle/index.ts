@@ -1,6 +1,6 @@
 import type { HeadlessProjectDescriptor } from '../../project'
 import type { HeadlessSession } from '../../runtime'
-import type { HeadlessTestingWaitOptions } from '../pageHandle'
+import type { HeadlessTestingWaitOptions } from '../pageWait'
 import { HeadlessTestingPageHandle } from '../pageHandle'
 import { HeadlessTestingScopeHandle } from './scope'
 import { normalizeNonEmptyInput, normalizeRoute, pollUntil, runWithTimeout } from './shared'
@@ -18,15 +18,18 @@ export class HeadlessTestingSessionHandle {
   ) {}
 
   async close() {
+    this.session.close()
   }
 
   async currentPage() {
+    this.session.assertActive()
     const pages = this.session.getCurrentPages()
     const current = pages.at(-1)
     return current ? new HeadlessTestingPageHandle(this.project, current, this.session) : null
   }
 
   async getCurrentPages() {
+    this.session.assertActive()
     return this.session.getCurrentPages().map((page: any) => new HeadlessTestingPageHandle(this.project, page, this.session))
   }
 
@@ -101,6 +104,34 @@ export class HeadlessTestingSessionHandle {
     return new HeadlessTestingPageHandle(this.project, page, this.session)
   }
 
+  async navigateTo(route: string) {
+    this.session.callWxMethod('navigateTo', {
+      url: route,
+    })
+    return await this.requireCurrentPage('navigateTo', route)
+  }
+
+  async redirectTo(route: string) {
+    this.session.callWxMethod('redirectTo', {
+      url: route,
+    })
+    return await this.requireCurrentPage('redirectTo', route)
+  }
+
+  async navigateBack(delta = 1) {
+    this.session.callWxMethod('navigateBack', {
+      delta,
+    })
+    return await this.currentPage()
+  }
+
+  async switchTab(route: string) {
+    this.session.callWxMethod('switchTab', {
+      url: route,
+    })
+    return await this.requireCurrentPage('switchTab', route)
+  }
+
   async waitForCurrentPage(route?: string, options: HeadlessTestingWaitOptions = {}) {
     const normalizedRoute = route?.trim()
     if (normalizedRoute != null && !normalizedRoute) {
@@ -147,5 +178,13 @@ export class HeadlessTestingSessionHandle {
 
   async triggerRouteDone(options?: Record<string, any>) {
     this.session.triggerRouteDone(options)
+  }
+
+  private async requireCurrentPage(methodName: string, route: string) {
+    const page = await this.currentPage()
+    if (!page) {
+      throw new Error(`Failed to ${methodName} route "${route}" through the headless wx runtime.`)
+    }
+    return page
   }
 }

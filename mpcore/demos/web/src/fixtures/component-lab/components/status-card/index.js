@@ -49,6 +49,14 @@ Component({
     }
   },
   methods: {
+    emitCompatibilityEvents() {
+      this.triggerEvent('probe', { name: 'legacy-probe' })
+      this.triggerEvent('legacy-hyphen', { name: 'invalid-legacy-hyphen' })
+      this.triggerEvent('colon-hyphen', { name: 'colon-hyphen' })
+      this.triggerEvent('legacy_under', { name: 'legacy-underscore' })
+      this.triggerEvent('colon_under', { name: 'colon-underscore' })
+      this.triggerEvent('duplicate_under', { name: 'legacy-duplicate-underscore' })
+    },
     pulse() {
       this.setData({
         internalClicks: this.data.internalClicks + 1,

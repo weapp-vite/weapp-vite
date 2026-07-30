@@ -1,4 +1,5 @@
 import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType, HeadlessWxSavedFileInfo } from '../host'
+import type { RuntimeDiagnosticEntry } from '../kernel'
 import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
 import type { HeadlessAppInstance } from '../runtime/appInstance'
@@ -15,6 +16,7 @@ import type {
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
+import { RuntimeKernel } from '../kernel'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { createAppInstance } from '../runtime/appInstance'
 import { runComponentPageLifetime } from '../runtime/componentInstance'
@@ -44,8 +46,10 @@ import { readBrowserVirtualFile } from './virtualFiles'
 
 export interface BrowserHeadlessSessionOptions {
   files: BrowserVirtualFiles
+  globals?: Record<string, unknown>
   onRender?: () => void
   project?: HeadlessProjectDescriptor
+  strictHostMocks?: boolean
 }
 
 interface ResolvedNavigationTarget {
@@ -224,7 +228,8 @@ export class BrowserHeadlessSession {
   private readonly canvasContexts = new Map<string, import('../host').HeadlessWxCanvasContext>()
   private enterOptions = createAppLaunchOptions('', {})
   private launchOptions = createAppLaunchOptions('', {})
-  private readonly wxState = createHeadlessWxState()
+  private readonly kernel = new RuntimeKernel()
+  private readonly wxState
   private pullDownRefreshState: HeadlessPullDownRefreshState = {
     active: false,
     stopCalls: 0,
@@ -232,6 +237,9 @@ export class BrowserHeadlessSession {
 
   constructor(options: BrowserHeadlessSessionOptions) {
     this.files = options.files
+    this.wxState = createHeadlessWxState(this.kernel.scheduler, {
+      strictMocks: options.strictHostMocks,
+    })
     this.onRender = options.onRender
     this.project = options.project ?? createBrowserProject(options.files)
     this.registries = createHostRegistries()
@@ -310,7 +318,7 @@ export class BrowserHeadlessSession {
         removeSavedFile: option => this.wxState.removeSavedFile(option),
         saveImageToPhotosAlbum: option => this.wxState.saveImageToPhotosAlbum(option),
         saveVideoToPhotosAlbum: option => this.wxState.saveVideoToPhotosAlbum(option),
-        nextTick: callback => queueMicrotask(() => callback?.()),
+        nextTick: callback => this.kernel.scheduler.queueMicrotask(() => callback?.()),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
@@ -343,14 +351,45 @@ export class BrowserHeadlessSession {
         setTabBarBadge: option => this.setTabBarBadge(option.index, option.text),
         updateShareMenu: option => this.wxState.updateShareMenu(option),
       },
+      {
+        globals: options.globals,
+        kernel: this.kernel,
+      },
     )
   }
 
+  assertActive() {
+    this.kernel.assertActive()
+  }
+
+  close() {
+    if (this.kernel.isClosed) {
+      return
+    }
+    this.unloadAllPages()
+    this.canvasContexts.clear()
+    this.renderRequestCallbacks.length = 0
+    this.renderRequestPending = false
+    this.wxState.close()
+    this.moduleLoader.close()
+    this.kernel.close()
+  }
+
+  getDiagnostics(): RuntimeDiagnosticEntry[] {
+    return this.kernel.diagnostics.getEntries()
+  }
+
+  get isClosed() {
+    return this.kernel.isClosed
+  }
+
   getApp() {
+    this.assertActive()
     return this.appInstance
   }
 
   getCurrentPages() {
+    this.assertActive()
     return this.pages.slice()
   }
 
@@ -835,6 +874,7 @@ export class BrowserHeadlessSession {
   }
 
   renderCurrentPage() {
+    this.assertActive()
     const current = this.requireCurrentPage('renderCurrentPage()')
     const rendered = renderBrowserPageTree({
       changedPageKeys: current.__lastChangedKeys__ ?? [],
@@ -867,6 +907,7 @@ export class BrowserHeadlessSession {
   }
 
   requestRender(callback?: () => void) {
+    this.assertActive()
     if (callback) {
       this.renderRequestCallbacks.push(callback)
     }
@@ -875,6 +916,9 @@ export class BrowserHeadlessSession {
     }
     this.renderRequestPending = true
     Promise.resolve().then(() => {
+      if (this.kernel.isClosed) {
+        return
+      }
       this.renderRequestPending = false
       const callbacks = this.renderRequestCallbacks.splice(0)
       if (this.currentPageInstance) {
@@ -1011,6 +1055,7 @@ export class BrowserHeadlessSession {
   }
 
   bootstrap(launchOptions = createAppLaunchOptions('', {})) {
+    this.assertActive()
     if (this.appInstance) {
       return this.appInstance
     }
@@ -1112,10 +1157,8 @@ export class BrowserHeadlessSession {
 
     const current = this.currentPageInstance
     const cachedTarget = this.tabPages.get(target.routeRecord.route) ?? null
-    const tabItem = this.resolveTabBarItem(target.routeRecord.route)
 
     if (current === cachedTarget && current) {
-      current.onTabItemTap?.(tabItem)
       return current
     }
 
@@ -1151,7 +1194,6 @@ export class BrowserHeadlessSession {
       this.runPageComponentLifetime(nextPage.route, 'show')
     }
 
-    nextPage.onTabItemTap?.(tabItem)
     return nextPage
   }
 
@@ -1328,6 +1370,7 @@ export class BrowserHeadlessSession {
     pageInstance.onLoad?.(query)
     pageInstance.onShow?.()
     pageInstance.onReady?.()
+    pageInstance.onRouteDone?.({})
   }
 
   private isTabBarRoute(route: string) {
@@ -1357,17 +1400,6 @@ export class BrowserHeadlessSession {
       normalizedRoute,
       query,
       routeRecord,
-    }
-  }
-
-  private resolveTabBarItem(route: string) {
-    const pagePath = stripLeadingSlash(route)
-    const item = this.tabBarItems.get(pagePath)
-    if (!item) {
-      throw new Error(`Missing tabBar metadata for route "${route}" in browser simulator runtime.`)
-    }
-    return {
-      ...item,
     }
   }
 

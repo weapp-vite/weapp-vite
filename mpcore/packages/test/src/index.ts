@@ -1,0 +1,7 @@
+export * from './host'
+export * from './matchers'
+export * from './project'
+export * from './screen'
+export * from './types'
+export * from './user'
+export { wechat } from '@mpcore/simulator'

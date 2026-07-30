@@ -231,7 +231,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
   const { injectBuiltinAliases, oxcRolldownPlugin, oxcVitePlugin } = options
 
   return async function loadConfig(opts: LoadConfigOptions): Promise<LoadConfigResult> {
-    const { cwd, isDev, mode, pluginOnly = false, inlineConfig, configFile, configLoader = 'runner', cliPlatform, projectConfigPath } = opts
+    const { cwd, isDev, mode, outputRoot, pluginOnly = false, inlineConfig, configFile, configLoader = 'runner', cliPlatform, projectConfigPath } = opts
 
     const { packageJson, packageJsonPath } = await loadPackageJson(cwd)
 
@@ -437,7 +437,13 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
           mpDistRoot = path.join('dist', platform, normalizedDistRoot)
         }
       }
-      buildConfig.outDir ??= mpDistRoot
+      if (outputRoot) {
+        mpDistRoot = outputRoot
+        buildConfig.outDir = outputRoot
+      }
+      else {
+        buildConfig.outDir ??= mpDistRoot
+      }
       projectConfigPathResolved = path.resolve(cwd, basePath ?? getProjectConfigFileName(platform))
       projectPrivateConfigPathResolved = path.resolve(cwd, privatePath ?? getProjectPrivateConfigFileName(platform))
     }

@@ -16,6 +16,7 @@
 
 - `mcp.md`、`volar.md`、`define-config-overloads.md` 会直接同步到 `dist/docs/`。
 - `packaged/*.md` 是 `dist/docs/` 的维护源文件，不要再把生成结果反向放回本目录。
+- `packaged/testing.md` 维护 mpcore 页面/组件测试与 `weapp-vite/test` 程序化构建入口说明。
 
 不属于 npm 包内交付文档的内容，例如：
 

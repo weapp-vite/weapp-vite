@@ -221,6 +221,24 @@
       "path": "./mpcore/packages/simulator"
     },
     {
+      "path": "./mpcore/packages/test"
+    },
+    {
+      "path": "./mpcore/packages/test/test-d"
+    },
+    {
+      "path": "./mpcore/packages/vitest"
+    },
+    {
+      "path": "./mpcore/packages/vitest/test-d"
+    },
+    {
+      "path": "./mpcore/packages/weapp-vite"
+    },
+    {
+      "path": "./mpcore/packages/weapp-vite/test-d"
+    },
+    {
       "path": "./packages-private/sfc-playground"
     },
     {

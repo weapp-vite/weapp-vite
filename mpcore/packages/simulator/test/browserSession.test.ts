@@ -293,6 +293,7 @@ Component({
       'load:browser',
       'show',
       'ready',
+      'routeDone:undefined',
       'routeDone:browser',
       'resize:412',
       'hide',

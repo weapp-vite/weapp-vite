@@ -1,8 +1,8 @@
 import type { HeadlessComponentDefinition } from '../../host'
 import type { HeadlessComponentInstance } from '../componentInstance'
 import type { DomNodeLike, RuntimeComponentRegistryEntry, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
-import fs from 'node:fs'
 import path from 'node:path'
+import { collectMiniProgramEventBindings } from '../../view/eventBinding'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
 import {
   cloneValue,
@@ -15,7 +15,6 @@ import {
 import {
   CLASS_SPLIT_RE,
   collectDataset,
-  COMPONENT_EVENT_PREFIXES,
   createMergedScopeData,
   isMustacheOnly,
   JS_FILE_RE,
@@ -33,7 +32,7 @@ export function resolveComponentRegistryEntry(
   genericComponentBasePath?: string,
 ) {
   // eslint-disable-next-line ts/no-use-before-define
-  const usingComponents = resolveUsingComponents(ownerJsonPath, ownerFilePath)
+  const usingComponents = resolveUsingComponents(context.artifactSource, ownerJsonPath, ownerFilePath)
   const componentBasePath = genericComponentBasePath ?? usingComponents.get(alias)
   if (!componentBasePath) {
     return null
@@ -52,9 +51,10 @@ export function resolveComponentRegistryEntry(
   } satisfies RuntimeComponentRegistryEntry & { absoluteTemplatePath: string }
 }
 
-function readComponentConfig(jsonPath: string) {
+function readComponentConfig(artifactSource: RuntimeRendererContext['artifactSource'], jsonPath: string) {
   try {
-    return JSON.parse(fs.readFileSync(jsonPath, 'utf8')) as Record<string, any>
+    const source = artifactSource.readText(jsonPath)
+    return source ? JSON.parse(source) as Record<string, any> : {}
   }
   catch {
     return {}
@@ -62,11 +62,12 @@ function readComponentConfig(jsonPath: string) {
 }
 
 function resolveUsingComponents(
+  artifactSource: RuntimeRendererContext['artifactSource'],
   ownerJsonPath: string,
   ownerFilePath: string,
 ) {
   try {
-    const parsed = readComponentConfig(ownerJsonPath)
+    const parsed = readComponentConfig(artifactSource, ownerJsonPath)
     const usingComponents = parsed.usingComponents
     if (!usingComponents || typeof usingComponents !== 'object' || Array.isArray(usingComponents)) {
       return new Map<string, string>()
@@ -100,12 +101,12 @@ export function resolveComponentGenerics(
     context.project.miniprogramRootPath,
     `${componentFilePath.replace(JS_FILE_RE, '')}.json`,
   )
-  const componentGenerics = readComponentConfig(componentJsonPath).componentGenerics
+  const componentGenerics = readComponentConfig(context.artifactSource, componentJsonPath).componentGenerics
   if (!componentGenerics || typeof componentGenerics !== 'object' || Array.isArray(componentGenerics)) {
     return undefined
   }
 
-  const ownerComponents = resolveUsingComponents(ownerJsonPath, ownerFilePath)
+  const ownerComponents = resolveUsingComponents(context.artifactSource, ownerJsonPath, ownerFilePath)
   const resolved = new Map<string, string>()
   for (const [genericName, definition] of Object.entries(componentGenerics)) {
     const selectedAlias = hostNode.attribs?.[`generic:${genericName}`]
@@ -130,23 +131,7 @@ export function resolveComponentGenerics(
 }
 
 export function collectComponentEventBindings(hostNode: DomNodeLike) {
-  const eventBindings = new Map<string, { method: string, stopAfter: boolean }>()
-  for (const [key, value] of Object.entries(hostNode.attribs ?? {})) {
-    const matchedPrefix = COMPONENT_EVENT_PREFIXES.find(prefix => key.startsWith(prefix))
-    if (!matchedPrefix) {
-      continue
-    }
-    const eventName = key.slice(matchedPrefix.length)
-    if (!eventName) {
-      continue
-    }
-    eventBindings.set(eventName, {
-      method: value,
-      stopAfter: matchedPrefix.startsWith('catch'),
-    })
-  }
-
-  return eventBindings
+  return collectMiniProgramEventBindings(hostNode.attribs)
 }
 
 export function buildComponentTrigger(
@@ -348,7 +333,7 @@ export function renderRuntimeComponentTemplate(
   componentScopeId: string,
   seenComponentScopes: Set<string>,
 ) {
-  const componentTemplate = readTemplateSource(componentEntry.absoluteTemplatePath)
+  const componentTemplate = readTemplateSource(context.artifactSource, componentEntry.absoluteTemplatePath)
   const componentDocument = parseTemplateDocument(componentTemplate)
   const componentRoot = (componentDocument.children ?? [])[0] ?? componentDocument
   return renderNodeTree(

@@ -1,6 +1,5 @@
 import type { HeadlessProjectDescriptor } from '../project'
 import type { HeadlessPageInstance } from '../runtime'
-import fs from 'node:fs'
 import path from 'node:path'
 import { parseDocument } from 'htmlparser2'
 
@@ -96,7 +95,10 @@ export interface RenderedPageTree {
 export function renderPageTree(project: HeadlessProjectDescriptor, page: HeadlessPageInstance): RenderedPageTree {
   const route = page.route.replace(LEADING_SLASH_RE, '')
   const templatePath = path.resolve(project.miniprogramRootPath, `${route}.wxml`)
-  const templateSource = fs.readFileSync(templatePath, 'utf8')
+  const templateSource = project.artifactSource.readText(templatePath)
+  if (templateSource == null) {
+    throw new Error(`Missing template in headless runtime: ${templatePath}`)
+  }
   const document = parseDocument(`<page>${templateSource}</page>`, {
     xmlMode: false,
     decodeEntities: false,

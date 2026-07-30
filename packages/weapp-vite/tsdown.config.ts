@@ -14,6 +14,7 @@ export default defineConfig({
     'resolvers': './src/resolvers.ts',
     'auto-routes': './src/auto-routes.ts',
     'types': './src/types/index.ts',
+    'test': './src/testArtifact.ts',
   },
   dts: true,
   clean: true,

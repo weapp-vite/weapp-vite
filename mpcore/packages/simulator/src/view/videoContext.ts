@@ -1,4 +1,5 @@
 import type { HeadlessWxVideoContext } from '../host'
+import { resolveMiniProgramEventBinding } from './eventBinding'
 import { resolveSelectorQueryScopeRoot } from './selectorQuery'
 import { querySelectorAll } from './selectors'
 
@@ -45,27 +46,6 @@ function collectDataset(node: DomNodeLike) {
     dataset[toDatasetKey(key)] = value
   }
   return dataset
-}
-
-function resolveEventBinding(node: DomNodeLike, eventName: string) {
-  const normalizedEventName = eventName.trim()
-  if (!normalizedEventName) {
-    return null
-  }
-
-  const bindingAttrs = [
-    `bind${normalizedEventName}`,
-    `bind:${normalizedEventName}`,
-    `catch${normalizedEventName}`,
-    `catch:${normalizedEventName}`,
-  ]
-  for (const attributeName of bindingAttrs) {
-    const methodName = node.attribs?.[attributeName]?.trim()
-    if (methodName) {
-      return methodName
-    }
-  }
-  return null
 }
 
 function createEventPayload(node: DomNodeLike, eventName: string, detail: Record<string, unknown>) {
@@ -117,11 +97,11 @@ export function createHeadlessVideoContext(
     if (!node) {
       return
     }
-    const methodName = resolveEventBinding(node, eventName)
-    if (!methodName) {
+    const binding = resolveMiniProgramEventBinding(node.attribs, eventName)
+    if (!binding?.method) {
       return
     }
-    driver.callScopeMethod(node.attribs?.['data-sim-scope'] ?? null, methodName, createEventPayload(node, eventName, detail))
+    driver.callScopeMethod(node.attribs?.['data-sim-scope'] ?? null, binding.method, createEventPayload(node, eventName, detail))
   }
 
   return {

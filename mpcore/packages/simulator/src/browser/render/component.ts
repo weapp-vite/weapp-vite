@@ -12,12 +12,12 @@ import {
   runComponentObservers,
   runComponentPageLifetime,
 } from '../../runtime/componentInstance'
+import { collectMiniProgramEventBindings } from '../../view/eventBinding'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
 import { readBrowserVirtualFile } from '../virtualFiles'
 import {
   CLASS_SPLIT_RE,
   collectDataset,
-  COMPONENT_EVENT_PREFIXES,
   createMergedScopeData,
   isMustacheOnly,
   JS_FILE_RE,
@@ -131,23 +131,7 @@ export function resolveComponentGenerics(
 }
 
 export function collectComponentEventBindings(hostNode: DomNodeLike) {
-  const eventBindings = new Map<string, { method: string, stopAfter: boolean }>()
-  for (const [key, value] of Object.entries(hostNode.attribs ?? {})) {
-    const matchedPrefix = COMPONENT_EVENT_PREFIXES.find(prefix => key.startsWith(prefix))
-    if (!matchedPrefix) {
-      continue
-    }
-    const eventName = key.slice(matchedPrefix.length)
-    if (!eventName) {
-      continue
-    }
-    eventBindings.set(eventName, {
-      method: value,
-      stopAfter: matchedPrefix.startsWith('catch'),
-    })
-  }
-
-  return eventBindings
+  return collectMiniProgramEventBindings(hostNode.attribs)
 }
 
 export function buildComponentTrigger(

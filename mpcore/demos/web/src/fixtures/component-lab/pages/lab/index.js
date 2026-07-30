@@ -6,6 +6,7 @@ Page({
     status: 'stable',
     count: 3,
     events: [],
+    eventBindingCompatibility: [],
     eventShape: '',
     componentSnapshot: '',
     compoundSelectorSnapshot: '',
@@ -183,6 +184,17 @@ Page({
       events: [...this.data.events, detail.phase || 'unknown'],
     })
     this.push('lab:handlePulse:' + JSON.stringify(detail))
+  },
+  recordEventBinding(event) {
+    this.setData({
+      eventBindingCompatibility: [
+        ...this.data.eventBindingCompatibility,
+        event.detail.name,
+      ],
+    })
+  },
+  runEventBindingCompatibility() {
+    this.selectComponent('#status-card')?.emitCompatibilityEvents()
   },
   applyStatus(event) {
     const status = event?.currentTarget?.dataset?.status || 'stable'

@@ -19,6 +19,13 @@ export function normalizeNonEmptyInput(value: string, label: string) {
   return normalizedValue
 }
 
+export function cloneProtocolValue<T>(value: T): T {
+  if (!value || typeof value !== 'object') {
+    return value
+  }
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
 async function waitForDelay(ms = 0) {
   if (ms <= 0) {
     return

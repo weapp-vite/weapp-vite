@@ -9,7 +9,6 @@ const DATASET_NAME_RE = /-([a-z])/g
 
 export const LEADING_SLASH_RE = /^\/+/
 export const EVENT_BINDING_ATTRS = ['bindtap', 'bind:tap', 'catchtap', 'catch:tap']
-export const COMPONENT_EVENT_PREFIXES = ['bind:', 'bind', 'catch:', 'catch']
 export const STRUCTURAL_ATTRS = ['wx:if', 'wx:elif', 'wx:else', 'wx:for', 'wx:for-item', 'wx:for-index', 'wx:key']
 export const WX_ELSE_ATTRS = new Set(['wx:elif', 'wx:else'])
 export const CLASS_SPLIT_RE = /\s+/

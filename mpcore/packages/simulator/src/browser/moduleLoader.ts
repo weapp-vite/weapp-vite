@@ -5,7 +5,9 @@ import type {
   HeadlessHostLoadContext,
   HeadlessHostRegistries,
   HeadlessPageDefinition,
+  HeadlessWx,
 } from '../host'
+import type { RuntimeKernel } from '../kernel'
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { dirname, join, normalize } from 'pathe'
 import {
@@ -18,9 +20,11 @@ import {
 import { hasBrowserVirtualFile, readBrowserVirtualFile } from './virtualFiles'
 
 export interface BrowserModuleLoader {
+  close: () => void
   executeComponentModule: (filePath: string, id: string) => HeadlessComponentDefinition
   executeAppModule: (filePath: string) => HeadlessAppDefinition
   executePageModule: (filePath: string, route: string) => HeadlessPageDefinition
+  wx: HeadlessWx
 }
 
 interface ModuleCacheEntry {
@@ -64,6 +68,8 @@ function createExecutionContext(
   getCurrentPages: () => any[],
   getApp: () => any,
   wxDriver: Parameters<typeof createHeadlessWx>[0],
+  kernel: RuntimeKernel,
+  globals: Record<string, unknown>,
 ) {
   const wx = createHeadlessWx(wxDriver)
 
@@ -84,16 +90,17 @@ function createExecutionContext(
       return registerPageDefinition(registries, definition)
     },
     URLSearchParams,
-    clearInterval,
-    clearTimeout,
-    console,
+    clearInterval: (handle: ReturnType<typeof setInterval>) => kernel.scheduler.clearInterval(handle),
+    clearTimeout: (handle: ReturnType<typeof setTimeout>) => kernel.scheduler.clearTimeout(handle),
+    console: kernel.diagnostics.createConsole(),
     getApp,
     getCurrentPages,
     globalThis: undefined as any,
     require: undefined as any,
-    setInterval,
-    setTimeout,
+    setInterval: kernel.scheduler.setInterval.bind(kernel.scheduler),
+    setTimeout: kernel.scheduler.setTimeout.bind(kernel.scheduler),
     wx,
+    ...globals,
   }
 }
 
@@ -103,9 +110,20 @@ export function createBrowserModuleLoader(
   getCurrentPages: () => any[],
   getApp: () => any,
   wxDriver: Parameters<typeof createHeadlessWx>[0],
+  options: {
+    globals?: Record<string, unknown>
+    kernel: RuntimeKernel
+  },
 ): BrowserModuleLoader {
   const moduleCache = new Map<string, ModuleCacheEntry>()
-  const executionContext = createExecutionContext(registries, getCurrentPages, getApp, wxDriver)
+  const executionContext = createExecutionContext(
+    registries,
+    getCurrentPages,
+    getApp,
+    wxDriver,
+    options.kernel,
+    options.globals ?? {},
+  )
   executionContext.globalThis = executionContext
 
   function executeModule(filePath: string, loadContext: HeadlessHostLoadContext | null) {
@@ -180,6 +198,9 @@ export function createBrowserModuleLoader(
   }
 
   return {
+    close() {
+      moduleCache.clear()
+    },
     executeAppModule(filePath) {
       executeModule(filePath, { kind: 'app' })
       if (!registries.appDefinition) {
@@ -209,5 +230,6 @@ export function createBrowserModuleLoader(
       }
       return definition
     },
+    wx: executionContext.wx,
   }
 }

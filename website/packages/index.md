@@ -34,6 +34,7 @@ keywords:
 - 想统一多端小程序 API 调用风格：用 `@wevu/api`
 - 想在浏览器里做小程序语法预览、调试与兼容验证：用 `@weapp-vite/web`（实验）
 - 想增强 `<json>` 配置块智能提示：用 `@weapp-vite/volar`
+- 想用 Vitest 测试真实小程序编译产物：用 `@mpcore/test`、`@mpcore/vitest` 与 `@mpcore/weapp-vite`
 
 ## 包能力矩阵
 
@@ -48,6 +49,7 @@ keywords:
 | `@weapp-vite/web`         | Web 端实验运行时与插件                   | 浏览器侧验证小程序语法/页面                        | [/packages/web](/packages/web)                                             |
 | `@weapp-vite/mcp`         | MCP 服务实现                             | AI 代码助手接入与仓库能力开放                      | [/packages/mcp](/packages/mcp)                                             |
 | `@weapp-vite/volar`       | Volar 语言插件                           | `<json>` 配置块补全与校验                          | [/packages/volar](/packages/volar)                                         |
+| `@mpcore/test`            | 小程序逻辑树测试工具                     | 页面/组件单测、宿主 mock、交互与诊断               | [/packages/mpcore-test](/packages/mpcore-test)                             |
 
 ## 已有独立文档模块
 

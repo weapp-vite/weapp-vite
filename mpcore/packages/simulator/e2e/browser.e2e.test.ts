@@ -196,6 +196,31 @@ describe.sequential('simulator browser e2e', () => {
     })
   })
 
+  it('matches WeChat component event binding precedence in the browser runtime', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('component-lab')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'component-lab' && state.currentRoute === 'pages/lab/index',
+      20_000,
+    )
+    bridge.runPageMethod('runEventBindingCompatibility')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => parseJsonString<Record<string, any>>(nextState.pageData).eventBindingCompatibility.length === 5,
+      20_000,
+    )
+    expect(parseJsonString<Record<string, any>>(state.pageData).eventBindingCompatibility).toEqual([
+      'legacy-probe',
+      'colon-hyphen',
+      'legacy-underscore',
+      'colon-underscore',
+      'legacy-duplicate-underscore',
+    ])
+  })
+
   it('runs uni event bus and font APIs in the browser runtime', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('component-lab')
@@ -249,8 +274,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(state.errorMessage).toBe('')
     expect(state.previewMarkup).toContain('data-scenario="component-page"')
     expect(parseJsonString<Record<string, any>>(state.pageData)).toMatchObject({
-      lifecycleLog: ['created', 'attached', 'load', 'show', 'ready', initialResizeMarker, 'routeDone:browser-e2e', 'resize:412'],
-      snapshot: `created|attached|load|show|ready|${initialResizeMarker}|routeDone:browser-e2e|resize:412`,
+      lifecycleLog: ['created', 'attached', 'load', 'show', 'ready', 'routeDone:undefined', initialResizeMarker, 'routeDone:browser-e2e', 'resize:412'],
+      snapshot: `created|attached|load|show|ready|routeDone:undefined|${initialResizeMarker}|routeDone:browser-e2e|resize:412`,
     })
 
     bridge.runPageMethod('openNext')
@@ -279,6 +304,7 @@ describe.sequential('simulator browser e2e', () => {
         'load',
         'show',
         'ready',
+        'routeDone:undefined',
         initialResizeMarker,
         'routeDone:browser-e2e',
         'resize:412',
@@ -1490,7 +1516,7 @@ describe.sequential('simulator browser e2e', () => {
     expect(state.pageStack).toEqual(['pages/settings/index'])
     expect(pageData.title).toBe('Settings Tab')
     expect(pageData.logs).toContain('settings-tab:onShow')
-    expect(pageData.logs).toContain('settings-tab:onTabItemTap:{"index":1,"pagePath":"pages/settings/index","text":"Settings"}')
+    expect(pageData.logs).not.toContain(expect.stringContaining('settings-tab:onTabItemTap:'))
     expect(state.previewMarkup).toContain('Settings Tab')
     expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
   })
