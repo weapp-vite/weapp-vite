@@ -507,6 +507,9 @@ importers:
       tailwindcss:
         specifier: catalog:tailwind4
         version: 4.3.3
+      tinyexec:
+        specifier: ^1.2.4
+        version: 1.2.4
       tinypool:
         specifier: ^2.1.0
         version: 2.1.0
