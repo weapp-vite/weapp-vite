@@ -28,6 +28,10 @@
       "./fs": {
         "types": "./src/fs/index.ts",
         "default": "./src/fs/index.ts"
+      },
+      "./platforms": {
+        "types": "./src/platforms/index.ts",
+        "default": "./src/platforms/index.ts"
       }
     },
     "main": "./src/index.ts",
@@ -46,6 +50,10 @@
     "./fs": {
       "types": "./dist/fs/index.d.ts",
       "import": "./dist/fs/index.js"
+    },
+    "./platforms": {
+      "types": "./dist/platforms/index.d.ts",
+      "import": "./dist/platforms/index.js"
     }
   },
   "main": "./dist/index.js",
@@ -81,6 +89,10 @@
       "./fs": {
         "types": "./dist/fs/index.d.ts",
         "import": "./dist/fs/index.js"
+      },
+      "./platforms": {
+        "types": "./dist/platforms/index.d.ts",
+        "import": "./dist/platforms/index.js"
       }
     },
     "main": "./dist/index.js",

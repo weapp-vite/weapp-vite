@@ -247,6 +247,33 @@ describe('sharedBuildConfig', () => {
     })).toBe('weapp-vendors/wevu-src.js')
   })
 
+  it('groups preserved wevu modules under semantic stable vendor names', () => {
+    expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/packages-runtime/wevu/dist/dev/internal-runtime.mjs',
+    })).toBe('weapp-vendors/wevu-runtime.js')
+    expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/node_modules/wevu/dist/reactivity/ref.mjs',
+    })).toBe('weapp-vendors/wevu-reactivity.js')
+    expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/packages-runtime/wevu/src/runtime/template.ts',
+    })).toBe('weapp-vendors/wevu-template.js')
+    expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/node_modules/wevu/dist/dev/router/createRouter.mjs',
+    })).toBe('weapp-vendors/wevu-router.js')
+
+    const output = createSharedBuildOutput(createTestConfigService({}, { isDev: true }), () => [])
+    expect(output.codeSplitting.groups[0]!.name(
+      '/project/node_modules/wevu/dist/dev/store/define.mjs',
+    )).toBe('weapp-vendors/wevu-store')
+    expect(output.chunkFileNames({
+      name: 'weapp-vendors/wevu-router',
+      moduleIds: [
+        '/project/node_modules/wevu/dist/dev/runtime/hooks/base.mjs',
+        '/project/node_modules/wevu/dist/dev/router/createRouter.mjs',
+      ],
+    })).toBe('weapp-vendors/wevu-router.js')
+  })
+
   it('renames hashed node_modules dist chunks to stable vendor file names', () => {
     expect(resolveStableHashedDistChunkFileName({
       facadeModuleId: '/project/node_modules/.pnpm/@scope+pkg@1.0.0/node_modules/@scope/pkg/dist/store-fwgCLl_K.mjs',

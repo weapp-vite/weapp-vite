@@ -1,0 +1,93 @@
+name: Wevu Runtime Size
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    name: Runtime Size (Ubuntu / Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: head
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Check out baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: baseline
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: 11.18.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: |
+            head/pnpm-lock.yaml
+            baseline/pnpm-lock.yaml
+
+      - name: Install head dependencies
+        working-directory: head
+        run: pnpm install --frozen-lockfile
+
+      - name: Install baseline dependencies
+        working-directory: baseline
+        run: pnpm install --frozen-lockfile
+
+      - name: Build head runtime dependencies
+        working-directory: head
+        run: pnpm --filter '@weapp-vite/web...' build
+
+      - name: Build baseline runtime dependencies
+        working-directory: baseline
+        run: pnpm --filter '@weapp-vite/web...' build
+
+      - name: Measure head and baseline
+        working-directory: head
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          pnpm exec tsx scripts/report-wevu-runtime-size.ts \
+            --root=. \
+            --output-json=../runtime-size-artifact/head.json
+          pnpm exec tsx scripts/report-wevu-runtime-size.ts \
+            --root=../baseline \
+            --output-json=../runtime-size-artifact/baseline.json
+          pnpm exec tsx scripts/report-wevu-runtime-size.ts \
+            --current-json=../runtime-size-artifact/head.json \
+            --baseline-json=../runtime-size-artifact/baseline.json \
+            --output-markdown=../runtime-size-artifact/report.md \
+            --artifact-json=../runtime-size-artifact/report.json \
+            --repository="$REPOSITORY" \
+            --pr-number="$PR_NUMBER" \
+            --head-sha="$HEAD_SHA" \
+            --base-sha="$BASE_SHA" \
+            --github-summary
+
+      - name: Upload runtime size report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wevu-runtime-size-report
+          path: runtime-size-artifact
+          if-no-files-found: warn

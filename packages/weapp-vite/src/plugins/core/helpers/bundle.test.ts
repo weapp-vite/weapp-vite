@@ -659,6 +659,80 @@ describe('core helper bundle', () => {
     expect(runtimeFileNames.get('wevu/internal-template')).toBe('weapp-vendors/wevu-template.js')
   })
 
+  it('indexes preserved wevu entry modules before export marker fallback', () => {
+    const runtimeFileNames = new Map<string, string>()
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'import { createApp } from "wevu/internal-runtime";createApp({});',
+        imports: [],
+      },
+      'weapp-vendors/wevu-runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-runtime.js',
+        facadeModuleId: '/project/node_modules/wevu/dist/dev/internal-runtime.mjs',
+        moduleIds: ['/project/node_modules/wevu/dist/dev/internal-runtime.mjs'],
+        code: 'Object.defineProperty(exports, "createApp", { enumerable: true, get: function() { return createApp; } });',
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      runtimeFileNames: new Map([
+        ['wevu/internal-runtime', 'weapp-vendors/wevu-watch.js'],
+      ]),
+      isRuntimeFileNameAvailable: () => false,
+      onRuntimeModuleFileName(moduleId, fileName) {
+        runtimeFileNames.set(moduleId, fileName)
+      },
+    })
+
+    expect(bundle['app.js'].code).toContain('require("./weapp-vendors/wevu-runtime.js")')
+    expect(bundle['app.js'].code).not.toContain('wevu/internal-runtime')
+    expect(runtimeFileNames.get('wevu/internal-runtime')).toBe('weapp-vendors/wevu-runtime.js')
+  })
+
+  it('uses stable vendor identity when preserved entry facades are absent', () => {
+    const runtimeFileNames = new Map<string, string>()
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'import { createApp, defineAppSetup, setWevuDefaults } from "wevu/internal-runtime";',
+        imports: [],
+      },
+      'weapp-vendors/wevu-reactivity.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-reactivity.js',
+        moduleIds: ['/project/node_modules/wevu/dist/dev/reactivity/core.mjs'],
+        code: 'Object.defineProperty(exports, "setCurrentInstance", { enumerable: true, get: function() {} });',
+        imports: [],
+      },
+      'weapp-vendors/wevu-runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-runtime.js',
+        moduleIds: ['/project/node_modules/wevu/dist/dev/runtime/app.mjs'],
+        code: [
+          'Object.defineProperty(exports, "createApp", { enumerable: true, get: function() {} });',
+          'Object.defineProperty(exports, "defineAppSetup", { enumerable: true, get: function() {} });',
+          'Object.defineProperty(exports, "setWevuDefaults", { enumerable: true, get: function() {} });',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    rewriteWevuInternalRuntimeImports(bundle, {
+      onRuntimeModuleFileName(moduleId, fileName) {
+        runtimeFileNames.set(moduleId, fileName)
+      },
+    })
+
+    expect(bundle['app.js'].code).toContain('require("./weapp-vendors/wevu-runtime.js")')
+    expect(bundle['app.js'].code).not.toContain('wevu-reactivity.js')
+    expect(runtimeFileNames.get('wevu/internal-runtime')).toBe('weapp-vendors/wevu-runtime.js')
+  })
+
   it('rewrites multiple wevu internal imports from the indexed runtime chunks', () => {
     const bundle = {
       'pages/index/index.js': {

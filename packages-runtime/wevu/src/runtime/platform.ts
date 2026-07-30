@@ -1,4 +1,4 @@
-import type { MiniProgramRuntimeCapabilities, MiniProgramRuntimeCapabilityName } from '@weapp-core/shared'
+import type { MiniProgramRuntimeCapabilities, MiniProgramRuntimeCapabilityName } from '@weapp-core/shared/platforms'
 import {
   getMiniProgramPlatformByRuntimeGlobalKey,
   getMiniProgramRuntimeCapabilities,
@@ -7,7 +7,7 @@ import {
   getMiniProgramRuntimeHostConfigKey,
   resolveMiniProgramPlatform,
   supportsMiniProgramRuntimeCapability,
-} from '@weapp-core/shared'
+} from '@weapp-core/shared/platforms'
 
 type MiniProgramGlobal = Record<string, any>
 type MiniProgramHostConfig = Record<string, any>

@@ -565,7 +565,7 @@ describe('core lifecycle emit hook extra branches', () => {
     )
   })
 
-  it('keeps active runtime vendor chunks during partial dev hmr rebuilds', async () => {
+  it('keeps infrastructure runtimes without emitting partial wevu vendors during hmr', async () => {
     const emittedChunkFileNames = new Set<string>()
     const state = createState({
       subPackageMeta: undefined,

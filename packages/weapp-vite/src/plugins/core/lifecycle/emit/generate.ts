@@ -12,6 +12,7 @@ import { shouldRewriteBundleNpmImports } from '../../../../platform'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../../runtime/chunkStrategy'
 import { resolveRequestRuntimeOptions } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { resolveNpmBuildCandidateDependencyRecordSync } from '../../../../runtime/npmPlugin/service'
+import { isWevuStableVendorFileName } from '../../../../runtime/wevuModules'
 import { toPosixPath } from '../../../../utils'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -96,7 +97,8 @@ function isStableHmrSharedChunk(fileName: string) {
 }
 
 function isRuntimeVendorSharedChunk(fileName: string) {
-  return fileName.startsWith('weapp-vendors/')
+  return !isWevuStableVendorFileName(fileName)
+    && fileName.startsWith('weapp-vendors/')
     && /(?:^|[-/])[\w-]*runtime[\w-]*(?:[-.]|$)/.test(fileName)
 }
 
@@ -818,6 +820,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       rewriteWevuInternalRuntimeImports(runtimeRewriteBundle, {
         runtimeFileName: state.ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName,
         runtimeFileNames: state.ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileNames,
+        isRuntimeFileNameAvailable(fileName) {
+          return state.ctx.runtimeState?.build?.output?.emittedSource.has(fileName) === true
+        },
         onRuntimeFileName(fileName) {
           const outputState = state.ctx.runtimeState?.build?.output
           if (outputState) {
