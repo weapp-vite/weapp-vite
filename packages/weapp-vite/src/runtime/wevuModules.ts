@@ -41,6 +41,16 @@ const WEVU_ENTRY_MODULE_IDS: Record<string, WevuRuntimeModuleId> = {
 
 const WEVU_STABLE_VENDOR_FILE_RE = /^weapp-vendors\/wevu-[^/]+\.js$/
 const HASHED_MODULE_BASENAME_RE = /-[\w-]{8}$/
+const WEVU_RUNTIME_MODULE_ID_BY_FAMILY: Partial<Record<WevuRuntimeModuleFamily, WevuRuntimeModuleId>> = {
+  'api': 'wevu/api',
+  'fetch': 'wevu/fetch',
+  'reactivity': 'wevu/internal-reactivity',
+  'router': 'wevu/router',
+  'runtime': 'wevu/internal-runtime',
+  'store': 'wevu/store',
+  'template': 'wevu/internal-template',
+  'web-apis': 'wevu/web-apis',
+}
 
 function isWevuEntryModulePath(value: string) {
   return Object.prototype.hasOwnProperty.call(WEVU_ENTRY_MODULE_IDS, value)
@@ -146,4 +156,14 @@ export function resolveWevuStableVendorFileName(id: string) {
 
 export function isWevuStableVendorFileName(fileName: string) {
   return WEVU_STABLE_VENDOR_FILE_RE.test(fileName.replaceAll('\\', '/'))
+}
+
+export function resolveWevuRuntimeModuleIdFromStableVendorFileName(fileName: string) {
+  const normalized = fileName.replaceAll('\\', '/')
+  if (!isWevuStableVendorFileName(normalized)) {
+    return undefined
+  }
+  const family = normalized
+    .slice('weapp-vendors/wevu-'.length, -'.js'.length) as WevuRuntimeModuleFamily
+  return WEVU_RUNTIME_MODULE_ID_BY_FAMILY[family]
 }

@@ -21,14 +21,20 @@ interface PackageAliasTarget {
   packageName: string
   distEntry: string
   devDistEntry?: string
-  devWorkspaceEntry?: string
   fallbackWorkspacePackagePath?: string
 }
 
 const WEVU_WORKSPACE_PACKAGE_PATH = 'packages-runtime/wevu'
+const SHARED_WORKSPACE_PACKAGE_PATH = '@weapp-core/shared'
 const PACKAGE_ALIAS_MODULE_DIR = path.dirname(fileURLToPath(import.meta.url))
 
 const PACKAGE_ALIASES: PackageAliasTarget[] = [
+  {
+    find: '@weapp-core/shared/platforms',
+    packageName: '@weapp-core/shared',
+    distEntry: 'dist/platforms/index.js',
+    fallbackWorkspacePackagePath: SHARED_WORKSPACE_PACKAGE_PATH,
+  },
   {
     find: 'class-variance-authority',
     packageName: 'class-variance-authority',
@@ -53,7 +59,6 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     packageName: 'wevu',
     distEntry: 'dist/internal-runtime.mjs',
     devDistEntry: 'dist/dev/internal-runtime.mjs',
-    devWorkspaceEntry: 'src/internal-runtime.ts',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
@@ -61,7 +66,6 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     packageName: 'wevu',
     distEntry: 'dist/internal-reactivity.mjs',
     devDistEntry: 'dist/dev/internal-reactivity.mjs',
-    devWorkspaceEntry: 'src/internal-reactivity.ts',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
@@ -69,7 +73,6 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     packageName: 'wevu',
     distEntry: 'dist/internal-template.mjs',
     devDistEntry: 'dist/dev/internal-template.mjs',
-    devWorkspaceEntry: 'src/internal-template.ts',
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
@@ -132,10 +135,7 @@ function resolveWevuRuntimeDistEntries(
   }
   const mode = options.wevuRuntime ?? 'auto'
   if (mode === 'dev' || (mode === 'auto' && options.isDev)) {
-    return [
-      target.devWorkspaceEntry,
-      target.devDistEntry,
-    ].filter((entry): entry is string => Boolean(entry))
+    return [target.devDistEntry]
   }
   return [target.distEntry]
 }

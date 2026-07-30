@@ -141,31 +141,45 @@ function includesRelativeWevuVendorRequire(code: string) {
 }
 
 function expectRelativeWevuVendorRequireForBinding(files: GeneratedJsFile[], bindingName: string) {
-  const destructuredPattern = [
+  const destructuredPattern = new RegExp([
     '\\bconst\\s*\\{[^}]*\\b',
     bindingName,
-    '\\b[^}]*\\}\\s*=\\s*require\\((["\'])(?:\\.\\.?/)+weapp-vendors/wevu-[^\'"]+\\.js\\1\\)',
-  ].join('')
-  const namespaceRequirePattern = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*require\((["'])(?:\.\.?\/)+weapp-vendors\/wevu-[^'"]+\.js\2\)/g
-  const bindingPattern = new RegExp(`\\b${bindingName}\\b`)
+    '\\b[^}]*\\}\\s*=\\s*require\\((["\'])((?:\\.\\.?/)+weapp-vendors/wevu-[^\'"]+\\.js)\\1\\)',
+  ].join(''), 'g')
+  const namespaceRequirePattern = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*require\((["'])((?:\.\.?\/)+weapp-vendors\/wevu-[^'"]+\.js)\2\)/g
   const exportPattern = new RegExp(`\\bexports\\.${bindingName}\\b|Object\\.defineProperty\\(exports, ["']${bindingName}`)
-  const matchedFiles = files.filter(({ code }) => {
-    if (!includesRelativeWevuVendorRequire(code) || !bindingPattern.test(code)) {
-      return false
+  const filesByPath = new Map(files.map(file => [file.relativePath, file]))
+  const requiredTargets: string[] = []
+
+  for (const file of files) {
+    if (!includesRelativeWevuVendorRequire(file.code)) {
+      continue
     }
-    if (new RegExp(destructuredPattern).test(code)) {
-      return true
-    }
-    for (const match of code.matchAll(namespaceRequirePattern)) {
-      const namespace = match[1]
-      if (new RegExp(`\\b${namespace}\\.${bindingName}\\b`).test(code)) {
-        return true
+    for (const match of file.code.matchAll(destructuredPattern)) {
+      const specifier = match[2]
+      if (specifier) {
+        requiredTargets.push(path.posix.normalize(path.posix.join(
+          path.posix.dirname(file.relativePath),
+          specifier,
+        )))
       }
     }
-    return exportPattern.test(code)
-  })
+    for (const match of file.code.matchAll(namespaceRequirePattern)) {
+      const namespace = match[1]
+      const specifier = match[3]
+      if (namespace && specifier && new RegExp(`\\b${namespace}\\.${bindingName}\\b`).test(file.code)) {
+        requiredTargets.push(path.posix.normalize(path.posix.join(
+          path.posix.dirname(file.relativePath),
+          specifier,
+        )))
+      }
+    }
+  }
 
-  expect(matchedFiles.map(file => file.relativePath)).not.toEqual([])
+  expect(requiredTargets).not.toEqual([])
+  for (const target of requiredTargets) {
+    expect(filesByPath.get(target)?.code, `${target} must export ${bindingName}`).toMatch(exportPattern)
+  }
 }
 
 describe.sequential('wevu app runtime HMR', () => {

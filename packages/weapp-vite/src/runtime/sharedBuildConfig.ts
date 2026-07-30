@@ -13,7 +13,7 @@ import { isRegexp } from '../utils/regexp'
 import { normalizeViteId } from '../utils/viteId'
 import { createAdvancedChunkNameResolver } from './advancedChunks'
 import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
-import { resolveWevuStableVendorFileName } from './wevuModules'
+import { isWevuStableVendorFileName, resolveWevuStableVendorFileName } from './wevuModules'
 
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
 const REG_COMMONJS_HELPERS = /commonjsHelpers\.js$/
@@ -442,6 +442,10 @@ export function createSharedBuildOutput(
         return REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME
       }
       if (options.runtime !== 'web') {
+        const namedStableVendorFileName = `${chunk.name}.js`
+        if (isWevuStableVendorFileName(namedStableVendorFileName)) {
+          return namedStableVendorFileName
+        }
         const stableHashedDistChunkFileName = resolveStableHashedDistChunkFileName(chunk)
         if (stableHashedDistChunkFileName) {
           return stableHashedDistChunkFileName

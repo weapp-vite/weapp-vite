@@ -12,7 +12,11 @@ import {
 import { isEmptyObject, isObject } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import path from 'pathe'
-import { resolveWevuRuntimeModuleId, WEVU_RUNTIME_MODULE_IDS } from '../../../runtime/wevuModules'
+import {
+  resolveWevuRuntimeModuleId,
+  resolveWevuRuntimeModuleIdFromStableVendorFileName,
+  WEVU_RUNTIME_MODULE_IDS,
+} from '../../../runtime/wevuModules'
 import { changeFileExtension } from '../../../utils/file'
 import { resolveCompilerOutputExtensions } from '../../../utils/outputExtensions'
 import { isPathInside, normalizeRelativePath } from '../../../utils/path'
@@ -689,6 +693,10 @@ function createWevuRuntimeChunkIndex(bundle: OutputBundle, snapshot = createBund
         chunksByModuleId.set(moduleId, chunk)
       }
     }
+    const stableModuleId = resolveWevuRuntimeModuleIdFromStableVendorFileName(normalizedFileName)
+    if (stableModuleId && !chunksByModuleId.has(stableModuleId)) {
+      chunksByModuleId.set(stableModuleId, chunk)
+    }
     for (const moduleId of WEVU_RUNTIME_MODULE_IDS) {
       const chunkFileName = moduleId.replace(/\//g, '-')
       const isMatch = moduleId === 'wevu'
@@ -839,8 +847,15 @@ function resolveWevuRuntimeChunkForModuleId(
   moduleId: WevuRuntimeModuleId,
   importedNames: Iterable<string>,
 ) {
-  return index.chunksByModuleId.get(moduleId)
-    ?? resolveIndexedWevuInternalChunk(index, importedNames)
+  const names = [...importedNames]
+  const exactChunk = index.chunksByModuleId.get(moduleId)
+  if (exactChunk) {
+    const exports = getWevuRuntimeChunkExportNames(index, exactChunk)
+    if (names.every(name => exports.has(name))) {
+      return exactChunk
+    }
+  }
+  return resolveIndexedWevuInternalChunk(index, names)
 }
 
 function resolveRememberedWevuRuntimeFileName(

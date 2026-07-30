@@ -4,6 +4,7 @@ import {
   resolveWevuPreservedModulePath,
   resolveWevuRuntimeModuleFamily,
   resolveWevuRuntimeModuleId,
+  resolveWevuRuntimeModuleIdFromStableVendorFileName,
   resolveWevuStableVendorFileName,
 } from './wevuModules'
 
@@ -50,5 +51,12 @@ describe('wevu module identity', () => {
     )).toBe('weapp-vendors/wevu-reactivity.js')
     expect(isWevuStableVendorFileName('weapp-vendors/wevu-template.js')).toBe(true)
     expect(isWevuStableVendorFileName('common.js')).toBe(false)
+    expect(resolveWevuRuntimeModuleIdFromStableVendorFileName(
+      'weapp-vendors/wevu-runtime.js',
+    )).toBe('wevu/internal-runtime')
+    expect(resolveWevuRuntimeModuleIdFromStableVendorFileName(
+      'weapp-vendors/wevu-reactivity.js',
+    )).toBe('wevu/internal-reactivity')
+    expect(resolveWevuRuntimeModuleIdFromStableVendorFileName('common.js')).toBeUndefined()
   })
 })

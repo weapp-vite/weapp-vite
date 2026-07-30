@@ -172,9 +172,7 @@ describe.sequential('wevu/router HMR fixture runtime', () => {
         }
         throw error
       }
-      expect(collector.getSince(beforeHmr)).not.toEqual(expect.arrayContaining([
-        expect.stringContaining('wevu/router'),
-      ]))
+      expect(collector.getSince(beforeHmr)).toEqual([])
 
       const afterHmr = collector.mark()
       await replaceFileByRename(PAGE_VUE_PATH, updatedPageSource)
@@ -191,9 +189,7 @@ describe.sequential('wevu/router HMR fixture runtime', () => {
         throw error
       }
       await assertNoBareWevuRouterImport()
-      expect(collector.getSince(afterHmr)).not.toEqual(expect.arrayContaining([
-        expect.stringContaining('wevu/router'),
-      ]))
+      expect(collector.getSince(afterHmr)).toEqual([])
       expect(devProcess.getOutput()).not.toContain('module \'wevu/router.js\' is not defined')
     }
     finally {

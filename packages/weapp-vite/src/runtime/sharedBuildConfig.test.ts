@@ -265,6 +265,13 @@ describe('sharedBuildConfig', () => {
     expect(output.codeSplitting.groups[0]!.name(
       '/project/node_modules/wevu/dist/dev/store/define.mjs',
     )).toBe('weapp-vendors/wevu-store')
+    expect(output.chunkFileNames({
+      name: 'weapp-vendors/wevu-router',
+      moduleIds: [
+        '/project/node_modules/wevu/dist/dev/runtime/hooks/base.mjs',
+        '/project/node_modules/wevu/dist/dev/router/createRouter.mjs',
+      ],
+    })).toBe('weapp-vendors/wevu-router.js')
   })
 
   it('renames hashed node_modules dist chunks to stable vendor file names', () => {
