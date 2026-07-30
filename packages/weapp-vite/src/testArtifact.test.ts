@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const buildMock = vi.hoisted(() => vi.fn(async () => ({ output: [] })))
@@ -29,6 +30,9 @@ vi.mock('chokidar', () => ({
 }))
 
 describe('test artifact build API', () => {
+  const projectPath = path.resolve('/project')
+  const testArtifactPath = path.join(projectPath, '.weapp-vite/test-artifacts')
+
   beforeEach(() => {
     buildMock.mockClear()
     createCompilerContextMock.mockClear()
@@ -46,24 +50,24 @@ describe('test artifact build API', () => {
     const artifact = await buildTestArtifact({ cwd: '/project', skipNpm: true })
 
     expect(createCompilerContextMock).toHaveBeenCalledWith(expect.objectContaining({
-      cwd: '/project',
+      cwd: projectPath,
       isDev: false,
       mode: 'test',
-      outputRoot: '/project/.weapp-vite/test-artifacts',
+      outputRoot: testArtifactPath,
       preloadAppEntry: false,
       syncSupportFiles: false,
       inlineConfig: {
         build: {
           emptyOutDir: true,
-          outDir: '/project/.weapp-vite/test-artifacts',
+          outDir: testArtifactPath,
         },
       },
     }))
     expect(buildMock).toHaveBeenCalledWith({ skipNpm: true })
     expect(artifact).toEqual({
-      appConfigPath: '/project/.weapp-vite/test-artifacts/app.json',
-      miniprogramRootPath: '/project/.weapp-vite/test-artifacts',
-      projectPath: '/project',
+      appConfigPath: path.join(testArtifactPath, 'app.json'),
+      miniprogramRootPath: testArtifactPath,
+      projectPath,
       sourceRootPath: '/project/src',
     })
   })
@@ -85,7 +89,7 @@ describe('test artifact build API', () => {
     expect(buildMock).toHaveBeenCalledTimes(1)
     expect(watcherMock.watch).toHaveBeenCalledWith('/project/src', {
       ignoreInitial: true,
-      ignored: ['/project/.weapp-vite/test-artifacts'],
+      ignored: [testArtifactPath],
     })
 
     watcherMock.handlers.get('change')?.()
