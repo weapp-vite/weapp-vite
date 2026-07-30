@@ -650,11 +650,11 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['weapp-vendors/weapp-vite-runtime.js']).toBeDefined()
     expect(bundle['weapp-vendors/request-globals-runtime.js']).toBeDefined()
     expect(bundle['weapp-vendors/request-runtime.js']).toBeDefined()
-    expect(bundle['weapp-vendors/wevu-src.js']).toBeUndefined()
+    expect(bundle['weapp-vendors/wevu-src.js']).toBeDefined()
     expect(emittedChunkFileNames.has('weapp-vendors/weapp-vite-runtime.js')).toBe(true)
     expect(emittedChunkFileNames.has('weapp-vendors/request-globals-runtime.js')).toBe(true)
     expect(emittedChunkFileNames.has('weapp-vendors/request-runtime.js')).toBe(true)
-    expect(emittedChunkFileNames.has('weapp-vendors/wevu-src.js')).toBe(false)
+    expect(emittedChunkFileNames.has('weapp-vendors/wevu-src.js')).toBe(true)
   })
 
   it('keeps stable shared chunks when all known importers are emitted in dev hmr', async () => {
