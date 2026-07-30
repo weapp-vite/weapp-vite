@@ -14,6 +14,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 用户要配置 `vite.config.ts` 里的 `weapp`。
 - 用户要排查输出缺页、路径不对、自动路由不生效、layout 不生效。
 - 用户要接入分包、npm 落位、多平台、worker、web runtime、lib mode。
+- 用户要用 Vitest 对真实小程序编译产物进行页面或组件测试。
 - 用户要让 AI 正确使用项目，包括 `AGENTS.md`、`dist/docs`、screenshot / compare / logs / mcp。
 - 用户要梳理 `weapp-vite` 与 `weapp-ide-cli` 的命令归属、透传边界、`preview/upload/open/config` 这类 DevTools CLI 能力。
 
@@ -50,6 +51,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - AI / 调试：`weapp.forwardConsole`、`weapp.mcp`、`wv mcp init|print|doctor`、`wv screenshot`、`wv compare`、`wv ide logs --open`
    - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`、`weapp.analyze.budgets` / `history`
    - 进阶链路：`web`、`lib`
+   - 页面/组件单测：`@mpcore/weapp-vite` 构建产物，`@mpcore/test` 提供 render/query/user，`@mpcore/vitest` 提供每测试隔离和 matcher
 4. CLI 与 IDE 所有权保持清晰：
    - `weapp-vite` 原生命令优先
    - `weapp-ide-cli` 只在 catalog 命中后透传
@@ -78,6 +80,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 插件项目先确认 `weapp.pluginRoot`，结构变化必须同时检查主应用 `dist/` 和插件 `dist-plugin/`；不要只验证 host 产物。
 - 状态保持 HMR 仅适用于微信小程序：需要 DevTools 服务端口、热重载和 `setting.compileHotReLoad: true`。JS/Vue 安全补丁可保留实例状态；CSS、资源、JSON、配置、边界不兼容或补丁失败时应接受完整构建回退。
 - Web runtime 只验证 Web 语义，不把它当成小程序真机等价环境；请求 globals、URL 和平台 API 兼容问题要分别在目标 runtime 验证。
+- 小程序单测不使用 jsdom；`@mpcore/test` 只暴露逻辑 WXML 树。测试产物必须通过 `weapp-vite/test` 交给 Vite/Rolldown emit，不能由适配器手写 bundle。
 - uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 与 uview-plus 分别以 `@wot-ui/ui@2.2.0`、`uview-plus@3.8.86` 的 npm 发布包 SFC 清单为兼容基线，不把它们泛化成完整 uni-app runtime。
 - 分包、插件、worker 和 lib mode 的性能判断都先看产物结构与 `wv analyze`，再改 chunk/shared 策略。
 

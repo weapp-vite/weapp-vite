@@ -1,4 +1,5 @@
 import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType, HeadlessWxSavedFileInfo } from '../host'
+import type { RuntimeDiagnosticEntry } from '../kernel'
 import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessAppInstance } from './appInstance'
 import type { HeadlessComponentInstance } from './componentInstance'
@@ -12,9 +13,9 @@ import type {
   HeadlessWxRequestMockDefinition,
   HeadlessWxUploadFileMockDefinition,
 } from './wxState'
-import fs from 'node:fs'
 import path from 'node:path'
 import { createHostRegistries } from '../host'
+import { RuntimeKernel } from '../kernel'
 import { loadProject } from '../project'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
@@ -41,7 +42,10 @@ import {
 import { createHeadlessWxState } from './wxState'
 
 export interface HeadlessSessionOptions {
-  projectPath: string
+  globals?: Record<string, unknown>
+  project?: HeadlessProjectDescriptor
+  projectPath?: string
+  strictHostMocks?: boolean
 }
 
 interface ResolvedNavigationTarget {
@@ -155,9 +159,10 @@ function createAppLaunchOptions(pathname: string, query: Record<string, string>)
   }
 }
 
-function readJsonObject(filePath: string) {
+function readJsonObject(project: HeadlessProjectDescriptor, filePath: string) {
   try {
-    const value = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+    const source = project.artifactSource.readText(filePath)
+    const value = source == null ? undefined : JSON.parse(source)
     return value && typeof value === 'object' && !Array.isArray(value)
       ? value as Record<string, any>
       : undefined
@@ -186,6 +191,7 @@ function resolveNavigationPath(targetPath: string, baseRoute?: string) {
 
 export class HeadlessSession {
   readonly project: HeadlessProjectDescriptor
+  private readonly kernel = new RuntimeKernel()
 
   private appDefinition: HeadlessAppDefinition | null = null
   private appInstance: HeadlessAppInstance | null = null
@@ -213,14 +219,20 @@ export class HeadlessSession {
   private readonly canvasContexts = new Map<string, import('../host').HeadlessWxCanvasContext>()
   private enterOptions = createAppLaunchOptions('', {})
   private launchOptions = createAppLaunchOptions('', {})
-  private readonly wxState = createHeadlessWxState()
+  private readonly wxState
   private pullDownRefreshState: HeadlessPullDownRefreshState = {
     active: false,
     stopCalls: 0,
   }
 
   constructor(options: HeadlessSessionOptions) {
-    this.project = loadProject(options.projectPath)
+    if (!options.project && !options.projectPath) {
+      throw new Error('Headless runtime requires projectPath or project.')
+    }
+    this.project = options.project ?? loadProject(options.projectPath!)
+    this.wxState = createHeadlessWxState(this.kernel.scheduler, {
+      strictMocks: options.strictHostMocks,
+    })
     this.registries = createHostRegistries()
     const rawTabBarList = Array.isArray(this.project.appConfig.tabBar?.list)
       ? this.project.appConfig.tabBar.list
@@ -296,7 +308,7 @@ export class HeadlessSession {
         removeSavedFile: option => this.wxState.removeSavedFile(option),
         saveImageToPhotosAlbum: option => this.wxState.saveImageToPhotosAlbum(option),
         saveVideoToPhotosAlbum: option => this.wxState.saveVideoToPhotosAlbum(option),
-        nextTick: callback => queueMicrotask(() => callback?.()),
+        nextTick: callback => this.kernel.scheduler.queueMicrotask(() => callback?.()),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
@@ -329,18 +341,51 @@ export class HeadlessSession {
         setTabBarBadge: option => this.setTabBarBadge(option.index, option.text),
         updateShareMenu: option => this.wxState.updateShareMenu(option),
       },
+      {
+        artifactSource: this.project.artifactSource,
+        globals: options.globals,
+        kernel: this.kernel,
+      },
     )
   }
 
+  assertActive() {
+    this.kernel.assertActive()
+  }
+
+  close() {
+    if (this.kernel.isClosed) {
+      return
+    }
+    this.unloadAllPages()
+    this.canvasContexts.clear()
+    this.renderRequestCallbacks.length = 0
+    this.renderRequestPending = false
+    this.wxState.close()
+    this.moduleLoader.close()
+    this.kernel.close()
+  }
+
+  getDiagnostics(): RuntimeDiagnosticEntry[] {
+    return this.kernel.diagnostics.getEntries()
+  }
+
+  get isClosed() {
+    return this.kernel.isClosed
+  }
+
   getApp() {
+    this.assertActive()
     return this.appInstance
   }
 
   getCurrentPages() {
+    this.assertActive()
     return this.pages.slice()
   }
 
   callWxMethod(methodName: string, ...args: any[]) {
+    this.assertActive()
     const method = this.moduleLoader.wx[methodName as keyof typeof this.moduleLoader.wx]
     if (typeof method !== 'function') {
       throw new TypeError(`wx.${methodName} is not available in headless runtime.`)
@@ -395,9 +440,11 @@ export class HeadlessSession {
   }
 
   renderCurrentPage() {
+    this.assertActive()
     const current = this.requireCurrentPage('renderCurrentPage()')
     const rendered = renderRuntimePageTree({
       changedPageKeys: current.__lastChangedKeys__ ?? [],
+      artifactSource: this.project.artifactSource,
       componentCache: this.componentCache,
       componentScopes: this.componentScopes,
       moduleLoader: this.moduleLoader,
@@ -425,6 +472,7 @@ export class HeadlessSession {
   }
 
   requestRender(callback?: () => void) {
+    this.assertActive()
     if (callback) {
       this.renderRequestCallbacks.push(callback)
     }
@@ -433,6 +481,9 @@ export class HeadlessSession {
     }
     this.renderRequestPending = true
     Promise.resolve().then(() => {
+      if (this.kernel.isClosed) {
+        return
+      }
       this.renderRequestPending = false
       const callbacks = this.renderRequestCallbacks.splice(0)
       if (this.currentPageInstance) {
@@ -882,6 +933,7 @@ export class HeadlessSession {
   }
 
   bootstrap(launchOptions = createAppLaunchOptions('', {})) {
+    this.assertActive()
     if (this.appInstance) {
       return this.appInstance
     }
@@ -983,10 +1035,8 @@ export class HeadlessSession {
 
     const current = this.currentPageInstance
     const cachedTarget = this.tabPages.get(target.routeRecord.route) ?? null
-    const tabItem = this.resolveTabBarItem(target.routeRecord.route)
 
     if (current === cachedTarget && current) {
-      current.onTabItemTap?.(tabItem)
       return current
     }
 
@@ -1022,7 +1072,6 @@ export class HeadlessSession {
       this.runPageComponentLifetime(nextPage.route, 'show')
     }
 
-    nextPage.onTabItemTap?.(tabItem)
     return nextPage
   }
 
@@ -1153,7 +1202,7 @@ export class HeadlessSession {
     const pageModulePath = path.resolve(this.project.miniprogramRootPath, `${target.routeRecord.route}.js`)
     const pageConfigPath = path.resolve(this.project.miniprogramRootPath, `${target.routeRecord.route}.json`)
     const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
-    const pageConfig = readJsonObject(pageConfigPath)
+    const pageConfig = readJsonObject(this.project, pageConfigPath)
     const pageInstance = createPageInstance(`/${target.routeRecord.route}`, pageDefinition, target.query, {
       background: resolveBackgroundSnapshot(this.project.appConfig, pageConfig),
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
@@ -1172,21 +1221,11 @@ export class HeadlessSession {
     pageInstance.onLoad?.(query)
     pageInstance.onShow?.()
     pageInstance.onReady?.()
+    pageInstance.onRouteDone?.({})
   }
 
   private isTabBarRoute(route: string) {
     return this.tabBarRoutes.has(stripLeadingSlash(route))
-  }
-
-  private resolveTabBarItem(route: string) {
-    const pagePath = stripLeadingSlash(route)
-    const item = this.tabBarItems.get(pagePath)
-    if (!item) {
-      throw new Error(`Missing tabBar metadata for route "${route}" in headless runtime.`)
-    }
-    return {
-      ...item,
-    }
   }
 
   private requireTabBarItem(index: number, action: string) {

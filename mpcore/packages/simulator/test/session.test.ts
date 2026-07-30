@@ -157,7 +157,7 @@ Component({
     const session = createHeadlessSession({ projectPath })
     const page = session.reLaunch('/pages/component/index?from=e2e')
 
-    expect(page.runE2E()).toEqual(['created', 'attached', 'load:e2e', 'show', 'ready'])
+    expect(page.runE2E()).toEqual(['created', 'attached', 'load:e2e', 'show', 'ready', 'routeDone:undefined'])
     session.triggerRouteDone({ from: 'headless' })
     session.triggerResize({ size: { windowWidth: 390 } })
     page.openNext()
@@ -167,6 +167,7 @@ Component({
       'load:e2e',
       'show',
       'ready',
+      'routeDone:undefined',
       'routeDone:headless',
       'resize:390',
       'hide',
@@ -180,6 +181,7 @@ Component({
       'load:e2e',
       'show',
       'ready',
+      'routeDone:undefined',
       'routeDone:headless',
       'resize:390',
       'hide',
@@ -469,7 +471,6 @@ Page({
       'settings:onHide',
       'settings:onUnload',
       'home:onShow',
-      'home:onTabItemTap:{"index":0,"pagePath":"pages/home/index","text":"Home"}',
     ])
 
     session.reLaunch('/pages/profile/index?mode=relaunch')
@@ -491,7 +492,6 @@ Page({
       'settings:onHide',
       'settings:onUnload',
       'home:onShow',
-      'home:onTabItemTap:{"index":0,"pagePath":"pages/home/index","text":"Home"}',
       'home:onUnload',
       'profile:onLoad:{"mode":"relaunch"}',
       'profile:onShow',
@@ -499,7 +499,7 @@ Page({
     ])
   })
 
-  it('fires onTabItemTap when switching or retapping a tab page', () => {
+  it('does not synthesize onTabItemTap for programmatic tab switches', () => {
     const projectPath = createNavigationFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
@@ -517,7 +517,6 @@ Page({
       'profile:onLoad:{}',
       'profile:onShow',
       'profile:onReady',
-      'profile:onTabItemTap:{"index":1,"pagePath":"pages/profile/index","text":"Profile"}',
     ])
 
     session.switchTab('/pages/profile/index')
@@ -530,8 +529,6 @@ Page({
       'profile:onLoad:{}',
       'profile:onShow',
       'profile:onReady',
-      'profile:onTabItemTap:{"index":1,"pagePath":"pages/profile/index","text":"Profile"}',
-      'profile:onTabItemTap:{"index":1,"pagePath":"pages/profile/index","text":"Profile"}',
     ])
     expect(homePage.options).toEqual({})
     expect(profilePage?.options).toEqual({})

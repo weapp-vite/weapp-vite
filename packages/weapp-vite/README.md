@@ -31,6 +31,7 @@
 - 🌐 **实验性 Web Runtime**：同一份原生 WXML/WXSS/TS 或 wevu Vue SFC 源码可通过 `-p web` 启动和构建浏览器版本
 - 🧩 **实验性 uni-app 组件库兼容**：通过显式依赖白名单与 `WotUiResolver()` 在微信小程序和 Web 中使用 Wot UI Vue SFC
 - 🧰 **IDE 命令增强**：可直接透传 `weapp-ide-cli` 全量命令（`preview/upload/config/automator` 等）
+- 🧪 **真实产物单测**：`weapp-vite/test` 提供不启动 CLI 的程序化测试构建入口，可配合 `@mpcore/test` 测试页面和组件
 
 ## 快速开始
 
@@ -384,6 +385,18 @@ export default defineConfig({
 ```
 
 详细说明见：[docs/mcp.md](./docs/mcp.md)
+
+## 小程序页面与组件测试
+
+`buildTestArtifact()` 会通过 Vite/Rolldown 把真实编译产物输出到隔离目录，供 mpcore 测试环境消费：
+
+```ts
+import { buildTestArtifact } from 'weapp-vite/test'
+
+const artifact = await buildTestArtifact({ cwd: process.cwd() })
+```
+
+默认输出目录是 `.weapp-vite/test-artifacts/`。完整的 render、查询、交互和 Vitest 接入见 [测试指南](./docs/packaged/testing.md)。
 
 ## Contribute
 

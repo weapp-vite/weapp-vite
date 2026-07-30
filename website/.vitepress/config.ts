@@ -343,6 +343,7 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'weapp-ide-cli', link: '/packages/weapp-ide-cli' },
       { text: 'rolldown-require', link: '/packages/rolldown-require/index.zh' },
       { text: 'vite-plugin-performance', link: '/packages/vite-plugin-performance' },
+      { text: 'mpcore 小程序测试', link: '/packages/mpcore-test' },
     ],
   },
   {

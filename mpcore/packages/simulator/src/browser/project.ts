@@ -1,9 +1,11 @@
+import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
+import type { BrowserVirtualFiles } from './virtualFiles'
 import {
   createProjectDescriptor,
-  type HeadlessProjectDescriptor,
+
 } from '../project/createProjectDescriptor'
 import {
-  type BrowserVirtualFiles,
+
   hasBrowserVirtualFile,
   readBrowserVirtualFile,
 } from './virtualFiles'
@@ -49,6 +51,10 @@ export function createBrowserProject(
   return createProjectDescriptor({
     appConfig,
     appConfigPath,
+    artifactSource: {
+      has: filePath => hasBrowserVirtualFile(files, filePath),
+      readText: filePath => readBrowserVirtualFile(files, filePath),
+    },
     miniprogramRoot: options.miniprogramRoot ?? '.',
     miniprogramRootPath: options.miniprogramRootPath ?? '/',
     projectPath: options.projectPath ?? 'browser://simulator',

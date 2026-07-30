@@ -42,6 +42,14 @@
     count="{{count}}"
     status="{{status}}"
     bind:pulse="handlePulse"
+    bind:probe="recordColonProbe"
+    bindprobe="recordEventBinding"
+    bindlegacy-hyphen="recordEventBinding"
+    bind:colon-hyphen="recordEventBinding"
+    bindlegacy_under="recordEventBinding"
+    bind:colon_under="recordEventBinding"
+    bind:duplicate_under="recordColonProbe"
+    bindduplicate_under="recordEventBinding"
   />
   <view wx:if="{{flags.showMeta}}" class="panel-row">最近事件：{{events.0}}</view>
   <view wx:elif="{{eventShape}}" class="panel-row">meta 已隐藏，但保留事件形态</view>

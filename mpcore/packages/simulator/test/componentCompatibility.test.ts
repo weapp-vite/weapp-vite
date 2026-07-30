@@ -12,6 +12,7 @@ const projectFiles = [
   ['pages/index/index.json', JSON.stringify({
     usingComponents: {
       'forward-host': '/components/forward-host',
+      'event-probe': '/components/event-probe',
       'generic-host': '/components/generic-host',
       'projected-target': '/components/projected-target',
       'selector-host': '/components/selector-host',
@@ -27,6 +28,7 @@ Page({
     deviceInfo: null,
     componentIs: '',
     enabled: false,
+    eventBindingLog: [],
     eventValue: '',
     forwardedFound: false,
     initialFallbackSize: -1,
@@ -48,6 +50,14 @@ Page({
   },
   onProjectedRendered(event) {
     this.setData({ projectedRendered: event.detail.value })
+  },
+  recordEventBinding(event) {
+    this.setData({
+      eventBindingLog: [...this.data.eventBindingLog, event.detail.name],
+    })
+  },
+  inspectEventBindings() {
+    this.selectComponent('#event-probe')?.emitCompatibilityEvents()
   },
   inspectCompatibility() {
     const booleanTarget = this.selectComponent('#boolean-target')
@@ -107,7 +117,34 @@ Page({
   <projected-target id="forwarded-target" label="{{slotLabel}}" />
 </forward-host>
 <selector-host id="selector-host" />
+<event-probe
+  id="event-probe"
+  bind:probe="recordColonProbe"
+  bindprobe="recordEventBinding"
+  bindlegacy-hyphen="recordEventBinding"
+  bind:colon-hyphen="recordEventBinding"
+  bindlegacy_under="recordEventBinding"
+  bind:colon_under="recordEventBinding"
+  bind:duplicate_under="recordColonProbe"
+  bindduplicate_under="recordEventBinding"
+/>
 `],
+  ['components/event-probe.json', JSON.stringify({ component: true })],
+  ['components/event-probe.js', `
+Component({
+  methods: {
+    emitCompatibilityEvents() {
+      this.triggerEvent('probe', { name: 'legacy-probe' })
+      this.triggerEvent('legacy-hyphen', { name: 'invalid-legacy-hyphen' })
+      this.triggerEvent('colon-hyphen', { name: 'colon-hyphen' })
+      this.triggerEvent('legacy_under', { name: 'legacy-underscore' })
+      this.triggerEvent('colon_under', { name: 'colon-underscore' })
+      this.triggerEvent('duplicate_under', { name: 'legacy-duplicate-underscore' })
+    },
+  },
+})
+`],
+  ['components/event-probe.wxml', '<view>event probe</view>'],
   ['components/generic-host.json', JSON.stringify({
     component: true,
     componentGenerics: {
@@ -337,6 +374,13 @@ function expectCompatibilityResult(page: Record<string, any>) {
     componentIs: 'components/nested-target',
     enabled: true,
     eventValue: 'changed',
+    eventBindingLog: [
+      'legacy-probe',
+      'colon-hyphen',
+      'legacy-underscore',
+      'colon-underscore',
+      'legacy-duplicate-underscore',
+    ],
     forwardedFound: true,
     initialFallbackSize: 0,
     nestedFound: true,
@@ -382,6 +426,7 @@ describe('component compatibility', () => {
 
     expect(page.selectComponent?.('#boolean-target')?.properties.enabled).toBe(true)
     expectStructurallyStableObjectProperty(page)
+    page.inspectEventBindings()
     page.inspectCompatibility()
     await Promise.resolve()
     await Promise.resolve()
@@ -404,6 +449,7 @@ describe('component compatibility', () => {
 
     expect(page.selectComponent?.('#boolean-target')?.properties.enabled).toBe(true)
     expectStructurallyStableObjectProperty(page)
+    page.inspectEventBindings()
     page.inspectCompatibility()
     await Promise.resolve()
     await Promise.resolve()

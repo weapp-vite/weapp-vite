@@ -1,4 +1,5 @@
 import type { HeadlessComponentDefinition } from '../../host'
+import type { ArtifactSource } from '../../kernel'
 import type { HeadlessProjectDescriptor } from '../../project'
 import type { HeadlessComponentInstance } from '../componentInstance'
 import type { HeadlessModuleLoader } from '../moduleLoader'
@@ -48,6 +49,7 @@ export interface RuntimeRenderedPageTree {
 }
 
 export interface RuntimeRendererContext {
+  artifactSource: ArtifactSource
   changedPageKeys: string[]
   componentCache: Map<string, HeadlessComponentInstance>
   componentScopes: Map<string, RuntimeRenderScope>

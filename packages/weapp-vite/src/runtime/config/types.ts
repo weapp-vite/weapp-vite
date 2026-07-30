@@ -13,6 +13,7 @@ export interface LoadConfigOptions {
   isDev: boolean
   mode: string
   emitDefaultAutoImportOutputs?: boolean
+  outputRoot?: string
   pluginOnly?: boolean
   inlineConfig?: InlineConfig
   configFile?: string

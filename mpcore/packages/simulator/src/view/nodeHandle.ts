@@ -1,3 +1,4 @@
+import { resolveMiniProgramEventBinding } from './eventBinding'
 import { querySelectorAll } from './selectors'
 
 interface DomNodeLike {
@@ -32,6 +33,7 @@ interface HeadlessTestingNodeValueEventInit extends HeadlessTestingNodeEventInit
 }
 
 interface HeadlessTestingNodeInteractionHandlers {
+  assertActive?: () => void
   callMethod: (scopeId: string | null, methodName: string, event: Record<string, any>) => unknown
   createScopeHandle: (scopeId: string | null) => { scopeId: string, snapshot: () => Promise<unknown> } | null
   createPageHandle: () => { data: (path?: string) => Promise<unknown> }
@@ -62,27 +64,6 @@ function collectDataset(node: DomNodeLike) {
     dataset[toDatasetKey(key)] = value
   }
   return dataset
-}
-
-function resolveEventBinding(node: DomNodeLike, eventName: string) {
-  const normalizedEventName = eventName.trim()
-  if (!normalizedEventName) {
-    return null
-  }
-
-  const bindingAttrs = [
-    `bind${normalizedEventName}`,
-    `bind:${normalizedEventName}`,
-    `catch${normalizedEventName}`,
-    `catch:${normalizedEventName}`,
-  ]
-  for (const attributeName of bindingAttrs) {
-    const methodName = node.attribs?.[attributeName]?.trim()
-    if (methodName) {
-      return methodName
-    }
-  }
-  return null
 }
 
 function createEventPayload(node: DomNodeLike, eventName: string, event: HeadlessTestingNodeEventInit) {
@@ -169,24 +150,33 @@ export class HeadlessTestingNodeHandle {
     private readonly interactions?: HeadlessTestingNodeInteractionHandlers,
   ) {}
 
+  private assertActive() {
+    this.interactions?.assertActive?.()
+  }
+
   async $(selector: string) {
+    this.assertActive()
     const match = querySelectorAll(this.node, selector)[0]
     return match ? new HeadlessTestingNodeHandle(match, this.interactions) : null
   }
 
   async $$(selector: string) {
+    this.assertActive()
     return querySelectorAll(this.node, selector).map(node => new HeadlessTestingNodeHandle(node, this.interactions))
   }
 
   async attr(name: string) {
+    this.assertActive()
     return this.node.attribs?.[name]
   }
 
   async dataset() {
+    this.assertActive()
     return collectDataset(this.node)
   }
 
   async scope() {
+    this.assertActive()
     if (!this.interactions) {
       throw new Error('Node interactions are not available for this headless testing node.')
     }
@@ -194,6 +184,7 @@ export class HeadlessTestingNodeHandle {
   }
 
   async componentScope() {
+    this.assertActive()
     if (!this.interactions) {
       throw new Error('Node interactions are not available for this headless testing node.')
     }
@@ -201,6 +192,7 @@ export class HeadlessTestingNodeHandle {
   }
 
   async pageScope() {
+    this.assertActive()
     if (!this.interactions) {
       throw new Error('Node interactions are not available for this headless testing node.')
     }
@@ -208,6 +200,7 @@ export class HeadlessTestingNodeHandle {
   }
 
   async page() {
+    this.assertActive()
     if (!this.interactions) {
       throw new Error('Node interactions are not available for this headless testing node.')
     }
@@ -215,6 +208,7 @@ export class HeadlessTestingNodeHandle {
   }
 
   async ownerComponentScope() {
+    this.assertActive()
     if (!this.interactions) {
       throw new Error('Node interactions are not available for this headless testing node.')
     }
@@ -223,10 +217,17 @@ export class HeadlessTestingNodeHandle {
   }
 
   async text() {
+    this.assertActive()
     return collectText(this.node)
   }
 
+  async tagName() {
+    this.assertActive()
+    return this.node.type === 'tag' ? this.node.name : undefined
+  }
+
   async trigger(eventName: string, event: HeadlessTestingNodeEventInit = {}) {
+    this.assertActive()
     if (!this.interactions) {
       throw new Error('Node interactions are not available for this headless testing node.')
     }
@@ -236,14 +237,14 @@ export class HeadlessTestingNodeHandle {
       throw new Error('Event name must be a non-empty string in headless testing runtime.')
     }
 
-    const methodName = resolveEventBinding(this.node, normalizedEventName)
-    if (!methodName) {
+    const binding = resolveMiniProgramEventBinding(this.node.attribs, normalizedEventName)
+    if (!binding?.method) {
       throw new Error(`No ${normalizedEventName} binding was found on <${this.node.name ?? 'unknown'}> in headless testing runtime.`)
     }
 
     return await this.interactions.callMethod(
       this.node.attribs?.['data-sim-scope'] ?? null,
-      methodName,
+      binding.method,
       createEventPayload(this.node, normalizedEventName, event),
     )
   }
@@ -274,6 +275,7 @@ export class HeadlessTestingNodeHandle {
   }
 
   async wxml() {
+    this.assertActive()
     return serializeNode(this.node)
   }
 }

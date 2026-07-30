@@ -24,6 +24,10 @@ describe('headless testing bridge', () => {
     const currentPage = await miniProgram.currentPage()
     expect(currentPage).not.toBeNull()
     expect(await currentPage?.data('__e2eData.greeting')).toBe('Hello')
+
+    const dataSnapshot = await currentPage?.data('__e2eData') as Record<string, unknown>
+    dataSnapshot.greeting = 'mutated outside the runtime'
+    expect(await currentPage?.data('__e2eData.greeting')).toBe('Hello')
   })
 
   it('calls page methods through the testing bridge', async () => {
@@ -363,6 +367,80 @@ Page({
     expect(wxml).toContain('<view id="greeting-button" data-phase="initial" data-card-type="primary" bind:tap="onTap">Hello</view>')
     expect(wxml).toContain('Status: ready')
     expect(wxml).toContain('Greeting: Hello')
+  })
+
+  it('exposes automator-compatible rendered node probes', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({ projectPath })
+    const page = await miniProgram.reLaunch('/pages/index/index')
+
+    await expect(page.renderedNodes('#greeting-button')).resolves.toEqual([
+      {
+        bottom: 1,
+        dataset: {
+          cardType: 'primary',
+          phase: 'initial',
+        },
+        height: 1,
+        id: 'greeting-button',
+        left: 0,
+        right: 1,
+        top: 0,
+        width: 1,
+      },
+    ])
+    const renderedSelectors = await page.renderedSelectorNodes([
+      '#greeting-button',
+      '.panel-row',
+    ])
+    expect(renderedSelectors['#greeting-button']).toMatchObject([{ id: 'greeting-button' }])
+    expect(renderedSelectors['.panel-row']).toHaveLength(4)
+    expect(renderedSelectors['.panel-row']?.[0]).toMatchObject({ height: 1, width: 1 })
+    await expect(page.waitForRendered({
+      dataset: {
+        phase: 'initial',
+      },
+      selector: '#greeting-button',
+    })).resolves.toContain('"selector":"#greeting-button"')
+    await expect(page.waitForRendered({ text: 'Greeting: Hello' })).resolves.toContain('Greeting: Hello')
+    await expect(page.waitForRendered({
+      dataset: {
+        phase: 'missing',
+      },
+      selector: '#greeting-button',
+      timeout: 20,
+    })).rejects.toThrow('Timed out waiting page rendered: selector=#greeting-button')
+
+    await miniProgram.close()
+    await expect(page.renderedNodes('#greeting-button')).rejects.toThrow('closed')
+  })
+
+  it('exposes provider-compatible navigation methods', async () => {
+    const projectPath = createNavigationFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({ projectPath })
+
+    const home = await miniProgram.reLaunch('/pages/home/index')
+    expect(home.path).toBe('pages/home/index')
+
+    const detail = await miniProgram.navigateTo('/pages/detail/index?from=testing-handle')
+    expect(detail.path).toBe('pages/detail/index')
+    expect(detail.query).toEqual({ from: 'testing-handle' })
+
+    const back = await miniProgram.navigateBack()
+    expect(back?.path).toBe('pages/home/index')
+
+    await miniProgram.navigateTo('/pages/detail/index')
+    const settings = await miniProgram.redirectTo('/pages/settings/index?from=redirect')
+    expect(settings.path).toBe('pages/settings/index')
+    expect(settings.query).toEqual({ from: 'redirect' })
+
+    const profile = await miniProgram.switchTab('/pages/profile/index')
+    expect(profile.path).toBe('pages/profile/index')
+    expect(await miniProgram.getCurrentPages()).toHaveLength(1)
+
+    await miniProgram.close()
   })
 
   it('renders custom component output through the testing bridge', async () => {

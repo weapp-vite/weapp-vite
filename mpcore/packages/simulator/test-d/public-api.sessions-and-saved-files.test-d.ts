@@ -1,4 +1,5 @@
 import type {
+  HeadlessTestingRenderedNodeSnapshot,
   HeadlessWxDeviceInfoResult,
   HeadlessWxDownloadFileMockDefinition,
   HeadlessWxGetLocationResult,
@@ -23,6 +24,11 @@ const browserSession = createBrowserHeadlessSession({ files: browserFiles })
 expectType<ReturnType<typeof createBrowserHeadlessSession>>(createBrowserHeadlessSession({
   files: browserFiles,
   onRender: () => {},
+  strictHostMocks: true,
+}))
+expectType<ReturnType<typeof createHeadlessSession>>(createHeadlessSession({
+  projectPath: '/project',
+  strictHostMocks: true,
 }))
 browserSession.reLaunch('/pages/index/index')
 const browserPage = browserSession.getCurrentPages()[0]
@@ -797,7 +803,16 @@ launchResult.then((session) => {
       routeOnly: true,
       timeout: 1_000,
     }))
+    expectType<Promise<HeadlessTestingRenderedNodeSnapshot[]>>(page.renderedNodes('#probe'))
+    expectType<Promise<string>>(page.waitForRendered({
+      dataset: { status: 'ready' },
+      selector: '#probe',
+    }))
   })
+  expectType<Promise<unknown>>(session.navigateTo('/pages/detail/index'))
+  expectType<Promise<unknown>>(session.redirectTo('/pages/detail/index'))
+  expectType<Promise<unknown>>(session.navigateBack())
+  expectType<Promise<unknown>>(session.switchTab('/pages/profile/index'))
 })
 expectType<Promise<{
   callWxMethod: <T = unknown>(methodName: string, ...args: any[]) => Promise<T>

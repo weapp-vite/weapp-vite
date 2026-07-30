@@ -1,4 +1,6 @@
+import type { ArtifactSource } from '../kernel'
 import type { HeadlessRouteRecord } from './resolveRoutes'
+import { createFileSystemArtifactSource } from '../kernel'
 import { resolveRoutesFromAppConfig } from './resolveRoutes'
 
 export interface HeadlessProjectConfigFile {
@@ -7,6 +9,7 @@ export interface HeadlessProjectConfigFile {
 }
 
 export interface HeadlessProjectDescriptor {
+  artifactSource: ArtifactSource
   appConfig: Record<string, any>
   appConfigPath: string
   miniprogramRoot: string
@@ -17,6 +20,7 @@ export interface HeadlessProjectDescriptor {
 }
 
 export interface CreateProjectDescriptorOptions {
+  artifactSource?: ArtifactSource
   appConfig: Record<string, any>
   appConfigPath: string
   miniprogramRoot: string
@@ -27,6 +31,7 @@ export interface CreateProjectDescriptorOptions {
 
 export function createProjectDescriptor(options: CreateProjectDescriptorOptions): HeadlessProjectDescriptor {
   return {
+    artifactSource: options.artifactSource ?? createFileSystemArtifactSource(),
     appConfig: options.appConfig,
     appConfigPath: options.appConfigPath,
     miniprogramRoot: options.miniprogramRoot,

@@ -219,7 +219,10 @@ function renderNodeTree(
     return {
       type: 'tag',
       name: 'block',
-      attribs: { 'data-sim-scope': scope.getScopeId() },
+      attribs: {
+        'data-sim-node': instancePath,
+        'data-sim-scope': scope.getScopeId(),
+      },
       children,
     }
   }
@@ -293,6 +296,7 @@ function renderNodeTree(
     )
     if (renderedComponentRoot.attribs) {
       renderedComponentRoot.attribs['data-sim-component'] = clonedNode.name
+      renderedComponentRoot.attribs['data-sim-node'] = instancePath
       renderedComponentRoot.attribs['data-sim-scope'] = componentScopeId
     }
     if (!componentInstance.__ready__) {
@@ -304,6 +308,7 @@ function renderNodeTree(
   }
 
   applyNodeBindings(clonedNode, scope)
+  clonedNode.attribs!['data-sim-node'] = instancePath
   clonedNode.children = renderChildren(
     clonedNode.children ?? [],
     scope,
@@ -322,7 +327,7 @@ export function renderRuntimePageTree(
 ): RuntimeRenderedPageTree {
   const route = page.route.replace(LEADING_SLASH_RE, '')
   const templatePath = path.resolve(context.project.miniprogramRootPath, `${route}.wxml`)
-  const templateSource = readTemplateSource(templatePath)
+  const templateSource = readTemplateSource(context.artifactSource, templatePath)
   const document = parseTemplateDocument(templateSource)
   const pageScopeId = `page:${route}`
   const pageScope: RuntimeRenderScope = {
