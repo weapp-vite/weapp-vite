@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-30T04:03:10.682Z",
+  "generatedAt": "2026-07-30T04:47:59.064Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
     "files": 274,
@@ -14,14 +14,14 @@
       "total": 274,
       "title": 274,
       "description": 274,
-      "keywords": 273,
+      "keywords": 274,
       "date": 11
     },
     "docs": {
       "total": 259,
       "title": 259,
       "description": 259,
-      "keywords": 258,
+      "keywords": 259,
       "date": 3
     },
     "blog": {
@@ -43,13 +43,13 @@
     "all": {
       "title": 100,
       "description": 100,
-      "keywords": 99.6,
+      "keywords": 100,
       "date": 4
     },
     "docs": {
       "title": 100,
       "description": 100,
-      "keywords": 99.6,
+      "keywords": 100,
       "date": 1.2
     },
     "blog": {
@@ -108,15 +108,7 @@
   },
   "quality": {
     "checked": 274,
-    "issues": [
-      {
-        "path": "packages/mpcore-test.md",
-        "type": "missing-keywords",
-        "message": "缺少 keywords。"
-      }
-    ]
+    "issues": []
   },
-  "qualityIssueCounts": {
-    "missing-keywords": 1
-  }
+  "qualityIssueCounts": {}
 }

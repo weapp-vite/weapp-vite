@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-30T04:03:10.288Z",
+  "generatedAt": "2026-07-30T04:47:58.636Z",
   "site": "https://vite.icebreaker.top",
   "count": 274,
   "items": [
@@ -4017,11 +4017,14 @@
       "url": "/packages/mpcore-test",
       "canonical": "https://vite.icebreaker.top/packages/mpcore-test",
       "keywords": [
-        "微信小程序",
-        "packages",
         "mpcore",
-        "test",
-        "小程序页面与组件测试"
+        "小程序测试",
+        "微信小程序",
+        "vitest",
+        "weapp-vite",
+        "组件测试",
+        "packages",
+        "test"
       ],
       "headings": [
         "小程序页面与组件测试",

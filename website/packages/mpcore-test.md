@@ -1,6 +1,13 @@
 ---
 title: 小程序页面与组件测试
 description: 使用 mpcore、Vitest 与 weapp-vite 真实编译产物测试微信小程序页面和组件。
+keywords:
+  - mpcore
+  - 小程序测试
+  - 微信小程序
+  - Vitest
+  - weapp-vite
+  - 组件测试
 ---
 
 # 小程序页面与组件测试
