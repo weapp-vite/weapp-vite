@@ -343,6 +343,9 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
     get runtimeFileNames() {
       return ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileNames
     },
+    isRuntimeFileNameAvailable(fileName) {
+      return ctx.runtimeState?.build?.output?.emittedSource.has(fileName) === true
+    },
     onRuntimeFileName(fileName) {
       const outputState = ctx.runtimeState?.build?.output
       if (outputState) {

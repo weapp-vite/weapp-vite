@@ -13,6 +13,7 @@ import { isRegexp } from '../utils/regexp'
 import { normalizeViteId } from '../utils/viteId'
 import { createAdvancedChunkNameResolver } from './advancedChunks'
 import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
+import { resolveWevuStableVendorFileName } from './wevuModules'
 
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
 const REG_COMMONJS_HELPERS = /commonjsHelpers\.js$/
@@ -258,6 +259,13 @@ function resolveStableHashedDistChunkFileName(
   ].filter((id): id is string => typeof id === 'string')
   const matchedChunks: Array<{ baseName: string, fileName: string }> = []
   let facadeMatchedChunk: { baseName: string, fileName: string } | undefined
+
+  for (const id of candidateIds) {
+    const fileName = resolveWevuStableVendorFileName(id)
+    if (fileName) {
+      return fileName
+    }
+  }
 
   for (const id of candidateIds) {
     if (isWeappViteRuntimeModuleId(id)) {

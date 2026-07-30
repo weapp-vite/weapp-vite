@@ -1,5 +1,6 @@
 import type { OutputAsset, OutputBundle, OutputChunk } from 'rolldown'
 import type { CompilerContext } from '../../../context'
+import type { WevuRuntimeModuleId } from '../../../runtime/wevuModules'
 import type { CorePluginState, RemoveImplicitPagePreloadOptions } from './types'
 import { Buffer } from 'node:buffer'
 import {
@@ -11,6 +12,7 @@ import {
 import { isEmptyObject, isObject } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import path from 'pathe'
+import { resolveWevuRuntimeModuleId, WEVU_RUNTIME_MODULE_IDS } from '../../../runtime/wevuModules'
 import { changeFileExtension } from '../../../utils/file'
 import { resolveCompilerOutputExtensions } from '../../../utils/outputExtensions'
 import { isPathInside, normalizeRelativePath } from '../../../utils/path'
@@ -179,22 +181,10 @@ const WEVU_INTERNAL_RUNTIME_EXPORTS = [
   'version',
   'waitForLayoutHost',
 ] as const
-const WEVU_INTERNAL_MODULE_IDS = [
-  'wevu/internal-runtime',
-  'wevu/internal-reactivity',
-  'wevu/internal-template',
-] as const
-type WevuInternalModuleId = (typeof WEVU_INTERNAL_MODULE_IDS)[number]
-const WEVU_RUNTIME_MODULE_IDS = [
-  'wevu',
-  'wevu/router',
-  'wevu/store',
-  'wevu/api',
-  'wevu/fetch',
-  'wevu/web-apis',
-  ...WEVU_INTERNAL_MODULE_IDS,
-] as const
-type WevuRuntimeModuleId = (typeof WEVU_RUNTIME_MODULE_IDS)[number]
+type WevuInternalModuleId
+  = | 'wevu/internal-runtime'
+    | 'wevu/internal-reactivity'
+    | 'wevu/internal-template'
 const WEVU_RUNTIME_MODULE_ID_PATTERN = [
   'wevu(?:\\/(?:router|store|api|fetch|web-apis|internal-(?:runtime|reactivity|template)))?',
   ...Object.values(WEAPP_VITE_RUNTIME_VIRTUAL_IDS)
@@ -369,6 +359,7 @@ interface RemovalRange {
 export interface RewriteWevuInternalRuntimeImportsOptions {
   runtimeFileName?: string
   runtimeFileNames?: Map<string, string>
+  isRuntimeFileNameAvailable?: (fileName: string) => boolean
   onRuntimeFileName?: (fileName: string) => void
   onRuntimeModuleFileName?: (moduleId: string, fileName: string) => void
 }
@@ -640,10 +631,6 @@ function collectChunkExportNames(chunk: OutputChunk) {
   return collectExistingExportNames(chunk.code)
 }
 
-function isWevuRuntimeModuleId(value: string): value is WevuRuntimeModuleId {
-  return (WEVU_RUNTIME_MODULE_IDS as readonly string[]).includes(value)
-}
-
 function normalizeWevuRuntimeModuleId(value: string): WevuRuntimeModuleId | undefined {
   if (value === WEAPP_VITE_RUNTIME_VIRTUAL_ID) {
     return 'wevu/internal-runtime'
@@ -654,7 +641,7 @@ function normalizeWevuRuntimeModuleId(value: string): WevuRuntimeModuleId | unde
   if (value === WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID) {
     return 'wevu/internal-template'
   }
-  return isWevuRuntimeModuleId(value) ? value : undefined
+  return resolveWevuRuntimeModuleId(value)
 }
 
 function resolveWevuInternalChunk(
@@ -690,6 +677,18 @@ function createWevuRuntimeChunkIndex(bundle: OutputBundle, snapshot = createBund
 
     vendorChunks.push(chunk)
     const normalizedFileName = chunk.fileName.replace(/\\/g, '/')
+    const resolvedModuleIds = [
+      chunk.facadeModuleId,
+      ...(chunk.moduleIds ?? []),
+    ]
+      .filter((id): id is string => typeof id === 'string')
+      .map(id => resolveWevuRuntimeModuleId(id))
+      .filter((id): id is WevuRuntimeModuleId => Boolean(id))
+    for (const moduleId of resolvedModuleIds) {
+      if (!chunksByModuleId.has(moduleId)) {
+        chunksByModuleId.set(moduleId, chunk)
+      }
+    }
     for (const moduleId of WEVU_RUNTIME_MODULE_IDS) {
       const chunkFileName = moduleId.replace(/\//g, '-')
       const isMatch = moduleId === 'wevu'
@@ -852,8 +851,16 @@ function resolveRememberedWevuRuntimeFileName(
   const names = [...importedNames]
   const canUseLegacyRuntimeFileName = moduleId === 'wevu/internal-runtime'
     && names.every(importedName => WEVU_INTERNAL_RUNTIME_EXPORT_SET.has(importedName))
-  return options.runtimeFileNames?.get(moduleId)
+  const rememberedFileName = options.runtimeFileNames?.get(moduleId)
     ?? (canUseLegacyRuntimeFileName ? options.runtimeFileName : undefined)
+  if (
+    rememberedFileName
+    && options.isRuntimeFileNameAvailable
+    && !options.isRuntimeFileNameAvailable(rememberedFileName)
+  ) {
+    return undefined
+  }
+  return rememberedFileName
 }
 
 function formatWevuRuntimeRequire(

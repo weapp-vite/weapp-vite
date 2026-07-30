@@ -11,7 +11,6 @@ import { attachRuntimeErrorCollector } from './runtimeErrors'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-router-hmr')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
-const COMMON_JS_PATH = path.join(DIST_ROOT, 'common.js')
 const PAGE_VUE_PATH = path.join(APP_ROOT, 'src/pages/index/index.vue')
 const PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/index/index.js')
 const INDEX_ROUTE = '/pages/index/index'
@@ -120,7 +119,7 @@ describe.sequential('wevu/router HMR fixture runtime', () => {
     })
 
     await devProcess.waitFor(waitForFileContains(PAGE_JS_PATH, BASE_MARKER), 'initial router page script emitted')
-    await devProcess.waitFor(waitForFileContains(COMMON_JS_PATH, 'weapp-vendors/wevu-router.js'), 'initial common.js imports wevu router vendor')
+    await devProcess.waitFor(waitForFileContains(PAGE_JS_PATH, 'weapp-vendors/wevu-router.js'), 'initial page imports wevu router vendor')
 
     try {
       miniProgram = await launchAutomator({
@@ -180,7 +179,7 @@ describe.sequential('wevu/router HMR fixture runtime', () => {
       const afterHmr = collector.mark()
       await replaceFileByRename(PAGE_VUE_PATH, updatedPageSource)
       await devProcess.waitFor(waitForFileContains(PAGE_JS_PATH, marker), 'updated router page script emitted')
-      await devProcess.waitFor(waitForFileContains(COMMON_JS_PATH, 'weapp-vendors/wevu-router.js'), 'common.js keeps router vendor after HMR')
+      await devProcess.waitFor(waitForFileContains(PAGE_JS_PATH, 'weapp-vendors/wevu-router.js'), 'page keeps router vendor after HMR')
 
       try {
         await relaunchAndWaitForMarker(miniProgram, marker)

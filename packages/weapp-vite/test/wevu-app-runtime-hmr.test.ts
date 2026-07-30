@@ -21,6 +21,7 @@ interface GeneratedJsFile {
 
 const WATCH_ASSERTION_TIMEOUT_MS = 90_000
 const TEST_TIMEOUT_MS = 180_000
+const WEVU_PACKAGE_ROOT = path.resolve(__dirname, '../../../packages-runtime/wevu')
 
 type WatcherEmitter = WatcherInstance & {
   on: (event: 'event', listener: (event: WatcherEvent) => void) => void
@@ -118,6 +119,15 @@ async function readGeneratedJsFiles(root: string) {
   return files
 }
 
+async function installPublishedWevuPackage(projectRoot: string) {
+  const targetRoot = path.resolve(projectRoot, 'node_modules/wevu')
+  await fs.ensureDir(targetRoot)
+  await Promise.all([
+    fs.copy(path.resolve(WEVU_PACKAGE_ROOT, 'dist'), path.resolve(targetRoot, 'dist')),
+    fs.copy(path.resolve(WEVU_PACKAGE_ROOT, 'package.json'), path.resolve(targetRoot, 'package.json')),
+  ])
+}
+
 function expectNoBareWevuRuntimeReferences(code: string) {
   expect(code).not.toMatch(/\brequire\((['"`])wevu(?:\/internal-(?:runtime|reactivity|template))?\1\)/)
   expect(code).not.toMatch(/\bfrom\s*(['"`])wevu(?:\/internal-(?:runtime|reactivity|template))?\1/)
@@ -159,10 +169,11 @@ function expectRelativeWevuVendorRequireForBinding(files: GeneratedJsFile[], bin
 }
 
 describe.sequential('wevu app runtime HMR', () => {
-  it('keeps app runtime imports resolved after editing a layout in dev watch mode', async () => {
+  it('keeps published app runtime imports resolved after editing a layout in dev watch mode', async () => {
     const fixtureSource = path.resolve(__dirname, '../../../e2e-apps/github-issues')
     const tempProject = await createTempFixtureProject(fixtureSource, 'wevu-app-runtime-hmr')
     const cwd = tempProject.tempDir
+    await installPublishedWevuPackage(cwd)
     const appSourcePath = path.resolve(cwd, 'src/app.vue')
     const layoutSourcePath = path.resolve(cwd, 'src/layouts/issue-398-shell.vue')
 
@@ -216,6 +227,9 @@ describe.sequential('wevu app runtime HMR', () => {
 
       const appOutputPath = path.resolve(ctxResult.ctx.configService.outDir, 'app.js')
       const layoutOutputPath = path.resolve(ctxResult.ctx.configService.outDir, 'layouts/issue-398-shell.wxml')
+      const runtimeVendorPath = path.resolve(ctxResult.ctx.configService.outDir, 'weapp-vendors/wevu-runtime.js')
+      const reactivityVendorPath = path.resolve(ctxResult.ctx.configService.outDir, 'weapp-vendors/wevu-reactivity.js')
+      const templateVendorPath = path.resolve(ctxResult.ctx.configService.outDir, 'weapp-vendors/wevu-template.js')
 
       const initialAppOutput = await waitForFileSatisfies(
         appOutputPath,
@@ -223,6 +237,9 @@ describe.sequential('wevu app runtime HMR', () => {
         'initial app output contains hmr probe',
       )
       expectNoBareWevuRuntimeReferences(initialAppOutput)
+      expect(await fs.pathExists(runtimeVendorPath)).toBe(true)
+      expect(await fs.pathExists(reactivityVendorPath)).toBe(true)
+      expect(await fs.pathExists(templateVendorPath)).toBe(true)
 
       const originalLayoutSource = await fs.readFile(layoutSourcePath, 'utf8')
       const updatedLayoutSource = originalLayoutSource.replace(
