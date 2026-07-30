@@ -9,6 +9,14 @@ const TARGETS = [
   { id: 'web', label: 'Web', gzip: true },
 ]
 
+const TIERS = [
+  { id: 'reactivity-core', label: '响应式核心', description: '`ref`' },
+  { id: 'minimal-app', label: '最小应用', description: '响应式核心 + `createApp`、`setWevuDefaults`' },
+  { id: 'typical-page', label: '典型页面', description: '最小应用 + 组件注册、常用响应式、页面生命周期、class/style 模板辅助' },
+  { id: 'complex-component', label: '复杂组件', description: '典型页面 + provide/inject、slots、template ref、model、动态 layout' },
+  { id: 'full-provider', label: '完整 Provider', description: '端侧 runtime provider 暴露的全部能力上限' },
+]
+
 function assertObject(value, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`${label} must be an object.`)
@@ -40,26 +48,38 @@ function assertBytes(value, label) {
 
 function validateReport(value, label) {
   const report = assertObject(value, label)
-  if (report.version !== 1) {
-    throw new Error(`${label}.version must be 1.`)
+  if (report.version !== 2) {
+    throw new Error(`${label}.version must be 2.`)
   }
   assertCommit(report.commit, `${label}.commit`)
   if (!Array.isArray(report.targets) || report.targets.length !== TARGETS.length) {
     throw new Error(`${label}.targets must contain the configured runtime targets.`)
   }
 
-  for (const expected of TARGETS) {
-    const target = report.targets.find(candidate => candidate?.id === expected.id)
-    if (!target) {
-      throw new Error(`${label}.targets is missing ${expected.id}.`)
+  for (const [targetIndex, expected] of TARGETS.entries()) {
+    const target = report.targets[targetIndex]
+    if (target?.id !== expected.id) {
+      throw new Error(`${label}.targets[${targetIndex}] must be ${expected.id}.`)
     }
-    assertBytes(target.dev?.bytes, `${label}.${expected.id}.dev.bytes`)
-    assertBytes(target.production?.bytes, `${label}.${expected.id}.production.bytes`)
-    if (expected.gzip) {
-      assertBytes(target.production?.gzipBytes, `${label}.${expected.id}.production.gzipBytes`)
+    if (!Array.isArray(target.tiers) || target.tiers.length !== TIERS.length) {
+      throw new Error(`${label}.${expected.id}.tiers must contain the configured runtime tiers.`)
     }
-    else if (target.production?.gzipBytes !== undefined) {
-      throw new Error(`${label}.${expected.id} must not contain gzipBytes.`)
+    for (const [tierIndex, expectedTier] of TIERS.entries()) {
+      const tier = target.tiers[tierIndex]
+      if (tier?.id !== expectedTier.id) {
+        throw new Error(`${label}.${expected.id}.tiers[${tierIndex}] must be ${expectedTier.id}.`)
+      }
+      assertBytes(tier.dev?.bytes, `${label}.${expected.id}.${expectedTier.id}.dev.bytes`)
+      assertBytes(tier.production?.bytes, `${label}.${expected.id}.${expectedTier.id}.production.bytes`)
+      if (tier.dev?.gzipBytes !== undefined) {
+        throw new Error(`${label}.${expected.id}.${expectedTier.id}.dev must not contain gzipBytes.`)
+      }
+      if (expected.gzip) {
+        assertBytes(tier.production?.gzipBytes, `${label}.${expected.id}.${expectedTier.id}.production.gzipBytes`)
+      }
+      else if (tier.production?.gzipBytes !== undefined) {
+        throw new Error(`${label}.${expected.id}.${expectedTier.id} must not contain gzipBytes.`)
+      }
     }
   }
   return report
@@ -67,7 +87,7 @@ function validateReport(value, label) {
 
 export function validateArtifact(value, expected) {
   const artifact = assertObject(value, 'artifact')
-  if (artifact.version !== 1 || artifact.kind !== 'wevu-runtime-size-pr-report') {
+  if (artifact.version !== 2 || artifact.kind !== 'wevu-runtime-size-pr-report') {
     throw new Error('Unsupported runtime size artifact.')
   }
   if (artifact.repository !== expected.repository) {
@@ -119,19 +139,43 @@ export function renderSuccessComment(artifact) {
     COMMENT_MARKER,
     '## wevu 运行时体积',
     '',
+    '### 完整 Provider 能力上限',
+    '',
     '| 端 | Dev 未压缩 | Production 压缩 | Production gzip |',
     '| --- | ---: | ---: | ---: |',
   ]
   for (const target of TARGETS) {
     const current = currentById.get(target.id)
     const baseline = baselineById.get(target.id)
-    lines.push(`| ${target.label} | ${formatMeasurement(current.dev.bytes, baseline.dev.bytes)} | ${formatMeasurement(current.production.bytes, baseline.production.bytes)} | ${target.gzip ? formatMeasurement(current.production.gzipBytes, baseline.production.gzipBytes) : '不适用'} |`)
+    const currentTier = current.tiers.at(-1)
+    const baselineTier = baseline.tiers.at(-1)
+    lines.push(`| ${target.label} | ${formatMeasurement(currentTier.dev.bytes, baselineTier.dev.bytes)} | ${formatMeasurement(currentTier.production.bytes, baselineTier.production.bytes)} | ${target.gzip ? formatMeasurement(currentTier.production.gzipBytes, baselineTier.production.gzipBytes) : '不适用'} |`)
+  }
+  lines.push('', '### 正常 Tree-shaking 阶梯')
+  for (const target of TARGETS) {
+    const current = currentById.get(target.id)
+    const baseline = baselineById.get(target.id)
+    lines.push(
+      '',
+      `#### ${target.label}`,
+      '',
+      '| 阶梯 | Dev 未压缩 | Production 压缩 | Production gzip |',
+      '| --- | ---: | ---: | ---: |',
+    )
+    for (const [tierIndex, tier] of TIERS.entries()) {
+      const currentTier = current.tiers[tierIndex]
+      const baselineTier = baseline.tiers[tierIndex]
+      lines.push(`| ${tier.label} | ${formatMeasurement(currentTier.dev.bytes, baselineTier.dev.bytes)} | ${formatMeasurement(currentTier.production.bytes, baselineTier.production.bytes)} | ${target.gzip ? formatMeasurement(currentTier.production.gzipBytes, baselineTier.production.gzipBytes) : '不适用'} |`)
+    }
   }
   lines.push(
     '',
+    ...TIERS.map(tier => `- **${tier.label}**：${tier.description}`),
+    '',
     `- 当前 commit：\`${artifact.current.commit}\``,
     `- 对比基线：\`${artifact.baseline.commit}\``,
-    '- 统计完整 runtime provider 的能力上限，不等同于业务应用 tree-shaking 后的起步体积。',
+    '- 阶梯使用具名导入模拟正常 tree-shaking；完整 Provider 行表示全部能力上限。',
+    '- Web 最小应用包含 app 注册桥；典型页面及以上同时包含组件/页面注册桥。',
     '- 小程序仅统计产物字节；Web gzip 使用 level 9。',
   )
   return lines.join('\n')

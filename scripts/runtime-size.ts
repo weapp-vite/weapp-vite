@@ -1,19 +1,14 @@
 import type { BuildOptions } from 'esbuild'
+import type { RuntimeSizeEntryKind, RuntimeSizeTarget, RuntimeSizeTier } from './runtime-size-config'
 
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { gzipSync } from 'node:zlib'
 import { build } from 'esbuild'
+import { RUNTIME_SIZE_REPORT_VERSION, runtimeSizeTargets, runtimeSizeTiers } from './runtime-size-config'
 
-export const RUNTIME_SIZE_REPORT_VERSION = 1 as const
-
-export interface RuntimeSizeTarget {
-  id: 'weapp' | 'web'
-  label: string
-  platform: 'weapp' | 'web'
-  entries: readonly string[]
-  gzip: boolean
-}
+export type { RuntimeSizeEntryKind, RuntimeSizeTarget, RuntimeSizeTier } from './runtime-size-config'
+export { RUNTIME_SIZE_REPORT_VERSION, runtimeSizeTargets, runtimeSizeTiers } from './runtime-size-config'
 
 export interface RuntimeSizeMeasurement {
   bytes: number
@@ -22,6 +17,12 @@ export interface RuntimeSizeMeasurement {
 
 export interface RuntimeSizeTargetReport {
   id: RuntimeSizeTarget['id']
+  label: string
+  tiers: RuntimeSizeTierReport[]
+}
+
+export interface RuntimeSizeTierReport {
+  id: RuntimeSizeTier['id']
   label: string
   dev: RuntimeSizeMeasurement
   production: RuntimeSizeMeasurement
@@ -55,38 +56,33 @@ interface CollectRuntimeSizeOptions {
 interface BundleRuntimeTargetOptions {
   root: string
   target: RuntimeSizeTarget
+  tier: RuntimeSizeTier
   mode: 'development' | 'production'
 }
 
-export const runtimeSizeTargets: readonly RuntimeSizeTarget[] = [
-  {
-    id: 'weapp',
-    label: '微信小程序',
-    platform: 'weapp',
-    entries: [
-      'wevu/internal-runtime',
-      'wevu/internal-reactivity',
-      'wevu/internal-template',
-    ],
-    gzip: false,
-  },
-  {
-    id: 'web',
-    label: 'Web',
-    platform: 'web',
-    entries: [
-      '@weapp-vite/web/runtime',
-      'wevu/internal-reactivity',
-      'wevu/internal-template',
-    ],
-    gzip: true,
-  },
-] as const
+function createProviderEntry(target: RuntimeSizeTarget, tier: RuntimeSizeTier) {
+  if (!tier.imports) {
+    const entries = Object.values(target.entries)
+    return entries
+      .map((entry, index) => `import * as provider${index} from ${JSON.stringify(entry)}`)
+      .concat(`export { ${entries.map((_, index) => `provider${index}`).join(', ')} }`)
+      .join('\n')
+  }
 
-function createProviderEntry(entries: readonly string[]) {
-  return entries
-    .map((entry, index) => `import * as provider${index} from ${JSON.stringify(entry)}`)
-    .concat(`export { ${entries.map((_, index) => `provider${index}`).join(', ')} }`)
+  const targetImports = tier.targetImports?.[target.id]
+  const imports = (Object.keys(target.entries) as RuntimeSizeEntryKind[]).flatMap((kind) => {
+    const names = [...new Set([...(tier.imports[kind] ?? []), ...(targetImports?.[kind] ?? [])])]
+    return names.length > 0 ? [{ kind, names }] : []
+  }).map(({ kind, names }, entryIndex) => {
+    const aliases = names.map(name => `${name} as tier${entryIndex}_${name}`)
+    return {
+      statement: `import { ${aliases.join(', ')} } from ${JSON.stringify(target.entries[kind as RuntimeSizeEntryKind])}`,
+      exports: names.map(name => `tier${entryIndex}_${name}`),
+    }
+  })
+  return imports
+    .map(entry => entry.statement)
+    .concat(`export { ${imports.flatMap(entry => entry.exports).join(', ')} }`)
     .join('\n')
 }
 
@@ -114,10 +110,10 @@ export function createRuntimeSizeBuildOptions(options: BundleRuntimeTargetOption
     platform: 'browser',
     sourcemap: false,
     stdin: {
-      contents: createProviderEntry(options.target.entries),
+      contents: createProviderEntry(options.target, options.tier),
       loader: 'js',
       resolveDir: options.root,
-      sourcefile: `wevu-runtime-size-${options.target.id}-${options.mode}.mjs`,
+      sourcefile: `wevu-runtime-size-${options.target.id}-${options.tier.id}-${options.mode}.mjs`,
     },
     target: 'es2018',
     treeShaking: true,
@@ -139,18 +135,24 @@ export async function collectRuntimeSizeReport(options: CollectRuntimeSizeOption
   const targets: RuntimeSizeTargetReport[] = []
 
   for (const target of runtimeSizeTargets) {
-    const devOutput = await bundle({ root: options.root, target, mode: 'development' })
-    const productionOutput = await bundle({ root: options.root, target, mode: 'production' })
+    const tiers: RuntimeSizeTierReport[] = []
+    for (const tier of runtimeSizeTiers) {
+      const devOutput = await bundle({ root: options.root, target, tier, mode: 'development' })
+      const productionOutput = await bundle({ root: options.root, target, tier, mode: 'production' })
+      tiers.push({
+        id: tier.id,
+        label: tier.label,
+        dev: { bytes: devOutput.byteLength },
+        production: {
+          bytes: productionOutput.byteLength,
+          ...(target.gzip ? { gzipBytes: gzipSync(productionOutput, { level: 9 }).byteLength } : {}),
+        },
+      })
+    }
     targets.push({
       id: target.id,
       label: target.label,
-      dev: {
-        bytes: devOutput.byteLength,
-      },
-      production: {
-        bytes: productionOutput.byteLength,
-        ...(target.gzip ? { gzipBytes: gzipSync(productionOutput, { level: 9 }).byteLength } : {}),
-      },
+      tiers,
     })
   }
 
@@ -192,8 +194,11 @@ function renderMeasurement(current: number, baseline: number | undefined) {
 
 export function renderRuntimeSizeMarkdown(current: RuntimeSizeReport, baseline?: RuntimeSizeReport) {
   const baselineById = new Map(baseline?.targets.map(target => [target.id, target]))
+  const fullProviderId: RuntimeSizeTier['id'] = 'full-provider'
   const lines = [
     '## wevu 运行时体积',
+    '',
+    '### 完整 Provider 能力上限',
     '',
     '| 端 | Dev 未压缩 | Production 压缩 | Production gzip |',
     '| --- | ---: | ---: | ---: |',
@@ -201,17 +206,41 @@ export function renderRuntimeSizeMarkdown(current: RuntimeSizeReport, baseline?:
 
   for (const target of current.targets) {
     const baselineTarget = baselineById.get(target.id)
-    const gzip = target.production.gzipBytes === undefined
+    const tier = target.tiers.find(candidate => candidate.id === fullProviderId)!
+    const baselineTier = baselineTarget?.tiers.find(candidate => candidate.id === fullProviderId)
+    const gzip = tier.production.gzipBytes === undefined
       ? '不适用'
-      : renderMeasurement(target.production.gzipBytes, baselineTarget?.production.gzipBytes)
-    lines.push(`| ${target.label} | ${renderMeasurement(target.dev.bytes, baselineTarget?.dev.bytes)} | ${renderMeasurement(target.production.bytes, baselineTarget?.production.bytes)} | ${gzip} |`)
+      : renderMeasurement(tier.production.gzipBytes, baselineTier?.production.gzipBytes)
+    lines.push(`| ${target.label} | ${renderMeasurement(tier.dev.bytes, baselineTier?.dev.bytes)} | ${renderMeasurement(tier.production.bytes, baselineTier?.production.bytes)} | ${gzip} |`)
+  }
+
+  lines.push('', '### 正常 Tree-shaking 阶梯')
+  for (const target of current.targets) {
+    const baselineTarget = baselineById.get(target.id)
+    lines.push(
+      '',
+      `#### ${target.label}`,
+      '',
+      '| 阶梯 | Dev 未压缩 | Production 压缩 | Production gzip |',
+      '| --- | ---: | ---: | ---: |',
+    )
+    for (const tier of target.tiers) {
+      const baselineTier = baselineTarget?.tiers.find(candidate => candidate.id === tier.id)
+      const gzip = tier.production.gzipBytes === undefined
+        ? '不适用'
+        : renderMeasurement(tier.production.gzipBytes, baselineTier?.production.gzipBytes)
+      lines.push(`| ${tier.label} | ${renderMeasurement(tier.dev.bytes, baselineTier?.dev.bytes)} | ${renderMeasurement(tier.production.bytes, baselineTier?.production.bytes)} | ${gzip} |`)
+    }
   }
 
   lines.push(
     '',
+    ...runtimeSizeTiers.map(tier => `- **${tier.label}**：${tier.description}`),
+    '',
     `- 当前 commit：\`${current.commit}\``,
     ...(baseline ? [`- 对比基线：\`${baseline.commit}\``] : []),
-    '- 统计完整 runtime provider 的能力上限，不等同于业务应用 tree-shaking 后的起步体积。',
+    '- 阶梯使用具名导入模拟正常 tree-shaking；完整 Provider 行表示全部能力上限。',
+    '- Web 最小应用包含 app 注册桥；典型页面及以上同时包含组件/页面注册桥。',
     '- 小程序仅统计产物字节；Web gzip 使用 level 9。',
     '',
   )
