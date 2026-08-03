@@ -1,4 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- e2e build assertions reuse shared fs helpers to inspect generated artifacts. */
+import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import { fdir } from 'fdir'
@@ -86,6 +87,16 @@ function createCachedEnvLinePattern(variableName: string) {
   return new RegExp(
     `const ${variableName} = .*globalThis\\["__weappViteImportMetaEnv"\\].*JSON\\.parse\\(`,
   )
+}
+
+function findGeneratedPosition(code: string, needle: string) {
+  const lines = code.split('\n')
+  const lineIndex = lines.findIndex(line => line.includes(needle))
+  expect(lineIndex).toBeGreaterThanOrEqual(0)
+  return {
+    column: lines[lineIndex].indexOf(needle),
+    line: lineIndex + 1,
+  }
 }
 
 function createObjectPropertyPattern(property: string, value: string) {
@@ -950,6 +961,28 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(componentJs).toContain('issue-475 component marker')
     expect(componentJs).toMatch(createCachedEnvLinePattern('componentEnv'))
     expect(componentJs).not.toContain('const componentEnv = {\n')
+  })
+
+  it('issue #769: keeps native ts sourcemaps aligned after local npm rewrite', async () => {
+    await runBuildWithSourcemap()
+
+    const sourceFile = 'src/subpackages/item/issue-769/index.ts'
+    const pageJsPath = path.join(DIST_ROOT, 'subpackages/item/issue-769/index.js')
+    const pageMapPath = `${pageJsPath}.map`
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const pageMap = JSON.parse(await fs.readFile(pageMapPath, 'utf-8')) as Parameters<typeof TraceMap>[0]
+    const sourceTs = await fs.readFile(path.join(APP_ROOT, sourceFile), 'utf-8')
+    const expectedSourceLine = sourceTs
+      .split('\n')
+      .findIndex(line => line.includes(`camelCase('issue 769 sourcemap marker')`)) + 1
+    const generatedPosition = findGeneratedPosition(pageJs, 'issue 769 sourcemap marker')
+    const originalPosition = originalPositionFor(new TraceMap(pageMap), generatedPosition)
+
+    expect(pageJs).toMatch(/require\((['"])\.\.\/miniprogram_npm\/camelcase(?:\/index)?\1\)/)
+    expect(await fs.pathExists(pageMapPath)).toBe(true)
+    expect(expectedSourceLine).toBeGreaterThan(0)
+    expect(originalPosition.source?.replaceAll('\\', '/')).toContain(sourceFile)
+    expect(originalPosition.line).toBe(expectedSourceLine)
   })
 
   it('issue #479: injects indirect wevu page feature hooks from local helpers', async () => {
@@ -2521,6 +2554,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(itemSubPackage?.pages).toEqual([
       'index',
+      'issue-769/index',
       'login-required/index',
     ])
     expect(await fs.pathExists(invalidSharedPageWxmlPath)).toBe(false)

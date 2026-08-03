@@ -610,6 +610,13 @@
           "launchMode": "default"
         },
         {
+          "name": "subpackages/item/issue-769/index",
+          "pathName": "subpackages/item/issue-769/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "subpackages/item/login-required/index",
           "pathName": "subpackages/item/login-required/index",
           "query": "",

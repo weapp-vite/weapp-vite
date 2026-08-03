@@ -258,6 +258,9 @@ importers:
       '@icebreakers/changelog-github':
         specifier: ^2.0.0
         version: 2.0.0(encoding@0.1.13)
+      '@jridgewell/trace-mapping':
+        specifier: ^0.3.31
+        version: 0.3.31
       '@oxc-node/cli':
         specifier: ^0.1.0
         version: 0.1.0
