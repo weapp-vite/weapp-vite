@@ -51,6 +51,10 @@
     bind:duplicate_under="recordColonProbe"
     bindduplicate_under="recordEventBinding"
   />
+  <PascalCaseCard
+    id="pascal-case-card"
+    status="pascal"
+  />
   <view wx:if="{{flags.showMeta}}" class="panel-row">最近事件：{{events.0}}</view>
   <view wx:elif="{{eventShape}}" class="panel-row">meta 已隐藏，但保留事件形态</view>
   <view wx:else class="panel-row">meta 已隐藏且还没有事件</view>

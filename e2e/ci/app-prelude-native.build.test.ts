@@ -1,6 +1,7 @@
 import {
   APP_PRELUDE_CHUNK_MARKER,
   APP_PRELUDE_GUARD_KEY,
+  REQUEST_GLOBAL_PRELUDE_GUARD_KEY,
   REQUEST_GLOBAL_PRELUDE_MARKER,
 } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
@@ -231,7 +232,7 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(rootPreludeJs).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(rootPreludeJs).toContain(`/* ${APP_PRELUDE_CHUNK_MARKER} */`)
     expect(rootPreludeJs).toContain('require("./weapp-vendors/request-globals-web-apis-shared.js")')
-    expect(rootPreludeJs).toContain('"__wvRGI__"')
+    expect(rootPreludeJs).toContain(JSON.stringify(REQUEST_GLOBAL_PRELUDE_GUARD_KEY))
     expect(rootPreludeJs).toContain('"fetch","Headers","Request","Response"')
     expect(rootPreludeJs).not.toContain('"XMLHttpRequest"')
     expect(rootPreludeJs).not.toContain('"WebSocket"')

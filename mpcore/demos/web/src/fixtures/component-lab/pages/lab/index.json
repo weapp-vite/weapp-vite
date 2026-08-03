@@ -7,6 +7,7 @@
   "backgroundColorTop": "#303030",
   "backgroundTextStyle": "dark",
   "usingComponents": {
+    "PascalCaseCard": "../../components/status-card/index",
     "status-card": "../../components/status-card/index"
   }
 }

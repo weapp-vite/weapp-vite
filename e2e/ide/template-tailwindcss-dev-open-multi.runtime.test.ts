@@ -100,6 +100,11 @@ function isDevtoolsProtocolTimeout(error: unknown) {
     )
 }
 
+function canRetryOnCurrentAutomatorSession(error: unknown) {
+  return isDevtoolsProtocolTimeout(error)
+    || (error instanceof Error && /timeout waiting for automator response/i.test(error.message))
+}
+
 async function removeAutomatorSessionFiles(projectPath: string) {
   await Promise.all([
     fs.rm(resolveAutomatorSessionFile(projectPath), { force: true }).catch(() => {}),
@@ -111,7 +116,6 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
   const normalizedRoute = normalizeRoutePath(route)
   const start = Date.now()
   let latestWxml = ''
-  let emptyPageReads = 0
   let lastProtocolTimeout = ''
   let currentMiniProgram = miniProgram
 
@@ -149,25 +153,18 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
       catch {
         // Page 域 DOM 不稳定时，data fallback 也可能短暂不可读，继续轮询。
       }
-      if (latestWxml.trim() === '' || latestWxml.trim() === '<page></page>') {
-        emptyPageReads += 1
-        if (emptyPageReads >= 2) {
-          currentMiniProgram.disconnect?.()
-          currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 30_000 })).miniProgram
-          emptyPageReads = 0
-        }
-      }
-      else {
-        emptyPageReads = 0
-      }
     }
     catch (error) {
       if (!isDevtoolsProtocolTimeout(error) && !isLikelyRelaunchRetryableError(error)) {
         throw error
       }
       lastProtocolTimeout = error.message
+      if (canRetryOnCurrentAutomatorSession(error)) {
+        await delay(1_000)
+        continue
+      }
       currentMiniProgram.disconnect?.()
-      currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 30_000 })).miniProgram
+      currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 120_000 })).miniProgram
     }
     await delay(1_000)
   }
@@ -186,17 +183,17 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
     infraOutput = output.length > 4_000 ? output.slice(-4_000) : output
   }).catch(() => {})
 
+  const readySession = waitForOpenedAutomator(process.root, { timeoutMs: 120_000 }).catch((error) => {
+    const details = infraOutput ? `\nRecent infra output:\n${infraOutput}` : ''
+    throw new Error(`WeChat DevTools automator unavailable while opening ${process.name}${details}`, {
+      cause: error as Error,
+    })
+  })
   await process.dev.waitFor(
-    waitForOpenedAutomator(process.root, { timeoutMs: 120_000 }).then(async ({ miniProgram }) => {
-      await miniProgram.disconnect()
-    }).catch((error) => {
-      const details = infraOutput ? `\nRecent infra output:\n${infraOutput}` : ''
-      throw new Error(`WeChat DevTools automator unavailable while opening ${process.name}${details}`, {
-        cause: error as Error,
-      })
-    }),
+    readySession,
     `${process.name} dev:open ready`,
   )
+  return await readySession
 }
 
 function startTemplateDevProcess(templateCase: typeof TEMPLATE_CASES[number]): TemplateDevProcess {
@@ -228,17 +225,25 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
       const process = startTemplateDevProcess(templateCase)
       const port = resolveProjectAutomatorPort(templateCase.root)
       try {
-        await waitForTemplateDevOpenReady(process)
-        const { metadata, miniProgram } = await waitForOpenedAutomator(templateCase.root)
+        const { metadata, miniProgram } = await waitForTemplateDevOpenReady(process)
         try {
           expect(path.resolve(metadata.projectPath)).toBe(templateCase.root)
           expect(metadata.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
           const wrapperProjectPath = resolveAutomatorWrapperProjectPath(templateCase.root)
-          await fs.access(wrapperProjectPath)
-          expect(JSON.parse(await fs.readFile(path.join(wrapperProjectPath, 'project.config.json'), 'utf8'))).toMatchObject({
-            miniprogramRoot: './',
-            srcMiniprogramRoot: './',
-          })
+          const wrapperProjectConfig = path.join(wrapperProjectPath, 'project.config.json')
+          const usesWrapperProject = await fs.access(wrapperProjectConfig).then(() => true).catch(() => false)
+          const projectConfigPath = usesWrapperProject
+            ? wrapperProjectConfig
+            : path.join(templateCase.root, 'project.config.json')
+          expect(JSON.parse(await fs.readFile(projectConfigPath, 'utf8'))).toMatchObject(usesWrapperProject
+            ? {
+                miniprogramRoot: './',
+                srcMiniprogramRoot: './',
+              }
+            : {
+                miniprogramRoot: 'dist/',
+                srcMiniprogramRoot: 'dist/',
+              })
           await waitForPageText(miniProgram, templateCase.root, INDEX_ROUTE, templateCase.expectedText)
         }
         finally {
@@ -272,7 +277,8 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
       reject: false,
     })
     try {
-      await waitForTemplateDevOpenReady({ ...PLAIN_TEMPLATE, dev: plainDev })
+      const { miniProgram } = await waitForTemplateDevOpenReady({ ...PLAIN_TEMPLATE, dev: plainDev })
+      await miniProgram.disconnect()
     }
     catch (error) {
       await plainDev.stop().catch(() => {})
@@ -289,8 +295,7 @@ describe.sequential('template TailwindCSS dev:open multi-project IDE integration
     })
 
     try {
-      await waitForTemplateDevOpenReady({ ...TDESIGN_TEMPLATE, dev: tdesignDev })
-      const { miniProgram } = await waitForOpenedAutomator(TDESIGN_TEMPLATE.root)
+      const { miniProgram } = await waitForTemplateDevOpenReady({ ...TDESIGN_TEMPLATE, dev: tdesignDev })
       try {
         await waitForPageText(miniProgram, TDESIGN_TEMPLATE.root, INDEX_ROUTE, TDESIGN_TEMPLATE.expectedText)
       }

@@ -188,7 +188,9 @@ async function requireElement(page: MiniProgramPage, selector: string, timeoutMs
   let lastError: unknown
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const element = await page.$(selector)
+      const element = await page.$(selector, {
+        fallback: false,
+      })
       if (element) {
         return element as MiniProgramElement
       }

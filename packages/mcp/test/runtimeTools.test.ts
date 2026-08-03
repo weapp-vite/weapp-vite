@@ -216,6 +216,7 @@ describe('runtime MCP tools', () => {
       waitedMs: 10,
     })
     expect(inner.tap).toHaveBeenCalledTimes(1)
+    expect(fixture.page.$$).toHaveBeenCalledWith('.item', { fallback: false })
     expect(fixture.page.waitFor).toHaveBeenCalledWith(10)
   })
 

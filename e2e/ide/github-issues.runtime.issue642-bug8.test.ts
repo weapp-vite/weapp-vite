@@ -61,13 +61,13 @@ async function expectIssue642Bug8DistWxmlContract() {
   expect(pageWxml).toContain('id="issue642-bug8-direct-cell"')
   expect(pageWxml).toContain('generic:scoped-slots-default=')
   expect(pageWxml).toContain('vue-slots="{{ {default:true} }}"')
-  expect(pageWxml).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
+  expect(pageWxml).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
   expect(pageWxml).toContain('<Issue642Bug8Wrap id="issue642-bug8-wrap"')
 
   expect(wrapWxml).toContain('id="issue642-bug8-wrapped-cell"')
   expect(wrapWxml).toContain('generic:scoped-slots-default=')
   expect(wrapWxml).toContain('vue-slots="{{ {default:true} }}"')
-  expect(wrapWxml).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
+  expect(wrapWxml).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
 
   expect(directSlotWxml).toContain('data-issue642-bug8-case="direct"')
   expect(directSlotWxml).toContain('data-issue642-bug8-value="{{__wvSlotPropsData.io}}"')
@@ -90,14 +90,12 @@ describe.sequential('e2e app: github-issues / issue #642 bug-8', () => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_642_BUG8_ROUTE, undefined, 45_000, {
-        readiness: async (page) => {
-          await page.waitForRendered({
-            selector: '#issue642-bug8-page',
-            dataset: { e2eIssue: '642-bug8' },
-            timeout: 4_000,
-          })
-          return true
-        },
+        readiness: async (_page, runtimeMiniProgram) => Boolean(await runtimeMiniProgram.evaluate(() => {
+          const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+          const page = pages[pages.length - 1] as any
+          return page?.route === 'pages/issue-642-bug8/index'
+            && typeof page?._runE2E === 'function'
+        }).catch(() => false)),
       })
       if (!issuePage) {
         throw new Error('Failed to launch issue-642-bug8 page')

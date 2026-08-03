@@ -89,7 +89,7 @@ describe('emitVueBundleAssets platform output', () => {
     return dir
   }
 
-  it('registers emitted slot fallback wrapper globally when app json is available', async () => {
+  it('registers emitted slot fallback wrapper locally when app json is available', async () => {
     const configService = {
       isDev: false,
       platform: 'weapp',
@@ -168,9 +168,6 @@ describe('emitVueBundleAssets platform output', () => {
 
     expect(JSON.parse(bundle['app.json'].source)).toEqual({
       pages: ['pages/index/index'],
-      usingComponents: {
-        'weapp-slot-wrapper': '/weapp_vite_internal/slot-wrapper/index',
-      },
     })
     expect(emittedAssets.get('weapp_vite_internal/slot-wrapper/index.wxml')).toBe('<slot></slot>')
     expect(JSON.parse(emittedAssets.get('weapp_vite_internal/slot-wrapper/index.json')!)).toEqual({
@@ -179,7 +176,7 @@ describe('emitVueBundleAssets platform output', () => {
     expect(emittedAssets.get('weapp_vite_internal/slot-wrapper/index.js')).toContain('virtualHost:true')
 
     const componentJson = JSON.parse(emittedAssets.get('components/Forwarder/index.json')!)
-    expect(componentJson.usingComponents?.['weapp-slot-wrapper']).toBeUndefined()
+    expect(componentJson.usingComponents?.['weapp-slot-wrapper']).toBe('/weapp_vite_internal/slot-wrapper/index')
   })
 
   it('registers emitted slot fallback wrapper locally when app json is unavailable', async () => {

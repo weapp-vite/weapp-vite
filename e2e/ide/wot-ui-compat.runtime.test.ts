@@ -8,6 +8,8 @@ defineComponentLibraryRuntimeSuite({
   expectedCount: 99,
   outputRoot: '.tmp/wot-ui-compat/wechat',
   progressLabel: 'wot-ui',
+  sessionReadyRoute: '/pages/bootstrap/index',
+  sessionReadySelector: '.bootstrap-page',
   scenarios: componentScenarios,
   suiteName: 'Wot UI 2.2.0 全组件运行时兼容',
   updateBaselinesEnv: 'WOT_UI_UPDATE_WECHAT_BASELINES',

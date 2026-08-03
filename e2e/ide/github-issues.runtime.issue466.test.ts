@@ -8,7 +8,6 @@ import {
   prepareGithubIssuesBuild,
   relaunchPage,
   releaseSharedMiniProgram,
-  waitForCurrentPagePath,
 } from './github-issues.runtime.shared'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
@@ -27,14 +26,61 @@ async function waitForIssue466PageMarker(page: any, selector: string, marker: st
   return true
 }
 
-async function navigateToIssue466Page(miniProgram: any, route: string, selector: string, marker: string) {
-  await miniProgram.navigateTo(route).catch(() => {})
-  const page = await waitForCurrentPagePath(miniProgram, route, 30_000)
-  if (!page) {
-    return null
+function isIssue466RuntimeReady(marker: string, runtime: Record<string, any> | null) {
+  if (marker === '466-main') {
+    return runtime?.confirmType === 'function'
   }
-  await waitForIssue466PageMarker(page, selector, marker)
-  return page
+  if (marker === '466-native') {
+    return runtime?.confirmType === 'function'
+      && runtime?.alertType === 'function'
+  }
+  return runtime?.alertType === 'function'
+    && runtime?.confirmType === 'function'
+    && runtime?.actionType === 'function'
+    && runtime?.closeType === 'function'
+}
+
+async function waitForIssue466PageReadiness(
+  miniProgram: any,
+  route: string,
+  page: any,
+  selector: string,
+  marker: string,
+) {
+  try {
+    return await waitForIssue466PageMarker(page, selector, marker)
+  }
+  catch {
+  }
+
+  try {
+    const runtime = await callRoutePageMethodWithOptions<Record<string, any>>(
+      miniProgram,
+      route,
+      '_runE2E',
+      {
+        protocolTimeoutMs: 3_000,
+        retries: 1,
+        recoveryAttempts: 1,
+      },
+    )
+    return isIssue466RuntimeReady(marker, runtime)
+  }
+  catch {
+    return false
+  }
+}
+
+async function navigateToIssue466Page(miniProgram: any, route: string, selector: string, marker: string) {
+  return await relaunchPage(miniProgram, route, undefined, 45_000, {
+    readiness: (page, activeMiniProgram) => waitForIssue466PageReadiness(
+      activeMiniProgram,
+      route,
+      page,
+      selector,
+      marker,
+    ),
+  })
 }
 
 async function waitForIssue466Runtime(miniProgram: any, route: string, page: any, timeoutMs = 20_000) {
@@ -136,7 +182,13 @@ describe.sequential('github-issues runtime issue-466', () => {
 
     try {
       const page = await relaunchPage(miniProgram, route, undefined, 45_000, {
-        readiness: page => waitForIssue466PageMarker(page, '#issue466-page', '466-main'),
+        readiness: (page, activeMiniProgram) => waitForIssue466PageReadiness(
+          activeMiniProgram,
+          route,
+          page,
+          '#issue466-page',
+          '466-main',
+        ),
       })
       if (!page) {
         throw new Error('Failed to launch main-package issue-466 page')

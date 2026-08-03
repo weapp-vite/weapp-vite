@@ -65,7 +65,10 @@ describe.sequential('wevu watch controls (e2e)', () => {
       if (!page) {
         throw new Error('Failed to launch index page')
       }
-      const logs = await page.callMethod('runWatchE2E')
+      const logs = await page.callMethodWithOptions('runWatchE2E', {
+        routeOnly: true,
+        timeout: 60_000,
+      })
       expect(logs).toEqual([2])
       const storedLogs = await page.data('__watchLogs')
       expect(storedLogs).toEqual([2])

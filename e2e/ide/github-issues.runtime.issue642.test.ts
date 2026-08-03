@@ -15,6 +15,15 @@ import {
 
 const ISSUE_642_ROUTE = '/pages/issue-642/index'
 
+async function waitForIssue642PageMethod(_page: any, miniProgram: any) {
+  return Boolean(await miniProgram.evaluate(() => {
+    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+    const page = pages[pages.length - 1] as any
+    return page?.route === 'pages/issue-642/index'
+      && typeof page?._runE2E === 'function'
+  }).catch(() => false))
+}
+
 function countToken(wxml: string, token: string) {
   return wxml.split(token).length - 1
 }
@@ -36,7 +45,7 @@ async function callIssue642Runtime(ctx: { skip: (message?: string) => void }, ..
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const miniProgram = await getSharedMiniProgram(ctx)
     const page = await relaunchPage(miniProgram, ISSUE_642_ROUTE, undefined, 45_000, {
-      readiness: 'route',
+      readiness: waitForIssue642PageMethod,
     })
     if (!page) {
       throw new Error('Failed to launch issue-642 page')
@@ -53,7 +62,7 @@ async function callIssue642Runtime(ctx: { skip: (message?: string) => void }, ..
     }
 
     process.stdout.write(`[github-issues:issue642-runtime] undefined result attempt=${attempt}/3; restarting shared automator\n`)
-    await closeSharedMiniProgram().catch(() => {})
+    await closeSharedMiniProgram({ force: true }).catch(() => {})
     await delay(800)
   }
 
@@ -105,7 +114,7 @@ describe.sequential('e2e app: github-issues / issue #642', () => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_642_ROUTE, undefined, 45_000, {
-        readiness: 'route',
+        readiness: waitForIssue642PageMethod,
       })
       if (!issuePage) {
         throw new Error('Failed to launch issue-642 page')

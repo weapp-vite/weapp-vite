@@ -22,8 +22,20 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..')
 const SOURCE_APP_ROOT = path.join(REPO_ROOT, 'e2e-apps/github-issues')
 const SOURCE_NODE_MODULES = path.join(SOURCE_APP_ROOT, 'node_modules')
+const AGGREGATE_STABLE_LAUNCH_ROUTE = '/pages/issue-431/index'
+const DEVTOOLS_UNUSED_BUILD_ENTRIES = [
+  '.weapp-vite',
+  'node_modules',
+  'src',
+] as const
+const AGGREGATE_TARGET = 'github-issues.runtime.aggregate.test.ts'
 const SLOT_FALLBACK_COMPILER_OFF_TARGET = 'github-issues.runtime.slot-fallback-compiler-off.test.ts'
 const SLOT_FALLBACK_COMPILER_OFF_ENV = 'WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF'
+const SCOPED_BUILD_TARGETS = new Set([
+  AGGREGATE_TARGET,
+  'github-issues.runtime.app-shell.test.ts',
+  'github-issues.runtime.require-async.test.ts',
+])
 const APP_SHELL_FREE_TARGETS = new Set([
   'github-issues.runtime.issue642-bug7-default.test.ts',
   'github-issues.runtime.issue642-bug7-performance.test.ts',
@@ -74,7 +86,6 @@ export const APP_ROOT = path.join(REPO_ROOT, '.tmp/e2e-projects/github-issues', 
 export const DIST_ROOT = path.join(APP_ROOT, resolveGithubIssuesDistDir())
 const GITHUB_ISSUES_LAUNCH_RETRIES = 2
 const GITHUB_ISSUES_LAUNCH_RETRY_DELAY = 1_200
-const AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const CURRENT_PAGE_PROTOCOL_TIMEOUT = 3_000
 const PAGE_ROOT_QUERY_PROTOCOL_TIMEOUT = 1_000
 const PAGE_WXML_PROTOCOL_TIMEOUT = 1_000
@@ -84,10 +95,15 @@ const ROUTE_PAGE_METHOD_RETRIES = 3
 const ROUTE_PAGE_METHOD_RECOVERY_ATTEMPTS = 2
 export const PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT = 120_000
 
-type RelaunchPageReadiness = 'wxml' | 'route' | ((page: any) => boolean | Promise<boolean>)
+type RelaunchPageReadiness = 'wxml' | 'route' | ((page: any, miniProgram: any) => boolean | Promise<boolean>)
 
 export interface RelaunchPageOptions {
   readiness?: RelaunchPageReadiness
+  readinessTimeoutMs?: number
+}
+
+interface RouteRenderedRecoveryOptions extends RelaunchPageOptions {
+  routeTimeoutMs?: number
 }
 
 interface CallRoutePageMethodOptions {
@@ -96,6 +112,10 @@ interface CallRoutePageMethodOptions {
   readiness?: RelaunchPageReadiness
   retries?: number
   retryDelayMs?: number
+}
+
+interface CloseSharedMiniProgramOptions {
+  force?: boolean
 }
 
 function isRecord(value: unknown): value is Record<string, any> {
@@ -229,6 +249,10 @@ async function prepareIsolatedProjectRoot() {
 
 async function runBuild() {
   await fs.remove(DIST_ROOT)
+  const targetFile = getNormalizedTargetFile()
+  const scopedTargetFile = [...SCOPED_BUILD_TARGETS].some(target => targetFile.endsWith(target))
+    ? targetFile
+    : undefined
 
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
@@ -236,8 +260,17 @@ async function runBuild() {
     platform: 'weapp',
     skipNpm: true,
     cwd: APP_ROOT,
+    env: {
+      [E2E_TARGET_FILE_ENV]: scopedTargetFile,
+    },
     label: 'ide:github-issues',
   })
+}
+
+export async function pruneGithubIssuesBuildInputs(projectRoot = APP_ROOT) {
+  await Promise.all(DEVTOOLS_UNUSED_BUILD_ENTRIES.map(async (entry) => {
+    await fs.remove(path.join(projectRoot, entry))
+  }))
 }
 
 function resolveAppConfigRoutes(config: Record<string, any>) {
@@ -501,6 +534,11 @@ export async function prepareGithubIssuesBuild() {
   await cleanDevtoolsCache('all', { cwd: APP_ROOT })
   await runBuild()
   await assertGithubIssuesAppConfigReady()
+  if (getNormalizedTargetFile().endsWith(AGGREGATE_TARGET)) {
+    await prioritizeDistLaunchRoute(AGGREGATE_STABLE_LAUNCH_ROUTE)
+  }
+  // DevTools 的 FileUtils 会扫描项目根；构建完成后只保留运行期输入，避免大目录和依赖链接干扰产物索引。
+  await pruneGithubIssuesBuildInputs()
   await cleanDevtoolsCache('all', { cwd: APP_ROOT })
   await delay(600)
   sharedBuildPrepared = true
@@ -561,7 +599,8 @@ function shouldRecoverRoutePageMethodError(error: unknown) {
 
 function isRelaunchSessionUnstableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
-  return /Timeout in (?:raw )?reLaunch/i.test(message)
+  return isDevtoolsSimulatorBootError(error)
+    || /Timeout in (?:raw )?reLaunch/i.test(message)
     || /Timed out waiting page root after reLaunch/i.test(message)
     || /reLaunch returned empty page/i.test(message)
     || /routeDone with a webviewId/i.test(message)
@@ -571,6 +610,11 @@ function isRelaunchSessionUnstableError(error: unknown) {
     || /Target closed/i.test(message)
     || /WebSocket is not open/i.test(message)
     || /not connected/i.test(message)
+}
+
+export function isRenderedProtocolSessionError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return /DEVTOOLS_PROTOCOL_TIMEOUT.*App\.callFunction|App\.callFunction.*DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond to protocol method App\.callFunction/i.test(message)
 }
 
 async function runAutomatorOp<T>(
@@ -801,19 +845,25 @@ async function waitForPageReadiness(
   async function waitForRenderedDom(remainingTimeoutMs: number) {
     let lastError: unknown
     if (typeof page?.waitForRendered === 'function') {
-      const timeout = Math.max(1, remainingTimeoutMs)
-      for (const selector of resolveRouteRenderedSelectors(route)) {
-        try {
-          return {
-            ready: true,
-            wxml: stripAutomatorOverlay(await page.waitForRendered({
-              selector,
-              timeout: Math.min(timeout, 1_500),
-            })),
+      const selectors = resolveRouteRenderedSelectors(route)
+      const startedAt = Date.now()
+      let firstRound = true
+      while (selectors.length > 0 && (firstRound || Date.now() - startedAt < remainingTimeoutMs)) {
+        firstRound = false
+        for (const selector of selectors) {
+          const remaining = Math.max(1, remainingTimeoutMs - (Date.now() - startedAt))
+          try {
+            return {
+              ready: true,
+              wxml: stripAutomatorOverlay(await page.waitForRendered({
+                selector,
+                timeout: Math.min(remaining, 1_500),
+              })),
+            }
           }
-        }
-        catch (error) {
-          lastError = error
+          catch (error) {
+            lastError = error
+          }
         }
       }
     }
@@ -827,8 +877,15 @@ async function waitForPageReadiness(
     }
   }
 
-  if (readiness === 'route' || (!readiness && !readyText)) {
-    const routeStart = Date.now()
+  if (readiness === 'route') {
+    const appServiceReady = await waitForAppServiceRoute(miniProgram, route, timeoutMs)
+    return {
+      ready: appServiceReady,
+      wxml: '',
+    }
+  }
+
+  if (!readiness && !readyText) {
     const appServiceReady = await waitForAppServiceRoute(miniProgram, route, timeoutMs)
     if (!appServiceReady) {
       return {
@@ -836,7 +893,7 @@ async function waitForPageReadiness(
         wxml: '',
       }
     }
-    const domResult = await waitForRenderedDom(timeoutMs - (Date.now() - routeStart))
+    const domResult = await waitForRenderedDom(timeoutMs)
     return {
       ready: domResult.ready,
       wxml: domResult.wxml,
@@ -854,8 +911,8 @@ async function waitForPageReadiness(
     try {
       const remaining = Math.max(1, timeoutMs - (Date.now() - start))
       const ready = await runWithTimeout(
-        () => Promise.resolve(readiness(page)),
-        Math.min(CURRENT_PAGE_PROTOCOL_TIMEOUT, remaining),
+        () => Promise.resolve(readiness(page, miniProgram)),
+        remaining,
         `runtime ready ${route}`,
       )
       if (ready) {
@@ -948,26 +1005,14 @@ function isGithubIssuesLaunchInfraUnavailableError(error: unknown) {
 }
 
 async function launchGithubIssuesMiniProgramOnce() {
-  const previousBridgePostConnectRefresh = process.env[AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH_ENV]
-  try {
-    process.env[AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH_ENV] = '1'
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-      skipRelaunchPageRootCheck: true,
-      skipWarmup: true,
-      warmupAllowRelaunch: true,
-    })
-    await delay(600)
-    return miniProgram
-  }
-  finally {
-    if (previousBridgePostConnectRefresh == null) {
-      delete process.env[AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH_ENV]
-    }
-    else {
-      process.env[AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH_ENV] = previousBridgePostConnectRefresh
-    }
-  }
+  const miniProgram = await launchAutomator({
+    projectPath: APP_ROOT,
+    skipRelaunchPageRootCheck: true,
+    skipWarmup: true,
+    warmupAllowRelaunch: true,
+  })
+  await delay(600)
+  return miniProgram
 }
 
 async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) => void }) {
@@ -1005,7 +1050,26 @@ async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) =>
   throw lastError
 }
 
-export async function closeSharedMiniProgram() {
+export function shouldDeferSharedMiniProgramClose(
+  options: CloseSharedMiniProgramOptions = {},
+  targetFile = getNormalizedTargetFile(),
+) {
+  return !options.force && targetFile.endsWith(AGGREGATE_TARGET)
+}
+
+export function resolveSharedMiniProgramRestartRoute(
+  launchRoute: string | undefined,
+  targetFile = getNormalizedTargetFile(),
+) {
+  return targetFile.endsWith(AGGREGATE_TARGET)
+    ? AGGREGATE_STABLE_LAUNCH_ROUTE
+    : launchRoute
+}
+
+export async function closeSharedMiniProgram(options: CloseSharedMiniProgramOptions = {}) {
+  if (shouldDeferSharedMiniProgramClose(options)) {
+    return
+  }
   if (!sharedMiniProgram) {
     return
   }
@@ -1067,12 +1131,11 @@ export async function callCurrentPageMethod<T = any>(miniProgram: any, methodNam
 }
 
 async function restartSharedMiniProgram(ctx?: { skip: (message?: string) => void }, launchRoute?: string) {
-  await closeSharedMiniProgram()
-  if (launchRoute) {
-    const prioritized = await prioritizeDistLaunchRoute(launchRoute)
+  await closeSharedMiniProgram({ force: true })
+  const restartRoute = resolveSharedMiniProgramRestartRoute(launchRoute)
+  if (restartRoute) {
+    const prioritized = await prioritizeDistLaunchRoute(restartRoute)
     if (prioritized) {
-      await cleanupResidualIdeProcesses()
-      await cleanDevtoolsCache('all', { cwd: APP_ROOT }).catch(() => {})
       await delay(600)
     }
   }
@@ -1163,13 +1226,14 @@ export async function relaunchPage(
       page,
       route,
       readyText,
-      Math.min(timeoutMs, 12_000),
+      Math.min(timeoutMs, options.readinessTimeoutMs ?? 12_000),
       options.readiness,
     )
     if (readyResult.ready) {
       process.stdout.write(`[github-issues:relaunch] current-page-ready route=${route} phase=${phase}\n`)
       return page
     }
+
     process.stdout.write(`[github-issues:relaunch] current-page-ready-timeout route=${route} phase=${phase} readyText=${readyText || '<none>'}\n`)
     recordPageWxmlSnapshot({
       channel: 'github-issues:current-page-ready-timeout',
@@ -1201,6 +1265,49 @@ export async function relaunchPage(
   return null
 }
 
+export async function verifyRouteRenderedWithRecovery<T>(
+  miniProgram: any,
+  route: string,
+  verify: (page: any) => Promise<T>,
+  options: RouteRenderedRecoveryOptions = {},
+) {
+  async function verifyCurrentRoute(targetMiniProgram: any) {
+    const page = await waitForCurrentPagePath(
+      targetMiniProgram,
+      route,
+      options.routeTimeoutMs ?? 15_000,
+    )
+    if (!page) {
+      throw new Error(`Failed to resolve current rendered page: route=${route}`)
+    }
+    return {
+      miniProgram: targetMiniProgram,
+      page,
+      result: await verify(page),
+    }
+  }
+
+  try {
+    return await verifyCurrentRoute(miniProgram)
+  }
+  catch (error) {
+    if (!isRenderedProtocolSessionError(error) || miniProgram !== sharedMiniProgram) {
+      throw error
+    }
+
+    process.stdout.write(`[github-issues:rendered-recover] route=${route} reason=${error instanceof Error ? error.message : String(error)}\n`)
+    const restartedMiniProgram = await restartSharedMiniProgram(undefined, route)
+    const restartedPage = await relaunchPage(restartedMiniProgram, route, undefined, 45_000, {
+      readiness: options.readiness,
+      readinessTimeoutMs: options.readinessTimeoutMs,
+    })
+    if (!restartedPage) {
+      throw error
+    }
+    return await verifyCurrentRoute(restartedMiniProgram)
+  }
+}
+
 export async function callRoutePageMethodWithOptions<T = any>(
   miniProgram: any,
   route: string,
@@ -1214,6 +1321,20 @@ export async function callRoutePageMethodWithOptions<T = any>(
   const retryDelayMs = options.retryDelayMs ?? 500
 
   async function evaluateRoutePageMethod(targetMiniProgram: any) {
+    const currentPage = await waitForCurrentPagePath(
+      targetMiniProgram,
+      route,
+      CURRENT_PAGE_PROTOCOL_TIMEOUT,
+    )
+    if (typeof currentPage?.callMethodWithOptions === 'function') {
+      return {
+        value: await currentPage.callMethodWithOptions(methodName, {
+          routeOnly: true,
+          timeout: protocolTimeoutMs,
+        }, ...args),
+      }
+    }
+
     const evaluator = async (expectedRoute: string, name: string, methodArgs: any[]) => {
       const normalizeRoute = (value: unknown) => String(value || '').split('?', 1)[0].split('#', 1)[0].replace(/^\/+/, '').replace(/\/+$/g, '')
       const expected = normalizeRoute(expectedRoute)

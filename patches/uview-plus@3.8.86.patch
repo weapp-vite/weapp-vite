@@ -1,3 +1,159 @@
+diff --git a/components/u-cascader/u-cascader.vue b/components/u-cascader/u-cascader.vue
+index b4f6fc5fa11948d5f39c2fa8128202534037954b..4cf24ce837c5b33be2fbbd0f1d8e8c12dfcf0815 100644
+--- a/components/u-cascader/u-cascader.vue
++++ b/components/u-cascader/u-cascader.vue
+@@ -348,7 +348,7 @@
+ 		overflow: hidden;
+ 		height: 800rpx;
+ 
+-		>view {
++		>.u-flex {
+ 			width: 150%;
+ 			transition: transform 0.3s ease-in-out 0s;
+ 			transform: translateX(0);
+diff --git a/components/u-cropper/u-cropper.vue b/components/u-cropper/u-cropper.vue
+index 041612381a7b494fffc77164bce9a72ee6afb8c1..1b52a4eca1af62edba2ca0460a08e51cb52dff24 100644
+--- a/components/u-cropper/u-cropper.vue
++++ b/components/u-cropper/u-cropper.vue
+@@ -7,25 +7,25 @@
+ 		<view class="oper-wrapper" :style="{ display: styleDisplay }">
+ 			<view class="oper">
+ 				<view class="btn-wrapper" v-if="showOper">
+-					<view @click="select" hover-class="hover" :style="{ width: btnWidth }">
++					<view class="u-cropper__action" @click="select" hover-class="hover" :style="{ width: btnWidth }">
+ 						<text>{{ t("up.common.re-select") }}</text>
+ 					</view>
+-					<view @click="close" hover-class="hover" :style="{ width: btnWidth }">
++					<view class="u-cropper__action" @click="close" hover-class="hover" :style="{ width: btnWidth }">
+ 						<text>{{ t("up.common.close") }}</text>
+ 					</view>
+-					<view @click="rotate" hover-class="hover" :style="{ width: btnWidth, display: btnDsp }">
++					<view class="u-cropper__action" @click="rotate" hover-class="hover" :style="{ width: btnWidth, display: btnDsp }">
+ 						<text>{{ t("up.common.rotate") }}</text>
+ 					</view>
+-					<view @click="preview" hover-class="hover" :style="{ width: btnWidth }">
++					<view class="u-cropper__action" @click="preview" hover-class="hover" :style="{ width: btnWidth }">
+ 						<text>{{ t("up.common.preview") }}</text>
+ 					</view>
+-					<view @click="confirm" hover-class="hover" :style="{ width: btnWidth }">
++					<view class="u-cropper__action" @click="confirm" hover-class="hover" :style="{ width: btnWidth }">
+ 						<text>{{ t("up.common.confirm") }}</text>
+ 					</view>
+ 				</view>
+ 				<view class="clr-wrapper" v-else>
+ 					<slider class="my-slider" @change="colorChange" block-size="25" value="0" min="-100" max="100" activeColor="red" backgroundColor="green" block-color="grey" show-value></slider>
+-					<view @click="prvUpload" hover-class="hover" :style="{ width: btnWidth }">
++					<view class="u-cropper__action" @click="prvUpload" hover-class="hover" :style="{ width: btnWidth }">
+ 						<text>{{ t("up.common.confirm") }}</text>
+ 					</view>
+ 				</view>
+@@ -1259,7 +1259,7 @@
+ 			justify-content: space-between;
+ 		}
+ 
+-		.btn-wrapper view {
++		.btn-wrapper .u-cropper__action {
+ 			display: flex;
+ 			align-items: center;
+ 			justify-content: center;
+@@ -1280,7 +1280,7 @@
+ 			flex-grow: 1;
+ 		}
+ 
+-		.clr-wrapper view {
++		.clr-wrapper .u-cropper__action {
+ 			display: flex;
+ 			align-items: center;
+ 			justify-content: center;
+diff --git a/components/u-float-button/u-float-button.vue b/components/u-float-button/u-float-button.vue
+index 4ffc32baf1727c4ba5304ae6f24fa49fd9539dab..420fa8307ac4d188a266e0f43283e1160af42474 100644
+--- a/components/u-float-button/u-float-button.vue
++++ b/components/u-float-button/u-float-button.vue
+@@ -159,7 +159,7 @@ export default {
+         bottom: 0px;
+         display: flex;
+         flex-direction: column;
+-        >view {
++        >.u-float-button__item {
+             margin: 5px 0px;
+         }
+     }
+diff --git a/components/u-goods-sku/u-goods-sku.vue b/components/u-goods-sku/u-goods-sku.vue
+index e20abfc61f5ebc19f4bf07a52b5271e0f87fe80a..dfb8ed2ebaea5d150a530e8658bf16ea299bf6c3 100644
+--- a/components/u-goods-sku/u-goods-sku.vue
++++ b/components/u-goods-sku/u-goods-sku.vue
+@@ -15,7 +15,7 @@
+                 <view class="up-goods-sku__header">
+                     <slot name="header">
+                         <view class="up-goods-sku__header__image">
+-                            <image :src="goodsInfo.image || goodsInfo.picture" mode="aspectFill"></image>
++                            <image class="up-goods-sku__header__image-element" :src="goodsInfo.image || goodsInfo.picture" mode="aspectFill"></image>
+                         </view>
+                         <view class="up-goods-sku__header__info">
+                             <view class="up-goods-sku__header__info__price">
+@@ -332,7 +332,7 @@
+ 				overflow: hidden;
+ 				margin-right: 20rpx;
+ 				
+-				image {
++				&-element {
+ 					width: 100%;
+ 					height: 100%;
+ 				}
+diff --git a/components/u-navbar/theme-vars.scss b/components/u-navbar/theme-vars.scss
+index d057ee6ac974fe51931f67dc0f93acb8f1f77ba0..1d58993f60a7d198ba08efec3f4afe0739f7e95b 100644
+--- a/components/u-navbar/theme-vars.scss
++++ b/components/u-navbar/theme-vars.scss
+@@ -1,3 +1,16 @@
++/* #ifdef MP-WEIXIN */
++:host {
++	--up-navbar-bg-color: #ffffff;
++}
++
++@media (prefers-color-scheme: dark) {
++	:host {
++		--up-navbar-bg-color: #1c1c1e;
++	}
++}
++/* #endif */
++
++/* #ifndef MP-WEIXIN */
+ :root,
+ page,
+ body {
+@@ -19,3 +32,4 @@ [data-up-theme='light'] {
+ [data-up-theme='dark'] {
+ 	--up-navbar-bg-color: #1c1c1e;
+ }
++/* #endif */
+diff --git a/components/u-notice-bar/theme-vars.scss b/components/u-notice-bar/theme-vars.scss
+index ed4c8ea58e4a17ee80ca34ef63dba0044084a947..da02a26a13b80c6dd6e74a0e3d5d4512c9f14b7b 100644
+--- a/components/u-notice-bar/theme-vars.scss
++++ b/components/u-notice-bar/theme-vars.scss
+@@ -1,3 +1,18 @@
++/* #ifdef MP-WEIXIN */
++:host {
++	--up-notice-bar-color: #f9ae3d;
++	--up-notice-bar-bg-color: #fdf6ec;
++}
++
++@media (prefers-color-scheme: dark) {
++	:host {
++		--up-notice-bar-color: #f9ae3d;
++		--up-notice-bar-bg-color: #3d2f1b;
++	}
++}
++/* #endif */
++
++/* #ifndef MP-WEIXIN */
+ :root,
+ page,
+ body {
+@@ -23,3 +38,4 @@ [data-up-theme='dark'] {
+ 	--up-notice-bar-color: #f9ae3d;
+ 	--up-notice-bar-bg-color: #3d2f1b;
+ }
++/* #endif */
 diff --git a/components/u-slider/u-slider.vue b/components/u-slider/u-slider.vue
 index 3a6fb1df181491a0f7432f1db4b35dacefd8b55d..def8acce354fa94ac001c4b366927c19b73b75e3 100644
 --- a/components/u-slider/u-slider.vue
@@ -11,3 +167,131 @@ index 3a6fb1df181491a0f7432f1db4b35dacefd8b55d..def8acce354fa94ac001c4b366927c19
  			} else {
  				this.sizeLocal = this.size
  			}
+diff --git a/components/u-subsection/theme-vars.scss b/components/u-subsection/theme-vars.scss
+index eeb867e9ea2b7128d1a63eed29ddd72037a3df71..cff76f5e7578f6c97dba20aaceba13b4fe806cf6 100644
+--- a/components/u-subsection/theme-vars.scss
++++ b/components/u-subsection/theme-vars.scss
+@@ -1,3 +1,26 @@
++/* #ifdef MP-WEIXIN */
++:host {
++	--up-subsection-bg-color: #eeeeef;
++	--up-subsection-bar-color: #ffffff;
++	--up-subsection-inactive-color: #303133;
++	--up-subsection-disabled-text-color: #c8c9cc;
++	--up-subsection-disabled-border-color: #d4d4d4;
++	--up-subsection-disabled-bar-color: #f5f5f5;
++}
++
++@media (prefers-color-scheme: dark) {
++	:host {
++		--up-subsection-bg-color: #2b2c30;
++		--up-subsection-bar-color: #3a3b40;
++		--up-subsection-inactive-color: #d1d5db;
++		--up-subsection-disabled-text-color: #6b7280;
++		--up-subsection-disabled-border-color: #3a3a3c;
++		--up-subsection-disabled-bar-color: #3a3a3c;
++	}
++}
++/* #endif */
++
++/* #ifndef MP-WEIXIN */
+ :root,
+ page,
+ body {
+@@ -39,3 +62,4 @@ [data-up-theme='dark'] {
+ 	--up-subsection-disabled-border-color: #3a3a3c;
+ 	--up-subsection-disabled-bar-color: #3a3a3c;
+ }
++/* #endif */
+diff --git a/components/u-switch/theme-vars.scss b/components/u-switch/theme-vars.scss
+index 1ca759530de0d1490a21f29d351b4c87d7765e99..ba1d9cd9d3f443813d7aca903b59b772b410d486 100644
+--- a/components/u-switch/theme-vars.scss
++++ b/components/u-switch/theme-vars.scss
+@@ -1,3 +1,26 @@
++/* #ifdef MP-WEIXIN */
++:host {
++	--up-switch-active-color: #3c9cff;
++	--up-switch-inactive-color: #ffffff;
++	--up-switch-dot-active-color: #ffffff;
++	--up-switch-dot-inactive-color: #ffffff;
++	--up-switch-loading-inactive-color: #aaabad;
++	--up-switch-border-color: rgba(0, 0, 0, 0.12);
++}
++
++@media (prefers-color-scheme: dark) {
++	:host {
++		--up-switch-active-color: #3c9cff;
++		--up-switch-inactive-color: #3a3a3c;
++		--up-switch-dot-active-color: #ffffff;
++		--up-switch-dot-inactive-color: #d1d5db;
++		--up-switch-loading-inactive-color: #9ca3af;
++		--up-switch-border-color: #4b5563;
++	}
++}
++/* #endif */
++
++/* #ifndef MP-WEIXIN */
+ :root,
+ page,
+ body {
+@@ -39,3 +62,4 @@ [data-up-theme='dark'] {
+ 	--up-switch-loading-inactive-color: #9ca3af;
+ 	--up-switch-border-color: #4b5563;
+ }
++/* #endif */
+diff --git a/components/u-tabbar-item/u-tabbar-item.vue b/components/u-tabbar-item/u-tabbar-item.vue
+index 4ae2d54e43376c76a1b07ec8d1c52661826a45dc..2e9d6bf4d5874737a2d54a3a206e2437579f0683 100644
+--- a/components/u-tabbar-item/u-tabbar-item.vue
++++ b/components/u-tabbar-item/u-tabbar-item.vue
+@@ -12,8 +12,8 @@
+ 					:class="iconClassNames"
+ 				>
+ 					<view v-if="isMidButton" class="u-tabbar-item__mid-button-arc">
+-						<svg viewBox="0 0 72 72" preserveAspectRatio="none">
+-							<path d="M 4 36 A 32 32 0 0 1 68 36"></path>
++						<svg class="u-tabbar-item__mid-button-svg" viewBox="0 0 72 72" preserveAspectRatio="none">
++							<path class="u-tabbar-item__mid-button-path" d="M 4 36 A 32 32 0 0 1 68 36"></path>
+ 						</svg>
+ 					</view>
+ 					<view v-if="isMidButton" class="u-tabbar-item__mid-button-inner"></view>
+@@ -411,12 +411,12 @@
+ 		z-index: 0;
+ 	}
+ 
+-	.u-tabbar-item__mid-button-arc svg {
++	.u-tabbar-item__mid-button-svg {
+ 		width: 100%;
+ 		height: 100%;
+ 	}
+ 
+-	.u-tabbar-item__mid-button-arc path {
++	.u-tabbar-item__mid-button-path {
+ 		fill: none;
+ 		stroke: none;
+ 		stroke-width: 0;
+diff --git a/components/u-tag/theme-vars.scss b/components/u-tag/theme-vars.scss
+index bf38484930d6c6e924e1b2ab75709795ffd7a35e..d69eb01c44c9ae904e6023b5fb6559b30de22bab 100644
+--- a/components/u-tag/theme-vars.scss
++++ b/components/u-tag/theme-vars.scss
+@@ -1,3 +1,16 @@
++/* #ifdef MP-WEIXIN */
++:host {
++	--up-tag-close-bg-color: #c8c9cc;
++}
++
++@media (prefers-color-scheme: dark) {
++	:host {
++		--up-tag-close-bg-color: #4b5563;
++	}
++}
++/* #endif */
++
++/* #ifndef MP-WEIXIN */
+ :root,
+ page,
+ body {
+@@ -19,3 +32,4 @@ [data-up-theme='light'] {
+ [data-up-theme='dark'] {
+ 	--up-tag-close-bg-color: #4b5563;
+ }
++/* #endif */

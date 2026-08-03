@@ -349,6 +349,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
+      timeout: 120_000,
       trustProject: true,
     })
   })
@@ -379,6 +380,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
+      timeout: 120_000,
       trustProject: true,
     })
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
@@ -417,6 +419,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
+      timeout: 120_000,
       trustProject: true,
     })
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
@@ -560,6 +563,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
+      timeout: 120_000,
       trustProject: true,
     })
     expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()

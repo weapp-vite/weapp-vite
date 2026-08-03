@@ -9,6 +9,7 @@ export interface IElementOptions {
   nodeId?: string
   videoId?: string
   pageId: number
+  routeFallback?: boolean
   tagName: string
 }
 /** ITouch 的类型定义。 */
@@ -206,7 +207,10 @@ export default class Element {
       return existing
     }
     let ElementCtor: typeof Element = Element
-    if (options.nodeId) {
+    if (options.routeFallback) {
+      ElementCtor = RouteFallbackElement
+    }
+    else if (options.nodeId) {
       ElementCtor = CustomElement
     }
     else {
@@ -242,6 +246,40 @@ export default class Element {
     const element = new ElementCtor(connection, options, elementMap)
     elementMap.set(options.elementId, element)
     return element
+  }
+}
+/** App-Service 路由降级元素仅用于只读查询，不能伪装成交互协议元素。 */
+export class RouteFallbackElement extends Element {
+  private unsupported(method: string): never {
+    throw new Error(`App-Service route fallback 元素不支持 ${method}`)
+  }
+
+  async tap() {
+    this.unsupported('Element.tap')
+  }
+
+  async longpress() {
+    this.unsupported('Element.longpress')
+  }
+
+  async trigger() {
+    this.unsupported('Element.triggerEvent')
+  }
+
+  async touchstart() {
+    this.unsupported('Element.touchstart')
+  }
+
+  async touchmove() {
+    this.unsupported('Element.touchmove')
+  }
+
+  async touchend() {
+    this.unsupported('Element.touchend')
+  }
+
+  async dispatchEvent() {
+    this.unsupported('Element.dispatchEvent')
   }
 }
 /** CustomElement 的实现。 */

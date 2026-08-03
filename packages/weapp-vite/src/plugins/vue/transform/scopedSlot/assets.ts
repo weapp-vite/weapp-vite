@@ -6,7 +6,7 @@ import { createJsonMerger } from 'wevu/compiler'
 import { resolveJson } from '../../../../utils'
 import { toPosixPath } from '../../../../utils/path'
 import { resolveBundleOutputExtensions } from '../bundle/outputExtensions'
-import { emitClassStyleWxsAssetIfMissing } from '../emitAssets'
+import { emitClassStyleWxsAssetIfMissing, emitSfcStyleIfMissing } from '../emitAssets'
 import { resolveVueTransformJsonPlatformOptions } from '../platform'
 
 interface ClassStyleWxsAsset {
@@ -189,6 +189,11 @@ export function emitScopedSlotAssets(
 
   const { templateExtension, styleExtension, jsonExtension } = resolveBundleOutputExtensions(outputExtensions)
   const hasOwnerStyle = typeof result.style === 'string' && result.style.trim().length > 0
+  if (hasOwnerStyle) {
+    emitSfcStyleIfMissing(ctx, bundle, relativeBase, '', styleExtension, {
+      updateExisting: false,
+    })
+  }
   const configObj = parseJsonSafely(result.config) ?? {}
   const baseUsingComponents: Record<string, string> = (configObj.usingComponents && typeof configObj.usingComponents === 'object' && !Array.isArray(configObj.usingComponents))
     ? { ...configObj.usingComponents }

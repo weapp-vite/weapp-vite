@@ -1,6 +1,4 @@
-import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
-import os from 'node:os'
 import path from 'node:path'
 import { afterAll, afterEach, beforeAll, describe, it } from 'vitest'
 import {
@@ -26,24 +24,6 @@ const APP_AUTOMATOR_PORT = resolveProjectAutomatorPort(APP_ROOT)
 const INITIAL_DESCRIPTION = '点击按钮，日志同步回当前终端。'
 const LOG_CLICKED_RE = /\[mini:log\s*\]\s+\[forward-console-demo\] Log clicked/
 const LOG_CLICKED_MESSAGE_RE = /\[forward-console-demo\] Log clicked/
-
-function resolveAutomatorSessionFile(projectPath: string, port?: number) {
-  const normalizedProjectPath = path.resolve(projectPath)
-  const sessionKey = port ? `${normalizedProjectPath}#port-${port}` : normalizedProjectPath
-  const encodedProjectPath = Buffer.from(sessionKey).toString('base64url')
-  return path.join(os.tmpdir(), 'weapp-vite-automator-sessions', `${encodedProjectPath}.json`)
-}
-
-async function persistAutomatorSession(projectPath: string, wsEndpoint: string, port?: number) {
-  const filePath = resolveAutomatorSessionFile(projectPath, port)
-  await fs.mkdir(path.dirname(filePath), { recursive: true })
-  await fs.writeFile(filePath, JSON.stringify({
-    ...(port ? { port } : {}),
-    projectPath: path.resolve(projectPath),
-    updatedAt: new Date().toISOString(),
-    wsEndpoint,
-  }, null, 2), 'utf8')
-}
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -164,10 +144,6 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
     originalIndexTs = indexTs
     originalIndexWxml = indexWxml
     await cleanupResidualIdeProcesses()
-    await Promise.all([
-      fs.rm(resolveAutomatorSessionFile(APP_ROOT), { force: true }).catch(() => {}),
-      fs.rm(resolveAutomatorSessionFile(APP_ROOT, APP_AUTOMATOR_PORT), { force: true }).catch(() => {}),
-    ])
     devProcess = startDevProcess('pnpm', ['exec', 'wv', 'dev'], {
       cwd: APP_ROOT,
       env: createDevProcessEnv(),
@@ -181,19 +157,10 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
       port: APP_AUTOMATOR_PORT,
-      skipWarmup: true,
+      retryWarmupTimeout: true,
       timeout: 120_000,
       trustProject: true,
     })
-    const sessionMetadata = Reflect.get(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA') as { port?: number, wsEndpoint?: string } | undefined
-    const wsEndpoint = sessionMetadata?.wsEndpoint
-    if (!wsEndpoint) {
-      throw new Error('Failed to resolve automator websocket endpoint for forwardConsole test')
-    }
-    await Promise.all([
-      persistAutomatorSession(APP_ROOT, wsEndpoint),
-      persistAutomatorSession(APP_ROOT, wsEndpoint, APP_AUTOMATOR_PORT),
-    ])
   }, 240_000)
 
   afterEach(async () => {
@@ -218,8 +185,10 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
     if (!miniProgram) {
       throw new Error('Shared automator session is not initialized')
     }
+    await waitForPageDescription(miniProgram, INITIAL_DESCRIPTION)
     const forwardedMessages: string[] = []
     forwardConsoleSession = await startForwardConsole({
+      miniProgram,
       projectPath: APP_ROOT,
       port: APP_AUTOMATOR_PORT,
       logLevels: ['log', 'info', 'warn', 'error'],
@@ -227,7 +196,6 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
         forwardedMessages.push(`[mini:${event.level.padEnd(5)}] ${event.message}`)
       },
     })
-    await waitForPageDescription(miniProgram, INITIAL_DESCRIPTION)
 
     await emitLogClick(miniProgram)
     await waitForOutputAfter(() => forwardedMessages.join('\n'), 0, LOG_CLICKED_RE)

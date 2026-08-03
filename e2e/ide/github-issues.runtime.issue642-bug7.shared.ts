@@ -2,7 +2,6 @@ import fs from 'node:fs/promises'
 import path from 'pathe'
 import { expect } from 'vitest'
 import {
-  callRoutePageMethod,
   delay,
   DIST_ROOT,
   getSharedMiniProgram,
@@ -10,14 +9,14 @@ import {
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
 
-async function waitForIssue642Bug7Runtime(miniProgram: any, expectedTick: number, timeoutMs = 30_000) {
+async function waitForIssue642Bug7Runtime(page: any, expectedTick: number, timeoutMs = 30_000) {
   const startedAt = Date.now()
   let latest: any
   let lastError: unknown
 
   while (Date.now() - startedAt < timeoutMs) {
     try {
-      latest = await callRoutePageMethod(miniProgram, '/pages/issue-642-bug7/index', '_runE2E')
+      latest = await page.callMethod('_runE2E')
     }
     catch (error) {
       lastError = error
@@ -64,18 +63,14 @@ export async function runIssue642Bug7RuntimeCase(ctx: { skip: (message?: string)
   try {
     const issuePage = await relaunchPage(miniProgram, '/pages/issue-642-bug7/index', undefined, 45_000, {
       readiness: async (page) => {
-        await page.waitForRendered({
-          selector: '#issue642-bug7-page',
-          dataset: { e2eIssue: '642-bug7' },
-          timeout: 4_000,
-        })
-        return true
+        // DevTools 的 page-frame 协议对 componentGenerics 页面可能返回空树，改由页面实例确认 runtime 已挂载。
+        const runtime = await page.callMethod('_runE2E')
+        return runtime?.tick === 0
       },
     })
     if (!issuePage) {
       throw new Error('Failed to launch issue-642-bug7 page')
     }
-    const activeMiniProgram = await getSharedMiniProgram(ctx)
 
     const renderedWxml = await readIssue642Bug7WxmlBundle()
     expect(renderedWxml).toContain('data-issue642-bug7-cell1-state="scoped"')
@@ -83,7 +78,7 @@ export async function runIssue642Bug7RuntimeCase(ctx: { skip: (message?: string)
     expect(renderedWxml).toContain('data-issue642-bug7-cell2-state="provided">1234</text>')
     expect(renderedWxml).toContain('data-issue642-bug7-cell2-state="fallback">5678</text>')
 
-    const initialRuntime = await waitForIssue642Bug7Runtime(activeMiniProgram, 0)
+    const initialRuntime = await waitForIssue642Bug7Runtime(issuePage, 0)
     expect(initialRuntime).toMatchObject({
       tick: 0,
       owner: {
@@ -110,9 +105,9 @@ export async function runIssue642Bug7RuntimeCase(ctx: { skip: (message?: string)
     expect(initialRuntime.scoped.propsSlotOwnerId).toBe(initialRuntime.owner.dataOwnerId)
     expect(initialRuntime.provided.dataVueSlots).toEqual(initialRuntime.provided.propertyVueSlots)
 
-    await callRoutePageMethod(activeMiniProgram, '/pages/issue-642-bug7/index', '_runE2E', 'bump')
+    await issuePage.callMethod('_runE2E', 'bump')
 
-    const updatedRuntime = await waitForIssue642Bug7Runtime(activeMiniProgram, 1)
+    const updatedRuntime = await waitForIssue642Bug7Runtime(issuePage, 1)
     expect(updatedRuntime).toMatchObject({
       tick: 1,
       owner: {

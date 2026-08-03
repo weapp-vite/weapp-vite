@@ -10,6 +10,7 @@ export interface ServeMiniProgramDevActions {
 export interface OpenServeIdeOptions {
   forceOpen?: boolean
   forceReopen?: boolean
+  useAutomatorOpen?: boolean
 }
 
 export interface CreateServeMiniProgramDevActionsOptions {

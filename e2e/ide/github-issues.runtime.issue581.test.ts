@@ -22,6 +22,27 @@ const ISSUE_581_ROUTE_METHOD_OPTIONS = {
   recoveryAttempts: 2,
 }
 
+async function isIssue581RuntimeReady(miniProgram: any) {
+  try {
+    const runtime = await callRoutePageMethodWithOptions<Record<string, any>>(
+      miniProgram,
+      ISSUE_581_ROUTE,
+      '_runE2E',
+      {
+        protocolTimeoutMs: 3_000,
+        retries: 1,
+        recoveryAttempts: 1,
+      },
+    )
+    return runtime?.ok === true
+      && runtime.loading === false
+      && ISSUE_581_EXPECTED_ROWS.every((row, index) => runtime?.rows?.[index] === row)
+  }
+  catch {
+    return false
+  }
+}
+
 async function waitForIssue581Rows(miniProgram: any, expectedRows = ISSUE_581_EXPECTED_ROWS) {
   const start = Date.now()
   let latestRuntime: any
@@ -80,7 +101,7 @@ describe.sequential('e2e app: github-issues / issue #581', () => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_581_ROUTE, undefined, 45_000, {
-        readiness: 'route',
+        readiness: (_page, activeMiniProgram) => isIssue581RuntimeReady(activeMiniProgram),
       })
       if (!issuePage) {
         throw new Error('Failed to launch issue-581 page')
@@ -107,7 +128,7 @@ describe.sequential('e2e app: github-issues / issue #581', () => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_581_ROUTE, undefined, 45_000, {
-        readiness: 'route',
+        readiness: (_page, activeMiniProgram) => isIssue581RuntimeReady(activeMiniProgram),
       })
       if (!issuePage) {
         throw new Error('Failed to launch issue-581 page')

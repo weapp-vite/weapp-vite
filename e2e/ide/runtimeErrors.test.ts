@@ -104,6 +104,39 @@ describe('runtimeErrors', () => {
     ])
   })
 
+  it('preserves DevTools RemoteObject descriptions and previews', () => {
+    const miniProgram = createMiniProgramEmitter()
+    const collector = attachRuntimeErrorCollector(miniProgram)
+    const marker = collector.mark()
+
+    miniProgram.emit('console', {
+      message: {
+        type: 'error',
+        args: [
+          {
+            type: 'object',
+            subtype: 'error',
+            description: 'TypeError: Cannot read properties of undefined',
+            value: {},
+          },
+          {
+            type: 'object',
+            preview: {
+              properties: [
+                { name: 'route', value: 'pages/index/index' },
+                { name: 'status', value: 'failed' },
+              ],
+            },
+          },
+        ],
+      },
+    })
+
+    expect(collector.getSince(marker)).toEqual([
+      '[console:error] TypeError: Cannot read properties of undefined route: pages/index/index, status: failed',
+    ])
+  })
+
   it('supports providers without DevTools runtime event subscriptions', () => {
     const collector = attachRuntimeErrorCollector({})
 

@@ -16,6 +16,7 @@ const SWITCH_TAB_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_switch_tab_result_
 const TAB_PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_tab_push_result__'
 const STORAGE_TIMEOUT = 8_000
 const ISSUE_PAGE_PATH = '/pages/issue-705/index'
+const TAB_PAGE_PATH = '/pages/issue-705-tab/index'
 const TARGET_PAGE_PATH = '/pages/issue-550/index'
 
 async function removeStorage(miniProgram: any, key: string) {
@@ -74,20 +75,35 @@ function expectNavigationResult(result: any, from: string) {
   expect(result.route.path).toBe('pages/issue-550/index')
 }
 
-async function isIssue705PageReady(page: any) {
-  const runtime = await page.callMethodWithOptions('_runE2E', {
-    timeout: 5_000,
-  }).catch(() => undefined)
+async function callIssue705PageMethod(
+  miniProgram: any,
+  route: string,
+  action?: 'push' | 'switchTab',
+  timeoutMs = 5_000,
+) {
+  return await callRoutePageMethodWithOptions<Record<string, any>>(
+    miniProgram,
+    route,
+    '_runE2E',
+    {
+      protocolTimeoutMs: timeoutMs,
+      recoveryAttempts: 1,
+      retries: 1,
+    },
+    action,
+  )
+}
+
+async function isIssue705PageReady(_page: any, miniProgram: any) {
+  const runtime = await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH).catch(() => undefined)
   return runtime?.ready === true && runtime?.route?.path === 'pages/issue-705/index'
 }
 
-async function waitForIssue705TabReady(page: any) {
+async function waitForIssue705TabReady(miniProgram: any) {
   const start = Date.now()
   let latest: any
   while (Date.now() - start <= STORAGE_TIMEOUT) {
-    latest = await page.callMethodWithOptions('_runE2E', {
-      timeout: 5_000,
-    }).catch(() => undefined)
+    latest = await callIssue705PageMethod(miniProgram, TAB_PAGE_PATH).catch(() => undefined)
     if (latest?.ready === true && latest?.route?.path === 'pages/issue-705-tab/index') {
       return latest
     }
@@ -98,7 +114,7 @@ async function waitForIssue705TabReady(page: any) {
 
 async function waitForIssue705Page(miniProgram: any) {
   const page = await waitForCurrentPagePath(miniProgram, ISSUE_PAGE_PATH, STORAGE_TIMEOUT)
-  if (!page || !(await isIssue705PageReady(page))) {
+  if (!page || !(await isIssue705PageReady(page, miniProgram))) {
     throw new Error('Failed to return to issue-705 page')
   }
   return page
@@ -165,9 +181,7 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
       }
       miniProgram = await getSharedMiniProgram(ctx)
 
-      await issuePage.callMethodWithOptions('_runE2E', {
-        timeout: 12_000,
-      }, 'push').catch(() => undefined)
+      await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, 'push', 12_000).catch(() => undefined)
       const pushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
       expectNavigationResult(pushResult, 'pages/issue-705/index')
 
@@ -185,9 +199,7 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
       }
       miniProgram = await getSharedMiniProgram(ctx)
 
-      await reloadedIssuePage.callMethodWithOptions('_runE2E', {
-        timeout: 12_000,
-      }, 'switchTab').catch(() => undefined)
+      await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, 'switchTab', 12_000).catch(() => undefined)
       const switchTabResult = await waitForStorage(miniProgram, SWITCH_TAB_RESULT_STORAGE_KEY)
       expect(switchTabResult.route.path).toBe('pages/issue-705-tab/index')
 
@@ -196,12 +208,10 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
         throw new Error('Failed to switch to issue-705 tab page')
       }
 
-      const tabSnapshot = await waitForIssue705TabReady(tabPage)
+      const tabSnapshot = await waitForIssue705TabReady(miniProgram)
       expect(tabSnapshot.route.path).toBe('pages/issue-705-tab/index')
 
-      await tabPage.callMethodWithOptions('_runE2E', {
-        timeout: 12_000,
-      }, 'push').catch(() => undefined)
+      await callIssue705PageMethod(miniProgram, TAB_PAGE_PATH, 'push', 12_000).catch(() => undefined)
       const tabPushResult = await waitForStorage(miniProgram, TAB_PUSH_RESULT_STORAGE_KEY)
       expectNavigationResult(tabPushResult, 'pages/issue-705-tab/index')
     }
@@ -232,9 +242,7 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
         }
         miniProgram = await getSharedMiniProgram(ctx)
 
-        await issuePage.callMethodWithOptions('_runE2E', {
-          timeout: 12_000,
-        }, 'push').catch(() => undefined)
+        await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, 'push', 12_000).catch(() => undefined)
         const firstPushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
         expectNavigationResult(firstPushResult, 'pages/issue-705/index')
 
@@ -260,7 +268,7 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
           })
         }
 
-        const returnedPage = await waitForIssue705Page(miniProgram)
+        await waitForIssue705Page(miniProgram)
         const backResult = await waitForBackHooks(miniProgram)
         expect(backResult.hooks).toEqual([
           {
@@ -274,16 +282,12 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
             from: 'pages/issue-550/index',
           },
         ])
-        const returnedSnapshot = await returnedPage.callMethodWithOptions('_runE2E', {
-          timeout: 5_000,
-        })
+        const returnedSnapshot = await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH)
         expect(returnedSnapshot.route.path).toBe('pages/issue-705/index')
         expect(returnedSnapshot.routerRoute.path).toBe('pages/issue-705/index')
 
         await removeStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
-        await returnedPage.callMethodWithOptions('_runE2E', {
-          timeout: 12_000,
-        }, 'push').catch(() => undefined)
+        await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, 'push', 12_000).catch(() => undefined)
         const secondPushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
         expectNavigationResult(secondPushResult, 'pages/issue-705/index')
         expect(await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT)).toBeTruthy()

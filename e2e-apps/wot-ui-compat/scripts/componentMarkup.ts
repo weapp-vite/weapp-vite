@@ -45,7 +45,12 @@ const overrides: Record<string, ComponentMarkup> = {
   'wd-avatar-group': { parent: 'wd-avatar-group', markup: '<wd-avatar-group><wd-avatar text="A" /><wd-avatar text="B" /></wd-avatar-group>' },
   'wd-badge': { markup: '<wd-badge :value="8"><view class="badge-anchor">Badge</view></wd-badge>' },
   'wd-button': { markup: '<wd-button type="primary">Primary button</wd-button>' },
-  'wd-calendar': { setup: `const modelValue = ref<number[]>([])`, markup: '<wd-calendar v-model="modelValue" label="Date" type="dates" />' },
+  'wd-calendar': {
+    setup: `const modelValue = ref<number[]>([Date.UTC(2025, 0, 15)])
+const minDate = Date.UTC(2024, 11, 1)
+const maxDate = Date.UTC(2025, 1, 28)`,
+    markup: '<wd-calendar v-model="modelValue" :min-date="minDate" :max-date="maxDate" label="Date" type="dates" />',
+  },
   'wd-calendar-view': {
     setup: `const modelValue = ref(Date.UTC(2025, 0, 15))
 const minDate = Date.UTC(2024, 11, 1)
@@ -70,8 +75,8 @@ const maxDate = Date.UTC(2025, 1, 28)`,
   'wd-datetime-picker-view': { setup: `const modelValue = ref(Date.UTC(2025, 0, 15, 8, 0))`, markup: '<wd-datetime-picker-view v-model="modelValue" />' },
   'wd-dialog': { setup: `const modelValue = ref(true)`, markup: '<wd-dialog v-model="modelValue" title="Dialog"><view>Dialog content</view></wd-dialog>' },
   'wd-divider': { markup: '<wd-divider>Divider label</wd-divider>' },
-  'wd-drop-menu': { setup: `${MODEL_SETUP}\n${OPTIONS_SETUP}`, parent: 'wd-drop-menu', markup: '<wd-drop-menu><wd-drop-menu-item v-model="modelValue" :options="options" /></wd-drop-menu>' },
-  'wd-drop-menu-item': { setup: `${MODEL_SETUP}\n${OPTIONS_SETUP}`, parent: 'wd-drop-menu', markup: '<wd-drop-menu><wd-drop-menu-item v-model="modelValue" :options="options" /></wd-drop-menu>' },
+  'wd-drop-menu': { setup: `${MODEL_SETUP}\n${OPTIONS_SETUP}`, parent: 'wd-drop-menu', markup: '<wd-drop-menu><wd-drop-menu-item v-model="modelValue" :options="options" title="Option A" /></wd-drop-menu>' },
+  'wd-drop-menu-item': { setup: `${MODEL_SETUP}\n${OPTIONS_SETUP}`, parent: 'wd-drop-menu', markup: '<wd-drop-menu><wd-drop-menu-item v-model="modelValue" :options="options" title="Option A" /></wd-drop-menu>' },
   'wd-empty': { markup: '<wd-empty description="No data" />' },
   'wd-form': { setup: `const formModel = { name: 'Wot UI' }\nconst formSchema = { validate: () => [] }`, parent: 'wd-form', markup: '<wd-form :model="formModel" :schema="formSchema"><wd-form-item label="Name" prop="name"><wd-input v-model="formModel.name" /></wd-form-item></wd-form>' },
   'wd-form-item': { setup: `const formModel = { name: 'Wot UI' }`, parent: 'wd-form', markup: '<wd-form :model="formModel"><wd-form-item label="Name" prop="name"><wd-input v-model="formModel.name" /></wd-form-item></wd-form>' },

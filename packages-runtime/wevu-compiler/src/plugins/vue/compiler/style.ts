@@ -1,6 +1,7 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import postcss from 'postcss'
 import selectorParser from 'postcss-selector-parser'
+import { DEFAULT_HTML_TO_WXML_TAG_MAP } from './template/htmlTagMapping'
 
 export { transformNestedWxssVars } from './wxss'
 
@@ -8,11 +9,17 @@ const CSS_RULE_RE = /([^{]+)(\{[^}]*\})/g
 const CSS_CLASS_RE = /\.([a-z_][\w-]*)(?:\[[^\]]+\])?\s*\{/gi
 
 export function transformVueDeepSelectors(source: string) {
-  if (!source.includes(':deep(') && !source.includes('::v-deep(')) {
+  if (!source.includes(':deep') && !source.includes('::v-deep')) {
     return source
   }
   const root = postcss.parse(source)
   const processor = selectorParser((selectors) => {
+    selectors.walkTags((tag) => {
+      const name = tag.value.toLowerCase()
+      if (DEFAULT_HTML_TO_WXML_TAG_MAP[name] !== name && DEFAULT_HTML_TO_WXML_TAG_MAP[name]) {
+        tag.replaceWith(selectorParser.className({ value: name }))
+      }
+    })
     selectors.walkPseudos((pseudo) => {
       if (pseudo.value !== ':deep' && pseudo.value !== '::v-deep') {
         return
@@ -22,12 +29,17 @@ export function transformVueDeepSelectors(source: string) {
         pseudo.replaceWith(...replacement)
       }
       else {
+        const previous = pseudo.prev()
+        const next = pseudo.next()
+        if (next?.type === 'combinator' && (!previous || previous.type === 'combinator')) {
+          next.remove()
+        }
         pseudo.remove()
       }
     })
   })
   root.walkRules((rule) => {
-    if (rule.selector.includes(':deep(') || rule.selector.includes('::v-deep(')) {
+    if (rule.selector.includes(':deep') || rule.selector.includes('::v-deep')) {
       rule.selector = processor.processSync(rule.selector)
     }
   })

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
@@ -21,11 +22,21 @@ async function callCurrentComputedPageMethod(miniProgram: any, methodName: strin
   if (!page) {
     throw new Error(`Failed to resolve current computed page before calling ${methodName}`)
   }
-  return await page.callMethod(methodName)
+  return await callRoutePageMethodWithOptions<Record<string, any>>(
+    miniProgram,
+    ROUTE,
+    methodName,
+    {
+      protocolTimeoutMs: 12_000,
+      recoveryAttempts: 1,
+      retries: 1,
+    },
+  )
 }
 
 async function waitForComputedProbeState(miniProgram: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
+  let lastError: unknown
   let lastRuntime: Record<string, any> | null = null
 
   while (Date.now() - startedAt <= timeoutMs) {
@@ -39,7 +50,8 @@ async function waitForComputedProbeState(miniProgram: any, timeoutMs = 20_000) {
         return runtime
       }
     }
-    catch {
+    catch (error) {
+      lastError = error
     }
 
     try {
@@ -53,7 +65,8 @@ async function waitForComputedProbeState(miniProgram: any, timeoutMs = 20_000) {
     }
   }
 
-  throw new Error(`Timed out waiting for miniprogram-computed runtime: ${JSON.stringify(lastRuntime, null, 2)}`)
+  const errorMessage = lastError instanceof Error ? lastError.message : String(lastError ?? '')
+  throw new Error(`Timed out waiting for miniprogram-computed runtime: ${JSON.stringify(lastRuntime, null, 2)}; last error: ${errorMessage || '<none>'}`)
 }
 
 async function waitForUpdatedComputedProbeState(miniProgram: any, timeoutMs = 20_000) {
@@ -101,8 +114,8 @@ describe.sequential('github-issues runtime miniprogram-computed', () => {
   })
 
   it('keeps build-npm cjs package miniprogram-computed working in DevTools runtime', async (ctx) => {
-    const miniProgram = await getSharedMiniProgram(ctx)
-    const collector = attachRuntimeErrorCollector(miniProgram)
+    let miniProgram = await getSharedMiniProgram(ctx)
+    let collector: ReturnType<typeof attachRuntimeErrorCollector> | undefined
 
     try {
       const page = await relaunchPage(
@@ -114,6 +127,8 @@ describe.sequential('github-issues runtime miniprogram-computed', () => {
       if (!page) {
         throw new Error('Failed to launch issue-466-computed page')
       }
+      miniProgram = await getSharedMiniProgram(ctx)
+      collector = attachRuntimeErrorCollector(miniProgram)
 
       const initialMarker = collector.mark()
       const initialRuntime = await waitForComputedProbeState(miniProgram)
@@ -309,7 +324,7 @@ describe.sequential('github-issues runtime miniprogram-computed', () => {
       expect(collector.getSince(closeMarker)).toEqual([])
     }
     finally {
-      collector.dispose()
+      collector?.dispose()
       await releaseSharedMiniProgram(miniProgram)
     }
   })

@@ -26,9 +26,13 @@ vi.mock('wevu/compiler', () => ({
   },
 }))
 
-vi.mock('./emitAssets', () => ({
-  emitClassStyleWxsAssetIfMissing: emitClassStyleWxsAssetIfMissingMock,
-}))
+vi.mock('./emitAssets', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./emitAssets')>()
+  return {
+    ...actual,
+    emitClassStyleWxsAssetIfMissing: emitClassStyleWxsAssetIfMissingMock,
+  }
+})
 
 vi.mock('../../../utils', () => ({
   resolveJson: resolveJsonMock,
@@ -87,6 +91,11 @@ describe('scoped slot helpers', () => {
       { defaults: { virtualHost: true } },
     )
 
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'pages/index/index.wxss',
+      source: '',
+    })
     expect(emitFile).toHaveBeenCalledWith({
       type: 'asset',
       fileName: 'pages/index/index.__scoped-slot-slot-0.wxml',
@@ -339,6 +348,7 @@ describe('scoped slot helpers', () => {
       ],
     }
     const bundle: Record<string, any> = {
+      'pages/index/index.wxss': { type: 'asset', source: '.owner { color: red; }' },
       'pages/index/index.__scoped-slot-slot-1.wxml': { type: 'asset' },
       'pages/index/index.__scoped-slot-slot-1.wxss': { type: 'asset' },
       'pages/index/index.__scoped-slot-slot-1.json': { type: 'asset' },
@@ -385,6 +395,11 @@ describe('scoped slot helpers', () => {
       { wxml: 'axml', wxss: 'acss', json: 'json' } as any,
     )
 
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'components/card/index.acss',
+      source: '',
+    })
     expect(emitFile).toHaveBeenCalledWith({
       type: 'asset',
       fileName: 'components/card/index.__scoped-slot-slot-alipay.acss',

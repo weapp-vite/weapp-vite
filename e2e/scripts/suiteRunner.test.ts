@@ -4,7 +4,12 @@ import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
-import { getSuiteTasks, listE2ESuites } from './e2e-suite-manifest'
+import {
+  getSuiteTasks,
+  IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
+  IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS,
+  listE2ESuites,
+} from './e2e-suite-manifest'
 import { createSuiteReport } from './suiteReport'
 import {
   formatSuiteArtifactsSummary,
@@ -255,9 +260,10 @@ describe('suiteRunner', () => {
     const ideChunkModesLabels = ideChunkModesTasks.map(task => task.label)
     const ideGithubIssuesLabels = ideGithubIssuesTasks.map(task => task.label)
     const coreHmrTask = ideFullTasks.find(task => task.label === 'ide/wevu-runtime.core-hmr.test.ts')
-    const githubIssuesLifecycleTask = ideFullTasks.find(task => task.label === 'ide/github-issues.runtime.lifecycle.test.ts')
-    const githubIssuesPropsTask = ideFullTasks.find(task => task.label === 'ide/github-issues.runtime.props.test.ts')
+    const devtoolsCliWorkflowTask = ideFullTasks.find(task => task.label === 'ide/devtools-cli-workflow.runtime.test.ts')
+    const githubIssuesAggregateTask = ideFullTasks.find(task => task.label === IDE_GITHUB_ISSUES_AGGREGATE_LABEL)
     const statefulHmrTask = ideFullTasks.find(task => task.label === 'ide/stateful-hmr.runtime.test.ts')
+    const subpackageSharedStrategyComplexTask = ideFullTasks.find(task => task.label === 'ide/subpackage-shared-strategy-complex.runtime.test.ts')
     const templateDevOpenAllTask = ideFullTasks.find(task => task.label === 'ide/template-dev-open-all.runtime.test.ts')
     const templateTailwindDevOpenMultiTask = ideFullTasks.find(task => task.label === 'ide/template-tailwindcss-dev-open-multi.runtime.test.ts')
     const templateTailwindTdesignHmrTask = ideFullTasks.find(task => task.label === 'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts')
@@ -276,9 +282,10 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
     expect(ideFullLabels).not.toContain('ide/runtimeErrors.test.ts')
-    expect(githubIssuesLifecycleTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
-    expect(githubIssuesPropsTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
+    expect(devtoolsCliWorkflowTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
+    expect(githubIssuesAggregateTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('3600000')
     expect(statefulHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
+    expect(subpackageSharedStrategyComplexTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
     expect(templateDevOpenAllTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(templateTailwindDevOpenMultiTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1200000')
     expect(templateTailwindTdesignHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
@@ -286,7 +293,7 @@ describe('suiteRunner', () => {
     expect(uviewPlusCompatTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1200000')
     expect(coreHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(wevuRuntimeTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
-    expect(wotUiCompatTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
+    expect(wotUiCompatTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1200000')
     expect(ideHeadlessSmokeLabels).toEqual([
       'ide/index.test.ts',
       'ide/template-weapp-vite-template.test.ts',
@@ -302,25 +309,56 @@ describe('suiteRunner', () => {
     ])
     expect(ideFullLabels.slice(-3)).toEqual(ideChunkModesLabels)
     expect(ideFullTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
+    expect(ideFullTasks.find(task => task.label === 'ide/app-vue-hmr-alias.runtime.test.ts')?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
     expect(ideFullTasks.find(task => task.label === 'ide/automator-bridge-wrapper-hmr.runtime.test.ts')?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
     expect(ideFullTasks.find(task => task.label === 'ide/automator-concurrent-sessions.runtime.test.ts')?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.app-shell.test.ts')
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue289.test.ts')
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue558.test.ts')
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue615.test.ts')
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue642-bug7-default.test.ts')
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue642-bug7-performance.test.ts')
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue642.test.ts')
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue705.test.ts')
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue706.test.ts')
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.lifecycle.test.ts')
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback-compiler-off.test.ts')
-    expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.slot-fallback.test.ts')
-    expect(ideGithubIssuesTasks.length).toBe(17)
+    expect(ideFullTasks.find(task => task.label === 'ide/github-issues.runtime.issue547.test.ts')?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
+    expect(ideFullTasks.find(task => task.label === 'ide/github-issues.runtime.require-async.test.ts')?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
+    expect(statefulHmrTask?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
+    expect(templateTailwindTdesignHmrTask?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
+    expect(ideFullLabels).toContain(IDE_GITHUB_ISSUES_AGGREGATE_LABEL)
+    expect(ideGithubIssuesLabels).toEqual([
+      IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
+      'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
+      'ide/github-issues.runtime.issue547.test.ts',
+      'ide/github-issues.runtime.issue558.test.ts',
+      'ide/github-issues.runtime.issue615.test.ts',
+      'ide/github-issues.runtime.issue621.test.ts',
+      'ide/github-issues.runtime.issue642-bug7-default.test.ts',
+      'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
+      'ide/github-issues.runtime.issue642-bug8.test.ts',
+      'ide/github-issues.runtime.require-async.test.ts',
+      'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
+    ])
+    for (const sourceLabel of IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS) {
+      expect(ideFullLabels).not.toContain(sourceLabel)
+      expect(ideGithubIssuesLabels).not.toContain(sourceLabel)
+    }
+    const aggregateSource = fs.readFileSync(
+      path.resolve(import.meta.dirname, '../ide/github-issues.runtime.aggregate.test.ts'),
+      'utf8',
+    )
+    for (const sourceLabel of IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS) {
+      const importPath = `./${path.posix.basename(sourceLabel, '.ts')}`
+      expect(aggregateSource).toContain(`import '${importPath}'`)
+    }
+    expect(aggregateSource.match(/^import '\.\/github-issues\.runtime\..+\.test'$/gm)).toHaveLength(
+      IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS.length,
+    )
     expect(ideGithubIssuesTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
   })
 

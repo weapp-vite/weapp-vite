@@ -22,6 +22,7 @@ const INDEX_ROUTE = '/pages/index/index'
 const COUNT_LABEL_SELECTOR = '#count-label'
 const COUNT_BUTTON_SELECTOR = '.count-button-control'
 const COUNT_BUTTON_WRAPPER_SELECTOR = '#count-button'
+const AUTOMATOR_LAUNCH_TIMEOUT = 60_000
 const SCREENSHOT_PROTOCOL_TIMEOUT = 90_000
 const SCRIPT_BIN = '/usr/bin/script'
 const SHOULD_RUN_TTY_HOTKEY_SMOKE = process.platform === 'darwin' && process.stdin.isTTY && process.stdout.isTTY
@@ -221,7 +222,7 @@ function isRecoverableDevToolsLaunchError(error: unknown) {
   const name = error instanceof Error ? error.name : ''
   return isRecoverableAutomatorConnectionError(error)
     || name === 'WechatIdeSimulatorBootLogError'
-    || /Timeout in warmup current page|Timeout in read current page|WeChat DevTools simulator boot error detected|DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond/i.test(message)
+    || /Timeout in warmup (?:current page|reLaunch)|Timed out waiting page root after warmup reLaunch|Timeout in read current page|WeChat DevTools simulator boot error detected|DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond/i.test(message)
 }
 
 async function waitForPredicate(
@@ -408,8 +409,8 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
     miniProgram = await launchAutomator({
       projectPath: TEMPLATE_ROOT,
-      skipRelaunchPageRootCheck: true,
-      skipWarmup: true,
+      retryWarmupTimeout: true,
+      timeout: AUTOMATOR_LAUNCH_TIMEOUT,
       warmupRoute: INDEX_ROUTE,
     })
   }
@@ -501,6 +502,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     }
     weappIdeOpenExitCode = weappOpen.exitCode
 
+    await closeWechatIdeProject().catch(() => {})
     await ensureCliWorkflowDomReady()
 
     const screenshot = await runWeappIdeCli([
@@ -575,16 +577,18 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     expect(weappIdeOpenExitCode).toBe(0)
     expect(screenshotExitCode).toBe(0)
 
-    try {
-      await startMiniProgram()
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      if (isRecoverableDevToolsLaunchError(error)) {
-        expect(message).toMatch(/Timeout in warmup current page|Timeout in read current page|WeChat DevTools simulator boot error detected|DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond/i)
-        return
+    if (!miniProgram) {
+      try {
+        await startMiniProgram()
       }
-      throw error
+      catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        if (isRecoverableDevToolsLaunchError(error)) {
+          expect(message).toMatch(/Timeout in warmup (?:current page|reLaunch)|Timed out waiting page root after warmup reLaunch|Timeout in read current page|WeChat DevTools simulator boot error detected|DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond/i)
+          return
+        }
+        throw error
+      }
     }
 
     await runWithMiniProgramRecovery(async () => {

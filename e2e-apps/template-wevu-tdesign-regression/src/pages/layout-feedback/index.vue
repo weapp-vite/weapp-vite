@@ -98,42 +98,54 @@ function inspectDialogHostE2E() {
   }
 }
 
-async function runPageAlertCloseE2E() {
+function runPageAlertCloseE2E() {
   triggerPageAlert()
-  await new Promise(resolve => setTimeout(resolve, 120))
-  return inspectDialogHostE2E()
 }
 
-async function runPageConfirmOpenE2E() {
+function runPageConfirmOpenE2E() {
   triggerPageConfirm()
-  await new Promise(resolve => setTimeout(resolve, 120))
-  return inspectDialogHostE2E()
 }
 
 function getLayoutFeedbackLogsE2E() {
-  return actionLogs.value.slice()
+  return JSON.stringify(actionLogs.value)
 }
 
-async function runDialogHostConfirmE2E() {
+function resetLayoutFeedbackE2E() {
+  const dialogHost = resolveLayoutHost<any>(LAYOUT_DIALOG_BRIDGE_KEY, { context: pageInstance })
+  if (typeof dialogHost?.close === 'function') {
+    dialogHost.close()
+  }
+  else {
+    dialogHost?.setData?.({ visible: false })
+  }
+  actionSeed.value = 0
+  actionLogs.value = []
+}
+
+function runDialogHostConfirmE2E() {
   const dialogHost = resolveLayoutHost<any>(LAYOUT_DIALOG_BRIDGE_KEY, { context: pageInstance })
   dialogHost?.onConfirm?.()
-  await new Promise(resolve => setTimeout(resolve, 60))
-  return inspectDialogHostE2E()
 }
 
-async function runDialogHostCancelE2E() {
+function runDialogHostCancelE2E() {
   const dialogHost = resolveLayoutHost<any>(LAYOUT_DIALOG_BRIDGE_KEY, { context: pageInstance })
   dialogHost?.onCancel?.()
-  await new Promise(resolve => setTimeout(resolve, 60))
-  return inspectDialogHostE2E()
 }
 
-void inspectDialogHostE2E
-void runPageAlertCloseE2E
-void runPageConfirmOpenE2E
-void getLayoutFeedbackLogsE2E
-void runDialogHostConfirmE2E
-void runDialogHostCancelE2E
+function inspectDialogHostJsonE2E() {
+  return JSON.stringify(inspectDialogHostE2E())
+}
+
+defineExpose({
+  getLayoutFeedbackLogsE2E,
+  inspectDialogHostE2E,
+  inspectDialogHostJsonE2E,
+  resetLayoutFeedbackE2E,
+  runDialogHostCancelE2E,
+  runDialogHostConfirmE2E,
+  runPageAlertCloseE2E,
+  runPageConfirmOpenE2E,
+})
 </script>
 
 <template>

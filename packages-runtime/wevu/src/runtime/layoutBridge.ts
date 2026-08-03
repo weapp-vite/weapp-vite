@@ -174,13 +174,6 @@ function resolvePageKeys(page?: LayoutBridgeContext) {
   return resolvePageIdentityKeys(page as Record<string, any> | undefined)
 }
 
-function resolvePageFromContext(context?: LayoutBridgeContext) {
-  if (context && typeof context.__wevuSetPageLayout === 'function') {
-    return context
-  }
-  return resolveCurrentPageInstance()
-}
-
 function resolveNativeLayoutContext(context?: LayoutBridgeContext) {
   if (!context || typeof context !== 'object') {
     return undefined
@@ -201,6 +194,55 @@ function resolveNativeLayoutContext(context?: LayoutBridgeContext) {
   }
 
   return context
+}
+
+function resolvePageFromContext(
+  context?: LayoutBridgeContext,
+  visited = new Set<LayoutBridgeContext>(),
+): LayoutBridgeContext | undefined {
+  if (!context || typeof context !== 'object' || visited.has(context)) {
+    return resolveCurrentPageInstance()
+  }
+  visited.add(context)
+
+  if (typeof context.__wevuSetPageLayout === 'function') {
+    return context
+  }
+
+  const nativeContext = resolveNativeLayoutContext(context)
+  if (nativeContext && nativeContext !== context) {
+    const nativePage = resolvePageFromContext(nativeContext, visited)
+    if (nativePage) {
+      return nativePage
+    }
+  }
+
+  const publicNativePage = context.$
+  if (publicNativePage && typeof publicNativePage === 'object') {
+    const nativePage = resolvePageFromContext(publicNativePage as LayoutBridgeContext, visited)
+    if (nativePage) {
+      return nativePage
+    }
+  }
+
+  const ownerContext = nativeContext ?? context
+  const selectOwnerComponent = ownerContext.selectOwnerComponent
+  if (typeof selectOwnerComponent === 'function') {
+    try {
+      const owner = selectOwnerComponent.call(ownerContext) as LayoutBridgeContext | undefined
+      if (owner && owner !== ownerContext) {
+        const ownerPage = resolvePageFromContext(owner, visited)
+        if (ownerPage) {
+          return ownerPage
+        }
+      }
+    }
+    catch {
+      // 部分宿主或生命周期阶段暂不支持 owner 查询，继续使用页面栈兜底。
+    }
+  }
+
+  return resolveCurrentPageInstance()
 }
 
 function resolveHostEntry(entry: unknown) {

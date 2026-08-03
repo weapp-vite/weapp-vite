@@ -15,13 +15,6 @@ interface Emitter {
   emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void
 }
 
-interface BundleAsset {
-  type: 'asset'
-  fileName?: string
-  source?: string | Uint8Array
-}
-
-const slotFallbackWrapperUsageByBundle = new WeakMap<Record<string, any>, Set<string>>()
 const slotFallbackWrapperScriptByBundle = new WeakMap<Record<string, any>, Map<string, string>>()
 
 function parseJsonSafely(source: string | undefined): Record<string, any> {
@@ -41,14 +34,6 @@ function parseJsonSafely(source: string | undefined): Record<string, any> {
 
 function stringifyJson(json: Record<string, any>) {
   return JSON.stringify(json, null, 2)
-}
-
-function isAsset(value: any): value is BundleAsset {
-  return value?.type === 'asset'
-}
-
-function getAssetSource(asset: BundleAsset | undefined) {
-  return asset?.source?.toString?.() ?? ''
 }
 
 function upsertSlotFallbackWrapperUsingComponent(json: Record<string, any>) {
@@ -86,19 +71,6 @@ function normalizeJsonConfigForPlatform(
   }
 }
 
-function getSlotFallbackWrapperUsage(bundle: Record<string, any>) {
-  let usage = slotFallbackWrapperUsageByBundle.get(bundle)
-  if (!usage) {
-    usage = new Set<string>()
-    slotFallbackWrapperUsageByBundle.set(bundle, usage)
-  }
-  return usage
-}
-
-function markSlotFallbackWrapperUsage(bundle: Record<string, any>, relativeBase: string) {
-  getSlotFallbackWrapperUsage(bundle).add(relativeBase)
-}
-
 function getSlotFallbackWrapperScriptCache(bundle: Record<string, any>) {
   let cache = slotFallbackWrapperScriptByBundle.get(bundle)
   if (!cache) {
@@ -108,50 +80,6 @@ function getSlotFallbackWrapperScriptCache(bundle: Record<string, any>) {
   return cache
 }
 
-function injectSlotFallbackWrapperIntoJsonAsset(
-  bundle: Record<string, any>,
-  jsonFileName: string,
-  compilerCtx?: Pick<CompilerContext, 'configService'>,
-) {
-  const output = bundle[jsonFileName]
-  if (!isAsset(output)) {
-    return false
-  }
-
-  const json = upsertSlotFallbackWrapperUsingComponent(parseJsonSafely(getAssetSource(output)))
-  output.source = stringifyJson(normalizeJsonConfigForPlatform(json, compilerCtx))
-  return true
-}
-
-export function injectGlobalSlotFallbackWrapperUsingComponent(
-  bundle: Record<string, any>,
-  compilerCtx?: Pick<CompilerContext, 'configService'>,
-  outputExtensions?: NonNullable<CompilerContext['configService']>['outputExtensions'],
-) {
-  const { jsonExtension } = resolveBundleOutputExtensions(outputExtensions)
-  const usage = slotFallbackWrapperUsageByBundle.get(bundle)
-  if (!usage?.size) {
-    return false
-  }
-
-  if (injectSlotFallbackWrapperIntoJsonAsset(bundle, `app.${jsonExtension}`, compilerCtx)) {
-    return true
-  }
-
-  for (const relativeBase of usage) {
-    injectSlotFallbackWrapperIntoJsonAsset(bundle, `${relativeBase}.${jsonExtension}`, compilerCtx)
-  }
-  return false
-}
-
-function hasGlobalSlotFallbackWrapperUsingComponentAsset(
-  bundle: Record<string, any>,
-  outputExtensions?: NonNullable<CompilerContext['configService']>['outputExtensions'],
-) {
-  const { jsonExtension } = resolveBundleOutputExtensions(outputExtensions)
-  return isAsset(bundle[`app.${jsonExtension}`])
-}
-
 export function injectLocalSlotFallbackWrapperUsingComponentIfNeeded(options: {
   bundle: Record<string, any>
   result: Pick<VueTransformResult, 'config' | 'slotFallbackWrapperComponent'>
@@ -159,7 +87,7 @@ export function injectLocalSlotFallbackWrapperUsingComponentIfNeeded(options: {
   outputExtensions?: NonNullable<CompilerContext['configService']>['outputExtensions']
 }) {
   const component = options.result.slotFallbackWrapperComponent
-  if (!component || hasGlobalSlotFallbackWrapperUsingComponentAsset(options.bundle, options.outputExtensions)) {
+  if (!component) {
     return false
   }
 
@@ -211,7 +139,6 @@ export function emitSlotFallbackWrapperComponentAsset(options: {
 
   const { templateExtension, jsonExtension, scriptExtension } = resolveBundleOutputExtensions(options.outputExtensions)
   const componentBase = WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE
-  markSlotFallbackWrapperUsage(options.bundle, options.relativeBase)
   emitSfcTemplateIfMissing(
     options.ctx,
     options.bundle,

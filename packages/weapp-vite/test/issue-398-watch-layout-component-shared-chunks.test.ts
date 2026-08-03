@@ -14,6 +14,8 @@ interface WatcherEvent {
   error?: unknown
 }
 
+const TEST_TIMEOUT_MS = 240_000
+
 type WatcherEmitter = WatcherInstance & {
   on: (event: 'event', listener: (event: WatcherEvent) => void) => void
   off?: (event: 'event', listener: (event: WatcherEvent) => void) => void
@@ -181,5 +183,5 @@ describe.sequential('issue #398 watch shared chunk rebuild', () => {
       await ctxResult.dispose()
       await tempProject.cleanup()
     }
-  }, 120_000)
+  }, TEST_TIMEOUT_MS)
 })

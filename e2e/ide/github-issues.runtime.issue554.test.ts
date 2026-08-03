@@ -34,6 +34,7 @@ describe.sequential('e2e app: github-issues / issue #554', () => {
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_554_ROUTE, undefined, 45_000, {
         readiness: 'route',
+        readinessTimeoutMs: 30_000,
       })
       if (!issuePage) {
         throw new Error('Failed to launch issue-554 page')

@@ -812,19 +812,31 @@ describe('request globals runtime', () => {
     ;(placeholderFetch as any)[REQUEST_GLOBAL_PLACEHOLDER_KEY] = true
     const placeholderWebSocket = vi.fn()
     ;(placeholderWebSocket as any)[REQUEST_GLOBAL_PLACEHOLDER_KEY] = true
+    const placeholderPerformance = { now: vi.fn() }
+    ;(placeholderPerformance as any)[REQUEST_GLOBAL_PLACEHOLDER_KEY] = true
+    const placeholderCrypto = { getRandomValues: vi.fn() }
+    ;(placeholderCrypto as any)[REQUEST_GLOBAL_PLACEHOLDER_KEY] = true
 
     setGlobalValue('fetch', placeholderFetch)
     setGlobalValue('WebSocket', placeholderWebSocket)
+    setGlobalValue('performance', placeholderPerformance)
+    setGlobalValue('crypto', placeholderCrypto)
 
     const { installRequestGlobals } = await import('../src')
     installRequestGlobals({
-      targets: ['fetch', 'WebSocket'],
+      targets: ['fetch', 'WebSocket', 'performance', 'crypto'],
     })
 
     expect(globalThis.fetch).not.toBe(placeholderFetch)
     expect(globalThis.WebSocket).not.toBe(placeholderWebSocket)
+    expect(globalThis.performance).not.toBe(placeholderPerformance)
+    expect(globalThis.crypto).not.toBe(placeholderCrypto)
     expect(typeof globalThis.fetch).toBe('function')
     expect(typeof globalThis.WebSocket).toBe('function')
+    expect(typeof globalThis.performance.now).toBe('function')
+    expect(typeof globalThis.crypto.getRandomValues).toBe('function')
+    expect((globalThis as any)[REQUEST_GLOBAL_ACTUALS_KEY].performance).toBe(globalThis.performance)
+    expect((globalThis as any)[REQUEST_GLOBAL_ACTUALS_KEY].crypto).toBe(globalThis.crypto)
   })
 
   it('syncs installed request globals to the runtime host and actuals registry', async () => {

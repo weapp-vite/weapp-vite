@@ -196,6 +196,28 @@ describe.sequential('simulator browser e2e', () => {
     })
   })
 
+  it('preserves PascalCase WXML component aliases in the browser runtime', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('component-lab')
+
+    await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentScenarioId === 'component-lab'
+        && nextState.currentRoute === 'pages/lab/index'
+        && nextState.previewMarkup.includes('data-sim-component="PascalCaseCard"'),
+      20_000,
+    )
+
+    const scopeIds = bridge.findComponentScopeIds('PascalCaseCard')
+    expect(scopeIds).toHaveLength(1)
+    expect(bridge.readScopeSnapshot(scopeIds[0])).toMatchObject({
+      properties: {
+        status: 'pascal',
+      },
+      type: 'component',
+    })
+  })
+
   it('matches WeChat component event binding precedence in the browser runtime', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('component-lab')

@@ -6,7 +6,9 @@ definePageJson({ navigationBarTitleText: 'wd-calendar' })
 const interactionCount = ref(0)
 const scenarioState = ref('pending')
 const e2eComponent = ref<Record<string, unknown> | null>(null)
-const modelValue = ref<number[]>([])
+const modelValue = ref<number[]>([Date.UTC(2025, 0, 15)])
+const minDate = Date.UTC(2024, 11, 1)
+const maxDate = Date.UTC(2025, 1, 28)
 function markInteraction() {
   interactionCount.value += 1
 }
@@ -99,7 +101,7 @@ async function runE2E() {
       <view class="scenario-status">rendered / interactive</view>
     </view>
     <view id="e2e-target" class="scenario-subject">
-      <wd-calendar id="e2e-component" ref="e2eComponent" v-model="modelValue" label="Date" type="dates" @open="markInteraction" />
+      <wd-calendar id="e2e-component" ref="e2eComponent" v-model="modelValue" :min-date="minDate" :max-date="maxDate" label="Date" type="dates" @open="markInteraction" />
     </view>
     <button id="e2e-action" class="scenario-action" @click="runE2E">
       Exercise interaction

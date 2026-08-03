@@ -12,6 +12,7 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/lifecycle-compare')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const COMPONENTS_WXML_DIST = path.join(DIST_ROOT, 'pages/components/index.wxml')
+const LIFECYCLE_DOM_RECOVERY_ROUTE = '/pages/blank/index'
 const DEVTOOLS_ROUTE_INFRA_RE = /Timeout in read current page|Timeout in raw reLaunch|Timed out in (?:relaunch|switchTab|read lifecycle)|DEVTOOLS_PROTOCOL_TIMEOUT|simulator not found|模拟器启动失败/i
 
 const TAB_PATHS = [
@@ -162,6 +163,43 @@ async function waitForLifecyclePageDom(miniProgram: any, pagePath: string, timeo
   throw new Error(`Timed out waiting lifecycle DOM for ${pagePath}: ${JSON.stringify(lastResult, null, 2)}`)
 }
 
+async function recoverLifecyclePageDom(miniProgram: any, pagePath: string, route: string, reason: string) {
+  process.stdout.write(`[lifecycle-compare:dom-recover] route=${route} via=${LIFECYCLE_DOM_RECOVERY_ROUTE} reason=${reason}\n`)
+  await withTimeout(
+    miniProgram.reLaunch(LIFECYCLE_DOM_RECOVERY_ROUTE),
+    20_000,
+    `relaunch lifecycle recovery page ${LIFECYCLE_DOM_RECOVERY_ROUTE}`,
+  )
+  await withTimeout(
+    miniProgram.reLaunch(route),
+    20_000,
+    `relaunch lifecycle page after DOM recovery ${route}`,
+  )
+
+  try {
+    await waitForLifecyclePageDom(miniProgram, pagePath)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const fallbackTab = TAB_PATHS.find(p => p !== pagePath)
+    if (!fallbackTab) {
+      throw error
+    }
+    process.stdout.write(`[lifecycle-compare:dom-recover-tab] route=${route} via=${fallbackTab} reason=${message}\n`)
+    await withTimeout(
+      miniProgram.switchTab(fallbackTab),
+      12_000,
+      `switchTab lifecycle recovery page ${fallbackTab}`,
+    )
+    await withTimeout(
+      miniProgram.switchTab(pagePath),
+      12_000,
+      `switchTab lifecycle page after DOM recovery ${pagePath}`,
+    )
+    await waitForLifecyclePageDom(miniProgram, pagePath)
+  }
+}
+
 async function openLifecyclePage(miniProgram: any, pagePath: string, query = '') {
   const route = query ? `${pagePath}?${query}` : pagePath
   process.stdout.write(`[lifecycle-compare:open] route=${route}\n`)
@@ -171,7 +209,16 @@ async function openLifecyclePage(miniProgram: any, pagePath: string, query = '')
     `relaunch lifecycle page ${route}`,
   )
   process.stdout.write(`[lifecycle-compare:open-ready] route=${route}\n`)
-  await waitForLifecyclePageDom(miniProgram, pagePath)
+  try {
+    await waitForLifecyclePageDom(miniProgram, pagePath)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (!message.includes(`Timed out waiting lifecycle DOM for ${pagePath}`)) {
+      throw error
+    }
+    await recoverLifecyclePageDom(miniProgram, pagePath, route, message)
+  }
   return await withTimeout(
     miniProgram.currentPage(),
     2_500,

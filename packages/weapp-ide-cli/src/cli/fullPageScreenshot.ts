@@ -22,6 +22,31 @@ interface RuntimeViewportMetrics {
   viewportHeight: number | undefined
 }
 
+interface RuntimeWindowInfo {
+  windowHeight?: number
+  windowWidth?: number
+}
+
+interface RuntimeViewportOffset {
+  scrollHeight?: number
+  scrollTop?: number
+  scrollWidth?: number
+}
+
+interface RuntimeSelectorQuery {
+  exec: () => void
+  scrollOffset: (callback: (viewport: RuntimeViewportOffset | undefined) => void) => RuntimeSelectorQuery
+  selectViewport: () => RuntimeSelectorQuery
+}
+
+interface RuntimeWx {
+  createSelectorQuery?: () => RuntimeSelectorQuery
+  getSystemInfoSync?: () => RuntimeWindowInfo
+  getWindowInfo?: () => RuntimeWindowInfo
+}
+
+declare const wx: RuntimeWx | undefined
+
 const MAX_FULL_PAGE_CAPTURES = 200
 const DEVTOOLS_INSPECTEE_REFERENCE_ERROR = /__inspectee__ is not defined|Can't find variable:\s*__inspectee__/i
 

@@ -96,7 +96,7 @@ function resolveActualBindingTargets(targets: WeappInjectWebRuntimeGlobalsTarget
 function isPlaceholderRequestGlobal(value: unknown) {
   return Boolean(
     value
-    && typeof value === 'function'
+    && (typeof value === 'function' || typeof value === 'object')
     && (value as Record<string, any>)[REQUEST_GLOBAL_PLACEHOLDER_KEY] === true,
   )
 }
@@ -351,14 +351,14 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectWebRu
   }
 
   if (target === 'performance') {
-    if (!host.performance || typeof host.performance.now !== 'function') {
+    if (!host.performance || isPlaceholderRequestGlobal(host.performance) || typeof host.performance.now !== 'function') {
       assignHostGlobal(host, 'performance', performancePolyfill)
     }
     return
   }
 
   if (target === 'crypto') {
-    if (!host.crypto || typeof host.crypto.getRandomValues !== 'function') {
+    if (!host.crypto || isPlaceholderRequestGlobal(host.crypto) || typeof host.crypto.getRandomValues !== 'function') {
       assignHostGlobal(host, 'crypto', cryptoPolyfill)
     }
     return

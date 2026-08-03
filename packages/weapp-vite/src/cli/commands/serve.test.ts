@@ -518,12 +518,12 @@ describe('serve cli command', () => {
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       openRecovery: false,
-      prepareAutomatorSession: 'connect-opened',
+      prepareAutomatorSession: true,
       reuseOpenedProject: true,
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: false,
+      useAutomatorOpen: true,
     })
     expect(maybeStartForwardConsoleMock).toHaveBeenCalledWith({
       platform: 'weapp',
@@ -550,12 +550,12 @@ describe('serve cli command', () => {
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       openRecovery: false,
-      prepareAutomatorSession: 'connect-opened',
+      prepareAutomatorSession: true,
       reuseOpenedProject: true,
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: false,
+      useAutomatorOpen: true,
     })
   })
 

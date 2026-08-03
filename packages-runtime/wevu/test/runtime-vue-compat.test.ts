@@ -151,7 +151,7 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
-    const readyInst = {
+    const readyInst: any = {
       __wevuRuntimeOwnerId: inst.__wevuRuntimeOwnerId,
     }
     ;(globalThis as any)[WEVU_SCOPED_SLOT_OWNER_STORE_KEY] = new Map()
@@ -390,7 +390,7 @@ describe('runtime: vue compat helpers', () => {
     const parent = createAttachedInstance(parentOptions)
     const slotOwner = createAttachedInstance(slotOwnerOptions, parent)
     const child = createAttachedInstance(childOptions, slotOwner)
-    const createReadyWrapper = (options: Record<string, any>, source: Record<string, any>, owner?: Record<string, any>) => ({
+    const createReadyWrapper = (options: Record<string, any>, source: Record<string, any>, owner?: Record<string, any>): Record<string, any> => ({
       [WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD]: options.methods[WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD],
       __wevuRuntimeOwnerId: source.__wevuRuntimeOwnerId,
       data: structuredClone(source.data ?? {}),
@@ -416,11 +416,11 @@ describe('runtime: vue compat helpers', () => {
       data() {
         return { count: 0 }
       },
-      created() {
+      created(this: any) {
         this.children = []
       },
       methods: {
-        registerChild(child: unknown) {
+        registerChild(this: any, child: unknown) {
           this.children.push(child)
         },
       },

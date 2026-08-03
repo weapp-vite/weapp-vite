@@ -5,6 +5,33 @@ import {
 } from '../src/browser'
 
 describe('BrowserHeadlessSession', () => {
+  it('preserves PascalCase component aliases while parsing WXML', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.json', JSON.stringify({
+        usingComponents: {
+          PascalCaseCard: '/components/pascal-case-card/index',
+        },
+      })],
+      ['pages/index/index.js', 'Page({})'],
+      ['pages/index/index.wxml', '<PascalCaseCard id="pascal-case-card" label="ready" />'],
+      ['components/pascal-case-card/index.json', '{}'],
+      ['components/pascal-case-card/index.js', 'Component({ properties: { label: String } })'],
+      ['components/pascal-case-card/index.wxml', '<view>{{label}}</view>'],
+    ])
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(page.selectComponent?.('#pascal-case-card')).toMatchObject({
+      is: 'components/pascal-case-card/index',
+      properties: {
+        label: 'ready',
+      },
+    })
+    expect(session.renderCurrentPage().wxml).toContain('data-sim-component="PascalCaseCard"')
+  })
+
   it('loads and caches modules through require.async', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

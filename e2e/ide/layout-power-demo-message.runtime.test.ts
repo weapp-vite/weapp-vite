@@ -15,6 +15,7 @@ import {
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { runLayoutFeedbackE2E } from './layout-power-demo.runtime.shared'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
@@ -26,6 +27,7 @@ const TD_MESSAGE_DUPLICATE_SLOT_RE = /More than one slot named .*tdesign-minipro
 const LAYOUTS = ['default', 'command', 'studio', 'split', 'poster'] as const
 const CONNECTION_CLOSED_RE = /Connection closed|WebSocket is not open|other side closed|not connected/i
 const PROTOCOL_TIMEOUT_RE = /DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond to protocol method App\.(?:callFunction|getCurrentPage|getPageStack)|Operation timed out after/i
+const DOM_NOT_READY_RE = /Timed out waiting layout-power DOM/i
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -65,14 +67,6 @@ async function waitForOpenedAutomator(projectPath: string, timeoutMs = 120_000) 
   }
 
   throw lastError instanceof Error ? lastError : new Error(String(lastError))
-}
-
-async function relaunchIndexPage(miniProgram: any) {
-  const page = await miniProgram.reLaunch(INDEX_ROUTE)
-  if (page) {
-    return page
-  }
-  return await miniProgram.currentPage()
 }
 
 async function waitForLayoutPowerDom(page: any, timeoutMs = 15_000) {
@@ -116,6 +110,30 @@ async function waitForLayoutPowerDom(page: any, timeoutMs = 15_000) {
   throw new Error(`Timed out waiting layout-power DOM: ${JSON.stringify(lastResult, null, 2)}`)
 }
 
+async function waitForCurrentIndexPageDom(miniProgram: any, timeoutMs = 30_000) {
+  const startedAt = Date.now()
+  let lastError: unknown
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const page = await miniProgram.currentPage()
+      await waitForLayoutPowerDom(page, 3_000)
+      return page
+    }
+    catch (error) {
+      lastError = error
+    }
+    await delay(300)
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError))
+}
+
+async function relaunchIndexPage(miniProgram: any) {
+  await miniProgram.reLaunch(INDEX_ROUTE)
+  return await waitForCurrentIndexPageDom(miniProgram)
+}
+
 async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000) {
   const startedAt = Date.now()
   let lastResult: unknown
@@ -138,12 +156,13 @@ function isRecoverableRuntimeSessionError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return CONNECTION_CLOSED_RE.test(message)
     || PROTOCOL_TIMEOUT_RE.test(message)
+    || DOM_NOT_READY_RE.test(message)
     || (error instanceof Error
       && 'code' in error
       && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT')
 }
 
-async function expectRepeatedMessageTap(page: any, collector: RuntimeErrorCollector) {
+async function expectRepeatedMessageTap(miniProgram: any, page: any, collector: RuntimeErrorCollector) {
   const marker = collector.mark()
   let completedRepeats = 0
 
@@ -151,7 +170,7 @@ async function expectRepeatedMessageTap(page: any, collector: RuntimeErrorCollec
     process.stdout.write(`[layout-power-demo:message] tap-repeat=${repeat + 1}\n`)
     let result: any
     try {
-      result = await page.callMethod('runLayoutFeedbackE2E')
+      result = await runLayoutFeedbackE2E(miniProgram)
     }
     catch (error) {
       if (completedRepeats > 0 && isRecoverableRuntimeSessionError(error)) {
@@ -242,7 +261,7 @@ describe.sequential('layout-power-demo message feedback in real WeChat DevTools'
     if (!runtimeErrorCollector) {
       throw new Error('Runtime error collector is not initialized')
     }
-    await expectRepeatedMessageTap(page, runtimeErrorCollector)
+    await expectRepeatedMessageTap(miniProgram, page, runtimeErrorCollector)
   }
 
   it('keeps repeated message taps stable after layout switches', async () => {

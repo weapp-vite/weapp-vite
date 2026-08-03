@@ -82,6 +82,7 @@ export function parseTemplateDocument(templateSource: string) {
     xmlMode: false,
     decodeEntities: false,
     lowerCaseAttributeNames: false,
+    lowerCaseTags: false,
     recognizeSelfClosing: true,
   }) as unknown as DomNodeLike
 }

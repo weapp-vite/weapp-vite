@@ -48,7 +48,10 @@ describe.sequential('wevu runtime class computed (weapp e2e)', () => {
         throw new Error('Failed to launch class-computed page')
       }
 
-      const result = await page.callMethod('runE2E')
+      const result = await page.callMethodWithOptions('runE2E', {
+        routeOnly: true,
+        timeout: 60_000,
+      })
       if (!result?.ok) {
         throw new Error(`E2E failed for class-computed: ${JSON.stringify(result)}`)
       }

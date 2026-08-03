@@ -14,9 +14,12 @@ const WEB_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.web.config.ts')
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
+  ['ide/devtools-cli-workflow.runtime.test.ts', '900000'],
+  ['ide/github-issues.runtime.aggregate.test.ts', '3600000'],
   ['ide/github-issues.runtime.lifecycle.test.ts', '600000'],
   ['ide/github-issues.runtime.props.test.ts', '600000'],
   ['ide/stateful-hmr.runtime.test.ts', '900000'],
+  ['ide/subpackage-shared-strategy-complex.runtime.test.ts', '600000'],
   ['ide/template-dev-open-all.runtime.test.ts', '900000'],
   ['ide/template-tailwindcss-dev-open-multi.runtime.test.ts', '1200000'],
   ['ide/template-tailwindcss-tdesign-hmr.runtime.test.ts', '900000'],
@@ -25,30 +28,52 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/wevu-runtime.core-hmr.test.ts', '900000'],
   ['ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts', '900000'],
   ['ide/wevu-runtime.weapp.test.ts', '600000'],
-  ['ide/wot-ui-compat.runtime.test.ts', '600000'],
+  ['ide/wot-ui-compat.runtime.test.ts', '1200000'],
 ])
 const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
+  'ide/app-vue-hmr-alias.runtime.test.ts',
   'ide/automator-bridge-wrapper-hmr.runtime.test.ts',
   'ide/automator-concurrent-sessions.runtime.test.ts',
+  'ide/github-issues.runtime.issue547.test.ts',
+  'ide/github-issues.runtime.require-async.test.ts',
+  'ide/stateful-hmr.runtime.test.ts',
+  'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
 ])
-const IDE_GITHUB_ISSUES_PATTERNS = [
+export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
+export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
   'ide/github-issues.runtime.app-shell.test.ts',
+  'ide/github-issues.runtime.import-meta.test.ts',
   'ide/github-issues.runtime.issue289.test.ts',
   'ide/github-issues.runtime.issue297-302.test.ts',
-  'ide/github-issues.runtime.issue547.test.ts',
-  'ide/github-issues.runtime.issue558.test.ts',
-  'ide/github-issues.runtime.issue615.test.ts',
+  'ide/github-issues.runtime.issue466.test.ts',
+  'ide/github-issues.runtime.issue553-555.test.ts',
+  'ide/github-issues.runtime.issue554.test.ts',
+  'ide/github-issues.runtime.issue564.test.ts',
+  'ide/github-issues.runtime.issue581.test.ts',
   'ide/github-issues.runtime.issue627.test.ts',
-  'ide/github-issues.runtime.issue642-bug7-default.test.ts',
-  'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
   'ide/github-issues.runtime.issue642.test.ts',
   'ide/github-issues.runtime.issue705.test.ts',
   'ide/github-issues.runtime.issue706.test.ts',
-  'ide/github-issues.runtime.issue553-555.test.ts',
   'ide/github-issues.runtime.lifecycle.test.ts',
+  'ide/github-issues.runtime.miniprogram-computed.test.ts',
   'ide/github-issues.runtime.props.test.ts',
-  'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
   'ide/github-issues.runtime.slot-fallback.test.ts',
+  'ide/github-issues.runtime.web-runtime.test.ts',
+] as const
+const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
+const IDE_GITHUB_ISSUES_PATTERNS = [
+  IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
+  // wx.downloadFile 的域名校验依赖完整独立项目，不能复用聚合目标的裁剪构建。
+  'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
+  'ide/github-issues.runtime.issue547.test.ts',
+  'ide/github-issues.runtime.issue558.test.ts',
+  'ide/github-issues.runtime.issue615.test.ts',
+  'ide/github-issues.runtime.issue621.test.ts',
+  'ide/github-issues.runtime.issue642-bug7-default.test.ts',
+  'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
+  'ide/github-issues.runtime.issue642-bug8.test.ts',
+  'ide/github-issues.runtime.require-async.test.ts',
+  'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
 ]
 const IDE_CHUNK_MODES_PATTERNS = [
   'ide/chunk-modes.runtime.duplicate.test.ts',
@@ -244,6 +269,7 @@ export function getIdeTasks() {
     .sort()
     .filter(filePath => !isIdeHelperTest(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_MANUAL_DEVTOOLS_TEST_PATTERNS.has(toRelativeLabel(filePath)))
+    .filter(filePath => !IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET.has(toRelativeLabel(filePath)))
     .map(filePath => createIdeVitestTask(filePath))
 
   return tasks.sort((left, right) => {

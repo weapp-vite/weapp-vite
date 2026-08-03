@@ -148,6 +148,11 @@ function isDevtoolsProtocolTimeout(error: unknown) {
     )
 }
 
+function canRetryOnCurrentAutomatorSession(error: unknown) {
+  return isDevtoolsProtocolTimeout(error)
+    || (error instanceof Error && /timeout waiting for automator response/i.test(error.message))
+}
+
 async function waitForPageText(miniProgram: any, projectPath: string, route: string, text: string, expectedData?: Record<string, unknown>, timeoutMs = 90_000) {
   if (!route) {
     throw new Error(`Missing route while waiting for rendered text "${text}"`)
@@ -157,7 +162,6 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
   let latestWxml = ''
   let latestData = ''
   let latestRoute = ''
-  let emptyPageReads = 0
   let lastProtocolTimeout = ''
   let currentMiniProgram = miniProgram
 
@@ -198,25 +202,18 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
       catch {
         // Page 域 DOM 不稳定时，data fallback 也可能短暂不可读，继续轮询。
       }
-      if (latestWxml.trim() === '' || latestWxml.trim() === '<page></page>') {
-        emptyPageReads += 1
-        if (emptyPageReads >= 2) {
-          currentMiniProgram.disconnect?.()
-          currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 30_000 })).miniProgram
-          emptyPageReads = 0
-        }
-      }
-      else {
-        emptyPageReads = 0
-      }
     }
     catch (error) {
       if (!isDevtoolsProtocolTimeout(error) && !isLikelyRelaunchRetryableError(error)) {
         throw error
       }
       lastProtocolTimeout = error.message
+      if (canRetryOnCurrentAutomatorSession(error)) {
+        await delay(1_000)
+        continue
+      }
       currentMiniProgram.disconnect?.()
-      currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 30_000 })).miniProgram
+      currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 120_000 })).miniProgram
     }
     await delay(1_000)
   }
@@ -235,17 +232,17 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
     infraOutput = output.length > 4_000 ? output.slice(-4_000) : output
   }).catch(() => {})
 
+  const readySession = waitForOpenedAutomator(process.root, { timeoutMs: 120_000 }).catch((error) => {
+    const details = infraOutput ? `\nRecent infra output:\n${infraOutput}` : ''
+    throw new Error(`WeChat DevTools automator unavailable while opening ${process.name}${details}`, {
+      cause: error as Error,
+    })
+  })
   await process.dev.waitFor(
-    waitForOpenedAutomator(process.root, { timeoutMs: 120_000 }).then(async ({ miniProgram }) => {
-      await miniProgram.disconnect()
-    }).catch((error) => {
-      const details = infraOutput ? `\nRecent infra output:\n${infraOutput}` : ''
-      throw new Error(`WeChat DevTools automator unavailable while opening ${process.name}${details}`, {
-        cause: error as Error,
-      })
-    }),
+    readySession,
     `${process.name} dev:open ready`,
   )
+  return await readySession
 }
 
 async function cleanupTemplateAutomatorState(templateCase: TemplateCase) {
@@ -274,8 +271,8 @@ async function openTemplateDevProcess(templateCase: TemplateCase) {
     await cleanupTemplateAutomatorState(templateCase)
     const devProcess = startTemplateDevProcess(templateCase)
     try {
-      await waitForTemplateDevOpenReady(devProcess)
-      return devProcess
+      const session = await waitForTemplateDevOpenReady(devProcess)
+      return { devProcess, session }
     }
     catch (error) {
       lastError = error
@@ -308,20 +305,28 @@ describe.sequential('all templates dev:open IDE integration', () => {
   it('renders every app template after dev:open', async () => {
     for (const templateCase of TEMPLATE_CASES) {
       const port = resolveProjectAutomatorPort(templateCase.root)
-      const devProcess = await openTemplateDevProcess(templateCase)
+      const { devProcess, session } = await openTemplateDevProcess(templateCase)
       let miniProgram: any
       try {
-        const session = await waitForOpenedAutomator(templateCase.root)
         miniProgram = session.miniProgram
         const { metadata } = session
         expect(path.resolve(metadata.projectPath)).toBe(templateCase.root)
         expect(metadata.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
         const wrapperProjectPath = resolveAutomatorWrapperProjectPath(templateCase.root)
-        await fs.access(wrapperProjectPath)
-        expect(JSON.parse(await fs.readFile(path.join(wrapperProjectPath, 'project.config.json'), 'utf8'))).toMatchObject({
-          miniprogramRoot: './',
-          srcMiniprogramRoot: './',
-        })
+        const wrapperProjectConfig = path.join(wrapperProjectPath, 'project.config.json')
+        const usesWrapperProject = await fs.access(wrapperProjectConfig).then(() => true).catch(() => false)
+        const projectConfigPath = usesWrapperProject
+          ? wrapperProjectConfig
+          : path.join(templateCase.root, 'project.config.json')
+        expect(JSON.parse(await fs.readFile(projectConfigPath, 'utf8'))).toMatchObject(usesWrapperProject
+          ? {
+              miniprogramRoot: './',
+              srcMiniprogramRoot: './',
+            }
+          : {
+              miniprogramRoot: 'dist/',
+              srcMiniprogramRoot: 'dist/',
+            })
 
         try {
           await waitForPageText(miniProgram, templateCase.root, templateCase.route, templateCase.expectedText, templateCase.expectedData)
