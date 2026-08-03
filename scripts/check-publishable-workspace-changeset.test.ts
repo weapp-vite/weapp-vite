@@ -204,7 +204,7 @@ it('collectConstantsDependentReleaseIssues accepts complete constants release se
   assert.deepEqual(issues, [])
 })
 
-it('publish-packages runs constants guards before publishing packages', async () => {
+it('publish-packages runs release guards without rechecking consumed changesets', async () => {
   const packageJsonPath = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
     '../package.json',
@@ -215,11 +215,13 @@ it('publish-packages runs constants guards before publishing packages', async ()
   }
 
   const publishScript = packageJson.scripts?.['publish-packages'] ?? ''
+  const workspaceChangesetGuardIndex = publishScript.indexOf('check:publishable-workspace-changeset')
   const changesetGuardIndex = publishScript.indexOf('check:weapp-core-constants-changeset')
   const versionIndex = publishScript.indexOf('changeset version')
   const versionGuardIndex = publishScript.indexOf('check:weapp-core-constants-release-version')
   const publishIndex = publishScript.indexOf('changeset publish')
 
+  assert.equal(workspaceChangesetGuardIndex, -1)
   assert.notEqual(changesetGuardIndex, -1)
   assert.notEqual(versionIndex, -1)
   assert.notEqual(versionGuardIndex, -1)
