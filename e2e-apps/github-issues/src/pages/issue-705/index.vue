@@ -10,6 +10,8 @@ const route = useRoute()
 const router = useRouter()
 const routePath = computed(() => route.path)
 const hookCalls: Array<{ phase: string, to?: string, from: string }> = []
+const backHookCalls: Array<{ phase: string, to?: string, from: string }> = []
+const BACK_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_back_result__'
 const PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_push_result__'
 const SWITCH_TAB_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_switch_tab_result__'
 let lastFailure: null | { cause: string, type: number } = null
@@ -33,12 +35,32 @@ function createSnapshot() {
   }
 }
 
+function recordBackHook(call: { phase: string, to?: string, from: string }) {
+  const backProbe = wx.getStorageSync(BACK_RESULT_STORAGE_KEY)
+  if (backProbe?.stage !== 'started' && backHookCalls.length === 0) {
+    return
+  }
+  if (backProbe?.stage === 'started') {
+    backHookCalls.length = 0
+  }
+  backHookCalls.push(call)
+  wx.setStorageSync(BACK_RESULT_STORAGE_KEY, {
+    hooks: backHookCalls.slice(),
+    route: {
+      fullPath: route.fullPath,
+      path: route.path,
+    },
+  })
+}
+
 const removeBeforeEach = router.beforeEach((to, from) => {
-  hookCalls.push({
+  const call = {
     phase: 'before',
     to: to?.path,
     from: from.path,
-  })
+  }
+  hookCalls.push(call)
+  recordBackHook(call)
   wx.setStorageSync(PUSH_RESULT_STORAGE_KEY, {
     from: from.path,
     stage: 'before',
@@ -47,11 +69,13 @@ const removeBeforeEach = router.beforeEach((to, from) => {
 })
 
 const removeAfterEach = router.afterEach((to, from, failure) => {
-  hookCalls.push({
+  const call = {
     phase: 'after',
     to: to?.path,
     from: from.path,
-  })
+  }
+  hookCalls.push(call)
+  recordBackHook(call)
   lastFailure = failure
     ? {
         cause: String((failure.cause as any)?.errMsg ?? failure.cause ?? ''),

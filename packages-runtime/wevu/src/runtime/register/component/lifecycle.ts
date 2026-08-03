@@ -1,3 +1,4 @@
+import type { MiniProgramPageLike } from '../../../routerInternal/shared'
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, RuntimeApp } from '../../types'
 import type { WatchMap } from '../watch'
 import {
@@ -134,7 +135,10 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       }
       setRuntimeSetDataVisibility(this, true)
       if (isPage) {
-        notifyRouteStateSync({ page: this })
+        notifyRouteStateSync({
+          page: this as MiniProgramPageLike,
+          source: 'page',
+        })
       }
       callHookList(this, 'onShow', args)
       if (typeof userOnShow === 'function') {
