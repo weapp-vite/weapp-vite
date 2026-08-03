@@ -10,8 +10,38 @@ import {
   prepareGithubIssuesBuild,
   relaunchPage,
   releaseSharedMiniProgram,
+  verifyRouteRenderedWithRecovery,
 } from './github-issues.runtime.shared'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
+
+const ISSUE_600_ROUTE = '/pages/issue-600/index'
+
+function createIssue600Readiness(expectedSummary: string) {
+  return async (_page: any, miniProgram: any) => Boolean(await miniProgram.evaluate((summary: string) => {
+    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+    const page = pages[pages.length - 1] as any
+    if (page?.route !== 'pages/issue-600/index' || typeof page?._runE2E !== 'function') {
+      return false
+    }
+    return page._runE2E()?.summary === summary
+  }, expectedSummary).catch(() => false))
+}
+
+async function waitForIssue600RenderedPage(page: any, expectedDataset: Record<string, string>) {
+  await page.waitForRendered({
+    dataset: expectedDataset,
+    selector: '.issue600-probe',
+    timeout: 15_000,
+  })
+  await page.waitForRendered({
+    dataset: {
+      issue600SetupValue: 'issue-600-setup',
+    },
+    selector: '.issue600-setup-probe',
+    timeout: 15_000,
+  })
+  return page
+}
 
 describe.sequential('e2e app: github-issues / props', () => {
   beforeAll(async () => {
@@ -219,8 +249,8 @@ describe.sequential('e2e app: github-issues / props', () => {
     expect(viewForwarderWxml).toContain('vue-slots="{{ {header:true,footer:true} }}"')
     expect(viewForwarderWxml).not.toContain('vue-slots="{{{')
     expect(viewForwarderWxml).not.toContain('vue-slots="{{ {[')
-    expect(appJson.usingComponents?.['weapp-slot-wrapper']).toBe('/weapp_vite_internal/slot-wrapper/index')
-    expect(viewForwarderJson.usingComponents?.['weapp-slot-wrapper']).toBeUndefined()
+    expect(appJson.usingComponents?.['weapp-slot-wrapper']).toBeUndefined()
+    expect(viewForwarderJson.usingComponents?.['weapp-slot-wrapper']).toBe('/weapp_vite_internal/slot-wrapper/index')
     expect(wrapperJs).toContain('virtualHost:true')
     expect(legacyForwarderWxml).toContain('<view slot="header"><slot /></view>')
     expect(legacyForwarderWxml).toContain('vue-slots="{{ {header:true,footer:true} }}"')
@@ -296,49 +326,48 @@ describe.sequential('e2e app: github-issues / props', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const aliasPage = await relaunchPage(miniProgram, '/pages/issue-600/index?x=issue-600-alias', undefined, 45_000, {
-        readiness: async page => Boolean(await page.waitForRendered({
-          dataset: {
-            issue600Summary: 'issue-600-alias|issue-600-setup|alias-ready|setup-ready',
-            issue600Value: 'issue-600-alias',
-          },
-          selector: '.issue600-probe',
-          timeout: 15_000,
-        })),
+      const aliasSummary = 'issue-600-alias|issue-600-setup|alias-ready|setup-ready'
+      const aliasRoute = `${ISSUE_600_ROUTE}?x=issue-600-alias`
+      const aliasPage = await relaunchPage(miniProgram, aliasRoute, undefined, 45_000, {
+        readiness: createIssue600Readiness(aliasSummary),
       })
       if (!aliasPage) {
         throw new Error('Failed to launch issue-600 alias page')
       }
-      await expect(aliasPage.waitForRendered({
-        dataset: {
-          issue600SetupValue: 'issue-600-setup',
+      const activeAliasMiniProgram = await getSharedMiniProgram(ctx)
+      await verifyRouteRenderedWithRecovery(
+        activeAliasMiniProgram,
+        aliasRoute,
+        page => waitForIssue600RenderedPage(page, {
+          issue600Summary: aliasSummary,
+          issue600Value: 'issue-600-alias',
+        }),
+        {
+          readiness: createIssue600Readiness(aliasSummary),
         },
-        selector: '.issue600-setup-probe',
-        timeout: 15_000,
-      })).resolves.toBeTruthy()
+      )
 
-      await closeSharedMiniProgram()
+      await closeSharedMiniProgram({ force: true })
       const defaultMiniProgram = await getSharedMiniProgram(ctx)
-      const defaultPage = await relaunchPage(defaultMiniProgram, '/pages/issue-600/index', undefined, 45_000, {
-        readiness: async page => Boolean(await page.waitForRendered({
-          dataset: {
-            issue600Summary: 'issue-600-default|issue-600-setup|alias-fallback|setup-ready',
-            issue600Value: 'issue-600-default',
-          },
-          selector: '.issue600-probe',
-          timeout: 15_000,
-        })),
+      const defaultSummary = 'issue-600-default|issue-600-setup|alias-fallback|setup-ready'
+      const defaultPage = await relaunchPage(defaultMiniProgram, ISSUE_600_ROUTE, undefined, 45_000, {
+        readiness: createIssue600Readiness(defaultSummary),
       })
       if (!defaultPage) {
         throw new Error('Failed to launch issue-600 default page')
       }
-      await expect(defaultPage.waitForRendered({
-        dataset: {
-          issue600SetupValue: 'issue-600-setup',
+      const activeDefaultMiniProgram = await getSharedMiniProgram(ctx)
+      await verifyRouteRenderedWithRecovery(
+        activeDefaultMiniProgram,
+        ISSUE_600_ROUTE,
+        page => waitForIssue600RenderedPage(page, {
+          issue600Summary: defaultSummary,
+          issue600Value: 'issue-600-default',
+        }),
+        {
+          readiness: createIssue600Readiness(defaultSummary),
         },
-        selector: '.issue600-setup-probe',
-        timeout: 15_000,
-      })).resolves.toBeTruthy()
+      )
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

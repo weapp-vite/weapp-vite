@@ -460,12 +460,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(appShellWxml).toContain('issue-563-app-shell')
     expect(appShellWxml).toContain('<slot />')
     expect(appShellWxml).not.toContain('scoped-slots-default')
-    expect(appShellJson).toMatchObject({
+    expect(appShellJson).toEqual({
       component: true,
       styleIsolation: 'apply-shared',
-      usingComponents: {
-        'custom-tab-bar': '/custom-tab-bar/index',
-      },
     })
     expect(pageWxml).toContain(`<weapp-app-shell ${SLOT_OWNER_ATTR}><weapp-layout-default ${SLOT_OWNER_ATTR}>`)
     expect(pageWxml).toContain('</weapp-layout-default></weapp-app-shell>')
@@ -619,10 +616,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('slot="main"')
     expect(pageWxml).toContain('slot="footer"')
     expect(pageWxml).not.toContain('generic:scoped-slots-main=')
-    expect(componentWxml).toContain('<slot name="main" /><scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
-    expect(componentWxml).toContain('<slot name="footer" /><scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
+    expect(componentWxml).toContain('<scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
+    expect(componentWxml).toContain('<block wx:if="{{!__wvSlotOwnerId}}"><slot name="main" /></block>')
+    expect(componentWxml).toContain('<scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
+    expect(componentWxml).toContain('<block wx:if="{{!__wvSlotOwnerId}}"><slot name="footer" /></block>')
     expect(componentWxml).toContain(`__wvSlotProps="{{['list',back.state.list]}}"`)
-    expect(componentWxml).not.toContain('<block wx:else><slot name="main" /></block>')
+    expect(componentWxml).not.toContain('<slot name="main" /><scoped-slots-main')
   })
 
   it('slot fallback compiler off: keeps plain fallback guards independent from scoped slot compiler', async () => {
@@ -1326,8 +1325,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(forwarderWxml).not.toContain('vue-slots="{{ {[')
     expect(forwarderWxml).toContain('<weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper>')
     expect(forwarderWxml).toContain('<weapp-slot-wrapper slot="footer"><slot name="footer" /></weapp-slot-wrapper>')
-    expect(appJson.usingComponents?.['weapp-slot-wrapper']).toBe('/weapp_vite_internal/slot-wrapper/index')
-    expect(forwarderJson.usingComponents?.['weapp-slot-wrapper']).toBeUndefined()
+    expect(appJson.usingComponents?.['weapp-slot-wrapper']).toBeUndefined()
+    expect(forwarderJson.usingComponents?.['weapp-slot-wrapper']).toBe('/weapp_vite_internal/slot-wrapper/index')
     expect(wrapperWxml).toBe('<slot></slot>')
     expect(wrapperJson.component).toBe(true)
     expect(wrapperJs).toContain('virtualHost:true')

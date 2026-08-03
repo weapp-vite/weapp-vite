@@ -12,6 +12,7 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-features')
 export const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const ROUTE_READY_SELECTORS: Record<string, string> = {
+  'pages/subpath-entries/index': '#subpath-run-e2e',
   'pages/router-dynamic/index': '#router-dynamic-run-e2e',
   'pages/router-showcase/index': '#router-showcase-run-e2e',
   'pages/router-stability/index': '#router-open-sub',

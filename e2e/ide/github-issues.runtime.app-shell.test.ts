@@ -16,12 +16,27 @@ async function readDistWxml(relativePath: string) {
   return await fs.readFile(path.join(DIST_ROOT, relativePath), 'utf8')
 }
 
-async function waitForRenderedMarker(page: any, selector: string, dataset: Record<string, string>) {
+async function waitForRenderedMarker(
+  page: any,
+  selector: string,
+  dataset: Record<string, string>,
+  timeout = 30_000,
+) {
   await page.waitForRendered({
     selector,
     dataset,
-    timeout: 12_000,
+    timeout,
   })
+}
+
+async function isRenderedMarkerReady(page: any, selector: string, dataset: Record<string, string>) {
+  try {
+    await waitForRenderedMarker(page, selector, dataset, 12_000)
+    return true
+  }
+  catch {
+    return false
+  }
 }
 
 describe.sequential('e2e app: github-issues / app shell runtime', () => {
@@ -37,10 +52,8 @@ describe.sequential('e2e app: github-issues / app shell runtime', () => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const page = await relaunchPage(miniProgram, '/pages/issue-338/index', undefined, 45_000, {
-        readiness: async (page) => {
-          await waitForRenderedMarker(page, '#issue338-page', { e2eIssue: '338' })
-          return true
-        },
+        readiness: page => isRenderedMarkerReady(page, '#issue338-page', { e2eIssue: '338' }),
+        readinessTimeoutMs: 30_000,
       })
       if (!page) {
         throw new Error('Failed to launch issue-338 page')
@@ -68,10 +81,8 @@ describe.sequential('e2e app: github-issues / app shell runtime', () => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const page = await relaunchPage(miniProgram, '/pages/issue-448/index', undefined, 45_000, {
-        readiness: async (page) => {
-          await waitForRenderedMarker(page, '#issue448-page', { e2eIssue: '448' })
-          return true
-        },
+        readiness: page => isRenderedMarkerReady(page, '#issue448-page', { e2eIssue: '448' }),
+        readinessTimeoutMs: 30_000,
       })
       if (!page) {
         throw new Error('Failed to launch issue-448 page')

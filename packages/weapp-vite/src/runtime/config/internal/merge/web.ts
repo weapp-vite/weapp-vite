@@ -116,6 +116,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
   })
   inline.plugins = mergeWebPlugins(inline.plugins, webPlugin, runtimeProviderPlugin)
 
+  inline.build ??= {}
   inline.build.outDir = web.outDir
   inline.build.emptyOutDir ??= !isDev
 

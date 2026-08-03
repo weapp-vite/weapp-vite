@@ -113,6 +113,7 @@ describe('forwardConsole', () => {
     expect(startForwardConsoleMock).toHaveBeenCalledWith(expect.objectContaining({
       projectPath: 'dist/dev',
       port: 10261,
+      timeout: 120_000,
       logLevels: ['log', 'info', 'warn', 'error'],
       openedOnly: undefined,
       unhandledErrors: true,

@@ -29,12 +29,8 @@ describe.sequential('github-issues runtime import.meta bindings', () => {
       20_000,
       {
         readiness: async (page) => {
-          await page.waitForRendered({
-            selector: '#issue431-page',
-            dataset: { e2eIssue: '431' },
-            timeout: 2_500,
-          })
-          return true
+          const runtime = await page.callMethod('_runE2E')
+          return runtime?.url === '/pages/issue-431/index.js'
         },
       },
     )
@@ -43,7 +39,18 @@ describe.sequential('github-issues runtime import.meta bindings', () => {
     }
 
     const pageWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-431/index.wxml'), 'utf8')
+    const runtime = await page.callMethod('_runE2E')
+    const importMetaSnapshot = JSON.parse(runtime.snapshot)
 
+    expect(runtime).toMatchObject({
+      dirname: '/pages/issue-431',
+      url: '/pages/issue-431/index.js',
+    })
+    expect(importMetaSnapshot).toMatchObject({
+      dirname: '/pages/issue-431',
+      filename: '/pages/issue-431/index.js',
+      url: '/pages/issue-431/index.js',
+    })
     expect(pageWxml).toContain('data-case="double"')
     expect(pageWxml).toContain('data-case=\'single\'')
     expect(pageWxml).toMatch(/data-template-url=(["'])\{\{['"]\/pages\/issue-431\/index\.wxml['"]\}\}\1/)

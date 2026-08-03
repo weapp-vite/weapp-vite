@@ -28,7 +28,7 @@ const SECOND_TIME_RE = /(^|[\s,(])(\d+\.\d+|\d+|\.\d+)s(?=($|[\s),]))/g
 const MS_TIME_RE = /(^|[\s,(])(\d+\.\d+|\d+|\.\d+)ms(?=($|[\s),]))/g
 const RGBA_RE = /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*([+-]?(\d+\.\d+|\d+|\.\d+)))?\s*\)/gi
 const VITE_MARKER_COMMENT_RE = /^\$vite\$:\d+$/
-const TEMPLATE_RELAUNCH_RETRYABLE_RE = /Timeout in raw reLaunch|Timeout in warmup reLaunch|Timeout in read current page|Timed out waiting page root after (?:warmup )?reLaunch|DEVTOOLS_PROTOCOL_TIMEOUT|WeChat DevTools simulator boot error detected|Connection closed|WebSocket is not open|socket hang up|Target closed|not connected/i
+const TEMPLATE_RELAUNCH_RETRYABLE_RE = /Timeout in raw reLaunch|Timeout in warmup reLaunch|Timeout in read current page|Timed out waiting (?:page root|route .*?) after (?:warmup )?reLaunch|DEVTOOLS_PROTOCOL_TIMEOUT|WeChat DevTools simulator boot error detected|Connection closed|WebSocket is not open|socket hang up|Target closed|not connected/i
 const TEMPLATE_RELAUNCH_FATAL_BOOT_RE = /WeChat DevTools simulator boot error detected/i
 const SCOPED_SLOT_ID_RE = /\bscoped-slot-[a-z0-9]+-default-\d+\b/g
 const TEMPLATE_PAGE_RENDERED_TIMEOUT = 12_000
@@ -709,9 +709,11 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
           skylineRenderEnable: false,
         },
       },
+      refreshProjectAfterConnect: true,
+      retryWarmupTimeout: true,
       skipRelaunchPageRootCheck: true,
       warmupAnyPage: true,
-      warmupAllowRelaunch: false,
+      warmupAllowRelaunch: true,
       warmupRoute: launchWarmupRoute,
     })
   }

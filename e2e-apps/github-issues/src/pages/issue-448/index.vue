@@ -183,6 +183,26 @@ function assertRawUploadPayload(caseName: string, payload: RawFetchUploadPayload
   }
 }
 
+function formatRuntimeError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message
+  }
+  if (error && typeof error === 'object') {
+    const record = error as Record<string, unknown>
+    for (const key of ['errMsg', 'message']) {
+      if (typeof record[key] === 'string' && record[key]) {
+        return record[key]
+      }
+    }
+    try {
+      return JSON.stringify(record)
+    }
+    catch {
+    }
+  }
+  return String(error)
+}
+
 async function uploadRawFetchCase(caseName: string, input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) {
   const response = await fetch(input, init)
   const payload = await response.json() as RawFetchUploadPayload
@@ -315,7 +335,7 @@ async function _runFormDataUploadE2E() {
   catch (error) {
     formDataUploadStatus.value = 'failed'
     rawFetchUploadStatus.value = 'failed'
-    formDataUploadPayload.value = error instanceof Error ? error.message : String(error)
+    formDataUploadPayload.value = formatRuntimeError(error)
     rawFetchUploadPayload.value = formDataUploadPayload.value
     return {
       error: formDataUploadPayload.value,

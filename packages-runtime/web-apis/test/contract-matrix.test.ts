@@ -466,7 +466,7 @@ describe('web API contract matrix', () => {
     const timeoutSpy = vi.spyOn(globalThis, 'setTimeout').mockImplementation(((callback: () => void) => {
       scheduled.push(callback)
       return 1 as never
-    }) as typeof setTimeout)
+    }) as unknown as typeof setTimeout)
     queueMicrotaskPolyfill(() => {
       throw new Error('microtask failed')
     })

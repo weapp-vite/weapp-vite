@@ -537,38 +537,36 @@ function preserveRuntimeFacadeIdentity<D extends object, C extends ComputedDefin
   return previousRuntime
 }
 
-/**
- * 重建运行时实例，同时保持宿主包装对象持有的 runtime facade 身份稳定。
- * @internal
- */
-export function refreshRuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
-  target: InternalRuntimeState,
-  runtimeApp: RuntimeApp<D, C, M>,
-  watchMap: WatchMap | undefined,
-  setup?: RuntimeSetupFunction<D, C, M>,
-  options?: { snapshotOmitKeys?: string[] },
+function createRuntimeStateSnapshot(
+  runtime: RuntimeInstance<any, any, any>,
+  nativeData: Record<string, any> | undefined,
+  preferredState?: Record<string, any>,
 ) {
-  const previousRuntime = target.__wevu as RuntimeInstance<D, C, M> | undefined
-  // eslint-disable-next-line ts/no-use-before-define
-  teardownRuntimeInstance(target, { skipHooks: true })
-  const nextRuntime = mountRuntimeInstance(target, runtimeApp, watchMap, setup, {
-    deferSetData: true,
-    snapshotOmitKeys: options?.snapshotOmitKeys,
-  })
-  if (!previousRuntime || previousRuntime === nextRuntime) {
-    return nextRuntime
+  const runtimeState = runtime.state as Record<string, any>
+  const setupState = runtime.setupState as Record<string, any> | undefined
+  const snapshot: Record<string, any> = {}
+  for (const key of Object.keys(nativeData ?? {})) {
+    if (!Object.prototype.hasOwnProperty.call(runtimeState, key)) {
+      continue
+    }
+    if (preferredState && Object.prototype.hasOwnProperty.call(preferredState, key)) {
+      snapshot[key] = cloneInitialSnapshotValue(preferredState[key])
+      continue
+    }
+    const setupBinding = setupState?.[key]
+    snapshot[key] = cloneInitialSnapshotValue(isRef(setupBinding) ? setupBinding.value : runtimeState[key])
   }
-  return preserveRuntimeFacadeIdentity(target, previousRuntime, nextRuntime)
+  return snapshot
 }
 
 function syncRuntimeStateFromNativeData(
   target: InternalRuntimeState,
-  options?: { includeSetupState?: boolean },
+  options?: { includeSetupState?: boolean, nativeData?: Record<string, any> },
 ) {
   const runtime = target.__wevu
   const runtimeState = runtime?.state as Record<string, any> | undefined
   const setupState = runtime?.setupState as Record<string, any> | undefined
-  const nativeData = (target as any).data as Record<string, any> | undefined
+  const nativeData = options?.nativeData ?? (target as any).data as Record<string, any> | undefined
   if (!runtimeState || typeof runtimeState !== 'object' || !nativeData || typeof nativeData !== 'object') {
     return
   }
@@ -674,4 +672,40 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
   if (WEVU_PUBLIC_RUNTIME_KEY in target) {
     delete (target as any)[WEVU_PUBLIC_RUNTIME_KEY]
   }
+}
+
+/**
+ * 重建运行时实例，同时保持宿主包装对象持有的 runtime facade 身份稳定。
+ * @internal
+ */
+export function refreshRuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  target: InternalRuntimeState,
+  runtimeApp: RuntimeApp<D, C, M>,
+  watchMap: WatchMap | undefined,
+  setup?: RuntimeSetupFunction<D, C, M>,
+  options?: { snapshotOmitKeys?: string[], stateSnapshot?: Record<string, any> },
+) {
+  const previousRuntime = target.__wevu as RuntimeInstance<D, C, M> | undefined
+  const previousRuntimeState = previousRuntime
+    ? createRuntimeStateSnapshot(previousRuntime, (target as any).data, options?.stateSnapshot)
+    : undefined
+  teardownRuntimeInstance(target, { skipHooks: true })
+  const nextRuntime = mountRuntimeInstance(target, runtimeApp, watchMap, setup, {
+    deferSetData: true,
+    snapshotOmitKeys: options?.snapshotOmitKeys,
+  })
+  if (previousRuntimeState) {
+    const nativeData = (target as any).data
+    if (nativeData && typeof nativeData === 'object') {
+      Object.assign(nativeData, cloneInitialSnapshotValue(previousRuntimeState))
+    }
+    syncRuntimeStateFromNativeData(target, {
+      includeSetupState: true,
+      nativeData: previousRuntimeState,
+    })
+  }
+  if (!previousRuntime || previousRuntime === nextRuntime) {
+    return nextRuntime
+  }
+  return preserveRuntimeFacadeIdentity(target, previousRuntime, nextRuntime)
 }

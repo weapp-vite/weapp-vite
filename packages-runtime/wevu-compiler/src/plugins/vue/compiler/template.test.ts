@@ -459,6 +459,7 @@ describe('compileVueTemplateToWxml', () => {
   <span>{{ title }}</span>
   <img :src="cover" />
   <a url="/pages/detail/index">详情</a>
+  <table><tbody><tr><td>单元格</td></tr></tbody></table>
 </div>
     `.trim()
 
@@ -468,6 +469,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('<text class="span">{{title}}</text>')
     expect(code).toContain('<image class="img" src="{{cover}}" />')
     expect(code).toContain('<navigator class="a" url="/pages/detail/index">详情</navigator>')
+    expect(code).toContain('<view class="table"><view class="tbody"><view class="tr"><view class="td">单元格</view></view></view></view>')
     expect(code).not.toContain('data-wd-tap')
     expect(code).not.toContain('<div')
     expect(code).not.toContain('<span')
@@ -856,7 +858,8 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/components/KpiBoard/index.vue')
 
-    expect(code).toBe('<slot name="item" /><scoped-slots-item wx:if="{{__wvSlotOwnerId}}" __wvSlotOwnerId="{{__wvSlotOwnerId}}" __wvSlotProps="{{[\'item\',card.item,\'index\',card.index]}}" __wvSlotScope="{{__wvSlotScope}}" />')
+    expect(code).toContain('<scoped-slots-item wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).toContain('<block wx:if="{{!__wvSlotOwnerId}}"><slot name="item" /></block>')
     expect(code).toContain(`__wvSlotProps="{{['item',card.item,'index',card.index]}}"`)
     expect(code).not.toContain(`__wvSlotProps="{{{`)
   })
@@ -883,10 +886,12 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/components/BackList/index.vue')
 
-    expect(code).toContain('<slot name="main" /><scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).toContain('<scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).toContain('<block wx:if="{{!__wvSlotOwnerId}}"><slot name="main" /></block>')
     expect(code).toContain('<scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
     expect(code).toContain(`__wvSlotProps="{{['list',back.state.list]}}"`)
-    expect(code).toContain('<slot name="footer" /><scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).toContain('<scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).toContain('<block wx:if="{{!__wvSlotOwnerId}}"><slot name="footer" /></block>')
     expect(code).toContain('<scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
   })
 
@@ -909,7 +914,8 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain(`<scoped-slots-default ${DEFAULT_DIRECTIVES.ifAttr}="{{__wvSlotOwnerId}}"`)
     expect(code).toContain(`__wvSlotProps="{{['item',item,'index',index]}}"`)
     expect(code).toContain('__wvSlotScope="{{__wvSlotScope}}"')
-    expect(code).toContain('<slot /><scoped-slots-default')
+    expect(code).not.toContain('<slot />')
+    expect(code).not.toContain('<slot /><scoped-slots-default')
     expect(code).not.toContain(`'key',item.id`)
   })
 

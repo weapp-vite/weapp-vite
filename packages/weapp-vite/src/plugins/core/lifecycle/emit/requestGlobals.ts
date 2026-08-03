@@ -92,6 +92,9 @@ export function resolveRequestGlobalsInstallerName(code: string) {
       if (!node) {
         return false
       }
+      if (Array.isArray(node.params) && node.params.length > 1) {
+        return false
+      }
       const functionCode = generate(node).code
       return FULL_REQUEST_GLOBAL_TARGETS.every(target => functionCode.includes(target))
     }
@@ -101,7 +104,7 @@ export function resolveRequestGlobalsInstallerName(code: string) {
         if (installerName || !path.node?.id?.name) {
           return
         }
-        if (isInstallerFunctionNode(path.node.body)) {
+        if (isInstallerFunctionNode(path.node)) {
           installerName = path.node.id.name
         }
       },
@@ -113,7 +116,7 @@ export function resolveRequestGlobalsInstallerName(code: string) {
         if (!init || (init.type !== 'FunctionExpression' && init.type !== 'ArrowFunctionExpression')) {
           return
         }
-        if (isInstallerFunctionNode(init.body)) {
+        if (isInstallerFunctionNode(init)) {
           installerName = path.node.id.name
         }
       },
@@ -247,12 +250,6 @@ export function injectRequestGlobalsBundleRuntime(
       ...bindingTargets.map(target => `try{globalThis[${JSON.stringify(target)}]=${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}}catch{}`),
     ].join(';')
     const bundlePrelude = `/* ${REQUEST_GLOBAL_BUNDLE_MARKER} */ ${passiveBindingsCode ? `${passiveBindingsCode}\n` : ''}`
-    const firstRequireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)
-    if (firstRequireMatch?.[0]) {
-      chunk.code = `${bundlePrelude}${chunk.code.replace(firstRequireMatch[0], match => `${match};${syntheticExportCode}${runtimeBindingCode}`)}\n`
-      continue
-    }
-
     chunk.code = `${bundlePrelude}${syntheticExportCode}${chunk.code}\n;${runtimeBindingCode};\n`
   }
 

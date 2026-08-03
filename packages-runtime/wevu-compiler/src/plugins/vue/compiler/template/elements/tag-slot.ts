@@ -613,8 +613,16 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   }
   const scopedAttrString = scopedAttrs.length ? ` ${scopedAttrs.join(' ')}` : ''
   const scopedTag = `<${genericKey}${scopedAttrString} />`
+  // DevTools 会在 v-for 展开前注册原生 slot，多实例场景必须只保留 scoped generic。
+  const nativeFallbackTag = context.forStack.length > 0
+    ? ''
+    : context.platform.wrapIf(
+        `!${WEVU_SLOT_OWNER_ID_PROP}`,
+        slotTag,
+        exp => renderMustache(exp, context),
+      )
   const projectedContent = hasScopeBindings
-    ? `${slotTag}${scopedTag}`
+    ? `${scopedTag}${nativeFallbackTag}`
     : `${scopedTag}${context.platform.wrapElse(slotTag)}`
 
   if (fallbackContent && slotPresentExp) {

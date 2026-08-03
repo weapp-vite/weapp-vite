@@ -17,7 +17,10 @@ async function launchPage(miniProgram: any, route: string) {
 }
 
 async function runPageE2E(page: any, method = 'runE2E') {
-  const result = await page.callMethod(method)
+  const result = await page.callMethodWithOptions(method, {
+    routeOnly: true,
+    timeout: 60_000,
+  })
   expect(result?.ok, JSON.stringify(result)).toBe(true)
   return result
 }

@@ -125,7 +125,6 @@ async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
-      skipWarmup: true,
     })
   }
   return sharedMiniProgram
@@ -153,7 +152,11 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
-      const page = await miniProgram.currentPage({ retries: 1, timeout: 5_000 })
+      const page = await miniProgram.currentPage({
+        appFunctionFallback: false,
+        retries: 1,
+        timeout: 5_000,
+      })
       if (normalizeRoutePath(page?.path ?? '') === normalizedExpectedPath) {
         return page
       }
@@ -242,7 +245,11 @@ async function resolveHostPage(miniProgram: any) {
   try {
     if (!page) {
       page = await runWithTimeout(
-        () => miniProgram.currentPage({ retries: 1, timeout: 3_000 }),
+        () => miniProgram.currentPage({
+          appFunctionFallback: false,
+          retries: 1,
+          timeout: 3_000,
+        }),
         4_000,
         'read plugin host current page',
       )

@@ -19,6 +19,7 @@ const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_CO
   || e2eTargetFile.endsWith('github-issues.runtime.slot-fallback-compiler-off.test.ts')
 const issue642Bug7DefaultEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue642-bug7-default.test.ts')
 const issue642Bug7PerformanceEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue642-bug7-performance.test.ts')
+const githubIssuesAggregateTarget = 'github-issues.runtime.aggregate.test.ts'
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
 const issue558AugmentedEnabled = issue558AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue558.test.ts')
 const issue564AugmentedEnabled = issue564AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue564.test.ts')
@@ -46,6 +47,10 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue466.test.ts': [
     'pages/issue-466/**',
     'subpackages/issue-466/**',
+  ],
+  'github-issues.runtime.issue553-555.test.ts': [
+    'pages/issue-553/**',
+    'pages/issue-555/**',
   ],
   'github-issues.runtime.issue547.test.ts': [
     'pages/issue-547/**',
@@ -105,6 +110,7 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-581/**',
   ],
   'github-issues.runtime.lifecycle.test.ts': [
+    'pages/block-slot/**',
     'pages/issue-289/**',
     'pages/issue-309/**',
     'pages/issue-309-created/**',
@@ -161,6 +167,29 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-459/**',
   ],
 }
+const githubIssuesAggregateRouteGroupFiles = [
+  'github-issues.runtime.app-shell.test.ts',
+  'github-issues.runtime.issue289.test.ts',
+  'github-issues.runtime.issue297-302.test.ts',
+  'github-issues.runtime.web-runtime.test.ts',
+  'github-issues.runtime.import-meta.test.ts',
+  'github-issues.runtime.issue466.test.ts',
+  'github-issues.runtime.issue553-555.test.ts',
+  'github-issues.runtime.issue554.test.ts',
+  'github-issues.runtime.issue564.test.ts',
+  'github-issues.runtime.issue581.test.ts',
+  'github-issues.runtime.issue627.test.ts',
+  'github-issues.runtime.issue642.test.ts',
+  'github-issues.runtime.issue705.test.ts',
+  'github-issues.runtime.issue706.test.ts',
+  'github-issues.runtime.lifecycle.test.ts',
+  'github-issues.runtime.miniprogram-computed.test.ts',
+  'github-issues.runtime.props.test.ts',
+  'github-issues.runtime.slot-fallback.test.ts',
+] as const
+githubIssuesRouteGroups[githubIssuesAggregateTarget] = [
+  ...new Set(githubIssuesAggregateRouteGroupFiles.flatMap(testFile => githubIssuesRouteGroups[testFile] ?? [])),
+]
 const matchedGithubIssuesTestFile = Object.keys(githubIssuesRouteGroups)
   .find(testFile => e2eTargetFile.endsWith(testFile))
 
@@ -309,6 +338,18 @@ function resolveGithubIssuesNpm() {
   if (matchedGithubIssuesTestFile === 'github-issues.runtime.props.test.ts') {
     return {
       subPackages: {
+        'subpackages/item': fullNpmConfig.subPackages['subpackages/item'],
+        'subpackages/user': fullNpmConfig.subPackages['subpackages/user'],
+      },
+    }
+  }
+
+  if (matchedGithubIssuesTestFile === githubIssuesAggregateTarget) {
+    return {
+      mainPackage: fullNpmConfig.mainPackage,
+      subPackages: {
+        'subpackages/issue-466': fullNpmConfig.subPackages['subpackages/issue-466'],
+        'subpackages/issue-466-computed': fullNpmConfig.subPackages['subpackages/issue-466-computed'],
         'subpackages/item': fullNpmConfig.subPackages['subpackages/item'],
         'subpackages/user': fullNpmConfig.subPackages['subpackages/user'],
       },

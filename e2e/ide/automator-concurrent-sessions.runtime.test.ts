@@ -1,12 +1,9 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll } from 'vitest'
-import {
-  isDevtoolsHttpPortError,
-  isDevtoolsSimulatorBootError,
-  launchAutomator,
-} from '../utils/automator'
+import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
@@ -16,8 +13,10 @@ const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 const NATIVE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-native')
 const INDEX_ROUTE = '/pages/index/index'
 const LEADING_SLASH_RE = /^\/+/
-const HOOK_TIMEOUT = 180_000
+const HOOK_TIMEOUT = 300_000
 const LAUNCH_TIMEOUT = 60_000
+const RUNTIME_SNAPSHOT_ATTEMPT_TIMEOUT = 5_000
+const RUNTIME_SNAPSHOT_TIMEOUT = 45_000
 
 interface AutomatorSessionMetadata {
   port: number
@@ -37,65 +36,49 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-function isConcurrentSessionInfraError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return isDevtoolsHttpPortError(error)
-    || isDevtoolsSimulatorBootError(error)
-    || /Timeout in launch concurrent automator/i.test(message)
+function isRuntimeSnapshotReady(snapshot: any, sessionLabel: string) {
+  if (normalizeRoutePath(String(snapshot?.route ?? '')) !== normalizeRoutePath(INDEX_ROUTE)) {
+    return false
+  }
+  if (sessionLabel === 'base') {
+    return snapshot?.pageData?.__e2eResult?.status === 'ready'
+  }
+  return snapshot?.pageData?.message === 'App lifecycle native'
+    && Array.isArray(snapshot?.appData?.__lifecycleLogs)
 }
 
-async function waitForCurrentPage(miniProgram: any, expectedPath: string, timeoutMs = 20_000) {
-  const normalizedExpectedPath = normalizeRoutePath(expectedPath)
-  const start = Date.now()
-
-  while (Date.now() - start <= timeoutMs) {
+async function readRuntimeSnapshot(miniProgram: any, sessionLabel: string) {
+  const startedAt = Date.now()
+  let lastError: unknown
+  let latestSnapshot: any
+  while (Date.now() - startedAt <= RUNTIME_SNAPSHOT_TIMEOUT) {
     try {
-      const page = await miniProgram.currentPage()
-      if (normalizeRoutePath(String(page?.path ?? '')) === normalizedExpectedPath) {
-        return page
+      latestSnapshot = await miniProgram.evaluateWithOptions(() => {
+        const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+        const currentPage = pages[pages.length - 1]
+        const app = getApp()
+        return {
+          route: currentPage?.route || currentPage?.path || currentPage?.__route__ || '',
+          pageData: currentPage?.data ?? {},
+          appData: app?.globalData ?? {},
+        }
+      }, {
+        timeout: RUNTIME_SNAPSHOT_ATTEMPT_TIMEOUT,
+      })
+      if (isRuntimeSnapshotReady(latestSnapshot, sessionLabel)) {
+        return latestSnapshot
       }
     }
     catch (error) {
-      if (isConcurrentSessionInfraError(error)) {
-        throw error
-      }
+      lastError = error
     }
-    await delay(250)
+    await delay(300)
   }
-
-  return null
-}
-
-async function resolveRoutePage(miniProgram: any, expectedPath: string) {
-  const currentPage = await waitForCurrentPage(miniProgram, expectedPath, 8_000)
-  if (currentPage) {
-    return currentPage
-  }
-
-  try {
-    const page = await miniProgram.reLaunch(expectedPath)
-    if (normalizeRoutePath(String(page?.path ?? '')) === normalizeRoutePath(expectedPath)) {
-      return page
-    }
-  }
-  catch (error) {
-    if (isConcurrentSessionInfraError(error)) {
-      throw error
-    }
-  }
-  return await waitForCurrentPage(miniProgram, expectedPath)
-}
-
-async function readRuntimeSnapshot(miniProgram: any) {
-  return await miniProgram.evaluate(() => {
-    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
-    const currentPage = pages[pages.length - 1]
-    const app = getApp()
-    return {
-      route: currentPage?.route || currentPage?.path || currentPage?.__route__ || '',
-      pageData: currentPage?.data ?? {},
-      appData: app?.globalData ?? {},
-    }
+  const reason = lastError instanceof Error
+    ? lastError
+    : new Error(`Latest snapshot: ${JSON.stringify(latestSnapshot)}`)
+  throw new Error(`Failed to read concurrent ${sessionLabel} runtime snapshot`, {
+    cause: reason,
   })
 }
 
@@ -125,37 +108,12 @@ async function closeMiniProgram(miniProgram: any) {
   await miniProgram.close().catch(() => {})
 }
 
-function createTimeoutError(label: string, timeoutMs: number) {
-  return new Error(`Timeout in ${label} after ${timeoutMs}ms`)
-}
-
-async function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs: number): Promise<T> {
-  let timer: NodeJS.Timeout | undefined
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        timer = setTimeout(() => reject(createTimeoutError(label, timeoutMs)), timeoutMs)
-      }),
-    ])
-  }
-  finally {
-    if (timer) {
-      clearTimeout(timer)
-    }
-  }
-}
-
-function createConcurrentSessionInfraUnavailableMessage(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return `WeChat DevTools automator 基础设施不可用，跳过 concurrent sessions IDE 自动化用例。reason=${message}`
-}
-
 describe.sequential('automator concurrent sessions', () => {
   const miniPrograms: any[] = []
+  let baseSnapshot: any
+  let baseToolInfo: any
   let previousLaunchMode: string | undefined
   let previousPrebuild: string | undefined
-  let infraUnavailableMessage = ''
 
   beforeAll(async () => {
     previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
@@ -169,28 +127,13 @@ describe.sequential('automator concurrent sessions', () => {
       runBuild(NATIVE_APP_ROOT, 'ide:automator-concurrent-sessions:native'),
     ])
     // DevTools cache recovery 是进程全局清理；串行启动避免一个项目的恢复流程关闭另一个新会话。
-    try {
-      const sessions = [
-        await withTimeout(
-          launchProjectAutomator(BASE_APP_ROOT),
-          'launch concurrent automator base',
-          LAUNCH_TIMEOUT,
-        ),
-        await withTimeout(
-          launchProjectAutomator(NATIVE_APP_ROOT),
-          'launch concurrent automator native',
-          LAUNCH_TIMEOUT,
-        ),
-      ]
-      miniPrograms.push(...sessions)
-    }
-    catch (error) {
-      if (isConcurrentSessionInfraError(error)) {
-        infraUnavailableMessage = createConcurrentSessionInfraUnavailableMessage(error)
-        return
-      }
-      throw error
-    }
+    const baseMiniProgram = await launchProjectAutomator(BASE_APP_ROOT)
+    miniPrograms.push(baseMiniProgram)
+    baseSnapshot = await readRuntimeSnapshot(baseMiniProgram, 'base')
+    baseToolInfo = await baseMiniProgram.toolInfo()
+
+    const nativeMiniProgram = await launchProjectAutomator(NATIVE_APP_ROOT)
+    miniPrograms.push(nativeMiniProgram)
   }, HOOK_TIMEOUT)
 
   afterAll(async () => {
@@ -208,14 +151,10 @@ describe.sequential('automator concurrent sessions', () => {
     }
 
     await Promise.all(miniPrograms.map(closeMiniProgram))
+    await cleanupResidualIdeProcesses()
   }, HOOK_TIMEOUT)
 
-  it('launches one independent automator connection per project', async (ctx) => {
-    if (infraUnavailableMessage) {
-      ctx.skip(infraUnavailableMessage)
-      return
-    }
-
+  it('assigns independent automator session metadata to each project', async () => {
     const [baseMiniProgram, nativeMiniProgram] = miniPrograms
 
     const baseMetadata = readSessionMetadata(baseMiniProgram)
@@ -229,38 +168,11 @@ describe.sequential('automator concurrent sessions', () => {
     expect(baseMetadata?.port).not.toBe(nativeMetadata?.port)
     expect(baseMetadata?.wsEndpoint).not.toBe(nativeMetadata?.wsEndpoint)
 
-    let basePage: any = null
-    let nativePage: any = null
-    try {
-      ;[basePage, nativePage] = await Promise.all([
-        resolveRoutePage(baseMiniProgram, INDEX_ROUTE),
-        resolveRoutePage(nativeMiniProgram, INDEX_ROUTE),
-      ])
-    }
-    catch (error) {
-      if (isConcurrentSessionInfraError(error)) {
-        ctx.skip(createConcurrentSessionInfraUnavailableMessage(error))
-        return
-      }
-      throw error
-    }
-
-    expect(basePage).toBeTruthy()
-    expect(nativePage).toBeTruthy()
-    if (!basePage || !nativePage) {
-      throw new Error('Failed to resolve concurrent session pages')
-    }
-
-    const [baseSnapshot, nativeSnapshot] = await Promise.all([
-      readRuntimeSnapshot(baseMiniProgram),
-      readRuntimeSnapshot(nativeMiniProgram),
-    ])
-
+    // DevTools 同一 AppID 只保证当前前台项目的 AppService 协议可响应，因此
+    // 页面快照在启动第二个项目前读取，并用两个 Tool 域探针锁定并发连接契约。
     expect(normalizeRoutePath(String(baseSnapshot?.route ?? ''))).toBe(normalizeRoutePath(INDEX_ROUTE))
-    expect(normalizeRoutePath(String(nativeSnapshot?.route ?? ''))).toBe(normalizeRoutePath(INDEX_ROUTE))
     expect(baseSnapshot?.pageData?.__e2eResult?.status).toBe('ready')
     expect(baseSnapshot?.pageData?.__e2eData?.target).toBe('index snapshot')
-    expect(nativeSnapshot?.pageData?.message).toBe('App lifecycle native')
-    expect(Array.isArray(nativeSnapshot?.appData?.__lifecycleLogs)).toBe(true)
+    expect(baseToolInfo?.SDKVersion).toEqual(expect.any(String))
   })
 })

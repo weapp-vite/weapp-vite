@@ -25,7 +25,6 @@ const INDEX_WXML = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.wxml')
 const INDEX_WXML_DIST = path.resolve(TEMPLATE_ROOT, 'dist/pages/index/index.wxml')
 const APP_WXSS_DIST = path.resolve(TEMPLATE_ROOT, 'dist/app.wxss')
 const INDEX_ROUTE = '/pages/index/index'
-const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const ROOT_MARKUP_RE = /<view class="min-h-screen \{\{ mode === 'light'\?'[^']+':'bg-gray-900 text-slate-200' \}\} transition-colors duration-500">/
 const LIGHT_BACKGROUND_CLASS_RE = /bg-(?:\[#([0-9a-fA-F]{6})\]|gray-100)/
 const INITIAL_BACKGROUND_HEX = 'f3f4f6'
@@ -38,6 +37,8 @@ const PROBE_ID = 'tailwind-hmr-probe'
 const CURRENT_PAGE_READ_TIMEOUT = 3_000
 const CURRENT_PAGE_READ_RETRIES = 2
 const ROUTE_READY_TIMEOUT = 30_000
+const RELAUNCH_AUTOMATOR_TIMEOUT = 45_000
+const RELAUNCH_AUTOMATOR_RETRIES = 1
 const PNG_SIGNATURE = '89504e470d0a1a0a'
 const SCREENSHOT_COLOR_MIN_MATCHED = 24
 const SCREENSHOT_COLOR_MIN_RATIO = 0.01
@@ -160,11 +161,8 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
   let originalWxml = ''
   let miniProgram: any
   let devProcess: ReturnType<typeof startDevProcess> | undefined
-  let previousAutomatorLaunchMode: string | undefined
 
   beforeAll(async () => {
-    previousAutomatorLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-    process.env[AUTOMATOR_LAUNCH_MODE_ENV] = 'direct'
     originalWxml = await fs.readFile(INDEX_WXML, 'utf8')
     const rootMarkupMatch = originalWxml.match(ROOT_MARKUP_RE)
     if (!rootMarkupMatch) {
@@ -203,37 +201,22 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
     }
     await stopDevSession()
     await cleanupTrackedDevProcesses()
-    if (previousAutomatorLaunchMode == null) {
-      delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-    }
-    else {
-      process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousAutomatorLaunchMode
-    }
   }, 60_000)
 
-  async function launchRuntimeAutomator(mode: 'bridge' | 'direct' = 'direct') {
-    const previousMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-    process.env[AUTOMATOR_LAUNCH_MODE_ENV] = mode
-    try {
-      miniProgram = await launchAutomator({
-        projectPath: TEMPLATE_ROOT,
-        skipRelaunchPageRootCheck: true,
-        skipWarmup: true,
-      })
-      return miniProgram
-    }
-    finally {
-      if (previousMode == null) {
-        delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-      }
-      else {
-        process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousMode
-      }
-    }
+  async function launchRuntimeAutomator(options: { maxLaunchRetries?: number, timeout?: number } = {}) {
+    miniProgram = await launchAutomator({
+      launchMode: 'bridge',
+      maxLaunchRetries: options.maxLaunchRetries,
+      projectPath: TEMPLATE_ROOT,
+      skipRelaunchPageRootCheck: true,
+      skipWarmup: true,
+      timeout: options.timeout,
+    })
+    return miniProgram
   }
 
-  async function startDevSession() {
-    process.stdout.write('[template-tailwindcss-tdesign:hmr] start-dev-session\n')
+  async function startDevSessionForDist(label: string, escapedClass: string, backgroundCss: string) {
+    process.stdout.write(`[template-tailwindcss-tdesign:hmr] start-dev-session label=${label}\n`)
     devProcess = startDevProcess('pnpm', ['exec', 'wv', 'dev', '--non-interactive'], {
       cwd: TEMPLATE_ROOT,
       env: createDevProcessEnv(),
@@ -242,28 +225,59 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] dev-process-started pid=${devProcess.pid ?? 'unknown'}\n`)
     await devProcess.waitFor(
       Promise.all([
-        waitForFileContains(INDEX_WXML_DIST, INITIAL_ESCAPED_CLASS),
-        waitForFileContains(APP_WXSS_DIST, INITIAL_BACKGROUND_CSS),
+        waitForFileContains(INDEX_WXML_DIST, escapedClass),
+        waitForFileContains(APP_WXSS_DIST, backgroundCss),
       ]),
-      'tailwindcss tdesign initial dist ready',
+      `tailwindcss tdesign ${label} dist ready`,
     )
     await launchRuntimeAutomator()
-    process.stdout.write('[template-tailwindcss-tdesign:hmr] automator-connected mode=direct\n')
+    process.stdout.write('[template-tailwindcss-tdesign:hmr] automator-connected mode=bridge\n')
     return miniProgram
   }
 
-  async function refreshRuntimeForDistUpdate(label: string, requiresIsolatedRelaunch: boolean) {
+  async function startDevSession() {
+    return await startDevSessionForDist(
+      'initial Tailwind background',
+      INITIAL_ESCAPED_CLASS,
+      INITIAL_BACKGROUND_CSS,
+    )
+  }
+
+  async function restartDevSessionForDist(label: string, escapedClass: string, backgroundCss: string, reason: unknown) {
+    const message = reason instanceof Error ? reason.message : String(reason)
+    process.stdout.write(`[warn] [template-tailwindcss-tdesign:hmr] restart-dev-session label=${label} reason=${message.replace(/\s+/g, ' ').trim().slice(0, 240)}\n`)
+    await stopDevSession()
+    await startDevSessionForDist(label, escapedClass, backgroundCss)
+  }
+
+  async function relaunchRuntimeAfterCacheClean(label: string) {
+    await Promise.resolve(miniProgram?.close?.()).catch(() => {})
+    miniProgram = undefined
+    await cleanupResidualDevtoolsProcesses()
+    await cleanDevtoolsCache('all', { cwd: TEMPLATE_ROOT })
+    await delay(1_600)
+    await launchRuntimeAutomator({
+      maxLaunchRetries: RELAUNCH_AUTOMATOR_RETRIES,
+      timeout: RELAUNCH_AUTOMATOR_TIMEOUT,
+    })
+    process.stdout.write(`[template-tailwindcss-tdesign:hmr] automator-relaunched label=${label} isolated=true mode=bridge reason=tool-compile-unimplemented\n`)
+  }
+
+  async function refreshRuntimeForDistUpdate(
+    label: string,
+    requiresIsolatedRelaunch: boolean,
+    expectedDist: { backgroundCss: string, escapedClass: string },
+  ) {
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] hmr-settle-start label=${label}\n`)
     await delay(5_000)
     if (requiresIsolatedRelaunch) {
-      // 当前 DevTools 的 Tool.compile/Tool.clearCache 均未实现，更新后的外部产物只能通过清理编译缓存并重连读取。
-      await Promise.resolve(miniProgram?.close?.()).catch(() => {})
-      miniProgram = undefined
-      await cleanupResidualDevtoolsProcesses()
-      await cleanDevtoolsCache('all', { cwd: TEMPLATE_ROOT })
-      await delay(1_600)
-      await launchRuntimeAutomator('bridge')
-      process.stdout.write(`[template-tailwindcss-tdesign:hmr] automator-relaunched label=${label} isolated=true mode=bridge reason=tool-compile-unimplemented\n`)
+      try {
+        // 当前 DevTools 的 Tool.compile/Tool.clearCache 均未实现，更新后的外部产物只能通过清理编译缓存并重连读取。
+        await relaunchRuntimeAfterCacheClean(label)
+      }
+      catch (error) {
+        await restartDevSessionForDist(label, expectedDist.escapedClass, expectedDist.backgroundCss, error)
+      }
     }
     await relaunchIndexPage(miniProgram)
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] hmr-settle-ready label=${label} route=${INDEX_ROUTE}\n`)
@@ -471,8 +485,12 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
     escapedClass: string,
     label: string,
     requiresIsolatedRelaunch = false,
+    expectedDist = {
+      backgroundCss: INITIAL_BACKGROUND_CSS,
+      escapedClass: INITIAL_ESCAPED_CLASS,
+    },
   ) {
-    await refreshRuntimeForDistUpdate(label, requiresIsolatedRelaunch)
+    await refreshRuntimeForDistUpdate(label, requiresIsolatedRelaunch, expectedDist)
     try {
       const state = await waitForProbeBackgroundColor(expectedBg, escapedClass, label, 45_000)
       process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=dom state=${JSON.stringify(state)}\n`)
@@ -517,6 +535,10 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
       UPDATED_ESCAPED_CLASS,
       'updated Tailwind background',
       true,
+      {
+        backgroundCss: UPDATED_BACKGROUND_CSS,
+        escapedClass: UPDATED_ESCAPED_CLASS,
+      },
     )
   }, 420_000)
 })

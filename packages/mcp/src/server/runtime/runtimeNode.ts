@@ -24,6 +24,8 @@ const elementSelectorSchema = {
   innerSelector: z.string().trim().min(1).optional(),
 }
 
+const nativeElementQuery = { fallback: false } as const
+
 export function registerRuntimeNodeTools(
   server: McpServer,
   manager: RuntimeSessionManager,
@@ -38,7 +40,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, waitMs, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const element = await resolveElement(page, selector, innerSelector)
+        const element = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         await element.tap()
         if (waitMs) {
           await page.waitFor(waitMs)
@@ -66,7 +68,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, value, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const element = await resolveElement(page, selector, innerSelector)
+        const element = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         await callRequiredMethod(element, 'input', String(value))
         return {
           selector,
@@ -92,7 +94,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, method, args, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const element = await resolveElement(page, selector, innerSelector)
+        const element = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         const callArgs = args ?? []
         return {
           selector,
@@ -119,7 +121,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, path, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const element = await resolveElement(page, selector, innerSelector)
+        const element = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         return {
           selector,
           innerSelector: innerSelector ?? null,
@@ -144,7 +146,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, data, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const element = await resolveElement(page, selector, innerSelector)
+        const element = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         await callRequiredMethod(element, 'setData', data)
         return {
           selector,
@@ -170,7 +172,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, targetSelector, withWxml, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const parent = await resolveElement(page, selector, innerSelector)
+        const parent = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         const element = await callRequiredMethod<MiniProgramElement | null>(parent, '$', targetSelector)
         if (!element) {
           throw new Error(`在元素 "${selector}" 内未找到元素: ${targetSelector}`)
@@ -200,7 +202,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, targetSelector, withWxml, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const parent = await resolveElement(page, selector, innerSelector)
+        const parent = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         const elements = await callRequiredMethod(parent, '$$', targetSelector)
         if (!Array.isArray(elements)) {
           throw new TypeError(`在元素 "${selector}" 内查询 "${targetSelector}" 失败。`)
@@ -233,7 +235,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, outer, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const element = await resolveElement(page, selector, innerSelector)
+        const element = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         const markup = await readElementMarkup(element, outer)
         return {
           selector,
@@ -259,7 +261,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, names, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const element = await resolveElement(page, selector, innerSelector)
+        const element = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         return {
           selector,
           innerSelector: innerSelector ?? null,
@@ -286,7 +288,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, names, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const element = await resolveElement(page, selector, innerSelector)
+        const element = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         return {
           selector,
           innerSelector: innerSelector ?? null,
@@ -314,7 +316,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, x, y, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const element = await resolveElement(page, selector, innerSelector)
+        const element = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         await callRequiredMethod(element, 'scrollTo', x, y)
         return {
           selector,
@@ -337,7 +339,7 @@ export function registerRuntimeNodeTools(
   }, async ({ selector, innerSelector, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
-        const element = await resolveElement(page, selector, innerSelector)
+        const element = await resolveElement(page, selector, innerSelector, nativeElementQuery)
         const offset = toRecord(await callMaybe(element, 'offset'))
         const size = toRecord(await callMaybe(element, 'size'))
         const left = toNumber(offset.left)

@@ -79,17 +79,18 @@ export function registerServeCommand(cli: CAC) {
         fallbackProjectPath: configService.cwd,
         openIde: async (projectPath, openOptions) => {
           const forceReopen = openOptions?.forceReopen === true
+          const useAutomatorOpen = forceReopen || openOptions?.useAutomatorOpen === true
           await openIde(configService.platform, projectPath, {
             loginRetry: options.loginRetry,
             loginRetryTimeout: options.loginRetryTimeout,
             nonInteractive: options.nonInteractive,
             openRecovery: false,
-            prepareAutomatorSession: forceReopen ? true : 'connect-opened',
+            prepareAutomatorSession: useAutomatorOpen ? true : 'connect-opened',
             reuseOpenedProject: !forceReopen,
             skipAutomatorCompile: !forceReopen,
             skipPostOpenHealthCheck: true,
             trustProject: options.trustProject,
-            useAutomatorOpen: forceReopen,
+            useAutomatorOpen,
           })
           writePostOpenSeparator()
         },
@@ -114,7 +115,7 @@ export function registerServeCommand(cli: CAC) {
               forceReopen: true,
             }),
             platform: configService.platform,
-            projectPath: miniProgramDevActions.projectPath,
+            projectPath: miniProgramDevActions.projectPath ?? configService.cwd,
             rebuild: miniProgramDevActions.rebuild,
             silentStartupHint: true,
             weappViteConfig: configService.weappViteConfig,
@@ -217,6 +218,7 @@ export function registerServeCommand(cli: CAC) {
             await miniProgramDevActions.openIde({
               forceOpen: true,
               forceReopen: false,
+              useAutomatorOpen: options.trustProject !== false,
             })
           }
           finally {

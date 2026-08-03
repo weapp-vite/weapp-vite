@@ -106,6 +106,23 @@ function expectSocketTrace(
   expect(trace).toMatchObject(expected)
 }
 
+async function waitForPageData(
+  page: any,
+  label: string,
+  predicate: (data: Record<string, any>) => boolean,
+) {
+  const startedAt = Date.now()
+  let latestData: Record<string, any> = {}
+  while (Date.now() - startedAt <= 15_000) {
+    latestData = await page.data()
+    if (predicate(latestData)) {
+      return latestData
+    }
+    await page.waitFor(220)
+  }
+  throw new Error(`Timed out waiting ${label} page data: ${JSON.stringify(latestData)}`)
+}
+
 beforeAll(async () => {
   try {
     serverHandle = await startRequestClientsRealServer()
@@ -209,14 +226,14 @@ for (const jsFormat of JS_FORMATS) {
       }
       await waitForRequestClientsRealRouteDom(page, '/pages/fetch/index')
 
-      const result = await page.callMethod('runE2E')
+      await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/fetch/index')
+      const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
-      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.snapshot?.requestPath).toBe('/fetch')
-      expect(result?.snapshot?.payload).toContain('"transport":"fetch"')
-      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expect(snapshot?.requestPath, JSON.stringify({ snapshot, requestCounts: serverHandle?.requestCounts })).toBe('/fetch')
+      expect(snapshot?.payload).toContain('"transport":"fetch"')
+      expect(snapshot?.pageStatus).toBe('全部通过')
       expectRequestTrace(newRequestCalls, '/fetch')
     })
 
@@ -232,14 +249,14 @@ for (const jsFormat of JS_FORMATS) {
       }
       await waitForRequestClientsRealRouteDom(page, '/pages/axios/index')
 
-      const result = await page.callMethod('runE2E')
+      await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/axios/index')
+      const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
-      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.snapshot?.requestPath).toBe('/axios')
-      expect(result?.snapshot?.payload).toContain('"transport":"axios"')
-      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expect(snapshot?.requestPath, JSON.stringify({ snapshot, requestCounts: serverHandle?.requestCounts })).toBe('/axios')
+      expect(snapshot?.payload).toContain('"transport":"axios"')
+      expect(snapshot?.pageStatus).toBe('全部通过')
       expectRequestTrace(newRequestCalls, '/axios')
     })
 
@@ -255,14 +272,14 @@ for (const jsFormat of JS_FORMATS) {
       }
       await waitForRequestClientsRealRouteDom(page, '/pages/graphql-request/index')
 
-      const result = await page.callMethod('runE2E')
+      await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/graphql-request/index')
+      const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
-      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.snapshot?.requestPath).toBe('/graphql')
-      expect(result?.snapshot?.payload).toContain('"client":"graphql-request"')
-      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expect(snapshot?.requestPath, JSON.stringify({ snapshot, requestCounts: serverHandle?.requestCounts })).toBe('/graphql')
+      expect(snapshot?.payload).toContain('"client":"graphql-request"')
+      expect(snapshot?.pageStatus).toBe('全部通过')
       expectRequestTrace(newRequestCalls, '/graphql')
     })
 
@@ -278,21 +295,27 @@ for (const jsFormat of JS_FORMATS) {
       }
       await waitForRequestClientsRealRouteDom(page, '/pages/socket-io/index')
 
-      const result = await page.callMethod('runE2E')
+      await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/socket-io/index')
+      const pageData = await waitForPageData(page, 'socket.io', data => (
+        data.websocketOnlyTransportName === 'websocket'
+        && ['polling', 'websocket'].includes(data.defaultTransportName)
+        && data.randomPushCount > 0
+        && Boolean(data.latestRandomMessage)
+      ))
+      const snapshot = pageData?.state
       const currentTrace = await readHostTrace(miniProgram)
       const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
-      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.snapshot?.requestPath).toBe('/socket.io')
-      expect(result?.snapshot?.payload).toContain('"client":"socket.io-client"')
-      expect(result?.snapshot?.payload).toContain('"serverRandomReceived":true')
-      expect(result?.snapshot?.payload).toContain('"websocketOnlyConnected":true')
-      expect(result?.latestRandomMessage).toBeTruthy()
-      expect(result?.randomPushCount).toBeGreaterThan(0)
-      expect(['polling', 'websocket']).toContain(result?.defaultTransportName)
-      expect(result?.websocketOnlyTransportName).toBe('websocket')
+      expect(snapshot?.requestPath, JSON.stringify({ snapshot, requestCounts: serverHandle?.requestCounts })).toBe('/socket.io')
+      expect(snapshot?.payload).toContain('"client":"socket.io-client"')
+      expect(snapshot?.payload).toContain('"serverRandomReceived":true')
+      expect(snapshot?.payload).toContain('"websocketOnlyConnected":true')
+      expect(pageData?.latestRandomMessage).toBeTruthy()
+      expect(pageData?.randomPushCount).toBeGreaterThan(0)
+      expect(['polling', 'websocket']).toContain(pageData?.defaultTransportName)
+      expect(pageData?.websocketOnlyTransportName).toBe('websocket')
       expect(serverHandle?.requestCounts.socketIo).toBeGreaterThan(0)
-      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expect(snapshot?.pageStatus).toBe('全部通过')
       expectSocketTrace(newSocketCalls, '/socket.io', {
         perMessageDeflate: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.perMessageDeflate,
       })
@@ -310,19 +333,24 @@ for (const jsFormat of JS_FORMATS) {
       }
       await waitForRequestClientsRealRouteDom(page, '/pages/websocket/index')
 
-      const result = await page.callMethod('runE2E')
+      await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/websocket/index')
+      const pageData = await waitForPageData(page, 'native WebSocket', data => (
+        data.connectedReadyState === 1
+        && data.randomPushCount > 0
+        && Boolean(data.latestRandomMessage)
+      ))
+      const snapshot = pageData?.state
       const currentTrace = await readHostTrace(miniProgram)
       const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
-      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.snapshot?.requestPath).toBe('/ws')
-      expect(result?.snapshot?.payload).toContain('"client":"native-websocket"')
-      expect(result?.snapshot?.payload).toContain('"serverRandomEvent":"server-random"')
-      expect(result?.snapshot?.payload).toContain('"transport":"websocket"')
-      expect(result?.connectedReadyState).toBe(1)
-      expect(result?.latestRandomMessage).toBeTruthy()
-      expect(result?.randomPushCount).toBeGreaterThan(0)
-      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expect(snapshot?.requestPath, JSON.stringify({ snapshot, requestCounts: serverHandle?.requestCounts })).toBe('/ws')
+      expect(snapshot?.payload).toContain('"client":"native-websocket"')
+      expect(snapshot?.payload).toContain('"serverRandomEvent":"server-random"')
+      expect(snapshot?.payload).toContain('"transport":"websocket"')
+      expect(pageData?.connectedReadyState).toBe(1)
+      expect(pageData?.latestRandomMessage).toBeTruthy()
+      expect(pageData?.randomPushCount).toBeGreaterThan(0)
+      expect(snapshot?.pageStatus).toBe('全部通过')
       expectSocketTrace(newSocketCalls, '/ws', {
         perMessageDeflate: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.perMessageDeflate,
         timeout: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.timeout,

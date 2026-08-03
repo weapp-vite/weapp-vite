@@ -1,9 +1,14 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import {
+  callRoutePageMethod,
   closeSharedMiniProgram,
   getSharedMiniProgram,
+  relaunchPage,
   releaseSharedMiniProgram,
 } from './wevu-features.runtime.shared'
+
+const SUBPATH_ROUTE = '/pages/subpath-entries/index'
+const SUBPATH_READY_TEXT = 'wevu 子路径入口综合场景'
 
 describe.sequential('e2e app: wevu-features / subpath', () => {
   afterAll(async () => {
@@ -14,12 +19,12 @@ describe.sequential('e2e app: wevu-features / subpath', () => {
     const miniProgram = await getSharedMiniProgram()
 
     try {
-      const subpathPage = await miniProgram.reLaunch('/pages/subpath-entries/index')
+      const subpathPage = await relaunchPage(miniProgram, SUBPATH_ROUTE, SUBPATH_READY_TEXT)
       if (!subpathPage) {
         throw new Error('Failed to launch subpath-entries page')
       }
 
-      const subpathResult = await subpathPage.callMethod('runE2E')
+      const subpathResult = await callRoutePageMethod(miniProgram, subpathPage, SUBPATH_ROUTE, 'runE2E')
       expect(subpathResult?.ok, JSON.stringify(subpathResult)).toBe(true)
       expect(subpathResult?.checks?.routerResolved).toBe(true)
       expect(subpathResult?.checks?.storeUpdated).toBe(true)

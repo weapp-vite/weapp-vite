@@ -53,10 +53,11 @@ async function launchFreshMiniProgram(root: string) {
     delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
     return await launchAutomator({
       projectPath: root,
+      retryWarmupTimeout: true,
       skipRelaunchPageRootCheck: true,
-      skipWarmup: true,
       warmupAllowRelaunch: true,
-      warmupAnyPage: true,
+      warmupRootSelectors: [INDEX_ROUTE_MARKER_SELECTOR],
+      warmupRoute: INDEX_ROUTE,
     })
   }
   finally {

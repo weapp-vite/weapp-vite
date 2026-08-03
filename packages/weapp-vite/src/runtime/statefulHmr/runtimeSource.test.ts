@@ -16,8 +16,15 @@ describe('stateful hmr runtime source', () => {
     expect(statefulHmrRolldownRuntimeSource).toContain('result.onUnload = function (...args)')
     expect(statefulHmrRolldownRuntimeSource).toContain('methods[name] = function (...args)')
     expect(statefulHmrRolldownRuntimeSource).toContain('refreshWevuInstance(this, moduleId)')
+    expect(statefulHmrRolldownRuntimeSource).toContain('const instanceSnapshots = new WeakMap()')
+    expect(statefulHmrRolldownRuntimeSource).toContain('const moduleSnapshots = new Map()')
+    expect(statefulHmrRolldownRuntimeSource).toContain('restoreInstanceState(instance, moduleId)')
+    expect(statefulHmrRolldownRuntimeSource).toContain('if (!suppressLifecycles) moduleSnapshots.delete(moduleId)')
+    expect(statefulHmrRolldownRuntimeSource).toContain('pending.push(decorateObject(definition, moduleId, \'\', true))')
+    expect(statefulHmrRolldownRuntimeSource).toContain('restoreTrackedInstances()')
     expect(statefulHmrRolldownRuntimeSource).toContain('wevuRefreshGenerations.set(moduleId')
     expect(statefulHmrRolldownRuntimeSource).toContain('runtime.registrationModuleId || runtime.currentModuleId || \'Component\'')
+    expect(statefulHmrRolldownRuntimeSource).toContain('return decorateWevuComponent(definition, moduleId)')
     expect(statefulHmrRolldownRuntimeSource.indexOf('!runtime.applyingPatch && runtime.patchedModules.has(moduleId)')).toBeLessThan(
       statefulHmrRolldownRuntimeSource.indexOf('wevuRefreshes.set(moduleId, refresh)'),
     )

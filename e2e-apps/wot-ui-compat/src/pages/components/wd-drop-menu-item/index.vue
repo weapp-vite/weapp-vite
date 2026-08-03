@@ -99,7 +99,7 @@ async function runE2E() {
       <view class="scenario-status">rendered / interactive</view>
     </view>
     <view id="e2e-target" class="scenario-subject">
-      <wd-drop-menu id="e2e-parent"><wd-drop-menu-item id="e2e-component" ref="e2eComponent" v-model="modelValue" :options="options" /></wd-drop-menu>
+      <wd-drop-menu id="e2e-parent"><wd-drop-menu-item id="e2e-component" ref="e2eComponent" v-model="modelValue" :options="options" title="Option A" /></wd-drop-menu>
     </view>
     <button id="e2e-action" class="scenario-action" @click="runE2E">
       Exercise interaction

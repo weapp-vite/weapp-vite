@@ -504,6 +504,49 @@ describe('resolveVueLayoutAssetOptions', () => {
     }))
   })
 
+  it('keeps only components referenced by the app shell template', () => {
+    emitAppShellAssetsIfNeeded({
+      pluginCtx: { emitFile: vi.fn() },
+      bundle: {},
+      ctx: {} as any,
+      filename: '/project/src/app.vue',
+      relativeBase: '__weapp_vite_app_shell',
+      result: {
+        template: '<app-shell-card><slot /></app-shell-card>',
+        style: '',
+        config: JSON.stringify({
+          usingComponents: {
+            'app-shell-card': '/components/app-shell-card/index',
+            'custom-tab-bar': '/custom-tab-bar/index',
+          },
+        }),
+        classStyleWxs: undefined,
+        scopedSlotComponents: [],
+      },
+      configService: {} as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptExtension: 'js',
+      outputExtensions: {
+        wxss: 'wxss',
+      } as any,
+      platformAssetOptions: {
+        platform: 'weapp',
+        templateExtension: 'wxml',
+      },
+    })
+
+    expect(emitSharedVueEntryJsonAssetMock).toHaveBeenCalledWith(expect.objectContaining({
+      relativeBase: '__weapp_vite_app_shell',
+      config: JSON.stringify({
+        styleIsolation: 'apply-shared',
+        usingComponents: {
+          'app-shell-card': '/components/app-shell-card/index',
+        },
+      }, null, 2),
+    }))
+  })
+
   it('dispatches bundle page layouts through shared native and vue emit flows', async () => {
     await emitBundlePageLayoutsIfNeeded({
       layouts: [

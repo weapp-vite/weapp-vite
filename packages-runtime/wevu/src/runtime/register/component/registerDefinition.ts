@@ -412,9 +412,13 @@ export function registerComponentDefinition<D extends object, C extends Computed
   }
   const statefulHmrBridge = (globalThis as Record<string, any>)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
   if (typeof statefulHmrBridge?.trackWevuComponent === 'function') {
-    const definition = statefulHmrBridge.trackWevuComponent(componentDefinition, (instance: InternalRuntimeState) => {
+    const definition = statefulHmrBridge.trackWevuComponent(componentDefinition, (
+      instance: InternalRuntimeState,
+      stateSnapshot?: Record<string, any>,
+    ) => {
       refreshRuntimeInstance(instance, runtimeApp, watch, setup, {
         snapshotOmitKeys: directPropsDerivedKeys,
+        stateSnapshot,
       })
       syncWevuPropsFromInstance(instance)
       attachPageLayoutSetter(instance)

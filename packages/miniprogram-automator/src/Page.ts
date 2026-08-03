@@ -5,6 +5,7 @@ import type Connection from './Connection'
 import Element from './Element'
 import { isFn, isNum, isStr, sleep, waitUntil } from './internal/compat'
 import { createRouteFallbackElement } from './pageRouteFallback'
+import { callRouteMethodViaAppService } from './pageRouteMethod'
 /** IPageOptions 的类型定义。 */
 export interface IPageOptions {
   id: number
@@ -61,6 +62,10 @@ const PAGE_RENDERED_TIMEOUT = 15_000
 const PAGE_RENDERED_POLL_DELAY = 220
 const PAGE_RENDERED_QUERY_TIMEOUT = 5_000
 const PAGE_ROOT_SELECTORS = ['page', 'body', 'weapp-app-shell', 'view'] as const
+const PAGE_DIRECT_RENDERED_QUERY_TIMEOUT = 800
+const PAGE_DIRECT_RENDERED_MAX_SCOPES = 12
+const PAGE_DIRECT_COMPONENT_SELECTORS = ['weapp-app-shell', 'weapp-layout-default'] as const
+const DATASET_UPPERCASE_PATTERN = /[A-Z]/g
 function isProtocolTimeoutError(error: unknown, method: string) {
   return error instanceof Error
     && 'code' in error
@@ -100,6 +105,9 @@ function matchesDataset(
   }
   const dataset = node.dataset ?? {}
   return Object.entries(expected).every(([key, value]) => String(dataset[key] ?? '') === String(value))
+}
+function toDatasetAttributeName(key: string) {
+  return `data-${key.replace(DATASET_UPPERCASE_PATTERN, letter => `-${letter.toLowerCase()}`)}`
 }
 /** Page 的实现。 */
 export default class Page {
@@ -386,6 +394,10 @@ export default class Page {
               index += 1;
               queryScope(scope).then(function (nodes) {
                 collected = collected.concat(nodes);
+                if (nodes.length > 0) {
+                  resolve(collected);
+                  return;
+                }
                 next();
               }, function () {
                 next();
@@ -638,12 +650,40 @@ export default class Page {
     while (Date.now() - start <= timeout) {
       try {
         if (options.selector) {
-          const nodes = await this.renderedNodes(options.selector, {
-            componentSelectors: options.componentSelectors,
-            timeout: Math.min(PAGE_RENDERED_QUERY_TIMEOUT, Math.max(1, timeout - (Date.now() - start))),
-          })
+          const remaining = Math.max(1, timeout - (Date.now() - start))
+          let directNode: RenderedNodeSnapshot | null = null
+          if (!this.preferAppServicePageProtocol) {
+            try {
+              directNode = await this.readDirectRenderedNode(
+                options.selector,
+                options.dataset,
+                Math.max(1, Math.floor(remaining / 2)),
+                options.componentSelectors,
+              )
+            }
+            catch (error) {
+              lastError = error
+            }
+          }
+          if (directNode && matchesDataset(directNode, options.dataset)) {
+            return JSON.stringify({
+              selector: options.selector,
+              nodes: [directNode],
+            })
+          }
+
+          let nodes: RenderedNodeSnapshot[] = []
+          try {
+            nodes = await this.renderedNodes(options.selector, {
+              componentSelectors: options.componentSelectors,
+              timeout: Math.min(PAGE_RENDERED_QUERY_TIMEOUT, Math.max(1, timeout - (Date.now() - start))),
+            })
+            lastError = undefined
+          }
+          catch (error) {
+            lastError = error
+          }
           lastRenderedNodes = nodes
-          lastError = undefined
           const matchedNode = nodes.find(node => matchesDataset(node, options.dataset))
           if (matchedNode) {
             return JSON.stringify({
@@ -683,6 +723,89 @@ export default class Page {
           : ' non-empty wxml'
     const latest = options.selector ? JSON.stringify(lastRenderedNodes).slice(0, 500) : lastWxml.slice(0, 500)
     throw new Error(`Timed out waiting page rendered:${expected}; reason=${reason}; latest=${latest}`)
+  }
+
+  private async readDirectRenderedNode(
+    selector: string,
+    expectedDataset: Record<string, string | number | boolean> | undefined,
+    timeout: number,
+    componentSelectors: string[] | undefined,
+  ): Promise<RenderedNodeSnapshot | null> {
+    const element = await this.findDirectRenderedElement(selector, timeout, componentSelectors)
+    if (!element) {
+      return null
+    }
+    const entries = await Promise.all(Object.keys(expectedDataset ?? {}).map(async key => [
+      key,
+      await element.attribute(toDatasetAttributeName(key)),
+    ] as const))
+    return {
+      dataset: Object.fromEntries(entries),
+    }
+  }
+
+  private async findDirectRenderedElement(
+    selector: string,
+    timeout: number,
+    componentSelectors: string[] | undefined,
+  ) {
+    const start = Date.now()
+    const getQueryTimeout = () => Math.min(
+      PAGE_DIRECT_RENDERED_QUERY_TIMEOUT,
+      Math.max(1, timeout - (Date.now() - start)),
+    )
+    const directElement = await this.$(selector, {
+      fallback: false,
+      timeout: getQueryTimeout(),
+    })
+    if (directElement) {
+      return directElement
+    }
+
+    const scopeSelectors = [...new Set([
+      ...(componentSelectors ?? []),
+      ...PAGE_DIRECT_COMPONENT_SELECTORS,
+    ].filter(Boolean))]
+    for (const rootSelector of PAGE_ROOT_SELECTORS) {
+      if (Date.now() - start >= timeout) {
+        break
+      }
+      const rootElement = await this.$(rootSelector, {
+        fallback: false,
+        timeout: getQueryTimeout(),
+      })
+      if (!rootElement) {
+        continue
+      }
+
+      const queue = [rootElement]
+      const visited = new Set<Element>()
+      while (queue.length > 0 && visited.size < PAGE_DIRECT_RENDERED_MAX_SCOPES) {
+        if (Date.now() - start >= timeout) {
+          return null
+        }
+        const scope = queue.shift()!
+        if (visited.has(scope)) {
+          continue
+        }
+        visited.add(scope)
+        const nestedElement = await scope.$(selector, {
+          timeout: getQueryTimeout(),
+        })
+        if (nestedElement) {
+          return nestedElement
+        }
+        for (const componentSelector of scopeSelectors) {
+          const childScope = await scope.$(componentSelector, {
+            timeout: getQueryTimeout(),
+          })
+          if (childScope && !visited.has(childScope)) {
+            queue.push(childScope)
+          }
+        }
+      }
+    }
+    return null
   }
 
   async data(path?: string, options: PageDataOptions = {}) {
@@ -837,77 +960,14 @@ export default class Page {
   }
 
   private async callRouteMethod(method: string, args: any[], timeout = PAGE_CALL_METHOD_TIMEOUT) {
-    let latestResult: any
-    for (let attempt = 1; attempt <= PAGE_CALL_METHOD_FALLBACK_RETRIES; attempt += 1) {
-      try {
-        const fallbackResult = (await this.connection.send('App.callFunction', {
-          functionDeclaration: `async function (route, query, method, args) {
-            var pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
-            var normalizedRoute = String(route || '').replace(/^\\/+/, '').replace(/\\/+$/g, '');
-            function methodResult(value) {
-              return {
-                __weappVitePageMethodFound: true,
-                value: value
-              };
-            }
-            function matchesQuery(page, expectedQuery) {
-              if (!expectedQuery || !Object.keys(expectedQuery).length) {
-                return true;
-              }
-              var actualQuery = page && (page.options || page.query || {});
-              return Object.keys(expectedQuery).every(function (key) {
-                var actualValue = String(actualQuery[key] == null ? '' : actualQuery[key]);
-                var expectedValue = String(expectedQuery[key]);
-                var decodedActualValue = actualValue;
-                try {
-                  decodedActualValue = decodeURIComponent(actualValue);
-                }
-                catch (_) {
-                }
-                return actualValue === expectedValue
-                  || decodedActualValue === expectedValue
-                  || actualValue === encodeURIComponent(expectedValue);
-              });
-            }
-            for (var index = pages.length - 1; index >= 0; index -= 1) {
-              var page = pages[index];
-              var pageRoute = String(page.path || page.route || page.__route__ || '').replace(/^\\/+/, '').replace(/\\/+$/g, '');
-              if (pageRoute === normalizedRoute && matchesQuery(page, query) && typeof page[method] === 'function') {
-                return methodResult(await page[method].apply(page, args || []));
-              }
-            }
-            for (var fallbackIndex = pages.length - 1; fallbackIndex >= 0; fallbackIndex -= 1) {
-              var fallbackPage = pages[fallbackIndex];
-              if (matchesQuery(fallbackPage, query) && typeof fallbackPage[method] === 'function') {
-                return methodResult(await fallbackPage[method].apply(fallbackPage, args || []));
-              }
-            }
-            return {
-              __weappVitePageMethodFound: false
-            };
-          }`,
-          args: [this.path, this.query, method, args],
-        }, {
-          timeout,
-        })).result
-        if (fallbackResult && typeof fallbackResult === 'object' && fallbackResult.__weappVitePageMethodFound === true) {
-          return fallbackResult.value
-        }
-        latestResult = fallbackResult && typeof fallbackResult === 'object' && fallbackResult.__weappVitePageMethodFound === false
-          ? undefined
-          : fallbackResult
-        if (latestResult !== undefined || attempt === PAGE_CALL_METHOD_FALLBACK_RETRIES) {
-          return latestResult
-        }
-      }
-      catch (error) {
-        if (!isProtocolTimeoutError(error, 'App.callFunction') || attempt === PAGE_CALL_METHOD_FALLBACK_RETRIES) {
-          throw error
-        }
-      }
-      await sleep(PAGE_CALL_METHOD_FALLBACK_RETRY_DELAY)
-    }
-    return latestResult
+    return await callRouteMethodViaAppService(
+      this.connection,
+      this.path,
+      this.query,
+      method,
+      args,
+      timeout,
+    )
   }
 
   private async setRouteData(data: any) {

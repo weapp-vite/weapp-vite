@@ -21,7 +21,6 @@ const WEVU_SOURCE = path.join(APP_ROOT, 'src/pages/wevu/index.vue')
 const NATIVE_ROUTE = '/pages/native/index?source=e2e'
 const COMPONENT_ROUTE = '/pages/component/index?source=e2e'
 const WEVU_ROUTE = '/pages/wevu/index?source=e2e'
-const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH'
 
 interface RuntimeState {
@@ -37,7 +36,6 @@ let devProcess: ReturnType<typeof startDevProcess> | undefined
 let originalComponentSource = ''
 let originalNativeSource = ''
 let originalWevuSource = ''
-let previousAutomatorLaunchMode: string | undefined
 let previousPostConnectRefresh: string | undefined
 
 function normalizeFixtureSource(source: string, runtime: 'component' | 'native' | 'wevu'): string {
@@ -99,6 +97,10 @@ async function triggerIncrement(runtime: 'component' | 'native' | 'wevu', page?:
     await page.callMethod('increment')
     return
   }
+  if (page && typeof page.callMethod === 'function') {
+    await page.callMethod('increment')
+    return
+  }
   await miniProgram.evaluate((expectedRuntime: 'native' | 'wevu') => {
     const pages = getCurrentPages()
     const page = pages[pages.length - 1] as any
@@ -124,7 +126,8 @@ async function waitForPatchedBehavior(expectedCount: number, page?: any, timeout
     await new Promise(resolve => setTimeout(resolve, 250))
   }
   const runtimeLogs = miniProgram.__weappViteRuntimeLogMeta?.entries ?? []
-  throw new Error(`Timed out waiting for patched runtime count ${expectedCount}; latest=${JSON.stringify(latest)}; error=${latestError}; logs=${JSON.stringify(runtimeLogs)}`)
+  const devOutput = devProcess?.getOutput().slice(-8_000) ?? ''
+  throw new Error(`Timed out waiting for patched runtime count ${expectedCount}; latest=${JSON.stringify(latest)}; error=${latestError}; logs=${JSON.stringify(runtimeLogs)}; devOutput=${devOutput}`)
 }
 
 async function waitForClientVersion(expectedVersion: number, timeoutMs = 30_000): Promise<void> {
@@ -138,9 +141,13 @@ async function waitForClientVersion(expectedVersion: number, timeoutMs = 30_000)
     if (latest === expectedVersion) {
       return
     }
+    if (latest > expectedVersion) {
+      break
+    }
     await new Promise(resolve => setTimeout(resolve, 250))
   }
-  throw new Error(`Timed out waiting for stateful HMR client version ${expectedVersion}; latest=${latest}`)
+  const devOutput = devProcess?.getOutput().slice(-8_000) ?? ''
+  throw new Error(`Timed out waiting for stateful HMR client version ${expectedVersion}; latest=${latest}; devOutput=${devOutput}`)
 }
 
 async function readClientVersion(): Promise<number> {
@@ -152,10 +159,8 @@ async function readClientVersion(): Promise<number> {
 
 describe.sequential('stateful HMR in real WeChat DevTools', () => {
   beforeAll(async () => {
-    previousAutomatorLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
     previousPostConnectRefresh = process.env[POST_CONNECT_REFRESH_ENV]
-    process.env[AUTOMATOR_LAUNCH_MODE_ENV] = 'direct'
-    process.env[POST_CONNECT_REFRESH_ENV] = '1'
+    delete process.env[POST_CONNECT_REFRESH_ENV]
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()
     await cleanDevtoolsCache('all', { cwd: APP_ROOT })
@@ -185,6 +190,7 @@ describe.sequential('stateful HMR in real WeChat DevTools', () => {
     await devProcess.waitFor(waitForFileContains(CONTROL_FILE, 'http://127.0.0.1:'), 'stateful HMR control ready')
 
     miniProgram = await launchAutomator({
+      launchMode: 'bridge',
       projectPath: APP_ROOT,
       timeout: 120_000,
       warmupRootSelectors: ['.page'],
@@ -212,12 +218,6 @@ describe.sequential('stateful HMR in real WeChat DevTools', () => {
     if (originalWevuSource) {
       await fs.writeFile(WEVU_SOURCE, originalWevuSource, 'utf8')
     }
-    if (previousAutomatorLaunchMode === undefined) {
-      delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-    }
-    else {
-      process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousAutomatorLaunchMode
-    }
     if (previousPostConnectRefresh === undefined) {
       delete process.env[POST_CONNECT_REFRESH_ENV]
     }
@@ -229,10 +229,11 @@ describe.sequential('stateful HMR in real WeChat DevTools', () => {
   })
 
   it('preserves native Page identity, data, input, route, and query across a JavaScript patch', async () => {
-    await miniProgram.reLaunch(NATIVE_ROUTE)
+    const page = await miniProgram.reLaunch(NATIVE_ROUTE)
+    await waitForPatchedBehavior(0, page)
     await prepareRuntimeState('native-instance')
-    await triggerIncrement('native')
-    expect(await readRuntimeState()).toEqual({
+    await triggerIncrement('native', page)
+    expect(await readRuntimeState(page)).toEqual({
       count: 1,
       identity: 'native-instance',
       input: 'held-input',
@@ -248,8 +249,8 @@ describe.sequential('stateful HMR in real WeChat DevTools', () => {
     await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'this.data.count + 2'), 'native literal patch published')
     await waitForClientVersion(clientVersion + 1)
 
-    await triggerIncrement('native')
-    const state = await waitForPatchedBehavior(3)
+    await triggerIncrement('native', page)
+    const state = await waitForPatchedBehavior(3, page)
     expect(state).toEqual({
       count: 3,
       identity: 'native-instance',

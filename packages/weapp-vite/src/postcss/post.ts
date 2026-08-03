@@ -7,6 +7,15 @@ interface ConditionalDirective {
   targets: string[]
 }
 
+const UNI_APP_PLATFORM_DEFINES: Readonly<Record<MpPlatform, readonly string[]>> = {
+  weapp: ['mp', 'mp-weixin', 'vue3'],
+  alipay: ['mp', 'mp-alipay', 'vue3'],
+  tt: ['mp', 'mp-toutiao', 'vue3'],
+  swan: ['mp', 'mp-baidu', 'vue3'],
+  jd: ['mp', 'mp-jd', 'vue3'],
+  xhs: ['mp', 'mp-xhs', 'vue3'],
+}
+
 function normalizeTargets(values: string[]): string[] {
   return values.map(value => value.trim().toLowerCase()).filter(Boolean)
 }
@@ -76,6 +85,7 @@ function removeConditionalBlock(start: Comment) {
 export const postCreator: PluginCreator<{ platform: MpPlatform }> = (options = { platform: 'weapp' }) => {
   const atRulePrefixRegExp = new RegExp(`^${cssAtRulePrefix}-`)
   const platform = options.platform.toLowerCase()
+  const activeTargets = new Set([platform, ...UNI_APP_PLATFORM_DEFINES[options.platform]])
 
   return {
     postcssPlugin: 'postcss-weapp-vite-plugin-post',
@@ -117,7 +127,7 @@ export const postCreator: PluginCreator<{ platform: MpPlatform }> = (options = {
           }
 
           const targets = directive.targets
-          const hasPlatform = targets.includes(platform)
+          const hasPlatform = targets.some(target => activeTargets.has(target))
 
           const shouldKeep = directive.type === 'ifdef'
             ? hasPlatform

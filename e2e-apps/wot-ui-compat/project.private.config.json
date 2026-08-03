@@ -9,6 +9,12 @@
     "miniprogram": {
       "list": [
         {
+          "name": "启动页",
+          "pathName": "pages/bootstrap/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "组件索引",
           "pathName": "pages/index/index",
           "query": "",

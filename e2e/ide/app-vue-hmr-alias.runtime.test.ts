@@ -13,7 +13,6 @@ import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../ut
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
-const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-vue-hmr-alias')
@@ -59,7 +58,6 @@ let originalAppSource = ''
 let originalLayoutSource = ''
 let originalPageSource = ''
 let originalBootstrapSource = ''
-let previousAutomatorLaunchMode: string | undefined
 let previousAutomatorPostConnectRefresh: string | undefined
 let previousBridgePostConnectRefresh: string | undefined
 let sharedInfraUnavailableMessage: string | null = null
@@ -215,10 +213,8 @@ async function assertDistJsKeepsBundledAliasMarker(marker: string) {
 
 describe.sequential('app.vue alias import layout HMR runtime', () => {
   beforeAll(async () => {
-    previousAutomatorLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
     previousAutomatorPostConnectRefresh = process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV]
     previousBridgePostConnectRefresh = process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
-    process.env[AUTOMATOR_LAUNCH_MODE_ENV] = 'direct'
     delete process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV]
     delete process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
     await cleanupResidualDevProcesses()
@@ -249,6 +245,7 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
 
     try {
       miniProgram = await launchAutomator({
+        launchMode: 'bridge',
         projectPath: APP_ROOT,
         skipRelaunchPageRootCheck: true,
         skipWarmup: true,
@@ -282,12 +279,6 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
       await fs.writeFile(BOOTSTRAP_TS_PATH, originalBootstrapSource, 'utf8').catch(() => {})
     }
     await cleanupResidualIdeProcesses()
-    if (previousAutomatorLaunchMode == null) {
-      delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-    }
-    else {
-      process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousAutomatorLaunchMode
-    }
     if (previousAutomatorPostConnectRefresh == null) {
       delete process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV]
     }

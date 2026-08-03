@@ -3,6 +3,7 @@ import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 import type { VueBundleCompileOptionsState } from './shared'
 import { fs } from '@weapp-core/shared/fs'
+import { scanWxml } from '../../../../wxml/scan'
 import {
   resolveNativeLayoutOutputOptions,
   resolveNativeLayoutStaticAssetEntries,
@@ -287,7 +288,17 @@ export async function emitBundlePageLayoutsIfNeeded(options: {
   })
 }
 
-function resolveAppShellComponentConfig(config: string | undefined) {
+function resolveAppShellUsingComponents(template: string, usingComponents: Record<string, string>) {
+  const templateComponents = scanWxml(template, {
+    excludeComponent: () => false,
+  }).autoImportComponents ?? {}
+
+  return Object.fromEntries(
+    Object.entries(usingComponents).filter(([name]) => Reflect.has(templateComponents, name)),
+  )
+}
+
+function resolveAppShellComponentConfig(config: string | undefined, template: string) {
   const shellConfig: Record<string, any> = {
     styleIsolation: 'apply-shared',
   }
@@ -305,7 +316,12 @@ function resolveAppShellComponentConfig(config: string | undefined) {
     for (const key of ['usingComponents', 'componentGenerics']) {
       const value = parsed[key]
       if (value && typeof value === 'object' && !Array.isArray(value)) {
-        shellConfig[key] = value
+        const normalizedValue = key === 'usingComponents'
+          ? resolveAppShellUsingComponents(template, value)
+          : value
+        if (Object.keys(normalizedValue).length > 0) {
+          shellConfig[key] = normalizedValue
+        }
       }
     }
 
@@ -368,7 +384,7 @@ export function emitAppShellAssetsIfNeeded(options: {
     bundle: options.bundle,
     pluginCtx: options.pluginCtx,
     relativeBase,
-    config: resolveAppShellComponentConfig(result.config),
+    config: resolveAppShellComponentConfig(result.config, result.template),
     outputExtensions: options.outputExtensions,
     platformAssetOptions: options.platformAssetOptions,
     jsonOptions: {

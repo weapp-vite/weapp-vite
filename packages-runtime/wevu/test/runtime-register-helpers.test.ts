@@ -101,8 +101,8 @@ describe('runtime: register helpers', () => {
     }
 
     const stops = registerWatches(runtime, {
-      'injected.value': vi.fn(),
-      'visible': { handler: vi.fn(), immediate: true },
+      'injected.value': vi.fn((_value: any, _oldValue: any) => {}),
+      'visible': { handler: vi.fn((_value: any, _oldValue: any) => {}), immediate: true },
     }, {} as any, { deferMissingSourceBaseline: true })
 
     expect(stops).toHaveLength(2)

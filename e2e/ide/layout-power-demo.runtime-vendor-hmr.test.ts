@@ -14,6 +14,7 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
+import { runLayoutFeedbackE2E } from './layout-power-demo.runtime.shared'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
@@ -31,10 +32,12 @@ const BASELINE_MARKER = 'runtime-vendor-hmr-baseline'
 const UPDATED_MARKER = 'runtime-vendor-hmr-updated'
 const TEMPLATE_MARKER = 'runtime-vendor-template-hmr'
 const STYLE_MARKER = 'runtime-vendor-style-hmr'
+const LAYOUT_FEEDBACK_PROTOCOL_TIMEOUT = 60_000
 const LAYOUTS = ['default', 'command', 'studio', 'split', 'poster'] as const
 const MODULE_MISSING_RE = /module 'weapp-vendors\/[^']*runtime[^']*\.js' is not defined/i
 const TD_MESSAGE_DUPLICATE_SLOT_RE = /More than one slot named .*tdesign-miniprogram\/message\/message/
 const STALE_RUN_E2E_MARKER_RE = /Stale runE2E marker/
+const RUNTIME_SESSION_PROTOCOL_ERROR_RE = /connection closed|timeout waiting for automator response|DEVTOOLS_PROTOCOL_TIMEOUT/i
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -193,9 +196,19 @@ function isRecoverableRunE2EMarkerError(error: unknown, marker: string) {
     || message.includes(`while waiting ${marker}`)
 }
 
-async function expectLayoutFeedback(page: any, collector: RuntimeErrorCollector) {
+function isRecoverableRuntimeSessionError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return RUNTIME_SESSION_PROTOCOL_ERROR_RE.test(message)
+    || (error instanceof Error
+      && 'code' in error
+      && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT')
+}
+
+async function expectLayoutFeedback(miniProgram: any, page: any, collector: RuntimeErrorCollector) {
   const marker = collector.mark()
-  const result = await page.callMethod('runLayoutFeedbackE2E')
+  process.stdout.write('[layout-power-demo:hmr] layout-feedback-start\n')
+  const result = await runLayoutFeedbackE2E(miniProgram, LAYOUT_FEEDBACK_PROTOCOL_TIMEOUT)
+  process.stdout.write('[layout-power-demo:hmr] layout-feedback-ready\n')
   await page.waitFor?.(600).catch(() => delay(600))
   expect(result).toMatchObject({
     ok: true,
@@ -400,11 +413,35 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     throw lastError instanceof Error ? lastError : new Error(String(lastError))
   }
 
+  async function expectLayoutFeedbackWithRecoveredSession(page: any, marker: string) {
+    let activePage = page
+    let lastError: unknown
+    for (let restartAttempt = 0; restartAttempt <= 3; restartAttempt += 1) {
+      try {
+        await expectLayoutFeedback(miniProgram, activePage, runtimeErrorCollector)
+        return activePage
+      }
+      catch (error) {
+        if (!isRecoverableRuntimeSessionError(error) || restartAttempt >= 3) {
+          throw error
+        }
+        lastError = error
+      }
+      const message = lastError instanceof Error ? lastError.message : String(lastError)
+      process.stdout.write(`[layout-power-demo:hmr] restart-feedback-session marker=${marker} attempt=${restartAttempt + 1}/3 reason=${message}\n`)
+      await stopDevSession()
+      await waitForIdeRecompileSettled(2_000)
+      await startDevSession()
+      activePage = await relaunchIndexPageWithRecoveredSession(marker)
+    }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError))
+  }
+
   it('keeps active runtime vendor chunks available after page script HMR', async () => {
     await startDevSession()
     let page = await relaunchIndexPage(miniProgram)
     await waitForRunE2EMarker(page, BASELINE_MARKER)
-    await expectLayoutFeedback(page, runtimeErrorCollector)
+    page = await expectLayoutFeedbackWithRecoveredSession(page, BASELINE_MARKER)
 
     const nextScript = originalScript.replace(BASELINE_MARKER, UPDATED_MARKER)
     expect(nextScript).not.toBe(originalScript)
@@ -416,7 +453,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await waitForIdeRecompileSettled()
 
     page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
-    await expectLayoutFeedback(page, runtimeErrorCollector)
+    page = await expectLayoutFeedbackWithRecoveredSession(page, UPDATED_MARKER)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
 
     const nextTemplate = originalTemplate.replace('页面内容保留，只替换布局、属性和骨架。', `页面内容保留，只替换布局、属性和骨架。${TEMPLATE_MARKER}`)

@@ -3240,6 +3240,39 @@ Page({
     expect(page.data.metaSummary).toContain('"type":"view"')
   })
 
+  it('preserves PascalCase component aliases while parsing WXML', () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/index/index.json'), JSON.stringify({
+      usingComponents: {
+        PascalCaseCard: '/components/pascal-case-card/index',
+      },
+    }))
+    writeFixtureFile(
+      path.join(projectPath, 'dist/pages/index/index.wxml'),
+      '<PascalCaseCard id="pascal-case-card" label="ready" />',
+    )
+    writeFixtureFile(path.join(projectPath, 'dist/components/pascal-case-card/index.json'), '{}')
+    writeFixtureFile(
+      path.join(projectPath, 'dist/components/pascal-case-card/index.js'),
+      'Component({ properties: { label: String } })\n',
+    )
+    writeFixtureFile(
+      path.join(projectPath, 'dist/components/pascal-case-card/index.wxml'),
+      '<view>{{label}}</view>',
+    )
+    const session = createHeadlessSession({ projectPath })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(page.selectComponent?.('#pascal-case-card')).toMatchObject({
+      is: 'components/pascal-case-card/index',
+      properties: {
+        label: 'ready',
+      },
+    })
+    expect(session.renderCurrentPage().wxml).toContain('data-sim-component="PascalCaseCard"')
+  })
+
   it('runs component lifetimes and pageLifetimes in headless runtime', () => {
     const projectPath = createComponentLifecycleFixture()
     tempDirs.push(projectPath)

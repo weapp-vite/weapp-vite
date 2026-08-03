@@ -65,7 +65,13 @@ async function runPageE2E(page: any) {
 
   for (const methodName of methodNames) {
     try {
-      return await page.callMethod(methodName)
+      const result = await page.callMethodWithOptions(methodName, {
+        routeOnly: true,
+        timeout: 60_000,
+      })
+      if (result !== undefined) {
+        return result
+      }
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -121,6 +127,7 @@ for (const jsFormat of JS_FORMATS) {
       if (!sharedMiniProgram) {
         sharedMiniProgram = await launchAutomator({
           projectPath: APP_ROOT,
+          retryWarmupTimeout: true,
         })
       }
       return sharedMiniProgram

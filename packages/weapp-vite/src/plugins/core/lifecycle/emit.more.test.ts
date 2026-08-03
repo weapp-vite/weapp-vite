@@ -21,6 +21,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 import { collectActiveHmrImportedChunkIds, createSubPackageMatcher, shouldWarmupBundleScriptAnalysis } from './emit/generate'
+import { resolveRequestGlobalsExportName, resolveRequestGlobalsInstallerName } from './emit/requestGlobals'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => 'globalThis.__probe = (globalThis.__probe || 0) + 1'))
 const transformWithOxcMock = vi.hoisted(() => vi.fn(async (code: string) => ({ code })))
@@ -168,6 +169,17 @@ function createBundleAssetEmitter(bundle: Record<string, any>) {
 }
 
 describe('core lifecycle emit hook extra branches', () => {
+  it('distinguishes the public request globals installer from its internal target helper', () => {
+    const code = [
+      'function installSingleTarget(host,target){if(target==="fetch")host.fetch=fetch;if(target==="Headers")host.Headers=Headers;if(target==="Request")host.Request=Request;if(target==="Response")host.Response=Response;if(target==="TextEncoder")host.TextEncoder=TextEncoder;if(target==="TextDecoder")host.TextDecoder=TextDecoder;if(target==="AbortController")host.AbortController=AbortController;if(target==="AbortSignal")host.AbortSignal=AbortSignal;if(target==="XMLHttpRequest")host.XMLHttpRequest=XMLHttpRequest;if(target==="WebSocket")host.WebSocket=WebSocket}',
+      'function installWebRuntimeGlobals(options={}){const targets=resolveInstallTargets(options.targets??["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"]);for(const target of targets)installSingleTarget(globalThis,target);return globalThis}',
+      'Object.defineProperty(exports,"installWebRuntimeGlobals",{enumerable:true,get:function(){return installWebRuntimeGlobals}})',
+    ].join(';')
+
+    expect(resolveRequestGlobalsInstallerName(code)).toBe('installWebRuntimeGlobals')
+    expect(resolveRequestGlobalsExportName(code)).toBe('installWebRuntimeGlobals')
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     flushIndependentBuildsMock.mockResolvedValue(undefined)
@@ -2366,7 +2378,7 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(code).not.toContain('require("./weapp-vendors/request-globals-web-apis-shared.js")')
   })
 
-  it('injects bundled runtime installation right after the first require when installer chunk has imports', async () => {
+  it('injects bundled runtime installation after installer chunk initialization', async () => {
     const state = createState({
       subPackageMeta: null,
       entriesMap: new Map([
@@ -2391,7 +2403,8 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'const e=require("./common.js");',
           'const __keep__ = [Request, WebSocket];',
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'const hosts = [globalThis];',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return hosts[0] || { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: ['common.js'],
@@ -2403,9 +2416,10 @@ describe('core lifecycle emit hook extra branches', () => {
 
     const code = bundle['dist.js'].code
     expect(code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
-    expect(code).toContain(`const e=require("./common.js");const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
+    expect(code).toContain(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
     expect(code).not.toContain(`Request = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.Request`)
-    expect(code.indexOf(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn`)).toBeLessThan(code.indexOf('Object.defineProperty(exports,`At`'))
+    expect(code.indexOf(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn`)).toBeGreaterThan(code.indexOf('const hosts = [globalThis]'))
+    expect(code.indexOf(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn`)).toBeGreaterThan(code.indexOf('Object.defineProperty(exports,`At`'))
   })
 
   it('does not overwrite same-named module locals when ESM runtime installation is appended', async () => {

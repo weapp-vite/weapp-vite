@@ -35,7 +35,12 @@ describe.sequential('e2e app: github-issues / require async subpackage modules',
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const page = await relaunchPage(miniProgram, REQUIRE_ASYNC_ROUTE, undefined, 45_000, {
-        readiness: async page => Boolean(await page.$('#require-async-page')),
+        readiness: async (_page, runtimeMiniProgram) => Boolean(await runtimeMiniProgram.evaluate(() => {
+          const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+          const page = pages[pages.length - 1] as any
+          return page?.route === 'pages/require-async/index'
+            && typeof page?._runE2E === 'function'
+        }).catch(() => false)),
       })
       expect(page).toBeTruthy()
 

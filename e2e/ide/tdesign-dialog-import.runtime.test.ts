@@ -45,6 +45,7 @@ async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
   try {
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
+      retryWarmupTimeout: true,
       skipRelaunchPageRootCheck: true,
       warmupRootSelectors: ['#tdesign-dialog-import-home'],
       warmupRoute: '/pages/index/index',

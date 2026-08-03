@@ -6,15 +6,34 @@ import process from 'node:process'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { comparePngWithBaseline } from '../../packages/weapp-ide-cli/src/cli/imageDiff'
 import { attachRuntimeErrorCollector } from '../ide/runtimeErrors'
-import { launchAutomator } from '../utils/automator'
+import { launchAutomator, resetAutomatorRuntimeLogs } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupDevtoolsScreenshotArtifacts } from '../utils/ide-devtools-screenshot-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { assertNonBlankPng } from './webHarness'
+import { normalizeWechatViewportScreenshot } from './wechatScreenshot'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const CLI_PATH = path.join(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const PAGE_READY_TIMEOUT = 20_000
-const SCREENSHOT_SETTLE_MS = 700
+const DEFAULT_SCREENSHOT_SETTLE_MS = 100
+const DEVTOOLS_SCREENSHOT_SESSION_LIMIT = 72
+const DEVTOOLS_SCENARIO_ATTEMPTS = 2
+const FAST_METHOD_ROOT_CONFIRM_THRESHOLD_MS = 1_000
+const DEFAULT_SESSION_READY_ROUTE = '/pages/index/index'
+const DEFAULT_SESSION_READY_SELECTOR = '.index-page'
+const SCENARIO_READY_SELECTOR = '#e2e-root'
+const SUITE_SETUP_TIMEOUT = 300_000
+const WECHAT_SCREENSHOT_HEIGHT = 1_506
+const WECHAT_SCREENSHOT_WIDTH = 780
+
+function resolveScreenshotSettleMs() {
+  const configured = Number(process.env.WEAPP_VITE_COMPONENT_SCREENSHOT_SETTLE_MS)
+  return Number.isFinite(configured) && configured >= 0
+    ? configured
+    : DEFAULT_SCREENSHOT_SETTLE_MS
+}
 
 interface PageScenarioResult {
   component?: string
@@ -28,28 +47,38 @@ export interface ComponentLibraryRuntimeSuiteOptions {
   appRoot: string
   baselineRoot: string
   componentFilterEnv: string
+  devtoolsEngineBuildFallbackSettleMs?: number
+  devtoolsRefreshProjectAfterConnect?: boolean
+  devtoolsScreenshotSessionLimit?: number
+  devtoolsWarmupScenarioRoute?: boolean
   expectedCount: number
+  ignoredRuntimeErrorPatterns?: readonly RegExp[]
+  methodReadinessFastPath?: boolean
   outputRoot: string
   progressLabel: string
+  sessionReadyRoute?: string
+  sessionReadySelector?: string
+  screenshotSettleMs?: number
+  screenshotSettleOverrides?: Readonly<Record<string, number>>
   scenarios: readonly ComponentScenarioLike[]
   suiteName: string
   testTimeout?: number
   updateBaselinesEnv: string
 }
 
-async function waitForScenarioReady(page: any, component: string) {
+async function waitForRenderedSelector(page: any, selector: string, label: string) {
   if (typeof page?.waitForRendered === 'function') {
-    await page.waitForRendered({ selector: '#e2e-root', timeout: PAGE_READY_TIMEOUT })
+    await page.waitForRendered({ selector, timeout: PAGE_READY_TIMEOUT })
     return
   }
   const startedAt = Date.now()
   while (Date.now() - startedAt <= PAGE_READY_TIMEOUT) {
-    if (await page?.$('#e2e-root')) {
+    if (await page?.$(selector)) {
       return
     }
     await page.waitFor(220)
   }
-  throw new Error(`${component}: 等待 #e2e-root 渲染超时`)
+  throw new Error(`${label}: 等待 ${selector} 渲染超时`)
 }
 
 export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRuntimeSuiteOptions) {
@@ -59,6 +88,21 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
   const baselineRoot = path.join(ROOT, options.baselineRoot)
   const outputRoot = path.join(ROOT, options.outputRoot)
   const updateBaselines = process.env[options.updateBaselinesEnv] === '1'
+  const configuredScreenshotSettleMs = options.screenshotSettleMs ?? resolveScreenshotSettleMs()
+  const sessionReadyRoute = options.sessionReadyRoute ?? DEFAULT_SESSION_READY_ROUTE
+  const sessionReadySelector = options.sessionReadySelector ?? DEFAULT_SESSION_READY_SELECTOR
+  const screenshotSettleMs = Number.isFinite(configuredScreenshotSettleMs)
+    ? Math.max(0, Math.trunc(configuredScreenshotSettleMs))
+    : resolveScreenshotSettleMs()
+  const resolveScenarioScreenshotSettleMs = (component: string) => {
+    const override = options.screenshotSettleOverrides?.[component]
+    return Number.isFinite(override)
+      ? Math.max(0, Math.trunc(override))
+      : screenshotSettleMs
+  }
+  const devtoolsScreenshotSessionLimit = options.devtoolsScreenshotSessionLimit
+    ?? DEVTOOLS_SCREENSHOT_SESSION_LIMIT
+  const reportTimings = process.env.WEAPP_VITE_COMPONENT_TIMINGS === '1'
   const componentFilter = new Set(
     (process.env[options.componentFilterEnv] ?? '')
       .split(',')
@@ -71,22 +115,47 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
   const reportProgress = (message: string) => {
     process.stderr.write(`[${options.progressLabel}][${runtimeProvider}] ${message}\n`)
   }
+  const shouldIgnoreRuntimeError = (error: string) => {
+    return options.ignoredRuntimeErrorPatterns?.some(pattern => pattern.test(error)) === true
+  }
+  let wechatSystemInfo: Record<string, unknown> | undefined
+  let warmupScenarioPage: any
+  let warmupScenarioRoute = ''
+
+  async function cleanupWechatScreenshotArtifacts(label: string) {
+    const result = await cleanupDevtoolsScreenshotArtifacts()
+    if (result.files > 0) {
+      reportProgress(`${label} screenshot-temp files=${result.files} bytes=${result.bytes}`)
+    }
+  }
 
   async function captureWechatScreenshot(miniProgram: any, component: string) {
     const baselinePath = path.join(baselineRoot, `${component}.png`)
     const currentPath = path.join(outputRoot, `${component}.current.png`)
     const diffPath = path.join(outputRoot, `${component}.diff.png`)
-    await fs.mkdir(path.dirname(currentPath), { recursive: true })
     let screenshot: Buffer | undefined
     let screenshotError: unknown
     for (let attempt = 0; attempt < 4; attempt += 1) {
+      const captureStartedAt = Date.now()
       try {
         const rawScreenshot = await miniProgram.screenshot({ timeout: 15_000 })
-        screenshot = typeof rawScreenshot === 'string'
+        const capturedAt = Date.now()
+        const deviceScreenshot = typeof rawScreenshot === 'string'
           ? Buffer.from(rawScreenshot, 'base64')
           : Buffer.from(rawScreenshot)
-        await fs.writeFile(currentPath, screenshot)
+        wechatSystemInfo ??= await miniProgram.systemInfo()
+        const systemInfoReadyAt = Date.now()
+        screenshot = await normalizeWechatViewportScreenshot({
+          screenshot: deviceScreenshot,
+          systemInfo: wechatSystemInfo,
+          targetHeight: WECHAT_SCREENSHOT_HEIGHT,
+          targetWidth: WECHAT_SCREENSHOT_WIDTH,
+        })
+        const normalizedAt = Date.now()
         assertNonBlankPng(screenshot, `wechat/${component}`)
+        if (reportTimings) {
+          reportProgress(`capture ${component} attempt=${attempt + 1} protocol=${capturedAt - captureStartedAt}ms systemInfo=${systemInfoReadyAt - capturedAt}ms normalize=${normalizedAt - systemInfoReadyAt}ms`)
+        }
         screenshotError = undefined
         break
       }
@@ -103,13 +172,28 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
       await fs.writeFile(baselinePath, screenshot)
       return
     }
+    const compareStartedAt = Date.now()
     const result = await comparePngWithBaseline({
       baselinePath,
       currentPngBuffer: screenshot,
-      diffOutputPath: diffPath,
       threshold: 0.18,
+    }).catch(async (error) => {
+      await fs.mkdir(path.dirname(currentPath), { recursive: true })
+      await fs.writeFile(currentPath, screenshot)
+      throw error
     })
+    if (reportTimings) {
+      reportProgress(`compare ${component} pixels=${Date.now() - compareStartedAt}ms diffRatio=${result.diffRatio}`)
+    }
     if (result.diffRatio > 0.03) {
+      await fs.mkdir(path.dirname(currentPath), { recursive: true })
+      await comparePngWithBaseline({
+        baselinePath,
+        currentOutputPath: currentPath,
+        currentPngBuffer: screenshot,
+        diffOutputPath: diffPath,
+        threshold: 0.18,
+      })
       throw new Error(`wechat/${component}: diffRatio=${result.diffRatio}`)
     }
   }
@@ -118,20 +202,29 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
     let miniProgram: any
     let runtimeErrorCollector: ReturnType<typeof attachRuntimeErrorCollector>
 
-    beforeAll(async () => {
-      expect(options.scenarios).toHaveLength(options.expectedCount)
-      reportProgress('build')
-      await fs.rm(distRoot, { recursive: true, force: true })
-      await runWeappViteBuildWithLogCapture({
-        cliPath: CLI_PATH,
-        projectRoot: appRoot,
-        platform: 'weapp',
-        skipNpm: true,
-        label: `${options.progressLabel}:${runtimeProvider}`,
-      })
-      reportProgress('launch')
+    async function launchRuntimeSession(label: string, scenario?: ComponentScenarioLike) {
+      reportProgress(`${label} launch`)
+      const shouldWarmupScenario = runtimeProvider === 'devtools'
+        && options.devtoolsWarmupScenarioRoute === true
+        && scenario != null
+      const warmupRoute = shouldWarmupScenario
+        ? scenario.route
+        : sessionReadyRoute
+      const warmupRootSelectors = shouldWarmupScenario
+        ? [SCENARIO_READY_SELECTOR]
+        : [sessionReadySelector]
+      const devtoolsLaunchOptions = runtimeProvider === 'devtools'
+        ? {
+            ...(options.devtoolsEngineBuildFallbackSettleMs == null
+              ? {}
+              : { engineBuildFallbackSettleMs: options.devtoolsEngineBuildFallbackSettleMs }),
+            ...(options.devtoolsRefreshProjectAfterConnect == null
+              ? {}
+              : { refreshProjectAfterConnect: options.devtoolsRefreshProjectAfterConnect }),
+          }
+        : {}
       miniProgram = await launchAutomator({
-        launchMode: 'direct',
+        launchMode: 'bridge',
         projectPath: appRoot,
         projectConfig: {
           setting: {
@@ -140,49 +233,192 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
           },
         },
         skipRelaunchPageRootCheck: true,
-        skipWarmup: true,
+        retryWarmupTimeout: true,
+        ...devtoolsLaunchOptions,
         timeout: 120_000,
+        warmupRootSelectors,
+        warmupRoute,
       })
-      reportProgress('ready')
+      wechatSystemInfo = undefined
+      warmupScenarioPage = shouldWarmupScenario
+        ? await miniProgram.currentPage({
+            retries: 2,
+            timeout: 5_000,
+          }).catch(() => undefined)
+        : undefined
+      warmupScenarioRoute = warmupScenarioPage ? warmupRoute : ''
+      resetAutomatorRuntimeLogs(miniProgram)
       runtimeErrorCollector = attachRuntimeErrorCollector(miniProgram)
-    }, 180_000)
+      reportProgress(`${label} ready`)
+    }
 
-    afterAll(async () => {
-      reportProgress('close')
+    async function closeRuntimeSession(label: string) {
+      reportProgress(`${label} close`)
       runtimeErrorCollector?.dispose()
       await miniProgram?.close?.()
-      reportProgress('closed')
+      miniProgram = undefined
+      warmupScenarioPage = undefined
+      warmupScenarioRoute = ''
+      if (runtimeProvider === 'devtools') {
+        await cleanupResidualIdeProcesses()
+        await cleanupWechatScreenshotArtifacts(label)
+      }
+      reportProgress(`${label} closed`)
+    }
+
+    beforeAll(async () => {
+      expect(options.scenarios).toHaveLength(options.expectedCount)
+      await cleanupResidualIdeProcesses()
+      if (runtimeProvider === 'devtools') {
+        await cleanDevtoolsCache('all', { cwd: appRoot })
+        await cleanupResidualIdeProcesses()
+        await cleanupWechatScreenshotArtifacts('setup')
+      }
+      reportProgress('build')
+      await fs.rm(outputRoot, { recursive: true, force: true })
+      await fs.rm(distRoot, { recursive: true, force: true })
+      await runWeappViteBuildWithLogCapture({
+        cliPath: CLI_PATH,
+        projectRoot: appRoot,
+        platform: 'weapp',
+        skipNpm: true,
+        label: `${options.progressLabel}:${runtimeProvider}`,
+      })
+      await launchRuntimeSession('initial', scenarios[0])
+    }, SUITE_SETUP_TIMEOUT)
+
+    afterAll(async () => {
+      await closeRuntimeSession('final')
     }, 60_000)
 
     it(`逐页完成 ${options.expectedCount} 个组件的渲染、交互与状态断言`, { timeout: options.testTimeout ?? 1_200_000 }, async () => {
       const failures: string[] = []
       for (const [index, scenario] of scenarios.entries()) {
+        // DevTools 的 App.captureScreenshot 单会话受 100 个临时文件 quota 限制；
+        // 组件视觉套件需要隔离启动新会话，但继续复用同一次构建并保留逐页真实截图。
+        if (
+          runtimeProvider === 'devtools'
+          && index > 0
+          && index % devtoolsScreenshotSessionLimit === 0
+        ) {
+          await closeRuntimeSession(`rotate-${index}`)
+          await launchRuntimeSession(`rotate-${index}`, scenario)
+        }
         reportProgress(`${index + 1}/${scenarios.length} ${scenario.component}`)
-        const runtimeErrorMarker = runtimeErrorCollector.mark()
-        try {
-          const page = await miniProgram.reLaunch(scenario.route)
-          if (!page) {
-            failures.push(`${scenario.component}: reLaunch 未返回页面`)
-            continue
+        const scenarioStartedAt = Date.now()
+        let relaunchedAt = scenarioStartedAt
+        let readyAt = scenarioStartedAt
+        let assertedAt = scenarioStartedAt
+        let settledAt = scenarioStartedAt
+        let usedReadinessFallback = false
+        let scenarioFailures: string[] = []
+        let scenarioRuntimeErrors: string[] = []
+        let scenarioError: unknown
+        const maxAttempts = runtimeProvider === 'devtools'
+          ? DEVTOOLS_SCENARIO_ATTEMPTS
+          : 1
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+          const attemptFailures: string[] = []
+          const runtimeErrorMarker = runtimeErrorCollector.mark()
+          try {
+            let page = warmupScenarioRoute === scenario.route && warmupScenarioPage
+              ? warmupScenarioPage
+              : await miniProgram.reLaunch(scenario.route)
+            warmupScenarioPage = undefined
+            warmupScenarioRoute = ''
+            relaunchedAt = Date.now()
+            readyAt = relaunchedAt
+            assertedAt = relaunchedAt
+            settledAt = relaunchedAt
+            if (!page) {
+              throw new Error('reLaunch 未返回页面')
+            }
+            let result: PageScenarioResult | undefined
+            if (options.methodReadinessFastPath) {
+              const fastMethodStartedAt = Date.now()
+              try {
+                result = await page.callMethodWithOptions('runE2E', {
+                  routeOnly: true,
+                }) as PageScenarioResult
+                const fastMethodDuration = Date.now() - fastMethodStartedAt
+                if (fastMethodDuration < FAST_METHOD_ROOT_CONFIRM_THRESHOLD_MS) {
+                  await waitForRenderedSelector(page, '#e2e-root', scenario.component)
+                }
+                readyAt = Date.now()
+              }
+              catch {
+              }
+            }
+            if (!options.methodReadinessFastPath || (
+              result?.component !== scenario.component
+              || !result.rendered
+              || !result.ok
+              || !result.state?.startsWith(scenario.expectedState)
+            )) {
+              usedReadinessFallback = options.methodReadinessFastPath === true
+              if (usedReadinessFallback) {
+                page = await miniProgram.reLaunch(scenario.route)
+                if (!page) {
+                  throw new Error('fallback reLaunch 未返回页面')
+                }
+              }
+              await waitForRenderedSelector(page, '#e2e-root', scenario.component)
+              readyAt = Date.now()
+              result = await page.callMethodWithOptions('runE2E', {
+                routeOnly: true,
+              }) as PageScenarioResult
+            }
+            assertedAt = Date.now()
+            if (result.component !== scenario.component) {
+              attemptFailures.push(`${scenario.component}: bridge component=${result.component ?? '<missing>'}`)
+            }
+            if (!result.rendered || !result.ok || !result.state?.startsWith(scenario.expectedState)) {
+              attemptFailures.push(`${scenario.component}: expected=${scenario.expectedState}, result=${JSON.stringify(result)}`)
+            }
+            await page.waitFor(resolveScenarioScreenshotSettleMs(scenario.component))
+            settledAt = Date.now()
+            if (runtimeProvider === 'devtools') {
+              await captureWechatScreenshot(miniProgram, scenario.component)
+            }
+            scenarioFailures = attemptFailures
+            scenarioRuntimeErrors = runtimeErrorCollector
+              .getSince(runtimeErrorMarker)
+              .filter((error) => {
+                const ignored = shouldIgnoreRuntimeError(error)
+                if (ignored) {
+                  reportProgress(`ignored-runtime-error ${scenario.component} ${error}`)
+                }
+                return !ignored
+              })
+            scenarioError = undefined
+            break
           }
-          await waitForScenarioReady(page, scenario.component)
-          const result = await page.callMethod('runE2E') as PageScenarioResult
-          if (result.component !== scenario.component) {
-            failures.push(`${scenario.component}: bridge component=${result.component ?? '<missing>'}`)
-          }
-          if (!result.rendered || !result.ok || !result.state?.startsWith(scenario.expectedState)) {
-            failures.push(`${scenario.component}: expected=${scenario.expectedState}, result=${JSON.stringify(result)}`)
-          }
-          await page.waitFor(SCREENSHOT_SETTLE_MS)
-          if (runtimeProvider === 'devtools') {
-            await captureWechatScreenshot(miniProgram, scenario.component)
+          catch (error) {
+            scenarioError = error
+            const reason = error instanceof Error ? error.message : String(error)
+            reportProgress(`attempt-failed ${scenario.component} attempt=${attempt}/${maxAttempts} reason=${reason}`)
+            if (attempt >= maxAttempts) {
+              break
+            }
+            await closeRuntimeSession(`recover-${scenario.component}`)
+            await launchRuntimeSession(`recover-${scenario.component}`, scenario)
           }
         }
-        catch (error) {
-          failures.push(`${scenario.component}: ${error instanceof Error ? error.message : String(error)}`)
+
+        if (scenarioError) {
+          failures.push(`${scenario.component}: ${scenarioError instanceof Error ? scenarioError.message : String(scenarioError)}`)
         }
-        for (const error of runtimeErrorCollector.getSince(runtimeErrorMarker)) {
+        failures.push(...scenarioFailures)
+        for (const error of scenarioRuntimeErrors) {
           failures.push(`${scenario.component}: runtime ${scenario.route}: ${error}`)
+        }
+        if (reportTimings) {
+          const completedAt = Date.now()
+          const safeReadyAt = Math.max(readyAt, relaunchedAt)
+          const safeAssertedAt = Math.max(assertedAt, safeReadyAt)
+          const safeSettledAt = Math.max(settledAt, safeAssertedAt)
+          reportProgress(`timing ${scenario.component} reLaunch=${relaunchedAt - scenarioStartedAt}ms ready=${safeReadyAt - relaunchedAt}ms run=${safeAssertedAt - safeReadyAt}ms settle=${safeSettledAt - safeAssertedAt}ms screenshot=${completedAt - safeSettledAt}ms total=${completedAt - scenarioStartedAt}ms fallback=${usedReadinessFallback}`)
         }
       }
       reportProgress(`assert failures=${failures.length}`)

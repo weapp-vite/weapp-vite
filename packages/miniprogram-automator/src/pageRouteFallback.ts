@@ -36,6 +36,7 @@ export function createRouteFallbackElement(
   return Element.create(connection, {
     elementId,
     pageId,
+    routeFallback: true,
     tagName: resolveFallbackTagName(selector),
   }, elementMap)
 }

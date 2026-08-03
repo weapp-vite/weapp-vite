@@ -205,6 +205,56 @@ describe('layout bridge runtime api', () => {
     delete (globalThis as any).getCurrentPages
   })
 
+  it('resolves layout hosts from an explicit page proxy when the global page stack is unavailable', () => {
+    const page = {
+      route: 'pages/index/index',
+      __wevuSetPageLayout: () => {},
+    }
+    const pageProxy = { $: page }
+    const dialogHost = { close: vi.fn() }
+    const layoutInstance = {
+      is: 'layouts/default',
+      selectComponent: vi.fn((selector: string) => selector === '#__wv-layout-host-0' ? dialogHost : null),
+    } as any
+
+    ;(globalThis as any).getCurrentPages = () => [page]
+    registerRuntimeLayoutHosts([
+      { key: 'layout-dialog', refName: '__wevu_layout_host_0', selector: '#__wv-layout-host-0', kind: 'component' },
+    ], layoutInstance)
+    ;(globalThis as any).getCurrentPages = () => []
+
+    expect(resolveLayoutHost('layout-dialog', { context: pageProxy })).toBe(dialogHost)
+
+    delete (globalThis as any).getCurrentPages
+  })
+
+  it('registers layout hosts through the owner page when the global page stack is unavailable', () => {
+    const page = {
+      route: 'pages/index/index',
+      __wevuSetPageLayout: () => {},
+    }
+    const dialogHost = { close: vi.fn() }
+    const layoutInstance = {
+      is: 'layouts/default',
+      selectOwnerComponent: vi.fn(() => page),
+      selectComponent: vi.fn((selector: string) => selector === '#__wv-layout-host-0' ? dialogHost : null),
+    } as any
+
+    ;(globalThis as any).getCurrentPages = () => []
+    const bridge = registerRuntimeLayoutHosts([
+      { key: 'layout-dialog', refName: '__wevu_layout_host_0', selector: '#__wv-layout-host-0', kind: 'component' },
+    ], layoutInstance)
+
+    expect(bridge).toBeTruthy()
+    expect(resolveLayoutHost('layout-dialog', { context: page })).toBe(dialogHost)
+    expect(layoutInstance.selectOwnerComponent).toHaveBeenCalled()
+
+    unregisterRuntimeLayoutHosts([
+      { key: 'layout-dialog', refName: '__wevu_layout_host_0', selector: '#__wv-layout-host-0', kind: 'component' },
+    ], bridge as any)
+    delete (globalThis as any).getCurrentPages
+  })
+
   it('registers declared layout hosts from runtime component selectors', () => {
     const page = {
       route: 'pages/index/index',

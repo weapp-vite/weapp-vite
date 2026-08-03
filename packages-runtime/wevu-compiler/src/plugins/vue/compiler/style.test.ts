@@ -45,6 +45,27 @@ describe('compileVueStyleToWxss', () => {
     expect(result.code).not.toContain(':deep')
   })
 
+  it('lowers legacy v-deep selectors and mapped HTML tags', () => {
+    const result = compileVueStyleToWxss(
+      createStyleBlock(`
+.markdown ::v-deep h1,
+.markdown ::v-deep table th,
+.panel > ::v-deep .title,
+::v-deep .code-block {
+  color: red;
+}
+      `.trim()),
+      { id: 'legacy-deep-selector' },
+    )
+
+    expect(result.code).toContain('.markdown .h1')
+    expect(result.code).toContain('.markdown .table .th')
+    expect(result.code).toContain('.panel > .title')
+    expect(result.code).toContain('.code-block')
+    expect(result.code).not.toContain('::v-deep')
+    expect(result.code).not.toMatch(/(^|[\s,])h1(?=[\s,{])/)
+  })
+
   it('preserves Vue deep selectors for a target-specific final CSS stage', () => {
     const source = '.host :deep(.child).active { color: red; }'
     const result = compileVueStyleToWxss(

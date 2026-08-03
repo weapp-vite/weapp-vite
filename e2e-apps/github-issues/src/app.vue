@@ -28,9 +28,6 @@ defineAppJson({
   subpackages: routes.subPackages,
   ...(tabBarList.length >= 2
     ? {
-        usingComponents: {
-          'custom-tab-bar': '/custom-tab-bar/index',
-        },
         tabBar: {
           custom: true,
           list: tabBarList,

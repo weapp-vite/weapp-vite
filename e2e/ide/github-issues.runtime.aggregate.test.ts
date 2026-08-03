@@ -1,0 +1,24 @@
+import { afterAll } from 'vitest'
+import { closeSharedMiniProgram } from './github-issues.runtime.shared'
+import './github-issues.runtime.issue289.test'
+import './github-issues.runtime.issue297-302.test'
+import './github-issues.runtime.web-runtime.test'
+import './github-issues.runtime.import-meta.test'
+import './github-issues.runtime.issue466.test'
+import './github-issues.runtime.issue553-555.test'
+import './github-issues.runtime.issue554.test'
+import './github-issues.runtime.issue564.test'
+import './github-issues.runtime.issue581.test'
+import './github-issues.runtime.issue627.test'
+import './github-issues.runtime.issue642.test'
+import './github-issues.runtime.issue705.test'
+import './github-issues.runtime.issue706.test'
+import './github-issues.runtime.lifecycle.test'
+import './github-issues.runtime.miniprogram-computed.test'
+import './github-issues.runtime.props.test'
+import './github-issues.runtime.app-shell.test'
+import './github-issues.runtime.slot-fallback.test'
+
+afterAll(async () => {
+  await closeSharedMiniProgram({ force: true })
+}, 30_000)
