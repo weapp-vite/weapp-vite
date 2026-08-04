@@ -13,7 +13,7 @@
 
 升级除 TypeScript 外的依赖与 pnpm，并适配 Vite 8 的 OXC JSX 转换：已有 `esbuild.jsx: 'preserve'` 配置会同步到 OXC，避免 Wevu JSX 被误转换为 React runtime。
 
-升级至 `weapp-tailwindcss@5.2.10`，并补齐通用 Tailwind v4 生成器对 `weapp-vite` 样式 sidecar 虚拟查询的清理，避免虚拟样式模块 ID 被当作磁盘路径读取，确保原生模板、脚本和样式增量更新正常输出。
+升级至 `weapp-tailwindcss@5.2.11`，采用上游对 Tailwind v4 生成器 module ID 查询的统一清理，避免 `weapp-vite` 样式 sidecar 虚拟模块 ID 被当作磁盘路径读取，确保原生模板、脚本和样式增量更新正常输出。
 
 涉及包：
 - @wevu/api：dependencies.@douyin-microapp/typings
