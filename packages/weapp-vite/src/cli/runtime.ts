@@ -49,7 +49,7 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
 
 export function createInlineConfig(
   execution: RuntimeTargets,
-  options: { scope?: string, host?: string | boolean } = {},
+  options: { scope?: string, host?: string | boolean, inlineConfig?: InlineConfig } = {},
 ): InlineConfig | undefined {
   const configs = execution.entries
     .map(entry => entry.driver.createInlineConfig({
@@ -60,10 +60,13 @@ export function createInlineConfig(
     }))
     .filter((config): config is InlineConfig => Boolean(config))
   if (configs.length === 0) {
-    return undefined
+    return options.inlineConfig
   }
-  return configs.slice(1).reduce(
+  const merged = configs.slice(1).reduce(
     (merged, config) => defu<InlineConfig, InlineConfig[]>(merged, config),
     configs[0],
   )
+  return options.inlineConfig
+    ? defu<InlineConfig, InlineConfig[]>(options.inlineConfig, merged)
+    : merged
 }

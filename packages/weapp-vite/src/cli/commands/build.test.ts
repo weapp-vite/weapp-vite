@@ -219,6 +219,30 @@ describe('build cli command', () => {
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序构建完成，耗时：'))
   })
 
+  it('passes build output options through inline config', async () => {
+    const action = createBuildActionHandler()
+
+    await action('/project', {
+      emptyOutDir: true,
+      minify: false,
+      outDir: 'dist-debug',
+      platform: 'weapp',
+      sourcemap: true,
+    })
+
+    expect(createInlineConfigMock).toHaveBeenCalledWith(expect.anything(), {
+      inlineConfig: {
+        build: {
+          emptyOutDir: true,
+          minify: false,
+          outDir: 'dist-debug',
+          sourcemap: true,
+        },
+      },
+      scope: undefined,
+    })
+  })
+
   it('forwards trust-project setting when opening ide after build', async () => {
     const action = createBuildActionHandler()
 

@@ -30,6 +30,10 @@ export interface GlobalCLIOptions {
   'loginRetry'?: string
   'loginRetryTimeout'?: string
   'nonInteractive'?: boolean
+  'outDir'?: string
+  'sourcemap'?: boolean | 'false' | 'hidden' | 'inline' | 'true'
+  'minify'?: boolean | 'esbuild' | 'false' | 'oxc' | 'terser' | 'true'
+  'emptyOutDir'?: boolean
   'analyze'?: boolean
   'ui'?: boolean
   'watch'?: boolean

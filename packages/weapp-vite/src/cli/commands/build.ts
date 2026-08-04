@@ -1,5 +1,6 @@
 import type { CAC } from 'cac'
 import type { ChildProcess } from 'node:child_process'
+import type { InlineConfig } from 'vite'
 import type { AnalyzeDashboardHandle, DashboardRuntimeEventInput } from '../analyze/dashboard'
 import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
@@ -45,6 +46,54 @@ function terminateStaleSassEmbeddedProcess() {
 
 function emitDashboardEvents(handle: AnalyzeDashboardHandle | undefined, events: DashboardRuntimeEventInput[]) {
   handle?.emitRuntimeEvents(events)
+}
+
+function normalizeBuildSourcemap(
+  value: GlobalCLIOptions['sourcemap'],
+): NonNullable<InlineConfig['build']>['sourcemap'] {
+  if (value === 'true') {
+    return true
+  }
+  if (value === 'false') {
+    return false
+  }
+  return value
+}
+
+function normalizeBuildMinify(
+  value: GlobalCLIOptions['minify'],
+): NonNullable<InlineConfig['build']>['minify'] {
+  if (value === 'true') {
+    return true
+  }
+  if (value === 'false') {
+    return false
+  }
+  return value
+}
+
+function hasCliOption(options: GlobalCLIOptions, key: keyof GlobalCLIOptions) {
+  return Object.prototype.hasOwnProperty.call(options, key)
+}
+
+function createBuildInlineConfig(options: GlobalCLIOptions): InlineConfig | undefined {
+  const build: NonNullable<InlineConfig['build']> = {}
+  if (typeof options.outDir === 'string') {
+    build.outDir = options.outDir
+  }
+  if (hasCliOption(options, 'sourcemap')) {
+    build.sourcemap = normalizeBuildSourcemap(options.sourcemap)
+  }
+  if (hasCliOption(options, 'minify')) {
+    build.minify = normalizeBuildMinify(options.minify)
+  }
+  if (typeof options.emptyOutDir === 'boolean') {
+    build.emptyOutDir = options.emptyOutDir
+  }
+
+  return Object.keys(build).length
+    ? { build }
+    : undefined
 }
 
 export function shouldScheduleCompletedProductionBuildExit(options: GlobalCLIOptions, analyzeHandle: AnalyzeDashboardHandle | undefined) {
@@ -107,7 +156,10 @@ export function registerBuildCommand(cli: CAC) {
         const cwd = root ?? process.cwd()
         const configFile = resolveConfigFile(options)
         targets = resolveRuntimeTargets(options)
-        const inlineConfig = createInlineConfig(targets, { scope: options.scope })
+        const inlineConfig = createInlineConfig(targets, {
+          scope: options.scope,
+          inlineConfig: createBuildInlineConfig(options),
+        })
         ctx = await createCompilerContext({
           cwd,
           mode: options.mode ?? 'production',

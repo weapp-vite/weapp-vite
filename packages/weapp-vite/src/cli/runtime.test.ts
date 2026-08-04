@@ -54,6 +54,20 @@ describe('cli runtime target resolution', () => {
     expect(createInlineConfig(resolveRuntimeTargets({}))).toBeUndefined()
   })
 
+  it('uses explicit inline config when runtime target does not add one', () => {
+    expect(createInlineConfig(resolveRuntimeTargets({}), {
+      inlineConfig: {
+        build: {
+          sourcemap: true,
+        },
+      },
+    })).toEqual({
+      build: {
+        sourcemap: true,
+      },
+    })
+  })
+
   it('composes backend inline config in execution order', () => {
     const targets = resolveRuntimeTargets({ platform: 'all' })
 
@@ -78,6 +92,25 @@ describe('cli runtime target resolution', () => {
           usePolling: true,
           interval: 100,
         },
+      },
+    })
+  })
+
+  it('keeps explicit inline build options while composing backend config', () => {
+    const targets = resolveRuntimeTargets({ platform: 'all' })
+
+    expect(createInlineConfig(targets, {
+      inlineConfig: {
+        build: {
+          outDir: 'dist-weapp',
+          sourcemap: true,
+        },
+      },
+    })).toMatchObject({
+      build: {
+        outDir: 'dist-weapp',
+        sourcemap: true,
+        watch: {},
       },
     })
   })
