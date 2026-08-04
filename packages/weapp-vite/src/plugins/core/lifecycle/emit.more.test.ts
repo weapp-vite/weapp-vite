@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import {
   APP_PRELUDE_CHUNK_MARKER,
   APP_PRELUDE_GUARD_KEY,
@@ -17,6 +18,7 @@ import {
   REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME,
   REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER,
 } from '@weapp-core/constants'
+import MagicString from 'magic-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
@@ -2863,6 +2865,12 @@ describe('core lifecycle emit hook extra branches', () => {
 
   it('emits synthetic request globals prelude in default require mode without user app.prelude file', async () => {
     const emittedAssets: Array<{ fileName: string, source: string, type: 'asset' }> = []
+    const source = 'src/pages/issue-764/sourcemap.ts'
+    const pageSource = [
+      `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ const before = 1`,
+      'const issue764SourcemapMarker = "issue 764 sourcemap marker"',
+      'Page({ data: { before, issue764SourcemapMarker } })',
+    ].join('\n')
     const state = createState({
       subPackageMeta: null,
       entriesMap: new Map([
@@ -2913,13 +2921,37 @@ describe('core lifecycle emit hook extra branches', () => {
         imports: ['axios.js'],
         dynamicImports: [],
       },
+      'pages/issue-764/sourcemap.js': {
+        type: 'chunk',
+        fileName: 'pages/issue-764/sourcemap.js',
+        isEntry: true,
+        code: pageSource,
+        map: new MagicString(pageSource).generateMap({
+          hires: 'boundary',
+          includeContent: true,
+          source,
+        }),
+        imports: [],
+        dynamicImports: [],
+      },
     } as any
 
     await hook.call({ emitFile: (asset: any) => emittedAssets.push(asset) }, {}, bundle)
 
-    const appCode = bundle['app.js'].code
+    const axiosCode = bundle['axios.js'].code
+    const pageChunk = bundle['pages/issue-764/sourcemap.js']
     const appPreludeAsset = emittedAssets.find(asset => asset.fileName === 'app.prelude.js')
-    expect(appCode).toContain(`/* ${APP_PRELUDE_REQUIRE_MARKER} */require("./app.prelude.js")`)
+    const generatedIndex = pageChunk.code.indexOf('issue 764 sourcemap marker')
+    const generatedBeforeMarker = pageChunk.code.slice(0, generatedIndex).split('\n')
+    const generatedMarkerLinePrefix = generatedBeforeMarker[generatedBeforeMarker.length - 1]
+    const originalPosition = originalPositionFor(new TraceMap(pageChunk.map), {
+      line: generatedBeforeMarker.length,
+      column: generatedMarkerLinePrefix?.length ?? 0,
+    })
+    expect(axiosCode).toContain(`/* ${APP_PRELUDE_REQUIRE_MARKER} */require("./app.prelude.js")`)
+    expect(pageChunk.code).toContain(`/* ${APP_PRELUDE_REQUIRE_MARKER} */require("../../app.prelude.js")`)
+    expect(originalPosition.source).toBe(source)
+    expect(originalPosition.line).toBe(2)
     expect(appPreludeAsset?.source).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(appPreludeAsset?.source).toContain('"XMLHttpRequest"')
     expect(appPreludeAsset?.source).not.toContain(APP_PRELUDE_CHUNK_MARKER)

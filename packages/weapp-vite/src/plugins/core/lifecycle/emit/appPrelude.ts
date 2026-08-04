@@ -7,6 +7,7 @@ import type {
 import type { ImportMetaDefineRegistry } from '../../../../utils/importMeta'
 import type { CorePluginState } from '../../helpers'
 import { readFile } from 'node:fs/promises'
+import MagicString from 'magic-string'
 import path from 'pathe'
 import { transformWithOxc } from 'vite'
 import { toPosixPath } from '../../../../utils'
@@ -18,6 +19,10 @@ import {
   APP_PRELUDE_GUARD_KEY,
   APP_PRELUDE_REQUIRE_FILE_BASENAME,
   APP_PRELUDE_REQUIRE_MARKER,
+  DIRECTIVE_PROLOGUE_RE,
+  REQUEST_GLOBAL_BUNDLE_MARKER,
+  REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
+  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
   USE_STRICT_PREFIX_RE,
 } from './constants'
 import {
@@ -25,7 +30,7 @@ import {
   createRequestGlobalsPreludeCode,
   resolveRequestGlobalsInstallerImport,
 } from './requestGlobals'
-import { prependChunkCodePreservingDirectives } from './rewrite'
+import { applyMagicStringChunkRewrite } from './rewrite/sourcemap'
 
 interface ResolvedAppPreludeOptions {
   enabled: boolean
@@ -127,6 +132,32 @@ export function createAppPreludeRequireStatement(chunkFileName: string, preludeF
   const relativePath = toPosixPath(path.relative(path.dirname(chunkFileName), preludeFileName))
   const requestPath = relativePath.startsWith('.') ? relativePath : `./${relativePath}`
   return `/* ${APP_PRELUDE_REQUIRE_MARKER} */require(${JSON.stringify(requestPath)})`
+}
+
+function prependChunkCodeWithSourcemap(chunk: OutputChunk, injectedCode: string) {
+  const directiveMatch = chunk.code.match(DIRECTIVE_PROLOGUE_RE)
+  const insertIndex = directiveMatch?.[0] ? directiveMatch[0].length : 0
+  const magicString = new MagicString(chunk.code)
+  magicString.prependLeft(insertIndex, `${injectedCode}\n`)
+  applyMagicStringChunkRewrite(chunk, magicString, { hires: true })
+}
+
+function hasRequestGlobalsPreludeDependency(
+  chunk: OutputChunk,
+  requestGlobalsPreludeOptions: {
+    enabled: boolean
+    installerChunks: Map<string, string>
+  },
+) {
+  if (!requestGlobalsPreludeOptions.enabled) {
+    return false
+  }
+
+  return requestGlobalsPreludeOptions.installerChunks.has(toPosixPath(chunk.fileName))
+    || Boolean(resolveRequestGlobalsInstallerImport(chunk, requestGlobalsPreludeOptions.installerChunks))
+    || chunk.code.includes(REQUEST_GLOBAL_BUNDLE_MARKER)
+    || chunk.code.includes(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
+    || chunk.code.includes(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
 }
 
 export function emitAppPreludeRequireAssets(
@@ -238,18 +269,20 @@ export function injectAppPreludeCode(
           requestGlobalsPreludeOptions.networkDefaults,
         )
       : undefined
+    const shouldInjectRequirePrelude = appPreludeCode
+      || hasRequestGlobalsPreludeDependency(chunk, requestGlobalsPreludeOptions)
     const injectedCode = [
       requestGlobalsPreludeCode,
       options.mode === 'require'
-        ? (appPreludeCode || requestGlobalsPreludeOptions.enabled)
-            ? createAppPreludeRequireStatement(chunk.fileName, resolveAppPreludeRequireFileName(chunk.fileName, state))
-            : undefined
+        ? shouldInjectRequirePrelude
+          ? createAppPreludeRequireStatement(chunk.fileName, resolveAppPreludeRequireFileName(chunk.fileName, state))
+          : undefined
         : appPreludeCode,
     ].filter(Boolean).join('\n')
     if (!injectedCode) {
       continue
     }
-    chunk.code = prependChunkCodePreservingDirectives(chunk.code, injectedCode)
+    prependChunkCodeWithSourcemap(chunk, injectedCode)
   }
   return preservedRequestGlobalsInstallerChunks
 }

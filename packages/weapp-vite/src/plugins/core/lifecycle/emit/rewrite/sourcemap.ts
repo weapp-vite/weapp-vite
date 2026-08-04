@@ -2,7 +2,13 @@ import type MagicString from 'magic-string'
 import type { OutputChunk } from 'rolldown'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 
-export function applyMagicStringChunkRewrite(chunk: OutputChunk, magicString: MagicString) {
+export function applyMagicStringChunkRewrite(
+  chunk: OutputChunk,
+  magicString: MagicString,
+  options?: {
+    hires?: boolean | 'boundary'
+  },
+) {
   const previousCode = chunk.code
   const nextCode = magicString.toString()
   if (nextCode === previousCode) {
@@ -14,7 +20,7 @@ export function applyMagicStringChunkRewrite(chunk: OutputChunk, magicString: Ma
   chunk.code = nextCode
   if (previousMap) {
     const nextMap = magicString.generateMap({
-      hires: 'boundary',
+      hires: options?.hires ?? 'boundary',
       includeContent: true,
       source: chunk.fileName,
     })
