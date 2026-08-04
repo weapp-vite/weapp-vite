@@ -1,5 +1,13 @@
 # @weapp-core/constants
 
+## 0.1.15
+
+### Patch Changes
+
+- 🐛 **新增 uview-plus 3.8.86 全组件解析器与三端兼容示例，并完善 uni-app SFC 的条件编译、sidecar、Web 子组件解析、样式预处理和 headless 宿主 API 兼容。** [#758](https://github.com/weapp-vite/weapp-vite/pull/758) by @sonofmagic
+
+- 🐛 **新增实验性的 uni-app Vue SFC 组件库兼容层与 `WotUiResolver()`，支持显式白名单依赖的条件编译、外部组件图、样式资源和双端注册，并补齐 Wot UI 2.2.0 全部 99 个公开组件在微信小程序、Web 与 headless 运行时所需的编译和运行时语义。外部组件产物使用微信允许的稳定目录名，避免组件文件因命中双下划线保留目录规则而被开发者工具忽略。** [#757](https://github.com/weapp-vite/weapp-vite/pull/757) by @sonofmagic
+
 ## 0.1.14
 
 ### Patch Changes

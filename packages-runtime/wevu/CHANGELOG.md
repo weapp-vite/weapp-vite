@@ -1,5 +1,29 @@
 # wevu
 
+## 6.19.0
+
+### Minor Changes
+
+- ✨ **新增实验性的 uni-app Vue SFC 组件库兼容层与 `WotUiResolver()`，支持显式白名单依赖的条件编译、外部组件图、样式资源和双端注册，并补齐 Wot UI 2.2.0 全部 99 个公开组件在微信小程序、Web 与 headless 运行时所需的编译和运行时语义。外部组件产物使用微信允许的稳定目录名，避免组件文件因命中双下划线保留目录规则而被开发者工具忽略。** [#757](https://github.com/weapp-vite/weapp-vite/pull/757) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **新增 uview-plus 3.8.86 全组件解析器与三端兼容示例，并完善 uni-app SFC 的条件编译、sidecar、Web 子组件解析、样式预处理和 headless 宿主 API 兼容。** [#758](https://github.com/weapp-vite/weapp-vite/pull/758) by @sonofmagic
+
+- 🐛 **修复真实微信开发者工具自动化中的会话复用、页面重启、日志收集与截图清理稳定性问题，避免 `forwardConsole` 重复连接现有会话，并降低完整 IDE E2E 在组件库和 GitHub issue 回归场景中的重复启动成本。** [#770](https://github.com/weapp-vite/weapp-vite/pull/770) by @sonofmagic
+
+- 🐛 **修复 `shallowRef` 强制触发、调度队列续刷和编译绑定取值优先级，确保连续响应式更新及 setup/data/props 同名绑定能稳定同步到小程序视图。** [`8bda321`](https://github.com/weapp-vite/weapp-vite/commit/8bda32164dac96e90f2bb17ca753b12ae0c59b93) by @sonofmagic
+
+- 🐛 **降低 wevu 在正常 tree-shaking 下的小程序与 Web 运行时体积，并让微信开发者工具 HMR 稳定识别新版 preserve-modules 产物，避免局部更新后出现运行时 vendor 模块缺失。** [#762](https://github.com/weapp-vite/weapp-vite/pull/762) by @sonofmagic
+
+- 🐛 **扩展 Web runtime 对原生小程序与 wevu Vue SFC 项目的自动扫描、编译和宿主初始化能力，为全部内置模板提供统一的 Web 开发与构建命令，并通过工作区生产构建及 Playwright 矩阵持续验证浏览器运行链路。** [#756](https://github.com/weapp-vite/weapp-vite/pull/756) by @sonofmagic
+- 📦 Updated 5 dependencies [`878073f`](https://github.com/weapp-vite/weapp-vite/commit/878073f8819a21f7e6baa96d13cf3f7e552d2158)
+  <details><summary>Details</summary>
+
+  `@weapp-core/constants@0.1.15`, `@wevu/compiler@6.19.0`, `@wevu/api@0.2.13`, `@wevu/web-apis@1.2.29`, `@weapp-core/shared@3.1.0`
+
+  </details>
+
 ## 6.18.7
 
 ### Patch Changes

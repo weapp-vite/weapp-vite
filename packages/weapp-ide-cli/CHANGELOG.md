@@ -1,5 +1,13 @@
 # weapp-ide-cli
 
+## 6.0.1
+
+### Patch Changes
+
+- 🐛 **修复真实微信开发者工具自动化中的会话复用、页面重启、日志收集与截图清理稳定性问题，避免 `forwardConsole` 重复连接现有会话，并降低完整 IDE E2E 在组件库和 GitHub issue 回归场景中的重复启动成本。** [#770](https://github.com/weapp-vite/weapp-vite/pull/770) by @sonofmagic
+- 📦 **Dependencies** [`aceaafa`](https://github.com/weapp-vite/weapp-vite/commit/aceaafaadb179498a56261721ce4db9bcbee1d0c)
+  → `@weapp-vite/miniprogram-automator@1.2.9`, `@weapp-core/shared@3.1.0`, `@weapp-vite/devtools-runtime@0.4.10`
+
 ## 6.0.0
 
 ### Major Changes
