@@ -45,7 +45,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'auto',
-      prelude: false,
+      prelude: true,
       targets: [...fullWebRuntimeTargets],
     })
   })
@@ -57,7 +57,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'auto',
-      prelude: false,
+      prelude: true,
       targets: [...fullWebRuntimeTargets],
     })
   })
@@ -69,11 +69,25 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'auto',
-      prelude: false,
+      prelude: true,
       targets: [
         'AbortController',
         'AbortSignal',
       ],
+    })
+  })
+
+  it('allows explicit auto mode to opt out of prelude timing', () => {
+    expect(resolveInjectRequestGlobalsOptions({
+      prelude: false,
+    }, {
+      dependencies: {
+        axios: '^1.0.0',
+      },
+    })).toEqual({
+      mode: 'auto',
+      prelude: false,
+      targets: [...fullWebRuntimeTargets],
     })
   })
 

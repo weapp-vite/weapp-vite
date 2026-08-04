@@ -2117,7 +2117,8 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'common.js',
         code: [
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'const __keep__ = [XMLHttpRequest, WebSocket];',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: [],
@@ -2858,6 +2859,70 @@ describe('core lifecycle emit hook extra branches', () => {
     const appCode = bundle['app.js'].code
     expect(appCode).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(appCode).not.toContain(APP_PRELUDE_CHUNK_MARKER)
+  })
+
+  it('emits synthetic request globals prelude in default require mode without user app.prelude file', async () => {
+    const emittedAssets: Array<{ fileName: string, source: string, type: 'asset' }> = []
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: undefined,
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(''),
+        imports: [],
+        dynamicImports: [],
+      },
+      'axios.js': {
+        type: 'chunk',
+        fileName: 'axios.js',
+        code: 'const common = require("./common.js");const supportsXhr = typeof XMLHttpRequest !== "undefined"',
+        imports: ['common.js'],
+        dynamicImports: [],
+      },
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: 'require("./axios.js");App({})',
+        imports: ['axios.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({ emitFile: (asset: any) => emittedAssets.push(asset) }, {}, bundle)
+
+    const appCode = bundle['app.js'].code
+    const appPreludeAsset = emittedAssets.find(asset => asset.fileName === 'app.prelude.js')
+    expect(appCode).toContain(`/* ${APP_PRELUDE_REQUIRE_MARKER} */require("./app.prelude.js")`)
+    expect(appPreludeAsset?.source).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
+    expect(appPreludeAsset?.source).toContain('"XMLHttpRequest"')
+    expect(appPreludeAsset?.source).not.toContain(APP_PRELUDE_CHUNK_MARKER)
   })
 
   it('patches axios chunk defaults env through emit injection', async () => {

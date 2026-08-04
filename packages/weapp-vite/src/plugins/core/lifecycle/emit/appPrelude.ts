@@ -143,7 +143,7 @@ export function emitAppPreludeRequireAssets(
   emitFile?: (asset: { type: 'asset', fileName: string, source: string }) => void,
 ) {
   const preservedRequestGlobalsInstallerChunks = new Set<string>()
-  if (!appPreludeCode) {
+  if (!appPreludeCode && !requestGlobalsPreludeOptions.enabled) {
     return preservedRequestGlobalsInstallerChunks
   }
   const preludeFileNames = new Set<string>()
@@ -165,8 +165,12 @@ export function emitAppPreludeRequireAssets(
     const scopeChunks = Object.values(bundle).filter((output): output is OutputChunk => {
       return output?.type === 'chunk' && resolveAppPreludeRequireFileName(output.fileName, state) === fileName
     })
+    const sortedScopeChunks = [
+      ...scopeChunks.filter(chunk => !requestGlobalsPreludeOptions.installerChunks.has(toPosixPath(chunk.fileName))),
+      ...scopeChunks.filter(chunk => requestGlobalsPreludeOptions.installerChunks.has(toPosixPath(chunk.fileName))),
+    ]
     const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled
-      ? scopeChunks
+      ? sortedScopeChunks
           .map(chunk => createRequestGlobalsPreludeAssetCode(
             fileName,
             chunk,
@@ -210,7 +214,7 @@ export function injectAppPreludeCode(
     return preservedRequestGlobalsInstallerChunks
   }
   const entryChunkFileNames = options.mode === 'entry' ? collectAppPreludeEntryChunkFileNames(state) : undefined
-  if (options.mode === 'require' && appPreludeCode) {
+  if (options.mode === 'require' && (appPreludeCode || requestGlobalsPreludeOptions.enabled)) {
     preservedRequestGlobalsInstallerChunks = emitAppPreludeRequireAssets(bundle, appPreludeCode, state, requestGlobalsPreludeOptions, emitFile)
   }
   for (const output of Object.values(bundle)) {
@@ -237,9 +241,9 @@ export function injectAppPreludeCode(
     const injectedCode = [
       requestGlobalsPreludeCode,
       options.mode === 'require'
-        ? appPreludeCode
-          ? createAppPreludeRequireStatement(chunk.fileName, resolveAppPreludeRequireFileName(chunk.fileName, state))
-          : undefined
+        ? (appPreludeCode || requestGlobalsPreludeOptions.enabled)
+            ? createAppPreludeRequireStatement(chunk.fileName, resolveAppPreludeRequireFileName(chunk.fileName, state))
+            : undefined
         : appPreludeCode,
     ].filter(Boolean).join('\n')
     if (!injectedCode) {

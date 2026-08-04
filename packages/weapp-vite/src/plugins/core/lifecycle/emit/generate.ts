@@ -784,6 +784,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
       const appPreludePath = scanService.appEntry?.preludePath
       const shouldInjectRequestGlobalsPrelude = injectRequestGlobalsOptions?.prelude === true
+        && Boolean(scanService.appEntry || subPackageMeta)
       const appPreludeOptions = resolveAppPreludeOptions(state)
       const shouldRunAppPrelude = (appPreludeOptions.enabled && Boolean(appPreludePath))
         || shouldInjectRequestGlobalsPrelude

@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@wevu/web-apis": "workspace:*",
+    "axios": "^1.19.0",
     "camelcase": "^9.0.0",
     "dayjs": "catalog:",
     "merge": "catalog:",
