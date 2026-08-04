@@ -130,3 +130,4 @@ shamefullyHoist: true
 
 patchedDependencies:
   uview-plus@3.8.86: patches/uview-plus@3.8.86.patch
+  weapp-tailwindcss@5.2.10: patches/weapp-tailwindcss@5.2.10.patch
