@@ -1,5 +1,15 @@
 # @weapp-vite/ast
 
+## 6.19.0
+
+### Patch Changes
+
+- 🐛 **修复跨分包 `require(path, callback, errorCallback)` 被当成同步 CommonJS 依赖并提升到主包的问题，统一通过 `require.async()` Promise 通道输出异步模块，同时补充 callback、Promise 与真实小程序运行时回归覆盖。** [#755](https://github.com/weapp-vite/weapp-vite/pull/755) by @sonofmagic
+
+- 🐛 **新增微信普通分包原生动态导入模式，将符合条件的静态 `import()` 转换为 `require.async()`，同时修复异步 require 源码扩展名未改写的问题，并补齐模拟器兼容支持。** [#759](https://github.com/weapp-vite/weapp-vite/pull/759) by @sonofmagic
+- 📦 **Dependencies** [`1b06f6e`](https://github.com/weapp-vite/weapp-vite/commit/1b06f6e47cf2e16904c319acf84ab383e8cd347b)
+  → `@weapp-core/shared@3.1.0`
+
 ## 6.18.7
 
 ## 6.18.6

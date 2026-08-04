@@ -1,5 +1,41 @@
 # weapp-vite
 
+## 6.19.0
+
+### Minor Changes
+
+- ✨ **新增 uview-plus 3.8.86 全组件解析器与三端兼容示例，并完善 uni-app SFC 的条件编译、sidecar、Web 子组件解析、样式预处理和 headless 宿主 API 兼容。** [#758](https://github.com/weapp-vite/weapp-vite/pull/758) by @sonofmagic
+
+- ✨ **新增面向真实小程序编译产物的页面与组件测试基础设施，提供共享运行时内核、逻辑 WXML 查询与交互、严格宿主 mock、Vitest 隔离适配和 weapp-vite 程序化测试构建入口。** [#761](https://github.com/weapp-vite/weapp-vite/pull/761) by @sonofmagic
+
+- ✨ **新增微信普通分包原生动态导入模式，将符合条件的静态 `import()` 转换为 `require.async()`，同时修复异步 require 源码扩展名未改写的问题，并补齐模拟器兼容支持。** [#759](https://github.com/weapp-vite/weapp-vite/pull/759) by @sonofmagic
+
+- ✨ **扩展 Web runtime 对原生小程序与 wevu Vue SFC 项目的自动扫描、编译和宿主初始化能力，为全部内置模板提供统一的 Web 开发与构建命令，并通过工作区生产构建及 Playwright 矩阵持续验证浏览器运行链路。** [#756](https://github.com/weapp-vite/weapp-vite/pull/756) by @sonofmagic
+
+- ✨ **新增实验性的 uni-app Vue SFC 组件库兼容层与 `WotUiResolver()`，支持显式白名单依赖的条件编译、外部组件图、样式资源和双端注册，并补齐 Wot UI 2.2.0 全部 99 个公开组件在微信小程序、Web 与 headless 运行时所需的编译和运行时语义。外部组件产物使用微信允许的稳定目录名，避免组件文件因命中双下划线保留目录规则而被开发者工具忽略。** [#757](https://github.com/weapp-vite/weapp-vite/pull/757) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复跨分包 `require(path, callback, errorCallback)` 被当成同步 CommonJS 依赖并提升到主包的问题，统一通过 `require.async()` Promise 通道输出异步模块，同时补充 callback、Promise 与真实小程序运行时回归覆盖。** [#755](https://github.com/weapp-vite/weapp-vite/pull/755) by @sonofmagic
+
+- 🐛 **修复真实微信开发者工具自动化中的会话复用、页面重启、日志收集与截图清理稳定性问题，避免 `forwardConsole` 重复连接现有会话，并降低完整 IDE E2E 在组件库和 GitHub issue 回归场景中的重复启动成本。** [#770](https://github.com/weapp-vite/weapp-vite/pull/770) by @sonofmagic
+
+- 🐛 **修复 `wv build --sourcemap` 未透传到 Vite 构建配置，以及分包 npm 本地化重写后原生 TypeScript 页面 sourcemap 继续沿用旧映射导致行号错乱的问题。** [#771](https://github.com/weapp-vite/weapp-vite/pull/771) by @sonofmagic
+
+- 🐛 **修复 Web 运行时原生页面调用 `setPageLayout()` 时缺少当前页面实例的问题，并补齐 Web 页面布局扫描、动态布局切换与布局组件渲染。** [`fe71afa`](https://github.com/weapp-vite/weapp-vite/commit/fe71afa9a67d74c3a1e0581d9d36038681e3037c) by @sonofmagic
+
+- 🐛 **降低 wevu 在正常 tree-shaking 下的小程序与 Web 运行时体积，并让微信开发者工具 HMR 稳定识别新版 preserve-modules 产物，避免局部更新后出现运行时 vendor 模块缺失。** [#762](https://github.com/weapp-vite/weapp-vite/pull/762) by @sonofmagic
+
+- 🐛 **修复 Web 运行时页面跳转未同步 history 路由，以及页面栈旧页面仍可见的问题。** [`57a60b0`](https://github.com/weapp-vite/weapp-vite/commit/57a60b09c62cda3810061705a15faef65a1bf652) by @sonofmagic
+
+- 🐛 **修复 Web 生产构建中的共享 chunk 包含带哈希依赖模块时被错误重命名为 vendor 文件的问题，确保应用共享 chunk 继续使用配置对应的稳定名称。** [#754](https://github.com/weapp-vite/weapp-vite/pull/754) by @sonofmagic
+- 📦 Updated 11 dependencies [`878073f`](https://github.com/weapp-vite/weapp-vite/commit/878073f8819a21f7e6baa96d13cf3f7e552d2158)
+  <details><summary>Details</summary>
+
+  `@weapp-core/constants@0.1.15`, `@weapp-vite/web@1.4.0`, `wevu@6.19.0`, `@wevu/api@0.2.13`, `@weapp-vite/ast@6.19.0`, `weapp-ide-cli@6.0.1`, `@weapp-vite/miniprogram-automator@1.2.9`, `@weapp-vite/mcp@1.4.10`, `@wevu/web-apis@1.2.29`, `@weapp-core/shared@3.1.0`, `@weapp-core/init@6.0.13`
+
+  </details>
+
 ## 6.18.7
 
 ### Patch Changes
