@@ -1,5 +1,14 @@
 # @wevu/compiler
 
+## 6.19.1
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [#772](https://github.com/weapp-vite/weapp-vite/pull/772) by @sonofmagic
+  - 默认 catalog 变更键：@types/semver, @vue/language-core, @wot-ui/ui, oxc-parser, oxc-walker, postcss, rolldown, tailwind-variants, tsx, vite, vue-tsc, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+- 📦 **Dependencies** [`c7d8514`](https://github.com/weapp-vite/weapp-vite/commit/c7d85143aeb5edaaf5d1902a8bd3d5fe09ef570e)
+  → `@weapp-vite/ast@6.19.1`, `rolldown-require@2.0.23`
+
 ## 6.19.0
 
 ### Minor Changes
