@@ -1,0 +1,94 @@
+diff --git a/dist/hmr-timing-CJocHeZr.js b/dist/hmr-timing-CJocHeZr.js
+index 5e24c23e7ea7a09e839db5ce1e8de4787f8f3834..678f44b6083cd4d518001f19d1b5b04258d7d0c0 100644
+--- a/dist/hmr-timing-CJocHeZr.js
++++ b/dist/hmr-timing-CJocHeZr.js
+@@ -5671,7 +5671,11 @@ async function generateTailwindV4CssWithImplementation(options, implementation)
+ }
+ async function generateTailwindV4Css(options) {
+ 	const mode = resolveCompilerMode();
+-	const generationOptions = resolveGenerationOptions(options, mode);
++	const normalizedOptions = options.file.includes("weapp-vite-sidecar=") ? {
++		...options,
++		file: options.file.replace(/[?#].*$/, "")
++	} : options;
++	const generationOptions = resolveGenerationOptions(normalizedOptions, mode);
+ 	if (mode === "legacy") return generateTailwindV4CssWithImplementation(generationOptions, {
+ 		emitArtifact: false,
+ 		frameworkAdapter: "legacy"
+diff --git a/dist/v4-generation-core-BjHT6qGC.cjs b/dist/v4-generation-core-BjHT6qGC.cjs
+index a59cc1366b1b772ded271feaafa6fac61c35df4f..67d1f2a58bab62e21cadcc09b57035af6f946cd4 100644
+--- a/dist/v4-generation-core-BjHT6qGC.cjs
++++ b/dist/v4-generation-core-BjHT6qGC.cjs
+@@ -5272,7 +5272,11 @@ async function generateTailwindV4CssWithImplementation(options, implementation)
+ }
+ async function generateTailwindV4Css(options) {
+ 	const mode = resolveCompilerMode();
+-	const generationOptions = resolveGenerationOptions(options, mode);
++	const normalizedOptions = options.file.includes("weapp-vite-sidecar=") ? {
++		...options,
++		file: options.file.replace(/[?#].*$/, "")
++	} : options;
++	const generationOptions = resolveGenerationOptions(normalizedOptions, mode);
+ 	if (mode === "legacy") return generateTailwindV4CssWithImplementation(generationOptions, {
+ 		emitArtifact: false,
+ 		frameworkAdapter: "legacy"
+diff --git a/dist/vite-8l9_S4Qi.js b/dist/vite-8l9_S4Qi.js
+index b4d9600422d6cc359be68dfc368dad9264841522..f6d5e0733bf360d122efe887418a05695c6d3b5e 100644
+--- a/dist/vite-8l9_S4Qi.js
++++ b/dist/vite-8l9_S4Qi.js
+@@ -8410,6 +8410,7 @@ function normalizeKnownSfcSourceKey(file) {
+ 	return normalizeOutputPathKey(path.resolve(cleanUrl(file)));
+ }
+ function shouldCollectTransformedSourceCandidates(id) {
++	if (id.includes("weapp-vite-sidecar=")) return false;
+ 	if (id.search(/[?#]/) < 0) return true;
+ 	const file = cleanUrl(id);
+ 	return !SFC_COMPONENT_FILE_RE.test(file);
+@@ -9378,7 +9379,7 @@ function createFrameworkSourceCandidatesPlugin(options) {
+ 				let transformedCode = code;
+ 				if (options.shouldOwnTailwindGeneration && !options.resolveCurrentGeneratorBranch().isWeb && isCSSRequest(id)) transformedCode = options.transformEarlyMiniProgramCss(code);
+ 				const shouldReturnTransformedCode = transformedCode !== code;
+-				if (options.shouldOwnTailwindGeneration) {
++				if (options.shouldOwnTailwindGeneration && shouldCollectTransformedSourceCandidates(id)) {
+ 					options.cssMemory.rememberKnownSfcSource(id, transformedCode);
+ 					if (isCSSRequest(id) && hasTailwindRootDirectives(transformedCode, { importFallback: options.resolveCurrentGeneratorOptions().importFallback })) options.rememberTailwindRootCssModule(id);
+ 				}
+@@ -10100,7 +10101,7 @@ function createViteFrameworkPlugins$1(options = {}, frameworkBranch) {
+ 		await sourceScanSession.waitForPendingSyncs();
+ 		const file = cleanUrl(id);
+ 		const inferredSfcStyleRequest = isSfcStyleSourceFile(file) ? resolveSfcStyleRequestFromKnownSource(file, cssMemory.getKnownSfcSource(file), code) : file;
+-		const requestFile = isCSSRequest(id) ? inferredSfcStyleRequest === file ? id : inferredSfcStyleRequest : inferredSfcStyleRequest;
++		const requestFile = id.includes("weapp-vite-sidecar=") ? file : isCSSRequest(id) ? inferredSfcStyleRequest === file ? id : inferredSfcStyleRequest : inferredSfcStyleRequest;
+ 		if (!isCSSRequest(requestFile) || opts.htmlMatcher(file) || isHTMLRequest(file)) return;
+ 		const generatorCode = normalizeEmptyTailwindCustomVariants(code);
+ 		const rootDir = resolvedConfig?.root ? path.resolve(resolvedConfig.root) : process$1.cwd();
+diff --git a/dist/vite-Dcx59GRQ.cjs b/dist/vite-Dcx59GRQ.cjs
+index 2fed3c230f55cc2ad4181193172d04b62c1fee82..b4170ef22105ac7d9691459de415febee4e4d485 100644
+--- a/dist/vite-Dcx59GRQ.cjs
++++ b/dist/vite-Dcx59GRQ.cjs
+@@ -8419,6 +8419,7 @@ function normalizeKnownSfcSourceKey(file) {
+ 	return require_source_candidate_scan_signature.normalizeOutputPathKey(node_path.default.resolve((0, _weapp_tailwindcss_shared.cleanUrl)(file)));
+ }
+ function shouldCollectTransformedSourceCandidates(id) {
++	if (id.includes("weapp-vite-sidecar=")) return false;
+ 	if (id.search(/[?#]/) < 0) return true;
+ 	const file = (0, _weapp_tailwindcss_shared.cleanUrl)(id);
+ 	return !SFC_COMPONENT_FILE_RE.test(file);
+@@ -9359,7 +9360,7 @@ function createFrameworkSourceCandidatesPlugin(options) {
+ 				let transformedCode = code;
+ 				if (options.shouldOwnTailwindGeneration && !options.resolveCurrentGeneratorBranch().isWeb && isCSSRequest(id)) transformedCode = options.transformEarlyMiniProgramCss(code);
+ 				const shouldReturnTransformedCode = transformedCode !== code;
+-				if (options.shouldOwnTailwindGeneration) {
++				if (options.shouldOwnTailwindGeneration && shouldCollectTransformedSourceCandidates(id)) {
+ 					options.cssMemory.rememberKnownSfcSource(id, transformedCode);
+ 					if (isCSSRequest(id) && require_generator.hasTailwindRootDirectives(transformedCode, { importFallback: options.resolveCurrentGeneratorOptions().importFallback })) options.rememberTailwindRootCssModule(id);
+ 				}
+@@ -10081,7 +10082,7 @@ function createViteFrameworkPlugins$1(options = {}, frameworkBranch) {
+ 		await sourceScanSession.waitForPendingSyncs();
+ 		const file = (0, _weapp_tailwindcss_shared.cleanUrl)(id);
+ 		const inferredSfcStyleRequest = isSfcStyleSourceFile(file) ? resolveSfcStyleRequestFromKnownSource(file, cssMemory.getKnownSfcSource(file), code) : file;
+-		const requestFile = isCSSRequest(id) ? inferredSfcStyleRequest === file ? id : inferredSfcStyleRequest : inferredSfcStyleRequest;
++		const requestFile = id.includes("weapp-vite-sidecar=") ? file : isCSSRequest(id) ? inferredSfcStyleRequest === file ? id : inferredSfcStyleRequest : inferredSfcStyleRequest;
+ 		if (!isCSSRequest(requestFile) || opts.htmlMatcher(file) || isHTMLRequest(file)) return;
+ 		const generatorCode = require_generator.normalizeEmptyTailwindCustomVariants(code);
+ 		const rootDir = resolvedConfig?.root ? node_path.default.resolve(resolvedConfig.root) : node_process.default.cwd();
