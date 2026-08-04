@@ -93,6 +93,13 @@ export function configureBuildAndPlugins(options: {
     if (!Object.prototype.hasOwnProperty.call(oxcOptions, 'tsconfig')) {
       oxcOptions.tsconfig = false
     }
+    if (
+      config.esbuild !== false
+      && config.esbuild?.jsx === 'preserve'
+      && !Object.prototype.hasOwnProperty.call(oxcOptions, 'jsx')
+    ) {
+      oxcOptions.jsx = 'preserve'
+    }
     config.oxc = oxcOptions as InlineConfig['oxc']
   }
   const rdTransform = (rdOptions.transform ?? {}) as Record<string, unknown>

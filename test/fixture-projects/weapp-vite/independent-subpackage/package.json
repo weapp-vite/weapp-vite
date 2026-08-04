@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "class-variance-authority": "^0.7.1"
+    "class-variance-authority": "catalog:"
   },
   "devDependencies": {
     "weapp-vite": "workspace:*"

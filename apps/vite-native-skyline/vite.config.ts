@@ -7,6 +7,7 @@ const __dirname = import.meta.dirname
 export default defineConfig({
   plugins: [
     WeappTailwindcss({
+      cssEntries: [path.resolve(__dirname, 'app.wxss')],
       rem2rpx: true,
     }),
   ],
