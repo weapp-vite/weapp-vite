@@ -83,7 +83,7 @@ catalog:
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.40
   vue-tsc: ^3.3.9
-  weapp-tailwindcss: ^5.2.9
+  weapp-tailwindcss: ^5.2.10
   zod: ^4.4.3
 
 catalogs:
@@ -97,7 +97,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.15.3
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.2.9
+    weapp-tailwindcss: 5.2.10
 
 gitChecks: false
 
@@ -130,4 +130,3 @@ shamefullyHoist: true
 
 patchedDependencies:
   uview-plus@3.8.86: patches/uview-plus@3.8.86.patch
-  weapp-tailwindcss@5.2.9: patches/weapp-tailwindcss@5.2.9.patch
