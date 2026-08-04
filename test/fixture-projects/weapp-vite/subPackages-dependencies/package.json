@@ -23,10 +23,10 @@
     "g": "weapp-vite generate"
   },
   "dependencies": {
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "dayjs": "^1.11.21",
-    "gm-crypto": "^0.1.12"
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "dayjs": "catalog:",
+    "gm-crypto": "catalog:"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",

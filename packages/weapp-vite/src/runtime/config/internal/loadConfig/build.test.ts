@@ -146,4 +146,53 @@ describe('loadConfig build helpers', () => {
     expect((config as { oxc?: { tsconfig?: unknown } }).oxc?.tsconfig).toBe(true)
     expect((config as { build?: { rolldownOptions?: { transform?: { tsconfig?: unknown } } } }).build?.rolldownOptions?.transform?.tsconfig).toBe(true)
   })
+
+  it('maps legacy esbuild JSX preserve intent to the Vite OXC transform', async () => {
+    const root = await createTempProject('weapp-vite-oxc-jsx-preserve-')
+    const config = {
+      esbuild: {
+        jsx: 'preserve' as const,
+      },
+    }
+
+    configureBuildAndPlugins({
+      config,
+      pluginOnly: false,
+      oxcRolldownPlugin: undefined,
+      oxcVitePlugin: undefined,
+      injectBuiltinAliases: vi.fn(),
+      resolvedLibConfig: undefined,
+      cliPlatform: 'weapp',
+      projectConfigPath: undefined,
+      cwd: root,
+    })
+
+    expect((config as { oxc?: { jsx?: unknown } }).oxc?.jsx).toBe('preserve')
+  })
+
+  it('preserves explicit user OXC JSX options over legacy esbuild options', async () => {
+    const root = await createTempProject('weapp-vite-oxc-jsx-explicit-')
+    const config = {
+      esbuild: {
+        jsx: 'preserve' as const,
+      },
+      oxc: {
+        jsx: 'react-jsx' as const,
+      },
+    }
+
+    configureBuildAndPlugins({
+      config,
+      pluginOnly: false,
+      oxcRolldownPlugin: undefined,
+      oxcVitePlugin: undefined,
+      injectBuiltinAliases: vi.fn(),
+      resolvedLibConfig: undefined,
+      cliPlatform: 'weapp',
+      projectConfigPath: undefined,
+      cwd: root,
+    })
+
+    expect(config.oxc.jsx).toBe('react-jsx')
+  })
 })
