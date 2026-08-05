@@ -5,6 +5,7 @@ export default defineConfig({
     hmr: {
       logLevel: 'verbose',
       profileJson: true,
+      runtime: 'classic',
     },
     srcRoot: 'src',
     autoRoutes: true,
