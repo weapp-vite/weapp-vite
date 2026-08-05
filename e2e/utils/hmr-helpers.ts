@@ -27,10 +27,12 @@ export const PLATFORM_EXT: Record<RuntimePlatform, { template: string, style: st
  * 在隔离测试项目中关闭微信开发者工具热重载，使磁盘产物回归固定使用 classic watcher。
  *
  * @param projectRoot - 隔离测试项目根目录
+ * @returns 恢复原始私有配置的函数
  */
-export async function disableProjectCompileHotReload(projectRoot: string): Promise<void> {
+export async function disableProjectCompileHotReload(projectRoot: string): Promise<() => Promise<void>> {
   const configPath = path.join(projectRoot, 'project.private.config.json')
-  const loaded = await fs.readJSON(configPath) as { setting?: Record<string, unknown>, [key: string]: unknown }
+  const original = await fs.readFile(configPath, 'utf8')
+  const loaded = JSON.parse(original) as { setting?: Record<string, unknown>, [key: string]: unknown }
   await fs.writeJSON(configPath, {
     ...loaded,
     setting: {
@@ -38,6 +40,9 @@ export async function disableProjectCompileHotReload(projectRoot: string): Promi
       compileHotReLoad: false,
     },
   }, { spaces: 2 })
+  return async () => {
+    await fs.writeFile(configPath, original, 'utf8')
+  }
 }
 
 /**

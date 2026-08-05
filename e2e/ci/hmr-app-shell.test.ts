@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, disableProjectCompileHotReload, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
@@ -156,6 +156,7 @@ describe.sequential('app shell HMR (dev watch)', () => {
   it('adds template app.vue shell through dev watch after starting without a shell', async () => {
     const originalAppSource = await fs.readFile(TEMPLATE_APP_VUE_PATH, 'utf8')
     const appSourceWithShell = addTemplateAppShell(originalAppSource)
+    const restoreCompileHotReload = await disableProjectCompileHotReload(TEMPLATE_ROOT)
 
     await fs.writeFile(TEMPLATE_APP_VUE_PATH, originalAppSource, 'utf8')
 
@@ -181,6 +182,7 @@ describe.sequential('app shell HMR (dev watch)', () => {
     finally {
       await dev.stop(5_000)
       await fs.writeFile(TEMPLATE_APP_VUE_PATH, originalAppSource, 'utf8')
+      await restoreCompileHotReload()
     }
   })
 })
