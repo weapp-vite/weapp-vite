@@ -13,11 +13,14 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import MagicString from 'magic-string'
+import path from 'pathe'
 import { createServer, transformWithOxc } from 'vite'
-import { parseSidecarSourceRequest } from '../../moduleGraph/protocol'
+import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
 import { parseJsLike, traverse } from '../../utils/babel'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { createStatefulHmrControlSource } from './runtimeSource'
+import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
 import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
@@ -43,7 +46,14 @@ export async function runStatefulHmrDev(
       currentSession.install()
     },
     transform(code, id) {
-      if (!isStatefulHmrBoundary(id, configService.absoluteSrcRoot) || code.includes('import.meta.hot.accept')) {
+      if (
+        !isStatefulHmrBoundary(
+          id,
+          configService.absoluteSrcRoot,
+          ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
+        )
+        || code.includes('import.meta.hot.accept')
+      ) {
         return
       }
       const transformed = id.endsWith('.vue') ? code : redirectNativeComponentRegistration(code)
@@ -63,7 +73,7 @@ export async function runStatefulHmrDev(
       ...(buildOptions.experimental ?? {}),
       bundledDev: true,
     },
-    plugins: [installPlugin, ...(buildOptions.plugins ?? [])],
+    plugins: [createStatefulHmrSidecarPlugin(), installPlugin, ...(buildOptions.plugins ?? [])],
     server: {
       ...(buildOptions.server ?? {}),
       host: '127.0.0.1',
@@ -154,6 +164,7 @@ class StatefulHmrSession {
       if (fullBuild) {
         const buildId = this.transport.createBuildId()
         this.transport.commitFullBuild(buildId)
+        stampStatefulHmrFullBuild(compatibleOutput, buildId)
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, createStatefulHmrControlSource({
           ...this.transport.createControl(),
           buildId,
@@ -171,7 +182,13 @@ class StatefulHmrSession {
   }
 
   private handlePatch(files: string[], output: StatefulHmrDevEngineUpdate): boolean {
-    if (!isSafeJavaScriptPatch(files, output, this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
+    if (!isSafeJavaScriptPatch(
+      files,
+      output,
+      this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
+      this.ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
+      this.server.config.root,
+    )) {
       this.requestServerRestart()
       return false
     }
@@ -245,16 +262,29 @@ function createWatcherAdapter(server: ViteDevServer, session: StatefulHmrSession
   } as unknown as RolldownWatcher
 }
 
-export function isStatefulHmrBoundary(id: string, srcRoot: string): boolean {
+export function isStatefulHmrBoundary(id: string, srcRoot: string, entryIds?: Iterable<string>): boolean {
   const sidecar = parseSidecarSourceRequest(id)
   const sourceId = sidecar?.kind === 'script' ? sidecar.sourceId : id.includes('?') ? undefined : id
   if (!sourceId) {
     return false
   }
-  const normalizedSourceId = sourceId.replaceAll('\\', '/')
-  const normalizedSrcRoot = srcRoot.replaceAll('\\', '/').replace(/\/$/, '')
-  return normalizedSourceId.startsWith(`${normalizedSrcRoot}/`)
-    && /\.(?:[cm]?[jt]sx?|vue)$/.test(normalizedSourceId)
+  const normalizedSourceId = normalizeFsResolvedId(sourceId)
+  const normalizedSrcRoot = normalizeFsResolvedId(srcRoot).replace(/\/$/, '')
+  if (
+    !normalizedSourceId.startsWith(`${normalizedSrcRoot}/`)
+    || !/\.(?:[cm]?[jt]sx?|vue)$/.test(normalizedSourceId)
+  ) {
+    return false
+  }
+  if (!entryIds) {
+    return true
+  }
+  for (const entryId of entryIds) {
+    if (normalizeFsResolvedId(entryId) === normalizedSourceId) {
+      return true
+    }
+  }
+  return false
 }
 
 export function redirectNativeComponentRegistration(code: string): string {
@@ -291,10 +321,25 @@ export function isSafeJavaScriptPatch(
   files: string[],
   output: StatefulHmrDevEngineUpdate,
   dirtyReasonSummary: string[] = [],
+  entryIds?: Iterable<string>,
+  root?: string,
 ): output is Extract<StatefulHmrDevEngineUpdate, { type: 'Patch' }> {
+  const normalizedEntryIds = entryIds
+    ? new Set(Array.from(entryIds, entryId => normalizeFsResolvedId(entryId)))
+    : undefined
   return output.type === 'Patch'
     && files.every(file => /\.(?:[cm]?[jt]sx?|vue)$/.test(file))
+    && (!normalizedEntryIds || files.every((file) => {
+      const absoluteFile = path.isAbsolute(file) || !root ? file : path.resolve(root, file)
+      return normalizedEntryIds.has(normalizeFsResolvedId(absoluteFile))
+    }))
+    && !output.changedIds?.some(isNonJavaScriptSidecarId)
     && !dirtyReasonSummary.some(reason => /^(?:entry-json-only|entry-local-asset|entry-style-only):/.test(reason))
+}
+
+function isNonJavaScriptSidecarId(id: string): boolean {
+  const sidecar = parseSidecarSourceRequest(id) ?? parseSidecarModuleId(id)
+  return sidecar !== undefined && sidecar.kind !== 'script'
 }
 
 export function shouldResetStatefulHmrRetention(
@@ -336,6 +381,14 @@ function setAsset(output: StatefulHmrOutputFile[], fileName: string, source: str
   }
   else {
     output.push(asset)
+  }
+}
+
+export function stampStatefulHmrFullBuild(output: StatefulHmrOutputFile[], buildId: string): void {
+  for (const item of output) {
+    if (item.type === 'chunk' && item.fileName.endsWith('.js')) {
+      item.code = `// weapp-vite-stateful-build:${buildId}\n${item.code}`
+    }
   }
 }
 

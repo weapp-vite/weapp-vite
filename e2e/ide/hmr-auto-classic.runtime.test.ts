@@ -78,6 +78,16 @@ async function waitForAutomatorSessionReset(timeoutMs = 30_000): Promise<void> {
   throw new Error('Timed out waiting for classic full reload to reset the automator session')
 }
 
+async function connectAutomatorSession() {
+  return await launchAutomator({
+    launchMode: 'bridge',
+    projectPath: APP_ROOT,
+    timeout: 120_000,
+    warmupRootSelectors: ['.page'],
+    warmupRoute: NATIVE_ROUTE,
+  })
+}
+
 describe.sequential('automatic classic HMR in real WeChat DevTools', () => {
   beforeAll(async () => {
     await cleanupResidualDevProcesses()
@@ -116,13 +126,7 @@ describe.sequential('automatic classic HMR in real WeChat DevTools', () => {
     )
     expect(await fs.pathExists(CONTROL_FILE)).toBe(false)
 
-    miniProgram = await launchAutomator({
-      launchMode: 'bridge',
-      projectPath: APP_ROOT,
-      timeout: 120_000,
-      warmupRootSelectors: ['.page'],
-      warmupRoute: NATIVE_ROUTE,
-    })
+    miniProgram = await connectAutomatorSession()
   }, 600_000)
 
   afterAll(async () => {
@@ -174,15 +178,9 @@ describe.sequential('automatic classic HMR in real WeChat DevTools', () => {
     )
     await waitForAutomatorSessionReset()
 
-    // Classic 全量重载会关闭旧 bridge；这里需要重新连接才能检查重载后的实例。
+    // Classic 全量重载会按预期关闭旧 bridge；共享 helper 只在这里恢复同一项目的连接。
     await miniProgram.disconnect?.().catch(() => {})
-    miniProgram = await launchAutomator({
-      launchMode: 'bridge',
-      projectPath: APP_ROOT,
-      timeout: 120_000,
-      warmupRootSelectors: ['.page'],
-      warmupRoute: NATIVE_ROUTE,
-    })
+    miniProgram = await connectAutomatorSession()
     await miniProgram.reLaunch(NATIVE_ROUTE)
     const reloaded = await waitForRuntimeState(state => state.marker === 'STATEFUL-NATIVE-PATCHED')
     expect(reloaded).toEqual({

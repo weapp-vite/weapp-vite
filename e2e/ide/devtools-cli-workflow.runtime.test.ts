@@ -12,6 +12,7 @@ import { registerRuntimeTools } from '../../packages/mcp/src/server/runtime'
 import { closeWechatIdeProject } from '../../packages/weapp-ide-cli/src/cli/wechat-commands'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const WEAPP_IDE_CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-ide-cli/bin/weapp.js')
@@ -441,6 +442,8 @@ describe.sequential('DevTools CLI workflow runtime', () => {
   }
 
   beforeAll(async () => {
+    await cleanupResidualIdeProcesses()
+    await cleanDevtoolsCache('all', { cwd: TEMPLATE_ROOT })
     await fs.rm(SCREENSHOT_OUTPUT, { force: true })
     await runWeappViteBuildWithLogCapture({
       cliPath: CLI_PATH,
@@ -547,6 +550,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     }
     await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
     await fs.rm(SCREENSHOT_OUTPUT, { force: true }).catch(() => {})
+    await cleanupResidualIdeProcesses()
   }, 60_000)
 
   it('opens with weapp-vite and weapp-ide-cli, screenshots, taps DOM, and exposes helpful diagnostics', async () => {

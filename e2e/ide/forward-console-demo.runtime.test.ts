@@ -19,11 +19,12 @@ const APP_ROOT = path.resolve(WORKSPACE_ROOT, 'apps/forward-console-demo')
 const INDEX_TS = path.resolve(APP_ROOT, 'src/pages/index/index.ts')
 const INDEX_WXML = path.resolve(APP_ROOT, 'src/pages/index/index.wxml')
 const DIST_INDEX_JS = path.resolve(APP_ROOT, 'dist/pages/index/index.js')
+const HMR_UPDATE_JS = path.resolve(APP_ROOT, 'dist/__weapp_vite_hmr/update.js')
 const INDEX_ROUTE = '/pages/index/index'
 const APP_AUTOMATOR_PORT = resolveProjectAutomatorPort(APP_ROOT)
 const INITIAL_DESCRIPTION = '点击按钮，日志同步回当前终端。'
+const INITIAL_LOG_MESSAGE = ['`[forward-console-demo] $', '{action.title} clicked`'].join('')
 const LOG_CLICKED_RE = /\[mini:log\s*\]\s+\[forward-console-demo\] Log clicked/
-const LOG_CLICKED_MESSAGE_RE = /\[forward-console-demo\] Log clicked/
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -104,12 +105,33 @@ async function emitLogClick(miniProgram: any) {
   })
 }
 
-function replaceSourceDescription(source: string, nextDescription: string) {
-  const updated = source.replace(INITIAL_DESCRIPTION, nextDescription)
+function replaceSourceLogMessage(source: string, nextMessage: string) {
+  const updated = source.replace(INITIAL_LOG_MESSAGE, JSON.stringify(nextMessage))
   if (updated === source) {
-    throw new Error(`Expected ${INDEX_TS} to contain the initial description`)
+    throw new Error(`Expected ${INDEX_TS} to contain the initial log message`)
   }
   return updated
+}
+
+async function waitForForwardedMessage(
+  miniProgram: any,
+  getOutput: () => string,
+  matcher: RegExp,
+  timeoutMs = 30_000,
+) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    const since = getOutput().length
+    await emitLogClick(miniProgram)
+    try {
+      await waitForOutputAfter(getOutput, since, matcher, 2_000)
+      return
+    }
+    catch {
+      await delay(300)
+    }
+  }
+  throw new Error(`Timed out waiting for forwarded HMR message; recent output=${getOutput()}`)
 }
 
 describe.sequential('forward-console-demo in real WeChat DevTools', () => {
@@ -200,23 +222,17 @@ describe.sequential('forward-console-demo in real WeChat DevTools', () => {
     await emitLogClick(miniProgram)
     await waitForOutputAfter(() => forwardedMessages.join('\n'), 0, LOG_CLICKED_RE)
 
-    const hmrDescription = `HMR forwardConsole ${Date.now()}`
-    await fs.writeFile(INDEX_TS, replaceSourceDescription(originalIndexTs, hmrDescription), 'utf8')
+    const hmrMessage = `HMR forwardConsole ${Date.now()}`
+    await fs.writeFile(INDEX_TS, replaceSourceLogMessage(originalIndexTs, hmrMessage), 'utf8')
     await devProcess.waitFor(
-      waitForFileContains(DIST_INDEX_JS, hmrDescription, 90_000),
-      'forward-console demo HMR dist update',
+      waitForFileContains(HMR_UPDATE_JS, hmrMessage, 90_000),
+      'forward-console demo stateful HMR delta update',
     )
-    await miniProgram.compile({ force: true }).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : String(error)
-      if (!/^unimplemented$/i.test(message.trim())) {
-        throw error
-      }
-    })
-    await miniProgram.reLaunch(INDEX_ROUTE)
-    await waitForPageDescription(miniProgram, hmrDescription, 90_000)
-    const outputBeforeHmrTap = forwardedMessages.join('\n').length
-
-    await emitLogClick(miniProgram)
-    await waitForOutputAfter(() => forwardedMessages.join('\n'), outputBeforeHmrTap, LOG_CLICKED_MESSAGE_RE)
+    await waitForForwardedMessage(
+      miniProgram,
+      () => forwardedMessages.join('\n'),
+      new RegExp(hmrMessage),
+      90_000,
+    )
   }, 360_000)
 })
