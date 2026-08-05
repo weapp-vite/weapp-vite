@@ -23,12 +23,12 @@ const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-ta
 const INDEX_VUE = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.vue')
 const DIST_ROOT = path.resolve(TEMPLATE_ROOT, 'dist')
 const DIST_APP_JS = path.resolve(DIST_ROOT, 'app.js')
+const DIST_WEVU_RUNTIME_JS = path.resolve(DIST_ROOT, 'weapp-vendors/wevu-runtime.js')
 const INDEX_WXML_DIST = path.resolve(DIST_ROOT, 'pages/index/index.wxml')
 const INDEX_ROUTE = '/pages/index/index'
 const INITIAL_CARD_CLASS = 'rounded-[28rpx] bg-white p-[28rpx]'
 const UPDATED_CARD_CLASS = 'rounded-[28rpx] bg-[red] p-[28rpx]'
 const UPDATED_ESCAPED_CLASS = 'bg-_bred_B'
-const CARD_PROBE_ID = 'wevu-tailwind-hmr-card'
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -102,23 +102,37 @@ async function waitForCurrentRoute(miniProgram: any, timeoutMs = 90_000) {
 
 async function waitForAppRuntimeReady(timeoutMs = 120_000) {
   const start = Date.now()
-  let latest = ''
+  let latestApp = ''
+  let latestRuntime = ''
 
   while (Date.now() - start <= timeoutMs) {
-    latest = await fs.readFile(DIST_APP_JS, 'utf8').catch(() => '')
-    const hasBundledRuntimeRequire = latest.includes('require("./common.js")')
-      || latest.includes('require("./weapp-vendors/')
+    [latestApp, latestRuntime] = await Promise.all([
+      fs.readFile(DIST_APP_JS, 'utf8').catch(() => ''),
+      fs.readFile(DIST_WEVU_RUNTIME_JS, 'utf8').catch(() => ''),
+    ])
+    const hasStableRuntimeRequire = latestApp.includes('require("./weapp-vendors/wevu-runtime.js")')
+    const hasRequiredRuntimeExports = latestRuntime.includes('Object.defineProperty(exports, "createApp"')
+      && latestRuntime.includes('Object.defineProperty(exports, "setWevuDefaults"')
     if (
-      latest.includes('createApp')
-      && hasBundledRuntimeRequire
-      && !latest.includes('from "wevu/internal-runtime"')
+      latestApp.includes('createApp')
+      && latestApp.includes('setWevuDefaults')
+      && hasStableRuntimeRequire
+      && hasRequiredRuntimeExports
+      && !latestApp.includes('from "wevu/internal-runtime"')
     ) {
-      return latest
+      return {
+        app: latestApp,
+        runtime: latestRuntime,
+      }
     }
     await delay(500)
   }
 
-  throw new Error(`Timed out waiting for ${path.relative(WORKSPACE_ROOT, DIST_APP_JS)} to use bundled wevu runtime.\nLatest content:\n${latest.slice(0, 1000)}`)
+  throw new Error([
+    `Timed out waiting for ${path.relative(WORKSPACE_ROOT, DIST_APP_JS)} to use the stable wevu runtime.`,
+    `Latest app content:\n${latestApp.slice(0, 1000)}`,
+    `Latest runtime content:\n${latestRuntime.slice(0, 1000)}`,
+  ].join('\n'))
 }
 
 async function waitForDistTailwindClass(timeoutMs = 90_000) {
@@ -136,69 +150,6 @@ async function waitForDistTailwindClass(timeoutMs = 90_000) {
   throw new Error(`Timed out waiting for ${path.relative(WORKSPACE_ROOT, INDEX_WXML_DIST)} to contain ${UPDATED_ESCAPED_CLASS}.\nLatest content:\n${latest.slice(0, 1000)}`)
 }
 
-function ensureCardProbe(source: string) {
-  if (source.includes(`id="${CARD_PROBE_ID}"`)) {
-    return source
-  }
-  const target = `<view class="${INITIAL_CARD_CLASS}`
-  if (!source.includes(target)) {
-    throw new Error(`Expected ${INDEX_VUE} to contain the HMR card markup`)
-  }
-  return source.replace(target, `<view id="${CARD_PROBE_ID}" class="${INITIAL_CARD_CLASS}`)
-}
-
-async function waitForRenderedCardClass(page: any, timeoutMs = 12_000) {
-  const start = Date.now()
-  let lastState: unknown
-
-  while (Date.now() - start <= timeoutMs) {
-    try {
-      const element = await page.$(`#${CARD_PROBE_ID}`, { timeout: 3_000 }).catch(() => null)
-      const [outerWxml, size] = element
-        ? await Promise.all([
-            element.outerWxml().catch(() => ''),
-            element.size().catch(() => ({ height: 0, width: 0 })),
-          ])
-        : ['', { height: 0, width: 0 }]
-      const rendered = element
-        ? {}
-        : await page.renderedSelectorNodes?.([`#${CARD_PROBE_ID}`], {
-            timeout: 5_000,
-          }).catch(() => ({}))
-      const renderedNodes = rendered?.[`#${CARD_PROBE_ID}`] ?? []
-      const renderedSized = renderedNodes.some((node: any) => Number(node?.width) > 0 && Number(node?.height) > 0)
-      lastState = {
-        outerWxml: String(outerWxml).slice(0, 500),
-        renderedNodes,
-        size,
-      }
-      if (
-        (
-          String(outerWxml).includes(UPDATED_ESCAPED_CLASS)
-          && Number((size as any).width) > 0
-          && Number((size as any).height) > 0
-        )
-        || renderedSized
-      ) {
-        return {
-          verified: true,
-        }
-      }
-    }
-    catch (error) {
-      lastState = {
-        error: error instanceof Error ? error.message : String(error),
-      }
-    }
-    await delay(800)
-  }
-
-  return {
-    lastState,
-    verified: false,
-  }
-}
-
 async function refreshRuntimeForDistUpdate(miniProgram: any) {
   await miniProgram.compile({ force: true }).catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error)
@@ -207,8 +158,8 @@ async function refreshRuntimeForDistUpdate(miniProgram: any) {
     }
   })
   await delay(1_200)
-  await miniProgram.reLaunch(INDEX_ROUTE).catch(() => null)
-  return await waitForCurrentRoute(miniProgram)
+  await miniProgram.reLaunch(INDEX_ROUTE)
+  await delay(1_200)
 }
 
 describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', () => {
@@ -269,7 +220,7 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
     if (!restoreVue.includes(INITIAL_CARD_CLASS) && !restoreVue.includes(UPDATED_CARD_CLASS)) {
       throw new Error(`Expected ${INDEX_VUE} to contain the Tailwind HMR card class`)
     }
-    initialVue = ensureCardProbe(restoreVue.replace(UPDATED_CARD_CLASS, INITIAL_CARD_CLASS))
+    initialVue = restoreVue.replace(UPDATED_CARD_CLASS, INITIAL_CARD_CLASS)
     if (initialVue !== restoreVue) {
       await fs.writeFile(INDEX_VUE, initialVue, 'utf8')
     }
@@ -288,29 +239,22 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
 
   it('keeps wevu internal runtime bundled after bg-white changes to bg-[red]', async () => {
     await startDevSession()
-    const collector = attachRuntimeErrorCollector(miniProgram)
 
+    await waitForCurrentRoute(miniProgram)
+    const collector = attachRuntimeErrorCollector(miniProgram)
+    const marker = collector.mark()
     try {
-      await waitForCurrentRoute(miniProgram)
-      const marker = collector.mark()
       const updatedVue = initialVue.replace(INITIAL_CARD_CLASS, UPDATED_CARD_CLASS)
       expect(updatedVue).not.toBe(initialVue)
       await fs.writeFile(INDEX_VUE, updatedVue, 'utf8')
       await waitForDistTailwindClass()
-      await waitForAppRuntimeReady()
-      const page = await refreshRuntimeForDistUpdate(miniProgram)
-      const renderedCard = await waitForRenderedCardClass(page)
-      if (!renderedCard.verified) {
-        process.stdout.write(`[warn] [template-wevu-tailwindcss-tdesign:hmr] DOM protocol unavailable; using active route + dist class contract state=${JSON.stringify(renderedCard.lastState)}\n`)
-      }
-      expect(page.path).toBe(INDEX_ROUTE.slice(1))
-      expect(await fs.readFile(INDEX_WXML_DIST, 'utf8')).toContain(UPDATED_ESCAPED_CLASS)
+      const runtimeOutput = await waitForAppRuntimeReady()
+      await refreshRuntimeForDistUpdate(miniProgram)
 
-      const runtimeErrors = collector.getSince(marker)
-      expect(runtimeErrors).not.toEqual(expect.arrayContaining([
-        expect.stringContaining('wevu/internal-runtime'),
-      ]))
-      expect(await fs.readFile(DIST_APP_JS, 'utf8')).not.toContain('from "wevu/internal-runtime"')
+      expect(await fs.readFile(INDEX_WXML_DIST, 'utf8')).toContain(UPDATED_ESCAPED_CLASS)
+      expect(runtimeOutput.app).not.toContain('from "wevu/internal-runtime"')
+      expect(runtimeOutput.runtime).toContain('Object.defineProperty(exports, "setWevuDefaults"')
+      expect(collector.getSince(marker)).toEqual([])
     }
     finally {
       collector.dispose()
