@@ -2,6 +2,7 @@ import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { normalizePath } from '../../utils/path'
 import { createStatefulHmrSidecarModuleCode, createStatefulHmrSidecarPlugin } from './sidecarPlugin'
 
 describe('stateful HMR sidecar plugin', () => {
@@ -35,7 +36,7 @@ describe('stateful HMR sidecar plugin', () => {
       const load = plugin.load as (...args: any[]) => any
       const result = await load.call({ addWatchFile }, `${sourceId}?raw&weapp-vite-sidecar-owner=${encodeURIComponent(ownerId)}&weapp-vite-sidecar=template&lang.js`)
 
-      expect(addWatchFile).toHaveBeenCalledWith(await realpath(sourceId))
+      expect(addWatchFile).toHaveBeenCalledWith(normalizePath(await realpath(sourceId)))
       expect(result.code).toMatch(/^export default "[a-f\d]{64}";\n$/)
     }
     finally {
