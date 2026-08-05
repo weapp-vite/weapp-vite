@@ -143,6 +143,7 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
         },
       },
     })
+    ctxResult.ctx.configService.weappViteConfig.hmr = { runtime: 'classic' }
 
     let watcher: WatcherEmitter | undefined
 
