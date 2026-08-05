@@ -334,7 +334,7 @@ export function isSafeJavaScriptPatch(
       return normalizedEntryIds.has(normalizeFsResolvedId(absoluteFile))
     }))
     && !output.changedIds?.some(isNonJavaScriptSidecarId)
-    && !dirtyReasonSummary.some(reason => /^(?:entry-json-only|entry-local-asset|entry-style-only):/.test(reason))
+    && !dirtyReasonSummary.some(reason => /^(?:entry-json-only|entry-local-asset|entry-style-only|tailwind-content):/.test(reason))
 }
 
 function isNonJavaScriptSidecarId(id: string): boolean {

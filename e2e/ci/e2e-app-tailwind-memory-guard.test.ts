@@ -6,7 +6,7 @@ import { formatMemoryGuardReport, formatMemoryMiB, sampleHeapAfterGc, sampleSett
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { disableProjectCompileHotReload, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..')
 const CLI_PATH = path.resolve(REPO_ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
@@ -50,6 +50,7 @@ async function createGuardFixture(testCase: TailwindMemoryGuardCase) {
       return relativePath !== 'dist' && !relativePath.startsWith(`dist${path.sep}`)
     },
   })
+  await disableProjectCompileHotReload(fixtureRoot)
 
   const sourceFile = path.join(fixtureRoot, testCase.sourcePath)
   const originalSource = await fs.readFile(sourceFile, 'utf8')
