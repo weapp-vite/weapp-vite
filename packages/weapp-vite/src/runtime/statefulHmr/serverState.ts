@@ -1,6 +1,7 @@
 /* eslint-disable ts/no-use-before-define */
 
 export interface StatefulHmrDelta {
+  changedIds: string[]
   code: string
   version: number
 }
@@ -24,7 +25,7 @@ export interface StatefulHmrServerState {
 }
 
 export type StatefulHmrServerEvent
-  = | { type: 'delta-added', bytes: number, code: string }
+  = | { type: 'delta-added', bytes: number, changedIds: string[], code: string }
     | { type: 'client-registered', buildId: string, sessionId: string, version: number }
     | { type: 'client-reported', buildId: string, sessionId: string, version: number }
     | { type: 'batch-publish-failed', sessionId: string, targetVersion: number }
@@ -64,7 +65,7 @@ export function transitionStatefulHmrServer(
       const version = state.hostVersion + 1
       return unchanged({
         ...state,
-        deltas: [...state.deltas, { code: event.code, version }],
+        deltas: [...state.deltas, { changedIds: event.changedIds, code: event.code, version }],
         hostVersion: version,
         retainedDeltaBytes: state.retainedDeltaBytes + event.bytes,
       })

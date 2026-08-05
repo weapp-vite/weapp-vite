@@ -14,8 +14,8 @@ function register(buildId = 'build-a', sessionId = 'session-a') {
 describe('stateful hmr server state', () => {
   it('publishes the complete missing range and waits for acknowledgement', () => {
     let state = register()
-    state = transitionStatefulHmrServer(state, { type: 'delta-added', bytes: 1, code: 'a' }).state
-    state = transitionStatefulHmrServer(state, { type: 'delta-added', bytes: 2, code: 'bb' }).state
+    state = transitionStatefulHmrServer(state, { type: 'delta-added', bytes: 1, changedIds: ['a.ts'], code: 'a' }).state
+    state = transitionStatefulHmrServer(state, { type: 'delta-added', bytes: 2, changedIds: ['b.ts'], code: 'bb' }).state
 
     const publish = transitionStatefulHmrServer(state, {
       type: 'client-reported',
@@ -29,8 +29,8 @@ describe('stateful hmr server state', () => {
       batch: {
         buildId: 'build-a',
         deltas: [
-          { code: 'a', version: 1 },
-          { code: 'bb', version: 2 },
+          { changedIds: ['a.ts'], code: 'a', version: 1 },
+          { changedIds: ['b.ts'], code: 'bb', version: 2 },
         ],
         fromVersion: 0,
         sessionId: 'session-a',
@@ -55,14 +55,14 @@ describe('stateful hmr server state', () => {
 
   it('republishes an unacknowledged range and queues later deltas', () => {
     let state = register()
-    state = transitionStatefulHmrServer(state, { type: 'delta-added', bytes: 1, code: 'a' }).state
+    state = transitionStatefulHmrServer(state, { type: 'delta-added', bytes: 1, changedIds: ['a.ts'], code: 'a' }).state
     state = transitionStatefulHmrServer(state, {
       type: 'client-reported',
       buildId: 'build-a',
       sessionId: 'session-a',
       version: 0,
     }).state
-    state = transitionStatefulHmrServer(state, { type: 'delta-added', bytes: 1, code: 'b' }).state
+    state = transitionStatefulHmrServer(state, { type: 'delta-added', bytes: 1, changedIds: ['b.ts'], code: 'b' }).state
 
     const retry = transitionStatefulHmrServer(state, {
       type: 'client-reported',
@@ -130,7 +130,7 @@ describe('stateful hmr server state', () => {
 
   it('resets all retained state after a full build epoch change', () => {
     let state = register()
-    state = transitionStatefulHmrServer(state, { type: 'delta-added', bytes: 4, code: 'test' }).state
+    state = transitionStatefulHmrServer(state, { type: 'delta-added', bytes: 4, changedIds: ['test.ts'], code: 'test' }).state
     const reset = transitionStatefulHmrServer(state, { type: 'full-build-committed', buildId: 'build-b' })
     expect(reset.state).toEqual(createStatefulHmrServerState('build-b'))
   })

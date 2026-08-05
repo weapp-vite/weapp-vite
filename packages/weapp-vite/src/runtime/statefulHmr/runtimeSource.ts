@@ -39,7 +39,6 @@ class WeappViteDevRuntime extends BaseDevRuntime {
   registrationModuleId = '';
   createEsmInitializer = (id, initialize, _deduplicate, result) => () => {
     if (!initialize) return result;
-    if (!this.applyingPatch && this.patchedModules.has(id)) return result;
     const callback = initialize;
     initialize = undefined;
     const previousId = this.currentModuleId;
@@ -51,7 +50,6 @@ class WeappViteDevRuntime extends BaseDevRuntime {
   };
   createCjsInitializer = (id, initialize, _deduplicate, module) => () => {
     if (module) return module.exports;
-    if (!this.applyingPatch && this.patchedModules.has(id)) return this.loadExports(id);
     module = { exports: {} };
     const previousId = this.currentModuleId;
     this.currentModuleId = id;
@@ -73,6 +71,16 @@ class WeappViteDevRuntime extends BaseDevRuntime {
   registerModule(id, exportsHolder) {
     this.registrationModuleId = id;
     return super.registerModule(id, exportsHolder);
+  }
+  initModule(id) {
+    const previousId = this.currentModuleId;
+    this.currentModuleId = id;
+    try {
+      const result = super.initModule(id);
+      if (this.applyingPatch) this.patchedModules.add(id);
+      return result;
+    }
+    finally { this.currentModuleId = previousId; }
   }
   beginPatch() { this.applyingPatch = true; }
   endPatch() { this.applyingPatch = false; }
@@ -368,7 +376,7 @@ export function createStatefulHmrControlSource(control: StatefulHmrControl): str
 globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stringify(control)};
 (() => {
   const control = globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}];
-  if (globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}]) return;
+  globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}]?.stop?.();
   let version = 0;
   let phase = 'registering';
   let pendingBatch;
@@ -426,7 +434,38 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
     wx.reLaunch({ url: '/' + route + (query ? '?' + query : ''), complete: () => send('poll') });
   };
   globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}] = {
+    lastApply: undefined,
     getVersion() { return version; },
+    getLastApply() { return this.lastApply; },
+    stop() {
+      phase = 'stopped';
+      if (timer) {
+        clearTimeout(timer);
+        timer = undefined;
+      }
+      activeRequest?.abort?.();
+      activeRequest = undefined;
+    },
+    applyChangedModules(changedIds) {
+      const runtime = globalThis.__rolldown_runtime__;
+      if (!runtime || !Array.isArray(changedIds)) return;
+      const uniqueIds = [...new Set(changedIds.filter((id) => typeof id === 'string'))];
+      const summary = { changedIds: uniqueIds, initialized: [], missing: [], executedBefore: [], executedAfterRemove: [] };
+      for (const id of uniqueIds) {
+        if (typeof runtime.isExecuted === 'function' && runtime.isExecuted(id)) summary.executedBefore.push(id);
+        if (typeof runtime.removeModuleCache === 'function') runtime.removeModuleCache.call(runtime, id);
+        if (typeof runtime.isExecuted === 'function' && runtime.isExecuted(id)) summary.executedAfterRemove.push(id);
+      }
+      for (const id of uniqueIds) {
+        if (typeof runtime.hasFactory === 'function' && !runtime.hasFactory(id)) {
+          summary.missing.push(id);
+          continue;
+        }
+        if (typeof runtime.initModule === 'function') runtime.initModule.call(runtime, id);
+        summary.initialized.push(id);
+      }
+      this.lastApply = summary;
+    },
     receiveBatch(meta, apply) {
       if (phase === 'registering') {
         pendingBatch = { meta, apply };
@@ -443,6 +482,7 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       bridge.beginUpdate?.();
       try {
         apply();
+        globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].applyChangedModules(meta.changedIds);
         version = meta.targetVersion;
         phase = meta.compatible === false ? 'relaunching' : 'polling';
       } catch (error) {

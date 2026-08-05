@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createStatefulHmrBanner, createStatefulHmrFooter, toStableModuleId } from './viteAdapter'
+import { isSafeJavaScriptPatch } from './session'
+import { createStatefulHmrBanner, createStatefulHmrFooter, StatefulHmrViteAdapter, toStableModuleId } from './viteAdapter'
 
 describe('stateful HMR Vite adapter', () => {
   it('installs native page registration and flushes component definitions for entry chunks', () => {
@@ -15,5 +16,108 @@ describe('stateful HMR Vite adapter', () => {
     expect(toStableModuleId('\0virtual:entry', '/project')).toBe('\0virtual:entry')
     expect(toStableModuleId('/project/src/pages/index.ts', '/project')).toBe('src/pages/index.ts')
     expect(toStableModuleId('C:\\project\\src\\pages\\index.ts', 'C:\\project')).toBe('src/pages/index.ts')
+  })
+
+  it('accepts Vite 8 patch payloads without legacy hmr boundary metadata', () => {
+    expect(isSafeJavaScriptPatch(['src/pages/index.ts'], {
+      changedIds: ['src/pages/index.ts'],
+      code: 'createCjsInitializer("src/pages/index.ts")',
+      filename: '__weapp_vite_hmr/update.js',
+      seq: 1,
+      type: 'Patch',
+    })).toBe(true)
+  })
+
+  it('registers the stateful HMR client with Vite bundled dev engines', async () => {
+    let registeredClientId = ''
+    const adapter = new StatefulHmrViteAdapter(
+      { root: '/project' } as any,
+      {} as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+    )
+    const bundledDev = {
+      _devEngine: {
+        ensureCurrentBuildFinish: async () => {},
+        ensureLatestBuildOutput: async () => {},
+        getBundleState: async () => ({ lastBuildErrored: false }),
+        registerClient: (clientId: string) => {
+          registeredClientId = clientId
+        },
+        triggerFullBuild: () => {},
+      },
+      clients: {
+        setupIfNeeded: () => {},
+      },
+      getRolldownOptions: async () => ({}),
+      handleHmrOutput: () => {},
+      listen: async () => {},
+      storeOutputFiles: () => {},
+    }
+
+    Reflect.set(adapter as object, 'server', {
+      environments: {
+        client: {
+          bundledDev,
+        },
+      },
+    })
+
+    adapter.install()
+    await bundledDev.listen()
+
+    expect(registeredClientId).toBe('weapp-vite-stateful-hmr')
+  })
+
+  it('keeps Vite 7 module registration compatibility when available', async () => {
+    const registeredModules: string[] = []
+    const deliveredPayloads: string[] = []
+    const adapter = new StatefulHmrViteAdapter(
+      { root: '/project' } as any,
+      {} as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+    )
+    Reflect.set(adapter as object, 'bundledDev', {
+      _devEngine: {
+        notifyPayloadDelivered: (filename: string) => {
+          deliveredPayloads.push(filename)
+        },
+        registerModules: (_clientId: string, modules: string[]) => {
+          registeredModules.push(...modules)
+        },
+      },
+    })
+
+    await expect(adapter.registerBundleModules([
+      {
+        code: 'registerModule("src/pages/index.ts")',
+        fileName: 'pages/index/index.js',
+        modules: {
+          '/project/src/components/card.ts': {},
+        },
+        type: 'chunk',
+      },
+    ])).resolves.toBe(2)
+    await adapter.registerPatchModules('createCjsInitializer("src/pages/detail.ts")')
+    await adapter.markPayloadDelivered('__weapp_vite_hmr/update.js')
+
+    expect(registeredModules).toEqual([
+      'src/pages/index.ts',
+      'src/components/card.ts',
+      'src/pages/detail.ts',
+    ])
+    expect(deliveredPayloads).toEqual([
+      'pages/index/index.js',
+      '__weapp_vite_hmr/update.js',
+    ])
   })
 })
