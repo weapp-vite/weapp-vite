@@ -47,6 +47,14 @@ function resolveChunkRequestGlobalsTargets(
     : targets
 }
 
+function resolvePreludeRequestGlobalsTargets(
+  code: string,
+  targets: WeappInjectRequestGlobalsTarget[],
+  mode: 'auto' | 'explicit',
+) {
+  return mode === 'auto' ? targets : resolveChunkRequestGlobalsTargets(code, targets, mode)
+}
+
 function collectTopLevelDeclaredIdentifiers(code: string) {
   const identifiers = new Set<string>()
   try {
@@ -853,7 +861,7 @@ export function createRequestGlobalsPreludeCode(
   mode: 'auto' | 'explicit',
   networkDefaults?: MiniProgramNetworkDefaults,
 ) {
-  const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
+  const chunkTargets = resolvePreludeRequestGlobalsTargets(chunk.code, targets, mode)
   if (chunkTargets.length === 0 || chunk.code.includes(REQUEST_GLOBAL_PRELUDE_MARKER)) {
     return undefined
   }
@@ -900,7 +908,7 @@ export function createRequestGlobalsPreludeAssetCode(
   mode: 'auto' | 'explicit',
   networkDefaults?: MiniProgramNetworkDefaults,
 ) {
-  const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
+  const chunkTargets = resolvePreludeRequestGlobalsTargets(chunk.code, targets, mode)
   if (chunkTargets.length === 0) {
     return undefined
   }
@@ -910,11 +918,20 @@ export function createRequestGlobalsPreludeAssetCode(
   }
 
   const installerImport = resolveRequestGlobalsInstallerImport(chunk, installerChunks)
-  if (!installerImport?.installerChunkFileName || !installerImport.exportName) {
+  let installerChunkFileName = installerImport?.installerChunkFileName
+  let exportName = installerImport?.exportName
+  if (!installerChunkFileName || !exportName) {
+    const ownExportName = installerChunks.get(toPosixPath(chunk.fileName))
+    if (ownExportName) {
+      installerChunkFileName = chunk.fileName
+      exportName = ownExportName
+    }
+  }
+  if (!installerChunkFileName || !exportName) {
     return undefined
   }
 
-  const installerHostCode = `${toRequestGlobalsInstallerModuleExpression(preludeFileName, installerImport.installerChunkFileName, { appRegisteredModule: false })}[${JSON.stringify(installerImport.exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
+  const installerHostCode = `${toRequestGlobalsInstallerModuleExpression(preludeFileName, installerChunkFileName, { appRegisteredModule: false })}[${JSON.stringify(exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
 
   return [
     `/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`,

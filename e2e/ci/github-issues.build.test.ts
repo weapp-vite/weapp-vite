@@ -1,5 +1,6 @@
 /* eslint-disable e18e/ban-dependencies -- e2e build assertions reuse shared fs helpers to inspect generated artifacts. */
 import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
+import { REQUEST_GLOBAL_PRELUDE_MARKER } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import { fdir } from 'fdir'
@@ -432,6 +433,19 @@ describe.sequential('e2e app: github-issues (build)', () => {
     for (const output of [pageJs, pageWxml, pageWxss, componentJs, componentWxml, componentWxss]) {
       expect(output).not.toMatch(/<(?:template|script|style)(?:\s|>)/)
     }
+  })
+
+  it('issue #764: installs axios request globals before page modules execute', async () => {
+    await runBuild()
+
+    const pageJs = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-764/index.js'), 'utf8')
+    const appPreludeJs = await fs.readFile(path.join(DIST_ROOT, 'app.prelude.js'), 'utf8')
+
+    expect(pageJs).toContain('app.prelude.js')
+    expect(appPreludeJs).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
+    expect(appPreludeJs).toContain('"fetch"')
+    expect(appPreludeJs).toContain('"XMLHttpRequest"')
+    expect(appPreludeJs).toContain('"URL"')
   })
 
   it('discussion #338: emits mapped wxml tags from vue html-style templates', async () => {
