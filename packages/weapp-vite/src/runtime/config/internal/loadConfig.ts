@@ -13,6 +13,7 @@ import {
   getProjectConfig,
   getProjectConfigFileName,
   getProjectConfigRootKeys,
+  getProjectPrivateConfig,
   getProjectPrivateConfigFileName,
   loadViteConfigFile,
   resolveProjectConfigRoot,
@@ -409,6 +410,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       cwd,
     })
     let projectConfig: Record<string, any> = {}
+    let projectPrivateConfig: Record<string, any> = {}
     let projectConfigPathResolved: string | undefined
     let projectPrivateConfigPathResolved: string | undefined
     let mpDistRoot = ''
@@ -424,6 +426,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
         basePath,
         privatePath,
       })
+      projectPrivateConfig = await getProjectPrivateConfig(cwd, { privatePath })
       mpDistRoot = resolveProjectConfigRoot(projectConfig, platform) ?? ''
       if (!mpDistRoot) {
         const displayPath = formatProjectConfigPath(cwd, basePath ?? getProjectConfigFileName(platform))
@@ -511,6 +514,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       emitDefaultAutoImportOutputs: opts.emitDefaultAutoImportOutputs ?? true,
       chunksConfigured,
       projectConfig,
+      projectPrivateConfig,
       projectConfigPath: projectConfigPathResolved,
       projectPrivateConfigPath: projectPrivateConfigPathResolved,
       mpDistRoot,

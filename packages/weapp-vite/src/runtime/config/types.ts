@@ -35,6 +35,7 @@ export interface LoadConfigResult {
   emitDefaultAutoImportOutputs: boolean
   chunksConfigured?: boolean
   projectConfig: Record<string, any>
+  projectPrivateConfig: Record<string, any>
   projectConfigPath?: string
   projectPrivateConfigPath?: string
   mpDistRoot: string
@@ -106,6 +107,7 @@ export interface ConfigService {
   readonly weappViteConfig: NonNullable<InlineConfig['weapp']>
   readonly packageJson: PackageJson
   readonly projectConfig: Record<string, any>
+  readonly projectPrivateConfig: Record<string, any>
   readonly projectConfigPath?: string
   readonly projectPrivateConfigPath?: string
   readonly srcRoot: string

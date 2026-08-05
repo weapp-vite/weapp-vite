@@ -33,6 +33,7 @@ import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJso
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { resolveHmrRuntime } from '../hmrRuntime'
 import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
@@ -1171,7 +1172,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       ...(buildOptions.build ?? {}),
       write: true,
     }
-    if (target === 'app' && configService.weappViteConfig.hmr?.runtime === 'stateful-experimental') {
+    const hmrRuntime = resolveHmrRuntime({
+      platform: configService.platform,
+      configured: configService.weappViteConfig.hmr?.runtime,
+      compileHotReLoad: configService.projectPrivateConfig.setting?.compileHotReLoad,
+    })
+    if (target === 'app' && hmrRuntime === 'stateful-experimental') {
       const snapshotBuildOptions: InlineConfig = {
         ...buildOptions,
         build: {

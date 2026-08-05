@@ -259,6 +259,7 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
       packageJson: {},
       cwd: '/project',
       projectConfigPath: '/project/project.config.json',
+      projectPrivateConfig: {},
       projectPrivateConfigPath: '/project/project.private.config.json',
       isDev: true,
       configFileDependencies: [],
@@ -392,6 +393,40 @@ describe('runtime buildPlugin service', () => {
     expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(2)
     expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(3)
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenLastCalledWith(secondWatcher, '/')
+  })
+
+  it('selects stateful dev for auto runtime when WeChat hot reload is enabled', async () => {
+    const watcher = { close: vi.fn(async () => {}) }
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockResolvedValue(watcher)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'auto' }
+    ctx.configService.projectPrivateConfig = {
+      setting: { compileHotReLoad: true },
+    }
+
+    await createBuildService(ctx).build({ skipNpm: true })
+
+    expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
+    expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(watcher, '/')
+  })
+
+  it('keeps explicit classic runtime when WeChat hot reload is enabled', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'classic' }
+    ctx.configService.projectPrivateConfig = {
+      setting: { compileHotReLoad: true },
+    }
+
+    const buildPromise = createBuildService(ctx).build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    expect(runStatefulHmrDevMock).not.toHaveBeenCalled()
   })
 
   it('runs dev app build with workers and caches touchAppWxss auto decision', async () => {

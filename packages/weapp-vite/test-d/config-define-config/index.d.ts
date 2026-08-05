@@ -14,6 +14,9 @@ export interface AutoImportComponentsConfig {
 export interface WeappViteConfig {
   srcRoot?: string
   platform?: 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'
+  hmr?: {
+    runtime?: 'auto' | 'classic' | 'stateful-experimental'
+  }
   wevu?: {
     defaults?: {
       component?: {

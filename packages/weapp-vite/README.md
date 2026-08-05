@@ -35,7 +35,7 @@
 
 ## 快速开始
 
-微信项目可选择开启实验性状态保持热更新：
+微信项目默认会根据微信开发者工具的热重载设置选择 HMR 模式。也可以显式锁定模式：
 
 ```ts
 export default defineConfig({
@@ -47,7 +47,7 @@ export default defineConfig({
 })
 ```
 
-默认仍为 `classic`。实验模式要求微信开发者工具开启热重载；CSS、资源、配置和不兼容更新会自动回退完整构建与当前路由重载。
+未配置 `weapp.hmr.runtime` 时，`wv dev` 会在启动时读取 `project.private.config.json.setting.compileHotReLoad`：开启时使用 `stateful-experimental`，关闭或无法确认时使用 `classic`。显式设置 `classic` 或 `stateful-experimental` 会覆盖自动选择。修改 DevTools 设置后请重启 `wv dev`；CSS、资源、配置和不兼容更新会自动回退完整构建与当前路由重载。
 
 > 说明：CLI 同时支持完整命令 `weapp-vite` 与简写命令 `wv`，两者等价。下面的示例默认使用 `weapp-vite`，你也可以按个人习惯替换成 `wv`。
 
