@@ -39,7 +39,7 @@ catalog:
   '@vue/compiler-core': ^3.5.40
   '@vue/compiler-dom': ^3.5.40
   '@vue/language-core': ^3.3.9
-  '@wot-ui/ui': 2.3.0
+  '@wot-ui/ui': 2.3.1
   antd-mini: ^3.4.3
   autoprefixer: ^10.5.4
   bundle-require: ^5.1.0
@@ -76,7 +76,7 @@ catalog:
   tdesign-miniprogram: ^1.15.3
   ts-morph: ^28.0.0
   tslib: ^2.8.1
-  tsx: ^4.23.5
+  tsx: ^4.23.7
   typescript: ^6.0.3
   uview-plus: 3.8.86
   vite: 8.2.0
