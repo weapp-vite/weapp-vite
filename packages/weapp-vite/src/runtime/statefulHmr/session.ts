@@ -163,7 +163,7 @@ class StatefulHmrSession {
       }
       await writeStatefulHmrOutput(this.ctx.configService!.outDir, compatibleOutput)
       if (fullBuild) {
-        const moduleCount = this.adapter.registerBundleModules(compatibleOutput)
+        const moduleCount = await this.adapter.registerBundleModules(compatibleOutput)
         this.server.config.logger.info(`[weapp-vite] 微信状态保持 HMR 已就绪（${moduleCount} modules）`)
         this.initialBundle.resolve()
       }
@@ -175,8 +175,8 @@ class StatefulHmrSession {
       this.requestServerRestart()
       return false
     }
-    this.adapter.registerPatchModules(output.code)
-    void transformJavaScript(output.code, output.filename).then((code) => {
+    void this.adapter.registerPatchModules(output.code).then(async () => {
+      const code = await transformJavaScript(output.code, output.filename)
       if (
         shouldResetStatefulHmrRetention(
           this.transport.retainedDeltaCount,
@@ -187,7 +187,8 @@ class StatefulHmrSession {
         this.requestFullBuild()
         return
       }
-      this.transport.addDelta(code)
+      this.transport.addDelta(code, output.changedIds ?? [])
+      return this.adapter.markPayloadDelivered(output.filename)
     }).catch((error) => {
       this.server.config.logger.error('[weapp-vite] stateful HMR patch transform failed', { error })
       this.requestFullBuild()
@@ -221,7 +222,7 @@ class StatefulHmrSession {
 
   private enqueueOutput(task: () => Promise<void>): Promise<void> {
     this.outputChain = this.outputChain.then(task, task).catch((error) => {
-      this.server.config.logger.error('[weapp-vite] stateful HMR output failed', { error })
+      this.server.config.logger.error(`[weapp-vite] stateful HMR output failed: ${formatStatefulHmrError(error)}`)
     })
     return this.outputChain
   }
@@ -292,7 +293,6 @@ export function isSafeJavaScriptPatch(
   dirtyReasonSummary: string[] = [],
 ): output is Extract<StatefulHmrDevEngineUpdate, { type: 'Patch' }> {
   return output.type === 'Patch'
-    && output.hmrBoundaries.length > 0
     && files.every(file => /\.(?:[cm]?[jt]sx?|vue)$/.test(file))
     && !dirtyReasonSummary.some(reason => /^(?:entry-json-only|entry-local-asset|entry-style-only):/.test(reason))
 }
@@ -337,4 +337,11 @@ function setAsset(output: StatefulHmrOutputFile[], fileName: string, source: str
   else {
     output.push(asset)
   }
+}
+
+function formatStatefulHmrError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.stack || error.message
+  }
+  return String(error)
 }

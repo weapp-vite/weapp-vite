@@ -16,14 +16,25 @@ const clientId = 'weapp-vite-stateful-hmr'
 export type StatefulHmrDevEngineUpdate
   = | { type: 'Noop' }
     | { type: 'FullReload', reason?: string }
-    | { type: 'Patch', code: string, filename: string, hmrBoundaries: Array<{ acceptedVia: string, boundary: string }> }
+    | {
+      type: 'Patch'
+      changedIds?: string[]
+      code: string
+      filename: string
+      hmrBoundaries?: Array<{ acceptedVia: string, boundary: string }>
+      seq?: number
+      sourcemap?: string
+      sourcemapFilename?: string
+    }
 
 interface BundledDevInternal {
   _devEngine?: {
     ensureCurrentBuildFinish: () => Promise<void>
     ensureLatestBuildOutput: () => Promise<unknown>
     getBundleState: () => Promise<{ lastBuildErrored: boolean }>
-    registerModules: (clientId: string, modules: string[]) => void
+    notifyPayloadDelivered?: (filename: string) => Promise<void> | void
+    registerClient?: (clientId: string) => Promise<void> | void
+    registerModules?: (clientId: string, modules: string[]) => Promise<void> | void
     triggerFullBuild: () => void
   }
   clients: {
@@ -78,12 +89,14 @@ export class StatefulHmrViteAdapter {
     await engine.ensureLatestBuildOutput()
   }
 
-  registerBundleModules(output: StatefulHmrOutputFile[]): number {
+  async registerBundleModules(output: StatefulHmrOutputFile[]): Promise<number> {
     const moduleIds = new Set<string>()
+    const payloadFilenames: string[] = []
     for (const item of output) {
       if (item.type !== 'chunk') {
         continue
       }
+      payloadFilenames.push(item.fileName)
       for (const match of item.code.matchAll(/registerModule\("([^"]+)"/g)) {
         moduleIds.add(match[1]!)
       }
@@ -94,21 +107,37 @@ export class StatefulHmrViteAdapter {
         }
       }
     }
-    this.registerModules([...moduleIds])
+    await this.registerModules([...moduleIds])
+    await this.markPayloadsDelivered(payloadFilenames)
     return moduleIds.size
   }
 
-  registerPatchModules(code: string): void {
+  async registerPatchModules(code: string): Promise<void> {
     const moduleIds = new Set<string>()
     for (const match of code.matchAll(/create(?:Esm|Cjs)Initializer\("([^"]+)"/g)) {
       moduleIds.add(match[1]!)
     }
-    this.registerModules([...moduleIds])
+    await this.registerModules([...moduleIds])
   }
 
-  private registerModules(moduleIds: string[]): void {
-    if (moduleIds.length) {
-      this.bundledDev?._devEngine?.registerModules(clientId, moduleIds)
+  async markPayloadDelivered(filename: string): Promise<void> {
+    await this.markPayloadsDelivered([filename])
+  }
+
+  private async registerModules(moduleIds: string[]): Promise<void> {
+    const engine = this.bundledDev?._devEngine
+    if (moduleIds.length && typeof engine?.registerModules === 'function') {
+      await engine.registerModules(clientId, moduleIds)
+    }
+  }
+
+  private async markPayloadsDelivered(filenames: string[]): Promise<void> {
+    const engine = this.bundledDev?._devEngine
+    if (typeof engine?.notifyPayloadDelivered !== 'function') {
+      return
+    }
+    for (const filename of filenames) {
+      await engine.notifyPayloadDelivered(filename)
     }
   }
 
@@ -175,6 +204,7 @@ export class StatefulHmrViteAdapter {
       if (!engine) {
         throw new Error('Vite 未初始化微信状态保持 HMR 所需的 DevEngine。')
       }
+      await engine.registerClient?.(clientId)
       await engine.ensureCurrentBuildFinish()
       if ((await engine.getBundleState()).lastBuildErrored) {
         throw new Error('微信状态保持 HMR 初次构建失败。')

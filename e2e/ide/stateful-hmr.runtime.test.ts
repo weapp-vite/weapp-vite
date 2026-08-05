@@ -126,8 +126,12 @@ async function waitForPatchedBehavior(expectedCount: number, page?: any, timeout
     await new Promise(resolve => setTimeout(resolve, 250))
   }
   const runtimeLogs = miniProgram.__weappViteRuntimeLogMeta?.entries ?? []
+  const lastApply = await miniProgram.evaluate(() => {
+    const client = (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__
+    return typeof client?.getLastApply === 'function' ? client.getLastApply() : null
+  }).catch(() => null)
   const devOutput = devProcess?.getOutput().slice(-8_000) ?? ''
-  throw new Error(`Timed out waiting for patched runtime count ${expectedCount}; latest=${JSON.stringify(latest)}; error=${latestError}; logs=${JSON.stringify(runtimeLogs)}; devOutput=${devOutput}`)
+  throw new Error(`Timed out waiting for patched runtime count ${expectedCount}; latest=${JSON.stringify(latest)}; error=${latestError}; lastApply=${JSON.stringify(lastApply)}; logs=${JSON.stringify(runtimeLogs)}; devOutput=${devOutput}`)
 }
 
 async function waitForClientVersion(expectedVersion: number, timeoutMs = 30_000): Promise<void> {

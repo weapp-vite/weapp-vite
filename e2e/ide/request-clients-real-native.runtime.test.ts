@@ -38,6 +38,19 @@ function isLocalServerInfraError(error: unknown) {
   return LOCAL_SERVER_INFRA_ERROR_PATTERNS.some(pattern => pattern.test(message))
 }
 
+function isRecoverableAutomatorSessionError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('Connection closed')
+    || message.includes('Target closed')
+    || message.includes('WebSocket is not open')
+    || message.includes('socket hang up')
+    || message.includes('Execution context was destroyed')
+    || message.includes('DEVTOOLS_PROTOCOL_TIMEOUT')
+    || message.includes('DevTools did not respond to protocol method')
+    || message.includes('Timeout in raw reLaunch')
+    || (typeof error === 'object' && error !== null && Reflect.get(error, 'code') === 'DEVTOOLS_PROTOCOL_TIMEOUT')
+}
+
 async function ensureBuilt(jsFormat: TestJsFormat) {
   if (preparedBuildFormats.has(jsFormat)) {
     return
@@ -161,6 +174,7 @@ for (const jsFormat of JS_FORMATS) {
           delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
           miniProgram = await launchAutomator({
             projectPath: APP_ROOT,
+            retryWarmupTimeout: true,
             skipRelaunchPageRootCheck: true,
             warmupRootSelectors: ['#request-clients-real-root'],
             warmupRoute: '/pages/index/index',
@@ -184,23 +198,77 @@ for (const jsFormat of JS_FORMATS) {
       }
     }
 
-    afterAll(async () => {
+    async function resetMiniProgram() {
       if (miniProgram) {
-        await miniProgram.close()
+        await miniProgram.close().catch(() => {})
+        miniProgram = null
       }
       await cleanupResidualIdeProcesses()
+    }
+
+    async function reLaunchPage(ctx: { skip: (message?: string) => void }, route: string) {
+      let lastError: unknown
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        const currentMiniProgram = await getMiniProgram(ctx)
+        try {
+          const page = await currentMiniProgram.reLaunch(route)
+          if (!page) {
+            throw new Error(`Failed to launch ${route}`)
+          }
+          await waitForRequestClientsRealRouteDom(page, route)
+          return {
+            miniProgram: currentMiniProgram,
+            page,
+          }
+        }
+        catch (error) {
+          lastError = error
+          if (attempt === 2 || !isRecoverableAutomatorSessionError(error)) {
+            throw error
+          }
+          await resetMiniProgram()
+        }
+      }
+      throw lastError
+    }
+
+    async function openTracedPage(ctx: { skip: (message?: string) => void }, route: string) {
+      let lastError: unknown
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        const currentMiniProgram = await getMiniProgram(ctx)
+        try {
+          const baselineTrace = await readHostTrace(currentMiniProgram)
+          const page = await currentMiniProgram.reLaunch(route)
+          if (!page) {
+            throw new Error(`Failed to launch ${route}`)
+          }
+          await waitForRequestClientsRealRouteDom(page, route)
+          return {
+            baselineTrace,
+            miniProgram: currentMiniProgram,
+            page,
+          }
+        }
+        catch (error) {
+          lastError = error
+          if (attempt === 2 || !isRecoverableAutomatorSessionError(error)) {
+            throw error
+          }
+          await resetMiniProgram()
+        }
+      }
+      throw lastError
+    }
+
+    afterAll(async () => {
+      await resetMiniProgram()
     })
 
     it('covers app-level request globals probe from a native app entry', async (ctx) => {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const page = await miniProgram.reLaunch('/pages/index/index')
-      if (!page) {
-        throw new Error('Failed to launch /pages/index/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/index/index')
+      const { miniProgram } = await reLaunchPage(ctx, '/pages/index/index')
 
       const appProbe = await miniProgram.evaluate(() => {
         return getApp<{ globalData?: { requestGlobalsProbe?: Record<string, unknown> } }>()?.globalData?.requestGlobalsProbe ?? null
@@ -218,13 +286,7 @@ for (const jsFormat of JS_FORMATS) {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const baselineTrace = await readHostTrace(miniProgram)
-      const page = await miniProgram.reLaunch(withBaseUrl('/pages/fetch/index'))
-      if (!page) {
-        throw new Error('Failed to launch /pages/fetch/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/fetch/index')
+      const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/fetch/index'))
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/fetch/index')
@@ -241,13 +303,7 @@ for (const jsFormat of JS_FORMATS) {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const baselineTrace = await readHostTrace(miniProgram)
-      const page = await miniProgram.reLaunch(withBaseUrl('/pages/axios/index'))
-      if (!page) {
-        throw new Error('Failed to launch /pages/axios/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/axios/index')
+      const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/axios/index'))
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/axios/index')
@@ -264,13 +320,7 @@ for (const jsFormat of JS_FORMATS) {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const baselineTrace = await readHostTrace(miniProgram)
-      const page = await miniProgram.reLaunch(withBaseUrl('/pages/graphql-request/index'))
-      if (!page) {
-        throw new Error('Failed to launch /pages/graphql-request/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/graphql-request/index')
+      const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/graphql-request/index'))
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/graphql-request/index')
@@ -287,13 +337,7 @@ for (const jsFormat of JS_FORMATS) {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const baselineTrace = await readHostTrace(miniProgram)
-      const page = await miniProgram.reLaunch(withBaseUrl('/pages/socket-io/index'))
-      if (!page) {
-        throw new Error('Failed to launch /pages/socket-io/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/socket-io/index')
+      const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/socket-io/index'))
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/socket-io/index')
@@ -325,13 +369,7 @@ for (const jsFormat of JS_FORMATS) {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const baselineTrace = await readHostTrace(miniProgram)
-      const page = await miniProgram.reLaunch(withBaseUrl('/pages/websocket/index'))
-      if (!page) {
-        throw new Error('Failed to launch /pages/websocket/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/websocket/index')
+      const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/websocket/index'))
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/websocket/index')
