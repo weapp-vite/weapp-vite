@@ -8,6 +8,10 @@ export interface StatefulHmrControl {
   url: string
 }
 
+export function resolveWorkspaceHmrRuntime(hasStatefulControl: boolean): WorkspaceHmrRuntime {
+  return hasStatefulControl ? 'stateful' : 'standard'
+}
+
 export function parseStatefulHmrControlSource(source: string): StatefulHmrControl {
   const serialized = source.match(/=\s*(\{[^\r\n]+\});/)?.[1]
   if (!serialized) {

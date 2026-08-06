@@ -18,7 +18,7 @@ import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
-const IDE_AUTOMATOR_INFRA_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Timed out waiting for opened automator ws:\/\/127\.0\.0\.1:\d+|无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|automation websocket|Wait timed out after \d+ ms|当前项目已完成打开流程，但尚未连接到可复用的自动化会话/i
+const IDE_AUTOMATOR_INFRA_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Timed out waiting for opened automator ws:\/\/127\.0\.0\.1:\d+|无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|automation websocket|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Wait timed out after \d+ ms|当前项目已完成打开流程，但尚未连接到可复用的自动化会话/i
 
 interface TemplateCase {
   expectedData?: Record<string, unknown>
@@ -153,6 +153,13 @@ function canRetryOnCurrentAutomatorSession(error: unknown) {
     || (error instanceof Error && /timeout waiting for automator response/i.test(error.message))
 }
 
+async function removeAutomatorSessionFiles(projectPath: string) {
+  await Promise.all([
+    fs.rm(resolveAutomatorSessionFile(projectPath), { force: true }).catch(() => {}),
+    fs.rm(resolveAutomatorSessionFile(projectPath, resolveProjectAutomatorPort(projectPath)), { force: true }).catch(() => {}),
+  ])
+}
+
 async function waitForPageText(miniProgram: any, projectPath: string, route: string, text: string, expectedData?: Record<string, unknown>, timeoutMs = 90_000) {
   if (!route) {
     throw new Error(`Missing route while waiting for rendered text "${text}"`)
@@ -212,7 +219,10 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
         await delay(1_000)
         continue
       }
-      currentMiniProgram.disconnect?.()
+      await Promise.resolve(currentMiniProgram.disconnect?.()).catch(() => {})
+      await closeSharedMiniProgram(projectPath, resolveProjectAutomatorPort(projectPath)).catch(() => {})
+      await removeAutomatorSessionFiles(projectPath)
+      await delay(1_000)
       currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 120_000 })).miniProgram
     }
     await delay(1_000)
@@ -247,8 +257,7 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
 
 async function cleanupTemplateAutomatorState(templateCase: TemplateCase) {
   await Promise.all([
-    fs.rm(resolveAutomatorSessionFile(templateCase.root), { force: true }).catch(() => {}),
-    fs.rm(resolveAutomatorSessionFile(templateCase.root, resolveProjectAutomatorPort(templateCase.root)), { force: true }).catch(() => {}),
+    removeAutomatorSessionFiles(templateCase.root),
     fs.rm(resolveAutomatorWrapperProjectPath(templateCase.root), { force: true, recursive: true }).catch(() => {}),
   ])
 }
