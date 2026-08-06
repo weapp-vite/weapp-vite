@@ -42,7 +42,7 @@ export default defineConfig({
 })
 ```
 
-`auto` 会在 `wv dev` 启动时读取微信项目的 `project.private.config.json`：当 `setting.compileHotReLoad` 严格为 `true` 时使用 `stateful-experimental`，否则使用 `classic`。非微信平台也会回退到 `classic`。该判断只发生在启动阶段，修改微信开发者工具设置后需要重启 `wv dev` 才会重新选择模式。显式配置 `classic` 或 `stateful-experimental` 时始终优先于自动判断。
+`auto` 会在 `wv dev` 启动时读取微信项目的 `project.private.config.json`：当 `setting.compileHotReLoad` 严格为 `true` 时使用 `stateful-experimental`，否则使用 `classic`。非微信平台也会回退到 `classic`。该判断只发生在启动阶段，修改微信开发者工具设置后需要重启 `wv dev` 才会重新选择模式。启动日志会显示最终模式、选择来源，以及通过 DevTools 热重载开关或 `weapp.hmr.runtime` 切换模式的方法。显式配置 `classic` 或 `stateful-experimental` 时始终优先于自动判断。
 
 `stateful-experimental` 目前只支持微信小程序平台。它使用 Vite bundled dev graph 和微信 App Service 内的增量补丁协议，JavaScript/Vue 安全更新会在现有实例上替换方法并恢复状态。CSS、静态资源、JSON/配置变化、模块边界不兼容、补丁积压超过保留上限或补丁执行失败时，会回退到完整构建并通过 `wx.reLaunch` 恢复当前 route/query。
 

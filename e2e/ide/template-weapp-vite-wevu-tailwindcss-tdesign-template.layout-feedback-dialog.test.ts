@@ -12,65 +12,24 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const ROUTE = '/pages/layout-feedback/index'
-const PAGE_METHOD_ATTEMPTS = 3
 const PAGE_METHOD_TIMEOUT = 10_000
 let sharedMiniProgram: any = null
 let sharedBuildPrepared = false
 let sharedPage: any = null
 
-function isPageLocationUnavailable(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return message.includes('getPageMetaByWebviewId')
-    || message.includes('page is not on top of page stack')
-}
-
-function isPageProtocolTimeout(error: unknown) {
-  return error instanceof Error
-    && 'code' in error
-    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    && 'method' in error
-    && error.method === 'Page.callMethod'
-}
-
-async function callPageMethod(page: any, method: string, options: { readOnly?: boolean } = {}) {
-  let currentPage = sharedPage ?? page
-  let lastError: unknown
-  for (let attempt = 1; attempt <= PAGE_METHOD_ATTEMPTS; attempt += 1) {
-    try {
-      return await currentPage.callMethodWithOptions(method, {
-        fallback: false,
-        timeout: PAGE_METHOD_TIMEOUT,
-      })
-    }
-    catch (error) {
-      lastError = error
-      if (isPageLocationUnavailable(error)) {
-        return await currentPage.callMethodWithOptions(method, {
-          routeOnly: true,
-          timeout: PAGE_METHOD_TIMEOUT,
-        })
-      }
-      const canRetry = options.readOnly && isPageProtocolTimeout(error)
-      if (!canRetry || attempt === PAGE_METHOD_ATTEMPTS || !sharedMiniProgram) {
-        throw error
-      }
-      await currentPage.waitFor(300)
-      currentPage = await sharedMiniProgram.currentPage({
-        retries: 2,
-        timeout: 5_000,
-      })
-      sharedPage = currentPage
-    }
-  }
-  throw lastError
+async function callPageMethod(page: any, method: string) {
+  return await page.callMethodWithOptions(method, {
+    routeOnly: true,
+    timeout: PAGE_METHOD_TIMEOUT,
+  })
 }
 
 async function readDialogHost(page: any) {
-  return JSON.parse(await callPageMethod(page, 'inspectDialogHostJsonE2E', { readOnly: true }))
+  return JSON.parse(await callPageMethod(page, 'inspectDialogHostJsonE2E'))
 }
 
 async function readActionLogs(page: any) {
-  return JSON.parse(await callPageMethod(page, 'getLayoutFeedbackLogsE2E', { readOnly: true }))
+  return JSON.parse(await callPageMethod(page, 'getLayoutFeedbackLogsE2E'))
 }
 
 async function waitForPageMethodReady(page: any) {

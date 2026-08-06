@@ -15,6 +15,7 @@ import {
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { createServer, transformWithOxc } from 'vite'
+import { logger } from '../../context/shared'
 import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
@@ -31,6 +32,10 @@ export async function runStatefulHmrDev(
   ctx: MutableCompilerContext,
   buildOptions: InlineConfig,
   restart: () => Promise<void>,
+  snapshots: {
+    initial: StatefulHmrOutputFile[]
+    rebuild: (files: string[]) => Promise<StatefulHmrOutputFile[]>
+  },
 ): Promise<RolldownWatcher> {
   const configService = ctx.configService!
   if (configService.platform !== 'weapp') {
@@ -41,7 +46,7 @@ export async function runStatefulHmrDev(
     name: 'weapp-vite:stateful-hmr-session',
     enforce: 'post',
     configureServer(server) {
-      const currentSession = new StatefulHmrSession(ctx, server, restart)
+      const currentSession = new StatefulHmrSession(ctx, server, restart, snapshots)
       session = currentSession
       currentSession.install()
     },
@@ -98,15 +103,23 @@ class StatefulHmrSession {
   private readonly adapter: StatefulHmrViteAdapter
   private readonly initialBundle = Promise.withResolvers<void>()
   private readonly transport: StatefulHmrTransport
+  private fullBuildTimer?: ReturnType<typeof setTimeout>
   private outputChain: Promise<void> = Promise.resolve()
-  private rebuildTimer?: ReturnType<typeof setTimeout>
   private restartTimer?: ReturnType<typeof setTimeout>
+  private snapshotTimer?: ReturnType<typeof setTimeout>
+  private readonly snapshotFiles = new Set<string>()
+  private snapshotAssets = new Map<string, StatefulHmrOutputFile>()
+  private readonly sourceChangeListener = (file: string, dirtyReasonSummary: string[]) => {
+    this.handleSourceUpdate(file, dirtyReasonSummary)
+  }
 
   constructor(
     private readonly ctx: MutableCompilerContext,
     private readonly server: ViteDevServer,
     private readonly restart: () => Promise<void>,
+    private readonly snapshots: { rebuild: (files: string[]) => Promise<StatefulHmrOutputFile[]> },
   ) {
+    this.replaceSnapshotAssets(snapshots.initial)
     this.transport = new StatefulHmrTransport(
       server,
       async (buildId, source) => {
@@ -134,14 +147,21 @@ class StatefulHmrSession {
   install(): void {
     this.transport.install()
     this.adapter.install()
+    this.ctx.onStatefulHmrSourceChange = this.sourceChangeListener
   }
 
   async close(): Promise<void> {
-    if (this.rebuildTimer) {
-      clearTimeout(this.rebuildTimer)
+    if (this.fullBuildTimer) {
+      clearTimeout(this.fullBuildTimer)
+    }
+    if (this.snapshotTimer) {
+      clearTimeout(this.snapshotTimer)
     }
     if (this.restartTimer) {
       clearTimeout(this.restartTimer)
+    }
+    if (this.ctx.onStatefulHmrSourceChange === this.sourceChangeListener) {
+      this.ctx.onStatefulHmrSourceChange = undefined
     }
     this.transport.close()
     await this.outputChain
@@ -157,11 +177,33 @@ class StatefulHmrSession {
     })
   }
 
+  handleSourceUpdate(file: string, dirtyReasonSummary: string[] = []): void {
+    const normalizedFile = normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file))
+    const normalizedOutDir = normalizeFsResolvedId(this.ctx.configService!.outDir).replace(/\/$/, '')
+    if (normalizedFile === normalizedOutDir || normalizedFile.startsWith(`${normalizedOutDir}/`)) {
+      return
+    }
+    if (shouldRestartStatefulHmrServer([normalizedFile], this.ctx.configService?.configFileDependencies)) {
+      this.requestServerRestart()
+      return
+    }
+    if (requiresStatefulHmrSnapshot(
+      normalizedFile,
+      dirtyReasonSummary,
+    )) {
+      if (!this.snapshotTimer && !this.fullBuildTimer) {
+        logger.info('微信状态保持 HMR 正在刷新模板、样式与静态资源产物...')
+      }
+      this.requestSnapshotRefresh([normalizedFile])
+    }
+  }
+
   private handleOutput(output: StatefulHmrOutputFile[]): void {
     void this.enqueueOutput(async () => {
       const compatibleOutput = await transformOutput(output)
       const fullBuild = compatibleOutput.some(item => item.fileName === 'app.js')
       if (fullBuild) {
+        mergeStatefulHmrSnapshotAssets(compatibleOutput, this.snapshotAssets.values())
         const buildId = this.transport.createBuildId()
         this.transport.commitFullBuild(buildId)
         stampStatefulHmrFullBuild(compatibleOutput, buildId)
@@ -182,6 +224,9 @@ class StatefulHmrSession {
   }
 
   private handlePatch(files: string[], output: StatefulHmrDevEngineUpdate): boolean {
+    if (output.type === 'Noop') {
+      return false
+    }
     if (!isSafeJavaScriptPatch(
       files,
       output,
@@ -189,7 +234,12 @@ class StatefulHmrSession {
       this.ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
       this.server.config.root,
     )) {
-      this.requestServerRestart()
+      if (shouldRestartStatefulHmrServer(files, this.ctx.configService?.configFileDependencies)) {
+        this.requestServerRestart()
+      }
+      else {
+        this.requestFullBuild(files)
+      }
       return false
     }
     void this.adapter.registerPatchModules(output.code).then(async () => {
@@ -213,14 +263,38 @@ class StatefulHmrSession {
     return true
   }
 
-  private requestFullBuild(): void {
-    if (this.rebuildTimer) {
+  private requestFullBuild(files: Iterable<string> = []): void {
+    for (const file of files) {
+      this.snapshotFiles.add(file)
+    }
+    if (this.snapshotTimer) {
+      clearTimeout(this.snapshotTimer)
+      this.snapshotTimer = undefined
+    }
+    if (this.fullBuildTimer) {
       return
     }
-    this.rebuildTimer = setTimeout(() => {
-      this.rebuildTimer = undefined
-      void this.adapter.rebuild().catch((error) => {
+    this.fullBuildTimer = setTimeout(() => {
+      this.fullBuildTimer = undefined
+      const snapshotFiles = this.takeSnapshotFiles()
+      void this.rebuildFromSnapshot(snapshotFiles).catch((error) => {
         this.server.config.logger.error('[weapp-vite] stateful HMR full rebuild failed', { error })
+      })
+    }, 100)
+  }
+
+  private requestSnapshotRefresh(files: Iterable<string> = []): void {
+    for (const file of files) {
+      this.snapshotFiles.add(file)
+    }
+    if (this.fullBuildTimer || this.snapshotTimer) {
+      return
+    }
+    this.snapshotTimer = setTimeout(() => {
+      this.snapshotTimer = undefined
+      const snapshotFiles = this.takeSnapshotFiles()
+      void this.refreshSnapshotAssets(snapshotFiles).catch((error) => {
+        this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', { error })
       })
     }, 100)
   }
@@ -244,9 +318,61 @@ class StatefulHmrSession {
     return this.outputChain
   }
 
+  private async rebuildFromSnapshot(files: string[]): Promise<void> {
+    await this.adapter.rebuild(async () => {
+      this.replaceSnapshotAssets(await this.snapshots.rebuild(files))
+    })
+  }
+
+  private async refreshSnapshotAssets(files: string[]): Promise<void> {
+    this.replaceSnapshotAssets(await this.snapshots.rebuild(files))
+  }
+
+  private takeSnapshotFiles(): string[] {
+    const files = [...this.snapshotFiles]
+    this.snapshotFiles.clear()
+    return files
+  }
+
+  private replaceSnapshotAssets(output: StatefulHmrOutputFile[]): void {
+    this.snapshotAssets = new Map(
+      output
+        .filter(item => item.type === 'asset')
+        .map(item => [item.fileName, item]),
+    )
+  }
+
   private async waitForInitialBundle(): Promise<void> {
     await this.initialBundle.promise
     await this.outputChain
+  }
+}
+
+export function shouldRestartStatefulHmrServer(
+  files: Iterable<string>,
+  configFileDependencies: Iterable<string> = [],
+): boolean {
+  const normalizedConfigDependencies = new Set(
+    Array.from(configFileDependencies, dependency => normalizeFsResolvedId(dependency)),
+  )
+  return Array.from(files).some(file => normalizedConfigDependencies.has(normalizeFsResolvedId(file)))
+}
+
+export function mergeStatefulHmrSnapshotAssets(
+  output: StatefulHmrOutputFile[],
+  snapshotAssets: Iterable<StatefulHmrOutputFile>,
+): void {
+  for (const asset of snapshotAssets) {
+    if (asset.type !== 'asset') {
+      continue
+    }
+    const index = output.findIndex(item => item.fileName === asset.fileName)
+    if (index >= 0) {
+      output[index] = asset
+    }
+    else {
+      output.push(asset)
+    }
   }
 }
 
@@ -334,7 +460,16 @@ export function isSafeJavaScriptPatch(
       return normalizedEntryIds.has(normalizeFsResolvedId(absoluteFile))
     }))
     && !output.changedIds?.some(isNonJavaScriptSidecarId)
-    && !dirtyReasonSummary.some(reason => /^(?:entry-json-only|entry-local-asset|entry-style-only|tailwind-content):/.test(reason))
+    && !dirtyReasonSummary.some(isUnsafeStatefulHmrReason)
+}
+
+export function requiresStatefulHmrSnapshot(file: string, dirtyReasonSummary: string[] = []): boolean {
+  return !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
+    || dirtyReasonSummary.some(isUnsafeStatefulHmrReason)
+}
+
+function isUnsafeStatefulHmrReason(reason: string): boolean {
+  return /^(?:entry-json-only|entry-local-asset|entry-style-only|tailwind-content):/.test(reason)
 }
 
 function isNonJavaScriptSidecarId(id: string): boolean {

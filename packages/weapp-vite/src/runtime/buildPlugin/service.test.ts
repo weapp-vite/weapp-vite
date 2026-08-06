@@ -368,7 +368,7 @@ describe('runtime buildPlugin service', () => {
     expect(() => createBuildService({ runtimeState } as any)).toThrow('构建服务需要先初始化 config、watcher、npm 和 scan 服务。')
   })
 
-  it('seeds complete outputs before stateful dev and recreates the plugin graph on full reload', async () => {
+  it('seeds complete outputs and reloads independent plugin graphs for stateful dev', async () => {
     const firstWatcher = { close: vi.fn(async () => {}) }
     const secondWatcher = { close: vi.fn(async () => {}) }
     buildMock.mockResolvedValue({ output: [] })
@@ -383,6 +383,8 @@ describe('runtime buildPlugin service', () => {
 
     expect(buildMock).toHaveBeenCalledTimes(1)
     expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(1)
+    expect(ctx.configService.load).toHaveBeenCalledTimes(1)
+    expect(ctx.configService.load).toHaveBeenCalledWith(ctx.configService.loadOptions)
     expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
     const restart = runStatefulHmrDevMock.mock.calls[0]![2]
 
@@ -391,8 +393,12 @@ describe('runtime buildPlugin service', () => {
     expect(firstWatcher.close).toHaveBeenCalledOnce()
     expect(buildMock).toHaveBeenCalledTimes(2)
     expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(2)
+    expect(ctx.configService.load).toHaveBeenCalledTimes(3)
     expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(3)
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenLastCalledWith(secondWatcher, '/')
+    expect(loggerInfoMock.mock.calls.filter(([message]) => String(message).startsWith('HMR 模式：'))).toEqual([
+      ['HMR 模式：stateful-experimental（weapp.hmr.runtime 显式配置）'],
+    ])
   })
 
   it('selects stateful dev for auto runtime when WeChat hot reload is enabled', async () => {
@@ -409,6 +415,8 @@ describe('runtime buildPlugin service', () => {
 
     expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(watcher, '/')
+    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：stateful-experimental（auto：微信开发者工具热重载已开启）')
+    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('关闭“热重载”并重启 wv dev'))
   })
 
   it('keeps explicit classic runtime when WeChat hot reload is enabled', async () => {
@@ -427,6 +435,8 @@ describe('runtime buildPlugin service', () => {
     await buildPromise
 
     expect(runStatefulHmrDevMock).not.toHaveBeenCalled()
+    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（weapp.hmr.runtime 显式配置）')
+    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('auto 或 stateful-experimental'))
   })
 
   it('runs dev app build with workers and caches touchAppWxss auto decision', async () => {
@@ -1679,7 +1689,7 @@ describe('runtime buildPlugin service', () => {
       cursor += totalMs + 10
     }
 
-    expect(loggerInfoMock).not.toHaveBeenCalled()
+    expect(loggerInfoMock.mock.calls.flat().join('\n')).not.toContain('疑似慢段')
     nowSpy.mockRestore()
   })
 
@@ -1724,7 +1734,7 @@ describe('runtime buildPlugin service', () => {
       cursor += totalMs + 10
     }
 
-    expect(loggerInfoMock).toHaveBeenCalledTimes(1)
+    expect(loggerInfoMock.mock.calls.filter(([message]) => String(message).includes('疑似慢段'))).toHaveLength(1)
     nowSpy.mockRestore()
   })
 

@@ -73,6 +73,76 @@ describe('stateful HMR Vite adapter', () => {
     expect(registeredClientId).toBe('weapp-vite-stateful-hmr')
   })
 
+  it('prepares fallback assets before triggering and awaiting a full rebuild', async () => {
+    const calls: string[] = []
+    const adapter = new StatefulHmrViteAdapter(
+      { root: '/project' } as any,
+      {} as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+    )
+    Reflect.set(adapter as object, 'bundledDev', {
+      _devEngine: {
+        ensureLatestBuildOutput: async () => {
+          calls.push('latest-output')
+        },
+        triggerFullBuild: () => {
+          calls.push('trigger-full')
+        },
+      },
+    })
+
+    await adapter.rebuild(async () => {
+      calls.push('prepare')
+    })
+
+    expect(calls).toEqual(['prepare', 'trigger-full', 'latest-output'])
+  })
+
+  it('routes bundled-dev no-op updates through the fallback without forwarding them', () => {
+    const fallbackFiles: string[][] = []
+    let forwarded = 0
+    const adapter = new StatefulHmrViteAdapter(
+      { build: { rolldownOptions: {} }, root: '/project' } as any,
+      {
+        environments: {
+          client: {
+            bundledDev: {
+              _devEngine: {},
+              clients: { setupIfNeeded: () => {} },
+              getRolldownOptions: async () => ({}),
+              handleHmrOutput: () => {
+                forwarded += 1
+              },
+              listen: async () => {},
+              storeOutputFiles: () => {},
+            },
+          },
+        },
+      } as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: (files) => {
+          fallbackFiles.push(files)
+          return false
+        },
+        waitForInitialBundle: async () => {},
+      },
+    )
+
+    adapter.install()
+    const bundledDev = (adapter as any).bundledDev
+    bundledDev.handleHmrOutput({}, ['src/pages/index.wxml'], { type: 'Noop' })
+
+    expect(fallbackFiles).toEqual([['src/pages/index.wxml']])
+    expect(forwarded).toBe(0)
+  })
+
   it('keeps Vite 7 module registration compatibility when available', async () => {
     const registeredModules: string[] = []
     const deliveredPayloads: string[] = []

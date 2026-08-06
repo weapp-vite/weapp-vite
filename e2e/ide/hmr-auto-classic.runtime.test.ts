@@ -82,6 +82,7 @@ async function connectAutomatorSession() {
   return await launchAutomator({
     launchMode: 'bridge',
     projectPath: APP_ROOT,
+    retryWarmupTimeout: true,
     timeout: 120_000,
     warmupRootSelectors: ['.page'],
     warmupRoute: NATIVE_ROUTE,
@@ -179,7 +180,7 @@ describe.sequential('automatic classic HMR in real WeChat DevTools', () => {
     await waitForAutomatorSessionReset()
 
     // Classic 全量重载会按预期关闭旧 bridge；共享 helper 只在这里恢复同一项目的连接。
-    await miniProgram.disconnect?.().catch(() => {})
+    await Promise.resolve(miniProgram.disconnect?.()).catch(() => {})
     miniProgram = await connectAutomatorSession()
     await miniProgram.reLaunch(NATIVE_ROUTE)
     const reloaded = await waitForRuntimeState(state => state.marker === 'STATEFUL-NATIVE-PATCHED')

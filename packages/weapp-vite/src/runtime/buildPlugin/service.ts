@@ -7,6 +7,7 @@ import type {
 import type { InlineConfig } from 'vite'
 import type { BuildTarget, MutableCompilerContext } from '../../context'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
+import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
 import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -33,7 +34,7 @@ import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJso
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { resolveHmrRuntime } from '../hmrRuntime'
+import { formatHmrRuntimeStartupMessages, resolveHmrRuntime } from '../hmrRuntime'
 import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
@@ -181,6 +182,11 @@ interface SnapshotBuildReason {
 interface SnapshotBuildBatch {
   reasons: SnapshotBuildReason[]
   startedAt: number
+}
+
+function toStatefulHmrOutput(output: RolldownOutput | RolldownOutput[]): StatefulHmrOutputFile[] {
+  const outputs = Array.isArray(output) ? output : [output]
+  return outputs.flatMap(result => result.output as StatefulHmrOutputFile[])
 }
 
 function resolveSnapshotSidecarDirtySummary(
@@ -351,6 +357,8 @@ function createSnapshotSidecarIgnoredMatcher(ctx: MutableCompilerContext) {
 
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let lastHmrSlowTipProfileCount = 0
+  let devHmrRuntime: ReturnType<typeof resolveHmrRuntime> | undefined
+  let devHmrRuntimeNoticeLogged = false
 
   function createHmrProfileJsonSample(totalMs: number): HmrProfileJsonSample {
     const profile = ctx.runtimeState.build.hmr.profile
@@ -1172,11 +1180,26 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       ...(buildOptions.build ?? {}),
       write: true,
     }
-    const hmrRuntime = resolveHmrRuntime({
+    const configuredHmrRuntime = configService.weappViteConfig.hmr?.runtime
+    const compileHotReLoad = configService.projectPrivateConfig.setting?.compileHotReLoad
+    devHmrRuntime ??= resolveHmrRuntime({
       platform: configService.platform,
-      configured: configService.weappViteConfig.hmr?.runtime,
-      compileHotReLoad: configService.projectPrivateConfig.setting?.compileHotReLoad,
+      configured: configuredHmrRuntime,
+      compileHotReLoad,
     })
+    const hmrRuntime = devHmrRuntime
+    if (target === 'app' && !devHmrRuntimeNoticeLogged) {
+      devHmrRuntimeNoticeLogged = true
+      const messages = formatHmrRuntimeStartupMessages({
+        platform: configService.platform,
+        configured: configuredHmrRuntime,
+        compileHotReLoad,
+        runtime: hmrRuntime,
+      })
+      for (const message of messages) {
+        logger.info(message)
+      }
+    }
     if (target === 'app' && hmrRuntime === 'stateful-experimental') {
       const snapshotBuildOptions: InlineConfig = {
         ...buildOptions,
@@ -1185,7 +1208,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           watch: undefined,
         },
       }
-      await build(snapshotBuildOptions)
+      const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
+      await configService.load(configService.loadOptions)
       resetRuntimeStateForFreshBuild(ctx.runtimeState)
       await scanService.loadAppEntry()
       scanService.loadSubPackages()
@@ -1203,10 +1227,44 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           await statefulWatcher?.close()
           logger.info('检测到非兼容更新，正在重启微信状态保持 HMR 构建...')
           resetRuntimeStateForFreshBuild(ctx.runtimeState)
+          await configService.load(configService.loadOptions)
           await scanService.loadAppEntry()
           scanService.loadSubPackages()
           await runDev(target)
           logger.success('微信状态保持 HMR 构建已完成完整重载。')
+        }, {
+          initial: initialSnapshot,
+          rebuild: async (files) => {
+            for (const file of files) {
+              invalidateFileCache(file)
+            }
+            resetRuntimeStateForFreshBuild(ctx.runtimeState)
+            await configService.load(configService.loadOptions)
+            await scanService.loadAppEntry()
+            scanService.loadSubPackages()
+            const snapshotOptions = createDevBuildOptions()
+            snapshotOptions.build = {
+              ...(snapshotOptions.build ?? {}),
+              emptyOutDir: false,
+              watch: undefined,
+              write: true,
+            }
+            snapshotOptions.plugins = [
+              ...(snapshotOptions.plugins ?? []),
+              {
+                name: 'weapp-vite:stateful-hmr-snapshot-assets',
+                enforce: 'post',
+                generateBundle(_options, bundle) {
+                  for (const [fileName, item] of Object.entries(bundle)) {
+                    if (item.type === 'chunk') {
+                      delete bundle[fileName]
+                    }
+                  }
+                },
+              },
+            ]
+            return toStatefulHmrOutput(await build(snapshotOptions))
+          },
         }),
         workerPromise,
       ])

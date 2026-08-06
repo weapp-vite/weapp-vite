@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   isSafeJavaScriptPatch,
   isStatefulHmrBoundary,
+  mergeStatefulHmrSnapshotAssets,
   redirectNativeComponentRegistration,
+  requiresStatefulHmrSnapshot,
   shouldResetStatefulHmrRetention,
+  shouldRestartStatefulHmrServer,
   stampStatefulHmrFullBuild,
 } from './session'
 
@@ -87,6 +90,24 @@ describe('stateful hmr session', () => {
     expect(shouldResetStatefulHmrRetention(0, 16 * 1024 * 1024 - 1, 1)).toBe(true)
   })
 
+  it('rebuilds source fallbacks in place and only restarts for config dependencies', () => {
+    const configDependencies = ['/project/weapp-vite.config.ts', '/project/shared.config.ts']
+
+    expect(shouldRestartStatefulHmrServer(['/project/src/pages/index.wxml'], configDependencies)).toBe(false)
+    expect(shouldRestartStatefulHmrServer(['/project/src/app.css'], configDependencies)).toBe(false)
+    expect(shouldRestartStatefulHmrServer(['/project/weapp-vite.config.ts'], configDependencies)).toBe(true)
+    expect(shouldRestartStatefulHmrServer(['C:\\project\\shared.config.ts'], ['C:/project/shared.config.ts'])).toBe(true)
+  })
+
+  it('schedules snapshots for sidecars and unsafe script or Vue updates', () => {
+    expect(requiresStatefulHmrSnapshot('/project/src/pages/index.wxml')).toBe(true)
+    expect(requiresStatefulHmrSnapshot('/project/src/app.css')).toBe(true)
+    expect(requiresStatefulHmrSnapshot('/project/src/pages/index.ts')).toBe(false)
+    expect(requiresStatefulHmrSnapshot('/project/src/pages/index.vue', ['entry-direct:1'])).toBe(false)
+    expect(requiresStatefulHmrSnapshot('/project/src/pages/index.vue', ['entry-style-only:1'])).toBe(true)
+    expect(requiresStatefulHmrSnapshot('/project/src/pages/index.ts', ['tailwind-content:2'])).toBe(true)
+  })
+
   it('stamps every JavaScript chunk in a full build with the same build id', () => {
     const output = [
       { code: 'app();', fileName: 'app.js', type: 'chunk' },
@@ -99,5 +120,26 @@ describe('stateful hmr session', () => {
     expect(output[0].code).toBe('// weapp-vite-stateful-build:build-a\napp();')
     expect(output[1].code).toBe('// weapp-vite-stateful-build:build-a\nshared();')
     expect(output[2]).toEqual({ fileName: 'app.json', source: '{}', type: 'asset' })
+  })
+
+  it('keeps stateful chunks while replacing serve-mode assets with snapshot assets', () => {
+    const output = [
+      { code: 'stateful();', fileName: 'app.js', type: 'chunk' },
+      { fileName: 'app.wxss', source: '', type: 'asset' },
+      { fileName: 'server-only.json', source: '{}', type: 'asset' },
+    ] as any
+
+    mergeStatefulHmrSnapshotAssets(output, [
+      { code: 'plain();', fileName: 'app.js', type: 'chunk' },
+      { fileName: 'app.wxss', source: '.bg{}', type: 'asset' },
+      { fileName: 'pages/index/index.wxml', source: '<view/>', type: 'asset' },
+    ] as any)
+
+    expect(output).toEqual([
+      { code: 'stateful();', fileName: 'app.js', type: 'chunk' },
+      { fileName: 'app.wxss', source: '.bg{}', type: 'asset' },
+      { fileName: 'server-only.json', source: '{}', type: 'asset' },
+      { fileName: 'pages/index/index.wxml', source: '<view/>', type: 'asset' },
+    ])
   })
 })

@@ -265,7 +265,7 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
         waitMs: 200,
       })
       if (isToolError(tapNodeResult)) {
-        expectToolError(tapNodeResult, /Element\.tap|DevTools did not respond|超时|点击/)
+        expectToolError(tapNodeResult, /未找到元素|Element\.tap|DevTools did not respond|超时|点击/)
         await expectMcpDemoDistContract()
       }
       else {
@@ -349,7 +349,7 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
       expect(measureNode.boundingClientRect?.width).toBeGreaterThan(0)
       expect(measureNode.boundingClientRect?.height).toBeGreaterThan(0)
     }
-    else if (!liveDomAvailable) {
+    else {
       await expectDomToolUnavailable('weapp_runtime_find_node', { selector: ROOT_SELECTOR, withWxml: true })
       await expectDomToolUnavailable('weapp_runtime_find_nodes', { selector: '.probe-value' })
       await expectDomToolUnavailable('weapp_runtime_tap_node', { selector: TAP_BUTTON_SELECTOR, waitMs: 200 })
