@@ -660,7 +660,9 @@ async function auditScenario(
     if (project.hmrRuntime === 'standard') {
       result.profile = await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000)
     }
-    result.totalMs = result.profile?.totalMs ?? result.observedMs
+    result.totalMs = project.hmrRuntime === 'standard'
+      ? result.profile?.totalMs ?? result.observedMs
+      : undefined
     result.impact = diffDistSnapshots(before, after)
   }
   catch (error) {
