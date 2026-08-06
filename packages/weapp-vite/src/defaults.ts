@@ -76,7 +76,7 @@ export function getWeappViteConfig(): WeappViteConfig {
       alipayNpmMode: 'node_modules',
     },
     hmr: {
-      runtime: 'classic',
+      runtime: 'auto',
       sharedChunks: 'auto',
       touchAppWxss: 'auto',
       logLevel: 'default',

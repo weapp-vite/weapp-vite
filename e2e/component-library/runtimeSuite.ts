@@ -11,6 +11,13 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { cleanupDevtoolsScreenshotArtifacts } from '../utils/ide-devtools-screenshot-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import {
+  resolveComponentLibraryRuntimeMode,
+  selectComponentLibraryScenarios,
+  shouldCaptureComponentLibraryScreenshot,
+  shouldRecoverComponentLibrarySession,
+  shouldRotateComponentLibrarySession,
+} from './runtimePolicy'
 import { assertNonBlankPng } from './webHarness'
 import { normalizeWechatViewportScreenshot } from './wechatScreenshot'
 
@@ -18,7 +25,7 @@ const ROOT = path.resolve(import.meta.dirname, '../..')
 const CLI_PATH = path.join(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const PAGE_READY_TIMEOUT = 20_000
 const DEFAULT_SCREENSHOT_SETTLE_MS = 100
-const DEVTOOLS_SCREENSHOT_SESSION_LIMIT = 72
+const DEVTOOLS_SCREENSHOT_SESSION_LIMIT = 20
 const DEVTOOLS_SCENARIO_ATTEMPTS = 2
 const FAST_METHOD_ROOT_CONFIRM_THRESHOLD_MS = 1_000
 const DEFAULT_SESSION_READY_ROUTE = '/pages/index/index'
@@ -27,6 +34,7 @@ const SCENARIO_READY_SELECTOR = '#e2e-root'
 const SUITE_SETUP_TIMEOUT = 300_000
 const WECHAT_SCREENSHOT_HEIGHT = 1_506
 const WECHAT_SCREENSHOT_WIDTH = 780
+const FORCE_SCREENSHOT_TIMEOUT_ONCE_ENV = 'WEAPP_VITE_COMPONENT_FORCE_SCREENSHOT_TIMEOUT_ONCE'
 
 function resolveScreenshotSettleMs() {
   const configured = Number(process.env.WEAPP_VITE_COMPONENT_SCREENSHOT_SETTLE_MS)
@@ -47,6 +55,8 @@ export interface ComponentLibraryRuntimeSuiteOptions {
   appRoot: string
   baselineRoot: string
   componentFilterEnv: string
+  runtimeModeEnv?: string
+  visualComponents?: readonly string[]
   devtoolsEngineBuildFallbackSettleMs?: number
   devtoolsRefreshProjectAfterConnect?: boolean
   devtoolsScreenshotSessionLimit?: number
@@ -96,22 +106,34 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
     : resolveScreenshotSettleMs()
   const resolveScenarioScreenshotSettleMs = (component: string) => {
     const override = options.screenshotSettleOverrides?.[component]
-    return Number.isFinite(override)
+    return typeof override === 'number' && Number.isFinite(override)
       ? Math.max(0, Math.trunc(override))
       : screenshotSettleMs
   }
-  const devtoolsScreenshotSessionLimit = options.devtoolsScreenshotSessionLimit
+  const configuredSessionLimit = options.devtoolsScreenshotSessionLimit
     ?? DEVTOOLS_SCREENSHOT_SESSION_LIMIT
+  const devtoolsScreenshotSessionLimit = Number.isFinite(configuredSessionLimit)
+    ? Math.max(1, Math.trunc(configuredSessionLimit))
+    : DEVTOOLS_SCREENSHOT_SESSION_LIMIT
   const reportTimings = process.env.WEAPP_VITE_COMPONENT_TIMINGS === '1'
+  const forceScreenshotTimeoutOnce = process.env[FORCE_SCREENSHOT_TIMEOUT_ONCE_ENV] === '1'
   const componentFilter = new Set(
     (process.env[options.componentFilterEnv] ?? '')
       .split(',')
       .map(component => component.trim())
       .filter(Boolean),
   )
+  const runtimeMode = resolveComponentLibraryRuntimeMode(
+    process.env[options.runtimeModeEnv ?? 'WEAPP_VITE_COMPONENT_LIBRARY_MODE'],
+  )
+  const modeScenarios = selectComponentLibraryScenarios(
+    options.scenarios,
+    runtimeMode,
+    options.visualComponents,
+  )
   const scenarios = componentFilter.size > 0
-    ? options.scenarios.filter(scenario => componentFilter.has(scenario.component))
-    : options.scenarios
+    ? modeScenarios.filter(scenario => componentFilter.has(scenario.component))
+    : modeScenarios
   const reportProgress = (message: string) => {
     process.stderr.write(`[${options.progressLabel}][${runtimeProvider}] ${message}\n`)
   }
@@ -119,6 +141,7 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
     return options.ignoredRuntimeErrorPatterns?.some(pattern => pattern.test(error)) === true
   }
   let wechatSystemInfo: Record<string, unknown> | undefined
+  let forcedScreenshotTimeout = false
   let warmupScenarioPage: any
   let warmupScenarioRoute = ''
 
@@ -135,34 +158,35 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
     const diffPath = path.join(outputRoot, `${component}.diff.png`)
     let screenshot: Buffer | undefined
     let screenshotError: unknown
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      const captureStartedAt = Date.now()
-      try {
-        const rawScreenshot = await miniProgram.screenshot({ timeout: 15_000 })
-        const capturedAt = Date.now()
-        const deviceScreenshot = typeof rawScreenshot === 'string'
-          ? Buffer.from(rawScreenshot, 'base64')
-          : Buffer.from(rawScreenshot)
-        wechatSystemInfo ??= await miniProgram.systemInfo()
-        const systemInfoReadyAt = Date.now()
-        screenshot = await normalizeWechatViewportScreenshot({
-          screenshot: deviceScreenshot,
-          systemInfo: wechatSystemInfo,
-          targetHeight: WECHAT_SCREENSHOT_HEIGHT,
-          targetWidth: WECHAT_SCREENSHOT_WIDTH,
-        })
-        const normalizedAt = Date.now()
-        assertNonBlankPng(screenshot, `wechat/${component}`)
-        if (reportTimings) {
-          reportProgress(`capture ${component} attempt=${attempt + 1} protocol=${capturedAt - captureStartedAt}ms systemInfo=${systemInfoReadyAt - capturedAt}ms normalize=${normalizedAt - systemInfoReadyAt}ms`)
-        }
-        screenshotError = undefined
-        break
+    const captureStartedAt = Date.now()
+    try {
+      const shouldForceTimeout = forceScreenshotTimeoutOnce && !forcedScreenshotTimeout
+      forcedScreenshotTimeout ||= shouldForceTimeout
+      if (shouldForceTimeout) {
+        reportProgress(`force-protocol-timeout ${component}`)
       }
-      catch (error) {
-        screenshotError = error
-        await new Promise(resolve => setTimeout(resolve, 400))
+      const rawScreenshot = await miniProgram.screenshot({ timeout: shouldForceTimeout ? 1 : 15_000 })
+      const capturedAt = Date.now()
+      const deviceScreenshot = typeof rawScreenshot === 'string'
+        ? Buffer.from(rawScreenshot, 'base64')
+        : Buffer.from(rawScreenshot)
+      const systemInfo = wechatSystemInfo ?? await miniProgram.systemInfo()
+      wechatSystemInfo = systemInfo
+      const systemInfoReadyAt = Date.now()
+      screenshot = await normalizeWechatViewportScreenshot({
+        screenshot: deviceScreenshot,
+        systemInfo,
+        targetHeight: WECHAT_SCREENSHOT_HEIGHT,
+        targetWidth: WECHAT_SCREENSHOT_WIDTH,
+      })
+      const normalizedAt = Date.now()
+      assertNonBlankPng(screenshot, `wechat/${component}`)
+      if (reportTimings) {
+        reportProgress(`capture ${component} protocol=${capturedAt - captureStartedAt}ms systemInfo=${systemInfoReadyAt - capturedAt}ms normalize=${normalizedAt - systemInfoReadyAt}ms`)
       }
+    }
+    catch (error) {
+      screenshotError = error
     }
     if (!screenshot || screenshotError) {
       throw screenshotError ?? new Error(`wechat/${component}: 截图未返回有效图像`)
@@ -291,15 +315,14 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
       await closeRuntimeSession('final')
     }, 60_000)
 
-    it(`逐页完成 ${options.expectedCount} 个组件的渲染、交互与状态断言`, { timeout: options.testTimeout ?? 1_200_000 }, async () => {
+    it(`${runtimeMode} 模式逐页完成 ${scenarios.length} 个组件的渲染、交互与状态断言`, { timeout: options.testTimeout ?? 1_200_000 }, async () => {
       const failures: string[] = []
       for (const [index, scenario] of scenarios.entries()) {
-        // DevTools 的 App.captureScreenshot 单会话受 100 个临时文件 quota 限制；
-        // 组件视觉套件需要隔离启动新会话，但继续复用同一次构建并保留逐页真实截图。
+        // 长时间连续截图会让 DevTools renderer 与协议队列逐步失稳；
+        // 视觉套件定期轮换会话，但继续复用同一次构建并保留逐页真实截图。
         if (
           runtimeProvider === 'devtools'
-          && index > 0
-          && index % devtoolsScreenshotSessionLimit === 0
+          && shouldRotateComponentLibrarySession(runtimeMode, index, devtoolsScreenshotSessionLimit)
         ) {
           await closeRuntimeSession(`rotate-${index}`)
           await launchRuntimeSession(`rotate-${index}`, scenario)
@@ -378,7 +401,7 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
             }
             await page.waitFor(resolveScenarioScreenshotSettleMs(scenario.component))
             settledAt = Date.now()
-            if (runtimeProvider === 'devtools') {
+            if (runtimeProvider === 'devtools' && shouldCaptureComponentLibraryScreenshot(runtimeMode)) {
               await captureWechatScreenshot(miniProgram, scenario.component)
             }
             scenarioFailures = attemptFailures
@@ -398,7 +421,7 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
             scenarioError = error
             const reason = error instanceof Error ? error.message : String(error)
             reportProgress(`attempt-failed ${scenario.component} attempt=${attempt}/${maxAttempts} reason=${reason}`)
-            if (attempt >= maxAttempts) {
+            if (attempt >= maxAttempts || !shouldRecoverComponentLibrarySession(error)) {
               break
             }
             await closeRuntimeSession(`recover-${scenario.component}`)

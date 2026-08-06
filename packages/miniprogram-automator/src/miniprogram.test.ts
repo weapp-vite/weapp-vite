@@ -213,6 +213,23 @@ describe('MiniProgram', () => {
     })
   })
 
+  it('does not retry a protocol timeout on the same connection', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.captureScreenshot within 12_000ms'),
+      { code: 'DEVTOOLS_PROTOCOL_TIMEOUT', method: 'App.captureScreenshot' },
+    )
+
+    connection.send.mockRejectedValue(timeoutError)
+
+    await expect(miniProgram.screenshot({ timeout: 12_000 })).rejects.toMatchObject({
+      code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+      method: 'App.captureScreenshot',
+    })
+    expect(connection.send).toHaveBeenCalledTimes(1)
+  })
+
   it('forwards raw Tool domain commands through tool()', async () => {
     const connection = new FakeConnection()
     const miniProgram = new MiniProgram(connection as any)

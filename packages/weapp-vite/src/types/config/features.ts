@@ -281,7 +281,7 @@ export interface WeappHmrConfig {
   /**
    * @description 微信开发者工具热更新运行时。stateful-experimental 使用实验性的状态保持协议。
    */
-  runtime?: 'classic' | 'stateful-experimental'
+  runtime?: 'auto' | 'classic' | 'stateful-experimental'
   sharedChunks?: 'full' | 'auto' | 'off'
   touchAppWxss?: boolean | 'auto'
   /**

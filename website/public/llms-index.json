@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-30T04:47:58.636Z",
+  "generatedAt": "2026-08-05T07:19:19.416Z",
   "site": "https://vite.icebreaker.top",
   "count": 274,
   "items": [
@@ -617,7 +617,7 @@
         "weapp.hmr.profileJson {#weapp-hmr-profilejson}",
         "关联阅读"
       ],
-      "updatedAt": "2026-07-13",
+      "updatedAt": "2026-08-05",
       "source": "config/hmr.md"
     },
     {

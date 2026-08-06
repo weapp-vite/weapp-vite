@@ -196,6 +196,7 @@ describe.sequential('stateful HMR in real WeChat DevTools', () => {
     miniProgram = await launchAutomator({
       launchMode: 'bridge',
       projectPath: APP_ROOT,
+      retryWarmupTimeout: true,
       timeout: 120_000,
       warmupRootSelectors: ['.page'],
       warmupRoute: NATIVE_ROUTE,

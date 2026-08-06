@@ -5,6 +5,9 @@ import { defineConfig } from '.'
 const objectConfig = defineConfig({
   weapp: {
     srcRoot: 'src',
+    hmr: {
+      runtime: 'auto',
+    },
     wevu: {
       minify: true,
       runtime: 'auto' as const,
@@ -94,6 +97,7 @@ const objectConfig = defineConfig({
   },
 })
 expectAssignable<string | undefined>(objectConfig.weapp?.srcRoot)
+expectAssignable<'auto' | 'classic' | 'stateful-experimental' | undefined>(objectConfig.weapp?.hmr?.runtime)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.wevu?.defaults?.component?.allowNullPropInput)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.wevu?.minify)
 expectAssignable<'auto' | 'dev' | 'build' | undefined>(objectConfig.weapp?.wevu?.runtime)

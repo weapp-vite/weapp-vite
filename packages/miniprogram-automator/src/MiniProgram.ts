@@ -163,17 +163,9 @@ function isCaptureScreenshotRecoverableError(error: unknown) {
     return false
   }
 
-  if (
-    'code' in error
-    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    && 'method' in error
-    && error.method === 'App.captureScreenshot'
-  ) {
-    return true
-  }
-
+  // 协议超时无法取消 DevTools 内部仍在执行的截图任务；调用方应轮换会话，
+  // 不能在同一连接上继续堆积请求。只有 DevTools 明确返回的瞬时失败适合重试。
   return error.message.includes('fail to capture screenshot')
-    || error.message.includes('App.captureScreenshot')
 }
 
 function isRouteContextProbeError(error: unknown) {

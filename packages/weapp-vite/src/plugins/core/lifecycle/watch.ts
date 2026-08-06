@@ -720,5 +720,6 @@ export function createWatchChangeHook(state: CorePluginState) {
       watchToDirtyMs: performance.now() - startedAt,
       dirtyReasonSummary,
     }
+    state.ctx.onStatefulHmrSourceChange?.(normalizedId, dirtyReasonSummary)
   }
 }

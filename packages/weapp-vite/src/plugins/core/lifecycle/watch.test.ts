@@ -210,6 +210,7 @@ describe('core lifecycle watch hook', () => {
     })
     collectAffectedEntriesMock.mockReturnValue(new Set(['/project/src/pages/hmr/index.ts']))
     const state = createState()
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
     const hook = createWatchChangeHook(state)
 
     await hook('/project/src/pages/hmr/index.wxml', { event: 'update' })
@@ -217,6 +218,10 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
     expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'metadata')
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['sidecar-direct:1'])
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledWith(
+      '/project/src/pages/hmr/index.wxml',
+      ['sidecar-direct:1'],
+    )
   })
 
   it('does not expand sidecar updates through stale shared chunk importers', async () => {

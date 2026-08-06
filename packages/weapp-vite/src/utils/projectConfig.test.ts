@@ -7,6 +7,7 @@ import {
   getProjectConfig,
   getProjectConfigFileName,
   getProjectConfigRootKeys,
+  getProjectPrivateConfig,
   getProjectPrivateConfigFileName,
   resolveProjectConfigRoot,
   resolveProjectConfigSyncDirs,
@@ -63,6 +64,22 @@ describe('projectConfig utils', () => {
       appid: 'wx123',
     })
     expect(ignorePrivate).not.toHaveProperty('projectname')
+  })
+
+  it('keeps private settings available independently from the merged base settings', async () => {
+    const root = await createTempDir()
+    await fs.writeJson(path.join(root, 'project.config.json'), {
+      setting: { es6: true },
+    })
+    await fs.writeJson(path.join(root, 'project.private.config.json'), {
+      setting: { compileHotReLoad: true },
+    })
+
+    const merged = await getProjectConfig(root)
+    const privateConfig = await getProjectPrivateConfig(root)
+
+    expect(merged.setting).toEqual({ es6: true })
+    expect(privateConfig.setting).toEqual({ compileHotReLoad: true })
   })
 
   it('supports custom config paths and falls back empty json payloads to plain objects', async () => {

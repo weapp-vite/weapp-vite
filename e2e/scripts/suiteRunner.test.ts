@@ -251,6 +251,9 @@ describe('suiteRunner', () => {
     const ideHeadlessFullTasks = await getSuiteTasks('ide-headless-full')
     const ideChunkModesTasks = await getSuiteTasks('ide-full:chunk-modes')
     const ideGithubIssuesTasks = await getSuiteTasks('ide-full:github-issues')
+    const ideComponentLibraryTasks = await getSuiteTasks('ide-component-libraries')
+    const ideComponentLibraryVisualTasks = await getSuiteTasks('ide-component-libraries:visual')
+    const ideComponentLibraryVisualFullTasks = await getSuiteTasks('ide-component-libraries:visual-full')
     const ideSmokeLabels = ideSmokeTasks.map(task => task.label)
     const ideGateLabels = ideGateTasks.map(task => task.label)
     const ideFullLabels = ideFullTasks.map(task => task.label)
@@ -268,9 +271,9 @@ describe('suiteRunner', () => {
     const templateTailwindDevOpenMultiTask = ideFullTasks.find(task => task.label === 'ide/template-tailwindcss-dev-open-multi.runtime.test.ts')
     const templateTailwindTdesignHmrTask = ideFullTasks.find(task => task.label === 'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts')
     const templateWevuTailwindTdesignHmrTask = ideFullTasks.find(task => task.label === 'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts')
-    const uviewPlusCompatTask = ideFullTasks.find(task => task.label === 'ide/uview-plus-compat.runtime.test.ts')
+    const uviewPlusCompatTask = ideComponentLibraryTasks.find(task => task.label === 'ide/uview-plus-compat.runtime.test.ts')
     const wevuRuntimeTask = ideFullTasks.find(task => task.label === 'ide/wevu-runtime.weapp.test.ts')
-    const wotUiCompatTask = ideFullTasks.find(task => task.label === 'ide/wot-ui-compat.runtime.test.ts')
+    const wotUiCompatTask = ideComponentLibraryTasks.find(task => task.label === 'ide/wot-ui-compat.runtime.test.ts')
 
     expect(ideSmokeTasks.length).toBeLessThan(ideGateTasks.length)
     expect(ideGateTasks.length).toBeLessThan(ideFullTasks.length)
@@ -282,6 +285,14 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
     expect(ideFullLabels).not.toContain('ide/runtimeErrors.test.ts')
+    expect(ideFullLabels).not.toContain('ide/uview-plus-compat.runtime.test.ts')
+    expect(ideFullLabels).not.toContain('ide/wot-ui-compat.runtime.test.ts')
+    expect(ideComponentLibraryTasks.map(task => task.label)).toEqual([
+      'ide/uview-plus-compat.runtime.test.ts',
+      'ide/wot-ui-compat.runtime.test.ts',
+    ])
+    expect(ideComponentLibraryVisualTasks.map(task => task.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE)).toEqual(['visual', 'visual'])
+    expect(ideComponentLibraryVisualFullTasks.map(task => task.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE)).toEqual(['visual-full', 'visual-full'])
     expect(devtoolsCliWorkflowTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(githubIssuesAggregateTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('3600000')
     expect(statefulHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')

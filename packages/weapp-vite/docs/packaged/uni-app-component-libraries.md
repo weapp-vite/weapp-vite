@@ -42,6 +42,18 @@ export default defineConfig({
 
 `supportFilesStrategy` 默认为 `'used'`；需要生成全量组件辅助文件时可传入 `UviewPlusResolver({ supportFilesStrategy: 'full' })`。
 
+## 微信开发者工具回归分层
+
+组件库 IDE 验收拆分为运行时、代表性视觉和全量视觉三种命令。运行时命令覆盖全部组件页面的行为与交互，不调用截图；视觉命令独立执行截图对比。
+
+```bash
+pnpm e2e:ide:component-libraries
+pnpm e2e:ide:component-libraries:visual
+pnpm e2e:ide:component-libraries:visual:full
+```
+
+也可以分别运行 `pnpm e2e:ide:uview-plus`、`pnpm e2e:ide:wot-ui` 及其 `:visual` / `:visual:full` 变体。视觉套件在 `App.captureScreenshot` 协议超时后轮换 DevTools 会话；自动恢复只处理连接级错误，视觉差异仍会直接失败。
+
 ## Wot UI
 
 ## 安装

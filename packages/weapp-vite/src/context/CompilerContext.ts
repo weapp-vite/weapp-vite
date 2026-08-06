@@ -28,6 +28,7 @@ export interface CompilerContext {
   buildService: BuildService
   scanService: ScanService
   currentBuildTarget?: BuildTarget
+  onStatefulHmrSourceChange?: (file: string, dirtyReasonSummary: string[]) => void
 }
 
 export type MutableCompilerContext = Partial<Omit<CompilerContext, 'runtimeState'>> & {
@@ -44,4 +45,5 @@ export type MutableCompilerContext = Partial<Omit<CompilerContext, 'runtimeState
   buildService?: BuildService
   scanService?: ScanService
   currentBuildTarget?: BuildTarget
+  onStatefulHmrSourceChange?: (file: string, dirtyReasonSummary: string[]) => void
 }

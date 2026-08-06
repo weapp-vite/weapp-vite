@@ -3,7 +3,7 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { disableProjectCompileHotReload, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { waitForFile } from '../wevu-runtime.utils'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -158,6 +158,7 @@ async function withRetailDevWatch<T>(
   task: (dev: ReturnType<typeof startDevProcess>) => Promise<T>,
 ) {
   await fs.remove(DIST_ROOT)
+  const restoreCompileHotReload = await disableProjectCompileHotReload(TEMPLATE_ROOT)
 
   const dev = startDevProcess('node', [CLI_PATH, 'dev', TEMPLATE_ROOT, '--platform', 'weapp'], {
     cwd: TEMPLATE_ROOT,
@@ -178,7 +179,12 @@ async function withRetailDevWatch<T>(
     return await task(dev)
   }
   finally {
-    await dev.stop(5_000)
+    try {
+      await dev.stop(5_000)
+    }
+    finally {
+      await restoreCompileHotReload()
+    }
   }
 }
 
@@ -186,6 +192,7 @@ async function withMinimalDevWatch<T>(
   task: (dev: ReturnType<typeof startDevProcess>) => Promise<T>,
 ) {
   await fs.remove(MINIMAL_DIST_ROOT)
+  const restoreCompileHotReload = await disableProjectCompileHotReload(MINIMAL_TEMPLATE_ROOT)
 
   const dev = startDevProcess('node', [CLI_PATH, 'dev', MINIMAL_TEMPLATE_ROOT, '--platform', 'weapp'], {
     cwd: MINIMAL_TEMPLATE_ROOT,
@@ -206,7 +213,12 @@ async function withMinimalDevWatch<T>(
     return await task(dev)
   }
   finally {
-    await dev.stop(5_000)
+    try {
+      await dev.stop(5_000)
+    }
+    finally {
+      await restoreCompileHotReload()
+    }
   }
 }
 

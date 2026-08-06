@@ -80,11 +80,12 @@ export class StatefulHmrViteAdapter {
     this.installListener(bundledDev)
   }
 
-  async rebuild(): Promise<void> {
+  async rebuild(prepare?: () => Promise<void>): Promise<void> {
     const engine = this.bundledDev?._devEngine
     if (!engine) {
-      return
+      throw new Error('Vite DevEngine 未初始化，无法执行 stateful HMR 完整刷新。')
     }
+    await prepare?.()
     engine.triggerFullBuild()
     await engine.ensureLatestBuildOutput()
   }
@@ -187,6 +188,7 @@ export class StatefulHmrViteAdapter {
     const original = bundledDev.handleHmrOutput.bind(bundledDev)
     bundledDev.handleHmrOutput = (client, files, output, info) => {
       if (output.type === 'Noop') {
+        this.callbacks.onPatch(files, output)
         return
       }
       if (this.callbacks.onPatch(files, output)) {

@@ -313,7 +313,7 @@ export default defineConfig({
 
 ### `hmr.runtime`
 
-默认值为 `classic`。微信项目可实验性开启状态保持型热更新：
+默认值为 `auto`。微信项目会在 `wv dev` 启动时根据开发者工具设置自动选择 HMR 运行时，也可显式锁定状态保持型热更新：
 
 ```ts
 export default defineConfig({
@@ -327,7 +327,9 @@ export default defineConfig({
 
 安全的 JavaScript/Vue 更新会保留当前 Page/Component 实例、route/query、输入和可序列化 data/setup ref，并替换原生 Page、原生 Component 与 wevu 方法。CSS、资源、JSON/配置、不兼容模块图或补丁失败会回退完整构建与当前路由重载。
 
-该模式目前只支持微信小程序，需要微信开发者工具开启服务端口和热重载，并设置 `project.private.config.json` 的 `setting.compileHotReLoad: true`。需要既有写盘/刷新行为时保持 `classic`。
+`auto` 在 `project.private.config.json` 的 `setting.compileHotReLoad` 严格为 `true` 时选择 `stateful-experimental`，否则选择 `classic`；非微信平台也会回退到 `classic`。该判断只在启动时执行，修改开发者工具设置后需要重启 `wv dev`。启动日志会显示最终模式、选择来源，以及通过 DevTools 热重载开关或 `weapp.hmr.runtime` 切换模式的方法。显式配置 `classic` 或 `stateful-experimental` 始终优先。
+
+状态保持模式目前只支持微信小程序，需要微信开发者工具开启服务端口和热重载。需要既有写盘/刷新行为时显式配置 `classic`。
 
 ### `hmr.logLevel` / `hmr.profileJson`
 

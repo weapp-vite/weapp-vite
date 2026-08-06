@@ -229,6 +229,7 @@ describe.sequential('wevu app runtime HMR', () => {
         },
       },
     })
+    ctxResult.ctx.configService.weappViteConfig.hmr = { runtime: 'classic' }
 
     let watcher: WatcherEmitter | undefined
 

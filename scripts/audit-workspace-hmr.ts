@@ -19,7 +19,7 @@ import {
   parseThresholdOverrides,
   renderThresholdMarkdown,
 } from './workspace-hmr/baseline'
-import { parseStatefulHmrControlSource, resolveHmrScriptOutputPath } from './workspace-hmr/scenarios'
+import { parseStatefulHmrControlSource, resolveHmrScriptOutputPath, resolveWorkspaceHmrRuntime } from './workspace-hmr/scenarios'
 
 const execFile = promisify(execFileCallback)
 
@@ -468,8 +468,8 @@ async function resolvePlatform(root: string): Promise<RuntimePlatform> {
 async function auditProject(project: ProjectCase): Promise<ProjectResult> {
   const profilePath = path.join(project.root, '.weapp-vite/hmr-profile.jsonl')
   const distRoot = project.distRoot
-  const scenarios = await discoverScenarios(project)
-  const selectedScenarios = maxScenariosPerProject
+  let scenarios = await discoverScenarios(project)
+  let selectedScenarios = maxScenariosPerProject
     ? scenarios.slice(0, maxScenariosPerProject)
     : scenarios
   const result: ProjectResult = {
@@ -527,6 +527,20 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     await dev.waitFor(waitForFile(path.join(distRoot, 'app.json'), startupTimeoutMs), `${project.id} app.json`)
     await waitForStableDistSnapshot(distRoot, startupDistStableMs, startupTimeoutMs)
     await sleep(settleMs)
+    project.hmrRuntime = resolveWorkspaceHmrRuntime(await pathExists(path.join(
+      distRoot,
+      '__weapp_vite_hmr/control.js',
+    )))
+    scenarios = await discoverScenarios(project)
+    selectedScenarios = maxScenariosPerProject
+      ? scenarios.slice(0, maxScenariosPerProject)
+      : scenarios
+    result.scenarios = selectedScenarios.map(scenario => ({
+      id: scenario.id,
+      label: scenario.label,
+      source: formatProjectPath(scenario.sourcePath),
+      output: formatProjectPath(scenario.outputPath),
+    }))
     const runnableScenarios = []
     for (const scenario of selectedScenarios) {
       if (await pathExists(scenario.outputPath)) {
@@ -646,7 +660,9 @@ async function auditScenario(
     if (project.hmrRuntime === 'standard') {
       result.profile = await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000)
     }
-    result.totalMs = result.profile?.totalMs ?? result.observedMs
+    result.totalMs = project.hmrRuntime === 'standard'
+      ? result.profile?.totalMs ?? result.observedMs
+      : undefined
     result.impact = diffDistSnapshots(before, after)
   }
   catch (error) {

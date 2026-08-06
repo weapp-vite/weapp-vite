@@ -249,6 +249,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       isDev: false,
       emitDefaultAutoImportOutputs: true,
       projectConfig: {},
+      projectPrivateConfig: {},
       config: {},
       loadOptions: input,
       packageJson: {},
@@ -363,6 +364,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     },
     get projectConfig() {
       return options.projectConfig
+    },
+    get projectPrivateConfig() {
+      return options.projectPrivateConfig
     },
     get projectConfigPath() {
       return options.projectConfigPath

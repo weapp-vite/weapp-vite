@@ -72,6 +72,7 @@ function isDevtoolsPageProtocolUnavailable(error: unknown) {
   return message.includes('DevTools did not respond to protocol method App.getCurrentPage')
     || message.includes('DevTools did not respond to protocol method App.getPageStack')
     || message.includes('DevTools did not respond to protocol method App.callFunction')
+    || message.includes('DevTools did not respond to protocol method App.captureScreenshot')
     || message.includes('Operation timed out after')
     || message.includes('Connection closed, check if wechat web devTools is still running')
     || message.includes('WebSocket is not open')
@@ -261,6 +262,22 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
       timeout: RELAUNCH_AUTOMATOR_TIMEOUT,
     })
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] automator-relaunched label=${label} isolated=true mode=bridge reason=tool-compile-unimplemented\n`)
+  }
+
+  async function reconnectRuntimeAutomator(label: string, reason: unknown) {
+    const message = reason instanceof Error ? reason.message : String(reason)
+    process.stdout.write(`[warn] [template-tailwindcss-tdesign:hmr] reconnect-automator label=${label} reason=${message.replace(/\s+/g, ' ').trim().slice(0, 240)}\n`)
+    await Promise.resolve(miniProgram?.close?.()).catch(() => {})
+    miniProgram = undefined
+    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
+    await cleanupResidualDevtoolsProcesses()
+    await delay(1_600)
+    await launchRuntimeAutomator({
+      maxLaunchRetries: RELAUNCH_AUTOMATOR_RETRIES,
+      timeout: RELAUNCH_AUTOMATOR_TIMEOUT,
+    })
+    await relaunchIndexPage(miniProgram)
+    process.stdout.write(`[template-tailwindcss-tdesign:hmr] automator-reconnected label=${label} mode=bridge\n`)
   }
 
   async function refreshRuntimeForDistUpdate(
@@ -491,24 +508,32 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
     },
   ) {
     await refreshRuntimeForDistUpdate(label, requiresIsolatedRelaunch, expectedDist)
-    try {
-      const state = await waitForProbeBackgroundColor(expectedBg, escapedClass, label, 45_000)
-      process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=dom state=${JSON.stringify(state)}\n`)
-      return state
-    }
-    catch (probeError) {
-      const probeMessage = probeError instanceof Error ? probeError.message : String(probeError)
-      process.stdout.write(`[template-tailwindcss-tdesign:hmr] dom-probe-fallback-screenshot label=${label} reason=${probeMessage}\n`)
+    let lastError: unknown
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
       try {
-        const analysis = await waitForScreenshotColor(expectedBg, label, 45_000)
-        process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=screenshot analysis=${JSON.stringify(analysis)}\n`)
-        return analysis
+        const state = await waitForProbeBackgroundColor(expectedBg, escapedClass, label, 45_000)
+        process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=dom state=${JSON.stringify(state)}\n`)
+        return state
       }
-      catch (screenshotError) {
-        const screenshotMessage = screenshotError instanceof Error ? screenshotError.message : String(screenshotError)
-        throw new Error(`Failed to verify ${label} from the active DevTools project. DOM: ${probeMessage}; screenshot: ${screenshotMessage}`)
+      catch (probeError) {
+        const probeMessage = probeError instanceof Error ? probeError.message : String(probeError)
+        process.stdout.write(`[template-tailwindcss-tdesign:hmr] dom-probe-fallback-screenshot label=${label} reason=${probeMessage}\n`)
+        try {
+          const analysis = await waitForScreenshotColor(expectedBg, label, 45_000)
+          process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=screenshot analysis=${JSON.stringify(analysis)}\n`)
+          return analysis
+        }
+        catch (screenshotError) {
+          const screenshotMessage = screenshotError instanceof Error ? screenshotError.message : String(screenshotError)
+          lastError = new Error(`Failed to verify ${label} from the active DevTools project. DOM: ${probeMessage}; screenshot: ${screenshotMessage}`)
+          if (attempt === 2 || !isDevtoolsPageProtocolUnavailable(lastError)) {
+            throw lastError
+          }
+          await reconnectRuntimeAutomator(label, lastError)
+        }
       }
     }
+    throw lastError
   }
 
   it('updates the visible Tailwind arbitrary background color through dev HMR', async () => {

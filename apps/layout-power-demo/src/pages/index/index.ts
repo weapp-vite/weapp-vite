@@ -209,6 +209,7 @@ Page({
       && this.data.e2eRuntimeVendorMarker === e2eRuntimeVendorMarker
     return {
       currentLayout: this.data.currentLayout,
+      definitionMarker: e2eRuntimeVendorMarker,
       marker: this.data.e2eRuntimeVendorMarker,
       ok,
     }

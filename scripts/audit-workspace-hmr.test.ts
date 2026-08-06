@@ -1,8 +1,13 @@
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { parseStatefulHmrControlSource, resolveHmrScriptOutputPath } from './workspace-hmr/scenarios'
+import { parseStatefulHmrControlSource, resolveHmrScriptOutputPath, resolveWorkspaceHmrRuntime } from './workspace-hmr/scenarios'
 
 describe('workspace HMR script output', () => {
+  it('detects the runtime from the stateful control artifact', () => {
+    expect(resolveWorkspaceHmrRuntime(true)).toBe('stateful')
+    expect(resolveWorkspaceHmrRuntime(false)).toBe('standard')
+  })
+
   it('parses the generated stateful control assignment', () => {
     expect(parseStatefulHmrControlSource(
       'globalThis["__CONTROL__"] = {"buildId":"build-a","token":"token-a","url":"http://127.0.0.1:3000/hmr"};\n',
