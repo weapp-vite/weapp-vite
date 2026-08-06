@@ -90,6 +90,21 @@ app.config.globalProperties.$u = uni.$u
 
 每页都验证目标组件存在、目标与场景容器具有可见边界、没有运行时错误，并完成稳定交互或状态断言。上传、媒体、网络、权限和时钟类能力使用本地资源或确定性测试替身。
 
+### 微信开发者工具回归命令
+
+组件库 IDE 回归按运行时与视觉检查分层，避免把截图协议的稳定性问题混入行为门禁：
+
+```bash
+# 135 个页面的真实运行时行为与交互（不截图）
+pnpm e2e:ide:uview-plus
+# 10 个代表组件的截图对比
+pnpm e2e:ide:uview-plus:visual
+# 135 个页面的全量截图对比
+pnpm e2e:ide:uview-plus:visual:full
+```
+
+视觉套件在 `App.captureScreenshot` 协议超时后会关闭并轮换 DevTools 会话，不会在同一连接上叠加请求；视觉检查失败不会被当作连接故障自动重启。运行时和视觉套件是独立门禁，修改组件后可先运行 runtime，再按需运行视觉套件。
+
 `u-action-sheet-data` 与 `u-column-notice` 没有可注册的组件名，因此不伪造独立页面：前者由 action-sheet 场景覆盖，后者由 notice-bar 场景覆盖。
 
 ## 已知边界

@@ -43,6 +43,19 @@ export default defineConfig({
 
 `WotUiResolver()` 使用 Wot UI 2.2.0 的真实公开 SFC 清单建立标签映射，并返回 `sourceType: 'wevu-sfc'` 与可解析的源码 ID。不要自行假设所有 `wd-*` 标签都能通过目录名拼接得到入口。
 
+### 微信开发者工具回归命令
+
+```bash
+# 全部公开组件的真实运行时行为（不截图）
+pnpm e2e:ide:wot-ui
+# 代表组件视觉回归
+pnpm e2e:ide:wot-ui:visual
+# 全量视觉回归
+pnpm e2e:ide:wot-ui:visual:full
+```
+
+视觉回归遇到 `App.captureScreenshot` 协议超时会轮换 DevTools 会话，避免旧请求在同一连接上堆积；运行时覆盖与视觉覆盖分别执行。
+
 `weapp.uniApp` 的行为：
 
 - 未配置或设为 `false` 时不扫描依赖，也不改变现有项目行为。

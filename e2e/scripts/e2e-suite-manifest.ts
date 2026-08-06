@@ -288,8 +288,12 @@ export function getIdeTasks() {
   })
 }
 
-function getIdePatternTasks(patterns: string[]) {
-  return patterns.map(filePath => createIdeVitestTask(path.resolve(ROOT, filePath)))
+function getIdePatternTasks(patterns: string[], env: Record<string, string> = {}) {
+  return patterns.map((filePath) => {
+    const task = createIdeVitestTask(path.resolve(ROOT, filePath))
+    task.env = { ...task.env, ...env }
+    return task
+  })
 }
 
 export function getIdeGateTasks() {
@@ -338,8 +342,22 @@ export function getIdeChunkModesTasks() {
   return getIdePatternTasks(IDE_CHUNK_MODES_PATTERNS)
 }
 
-export function getIdeComponentLibraryTasks() {
-  return getIdePatternTasks(IDE_COMPONENT_LIBRARY_PATTERNS)
+function getIdeComponentLibraryTasksForMode(mode: 'runtime' | 'visual' | 'visual-full') {
+  return getIdePatternTasks(IDE_COMPONENT_LIBRARY_PATTERNS, {
+    WEAPP_VITE_COMPONENT_LIBRARY_MODE: mode,
+  })
+}
+
+export function getIdeComponentLibraryTasks(_options: SuiteTaskFactoryOptions = {}) {
+  return getIdeComponentLibraryTasksForMode('runtime')
+}
+
+export function getIdeComponentLibraryVisualTasks(_options: SuiteTaskFactoryOptions = {}) {
+  return getIdeComponentLibraryTasksForMode('visual')
+}
+
+export function getIdeComponentLibraryVisualFullTasks(_options: SuiteTaskFactoryOptions = {}) {
+  return getIdeComponentLibraryTasksForMode('visual-full')
 }
 
 export function getHmrRegressionTasks() {
@@ -479,6 +497,16 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ide-component-libraries',
     description: 'Long-running IDE visual and runtime coverage for uview-plus and wot-ui',
     tasks: getIdeComponentLibraryTasks,
+  },
+  'ide-component-libraries:visual': {
+    name: 'ide-component-libraries:visual',
+    description: 'Representative IDE visual coverage for uview-plus and wot-ui',
+    tasks: getIdeComponentLibraryVisualTasks,
+  },
+  'ide-component-libraries:visual-full': {
+    name: 'ide-component-libraries:visual-full',
+    description: 'Full IDE visual coverage for uview-plus and wot-ui',
+    tasks: getIdeComponentLibraryVisualFullTasks,
   },
   'hmr-regression': {
     name: 'hmr-regression',

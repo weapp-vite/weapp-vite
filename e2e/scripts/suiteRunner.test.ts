@@ -252,6 +252,8 @@ describe('suiteRunner', () => {
     const ideChunkModesTasks = await getSuiteTasks('ide-full:chunk-modes')
     const ideGithubIssuesTasks = await getSuiteTasks('ide-full:github-issues')
     const ideComponentLibraryTasks = await getSuiteTasks('ide-component-libraries')
+    const ideComponentLibraryVisualTasks = await getSuiteTasks('ide-component-libraries:visual')
+    const ideComponentLibraryVisualFullTasks = await getSuiteTasks('ide-component-libraries:visual-full')
     const ideSmokeLabels = ideSmokeTasks.map(task => task.label)
     const ideGateLabels = ideGateTasks.map(task => task.label)
     const ideFullLabels = ideFullTasks.map(task => task.label)
@@ -289,6 +291,8 @@ describe('suiteRunner', () => {
       'ide/uview-plus-compat.runtime.test.ts',
       'ide/wot-ui-compat.runtime.test.ts',
     ])
+    expect(ideComponentLibraryVisualTasks.map(task => task.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE)).toEqual(['visual', 'visual'])
+    expect(ideComponentLibraryVisualFullTasks.map(task => task.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE)).toEqual(['visual-full', 'visual-full'])
     expect(devtoolsCliWorkflowTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(githubIssuesAggregateTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('3600000')
     expect(statefulHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
