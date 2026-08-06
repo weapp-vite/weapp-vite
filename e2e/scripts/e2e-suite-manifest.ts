@@ -114,6 +114,11 @@ const IDE_HMR_PATTERNS = [
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
 ]
+const IDE_COMPONENT_LIBRARY_PATTERNS = [
+  'ide/uview-plus-compat.runtime.test.ts',
+  'ide/wot-ui-compat.runtime.test.ts',
+]
+const IDE_COMPONENT_LIBRARY_PATTERN_SET = new Set(IDE_COMPONENT_LIBRARY_PATTERNS)
 const IDE_HELPER_TEST_PATTERNS = new Set([
   'ide/runtimeErrors.test.ts',
 ])
@@ -270,6 +275,7 @@ export function getIdeTasks() {
     .filter(filePath => !isIdeHelperTest(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_MANUAL_DEVTOOLS_TEST_PATTERNS.has(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET.has(toRelativeLabel(filePath)))
+    .filter(filePath => !IDE_COMPONENT_LIBRARY_PATTERN_SET.has(toRelativeLabel(filePath)))
     .map(filePath => createIdeVitestTask(filePath))
 
   return tasks.sort((left, right) => {
@@ -330,6 +336,10 @@ export function getIdeTemplatesTasks() {
 
 export function getIdeChunkModesTasks() {
   return getIdePatternTasks(IDE_CHUNK_MODES_PATTERNS)
+}
+
+export function getIdeComponentLibraryTasks() {
+  return getIdePatternTasks(IDE_COMPONENT_LIBRARY_PATTERNS)
 }
 
 export function getHmrRegressionTasks() {
@@ -464,6 +474,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ide-full:chunk-modes',
     description: 'IDE regression suite focused on chunk-modes runtime matrix coverage',
     tasks: getIdeChunkModesTasks,
+  },
+  'ide-component-libraries': {
+    name: 'ide-component-libraries',
+    description: 'Long-running IDE visual and runtime coverage for uview-plus and wot-ui',
+    tasks: getIdeComponentLibraryTasks,
   },
   'hmr-regression': {
     name: 'hmr-regression',

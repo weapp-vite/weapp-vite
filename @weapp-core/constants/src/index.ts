@@ -51,6 +51,7 @@ export const WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY = '__WEAPP_VITE_STATEFUL_HMR_CLI
 export const WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY = '__WEAPP_VITE_STATEFUL_HMR_BRIDGE__'
 
 export const WEVU_PAGE_LAYOUT_SETTER_KEY = '__wevuSetPageLayout'
+export const WEVU_WEB_APIS_NETWORK_DEFAULTS_KEY = '__wevuWebApisNetworkDefaults'
 export const WEVU_PAGE_LAYOUT_NONE = '__wv_no_layout'
 export const WEVU_PAGE_LAYOUT_NAME_KEY = '__wv_page_layout_name'
 export const WEVU_PAGE_LAYOUT_PROPS_KEY = '__wv_page_layout_props'

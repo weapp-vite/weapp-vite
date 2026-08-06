@@ -10,9 +10,16 @@ export default defineProject({
   test: {
     globals: true,
     environment: 'node',
-    include: [path.join(PACKAGE_DIR, 'test/**/*.test.ts')],
+    include: [
+      path.join(PACKAGE_DIR, 'src/**/*.test.ts'),
+      path.join(PACKAGE_DIR, 'test/**/*.test.ts'),
+    ],
     coverage: createProjectCoverage('packages-runtime/web-apis', {
       all: true,
+      exclude: [
+        '**/dist/**',
+        '**/*.test.ts',
+      ],
       include: [path.join(PACKAGE_DIR, 'src/**/*.ts')],
     }),
   },

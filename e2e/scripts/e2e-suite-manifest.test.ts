@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { getFullRegressionTasks, getFullTasks, getSuiteTasks, getWebTasks } from './e2e-suite-manifest'
+import { getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getSuiteTasks, getWebTasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
   it('runs the web suite through its dedicated Vitest config', () => {
@@ -18,6 +18,10 @@ describe('e2e suite manifest', () => {
 
   it('registers the web suite as a standalone entry', async () => {
     expect(await getSuiteTasks('web')).toEqual(getWebTasks())
+  })
+
+  it('registers component library IDE coverage as a standalone entry', async () => {
+    expect(await getSuiteTasks('ide-component-libraries')).toEqual(getIdeComponentLibraryTasks())
   })
 
   it('keeps web coverage between ci and ide in aggregate entries', () => {
