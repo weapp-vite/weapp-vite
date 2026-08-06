@@ -200,7 +200,7 @@ jobs:
     secrets: inherit
 
   workspace-hmr-pr:
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !startsWith(github.head_ref, 'changeset-release/'))
     name: Workspace HMR Changed Projects (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:

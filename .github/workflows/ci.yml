@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   build-pr:
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !startsWith(github.head_ref, 'changeset-release/') || matrix.os == 'ubuntu-latest')
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
