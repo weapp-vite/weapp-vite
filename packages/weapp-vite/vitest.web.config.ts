@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
-import { createProjectCoverage } from '../../vitest.coverage'
+import { createProjectCoverage } from '../../vitest.coverage.ts'
 
 const projectTestExcludes = [
   '**/node_modules/**',
@@ -40,13 +40,15 @@ const webSourceFiles = [
   'src/runtimeTarget.ts',
 ]
 
+const packageDir = import.meta.dirname
+
 export default defineProject({
   name: 'weapp-vite-web',
   define: {
     'process.env.__TEST__': JSON.stringify(true),
   },
   test: {
-    dir: __dirname,
+    dir: packageDir,
     include: webTestFiles,
     exclude: projectTestExcludes,
     globals: true,
@@ -57,43 +59,43 @@ export default defineProject({
     alias: [
       {
         find: '@/',
-        replacement: `${path.resolve(__dirname, './src')}/`,
+        replacement: `${path.resolve(packageDir, './src')}/`,
       },
       {
         find: /^weapp-vite$/,
-        replacement: path.resolve(__dirname, './src/index.ts'),
+        replacement: path.resolve(packageDir, './src/index.ts'),
       },
       {
         find: /^weapp-vite\/config$/,
-        replacement: path.resolve(__dirname, './src/config.ts'),
+        replacement: path.resolve(packageDir, './src/config.ts'),
       },
       {
         find: /^wevu$/,
-        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/index.ts'),
+        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/index.ts'),
       },
       {
         find: /^wevu\/compiler$/,
-        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu-compiler/src/index.ts'),
+        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu-compiler/src/index.ts'),
       },
       {
         find: /^wevu\/api$/,
-        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/api.ts'),
+        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/api.ts'),
       },
       {
         find: /^@wevu\/compiler$/,
-        replacement: path.resolve(__dirname, '../wevu-compiler/src/index.ts'),
+        replacement: path.resolve(packageDir, '../wevu-compiler/src/index.ts'),
       },
       {
         find: /^@weapp-core\/shared$/,
-        replacement: path.resolve(__dirname, '../..', '@weapp-core/shared/src/index.ts'),
+        replacement: path.resolve(packageDir, '../..', '@weapp-core/shared/src/index.ts'),
       },
       {
         find: /^@weapp-core\/shared\/node$/,
-        replacement: path.resolve(__dirname, '../..', '@weapp-core/shared/src/node.ts'),
+        replacement: path.resolve(packageDir, '../..', '@weapp-core/shared/src/node.ts'),
       },
       {
         find: /^@weapp-core\/shared\/fs$/,
-        replacement: path.resolve(__dirname, '../..', '@weapp-core/shared/src/fs/index.ts'),
+        replacement: path.resolve(packageDir, '../..', '@weapp-core/shared/src/fs/index.ts'),
       },
     ],
     coverage: createProjectCoverage('packages/weapp-vite/web', {

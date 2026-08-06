@@ -67,7 +67,7 @@ it('auto-enables inline sourcemap when debugging', async () => {
   }
   finally {
     process.env.NODE_OPTIONS = previousNodeOptions
-    vi.unmock('../src/bundler')
-    vi.unmock('../src/loader')
+    vi.doUnmock('../src/bundler')
+    vi.doUnmock('../src/loader')
   }
 })

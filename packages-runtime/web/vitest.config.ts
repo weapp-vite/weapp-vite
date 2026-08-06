@@ -1,6 +1,8 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
-import { createProjectCoverage } from '../../vitest.coverage'
+import { createProjectCoverage } from '../../vitest.coverage.ts'
+
+const packageDir = import.meta.dirname
 
 export default defineProject({
   name: '@weapp-vite/web',
@@ -10,16 +12,16 @@ export default defineProject({
     alias: [
       {
         find: '@weapp-vite/web/runtime',
-        replacement: path.resolve(__dirname, './src/runtime'),
+        replacement: path.resolve(packageDir, './src/runtime'),
       },
       {
         find: '@weapp-vite/web',
-        replacement: path.resolve(__dirname, './src'),
+        replacement: path.resolve(packageDir, './src'),
       },
     ],
     coverage: createProjectCoverage('packages-runtime/web', {
       all: true,
-      include: [path.resolve(__dirname, './src/**/*.ts')],
+      include: [path.resolve(packageDir, './src/**/*.ts')],
       exclude: [
         '**/dist/**',
         '**/*.test.ts',

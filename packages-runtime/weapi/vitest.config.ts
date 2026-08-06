@@ -1,25 +1,27 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
-import { createProjectCoverage } from '../../vitest.coverage'
+import { createProjectCoverage } from '../../vitest.coverage.ts'
+
+const packageDir = import.meta.dirname
 
 export default defineProject({
   test: {
     alias: [
       {
         find: '@',
-        replacement: path.resolve(__dirname, './src'),
+        replacement: path.resolve(packageDir, './src'),
       },
       {
         find: '@weapp-core/shared',
-        replacement: path.resolve(__dirname, '../../@weapp-core/shared/src/index.ts'),
+        replacement: path.resolve(packageDir, '../../@weapp-core/shared/src/index.ts'),
       },
       {
         find: '@weapp-core/shared/node',
-        replacement: path.resolve(__dirname, '../../@weapp-core/shared/src/node.ts'),
+        replacement: path.resolve(packageDir, '../../@weapp-core/shared/src/node.ts'),
       },
       {
         find: '@weapp-core/shared/fs',
-        replacement: path.resolve(__dirname, '../../@weapp-core/shared/src/fs/index.ts'),
+        replacement: path.resolve(packageDir, '../../@weapp-core/shared/src/fs/index.ts'),
       },
     ],
     globals: true,

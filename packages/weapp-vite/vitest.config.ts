@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
-import { createProjectCoverage } from '../../vitest.coverage'
+import { createProjectCoverage } from '../../vitest.coverage.ts'
 
 const projectTestIncludes = [
   'test/**/*.test.ts',
@@ -92,6 +92,8 @@ const sharedCoverageOptions = {
   ],
 }
 
+const packageDir = import.meta.dirname
+
 export default defineProject({
   define: {
     'process.env.__TEST__': JSON.stringify(true),
@@ -100,73 +102,73 @@ export default defineProject({
     sequence: {
       groupOrder: 100,
     },
-    dir: __dirname,
+    dir: packageDir,
     include: projectTestIncludes,
     exclude: projectTestExcludes,
     alias: [
       {
         find: '@/',
-        replacement: `${path.resolve(__dirname, './src')}/`,
+        replacement: `${path.resolve(packageDir, './src')}/`,
       },
       {
         find: /^weapp-vite$/,
-        replacement: path.resolve(__dirname, './src/index.ts'),
+        replacement: path.resolve(packageDir, './src/index.ts'),
       },
       {
         find: /^weapp-vite\/config$/,
-        replacement: path.resolve(__dirname, './src/config.ts'),
+        replacement: path.resolve(packageDir, './src/config.ts'),
       },
       {
         find: /^wevu$/,
-        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/index.ts'),
+        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/index.ts'),
       },
       {
         find: /^wevu\/compiler$/,
-        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu-compiler/src/index.ts'),
+        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu-compiler/src/index.ts'),
       },
       {
         find: /^wevu\/jsx-runtime$/,
-        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/jsx-runtime.ts'),
+        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/jsx-runtime.ts'),
       },
       {
         find: /^wevu\/store$/,
-        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/store/index.ts'),
+        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/store/index.ts'),
       },
       {
         find: /^wevu\/api$/,
-        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/api.ts'),
+        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/api.ts'),
       },
       {
         find: /^wevu\/fetch$/,
-        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/fetch.ts'),
+        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/fetch.ts'),
       },
       {
         find: /^wevu\/router$/,
-        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/router.ts'),
+        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/router.ts'),
       },
       {
         find: /^wevu\/vue-demi$/,
-        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/vue-demi.ts'),
+        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/vue-demi.ts'),
       },
       {
         find: /^@wevu\/compiler$/,
-        replacement: path.resolve(__dirname, '../wevu-compiler/src/index.ts'),
+        replacement: path.resolve(packageDir, '../wevu-compiler/src/index.ts'),
       },
       {
         find: /^@weapp-core\/shared$/,
-        replacement: path.resolve(__dirname, '../..', '@weapp-core/shared/src/index.ts'),
+        replacement: path.resolve(packageDir, '../..', '@weapp-core/shared/src/index.ts'),
       },
       {
         find: /^@weapp-core\/shared\/node$/,
-        replacement: path.resolve(__dirname, '../..', '@weapp-core/shared/src/node.ts'),
+        replacement: path.resolve(packageDir, '../..', '@weapp-core/shared/src/node.ts'),
       },
       {
         find: /^@weapp-core\/shared\/fs$/,
-        replacement: path.resolve(__dirname, '../..', '@weapp-core/shared/src/fs/index.ts'),
+        replacement: path.resolve(packageDir, '../..', '@weapp-core/shared/src/fs/index.ts'),
       },
       {
         find: 'weapp-vite/auto-routes',
-        replacement: path.resolve(__dirname, './src/auto-routes.ts'),
+        replacement: path.resolve(packageDir, './src/auto-routes.ts'),
       },
     ],
     globals: true,

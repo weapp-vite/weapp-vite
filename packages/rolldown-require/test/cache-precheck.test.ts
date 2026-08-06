@@ -37,7 +37,7 @@ it('skips bundler when cache is valid', async () => {
     expect(bundleFileMock).not.toHaveBeenCalled()
   }
   finally {
-    vi.unmock('../src/bundler')
+    vi.doUnmock('../src/bundler')
     await fsp.rm(root, { recursive: true, force: true })
   }
 })

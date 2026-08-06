@@ -19,8 +19,8 @@ export const TEMPLATE_CATALOG = {
   '@types/semver': '^7.8.0',
   '@vant/weapp': '^1.11.7',
   '@vitejs/plugin-vue': '^6.0.8',
-  '@vue/compiler-core': '^3.5.40',
-  '@vue/compiler-dom': '^3.5.40',
+  '@vue/compiler-core': '^3.5.41',
+  '@vue/compiler-dom': '^3.5.41',
   '@vue/language-core': '^3.3.9',
   '@wot-ui/ui': '2.3.1',
   'antd-mini': '^3.4.3',
@@ -39,7 +39,7 @@ export const TEMPLATE_CATALOG = {
   'sass-embedded': '^1.100.0',
   'tailwind-merge': '^3.6.0',
   'tailwind-variants': '^3.3.1',
-  'tdesign-miniprogram': '^1.15.3',
+  'tdesign-miniprogram': '^1.16.0',
   'ts-morph': '^28.0.0',
   'uview-plus': '3.8.86',
   'vite-plugin-inspect': '^12.0.2',
@@ -57,22 +57,22 @@ export const TEMPLATE_CATALOG = {
   merge: '^2.1.1',
   obug: '^2.1.4',
   pathe: '^2.0.3',
-  postcss: '^8.5.25',
-  rolldown: '1.2.2',
+  postcss: '^8.5.26',
+  rolldown: '1.2.3',
   sass: '^1.102.0',
   stylelint: '^17.14.1',
   tailwindcss: '^4.3.3',
   tslib: '^2.8.1',
-  tsx: '^4.23.7',
+  tsx: '^4.23.9',
   typescript: '^6.0.3',
-  vite: '8.2.0',
-  vue: '^3.5.40',
+  vite: '8.2.1',
+  vue: '^3.5.41',
   zod: '^4.4.3'
 } as const
 
 export const TEMPLATE_NAMED_CATALOG = {
   'tdesign-miniprogram-fixed': {
-    'tdesign-miniprogram': '1.15.3'
+    'tdesign-miniprogram': '1.16.0'
   },
   'weapp-tailwindcss-fixed': {
     'weapp-tailwindcss': '5.2.11'

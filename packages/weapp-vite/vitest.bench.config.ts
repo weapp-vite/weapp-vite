@@ -1,6 +1,8 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
 
+const packageDir = import.meta.dirname
+
 export default defineProject({
   define: {
     'process.env.__TEST__': JSON.stringify(true),
@@ -9,11 +11,11 @@ export default defineProject({
     alias: [
       {
         find: '@',
-        replacement: path.resolve(__dirname, './src'),
+        replacement: path.resolve(packageDir, './src'),
       },
       {
         find: 'weapp-vite/auto-routes',
-        replacement: path.resolve(__dirname, './src/auto-routes.ts'),
+        replacement: path.resolve(packageDir, './src/auto-routes.ts'),
       },
     ],
     globals: true,
