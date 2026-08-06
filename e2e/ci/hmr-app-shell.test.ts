@@ -119,6 +119,7 @@ afterEach(async () => {
 describe.sequential('app shell HMR (dev watch)', () => {
   it('updates app.vue template shell assets and keeps page wrappers in sync', async () => {
     const originalAppSource = await fs.readFile(APP_VUE_PATH, 'utf8')
+    const restoreCompileHotReload = await disableProjectCompileHotReload(APP_ROOT)
     const updateMarker = createHmrMarker('APP-SHELL', 'weapp')
     const updatedAppSource = originalAppSource.replace(INITIAL_APP_SHELL_MARKER, updateMarker)
 
@@ -148,8 +149,15 @@ describe.sequential('app shell HMR (dev watch)', () => {
       expect(pageWxml).toContain('</weapp-layout-default></weapp-app-shell>')
     }
     finally {
-      await dev.stop(5_000)
-      await restoreAppVueSource(originalAppSource)
+      try {
+        await dev.stop(5_000)
+      }
+      finally {
+        await Promise.all([
+          restoreAppVueSource(originalAppSource),
+          restoreCompileHotReload(),
+        ])
+      }
     }
   })
 

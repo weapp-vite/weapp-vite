@@ -70,4 +70,29 @@ describe('normalizeWechatViewportScreenshot', () => {
       targetWidth: 780,
     })).rejects.toThrow('微信整机截图宽高比与运行时 viewport 不一致')
   })
+
+  it('accepts a DevTools screenshot that already contains only the window viewport', async () => {
+    const screenshot = await sharp({
+      create: {
+        background: '#1769e0',
+        channels: 4,
+        height: 753,
+        width: 390,
+      },
+    }).png().toBuffer()
+
+    const normalized = await normalizeWechatViewportScreenshot({
+      screenshot: Buffer.from(screenshot),
+      systemInfo: {
+        screenHeight: 844,
+        screenWidth: 390,
+        windowHeight: 753,
+        windowWidth: 390,
+      },
+      targetHeight: 1_506,
+      targetWidth: 780,
+    })
+
+    expect(await sharp(normalized).metadata()).toMatchObject({ height: 1_506, width: 780 })
+  })
 })
