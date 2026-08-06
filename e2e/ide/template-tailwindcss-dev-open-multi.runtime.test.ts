@@ -163,7 +163,10 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
         await delay(1_000)
         continue
       }
-      currentMiniProgram.disconnect?.()
+      await Promise.resolve(currentMiniProgram.disconnect?.()).catch(() => {})
+      await closeSharedMiniProgram(projectPath).catch(() => {})
+      await removeAutomatorSessionFiles(projectPath)
+      await delay(1_000)
       currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 120_000 })).miniProgram
     }
     await delay(1_000)
