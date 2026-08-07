@@ -1,5 +1,77 @@
 import * as z from 'zod'
-// import { zodToJsonSchema } from 'zod-to-json-schema'
+import appMetadata from './config/app.json'
+import componentMetadata from './config/component.json'
+import pageMetadata from './config/page.json'
+import pluginMetadata from './config/plugin.json'
+import sitemapMetadata from './config/sitemap.json'
+import themeMetadata from './config/theme.json'
+
+export interface ConfigFieldMetadata {
+  'type': string
+  'required'?: boolean
+  'default'?: unknown
+  'description'?: string
+  'enum'?: string[]
+  'x-wechat-min-version'?: string
+}
+
+export interface ConfigMetadata {
+  source: string
+  fields: Record<string, ConfigFieldMetadata>
+}
+
+function metadataProperty(type: string): Record<string, any> {
+  const normalized = type.toLowerCase().replace(/\s+/g, '')
+  if (normalized.includes('|')) {
+    return { anyOf: normalized.split('|').map(metadataProperty) }
+  }
+  if (normalized.endsWith('[]')) {
+    return { type: 'array', items: metadataProperty(normalized.slice(0, -2)) }
+  }
+  if (normalized === 'boolean') {
+    return { type: 'boolean' }
+  }
+  if (normalized === 'number') {
+    return { type: 'number' }
+  }
+  if (normalized === 'hexcolor' || normalized === 'string') {
+    return { type: 'string' }
+  }
+  return { type: 'object', additionalProperties: true }
+}
+
+function enrichJsonSchema(schema: Record<string, any>, metadata: ConfigMetadata) {
+  const properties = schema.properties ?? {}
+  for (const [name, field] of Object.entries(metadata.fields)) {
+    if (name.includes('.')) {
+      continue
+    }
+    const property = properties[name] ?? metadataProperty(field.type)
+    if (field.description) {
+      property.description = field.description
+    }
+    if (field.default !== undefined && property.default === undefined) {
+      property.default = field.default
+    }
+    if (field.enum?.length) {
+      property.enum = field.enum
+    }
+    if (field['x-wechat-min-version']) {
+      property['x-wechat-min-version'] = field['x-wechat-min-version']
+    }
+    properties[name] = property
+    if (field.required && !schema.required?.includes(name)) {
+      schema.required = [...(schema.required ?? []), name]
+    }
+  }
+  schema.properties = properties
+  schema['x-wechat-doc'] = metadata.source
+  return schema
+}
+
+function createJsonSchema(schema: z.ZodType, metadata: ConfigMetadata) {
+  return enrichJsonSchema(z.toJSONSchema(schema) as Record<string, any>, metadata)
+}
 
 // https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/app.html
 
@@ -44,7 +116,7 @@ export const windowSchema = z.looseObject({
   onReachBottomDistance: z.number().default(50),
   pageOrientation: z.enum(['portrait', 'auto', 'landscape']).default('portrait'),
   restartStrategy: z.enum(['homePage', 'homePageAndLatestPage']).default('homePage'),
-  initialRenderingCache: z.enum(['static', 'dynamic']),
+  initialRenderingCache: z.enum(['static', 'dynamic', 'capture']),
   visualEffectInBackground: z.enum(['none', 'hidden']).default('none'),
   handleWebviewPreload: z.enum(['static', 'manual', 'auto']).default('static'),
 }).partial()
@@ -134,6 +206,7 @@ export const AppSchema = z
     static: z.looseObject({}),
     convertRpxToVw: z.boolean(),
     appBar: z.looseObject({}),
+    chatTools: z.looseObject({}),
   })
   .partial()
   .required({
@@ -164,11 +237,11 @@ export const ComponentSchema = z
   .extend(pageAndComponentSharedSchema.shape)
   .describe('自定义组件配置')
 
-export const AppJsonSchema = z.toJSONSchema(AppSchema)
+export const AppJsonSchema = createJsonSchema(AppSchema, appMetadata)
 
-export const PageJsonSchema = z.toJSONSchema(PageSchema)
+export const PageJsonSchema = createJsonSchema(PageSchema, pageMetadata)
 
-export const ComponentJsonSchema = z.toJSONSchema(ComponentSchema)
+export const ComponentJsonSchema = createJsonSchema(ComponentSchema, componentMetadata)
 
 export const ThemeSchema = z.looseObject({
   light: z.looseObject({}),
@@ -190,9 +263,9 @@ export const SitemapSchema = z.looseObject({
   }).array(),
 }).extend(metaSchema.shape).describe('https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/sitemap.html')
 
-export const ThemeJsonSchema = z.toJSONSchema(ThemeSchema)
+export const ThemeJsonSchema = createJsonSchema(ThemeSchema, themeMetadata)
 
-export const SitemapJsonSchema = z.toJSONSchema(SitemapSchema)
+export const SitemapJsonSchema = createJsonSchema(SitemapSchema, sitemapMetadata)
 
 export const PluginSchema = z.looseObject({
   publicComponents: z.record(z.string(), z.string()),
@@ -202,7 +275,7 @@ export const PluginSchema = z.looseObject({
   .partial()
   .describe('https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/development.html#%E6%8F%92%E4%BB%B6%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6')
 
-export const PluginJsonSchema = z.toJSONSchema(PluginSchema)
+export const PluginJsonSchema = createJsonSchema(PluginSchema, pluginMetadata)
 
 export const JSON_SCHEMA_DEFINITIONS = [
   {

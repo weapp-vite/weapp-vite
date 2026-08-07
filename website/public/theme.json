@@ -7,11 +7,13 @@
     },
     "dark": {
       "additionalProperties": {},
+      "description": "深色主题配置。",
       "properties": {},
       "type": "object"
     },
     "light": {
       "additionalProperties": {},
+      "description": "浅色主题配置。",
       "properties": {},
       "type": "object"
     }
@@ -20,5 +22,6 @@
     "light",
     "dark"
   ],
-  "type": "object"
+  "type": "object",
+  "x-wechat-doc": "https://developers.weixin.qq.com/miniprogram/dev/framework/view/theme.html"
 }

@@ -1,0 +1,6 @@
+{
+  "source": "https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
+  "fields": {
+    "rules": { "type": "object[]", "required": true, "description": "sitemap 匹配规则列表。" }
+  }
+}

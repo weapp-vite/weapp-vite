@@ -8,23 +8,28 @@
     },
     "component": {
       "default": true,
+      "description": "声明当前配置对应自定义组件。",
       "type": "boolean"
     },
     "componentFramework": {
+      "description": "组件框架。",
       "type": "string"
     },
     "componentGenerics": {
       "additionalProperties": {},
+      "description": "组件泛型配置。",
       "properties": {},
       "type": "object"
     },
     "componentPlaceholder": {
       "additionalProperties": {},
+      "description": "组件占位配置。",
       "properties": {},
       "type": "object"
     },
     "styleIsolation": {
       "default": "isolated",
+      "description": "组件样式隔离策略。",
       "enum": [
         "isolated",
         "apply-shared",
@@ -36,11 +41,13 @@
       "additionalProperties": {
         "type": "string"
       },
+      "description": "组件依赖的自定义组件配置。",
       "propertyNames": {
         "type": "string"
       },
       "type": "object"
     }
   },
-  "type": "object"
+  "type": "object",
+  "x-wechat-doc": "https://developers.weixin.qq.com/miniprogram/dev/framework/custom-component/"
 }

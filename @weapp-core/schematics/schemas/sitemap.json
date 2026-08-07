@@ -7,6 +7,7 @@
       "type": "string"
     },
     "rules": {
+      "description": "sitemap 匹配规则列表。",
       "items": {
         "additionalProperties": false,
         "properties": {
@@ -52,5 +53,6 @@
   "required": [
     "rules"
   ],
-  "type": "object"
+  "type": "object",
+  "x-wechat-doc": "https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html"
 }

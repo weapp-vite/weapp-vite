@@ -592,6 +592,10 @@ importers:
         version: 1.1.1
 
   '@weapp-core/schematics':
+    devDependencies:
+      cheerio:
+        specifier: ^1.2.0
+        version: 1.2.0
     dependencies:
       zod:
         specifier: 'catalog:'
