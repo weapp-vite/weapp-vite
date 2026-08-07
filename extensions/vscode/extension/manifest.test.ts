@@ -58,6 +58,17 @@ it('manifest exposes practical command set', () => {
   ])
 })
 
+it('manifest registers WeChat JSON Schema validation', () => {
+  assert.deepEqual(packageJson.contributes.jsonValidation, [
+    { fileMatch: ['**/app.json', '**/app.jsonc', '**/app.json.ts', '**/app.json.js'], url: 'https://vite.icebreaker.top/app.json' },
+    { fileMatch: ['**/page.json', '**/page.jsonc', '**/page.json.ts', '**/page.json.js'], url: 'https://vite.icebreaker.top/page.json' },
+    { fileMatch: ['**/component.json', '**/component.jsonc', '**/component.json.ts', '**/component.json.js'], url: 'https://vite.icebreaker.top/component.json' },
+    { fileMatch: ['**/sitemap.json', '**/sitemap.jsonc', '**/sitemap.json.ts', '**/sitemap.json.js'], url: 'https://vite.icebreaker.top/sitemap.json' },
+    { fileMatch: ['**/theme.json', '**/theme.jsonc', '**/theme.json.ts', '**/theme.json.js'], url: 'https://vite.icebreaker.top/theme.json' },
+    { fileMatch: ['**/plugin.json', '**/plugin.jsonc', '**/plugin.json.ts', '**/plugin.json.js'], url: 'https://vite.icebreaker.top/plugin.json' },
+  ])
+})
+
 it('manifest keeps publish-safe file whitelist', () => {
   assert.deepEqual([...packageJson.files].sort(), [
     'assets/**',
