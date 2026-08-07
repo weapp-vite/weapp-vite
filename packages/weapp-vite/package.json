@@ -149,7 +149,7 @@
     "pathe": "catalog:",
     "picomatch": "^4.0.5",
     "postcss": "catalog:",
-    "rolldown": "1.2.3",
+    "rolldown": "catalog:",
     "rolldown-plugin-dts": "0.28.0",
     "rolldown-require": "workspace:*",
     "semver": "^7.8.5",

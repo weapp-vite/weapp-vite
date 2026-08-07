@@ -70,7 +70,7 @@
     "types": "./dist/index.d.mts"
   },
   "peerDependencies": {
-    "rolldown": "1.2.3"
+    "rolldown": "catalog:"
   },
   "dependencies": {
     "@rollup/pluginutils": "^5.4.0",

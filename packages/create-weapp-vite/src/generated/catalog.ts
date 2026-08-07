@@ -29,10 +29,10 @@ export const TEMPLATE_CATALOG = {
   'comment-json': '^5.0.0',
   'estree-walker': '^3.0.3',
   'gm-crypto': '^0.1.12',
-  'happy-dom': '^20.11.1',
+  'happy-dom': '^20.11.2',
   'lru-cache': '^11.5.2',
   'magic-string': '^1.1.0',
-  'miniprogram-api-typings': '^5.2.2',
+  'miniprogram-api-typings': '^5.2.3',
   'oxc-parser': '^0.143.0',
   'oxc-walker': '^1.1.1',
   'pkg-types': '^2.3.1',
@@ -44,7 +44,7 @@ export const TEMPLATE_CATALOG = {
   'uview-plus': '3.8.86',
   'vite-plugin-inspect': '^12.0.2',
   'vue-tsc': '^3.3.9',
-  'weapp-tailwindcss': '^5.2.11',
+  'weapp-tailwindcss': '^5.2.12',
   autoprefixer: '^10.5.4',
   clsx: '^2.1.1',
   dayjs: '^1.11.21',
@@ -63,7 +63,7 @@ export const TEMPLATE_CATALOG = {
   stylelint: '^17.14.1',
   tailwindcss: '^4.3.3',
   tslib: '^2.8.1',
-  tsx: '^4.23.9',
+  tsx: '^4.23.11',
   typescript: '^6.0.3',
   vite: '8.2.1',
   vue: '^3.5.41',
@@ -75,10 +75,10 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.16.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.2.11'
+    'weapp-tailwindcss': '5.2.12'
   },
   latest: {
-    'miniprogram-api-typings': '^5.2.2',
+    'miniprogram-api-typings': '^5.2.3',
     typescript: '^6.0.3'
   },
   tailwind3: {
