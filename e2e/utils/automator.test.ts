@@ -1,7 +1,10 @@
 import { spawn } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import process from 'node:process'
 import { describe, expect, it } from 'vitest'
-import { createBridgeWrapperProjectConfig, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldPrebuildAutomatorProject, terminateBridgeCliProcess } from './automator'
+import { createBridgeWrapperProjectConfig, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldPrebuildAutomatorProject, terminateBridgeCliProcess, validateLaunchProjectAssets } from './automator'
 
 function waitForSpawn(child: ReturnType<typeof spawn>) {
   return new Promise<number>((resolve, reject) => {
@@ -43,6 +46,33 @@ async function waitForProcessGone(pid: number, timeoutMs = 3_000) {
 }
 
 describe('automator', () => {
+  it('waits until every configured page bundle exists before launching DevTools', () => {
+    const outputRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weapp-vite-launch-assets-'))
+    const appConfigPath = path.join(outputRoot, 'app.json')
+    const config = {
+      pages: ['pages/index/index'],
+      subPackages: [{ root: 'package-a', pages: ['pages/detail/index'] }],
+    }
+
+    try {
+      fs.mkdirSync(path.join(outputRoot, 'pages/index'), { recursive: true })
+      fs.writeFileSync(path.join(outputRoot, 'pages/index/index.js'), '')
+
+      expect(validateLaunchProjectAssets(appConfigPath, config)).toEqual({
+        ready: false,
+        reason: 'page bundle is missing: package-a/pages/detail/index.js',
+      })
+
+      fs.mkdirSync(path.join(outputRoot, 'package-a/pages/detail'), { recursive: true })
+      fs.writeFileSync(path.join(outputRoot, 'package-a/pages/detail/index.js'), '')
+
+      expect(validateLaunchProjectAssets(appConfigPath, config)).toEqual({ ready: true })
+    }
+    finally {
+      fs.rmSync(outputRoot, { recursive: true, force: true })
+    }
+  })
+
   it('extracts login state from WeChat DevTools cli output', () => {
     expect(extractDevtoolsCliLoginState('- initialize\n\n{"login":false}\n✔ islogin')).toBe(false)
     expect(extractDevtoolsCliLoginState('- initialize\n\n{"login":true}\n✔ islogin')).toBe(true)

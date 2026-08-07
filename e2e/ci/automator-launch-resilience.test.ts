@@ -143,10 +143,27 @@ function createProjectFixture(projectRoot: string, appJson?: Record<string, any>
     },
   })
   if (appJson) {
-    writeJson(path.join(projectRoot, 'dist/app.json'), {
+    const resolvedAppJson = {
       subPackages: [],
       ...appJson,
-    })
+    }
+    writeJson(path.join(projectRoot, 'dist/app.json'), resolvedAppJson)
+
+    const routes: string[] = Array.isArray(resolvedAppJson.pages)
+      ? resolvedAppJson.pages.filter((page: unknown): page is string => typeof page === 'string')
+      : []
+    for (const subPackage of resolvedAppJson.subPackages) {
+      if (!subPackage || typeof subPackage !== 'object' || typeof subPackage.root !== 'string' || !Array.isArray(subPackage.pages)) {
+        continue
+      }
+      routes.push(...subPackage.pages
+        .filter((page: unknown): page is string => typeof page === 'string')
+        .map((page: string) => path.join(subPackage.root, page)))
+    }
+    for (const route of routes) {
+      fs.mkdirSync(path.dirname(path.join(projectRoot, 'dist', `${route}.js`)), { recursive: true })
+      fs.writeFileSync(path.join(projectRoot, 'dist', `${route}.js`), '')
+    }
   }
 }
 
@@ -1498,6 +1515,8 @@ describe.sequential('automator launch resilience', () => {
     const sameSizeAppJson = staleWrapperContent.replace('pages/rebuilt/index', 'pages/changed/index')
     expect(sameSizeAppJson.length).toBe(staleWrapperContent.length)
     fs.writeFileSync(sourceAppJsonPath, sameSizeAppJson, 'utf8')
+    fs.mkdirSync(path.join(sandboxRoot, 'dist/pages/changed'), { recursive: true })
+    fs.writeFileSync(path.join(sandboxRoot, 'dist/pages/changed/index.js'), '')
     const sourceAppJsonStat = fs.statSync(sourceAppJsonPath)
     fs.utimesSync(
       wrapperAppJsonPath,

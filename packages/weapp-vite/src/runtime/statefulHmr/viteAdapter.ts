@@ -9,7 +9,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE,
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
-import { statefulHmrRolldownRuntimeSource } from './runtimeSource'
+import { assertStatefulHmrRuntimeOutput, createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 
 const clientId = 'weapp-vite-stateful-hmr'
 
@@ -53,6 +53,7 @@ interface BundledDevInternal {
 
 export class StatefulHmrViteAdapter {
   private bundledDev?: BundledDevInternal
+  private initialOutputError?: Error
 
   constructor(
     private readonly config: ResolvedConfig,
@@ -169,8 +170,9 @@ export class StatefulHmrViteAdapter {
       options.experimental ??= {}
       options.experimental.devMode = {
         ...(typeof options.experimental.devMode === 'object' ? options.experimental.devMode : {}),
-        implement: statefulHmrRolldownRuntimeSource,
+        implement: createStatefulHmrRolldownRuntimeSource(),
         lazy: false,
+        skipCommonRuntimeInjection: true,
       }
       return options
     }
@@ -179,8 +181,17 @@ export class StatefulHmrViteAdapter {
   private installOutput(bundledDev: BundledDevInternal): void {
     const original = bundledDev.storeOutputFiles.bind(bundledDev)
     bundledDev.storeOutputFiles = (output) => {
-      original(output)
-      this.callbacks.onOutput(output)
+      try {
+        if (output.some(item => item.fileName === 'app.js')) {
+          assertStatefulHmrRuntimeOutput(output)
+        }
+        original(output)
+        this.callbacks.onOutput(output)
+      }
+      catch (error) {
+        this.initialOutputError = error instanceof Error ? error : new Error(String(error))
+        throw error
+      }
     }
   }
 
@@ -208,6 +219,9 @@ export class StatefulHmrViteAdapter {
       }
       await engine.registerClient?.(clientId)
       await engine.ensureCurrentBuildFinish()
+      if (this.initialOutputError) {
+        throw this.initialOutputError
+      }
       if ((await engine.getBundleState()).lastBuildErrored) {
         throw new Error('微信状态保持 HMR 初次构建失败。')
       }

@@ -12,6 +12,14 @@ const pathExistsCache = new LRUCache<string, boolean>({
   max: 4096,
 })
 
+const transientRenameRetryDelays = [10, 25, 50]
+
+function isMissingFileError(error: unknown) {
+  return error instanceof Error
+    && 'code' in error
+    && error.code === 'ENOENT'
+}
+
 /**
  * 返回 true 的时候需要重新 fs 读取
  * @param id 文件路径
@@ -73,17 +81,28 @@ export async function readFile(
     return content
   }
 
-  const invalid = await isInvalidate(id)
-  if (!invalid) {
-    const cached = loadCache.get(id)
-    if (cached !== undefined) {
-      return cached
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      const invalid = await isInvalidate(id)
+      if (!invalid) {
+        const cached = loadCache.get(id)
+        if (cached !== undefined) {
+          return cached
+        }
+      }
+
+      const content = normalizeLineEndings(await fs.readFile(id, encoding))
+      loadCache.set(id, content)
+      return content
+    }
+    catch (error) {
+      const retryDelay = transientRenameRetryDelays[attempt]
+      if (!isMissingFileError(error) || retryDelay === undefined) {
+        throw error
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay))
     }
   }
-
-  const content = normalizeLineEndings(await fs.readFile(id, encoding))
-  loadCache.set(id, content)
-  return content
 }
 
 /**

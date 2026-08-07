@@ -31,7 +31,7 @@
 ## 使用提示
 
 - 模板默认通过 `weapp.pluginRoot` 输出 `dist-plugin/**`
-- `src/app.json` 里预置了 `hello-plugin` 的 `provider`
+- `src/app.json` 里预置了与插件 AppID 一致的 `hello-plugin.provider`
 - 如果你要在自己的插件 AppID 下调试或上传，请先替换 `project.config.json` 的 `appid`，并同步修改 `src/app.json` 里的 `plugins.hello-plugin.provider`
 
 ## 文档地址

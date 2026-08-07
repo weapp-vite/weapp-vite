@@ -192,6 +192,7 @@ const WORKSPACE_HMR_BASELINE_PROJECT_ALIASES = new Map<string, string>([
 async function main() {
   await mkdir(reportRoot, { recursive: true })
   await cleanupResidualDevProcesses()
+  await prepareReferencedWorkspaceTsconfigs()
 
   const projects = (await selectProjectsForRunMode(await discoverProjects()))
     .filter(project => !projectFilter || project.id.includes(projectFilter))
@@ -256,6 +257,27 @@ async function main() {
   }
   if (failOnError && (failedProjects.length || thresholdEvaluation.issues.length)) {
     process.exitCode = 1
+  }
+}
+
+async function prepareReferencedWorkspaceTsconfigs() {
+  const workspaceTsconfigPath = path.join(repoRoot, 'tsconfig.json')
+  if (!existsSync(workspaceTsconfigPath)) {
+    return
+  }
+  const parsed = JSON.parse(await readFile(workspaceTsconfigPath, 'utf8')) as { references?: Array<{ path?: unknown }> }
+  const projectRoots = (parsed.references ?? [])
+    .map(reference => typeof reference.path === 'string' ? reference.path : undefined)
+    .filter((referencePath): referencePath is string => Boolean(referencePath))
+    .map(referencePath => path.resolve(repoRoot, referencePath))
+    .filter(projectRoot => existsSync(path.join(projectRoot, 'package.json')))
+  for (const projectRoot of projectRoots) {
+    if (existsSync(path.join(projectRoot, '.weapp-vite/tsconfig.shared.json'))) {
+      continue
+    }
+    const managedDir = path.join(projectRoot, '.weapp-vite')
+    await mkdir(managedDir, { recursive: true })
+    await writeFile(path.join(managedDir, 'tsconfig.shared.json'), '{"files":[]}\n', 'utf8')
   }
 }
 

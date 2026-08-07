@@ -89,6 +89,19 @@ describe('file cache readFile line endings', () => {
     expect(await isInvalidate(filePath)).toBe(false)
   })
 
+  it('retries a transient missing-file window during replace-by-rename', async () => {
+    const filePath = path.join(tempDir, 'sample-transient-rename.vue')
+    await fs.writeFile(filePath, '<view>ready</view>', 'utf8')
+    const missingError = Object.assign(new Error('file is being replaced'), {
+      code: 'ENOENT',
+    })
+    const statSpy = vi.spyOn(fs, 'stat').mockRejectedValueOnce(missingError)
+
+    await expect(readFile(filePath, { checkMtime: true })).resolves.toBe('<view>ready</view>')
+    expect(statSpy).toHaveBeenCalledTimes(2)
+    statSpy.mockRestore()
+  })
+
   it('returns true when fs.stat contains invalid mtime/size', async () => {
     const filePath = path.join(tempDir, 'sample-invalid-stat.vue')
     await fs.writeFile(filePath, 'x', 'utf8')

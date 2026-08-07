@@ -11,6 +11,7 @@ interface PackageScriptHmrCase {
   appRoot: string
   distPath: string
   env?: NodeJS.ProcessEnv
+  forceClassic?: boolean
   label: string
   originalMarker: string
   script: string
@@ -40,6 +41,7 @@ const PACKAGE_SCRIPT_HMR_CASES: PackageScriptHmrCase[] = [
   },
   {
     label: 'apps/wevu-vue-demo Vue SFC dev script',
+    forceClassic: true,
     appRoot: path.resolve(ROOT, 'apps/wevu-vue-demo'),
     script: 'dev',
     sourcePath: path.resolve(ROOT, 'apps/wevu-vue-demo/src/pages/config-ts/index.vue'),
@@ -73,12 +75,25 @@ describe.sequential('HMR package scripts — apps and e2e-apps dev entrypoints',
     const originalSource = await fs.readFile(fixture.sourcePath, 'utf8')
     const marker = createHmrMarker('PACKAGE-SCRIPT', path.basename(fixture.appRoot).replaceAll(/[^a-z0-9]+/gi, '-').toUpperCase())
     const updatedSource = fixture.sourceReplacement(originalSource, marker)
+    const projectPrivateConfigPath = path.join(fixture.appRoot, 'project.private.config.json')
+    const originalProjectPrivateConfig = fixture.forceClassic
+      ? await fs.readFile(projectPrivateConfigPath, 'utf8')
+      : undefined
 
     if (updatedSource === originalSource) {
       throw new Error(`Failed to insert HMR marker for ${fixture.label}.`)
     }
 
     await fs.remove(distRoot)
+
+    if (originalProjectPrivateConfig) {
+      const projectPrivateConfig = JSON.parse(originalProjectPrivateConfig) as Record<string, any>
+      projectPrivateConfig.setting = {
+        ...(projectPrivateConfig.setting ?? {}),
+        compileHotReLoad: false,
+      }
+      await fs.writeFile(projectPrivateConfigPath, `${JSON.stringify(projectPrivateConfig, null, 2)}\n`, 'utf8')
+    }
 
     const dev = startDevProcess('pnpm', [
       '--dir',
@@ -112,6 +127,9 @@ describe.sequential('HMR package scripts — apps and e2e-apps dev entrypoints',
     finally {
       await dev.stop(5_000)
       await fs.writeFile(fixture.sourcePath, originalSource, 'utf8')
+      if (originalProjectPrivateConfig) {
+        await fs.writeFile(projectPrivateConfigPath, originalProjectPrivateConfig, 'utf8')
+      }
     }
   })
 })

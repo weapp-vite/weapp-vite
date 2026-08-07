@@ -1493,6 +1493,33 @@ function validateLaunchAppConfig(config: Record<string, any>): LaunchAppConfigVa
   }
 }
 
+export function validateLaunchProjectAssets(appConfigPath: string, config: Record<string, any>) {
+  const outputRoot = path.dirname(appConfigPath)
+  const routes: string[] = []
+  if (Array.isArray(config.pages)) {
+    const pageItems: unknown[] = config.pages
+    routes.push(...pageItems.filter(
+      (item): item is string => typeof item === 'string' && item.trim().length > 0,
+    ))
+  }
+  for (const subPackage of [
+    ...(Array.isArray(config.subPackages) ? config.subPackages : []),
+    ...(Array.isArray(config.subpackages) ? config.subpackages : []),
+  ]) {
+    if (!subPackage || typeof subPackage !== 'object' || typeof subPackage.root !== 'string' || !Array.isArray(subPackage.pages)) {
+      continue
+    }
+    const pageItems: unknown[] = subPackage.pages
+    routes.push(...pageItems
+      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      .map((page: string) => path.join(subPackage.root as string, page)))
+  }
+  const missingRoute = routes.find(route => !fs.existsSync(path.join(outputRoot, `${route}.js`)))
+  return missingRoute
+    ? { ready: false, reason: `page bundle is missing: ${missingRoute.replace(/\\/g, '/')}.js` }
+    : { ready: true as const }
+}
+
 async function resolveLaunchProjectMeta(projectPath: string | undefined): Promise<LaunchProjectMeta | undefined> {
   if (!projectPath) {
     return undefined
@@ -1507,6 +1534,12 @@ async function resolveLaunchProjectMeta(projectPath: string | undefined): Promis
       const validation = validateLaunchAppConfig(config)
       lastReason = validation.reason ?? 'app.json is ready'
       if (validation.ready) {
+        const assets = validateLaunchProjectAssets(appConfigPath, config)
+        if (!assets.ready) {
+          lastReason = assets.reason
+          await sleep(120)
+          continue
+        }
         return {
           appConfigPath,
           warmupRoute: validation.warmupRoute,

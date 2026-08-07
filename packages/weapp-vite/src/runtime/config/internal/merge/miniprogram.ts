@@ -53,9 +53,13 @@ function hasTsconfigReference(tsconfig: string, target: string) {
   }
 }
 
-function resolveDefaultRolldownTsconfig(cwd: string) {
-  const appTsconfig = path.resolve(cwd, '.weapp-vite/tsconfig.app.json')
-  const rootTsconfig = path.resolve(cwd, 'tsconfig.json')
+function resolveDefaultRolldownTsconfig(cwd: string, configFilePath?: string) {
+  const configRoot = configFilePath ? path.dirname(configFilePath) : undefined
+  const projectRoot = configRoot && existsSync(path.resolve(configRoot, '.weapp-vite/tsconfig.app.json'))
+    ? configRoot
+    : cwd
+  const appTsconfig = path.resolve(projectRoot, '.weapp-vite/tsconfig.app.json')
+  const rootTsconfig = path.resolve(projectRoot, 'tsconfig.json')
   if (existsSync(appTsconfig)) {
     return appTsconfig
   }
@@ -75,13 +79,14 @@ function normalizeInlineConfigAfterDefu(
   inline: InlineConfig,
   options: {
     cwd: string
+    configFilePath?: string
     ctx: MutableCompilerContext
     platform: WeappVitePlatform | undefined
     rolldownOptions: Record<string, unknown>
     subPackageMeta: SubPackageMetaValue | undefined
   },
 ) {
-  const { cwd, ctx, platform, rolldownOptions, subPackageMeta } = options
+  const { cwd, configFilePath, ctx, platform, rolldownOptions, subPackageMeta } = options
   const build = inline.build ?? (inline.build = {})
   const userRolldownOptions = build.rolldownOptions as Record<string, any> | undefined
   const mergedRolldownOptions: Record<string, any> = {
@@ -92,13 +97,21 @@ function normalizeInlineConfigAfterDefu(
       ...(userRolldownOptions?.output ?? {}),
     },
   }
-  const defaultTsconfig = resolveDefaultRolldownTsconfig(cwd)
-  if (
+  const defaultTsconfig = resolveDefaultRolldownTsconfig(cwd, configFilePath)
+  const resolveOptions = mergedRolldownOptions.resolve as Record<string, unknown> | undefined
+  if (defaultTsconfig) {
+    if (!Object.prototype.hasOwnProperty.call(mergedRolldownOptions, 'tsconfig')) {
+      mergedRolldownOptions.tsconfig = configFilePath && !resolveOptions?.tsconfigFilename
+        ? false
+        : defaultTsconfig
+    }
+  }
+  else if (
     !Object.prototype.hasOwnProperty.call(mergedRolldownOptions, 'tsconfig')
-    && !(mergedRolldownOptions.resolve as { tsconfigFilename?: unknown } | undefined)?.tsconfigFilename
-    && defaultTsconfig
+    && !resolveOptions?.tsconfigFilename
   ) {
-    mergedRolldownOptions.tsconfig = defaultTsconfig
+    // 禁止 Rolldown 沿依赖路径向上探测 workspace 根 tsconfig，避免加载无关项目引用。
+    mergedRolldownOptions.tsconfig = false
   }
   build.rolldownOptions = mergedRolldownOptions
   inline.define = {
@@ -118,6 +131,7 @@ interface MergeMiniprogramOptions {
   srcRoot: string
   mpDistRoot?: string
   configFileDependencies?: string[]
+  configFilePath?: string
   packageJson: { dependencies?: Record<string, string> } | undefined
   isDev: boolean
   applyRuntimePlatform: (runtime: 'miniprogram' | 'web') => void
@@ -196,6 +210,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     srcRoot,
     mpDistRoot,
     configFileDependencies = [],
+    configFilePath,
     packageJson,
     isDev,
     applyRuntimePlatform,
@@ -301,6 +316,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     })
     normalizeInlineConfigAfterDefu(inline, {
       cwd,
+      configFilePath,
       ctx,
       platform,
       rolldownOptions,
@@ -333,6 +349,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
   }
   normalizeInlineConfigAfterDefu(inlineConfig, {
     cwd,
+    configFilePath,
     ctx,
     platform,
     rolldownOptions,
