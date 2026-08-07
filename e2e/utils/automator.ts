@@ -1516,7 +1516,7 @@ export function validateLaunchProjectAssets(appConfigPath: string, config: Recor
   }
   const missingRoute = routes.find(route => !fs.existsSync(path.join(outputRoot, `${route}.js`)))
   return missingRoute
-    ? { ready: false, reason: `page bundle is missing: ${missingRoute}.js` }
+    ? { ready: false, reason: `page bundle is missing: ${missingRoute.replace(/\\/g, '/')}.js` }
     : { ready: true as const }
 }
 
