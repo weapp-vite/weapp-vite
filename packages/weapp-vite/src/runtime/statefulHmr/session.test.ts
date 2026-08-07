@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getChangedStatefulHmrSnapshotAssets,
   isSafeJavaScriptPatch,
+  isStatefulHmrAssetFile,
   isStatefulHmrBoundary,
   mergeStatefulHmrSnapshotAssets,
   redirectNativeComponentRegistration,
@@ -122,6 +123,13 @@ describe('stateful hmr session', () => {
       'tailwind-content:2',
     ])).toBe(false)
     expect(shouldUseStatefulHmrSnapshotOnly(['tailwind-content:2'])).toBe(false)
+  })
+
+  it('classifies native asset updates without relying on dirty reason labels', () => {
+    expect(isStatefulHmrAssetFile('/project/pages/index/index.wxml')).toBe(true)
+    expect(isStatefulHmrAssetFile('/project/app.wxss')).toBe(true)
+    expect(isStatefulHmrAssetFile('/project/pages/index/index.js')).toBe(false)
+    expect(isStatefulHmrAssetFile('/project/src/pages/index.vue')).toBe(false)
   })
 
   it('stamps every JavaScript chunk in a full build with the same build id', () => {

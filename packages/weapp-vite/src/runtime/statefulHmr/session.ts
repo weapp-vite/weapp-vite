@@ -153,7 +153,9 @@ class StatefulHmrSession {
     })
     this.snapshotScheduler = new StatefulHmrSnapshotScheduler({
       execute: batch => this.executeSnapshotBatch(batch),
-      onError: error => this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', { error }),
+      onError: error => this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', {
+        error: error instanceof Error ? error : new Error(String(error)),
+      }),
     })
   }
 
@@ -249,7 +251,10 @@ class StatefulHmrSession {
       if (shouldRestartStatefulHmrServer(files, this.ctx.configService?.configFileDependencies)) {
         this.requestServerRestart()
       }
-      else if (shouldUseStatefulHmrSnapshotOnly(this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
+      else if (
+        (files.length > 0 && files.every(isStatefulHmrAssetFile))
+        || shouldUseStatefulHmrSnapshotOnly(this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary ?? [])
+      ) {
         if (!this.snapshotScheduler.isPending()) {
           this.requestSnapshotRefresh(files)
         }
@@ -397,7 +402,9 @@ export function getChangedStatefulHmrSnapshotAssets(
   })
 }
 
-function statefulHmrAssetSourcesEqual(left: StatefulHmrOutputFile['source'], right: StatefulHmrOutputFile['source']): boolean {
+type StatefulHmrAssetSource = Extract<StatefulHmrOutputFile, { type: 'asset' }>['source']
+
+function statefulHmrAssetSourcesEqual(left: StatefulHmrAssetSource, right: StatefulHmrAssetSource): boolean {
   if (left === right) {
     return true
   }
@@ -496,6 +503,10 @@ export function isSafeJavaScriptPatch(
 export function requiresStatefulHmrSnapshot(file: string, dirtyReasonSummary: string[] = []): boolean {
   return !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
     || dirtyReasonSummary.some(isUnsafeStatefulHmrReason)
+}
+
+export function isStatefulHmrAssetFile(file: string): boolean {
+  return !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
 }
 
 function isUnsafeStatefulHmrReason(reason: string): boolean {
