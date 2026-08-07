@@ -191,7 +191,7 @@ describe('createProject', () => {
     const appJson = await readJsonAs<{
       plugins?: Record<string, { provider?: string }>
     }>(path.join(root, 'src/app.json'))
-    expect(appJson.plugins?.['hello-plugin']?.provider).toBe('touristappid')
+    expect(appJson.plugins?.['hello-plugin']?.provider).toBe('')
   })
 
   it('preserves existing .gitignore when templates ship gitignore', async () => {

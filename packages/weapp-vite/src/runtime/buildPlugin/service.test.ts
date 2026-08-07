@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
 
 import { createRuntimeState } from '../runtimeState'
+import { StatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
 import { createBuildService } from './service'
 
 const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
@@ -437,6 +438,29 @@ describe('runtime buildPlugin service', () => {
     expect(runStatefulHmrDevMock).not.toHaveBeenCalled()
     expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（weapp.hmr.runtime 显式配置）')
     expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('auto 或 stateful-experimental'))
+  })
+
+  it('falls back to classic when auto stateful runtime compatibility fails', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce({ output: [] })
+    runStatefulHmrDevMock.mockRejectedValueOnce(new StatefulHmrRuntimeCompatibilityError('missing DevRuntime'))
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'auto' }
+    ctx.configService.projectPrivateConfig = {
+      setting: { compileHotReLoad: true },
+    }
+
+    const buildPromise = createBuildService(ctx).build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
+    expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(watcher, '/')
+    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('已自动降级为 classic'))
+    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（auto fallback：stateful runtime compatibility check failed）')
   })
 
   it('runs dev app build with workers and caches touchAppWxss auto decision', async () => {

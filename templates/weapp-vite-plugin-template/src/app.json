@@ -5,7 +5,7 @@
   "plugins": {
     "hello-plugin": {
       "version": "dev",
-      "provider": "touristappid"
+      "provider": ""
     }
   }
 }

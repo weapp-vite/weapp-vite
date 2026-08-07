@@ -16,6 +16,7 @@ import {
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
+import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const IDE_AUTOMATOR_INFRA_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Timed out waiting for opened automator ws:\/\/127\.0\.0\.1:\d+|无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|automation websocket|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Wait timed out after \d+ ms|当前项目已完成打开流程，但尚未连接到可复用的自动化会话/i
@@ -29,6 +30,12 @@ interface TemplateCase {
 }
 
 const TEMPLATE_CASES: TemplateCase[] = [
+  {
+    name: 'weapp-vite-plugin-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-plugin-template'),
+    route: '/pages/index/index',
+    expectedText: '插件能力混合演示',
+  },
   {
     name: 'weapp-vite-template',
     root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-template'),
@@ -77,6 +84,12 @@ const TEMPLATE_CASES: TemplateCase[] = [
     expectedData: {
       count: 0,
     },
+  },
+  {
+    name: 'weapp-vite-wevu-tailwindcss-tdesign-retail-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template'),
+    route: '/pages/home/home',
+    expectedText: '精选好物',
   },
 ]
 
@@ -316,8 +329,11 @@ describe.sequential('all templates dev:open IDE integration', () => {
       const port = resolveProjectAutomatorPort(templateCase.root)
       const { devProcess, session } = await openTemplateDevProcess(templateCase)
       let miniProgram: any
+      let runtimeErrors: ReturnType<typeof attachRuntimeErrorCollector> | undefined
       try {
         miniProgram = session.miniProgram
+        runtimeErrors = attachRuntimeErrorCollector(miniProgram)
+        const runtimeMarker = runtimeErrors.mark()
         const { metadata } = session
         expect(path.resolve(metadata.projectPath)).toBe(templateCase.root)
         expect(metadata.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
@@ -343,11 +359,14 @@ describe.sequential('all templates dev:open IDE integration', () => {
         catch (error) {
           throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)
         }
+        expect(runtimeErrors.getSince(runtimeMarker)).toEqual([])
+        expect(runtimeErrors.getAll().filter(message => /DevRuntime|module .* is not defined|SystemError|MiniProgramError/i.test(message))).toEqual([])
       }
       catch (error) {
         throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)
       }
       finally {
+        runtimeErrors?.dispose()
         try {
           miniProgram?.disconnect?.()
         }

@@ -73,6 +73,34 @@ describe('stateful HMR Vite adapter', () => {
     expect(registeredClientId).toBe('weapp-vite-stateful-hmr')
   })
 
+  it('passes one complete runtime and disables Rolldown implicit injection', async () => {
+    const bundledDev = {
+      _devEngine: {},
+      clients: { setupIfNeeded: () => {} },
+      getRolldownOptions: async () => ({}),
+      handleHmrOutput: () => {},
+      listen: async () => {},
+      storeOutputFiles: () => {},
+    }
+    const adapter = new StatefulHmrViteAdapter(
+      { build: { rolldownOptions: {} }, root: '/project' } as any,
+      { environments: { client: { bundledDev } } } as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+    )
+
+    adapter.install()
+    const options = await bundledDev.getRolldownOptions() as any
+
+    expect(options.experimental.devMode.skipCommonRuntimeInjection).toBe(true)
+    expect(options.experimental.devMode.implement.match(/class DevRuntime/g)).toHaveLength(1)
+    expect(options.experimental.devMode.implement).toContain('class WeappViteDevRuntime')
+  })
+
   it('prepares fallback assets before triggering and awaiting a full rebuild', async () => {
     const calls: string[] = []
     const adapter = new StatefulHmrViteAdapter(

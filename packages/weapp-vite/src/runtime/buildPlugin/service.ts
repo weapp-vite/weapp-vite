@@ -38,6 +38,7 @@ import { formatHmrRuntimeStartupMessages, resolveHmrRuntime } from '../hmrRuntim
 import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
+import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
 import { runStatefulHmrDev } from '../statefulHmr/session'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { createSidecarWatchOptions } from '../watch/options'
@@ -1201,76 +1202,91 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }
     }
     if (target === 'app' && hmrRuntime === 'stateful-experimental') {
-      const snapshotBuildOptions: InlineConfig = {
-        ...buildOptions,
-        build: {
+      try {
+        const snapshotBuildOptions: InlineConfig = {
+          ...buildOptions,
+          build: {
+            ...(buildOptions.build ?? {}),
+            watch: undefined,
+          },
+        }
+        const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
+        await configService.load(configService.loadOptions)
+        resetRuntimeStateForFreshBuild(ctx.runtimeState)
+        await scanService.loadAppEntry()
+        scanService.loadSubPackages()
+        buildOptions = createDevBuildOptions()
+        buildOptions.build = {
           ...(buildOptions.build ?? {}),
-          watch: undefined,
-        },
-      }
-      const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
-      await configService.load(configService.loadOptions)
-      resetRuntimeStateForFreshBuild(ctx.runtimeState)
-      await scanService.loadAppEntry()
-      scanService.loadSubPackages()
-      buildOptions = createDevBuildOptions()
-      buildOptions.build = {
-        ...(buildOptions.build ?? {}),
-        write: true,
-      }
-      const workerPromise = hasWorkersDir && workersDir
-        ? devWorkers(configService, watcherService, workersDir)
-        : Promise.resolve()
-      let statefulWatcher: RolldownWatcher | undefined
-      const [watcher] = await Promise.all([
-        runStatefulHmrDev(ctx, buildOptions, async () => {
-          await statefulWatcher?.close()
-          logger.info('检测到非兼容更新，正在重启微信状态保持 HMR 构建...')
-          resetRuntimeStateForFreshBuild(ctx.runtimeState)
-          await configService.load(configService.loadOptions)
-          await scanService.loadAppEntry()
-          scanService.loadSubPackages()
-          await runDev(target)
-          logger.success('微信状态保持 HMR 构建已完成完整重载。')
-        }, {
-          initial: initialSnapshot,
-          rebuild: async (files) => {
-            for (const file of files) {
-              invalidateFileCache(file)
-            }
+          write: true,
+        }
+        const workerPromise = hasWorkersDir && workersDir
+          ? devWorkers(configService, watcherService, workersDir)
+          : Promise.resolve()
+        let statefulWatcher: RolldownWatcher | undefined
+        const [watcher] = await Promise.all([
+          runStatefulHmrDev(ctx, buildOptions, async () => {
+            await statefulWatcher?.close()
+            logger.info('检测到非兼容更新，正在重启微信状态保持 HMR 构建...')
             resetRuntimeStateForFreshBuild(ctx.runtimeState)
             await configService.load(configService.loadOptions)
             await scanService.loadAppEntry()
             scanService.loadSubPackages()
-            const snapshotOptions = createDevBuildOptions()
-            snapshotOptions.build = {
-              ...(snapshotOptions.build ?? {}),
-              emptyOutDir: false,
-              watch: undefined,
-              write: true,
-            }
-            snapshotOptions.plugins = [
-              ...(snapshotOptions.plugins ?? []),
-              {
-                name: 'weapp-vite:stateful-hmr-snapshot-assets',
-                enforce: 'post',
-                generateBundle(_options, bundle) {
-                  for (const [fileName, item] of Object.entries(bundle)) {
-                    if (item.type === 'chunk') {
-                      delete bundle[fileName]
+            await runDev(target)
+            logger.success('微信状态保持 HMR 构建已完成完整重载。')
+          }, {
+            initial: initialSnapshot,
+            rebuild: async (files) => {
+              for (const file of files) {
+                invalidateFileCache(file)
+              }
+              resetRuntimeStateForFreshBuild(ctx.runtimeState)
+              await configService.load(configService.loadOptions)
+              await scanService.loadAppEntry()
+              scanService.loadSubPackages()
+              const snapshotOptions = createDevBuildOptions()
+              snapshotOptions.build = {
+                ...(snapshotOptions.build ?? {}),
+                emptyOutDir: false,
+                watch: undefined,
+                write: true,
+              }
+              snapshotOptions.plugins = [
+                ...(snapshotOptions.plugins ?? []),
+                {
+                  name: 'weapp-vite:stateful-hmr-snapshot-assets',
+                  enforce: 'post',
+                  generateBundle(_options, bundle) {
+                    for (const [fileName, item] of Object.entries(bundle)) {
+                      if (item.type === 'chunk') {
+                        delete bundle[fileName]
+                      }
                     }
-                  }
+                  },
                 },
-              },
-            ]
-            return toStatefulHmrOutput(await build(snapshotOptions))
-          },
-        }),
-        workerPromise,
-      ])
-      statefulWatcher = watcher
-      watcherService.setRollupWatcher(watcher, '/')
-      return watcher
+              ]
+              return toStatefulHmrOutput(await build(snapshotOptions))
+            },
+          }),
+          workerPromise,
+        ])
+        statefulWatcher = watcher
+        watcherService.setRollupWatcher(watcher, '/')
+        return watcher
+      }
+      catch (error) {
+        if (configuredHmrRuntime !== 'auto' || !isStatefulHmrRuntimeCompatibilityError(error)) {
+          throw error
+        }
+        devHmrRuntime = 'classic'
+        logger.warn(`微信状态保持 HMR 运行时不可用，已自动降级为 classic：${error instanceof Error ? error.message : String(error)}`)
+        logger.info('HMR 模式：classic（auto fallback：stateful runtime compatibility check failed）')
+        resetRuntimeStateForFreshBuild(ctx.runtimeState)
+        await configService.load(configService.loadOptions)
+        await scanService.loadAppEntry()
+        scanService.loadSubPackages()
+        return await runDev(target)
+      }
     }
     const snapshotBuildOptions: InlineConfig = {
       ...buildOptions,

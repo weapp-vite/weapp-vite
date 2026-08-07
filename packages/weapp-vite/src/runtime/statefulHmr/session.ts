@@ -90,13 +90,19 @@ export async function runStatefulHmrDev(
       write: false,
     },
   })
-  await server.listen()
-  if (!session) {
-    await server.close()
-    throw new Error('微信状态保持 HMR session 未完成初始化。')
+  try {
+    await server.listen()
+    if (!session) {
+      throw new Error('微信状态保持 HMR session 未完成初始化。')
+    }
+    await session.refreshControl()
+    return createWatcherAdapter(server, session)
   }
-  await session.refreshControl()
-  return createWatcherAdapter(server, session)
+  catch (error) {
+    await session?.close().catch(() => {})
+    await server.close().catch(() => {})
+    throw error
+  }
 }
 
 class StatefulHmrSession {
