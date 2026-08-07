@@ -26,7 +26,7 @@ export default defineConfig({
           navigationStyle: 'custom',
         },
         component: {
-          styleIsolation: 'shared',
+          styleIsolation: 'apply-shared',
         },
       },
     },

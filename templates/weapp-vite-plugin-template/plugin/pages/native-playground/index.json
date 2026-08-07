@@ -1,4 +1,5 @@
 {
+  "$schema": "https://vite.icebreaker.top/page.json",
   "navigationBarTitleText": "插件原生 TS 页",
   "usingComponents": {
     "hello-showcase": "../../components/hello-component/index",
