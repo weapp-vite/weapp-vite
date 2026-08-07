@@ -1,5 +1,20 @@
 # @weapp-vite/web
 
+## 1.4.3
+
+### Patch Changes
+
+- 🐛 **自动补充依赖升级发布记录。** [`8d7c0a2`](https://github.com/weapp-vite/weapp-vite/commit/8d7c0a292cd98462ba127f7ab4fd5077a09b54de) by @sonofmagic
+  涉及包：
+  - @weapp-vite/web：dependencies.postcss-selector-parser、dependencies.rolldown
+  - @wevu/compiler：dependencies.postcss-selector-parser
+  - @weapp-vite/miniprogram-automator：dependencies.ws
+  - rolldown-require：peerDependencies.rolldown
+  - weapp-vite：dependencies.rolldown
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+- 📦 **Dependencies** [`8d7c0a2`](https://github.com/weapp-vite/weapp-vite/commit/8d7c0a292cd98462ba127f7ab4fd5077a09b54de)
+  → `rolldown-require@2.0.24`, `wevu@6.19.3`
+
 ## 1.4.2
 
 ### Patch Changes
