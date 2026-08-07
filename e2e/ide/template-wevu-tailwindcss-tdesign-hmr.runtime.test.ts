@@ -23,10 +23,10 @@ const PROBE_ID = 'wevu-tailwind-hmr-probe'
 const INITIAL_BACKGROUND_CLASS = 'bg-[#f6f7fb]'
 const INITIAL_BACKGROUND_HEX = 'f6f7fb'
 const BACKGROUND_UPDATES = [
-  { className: 'bg-[#dbeafe]', css: 'background-color: #dbeafe', escapedClass: 'bg-_b_hdbeafe_B', hex: 'dbeafe' },
-  { className: 'bg-[#dcfce7]', css: 'background-color: #dcfce7', escapedClass: 'bg-_b_hdcfce7_B', hex: 'dcfce7' },
-  { className: 'bg-[#fef3c7]', css: 'background-color: #fef3c7', escapedClass: 'bg-_b_hfef3c7_B', hex: 'fef3c7' },
-  { className: 'bg-[#fce7f3]', css: 'background-color: #fce7f3', escapedClass: 'bg-_b_hfce7f3_B', hex: 'fce7f3' },
+  { action: 'modify', className: 'bg-[#dbeafe]', css: 'background-color: #dbeafe', escapedClass: 'bg-_b_hdbeafe_B', hex: 'dbeafe' },
+  { action: 'delete', className: '', css: '', escapedClass: '', hex: 'none' },
+  { action: 'add', className: 'bg-[#fef3c7]', css: 'background-color: #fef3c7', escapedClass: 'bg-_b_hfef3c7_B', hex: 'fef3c7' },
+  { action: 'modify', className: 'bg-[#fce7f3]', css: 'background-color: #fce7f3', escapedClass: 'bg-_b_hfce7f3_B', hex: 'fce7f3' },
 ] as const
 const FORBIDDEN_RUNTIME_ERRORS = [
   'unexpected current frame status timedout',
@@ -56,17 +56,34 @@ function addRuntimeProbe(source: string) {
   )
 }
 
-async function waitForFileContains(file: string, expected: string, timeoutMs = 90_000) {
+function updateRuntimeProbe(source: string, previousClass: string, nextClass: string, previousHex: string, nextHex: string) {
+  const probeStartTag = new RegExp(`(<view id="${PROBE_ID}" data-e2e-bg=")${previousHex}(" class=")([^"]*)(")`)
+  const match = source.match(probeStartTag)
+  if (!match) {
+    throw new Error(`Expected the runtime probe to use background marker ${previousHex}`)
+  }
+  const classes = match[3]!.split(/\s+/).filter(className => className && className !== previousClass)
+  if (nextClass) {
+    classes.push(nextClass)
+  }
+  return source.replace(probeStartTag, `$1${nextHex}$2${classes.join(' ')}$4`)
+}
+
+async function waitForFileMatch(file: string, matches: (source: string) => boolean, description: string, timeoutMs = 90_000) {
   const startedAt = Date.now()
   let latest = ''
   while (Date.now() - startedAt <= timeoutMs) {
     latest = await fs.readFile(file, 'utf8').catch(() => '')
-    if (latest.includes(expected)) {
+    if (matches(latest)) {
       return latest
     }
-    await delay(250)
+    await delay(25)
   }
-  throw new Error(`Timed out waiting for ${path.relative(WORKSPACE_ROOT, file)} to contain ${expected}.\nLatest content:\n${latest.slice(0, 1000)}`)
+  throw new Error(`Timed out waiting for ${path.relative(WORKSPACE_ROOT, file)} to ${description}.\nLatest content:\n${latest.slice(0, 1000)}`)
+}
+
+async function waitForFileContains(file: string, expected: string, timeoutMs = 90_000) {
+  return waitForFileMatch(file, source => source.includes(expected), `contain ${expected}`, timeoutMs)
 }
 
 describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', () => {
@@ -141,30 +158,28 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
     throw new Error(`Timed out waiting for ${INDEX_ROUTE}; latest route: ${latestRoute || '<none>'}`)
   }
 
-  async function waitForRuntimeState(expectedClass: string, expectedHex: string, timeoutMs = 45_000) {
+  async function waitForRuntimeState(expectedHex: string, timeoutMs = 45_000) {
     const startedAt = Date.now()
-    let latestWxml = ''
+    let latestError: unknown
     while (Date.now() - startedAt <= timeoutMs) {
       const page = await waitForIndexPage(8_000)
-      const element = await page.$(`#${PROBE_ID}`, { timeout: 3_000 }).catch(() => null)
-      latestWxml = element ? await element.outerWxml().catch(() => '') : ''
-      const rendered = await page.renderedSelectorNodes([`#${PROBE_ID}`], {
-        timeout: 5_000,
-      }).catch(() => ({}))
-      const renderedNodes = rendered[`#${PROBE_ID}`] ?? []
-      const datasetMatched = renderedNodes.some((node: any) =>
-        Object.values(node?.dataset ?? {}).some(value => String(value) === expectedHex),
-      )
-      if (
-        latestWxml.includes(expectedClass)
-        || latestWxml.includes(`data-e2e-bg="${expectedHex}"`)
-        || datasetMatched
-      ) {
-        return latestWxml
+      try {
+        await page.waitForRendered({
+          dataset: { e2eBg: expectedHex },
+          selector: `#${PROBE_ID}`,
+          timeout: 1_000,
+        })
+        return
       }
-      await delay(500)
+      catch (error) {
+        latestError = error
+        await delay(50)
+      }
     }
-    throw new Error(`Timed out waiting for the active DevTools page to render ${expectedClass} / ${expectedHex}.\nLatest WXML:\n${latestWxml.slice(0, 1000)}`)
+    const page = await waitForIndexPage(8_000)
+    const element = await page.$(`#${PROBE_ID}`, { timeout: 1_000 }).catch(() => null)
+    const latestWxml = element ? await element.outerWxml().catch(() => '') : ''
+    throw new Error(`Timed out waiting for the active DevTools page to render data-e2e-bg=${expectedHex}.\nLatest error:\n${String(latestError)}\nLatest WXML:\n${latestWxml.slice(0, 1000)}`)
   }
 
   async function startDevSession() {
@@ -186,7 +201,7 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
         })
         await waitForIndexPage()
         await waitForFileContains(indexWxmlDist, PROBE_ID)
-        await waitForRuntimeState('bg-_b_hf6f7fb_B', INITIAL_BACKGROUND_HEX)
+        await waitForRuntimeState(INITIAL_BACKGROUND_HEX)
         return initialRuntime
       }
       catch (error) {
@@ -238,12 +253,17 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
     const collector = attachRuntimeErrorCollector(miniProgram)
     const marker = collector.mark()
     let previousClass = INITIAL_BACKGROUND_CLASS
+    let previousEscapedClass = 'bg-_b_hf6f7fb_B'
     let previousHex = INITIAL_BACKGROUND_HEX
     try {
       for (const update of BACKGROUND_UPDATES) {
-        const nextVue = currentVue
-          .replace(previousClass, update.className)
-          .replace(`data-e2e-bg="${previousHex}"`, `data-e2e-bg="${update.hex}"`)
+        const nextVue = updateRuntimeProbe(
+          currentVue,
+          previousClass,
+          update.className,
+          previousHex,
+          update.hex,
+        )
         expect(nextVue).not.toBe(currentVue)
         const startedAt = Date.now()
         await fs.writeFile(indexVue, nextVue, 'utf8')
@@ -251,15 +271,28 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
         previousClass = update.className
         previousHex = update.hex
 
-        await Promise.all([
-          waitForFileContains(indexWxmlDist, update.escapedClass),
-          waitForFileContains(appWxssDist, update.css),
-          waitForRuntimeState(update.escapedClass, update.hex),
+        const wxmlReady = waitForFileMatch(
+          indexWxmlDist,
+          source => update.escapedClass ? source.includes(update.escapedClass) : !source.includes(previousEscapedClass),
+          update.escapedClass ? `contain ${update.escapedClass}` : 'remove the arbitrary background class',
+        ).then(() => Date.now())
+        const wxssReady = update.css
+          ? waitForFileContains(appWxssDist, update.css).then(() => Date.now())
+          : wxmlReady
+        const runtimeReady = waitForRuntimeState(update.hex).then(() => Date.now())
+        const [wxmlReadyAt, wxssReadyAt, runtimeReadyAt] = await Promise.all([
+          wxmlReady,
+          wxssReady,
+          runtimeReady,
         ])
-        const elapsedMs = Date.now() - startedAt
-        process.stdout.write(`[template-wevu-tailwindcss-tdesign:hmr] update class=${update.className} elapsedMs=${elapsedMs}\n`)
-        expect(elapsedMs).toBeLessThan(45_000)
+        const outputMs = Math.max(wxmlReadyAt, wxssReadyAt) - startedAt
+        const runtimeMs = runtimeReadyAt - startedAt
+        const devtoolsApplyMs = Math.max(0, runtimeReadyAt - Math.max(wxmlReadyAt, wxssReadyAt))
+        process.stdout.write(`[template-wevu-tailwindcss-tdesign:hmr] update action=${update.action} class=${update.className || '<removed>'} wxmlMs=${wxmlReadyAt - startedAt} wxssMs=${wxssReadyAt - startedAt} outputMs=${outputMs} devtoolsApplyMs=${devtoolsApplyMs} runtimeMs=${runtimeMs}\n`)
+        expect(outputMs).toBeLessThan(45_000)
+        expect(runtimeMs).toBeLessThan(45_000)
         expect((await miniProgram.currentPage({ retries: 1, timeout: 6_000 }))?.path).toBe(INDEX_ROUTE.slice(1))
+        previousEscapedClass = update.escapedClass
       }
 
       const runtimeErrors = collector.getSince(marker)

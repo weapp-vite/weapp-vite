@@ -316,8 +316,8 @@ class StatefulHmrSession {
     if (batch.isSuperseded()) {
       return
     }
-    this.replaceSnapshotAssets(output)
     if (batch.mode === 'full') {
+      this.replaceSnapshotAssets(output)
       this.activeSnapshotBatch = batch
       try {
         await this.adapter.rebuild()
@@ -330,9 +330,11 @@ class StatefulHmrSession {
       }
       return
     }
+    const changedOutput = getChangedStatefulHmrSnapshotAssets(this.snapshotAssets.values(), output)
+    this.replaceSnapshotAssets(output)
     await this.enqueueOutput(async () => {
       if (!batch.isSuperseded()) {
-        await writeStatefulHmrOutput(this.ctx.configService!.outDir, output)
+        await writeStatefulHmrOutput(this.ctx.configService!.outDir, changedOutput)
       }
     })
   }
@@ -377,6 +379,31 @@ export function mergeStatefulHmrSnapshotAssets(
       output.push(asset)
     }
   }
+}
+
+export function getChangedStatefulHmrSnapshotAssets(
+  previous: Iterable<StatefulHmrOutputFile>,
+  next: Iterable<StatefulHmrOutputFile>,
+): StatefulHmrOutputFile[] {
+  const previousAssets = new Map(
+    Array.from(previous).flatMap(item => item.type === 'asset' ? [[item.fileName, item.source] as const] : []),
+  )
+  return Array.from(next).filter((item) => {
+    if (item.type !== 'asset') {
+      return true
+    }
+    const previousSource = previousAssets.get(item.fileName)
+    return previousSource === undefined || !statefulHmrAssetSourcesEqual(previousSource, item.source)
+  })
+}
+
+function statefulHmrAssetSourcesEqual(left: StatefulHmrOutputFile['source'], right: StatefulHmrOutputFile['source']): boolean {
+  if (left === right) {
+    return true
+  }
+  const leftBuffer = Buffer.isBuffer(left) ? left : Buffer.from(left)
+  const rightBuffer = Buffer.isBuffer(right) ? right : Buffer.from(right)
+  return leftBuffer.equals(rightBuffer)
 }
 
 function createWatcherAdapter(server: ViteDevServer, session: StatefulHmrSession): RolldownWatcher {

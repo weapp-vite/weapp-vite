@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getChangedStatefulHmrSnapshotAssets,
   isSafeJavaScriptPatch,
   isStatefulHmrBoundary,
   mergeStatefulHmrSnapshotAssets,
@@ -155,6 +156,22 @@ describe('stateful hmr session', () => {
       { fileName: 'app.wxss', source: '.bg{}', type: 'asset' },
       { fileName: 'server-only.json', source: '{}', type: 'asset' },
       { fileName: 'pages/index/index.wxml', source: '<view/>', type: 'asset' },
+    ])
+  })
+
+  it('only submits changed snapshot assets during a refresh', () => {
+    const changed = getChangedStatefulHmrSnapshotAssets([
+      { fileName: 'app.wxss', source: '.same{}', type: 'asset' },
+      { fileName: 'pages/index/index.wxml', source: '<view/>', type: 'asset' },
+    ], [
+      { fileName: 'app.wxss', source: '.same{}', type: 'asset' },
+      { fileName: 'pages/index/index.wxml', source: '<view class="updated"/>', type: 'asset' },
+      { fileName: 'pages/about/index.wxml', source: '<view/>', type: 'asset' },
+    ])
+
+    expect(changed).toEqual([
+      { fileName: 'pages/index/index.wxml', source: '<view class="updated"/>', type: 'asset' },
+      { fileName: 'pages/about/index.wxml', source: '<view/>', type: 'asset' },
     ])
   })
 })

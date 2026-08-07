@@ -26,7 +26,7 @@ describe('stateful hmr snapshot scheduler', () => {
 
     scheduler.request('refresh', ['/project/src/pages/index.vue'])
     scheduler.request('refresh', ['/project/src/app.css'])
-    await vi.advanceTimersByTimeAsync(100)
+    await vi.advanceTimersByTimeAsync(40)
 
     expect(batches).toEqual([{
       files: ['/project/src/pages/index.vue', '/project/src/app.css'],
@@ -53,14 +53,14 @@ describe('stateful hmr snapshot scheduler', () => {
     })
 
     scheduler.request('refresh', ['/project/src/pages/index.vue'])
-    await vi.advanceTimersByTimeAsync(100)
+    await vi.advanceTimersByTimeAsync(40)
     scheduler.request('refresh', ['/project/src/app.css'])
 
     expect(batches).toHaveLength(1)
     expect(batches[0]!.isSuperseded()).toBe(true)
     deferreds[0]!.resolve()
     await flushPromises()
-    await vi.advanceTimersByTimeAsync(100)
+    await vi.advanceTimersByTimeAsync(40)
 
     expect(batches).toHaveLength(2)
     expect(batches[1]!.files).toEqual([
@@ -86,12 +86,12 @@ describe('stateful hmr snapshot scheduler', () => {
     })
 
     scheduler.request('full', ['/project/src/pages/index.ts'])
-    await vi.advanceTimersByTimeAsync(100)
+    await vi.advanceTimersByTimeAsync(40)
     scheduler.request('refresh', ['/project/src/app.css'])
     expect(batches[0]!.isSuperseded()).toBe(true)
     first.resolve()
     await flushPromises()
-    await vi.advanceTimersByTimeAsync(100)
+    await vi.advanceTimersByTimeAsync(40)
 
     expect(batches.map(batch => batch.mode)).toEqual(['full', 'full'])
     await scheduler.close()

@@ -1,5 +1,7 @@
 export type StatefulHmrSnapshotMode = 'full' | 'refresh'
 
+const DEFAULT_SNAPSHOT_DEBOUNCE_MS = 40
+
 export interface StatefulHmrSnapshotBatch {
   files: string[]
   isSuperseded: () => boolean
@@ -24,7 +26,7 @@ export class StatefulHmrSnapshotScheduler {
   private timer?: ReturnType<typeof setTimeout>
 
   constructor(options: StatefulHmrSnapshotSchedulerOptions) {
-    this.debounceMs = options.debounceMs ?? 100
+    this.debounceMs = options.debounceMs ?? DEFAULT_SNAPSHOT_DEBOUNCE_MS
     this.execute = options.execute
     this.onError = options.onError
   }
