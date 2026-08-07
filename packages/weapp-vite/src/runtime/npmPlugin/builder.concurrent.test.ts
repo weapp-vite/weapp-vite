@@ -102,6 +102,23 @@ describe('runtime npm builder concurrent dedupe', () => {
       },
     } as MutableCompilerContext
     const builder = createPackageBuilder(ctx)
+    const originalCopy = fs.copy.bind(fs)
+    const parentCopies = new Set<string>()
+    let releaseParentCopies: (() => void) | undefined
+    const parentCopyBarrier = new Promise<void>((resolve) => {
+      releaseParentCopies = resolve
+    })
+    vi.spyOn(fs, 'copy').mockImplementation(async (from: string, to: string, ...rest: unknown[]) => {
+      await (originalCopy as (...args: unknown[]) => Promise<void>)(from, to, ...rest)
+      const packageName = path.basename(to)
+      if (packageName === 'pkg-a' || packageName === 'pkg-b') {
+        parentCopies.add(packageName)
+        if (parentCopies.size === 2) {
+          releaseParentCopies?.()
+        }
+        await parentCopyBarrier
+      }
+    })
 
     await Promise.all([
       builder.buildPackage({

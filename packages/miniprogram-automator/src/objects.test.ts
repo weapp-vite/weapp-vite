@@ -464,7 +464,11 @@ describe('Page', () => {
         method: 'Page.callMethod',
       },
     )
-    const send = vi.fn(async (method: string, params?: Record<string, any>) => {
+    const send = vi.fn(async (
+      method: string,
+      params?: Record<string, any>,
+      _options?: { timeout?: number },
+    ) => {
       if (method === 'Page.callMethod') {
         throw pageCallTimeout
       }
@@ -502,8 +506,15 @@ describe('Page', () => {
       functionDeclaration: expect.stringContaining('createSelectorQuery'),
       args: ['pages/issue-706/index', {}, '.hello', []],
     }), {
-      timeout: 1_000,
+      timeout: expect.any(Number),
     })
+    const renderedQueryCall = vi.mocked(send).mock.calls.find(([method, params]) => {
+      return method === 'App.callFunction'
+        && params?.functionDeclaration?.includes('createSelectorQuery')
+    })
+    const renderedQueryTimeout = renderedQueryCall?.[2]?.timeout
+    expect(renderedQueryTimeout).toBeGreaterThan(0)
+    expect(renderedQueryTimeout).toBeLessThanOrEqual(1_000)
     const renderedQuery = vi.mocked(send).mock.calls[0]?.[1]?.functionDeclaration as string
     expect(renderedQuery).toContain('if (nodes.length > 0)')
     expect(renderedQuery).toContain('resolve(collected)')
