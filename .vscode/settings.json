@@ -1,5 +1,7 @@
 {
-  "vue.server.hybridMode": true,
+  // The repository root is a large TypeScript solution. Let Volar own Vue
+  // files so it does not race the TypeScript extension over the same projects.
+  "vue.server.hybridMode": false,
   "vue.server.includeLanguages": [
     "vue"
   ],
@@ -14,6 +16,7 @@
   },
   "typescript.disableReferencedProjectLoad": true,
   "typescript.disableSolutionSearching": true,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
   "typescript.disableAutomaticTypeAcquisition": true,
   "typescript.preferences.autoImportFileExcludePatterns": [
     "**/.cache/**",

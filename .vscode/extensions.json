@@ -4,6 +4,7 @@
     "stylelint.vscode-stylelint"
   ],
   "unwantedRecommendations": [
-    "unifiedjs.vscode-mdx"
+    "unifiedjs.vscode-mdx",
+    "mpxjs.mpx-official"
   ]
 }
