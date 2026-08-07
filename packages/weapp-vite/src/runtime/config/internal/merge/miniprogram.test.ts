@@ -197,7 +197,7 @@ describe('runtime config merge miniprogram', () => {
     expect(result.build?.watch?.buildDelay).toBe(10)
     expect(result.build?.watch?.watcher).toBeUndefined()
     expect(result.build?.watch?.exclude).toContain('/project/custom-dist/**')
-    expect((result.build as any).rolldownOptions.tsconfig).toBeUndefined()
+    expect((result.build as any).rolldownOptions.tsconfig).toBe(false)
     expect(injectBuiltinAliases).toHaveBeenCalledWith(result)
     expect(arrangePluginsMock).toHaveBeenCalledWith(result, expect.objectContaining({
       configService: {
@@ -218,7 +218,6 @@ describe('runtime config merge miniprogram', () => {
     const result = mergeMiniprogramForTsconfig(root)
 
     expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(appTsconfig)
-    expect((result.build as any)?.rolldownOptions?.resolve?.tsconfigFilename).toBe(appTsconfig)
   })
 
   it('falls back to project tsconfig when managed app tsconfig is missing', async () => {
@@ -229,7 +228,6 @@ describe('runtime config merge miniprogram', () => {
     const result = mergeMiniprogramForTsconfig(root)
 
     expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(rootTsconfig)
-    expect((result.build as any)?.rolldownOptions?.resolve?.tsconfigFilename).toBe(rootTsconfig)
   })
 
   it('anchors default tsconfig resolution to the config project when cwd is a workspace root', async () => {
@@ -242,16 +240,15 @@ describe('runtime config merge miniprogram', () => {
 
     const result = mergeMiniprogramForTsconfig(workspaceRoot, {}, configFilePath)
 
-    expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(appTsconfig)
-    expect((result.build as any)?.rolldownOptions?.resolve?.tsconfigFilename).toBe(appTsconfig)
+    expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(false)
   })
 
-  it('does not set default rolldown tsconfig when project tsconfig files are missing', async () => {
+  it('disables implicit rolldown tsconfig discovery when project tsconfig files are missing', async () => {
     const root = await createTempProject('weapp-vite-miniprogram-no-tsconfig-')
 
     const result = mergeMiniprogramForTsconfig(root)
 
-    expect((result.build as any)?.rolldownOptions?.tsconfig).toBeUndefined()
+    expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(false)
   })
 
   it('preserves shared output options when merging user rolldown options', () => {

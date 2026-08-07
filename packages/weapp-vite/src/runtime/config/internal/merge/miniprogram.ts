@@ -101,16 +101,17 @@ function normalizeInlineConfigAfterDefu(
   const resolveOptions = mergedRolldownOptions.resolve as Record<string, unknown> | undefined
   if (defaultTsconfig) {
     if (!Object.prototype.hasOwnProperty.call(mergedRolldownOptions, 'tsconfig')) {
-      mergedRolldownOptions.tsconfig = defaultTsconfig
+      mergedRolldownOptions.tsconfig = configFilePath && !resolveOptions?.tsconfigFilename
+        ? false
+        : defaultTsconfig
     }
-    // Rolldown 1.2.x 的 Oxc transform 会优先读取 resolve.tsconfigFilename，
-    // 若未显式设置则向 workspace 根目录探测，可能加载无关项目的 references。
-    if (!resolveOptions?.tsconfigFilename) {
-      mergedRolldownOptions.resolve = {
-        ...(resolveOptions ?? {}),
-        tsconfigFilename: defaultTsconfig,
-      }
-    }
+  }
+  else if (
+    !Object.prototype.hasOwnProperty.call(mergedRolldownOptions, 'tsconfig')
+    && !resolveOptions?.tsconfigFilename
+  ) {
+    // 禁止 Rolldown 沿依赖路径向上探测 workspace 根 tsconfig，避免加载无关项目引用。
+    mergedRolldownOptions.tsconfig = false
   }
   build.rolldownOptions = mergedRolldownOptions
   inline.define = {
