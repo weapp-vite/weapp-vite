@@ -28,11 +28,11 @@
     "@iconify/vue": "^5.0.1",
     "@vue/shared": "^3.5.41",
     "echarts": "catalog:",
-    "element-plus": "^2.14.3",
+    "element-plus": "^2.14.4",
     "gridstack": "^13.1.2",
     "theme-transition": "^2.0.4",
     "vue": "catalog:",
-    "vue-echarts": "^8.0.1"
+    "vue-echarts": "^8.1.0"
   },
   "devDependencies": {
     "@egoist/tailwindcss-icons": "catalog:",
