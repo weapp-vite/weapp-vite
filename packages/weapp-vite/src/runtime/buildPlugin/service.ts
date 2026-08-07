@@ -1283,7 +1283,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         devHmrRuntime = 'classic'
         logger.warn(`微信状态保持 HMR 运行时不可用，已自动降级为 classic：${error instanceof Error ? error.message : String(error)}`)
-        logger.info('HMR 模式：classic（auto fallback：stateful runtime compatibility check failed）')
+        logger.info('HMR 模式：classic（自动降级：stateful HMR 运行时兼容性检查失败）')
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
         await configService.load(configService.loadOptions)
         await scanService.loadAppEntry()

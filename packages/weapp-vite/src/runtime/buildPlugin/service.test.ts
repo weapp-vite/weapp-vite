@@ -398,7 +398,7 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(3)
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenLastCalledWith(secondWatcher, '/')
     expect(loggerInfoMock.mock.calls.filter(([message]) => String(message).startsWith('HMR 模式：'))).toEqual([
-      ['HMR 模式：stateful-experimental（weapp.hmr.runtime 显式配置）'],
+      ['HMR 模式：stateful-experimental（显式配置）'],
     ])
   })
 
@@ -416,8 +416,8 @@ describe('runtime buildPlugin service', () => {
 
     expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(watcher, '/')
-    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：stateful-experimental（auto：微信开发者工具热重载已开启）')
-    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('关闭“热重载”并重启 wv dev'))
+    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：stateful-experimental（自动检测：微信开发者工具热重载已开启）')
+    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('HMR 切换：关闭微信开发者工具“热重载”后重启 wv dev'))
   })
 
   it('keeps explicit classic runtime when WeChat hot reload is enabled', async () => {
@@ -436,8 +436,8 @@ describe('runtime buildPlugin service', () => {
     await buildPromise
 
     expect(runStatefulHmrDevMock).not.toHaveBeenCalled()
-    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（weapp.hmr.runtime 显式配置）')
-    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('auto 或 stateful-experimental'))
+    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（显式配置）')
+    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('HMR 切换：修改 weapp.hmr.runtime 为 auto 或 stateful-experimental'))
   })
 
   it('falls back to classic when auto stateful runtime compatibility fails', async () => {
@@ -460,7 +460,7 @@ describe('runtime buildPlugin service', () => {
     expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(watcher, '/')
     expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('已自动降级为 classic'))
-    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（auto fallback：stateful runtime compatibility check failed）')
+    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（自动降级：stateful HMR 运行时兼容性检查失败）')
   })
 
   it('runs dev app build with workers and caches touchAppWxss auto decision', async () => {

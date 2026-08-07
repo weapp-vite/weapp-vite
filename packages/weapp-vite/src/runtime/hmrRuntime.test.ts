@@ -26,8 +26,8 @@ describe('resolveHmrRuntime', () => {
       compileHotReLoad: true,
       runtime: 'stateful-experimental',
     })).toEqual([
-      'HMR 模式：stateful-experimental（auto：微信开发者工具热重载已开启）',
-      '切换模式：在微信开发者工具中关闭“热重载”并重启 wv dev，可切换为 classic；也可通过 weapp.hmr.runtime 显式锁定模式。',
+      'HMR 模式：stateful-experimental（自动检测：微信开发者工具热重载已开启）',
+      'HMR 切换：关闭微信开发者工具“热重载”后重启 wv dev，或通过 weapp.hmr.runtime 显式配置。',
     ])
   })
 
@@ -38,8 +38,8 @@ describe('resolveHmrRuntime', () => {
       compileHotReLoad: false,
       runtime: 'classic',
     })).toEqual([
-      'HMR 模式：classic（auto：微信开发者工具热重载未开启或无法确认）',
-      '切换模式：在微信开发者工具中开启“热重载”并重启 wv dev，可切换为 stateful-experimental；也可通过 weapp.hmr.runtime 显式锁定模式。',
+      'HMR 模式：classic（自动检测：微信开发者工具热重载未开启或无法确认）',
+      'HMR 切换：开启微信开发者工具“热重载”后重启 wv dev，或通过 weapp.hmr.runtime 显式配置。',
     ])
   })
 
@@ -56,8 +56,8 @@ describe('resolveHmrRuntime', () => {
       compileHotReLoad: true,
       runtime: 'classic',
     })).toEqual([
-      'HMR 模式：classic（auto：stateful-experimental 仅支持微信小程序）',
-      '切换模式：可通过 weapp.hmr.runtime 显式锁定 classic；stateful-experimental 仅支持微信小程序。',
+      'HMR 模式：classic（自动检测：仅微信小程序支持 stateful-experimental）',
+      'HMR 切换：可通过 weapp.hmr.runtime 显式配置 classic。',
     ])
   })
 })

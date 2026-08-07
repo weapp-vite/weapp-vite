@@ -201,7 +201,7 @@ class StatefulHmrSession {
       dirtyReasonSummary,
     )) {
       if (!this.snapshotTimer && !this.fullBuildTimer) {
-        logger.info('微信状态保持 HMR 正在刷新模板、样式与静态资源产物...')
+        logger.info('HMR 更新：正在同步模板、样式与静态资源...')
       }
       this.requestSnapshotRefresh([normalizedFile])
     }
