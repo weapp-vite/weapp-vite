@@ -1,11 +1,12 @@
 import type { StatefulHmrOutputFile } from './outputWriter'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import path from 'node:path'
 import { statefulHmrRolldownRuntimeSource } from './runtimeSource'
 
 const require = createRequire(import.meta.url)
-const ROLLDOWN_RUNTIME_IMPORT_RE = /^import\s+\{[^\n]+\}\s+from\s+['"]\.\/experimental-runtime-base\.mjs['"];?\s*/
-const ROLLDOWN_EXPORT_RE = /^export\s+/gm
+const STATIC_IMPORT_RE = /^import\s+(?:\{[^}\n]*\}|[A-Za-z_$][\w$]*)\s+from\s+['"]([^'"]+)['"](?:;\s*)?$/gm
+const EXPORT_PREFIX_RE = /^export\s+/gm
 
 export const STATEFUL_HMR_RUNTIME_COMPATIBILITY_ERROR_CODE = 'WEAPP_VITE_STATEFUL_HMR_RUNTIME_INCOMPATIBLE'
 
@@ -18,9 +19,10 @@ export class StatefulHmrRuntimeCompatibilityError extends Error {
   }
 }
 
-function readRolldownRuntimeSource(subpath: string): string {
+function readRolldownRuntimeSource(subpath: string): { filePath: string, source: string } {
   try {
-    return readFileSync(require.resolve(subpath), 'utf8')
+    const filePath = require.resolve(subpath)
+    return { filePath, source: readFileSync(filePath, 'utf8') }
   }
   catch (error) {
     throw new StatefulHmrRuntimeCompatibilityError(
@@ -29,27 +31,54 @@ function readRolldownRuntimeSource(subpath: string): string {
   }
 }
 
+function stripModuleSyntax(source: string): string {
+  return source.replace(STATIC_IMPORT_RE, '').replace(EXPORT_PREFIX_RE, '')
+}
+
+function resolveRuntimeHelpers(runtime: { filePath: string, source: string }): string {
+  const helperSpecifiers = [...runtime.source.matchAll(STATIC_IMPORT_RE)]
+    .map(match => match[1])
+    .filter((specifier): specifier is string => Boolean(specifier && specifier.startsWith('.')))
+
+  return helperSpecifiers
+    .map((specifier) => {
+      const helperPath = path.resolve(path.dirname(runtime.filePath), specifier)
+      try {
+        return readFileSync(helperPath, 'utf8')
+      }
+      catch (error) {
+        throw new StatefulHmrRuntimeCompatibilityError(
+          `无法读取 Rolldown dev runtime helper ${specifier}：${error instanceof Error ? error.message : String(error)}`,
+        )
+      }
+    })
+    .map(stripModuleSyntax)
+    .join('\n')
+}
+
+function assertRolldownRuntimeContract(runtime: { source: string, filePath: string }, helpers: string): void {
+  const contracts = [
+    [runtime.source, /(?:class\s+DevRuntime|(?:var|let|const)\s+DevRuntime\s*=)/, 'DevRuntime'],
+    [runtime.source, /(?:class\s+Module|(?:var|let|const)\s+Module\s*=)/, 'Module'],
+    [helpers, /(?:var|let|const)\s+__exportAll\s*=|function\s+__exportAll\b/, 'common runtime helpers'],
+  ] as const
+  const missing = contracts.filter(([source, pattern]) => !pattern.test(source))
+  if (missing.length > 0) {
+    throw new StatefulHmrRuntimeCompatibilityError(
+      `Rolldown dev runtime ${runtime.filePath} 缺少稳定契约：${missing.map(([, , name]) => name).join('、')}。`,
+    )
+  }
+}
+
+export function composeStatefulHmrRuntimeSource(runtime: { filePath: string, source: string }, helpers: string): string {
+  assertRolldownRuntimeContract(runtime, helpers)
+  return `${helpers}\n${stripModuleSyntax(runtime.source)}\n${statefulHmrRolldownRuntimeSource}`
+}
+
 export function createStatefulHmrRolldownRuntimeSource(): string {
-  const baseSource = readRolldownRuntimeSource('rolldown/experimental/runtime')
-    .replace(ROLLDOWN_RUNTIME_IMPORT_RE, '')
-    .replace(ROLLDOWN_EXPORT_RE, '')
-  const helperSource = readRolldownRuntimeSource('rolldown/experimental/runtime')
-    .match(ROLLDOWN_RUNTIME_IMPORT_RE)?.[0]
-
-  if (!helperSource || !baseSource.includes('class DevRuntime')) {
-    throw new StatefulHmrRuntimeCompatibilityError('当前 Rolldown 包未提供可组合的 DevRuntime 基础运行时。')
-  }
-
-  const runtimeBaseSource = readRolldownRuntimeSource('rolldown/package.json')
-  const packageRoot = require.resolve('rolldown/package.json').replace(/package\.json$/, '')
-  const helpers = readFileSync(`${packageRoot}dist/experimental-runtime-base.mjs`, 'utf8')
-    .replace(ROLLDOWN_EXPORT_RE, '')
-
-  if (!runtimeBaseSource.includes('"name": "rolldown"') || !helpers.includes('var __exportAll')) {
-    throw new StatefulHmrRuntimeCompatibilityError('当前 Rolldown 包的 dev runtime helper 结构与 weapp-vite 不兼容。')
-  }
-
-  return `${helpers}\n${baseSource}\n${statefulHmrRolldownRuntimeSource}`
+  const runtime = readRolldownRuntimeSource('rolldown/experimental/runtime')
+  const helpers = resolveRuntimeHelpers(runtime)
+  return composeStatefulHmrRuntimeSource(runtime, helpers)
 }
 
 export function assertStatefulHmrRuntimeOutput(output: StatefulHmrOutputFile[]): void {

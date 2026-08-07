@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   assertStatefulHmrRuntimeOutput,
+  composeStatefulHmrRuntimeSource,
   createStatefulHmrRolldownRuntimeSource,
   StatefulHmrRuntimeCompatibilityError,
 } from './commonRuntime'
@@ -32,5 +33,19 @@ describe('stateful HMR common runtime', () => {
         type: 'chunk',
       },
     ])).not.toThrow()
+  })
+
+  it('does not couple composition to the helper filename or import spelling', () => {
+    const source = composeStatefulHmrRuntimeSource(
+      {
+        filePath: '/rolldown/dist/experimental-runtime.mjs',
+        source: 'import { __exportAll } from "./runtime-helper.mjs";\nclass Module {}\nclass DevRuntime {}',
+      },
+      'var __exportAll = () => {};',
+    )
+
+    expect(source).toContain('class DevRuntime')
+    expect(source).not.toContain('runtime-helper.mjs')
+    expect(source).toContain('class WeappViteDevRuntime')
   })
 })
