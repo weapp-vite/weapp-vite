@@ -1211,6 +1211,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           build: {
             ...(buildOptions.build ?? {}),
             watch: undefined,
+            write: false,
           },
         }
         const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
@@ -1252,7 +1253,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 ...(snapshotOptions.build ?? {}),
                 emptyOutDir: false,
                 watch: undefined,
-                write: true,
+                write: false,
               }
               snapshotOptions.plugins = [
                 ...(snapshotOptions.plugins ?? []),

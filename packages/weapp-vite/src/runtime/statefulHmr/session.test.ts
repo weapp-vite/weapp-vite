@@ -7,6 +7,7 @@ import {
   requiresStatefulHmrSnapshot,
   shouldResetStatefulHmrRetention,
   shouldRestartStatefulHmrServer,
+  shouldUseStatefulHmrSnapshotOnly,
   stampStatefulHmrFullBuild,
 } from './session'
 
@@ -106,6 +107,20 @@ describe('stateful hmr session', () => {
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.vue', ['entry-direct:1'])).toBe(false)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.vue', ['entry-style-only:1'])).toBe(true)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.ts', ['tailwind-content:2'])).toBe(true)
+  })
+
+  it('keeps asset-only Tailwind updates out of the DevEngine full build path', () => {
+    expect(shouldUseStatefulHmrSnapshotOnly([
+      'entry-local-asset:1',
+      'tailwind-content:2',
+    ])).toBe(true)
+    expect(shouldUseStatefulHmrSnapshotOnly(['entry-style-only:1'])).toBe(true)
+    expect(shouldUseStatefulHmrSnapshotOnly(['entry-json-only:1'])).toBe(true)
+    expect(shouldUseStatefulHmrSnapshotOnly([
+      'entry-direct:1',
+      'tailwind-content:2',
+    ])).toBe(false)
+    expect(shouldUseStatefulHmrSnapshotOnly(['tailwind-content:2'])).toBe(false)
   })
 
   it('stamps every JavaScript chunk in a full build with the same build id', () => {
