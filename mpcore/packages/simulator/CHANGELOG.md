@@ -1,5 +1,12 @@
 # @mpcore/simulator
 
+## 0.3.1
+
+### Patch Changes
+
+- 📦 **Dependencies** [`b055929`](https://github.com/weapp-vite/weapp-vite/commit/b055929f8c18a2a9be800eff88f8f7806a9a4f46)
+  → `@weapp-core/constants@0.1.16`
+
 ## 0.3.0
 
 ### Minor Changes
