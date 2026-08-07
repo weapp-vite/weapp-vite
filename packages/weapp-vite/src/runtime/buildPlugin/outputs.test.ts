@@ -176,6 +176,10 @@ describe('buildPlugin outputs', () => {
         scopedSlotGenerics: new Map([['/components/native/index', new Set(['scoped-slots-default'])]]),
       },
       css: {
+        transformedSidecarSource: new Map([['/project/src/app.css', {
+          code: '.pre-plugin {}',
+          diskSource: '.disk {}',
+        }]]),
         emittedSource: new Map([['app.wxss', '.page {}']]),
       },
       wxml: {
@@ -189,6 +193,7 @@ describe('buildPlugin outputs', () => {
     expect(runtimeState.json.emittedSource.size).toBe(0)
     expect(runtimeState.asset.emittedBuffer.size).toBe(0)
     expect(runtimeState.asset.scopedSlotGenerics.size).toBe(0)
+    expect(runtimeState.css.transformedSidecarSource.size).toBe(0)
     expect(runtimeState.css.emittedSource.size).toBe(0)
     expect(runtimeState.wxml.emittedCode.size).toBe(0)
   })

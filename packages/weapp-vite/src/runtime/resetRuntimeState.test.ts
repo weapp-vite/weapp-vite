@@ -13,6 +13,10 @@ describe('runtime state fresh build reset', () => {
     state.autoImport.registry.set('Button', {} as any)
     state.build.hmr.loadedEntrySet.add('/project/src/pages/index.ts')
     state.json.emittedSource.set('app.json', '{}')
+    state.css.transformedSidecarSource.set('/project/src/pages/index/index.css', {
+      code: '.pre-plugin {}',
+      diskSource: '.disk {}',
+    })
     state.css.emittedSource.set('app.wxss', '.page {}')
     state.wxml.emittedCode.set('pages/index/index.wxml', '<view />')
     state.scan.warnedMessages.add('warning')
@@ -26,6 +30,7 @@ describe('runtime state fresh build reset', () => {
     expect(state.autoImport.version).toBe(5)
     expect(state.autoImport.registry.size).toBe(0)
     expect(state.json.emittedSource.size).toBe(0)
+    expect(state.css.transformedSidecarSource.size).toBe(0)
     expect(state.css.emittedSource.size).toBe(0)
     expect(state.wxml.emittedCode.size).toBe(0)
     expect(state.scan.warnedMessages.size).toBe(0)

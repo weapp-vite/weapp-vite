@@ -148,6 +148,7 @@ describe('css plugin shared style injection', () => {
       css: {
         importerToDependencies: new Map<string, Set<string>>(),
         dependencyToImporters: new Map<string, Set<string>>(),
+        transformedSidecarSource: new Map<string, { code: string, diskSource: string }>(),
         emittedSource: new Map(),
         sidecarImports: new Set<string>(),
       },
@@ -185,6 +186,7 @@ describe('css plugin shared style injection', () => {
     pluginContext.addWatchFile.mockClear()
     ;(ctx as any).runtimeState.css.importerToDependencies.clear()
     ;(ctx as any).runtimeState.css.dependencyToImporters.clear()
+    ;(ctx as any).runtimeState.css.transformedSidecarSource.clear()
     ;(ctx as any).runtimeState.css.emittedSource.clear()
     ;(ctx as any).runtimeState.css.sidecarImports.clear()
   })
@@ -881,6 +883,165 @@ describe('css plugin shared style injection', () => {
     expect(bundle['pages/index/index.wxss']?.source).toBe('.page .title{color:red}')
     expect((ctx as any).runtimeState.css.emittedSource.get('pages/index/index.wxss')).toBe('.page .title{color:red}')
     expect(emitted.find(asset => asset.fileName === 'pages/index/index.scss')).toBeUndefined()
+  })
+
+  it('uses the in-memory CSS source produced by an earlier pre plugin for sidecars', async () => {
+    const stylePath = resolve(absoluteSrcRoot, 'pages/index/index.css')
+    const transformedSource = '.pre-plugin-marker { color: red; }'
+    readFileMock.mockResolvedValue('.disk-source { color: blue; }')
+
+    const runtimeState = structuredClone(ctx.runtimeState)
+    runtimeState.css.transformedSidecarSource = new Map()
+    runtimeState.css.emittedSource = new Map()
+    runtimeState.css.sidecarImports = new Set()
+    runtimeState.css.importerToDependencies = new Map()
+    runtimeState.css.dependencyToImporters = new Map()
+    const plugins = css({
+      ...ctx,
+      runtimeState,
+    } as unknown as CompilerContext)
+    const sourcePlugin = plugins[1]
+    await invokeHook(
+      sourcePlugin.transform,
+      pluginContext,
+      transformedSource,
+      `${stylePath}?weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Findex%2Findex.ts&weapp-vite-sidecar=style&lang.css`,
+    )
+
+    await emitStyleSidecarAsset(
+      { ...ctx, runtimeState } as unknown as CompilerContext,
+      pluginContext,
+      {} as any,
+      stylePath,
+      resolvedConfig,
+    )
+
+    expect(preprocessCSSMock).toHaveBeenCalledWith(transformedSource, stylePath, resolvedConfig)
+    expect(preprocessCSSMock).not.toHaveBeenCalledWith('.disk-source { color: blue; }', stylePath, resolvedConfig)
+    expect(emitted[emitted.length - 1]?.source).toBe(transformedSource)
+  })
+
+  it('does not cache ordinary CSS or Vue style block requests', async () => {
+    const stylePath = resolve(absoluteSrcRoot, 'pages/index/index.css')
+    const plugin = css(ctx)[1]
+
+    await invokeHook(plugin.transform, pluginContext, '.ordinary {}', stylePath)
+    await invokeHook(plugin.transform, pluginContext, '.vue-block {}', `${stylePath}?vue&type=style&index=0&lang.css`)
+
+    expect((ctx as any).runtimeState.css.transformedSidecarSource.size).toBe(0)
+  })
+
+  it('keeps transformed sidecar sources isolated by physical style file', async () => {
+    const firstStylePath = resolve(absoluteSrcRoot, 'pages/first/index.css')
+    const secondStylePath = resolve(absoluteSrcRoot, 'pages/second/index.css')
+    const plugin = css(ctx)[1]
+
+    await invokeHook(
+      plugin.transform,
+      pluginContext,
+      '.first {}',
+      `${firstStylePath}?weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Ffirst%2Findex.ts&weapp-vite-sidecar=style&lang.css`,
+    )
+    await invokeHook(
+      plugin.transform,
+      pluginContext,
+      '.second {}',
+      `${secondStylePath}?weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Fsecond%2Findex.ts&weapp-vite-sidecar=style&lang.css`,
+    )
+
+    expect((ctx as any).runtimeState.css.transformedSidecarSource).toEqual(new Map([
+      [firstStylePath, { code: '.first {}', diskSource: '.sidecar{color:red}' }],
+      [secondStylePath, { code: '.second {}', diskSource: '.sidecar{color:red}' }],
+    ]))
+  })
+
+  it('falls back to disk when a style sidecar has no transformed source', async () => {
+    const stylePath = resolve(absoluteSrcRoot, 'pages/fallback/index.css')
+    const diskSource = '.disk-fallback { color: blue; }'
+    readFileMock.mockResolvedValueOnce(diskSource)
+
+    await emitStyleSidecarAsset(ctx, pluginContext, {} as any, stylePath, resolvedConfig)
+
+    expect(readFileMock).toHaveBeenCalledWith(stylePath, 'utf8')
+    expect(preprocessCSSMock).toHaveBeenCalledWith(diskSource, stylePath, resolvedConfig)
+    expect(emitted[emitted.length - 1]?.source).toBe(diskSource)
+  })
+
+  it('drops stale transformed source and falls back to the current disk source', async () => {
+    const stylePath = resolve(absoluteSrcRoot, 'pages/stale/index.css')
+    const diskSource = '.current-disk { color: green; }'
+    const runtimeState = structuredClone(ctx.runtimeState)
+    runtimeState.css.transformedSidecarSource = new Map([[stylePath, {
+      code: '.stale-pre-plugin { color: red; }',
+      diskSource: '.previous-disk { color: blue; }',
+    }]])
+    readFileMock.mockResolvedValue(diskSource)
+
+    await emitStyleSidecarAsset(
+      { ...ctx, runtimeState } as unknown as CompilerContext,
+      pluginContext,
+      {} as any,
+      stylePath,
+      resolvedConfig,
+    )
+
+    expect(preprocessCSSMock).toHaveBeenCalledWith(diskSource, stylePath, resolvedConfig)
+    expect(emitted[emitted.length - 1]?.source).toBe(diskSource)
+    expect(runtimeState.css.transformedSidecarSource.has(stylePath)).toBe(false)
+  })
+
+  it('rebuilds hmr style assets from the transformed sidecar source', async () => {
+    const stylePath = resolve(absoluteSrcRoot, 'pages/index/index.scss')
+    const transformedSource = '$brand: purple;\n.page { .title { color: $brand; } }'
+    preprocessCSSMock.mockResolvedValueOnce({
+      code: '.page .title{color:purple}',
+      deps: [],
+    })
+    const runtimeState = {
+      css: {
+        transformedSidecarSource: new Map([[stylePath, {
+          code: transformedSource,
+          diskSource: '.sidecar{color:red}',
+        }]]),
+        emittedSource: new Map([
+          ['pages/index/index.wxss', '.page .title{color:red}'],
+        ]),
+      },
+      build: {
+        hmr: {
+          didEmitAllEntries: false,
+          lastHmrEntryIds: new Set([resolve(absoluteSrcRoot, 'pages/index/index.ts')]),
+          lastEmittedEntryIds: new Set(),
+          profile: {
+            event: 'update',
+            file: stylePath,
+          },
+        },
+      },
+    }
+    const plugin = css({
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+      runtimeState,
+      scanService,
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'pages/index/index.wxss': {
+        type: 'asset',
+        fileName: 'pages/index/index.wxss',
+        source: '.page .title{color:red}',
+        originalFileNames: [stylePath],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+
+    expect(readFileMock).toHaveBeenCalledWith(stylePath, 'utf8')
+    expect(preprocessCSSMock).toHaveBeenCalledWith(transformedSource, stylePath, resolvedConfig)
+    expect(bundle['pages/index/index.wxss']?.source).toBe('.page .title{color:purple}')
   })
 
   it('rebuilds the current hmr final style asset from the latest sidecar source', async () => {
