@@ -687,6 +687,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-779/index",
+          "pathName": "pages/issue-779/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/require-async/index",
           "pathName": "pages/require-async/index",
           "query": "",

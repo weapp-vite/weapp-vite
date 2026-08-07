@@ -1514,6 +1514,12 @@ importers:
       socket.io-client:
         specifier: ^4.8.3
         version: 4.8.3(bufferutil@4.1.0)(supports-color@10.2.2)
+      tailwindcss:
+        specifier: catalog:tailwind4
+        version: 4.3.3
+      weapp-tailwindcss:
+        specifier: catalog:weapp-tailwindcss-fixed
+        version: 5.2.11(@oxc-project/types@0.143.0)(jiti@2.7.0)(rolldown@1.2.3)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.9)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite

@@ -1,5 +1,6 @@
 import path from 'node:path'
 import process from 'node:process'
+import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
@@ -12,6 +13,7 @@ const issue621AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_621_AUGMENTED
 const issue595ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_595_SCOPED === 'true'
 const issue642ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_642_SCOPED === 'true'
 const issue724ProbeEnabled = process.env.WEAPP_GITHUB_ISSUE_724_PROBE === 'true'
+const issue779CssPreEnabled = process.env.WEAPP_GITHUB_ISSUE_779_CSS_PRE === 'true'
 const issue651NoExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverNoExt/index')
 const issue651WithExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverWithExt/index.vue')
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
@@ -394,8 +396,44 @@ const issue724ProbePlugins = issue724ProbeEnabled
     ]
   : []
 
+const issue779CssPrePlugin = issue779CssPreEnabled
+  ? [
+      {
+        name: 'github-issues:issue-779-css-pre',
+        enforce: 'pre' as const,
+        transform(_code: string, id: string) {
+          const normalizedId = id.replaceAll('\\', '/')
+          if (!normalizedId.includes('/src/pages/issue-779/') || !id.includes('weapp-vite-sidecar=style')) {
+            return null
+          }
+          return `@import "tailwindcss";\n.issue-779-pre-marker { color: rgb(1, 2, 3); }`
+        },
+      },
+      WeappTailwindcss(),
+      {
+        name: 'github-issues:issue-779-css-pipeline-probe',
+        transform(code: string, id: string) {
+          const normalizedId = id.replaceAll('\\', '/')
+          if (!normalizedId.includes('/src/pages/issue-779/') || !id.includes('weapp-vite-sidecar=style')) {
+            return null
+          }
+          if (
+            !code.includes('.issue-779-pre-marker')
+            || code.includes('.issue-779-disk-marker')
+          ) {
+            throw new Error(`issue #779 Tailwind pipeline did not preserve the pre-transformed CSS: ${normalizedId}`)
+          }
+          return null
+        },
+      },
+    ]
+  : undefined
+
 export default defineConfig({
-  plugins: issue724ProbePlugins,
+  plugins: [
+    ...issue724ProbePlugins,
+    ...(issue779CssPrePlugin ?? []),
+  ],
   define: {
     'import.meta.env.ISSUE_484_FLAG': '123456',
   },
@@ -525,5 +563,11 @@ export default defineConfig({
                     outDir: 'dist-issue-642',
                   },
                 }
-              : {}),
+              : issue779CssPreEnabled
+                ? {
+                    build: {
+                      outDir: 'dist-issue-779',
+                    },
+                  }
+                : {}),
 })

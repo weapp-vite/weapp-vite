@@ -271,6 +271,7 @@ export interface RuntimeState {
   css: {
     importerToDependencies: Map<string, Set<string>>
     dependencyToImporters: Map<string, Set<string>>
+    transformedSidecarSource: Map<string, { code: string, diskSource: string }>
     emittedSource: Map<string, string>
     sidecarImports: Set<string>
   }
@@ -385,6 +386,7 @@ export function createRuntimeState(): RuntimeState {
     css: {
       importerToDependencies: new Map<string, Set<string>>(),
       dependencyToImporters: new Map<string, Set<string>>(),
+      transformedSidecarSource: new Map<string, { code: string, diskSource: string }>(),
       emittedSource: new Map<string, string>(),
       sidecarImports: new Set<string>(),
     },

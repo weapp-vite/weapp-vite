@@ -68,6 +68,9 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
 
   const isCssSidecar = Boolean(ext && watchedCssExts.has(ext))
   const isTemplateSidecar = Boolean(ext && watchedTemplateExts.has(ext))
+  if (isCssSidecar) {
+    ctx.runtimeState?.css?.transformedSidecarSource.delete(normalizedPath)
+  }
   const sidecarCause = configSuffix
     ? 'json-sidecar' as const
     : isCssSidecar
