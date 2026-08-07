@@ -185,7 +185,10 @@ interface SnapshotBuildBatch {
   startedAt: number
 }
 
-function toStatefulHmrOutput(output: RolldownOutput | RolldownOutput[]): StatefulHmrOutputFile[] {
+function toStatefulHmrOutput(output: RolldownOutput | RolldownOutput[] | RolldownWatcher): StatefulHmrOutputFile[] {
+  if (!Array.isArray(output) && !('output' in output)) {
+    throw new TypeError('stateful HMR snapshot build unexpectedly returned a watcher')
+  }
   const outputs = Array.isArray(output) ? output : [output]
   return outputs.flatMap(result => result.output as StatefulHmrOutputFile[])
 }

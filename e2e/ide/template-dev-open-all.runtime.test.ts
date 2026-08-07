@@ -35,6 +35,9 @@ const TEMPLATE_CASES: TemplateCase[] = [
     root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-plugin-template'),
     route: '/pages/index/index',
     expectedText: '插件能力混合演示',
+    expectedData: {
+      pluginAnswer: 42,
+    },
   },
   {
     name: 'weapp-vite-template',
@@ -89,9 +92,13 @@ const TEMPLATE_CASES: TemplateCase[] = [
     name: 'weapp-vite-wevu-tailwindcss-tdesign-retail-template',
     root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template'),
     route: '/pages/home/home',
-    expectedText: '精选好物',
+    expectedText: '精选推荐',
   },
 ]
+const TEMPLATE_FILTER = process.env.WEAPP_VITE_E2E_TEMPLATE?.trim()
+const ACTIVE_TEMPLATE_CASES = TEMPLATE_FILTER
+  ? TEMPLATE_CASES.filter(templateCase => templateCase.name === TEMPLATE_FILTER)
+  : TEMPLATE_CASES
 
 type TemplateDevProcess = TemplateCase & {
   dev: ReturnType<typeof startDevProcess>
@@ -286,6 +293,10 @@ function startTemplateDevProcess(templateCase: TemplateCase): TemplateDevProcess
   }
 }
 
+function isTemplateRuntimeInfraError(error: unknown) {
+  return error instanceof Error && IDE_AUTOMATOR_INFRA_RE.test(error.message)
+}
+
 async function openTemplateDevProcess(templateCase: TemplateCase) {
   let lastError: unknown
   for (let attempt = 1; attempt <= 2; attempt += 1) {
@@ -312,20 +323,21 @@ async function openTemplateDevProcess(templateCase: TemplateCase) {
 describe.sequential('all templates dev:open IDE integration', () => {
   beforeAll(async () => {
     await cleanupResidualIdeProcesses()
-    await Promise.all(TEMPLATE_CASES.map(async templateCase => await cleanupTemplateAutomatorState(templateCase)))
+    await Promise.all(ACTIVE_TEMPLATE_CASES.map(async templateCase => await cleanupTemplateAutomatorState(templateCase)))
   }, 60_000)
 
   afterAll(async () => {
     await cleanupTrackedDevProcesses()
-    await Promise.all(TEMPLATE_CASES.map(async templateCase => await closeSharedMiniProgram(
+    await Promise.all(ACTIVE_TEMPLATE_CASES.map(async templateCase => await closeSharedMiniProgram(
       templateCase.root,
       resolveProjectAutomatorPort(templateCase.root),
     ).catch(() => {})))
     await cleanupResidualIdeProcesses()
   }, 180_000)
 
-  it('renders every app template after dev:open', async () => {
-    for (const templateCase of TEMPLATE_CASES) {
+  it.each(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', async (templateCase) => {
+    let lastError: unknown
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
       const port = resolveProjectAutomatorPort(templateCase.root)
       const { devProcess, session } = await openTemplateDevProcess(templateCase)
       let miniProgram: any
@@ -361,9 +373,14 @@ describe.sequential('all templates dev:open IDE integration', () => {
         }
         expect(runtimeErrors.getSince(runtimeMarker)).toEqual([])
         expect(runtimeErrors.getAll().filter(message => /DevRuntime|module .* is not defined|SystemError|MiniProgramError/i.test(message))).toEqual([])
+        return
       }
       catch (error) {
-        throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)
+        lastError = error
+        if (attempt >= 2 || !isTemplateRuntimeInfraError(error)) {
+          throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)
+        }
+        process.stdout.write(`[warn] [template-dev-open-all] retry runtime template=${templateCase.name} reason=${error instanceof Error ? error.message : String(error)}\n`)
       }
       finally {
         runtimeErrors?.dispose()
@@ -380,5 +397,6 @@ describe.sequential('all templates dev:open IDE integration', () => {
         await delay(2_000)
       }
     }
-  }, 900_000)
+    throw lastError instanceof Error ? lastError : new Error(String(lastError))
+  }, 480_000)
 })

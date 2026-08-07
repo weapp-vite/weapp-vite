@@ -50,6 +50,7 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
     emitDefaultAutoImportOutputs: true,
     projectConfig: {},
     projectConfigPath: undefined,
+    projectPrivateConfig: {},
     projectPrivateConfigPath: undefined,
     mpDistRoot: '',
     multiPlatform: resolveMultiPlatformConfig(false),

@@ -163,7 +163,12 @@ async function rewriteProjectConfigAppId(targetDir: string) {
   }
 
   const projectConfig = await fs.readJSON(projectConfigPath) as Record<string, any>
-  if (!projectConfig || typeof projectConfig !== 'object' || projectConfig.appid === TOURIST_APP_ID) {
+  if (
+    !projectConfig
+    || typeof projectConfig !== 'object'
+    || projectConfig.compileType === 'plugin'
+    || projectConfig.appid === TOURIST_APP_ID
+  ) {
     return
   }
 

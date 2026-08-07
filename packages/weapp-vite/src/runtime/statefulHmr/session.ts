@@ -123,7 +123,10 @@ class StatefulHmrSession {
     private readonly ctx: MutableCompilerContext,
     private readonly server: ViteDevServer,
     private readonly restart: () => Promise<void>,
-    private readonly snapshots: { rebuild: (files: string[]) => Promise<StatefulHmrOutputFile[]> },
+    private readonly snapshots: {
+      initial: StatefulHmrOutputFile[]
+      rebuild: (files: string[]) => Promise<StatefulHmrOutputFile[]>
+    },
   ) {
     this.replaceSnapshotAssets(snapshots.initial)
     this.transport = new StatefulHmrTransport(

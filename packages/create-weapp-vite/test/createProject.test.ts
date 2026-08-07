@@ -121,7 +121,7 @@ describe('createProject', () => {
     expect(files).toContain('AGENTS.md')
   })
 
-  it.each(Object.values(TemplateName))('rewrites generated project.config.json appid to touristappid for template %s', async (templateName) => {
+  it.each(Object.values(TemplateName).filter(templateName => templateName !== TemplateName.plugin))('rewrites generated project.config.json appid to touristappid for template %s', async (templateName) => {
     const root = await createTmpRoot(`tourist-appid-${templateName}`)
 
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
@@ -130,6 +130,20 @@ describe('createProject', () => {
 
     const projectConfig = await readJsonAs<{ appid?: string }>(path.join(root, 'project.config.json'))
     expect(projectConfig.appid).toBe('touristappid')
+  })
+
+  it('preserves the real plugin AppID for plugin templates', async () => {
+    const root = await createTmpRoot('plugin-appid')
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, TemplateName.plugin)
+
+    const projectConfig = await readJsonAs<{ appid?: string, compileType?: string }>(path.join(root, 'project.config.json'))
+    expect(projectConfig).toMatchObject({
+      appid: 'wxb3d842a4a7e3440d',
+      compileType: 'plugin',
+    })
   })
 
   it('installs recommended local skills when enabled', async () => {
@@ -191,7 +205,7 @@ describe('createProject', () => {
     const appJson = await readJsonAs<{
       plugins?: Record<string, { provider?: string }>
     }>(path.join(root, 'src/app.json'))
-    expect(appJson.plugins?.['hello-plugin']?.provider).toBe('')
+    expect(appJson.plugins?.['hello-plugin']?.provider).toBe('wxb3d842a4a7e3440d')
   })
 
   it('preserves existing .gitignore when templates ship gitignore', async () => {

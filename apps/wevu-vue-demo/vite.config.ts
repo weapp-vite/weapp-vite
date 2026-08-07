@@ -3,6 +3,7 @@ import { defineConfig } from 'weapp-vite'
 export default defineConfig(() => ({
   weapp: {
     hmr: {
+      runtime: 'classic',
       logLevel: 'verbose',
       profileJson: true,
     },

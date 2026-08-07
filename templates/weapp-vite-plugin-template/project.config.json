@@ -5,7 +5,7 @@
   "compileType": "plugin",
   "libVersion": "3.13.2",
   "srcMiniprogramRoot": "dist/",
-  "appid": "touristappid",
+  "appid": "wxb3d842a4a7e3440d",
   "setting": {
     "es6": true,
     "postcss": false,
