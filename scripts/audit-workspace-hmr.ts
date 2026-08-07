@@ -275,11 +275,9 @@ async function prepareReferencedWorkspaceTsconfigs() {
     if (existsSync(path.join(projectRoot, '.weapp-vite/tsconfig.shared.json'))) {
       continue
     }
-    process.stdout.write(`[workspace-hmr] prepare managed tsconfig: ${path.relative(repoRoot, projectRoot)}\n`)
-    await execFile(process.execPath, [cliPath, 'prepare'], {
-      cwd: projectRoot,
-      timeout: 60_000,
-    })
+    const managedDir = path.join(projectRoot, '.weapp-vite')
+    await mkdir(managedDir, { recursive: true })
+    await writeFile(path.join(managedDir, 'tsconfig.shared.json'), '{"files":[]}\n', 'utf8')
   }
 }
 
