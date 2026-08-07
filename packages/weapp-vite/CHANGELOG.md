@@ -1,5 +1,25 @@
 # weapp-vite
 
+## 6.19.2
+
+### Patch Changes
+
+- 🐛 **微信小程序开发模式默认根据开发者工具的热重载设置自动选择 HMR 运行时，并在启动时显示当前模式与切换方法；同时确保 Web API 网络默认值在分包和共享 chunk 的多份运行时实例之间保持一致，并避免截图协议超时后在同一 DevTools 连接上继续叠加请求。** [#778](https://github.com/weapp-vite/weapp-vite/pull/778) by @sonofmagic
+
+- 🐛 **修复默认 wevu 模板安装 axios 后真机调试可能白屏的问题：自动识别请求客户端依赖时默认提前生成 request globals app prelude，确保页面模块执行前已经安装 `fetch`、`XMLHttpRequest` 和 `URL` 等兼容全局对象。** [#774](https://github.com/weapp-vite/weapp-vite/pull/774) by @sonofmagic
+
+- 🐛 **修复微信开发者工具热重载运行时缺少 `DevRuntime` 导致模板启动白屏的问题，并在自动模式下增加兼容性降级与模板回归覆盖。** [#781](https://github.com/weapp-vite/weapp-vite/pull/781) by @sonofmagic
+
+- 🐛 **修复 Vite 8 / Rolldown 1.2 下微信状态保持 HMR 的补丁注册与模块重执行流程，避免补丁定义被旧页面或组件注册覆盖。** [#775](https://github.com/weapp-vite/weapp-vite/pull/775) by @sonofmagic
+
+- 🐛 **修复 CSS `pre` 插件处理结果未传递到 Tailwind 与小程序样式 sidecar 输出的问题，样式生成现在优先使用 Vite 管线中的内存内容。** [#782](https://github.com/weapp-vite/weapp-vite/pull/782) by @sonofmagic
+- 📦 Updated 8 dependencies [`b055929`](https://github.com/weapp-vite/weapp-vite/commit/b055929f8c18a2a9be800eff88f8f7806a9a4f46)
+  <details><summary>Details</summary>
+
+  `@weapp-core/constants@0.1.16`, `@wevu/web-apis@1.2.31`, `@weapp-vite/miniprogram-automator@1.2.11`, `@weapp-vite/web@1.4.2`, `wevu@6.19.2`, `weapp-ide-cli@6.0.3`, `@weapp-vite/mcp@1.4.12`, `@weapp-vite/ast@6.19.2`
+
+  </details>
+
 ## 6.19.1
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @mpcore/weapp-vite
 
+## 0.1.2
+
+### Patch Changes
+
+- 📦 **Dependencies** [`b055929`](https://github.com/weapp-vite/weapp-vite/commit/b055929f8c18a2a9be800eff88f8f7806a9a4f46)
+  → `weapp-vite@6.19.2`, `@mpcore/test@0.1.1`
+
 ## 0.1.1
 
 ### Patch Changes
