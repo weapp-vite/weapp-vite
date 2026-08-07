@@ -74,6 +74,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
         srcRoot: currentOptions.srcRoot,
         mpDistRoot: currentOptions.mpDistRoot,
         configFileDependencies: currentOptions.configFileDependencies,
+        configFilePath: currentOptions.configFilePath,
         packageJson: currentOptions.packageJson,
         isDev: currentOptions.isDev,
         applyRuntimePlatform,

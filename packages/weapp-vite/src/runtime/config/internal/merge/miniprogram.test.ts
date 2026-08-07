@@ -29,7 +29,7 @@ async function createTempProject(prefix: string) {
   return root
 }
 
-function mergeMiniprogramForTsconfig(cwd: string, config: Record<string, unknown> = {}) {
+function mergeMiniprogramForTsconfig(cwd: string, config: Record<string, unknown> = {}, configFilePath?: string) {
   return mergeMiniprogram(
     {
       ctx: {
@@ -41,6 +41,7 @@ function mergeMiniprogramForTsconfig(cwd: string, config: Record<string, unknown
       config: config as any,
       cwd,
       srcRoot: 'src',
+      configFilePath,
       configFileDependencies: [],
       packageJson: undefined,
       isDev: true,
@@ -217,6 +218,7 @@ describe('runtime config merge miniprogram', () => {
     const result = mergeMiniprogramForTsconfig(root)
 
     expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(appTsconfig)
+    expect((result.build as any)?.rolldownOptions?.resolve?.tsconfigFilename).toBe(appTsconfig)
   })
 
   it('falls back to project tsconfig when managed app tsconfig is missing', async () => {
@@ -227,6 +229,21 @@ describe('runtime config merge miniprogram', () => {
     const result = mergeMiniprogramForTsconfig(root)
 
     expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(rootTsconfig)
+    expect((result.build as any)?.rolldownOptions?.resolve?.tsconfigFilename).toBe(rootTsconfig)
+  })
+
+  it('anchors default tsconfig resolution to the config project when cwd is a workspace root', async () => {
+    const workspaceRoot = await createTempProject('weapp-vite-workspace-root-')
+    const projectRoot = path.join(workspaceRoot, 'templates/plugin')
+    const appTsconfig = path.join(projectRoot, '.weapp-vite/tsconfig.app.json')
+    await mkdir(path.dirname(appTsconfig), { recursive: true })
+    await writeFile(appTsconfig, `${JSON.stringify({ include: ['../src/**/*'] }, null, 2)}\n`, 'utf8')
+    const configFilePath = path.join(projectRoot, 'weapp-vite.config.ts')
+
+    const result = mergeMiniprogramForTsconfig(workspaceRoot, {}, configFilePath)
+
+    expect((result.build as any)?.rolldownOptions?.tsconfig).toBe(appTsconfig)
+    expect((result.build as any)?.rolldownOptions?.resolve?.tsconfigFilename).toBe(appTsconfig)
   })
 
   it('does not set default rolldown tsconfig when project tsconfig files are missing', async () => {
