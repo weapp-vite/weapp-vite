@@ -4,6 +4,7 @@ import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
+  delay,
   DIST_ROOT,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
@@ -14,17 +15,42 @@ import {
 
 const ISSUE_558_AUGMENTED_ENV = 'WEAPP_GITHUB_ISSUE_558_AUGMENTED'
 
-function getIssue558ExpectedCases(cases: Record<string, any>) {
-  return [
-    ['plain-default', cases.plainDefault],
-    ['named-header', cases.namedHeader],
-    ['explicit-default', cases.explicitDefault],
-    ['named-scoped-footer', cases.namedScopedFooter],
-    ['default-scoped', cases.defaultScoped],
-    ['list-scoped-0', Array.isArray(cases.listScoped) ? cases.listScoped[0] : undefined],
-    ['list-scoped-1', Array.isArray(cases.listScoped) ? cases.listScoped[1] : undefined],
-    ['nested-default', cases.nestedDefault],
-  ].filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].length > 0)
+const ISSUE_558_EXPECTED_RENDERED_CASES = {
+  plainDefault: '987654321',
+  namedHeader: 'redaeh',
+  explicitDefault: 'tluafed',
+  namedScopedFooter: 'retoof-987654321',
+  defaultScoped: '987654321-2-tluafed-depocs',
+  listScoped: [
+    '987654321-0-ahpla',
+    '987654321-1-ateb',
+  ],
+  nestedOuter: 'retuo',
+  nestedDefault: 'detsen',
+}
+
+async function waitForIssue558Runtime(page: any, timeoutMs = 30_000) {
+  const startedAt = Date.now()
+  let latest: Record<string, any> | null = null
+  let lastError: unknown
+
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      latest = await page.callMethod('_runE2E')
+      if (latest?.ok === true) {
+        return latest
+      }
+    }
+    catch (error) {
+      lastError = error
+    }
+    await delay(160)
+  }
+
+  if (latest == null && lastError) {
+    throw lastError
+  }
+  return latest
 }
 
 async function readIssue558WxmlBundle() {
@@ -54,32 +80,19 @@ describe.sequential('e2e app: github-issues / issue #558', () => {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-558/index', undefined, 20_000, {
         readiness: async (page) => {
           const runtime = await page.callMethod('_runE2E')
-          return runtime?.ok === true
+          return runtime != null && typeof runtime.cases === 'object'
         },
       })
       if (!issuePage) {
         throw new Error('Failed to launch issue-558 page')
       }
 
-      const runtime = await issuePage.callMethod('_runE2E')
-      const cases = runtime?.cases ?? {}
+      const runtime = await waitForIssue558Runtime(issuePage)
       const renderedWxml = await readIssue558WxmlBundle()
 
+      expect(runtime?.cases).toEqual(ISSUE_558_EXPECTED_RENDERED_CASES)
       expect(runtime?.ok).toBe(true)
-      for (const [, expected] of getIssue558ExpectedCases(cases)) {
-        expect(expected).toBeTruthy()
-      }
-      for (const caseName of [
-        'plain-default',
-        'named-header',
-        'explicit-default',
-        'named-scoped-footer',
-        'default-scoped',
-        'nested-default',
-      ]) {
-        expect(renderedWxml).toContain(`data-issue558-case="${caseName}"`)
-      }
-      expect(renderedWxml).toContain('data-issue558-case="{{\'list-scoped-\'+__wvSlotPropsData.index}}"')
+      expect(renderedWxml).toContain('<issue-558-render-probe')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

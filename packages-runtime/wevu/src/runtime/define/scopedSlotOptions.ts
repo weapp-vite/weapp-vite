@@ -228,10 +228,23 @@ function syncSlotPropsData(
   }
   instance[WEVU_SLOT_PROPS_DATA_KEY] = merged
   const runtimeState = instance?.__wevu?.state
+  const runtimeSnapshotChanged = Boolean(
+    runtimeState
+    && typeof runtimeState === 'object'
+    && (
+      !hasOwn(runtimeState, WEVU_SLOT_PROPS_DATA_KEY)
+      || !isDeepEqualValue(
+        runtimeState[WEVU_SLOT_PROPS_DATA_KEY] ?? {},
+        snapshot,
+        20,
+        { keys: 10_000 },
+      )
+    ),
+  )
   if (runtimeState && typeof runtimeState === 'object') {
     runtimeState[WEVU_SLOT_PROPS_DATA_KEY] = merged
   }
-  return { merged, snapshot, snapshotChanged }
+  return { merged, runtimeSnapshotChanged, snapshot, snapshotChanged }
 }
 
 function mergeSlotProps(
@@ -239,8 +252,8 @@ function mergeSlotProps(
   computed?: ComputedDefinitions,
   override?: { [WEVU_SLOT_SCOPE_KEY]?: unknown, [WEVU_SLOT_PROPS_KEY]?: unknown },
 ) {
-  const { snapshot, snapshotChanged } = syncSlotPropsData(instance, override)
-  if (snapshotChanged && typeof instance?.setData === 'function') {
+  const { runtimeSnapshotChanged, snapshot, snapshotChanged } = syncSlotPropsData(instance, override)
+  if ((snapshotChanged || runtimeSnapshotChanged) && typeof instance?.setData === 'function') {
     instance.setData({ [WEVU_SLOT_PROPS_DATA_KEY]: snapshot })
   }
   if (snapshotChanged) {
@@ -249,12 +262,13 @@ function mergeSlotProps(
 }
 
 function setOwnerProxy(instance: any, proxy: any) {
-  if (instance[WEVU_SLOT_OWNER_PROXY_KEY] === proxy) {
-    return false
+  let changed = false
+  if (instance[WEVU_SLOT_OWNER_PROXY_KEY] !== proxy) {
+    instance[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
+    changed = true
   }
-  instance[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
   const data = instance?.data
-  if (data && typeof data === 'object') {
+  if (data && typeof data === 'object' && data[WEVU_SLOT_OWNER_PROXY_KEY] !== proxy) {
     try {
       Object.defineProperty(data, WEVU_SLOT_OWNER_PROXY_KEY, {
         value: proxy,
@@ -266,12 +280,18 @@ function setOwnerProxy(instance: any, proxy: any) {
     catch {
       data[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
     }
+    changed = true
   }
   const runtimeState = instance?.__wevu?.state
-  if (runtimeState && typeof runtimeState === 'object') {
+  if (
+    runtimeState
+    && typeof runtimeState === 'object'
+    && runtimeState[WEVU_SLOT_OWNER_PROXY_KEY] !== proxy
+  ) {
     runtimeState[WEVU_SLOT_OWNER_PROXY_KEY] = proxy
+    changed = true
   }
-  return true
+  return changed
 }
 
 function updateOwnerBindings(instance: any, snapshot: Record<string, any>, proxy: any, computed?: ComputedDefinitions) {
