@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, shallowRef, watch } from 'vue'
+import DashboardIcon from './DashboardIcon.vue'
 
 interface AnalyzeDraggableGridItem {
   id: string
@@ -85,32 +86,39 @@ watch(
     <article
       v-for="item in orderedItems"
       :key="item.id"
-      class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-dashed border-transparent transition"
+      class="relative min-h-0 rounded-lg border border-dashed border-transparent pt-2 transition"
       :class="[item.className, draggingId === item.id ? 'border-(--dashboard-accent) opacity-70' : '']"
       @dragover.prevent
       @drop="handleDrop(item)"
     >
-      <div class="flex min-h-0 items-center justify-between gap-2 pb-1">
+      <div class="absolute inset-x-0 top-0 z-10 flex -translate-y-1/2 items-center justify-center gap-2 px-2">
         <button
-          class="inline-flex min-w-0 cursor-grab items-center gap-2 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2 py-1 text-[11px] uppercase tracking-[0.16em] text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
+          class="inline-flex h-7 w-7 shrink-0 cursor-grab items-center justify-center rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-strong) text-(--dashboard-text-soft) shadow-(--dashboard-shadow) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
           draggable="true"
           type="button"
+          :aria-label="`拖动调整${item.label}模块位置`"
+          :title="`拖动调整${item.label}模块位置`"
           @dragend="draggingId = null"
           @dragstart="handleDragStart(item, $event)"
         >
-          <span aria-hidden="true">::</span>
-          <span class="truncate">{{ item.label }}</span>
+          <span class="h-4 w-4" aria-hidden="true">
+            <DashboardIcon name="metric-drag" />
+          </span>
         </button>
         <button
           v-if="orderedItems.length > 1 && item.id === orderedItems[0]?.id"
-          class="shrink-0 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2 py-1 text-[11px] text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
+          class="absolute right-2 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-strong) text-(--dashboard-text-soft) shadow-(--dashboard-shadow) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
           type="button"
+          aria-label="重置模块布局"
+          title="重置模块布局"
           @click="resetOrder"
         >
-          重置布局
+          <span class="h-4 w-4" aria-hidden="true">
+            <DashboardIcon name="metric-reset" />
+          </span>
         </button>
       </div>
-      <div class="min-h-0 overflow-hidden">
+      <div class="min-h-0">
         <slot :name="item.id" :item="item" />
       </div>
     </article>

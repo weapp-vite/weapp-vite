@@ -100,7 +100,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <section v-if="activeTab === 'overview'" class="min-h-0 overflow-hidden">
+  <section v-if="activeTab === 'overview'" class="min-h-0">
     <AnalyzeDraggableGrid
       grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
       :items="overviewLayoutItems"
@@ -122,7 +122,7 @@ const emit = defineEmits<{
     </AnalyzeDraggableGrid>
   </section>
 
-  <section v-else-if="activeTab === 'diagnostics'" class="min-h-0 overflow-hidden">
+  <section v-else-if="activeTab === 'diagnostics'" class="min-h-0">
     <AnalyzeDiagnosticsSection
       :action-items="actionItems"
       :active-work-queue-item-id="activeWorkQueueItemId"
@@ -146,7 +146,7 @@ const emit = defineEmits<{
     />
   </section>
 
-  <section v-else-if="activeTab === 'review'" class="min-h-0 overflow-hidden">
+  <section v-else-if="activeTab === 'review'" class="min-h-0">
     <AnalyzeDraggableGrid
       grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
       :items="reviewLayoutItems"
@@ -163,7 +163,7 @@ const emit = defineEmits<{
     </AnalyzeDraggableGrid>
   </section>
 
-  <section v-else-if="activeTab === 'treemap'" class="min-h-0 overflow-hidden">
+  <section v-else-if="activeTab === 'treemap'" class="min-h-0">
     <AnalyzeDraggableGrid
       grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
       :items="treemapLayoutItems"
@@ -186,7 +186,7 @@ const emit = defineEmits<{
     </AnalyzeDraggableGrid>
   </section>
 
-  <section v-else-if="activeTab === 'files'" class="min-h-0 overflow-hidden">
+  <section v-else-if="activeTab === 'files'" class="min-h-0">
     <AnalyzeDetailsPanel
       :largest-files="filteredLargestFiles"
       :selected-file-modules="selectedFileModules"
@@ -202,7 +202,7 @@ const emit = defineEmits<{
     />
   </section>
 
-  <section v-else-if="activeTab === 'source'" class="min-h-0 overflow-hidden">
+  <section v-else-if="activeTab === 'source'" class="min-h-0">
     <AnalyzeDraggableGrid
       grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
       :items="sourceLayoutItems"
@@ -219,7 +219,7 @@ const emit = defineEmits<{
     </AnalyzeDraggableGrid>
   </section>
 
-  <section v-else-if="activeTab === 'packages'" class="min-h-0 overflow-hidden">
+  <section v-else-if="activeTab === 'packages'" class="min-h-0">
     <AnalyzeDraggableGrid
       grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
       :items="packagesLayoutItems"
@@ -235,7 +235,7 @@ const emit = defineEmits<{
     </AnalyzeDraggableGrid>
   </section>
 
-  <section v-else class="min-h-0 overflow-hidden">
+  <section v-else class="min-h-0">
     <AnalyzeDraggableGrid
       grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
       :items="modulesLayoutItems"

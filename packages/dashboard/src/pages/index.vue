@@ -25,14 +25,14 @@ const readinessSummary = computed(() => createWorkspaceReadinessSummary({
 </script>
 
 <template>
-  <div class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-cols-[minmax(0,0.92fr)_minmax(24rem,0.72fr)]">
+  <div class="grid min-h-[calc(100dvh-8rem)] items-start gap-3 xl:grid-cols-[minmax(0,1.12fr)_minmax(24rem,0.72fr)] xl:items-stretch">
     <AppSurfaceCard
       eyebrow="Status"
       title="当前工作区"
       icon-name="status-live"
       tone="strong"
       padding="md"
-      content-class="min-h-0 overflow-hidden"
+      content-class="min-h-[46rem]"
     >
       <div class="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-3 overflow-hidden">
         <AppInsetPanel>
@@ -70,7 +70,7 @@ const readinessSummary = computed(() => createWorkspaceReadinessSummary({
       </div>
     </AppSurfaceCard>
 
-    <section class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
+    <section class="grid min-h-[46rem] grid-rows-[auto_minmax(34rem,1fr)] gap-3">
       <WorkspaceReadinessPanel :summary="readinessSummary" />
 
       <AppSurfaceCard tone="default" padding="md" content-class="min-h-0 overflow-hidden">

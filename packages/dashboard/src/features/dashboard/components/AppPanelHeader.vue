@@ -20,7 +20,7 @@ const iconClassName = iconFrameStyles()
           <DashboardIcon :name="iconName" />
         </span>
       </span>
-      <div>
+      <div class="min-w-0 md:flex md:flex-wrap md:items-baseline md:gap-x-2">
         <h2 class="text-lg font-semibold text-(--dashboard-text)">
           {{ title }}
         </h2>

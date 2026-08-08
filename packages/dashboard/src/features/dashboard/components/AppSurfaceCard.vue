@@ -42,14 +42,14 @@ const hasHeader = Boolean(props.title || props.description || slots.header)
             <DashboardIcon :name="iconName" />
           </span>
         </span>
-        <div class="min-w-0">
+        <div class="min-w-0 sm:flex sm:flex-wrap sm:items-baseline sm:gap-x-2.5">
           <p v-if="eyebrow" class="text-[11px] uppercase tracking-[0.24em] text-(--dashboard-accent)">
             {{ eyebrow }}
           </p>
-          <h2 v-if="title" class="text-lg font-semibold tracking-tight">
+          <h2 v-if="title" class="text-lg font-semibold tracking-tight sm:whitespace-nowrap">
             {{ title }}
           </h2>
-          <p v-if="description" class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
+          <p v-if="description" class="mt-1 w-full text-sm leading-6 text-(--dashboard-text-muted)">
             {{ description }}
           </p>
         </div>

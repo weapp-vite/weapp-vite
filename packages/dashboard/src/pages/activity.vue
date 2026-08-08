@@ -31,12 +31,12 @@ const {
 </script>
 
 <template>
-  <div class="grid h-full min-h-0 gap-3 overflow-hidden xl:grid-cols-[minmax(0,1.25fr)_minmax(22rem,0.75fr)]">
+  <div class="grid min-h-[46rem] items-start gap-3 xl:grid-cols-[minmax(0,1.25fr)_minmax(22rem,0.75fr)] xl:items-stretch">
     <AppSurfaceCard
       eyebrow="Event Feed"
       title="事件控制台"
       icon-name="hero-commands"
-      content-class="min-h-0 overflow-hidden"
+      content-class="min-h-[42rem] overflow-hidden"
     >
       <div class="grid h-full min-h-0 grid-rows-[minmax(0,9rem)_auto_minmax(6rem,1fr)] gap-3 overflow-hidden">
         <AppEventFilterPanel

@@ -55,9 +55,9 @@ watch(() => route.fullPath, () => {
 </script>
 
 <template>
-  <div class="h-dvh overflow-hidden px-3 py-3 text-(--dashboard-text) md:px-4 md:py-4 lg:px-5">
-    <div class="mx-auto grid h-full max-w-400 gap-3 overflow-hidden lg:grid-cols-[17rem_minmax(0,1fr)]">
-      <aside class="hidden min-h-0 overflow-hidden lg:block">
+  <div class="min-h-dvh overflow-x-hidden px-3 py-3 text-(--dashboard-text) md:px-4 md:py-4 lg:px-5">
+    <div class="mx-auto grid max-w-480 items-start gap-3 lg:grid-cols-[16rem_minmax(0,1fr)]">
+      <aside class="hidden min-h-0 lg:sticky lg:top-4 lg:block lg:h-[calc(100dvh-2rem)]">
         <div class="grid h-full grid-rows-[minmax(0,1fr)_auto] gap-3">
           <AppSurfaceCard
             eyebrow="Shell"
@@ -82,7 +82,7 @@ watch(() => route.fullPath, () => {
         </div>
       </aside>
 
-      <div class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
+      <div class="grid min-h-0 min-w-0 gap-3">
         <AppShellHeader
           :title="pageMeta.title"
           :description="pageMeta.description"
@@ -92,7 +92,7 @@ watch(() => route.fullPath, () => {
           @set-theme="setThemePreference"
         />
 
-        <div class="min-h-0 overflow-hidden">
+        <div class="min-h-[calc(100dvh-8rem)] min-w-0">
           <RouterView />
         </div>
       </div>
