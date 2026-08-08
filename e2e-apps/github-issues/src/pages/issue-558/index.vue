@@ -8,6 +8,9 @@ import NamedSlotCard from '../../components/issue-558/NamedSlotCard/index.vue'
 
 definePageJson({
   navigationBarTitleText: 'issue-558',
+  usingComponents: {
+    'issue-558-render-probe': '/components/issue-558/Issue558RenderProbe/index',
+  },
 })
 
 function func(text: string = '') {
@@ -20,26 +23,34 @@ const defaultText = 'default'
 const nestedText = 'nested'
 const visible = true
 
+const expectedRenderedCases = {
+  plainDefault: '987654321',
+  namedHeader: 'redaeh',
+  explicitDefault: 'tluafed',
+  namedScopedFooter: 'retoof-987654321',
+  defaultScoped: '987654321-2-tluafed-depocs',
+  listScoped: [
+    '987654321-0-ahpla',
+    '987654321-1-ateb',
+  ],
+  nestedOuter: 'retuo',
+  nestedDefault: 'detsen',
+}
+
 function _runE2E() {
-  const defaultScopedLabel = 'scoped-default'
-  const defaultScopedCount = 2
-  const namedFooterSuffix = '-footer'
-  const listRows = [
-    { label: 'alpha' },
-    { label: 'beta' },
-  ]
+  const pages = getCurrentPages() as Array<Record<string, any>>
+  const currentPage = pages[pages.length - 1]
+  const renderedCases = { ...(currentPage?.__issue558RenderedCases ?? {}) }
+  const ok = Object.entries(expectedRenderedCases).every(([caseName, expected]) => {
+    const rendered = renderedCases[caseName]
+    return Array.isArray(expected)
+      ? Array.isArray(rendered) && expected.every((value, index) => rendered[index] === value)
+      : rendered === expected
+  })
 
   return {
-    ok: true,
-    cases: {
-      plainDefault: func(text),
-      namedHeader: func(headerText),
-      explicitDefault: func(defaultText),
-      namedScopedFooter: func(text + namedFooterSuffix),
-      defaultScoped: func(`${defaultScopedLabel}-${defaultScopedCount}-${text}`),
-      listScoped: listRows.map((item, index) => func(`${item.label}-${index}-${text}`)),
-      nestedDefault: func(nestedText),
-    },
+    ok,
+    cases: renderedCases,
   }
 }
 </script>
@@ -51,70 +62,60 @@ function _runE2E() {
     </view>
 
     <Cell>
-      <text
-        class="issue558-result"
-        data-issue558-case="plain-default"
-      >
-        {{ func(text) }}
-      </text>
+      <issue-558-render-probe
+        case-name="plainDefault"
+        :value="func(text)"
+      />
     </Cell>
 
     <NamedSlotCard>
       <template #header>
-        <text
-          class="issue558-result"
-          data-issue558-case="named-header"
-        >
-          {{ func(headerText) }}
-        </text>
+        <issue-558-render-probe
+          case-name="namedHeader"
+          :value="func(headerText)"
+        />
       </template>
 
       <template #default>
-        <text
-          class="issue558-result"
-          data-issue558-case="explicit-default"
-        >
-          {{ func(defaultText) }}
-        </text>
+        <issue-558-render-probe
+          case-name="explicitDefault"
+          :value="func(defaultText)"
+        />
       </template>
 
       <template #footer="{ suffix }">
-        <text
-          class="issue558-result"
-          data-issue558-case="named-scoped-footer"
-        >
-          {{ func(text + suffix) }}
-        </text>
+        <issue-558-render-probe
+          case-name="namedScopedFooter"
+          :value="func(text + suffix)"
+        />
       </template>
     </NamedSlotCard>
 
     <DefaultScopedCell v-slot="{ label, count }">
-      <text
+      <issue-558-render-probe
         v-if="visible"
-        class="issue558-result"
-        data-issue558-case="default-scoped"
-      >
-        {{ func(`${label}-${count}-${text}`) }}
-      </text>
+        case-name="defaultScoped"
+        :value="func(`${label}-${count}-${text}`)"
+      />
     </DefaultScopedCell>
 
     <ListScopedCell v-slot="{ item, index }">
-      <text
-        class="issue558-result"
-        :data-issue558-case="`list-scoped-${index}`"
-      >
-        {{ func(`${item.label}-${index}-${text}`) }}
-      </text>
+      <issue-558-render-probe
+        case-name="listScoped"
+        :value="func(`${item.label}-${index}-${text}`)"
+      />
     </ListScopedCell>
 
     <Issue558NestedSlotGroup>
+      <issue-558-render-probe
+        case-name="nestedOuter"
+        :value="func('outer')"
+      />
       <Issue558NestedSlotCell>
-        <text
-          class="issue558-result"
-          data-issue558-case="nested-default"
-        >
-          {{ func(nestedText) }}
-        </text>
+        <issue-558-render-probe
+          case-name="nestedDefault"
+          :value="func(nestedText)"
+        />
       </Issue558NestedSlotCell>
     </Issue558NestedSlotGroup>
   </view>

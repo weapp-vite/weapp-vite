@@ -1,7 +1,7 @@
 {
   "name": "e2e-app-uview-plus-compat",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "private": true,
   "description": "uview-plus 全组件 Web、微信开发者工具与 headless 兼容验证应用",
   "workspaceHmr": {

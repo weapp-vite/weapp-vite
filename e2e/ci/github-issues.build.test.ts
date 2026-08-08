@@ -986,17 +986,24 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const pageMap = JSON.parse(await fs.readFile(pageMapPath, 'utf-8')) as Parameters<typeof TraceMap>[0]
     const sourceTs = await fs.readFile(path.join(APP_ROOT, sourceFile), 'utf-8')
-    const expectedSourceLine = sourceTs
-      .split('\n')
-      .findIndex(line => line.includes(`camelCase('issue 769 sourcemap marker')`)) + 1
-    const generatedPosition = findGeneratedPosition(pageJs, 'issue 769 sourcemap marker')
-    const originalPosition = originalPositionFor(new TraceMap(pageMap), generatedPosition)
+    const sourceLines = sourceTs.split('\n')
+    const sourceMap = new TraceMap(pageMap)
+    const mappedMarkers = [
+      ['issue 769 sourcemap marker', `camelCase('issue 769 sourcemap marker')`],
+      ['Page({', 'Page({'],
+      ['_runE2E() {', '_runE2E() {'],
+      ['issue769SourcemapMarker', `ok: issue769NpmMarker === 'issue769SourcemapMarker'`],
+    ]
 
     expect(pageJs).toMatch(/require\((['"])\.\.\/miniprogram_npm\/camelcase(?:\/index)?\1\)/)
     expect(await fs.pathExists(pageMapPath)).toBe(true)
-    expect(expectedSourceLine).toBeGreaterThan(0)
-    expect(originalPosition.source?.replaceAll('\\', '/')).toContain(sourceFile)
-    expect(originalPosition.line).toBe(expectedSourceLine)
+    for (const [generatedMarker, sourceMarker] of mappedMarkers) {
+      const expectedSourceLine = sourceLines.findIndex(line => line.includes(sourceMarker)) + 1
+      const originalPosition = originalPositionFor(sourceMap, findGeneratedPosition(pageJs, generatedMarker))
+      expect(expectedSourceLine).toBeGreaterThan(0)
+      expect(originalPosition.source?.replaceAll('\\', '/')).toContain(sourceFile)
+      expect(originalPosition.line).toBe(expectedSourceLine)
+    }
   })
 
   it('issue #479: injects indirect wevu page feature hooks from local helpers', async () => {
@@ -1560,6 +1567,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const scopedSlotJsFiles = files
       .filter(file => file.startsWith('pages/issue-558/index.__scoped-slot-') && file.endsWith('.js'))
       .sort()
+    const scopedSlotJsonFiles = files
+      .filter(file => file.startsWith('pages/issue-558/index.__scoped-slot-') && file.endsWith('.json'))
+      .sort()
     const runtime = await findWevuRuntimeChunk(
       DIST_ROOT,
       code => code.includes('__wvOwnerProxy'),
@@ -1570,6 +1580,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
     const scopedSlotWxml = (await Promise.all(scopedSlotFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf-8')))).join('\n')
     const scopedSlotJs = (await Promise.all(scopedSlotJsFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf-8')))).join('\n')
+    const scopedSlotJson = (await Promise.all(scopedSlotJsonFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf-8')))).join('\n')
     const cellWxml = await fs.readFile(cellWxmlPath, 'utf-8')
     const defaultScopedCellWxml = await fs.readFile(defaultScopedCellWxmlPath, 'utf-8')
     const listScopedCellWxml = await fs.readFile(listScopedCellWxmlPath, 'utf-8')
@@ -1583,25 +1594,32 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('generic:scoped-slots-header=')
     expect(pageWxml).toContain('generic:scoped-slots-footer=')
     expect(pageJson.usingComponents).toMatchObject({
-      Cell: '/components/issue-558/Cell/index',
-      DefaultScopedCell: '/components/issue-558/DefaultScopedCell/index',
-      Issue558NestedSlotCell: '/components/issue-558/Issue558NestedSlotCell/index',
-      Issue558NestedSlotGroup: '/components/issue-558/Issue558NestedSlotGroup/index',
-      ListScopedCell: '/components/issue-558/ListScopedCell/index',
-      NamedSlotCard: '/components/issue-558/NamedSlotCard/index',
+      'Cell': '/components/issue-558/Cell/index',
+      'DefaultScopedCell': '/components/issue-558/DefaultScopedCell/index',
+      'Issue558NestedSlotCell': '/components/issue-558/Issue558NestedSlotCell/index',
+      'Issue558NestedSlotGroup': '/components/issue-558/Issue558NestedSlotGroup/index',
+      'issue-558-render-probe': '/components/issue-558/Issue558RenderProbe/index',
+      'ListScopedCell': '/components/issue-558/ListScopedCell/index',
+      'NamedSlotCard': '/components/issue-558/NamedSlotCard/index',
     })
     expect(Object.values(pageJson.usingComponents ?? {}).some(value => value.startsWith('/pages/issue-558/index.__scoped-slot-'))).toBe(true)
     expect(scopedSlotFiles.length).toBeGreaterThanOrEqual(5)
     expect(scopedSlotJsFiles.length).toBe(scopedSlotFiles.length)
-    expect(pageWxml).toContain('data-issue558-case="plain-default"')
-    expect(pageWxml).not.toContain('data-issue558-case="nested-default"')
-    expect(scopedSlotWxml).toContain('data-issue558-case="named-header"')
-    expect(scopedSlotWxml).toContain('data-issue558-case="explicit-default"')
-    expect(scopedSlotWxml).toContain('data-issue558-case="named-scoped-footer"')
-    expect(scopedSlotWxml).toContain('data-issue558-case="default-scoped"')
-    expect(scopedSlotWxml).toContain('data-issue558-case="{{\'list-scoped-\'+__wvSlotPropsData.index}}"')
-    expect(scopedSlotWxml).toContain('data-issue558-case="nested-default"')
-    expect(scopedSlotWxml).not.toContain('data-issue558-case="plain-default"')
+    expect(scopedSlotJsonFiles.length).toBe(scopedSlotFiles.length)
+    expect(pageWxml).toMatch(/<issue-558-render-probe case-name="plainDefault" value="\{\{__wv_bind_\d+\}\}"/)
+    expect(scopedSlotWxml).not.toContain('case-name="plainDefault"')
+    expect(scopedSlotJson).toContain('/components/issue-558/Issue558RenderProbe/index')
+    for (const caseName of [
+      'namedHeader',
+      'explicitDefault',
+      'namedScopedFooter',
+      'defaultScoped',
+      'listScoped',
+      'nestedOuter',
+      'nestedDefault',
+    ]) {
+      expect(scopedSlotWxml).toMatch(new RegExp(`<issue-558-render-probe case-name="${caseName}" value="\\{\\{__wv_bind_\\d+\\}\\}"`))
+    }
     expect(scopedSlotJs).toContain('__wvOwnerProxy')
     expect(scopedSlotJs).toContain('.func')
     expect(scopedSlotJs).toContain('.text')

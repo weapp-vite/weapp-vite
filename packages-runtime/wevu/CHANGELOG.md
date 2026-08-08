@@ -1,5 +1,20 @@
 # wevu
 
+## 6.19.4
+
+### Patch Changes
+
+- 🐛 **修复增强 scoped slot 的宿主属性早于 runtime 挂载时，owner proxy 与 slot props 未同步到新 runtime、导致模板计算值回退为空的问题。** [#787](https://github.com/weapp-vite/weapp-vite/pull/787) by @sonofmagic
+- 📦 **Dependencies**
+  → `@wevu/compiler@6.19.4`
+
+## 6.19.3
+
+### Patch Changes
+
+- 📦 **Dependencies** [`8d7c0a2`](https://github.com/weapp-vite/weapp-vite/commit/8d7c0a292cd98462ba127f7ab4fd5077a09b54de)
+  → `@wevu/api@0.2.15`, `@wevu/compiler@6.19.3`, `@wevu/web-apis@1.2.32`
+
 ## 6.19.2
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 6.1.0
+
+### Minor Changes
+
+- ✨ **完善微信小程序 `app.json`、`page.json`、组件、插件、sitemap 与主题配置的 JSON Schema。新增按类型维护的官方配置元数据、开发期微信文档抓取命令，并同步生成包内与网站公开 Schema 及 TypeScript 类型定义。** [`790834b`](https://github.com/weapp-vite/weapp-vite/commit/790834b549957b5151d62c50a7b055aed1a74a50) by @sonofmagic
+
 ## 6.0.4
 
 ### Patch Changes

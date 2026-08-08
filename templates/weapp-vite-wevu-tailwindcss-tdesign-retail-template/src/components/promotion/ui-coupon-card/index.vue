@@ -134,7 +134,7 @@ defineComponentJson({
         </view>
       </view>
       <view v-if="type === CouponType.MJF_COUPON || type === CouponType.MYF_COUPON">
-        <text class="wr-coupon__left--value text-[64rpx] leading-[88rpx] [font-weight:bold] font-['DIN_Alternate',cursive]" style="font-family: 'PingFang SC', sans-serif; font-size: 44rpx">
+        <text class="wr-coupon__left--value text-[44rpx] leading-[88rpx] [font-weight:bold] font-['DIN_Alternate',cursive]">
           免邮
         </text>
         <view class="wr-coupon__left--desc text-[24rpx] leading-[32rpx] text-[#fa4126]">

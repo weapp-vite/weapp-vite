@@ -363,6 +363,42 @@ describe('runtime: scoped slots', () => {
     }))
   })
 
+  it('restores owner-proxy computed bindings when owner id arrives before attach', () => {
+    const computed = {
+      __wv_bind_0(this: any) {
+        try {
+          return this[WEVU_SLOT_OWNER_PROXY_KEY].func(this[WEVU_SLOT_OWNER_PROXY_KEY].text)
+        }
+        catch {
+          return undefined
+        }
+      },
+    }
+    createWevuScopedSlotComponent({ computed })
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const ownerId = allocateOwnerId()
+    const proxy = {
+      text: '123456789',
+      func: (text: string) => text.split('').reverse().join(''),
+    }
+    updateOwnerSnapshot(ownerId, { text: '123456789' }, proxy as any)
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: { [WEVU_SLOT_OWNER_ID_PROP]: ownerId },
+      setData: vi.fn(),
+    }
+    opts.properties[WEVU_SLOT_OWNER_ID_PROP].observer.call(inst, ownerId)
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst.__wevu.state[WEVU_SLOT_OWNER_PROXY_KEY]).toEqual(proxy)
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
+      __wv_bind_0: '987654321',
+    }))
+  })
+
   it('binds owner-proxy computed bindings from dedicated owner id prop', () => {
     const computed = {
       __wv_bind_0(this: any) {
@@ -663,6 +699,28 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: ['ALPHA'],
     }))
+  })
+
+  it('restores native slot props data when slot props arrive before attach', () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: {
+        [WEVU_SLOT_SCOPE_KEY]: null,
+        [WEVU_SLOT_PROPS_KEY]: ['item', { label: 'alpha' }, 'index', 0],
+      },
+      setData: vi.fn(),
+    }
+    opts.properties[WEVU_SLOT_PROPS_KEY].observer.call(inst, inst.properties[WEVU_SLOT_PROPS_KEY])
+    inst.setData.mockClear()
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst.setData).toHaveBeenCalledWith({
+      [WEVU_SLOT_PROPS_DATA_KEY]: { item: { label: 'alpha' }, index: 0 },
+    })
   })
 
   it('keeps slot props readable when owner id arrives before slot prop observers', () => {
