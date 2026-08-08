@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.5.3
+
+### Patch Changes
+
+- 🐛 **为 VS Code 扩展注册 app、page、component、plugin、sitemap 和 theme 配置的 JSON Schema 校验与智能提示。** [`1cb87ac`](https://github.com/weapp-vite/weapp-vite/commit/1cb87ac0ab2b428f23d2217887adb6fd30ba177a) by @sonofmagic
+
 ## 0.5.2
 
 ### Patch Changes

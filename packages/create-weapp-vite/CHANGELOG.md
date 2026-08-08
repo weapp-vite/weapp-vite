@@ -1,5 +1,24 @@
 # create-weapp-vite
 
+## 2.6.3
+
+### Patch Changes
+
+- 🐛 **自动补充依赖升级发布记录。** [`8d7c0a2`](https://github.com/weapp-vite/weapp-vite/commit/8d7c0a292cd98462ba127f7ab4fd5077a09b54de) by @sonofmagic
+  涉及包：
+  - @weapp-vite/web：dependencies.postcss-selector-parser、dependencies.rolldown
+  - @wevu/compiler：dependencies.postcss-selector-parser
+  - @weapp-vite/miniprogram-automator：dependencies.ws
+  - rolldown-require：peerDependencies.rolldown
+  - weapp-vite：dependencies.rolldown
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+- 🐛 **修复微信状态保持 HMR 连续更新 Tailwind 任意值时的重复构建与页面栈超时问题；缩短样式刷新合并窗口，并避免把未变化的小程序资产重复写入开发者工具，提升添加、修改和删除 Tailwind 类时的热更新速度与稳定性。** [#784](https://github.com/weapp-vite/weapp-vite/pull/784) by @sonofmagic
+
+- 🐛 **移除 wevu TDesign 模板中对小程序宿主无实际作用的系统字体族声明，生成的项目将直接使用宿主默认字体。** [`6a0a908`](https://github.com/weapp-vite/weapp-vite/commit/6a0a9084df84dc7a476fe1a50aa30634ab41ca4a) by @sonofmagic
+
+- 🐛 **为原生小程序模板 JSON 配置补充编辑器智能提示所需的 `$schema`，并统一组件使用 `apply-shared` 样式隔离策略以共享 `app.wxss` 全局样式。** [`fa74e0e`](https://github.com/weapp-vite/weapp-vite/commit/fa74e0e9704f5f9e02cf30956a86d71eca760003) by @sonofmagic
+
 ## 2.6.2
 
 ### Patch Changes
