@@ -44,6 +44,47 @@ describe('runtime: setup returned ref triggers setData', () => {
     expect(setData).toHaveBeenCalledWith(expect.objectContaining({ active: false }))
   })
 
+  it('updates setup refs that overlap compiler-seeded data keys', async () => {
+    defineComponent({
+      data: () => ({
+        interactionCount: 0,
+        scenarioState: 'pending',
+      }),
+      setup() {
+        const interactionCount = ref(0)
+        const scenarioState = ref('pending')
+        function markInteraction() {
+          interactionCount.value += 1
+        }
+        function markPassed() {
+          scenarioState.value = 'pass'
+        }
+        return {
+          interactionCount,
+          scenarioState,
+          markInteraction,
+          markPassed,
+        }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const setData = vi.fn()
+    const inst: any = { setData }
+
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+    setData.mockClear()
+
+    inst.markInteraction()
+    await Promise.resolve()
+    inst.markPassed()
+    await Promise.resolve()
+
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ interactionCount: 1 }))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ scenarioState: 'pass' }))
+  })
+
   it('patch 模式下 setup computed 返回对象时，回到初始引用仍会触发更新', async () => {
     defineComponent({
       data: () => ({}),

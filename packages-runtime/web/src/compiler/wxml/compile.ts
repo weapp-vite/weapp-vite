@@ -14,6 +14,12 @@ import { parseWxml } from './parser'
 import { renderer } from './renderer'
 import { collectSpecialNodes, normalizeTemplatePath, shouldMarkWxsImport, toRelativeImport } from './specialNodes'
 
+const WEB_TEMPLATE_QUERY = 'weapp-web-template'
+
+function appendTemplateQuery(pathname: string) {
+  return `${pathname}${pathname.includes('?') ? '&' : '?'}${WEB_TEMPLATE_QUERY}`
+}
+
 export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   const dependencyContext = options.dependencyContext ?? createDependencyContext()
   const expandDependencies = options.expandDependencies ?? !options.dependencyContext
@@ -21,9 +27,6 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
 
   const expandDependencyTree = (dependencies: string[], importer: string) => {
     for (const target of dependencies) {
-      if (!target) {
-        continue
-      }
       if (dependencyContext.active.has(target)) {
         warnCircularTemplate(dependencyContext, importer, target)
         continue
@@ -109,13 +112,13 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
 
   for (const entry of imports) {
     const importPath = normalizeTemplatePath(toRelativeImport(options.id, entry.id))
-    importLines.push(`import { templates as ${entry.importName} } from '${importPath}'`)
+    importLines.push(`import { templates as ${entry.importName} } from '${appendTemplateQuery(importPath)}'`)
     addDependency(entry.id, dependencyContext, directDependencies)
   }
 
   for (const entry of includes) {
     const importPath = normalizeTemplatePath(toRelativeImport(options.id, entry.id))
-    importLines.push(`import { render as ${entry.importName} } from '${importPath}'`)
+    importLines.push(`import { render as ${entry.importName} } from '${appendTemplateQuery(importPath)}'`)
     addDependency(entry.id, dependencyContext, directDependencies)
   }
 

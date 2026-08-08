@@ -8,6 +8,7 @@ import type {
 } from './types'
 import { version } from '../version'
 import { createRuntimeMount } from './app/mount'
+import { setPendingRuntimeAppRegistration } from './app/pending'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { getMiniProgramGlobalObject } from './platform'
 import { ensureRuntimeAppProvides, setRuntimeAppProvidedValue } from './provideContext'
@@ -92,8 +93,6 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     version,
   }
 
-  const hasGlobalApp = typeof App === 'function'
-
   try {
     ensureRuntimeAppProvides(runtimeApp)
     Object.defineProperty(runtimeApp as Record<string, any>, '__wevuSetDataOptions', {
@@ -115,7 +114,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       .some(key => key.startsWith('__wv_bind_'))
   }
 
-  if (hasGlobalApp) {
+  const registerRuntimeApp = () => {
     const globalObject = getMiniProgramGlobalObject()
     const appRegisterKey = '__wevuAppRegistered'
     const hasRegistered = globalObject ? Boolean(globalObject[appRegisterKey]) : false
@@ -127,6 +126,16 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       // 若检测到全局 App 构造器则自动注册小程序 App
       registerApp<D, C, M>(runtimeApp, (methods ?? {}) as any, appWatch as any, appSetup as any, mpOptions as any)
     }
+  }
+
+  if (defaultsScope !== 'component' && typeof App === 'function') {
+    registerRuntimeApp()
+  }
+  else if (defaultsScope !== 'component') {
+    setPendingRuntimeAppRegistration({
+      app: runtimeApp,
+      register: registerRuntimeApp,
+    })
   }
 
   return runtimeApp

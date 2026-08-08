@@ -39,6 +39,17 @@ weapp-vite ide logs --open
 weapp-vite build
 ```
 
+### Web 预览与构建
+
+项目根目录准备引用 `/@weapp-vite/web/entry` 的 `index.html` 后，可以复用原有小程序源码：
+
+```bash
+wv dev -p web --host
+wv build -p web
+```
+
+推荐将两条命令分别固定为 `dev:web` 和 `build:web` scripts。`web` 是规范平台名，`h5` 仅作为向后兼容别名保留。Web runtime 适合浏览器兼容验证，但不替代微信 DevTools 或真机验收。
+
 ### 4. 截图验收
 
 ```bash
@@ -65,6 +76,8 @@ weapp-vite mcp
 weapp-vite dev
 weapp-vite dev --open
 weapp-vite build
+wv dev -p web --host
+wv build -p web
 weapp-vite open
 weapp-vite preview --project ./dist/build/mp-weixin
 weapp-vite ide preview --project ./dist/build/mp-weixin

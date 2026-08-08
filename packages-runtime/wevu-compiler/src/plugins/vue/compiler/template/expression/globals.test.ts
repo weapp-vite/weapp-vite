@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { registerInlineExpression } from './inline'
 import { normalizeJsExpressionWithContext } from './js'
 import { generateExpression } from './parse'
+import { shouldFallbackToRuntimeBinding } from './runtimeBinding'
+import { normalizeWxmlExpressionWithContext } from './scopedSlot'
 
 function createContext() {
   return {
@@ -36,6 +38,24 @@ describe('template expression globals', () => {
       {
         id: 'i0',
         expression: 'swan.getEnv()&&xhs.getStorageSync("demo")',
+        scopeKeys: [],
+      },
+    ])
+  })
+
+  it('registers slot function invocations as inline expressions', () => {
+    const context = createContext()
+    const result = registerInlineExpression('(() => toggleModal(\'confirm\'))(...$event)', context)
+
+    expect(result).toEqual({
+      id: 'i0',
+      scopeBindings: [],
+      indexBindings: [],
+    })
+    expect(context.inlineExpressions).toEqual([
+      {
+        id: 'i0',
+        expression: '(()=>ctx.toggleModal(\'confirm\'))(...$event)',
         scopeKeys: [],
       },
     ])
@@ -79,6 +99,29 @@ describe('template expression globals', () => {
     expect(code).toContain('this.data')
   })
 
+  it('prefers props over same-named native instance fields when state does not own the key', () => {
+    const context = createContext()
+    const result = normalizeJsExpressionWithContext('options', context)
+    const code = result && generateExpression(result)
+
+    expect(code).toContain('this.__wevuProps.options')
+    expect(code).not.toContain('"options" in this')
+    expect(code).toContain('this.$state')
+    expect(code).toContain('Object.prototype.hasOwnProperty.call(this.$state,\'options\')')
+  })
+
+  it('reads props-derived keys directly from props', () => {
+    const context = {
+      ...createContext(),
+      propsDerivedKeys: ['options'],
+    }
+    const result = normalizeJsExpressionWithContext('options', context)
+    const code = result && generateExpression(result)
+
+    expect(code).toContain('this.__wevuProps.options')
+    expect(code).not.toContain('this.$state')
+  })
+
   it('unrefs nested member results for runtime binding expressions', () => {
     const context = createContext()
     const result = normalizeJsExpressionWithContext('JSON.stringify(query.data, null, 2)', context, {
@@ -89,5 +132,16 @@ describe('template expression globals', () => {
 
     expect(code).toContain('JSON.stringify(')
     expect(code).toContain('__wevuUnref(__wevuUnref(__wevuResolvePropValue(this,\'query\',this.query)).data)')
+  })
+
+  it('uses runtime bindings for operators unsupported by WXML', () => {
+    expect(shouldFallbackToRuntimeBinding('typeof content === \'object\'')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('content === \'text\'')).toBe(false)
+  })
+
+  it('preserves vue slot metadata in scoped-slot expressions', () => {
+    const context = createContext()
+    context.rewriteScopedSlot = true
+    expect(normalizeWxmlExpressionWithContext('$slots.content', context)).toBe('vueSlots&&vueSlots.content')
   })
 })

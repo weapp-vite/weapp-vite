@@ -101,6 +101,7 @@ export function useWorkbench() {
         clipboardData: sessionState.session.value?.getClipboardData?.() ?? null,
         directorySnapshot: sessionState.session.value?.getDirectorySnapshot?.() ?? [],
         downloadFileLogs: sessionState.session.value?.getDownloadFileLogs?.() ?? [],
+        deviceInfo: sessionState.session.value?.getDeviceInfo?.() ?? null,
         fileSnapshot: sessionState.session.value?.getFileSnapshot?.() ?? {},
         loading: sessionState.session.value?.getLoading?.() ?? null,
         modalLogs: sessionState.session.value?.getModalLogs() ?? [],

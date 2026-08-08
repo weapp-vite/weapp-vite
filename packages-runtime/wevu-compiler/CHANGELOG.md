@@ -1,5 +1,84 @@
 # @wevu/compiler
 
+## 6.19.2
+
+### Patch Changes
+
+- 📦 **Dependencies** [`b055929`](https://github.com/weapp-vite/weapp-vite/commit/b055929f8c18a2a9be800eff88f8f7806a9a4f46)
+  → `@weapp-core/constants@0.1.16`, `@weapp-vite/ast@6.19.2`
+
+## 6.19.1
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [#772](https://github.com/weapp-vite/weapp-vite/pull/772) by @sonofmagic
+  - 默认 catalog 变更键：@types/semver, @vue/language-core, @wot-ui/ui, oxc-parser, oxc-walker, postcss, rolldown, tailwind-variants, tsx, vite, vue-tsc, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+- 📦 **Dependencies** [`c7d8514`](https://github.com/weapp-vite/weapp-vite/commit/c7d85143aeb5edaaf5d1902a8bd3d5fe09ef570e)
+  → `@weapp-vite/ast@6.19.1`, `rolldown-require@2.0.23`
+
+## 6.19.0
+
+### Minor Changes
+
+- ✨ **新增实验性的 uni-app Vue SFC 组件库兼容层与 `WotUiResolver()`，支持显式白名单依赖的条件编译、外部组件图、样式资源和双端注册，并补齐 Wot UI 2.2.0 全部 99 个公开组件在微信小程序、Web 与 headless 运行时所需的编译和运行时语义。外部组件产物使用微信允许的稳定目录名，避免组件文件因命中双下划线保留目录规则而被开发者工具忽略。** [#757](https://github.com/weapp-vite/weapp-vite/pull/757) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **新增 uview-plus 3.8.86 全组件解析器与三端兼容示例，并完善 uni-app SFC 的条件编译、sidecar、Web 子组件解析、样式预处理和 headless 宿主 API 兼容。** [#758](https://github.com/weapp-vite/weapp-vite/pull/758) by @sonofmagic
+
+- 🐛 **修复真实微信开发者工具自动化中的会话复用、页面重启、日志收集与截图清理稳定性问题，避免 `forwardConsole` 重复连接现有会话，并降低完整 IDE E2E 在组件库和 GitHub issue 回归场景中的重复启动成本。** [#770](https://github.com/weapp-vite/weapp-vite/pull/770) by @sonofmagic
+
+- 🐛 **扩展 Web runtime 对原生小程序与 wevu Vue SFC 项目的自动扫描、编译和宿主初始化能力，为全部内置模板提供统一的 Web 开发与构建命令，并通过工作区生产构建及 Playwright 矩阵持续验证浏览器运行链路。** [#756](https://github.com/weapp-vite/weapp-vite/pull/756) by @sonofmagic
+- 📦 **Dependencies** [`878073f`](https://github.com/weapp-vite/weapp-vite/commit/878073f8819a21f7e6baa96d13cf3f7e552d2158)
+  → `@weapp-core/constants@0.1.15`, `@weapp-vite/ast@6.19.0`, `@weapp-core/shared@3.1.0`
+
+## 6.18.7
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.18.7`
+
+## 6.18.6
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.18.6`
+
+## 6.18.5
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b) by @sonofmagic
+  - 默认 catalog 变更键：@vue/language-core, oxc-parser, postcss, rolldown, sass, stylelint, vue-tsc, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+  - 同时适配 Monaco Editor 0.56 的 worker 公开入口，恢复 Dashboard 构建。
+
+- 🐛 **引入声明式 runtime provider 契约，让原生小程序、wevu Vue SFC 与 Web 构建通过稳定虚拟入口选择各自运行时，并在入口缺失或契约版本不匹配时给出明确诊断。** [#736](https://github.com/weapp-vite/weapp-vite/pull/736) by @sonofmagic
+- 📦 Updated 4 dependencies [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/ast@6.18.5`, `rolldown-require@2.0.22`, `@weapp-core/constants@0.1.14`, `@weapp-core/shared@3.0.6`
+
+  </details>
+
+## 6.18.4
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`213a8e6`](https://github.com/weapp-vite/weapp-vite/commit/213a8e6a410198b54c499e29ad8c5d8d86bbaeb2) by @sonofmagic
+  - 默认 catalog 变更键：@vitejs/plugin-vue, @vue/compiler-core, @vue/compiler-dom, autoprefixer, oxc-parser, rolldown, vite, vue, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+- 📦 **Dependencies** [`213a8e6`](https://github.com/weapp-vite/weapp-vite/commit/213a8e6a410198b54c499e29ad8c5d8d86bbaeb2)
+  → `@weapp-vite/ast@6.18.4`, `rolldown-require@2.0.21`
+
+## 6.18.3
+
+### Patch Changes
+
+- 🐛 **优化 Vue SFC 页面配置热更新：仅修改 JSON 宏或 `<json>` 时复用已编译的脚本、模板与样式结果，避免重复执行完整 Vue 编译，并在混合变更或缓存不可用时自动回退。** [#719](https://github.com/weapp-vite/weapp-vite/pull/719) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.18.3`
+
 ## 6.18.2
 
 ### Patch Changes

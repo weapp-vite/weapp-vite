@@ -1,4 +1,5 @@
 {
+  "$schema": "https://vite.icebreaker.top/plugin.json",
   "publicComponents": {
     "hello-component": "components/hello-component/index",
     "native-meter": "components/native-meter/index"

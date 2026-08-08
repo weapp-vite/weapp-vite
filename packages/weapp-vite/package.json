@@ -1,7 +1,7 @@
 {
   "name": "weapp-vite",
   "type": "module",
-  "version": "6.18.2",
+  "version": "6.19.2",
   "description": "weapp-vite 一个现代化的小程序打包工具",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -58,9 +58,17 @@
       "types": "./dist/types.d.mts",
       "import": "./dist/types.mjs"
     },
+    "./test": {
+      "types": "./dist/test.d.mts",
+      "import": "./dist/test.mjs"
+    },
     "./auto-import-components/resolvers": {
       "types": "./dist/auto-import-components/resolvers.d.mts",
       "import": "./dist/auto-import-components/resolvers.mjs"
+    },
+    "./resolvers": {
+      "types": "./dist/resolvers.d.mts",
+      "import": "./dist/resolvers.mjs"
     },
     "./auto-routes": {
       "types": "./dist/auto-routes.d.mts",
@@ -102,7 +110,7 @@
     "benchmark:auto-import:ci": "node --import tsx scripts/benchmark-auto-import-ci.ts",
     "test:dev": "vitest",
     "test": "vitest run",
-    "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../config-define-config && tsd && cd ../internal-src-types && tsd && cd ../runtime-public-types && tsd",
+    "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../config-define-config && tsd && cd ../internal-src-types && tsd && cd ../resolvers-public-types && tsd && cd ../runtime-public-types && tsd && cd ../test-artifact-public-types && tsd",
     "lint:src": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync": "cnpm sync weapp-vite"
@@ -111,7 +119,7 @@
     "@babel/preset-env": "^8.0.2",
     "@babel/preset-typescript": "^8.0.1",
     "@jridgewell/remapping": "^2.3.5",
-    "@vercel/detect-agent": "^1.2.3",
+    "@vercel/detect-agent": "^1.2.4",
     "@volar/typescript": "^2.4.28",
     "@vue/language-core": "catalog:",
     "@weapp-core/constants": "workspace:*",
@@ -136,13 +144,13 @@
     "magic-string": "catalog:",
     "merge": "catalog:",
     "obug": "catalog:",
-    "p-queue": "^9.3.1",
-    "package-manager-detector": "^1.7.0",
+    "p-queue": "^9.3.3",
+    "package-manager-detector": "^1.8.0",
     "pathe": "catalog:",
     "picomatch": "^4.0.5",
     "postcss": "catalog:",
     "rolldown": "catalog:",
-    "rolldown-plugin-dts": "0.27.6",
+    "rolldown-plugin-dts": "0.28.0",
     "rolldown-require": "workspace:*",
     "semver": "^7.8.5",
     "typescript": "catalog:",

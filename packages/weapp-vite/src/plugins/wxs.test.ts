@@ -214,7 +214,7 @@ describe('wxs plugin', () => {
     expect(emitted.source.length).toBeGreaterThan(0)
   })
 
-  it('reuses unchanged wxs file transforms across generateBundle passes', async () => {
+  it('re-reads wxs sources without retaining a parallel dependency edge cache', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wxs-cache-'))
     tempDirs.push(tempDir)
 
@@ -290,7 +290,8 @@ describe('wxs plugin', () => {
     const wxsReadCount = readFileSpy.mock.calls.filter(([filePath]) => {
       return normalizeTestPath(filePath) === normalizeTestPath(wxsFile)
     }).length
-    expect(wxsReadCount).toBe(1)
+    expect(wxsReadCount).toBe(2)
+    expect(addWatchFile).not.toHaveBeenCalled()
     expect(emitFile).toHaveBeenCalledTimes(2)
     expect(emitFile.mock.calls[1][0].fileName).toBe('components/cache-card/tools.wxs')
   })
@@ -534,10 +535,10 @@ describe('wxs plugin', () => {
 
     expect(emitFile).toHaveBeenCalledTimes(1)
     expect(emitFile.mock.calls[0][0].fileName).toBe('components/wxs-card/tools.wxs')
-    expect(addWatchFile.mock.calls.map(([filePath]) => normalizeTestPath(filePath))).toContain(normalizeTestPath(wxsFile))
+    expect(addWatchFile).not.toHaveBeenCalled()
   })
 
-  it('keeps tokenMap scans for cached wxs importee hmr updates without wxs suffix', async () => {
+  it('keeps tokenMap scans for graph-backed wxs importee updates without wxs suffix', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wxs-importee-hmr-'))
     tempDirs.push(tempDir)
 
@@ -612,6 +613,7 @@ describe('wxs plugin', () => {
     emitFile.mockClear()
     addWatchFile.mockClear()
     ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['importer-graph:1'],
       event: 'update',
       file: helperFile,
     }
@@ -626,6 +628,6 @@ describe('wxs plugin', () => {
     )
 
     expect(emitFile.mock.calls.map(([asset]) => asset.fileName)).toContain('components/importee-card/tools.wxs')
-    expect(addWatchFile.mock.calls.map(([filePath]) => normalizeTestPath(filePath))).toContain(normalizeTestPath(helperFile))
+    expect(addWatchFile).not.toHaveBeenCalled()
   })
 })

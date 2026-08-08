@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按小程序基准命名）
 
-总计：484，支持：201，不支持：283
+总计：495，支持：201，不支持：294
 
 | 小程序基准 API                                | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                                                          |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
@@ -37,6 +37,7 @@
 | `checkIsSupportFacialRecognition`             | `checkIsSupportFacialRecognition`             | ❌   | `unsupported` | ❌       | 未提供 my.checkIsSupportFacialRecognition，调用时将返回 not supported                                         |
 | `checkIsSupportSoterAuthentication`           | `checkIsSupportIfaaAuthentication`            | ✅   | `mapped`      | ✅       | 映射到 `my.checkIsSupportIfaaAuthentication`                                                                  |
 | `checkSession`                                | `checkSession`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
+| `checkTransitCardSupport`                     | `checkTransitCardSupport`                     | ❌   | `unsupported` | ❌       | 未提供 my.checkTransitCardSupport，调用时将返回 not supported                                                 |
 | `chooseAddress`                               | `chooseAddress`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `chooseContact`                               | `chooseContact`                               | ✅   | `native`      | ✅       | 直连 `my.chooseContact`                                                                                       |
 | `chooseImage`                                 | `chooseImage`                                 | ✅   | `mapped`      | ✅       | 返回值 `apFilePaths` 映射到 `tempFilePaths`                                                                   |
@@ -87,6 +88,7 @@
 | `createWebAudioContext`                       | `createWebAudioContext`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `createWorker`                                | `createWorker`                                | ✅   | `native`      | ✅       | 直连 `my.createWorker`                                                                                        |
 | `cropImage`                                   | `cropImage`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
+| `deleteTransitCard`                           | `deleteTransitCard`                           | ❌   | `unsupported` | ❌       | 未提供 my.deleteTransitCard，调用时将返回 not supported                                                       |
 | `disableAlertBeforeUnload`                    | `disableAlertBeforeUnload`                    | ✅   | `native`      | ✅       | 直连 `my.disableAlertBeforeUnload`                                                                            |
 | `downloadFile`                                | `downloadFile`                                | ✅   | `native`      | ✅       | 直连 `my.downloadFile`                                                                                        |
 | `editImage`                                   | `editImage`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
@@ -142,6 +144,7 @@
 | `getNetworkType`                              | `getNetworkType`                              | ✅   | `mapped`      | ✅       | 直连 `my.getNetworkType`                                                                                      |
 | `getNFCAdapter`                               | `getNFCAdapter`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `getPerformance`                              | `getPerformance`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
+| `getPluginUpdateManager`                      | `getPluginUpdateManager`                      | ❌   | `unsupported` | ❌       | 未提供 my.getPluginUpdateManager，调用时将返回 not supported                                                  |
 | `getPrivacySetting`                           | `getPrivacySetting`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `getRandomValues`                             | `getRandomValues`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `getRealtimeLogManager`                       | `getRealtimeLogManager`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
@@ -164,6 +167,9 @@
 | `getSystemInfoAsync`                          | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `my.getSystemInfo`                                                                                     |
 | `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | `native`      | ✅       | 直连 `my.getSystemInfoSync`                                                                                   |
 | `getSystemSetting`                            | `getSystemSetting`                            | ✅   | `mapped`      | ✅       | 直连 `my.getSystemSetting`                                                                                    |
+| `getTransitCardCPLC`                          | `getTransitCardCPLC`                          | ❌   | `unsupported` | ❌       | 未提供 my.getTransitCardCPLC，调用时将返回 not supported                                                      |
+| `getTransitCardInfo`                          | `getTransitCardInfo`                          | ❌   | `unsupported` | ❌       | 未提供 my.getTransitCardInfo，调用时将返回 not supported                                                      |
+| `getTransitCardList`                          | `getTransitCardList`                          | ❌   | `unsupported` | ❌       | 未提供 my.getTransitCardList，调用时将返回 not supported                                                      |
 | `getUpdateManager`                            | `getUpdateManager`                            | ✅   | `native`      | ✅       | 直连 `my.getUpdateManager`                                                                                    |
 | `getUserCryptoManager`                        | `getUserCryptoManager`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `getUserInfo`                                 | `getUserInfo`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
@@ -183,9 +189,11 @@
 | `hideToast`                                   | `hideToast`                                   | ✅   | `native`      | ✅       | 直连 `my.hideToast`                                                                                           |
 | `initFaceDetect`                              | `initFaceDetect`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `isBluetoothDevicePaired`                     | `isBluetoothDevicePaired`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
+| `issueTransitCard`                            | `issueTransitCard`                            | ❌   | `unsupported` | ❌       | 未提供 my.issueTransitCard，调用时将返回 not supported                                                        |
 | `isVKSupport`                                 | `isVKSupport`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `join1v1Chat`                                 | `join1v1Chat`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `joinVoIPChat`                                | `joinVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
+| `jumpToOfflinePay`                            | `jumpToOfflinePay`                            | ❌   | `unsupported` | ❌       | 未提供 my.jumpToOfflinePay，调用时将返回 not supported                                                        |
 | `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `loadFontFace`                                | `loadFontFace`                                | ✅   | `native`      | ✅       | 直连 `my.loadFontFace`                                                                                        |
 | `login`                                       | `login`                                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
@@ -341,6 +349,7 @@
 | `openChannelsUserProfile`                     | `openChannelsUserProfile`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `openChatTool`                                | `openChatTool`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
+| `openDesignerProfile`                         | `openDesignerProfile`                         | ❌   | `unsupported` | ❌       | 未提供 my.openDesignerProfile，调用时将返回 not supported                                                     |
 | `openDocument`                                | `openDocument`                                | ✅   | `mapped`      | ✅       | 直连 `my.openDocument`                                                                                        |
 | `openEmbeddedMiniProgram`                     | `openEmbeddedMiniProgram`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
@@ -373,6 +382,7 @@
 | `previewImage`                                | `previewImage`                                | ✅   | `native`      | ✅       | 直连 `my.previewImage`                                                                                        |
 | `previewMedia`                                | `previewMedia`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `readBLECharacteristicValue`                  | `readBLECharacteristicValue`                  | ✅   | `native`      | ✅       | 直连 `my.readBLECharacteristicValue`                                                                          |
+| `rechargeTransitCard`                         | `rechargeTransitCard`                         | ❌   | `unsupported` | ❌       | 未提供 my.rechargeTransitCard，调用时将返回 not supported                                                     |
 | `redirectTo`                                  | `redirectTo`                                  | ✅   | `native`      | ✅       | 直连 `my.redirectTo`                                                                                          |
 | `reLaunch`                                    | `reLaunch`                                    | ✅   | `native`      | ✅       | 直连 `my.reLaunch`                                                                                            |
 | `removeSecureElementPass`                     | `removeSecureElementPass`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
@@ -384,6 +394,7 @@
 | `reportMonitor`                               | `reportMonitor`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `reportPerformance`                           | `reportPerformance`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `request`                                     | `request`                                     | ✅   | `native`      | ✅       | 直连 `my.request`                                                                                             |
+| `requestAppleSubscribeSign`                   | `requestAppleSubscribeSign`                   | ❌   | `unsupported` | ❌       | 未提供 my.requestAppleSubscribeSign，调用时将返回 not supported                                               |
 | `requestCommonPayment`                        | `requestCommonPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `requestFacialVerify`                         | `requestFacialVerify`                         | ❌   | `unsupported` | ❌       | 未提供 my.requestFacialVerify，调用时将返回 not supported                                                     |

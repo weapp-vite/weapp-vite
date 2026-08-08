@@ -11,25 +11,62 @@ function resolveConsolePayload(entry: any) {
   return entry
 }
 
+function normalizePreview(raw: any) {
+  const properties = Array.isArray(raw?.preview?.properties)
+    ? raw.preview.properties
+    : []
+  if (properties.length === 0) {
+    return ''
+  }
+  return properties
+    .map((property: any) => {
+      const name = typeof property?.name === 'string' ? property.name : ''
+      const value = typeof property?.value === 'string'
+        ? property.value
+        : typeof property?.valuePreview?.description === 'string'
+          ? property.valuePreview.description
+          : ''
+      return name ? `${name}: ${value || '<unavailable>'}` : value
+    })
+    .filter(Boolean)
+    .join(', ')
+}
+
 function normalizeConsoleArg(raw: any) {
   if (typeof raw === 'string') {
     return raw
   }
   if (raw && typeof raw === 'object') {
     const description = typeof raw.description === 'string' ? raw.description : ''
+    const preview = normalizePreview(raw)
     const value = 'value' in raw ? raw.value : raw
     if (value && typeof value === 'object') {
       const name = typeof value.name === 'string' ? value.name : ''
       const message = typeof value.message === 'string' ? value.message : ''
       const stack = typeof value.stack === 'string' ? value.stack : ''
       const errorText = [name, message].filter(Boolean).join(': ')
-      return [description || errorText, stack].filter(Boolean).join('\n')
+      const serialized = Object.keys(value).length > 0
+        ? (() => {
+            try {
+              return JSON.stringify(value)
+            }
+            catch {
+              return ''
+            }
+          })()
+        : ''
+      return [description || errorText || preview || serialized, stack]
+        .filter(Boolean)
+        .join('\n')
     }
     if (typeof value === 'string') {
       return value
     }
     if (description) {
       return description
+    }
+    if (preview) {
+      return preview
     }
     try {
       return JSON.stringify(value)
@@ -46,14 +83,14 @@ function normalizeConsoleArg(raw: any) {
   }
 }
 
-function normalizeConsoleText(entry: any) {
+export function normalizeRuntimeConsoleText(entry: any) {
   const payload = resolveConsolePayload(entry)
   if (typeof payload?.text === 'string' && payload.text.trim()) {
     return payload.text.trim()
   }
   if (Array.isArray(payload?.args) && payload.args.length > 0) {
     const text = payload.args
-      .map((item: any) => normalizeConsoleArg(item && typeof item === 'object' && 'value' in item ? item.value : item))
+      .map((item: any) => normalizeConsoleArg(item))
       .join(' ')
       .trim()
     if (text) {
@@ -70,7 +107,7 @@ function normalizeConsoleText(entry: any) {
 
 function resolveConsoleLevel(entry: any): 'debug' | 'info' | 'log' | 'warn' | 'error' {
   const payload = resolveConsolePayload(entry)
-  const level = String(payload?.level ?? '').toLowerCase()
+  const level = String(payload?.level ?? payload?.type ?? '').toLowerCase()
   if (level === 'debug') {
     return 'debug'
   }
@@ -83,7 +120,7 @@ function resolveConsoleLevel(entry: any): 'debug' | 'info' | 'log' | 'warn' | 'e
   if (level === 'error' || level === 'fatal') {
     return 'error'
   }
-  const text = normalizeConsoleText(entry)
+  const text = normalizeRuntimeConsoleText(entry)
   if (/\b(?:TypeError|ReferenceError|SyntaxError|Error|RangeError)\b/.test(text)) {
     return 'error'
   }
@@ -93,7 +130,7 @@ function resolveConsoleLevel(entry: any): 'debug' | 'info' | 'log' | 'warn' | 'e
 function formatRuntimeEntry(kind: 'console' | 'exception', entry: any, level?: string) {
   const text = kind === 'exception' && typeof entry?.exceptionDetails?.text === 'string'
     ? entry.exceptionDetails.text
-    : normalizeConsoleText(entry)
+    : normalizeRuntimeConsoleText(entry)
   if (kind === 'console') {
     return `[console:${level ?? resolveConsoleLevel(entry)}] ${text}`
   }
@@ -144,8 +181,11 @@ export function attachRuntimeErrorCollector(miniProgram: any): RuntimeErrorColle
     runtimeLogs.push({ seq, text: formatted })
   }
 
-  miniProgram.on('console', onConsole)
-  miniProgram.on('exception', onException)
+  const canSubscribe = typeof miniProgram?.on === 'function'
+  if (canSubscribe) {
+    miniProgram.on('console', onConsole)
+    miniProgram.on('exception', onException)
+  }
 
   return {
     mark() {
@@ -168,8 +208,10 @@ export function attachRuntimeErrorCollector(miniProgram: any): RuntimeErrorColle
       return runtimeLogs.map(entry => entry.text)
     },
     dispose() {
-      miniProgram.removeListener('console', onConsole)
-      miniProgram.removeListener('exception', onException)
+      if (canSubscribe && typeof miniProgram?.removeListener === 'function') {
+        miniProgram.removeListener('console', onConsole)
+        miniProgram.removeListener('exception', onException)
+      }
     },
   }
 }

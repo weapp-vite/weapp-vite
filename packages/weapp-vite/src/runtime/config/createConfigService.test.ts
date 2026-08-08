@@ -257,6 +257,7 @@ describe('createConfigService', () => {
     })
 
     expect(resolveBuiltinPackageAliasesMock).toHaveBeenCalledWith({
+      cwd: '/work',
       isDev: true,
       wevuRuntime: 'build',
     })
@@ -356,11 +357,14 @@ describe('createConfigService', () => {
   it('maps node_modules and cwd-external output paths into a generated external namespace', () => {
     const service = createConfigService(createCtx())
 
-    expect(service.relativeOutputPath('/project/node_modules/ui-lib/card/index.vue')).toMatch(
-      /^__weapp_vite_external__\/[a-f0-9]{10}\/index\.vue$/,
+    expect(service.relativeOutputPath('/project/node_modules/ui-lib/card/index.vue')).toBe(
+      'weapp_vite_external/ui-lib/card/index.vue',
+    )
+    expect(service.relativeOutputPath('/project/node_modules/.pnpm/@wot-ui+ui@2.2.0/node_modules/@wot-ui/ui/components/wd-button/wd-button.vue')).toBe(
+      'weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button.vue',
     )
     expect(service.relativeOutputPath('/workspace/packages/ui/card/index.vue')).toMatch(
-      /^__weapp_vite_external__\/[a-f0-9]{10}\/index\.vue$/,
+      /^weapp_vite_external\/[a-f0-9]{10}\/index\.vue$/,
     )
   })
 

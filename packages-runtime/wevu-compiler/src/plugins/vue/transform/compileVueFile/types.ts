@@ -35,6 +35,15 @@ export interface VueTransformResult {
     defineOptionsHash?: string
     sfcSrcDeps?: string[]
     styleBlocks?: SFCStyleBlock[]
+    /**
+     * JSON-only HMR 重算所需的稳定编译输入。
+     *
+     * @internal
+     */
+    jsonConfigCache?: {
+      autoImportTagsMap?: Record<string, string>
+      autoUsingComponentsMap: Record<string, string>
+    }
   }
 }
 
@@ -80,6 +89,10 @@ export interface CompileVueFileOptions {
   isPage?: boolean
   isApp?: boolean
   /**
+   * 是否把组件注册交给上层逻辑入口，当前模块仅导出组件选项。
+   */
+  skipComponentTransform?: boolean
+  /**
    * 是否压缩生成的 wevu 脚本输出。
    */
   minify?: boolean
@@ -91,6 +104,16 @@ export interface CompileVueFileOptions {
   autoUsingComponents?: AutoUsingComponentsOptions
   autoImportTags?: AutoImportTagsOptions
   template?: TemplateCompileOptions
+  style?: {
+    /**
+     * 保留 Vue deep 选择器，交由目标平台的最终 CSS 阶段处理。
+     */
+    preserveDeepSelectors?: boolean
+    /**
+     * 是否在当前阶段改写 scoped 选择器。预处理语言应由最终 CSS 管线完成隔离时可关闭。
+     */
+    transformScoped?: boolean
+  }
   json?: {
     kind?: 'app' | 'page' | 'component'
     defaults?: JsonConfig['defaults']

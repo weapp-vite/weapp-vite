@@ -9,7 +9,6 @@ import { attachRuntimeErrorCollector } from './runtimeErrors'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
-const DIST_HOME_JS = path.join(DIST_ROOT, 'pages/home/home.js')
 const DIST_HOME_WXML = path.join(DIST_ROOT, 'pages/home/home.wxml')
 const DIST_GOODS_CARD_WXML = path.join(DIST_ROOT, 'components/goods-card/index.wxml')
 const DIST_GOODS_LIST_WXML = path.join(DIST_ROOT, 'components/goods-list/index.wxml')
@@ -107,6 +106,7 @@ function isRetailSessionRecoverableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return message.includes('[loader] unexpected current frame status timedout')
     || message.includes('unexpected current frame status timedout')
+    || message.includes('timeout waiting for automator response')
     || message.includes('DEVTOOLS_PROTOCOL_TIMEOUT')
     || message.includes('DevTools did not respond to protocol method App.callFunction')
     || message.includes('DevTools did not respond to protocol method App.callWxMethod')
@@ -116,17 +116,6 @@ function isRetailSessionRecoverableError(error: unknown) {
     || message.includes('Target closed')
     || message.includes('WebSocket is not open')
     || message.includes('not connected')
-}
-
-function isRetailActionProtocolUnavailable(error: unknown) {
-  const protocolError = error as Error & { code?: unknown, method?: unknown }
-  const message = error instanceof Error ? error.message : String(error)
-  return (
-    protocolError.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    && (protocolError.method === 'Page.callMethod' || protocolError.method === 'App.callFunction')
-  )
-  || message.includes('DevTools did not respond to protocol method Page.callMethod')
-  || message.includes('DevTools did not respond to protocol method App.callFunction')
 }
 
 async function runWithRetailSession<T>(ctx: { skip: (message?: string) => void }, factory: (miniProgram: any) => Promise<T>) {
@@ -301,23 +290,10 @@ async function triggerHomeFeedbackAction(miniProgram: any, action: 'toast' | 'di
   const homePage = await ensureHomePage(miniProgram)
   const { page } = await waitForHomeReady(miniProgram, homePage)
   const method = action === 'toast' ? 'goodListAddCartHandle' : 'showLayoutDialogProbe'
-  try {
-    await page.callMethodWithOptions(method, {
-      fallback: false,
-      timeout: 12_000,
-    })
-  }
-  catch (error) {
-    if (!isRetailActionProtocolUnavailable(error)) {
-      throw error
-    }
-    const homeOutput = await readFile(DIST_HOME_JS, 'utf8')
-    expect(homeOutput).toContain(method)
-    expect(homeOutput).toContain(action === 'toast' ? '点击加入购物车' : '验证 layout dialog 选择器桥接')
-    const reason = error instanceof Error ? error.message : String(error)
-    process.stdout.write(`[warn] [retail-feedback-runtime] action-capability-limited action=${action} route=${page.path} reason=${reason}\n`)
-    return page
-  }
+  await page.callMethodWithOptions(method, {
+    routeOnly: true,
+    timeout: 12_000,
+  })
   await waitForHomeReady(miniProgram, page)
   return page
 }

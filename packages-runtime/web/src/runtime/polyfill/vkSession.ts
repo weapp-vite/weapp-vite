@@ -10,30 +10,20 @@ export function createVkSessionBridge(): VkSession {
   let destroyed = false
   const listeners = new Map<string, Set<(payload: unknown) => void>>()
 
-  const ensureAvailable = (action: string) => {
-    if (destroyed) {
-      throw new TypeError(`createVKSession:fail session is destroyed (${action})`)
-    }
+  const unavailable = (action: string) => {
+    return Promise.reject(new TypeError(`createVKSession:fail session is destroyed (${action})`))
   }
 
   return {
     start() {
-      try {
-        ensureAvailable('start')
-      }
-      catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        return Promise.reject(new TypeError(message))
+      if (destroyed) {
+        return unavailable('start')
       }
       return Promise.resolve({ errMsg: 'vkSession.start:ok' })
     },
     stop() {
-      try {
-        ensureAvailable('stop')
-      }
-      catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        return Promise.reject(new TypeError(message))
+      if (destroyed) {
+        return unavailable('stop')
       }
       return Promise.resolve({ errMsg: 'vkSession.stop:ok' })
     },

@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-25T07:44:54.105Z",
+  "device": {
+    "windowWidth": 390,
+    "windowHeight": 753,
+    "pixelRatio": 3,
+    "safeAreaInsetBottom": 34,
+    "screenshotScale": 2
+  },
+  "cases": [
+    {
+      "id": "component-matrix",
+      "route": "/pages/visual-parity/index",
+      "baseline": "component-matrix.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03,
+      "viewport": {
+        "width": 390,
+        "height": 753
+      }
+    },
+    {
+      "id": "form-matrix",
+      "route": "/pages/form-parity/index",
+      "baseline": "form-matrix.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03,
+      "viewport": {
+        "width": 390,
+        "height": 753
+      }
+    },
+    {
+      "id": "selection-matrix",
+      "route": "/pages/selection-parity/index",
+      "baseline": "selection-matrix.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03,
+      "viewport": {
+        "width": 390,
+        "height": 753
+      }
+    },
+    {
+      "id": "display-matrix",
+      "route": "/pages/display-parity/index",
+      "baseline": "display-matrix.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03,
+      "viewport": {
+        "width": 390,
+        "height": 753
+      }
+    },
+    {
+      "id": "navigation-matrix",
+      "route": "/pages/navigation-parity/index",
+      "baseline": "navigation-matrix.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03,
+      "viewport": {
+        "width": 390,
+        "height": 753
+      }
+    },
+    {
+      "id": "media-matrix",
+      "route": "/pages/media-parity/index",
+      "baseline": "media-matrix.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03,
+      "viewport": {
+        "width": 390,
+        "height": 753
+      }
+    },
+    {
+      "id": "layer-matrix",
+      "route": "/pages/layer-parity/index",
+      "baseline": "layer-matrix.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03,
+      "viewport": {
+        "width": 390,
+        "height": 753
+      }
+    },
+    {
+      "id": "app-shell-tabbar",
+      "route": "/pages/tabbar-parity/home",
+      "baseline": "app-shell-tabbar.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.03,
+      "viewport": {
+        "width": 390,
+        "height": 671
+      }
+    },
+    {
+      "id": "product-detail",
+      "route": "/pages/product/detail/detail?iteration=10",
+      "baseline": "product-detail.png",
+      "threshold": 0.18,
+      "maxDiffRatio": 0.05,
+      "viewport": {
+        "width": 390,
+        "height": 753
+      }
+    }
+  ]
+}

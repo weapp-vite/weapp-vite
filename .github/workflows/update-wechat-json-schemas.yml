@@ -1,0 +1,123 @@
+name: Update WeChat JSON Schemas
+
+on:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: update-wechat-json-schemas
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  HUSKY: 0
+
+jobs:
+  update:
+    name: Update WeChat JSON Schema metadata and generated files
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '22'
+
+      - name: Crawl WeChat configuration metadata
+        run: pnpm --filter @weapp-core/schematics crawl:wechat-config -- app page
+
+      - name: Regenerate JSON Schemas and type declarations
+        run: pnpm --filter @weapp-core/schematics schema
+
+      - name: Update JSON Schema snapshots
+        run: pnpm --filter @weapp-core/schematics exec vitest run test/json.test.ts -u
+
+      - name: Detect generated changes
+        id: changes
+        shell: bash
+        run: |
+          files=(
+            .changeset/update-wechat-json-schemas.md
+            @weapp-core/schematics/scripts/config
+            @weapp-core/schematics/schemas
+            @weapp-core/schematics/src/type.auto.ts
+            @weapp-core/schematics/test/__snapshots__/json.test.ts.snap
+            website/public/app.json
+            website/public/page.json
+            website/public/component.json
+            website/public/plugin.json
+            website/public/sitemap.json
+            website/public/theme.json
+          )
+
+          if git diff --quiet -- "${files[@]}"; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No generated changes detected." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          cat > .changeset/update-wechat-json-schemas.md <<'EOF'
+          ---
+          '@weapp-core/schematics': patch
+          ---
+
+          同步微信官方配置文档中的 JSON Schema 字段、描述、默认值和最低支持版本。
+          EOF
+
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "Generated changes detected:"
+            git diff --name-only -- \
+              @weapp-core/schematics/scripts/config \
+              @weapp-core/schematics/schemas \
+              @weapp-core/schematics/src/type.auto.ts \
+              @weapp-core/schematics/test/__snapshots__/json.test.ts.snap \
+              website/public/app.json \
+              website/public/page.json \
+              website/public/component.json \
+              website/public/plugin.json \
+              website/public/sitemap.json \
+              website/public/theme.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create pull request
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          base: main
+          branch: chore/update-wechat-json-schemas
+          delete-branch: true
+          commit-message: 'chore(schematics): update WeChat JSON Schemas'
+          title: 'chore: 同步微信官方 JSON Schema'
+          body: |
+            ## 概要
+            - 抓取微信官方 `app.json` 与 `page.json` 配置文档
+            - 更新按类型维护的 Schema 元数据
+            - 重新生成 `@weapp-core/schematics` 与网站公开 Schema
+            - 更新 Schema 快照和自动生成类型声明
+
+            ## 说明
+            - 该 PR 由 GitHub Actions 定时任务自动创建或更新
+            - 仅在官方配置字段发生变化时创建 PR
+            - 抓取器只在此工作流中联网，正常构建不依赖网络
+          add-paths: |
+            .changeset/update-wechat-json-schemas.md
+            @weapp-core/schematics/scripts/config
+            @weapp-core/schematics/schemas
+            @weapp-core/schematics/src/type.auto.ts
+            @weapp-core/schematics/test/__snapshots__/json.test.ts.snap
+            website/public/app.json
+            website/public/page.json
+            website/public/component.json
+            website/public/plugin.json
+            website/public/sitemap.json
+            website/public/theme.json

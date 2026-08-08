@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { WEVU_NATIVE_INSTANCE_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
 import {
@@ -46,6 +47,36 @@ describe('HeadlessSession', () => {
     expect(session.getCurrentPages()).toHaveLength(1)
   })
 
+  it('loads and caches modules through require.async', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'dist/subpackages/async/target.js'), `
+exports.default = 'async-default'
+exports.named = 'async-named'
+`)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/index/index.js'), `
+Page({
+  async loadAsync() {
+    const first = await require.async('../../subpackages/async/target.js')
+    const second = await require.async('../../subpackages/async/target.js')
+    return {
+      defaultValue: first.default,
+      namedValue: first.named,
+      reused: first === second,
+    }
+  },
+})
+`)
+    const session = createHeadlessSession({ projectPath })
+    const page = session.reLaunch('/pages/index/index')
+
+    await expect(page.loadAsync()).resolves.toEqual({
+      defaultValue: 'async-default',
+      namedValue: 'async-named',
+      reused: true,
+    })
+  })
+
   it('binds page methods to the page instance and applies setData', () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)
@@ -62,6 +93,103 @@ describe('HeadlessSession', () => {
     })
   })
 
+  it('runs Component() page methods and lifecycles in headless runtime', () => {
+    const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'mpcore-component-page-'))
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/component/index', 'pages/next/index'],
+    }))
+    writeFixtureFile(path.join(projectPath, 'project.config.json'), JSON.stringify({
+      appid: 'wx1234567890abcdef',
+      miniprogramRoot: 'dist/',
+    }))
+    writeFixtureFile(path.join(projectPath, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(projectPath, 'dist/pages/component/index.js'), `
+Component({
+  data() {
+    return { lifecycleLog: [] }
+  },
+  lifetimes: {
+    created() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'created'] })
+    },
+    attached() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'attached'] })
+    },
+    ready() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'ready'] })
+    },
+    detached() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'detached'] })
+    },
+  },
+  pageLifetimes: {
+    show() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'show'] })
+    },
+    hide() {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'hide'] })
+    },
+    resize(options) {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'resize:' + options.size.windowWidth] })
+    },
+    routeDone(options) {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'routeDone:' + options.from] })
+    },
+  },
+  methods: {
+    onLoad(query) {
+      this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'load:' + query.from] })
+    },
+    openNext() {
+      wx.navigateTo({ url: '/pages/next/index' })
+    },
+    runE2E() {
+      return this.data.lifecycleLog.slice()
+    },
+  },
+})
+`)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/component/index.wxml'), '<view>{{lifecycleLog}}</view>')
+    writeFixtureFile(path.join(projectPath, 'dist/pages/next/index.js'), 'Page({})\n')
+    writeFixtureFile(path.join(projectPath, 'dist/pages/next/index.wxml'), '<view>next</view>')
+
+    const session = createHeadlessSession({ projectPath })
+    const page = session.reLaunch('/pages/component/index?from=e2e')
+
+    expect(page.runE2E()).toEqual(['created', 'attached', 'load:e2e', 'show', 'ready', 'routeDone:undefined'])
+    session.triggerRouteDone({ from: 'headless' })
+    session.triggerResize({ size: { windowWidth: 390 } })
+    page.openNext()
+    expect(page.runE2E()).toEqual([
+      'created',
+      'attached',
+      'load:e2e',
+      'show',
+      'ready',
+      'routeDone:undefined',
+      'routeDone:headless',
+      'resize:390',
+      'hide',
+    ])
+
+    session.navigateBack()
+    session.reLaunch('/pages/next/index')
+    expect(page.runE2E()).toEqual([
+      'created',
+      'attached',
+      'load:e2e',
+      'show',
+      'ready',
+      'routeDone:undefined',
+      'routeDone:headless',
+      'resize:390',
+      'hide',
+      'show',
+      'detached',
+    ])
+  })
+
   it('runs unload and recreates the page on reLaunch', () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)
@@ -76,6 +204,43 @@ describe('HeadlessSession', () => {
     expect(secondPage).not.toBe(firstPage)
     expect(secondPage.data.transient).toBeUndefined()
     expect(session.getCurrentPages()).toHaveLength(1)
+  })
+
+  it('exposes the active page stack before initial page lifecycles run', () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const pageModulePath = path.join(projectPath, 'dist/pages/index/index.js')
+    writeFixtureFile(pageModulePath, `
+Page({
+  data: {
+    lifecycleStacks: [],
+  },
+  captureLifecycle(name) {
+    this.data.lifecycleStacks.push({
+      name,
+      routes: getCurrentPages().map(page => page.route),
+    })
+  },
+  onLoad() {
+    this.captureLifecycle('load')
+  },
+  onShow() {
+    this.captureLifecycle('show')
+  },
+  onReady() {
+    this.captureLifecycle('ready')
+  },
+})
+`)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(page.data.lifecycleStacks).toEqual([
+      { name: 'load', routes: ['pages/index/index'] },
+      { name: 'show', routes: ['pages/index/index'] },
+      { name: 'ready', routes: ['pages/index/index'] },
+    ])
   })
 
   it('drives navigateTo and navigateBack with devtools-like lifecycle order', () => {
@@ -149,7 +314,7 @@ describe('HeadlessSession', () => {
       'detail:onLoad:{"from":"home-callback"}',
       'detail:onShow',
       'detail:onReady',
-      'home:navigateTo:success',
+      'home:navigateTo:success:pages/detail/index',
       'home:navigateTo:complete',
     ])
 
@@ -165,7 +330,7 @@ describe('HeadlessSession', () => {
       'detail:onLoad:{"from":"home-callback"}',
       'detail:onShow',
       'detail:onReady',
-      'home:navigateTo:success',
+      'home:navigateTo:success:pages/detail/index',
       'home:navigateTo:complete',
       'detail:onUnload',
       'home:onShow',
@@ -306,7 +471,6 @@ describe('HeadlessSession', () => {
       'settings:onHide',
       'settings:onUnload',
       'home:onShow',
-      'home:onTabItemTap:{"index":0,"pagePath":"pages/home/index","text":"Home"}',
     ])
 
     session.reLaunch('/pages/profile/index?mode=relaunch')
@@ -328,7 +492,6 @@ describe('HeadlessSession', () => {
       'settings:onHide',
       'settings:onUnload',
       'home:onShow',
-      'home:onTabItemTap:{"index":0,"pagePath":"pages/home/index","text":"Home"}',
       'home:onUnload',
       'profile:onLoad:{"mode":"relaunch"}',
       'profile:onShow',
@@ -336,7 +499,7 @@ describe('HeadlessSession', () => {
     ])
   })
 
-  it('fires onTabItemTap when switching or retapping a tab page', () => {
+  it('does not synthesize onTabItemTap for programmatic tab switches', () => {
     const projectPath = createNavigationFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
@@ -354,7 +517,6 @@ describe('HeadlessSession', () => {
       'profile:onLoad:{}',
       'profile:onShow',
       'profile:onReady',
-      'profile:onTabItemTap:{"index":1,"pagePath":"pages/profile/index","text":"Profile"}',
     ])
 
     session.switchTab('/pages/profile/index')
@@ -367,8 +529,6 @@ describe('HeadlessSession', () => {
       'profile:onLoad:{}',
       'profile:onShow',
       'profile:onReady',
-      'profile:onTabItemTap:{"index":1,"pagePath":"pages/profile/index","text":"Profile"}',
-      'profile:onTabItemTap:{"index":1,"pagePath":"pages/profile/index","text":"Profile"}',
     ])
     expect(homePage.options).toEqual({})
     expect(profilePage?.options).toEqual({})
@@ -2211,7 +2371,7 @@ Page({
     ])
   })
 
-  it('supports getNetworkType and network status change listeners', () => {
+  it('supports deterministic location, getNetworkType and network status change listeners', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-network-type-'))
     tempDirs.push(root)
 
@@ -2228,6 +2388,7 @@ Page({
   data: {
     currentType: '',
     initialType: '',
+    location: null,
     logs: []
   },
   push(message) {
@@ -2242,6 +2403,15 @@ Page({
           initialType: result.networkType
         })
         this.push('get:' + result.networkType)
+      }
+    })
+  },
+  inspectLocation() {
+    wx.getLocation({
+      isHighAccuracy: true,
+      type: 'gcj02',
+      success: (result) => {
+        this.setData({ location: result })
       }
     })
   },
@@ -2266,12 +2436,23 @@ Page({
 
     page.startWatchingNetwork()
     page.inspectNetwork()
+    page.inspectLocation()
     session.setNetworkType('none')
     session.setNetworkType('4g')
     page.stopWatchingNetwork()
     session.setNetworkType('5g')
 
     expect(page.data.initialType).toBe('wifi')
+    expect(page.data.location).toEqual({
+      accuracy: 10,
+      altitude: 0,
+      errMsg: 'getLocation:ok',
+      horizontalAccuracy: 10,
+      latitude: 31.2304,
+      longitude: 121.4737,
+      speed: 0,
+      verticalAccuracy: 0,
+    })
     expect(page.data.currentType).toBe('4g')
     expect(page.data.logs).toEqual([
       'get:wifi',
@@ -2282,6 +2463,8 @@ Page({
       errMsg: 'getNetworkType:ok',
       networkType: '5g',
     })
+    expect(session.getLocation()).toEqual(page.data.location)
+    expect(session.callWxMethod('canIUse', 'getLocation.return.latitude')).toBe(true)
   })
 
   it('supports navigation bar title, color and loading state defaults', () => {
@@ -2935,6 +3118,82 @@ Page({
     })
   })
 
+  it('supports uni compatibility APIs with session-local event listeners', () => {
+    const firstProjectPath = createBaseFixture()
+    const secondProjectPath = createBaseFixture()
+    tempDirs.push(firstProjectPath, secondProjectPath)
+    const firstSession = createHeadlessSession({ projectPath: firstProjectPath })
+    const secondSession = createHeadlessSession({ projectPath: secondProjectPath })
+    const logs: string[] = []
+    const persistentHandler = (value: string) => logs.push(`on:${value}`)
+    const onceHandler = (value: string) => logs.push(`once:${value}`)
+    const success = vi.fn()
+    const complete = vi.fn()
+
+    expect(firstSession.callWxMethod('loadFontFace', {
+      complete,
+      family: 'uview-icon',
+      global: true,
+      source: 'url("headless://font/uview.ttf")',
+      success,
+    })).toEqual({ errMsg: 'loadFontFace:ok' })
+    expect(success).toHaveBeenCalledWith({ errMsg: 'loadFontFace:ok' })
+    expect(complete).toHaveBeenCalledWith({ errMsg: 'loadFontFace:ok' })
+    expect(firstSession.callWxMethod('canIUse', 'loadFontFace.return.errMsg')).toBe(true)
+    expect(firstSession.callWxMethod('getLocale')).toBe('zh-Hans')
+    expect(firstSession.callWxMethod('rpx2px', 100)).toBe(50)
+    expect(firstSession.callWxMethod('upx2px', 100)).toBe(50)
+    expect(firstSession.callWxMethod('getWindowInfo')).toMatchObject({
+      safeArea: {
+        bottom: 667,
+        top: 20,
+      },
+      safeAreaInsets: {
+        bottom: 0,
+        top: 20,
+      },
+    })
+
+    firstSession.callWxMethod('$on', 'grid:update', persistentHandler)
+    firstSession.callWxMethod('$once', 'grid:update', onceHandler)
+    firstSession.callWxMethod('$emit', 'grid:update', 'first')
+    firstSession.callWxMethod('$emit', 'grid:update', 'second')
+    secondSession.callWxMethod('$emit', 'grid:update', 'isolated')
+    firstSession.callWxMethod('$off', 'grid:update', persistentHandler)
+    firstSession.callWxMethod('$emit', 'grid:update', 'removed')
+
+    expect(logs).toEqual(['on:first', 'once:first', 'on:second'])
+  })
+
+  it('unwraps a wevu public proxy for scoped selector queries', () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+    const card = page.selectComponent?.('#status-card')
+    const proxy = {
+      $state: {
+        [WEVU_NATIVE_INSTANCE_KEY]: card,
+      },
+    }
+
+    const result = session.callWxMethod('createSelectorQuery')
+      .in(proxy)
+      .select('.card-shell')
+      .boundingClientRect()
+      .exec()
+
+    expect(result).toEqual([{
+      bottom: 0,
+      height: 0,
+      left: 0,
+      right: 0,
+      top: 0,
+      width: 0,
+    }])
+  })
+
   it('renders custom components and exposes selectComponent APIs in headless runtime', () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)
@@ -2979,6 +3238,39 @@ Page({
     expect(page.data.metaSummary).toContain('"source":"component-card"')
     expect(page.data.metaSummary).toContain('"type":"unsupported-context"')
     expect(page.data.metaSummary).toContain('"type":"view"')
+  })
+
+  it('preserves PascalCase component aliases while parsing WXML', () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/index/index.json'), JSON.stringify({
+      usingComponents: {
+        PascalCaseCard: '/components/pascal-case-card/index',
+      },
+    }))
+    writeFixtureFile(
+      path.join(projectPath, 'dist/pages/index/index.wxml'),
+      '<PascalCaseCard id="pascal-case-card" label="ready" />',
+    )
+    writeFixtureFile(path.join(projectPath, 'dist/components/pascal-case-card/index.json'), '{}')
+    writeFixtureFile(
+      path.join(projectPath, 'dist/components/pascal-case-card/index.js'),
+      'Component({ properties: { label: String } })\n',
+    )
+    writeFixtureFile(
+      path.join(projectPath, 'dist/components/pascal-case-card/index.wxml'),
+      '<view>{{label}}</view>',
+    )
+    const session = createHeadlessSession({ projectPath })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(page.selectComponent?.('#pascal-case-card')).toMatchObject({
+      is: 'components/pascal-case-card/index',
+      properties: {
+        label: 'ready',
+      },
+    })
+    expect(session.renderCurrentPage().wxml).toContain('data-sim-component="PascalCaseCard"')
   })
 
   it('runs component lifetimes and pageLifetimes in headless runtime', () => {

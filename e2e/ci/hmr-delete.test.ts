@@ -36,7 +36,6 @@ describe.sequential('HMR delete — page-level file deletions (dev watch)', () =
     const marker = createHmrMarker('DEL-TEMPLATE', platform)
     const srcFile = path.join(TEMP_PAGE_SRC_DIR, 'del-test.wxml')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       all: true,
@@ -62,7 +61,6 @@ describe.sequential('HMR delete — page-level file deletions (dev watch)', () =
     const marker = createHmrMarker('DEL-STYLE', platform)
     const srcFile = path.join(TEMP_PAGE_SRC_DIR, 'del-test.wxss')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -88,7 +86,6 @@ describe.sequential('HMR delete — page-level file deletions (dev watch)', () =
     const marker = createHmrMarker('DEL-SCRIPT', platform)
     const srcFile = path.join(TEMP_PAGE_SRC_DIR, 'del-test.ts')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -114,7 +111,6 @@ describe.sequential('HMR delete — page-level file deletions (dev watch)', () =
     const marker = createHmrMarker('DEL-JSON', platform)
     const srcFile = path.join(TEMP_PAGE_SRC_DIR, 'del-test.json')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -156,7 +152,6 @@ describe.sequential('HMR delete — page-level file deletions (dev watch)', () =
       '</style>',
     ].join('\n')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -188,7 +183,6 @@ describe.sequential('HMR delete — component-level file deletions (dev watch)',
     const srcStyle = path.join(TEMP_COMPONENT_SRC_DIR, 'index.wxss')
     const srcJson = path.join(TEMP_COMPONENT_SRC_DIR, 'index.json')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -222,7 +216,6 @@ describe.sequential('HMR delete — component-level file deletions (dev watch)',
     const srcStyle = path.join(TEMP_COMPONENT_SRC_DIR, 'index.wxss')
     const srcJson = path.join(TEMP_COMPONENT_SRC_DIR, 'index.json')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',

@@ -1,3 +1,4 @@
+import { WEAPP_VITE_RUNTIME_VIRTUAL_IDS } from '@weapp-core/constants'
 import logger from '../../src/logger'
 import { callPluginHook } from '../pluginHook'
 
@@ -96,6 +97,49 @@ onPageScroll(() => {
     expect(injectWevuPageFeaturesMock).not.toHaveBeenCalled()
     expect(warnSpy).not.toHaveBeenCalled()
   })
+
+  it.each(Object.values(WEAPP_VITE_RUNTIME_VIRTUAL_IDS))(
+    'runs indirect page feature analysis for runtime virtual entry %s',
+    async (runtimeModuleId) => {
+      createPageEntryMatcherMock.mockReturnValue({
+        markDirty: vi.fn(),
+        isPageFile: vi.fn(async () => true),
+      })
+      injectWevuPageFeaturesMock.mockResolvedValue({
+        transformed: true,
+        code: 'Page({ enableOnPullDownRefresh: true })',
+      })
+
+      const { createWevuAutoPageFeaturesPlugin } = await import('../../src/plugins/wevu')
+      const plugin = createWevuAutoPageFeaturesPlugin({
+        configService: {
+          cwd: '/src',
+          absoluteSrcRoot: '/src',
+        },
+        scanService: {
+          loadAppEntry: async () => ({ json: { pages: ['pages/index/index'] } }),
+          loadSubPackages: () => [],
+          pluginJson: undefined,
+        },
+        runtimeState: {
+          scan: { isDirty: false },
+        },
+      } as any)
+
+      const result = await callPluginHook(
+        plugin.transform as any,
+        { resolve: async () => null } as any,
+        `import { ref } from '${runtimeModuleId}'\nPage({ setup() { usePageFeatureHooks(ref([])) } })`,
+        '/src/pages/index/index.ts',
+      )
+
+      expect(injectWevuPageFeaturesMock).toHaveBeenCalledTimes(1)
+      expect(result).toEqual({
+        code: 'Page({ enableOnPullDownRefresh: true })',
+        map: null,
+      })
+    },
+  )
 
   it('reuses page matcher results until scan is marked dirty', async () => {
     const markDirty = vi.fn()

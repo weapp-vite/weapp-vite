@@ -1,5 +1,6 @@
 import { track } from '../core'
 import {
+  adoptReactiveRoot,
   indexPatchNode,
   rawMultiParentSet,
   rawParentMap,
@@ -68,9 +69,7 @@ export function prelinkReactiveTree(root: object, options?: PrelinkReactiveTreeO
         continue
       }
       const childRaw = toRaw(value as any) as object
-      if (!rawRootMap.has(childRaw)) {
-        rawRootMap.set(childRaw, rootRaw)
-      }
+      adoptReactiveRoot(childRaw, node.current)
       recordParentLink(childRaw, node.current, key)
       if (!rawMultiParentSet.has(childRaw)) {
         const childPath = node.path ? `${node.path}.${key}` : key

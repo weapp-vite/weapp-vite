@@ -1,9 +1,11 @@
 import type { Resolver } from './types'
 import { describe, expect, it } from 'vitest'
-import { TDesignResolver, VantResolver, WeuiResolver } from './index'
+import { TDesignResolver, UviewPlusResolver, VantResolver, WeuiResolver, WotUiResolver } from './index'
 import tdesignComponents from './json/tdesign.json'
+import uviewPlusComponents from './json/uviewPlus.json'
 import vantComponents from './json/vant.json'
 import weuiComponents from './json/weui.json'
+import wotUiComponents from './json/wotUi.json'
 
 function resolveWithResolver(resolver: Resolver, componentName: string, baseName = componentName) {
   if (typeof resolver.resolve === 'function') {
@@ -135,5 +137,109 @@ describe('WeuiResolver', () => {
       resolve: ({ name }) => ({ key: `weui-${name}`, value: `patched/${name}` }),
     })
     expect(resolveWithResolver(custom, 'weui-dialog')).toEqual({ name: 'weui-dialog', from: 'patched/dialog' })
+  })
+})
+
+describe('WotUiResolver', () => {
+  const resolver = WotUiResolver()
+
+  it('maps all public Wot UI Vue SFC components', () => {
+    expect(Object.keys(resolver.components ?? {})).toHaveLength(99)
+    expect(Object.keys(resolver.components ?? {}).sort()).toEqual([...wotUiComponents].sort())
+    expect(resolveWithResolver(resolver, 'wd-button')).toEqual({
+      name: 'wd-button',
+      from: '@wot-ui/ui/components/wd-button/wd-button.vue',
+      resolvedId: '@wot-ui/ui/components/wd-button/wd-button.vue',
+      sourceType: 'wevu-sfc',
+      typeImport: false,
+    })
+    expect(resolveWithResolver(resolver, 'wd-swiper-nav')).toEqual({
+      name: 'wd-swiper-nav',
+      from: '@wot-ui/ui/components/wd-swiper-nav/wd-swiper-nav.vue',
+      resolvedId: '@wot-ui/ui/components/wd-swiper-nav/wd-swiper-nav.vue',
+      sourceType: 'wevu-sfc',
+      typeImport: false,
+    })
+  })
+
+  it('supports a custom prefix and used-only support files', () => {
+    const custom = WotUiResolver({ prefix: 'wot-' })
+    expect(resolveWithResolver(custom, 'wot-button')?.from).toBe('@wot-ui/ui/components/wd-button/wd-button.vue')
+    expect(resolveWithResolver(custom, 'wd-button')).toBeUndefined()
+    expect(custom.supportFilesStrategy).toBe('used')
+  })
+
+  it('exposes package metadata candidates', () => {
+    expect(resolver.resolveExternalMetadataCandidates?.('@wot-ui/ui/components/wd-button/wd-button.vue')).toEqual({
+      packageName: '@wot-ui/ui',
+      dts: [
+        'components/wd-button/wd-button.d.ts',
+        'components/wd-button/types.d.ts',
+        'components/wd-button/type.d.ts',
+        'global.d.ts',
+      ],
+      js: [],
+    })
+  })
+})
+
+describe('UviewPlusResolver', () => {
+  const resolver = UviewPlusResolver()
+
+  it('maps all published Vue SFC entries under both supported prefixes', () => {
+    expect(Object.keys(resolver.components ?? {})).toHaveLength(274)
+    expect(uviewPlusComponents).toHaveLength(137)
+    expect(resolveWithResolver(resolver, 'u-button')).toEqual({
+      name: 'u-button',
+      from: 'uview-plus/components/u-button/u-button.vue',
+      resolvedId: expect.stringMatching(/uview-plus[\\/]components[\\/]u-button[\\/]u-button\.vue$/),
+      sourceType: 'wevu-sfc',
+      typeImport: false,
+    })
+    expect(resolveWithResolver(resolver, 'up-button')).toEqual({
+      name: 'up-button',
+      from: 'uview-plus/components/u-button/u-button.vue',
+      resolvedId: expect.stringMatching(/uview-plus[\\/]components[\\/]u-button[\\/]u-button\.vue$/),
+      sourceType: 'wevu-sfc',
+      typeImport: false,
+    })
+    expect(resolveWithResolver(resolver, 'up-action-sheet-data')?.from)
+      .toBe('uview-plus/components/u-action-sheet-data/u-action-sheet-data.vue')
+    expect(resolveWithResolver(resolver, 'up-unknown')).toBeUndefined()
+  })
+
+  it('supports full support-file generation', () => {
+    expect(resolver.supportFilesStrategy).toBe('used')
+    expect(UviewPlusResolver({ supportFilesStrategy: 'full' }).supportFilesStrategy).toBe('full')
+  })
+
+  it('exposes component source and package type metadata candidates', () => {
+    expect(resolver.resolveExternalMetadataCandidates?.('uview-plus/components/u-button/u-button.vue')).toEqual({
+      packageName: 'uview-plus',
+      dts: [
+        'types/comps/button.d.ts',
+        'types/comps.d.ts',
+        'types/index.d.ts',
+      ],
+      js: [
+        'components/u-button/props.js',
+        'components/u-button/button.js',
+      ],
+    })
+    expect(resolver.resolveExternalMetadataCandidates?.('uview-plus/components/u-loading-icon/u-loading-icon.vue')).toEqual({
+      packageName: 'uview-plus',
+      dts: [
+        'types/comps/loadingIcon.d.ts',
+        'types/comps.d.ts',
+        'types/index.d.ts',
+      ],
+      js: [
+        'components/u-loading-icon/props.js',
+        'components/u-loading-icon/loadingIcon.js',
+        'components/u-loading-icon/loadingicon.js',
+      ],
+    })
+    expect(resolver.resolveExternalMetadataCandidates?.('uview-plus/components/u-missing/u-missing.vue')).toBeUndefined()
+    expect(resolver.resolveExternalMetadataCandidates?.('some-lib/u-button.vue')).toBeUndefined()
   })
 })

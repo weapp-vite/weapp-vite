@@ -32,6 +32,7 @@ export default icebreaker(
       'vue/no-parsing-error': 'off',
       'vue/no-template-shadow': 'off',
       'vue/valid-define-options': 'off',
+      'vue/prefer-separate-static-class': 'off',
       'style/max-statements-per-line': 'off',
       'style/no-mixed-operators': 'off',
       'prefer-promise-reject-errors': 'off',

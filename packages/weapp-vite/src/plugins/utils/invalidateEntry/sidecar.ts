@@ -68,10 +68,20 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
 
   const isCssSidecar = Boolean(ext && watchedCssExts.has(ext))
   const isTemplateSidecar = Boolean(ext && watchedTemplateExts.has(ext))
+  if (isCssSidecar) {
+    ctx.runtimeState?.css?.transformedSidecarSource.delete(normalizedPath)
+  }
+  const sidecarCause = configSuffix
+    ? 'json-sidecar' as const
+    : isCssSidecar
+      ? 'style-sidecar' as const
+      : 'sidecar-direct' as const
   const configService = ctx.configService
   const relativeSource = configService.relativeCwd(normalizedPath)
+  const sidecarDirtyFiles = ctx.runtimeState?.watcher?.sidecarDirtyFiles
 
   for (const target of touchedTargets) {
+    sidecarDirtyFiles?.set(normalizePath(target), sidecarCause)
     try {
       await touch(target)
     }
@@ -79,6 +89,7 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
   }
 
   for (const script of touchedScripts) {
+    sidecarDirtyFiles?.set(normalizePath(script), sidecarCause)
     try {
       await touch(script)
     }

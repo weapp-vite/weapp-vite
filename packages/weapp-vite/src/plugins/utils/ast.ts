@@ -1,2 +1,2 @@
-export type { RequireToken } from '../../ast'
+export type { DynamicImportToken, RequireCallbackToken, RequireToken } from '../../ast'
 export { collectRequireTokens } from '../../ast'

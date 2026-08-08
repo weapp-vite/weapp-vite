@@ -1,4 +1,4 @@
-// import path from 'node:path'
+import path from 'node:path'
 import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers'
@@ -32,6 +32,7 @@ export default defineConfig({
   },
   plugins: [
     WeappTailwindcss({
+      cssEntries: [path.resolve(import.meta.dirname, 'miniprogram/app.wxss')],
       rem2rpx: true,
     }),
   ],

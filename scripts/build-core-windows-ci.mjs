@@ -19,6 +19,10 @@ const workspaceRoots = [
 const excludedPackages = new Set([
   '@weapp-vite/sfc-playground',
 ])
+const WINDOWS_DLL_INITIALIZATION_FAILURE_CODES = new Set([
+  -1073741502,
+  3221225794,
+])
 
 function readPackageJson(packageDir) {
   const packageJsonPath = path.join(packageDir, 'package.json')
@@ -146,11 +150,22 @@ for (const [index, packageInfo] of buildPlan.entries()) {
   const label = `[${index + 1}/${buildPlan.length}] ${packageInfo.name}`
   console.log(`\n${label}`)
 
-  const result = spawnSync(pnpmInvocation.command, [...pnpmInvocation.args, '--filter', packageInfo.name, 'build'], {
+  const buildArgs = [...pnpmInvocation.args, '--filter', packageInfo.name, 'build']
+  let result = spawnSync(pnpmInvocation.command, buildArgs, {
     cwd: repoRoot,
     env: process.env,
     stdio: 'inherit',
   })
+
+  // Windows runner 偶发在启动 Node 原生 DLL 时失败；只对该系统错误重试一次。
+  if (WINDOWS_DLL_INITIALIZATION_FAILURE_CODES.has(result.status ?? 0)) {
+    console.warn(`${label} hit a Windows DLL initialization failure; retrying once`)
+    result = spawnSync(pnpmInvocation.command, buildArgs, {
+      cwd: repoRoot,
+      env: process.env,
+      stdio: 'inherit',
+    })
+  }
 
   if (result.error) {
     throw result.error

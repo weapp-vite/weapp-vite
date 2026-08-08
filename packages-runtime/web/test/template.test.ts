@@ -37,20 +37,20 @@ describe('createTemplate', () => {
         { text: 'GitHub', url: 'https://github.com/weapp-vite/weapp-vite' },
       ],
     })
-    expect(html).toContain('<div class="hello-card">')
-    expect(html).toContain('<div class="hello-title">Hello weapp-vite</div>')
-    expect(html).toContain('<div class="hello-body">欢迎使用 weapp-vite 模板。</div>')
-    expect(html).toContain('<div class="hello-actions">')
+    expect(html).toContain('<weapp-view class="hello-card">')
+    expect(html).toContain('<weapp-view class="hello-title">Hello weapp-vite</weapp-view>')
+    expect(html).toContain('<weapp-view class="hello-body">欢迎使用 weapp-vite 模板。</weapp-view>')
+    expect(html).toContain('<weapp-view class="hello-actions">')
     expect(html).toContain('class="hello-button hello-button--ghost"')
     expect(html).toContain('data-url="https://vite.icebreaker.top"')
-    expect(html).toContain('<div class="hello-tip">复制后即可在浏览器中打开对应链接</div>')
+    expect(html).toContain('<weapp-view class="hello-tip">复制后即可在浏览器中打开对应链接</weapp-view>')
   })
 
   it('returns empty string when wx:if evaluates to false', () => {
     const render = createTemplate('<view wx:if="{{visible}}">hidden</view>')
     expect(render({ visible: false })).toBe('')
     expect(render({ visible: 0 })).toBe('')
-    expect(render({ visible: true })).toBe('<div>hidden</div>')
+    expect(render({ visible: true })).toBe('<weapp-view>hidden</weapp-view>')
   })
 
   it('supports non-wechat structural directive prefixes at runtime', () => {
@@ -68,8 +68,8 @@ describe('createTemplate', () => {
         { id: 1, label: 'one' },
         { id: 2, label: 'two' },
       ],
-    })).toContain('<span>one</span><span>two</span>')
-    expect(render({ visible: false, items: [] })).toContain('<div>fallback</div>')
+    })).toContain('<weapp-text>one</weapp-text><weapp-text>two</weapp-text>')
+    expect(render({ visible: false, items: [] })).toContain('<weapp-view>fallback</weapp-view>')
   })
 
   it('renders wx:elif branches when previous conditions fail', () => {
@@ -79,9 +79,9 @@ describe('createTemplate', () => {
   <view wx:elif="{{status === 'success'}}">success</view>
   <view wx:else>fallback</view>
 </view>`)
-    expect(render({ status: 'loading' }).trim()).toContain('<div>loading</div>')
-    expect(render({ status: 'success' }).trim()).toContain('<div>success</div>')
-    expect(render({ status: 'error' }).trim()).toContain('<div>fallback</div>')
+    expect(render({ status: 'loading' }).trim()).toContain('<weapp-view>loading</weapp-view>')
+    expect(render({ status: 'success' }).trim()).toContain('<weapp-view>success</weapp-view>')
+    expect(render({ status: 'error' }).trim()).toContain('<weapp-view>fallback</weapp-view>')
   })
 
   it('skips wx:elif branches when a previous condition succeeds', () => {
@@ -118,7 +118,7 @@ describe('createTemplate', () => {
     setRuntimeExecutionMode('safe')
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const render = createTemplate('<view>{{foo(}}</view>')
-    expect(render({})).toBe('<div></div>')
+    expect(render({})).toBe('<weapp-view></weapp-view>')
     expect(warn).toHaveBeenCalledTimes(1)
     expect(String(warn.mock.calls[0]?.[0])).toContain('safe 模式下忽略表达式解析错误')
   })
@@ -135,7 +135,7 @@ describe('createTemplate', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const render = createTemplate('<view>{{foo(}}</view>')
-    expect(render({})).toBe('<div></div>')
+    expect(render({})).toBe('<weapp-view></weapp-view>')
     expect(warn).not.toHaveBeenCalled()
     expect(error).not.toHaveBeenCalled()
   })
@@ -146,7 +146,7 @@ describe('createTemplate', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const render = createTemplate('<view>{{bar(}}</view>')
-    expect(render({})).toBe('<div></div>')
+    expect(render({})).toBe('<weapp-view></weapp-view>')
     expect(warn).not.toHaveBeenCalled()
     expect(error).toHaveBeenCalledTimes(1)
     expect(String(error.mock.calls[0]?.[0])).toContain('runtime:execution')

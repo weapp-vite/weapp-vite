@@ -1,16 +1,20 @@
-import type { ExecaChildProcess } from 'execa'
+/* eslint-disable e18e/ban-dependencies -- Web E2E 需要 execa 管理长驻 dev server、采集日志并清理子进程。 */
+import type { Subprocess } from 'execa'
 import type { Browser, Page } from 'playwright'
 import { existsSync } from 'node:fs'
 import process from 'node:process'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import path from 'pathe'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { collectRuntimeVirtualModuleReferences, readJavaScriptOutput } from '../utils/runtimeProviderOutput'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const WEB_DEMO_ROOT = path.resolve(ROOT, 'apps/weapp-vite-web-demo')
 const CLI_PATH = path.resolve(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
+const WEB_DIST_ROOT = path.join(WEB_DEMO_ROOT, 'dist/web')
 const WEB_HOST = '127.0.0.1'
 const WEB_PORT = Number(process.env.WEAPP_VITE_WEB_E2E_PORT ?? 5180)
 const WEB_URL = `http://${WEB_HOST}:${WEB_PORT}`
@@ -30,12 +34,12 @@ if (!BROWSER_AVAILABLE) {
   )
 }
 
-async function waitForWebServerReady(server: ExecaChildProcess, logsRef: { value: string }, timeoutMs = 60_000) {
+async function waitForWebServerReady(server: Subprocess, logsRef: { value: string }, timeoutMs = 60_000) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
-    if (server.exitCode !== null) {
+    if (server.nodeChildProcess.exitCode !== null) {
       throw new Error([
-        `[web-e2e] Web dev server exited early with code ${server.exitCode}.`,
+        `[web-e2e] Web dev server exited early with code ${server.nodeChildProcess.exitCode}.`,
         logsRef.value.trim(),
       ].join('\n'))
     }
@@ -55,7 +59,7 @@ async function waitForWebServerReady(server: ExecaChildProcess, logsRef: { value
   ].join('\n'))
 }
 
-function createServerLogger(server: ExecaChildProcess) {
+function createServerLogger(server: Subprocess) {
   const logsRef = { value: '' }
   server.stdout?.on('data', (chunk) => {
     logsRef.value += String(chunk)
@@ -66,13 +70,13 @@ function createServerLogger(server: ExecaChildProcess) {
   return logsRef
 }
 
-async function stopWebServer(server?: ExecaChildProcess) {
-  if (!server || server.exitCode !== null) {
+async function stopWebServer(server?: Subprocess) {
+  if (!server || server.nodeChildProcess.exitCode !== null) {
     return
   }
   server.kill('SIGTERM')
   const forceKillTimer = setTimeout(() => {
-    if (server.exitCode === null) {
+    if (server.nodeChildProcess.exitCode === null) {
       server.kill('SIGKILL')
     }
   }, 5_000)
@@ -86,59 +90,16 @@ async function stopWebServer(server?: ExecaChildProcess) {
   }
 }
 
-function isNavigationContextDestroyedError(error: unknown) {
-  if (!(error instanceof Error)) {
-    return false
-  }
-  return /Execution context was destroyed|Cannot find context with specified id|Target page, context or browser has been closed/i.test(error.message)
-}
-
-async function dispatchRuntimeNavigation(
-  page: Page,
-  method: 'navigateTo' | 'navigateBack',
-  payload: Record<string, unknown>,
-) {
-  await expect.poll(async () => {
-    return await page.evaluate(({ method }) => {
-      const wxRuntime = (window as any).wx
-      return typeof wxRuntime?.[method] === 'function'
-    }, { method })
-  }, { timeout: 20_000 }).toBe(true)
-
-  try {
-    await page.evaluate(({ method, payload }) => {
-      const wxRuntime = (window as any).wx
-      const navigate = wxRuntime?.[method]
-      if (typeof navigate !== 'function') {
-        throw new TypeError(`[web-e2e] wx.${method} is unavailable in runtime`)
-      }
-      // 导航触发后立即返回，避免导航导致 evaluate 上下文销毁造成误判。
-      const navigationResult = navigate(payload) as any
-      if (navigationResult && typeof navigationResult.catch === 'function') {
-        navigationResult.catch(() => {})
-      }
-    }, { method, payload })
-  }
-  catch (error) {
-    if (!isNavigationContextDestroyedError(error)) {
-      throw error
-    }
-  }
-}
-
-async function navigateToByRuntime(page: Page, url: string) {
-  await dispatchRuntimeNavigation(page, 'navigateTo', { url })
-}
-
-async function navigateBackByRuntime(page: Page, delta = 1) {
-  await dispatchRuntimeNavigation(page, 'navigateBack', { delta })
-}
-
 type CurrentPageData = Record<string, any> | null
 
 interface CurrentPageSnapshot {
   route: string | null
   data: CurrentPageData
+}
+
+interface PageStackSnapshot {
+  routes: Array<string | null>
+  currentData: CurrentPageData
 }
 
 async function readCurrentPageSnapshot(page: Page): Promise<CurrentPageSnapshot | null> {
@@ -168,6 +129,23 @@ async function readCurrentPageSnapshot(page: Page): Promise<CurrentPageSnapshot 
 async function readCurrentPageData(page: Page): Promise<CurrentPageData> {
   const snapshot = await readCurrentPageSnapshot(page)
   return snapshot?.data ?? null
+}
+
+async function readPageStackSnapshot(page: Page): Promise<PageStackSnapshot | null> {
+  return await page.evaluate(() => {
+    const getCurrentPages = (window as any).getCurrentPages
+    if (typeof getCurrentPages !== 'function') {
+      return null
+    }
+    const stack = getCurrentPages() as any[]
+    const currentPage = stack.at(-1)
+    return {
+      routes: stack.map(page => typeof page.route === 'string' ? page.route : null),
+      currentData: currentPage?.data && typeof currentPage.data === 'object'
+        ? JSON.parse(JSON.stringify(currentPage.data))
+        : null,
+    }
+  })
 }
 
 async function expectCurrentPageData(
@@ -340,21 +318,36 @@ async function navigateToInteractiveFromHome(page: Page) {
       && typeof snapshot.data.from === 'string'
       && snapshot.data.from === 'index'
       && Array.isArray(snapshot.data.scenarios)
-      && snapshot.data.scenarios.length >= 3
+      && snapshot.data.scenarios.length >= 3,
     )
   }, { timeout: 45_000 }).toBe(true)
 }
 
+describe.sequential('web runtime production build (weapp-vite-web-demo)', () => {
+  it('bundles only the selected web runtime without leaking virtual ids', async () => {
+    await fs.remove(WEB_DIST_ROOT)
+    await execa('node', [CLI_PATH, 'build', WEB_DEMO_ROOT, '--platform', 'web'], {
+      cwd: ROOT,
+    })
+
+    const javascript = await readJavaScriptOutput(WEB_DIST_ROOT)
+    expect(javascript.files.length).toBeGreaterThan(0)
+    expect(collectRuntimeVirtualModuleReferences(javascript.code)).toEqual([])
+    expect(javascript.code).not.toContain('wevu/internal-runtime')
+    expect(javascript.code).not.toContain('__wevu_runtime')
+  })
+})
+
 describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () => {
   let browser: Browser | undefined
-  let devServer: ExecaChildProcess | undefined
+  let devServer: Subprocess | undefined
 
   beforeAll(async () => {
     devServer = execa('node', [
       CLI_PATH,
       WEB_DEMO_ROOT,
       '--platform',
-      'h5',
+      'web',
       '--host',
       WEB_HOST,
     ], {
@@ -392,7 +385,7 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
           && snapshot.data
           && snapshot.data.from === 'index'
           && Array.isArray(snapshot.data.scenarios)
-          && snapshot.data.selectedScenarioId === 'component-flow'
+          && snapshot.data.selectedScenarioId === 'component-flow',
         )
       }, { timeout: 45_000 }).toBe(true)
 
@@ -403,9 +396,207 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
           snapshot
           && snapshot.data
           && snapshot.data.hello?.title === 'Hello weapp-vite'
-          && snapshot.data.platform === 'web'
+          && snapshot.data.platform === 'web',
         )
       }, { timeout: 45_000 }).toBe(true)
+    }
+    finally {
+      await page.close()
+    }
+  })
+
+  it('restores a deep link and page stack on browser back', async () => {
+    const page = await browser!.newPage()
+    try {
+      await page.goto(`${WEB_URL}/pages/interactive/index?from=deep-link`, { waitUntil: 'domcontentloaded' })
+      await expect.poll(async () => {
+        const snapshot = await readCurrentPageSnapshot(page)
+        return snapshot?.route
+      }, { timeout: 45_000 }).toBe('pages/interactive/index')
+      await expect.poll(() => page.evaluate(() => window.location.pathname + window.location.search))
+        .toBe('/pages/interactive/index?from=deep-link')
+
+      await page.evaluate(async () => {
+        await (window as any).wx.navigateTo({
+          url: 'pages/interactive/detail?id=component-flow&from=deep-link',
+        })
+      })
+      await expect.poll(async () => (await readCurrentPageSnapshot(page))?.route, { timeout: 45_000 })
+        .toBe('pages/interactive/detail')
+
+      await page.goBack()
+      await expect.poll(async () => (await readCurrentPageSnapshot(page))?.route, { timeout: 45_000 })
+        .toBe('pages/interactive/index')
+      await expect.poll(async () => page.evaluate(() => window.location.pathname + window.location.search))
+        .toBe('/pages/interactive/index?from=deep-link')
+    }
+    finally {
+      await page.close()
+    }
+  })
+
+  it('syncs browser head metadata with the active mini-program page', async () => {
+    const page = await browser!.newPage()
+    try {
+      await openHomePage(page)
+      await expect.poll(() => page.title()).toBe('初始模板 | weapp-vite')
+      await expect.poll(() => page.locator('meta[name="description"]').getAttribute('content'))
+        .toBe('原生小程序页面的 Web Runtime 演示。')
+      await expect.poll(() => page.locator('link[rel="preconnect"][href="https://static.example.test"]').count())
+        .toBe(1)
+
+      await navigateToInteractiveFromHome(page)
+      await expect.poll(() => page.title()).toBe('互动场景 | weapp-vite')
+      await page.goBack()
+      await expect.poll(() => page.title()).toBe('初始模板 | weapp-vite')
+    }
+    finally {
+      await page.close()
+    }
+  })
+
+  it('bridges App foreground lifecycle and keeps launch and enter options distinct', async () => {
+    const page = await browser!.newPage()
+    try {
+      await openHomePage(page)
+      await navigateToInteractiveFromHome(page)
+
+      const snapshot = await page.evaluate(() => {
+        const runtimeWindow = window as any
+        const ownVisibilityState = Object.getOwnPropertyDescriptor(document, 'visibilityState')
+        const ownHidden = Object.getOwnPropertyDescriptor(document, 'hidden')
+        const setVisibility = (visibilityState: 'hidden' | 'visible') => {
+          Object.defineProperty(document, 'visibilityState', {
+            configurable: true,
+            value: visibilityState,
+          })
+          Object.defineProperty(document, 'hidden', {
+            configurable: true,
+            value: visibilityState === 'hidden',
+          })
+          document.dispatchEvent(new Event('visibilitychange'))
+        }
+
+        try {
+          setVisibility('hidden')
+          setVisibility('hidden')
+          setVisibility('visible')
+          setVisibility('visible')
+          return {
+            lifecycle: JSON.parse(JSON.stringify(runtimeWindow.getApp().globalData.lifecycle)),
+            launchOptions: runtimeWindow.wx.getLaunchOptionsSync(),
+            enterOptions: runtimeWindow.wx.getEnterOptionsSync(),
+          }
+        }
+        finally {
+          if (ownVisibilityState) {
+            Object.defineProperty(document, 'visibilityState', ownVisibilityState)
+          }
+          else {
+            delete (document as any).visibilityState
+          }
+          if (ownHidden) {
+            Object.defineProperty(document, 'hidden', ownHidden)
+          }
+          else {
+            delete (document as any).hidden
+          }
+        }
+      })
+
+      expect(snapshot.lifecycle).toEqual({
+        launchCount: 1,
+        showCount: 2,
+        hideCount: 1,
+        lastShowPath: 'pages/interactive/index',
+        events: [
+          'launch:pages/index/index',
+          'show:pages/index/index',
+          'hide',
+          'show:pages/interactive/index',
+        ],
+      })
+      expect(snapshot.launchOptions).toMatchObject({
+        path: 'pages/index/index',
+        query: {},
+      })
+      expect(snapshot.enterOptions).toMatchObject({
+        path: 'pages/interactive/index',
+        query: { from: 'index' },
+      })
+    }
+    finally {
+      await page.close()
+    }
+  })
+
+  it('preserves page instance, lifecycle state and scroll position after navigateBack', async () => {
+    const page = await browser!.newPage()
+    try {
+      await openHomePage(page)
+      await navigateToInteractiveFromHome(page)
+      await setCurrentPageData(page, { preservedMarker: 'interactive-page-state' })
+
+      const scrollTop = await page.evaluate(() => {
+        const runtimeWindow = window as any
+        const stack = runtimeWindow.getCurrentPages() as any[]
+        runtimeWindow.__webE2EInteractivePage = stack.at(-1)
+        const container = document.querySelector('#app') as HTMLElement | null
+        if (!container) {
+          throw new TypeError('[web-e2e] Missing #app page container')
+        }
+        container.scrollTop = Math.min(180, container.scrollHeight - container.clientHeight)
+        return container.scrollTop
+      })
+      expect(scrollTop).toBeGreaterThan(0)
+
+      await expect(page.evaluate(async () => {
+        return await (window as any).wx.navigateTo({
+          url: 'pages/interactive/detail?id=component-flow&from=interactive',
+        })
+      })).resolves.toEqual({ errMsg: 'navigateTo:ok' })
+      await expect.poll(async () => {
+        const snapshot = await readPageStackSnapshot(page)
+        return snapshot?.routes
+      }, { timeout: 45_000 }).toEqual([
+        'pages/index/index',
+        'pages/interactive/index',
+        'pages/interactive/detail',
+      ])
+
+      await expect(page.evaluate(async () => {
+        return await (window as any).wx.navigateBack({ delta: 1 })
+      })).resolves.toEqual({ errMsg: 'navigateBack:ok' })
+      await expect.poll(async () => {
+        const snapshot = await readPageStackSnapshot(page)
+        const log = Array.isArray(snapshot?.currentData?.log) ? snapshot.currentData.log : []
+        return {
+          routes: snapshot?.routes,
+          marker: snapshot?.currentData?.preservedMarker,
+          viewCount: snapshot?.currentData?.viewCount,
+          loadCount: log.filter((item: any) => item?.title === '页面 onLoad').length,
+          showCount: log.filter((item: any) => item?.title === '页面 onShow').length,
+        }
+      }, { timeout: 45_000 }).toEqual({
+        routes: ['pages/index/index', 'pages/interactive/index'],
+        marker: 'interactive-page-state',
+        viewCount: 2,
+        loadCount: 1,
+        showCount: 2,
+      })
+
+      await expect.poll(() => page.evaluate(() => {
+        const runtimeWindow = window as any
+        const currentPage = (runtimeWindow.getCurrentPages() as any[]).at(-1)
+        const container = document.querySelector('#app') as HTMLElement | null
+        return {
+          sameInstance: currentPage === runtimeWindow.__webE2EInteractivePage,
+          scrollTop: container?.scrollTop ?? 0,
+        }
+      })).toEqual({
+        sameInstance: true,
+        scrollTop,
+      })
     }
     finally {
       await page.close()

@@ -38,7 +38,6 @@ describe.sequential('HMR app.json config (dev watch)', () => {
     config.window.navigationBarTitleText = marker
     const updatedSource = JSON.stringify(config, null, 2)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: {
         ...createDevProcessEnv(),
@@ -82,7 +81,6 @@ describe.sequential('HMR app.json config (dev watch)', () => {
     const marker = createHmrMarker('APP-CONFIG-PAGE', platform)
     const newPagePath = 'pages/hmr-config-temp/index'
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',

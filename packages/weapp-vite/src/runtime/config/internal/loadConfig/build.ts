@@ -1,6 +1,7 @@
 import type { RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, PluginOption } from 'vite'
 import type { MpPlatform } from '../../../../types'
+import type { WevuRuntimeAliasMode } from '../../../packageAliases'
 import type { LoadConfigResult } from '../../types'
 import logger from '../../../../logger'
 import { supportsMultiPlatformTarget } from '../../../../multiPlatform'
@@ -33,7 +34,7 @@ export function configureBuildAndPlugins(options: {
   pluginOnly: boolean
   oxcRolldownPlugin: RolldownPluginOption<any> | undefined
   oxcVitePlugin: PluginOption | undefined
-  injectBuiltinAliases: (config: InlineConfig) => void
+  injectBuiltinAliases: (config: InlineConfig, wevuRuntime?: WevuRuntimeAliasMode) => void
   resolvedLibConfig: LoadConfigResult['weappLib']
   cliPlatform?: string
   projectConfigPath?: string
@@ -41,7 +42,6 @@ export function configureBuildAndPlugins(options: {
 }) {
   const {
     config,
-    pluginOnly,
     oxcRolldownPlugin,
     oxcVitePlugin,
     injectBuiltinAliases,
@@ -93,6 +93,13 @@ export function configureBuildAndPlugins(options: {
     if (!Object.prototype.hasOwnProperty.call(oxcOptions, 'tsconfig')) {
       oxcOptions.tsconfig = false
     }
+    if (
+      config.esbuild !== false
+      && config.esbuild?.jsx === 'preserve'
+      && !Object.prototype.hasOwnProperty.call(oxcOptions, 'jsx')
+    ) {
+      oxcOptions.jsx = 'preserve'
+    }
     config.oxc = oxcOptions as InlineConfig['oxc']
   }
   const rdTransform = (rdOptions.transform ?? {}) as Record<string, unknown>
@@ -100,9 +107,7 @@ export function configureBuildAndPlugins(options: {
     rdTransform.tsconfig = false
   }
   rdOptions.transform = rdTransform
-  if (pluginOnly) {
-    rdOptions.preserveEntrySignatures = 'exports-only'
-  }
+  rdOptions.preserveEntrySignatures ??= 'exports-only'
   if (Array.isArray(rdOptions.output)) {
     rdOptions.output = rdOptions.output.map(output => ({ ...output, format: jsFormat }))
   }
@@ -150,7 +155,11 @@ export function configureBuildAndPlugins(options: {
     rd.plugins = arr.includes(oxcRolldownPlugin) ? arr : [oxcRolldownPlugin, ...arr]
   }
 
-  injectBuiltinAliases(config)
+  const {
+    normalizedCliPlatform,
+    isWebRuntime,
+  } = resolveCliPlatformRuntime(cliPlatform)
+  injectBuiltinAliases(config, isWebRuntime ? 'build' : undefined)
   if (oxcVitePlugin) {
     config.plugins ??= []
     config.plugins.unshift(oxcVitePlugin)
@@ -158,10 +167,6 @@ export function configureBuildAndPlugins(options: {
 
   const platform = config.weapp?.platform ?? DEFAULT_MP_PLATFORM
   const multiPlatform = resolveMultiPlatformConfig(config.weapp?.multiPlatform)
-  const {
-    normalizedCliPlatform,
-    isWebRuntime,
-  } = resolveCliPlatformRuntime(cliPlatform)
   if (multiPlatform.enabled && !isWebRuntime && !normalizedCliPlatform) {
     throw new Error('已开启 weapp.multiPlatform，请通过 --platform 指定目标小程序平台，例如：weapp-vite dev -p weapp')
   }

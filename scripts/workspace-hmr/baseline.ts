@@ -77,6 +77,7 @@ export function createWorkspaceHmrBaseline(
     projects: Object.fromEntries(selectedResults.map((project) => {
       return [project.id, {
         startupMs: roundMetric(project.startupMs),
+        thresholds: project.thresholds,
         scenarios: Object.fromEntries(project.scenarios.map((scenario) => {
           return [scenario.id, {
             totalMs: roundMetric(scenario.totalMs),
@@ -104,16 +105,27 @@ export function evaluateWorkspaceHmrThresholds(
     .filter((value): value is number => typeof value === 'number')
   const scenarioP95Ms = percentile(measuredScenarioMs, 0.95)
   const globalThresholds = mergeThresholds(DEFAULT_BASELINE_THRESHOLDS, options.baseline?.thresholds, options.overrides)
-  const baselineScenarioP95Ms = percentile(collectBaselineScenarioTimes(results, options.baseline), 0.95)
+  const globalP95Results = results.filter((project) => {
+    const baselineProject = options.baseline?.projects[project.baselineId ?? project.id]
+    return project.thresholds?.maxScenarioP95Ms == null
+      && baselineProject?.thresholds?.maxScenarioP95Ms == null
+  })
+  const globalScenarioP95Ms = percentile(
+    globalP95Results
+      .flatMap(project => project.scenarios.map(scenario => scenario.totalMs))
+      .filter((value): value is number => typeof value === 'number'),
+    0.95,
+  )
+  const baselineScenarioP95Ms = percentile(collectBaselineScenarioTimes(globalP95Results, options.baseline), 0.95)
 
-  if (scenarioP95Ms != null && globalThresholds.maxScenarioP95Ms != null && scenarioP95Ms > globalThresholds.maxScenarioP95Ms) {
+  if (globalScenarioP95Ms != null && globalThresholds.maxScenarioP95Ms != null && globalScenarioP95Ms > globalThresholds.maxScenarioP95Ms) {
     checkAbsoluteLimit(issues, {
       project: '<workspace>',
       metric: 'scenarioP95Ms',
-      actual: scenarioP95Ms,
+      actual: globalScenarioP95Ms,
       limit: resolveBaselineAwareLimit(globalThresholds.maxScenarioP95Ms, baselineScenarioP95Ms, globalThresholds),
       baseline: baselineScenarioP95Ms,
-      message: limit => `HMR P95 ${formatNumber(scenarioP95Ms)}ms exceeds ${formatNumber(limit)}ms`,
+      message: limit => `HMR P95 ${formatNumber(globalScenarioP95Ms)}ms exceeds ${formatNumber(limit)}ms`,
     })
   }
 
@@ -122,7 +134,35 @@ export function evaluateWorkspaceHmrThresholds(
     if (options.baseline?.scope === 'templates' && project.kind === 'templates' && !baselineProject) {
       issues.push(createMissingBaselineIssue(project.id, 'project'))
     }
-    const projectThresholds = mergeThresholds(globalThresholds, baselineProject?.thresholds)
+    const projectThresholds = mergeThresholds(globalThresholds, project.thresholds, baselineProject?.thresholds)
+
+    if (project.thresholds?.maxScenarioP95Ms != null || baselineProject?.thresholds?.maxScenarioP95Ms != null) {
+      const projectScenarioP95Ms = percentile(
+        project.scenarios
+          .map(scenario => scenario.totalMs)
+          .filter((value): value is number => typeof value === 'number'),
+        0.95,
+      )
+      const baselineProjectP95Ms = percentile(
+        project.scenarios
+          .map(scenario => baselineProject?.scenarios[scenario.id]?.totalMs)
+          .filter((value): value is number => typeof value === 'number'),
+        0.95,
+      )
+      if (projectScenarioP95Ms != null && projectThresholds.maxScenarioP95Ms != null) {
+        checkAbsoluteLimit(issues, {
+          project: project.id,
+          metric: 'scenarioP95Ms',
+          actual: projectScenarioP95Ms,
+          limit: resolveBaselineAwareLimit(
+            projectThresholds.maxScenarioP95Ms,
+            baselineProjectP95Ms,
+            projectThresholds,
+          ),
+          baseline: baselineProjectP95Ms,
+        })
+      }
+    }
 
     if (project.startupMs != null) {
       checkAbsoluteLimit(issues, {

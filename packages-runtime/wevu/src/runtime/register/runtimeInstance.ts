@@ -20,10 +20,13 @@ import {
   WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PROPS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_RUNTIME_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_TEMPLATE_REFS_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
 import { isRef } from '../../reactivity'
+import { isDeepEqualValue } from '../app/setData/snapshot'
 import { callHookList } from '../hooks'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
 import { allocateOwnerId, attachOwnerSnapshot, mergeOwnerSnapshotProps, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
@@ -31,6 +34,7 @@ import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
 import { attachRuntimeProvideParentContext } from './runtimeInstance/provideContext'
 import {
+  attachRuntimeSlots,
   createNoopWatchStopHandle,
   safeMarkNoSetData,
 } from './runtimeInstance/setupContext'
@@ -174,19 +178,23 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   })
   const createDeferredAdapter = (instance: InternalRuntimeState): AdapterWithSetData => {
     let pending: Record<string, any> | undefined
+    let pendingCallbacks: Array<() => void> = []
     let enabled = false
     const adapter: AdapterWithSetData = {
-      setData(payload: Record<string, any>) {
+      setData(payload: Record<string, any>, callback?: () => void) {
         if (!enabled) {
           pending = {
             ...(pending ?? {}),
             ...payload,
           }
+          if (callback) {
+            pendingCallbacks.push(callback)
+          }
           return undefined
         }
         const setData = resolveNativeSetData(instance)
         if (setData) {
-          return callNativeSetData(instance, setData, payload)
+          return callNativeSetData(instance, setData, payload, callback)
         }
         return undefined
       },
@@ -195,12 +203,18 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       enabled = true
       if (discardPending) {
         pending = undefined
+        pendingCallbacks = []
       }
       const setData = resolveNativeSetData(instance)
       if (pending && Object.keys(pending).length && setData) {
         const payload = pending
+        const callbacks = pendingCallbacks
         pending = undefined
-        callNativeSetData(instance, setData, payload)
+        pendingCallbacks = []
+        const callback = callbacks.length
+          ? () => callbacks.forEach(callback => callback())
+          : undefined
+        callNativeSetData(instance, setData, payload, callback)
       }
     }
     return adapter
@@ -209,10 +223,10 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const baseAdapter: AdapterWithSetData = options?.deferSetData
     ? createDeferredAdapter(target)
     : {
-        setData(payload: Record<string, any>) {
+        setData(payload: Record<string, any>, callback?: () => void) {
           const setData = resolveNativeSetData(target)
           if (setData) {
-            return callNativeSetData(target, setData, payload)
+            return callNativeSetData(target, setData, payload, callback)
           }
           return undefined
         },
@@ -231,8 +245,8 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     }
     const snapshot = resolveOwnerSnapshot(runtimeRef)
     const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
-    mergeOwnerSnapshotProps(snapshot, propsSource, runtimeRef)
-    updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy)
+    mergeOwnerSnapshotProps(snapshot, propsSource)
+    updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy, target)
   }
   const syncNativeOwnerId = () => {
     if (!shouldFlushNativeOwnerId) {
@@ -263,8 +277,19 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         scheduleTemplateRefUpdate(target)
         return undefined
       }
-      const result = baseAdapter.setData(payload)
+      const hasTemplateRefs = Array.isArray((target as any)[WEVU_TEMPLATE_REFS_KEY])
+        && (target as any)[WEVU_TEMPLATE_REFS_KEY].length > 0
       refreshOwnerSnapshot()
+      if (hasTemplateRefs && resolveNativeSetData(target)) {
+        return new Promise<void>((resolve) => {
+          baseAdapter.setData(payload, () => {
+            refreshOwnerSnapshot()
+            scheduleTemplateRefUpdate(target)
+            resolve()
+          })
+        })
+      }
+      const result = baseAdapter.setData(payload)
       scheduleTemplateRefUpdate(target)
       return result
     },
@@ -275,8 +300,19 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       }
       const payload = hiddenPendingPayload
       hiddenPendingPayload = undefined
-      const result = baseAdapter.setData(payload)
+      const hasTemplateRefs = Array.isArray((target as any)[WEVU_TEMPLATE_REFS_KEY])
+        && (target as any)[WEVU_TEMPLATE_REFS_KEY].length > 0
       refreshOwnerSnapshot()
+      if (hasTemplateRefs && resolveNativeSetData(target)) {
+        return new Promise<void>((resolve) => {
+          baseAdapter.setData(payload, () => {
+            refreshOwnerSnapshot()
+            scheduleTemplateRefUpdate(target)
+            resolve()
+          })
+        })
+      }
+      const result = baseAdapter.setData(payload)
       scheduleTemplateRefUpdate(target)
       return result
     },
@@ -284,6 +320,21 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
 
   const baseMountAdapter = {
     ...(adapter as any),
+  }
+  Object.defineProperty(baseMountAdapter, '__wevu_targetLabel', {
+    configurable: true,
+    enumerable: false,
+    value: targetLabel,
+    writable: false,
+  })
+  const targetProperties = (target as any).properties
+  if (targetProperties && typeof targetProperties === 'object') {
+    Object.defineProperty(baseMountAdapter, '__wevu_initialProps', {
+      configurable: true,
+      enumerable: false,
+      value: targetProperties,
+      writable: false,
+    })
   }
   if (Array.isArray(options?.snapshotOmitKeys) && options.snapshotOmitKeys.length) {
     Object.defineProperty(baseMountAdapter, '__wevu_snapshotOmitKeys', {
@@ -314,8 +365,8 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     value: { [WEVU_SLOT_OWNER_ID_KEY]: ownerId },
     writable: false,
   })
-  const targetProperties = (target as any).properties
-  const shouldDeferInitialSnapshot = Boolean(setup)
+  const shouldDeferInitialSnapshot = Boolean(options?.deferSetData)
+    || Boolean(setup)
     || Boolean(targetProperties && typeof targetProperties === 'object' && Object.keys(targetProperties).length > 0)
   if (shouldDeferInitialSnapshot) {
     Object.defineProperty(baseMountAdapter, '__wevu_deferInitialSnapshot', {
@@ -360,6 +411,12 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     snapshot: (runtime as any)?.snapshot ?? (() => Object.create(null)),
     unmount: (runtime as any)?.unmount ?? (() => {}),
   } satisfies RuntimeInstance<any, any, any>
+  Object.defineProperty(runtimeWithDefaults, '__wevu_initialRuntimeSnapshot', {
+    configurable: true,
+    enumerable: false,
+    value: cloneInitialSnapshotValue(runtimeState),
+    writable: false,
+  })
   const runtimeWithSyncFlush = runtimeWithDefaults as RuntimeInstanceWithSyncFlush<D, C, M>
   const internalRuntimeFields = {
     __wevu_flushSetupSnapshotSync: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_flushSetupSnapshotSync,
@@ -387,16 +444,21 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   })
   target.__wevu = runtimeWithDefaults
   attachPageLayoutSetter(target)
-  ensureRuntimeProps(target, runtimeState as Record<string, any>)
+  const runtimeProps = ensureRuntimeProps(target, runtimeState as Record<string, any>)
+  attachRuntimeSlots(runtimeState as Record<string, any>, runtimeProps)
 
-  attachOwnerSnapshot(target, runtimeWithDefaults as any, ownerId)
+  attachOwnerSnapshot(target, runtimeWithDefaults as any, ownerId, {
+    deferSnapshot: options?.deferSetData,
+  })
   syncNativeOwnerId()
 
-  if (watchMap) {
-    const stops = registerWatches(runtimeWithDefaults, watchMap, target)
-    if (stops.length) {
-      target[WEVU_WATCH_STOPS_KEY] = stops
-    }
+  const watchStops = watchMap
+    ? registerWatches(runtimeWithDefaults, watchMap, target, {
+        deferMissingSourceBaseline: Boolean(setup),
+      })
+    : []
+  if (watchStops.length) {
+    target[WEVU_WATCH_STOPS_KEY] = watchStops
   }
 
   if (setup) {
@@ -411,10 +473,16 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     if (!options?.deferSetData) {
       runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
     }
-    refreshOwnerSnapshot()
+    if (!options?.deferSetData) {
+      refreshOwnerSnapshot()
+    }
+    for (const stop of watchStops) {
+      stop.resume()
+    }
   }
   else if (
-    (target as any).properties
+    !options?.deferSetData
+    && (target as any).properties
     && typeof (target as any).properties === 'object'
     && Object.keys((target as any).properties).length > 0
   ) {
@@ -469,38 +537,40 @@ function preserveRuntimeFacadeIdentity<D extends object, C extends ComputedDefin
   return previousRuntime
 }
 
-/**
- * 重建运行时实例，同时保持宿主包装对象持有的 runtime facade 身份稳定。
- * @internal
- */
-export function refreshRuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
-  target: InternalRuntimeState,
-  runtimeApp: RuntimeApp<D, C, M>,
-  watchMap: WatchMap | undefined,
-  setup?: RuntimeSetupFunction<D, C, M>,
-  options?: { snapshotOmitKeys?: string[] },
+function createRuntimeStateSnapshot(
+  runtime: RuntimeInstance<any, any, any>,
+  nativeData: Record<string, any> | undefined,
+  preferredState?: Record<string, any>,
 ) {
-  const previousRuntime = target.__wevu as RuntimeInstance<D, C, M> | undefined
-  // eslint-disable-next-line ts/no-use-before-define
-  teardownRuntimeInstance(target, { skipHooks: true })
-  const nextRuntime = mountRuntimeInstance(target, runtimeApp, watchMap, setup, {
-    deferSetData: true,
-    snapshotOmitKeys: options?.snapshotOmitKeys,
-  })
-  if (!previousRuntime || previousRuntime === nextRuntime) {
-    return nextRuntime
+  const runtimeState = runtime.state as Record<string, any>
+  const setupState = runtime.setupState as Record<string, any> | undefined
+  const snapshot: Record<string, any> = {}
+  for (const key of Object.keys(nativeData ?? {})) {
+    if (!Object.prototype.hasOwnProperty.call(runtimeState, key)) {
+      continue
+    }
+    if (preferredState && Object.prototype.hasOwnProperty.call(preferredState, key)) {
+      snapshot[key] = cloneInitialSnapshotValue(preferredState[key])
+      continue
+    }
+    const setupBinding = setupState?.[key]
+    snapshot[key] = cloneInitialSnapshotValue(isRef(setupBinding) ? setupBinding.value : runtimeState[key])
   }
-  return preserveRuntimeFacadeIdentity(target, previousRuntime, nextRuntime)
+  return snapshot
 }
 
-function syncRuntimeStateFromNativeData(target: InternalRuntimeState) {
+function syncRuntimeStateFromNativeData(
+  target: InternalRuntimeState,
+  options?: { includeSetupState?: boolean, nativeData?: Record<string, any> },
+) {
   const runtime = target.__wevu
   const runtimeState = runtime?.state as Record<string, any> | undefined
   const setupState = runtime?.setupState as Record<string, any> | undefined
-  const nativeData = (target as any).data as Record<string, any> | undefined
+  const nativeData = options?.nativeData ?? (target as any).data as Record<string, any> | undefined
   if (!runtimeState || typeof runtimeState !== 'object' || !nativeData || typeof nativeData !== 'object') {
     return
   }
+  const initialRuntimeSnapshot = (runtime as any)?.__wevu_initialRuntimeSnapshot as Record<string, any> | undefined
   for (const [key, value] of Object.entries(nativeData)) {
     if (!key || key === 'undefined') {
       continue
@@ -508,11 +578,30 @@ function syncRuntimeStateFromNativeData(target: InternalRuntimeState) {
     if (Object.prototype.hasOwnProperty.call(runtimeState, key)) {
       try {
         const setupBinding = setupState?.[key]
-        if (isRef(setupBinding)) {
-          setupBinding.value = value
+        const runtimeValue = cloneInitialSnapshotValue(value)
+        if (!options?.includeSetupState && setupState && Object.prototype.hasOwnProperty.call(setupState, key)) {
           continue
         }
-        runtimeState[key] = value
+        if (
+          !options?.includeSetupState
+          && initialRuntimeSnapshot
+          && Object.prototype.hasOwnProperty.call(initialRuntimeSnapshot, key)
+          && !isDeepEqualValue(runtimeState[key], initialRuntimeSnapshot[key], 20, { keys: 10_000 })
+        ) {
+          continue
+        }
+        if (
+          !options?.includeSetupState
+          && initialRuntimeSnapshot
+          && !Object.prototype.hasOwnProperty.call(initialRuntimeSnapshot, key)
+        ) {
+          continue
+        }
+        if (isRef(setupBinding)) {
+          setupBinding.value = runtimeValue
+          continue
+        }
+        runtimeState[key] = runtimeValue
       }
       catch {
         // DevTools 热更新期间可能带入响应式 state 拒绝写入的临时 data key，跳过即可。
@@ -521,9 +610,14 @@ function syncRuntimeStateFromNativeData(target: InternalRuntimeState) {
   }
 }
 
-export function enableDeferredSetData(target: InternalRuntimeState) {
+export function enableDeferredSetData(
+  target: InternalRuntimeState,
+  options?: { rehydrateSetupState?: boolean },
+) {
   const adapter = (target as any).__wevu?.adapter
-  syncRuntimeStateFromNativeData(target)
+  syncRuntimeStateFromNativeData(target, {
+    includeSetupState: options?.rehydrateSetupState,
+  })
   if (adapter && typeof (adapter as any).__wevu_enableSetData === 'function') {
     ;(adapter as any).__wevu_enableSetData(true)
   }
@@ -543,7 +637,8 @@ export function setRuntimeSetDataVisibility(target: InternalRuntimeState, visibl
  */
 export function teardownRuntimeInstance(target: InternalRuntimeState, options?: { skipHooks?: boolean }) {
   const runtime = target.__wevu
-  const ownerId = (target as any)[WEVU_SLOT_OWNER_ID_KEY]
+  const ownerId = (target as any)[WEVU_RUNTIME_OWNER_ID_KEY]
+    ?? (target as any)[WEVU_SLOT_OWNER_ID_KEY]
   if (ownerId) {
     removeOwner(ownerId)
   }
@@ -577,4 +672,40 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
   if (WEVU_PUBLIC_RUNTIME_KEY in target) {
     delete (target as any)[WEVU_PUBLIC_RUNTIME_KEY]
   }
+}
+
+/**
+ * 重建运行时实例，同时保持宿主包装对象持有的 runtime facade 身份稳定。
+ * @internal
+ */
+export function refreshRuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  target: InternalRuntimeState,
+  runtimeApp: RuntimeApp<D, C, M>,
+  watchMap: WatchMap | undefined,
+  setup?: RuntimeSetupFunction<D, C, M>,
+  options?: { snapshotOmitKeys?: string[], stateSnapshot?: Record<string, any> },
+) {
+  const previousRuntime = target.__wevu as RuntimeInstance<D, C, M> | undefined
+  const previousRuntimeState = previousRuntime
+    ? createRuntimeStateSnapshot(previousRuntime, (target as any).data, options?.stateSnapshot)
+    : undefined
+  teardownRuntimeInstance(target, { skipHooks: true })
+  const nextRuntime = mountRuntimeInstance(target, runtimeApp, watchMap, setup, {
+    deferSetData: true,
+    snapshotOmitKeys: options?.snapshotOmitKeys,
+  })
+  if (previousRuntimeState) {
+    const nativeData = (target as any).data
+    if (nativeData && typeof nativeData === 'object') {
+      Object.assign(nativeData, cloneInitialSnapshotValue(previousRuntimeState))
+    }
+    syncRuntimeStateFromNativeData(target, {
+      includeSetupState: true,
+      nativeData: previousRuntimeState,
+    })
+  }
+  if (!previousRuntime || previousRuntime === nextRuntime) {
+    return nextRuntime
+  }
+  return preserveRuntimeFacadeIdentity(target, previousRuntime, nextRuntime)
 }

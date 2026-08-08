@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/mcp",
   "type": "module",
-  "version": "1.4.8",
+  "version": "1.4.12",
   "description": "mcp",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "ISC",
@@ -46,7 +46,7 @@
   },
   "publishConfig": {},
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@weapp-vite/devtools-runtime": "workspace:*",
     "zod": "catalog:"
   }

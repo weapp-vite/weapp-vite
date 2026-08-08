@@ -3,6 +3,11 @@ export interface ResolvedValue {
   from: string
   resolvedId?: string
   sourceType?: 'wevu-sfc' | 'native'
+  /**
+   * 是否允许 `components.d.ts` 通过 `import()` 直接引用组件源码。
+   * 需要编译期方言转换、且源码声明不能被消费端直接检查的外部 SFC 应设为 `false`。
+   */
+  typeImport?: boolean
 }
 
 export type ResolverSupportFilesStrategy = 'used' | 'full'

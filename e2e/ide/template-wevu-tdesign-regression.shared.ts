@@ -29,9 +29,11 @@ async function waitForRoute(miniProgram: any, route: string, timeoutMs = 8_000) 
 export function createTemplateWevuTdesignRegressionLaunchOptions(projectPath: string) {
   return {
     projectPath,
+    refreshProjectAfterConnect: true,
+    retryWarmupTimeout: true,
     skipRelaunchPageRootCheck: true,
     warmupAnyPage: true,
-    warmupAllowRelaunch: false,
+    warmupAllowRelaunch: true,
     warmupRoute: WARMUP_ROUTE,
   }
 }
@@ -66,12 +68,6 @@ export async function assertTemplateWevuTdesignRegressionPageProtocol(miniProgra
 }
 
 export async function relaunchTemplateWevuTdesignRegressionPage(ctx: any, miniProgram: any, route: string, label: string) {
-  await assertTemplateWevuTdesignRegressionPageProtocol(miniProgram).catch((error: unknown) => {
-    if (isTemplateWevuTdesignRegressionPageProtocolUnavailable(error)) {
-      ctx.skip(createTemplateWevuTdesignRegressionSkipMessage(label))
-    }
-    throw error
-  })
   let lastError: unknown
   for (let attempt = 1; attempt <= RELAUNCH_ATTEMPTS; attempt += 1) {
     try {

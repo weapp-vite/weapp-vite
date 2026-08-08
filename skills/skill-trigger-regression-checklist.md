@@ -291,6 +291,25 @@ pnpm skills:score:json
 3. 冲突场景下，主 skill 判断与问题主轴一致。
 4. 回答中包含结构化输出（诊断、改动、验证）视为加分项。
 
+## 近期能力边界用例
+
+### K. 能力主题路由
+
+1. 提问：微信开发者工具里想保留页面状态做 HMR，同时要知道什么变化会完整重载。
+   预期 skill：`weapp-vite-best-practices`
+2. 提问：项目同时有主应用和插件，改了 pluginRoot 后怎么验证 dist 和 dist-plugin。
+   预期 skill：`weapp-vite-best-practices`
+3. 提问：我们要把原生 router 调用迁到 wevu/router，并处理 forward 失败语义。
+   预期 skill：`wevu-best-practices`
+4. 提问：DevTools 里 fetch 能用但 axios 报 URL is not a constructor，如何记录和隔离这个问题。
+   预期 skill：`weapp-devtools-e2e-best-practices`
+5. 提问：native AST 优化想拆成多个 N-API 查询，如何判断是否违反性能边界。
+   预期 skill：`weapp-vite-best-practices`
+6. 提问：新增一个公开 skill 后，website、AGENTS、元数据和触发评分需要怎么同步。
+   预期 skill：`docs-and-website-sync`
+
+这些用例使用 K1-K6 作为评分脚本的稳定 ID。
+
 ## 记录模板
 
 | 编号 | 提问 | 预期 skill | 实际 skill | 结果(P/F) | 备注 |
@@ -354,3 +373,9 @@ pnpm skills:score:json
 | J4   |      |            |            |           |      |
 | J5   |      |            |            |           |      |
 | X9   |      |            |            |           |      |
+| K1   |      |            |            |           |      |
+| K2   |      |            |            |           |      |
+| K3   |      |            |            |           |      |
+| K4   |      |            |            |           |      |
+| K5   |      |            |            |           |      |
+| K6   |      |            |            |           |      |

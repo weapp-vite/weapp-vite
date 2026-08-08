@@ -1,10 +1,13 @@
+import type { NavigationBarConfig } from '../../../compiler/wxml'
 import type { ComponentOptions, ComponentPublicInstance } from '../../component'
 import type { TemplateRenderer } from '../../template'
+import type { MiniProgramAsyncOptions, MiniProgramBaseResult } from '../types'
 
 export interface RegisterMeta {
   id: string
   template?: TemplateRenderer
   style?: string
+  navigationBar?: NavigationBarConfig
 }
 
 export interface PageHooks {
@@ -19,6 +22,7 @@ export interface PageRecord {
   tag: string
   hooks: PageHooks
   instances: Set<ComponentPublicInstance>
+  navigationBar?: NavigationBarConfig
 }
 
 export interface ComponentRecord {
@@ -28,7 +32,10 @@ export interface ComponentRecord {
 export interface PageStackEntry {
   id: string
   query: Record<string, string>
+  active: boolean
+  element?: HTMLElement & ComponentPublicInstance
   instance?: ComponentPublicInstance
+  scrollTop?: number
 }
 
 export interface RouteMeta {
@@ -40,6 +47,7 @@ export interface RouteMeta {
 interface AppLifecycleHooks {
   onLaunch?: (this: AppRuntime, options: AppLaunchOptions) => void
   onShow?: (this: AppRuntime, options: AppLaunchOptions) => void
+  onHide?: (this: AppRuntime) => void
 }
 
 export type AppRuntime = Record<string, unknown> & Partial<AppLifecycleHooks> & {
@@ -51,6 +59,14 @@ export interface AppLaunchOptions {
   scene: number
   query: Record<string, string>
   referrerInfo: Record<string, unknown>
+}
+
+export interface RouteOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
+  url: string
+}
+
+export interface NavigateBackOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
+  delta?: number
 }
 
 type MethodHandler = (this: ComponentPublicInstance, ...args: unknown[]) => unknown
@@ -82,10 +98,7 @@ const RESERVED_COMPONENT_METHOD_KEYS = new Set([
   'mixins',
 ])
 
-function cloneLifetimes(source?: ComponentOptions['lifetimes']): ComponentOptions['lifetimes'] {
-  if (!source) {
-    return undefined
-  }
+function cloneLifetimes(source: NonNullable<ComponentOptions['lifetimes']>): ComponentOptions['lifetimes'] {
   return {
     ...source,
   }

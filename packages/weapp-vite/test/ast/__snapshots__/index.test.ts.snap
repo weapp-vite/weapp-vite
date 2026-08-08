@@ -11,7 +11,22 @@ exports[`require > case0.js > requireTokens 1`] = `
 ]
 `;
 
-exports[`require > case1.js > requireTokens 1`] = `[]`;
+exports[`require > case1.js > requireTokens 1`] = `
+[
+  {
+    "async": true,
+    "callEnd": 151,
+    "callStart": 12,
+    "end": 48,
+    "errorCallbackEnd": 150,
+    "errorCallbackStart": 81,
+    "start": 20,
+    "successCallbackEnd": 79,
+    "successCallbackStart": 50,
+    "value": "../../subpackage/common.js",
+  },
+]
+`;
 
 exports[`require > case2.js > requireTokens 1`] = `[]`;
 

@@ -1,4 +1,10 @@
 /// <reference types="miniprogram-api-typings" />
+import {
+  WEAPP_VITE_RUNTIME_REACTIVITY_VIRTUAL_ID,
+  WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID,
+  WEAPP_VITE_RUNTIME_VIRTUAL_ID,
+} from '@weapp-core/constants'
+
 export const WE_VU_PAGE_HOOK_TO_FEATURE = {
   onPageScroll: 'enableOnPageScroll',
   onPullDownRefresh: 'enableOnPullDownRefresh',
@@ -42,11 +48,29 @@ export const WE_VU_INTERNAL_REACTIVITY_MODULE_ID = 'wevu/internal-reactivity' as
 export const WE_VU_INTERNAL_TEMPLATE_MODULE_ID = 'wevu/internal-template' as const
 
 /**
+ * wevu 编译产物使用的稳定运行时虚拟模块 ID。
+ */
+export const WE_VU_COMPILER_RUNTIME_MODULE_ID = WEAPP_VITE_RUNTIME_VIRTUAL_ID
+
+/**
+ * wevu 编译产物使用的稳定响应式虚拟模块 ID。
+ */
+export const WE_VU_COMPILER_REACTIVITY_MODULE_ID = WEAPP_VITE_RUNTIME_REACTIVITY_VIRTUAL_ID
+
+/**
+ * wevu 编译产物使用的稳定模板工具虚拟模块 ID。
+ */
+export const WE_VU_COMPILER_TEMPLATE_MODULE_ID = WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID
+
+/**
  * wevu 运行时模块 ID 列表。
  */
 export const WE_VU_RUNTIME_MODULE_IDS = [
   WE_VU_MODULE_ID,
   WE_VU_INTERNAL_RUNTIME_MODULE_ID,
+  WE_VU_COMPILER_RUNTIME_MODULE_ID,
+  WE_VU_COMPILER_REACTIVITY_MODULE_ID,
+  WE_VU_COMPILER_TEMPLATE_MODULE_ID,
 ] as const
 
 /**
@@ -139,10 +163,10 @@ const WE_VU_INTERNAL_TEMPLATE_API_SET = new Set<string>(WE_VU_INTERNAL_TEMPLATE_
  */
 export function resolveWevuInternalImportModuleId(apiName: string) {
   if (WE_VU_INTERNAL_REACTIVITY_API_SET.has(apiName)) {
-    return WE_VU_INTERNAL_REACTIVITY_MODULE_ID
+    return WE_VU_COMPILER_REACTIVITY_MODULE_ID
   }
   if (WE_VU_INTERNAL_TEMPLATE_API_SET.has(apiName)) {
-    return WE_VU_INTERNAL_TEMPLATE_MODULE_ID
+    return WE_VU_COMPILER_TEMPLATE_MODULE_ID
   }
-  return WE_VU_INTERNAL_RUNTIME_MODULE_ID
+  return WE_VU_COMPILER_RUNTIME_MODULE_ID
 }

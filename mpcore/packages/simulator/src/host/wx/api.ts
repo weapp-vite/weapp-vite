@@ -5,9 +5,12 @@ import type {
   HeadlessWxCallbackOption,
   HeadlessWxCanvasContext,
   HeadlessWxCreateIntersectionObserverOption,
+  HeadlessWxDeviceInfoResult,
   HeadlessWxGetAppBaseInfoOption,
   HeadlessWxGetClipboardDataOption,
   HeadlessWxGetClipboardDataResult,
+  HeadlessWxGetLocationOption,
+  HeadlessWxGetLocationResult,
   HeadlessWxGetNetworkTypeOption,
   HeadlessWxGetNetworkTypeResult,
   HeadlessWxGetStorageInfoOption,
@@ -17,6 +20,8 @@ import type {
   HeadlessWxGetWindowInfoOption,
   HeadlessWxIntersectionObserver,
   HeadlessWxLaunchOptions,
+  HeadlessWxLoadFontFaceOption,
+  HeadlessWxLoadFontFaceResult,
   HeadlessWxMenuButtonBoundingClientRectResult,
   HeadlessWxNavigateBackOption,
   HeadlessWxNavigateOption,
@@ -32,6 +37,7 @@ import type {
   HeadlessWxVideoContext,
   HeadlessWxWindowInfoResult,
 } from './core'
+import type { HeadlessUniEventBus } from './eventBus'
 import type { HeadlessWxFileSystemManager } from './fileSystem'
 import type {
   HeadlessWxCanvasToTempFilePathOption,
@@ -103,6 +109,7 @@ export interface HeadlessWxDriver extends HeadlessWxDriverCapabilities {
   compressImage: (option: HeadlessWxCompressImageOption) => HeadlessWxCompressImageResult
   getFileInfo: (option: HeadlessWxGetFileInfoOption) => HeadlessWxGetFileInfoResult
   getImageInfo: (option: HeadlessWxGetImageInfoOption) => HeadlessWxGetImageInfoResult
+  getLocation: (option?: HeadlessWxGetLocationOption) => HeadlessWxGetLocationResult
   getVideoInfo: (option: HeadlessWxGetVideoInfoOption) => HeadlessWxGetVideoInfoResult
   getFileSystemManager: () => HeadlessWxFileSystemManager
   getSavedFileInfo: (option: HeadlessWxGetSavedFileInfoOption) => HeadlessWxGetSavedFileInfoSuccessResult
@@ -119,7 +126,7 @@ export interface HeadlessWxDriver extends HeadlessWxDriverCapabilities {
   uploadFile: (option: HeadlessWxUploadFileOption) => HeadlessWxRequestTask
 }
 
-export interface HeadlessWx {
+export interface HeadlessWx extends HeadlessUniEventBus {
   canIUse: (schema: string) => boolean
   chooseImage: (option?: HeadlessWxChooseImageOption) => HeadlessWxChooseImageResult | undefined
   chooseMessageFile: (option?: HeadlessWxChooseMessageFileOption) => HeadlessWxChooseMessageFileResult | undefined
@@ -139,6 +146,7 @@ export interface HeadlessWx {
   createSelectorQuery: () => HeadlessWxSelectorQuery
   getFileInfo: (option: HeadlessWxGetFileInfoOption) => HeadlessWxGetFileInfoResult | undefined
   getImageInfo: (option: HeadlessWxGetImageInfoOption) => HeadlessWxGetImageInfoResult | undefined
+  getLocale: () => string
   getVideoInfo: (option: HeadlessWxGetVideoInfoOption) => HeadlessWxGetVideoInfoResult | undefined
   getFileSystemManager: () => HeadlessWxFileSystemManager
   getSavedFileInfo: (option: HeadlessWxGetSavedFileInfoOption) => HeadlessWxGetSavedFileInfoSuccessResult | undefined
@@ -146,9 +154,11 @@ export interface HeadlessWx {
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getAppBaseInfo: (option?: HeadlessWxGetAppBaseInfoOption) => HeadlessWxAppBaseInfoResult | undefined
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
+  getDeviceInfo: () => HeadlessWxDeviceInfoResult
   getLaunchOptionsSync: () => HeadlessWxLaunchOptions
   getMenuButtonBoundingClientRect: () => HeadlessWxMenuButtonBoundingClientRectResult
   getClipboardData: (option?: HeadlessWxGetClipboardDataOption) => HeadlessWxGetClipboardDataResult | undefined
+  getLocation: (option?: HeadlessWxGetLocationOption) => HeadlessWxGetLocationResult | undefined
   getNetworkType: (option?: HeadlessWxGetNetworkTypeOption) => HeadlessWxGetNetworkTypeResult | undefined
   getStorageInfo: (option?: HeadlessWxGetStorageInfoOption) => HeadlessWxStorageInfoResult | undefined
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
@@ -158,6 +168,7 @@ export interface HeadlessWx {
   getSystemInfoSync: () => HeadlessWxSystemInfoResult
   getWindowInfo: (option?: HeadlessWxGetWindowInfoOption) => HeadlessWxWindowInfoResult | undefined
   getWindowInfoSync: () => HeadlessWxWindowInfoResult
+  loadFontFace: (option: HeadlessWxLoadFontFaceOption) => HeadlessWxLoadFontFaceResult | undefined
   hideLoading: (option?: HeadlessWxHideLoadingOption) => { errMsg: string } | undefined
   hideToast: () => { errMsg: string }
   downloadFile: (option: HeadlessWxDownloadFileOption) => HeadlessWxRequestTask
@@ -176,6 +187,7 @@ export interface HeadlessWx {
   saveVideoToPhotosAlbum: (option: HeadlessWxSaveVideoToPhotosAlbumOption) => HeadlessWxSaveVideoToPhotosAlbumResult | undefined
   removeStorage: (option: HeadlessWxRemoveStorageOption) => HeadlessWxStorageResult | undefined
   removeStorageSync: (key: string) => void
+  rpx2px: (value: number) => number
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
   saveFile: (option: HeadlessWxSaveFileOption) => HeadlessWxSaveFileSuccessResult | undefined
   setBackgroundColor: (option: HeadlessWxSetBackgroundColorOption) => { errMsg: string } | undefined
@@ -204,4 +216,5 @@ export interface HeadlessWx {
   removeTabBarBadge: (option: HeadlessWxTabBarItemOption) => { errMsg: string } | undefined
   setTabBarBadge: (option: HeadlessWxSetTabBarBadgeOption) => { errMsg: string } | undefined
   updateShareMenu: (option?: HeadlessWxShareMenuOption) => { errMsg: string } | undefined
+  upx2px: (value: number) => number
 }

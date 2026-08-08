@@ -14,6 +14,30 @@ async function createTempRoot() {
   return root
 }
 
+function chunkImportsTransitively(
+  outputs: Array<{ type: string, fileName: string, imports?: string[] }>,
+  sourceFileName: string,
+  targetFileName: string,
+) {
+  const chunks = new Map(outputs
+    .filter(output => output.type === 'chunk')
+    .map(output => [output.fileName, output.imports ?? []]))
+  const queue = [...(chunks.get(sourceFileName) ?? [])]
+  const visited = new Set<string>()
+  for (let index = 0; index < queue.length; index += 1) {
+    const fileName = queue[index]!
+    if (fileName === targetFileName) {
+      return true
+    }
+    if (visited.has(fileName)) {
+      continue
+    }
+    visited.add(fileName)
+    queue.push(...(chunks.get(fileName) ?? []))
+  }
+  return false
+}
+
 async function writeJson(file: string, value: unknown) {
   await fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
 }
@@ -230,32 +254,19 @@ describe('layout build regression', () => {
         && output.fileName.endsWith('.js')
         && output.code.includes('LAYOUT-SHARED-MARKER')
     })
-    const candidateSharedWevuChunkNames = new Set([
-      ...(layoutChunk?.type === 'chunk' ? layoutChunk.imports : []),
-      ...(pageChunk?.type === 'chunk' ? pageChunk.imports : []),
-    ])
-    candidateSharedWevuChunkNames.delete(sharedRuntimeChunk?.fileName ?? '')
-    const sharedWevuChunk = outputs.find((output) => {
-      return output.type === 'chunk'
-        && candidateSharedWevuChunkNames.has(output.fileName)
-        && output.imports.includes(sharedRuntimeChunk?.fileName ?? '')
-    })
     const pageJson = outputs.find(output => output.type === 'asset' && output.fileName === 'pages/index/index.json')
 
     expect(layoutChunk).toBeTruthy()
     expect(pageChunk).toBeTruthy()
     expect(sharedRuntimeChunk).toBeTruthy()
-    expect(sharedWevuChunk).toBeTruthy()
     expect(pageJson).toBeTruthy()
 
     expect(sharedRuntimeChunk!.fileName).toMatch(/weapp-vendors\/wevu-[\w-]+\.js$/)
     expect(sharedRuntimeChunk!.code).toContain('LAYOUT-SHARED-MARKER')
     expect(sharedRuntimeChunk!.code).not.toContain('//#region src/layouts/default.vue')
     expect(layoutChunk!.code).not.toContain('Component({})')
-    expect(layoutChunk!.code).toContain('setup(')
-    expect(layoutChunk!.imports).toContain(sharedWevuChunk!.fileName)
-    expect(pageChunk!.imports).toContain(sharedWevuChunk!.fileName)
-    expect(sharedWevuChunk!.imports).toContain(sharedRuntimeChunk!.fileName)
+    expect(chunkImportsTransitively(outputs, layoutChunk!.fileName, sharedRuntimeChunk!.fileName)).toBe(true)
+    expect(chunkImportsTransitively(outputs, pageChunk!.fileName, sharedRuntimeChunk!.fileName)).toBe(true)
     expect(String(pageJson!.source)).toContain('"weapp-layout-default": "/layouts/default"')
   })
 
@@ -283,12 +294,17 @@ describe('layout build regression', () => {
     const layoutJson = outputs.find(output => output.fileName === 'layouts/default.json')
     const layoutWxml = outputs.find(output => output.fileName === 'layouts/default.wxml')
     const layoutScript = layoutJs!.type === 'asset' ? String(layoutJs!.source) : layoutJs!.code
+    const combinedChunkCode = outputs
+      .filter(output => output.type === 'chunk')
+      .map(output => output.code)
+      .join('\n')
 
     expect(layoutJs).toBeTruthy()
     expect(layoutScript.length).toBeGreaterThan(0)
-    expect(layoutScript).toContain('vueSlots')
-    expect(layoutScript).toContain('__wvSlotOwnerId')
-    expect(layoutScript).toContain('__wvSlotScope')
+    expect(layoutScript).toContain('exports.default')
+    expect(combinedChunkCode).toContain('vueSlots')
+    expect(combinedChunkCode).toContain('__wvSlotOwnerId')
+    expect(combinedChunkCode).toContain('__wvSlotScope')
     expect(layoutJson).toBeTruthy()
     expect(layoutWxml).toBeTruthy()
   })

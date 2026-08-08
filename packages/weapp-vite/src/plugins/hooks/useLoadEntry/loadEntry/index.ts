@@ -19,12 +19,12 @@ import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { isPathInside } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
+import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
 import { analyzeCommonJson } from '../../../utils/analyze'
 import { markComponentEntries, registerResolvedPageLayoutEntries } from '../../../utils/layoutEntries'
-import { addResolvedPageLayoutWatchFiles, expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
+import { expandResolvedPageLayoutFiles, registerResolvedPageLayoutDependencies } from '../../../utils/pageLayout'
 import { emitScriptlessComponentAsset, resolveScriptlessComponentFileName, SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
-import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
@@ -173,6 +173,53 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const styleImportsCache = new Map<string, string[]>()
   let resolveCacheVersion = 0
 
+  async function materializeVueAutoImportEntries(
+    pluginCtx: PluginContext,
+    importer: string,
+    json: any,
+    injectedEntries: string[],
+  ) {
+    const usingComponents = get(json, 'usingComponents')
+    if (!isObject(usingComponents) || !injectedEntries.length) {
+      if (!isObject(usingComponents) || !configService.weappViteConfig?.uniApp) {
+        return injectedEntries
+      }
+    }
+    const candidateEntries = Array.from(new Set([
+      ...injectedEntries,
+      ...Object.values(usingComponents).filter((entry): entry is string => typeof entry === 'string' && entry.endsWith('.vue')),
+    ]))
+    const rewritten = new Map<string, string>()
+    for (const entry of candidateEntries) {
+      const resolved = await pluginCtx.resolve(entry, importer)
+      const resolvedId = resolved?.id ? normalizeFsResolvedId(resolved.id) : undefined
+      if (!resolvedId?.endsWith('.vue')) {
+        if (configService.weappViteConfig?.uniApp && entry.endsWith('.vue')) {
+          throw new Error(`[uni-app] 无法解析外部 Vue 组件: importer=${importer} request=${entry}`)
+        }
+        continue
+      }
+      const outputPath = usingComponentFromResolvedFile(resolvedId, configService)
+      if (!outputPath) {
+        throw new Error(`[uni-app] 无法生成外部 Vue 组件输出路径: importer=${importer} resolvedId=${resolvedId}`)
+      }
+      for (const [name, value] of Object.entries(usingComponents)) {
+        if (value === entry) {
+          usingComponents[name] = outputPath
+        }
+      }
+      ctx.runtimeState.build.hmr.externalComponentEntryMap.set(
+        removeExtensionDeep(outputPath).replace(/^\/+/, ''),
+        resolvedId,
+      )
+      rewritten.set(entry, outputPath)
+    }
+    return Array.from(new Set([
+      ...injectedEntries.map(entry => rewritten.get(entry) ?? entry),
+      ...candidateEntries.map(entry => rewritten.get(entry) ?? entry),
+    ]))
+  }
+
   const shouldEmitScriptlessVueLayoutJs = async (layoutFile: string) => {
     const cached = scriptlessVueLayoutDecisionCache.get(layoutFile)
     if (cached) {
@@ -194,7 +241,12 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
   }
 
-  const loadEntry = async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
+  const loadEntry = async function loadEntry(
+    this: PluginContext,
+    id: string,
+    type: 'app' | 'page' | 'component',
+    loadOptions?: { metadataOnly?: boolean },
+  ) {
     if (configService.isDev) {
       existsCache.clear()
     }
@@ -208,7 +260,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       ? ctx.runtimeState.lib.entries.get(normalizedId)
       : undefined
 
-    addNormalizedWatchFile(this, id)
     const baseName = removeExtensionDeep(id)
 
     function recordEntryDuration(key: HmrProfileDurationKey, startedAt: number) {
@@ -289,10 +340,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     // 回退：当不存在 .json 时，尝试从 .vue 的 <json> 块读取配置
-    if (vueEntryPath) {
-      addNormalizedWatchFile(this, vueEntryPath)
-    }
-
     let vueSource: string | undefined
     const readVueSource = async () => {
       if (!vueEntryPath) {
@@ -391,7 +438,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         replaceLayoutDependencies(normalizedId, layoutDependencies)
       }
 
-      await addResolvedPageLayoutWatchFiles(this, layoutPlan.layouts)
+      await registerResolvedPageLayoutDependencies(ctx, normalizedId, layoutPlan.layouts)
       await registerResolvedPageLayoutEntries({
         layouts: layoutPlan.layouts,
         entries,
@@ -678,7 +725,13 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         if (ctx.autoImportService?.hasPendingRegistrations?.() !== false) {
           await ctx.autoImportService?.awaitPendingRegistrations?.()
         }
-        const injectedAutoImportEntries = await applyAutoImports(baseName, json) ?? []
+        const rawInjectedAutoImportEntries = await applyAutoImports(baseName, json) ?? []
+        const injectedAutoImportEntries = await materializeVueAutoImportEntries(
+          this,
+          vueEntryPath ?? id,
+          json,
+          rawInjectedAutoImportEntries,
+        )
         const componentEntries = analyzeCommonJson(json)
         const pendingAutoImportMap = ctx.runtimeState?.autoImport?.pendingEntriesByImporter
         const vueBaseName = vueEntryPath ? removeExtensionDeep(vueEntryPath) : undefined
@@ -715,6 +768,18 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     const prepareStartedAt = performance.now()
+    const ownerEntryKey = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(id))
+    const ownerEntry = type === 'app'
+      ? { ...entriesMap.get(ownerEntryKey) }
+      : {}
+    entriesMap.set(ownerEntryKey, {
+      ...ownerEntry,
+      type,
+      path: id,
+      json,
+      ...(jsonPath ? { jsonPath } : {}),
+      ...(templatePath ? { templatePath } : {}),
+    } as Entry)
     const normalizedEntries = shouldSkipAppEntries
       ? []
       : prepareNormalizedEntries({
@@ -754,6 +819,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           templatePath,
           isPluginBuild,
           normalizedEntries,
+          entriesMap,
           pluginResolvedRecords,
           pluginJsonPathForRegistration,
           pluginJsonForRegistration,
@@ -769,6 +835,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           forceEmitEntrySet,
           forceReloadEntrySet,
           replaceLayoutDependencies,
+          replaceEntryDependencies: (entryId, kind, dependencies) => {
+            ctx.moduleGraphService.replaceEntryDependencies(entryId, kind, dependencies)
+          },
           emitEntriesChunks,
           registerJsonAsset,
           existsCache,
@@ -781,6 +850,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           resolvedPageLayoutPlan,
           entryCodeSource,
           skipEntries: shouldSkipAppEntries,
+          metadataOnly: loadOptions?.metadataOnly,
         })
       }
       finally {

@@ -50,9 +50,11 @@ describe('hmr-guard manifest', () => {
       'ci/hmr-*.test.ts',
       'ci/auto-import-vue-sfc.test.ts',
       'ci/auto-routes-hmr.test.ts',
+      'ci/e2e-app-tailwind-memory-guard.test.ts',
       'ci/external-linked-vue-component.hmr.test.ts',
       'ci/issue-340-comment.hmr.test.ts',
       'ci/style-import-vue.test.ts',
+      'ci/template-tailwind-hmr.test.ts',
       'ci/wevu-root-import-hmr.test.ts',
       'ci/wevu-router-hmr.test.ts',
       'ci/wevu-runtime.hmr.test.ts',
@@ -86,7 +88,9 @@ describe('hmr-guard manifest', () => {
     const complexDeveloperFlowTests = HMR_GUARD_TEST_GROUPS.complexDeveloperFlows.map(filePath => toRelativeLabel(filePath))
 
     expect(complexDeveloperFlowTests).toEqual([
+      'ci/e2e-app-tailwind-memory-guard.test.ts',
       'ci/hmr-complex-developer-flow.test.ts',
+      'ci/template-tailwind-hmr.test.ts',
     ])
     expect(HMR_GUARD_ALL_TESTS).toEqual(expect.arrayContaining(HMR_GUARD_TEST_GROUPS.complexDeveloperFlows))
   })

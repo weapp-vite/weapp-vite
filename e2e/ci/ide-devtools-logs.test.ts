@@ -84,4 +84,100 @@ describe('ide devtools logs', () => {
     expect(issues).toHaveLength(1)
     expect(issues[0]?.line).toContain('subPackages')
   })
+
+  it('ignores stale simulator boot lines with a timezone offset', () => {
+    const startedAt = Date.now() - 1_000
+    writeLog(
+      sandboxRoot,
+      '[2020-01-01 00:00:00.000+08:00][ERROR] simulator launch catch error TypeError: Cannot read property \'subPackages\' of undefined',
+    )
+
+    expect(scanRecentDevtoolsSimulatorBootIssues({
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })).toEqual([])
+  })
+
+  it('ignores a transient simulator-not-found warning when the same simulator initializes', () => {
+    const startedAt = Date.now() - 1_000
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    writeLog(sandboxRoot, [
+      `[${timestamp}][INFO] [SimulatorService] init simulator s0 with clientSid s0`,
+      `[${timestamp}][WARN] [SimulatorService] updateSimulatorCompileOptions: simulator not found s0`,
+      `[${timestamp}][WARN] [SimulatorService] updateSimulatorCompileOptions: simulator not found s1`,
+      `[${timestamp}][INFO] [SimulatorService] init simulator s1 with clientSid s1`,
+      `[${timestamp}][WARN] [SimulatorService] updateSimulatorCompileOptions: simulator not found s2`,
+    ].join('\n'))
+
+    const issues = scanRecentDevtoolsSimulatorBootIssues({
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })
+
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.line).toContain('simulator not found s2')
+  })
+
+  it('ignores a simulator launch error when the appservice subsequently launches successfully', () => {
+    const startedAt = Date.now() - 1_000
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    writeLog(sandboxRoot, [
+      `[${timestamp}][ERROR] [appservice] simulator launch catch error Error: [summer-compiler] Couldn't found weapp_vite_internal/slot-wrapper/index.json`,
+      `[${timestamp}][INFO] [appservice] simulator launch success, set src dist/app-service.js`,
+    ].join('\n'))
+
+    expect(scanRecentDevtoolsSimulatorBootIssues({
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })).toEqual([])
+  })
+
+  it('reports a simulator launch error when appservice validation fails after the success marker', () => {
+    const startedAt = Date.now() - 1_000
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    writeLog(sandboxRoot, [
+      `[${timestamp}][ERROR] [appservice] simulator launch catch error Error: [summer-compiler] Couldn't found the '/weapp_vite_internal/slot-wrapper/index.json' file`,
+      `[${timestamp}][INFO] [appservice] simulator launch success, set src http://127.0.0.1/appservice/mainframe`,
+      `[${timestamp}][ERROR] [Devtools] appservice.js checkPluginInfo fail with error: Error: [summer-compiler] Couldn't found the '/weapp_vite_internal/slot-wrapper/index.json' file`,
+    ].join('\n'))
+
+    const issues = scanRecentDevtoolsSimulatorBootIssues({
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })
+
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.line).toContain('slot-wrapper/index.json')
+  })
+
+  it('reports the last simulator launch error when it has no later success signal', () => {
+    const startedAt = Date.now() - 1_000
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    writeLog(sandboxRoot, [
+      `[${timestamp}][INFO] [appservice] simulator launch success, set src dist/app-service.js`,
+      `[${timestamp}][ERROR] [appservice] simulator launch catch error Error: [summer-compiler] Couldn't found custom-tab-bar/index.json`,
+    ].join('\n'))
+
+    const issues = scanRecentDevtoolsSimulatorBootIssues({
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })
+
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.line).toContain('custom-tab-bar/index.json')
+  })
+
+  it('ignores informational compile-cache lines with undefined metadata', () => {
+    const startedAt = Date.now() - 1_000
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    writeLog(
+      sandboxRoot,
+      `[${timestamp}][INFO] cacheSubKey: 'dist/subpackages/normal/index.json', lastKeyInfo: undefined`,
+    )
+
+    expect(scanRecentDevtoolsSimulatorBootIssues({
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })).toEqual([])
+  })
 })

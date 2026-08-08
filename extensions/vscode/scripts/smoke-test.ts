@@ -444,7 +444,10 @@ async function main() {
     assert.equal(state.registeredProviders.some(item => item.type === 'semanticTokens'), false)
     assert.ok(
       state.registeredProviders.some(item => item.type === 'documentFormatting'
-        && JSON.stringify(item.selector) === JSON.stringify({ language: 'wxml', scheme: 'file' })),
+        && JSON.stringify(item.selector) === JSON.stringify([
+          { language: 'wxml', scheme: 'file' },
+          { language: 'miniprogram-template', scheme: 'file' },
+        ])),
     )
     assert.equal(state.createdTreeViews.length, 2)
     assert.deepEqual(state.createdTreeViews.map(item => item.viewId), [

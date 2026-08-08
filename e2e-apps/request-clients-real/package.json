@@ -4,17 +4,19 @@
   "private": true,
   "scripts": {
     "dev": "wv dev",
+    "dev:web": "wv dev -p web --host",
     "dev:open": "wv dev -o",
     "build": "wv build",
+    "build:web": "wv build -p web",
     "dev:ui": "wv dev --ui",
     "build:ui": "wv build --ui",
     "postinstall": "wv prepare"
   },
   "devDependencies": {
-    "@tanstack/vue-query": "^5.101.2",
+    "@tanstack/vue-query": "^5.101.4",
     "@weapp-vite/dashboard": "workspace:*",
-    "axios": "^1.18.1",
-    "graphql-request": "^7.3.1",
+    "axios": "^1.19.0",
+    "graphql-request": "^7.4.0",
     "socket.io-client": "^4.8.3",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"

@@ -5,6 +5,29 @@ import { createTempFixtureProject, createTestCompilerContext, getFixture, scanFi
 const TEXT_OUTPUT_RE = /\.(?:js|json|wxml|wxss)$/
 const RUNTIME_VENDOR_RE = /^weapp-vendors\//
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function normalizeWevuRuntimeBindings(value: string) {
+  const aliases = Array.from(value.matchAll(
+    /const (require_[A-Za-z_$][\w$]*) = require\("[^"]*wevu-runtime\.js"\);/g,
+  ), match => match[1])
+
+  for (const alias of aliases) {
+    const escapedAlias = escapeRegExp(alias)
+    const isScopedSlotCreator = new RegExp(
+      `(?:\\?\\? ${escapedAlias}\\.|${escapedAlias}\\.[A-Za-z_$][\\w$]*\\(__wevuOptions\\))`,
+    ).test(value)
+    const stableAlias = isScopedSlotCreator ? 'require_templateRef' : 'require_common'
+    value = value.replace(new RegExp(`\\b${escapedAlias}\\b`, 'g'), stableAlias)
+  }
+
+  return value
+    .replace(/\brequire_templateRef\.[A-Za-z_$][\w$]*/g, 'require_templateRef.__wevuScopedSlotCreator')
+    .replace(/\brequire_common\.[A-Za-z_$][\w$]*/g, 'require_common.$')
+}
+
 function normalizeOutputContent(file: string, content: string) {
   const normalizeStableNames = (value: string) => {
     return value
@@ -15,8 +38,9 @@ function normalizeOutputContent(file: string, content: string) {
     return normalizeStableNames(`${JSON.stringify(JSON.parse(content), null, 2)}\n`)
   }
   if (file.endsWith('.js')) {
-    return normalizeStableNames(content)
+    return normalizeWevuRuntimeBindings(normalizeStableNames(content))
       .replace(/^\/\/#region .*\/src\//gm, '//#region <fixture>/src/')
+      .replace(/module\.exports = __wevuOptions;/g, 'exports.default = __wevuOptions;')
       .replace(/\brequire_src_\w+\b/g, 'require_src')
       .replace(/\brequire_templateRef_\w+\b/g, 'require_templateRef')
       .replace(/require\("([^"]*wevu-runtime\.js)"\)\.to\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
@@ -25,9 +49,6 @@ function normalizeOutputContent(file: string, content: string) {
       .replace(/require\("([^"]*wevu-runtime\.js)"\)\.[A-Za-z_$][\w$]*\(\{/g, 'require("$1").__wevuCreatePage({')
       .replace(/require\("([^"]*wevu-runtime\.js)"\)\.__wevuCreatePage\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
       .replace(/require_src\.[A-Za-z_$][\w$]*/g, 'require_src.__wevuScopedSlotCreator')
-      .replace(/\brequire_templateRef\.[A-Za-z_$][\w$]*/g, 'require_templateRef.__wevuScopedSlotCreator')
-      .replace(/(\bcreateWevuScopedSlotComponent = .*?\?\? require_templateRef\.)[A-Za-z_$][\w$]*(;)/g, '$1__wevuScopedSlotCreator$2')
-      .replace(/(var createWevuScopedSlotComponent = .*?\?\? require_templateRef\.)[A-Za-z_$][\w$]*(;)/g, '$1__wevuScopedSlotCreator$2')
   }
   return normalizeStableNames(content)
 }

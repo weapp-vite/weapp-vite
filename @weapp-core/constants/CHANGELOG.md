@@ -1,5 +1,27 @@
 # @weapp-core/constants
 
+## 0.1.16
+
+### Patch Changes
+
+- 🐛 **微信小程序开发模式默认根据开发者工具的热重载设置自动选择 HMR 运行时，并在启动时显示当前模式与切换方法；同时确保 Web API 网络默认值在分包和共享 chunk 的多份运行时实例之间保持一致，并避免截图协议超时后在同一 DevTools 连接上继续叠加请求。** [#778](https://github.com/weapp-vite/weapp-vite/pull/778) by @sonofmagic
+
+## 0.1.15
+
+### Patch Changes
+
+- 🐛 **新增 uview-plus 3.8.86 全组件解析器与三端兼容示例，并完善 uni-app SFC 的条件编译、sidecar、Web 子组件解析、样式预处理和 headless 宿主 API 兼容。** [#758](https://github.com/weapp-vite/weapp-vite/pull/758) by @sonofmagic
+
+- 🐛 **新增实验性的 uni-app Vue SFC 组件库兼容层与 `WotUiResolver()`，支持显式白名单依赖的条件编译、外部组件图、样式资源和双端注册，并补齐 Wot UI 2.2.0 全部 99 个公开组件在微信小程序、Web 与 headless 运行时所需的编译和运行时语义。外部组件产物使用微信允许的稳定目录名，避免组件文件因命中双下划线保留目录规则而被开发者工具忽略。** [#757](https://github.com/weapp-vite/weapp-vite/pull/757) by @sonofmagic
+
+## 0.1.14
+
+### Patch Changes
+
+- 🐛 **使用 Vite/Rolldown 真实模块图追踪静态与动态 import、别名、npm、外部链接源码以及小程序 template、style、JSON、WXS、layout 和 `usingComponents` sidecar 依赖，修复增量构建中 importer 传播不完整、无关入口被重复标脏及 sidecar 新增删除失效不稳定的问题。** [#735](https://github.com/weapp-vite/weapp-vite/pull/735) by @sonofmagic
+
+- 🐛 **引入声明式 runtime provider 契约，让原生小程序、wevu Vue SFC 与 Web 构建通过稳定虚拟入口选择各自运行时，并在入口缺失或契约版本不匹配时给出明确诊断。** [#736](https://github.com/weapp-vite/weapp-vite/pull/736) by @sonofmagic
+
 ## 0.1.13
 
 ### Patch Changes

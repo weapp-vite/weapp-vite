@@ -1,5 +1,9 @@
+import type { VueTransformResult } from 'wevu/compiler'
 import type { NavigationBarConfig } from '../compiler/wxml'
 import type { WxssTransformOptions } from '../css/wxss'
+import type { WebRoutingConfig } from '../runtime/polyfill/routeRuntime/history'
+import type { WebResourceHintsConfig, WebSeoConfig } from '../runtime/seo'
+import type { WebTabBarConfig } from '../shared/tabBar'
 
 export interface WeappWebPluginOptions {
   wxss?: WxssTransformOptions
@@ -39,8 +43,51 @@ export interface WeappWebPluginOptions {
       level?: 'off' | 'warn' | 'error'
       dedupe?: boolean
     }
+    /**
+     * Web 页面视口表现。默认使用小程序设备容器，宽屏下居中显示。
+     */
+    viewport?: {
+      mode?: 'mini-program' | 'responsive'
+      maxWidth?: number
+      desktopBreakpoint?: number
+    }
+    /** Web 路由与浏览器地址栏同步策略。 */
+    routing?: WebRoutingConfig
+    /** 页面切换时同步浏览器 Head 的 SEO 配置。 */
+    seo?: WebSeoConfig
+    /** 首屏或关键资源的浏览器 Resource Hints。 */
+    resourceHints?: WebResourceHintsConfig
   }
+  /**
+   * weapp-vite runtime provider 注入的内部绑定。
+   *
+   * @internal
+   */
+  __runtimeProvider?: {
+    moduleId: string
+    hmrAcceptCode?: string
+  }
+  /** @internal */
+  __uniApp?: {
+    include: string[]
+  }
+  /** @internal */
+  __autoImportResolvers?: WebComponentResolver[]
+  /** @internal */
+  __resolveAppConfig?: (appConfigPath: string) => Promise<Record<string, unknown> | undefined>
 }
+
+export interface WebResolvedComponent {
+  name: string
+  from: string
+  resolvedId?: string
+  sourceType?: 'wevu-sfc' | 'native'
+}
+
+export type WebComponentResolver = {
+  components?: Record<string, string>
+  resolve?: (componentName: string, baseName: string) => WebResolvedComponent | void
+} | ((componentName: string, baseName: string) => WebResolvedComponent | void)
 
 export interface ModuleMeta {
   kind: 'app' | 'page' | 'component'
@@ -48,6 +95,9 @@ export interface ModuleMeta {
   scriptPath: string
   templatePath?: string
   stylePath?: string
+  navigationBar?: NavigationBarConfig
+  sourceType?: 'native' | 'vue-sfc'
+  componentTags?: Record<string, string>
 }
 
 export interface PageEntry {
@@ -55,15 +105,27 @@ export interface PageEntry {
   id: string
 }
 
+export interface LayoutEntry {
+  script: string
+  id: string
+  name: string
+  tag: string
+  template?: string
+  style?: string
+}
+
 export interface ComponentEntry {
   script: string
   id: string
+  importId?: string
 }
 
 export interface ScanResult {
   app?: string
   pages: PageEntry[]
   components: ComponentEntry[]
+  layouts: LayoutEntry[]
+  tabBar?: WebTabBarConfig
 }
 
 export interface ScanState {
@@ -72,10 +134,12 @@ export interface ScanState {
   templateComponentMap: Map<string, Record<string, string>>
   templatePathSet: Set<string>
   componentTagMap: Map<string, string>
-  componentIdMap: Map<string, string>
   appNavigationDefaults: NavigationBarConfig
   appComponentTags: Record<string, string>
+  sfcResults: Map<string, VueTransformResult>
   scanResult: ScanResult
 }
 
 export type WarnFn = (message: string) => void
+export type ResolveWebModuleId = (source: string, importer?: string) => Promise<string | undefined>
+export type ResolveWebAutoImportTag = (tag: string, importer: string) => Promise<WebResolvedComponent | undefined>

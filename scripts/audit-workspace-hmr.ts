@@ -1,5 +1,5 @@
 /* eslint-disable ts/no-use-before-define */
-import type { WorkspaceHmrBaseline } from './workspace-hmr/baseline'
+import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-hmr/baseline'
 import { execFile as execFileCallback } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
@@ -19,7 +19,7 @@ import {
   parseThresholdOverrides,
   renderThresholdMarkdown,
 } from './workspace-hmr/baseline'
-import { parseStatefulHmrControlSource, resolveHmrScriptOutputPath } from './workspace-hmr/scenarios'
+import { parseStatefulHmrControlSource, resolveHmrScriptOutputPath, resolveWorkspaceHmrRuntime } from './workspace-hmr/scenarios'
 
 const execFile = promisify(execFileCallback)
 
@@ -28,6 +28,7 @@ interface PackageJson {
   scripts?: Record<string, string>
   workspaceHmr?: {
     runtime?: WorkspaceHmrRuntime
+    thresholds?: WorkspaceHmrThresholds
   }
 }
 
@@ -39,6 +40,7 @@ interface ProjectCase {
   sourceRoot: string
   platform: RuntimePlatform
   hmrRuntime: WorkspaceHmrRuntime
+  thresholds?: WorkspaceHmrThresholds
 }
 
 type RuntimePlatform = 'weapp' | 'alipay'
@@ -126,6 +128,7 @@ interface ProjectResult {
   platform: RuntimePlatform
   source: string
   startupMs?: number
+  thresholds?: WorkspaceHmrThresholds
   scenarios: ScenarioResult[]
   error?: string
 }
@@ -189,6 +192,7 @@ const WORKSPACE_HMR_BASELINE_PROJECT_ALIASES = new Map<string, string>([
 async function main() {
   await mkdir(reportRoot, { recursive: true })
   await cleanupResidualDevProcesses()
+  await prepareReferencedWorkspaceTsconfigs()
 
   const projects = (await selectProjectsForRunMode(await discoverProjects()))
     .filter(project => !projectFilter || project.id.includes(projectFilter))
@@ -256,6 +260,27 @@ async function main() {
   }
 }
 
+async function prepareReferencedWorkspaceTsconfigs() {
+  const workspaceTsconfigPath = path.join(repoRoot, 'tsconfig.json')
+  if (!existsSync(workspaceTsconfigPath)) {
+    return
+  }
+  const parsed = JSON.parse(await readFile(workspaceTsconfigPath, 'utf8')) as { references?: Array<{ path?: unknown }> }
+  const projectRoots = (parsed.references ?? [])
+    .map(reference => typeof reference.path === 'string' ? reference.path : undefined)
+    .filter((referencePath): referencePath is string => Boolean(referencePath))
+    .map(referencePath => path.resolve(repoRoot, referencePath))
+    .filter(projectRoot => existsSync(path.join(projectRoot, 'package.json')))
+  for (const projectRoot of projectRoots) {
+    if (existsSync(path.join(projectRoot, '.weapp-vite/tsconfig.shared.json'))) {
+      continue
+    }
+    const managedDir = path.join(projectRoot, '.weapp-vite')
+    await mkdir(managedDir, { recursive: true })
+    await writeFile(path.join(managedDir, 'tsconfig.shared.json'), '{"files":[]}\n', 'utf8')
+  }
+}
+
 async function selectProjectsForRunMode(projects: ProjectCase[]) {
   if (runMode === 'smoke') {
     return selectSmokeProjects(projects, workspaceHmrScope)
@@ -295,6 +320,7 @@ function isWorkspaceHmrIgnoredChange(file: string) {
     || file.startsWith('docs/')
     || file.endsWith('.md')
     || isWorkspaceProjectPackageJson(file)
+    || isWorkspaceProjectWebEntry(file)
   )
 }
 
@@ -304,6 +330,15 @@ function isWorkspaceProjectPackageJson(file: string) {
     segments.length === 3
     && isWorkspaceHmrProjectKind(segments[0])
     && segments[2] === 'package.json'
+  )
+}
+
+function isWorkspaceProjectWebEntry(file: string) {
+  const segments = file.split('/')
+  return (
+    segments.length === 3
+    && isWorkspaceHmrProjectKind(segments[0])
+    && segments[2] === 'index.html'
   )
 }
 
@@ -409,6 +444,7 @@ async function discoverProjects(): Promise<ProjectCase[]> {
         sourceRoot,
         platform,
         hmrRuntime: packageJson.workspaceHmr?.runtime === 'stateful' ? 'stateful' : 'standard',
+        thresholds: packageJson.workspaceHmr?.thresholds,
       })
     }
   }
@@ -454,8 +490,8 @@ async function resolvePlatform(root: string): Promise<RuntimePlatform> {
 async function auditProject(project: ProjectCase): Promise<ProjectResult> {
   const profilePath = path.join(project.root, '.weapp-vite/hmr-profile.jsonl')
   const distRoot = project.distRoot
-  const scenarios = await discoverScenarios(project)
-  const selectedScenarios = maxScenariosPerProject
+  let scenarios = await discoverScenarios(project)
+  let selectedScenarios = maxScenariosPerProject
     ? scenarios.slice(0, maxScenariosPerProject)
     : scenarios
   const result: ProjectResult = {
@@ -464,6 +500,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     kind: project.kind,
     platform: project.platform,
     source: formatProjectPath(project.root),
+    thresholds: project.thresholds,
     scenarios: selectedScenarios.map(scenario => ({
       id: scenario.id,
       label: scenario.label,
@@ -512,6 +549,20 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     await dev.waitFor(waitForFile(path.join(distRoot, 'app.json'), startupTimeoutMs), `${project.id} app.json`)
     await waitForStableDistSnapshot(distRoot, startupDistStableMs, startupTimeoutMs)
     await sleep(settleMs)
+    project.hmrRuntime = resolveWorkspaceHmrRuntime(await pathExists(path.join(
+      distRoot,
+      '__weapp_vite_hmr/control.js',
+    )))
+    scenarios = await discoverScenarios(project)
+    selectedScenarios = maxScenariosPerProject
+      ? scenarios.slice(0, maxScenariosPerProject)
+      : scenarios
+    result.scenarios = selectedScenarios.map(scenario => ({
+      id: scenario.id,
+      label: scenario.label,
+      source: formatProjectPath(scenario.sourcePath),
+      output: formatProjectPath(scenario.outputPath),
+    }))
     const runnableScenarios = []
     for (const scenario of selectedScenarios) {
       if (await pathExists(scenario.outputPath)) {
@@ -631,7 +682,9 @@ async function auditScenario(
     if (project.hmrRuntime === 'standard') {
       result.profile = await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000)
     }
-    result.totalMs = result.profile?.totalMs ?? result.observedMs
+    result.totalMs = project.hmrRuntime === 'standard'
+      ? result.profile?.totalMs ?? result.observedMs
+      : undefined
     result.impact = diffDistSnapshots(before, after)
   }
   catch (error) {

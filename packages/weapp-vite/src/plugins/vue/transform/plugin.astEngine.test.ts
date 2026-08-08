@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createModuleGraphService } from '../../../moduleGraph'
 
 const compileVueFileMock = vi.hoisted(() => vi.fn())
 const compileJsxFileMock = vi.hoisted(() => vi.fn())
@@ -160,6 +161,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
   it('returns null when config service is missing', async () => {
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createModuleGraphService(),
       runtimeState: {
         scan: {
           isDirty: false,
@@ -177,6 +179,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
 
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createModuleGraphService(),
       configService: {
         isDev: false,
         cwd: '/project',
@@ -203,6 +206,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
   it('passes resolved astEngine into setData pick collection', async () => {
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createModuleGraphService(),
       configService: {
         isDev: false,
         cwd: '/project',
@@ -248,6 +252,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
 
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createModuleGraphService(),
       configService: {
         isDev: false,
         cwd: '/project',
@@ -283,6 +288,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     const vueTransformTiming = vi.fn()
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createModuleGraphService(),
       configService: {
         isDev: false,
         cwd: '/project',
@@ -324,6 +330,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
   it('pre-parses sfc styles only when style blocks exist', async () => {
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createModuleGraphService(),
       configService: {
         isDev: false,
         cwd: '/project',
@@ -359,6 +366,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
 
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createModuleGraphService(),
       configService: {
         isDev: false,
         cwd: '/project',
@@ -396,6 +404,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
 
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createModuleGraphService(),
       configService: {
         isDev: false,
         cwd: '/project',
@@ -443,6 +452,7 @@ export default defineComponent({ setup() { usePageFeatureHooks() } })`,
 
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createModuleGraphService(),
       configService: {
         isDev: false,
         cwd: '/project',
@@ -488,6 +498,7 @@ export default defineComponent({ setup() { usePageFeatureHooks() } })`,
 
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createModuleGraphService(),
       configService: {
         isDev: false,
         cwd: '/project',
@@ -527,6 +538,7 @@ export default defineComponent({ setup() { usePageFeatureHooks() } })`,
 
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createModuleGraphService(),
       configService: {
         isDev: false,
         cwd: '/project',

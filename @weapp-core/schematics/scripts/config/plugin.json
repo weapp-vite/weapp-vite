@@ -1,0 +1,8 @@
+{
+  "source": "https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/development.html",
+  "fields": {
+    "publicComponents": { "type": "object", "description": "插件对外提供的自定义组件。" },
+    "pages": { "type": "object", "description": "插件页面映射。" },
+    "main": { "type": "string", "description": "插件主入口文件。" }
+  }
+}

@@ -4,6 +4,18 @@ export interface HeadlessWxCallbackOption<TResult = void> {
   success?: (result: TResult) => void
 }
 
+export interface HeadlessWxLoadFontFaceResult {
+  errMsg: string
+}
+
+export interface HeadlessWxLoadFontFaceOption extends HeadlessWxCallbackOption<HeadlessWxLoadFontFaceResult> {
+  descriptors?: Record<string, string>
+  family: string
+  global?: boolean
+  scopes?: string[]
+  source: string
+}
+
 export interface HeadlessWxNavigateOption extends HeadlessWxCallbackOption {
   url: string
 }
@@ -229,6 +241,7 @@ export interface HeadlessWxSelectorQueryNode {
     fields: HeadlessWxSelectorQueryFieldsOption,
     callback?: (result: Record<string, any> | Record<string, any>[] | null) => void,
   ) => HeadlessWxSelectorQuery
+  node: (callback?: (result: Record<string, any> | Record<string, any>[] | null) => void) => HeadlessWxSelectorQuery
   scrollOffset: (callback?: (result: HeadlessWxSelectorQueryScrollOffsetResult | HeadlessWxSelectorQueryScrollOffsetResult[] | null) => void) => HeadlessWxSelectorQuery
 }
 
@@ -261,6 +274,17 @@ export interface HeadlessWxGetNetworkTypeResult {
   networkType: HeadlessWxNetworkType
 }
 
+export interface HeadlessWxGetLocationResult {
+  accuracy: number
+  altitude: number
+  errMsg: string
+  horizontalAccuracy: number
+  latitude: number
+  longitude: number
+  speed: number
+  verticalAccuracy: number
+}
+
 export interface HeadlessWxNetworkStatusChangeResult {
   isConnected: boolean
   networkType: HeadlessWxNetworkType
@@ -275,12 +299,30 @@ export interface HeadlessWxSystemInfoResult {
   model: string
   pixelRatio: number
   platform: string
+  safeArea: HeadlessWxSafeArea
+  safeAreaInsets: HeadlessWxSafeAreaInsets
   screenHeight: number
   screenWidth: number
   system: string
   version: string
   windowHeight: number
   windowWidth: number
+}
+
+export interface HeadlessWxSafeArea {
+  bottom: number
+  height: number
+  left: number
+  right: number
+  top: number
+  width: number
+}
+
+export interface HeadlessWxSafeAreaInsets {
+  bottom: number
+  left: number
+  right: number
+  top: number
 }
 
 export interface HeadlessWxAppBaseInfoResult {
@@ -294,8 +336,22 @@ export interface HeadlessWxAppBaseInfoResult {
   version: string
 }
 
+export interface HeadlessWxDeviceInfoResult {
+  abi: string
+  benchmarkLevel: number
+  brand: string
+  cpuType: string
+  deviceAbi: string
+  memorySize: number
+  model: string
+  platform: string
+  system: string
+}
+
 export interface HeadlessWxWindowInfoResult {
   pixelRatio: number
+  safeArea: HeadlessWxSafeArea
+  safeAreaInsets: HeadlessWxSafeAreaInsets
   screenHeight: number
   screenWidth: number
   statusBarHeight: number
@@ -349,6 +405,13 @@ export interface HeadlessWxGetStorageOption extends HeadlessWxCallbackOption<Hea
 export interface HeadlessWxGetStorageInfoOption extends HeadlessWxCallbackOption<HeadlessWxStorageInfoResult> {}
 
 export interface HeadlessWxGetNetworkTypeOption extends HeadlessWxCallbackOption<HeadlessWxGetNetworkTypeResult> {}
+
+export interface HeadlessWxGetLocationOption extends HeadlessWxCallbackOption<HeadlessWxGetLocationResult> {
+  altitude?: boolean
+  highAccuracyExpireTime?: number
+  isHighAccuracy?: boolean
+  type?: 'gcj02' | 'wgs84'
+}
 
 export interface HeadlessWxGetSystemInfoOption extends HeadlessWxCallbackOption<HeadlessWxSystemInfoResult> {}
 

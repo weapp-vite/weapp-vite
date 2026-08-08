@@ -21,8 +21,7 @@ describe('cli runtime target resolution', () => {
   it('uses config-driven mini platform when cli platform is missing', () => {
     const targets = resolveRuntimeTargets({})
 
-    expect(targets.runMini).toBe(true)
-    expect(targets.runWeb).toBe(false)
+    expect(targets.entries.map(entry => entry.descriptor.id)).toEqual(['miniprogram'])
     expect(targets.platform).toBeUndefined()
     expect(targets.label).toBe('config')
   })
@@ -30,8 +29,7 @@ describe('cli runtime target resolution', () => {
   it('resolves explicit mini platform from cli option', () => {
     const targets = resolveRuntimeTargets({ platform: 'alipay' })
 
-    expect(targets.runMini).toBe(true)
-    expect(targets.runWeb).toBe(false)
+    expect(targets.entries.map(entry => entry.descriptor.id)).toEqual(['miniprogram'])
     expect(targets.platform).toBe('alipay')
     expect(targets.label).toBe('alipay')
   })
@@ -39,8 +37,7 @@ describe('cli runtime target resolution', () => {
   it('resolves h5 alias to web runtime target from cli option', () => {
     const targets = resolveRuntimeTargets({ platform: 'h5' })
 
-    expect(targets.runMini).toBe(false)
-    expect(targets.runWeb).toBe(true)
+    expect(targets.entries.map(entry => entry.descriptor.id)).toEqual(['web'])
     expect(targets.platform).toBeUndefined()
     expect(targets.label).toBe('web')
   })
@@ -48,14 +45,74 @@ describe('cli runtime target resolution', () => {
   it('resolves combined mini and web runtime target from cli option', () => {
     const targets = resolveRuntimeTargets({ platform: 'all' })
 
-    expect(targets.runMini).toBe(true)
-    expect(targets.runWeb).toBe(true)
+    expect(targets.entries.map(entry => entry.descriptor.id)).toEqual(['miniprogram', 'web'])
     expect(targets.platform).toBeUndefined()
     expect(targets.label).toBe('weapp + web')
   })
 
   it('does not inject mini platform into inline config when platform is omitted', () => {
-    expect(createInlineConfig(undefined)).toBeUndefined()
+    expect(createInlineConfig(resolveRuntimeTargets({}))).toBeUndefined()
+  })
+
+  it('uses explicit inline config when runtime target does not add one', () => {
+    expect(createInlineConfig(resolveRuntimeTargets({}), {
+      inlineConfig: {
+        build: {
+          sourcemap: true,
+        },
+      },
+    })).toEqual({
+      build: {
+        sourcemap: true,
+      },
+    })
+  })
+
+  it('composes backend inline config in execution order', () => {
+    const targets = resolveRuntimeTargets({ platform: 'all' })
+
+    expect(createInlineConfig(targets, {
+      host: '127.0.0.1',
+      scope: 'main',
+    })).toMatchObject({
+      weapp: {
+        buildScope: {
+          includeMainPackage: true,
+          include: [],
+          __weappViteBuildScopeSource: true,
+        },
+      },
+      build: {
+        watch: {},
+      },
+      server: {
+        host: '127.0.0.1',
+        port: 0,
+        watch: {
+          usePolling: true,
+          interval: 100,
+        },
+      },
+    })
+  })
+
+  it('keeps explicit inline build options while composing backend config', () => {
+    const targets = resolveRuntimeTargets({ platform: 'all' })
+
+    expect(createInlineConfig(targets, {
+      inlineConfig: {
+        build: {
+          outDir: 'dist-weapp',
+          sourcemap: true,
+        },
+      },
+    })).toMatchObject({
+      build: {
+        outDir: 'dist-weapp',
+        sourcemap: true,
+        watch: {},
+      },
+    })
   })
 
   it('can skip runtime target logging when silent is enabled', async () => {

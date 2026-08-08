@@ -17,6 +17,10 @@ interface FileReadOptionsLike {
   encoding?: string
 }
 
+function stringifyFileSystemError(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
 export function createFileSystemManagerBridge(
   callMiniProgramAsyncSuccess: AsyncSuccess,
   callMiniProgramAsyncFailure: AsyncFailure,
@@ -33,7 +37,7 @@ export function createFileSystemManagerBridge(
         callMiniProgramAsyncSuccess(options, { errMsg: 'writeFile:ok' })
       }
       catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
+        const message = stringifyFileSystemError(error)
         callMiniProgramAsyncFailure(options, `writeFile:fail ${message}`)
       }
     },
@@ -48,7 +52,7 @@ export function createFileSystemManagerBridge(
         callMiniProgramAsyncSuccess(options, { errMsg: 'readFile:ok', data })
       }
       catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
+        const message = stringifyFileSystemError(error)
         callMiniProgramAsyncFailure(options, `readFile:fail ${message}`)
       }
     },

@@ -1,13 +1,51 @@
 <script lang="ts">
-/* eslint-disable vue/no-reserved-keys */
 import { defineComponent, nextTick } from 'wevu'
 import { buildResult, stringifyResult } from '../../shared/e2e'
+
+function readRuntimeStyles() {
+  const currentPages = getCurrentPages() as any[]
+  const currentPage = currentPages[currentPages.length - 1] as any
+  const styleBindingEntries = Object.entries(currentPage?.data || {})
+    .filter(([key]) => /^__wv_style_\d+$/.test(key))
+  const styleValues = styleBindingEntries
+    .map(([, value]) => value)
+    .filter((value): value is string => typeof value === 'string')
+  return {
+    styleBindingEntries,
+    styleValues,
+  }
+}
+
+async function waitForRuntimeStyles(timeoutMs = 3_000) {
+  const expectedTexts = [
+    '#0f766e',
+    'font-size:28rpx',
+    'webkit-line-clamp:3',
+    'padding:8rpx',
+    'translate3d(1px, 0, 0)',
+    '#111827',
+    '#345678',
+    '#ff4d4f !important',
+    '--chip-bg:#e6f4ff',
+    'border-width:2rpx',
+  ]
+  const start = Date.now()
+  let latest = readRuntimeStyles()
+  while (Date.now() - start <= timeoutMs) {
+    if (expectedTexts.every(text => latest.styleValues.some(value => value.includes(text)))) {
+      return latest
+    }
+    await new Promise(resolve => setTimeout(resolve, 50))
+    latest = readRuntimeStyles()
+  }
+  return latest
+}
 
 export default defineComponent({
   setup(_props, ctx) {
     const runE2E = async () => {
-      const target = ctx.instance as any
-      target.setData({
+      const state = ctx.state as any
+      Object.assign(state, {
         isReady: true,
         styleString: 'color:#0f766e;background-color:#ecfeff',
         styleObject: {
@@ -56,37 +94,38 @@ export default defineComponent({
 
       await nextTick()
 
-      const data = target.data || {}
+      const { styleBindingEntries, styleValues } = await waitForRuntimeStyles()
+      const hasStyleText = (text: string) => styleValues.some(value => value.includes(text))
       const checks = {
-        stringUpdated: typeof data.styleString === 'string' && data.styleString.includes('#0f766e'),
-        objectUpdated: data.styleObject?.fontSize === '28rpx' && data.styleObject?.lineHeight === 1.6,
-        camelCaseUpdated: data.styleCamelObject?.WebkitLineClamp === 3,
-        arrayUpdated: Array.isArray(data.styleArray) && data.styleArray.length === 2,
-        nestedArrayUpdated: Array.isArray(data.styleNestedArray?.[1]),
-        nullableUpdated: Array.isArray(data.styleNullable) && data.styleNullable.length >= 5,
-        overrideUpdated: Array.isArray(data.styleOverride) && data.styleOverride.length === 3,
-        importantUpdated: Array.isArray(data.styleImportant),
-        cssVarUpdated: Array.isArray(data.styleCssVar),
-        conditionalUpdated: data.isReady === true,
+        stringUpdated: state.styleString.includes('#0f766e') && hasStyleText('#0f766e'),
+        objectUpdated: state.styleObject?.fontSize === '28rpx' && hasStyleText('font-size:28rpx'),
+        camelCaseUpdated: state.styleCamelObject?.WebkitLineClamp === 3 && hasStyleText('webkit-line-clamp:3'),
+        arrayUpdated: Array.isArray(state.styleArray) && hasStyleText('padding:8rpx'),
+        nestedArrayUpdated: Array.isArray(state.styleNestedArray?.[1]) && hasStyleText('translate3d(1px, 0, 0)'),
+        nullableUpdated: Array.isArray(state.styleNullable) && hasStyleText('#111827'),
+        overrideUpdated: Array.isArray(state.styleOverride) && hasStyleText('#345678'),
+        importantUpdated: Array.isArray(state.styleImportant) && hasStyleText('#ff4d4f !important'),
+        cssVarUpdated: Array.isArray(state.styleCssVar) && hasStyleText('--chip-bg:#e6f4ff'),
+        conditionalUpdated: state.isReady === true && hasStyleText('border-width:2rpx'),
       }
 
       const result = buildResult('style-matrix', checks, {
-        styleString: data.styleString,
-        styleObject: data.styleObject,
-        styleCamelObject: data.styleCamelObject,
-        styleArray: data.styleArray,
-        styleNestedArray: data.styleNestedArray,
-        styleNullable: data.styleNullable,
-        styleOverride: data.styleOverride,
-        styleImportant: data.styleImportant,
-        styleCssVar: data.styleCssVar,
-        isReady: data.isReady,
+        styleBindingEntries,
+        styleString: state.styleString,
+        styleObject: state.styleObject,
+        styleCamelObject: state.styleCamelObject,
+        styleArray: state.styleArray,
+        styleNestedArray: state.styleNestedArray,
+        styleNullable: state.styleNullable,
+        styleOverride: state.styleOverride,
+        styleImportant: state.styleImportant,
+        styleCssVar: state.styleCssVar,
+        isReady: state.isReady,
       })
 
-      target.setData({
-        __e2e: result,
-        __e2eText: stringifyResult(result),
-      })
+      state.__e2e = result
+      state.__e2eText = stringifyResult(result)
+      await nextTick()
 
       return result
     }

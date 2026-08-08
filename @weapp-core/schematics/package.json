@@ -46,7 +46,8 @@
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "schema": "tsx scripts/schema.ts"
+    "schema": "tsx scripts/schema.ts",
+    "crawl:wechat-config": "tsx scripts/crawl-wechat-config.ts"
   },
   "publishConfig": {
     "exports": {
@@ -62,5 +63,8 @@
   },
   "dependencies": {
     "zod": "catalog:"
+  },
+  "devDependencies": {
+    "cheerio": "^1.2.0"
   }
 }

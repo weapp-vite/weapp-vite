@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, replaceFileByRename, resolvePlatforms } from '../utils/hmr-helpers'
+import { createHmrMarker, disableProjectCompileHotReload, replaceFileByRename, resolvePlatforms } from '../utils/hmr-helpers'
 import { waitForFile } from '../wevu-runtime.utils'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -146,6 +146,7 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
     }
 
     await writeFile(CONFIG_PATH, updatedConfig, 'utf8')
+    const restoreCompileHotReload = await disableProjectCompileHotReload(APP_ROOT)
 
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: {
@@ -185,9 +186,16 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
       expect(userPageJs).not.toContain('node_modules/wevu/dist/index.js')
     }
     finally {
-      await dev.stop(5_000)
-      await writeFile(CONFIG_PATH, originalConfig, 'utf8')
-      await writeFile(SHARED_SOURCE_PATH, originalSharedSource, 'utf8')
+      try {
+        await dev.stop(5_000)
+      }
+      finally {
+        await Promise.all([
+          writeFile(CONFIG_PATH, originalConfig, 'utf8'),
+          writeFile(SHARED_SOURCE_PATH, originalSharedSource, 'utf8'),
+          restoreCompileHotReload(),
+        ])
+      }
       await rm(DIST_ROOT, { recursive: true, force: true })
     }
   })
@@ -208,6 +216,7 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
     }
 
     await writeFile(CONFIG_PATH, updatedConfig, 'utf8')
+    const restoreCompileHotReload = await disableProjectCompileHotReload(APP_ROOT)
 
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: {
@@ -249,9 +258,16 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
       expect(userPageJs).not.toContain('node_modules/wevu/dist/index.js')
     }
     finally {
-      await dev.stop(5_000)
-      await writeFile(CONFIG_PATH, originalConfig, 'utf8')
-      await writeFile(SHARED_SOURCE_PATH, originalSharedSource, 'utf8')
+      try {
+        await dev.stop(5_000)
+      }
+      finally {
+        await Promise.all([
+          writeFile(CONFIG_PATH, originalConfig, 'utf8'),
+          writeFile(SHARED_SOURCE_PATH, originalSharedSource, 'utf8'),
+          restoreCompileHotReload(),
+        ])
+      }
       await rm(DIST_ROOT, { recursive: true, force: true })
     }
   })

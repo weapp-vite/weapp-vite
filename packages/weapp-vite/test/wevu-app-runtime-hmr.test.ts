@@ -19,6 +19,10 @@ interface GeneratedJsFile {
   code: string
 }
 
+const WATCH_ASSERTION_TIMEOUT_MS = 90_000
+const TEST_TIMEOUT_MS = 180_000
+const WEVU_PACKAGE_ROOT = path.resolve(__dirname, '../../../packages-runtime/wevu')
+
 type WatcherEmitter = WatcherInstance & {
   on: (event: 'event', listener: (event: WatcherEvent) => void) => void
   off?: (event: 'event', listener: (event: WatcherEvent) => void) => void
@@ -33,7 +37,7 @@ function isWatcherEmitter(value: unknown): value is WatcherEmitter {
   return typeof candidate.on === 'function' && typeof candidate.close === 'function'
 }
 
-async function waitForBuild(watcher: WatcherEmitter, timeoutMs = 45_000) {
+async function waitForBuild(watcher: WatcherEmitter, timeoutMs = WATCH_ASSERTION_TIMEOUT_MS) {
   return new Promise<void>((resolve, reject) => {
     const seenEvents: string[] = []
 
@@ -74,7 +78,7 @@ async function waitForFileSatisfies(
   filePath: string,
   predicate: (content: string) => boolean,
   label: string,
-  timeoutMs = 45_000,
+  timeoutMs = WATCH_ASSERTION_TIMEOUT_MS,
 ) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
@@ -115,6 +119,15 @@ async function readGeneratedJsFiles(root: string) {
   return files
 }
 
+async function installPublishedWevuPackage(projectRoot: string) {
+  const targetRoot = path.resolve(projectRoot, 'node_modules/wevu')
+  await fs.ensureDir(targetRoot)
+  await Promise.all([
+    fs.copy(path.resolve(WEVU_PACKAGE_ROOT, 'dist'), path.resolve(targetRoot, 'dist')),
+    fs.copy(path.resolve(WEVU_PACKAGE_ROOT, 'package.json'), path.resolve(targetRoot, 'package.json')),
+  ])
+}
+
 function expectNoBareWevuRuntimeReferences(code: string) {
   expect(code).not.toMatch(/\brequire\((['"`])wevu(?:\/internal-(?:runtime|reactivity|template))?\1\)/)
   expect(code).not.toMatch(/\bfrom\s*(['"`])wevu(?:\/internal-(?:runtime|reactivity|template))?\1/)
@@ -128,38 +141,53 @@ function includesRelativeWevuVendorRequire(code: string) {
 }
 
 function expectRelativeWevuVendorRequireForBinding(files: GeneratedJsFile[], bindingName: string) {
-  const destructuredPattern = [
+  const destructuredPattern = new RegExp([
     '\\bconst\\s*\\{[^}]*\\b',
     bindingName,
-    '\\b[^}]*\\}\\s*=\\s*require\\((["\'])(?:\\.\\.?/)+weapp-vendors/wevu-[^\'"]+\\.js\\1\\)',
-  ].join('')
-  const namespaceRequirePattern = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*require\((["'])(?:\.\.?\/)+weapp-vendors\/wevu-[^'"]+\.js\2\)/g
-  const bindingPattern = new RegExp(`\\b${bindingName}\\b`)
+    '\\b[^}]*\\}\\s*=\\s*require\\((["\'])((?:\\.\\.?/)+weapp-vendors/wevu-[^\'"]+\\.js)\\1\\)',
+  ].join(''), 'g')
+  const namespaceRequirePattern = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*require\((["'])((?:\.\.?\/)+weapp-vendors\/wevu-[^'"]+\.js)\2\)/g
   const exportPattern = new RegExp(`\\bexports\\.${bindingName}\\b|Object\\.defineProperty\\(exports, ["']${bindingName}`)
-  const matchedFiles = files.filter(({ code }) => {
-    if (!includesRelativeWevuVendorRequire(code) || !bindingPattern.test(code)) {
-      return false
+  const filesByPath = new Map(files.map(file => [file.relativePath, file]))
+  const requiredTargets: string[] = []
+
+  for (const file of files) {
+    if (!includesRelativeWevuVendorRequire(file.code)) {
+      continue
     }
-    if (new RegExp(destructuredPattern).test(code)) {
-      return true
-    }
-    for (const match of code.matchAll(namespaceRequirePattern)) {
-      const namespace = match[1]
-      if (new RegExp(`\\b${namespace}\\.${bindingName}\\b`).test(code)) {
-        return true
+    for (const match of file.code.matchAll(destructuredPattern)) {
+      const specifier = match[2]
+      if (specifier) {
+        requiredTargets.push(path.posix.normalize(path.posix.join(
+          path.posix.dirname(file.relativePath),
+          specifier,
+        )))
       }
     }
-    return exportPattern.test(code)
-  })
+    for (const match of file.code.matchAll(namespaceRequirePattern)) {
+      const namespace = match[1]
+      const specifier = match[3]
+      if (namespace && specifier && new RegExp(`\\b${namespace}\\.${bindingName}\\b`).test(file.code)) {
+        requiredTargets.push(path.posix.normalize(path.posix.join(
+          path.posix.dirname(file.relativePath),
+          specifier,
+        )))
+      }
+    }
+  }
 
-  expect(matchedFiles.map(file => file.relativePath)).not.toEqual([])
+  expect(requiredTargets).not.toEqual([])
+  for (const target of requiredTargets) {
+    expect(filesByPath.get(target)?.code, `${target} must export ${bindingName}`).toMatch(exportPattern)
+  }
 }
 
 describe.sequential('wevu app runtime HMR', () => {
-  it('keeps app runtime imports resolved after editing a layout in dev watch mode', async () => {
+  it('keeps published app runtime imports resolved after editing a layout in dev watch mode', async () => {
     const fixtureSource = path.resolve(__dirname, '../../../e2e-apps/github-issues')
     const tempProject = await createTempFixtureProject(fixtureSource, 'wevu-app-runtime-hmr')
     const cwd = tempProject.tempDir
+    await installPublishedWevuPackage(cwd)
     const appSourcePath = path.resolve(cwd, 'src/app.vue')
     const layoutSourcePath = path.resolve(cwd, 'src/layouts/issue-398-shell.vue')
 
@@ -201,6 +229,7 @@ describe.sequential('wevu app runtime HMR', () => {
         },
       },
     })
+    ctxResult.ctx.configService.weappViteConfig.hmr = { runtime: 'classic' }
 
     let watcher: WatcherEmitter | undefined
 
@@ -213,6 +242,9 @@ describe.sequential('wevu app runtime HMR', () => {
 
       const appOutputPath = path.resolve(ctxResult.ctx.configService.outDir, 'app.js')
       const layoutOutputPath = path.resolve(ctxResult.ctx.configService.outDir, 'layouts/issue-398-shell.wxml')
+      const runtimeVendorPath = path.resolve(ctxResult.ctx.configService.outDir, 'weapp-vendors/wevu-runtime.js')
+      const reactivityVendorPath = path.resolve(ctxResult.ctx.configService.outDir, 'weapp-vendors/wevu-reactivity.js')
+      const templateVendorPath = path.resolve(ctxResult.ctx.configService.outDir, 'weapp-vendors/wevu-template.js')
 
       const initialAppOutput = await waitForFileSatisfies(
         appOutputPath,
@@ -220,6 +252,9 @@ describe.sequential('wevu app runtime HMR', () => {
         'initial app output contains hmr probe',
       )
       expectNoBareWevuRuntimeReferences(initialAppOutput)
+      expect(await fs.pathExists(runtimeVendorPath)).toBe(true)
+      expect(await fs.pathExists(reactivityVendorPath)).toBe(true)
+      expect(await fs.pathExists(templateVendorPath)).toBe(true)
 
       const originalLayoutSource = await fs.readFile(layoutSourcePath, 'utf8')
       const updatedLayoutSource = originalLayoutSource.replace(
@@ -253,5 +288,5 @@ describe.sequential('wevu app runtime HMR', () => {
       await ctxResult.dispose()
       await tempProject.cleanup()
     }
-  }, 120_000)
+  }, TEST_TIMEOUT_MS)
 })

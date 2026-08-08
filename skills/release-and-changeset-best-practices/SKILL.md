@@ -48,6 +48,12 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 release、changese
    - `node --import tsx scripts/check-catalog-changeset.ts`
    - 需要时再跑 `pnpm release`、`pnpm cv`、`pnpm publish-packages`
 
+## Skills 改动判定
+
+- skill 正文、触发元数据、脚手架 AGENTS 或网站 AI 路由变化属于用户可见的 AI 工作流变化，不应按纯注释维护处理。
+- 只要改动影响 `create-weapp-vite` 生成的默认指引，默认同时检查 `create-weapp-vite` bump 和模板输出回归。
+- changeset summary 说明用户获得的 AI 工作流、验证路径或命令路由变化，不罗列内部文案重排。
+
 ## 约束
 
 - 不要漏掉源码 bug fix 的 changeset。

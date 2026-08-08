@@ -19,12 +19,10 @@ import { registerNativePageLayoutOutput } from '../../../outputFinalizer/pageLay
 import { readFile as readFileCached } from '../../../utils/cache'
 import { syncCssImportDependencies } from '../../../utils/invalidateEntry'
 import {
-  emitNativeLayoutScriptChunkIfNeeded,
   resolveNativeLayoutOutputOptions,
   resolveNativeLayoutStaticAssetEntries,
 } from '../../../utils/nativeLayout'
 import { expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
-import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { emitWxmlAssetFile, resolveWxmlEmitContext } from '../../../utils/wxmlEmit'
 import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectStyleImports } from './watch'
@@ -103,6 +101,7 @@ interface EmitEntryOutputOptions {
   templatePath: string
   isPluginBuild: boolean
   normalizedEntries: string[]
+  entriesMap: Map<string, Entry | undefined>
   pluginResolvedRecords?: ResolvedEntryRecord[]
   pluginJsonPathForRegistration?: string
   pluginJsonForRegistration?: any
@@ -120,6 +119,7 @@ interface EmitEntryOutputOptions {
   forceEmitEntrySet?: Set<string>
   forceReloadEntrySet?: Set<string>
   replaceLayoutDependencies: (entryId: string, dependencies: Iterable<string>) => void
+  replaceEntryDependencies: (entryId: string, kind: 'using-component', dependencies: Iterable<string>) => void
   emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => ChunkEmitTask[]
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
   existsCache: Map<string, boolean>
@@ -133,6 +133,7 @@ interface EmitEntryOutputOptions {
   styleImportsCache?: Map<string, string[]>
   resolvedPageLayoutPlan?: ResolvedPageLayoutPlan | null
   entryCodeSource?: string
+  metadataOnly?: boolean
 }
 
 function isEntryStyleStableHmr(runtimeState: CompilerContext['runtimeState']) {
@@ -165,6 +166,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     templatePath,
     isPluginBuild,
     normalizedEntries,
+    entriesMap,
     pluginResolvedRecords,
     pluginJsonPathForRegistration,
     pluginJsonForRegistration,
@@ -180,6 +182,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     forceEmitEntrySet,
     forceReloadEntrySet,
     replaceLayoutDependencies,
+    replaceEntryDependencies,
     emitEntriesChunks,
     registerJsonAsset,
     existsCache,
@@ -191,6 +194,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     styleImportsCache,
     resolvedPageLayoutPlan,
     entryCodeSource,
+    metadataOnly,
   } = options
   let json = initialJson
   function recordEntryDuration(key: HmrProfileDurationKey, startedAt: number) {
@@ -308,7 +312,6 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         wxmlService.setWxmlComponentsMap(assets.template, token.components)
         emitWxmlAssetFile({
           runtime: {
-            addWatchFile: pluginCtx.addWatchFile?.bind(pluginCtx),
             emitFile: payload => pluginCtx.emitFile(payload),
           },
           id: assets.template,
@@ -338,12 +341,6 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       })
       nativeLayoutAssetSourceCache.set(cacheKey, asset.source)
     }
-
-    emitNativeLayoutScriptChunkIfNeeded({
-      pluginCtx,
-      scriptId: assets.script,
-      fileName: `${resolvedOptions.relativeBase}.${resolvedOptions.scriptExtension}`,
-    })
   }
 
   const shouldSkipEntries = Boolean(options.skipEntries)
@@ -381,6 +378,18 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     ? undefined
     : new Set(pluginResolvedRecords.map(record => record.entry))
 
+  replaceEntryDependencies(
+    id,
+    'using-component',
+    combinedResolved.flatMap(({ entry, resolvedId }) => {
+      if (!resolvedId || entriesMap.get(entry)?.type !== 'component') {
+        return []
+      }
+      const resolvedSourceId = normalizeFsResolvedId(resolvedId.id)
+      return isSkippableResolvedId(resolvedSourceId) ? [] : [resolvedSourceId]
+    }),
+  )
+
   for (const { entry, resolvedId } of combinedResolved) {
     if (!resolvedId) {
       const missingAbsoluteEntryPath = path.resolve(entryResolveRoot, entry)
@@ -400,13 +409,6 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     }
 
     const normalizedResolvedId = normalizeFsResolvedId(resolvedId.id)
-    if (
-      normalizedResolvedId
-      && !isSkippableResolvedId(normalizedResolvedId)
-      && path.isAbsolute(normalizedResolvedId)
-    ) {
-      addNormalizedWatchFile(pluginCtx, normalizedResolvedId)
-    }
     if (normalizedResolvedId && !isSkippableResolvedId(normalizedResolvedId)) {
       resolvedEntryMap.set(normalizedResolvedId, resolvedId)
     }
@@ -429,7 +431,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     }
   }
 
-  if (pendingResolvedIds.length) {
+  if (pendingResolvedIds.length && !metadataOnly) {
     const startedAt = performance.now()
     try {
       await Promise.all(emitEntriesChunks.call(pluginCtx, pendingResolvedIds))
@@ -476,7 +478,6 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       if (layoutPlan) {
         const layoutDependencies = new Set<string>()
         for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
-          addNormalizedWatchFile(pluginCtx, file)
           layoutDependencies.add(normalizeFsResolvedId(file))
         }
         replaceLayoutDependencies(id, layoutDependencies)

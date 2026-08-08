@@ -24,7 +24,7 @@
     "gen": "tsx gen.ts"
   },
   "dependencies": {
-    "gm-crypto": "^0.1.12"
+    "gm-crypto": "catalog:"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",

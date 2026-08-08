@@ -281,6 +281,25 @@ async function waitForIssue479Ready(miniProgram: any, timeoutMs = 20_000) {
   return null
 }
 
+async function isLifecycleRuntimeReady(miniProgram: any, route: string) {
+  try {
+    const runtime = await callRoutePageMethodWithOptions<Record<string, any>>(
+      miniProgram,
+      route,
+      '_runE2E',
+      {
+        protocolTimeoutMs: 3_000,
+        retries: 1,
+        recoveryAttempts: 1,
+      },
+    )
+    return runtime?.ok === true
+  }
+  catch {
+    return false
+  }
+}
+
 describe.sequential('e2e app: github-issues / lifecycle', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
@@ -293,7 +312,9 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
   it('issue #309: triggers onLoad without requiring onPullDownRefresh hook', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-309/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-309/index', undefined, 45_000, {
+        readiness: (_page, activeMiniProgram) => isLifecycleRuntimeReady(activeMiniProgram, '/pages/issue-309/index'),
+      })
       if (!issuePage) {
         throw new Error('Failed to launch issue-309 page')
       }
@@ -310,7 +331,9 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
   it('issue #309: triggers onLoad with created setupLifecycle and no pull-down hook', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-309-created/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-309-created/index', undefined, 45_000, {
+        readiness: (_page, activeMiniProgram) => isLifecycleRuntimeReady(activeMiniProgram, '/pages/issue-309-created/index'),
+      })
       if (!issuePage) {
         throw new Error('Failed to launch issue-309-created page')
       }
@@ -451,7 +474,16 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
         throw new Error('Failed to launch issue-320 page')
       }
       const activeMiniProgram = await getSharedMiniProgram(ctx)
-      const navigationResult = await issuePage.callMethod('runRedirectNavigationE2E')
+      const navigationResult = await callRoutePageMethodWithOptions<Record<string, any>>(
+        activeMiniProgram,
+        '/pages/issue-320/index',
+        'runRedirectNavigationE2E',
+        {
+          protocolTimeoutMs: 12_000,
+          recoveryAttempts: 1,
+          retries: 1,
+        },
+      )
       expect(navigationResult?.ok).toBe(true)
       const redirectedPage = await waitForCurrentPagePath(activeMiniProgram, '/pages/issue-309/index')
       expect(redirectedPage).toBeTruthy()
@@ -815,10 +847,15 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
         throw new Error('Failed to launch issue-500 page')
       }
 
-      const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-500/index', '_runE2E')
-      expect(runtime?.ok).toBe(true)
-      expect(runtime?.continuationText).toBe('continued')
-      expect(runtime?.missingType).toBe('fallback')
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const runtime = await callRoutePageMethodWithOptions(activeMiniProgram, '/pages/issue-500/index', '_runE2E', {
+        protocolTimeoutMs: 12_000,
+      })
+      expect(runtime).toMatchObject({
+        continuationText: 'continued',
+        missingType: 'fallback',
+        ok: true,
+      })
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

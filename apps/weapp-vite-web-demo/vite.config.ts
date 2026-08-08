@@ -34,6 +34,23 @@ export default defineConfig({
       },
     },
     web: {
+      pluginOptions: {
+        runtime: {
+          routing: {
+            mode: 'history',
+          },
+          seo: {
+            defaultTitle: 'weapp-vite Web Runtime',
+            titleTemplate: '%s | weapp-vite',
+            description: '原生小程序页面的 Web Runtime 演示。',
+          },
+          resourceHints: {
+            links: [
+              { rel: 'preconnect', href: 'https://static.example.test' },
+            ],
+          },
+        },
+      },
       vite: {
         server: {
           host: webHost ?? '127.0.0.1',

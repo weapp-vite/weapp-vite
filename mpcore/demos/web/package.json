@@ -1,7 +1,7 @@
 {
   "name": "@mpcore/simulator-web-demo",
   "type": "module",
-  "version": "0.0.8",
+  "version": "0.0.11",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -18,12 +18,12 @@
   "devDependencies": {
     "@iconify-json/mdi": "catalog:",
     "@iconify/tailwind4": "catalog:",
-    "@shikijs/engine-javascript": "^4.3.1",
-    "@shikijs/langs": "^4.3.1",
-    "@shikijs/themes": "^4.3.1",
+    "@shikijs/engine-javascript": "^4.4.2",
+    "@shikijs/langs": "^4.4.2",
+    "@shikijs/themes": "^4.4.2",
     "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
-    "shiki": "^4.3.1",
+    "shiki": "^4.4.2",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
     "vite": "catalog:",

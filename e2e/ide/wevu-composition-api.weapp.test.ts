@@ -42,9 +42,12 @@ async function assertCoverageForRoute(miniProgram: any, route: string) {
   if (!page) {
     throw new Error(`Failed to launch ${route}`)
   }
-  await page.waitFor(160)
+  await page.waitForRendered({ selector: '.page', timeout: 20_000 })
 
-  const result = await page.callMethod('runE2E')
+  const result = await page.callMethodWithOptions('runE2E', {
+    routeOnly: true,
+    timeout: 60_000,
+  })
   if (!result?.ok) {
     throw new Error(`Coverage failed for ${route}: ${JSON.stringify(result?.details ?? {}, null, 2)}`)
   }

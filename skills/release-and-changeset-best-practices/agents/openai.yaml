@@ -1,12 +1,9 @@
 interface:
   display_name: Release And Changeset Best Practices
-  short_description: changeset、版本联动、issue 交付与发布判定
+  short_description: changeset、issue worktree、回归验证和发布交付闭环
   default_prompt: >-
-    当任务主轴是判断某次改动是否需要 changeset、准备发布、处理
-    `create-weapp-vite` 与 `weapp-vite/wevu/templates` 的联动，或按仓库流程修复
-    GitHub issue、建立 worktree、补回归并推进到 PR 时，使用
-    $release-and-changeset-best-practices。changeset summary 使用中文，
-    提交遵循 Conventional Commits，并遵循仓库默认交付策略。
+    当任务主轴是 changeset、版本联动、GitHub issue worktree、最小复现、回归验证或 PR 交付时，
+    使用 $release-and-changeset-best-practices。先判断用户可见性，再给出中文 changeset、测试和提交策略。
 
 policy:
   allow_implicit_invocation: true

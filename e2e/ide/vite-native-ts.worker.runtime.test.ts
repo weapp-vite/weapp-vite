@@ -39,7 +39,9 @@ async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
   try {
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
-      skipWarmup: true,
+      retryWarmupTimeout: true,
+      warmupRootSelectors: ['.worker-status'],
+      warmupRoute: ROUTE,
     })
     return miniProgram
   }
@@ -87,7 +89,10 @@ describe.sequential('e2e app: vite-native-ts worker runtime', () => {
     const marker = collector.mark()
 
     try {
-      const page = await miniProgram.reLaunch(ROUTE)
+      const page = await miniProgram.currentPage({
+        retries: 2,
+        timeout: 5_000,
+      })
       if (!page) {
         throw new Error(`Failed to launch ${ROUTE}`)
       }

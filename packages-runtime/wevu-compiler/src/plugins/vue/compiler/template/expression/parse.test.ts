@@ -5,6 +5,7 @@ import {
   parseBabelExpressionFile,
   parseInlineHandler,
 } from './parse'
+import { normalizeWxmlExpression } from './wxml'
 
 describe('template expression parse helpers', () => {
   it('parses expression and reuses cache for same source', () => {
@@ -20,6 +21,20 @@ describe('template expression parse helpers', () => {
     expect(parseBabelExpression('foo +')).toBeNull()
     // hit cached false sentinel branch
     expect(parseBabelExpression('foo +')).toBeNull()
+  })
+
+  it('strips TypeScript-only syntax from template expressions', () => {
+    expect(generateExpression(parseBabelExpression('(event: any) => handle(event)')!)).toBe('event=>handle(event)')
+    expect(generateExpression(parseBabelExpression('column.$.exposed!.value as string')!)).toBe('column.$.exposed.value')
+    expect(normalizeWxmlExpression('column.$.exposed!.sortDirection.value')).toBe('column.$.exposed.sortDirection.value')
+  })
+
+  it('rewrites Vue slot presence checks to mini-program slot metadata', () => {
+    expect(normalizeWxmlExpression('!$slots.content && mode === \'normal\''))
+      .toBe('!(vueSlots&&vueSlots.content)&&mode===\'normal\'')
+    expect(normalizeWxmlExpression('$slots[\'preview-cover\'] || $slots.default'))
+      .toBe('vueSlots&&vueSlots[\'preview-cover\']||vueSlots&&vueSlots.default')
+    expect(normalizeWxmlExpression('$slots')).toBe('vueSlots')
   })
 
   it('parses expression file helper and returns null when invalid', () => {

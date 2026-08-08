@@ -10,6 +10,7 @@ import {
   resolveProjectAutomatorPort,
   setWechatIdeTicket,
 } from 'weapp-ide-cli'
+import { getBackendForCapability } from '../../backends'
 import logger from '../../logger'
 import { resolveForwardConsoleOptions, startForwardConsoleBridge } from '../forwardConsole'
 import { readLatestHmrProfileSummary } from '../hmrProfileSummary'
@@ -70,10 +71,14 @@ export async function runIdeCommand(action: string | undefined, root: string | u
   filterDuplicateOptions(options)
   const configFile = resolveConfigFile(options)
   const targets = resolveRuntimeTargets(options)
+  const ideBackend = getBackendForCapability(targets, 'miniprogram', 'ide')
+  if (!ideBackend) {
+    throw new Error('`weapp-vite ide` 当前仅支持小程序平台。')
+  }
   const resolved = await resolveIdeCommandContext({
     configFile,
     mode: options.mode ?? 'development',
-    platform: targets.platform,
+    platform: ideBackend.platform as typeof targets.platform,
     projectPath: root,
     cliPlatform: targets.rawPlatform,
   })

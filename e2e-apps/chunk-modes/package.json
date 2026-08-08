@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "wv dev",
+    "dev:web": "wv dev -p web --host",
     "dev:open": "wv dev -o",
     "dev:duplicate:common": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_MODE=common WEAPP_CHUNK_OUTDIR=dist-dev-duplicate-common wv dev",
     "dev:duplicate:path": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_MODE=path WEAPP_CHUNK_OUTDIR=dist-dev-duplicate-path WEAPP_CHUNK_SHARED_PATH_ROOT=src wv dev",
@@ -28,6 +29,7 @@
     "dev:open:warn:off": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_LOG_OPTIMIZATION=false WEAPP_CHUNK_DUPLICATE_WARNING_BYTES=1 WEAPP_CHUNK_OUTDIR=dist-dev-warn-off wv dev -o",
     "dev:open:warn:zero-threshold": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_LOG_OPTIMIZATION=true WEAPP_CHUNK_DUPLICATE_WARNING_BYTES=0 WEAPP_CHUNK_OUTDIR=dist-dev-warn-zero-threshold wv dev -o",
     "build": "wv build --platform weapp --skipNpm",
+    "build:web": "wv build -p web",
     "build:duplicate:common": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_MODE=common WEAPP_CHUNK_OUTDIR=dist-duplicate-common wv build --platform weapp --skipNpm",
     "build:duplicate:path": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_MODE=path WEAPP_CHUNK_OUTDIR=dist-duplicate-path WEAPP_CHUNK_SHARED_PATH_ROOT=src wv build --platform weapp --skipNpm",
     "build:duplicate:inline": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_MODE=inline WEAPP_CHUNK_OUTDIR=dist-duplicate-inline wv build --platform weapp --skipNpm",

@@ -9,6 +9,7 @@ import {
 import { parseSync } from 'oxc-parser'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { createLoadHook, createOptionsHook } from './load'
 
@@ -41,6 +42,10 @@ vi.mock('../../../utils', async () => {
 
 describe('core lifecycle load hook injectWeapi', () => {
   beforeEach(() => {
+    findJsEntryMock.mockReset()
+    findJsEntryMock.mockResolvedValue({ path: undefined, predictions: [] })
+    findVueEntryMock.mockReset()
+    findVueEntryMock.mockResolvedValue(undefined)
     pathExistsCachedMock.mockReset()
     pathExistsCachedMock.mockResolvedValue(true)
   })
@@ -548,7 +553,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).not.toContain('my.showToast')
   })
 
-  it('loads css wxss requests from the real wxss path and registers watch file', async () => {
+  it('loads css wxss requests from the real wxss path without duplicating the module edge', async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-load-'))
     const realWxss = path.join(tempDir, 'index.wxss')
     await writeFile(realWxss, '.page{color:red;}', 'utf8')
@@ -574,7 +579,7 @@ describe('core lifecycle load hook injectWeapi', () => {
       `${path.join(tempDir, 'index.css')}?wxss`,
     )
 
-    expect(addWatchFile).toHaveBeenCalled()
+    expect(addWatchFile).not.toHaveBeenCalled()
     expect(result).toEqual({ code: '.page{color:red;}' })
   })
 
@@ -910,6 +915,10 @@ describe('core lifecycle load hook injectWeapi', () => {
 
 describe('core lifecycle options hook', () => {
   it('builds input map from subPackageMeta entries', async () => {
+    findJsEntryMock.mockImplementation(async (id: string) => ({
+      path: `${id}.ts`,
+      predictions: [`${id}.ts`],
+    }))
     const state = {
       ctx: {
         configService: {
@@ -929,13 +938,72 @@ describe('core lifecycle options hook', () => {
     await optionsHook(options)
 
     expect(options.input).toEqual({
-      'pages/a/index': '/project/src/pages/a/index',
-      'pages/b/index': '/project/src/pages/b/index',
+      'pages/a/index': createLogicalEntryId('/project/src/pages/a/index.ts', 'page'),
+      'pages/b/index': createLogicalEntryId('/project/src/pages/b/index.ts', 'page'),
     })
     expect(Array.from(state.hmrRootInputIds)).toEqual([
-      '/project/src/pages/a/index',
-      '/project/src/pages/b/index',
+      '/project/src/pages/a/index.ts',
+      '/project/src/pages/b/index.ts',
     ])
+  })
+
+  it('only promotes physical app routes and local components to logical inputs', async () => {
+    findJsEntryMock.mockImplementation(async (id: string) => ({
+      path: id.endsWith('/pages/home/index') || id.endsWith('/components/card/index')
+        ? `${id}.ts`
+        : undefined,
+      predictions: [`${id}.ts`],
+    }))
+    const runtimeState = {
+      lib: {
+        enabled: false,
+        entries: new Map(),
+      },
+    }
+    const configService = {
+      absoluteSrcRoot: '/project/src',
+      weappLibConfig: undefined,
+      isDev: false,
+      options: {},
+      relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+    }
+    const appEntry = {
+      path: '/project/src/app.ts',
+      json: {
+        pages: ['pages/home/index', 'pages/missing/index'],
+        usingComponents: {
+          card: '/components/card/index',
+          vendor: 'vendor-ui/button/index',
+        },
+      },
+    }
+    const state = {
+      ctx: {
+        runtimeState,
+        configService,
+        scanService: {
+          appEntry,
+          loadAppEntry: vi.fn(async () => appEntry),
+          loadSubPackages: vi.fn(),
+          drainIndependentDirtyRoots: vi.fn(() => []),
+          independentSubPackageMap: new Map(),
+        },
+        buildService: {},
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+    } as any
+
+    const options: Record<string, any> = {}
+    await createOptionsHook(state)(options)
+
+    expect(options.input).toEqual({
+      'app': createLogicalEntryId('/project/src/app.ts', 'app'),
+      'pages/home/index': createLogicalEntryId('/project/src/pages/home/index.ts', 'page'),
+      'components/card/index': createLogicalEntryId('/project/src/components/card/index.ts', 'component'),
+    })
+    expect(options.input).not.toHaveProperty('pages/missing/index')
+    expect(options.input).not.toHaveProperty('vendor-ui/button/index')
   })
 
   it('loads lib entries when weapp lib mode is enabled', async () => {
@@ -979,7 +1047,7 @@ describe('core lifecycle options hook', () => {
     await optionsHook(options)
 
     expect(options.input).toEqual({
-      card: '/project/src/components/card.ts',
+      card: createLogicalEntryId('/project/src/components/card.ts', 'component'),
     })
     expect(runtimeState.lib.enabled).toBe(true)
     expect(runtimeState.lib.entries.size).toBe(1)
@@ -1039,7 +1107,7 @@ describe('core lifecycle options hook', () => {
     await optionsHook(options)
 
     expect(options.input).toEqual({
-      app: '/project/src/app.ts',
+      app: createLogicalEntryId('/project/src/app.ts', 'app'),
     })
     expect(runtimeState.lib.enabled).toBe(false)
     expect(runtimeState.lib.entries.size).toBe(0)
@@ -1102,7 +1170,7 @@ describe('core lifecycle options hook', () => {
     await optionsHook(options)
 
     expect(options.input).toEqual({
-      index: '/project/plugin/index.ts',
+      index: createLogicalEntryId('/project/plugin/index.ts', 'app'),
     })
     expect(Array.from(state.hmrRootInputIds)).toEqual(['/project/plugin/index.ts'])
     expect(scanService.loadSubPackages).not.toHaveBeenCalled()

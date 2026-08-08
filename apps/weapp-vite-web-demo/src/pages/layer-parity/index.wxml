@@ -1,0 +1,57 @@
+<view class="layer-page" data-visual-ready="true">
+  <view class="layer-page__intro">
+    <text class="layer-page__eyebrow">LAYER / MOVABLE</text>
+    <text class="layer-page__title">覆盖层与移动组件</text>
+    <text class="layer-page__caption">原生覆盖层、图片模式与拖拽事件共用同一份页面源码</text>
+  </view>
+
+  <view class="layer-panel">
+    <view class="layer-heading">
+      <text class="layer-heading__label">COVER LAYER</text>
+      <text class="layer-heading__meta">z-index / image mode</text>
+    </view>
+    <view class="cover-stage">
+      <image class="cover-stage__background" src="/retail-goods-02.jpg" mode="aspectFill" />
+      <cover-image class="cover-stage__logo" src="/logo.png" mode="aspectFit" />
+      <cover-view class="cover-stage__badge" bindtap="handleCoverTap">COVER VIEW</cover-view>
+      <cover-view class="cover-stage__caption">Web runtime layer</cover-view>
+    </view>
+    <text class="event-value">{{coverEvent}}</text>
+  </view>
+
+  <view class="layer-panel">
+    <view class="layer-heading">
+      <text class="layer-heading__label">MOVABLE AREA</text>
+      <text class="layer-heading__meta">all / bounds</text>
+    </view>
+    <movable-area class="move-area">
+      <movable-view
+        class="move-handle"
+        direction="all"
+        x="{{movableX}}"
+        y="{{movableY}}"
+        animation
+        bindchange="handleMove"
+      >
+        <text class="move-handle__label">DRAG</text>
+      </movable-view>
+    </movable-area>
+    <text class="event-value">position: {{moveEvent}}</text>
+  </view>
+
+  <view class="layer-panel layer-panel--axis">
+    <view class="axis-column">
+      <text class="axis-column__label">HORIZONTAL</text>
+      <movable-area class="axis-area">
+        <movable-view class="axis-handle" direction="horizontal" x="32" y="0" bindhtouchmove="handleHorizontalMove">H</movable-view>
+      </movable-area>
+    </view>
+    <view class="axis-column">
+      <text class="axis-column__label">VERTICAL</text>
+      <movable-area class="axis-area axis-area--vertical">
+        <movable-view class="axis-handle" direction="vertical" x="0" y="12" bindvtouchmove="handleVerticalMove">V</movable-view>
+      </movable-area>
+    </view>
+    <text class="event-value">{{axisEvent}}</text>
+  </view>
+</view>

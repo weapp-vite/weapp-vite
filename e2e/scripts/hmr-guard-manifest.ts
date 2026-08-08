@@ -35,7 +35,9 @@ export const HMR_GUARD_TEST_GROUPS = {
     'wevu-runtime.hmr.test.ts',
   ]),
   complexDeveloperFlows: resolveCiTests([
+    'e2e-app-tailwind-memory-guard.test.ts',
     'hmr-complex-developer-flow.test.ts',
+    'template-tailwind-hmr.test.ts',
   ]),
 } as const
 

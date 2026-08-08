@@ -1,16 +1,60 @@
 <script setup lang="ts">
 import { computed } from 'wevu'
-import { useRoute } from 'wevu/router'
+import { useRoute, useRouter } from 'wevu/router'
 
 definePageJson({
   navigationBarTitleText: 'issue-550',
 })
 
 const route = useRoute()
+const router = useRouter()
 const routeName = computed(() => route.name ?? '')
 const routeMatchedName = computed(() => route.matched?.[0]?.name ?? '')
+const BACK_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_back_result__'
 
-function _runE2E() {
+function prepareBackProbe() {
+  wx.setStorageSync(BACK_RESULT_STORAGE_KEY, {
+    stage: 'started',
+  })
+}
+
+function routerBack() {
+  prepareBackProbe()
+  return router.back()
+}
+
+function nativeBack() {
+  prepareBackProbe()
+  return wx.navigateBack()
+}
+
+function scheduleBackForE2E(mode: 'native' | 'router') {
+  prepareBackProbe()
+  setTimeout(() => {
+    if (mode === 'router') {
+      void router.back()
+    }
+    else {
+      void wx.navigateBack()
+    }
+  }, 0)
+  return {
+    mode,
+    started: true,
+  }
+}
+
+function _runE2E(action?: 'nativeBack' | 'prepareBack' | 'routerBack') {
+  if (action === 'routerBack') {
+    return scheduleBackForE2E('router')
+  }
+  if (action === 'nativeBack') {
+    return scheduleBackForE2E('native')
+  }
+  if (action === 'prepareBack') {
+    prepareBackProbe()
+    return
+  }
   return {
     ok: route.name === 'pages/issue-550/index',
     name: route.name,
@@ -31,6 +75,12 @@ function _runE2E() {
     >
       route name = {{ routeName }}
     </view>
+    <button @tap="routerBack">
+      router back
+    </button>
+    <button @tap="nativeBack">
+      native back
+    </button>
   </view>
 </template>
 

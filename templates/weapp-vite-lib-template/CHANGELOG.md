@@ -1,5 +1,54 @@
 # weapp-vite-lib-template
 
+## 10.0.2
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.19.2`
+
+## 10.0.1
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.19.1`
+
+## 10.0.0
+
+### Patch Changes
+
+- 📦 **Dependencies** [`878073f`](https://github.com/weapp-vite/weapp-vite/commit/878073f8819a21f7e6baa96d13cf3f7e552d2158)
+  → `wevu@6.19.0`
+
+## 9.0.6
+
+### Patch Changes
+
+- 📦 **Dependencies** [`64b74ad`](https://github.com/weapp-vite/weapp-vite/commit/64b74ad0a04c16f7281ce789ffdc47836d1f9fef)
+  → `wevu@6.18.6`
+
+## 9.0.5
+
+### Patch Changes
+
+- 📦 **Dependencies** [`b9be44a`](https://github.com/weapp-vite/weapp-vite/commit/b9be44a929932241af31cdb284ee6271c6ff8ac3)
+  → `wevu@6.18.5`
+
+## 9.0.4
+
+### Patch Changes
+
+- 📦 **Dependencies** [`213a8e6`](https://github.com/weapp-vite/weapp-vite/commit/213a8e6a410198b54c499e29ad8c5d8d86bbaeb2)
+  → `wevu@6.18.4`
+
+## 9.0.3
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.18.3`
+
 ## 9.0.2
 
 ### Patch Changes

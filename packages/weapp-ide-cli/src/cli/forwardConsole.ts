@@ -214,14 +214,20 @@ async function refreshOpenedMiniProgramConsoleLog(options: ForwardConsoleOptions
   }
 }
 
-function startEnableLogRefresh(miniProgram: MiniProgramLike, options: ForwardConsoleOptions) {
+function startEnableLogRefresh(
+  miniProgram: MiniProgramLike,
+  options: ForwardConsoleOptions,
+  refreshOpenedSession: boolean,
+) {
   if (typeof miniProgram.enableLog !== 'function') {
     return undefined
   }
 
   const timer = setInterval(() => {
     void miniProgram.enableLog().catch(() => {})
-    void refreshOpenedMiniProgramConsoleLog(options).catch(() => {})
+    if (refreshOpenedSession) {
+      void refreshOpenedMiniProgramConsoleLog(options).catch(() => {})
+    }
   }, ENABLE_LOG_REFRESH_INTERVAL_MS)
 
   return () => {
@@ -233,7 +239,8 @@ function startEnableLogRefresh(miniProgram: MiniProgramLike, options: ForwardCon
  * @description 启动小程序控制台日志转发，并保持 automator 会话常驻。
  */
 export async function startForwardConsole(options: ForwardConsoleOptions): Promise<ForwardConsoleSession> {
-  const miniProgram = await acquireSharedMiniProgram(options)
+  const usesSharedSession = !options.miniProgram
+  const miniProgram = options.miniProgram ?? await acquireSharedMiniProgram(options)
   const logLevels = new Set(options.logLevels?.length ? options.logLevels : DEFAULT_FORWARD_CONSOLE_LEVELS)
   const logHandler = options.onLog ?? printForwardConsoleEvent
   const recentLogTimes = new Map<string, number>()
@@ -283,7 +290,9 @@ export async function startForwardConsole(options: ForwardConsoleOptions): Promi
       auxiliaryMiniProgram.disconnect()
       auxiliaryMiniProgram = undefined
     }
-    releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port)
+    if (usesSharedSession) {
+      releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port)
+    }
   }
 
   try {
@@ -296,23 +305,25 @@ export async function startForwardConsole(options: ForwardConsoleOptions): Promi
 
   miniProgram.on('console', onConsole)
   miniProgram.on('exception', onException)
-  stopEnableLogRefresh = startEnableLogRefresh(miniProgram, options)
-  auxiliaryTimer = setTimeout(() => {
-    void (async () => {
-      const openedMiniProgram = await connectMiniProgram({
-        ...options,
-        openedOnly: true,
-      })
-      if (closed) {
-        openedMiniProgram.disconnect()
-        return
-      }
-      auxiliaryMiniProgram = openedMiniProgram
-      await enableMiniProgramConsoleLog(openedMiniProgram)
-      openedMiniProgram.on('console', onConsole)
-      openedMiniProgram.on('exception', onException)
-    })().catch(() => {})
-  }, AUXILIARY_FORWARD_CONSOLE_DELAY_MS)
+  stopEnableLogRefresh = startEnableLogRefresh(miniProgram, options, usesSharedSession)
+  if (usesSharedSession) {
+    auxiliaryTimer = setTimeout(() => {
+      void (async () => {
+        const openedMiniProgram = await connectMiniProgram({
+          ...options,
+          openedOnly: true,
+        })
+        if (closed) {
+          openedMiniProgram.disconnect()
+          return
+        }
+        auxiliaryMiniProgram = openedMiniProgram
+        await enableMiniProgramConsoleLog(openedMiniProgram)
+        openedMiniProgram.on('console', onConsole)
+        openedMiniProgram.on('exception', onException)
+      })().catch(() => {})
+    }, AUXILIARY_FORWARD_CONSOLE_DELAY_MS)
+  }
   options.onReady?.()
 
   return {

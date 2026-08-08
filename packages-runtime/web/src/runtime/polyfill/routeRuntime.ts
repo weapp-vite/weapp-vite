@@ -1,40 +1,111 @@
+import type { WebTabBarConfig } from '../../shared/tabBar'
 import type { ButtonFormConfig } from '../button'
 import type { ComponentPublicInstance } from '../component'
 import type { NavigationBarMetrics } from '../navigationBar'
-import type { AppLaunchOptions, AppRuntime, ComponentRawOptions, ComponentRecord, PageRawOptions, PageRecord, PageStackEntry, RegisterMeta } from './routeRuntime/options'
+import type { WebResourceHintsConfig, WebSeoConfig } from '../seo'
+import type { WebViewportConfig } from '../viewport'
+import type { WebRouteHistoryState, WebRouteTarget, WebRoutingConfig } from './routeRuntime/history'
+import type { AppRuntime, ComponentRawOptions, ComponentRecord, NavigateBackOptions, PageRawOptions, PageRecord, RegisterMeta, RouteOptions } from './routeRuntime/options'
 import { slugify } from '../../shared/slugify'
-import { ensureButtonDefined, setButtonFormConfig } from '../button'
+import {
+  configureTabBar,
+  getTabBarPagePaths,
+  syncTabBarRoute,
+} from '../appShell/tabBar'
+import { setButtonFormConfig } from '../button'
 import { defineComponent } from '../component'
 import { setRuntimeExecutionMode } from '../execution'
+import { ensureNativeComponentsDefined } from '../nativeComponents'
 import { ensureNavigationBarDefined, setNavigationBarMetrics } from '../navigationBar'
 import { setupRpx } from '../rpx'
+import { configureWebSeo, setupWebResourceHints, syncWebDocumentHead } from '../seo'
+import { setupWebViewport } from '../viewport'
 import { setRuntimeWarningOptions } from '../warning'
+import { resolveCurrentPages } from './appState'
+import { AppLifecycleRuntime } from './routeRuntime/appLifecycle'
 import {
-  cloneLaunchOptions,
-  resolveCurrentPages,
-  resolveFallbackLaunchOptions,
-} from './appState'
-import { mountEntryToDom } from './routeRuntime/dom'
+  configureWebRouting,
+  getWebHistoryStack,
+  readWebRouteTarget,
+  syncWebRouting,
+} from './routeRuntime/history'
 import {
   augmentPageComponentOptions,
   dispatchPageLifetimeToComponents,
 } from './routeRuntime/lifecycle'
 import {
-
-  isRecord,
   normalizeComponentOptions,
   normalizePageOptions,
 } from './routeRuntime/options'
+import { resolveRouteAction } from './routeRuntime/result'
+import { PageStackRuntime } from './routeRuntime/stack'
 import { parsePageUrl } from './routeRuntime/url'
 
 const pageRegistry = new Map<string, PageRecord>()
 const componentRegistry = new Map<string, ComponentRecord>()
-const navigationHistory: PageStackEntry[] = []
 let pageOrder: string[] = []
-let appInstance: AppRuntime | undefined
-let appLaunched = false
-let lastLaunchOptions: AppLaunchOptions | undefined
 let pageResizeBridgeBound = false
+
+let pageStack: PageStackRuntime
+const appLifecycle = new AppLifecycleRuntime(
+  () => pageStack?.entries[pageStack.entries.length - 1],
+)
+pageStack = new PageStackRuntime(pageRegistry, entry => appLifecycle.ensureLaunched(entry))
+
+function syncCurrentWebDocument() {
+  const current = pageStack.entries[pageStack.entries.length - 1]
+  syncWebDocumentHead({
+    route: current?.id,
+    title: current ? pageRegistry.get(current.id)?.navigationBar?.title : undefined,
+  })
+}
+
+function syncCurrentWebRoute(operation: 'push' | 'replace') {
+  syncWebRouting(pageStack.entries, operation)
+  syncCurrentWebDocument()
+}
+
+function reconcileWebRoute(target: WebRouteTarget | undefined, state: WebRouteHistoryState | undefined) {
+  const currentIds = pageStack.entries.map(entry => entry.id)
+  const historyStack = getWebHistoryStack(state)
+  if (historyStack?.length) {
+    const desiredIds = historyStack.map(entry => entry.id)
+    const sharedLength = Math.min(desiredIds.length, currentIds.length)
+    const samePrefix = desiredIds
+      .slice(0, sharedLength)
+      .every((id, index) => currentIds[index] === id)
+    if (samePrefix && desiredIds.length < currentIds.length) {
+      pageStack.back(currentIds.length - desiredIds.length)
+    }
+    else if (samePrefix && desiredIds.length > currentIds.length) {
+      for (const entry of historyStack.slice(currentIds.length)) {
+        pageStack.push(entry.id, { ...entry.query })
+      }
+    }
+    else {
+      const last = historyStack[historyStack.length - 1]!
+      pageStack.relaunch(last.id, { ...last.query })
+    }
+    syncTabBarRoute(pageStack.entries[pageStack.entries.length - 1]?.id ?? '')
+    syncCurrentWebDocument()
+    return
+  }
+  if (target && pageRegistry.has(target.id)) {
+    pageStack.relaunch(target.id, { ...target.query })
+    syncTabBarRoute(target.id)
+    syncCurrentWebDocument()
+  }
+}
+
+function performSwitchTab(options: RouteOptions) {
+  const { id, query } = parsePageUrl(options?.url ?? '')
+  const succeeded = pageStack.switchTab(id, query)
+  if (succeeded) {
+    syncTabBarRoute(id)
+    syncCurrentWebRoute('push')
+  }
+  return resolveRouteAction('switchTab', options, succeeded, 'not a tabBar page')
+}
 
 function bindPageResizeBridge() {
   if (pageResizeBridgeBound || typeof window === 'undefined') {
@@ -45,7 +116,7 @@ function bindPageResizeBridge() {
   }
   pageResizeBridgeBound = true
   window.addEventListener('resize', () => {
-    const pages = getCurrentPagesInternal()
+    const pages = resolveCurrentPages<ComponentPublicInstance>(pageStack.entries)
     const current = pages[pages.length - 1]
     if (!current) {
       return
@@ -54,81 +125,37 @@ function bindPageResizeBridge() {
   })
 }
 
-function ensureAppLaunched(entry: PageStackEntry) {
-  if (!appInstance || appLaunched) {
-    return
-  }
-  const launchOptions: AppLaunchOptions = {
-    path: entry.id,
-    scene: 0,
-    query: entry.query,
-    referrerInfo: {},
-  }
-  lastLaunchOptions = {
-    path: launchOptions.path,
-    scene: launchOptions.scene,
-    query: { ...launchOptions.query },
-    referrerInfo: { ...launchOptions.referrerInfo },
-  }
-  if (typeof appInstance.onLaunch === 'function') {
-    appInstance.onLaunch(launchOptions)
-  }
-  if (typeof appInstance.onShow === 'function') {
-    appInstance.onShow(launchOptions)
-  }
-  appLaunched = true
-}
-
-function mountEntry(entry: PageStackEntry) {
-  mountEntryToDom(entry, pageRegistry, ensureAppLaunched)
-}
-
-function pushEntry(id: string, query: Record<string, string>) {
-  if (!pageRegistry.has(id)) {
-    return
-  }
-  const entry: PageStackEntry = { id, query }
-  navigationHistory.push(entry)
-  mountEntry(entry)
-}
-
-function replaceEntry(id: string, query: Record<string, string>) {
-  if (!pageRegistry.has(id)) {
-    return
-  }
-  const entry: PageStackEntry = { id, query }
-  if (navigationHistory.length) {
-    navigationHistory[navigationHistory.length - 1] = entry
-  }
-  else {
-    navigationHistory.push(entry)
-  }
-  mountEntry(entry)
-}
-
-function relaunchEntry(id: string, query: Record<string, string>) {
-  navigationHistory.length = 0
-  pushEntry(id, query)
-}
-
 export function initializePageRoutes(
   ids: string[],
   options?: {
     rpx?: { designWidth?: number, varName?: string }
     navigationBar?: NavigationBarMetrics
     form?: ButtonFormConfig
+    tabBar?: WebTabBarConfig
     runtime?: {
       executionMode?: 'compat' | 'safe' | 'strict'
       warnings?: {
         level?: 'off' | 'warn' | 'error'
         dedupe?: boolean
       }
+      viewport?: WebViewportConfig
+      routing?: WebRoutingConfig
+      seo?: WebSeoConfig
+      resourceHints?: WebResourceHintsConfig
     }
   },
 ) {
   setRuntimeExecutionMode(options?.runtime?.executionMode)
   setRuntimeWarningOptions(options?.runtime?.warnings)
+  setupWebViewport(options?.runtime?.viewport)
+  configureWebSeo(options?.runtime?.seo)
+  setupWebResourceHints(options?.runtime?.resourceHints)
+  configureWebRouting(options?.runtime?.routing, ids, reconcileWebRoute)
+  appLifecycle.bindVisibility()
+  ensureNativeComponentsDefined()
   pageOrder = Array.from(new Set(ids))
+  configureTabBar(options?.tabBar, url => performSwitchTab({ url }))
+  pageStack.configureTabPages(getTabBarPagePaths())
   if (!pageOrder.length) {
     return
   }
@@ -142,13 +169,19 @@ export function initializePageRoutes(
   if (options?.form) {
     setButtonFormConfig(options.form)
   }
-  if (!navigationHistory.length) {
-    pushEntry(pageOrder[0], {})
+  if (!pageStack.entries.length) {
+    const initialTarget = readWebRouteTarget(pageOrder)
+    const initialId = initialTarget?.id ?? pageOrder[0]
+    const initialQuery = initialTarget?.query ?? {}
+    if (pageStack.push(initialId, initialQuery)) {
+      syncTabBarRoute(initialId)
+      syncCurrentWebRoute('replace')
+    }
   }
 }
 
 export function registerPage<T extends PageRawOptions | undefined>(options: T, meta: RegisterMeta): T {
-  ensureButtonDefined()
+  ensureNativeComponentsDefined()
   ensureNavigationBarDefined()
   const tag = slugify(meta.id, 'wv-page')
   const template = meta.template ?? (() => '')
@@ -156,8 +189,10 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
   const existing = pageRegistry.get(meta.id)
   if (existing) {
     existing.hooks = normalized.hooks
+    existing.navigationBar = meta.navigationBar
     const component = augmentPageComponentOptions(normalized.component, existing)
     defineComponent(tag, {
+      id: meta.id,
       template,
       style: meta.style,
       component,
@@ -168,9 +203,11 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
     tag,
     hooks: normalized.hooks,
     instances: new Set(),
+    navigationBar: meta.navigationBar,
   }
   const component = augmentPageComponentOptions(normalized.component, record)
   defineComponent(tag, {
+    id: meta.id,
     template,
     style: meta.style,
     component,
@@ -179,13 +216,18 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
   return options
 }
 
+export function getCurrentPageInstance(): ComponentPublicInstance | undefined {
+  return pageStack.entries[pageStack.entries.length - 1]?.instance
+}
+
 export function registerComponent<T extends ComponentRawOptions | undefined>(options: T, meta: RegisterMeta): T {
-  ensureButtonDefined()
+  ensureNativeComponentsDefined()
   const tag = slugify(meta.id, 'wv-component')
   const template = meta.template ?? (() => '')
   const component = normalizeComponentOptions(options)
   if (componentRegistry.has(meta.id)) {
     defineComponent(tag, {
+      id: meta.id,
       template,
       style: meta.style,
       component,
@@ -193,6 +235,7 @@ export function registerComponent<T extends ComponentRawOptions | undefined>(opt
     return options
   }
   defineComponent(tag, {
+    id: meta.id,
     template,
     style: meta.style,
     component,
@@ -202,85 +245,64 @@ export function registerComponent<T extends ComponentRawOptions | undefined>(opt
 }
 
 export function registerApp<T extends AppRuntime | undefined>(options: T, _meta?: RegisterMeta): T {
-  const resolved = (options ?? {}) as AppRuntime
-  if (appInstance) {
-    const currentGlobal = appInstance.globalData
-    Object.assign(appInstance, resolved)
-    if (isRecord(currentGlobal)) {
-      appInstance.globalData = currentGlobal
-    }
-    else if (!isRecord(appInstance.globalData)) {
-      appInstance.globalData = {}
-    }
-    return options
-  }
-  appInstance = resolved
-  appLaunched = false
-  lastLaunchOptions = undefined
-  if (!isRecord(appInstance.globalData)) {
-    appInstance.globalData = {}
-  }
-  return options
+  return appLifecycle.register(options)
 }
 
-export function navigateTo(options: { url: string }) {
-  if (!options?.url) {
-    return Promise.resolve()
+export function navigateTo(options: RouteOptions) {
+  const { id, query } = parsePageUrl(options?.url ?? '')
+  const succeeded = pageStack.push(id, query)
+  if (succeeded) {
+    syncTabBarRoute(id)
+    syncCurrentWebRoute('push')
   }
-  const { id, query } = parsePageUrl(options.url)
-  pushEntry(id, query)
-  return Promise.resolve()
+  return resolveRouteAction('navigateTo', options, succeeded)
 }
 
-export function redirectTo(options: { url: string }) {
-  if (!options?.url) {
-    return Promise.resolve()
+export function redirectTo(options: RouteOptions) {
+  const { id, query } = parsePageUrl(options?.url ?? '')
+  const succeeded = pageStack.replace(id, query)
+  if (succeeded) {
+    syncTabBarRoute(id)
+    syncCurrentWebRoute('replace')
   }
-  const { id, query } = parsePageUrl(options.url)
-  replaceEntry(id, query)
-  return Promise.resolve()
+  return resolveRouteAction('redirectTo', options, succeeded)
 }
 
-export function reLaunch(options: { url: string }) {
-  if (!options?.url) {
-    return Promise.resolve()
+export function reLaunch(options: RouteOptions) {
+  const { id, query } = parsePageUrl(options?.url ?? '')
+  const succeeded = pageStack.relaunch(id, query)
+  if (succeeded) {
+    syncTabBarRoute(id)
+    syncCurrentWebRoute('replace')
   }
-  const { id, query } = parsePageUrl(options.url)
-  relaunchEntry(id, query)
-  return Promise.resolve()
+  return resolveRouteAction('reLaunch', options, succeeded)
 }
 
-export function switchTab(options: { url: string }) {
-  return redirectTo(options)
+export function switchTab(options: RouteOptions) {
+  return performSwitchTab(options)
 }
 
-export function navigateBack(options?: { delta?: number }) {
-  if (navigationHistory.length <= 1) {
-    return Promise.resolve()
+export function navigateBack(options?: NavigateBackOptions) {
+  const succeeded = pageStack.back(options?.delta)
+  if (succeeded) {
+    syncTabBarRoute(pageStack.entries[pageStack.entries.length - 1]?.id ?? '')
+    syncCurrentWebRoute('replace')
   }
-  const delta = Math.max(1, options?.delta ?? 1)
-  const targetIndex = Math.max(0, navigationHistory.length - 1 - delta)
-  const target = navigationHistory[targetIndex]
-  navigationHistory.length = targetIndex
-  pushEntry(target.id, target.query)
-  return Promise.resolve()
+  return resolveRouteAction('navigateBack', options, succeeded)
 }
 
 export function getCurrentPagesInternal() {
-  return resolveCurrentPages<ComponentPublicInstance>(navigationHistory)
+  return resolveCurrentPages<ComponentPublicInstance>(pageStack.entries)
 }
 
 export function getAppInstance() {
-  return appInstance
+  return appLifecycle.instance
 }
 
-export function getLaunchOptionsSync(): AppLaunchOptions {
-  if (lastLaunchOptions) {
-    return cloneLaunchOptions(lastLaunchOptions)
-  }
-  return resolveFallbackLaunchOptions(navigationHistory)
+export function getLaunchOptionsSync() {
+  return appLifecycle.getLaunchOptions()
 }
 
-export function getEnterOptionsSync(): AppLaunchOptions {
-  return getLaunchOptionsSync()
+export function getEnterOptionsSync() {
+  return appLifecycle.getEnterOptions()
 }

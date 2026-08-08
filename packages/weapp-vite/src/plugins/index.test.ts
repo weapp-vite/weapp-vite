@@ -19,6 +19,26 @@ describe('vitePluginWeapp plugin api', () => {
     const plugins = vitePluginWeapp(ctx)
     const api = extractPluginApi(plugins)
     expect(api?.ctx).toBe(ctx)
+    const names = plugins.map(plugin => plugin.name)
+    expect(names).toContain('weapp-vite:runtime-provider:wevu-miniprogram')
+    expect(names.indexOf('weapp-vite:runtime-provider:wevu-miniprogram'))
+      .toBeLessThan(names.indexOf('weapp-vite:vue:transform'))
+  })
+
+  it('selects the native runtime provider when Vue compilation is disabled', () => {
+    const ctx = createCompilerContext('plugin-api:native')
+    ctx.configService.inlineConfig.weapp = {
+      vue: {
+        enable: false,
+      },
+    }
+
+    const names = vitePluginWeapp(ctx).map(plugin => plugin.name)
+
+    expect(names).toContain('weapp-vite:runtime-provider:native-miniprogram')
+    expect(names).not.toContain('weapp-vite:runtime-provider:wevu-miniprogram')
+    expect(names).not.toContain('weapp-vite:vue:transform')
+    expect(names).not.toContain('weapp-vite:wevu:page-features')
   })
 
   it('exposes compiler context when workers are used', () => {

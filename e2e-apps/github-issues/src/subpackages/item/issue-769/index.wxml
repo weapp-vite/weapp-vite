@@ -1,0 +1,4 @@
+<view class="issue769-page">
+  <text>{{title}}</text>
+  <text>{{issue769NpmMarker}}</text>
+</view>

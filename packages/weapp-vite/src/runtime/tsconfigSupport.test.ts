@@ -287,9 +287,23 @@ describe('tsconfig support', () => {
 
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.shared.json'))).toBe(true)
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.shared.empty.d.ts'))).toBe(true)
+    expect(await fs.readFile(path.join(root, '.weapp-vite', 'uni-app.d.ts'), 'utf8')).toBe('export {}\n')
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.app.json'))).toBe(true)
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.node.json'))).toBe(true)
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.server.json'))).toBe(true)
+  })
+
+  it('generates the uni host binding type only when compatibility is enabled', async () => {
+    const files = await createManagedTsconfigFiles(createCtx({
+      weappViteConfig: {
+        uniApp: {
+          include: ['@wot-ui/ui'],
+        },
+      },
+    }))
+    const uniAppTypes = files.find(file => file.path.endsWith('uni-app.d.ts'))
+
+    expect(uniAppTypes?.content).toBe('export {}\n\ndeclare global {\n  const uni: typeof wx\n}\n')
   })
 
   it('does not rewrite unchanged managed tsconfig files', async () => {

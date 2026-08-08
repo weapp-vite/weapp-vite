@@ -1,15 +1,18 @@
 import type { ComponentOptions, ComponentPublicInstance } from '../../component'
 import type { PageRecord, RouteMeta } from './options'
+import { WEVU_PAGE_LAYOUT_NAME_KEY, WEVU_PAGE_LAYOUT_PROPS_KEY, WEVU_PAGE_LAYOUT_SETTER_KEY } from '@weapp-core/constants'
 
 const ROUTE_META_SYMBOL = Symbol('@weapp-vite/web:route-meta')
 const PAGE_STATE_SYMBOL = Symbol('@weapp-vite/web:page-state')
 
 interface RouteMetaCarrier {
   [ROUTE_META_SYMBOL]?: RouteMeta
+  route?: string
 }
 
 interface PageInstanceState {
   loaded: boolean
+  visible: boolean
 }
 
 interface PageStateCarrier {
@@ -29,7 +32,7 @@ function getRouteMeta(instance: ComponentPublicInstance): RouteMeta | undefined 
 
 function getPageState(instance: ComponentPublicInstance): PageInstanceState {
   const target = instance as PageStateCarrier
-  target[PAGE_STATE_SYMBOL] ??= { loaded: false }
+  target[PAGE_STATE_SYMBOL] ??= { loaded: false, visible: false }
   return target[PAGE_STATE_SYMBOL]!
 }
 
@@ -73,7 +76,29 @@ export function attachRouteMeta(
   element: HTMLElement & ComponentPublicInstance,
   meta: RouteMeta,
 ) {
-  (element as RouteMetaCarrier)[ROUTE_META_SYMBOL] = meta
+  const carrier = element as RouteMetaCarrier
+  carrier[ROUTE_META_SYMBOL] = meta
+  carrier.route = meta.id
+}
+
+export function hidePageInstance(instance: ComponentPublicInstance, record: PageRecord) {
+  const state = getPageState(instance)
+  if (!state.visible) {
+    return
+  }
+  dispatchPageLifetimeToComponents(instance, 'hide')
+  record.hooks.onHide?.call(instance)
+  state.visible = false
+}
+
+export function showPageInstance(instance: ComponentPublicInstance, record: PageRecord) {
+  const state = getPageState(instance)
+  if (state.visible || !state.loaded) {
+    return
+  }
+  record.hooks.onShow?.call(instance)
+  dispatchPageLifetimeToComponents(instance, 'show')
+  state.visible = true
 }
 
 export function augmentPageComponentOptions(component: ComponentOptions, record: PageRecord) {
@@ -89,6 +114,13 @@ export function augmentPageComponentOptions(component: ComponentOptions, record:
       ...lifetimes,
       created(this: ComponentPublicInstance) {
         originalCreated?.call(this)
+        const target = this as ComponentPublicInstance & Record<string, any>
+        target[WEVU_PAGE_LAYOUT_SETTER_KEY] = (layout: string | false, props?: Record<string, any>) => {
+          target.setData?.({
+            [WEVU_PAGE_LAYOUT_NAME_KEY]: layout === false ? '__wv_no_layout' : layout,
+            [WEVU_PAGE_LAYOUT_PROPS_KEY]: layout === false ? {} : (props ?? {}),
+          })
+        }
         getPageState(this)
         record.instances.add(this)
       },
@@ -103,12 +135,17 @@ export function augmentPageComponentOptions(component: ComponentOptions, record:
           record.hooks.onLoad?.call(this, meta?.query ?? {})
           state.loaded = true
         }
-        record.hooks.onShow?.call(this)
+        if (meta?.entry.active !== false) {
+          record.hooks.onShow?.call(this)
+          state.visible = true
+        }
       },
       ready(this: ComponentPublicInstance) {
         originalReady?.call(this)
         record.hooks.onReady?.call(this)
-        dispatchPageLifetimeToComponents(this, 'show')
+        if (getPageState(this).visible) {
+          dispatchPageLifetimeToComponents(this, 'show')
+        }
       },
       detached(this: ComponentPublicInstance) {
         originalDetached?.call(this)
@@ -116,11 +153,13 @@ export function augmentPageComponentOptions(component: ComponentOptions, record:
         if (meta?.entry) {
           meta.entry.instance = undefined
         }
-        dispatchPageLifetimeToComponents(this, 'hide')
-        record.hooks.onHide?.call(this)
-        record.hooks.onUnload?.call(this)
         const state = getPageState(this)
+        hidePageInstance(this, record)
+        if (state.loaded) {
+          record.hooks.onUnload?.call(this)
+        }
         state.loaded = false
+        state.visible = false
         record.instances.delete(this)
       },
     },

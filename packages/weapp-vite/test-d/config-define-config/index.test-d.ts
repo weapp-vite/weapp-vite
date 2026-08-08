@@ -5,6 +5,9 @@ import { defineConfig } from '.'
 const objectConfig = defineConfig({
   weapp: {
     srcRoot: 'src',
+    hmr: {
+      runtime: 'auto',
+    },
     wevu: {
       minify: true,
       runtime: 'auto' as const,
@@ -39,6 +42,9 @@ const objectConfig = defineConfig({
     buildScope: {
       includeMainPackage: true,
       include: ['main', 'subpackages/item'],
+    },
+    chunks: {
+      dynamicImports: 'native' as const,
     },
     mcp: {
       autoStart: 'ai',
@@ -82,6 +88,7 @@ const objectConfig = defineConfig({
               name: componentName,
               from: '/components/issue-520/ResolverSlotCard/index',
               sourceType: 'wevu-sfc',
+              typeImport: false,
             }
           },
         },
@@ -90,6 +97,7 @@ const objectConfig = defineConfig({
   },
 })
 expectAssignable<string | undefined>(objectConfig.weapp?.srcRoot)
+expectAssignable<'auto' | 'classic' | 'stateful-experimental' | undefined>(objectConfig.weapp?.hmr?.runtime)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.wevu?.defaults?.component?.allowNullPropInput)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.wevu?.minify)
 expectAssignable<'auto' | 'dev' | 'build' | undefined>(objectConfig.weapp?.wevu?.runtime)
@@ -134,6 +142,7 @@ expectAssignable<string | string[] | {
   includeMainPackage?: boolean
   include?: string[]
 } | undefined>(objectConfig.weapp?.buildScope)
+expectAssignable<'preserve' | 'inline' | 'native' | undefined>(objectConfig.weapp?.chunks?.dynamicImports)
 expectAssignable<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
 expectAssignable<boolean | 'auto' | undefined>(objectConfig.weapp?.vue?.template?.formatWxml)
@@ -192,6 +201,7 @@ expectAssignable<Array<{
     from: string
     resolvedId?: string
     sourceType?: 'wevu-sfc' | 'native'
+    typeImport?: boolean
   } | void
 }> | undefined>(objectConfigResolvers)
 

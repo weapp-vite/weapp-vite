@@ -4,7 +4,7 @@ import { defineComponent, nextTick, onAttached, onUnload, ref } from '@/index'
 
 describe('runtime: stateful HMR', () => {
   let applying = false
-  let refresh: ((instance: any) => void) | undefined
+  let refresh: ((instance: any, stateSnapshot?: Record<string, any>) => void) | undefined
   let registeredDefinition: Record<string, any> | undefined
 
   beforeEach(() => {
@@ -16,7 +16,10 @@ describe('runtime: stateful HMR', () => {
     })
     ;(globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY] = {
       isApplying: () => applying,
-      trackWevuComponent(definition: Record<string, any>, callback: (instance: any) => void) {
+      trackWevuComponent(
+        definition: Record<string, any>,
+        callback: (instance: any, stateSnapshot?: Record<string, any>) => void,
+      ) {
         refresh = callback
         return definition
       },
@@ -39,15 +42,16 @@ describe('runtime: stateful HMR', () => {
             fn: (ctx: any) => ctx.increment(),
           },
         },
-      },
+      } as any,
       setup() {
         const count = ref(0)
+        const input = ref('')
         const increment = () => {
           count.value += delta
         }
         onAttached(attached)
         onUnload(unloaded)
-        return { count, increment }
+        return { count, increment, input }
       },
     })
     defineRuntime(1)
@@ -60,15 +64,25 @@ describe('runtime: stateful HMR', () => {
       },
     }
     registeredDefinition!.lifetimes.attached.call(instance)
-    instance.setData({ count: 2 })
-    expect(instance.data.count).toBe(2)
     const runtimeFacade = instance.__wevu
+    const previousIncrement = runtimeFacade.methods.increment
+    runtimeFacade.methods.increment()
+    runtimeFacade.methods.increment()
+    await nextTick()
+    await nextTick()
+    instance.setData({ input: 'held-input' })
+    expect(instance.data.count).toBe(2)
+    expect(instance.data.input).toBe('held-input')
     const pageWrapper = { __wevu: runtimeFacade }
 
+    Object.assign(instance.data, { count: 0, input: '' })
     applying = true
     defineRuntime(2)
-    refresh!(instance)
+    refresh!(instance, { count: 2, input: 'held-input' })
     applying = false
+    expect(instance.__wevu.setupState.count.value).toBe(2)
+    expect(instance.__wevu.setupState.input.value).toBe('held-input')
+    expect(instance.__wevu.methods.increment).not.toBe(previousIncrement)
     registeredDefinition!.methods.__weapp_vite_inline.call(pageWrapper, {
       type: 'tap',
       currentTarget: {
@@ -83,7 +97,9 @@ describe('runtime: stateful HMR', () => {
     expect(instance.__wevu).toBe(runtimeFacade)
     expect(pageWrapper.__wevu).toBe(runtimeFacade)
     expect(instance.__wevu.setupState.count.value).toBe(4)
+    expect(instance.__wevu.setupState.input.value).toBe('held-input')
     expect(instance.data.count).toBe(4)
+    expect(instance.data.input).toBe('held-input')
     expect(attached).toHaveBeenCalledTimes(1)
     expect(unloaded).not.toHaveBeenCalled()
   })

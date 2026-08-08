@@ -40,6 +40,7 @@ export function resetRuntimeStateForFreshBuild(runtimeState: RuntimeState): void
   const css = runtimeState.css
   css.importerToDependencies.clear()
   css.dependencyToImporters.clear()
+  css.transformedSidecarSource.clear()
   css.emittedSource.clear()
 
   const wxml = runtimeState.wxml
@@ -67,4 +68,6 @@ export function resetRuntimeStateForFreshBuild(runtimeState: RuntimeState): void
   const lib = runtimeState.lib
   lib.enabled = fresh.lib.enabled
   lib.entries.clear()
+
+  runtimeState.watcher.sidecarDirtyFiles.clear()
 }

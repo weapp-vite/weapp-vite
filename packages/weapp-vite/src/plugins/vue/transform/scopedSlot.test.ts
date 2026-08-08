@@ -18,17 +18,21 @@ vi.mock('wevu/compiler', () => ({
   createJsonMerger: createJsonMergerMock,
   buildClassStyleComputedCode: vi.fn(() => '() => ({})'),
   getClassStyleWxsSource: vi.fn(() => 'module.exports = {};'),
-  WE_VU_INTERNAL_REACTIVITY_MODULE_ID: 'wevu/internal-reactivity',
-  WE_VU_INTERNAL_RUNTIME_MODULE_ID: 'wevu/internal-runtime',
-  WE_VU_INTERNAL_TEMPLATE_MODULE_ID: 'wevu/internal-template',
+  WE_VU_COMPILER_REACTIVITY_MODULE_ID: 'virtual:weapp-vite/runtime/reactivity',
+  WE_VU_COMPILER_RUNTIME_MODULE_ID: 'virtual:weapp-vite/runtime',
+  WE_VU_COMPILER_TEMPLATE_MODULE_ID: 'virtual:weapp-vite/runtime/template',
   WE_VU_RUNTIME_APIS: {
     createWevuScopedSlotComponent: 'createWevuScopedSlotComponent',
   },
 }))
 
-vi.mock('./emitAssets', () => ({
-  emitClassStyleWxsAssetIfMissing: emitClassStyleWxsAssetIfMissingMock,
-}))
+vi.mock('./emitAssets', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./emitAssets')>()
+  return {
+    ...actual,
+    emitClassStyleWxsAssetIfMissing: emitClassStyleWxsAssetIfMissingMock,
+  }
+})
 
 vi.mock('../../../utils', () => ({
   resolveJson: resolveJsonMock,
@@ -59,6 +63,7 @@ describe('scoped slot helpers', () => {
     const emitFile = vi.fn()
     const result: any = {
       config: '{ bad json }',
+      style: '.owner { color: red; }',
       scopedSlotComponents: [
         {
           id: 'slot-0',
@@ -88,8 +93,18 @@ describe('scoped slot helpers', () => {
 
     expect(emitFile).toHaveBeenCalledWith({
       type: 'asset',
+      fileName: 'pages/index/index.wxss',
+      source: '',
+    })
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
       fileName: 'pages/index/index.__scoped-slot-slot-0.wxml',
       source: '<view/>',
+    })
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'pages/index/index.__scoped-slot-slot-0.wxss',
+      source: `@import './index.wxss';\n`,
     })
     expect(emitFile).toHaveBeenCalledWith({
       type: 'asset',
@@ -323,6 +338,7 @@ describe('scoped slot helpers', () => {
           Existing: '/components/existing',
         },
       }),
+      style: '.owner { color: red; }',
       scopedSlotComponents: [
         {
           id: 'slot-1',
@@ -332,7 +348,9 @@ describe('scoped slot helpers', () => {
       ],
     }
     const bundle: Record<string, any> = {
+      'pages/index/index.wxss': { type: 'asset', source: '.owner { color: red; }' },
       'pages/index/index.__scoped-slot-slot-1.wxml': { type: 'asset' },
+      'pages/index/index.__scoped-slot-slot-1.wxss': { type: 'asset' },
       'pages/index/index.__scoped-slot-slot-1.json': { type: 'asset' },
     }
 
@@ -350,6 +368,42 @@ describe('scoped slot helpers', () => {
     expect(JSON.parse(result.config).usingComponents).toEqual({
       Existing: '/components/existing',
       ScopedComp: '/pages/index/index.__scoped-slot-slot-1',
+    })
+  })
+
+  it('uses the configured style extension for scoped slot owner styles', () => {
+    const emitFile = vi.fn()
+    const result: any = {
+      config: '{}',
+      style: '.owner { color: red; }',
+      scopedSlotComponents: [
+        {
+          id: 'slot-alipay',
+          componentName: 'ScopedComp',
+          template: '<view/>',
+        },
+      ],
+    }
+
+    emitScopedSlotAssets(
+      { emitFile },
+      {},
+      'components/card/index',
+      result,
+      undefined,
+      undefined,
+      { wxml: 'axml', wxss: 'acss', json: 'json' } as any,
+    )
+
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'components/card/index.acss',
+      source: '',
+    })
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'components/card/index.__scoped-slot-slot-alipay.acss',
+      source: `@import './index.acss';\n`,
     })
   })
 
@@ -376,7 +430,7 @@ describe('scoped slot helpers', () => {
 
     const [virtualId] = Array.from(scopedSlotModules.keys())
     const code = scopedSlotModules.get(virtualId)!
-    expect(code).toContain(`import { createWevuScopedSlotComponent as _createWevuScopedSlotComponent } from 'wevu/internal-runtime';`)
+    expect(code).toContain(`import { createWevuScopedSlotComponent as _createWevuScopedSlotComponent } from 'virtual:weapp-vite/runtime';`)
     expect(code).toContain('createWevuScopedSlotComponent();')
     expect(code).not.toContain('__wevuComputed')
     expect(code).not.toContain('__wevuInlineMap')
@@ -428,6 +482,41 @@ describe('scoped slot helpers', () => {
     const code = scopedSlotModules.get(virtualId)!
     expect(code).toContain('createWevuScopedSlotComponent')
     expect(loadScopedSlotModule(virtualId, scopedSlotModules)).toEqual({ code, map: null })
+  })
+
+  it('passes scoped slot template ref metadata to the runtime component', () => {
+    const emitFile = vi.fn()
+    const scopedSlotModules = new Map<string, string>()
+    const emittedScopedSlotChunks = new Set<string>()
+    const result: any = {
+      scopedSlotComponents: [
+        {
+          id: 'slot-ref',
+          templateRefs: [
+            {
+              selector: '.__wevu-ref-0',
+              inFor: false,
+              name: 'leaf',
+              kind: 'component',
+            },
+          ],
+        },
+      ],
+    }
+
+    emitScopedSlotChunks(
+      { emitFile },
+      'pages/index/index',
+      result,
+      scopedSlotModules,
+      emittedScopedSlotChunks,
+      { js: 'js' } as any,
+    )
+
+    const [virtualId] = Array.from(scopedSlotModules.keys())
+    const code = scopedSlotModules.get(virtualId)!
+    expect(code).toContain('const __wevuTemplateRefs = [{selector:".__wevu-ref-0",inFor:false,name:"leaf",kind:"component"}];')
+    expect(code).toContain('createWevuScopedSlotComponent({ templateRefs: __wevuTemplateRefs });')
   })
 
   it('handles scoped slot virtual id helpers and cache guards', () => {

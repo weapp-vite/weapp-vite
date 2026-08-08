@@ -230,6 +230,38 @@ describe('classStyleComputed', () => {
     expect(code).toContain('actualKey')
   })
 
+  it('normalizes finite numeric v-for sources before building per-item bindings', () => {
+    const bindings: any = [
+      {
+        name: '__wv_bind_0',
+        type: 'bind',
+        exp: 'index',
+        expAst: t.identifier('index'),
+        forStack: [
+          {
+            listExp: 'Number(count)',
+            listExpAst: t.callExpression(t.identifier('Number'), [
+              t.memberExpression(t.thisExpression(), t.identifier('count')),
+            ]),
+            item: 'item',
+            index: 'index',
+          },
+        ],
+      },
+    ]
+
+    const code = buildClassStyleComputedCode(bindings, {
+      normalizeClassName: 'normalizeClass',
+      normalizeStyleName: 'normalizeStyle',
+      unrefName: 'unref',
+    })
+
+    expect(code).toContain('typeof __wv_list_0==="number"')
+    expect(code).toContain('Number.isFinite(__wv_list_0)')
+    expect(code).toContain('Array.from({length:Math.max(0,Math.floor(__wv_list_0))}')
+    expect(code).toContain('__wv_list_0.map((item,index)')
+  })
+
   it('keeps scoped slot v-for source missing values silent during initialization', () => {
     const bindings: any = [
       {

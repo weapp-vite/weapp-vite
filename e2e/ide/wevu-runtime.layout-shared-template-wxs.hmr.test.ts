@@ -204,6 +204,7 @@ async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
+      retryWarmupTimeout: true,
     })
   }
   return sharedMiniProgram

@@ -29,6 +29,8 @@ export default defineConfig([
     // },
     clean: true,
     minify: true,
+    hash: false,
+    unbundle: true,
     sourcemap: false,
     failOnWarn: false,
     checks: {
@@ -43,6 +45,8 @@ export default defineConfig([
     dts: false,
     clean: false,
     minify: false,
+    hash: false,
+    unbundle: true,
     sourcemap: true,
     failOnWarn: false,
     checks: {

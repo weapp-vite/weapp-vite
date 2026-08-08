@@ -1,7 +1,50 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
+import postcss from 'postcss'
+import selectorParser from 'postcss-selector-parser'
+import { DEFAULT_HTML_TO_WXML_TAG_MAP } from './template/htmlTagMapping'
+
+export { transformNestedWxssVars } from './wxss'
 
 const CSS_RULE_RE = /([^{]+)(\{[^}]*\})/g
 const CSS_CLASS_RE = /\.([a-z_][\w-]*)(?:\[[^\]]+\])?\s*\{/gi
+
+export function transformVueDeepSelectors(source: string) {
+  if (!source.includes(':deep') && !source.includes('::v-deep')) {
+    return source
+  }
+  const root = postcss.parse(source)
+  const processor = selectorParser((selectors) => {
+    selectors.walkTags((tag) => {
+      const name = tag.value.toLowerCase()
+      if (DEFAULT_HTML_TO_WXML_TAG_MAP[name] !== name && DEFAULT_HTML_TO_WXML_TAG_MAP[name]) {
+        tag.replaceWith(selectorParser.className({ value: name }))
+      }
+    })
+    selectors.walkPseudos((pseudo) => {
+      if (pseudo.value !== ':deep' && pseudo.value !== '::v-deep') {
+        return
+      }
+      const replacement = pseudo.nodes?.[0]?.nodes.map(node => node.clone()) ?? []
+      if (replacement.length > 0) {
+        pseudo.replaceWith(...replacement)
+      }
+      else {
+        const previous = pseudo.prev()
+        const next = pseudo.next()
+        if (next?.type === 'combinator' && (!previous || previous.type === 'combinator')) {
+          next.remove()
+        }
+        pseudo.remove()
+      }
+    })
+  })
+  root.walkRules((rule) => {
+    if (rule.selector.includes(':deep') || rule.selector.includes('::v-deep')) {
+      rule.selector = processor.processSync(rule.selector)
+    }
+  })
+  return root.toString()
+}
 
 /**
  * 样式编译结果。
@@ -19,8 +62,10 @@ export interface StyleCompileResult {
 export interface StyleCompileOptions {
   id: string
   scoped?: boolean
+  transformScoped?: boolean
   modules?: boolean | string
   preprocessOptions?: Record<string, any>
+  preserveDeepSelectors?: boolean
 }
 
 /**
@@ -130,13 +175,13 @@ export function compileVueStyleToWxss(
   styleBlock: SFCStyleBlock,
   options: StyleCompileOptions,
 ): StyleCompileResult {
-  const { id, scoped, modules } = options
+  const { id, scoped, modules, preserveDeepSelectors, transformScoped = true } = options
   const source = styleBlock.content
 
   let code = source
 
   // 1. 处理 scoped 样式
-  if (scoped || styleBlock.scoped) {
+  if (transformScoped && (scoped || styleBlock.scoped)) {
     code = transformScopedCss(code, id)
   }
 
@@ -145,12 +190,16 @@ export function compileVueStyleToWxss(
     const moduleName = typeof styleBlock.module === 'string' ? styleBlock.module : '$style'
     const moduleResult = transformCssModules(code, id)
     return {
-      code: moduleResult.code,
+      code: preserveDeepSelectors
+        ? moduleResult.code
+        : transformVueDeepSelectors(moduleResult.code),
       modules: {
         [moduleName]: moduleResult.classes,
       },
     }
   }
 
-  return { code }
+  return {
+    code: preserveDeepSelectors ? code : transformVueDeepSelectors(code),
+  }
 }

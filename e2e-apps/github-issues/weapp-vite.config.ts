@@ -1,5 +1,6 @@
 import path from 'node:path'
 import process from 'node:process'
+import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
@@ -11,6 +12,8 @@ const issue615AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_615_AUGMENTED
 const issue621AugmentedEnvEnabled = process.env.WEAPP_GITHUB_ISSUE_621_AUGMENTED === 'true'
 const issue595ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_595_SCOPED === 'true'
 const issue642ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_642_SCOPED === 'true'
+const issue724ProbeEnabled = process.env.WEAPP_GITHUB_ISSUE_724_PROBE === 'true'
+const issue779CssPreEnabled = process.env.WEAPP_GITHUB_ISSUE_779_CSS_PRE === 'true'
 const issue651NoExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverNoExt/index')
 const issue651WithExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverWithExt/index.vue')
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
@@ -18,6 +21,7 @@ const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_CO
   || e2eTargetFile.endsWith('github-issues.runtime.slot-fallback-compiler-off.test.ts')
 const issue642Bug7DefaultEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue642-bug7-default.test.ts')
 const issue642Bug7PerformanceEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue642-bug7-performance.test.ts')
+const githubIssuesAggregateTarget = 'github-issues.runtime.aggregate.test.ts'
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
 const issue558AugmentedEnabled = issue558AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue558.test.ts')
 const issue564AugmentedEnabled = issue564AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue564.test.ts')
@@ -45,6 +49,10 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue466.test.ts': [
     'pages/issue-466/**',
     'subpackages/issue-466/**',
+  ],
+  'github-issues.runtime.issue553-555.test.ts': [
+    'pages/issue-553/**',
+    'pages/issue-555/**',
   ],
   'github-issues.runtime.issue547.test.ts': [
     'pages/issue-547/**',
@@ -96,10 +104,15 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue706.test.ts': [
     'pages/issue-706/**',
   ],
+  'github-issues.runtime.require-async.test.ts': [
+    'pages/require-async/**',
+    'subpackages/require-async/**',
+  ],
   'github-issues.runtime.issue581.test.ts': [
     'pages/issue-581/**',
   ],
   'github-issues.runtime.lifecycle.test.ts': [
+    'pages/block-slot/**',
     'pages/issue-289/**',
     'pages/issue-309/**',
     'pages/issue-309-created/**',
@@ -156,10 +169,41 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-459/**',
   ],
 }
+const githubIssuesAggregateRouteGroupFiles = [
+  'github-issues.runtime.app-shell.test.ts',
+  'github-issues.runtime.issue289.test.ts',
+  'github-issues.runtime.issue297-302.test.ts',
+  'github-issues.runtime.web-runtime.test.ts',
+  'github-issues.runtime.import-meta.test.ts',
+  'github-issues.runtime.issue466.test.ts',
+  'github-issues.runtime.issue553-555.test.ts',
+  'github-issues.runtime.issue554.test.ts',
+  'github-issues.runtime.issue564.test.ts',
+  'github-issues.runtime.issue581.test.ts',
+  'github-issues.runtime.issue627.test.ts',
+  'github-issues.runtime.issue642.test.ts',
+  'github-issues.runtime.issue705.test.ts',
+  'github-issues.runtime.issue706.test.ts',
+  'github-issues.runtime.lifecycle.test.ts',
+  'github-issues.runtime.miniprogram-computed.test.ts',
+  'github-issues.runtime.props.test.ts',
+  'github-issues.runtime.slot-fallback.test.ts',
+] as const
+githubIssuesRouteGroups[githubIssuesAggregateTarget] = [
+  ...new Set(githubIssuesAggregateRouteGroupFiles.flatMap(testFile => githubIssuesRouteGroups[testFile] ?? [])),
+]
 const matchedGithubIssuesTestFile = Object.keys(githubIssuesRouteGroups)
   .find(testFile => e2eTargetFile.endsWith(testFile))
 
 function resolveGithubIssuesAutoRoutes() {
+  if (issue724ProbeEnabled) {
+    return {
+      include: [
+        'pages/issue-724/**',
+        'components/issue-724/**',
+      ],
+    }
+  }
   if (issue510AugmentedEnabled) {
     return {
       include: [
@@ -302,12 +346,94 @@ function resolveGithubIssuesNpm() {
     }
   }
 
+  if (matchedGithubIssuesTestFile === githubIssuesAggregateTarget) {
+    return {
+      mainPackage: fullNpmConfig.mainPackage,
+      subPackages: {
+        'subpackages/issue-466': fullNpmConfig.subPackages['subpackages/issue-466'],
+        'subpackages/issue-466-computed': fullNpmConfig.subPackages['subpackages/issue-466-computed'],
+        'subpackages/item': fullNpmConfig.subPackages['subpackages/item'],
+        'subpackages/user': fullNpmConfig.subPackages['subpackages/user'],
+      },
+    }
+  }
+
   return {
     enable: false,
   }
 }
 
+const issue724ProbePlugins = issue724ProbeEnabled
+  ? [
+      {
+        name: 'github-issues:issue-724-style-load-probe',
+        enforce: 'pre' as const,
+        transform(code: string, id: string) {
+          const normalizedId = id.replaceAll('\\', '/')
+          if (!normalizedId.includes('/issue-724/') || !id.includes('?weapp-vite-vue&type=style')) {
+            return null
+          }
+          if (/<(?:template|script|style)(?:\s|>)/.test(code)) {
+            throw new Error(`issue #724 style request leaked another SFC block: ${normalizedId}`)
+          }
+          return null
+        },
+      },
+      {
+        name: 'github-issues:issue-724-post-transform-probe',
+        enforce: 'post' as const,
+        transform(code: string, id: string) {
+          const normalizedId = id.replaceAll('\\', '/')
+          if (!normalizedId.includes('/issue-724/') || !normalizedId.endsWith('.vue')) {
+            return null
+          }
+          if (/<(?:template|script|style)(?:\s|>)/.test(code)) {
+            throw new Error(`issue #724 downstream JS received a raw SFC: ${normalizedId}`)
+          }
+          return null
+        },
+      },
+    ]
+  : []
+
+const issue779CssPrePlugin = issue779CssPreEnabled
+  ? [
+      {
+        name: 'github-issues:issue-779-css-pre',
+        enforce: 'pre' as const,
+        transform(_code: string, id: string) {
+          const normalizedId = id.replaceAll('\\', '/')
+          if (!normalizedId.includes('/src/pages/issue-779/') || !id.includes('weapp-vite-sidecar=style')) {
+            return null
+          }
+          return `@import "tailwindcss";\n.issue-779-pre-marker { color: rgb(1, 2, 3); }`
+        },
+      },
+      WeappTailwindcss(),
+      {
+        name: 'github-issues:issue-779-css-pipeline-probe',
+        transform(code: string, id: string) {
+          const normalizedId = id.replaceAll('\\', '/')
+          if (!normalizedId.includes('/src/pages/issue-779/') || !id.includes('weapp-vite-sidecar=style')) {
+            return null
+          }
+          if (
+            !code.includes('.issue-779-pre-marker')
+            || code.includes('.issue-779-disk-marker')
+          ) {
+            throw new Error(`issue #779 Tailwind pipeline did not preserve the pre-transformed CSS: ${normalizedId}`)
+          }
+          return null
+        },
+      },
+    ]
+  : undefined
+
 export default defineConfig({
+  plugins: [
+    ...issue724ProbePlugins,
+    ...(issue779CssPrePlugin ?? []),
+  ],
   define: {
     'import.meta.env.ISSUE_484_FLAG': '123456',
   },
@@ -318,6 +444,9 @@ export default defineConfig({
     },
     srcRoot: 'src',
     autoRoutes: resolveGithubIssuesAutoRoutes(),
+    subPackages: {
+      'subpackages/require-async': {},
+    },
     typescript: {
       app: {
         compilerOptions: {
@@ -341,6 +470,7 @@ export default defineConfig({
         {
           components: {
             Issue520ResolverSlotCard: '/components/issue-520/ResolverSlotCard/index',
+            Issue724RoutingProbe: '/components/issue-724/RoutingProbe/index',
           },
         },
         {
@@ -379,22 +509,22 @@ export default defineConfig({
       },
     },
     npm: resolveGithubIssuesNpm(),
-    ...(issue393ChunkModeEnabled
-      ? {
-          chunks: {
+    chunks: {
+      dynamicImports: issue393ChunkModeEnabled ? 'preserve' : 'native',
+      ...(issue393ChunkModeEnabled
+        ? {
             sharedStrategy: 'duplicate',
             sharedMode: 'common',
             sharedPathRoot: 'src',
-            dynamicImports: 'preserve',
             sharedOverrides: [
               {
                 test: /(?:^|\/)debounce(?:\/|$)/,
                 mode: 'path',
               },
             ],
-          },
-        }
-      : {}),
+          }
+        : {}),
+    },
   },
   ...(issue393ChunkModeEnabled
     ? {
@@ -403,29 +533,41 @@ export default defineConfig({
           minify: false,
         },
       }
-    : issue510AugmentedEnabled
+    : issue724ProbeEnabled
       ? {
           build: {
-            outDir: 'dist-issue-510',
+            outDir: 'dist-issue-724',
           },
         }
-      : slotFallbackCompilerOffEnabled
+      : issue510AugmentedEnabled
         ? {
             build: {
-              outDir: 'dist-slot-fallback-compiler-off',
+              outDir: 'dist-issue-510',
             },
           }
-        : issue595ScopedBuildEnabled
+        : slotFallbackCompilerOffEnabled
           ? {
               build: {
-                outDir: 'dist-issue-595',
+                outDir: 'dist-slot-fallback-compiler-off',
               },
             }
-          : issue642ScopedBuildEnabled
+          : issue595ScopedBuildEnabled
             ? {
                 build: {
-                  outDir: 'dist-issue-642',
+                  outDir: 'dist-issue-595',
                 },
               }
-            : {}),
+            : issue642ScopedBuildEnabled
+              ? {
+                  build: {
+                    outDir: 'dist-issue-642',
+                  },
+                }
+              : issue779CssPreEnabled
+                ? {
+                    build: {
+                      outDir: 'dist-issue-779',
+                    },
+                  }
+                : {}),
 })

@@ -5,7 +5,7 @@ import {
   WEVU_TEMPLATE_REFS_PENDING_KEY,
 } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ref } from '@/reactivity'
+import { reactive, ref } from '@/reactivity'
 import { setCurrentInstance } from '@/runtime/hooks'
 import { clearTemplateRefs, scheduleTemplateRefUpdate, updateTemplateRefs } from '@/runtime/templateRefs'
 import { useTemplateRef } from '@/runtime/vueCompat'
@@ -180,6 +180,7 @@ describe('runtime: template refs', () => {
     const setHeaderKey = vi.fn()
     const componentInstance = {
       [WEVU_EXPOSED_KEY]: { headerKey, setHeaderKey },
+      [WEVU_READY_CALLED_KEY]: true,
       __wevu: { proxy: {} },
     }
 
@@ -200,6 +201,152 @@ describe('runtime: template refs', () => {
     expect(refs.header.selector).toBe('.header')
     refs.header.setHeaderKey('world')
     expect(setHeaderKey).toHaveBeenCalledWith('world')
+  })
+
+  it('does not query a lazy component ref while clearing a reactive setup ref', () => {
+    const componentRef = ref<any>()
+    const componentInstance = {
+      [WEVU_READY_CALLED_KEY]: true,
+      __wevu: { proxy: {} },
+      open: vi.fn(),
+    }
+    const selectComponent = vi.fn(() => componentInstance)
+    const instance: any = {
+      [WEVU_READY_CALLED_KEY]: true,
+      __wevu: {
+        state: {},
+        proxy: {},
+        setupState: reactive({ componentRef }),
+      },
+      selectComponent,
+      __wevuTemplateRefs: [
+        { selector: '.component', inFor: false, name: 'componentRef', kind: 'component' },
+      ],
+    }
+
+    updateTemplateRefs(instance)
+    expect(selectComponent).toHaveBeenCalledTimes(1)
+    expect(componentRef.value).toBeTruthy()
+
+    clearTemplateRefs(instance)
+
+    expect(componentRef.value).toBeNull()
+    expect(selectComponent).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not expose a wevu component template ref before ready', () => {
+    const child: any = {
+      [WEVU_EXPOSED_KEY]: { open: vi.fn() },
+      __wevu: { proxy: {} },
+    }
+    const childRef = ref<any>(undefined)
+    const instance: any = {
+      [WEVU_READY_CALLED_KEY]: true,
+      __wevu: {
+        state: {},
+        proxy: {},
+        setupState: { childRef },
+      },
+      selectComponent: vi.fn(() => child),
+      __wevuTemplateRefs: [
+        { selector: '.child', inFor: false, name: 'childRef', kind: 'component' },
+      ],
+    }
+
+    updateTemplateRefs(instance)
+    expect(childRef.value).toBeNull()
+
+    child[WEVU_READY_CALLED_KEY] = true
+    updateTemplateRefs(instance)
+    expect(childRef.value.open).toEqual(expect.any(Function))
+  })
+
+  it('queries a scoped slot component while assigning the ref to its owner', () => {
+    const ownerRef = ref<any>(null)
+    const owner: any = {
+      [WEVU_READY_CALLED_KEY]: true,
+      __wevu: {
+        state: {},
+        proxy: {},
+        setupState: { leaf: ownerRef },
+      },
+    }
+    const leaf = { marker: 'scoped-leaf' }
+    const scopedSlot: any = {
+      [WEVU_READY_CALLED_KEY]: true,
+      __wevu: { state: {}, proxy: {} },
+      selectComponent: vi.fn(() => leaf),
+      __wevuTemplateRefs: [
+        { selector: '.__wevu-ref-0', inFor: false, name: 'leaf', kind: 'component' },
+      ],
+    }
+
+    updateTemplateRefs(scopedSlot, undefined, owner)
+
+    expect(scopedSlot.selectComponent).toHaveBeenCalledWith('.__wevu-ref-0')
+    expect(ownerRef.value.marker).toBe('scoped-leaf')
+    expect(owner.__wevu.state.$refs.leaf).toBeUndefined()
+    expect(scopedSlot.__wevu.state.$refs).toBeUndefined()
+
+    clearTemplateRefs(scopedSlot, owner)
+    expect(ownerRef.value).toBeNull()
+  })
+
+  it('writes static component template refs into matching setup refs', () => {
+    const monthPanelRef = ref<any>()
+    const componentInstance = {
+      [WEVU_READY_CALLED_KEY]: true,
+      __wevu: { proxy: {} },
+      getMonths: vi.fn(() => ['2026-07']),
+    }
+
+    const instance: any = {
+      __wevuReadyCalled: true,
+      __wevu: {
+        state: {},
+        proxy: {},
+        setupState: { monthPanelRef },
+      },
+      selectComponent: vi.fn(() => componentInstance),
+      __wevuTemplateRefs: [
+        { selector: '.month-panel', inFor: false, name: 'monthPanelRef', kind: 'component' },
+      ],
+    }
+
+    updateTemplateRefs(instance)
+
+    expect(monthPanelRef.value).toBeTruthy()
+    expect(monthPanelRef.value.getMonths()).toEqual(['2026-07'])
+    expect(instance.__wevu.state.$refs.monthPanelRef).toBeUndefined()
+
+    clearTemplateRefs(instance)
+    expect(monthPanelRef.value).toBeNull()
+  })
+
+  it('resolves public methods lazily when a conditional component mounts later', () => {
+    const conditionalRef = ref<any>()
+    const open = vi.fn()
+    let mounted = false
+    const instance: any = {
+      __wevuReadyCalled: true,
+      __wevu: {
+        state: {},
+        proxy: {},
+        setupState: { conditionalRef },
+      },
+      selectComponent: vi.fn(() => mounted ? { open } : null),
+      __wevuTemplateRefs: [
+        { selector: '.conditional', inFor: false, name: 'conditionalRef', kind: 'component' },
+      ],
+    }
+
+    updateTemplateRefs(instance)
+    expect(conditionalRef.value).toBeNull()
+
+    mounted = true
+    updateTemplateRefs(instance)
+    conditionalRef.value.open()
+    expect(open).toHaveBeenCalledTimes(1)
   })
 
   it('binds component template ref methods to the original instance', () => {

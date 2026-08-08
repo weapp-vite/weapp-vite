@@ -1,5 +1,11 @@
 # @weapp-vite/volar
 
+## 2.1.2
+
+### Patch Changes
+
+- 🐛 **修复 Vue 编译器依赖出现不同补丁版本时 Volar 插件的类型冲突，并同步新版语言核心的编译选项契约。** [`2a50cbc`](https://github.com/weapp-vite/weapp-vite/commit/2a50cbc1427d42edeffca28aef43b1797481180d) by @sonofmagic
+
 ## 2.1.1
 
 ### Patch Changes

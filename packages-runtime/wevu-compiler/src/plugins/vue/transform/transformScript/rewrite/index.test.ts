@@ -76,6 +76,16 @@ describe('rewriteDefaultExport', () => {
     expect(code).toContain('createWevuComponent')
   })
 
+  it('injects an explicit non-page marker into component options', () => {
+    const { transformed, code } = runRewrite(
+      'export default { setup() {} }',
+      { isPage: false },
+    )
+
+    expect(transformed).toBe(true)
+    expect(code).toContain('__wevu_isPage: false')
+  })
+
   it('preserves component default export after creating wevu component', () => {
     const { transformed, code } = runRewrite('export default { setup() {} }')
 

@@ -303,7 +303,11 @@ export async function compileScriptPhase(
 
   if (scriptCode) {
     const transformed = transformScript(scriptCode, {
-      skipComponentTransform: isAppFile,
+      isTypeScript: descriptor.script?.lang === 'ts'
+        || descriptor.script?.lang === 'tsx'
+        || descriptor.scriptSetup?.lang === 'ts'
+        || descriptor.scriptSetup?.lang === 'tsx',
+      skipComponentTransform: options?.skipComponentTransform ?? isAppFile,
       isApp: isAppFile,
       isPage: options?.isPage === true,
       minify: options?.minify,

@@ -1,5 +1,53 @@
 # weapp-ide-cli
 
+## 6.0.3
+
+### Patch Changes
+
+- 📦 **Dependencies** [`b055929`](https://github.com/weapp-vite/weapp-vite/commit/b055929f8c18a2a9be800eff88f8f7806a9a4f46)
+  → `@weapp-vite/miniprogram-automator@1.2.11`, `@weapp-vite/devtools-runtime@0.4.12`
+
+## 6.0.2
+
+### Patch Changes
+
+- 🐛 **升级除 TypeScript 外的依赖与 pnpm，并适配 Vite 8 的 OXC JSX 转换：已有 `esbuild.jsx: 'preserve'` 配置会同步到 OXC，避免 Wevu JSX 被误转换为 React runtime。** [#772](https://github.com/weapp-vite/weapp-vite/pull/772) by @sonofmagic
+  升级至 `weapp-tailwindcss@5.2.11`，采用上游对 Tailwind v4 生成器 module ID 查询的统一清理，避免 `weapp-vite` 样式 sidecar 虚拟模块 ID 被当作磁盘路径读取，确保原生模板、脚本和样式增量更新正常输出。
+
+  涉及包：
+  - @wevu/api：dependencies.@douyin-microapp/typings
+  - @weapp-vite/web：dependencies.rolldown
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - @weapp-vite/dashboard：devDependencies.@iconify/tailwind4
+  - @weapp-vite/miniprogram-automator：dependencies.ws
+  - rolldown-require：dependencies.get-tsconfig
+  - weapp-ide-cli：dependencies.execa
+  - weapp-vite：dependencies.@vercel/detect-agent、dependencies.rolldown-plugin-dts
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+- 📦 **Dependencies** [`c7d8514`](https://github.com/weapp-vite/weapp-vite/commit/c7d85143aeb5edaaf5d1902a8bd3d5fe09ef570e)
+  → `@weapp-vite/miniprogram-automator@1.2.10`, `@weapp-vite/devtools-runtime@0.4.11`
+
+## 6.0.1
+
+### Patch Changes
+
+- 🐛 **修复真实微信开发者工具自动化中的会话复用、页面重启、日志收集与截图清理稳定性问题，避免 `forwardConsole` 重复连接现有会话，并降低完整 IDE E2E 在组件库和 GitHub issue 回归场景中的重复启动成本。** [#770](https://github.com/weapp-vite/weapp-vite/pull/770) by @sonofmagic
+- 📦 **Dependencies** [`aceaafa`](https://github.com/weapp-vite/weapp-vite/commit/aceaafaadb179498a56261721ce4db9bcbee1d0c)
+  → `@weapp-vite/miniprogram-automator@1.2.9`, `@weapp-core/shared@3.1.0`, `@weapp-vite/devtools-runtime@0.4.10`
+
+## 6.0.0
+
+### Major Changes
+
+- 🚀 **升级 execa 10，并将最低 Node.js 版本提升至 22。** [`4d87781`](https://github.com/weapp-vite/weapp-vite/commit/4d877818a53f168725e25eeaed5e4bc0accfc630) by @sonofmagic
+
+### Patch Changes
+
+- 📦 **Dependencies** [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b)
+  → `@weapp-vite/miniprogram-automator@1.2.8`, `@weapp-core/shared@3.0.6`, `@weapp-vite/devtools-runtime@0.4.9`
+
 ## 5.4.12
 
 ### Patch Changes

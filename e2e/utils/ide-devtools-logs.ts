@@ -6,15 +6,19 @@ import process from 'node:process'
 const DEVTOOLS_LOG_ROOT_ENV = 'WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT'
 const DEVTOOLS_PROFILE_NAME_PATTERN = /^[\w.-]+$/
 const DEVTOOLS_LOG_FILE_PATTERN = /\.log$/i
-const DEVTOOLS_LOG_TIMESTAMP_PATTERN = /^\[(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})\.(\d{3})\]/
+const DEVTOOLS_LOG_TIMESTAMP_PATTERN = /^\[(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})\.(\d{3})(Z|[+-]\d{2}:\d{2})?\]/
 const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /simulator launch catch error/i,
   /simulator not found/i,
   /模拟器启动失败/,
   /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
   /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
-  /subPackages[\s\S]{0,80}undefined/i,
 ] as const
+const DEVTOOLS_SIMULATOR_LAUNCH_ERROR_PATTERN = /simulator launch catch error/i
+const DEVTOOLS_SIMULATOR_LAUNCH_SUCCESS_PATTERN = /\[appservice\]\s+simulator launch success\b/i
+const DEVTOOLS_APPSERVICE_POST_LAUNCH_ERROR_PATTERN = /\[Devtools\]\s+appservice\.js checkPluginInfo fail with error:/i
+const DEVTOOLS_SIMULATOR_NOT_FOUND_PATTERN = /\[SimulatorService\]\s+updateSimulatorCompileOptions:\s+simulator not found\s+(\S+)/i
+const DEVTOOLS_SIMULATOR_INIT_PATTERN = /\[SimulatorService\]\s+init simulator\s+(\S+)\s+with clientSid\b/i
 
 export interface DevtoolsLogIssue {
   file: string
@@ -101,12 +105,39 @@ function isSimulatorBootIssue(line: string) {
   return DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS.some(pattern => pattern.test(line))
 }
 
+function isTransientSimulatorNotFoundWarning(lines: string[], index: number) {
+  const simulatorId = lines[index]?.match(DEVTOOLS_SIMULATOR_NOT_FOUND_PATTERN)?.[1]
+  if (!simulatorId) {
+    return false
+  }
+
+  return lines.some((line) => {
+    return line.match(DEVTOOLS_SIMULATOR_INIT_PATTERN)?.[1] === simulatorId
+  })
+}
+
+function isRecoveredSimulatorLaunchError(lines: string[], index: number) {
+  if (!DEVTOOLS_SIMULATOR_LAUNCH_ERROR_PATTERN.test(lines[index] || '')) {
+    return false
+  }
+
+  const laterLines = lines.slice(index + 1)
+  const successIndex = laterLines.findIndex(line => DEVTOOLS_SIMULATOR_LAUNCH_SUCCESS_PATTERN.test(line))
+  if (successIndex < 0) {
+    return false
+  }
+
+  return !laterLines
+    .slice(successIndex + 1)
+    .some(line => DEVTOOLS_APPSERVICE_POST_LAUNCH_ERROR_PATTERN.test(line))
+}
+
 function parseDevtoolsLogLineTime(line: string) {
   const match = line.match(DEVTOOLS_LOG_TIMESTAMP_PATTERN)
   if (!match) {
     return null
   }
-  const timestamp = Date.parse(`${match[1]}T${match[2]}.${match[3]}`)
+  const timestamp = Date.parse(`${match[1]}T${match[2]}.${match[3]}${match[4] || ''}`)
   return Number.isFinite(timestamp) ? timestamp : null
 }
 
@@ -131,12 +162,17 @@ export function scanRecentDevtoolsSimulatorBootIssues(options: {
     catch {
       continue
     }
-    for (const line of content.split(/\r?\n/)) {
+    const lines = content.split(/\r?\n/)
+    for (const [index, line] of lines.entries()) {
       const lineTime = parseDevtoolsLogLineTime(line)
       if (lineTime !== null && lineTime < options.sinceMs - 1_000) {
         continue
       }
-      if (isSimulatorBootIssue(line)) {
+      if (
+        isSimulatorBootIssue(line)
+        && !isTransientSimulatorNotFoundWarning(lines, index)
+        && !isRecoveredSimulatorLaunchError(lines, index)
+      ) {
         issues.push({ file: filePath, line: line.trim() })
       }
     }

@@ -9,37 +9,85 @@
  * 全局配置, 小程序根目录下的 app.json 文件用来对微信小程序进行全局配置。
  */
 export interface App {
+  /**
+   * AppBar 配置。
+   */
   appBar?: {
     [k: string]: unknown;
   };
+  /**
+   * 聊天工具分包配置
+   */
+  chatTools?: {
+    [k: string]: unknown;
+  };
+  /**
+   * 组件框架。
+   */
   componentFramework?: string;
+  /**
+   * 是否将 rpx 单位转换为 vw 单位。
+   */
   convertRpxToVw?: boolean;
+  /**
+   * 小程序支持 DarkMode。
+   */
   darkmode?: boolean;
+  /**
+   * 是否开启 debug 模式。
+   */
   debug?: boolean;
+  /**
+   * 调试相关配置。
+   */
   debugOptions?: {
     [k: string]: unknown;
   };
+  /**
+   * 半屏小程序 appId 列表。
+   */
   embeddedAppIdList?: string[];
+  /**
+   * touch 事件监听是否为 passive
+   */
   enablePassiveEvent?:
     | {
         [k: string]: unknown;
       }
     | boolean;
+  /**
+   * 微信消息用小程序打开。
+   */
   entranceDeclare?: {
     [k: string]: unknown;
   };
   /**
-   * 指定小程序的默认启动路径（首页），常见情景是从微信聊天列表页下拉启动、小程序列表启动等。如果不填，将默认为 pages 列表的第一项。不支持带页面路径参数。
+   * 小程序默认启动首页。
    */
   entryPagePath?: string;
+  /**
+   * 是否启用插件功能页。
+   */
   functionalPages?: boolean;
+  /**
+   * 视频号直播半屏场景设置。
+   */
   halfPage?: {
     [k: string]: unknown;
   };
+  /**
+   * 配置自定义组件代码按需注入。
+   */
   lazyCodeLoading?: string;
+  /**
+   * 多端模式场景接入身份管理服务时开启小程序授权页相关配置，详见相关文档
+   */
   miniApp?: {
     [k: string]: unknown;
   };
+  /**
+   * 网络超时时间。
+   */
   networkTimeout?: {
     connectSocket?: number;
     downloadFile?: number;
@@ -48,19 +96,34 @@ export interface App {
     [k: string]: unknown;
   };
   /**
-   * 用于指定小程序由哪些页面组成，每一项都对应一个页面的 路径（含文件名） 信息。文件名不需要写文件后缀，框架会自动去寻找对应位置的 .json, .js, .wxml, .wxss 四个文件进行处理。
+   * 页面路径列表。
    */
   pages: string[];
+  /**
+   * 小程序接口权限相关设置。
+   */
   permission?: {
     [k: string]: unknown;
   };
+  /**
+   * 使用到的插件。
+   */
   plugins?: {
     [k: string]: unknown;
   };
+  /**
+   * 分包预下载规则。
+   */
   preloadRule?: {
     [k: string]: unknown;
   };
+  /**
+   * 全局默认的渲染后端。
+   */
   renderer?: "webview" | "skyline";
+  /**
+   * 渲染后端选项。
+   */
   rendererOptions?: {
     skyline?: {
       defaultContentBox?: boolean;
@@ -70,21 +133,51 @@ export interface App {
     };
     [k: string]: unknown;
   };
+  /**
+   * 需要在后台使用的能力。
+   */
   requiredBackgroundModes?: string[];
+  /**
+   * 调用的地理位置相关隐私接口。
+   */
   requiredPrivateInfos?: string[];
+  /**
+   * PC 小程序是否支持用户任意改变窗口大小（包括最大化窗口）；iPad 小程序是否支持屏幕旋转。默认关闭
+   */
   resizable?: boolean;
+  /**
+   * 自定义模块映射规则。
+   */
   resolveAlias?: {
     [k: string]: unknown;
   };
+  /**
+   * 定制化型服务商票据
+   */
   serviceProviderTicket?: string;
+  /**
+   * 单页模式相关配置
+   */
   singlePage?: {
     [k: string]: unknown;
   };
+  /**
+   * 指明 sitemap.json 的位置。
+   */
   sitemapLocation?: string;
+  /**
+   * 正常情况下默认所有资源文件都被打包发布到所有平台，可以通过 static 字段配置特定每个目录/文件只能发布到特定的平台(多端场景) 相关文档
+   */
   static?: {
     [k: string]: unknown;
   };
+  /**
+   * 指定使用升级后的weui样式
+   */
   style?: string;
+  /**
+   * 分包结构配置（兼容别名）。
+   */
   subPackages?: {
     entry?: string;
     independent?: boolean;
@@ -93,6 +186,9 @@ export interface App {
     root?: string;
     [k: string]: unknown;
   }[];
+  /**
+   * 分包结构配置。
+   */
   subpackages?: {
     entry?: string;
     independent?: boolean;
@@ -101,9 +197,15 @@ export interface App {
     root?: string;
     [k: string]: unknown;
   }[];
+  /**
+   * 聊天素材小程序打开相关配置。
+   */
   supportedMaterials?: {
     [k: string]: unknown;
   };
+  /**
+   * 底部 tab 栏的表现。
+   */
   tabBar?: {
     backgroundColor: string;
     borderStyle?: "black" | "white";
@@ -224,13 +326,25 @@ export interface App {
     selectedColor: string;
     [k: string]: unknown;
   };
+  /**
+   * 指明 theme.json 的位置。
+   */
   themeLocation?: string;
+  /**
+   * 指定需要引用的扩展库。
+   */
   useExtendedLib?: {
     [k: string]: unknown;
   };
+  /**
+   * 全局自定义组件配置。
+   */
   usingComponents?: {
     [k: string]: string;
   };
+  /**
+   * 全局的默认窗口表现。
+   */
   window?: {
     backgroundColor?: string;
     backgroundColorBottom?: string;
@@ -239,7 +353,7 @@ export interface App {
     enablePullDownRefresh?: boolean;
     handleWebviewPreload?: "static" | "manual" | "auto";
     homeButton?: boolean;
-    initialRenderingCache?: "static" | "dynamic";
+    initialRenderingCache?: "static" | "dynamic" | "capture";
     navigationBarBackgroundColor?: string;
     navigationBarTextStyle?: string;
     navigationBarTitleText?: string;
@@ -250,6 +364,9 @@ export interface App {
     visualEffectInBackground?: "none" | "hidden";
     [k: string]: unknown;
   };
+  /**
+   * Worker 代码放置的目录。
+   */
   workers?:
     | string
     | {
@@ -271,15 +388,33 @@ export interface App {
  * 自定义组件配置
  */
 export interface Component {
+  /**
+   * 声明当前配置对应自定义组件。
+   */
   component?: boolean;
+  /**
+   * 组件框架。
+   */
   componentFramework?: string;
+  /**
+   * 组件泛型配置。
+   */
   componentGenerics?: {
     [k: string]: unknown;
   };
+  /**
+   * 组件占位配置。
+   */
   componentPlaceholder?: {
     [k: string]: unknown;
   };
+  /**
+   * 组件样式隔离策略。
+   */
   styleIsolation?: "isolated" | "apply-shared" | "shared";
+  /**
+   * 组件依赖的自定义组件配置。
+   */
   usingComponents?: {
     [k: string]: string;
   };
@@ -297,50 +432,118 @@ export interface Component {
  * 页面配置, 支持对单个页面进行配置，可以在页面对应的 .json 文件来对本页面的表现进行配置
  */
 export interface Page {
+  /**
+   * 窗口的背景色
+   */
   backgroundColor?: string;
+  /**
+   * 底部窗口的背景色，仅 iOS 支持
+   */
   backgroundColorBottom?: string;
+  /**
+   * 页面容器背景色。
+   */
   backgroundColorContent?: string;
+  /**
+   * 顶部窗口的背景色，仅 iOS 支持
+   */
   backgroundColorTop?: string;
+  /**
+   * 下拉 loading 的样式，仅支持 dark / light
+   */
   backgroundTextStyle?: "dark" | "light";
+  /**
+   * 组件框架。
+   */
   componentFramework?: string;
   componentPlaceholder?: {
     [k: string]: unknown;
   };
+  /**
+   * 设置为 true 时页面整体不能上下滚动。
+   */
   disableScroll?: boolean;
+  /**
+   * 事件监听是否为 passive，若对页面单独设置则会覆盖全局的配置，详见 全局配置
+   */
   enablePassiveEvent?:
     | {
         [k: string]: unknown;
       }
     | boolean;
+  /**
+   * 是否开启当前页面下拉刷新。详见 Page.onPullDownRefresh
+   */
   enablePullDownRefresh?: boolean;
+  /**
+   * 控制预加载下个页面的时机。支持 static / manual / auto
+   */
   handleWebviewPreload?: "static" | "manual" | "auto";
+  /**
+   * 在非首页、非页面栈最底层页面或非tabbar内页面中的导航栏展示home键
+   */
   homeButton?: boolean;
-  initialRenderingCache?: "static" | "dynamic";
+  /**
+   * 页面初始渲染缓存配置。
+   */
+  initialRenderingCache?: "static" | "dynamic" | "capture";
+  /**
+   * 导航栏背景颜色，如 #000000
+   */
   navigationBarBackgroundColor?: string;
+  /**
+   * 导航栏标题、状态栏颜色，仅支持 black / white
+   */
   navigationBarTextStyle?: string;
+  /**
+   * 导航栏标题文字内容
+   */
   navigationBarTitleText?: string;
+  /**
+   * 导航栏样式，仅支持以下值：default 默认样式 custom 自定义导航栏，只保留右上角胶囊按钮。
+   */
   navigationStyle?: "default" | "custom";
+  /**
+   * 页面上拉触底事件触发时距页面底部距离，单位为px。详见 Page.onReachBottom
+   */
   onReachBottomDistance?: number;
+  /**
+   * 屏幕旋转设置，支持 auto / portrait / landscape 详见 响应显示区域变化
+   */
   pageOrientation?: "portrait" | "auto" | "landscape";
+  /**
+   * 页面渲染后端。
+   */
   renderer?: "webview" | "skyline";
-  rendererOptions?: {
-    skyline?: {
-      defaultContentBox?: boolean;
-      defaultDisplayBlock?: boolean;
-      disableABTest?: boolean;
-      [k: string]: unknown;
-    };
-    [k: string]: unknown;
-  };
+  /**
+   * 渲染后端选项，详情相关文档
+   */
+  rendererOptions?: string;
+  /**
+   * 重新启动策略配置
+   */
   restartStrategy?: "homePage" | "homePageAndLatestPage";
-  singlePage?: {
-    [k: string]: unknown;
-  };
+  /**
+   * 单页模式相关配置
+   */
+  singlePage?: string;
+  /**
+   * 启用新版的组件样式
+   */
   style?: string;
+  /**
+   * 页面样式隔离策略。
+   */
   styleIsolation?: "page-isolated" | "page-apply-shared" | "page-shared";
+  /**
+   * 页面自定义组件配置。
+   */
   usingComponents?: {
     [k: string]: string;
   };
+  /**
+   * 切入系统后台时，隐藏页面内容，保护用户隐私。支持 hidden / none，若对页面单独设置则会覆盖全局的配置，详见 全局配置
+   */
   visualEffectInBackground?: "none" | "hidden";
   [k: string]: unknown;
 }
@@ -356,6 +559,9 @@ export interface Page {
  * https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/sitemap.html
  */
 export interface Sitemap {
+  /**
+   * sitemap 匹配规则列表。
+   */
   rules: {
     action?: "allow" | "disallow";
     matching?: "exact" | "inclusive" | "exclusive" | "partial";
@@ -374,9 +580,15 @@ export interface Sitemap {
  */
 
 export interface Theme {
+  /**
+   * 深色主题配置。
+   */
   dark: {
     [k: string]: unknown;
   };
+  /**
+   * 浅色主题配置。
+   */
   light: {
     [k: string]: unknown;
   };
@@ -394,10 +606,19 @@ export interface Theme {
  * https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/development.html#%E6%8F%92%E4%BB%B6%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6
  */
 export interface Plugin {
+  /**
+   * 插件主入口文件。
+   */
   main?: string;
+  /**
+   * 插件页面映射。
+   */
   pages?: {
     [k: string]: string;
   };
+  /**
+   * 插件对外提供的自定义组件。
+   */
   publicComponents?: {
     [k: string]: string;
   };

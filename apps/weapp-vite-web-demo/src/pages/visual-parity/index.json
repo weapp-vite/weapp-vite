@@ -1,0 +1,6 @@
+{
+  "$schema": "https://vite.icebreaker.top/page.json",
+  "navigationBarTitleText": "基础组件视觉矩阵",
+  "navigationBarBackgroundColor": "#ffffff",
+  "navigationBarTextStyle": "black"
+}

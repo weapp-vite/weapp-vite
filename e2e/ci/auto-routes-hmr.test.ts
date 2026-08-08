@@ -150,7 +150,6 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
     const recreateMarker = createHmrMarker('AUTO-ROUTES-RECREATE', 'weapp')
     const originalLogsSource = await fs.readFile(LOGS_VUE_PATH, 'utf8')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       cwd: APP_ROOT,
       env: {
@@ -217,7 +216,6 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
     const appTitleAddMarker = createHmrMarker('AUTO-ROUTES-APP-TITLE-ADD', 'weapp')
     const originalAppSource = await fs.readFile(APP_VUE_PATH, 'utf8')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       cwd: APP_ROOT,
       env: {

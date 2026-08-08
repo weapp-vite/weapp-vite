@@ -19,6 +19,13 @@ export function normalizeNonEmptyInput(value: string, label: string) {
   return normalizedValue
 }
 
+export function cloneProtocolValue<T>(value: T): T {
+  if (!value || typeof value !== 'object') {
+    return value
+  }
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
 async function waitForDelay(ms = 0) {
   if (ms <= 0) {
     return
@@ -48,5 +55,30 @@ export async function pollUntil<T>(
       throw new Error(errorMessage)
     }
     await waitForDelay(interval)
+  }
+}
+
+export async function runWithTimeout<T>(
+  operation: () => T | PromiseLike<T>,
+  timeout: number | undefined,
+  message: string,
+) {
+  if (!Number.isFinite(timeout) || (timeout ?? 0) <= 0) {
+    return await operation()
+  }
+
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      Promise.resolve().then(operation),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), Math.trunc(timeout!))
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import { createProjectCoverage } from '../../../vitest.coverage'
+import { createProjectCoverage } from '../../../vitest.coverage.ts'
 
 export default defineConfig({
   test: {

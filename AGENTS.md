@@ -190,6 +190,13 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
     - `pnpm test:e2e`
     - `pnpm test:types`
     - `pnpm test:all`
+- For incremental parity between real WeChat DevTools and `mpcore`:
+  - Treat stable, reproducible behavior observed in the real WeChat DevTools runtime as the source of truth, including platform quirks. Login failures, unavailable service ports, automator connection failures, protocol timeouts, and other infrastructure failures are not runtime behavior contracts.
+  - Every new or modified `e2e/ide/**` scenario, and every existing scenario that exposes a DevTools-versus-`mpcore` difference, must add or update corresponding coverage under `mpcore/packages/*` in the same change.
+  - Prefer running the same provider-compatible IDE scenario with both `devtools` and `headless` through `WEAPP_VITE_E2E_RUNTIME_PROVIDER`. When direct reuse is not practical, add the narrowest semantically equivalent simulator unit/integration and browser e2e coverage, plus type-contract coverage when public types are involved.
+  - When the real IDE and `mpcore` disagree, keep the real IDE assertion intact, minimize the observable behavior into an `mpcore` regression case, and fix the owning `mpcore/packages/*` runtime, lifecycle, rendering, API, navigation, or testing-bridge implementation. Do not weaken assertions, normalize away meaningful differences, or skip the headless case merely to make the suites pass.
+  - A touched parity scenario is complete only after the real IDE case and its `mpcore` counterpart agree on the relevant observable state, callback ordering, lifecycle, rendered structure, API result, and error behavior.
+  - Apply this rule incrementally: historical IDE scenarios do not all need to be migrated at once, but any scenario touched or found divergent during current work must reach parity before that work is considered complete. The long-term target is for the `mpcore` mini-program container sandbox to reproduce WeChat runtime behavior completely across all covered scenarios.
 - For WeChat DevTools runtime e2e environment selection:
   - Treat `pnpm e2e:ide*`, `pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts ...`, and any validation that depends on WeChat DevTools, automator bridge, or local port listeners as sandbox-sensitive by default.
   - Run these validations outside the sandbox by default; request escalation before launching them instead of treating sandbox failure as the first signal.

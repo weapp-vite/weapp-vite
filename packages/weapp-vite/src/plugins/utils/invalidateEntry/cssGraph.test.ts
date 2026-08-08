@@ -252,11 +252,8 @@ describe('invalidateEntry cssGraph', () => {
 
     expect(dependencies).toEqual(new Set([
       hello,
-      hello.slice(0, -'.css'.length),
       global,
-      global.slice(0, -'.scss'.length),
       external,
-      external.slice(0, -'.css'.length),
     ]))
     expect(ctx.runtimeState.css.dependencyToImporters.get(hello)).toEqual(new Set([vueFile]))
     expect(ctx.runtimeState.css.dependencyToImporters.get(hello.slice(0, -'.css'.length))).toEqual(new Set([vueFile]))

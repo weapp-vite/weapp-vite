@@ -23,6 +23,24 @@ export interface ToPlainOptions {
   _path?: string
 }
 
+function isAllowedFunctionPath(functionPathSet: Set<string> | undefined, currentPath: string) {
+  if (!functionPathSet || !currentPath) {
+    return false
+  }
+  let candidate = currentPath
+  while (candidate) {
+    if (functionPathSet.has(candidate)) {
+      return true
+    }
+    const separatorIndex = candidate.lastIndexOf('.')
+    if (separatorIndex < 0) {
+      return false
+    }
+    candidate = candidate.slice(0, separatorIndex)
+  }
+  return false
+}
+
 function toPlainInternal(
   value: any,
   seen: WeakMap<object, any>,
@@ -44,7 +62,7 @@ function toPlainInternal(
     return unwrapped.toString()
   }
   if (typeof unwrapped === 'function') {
-    return includeFunctions || functionPathSet?.has(currentPath) ? unwrapped : undefined
+    return includeFunctions || isAllowedFunctionPath(functionPathSet, currentPath) ? unwrapped : undefined
   }
   if (typeof unwrapped !== 'object' || unwrapped === null) {
     return unwrapped

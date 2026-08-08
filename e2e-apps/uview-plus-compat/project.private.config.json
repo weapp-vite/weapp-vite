@@ -1,0 +1,837 @@
+{
+  "description": "uview-plus 全组件启动条件",
+  "projectname": "uview-plus-compat",
+  "setting": {
+    "compileHotReLoad": false,
+    "urlCheck": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "启动页",
+          "pathName": "pages/bootstrap/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "组件索引",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-action-sheet",
+          "pathName": "pages/components/up-action-sheet/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-agreement",
+          "pathName": "pages/components/up-agreement/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-album",
+          "pathName": "pages/components/up-album/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-alert",
+          "pathName": "pages/components/up-alert/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-avatar",
+          "pathName": "pages/components/up-avatar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-avatar-group",
+          "pathName": "pages/components/up-avatar-group/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-back-top",
+          "pathName": "pages/components/up-back-top/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-badge",
+          "pathName": "pages/components/up-badge/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-barcode",
+          "pathName": "pages/components/up-barcode/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-box",
+          "pathName": "pages/components/up-box/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-button",
+          "pathName": "pages/components/up-button/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-calendar",
+          "pathName": "pages/components/up-calendar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-calendar-strip",
+          "pathName": "pages/components/up-calendar-strip/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-canvas",
+          "pathName": "pages/components/up-canvas/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-car-keyboard",
+          "pathName": "pages/components/up-car-keyboard/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-card",
+          "pathName": "pages/components/up-card/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-cascader",
+          "pathName": "pages/components/up-cascader/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-cate-tab",
+          "pathName": "pages/components/up-cate-tab/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-cell",
+          "pathName": "pages/components/up-cell/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-cell-group",
+          "pathName": "pages/components/up-cell-group/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-checkbox",
+          "pathName": "pages/components/up-checkbox/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-checkbox-group",
+          "pathName": "pages/components/up-checkbox-group/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-choose",
+          "pathName": "pages/components/up-choose/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-circle-progress",
+          "pathName": "pages/components/up-circle-progress/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-city-locate",
+          "pathName": "pages/components/up-city-locate/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-code",
+          "pathName": "pages/components/up-code/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-code-input",
+          "pathName": "pages/components/up-code-input/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-col",
+          "pathName": "pages/components/up-col/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-collapse",
+          "pathName": "pages/components/up-collapse/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-collapse-item",
+          "pathName": "pages/components/up-collapse-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-color-picker",
+          "pathName": "pages/components/up-color-picker/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-copy",
+          "pathName": "pages/components/up-copy/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-count-down",
+          "pathName": "pages/components/up-count-down/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-count-to",
+          "pathName": "pages/components/up-count-to/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-coupon",
+          "pathName": "pages/components/up-coupon/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-cropper",
+          "pathName": "pages/components/up-cropper/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-datetime-picker",
+          "pathName": "pages/components/up-datetime-picker/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-divider",
+          "pathName": "pages/components/up-divider/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-dragsort",
+          "pathName": "pages/components/up-dragsort/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-dropdown",
+          "pathName": "pages/components/up-dropdown/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-dropdown-item",
+          "pathName": "pages/components/up-dropdown-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-empty",
+          "pathName": "pages/components/up-empty/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-float-button",
+          "pathName": "pages/components/up-float-button/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-form",
+          "pathName": "pages/components/up-form/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-form-item",
+          "pathName": "pages/components/up-form-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-gap",
+          "pathName": "pages/components/up-gap/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-goods-sku",
+          "pathName": "pages/components/up-goods-sku/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-grid",
+          "pathName": "pages/components/up-grid/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-grid-item",
+          "pathName": "pages/components/up-grid-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-guide",
+          "pathName": "pages/components/up-guide/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-icon",
+          "pathName": "pages/components/up-icon/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-image",
+          "pathName": "pages/components/up-image/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-index-anchor",
+          "pathName": "pages/components/up-index-anchor/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-index-item",
+          "pathName": "pages/components/up-index-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-index-list",
+          "pathName": "pages/components/up-index-list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-input",
+          "pathName": "pages/components/up-input/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-keyboard",
+          "pathName": "pages/components/up-keyboard/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-lazy-load",
+          "pathName": "pages/components/up-lazy-load/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-line",
+          "pathName": "pages/components/up-line/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-line-progress",
+          "pathName": "pages/components/up-line-progress/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-link",
+          "pathName": "pages/components/up-link/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-list",
+          "pathName": "pages/components/up-list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-list-item",
+          "pathName": "pages/components/up-list-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-loading-icon",
+          "pathName": "pages/components/up-loading-icon/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-loading-page",
+          "pathName": "pages/components/up-loading-page/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-loadmore",
+          "pathName": "pages/components/up-loadmore/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-markdown",
+          "pathName": "pages/components/up-markdown/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-message-input",
+          "pathName": "pages/components/up-message-input/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-modal",
+          "pathName": "pages/components/up-modal/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-navbar",
+          "pathName": "pages/components/up-navbar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-navbar-mini",
+          "pathName": "pages/components/up-navbar-mini/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-no-network",
+          "pathName": "pages/components/up-no-network/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-notice-bar",
+          "pathName": "pages/components/up-notice-bar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-notify",
+          "pathName": "pages/components/up-notify/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-number-box",
+          "pathName": "pages/components/up-number-box/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-number-keyboard",
+          "pathName": "pages/components/up-number-keyboard/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-overlay",
+          "pathName": "pages/components/up-overlay/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-pagination",
+          "pathName": "pages/components/up-pagination/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-parse",
+          "pathName": "pages/components/up-parse/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-pdf-reader",
+          "pathName": "pages/components/up-pdf-reader/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-picker",
+          "pathName": "pages/components/up-picker/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-picker-column",
+          "pathName": "pages/components/up-picker-column/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-picker-data",
+          "pathName": "pages/components/up-picker-data/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-popover",
+          "pathName": "pages/components/up-popover/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-popup",
+          "pathName": "pages/components/up-popup/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-poster",
+          "pathName": "pages/components/up-poster/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-pull-refresh",
+          "pathName": "pages/components/up-pull-refresh/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-qrcode",
+          "pathName": "pages/components/up-qrcode/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-radio",
+          "pathName": "pages/components/up-radio/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-radio-group",
+          "pathName": "pages/components/up-radio-group/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-rate",
+          "pathName": "pages/components/up-rate/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-read-more",
+          "pathName": "pages/components/up-read-more/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-refresh-virtual-list",
+          "pathName": "pages/components/up-refresh-virtual-list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-row",
+          "pathName": "pages/components/up-row/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-row-notice",
+          "pathName": "pages/components/up-row-notice/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-safe-bottom",
+          "pathName": "pages/components/up-safe-bottom/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-scroll-list",
+          "pathName": "pages/components/up-scroll-list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-search",
+          "pathName": "pages/components/up-search/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-select",
+          "pathName": "pages/components/up-select/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-short-video",
+          "pathName": "pages/components/up-short-video/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-signature",
+          "pathName": "pages/components/up-signature/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-skeleton",
+          "pathName": "pages/components/up-skeleton/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-slider",
+          "pathName": "pages/components/up-slider/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-status-bar",
+          "pathName": "pages/components/up-status-bar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-steps",
+          "pathName": "pages/components/up-steps/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-steps-item",
+          "pathName": "pages/components/up-steps-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-sticky",
+          "pathName": "pages/components/up-sticky/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-subsection",
+          "pathName": "pages/components/up-subsection/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-swipe-action",
+          "pathName": "pages/components/up-swipe-action/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-swipe-action-item",
+          "pathName": "pages/components/up-swipe-action-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-swiper",
+          "pathName": "pages/components/up-swiper/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-swiper-indicator",
+          "pathName": "pages/components/up-swiper-indicator/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-switch",
+          "pathName": "pages/components/up-switch/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-tabbar",
+          "pathName": "pages/components/up-tabbar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-tabbar-item",
+          "pathName": "pages/components/up-tabbar-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-table",
+          "pathName": "pages/components/up-table/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-table2",
+          "pathName": "pages/components/up-table2/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-tabs",
+          "pathName": "pages/components/up-tabs/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-tabs-item",
+          "pathName": "pages/components/up-tabs-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-tag",
+          "pathName": "pages/components/up-tag/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-td",
+          "pathName": "pages/components/up-td/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-text",
+          "pathName": "pages/components/up-text/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-textarea",
+          "pathName": "pages/components/up-textarea/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-th",
+          "pathName": "pages/components/up-th/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-title",
+          "pathName": "pages/components/up-title/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-toast",
+          "pathName": "pages/components/up-toast/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-toolbar",
+          "pathName": "pages/components/up-toolbar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-tooltip",
+          "pathName": "pages/components/up-tooltip/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-tr",
+          "pathName": "pages/components/up-tr/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-transition",
+          "pathName": "pages/components/up-transition/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-tree",
+          "pathName": "pages/components/up-tree/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-upload",
+          "pathName": "pages/components/up-upload/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-view",
+          "pathName": "pages/components/up-view/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-virtual-list",
+          "pathName": "pages/components/up-virtual-list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-waterfall",
+          "pathName": "pages/components/up-waterfall/index",
+          "query": "",
+          "scene": null
+        }
+      ]
+    }
+  },
+  "libVersion": "3.15.0"
+}

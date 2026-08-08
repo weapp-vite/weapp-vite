@@ -38,6 +38,19 @@ function isLocalServerInfraError(error: unknown) {
   return LOCAL_SERVER_INFRA_ERROR_PATTERNS.some(pattern => pattern.test(message))
 }
 
+function isRecoverableAutomatorSessionError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('Connection closed')
+    || message.includes('Target closed')
+    || message.includes('WebSocket is not open')
+    || message.includes('socket hang up')
+    || message.includes('Execution context was destroyed')
+    || message.includes('DEVTOOLS_PROTOCOL_TIMEOUT')
+    || message.includes('DevTools did not respond to protocol method')
+    || message.includes('Timeout in raw reLaunch')
+    || (typeof error === 'object' && error !== null && Reflect.get(error, 'code') === 'DEVTOOLS_PROTOCOL_TIMEOUT')
+}
+
 async function ensureBuilt(jsFormat: TestJsFormat) {
   if (preparedBuildFormats.has(jsFormat)) {
     return
@@ -106,6 +119,23 @@ function expectSocketTrace(
   expect(trace).toMatchObject(expected)
 }
 
+async function waitForPageData(
+  page: any,
+  label: string,
+  predicate: (data: Record<string, any>) => boolean,
+) {
+  const startedAt = Date.now()
+  let latestData: Record<string, any> = {}
+  while (Date.now() - startedAt <= 15_000) {
+    latestData = await page.data()
+    if (predicate(latestData)) {
+      return latestData
+    }
+    await page.waitFor(220)
+  }
+  throw new Error(`Timed out waiting ${label} page data: ${JSON.stringify(latestData)}`)
+}
+
 beforeAll(async () => {
   try {
     serverHandle = await startRequestClientsRealServer()
@@ -144,6 +174,7 @@ for (const jsFormat of JS_FORMATS) {
           delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
           miniProgram = await launchAutomator({
             projectPath: APP_ROOT,
+            retryWarmupTimeout: true,
             skipRelaunchPageRootCheck: true,
             warmupRootSelectors: ['#request-clients-real-root'],
             warmupRoute: '/pages/index/index',
@@ -167,23 +198,77 @@ for (const jsFormat of JS_FORMATS) {
       }
     }
 
-    afterAll(async () => {
+    async function resetMiniProgram() {
       if (miniProgram) {
-        await miniProgram.close()
+        await miniProgram.close().catch(() => {})
+        miniProgram = null
       }
       await cleanupResidualIdeProcesses()
+    }
+
+    async function reLaunchPage(ctx: { skip: (message?: string) => void }, route: string) {
+      let lastError: unknown
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        const currentMiniProgram = await getMiniProgram(ctx)
+        try {
+          const page = await currentMiniProgram.reLaunch(route)
+          if (!page) {
+            throw new Error(`Failed to launch ${route}`)
+          }
+          await waitForRequestClientsRealRouteDom(page, route)
+          return {
+            miniProgram: currentMiniProgram,
+            page,
+          }
+        }
+        catch (error) {
+          lastError = error
+          if (attempt === 2 || !isRecoverableAutomatorSessionError(error)) {
+            throw error
+          }
+          await resetMiniProgram()
+        }
+      }
+      throw lastError
+    }
+
+    async function openTracedPage(ctx: { skip: (message?: string) => void }, route: string) {
+      let lastError: unknown
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        const currentMiniProgram = await getMiniProgram(ctx)
+        try {
+          const baselineTrace = await readHostTrace(currentMiniProgram)
+          const page = await currentMiniProgram.reLaunch(route)
+          if (!page) {
+            throw new Error(`Failed to launch ${route}`)
+          }
+          await waitForRequestClientsRealRouteDom(page, route)
+          return {
+            baselineTrace,
+            miniProgram: currentMiniProgram,
+            page,
+          }
+        }
+        catch (error) {
+          lastError = error
+          if (attempt === 2 || !isRecoverableAutomatorSessionError(error)) {
+            throw error
+          }
+          await resetMiniProgram()
+        }
+      }
+      throw lastError
+    }
+
+    afterAll(async () => {
+      await resetMiniProgram()
     })
 
     it('covers app-level request globals probe from a native app entry', async (ctx) => {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const page = await miniProgram.reLaunch('/pages/index/index')
-      if (!page) {
-        throw new Error('Failed to launch /pages/index/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/index/index')
+      const { miniProgram } = await reLaunchPage(ctx, '/pages/index/index')
 
       const appProbe = await miniProgram.evaluate(() => {
         return getApp<{ globalData?: { requestGlobalsProbe?: Record<string, unknown> } }>()?.globalData?.requestGlobalsProbe ?? null
@@ -201,22 +286,16 @@ for (const jsFormat of JS_FORMATS) {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const baselineTrace = await readHostTrace(miniProgram)
-      const page = await miniProgram.reLaunch(withBaseUrl('/pages/fetch/index'))
-      if (!page) {
-        throw new Error('Failed to launch /pages/fetch/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/fetch/index')
+      const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/fetch/index'))
 
-      const result = await page.callMethod('runE2E')
+      await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/fetch/index')
+      const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
-      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.snapshot?.requestPath).toBe('/fetch')
-      expect(result?.snapshot?.payload).toContain('"transport":"fetch"')
-      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expect(snapshot?.requestPath, JSON.stringify({ snapshot, requestCounts: serverHandle?.requestCounts })).toBe('/fetch')
+      expect(snapshot?.payload).toContain('"transport":"fetch"')
+      expect(snapshot?.pageStatus).toBe('全部通过')
       expectRequestTrace(newRequestCalls, '/fetch')
     })
 
@@ -224,22 +303,16 @@ for (const jsFormat of JS_FORMATS) {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const baselineTrace = await readHostTrace(miniProgram)
-      const page = await miniProgram.reLaunch(withBaseUrl('/pages/axios/index'))
-      if (!page) {
-        throw new Error('Failed to launch /pages/axios/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/axios/index')
+      const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/axios/index'))
 
-      const result = await page.callMethod('runE2E')
+      await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/axios/index')
+      const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
-      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.snapshot?.requestPath).toBe('/axios')
-      expect(result?.snapshot?.payload).toContain('"transport":"axios"')
-      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expect(snapshot?.requestPath, JSON.stringify({ snapshot, requestCounts: serverHandle?.requestCounts })).toBe('/axios')
+      expect(snapshot?.payload).toContain('"transport":"axios"')
+      expect(snapshot?.pageStatus).toBe('全部通过')
       expectRequestTrace(newRequestCalls, '/axios')
     })
 
@@ -247,22 +320,16 @@ for (const jsFormat of JS_FORMATS) {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const baselineTrace = await readHostTrace(miniProgram)
-      const page = await miniProgram.reLaunch(withBaseUrl('/pages/graphql-request/index'))
-      if (!page) {
-        throw new Error('Failed to launch /pages/graphql-request/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/graphql-request/index')
+      const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/graphql-request/index'))
 
-      const result = await page.callMethod('runE2E')
+      await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/graphql-request/index')
+      const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
-      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.snapshot?.requestPath).toBe('/graphql')
-      expect(result?.snapshot?.payload).toContain('"client":"graphql-request"')
-      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expect(snapshot?.requestPath, JSON.stringify({ snapshot, requestCounts: serverHandle?.requestCounts })).toBe('/graphql')
+      expect(snapshot?.payload).toContain('"client":"graphql-request"')
+      expect(snapshot?.pageStatus).toBe('全部通过')
       expectRequestTrace(newRequestCalls, '/graphql')
     })
 
@@ -270,29 +337,29 @@ for (const jsFormat of JS_FORMATS) {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const baselineTrace = await readHostTrace(miniProgram)
-      const page = await miniProgram.reLaunch(withBaseUrl('/pages/socket-io/index'))
-      if (!page) {
-        throw new Error('Failed to launch /pages/socket-io/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/socket-io/index')
+      const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/socket-io/index'))
 
-      const result = await page.callMethod('runE2E')
+      await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/socket-io/index')
+      const pageData = await waitForPageData(page, 'socket.io', data => (
+        data.websocketOnlyTransportName === 'websocket'
+        && ['polling', 'websocket'].includes(data.defaultTransportName)
+        && data.randomPushCount > 0
+        && Boolean(data.latestRandomMessage)
+      ))
+      const snapshot = pageData?.state
       const currentTrace = await readHostTrace(miniProgram)
       const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
-      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.snapshot?.requestPath).toBe('/socket.io')
-      expect(result?.snapshot?.payload).toContain('"client":"socket.io-client"')
-      expect(result?.snapshot?.payload).toContain('"serverRandomReceived":true')
-      expect(result?.snapshot?.payload).toContain('"websocketOnlyConnected":true')
-      expect(result?.latestRandomMessage).toBeTruthy()
-      expect(result?.randomPushCount).toBeGreaterThan(0)
-      expect(['polling', 'websocket']).toContain(result?.defaultTransportName)
-      expect(result?.websocketOnlyTransportName).toBe('websocket')
+      expect(snapshot?.requestPath, JSON.stringify({ snapshot, requestCounts: serverHandle?.requestCounts })).toBe('/socket.io')
+      expect(snapshot?.payload).toContain('"client":"socket.io-client"')
+      expect(snapshot?.payload).toContain('"serverRandomReceived":true')
+      expect(snapshot?.payload).toContain('"websocketOnlyConnected":true')
+      expect(pageData?.latestRandomMessage).toBeTruthy()
+      expect(pageData?.randomPushCount).toBeGreaterThan(0)
+      expect(['polling', 'websocket']).toContain(pageData?.defaultTransportName)
+      expect(pageData?.websocketOnlyTransportName).toBe('websocket')
       expect(serverHandle?.requestCounts.socketIo).toBeGreaterThan(0)
-      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expect(snapshot?.pageStatus).toBe('全部通过')
       expectSocketTrace(newSocketCalls, '/socket.io', {
         perMessageDeflate: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.perMessageDeflate,
       })
@@ -302,27 +369,26 @@ for (const jsFormat of JS_FORMATS) {
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const miniProgram = await getMiniProgram(ctx)
-      const baselineTrace = await readHostTrace(miniProgram)
-      const page = await miniProgram.reLaunch(withBaseUrl('/pages/websocket/index'))
-      if (!page) {
-        throw new Error('Failed to launch /pages/websocket/index')
-      }
-      await waitForRequestClientsRealRouteDom(page, '/pages/websocket/index')
+      const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/websocket/index'))
 
-      const result = await page.callMethod('runE2E')
+      await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/websocket/index')
+      const pageData = await waitForPageData(page, 'native WebSocket', data => (
+        data.connectedReadyState === 1
+        && data.randomPushCount > 0
+        && Boolean(data.latestRandomMessage)
+      ))
+      const snapshot = pageData?.state
       const currentTrace = await readHostTrace(miniProgram)
       const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
-      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.snapshot?.requestPath).toBe('/ws')
-      expect(result?.snapshot?.payload).toContain('"client":"native-websocket"')
-      expect(result?.snapshot?.payload).toContain('"serverRandomEvent":"server-random"')
-      expect(result?.snapshot?.payload).toContain('"transport":"websocket"')
-      expect(result?.connectedReadyState).toBe(1)
-      expect(result?.latestRandomMessage).toBeTruthy()
-      expect(result?.randomPushCount).toBeGreaterThan(0)
-      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expect(snapshot?.requestPath, JSON.stringify({ snapshot, requestCounts: serverHandle?.requestCounts })).toBe('/ws')
+      expect(snapshot?.payload).toContain('"client":"native-websocket"')
+      expect(snapshot?.payload).toContain('"serverRandomEvent":"server-random"')
+      expect(snapshot?.payload).toContain('"transport":"websocket"')
+      expect(pageData?.connectedReadyState).toBe(1)
+      expect(pageData?.latestRandomMessage).toBeTruthy()
+      expect(pageData?.randomPushCount).toBeGreaterThan(0)
+      expect(snapshot?.pageStatus).toBe('全部通过')
       expectSocketTrace(newSocketCalls, '/ws', {
         perMessageDeflate: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.perMessageDeflate,
         timeout: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.timeout,

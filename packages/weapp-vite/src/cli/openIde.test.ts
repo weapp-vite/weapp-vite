@@ -29,7 +29,18 @@ const colorsMock = vi.hoisted(() => ({
 }))
 const execFileMock = vi.hoisted(() => vi.fn())
 const createCompilerContextMock = vi.hoisted(() => vi.fn())
-const createInlineConfigMock = vi.hoisted(() => vi.fn((platform?: string) => ({ platform })))
+const [resolveRuntimeTargetsMock, runtimeTargetsMock] = vi.hoisted(() => {
+  const targets = {
+    kind: 'config',
+    label: 'config',
+    entries: [],
+    platform: undefined,
+    rawPlatform: undefined,
+    get: vi.fn(),
+  }
+  return [vi.fn(() => targets), targets] as const
+})
+const createInlineConfigMock = vi.hoisted(() => vi.fn((targets: { platform?: string }) => ({ platform: targets.platform })))
 const miniProgramDisconnectMock = vi.hoisted(() => vi.fn())
 const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
 const launchAutomatorMock = vi.hoisted(() => vi.fn())
@@ -72,6 +83,7 @@ vi.mock('../createContext', () => ({
 
 vi.mock('./runtime', () => ({
   createInlineConfig: createInlineConfigMock,
+  resolveRuntimeTargets: resolveRuntimeTargetsMock,
 }))
 
 vi.mock('../logger', () => ({
@@ -111,6 +123,7 @@ describe('openIde', () => {
     resolveProjectAutomatorPortMock.mockReturnValue(9633)
     bootstrapWechatDevtoolsSettingsMock.mockReset()
     createInlineConfigMock.mockClear()
+    resolveRuntimeTargetsMock.mockClear()
     colorsMock.green.mockClear()
     colorsMock.bold.mockClear()
     delete process.env.WEAPP_VITE_DEBUG_AUTOMATOR_OPEN
@@ -336,6 +349,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
+      timeout: 120_000,
       trustProject: true,
     })
   })
@@ -366,6 +380,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
+      timeout: 120_000,
       trustProject: true,
     })
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
@@ -404,6 +419,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
+      timeout: 120_000,
       trustProject: true,
     })
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
@@ -547,6 +563,7 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
       port: 9633,
+      timeout: 120_000,
       trustProject: true,
     })
     expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
@@ -1072,7 +1089,8 @@ describe('openIde', () => {
       cliPlatform: 'weapp',
     })
 
-    expect(createInlineConfigMock).toHaveBeenCalledWith(undefined)
+    expect(resolveRuntimeTargetsMock).toHaveBeenCalledWith({ platform: undefined })
+    expect(createInlineConfigMock).toHaveBeenCalledWith(runtimeTargetsMock)
     expect(createCompilerContextMock).toHaveBeenCalledWith({
       cwd: '/workspace/project',
       mode: 'production',

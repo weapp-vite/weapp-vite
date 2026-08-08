@@ -4,16 +4,29 @@ import { analyzeHmrProfile } from '../../analyze/hmr'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
-import { registerAnalyzeCommand } from './analyze'
+import { createWebAnalyzeResult, registerAnalyzeCommand } from './analyze'
 
 const filterDuplicateOptionsMock = vi.hoisted(() => vi.fn())
 const resolveConfigFileMock = vi.hoisted(() => vi.fn())
-const resolveRuntimeTargetsMock = vi.hoisted(() => vi.fn(() => ({
-  runMini: true,
-  runWeb: false,
-  platform: 'weapp',
-  rawPlatform: 'weapp',
-})))
+const resolveRuntimeTargetsMock = vi.hoisted(() => {
+  const miniBackend = {
+    descriptor: {
+      id: 'miniprogram',
+      capabilities: {
+        analyze: true,
+      },
+    },
+    platform: 'weapp',
+  }
+  return vi.fn(() => ({
+    kind: 'miniprogram',
+    label: 'weapp',
+    entries: [miniBackend],
+    platform: 'weapp',
+    rawPlatform: 'weapp',
+    get: (id: string) => id === 'miniprogram' ? miniBackend : undefined,
+  }))
+})
 const createInlineConfigMock = vi.hoisted(() => vi.fn(() => ({})))
 const logRuntimeTargetMock = vi.hoisted(() => vi.fn())
 const createCompilerContextMock = vi.hoisted(() => vi.fn())
@@ -22,6 +35,11 @@ const analyzeHmrProfileMock = vi.hoisted(() => vi.fn())
 const readLatestAnalyzeHistorySnapshotMock = vi.hoisted(() => vi.fn())
 const writeAnalyzeHistorySnapshotMock = vi.hoisted(() => vi.fn())
 const startAnalyzeDashboardMock = vi.hoisted(() => vi.fn())
+const ensureDirMock = vi.hoisted(() => vi.fn())
+const writeFileMock = vi.hoisted(() => vi.fn())
+const resolveHmrProfileJsonPathMock = vi.hoisted(() => vi.fn(({ cwd, option }) => (
+  option ? `${cwd}/${option}` : `${cwd}/.weapp-vite/hmr-profile.jsonl`
+)))
 const loggerMock = vi.hoisted(() => ({
   success: vi.fn(),
   info: vi.fn(),
@@ -35,6 +53,17 @@ vi.mock('../../logger', () => ({
     green: (input: string) => input,
     bold: (input: string) => input,
   },
+}))
+
+vi.mock('@weapp-core/shared/fs', () => ({
+  fs: {
+    ensureDir: ensureDirMock,
+    writeFile: writeFileMock,
+  },
+}))
+
+vi.mock('../../utils/hmrProfile', () => ({
+  resolveHmrProfileJsonPath: resolveHmrProfileJsonPathMock,
 }))
 
 vi.mock('../options', () => ({
@@ -97,6 +126,8 @@ describe('analyze cli command', () => {
     resolveConfigFileMock.mockReturnValue(undefined)
     readLatestAnalyzeHistorySnapshotMock.mockResolvedValue(null)
     writeAnalyzeHistorySnapshotMock.mockResolvedValue('/project/.weapp-vite/analyze-history/latest.json')
+    ensureDirMock.mockResolvedValue(undefined)
+    writeFileMock.mockResolvedValue(undefined)
     createCompilerContextMock.mockResolvedValue({
       configService: {
         platform: 'weapp',
@@ -209,6 +240,53 @@ describe('analyze cli command', () => {
     expect(startAnalyzeDashboard).not.toHaveBeenCalled()
     expect(loggerMock.success).toHaveBeenCalledWith('HMR profile 分析完成')
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('事件分布'))
+  })
+
+  it('reports skipped hmr profile records and unavailable profile paths', async () => {
+    const profileResult = await analyzeHmrProfileMock()
+    analyzeHmrProfileMock.mockClear()
+    analyzeHmrProfileMock.mockResolvedValueOnce({
+      ...profileResult,
+      skippedLineCount: 2,
+    })
+    const action = createAnalyzeActionHandler()
+
+    await action('/project', { hmrProfile: true })
+    expect(loggerMock.warn).toHaveBeenCalledWith('- 跳过 2 条无法解析的 profile 记录')
+
+    resolveHmrProfileJsonPathMock.mockReturnValueOnce(undefined)
+    await action('/project', { hmrProfile: true })
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.objectContaining({
+      message: '未找到可用的 HMR profile 文件路径',
+    }))
+    expect(process.exitCode).toBe(1)
+  })
+
+  it('prints empty and fallback-valued hmr profile summaries', async () => {
+    const profileResult = await analyzeHmrProfileMock()
+    analyzeHmrProfileMock.mockClear()
+    const action = createAnalyzeActionHandler()
+
+    analyzeHmrProfileMock.mockResolvedValueOnce({
+      ...profileResult,
+      dirtyReasons: [],
+      events: [],
+      firstTimestamp: undefined,
+      lastTimestamp: undefined,
+      pendingReasons: [],
+      slowestSamples: [],
+    })
+    await action('/project', { hmrProfile: 'custom-profile.jsonl' })
+    expect(resolveHmrProfileJsonPathMock).toHaveBeenCalledWith(expect.objectContaining({
+      option: 'custom-profile.jsonl',
+    }))
+
+    analyzeHmrProfileMock.mockResolvedValueOnce({
+      ...profileResult,
+      slowestSamples: [{}],
+    })
+    await action('/project', { hmrProfile: true })
+    expect(loggerMock.info).toHaveBeenCalledWith('  - 0.00 ms，unknown，(unknown)')
   })
 
   it('prefers config-defined hmr profile path when option has no explicit file', async () => {
@@ -377,5 +455,337 @@ describe('analyze cli command', () => {
     expect(loggerMock.info).toHaveBeenCalledWith('组件依赖：1 个组件，1 条分包优化建议')
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('components/detail-card'))
     expect(startAnalyzeDashboard).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the web analyze capability without running mini analysis', async () => {
+    const webBackend = {
+      descriptor: {
+        id: 'web',
+        capabilities: { analyze: true },
+      },
+      platform: 'web',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+    })
+    createCompilerContextMock.mockResolvedValueOnce({
+      configService: {
+        platform: 'weapp',
+        cwd: '/project',
+        mode: 'production',
+        packageManager: { agent: 'pnpm' },
+        relativeCwd: (input: string) => input.replace('/project/', ''),
+        weappViteConfig: { hmr: { profileJson: false } },
+        weappWebConfig: {
+          enabled: true,
+          root: '/project/web',
+          srcDir: 'src',
+          outDir: '/project/dist/web',
+          pluginOptions: {
+            executionMode: 'compat',
+          },
+        },
+      },
+    })
+    const action = createAnalyzeActionHandler()
+
+    await action('/project', { platform: 'web' })
+
+    expect(analyzeSubpackages).not.toHaveBeenCalled()
+    expect(loggerMock.success).toHaveBeenCalledWith('Web 静态分析完成')
+  })
+
+  it('prints disabled and default-valued web summaries', async () => {
+    const webBackend = {
+      descriptor: { id: 'web', capabilities: { analyze: true } },
+      platform: 'web',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+    })
+    const action = createAnalyzeActionHandler()
+    createCompilerContextMock.mockResolvedValueOnce({
+      configService: {
+        cwd: '/project',
+        mode: 'production',
+        packageManager: { agent: 'pnpm' },
+        platform: 'weapp',
+        relativeCwd: (input: string) => input,
+        weappViteConfig: {},
+        weappWebConfig: { enabled: false, pluginOptions: {} },
+      },
+    })
+    await action('/project', { platform: 'web' })
+    expect(loggerMock.info).toHaveBeenCalledWith('- 配置状态：未启用 weapp.web')
+
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+    })
+    createCompilerContextMock.mockResolvedValueOnce({
+      configService: {
+        cwd: '/project',
+        mode: 'production',
+        packageManager: { agent: 'pnpm' },
+        platform: 'weapp',
+        relativeCwd: (input: string) => input,
+        weappViteConfig: {},
+        weappWebConfig: { enabled: true, pluginOptions: {} },
+      },
+    })
+    await action('/project', { platform: 'web' })
+    expect(loggerMock.info).toHaveBeenCalledWith('- root：.')
+    expect(loggerMock.info).toHaveBeenCalledWith('- srcDir：.')
+    expect(loggerMock.info).toHaveBeenCalledWith('- outDir：dist/web')
+  })
+
+  it('describes disabled web config with stable relative paths and timestamp', () => {
+    const result = createWebAnalyzeResult({
+      configFilePath: '/project/vite.config.ts',
+      mode: 'test',
+      relativeCwd: () => '',
+      weappWebConfig: undefined,
+    } as any, {
+      now: new Date('2026-07-29T00:00:00.000Z'),
+      platform: 'web',
+    })
+    expect(result).toMatchObject({
+      configFile: '.',
+      generatedAt: '2026-07-29T00:00:00.000Z',
+      limitations: expect.arrayContaining(['未检测到启用的 weapp.web 配置。']),
+      web: {
+        enabled: false,
+        executionMode: 'compat',
+      },
+    })
+  })
+
+  it('rejects unsupported report types and records context creation failures', async () => {
+    const action = createAnalyzeActionHandler()
+    await expect(action('/project', { report: 'html' })).rejects.toThrow('不支持的 analyze report 类型')
+
+    createCompilerContextMock.mockRejectedValueOnce(new Error('invalid config'))
+    await action('/project', {})
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.objectContaining({ message: 'invalid config' }))
+    expect(process.exitCode).toBe(1)
+  })
+
+  it('prints hmr, web and mini JSON or Markdown when no output file is provided', async () => {
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const action = createAnalyzeActionHandler()
+
+    await action('/project', { hmrProfile: true, json: true })
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('"kind": "hmr-profile"'))
+
+    const webBackend = {
+      descriptor: { id: 'web', capabilities: { analyze: true } },
+      platform: 'web',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+    })
+    createCompilerContextMock.mockResolvedValueOnce({
+      configService: {
+        platform: 'weapp',
+        cwd: '/project',
+        mode: 'production',
+        packageManager: { agent: 'pnpm' },
+        relativeCwd: (input: string) => input.replace('/project/', ''),
+        weappViteConfig: {},
+        weappWebConfig: { enabled: false, pluginOptions: {} },
+      },
+    })
+    await action('/project', { json: true, platform: 'web' })
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('"runtime": "web"'))
+
+    await action('/project', { markdown: true, platform: 'weapp' })
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('# weapp-vite analyze 报告'))
+
+    await action('/project', { json: true, platform: 'weapp' })
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('"packages"'))
+    writeSpy.mockRestore()
+  })
+
+  it('writes JSON, Markdown and PR reports to resolved output files', async () => {
+    const action = createAnalyzeActionHandler()
+
+    await action('/project', {
+      markdown: true,
+      output: 'reports/analyze.md',
+      platform: 'weapp',
+    })
+    expect(writeFileMock).toHaveBeenLastCalledWith(
+      '/project/reports/analyze.md',
+      expect.stringContaining('# weapp-vite analyze 报告'),
+      'utf8',
+    )
+
+    await action('/project', {
+      output: '/tmp/analyze-pr.md',
+      platform: 'weapp',
+      report: 'pr',
+    })
+    expect(writeFileMock).toHaveBeenLastCalledWith(
+      '/tmp/analyze-pr.md',
+      expect.stringContaining('## weapp-vite analyze PR 摘要'),
+      'utf8',
+    )
+
+    await action('/project', {
+      json: true,
+      output: 'reports/analyze.json',
+      platform: 'weapp',
+    })
+    expect(writeFileMock).toHaveBeenLastCalledWith(
+      '/project/reports/analyze.json',
+      expect.stringContaining('"packages"'),
+      'utf8',
+    )
+    expect(ensureDirMock).toHaveBeenCalledWith('/project/reports')
+    expect(loggerMock.success).toHaveBeenCalledWith(expect.stringContaining('分析结果已写入'))
+  })
+
+  it('writes hmr and web JSON without also printing stdout', async () => {
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const action = createAnalyzeActionHandler()
+
+    await action('/project', {
+      hmrProfile: true,
+      json: true,
+      output: 'reports/hmr.json',
+    })
+
+    const webBackend = {
+      descriptor: { id: 'web', capabilities: { analyze: true } },
+      platform: 'web',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+    })
+    createCompilerContextMock.mockResolvedValueOnce({
+      configService: {
+        cwd: '/project',
+        mode: 'production',
+        packageManager: { agent: 'pnpm' },
+        platform: 'weapp',
+        relativeCwd: (input: string) => input,
+        weappViteConfig: {},
+        weappWebConfig: { enabled: false, pluginOptions: {} },
+      },
+    })
+    await action('/project', {
+      json: true,
+      output: 'reports/web.json',
+      platform: 'web',
+    })
+
+    expect(writeFileMock).toHaveBeenCalledWith(
+      '/project/reports/hmr.json',
+      expect.stringContaining('"kind": "hmr-profile"'),
+      'utf8',
+    )
+    expect(writeFileMock).toHaveBeenCalledWith(
+      '/project/reports/web.json',
+      expect.stringContaining('"runtime": "web"'),
+      'utf8',
+    )
+    expect(writeSpy).not.toHaveBeenCalled()
+    writeSpy.mockRestore()
+  })
+
+  it('warns for targets without analyze capability and returns after a passing budget check', async () => {
+    const unsupported = {
+      descriptor: { id: 'custom', capabilities: { analyze: false } },
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'miniprogram',
+      label: 'custom',
+      entries: [unsupported],
+      rawPlatform: 'custom',
+      get: () => undefined,
+    })
+    const action = createAnalyzeActionHandler()
+    await action('/project', {})
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('当前命令不支持该平台'))
+
+    await action('/project', { budgetCheck: true })
+    expect(loggerMock.success).toHaveBeenCalledWith('包体预算检查通过')
+    expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+  })
+
+  it('prints detailed package, component and duplicate-module summaries', async () => {
+    const suggestions = Array.from({ length: 6 }, (_, index) => ({
+      kind: 'move-to-subpackage',
+      message: `suggestion-${index}`,
+    }))
+    const modules = Array.from({ length: 11 }, (_, index) => ({
+      id: `module-${index}`,
+      packages: [
+        { packageId: 'main', files: [`main-${index}.js`] },
+        { packageId: 'pkg', files: [`pkg-${index}.js`] },
+      ],
+      source: `src/module-${index}.ts`,
+      sourceType: 'src',
+    }))
+    analyzeSubpackagesMock.mockResolvedValueOnce({
+      components: [{ suggestions }],
+      modules,
+      packages: [
+        {
+          files: [{ type: 'chunk' }, { type: 'asset' }],
+          id: 'main',
+          label: '主包',
+        },
+        { files: [], id: 'pkg', label: '分包' },
+      ],
+      subPackages: [{ independent: true, name: 'goods', root: 'pkg' }],
+    })
+    const action = createAnalyzeActionHandler()
+    await action('/project', {})
+    expect(loggerMock.info).toHaveBeenCalledWith('分包配置：')
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('其余 1 条组件建议'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('跨包复用/复制源码共 11 项'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('其余 1 项'))
+  })
+
+  it('prints summary fallbacks without subpackages or component metadata', async () => {
+    analyzeSubpackagesMock.mockResolvedValueOnce({
+      modules: [{
+        id: 'shared',
+        packages: [
+          { files: ['main.js'], packageId: 'missing-main' },
+          { files: ['pkg.js'], packageId: 'missing-pkg' },
+        ],
+        source: 'src/shared.ts',
+        sourceType: 'src',
+      }],
+      packages: [{ files: [], id: 'main', label: '主包' }],
+      subPackages: [],
+    })
+    const action = createAnalyzeActionHandler()
+
+    await action('/project', {})
+
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('覆盖 0 个源码模块'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('missing-main'))
   })
 })

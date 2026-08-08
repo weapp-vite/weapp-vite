@@ -21,10 +21,20 @@ export interface BrowserRenderScope {
   eventBindings?: Map<string, { method: string, stopAfter: boolean }>
   getMethod: (methodName: string) => ((...args: any[]) => any) | undefined
   getScopeId: () => string
+  genericComponents?: Map<string, string>
   hostId?: string
   listenerScopeId?: string
   id?: string
   ownerScopeId?: string
+  slots?: Map<string, BrowserSlotContent[]>
+}
+
+export interface BrowserSlotContent {
+  instancePath: string
+  node: DomNodeLike
+  ownerFilePath: string
+  ownerJsonPath: string
+  scope: BrowserRenderScope
 }
 
 export interface BrowserComponentRegistryEntry {
@@ -48,6 +58,7 @@ export interface BrowserRendererContext {
   session: {
     createIntersectionObserver: (scope: any, options?: Record<string, any>) => any
     createMediaQueryObserver: (scope: any) => any
+    requestRender: (callback?: () => void) => void
     selectAllComponentsWithin: (scopeId: string, selector: string) => any[]
     selectComponentWithin: (scopeId: string, selector: string) => any
     selectOwnerComponent: (scopeId: string) => any

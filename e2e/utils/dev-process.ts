@@ -281,9 +281,13 @@ export function startDevProcess(
     }
   }
 
-  child.stdout?.on('data', appendOutput)
-  child.stderr?.on('data', appendOutput)
-  child.all?.on('data', appendOutput)
+  if (child.all) {
+    child.all.on('data', appendOutput)
+  }
+  else {
+    child.stdout?.on('data', appendOutput)
+    child.stderr?.on('data', appendOutput)
+  }
 
   const settledExit: Promise<DevProcessExitInfo> = child
     .then(result => ({
@@ -325,7 +329,11 @@ export function startDevProcess(
     if (winner.type === 'task') {
       return winner.value
     }
-    throw new Error(`Dev process exited before ${description}: ${formatExitInfo(winner.info)}`)
+    throw new Error(appendRecentOutput(
+      `Dev process exited before ${description}: ${formatExitInfo(winner.info)}`,
+      outputChunks,
+      spawnInfo,
+    ))
   }
 
   const waitForOutput = async (matcher: string | RegExp, description: string, timeoutMs = 90_000) => {
@@ -353,7 +361,7 @@ export function startDevProcess(
     if (typeof child.pid === 'number') {
       await terminatePid(child.pid, forceKillDelayMs)
     }
-    else if (child.exitCode == null) {
+    else if (child.nodeChildProcess.exitCode == null) {
       child.kill('SIGTERM')
     }
     await waitForExitWithTimeout(settledExit, forceKillDelayMs + 1_000)

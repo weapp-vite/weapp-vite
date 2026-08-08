@@ -1,4 +1,5 @@
 import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType, HeadlessWxSavedFileInfo } from '../host'
+import type { RuntimeDiagnosticEntry } from '../kernel'
 import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessAppInstance } from './appInstance'
 import type { HeadlessComponentInstance } from './componentInstance'
@@ -12,9 +13,9 @@ import type {
   HeadlessWxRequestMockDefinition,
   HeadlessWxUploadFileMockDefinition,
 } from './wxState'
-import fs from 'node:fs'
 import path from 'node:path'
 import { createHostRegistries } from '../host'
+import { RuntimeKernel } from '../kernel'
 import { loadProject } from '../project'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
@@ -23,6 +24,7 @@ import { createHeadlessCanvasContext } from '../view/canvasContext'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
+import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
@@ -30,15 +32,20 @@ import { createPageInstance } from './pageInstance'
 import { renderRuntimePageTree } from './render'
 import {
   applyResizeToSystemInfo,
+  createDefaultLocationResult,
   createDefaultSystemInfo,
   deriveAppBaseInfo,
+  deriveDeviceInfo,
   deriveMenuButtonBoundingClientRect,
   deriveWindowInfo,
 } from './systemInfo'
 import { createHeadlessWxState } from './wxState'
 
 export interface HeadlessSessionOptions {
-  projectPath: string
+  globals?: Record<string, unknown>
+  project?: HeadlessProjectDescriptor
+  projectPath?: string
+  strictHostMocks?: boolean
 }
 
 interface ResolvedNavigationTarget {
@@ -152,9 +159,10 @@ function createAppLaunchOptions(pathname: string, query: Record<string, string>)
   }
 }
 
-function readJsonObject(filePath: string) {
+function readJsonObject(project: HeadlessProjectDescriptor, filePath: string) {
   try {
-    const value = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+    const source = project.artifactSource.readText(filePath)
+    const value = source == null ? undefined : JSON.parse(source)
     return value && typeof value === 'object' && !Array.isArray(value)
       ? value as Record<string, any>
       : undefined
@@ -183,6 +191,7 @@ function resolveNavigationPath(targetPath: string, baseRoute?: string) {
 
 export class HeadlessSession {
   readonly project: HeadlessProjectDescriptor
+  private readonly kernel = new RuntimeKernel()
 
   private appDefinition: HeadlessAppDefinition | null = null
   private appInstance: HeadlessAppInstance | null = null
@@ -192,6 +201,14 @@ export class HeadlessSession {
   private readonly pages: HeadlessPageInstance[] = []
   private readonly componentCache = new Map<string, HeadlessComponentInstance>()
   private readonly componentScopes = new Map<string, any>()
+  private readonly selectorQueryScopeSnapshots = new WeakMap<Record<string, any>, {
+    page: HeadlessPageInstance
+    root: ReturnType<typeof renderRuntimePageTree>['root']
+    scopeId: string
+  }>()
+
+  private renderRequestPending = false
+  private readonly renderRequestCallbacks: Array<() => void> = []
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
@@ -202,14 +219,20 @@ export class HeadlessSession {
   private readonly canvasContexts = new Map<string, import('../host').HeadlessWxCanvasContext>()
   private enterOptions = createAppLaunchOptions('', {})
   private launchOptions = createAppLaunchOptions('', {})
-  private readonly wxState = createHeadlessWxState()
+  private readonly wxState
   private pullDownRefreshState: HeadlessPullDownRefreshState = {
     active: false,
     stopCalls: 0,
   }
 
   constructor(options: HeadlessSessionOptions) {
-    this.project = loadProject(options.projectPath)
+    if (!options.project && !options.projectPath) {
+      throw new Error('Headless runtime requires projectPath or project.')
+    }
+    this.project = options.project ?? loadProject(options.projectPath!)
+    this.wxState = createHeadlessWxState(this.kernel.scheduler, {
+      strictMocks: options.strictHostMocks,
+    })
     this.registries = createHostRegistries()
     const rawTabBarList = Array.isArray(this.project.appConfig.tabBar?.list)
       ? this.project.appConfig.tabBar.list
@@ -262,8 +285,10 @@ export class HeadlessSession {
         getSavedFileList: () => this.wxState.getSavedFileList(),
         getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
+        getDeviceInfo: () => deriveDeviceInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
         getClipboardData: () => this.wxState.getClipboardData(),
+        getLocation: () => createDefaultLocationResult(),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
         getNetworkType: () => this.wxState.getNetworkType(),
         navigateBack: option => this.navigateBack(option?.delta),
@@ -283,7 +308,7 @@ export class HeadlessSession {
         removeSavedFile: option => this.wxState.removeSavedFile(option),
         saveImageToPhotosAlbum: option => this.wxState.saveImageToPhotosAlbum(option),
         saveVideoToPhotosAlbum: option => this.wxState.saveVideoToPhotosAlbum(option),
-        nextTick: callback => queueMicrotask(() => callback?.()),
+        nextTick: callback => this.kernel.scheduler.queueMicrotask(() => callback?.()),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
@@ -316,15 +341,56 @@ export class HeadlessSession {
         setTabBarBadge: option => this.setTabBarBadge(option.index, option.text),
         updateShareMenu: option => this.wxState.updateShareMenu(option),
       },
+      {
+        artifactSource: this.project.artifactSource,
+        globals: options.globals,
+        kernel: this.kernel,
+      },
     )
   }
 
+  assertActive() {
+    this.kernel.assertActive()
+  }
+
+  close() {
+    if (this.kernel.isClosed) {
+      return
+    }
+    this.unloadAllPages()
+    this.canvasContexts.clear()
+    this.renderRequestCallbacks.length = 0
+    this.renderRequestPending = false
+    this.wxState.close()
+    this.moduleLoader.close()
+    this.kernel.close()
+  }
+
+  getDiagnostics(): RuntimeDiagnosticEntry[] {
+    return this.kernel.diagnostics.getEntries()
+  }
+
+  get isClosed() {
+    return this.kernel.isClosed
+  }
+
   getApp() {
+    this.assertActive()
     return this.appInstance
   }
 
   getCurrentPages() {
+    this.assertActive()
     return this.pages.slice()
+  }
+
+  callWxMethod(methodName: string, ...args: any[]) {
+    this.assertActive()
+    const method = this.moduleLoader.wx[methodName as keyof typeof this.moduleLoader.wx]
+    if (typeof method !== 'function') {
+      throw new TypeError(`wx.${methodName} is not available in headless runtime.`)
+    }
+    return Reflect.apply(method, this.moduleLoader.wx, args)
   }
 
   getCurrentPageNavigationBarTitle() {
@@ -374,9 +440,11 @@ export class HeadlessSession {
   }
 
   renderCurrentPage() {
+    this.assertActive()
     const current = this.requireCurrentPage('renderCurrentPage()')
-    return renderRuntimePageTree({
+    const rendered = renderRuntimePageTree({
       changedPageKeys: current.__lastChangedKeys__ ?? [],
+      artifactSource: this.project.artifactSource,
       componentCache: this.componentCache,
       componentScopes: this.componentScopes,
       moduleLoader: this.moduleLoader,
@@ -384,11 +452,45 @@ export class HeadlessSession {
       session: {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
+        requestRender: callback => this.requestRender(callback),
         selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
       },
     }, current)
+    const componentScopePrefix = `page:${stripLeadingSlash(current.route)}`
+    for (const [scopeId, instance] of this.componentCache.entries()) {
+      if (scopeId.startsWith(componentScopePrefix)) {
+        this.selectorQueryScopeSnapshots.set(instance, {
+          page: current,
+          root: rendered.root,
+          scopeId,
+        })
+      }
+    }
+    return rendered
+  }
+
+  requestRender(callback?: () => void) {
+    this.assertActive()
+    if (callback) {
+      this.renderRequestCallbacks.push(callback)
+    }
+    if (this.renderRequestPending) {
+      return
+    }
+    this.renderRequestPending = true
+    Promise.resolve().then(() => {
+      if (this.kernel.isClosed) {
+        return
+      }
+      this.renderRequestPending = false
+      const callbacks = this.renderRequestCallbacks.splice(0)
+      if (this.currentPageInstance) {
+        this.renderCurrentPage()
+      }
+      callbacks.forEach(cb => cb())
+    })
   }
 
   getScopeSnapshot(scopeId: string) {
@@ -473,6 +575,7 @@ export class HeadlessSession {
     }
 
     const current = this.requireCurrentPage(`scope method "${methodName}"`)
+    this.renderCurrentPage()
     if (normalizedScopeId === `page:${stripLeadingSlash(current.route)}`) {
       const method = current[methodName]
       if (typeof method !== 'function') {
@@ -580,6 +683,10 @@ export class HeadlessSession {
     return deriveAppBaseInfo(this.systemInfo)
   }
 
+  getDeviceInfo() {
+    return deriveDeviceInfo(this.systemInfo)
+  }
+
   getLaunchOptions() {
     return {
       ...this.launchOptions,
@@ -604,6 +711,10 @@ export class HeadlessSession {
 
   getMenuButtonBoundingClientRect() {
     return deriveMenuButtonBoundingClientRect(this.systemInfo)
+  }
+
+  getLocation() {
+    return createDefaultLocationResult()
   }
 
   getNetworkType() {
@@ -822,6 +933,7 @@ export class HeadlessSession {
   }
 
   bootstrap(launchOptions = createAppLaunchOptions('', {})) {
+    this.assertActive()
     if (this.appInstance) {
       return this.appInstance
     }
@@ -843,6 +955,7 @@ export class HeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
 
@@ -864,6 +977,7 @@ export class HeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
 
@@ -883,6 +997,7 @@ export class HeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
 
@@ -920,10 +1035,8 @@ export class HeadlessSession {
 
     const current = this.currentPageInstance
     const cachedTarget = this.tabPages.get(target.routeRecord.route) ?? null
-    const tabItem = this.resolveTabBarItem(target.routeRecord.route)
 
     if (current === cachedTarget && current) {
-      current.onTabItemTap?.(tabItem)
       return current
     }
 
@@ -941,20 +1054,24 @@ export class HeadlessSession {
     }
 
     let nextPage = cachedTarget
+    let shouldRunInitialLifecycles = false
     if (!nextPage) {
       nextPage = this.createFreshPage(target)
       this.tabPages.set(target.routeRecord.route, nextPage)
+      shouldRunInitialLifecycles = true
+    }
+
+    this.pages.length = 0
+    this.pages.push(nextPage)
+    this.currentPageInstance = nextPage
+    if (shouldRunInitialLifecycles) {
+      this.runInitialPageLifecycles(nextPage, target.query)
     }
     else if (current !== nextPage) {
       nextPage.onShow?.()
       this.runPageComponentLifetime(nextPage.route, 'show')
     }
 
-    nextPage.onTabItemTap?.(tabItem)
-
-    this.pages.length = 0
-    this.pages.push(nextPage)
-    this.currentPageInstance = nextPage
     return nextPage
   }
 
@@ -1025,12 +1142,41 @@ export class HeadlessSession {
     scope?: Record<string, any>,
   ) {
     const current = this.requireCurrentPage('wx.createSelectorQuery().exec()')
-    if (scope && scope !== current && !Array.from(this.componentCache.values()).includes(scope as HeadlessComponentInstance)) {
+    const nativeScope = resolveSelectorQueryNativeScope(scope, current, this.componentCache.values())
+    const staleScope = scope && !nativeScope
+      ? resolveSelectorQueryScopeSnapshot(scope, this.selectorQueryScopeSnapshots)
+      : null
+    if (scope && !nativeScope && !staleScope) {
+      if (resolveSelectorQueryScopeId(scope)) {
+        return requests.map(request => request.target === 'viewport'
+          ? { scrollLeft: 0, scrollTop: current.__scrollTop__ ?? 0 }
+          : request.single ? null : [])
+      }
       throw new Error('wx.createSelectorQuery().in(component) received an unknown scope in headless runtime.')
     }
+    if (staleScope) {
+      return executeSelectorQueryRequests(requests, {
+        page: staleScope.snapshot.page,
+        resolveContext: (node) => {
+          if (node.name !== 'canvas') {
+            return {
+              type: 'unsupported-context',
+            }
+          }
+          const canvasId = node.attribs?.['canvas-id']
+          return typeof canvasId === 'string' && canvasId
+            ? this.createCanvasContext(canvasId, staleScope.nativeScope)
+            : {
+                type: 'unsupported-context',
+              }
+        },
+        root: resolveSelectorQueryScopeRoot(staleScope.snapshot.root, staleScope.snapshot.scopeId),
+        windowInfo: this.getWindowInfo(),
+      })
+    }
     const rendered = this.renderCurrentPage()
-    const scopeId = scope && scope !== current
-      ? this.getComponentScopeId(scope as HeadlessComponentInstance)
+    const scopeId = nativeScope && nativeScope !== current
+      ? this.getComponentScopeId(nativeScope as HeadlessComponentInstance)
       : null
     return executeSelectorQueryRequests(requests, {
       page: current,
@@ -1042,7 +1188,7 @@ export class HeadlessSession {
         }
         const canvasId = node.attribs?.['canvas-id']
         return typeof canvasId === 'string' && canvasId
-          ? this.createCanvasContext(canvasId, scope)
+          ? this.createCanvasContext(canvasId, nativeScope ?? undefined)
           : {
               type: 'unsupported-context',
             }
@@ -1056,7 +1202,7 @@ export class HeadlessSession {
     const pageModulePath = path.resolve(this.project.miniprogramRootPath, `${target.routeRecord.route}.js`)
     const pageConfigPath = path.resolve(this.project.miniprogramRootPath, `${target.routeRecord.route}.json`)
     const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
-    const pageConfig = readJsonObject(pageConfigPath)
+    const pageConfig = readJsonObject(this.project, pageConfigPath)
     const pageInstance = createPageInstance(`/${target.routeRecord.route}`, pageDefinition, target.query, {
       background: resolveBackgroundSnapshot(this.project.appConfig, pageConfig),
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
@@ -1065,28 +1211,21 @@ export class HeadlessSession {
     pageInstance.createMediaQueryObserver = () => this.createMediaQueryObserver(pageInstance)
     pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
     pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
-    pageInstance.onLoad?.(target.query)
-    pageInstance.onShow?.()
-    pageInstance.onReady?.()
     if (this.isTabBarRoute(target.routeRecord.route)) {
       this.tabPages.set(target.routeRecord.route, pageInstance)
     }
     return pageInstance
   }
 
-  private isTabBarRoute(route: string) {
-    return this.tabBarRoutes.has(stripLeadingSlash(route))
+  private runInitialPageLifecycles(pageInstance: HeadlessPageInstance, query: Record<string, string>) {
+    pageInstance.onLoad?.(query)
+    pageInstance.onShow?.()
+    pageInstance.onReady?.()
+    pageInstance.onRouteDone?.({})
   }
 
-  private resolveTabBarItem(route: string) {
-    const pagePath = stripLeadingSlash(route)
-    const item = this.tabBarItems.get(pagePath)
-    if (!item) {
-      throw new Error(`Missing tabBar metadata for route "${route}" in headless runtime.`)
-    }
-    return {
-      ...item,
-    }
+  private isTabBarRoute(route: string) {
+    return this.tabBarRoutes.has(stripLeadingSlash(route))
   }
 
   private requireTabBarItem(index: number, action: string) {
@@ -1162,7 +1301,7 @@ export class HeadlessSession {
       return []
     }
 
-    return [...this.componentScopes.entries()]
+    const matches = [...this.componentScopes.entries()]
       .filter(([candidateScopeId, scope]) => {
         if (!candidateScopeId.includes('/')) {
           return false
@@ -1198,6 +1337,11 @@ export class HeadlessSession {
         }
         return true
       })
+
+    const directlyOwned = rootScopeId
+      ? matches.filter(([, scope]) => scope.ownerScopeId === rootScopeId)
+      : []
+    return (directlyOwned.length > 0 ? directlyOwned : matches)
       .map(([candidateScopeId]) => this.componentCache.get(candidateScopeId))
       .filter(Boolean)
   }

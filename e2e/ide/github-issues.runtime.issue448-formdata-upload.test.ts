@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
 import {
-  callRoutePageMethod,
   callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
+  delay,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
@@ -28,6 +28,41 @@ function isLocalServerInfraError(error: unknown) {
 
 function withBaseUrl(route: string) {
   return `${route}?baseUrl=${encodeURIComponent(baseUrl)}`
+}
+
+async function waitForFormDataUploadRuntime(miniProgram: any, route: string, timeoutMs = 90_000) {
+  const startedAt = Date.now()
+  let latest: Record<string, any> | undefined
+  let lastError: unknown
+
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      latest = await callRoutePageMethodWithOptions(miniProgram, route, '_runE2E', {
+        protocolTimeoutMs: 8_000,
+        recoveryAttempts: 1,
+        retries: 1,
+      })
+      lastError = undefined
+      if (latest.formDataUploadStatus === 'failed' || latest.rawFetchUploadStatus === 'failed') {
+        throw new Error(
+          `issue-448 upload failed: formData=${latest.formDataUploadPayload || '<empty>'}; rawFetch=${latest.rawFetchUploadPayload || '<empty>'}`,
+        )
+      }
+      if (latest.formDataUploadStatus === 'passed' && latest.rawFetchUploadStatus === 'passed') {
+        return latest
+      }
+    }
+    catch (error) {
+      if (error instanceof Error && error.message.startsWith('issue-448 upload failed:')) {
+        throw error
+      }
+      lastError = error
+    }
+    await delay(250)
+  }
+
+  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'upload did not finish')
+  throw new Error(`Timed out waiting issue-448 upload runtime; reason=${reason}; latest=${JSON.stringify(latest ?? {})}`)
 }
 
 describe.sequential('github-issues runtime issue #448 FormData upload', () => {
@@ -88,6 +123,7 @@ describe.sequential('github-issues runtime issue #448 FormData upload', () => {
         retries: 1,
       })
       expect(started?.ok).toBe(true)
+      const runtime = await waitForFormDataUploadRuntime(activeMiniProgram, route)
       await expect(page.waitForRendered({
         dataset: {
           formDataStatus: 'passed',
@@ -95,9 +131,8 @@ describe.sequential('github-issues runtime issue #448 FormData upload', () => {
           readKind: 'arraybuffer',
         },
         selector: '.issue448-upload-probe',
-        timeout: 90_000,
+        timeout: 15_000,
       })).resolves.toBeTruthy()
-      const runtime = await callRoutePageMethod(activeMiniProgram, route, '_runE2E')
       const payload = JSON.parse(runtime.formDataUploadPayload)
       const rawFetch = JSON.parse(runtime.rawFetchUploadPayload)
 

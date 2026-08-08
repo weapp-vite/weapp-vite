@@ -394,6 +394,41 @@ function buildObjectMapExpression(
   ])
 }
 
+function buildNumericListNormalization(level: number, listId: t.Identifier) {
+  const indexId = t.identifier(`__wv_numeric_index_${level}`)
+  const numberCheck = t.logicalExpression(
+    '&&',
+    t.binaryExpression('===', t.unaryExpression('typeof', listId), t.stringLiteral('number')),
+    t.callExpression(
+      t.memberExpression(t.identifier('Number'), t.identifier('isFinite')),
+      [listId],
+    ),
+  )
+  const length = t.callExpression(
+    t.memberExpression(t.identifier('Math'), t.identifier('max')),
+    [
+      t.numericLiteral(0),
+      t.callExpression(
+        t.memberExpression(t.identifier('Math'), t.identifier('floor')),
+        [listId],
+      ),
+    ],
+  )
+  const normalized = t.callExpression(
+    t.memberExpression(t.identifier('Array'), t.identifier('from')),
+    [
+      t.objectExpression([t.objectProperty(t.identifier('length'), length)]),
+      t.arrowFunctionExpression([t.identifier('_'), indexId], indexId),
+    ],
+  )
+  return t.ifStatement(
+    numberCheck,
+    t.blockStatement([
+      t.expressionStatement(t.assignmentExpression('=', listId, normalized)),
+    ]),
+  )
+}
+
 function buildForExpression(
   binding: ClassStyleBinding,
   forStack: ForParseResult[],
@@ -457,6 +492,7 @@ function buildForExpression(
   const body = t.blockStatement([
     listDecl,
     listSafeAssign,
+    buildNumericListNormalization(level, listId),
     t.ifStatement(
       arrayCheck,
       t.blockStatement([t.returnStatement(arrayMap)]),

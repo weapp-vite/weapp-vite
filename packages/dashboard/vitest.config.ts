@@ -1,9 +1,11 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
-import { createProjectCoverage } from '../../vitest.coverage'
+import { createProjectCoverage } from '../../vitest.coverage.ts'
+
+const packageDir = import.meta.dirname
 
 export default defineProject({
-  cacheDir: path.resolve(__dirname, './.vite'),
+  cacheDir: path.resolve(packageDir, './.vite'),
   test: {
     globals: true,
     coverage: createProjectCoverage('packages/dashboard', {

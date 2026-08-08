@@ -27,7 +27,7 @@ interface OutputsOptions {
   syncResolverComponentProps: () => void
   preloadResolverComponentMetadata: () => void
   getComponentMetadata: (name: string) => ComponentMetadata
-  resolveNavigationImport: (from: string) => string | undefined
+  resolveComponentTypeImport: (componentName: string, from: string) => string | undefined
 }
 
 export function createOutputsHelpers(options: OutputsOptions): OutputsHelpers {
@@ -45,7 +45,7 @@ export function createOutputsHelpers(options: OutputsOptions): OutputsHelpers {
     syncResolverComponentProps,
     preloadResolverComponentMetadata,
     getComponentMetadata,
-    resolveNavigationImport,
+    resolveComponentTypeImport,
   } = options
 
   const commonSyncOptions: CommonSyncOptions = {
@@ -79,7 +79,7 @@ export function createOutputsHelpers(options: OutputsOptions): OutputsHelpers {
     syncVueComponents: async settings => syncVueComponentsDefinition(settings, {
       ...commonSyncOptions,
       resolverComponentsMapRef,
-      resolveNavigationImport,
+      resolveComponentTypeImport,
     }),
   })
 

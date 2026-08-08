@@ -13,6 +13,7 @@ import {
   getProjectConfig,
   getProjectConfigFileName,
   getProjectConfigRootKeys,
+  getProjectPrivateConfig,
   getProjectPrivateConfigFileName,
   loadViteConfigFile,
   resolveProjectConfigRoot,
@@ -22,7 +23,7 @@ import {
 import { hasLibEntry, resolveWeappLibConfig } from '../../lib'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { resolveWeappWebConfig } from '../web'
-import { configureBuildAndPlugins } from './loadConfig/build'
+import { configureBuildAndPlugins, resolveCliPlatformRuntime } from './loadConfig/build'
 import { formatProjectConfigPath, loadPackageJson, normalizeRelativeDistRoot, resolveProjectConfigPaths } from './loadConfig/shared'
 import { inspectTsconfigPathsUsage } from './tsconfigPaths'
 
@@ -231,7 +232,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
   const { injectBuiltinAliases, oxcRolldownPlugin, oxcVitePlugin } = options
 
   return async function loadConfig(opts: LoadConfigOptions): Promise<LoadConfigResult> {
-    const { cwd, isDev, mode, pluginOnly = false, inlineConfig, configFile, configLoader = 'runner', cliPlatform, projectConfigPath } = opts
+    const { cwd, isDev, mode, outputRoot, pluginOnly = false, inlineConfig, configFile, configLoader = 'runner', cliPlatform, projectConfigPath } = opts
 
     const { packageJson, packageJsonPath } = await loadPackageJson(cwd)
 
@@ -389,6 +390,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       cwd,
       srcRoot,
       config: config.weapp?.web,
+      enableByCli: resolveCliPlatformRuntime(cliPlatform).isWebRuntime,
     })
 
     const {
@@ -408,6 +410,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       cwd,
     })
     let projectConfig: Record<string, any> = {}
+    let projectPrivateConfig: Record<string, any> = {}
     let projectConfigPathResolved: string | undefined
     let projectPrivateConfigPathResolved: string | undefined
     let mpDistRoot = ''
@@ -423,6 +426,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
         basePath,
         privatePath,
       })
+      projectPrivateConfig = await getProjectPrivateConfig(cwd, { privatePath })
       mpDistRoot = resolveProjectConfigRoot(projectConfig, platform) ?? ''
       if (!mpDistRoot) {
         const displayPath = formatProjectConfigPath(cwd, basePath ?? getProjectConfigFileName(platform))
@@ -436,7 +440,13 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
           mpDistRoot = path.join('dist', platform, normalizedDistRoot)
         }
       }
-      buildConfig.outDir ??= mpDistRoot
+      if (outputRoot) {
+        mpDistRoot = outputRoot
+        buildConfig.outDir = outputRoot
+      }
+      else {
+        buildConfig.outDir ??= mpDistRoot
+      }
       projectConfigPathResolved = path.resolve(cwd, basePath ?? getProjectConfigFileName(platform))
       projectPrivateConfigPathResolved = path.resolve(cwd, privatePath ?? getProjectPrivateConfigFileName(platform))
     }
@@ -504,6 +514,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       emitDefaultAutoImportOutputs: opts.emitDefaultAutoImportOutputs ?? true,
       chunksConfigured,
       projectConfig,
+      projectPrivateConfig,
       projectConfigPath: projectConfigPathResolved,
       projectPrivateConfigPath: projectPrivateConfigPathResolved,
       mpDistRoot,

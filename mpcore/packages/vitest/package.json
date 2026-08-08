@@ -1,0 +1,54 @@
+{
+  "name": "@mpcore/vitest",
+  "type": "module",
+  "version": "0.1.1",
+  "description": "Vitest integration for @mpcore/test",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "mpcore/packages/vitest"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./setup": {
+      "types": "./dist/setup.d.mts",
+      "import": "./dist/setup.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown -w",
+    "test": "vitest run",
+    "test:types": "pnpm build && tsd",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "vitest": ">=4.0.0"
+  },
+  "dependencies": {
+    "@mpcore/test": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "~4.1.10"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

@@ -59,7 +59,6 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
     const firstMarker = createHmrMarker('RAPID-FIRST-TEMPLATE', platform)
     const secondMarker = createHmrMarker('RAPID-SECOND-TEMPLATE', platform)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -115,7 +114,6 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
     const firstMarker = createHmrMarker('RAPID-FIRST-SCRIPT', platform)
     const secondMarker = createHmrMarker('RAPID-SECOND-SCRIPT', platform)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -162,7 +160,6 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
     const firstMarker = createHmrMarker('RAPID-FIRST-SFC', platform)
     const secondMarker = createHmrMarker('RAPID-SECOND-SFC', platform)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -224,7 +221,6 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
       throw new Error('Failed to insert marker into .vue SFC style source.')
     }
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',

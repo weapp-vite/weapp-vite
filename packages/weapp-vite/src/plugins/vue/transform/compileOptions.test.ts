@@ -263,10 +263,46 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(options.template.slotSingleRootNoWrapper).toBe(false)
     expect(options.template.slotFallbackWrapperStrategy).toBe('virtual-host')
     expect(options.json.kind).toBe('component')
+    expect(options.skipComponentTransform).toBe(true)
     expect(await options.autoImportTags.resolveUsingComponent('Missing')).toBeUndefined()
     expect(await options.sfcSrc.resolveId('./source.vue', '/project/src/components/card.vue')).toBeUndefined()
     expect(state.value).toBe(true)
     expect(loggerWarnMock).toHaveBeenCalled()
+  })
+
+  it('keeps module-owned registration for layouts and library builds', () => {
+    const layoutPath = '/project/src/layouts/default.vue'
+    const createOptions = (
+      vuePath: string,
+      overrides: Record<string, unknown> = {},
+    ) => createCompileVueFileOptions(
+      {
+        moduleGraphService: {
+          isLogicalLayoutEntry: (id: string) => id === layoutPath,
+        },
+      } as any,
+      {} as any,
+      vuePath,
+      false,
+      false,
+      {
+        platform: 'weapp',
+        isDev: false,
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+        ...overrides,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(createOptions(layoutPath).skipComponentTransform).toBe(false)
+    expect(createOptions('/project/src/components/card.vue', {
+      weappLibConfig: { enabled: true },
+    }).skipComponentTransform).toBe(false)
   })
 
   it('uses virtual-host slot fallback wrapper by default only on weapp platform', () => {
@@ -423,6 +459,55 @@ describe('resolveVueTemplatePlatformOptions', () => {
       resolvedId: resolvedVueEntry,
       sourceType: 'wevu-sfc',
     })
+  })
+
+  it('maps external resolver SFCs to stable output paths during compilation', async () => {
+    const resolvedVueEntry = '/project/node_modules/@wot-ui/ui/components/wd-button/wd-button.vue'
+    const externalComponentEntryMap = new Map<string, string>()
+    const options = createCompileVueFileOptions(
+      {
+        autoImportService: {
+          getVersion: () => 1,
+          resolve: () => ({
+            kind: 'resolver',
+            value: {
+              name: 'wd-button',
+              from: '@wot-ui/ui/components/wd-button/wd-button.vue',
+              resolvedId: resolvedVueEntry,
+              sourceType: 'wevu-sfc',
+            },
+          }),
+        },
+        runtimeState: {
+          build: { hmr: { externalComponentEntryMap } },
+        },
+      } as any,
+      {} as any,
+      '/project/src/pages/index/index.vue',
+      true,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        absoluteSrcRoot: '/project/src',
+        weappViteConfig: {},
+        relativeOutputPath: (id: string) => id === resolvedVueEntry.replace(/\.vue$/, '')
+          ? 'weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button'
+          : undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    await expect(options.autoImportTags.resolveUsingComponent('wd-button')).resolves.toEqual({
+      name: 'wd-button',
+      from: '/weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button',
+      resolvedId: resolvedVueEntry,
+      sourceType: 'wevu-sfc',
+    })
+    expect(externalComponentEntryMap.get('weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button')).toBe(resolvedVueEntry)
   })
 
   it('defaults plain slots to augmented scoped slot compilation', () => {

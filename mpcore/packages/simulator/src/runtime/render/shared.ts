@@ -1,14 +1,13 @@
+import type { ArtifactSource } from '../../kernel'
 import type { DomNodeLike, RuntimeRenderScope } from './types'
-import fs from 'node:fs'
 import { parseDocument } from 'htmlparser2'
+import { resolveTemplateExpression } from '../../view/templateExpression'
 
 const TEMPLATE_INTERPOLATION_RE = /\{\{([^{}]+)\}\}/g
 const DATASET_NAME_RE = /-([a-z])/g
-const BRACKET_INDEX_RE = /\[(\d+)\]/g
 
 export const LEADING_SLASH_RE = /^\/+/
 export const EVENT_BINDING_ATTRS = ['bindtap', 'bind:tap', 'catchtap', 'catch:tap']
-export const COMPONENT_EVENT_PREFIXES = ['bind:', 'bind', 'catch:', 'catch']
 export const STRUCTURAL_ATTRS = ['wx:if', 'wx:elif', 'wx:else', 'wx:for', 'wx:for-item', 'wx:for-index', 'wx:key']
 export const WX_ELSE_ATTRS = new Set(['wx:elif', 'wx:else'])
 export const CLASS_SPLIT_RE = /\s+/
@@ -55,74 +54,12 @@ export function cloneNode(node: DomNodeLike): DomNodeLike {
   }
 }
 
-function parseExpressionSegments(expression: string) {
-  return expression
-    .replace(BRACKET_INDEX_RE, '.$1')
-    .split('.')
-    .map(segment => segment.trim())
-    .filter(Boolean)
-}
-
-function unwrapMustacheExpression(expression: string) {
-  const normalized = expression.trim()
-  if (isMustacheOnly(normalized)) {
-    return normalized.slice(2, -2).trim()
-  }
-  return normalized
-}
-
-function resolveLiteralValue(expression: string) {
-  if (expression === 'true') {
-    return true
-  }
-  if (expression === 'false') {
-    return false
-  }
-  if (expression === 'null') {
-    return null
-  }
-  if (expression === 'undefined') {
-    return undefined
-  }
-  if ((expression.startsWith('"') && expression.endsWith('"')) || (expression.startsWith('\'') && expression.endsWith('\''))) {
-    return expression.slice(1, -1)
-  }
-  const numericValue = Number(expression)
-  if (!Number.isNaN(numericValue) && expression !== '') {
-    return numericValue
-  }
-  return undefined
-}
-
-function resolveValueByExpression(source: Record<string, any>, expression: string): unknown {
-  const normalized = unwrapMustacheExpression(expression)
-  if (!normalized) {
-    return undefined
-  }
-
-  if (normalized.startsWith('!')) {
-    return !resolveValueByExpression(source, normalized.slice(1))
-  }
-
-  const literalValue = resolveLiteralValue(normalized)
-  if (literalValue !== undefined || normalized === 'undefined') {
-    return literalValue
-  }
-
-  const segments = parseExpressionSegments(normalized)
-  let current: any = source
-  for (const segment of segments) {
-    current = current?.[segment]
-  }
-  return current
-}
-
 export function resolveValueByPath(source: Record<string, any>, expression: string) {
-  return resolveValueByExpression(source, expression) ?? ''
+  return resolveTemplateExpression(source, expression) ?? ''
 }
 
 export function resolveRawValueByPath(source: Record<string, any>, expression: string) {
-  return resolveValueByExpression(source, expression)
+  return resolveTemplateExpression(source, expression)
 }
 
 function interpolateTemplate(input: string, data: Record<string, any>) {
@@ -132,14 +69,20 @@ function interpolateTemplate(input: string, data: Record<string, any>) {
   })
 }
 
-export function readTemplateSource(filePath: string) {
-  return fs.readFileSync(filePath, 'utf8')
+export function readTemplateSource(artifactSource: ArtifactSource, filePath: string) {
+  const source = artifactSource.readText(filePath)
+  if (source == null) {
+    throw new Error(`Missing template in headless runtime: ${filePath}`)
+  }
+  return source
 }
 
 export function parseTemplateDocument(templateSource: string) {
   return parseDocument(`<page>${templateSource}</page>`, {
     xmlMode: false,
     decodeEntities: false,
+    lowerCaseAttributeNames: false,
+    lowerCaseTags: false,
     recognizeSelfClosing: true,
   }) as unknown as DomNodeLike
 }

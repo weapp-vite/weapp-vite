@@ -32,7 +32,7 @@ function filterRenderableNode(node: Node) {
     return false
   }
   if (node.type === 'text') {
-    const data = (node as DataNode).data ?? ''
+    const data = (node as DataNode).data
     return data.trim().length > 0
   }
   return true
@@ -46,7 +46,7 @@ function getOrParseTemplate(source: string) {
       decodeEntities: true,
       recognizeSelfClosing: true,
     })
-    cached = (document.children ?? []).filter(filterRenderableNode)
+    cached = document.children.filter(filterRenderableNode)
     templateCache.set(source, cached)
   }
   return cached
@@ -67,7 +67,7 @@ function renderConditionalSequence(
       break
     }
     const element = candidate as Element
-    const attribs = element.attribs ?? {}
+    const attribs = element.attribs
     if (branches.length === 0 && !hasControlAttribute(attribs, 'if')) {
       break
     }
@@ -134,7 +134,7 @@ function renderElement(
   renderChildren: (nodes: ChildNode[] | undefined, scope: LegacyTemplateScope) => string,
   options: RenderOptions = {},
 ) {
-  const attribs = node.attribs ?? {}
+  const attribs = node.attribs
   if (!options.skipFor) {
     const forExtract = extractFor(attribs)
     if (forExtract.expr) {
@@ -174,7 +174,7 @@ function renderElement(
 }
 
 function renderTextNode(node: DataNode, scope: LegacyTemplateScope) {
-  const value = node.data ?? ''
+  const value = node.data
   if (!value.trim()) {
     return ''
   }

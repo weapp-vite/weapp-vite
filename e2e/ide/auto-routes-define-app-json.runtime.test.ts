@@ -294,8 +294,6 @@ async function getSharedMiniProgram() {
       delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
       sharedMiniProgram = await launchAutomator({
         projectPath: APP_ROOT,
-        skipRelaunchPageRootCheck: true,
-        skipWarmup: true,
       })
     }
     finally {

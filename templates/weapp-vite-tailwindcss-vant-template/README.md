@@ -14,6 +14,11 @@
 
 `pnpm build`
 
+### Web 预览与构建
+
+- `pnpm dev:web`
+- `pnpm build:web`
+
 ### 打开微信开发者工具
 
 `pnpm open`

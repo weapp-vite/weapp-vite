@@ -5,6 +5,7 @@ import type { SubPackageStyleEntry } from '../types'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { preprocessCSS } from 'vite'
+import { parseLogicalEntryId, parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { changeFileExtension, isJsOrTs } from '../utils'
 import { getPathExistsTtlMs } from '../utils/cachePolicy'
 import { normalizeWatchPath } from '../utils/path'
@@ -172,6 +173,23 @@ async function readStyleGraphSource(stylePath: string, fallback: string) {
   }
 }
 
+async function resolveMemoryStyleSource(ctx: CompilerContext, stylePath: string) {
+  const sourceId = normalizeFsResolvedId(stylePath, { stripLeadingNullByte: true })
+  const cache = ctx.runtimeState?.css?.transformedSidecarSource
+  const cached = cache?.get(sourceId)
+  if (!cached) {
+    return
+  }
+  try {
+    const diskSource = await fs.readFile(stylePath, 'utf8')
+    if (diskSource === cached.diskSource) {
+      return cached.code
+    }
+  }
+  catch {}
+  cache?.delete(sourceId)
+}
+
 function resolveOutputStyleFileName(
   configService: CompilerContext['configService'],
   stylePath: string,
@@ -309,6 +327,10 @@ function injectSharedStyleImportsCached(
   return prependSharedStyleImports(css, missingStatements)
 }
 
+function resolveStyleOwnerId(id: string) {
+  return parseLogicalEntryId(id)?.sourceId ?? id
+}
+
 function analyzeBundleStyles(bundle: OutputBundle): BundleStyleAnalysis {
   const facadeChunks: OutputChunk[] = []
   const ownersByCssAsset = new Map<string, Set<string>>()
@@ -329,7 +351,7 @@ function analyzeBundleStyles(bundle: OutputBundle): BundleStyleAnalysis {
     }
     for (const cssAsset of importedCss) {
       const owners = ownersByCssAsset.get(cssAsset) ?? new Set<string>()
-      owners.add(output.facadeModuleId)
+      owners.add(resolveStyleOwnerId(output.facadeModuleId))
       ownersByCssAsset.set(cssAsset, owners)
     }
   }
@@ -356,7 +378,7 @@ export async function emitStyleSidecarAsset(
     return false
   }
 
-  const rawCss = await fs.readFile(stylePath, 'utf8')
+  const rawCss = await resolveMemoryStyleSource(ctx, stylePath) ?? await fs.readFile(stylePath, 'utf8')
   const { css, dependencies } = await preprocessStyleSource(rawCss, stylePath, resolvedConfig)
   syncCssImportDependencies(ctx, stylePath, rawCss, dependencies)
   if (typeof pluginCtx.addWatchFile === 'function') {
@@ -402,7 +424,7 @@ async function handleBundleEntry(
   }
 
   const normalizeOwnerId = (id: string) => {
-    return normalizeFsResolvedId(id, { stripLeadingNullByte: true })
+    return normalizeFsResolvedId(resolveStyleOwnerId(id), { stripLeadingNullByte: true })
   }
   const preparedStyleAssets = new Map<string, Promise<PreparedStyleAsset>>()
 
@@ -481,7 +503,7 @@ async function handleBundleEntry(
       const freshHmrStyleSourcePath = resolveFreshHmrStyleSourcePath(ctx, normalizedFileName)
       const preprocessId = freshHmrStyleSourcePath ?? absOriginal
       const preprocessInput = freshHmrStyleSourcePath
-        ? await readStyleGraphSource(freshHmrStyleSourcePath, canonicalSource)
+        ? await resolveMemoryStyleSource(ctx, freshHmrStyleSourcePath) ?? await readStyleGraphSource(freshHmrStyleSourcePath, canonicalSource)
         : canonicalSource
       const { css, dependencies } = await preprocessStyleSource(preprocessInput, preprocessId, resolvedConfig, {
         enabled: shouldPreprocessWithVite(preprocessId),
@@ -687,9 +709,10 @@ async function emitSharedStyleImportsForChunks(
       if (!moduleId) {
         return
       }
-      handledModuleIds.add(normalizeFsResolvedId(moduleId))
+      const ownerId = resolveStyleOwnerId(moduleId)
+      handledModuleIds.add(normalizeFsResolvedId(ownerId))
 
-      return prepareSharedStyleImportForModule(sharedStyles, configService, sharedStyleImportCache, moduleId)
+      return prepareSharedStyleImportForModule(sharedStyles, configService, sharedStyleImportCache, ownerId)
     }),
   )
   for (const asset of chunkImportAssets) {
@@ -792,6 +815,24 @@ export function css(ctx: CompilerContext): Plugin[] {
         const styleAnalysis = analyzeBundleStyles(rolldownBundle)
         await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
         await emitCollectedStyleSidecars.call(this, ctx, rolldownBundle, resolvedConfig)
+      },
+    },
+    {
+      name: 'weapp-vite:css-sidecar-source',
+      async transform(code, id) {
+        const sidecar = parseSidecarSourceRequest(id)
+        if (!sidecar || sidecar.kind !== 'style') {
+          return null
+        }
+        const sourceId = normalizeFsResolvedId(sidecar.sourceId, { stripLeadingNullByte: true })
+        try {
+          const diskSource = await fs.readFile(sourceId, 'utf8')
+          ctx.runtimeState?.css?.transformedSidecarSource.set(sourceId, { code, diskSource })
+        }
+        catch {
+          ctx.runtimeState?.css?.transformedSidecarSource.delete(sourceId)
+        }
+        return null
       },
     },
   ]

@@ -51,6 +51,10 @@ export function appendInlineQuery(id: string) {
   return `${id}?inline`
 }
 
+export function appendQuery(id: string, query: string) {
+  return `${id}${id.includes('?') ? '&' : '?'}${query}`
+}
+
 export function relativeModuleId(root: string, absPath: string) {
   const rel = relative(root, absPath)
   return `/${normalizePath(rel)}`

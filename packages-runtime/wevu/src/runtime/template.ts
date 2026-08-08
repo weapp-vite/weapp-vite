@@ -1,3 +1,4 @@
+import { WEVU_SETUP_STATE_KEY } from '@weapp-core/constants'
 import { unref } from '../reactivity'
 
 const hyphenateRE = /\B([A-Z])/g
@@ -131,8 +132,12 @@ export function resolvePropValue(target: any, key: string, fallback: any, prefer
     return fallback
   }
   const stateObject = unref(target.$state)
-  if (stateObject != null && hasOwnProperty(stateObject, key)) {
+  const setupStateObject = stateObject?.[WEVU_SETUP_STATE_KEY]
+  if (setupStateObject != null && hasOwnProperty(setupStateObject, key)) {
     return target[key]
+  }
+  if (stateObject != null && hasOwnProperty(stateObject, key)) {
+    return stateObject[key]
   }
   if (hasPropsValue) {
     return propsObject[key]

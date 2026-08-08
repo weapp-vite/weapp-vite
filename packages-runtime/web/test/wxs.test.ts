@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { parse } from '@babel/parser'
 import { describe, expect, it } from 'vitest'
 import { compileWxml } from '../src/compiler/wxml'
 import { transformWxsToEsm } from '../src/compiler/wxs'
@@ -59,6 +60,8 @@ describe('transformWxsToEsm', () => {
     )
 
     expect(result.code).toContain(`import __wxs_dep_0 from '/src/dep.ts?wxs'`)
+    expect(() => parse(result.code, { sourceType: 'module' })).not.toThrow()
+    expect(result.code).not.toContain('}\\nconst')
   })
 })
 

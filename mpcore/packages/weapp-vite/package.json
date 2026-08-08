@@ -1,0 +1,51 @@
+{
+  "name": "@mpcore/weapp-vite",
+  "type": "module",
+  "version": "0.1.2",
+  "description": "weapp-vite artifact adapter for @mpcore/test",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "mpcore/packages/weapp-vite"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown -w",
+    "test": "vitest run",
+    "test:types": "pnpm build && tsd",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mpcore/test": "workspace:*",
+    "weapp-vite": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "ESNext",
+      "moduleResolution": "Bundler"
+    }
+  }
+}

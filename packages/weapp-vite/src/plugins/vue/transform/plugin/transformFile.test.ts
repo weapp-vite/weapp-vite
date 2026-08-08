@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createModuleGraphService } from '../../../../moduleGraph'
 import { transformVueLikeFile } from './transformFile'
 
 const compileVueFileMock = vi.hoisted(() => vi.fn(async () => ({
@@ -78,6 +79,7 @@ vi.mock('../../../../utils/file/vueSfcSignature', async (importOriginal) => {
 function createBaseOptions(overrides: Record<string, any> = {}) {
   return {
     ctx: {
+      moduleGraphService: createModuleGraphService(),
       configService: {
         isDev: true,
         platform: 'weapp',

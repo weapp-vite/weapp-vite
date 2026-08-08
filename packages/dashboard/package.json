@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/dashboard",
   "type": "module",
-  "version": "6.18.2",
+  "version": "6.19.2",
   "description": "Optional analyze dashboard for weapp-vite",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -40,15 +40,15 @@
   },
   "dependencies": {
     "echarts": "catalog:",
-    "monaco-editor": "^0.55.1",
+    "monaco-editor": "^0.56.0",
     "tailwind-merge": "catalog:",
     "tailwind-variants": "catalog:",
     "vue": "catalog:",
-    "vue-router": "5.1.0"
+    "vue-router": "5.2.0"
   },
   "devDependencies": {
     "@iconify-json/mdi": "catalog:",
-    "@iconify/tailwind4": "^1.2.3",
+    "@iconify/tailwind4": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "tailwindcss": "catalog:tailwind4",

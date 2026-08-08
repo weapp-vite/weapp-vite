@@ -7,6 +7,7 @@ import {
 import { parseSync } from 'oxc-parser'
 import { describe, expect, it, vi } from 'vitest'
 import { compileScript, parse as parseSfc } from 'vue/compiler-sfc'
+import { createSidecarSourceSpecifier } from '../../../moduleGraph/protocol'
 import { createImportMetaDefineRegistry } from '../../../utils/importMeta'
 import { createTransformHook } from './transform'
 
@@ -45,6 +46,19 @@ function createConfigServiceMock(options?: {
 }
 
 describe('core lifecycle transform hook injectWeapi', () => {
+  it('skips sidecar source graph modules', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: createConfigServiceMock(),
+      },
+    } as any)
+
+    await expect(transform(
+      'export default "<script>const url = import.meta.url</script>"',
+      createSidecarSourceSpecifier('/project/src/pages/home.vue', '/project/src/pages/home.vue', 'script'),
+    )).resolves.toBeNull()
+  })
+
   it('replaces import.meta.filename, import.meta.url, import.meta.dirname and bare import.meta in script files', async () => {
     const transform = createTransformHook({
       ctx: {

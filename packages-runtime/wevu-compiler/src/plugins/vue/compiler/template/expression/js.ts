@@ -9,9 +9,9 @@ import {
 } from '@weapp-core/constants'
 import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
-import { parseJsLike, traverse } from '../../../../../utils/babel'
+import { traverse } from '../../../../../utils/babel'
 import { hasOwn } from '../../../../../utils/object'
-import { parseBabelExpression } from './parse'
+import { parseBabelExpression, parseBabelExpressionFile } from './parse'
 import { collectScopedSlotLocals, collectSlotPropMapping } from './scopedSlot'
 import { normalizeWxmlExpression } from './wxml'
 
@@ -54,21 +54,6 @@ const JS_RUNTIME_GLOBALS = new Set([
   'getCurrentPages',
   ...getMiniProgramRuntimeGlobalKeys(),
 ])
-
-function parseJsExpressionFile(exp: string): { ast: t.File, expression: t.Expression } | null {
-  try {
-    const ast = parseJsLike(`(${exp})`)
-    const stmt = ast.program.body[0]
-    if (!stmt || !('expression' in stmt)) {
-      return null
-    }
-    const expression = (stmt as any).expression as t.Expression
-    return { ast, expression }
-  }
-  catch {
-    return null
-  }
-}
 
 function createMemberAccess(target: t.Expression, prop: string): t.Expression {
   if (!prop) {
@@ -174,21 +159,15 @@ function createIdentifierAccessWithPropsFallback(
   )
   const hasStateObject = t.binaryExpression('!=', stateObject, t.nullLiteral())
   const hasStateKey = createHasOwnPropertyCall(stateObject, name)
-  const hasThisMember = t.binaryExpression('in', t.stringLiteral(name), t.thisExpression())
   const isPropsDerivedKey = Boolean(context.propsDerivedKeys?.includes(name))
   const shouldUseStateAccess = isPropsDerivedKey
     ? t.booleanLiteral(false)
     : t.logicalExpression('&&', hasStateObject, hasStateKey)
-  const shouldUsePropsAccess = t.logicalExpression(
-    '&&',
-    hasUsablePropsValue,
-    isPropsDerivedKey ? t.booleanLiteral(true) : t.unaryExpression('!', hasThisMember),
-  )
   return t.conditionalExpression(
     shouldUseStateAccess,
     thisAccess,
     t.conditionalExpression(
-      shouldUsePropsAccess,
+      hasUsablePropsValue,
       propsAccess,
       thisAccess,
     ),
@@ -255,7 +234,7 @@ export function normalizeJsExpressionWithContext(
     return null
   }
   const normalized = normalizeWxmlExpression(trimmed)
-  const parsed = parseJsExpressionFile(normalized)
+  const parsed = parseBabelExpressionFile(normalized)
   if (!parsed) {
     const hint = options?.hint ? `${options.hint} ` : ''
     context.warnings.push(`${hint}模板表达式解析失败，已忽略：${exp}`)

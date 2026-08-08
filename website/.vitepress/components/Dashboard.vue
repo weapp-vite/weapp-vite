@@ -18,7 +18,7 @@ const items = ref([
   { w: 4, h: 2, content: 'chart', option: lineOption },
   { x: 4, y: 4, w: 6, h: 2, content: 'table' },
 ])
-const gridRef = ref<GridStackType>()
+const gridRef = ref<GridStackType | null>(null)
 onMounted(async () => {
   const [{ GridStack }] = await Promise.all([
     import('gridstack'),

@@ -51,8 +51,8 @@ export class StatefulHmrTransport {
     this.respondToAll({ type: 'rebuilding' })
   }
 
-  addDelta(code: string): void {
-    this.apply({ type: 'delta-added', bytes: Buffer.byteLength(code), code })
+  addDelta(code: string, changedIds: string[]): void {
+    this.apply({ type: 'delta-added', bytes: Buffer.byteLength(code), changedIds, code })
     this.respondToAll({ type: 'changed' })
   }
 
@@ -186,11 +186,13 @@ export class StatefulHmrTransport {
 }
 
 export function renderBatch(
-  batch: { buildId: string, deltas: Array<{ code: string }>, fromVersion: number, targetVersion: number },
+  batch: { buildId: string, deltas: Array<{ changedIds: string[], code: string }>, fromVersion: number, targetVersion: number },
   nonce: string,
 ): string {
+  const changedIds = [...new Set(batch.deltas.flatMap(delta => delta.changedIds))]
   const metadata = {
     buildId: batch.buildId,
+    changedIds,
     compatible: true,
     fromVersion: batch.fromVersion,
     targetVersion: batch.targetVersion,

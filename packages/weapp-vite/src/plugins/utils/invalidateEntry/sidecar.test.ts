@@ -49,6 +49,11 @@ function createContext() {
         return new Set<string>()
       }),
     },
+    runtimeState: {
+      css: {
+        transformedSidecarSource: new Map<string, { code: string, diskSource: string }>(),
+      },
+    },
   } as any
 }
 
@@ -96,5 +101,17 @@ describe('invalidateEntryForSidecar', () => {
 
     expect(touchMock).toHaveBeenCalledWith('/project/src/pages/dashboard/index.vue')
     expect(findJsEntryMock).not.toHaveBeenCalledWith('/project/src/shared/helper')
+  })
+
+  it.each(['update', 'delete'] as const)('drops cached CSS sidecar source when the file receives a %s event', async (event) => {
+    const ctx = createContext()
+    ctx.runtimeState.css.transformedSidecarSource.set('/project/src/shared/theme.css', {
+      code: '.theme {}',
+      diskSource: '.theme {}',
+    })
+
+    await invalidateEntryForSidecar(ctx, '/project/src/shared/theme.css', event)
+
+    expect(ctx.runtimeState.css.transformedSidecarSource.has('/project/src/shared/theme.css')).toBe(false)
   })
 })

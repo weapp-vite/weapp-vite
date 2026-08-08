@@ -4,6 +4,7 @@ import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createModuleGraphService } from '../../../moduleGraph'
 import { scanWxml } from '../../../wxml'
 import * as wxmlHandleModule from '../../../wxml/handle'
 import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../utils/scriptlessComponent'
@@ -88,7 +89,7 @@ describe('emitVueBundleAssets platform output', () => {
     return dir
   }
 
-  it('registers emitted slot fallback wrapper globally when app json is available', async () => {
+  it('registers emitted slot fallback wrapper locally when app json is available', async () => {
     const configService = {
       isDev: false,
       platform: 'weapp',
@@ -108,6 +109,7 @@ describe('emitVueBundleAssets platform output', () => {
 
     const ctx = {
       configService,
+      moduleGraphService: createModuleGraphService(),
       scanService: {
         independentSubPackageMap: new Map(),
       },
@@ -126,7 +128,7 @@ describe('emitVueBundleAssets platform output', () => {
             script: 'Component({})',
             slotFallbackWrapperComponent: {
               tagName: 'weapp-slot-wrapper',
-              componentBase: '__weapp_vite_slot_wrapper',
+              componentBase: 'weapp_vite_internal/slot-wrapper/index',
               template: '<slot></slot>',
               script: 'Component({options:{virtualHost:true,multipleSlots:true}})',
               config: {
@@ -166,18 +168,15 @@ describe('emitVueBundleAssets platform output', () => {
 
     expect(JSON.parse(bundle['app.json'].source)).toEqual({
       pages: ['pages/index/index'],
-      usingComponents: {
-        'weapp-slot-wrapper': '/__weapp_vite_slot_wrapper',
-      },
     })
-    expect(emittedAssets.get('__weapp_vite_slot_wrapper.wxml')).toBe('<slot></slot>')
-    expect(JSON.parse(emittedAssets.get('__weapp_vite_slot_wrapper.json')!)).toEqual({
+    expect(emittedAssets.get('weapp_vite_internal/slot-wrapper/index.wxml')).toBe('<slot></slot>')
+    expect(JSON.parse(emittedAssets.get('weapp_vite_internal/slot-wrapper/index.json')!)).toEqual({
       component: true,
     })
-    expect(emittedAssets.get('__weapp_vite_slot_wrapper.js')).toContain('virtualHost:true')
+    expect(emittedAssets.get('weapp_vite_internal/slot-wrapper/index.js')).toContain('virtualHost:true')
 
     const componentJson = JSON.parse(emittedAssets.get('components/Forwarder/index.json')!)
-    expect(componentJson.usingComponents?.['weapp-slot-wrapper']).toBeUndefined()
+    expect(componentJson.usingComponents?.['weapp-slot-wrapper']).toBe('/weapp_vite_internal/slot-wrapper/index')
   })
 
   it('registers emitted slot fallback wrapper locally when app json is unavailable', async () => {
@@ -217,7 +216,7 @@ describe('emitVueBundleAssets platform output', () => {
             script: 'Component({})',
             slotFallbackWrapperComponent: {
               tagName: 'weapp-slot-wrapper',
-              componentBase: '__weapp_vite_slot_wrapper',
+              componentBase: 'weapp_vite_internal/slot-wrapper/index',
               template: '<slot></slot>',
               script: 'Component({options:{virtualHost:true,multipleSlots:true}})',
               config: {
@@ -239,7 +238,7 @@ describe('emitVueBundleAssets platform output', () => {
             script: 'Component({})',
             slotFallbackWrapperComponent: {
               tagName: 'weapp-slot-wrapper',
-              componentBase: '__weapp_vite_slot_wrapper',
+              componentBase: 'weapp_vite_internal/slot-wrapper/index',
               template: '<slot></slot>',
               script: 'Component({options:{virtualHost:true,multipleSlots:true}})',
               config: {
@@ -271,9 +270,9 @@ describe('emitVueBundleAssets platform output', () => {
 
     const forwarderAJson = JSON.parse(emittedAssets.get('components/ForwarderA/index.json')!)
     const forwarderBJson = JSON.parse(emittedAssets.get('components/ForwarderB/index.json')!)
-    expect(forwarderAJson.usingComponents?.['weapp-slot-wrapper']).toBe('/__weapp_vite_slot_wrapper')
-    expect(forwarderBJson.usingComponents?.['weapp-slot-wrapper']).toBe('/__weapp_vite_slot_wrapper')
-    expect(emitFile.mock.calls.filter(call => call[0]?.fileName === '__weapp_vite_slot_wrapper.js')).toHaveLength(1)
+    expect(forwarderAJson.usingComponents?.['weapp-slot-wrapper']).toBe('/weapp_vite_internal/slot-wrapper/index')
+    expect(forwarderBJson.usingComponents?.['weapp-slot-wrapper']).toBe('/weapp_vite_internal/slot-wrapper/index')
+    expect(emitFile.mock.calls.filter(call => call[0]?.fileName === 'weapp_vite_internal/slot-wrapper/index.js')).toHaveLength(1)
   })
 
   it('returns original config/template when direct platform helpers hit fallback branches', () => {
@@ -1017,6 +1016,7 @@ export default {
 
     const ctx = {
       configService,
+      moduleGraphService: createModuleGraphService(),
       scanService: {
         independentSubPackageMap: new Map(),
       },
@@ -1045,7 +1045,7 @@ export default {
       classStyleRuntimeWarned: { value: false },
     })
 
-    expect(addWatchFile).toHaveBeenCalled()
+    expect(addWatchFile).not.toHaveBeenCalled()
     expect(compileJsxFileMock).toHaveBeenCalledTimes(1)
     expect(cached.source).toContain('new jsx source')
     expect(cached.result.script).toBe('/* injected page */')

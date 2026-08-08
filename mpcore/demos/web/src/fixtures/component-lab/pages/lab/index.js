@@ -1,10 +1,12 @@
 Page({
   data: {
     title: 'Component Lab',
+    uniCompatibilityInfo: '',
     cardTitle: 'Queue health',
     status: 'stable',
     count: 3,
     events: [],
+    eventBindingCompatibility: [],
     eventShape: '',
     componentSnapshot: '',
     compoundSelectorSnapshot: '',
@@ -58,6 +60,7 @@ Page({
     backgroundLightInfo: '',
     backgroundColorInfo: '',
     backgroundInvalidInfo: '',
+    locationInfo: '',
     networkInitialInfo: '',
     networkCurrentInfo: '',
     networkLogs: [],
@@ -125,6 +128,30 @@ Page({
       traces: [...this.data.traces, message],
     })
   },
+  runUniCompatibilityLab() {
+    const events = []
+    const handler = value => events.push('on:' + value)
+    wx.$on('component-lab:probe', handler)
+    wx.$once('component-lab:probe', value => events.push('once:' + value))
+    wx.$emit('component-lab:probe', 'first')
+    wx.$emit('component-lab:probe', 'second')
+    wx.$off('component-lab:probe', handler)
+    wx.loadFontFace({
+      family: 'component-lab-icon',
+      source: 'url("headless://font/component-lab.ttf")',
+      success: (fontResult) => {
+        this.setData({
+          uniCompatibilityInfo: JSON.stringify({
+            events,
+            fontResult,
+            locale: wx.getLocale(),
+            pixels: wx.rpx2px(100),
+            safeAreaInsets: wx.getWindowInfo().safeAreaInsets,
+          }),
+        })
+      },
+    })
+  },
   onPullDownRefresh() {
     this.push('lab:onPullDownRefresh')
     this.setData({
@@ -157,6 +184,17 @@ Page({
       events: [...this.data.events, detail.phase || 'unknown'],
     })
     this.push('lab:handlePulse:' + JSON.stringify(detail))
+  },
+  recordEventBinding(event) {
+    this.setData({
+      eventBindingCompatibility: [
+        ...this.data.eventBindingCompatibility,
+        event.detail.name,
+      ],
+    })
+  },
+  runEventBindingCompatibility() {
+    this.selectComponent('#status-card')?.emitCompatibilityEvents()
   },
   applyStatus(event) {
     const status = event?.currentTarget?.dataset?.status || 'stable'
@@ -777,6 +815,17 @@ Page({
         this.setData({
           networkInitialInfo: JSON.stringify(result),
           networkLogs: [...this.data.networkLogs, `get:${result.networkType}`],
+        })
+      },
+    })
+  },
+  inspectLocationLab() {
+    wx.getLocation({
+      isHighAccuracy: true,
+      type: 'gcj02',
+      success: (result) => {
+        this.setData({
+          locationInfo: JSON.stringify(result),
         })
       },
     })

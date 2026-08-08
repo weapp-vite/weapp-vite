@@ -1,0 +1,177 @@
+{
+  "source": "https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/app.html",
+  "fields": {
+    "entryPagePath": {
+      "type": "string",
+      "description": "小程序默认启动首页。"
+    },
+    "pages": {
+      "type": "string[]",
+      "required": true,
+      "description": "页面路径列表。"
+    },
+    "window": {
+      "type": "object",
+      "description": "全局的默认窗口表现。"
+    },
+    "tabBar": {
+      "type": "object",
+      "description": "底部 tab 栏的表现。"
+    },
+    "networkTimeout": {
+      "type": "object",
+      "description": "网络超时时间。"
+    },
+    "debug": {
+      "type": "boolean",
+      "description": "是否开启 debug 模式。"
+    },
+    "functionalPages": {
+      "type": "boolean",
+      "description": "是否启用插件功能页。",
+      "x-wechat-min-version": "2.1.0"
+    },
+    "subpackages": {
+      "type": "object[]",
+      "description": "分包结构配置。",
+      "x-wechat-min-version": "1.7.3"
+    },
+    "workers": {
+      "type": "string | object",
+      "description": "Worker 代码放置的目录。"
+    },
+    "requiredBackgroundModes": {
+      "type": "string[]",
+      "description": "需要在后台使用的能力。"
+    },
+    "requiredPrivateInfos": {
+      "type": "string[]",
+      "description": "调用的地理位置相关隐私接口。"
+    },
+    "plugins": {
+      "type": "object",
+      "description": "使用到的插件。"
+    },
+    "preloadRule": {
+      "type": "object",
+      "description": "分包预下载规则。"
+    },
+    "resizable": {
+      "type": "boolean",
+      "description": "PC 小程序是否支持用户任意改变窗口大小（包括最大化窗口）；iPad 小程序是否支持屏幕旋转。默认关闭",
+      "x-wechat-min-version": "2.3.0"
+    },
+    "usingComponents": {
+      "type": "object",
+      "description": "全局自定义组件配置。"
+    },
+    "permission": {
+      "type": "object",
+      "description": "小程序接口权限相关设置。"
+    },
+    "sitemapLocation": {
+      "type": "string",
+      "description": "指明 sitemap.json 的位置。"
+    },
+    "style": {
+      "type": "string",
+      "description": "指定使用升级后的weui样式",
+      "x-wechat-min-version": "2.8.0"
+    },
+    "useExtendedLib": {
+      "type": "object",
+      "description": "指定需要引用的扩展库。"
+    },
+    "entranceDeclare": {
+      "type": "object",
+      "description": "微信消息用小程序打开。"
+    },
+    "darkmode": {
+      "type": "boolean",
+      "description": "小程序支持 DarkMode。"
+    },
+    "themeLocation": {
+      "type": "string",
+      "description": "指明 theme.json 的位置。"
+    },
+    "lazyCodeLoading": {
+      "type": "string",
+      "description": "配置自定义组件代码按需注入。"
+    },
+    "singlePage": {
+      "type": "object",
+      "description": "单页模式相关配置",
+      "x-wechat-min-version": "2.12.0"
+    },
+    "supportedMaterials": {
+      "type": "object",
+      "description": "聊天素材小程序打开相关配置。"
+    },
+    "serviceProviderTicket": {
+      "type": "string",
+      "description": "定制化型服务商票据"
+    },
+    "embeddedAppIdList": {
+      "type": "string[]",
+      "description": "半屏小程序 appId 列表。"
+    },
+    "halfPage": {
+      "type": "object",
+      "description": "视频号直播半屏场景设置。"
+    },
+    "debugOptions": {
+      "type": "object",
+      "description": "调试相关配置。"
+    },
+    "enablePassiveEvent": {
+      "type": "object | boolean",
+      "description": "touch 事件监听是否为 passive",
+      "x-wechat-min-version": "2.24.1"
+    },
+    "resolveAlias": {
+      "type": "object",
+      "description": "自定义模块映射规则。"
+    },
+    "renderer": {
+      "type": "string",
+      "description": "全局默认的渲染后端。",
+      "enum": [
+        "webview",
+        "skyline"
+      ]
+    },
+    "rendererOptions": {
+      "type": "object",
+      "description": "渲染后端选项。"
+    },
+    "componentFramework": {
+      "type": "string",
+      "description": "组件框架。"
+    },
+    "miniApp": {
+      "type": "object",
+      "description": "多端模式场景接入身份管理服务时开启小程序授权页相关配置，详见相关文档"
+    },
+    "static": {
+      "type": "object",
+      "description": "正常情况下默认所有资源文件都被打包发布到所有平台，可以通过 static 字段配置特定每个目录/文件只能发布到特定的平台(多端场景) 相关文档"
+    },
+    "convertRpxToVw": {
+      "type": "boolean",
+      "description": "是否将 rpx 单位转换为 vw 单位。"
+    },
+    "chatTools": {
+      "type": "object",
+      "description": "聊天工具分包配置",
+      "x-wechat-min-version": "3.7.8"
+    },
+    "subPackages": {
+      "type": "object[]",
+      "description": "分包结构配置（兼容别名）。"
+    },
+    "appBar": {
+      "type": "object",
+      "description": "AppBar 配置。"
+    }
+  }
+}

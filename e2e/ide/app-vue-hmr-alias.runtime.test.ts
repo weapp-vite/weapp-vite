@@ -1,4 +1,6 @@
 import { fs } from '@weapp-core/shared/node'
+import { parse as babelParse } from '@weapp-vite/ast/babel'
+import traverse from '@weapp-vite/ast/babelTraverse'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
@@ -10,10 +12,9 @@ import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
-import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
-const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-vue-hmr-alias')
@@ -23,9 +24,10 @@ const LAYOUT_VUE_PATH = path.join(APP_ROOT, 'src/layouts/default.vue')
 const PAGE_VUE_PATH = path.join(APP_ROOT, 'src/pages/index/index.vue')
 const BOOTSTRAP_TS_PATH = path.join(APP_ROOT, 'src/bootstrap/index.ts')
 const COMMON_JS_DIST = path.join(DIST_ROOT, 'common.js')
+const HMR_CONTROL_DIST = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
+const HMR_UPDATE_DIST = path.join(DIST_ROOT, '__weapp_vite_hmr/update.js')
 const APP_SHELL_WXML_DIST = path.join(DIST_ROOT, '__weapp_vite_app_shell.wxml')
 const LAYOUT_WXML_DIST = path.join(DIST_ROOT, 'layouts/default.wxml')
-const PAGE_JS_DIST = path.join(DIST_ROOT, 'pages/index/index.js')
 const INDEX_ROUTE = '/pages/index/index'
 const BASE_APP_MARKER = 'APP-VUE-HMR-ALIAS-APP-BASE'
 const BASE_LAYOUT_MARKER = 'APP-VUE-HMR-ALIAS-LAYOUT-BASE'
@@ -59,7 +61,6 @@ let originalAppSource = ''
 let originalLayoutSource = ''
 let originalPageSource = ''
 let originalBootstrapSource = ''
-let previousAutomatorLaunchMode: string | undefined
 let previousAutomatorPostConnectRefresh: string | undefined
 let previousBridgePostConnectRefresh: string | undefined
 let sharedInfraUnavailableMessage: string | null = null
@@ -132,7 +133,9 @@ async function waitForVisibleRuntime(miniProgram: any, markers: string[], timeou
     }
     await new Promise(resolve => setTimeout(resolve, 260))
   }
-  throw new Error(`Timed out waiting visible runtime markers ${markers.join(', ')}. latest=${JSON.stringify(latest)}`)
+  const runtimeLogs = miniProgram?.__weappViteRuntimeLogMeta?.entries ?? []
+  const devOutput = devProcess?.getOutput().slice(-8_000) ?? ''
+  throw new Error(`Timed out waiting visible runtime markers ${markers.join(', ')}. latest=${JSON.stringify(latest)}; logs=${JSON.stringify(runtimeLogs)}; devOutput=${devOutput}`)
 }
 
 async function waitForCurrentRoute(miniProgram: any, timeoutMs = 15_000) {
@@ -197,32 +200,80 @@ async function readDistJsFiles() {
   return entries
 }
 
-async function assertDistJsKeepsBundledAliasMarker(marker: string) {
-  await devProcess?.waitFor(waitForFileContains(COMMON_JS_DIST, marker), `dist keeps bundled bootstrap marker ${marker}`)
+function hasExecutableAliasImport(code: string) {
+  const ast = babelParse(code, { sourceType: 'unambiguous' })
+  let found = false
+  traverse(ast, {
+    CallExpression(callPath) {
+      const callee = callPath.node.callee
+      const argument = callPath.node.arguments[0]
+      if (
+        callee.type === 'Identifier'
+        && callee.name === 'require'
+        && argument?.type === 'StringLiteral'
+        && argument.value.startsWith('@/')
+      ) {
+        found = true
+        callPath.stop()
+      }
+    },
+    ExportAllDeclaration(exportPath) {
+      if (exportPath.node.source.value.startsWith('@/')) {
+        found = true
+        exportPath.stop()
+      }
+    },
+    ExportNamedDeclaration(exportPath) {
+      if (exportPath.node.source?.value.startsWith('@/')) {
+        found = true
+        exportPath.stop()
+      }
+    },
+    ImportDeclaration(importPath) {
+      if (importPath.node.source.value.startsWith('@/')) {
+        found = true
+        importPath.stop()
+      }
+    },
+  })
+  return found
+}
+
+async function assertDistJsKeepsBundledAliasMarker(marker: string, markerFile = COMMON_JS_DIST) {
+  await devProcess?.waitFor(waitForFileContains(markerFile, marker), `dist keeps bundled bootstrap marker ${marker}`)
   const entries = await readDistJsFiles()
   expect(entries.some(entry => entry.content.includes(marker))).toBe(true)
 
   const aliasOffenders = entries
-    .filter(entry =>
-      entry.content.includes('@/bootstrap')
-      || entry.content.includes('from "@/')
-      || entry.content.includes('from \'@/')
-      || entry.content.includes('require("@/')
-      || entry.content.includes('require(\'@/'))
+    .filter(entry => hasExecutableAliasImport(entry.content))
     .map(entry => entry.file)
   expect(aliasOffenders).toEqual([])
 }
 
+async function connectAutomatorSession() {
+  return await launchAutomator({
+    launchMode: 'bridge',
+    projectPath: APP_ROOT,
+    timeout: 120_000,
+    warmupRootSelectors: ['.app-vue-hmr-alias-page'],
+    warmupRoute: INDEX_ROUTE,
+  })
+}
+
+async function reconnectAutomatorAfterFullReload() {
+  await miniProgram?.disconnect?.().catch(() => {})
+  miniProgram = await connectAutomatorSession()
+}
+
 describe.sequential('app.vue alias import layout HMR runtime', () => {
   beforeAll(async () => {
-    previousAutomatorLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
     previousAutomatorPostConnectRefresh = process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV]
     previousBridgePostConnectRefresh = process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
-    process.env[AUTOMATOR_LAUNCH_MODE_ENV] = 'direct'
     delete process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV]
     delete process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()
+    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
     originalAppSource = await fs.readFile(APP_VUE_PATH, 'utf8')
     originalLayoutSource = await fs.readFile(LAYOUT_VUE_PATH, 'utf8')
     originalPageSource = await fs.readFile(PAGE_VUE_PATH, 'utf8')
@@ -245,15 +296,13 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
       reject: false,
     })
 
-    await devProcess.waitFor(waitForFileContains(COMMON_JS_DIST, BOOTSTRAP_MARKER), 'initial common.js bundles aliased bootstrap import')
+    await devProcess.waitFor(Promise.all([
+      waitForFileContains(COMMON_JS_DIST, BOOTSTRAP_MARKER),
+      waitForFileContains(HMR_CONTROL_DIST, 'http://127.0.0.1:'),
+    ]), 'initial stateful HMR output bundles aliased bootstrap import')
 
     try {
-      miniProgram = await launchAutomator({
-        projectPath: APP_ROOT,
-        skipRelaunchPageRootCheck: true,
-        skipWarmup: true,
-        timeout: 120_000,
-      })
+      miniProgram = await connectAutomatorSession()
     }
     catch (error) {
       if (isDevtoolsRouteInfraError(error)) {
@@ -282,12 +331,6 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
       await fs.writeFile(BOOTSTRAP_TS_PATH, originalBootstrapSource, 'utf8').catch(() => {})
     }
     await cleanupResidualIdeProcesses()
-    if (previousAutomatorLaunchMode == null) {
-      delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
-    }
-    else {
-      process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousAutomatorLaunchMode
-    }
     if (previousAutomatorPostConnectRefresh == null) {
       delete process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV]
     }
@@ -329,6 +372,8 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
     await devProcess.waitFor(waitForFileContains(APP_SHELL_WXML_DIST, appMarker), 'updated app shell emitted')
     await assertDistJsKeepsBundledAliasMarker(BOOTSTRAP_MARKER)
     await waitForIdeHmrSettled()
+    // 不兼容更新会触发 DevTools 全量重载并关闭旧 bridge，恢复连接后继续检查同一项目。
+    await reconnectAutomatorAfterFullReload()
     await waitForVisibleRuntime(miniProgram, [PAGE_MARKER, BOOTSTRAP_MARKER])
 
     const layoutMarker = createHmrMarker('APP-VUE-ALIAS-LAYOUT', 'weapp')
@@ -336,11 +381,12 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
     await devProcess.waitFor(waitForFileContains(LAYOUT_WXML_DIST, layoutMarker), 'updated layout emitted')
     await assertDistJsKeepsBundledAliasMarker(BOOTSTRAP_MARKER)
     await waitForIdeHmrSettled()
+    await reconnectAutomatorAfterFullReload()
     await waitForVisibleRuntime(miniProgram, [PAGE_MARKER, BOOTSTRAP_MARKER])
 
     const pageMarker = createHmrMarker('APP-VUE-ALIAS-PAGE', 'weapp')
     await replaceFileByRename(PAGE_VUE_PATH, replaceMarker(originalPageSource, PAGE_MARKER, pageMarker, 'index page'))
-    await devProcess.waitFor(waitForFileContains(PAGE_JS_DIST, pageMarker), 'updated page script emitted')
+    await devProcess.waitFor(waitForFileContains(HMR_UPDATE_DIST, pageMarker), 'updated page script patch published')
     await assertDistJsKeepsBundledAliasMarker(BOOTSTRAP_MARKER)
     await waitForIdeHmrSettled()
     try {
@@ -358,15 +404,7 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
     await replaceFileByRename(BOOTSTRAP_TS_PATH, replaceMarker(originalBootstrapSource, BOOTSTRAP_MARKER, bootstrapMarker, 'bootstrap alias module'))
     await assertDistJsKeepsBundledAliasMarker(bootstrapMarker)
     await waitForIdeHmrSettled()
-    try {
-      await relaunchIndexPage(miniProgram)
-    }
-    catch (error) {
-      if (isDevtoolsRouteInfraError(error)) {
-        ctx.skip(`WeChat DevTools 页面路由协议不可用，跳过 app.vue alias HMR IDE runtime：${error instanceof Error ? error.message : String(error)}`)
-      }
-      throw error
-    }
+    await reconnectAutomatorAfterFullReload()
     await waitForVisibleRuntime(miniProgram, [pageMarker, bootstrapMarker])
 
     expect(devProcess.getOutput()).not.toMatch(ALIAS_MODULE_MISSING_RE)

@@ -1,5 +1,21 @@
 import type { MiniProgramAsyncOptions, MiniProgramBaseResult } from './base'
 
+export interface SafeArea {
+  left: number
+  right: number
+  top: number
+  bottom: number
+  width: number
+  height: number
+}
+
+export interface SafeAreaInsets {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
 export interface SystemInfo {
   brand: string
   model: string
@@ -9,6 +25,10 @@ export interface SystemInfo {
   windowWidth: number
   windowHeight: number
   statusBarHeight: number
+  safeArea: SafeArea
+  safeAreaInsets: SafeAreaInsets
+  windowTop: number
+  windowBottom: number
   language: string
   version: string
   system: string
@@ -41,14 +61,7 @@ export interface WindowInfo {
   windowHeight: number
   statusBarHeight: number
   screenTop: number
-  safeArea: {
-    left: number
-    right: number
-    top: number
-    bottom: number
-    width: number
-    height: number
-  }
+  safeArea: SafeArea
 }
 
 export interface DeviceInfo {

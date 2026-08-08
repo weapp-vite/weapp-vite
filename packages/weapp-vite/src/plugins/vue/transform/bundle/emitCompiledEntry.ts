@@ -1,4 +1,5 @@
 import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
+import { WEAPP_VITE_RUNTIME_VIRTUAL_IDS } from '@weapp-core/constants'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { rewriteWevuInternalRuntimeImportCode } from '../../../core/helpers'
 import { applyAppShell, hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
@@ -9,7 +10,7 @@ import {
   emitBundlePageLayoutsIfNeeded,
   emitScriptlessComponentJsFallbackIfMissing,
 } from './layoutAssets'
-import { addBundleWatchFile, emitCompiledEntryBundleAssets, handleCompiledEntryPageLayouts, resolveCompiledEntryEmitState, resolveVueBundleAssetContext } from './shared'
+import { emitCompiledEntryBundleAssets, handleCompiledEntryPageLayouts, resolveCompiledEntryEmitState, resolveVueBundleAssetContext } from './shared'
 
 function shouldReplaceAppScriptBundleEntry(options: {
   filename: string
@@ -45,6 +46,7 @@ function hasUnresolvedModuleImportDeclaration(script: string | undefined) {
             || source === 'wevu/internal-runtime'
             || source === 'wevu/internal-reactivity'
             || source === 'wevu/internal-template'
+            || Object.values(WEAPP_VITE_RUNTIME_VIRTUAL_IDS).includes(source as any)
           )
         ) {
           hasUnresolvedImport = true
@@ -210,8 +212,6 @@ export async function emitCompiledVueEntryAssets(
   if (!configService) {
     return
   }
-
-  addBundleWatchFile(pluginCtx, filename)
 
   const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache, componentMetaCache }
   const {

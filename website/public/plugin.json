@@ -4,12 +4,14 @@
   "description": "https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/development.html#%E6%8F%92%E4%BB%B6%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6",
   "properties": {
     "main": {
+      "description": "插件主入口文件。",
       "type": "string"
     },
     "pages": {
       "additionalProperties": {
         "type": "string"
       },
+      "description": "插件页面映射。",
       "propertyNames": {
         "type": "string"
       },
@@ -19,11 +21,13 @@
       "additionalProperties": {
         "type": "string"
       },
+      "description": "插件对外提供的自定义组件。",
       "propertyNames": {
         "type": "string"
       },
       "type": "object"
     }
   },
-  "type": "object"
+  "type": "object",
+  "x-wechat-doc": "https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/development.html"
 }

@@ -214,6 +214,13 @@ function hasConfiguredNetworkDefaults(config?: boolean | WeappInjectRequestGloba
   )
 }
 
+function resolveAutoPrelude(config?: boolean | WeappInjectRequestGlobalsConfig) {
+  if (!config || typeof config !== 'object' || !hasOwn(config, 'prelude')) {
+    return true
+  }
+  return config.prelude === true
+}
+
 function resolveAutoRules(config?: boolean | WeappInjectRequestGlobalsConfig): InjectRequestGlobalsAutoRule[] {
   if (hasCustomAutoRuleConfig(config)) {
     return [{
@@ -285,7 +292,7 @@ export function resolveInjectRequestGlobalsOptions(
   return {
     mode: 'auto',
     targets: [...matchedTargets],
-    prelude: config && typeof config === 'object' ? config.prelude === true : false,
+    prelude: resolveAutoPrelude(config),
   }
 }
 

@@ -1,3 +1,5 @@
+import { parseLogicalEntryId, parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
+
 export interface ModuleInfoLike {
   importers?: string[]
 }
@@ -32,42 +34,23 @@ interface CollectorOptions {
   forceDuplicateTester?: (relativeId: string, absoluteId: string) => boolean
 }
 
-export function summarizeImportPrefixes(options: SummarizeOptions) {
-  const {
-    ctx,
-    importers,
-    relativeAbsoluteSrcRoot,
-    subPackageRoots,
-    forceDuplicateTester,
-  } = options
-  const summary: Record<string, number> = {}
-  const ignoredImporters = new Set<string>()
-  const state: CollectorState = {
-    cache: new Map(),
-    stack: new Set(),
-  }
+function resolveChunkGraphSourceId(id: string) {
+  return parseLogicalEntryId(id)?.sourceId
+    ?? parseSidecarModuleId(id)?.ownerId
+    ?? parseSidecarSourceRequest(id)?.ownerId
+    ?? id
+}
 
-  for (const importer of importers) {
-    const { prefixes, ignored } = collectEffectivePrefixes(importer, {
-      ctx,
-      relativeAbsoluteSrcRoot,
-      subPackageRoots,
-      forceDuplicateTester,
-    }, state)
-
-    for (const prefix of prefixes) {
-      summary[prefix] = (summary[prefix] || 0) + 1
+export function resolveSubPackagePrefix(fileName: string, subPackageRoots: string[]): string {
+  for (const root of subPackageRoots) {
+    if (!root) {
+      continue
     }
-
-    for (const entry of ignored) {
-      ignoredImporters.add(entry)
+    if (fileName === root || fileName.startsWith(`${root}/`)) {
+      return root
     }
   }
-
-  return {
-    summary,
-    ignoredMainImporters: Array.from(ignoredImporters),
-  }
+  return ''
 }
 
 function collectEffectivePrefixes(
@@ -101,7 +84,8 @@ function collectEffectivePrefixes(
     forceDuplicateTester,
   } = options
 
-  const relativeId = relativeAbsoluteSrcRoot(importer)
+  const sourceImporter = resolveChunkGraphSourceId(importer)
+  const relativeId = relativeAbsoluteSrcRoot(sourceImporter)
   const subPackagePrefix = resolveSubPackagePrefix(relativeId, subPackageRoots)
 
   if (subPackagePrefix) {
@@ -121,7 +105,7 @@ function collectEffectivePrefixes(
 
   const moduleInfo = ctx.getModuleInfo(importer)
   const importerParents = moduleInfo?.importers ?? []
-  const forcedDuplicate = forceDuplicateTester?.(relativeId, importer) ?? false
+  const forcedDuplicate = forceDuplicateTester?.(relativeId, sourceImporter) ?? false
 
   if (!importerParents.length) {
     const result: CollectorResult = forcedDuplicate
@@ -187,16 +171,42 @@ function collectEffectivePrefixes(
   }
 }
 
-export function resolveSubPackagePrefix(fileName: string, subPackageRoots: string[]): string {
-  for (const root of subPackageRoots) {
-    if (!root) {
-      continue
+export function summarizeImportPrefixes(options: SummarizeOptions) {
+  const {
+    ctx,
+    importers,
+    relativeAbsoluteSrcRoot,
+    subPackageRoots,
+    forceDuplicateTester,
+  } = options
+  const summary: Record<string, number> = {}
+  const ignoredImporters = new Set<string>()
+  const state: CollectorState = {
+    cache: new Map(),
+    stack: new Set(),
+  }
+
+  for (const importer of importers) {
+    const { prefixes, ignored } = collectEffectivePrefixes(importer, {
+      ctx,
+      relativeAbsoluteSrcRoot,
+      subPackageRoots,
+      forceDuplicateTester,
+    }, state)
+
+    for (const prefix of prefixes) {
+      summary[prefix] = (summary[prefix] || 0) + 1
     }
-    if (fileName === root || fileName.startsWith(`${root}/`)) {
-      return root
+
+    for (const entry of ignored) {
+      ignoredImporters.add(entry)
     }
   }
-  return ''
+
+  return {
+    summary,
+    ignoredMainImporters: Array.from(ignoredImporters),
+  }
 }
 
 interface ModuleScopeAssertionOptions {
@@ -221,10 +231,11 @@ export function assertModuleScopedToRoot(options: ModuleScopeAssertionOptions) {
   }
 
   for (const importer of moduleInfo.importers) {
-    const importerRoot = resolveSubPackagePrefix(relativeAbsoluteSrcRoot(importer), subPackageRoots)
+    const sourceImporter = resolveChunkGraphSourceId(importer)
+    const importerRoot = resolveSubPackagePrefix(relativeAbsoluteSrcRoot(sourceImporter), subPackageRoots)
     if (importerRoot !== moduleRoot) {
       const moduleLabel = relativeAbsoluteSrcRoot(moduleId)
-      const importerLabel = relativeAbsoluteSrcRoot(importer)
+      const importerLabel = relativeAbsoluteSrcRoot(sourceImporter)
       throw new Error(
         `[分包] 模块 "${moduleLabel}" 位于分包 "${moduleRoot}"，但被 "${importerLabel}" 引用，`
         + '请将该模块移动到主包或公共目录以进行跨分包共享。',

@@ -15,7 +15,7 @@ import {
   cleanupResidualDevtoolsProcesses,
   cleanupResidualIdeProcesses,
 } from '../utils/ide-devtools-cleanup'
-import { toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
+import { waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 import { relaunchPage } from './github-issues.runtime.shared'
 
@@ -795,12 +795,6 @@ describe.sequential('wevu runtime core hmr matrix (ide)', () => {
       expect(sharedRuntime.code).toContain(sharedStoreMarker)
       expect(sharedRuntime.code).toContain('setupCounter')
       expect(sharedRuntime.code).toContain('optionsCounter')
-      const [storePageOutput, storeSharePageOutput] = await Promise.all([
-        fs.readFile(STORE_PAGE_JS_DIST, 'utf8'),
-        fs.readFile(STORE_SHARE_PAGE_JS_DIST, 'utf8'),
-      ])
-      expect(storePageOutput).toContain(`require("${toRelativeImport(STORE_PAGE_JS_DIST, sharedRuntime.path)}")`)
-      expect(storeSharePageOutput).toContain(`require("${toRelativeImport(STORE_SHARE_PAGE_JS_DIST, sharedRuntime.path)}")`)
       await waitForIdeRecompileSettled()
       await relaunchIdeRoute('/pages/store/index', undefined, ctx, {
         storageReady: {

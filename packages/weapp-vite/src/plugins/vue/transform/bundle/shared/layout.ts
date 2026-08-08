@@ -2,20 +2,11 @@ import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { ResolvedPageLayout } from '../../pageLayout'
 import type { CompilationCacheEntry } from './types'
-import { normalizeWatchPath } from '../../../../../utils/path'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
 import { findFirstResolvedVueLikeEntry } from '../../shared'
 import { getVueBundlePageLayoutPlan } from './types'
 
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
-
-export function addBundleWatchFile(pluginCtx: any, filePath: string) {
-  if (typeof pluginCtx.addWatchFile !== 'function') {
-    return
-  }
-
-  pluginCtx.addWatchFile(normalizeWatchPath(filePath))
-}
 
 export function getEntryBaseName(filename: string) {
   const extIndex = filename.lastIndexOf('.')

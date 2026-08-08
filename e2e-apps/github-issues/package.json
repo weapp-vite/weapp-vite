@@ -1,17 +1,20 @@
 {
   "name": "e2e-app-github-issues",
-  "version": "0.0.21",
+  "version": "0.0.25",
   "private": true,
   "scripts": {
     "dev": "wv dev",
+    "dev:web": "wv dev -p web --host",
     "dev:open": "wv dev -o",
     "build": "wv build",
+    "build:web": "wv build -p web",
     "dev:ui": "wv dev --ui",
     "build:ui": "wv build --ui",
     "postinstall": "wv prepare"
   },
   "dependencies": {
     "@wevu/web-apis": "workspace:*",
+    "axios": "^1.19.0",
     "camelcase": "^9.0.0",
     "dayjs": "catalog:",
     "merge": "catalog:",
@@ -21,6 +24,8 @@
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",
     "socket.io-client": "^4.8.3",
+    "tailwindcss": "catalog:tailwind4",
+    "weapp-tailwindcss": "catalog:weapp-tailwindcss-fixed",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

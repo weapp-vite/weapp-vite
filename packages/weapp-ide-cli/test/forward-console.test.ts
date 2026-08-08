@@ -230,6 +230,28 @@ describe('forwardConsole', () => {
     vi.useRealTimers()
   })
 
+  it('reuses a provided mini program without opening or releasing another session', async () => {
+    vi.useFakeTimers()
+    const miniProgram = createMiniProgramMock()
+    const { startForwardConsole } = await import('../src/cli/forwardConsole')
+
+    const session = await startForwardConsole({
+      miniProgram: miniProgram as unknown as Parameters<typeof startForwardConsole>[0]['miniProgram'],
+      projectPath: '/tmp/demo',
+    })
+    await vi.advanceTimersByTimeAsync(6_100)
+
+    expect(acquireSharedMiniProgramMock).not.toHaveBeenCalled()
+    expect(connectMiniProgramMock).not.toHaveBeenCalled()
+    expect(miniProgram.enableLog).toHaveBeenCalledTimes(4)
+
+    await session.close()
+
+    expect(releaseSharedMiniProgramMock).not.toHaveBeenCalled()
+    expect(miniProgram.disconnect).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
   it('cleans up when App.enableLog cannot be enabled', async () => {
     vi.useFakeTimers()
     const miniProgram = createMiniProgramMock()

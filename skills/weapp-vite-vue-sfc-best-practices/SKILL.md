@@ -16,6 +16,7 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 - 用户问 `definePageMeta` / layout 怎么配。
 - 用户遇到模板兼容或编译错误。
 - 用户遇到 `.weapp-vite` 类型输出、组件声明或 route type 漂移。
+- 用户要在微信小程序与 Web 中使用 Wot UI、uview-plus 等 uni-app Vue SFC 组件库。
 
 ## 不适用场景
 
@@ -38,16 +39,27 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
    - 不要假设 Web Vue 的所有模板特性都可用
    - `usingComponents` 走 JSON 宏 / 自动导入，不走 Web Vue 注册思路
    - 第三方小程序 UI 库（如 TDesign Mini Program、Vant Weapp）文档中的 `TNode`、`slot`、自定义内容通常是小程序原生 slot 或属性渲染，不要默认按 Vue scoped slot 处理
+   - 第三方 uni-app Vue SFC 组件库与原生小程序 UI 库不是同一路径：前者需要 resolver 返回 `sourceType: 'wevu-sfc'` / 真实 `resolvedId`，并通过 `weapp.uniApp.include` 显式允许依赖转换
    - 只有存在明确 slot props（如 `<template #item="{ item }">`）或显式增强作用域插槽场景时，才应生成 `generic:scoped-slots-*`
    - 转发 `<slot />` 到子组件具名插槽时不要生成或建议 `<block slot="..."><slot /></block>`；真实 DevTools 运行时会丢失转发内容。微信平台默认使用内部 `virtualHost` wrapper，需要回到旧版真实节点行为时配置 `weapp.vue.template.slotFallbackWrapperStrategy: 'view'`，需要自定义时优先用组件内静态属性 `slot-wrapper="cover-view"`、`slot-wrapper-footer="view"`、`slot-wrapper-class="..."`、`slot-wrapper-footer-class="..."` 或项目配置 `weapp.vue.template.slotFallbackWrapper`；全局规则里 `component` 匹配模板标签名，`componentName` 匹配子组件静态 `defineOptions({ name })`
    - 自定义 slot wrapper 必须能承载实际子内容；例如 `text` 不适合包裹 `<view>`，`block` 会被编译器回退为 `view`
 5. 若 `typed-router.d.ts`、`typed-components.d.ts`、`components.d.ts` 漂移，先跑 `wv prepare`。
 6. 若项目有根 `AGENTS.md` 或本地 `dist/docs/vue-sfc.md`，SFC 写法要与其约束一致。
 
+## 工具链与热更新边界
+
+- Volar 类型问题先检查 `.weapp-vite/tsconfig.app.json`、solution references 和 `vueCompilerOptions.plugins`；不要用根目录隐式包含替代受管配置。
+- `skipTemplateCodegen` 会让模板绑定和 WXS 类型离开模板上下文，出现“属性不存在”时先排除该配置。
+- 只有 JSON 宏或配置发生变化时才依赖 JSON-only HMR；行为、模板和运行时变化仍按完整 SFC 编译链验证。
+- `defineConfig` 推荐从 `weapp-vite/config` 导入，以保留 `weapp.*` 的上下文类型和 Hover 文档。
+
+详细矩阵见 `references/tooling-and-hmr-matrix.md`。
+
 ## 约束
 
 - 不要在一个 SFC 里混多套 JSON 宏。
 - 不要把小程序组件注册当成 Web Vue 组件注册。
+- 不要只配置 Wot UI 或 uview-plus resolver 而遗漏 `weapp.uniApp.include`，也不要把 npm 依赖自动加入转换范围。uview-plus 应调用 `mount$u()` 并同步 `$u`，不要走 Web 全局组件注册流程。
 - 不要把 `t-*`、`van-*` 等 kebab-case 第三方原生组件的普通默认插槽误判为增强作用域插槽。
 - 不要忽略 `prepare` 和 `.weapp-vite` 产物。
 - 不要在修 SFC 语法时顺手做无关运行时重构。
@@ -73,3 +85,4 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 - `references/macro-config-checklist.md`
 - `references/template-compat-matrix.md`
 - `references/troubleshooting-playbook.md`
+- `references/tooling-and-hmr-matrix.md`

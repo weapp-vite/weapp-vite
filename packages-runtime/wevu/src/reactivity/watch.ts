@@ -69,13 +69,17 @@ export function watch(
     watchGetterContext.isReactiveSource,
     options.deep,
   )
+  const forceTrigger = options.deep === true
+    || typeof options.deep === 'number'
+    || (options.deep === undefined && watchGetterContext.hasReactiveSource)
+    || watchGetterContext.hasShallowSource
 
   let cleanup: (() => void) | undefined
   const onCleanup: OnCleanup = (fn) => {
     cleanup = fn
   }
 
-  let oldValue: any
+  let oldValue: any = watchGetterContext.isMultiSource ? [] : undefined
   let runner: ReactiveEffect<any>
   let paused = false
   let pauseToken = 0
@@ -89,11 +93,25 @@ export function watch(
     : cb
   const flush = options.flush ?? 'pre'
 
-  const runJob = (token: number) => {
+  const hasChanged = (newValue: any, previousValue: any) => {
+    if (!watchGetterContext.isMultiSource) {
+      return !Object.is(newValue, previousValue)
+    }
+    if (!Array.isArray(newValue) || !Array.isArray(previousValue)) {
+      return !Object.is(newValue, previousValue)
+    }
+    return newValue.length !== previousValue.length
+      || newValue.some((value, index) => !Object.is(value, previousValue[index]))
+  }
+
+  const runJob = (token: number, force = false) => {
     if (!runner.active || paused || token !== pauseToken) {
       return
     }
     const newValue = runner()
+    if (!force && !forceTrigger && !hasChanged(newValue, oldValue)) {
+      return
+    }
     cleanup?.()
     const previousInstance = getCurrentInstance()
     setCurrentInstance(ownerInstance)
@@ -144,7 +162,7 @@ export function watch(
   }
 
   if (options.immediate) {
-    runJob(pauseToken)
+    runJob(pauseToken, true)
   }
   else {
     oldValue = runner()

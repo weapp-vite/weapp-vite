@@ -54,6 +54,16 @@ export interface AutoImportComponents {
 
 export type AutoImportComponentsOption = AutoImportComponents | boolean
 
+/**
+ * @description 实验性的 uni-app 源码兼容配置。
+ */
+export interface WeappUniAppConfig {
+  /**
+   * @description 允许参与兼容转换的 npm 包名。项目源码始终参与转换。
+   */
+  include: string[]
+}
+
 export type EnhanceWxmlOptions = ScanWxmlOptions & HandleWxmlOptions
 
 /**
@@ -271,7 +281,7 @@ export interface WeappHmrConfig {
   /**
    * @description 微信开发者工具热更新运行时。stateful-experimental 使用实验性的状态保持协议。
    */
-  runtime?: 'classic' | 'stateful-experimental'
+  runtime?: 'auto' | 'classic' | 'stateful-experimental'
   sharedChunks?: 'full' | 'auto' | 'off'
   touchAppWxss?: boolean | 'auto'
   /**

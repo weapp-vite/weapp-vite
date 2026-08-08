@@ -8,12 +8,39 @@ import { registerServeCommand } from './serve'
 const filterDuplicateOptionsMock = vi.hoisted(() => vi.fn())
 const resolveConfigFileMock = vi.hoisted(() => vi.fn())
 const isUiEnabledMock = vi.hoisted(() => vi.fn(() => true))
-const resolveRuntimeTargetsMock = vi.hoisted(() => vi.fn(() => ({
-  runMini: true,
-  runWeb: false,
-  platform: 'weapp',
-  rawPlatform: 'weapp',
-})))
+const resolveRuntimeTargetsMock = vi.hoisted(() => {
+  const miniBackend = {
+    descriptor: {
+      id: 'miniprogram',
+      runtime: 'miniprogram',
+      aliases: ['weapp'],
+      capabilities: {
+        build: true,
+        dev: true,
+        ide: true,
+        analyze: true,
+        npm: true,
+        workers: true,
+        lib: true,
+      },
+    },
+    driver: {
+      dev: (ctx: any, options: any) => ctx.buildService.build(options),
+      close: (ctx: any) => ctx.watcherService.closeAll(),
+    },
+    platform: 'weapp',
+  }
+  return vi.fn(() => ({
+    kind: 'miniprogram',
+    label: 'weapp',
+    entries: [miniBackend],
+    platform: 'weapp',
+    rawPlatform: 'weapp',
+    get: (id: string) => id === 'miniprogram' ? miniBackend : undefined,
+    has: (capability: string) => Boolean((miniBackend.descriptor.capabilities as any)[capability]),
+    select: (capability: string) => (miniBackend.descriptor.capabilities as any)[capability] ? [miniBackend] : [],
+  }))
+})
 const createInlineConfigMock = vi.hoisted(() => vi.fn(() => ({})))
 const logRuntimeTargetMock = vi.hoisted(() => vi.fn())
 const createCompilerContextMock = vi.hoisted(() => vi.fn())
@@ -25,6 +52,8 @@ const detectAiDevelopmentEnvironmentMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
 const resolveIdeProjectRootMock = vi.hoisted(() => vi.fn((root: string) => root))
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
+const loggerWarnMock = vi.hoisted(() => vi.fn())
+const loggerErrorMock = vi.hoisted(() => vi.fn())
 const devHotkeysCloseMock = vi.hoisted(() => vi.fn())
 const devHotkeysRestoreMock = vi.hoisted(() => vi.fn())
 const devHotkeysSuspendMock = vi.hoisted(() => vi.fn())
@@ -48,6 +77,9 @@ const fakeProcess = vi.hoisted(() => {
     off(event: string, listener: (...args: any[]) => void) {
       listeners.get(event)?.delete(listener)
       return this
+    },
+    listenerCount(event: string) {
+      return listeners.get(event)?.size ?? 0
     },
     removeAllListeners() {
       listeners.clear()
@@ -83,8 +115,8 @@ vi.mock('node:process', () => ({
 vi.mock('../../logger', () => ({
   default: {
     success: loggerSuccessMock,
-    warn: vi.fn(),
-    error: vi.fn(),
+    warn: loggerWarnMock,
+    error: loggerErrorMock,
   },
 }))
 
@@ -486,12 +518,12 @@ describe('serve cli command', () => {
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       openRecovery: false,
-      prepareAutomatorSession: 'connect-opened',
+      prepareAutomatorSession: true,
       reuseOpenedProject: true,
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: false,
+      useAutomatorOpen: true,
     })
     expect(maybeStartForwardConsoleMock).toHaveBeenCalledWith({
       platform: 'weapp',
@@ -518,12 +550,12 @@ describe('serve cli command', () => {
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       openRecovery: false,
-      prepareAutomatorSession: 'connect-opened',
+      prepareAutomatorSession: true,
       reuseOpenedProject: true,
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: false,
+      useAutomatorOpen: true,
     })
   })
 
@@ -560,6 +592,192 @@ describe('serve cli command', () => {
       cwd: '/cwd-project',
       preloadAppEntry: false,
     }))
+  })
+
+  it('starts and closes a web-only dev backend without mini build actions', async () => {
+    const webServer = {}
+    const webDev = vi.fn().mockResolvedValue(webServer)
+    const webClose = vi.fn().mockResolvedValue(undefined)
+    const webBackend = {
+      descriptor: {
+        id: 'web',
+        capabilities: { dev: true, ide: false },
+      },
+      driver: {
+        dev: webDev,
+        close: webClose,
+      },
+      platform: 'web',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+      has: (capability: string) => capability === 'dev',
+      select: (capability: string) => capability === 'dev' ? [webBackend] : [],
+    })
+    createCompilerContextMock.mockReset()
+    createCompilerContextMock.mockResolvedValueOnce({
+      buildService: { build: buildServiceBuildMock },
+      configService: {
+        platform: 'weapp',
+        cwd: '/project',
+        mode: 'development',
+        outDir: '/project/dist',
+        mpDistRoot: '/project/dist',
+        packageManager: { agent: 'pnpm' },
+        weappViteConfig: {},
+      },
+      webService: { startDevServer: vi.fn(), close: vi.fn() },
+      watcherService: { closeAll: watcherCloseAllMock },
+    })
+    const action = createServeActionHandler()
+
+    const actionPromise = action('/project', { platform: 'web' })
+    for (let index = 0; index < 20 && fakeProcess.listenerCount('SIGINT') === 0; index++) {
+      await Promise.resolve()
+    }
+    expect(webDev).toHaveBeenCalledTimes(1)
+    expect(fakeProcess.listenerCount('SIGINT')).toBeGreaterThan(0)
+    fakeProcess.emit('SIGINT')
+    await actionPromise
+
+    expect(buildServiceBuildMock).not.toHaveBeenCalled()
+    expect(webClose).toHaveBeenCalledTimes(1)
+    expect(logBuildAppFinishMock).toHaveBeenCalledWith(expect.anything(), webServer, { skipMini: true })
+  })
+
+  it('reports web dev startup failures and closes the backend', async () => {
+    const startupError = new Error('web dev failed')
+    const webClose = vi.fn().mockResolvedValue(undefined)
+    const webBackend = {
+      descriptor: { id: 'web', capabilities: { dev: true } },
+      driver: {
+        dev: vi.fn().mockRejectedValue(startupError),
+        close: webClose,
+      },
+      platform: 'web',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+      has: (capability: string) => capability === 'dev',
+      select: (capability: string) => capability === 'dev' ? [webBackend] : [],
+    })
+    createCompilerContextMock.mockReset()
+    createCompilerContextMock.mockResolvedValueOnce({
+      configService: {
+        platform: 'weapp',
+        cwd: '/project',
+        mpDistRoot: '/project/dist',
+        weappViteConfig: {},
+      },
+    })
+    const action = createServeActionHandler()
+
+    await expect(action('/project', { platform: 'web' })).rejects.toThrow(startupError)
+
+    expect(loggerErrorMock).toHaveBeenCalledWith(startupError)
+    expect(webClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('stringifies non-error web dev failures', async () => {
+    const webClose = vi.fn()
+    const webBackend = {
+      descriptor: { id: 'web', capabilities: { dev: true } },
+      driver: {
+        dev: vi.fn().mockRejectedValue('web dev failed'),
+        close: webClose,
+      },
+      platform: 'web',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+      has: () => true,
+      select: (capability: string) => capability === 'dev' ? [webBackend] : [],
+    })
+    createCompilerContextMock.mockReset()
+    createCompilerContextMock.mockResolvedValueOnce({
+      configService: {
+        platform: 'weapp',
+        cwd: '/project',
+        mpDistRoot: '/project/dist',
+        weappViteConfig: {},
+      },
+    })
+
+    await expect(createServeActionHandler()('/project', { platform: 'web' })).rejects.toBe('web dev failed')
+    expect(loggerErrorMock).toHaveBeenCalledWith('web dev failed')
+    expect(webClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips unknown dev backends and closes them at shutdown', async () => {
+    const customDev = vi.fn()
+    const customClose = vi.fn()
+    const customBackend = {
+      descriptor: { id: 'custom', capabilities: { dev: true } },
+      driver: { dev: customDev, close: customClose },
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'miniprogram',
+      label: 'custom',
+      entries: [customBackend],
+      rawPlatform: 'custom',
+      get: () => undefined,
+      has: () => false,
+      select: (capability: string) => capability === 'dev' ? [customBackend] : [],
+    })
+    const action = createServeActionHandler()
+
+    await action('/project', {})
+
+    expect(customDev).not.toHaveBeenCalled()
+    expect(customClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('warns when background support-file synchronization fails', async () => {
+    syncSupportFileResolverComponentsMock.mockRejectedValueOnce(new Error('readonly support dir'))
+    const action = createServeActionHandler()
+
+    const actionPromise = action('/project', { platform: 'weapp' })
+    for (let index = 0; index < 20 && fakeProcess.listenerCount('SIGINT') === 0; index++) {
+      await Promise.resolve()
+    }
+    fakeProcess.emit('SIGINT')
+    await actionPromise
+    await Promise.resolve()
+
+    expect(loggerWarnMock).toHaveBeenCalledWith(
+      '[prepare] 后台同步 .weapp-vite 支持文件失败：readonly support dir',
+    )
+  })
+
+  it('skips analyze when the UI is disabled', async () => {
+    isUiEnabledMock.mockReturnValueOnce(false)
+    syncSupportFileResolverComponentsMock.mockRejectedValueOnce('support sync failed')
+    const action = createServeActionHandler()
+
+    const actionPromise = action('/project', { platform: 'weapp' })
+    for (let index = 0; index < 20 && fakeProcess.listenerCount('SIGINT') === 0; index++) {
+      await Promise.resolve()
+    }
+    fakeProcess.emit('SIGINT')
+    await actionPromise
+    await Promise.resolve()
+
+    expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+    expect(loggerWarnMock).toHaveBeenCalledWith(
+      '[prepare] 后台同步 .weapp-vite 支持文件失败：support sync failed',
+    )
   })
 
   it('injects rebuild and reopen callbacks into dev hotkeys session', async () => {

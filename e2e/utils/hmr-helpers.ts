@@ -24,6 +24,28 @@ export const PLATFORM_EXT: Record<RuntimePlatform, { template: string, style: st
 }
 
 /**
+ * 在隔离测试项目中关闭微信开发者工具热重载，使磁盘产物回归固定使用 classic watcher。
+ *
+ * @param projectRoot - 隔离测试项目根目录
+ * @returns 恢复原始私有配置的函数
+ */
+export async function disableProjectCompileHotReload(projectRoot: string): Promise<() => Promise<void>> {
+  const configPath = path.join(projectRoot, 'project.private.config.json')
+  const original = await fs.readFile(configPath, 'utf8')
+  const loaded = JSON.parse(original) as { setting?: Record<string, unknown>, [key: string]: unknown }
+  await fs.writeJSON(configPath, {
+    ...loaded,
+    setting: {
+      ...loaded.setting,
+      compileHotReLoad: false,
+    },
+  }, { spaces: 2 })
+  return async () => {
+    await fs.writeFile(configPath, original, 'utf8')
+  }
+}
+
+/**
  * 解析要测试的平台列表：
  * 1) 指定 E2E_PLATFORM 时仅测试单平台；
  * 2) CI 或 E2E_FULL_MATRIX=1 时测试全部平台；

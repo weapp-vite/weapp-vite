@@ -4,11 +4,14 @@ import { nextTick } from '../../scheduler'
 import { queueJob } from '../core'
 import { isReactive, touchReactive } from '../reactive'
 import { isRef } from '../ref'
+import { isShallowRef } from '../shallowRef'
 import { traverse } from '../traverse'
 import { getDeepWatchStrategy } from './types'
 
 interface WatchGetterContext {
   getter: () => any
+  hasReactiveSource: boolean
+  hasShallowSource: boolean
   isMultiSource: boolean
   isReactiveSource: boolean
 }
@@ -27,8 +30,14 @@ function resolveWatchSource(item: WatchSource<any> | object) {
 }
 
 export function createWatchGetter(source: WatchSources<any>): WatchGetterContext {
-  const isReactiveSource = isReactive(source)
-  const isMultiSource = Array.isArray(source) && !isReactiveSource
+  const isMultiSource = Array.isArray(source)
+  const isReactiveSource = !isMultiSource && isReactive(source)
+  const hasReactiveSource = isMultiSource
+    ? (source as ReadonlyArray<WatchSource<any> | object>).some(item => isReactive(item))
+    : isReactiveSource
+  const hasShallowSource = isMultiSource
+    ? (source as ReadonlyArray<WatchSource<any> | object>).some(item => isShallowRef(item))
+    : isShallowRef(source)
   let getter: () => any
 
   if (isMultiSource) {
@@ -50,6 +59,8 @@ export function createWatchGetter(source: WatchSources<any>): WatchGetterContext
 
   return {
     getter,
+    hasReactiveSource,
+    hasShallowSource,
     isMultiSource,
     isReactiveSource,
   }

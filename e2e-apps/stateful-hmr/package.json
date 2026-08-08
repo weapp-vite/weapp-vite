@@ -7,7 +7,9 @@
   },
   "scripts": {
     "build": "wv build",
+    "build:web": "wv build -p web",
     "dev": "wv dev",
+    "dev:web": "wv dev -p web --host",
     "dev:open": "wv dev -o",
     "postinstall": "wv prepare"
   },

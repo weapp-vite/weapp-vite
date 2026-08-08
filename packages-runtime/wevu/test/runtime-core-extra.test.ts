@@ -43,6 +43,10 @@ describe('runtime diff/toPlain coverage', () => {
     expect(toPlain(() => {})).toBeUndefined()
     const fn = () => 'ok'
     expect(toPlain(fn, new WeakMap(), { includeFunctions: true })).toBe(fn)
+    const nestedFn = () => 'nested'
+    expect(toPlain({ schema: { validate: nestedFn }, ignored: nestedFn }, new WeakMap(), {
+      functionPaths: ['schema'],
+    })).toEqual({ schema: { validate: nestedFn } })
     expect(toPlain(3)).toBe(3)
 
     const noSet = markNoSetData({ a: 1 })

@@ -13,6 +13,7 @@ import { isRegexp } from '../utils/regexp'
 import { normalizeViteId } from '../utils/viteId'
 import { createAdvancedChunkNameResolver } from './advancedChunks'
 import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
+import { isWevuStableVendorFileName, resolveWevuStableVendorFileName } from './wevuModules'
 
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
 const REG_COMMONJS_HELPERS = /commonjsHelpers\.js$/
@@ -260,6 +261,13 @@ function resolveStableHashedDistChunkFileName(
   let facadeMatchedChunk: { baseName: string, fileName: string } | undefined
 
   for (const id of candidateIds) {
+    const fileName = resolveWevuStableVendorFileName(id)
+    if (fileName) {
+      return fileName
+    }
+  }
+
+  for (const id of candidateIds) {
     if (isWeappViteRuntimeModuleId(id)) {
       return 'weapp-vendors/weapp-vite-runtime.js'
     }
@@ -397,6 +405,7 @@ function createSharedBuildResolver(
 export function createSharedBuildOutput(
   configService: ConfigService,
   getSubPackageRoots: () => Iterable<string>,
+  options: { runtime?: 'miniprogram' | 'web' } = {},
 ) {
   const { resolveAdvancedChunkName } = createSharedBuildResolver(
     configService,
@@ -432,9 +441,15 @@ export function createSharedBuildOutput(
       if (isRequestGlobalsRuntimeChunk(chunk)) {
         return REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME
       }
-      const stableHashedDistChunkFileName = resolveStableHashedDistChunkFileName(chunk)
-      if (stableHashedDistChunkFileName) {
-        return stableHashedDistChunkFileName
+      if (options.runtime !== 'web') {
+        const namedStableVendorFileName = `${chunk.name}.js`
+        if (isWevuStableVendorFileName(namedStableVendorFileName)) {
+          return namedStableVendorFileName
+        }
+        const stableHashedDistChunkFileName = resolveStableHashedDistChunkFileName(chunk)
+        if (stableHashedDistChunkFileName) {
+          return stableHashedDistChunkFileName
+        }
       }
       return '[name].js'
     },

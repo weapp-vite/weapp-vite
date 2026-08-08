@@ -69,6 +69,8 @@ export function createAgentsGuidelines(templateName: TemplateName) {
     '  - `$weapp-vite-vue-sfc-best-practices` for `.vue` SFC macros, JSON blocks, and template compatibility.',
     '  - `$release-and-changeset-best-practices` for issue delivery, changesets, release decisions, and PR workflow.',
     '  - `$docs-and-website-sync` when documentation or AI guidance must be refreshed together with code changes.',
+    '  - Use `$weapp-vite-best-practices` for stateful HMR, pluginRoot/dist-plugin, Web runtime compatibility, and native AST profiling; use `$wevu-best-practices` for `wevu/router` navigation semantics.',
+    '  - Use `$weapp-devtools-e2e-best-practices` for serialized DevTools runtime suites, shared automator sessions, and known host compatibility skips.',
   ]
 
   if (supportsWevu(templateName)) {

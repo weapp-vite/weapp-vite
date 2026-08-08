@@ -1,0 +1,63 @@
+<view class="media-page" data-visual-ready="true">
+  <view class="media-page__intro">
+    <text class="media-page__eyebrow">CANVAS / VIDEO</text>
+    <text class="media-page__title">图形与媒体</text>
+    <text class="media-page__caption">绘图命令、媒体属性与事件使用同一份页面源码</text>
+  </view>
+
+  <view class="media-panel">
+    <view class="section-heading">
+      <text class="section-heading__label">CANVAS 2D</text>
+      <text class="section-heading__meta">300 x 150</text>
+    </view>
+    <canvas
+      id="mediaCanvas"
+      class="media-canvas"
+      canvas-id="mediaCanvas"
+      width="300"
+      height="150"
+    ></canvas>
+    <view class="status-row">
+      <text class="status-row__label">DRAW</text>
+      <text class="status-row__value">{{canvasStatus}}</text>
+    </view>
+  </view>
+
+  <view class="media-panel media-panel--video">
+    <view class="section-heading">
+      <text class="section-heading__label">VIDEO</text>
+      <text class="section-heading__meta">cover / poster</text>
+    </view>
+    <view class="media-video-frame">
+      <video
+        id="mediaVideo"
+        class="media-video-runtime"
+        poster="/retail-goods-02.jpg"
+        controls="{{false}}"
+        object-fit="cover"
+        bindplay="handleVideoPlay"
+        bindpause="handleVideoPause"
+        bindended="handleVideoEnded"
+        bindwaiting="handleVideoWaiting"
+        bindtimeupdate="handleVideoTimeUpdate"
+        bindprogress="handleVideoProgress"
+        binderror="handleVideoError"
+      ></video>
+      <image class="media-video-poster" src="/retail-goods-02.jpg" mode="aspectFill" />
+    </view>
+    <view class="video-state">
+      <view>
+        <text class="video-state__label">EVENT</text>
+        <text class="video-state__value">{{videoEvent}}</text>
+      </view>
+      <view>
+        <text class="video-state__label">TIME</text>
+        <text class="video-state__value">{{videoTime}}</text>
+      </view>
+      <view>
+        <text class="video-state__label">BUFFERED</text>
+        <text class="video-state__value">{{videoBuffered}}</text>
+      </view>
+    </view>
+  </view>
+</view>

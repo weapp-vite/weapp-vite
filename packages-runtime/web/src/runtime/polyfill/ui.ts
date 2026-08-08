@@ -1,4 +1,5 @@
 import { WEAPP_VITE_WEB_ACTION_SHEET_SELECT_INDEX_KEY } from '@weapp-core/constants'
+import { getRuntimeDialogs } from '../host'
 
 const TOAST_ID = '__weapp_vite_web_toast__'
 const TOAST_SELECTOR = `#${TOAST_ID}`
@@ -6,12 +7,7 @@ const LOADING_ID = '__weapp_vite_web_loading__'
 const LOADING_SELECTOR = `#${LOADING_ID}`
 
 export function getGlobalDialogHandlers() {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  return {
-    confirm: runtimeGlobal.confirm as ((message?: string) => boolean) | undefined,
-    alert: runtimeGlobal.alert as ((message?: string) => void) | undefined,
-    prompt: runtimeGlobal.prompt as ((message?: string, defaultValue?: string) => string | null) | undefined,
-  }
+  return getRuntimeDialogs()
 }
 
 export function getToastElement() {

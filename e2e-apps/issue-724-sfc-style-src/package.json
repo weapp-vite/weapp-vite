@@ -1,0 +1,20 @@
+{
+  "name": "e2e-app-issue-724-sfc-style-src",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wv dev",
+    "dev:web": "wv dev -p web --host",
+    "build": "wv build",
+    "build:web": "wv build -p web",
+    "postinstall": "wv prepare"
+  },
+  "dependencies": {
+    "vant": "^4.10.0"
+  },
+  "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

@@ -1,0 +1,51 @@
+<view class="shell-page" data-visual-ready="true">
+  <view class="shell-page__intro">
+    <text class="shell-page__eyebrow">APP SHELL / TAB BAR</text>
+    <text class="shell-page__title">运行工作台</text>
+    <text class="shell-page__caption">页面栈、设备视口与底部安全区共享同一运行边界</text>
+  </view>
+
+  <view class="metric-grid">
+    <view class="metric-card">
+      <text class="metric-card__value" data-load-count="{{loadCount}}">{{loadCount}}</text>
+      <text class="metric-card__label">LOAD</text>
+    </view>
+    <view class="metric-card">
+      <text class="metric-card__value" data-show-count="{{showCount}}">{{showCount}}</text>
+      <text class="metric-card__label">SHOW</text>
+    </view>
+    <view class="metric-card metric-card--accent">
+      <text class="metric-card__value">2</text>
+      <text class="metric-card__label">TABS</text>
+    </view>
+  </view>
+
+  <view class="shell-panel">
+    <text class="shell-panel__label">ACTIVE SESSION</text>
+    <text class="shell-panel__title">Web Runtime</text>
+    <view class="shell-panel__rule"></view>
+    <view class="shell-panel__row">
+      <text>Viewport</text>
+      <text class="shell-panel__status">MINI PROGRAM</text>
+    </view>
+    <view class="shell-panel__row">
+      <text>Safe area</text>
+      <text class="shell-panel__status">SYNCED</text>
+    </view>
+    <view class="shell-panel__row">
+      <text>Page stack</text>
+      <text class="shell-panel__status">PERSISTENT</text>
+    </view>
+  </view>
+
+  <view class="action-row">
+    <button size="mini" bindtap="setBadge">Badge</button>
+    <button size="mini" bindtap="showRedDot">Red dot</button>
+    <button size="mini" bindtap="toggleTabBar">Toggle</button>
+  </view>
+
+  <view class="event-result" data-shell-event="{{lastEvent}}">
+    <text class="event-result__label">TAB BAR EVENT</text>
+    <text class="event-result__value">{{lastEvent}}</text>
+  </view>
+</view>

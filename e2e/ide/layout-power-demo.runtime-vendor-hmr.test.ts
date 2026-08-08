@@ -14,10 +14,12 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
+import { runLayoutFeedbackE2E } from './layout-power-demo.runtime.shared'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.resolve(WORKSPACE_ROOT, 'apps/layout-power-demo')
+const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const CLI_PATH = path.join(APP_ROOT, 'node_modules/weapp-vite/bin/weapp-vite.js')
 const PAGE_SCRIPT = path.join(APP_ROOT, 'src/pages/index/index.ts')
 const PAGE_WXML = path.join(APP_ROOT, 'src/pages/index/index.wxml')
@@ -25,16 +27,20 @@ const COMMAND_LAYOUT_WXSS = path.join(APP_ROOT, 'src/layouts/command/index.wxss'
 const PAGE_JS_DIST = path.join(APP_ROOT, 'dist/pages/index/index.js')
 const PAGE_WXML_DIST = path.join(APP_ROOT, 'dist/pages/index/index.wxml')
 const COMMAND_LAYOUT_WXSS_DIST = path.join(APP_ROOT, 'dist/layouts/command/index.wxss')
-const RUNTIME_VENDOR_DIST = path.join(APP_ROOT, 'dist/weapp-vendors/weapp-vite-runtime.js')
+const HMR_CONTROL_DIST = path.join(APP_ROOT, 'dist/__weapp_vite_hmr/control.js')
+const HMR_UPDATE_DIST = path.join(APP_ROOT, 'dist/__weapp_vite_hmr/update.js')
 const INDEX_ROUTE = '/pages/index/index'
 const BASELINE_MARKER = 'runtime-vendor-hmr-baseline'
 const UPDATED_MARKER = 'runtime-vendor-hmr-updated'
 const TEMPLATE_MARKER = 'runtime-vendor-template-hmr'
 const STYLE_MARKER = 'runtime-vendor-style-hmr'
+const LAYOUT_FEEDBACK_PROTOCOL_TIMEOUT = 60_000
 const LAYOUTS = ['default', 'command', 'studio', 'split', 'poster'] as const
 const MODULE_MISSING_RE = /module 'weapp-vendors\/[^']*runtime[^']*\.js' is not defined/i
 const TD_MESSAGE_DUPLICATE_SLOT_RE = /More than one slot named .*tdesign-miniprogram\/message\/message/
 const STALE_RUN_E2E_MARKER_RE = /Stale runE2E marker/
+const RUNTIME_SESSION_PROTOCOL_ERROR_RE = /connection closed|timeout waiting for automator response|DEVTOOLS_PROTOCOL_TIMEOUT/i
+const VENDOR_REQUIRE_RE = /require\(["']\.\.\/\.\.\/(weapp-vendors\/[^"']+\.js)["']\)/g
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -131,13 +137,14 @@ async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000
         domReady = true
       }
       lastResult = await page.callMethod('runE2E')
-      if ((lastResult as any)?.ok === true && (lastResult as any)?.marker === marker) {
+      const resultMarker = (lastResult as any)?.definitionMarker ?? (lastResult as any)?.marker
+      if (resultMarker === marker) {
         return lastResult
       }
-      if ((lastResult as any)?.ok === true && typeof (lastResult as any)?.marker === 'string' && (lastResult as any)?.marker !== marker) {
+      if (typeof resultMarker === 'string' && resultMarker !== marker) {
         staleMarkerStartedAt ||= Date.now()
         if (Date.now() - staleMarkerStartedAt >= staleMarkerTimeoutMs) {
-          throw new Error(`Stale runE2E marker ${String((lastResult as any).marker)} while waiting ${marker}`)
+          throw new Error(`Stale runE2E marker ${resultMarker} while waiting ${marker}`)
         }
       }
       else {
@@ -162,6 +169,42 @@ async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000
 
 async function waitForIdeRecompileSettled(delayMs = 1_500) {
   await delay(delayMs)
+}
+
+async function readStatefulHmrClientVersion(miniProgram: any) {
+  return await miniProgram.evaluate(() => {
+    const client = (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__
+    return typeof client?.getVersion === 'function' ? Number(client.getVersion()) : -1
+  })
+}
+
+async function waitForStatefulHmrClientVersion(miniProgram: any, expectedVersion: number, timeoutMs = 30_000) {
+  const startedAt = Date.now()
+  let latest = -1
+  while (Date.now() - startedAt <= timeoutMs) {
+    latest = await readStatefulHmrClientVersion(miniProgram).catch(() => -1)
+    if (latest === expectedVersion) {
+      return
+    }
+    if (latest > expectedVersion) {
+      break
+    }
+    await delay(250)
+  }
+  throw new Error(`Timed out waiting for stateful HMR client version ${expectedVersion}; latest=${latest}`)
+}
+
+async function expectReferencedRuntimeVendor() {
+  const pageJs = await waitForFileContains(PAGE_JS_DIST, 'weapp-vendors/', 30_000)
+  const vendorFiles = [...pageJs.matchAll(VENDOR_REQUIRE_RE)]
+    .map(match => match[1])
+    .filter((file, index, files) => files.indexOf(file) === index)
+  expect(vendorFiles.length).toBeGreaterThan(0)
+  const vendorContents = await Promise.all(
+    vendorFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf8')),
+  )
+  expect(vendorContents.some(content => content.includes('setPageLayout'))).toBe(true)
+  return pageJs
 }
 
 async function relaunchIndexPageWithRunE2EMarker(miniProgram: any, marker: string, timeoutMs = 24_000) {
@@ -193,9 +236,19 @@ function isRecoverableRunE2EMarkerError(error: unknown, marker: string) {
     || message.includes(`while waiting ${marker}`)
 }
 
-async function expectLayoutFeedback(page: any, collector: RuntimeErrorCollector) {
+function isRecoverableRuntimeSessionError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return RUNTIME_SESSION_PROTOCOL_ERROR_RE.test(message)
+    || (error instanceof Error
+      && 'code' in error
+      && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT')
+}
+
+async function expectLayoutFeedback(miniProgram: any, page: any, collector: RuntimeErrorCollector) {
   const marker = collector.mark()
-  const result = await page.callMethod('runLayoutFeedbackE2E')
+  process.stdout.write('[layout-power-demo:hmr] layout-feedback-start\n')
+  const result = await runLayoutFeedbackE2E(miniProgram, LAYOUT_FEEDBACK_PROTOCOL_TIMEOUT)
+  process.stdout.write('[layout-power-demo:hmr] layout-feedback-ready\n')
   await page.waitFor?.(600).catch(() => delay(600))
   expect(result).toMatchObject({
     ok: true,
@@ -313,6 +366,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     await Promise.all([
       fs.rm(resolveAutomatorSessionFile(APP_ROOT), { force: true }).catch(() => {}),
       fs.rm(resolveAutomatorSessionFile(APP_ROOT, resolveProjectAutomatorPort(APP_ROOT)), { force: true }).catch(() => {}),
+      fs.rm(DIST_ROOT, { force: true, recursive: true }),
     ])
     await cleanupResidualIdeProcesses()
   }, 60_000)
@@ -373,6 +427,10 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
       waitForOpenedAutomator(APP_ROOT, { timeoutMs: 120_000 }),
       'layout-power-demo opened automator',
     )
+    await devProcess.waitFor(
+      waitForFileContains(HMR_CONTROL_DIST, 'http://127.0.0.1:'),
+      'layout-power-demo stateful HMR control ready',
+    )
     miniProgram = session.miniProgram
     process.stdout.write(`[layout-power-demo:hmr] automator-connected endpoint=${session.metadata.wsEndpoint}\n`)
     runtimeErrorCollector = attachRuntimeErrorCollector(miniProgram)
@@ -400,30 +458,63 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     throw lastError instanceof Error ? lastError : new Error(String(lastError))
   }
 
+  async function expectLayoutFeedbackWithRecoveredSession(page: any, marker: string) {
+    let activePage = page
+    let lastError: unknown
+    for (let restartAttempt = 0; restartAttempt <= 3; restartAttempt += 1) {
+      try {
+        await expectLayoutFeedback(miniProgram, activePage, runtimeErrorCollector)
+        return activePage
+      }
+      catch (error) {
+        if (!isRecoverableRuntimeSessionError(error) || restartAttempt >= 3) {
+          throw error
+        }
+        lastError = error
+      }
+      const message = lastError instanceof Error ? lastError.message : String(lastError)
+      process.stdout.write(`[layout-power-demo:hmr] restart-feedback-session marker=${marker} attempt=${restartAttempt + 1}/3 reason=${message}\n`)
+      await stopDevSession()
+      await waitForIdeRecompileSettled(2_000)
+      await startDevSession()
+      activePage = await relaunchIndexPageWithRecoveredSession(marker)
+    }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError))
+  }
+
   it('keeps active runtime vendor chunks available after page script HMR', async () => {
     await startDevSession()
     let page = await relaunchIndexPage(miniProgram)
     await waitForRunE2EMarker(page, BASELINE_MARKER)
-    await expectLayoutFeedback(page, runtimeErrorCollector)
+    page = await expectLayoutFeedbackWithRecoveredSession(page, BASELINE_MARKER)
 
     const nextScript = originalScript.replace(BASELINE_MARKER, UPDATED_MARKER)
     expect(nextScript).not.toBe(originalScript)
+    const clientVersion = await readStatefulHmrClientVersion(miniProgram)
     await replaceFileByRename(PAGE_SCRIPT, nextScript)
 
-    const pageJs = await waitForFileContains(PAGE_JS_DIST, UPDATED_MARKER, 30_000)
-    expect(pageJs).toContain('../../weapp-vendors/weapp-vite-runtime.js')
-    await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
-    await waitForIdeRecompileSettled()
-
+    await devProcess.waitFor(
+      waitForFileContains(HMR_UPDATE_DIST, UPDATED_MARKER, 30_000),
+      'layout-power-demo stateful page patch published',
+    )
+    await waitForStatefulHmrClientVersion(miniProgram, clientVersion + 1)
+    const pageJs = await expectReferencedRuntimeVendor()
+    expect(pageJs).toContain(BASELINE_MARKER)
+    expect(await waitForRunE2EMarker(page, UPDATED_MARKER)).toMatchObject({
+      currentLayout: 'poster',
+      definitionMarker: UPDATED_MARKER,
+      marker: BASELINE_MARKER,
+      ok: false,
+    })
     page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
-    await expectLayoutFeedback(page, runtimeErrorCollector)
+    page = await expectLayoutFeedbackWithRecoveredSession(page, UPDATED_MARKER)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
 
     const nextTemplate = originalTemplate.replace('页面内容保留，只替换布局、属性和骨架。', `页面内容保留，只替换布局、属性和骨架。${TEMPLATE_MARKER}`)
     expect(nextTemplate).not.toBe(originalTemplate)
     await replaceFileByRename(PAGE_WXML, nextTemplate)
     await waitForFileContains(PAGE_WXML_DIST, TEMPLATE_MARKER, 30_000)
-    await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
+    await expectReferencedRuntimeVendor()
     await waitForIdeRecompileSettled()
 
     page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)
@@ -433,7 +524,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
     expect(nextCommandLayoutStyle).not.toBe(originalCommandLayoutStyle)
     await replaceFileByRename(COMMAND_LAYOUT_WXSS, nextCommandLayoutStyle)
     await waitForFileContains(COMMAND_LAYOUT_WXSS_DIST, STYLE_MARKER, 30_000)
-    await waitForFileContains(RUNTIME_VENDOR_DIST, 'setPageLayout', 30_000)
+    await expectReferencedRuntimeVendor()
     await waitForIdeRecompileSettled()
 
     page = await relaunchIndexPageWithRecoveredSession(UPDATED_MARKER)

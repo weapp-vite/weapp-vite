@@ -1,4 +1,5 @@
 import type { InlineExpressionMap } from './register/inline'
+import type { TemplateRefBinding } from './templateRefs'
 import type {
   ComponentPropsOptions,
   ComponentPublicInstance,
@@ -18,9 +19,12 @@ import {
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
+import { hasOwn } from '../utils'
 import { createApp } from './app'
 import { applyWevuComponentDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { resolveNativeInitialData } from './define/initialComputed'
+import { resolveVueComponentOptions } from './define/options'
+import { applyOptionsApiProvide, resolveOptionsApiInjections } from './define/optionsApi'
 import { normalizeProps } from './define/props'
 import { createScopedSlotOptions } from './define/scopedSlotOptions'
 import { applySetupResult } from './define/setupResult'
@@ -39,6 +43,19 @@ function ensureScopedSlotComponentGlobal() {
   if (scopedSlotCreator && globalRecord[WEVU_SCOPED_SLOT_CREATOR_KEY] !== scopedSlotCreator) {
     globalRecord[WEVU_SCOPED_SLOT_CREATOR_KEY] = scopedSlotCreator
   }
+}
+
+function resolveInitialDataContext(properties: unknown, methods: MethodDefinitions | undefined) {
+  const context: Record<string, unknown> = { ...(methods ?? {}) }
+  if (!properties || typeof properties !== 'object') {
+    return context
+  }
+  for (const [name, definition] of Object.entries(properties)) {
+    if (definition && typeof definition === 'object' && hasOwn(definition, 'value')) {
+      context[name] = (definition as Record<string, unknown>).value
+    }
+  }
+  return context
 }
 
 function shouldSeedNativeSlotOwnerId(
@@ -197,7 +214,7 @@ export function defineComponent(
 ): WevuComponentConstructor<Record<string, any>, Record<string, any>, Record<string, any>, ComputedDefinitions, MethodDefinitions>
   & ComponentDefinition<any, any, any> {
   ensureScopedSlotComponentGlobal()
-  const resolvedOptions = applyWevuComponentDefaults(options)
+  const resolvedOptions = resolveVueComponentOptions(applyWevuComponentDefaults(options))
   const {
     __typeProps: _typeProps,
     data,
@@ -207,6 +224,8 @@ export function defineComponent(
     watch,
     setup,
     props,
+    inject: injectOptions,
+    provide: provideOptions,
     allowFunctionProps,
     ...mpOptions
   } = resolvedOptions
@@ -237,19 +256,37 @@ export function defineComponent(
       .filter(path => !path.includes('.')),
   )
 
+  const normalizedMpOptions = normalizeProps(mpOptions, props)
+  const initialDataContext = resolveInitialDataContext(normalizedMpOptions.properties, methods)
+  const resolvedData = typeof data === 'function'
+    ? () => data.call(initialDataContext)
+    : data
+
   const runtimeApp = createApp({
-    data,
+    data: resolvedData,
     computed,
     methods,
     setData: resolvedSetData,
     [INTERNAL_DEFAULTS_SCOPE_KEY]: 'component',
   } as any)
 
-  const setupWrapper = typeof setup === 'function'
+  const hasOptionsApiContext = injectOptions != null || provideOptions != null
+  const setupWrapper = typeof setup === 'function' || hasOptionsApiContext
     ? ((props, ctx) => {
-      const result = runSetupFunction(setup as any, props as Record<string, any>, ctx as any) as Record<string, any> | void
-      if (result && ctx) {
-        applySetupResult((ctx as any).runtime, (ctx as any).instance, result as Record<string, any>, {
+      const publicInstance = (ctx as any)?.proxy ?? (ctx as any)?.instance ?? Object.create(null)
+      const injected = resolveOptionsApiInjections(injectOptions, publicInstance)
+      if (provideOptions != null) {
+        applyOptionsApiProvide(provideOptions, publicInstance)
+      }
+      const setupResult = typeof setup === 'function'
+        ? runSetupFunction(setup as any, props as Record<string, any>, ctx as any) as Record<string, any> | void
+        : undefined
+      const result = {
+        ...injected,
+        ...(setupResult ?? {}),
+      }
+      if (ctx && Object.keys(result).length) {
+        applySetupResult((ctx as any).runtime, (ctx as any).instance, result, {
           includeFunctionsInState: allowFunctionProps === true,
           functionPropPaths: allowFunctionProps === false ? undefined : setupFunctionPropKeys,
         })
@@ -258,9 +295,9 @@ export function defineComponent(
     }) satisfies DefineComponentOptions<ComponentPropsOptions, any, any, any, any>['setup']
     : undefined
 
-  const nativeData = typeof data === 'function'
-    ? data()
-    : data
+  const nativeData = typeof resolvedData === 'function'
+    ? resolvedData()
+    : resolvedData
   const shouldDeclareOwnerId = shouldDeclareNativeSlotOwnerId(resolvedSetData)
   const seededNativeData = shouldDeclareOwnerId
     ? {
@@ -271,18 +308,15 @@ export function defineComponent(
       }
     : nativeData
   const nativeInitialData = resolveNativeInitialData(seededNativeData, computed as ComputedDefinitions, resolvedSetData)
-  const mpOptionsWithProps = normalizeProps(
-    nativeInitialData !== undefined
-      ? {
-          ...mpOptions,
-          data: nativeInitialData,
-        }
-      : mpOptions,
-    props,
-  )
+  const mpOptionsWithProps = nativeInitialData !== undefined
+    ? {
+        ...normalizedMpOptions,
+        data: nativeInitialData,
+      }
+    : normalizedMpOptions
 
   const componentOptions = {
-    data: data as () => Record<string, any>,
+    data: resolvedData as () => Record<string, any>,
     computed: computed as ComputedDefinitions,
     methods: methods as MethodDefinitions,
     setData: resolvedSetData,
@@ -346,7 +380,11 @@ export function createWevuComponent<
  * @internal
  */
 export function createWevuScopedSlotComponent(
-  overrides?: { computed?: ComputedDefinitions, inlineMap?: InlineExpressionMap },
+  overrides?: {
+    computed?: ComputedDefinitions
+    inlineMap?: InlineExpressionMap
+    templateRefs?: TemplateRefBinding[]
+  },
 ): void {
   const baseOptions = createScopedSlotOptions(overrides)
   createWevuComponent(baseOptions as any)

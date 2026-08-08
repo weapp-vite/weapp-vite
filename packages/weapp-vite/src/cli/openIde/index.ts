@@ -16,7 +16,7 @@ import {
   getDefaultIdeProjectRoot,
   shouldPassPlatformArgToIdeOpen,
 } from '../../platform'
-import { createInlineConfig } from '../runtime'
+import { createInlineConfig, resolveRuntimeTargets } from '../runtime'
 import { closeIde as closeWechatIde } from './close'
 import {
   logWechatIdeRecoveryHint,
@@ -472,11 +472,12 @@ export async function resolveIdeCommandContext(options: ResolveIdeCommandOptions
 
   if (!platform || !projectPath) {
     try {
+      const targets = resolveRuntimeTargets({ platform })
       const ctx = await createCompilerContext({
         cwd,
         mode: options.mode ?? 'development',
         configFile: options.configFile,
-        inlineConfig: createInlineConfig(platform),
+        inlineConfig: createInlineConfig(targets),
         cliPlatform: options.cliPlatform,
       })
       platform ??= ctx.configService.platform

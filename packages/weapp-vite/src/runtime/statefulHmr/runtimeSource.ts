@@ -39,7 +39,6 @@ class WeappViteDevRuntime extends BaseDevRuntime {
   registrationModuleId = '';
   createEsmInitializer = (id, initialize, _deduplicate, result) => () => {
     if (!initialize) return result;
-    if (!this.applyingPatch && this.patchedModules.has(id)) return result;
     const callback = initialize;
     initialize = undefined;
     const previousId = this.currentModuleId;
@@ -51,7 +50,6 @@ class WeappViteDevRuntime extends BaseDevRuntime {
   };
   createCjsInitializer = (id, initialize, _deduplicate, module) => () => {
     if (module) return module.exports;
-    if (!this.applyingPatch && this.patchedModules.has(id)) return this.loadExports(id);
     module = { exports: {} };
     const previousId = this.currentModuleId;
     this.currentModuleId = id;
@@ -73,6 +71,16 @@ class WeappViteDevRuntime extends BaseDevRuntime {
   registerModule(id, exportsHolder) {
     this.registrationModuleId = id;
     return super.registerModule(id, exportsHolder);
+  }
+  initModule(id) {
+    const previousId = this.currentModuleId;
+    this.currentModuleId = id;
+    try {
+      const result = super.initModule(id);
+      if (this.applyingPatch) this.patchedModules.add(id);
+      return result;
+    }
+    finally { this.currentModuleId = previousId; }
   }
   beginPatch() { this.applyingPatch = true; }
   endPatch() { this.applyingPatch = false; }
@@ -97,6 +105,8 @@ const bridgeKey = ${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)};
 const definitions = new Map();
 const registered = new Set();
 const instances = new Map();
+const instanceSnapshots = new WeakMap();
+const moduleSnapshots = new Map();
 const pendingNativeDefinitions = new Map();
 const wevuRefreshes = new Map();
 const wevuRefreshGenerations = new Map();
@@ -108,6 +118,74 @@ function getInstances(moduleId) {
   if (!values) instances.set(moduleId, values = new Set());
   return values;
 }
+function cloneInstanceData(value) {
+  if (Array.isArray(value)) return value.map(cloneInstanceData);
+  if (!value || typeof value !== 'object') return value;
+  const result = {};
+  for (const [key, child] of Object.entries(value)) result[key] = cloneInstanceData(child);
+  return result;
+}
+function countChangedDataKeys(data, initialData) {
+  let changed = 0;
+  for (const [key, value] of Object.entries(data)) {
+    if (!Object.prototype.hasOwnProperty.call(initialData, key)) {
+      changed++;
+      continue;
+    }
+    try {
+      if (JSON.stringify(value) !== JSON.stringify(initialData[key])) changed++;
+    } catch {
+      if (value !== initialData[key]) changed++;
+    }
+  }
+  return changed;
+}
+function rememberInstanceState(instance, moduleId) {
+  if (!instance?.data || typeof instance.data !== 'object') return;
+  const data = cloneInstanceData(instance.data);
+  const definitionData = definitions.get(moduleId)?.data;
+  const initialData = definitionData && typeof definitionData === 'object' ? definitionData : {};
+  const changedKeys = countChangedDataKeys(data, initialData);
+  const previous = instanceSnapshots.get(instance) || moduleSnapshots.get(moduleId);
+  if (!previous || changedKeys >= previous.changedKeys) {
+    const snapshot = { changedKeys, data, moduleId };
+    instanceSnapshots.set(instance, snapshot);
+    moduleSnapshots.set(moduleId, snapshot);
+  }
+}
+function trackInstance(instance, moduleId) {
+  getInstances(moduleId).add(instance);
+  if (instanceSnapshots.has(instance)) return;
+  const snapshot = moduleSnapshots.get(moduleId);
+  if (snapshot) {
+    instanceSnapshots.set(instance, snapshot);
+    restoreInstanceState(instance, moduleId);
+  } else {
+    rememberInstanceState(instance, moduleId);
+  }
+}
+function forgetInstance(instance, moduleId) {
+  getInstances(moduleId).delete(instance);
+  instanceSnapshots.delete(instance);
+  if (!suppressLifecycles) moduleSnapshots.delete(moduleId);
+}
+function restoreInstanceState(instance, moduleId) {
+  const snapshot = instanceSnapshots.get(instance);
+  if (!snapshot || snapshot.moduleId !== moduleId) return;
+  const data = cloneInstanceData(snapshot.data);
+  if (instance.data && typeof instance.data === 'object') Object.assign(instance.data, data);
+  if (typeof instance.setData === 'function') instance.setData(data);
+}
+function rememberTrackedInstances() {
+  for (const [moduleId, values] of instances) {
+    for (const instance of values) rememberInstanceState(instance, moduleId);
+  }
+}
+function restoreTrackedInstances() {
+  for (const [moduleId, values] of instances) {
+    for (const instance of values) restoreInstanceState(instance, moduleId);
+  }
+}
 function refreshWevuInstance(instance, moduleId) {
   if (!instance || (typeof instance !== 'object' && typeof instance !== 'function')) return;
   const generation = wevuRefreshGenerations.get(moduleId) || 0;
@@ -116,7 +194,10 @@ function refreshWevuInstance(instance, moduleId) {
   if (generations?.get(moduleId) === generation) return;
   const refresh = wevuRefreshes.get(moduleId);
   if (typeof refresh !== 'function') return;
-  refresh(instance);
+  restoreInstanceState(instance, moduleId);
+  const snapshot = instanceSnapshots.get(instance) || moduleSnapshots.get(moduleId);
+  refresh(instance, cloneInstanceData(snapshot?.data));
+  rememberInstanceState(instance, moduleId);
   if (!generations) wevuInstanceGenerations.set(instance, generations = new Map());
   generations.set(moduleId, generation);
 }
@@ -127,10 +208,15 @@ function proxyFunction(moduleId, path, fallback) {
     const segments = path.split('.');
     let value = definition;
     for (const segment of segments) value = value && value[segment];
-    return (typeof value === 'function' ? value : fallback)?.apply(this, args);
+    trackInstance(this, moduleId);
+    try {
+      return (typeof value === 'function' ? value : fallback)?.apply(this, args);
+    } finally {
+      rememberInstanceState(this, moduleId);
+    }
   };
 }
-function decorateObject(value, moduleId, prefix = '') {
+function decorateObject(value, moduleId, prefix = '', trackLifecycle = false) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
   const result = { ...value };
   for (const [key, child] of Object.entries(value)) {
@@ -143,24 +229,28 @@ function decorateObject(value, moduleId, prefix = '') {
   if (!prefix && typeof value.onLoad === 'function') {
     const onLoad = result.onLoad;
     result.onLoad = function (...args) {
-      getInstances(moduleId).add(this);
+      trackInstance(this, moduleId);
       return onLoad.apply(this, args);
     };
   }
-  if (!prefix && result.lifetimes && typeof result.lifetimes === 'object') {
-    const attached = result.lifetimes.attached;
-    const detached = result.lifetimes.detached;
-    result.lifetimes = { ...result.lifetimes };
-    if (typeof attached === 'function') {
+  if (!prefix && (trackLifecycle || (result.lifetimes && typeof result.lifetimes === 'object'))) {
+    const lifetimes = { ...(result.lifetimes || {}) };
+    const attached = lifetimes.attached;
+    const detached = lifetimes.detached;
+    result.lifetimes = lifetimes;
+    if (trackLifecycle || typeof attached === 'function') {
       result.lifetimes.attached = function (...args) {
-        getInstances(moduleId).add(this);
-        return attached.apply(this, args);
+        trackInstance(this, moduleId);
+        return attached?.apply(this, args);
       };
     }
-    if (typeof detached === 'function') {
+    if (trackLifecycle || typeof detached === 'function') {
       result.lifetimes.detached = function (...args) {
-        getInstances(moduleId).delete(this);
-        return detached.apply(this, args);
+        try {
+          return detached?.apply(this, args);
+        } finally {
+          forgetInstance(this, moduleId);
+        }
       };
     }
   }
@@ -172,9 +262,13 @@ function decorateWevuComponent(definition, moduleId) {
   for (const [name, method] of Object.entries(methods)) {
     if (typeof method !== 'function') continue;
     methods[name] = function (...args) {
-      getInstances(moduleId).add(this);
+      trackInstance(this, moduleId);
       refreshWevuInstance(this, moduleId);
-      return method.apply(this, args);
+      try {
+        return method.apply(this, args);
+      } finally {
+        rememberInstanceState(this, moduleId);
+      }
     };
   }
   result.methods = methods;
@@ -182,26 +276,38 @@ function decorateWevuComponent(definition, moduleId) {
   const onUnload = definition.onUnload;
   if (typeof onLoad === 'function') {
     result.onLoad = function (...args) {
-      getInstances(moduleId).add(this);
+      trackInstance(this, moduleId);
+      refreshWevuInstance(this, moduleId);
+      if (suppressLifecycles) return;
       return onLoad.apply(this, args);
     };
   }
   if (typeof onUnload === 'function') {
     result.onUnload = function (...args) {
-      getInstances(moduleId).delete(this);
-      return onUnload.apply(this, args);
+      if (suppressLifecycles) return;
+      try {
+        return onUnload.apply(this, args);
+      } finally {
+        forgetInstance(this, moduleId);
+      }
     };
   }
   const lifetimes = { ...(definition.lifetimes || {}) };
   const attached = lifetimes.attached;
   const detached = lifetimes.detached;
   lifetimes.attached = function (...args) {
-    getInstances(moduleId).add(this);
+    trackInstance(this, moduleId);
+    refreshWevuInstance(this, moduleId);
+    if (suppressLifecycles) return;
     return attached?.apply(this, args);
   };
   lifetimes.detached = function (...args) {
-    getInstances(moduleId).delete(this);
-    return detached?.apply(this, args);
+    if (suppressLifecycles) return;
+    try {
+      return detached?.apply(this, args);
+    } finally {
+      forgetInstance(this, moduleId);
+    }
   };
   return { ...result, lifetimes };
 }
@@ -215,7 +321,7 @@ function registerDefinition(name, definition, nativeRegistration) {
   if (name === 'Component') {
     let pending = pendingNativeDefinitions.get(name);
     if (!pending) pendingNativeDefinitions.set(name, pending = []);
-    pending.push(decorateObject(definition, moduleId));
+    pending.push(decorateObject(definition, moduleId, '', true));
     registered.add(moduleId);
     return;
   }
@@ -239,15 +345,14 @@ globalThis[bridgeKey] = {
   isApplying() { return runtime.applyingPatch; },
   trackWevuComponent(definition, refresh) {
     const moduleId = runtime.registrationModuleId || runtime.currentModuleId || 'Component';
-    if (!runtime.applyingPatch && runtime.patchedModules.has(moduleId)) return definition;
+    if (!runtime.applyingPatch && runtime.patchedModules.has(moduleId)) {
+      return decorateWevuComponent(definition, moduleId);
+    }
     definitions.set(moduleId, definition);
     if (typeof refresh === 'function') wevuRefreshes.set(moduleId, refresh);
     if (runtime.applyingPatch) {
       wevuRefreshGenerations.set(moduleId, (wevuRefreshGenerations.get(moduleId) || 0) + 1);
-      const currentRefresh = wevuRefreshes.get(moduleId);
-      if (typeof currentRefresh === 'function') {
-        for (const instance of [...getInstances(moduleId)]) currentRefresh(instance);
-      }
+      for (const instance of [...getInstances(moduleId)]) refreshWevuInstance(instance, moduleId);
       return definition;
     }
     return decorateWevuComponent(definition, moduleId);
@@ -255,10 +360,12 @@ globalThis[bridgeKey] = {
   ready: true,
   beginUpdate() {
     suppressLifecycles = true;
+    rememberTrackedInstances();
     runtime.beginPatch();
   },
   endUpdate() {
     runtime.endPatch();
+    restoreTrackedInstances();
     setTimeout(() => { suppressLifecycles = false; });
   }
 };
@@ -269,7 +376,7 @@ export function createStatefulHmrControlSource(control: StatefulHmrControl): str
 globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stringify(control)};
 (() => {
   const control = globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}];
-  if (globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}]) return;
+  globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}]?.stop?.();
   let version = 0;
   let phase = 'registering';
   let pendingBatch;
@@ -327,7 +434,38 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
     wx.reLaunch({ url: '/' + route + (query ? '?' + query : ''), complete: () => send('poll') });
   };
   globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}] = {
+    lastApply: undefined,
     getVersion() { return version; },
+    getLastApply() { return this.lastApply; },
+    stop() {
+      phase = 'stopped';
+      if (timer) {
+        clearTimeout(timer);
+        timer = undefined;
+      }
+      activeRequest?.abort?.();
+      activeRequest = undefined;
+    },
+    applyChangedModules(changedIds) {
+      const runtime = globalThis.__rolldown_runtime__;
+      if (!runtime || !Array.isArray(changedIds)) return;
+      const uniqueIds = [...new Set(changedIds.filter((id) => typeof id === 'string'))];
+      const summary = { changedIds: uniqueIds, initialized: [], missing: [], executedBefore: [], executedAfterRemove: [] };
+      for (const id of uniqueIds) {
+        if (typeof runtime.isExecuted === 'function' && runtime.isExecuted(id)) summary.executedBefore.push(id);
+        if (typeof runtime.removeModuleCache === 'function') runtime.removeModuleCache.call(runtime, id);
+        if (typeof runtime.isExecuted === 'function' && runtime.isExecuted(id)) summary.executedAfterRemove.push(id);
+      }
+      for (const id of uniqueIds) {
+        if (typeof runtime.hasFactory === 'function' && !runtime.hasFactory(id)) {
+          summary.missing.push(id);
+          continue;
+        }
+        if (typeof runtime.initModule === 'function') runtime.initModule.call(runtime, id);
+        summary.initialized.push(id);
+      }
+      this.lastApply = summary;
+    },
     receiveBatch(meta, apply) {
       if (phase === 'registering') {
         pendingBatch = { meta, apply };
@@ -344,6 +482,7 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       bridge.beginUpdate?.();
       try {
         apply();
+        globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].applyChangedModules(meta.changedIds);
         version = meta.targetVersion;
         phase = meta.compatible === false ? 'relaunching' : 'polling';
       } catch (error) {

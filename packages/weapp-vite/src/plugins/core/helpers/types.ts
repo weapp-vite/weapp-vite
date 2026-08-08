@@ -20,14 +20,11 @@ export interface CorePluginState {
   entriesMap: LoadEntryApi['entriesMap']
   jsonEmitFilesMap: LoadEntryApi['jsonEmitFilesMap']
   resolvedEntryMap: LoadEntryApi['resolvedEntryMap']
-  layoutEntryDependents: LoadEntryApi['layoutEntryDependents']
   requireAsyncEmittedChunks: Set<string>
   pendingIndependentBuilds: Promise<IndependentBuildResult>[]
   watchFilesSnapshot: string[]
   buildTarget: BuildTarget
   resolvedConfig?: ResolvedConfig
-  moduleImporters: Map<string, Set<string>>
-  entryModuleIds: Set<string>
   hmrState: {
     didEmitAllEntries: boolean
     hasBuiltOnce: boolean
@@ -40,7 +37,7 @@ export interface CorePluginState {
   hmrSharedChunkImporters: Map<string, Set<string>>
   hmrSharedChunksByEntry: Map<string, Set<string>>
   hmrSharedChunkDependencies: Map<string, Set<string>>
-  hmrSharedChunksByModule: Map<string, Set<string>>
+  outputChunksByModule: Map<string, Set<string>>
   hmrSourceSharedChunks: Set<string>
   hmrRootInputIds: Set<string>
 }

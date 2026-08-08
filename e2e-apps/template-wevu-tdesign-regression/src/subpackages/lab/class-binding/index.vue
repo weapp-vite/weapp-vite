@@ -156,11 +156,16 @@ function collectClassBindingSnapshot() {
     const currentPage = pages[pages.length - 1]
     const currentData = currentPage?.data || {}
     const collectBindings = () => ({
+      classArrayKey: currentData.__wv_cls_5,
+      classCondArray: currentData.__wv_cls_4,
+      classObject: currentData.__wv_cls_0,
+      classReactive: currentData.__wv_cls_2,
       classArray: currentData.__wv_cls_3,
       classStaticObject: currentData.__wv_cls_1,
       styleArray: currentData.__wv_style_1,
       styleObject: currentData.__wv_style_0,
       styleString: currentData.__wv_style_2,
+      styleVar: currentData.__wv_style_3,
     })
     const query = wx.createSelectorQuery()
     if (currentPage && typeof query.in === 'function') {

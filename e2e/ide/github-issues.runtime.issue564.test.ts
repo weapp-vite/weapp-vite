@@ -20,6 +20,26 @@ const ISSUE_564_ROUTE_METHOD_OPTIONS = {
   recoveryAttempts: 2,
 }
 
+async function isIssue564RuntimeReady(miniProgram: any) {
+  try {
+    const runtime = await callRoutePageMethodWithOptions<Record<string, any>>(
+      miniProgram,
+      ISSUE_564_ROUTE,
+      '_runE2E',
+      {
+        protocolTimeoutMs: 3_000,
+        retries: 1,
+        recoveryAttempts: 1,
+      },
+    )
+    return runtime?.ok === true
+      && ISSUE_564_LABELS.every((label, index) => runtime?.labels?.[index] === label)
+  }
+  catch {
+    return false
+  }
+}
+
 describe.sequential('e2e app: github-issues / issue #564', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
@@ -33,7 +53,7 @@ describe.sequential('e2e app: github-issues / issue #564', () => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_564_ROUTE, undefined, 45_000, {
-        readiness: 'route',
+        readiness: (_page, activeMiniProgram) => isIssue564RuntimeReady(activeMiniProgram),
       })
       if (!issuePage) {
         throw new Error('Failed to launch issue-564 page')

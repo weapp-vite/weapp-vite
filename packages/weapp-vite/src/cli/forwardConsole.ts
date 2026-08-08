@@ -28,6 +28,7 @@ export interface StartForwardConsoleBridgeOptions {
   openedOnly?: boolean
   port?: number
   projectPath: string
+  timeout?: number
   unhandledErrors: boolean
 }
 
@@ -36,6 +37,7 @@ let activeForwardConsoleSession: Awaited<ReturnType<typeof startWechatForwardCon
 let activeForwardConsoleBridgeOptions: StartForwardConsoleBridgeOptions | undefined
 const FORWARD_CONSOLE_RETRY_DELAY_MS = 1000
 const FORWARD_CONSOLE_RETRY_TIMES = 5
+const FORWARD_CONSOLE_START_TIMEOUT_MS = 120_000
 
 async function detectAgent() {
   try {
@@ -193,6 +195,7 @@ export async function startForwardConsoleBridge(options: StartForwardConsoleBrid
       logLevels: options.logLevels,
       openedOnly: options.openedOnly,
       port: options.port,
+      timeout: options.timeout,
       unhandledErrors: options.unhandledErrors,
       onReady: () => {
         const suffix = options.agentName ? `（AI 终端：${options.agentName}）` : ''
@@ -266,6 +269,7 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
     color: !resolved.agentName,
     projectPath,
     port: resolveProjectAutomatorPort(projectPath),
+    timeout: FORWARD_CONSOLE_START_TIMEOUT_MS,
     logLevels: resolved.logLevels,
     openedOnly: options.openedOnly,
     unhandledErrors: resolved.unhandledErrors,

@@ -9,6 +9,7 @@ import type {
 } from '../../types'
 import {
   WEVU_NATIVE_INSTANCE_KEY,
+  WEVU_PROPS_KEY,
   WEVU_SETUP_CONTEXT_INSTANCE_KEY,
   WEVU_SLOT_NAMES_PROP,
 } from '@weapp-core/constants'
@@ -17,6 +18,8 @@ import { hasOwn } from '../../../utils'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../../nativeBridge'
 import { markNoSetData } from '../../noSetData'
 import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../../platform'
+
+export { normalizeEmitPayload } from '../../emit'
 
 type AdapterWithSetData = Required<MiniProgramAdapter> & {
   __wevu_enableSetData?: () => void
@@ -91,6 +94,22 @@ export function createSetupSlotsProxy(props: Record<string, any>) {
   }) as Record<string, any>
 }
 
+export function attachRuntimeSlots(runtimeState: Record<string, any>, props: Record<string, any>) {
+  const slots = createSetupSlotsProxy(props)
+  try {
+    Object.defineProperty(runtimeState, '$slots', {
+      value: slots,
+      configurable: true,
+      enumerable: false,
+      writable: false,
+    })
+  }
+  catch {
+    runtimeState.$slots = slots
+  }
+  return slots
+}
+
 export function createNoopWatchStopHandle(): WatchStopHandle {
   const stopHandle = (() => {}) as WatchStopHandle
   stopHandle.stop = () => {}
@@ -105,47 +124,6 @@ export function safeMarkNoSetData<T extends object>(value: T): T {
   }
   catch {
     return value
-  }
-}
-
-function isTriggerEventOptions(value: unknown): value is TriggerEventOptions {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return false
-  }
-  return (
-    hasOwn(value, 'bubbles')
-    || hasOwn(value, 'composed')
-    || hasOwn(value, 'capturePhase')
-  )
-}
-
-export function normalizeEmitPayload(args: any[]): { detail: any, options: TriggerEventOptions | undefined } {
-  if (args.length === 0) {
-    return {
-      detail: undefined,
-      options: undefined,
-    }
-  }
-
-  if (args.length === 1) {
-    return {
-      detail: args[0],
-      options: undefined,
-    }
-  }
-
-  const maybeOptions = args[args.length - 1]
-  if (isTriggerEventOptions(maybeOptions)) {
-    const detailArgs = args.slice(0, -1)
-    return {
-      detail: detailArgs.length <= 1 ? detailArgs[0] : detailArgs,
-      options: maybeOptions,
-    }
-  }
-
-  return {
-    detail: args,
-    options: undefined,
   }
 }
 
@@ -223,6 +201,24 @@ export function ensureSetupContextInstance(
   }
 
   const setupInstanceBridge: Record<string, any> = Object.create(null)
+  const resolvePublicValue = (key: PropertyKey) => {
+    const runtimeProxy = runtime?.proxy as Record<PropertyKey, any> | undefined
+    if (runtimeProxy && Reflect.has(runtimeProxy, key)) {
+      return {
+        found: true,
+        value: Reflect.get(runtimeProxy, key),
+      }
+    }
+    const runtimeProps = (runtime?.state as any)?.[WEVU_PROPS_KEY]
+      ?? (target as any)[WEVU_PROPS_KEY]
+    if (runtimeProps && typeof runtimeProps === 'object' && hasOwn(runtimeProps, key)) {
+      return {
+        found: true,
+        value: Reflect.get(runtimeProps, key),
+      }
+    }
+    return { found: false, value: undefined }
+  }
   const resolveSetupBridgeOwner = (methodName: SetupInstanceMethodName) => {
     const owner = resolveRuntimeNativeMethodOwner(runtime, target, methodName)
     if (owner) {
@@ -337,6 +333,17 @@ export function ensureSetupContextInstance(
       if (Reflect.has(bridgeTarget, key)) {
         return Reflect.get(bridgeTarget, key, receiver)
       }
+      if (key === '$el') {
+        return resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
+      }
+      if (key === 'renderRoot' || key === 'shadowRoot') {
+        const nativeOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
+        return (nativeOwner as any)[key]
+      }
+      const publicValue = resolvePublicValue(key)
+      if (publicValue.found) {
+        return publicValue.value
+      }
       const value = (target as any)[key as any]
       if (typeof value === 'function') {
         return value.bind(target)
@@ -344,7 +351,7 @@ export function ensureSetupContextInstance(
       return value
     },
     has(bridgeTarget, key) {
-      return Reflect.has(bridgeTarget, key) || key in (target as any)
+      return Reflect.has(bridgeTarget, key) || resolvePublicValue(key).found || key in (target as any)
     },
     set(bridgeTarget, key, value) {
       if (Reflect.has(bridgeTarget, key)) {

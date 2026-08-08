@@ -10,9 +10,9 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-router-hmr')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const APP_JS_PATH = path.join(DIST_ROOT, 'app.js')
-const COMMON_JS_PATH = path.join(DIST_ROOT, 'common.js')
 const PAGE_VUE_PATH = path.join(APP_ROOT, 'src/pages/index/index.vue')
 const PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/index/index.js')
+const ROUTER_VENDOR_MARKER = 'weapp-vendors/wevu-router.js'
 const BASE_MARKER = 'ROUTER-HMR-BASE'
 const BARE_WEVU_ROUTER_RE = /(?:from\s+['"]wevu\/router['"]|require\(\s*['"]wevu\/router['"]\s*\))/
 
@@ -74,15 +74,17 @@ describe.sequential('wevu/router HMR app fixture (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFileContains(COMMON_JS_PATH, 'weapp-vendors/wevu-router.js'), 'initial common.js imports wevu router vendor')
+      await dev.waitFor(waitForFileContains(APP_JS_PATH, ROUTER_VENDOR_MARKER), 'initial app.js imports wevu router vendor')
       await dev.waitFor(waitForFileContains(PAGE_JS_PATH, BASE_MARKER), 'initial router page script emitted')
+      await dev.waitFor(waitForFileContains(PAGE_JS_PATH, ROUTER_VENDOR_MARKER), 'initial page imports wevu router vendor')
       await assertNoBareWevuRouterImport('initial build')
 
       await sleep(1_000)
       await replaceFileByRename(PAGE_VUE_PATH, updatedPageSource)
 
       await dev.waitFor(waitForFileContains(PAGE_JS_PATH, marker), 'page HMR marker emitted')
-      await dev.waitFor(waitForFileContains(COMMON_JS_PATH, 'weapp-vendors/wevu-router.js'), 'common.js keeps router vendor after page HMR')
+      await dev.waitFor(waitForFileContains(APP_JS_PATH, ROUTER_VENDOR_MARKER), 'app.js keeps router vendor after page HMR')
+      await dev.waitFor(waitForFileContains(PAGE_JS_PATH, ROUTER_VENDOR_MARKER), 'page keeps router vendor after page HMR')
 
       const appJs = await fs.readFile(APP_JS_PATH, 'utf8')
       expect(appJs).not.toMatch(BARE_WEVU_ROUTER_RE)

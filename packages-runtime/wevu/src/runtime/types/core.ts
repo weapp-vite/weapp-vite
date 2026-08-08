@@ -21,8 +21,14 @@ export type ComponentPublicInstance<
 > = D & ExtractComputed<C> & ExtractMethods<M> & {
   $attrs: Record<string, any>
   $props: P
+  $refs: Record<string, any>
   $slots: S
+  $set: <T extends object, K extends PropertyKey>(object: T, property: K, value: any) => any
+  $delete: (object: object, property: PropertyKey) => boolean
   $emit: (event: string, ...args: any[]) => void
+  $nextTick: <T = void>(fn?: (this: ComponentPublicInstance<D, C, M, P, S>) => T) => Promise<T>
+  $options: { name?: string }
+  $parent?: ComponentPublicInstance
 }
 
 export interface ModelBindingOptions<

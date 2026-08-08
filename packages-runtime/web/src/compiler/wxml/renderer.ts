@@ -1,4 +1,5 @@
 import type { RenderElementNode, RenderNode } from './types'
+import { resolveNativeComponentPropertyAttributes } from '../../shared/nativeComponents'
 import {
   hasControlAttribute,
   normalizeTagName,
@@ -66,7 +67,7 @@ export class Renderer {
       if (!isConditionalElement(candidate)) {
         break
       }
-      const attribs = candidate.attribs ?? {}
+      const attribs = candidate.attribs!
       if (branches.length === 0 && !hasControlAttribute(attribs, 'if')) {
         break
       }
@@ -95,8 +96,7 @@ export class Renderer {
         continue
       }
       const conditionExpr = resolveControlAttributeValue(attribs, 'if')
-        ?? resolveControlAttributeValue(attribs, 'elif')
-        ?? ''
+        ?? resolveControlAttributeValue(attribs, 'elif')!
       const rendered = this.renderElement(node, scopeVar, wxsVar, componentTags, { overrideAttribs: cleanedAttribs })
       const condition = buildExpression(parseInterpolations(conditionExpr), scopeVar, wxsVar)
       expr = `(${condition} ? ${rendered} : ${expr})`
@@ -115,9 +115,6 @@ export class Renderer {
       return buildExpression(parts, scopeVar, wxsVar)
     }
     if (node.type === 'element') {
-      if (node.name === 'template' && node.attribs?.is) {
-        return this.renderTemplateInvoke(node, scopeVar, wxsVar)
-      }
       return this.renderElement(node, scopeVar, wxsVar, componentTags)
     }
     return '""'
@@ -127,8 +124,9 @@ export class Renderer {
     node: RenderElementNode,
     scopeVar: string,
     wxsVar: string,
+    overrideAttribs?: Record<string, string>,
   ): string {
-    const attribs = node.attribs ?? {}
+    const attribs = overrideAttribs ?? node.attribs ?? {}
     const isExpr = buildExpression(parseInterpolations(attribs.is ?? ''), scopeVar, wxsVar)
     const dataExpr = attribs.data
       ? buildTemplateDataExpression(attribs.data, scopeVar, wxsVar)
@@ -154,17 +152,24 @@ export class Renderer {
         const listExpr = `ctx.normalizeList(${listExpression})`
         const itemVar = forInfo.itemName
         const indexVar = forInfo.indexName
+        const nestedScopeVar = scopeVar === 'scope'
+          ? '__scope'
+          : `${scopeVar}_nested`
         const scopeExpr = `ctx.createScope(${scopeVar}, { ${itemVar}: ${itemVar}, ${indexVar}: ${indexVar} })`
         const itemRender = this.renderElement(
           node,
-          '__scope',
+          nestedScopeVar,
           wxsVar,
           componentTags,
           { skipFor: true, overrideAttribs: forInfo.restAttribs },
         )
         const keyExpr = `ctx.key(${JSON.stringify(forInfo.key ?? '')}, ${itemVar}, ${indexVar}, ${scopeExpr}, ${wxsVar})`
-        return `repeat(${listExpr}, (${itemVar}, ${indexVar}) => ${keyExpr}, (${itemVar}, ${indexVar}) => { const __scope = ${scopeExpr}; return ${itemRender}; })`
+        return `repeat(${listExpr}, (${itemVar}, ${indexVar}) => ${keyExpr}, (${itemVar}, ${indexVar}) => { const ${nestedScopeVar} = ${scopeExpr}; return ${itemRender}; })`
       }
+    }
+
+    if (node.name === 'template' && attribs.is) {
+      return this.renderTemplateInvoke(node, scopeVar, wxsVar, attribs)
     }
 
     const customTag = resolveComponentTagName(node.name ?? '', componentTags)
@@ -176,11 +181,14 @@ export class Renderer {
     const attrs = renderAttributes(attribs, scopeVar, wxsVar, {
       skipControl: true,
       preferProperty: Boolean(customTag),
+      propertyAttributes: customTag
+        ? undefined
+        : resolveNativeComponentPropertyAttributes(node.name ?? ''),
     })
     const childNodes = node.children ?? []
-    const children = childNodes
-      .map(child => `\${${this.renderNode(child, scopeVar, wxsVar, componentTags)}}`)
-      .join('')
+    const children = childNodes.length > 0
+      ? `\${${this.renderNodes(childNodes, scopeVar, wxsVar, componentTags)}}`
+      : ''
     if (SELF_CLOSING_TAGS.has(tagName) && childNodes.length === 0) {
       return `html\`<${tagName}${attrs} />\``
     }

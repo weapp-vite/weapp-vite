@@ -27,6 +27,7 @@ interface ScriptSetupImportComponent {
   importSource: string
   importedName?: string
   kind: 'default' | 'named'
+  templateTags: string[]
 }
 
 interface VueSfcSignaturePayload {
@@ -40,6 +41,7 @@ interface VueSfcSignaturePayload {
 interface TemplateComponentTagInfo {
   autoImportTags: Set<string>
   componentNames: Set<string>
+  tagsByComponentName: Map<string, Set<string>>
 }
 
 function normalizeResolvedUsingComponent(result: ResolvedUsingComponentPath | undefined) {
@@ -67,6 +69,14 @@ function pascalToKebab(name: string) {
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
     .toLowerCase()
+}
+
+function kebabToCamel(name: string) {
+  return name.replace(/-([a-z0-9])/g, (_, character: string) => character.toUpperCase())
+}
+
+function capitalize(name: string) {
+  return name ? `${name.charAt(0).toUpperCase()}${name.slice(1)}` : name
 }
 
 function extractStringPropertyFromObject(node: ObjectExpression, keyName: string) {
@@ -249,28 +259,33 @@ function mergeComponentSourceInfo(target: ComponentSourceInfo, source: Component
 
 function collectTemplateComponentTagInfo(template: string, filename: string, warn?: (message: string) => void): TemplateComponentTagInfo {
   const warnHandler = resolveWarnHandler(warn)
-  const tags = collectVueTemplateTags(template, {
+  const autoImportTags = collectVueTemplateTags(template, {
     filename,
     warnLabel: '组件标签',
     warn: (message: string) => warnHandler(message),
     shouldCollect: isAutoImportCandidateTag,
   })
-  const componentNames = new Set(tags)
-  for (const tag of tags) {
-    if (tag.includes('-')) {
-      const pascalName = tag
-        .split('-')
-        .filter(Boolean)
-        .map(segment => `${segment.charAt(0).toUpperCase()}${segment.slice(1)}`)
-        .join('')
-      if (pascalName) {
-        componentNames.add(pascalName)
-      }
+  const templateTags = collectVueTemplateTags(template, {
+    filename,
+    warnLabel: '脚本导入组件标签',
+    warn: (message: string) => warnHandler(message),
+    shouldCollect: () => true,
+  })
+  const componentNames = new Set<string>()
+  const tagsByComponentName = new Map<string, Set<string>>()
+  for (const tag of templateTags) {
+    const camelName = kebabToCamel(tag)
+    for (const componentName of [tag, camelName, capitalize(camelName)]) {
+      componentNames.add(componentName)
+      const matchedTags = tagsByComponentName.get(componentName) ?? new Set<string>()
+      matchedTags.add(tag)
+      tagsByComponentName.set(componentName, matchedTags)
     }
   }
   return {
-    autoImportTags: tags,
+    autoImportTags,
     componentNames,
+    tagsByComponentName,
   }
 }
 
@@ -285,6 +300,7 @@ async function collectScriptSetupUsingComponents(options: {
   compileOptions: CompileVueFileOptions | undefined
   autoUsingComponents: AutoUsingComponentsOptions | undefined
   templateComponentNames: Set<string> | undefined
+  templateTagsByComponentName: Map<string, Set<string>> | undefined
   result: ComponentSourceInfo
 }) {
   const {
@@ -294,6 +310,7 @@ async function collectScriptSetupUsingComponents(options: {
     compileOptions,
     autoUsingComponents,
     templateComponentNames,
+    templateTagsByComponentName,
     result,
   } = options
   if (!descriptor.scriptSetup || !descriptor.template) {
@@ -328,8 +345,9 @@ async function collectScriptSetupUsingComponents(options: {
           if (!templateComponentNames.has(localName)) {
             continue
           }
+          const templateTags = [...(templateTagsByComponentName?.get(localName) ?? [localName])]
           if (t.isImportDefaultSpecifier(specifier)) {
-            pending.push({ localName, importSource, importedName: 'default', kind: 'default' })
+            pending.push({ localName, importSource, importedName: 'default', kind: 'default', templateTags })
           }
           else if (t.isImportSpecifier(specifier)) {
             const importedName = t.isIdentifier(specifier.imported)
@@ -337,13 +355,13 @@ async function collectScriptSetupUsingComponents(options: {
               : t.isStringLiteral(specifier.imported)
                 ? specifier.imported.value
                 : undefined
-            pending.push({ localName, importSource, importedName, kind: 'named' })
+            pending.push({ localName, importSource, importedName, kind: 'named', templateTags })
           }
         }
       },
     })
 
-    const resolvedComponents = await Promise.all(pending.map(async ({ localName, importSource, importedName, kind }) => {
+    const resolvedComponents = await Promise.all(pending.map(async ({ localName, importSource, importedName, kind, templateTags }) => {
       let resolved = autoUsingComponents?.resolveUsingComponentPath
         ? normalizeResolvedUsingComponent(await autoUsingComponents.resolveUsingComponentPath(importSource, filename, {
             localName,
@@ -369,12 +387,15 @@ async function collectScriptSetupUsingComponents(options: {
         importSource,
         resolved,
         componentMeta,
+        templateTags,
       }
     }))
 
-    for (const { localName, importSource, resolved, componentMeta } of resolvedComponents) {
+    for (const { localName, importSource, resolved, componentMeta, templateTags } of resolvedComponents) {
       if (resolved?.from) {
-        result.autoUsingComponentsMap[localName] = resolved.from
+        for (const tag of templateTags) {
+          result.autoUsingComponentsMap[tag] = resolved.from
+        }
         result.autoComponentMeta[localName] = resolved.from
       }
       if (isVueSfcSource(importSource) || isWevuSfcComponent(resolved)) {
@@ -382,11 +403,17 @@ async function collectScriptSetupUsingComponents(options: {
         result.wevuComponentTags.add(pascalToKebab(localName))
       }
       registerComponentName(result, localName, componentMeta.componentName)
+      for (const tag of templateTags) {
+        registerComponentName(result, tag, componentMeta.componentName)
+      }
       registerMiniProgramComponentTag(
         result,
         localName,
         componentMeta.isMiniProgramComponent,
       )
+      for (const tag of templateTags) {
+        registerMiniProgramComponentTag(result, tag, componentMeta.isMiniProgramComponent)
+      }
     }
   }
   catch (error) {
@@ -484,6 +511,7 @@ export async function collectComponentSourceInfo(options: {
       compileOptions: options.compileOptions,
       autoUsingComponents: options.autoUsingComponents,
       templateComponentNames: templateComponentTagInfo?.componentNames,
+      templateTagsByComponentName: templateComponentTagInfo?.tagsByComponentName,
       result: scriptSetupResult,
     }),
     collectAutoImportWevuComponents({

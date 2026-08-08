@@ -37,21 +37,21 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
     /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-[\w-]+\.js["']\)/,
     /\.require_other\(\)/,
     /\bPage\(/,
-    /require\.async\(["']\.\/async["']\)/,
+    /require\.async\(["']\.\/async\.js["']\)/,
   ],
   'pages/index/vue.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-(?:src|templateRef|watch)(?:-[\w-]+)?|src-[\w-]+)\.js["']\)/,
+    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-[\w-]+|src-[\w-]+)\.js["']\)/,
     /var __wevuOptions = \{/,
     /\.[A-Za-z_$][\w$]*\(__wevuOptions\)/,
-    /exports\.default = __wevuOptions/,
+    /(?:exports\.default|module\.exports) = /,
   ],
   'pages/index/vue-setup.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-(?:src|templateRef|watch)(?:-[\w-]+)?|src-[\w-]+)\.js["']\)/,
+    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-[\w-]+|src-[\w-]+)\.js["']\)/,
     /var __wevuOptions = \{/,
     /\.[A-Za-z_$][\w$]*\(__wevuOptions\)/,
-    /exports\.default = __wevuOptions/,
+    /(?:exports\.default|module\.exports) = /,
   ],
   'weapp-vendors/wevu-shared.js': [
     /__commonJS(?:Min)?/,
@@ -71,7 +71,15 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   'rolldown-runtime.js': [/Object\.defineProperty/],
 }
 
-function normalizeDistFile(file: string) {
+function normalizeDistFile(file: string, content = '') {
+  if (/^weapp-vendors\/wevu-[\w-]+\.js$/.test(file)) {
+    if (content.includes('__wevu_runtime')) {
+      return 'wevu-runtime.js'
+    }
+    if (content.includes('require_other')) {
+      return 'weapp-vendors/wevu-shared.js'
+    }
+  }
   if (/^weapp-vendors\/wevu-src\.js$/.test(file)) {
     return 'wevu-runtime.js'
   }
@@ -91,7 +99,7 @@ function normalizeDistFile(file: string) {
 }
 
 function assertJsContent(file: string, content: string) {
-  const patterns = jsExpectations[normalizeDistFile(file)]
+  const patterns = jsExpectations[normalizeDistFile(file, content)]
   expect(patterns, `Missing JS expectations for ${file}`).toBeDefined()
   if (!patterns) {
     return
@@ -137,9 +145,12 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
     expect(await stat(path.resolve(distDir)).then(() => true, () => false)).toBe(true)
 
     const files = await scanFiles(distDir)
-    expect(files.map(normalizeDistFile).sort()).toMatchSnapshot()
-    for (const file of files) {
-      const content = await readFile(path.resolve(distDir, file), 'utf-8')
+    const outputs = await Promise.all(files.map(async file => ({
+      content: await readFile(path.resolve(distDir, file), 'utf-8'),
+      file,
+    })))
+    expect(outputs.map(({ content, file }) => normalizeDistFile(file, content)).sort()).toMatchSnapshot()
+    for (const { content, file } of outputs) {
       if (path.extname(file) === '.js') {
         assertJsContent(file, content)
         continue

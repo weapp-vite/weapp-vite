@@ -7,9 +7,9 @@ import { toPlain } from '../diff'
 
 class InitialComputedBailout extends Error {}
 
-function resolveComputedGetter(definition: unknown) {
+function resolveComputedGetter(definition: unknown): ((...args: any[]) => unknown) | undefined {
   if (typeof definition === 'function') {
-    return definition
+    return definition as (...args: any[]) => unknown
   }
   const getter = (definition as WritableComputedOptions<any> | undefined)?.get
   return typeof getter === 'function' ? getter : undefined

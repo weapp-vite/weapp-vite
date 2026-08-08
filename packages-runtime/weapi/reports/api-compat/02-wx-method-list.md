@@ -1,6 +1,6 @@
 # 02 小程序基准 API 全量清单
 
-总计：484
+总计：495
 
 - `addCard`
 - `addFileToFavorites`
@@ -35,6 +35,7 @@
 - `checkIsSupportFacialRecognition`
 - `checkIsSupportSoterAuthentication`
 - `checkSession`
+- `checkTransitCardSupport`
 - `chooseAddress`
 - `chooseContact`
 - `chooseImage`
@@ -85,6 +86,7 @@
 - `createWebAudioContext`
 - `createWorker`
 - `cropImage`
+- `deleteTransitCard`
 - `disableAlertBeforeUnload`
 - `downloadFile`
 - `editImage`
@@ -140,6 +142,7 @@
 - `getNetworkType`
 - `getNFCAdapter`
 - `getPerformance`
+- `getPluginUpdateManager`
 - `getPrivacySetting`
 - `getRandomValues`
 - `getRealtimeLogManager`
@@ -162,6 +165,9 @@
 - `getSystemInfoAsync`
 - `getSystemInfoSync`
 - `getSystemSetting`
+- `getTransitCardCPLC`
+- `getTransitCardInfo`
+- `getTransitCardList`
 - `getUpdateManager`
 - `getUserCryptoManager`
 - `getUserInfo`
@@ -181,9 +187,11 @@
 - `hideToast`
 - `initFaceDetect`
 - `isBluetoothDevicePaired`
+- `issueTransitCard`
 - `isVKSupport`
 - `join1v1Chat`
 - `joinVoIPChat`
+- `jumpToOfflinePay`
 - `loadBuiltInFontFace`
 - `loadFontFace`
 - `login`
@@ -339,6 +347,7 @@
 - `openChannelsUserProfile`
 - `openChatTool`
 - `openCustomerServiceChat`
+- `openDesignerProfile`
 - `openDocument`
 - `openEmbeddedMiniProgram`
 - `openHKOfflinePayView`
@@ -371,6 +380,7 @@
 - `previewImage`
 - `previewMedia`
 - `readBLECharacteristicValue`
+- `rechargeTransitCard`
 - `redirectTo`
 - `reLaunch`
 - `removeSecureElementPass`
@@ -382,6 +392,7 @@
 - `reportMonitor`
 - `reportPerformance`
 - `request`
+- `requestAppleSubscribeSign`
 - `requestCommonPayment`
 - `requestDeviceVoIP`
 - `requestFacialVerify`

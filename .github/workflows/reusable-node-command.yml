@@ -31,6 +31,10 @@ on:
         required: false
         type: boolean
         default: false
+      playwright_browsers:
+        required: false
+        type: string
+        default: chromium
       increase_ulimit:
         required: false
         type: boolean
@@ -66,7 +70,7 @@ jobs:
         run: git config --system core.longpaths true
 
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: ${{ inputs.fetch_depth }}
 
@@ -83,9 +87,13 @@ jobs:
         if: inputs.increase_ulimit && runner.os != 'Windows'
         run: ulimit -n 65536 || true
 
-      - name: Install Playwright Chromium
-        if: inputs.install_playwright
-        run: pnpm exec playwright install chromium
+      - name: Install Playwright browsers and system dependencies
+        if: inputs.install_playwright && runner.os == 'Linux'
+        run: pnpm exec playwright install --with-deps ${{ inputs.playwright_browsers }}
+
+      - name: Install Playwright browsers
+        if: inputs.install_playwright && runner.os != 'Linux'
+        run: pnpm exec playwright install ${{ inputs.playwright_browsers }}
 
       - name: Run command
         env:
@@ -94,13 +102,13 @@ jobs:
 
       - name: Upload coverage reports to Codecov
         if: inputs.upload_codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload artifact
         if: ${{ always() && inputs.artifact_name != '' && inputs.artifact_path != '' }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ inputs.artifact_name }}
           path: ${{ inputs.artifact_path }}

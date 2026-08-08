@@ -1,7 +1,7 @@
 {
   "name": "rolldown-require",
   "type": "module",
-  "version": "2.0.20",
+  "version": "2.0.23",
   "description": "bundle and require a file using rolldown!",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -74,7 +74,7 @@
   },
   "dependencies": {
     "@rollup/pluginutils": "^5.4.0",
-    "get-tsconfig": "^4.14.0"
+    "get-tsconfig": "^4.14.1"
   },
   "devDependencies": {
     "@types/pnpapi": "^0.0.5"

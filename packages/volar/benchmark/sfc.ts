@@ -1,6 +1,6 @@
 /* eslint-disable no-console -- benchmark CLI reports measurements to stdout */
 import type { VirtualCode } from '@volar/language-core'
-import type { VueLanguagePlugin } from '@vue/language-core'
+import type { VueCompilerOptions, VueLanguagePlugin } from '@vue/language-core'
 import { Buffer } from 'node:buffer'
 import { spawnSync } from 'node:child_process'
 import { performance } from 'node:perf_hooks'
@@ -123,6 +123,7 @@ const vueCompilerOptions = {
   inferTemplateDollarSlots: false,
   skipTemplateCodegen: false,
   fallthroughAttributes: false,
+  checkRequiredFallthroughAttributes: false,
   resolveStyleImports: false,
   resolveStyleClassNames: false,
   fallthroughComponentNames: [],
@@ -145,7 +146,7 @@ const vueCompilerOptions = {
     useTemplateRef: ['useTemplateRef'],
   },
   experimentalModelPropName: {},
-} as const
+} satisfies VueCompilerOptions
 
 function consumeCode(code: VirtualCode) {
   let length = code.snapshot.getLength()

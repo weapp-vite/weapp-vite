@@ -6,6 +6,15 @@ export default defineConfig(
     return {
       weapp: {
         srcRoot: 'src',
+        web: {
+          pluginOptions: {
+            runtime: {
+              routing: {
+                mode: 'history',
+              },
+            },
+          },
+        },
         // pnpm g 生成的格式
         // https://vite.icebreaker.top/guide/generate.html
         generate: {

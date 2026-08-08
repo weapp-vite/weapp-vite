@@ -3,8 +3,8 @@ import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 import type { VueBundleCompileOptionsState } from './shared'
 import { fs } from '@weapp-core/shared/fs'
+import { scanWxml } from '../../../../wxml/scan'
 import {
-  emitNativeLayoutScriptChunkIfNeeded as emitSharedNativeLayoutScriptChunkIfNeeded,
   resolveNativeLayoutOutputOptions,
   resolveNativeLayoutStaticAssetEntries,
 } from '../../../utils/nativeLayout'
@@ -40,52 +40,6 @@ export async function emitResolvedBundleLayouts(options: {
 
     await options.emitVueLayout(layout.file)
   }
-}
-
-export async function resolveNativeLayoutScriptChunkState(options: {
-  layoutBasePath: string
-  configService: NonNullable<CompilerContext['configService']>
-  outputExtensions: OutputExtensions | undefined
-}) {
-  const resolvedOptions = resolveVueLayoutAssetOptions({
-    configService: options.configService,
-    layoutBasePath: options.layoutBasePath,
-    outputExtensions: options.outputExtensions,
-  })
-  if (!resolvedOptions) {
-    return undefined
-  }
-
-  const assets = await collectNativeLayoutAssets(options.layoutBasePath)
-  if (!assets.script) {
-    return undefined
-  }
-
-  return {
-    fileName: resolveScriptlessComponentFileName(
-      resolvedOptions.relativeBase,
-      resolvedOptions.scriptExtension,
-    ),
-    scriptId: assets.script,
-  }
-}
-
-export async function emitNativeLayoutScriptChunkIfNeeded(options: {
-  pluginCtx: any
-  layoutBasePath: string
-  configService: NonNullable<CompilerContext['configService']>
-  outputExtensions: OutputExtensions | undefined
-}) {
-  const nativeScriptChunkState = await resolveNativeLayoutScriptChunkState(options)
-  if (!nativeScriptChunkState) {
-    return
-  }
-
-  emitSharedNativeLayoutScriptChunkIfNeeded({
-    pluginCtx: options.pluginCtx,
-    scriptId: nativeScriptChunkState.scriptId,
-    fileName: nativeScriptChunkState.fileName,
-  })
 }
 
 export async function resolveNativeLayoutAssetState(options: {
@@ -334,7 +288,17 @@ export async function emitBundlePageLayoutsIfNeeded(options: {
   })
 }
 
-function resolveAppShellComponentConfig(config: string | undefined) {
+function resolveAppShellUsingComponents(template: string, usingComponents: Record<string, string>) {
+  const templateComponents = scanWxml(template, {
+    excludeComponent: () => false,
+  }).autoImportComponents ?? {}
+
+  return Object.fromEntries(
+    Object.entries(usingComponents).filter(([name]) => Reflect.has(templateComponents, name)),
+  )
+}
+
+function resolveAppShellComponentConfig(config: string | undefined, template: string) {
   const shellConfig: Record<string, any> = {
     styleIsolation: 'apply-shared',
   }
@@ -352,7 +316,12 @@ function resolveAppShellComponentConfig(config: string | undefined) {
     for (const key of ['usingComponents', 'componentGenerics']) {
       const value = parsed[key]
       if (value && typeof value === 'object' && !Array.isArray(value)) {
-        shellConfig[key] = value
+        const normalizedValue = key === 'usingComponents'
+          ? resolveAppShellUsingComponents(template, value)
+          : value
+        if (Object.keys(normalizedValue).length > 0) {
+          shellConfig[key] = normalizedValue
+        }
       }
     }
 
@@ -415,7 +384,7 @@ export function emitAppShellAssetsIfNeeded(options: {
     bundle: options.bundle,
     pluginCtx: options.pluginCtx,
     relativeBase,
-    config: resolveAppShellComponentConfig(result.config),
+    config: resolveAppShellComponentConfig(result.config, result.template),
     outputExtensions: options.outputExtensions,
     platformAssetOptions: options.platformAssetOptions,
     jsonOptions: {

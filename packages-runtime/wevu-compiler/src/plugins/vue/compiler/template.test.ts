@@ -218,6 +218,24 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings).toBeUndefined()
   })
 
+  it('compacts multiline static object literals for WXML attributes', () => {
+    const template = `
+<InfoBanner
+  :customStyle="{
+    backgroundColor: '#fff',
+    display: 'flex',
+    justifyContent: 'center',
+  }"
+/>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain(`customStyle="{{ {backgroundColor:'#fff',display:'flex',justifyContent:'center'} }}"`)
+    expect(code).not.toContain('customStyle="{{ {\n')
+    expect(classStyleBindings).toBeUndefined()
+  })
+
   it('wraps dynamic object literal in v-bind attribute expression', () => {
     const template = `
 <InfoBanner :root="{ a: title }" />
@@ -441,6 +459,7 @@ describe('compileVueTemplateToWxml', () => {
   <span>{{ title }}</span>
   <img :src="cover" />
   <a url="/pages/detail/index">详情</a>
+  <table><tbody><tr><td>单元格</td></tr></tbody></table>
 </div>
     `.trim()
 
@@ -450,6 +469,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('<text class="span">{{title}}</text>')
     expect(code).toContain('<image class="img" src="{{cover}}" />')
     expect(code).toContain('<navigator class="a" url="/pages/detail/index">详情</navigator>')
+    expect(code).toContain('<view class="table"><view class="tbody"><view class="tr"><view class="td">单元格</view></view></view></view>')
     expect(code).not.toContain('data-wd-tap')
     expect(code).not.toContain('<div')
     expect(code).not.toContain('<span')
@@ -838,9 +858,24 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/components/KpiBoard/index.vue')
 
-    expect(code).toBe('<slot name="item" /><scoped-slots-item wx:if="{{__wvSlotOwnerId}}" __wvSlotOwnerId="{{__wvSlotOwnerId}}" __wvSlotProps="{{[\'item\',card.item,\'index\',card.index]}}" __wvSlotScope="{{__wvSlotScope}}" />')
+    expect(code).toContain('<scoped-slots-item wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).toContain('<block wx:if="{{!__wvSlotOwnerId}}"><slot name="item" /></block>')
     expect(code).toContain(`__wvSlotProps="{{['item',card.item,'index',card.index]}}"`)
     expect(code).not.toContain(`__wvSlotProps="{{{`)
+  })
+
+  it('lowers function-valued scoped slot props to serializable inline tokens', () => {
+    const template = `
+<slot name="actions" :confirm="() => toggleModal('confirm')" />
+    `.trim()
+
+    const result = compileVueTemplateToWxml(template, '/project/src/components/Dialog/index.vue')
+
+    expect(result.warnings).toEqual([])
+    expect(result.code).toContain(`__wvSlotProps="{{['confirm',['__wv_slot_function__','i0',[],[]]]}}"`)
+    expect(result.code).not.toContain('=>')
+    expect(result.inlineExpressions).toHaveLength(1)
+    expect(result.inlineExpressions?.[0]?.expression).toContain('ctx.toggleModal(\'confirm\')')
   })
 
   it('keeps native slot outlet fallback for scoped named slot props', () => {
@@ -851,10 +886,12 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/components/BackList/index.vue')
 
-    expect(code).toContain('<slot name="main" /><scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).toContain('<scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).toContain('<block wx:if="{{!__wvSlotOwnerId}}"><slot name="main" /></block>')
     expect(code).toContain('<scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
     expect(code).toContain(`__wvSlotProps="{{['list',back.state.list]}}"`)
-    expect(code).toContain('<slot name="footer" /><scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).toContain('<scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
+    expect(code).toContain('<block wx:if="{{!__wvSlotOwnerId}}"><slot name="footer" /></block>')
     expect(code).toContain('<scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
   })
 
@@ -877,7 +914,8 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain(`<scoped-slots-default ${DEFAULT_DIRECTIVES.ifAttr}="{{__wvSlotOwnerId}}"`)
     expect(code).toContain(`__wvSlotProps="{{['item',item,'index',index]}}"`)
     expect(code).toContain('__wvSlotScope="{{__wvSlotScope}}"')
-    expect(code).toContain('<slot /><scoped-slots-default')
+    expect(code).not.toContain('<slot />')
+    expect(code).not.toContain('<slot /><scoped-slots-default')
     expect(code).not.toContain(`'key',item.id`)
   })
 
@@ -943,6 +981,35 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents?.[0]?.template).toContain('<Leaf />')
   })
 
+  it('assigns template refs inside augmented slots to the scoped slot asset', () => {
+    const template = `
+<Provider>
+  <Leaf ref="leaf" />
+</Provider>
+    `.trim()
+
+    const { code, scopedSlotComponents, templateRefs } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      {
+        scopedSlotsRequireProps: false,
+        wevuComponentTags: ['Provider', 'Leaf'],
+      },
+    )
+
+    expect(code).toContain('generic:scoped-slots-default="')
+    expect(templateRefs).toBeUndefined()
+    expect(scopedSlotComponents?.[0]?.template).toContain('class="__wv-ref-0"')
+    expect(scopedSlotComponents?.[0]?.templateRefs).toEqual([
+      {
+        selector: '.__wv-ref-0',
+        inFor: false,
+        name: 'leaf',
+        kind: 'component',
+      },
+    ])
+  })
+
   it('keeps unknown plain default component children native when augmented slots require no props', () => {
     const template = `
 <Provider>
@@ -981,7 +1048,7 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain('generic:scoped-slots-default="')
     expect(code).toContain(`vue-slots="{{ {default:true} }}"`)
-    expect(code).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
+    expect(code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
     expect(code).not.toContain('<Leaf')
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.slotKey).toBe('default')
@@ -1129,6 +1196,31 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents?.[0]?.template).toContain('<view><Leaf /></view>')
   })
 
+  it('augments wrapped wevu component default children when explicitly augmented', () => {
+    const template = `
+<up-index-list>
+  <template v-for="item in cityList">
+    <up-index-item />
+  </template>
+</up-index-list>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/components/city-locate.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        wevuComponentTags: ['up-index-list', 'up-index-item'],
+      },
+    )
+
+    expect(code).toContain('generic:scoped-slots-default="')
+    expect(code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
+    expect(code).not.toContain('<up-index-item')
+    expect(scopedSlotComponents).toHaveLength(1)
+    expect(scopedSlotComponents?.[0]?.template).toContain('<up-index-item')
+  })
+
   it('keeps plain default slot runtime call bindings on the owner component', () => {
     const template = `
 <Cell>
@@ -1265,6 +1357,57 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents).toHaveLength(2)
     expect(scopedSlotComponents?.[0]?.template).toContain('<MyCell generic:scoped-slots-default=')
     expect(scopedSlotComponents?.[1]?.template).toContain('<MyImage />')
+  })
+
+  it('augments nested wevu component default children when explicitly augmented', () => {
+    const template = `
+<Provider>
+  <Cell>
+    <Leaf />
+  </Cell>
+</Provider>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/nested-wevu/index.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        wevuComponentTags: ['Provider', 'Cell', 'Leaf'],
+      },
+    )
+
+    expect(code).toContain('generic:scoped-slots-default="')
+    expect(code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
+    expect(code).not.toContain('<Cell ')
+    expect(scopedSlotComponents).toHaveLength(2)
+    expect(scopedSlotComponents?.[0]?.template).toContain('<Cell generic:scoped-slots-default=')
+    expect(scopedSlotComponents?.[0]?.template).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
+    expect(scopedSlotComponents?.[1]?.template).toContain('<Leaf />')
+  })
+
+  it('keeps default content with a forwarded slot outlet on its owner component', () => {
+    const template = `
+<Transition>
+  <view>
+    <slot />
+    <Icon />
+  </view>
+</Transition>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/components/popup.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        wevuComponentTags: ['Transition', 'Icon'],
+      },
+    )
+
+    expect(code).toContain('<Transition vue-slots="{{ {default:true} }}"><view><slot /><Icon /></view></Transition>')
+    expect(code).not.toContain('generic:scoped-slots-default=')
+    expect(scopedSlotComponents).toBeUndefined()
   })
 
   it('augments native component default slots while keeping nested native content inline', () => {
@@ -1696,7 +1839,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('<weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper>')
     expect(slotFallbackWrapperComponent).toEqual({
       tagName: 'weapp-slot-wrapper',
-      componentBase: '__weapp_vite_slot_wrapper',
+      componentBase: 'weapp_vite_internal/slot-wrapper/index',
       template: '<slot></slot>',
       script: 'Component({options:{virtualHost:true,multipleSlots:true}})',
       config: {

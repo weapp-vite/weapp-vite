@@ -1,13 +1,40 @@
 import type { ElementNode } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import { WEVU_SLOT_FUNCTION_TOKEN } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { parse as babelParse } from '../../../../../utils/babel'
-import { normalizeWxmlExpressionWithContext } from '../expression'
+import { normalizeWxmlExpressionWithContext, registerInlineExpression } from '../expression'
 import { getBindDirectiveExpression, toWxmlStringLiteral } from './helpers'
 
 const BACKSLASH_RE = /\\/g
 const SINGLE_QUOTE_RE = /'/g
+
+function isFunctionBindingExpression(exp: string) {
+  try {
+    const ast = babelParse(`(${exp})`, { sourceType: 'module', plugins: ['typescript'] })
+    const stmt = ast.program.body[0]
+    const expression = stmt && 'expression' in stmt ? (stmt as any).expression as t.Expression : undefined
+    return t.isArrowFunctionExpression(expression) || t.isFunctionExpression(expression)
+  }
+  catch {
+    return false
+  }
+}
+
+function createSlotFunctionBinding(exp: string, context: TransformContext) {
+  if (!isFunctionBindingExpression(exp)) {
+    return null
+  }
+  const inline = registerInlineExpression(`(${exp})(...$event)`, context)
+  if (!inline) {
+    context.warnings.push('作用域插槽函数参数编译失败。')
+    return null
+  }
+  const scopeBindings = `[${inline.scopeBindings.join(',')}]`
+  const indexBindings = `[${inline.indexBindings.join(',')}]`
+  return `[${toWxmlStringLiteral(WEVU_SLOT_FUNCTION_TOKEN)},${toWxmlStringLiteral(inline.id)},${scopeBindings},${indexBindings}]`
+}
 
 export function parseSlotPropsExpression(exp: string, context: TransformContext): Record<string, string> {
   const trimmed = exp.trim()
@@ -88,7 +115,11 @@ export function collectSlotBindingExpression(node: ElementNode, context: Transfo
           continue
         }
         if (rawExpValue) {
-          namedBindings.push({ key: prop.arg.content, value: normalizeWxmlExpressionWithContext(rawExpValue, context) })
+          namedBindings.push({
+            key: prop.arg.content,
+            value: createSlotFunctionBinding(rawExpValue, context)
+              ?? normalizeWxmlExpressionWithContext(rawExpValue, context),
+          })
         }
         continue
       }

@@ -7,6 +7,7 @@ interface DisconnectableMiniProgram {
 }
 
 const OPENED_PROJECT_HEALTH_CHECK_TIMEOUT = 3_000
+const OPEN_AUTOMATOR_TIMEOUT = 120_000
 
 function formatReuseOpenedWechatIdePrompt() {
   const highlightedRetryKeys = RETRY_CONFIRM_KEYS.map(key => colors.bold(colors.green(key))).join(' / ')
@@ -45,6 +46,7 @@ async function openWechatIdeByAutomator(projectPath: string) {
     preserveProjectRoot: true,
     projectPath,
     port: resolveProjectAutomatorPort(projectPath),
+    timeout: OPEN_AUTOMATOR_TIMEOUT,
     trustProject: true,
   }) as DisconnectableMiniProgram
   disconnectMiniProgram(miniProgram)

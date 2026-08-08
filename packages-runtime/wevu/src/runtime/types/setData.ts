@@ -239,5 +239,6 @@ export interface SetDataDebugInfo {
   computedDirtyKeys?: number
   flushCount?: number
   windowMs?: number
+  targetLabel?: string
   message?: string
 }

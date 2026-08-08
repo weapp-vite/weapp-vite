@@ -17,10 +17,12 @@
   "keywords": [],
   "scripts": {
     "dev": "wv dev",
+    "dev:web": "wv dev -p web --host",
     "dev:open": "wv dev -o",
     "dev:ui": "wv dev --ui",
     "dev:open:ui": "wv dev --ui -o",
     "build": "wv build",
+    "build:web": "wv build -p web",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "open": "wv open",

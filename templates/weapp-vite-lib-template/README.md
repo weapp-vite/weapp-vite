@@ -12,6 +12,11 @@
 
 `pnpm build`
 
+### Web 预览与构建
+
+- `pnpm dev:web`
+- `pnpm build:web`
+
 ### 构建组件库
 
 `pnpm build:lib`

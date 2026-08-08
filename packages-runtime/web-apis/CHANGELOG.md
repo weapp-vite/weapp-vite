@@ -1,5 +1,37 @@
 # @wevu/web-apis
 
+## 1.2.31
+
+### Patch Changes
+
+- 🐛 **微信小程序开发模式默认根据开发者工具的热重载设置自动选择 HMR 运行时，并在启动时显示当前模式与切换方法；同时确保 Web API 网络默认值在分包和共享 chunk 的多份运行时实例之间保持一致，并避免截图协议超时后在同一 DevTools 连接上继续叠加请求。** [#778](https://github.com/weapp-vite/weapp-vite/pull/778) by @sonofmagic
+- 📦 **Dependencies** [`b055929`](https://github.com/weapp-vite/weapp-vite/commit/b055929f8c18a2a9be800eff88f8f7806a9a4f46)
+  → `@weapp-core/constants@0.1.16`
+
+## 1.2.30
+
+### Patch Changes
+
+- 📦 **Dependencies** [`c7d8514`](https://github.com/weapp-vite/weapp-vite/commit/c7d85143aeb5edaaf5d1902a8bd3d5fe09ef570e)
+  → `@wevu/api@0.2.14`
+
+## 1.2.29
+
+### Patch Changes
+
+- 🐛 **修复真实微信开发者工具自动化中的会话复用、页面重启、日志收集与截图清理稳定性问题，避免 `forwardConsole` 重复连接现有会话，并降低完整 IDE E2E 在组件库和 GitHub issue 回归场景中的重复启动成本。** [#770](https://github.com/weapp-vite/weapp-vite/pull/770) by @sonofmagic
+
+- 🐛 **修复 Web API polyfill 对无填充 Base64、可迭代 Headers、请求中止竞态及 URL/XHR 宿主回退的兼容行为，并补齐完整能力矩阵回归。** [#760](https://github.com/weapp-vite/weapp-vite/pull/760) by @sonofmagic
+- 📦 **Dependencies** [`878073f`](https://github.com/weapp-vite/weapp-vite/commit/878073f8819a21f7e6baa96d13cf3f7e552d2158)
+  → `@weapp-core/constants@0.1.15`, `@wevu/api@0.2.13`
+
+## 1.2.28
+
+### Patch Changes
+
+- 📦 **Dependencies** [`5c251fa`](https://github.com/weapp-vite/weapp-vite/commit/5c251fa06bbf2818601959aace2d402f9a1dffc7)
+  → `@weapp-core/constants@0.1.14`, `@wevu/api@0.2.12`
+
 ## 1.2.27
 
 ### Patch Changes

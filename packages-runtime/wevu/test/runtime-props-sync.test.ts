@@ -7,7 +7,7 @@ import {
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createWevuComponent, defineComponent, nextTick } from '@/index'
+import { createWevuComponent, defineComponent, nextTick, ref, unref } from '@/index'
 import { resolvePropValue } from '@/runtime'
 
 const registeredComponents: Record<string, any>[] = []
@@ -255,6 +255,97 @@ describe('runtime: props sync', () => {
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.titleText).toBe('hello')
   })
 
+  it('prefers options data when a compiled binding collides with a native property', async () => {
+    defineComponent({
+      data: () => ({
+        title: 'data-title',
+      }),
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      setup(_props, ctx) {
+        const updateTitle = () => {
+          ctx.state.title = 'updated-data-title'
+        }
+        return { updateTitle }
+      },
+      computed: {
+        __wv_cls_0(this: any) {
+          return unref(resolvePropValue(this, 'title', this.title))
+        },
+      },
+      setData: {
+        strategy: 'patch',
+        pick: ['__wv_cls_0'],
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: { title: 'property-title' },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_cls_0).toBe('data-title')
+    inst.setData.mockClear()
+
+    inst.updateTitle()
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_cls_0).toBe('updated-data-title')
+    expect(inst.setData).toHaveBeenCalledWith({ __wv_cls_0: 'updated-data-title' })
+  })
+
+  it('prefers setup state over options data and props for compiled bindings', async () => {
+    defineComponent({
+      data: () => ({
+        title: 'data-title',
+      }),
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      setup() {
+        const title = ref('setup-title')
+        const updateTitle = () => {
+          title.value = 'updated-setup-title'
+        }
+        return { title, updateTitle }
+      },
+      computed: {
+        __wv_cls_0(this: any) {
+          return unref(resolvePropValue(this, 'title', this.title))
+        },
+      },
+      setData: {
+        strategy: 'patch',
+        pick: ['__wv_cls_0'],
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: { title: 'property-title' },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_cls_0).toBe('setup-title')
+    inst.setData.mockClear()
+
+    inst.updateTitle()
+    await nextTick()
+
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_cls_0).toBe('updated-setup-title')
+    expect(inst.setData).toHaveBeenCalledWith({ __wv_cls_0: 'updated-setup-title' })
+  })
+
   it('exposes __wevuProps to computed bindings when component has no setup', async () => {
     defineComponent({
       props: {
@@ -348,11 +439,12 @@ describe('runtime: props sync', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
     await nextTick()
-    inst.setData.mockClear()
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('from-props')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.label).toBe('from-setup:from-props')
+    expect(inst.setData.mock.calls.some(([payload]: [Record<string, unknown>]) => Object.hasOwn(payload, 'x'))).toBe(false)
+    inst.setData.mockClear()
 
     inst.properties.x = 'next-props'
     opts.observers.x.call(inst, 'next-props', 'from-props')
@@ -361,6 +453,7 @@ describe('runtime: props sync', () => {
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('next-props')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.label).toBe('from-setup:next-props')
+    expect(inst.setData.mock.calls.some(([payload]: [Record<string, unknown>]) => Object.hasOwn(payload, 'x'))).toBe(false)
   })
 
   it('syncs compiled props aliases into setup state without shadowing same-name setup bindings', async () => {

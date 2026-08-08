@@ -3,8 +3,10 @@ import process from 'node:process'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
+const playgroundRoot = import.meta.dirname
+
 export default defineConfig({
-  root: __dirname,
+  root: playgroundRoot,
   base: './',
   appType: 'spa',
   define: {
@@ -19,27 +21,27 @@ export default defineConfig({
     alias: [
       {
         find: /^@weapp-vite\/ast\/babelTraverse$/,
-        replacement: resolve(__dirname, 'src/browserAst/babelTraverse.ts'),
+        replacement: resolve(playgroundRoot, 'src/browserAst/babelTraverse.ts'),
       },
       {
         find: /^@weapp-vite\/ast\/babelTypes$/,
-        replacement: resolve(__dirname, 'src/browserAst/babelTypes.ts'),
+        replacement: resolve(playgroundRoot, 'src/browserAst/babelTypes.ts'),
       },
       {
         find: /^@weapp-vite\/ast\/babel$/,
-        replacement: resolve(__dirname, 'src/browserAst/babel.ts'),
+        replacement: resolve(playgroundRoot, 'src/browserAst/babel.ts'),
       },
       {
         find: /^@weapp-vite\/ast$/,
-        replacement: resolve(__dirname, 'src/browserAst/index.ts'),
+        replacement: resolve(playgroundRoot, 'src/browserAst/index.ts'),
       },
       {
         find: /^@weapp-core\/shared$/,
-        replacement: resolve(__dirname, '../../@weapp-core/shared/src/index.ts'),
+        replacement: resolve(playgroundRoot, '../../@weapp-core/shared/src/index.ts'),
       },
       {
         find: /^@weapp-core\/constants$/,
-        replacement: resolve(__dirname, '../../@weapp-core/constants/src/index.ts'),
+        replacement: resolve(playgroundRoot, '../../@weapp-core/constants/src/index.ts'),
       },
       {
         find: /^node:path$/,
@@ -51,16 +53,16 @@ export default defineConfig({
       },
       {
         find: /^@$/,
-        replacement: resolve(__dirname, 'src'),
+        replacement: resolve(playgroundRoot, 'src'),
       },
       {
         find: '@',
-        replacement: resolve(__dirname, 'src'),
+        replacement: resolve(playgroundRoot, 'src'),
       },
     ],
   },
   build: {
-    outDir: resolve(__dirname, 'dist'),
+    outDir: resolve(playgroundRoot, 'dist'),
     emptyOutDir: true,
   },
 })

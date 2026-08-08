@@ -57,7 +57,6 @@ function injectStyleMarker(source: string, selector: string, marker: string) {
 async function waitForFileWithSourceHeartbeat<T>(
   task: () => Promise<T>,
   touchFilePath: string,
-  touchContent: string,
   timeoutMs = 60_000,
   heartbeatMs = 2_000,
 ) {
@@ -70,7 +69,8 @@ async function waitForFileWithSourceHeartbeat<T>(
     }
     catch {
       if (Date.now() >= nextTouchAt) {
-        await replaceFileByRename(touchFilePath, touchContent)
+        const now = new Date()
+        await fs.utimes(touchFilePath, now, now)
         nextTouchAt = Date.now() + heartbeatMs
       }
       await new Promise(resolve => setTimeout(resolve, 250))
@@ -95,7 +95,6 @@ describe.sequential('vue style @import resolution (e2e)', () => {
 
   it('dev build inlines css/scss/src imports into wxss', async () => {
     await fs.remove(DIST_ROOT)
-    const originalSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
     const devProcess = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -106,7 +105,6 @@ describe.sequential('vue style @import resolution (e2e)', () => {
         waitForFileWithSourceHeartbeat(
           () => waitForFileContains(WXSS_PATH, EXPECTED_MARKERS, 1_000),
           PAGE_SOURCE_PATH,
-          originalSource,
         ),
         'weapp style import output',
       )
@@ -149,7 +147,6 @@ describe.sequential('vue style @import resolution (e2e)', () => {
         waitForFileWithSourceHeartbeat(
           () => waitForFileContains(WXSS_PATH, EXPECTED_MARKERS, 1_000),
           PAGE_SOURCE_PATH,
-          originalPageSource,
         ),
         'weapp initial style import output',
       )
@@ -159,7 +156,6 @@ describe.sequential('vue style @import resolution (e2e)', () => {
         waitForFileWithSourceHeartbeat(
           () => waitForFileContains(WXSS_PATH, [pageMarker], 1_000),
           PAGE_SOURCE_PATH,
-          updatedPageSource,
         ),
         'weapp page style keep-import hmr output',
       )
@@ -172,7 +168,6 @@ describe.sequential('vue style @import resolution (e2e)', () => {
         waitForFileWithSourceHeartbeat(
           () => waitForFileContains(WXSS_PATH, [helloMarker], 1_000),
           HELLO_CSS_PATH,
-          updatedHelloCss,
         ),
         'weapp hello.css hmr output',
       )
@@ -185,7 +180,6 @@ describe.sequential('vue style @import resolution (e2e)', () => {
         waitForFileWithSourceHeartbeat(
           () => waitForFileContains(WXSS_PATH, [scssMarker], 1_000),
           SCSS_IMPORT_PATH,
-          updatedScssImport,
         ),
         'weapp scss import hmr output',
       )
@@ -198,7 +192,6 @@ describe.sequential('vue style @import resolution (e2e)', () => {
         waitForFileWithSourceHeartbeat(
           () => waitForFileContains(WXSS_PATH, [externalMarker], 1_000),
           EXTERNAL_CSS_PATH,
-          updatedExternalCss,
         ),
         'weapp external style src hmr output',
       )

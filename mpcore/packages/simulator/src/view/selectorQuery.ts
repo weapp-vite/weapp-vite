@@ -220,9 +220,15 @@ function resolveFieldsResult(
     }
   }
   if (fields.node) {
-    result.node = {
-      type: node.name ?? 'unknown',
-    }
+    const context = options.resolveContext?.(node)
+    result.node = node.name === 'canvas' && context
+      ? {
+          getContext: () => context,
+          type: 'canvas',
+        }
+      : {
+          type: node.name ?? 'unknown',
+        }
   }
 
   return result

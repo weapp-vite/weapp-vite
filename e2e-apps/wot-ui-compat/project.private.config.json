@@ -1,0 +1,621 @@
+{
+  "description": "Wot UI 全组件启动条件",
+  "projectname": "wot-ui-compat",
+  "setting": {
+    "compileHotReLoad": false,
+    "urlCheck": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "启动页",
+          "pathName": "pages/bootstrap/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "组件索引",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-action-sheet",
+          "pathName": "pages/components/wd-action-sheet/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-avatar",
+          "pathName": "pages/components/wd-avatar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-avatar-group",
+          "pathName": "pages/components/wd-avatar-group/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-backtop",
+          "pathName": "pages/components/wd-backtop/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-badge",
+          "pathName": "pages/components/wd-badge/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-button",
+          "pathName": "pages/components/wd-button/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-calendar",
+          "pathName": "pages/components/wd-calendar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-calendar-view",
+          "pathName": "pages/components/wd-calendar-view/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-card",
+          "pathName": "pages/components/wd-card/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-cascader",
+          "pathName": "pages/components/wd-cascader/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-cell",
+          "pathName": "pages/components/wd-cell/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-cell-group",
+          "pathName": "pages/components/wd-cell-group/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-checkbox",
+          "pathName": "pages/components/wd-checkbox/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-checkbox-group",
+          "pathName": "pages/components/wd-checkbox-group/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-circle",
+          "pathName": "pages/components/wd-circle/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-col",
+          "pathName": "pages/components/wd-col/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-collapse",
+          "pathName": "pages/components/wd-collapse/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-collapse-item",
+          "pathName": "pages/components/wd-collapse-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-config-provider",
+          "pathName": "pages/components/wd-config-provider/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-count-down",
+          "pathName": "pages/components/wd-count-down/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-count-to",
+          "pathName": "pages/components/wd-count-to/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-curtain",
+          "pathName": "pages/components/wd-curtain/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-datetime-picker",
+          "pathName": "pages/components/wd-datetime-picker/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-datetime-picker-view",
+          "pathName": "pages/components/wd-datetime-picker-view/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-dialog",
+          "pathName": "pages/components/wd-dialog/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-divider",
+          "pathName": "pages/components/wd-divider/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-drop-menu",
+          "pathName": "pages/components/wd-drop-menu/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-drop-menu-item",
+          "pathName": "pages/components/wd-drop-menu-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-empty",
+          "pathName": "pages/components/wd-empty/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-fab",
+          "pathName": "pages/components/wd-fab/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-floating-panel",
+          "pathName": "pages/components/wd-floating-panel/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-form",
+          "pathName": "pages/components/wd-form/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-form-item",
+          "pathName": "pages/components/wd-form-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-gap",
+          "pathName": "pages/components/wd-gap/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-grid",
+          "pathName": "pages/components/wd-grid/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-grid-item",
+          "pathName": "pages/components/wd-grid-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-icon",
+          "pathName": "pages/components/wd-icon/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-image-preview",
+          "pathName": "pages/components/wd-image-preview/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-img",
+          "pathName": "pages/components/wd-img/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-img-cropper",
+          "pathName": "pages/components/wd-img-cropper/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-index-anchor",
+          "pathName": "pages/components/wd-index-anchor/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-index-bar",
+          "pathName": "pages/components/wd-index-bar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-input",
+          "pathName": "pages/components/wd-input/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-input-number",
+          "pathName": "pages/components/wd-input-number/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-keyboard",
+          "pathName": "pages/components/wd-keyboard/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-loading",
+          "pathName": "pages/components/wd-loading/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-loadmore",
+          "pathName": "pages/components/wd-loadmore/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-navbar",
+          "pathName": "pages/components/wd-navbar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-navbar-capsule",
+          "pathName": "pages/components/wd-navbar-capsule/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-notice-bar",
+          "pathName": "pages/components/wd-notice-bar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-notify",
+          "pathName": "pages/components/wd-notify/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-overlay",
+          "pathName": "pages/components/wd-overlay/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-pagination",
+          "pathName": "pages/components/wd-pagination/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-password-input",
+          "pathName": "pages/components/wd-password-input/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-picker",
+          "pathName": "pages/components/wd-picker/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-picker-view",
+          "pathName": "pages/components/wd-picker-view/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-popover",
+          "pathName": "pages/components/wd-popover/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-popup",
+          "pathName": "pages/components/wd-popup/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-progress",
+          "pathName": "pages/components/wd-progress/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-radio",
+          "pathName": "pages/components/wd-radio/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-radio-group",
+          "pathName": "pages/components/wd-radio-group/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-rate",
+          "pathName": "pages/components/wd-rate/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-resize",
+          "pathName": "pages/components/wd-resize/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-root-portal",
+          "pathName": "pages/components/wd-root-portal/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-row",
+          "pathName": "pages/components/wd-row/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-search",
+          "pathName": "pages/components/wd-search/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-segmented",
+          "pathName": "pages/components/wd-segmented/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-select-picker",
+          "pathName": "pages/components/wd-select-picker/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-sidebar",
+          "pathName": "pages/components/wd-sidebar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-sidebar-item",
+          "pathName": "pages/components/wd-sidebar-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-signature",
+          "pathName": "pages/components/wd-signature/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-skeleton",
+          "pathName": "pages/components/wd-skeleton/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-slide-verify",
+          "pathName": "pages/components/wd-slide-verify/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-slider",
+          "pathName": "pages/components/wd-slider/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-sort-button",
+          "pathName": "pages/components/wd-sort-button/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-step",
+          "pathName": "pages/components/wd-step/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-steps",
+          "pathName": "pages/components/wd-steps/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-sticky",
+          "pathName": "pages/components/wd-sticky/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-sticky-box",
+          "pathName": "pages/components/wd-sticky-box/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-swipe-action",
+          "pathName": "pages/components/wd-swipe-action/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-swiper",
+          "pathName": "pages/components/wd-swiper/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-swiper-nav",
+          "pathName": "pages/components/wd-swiper-nav/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-switch",
+          "pathName": "pages/components/wd-switch/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-tab",
+          "pathName": "pages/components/wd-tab/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-tabbar",
+          "pathName": "pages/components/wd-tabbar/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-tabbar-item",
+          "pathName": "pages/components/wd-tabbar-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-table",
+          "pathName": "pages/components/wd-table/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-table-column",
+          "pathName": "pages/components/wd-table-column/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-tabs",
+          "pathName": "pages/components/wd-tabs/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-tag",
+          "pathName": "pages/components/wd-tag/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-text",
+          "pathName": "pages/components/wd-text/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-textarea",
+          "pathName": "pages/components/wd-textarea/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-toast",
+          "pathName": "pages/components/wd-toast/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-tooltip",
+          "pathName": "pages/components/wd-tooltip/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-tour",
+          "pathName": "pages/components/wd-tour/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-transition",
+          "pathName": "pages/components/wd-transition/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-upload",
+          "pathName": "pages/components/wd-upload/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-video-preview",
+          "pathName": "pages/components/wd-video-preview/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "wd-watermark",
+          "pathName": "pages/components/wd-watermark/index",
+          "query": "",
+          "scene": null
+        }
+      ]
+    }
+  },
+  "libVersion": "3.15.0"
+}

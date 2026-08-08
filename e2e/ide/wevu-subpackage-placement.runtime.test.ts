@@ -65,8 +65,10 @@ async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
-      skipWarmup: true,
+      retryWarmupTimeout: true,
       timeout: 120_000,
+      warmupRootSelectors: ['.page'],
+      warmupRoute: '/pages/index/index',
     })
   }
   return sharedMiniProgram

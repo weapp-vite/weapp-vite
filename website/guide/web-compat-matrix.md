@@ -50,109 +50,144 @@ keywords:
 | `methods` / `triggerEvent`                       | `✅` | 支持事件触发与组件方法调用。                                     |
 | `lifetimes`（`created/attached/ready/detached`） | `✅` | 支持基础生命周期。                                               |
 | `pageLifetimes`（`show/hide`）                   | `🟡` | 在页面显示/隐藏时分发到组件；`resize` 依赖浏览器环境。           |
+| `App.onLaunch/onShow/onHide`                     | `✅` | 启动回调先于首屏页面挂载；前后台切换由 visibilitychange 驱动。   |
 | `behaviors`（递归合并）                          | `✅` | 支持递归合并 `data/properties/methods/lifetimes/pageLifetimes`。 |
 | `observerInit`                                   | `✅` | 可配置初始化阶段 observer 触发策略。                             |
 | `relations` / `externalClasses` 等               | `⛔` | 当前未在 runtime `ComponentOptions` 中实现。                     |
 
+## 原生组件矩阵
+
+| 组件                                         | 状态 | 说明                                                                                 |
+| -------------------------------------------- | ---- | ------------------------------------------------------------------------------------ |
+| `view` / `text` / `image`                    | `✅` | 保留组件标签与默认样式；`image.mode` 映射到 object fit / position。                  |
+| `button` / `input` / `textarea`              | `✅` | 支持常用属性、表单协议与微信形状事件。                                               |
+| `form` / `label` / checkbox / radio / switch | `✅` | 支持提交、重置、label 关联、组选值与禁用状态。                                       |
+| `scroll-view`                                | `✅` | 支持横纵轴、初始位置和带 delta 的 scroll 事件。                                      |
+| `picker`                                     | `🟡` | 支持 selector、multiSelector、date、time、region；region 不内置行政区 code 数据。    |
+| `picker-view` / `picker-view-column`         | `✅` | 支持受控 value、滚动吸附、mask / indicator 样式、change / pickstart / pickend。      |
+| `slider`                                     | `✅` | 支持范围、步长、颜色、block-size、show-value、disabled、表单值及 changing / change。 |
+| `icon`                                       | `✅` | 支持九种内建类型及 size / color，未知类型稳定降级为 success。                        |
+| `progress`                                   | `✅` | 支持常用视觉属性、按每增长 1% 计时的 active 动画及唯一的 activeend 事件。            |
+| `rich-text`                                  | `🟡` | 支持 HTML 字符串与节点数组；过滤脚本、事件属性、危险 URL / CSS，高级排版仍有差异。   |
+| `navigator`                                  | `🟡` | 支持常用 open-type 与 miniProgram bridge，宿主跳转能力取决于 provider。              |
+| `swiper` / `swiper-item`                     | `✅` | 支持受控切换、触摸、循环、指示点、autoplay 与生命周期清理。                          |
+| `canvas`                                     | `🟡` | 真实 2D Canvas；支持 id 定位和常用绘图命令，高级 API 未全量覆盖。                    |
+| `video`                                      | `🟡` | 同步常用属性与微信形状事件；播放和全屏仍受浏览器限制。                               |
+| `cover-view` / `cover-image`                 | `✅` | 通过绝对定位和层级覆盖媒体/图片；`cover-image` 支持常用图片属性与事件。              |
+| `movable-area` / `movable-view`              | `🟡` | 支持边界、direction、x/y、拖拽和移动事件；惯性、缩放等高级物理效果尚未实现。         |
+
+## 宿主注入矩阵
+
+| 能力                                        | 状态 | 说明                                                                         |
+| ------------------------------------------- | ---- | ---------------------------------------------------------------------------- |
+| `setWebRuntimeHost` / `resetWebRuntimeHost` | `✅` | 可注入网络、存储、剪贴板、对话框和打开链接能力；未注入字段回退到浏览器 API。 |
+| 注入 host 的生命周期                        | `🟡` | 运行时进程内共享一份 host；宿主卸载或测试结束时应显式调用 reset。            |
+
 ## `wx` API 矩阵（Web bridge）
 
-| API                                                                                                      | 状态 | 说明                                                                                                    |
-| -------------------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
-| `wx.navigateTo`                                                                                          | `✅` | 支持基础页面栈推进。                                                                                    |
-| `wx.redirectTo`                                                                                          | `✅` | 支持替换当前页面。                                                                                      |
-| `wx.reLaunch`                                                                                            | `✅` | 支持重建路由栈。                                                                                        |
-| `wx.switchTab`                                                                                           | `🟡` | 当前行为等价于 `redirectTo`。                                                                           |
-| `wx.showTabBar` / `wx.hideTabBar`                                                                        | `🟡` | 当前为 no-op 成功桥接，用于兼容调用链，不改变实际 Web 布局。                                            |
-| `wx.loadSubPackage` / `wx.preloadSubpackage`                                                             | `🟡` | 当前提供 no-op 成功桥接，主要用于兼容分包加载调用链，不执行真实下载与预加载流程。                       |
-| `wx.navigateBack`                                                                                        | `✅` | 支持 `delta` 回退。                                                                                     |
-| `wx.setNavigationBarTitle`                                                                               | `🟡` | 依赖默认导航栏组件存在。                                                                                |
-| `wx.setNavigationBarColor`                                                                               | `🟡` | 依赖默认导航栏组件存在。                                                                                |
-| `wx.setBackgroundColor` / `wx.setBackgroundTextStyle`                                                    | `🟡` | 提供页面背景与文本样式的近似桥接，基于 DOM 样式设置，不等价小程序原生渲染语义。                         |
-| `wx.showNavigationBarLoading` / `hideNavigationBarLoading`                                               | `🟡` | 依赖默认导航栏组件存在。                                                                                |
-| `wx.showLoading` / `wx.hideLoading`                                                                      | `🟡` | 提供轻量 DOM loading 层，视觉行为为近似实现。                                                           |
-| `wx.nextTick`                                                                                            | `🟡` | 基于微任务队列调度回调，时序近似小程序行为。                                                            |
-| `wx.showModal`                                                                                           | `🟡` | 基于浏览器 `confirm/alert`，`confirmText/cancelText` 不生效。                                           |
-| `wx.showActionSheet`                                                                                     | `🟡` | 通过浏览器 `prompt` 或预设索引桥接选择结果，交互样式与真机 ActionSheet 不一致。                         |
-| `wx.showToast`                                                                                           | `🟡` | 提供轻量 DOM toast，样式与真机不完全一致。                                                              |
-| `wx.startPullDownRefresh` / `wx.stopPullDownRefresh`                                                     | `🟡` | Web 侧均作为 no-op 成功桥接，便于兼容下拉刷新调用链。                                                   |
-| `wx.hideKeyboard`                                                                                        | `🟡` | 通过 `blur` 当前聚焦输入元素近似桥接收起键盘能力，行为受浏览器焦点模型限制。                            |
-| `wx.pageScrollTo`                                                                                        | `🟡` | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。                                     |
-| `wx.createCanvasContext`                                                                                 | `🟡` | 基于浏览器 2D Canvas 上下文桥接高频绘制命令，绘图状态与高级 API 未全量覆盖。                            |
-| `wx.createVideoContext`                                                                                  | `🟡` | 基于页面 video 元素提供播放控制桥接（`play/pause/seek` 等），不包含原生播放器完整语义。                 |
-| `wx.createWorker`                                                                                        | `🟡` | 基于浏览器 Worker 桥接消息收发与错误监听（`postMessage/onMessage/onError`），线程模型与真机不完全一致。 |
-| `wx.createSelectorQuery`                                                                                 | `🟡` | 支持 `in/select/selectAll/selectViewport` 与 `boundingClientRect/scrollOffset/fields/node` 高频子集。   |
-| `wx.setClipboardData` / `wx.getClipboardData`                                                            | `🟡` | 依赖浏览器剪贴板权限；失败时会回调 `fail`。                                                             |
-| `wx.request`                                                                                             | `🟡` | 基于 `fetch` 桥接，支持常见 JSON/text 场景；上传下载与高级拦截能力未覆盖。                              |
-| `wx.uploadFile`                                                                                          | `🟡` | 基于 `fetch + FormData` 桥接文件上传，支持基础表单字段；上传任务进度与中断控制语义未覆盖。              |
-| `wx.downloadFile`                                                                                        | `🟡` | 基于 `fetch` + `Blob URL` 桥接，返回临时 URL；文件系统语义与真机不一致。                                |
-| `wx.openDocument`                                                                                        | `🟡` | 支持 URL 或内存文件桥接到浏览器新窗口预览，文档菜单与内置查看器行为不等价。                             |
-| `wx.chooseImage`                                                                                         | `🟡` | 优先使用 `showOpenFilePicker`，降级到文件输入框选择；结果为浏览器临时 URL。                             |
-| `wx.chooseMedia`                                                                                         | `🟡` | 基于文件选择器桥接图片/视频选择，结果为浏览器临时 URL，媒体元信息（时长/尺寸）当前为近似占位值。        |
-| `wx.chooseVideo`                                                                                         | `🟡` | 基于媒体文件选择桥接视频选择，返回浏览器临时 URL；时长/尺寸字段当前为近似占位值。                       |
-| `wx.compressImage`                                                                                       | `🟡` | 优先基于 Canvas 执行近似压缩，失败或能力缺失时回退原图路径；压缩质量与真机语义不完全一致。              |
-| `wx.compressVideo`                                                                                       | `🟡` | 当前提供 no-op 兼容桥接（默认返回原视频路径），可通过预设结果注入压缩后的临时路径用于调试流程。         |
-| `wx.getImageInfo`                                                                                        | `🟡` | 基于浏览器 `Image` 对象读取图片宽高与类型；EXIF 与方向能力为近似值。                                    |
-| `wx.getVideoInfo`                                                                                        | `🟡` | 优先读取运行时预设，降级尝试浏览器 video 元信息；文件大小、帧率、码率等字段当前为近似值。               |
-| `wx.chooseMessageFile`                                                                                   | `🟡` | 基于文件选择器桥接消息文件选择，返回浏览器临时文件信息；会话/聊天上下文语义与真机不同。                 |
-| `wx.chooseFile`                                                                                          | `🟡` | 基于文件选择器桥接通用文件选择，支持 `extension` 过滤；返回浏览器临时文件信息。                         |
-| `wx.previewImage`                                                                                        | `🟡` | 使用浏览器 `window.open` 预览图片，依赖浏览器弹窗策略。                                                 |
-| `wx.previewMedia`                                                                                        | `🟡` | 基于浏览器新窗口预览媒体 URL，不提供小程序原生媒体预览器的手势、切换与播放控制能力。                    |
-| `wx.openVideoEditor`                                                                                     | `🟡` | 当前提供 API 级兼容桥接（默认返回原视频路径），可通过预设结果注入编辑后路径用于调试流程。               |
-| `wx.saveImageToPhotosAlbum`                                                                              | `🟡` | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                            |
-| `wx.saveVideoToPhotosAlbum`                                                                              | `🟡` | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                            |
-| `wx.saveFile`                                                                                            | `🟡` | 将临时文件路径近似持久化到 Web 内存文件系统并返回 `savedFilePath`，不等价真机文件沙箱语义。             |
-| `wx.saveFileToDisk`                                                                                      | `🟡` | 通过浏览器下载行为近似桥接保存文件流程，不具备小程序容器内的系统文件管理语义。                          |
-| `wx.login` / `wx.checkSession` / `wx.getAccountInfoSync`                                                 | `🟡` | 提供 Web 环境下的登录态占位桥接与会话校验，不等价真实小程序登录会话。                                   |
-| `wx.getUserInfo` / `wx.getUserProfile`                                                                   | `🟡` | 提供用户信息读取与授权确认占位桥接，可通过预设结果注入用户资料，不触发系统级授权弹窗。                  |
-| `wx.showShareMenu` / `wx.updateShareMenu`                                                                | `🟡` | 提供 API 级成功回调桥接，不覆盖平台级分享能力差异。                                                     |
-| `wx.getExtConfigSync` / `wx.getExtConfig`                                                                | `🟡` | 返回 Web runtime 注入的扩展配置快照（默认空对象）。                                                     |
-| `wx.getUpdateManager` / `wx.getLogManager`                                                               | `🟡` | 返回 Web 侧更新/日志桥接对象：更新流程可通过预设状态驱动，日志输出映射到浏览器 console。                |
-| `wx.cloud.init` / `wx.cloud.callFunction`                                                                | `🟡` | 提供云能力初始化与云函数调用占位桥接，返回 mock 结果用于流程调试，不连接真实云环境。                    |
-| `wx.reportAnalytics`                                                                                     | `🟡` | 在运行时内存中记录事件用于调试，不会真实上报到微信数据分析后台。                                        |
-| `wx.navigateToMiniProgram` / `wx.exitMiniProgram`                                                        | `🟡` | 提供 API 级桥接用于流程调试，不执行真实小程序容器跳转/退出。                                            |
-| `wx.openCustomerServiceChat`                                                                             | `🟡` | 可选地通过浏览器打开客服链接，企业微信会话能力不等价。                                                  |
-| `wx.makePhoneCall`                                                                                       | `🟡` | 通过浏览器 `tel:` 链接桥接拨号流程，受设备与浏览器支持限制。                                            |
-| `wx.chooseAddress`                                                                                       | `🟡` | 支持通过运行时预设或 `prompt` 输入桥接收货地址选择，不包含小程序原生地址簿与用户授权弹窗能力。          |
-| `wx.chooseLocation`                                                                                      | `🟡` | 支持通过预设值或 `prompt` 输入经纬度完成桥接，不包含地图选点 UI 与 POI 选择能力。                       |
-| `wx.openLocation`                                                                                        | `🟡` | 通过地图 URL 跳转近似桥接定位查看能力，不等价微信内置地图页面行为。                                     |
-| `wx.requestPayment`                                                                                      | `🟡` | 仅提供成功回调级占位桥接，不涉及真实支付签名与交易流程。                                                |
-| `wx.requestSubscribeMessage`                                                                             | `🟡` | 提供订阅消息授权结果占位桥接，可通过预设值控制模板消息确认结果，不触发平台级订阅弹窗。                  |
-| `wx.createRewardedVideoAd` / `wx.createInterstitialAd`                                                   | `🟡` | 提供广告对象生命周期桥接（`load/show/onError/onClose`），不触发真实广告网络与平台策略。                 |
-| `wx.createVKSession`                                                                                     | `🟡` | 提供 VKSession 生命周期占位桥接（`start/stop/destroy/on/off`），不包含真实 VisionKit 推理能力。         |
-| `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `🟡` | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。                                            |
-| `wx.scanCode`                                                                                            | `🟡` | 提供基于输入/预设结果的占位扫码桥接，用于流程调试，不等价真实摄像头扫码能力。                           |
-| `wx.getLocation`                                                                                         | `🟡` | 基于浏览器 Geolocation API 桥接，坐标与精度字段受浏览器权限策略影响。                                   |
-| `wx.getFuzzyLocation`                                                                                    | `🟡` | 优先读取运行时预设并降级到定位结果模糊化桥接（经纬度保留两位小数），精度字段为近似值。                  |
-| `wx.vibrateShort`                                                                                        | `🟡` | 通过浏览器 `navigator.vibrate` 触发短振动，实际效果受设备与权限限制。                                   |
-| `wx.getBatteryInfo` / `wx.getBatteryInfoSync`                                                            | `🟡` | 优先读取浏览器 Battery API，缺失时回退到缓存近似值。                                                    |
-| `wx.getFileSystemManager`                                                                                | `🟡` | 提供基于内存的文件读写桥接（`writeFile/readFile` 及 sync 版本），用于开发调试，不等价真机沙箱文件系统。 |
-| `wx.setStorage` / `getStorage` / `removeStorage` / `clearStorage` / `getStorageInfo`                     | `🟡` | 基于内存 + `localStorage` 前缀桥接；与真机容量和隔离策略不完全一致。                                    |
-| `wx.setStorageSync` / `getStorageSync` / `removeStorageSync` / `clearStorageSync` / `getStorageInfoSync` | `🟡` | 提供同步桥接，缺失 key 时 `getStorageSync` 返回空字符串。                                               |
-| `wx.getSystemInfo` / `wx.getSystemInfoSync` / `wx.getWindowInfo`                                         | `🟡` | 基于浏览器环境推断，字段为近似值。                                                                      |
-| `wx.onWindowResize` / `wx.offWindowResize`                                                               | `🟡` | 基于浏览器 `resize` 事件桥接窗口尺寸变化回调，触发时序与真机可能有差异。                                |
-| `wx.getDeviceInfo` / `wx.getSystemSetting` / `wx.getAppAuthorizeSetting`                                 | `🟡` | 返回浏览器可推断字段与默认授权状态（多数字段为近似/占位值）。                                           |
-| `wx.getSetting` / `wx.authorize` / `wx.openSetting`                                                      | `🟡` | 提供基于运行时内存状态的权限桥接，支持常见 scope 调试，不会触发系统级授权弹窗。                         |
-| `wx.openAppAuthorizeSetting`                                                                             | `🟡` | 提供应用级授权设置结果桥接，可通过预设状态注入授权结果，不触发系统级授权设置页。                        |
-| `wx.getAppBaseInfo`                                                                                      | `🟡` | 提供浏览器环境下的基础信息近似值（语言、主题、平台等）。                                                |
-| `wx.getMenuButtonBoundingClientRect`                                                                     | `🟡` | 返回基于窗口尺寸的启发式胶囊按钮区域，不保证与真机一致。                                                |
-| `wx.getLaunchOptionsSync` / `wx.getEnterOptionsSync`                                                     | `🟡` | 返回基于当前 Web runtime 路由推断的启动参数快照。                                                       |
-| `wx.canIUse`                                                                                             | `🟡` | 支持 API 级能力探测（`wx.xxx`）；复杂组件/样式规则探测未覆盖。                                          |
-| `getCurrentPages` / `getApp`                                                                             | `✅` | 提供基础桥接能力。                                                                                      |
-| 其他常见 API（多媒体高级能力等）                                                                         | `⛔` | 尚未内置桥接，需业务层自行兼容。                                                                        |
+| API                                                                                                      | 状态 | 说明                                                                                                                        |
+| -------------------------------------------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------- |
+| `wx.navigateTo`                                                                                          | `✅` | 支持基础页面栈推进。                                                                                                        |
+| `wx.redirectTo`                                                                                          | `✅` | 支持替换当前页面。                                                                                                          |
+| `wx.reLaunch`                                                                                            | `✅` | 支持重建路由栈。                                                                                                            |
+| `wx.switchTab`                                                                                           | `✅` | 只接受 tabBar 路由；关闭非 tab 页面并缓存其他 tab 页面实例，重复点击不会重跑生命周期。                                      |
+| `wx.showTabBar` / `wx.hideTabBar`                                                                        | `✅` | 控制标准 Web App Shell 显隐，并同步页面底部 inset 与安全区布局。                                                            |
+| `wx.setTabBarItem` / `wx.setTabBarStyle`                                                                 | `✅` | 动态更新标准 tabBar 的文字、图标、颜色、背景与边框。                                                                        |
+| `wx.setTabBarBadge` / `removeTabBarBadge` / `showTabBarRedDot` / `hideTabBarRedDot`                      | `✅` | 支持标准 tabBar badge 与红点状态；非法 index 按微信形状回调和 Promise 失败。                                                |
+| `wx.loadSubPackage` / `wx.preloadSubpackage`                                                             | `🟡` | 当前提供 no-op 成功桥接，主要用于兼容分包加载调用链，不执行真实下载与预加载流程。                                           |
+| `wx.navigateBack`                                                                                        | `✅` | 支持 `delta` 回退。                                                                                                         |
+| 浏览器深链接与前进/后退                                                                                  | `✅` | `runtime.routing` 支持 `history` / `hash`；页面栈拥有 `#app` 滚动位置并禁用浏览器原生滚动恢复。                             |
+| 页面 Head 与首屏资源提示                                                                                 | `✅` | `runtime.seo` 同步标题、description、canonical；`runtime.resourceHints.links` 去重注入浏览器 Resource Hints，不等同于 SSR。 |
+| `wx.setNavigationBarTitle`                                                                               | `🟡` | 依赖默认导航栏组件存在。                                                                                                    |
+| `wx.setNavigationBarColor`                                                                               | `🟡` | 依赖默认导航栏组件存在。                                                                                                    |
+| `wx.setBackgroundColor` / `wx.setBackgroundTextStyle`                                                    | `🟡` | 提供页面背景与文本样式的近似桥接，基于 DOM 样式设置，不等价小程序原生渲染语义。                                             |
+| `wx.showNavigationBarLoading` / `hideNavigationBarLoading`                                               | `🟡` | 依赖默认导航栏组件存在。                                                                                                    |
+| `wx.showLoading` / `wx.hideLoading`                                                                      | `🟡` | 提供轻量 DOM loading 层，视觉行为为近似实现。                                                                               |
+| `wx.nextTick`                                                                                            | `🟡` | 基于微任务队列调度回调，时序近似小程序行为。                                                                                |
+| `wx.showModal`                                                                                           | `🟡` | 基于浏览器 `confirm/alert`，`confirmText/cancelText` 不生效。                                                               |
+| `wx.showActionSheet`                                                                                     | `🟡` | 通过浏览器 `prompt` 或预设索引桥接选择结果，交互样式与真机 ActionSheet 不一致。                                             |
+| `wx.showToast`                                                                                           | `🟡` | 提供轻量 DOM toast，样式与真机不完全一致。                                                                                  |
+| `wx.startPullDownRefresh` / `wx.stopPullDownRefresh`                                                     | `🟡` | Web 侧均作为 no-op 成功桥接，便于兼容下拉刷新调用链。                                                                       |
+| `wx.hideKeyboard`                                                                                        | `🟡` | 通过 `blur` 当前聚焦输入元素近似桥接收起键盘能力，行为受浏览器焦点模型限制。                                                |
+| `wx.pageScrollTo`                                                                                        | `🟡` | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。                                                         |
+| `wx.createCanvasContext`                                                                                 | `🟡` | 跨 Shadow DOM 定位真实 Canvas，支持常用路径、填充和变换；高级 API 未全量覆盖。                                              |
+| `wx.createVideoContext`                                                                                  | `🟡` | 跨 Shadow DOM 定位真实 video，并提供 play/pause/seek 等控制；不包含原生播放器完整语义。                                     |
+| `wx.createWorker`                                                                                        | `🟡` | 基于浏览器 Worker 桥接消息收发与错误监听（`postMessage/onMessage/onError`），线程模型与真机不完全一致。                     |
+| `wx.createSelectorQuery`                                                                                 | `🟡` | 支持 `in/select/selectAll/selectViewport` 与 `boundingClientRect/scrollOffset/fields/node` 高频子集。                       |
+| `wx.setClipboardData` / `wx.getClipboardData`                                                            | `🟡` | 依赖浏览器剪贴板权限；失败时会回调 `fail`。                                                                                 |
+| `wx.request`                                                                                             | `🟡` | 基于 `fetch` 桥接，支持常见 JSON/text 场景；上传下载与高级拦截能力未覆盖。                                                  |
+| `wx.uploadFile`                                                                                          | `🟡` | 基于 `fetch + FormData` 桥接文件上传，支持基础表单字段；上传任务进度与中断控制语义未覆盖。                                  |
+| `wx.downloadFile`                                                                                        | `🟡` | 基于 `fetch` + `Blob URL` 桥接，返回临时 URL；文件系统语义与真机不一致。                                                    |
+| `wx.openDocument`                                                                                        | `🟡` | 支持 URL 或内存文件桥接到浏览器新窗口预览，文档菜单与内置查看器行为不等价。                                                 |
+| `wx.chooseImage`                                                                                         | `🟡` | 优先使用 `showOpenFilePicker`，降级到文件输入框选择；结果为浏览器临时 URL。                                                 |
+| `wx.chooseMedia`                                                                                         | `🟡` | 基于文件选择器桥接图片/视频选择，结果为浏览器临时 URL，媒体元信息（时长/尺寸）当前为近似占位值。                            |
+| `wx.chooseVideo`                                                                                         | `🟡` | 基于媒体文件选择桥接视频选择，返回浏览器临时 URL；时长/尺寸字段当前为近似占位值。                                           |
+| `wx.compressImage`                                                                                       | `🟡` | 优先基于 Canvas 执行近似压缩，失败或能力缺失时回退原图路径；压缩质量与真机语义不完全一致。                                  |
+| `wx.compressVideo`                                                                                       | `🟡` | 当前提供 no-op 兼容桥接（默认返回原视频路径），可通过预设结果注入压缩后的临时路径用于调试流程。                             |
+| `wx.getImageInfo`                                                                                        | `🟡` | 基于浏览器 `Image` 对象读取图片宽高与类型；EXIF 与方向能力为近似值。                                                        |
+| `wx.getVideoInfo`                                                                                        | `🟡` | 优先读取运行时预设，降级尝试浏览器 video 元信息；文件大小、帧率、码率等字段当前为近似值。                                   |
+| `wx.chooseMessageFile`                                                                                   | `🟡` | 基于文件选择器桥接消息文件选择，返回浏览器临时文件信息；会话/聊天上下文语义与真机不同。                                     |
+| `wx.chooseFile`                                                                                          | `🟡` | 基于文件选择器桥接通用文件选择，支持 `extension` 过滤；返回浏览器临时文件信息。                                             |
+| `wx.previewImage`                                                                                        | `🟡` | 使用浏览器 `window.open` 预览图片，依赖浏览器弹窗策略。                                                                     |
+| `wx.previewMedia`                                                                                        | `🟡` | 基于浏览器新窗口预览媒体 URL，不提供小程序原生媒体预览器的手势、切换与播放控制能力。                                        |
+| `wx.openVideoEditor`                                                                                     | `🟡` | 当前提供 API 级兼容桥接（默认返回原视频路径），可通过预设结果注入编辑后路径用于调试流程。                                   |
+| `wx.saveImageToPhotosAlbum`                                                                              | `🟡` | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                                                |
+| `wx.saveVideoToPhotosAlbum`                                                                              | `🟡` | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                                                |
+| `wx.saveFile`                                                                                            | `🟡` | 将临时文件路径近似持久化到 Web 内存文件系统并返回 `savedFilePath`，不等价真机文件沙箱语义。                                 |
+| `wx.saveFileToDisk`                                                                                      | `🟡` | 通过浏览器下载行为近似桥接保存文件流程，不具备小程序容器内的系统文件管理语义。                                              |
+| `wx.login` / `wx.checkSession` / `wx.getAccountInfoSync`                                                 | `🟡` | 提供 Web 环境下的登录态占位桥接与会话校验，不等价真实小程序登录会话。                                                       |
+| `wx.getUserInfo` / `wx.getUserProfile`                                                                   | `🟡` | 提供用户信息读取与授权确认占位桥接，可通过预设结果注入用户资料，不触发系统级授权弹窗。                                      |
+| `wx.showShareMenu` / `wx.updateShareMenu`                                                                | `🟡` | 提供 API 级成功回调桥接，不覆盖平台级分享能力差异。                                                                         |
+| `wx.getExtConfigSync` / `wx.getExtConfig`                                                                | `🟡` | 返回 Web runtime 注入的扩展配置快照（默认空对象）。                                                                         |
+| `wx.getUpdateManager` / `wx.getLogManager`                                                               | `🟡` | 返回 Web 侧更新/日志桥接对象：更新流程可通过预设状态驱动，日志输出映射到浏览器 console。                                    |
+| `wx.cloud.init` / `wx.cloud.callFunction`                                                                | `🟡` | 提供云能力初始化与云函数调用占位桥接，返回 mock 结果用于流程调试，不连接真实云环境。                                        |
+| `wx.reportAnalytics`                                                                                     | `🟡` | 在运行时内存中记录事件用于调试，不会真实上报到微信数据分析后台。                                                            |
+| `wx.navigateToMiniProgram` / `wx.exitMiniProgram`                                                        | `🟡` | 提供 API 级桥接用于流程调试，不执行真实小程序容器跳转/退出。                                                                |
+| `wx.openCustomerServiceChat`                                                                             | `🟡` | 可选地通过浏览器打开客服链接，企业微信会话能力不等价。                                                                      |
+| `wx.makePhoneCall`                                                                                       | `🟡` | 通过浏览器 `tel:` 链接桥接拨号流程，受设备与浏览器支持限制。                                                                |
+| `wx.chooseAddress`                                                                                       | `🟡` | 支持通过运行时预设或 `prompt` 输入桥接收货地址选择，不包含小程序原生地址簿与用户授权弹窗能力。                              |
+| `wx.chooseLocation`                                                                                      | `🟡` | 支持通过预设值或 `prompt` 输入经纬度完成桥接，不包含地图选点 UI 与 POI 选择能力。                                           |
+| `wx.openLocation`                                                                                        | `🟡` | 通过地图 URL 跳转近似桥接定位查看能力，不等价微信内置地图页面行为。                                                         |
+| `wx.requestPayment`                                                                                      | `🟡` | 仅提供成功回调级占位桥接，不涉及真实支付签名与交易流程。                                                                    |
+| `wx.requestSubscribeMessage`                                                                             | `🟡` | 提供订阅消息授权结果占位桥接，可通过预设值控制模板消息确认结果，不触发平台级订阅弹窗。                                      |
+| `wx.createRewardedVideoAd` / `wx.createInterstitialAd`                                                   | `🟡` | 提供广告对象生命周期桥接（`load/show/onError/onClose`），不触发真实广告网络与平台策略。                                     |
+| `wx.createVKSession`                                                                                     | `🟡` | 提供 VKSession 生命周期占位桥接（`start/stop/destroy/on/off`），不包含真实 VisionKit 推理能力。                             |
+| `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `🟡` | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。                                                                |
+| `wx.scanCode`                                                                                            | `🟡` | 提供基于输入/预设结果的占位扫码桥接，用于流程调试，不等价真实摄像头扫码能力。                                               |
+| `wx.getLocation`                                                                                         | `🟡` | 基于浏览器 Geolocation API 桥接，坐标与精度字段受浏览器权限策略影响。                                                       |
+| `wx.getFuzzyLocation`                                                                                    | `🟡` | 优先读取运行时预设并降级到定位结果模糊化桥接（经纬度保留两位小数），精度字段为近似值。                                      |
+| `wx.vibrateShort`                                                                                        | `🟡` | 通过浏览器 `navigator.vibrate` 触发短振动，实际效果受设备与权限限制。                                                       |
+| `wx.getBatteryInfo` / `wx.getBatteryInfoSync`                                                            | `🟡` | 优先读取浏览器 Battery API，缺失时回退到缓存近似值。                                                                        |
+| `wx.getFileSystemManager`                                                                                | `🟡` | 提供基于内存的文件读写桥接（`writeFile/readFile` 及 sync 版本），用于开发调试，不等价真机沙箱文件系统。                     |
+| `wx.setStorage` / `getStorage` / `removeStorage` / `clearStorage` / `getStorageInfo`                     | `🟡` | 基于内存 + `localStorage` 前缀桥接；与真机容量和隔离策略不完全一致。                                                        |
+| `wx.setStorageSync` / `getStorageSync` / `removeStorageSync` / `clearStorageSync` / `getStorageInfoSync` | `🟡` | 提供同步桥接，缺失 key 时 `getStorageSync` 返回空字符串。                                                                   |
+| `wx.getSystemInfo` / `wx.getSystemInfoSync` / `wx.getWindowInfo`                                         | `🟡` | 基于浏览器环境推断，字段为近似值。                                                                                          |
+| `wx.onWindowResize` / `wx.offWindowResize`                                                               | `🟡` | 基于浏览器 `resize` 事件桥接窗口尺寸变化回调，触发时序与真机可能有差异。                                                    |
+| `wx.getDeviceInfo` / `wx.getSystemSetting` / `wx.getAppAuthorizeSetting`                                 | `🟡` | 返回浏览器可推断字段与默认授权状态（多数字段为近似/占位值）。                                                               |
+| `wx.getSetting` / `wx.authorize` / `wx.openSetting`                                                      | `🟡` | 提供基于运行时内存状态的权限桥接，支持常见 scope 调试，不会触发系统级授权弹窗。                                             |
+| `wx.openAppAuthorizeSetting`                                                                             | `🟡` | 提供应用级授权设置结果桥接，可通过预设状态注入授权结果，不触发系统级授权设置页。                                            |
+| `wx.getAppBaseInfo`                                                                                      | `🟡` | 提供浏览器环境下的基础信息近似值（语言、主题、平台等）。                                                                    |
+| `wx.getMenuButtonBoundingClientRect`                                                                     | `🟡` | 返回基于窗口尺寸的启发式胶囊按钮区域，不保证与真机一致。                                                                    |
+| `wx.getLaunchOptionsSync` / `wx.getEnterOptionsSync`                                                     | `🟡` | launch 保留初始入口；重新进入前台时 enter 更新为当前页面，scene/referrerInfo 仍为 Web 近似值。                              |
+| `wx.canIUse`                                                                                             | `🟡` | 支持 API 级能力探测（`wx.xxx`）；复杂组件/样式规则探测未覆盖。                                                              |
+| `getCurrentPages` / `getApp`                                                                             | `✅` | 提供基础桥接能力。                                                                                                          |
+| 其他常见 API（多媒体高级能力等）                                                                         | `⛔` | 尚未内置桥接，需业务层自行兼容。                                                                                            |
 
 ## 已知限制
 
 1. Web 侧表达式与 WXS 执行依赖动态求值机制，行为与小程序引擎存在差异。
    如需更保守或更严格的行为，可通过 `weapp.web.pluginOptions.runtime.executionMode` 调整为 `safe` 或 `strict`。
 2. 事件映射与组件标签映射优先覆盖高频场景，未承诺全量等价。
-3. `analyze --platform h5` 目前仅支持 Web 静态配置分析（`weapp.web` 与 `executionMode`），不包含分包体积、源码映射和仪表盘能力。
+3. `analyze --platform web` 目前仅支持 Web 静态配置分析（`weapp.web` 与 `executionMode`），不包含分包体积、源码映射和仪表盘能力。
 4. 运行时告警已支持 `runtime.warnings.level` 与 `runtime.warnings.dedupe`，但当前可观测信息仍以控制台输出为主。
+5. 标准 `app.json.tabBar` 已由 Web App Shell 接管；`tabBar.custom: true` 只保留路由语义，自定义组件本身不会自动移植。
+6. DevTools automator 截图不包含宿主导航栏和 tabBar。视觉 manifest 按 case 记录实际 WebView 视口，tabBar 宿主区域使用浏览器结构、尺寸与交互断言验收。
 
 ## 建议用法
 
 1. 将 Web 运行时作为“开发期预览与调试层”，不要直接等价真机验收。
 2. 新增 Web 能力时，同步更新本矩阵，并补齐单测/E2E 用例。
-3. 需要查看 Web 侧静态分析时，可执行 `wv analyze --platform h5 --json`。
+3. 需要查看 Web 侧静态分析时，可执行 `wv analyze --platform web --json`。
 4. 若业务依赖 `⛔` 能力，建议在业务侧提供平台分支与降级策略。
 
 <style scoped>

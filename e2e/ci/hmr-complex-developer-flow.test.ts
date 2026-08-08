@@ -13,7 +13,7 @@ import {
   resolvePlatforms,
   waitForFileContains,
 } from '../utils/hmr-helpers'
-import { toRelativeImport, waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
+import { toRelativeImport, waitForWevuSharedRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const HMR_SRC_DIR = path.join(APP_ROOT, 'src/pages/hmr')
@@ -73,11 +73,19 @@ function createPageScriptWithMarker(source: string, marker: string) {
 
 async function waitForSharedStoreMarker(marker: string, retrySource: string) {
   try {
-    return await waitForWevuRuntimeChunkContaining(DIST_ROOT, marker, 30_000)
+    return await waitForWevuSharedRuntimeChunkContaining(
+      DIST_ROOT,
+      [marker, 'setupCounter', 'optionsCounter'],
+      30_000,
+    )
   }
   catch {
     await replaceFileByRename(SHARED_STORE, `${retrySource}\n`)
-    return await waitForWevuRuntimeChunkContaining(DIST_ROOT, marker, 90_000)
+    return await waitForWevuSharedRuntimeChunkContaining(
+      DIST_ROOT,
+      [marker, 'setupCounter', 'optionsCounter'],
+      90_000,
+    )
   }
 }
 

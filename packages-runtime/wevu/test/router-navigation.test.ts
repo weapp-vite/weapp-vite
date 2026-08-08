@@ -7,6 +7,7 @@ import {
   NavigationFailureType,
 } from '@/router'
 import { clearActiveRouter } from '@/router/instance'
+import { notifyRouteStateSync } from '@/router/routeSync'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 
 describe('router navigation helpers', () => {
@@ -3300,6 +3301,215 @@ describe('router navigation helpers', () => {
         to: { path: 'pages/profile/index' },
       },
     ])
+  })
+
+  it('restores currentRoute after back so the same target can be pushed again', async () => {
+    const pages = [
+      {
+        route: 'pages/page1/index',
+        options: {},
+      },
+    ]
+    const navigateTo = vi.fn((options: any) => {
+      pages.push({
+        route: 'pages/page2/index',
+        options: {},
+      })
+      options.success?.({})
+    })
+    const navigateBack = vi.fn((options: any) => {
+      pages.pop()
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack,
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).wx = instance.router
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const router = createRouter({
+      routes: [
+        {
+          name: 'page1',
+          path: '/pages/page1/index',
+        },
+        {
+          name: 'page2',
+          path: '/pages/page2/index',
+        },
+      ],
+    })
+
+    await expect(router.push({ name: 'page2' })).resolves.toBeUndefined()
+    expect(router.currentRoute.path).toBe('pages/page2/index')
+
+    await expect(router.back()).resolves.toBeUndefined()
+    expect(router.currentRoute.path).toBe('pages/page1/index')
+
+    await expect(router.push({ name: 'page2' })).resolves.toBeUndefined()
+    expect(navigateTo).toHaveBeenCalledTimes(2)
+  })
+
+  it('provides the resolved stack target to router.back guards and hooks', async () => {
+    const pages = [
+      {
+        route: 'pages/page1/index',
+        options: {
+          source: 'back-target',
+        },
+      },
+      {
+        route: 'pages/page2/index',
+        options: {},
+      },
+    ]
+    const navigateBack = vi.fn((options: any) => {
+      pages.pop()
+      options.success?.({})
+    })
+    const guardCalls: any[] = []
+    const afterCalls: any[] = []
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack,
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).wx = instance.router
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const router = createRouter({
+      routes: [
+        {
+          name: 'page1',
+          path: '/pages/page1/index',
+        },
+        {
+          name: 'page2',
+          path: '/pages/page2/index',
+        },
+      ],
+    })
+    notifyRouteStateSync({ page: pages[1] })
+    router.beforeEach((to, from) => {
+      guardCalls.push({ to, from })
+    })
+    router.afterEach((to, from) => {
+      afterCalls.push({ to, from })
+    })
+
+    await expect(router.back()).resolves.toBeUndefined()
+
+    expect(guardCalls).toMatchObject([
+      {
+        from: { path: 'pages/page2/index' },
+        to: {
+          fullPath: '/pages/page1/index?source=back-target',
+          name: 'page1',
+          path: 'pages/page1/index',
+        },
+      },
+    ])
+    expect(afterCalls).toMatchObject(guardCalls)
+    expect(router.currentRoute.fullPath).toBe('/pages/page1/index?source=back-target')
+  })
+
+  it('restores currentRoute from the activated page when the host performs back navigation', async () => {
+    const page1 = {
+      route: 'pages/page1/index',
+      options: {
+        source: 'host-back',
+      },
+    }
+    const pages: Array<{ options: Record<string, string>, route: string }> = [page1]
+    const navigateTo = vi.fn((options: any) => {
+      pages.push({
+        route: 'pages/page2/index',
+        options: {},
+      })
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const router = createRouter({
+      routes: [
+        {
+          name: 'page1',
+          path: '/pages/page1/index',
+        },
+        {
+          name: 'page2',
+          path: '/pages/page2/index',
+        },
+      ],
+    })
+    const guardCalls: any[] = []
+    const afterCalls: any[] = []
+    router.beforeEach((to, from) => {
+      guardCalls.push({ to, from })
+    })
+    router.afterEach((to, from) => {
+      afterCalls.push({ to, from })
+    })
+
+    await router.push({ name: 'page2' })
+    expect(router.currentRoute.path).toBe('pages/page2/index')
+    guardCalls.length = 0
+    afterCalls.length = 0
+
+    notifyRouteStateSync({ page: page1, source: 'page' })
+    await vi.waitFor(() => {
+      expect(afterCalls).toHaveLength(1)
+    })
+    expect(router.currentRoute.fullPath).toBe('/pages/page1/index?source=host-back')
+    expect(router.currentRoute.name).toBe('page1')
+    expect(guardCalls).toMatchObject([
+      {
+        from: { path: 'pages/page2/index' },
+        to: {
+          fullPath: '/pages/page1/index?source=host-back',
+          name: 'page1',
+          path: 'pages/page1/index',
+        },
+      },
+    ])
+    expect(afterCalls).toMatchObject(guardCalls)
+
+    await expect(router.push({ name: 'page2' })).resolves.toBeUndefined()
+    expect(navigateTo).toHaveBeenCalledTimes(2)
   })
 
   it('syncs currentRoute after native switchTab succeeds', async () => {

@@ -26,6 +26,9 @@ function matchesSimpleSelector(node: DomNodeLike, selector: string) {
   if (selector === 'page') {
     return node.name === 'page'
   }
+  if (selector === '*') {
+    return true
+  }
   if (selector.startsWith('#')) {
     return node.attribs?.id === selector.slice(1)
   }
@@ -46,6 +49,9 @@ function parseCompoundSelector(selector: string) {
 }
 
 function matchesSelectorToken(node: DomNodeLike, selector: string) {
+  if (selector === '*') {
+    return node.type === 'tag'
+  }
   const simpleSelectors = parseCompoundSelector(selector)
   if (simpleSelectors.length === 0) {
     return false

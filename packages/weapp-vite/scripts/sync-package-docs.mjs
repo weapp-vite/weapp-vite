@@ -57,6 +57,12 @@ const docEntries = [
     summary: 'weapp 配置、autoRoutes、autoImportComponents、routeRules 与 chunk 策略。',
   },
   {
+    source: path.join(packagedDocsDir, 'uni-app-component-libraries.md'),
+    output: 'uni-app-component-libraries.md',
+    title: 'uni-app Component Libraries',
+    summary: '实验性的 uni-app 组件库转换、Wot UI 配置、99 组件矩阵与双端边界。',
+  },
+  {
     source: path.join(packagedDocsDir, 'wevu-authoring.md'),
     output: 'wevu-authoring.md',
     title: 'Wevu Authoring',
@@ -74,6 +80,12 @@ const docEntries = [
     title: 'Troubleshooting',
     summary: 'prepare、截图、日志、wevu 依赖与 dist 同步等常见排障。',
   },
+  {
+    source: path.join(packagedDocsDir, 'testing.md'),
+    output: 'testing.md',
+    title: 'Mini-program Testing',
+    summary: '使用 mpcore、Vitest 与 weapp-vite 真实编译产物进行页面和组件测试。',
+  },
 ]
 
 function createIndex(entries) {
@@ -90,9 +102,11 @@ function createIndex(entries) {
     '2. 涉及 AI / MCP / screenshot / DevTools logs 时读 `ai-workflows.md` 与 `mcp.md`。',
     '3. 涉及项目目录、`AGENTS.md`、`.weapp-vite` 时读 `project-structure.md`。',
     '4. 涉及 `vite.config.ts`、`weapp` 配置与 chunk 策略时读 `weapp-config.md`。',
-    '5. 涉及 wevu 运行时与页面/组件/store 约束时读 `wevu-authoring.md`。',
-    '6. 涉及 Vue SFC 宏、模板约束与编辑器提示时读 `vue-sfc.md`、`volar.md` 与 `define-config-overloads.md`。',
-    '7. 遇到告警、prepare、截图、日志、依赖异常时读 `troubleshooting.md`。',
+    '5. 接入 uni-app Vue 组件库或 Wot UI 时读 `uni-app-component-libraries.md`。',
+    '6. 涉及 wevu 运行时与页面/组件/store 约束时读 `wevu-authoring.md`。',
+    '7. 涉及 Vue SFC 宏、模板约束与编辑器提示时读 `vue-sfc.md`、`volar.md` 与 `define-config-overloads.md`。',
+    '8. 编写页面或组件单测时读 `testing.md`。',
+    '9. 遇到告警、prepare、截图、日志、依赖异常时读 `troubleshooting.md`。',
     '',
     '## Included Docs',
     '',

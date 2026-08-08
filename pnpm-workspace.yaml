@@ -17,7 +17,6 @@ packages:
   - '!packages-runtime/**/test/**'
   - '!benchmarks/**/test/**'
   - '!@weapp-core/**/test/**'
-  - '!mpcore/**/test/**'
 
 catalog:
   '@babel/core': ^8.0.1
@@ -27,21 +26,22 @@ catalog:
   '@babel/types': ^8.0.4
   '@douyin-microapp/typings': ^1.3.1
   '@egoist/tailwindcss-icons': ^1.9.2
-  '@icebreakers/eslint-config': ^7.0.1
-  '@icebreakers/stylelint-config': ^5.0.2
+  '@icebreakers/eslint-config': ^7.0.2
+  '@icebreakers/stylelint-config': ^5.0.3
   '@iconify-json/mdi': ^1.2.3
   '@iconify/tailwind4': ^1.2.3
   '@mini-types/alipay': ^3.0.14
-  '@tailwindcss/vite': ^4.3.2
-  '@types/node': ^26.1.1
-  '@types/semver': ^7.7.1
+  '@tailwindcss/vite': ^4.3.3
+  '@types/node': ^26.2.0
+  '@types/semver': ^7.8.0
   '@vant/weapp': ^1.11.7
-  '@vitejs/plugin-vue': ^6.0.7
-  '@vue/compiler-core': ^3.5.39
-  '@vue/compiler-dom': ^3.5.39
-  '@vue/language-core': ^3.3.7
+  '@vitejs/plugin-vue': ^6.0.8
+  '@vue/compiler-core': ^3.5.41
+  '@vue/compiler-dom': ^3.5.41
+  '@vue/language-core': ^3.3.9
+  '@wot-ui/ui': 2.3.1
   antd-mini: ^3.4.3
-  autoprefixer: ^10.5.2
+  autoprefixer: ^10.5.4
   bundle-require: ^5.1.0
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
@@ -49,52 +49,55 @@ catalog:
   dayjs: ^1.11.21
   echarts: ^6.1.0
   esbuild: ^0.28.1
-  eslint: ^10.7.0
+  eslint: ^10.8.1
   estree-walker: ^3.0.3
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
+  happy-dom: ^20.11.2
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
   lru-cache: ^11.5.2
-  magic-string: ^0.30.21
+  magic-string: ^1.1.0
   merge: ^2.1.1
-  miniprogram-api-typings: ^5.2.1
-  obug: ^2.1.3
-  oxc-parser: ^0.139.0
-  oxc-walker: ^1.0.0
+  miniprogram-api-typings: ^5.2.3
+  obug: ^2.1.4
+  oxc-parser: ^0.143.0
+  oxc-walker: ^1.1.1
   pathe: ^2.0.3
   pkg-types: ^2.3.1
-  postcss: ^8.5.17
-  rolldown: 1.1.5
-  sass: ^1.101.0
+  postcss: ^8.5.26
+  rolldown: 1.2.3
+  sass: ^1.102.0
   sass-embedded: ^1.100.0
-  stylelint: ^17.14.0
+  stylelint: ^17.14.1
   tailwind-merge: ^3.6.0
-  tailwind-variants: ^3.2.2
-  tailwindcss: ^4.3.2
-  tdesign-miniprogram: ^1.15.3
+  tailwind-variants: ^3.3.1
+  tailwindcss: ^4.3.3
+  tdesign-miniprogram: ^1.16.0
   ts-morph: ^28.0.0
   tslib: ^2.8.1
+  tsx: ^4.23.11
   typescript: ^6.0.3
-  vite: 8.1.4
-  vite-plugin-inspect: ^11.4.1
-  vue: ^3.5.39
-  vue-tsc: ^3.3.7
-  weapp-tailwindcss: ^5.1.14
+  uview-plus: 3.8.86
+  vite: 8.2.1
+  vite-plugin-inspect: ^12.0.2
+  vue: ^3.5.41
+  vue-tsc: ^3.3.9
+  weapp-tailwindcss: ^5.2.12
   zod: ^4.4.3
 
 catalogs:
   latest:
-    miniprogram-api-typings: ^5.2.1
+    miniprogram-api-typings: ^5.2.3
     typescript: ^6.0.3
   tailwind3:
     tailwindcss: ^3.4.19
   tailwind4:
-    tailwindcss: ^4.3.2
+    tailwindcss: ^4.3.3
   tdesign-miniprogram-fixed:
-    tdesign-miniprogram: 1.15.3
+    tdesign-miniprogram: 1.16.0
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.1.14
+    weapp-tailwindcss: 5.2.12
 
 gitChecks: false
 
@@ -104,6 +107,9 @@ minimumReleaseAge: 0
 
 optimisticRepeatInstall: false
 
+overrides:
+  rolldown: 'catalog:'
+
 allowBuilds:
   '@parcel/watcher': false
   '@swc/core': true
@@ -111,6 +117,7 @@ allowBuilds:
   bufferutil: false
   cos-wx-sdk-v5: false
   esbuild: false
+  gridstack: false
   minidev: false
   msgpackr-extract: false
   oxc-resolver: true
@@ -120,3 +127,6 @@ allowBuilds:
   weapp-tailwindcss: false
 
 shamefullyHoist: true
+
+patchedDependencies:
+  uview-plus@3.8.86: patches/uview-plus@3.8.86.patch

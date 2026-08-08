@@ -15,11 +15,12 @@ import {
 } from '@weapp-core/constants'
 import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
+import { normalizeEmitEventName } from '../../emit'
 import { setCurrentInstance, setCurrentSetupContext } from '../../hooks'
 import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runSetupFunction } from '../setup'
 import {
-  createSetupSlotsProxy,
+  attachRuntimeSlots,
   ensureSetupContextInstance,
   normalizeEmitPayload,
   safeMarkNoSetData,
@@ -33,8 +34,67 @@ type RuntimeSetupFunction<
 > = DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
   | DefineAppOptions<D, C, M>['setup']
 
-function normalizeEmitEventName(eventName: string) {
-  return eventName.includes(':') ? eventName.replaceAll(':', '-').toLowerCase() : eventName
+let vueCompatInstanceUid = 0
+
+function attachVueCompatInstanceView(target: InternalRuntimeState, proxy: Record<string, any>) {
+  const internal = target as Record<string, any>
+  const descriptors: PropertyDescriptorMap = {
+    proxy: {
+      configurable: true,
+      enumerable: false,
+      value: proxy,
+      writable: false,
+    },
+    $: {
+      configurable: true,
+      enumerable: false,
+      value: target,
+      writable: false,
+    },
+    uid: {
+      configurable: true,
+      enumerable: false,
+      value: ++vueCompatInstanceUid,
+      writable: false,
+    },
+    exposed: {
+      configurable: true,
+      enumerable: false,
+      get: () => target[WEVU_EXPOSED_KEY],
+    },
+  }
+  for (const [key, descriptor] of Object.entries(descriptors)) {
+    try {
+      Object.defineProperty(internal, key, descriptor)
+    }
+    catch {
+      if ('value' in descriptor) {
+        internal[key] = descriptor.value
+      }
+    }
+  }
+  const publicDescriptors: PropertyDescriptorMap = {
+    $: {
+      configurable: true,
+      enumerable: false,
+      value: target,
+      writable: false,
+    },
+    $el: {
+      configurable: true,
+      enumerable: false,
+      value: target,
+      writable: false,
+    },
+  }
+  for (const [key, descriptor] of Object.entries(publicDescriptors)) {
+    try {
+      Object.defineProperty(proxy, key, descriptor)
+    }
+    catch {
+      proxy[key] = descriptor.value
+    }
+  }
 }
 
 function isInternalAttrKey(key: string) {
@@ -119,20 +179,10 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   }
 
   const setupInstance = ensureSetupContextInstance(target, runtimeWithDefaults)
-  const slots = createSetupSlotsProxy(props)
+  attachVueCompatInstanceView(target, setupInstance as Record<string, any>)
+  const slots = attachRuntimeSlots(runtimeState, props)
   const setupState = runtimeWithDefaults.setupState ?? Object.create(null)
   attachRuntimeSetupState(runtimeState, setupState)
-  try {
-    Object.defineProperty(runtimeState, '$slots', {
-      value: slots,
-      configurable: true,
-      enumerable: false,
-      writable: false,
-    })
-  }
-  catch {
-    ;(runtimeState as any).$slots = slots
-  }
 
   const context = safeMarkNoSetData({
     // 与 Vue 3 对齐的 ctx.props

@@ -12,7 +12,7 @@ export interface WxsTransformOptions {
 const REQUIRE_RE = /require\(\s*['"]([^'"]+)['"]\s*\)/g
 
 function normalizePath(p: string) {
-  return p.split('\\\\').join('/')
+  return p.replace(/\\/g, '/')
 }
 
 function isPlainWxsScript(pathname: string) {
@@ -87,9 +87,9 @@ export function transformWxsToEsm(code: string, id: string, options: WxsTransfor
     `  }`,
     `  return undefined`,
     `}`,
-  ].join('\\n')
-  const moduleInit = `const module = { exports: {} }\\nconst exports = module.exports`
-  const helpers = `const getRegExp = (pattern, flags) => new RegExp(pattern, flags)\\nconst getDate = (value) => (value == null ? new Date() : new Date(value))`
+  ].join('\n')
+  const moduleInit = `const module = { exports: {} }\nconst exports = module.exports`
+  const helpers = `const getRegExp = (pattern, flags) => new RegExp(pattern, flags)\nconst getDate = (value) => (value == null ? new Date() : new Date(value))`
 
   const body = [
     ...importLines,
@@ -99,7 +99,7 @@ export function transformWxsToEsm(code: string, id: string, options: WxsTransfor
     helpers,
     code,
     `export default module.exports`,
-  ].join('\\n')
+  ].join('\n')
 
   return {
     code: body,

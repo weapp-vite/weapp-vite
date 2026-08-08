@@ -1,5 +1,6 @@
+import type { CompilerContext } from '../../context'
 import type { ResolvedPageLayout } from '../vue/transform/pageLayout/types'
-import { normalizeWatchPath } from '../../utils/path'
+import { isTemplate } from '../../utils'
 import { collectNativeLayoutAssets } from '../vue/transform/pageLayout'
 
 export async function expandResolvedPageLayoutFiles(
@@ -8,8 +9,8 @@ export async function expandResolvedPageLayoutFiles(
   const files: string[] = []
 
   for (const layout of layouts) {
-    files.push(layout.file)
     if (layout.kind !== 'native') {
+      files.push(layout.file)
       continue
     }
 
@@ -24,17 +25,25 @@ export async function expandResolvedPageLayoutFiles(
   return files
 }
 
-export async function addResolvedPageLayoutWatchFiles(
-  pluginCtx: {
-    addWatchFile?: (id: string) => void
-  },
+export async function registerResolvedPageLayoutDependencies(
+  ctx: CompilerContext,
+  ownerId: string,
   layouts: ResolvedPageLayout[],
 ) {
-  if (typeof pluginCtx.addWatchFile !== 'function') {
-    return
+  const dependencies = await expandResolvedPageLayoutFiles(layouts)
+  const transitiveDependencies = new Set(dependencies)
+  for (const file of dependencies) {
+    if (!isTemplate(file)) {
+      continue
+    }
+    await ctx.wxmlService?.scan(file)
+    for (const dependency of ctx.wxmlService?.depsMap.get(file) ?? []) {
+      transitiveDependencies.add(dependency)
+    }
   }
-
-  for (const file of await expandResolvedPageLayoutFiles(layouts)) {
-    pluginCtx.addWatchFile(normalizeWatchPath(file))
-  }
+  ctx.moduleGraphService.replaceEntryDependencies(
+    ownerId,
+    'layout',
+    transitiveDependencies,
+  )
 }

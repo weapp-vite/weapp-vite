@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createStatefulHmrBanner, createStatefulHmrFooter, toStableModuleId } from './viteAdapter'
+import { isSafeJavaScriptPatch } from './session'
+import { createStatefulHmrBanner, createStatefulHmrFooter, StatefulHmrViteAdapter, toStableModuleId } from './viteAdapter'
 
 describe('stateful HMR Vite adapter', () => {
   it('installs native page registration and flushes component definitions for entry chunks', () => {
@@ -15,5 +16,206 @@ describe('stateful HMR Vite adapter', () => {
     expect(toStableModuleId('\0virtual:entry', '/project')).toBe('\0virtual:entry')
     expect(toStableModuleId('/project/src/pages/index.ts', '/project')).toBe('src/pages/index.ts')
     expect(toStableModuleId('C:\\project\\src\\pages\\index.ts', 'C:\\project')).toBe('src/pages/index.ts')
+  })
+
+  it('accepts Vite 8 patch payloads without legacy hmr boundary metadata', () => {
+    expect(isSafeJavaScriptPatch(['src/pages/index.ts'], {
+      changedIds: ['src/pages/index.ts'],
+      code: 'createCjsInitializer("src/pages/index.ts")',
+      filename: '__weapp_vite_hmr/update.js',
+      seq: 1,
+      type: 'Patch',
+    })).toBe(true)
+  })
+
+  it('registers the stateful HMR client with Vite bundled dev engines', async () => {
+    let registeredClientId = ''
+    const adapter = new StatefulHmrViteAdapter(
+      { root: '/project' } as any,
+      {} as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+    )
+    const bundledDev = {
+      _devEngine: {
+        ensureCurrentBuildFinish: async () => {},
+        ensureLatestBuildOutput: async () => {},
+        getBundleState: async () => ({ lastBuildErrored: false }),
+        registerClient: (clientId: string) => {
+          registeredClientId = clientId
+        },
+        triggerFullBuild: () => {},
+      },
+      clients: {
+        setupIfNeeded: () => {},
+      },
+      getRolldownOptions: async () => ({}),
+      handleHmrOutput: () => {},
+      listen: async () => {},
+      storeOutputFiles: () => {},
+    }
+
+    Reflect.set(adapter as object, 'server', {
+      environments: {
+        client: {
+          bundledDev,
+        },
+      },
+    })
+
+    adapter.install()
+    await bundledDev.listen()
+
+    expect(registeredClientId).toBe('weapp-vite-stateful-hmr')
+  })
+
+  it('passes one complete runtime and disables Rolldown implicit injection', async () => {
+    const bundledDev = {
+      _devEngine: {},
+      clients: { setupIfNeeded: () => {} },
+      getRolldownOptions: async () => ({}),
+      handleHmrOutput: () => {},
+      listen: async () => {},
+      storeOutputFiles: () => {},
+    }
+    const adapter = new StatefulHmrViteAdapter(
+      { build: { rolldownOptions: {} }, root: '/project' } as any,
+      { environments: { client: { bundledDev } } } as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+    )
+
+    adapter.install()
+    const options = await bundledDev.getRolldownOptions() as any
+
+    expect(options.experimental.devMode.skipCommonRuntimeInjection).toBe(true)
+    expect(options.experimental.devMode.implement.match(/class DevRuntime/g)).toHaveLength(1)
+    expect(options.experimental.devMode.implement).toContain('class WeappViteDevRuntime')
+  })
+
+  it('prepares fallback assets before triggering and awaiting a full rebuild', async () => {
+    const calls: string[] = []
+    const adapter = new StatefulHmrViteAdapter(
+      { root: '/project' } as any,
+      {} as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+    )
+    Reflect.set(adapter as object, 'bundledDev', {
+      _devEngine: {
+        ensureLatestBuildOutput: async () => {
+          calls.push('latest-output')
+        },
+        triggerFullBuild: () => {
+          calls.push('trigger-full')
+        },
+      },
+    })
+
+    await adapter.rebuild(async () => {
+      calls.push('prepare')
+    })
+
+    expect(calls).toEqual(['prepare', 'trigger-full', 'latest-output'])
+  })
+
+  it('routes bundled-dev no-op updates through the fallback without forwarding them', () => {
+    const fallbackFiles: string[][] = []
+    let forwarded = 0
+    const adapter = new StatefulHmrViteAdapter(
+      { build: { rolldownOptions: {} }, root: '/project' } as any,
+      {
+        environments: {
+          client: {
+            bundledDev: {
+              _devEngine: {},
+              clients: { setupIfNeeded: () => {} },
+              getRolldownOptions: async () => ({}),
+              handleHmrOutput: () => {
+                forwarded += 1
+              },
+              listen: async () => {},
+              storeOutputFiles: () => {},
+            },
+          },
+        },
+      } as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: (files) => {
+          fallbackFiles.push(files)
+          return false
+        },
+        waitForInitialBundle: async () => {},
+      },
+    )
+
+    adapter.install()
+    const bundledDev = (adapter as any).bundledDev
+    bundledDev.handleHmrOutput({}, ['src/pages/index.wxml'], { type: 'Noop' })
+
+    expect(fallbackFiles).toEqual([['src/pages/index.wxml']])
+    expect(forwarded).toBe(0)
+  })
+
+  it('keeps Vite 7 module registration compatibility when available', async () => {
+    const registeredModules: string[] = []
+    const deliveredPayloads: string[] = []
+    const adapter = new StatefulHmrViteAdapter(
+      { root: '/project' } as any,
+      {} as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+    )
+    Reflect.set(adapter as object, 'bundledDev', {
+      _devEngine: {
+        notifyPayloadDelivered: (filename: string) => {
+          deliveredPayloads.push(filename)
+        },
+        registerModules: (_clientId: string, modules: string[]) => {
+          registeredModules.push(...modules)
+        },
+      },
+    })
+
+    await expect(adapter.registerBundleModules([
+      {
+        code: 'registerModule("src/pages/index.ts")',
+        fileName: 'pages/index/index.js',
+        modules: {
+          '/project/src/components/card.ts': {},
+        },
+        type: 'chunk',
+      },
+    ])).resolves.toBe(2)
+    await adapter.registerPatchModules('createCjsInitializer("src/pages/detail.ts")')
+    await adapter.markPayloadDelivered('__weapp_vite_hmr/update.js')
+
+    expect(registeredModules).toEqual([
+      'src/pages/index.ts',
+      'src/components/card.ts',
+      'src/pages/detail.ts',
+    ])
+    expect(deliveredPayloads).toEqual([
+      'pages/index/index.js',
+      '__weapp_vite_hmr/update.js',
+    ])
   })
 })

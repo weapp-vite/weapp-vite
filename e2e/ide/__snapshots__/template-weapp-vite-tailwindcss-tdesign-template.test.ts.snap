@@ -5,7 +5,6 @@ exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pag
 text,
 ::after,
 ::before {
-  --tw-content: '';
   --tw-duration: initial;
   --tw-ease: initial;
   --tw-font-weight:;
@@ -58,7 +57,7 @@ wx-root-portal-content {
   --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif,
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   --font-weight-bold: 700;
   --font-weight-extrabold: 800;
@@ -69,17 +68,17 @@ wx-root-portal-content {
   --radius-3xl: 48rpx;
   --spacing: 8rpx;
   --text-2xl: 48rpx;
-  --text-2xl--line-height: 1.33333;
+  --text-2xl--line-height: calc(2 / 1.5);
   --text-3xl: 60rpx;
-  --text-3xl--line-height: 1.2;
+  --text-3xl--line-height: calc(2.25 / 1.875);
   --text-lg: 36rpx;
-  --text-lg--line-height: 1.55556;
+  --text-lg--line-height: calc(1.75 / 1.125);
   --text-sm: 28rpx;
-  --text-sm--line-height: 1.42857;
+  --text-sm--line-height: calc(1.25 / 0.875);
   --text-xl: 40rpx;
-  --text-xl--line-height: 1.4;
+  --text-xl--line-height: calc(1.75 / 1.25);
   --text-xs: 24rpx;
-  --text-xs--line-height: 1.33333;
+  --text-xs--line-height: calc(1 / 0.75);
 }
 .mx-auto {
   margin-left: auto;
@@ -147,16 +146,16 @@ wx-root-portal-content {
 .space-y-10 > text + view,
 .space-y-10 > text + text {
   --tw-space-y-reverse: 0;
-  margin-bottom: calc(var(--spacing) * 10 * var(--tw-space-y-reverse));
-  margin-top: calc(var(--spacing) * 10 * (1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(calc(var(--spacing) * 10) * var(--tw-space-y-reverse));
+  margin-top: calc(calc(var(--spacing) * 10) * calc(1 - var(--tw-space-y-reverse)));
 }
 .space-x-8 > view + view,
 .space-x-8 > view + text,
 .space-x-8 > text + view,
 .space-x-8 > text + text {
   --tw-space-x-reverse: 0;
-  margin-left: calc(var(--spacing) * 8 * (1 - var(--tw-space-x-reverse)));
-  margin-right: calc(var(--spacing) * 8 * var(--tw-space-x-reverse));
+  margin-left: calc(calc(var(--spacing) * 8) * calc(1 - var(--tw-space-x-reverse)));
+  margin-right: calc(calc(var(--spacing) * 8) * var(--tw-space-x-reverse));
 }
 .rounded-2xl {
   border-radius: var(--radius-2xl);
@@ -381,53 +380,107 @@ wx-root-portal-content {
 `;
 
 exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-tailwindcss-tdesign-template::pages/index/index 1`] = `
-"<view
-  class="min-h-screen {{ mode === 'light'?'bg-gray-100 text-slate-800':'bg-gray-900 text-slate-200' }} transition-colors duration-500">
-  <view class="flex flex-col items-center pt-20 space-y-10">
-    <HelloWorld
-      title="{{hello.title}}"
-      description="{{hello.description}}"
-      docs="{{hello.docs}}"
-      links="{{hello.links}}" />
-    <view class="flex items-center">
-      当前模式 {{mode}} 切换模式
-      <view
-        class="iconify {{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-2xl"></view>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
+  <view
+    class="min-h-screen {{ mode === 'light'?'bg-gray-100 text-slate-800':'bg-gray-900 text-slate-200' }} transition-colors duration-500">
+    <view class="flex flex-col items-center pt-20 space-y-10">
+      <HelloWorld
+        title="{{hello.title}}"
+        description="{{hello.description}}"
+        docs="{{hello.docs}}"
+        links="{{hello.links}}" />
+      <view class="flex items-center">
+        当前模式 {{mode}} 切换模式
+        <view
+          class="iconify {{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-2xl"></view>
+      </view>
+      <view class="underline" mark:url="https://vite.icebreaker.top">
+        https://vite.icebreaker.top
+      </view>
+      <view class="underline" mark:url="https://tw.icebreaker.top">https://tw.icebreaker.top</view>
+      <view>
+        <t-button theme="primary" ghost>TDesign Button</t-button>
+      </view>
+      <view>
+        <t-button theme="success" variant="outline">打开布局演示页</t-button>
+      </view>
     </view>
-    <view class="underline" mark:url="https://vite.icebreaker.top">
-      https://vite.icebreaker.top
-    </view>
-    <view class="underline" mark:url="https://tw.icebreaker.top">https://tw.icebreaker.top</view>
-    <view>
-      <t-button theme="primary" ghost>TDesign Button</t-button>
-    </view>
-    <view>
-      <t-button theme="success" variant="outline">打开布局演示页</t-button>
-    </view>
+    <t-action-sheet id="t-action-sheet" bind:selected="handleSelected" />
   </view>
-  <t-action-sheet id="t-action-sheet" bind:selected="handleSelected" />
-</view>
+</weapp-layout-default>
 "
 `;
 
 exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-tailwindcss-tdesign-template::pages/layouts/index 1`] = `
-"<view class="min-h-screen bg-slate-100 px-4 py-5">
-  <view class="rounded-2xl bg-white p-5 shadow-sm">
-    <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-violet-700">
-      Native Layouts
+"<block wx:if="{{__wv_page_layout_name === 'admin'}}">
+  <weapp-layout-admin
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
+    title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
+    subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
+    <view class="min-h-screen bg-slate-100 px-4 py-5">
+      <view class="rounded-2xl bg-white p-5 shadow-sm">
+        <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-violet-700">
+          Native Layouts
+        </view>
+        <view class="mt-3 text-2xl font-bold text-slate-900">TDesign 原生模板已接入 layouts</view>
+        <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
+      </view>
+
+      <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+        <t-button block theme="primary">使用 default 布局</t-button>
+        <t-button class="mt-3" block theme="success" variant="outline">切到 admin 布局</t-button>
+        <t-button class="mt-3" block theme="warning" variant="outline">关闭布局</t-button>
+        <t-button class="mt-3" block theme="default" variant="outline">返回首页</t-button>
+      </view>
+
+      <t-toast id="t-toast" />
     </view>
-    <view class="mt-3 text-2xl font-bold text-slate-900">TDesign 原生模板已接入 layouts</view>
-    <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
-  </view>
+  </weapp-layout-admin>
+</block>
+<block wx:elif="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}">
+  <weapp-layout-default
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
+    title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
+    subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
+    <view class="min-h-screen bg-slate-100 px-4 py-5">
+      <view class="rounded-2xl bg-white p-5 shadow-sm">
+        <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-violet-700">
+          Native Layouts
+        </view>
+        <view class="mt-3 text-2xl font-bold text-slate-900">TDesign 原生模板已接入 layouts</view>
+        <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
+      </view>
 
-  <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
-    <t-button block theme="primary">使用 default 布局</t-button>
-    <t-button class="mt-3" block theme="success" variant="outline">切到 admin 布局</t-button>
-    <t-button class="mt-3" block theme="warning" variant="outline">关闭布局</t-button>
-    <t-button class="mt-3" block theme="default" variant="outline">返回首页</t-button>
-  </view>
+      <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+        <t-button block theme="primary">使用 default 布局</t-button>
+        <t-button class="mt-3" block theme="success" variant="outline">切到 admin 布局</t-button>
+        <t-button class="mt-3" block theme="warning" variant="outline">关闭布局</t-button>
+        <t-button class="mt-3" block theme="default" variant="outline">返回首页</t-button>
+      </view>
 
-  <t-toast id="t-toast" />
-</view>
+      <t-toast id="t-toast" />
+    </view>
+  </weapp-layout-default>
+</block>
+<block wx:else>
+  <view class="min-h-screen bg-slate-100 px-4 py-5">
+    <view class="rounded-2xl bg-white p-5 shadow-sm">
+      <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-violet-700">
+        Native Layouts
+      </view>
+      <view class="mt-3 text-2xl font-bold text-slate-900">TDesign 原生模板已接入 layouts</view>
+      <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
+    </view>
+
+    <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+      <t-button block theme="primary">使用 default 布局</t-button>
+      <t-button class="mt-3" block theme="success" variant="outline">切到 admin 布局</t-button>
+      <t-button class="mt-3" block theme="warning" variant="outline">关闭布局</t-button>
+      <t-button class="mt-3" block theme="default" variant="outline">返回首页</t-button>
+    </view>
+
+    <t-toast id="t-toast" />
+  </view>
+</block>
 "
 `;

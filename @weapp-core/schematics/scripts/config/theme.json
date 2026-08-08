@@ -1,0 +1,7 @@
+{
+  "source": "https://developers.weixin.qq.com/miniprogram/dev/framework/view/theme.html",
+  "fields": {
+    "light": { "type": "object", "required": true, "description": "浅色主题配置。" },
+    "dark": { "type": "object", "required": true, "description": "深色主题配置。" }
+  }
+}

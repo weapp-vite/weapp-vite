@@ -9,6 +9,7 @@ import { execa } from 'execa'
 import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/cli/engine'
 import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from '../../packages/weapp-ide-cli/src/cli/http'
 import { setRuntimeWechatDevtoolsServicePort } from '../../packages/weapp-ide-cli/src/cli/wechatDevtoolsRuntimePort'
+import { normalizeRuntimeConsoleText } from '../ide/runtimeErrors'
 import { extractWechatDevtoolsServicePort } from './automator.cli-bridge'
 import { launchHeadlessAutomator } from './automator.headless'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
@@ -26,6 +27,7 @@ const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
 const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please make sure http port is open'
 const DEVTOOLS_INFRA_ERROR_PATTERNS = [
+  /WECHAT_DEVTOOLS_HTTP_TIMEOUT/i,
   /#initialize-error:\s*wait IDE port timeout/i,
   /IDE may already started at port/i,
   /wait IDE port timeout/i,
@@ -75,6 +77,8 @@ const DEFAULT_LAUNCH_RETRIES = 5
 const DEFAULT_LAUNCH_RETRY_DELAY = 1_200
 const DEFAULT_LAUNCH_ATTEMPT_TIMEOUT = 24_000
 const DEFAULT_APP_CONFIG_READY_TIMEOUT = 12_000
+const DEFAULT_ENGINE_BUILD_FALLBACK_SETTLE_MS = 1_200
+const DEFAULT_PROJECT_REFRESH_TIMEOUT = 60_000
 const DEFAULT_TOOL_COMPILE_TIMEOUT = 30_000
 const DEFAULT_PAGE_ROOT_QUERY_TIMEOUT = 1_000
 const ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT = 1_500
@@ -101,14 +105,13 @@ const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
   /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
   /getPageMetaByWebviewId/i,
-  /subPackages[\s\S]{0,80}undefined/i,
 ]
 const TRAILING_PATH_SEPARATOR_PATTERN = /[\\/]+$/
 const ENV_LIST_SPLIT_PATTERN = /[,;\n]/
 const ERROR_CONSOLE_TEXT_PATTERN = /\b(?:TypeError|ReferenceError|SyntaxError|Error|RangeError)\b/
 const WARN_CONSOLE_TEXT_PATTERN = /\b(?:warn(?:ing)?|deprecated|deprecation)\b/i
 const COMPONENT_WARN_PATTERN = /\[Component\]/
-const RELAUNCH_RETRYABLE_PATTERNS = [
+const RELAUNCH_CACHE_RECOVERY_PATTERNS = [
   /Wait timed out after/i,
   /Timeout in raw reLaunch/i,
   /Timeout in warmup reLaunch/i,
@@ -118,8 +121,13 @@ const RELAUNCH_RETRYABLE_PATTERNS = [
   /reLaunch returned empty page/i,
   /timed out waiting page root/i,
   /Failed to find page root/i,
+]
+const RELAUNCH_RETRYABLE_PATTERNS = [
+  ...RELAUNCH_CACHE_RECOVERY_PATTERNS,
   /Execution context was destroyed/i,
+  /Connection closed, check if .*DevTools is still running/i,
   /Target closed/i,
+  /timeout waiting for automator response/i,
   /DevTools did not respond to protocol method App\.getCurrentPage within \d+ms/i,
   /\bDEVTOOLS_PROTOCOL_TIMEOUT\b/i,
   /ECONNRESET/i,
@@ -138,6 +146,7 @@ const BRIDGE_CONNECT_TIMEOUT_PATTERN = /Timeout in connect automator bridge/i
 const BRIDGE_CONNECT_FAILURE_PATTERN = /Failed connecting to /
 const COMPACT_WHITESPACE_PATTERN = /\s+/g
 const LAUNCH_TIMEOUT_PATTERN = /Timeout in launch automator#/i
+const PROJECT_REFRESH_TIMEOUT_PATTERN = /Timeout in refresh project/i
 const DEVTOOLS_COMPILE_CACHE_CORRUPTION_PATTERNS = [
   /TypeError\s*\[ERR_INVALID_ARG_TYPE\]/i,
   /The ["']path["'] argument must be of type string\. Received undefined/i,
@@ -159,6 +168,13 @@ function resolvePositiveIntEnv(raw: string | undefined, fallback: number) {
     return fallback
   }
   return parsed
+}
+
+function resolveNonNegativeInt(value: number | undefined, fallback: number) {
+  if (value == null || !Number.isFinite(value)) {
+    return fallback
+  }
+  return Math.max(0, Math.trunc(value))
 }
 
 function compareVersion(versionA: string, versionB: string) {
@@ -203,6 +219,10 @@ const LAUNCH_ATTEMPT_TIMEOUT = resolvePositiveIntEnv(
 const APP_CONFIG_READY_TIMEOUT = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT,
   DEFAULT_APP_CONFIG_READY_TIMEOUT,
+)
+const PROJECT_REFRESH_TIMEOUT = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_PROJECT_REFRESH_TIMEOUT,
+  DEFAULT_PROJECT_REFRESH_TIMEOUT,
 )
 const TOOL_COMPILE_TIMEOUT = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_TOOL_COMPILE_TIMEOUT,
@@ -310,7 +330,11 @@ type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
   disableRelaunchSessionRecovery?: boolean
+  engineBuildFallbackSettleMs?: number
+  launchMode?: 'bridge' | 'direct'
   maxLaunchRetries?: number
+  refreshProjectAfterConnect?: boolean
+  retryWarmupTimeout?: boolean
   skipRelaunchPageRootCheck?: boolean
   skipWarmup?: boolean
   warmupAllowRelaunch?: boolean
@@ -436,46 +460,13 @@ function resolveConsolePayload(entry: any) {
   return entry
 }
 
-function normalizeConsoleText(entry: any) {
-  const payload = resolveConsolePayload(entry)
-  if (typeof payload?.text === 'string' && payload.text.trim()) {
-    return payload.text.trim()
-  }
-  if (Array.isArray(payload?.args) && payload.args.length > 0) {
-    const text = payload.args
-      .map((item: any) => {
-        const raw = item && typeof item === 'object' && 'value' in item ? item.value : item
-        if (typeof raw === 'string') {
-          return raw
-        }
-        try {
-          return JSON.stringify(raw)
-        }
-        catch {
-          return String(raw)
-        }
-      })
-      .join(' ')
-      .trim()
-    if (text) {
-      return text
-    }
-  }
-  try {
-    return JSON.stringify(entry)
-  }
-  catch {
-    return String(entry)
-  }
-}
-
 function isErrorConsoleEntry(entry: any) {
   const payload = resolveConsolePayload(entry)
   const level = String(payload?.level ?? payload?.type ?? '').toLowerCase()
   if (level === 'error' || level === 'fatal') {
     return true
   }
-  const text = normalizeConsoleText(entry)
+  const text = normalizeRuntimeConsoleText(entry)
   return ERROR_CONSOLE_TEXT_PATTERN.test(text)
 }
 
@@ -485,7 +476,7 @@ function isWarnConsoleEntry(entry: any) {
   if (level === 'warn' || level === 'warning') {
     return true
   }
-  const text = normalizeConsoleText(entry)
+  const text = normalizeRuntimeConsoleText(entry)
   return WARN_CONSOLE_TEXT_PATTERN.test(text)
     || COMPONENT_WARN_PATTERN.test(text)
 }
@@ -543,7 +534,7 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
   }
 
   const onConsole = (entry: any) => {
-    const text = normalizeConsoleText(entry)
+    const text = normalizeRuntimeConsoleText(entry)
     if (!text) {
       return
     }
@@ -558,7 +549,7 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
   const onException = (entry: any) => {
     const text = typeof entry?.exceptionDetails?.text === 'string'
       ? entry.exceptionDetails.text
-      : normalizeConsoleText(entry)
+      : normalizeRuntimeConsoleText(entry)
     stats.exception += 1
     stats.total += 1
     const runtimeEntry = { level: 'exception', text } satisfies RuntimeLogEntry
@@ -612,7 +603,7 @@ function isLikelyDevtoolsLaunchCacheStaleMessage(message: string) {
   return isLikelyDevtoolsCompileCacheCorruptionMessage(message)
     || isLikelySimulatorBootErrorMessage(message)
     || LAUNCH_TIMEOUT_PATTERN.test(message)
-    || RELAUNCH_RETRYABLE_PATTERNS.some(pattern => pattern.test(message))
+    || RELAUNCH_CACHE_RECOVERY_PATTERNS.some(pattern => pattern.test(message))
 }
 
 function resolveWechatCliPath(cliPath?: string) {
@@ -1058,35 +1049,6 @@ function normalizeProjectRelativeRoot(rawRoot: unknown) {
   return normalized
 }
 
-function copyDistEntryForBridgeWrapper(sourcePath: string, targetPath: string, isDirectory: boolean) {
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true })
-  try {
-    if (isDirectory) {
-      fs.mkdirSync(targetPath, { recursive: true })
-      fs.cpSync(sourcePath, targetPath, {
-        dereference: true,
-        recursive: true,
-      })
-      return
-    }
-
-    fs.rmSync(targetPath, { recursive: true, force: true })
-    fs.copyFileSync(sourcePath, targetPath)
-  }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      throw error
-    }
-  }
-}
-
-function shouldPreserveBridgeWrapperPath(relativePath: string, preserveRoots: string[]) {
-  const normalized = relativePath.replace(/\\/g, '/')
-  return normalized === 'project.config.json'
-    || normalized === 'project.private.config.json'
-    || preserveRoots.some(root => normalized === root || normalized.startsWith(`${root}/`))
-}
-
 function safeStat(targetPath: string) {
   try {
     return fs.lstatSync(targetPath)
@@ -1109,6 +1071,71 @@ function safeReadDirectory(directoryPath: string) {
     }
     throw error
   }
+}
+
+function copyDistEntryForBridgeWrapper(
+  sourcePath: string,
+  targetPath: string,
+  isDirectory: boolean,
+  options: { force?: boolean } = {},
+) {
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true })
+  try {
+    if (isDirectory) {
+      const targetStat = safeStat(targetPath)
+      if (targetStat && !targetStat.isDirectory()) {
+        fs.rmSync(targetPath, { recursive: true, force: true })
+      }
+      fs.mkdirSync(targetPath, { recursive: true })
+      const sourceEntries = safeReadDirectory(sourcePath) ?? []
+      const sourceNames = new Set(sourceEntries.map(entry => entry.name))
+      const targetEntries = safeReadDirectory(targetPath) ?? []
+      for (const entry of targetEntries) {
+        if (!sourceNames.has(entry.name)) {
+          fs.rmSync(path.join(targetPath, entry.name), { recursive: true, force: true })
+        }
+      }
+      for (const entry of sourceEntries) {
+        copyDistEntryForBridgeWrapper(
+          path.join(sourcePath, entry.name),
+          path.join(targetPath, entry.name),
+          entry.isDirectory(),
+          options,
+        )
+      }
+      return
+    }
+
+    const sourceStat = safeStat(sourcePath)
+    const targetStat = safeStat(targetPath)
+    if (
+      !options.force
+      && sourceStat?.isFile()
+      && targetStat?.isFile()
+      && sourceStat.size === targetStat.size
+      && Math.abs(targetStat.mtimeMs - sourceStat.mtimeMs) < 1
+    ) {
+      return
+    }
+
+    fs.rmSync(targetPath, { recursive: true, force: true })
+    fs.copyFileSync(sourcePath, targetPath)
+    if (sourceStat?.isFile()) {
+      fs.utimesSync(targetPath, sourceStat.atime, sourceStat.mtime)
+    }
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error
+    }
+  }
+}
+
+function shouldPreserveBridgeWrapperPath(relativePath: string, preserveRoots: string[]) {
+  const normalized = relativePath.replace(/\\/g, '/')
+  return normalized === 'project.config.json'
+    || normalized === 'project.private.config.json'
+    || preserveRoots.some(root => normalized === root || normalized.startsWith(`${root}/`))
 }
 
 function removeStaleBridgeWrapperDistEntries(distRoot: string, wrapperRoot: string, preserveRoots: string[]) {
@@ -1149,6 +1176,10 @@ function copyBridgeWrapperDistSnapshot(
   for (const entry of distEntries) {
     const sourcePath = path.join(distRoot, entry.name)
     const targetPath = path.join(wrapperRoot, entry.name)
+    const relativePath = path.relative(wrapperRoot, targetPath)
+    if (shouldPreserveBridgeWrapperPath(relativePath, preserveRoots)) {
+      continue
+    }
     copyDistEntryForBridgeWrapper(sourcePath, targetPath, entry.isDirectory())
   }
 }
@@ -1183,7 +1214,9 @@ function copyBridgeWrapperDistPath(distRoot: string, wrapperRoot: string, source
   if (!sourceStat) {
     return
   }
-  copyDistEntryForBridgeWrapper(sourcePath, targetPath, sourceStat.isDirectory())
+  copyDistEntryForBridgeWrapper(sourcePath, targetPath, sourceStat.isDirectory(), {
+    force: true,
+  })
 }
 
 function removeBridgeWrapperDistPath(distRoot: string, wrapperRoot: string, sourcePath: string) {
@@ -1320,7 +1353,7 @@ function startBridgeWrapperDistSync(
   }
 
   watchDirectoryTree(distRoot)
-  reconcileTimer = setInterval(syncSnapshot, 500)
+  reconcileTimer = setInterval(syncSnapshot, 2_000)
   reconcileTimer.unref()
 
   return closeSync
@@ -1460,6 +1493,33 @@ function validateLaunchAppConfig(config: Record<string, any>): LaunchAppConfigVa
   }
 }
 
+export function validateLaunchProjectAssets(appConfigPath: string, config: Record<string, any>) {
+  const outputRoot = path.dirname(appConfigPath)
+  const routes: string[] = []
+  if (Array.isArray(config.pages)) {
+    const pageItems: unknown[] = config.pages
+    routes.push(...pageItems.filter(
+      (item): item is string => typeof item === 'string' && item.trim().length > 0,
+    ))
+  }
+  for (const subPackage of [
+    ...(Array.isArray(config.subPackages) ? config.subPackages : []),
+    ...(Array.isArray(config.subpackages) ? config.subpackages : []),
+  ]) {
+    if (!subPackage || typeof subPackage !== 'object' || typeof subPackage.root !== 'string' || !Array.isArray(subPackage.pages)) {
+      continue
+    }
+    const pageItems: unknown[] = subPackage.pages
+    routes.push(...pageItems
+      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      .map((page: string) => path.join(subPackage.root as string, page)))
+  }
+  const missingRoute = routes.find(route => !fs.existsSync(path.join(outputRoot, `${route}.js`)))
+  return missingRoute
+    ? { ready: false, reason: `page bundle is missing: ${missingRoute.replace(/\\/g, '/')}.js` }
+    : { ready: true as const }
+}
+
 async function resolveLaunchProjectMeta(projectPath: string | undefined): Promise<LaunchProjectMeta | undefined> {
   if (!projectPath) {
     return undefined
@@ -1474,6 +1534,12 @@ async function resolveLaunchProjectMeta(projectPath: string | undefined): Promis
       const validation = validateLaunchAppConfig(config)
       lastReason = validation.reason ?? 'app.json is ready'
       if (validation.ready) {
+        const assets = validateLaunchProjectAssets(appConfigPath, config)
+        if (!assets.ready) {
+          lastReason = assets.reason
+          await sleep(120)
+          continue
+        }
         return {
           appConfigPath,
           warmupRoute: validation.warmupRoute,
@@ -1571,6 +1637,7 @@ function isLikelyLaunchRetryableError(error: unknown) {
   const message = extractExecutionErrorText(error) || String(error)
   return isLikelyDevtoolsInfraErrorMessage(message)
     || LAUNCH_TIMEOUT_PATTERN.test(message)
+    || PROJECT_REFRESH_TIMEOUT_PATTERN.test(message)
     || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
     || DEVTOOLS_CLI_EARLY_EXIT_PATTERNS.some(pattern => pattern.test(message))
     || isLikelySimulatorBootErrorMessage(message)
@@ -1876,7 +1943,7 @@ function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
   return miniProgram
 }
 
-function resetMiniProgramRuntimeLogs(miniProgram: any) {
+export function resetAutomatorRuntimeLogs(miniProgram: any) {
   const meta = (miniProgram as Record<string, any>)[RUNTIME_LOG_META_KEY] as RuntimeLogMeta | undefined
   meta?.reset()
 }
@@ -2012,6 +2079,9 @@ async function warmupMiniProgramRoute(
   const pageRoot = await waitForRelaunchPageRoot(page, RELAUNCH_READY_TIMEOUT, options.rootSelectors)
   if (!pageRoot) {
     if (normalizeRouteForCompare(page?.path ?? '') === normalizeRouteForCompare(route)) {
+      if (options.rootSelectors?.length) {
+        throw new Error(`Timed out waiting page root after warmup reLaunch: ${route}`)
+      }
       process.stdout.write(`[warn] [runtime:launch-step] warmup-page-root-missing route=${route} source=relaunch-page project=${project}\n`)
       return
     }
@@ -2104,17 +2174,23 @@ async function runWechatIdeEngineBuildByRuntimeHttp(projectPath: string, project
 async function refreshMiniProgramProjectIndex(
   projectPath: string | undefined,
   project: string,
-  options: { allowCliEngineBuildFallback?: boolean, cliPath?: string, cwd?: string, refreshProject?: boolean } = {},
+  options: { allowCliEngineBuildFallback?: boolean, cliPath?: string, cwd?: string, engineBuildFallbackSettleMs?: number, refreshProject?: boolean } = {},
 ) {
   if (!projectPath) {
     return
   }
+  const engineBuildFallbackSettleMs = resolveNonNegativeInt(
+    options.engineBuildFallbackSettleMs,
+    DEFAULT_ENGINE_BUILD_FALLBACK_SETTLE_MS,
+  )
 
   if (options.refreshProject) {
     process.stdout.write(`[info] [runtime:launch-step] project-refresh-start project=${project}\n`)
     await runWithTimeout(
-      () => openWechatIdeProjectByHttp(projectPath),
-      10_000,
+      () => openWechatIdeProjectByHttp(projectPath, {
+        timeoutMs: PROJECT_REFRESH_TIMEOUT,
+      }),
+      PROJECT_REFRESH_TIMEOUT,
       `refresh project ${project}`,
     )
     await sleep(1_000)
@@ -2138,7 +2214,7 @@ async function refreshMiniProgramProjectIndex(
       process.stdout.write(`[warn] [runtime:launch-step] engine-build-http-skip reason=endpoint-missing project=${project}\n`)
       if (options.allowCliEngineBuildFallback === false) {
         process.stdout.write(`[warn] [runtime:launch-step] engine-build-cli-skip reason=bridge-session project=${project}\n`)
-        await sleep(1_200)
+        await sleep(engineBuildFallbackSettleMs)
         return
       }
       const cliPath = resolveWechatCliPath(options.cliPath)
@@ -2164,13 +2240,13 @@ async function refreshMiniProgramProjectIndex(
               throw httpRetryError
             }
           }
-          process.stdout.write(`[warn] [runtime:launch-step] engine-build-cli-opened-with-nonzero project=${project} reason=${details}\n`)
-          await sleep(1_200)
+          process.stdout.write(`[warn] [runtime:launch-step] engine-build-cli-opened-with-nonzero project=${project} settle=${engineBuildFallbackSettleMs}ms reason=${details}\n`)
+          await sleep(engineBuildFallbackSettleMs)
           return
         }
         throw new Error(`Wechat DevTools CLI engine build failed: ${details}`)
       }
-      await sleep(1_200)
+      await sleep(engineBuildFallbackSettleMs)
       process.stdout.write(`[info] [runtime:launch-step] engine-build-ready source=cli project=${project}\n`)
       return
     }
@@ -2591,14 +2667,15 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { disableRelaunchSessionRecovery, maxLaunchRetries, projectConfig, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
   const launchAttemptTimeout = Math.max(LAUNCH_ATTEMPT_TIMEOUT, launchTimeout)
   const launchRetries = resolveLaunchRetryCount(maxLaunchRetries)
-  const launchMode = resolveAutomatorLaunchMode()
+  const launchMode = requestedLaunchMode ?? resolveAutomatorLaunchMode()
   const completedRecoverySteps = new Set<string>()
+  let forceProjectRefreshAfterRetry = false
   if (launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE) {
     patchMiniProgramOn()
   }
@@ -2668,7 +2745,10 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             }
 
             const withRuntimeLogs = await enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
-            if (!shouldRefreshAutomatorBridgeProjectAfterConnect()) {
+            const shouldRefreshProject = refreshProjectAfterConnect
+              || shouldRefreshAutomatorBridgeProjectAfterConnect()
+              || forceProjectRefreshAfterRetry
+            if (!shouldRefreshProject) {
               process.stdout.write(`[info] [runtime:launch-step] post-connect-refresh-skip project=${project}\n`)
             }
             else {
@@ -2676,10 +2756,12 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 allowCliEngineBuildFallback: true,
                 cliPath: rest.cliPath,
                 cwd: rest.cwd,
+                engineBuildFallbackSettleMs,
                 refreshProject: true,
               })
               await compileMiniProgramProject(withRuntimeLogs, project)
-              resetMiniProgramRuntimeLogs(withRuntimeLogs)
+              resetAutomatorRuntimeLogs(withRuntimeLogs)
+              forceProjectRefreshAfterRetry = false
             }
             if (resolvedWarmupRoute && !shouldSkipAutomatorWarmup(skipWarmup)) {
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${resolvedWarmupRoute} project=${project}\n`)
@@ -2714,6 +2796,13 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         )
       }
       catch (error) {
+        if (
+          isWarmupRelaunchTimeoutError(error)
+          || isWarmupPageRootTimeoutError(error)
+          || isLikelyDevtoolsLaunchCacheStaleMessage(extractExecutionErrorText(error))
+        ) {
+          forceProjectRefreshAfterRetry = true
+        }
         bridgeWrapperProject?.stopSync?.()
         if (miniProgram) {
           try {
@@ -2723,7 +2812,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
           }
         }
 
-        if (isWarmupRelaunchTimeoutError(error) || isWarmupPageRootTimeoutError(error)) {
+        if (!retryWarmupTimeout && (isWarmupRelaunchTimeoutError(error) || isWarmupPageRootTimeoutError(error))) {
           throw error
         }
 

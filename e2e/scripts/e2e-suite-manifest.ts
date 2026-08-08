@@ -10,33 +10,70 @@ const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
 const DEVTOOLS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.devtools.config.ts')
 const HEADLESS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.headless.config.ts')
+const WEB_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.web.config.ts')
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
+  ['ide/devtools-cli-workflow.runtime.test.ts', '900000'],
+  ['ide/github-issues.runtime.aggregate.test.ts', '3600000'],
+  ['ide/github-issues.runtime.lifecycle.test.ts', '600000'],
+  ['ide/github-issues.runtime.props.test.ts', '600000'],
+  ['ide/stateful-hmr.runtime.test.ts', '900000'],
+  ['ide/subpackage-shared-strategy-complex.runtime.test.ts', '600000'],
+  ['ide/template-dev-open-all.runtime.test.ts', '900000'],
+  ['ide/template-tailwindcss-dev-open-multi.runtime.test.ts', '1200000'],
+  ['ide/template-tailwindcss-tdesign-hmr.runtime.test.ts', '900000'],
+  ['ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts', '900000'],
+  ['ide/uview-plus-compat.runtime.test.ts', '1200000'],
   ['ide/wevu-runtime.core-hmr.test.ts', '900000'],
+  ['ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts', '900000'],
+  ['ide/wevu-runtime.weapp.test.ts', '600000'],
+  ['ide/wot-ui-compat.runtime.test.ts', '1200000'],
 ])
 const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
+  'ide/app-vue-hmr-alias.runtime.test.ts',
   'ide/automator-bridge-wrapper-hmr.runtime.test.ts',
   'ide/automator-concurrent-sessions.runtime.test.ts',
+  'ide/github-issues.runtime.issue547.test.ts',
+  'ide/github-issues.runtime.require-async.test.ts',
+  'ide/stateful-hmr.runtime.test.ts',
+  'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
 ])
-const IDE_GITHUB_ISSUES_PATTERNS = [
+export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
+export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
   'ide/github-issues.runtime.app-shell.test.ts',
+  'ide/github-issues.runtime.import-meta.test.ts',
   'ide/github-issues.runtime.issue289.test.ts',
   'ide/github-issues.runtime.issue297-302.test.ts',
-  'ide/github-issues.runtime.issue547.test.ts',
-  'ide/github-issues.runtime.issue558.test.ts',
-  'ide/github-issues.runtime.issue615.test.ts',
+  'ide/github-issues.runtime.issue466.test.ts',
+  'ide/github-issues.runtime.issue553-555.test.ts',
+  'ide/github-issues.runtime.issue554.test.ts',
+  'ide/github-issues.runtime.issue564.test.ts',
+  'ide/github-issues.runtime.issue581.test.ts',
   'ide/github-issues.runtime.issue627.test.ts',
-  'ide/github-issues.runtime.issue642-bug7-default.test.ts',
-  'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
   'ide/github-issues.runtime.issue642.test.ts',
   'ide/github-issues.runtime.issue705.test.ts',
   'ide/github-issues.runtime.issue706.test.ts',
-  'ide/github-issues.runtime.issue553-555.test.ts',
   'ide/github-issues.runtime.lifecycle.test.ts',
+  'ide/github-issues.runtime.miniprogram-computed.test.ts',
   'ide/github-issues.runtime.props.test.ts',
-  'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
   'ide/github-issues.runtime.slot-fallback.test.ts',
+  'ide/github-issues.runtime.web-runtime.test.ts',
+] as const
+const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
+const IDE_GITHUB_ISSUES_PATTERNS = [
+  IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
+  // wx.downloadFile 的域名校验依赖完整独立项目，不能复用聚合目标的裁剪构建。
+  'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
+  'ide/github-issues.runtime.issue547.test.ts',
+  'ide/github-issues.runtime.issue558.test.ts',
+  'ide/github-issues.runtime.issue615.test.ts',
+  'ide/github-issues.runtime.issue621.test.ts',
+  'ide/github-issues.runtime.issue642-bug7-default.test.ts',
+  'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
+  'ide/github-issues.runtime.issue642-bug8.test.ts',
+  'ide/github-issues.runtime.require-async.test.ts',
+  'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
 ]
 const IDE_CHUNK_MODES_PATTERNS = [
   'ide/chunk-modes.runtime.duplicate.test.ts',
@@ -77,6 +114,11 @@ const IDE_HMR_PATTERNS = [
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
 ]
+const IDE_COMPONENT_LIBRARY_PATTERNS = [
+  'ide/uview-plus-compat.runtime.test.ts',
+  'ide/wot-ui-compat.runtime.test.ts',
+]
+const IDE_COMPONENT_LIBRARY_PATTERN_SET = new Set(IDE_COMPONENT_LIBRARY_PATTERNS)
 const IDE_HELPER_TEST_PATTERNS = new Set([
   'ide/runtimeErrors.test.ts',
 ])
@@ -97,6 +139,11 @@ const IDE_GATE_TESTS = [
   'ide/lifecycle-compare.test.ts',
   'ide/wevu-features.runtime.behavior.test.ts',
 ].map(testPath => path.resolve(ROOT, testPath))
+const IDE_HEADLESS_FULL_TESTS = [
+  ...IDE_GATE_TESTS,
+  path.resolve(ROOT, 'ide/github-issues.runtime.issue705.test.ts'),
+  path.resolve(ROOT, 'ide/github-issues.runtime.require-async.test.ts'),
+]
 export const SKIP_CI_HMR_GUARD_ENV = 'WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD'
 
 interface SuiteTaskFactoryOptions {
@@ -184,6 +231,14 @@ function createCommandTask(label: string, args: string[]): SuiteTask {
   }
 }
 
+export function getWebTasks() {
+  return [{
+    label: 'web-runtime',
+    command: 'pnpm',
+    args: ['vitest', 'run', '-c', WEB_CONFIG_PATH],
+  }] satisfies SuiteTask[]
+}
+
 export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
   const buildOnlyFiles = fg.sync('ci/**/*.test.ts', {
     cwd: ROOT,
@@ -219,6 +274,8 @@ export function getIdeTasks() {
     .sort()
     .filter(filePath => !isIdeHelperTest(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_MANUAL_DEVTOOLS_TEST_PATTERNS.has(toRelativeLabel(filePath)))
+    .filter(filePath => !IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET.has(toRelativeLabel(filePath)))
+    .filter(filePath => !IDE_COMPONENT_LIBRARY_PATTERN_SET.has(toRelativeLabel(filePath)))
     .map(filePath => createIdeVitestTask(filePath))
 
   return tasks.sort((left, right) => {
@@ -231,8 +288,12 @@ export function getIdeTasks() {
   })
 }
 
-function getIdePatternTasks(patterns: string[]) {
-  return patterns.map(filePath => createIdeVitestTask(path.resolve(ROOT, filePath)))
+function getIdePatternTasks(patterns: string[], env: Record<string, string> = {}) {
+  return patterns.map((filePath) => {
+    const task = createIdeVitestTask(path.resolve(ROOT, filePath))
+    task.env = { ...task.env, ...env }
+    return task
+  })
 }
 
 export function getIdeGateTasks() {
@@ -262,7 +323,7 @@ export function getIdeHeadlessGateTasks() {
 }
 
 export function getIdeHeadlessTasks() {
-  return getHeadlessPatternTasks(IDE_GATE_TESTS.map(filePath => toRelativeLabel(filePath)))
+  return getHeadlessPatternTasks(IDE_HEADLESS_FULL_TESTS.map(filePath => toRelativeLabel(filePath)))
 }
 
 export function getIdeGithubIssuesTasks() {
@@ -279,6 +340,24 @@ export function getIdeTemplatesTasks() {
 
 export function getIdeChunkModesTasks() {
   return getIdePatternTasks(IDE_CHUNK_MODES_PATTERNS)
+}
+
+function getIdeComponentLibraryTasksForMode(mode: 'runtime' | 'visual' | 'visual-full') {
+  return getIdePatternTasks(IDE_COMPONENT_LIBRARY_PATTERNS, {
+    WEAPP_VITE_COMPONENT_LIBRARY_MODE: mode,
+  })
+}
+
+export function getIdeComponentLibraryTasks(_options: SuiteTaskFactoryOptions = {}) {
+  return getIdeComponentLibraryTasksForMode('runtime')
+}
+
+export function getIdeComponentLibraryVisualTasks(_options: SuiteTaskFactoryOptions = {}) {
+  return getIdeComponentLibraryTasksForMode('visual')
+}
+
+export function getIdeComponentLibraryVisualFullTasks(_options: SuiteTaskFactoryOptions = {}) {
+  return getIdeComponentLibraryTasksForMode('visual-full')
 }
 
 export function getHmrRegressionTasks() {
@@ -316,6 +395,11 @@ export function getFullTasks() {
       args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'ci'],
     },
     {
+      label: 'e2e:web',
+      command: 'node',
+      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'web'],
+    },
+    {
       label: 'e2e:ide',
       command: 'node',
       args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'ide-smoke'],
@@ -331,6 +415,11 @@ export function getFullRegressionTasks() {
       args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'ci'],
     },
     {
+      label: 'e2e:web',
+      command: 'node',
+      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'web'],
+    },
+    {
       label: 'e2e:ide:full',
       command: 'node',
       args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'ide-full'],
@@ -343,6 +432,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ci',
     description: 'Miniapp CI e2e baseline with aggregated failure summary',
     tasks: getCiTasks,
+  },
+  'web': {
+    name: 'web',
+    description: 'Web runtime browser and visual regression suite',
+    tasks: getWebTasks,
   },
   'ide': {
     name: 'ide',
@@ -399,6 +493,21 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     description: 'IDE regression suite focused on chunk-modes runtime matrix coverage',
     tasks: getIdeChunkModesTasks,
   },
+  'ide-component-libraries': {
+    name: 'ide-component-libraries',
+    description: 'Long-running IDE visual and runtime coverage for uview-plus and wot-ui',
+    tasks: getIdeComponentLibraryTasks,
+  },
+  'ide-component-libraries:visual': {
+    name: 'ide-component-libraries:visual',
+    description: 'Representative IDE visual coverage for uview-plus and wot-ui',
+    tasks: getIdeComponentLibraryVisualTasks,
+  },
+  'ide-component-libraries:visual-full': {
+    name: 'ide-component-libraries:visual-full',
+    description: 'Full IDE visual coverage for uview-plus and wot-ui',
+    tasks: getIdeComponentLibraryVisualFullTasks,
+  },
   'hmr-regression': {
     name: 'hmr-regression',
     description: 'Complete HMR regression flow: IDE template HMR plus CI dev-watch HMR guards',
@@ -406,12 +515,12 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
   },
   'full': {
     name: 'full',
-    description: 'Default regression entry: ci plus ide smoke',
+    description: 'Default regression entry: ci plus web plus ide smoke',
     tasks: getFullTasks,
   },
   'full-regression': {
     name: 'full-regression',
-    description: 'Full regression entry: ci plus ide full',
+    description: 'Full regression entry: ci plus web plus ide full',
     tasks: getFullRegressionTasks,
   },
   'hmr-shared-chunks-auto': {

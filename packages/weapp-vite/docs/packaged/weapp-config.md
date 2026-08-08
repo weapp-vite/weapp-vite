@@ -48,6 +48,35 @@ export default defineConfig({
 
 `main` 表示主包，`packages/order` 匹配 `app.json.subPackages[].root`。启用后，产物 `app.json.subPackages` 只保留参与 scope 的分包，`preloadRule`、自动路由和 typed router 也会按同一范围裁剪。发布前建议再跑不带 scope 的完整构建。
 
+### 分包异步模块
+
+跨分包 JS 使用微信官方 callback 或 Promise API：
+
+```ts
+require('../../packages/order/modules/price', onLoaded, onError)
+const moduleExport = await require.async('../../packages/order/modules/price')
+```
+
+`weapp-vite` 会把 callback 写法规范化为 `void require.async(path).then(onLoaded, onError)`，并确保静态路径目标作为异步 chunk 输出，避免被当成同步 CommonJS 依赖提升到主包。源码路径带 `.ts` 等扩展名时，调用参数会同步改为实际 `.js` 产物路径。路径必须是静态相对字面量，目标 root 也必须存在于最终 `app.json.subPackages`；使用自动路由的自定义 root 时，同时声明 `weapp.subPackages.<root>`。
+
+希望保留标准 `import()` 写法时，可以选择微信原生分包模式：
+
+```ts
+export default defineConfig({
+  weapp: {
+    chunks: {
+      dynamicImports: 'native',
+    },
+  },
+})
+
+const moduleExport = await import('../../packages/order/modules/price.ts')
+```
+
+`native` 只转换微信构建中跨入已声明普通分包的静态相对导入，并将路径规范化为 `.js`。动态表达式、裸模块、同包导入、独立分包目标以及非微信构建继续保留 bundler 动态导入。默认的 `preserve` 不做转换；历史 `inline` 已废弃，当前会回退为 `preserve` 并输出一次警告。
+
+跨包自定义组件不走这套 JS API。组件继续使用 `usingComponents` 与 `componentPlaceholder`，由微信基础库负责下载后的占位替换。
+
 ### `autoImportComponents`
 
 适合用目录扫描自动注册组件的项目。组件重名时要先解决命名冲突，不要让自动引入规则长期处于歧义状态。
@@ -284,7 +313,7 @@ export default defineConfig({
 
 ### `hmr.runtime`
 
-默认值为 `classic`。微信项目可实验性开启状态保持型热更新：
+默认值为 `auto`。微信项目会在 `wv dev` 启动时根据开发者工具设置自动选择 HMR 运行时，也可显式锁定状态保持型热更新：
 
 ```ts
 export default defineConfig({
@@ -298,7 +327,9 @@ export default defineConfig({
 
 安全的 JavaScript/Vue 更新会保留当前 Page/Component 实例、route/query、输入和可序列化 data/setup ref，并替换原生 Page、原生 Component 与 wevu 方法。CSS、资源、JSON/配置、不兼容模块图或补丁失败会回退完整构建与当前路由重载。
 
-该模式目前只支持微信小程序，需要微信开发者工具开启服务端口和热重载，并设置 `project.private.config.json` 的 `setting.compileHotReLoad: true`。需要既有写盘/刷新行为时保持 `classic`。
+`auto` 在 `project.private.config.json` 的 `setting.compileHotReLoad` 严格为 `true` 时选择 `stateful-experimental`，否则选择 `classic`；非微信平台也会回退到 `classic`。该判断只在启动时执行，修改开发者工具设置后需要重启 `wv dev`。启动日志会以 `HMR 模式` 和 `HMR 切换` 两行显示最终模式、选择来源，以及通过 DevTools 热重载开关或 `weapp.hmr.runtime` 切换模式的方法。显式配置 `classic` 或 `stateful-experimental` 始终优先。
+
+状态保持模式目前只支持微信小程序，需要微信开发者工具开启服务端口和热重载。需要既有写盘/刷新行为时显式配置 `classic`。
 
 ### `hmr.logLevel` / `hmr.profileJson`
 

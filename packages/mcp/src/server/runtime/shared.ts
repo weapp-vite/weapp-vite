@@ -24,12 +24,16 @@ export interface MiniProgramElement {
 export interface MiniProgramPage {
   path: string
   query?: unknown
-  $: (selector: string) => Promise<MiniProgramElement | null>
-  $$?: (selector: string) => Promise<MiniProgramElement[]>
+  $: (selector: string, options?: MiniProgramPageQueryOptions) => Promise<MiniProgramElement | null>
+  $$?: (selector: string, options?: MiniProgramPageQueryOptions) => Promise<MiniProgramElement[]>
   data: (path?: string) => Promise<unknown>
   size: () => Promise<unknown>
   scrollTop: () => Promise<unknown>
   waitFor: (milliseconds: number) => Promise<void>
+}
+
+export interface MiniProgramPageQueryOptions {
+  fallback?: boolean
 }
 
 export interface MiniProgramLike {
@@ -334,15 +338,16 @@ export async function resolveElement(
   page: MiniProgramPage,
   selectorInput: string,
   innerSelector?: string,
+  queryOptions?: MiniProgramPageQueryOptions,
 ): Promise<MiniProgramElement> {
   const { selector, index } = parseSelectorWithIndex(selectorInput)
   let element: MiniProgramElement | undefined | null
 
   if (index === undefined) {
-    element = await page.$(selector) as MiniProgramElement | null
+    element = await page.$(selector, queryOptions) as MiniProgramElement | null
   }
   else {
-    const elements = await queryElements(page, selector)
+    const elements = await queryElements(page, selector, queryOptions)
     if (index < 0 || index >= elements.length) {
       throw new Error(`选择器 "${selector}" 的 index=${index} 超出范围，当前匹配 ${elements.length} 个元素。`)
     }
@@ -365,9 +370,13 @@ export async function resolveElement(
   return inner
 }
 
-export async function queryElements(page: MiniProgramPage, selectorInput: string) {
+export async function queryElements(
+  page: MiniProgramPage,
+  selectorInput: string,
+  queryOptions?: MiniProgramPageQueryOptions,
+) {
   const { selector, index } = parseSelectorWithIndex(selectorInput)
-  const elements = await callOptionalMethod<MiniProgramElement[]>(page, '$$', selector)
+  const elements = await callOptionalMethod<MiniProgramElement[]>(page, '$$', selector, queryOptions)
   if (!Array.isArray(elements)) {
     return []
   }

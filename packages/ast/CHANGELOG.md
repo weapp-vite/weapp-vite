@@ -1,5 +1,59 @@
 # @weapp-vite/ast
 
+## 6.19.2
+
+## 6.19.1
+
+### Patch Changes
+
+- 🐛 **升级除 TypeScript 外的依赖与 pnpm，并适配 Vite 8 的 OXC JSX 转换：已有 `esbuild.jsx: 'preserve'` 配置会同步到 OXC，避免 Wevu JSX 被误转换为 React runtime。** [#772](https://github.com/weapp-vite/weapp-vite/pull/772) by @sonofmagic
+  升级至 `weapp-tailwindcss@5.2.11`，采用上游对 Tailwind v4 生成器 module ID 查询的统一清理，避免 `weapp-vite` 样式 sidecar 虚拟模块 ID 被当作磁盘路径读取，确保原生模板、脚本和样式增量更新正常输出。
+
+  涉及包：
+  - @wevu/api：dependencies.@douyin-microapp/typings
+  - @weapp-vite/web：dependencies.rolldown
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - @weapp-vite/dashboard：devDependencies.@iconify/tailwind4
+  - @weapp-vite/miniprogram-automator：dependencies.ws
+  - rolldown-require：dependencies.get-tsconfig
+  - weapp-ide-cli：dependencies.execa
+  - weapp-vite：dependencies.@vercel/detect-agent、dependencies.rolldown-plugin-dts
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+## 6.19.0
+
+### Patch Changes
+
+- 🐛 **修复跨分包 `require(path, callback, errorCallback)` 被当成同步 CommonJS 依赖并提升到主包的问题，统一通过 `require.async()` Promise 通道输出异步模块，同时补充 callback、Promise 与真实小程序运行时回归覆盖。** [#755](https://github.com/weapp-vite/weapp-vite/pull/755) by @sonofmagic
+
+- 🐛 **新增微信普通分包原生动态导入模式，将符合条件的静态 `import()` 转换为 `require.async()`，同时修复异步 require 源码扩展名未改写的问题，并补齐模拟器兼容支持。** [#759](https://github.com/weapp-vite/weapp-vite/pull/759) by @sonofmagic
+- 📦 **Dependencies** [`1b06f6e`](https://github.com/weapp-vite/weapp-vite/commit/1b06f6e47cf2e16904c319acf84ab383e8cd347b)
+  → `@weapp-core/shared@3.1.0`
+
+## 6.18.7
+
+## 6.18.6
+
+## 6.18.5
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b) by @sonofmagic
+  - 默认 catalog 变更键：@vue/language-core, oxc-parser, postcss, rolldown, sass, stylelint, vue-tsc, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+  - 同时适配 Monaco Editor 0.56 的 worker 公开入口，恢复 Dashboard 构建。
+- 📦 **Dependencies** [`9097806`](https://github.com/weapp-vite/weapp-vite/commit/9097806cf6a88144ddb161532dd77bbf78a44ccb)
+  → `@weapp-core/shared@3.0.6`
+
+## 6.18.4
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`213a8e6`](https://github.com/weapp-vite/weapp-vite/commit/213a8e6a410198b54c499e29ad8c5d8d86bbaeb2) by @sonofmagic
+  - 默认 catalog 变更键：@vitejs/plugin-vue, @vue/compiler-core, @vue/compiler-dom, autoprefixer, oxc-parser, rolldown, vite, vue, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+## 6.18.3
+
 ## 6.18.2
 
 ## 6.18.1

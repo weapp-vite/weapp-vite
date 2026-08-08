@@ -10,7 +10,8 @@ const PAGE_META_RE = /\bdefinePageMeta\s*\(/
 function hasMetadataInjectionOptions(options: TransformScriptOptions | undefined) {
   const hasWevuDefaults = options?.wevuDefaults && Object.keys(options.wevuDefaults).length > 0
   return Boolean(
-    options?.isApp
+    options?.isTypeScript
+    || options?.isApp
     || options?.skipComponentTransform
     || options?.minify
     || options?.sourceMap !== false
@@ -94,7 +95,7 @@ function stripCompiledScriptSetupMarkers(optionsSource: string) {
   return optionsSource
     .replace(/^\s*__name:\s*['"][^'"]+['"],?\n?/m, '')
     .replace(/\{\s*expose:\s*__expose\s*\}/g, '{ expose }')
-    .replace(/\b__expose\s*\(\s*\);?/g, 'expose();')
+    .replace(/\b__expose(?=\s*\()/g, 'expose')
     .replace(/^\s*Object\.defineProperty\(\s*__returned__\s*,\s*['"]__isScriptSetup['"]\s*,\s*\{\s*enumerable:\s*false\s*,\s*value:\s*true\s*\}\s*\);?\n?/m, '')
 }
 
@@ -143,7 +144,7 @@ export function tryFastTransformCompiledScriptSetup(
   }
 
   const componentOptions = stripCompiledScriptSetupMarkers(afterImport.slice(openParenIndex + 1, callEnd).trim())
-  const pageMarker = options?.isPage ? ' __wevu_isPage: true,\n' : ''
+  const pageMarker = ` __wevu_isPage: ${options?.isPage === true},\n`
   const code = [
     `import { ${WE_VU_RUNTIME_APIS.createWevuComponent} } from "${RUNTIME_IMPORT_PATH}";`,
     beforeExport.trim(),

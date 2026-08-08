@@ -1,13 +1,15 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
-import { createProjectCoverage } from '../../vitest.coverage'
+import { createProjectCoverage } from '../../vitest.coverage.ts'
+
+const packageDir = import.meta.dirname
 
 export default defineProject({
   test: {
     alias: [
       {
         find: '@',
-        replacement: path.resolve(__dirname, './src'),
+        replacement: path.resolve(packageDir, './src'),
       },
     ],
     globals: true,

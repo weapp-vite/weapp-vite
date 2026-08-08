@@ -32,7 +32,10 @@ async function runRouteE2E(miniProgram: any, route: string) {
   if (!page) {
     throw new Error(`Failed to launch route: ${route}`)
   }
-  const result = await page.callMethod('runE2E')
+  const result = await page.callMethodWithOptions('runE2E', {
+    routeOnly: true,
+    timeout: 60_000,
+  })
   if (!result?.ok) {
     throw new Error(`E2E failed for ${route}: ${JSON.stringify(result)}`)
   }

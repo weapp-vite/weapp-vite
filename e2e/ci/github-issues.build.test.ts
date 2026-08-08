@@ -1,4 +1,6 @@
 /* eslint-disable e18e/ban-dependencies -- e2e build assertions reuse shared fs helpers to inspect generated artifacts. */
+import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
+import { REQUEST_GLOBAL_PRELUDE_MARKER } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import { fdir } from 'fdir'
@@ -14,6 +16,7 @@ const ISSUE_393_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-393')
 const ISSUE_510_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-510')
 const ISSUE_595_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-595')
 const ISSUE_642_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-642')
+const ISSUE_724_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-724')
 const SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT = path.join(APP_ROOT, 'dist-slot-fallback-compiler-off')
 const SLOT_OWNER_ATTR = `__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"`
 let standardBuildPromise: Promise<void> | null = null
@@ -85,6 +88,16 @@ function createCachedEnvLinePattern(variableName: string) {
   return new RegExp(
     `const ${variableName} = .*globalThis\\["__weappViteImportMetaEnv"\\].*JSON\\.parse\\(`,
   )
+}
+
+function findGeneratedPosition(code: string, needle: string) {
+  const lines = code.split('\n')
+  const lineIndex = lines.findIndex(line => line.includes(needle))
+  expect(lineIndex).toBeGreaterThanOrEqual(0)
+  return {
+    column: lines[lineIndex].indexOf(needle),
+    line: lineIndex + 1,
+  }
 }
 
 function createObjectPropertyPattern(property: string, value: string) {
@@ -314,6 +327,26 @@ async function runIssue642Build() {
   distVariant = null
 }
 
+async function runIssue724Build() {
+  standardBuildPromise = null
+  await fs.remove(ISSUE_724_DIST_ROOT)
+
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
+    cwd: APP_ROOT,
+    label: 'ci:github-issues:issue724',
+    outDir: 'dist-issue-724',
+    skipNpm: true,
+    env: {
+      WEAPP_GITHUB_ISSUE_724_PROBE: 'true',
+    },
+  })
+
+  distVariant = null
+}
+
 interface AppJsonWithSubPackages {
   pages?: string[]
   subPackages?: Array<{ root?: string, pages?: string[] }>
@@ -368,6 +401,53 @@ async function runSlotFallbackCompilerOffBuild() {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #724: keeps Vue SFC script, template, and style requests isolated', async () => {
+    await runIssue724Build()
+
+    const pageBase = path.join(ISSUE_724_DIST_ROOT, 'pages/issue-724/index')
+    const componentBase = path.join(ISSUE_724_DIST_ROOT, 'components/issue-724/RoutingProbe/index')
+    const pageJs = await fs.readFile(`${pageBase}.js`, 'utf-8')
+    const pageWxml = await fs.readFile(`${pageBase}.wxml`, 'utf-8')
+    const pageWxss = await fs.readFile(`${pageBase}.wxss`, 'utf-8')
+    const pageJson = await fs.readJSON(`${pageBase}.json`) as { usingComponents?: Record<string, string> }
+    const componentJs = await fs.readFile(`${componentBase}.js`, 'utf-8')
+    const componentWxml = await fs.readFile(`${componentBase}.wxml`, 'utf-8')
+    const componentWxss = await fs.readFile(`${componentBase}.wxss`, 'utf-8')
+
+    expect(pageJs).toContain('issue-724-script-marker')
+    expect(pageWxml).toContain('issue-724-template-marker')
+    expect(pageWxml).toContain('<Issue724RoutingProbe />')
+    expect(pageWxss).toContain('.issue-724-page')
+    expect(pageWxss).toContain('.issue-724-template-marker')
+    expect(pageWxss).toContain('.issue-724-style-src')
+    expect(pageWxss).not.toContain('.issue-724-component')
+    expect(pageJson.usingComponents).toMatchObject({
+      Issue724RoutingProbe: '/components/issue-724/RoutingProbe/index',
+    })
+
+    expect(componentJs).toContain('issue-724-component-script-marker')
+    expect(componentWxml).toContain('issue-724-component-template-marker')
+    expect(componentWxss).toContain('.issue-724-component')
+    expect(componentWxss).not.toContain('.issue-724-page')
+
+    for (const output of [pageJs, pageWxml, pageWxss, componentJs, componentWxml, componentWxss]) {
+      expect(output).not.toMatch(/<(?:template|script|style)(?:\s|>)/)
+    }
+  })
+
+  it('issue #764: installs axios request globals before page modules execute', async () => {
+    await runBuild()
+
+    const pageJs = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-764/index.js'), 'utf8')
+    const appPreludeJs = await fs.readFile(path.join(DIST_ROOT, 'app.prelude.js'), 'utf8')
+
+    expect(pageJs).toContain('app.prelude.js')
+    expect(appPreludeJs).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
+    expect(appPreludeJs).toContain('"fetch"')
+    expect(appPreludeJs).toContain('"XMLHttpRequest"')
+    expect(appPreludeJs).toContain('"URL"')
+  })
+
   it('discussion #338: emits mapped wxml tags from vue html-style templates', async () => {
     await runBuild()
 
@@ -405,12 +485,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(appShellWxml).toContain('issue-563-app-shell')
     expect(appShellWxml).toContain('<slot />')
     expect(appShellWxml).not.toContain('scoped-slots-default')
-    expect(appShellJson).toMatchObject({
+    expect(appShellJson).toEqual({
       component: true,
       styleIsolation: 'apply-shared',
-      usingComponents: {
-        'custom-tab-bar': '/custom-tab-bar/index',
-      },
     })
     expect(pageWxml).toContain(`<weapp-app-shell ${SLOT_OWNER_ATTR}><weapp-layout-default ${SLOT_OWNER_ATTR}>`)
     expect(pageWxml).toContain('</weapp-layout-default></weapp-app-shell>')
@@ -564,10 +641,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('slot="main"')
     expect(pageWxml).toContain('slot="footer"')
     expect(pageWxml).not.toContain('generic:scoped-slots-main=')
-    expect(componentWxml).toContain('<slot name="main" /><scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
-    expect(componentWxml).toContain('<slot name="footer" /><scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
+    expect(componentWxml).toContain('<scoped-slots-main wx:if="{{__wvSlotOwnerId}}"')
+    expect(componentWxml).toContain('<block wx:if="{{!__wvSlotOwnerId}}"><slot name="main" /></block>')
+    expect(componentWxml).toContain('<scoped-slots-footer wx:if="{{__wvSlotOwnerId}}"')
+    expect(componentWxml).toContain('<block wx:if="{{!__wvSlotOwnerId}}"><slot name="footer" /></block>')
     expect(componentWxml).toContain(`__wvSlotProps="{{['list',back.state.list]}}"`)
-    expect(componentWxml).not.toContain('<block wx:else><slot name="main" /></block>')
+    expect(componentWxml).not.toContain('<slot name="main" /><scoped-slots-main')
   })
 
   it('slot fallback compiler off: keeps plain fallback guards independent from scoped slot compiler', async () => {
@@ -896,6 +975,28 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(componentJs).toContain('issue-475 component marker')
     expect(componentJs).toMatch(createCachedEnvLinePattern('componentEnv'))
     expect(componentJs).not.toContain('const componentEnv = {\n')
+  })
+
+  it('issue #769: keeps native ts sourcemaps aligned after local npm rewrite', async () => {
+    await runBuildWithSourcemap()
+
+    const sourceFile = 'src/subpackages/item/issue-769/index.ts'
+    const pageJsPath = path.join(DIST_ROOT, 'subpackages/item/issue-769/index.js')
+    const pageMapPath = `${pageJsPath}.map`
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const pageMap = JSON.parse(await fs.readFile(pageMapPath, 'utf-8')) as Parameters<typeof TraceMap>[0]
+    const sourceTs = await fs.readFile(path.join(APP_ROOT, sourceFile), 'utf-8')
+    const expectedSourceLine = sourceTs
+      .split('\n')
+      .findIndex(line => line.includes(`camelCase('issue 769 sourcemap marker')`)) + 1
+    const generatedPosition = findGeneratedPosition(pageJs, 'issue 769 sourcemap marker')
+    const originalPosition = originalPositionFor(new TraceMap(pageMap), generatedPosition)
+
+    expect(pageJs).toMatch(/require\((['"])\.\.\/miniprogram_npm\/camelcase(?:\/index)?\1\)/)
+    expect(await fs.pathExists(pageMapPath)).toBe(true)
+    expect(expectedSourceLine).toBeGreaterThan(0)
+    expect(originalPosition.source?.replaceAll('\\', '/')).toContain(sourceFile)
+    expect(originalPosition.line).toBe(expectedSourceLine)
   })
 
   it('issue #479: injects indirect wevu page feature hooks from local helpers', async () => {
@@ -1243,9 +1344,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const forwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.wxml')
     const forwarderJsonPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.json')
     const appJsonPath = path.join(DIST_ROOT, 'app.json')
-    const wrapperWxmlPath = path.join(DIST_ROOT, '__weapp_vite_slot_wrapper.wxml')
-    const wrapperJsonPath = path.join(DIST_ROOT, '__weapp_vite_slot_wrapper.json')
-    const wrapperJsPath = path.join(DIST_ROOT, '__weapp_vite_slot_wrapper.js')
+    const wrapperWxmlPath = path.join(DIST_ROOT, 'weapp_vite_internal/slot-wrapper/index.wxml')
+    const wrapperJsonPath = path.join(DIST_ROOT, 'weapp_vite_internal/slot-wrapper/index.json')
+    const wrapperJsPath = path.join(DIST_ROOT, 'weapp_vite_internal/slot-wrapper/index.js')
     const legacyForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613LegacyViewForwarder/index.wxml')
     const legacyForwarderJsonPath = path.join(DIST_ROOT, 'components/issue-613/Issue613LegacyViewForwarder/index.json')
     const blockForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/block-forwarder/index.wxml')
@@ -1271,8 +1372,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(forwarderWxml).not.toContain('vue-slots="{{ {[')
     expect(forwarderWxml).toContain('<weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper>')
     expect(forwarderWxml).toContain('<weapp-slot-wrapper slot="footer"><slot name="footer" /></weapp-slot-wrapper>')
-    expect(appJson.usingComponents?.['weapp-slot-wrapper']).toBe('/__weapp_vite_slot_wrapper')
-    expect(forwarderJson.usingComponents?.['weapp-slot-wrapper']).toBeUndefined()
+    expect(appJson.usingComponents?.['weapp-slot-wrapper']).toBeUndefined()
+    expect(forwarderJson.usingComponents?.['weapp-slot-wrapper']).toBe('/weapp_vite_internal/slot-wrapper/index')
     expect(wrapperWxml).toBe('<slot></slot>')
     expect(wrapperJson.component).toBe(true)
     expect(wrapperJs).toContain('virtualHost:true')
@@ -1493,20 +1594,20 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(scopedSlotFiles.length).toBeGreaterThanOrEqual(5)
     expect(scopedSlotJsFiles.length).toBe(scopedSlotFiles.length)
     expect(pageWxml).toContain('data-issue558-case="plain-default"')
-    expect(pageWxml).toContain('data-issue558-case="nested-default"')
+    expect(pageWxml).not.toContain('data-issue558-case="nested-default"')
     expect(scopedSlotWxml).toContain('data-issue558-case="named-header"')
     expect(scopedSlotWxml).toContain('data-issue558-case="explicit-default"')
     expect(scopedSlotWxml).toContain('data-issue558-case="named-scoped-footer"')
     expect(scopedSlotWxml).toContain('data-issue558-case="default-scoped"')
     expect(scopedSlotWxml).toContain('data-issue558-case="{{\'list-scoped-\'+__wvSlotPropsData.index}}"')
+    expect(scopedSlotWxml).toContain('data-issue558-case="nested-default"')
     expect(scopedSlotWxml).not.toContain('data-issue558-case="plain-default"')
-    expect(scopedSlotWxml).not.toContain('data-issue558-case="nested-default"')
     expect(scopedSlotJs).toContain('__wvOwnerProxy')
     expect(scopedSlotJs).toContain('.func')
     expect(scopedSlotJs).toContain('.text')
     expect(scopedSlotJs).toContain('.headerText')
     expect(scopedSlotJs).toContain('.defaultText')
-    expect(scopedSlotJs).not.toContain('.nestedText')
+    expect(scopedSlotJs).toContain('.nestedText')
     expect(scopedSlotJs).toContain('__wvSlotPropsData')
     expect(scopedSlotJs).toContain('.suffix')
     expect(scopedSlotJs).toContain('.label')
@@ -1524,7 +1625,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(namedSlotCardJs).toContain('properties')
     expect(namedSlotCardJs).toContain('__wvSlotOwnerId')
     expect(nestedSlotCellWxml).not.toContain('<scoped-slots-default')
-    expect(nestedSlotGroupWxml).not.toContain('<scoped-slots-default')
+    expect(nestedSlotGroupWxml).toContain('<slot />')
+    expect(nestedSlotGroupWxml).toContain('<scoped-slots-default')
     expect(runtime.code).toContain('__wvOwnerProxy')
   })
 
@@ -2063,7 +2165,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(computedPageJs).toContain('runE2E')
     expect(computedPageJs).toContain('showItemsChanged')
 
-    expect(objectLiteralWxml).toContain('root="{{ { a: \'aaaa\' } }}"')
+    expect(objectLiteralWxml).toContain('root="{{ {a:\'aaaa\'} }}"')
     expect(objectLiteralWxml).not.toContain('root="{{{')
     expect(objectLiteralWxml).not.toContain('root="{{({')
     expect(objectLiteralWxml).not.toMatch(/root="\{\{__wv_bind_\d+\}\}"/)
@@ -2466,6 +2568,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(itemSubPackage?.pages).toEqual([
       'index',
+      'issue-769/index',
       'login-required/index',
     ])
     expect(await fs.pathExists(invalidSharedPageWxmlPath)).toBe(false)
@@ -2650,5 +2753,52 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(wevuRuntime).toContain('issue-373-store')
     expect(launchPageJs).toMatch(/const\s+\{\s*count,\s*doubled\s*\}\s*=\s*[\w$]+\.[\w$]+\(\s*store\s*\)/)
     expect(resultPageJs).toMatch(/const\s+\{\s*count,\s*doubled\s*\}\s*=\s*[\w$]+\.[\w$]+\(\s*store\s*\)/)
+  })
+
+  it('emits callback, Promise, and native import targets inside their subpackage', async () => {
+    await runBuild()
+
+    const appJson = await fs.readJSON(path.join(DIST_ROOT, 'app.json')) as {
+      subPackages?: Array<{ pages?: string[], root?: string }>
+    }
+    const pageJs = await fs.readFile(path.join(DIST_ROOT, 'pages/require-async/index.js'), 'utf-8')
+    const callbackJs = await fs.readFile(path.join(DIST_ROOT, 'subpackages/require-async/callback.js'), 'utf-8')
+    const promiseJs = await fs.readFile(path.join(DIST_ROOT, 'subpackages/require-async/promise.js'), 'utf-8')
+    const nativeJs = await fs.readFile(path.join(DIST_ROOT, 'subpackages/require-async/import-native.js'), 'utf-8')
+    const outputFiles = await scanFiles(DIST_ROOT)
+    const jsFiles = outputFiles.filter(file => file.endsWith('.js'))
+    const outputCode = new Map(await Promise.all(jsFiles.map(async file => [
+      file,
+      await fs.readFile(path.join(DIST_ROOT, file), 'utf-8'),
+    ] as const)))
+
+    expect(appJson.subPackages).toContainEqual(expect.objectContaining({
+      pages: ['index'],
+      root: 'subpackages/require-async',
+    }))
+    expect(pageJs).toMatch(/require\.async\((['"])\.\.\/\.\.\/subpackages\/require-async\/callback\.js\1\)\.then\(/)
+    expect(pageJs).toMatch(/require\.async\((['"])\.\.\/\.\.\/subpackages\/require-async\/promise\.js\1\)/)
+    expect(pageJs).toMatch(/require\.async\((['"])\.\.\/\.\.\/subpackages\/require-async\/import-native\.js\1\)/)
+    expect(pageJs).not.toMatch(/import\((['"])\.\.\/\.\.\/subpackages\/require-async\/import-native/)
+    expect(callbackJs).toContain('require-async:callback')
+    expect(promiseJs).toContain('require-async:promise')
+    expect(nativeJs).toContain('require-async:native-default')
+    expect(nativeJs).toContain('require-async:native-named')
+
+    for (const marker of [
+      'require-async:native-default',
+      'require-async:native-named',
+      'require-async:transitive',
+    ]) {
+      const markerFiles = [...outputCode]
+        .filter(([, code]) => code.includes(marker))
+        .map(([file]) => file)
+      expect(markerFiles.length).toBeGreaterThan(0)
+      expect(markerFiles.every(file => file.startsWith('subpackages/require-async/'))).toBe(true)
+    }
+
+    expect(await fs.pathExists(path.join(DIST_ROOT, 'callback.js'))).toBe(false)
+    expect(await fs.pathExists(path.join(DIST_ROOT, 'import-native.js'))).toBe(false)
+    expect(await fs.pathExists(path.join(DIST_ROOT, 'transitive.js'))).toBe(false)
   })
 })

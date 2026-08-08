@@ -1,14 +1,15 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { ChunkScriptAnalysisCache } from './platform'
+import MagicString from 'magic-string'
 import path from 'pathe'
 import { toPosixPath } from '../../../../../utils'
-import { generate, parseJsLike, traverse } from '../../../../../utils/babel'
+import { parseJsLike, traverse } from '../../../../../utils/babel'
 import {
   getRequireImportLiteral,
   normalizeWeappLocalNpmImport,
-  setRequireImportLiteral,
 } from './literals'
 import { getChunkScriptAnalysis, matchesSubPackageDependency, rememberChunkScriptAnalysis } from './platform'
+import { applyMagicStringChunkRewrite } from './sourcemap'
 
 export interface LocalRootNpmRewriteSubPackageMeta {
   root: string
@@ -46,6 +47,23 @@ function isToEsmCall(node: any) {
 
 function isNumericOneLiteral(node: any) {
   return (node?.type === 'NumericLiteral' || node?.type === 'Literal') && node.value === 1
+}
+
+function hasNodeRange(node: any): node is { start: number, end: number } {
+  return Number.isInteger(node?.start) && Number.isInteger(node?.end) && node.start >= 0 && node.end >= node.start
+}
+
+function findPreviousCommaIndex(code: string, start: number) {
+  for (let index = start - 1; index >= 0; index--) {
+    const char = code[index]
+    if (char === ',') {
+      return index
+    }
+    if (!/\s/.test(char)) {
+      return start
+    }
+  }
+  return start
 }
 
 function getLocalizedBindingNameFromExpression(node: any, localizedRequireBindings: Set<string>) {
@@ -99,6 +117,7 @@ export function rewriteChunkNpmImportsToLocalRoot(
 
   try {
     const ast = parseJsLike(chunk.code)
+    const magicString = new MagicString(chunk.code)
     let mutated = false
     const localizedRequireBindings = new Set<string>()
 
@@ -163,7 +182,11 @@ export function rewriteChunkNpmImportsToLocalRoot(
             return
           }
 
-          setRequireImportLiteral(firstArg, nextValue)
+          if (!hasNodeRange(firstArg)) {
+            return
+          }
+
+          magicString.update(firstArg.start, firstArg.end, JSON.stringify(nextValue))
           if (isRelativeMiniprogramNpmImport(nextValue) && path.parentPath?.node?.type === 'VariableDeclarator' && path.parentPath.node.id?.type === 'Identifier') {
             localizedRequireBindings.add(path.parentPath.node.id.name)
           }
@@ -190,13 +213,18 @@ export function rewriteChunkNpmImportsToLocalRoot(
           return
         }
 
-        path.node.arguments = [firstArg]
+        const secondArg = args[1]
+        if (!hasNodeRange(firstArg) || !hasNodeRange(secondArg)) {
+          return
+        }
+
+        magicString.remove(findPreviousCommaIndex(chunk.code, secondArg.start), secondArg.end)
         mutated = true
       },
     })
 
     if (mutated) {
-      chunk.code = generate(ast as any).code
+      applyMagicStringChunkRewrite(chunk, magicString)
       rememberChunkScriptAnalysis(chunk, analysis, {
         cache: options?.analysisCache,
       })

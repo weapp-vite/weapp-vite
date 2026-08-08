@@ -1,8 +1,12 @@
+import type { MiniProgramPageLike } from '../routerInternal/shared'
 import type { RouteLocationNormalizedLoaded } from './types'
 
 export interface RouteStateSyncPayload {
+  page?: MiniProgramPageLike
   route?: RouteLocationNormalizedLoaded
   url?: string
+  source?: 'native' | 'page' | 'router'
+  method?: NativeRouterMethodName
 }
 
 type RouteStateSyncHandler = (payload?: RouteStateSyncPayload) => void
@@ -32,15 +36,25 @@ export function notifyRouteStateSync(payload?: RouteStateSyncPayload) {
 
 function createNativeRouteStateSyncPayload(methodName: NativeRouterMethodName, option: unknown): RouteStateSyncPayload | undefined {
   if (methodName === 'navigateBack') {
-    return undefined
+    return {
+      method: methodName,
+      source: 'native',
+    }
   }
   if (option && typeof option === 'object') {
     const url = (option as Record<string, unknown>).url
     if (typeof url === 'string') {
-      return { url }
+      return {
+        method: methodName,
+        source: 'native',
+        url,
+      }
     }
   }
-  return undefined
+  return {
+    method: methodName,
+    source: 'native',
+  }
 }
 
 export function installRouteStateSyncOnNativeRouter(nativeRouter: unknown) {

@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "wv dev",
+    "dev:web": "wv dev -p web --host",
     "dev:open": "wv dev -o",
     "build": "wv build",
+    "build:web": "wv build -p web",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
     "postinstall": "wv prepare"
   },

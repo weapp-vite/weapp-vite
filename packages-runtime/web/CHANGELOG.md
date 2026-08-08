@@ -1,5 +1,99 @@
 # @weapp-vite/web
 
+## 1.4.2
+
+### Patch Changes
+
+- 📦 **Dependencies** [`b055929`](https://github.com/weapp-vite/weapp-vite/commit/b055929f8c18a2a9be800eff88f8f7806a9a4f46)
+  → `@weapp-core/constants@0.1.16`, `wevu@6.19.2`
+
+## 1.4.1
+
+### Patch Changes
+
+- 🐛 **升级除 TypeScript 外的依赖与 pnpm，并适配 Vite 8 的 OXC JSX 转换：已有 `esbuild.jsx: 'preserve'` 配置会同步到 OXC，避免 Wevu JSX 被误转换为 React runtime。** [#772](https://github.com/weapp-vite/weapp-vite/pull/772) by @sonofmagic
+  升级至 `weapp-tailwindcss@5.2.11`，采用上游对 Tailwind v4 生成器 module ID 查询的统一清理，避免 `weapp-vite` 样式 sidecar 虚拟模块 ID 被当作磁盘路径读取，确保原生模板、脚本和样式增量更新正常输出。
+
+  涉及包：
+  - @wevu/api：dependencies.@douyin-microapp/typings
+  - @weapp-vite/web：dependencies.rolldown
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - @weapp-vite/dashboard：devDependencies.@iconify/tailwind4
+  - @weapp-vite/miniprogram-automator：dependencies.ws
+  - rolldown-require：dependencies.get-tsconfig
+  - weapp-ide-cli：dependencies.execa
+  - weapp-vite：dependencies.@vercel/detect-agent、dependencies.rolldown-plugin-dts
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+- 📦 **Dependencies** [`c7d8514`](https://github.com/weapp-vite/weapp-vite/commit/c7d85143aeb5edaaf5d1902a8bd3d5fe09ef570e)
+  → `rolldown-require@2.0.23`, `wevu@6.19.1`
+
+## 1.4.0
+
+### Minor Changes
+
+- ✨ **新增 Canvas 与视频原生组件的 Web 语义适配，支持跨 Shadow DOM 的上下文定位、常用 2D 绘图命令、媒体属性和微信形状事件。** [#748](https://github.com/weapp-vite/weapp-vite/pull/748) by @sonofmagic
+
+- ✨ **新增 cover-view、cover-image、movable-area 与 movable-view 的 Web 运行时适配，补齐覆盖层定位、图片模式、移动边界、方向限制和微信形状拖拽事件。** [#749](https://github.com/weapp-vite/weapp-vite/pull/749) by @sonofmagic
+
+- ✨ **为 Web 运行时新增 picker、picker-view、picker-view-column 与 slider 原生组件适配，补齐选择器受控值、表单值、滚动选择、滑块样式及微信形状交互事件，并新增同源选择组件视觉与行为门禁。** [#745](https://github.com/weapp-vite/weapp-vite/pull/745) by @sonofmagic
+
+- ✨ **新增 icon、progress 与 rich-text 的 Web 运行时适配，支持内建图标、按进度每增长 1% 计时的动画与 activeend 事件，并将 HTML 字符串和节点数组统一转换为经过危险内容过滤的安全富文本 DOM。** [#754](https://github.com/weapp-vite/weapp-vite/pull/754) by @sonofmagic
+
+- ✨ **补齐 form、label、textarea、checkbox、radio 与 switch 的 Web 运行时语义，支持表单值收集、提交、重置、控件关联及微信形状的交互事件。** [#741](https://github.com/weapp-vite/weapp-vite/pull/741) by @sonofmagic
+
+- ✨ **新增常用小程序组件的语义化 Web 适配、结构化 WXSS 选择器转换和默认设备视口，使页面、导航栏、固定元素与 rpx 在浏览器中按小程序容器一致布局。** [#738](https://github.com/weapp-vite/weapp-vite/pull/738) by @sonofmagic
+
+- ✨ **为 Web Runtime 增加可注入的宿主能力边界，网络、存储、剪贴板、对话框和打开链接可以由测试容器或业务宿主接管，并在未注入时保留浏览器回退行为。** [#750](https://github.com/weapp-vite/weapp-vite/pull/750) by @sonofmagic
+
+- ✨ **对齐 Web 运行时页面栈与小程序生命周期：页面返回时保留并恢复原实例、数据和滚动位置，补全路由回调与卸载语义。** [#744](https://github.com/weapp-vite/weapp-vite/pull/744) by @sonofmagic
+
+- ✨ **为 Web Runtime 增加可配置的浏览器路由模式，支持 history/hash 深链接、地址栏同步及前进后退恢复页面栈，默认继续使用 memory 模式保持现有预览行为。** [#751](https://github.com/weapp-vite/weapp-vite/pull/751) by @sonofmagic
+
+- ✨ **为 Web 运行时新增 navigator、swiper 与 swiper-item 的原生组件适配，补齐声明式页面栈跳转、轮播受控状态、触摸与自动播放事件，并扩展同源页面的微信 DevTools 视觉基线。** [#743](https://github.com/weapp-vite/weapp-vite/pull/743) by @sonofmagic
+
+- ✨ **扩展 Web runtime 对原生小程序与 wevu Vue SFC 项目的自动扫描、编译和宿主初始化能力，为全部内置模板提供统一的 Web 开发与构建命令，并通过工作区生产构建及 Playwright 矩阵持续验证浏览器运行链路。** [#756](https://github.com/weapp-vite/weapp-vite/pull/756) by @sonofmagic
+
+- ✨ **为 Web Runtime 补齐应用前后台生命周期与页面滚动所有权：首次页面挂载前触发 App 启动回调，浏览器可见性切换驱动 onHide/onShow，并让用户滚动、pageScrollTo 与浏览器历史恢复统一归属于当前页面栈项。** [#753](https://github.com/weapp-vite/weapp-vite/pull/753) by @sonofmagic
+
+- ✨ **新增基于 `app.json.tabBar` 的 Web App Shell，补齐 tab 页面缓存与 `switchTab` 页面栈语义，并让 tabBar 显隐、样式、条目、角标和红点 API 真实更新设备视口内的布局。** [#746](https://github.com/weapp-vite/weapp-vite/pull/746) by @sonofmagic
+
+- ✨ **为 Web Runtime 增加页面 Head 与首屏资源提示能力：路由切换会同步小程序页面标题、description 和 canonical，并支持去重注入浏览器 Resource Hints。** [#752](https://github.com/weapp-vite/weapp-vite/pull/752) by @sonofmagic
+
+- ✨ **新增实验性的 uni-app Vue SFC 组件库兼容层与 `WotUiResolver()`，支持显式白名单依赖的条件编译、外部组件图、样式资源和双端注册，并补齐 Wot UI 2.2.0 全部 99 个公开组件在微信小程序、Web 与 headless 运行时所需的编译和运行时语义。外部组件产物使用微信允许的稳定目录名，避免组件文件因命中双下划线保留目录规则而被开发者工具忽略。** [#757](https://github.com/weapp-vite/weapp-vite/pull/757) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **新增 uview-plus 3.8.86 全组件解析器与三端兼容示例，并完善 uni-app SFC 的条件编译、sidecar、Web 子组件解析、样式预处理和 headless 宿主 API 兼容。** [#758](https://github.com/weapp-vite/weapp-vite/pull/758) by @sonofmagic
+
+- 🐛 **修复 Web 运行时原生页面调用 `setPageLayout()` 时缺少当前页面实例的问题，并补齐 Web 页面布局扫描、动态布局切换与布局组件渲染。** [`fe71afa`](https://github.com/weapp-vite/weapp-vite/commit/fe71afa9a67d74c3a1e0581d9d36038681e3037c) by @sonofmagic
+
+- 🐛 **修复 Web 运行时页面跳转未同步 history 路由，以及页面栈旧页面仍可见的问题。** [`57a60b0`](https://github.com/weapp-vite/weapp-vite/commit/57a60b09c62cda3810061705a15faef65a1bf652) by @sonofmagic
+- 📦 **Dependencies** [`878073f`](https://github.com/weapp-vite/weapp-vite/commit/878073f8819a21f7e6baa96d13cf3f7e552d2158)
+  → `@weapp-core/constants@0.1.15`, `wevu@6.19.0`, `@weapp-core/shared@3.1.0`
+
+## 1.3.37
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b) by @sonofmagic
+  - 默认 catalog 变更键：@vue/language-core, oxc-parser, postcss, rolldown, sass, stylelint, vue-tsc, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+  - 同时适配 Monaco Editor 0.56 的 worker 公开入口，恢复 Dashboard 构建。
+
+- 🐛 **引入声明式 runtime provider 契约，让原生小程序、wevu Vue SFC 与 Web 构建通过稳定虚拟入口选择各自运行时，并在入口缺失或契约版本不匹配时给出明确诊断。** [#736](https://github.com/weapp-vite/weapp-vite/pull/736) by @sonofmagic
+- 📦 **Dependencies** [`39b6b97`](https://github.com/weapp-vite/weapp-vite/commit/39b6b97d03cdfcd3a492608479bc269d97164cd2)
+  → `rolldown-require@2.0.22`, `@weapp-core/constants@0.1.14`, `@weapp-core/shared@3.0.6`
+
+## 1.3.36
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`213a8e6`](https://github.com/weapp-vite/weapp-vite/commit/213a8e6a410198b54c499e29ad8c5d8d86bbaeb2) by @sonofmagic
+  - 默认 catalog 变更键：@vitejs/plugin-vue, @vue/compiler-core, @vue/compiler-dom, autoprefixer, oxc-parser, rolldown, vite, vue, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+- 📦 **Dependencies** [`213a8e6`](https://github.com/weapp-vite/weapp-vite/commit/213a8e6a410198b54c499e29ad8c5d8d86bbaeb2)
+  → `rolldown-require@2.0.21`
+
 ## 1.3.35
 
 ### Patch Changes

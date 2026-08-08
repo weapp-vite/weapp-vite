@@ -108,7 +108,7 @@ async function writeFixtureProject() {
     '            if (componentName === \'ResolverBadge\') {',
     '              return {',
     '                name: componentName,',
-    '                from: \'/__weapp_vite_external__/resolver-ui/ResolverBadge\',',
+    '                from: \'/weapp_vite_external/resolver-ui/ResolverBadge\',',
     '                resolvedId: path.join(projectRoot, \'../packages/resolver-ui/ResolverBadge.vue\'),',
     '              }',
     '            }',
@@ -235,7 +235,7 @@ async function waitForDistJsContains(marker: string, timeoutMs = 90_000) {
 }
 
 async function waitForExternalComponentContains(sourcePath: string, marker: string, timeoutMs = 90_000) {
-  const externalRoot = path.join(DIST_ROOT, '__weapp_vite_external__')
+  const externalRoot = path.join(DIST_ROOT, 'weapp_vite_external')
   const fileName = `${path.basename(sourcePath, '.vue')}.wxml`
   const start = Date.now()
 
@@ -299,7 +299,6 @@ describe.sequential('external linked Vue component HMR', () => {
   it('updates srcRoot-external Vue components and emits external plain/config deps in dev', async () => {
     await fs.remove(DIST_ROOT)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', [CLI_PATH, 'dev', '.', '--platform', 'weapp', '--skipNpm'], {
       cwd: PROJECT_ROOT,
       env: createDevProcessEnv(),

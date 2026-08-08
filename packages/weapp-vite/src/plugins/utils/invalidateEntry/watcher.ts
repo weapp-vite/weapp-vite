@@ -47,6 +47,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     const ext = path.extname(filePath)
     const isCssFile = Boolean(ext && watchedCssExts.has(ext))
     const isTemplateFile = Boolean(ext && watchedTemplateExts.has(ext))
+    const isConfigFile = configExtensions.some(suffix => filePath.endsWith(suffix))
     const isScriptModuleFile = watchedScriptModuleSuffixes.some(suffix => filePath.endsWith(suffix))
     const hasReverseImporters = Boolean(isTemplateFile || isScriptModuleFile)
       && (ctx.wxmlService?.getImporters(filePath).size ?? 0) > 0
@@ -56,13 +57,17 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     }
 
     const isDeleteEvent = event === 'delete'
+    const isOwnedByModuleGraph = event === 'update' && ctx.moduleGraphService?.hasModule?.(filePath) === true
     const shouldInvalidate = (event === 'create' && ready)
       || isDeleteEvent
-      || (event === 'update' && (isCssFile || hasReverseImporters || isTemplateFile))
+      || (event === 'update' && (isCssFile || hasReverseImporters || isTemplateFile || isConfigFile))
     if (shouldInvalidate) {
       void (async () => {
         if (isTemplateFile && event !== 'delete') {
           await ctx.wxmlService?.scan(filePath)
+        }
+        if (isOwnedByModuleGraph) {
+          return
         }
         await invalidateEntryForSidecar(ctx, filePath, event)
         if (isCssFile && isDeleteEvent) {

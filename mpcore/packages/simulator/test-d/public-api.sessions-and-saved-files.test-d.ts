@@ -1,5 +1,8 @@
 import type {
+  HeadlessTestingRenderedNodeSnapshot,
+  HeadlessWxDeviceInfoResult,
   HeadlessWxDownloadFileMockDefinition,
+  HeadlessWxGetLocationResult,
   HeadlessWxUploadFileMockDefinition,
 } from '..'
 import { expectType } from 'tsd'
@@ -18,6 +21,15 @@ const browserFiles = createBrowserVirtualFiles([
 ])
 
 const browserSession = createBrowserHeadlessSession({ files: browserFiles })
+expectType<ReturnType<typeof createBrowserHeadlessSession>>(createBrowserHeadlessSession({
+  files: browserFiles,
+  onRender: () => {},
+  strictHostMocks: true,
+}))
+expectType<ReturnType<typeof createHeadlessSession>>(createHeadlessSession({
+  projectPath: '/project',
+  strictHostMocks: true,
+}))
 browserSession.reLaunch('/pages/index/index')
 const browserPage = browserSession.getCurrentPages()[0]
 
@@ -154,6 +166,13 @@ browserPage?.wx.createCanvasContext('hero-canvas', browserPage).strokeText('canv
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).translate(3, 4)
 
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
+expectType<HeadlessWxDeviceInfoResult>(browserSession.getDeviceInfo())
+expectType<HeadlessWxDeviceInfoResult | undefined>(browserPage?.wx.getDeviceInfo())
+expectType<HeadlessWxGetLocationResult>(browserSession.getLocation())
+expectType<HeadlessWxGetLocationResult | undefined>(browserPage?.wx.getLocation({
+  isHighAccuracy: true,
+  type: 'gcj02',
+}))
 expectType<{ active: boolean, stopCalls: number }>(browserSession.getPullDownRefreshState())
 expectType<{ data: string }>(browserSession.getClipboardData())
 expectType<{ mask: boolean, title: string } | null>(browserSession.getLoading())
@@ -388,6 +407,24 @@ browserPage?.wx.removeSavedFile({
 
 const headlessSession = createHeadlessSession({ projectPath: '/tmp/project' })
 const headlessPage = headlessSession.getCurrentPages()[0]
+
+expectType<{ errMsg: string } | undefined>(headlessPage?.wx.loadFontFace({
+  family: 'uview-icon',
+  source: 'url("headless://font/uview.ttf")',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+}))
+expectType<void>(headlessPage?.wx.$on('grid:update', (index: number) => {
+  expectType<number>(index)
+}))
+expectType<void>(headlessPage?.wx.$once('grid:update', () => {}))
+expectType<void>(headlessPage?.wx.$emit('grid:update', 1))
+expectType<void>(headlessPage?.wx.$off('grid:update'))
+expectType<string | undefined>(headlessPage?.wx.getLocale())
+expectType<number | undefined>(headlessPage?.wx.rpx2px(100))
+expectType<number | undefined>(headlessPage?.wx.upx2px(100))
+expectType<number | undefined>(headlessPage?.wx.getWindowInfo().safeAreaInsets.bottom)
 
 const headlessDownloadMock: HeadlessWxDownloadFileMockDefinition = {
   fileContent: 'downloaded report',
@@ -753,7 +790,33 @@ headlessPage?.wx.removeSavedFile({
 })
 
 const launchResult = launch({ projectPath: '/tmp/project' })
+launchResult.then((session) => {
+  expectType<Promise<unknown>>(session.callWxMethod('getStorageSync', 'probe'))
+  expectType<Promise<unknown>>(session.callWxMethodWithOptions('getStorageSync', {
+    timeout: 1_000,
+  }, 'probe'))
+  session.reLaunch('/pages/index/index').then((page) => {
+    expectType<string>(page.path)
+    expectType<Record<string, string>>(page.query)
+    expectType<Promise<unknown>>(page.callMethodWithOptions('runProbe', {
+      fallback: false,
+      routeOnly: true,
+      timeout: 1_000,
+    }))
+    expectType<Promise<HeadlessTestingRenderedNodeSnapshot[]>>(page.renderedNodes('#probe'))
+    expectType<Promise<string>>(page.waitForRendered({
+      dataset: { status: 'ready' },
+      selector: '#probe',
+    }))
+  })
+  expectType<Promise<unknown>>(session.navigateTo('/pages/detail/index'))
+  expectType<Promise<unknown>>(session.redirectTo('/pages/detail/index'))
+  expectType<Promise<unknown>>(session.navigateBack())
+  expectType<Promise<unknown>>(session.switchTab('/pages/profile/index'))
+})
 expectType<Promise<{
+  callWxMethod: <T = unknown>(methodName: string, ...args: any[]) => Promise<T>
+  callWxMethodWithOptions: <T = unknown>(methodName: string, options?: { timeout?: number }, ...args: any[]) => Promise<T>
   currentPage: () => Promise<unknown>
   pageScrollTo: (scrollTop: number) => Promise<void>
   reLaunch: (route: string) => Promise<unknown>

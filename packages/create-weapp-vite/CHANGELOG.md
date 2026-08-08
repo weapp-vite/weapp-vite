@@ -1,5 +1,126 @@
 # create-weapp-vite
 
+## 2.6.2
+
+### Patch Changes
+
+- 🐛 **微信小程序开发模式默认根据开发者工具的热重载设置自动选择 HMR 运行时，并在启动时显示当前模式与切换方法；同时确保 Web API 网络默认值在分包和共享 chunk 的多份运行时实例之间保持一致，并避免截图协议超时后在同一 DevTools 连接上继续叠加请求。** [#778](https://github.com/weapp-vite/weapp-vite/pull/778) by @sonofmagic
+
+- 🐛 **修复默认 wevu 模板安装 axios 后真机调试可能白屏的问题：自动识别请求客户端依赖时默认提前生成 request globals app prelude，确保页面模块执行前已经安装 `fetch`、`XMLHttpRequest` 和 `URL` 等兼容全局对象。** [#774](https://github.com/weapp-vite/weapp-vite/pull/774) by @sonofmagic
+
+- 🐛 **修复微信开发者工具热重载运行时缺少 `DevRuntime` 导致模板启动白屏的问题，并在自动模式下增加兼容性降级与模板回归覆盖。** [#781](https://github.com/weapp-vite/weapp-vite/pull/781) by @sonofmagic
+
+- 🐛 **修复 Vite 8 / Rolldown 1.2 下微信状态保持 HMR 的补丁注册与模块重执行流程，避免补丁定义被旧页面或组件注册覆盖。** [#775](https://github.com/weapp-vite/weapp-vite/pull/775) by @sonofmagic
+
+- 🐛 **修复 CSS `pre` 插件处理结果未传递到 Tailwind 与小程序样式 sidecar 输出的问题，样式生成现在优先使用 Vite 管线中的内存内容。** [#782](https://github.com/weapp-vite/weapp-vite/pull/782) by @sonofmagic
+
+## 2.6.1
+
+### Patch Changes
+
+- 🐛 **升级除 TypeScript 外的依赖与 pnpm，并适配 Vite 8 的 OXC JSX 转换：已有 `esbuild.jsx: 'preserve'` 配置会同步到 OXC，避免 Wevu JSX 被误转换为 React runtime。** [#772](https://github.com/weapp-vite/weapp-vite/pull/772) by @sonofmagic
+  升级至 `weapp-tailwindcss@5.2.11`，采用上游对 Tailwind v4 生成器 module ID 查询的统一清理，避免 `weapp-vite` 样式 sidecar 虚拟模块 ID 被当作磁盘路径读取，确保原生模板、脚本和样式增量更新正常输出。
+
+  涉及包：
+  - @wevu/api：dependencies.@douyin-microapp/typings
+  - @weapp-vite/web：dependencies.rolldown
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - @weapp-vite/dashboard：devDependencies.@iconify/tailwind4
+  - @weapp-vite/miniprogram-automator：dependencies.ws
+  - rolldown-require：dependencies.get-tsconfig
+  - weapp-ide-cli：dependencies.execa
+  - weapp-vite：dependencies.@vercel/detect-agent、dependencies.rolldown-plugin-dts
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+## 2.6.0
+
+### Minor Changes
+
+- ✨ **扩展 Web runtime 对原生小程序与 wevu Vue SFC 项目的自动扫描、编译和宿主初始化能力，为全部内置模板提供统一的 Web 开发与构建命令，并通过工作区生产构建及 Playwright 矩阵持续验证浏览器运行链路。** [#756](https://github.com/weapp-vite/weapp-vite/pull/756) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **新增 uview-plus 3.8.86 全组件解析器与三端兼容示例，并完善 uni-app SFC 的条件编译、sidecar、Web 子组件解析、样式预处理和 headless 宿主 API 兼容。** [#758](https://github.com/weapp-vite/weapp-vite/pull/758) by @sonofmagic
+
+- 🐛 **修复跨分包 `require(path, callback, errorCallback)` 被当成同步 CommonJS 依赖并提升到主包的问题，统一通过 `require.async()` Promise 通道输出异步模块，同时补充 callback、Promise 与真实小程序运行时回归覆盖。** [#755](https://github.com/weapp-vite/weapp-vite/pull/755) by @sonofmagic
+
+- 🐛 **修复真实微信开发者工具自动化中的会话复用、页面重启、日志收集与截图清理稳定性问题，避免 `forwardConsole` 重复连接现有会话，并降低完整 IDE E2E 在组件库和 GitHub issue 回归场景中的重复启动成本。** [#770](https://github.com/weapp-vite/weapp-vite/pull/770) by @sonofmagic
+
+- 🐛 **修复 `wv build --sourcemap` 未透传到 Vite 构建配置，以及分包 npm 本地化重写后原生 TypeScript 页面 sourcemap 继续沿用旧映射导致行号错乱的问题。** [#771](https://github.com/weapp-vite/weapp-vite/pull/771) by @sonofmagic
+
+- 🐛 **修复 Web 运行时原生页面调用 `setPageLayout()` 时缺少当前页面实例的问题，并补齐 Web 页面布局扫描、动态布局切换与布局组件渲染。** [`fe71afa`](https://github.com/weapp-vite/weapp-vite/commit/fe71afa9a67d74c3a1e0581d9d36038681e3037c) by @sonofmagic
+
+- 🐛 **修复 `shallowRef` 强制触发、调度队列续刷和编译绑定取值优先级，确保连续响应式更新及 setup/data/props 同名绑定能稳定同步到小程序视图。** [`8bda321`](https://github.com/weapp-vite/weapp-vite/commit/8bda32164dac96e90f2bb17ca753b12ae0c59b93) by @sonofmagic
+
+- 🐛 **新增面向真实小程序编译产物的页面与组件测试基础设施，提供共享运行时内核、逻辑 WXML 查询与交互、严格宿主 mock、Vitest 隔离适配和 weapp-vite 程序化测试构建入口。** [#761](https://github.com/weapp-vite/weapp-vite/pull/761) by @sonofmagic
+
+- 🐛 **降低 wevu 在正常 tree-shaking 下的小程序与 Web 运行时体积，并让微信开发者工具 HMR 稳定识别新版 preserve-modules 产物，避免局部更新后出现运行时 vendor 模块缺失。** [#762](https://github.com/weapp-vite/weapp-vite/pull/762) by @sonofmagic
+
+- 🐛 **新增微信普通分包原生动态导入模式，将符合条件的静态 `import()` 转换为 `require.async()`，同时修复异步 require 源码扩展名未改写的问题，并补齐模拟器兼容支持。** [#759](https://github.com/weapp-vite/weapp-vite/pull/759) by @sonofmagic
+
+- 🐛 **修复 Web 运行时页面跳转未同步 history 路由，以及页面栈旧页面仍可见的问题。** [`57a60b0`](https://github.com/weapp-vite/weapp-vite/commit/57a60b09c62cda3810061705a15faef65a1bf652) by @sonofmagic
+
+- 🐛 **修复 Web 生产构建中的共享 chunk 包含带哈希依赖模块时被错误重命名为 vendor 文件的问题，确保应用共享 chunk 继续使用配置对应的稳定名称。** [#754](https://github.com/weapp-vite/weapp-vite/pull/754) by @sonofmagic
+
+- 🐛 **新增实验性的 uni-app Vue SFC 组件库兼容层与 `WotUiResolver()`，支持显式白名单依赖的条件编译、外部组件图、样式资源和双端注册，并补齐 Wot UI 2.2.0 全部 99 个公开组件在微信小程序、Web 与 headless 运行时所需的编译和运行时语义。外部组件产物使用微信允许的稳定目录名，避免组件文件因命中双下划线保留目录规则而被开发者工具忽略。** [#757](https://github.com/weapp-vite/weapp-vite/pull/757) by @sonofmagic
+- 📦 **Dependencies** [`1b06f6e`](https://github.com/weapp-vite/weapp-vite/commit/1b06f6e47cf2e16904c319acf84ab383e8cd347b)
+  → `@weapp-core/shared@3.1.0`, `@weapp-core/init@6.0.13`
+
+## 2.5.8
+
+### Patch Changes
+
+- 🐛 **修复返回导航与 Vue Router 守卫语义不一致的问题；`router.back()` 现在会从页面栈解析目标路由，原生返回和系统返回也会触发 `beforeEach`、`beforeResolve` 与 `afterEach`，并向 hooks 提供完整的 `to` 和 `from`。** [#765](https://github.com/weapp-vite/weapp-vite/pull/765) by @sonofmagic
+
+## 2.5.7
+
+### Patch Changes
+
+- 🐛 **修复小程序返回上一页后 `router.currentRoute` 未恢复的问题；通过 `router.back()`、原生返回或系统返回回到来源页后，可以再次 `router.push()` 进入同一目标页，并保持 `useRoute()` 与导航守卫来源状态一致。** [#737](https://github.com/weapp-vite/weapp-vite/pull/737) by @sonofmagic
+
+## 2.5.6
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`71e0e70`](https://github.com/weapp-vite/weapp-vite/commit/71e0e70cc7a466d67236a406d47f261ac57c815b) by @sonofmagic
+  - 默认 catalog 变更键：@vue/language-core, oxc-parser, postcss, rolldown, sass, stylelint, vue-tsc, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+  - 同时适配 Monaco Editor 0.56 的 worker 公开入口，恢复 Dashboard 构建。
+
+- 🐛 **修复 Vue SFC 使用裸包路径的 `<style src>` 时，外部样式加载失败并将完整 SFC 源码错误送入 CSS 编译的问题；同时修复 Windows 下 CJS 外部依赖绝对路径中的反斜杠被错误转义，确保 `app.json.ts` 脚本配置可以稳定加载依赖。** [#729](https://github.com/weapp-vite/weapp-vite/pull/729) by @sonofmagic
+
+- 🐛 **支持在 headless 和浏览器模拟器中加载通过 `Component()` 注册的组件式页面，并修复 wevu 创建期 setup 同步状态被原生初始数据覆盖的问题。** [`b9be44a`](https://github.com/weapp-vite/weapp-vite/commit/b9be44a929932241af31cdb284ee6271c6ff8ac3) by @sonofmagic
+
+- 🐛 **使用 Vite/Rolldown 真实模块图追踪静态与动态 import、别名、npm、外部链接源码以及小程序 template、style、JSON、WXS、layout 和 `usingComponents` sidecar 依赖，修复增量构建中 importer 传播不完整、无关入口被重复标脏及 sidecar 新增删除失效不稳定的问题。** [#735](https://github.com/weapp-vite/weapp-vite/pull/735) by @sonofmagic
+
+- 🐛 **引入声明式 runtime provider 契约，让原生小程序、wevu Vue SFC 与 Web 构建通过稳定虚拟入口选择各自运行时，并在入口缺失或契约版本不匹配时给出明确诊断。** [#736](https://github.com/weapp-vite/weapp-vite/pull/736) by @sonofmagic
+
+- 🐛 **修复 stateful HMR 对脚本 sidecar 源文件的边界识别与更新传播，增强 mp core 模拟器的宿主 `wx` 调用、页面方法超时、路由元数据和页面生命周期栈语义，使真实微信开发者工具与 headless 测试在导航及运行时状态上保持一致。** [`86cfba7`](https://github.com/weapp-vite/weapp-vite/commit/86cfba7065ec5bd9915e9023edba3ad7f3a67bb1) by @sonofmagic
+- 📦 **Dependencies** [`9097806`](https://github.com/weapp-vite/weapp-vite/commit/9097806cf6a88144ddb161532dd77bbf78a44ccb)
+  → `@weapp-core/shared@3.0.6`, `@weapp-core/init@6.0.12`
+
+## 2.5.5
+
+### Patch Changes
+
+- 🐛 **修复复杂插件调度下 Vue SFC 主请求与样式虚拟请求可能跳过编译分流的问题，避免原始 `<template>`、`<script>` 或 `<style>` 内容进入 Babel 与 Vite CSS 处理阶段。** [#725](https://github.com/weapp-vite/weapp-vite/pull/725) by @sonofmagic
+
+- 🐛 **对齐公开 AI skills 与当前 weapp-vite 实现，补充状态保持型 HMR、插件双产物、wevu/router、Web runtime、DevTools runtime e2e 和 native AST 性能边界，并同步脚手架指引与触发回归入口。** [`b3c1865`](https://github.com/weapp-vite/weapp-vite/commit/b3c1865d6ab58ef39b30dd9a30b7ef4005893a87) by @sonofmagic
+
+## 2.5.4
+
+### Patch Changes
+
+- 🐛 **upgrade weapp-tailwindcss** [`a7f7b91`](https://github.com/weapp-vite/weapp-vite/commit/a7f7b91b7087d2e62441bc8a0ba2730e2acc105c) by @sonofmagic
+
+## 2.5.3
+
+### Patch Changes
+
+- 🐛 **优化 Vue SFC 页面配置热更新：仅修改 JSON 宏或 `<json>` 时复用已编译的脚本、模板与样式结果，避免重复执行完整 Vue 编译，并在混合变更或缓存不可用时自动回退。** [#719](https://github.com/weapp-vite/weapp-vite/pull/719) by @sonofmagic
+
+- 🐛 **升级 `weapp-vite` 的类型声明构建依赖，并同步脚手架模板使用的 PostCSS 与 Vite Inspect 版本。** [`7cb75ef`](https://github.com/weapp-vite/weapp-vite/commit/7cb75ef58c8faebf85fd9c21a1925c88b19f6f21) by @sonofmagic
+
 ## 2.5.2
 
 ### Patch Changes

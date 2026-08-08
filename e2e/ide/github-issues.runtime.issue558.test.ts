@@ -52,20 +52,16 @@ describe.sequential('e2e app: github-issues / issue #558', () => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-558/index', undefined, 20_000, {
-        readiness: 'route',
+        readiness: async (page) => {
+          const runtime = await page.callMethod('_runE2E')
+          return runtime?.ok === true
+        },
       })
       if (!issuePage) {
         throw new Error('Failed to launch issue-558 page')
       }
 
-      const runtime = await miniProgram.evaluate(() => {
-        const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
-        const page = pages[pages.length - 1]
-        if (!page || typeof page._runE2E !== 'function') {
-          throw new Error('issue-558 page does not expose _runE2E')
-        }
-        return page._runE2E()
-      })
+      const runtime = await issuePage.callMethod('_runE2E')
       const cases = runtime?.cases ?? {}
       const renderedWxml = await readIssue558WxmlBundle()
 

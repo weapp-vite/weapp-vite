@@ -1,5 +1,5 @@
 import type { App as VueApp } from 'vue'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from 'vue'
 import SimulatorE2EApp from '../../../demos/web/src/e2e/SimulatorE2EApp.vue'
 import '../../../demos/web/src/styles.css'
@@ -48,6 +48,7 @@ interface SimulatorE2EApi {
     actionSheetLogs: unknown[]
     currentPageBackground: unknown
     currentPageNavigationBar: unknown
+    deviceInfo: unknown
     directorySnapshot: string[]
     downloadFileLogs: unknown[]
     fileSnapshot: Record<string, string>
@@ -96,6 +97,7 @@ function parseJsonString<T>(value: string): T {
 
 describe.sequential('simulator browser e2e', () => {
   let app: VueApp | undefined
+  let defaultViewportSize = { height: 812, width: 375 }
   let mountNode: HTMLDivElement | undefined
 
   beforeAll(async () => {
@@ -110,6 +112,7 @@ describe.sequential('simulator browser e2e', () => {
       () => getBridge(),
       bridge => typeof bridge?.getState === 'function',
     )
+    defaultViewportSize = getBridge()!.getState().viewportSize
   })
 
   beforeEach(async () => {
@@ -120,6 +123,10 @@ describe.sequential('simulator browser e2e', () => {
       state => state.currentScenarioId === 'wechat-template' && state.currentRoute === 'pages/index/index',
       20_000,
     )
+  })
+
+  afterEach(() => {
+    getBridge()?.triggerResize(defaultViewportSize.width, defaultViewportSize.height)
   })
 
   afterAll(() => {
@@ -133,6 +140,200 @@ describe.sequential('simulator browser e2e', () => {
     expect(state.currentRoute).toBe('pages/index/index')
     expect(state.pageStack).toEqual(['pages/index/index'])
     expect(state.previewMarkup).toContain('page')
+    expect(getBridge()!.sessionSnapshot().deviceInfo).toMatchObject({
+      brand: 'devtools',
+      model: 'headless-simulator',
+      platform: 'devtools',
+    })
+  })
+
+  it('loads a subpackage module through require.async in the browser demo', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('require-async')
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'require-async' && state.currentRoute === 'pages/index/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('loadAsyncModule')
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => parseJsonString<{ asyncResult: string }>(nextState.pageData).asyncResult.length > 0,
+      20_000,
+    )
+
+    expect(parseJsonString<{ asyncResult: string }>(state.pageData).asyncResult)
+      .toBe('async-default:async-named')
+  })
+
+  it('keeps wx storage state observable through the browser debug bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('component-lab')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'component-lab' && state.currentRoute === 'pages/lab/index',
+      20_000,
+    )
+    bridge.runPageMethod('storeSnapshot')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => parseJsonString<Record<string, any>>(nextState.pageData).storageSnapshot !== '',
+      20_000,
+    )
+    const pageData = parseJsonString<{ storageSnapshot: string }>(state.pageData)
+    const pageStorageSnapshot = parseJsonString<Record<string, unknown>>(pageData.storageSnapshot)
+    expect(pageStorageSnapshot).toEqual({
+      count: 3,
+      status: 'stable',
+    })
+    expect(parseJsonString<Record<string, unknown>>(state.storageData)).toEqual({
+      'component-lab': {
+        ...pageStorageSnapshot,
+      },
+    })
+  })
+
+  it('preserves PascalCase WXML component aliases in the browser runtime', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('component-lab')
+
+    await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentScenarioId === 'component-lab'
+        && nextState.currentRoute === 'pages/lab/index'
+        && nextState.previewMarkup.includes('data-sim-component="PascalCaseCard"'),
+      20_000,
+    )
+
+    const scopeIds = bridge.findComponentScopeIds('PascalCaseCard')
+    expect(scopeIds).toHaveLength(1)
+    expect(bridge.readScopeSnapshot(scopeIds[0])).toMatchObject({
+      properties: {
+        status: 'pascal',
+      },
+      type: 'component',
+    })
+  })
+
+  it('matches WeChat component event binding precedence in the browser runtime', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('component-lab')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'component-lab' && state.currentRoute === 'pages/lab/index',
+      20_000,
+    )
+    bridge.runPageMethod('runEventBindingCompatibility')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => parseJsonString<Record<string, any>>(nextState.pageData).eventBindingCompatibility.length === 5,
+      20_000,
+    )
+    expect(parseJsonString<Record<string, any>>(state.pageData).eventBindingCompatibility).toEqual([
+      'legacy-probe',
+      'colon-hyphen',
+      'legacy-underscore',
+      'colon-underscore',
+      'legacy-duplicate-underscore',
+    ])
+  })
+
+  it('runs uni event bus and font APIs in the browser runtime', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('component-lab')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'component-lab' && state.currentRoute === 'pages/lab/index',
+      20_000,
+    )
+    bridge.runPageMethod('runUniCompatibilityLab')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => Boolean(parseJsonString<Record<string, any>>(nextState.pageData).uniCompatibilityInfo),
+      20_000,
+    )
+    const pageData = parseJsonString<{ uniCompatibilityInfo: string }>(state.pageData)
+    expect(parseJsonString(pageData.uniCompatibilityInfo)).toEqual({
+      events: ['on:first', 'once:first', 'on:second'],
+      fontResult: { errMsg: 'loadFontFace:ok' },
+      locale: 'zh-Hans',
+      pixels: 50,
+      safeAreaInsets: {
+        bottom: 0,
+        left: 0,
+        right: 0,
+        top: 20,
+      },
+    })
+  })
+
+  it('runs Component() page methods and lifecycles through the browser bridge', async () => {
+    const bridge = getBridge()!
+    const initialResizeMarker = `resize:${bridge.getState().viewportSize.width}`
+    bridge.pickScenario('component-page')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'component-page' && state.currentRoute === 'pages/index/index',
+      20_000,
+    )
+    bridge.triggerRouteDone({ from: 'browser-e2e' })
+    bridge.triggerResize(412, 915)
+    bridge.runPageMethod('snapshotLifecycle')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.previewMarkup.includes('routeDone:browser-e2e|resize:412'),
+      20_000,
+    )
+    expect(state.errorMessage).toBe('')
+    expect(state.previewMarkup).toContain('data-scenario="component-page"')
+    expect(parseJsonString<Record<string, any>>(state.pageData)).toMatchObject({
+      lifecycleLog: ['created', 'attached', 'load', 'show', 'ready', 'routeDone:undefined', initialResizeMarker, 'routeDone:browser-e2e', 'resize:412'],
+      snapshot: `created|attached|load|show|ready|routeDone:undefined|${initialResizeMarker}|routeDone:browser-e2e|resize:412`,
+    })
+
+    bridge.runPageMethod('openNext')
+    await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentRoute === 'pages/next/index' && nextState.pageStack.length === 2,
+      20_000,
+    )
+    bridge.navigateBack()
+    await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentRoute === 'pages/index/index' && nextState.pageStack.length === 1,
+      20_000,
+    )
+    bridge.runPageMethod('snapshotLifecycle')
+
+    const resumedState = await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.previewMarkup.includes('resize:412|hide|show'),
+      20_000,
+    )
+    expect(parseJsonString<Record<string, any>>(resumedState.pageData)).toMatchObject({
+      lifecycleLog: [
+        'created',
+        'attached',
+        'load',
+        'show',
+        'ready',
+        'routeDone:undefined',
+        initialResizeMarker,
+        'routeDone:browser-e2e',
+        'resize:412',
+        'hide',
+        'show',
+      ],
+    })
   })
 
   it('switches scenarios and keeps browser session runtime functional', async () => {
@@ -200,6 +401,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('setInvalidBackgroundLab')
     bridge.runPageMethod('startWatchingNetworkLab')
     bridge.runPageMethod('inspectNetworkLab')
+    bridge.runPageMethod('inspectLocationLab')
     bridge.setNetworkType('none')
     bridge.setNetworkType('4g')
     bridge.runPageMethod('stopWatchingNetworkLab')
@@ -301,6 +503,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.backgroundLightInfo
           && pageData.backgroundColorInfo
           && pageData.backgroundInvalidInfo
+          && pageData.locationInfo
           && pageData.networkInitialInfo
           && pageData.networkCurrentInfo
           && Array.isArray(pageData.networkLogs)
@@ -478,6 +681,16 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.backgroundLightInfo).toContain('"errMsg":"setBackgroundTextStyle:ok"')
     expect(pageData.backgroundColorInfo).toContain('"errMsg":"setBackgroundColor:ok"')
     expect(pageData.backgroundInvalidInfo).toContain('"error":"setBackgroundTextStyle:fail invalid textStyle"')
+    expect(parseJsonString(pageData.locationInfo)).toEqual({
+      accuracy: 10,
+      altitude: 0,
+      errMsg: 'getLocation:ok',
+      horizontalAccuracy: 10,
+      latitude: 31.2304,
+      longitude: 121.4737,
+      speed: 0,
+      verticalAccuracy: 0,
+    })
     expect(pageData.networkInitialInfo).toContain('"networkType":"wifi"')
     expect(pageData.networkCurrentInfo).toContain('"networkType":"4g"')
     expect(pageData.networkCurrentInfo).toContain('"isConnected":true')
@@ -1325,7 +1538,7 @@ describe.sequential('simulator browser e2e', () => {
     expect(state.pageStack).toEqual(['pages/settings/index'])
     expect(pageData.title).toBe('Settings Tab')
     expect(pageData.logs).toContain('settings-tab:onShow')
-    expect(pageData.logs).toContain('settings-tab:onTabItemTap:{"index":1,"pagePath":"pages/settings/index","text":"Settings"}')
+    expect(pageData.logs).not.toContain(expect.stringContaining('settings-tab:onTabItemTap:'))
     expect(state.previewMarkup).toContain('Settings Tab')
     expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
   })

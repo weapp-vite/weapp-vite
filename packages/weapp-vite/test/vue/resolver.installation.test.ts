@@ -4,7 +4,7 @@ describe('vue resolver wevu install detection', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.restoreAllMocks()
-    vi.unmock('node:module')
+    vi.doUnmock('node:module')
   })
 
   it.each([

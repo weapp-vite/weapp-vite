@@ -14,6 +14,7 @@ import type {
 } from './types'
 import { getDefaultMiniProgramRuntimeGlobalKey, getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import { emitRuntimeWarning } from '../warning'
+import { createAnimation } from './animation'
 import {
   callMiniProgramAsyncFailure,
   callMiniProgramAsyncSuccess,
@@ -24,7 +25,10 @@ import {
 } from './background'
 import { createCloudBridge } from './cloud'
 import * as deviceAuthSystemApi from './deviceAuthSystemApi'
+import * as eventBusApi from './eventBus'
 import { WEB_USER_DATA_PATH } from './files'
+import { loadFontFace } from './font'
+import { getLocale } from './locale'
 import { createNavigationBarRuntimeBridge } from './navigationBarRuntime'
 import {
   createInterstitialAdBridge,
@@ -52,7 +56,11 @@ import {
 import * as runtimeDataApi from './runtimeDataApi'
 import * as uiMediaApi from './uiMediaApi'
 
+export { createAnimation } from './animation'
 export * from './deviceAuthSystemApi'
+export * from './eventBus'
+export { loadFontFace } from './font'
+export { getLocale } from './locale'
 
 export {
   getEnterOptionsSync,
@@ -73,7 +81,7 @@ export * from './uiMediaApi'
 
 const MINI_PROGRAM_GLOBAL_KEYS = getMiniProgramRuntimeGlobalKeys()
 const DEFAULT_MINI_PROGRAM_GLOBAL_KEY = getDefaultMiniProgramRuntimeGlobalKey()
-const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
+const globalTarget = globalThis as Record<string, unknown>
 
 function resolveMiniProgramBridge() {
   for (const runtimeGlobalKey of MINI_PROGRAM_GLOBAL_KEYS) {
@@ -81,10 +89,6 @@ function resolveMiniProgramBridge() {
     if (candidate && typeof candidate === 'object') {
       return candidate as Record<string, unknown>
     }
-  }
-  const fallback = globalTarget[DEFAULT_MINI_PROGRAM_GLOBAL_KEY]
-  if (fallback && typeof fallback === 'object') {
-    return fallback as Record<string, unknown>
   }
   return undefined
 }
@@ -165,47 +169,49 @@ export function reportAnalytics(eventName: string, data?: Record<string, unknown
   reportAnalyticsBridge(eventName, data)
 }
 
-if (globalTarget) {
-  const miniProgramBridge = (globalTarget[DEFAULT_MINI_PROGRAM_GLOBAL_KEY] as Record<string, unknown> | undefined) ?? {}
-  Object.assign(miniProgramBridge, {
-    navigateTo,
-    navigateBack,
-    redirectTo,
-    switchTab,
-    reLaunch,
-    getLaunchOptionsSync,
-    getEnterOptionsSync,
-    ...runtimeDataApi,
-    setNavigationBarTitle,
-    setNavigationBarColor,
-    setBackgroundColor,
-    setBackgroundTextStyle,
-    showNavigationBarLoading,
-    hideNavigationBarLoading,
-    ...uiMediaApi,
-    ...deviceAuthSystemApi,
-    createRewardedVideoAd,
-    createInterstitialAd,
-    getExtConfigSync,
-    getExtConfig,
-    getUpdateManager,
-    getLogManager,
-    reportAnalytics,
-    canIUse,
-    cloud: cloudBridge,
-  })
-  const miniProgramEnv = (miniProgramBridge.env as Record<string, unknown> | undefined) ?? {}
-  if (typeof miniProgramEnv.USER_DATA_PATH !== 'string' || !miniProgramEnv.USER_DATA_PATH.trim()) {
-    miniProgramEnv.USER_DATA_PATH = WEB_USER_DATA_PATH
-  }
-  miniProgramBridge.env = miniProgramEnv
-  for (const runtimeGlobalKey of MINI_PROGRAM_GLOBAL_KEYS) {
-    globalTarget[runtimeGlobalKey] = miniProgramBridge
-  }
-  if (typeof globalTarget.getApp !== 'function') {
-    globalTarget.getApp = getAppInstance
-  }
-  if (typeof globalTarget.getCurrentPages !== 'function') {
-    globalTarget.getCurrentPages = getCurrentPagesInternal
-  }
+const miniProgramBridge = (globalTarget[DEFAULT_MINI_PROGRAM_GLOBAL_KEY] as Record<string, unknown> | undefined) ?? {}
+Object.assign(miniProgramBridge, {
+  navigateTo,
+  navigateBack,
+  redirectTo,
+  switchTab,
+  reLaunch,
+  getLaunchOptionsSync,
+  getEnterOptionsSync,
+  ...runtimeDataApi,
+  setNavigationBarTitle,
+  setNavigationBarColor,
+  setBackgroundColor,
+  setBackgroundTextStyle,
+  showNavigationBarLoading,
+  hideNavigationBarLoading,
+  ...uiMediaApi,
+  ...deviceAuthSystemApi,
+  ...eventBusApi,
+  loadFontFace,
+  getLocale,
+  createAnimation,
+  createRewardedVideoAd,
+  createInterstitialAd,
+  getExtConfigSync,
+  getExtConfig,
+  getUpdateManager,
+  getLogManager,
+  reportAnalytics,
+  canIUse,
+  cloud: cloudBridge,
+})
+const miniProgramEnv = (miniProgramBridge.env as Record<string, unknown> | undefined) ?? {}
+if (typeof miniProgramEnv.USER_DATA_PATH !== 'string' || !miniProgramEnv.USER_DATA_PATH.trim()) {
+  miniProgramEnv.USER_DATA_PATH = WEB_USER_DATA_PATH
+}
+miniProgramBridge.env = miniProgramEnv
+for (const runtimeGlobalKey of MINI_PROGRAM_GLOBAL_KEYS) {
+  globalTarget[runtimeGlobalKey] = miniProgramBridge
+}
+if (typeof globalTarget.getApp !== 'function') {
+  globalTarget.getApp = getAppInstance
+}
+if (typeof globalTarget.getCurrentPages !== 'function') {
+  globalTarget.getCurrentPages = getCurrentPagesInternal
 }

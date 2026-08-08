@@ -1,12 +1,9 @@
 interface:
   display_name: Weapp DevTools E2E Best Practices
-  short_description: DevTools runtime e2e、automator 复用与截图验收链路
+  short_description: WeChat DevTools runtime e2e、automator 复用和截图日志验收
   default_prompt: >-
-    当任务主轴是 `e2e/ide/**`、`miniprogram-automator`、共享 launch 模式、
-    `miniProgram.reLaunch(...)` 串联、DevTools 运行时断言，或为 AI 截图/日志验收
-    建立稳定真实运行时路径时，使用 $weapp-devtools-e2e-best-practices。
-    同一个 app suite 复用一次 automator 启动，通过 reLaunch 切换页面，并同步维护
-    DevTools 项目配置与条件页。
+    当任务主轴是 e2e/ide、miniprogram-automator、真实 DevTools runtime、截图、日志或 MCP 页面验收时，
+    使用 $weapp-devtools-e2e-best-practices。先检查环境、残留进程和 suite 结构，再复用 automator 并用 reLaunch 串场景。
 
 policy:
   allow_implicit_invocation: true

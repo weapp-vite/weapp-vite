@@ -16,4 +16,6 @@ if [ ! -x "$workspace_root/node_modules/.bin/lint-staged" ]; then
   exit 1
 fi
 
-"$workspace_root/node_modules/.bin/lint-staged" --cwd "$repo_root"
+"$workspace_root/node_modules/.bin/lint-staged" \
+  --config "$repo_root/lint-staged.config.js" \
+  --cwd "$repo_root"

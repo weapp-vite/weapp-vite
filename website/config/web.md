@@ -24,6 +24,17 @@ keywords:
 
 [[toc]]
 
+## CLI 快速运行
+
+无需先在 `weapp.web` 中声明配置即可通过 CLI 临时启用 Web runtime。项目根目录需要有引用 `/@weapp-vite/web/entry` 的 `index.html`：
+
+```bash
+wv dev -p web --host
+wv build -p web
+```
+
+推荐将它们固定为 `dev:web` 和 `build:web` scripts。`web` 是浏览器 runtime 的规范平台名，`h5` 仅作为向后兼容别名保留；未选择 Web 平台时，原有小程序构建行为不变。
+
 ## `weapp.web` {#weapp-web}
 
 - **类型**：
@@ -60,6 +71,23 @@ export default defineConfig({
           warnings: {
             level: 'warn',
             dedupe: true,
+          },
+          viewport: {
+            mode: 'mini-program',
+            maxWidth: 375,
+            desktopBreakpoint: 600,
+          },
+          routing: {
+            mode: 'history',
+            base: '/mini',
+          },
+          seo: {
+            defaultTitle: '商城',
+            titleTemplate: '%s | Web Demo',
+            description: '小程序页面的 Web 运行时演示。',
+          },
+          resourceHints: {
+            links: [{ rel: 'preconnect', href: 'https://cdn.example.com' }],
           },
         },
       },
@@ -125,6 +153,66 @@ Web 产物输出目录，默认一般是 `dist/web`。
   - `error`
   - `off`
 - `runtime.warnings.dedupe`
+- `runtime.viewport.mode`
+  - `mini-program`：移动端铺满，宽屏下使用居中的设备容器（默认）
+  - `responsive`：保留浏览器全宽布局
+- `runtime.viewport.maxWidth`
+  - 设备容器最大宽度，默认 `375`
+- `runtime.viewport.desktopBreakpoint`
+  - 开始使用居中设备容器的浏览器宽度，默认 `600`
+- `runtime.routing.mode`
+  - `memory`：只维护 Web Runtime 页面栈，不修改地址栏（默认）
+  - `history`：使用真实路径，支持深链接与浏览器前进/后退
+  - `hash`：使用 `#/pages/...`，适合静态托管
+- `runtime.routing.base`
+  - Web 项目的部署目录前缀，例如 `/mini`
+- `runtime.seo`
+  - 路由切换时同步 `document.title`、description 和 canonical；`enabled: false` 可关闭
+- `runtime.seo.defaultTitle`
+  - 没有页面标题时使用的默认标题
+- `runtime.seo.titleTemplate`
+  - 标题模板，`%s` 会替换为当前页面标题
+- `runtime.seo.description`
+  - 全站 description meta 内容
+- `runtime.seo.canonical`
+  - 是否维护去掉 query/hash 的 canonical 链接，默认开启
+- `runtime.resourceHints.links`
+  - 去重注入的 `preconnect` / `dns-prefetch` / `prefetch` / `preload` 链接数组
+
+默认视口同时约束页面滚动、导航栏和 `fixed` 元素；`rpx` 也按设备容器宽度计算，而不是按桌面浏览器窗口计算。
+
+## 原生组件与 WXSS
+
+当前会保留并注册这些基础组件的 Web 语义：
+
+- `view`
+- `text`
+- `image`
+- `button`
+- `input`
+- `scroll-view`
+- `form`
+- `label`
+- `textarea`
+- `checkbox-group` / `checkbox`
+- `radio-group` / `radio`
+- `switch`
+- `picker`
+- `picker-view` / `picker-view-column`
+- `slider`
+- `icon`
+- `progress`
+- `rich-text`
+- `navigator`
+- `swiper` / `swiper-item`
+
+`image.mode`、input 常用属性与事件、scroll-view 滚动轴和事件均由运行时适配。表单组件支持带 `name` 控件的值收集、`submit` / `reset`、label 关联、checkbox/radio 聚合及 switch 状态；脚本同步属性不会触发用户 `change` 事件。`picker` 覆盖 selector、multiSelector、date、time 和 region 高频模式，其中 region 只提供当前层级文本编辑，不内置行政区 code / postcode 数据。`picker-view` / `picker-view-column` 提供受控滚轮与微信形状事件，`slider` 提供范围、步长、颜色、块大小、禁用状态和表单值。`icon` 覆盖九种内建类型，`progress` 支持样式、按每增长 1% 计时的动画与去重的 `activeend`，`rich-text.nodes` 通过 property 保留节点数组并将字符串或数组统一安全归一化，过滤脚本、事件属性、危险 URL 与 CSS 后再构造 DOM。`navigator` 复用 Web 页面栈路由，并覆盖常用 open-type 和 `target="miniProgram"` 回调。`swiper` / `swiper-item` 支持受控 current、item-id、横纵布局、循环、指示点、触摸、autoplay 和微信形状的切换事件，断开 DOM 后会停止 autoplay。WXSS 中的 `page` 会映射为页面组件的 `:host`，上述原生组件类型选择器会映射到对应运行时标签，class、attribute、pseudo 与组合选择器保持不变。
+
+Web 页面栈会保留 `navigateTo` 隐藏页面的 DOM、实例、数据和滚动位置。`navigateBack` 恢复同一页面实例并重新触发 `onShow`，不会重复触发 `onLoad`；`redirectTo` 只卸载当前页，`reLaunch` 卸载整个旧页面栈。`getCurrentPages()` 返回所有存活页面，路由 Promise 与 `success` / `fail` / `complete` 回调使用小程序形状的 `errMsg`。
+
+首次页面挂载前会触发 `App.onLaunch` / `App.onShow`，浏览器进入后台或回到前台时通过 `visibilitychange` 去重触发 `App.onHide` / `App.onShow`。`getLaunchOptionsSync()` 始终返回初始入口，`getEnterOptionsSync()` 会在重新进入前台时更新为当前页面。页面容器 `#app` 的滚动位置持续归属于当前栈项；history/hash 路由会关闭浏览器原生滚动恢复，避免窗口和设备容器重复恢复。
+
+尚未完整支持的已知小程序组件会保持可渲染降级并输出去重告警。Web 运行时仍不等价于微信 DevTools 或真机，视觉发布门禁应以 DevTools 基线为真值。
 
 ### `vite`
 

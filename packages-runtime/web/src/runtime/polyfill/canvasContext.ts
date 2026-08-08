@@ -1,4 +1,5 @@
 import type { CanvasContext } from './types/platformRuntime'
+import { resolveNativeMediaElement } from '../nativeComponents/mediaRegistry'
 
 function normalizeCanvasNumber(value: unknown) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
@@ -20,6 +21,10 @@ function resolveCanvasById(canvasId: string) {
   const normalized = canvasId.trim()
   if (!normalized) {
     return undefined
+  }
+  const registered = resolveNativeMediaElement<HTMLCanvasElement>('canvas', normalized)
+  if (registered) {
+    return registered
   }
   const canvasList = runtimeDocument.querySelectorAll?.('canvas')
     ?? runtimeDocument.body?.querySelectorAll?.('canvas')
@@ -80,6 +85,11 @@ function createCanvasCommandQueue(canvasId: string) {
     setLineWidth(width: number) {
       pushCommand((ctx) => {
         ctx.lineWidth = normalizeCanvasNumber(width)
+      })
+    },
+    setLineCap(lineCap: CanvasLineCap) {
+      pushCommand((ctx) => {
+        ctx.lineCap = lineCap
       })
     },
     setFontSize(size: number) {
@@ -148,6 +158,50 @@ function createCanvasCommandQueue(canvasId: string) {
     },
     stroke() {
       pushCommand(ctx => ctx.stroke())
+    },
+    fill() {
+      pushCommand(ctx => ctx.fill())
+    },
+    rect(x: number, y: number, width: number, height: number) {
+      pushCommand((ctx) => {
+        ctx.rect(
+          normalizeCanvasNumber(x),
+          normalizeCanvasNumber(y),
+          normalizeCanvasNumber(width),
+          normalizeCanvasNumber(height),
+        )
+      })
+    },
+    arc(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterClockwise = false) {
+      pushCommand((ctx) => {
+        ctx.arc(
+          normalizeCanvasNumber(x),
+          normalizeCanvasNumber(y),
+          Math.max(0, normalizeCanvasNumber(radius)),
+          normalizeCanvasNumber(startAngle),
+          normalizeCanvasNumber(endAngle),
+          Boolean(counterClockwise),
+        )
+      })
+    },
+    save() {
+      pushCommand(ctx => ctx.save())
+    },
+    restore() {
+      pushCommand(ctx => ctx.restore())
+    },
+    translate(x: number, y: number) {
+      pushCommand((ctx) => {
+        ctx.translate(normalizeCanvasNumber(x), normalizeCanvasNumber(y))
+      })
+    },
+    rotate(angle: number) {
+      pushCommand(ctx => ctx.rotate(normalizeCanvasNumber(angle)))
+    },
+    scale(scaleWidth: number, scaleHeight: number) {
+      pushCommand((ctx) => {
+        ctx.scale(normalizeCanvasNumber(scaleWidth), normalizeCanvasNumber(scaleHeight))
+      })
     },
     draw,
   }

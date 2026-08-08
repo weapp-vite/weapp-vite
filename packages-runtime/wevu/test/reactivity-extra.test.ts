@@ -20,6 +20,7 @@ import {
 import { isRaw, isShallowReactive } from '@/reactivity/reactive'
 import { customRef, isRef, markAsRef, toValue } from '@/reactivity/ref'
 import { isShallowRef, shallowRef, triggerRef } from '@/reactivity/shallowRef'
+import { queueJob } from '@/scheduler'
 import { capitalize, toPathSegments } from '@/utils'
 
 describe('utils and scheduler', () => {
@@ -31,6 +32,61 @@ describe('utils and scheduler', () => {
 
     await expect(nextTick()).resolves.toBeUndefined()
     await expect(nextTick(() => 42)).resolves.toBe(42)
+  })
+
+  it('waits for jobs deferred during the current flush', async () => {
+    const calls: number[] = []
+    const job = () => {
+      calls.push(calls.length + 1)
+      if (calls.length === 1) {
+        queueJob(job)
+      }
+    }
+
+    queueJob(job)
+    await nextTick()
+
+    expect(calls).toEqual([1, 2])
+  })
+
+  it('waits for asynchronous work returned by a queued job', async () => {
+    let finish!: () => void
+    const completion = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    let settled = false
+
+    queueJob(() => completion)
+    const tick = nextTick().then(() => {
+      settled = true
+    })
+    await Promise.resolve()
+
+    expect(settled).toBe(false)
+    finish()
+    await tick
+    expect(settled).toBe(true)
+  })
+
+  it('continues queued jobs after an error and recovers the next flush', async () => {
+    const calls: string[] = []
+
+    queueJob(() => {
+      calls.push('failed')
+      throw new Error('scheduler failure')
+    })
+    queueJob(() => {
+      calls.push('continued')
+    })
+
+    await expect(nextTick()).rejects.toThrow('scheduler failure')
+    expect(calls).toEqual(['failed', 'continued'])
+
+    queueJob(() => {
+      calls.push('recovered')
+    })
+    await expect(nextTick()).resolves.toBeUndefined()
+    expect(calls).toEqual(['failed', 'continued', 'recovered'])
   })
 })
 
@@ -113,8 +169,21 @@ describe('shallowRef and toRefs', () => {
     expect(calls).toBe(2)
 
     expect(isShallowRef(state)).toBe(true)
+    expect(isShallowRef(ref({ count: 1 }))).toBe(false)
     triggerRef(state)
     expect(calls).toBe(3)
+  })
+
+  it('forces shallowRef watchers when triggerRef keeps the same object identity', async () => {
+    const state = shallowRef({ count: 0 })
+    const calls: number[] = []
+    watch(state, value => calls.push(value.count))
+
+    state.value.count += 1
+    triggerRef(state)
+    await nextTick()
+
+    expect(calls).toEqual([1])
   })
 
   it('supports shallowRef default fallback and triggerRef fallback branches', () => {

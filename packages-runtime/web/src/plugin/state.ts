@@ -7,13 +7,14 @@ export function createEmptyScanState(): ScanState {
     templateComponentMap: new Map(),
     templatePathSet: new Set(),
     componentTagMap: new Map(),
-    componentIdMap: new Map(),
     appNavigationDefaults: {},
     appComponentTags: {},
+    sfcResults: new Map(),
     scanResult: {
       app: undefined,
       pages: [],
       components: [],
+      layouts: [],
     },
   }
 }

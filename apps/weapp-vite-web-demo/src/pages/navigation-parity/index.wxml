@@ -1,0 +1,84 @@
+<view class="navigation-page" data-visual-ready="true">
+  <view class="navigation-page__intro">
+    <text class="navigation-page__eyebrow">NAVIGATION / SWIPER</text>
+    <text class="navigation-page__title">页面流转</text>
+    <text class="navigation-page__caption">声明式路由、轮播状态与触摸事件使用同一份页面源码</text>
+  </view>
+
+  <view class="navigation-panel">
+    <view class="section-heading">
+      <text class="section-heading__label">NAVIGATOR</text>
+      <text class="section-heading__meta">navigate</text>
+    </view>
+    <navigator
+      class="navigation-link"
+      hover-class="navigation-link--pressed"
+      url="/pages/about/index?from=navigation-parity"
+    >
+      <view>
+        <text class="navigation-link__title">打开运行时说明</text>
+        <text class="navigation-link__caption">进入页面栈并保留查询参数</text>
+      </view>
+      <text class="navigation-link__action">OPEN</text>
+    </navigator>
+  </view>
+
+  <view class="swiper-panel">
+    <view class="section-heading">
+      <text class="section-heading__label">SWIPER</text>
+      <text class="section-heading__meta">{{current + 1}} / 3</text>
+    </view>
+    <swiper
+      class="feature-swiper"
+      current="{{current}}"
+      circular
+      indicator-dots
+      indicator-color="rgba(255, 255, 255, 0.45)"
+      indicator-active-color="#ffffff"
+      duration="180"
+      bindchange="handleSwiperChange"
+      bindanimationfinish="handleAnimationFinish"
+    >
+      <swiper-item item-id="routes">
+        <view class="feature-slide feature-slide--routes">
+          <text class="feature-slide__index">01</text>
+          <text class="feature-slide__title">Route stack</text>
+          <text class="feature-slide__caption">navigate / back / redirect</text>
+        </view>
+      </swiper-item>
+      <swiper-item item-id="gesture">
+        <view class="feature-slide feature-slide--gesture">
+          <text class="feature-slide__index">02</text>
+          <text class="feature-slide__title">Touch gesture</text>
+          <text class="feature-slide__caption">change / transition / finish</text>
+        </view>
+      </swiper-item>
+      <swiper-item item-id="lifecycle">
+        <view class="feature-slide feature-slide--lifecycle">
+          <text class="feature-slide__index">03</text>
+          <text class="feature-slide__title">Timer lifecycle</text>
+          <text class="feature-slide__caption">autoplay pauses on disconnect</text>
+        </view>
+      </swiper-item>
+    </swiper>
+    <view class="swiper-actions">
+      <button size="mini" data-direction="-1" bindtap="stepSwiper">上一项</button>
+      <button size="mini" type="primary" data-direction="1" bindtap="stepSwiper">下一项</button>
+    </view>
+  </view>
+
+  <view class="event-strip" data-current="{{current}}" data-source="{{eventSource}}">
+    <view>
+      <text class="event-strip__label">CURRENT</text>
+      <text class="event-strip__value">{{current}}</text>
+    </view>
+    <view>
+      <text class="event-strip__label">SOURCE</text>
+      <text class="event-strip__value">{{eventSource}}</text>
+    </view>
+    <view>
+      <text class="event-strip__label">FINISH</text>
+      <text class="event-strip__value">{{animationCount}}</text>
+    </view>
+  </view>
+</view>

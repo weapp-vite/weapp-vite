@@ -5,8 +5,33 @@
     "pages/about/index",
     "pages/interactive/index",
     "pages/interactive/detail",
+    "pages/visual-parity/index",
+    "pages/form-parity/index",
+    "pages/selection-parity/index",
+    "pages/display-parity/index",
+    "pages/navigation-parity/index",
+    "pages/media-parity/index",
+    "pages/layer-parity/index",
+    "pages/tabbar-parity/home",
+    "pages/tabbar-parity/settings",
     "pages/product/detail/detail"
   ],
+  "tabBar": {
+    "color": "#7a7e83",
+    "selectedColor": "#087f5b",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/tabbar-parity/home",
+        "text": "工作台"
+      },
+      {
+        "pagePath": "pages/tabbar-parity/settings",
+        "text": "设置"
+      }
+    ]
+  },
   "window": {},
   "style": "v2",
   "componentFramework": "glass-easel",

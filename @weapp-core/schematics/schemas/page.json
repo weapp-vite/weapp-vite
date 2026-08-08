@@ -8,22 +8,29 @@
     },
     "backgroundColor": {
       "default": "#ffffff",
+      "description": "窗口的背景色",
       "type": "string"
     },
     "backgroundColorBottom": {
       "default": "#ffffff",
-      "type": "string"
+      "description": "底部窗口的背景色，仅 iOS 支持",
+      "type": "string",
+      "x-wechat-min-version": "6.5.16"
     },
     "backgroundColorContent": {
       "default": "#RRGGBBAA",
+      "description": "页面容器背景色。",
       "type": "string"
     },
     "backgroundColorTop": {
       "default": "#ffffff",
-      "type": "string"
+      "description": "顶部窗口的背景色，仅 iOS 支持",
+      "type": "string",
+      "x-wechat-min-version": "6.5.16"
     },
     "backgroundTextStyle": {
       "default": "dark",
+      "description": "下拉 loading 的样式，仅支持 dark / light",
       "enum": [
         "dark",
         "light"
@@ -31,6 +38,7 @@
       "type": "string"
     },
     "componentFramework": {
+      "description": "组件框架。",
       "type": "string"
     },
     "componentPlaceholder": {
@@ -40,6 +48,7 @@
     },
     "disableScroll": {
       "default": false,
+      "description": "设置为 true 时页面整体不能上下滚动。",
       "type": "boolean"
     },
     "enablePassiveEvent": {
@@ -52,66 +61,85 @@
         {
           "type": "boolean"
         }
-      ]
+      ],
+      "default": "否",
+      "description": "事件监听是否为 passive，若对页面单独设置则会覆盖全局的配置，详见 全局配置",
+      "x-wechat-min-version": "2.24.1"
     },
     "enablePullDownRefresh": {
       "default": false,
+      "description": "是否开启当前页面下拉刷新。详见 Page.onPullDownRefresh",
       "type": "boolean"
     },
     "handleWebviewPreload": {
       "default": "static",
+      "description": "控制预加载下个页面的时机。支持 static / manual / auto",
       "enum": [
         "static",
         "manual",
         "auto"
       ],
-      "type": "string"
+      "type": "string",
+      "x-wechat-min-version": "2.15.0"
     },
     "homeButton": {
       "default": false,
-      "type": "boolean"
+      "description": "在非首页、非页面栈最底层页面或非tabbar内页面中的导航栏展示home键",
+      "type": "boolean",
+      "x-wechat-min-version": "8.0.24"
     },
     "initialRenderingCache": {
+      "description": "页面初始渲染缓存配置。",
       "enum": [
         "static",
-        "dynamic"
+        "dynamic",
+        "capture"
       ],
       "type": "string"
     },
     "navigationBarBackgroundColor": {
       "default": "#000000",
+      "description": "导航栏背景颜色，如 #000000",
       "type": "string"
     },
     "navigationBarTextStyle": {
       "default": "white",
+      "description": "导航栏标题、状态栏颜色，仅支持 black / white",
       "type": "string"
     },
     "navigationBarTitleText": {
+      "description": "导航栏标题文字内容",
       "type": "string"
     },
     "navigationStyle": {
       "default": "default",
+      "description": "导航栏样式，仅支持以下值：default 默认样式 custom 自定义导航栏，只保留右上角胶囊按钮。",
       "enum": [
         "default",
         "custom"
       ],
-      "type": "string"
+      "type": "string",
+      "x-wechat-min-version": "7.0.0"
     },
     "onReachBottomDistance": {
       "default": 50,
+      "description": "页面上拉触底事件触发时距页面底部距离，单位为px。详见 Page.onReachBottom",
       "type": "number"
     },
     "pageOrientation": {
       "default": "portrait",
+      "description": "屏幕旋转设置，支持 auto / portrait / landscape 详见 响应显示区域变化",
       "enum": [
         "portrait",
         "auto",
         "landscape"
       ],
-      "type": "string"
+      "type": "string",
+      "x-wechat-min-version": "2.4.0"
     },
     "renderer": {
       "default": "webview",
+      "description": "页面渲染后端。",
       "enum": [
         "webview",
         "skyline"
@@ -120,6 +148,8 @@
     },
     "rendererOptions": {
       "additionalProperties": {},
+      "default": "否",
+      "description": "渲染后端选项，详情相关文档",
       "properties": {
         "skyline": {
           "additionalProperties": {},
@@ -140,25 +170,35 @@
           "type": "object"
         }
       },
-      "type": "object"
+      "type": "object",
+      "x-wechat-min-version": "3.1.0"
     },
     "restartStrategy": {
       "default": "homePage",
+      "description": "重新启动策略配置",
       "enum": [
         "homePage",
         "homePageAndLatestPage"
       ],
-      "type": "string"
+      "type": "string",
+      "x-wechat-min-version": "2.8.0"
     },
     "singlePage": {
       "additionalProperties": {},
+      "default": "否",
+      "description": "单页模式相关配置",
       "properties": {},
-      "type": "object"
+      "type": "object",
+      "x-wechat-min-version": "2.12.0"
     },
     "style": {
-      "type": "string"
+      "default": "default",
+      "description": "启用新版的组件样式",
+      "type": "string",
+      "x-wechat-min-version": "2.10.2"
     },
     "styleIsolation": {
+      "description": "页面样式隔离策略。",
       "enum": [
         "page-isolated",
         "page-apply-shared",
@@ -170,6 +210,7 @@
       "additionalProperties": {
         "type": "string"
       },
+      "description": "页面自定义组件配置。",
       "propertyNames": {
         "type": "string"
       },
@@ -177,12 +218,15 @@
     },
     "visualEffectInBackground": {
       "default": "none",
+      "description": "切入系统后台时，隐藏页面内容，保护用户隐私。支持 hidden / none，若对页面单独设置则会覆盖全局的配置，详见 全局配置",
       "enum": [
         "none",
         "hidden"
       ],
-      "type": "string"
+      "type": "string",
+      "x-wechat-min-version": "2.15.0"
     }
   },
-  "type": "object"
+  "type": "object",
+  "x-wechat-doc": "https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/page.html"
 }

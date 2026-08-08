@@ -33,6 +33,9 @@ export function createDiagnosticsLogger(mode: 'off' | 'fallback' | 'always') {
     if (typeof info.windowMs === 'number') {
       parts.push(`window=${info.windowMs}ms`)
     }
+    if (info.targetLabel) {
+      parts.push(`target=${info.targetLabel}`)
+    }
     const message = `[wevu:setData] ${parts.join(' ')}`
     if (isFallbackReason(info.reason)) {
       // eslint-disable-next-line no-console

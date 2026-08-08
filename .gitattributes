@@ -28,8 +28,8 @@ apps/** linguist-vendored
 *.cmd             text eol=crlf
 *.coffee          text
 *.css             text eol=lf diff=css
-*.htm             text diff=html
-*.html            text diff=html
+*.htm             text eol=lf diff=html
+*.html            text eol=lf diff=html
 *.inc             text
 *.ini             text
 *.js              text eol=lf
@@ -55,6 +55,8 @@ apps/** linguist-vendored
 *.sql             text
 *.styl            text eol=lf
 *.wxss            text eol=lf diff=css
+*.wxml            text eol=lf diff=html
+*.wxs             text eol=lf
 *.tag             text
 *.ts              text eol=lf
 *.tsx             text eol=lf

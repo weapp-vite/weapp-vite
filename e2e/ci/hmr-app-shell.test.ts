@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, disableProjectCompileHotReload, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
@@ -119,10 +119,10 @@ afterEach(async () => {
 describe.sequential('app shell HMR (dev watch)', () => {
   it('updates app.vue template shell assets and keeps page wrappers in sync', async () => {
     const originalAppSource = await fs.readFile(APP_VUE_PATH, 'utf8')
+    const restoreCompileHotReload = await disableProjectCompileHotReload(APP_ROOT)
     const updateMarker = createHmrMarker('APP-SHELL', 'weapp')
     const updatedAppSource = originalAppSource.replace(INITIAL_APP_SHELL_MARKER, updateMarker)
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       cwd: APP_ROOT,
       env: createDevProcessEnv(),
@@ -149,18 +149,25 @@ describe.sequential('app shell HMR (dev watch)', () => {
       expect(pageWxml).toContain('</weapp-layout-default></weapp-app-shell>')
     }
     finally {
-      await dev.stop(5_000)
-      await restoreAppVueSource(originalAppSource)
+      try {
+        await dev.stop(5_000)
+      }
+      finally {
+        await Promise.all([
+          restoreAppVueSource(originalAppSource),
+          restoreCompileHotReload(),
+        ])
+      }
     }
   })
 
   it('adds template app.vue shell through dev watch after starting without a shell', async () => {
     const originalAppSource = await fs.readFile(TEMPLATE_APP_VUE_PATH, 'utf8')
     const appSourceWithShell = addTemplateAppShell(originalAppSource)
+    const restoreCompileHotReload = await disableProjectCompileHotReload(TEMPLATE_ROOT)
 
     await fs.writeFile(TEMPLATE_APP_VUE_PATH, originalAppSource, 'utf8')
 
-    // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', TEMPLATE_ROOT, '--platform', 'weapp', '--skipNpm'], {
       cwd: TEMPLATE_ROOT,
       env: createDevProcessEnv(),
@@ -183,6 +190,7 @@ describe.sequential('app shell HMR (dev watch)', () => {
     finally {
       await dev.stop(5_000)
       await fs.writeFile(TEMPLATE_APP_VUE_PATH, originalAppSource, 'utf8')
+      await restoreCompileHotReload()
     }
   })
 })

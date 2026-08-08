@@ -32,17 +32,17 @@ export class HeadersPolyfill {
       return
     }
 
-    if (typeof (init as { forEach?: unknown }).forEach === 'function') {
-      ;(init as { forEach: (callback: (value: string, key: string) => void) => void }).forEach((value, key) => {
-        this.set(key, value)
-      })
-      return
-    }
-
     if (isIterableHeaders(init)) {
       for (const [key, value] of init) {
         this.append(key, value)
       }
+      return
+    }
+
+    if (typeof (init as { forEach?: unknown }).forEach === 'function') {
+      ;(init as { forEach: (callback: (value: string, key: string) => void) => void }).forEach((value, key) => {
+        this.set(key, value)
+      })
       return
     }
 

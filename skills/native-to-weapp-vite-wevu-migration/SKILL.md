@@ -117,6 +117,13 @@ description: 面向原生微信/支付宝/抖音小程序渐进迁移到 `weapp-
 - `.weapp-vite` 支持文件和 AI 指引已对齐。
 - 至少有一轮可复现验证覆盖关键链路。
 
+## 工具链稳定后再升级
+
+- 插件项目先完成 host/plugin 双产物构建和 DevTools 打开链路，再迁移插件页面或共享组件。
+- 状态保持 HMR 是工具链优化，不是迁移前置条件；先用 `classic` 建立行为基线，再单独启用 `stateful-experimental` 并验证失败回退。
+- 路线 B 迁移 router、layout 或 Web API 前，先记录原生导航、宿主 API 和 URL/request globals 的平台差异。
+- 每个波次都要把构建产物、真实 runtime 信号和回滚方式写进验收记录。
+
 ## 参考资料
 
 - `references/migration-checklist.md`

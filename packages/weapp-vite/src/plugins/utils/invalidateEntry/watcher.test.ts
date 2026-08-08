@@ -60,6 +60,9 @@ function createContext() {
         sidecarWatcherMap: new Map<string, { close: () => Promise<void> | void }>(),
       },
     },
+    moduleGraphService: {
+      hasModule: vi.fn(() => false),
+    },
     wxmlService: {
       scan: scanMock,
       getImporters: (value: string) => {
@@ -273,5 +276,25 @@ describe('invalidateEntry sidecar watcher', () => {
     expect(scanMock).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'update')
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:update] src/pages/hmr/index.wxml')
+  })
+
+  it('does not duplicate updates already owned by the bundler module graph', async () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+    const watcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(watcher)
+    const ctx = createContext()
+    ctx.moduleGraphService.hasModule.mockReturnValue(true)
+    ensureSidecarWatcher(ctx, '/project/src')
+
+    watcher.emit('ready')
+    watcher.emit('change', '/project/src/pages/hmr/index.wxml')
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(scanMock).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
+    expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
   })
 })

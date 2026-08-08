@@ -1,8 +1,9 @@
 import type { MiniProgramPageLifetime } from '../runtime/types'
 import type { SetupContextRouter } from '../runtime/types/props'
+import type { RouteStateSyncPayload } from './routeSync'
 import type { LocationQueryRaw, RouteLocationNormalizedLoaded } from './types'
 import { reactive, readonly } from '../reactivity'
-import { cloneLocationQuery, cloneRouteLocationRedirectedFrom, cloneRouteMeta, cloneRouteParams, cloneRouteRecordMatchedList, resolveCurrentRoute } from '../routerInternal/shared'
+import { cloneLocationQuery, cloneRouteLocationRedirectedFrom, cloneRouteMeta, cloneRouteParams, cloneRouteRecordMatchedList, resolveCurrentRoute, resolvePageRoute } from '../routerInternal/shared'
 import { getCurrentSetupContext, onLoad, onReady, onRouteDone, onShow, onUnload } from '../runtime/hooks'
 import {
   useNativePageRouter as useNativePageRouterInternal,
@@ -14,6 +15,13 @@ import { registerRouteStateSyncHandler } from './routeSync'
 
 export interface UseRouteOptions {
   resolveRoute?: (route: RouteLocationNormalizedLoaded) => RouteLocationNormalizedLoaded
+}
+
+interface RouteStateControllerOptions extends UseRouteOptions {
+  beforeRouteStateSync?: (
+    nextRoute: RouteLocationNormalizedLoaded,
+    payload: RouteStateSyncPayload,
+  ) => void
 }
 
 export interface RouteStateController {
@@ -61,7 +69,7 @@ function applyRouteState(
   }
 }
 
-export function createRouteStateController(options: UseRouteOptions = {}): RouteStateController {
+export function createRouteStateController(options: RouteStateControllerOptions = {}): RouteStateController {
   const setupContext = getCurrentSetupContext()
   if (!setupContext) {
     throw new Error('useRoute() 必须在 setup() 的同步阶段调用')
@@ -80,10 +88,17 @@ export function createRouteStateController(options: UseRouteOptions = {}): Route
   })
   applyRouteState(routeState, currentRoute)
 
-  function syncRoute(queryOverride?: LocationQueryRaw, routeOverride?: RouteLocationNormalizedLoaded) {
+  function syncRoute(
+    queryOverride?: LocationQueryRaw,
+    routeOverride?: RouteLocationNormalizedLoaded,
+    payload?: RouteStateSyncPayload,
+  ) {
     const nextRoute = routeOverride
       ? resolveRoute(routeOverride)
       : resolveRoute(resolveCurrentRoute(queryOverride, fallbackPage))
+    if (payload) {
+      options.beforeRouteStateSync?.(nextRoute, payload)
+    }
     applyRouteState(routeState, nextRoute)
   }
 
@@ -101,14 +116,18 @@ export function createRouteStateController(options: UseRouteOptions = {}): Route
   })
   const unregisterRouteStateSync = registerRouteStateSyncHandler((payload) => {
     if (payload?.route) {
-      syncRoute(undefined, payload.route)
+      syncRoute(undefined, payload.route, payload)
+      return
+    }
+    if (payload?.page) {
+      syncRoute(undefined, resolvePageRoute(payload.page), payload)
       return
     }
     if (payload?.url) {
-      syncRoute(undefined, resolveRouteLocation(payload.url, routeState.path))
+      syncRoute(undefined, resolveRouteLocation(payload.url, routeState.path), payload)
       return
     }
-    syncRoute()
+    syncRoute(undefined, undefined, payload)
   })
   onUnload(() => {
     unregisterRouteStateSync()

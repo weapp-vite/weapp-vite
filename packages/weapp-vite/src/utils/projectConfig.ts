@@ -9,6 +9,21 @@ interface ProjectConfigOptions {
   privatePath?: string
 }
 
+async function readProjectConfigFile(filePath: string, required: boolean) {
+  if (!(await fs.pathExists(filePath))) {
+    if (required) {
+      throw new Error(`找不到项目配置文件：${filePath}`)
+    }
+    return {}
+  }
+  try {
+    return await fs.readJson(filePath) || {}
+  }
+  catch {
+    throw new Error(`解析 json 格式失败, ${filePath} 为非法的 json 格式`)
+  }
+}
+
 const DEFAULT_PROJECT_PRIVATE_CONFIG_FILE_NAME = 'project.private.config.json'
 
 export function getProjectConfigFileName(platform: MpPlatform): string {
@@ -37,31 +52,15 @@ export function resolveProjectConfigRoot(projectConfig: ProjectConfig, platform:
 export async function getProjectConfig(root: string, options?: ProjectConfigOptions) {
   const baseJsonPath = path.resolve(root, options?.basePath ?? 'project.config.json')
   const privateJsonPath = path.resolve(root, options?.privatePath ?? 'project.private.config.json')
-  let baseJson = {}
-  let privateJson = {}
-  if (await fs.pathExists(baseJsonPath)) {
-    try {
-      baseJson = await fs.readJson(baseJsonPath) || {}
-    }
-    catch {
-      throw new Error(`解析 json 格式失败, ${baseJsonPath} 为非法的 json 格式`)
-    }
-  }
-  else {
-    throw new Error(`找不到项目配置文件：${baseJsonPath}`)
-  }
-  if (!options?.ignorePrivate) {
-    if (await fs.pathExists(privateJsonPath)) {
-      try {
-        privateJson = await fs.readJson(privateJsonPath) || {}
-      }
-      catch {
-        throw new Error(`解析 json 格式失败, ${privateJsonPath} 为非法的 json 格式`)
-      }
-    }
-  }
+  const baseJson = await readProjectConfigFile(baseJsonPath, true)
+  const privateJson = options?.ignorePrivate ? {} : await readProjectConfigFile(privateJsonPath, false)
 
   return Object.assign({}, privateJson, baseJson) as ProjectConfig
+}
+
+export async function getProjectPrivateConfig(root: string, options?: Pick<ProjectConfigOptions, 'privatePath'>) {
+  const privateJsonPath = path.resolve(root, options?.privatePath ?? 'project.private.config.json')
+  return await readProjectConfigFile(privateJsonPath, false) as Record<string, any>
 }
 
 export function resolveProjectConfigSyncDirs(options: {

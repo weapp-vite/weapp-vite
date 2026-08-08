@@ -22,6 +22,7 @@ const resolveWeappConfigFileMock = vi.hoisted(() => vi.fn(async () => undefined)
 const createCjsConfigLoadErrorMock = vi.hoisted(() => vi.fn(() => null))
 const getAliasEntriesMock = vi.hoisted(() => vi.fn(() => []))
 const getProjectConfigMock = vi.hoisted(() => vi.fn(async () => ({ miniprogramRoot: 'dist' })))
+const getProjectPrivateConfigMock = vi.hoisted(() => vi.fn(async () => ({})))
 const getProjectConfigFileNameMock = vi.hoisted(() => vi.fn(() => 'project.config.json'))
 const getProjectPrivateConfigFileNameMock = vi.hoisted(() => vi.fn(() => 'project.private.config.json'))
 const resolveProjectConfigRootMock = vi.hoisted(() => vi.fn(() => 'dist'))
@@ -82,6 +83,7 @@ vi.mock('../../../utils', () => ({
   createCjsConfigLoadError: createCjsConfigLoadErrorMock,
   getAliasEntries: getAliasEntriesMock,
   getProjectConfig: getProjectConfigMock,
+  getProjectPrivateConfig: getProjectPrivateConfigMock,
   getProjectConfigFileName: getProjectConfigFileNameMock,
   getProjectConfigRootKeys: getProjectConfigRootKeysMock,
   getProjectPrivateConfigFileName: getProjectPrivateConfigFileNameMock,
@@ -140,6 +142,7 @@ beforeEach(() => {
     config: {},
     path: '/project/vite.config.ts',
   })
+  getProjectPrivateConfigMock.mockResolvedValue({})
 })
 
 describe('runtime config internal loadConfig', () => {
@@ -1196,6 +1199,9 @@ describe('runtime config internal loadConfig', () => {
     })
     hasLibEntryMock.mockReturnValueOnce(false)
     resolveProjectConfigRootMock.mockReturnValueOnce('dist')
+    getProjectPrivateConfigMock.mockResolvedValueOnce({
+      setting: { compileHotReLoad: true },
+    })
 
     const loadConfig = createFactory()
     const result = await loadConfig({
@@ -1212,6 +1218,10 @@ describe('runtime config internal loadConfig', () => {
       basePath: 'foo/custom.project.config.json',
       privatePath: 'foo/project.private.config.weapp.json',
     })
+    expect(getProjectPrivateConfigMock).toHaveBeenCalledWith('/project', {
+      privatePath: 'foo/project.private.config.weapp.json',
+    })
+    expect(result.projectPrivateConfig.setting.compileHotReLoad).toBe(true)
     expect(result.projectConfigPath).toBe('/project/foo/custom.project.config.json')
     expect(result.projectPrivateConfigPath).toBe('/project/foo/project.private.config.weapp.json')
   })

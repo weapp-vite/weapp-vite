@@ -60,6 +60,7 @@ describe.sequential('app vue hmr alias watch shared chunk rebuild', () => {
         },
       },
     })
+    ctxResult.ctx.configService.weappViteConfig.hmr = { runtime: 'classic' }
 
     let watcher: WatcherEmitter | undefined
 

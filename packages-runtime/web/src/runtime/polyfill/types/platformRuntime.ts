@@ -105,6 +105,7 @@ export interface CanvasContext {
   setFillStyle: (color: string) => void
   setStrokeStyle: (color: string) => void
   setLineWidth: (width: number) => void
+  setLineCap: (lineCap: CanvasLineCap) => void
   setFontSize: (size: number) => void
   fillRect: (x: number, y: number, width: number, height: number) => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
@@ -115,6 +116,14 @@ export interface CanvasContext {
   moveTo: (x: number, y: number) => void
   lineTo: (x: number, y: number) => void
   stroke: () => void
+  fill: () => void
+  rect: (x: number, y: number, width: number, height: number) => void
+  arc: (x: number, y: number, radius: number, startAngle: number, endAngle: number, counterClockwise?: boolean) => void
+  save: () => void
+  restore: () => void
+  translate: (x: number, y: number) => void
+  rotate: (angle: number) => void
+  scale: (scaleWidth: number, scaleHeight: number) => void
   draw: (reserve?: boolean | (() => void), callback?: () => void) => void
 }
 

@@ -19,6 +19,22 @@ describe('reactivity (root version)', () => {
     stop(runner)
   })
 
+  it('reparents a standalone reactive child into the owning state root', () => {
+    const child = reactive({ col: 0 })
+    const state = reactive({ child })
+    let ticks = 0
+    const runner = effect(() => {
+      touchReactive(state)
+      void state.child
+      ticks++
+    })
+
+    child.col = 1
+
+    expect(ticks).toBe(2)
+    stop(runner)
+  })
+
   it('deep watch uses version strategy for reactive values', () => {
     setDeepWatchStrategy('version')
     const state = reactive({ x: { y: 1 } })
@@ -62,6 +78,22 @@ describe('reactivity (root version)', () => {
     const o = reactive({ n: 1 })
     expect(isReactive(o)).toBe(true)
     expect(isReactive({})).toBe(false)
+  })
+
+  it('does not trigger when assigning the same raw object through raw and reactive identities', () => {
+    const raw = { count: 1 }
+    const state = reactive({ value: raw })
+    let runs = 0
+    effect(() => {
+      void state.value
+      runs += 1
+    })
+
+    const observed = state.value
+    state.value = raw
+    state.value = observed
+
+    expect(runs).toBe(1)
   })
 
   it('keeps frozen plain objects reactive', () => {

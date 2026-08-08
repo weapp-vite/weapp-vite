@@ -3,6 +3,7 @@ import type { AstEngineName } from '../../../ast'
 import type { WeappViteConfig } from '../../../types'
 import type { EncodedSourceMapLike } from '../../../utils/sourcemap'
 import {
+  WEAPP_VITE_RUNTIME_VIRTUAL_ID,
   WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
@@ -45,6 +46,7 @@ export function mayNeedInjectSetDataPickInJs(source: string): boolean {
     || source.includes('defineComponent')
     || source.includes('__wevu_isPage')
     || source.includes('.so(')
+    || source.includes('export default')
 }
 
 /**
@@ -60,7 +62,12 @@ export function mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(source: string)
   traverse(ast, {
     ImportDeclaration(path) {
       const sourceValue = path.node.source.value
-      if (sourceValue !== 'wevu' && sourceValue !== 'vue' && sourceValue !== 'wevu/internal-runtime') {
+      if (
+        sourceValue !== 'wevu'
+        && sourceValue !== 'vue'
+        && sourceValue !== 'wevu/internal-runtime'
+        && sourceValue !== WEAPP_VITE_RUNTIME_VIRTUAL_ID
+      ) {
         return
       }
       for (const specifier of path.node.specifiers) {
@@ -407,6 +414,16 @@ function transformTargetWevuOptionsInJs(
         ? resolveOptionsObjectExpression(firstArg, path.scope)
         : null
       if (resolvedOptions && (isKnownWevuComponentCallee(path.node.callee) || hasCompiledWevuOptionsMarker(resolvedOptions))) {
+        candidateOptions.add(resolvedOptions)
+      }
+    },
+    ExportDefaultDeclaration(path) {
+      const declaration = path.node.declaration
+      if (!t.isExpression(declaration)) {
+        return
+      }
+      const resolvedOptions = resolveOptionsObjectExpression(declaration, path.scope)
+      if (resolvedOptions) {
         candidateOptions.add(resolvedOptions)
       }
     },

@@ -213,6 +213,23 @@ describe('MiniProgram', () => {
     })
   })
 
+  it('does not retry a protocol timeout on the same connection', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.captureScreenshot within 12_000ms'),
+      { code: 'DEVTOOLS_PROTOCOL_TIMEOUT', method: 'App.captureScreenshot' },
+    )
+
+    connection.send.mockRejectedValue(timeoutError)
+
+    await expect(miniProgram.screenshot({ timeout: 12_000 })).rejects.toMatchObject({
+      code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+      method: 'App.captureScreenshot',
+    })
+    expect(connection.send).toHaveBeenCalledTimes(1)
+  })
+
   it('forwards raw Tool domain commands through tool()', async () => {
     const connection = new FakeConnection()
     const miniProgram = new MiniProgram(connection as any)
@@ -391,6 +408,21 @@ describe('MiniProgram', () => {
     expect(connection.send).toHaveBeenNthCalledWith(1, 'App.getCurrentPage', {})
     expect(connection.send).toHaveBeenNthCalledWith(2, 'App.getCurrentPage', {})
     expect(page.path).toBe('/pages/recovered')
+  })
+
+  it('retries currentPage when DevTools reports an automator response timeout', async () => {
+    const connection = new FakeConnection()
+    connection.send
+      .mockRejectedValueOnce(new Error('timeout waiting for automator response'))
+      .mockResolvedValueOnce({ pageId: 2, path: '/pages/next', query: {} })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.currentPage()
+    await vi.advanceTimersByTimeAsync(400)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(connection.send).toHaveBeenCalledTimes(2)
   })
 
   it('falls back to pageStack when currentPage times out after retries', async () => {
@@ -911,6 +943,36 @@ describe('MiniProgram', () => {
           )
         }
         return {}
+      }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.reLaunch('/pages/next')
+    await vi.advanceTimersByTimeAsync(20_000)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(connection.send).toHaveBeenCalledWith('App.callWxMethod', {
+      method: 'reLaunch',
+      args: [{ url: '/pages/next' }],
+    }, {
+      timeout: 12_000,
+    })
+  })
+
+  it('waits for the target route when DevTools reports an automator response timeout', async () => {
+    const connection = new FakeConnection()
+    let currentPageReads = 0
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        currentPageReads += 1
+        return currentPageReads >= 3
+          ? { pageId: 2, path: '/pages/next', query: {} }
+          : { pageId: 1, path: '/pages/index', query: {} }
+      }
+      if (method === 'App.callWxMethod') {
+        throw new Error('timeout waiting for automator response')
       }
       return {}
     })

@@ -1,5 +1,4 @@
 <script lang="ts">
-/* eslint-disable vue/no-reserved-keys */
 import { defineComponent, nextTick } from 'wevu'
 import { buildResult, stringifyResult } from '../../shared/e2e'
 
@@ -34,10 +33,47 @@ function flattenStyleValues(value: any): string[] {
   return []
 }
 
+function readRuntimeBindings() {
+  const currentPages = getCurrentPages() as any[]
+  const currentPage = currentPages[currentPages.length - 1] as any
+  const data = currentPage?.data || {}
+  const classBindingEntries = Object.entries(data).filter(([key]) => /^__wv_cls_\d+$/.test(key))
+  const classValues = classBindingEntries.flatMap(([, value]) => flattenClassValues(value))
+  const styleBindingEntries = Object.entries(data).filter(([key]) => /^__wv_style_\d+$/.test(key))
+  const styleValues = styleBindingEntries.flatMap(([, value]) => flattenStyleValues(value))
+  return {
+    classBindingEntries,
+    classValues,
+    styleBindingEntries,
+    styleValues,
+  }
+}
+
+async function waitForRuntimeBindings(includeRootGuard: boolean, timeoutMs = 3_000) {
+  const expectedClassTokens = ['state-ready', 'active', 'ready', 'w-[164rpx]', 'bg-highlight-dark', 'bg-white']
+  if (includeRootGuard) {
+    expectedClassTokens.push('root-ready')
+  }
+  const expectedStyleTexts = ['28rpx', '#0052d9', 'padding:8rpx']
+  const start = Date.now()
+  let latest = readRuntimeBindings()
+  while (Date.now() - start <= timeoutMs) {
+    const classTokens = latest.classValues.flatMap(value => value.split(/\s+/))
+    if (
+      expectedClassTokens.every(token => classTokens.includes(token))
+      && expectedStyleTexts.every(text => latest.styleValues.some(value => value.includes(text)))
+    ) {
+      return latest
+    }
+    await new Promise(resolve => setTimeout(resolve, 50))
+    latest = readRuntimeBindings()
+  }
+  return latest
+}
+
 export default defineComponent({
   setup(_props, ctx) {
     const runE2E = async () => {
-      const target = ctx.instance as any
       const state = ctx.state as any
 
       Object.assign(state, {
@@ -87,15 +123,17 @@ export default defineComponent({
 
       await nextTick()
 
+      await waitForRuntimeBindings(false)
       state.root = { a: 'root-ready' }
 
       await nextTick()
 
-      const data = target.data || {}
-      const classBindingEntries = Object.entries(data).filter(([key]) => /^__wv_cls_\d+$/.test(key))
-      const classValues = classBindingEntries.flatMap(([, value]) => flattenClassValues(value))
-      const styleBindingEntries = Object.entries(data).filter(([key]) => /^__wv_style_\d+$/.test(key))
-      const styleValues = styleBindingEntries.flatMap(([, value]) => flattenStyleValues(value))
+      const {
+        classBindingEntries,
+        classValues,
+        styleBindingEntries,
+        styleValues,
+      } = await waitForRuntimeBindings(true)
 
       const hasClassToken = (token: string) => classValues.some((value) => {
         if (typeof value !== 'string') {

@@ -91,7 +91,7 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
     })
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
-      warmupRootSelectors: [ROOT_SELECTOR],
+      retryWarmupTimeout: true,
       warmupRoute: INDEX_ROUTE,
     })
     runtimeTools = await createRuntimeTools(miniProgram)
@@ -148,6 +148,9 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
   }
 
   it('covers every MCP runtime tool against the real IDE runtime', async () => {
+    const toolInfo = await miniProgram.toolInfo() as { version?: string }
+    const requiresAppServicePageProtocol = toolInfo.version === '2.01.2510290'
+
     expect([...runtimeTools.tools.keys()].sort()).toEqual([
       'weapp_devtools_active_page',
       'weapp_devtools_capture',
@@ -262,7 +265,7 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
         waitMs: 200,
       })
       if (isToolError(tapNodeResult)) {
-        expectToolError(tapNodeResult, /Element\.tap|DevTools did not respond|超时|点击/)
+        expectToolError(tapNodeResult, /未找到元素|Element\.tap|DevTools did not respond|超时|点击/)
         await expectMcpDemoDistContract()
       }
       else {
@@ -346,7 +349,7 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
       expect(measureNode.boundingClientRect?.width).toBeGreaterThan(0)
       expect(measureNode.boundingClientRect?.height).toBeGreaterThan(0)
     }
-    else if (!liveDomAvailable) {
+    else {
       await expectDomToolUnavailable('weapp_runtime_find_node', { selector: ROOT_SELECTOR, withWxml: true })
       await expectDomToolUnavailable('weapp_runtime_find_nodes', { selector: '.probe-value' })
       await expectDomToolUnavailable('weapp_runtime_tap_node', { selector: TAP_BUTTON_SELECTOR, waitMs: 200 })
@@ -361,6 +364,10 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
       await expectDomToolUnavailable('weapp_runtime_node_attrs', { selector: ROOT_SELECTOR, names: ['data-role', 'id'] })
       await expectDomToolUnavailable('weapp_runtime_scroll_node', { selector: SCROLL_SELECTOR, x: 0, y: 80 })
       await expectDomToolUnavailable('weapp_runtime_measure_node', { selector: ROOT_SELECTOR })
+    }
+
+    if (!requiresAppServicePageProtocol) {
+      expect(liveElementProtocolAvailable).toBe(true)
     }
 
     const hostApi = await callTool<{ method: string }>('weapp_devtools_host_api', {

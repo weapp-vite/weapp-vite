@@ -75,6 +75,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
 
   return (adapter?: MiniProgramAdapter): RuntimeInstance<D, C, M> => {
     const rawState = resolveDataOption(data)
+    const adapterInitialProps = (adapter as any)?.__wevu_initialProps
     // 预置 props 容器，确保编译器生成的 this.__wevuProps 回退表达式
     // 在 computed 首次求值阶段即可建立响应式依赖。
     if (rawState && typeof rawState === 'object' && !hasOwn(rawState as object, WEVU_PROPS_KEY)) {
@@ -89,6 +90,12 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       catch {
         // 若 data 返回对象不可扩展，则跳过预置，后续由 mount 阶段兜底注入。
       }
+    }
+    const rawProps = rawState && typeof rawState === 'object'
+      ? (rawState as any)[WEVU_PROPS_KEY]
+      : undefined
+    if (rawProps && typeof rawProps === 'object' && adapterInitialProps && typeof adapterInitialProps === 'object') {
+      Object.assign(rawProps, adapterInitialProps)
     }
     const state = reactive(rawState)
     const setupState = reactive(Object.create(null))
@@ -201,6 +208,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     })
 
     const currentAdapter = adapter ?? { setData: () => {} }
+    const targetLabel = (currentAdapter as any).__wevu_targetLabel as string | undefined
     const stateRootRaw = toRaw(state as any) as object
     let tracker: ReturnType<typeof effect> | undefined
     const scheduler = createSetDataScheduler({
@@ -231,6 +239,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       debugWhen: mergedDebugWhen,
       debugSampleRate,
       loopWarning,
+      targetLabel,
       runTracker: () => tracker?.(),
       isMounted: () => mounted,
       initialSnapshot: adapterInitialSnapshot && typeof adapterInitialSnapshot === 'object'

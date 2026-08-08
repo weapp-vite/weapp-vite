@@ -1,0 +1,112 @@
+<view class="selection-page" data-visual-ready="true">
+  <view class="selection-page__intro">
+    <text class="selection-page__eyebrow">SELECTION / NATIVE COMPONENTS</text>
+    <text class="selection-page__title">发布参数</text>
+    <text class="selection-page__caption">选择器、滚轮与滑块共享同一份页面源码</text>
+  </view>
+
+  <view class="picker-grid">
+    <picker
+      class="picker-field"
+      mode="selector"
+      range="{{environments}}"
+      range-key="label"
+      value="{{environmentIndex}}"
+      bindchange="handleEnvironmentChange"
+      bindcancel="handlePickerCancel"
+    >
+      <text class="picker-field__label">运行环境</text>
+      <text class="picker-field__value" data-selection-environment="{{environmentIndex}}">{{environmentLabel}}</text>
+    </picker>
+    <picker
+      class="picker-field"
+      mode="multiSelector"
+      range="{{multiRange}}"
+      value="{{multiValue}}"
+      bindchange="handleMultiChange"
+      bindcancel="handlePickerCancel"
+    >
+      <text class="picker-field__label">发布组合</text>
+      <text class="picker-field__value" data-selection-multi="{{multiValue}}">{{multiLabel}}</text>
+    </picker>
+    <picker
+      class="picker-field"
+      mode="date"
+      value="{{releaseDate}}"
+      start="2026-01-01"
+      end="2026-12-31"
+      bindchange="handleDateChange"
+      bindcancel="handlePickerCancel"
+    >
+      <text class="picker-field__label">发布日期</text>
+      <text class="picker-field__value">{{releaseDate}}</text>
+    </picker>
+    <picker
+      class="picker-field"
+      mode="time"
+      value="{{releaseTime}}"
+      start="09:00"
+      end="22:00"
+      bindchange="handleTimeChange"
+      bindcancel="handlePickerCancel"
+    >
+      <text class="picker-field__label">发布时间</text>
+      <text class="picker-field__value">{{releaseTime}}</text>
+    </picker>
+  </view>
+
+  <view class="wheel-card">
+    <view class="section-heading">
+      <text class="section-heading__title">目标矩阵</text>
+      <text class="section-heading__value" data-picker-view-value="{{pickerViewValue}}">{{pickerViewLabel}}</text>
+    </view>
+    <picker-view
+      class="target-wheel"
+      value="{{pickerViewValue}}"
+      indicator-style="border-color: #b8c8c2;"
+      bindchange="handlePickerViewChange"
+    >
+      <picker-view-column>
+        <view class="target-wheel__item">小程序</view>
+        <view class="target-wheel__item">Web</view>
+        <view class="target-wheel__item">Node</view>
+      </picker-view-column>
+      <picker-view-column>
+        <view class="target-wheel__item">JavaScript</view>
+        <view class="target-wheel__item">Rust</view>
+        <view class="target-wheel__item">TypeScript</view>
+      </picker-view-column>
+      <picker-view-column>
+        <view class="target-wheel__item">开发</view>
+        <view class="target-wheel__item">生产</view>
+        <view class="target-wheel__item">灰度</view>
+      </picker-view-column>
+    </picker-view>
+  </view>
+
+  <view class="slider-card">
+    <view class="section-heading">
+      <text class="section-heading__title">发布比例</text>
+      <text class="section-heading__value" data-slider-value="{{sliderValue}}">{{sliderValue}}%</text>
+    </view>
+    <slider
+      class="release-slider"
+      min="0"
+      max="100"
+      step="2"
+      value="{{sliderValue}}"
+      active-color="#087f5b"
+      background-color="#dce3e1"
+      block-color="#ffffff"
+      block-size="24"
+      bindchanging="handleSliderChanging"
+      bindchange="handleSliderChange"
+    />
+    <slider class="release-slider" value="32" active-color="#aab2ba" block-size="20" disabled />
+  </view>
+
+  <view class="event-result" data-selection-result="{{eventSummary}}">
+    <text class="event-result__label">SELECTION EVENT</text>
+    <text class="event-result__value">{{eventSummary}}</text>
+  </view>
+</view>

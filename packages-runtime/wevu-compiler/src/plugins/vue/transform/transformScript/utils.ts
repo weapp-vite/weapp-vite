@@ -16,6 +16,11 @@ export interface TransformResult {
 
 export interface TransformScriptOptions {
   /**
+   * 输入是否来自 TypeScript SFC 区块。
+   * TypeScript 输入必须经过 AST 路径清理类型语法，不能使用仅重排文本的 script setup 快速路径。
+   */
+  isTypeScript?: boolean
+  /**
    * 是否跳过组件转换（不添加 createWevuComponent 调用）
    * 用于 app.vue 等入口文件
    */

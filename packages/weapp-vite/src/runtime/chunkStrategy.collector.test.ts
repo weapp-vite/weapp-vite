@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { summarizeImportPrefixes } from './chunkStrategy/collector'
+import { createLogicalEntryId, createSidecarModuleId, createSidecarSourceSpecifier } from '../moduleGraph/protocol'
+import { assertModuleScopedToRoot, summarizeImportPrefixes } from './chunkStrategy/collector'
 
 const ROOT = '/project/src'
 
@@ -96,5 +97,50 @@ describe('chunkStrategy collector', () => {
       packageB: 1,
     })
     expect(ignoredMainImporters).toEqual(['action/relay.ts'])
+  })
+
+  it('projects logical entry importers back to their physical subpackage source', () => {
+    const pageId = `${ROOT}/packageA/pages/foo.ts`
+    const logicalPageId = createLogicalEntryId(pageId, 'page')
+    const { summary } = summarizeImportPrefixes({
+      ctx: createCtx({ [logicalPageId]: [] }),
+      importers: [logicalPageId],
+      relativeAbsoluteSrcRoot,
+      subPackageRoots: ['packageA'],
+    })
+
+    expect(summary).toEqual({ packageA: 1 })
+    expect(() => assertModuleScopedToRoot({
+      moduleInfo: { importers: [logicalPageId] },
+      moduleRoot: 'packageA',
+      moduleId: pageId,
+      relativeAbsoluteSrcRoot,
+      subPackageRoots: ['packageA'],
+    })).not.toThrow()
+  })
+
+  it('keeps sidecar source and output ownership separate', () => {
+    const pageId = `${ROOT}/packageA/pages/foo.ts`
+    const templateId = `${ROOT}/packageA/pages/foo.wxml`
+    const sidecarId = createSidecarModuleId(pageId, templateId, 'template')
+    const sidecarSourceId = createSidecarSourceSpecifier(pageId, templateId, 'template')
+    const { summary } = summarizeImportPrefixes({
+      ctx: createCtx({
+        [sidecarId]: [],
+        [sidecarSourceId]: [sidecarId],
+      }),
+      importers: [sidecarSourceId],
+      relativeAbsoluteSrcRoot,
+      subPackageRoots: ['packageA'],
+    })
+
+    expect(summary).toEqual({ packageA: 1 })
+    expect(() => assertModuleScopedToRoot({
+      moduleInfo: { importers: [sidecarId] },
+      moduleRoot: 'packageA',
+      moduleId: templateId,
+      relativeAbsoluteSrcRoot,
+      subPackageRoots: ['packageA'],
+    })).not.toThrow()
   })
 })

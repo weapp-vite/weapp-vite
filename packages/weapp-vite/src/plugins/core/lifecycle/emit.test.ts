@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createGenerateBundleHook } from './emit'
-import { collectActiveHmrImportedChunkIds } from './emit/generate'
+import { collectActiveHmrImportedChunkIds, isActiveHmrEntryFacade, mergeActiveHmrEntryIds } from './emit/generate'
 
 describe('core lifecycle emit hook injectWeapi', () => {
   it('rewrites bundle chunk wx/my access to global wpi', async () => {
@@ -26,8 +27,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -78,8 +77,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -123,8 +120,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -175,8 +170,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -229,8 +222,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -275,8 +266,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       subPackageMeta: null,
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -342,8 +331,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       subPackageMeta: null,
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -398,8 +385,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -448,8 +433,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -496,8 +479,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -567,8 +548,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -636,8 +615,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       entriesMap: new Map(),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: false,
@@ -700,8 +677,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       entriesMap: new Map(),
       resolvedEntryMap: new Map([[activeEntry, {}]]),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: true,
@@ -764,8 +739,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       entriesMap: new Map(),
       resolvedEntryMap: new Map([[activeEntry, {}]]),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: true,
@@ -826,8 +799,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
       entriesMap: new Map(),
       resolvedEntryMap: new Map([[activeEntry, {}]]),
       pendingIndependentBuilds: [],
-      moduleImporters: new Map(),
-      entryModuleIds: new Set(),
       hmrState: {
         didEmitAllEntries: false,
         hasBuiltOnce: true,
@@ -864,6 +835,25 @@ describe('core lifecycle emit hook injectWeapi', () => {
 })
 
 describe('core lifecycle emit HMR import graph', () => {
+  it('keeps actual emitted entries alongside the selected hmr entry subset', () => {
+    expect(mergeActiveHmrEntryIds(
+      new Set(['/src/pages/index.ts']),
+      new Set(['/src/layouts/default/index.ts']),
+    )).toEqual(new Set([
+      '/src/pages/index.ts',
+      '/src/layouts/default/index.ts',
+    ]))
+  })
+
+  it('matches logical entry facades against physical active entry ids', () => {
+    const layoutEntry = '/src/layouts/default/index.ts'
+
+    expect(isActiveHmrEntryFacade(
+      createLogicalEntryId(layoutEntry, 'layout'),
+      new Set([layoutEntry]),
+    )).toBe(true)
+  })
+
   it('collects normalized direct and dynamic imports for active HMR entries once', () => {
     const activeEntry = '/src/pages/index/index.ts'
     const bundle = {

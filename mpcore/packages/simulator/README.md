@@ -10,3 +10,7 @@
 - 提供面向 e2e/runtime 断言的页面启动、重启与 WXML 查询能力
 - 提供测试节点句柄上的 `tap()`、`trigger()`、`input()`、`change()`、`blur()` 交互辅助方法
 - 提供测试页面/会话句柄上的 `waitForSelector()`、`waitForText()`、`waitForTextGone()`、`waitForData()`、`waitForCurrentPage()` 等轮询等待方法
+- 通过共享 `RuntimeKernel` 管理 artifact、独立执行 realm、timer、diagnostics 与平台适配边界
+- `close()` 会清理页面栈、组件 scope、observer、timer、事件和模块缓存，并使旧页面/节点 handle 失效
+
+编写页面和组件单测时优先使用上层 `@mpcore/test`；直接使用本包适合实现 provider、调试桥或更低层运行时断言。

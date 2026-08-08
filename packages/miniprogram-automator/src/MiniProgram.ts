@@ -87,6 +87,12 @@ function withTimeout<T>(task: Promise<T>, timeoutMs: number) {
 function isOperationTimeoutError(error: unknown, timeoutMs: number) {
   return error instanceof Error && error.message.includes(`Operation timed out after ${timeoutMs}ms`)
 }
+
+function isAutomatorResponseTimeout(error: unknown) {
+  return error instanceof Error
+    && /timeout waiting for automator response/i.test(error.message)
+}
+
 function isFnStr(value: unknown) {
   if (!isStr(value)) {
     return false
@@ -96,27 +102,36 @@ function isFnStr(value: unknown) {
 }
 
 function isCurrentPageProtocolTimeout(error: unknown) {
-  return error instanceof Error
-    && 'code' in error
-    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    && 'method' in error
-    && error.method === 'App.getCurrentPage'
+  return isAutomatorResponseTimeout(error)
+    || (
+      error instanceof Error
+      && 'code' in error
+      && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+      && 'method' in error
+      && error.method === 'App.getCurrentPage'
+    )
 }
 
 function isPageStackProtocolTimeout(error: unknown) {
-  return error instanceof Error
-    && 'code' in error
-    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    && 'method' in error
-    && error.method === 'App.getPageStack'
+  return isAutomatorResponseTimeout(error)
+    || (
+      error instanceof Error
+      && 'code' in error
+      && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+      && 'method' in error
+      && error.method === 'App.getPageStack'
+    )
 }
 
 function isCallFunctionProtocolTimeout(error: unknown) {
-  return error instanceof Error
-    && 'code' in error
-    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    && 'method' in error
-    && error.method === 'App.callFunction'
+  return isAutomatorResponseTimeout(error)
+    || (
+      error instanceof Error
+      && 'code' in error
+      && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+      && 'method' in error
+      && error.method === 'App.callFunction'
+    )
 }
 
 function isPageMetaMissingError(error: unknown) {
@@ -133,11 +148,14 @@ function isCurrentFrameTimedOutError(error: unknown) {
 }
 
 function isCallWxMethodProtocolTimeout(error: unknown) {
-  return error instanceof Error
-    && 'code' in error
-    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    && 'method' in error
-    && error.method === 'App.callWxMethod'
+  return isAutomatorResponseTimeout(error)
+    || (
+      error instanceof Error
+      && 'code' in error
+      && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+      && 'method' in error
+      && error.method === 'App.callWxMethod'
+    )
 }
 
 function isCaptureScreenshotRecoverableError(error: unknown) {
@@ -145,17 +163,9 @@ function isCaptureScreenshotRecoverableError(error: unknown) {
     return false
   }
 
-  if (
-    'code' in error
-    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    && 'method' in error
-    && error.method === 'App.captureScreenshot'
-  ) {
-    return true
-  }
-
+  // 协议超时无法取消 DevTools 内部仍在执行的截图任务；调用方应轮换会话，
+  // 不能在同一连接上继续堆积请求。只有 DevTools 明确返回的瞬时失败适合重试。
   return error.message.includes('fail to capture screenshot')
-    || error.message.includes('App.captureScreenshot')
 }
 
 function isRouteContextProbeError(error: unknown) {

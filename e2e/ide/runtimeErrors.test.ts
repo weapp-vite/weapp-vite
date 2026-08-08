@@ -86,4 +86,63 @@ describe('runtimeErrors', () => {
     expect(collector.getSince(marker)[0]).toContain('模板运行时表达式执行失败')
     expect(collector.getSince(marker)[0]).toContain('TypeError: Converting circular structure to JSON')
   })
+
+  it('recognizes DevTools console entries that expose the level as type', () => {
+    const miniProgram = createMiniProgramEmitter()
+    const collector = attachRuntimeErrorCollector(miniProgram)
+    const marker = collector.mark()
+
+    miniProgram.emit('console', {
+      message: {
+        type: 'error',
+        text: 'runtime error from message type',
+      },
+    })
+
+    expect(collector.getSince(marker)).toEqual([
+      '[console:error] runtime error from message type',
+    ])
+  })
+
+  it('preserves DevTools RemoteObject descriptions and previews', () => {
+    const miniProgram = createMiniProgramEmitter()
+    const collector = attachRuntimeErrorCollector(miniProgram)
+    const marker = collector.mark()
+
+    miniProgram.emit('console', {
+      message: {
+        type: 'error',
+        args: [
+          {
+            type: 'object',
+            subtype: 'error',
+            description: 'TypeError: Cannot read properties of undefined',
+            value: {},
+          },
+          {
+            type: 'object',
+            preview: {
+              properties: [
+                { name: 'route', value: 'pages/index/index' },
+                { name: 'status', value: 'failed' },
+              ],
+            },
+          },
+        ],
+      },
+    })
+
+    expect(collector.getSince(marker)).toEqual([
+      '[console:error] TypeError: Cannot read properties of undefined route: pages/index/index, status: failed',
+    ])
+  })
+
+  it('supports providers without DevTools runtime event subscriptions', () => {
+    const collector = attachRuntimeErrorCollector({})
+
+    expect(collector.mark()).toBe(0)
+    expect(collector.getAll()).toEqual([])
+    expect(collector.getAllLogs()).toEqual([])
+    expect(() => collector.dispose()).not.toThrow()
+  })
 })

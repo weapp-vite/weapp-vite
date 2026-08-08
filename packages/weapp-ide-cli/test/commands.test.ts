@@ -251,7 +251,7 @@ describe('automator commands', () => {
 
       await tap({ projectPath: mockCwd, selector: '.submit-btn' })
 
-      expect(mockPage.$).toHaveBeenCalledWith('.submit-btn')
+      expect(mockPage.$).toHaveBeenCalledWith('.submit-btn', { fallback: false })
       expect(mockElement.tap).toHaveBeenCalled()
       expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
@@ -277,8 +277,8 @@ describe('automator commands', () => {
       await tap({ projectPath: mockCwd, selector: '.submit-btn' })
 
       expect(mockMiniProgram.currentPage).toHaveBeenCalledTimes(2)
-      expect(stalePage.$).toHaveBeenCalledWith('.submit-btn')
-      expect(freshPage.$).toHaveBeenCalledWith('.submit-btn')
+      expect(stalePage.$).toHaveBeenCalledWith('.submit-btn', { fallback: false })
+      expect(freshPage.$).toHaveBeenCalledWith('.submit-btn', { fallback: false })
       expect(staleElement.tap).toHaveBeenCalledTimes(1)
       expect(freshElement.tap).toHaveBeenCalledTimes(1)
       expect(mockMiniProgram.disconnect).toHaveBeenCalled()
@@ -301,7 +301,7 @@ describe('automator commands', () => {
 
       await input({ projectPath: mockCwd, selector: '.input-field', value: 'Hello World' })
 
-      expect(mockPage.$).toHaveBeenCalledWith('.input-field')
+      expect(mockPage.$).toHaveBeenCalledWith('.input-field', { fallback: false })
       expect(mockElement.input).toHaveBeenCalledWith('Hello World')
       expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })

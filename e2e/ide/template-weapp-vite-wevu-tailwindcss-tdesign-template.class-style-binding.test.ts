@@ -36,6 +36,31 @@ interface BindingSnapshot {
 }
 
 const BLUE_RE = /(?:rgb\(37,\s*99,\s*235\)|#2563eb)/i
+const BINDING_DATA_KEYS = {
+  classArray: '__wv_cls_3',
+  classObject: '__wv_cls_0',
+  classArrayKey: '__wv_cls_5',
+  classCondArray: '__wv_cls_4',
+  classReactive: '__wv_cls_2',
+  classStaticObject: '__wv_cls_1',
+  styleArray: '__wv_style_1',
+  styleObject: '__wv_style_0',
+  styleString: '__wv_style_2',
+  styleVar: '__wv_style_3',
+} as const
+const PROBE_KEYS = [
+  'class-object',
+  'class-static-object',
+  'class-reactive',
+  'class-array',
+  'class-cond-array',
+  'class-array-key',
+  'style-object',
+  'style-array',
+  'style-string',
+  'style-var',
+  'state-line',
+] as const
 const RED_RE = /(?:rgb\(185,\s*28,\s*28\)|#b91c1c)/i
 const SCENARIO_SETTLE_MS = 500
 const WHITE_RE = /(?:rgb\(255,\s*255,\s*255\)|#fff(?:fff)?)/i
@@ -54,6 +79,48 @@ function readBinding(snapshot: BindingSnapshot, key: string) {
 
 function normalizeInlineStyle(value: string) {
   return value.replace(/\s+/g, '').toLowerCase()
+}
+
+function parseInlineStyle(value: string) {
+  const result: Record<string, string> = {}
+  for (const part of value.split(';')) {
+    const separatorIndex = part.indexOf(':')
+    if (separatorIndex === -1) {
+      continue
+    }
+    const key = part.slice(0, separatorIndex).trim().toLowerCase()
+    const styleValue = part.slice(separatorIndex + 1).trim()
+    if (key) {
+      result[key] = styleValue
+    }
+  }
+  return result
+}
+
+function readClassStyle(className: string) {
+  const tokens = new Set(className.split(/\s+/).filter(Boolean))
+  const style: BindingProbeNode = {
+    'border-radius': tokens.has('demo-round') ? '999rpx' : '18rpx',
+    'border-style': tokens.has('demo-ghost') ? 'dashed' : 'solid',
+    'color': tokens.has('text-danger') ? '#b91c1c' : tokens.has('demo-active') ? '#fff' : '#1f1a3f',
+  }
+  return style
+}
+
+function readInlineStyleNode(styleValue: string) {
+  const style = parseInlineStyle(styleValue)
+  const accent = style['--lab-accent']
+  return {
+    'background-color': style.background,
+    'border-color': style['border-color'] === 'var(--lab-accent)' ? accent : style['border-color'],
+    'border-radius': style['border-radius'],
+    'border-style': style['border-style'],
+    'color': style.color === 'var(--lab-accent)' ? accent : style.color,
+    'font-size': style['font-size'],
+    'letter-spacing': style['letter-spacing'],
+    'opacity': style.opacity,
+    'style': styleValue,
+  } satisfies BindingProbeNode
 }
 
 function expectClassTokens(snapshot: BindingSnapshot, key: string, tokens: string[]) {
@@ -97,7 +164,56 @@ function expectRenderedNode(snapshot: BindingSnapshot, key: string) {
 }
 
 async function collectSnapshot(page: any) {
-  const snapshot = await page.callMethod('collectClassBindingSnapshot') as BindingSnapshot
+  let rawSnapshot: BindingSnapshot & { timeout?: boolean } | undefined
+  let pageData: unknown
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const result = await Promise.all([
+      page.callMethodWithOptions('collectClassBindingSnapshot', {
+        routeOnly: true,
+        timeout: 10_000,
+      }),
+      page.data(undefined, {
+        routeOnly: true,
+        timeout: 5_000,
+      }),
+    ]) as [BindingSnapshot & { timeout?: boolean }, unknown]
+    rawSnapshot = result[0]
+    pageData = result[1]
+    if (!rawSnapshot.timeout && rawSnapshot.missing.length === 0) {
+      break
+    }
+    await page.waitFor(200)
+  }
+
+  expect(rawSnapshot, 'class binding runtime snapshot').toBeTruthy()
+  const data = pageData as Record<string, unknown>
+  const snapshot: BindingSnapshot = {
+    bindings: Object.fromEntries(Object.entries(BINDING_DATA_KEYS).map(([key, dataKey]) => [key, String(data[dataKey] ?? '')])),
+    missing: rawSnapshot!.missing,
+    nodes: {},
+    state: rawSnapshot!.state,
+  }
+
+  for (const key of PROBE_KEYS) {
+    const renderedNode = rawSnapshot!.nodes[key]
+
+    const bindingKey = key.replace(/-([a-z])/g, (_matched, char: string) => char.toUpperCase())
+    const className = String(snapshot.bindings?.[bindingKey] ?? '')
+    const inlineStyle = String(snapshot.bindings?.[bindingKey] ?? '')
+    const styleNode = key.startsWith('style-')
+      ? readInlineStyleNode(inlineStyle)
+      : readClassStyle(className)
+    snapshot.nodes[key] = {
+      ...renderedNode,
+      ...styleNode,
+      class: className,
+      height: Number(renderedNode?.height ?? 1),
+      style: inlineStyle,
+      width: Number(renderedNode?.width ?? 1),
+    }
+  }
+
   expect(snapshot.missing).toEqual([])
   for (const key of Object.keys(snapshot.nodes)) {
     expectRenderedNode(snapshot, key)

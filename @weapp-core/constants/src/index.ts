@@ -23,6 +23,24 @@ export const REQUEST_GLOBAL_BUNDLE_HOST_REF = '__rb'
 export const REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME = '__wvRGI__'
 
 export const WEAPP_VITE_IMPORT_META_ENV_KEY = '__weappViteImportMetaEnv'
+export const WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY = 'weapp_vite_external'
+
+export const WEAPP_VITE_LOGICAL_ENTRY_VIRTUAL_PREFIX = 'virtual:weapp-vite-logical-entry:'
+export const WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX = 'weapp-vite:logical-entry:'
+export const WEAPP_VITE_SIDECAR_VIRTUAL_PREFIX = 'virtual:weapp-vite-sidecar:'
+export const WEAPP_VITE_SIDECAR_RESOLVED_PREFIX = 'weapp-vite:sidecar:'
+export const WEAPP_VITE_SIDECAR_QUERY_MARKER = 'weapp-vite-sidecar'
+export const WEAPP_VITE_SIDECAR_OWNER_QUERY_MARKER = 'weapp-vite-sidecar-owner'
+
+export const WEAPP_VITE_RUNTIME_CONTRACT_VERSION = 1
+export const WEAPP_VITE_RUNTIME_VIRTUAL_ID = 'virtual:weapp-vite/runtime'
+export const WEAPP_VITE_RUNTIME_REACTIVITY_VIRTUAL_ID = `${WEAPP_VITE_RUNTIME_VIRTUAL_ID}/reactivity`
+export const WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID = `${WEAPP_VITE_RUNTIME_VIRTUAL_ID}/template`
+export const WEAPP_VITE_RUNTIME_VIRTUAL_IDS = {
+  runtime: WEAPP_VITE_RUNTIME_VIRTUAL_ID,
+  reactivity: WEAPP_VITE_RUNTIME_REACTIVITY_VIRTUAL_ID,
+  template: WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID,
+} as const
 
 export const WEAPP_VITE_STATEFUL_HMR_DIRECTORY = '__weapp_vite_hmr'
 export const WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE = `${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/control.js`
@@ -33,6 +51,7 @@ export const WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY = '__WEAPP_VITE_STATEFUL_HMR_CLI
 export const WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY = '__WEAPP_VITE_STATEFUL_HMR_BRIDGE__'
 
 export const WEVU_PAGE_LAYOUT_SETTER_KEY = '__wevuSetPageLayout'
+export const WEVU_WEB_APIS_NETWORK_DEFAULTS_KEY = '__wevuWebApisNetworkDefaults'
 export const WEVU_PAGE_LAYOUT_NONE = '__wv_no_layout'
 export const WEVU_PAGE_LAYOUT_NAME_KEY = '__wv_page_layout_name'
 export const WEVU_PAGE_LAYOUT_PROPS_KEY = '__wv_page_layout_props'
@@ -53,6 +72,7 @@ export const WEVU_SLOT_SCOPE_KEY = '__wvSlotScope'
 export const WEVU_SLOT_OWNER_KEY = '__wvOwner'
 export const WEVU_SLOT_OWNER_PROXY_KEY = '__wvOwnerProxy'
 export const WEVU_SLOT_PROPS_DATA_KEY = '__wvSlotPropsData'
+export const WEVU_SLOT_FUNCTION_TOKEN = '__wv_slot_function__'
 export const WEVU_SLOT_NAMES_PROP = 'vueSlots'
 
 export const WEVU_SLOT_OWNER_ATTR = '__wv-owner-id'
@@ -63,7 +83,7 @@ export const WEVU_SLOT_NAMES_ATTR = 'vue-slots'
 export const WEVU_SCOPED_SLOT_OWNER_STORE_KEY = '__wevuScopedSlotOwnerStore'
 export const WEVU_SCOPED_SLOT_OWNER_SEED_KEY = '__wevuScopedSlotOwnerSeed'
 export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME = 'weapp-slot-wrapper'
-export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE = '__weapp_vite_slot_wrapper'
+export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE = 'weapp_vite_internal/slot-wrapper/index'
 export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_GLOBAL_PATH = `/${WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE}`
 
 export const WEVU_CLASS_STYLE_RUNTIME_MODULE = '__weapp_vite'
@@ -84,8 +104,11 @@ export const WEVU_SETUP_STATE_KEY = '__wevuSetupState'
 export const WEVU_PROPS_ALIASES_KEY = '__wevuPropsAliases'
 export const WEVU_PROPS_DERIVED_KEYS_KEY = '__wevuPropsDerivedKeys'
 export const WEVU_ATTRS_KEY = '__wevuAttrs'
+export const WEVU_COMPONENT_NAME_KEY = '__wevuComponentName'
 export const WEVU_NATIVE_INSTANCE_KEY = '__wevuNativeInstance'
 export const WEVU_RUNTIME_KEY = '__wevuRuntime'
+export const WEVU_RUNTIME_OWNER_ID_KEY = '__wevuRuntimeOwnerId'
+export const WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD = '__weapp_vite_resolvePublicInstance'
 export const WEVU_TEMPLATE_REFS_KEY = '__wevuTemplateRefs'
 export const WEVU_LAYOUT_HOSTS_KEY = '__wevuLayoutHosts'
 export const WEVU_FUNCTION_PROP_PATHS_KEY = '__wevuFunctionPropPaths'

@@ -14,6 +14,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 用户要配置 `vite.config.ts` 里的 `weapp`。
 - 用户要排查输出缺页、路径不对、自动路由不生效、layout 不生效。
 - 用户要接入分包、npm 落位、多平台、worker、web runtime、lib mode。
+- 用户要用 Vitest 对真实小程序编译产物进行页面或组件测试。
 - 用户要让 AI 正确使用项目，包括 `AGENTS.md`、`dist/docs`、screenshot / compare / logs / mcp。
 - 用户要梳理 `weapp-vite` 与 `weapp-ide-cli` 的命令归属、透传边界、`preview/upload/open/config` 这类 DevTools CLI 能力。
 
@@ -40,6 +41,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp.multiPlatform`
    - `weapp.autoRoutes`
    - `weapp.autoImportComponents`
+   - `weapp.uniApp`：实验性外部 uni-app Vue SFC 转换；npm 包必须显式加入 `include` 白名单
    - `weapp.routeRules`
    - `weapp.typescript`
    - `weapp.hmr.runtime`：默认 `classic`；微信开发者工具需要保留 Page/Component/wevu 状态时可实验性使用 `stateful-experimental`
@@ -49,6 +51,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - AI / 调试：`weapp.forwardConsole`、`weapp.mcp`、`wv mcp init|print|doctor`、`wv screenshot`、`wv compare`、`wv ide logs --open`
    - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`、`weapp.analyze.budgets` / `history`
    - 进阶链路：`web`、`lib`
+   - 页面/组件单测：`@mpcore/weapp-vite` 构建产物，`@mpcore/test` 提供 render/query/user，`@mpcore/vitest` 提供每测试隔离和 matcher
 4. CLI 与 IDE 所有权保持清晰：
    - `weapp-vite` 原生命令优先
    - `weapp-ide-cli` 只在 catalog 命中后透传
@@ -61,6 +64,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `.weapp-vite` 类型异常：先跑 `wv prepare`
    - 页面 / layout 不对：查 `autoRoutes`、`routeRules`、`definePageMeta`
    - 自动导入异常：查 `autoImportComponents` 与 resolver
+   - Wot UI / uview-plus / uni-app 组件库异常：同时检查 `weapp.uniApp.include`、resolver 的真实 `resolvedId` / `sourceType: 'wevu-sfc'`，以及目标端条件分支
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`
    - 状态保持 HMR 不生效：确认平台为微信、DevTools 开启服务端口与热重载、`compileHotReLoad: true`，并区分安全 JS/Vue 补丁与 CSS/资源/配置的完整重载回退
@@ -70,6 +74,22 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 避免把同一份源码上的多个小 AST 查询拆成多个 N-API 调用；如果必须细粒度调用，先证明真实 HMR/build 热路径有净收益。
    - native fast path 必须显式启用、可选依赖、失败回退 Babel/Oxc/Vue compiler，并配 correctness 对齐测试与 profile。
 7. 验证按最小范围进行；若改了 `packages/*/src/**`，下游验证前先重建对应包，并明确 `dist sync: rebuilt weapp-vite before downstream validation`。
+
+## 近期能力决策
+
+- 插件项目先确认 `weapp.pluginRoot`，结构变化必须同时检查主应用 `dist/` 和插件 `dist-plugin/`；不要只验证 host 产物。
+- 状态保持 HMR 仅适用于微信小程序：需要 DevTools 服务端口、热重载和 `setting.compileHotReLoad: true`。JS/Vue 安全补丁可保留实例状态；CSS、资源、JSON、配置、边界不兼容或补丁失败时应接受完整构建回退。
+- Web runtime 只验证 Web 语义，不把它当成小程序真机等价环境；请求 globals、URL 和平台 API 兼容问题要分别在目标 runtime 验证。
+- 小程序单测不使用 jsdom；`@mpcore/test` 只暴露逻辑 WXML 树。测试产物必须通过 `weapp-vite/test` 交给 Vite/Rolldown emit，不能由适配器手写 bundle。
+- uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 与 uview-plus 分别以 `@wot-ui/ui@2.2.0`、`uview-plus@3.8.86` 的 npm 发布包 SFC 清单为兼容基线，不把它们泛化成完整 uni-app runtime。
+- 分包、插件、worker 和 lib mode 的性能判断都先看产物结构与 `wv analyze`，再改 chunk/shared 策略。
+
+## 参考决策表
+
+- HMR 行为：`references/stateful-hmr-playbook.md`
+- 插件双产物：`references/plugin-build-playbook.md`
+- Web runtime 与 URL：`references/web-runtime-compatibility.md`
+- native AST：`references/native-ast-performance-checklist.md`
 
 ## 约束
 
@@ -105,3 +125,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - `references/cli-dispatch-playbook.md`
 - `references/ide-command-playbook.md`
 - `references/ide-i18n-config-playbook.md`
+- `references/stateful-hmr-playbook.md`
+- `references/plugin-build-playbook.md`
+- `references/web-runtime-compatibility.md`
+- `references/native-ast-performance-checklist.md`

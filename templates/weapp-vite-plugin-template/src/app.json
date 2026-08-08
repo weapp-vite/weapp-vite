@@ -1,11 +1,12 @@
 {
+  "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
     "pages/index/index"
   ],
   "plugins": {
     "hello-plugin": {
       "version": "dev",
-      "provider": "touristappid"
+      "provider": "wxb3d842a4a7e3440d"
     }
   }
 }

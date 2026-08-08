@@ -1,5 +1,54 @@
 # wevu-comprehensive-demo
 
+## 0.0.170
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.19.2`
+
+## 0.0.169
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.19.1`
+
+## 0.0.168
+
+### Patch Changes
+
+- 📦 **Dependencies** [`878073f`](https://github.com/weapp-vite/weapp-vite/commit/878073f8819a21f7e6baa96d13cf3f7e552d2158)
+  → `wevu@6.19.0`
+
+## 0.0.167
+
+### Patch Changes
+
+- 📦 **Dependencies** [`64b74ad`](https://github.com/weapp-vite/weapp-vite/commit/64b74ad0a04c16f7281ce789ffdc47836d1f9fef)
+  → `wevu@6.18.6`
+
+## 0.0.166
+
+### Patch Changes
+
+- 📦 **Dependencies** [`b9be44a`](https://github.com/weapp-vite/weapp-vite/commit/b9be44a929932241af31cdb284ee6271c6ff8ac3)
+  → `wevu@6.18.5`
+
+## 0.0.165
+
+### Patch Changes
+
+- 📦 **Dependencies** [`213a8e6`](https://github.com/weapp-vite/weapp-vite/commit/213a8e6a410198b54c499e29ad8c5d8d86bbaeb2)
+  → `wevu@6.18.4`
+
+## 0.0.164
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.18.3`
+
 ## 0.0.163
 
 ### Patch Changes

@@ -143,17 +143,20 @@ export default defineConfig({
 ## dynamicImports：动态 import 的处理方式
 
 - `preserve`（默认）：保留独立的动态 chunk。
-- `inline`：尽量内联动态 import，减少额外 chunk。
+- `native`：仅在微信构建中，把跨入已声明普通分包的静态相对 `import()` 转为 `require.async()`。
+- `inline`（已废弃）：当前回退为 `preserve` 并输出一次警告。
 
 ```ts
 export default defineConfig({
   weapp: {
     chunks: {
-      dynamicImports: 'inline',
+      dynamicImports: 'native',
     },
   },
 })
 ```
+
+`native` 会把目标路径规范化为实际 `.js` 产物路径，并让目标及其静态依赖留在目标分包。动态表达式、裸模块、同包导入、独立分包目标以及非微信平台仍保留 bundler 的动态导入语义。
 
 ## forceDuplicatePatterns：强制复制共享模块
 

@@ -32,7 +32,7 @@ describe('analyze web static report', () => {
 
   it('marks disabled state when weapp.web is not enabled', async () => {
     const { ctx, dispose } = await createTestCompilerContext({
-      cwd: getApp('weapp-vite-template'),
+      cwd: getApp('vite-native'),
       mode: 'production',
     })
 

@@ -1,8 +1,8 @@
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { normalizeWatchPath } from '../../src/utils/path'
 import { callPluginHook } from '../pluginHook'
+import { createTestModuleGraphService } from './moduleGraph'
 
 vi.mock('wevu/compiler', async () => {
   const actual = await vi.importActual<typeof import('wevu/compiler')>('wevu/compiler')
@@ -40,7 +40,7 @@ afterEach(async () => {
 })
 
 describe('vue transform plugin: watch .vue files', () => {
-  it('adds watchFile for fallback-compiled page .vue entries', async () => {
+  it('keeps fallback-compiled page .vue entries in the module pipeline', async () => {
     tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-vue-watch-'))
     const cwd = tempRoot
     const absoluteSrcRoot = path.join(tempRoot, 'src')
@@ -56,6 +56,7 @@ describe('vue transform plugin: watch .vue files', () => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform')
 
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createTestModuleGraphService(),
       configService: {
         cwd,
         absoluteSrcRoot,
@@ -93,12 +94,12 @@ describe('vue transform plugin: watch .vue files', () => {
       bundle,
     )
 
-    expect(watchedFiles).toContain(normalizeWatchPath(pageVue))
+    expect(watchedFiles).toEqual([])
     expect(emittedFiles.some(x => x?.fileName?.endsWith('.wxml'))).toBeTruthy()
     expect(emittedFiles.some(x => x?.fileName?.endsWith('.json'))).toBeFalsy()
   })
 
-  it('adds watchFile for virtual module resolved .vue filename', async () => {
+  it('does not duplicate virtual module resolved .vue files as watch inputs', async () => {
     tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-vue-watch-'))
     const cwd = tempRoot
     const absoluteSrcRoot = path.join(tempRoot, 'src')
@@ -113,6 +114,7 @@ describe('vue transform plugin: watch .vue files', () => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform')
 
     const plugin = createVueTransformPlugin({
+      moduleGraphService: createTestModuleGraphService(),
       configService: {
         cwd,
         absoluteSrcRoot,
@@ -140,6 +142,6 @@ describe('vue transform plugin: watch .vue files', () => {
       addWatchFile: (file: string) => watchedFiles.push(file),
     } as any, '<template><view /></template>', `\0vue:${pageVueRelative}`)
 
-    expect(watchedFiles).toContain(normalizeWatchPath(pageVue))
+    expect(watchedFiles).toEqual([])
   })
 })

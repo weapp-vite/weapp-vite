@@ -50,6 +50,7 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
     emitDefaultAutoImportOutputs: true,
     projectConfig: {},
     projectConfigPath: undefined,
+    projectPrivateConfig: {},
     projectPrivateConfigPath: undefined,
     mpDistRoot: '',
     multiPlatform: resolveMultiPlatformConfig(false),
@@ -123,8 +124,6 @@ export interface RuntimeState {
       resolvedEntryMap: Map<string, ResolvedId>
       externalComponentEntryMap: Map<string, string>
       entriesMap: Map<string, Entry | undefined>
-      layoutEntryDependents: Map<string, Set<string>>
-      entryLayoutDependencies: Map<string, Set<string>>
       vueEntryHasTemplate: Map<string, boolean>
       vueEntryNonJsonSignatures: Map<string, string>
       vueEntryScriptSignatures: Map<string, string>
@@ -272,12 +271,14 @@ export interface RuntimeState {
   css: {
     importerToDependencies: Map<string, Set<string>>
     dependencyToImporters: Map<string, Set<string>>
+    transformedSidecarSource: Map<string, { code: string, diskSource: string }>
     emittedSource: Map<string, string>
     sidecarImports: Set<string>
   }
   watcher: {
     rollupWatcherMap: Map<string, WatcherInstance>
     sidecarWatcherMap: Map<string, SidecarWatcher>
+    sidecarDirtyFiles: Map<string, 'json-sidecar' | 'style-sidecar' | 'sidecar-direct'>
   }
   wxml: {
     depsMap: Map<string, Set<string>>
@@ -356,8 +357,6 @@ export function createRuntimeState(): RuntimeState {
         resolvedEntryMap: new Map<string, ResolvedId>(),
         externalComponentEntryMap: new Map<string, string>(),
         entriesMap: new Map<string, Entry | undefined>(),
-        layoutEntryDependents: new Map<string, Set<string>>(),
-        entryLayoutDependencies: new Map<string, Set<string>>(),
         vueEntryHasTemplate: new Map<string, boolean>(),
         vueEntryNonJsonSignatures: new Map<string, string>(),
         vueEntryScriptSignatures: new Map<string, string>(),
@@ -387,12 +386,14 @@ export function createRuntimeState(): RuntimeState {
     css: {
       importerToDependencies: new Map<string, Set<string>>(),
       dependencyToImporters: new Map<string, Set<string>>(),
+      transformedSidecarSource: new Map<string, { code: string, diskSource: string }>(),
       emittedSource: new Map<string, string>(),
       sidecarImports: new Set<string>(),
     },
     watcher: {
       rollupWatcherMap: new Map<string, WatcherInstance>(),
       sidecarWatcherMap: new Map<string, SidecarWatcher>(),
+      sidecarDirtyFiles: new Map<string, 'json-sidecar' | 'style-sidecar' | 'sidecar-direct'>(),
     },
     wxml: {
       depsMap: new Map<string, Set<string>>(),

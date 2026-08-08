@@ -1,0 +1,1 @@
+<view class="component-page" data-scenario="component-page">{{snapshot}}</view>

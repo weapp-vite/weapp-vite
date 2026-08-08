@@ -2,6 +2,7 @@ import type {
   WeapiMiniProgramConnectSocketOption,
   WeapiMiniProgramRequestOption,
 } from '@wevu/api'
+import { WEVU_WEB_APIS_NETWORK_DEFAULTS_KEY } from '@weapp-core/constants'
 
 const MINI_PROGRAM_REQUEST_OPTION_KEYS = [
   'enableCache',
@@ -43,7 +44,17 @@ export interface MiniProgramNetworkDefaults {
   socket?: WebSocketMiniProgramOptions
 }
 
-let miniProgramNetworkDefaults: MiniProgramNetworkDefaults = {}
+type NetworkDefaultsHost = typeof globalThis & {
+  [WEVU_WEB_APIS_NETWORK_DEFAULTS_KEY]?: MiniProgramNetworkDefaults
+}
+
+function getNetworkDefaultsHost() {
+  return globalThis as NetworkDefaultsHost
+}
+
+function readMiniProgramNetworkDefaults() {
+  return getNetworkDefaultsHost()[WEVU_WEB_APIS_NETWORK_DEFAULTS_KEY] ?? {}
+}
 
 function hasOwnProperty(source: object, key: string) {
   return Object.prototype.hasOwnProperty.call(source, key)
@@ -88,14 +99,15 @@ export function normalizeWebSocketMiniProgramOptions(...sources: unknown[]) {
 }
 
 export function getMiniProgramNetworkDefaults(): MiniProgramNetworkDefaults {
+  const defaults = readMiniProgramNetworkDefaults()
   return {
-    request: normalizeRequestMiniProgramOptions(miniProgramNetworkDefaults.request),
-    socket: normalizeWebSocketMiniProgramOptions(miniProgramNetworkDefaults.socket),
+    request: normalizeRequestMiniProgramOptions(defaults.request),
+    socket: normalizeWebSocketMiniProgramOptions(defaults.socket),
   }
 }
 
 export function setMiniProgramNetworkDefaults(defaults: MiniProgramNetworkDefaults = {}) {
-  miniProgramNetworkDefaults = {
+  getNetworkDefaultsHost()[WEVU_WEB_APIS_NETWORK_DEFAULTS_KEY] = {
     request: normalizeRequestMiniProgramOptions(defaults.request),
     socket: normalizeWebSocketMiniProgramOptions(defaults.socket),
   }
@@ -103,7 +115,7 @@ export function setMiniProgramNetworkDefaults(defaults: MiniProgramNetworkDefaul
 }
 
 export function resetMiniProgramNetworkDefaults() {
-  miniProgramNetworkDefaults = {}
+  delete getNetworkDefaultsHost()[WEVU_WEB_APIS_NETWORK_DEFAULTS_KEY]
   return getMiniProgramNetworkDefaults()
 }
 

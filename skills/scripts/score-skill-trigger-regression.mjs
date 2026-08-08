@@ -7,7 +7,7 @@ import process from 'node:process'
 const DEFAULT_FILE = 'skills/skill-trigger-regression-checklist.md'
 const BACKTICK_REGEX = /`/g
 const WHITESPACE_REGEX = /\s+/g
-const CHECKLIST_ID_REGEX = /^[A-JX]\d+$/
+const CHECKLIST_ID_REGEX = /^[A-KX]\d+$/
 
 const EXPECTED_BY_ID = {
   A1: 'weapp-vite-best-practices',
@@ -69,6 +69,12 @@ const EXPECTED_BY_ID = {
   X7: 'release-and-changeset-best-practices',
   X8: 'weapp-devtools-e2e-best-practices',
   X9: 'release-and-changeset-best-practices',
+  K1: 'weapp-vite-best-practices',
+  K2: 'weapp-vite-best-practices',
+  K3: 'wevu-best-practices',
+  K4: 'weapp-devtools-e2e-best-practices',
+  K5: 'weapp-vite-best-practices',
+  K6: 'docs-and-website-sync',
 }
 
 const BOUNDARY_IDS = new Set(['A5', 'B5', 'C5', 'D5', 'E5', 'F5', 'G5', 'H5', 'I5', 'J5'])
@@ -82,6 +88,7 @@ const MAIN_SKILL_CASES = {
   'docs-and-website-sync': ['G1', 'G2', 'G3', 'G4'],
   'weapp-devtools-e2e-best-practices': ['I1', 'I2', 'I3', 'I4'],
   'release-and-changeset-best-practices': ['H1', 'H2', 'H3', 'H4', 'J1', 'J2', 'J3', 'J4'],
+  'recent-capability-routing': ['K1', 'K2', 'K3', 'K4', 'K5', 'K6'],
 }
 
 function parseArgs(argv) {

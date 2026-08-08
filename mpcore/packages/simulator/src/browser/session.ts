@@ -1,4 +1,5 @@
 import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType, HeadlessWxSavedFileInfo } from '../host'
+import type { RuntimeDiagnosticEntry } from '../kernel'
 import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
 import type { HeadlessAppInstance } from '../runtime/appInstance'
@@ -15,14 +16,17 @@ import type {
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
+import { RuntimeKernel } from '../kernel'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { createAppInstance } from '../runtime/appInstance'
 import { runComponentPageLifetime } from '../runtime/componentInstance'
 import { createPageInstance } from '../runtime/pageInstance'
 import {
   applyResizeToSystemInfo,
+  createDefaultLocationResult,
   createDefaultSystemInfo,
   deriveAppBaseInfo,
+  deriveDeviceInfo,
   deriveMenuButtonBoundingClientRect,
   deriveWindowInfo,
 } from '../runtime/systemInfo'
@@ -33,6 +37,7 @@ import { createHeadlessCanvasContext } from '../view/canvasContext'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
+import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
@@ -41,7 +46,10 @@ import { readBrowserVirtualFile } from './virtualFiles'
 
 export interface BrowserHeadlessSessionOptions {
   files: BrowserVirtualFiles
+  globals?: Record<string, unknown>
+  onRender?: () => void
   project?: HeadlessProjectDescriptor
+  strictHostMocks?: boolean
 }
 
 interface ResolvedNavigationTarget {
@@ -196,11 +204,20 @@ export class BrowserHeadlessSession {
   private appDefinition: HeadlessAppDefinition | null = null
   private appInstance: HeadlessAppInstance | null = null
   private readonly moduleLoader
+  private readonly onRender?: () => void
   private readonly registries: HeadlessHostRegistries
   private currentPageInstance: HeadlessPageInstance | null = null
   private readonly pages: HeadlessPageInstance[] = []
   private readonly componentCache = new Map<string, any>()
   private readonly componentScopes = new Map<string, any>()
+  private readonly selectorQueryScopeSnapshots = new WeakMap<Record<string, any>, {
+    page: HeadlessPageInstance
+    root: ReturnType<typeof renderBrowserPageTree>['root']
+    scopeId: string
+  }>()
+
+  private renderRequestPending = false
+  private readonly renderRequestCallbacks: Array<() => void> = []
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
@@ -211,7 +228,8 @@ export class BrowserHeadlessSession {
   private readonly canvasContexts = new Map<string, import('../host').HeadlessWxCanvasContext>()
   private enterOptions = createAppLaunchOptions('', {})
   private launchOptions = createAppLaunchOptions('', {})
-  private readonly wxState = createHeadlessWxState()
+  private readonly kernel = new RuntimeKernel()
+  private readonly wxState
   private pullDownRefreshState: HeadlessPullDownRefreshState = {
     active: false,
     stopCalls: 0,
@@ -219,6 +237,10 @@ export class BrowserHeadlessSession {
 
   constructor(options: BrowserHeadlessSessionOptions) {
     this.files = options.files
+    this.wxState = createHeadlessWxState(this.kernel.scheduler, {
+      strictMocks: options.strictHostMocks,
+    })
+    this.onRender = options.onRender
     this.project = options.project ?? createBrowserProject(options.files)
     this.registries = createHostRegistries()
     const rawTabBarList = Array.isArray(this.project.appConfig.tabBar?.list)
@@ -273,8 +295,10 @@ export class BrowserHeadlessSession {
         getSavedFileList: () => this.wxState.getSavedFileList(),
         getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
+        getDeviceInfo: () => deriveDeviceInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
         getClipboardData: () => this.wxState.getClipboardData(),
+        getLocation: () => createDefaultLocationResult(),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
         getNetworkType: () => this.wxState.getNetworkType(),
         navigateBack: option => this.navigateBack(option?.delta),
@@ -294,7 +318,7 @@ export class BrowserHeadlessSession {
         removeSavedFile: option => this.wxState.removeSavedFile(option),
         saveImageToPhotosAlbum: option => this.wxState.saveImageToPhotosAlbum(option),
         saveVideoToPhotosAlbum: option => this.wxState.saveVideoToPhotosAlbum(option),
-        nextTick: callback => queueMicrotask(() => callback?.()),
+        nextTick: callback => this.kernel.scheduler.queueMicrotask(() => callback?.()),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
@@ -327,14 +351,45 @@ export class BrowserHeadlessSession {
         setTabBarBadge: option => this.setTabBarBadge(option.index, option.text),
         updateShareMenu: option => this.wxState.updateShareMenu(option),
       },
+      {
+        globals: options.globals,
+        kernel: this.kernel,
+      },
     )
   }
 
+  assertActive() {
+    this.kernel.assertActive()
+  }
+
+  close() {
+    if (this.kernel.isClosed) {
+      return
+    }
+    this.unloadAllPages()
+    this.canvasContexts.clear()
+    this.renderRequestCallbacks.length = 0
+    this.renderRequestPending = false
+    this.wxState.close()
+    this.moduleLoader.close()
+    this.kernel.close()
+  }
+
+  getDiagnostics(): RuntimeDiagnosticEntry[] {
+    return this.kernel.diagnostics.getEntries()
+  }
+
+  get isClosed() {
+    return this.kernel.isClosed
+  }
+
   getApp() {
+    this.assertActive()
     return this.appInstance
   }
 
   getCurrentPages() {
+    this.assertActive()
     return this.pages.slice()
   }
 
@@ -443,6 +498,10 @@ export class BrowserHeadlessSession {
     return deriveAppBaseInfo(this.systemInfo)
   }
 
+  getDeviceInfo() {
+    return deriveDeviceInfo(this.systemInfo)
+  }
+
   getLaunchOptions() {
     return {
       ...this.launchOptions,
@@ -467,6 +526,10 @@ export class BrowserHeadlessSession {
 
   getMenuButtonBoundingClientRect() {
     return deriveMenuButtonBoundingClientRect(this.systemInfo)
+  }
+
+  getLocation() {
+    return createDefaultLocationResult()
   }
 
   getNetworkType() {
@@ -732,18 +795,22 @@ export class BrowserHeadlessSession {
   }
 
   selectComponent(selector: string) {
+    this.renderCurrentPage()
     return this.selectComponentsWithin(null, selector)[0] ?? null
   }
 
   selectAllComponents(selector: string) {
+    this.renderCurrentPage()
     return this.selectComponentsWithin(null, selector)
   }
 
   selectComponentWithin(scopeId: string, selector: string) {
+    this.renderCurrentPage()
     return this.selectComponentsWithin(scopeId, selector)[0] ?? null
   }
 
   selectAllComponentsWithin(scopeId: string, selector: string) {
+    this.renderCurrentPage()
     return this.selectComponentsWithin(scopeId, selector)
   }
 
@@ -761,7 +828,7 @@ export class BrowserHeadlessSession {
       return []
     }
 
-    return [...this.componentScopes.entries()]
+    const matches = [...this.componentScopes.entries()]
       .filter(([candidateScopeId, scope]) => {
         if (!candidateScopeId.includes('/')) {
           return false
@@ -797,11 +864,17 @@ export class BrowserHeadlessSession {
         }
         return true
       })
+
+    const directlyOwned = rootScopeId
+      ? matches.filter(([, scope]) => scope.ownerScopeId === rootScopeId)
+      : []
+    return (directlyOwned.length > 0 ? directlyOwned : matches)
       .map(([candidateScopeId]) => this.componentCache.get(candidateScopeId))
       .filter(Boolean)
   }
 
   renderCurrentPage() {
+    this.assertActive()
     const current = this.requireCurrentPage('renderCurrentPage()')
     const rendered = renderBrowserPageTree({
       changedPageKeys: current.__lastChangedKeys__ ?? [],
@@ -813,13 +886,47 @@ export class BrowserHeadlessSession {
       session: {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
+        requestRender: callback => this.requestRender(callback),
         selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
       },
     }, current)
     current.__lastChangedKeys__ = []
+    const componentScopePrefix = `page:${stripLeadingSlash(current.route)}`
+    for (const [scopeId, instance] of this.componentCache.entries()) {
+      if (scopeId.startsWith(componentScopePrefix)) {
+        this.selectorQueryScopeSnapshots.set(instance, {
+          page: current,
+          root: rendered.root,
+          scopeId,
+        })
+      }
+    }
     return rendered
+  }
+
+  requestRender(callback?: () => void) {
+    this.assertActive()
+    if (callback) {
+      this.renderRequestCallbacks.push(callback)
+    }
+    if (this.renderRequestPending) {
+      return
+    }
+    this.renderRequestPending = true
+    Promise.resolve().then(() => {
+      if (this.kernel.isClosed) {
+        return
+      }
+      this.renderRequestPending = false
+      const callbacks = this.renderRequestCallbacks.splice(0)
+      if (this.currentPageInstance) {
+        this.renderCurrentPage()
+      }
+      callbacks.forEach(cb => cb())
+      this.onRender?.()
+    })
   }
 
   callScopeMethod(scopeId: string | null, methodName: string, event: Record<string, any>) {
@@ -857,6 +964,7 @@ export class BrowserHeadlessSession {
     }
 
     const current = this.requireCurrentPage(`scope method "${methodName}"`)
+    this.renderCurrentPage()
     if (normalizedScopeId === `page:${stripLeadingSlash(current.route)}`) {
       const method = current[methodName]
       if (typeof method !== 'function') {
@@ -947,6 +1055,7 @@ export class BrowserHeadlessSession {
   }
 
   bootstrap(launchOptions = createAppLaunchOptions('', {})) {
+    this.assertActive()
     if (this.appInstance) {
       return this.appInstance
     }
@@ -968,6 +1077,7 @@ export class BrowserHeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
 
@@ -989,6 +1099,7 @@ export class BrowserHeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
 
@@ -1008,6 +1119,7 @@ export class BrowserHeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
 
@@ -1045,10 +1157,8 @@ export class BrowserHeadlessSession {
 
     const current = this.currentPageInstance
     const cachedTarget = this.tabPages.get(target.routeRecord.route) ?? null
-    const tabItem = this.resolveTabBarItem(target.routeRecord.route)
 
     if (current === cachedTarget && current) {
-      current.onTabItemTap?.(tabItem)
       return current
     }
 
@@ -1066,20 +1176,24 @@ export class BrowserHeadlessSession {
     }
 
     let nextPage = cachedTarget
+    let shouldRunInitialLifecycles = false
     if (!nextPage) {
       nextPage = this.createFreshPage(target)
       this.tabPages.set(target.routeRecord.route, nextPage)
+      shouldRunInitialLifecycles = true
+    }
+
+    this.pages.length = 0
+    this.pages.push(nextPage)
+    this.currentPageInstance = nextPage
+    if (shouldRunInitialLifecycles) {
+      this.runInitialPageLifecycles(nextPage, target.query)
     }
     else if (current !== nextPage) {
       nextPage.onShow?.()
       this.runPageComponentLifetime(nextPage.route, 'show')
     }
 
-    nextPage.onTabItemTap?.(tabItem)
-
-    this.pages.length = 0
-    this.pages.push(nextPage)
-    this.currentPageInstance = nextPage
     return nextPage
   }
 
@@ -1099,6 +1213,7 @@ export class BrowserHeadlessSession {
       session: {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
+        requestRender: callback => this.requestRender(callback),
         selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
@@ -1161,11 +1276,40 @@ export class BrowserHeadlessSession {
     scope?: Record<string, any>,
   ) {
     const current = this.requireCurrentPage('wx.createSelectorQuery().exec()')
-    if (scope && scope !== current && !Array.from(this.componentCache.values()).includes(scope as import('../runtime').HeadlessComponentInstance)) {
+    const nativeScope = resolveSelectorQueryNativeScope(scope, current, this.componentCache.values())
+    const staleScope = scope && !nativeScope
+      ? resolveSelectorQueryScopeSnapshot(scope, this.selectorQueryScopeSnapshots)
+      : null
+    if (scope && !nativeScope && !staleScope) {
+      if (resolveSelectorQueryScopeId(scope)) {
+        return requests.map(request => request.target === 'viewport'
+          ? { scrollLeft: 0, scrollTop: current.__scrollTop__ ?? 0 }
+          : request.single ? null : [])
+      }
       throw new Error('wx.createSelectorQuery().in(component) received an unknown scope in browser simulator runtime.')
     }
-    const scopeId = scope && scope !== current
-      ? this.getComponentScopeId(scope as import('../runtime').HeadlessComponentInstance)
+    if (staleScope) {
+      return executeSelectorQueryRequests(requests, {
+        page: staleScope.snapshot.page,
+        resolveContext: (node) => {
+          if (node.name !== 'canvas') {
+            return {
+              type: 'unsupported-context',
+            }
+          }
+          const canvasId = node.attribs?.['canvas-id']
+          return typeof canvasId === 'string' && canvasId
+            ? this.createCanvasContext(canvasId, staleScope.nativeScope)
+            : {
+                type: 'unsupported-context',
+              }
+        },
+        root: resolveSelectorQueryScopeRoot(staleScope.snapshot.root, staleScope.snapshot.scopeId),
+        windowInfo: this.getWindowInfo(),
+      })
+    }
+    const scopeId = nativeScope && nativeScope !== current
+      ? this.getComponentScopeId(nativeScope as import('../runtime').HeadlessComponentInstance)
       : null
     const rendered = renderBrowserPageTree({
       changedPageKeys: current.__lastChangedKeys__ ?? [],
@@ -1177,6 +1321,7 @@ export class BrowserHeadlessSession {
       session: {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
+        requestRender: callback => this.requestRender(callback),
         selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
@@ -1192,7 +1337,7 @@ export class BrowserHeadlessSession {
         }
         const canvasId = node.attribs?.['canvas-id']
         return typeof canvasId === 'string' && canvasId
-          ? this.createCanvasContext(canvasId, scope)
+          ? this.createCanvasContext(canvasId, nativeScope ?? undefined)
           : {
               type: 'unsupported-context',
             }
@@ -1215,13 +1360,17 @@ export class BrowserHeadlessSession {
     pageInstance.createMediaQueryObserver = () => this.createMediaQueryObserver(pageInstance)
     pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
     pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
-    pageInstance.onLoad?.(target.query)
-    pageInstance.onShow?.()
-    pageInstance.onReady?.()
     if (this.isTabBarRoute(target.routeRecord.route)) {
       this.tabPages.set(target.routeRecord.route, pageInstance)
     }
     return pageInstance
+  }
+
+  private runInitialPageLifecycles(pageInstance: HeadlessPageInstance, query: Record<string, string>) {
+    pageInstance.onLoad?.(query)
+    pageInstance.onShow?.()
+    pageInstance.onReady?.()
+    pageInstance.onRouteDone?.({})
   }
 
   private isTabBarRoute(route: string) {
@@ -1251,17 +1400,6 @@ export class BrowserHeadlessSession {
       normalizedRoute,
       query,
       routeRecord,
-    }
-  }
-
-  private resolveTabBarItem(route: string) {
-    const pagePath = stripLeadingSlash(route)
-    const item = this.tabBarItems.get(pagePath)
-    if (!item) {
-      throw new Error(`Missing tabBar metadata for route "${route}" in browser simulator runtime.`)
-    }
-    return {
-      ...item,
     }
   }
 

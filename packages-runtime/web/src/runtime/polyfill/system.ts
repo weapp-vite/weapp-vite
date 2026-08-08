@@ -87,10 +87,15 @@ export function resolveRuntimeTheme(): 'light' | 'dark' {
   }
 }
 
+function resolveRuntimeWindow() {
+  if (typeof window === 'undefined') {
+    return globalThis
+  }
+  return window
+}
+
 export function readSystemInfoSnapshot() {
-  const runtimeWindow = (typeof window !== 'undefined'
-    ? window
-    : globalThis) as {
+  const runtimeWindow = resolveRuntimeWindow() as {
     innerWidth?: number
     innerHeight?: number
     devicePixelRatio?: number
@@ -114,6 +119,15 @@ export function readSystemInfoSnapshot() {
   const screenWidth = normalizePositiveNumber(runtimeScreen.width, windowWidth)
   const screenHeight = normalizePositiveNumber(runtimeScreen.height, windowHeight)
 
+  const statusBarHeight = 0
+  const safeArea = {
+    left: 0,
+    right: windowWidth,
+    top: statusBarHeight,
+    bottom: windowHeight,
+    width: windowWidth,
+    height: Math.max(0, windowHeight - statusBarHeight),
+  }
   return {
     brand: 'web',
     model: runtimeNavigator?.platform ?? 'web',
@@ -122,12 +136,29 @@ export function readSystemInfoSnapshot() {
     screenHeight,
     windowWidth,
     windowHeight,
-    statusBarHeight: 0,
+    statusBarHeight,
+    safeArea,
+    safeAreaInsets: {
+      left: safeArea.left,
+      right: Math.max(0, windowWidth - safeArea.right),
+      top: safeArea.top,
+      bottom: Math.max(0, windowHeight - safeArea.bottom),
+    },
+    windowTop: 0,
+    windowBottom: 0,
     language: runtimeNavigator?.language ?? 'en',
     version: runtimeNavigator?.appVersion ?? userAgent,
     system: resolveSystemName(userAgent),
     platform: resolvePlatformName(userAgent, runtimeNavigator),
   }
+}
+
+export function rpx2px(value: number) {
+  const width = readSystemInfoSnapshot().windowWidth
+  if (!Number.isFinite(value) || width <= 0) {
+    return 0
+  }
+  return value * width / 750
 }
 
 export function buildWindowInfoSnapshot(systemInfo: {

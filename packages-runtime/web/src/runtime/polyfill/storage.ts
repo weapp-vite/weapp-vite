@@ -1,3 +1,5 @@
+import { getRuntimeStorage as getHostRuntimeStorage } from '../host'
+
 const WEB_STORAGE_PREFIX = '__weapp_vite_web_storage__:'
 const WEB_STORAGE_LIMIT_SIZE_KB = 10240
 const memoryStorage = new Map<string, any>()
@@ -12,10 +14,11 @@ function isRuntimeStorageLike(value: unknown): value is Storage {
 }
 
 function getRuntimeStorage() {
-  if (typeof localStorage === 'undefined' || !isRuntimeStorageLike(localStorage)) {
+  const storage = getHostRuntimeStorage()
+  if (!isRuntimeStorageLike(storage)) {
     return undefined
   }
-  return localStorage
+  return storage
 }
 
 function storageKeyWithPrefix(key: string) {

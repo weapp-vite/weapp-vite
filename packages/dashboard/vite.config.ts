@@ -3,7 +3,9 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import VueRouter from 'vue-router/vite'
-import { createVueOxcTsconfigGuard } from '../../scripts/vite/vueOxcTsconfigGuard'
+import { createVueOxcTsconfigGuard } from '../../scripts/vite/vueOxcTsconfigGuard.js'
+
+const dashboardRoot = import.meta.dirname
 
 const dashboardDevServer = {
   host: '127.0.0.1',
@@ -30,7 +32,7 @@ function resolveDashboardChunk(id: string) {
 const dashboardVuePlugin = vue()
 
 export default defineConfig({
-  root: __dirname,
+  root: dashboardRoot,
   base: './',
   appType: 'spa',
   publicDir: false,
@@ -38,7 +40,7 @@ export default defineConfig({
   preview: dashboardDevServer,
   plugins: [
     VueRouter({
-      root: __dirname,
+      root: dashboardRoot,
       routesFolder: 'src/pages',
       extensions: ['.vue'],
       dts: 'typed-router.d.ts',
@@ -50,11 +52,11 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': resolve(dashboardRoot, 'src'),
     },
   },
   build: {
-    outDir: resolve(__dirname, 'dist'),
+    outDir: resolve(dashboardRoot, 'dist'),
     emptyOutDir: true,
     sourcemap: false,
     modulePreload: false,

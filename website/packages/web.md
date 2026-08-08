@@ -8,7 +8,7 @@ keywords:
   - web
   - "@weapp-vite/web"
   - 是实验性的
-  - h5
+  - browser
   - 运行时与
 ---
 
@@ -30,6 +30,21 @@ keywords:
 pnpm add -D @weapp-vite/web
 ```
 
+## 在 weapp-vite 项目中运行
+
+项目根目录提供 `index.html` 后，可直接让 CLI 从原有 `app.json`、WXML/WXSS/TS 或 Vue SFC 源码生成 Web 入口，无需维护第二套路由：
+
+```json
+{
+  "scripts": {
+    "dev:web": "wv dev -p web --host",
+    "build:web": "wv build -p web"
+  }
+}
+```
+
+`web` 是规范平台名，`h5` 仅作为向后兼容别名保留。App 模块会先于页面和组件求值，确保 App 注册、`defineAppSetup()`、router 和 `onLaunch` 在首个页面挂载前就绪。仓库通过 44 个 `e2e-apps/*` / `templates/*` 项目的生产构建与 Playwright 启动矩阵持续验证该入口。
+
 ## Vite 插件接入
 
 ```ts
@@ -42,6 +57,23 @@ export default defineConfig({
       srcDir: 'src',
       runtime: {
         executionMode: 'compat',
+        viewport: {
+          mode: 'mini-program',
+          maxWidth: 375,
+          desktopBreakpoint: 600,
+        },
+        routing: {
+          mode: 'history',
+          base: '/mini',
+        },
+        seo: {
+          defaultTitle: '商城',
+          titleTemplate: '%s | Web Demo',
+          description: '小程序页面的 Web 运行时演示。',
+        },
+        resourceHints: {
+          links: [{ rel: 'preconnect', href: 'https://cdn.example.com' }],
+        },
       },
     }),
   ],
@@ -57,8 +89,51 @@ export default defineConfig({
 - `navigateTo` / `navigateBack` / `getCurrentPages`
 - `request` / `showToast` 等 polyfill API
 
+## 视觉与组件适配
+
+- 默认提供 375px 宽的居中小程序设备视口；移动宽度下自动铺满
+- `rpx` 跟随设备容器宽度和 resize 更新
+- `view`、`text`、`image`、`button`、`input`、`scroll-view`、`icon`、`progress`、`rich-text`、`navigator`、`swiper` / `swiper-item`、`canvas`、`video`、`cover-view` / `cover-image`、`movable-area` / `movable-view` 及常用表单组件使用独立运行时标签，不会过早降级为无语义 DOM
+- `page` 和原生组件 WXSS 选择器通过 PostCSS 结构化转换
+- `image.mode`、input 常用属性与事件、scroll-view 滚动状态和事件已有基础适配
+- `form`、`label`、`textarea`、checkbox/radio group 和 `switch` 支持表单收集、提交、重置及微信形状的交互事件
+- `icon` 覆盖九种内建图标类型；`progress` 支持常用视觉属性、按每增长 1% 计时的 active 动画和去重的 `activeend`；`rich-text` 将字符串与节点数组统一转为经过脚本、事件属性、危险 URL 和 CSS 过滤的安全 DOM
+- `navigator` 复用页面栈和 mini-program bridge；`swiper` 支持受控状态、触摸、autoplay 及 `change` / `transition` / `animationfinish` 事件
+- `canvas` 使用真实 2D Canvas 承载高频绘图命令；`video` 同步常用媒体属性、微信形状事件，并允许 `createVideoContext` 跨 Shadow DOM 控制播放器
+- `cover-view` / `cover-image` 保留媒体覆盖层的定位和层级；`movable-area` / `movable-view` 支持边界、方向限制、拖拽及微信形状移动事件
+- `setWebRuntimeHost` / `resetWebRuntimeHost` 提供宿主注入边界；网络、存储、剪贴板、对话框和打开链接可由测试容器或业务宿主接管，未注入能力回退到浏览器 API。
+- `navigateTo` 保活隐藏页面，`navigateBack` 恢复同一实例、数据和滚动位置；`redirectTo` / `reLaunch` 按页面栈语义触发 `onHide` / `onUnload`
+- `App.onLaunch` / `App.onShow` 在首个页面挂载前触发，浏览器前后台切换会驱动去重的 `App.onHide` / `App.onShow`；launch options 与重新进入时的 enter options 分开维护
+- `#app` 滚动由当前页面栈项持续持有，用户滚动和 `pageScrollTo` 都会写回页面状态；history/hash 模式禁用浏览器原生滚动恢复以避免双重恢复
+- `getCurrentPages()` 返回当前活动路由栈，其他保活 tab 页面不会混入当前 tab 栈；路由 API 同时支持 Promise 与 `success` / `fail` / `complete` 回调
+- 读取 `app.json.tabBar` 并在设备容器内渲染标准 App Shell；`switchTab` 缓存 tab 页面、关闭非 tab 页面并保持正确的 `onLoad` / `onShow` 语义
+- `showTabBar` / `hideTabBar`、`setTabBarItem`、`setTabBarStyle`、badge 与 red-dot API 会真实更新布局和视觉状态
+
+需要保留旧的浏览器全宽行为时，将 `runtime.viewport.mode` 设置为 `responsive`。
+
+## 浏览器路由
+
+默认 `runtime.routing.mode` 为 `memory`，只维护小程序页面栈。部署到生产站点时可选择：
+
+- `history`：使用 `/pages/foo/index` 路径，支持深链接与浏览器前进/后退；服务端需要把未知路径回退到 Web 入口。
+- `hash`：使用 `#/pages/foo/index`，适合静态托管，不需要服务端配置。
+
+`runtime.routing.base` 用于部署在子目录的站点，例如 `/mini`。两种浏览器模式都会把页面栈和地址栏状态同步，未配置时保持原有 `memory` 行为。
+
+## 页面 Head 与首屏资源
+
+`runtime.seo` 会在浏览器路由切换后同步页面 Head：页面 `navigationBarTitleText` 作为当前标题，`titleTemplate` 使用 `%s` 占位；`description` 写入 description meta，默认还会维护去掉 query/hash 的 canonical 链接。设置 `enabled: false` 可关闭。
+
+`runtime.resourceHints.links` 支持去重注入 `preconnect`、`dns-prefetch`、`prefetch` 和 `preload`。它只影响浏览器文档，不改变小程序构建产物，也不等同于 SSR。
+
+## 宿主注入
+
+Web Runtime 默认读取浏览器 API。测试容器、沙箱或业务宿主可以在页面注册前调用 `setWebRuntimeHost()` 注入 `fetch`、`storage`、`clipboard`、`dialogs` 与 `open`；未提供的字段继续使用浏览器回退。宿主卸载时调用 `resetWebRuntimeHost()` 清理注入状态。
+
 ## 能力边界
 
 - 支持 `wx:if` / `wx:for` / 插值等常见语法
 - 支持小程序到 DOM 事件桥接（如 `bindtap`）
-- 样式与 API 兼容度仍在持续补齐
+- 未覆盖的原生组件、平台 API 和宿主细节仍需在微信 DevTools / 真机验证
+- `app.json.tabBar.custom: true` 只保留 tab 路由语义，不自动移植业务自定义 tabBar 组件
+- DevTools 自动化截图只覆盖页面 WebView，不包含宿主原生 tabBar；仓库通过 case 级 WebView 视口基线与独立浏览器行为断言组合验收

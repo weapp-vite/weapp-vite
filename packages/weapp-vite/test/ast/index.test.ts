@@ -29,6 +29,37 @@ describe('require', () => {
     }
   })
 
+  it('collects callback and Promise subpackage requires without treating sync require as async', async () => {
+    const code = `
+require('./sync')
+require('./callback', onLoaded, onError)
+const promise = require.async('./promise')
+promise.then(onLoaded, onError)
+`
+    const ast = await parseAstAsync(code)
+    const { requireTokens } = collectRequireTokens(ast)
+
+    expect(requireTokens.map(({ async, value }) => ({ async, value }))).toEqual([
+      { async: true, value: './callback' },
+      { async: true, value: './promise' },
+    ])
+  })
+
+  it('collects only static dynamic import dependencies', async () => {
+    const code = `
+import('./literal.ts')
+import(\`./template.ts\`)
+import(\`./\${name}.ts\`)
+`
+    const ast = await parseAstAsync(code)
+    const { dynamicImportTokens } = collectRequireTokens(ast)
+
+    expect(dynamicImportTokens.map(({ value }) => value)).toEqual([
+      './literal.ts',
+      './template.ts',
+    ])
+  })
+
   it('case0.js', async () => {
     const code = normalizeCode(await fs.readFile(path.resolve(__dirname, './fixtures/case0.js'), 'utf-8'))
     const ast = await parseAstAsync(code)

@@ -9,7 +9,7 @@ function isRenderableNode(node: Node) {
     return false
   }
   if (node.type === 'text') {
-    const data = (node as DataNode).data ?? ''
+    const data = (node as DataNode).data
     return data.trim().length > 0
   }
   return true
@@ -23,7 +23,7 @@ function hasChildren(node: Node): node is NodeWithChildren {
 
 function toRenderNode(node: Node, children?: RenderNode[]): RenderNode | undefined {
   if (node.type === 'text') {
-    const data = (node as DataNode).data ?? ''
+    const data = (node as DataNode).data
     return { type: 'text', data }
   }
   if (node.type === 'tag' || node.type === 'script' || node.type === 'style') {
@@ -31,7 +31,7 @@ function toRenderNode(node: Node, children?: RenderNode[]): RenderNode | undefin
     return {
       type: 'element',
       name: element.name,
-      attribs: element.attribs ?? {},
+      attribs: element.attribs,
       children,
     }
   }
@@ -54,7 +54,7 @@ export function parseWxml(source: string): RenderNode[] {
     decodeEntities: true,
     recognizeSelfClosing: true,
   })
-  const nodes = (document.children ?? []).filter(isRenderableNode)
+  const nodes = document.children.filter(isRenderableNode)
   return nodes
     .map(node => convertNode(node))
     .filter((node): node is RenderNode => Boolean(node))

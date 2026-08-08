@@ -526,6 +526,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-764/index",
+          "pathName": "pages/issue-764/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/issue-528/index",
           "pathName": "pages/issue-528/index",
           "query": "",
@@ -610,6 +617,13 @@
           "launchMode": "default"
         },
         {
+          "name": "subpackages/item/issue-769/index",
+          "pathName": "subpackages/item/issue-769/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "subpackages/item/login-required/index",
           "pathName": "subpackages/item/login-required/index",
           "query": "",
@@ -661,6 +675,34 @@
         {
           "name": "pages/issue-599/index",
           "pathName": "pages/issue-599/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-724/index",
+          "pathName": "pages/issue-724/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-779/index",
+          "pathName": "pages/issue-779/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/require-async/index",
+          "pathName": "pages/require-async/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/require-async/index",
+          "pathName": "subpackages/require-async/index",
           "query": "",
           "scene": null,
           "launchMode": "default"

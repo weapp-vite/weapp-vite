@@ -1,4 +1,5 @@
 import { WEAPP_VITE_WEB_OPEN_VIDEO_EDITOR_KEY } from '@weapp-core/constants'
+import { openRuntimeUrl } from '../host'
 
 interface PreviewMediaSourceRecord {
   url: string
@@ -7,11 +8,8 @@ interface PreviewMediaSourceRecord {
 }
 
 export function openTargetInNewWindow(target: string) {
-  if (typeof window === 'undefined' || typeof window.open !== 'function') {
-    return
-  }
   try {
-    window.open(target, '_blank', 'noopener,noreferrer')
+    openRuntimeUrl(target, '_blank', 'noopener,noreferrer')
   }
   catch {
     // ignore browser popup restrictions and keep API-level success semantics

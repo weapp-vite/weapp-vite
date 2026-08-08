@@ -45,8 +45,8 @@ describe('compileWxml alias tags', () => {
       resolveWxsPath: () => undefined,
     })
 
-    expect(result.code).toContain(`import { templates as __wxml_import_0 } from './parts/header.wxml'`)
-    expect(result.code).toContain(`import { render as __wxml_include_0 } from '../shared/footer.wxml'`)
+    expect(result.code).toContain(`import { templates as __wxml_import_0 } from './parts/header.wxml?weapp-web-template'`)
+    expect(result.code).toContain(`import { render as __wxml_include_0 } from '../shared/footer.wxml?weapp-web-template'`)
     expect(result.code).not.toContain(importTagName)
     expect(result.code).not.toContain(includeTagName)
     expect(result.dependencies).toHaveLength(2)

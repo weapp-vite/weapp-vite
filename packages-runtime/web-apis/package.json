@@ -1,7 +1,7 @@
 {
   "name": "@wevu/web-apis",
   "type": "module",
-  "version": "1.2.27",
+  "version": "1.2.31",
   "description": "Web API polyfills and global installers for mini-program runtimes",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -77,6 +77,7 @@
     "dev": "tsdown -w --sourcemap",
     "build": "tsdown",
     "test": "vitest run",
+    "test:coverage": "cross-env WEAPP_VITE_WEB_COVERAGE_STRICT=1 vitest run --coverage",
     "test:dev": "vitest",
     "pretest:types": "pnpm build",
     "test:types": "tsd",

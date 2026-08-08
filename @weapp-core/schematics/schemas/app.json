@@ -8,27 +8,41 @@
     },
     "appBar": {
       "additionalProperties": {},
+      "description": "AppBar 配置。",
       "properties": {},
       "type": "object"
     },
+    "chatTools": {
+      "additionalProperties": {},
+      "description": "聊天工具分包配置",
+      "properties": {},
+      "type": "object",
+      "x-wechat-min-version": "3.7.8"
+    },
     "componentFramework": {
+      "description": "组件框架。",
       "type": "string"
     },
     "convertRpxToVw": {
+      "description": "是否将 rpx 单位转换为 vw 单位。",
       "type": "boolean"
     },
     "darkmode": {
+      "description": "小程序支持 DarkMode。",
       "type": "boolean"
     },
     "debug": {
+      "description": "是否开启 debug 模式。",
       "type": "boolean"
     },
     "debugOptions": {
       "additionalProperties": {},
+      "description": "调试相关配置。",
       "properties": {},
       "type": "object"
     },
     "embeddedAppIdList": {
+      "description": "半屏小程序 appId 列表。",
       "items": {
         "type": "string"
       },
@@ -44,35 +58,44 @@
         {
           "type": "boolean"
         }
-      ]
+      ],
+      "description": "touch 事件监听是否为 passive",
+      "x-wechat-min-version": "2.24.1"
     },
     "entranceDeclare": {
       "additionalProperties": {},
+      "description": "微信消息用小程序打开。",
       "properties": {},
       "type": "object"
     },
     "entryPagePath": {
-      "description": "指定小程序的默认启动路径（首页），常见情景是从微信聊天列表页下拉启动、小程序列表启动等。如果不填，将默认为 pages 列表的第一项。不支持带页面路径参数。",
+      "description": "小程序默认启动首页。",
       "type": "string"
     },
     "functionalPages": {
-      "type": "boolean"
+      "description": "是否启用插件功能页。",
+      "type": "boolean",
+      "x-wechat-min-version": "2.1.0"
     },
     "halfPage": {
       "additionalProperties": {},
+      "description": "视频号直播半屏场景设置。",
       "properties": {},
       "type": "object"
     },
     "lazyCodeLoading": {
+      "description": "配置自定义组件代码按需注入。",
       "type": "string"
     },
     "miniApp": {
       "additionalProperties": {},
+      "description": "多端模式场景接入身份管理服务时开启小程序授权页相关配置，详见相关文档",
       "properties": {},
       "type": "object"
     },
     "networkTimeout": {
       "additionalProperties": {},
+      "description": "网络超时时间。",
       "properties": {
         "connectSocket": {
           "default": 60000,
@@ -94,7 +117,7 @@
       "type": "object"
     },
     "pages": {
-      "description": "用于指定小程序由哪些页面组成，每一项都对应一个页面的 路径（含文件名） 信息。文件名不需要写文件后缀，框架会自动去寻找对应位置的 .json, .js, .wxml, .wxss 四个文件进行处理。",
+      "description": "页面路径列表。",
       "items": {
         "type": "string"
       },
@@ -102,21 +125,25 @@
     },
     "permission": {
       "additionalProperties": {},
+      "description": "小程序接口权限相关设置。",
       "properties": {},
       "type": "object"
     },
     "plugins": {
       "additionalProperties": {},
+      "description": "使用到的插件。",
       "properties": {},
       "type": "object"
     },
     "preloadRule": {
       "additionalProperties": {},
+      "description": "分包预下载规则。",
       "properties": {},
       "type": "object"
     },
     "renderer": {
       "default": "webview",
+      "description": "全局默认的渲染后端。",
       "enum": [
         "webview",
         "skyline"
@@ -125,6 +152,7 @@
     },
     "rendererOptions": {
       "additionalProperties": {},
+      "description": "渲染后端选项。",
       "properties": {
         "skyline": {
           "additionalProperties": {},
@@ -148,45 +176,58 @@
       "type": "object"
     },
     "requiredBackgroundModes": {
+      "description": "需要在后台使用的能力。",
       "items": {
         "type": "string"
       },
       "type": "array"
     },
     "requiredPrivateInfos": {
+      "description": "调用的地理位置相关隐私接口。",
       "items": {
         "type": "string"
       },
       "type": "array"
     },
     "resizable": {
-      "type": "boolean"
+      "description": "PC 小程序是否支持用户任意改变窗口大小（包括最大化窗口）；iPad 小程序是否支持屏幕旋转。默认关闭",
+      "type": "boolean",
+      "x-wechat-min-version": "2.3.0"
     },
     "resolveAlias": {
       "additionalProperties": {},
+      "description": "自定义模块映射规则。",
       "properties": {},
       "type": "object"
     },
     "serviceProviderTicket": {
+      "description": "定制化型服务商票据",
       "type": "string"
     },
     "singlePage": {
       "additionalProperties": {},
+      "description": "单页模式相关配置",
       "properties": {},
-      "type": "object"
+      "type": "object",
+      "x-wechat-min-version": "2.12.0"
     },
     "sitemapLocation": {
+      "description": "指明 sitemap.json 的位置。",
       "type": "string"
     },
     "static": {
       "additionalProperties": {},
+      "description": "正常情况下默认所有资源文件都被打包发布到所有平台，可以通过 static 字段配置特定每个目录/文件只能发布到特定的平台(多端场景) 相关文档",
       "properties": {},
       "type": "object"
     },
     "style": {
-      "type": "string"
+      "description": "指定使用升级后的weui样式",
+      "type": "string",
+      "x-wechat-min-version": "2.8.0"
     },
     "subPackages": {
+      "description": "分包结构配置（兼容别名）。",
       "items": {
         "additionalProperties": {},
         "properties": {
@@ -214,6 +255,7 @@
       "type": "array"
     },
     "subpackages": {
+      "description": "分包结构配置。",
       "items": {
         "additionalProperties": {},
         "properties": {
@@ -238,15 +280,18 @@
         },
         "type": "object"
       },
-      "type": "array"
+      "type": "array",
+      "x-wechat-min-version": "1.7.3"
     },
     "supportedMaterials": {
       "additionalProperties": {},
+      "description": "聊天素材小程序打开相关配置。",
       "properties": {},
       "type": "object"
     },
     "tabBar": {
       "additionalProperties": {},
+      "description": "底部 tab 栏的表现。",
       "properties": {
         "backgroundColor": {
           "type": "string"
@@ -313,10 +358,12 @@
       "type": "object"
     },
     "themeLocation": {
+      "description": "指明 theme.json 的位置。",
       "type": "string"
     },
     "useExtendedLib": {
       "additionalProperties": {},
+      "description": "指定需要引用的扩展库。",
       "properties": {},
       "type": "object"
     },
@@ -324,6 +371,7 @@
       "additionalProperties": {
         "type": "string"
       },
+      "description": "全局自定义组件配置。",
       "propertyNames": {
         "type": "string"
       },
@@ -331,6 +379,7 @@
     },
     "window": {
       "additionalProperties": {},
+      "description": "全局的默认窗口表现。",
       "properties": {
         "backgroundColor": {
           "default": "#ffffff",
@@ -372,7 +421,8 @@
         "initialRenderingCache": {
           "enum": [
             "static",
-            "dynamic"
+            "dynamic",
+            "capture"
           ],
           "type": "string"
         },
@@ -444,11 +494,13 @@
           },
           "type": "object"
         }
-      ]
+      ],
+      "description": "Worker 代码放置的目录。"
     }
   },
   "required": [
     "pages"
   ],
-  "type": "object"
+  "type": "object",
+  "x-wechat-doc": "https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/app.html"
 }

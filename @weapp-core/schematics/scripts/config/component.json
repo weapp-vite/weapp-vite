@@ -1,0 +1,11 @@
+{
+  "source": "https://developers.weixin.qq.com/miniprogram/dev/framework/custom-component/",
+  "fields": {
+    "component": { "type": "boolean", "default": true, "description": "声明当前配置对应自定义组件。" },
+    "styleIsolation": { "type": "string", "enum": ["isolated", "apply-shared", "shared"], "default": "isolated", "description": "组件样式隔离策略。" },
+    "componentGenerics": { "type": "object", "description": "组件泛型配置。" },
+    "componentPlaceholder": { "type": "object", "description": "组件占位配置。" },
+    "componentFramework": { "type": "string", "description": "组件框架。" },
+    "usingComponents": { "type": "object", "description": "组件依赖的自定义组件配置。" }
+  }
+}

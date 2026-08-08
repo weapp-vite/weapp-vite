@@ -16,6 +16,7 @@ import type {
   WeappNpmConfig,
   WeappRouteRules,
   WeappSubPackageConfig,
+  WeappUniAppConfig,
   WeappVueConfig,
   WeappWevuConfig,
   WeappWorkerConfig,
@@ -211,6 +212,10 @@ export interface WeappViteConfig {
   wxml?: EnhanceOptions['wxml']
   wxs?: EnhanceOptions['wxs']
   autoImportComponents?: AutoImportComponentsOption
+  /**
+   * 实验性的 uni-app 源码兼容层。默认关闭。
+   */
+  uniApp?: false | WeappUniAppConfig
   enhance?: EnhanceOptions
   debug?: WeappDebugConfig
   hmr?: WeappHmrConfig

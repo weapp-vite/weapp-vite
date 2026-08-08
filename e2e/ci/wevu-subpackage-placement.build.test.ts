@@ -3,6 +3,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { collectRuntimeVirtualModuleReferences, readJavaScriptOutput } from '../utils/runtimeProviderOutput'
 import { findWevuRuntimeChunk, toRelativeImport } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -177,6 +178,11 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
       expect(distJsFiles.some(file => file.includes('subpackages/normal-wevu/common.js'))).toBe(true)
       expect(distJsFiles.some(file => file.includes('subpackages/independent-wevu/independentState.js'))).toBe(true)
       expect(distJsFiles.includes('pages/index/index.js')).toBe(true)
+
+      const javascript = await readJavaScriptOutput(DIST_ROOT)
+      expect(collectRuntimeVirtualModuleReferences(javascript.code)).toEqual([])
+      expect(javascript.code).not.toContain('@weapp-vite/web/runtime')
+      expect(javascript.code).toContain('__wevu_runtime')
     })
   }
 })

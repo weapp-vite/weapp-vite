@@ -1,4 +1,11 @@
 import {
+  setTabBarBadgeState,
+  setTabBarRedDotState,
+  setTabBarVisible,
+  updateTabBarItem,
+  updateTabBarStyle,
+} from '../appShell/tabBar'
+import {
   callMiniProgramAsyncFailure,
   callMiniProgramAsyncSuccess,
 } from './async'
@@ -21,12 +28,64 @@ export function getNetworkTypeBridge(options?: any): Promise<any> {
   }))
 }
 
+function resolveTabBarMutation(action: string, options: any, succeeded: boolean, failureReason = 'tabBar not configured') {
+  if (succeeded) {
+    return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: `${action}:ok` }))
+  }
+  const failure = callMiniProgramAsyncFailure(options, `${action}:fail ${failureReason}`)
+  return Promise.reject(failure)
+}
+
 export function showTabBarBridge(options?: any): Promise<any> {
-  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'showTabBar:ok' }))
+  return resolveTabBarMutation('showTabBar', options, setTabBarVisible(true, options?.animation === true))
 }
 
 export function hideTabBarBridge(options?: any): Promise<any> {
-  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'hideTabBar:ok' }))
+  return resolveTabBarMutation('hideTabBar', options, setTabBarVisible(false, options?.animation === true))
+}
+
+export function setTabBarItemBridge(options?: any): Promise<any> {
+  const patch = {
+    ...(typeof options?.text === 'string' ? { text: options.text } : {}),
+    ...(typeof options?.iconPath === 'string' ? { iconPath: options.iconPath } : {}),
+    ...(typeof options?.selectedIconPath === 'string' ? { selectedIconPath: options.selectedIconPath } : {}),
+  }
+  return resolveTabBarMutation('setTabBarItem', options, updateTabBarItem(options?.index, patch), 'invalid index')
+}
+
+export function setTabBarStyleBridge(options?: any): Promise<any> {
+  const patch = {
+    ...(typeof options?.color === 'string' ? { color: options.color } : {}),
+    ...(typeof options?.selectedColor === 'string' ? { selectedColor: options.selectedColor } : {}),
+    ...(typeof options?.backgroundColor === 'string' ? { backgroundColor: options.backgroundColor } : {}),
+    ...(options?.borderStyle === 'black' || options?.borderStyle === 'white'
+      ? { borderStyle: options.borderStyle }
+      : {}),
+  }
+  return resolveTabBarMutation('setTabBarStyle', options, updateTabBarStyle(patch))
+}
+
+export function setTabBarBadgeBridge(options?: any): Promise<any> {
+  const succeeded = typeof options?.text === 'string'
+    && setTabBarBadgeState(options?.index, options.text)
+  return resolveTabBarMutation('setTabBarBadge', options, succeeded, 'invalid index or text')
+}
+
+export function removeTabBarBadgeBridge(options?: any): Promise<any> {
+  return resolveTabBarMutation(
+    'removeTabBarBadge',
+    options,
+    setTabBarBadgeState(options?.index, undefined),
+    'invalid index',
+  )
+}
+
+export function showTabBarRedDotBridge(options?: any): Promise<any> {
+  return resolveTabBarMutation('showTabBarRedDot', options, setTabBarRedDotState(options?.index, true), 'invalid index')
+}
+
+export function hideTabBarRedDotBridge(options?: any): Promise<any> {
+  return resolveTabBarMutation('hideTabBarRedDot', options, setTabBarRedDotState(options?.index, false), 'invalid index')
 }
 
 export function requestPaymentBridge(options?: any): Promise<any> {

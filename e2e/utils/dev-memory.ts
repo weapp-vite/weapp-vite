@@ -14,7 +14,16 @@ interface InspectorResponse<T = unknown> {
 }
 
 const INSPECTOR_URL_RE = /Debugger listening on (ws:\/\/\S+)/
-const DEFAULT_INSPECTOR_COMMAND_TIMEOUT_MS = 5_000
+const DEFAULT_INSPECTOR_COMMAND_TIMEOUT_MS = 15_000
+const DEFAULT_HEAP_SETTLEMENT_ATTEMPTS = 6
+const DEFAULT_HEAP_SETTLEMENT_INTERVAL_MS = 500
+const DEFAULT_HEAP_SETTLEMENT_TOLERANCE_BYTES = 8 * 1024 * 1024
+
+export interface HeapSettlementOptions {
+  intervalMs?: number
+  maxAttempts?: number
+  toleranceBytes?: number
+}
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -80,15 +89,19 @@ function sendInspectorCommand<T>(
   params?: Record<string, unknown>,
   timeoutMs = DEFAULT_INSPECTOR_COMMAND_TIMEOUT_MS,
 ) {
-  const task = new Promise<T>((resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     let onError: () => void
     let onMessage: (event: MessageEvent) => void
+    let timer: ReturnType<typeof setTimeout> | undefined
     let settled = false
     const settle = (callback: () => void) => {
       if (settled) {
         return
       }
       settled = true
+      if (timer) {
+        clearTimeout(timer)
+      }
       removeInspectorListeners(socket, onMessage, onError)
       callback()
     }
@@ -117,13 +130,20 @@ function sendInspectorCommand<T>(
 
     socket.addEventListener('message', onMessage)
     socket.addEventListener('error', onError, { once: true })
-    socket.send(JSON.stringify({
-      id: commandId,
-      method,
-      params,
-    }))
+    timer = setTimeout(() => {
+      settle(() => reject(new Error(`Timed out waiting for inspector command ${method} after ${timeoutMs}ms.`)))
+    }, timeoutMs)
+    try {
+      socket.send(JSON.stringify({
+        id: commandId,
+        method,
+        params,
+      }))
+    }
+    catch (error) {
+      settle(() => reject(error))
+    }
   })
-  return withTimeout(task, timeoutMs, () => new Error(`Timed out waiting for inspector command ${method} after ${timeoutMs}ms.`))
 }
 
 export async function waitForInspectorUrl(
@@ -149,13 +169,12 @@ export async function sampleHeapAfterGc(
   const socket = new WebSocket(inspectorUrl)
   try {
     await waitForWebSocketOpen(socket, timeoutMs)
-    await sendInspectorCommand(socket, 1, 'HeapProfiler.collectGarbage', undefined, timeoutMs)
     const evaluated = await sendInspectorCommand<{
       result?: {
         value?: DevHeapUsage
       }
-    }>(socket, 2, 'Runtime.evaluate', {
-      expression: 'process.memoryUsage()',
+    }>(socket, 1, 'Runtime.evaluate', {
+      expression: 'typeof global.gc === "function" && global.gc(); process.memoryUsage()',
       returnByValue: true,
     }, timeoutMs)
     const usage = evaluated.result?.value
@@ -167,6 +186,50 @@ export async function sampleHeapAfterGc(
   finally {
     socket.close()
   }
+}
+
+export async function waitForHeapUsageToSettle(
+  sampleUsage: () => Promise<DevHeapUsage>,
+  options: HeapSettlementOptions = {},
+) {
+  const intervalMs = options.intervalMs ?? DEFAULT_HEAP_SETTLEMENT_INTERVAL_MS
+  const maxAttempts = options.maxAttempts ?? DEFAULT_HEAP_SETTLEMENT_ATTEMPTS
+  const toleranceBytes = options.toleranceBytes ?? DEFAULT_HEAP_SETTLEMENT_TOLERANCE_BYTES
+  let previous: DevHeapUsage | undefined
+  let stablePairs = 0
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const current = await sampleUsage()
+    if (previous && Math.abs(current.heapUsed - previous.heapUsed) <= toleranceBytes) {
+      stablePairs += 1
+      if (stablePairs >= 2) {
+        return current
+      }
+    }
+    else {
+      stablePairs = 0
+    }
+
+    previous = current
+    if (attempt < maxAttempts - 1) {
+      await sleep(intervalMs)
+    }
+  }
+
+  if (!previous) {
+    throw new Error('Heap settlement requires at least one sample attempt.')
+  }
+  return previous
+}
+
+export function sampleSettledHeapAfterGc(
+  inspectorUrl: string,
+  options: HeapSettlementOptions = {},
+) {
+  return waitForHeapUsageToSettle(
+    () => sampleHeapAfterGc(inspectorUrl),
+    options,
+  )
 }
 
 export function formatMemoryMiB(bytes: number) {

@@ -1,7 +1,7 @@
 {
   "name": "@wevu/api",
   "type": "module",
-  "version": "0.2.11",
+  "version": "0.2.14",
   "description": "tsdown bundler template",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -56,7 +56,7 @@
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json"
   },
   "dependencies": {
-    "@douyin-microapp/typings": "^1.3.1",
+    "@douyin-microapp/typings": "catalog:",
     "@mini-types/alipay": "catalog:",
     "@weapp-core/shared": "workspace:*",
     "miniprogram-api-typings": "catalog:"

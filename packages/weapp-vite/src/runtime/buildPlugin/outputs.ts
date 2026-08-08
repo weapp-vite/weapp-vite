@@ -53,6 +53,7 @@ export function resetEmittedOutputCaches(
   runtimeState.asset.scopedSlotGenerics.clear()
   runtimeState.build?.output?.emittedSource.clear()
   runtimeState.css.emittedSource.clear()
+  runtimeState.css.transformedSidecarSource.clear()
   runtimeState.wxml.emittedCode.clear()
 }
 

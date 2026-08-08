@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按小程序基准命名）
 
-总计：484，支持：133，不支持：351
+总计：495，支持：133，不支持：362
 
 | 小程序基准 API                                | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -37,6 +37,7 @@
 | `checkIsSupportFacialRecognition`             | `checkIsSupportFacialRecognition`             | ❌   | `unsupported` | ❌       | 未提供 tt.checkIsSupportFacialRecognition，调用时将返回 not supported             |
 | `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication`           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `checkSession`                                | `checkSession`                                | ✅   | `mapped`      | ✅       | 直连 `tt.checkSession`                                                            |
+| `checkTransitCardSupport`                     | `checkTransitCardSupport`                     | ❌   | `unsupported` | ❌       | 未提供 tt.checkTransitCardSupport，调用时将返回 not supported                     |
 | `chooseAddress`                               | `chooseAddress`                               | ✅   | `mapped`      | ✅       | 直连 `tt.chooseAddress`                                                           |
 | `chooseContact`                               | `chooseContact`                               | ❌   | `unsupported` | ❌       | 未提供 tt.chooseContact，调用时将返回 not supported                               |
 | `chooseImage`                                 | `chooseImage`                                 | ✅   | `mapped`      | ✅       | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底                      |
@@ -87,6 +88,7 @@
 | `createWebAudioContext`                       | `createWebAudioContext`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createWorker`                                | `createWorker`                                | ✅   | `native`      | ✅       | 直连 `tt.createWorker`                                                            |
 | `cropImage`                                   | `cropImage`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `deleteTransitCard`                           | `deleteTransitCard`                           | ❌   | `unsupported` | ❌       | 未提供 tt.deleteTransitCard，调用时将返回 not supported                           |
 | `disableAlertBeforeUnload`                    | `disableAlertBeforeUnload`                    | ❌   | `unsupported` | ❌       | 未提供 tt.disableAlertBeforeUnload，调用时将返回 not supported                    |
 | `downloadFile`                                | `downloadFile`                                | ✅   | `native`      | ✅       | 直连 `tt.downloadFile`                                                            |
 | `editImage`                                   | `editImage`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -142,6 +144,7 @@
 | `getNetworkType`                              | `getNetworkType`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getNFCAdapter`                               | `getNFCAdapter`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getPerformance`                              | `getPerformance`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getPluginUpdateManager`                      | `getPluginUpdateManager`                      | ❌   | `unsupported` | ❌       | 未提供 tt.getPluginUpdateManager，调用时将返回 not supported                      |
 | `getPrivacySetting`                           | `getPrivacySetting`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getRandomValues`                             | `getRandomValues`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getRealtimeLogManager`                       | `getRealtimeLogManager`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -164,6 +167,9 @@
 | `getSystemInfoAsync`                          | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`                                                         |
 | `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfoSync`                                                       |
 | `getSystemSetting`                            | `getSystemSetting`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getTransitCardCPLC`                          | `getTransitCardCPLC`                          | ❌   | `unsupported` | ❌       | 未提供 tt.getTransitCardCPLC，调用时将返回 not supported                          |
+| `getTransitCardInfo`                          | `getTransitCardInfo`                          | ❌   | `unsupported` | ❌       | 未提供 tt.getTransitCardInfo，调用时将返回 not supported                          |
+| `getTransitCardList`                          | `getTransitCardList`                          | ❌   | `unsupported` | ❌       | 未提供 tt.getTransitCardList，调用时将返回 not supported                          |
 | `getUpdateManager`                            | `getUpdateManager`                            | ✅   | `native`      | ✅       | 直连 `tt.getUpdateManager`                                                        |
 | `getUserCryptoManager`                        | `getUserCryptoManager`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getUserInfo`                                 | `getUserInfo`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.getUserInfo`                                                             |
@@ -183,9 +189,11 @@
 | `hideToast`                                   | `hideToast`                                   | ✅   | `native`      | ✅       | 直连 `tt.hideToast`                                                               |
 | `initFaceDetect`                              | `initFaceDetect`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `isBluetoothDevicePaired`                     | `isBluetoothDevicePaired`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `issueTransitCard`                            | `issueTransitCard`                            | ❌   | `unsupported` | ❌       | 未提供 tt.issueTransitCard，调用时将返回 not supported                            |
 | `isVKSupport`                                 | `isVKSupport`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `join1v1Chat`                                 | `join1v1Chat`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `joinVoIPChat`                                | `joinVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `jumpToOfflinePay`                            | `jumpToOfflinePay`                            | ❌   | `unsupported` | ❌       | 未提供 tt.jumpToOfflinePay，调用时将返回 not supported                            |
 | `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `loadFontFace`                                | `loadFontFace`                                | ❌   | `unsupported` | ❌       | 未提供 tt.loadFontFace，调用时将返回 not supported                                |
 | `login`                                       | `login`                                       | ✅   | `mapped`      | ✅       | 直连 `tt.login`                                                                   |
@@ -341,6 +349,7 @@
 | `openChannelsUserProfile`                     | `openChannelsUserProfile`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openChatTool`                                | `openChatTool`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openDesignerProfile`                         | `openDesignerProfile`                         | ❌   | `unsupported` | ❌       | 未提供 tt.openDesignerProfile，调用时将返回 not supported                         |
 | `openDocument`                                | `openDocument`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openEmbeddedMiniProgram`                     | `openEmbeddedMiniProgram`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -373,6 +382,7 @@
 | `previewImage`                                | `previewImage`                                | ✅   | `native`      | ✅       | 直连 `tt.previewImage`                                                            |
 | `previewMedia`                                | `previewMedia`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `readBLECharacteristicValue`                  | `readBLECharacteristicValue`                  | ❌   | `unsupported` | ❌       | 未提供 tt.readBLECharacteristicValue，调用时将返回 not supported                  |
+| `rechargeTransitCard`                         | `rechargeTransitCard`                         | ❌   | `unsupported` | ❌       | 未提供 tt.rechargeTransitCard，调用时将返回 not supported                         |
 | `redirectTo`                                  | `redirectTo`                                  | ✅   | `native`      | ✅       | 直连 `tt.redirectTo`                                                              |
 | `reLaunch`                                    | `reLaunch`                                    | ✅   | `native`      | ✅       | 直连 `tt.reLaunch`                                                                |
 | `removeSecureElementPass`                     | `removeSecureElementPass`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -384,6 +394,7 @@
 | `reportMonitor`                               | `reportMonitor`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `reportPerformance`                           | `reportPerformance`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `request`                                     | `request`                                     | ✅   | `native`      | ✅       | 直连 `tt.request`                                                                 |
+| `requestAppleSubscribeSign`                   | `requestAppleSubscribeSign`                   | ❌   | `unsupported` | ❌       | 未提供 tt.requestAppleSubscribeSign，调用时将返回 not supported                   |
 | `requestCommonPayment`                        | `requestCommonPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestFacialVerify`                         | `requestFacialVerify`                         | ❌   | `unsupported` | ❌       | 未提供 tt.requestFacialVerify，调用时将返回 not supported                         |

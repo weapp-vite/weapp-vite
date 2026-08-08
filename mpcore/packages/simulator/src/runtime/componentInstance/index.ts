@@ -7,10 +7,10 @@ import {
   resolveInitialData,
   resolveInitialProperties,
 } from './properties'
-import { assignByPath, bindFunction, cloneValue } from './shared'
+import { assignByPath, bindFunction, cloneValue, hasComponentPropertyValueChanged } from './shared'
 
 export type { CreateComponentInstanceOptions, HeadlessComponentInstance } from './types'
-export { cloneValue, coerceComponentPropertyValue, normalizeComponentPropertyValue, runComponentObservers }
+export { cloneValue, coerceComponentPropertyValue, hasComponentPropertyValueChanged, normalizeComponentPropertyValue, runComponentObservers }
 
 export function createComponentInstance(options: CreateComponentInstanceOptions): HeadlessComponentInstance {
   const definition = normalizeComponentDefinition(options.definition)
@@ -26,8 +26,12 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
       }
 
       runComponentObservers(definition, instance, changedKeys)
-
-      callback?.()
+      if (options.requestRender) {
+        options.requestRender(callback)
+      }
+      else {
+        callback?.()
+      }
     },
     triggerEvent(eventName, detail, triggerOptions) {
       options.triggerEvent?.(instance, eventName, detail, triggerOptions)

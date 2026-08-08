@@ -96,14 +96,16 @@ export {
 } from './operations/platformApi'
 export {
   collectRequireTokens,
+  getDynamicImportLiteralToken,
   getRequireAsyncLiteralToken,
+  getRequireCallbackLiteralToken,
   getStaticRequireLiteralValue,
   hasStaticRequireCall,
   isStaticRequireCall,
   mayContainRequireCallByText,
   mayContainStaticRequireLiteral,
 } from './operations/require'
-export type { RequireToken } from './operations/require'
+export type { DynamicImportToken, RequireCallbackToken, RequireToken } from './operations/require'
 export { analyzeScript, analyzeScripts } from './operations/scriptAnalysis'
 export type { ScriptAnalysisBatchInput, ScriptAnalysisOptions, ScriptAnalysisResult } from './operations/scriptAnalysis'
 export {

@@ -15,7 +15,7 @@ export function getImageInfoBridge(options?: any) {
   const src = typeof options?.src === 'string' ? options.src.trim() : ''
   if (!src) {
     const failure = callMiniProgramAsyncFailure(options, 'getImageInfo:fail invalid src')
-    return Promise.reject(failure)
+    return typeof options?.fail === 'function' ? Promise.resolve(failure) : Promise.reject(failure)
   }
   return readImageInfoFromSource(src)
     .then(({ width, height }) => callMiniProgramAsyncSuccess(options, {
@@ -27,9 +27,9 @@ export function getImageInfoBridge(options?: any) {
       orientation: 'up',
     }))
     .catch((error) => {
-      const message = error instanceof Error ? error.message : String(error)
+      const message = (error as Error).message
       const failure = callMiniProgramAsyncFailure(options, `getImageInfo:fail ${message}`)
-      return Promise.reject(failure)
+      return typeof options?.fail === 'function' ? failure : Promise.reject(failure)
     })
 }
 
@@ -66,7 +66,7 @@ export function getVideoInfoBridge(options?: any) {
       })
     })
     .catch((error) => {
-      const message = error instanceof Error ? error.message : String(error)
+      const message = (error as Error).message
       const failure = callMiniProgramAsyncFailure(options, `getVideoInfo:fail ${message}`)
       return Promise.reject(failure)
     })

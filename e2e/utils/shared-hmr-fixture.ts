@@ -73,6 +73,7 @@ export function buildSharedHmrPageWxml(importTemplatePath: string, includeTempla
 export function buildOriginalHmrPageWxml() {
   return [
     '<view class="page">',
+    '  <e2e-template-probe marker="HMR" storage-key="__weapp_vite_core_hmr_template_probe__" />',
     '  <view class="title">HMR</view>',
     '  <view class="summary">ok: {{__e2e.ok}}</view>',
     '  <text class="details" selectable>{{__e2eText}}</text>',

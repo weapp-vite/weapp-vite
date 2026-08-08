@@ -1,5 +1,40 @@
 # @wevu/api
 
+## 0.2.14
+
+### Patch Changes
+
+- 🐛 **升级除 TypeScript 外的依赖与 pnpm，并适配 Vite 8 的 OXC JSX 转换：已有 `esbuild.jsx: 'preserve'` 配置会同步到 OXC，避免 Wevu JSX 被误转换为 React runtime。** [#772](https://github.com/weapp-vite/weapp-vite/pull/772) by @sonofmagic
+  升级至 `weapp-tailwindcss@5.2.11`，采用上游对 Tailwind v4 生成器 module ID 查询的统一清理，避免 `weapp-vite` 样式 sidecar 虚拟模块 ID 被当作磁盘路径读取，确保原生模板、脚本和样式增量更新正常输出。
+
+  涉及包：
+  - @wevu/api：dependencies.@douyin-microapp/typings
+  - @weapp-vite/web：dependencies.rolldown
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - @weapp-vite/dashboard：devDependencies.@iconify/tailwind4
+  - @weapp-vite/miniprogram-automator：dependencies.ws
+  - rolldown-require：dependencies.get-tsconfig
+  - weapp-ide-cli：dependencies.execa
+  - weapp-vite：dependencies.@vercel/detect-agent、dependencies.rolldown-plugin-dts
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+## 0.2.13
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`98aa0bc`](https://github.com/weapp-vite/weapp-vite/commit/98aa0bcce2aa02df4ef6760f382143240dd76c17) by @sonofmagic
+  - 默认 catalog 变更键：@types/node, miniprogram-api-typings, oxc-parser, postcss, tailwind-variants, weapp-tailwindcss。命名 catalog 变更键：latest(miniprogram-api-typings)；weapp-tailwindcss-fixed(weapp-tailwindcss)。
+- 📦 **Dependencies** [`1b06f6e`](https://github.com/weapp-vite/weapp-vite/commit/1b06f6e47cf2e16904c319acf84ab383e8cd347b)
+  → `@weapp-core/shared@3.1.0`
+
+## 0.2.12
+
+### Patch Changes
+
+- 📦 **Dependencies** [`9097806`](https://github.com/weapp-vite/weapp-vite/commit/9097806cf6a88144ddb161532dd77bbf78a44ccb)
+  → `@weapp-core/shared@3.0.6`
+
 ## 0.2.11
 
 ### Patch Changes

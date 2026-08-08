@@ -22,7 +22,12 @@ import {
 import { parseDocument } from 'htmlparser2'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '../src/runtime/component'
+import { createComponentPublicInstance } from '../src/runtime/component/publicInstance'
 import {
+  $emit,
+  $off,
+  $on,
+  $once,
   authorize,
   canIUse,
   checkSession,
@@ -37,7 +42,9 @@ import {
   clearStorageSync,
   compressImage,
   compressVideo,
+  createAnimation,
   createCanvasContext,
+  createIntersectionObserver,
   createInterstitialAd,
   createRewardedVideoAd,
   createSelectorQuery,
@@ -60,6 +67,7 @@ import {
   getFuzzyLocation,
   getImageInfo,
   getLaunchOptionsSync,
+  getLocale,
   getLocation,
   getLogManager,
   getMenuButtonBoundingClientRect,
@@ -81,6 +89,7 @@ import {
   hideLoading,
   hideTabBar,
   initializePageRoutes,
+  loadFontFace,
   loadSubPackage,
   login,
   makePhoneCall,
@@ -102,6 +111,7 @@ import {
   preloadSubpackage,
   previewImage,
   previewMedia,
+  redirectTo,
   registerApp,
   registerComponent,
   registerPage,
@@ -112,6 +122,7 @@ import {
   request,
   requestPayment,
   requestSubscribeMessage,
+  rpx2px,
   saveFile,
   saveFileToDisk,
   saveImageToPhotosAlbum,
@@ -132,6 +143,7 @@ import {
   stopPullDownRefresh,
   updateShareMenu,
   uploadFile,
+  upx2px,
   vibrateShort,
 } from '../src/runtime/polyfill'
 import { createTemplate } from '../src/runtime/template'
@@ -546,8 +558,7 @@ beforeAll(() => {
 })
 
 function findElementByTag(tagName: string) {
-  const children = (document.body as any).childNodes as Array<HTMLElement>
-  return children.find(node => (node as any).tagName === tagName.toUpperCase()) ?? null
+  return document.querySelector(tagName)
 }
 
 function overrideGlobalProperty(name: string, value: unknown) {
@@ -640,13 +651,16 @@ describe.skip('defineComponent', () => {
 
 describe('registerPage integration', () => {
   it('mounts pages, wires events, and supports navigation', async () => {
-    const onLoad = vi.fn()
+    const onLoad = vi.fn(function (this: any) {
+      this.markPageLoaded()
+    })
     const onLoadUpdate = vi.fn()
     const onShow = vi.fn()
     const onHide = vi.fn()
     const onUnload = vi.fn()
     const onReady = vi.fn()
     const onSecondLoad = vi.fn()
+    const onSecondHide = vi.fn()
     const onSecondUnload = vi.fn()
 
     registerApp({
@@ -655,9 +669,12 @@ describe('registerPage integration', () => {
 
     const firstTemplate = createTemplate('<view bindtap="increment">{{count}}</view>')
     registerPage({
-      data: () => ({ count: 1 }),
+      data: () => ({ count: 1, loadedByMethod: false }),
       increment(this: any) {
         this.setData({ count: this.data.count + 1 })
+      },
+      markPageLoaded(this: any) {
+        this.setData({ loadedByMethod: true })
       },
       onLoad,
       onShow,
@@ -673,6 +690,7 @@ describe('registerPage integration', () => {
     registerPage({
       data: { title: 'second' },
       onLoad: onSecondLoad,
+      onHide: onSecondHide,
       onUnload: onSecondUnload,
     }, {
       id: 'pages/second/index',
@@ -682,26 +700,28 @@ describe('registerPage integration', () => {
     initializePageRoutes(['pages/index/index', 'pages/second/index'])
     await Promise.resolve()
 
-    const bodyChildren = (document.body as any).childNodes as Array<HTMLElement>
-    expect(bodyChildren.length).toBeGreaterThan(0)
-    const tags = bodyChildren.map(node => (node as any).tagName)
-    expect(tags).toContain('WV-PAGE-PAGES-INDEX-INDEX')
+    const container = document.querySelector('#app')
+    expect(container).toBeTruthy()
+    expect(container?.querySelector('wv-page-pages-index-index')).toBeTruthy()
 
     const firstPage = findElementByTag('wv-page-pages-index-index') as HTMLElement & { data: any }
     expect(firstPage).toBeTruthy()
     expect(onLoad).toHaveBeenCalledTimes(1)
     expect(onShow).toHaveBeenCalledTimes(1)
     expect(onReady).toHaveBeenCalledTimes(1)
+    expect(firstPage.data.loadedByMethod).toBe(true)
+    expect(typeof (firstPage as any).markPageLoaded).toBe('function')
 
     const currentPages = (globalThis as any).getCurrentPages?.() ?? []
     expect(currentPages.length).toBe(1)
+    expect(currentPages[0].route).toBe('pages/index/index')
 
     const renderedHTML = firstPage.shadowRoot?.innerHTML ?? ''
     expect(renderedHTML).toContain('data-mp-on-click="increment"')
 
     const shadowRoot = firstPage.shadowRoot as any
     expect(shadowRoot).toBeTruthy()
-    const trigger = (shadowRoot?.querySelectorAll('div') ?? [])
+    const trigger = (shadowRoot?.querySelectorAll('weapp-view') ?? [])
       .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     expect(trigger).toBeTruthy()
     trigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
@@ -727,31 +747,140 @@ describe('registerPage integration', () => {
     expect(onLoadUpdate).toHaveBeenCalledTimes(0)
     expect(onLoad).toHaveBeenCalledTimes(1)
     expect(firstPage.data.count).toBe(2)
+    expect((firstPage as any).markPageLoaded).toBeUndefined()
 
-    const updatedTrigger = (shadowRoot?.querySelectorAll('div') ?? [])
+    const updatedTrigger = (shadowRoot?.querySelectorAll('weapp-view') ?? [])
       .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     updatedTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(firstPage.data.count).toBe(12)
 
+    container!.scrollTop = 96
     await navigateTo({ url: 'pages/second/index?foo=bar' })
     await Promise.resolve()
 
-    expect(firstPage.parentNode).toBeNull()
+    expect(firstPage.parentNode).toBe(container)
+    expect(firstPage.hasAttribute('hidden')).toBe(true)
+    expect(firstPage.getAttribute('style')).toContain('display:none')
     expect(onHide).toHaveBeenCalledTimes(1)
-    expect(onUnload).toHaveBeenCalledTimes(1)
+    expect(onUnload).toHaveBeenCalledTimes(0)
+    expect(container?.scrollTop).toBe(0)
     const secondPage = findElementByTag('wv-page-pages-second-index') as HTMLElement & { data: any }
     expect(secondPage).toBeTruthy()
+    const pagesAfterNavigate = (globalThis as any).getCurrentPages?.() ?? []
+    expect(pagesAfterNavigate.map((page: any) => page.route)).toEqual([
+      'pages/index/index',
+      'pages/second/index',
+    ])
     expect(onSecondLoad).toHaveBeenCalledWith(expect.objectContaining({ foo: 'bar' }))
     expect(typeof (globalThis as any).wx.navigateTo).toBe('function')
 
+    container!.scrollTop = 41
     await navigateBack({ delta: 1 })
     await Promise.resolve()
 
     const firstPageAgain = findElementByTag('wv-page-pages-index-index') as HTMLElement & { data: any }
-    expect(firstPageAgain).toBeTruthy()
+    expect(firstPageAgain).toBe(firstPage)
+    expect(firstPageAgain.data.count).toBe(12)
+    expect(firstPageAgain.hasAttribute('hidden')).toBe(false)
+    expect(firstPageAgain.getAttribute('style')).toContain('display:block')
+    expect(container?.scrollTop).toBe(96)
     expect(onLoad).toHaveBeenCalledTimes(1)
-    expect(onLoadUpdate).toHaveBeenCalledTimes(1)
+    expect(onLoadUpdate).toHaveBeenCalledTimes(0)
+    expect(onShow).toHaveBeenCalledTimes(2)
+    expect(onSecondHide).toHaveBeenCalledTimes(1)
     expect(onSecondUnload).toHaveBeenCalledTimes(1)
+  })
+
+  it('unloads only pages removed by redirect and relaunch', async () => {
+    const calls: string[] = []
+    const createPage = (id: string) => {
+      registerPage({
+        onLoad() {
+          calls.push(`${id}:load`)
+        },
+        onShow() {
+          calls.push(`${id}:show`)
+        },
+        onHide() {
+          calls.push(`${id}:hide`)
+        },
+        onUnload() {
+          calls.push(`${id}:unload`)
+        },
+      }, {
+        id: `pages/route-${id}/index`,
+        template: createTemplate(`<view>${id}</view>`),
+      })
+    }
+
+    createPage('first')
+    createPage('second')
+    createPage('third')
+    const firstRoute = 'pages/route-first/index'
+    const secondRoute = 'pages/route-second/index'
+    const thirdRoute = 'pages/route-third/index'
+    initializePageRoutes([firstRoute, secondRoute, thirdRoute])
+    await reLaunch({ url: firstRoute })
+    calls.length = 0
+
+    await navigateTo({ url: secondRoute })
+    expect(calls).toEqual([
+      'first:hide',
+      'second:load',
+      'second:show',
+    ])
+    expect((globalThis as any).getCurrentPages().map((page: any) => page.route)).toEqual([
+      firstRoute,
+      secondRoute,
+    ])
+
+    calls.length = 0
+    await redirectTo({ url: thirdRoute })
+    expect(calls).toEqual([
+      'second:hide',
+      'second:unload',
+      'third:load',
+      'third:show',
+    ])
+    expect((globalThis as any).getCurrentPages().map((page: any) => page.route)).toEqual([
+      firstRoute,
+      thirdRoute,
+    ])
+
+    calls.length = 0
+    await reLaunch({ url: secondRoute })
+    expect(calls).toEqual([
+      'third:hide',
+      'third:unload',
+      'first:unload',
+      'second:load',
+      'second:show',
+    ])
+    expect((globalThis as any).getCurrentPages().map((page: any) => page.route)).toEqual([secondRoute])
+
+    const success = vi.fn()
+    const complete = vi.fn()
+    await expect(navigateTo({
+      url: thirdRoute,
+      success,
+      complete,
+    })).resolves.toEqual({ errMsg: 'navigateTo:ok' })
+    expect(success).toHaveBeenCalledWith({ errMsg: 'navigateTo:ok' })
+    expect(complete).toHaveBeenCalledWith({ errMsg: 'navigateTo:ok' })
+
+    const fail = vi.fn()
+    complete.mockClear()
+    await expect(redirectTo({
+      url: 'pages/route-missing/index',
+      fail,
+      complete,
+    })).rejects.toEqual({ errMsg: 'redirectTo:fail page not found' })
+    expect(fail).toHaveBeenCalledWith({ errMsg: 'redirectTo:fail page not found' })
+    expect(complete).toHaveBeenCalledWith({ errMsg: 'redirectTo:fail page not found' })
+    expect((globalThis as any).getCurrentPages().map((page: any) => page.route)).toEqual([
+      secondRoute,
+      thirdRoute,
+    ])
   })
 
   it('keeps active page state during repeated hot updates', async () => {
@@ -777,8 +906,8 @@ describe('registerPage integration', () => {
     expect(page).toBeTruthy()
     expect(onLoad).toHaveBeenCalledTimes(1)
 
-    const firstTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
-      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
+    const firstTrigger = [...(page.shadowRoot?.querySelectorAll('weapp-view') ?? [])]
+      .find(node => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     firstTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(1)
 
@@ -797,8 +926,8 @@ describe('registerPage integration', () => {
     expect(onHotLoad).toHaveBeenCalledTimes(0)
     expect(page.data.count).toBe(1)
 
-    const secondTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
-      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
+    const secondTrigger = [...(page.shadowRoot?.querySelectorAll('weapp-view') ?? [])]
+      .find(node => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     secondTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(6)
 
@@ -815,8 +944,8 @@ describe('registerPage integration', () => {
     await Promise.resolve()
     expect(page.data.count).toBe(6)
 
-    const thirdTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
-      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
+    const thirdTrigger = [...(page.shadowRoot?.querySelectorAll('weapp-view') ?? [])]
+      .find(node => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     thirdTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(8)
   })
@@ -918,6 +1047,147 @@ describe('event prefix mapping integration', () => {
 })
 
 describe('component observer init', () => {
+  it('supports native behavior lifetimes and relation node lookup', () => {
+    registerComponent({
+      properties: {
+        column: Number,
+      },
+      behaviors: [{
+        created() {
+          Object.defineProperty(this, '$children', {
+            get: () => this.getRelationNodes('../relation-child/relation-child'),
+          })
+        },
+      } as any],
+      relations: {
+        '../relation-child/relation-child': {
+          type: 'descendant',
+        },
+      },
+    }, {
+      id: 'components/relation-parent/relation-parent',
+      template: createTemplate('<slot />'),
+    })
+    registerComponent({}, {
+      id: 'components/relation-child/relation-child',
+      template: createTemplate('<view>child</view>'),
+    })
+
+    const parent = document.createElement('wv-component-components-relation-parent-relation-parent') as any
+    const child = document.createElement('wv-component-components-relation-child-relation-child')
+    parent.append(child)
+    expect(parent.$children).toEqual([child])
+  })
+
+  it('exports and clears chained animation steps', () => {
+    const animation = createAnimation({ duration: 300, timingFunction: 'linear' })
+      .translateX(24)
+      .opacity(0.5)
+      .step({ delay: 20 })
+      .height('auto')
+      .step()
+
+    expect(animation.export()).toEqual({
+      actions: [
+        {
+          animates: [
+            { type: 'translateX', args: [24] },
+            { type: 'opacity', args: [0.5] },
+          ],
+          option: { duration: 300, timingFunction: 'linear', delay: 20 },
+        },
+        {
+          animates: [{ type: 'height', args: ['auto'] }],
+          option: { duration: 300, timingFunction: 'linear' },
+        },
+      ],
+    })
+    expect(animation.export()).toEqual({ actions: [] })
+  })
+
+  it('keeps component instance fields isolated from readonly DOM properties', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'children')
+    Object.defineProperty(HTMLElement.prototype, 'children', {
+      configurable: true,
+      get: () => ['dom-child'],
+    })
+
+    try {
+      registerComponent({
+        lifetimes: {
+          created() {
+            expect(this.children).toBeUndefined()
+            ;(this as any).children = []
+          },
+        },
+        methods: {
+          appendChildInstance(child: unknown) {
+            ;(this as any).children.push(child)
+          },
+        },
+      }, {
+        id: 'components/readonly-dom-field',
+        template: createTemplate('<view>ready</view>'),
+      })
+
+      const element = document.createElement('wv-component-components-readonly-dom-field') as HTMLElement & {
+        appendChildInstance: (child: unknown) => void
+      }
+      element.appendChildInstance('component-child')
+      expect((element as any).children).toEqual(['component-child'])
+    }
+    finally {
+      if (descriptor) {
+        Object.defineProperty(HTMLElement.prototype, 'children', descriptor)
+      }
+      else {
+        delete (HTMLElement.prototype as any).children
+      }
+    }
+  })
+
+  it('supports shorthand and null property declarations', () => {
+    defineComponent('wv-property-declaration-shorthand', {
+      template: createTemplate('<view>{{title}} {{count}} {{anyValue}}</view>'),
+      component: {
+        properties: {
+          title: String,
+          count: { type: Number, value: 1, optionalTypes: [String] },
+          anyValue: null,
+        },
+      },
+    })
+
+    const element = document.createElement('wv-property-declaration-shorthand') as any
+    document.body.append(element)
+
+    expect(element.properties).toEqual({
+      title: undefined,
+      count: 1,
+      anyValue: undefined,
+    })
+  })
+
+  it('uses WeChat triggerEvent propagation defaults and explicit options', () => {
+    defineComponent('wv-trigger-event-options', {
+      template: createTemplate('<view>event source</view>'),
+      component: {},
+    })
+
+    const element = document.createElement('wv-trigger-event-options') as HTMLElement & {
+      triggerEvent: (name: string, detail?: unknown, options?: { bubbles?: boolean, composed?: boolean }) => void
+    }
+    const events: CustomEvent[] = []
+    element.addEventListener('state', event => events.push(event as CustomEvent))
+
+    element.triggerEvent('state', { value: 1 })
+    element.triggerEvent('state', { value: 2 }, { bubbles: true, composed: true })
+
+    expect(events).toHaveLength(2)
+    expect(events[0]).toMatchObject({ bubbles: false, composed: false, detail: { value: 1 } })
+    expect(events[1]).toMatchObject({ bubbles: true, composed: true, detail: { value: 2 } })
+  })
+
   it('fires observers once when enabled', () => {
     const countObserver = vi.fn()
     const titleObserver = vi.fn()
@@ -942,6 +1212,86 @@ describe('component observer init', () => {
     expect(titleObserver).toHaveBeenCalledWith('custom', 'default')
     expect(countObserver).toHaveBeenCalledTimes(1)
     expect(countObserver).toHaveBeenCalledWith(1, undefined)
+  })
+
+  it('runs component observers for properties, data, and behavior definitions', () => {
+    const propertyObserver = vi.fn()
+    const aggregateObserver = vi.fn()
+    const behaviorObserver = vi.fn()
+
+    defineComponent('wv-component-observers', {
+      template: createTemplate('<view>{{title}} {{count}}</view>'),
+      component: {
+        behaviors: [{
+          observers: {
+            count: behaviorObserver,
+          },
+        }],
+        data: { count: 0 },
+        properties: {
+          title: { type: String, value: 'before' },
+        },
+        observers: {
+          'title': propertyObserver,
+          'title, count': aggregateObserver,
+        },
+      },
+    })
+
+    const element = document.createElement('wv-component-observers') as any
+    element.title = 'after'
+    expect(behaviorObserver).not.toHaveBeenCalled()
+    expect(propertyObserver).toHaveBeenCalledWith('after')
+    expect(aggregateObserver).toHaveBeenCalledWith('after', 0)
+
+    element.setData({ count: 1 })
+    expect(behaviorObserver).toHaveBeenCalledWith(1)
+    expect(aggregateObserver).toHaveBeenLastCalledWith('after', 1)
+  })
+
+  it('resolves component methods that collide with inherited element methods inside observers', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'update')
+    const inheritedUpdate = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'update', {
+      configurable: true,
+      value: inheritedUpdate,
+    })
+
+    try {
+      defineComponent('wv-component-method-collision', {
+        template: createTemplate('<view>{{updated}}</view>'),
+        component: {
+          data: { updated: false },
+          properties: {
+            label: { type: String, value: 'before' },
+          },
+          observers: {
+            label(this: any) {
+              this.update()
+            },
+          },
+          methods: {
+            update(this: any) {
+              this.setData({ updated: true })
+            },
+          },
+        },
+      })
+
+      const element = document.createElement('wv-component-method-collision') as any
+      element.label = 'after'
+
+      expect(element.data.updated).toBe(true)
+      expect(inheritedUpdate).not.toHaveBeenCalled()
+    }
+    finally {
+      if (descriptor) {
+        Object.defineProperty(HTMLElement.prototype, 'update', descriptor)
+      }
+      else {
+        delete (HTMLElement.prototype as any).update
+      }
+    }
   })
 })
 
@@ -1087,6 +1437,151 @@ describe('component behaviors', () => {
 })
 
 describe('component selector helpers', () => {
+  it('renders empty and non-string legacy template results', () => {
+    defineComponent('wv-legacy-null-template', {
+      style: '.empty { display: none; }',
+      template: () => null as any,
+      component: {},
+    })
+    defineComponent('wv-legacy-object-template', {
+      style: '.object { display: block; }',
+      template: () => ({ kind: 'object' }) as any,
+      component: {},
+    })
+
+    const empty = document.createElement('wv-legacy-null-template') as HTMLElement
+    const object = document.createElement('wv-legacy-object-template') as HTMLElement
+    document.body.append(empty, object)
+
+    expect(empty.shadowRoot?.innerHTML).toBe('<style>.empty { display: none; }</style>')
+    expect(object.shadowRoot?.innerHTML).toBe('<style>.object { display: block; }</style>[object Object]')
+  })
+
+  it('exposes virtual host root classes without replacing caller classes', () => {
+    defineComponent('wv-virtual-host-class', {
+      template: createTemplate('<view class="root {{stateClass}}"></view>'),
+      component: {
+        options: {
+          virtualHost: true,
+          styleIsolation: 'shared',
+        },
+        data: {
+          stateClass: 'is-idle',
+        },
+      },
+    })
+
+    const element = document.createElement('wv-virtual-host-class') as any
+    element.setAttribute('class', 'caller-class root')
+    document.body.append(element)
+
+    expect(element.getAttribute('class')).toBe('caller-class root is-idle')
+    expect(element.shadowRoot?.querySelector('.root')?.getAttribute('part')).toBe('root is-idle')
+
+    element.setData({ stateClass: 'is-active' })
+    expect(element.getAttribute('class')).toBe('caller-class root is-active')
+    expect(element.shadowRoot?.querySelector('.root')?.getAttribute('part')).toBe('root is-active')
+
+    defineComponent('wv-virtual-host-class', {
+      template: createTemplate('<view class="root {{stateClass}}"></view>'),
+      component: {
+        options: {
+          virtualHost: false,
+        },
+      },
+    })
+    expect(element.getAttribute('class')).toBe('caller-class root')
+    expect(element.shadowRoot?.querySelector('.root')?.getAttribute('part')).toBeNull()
+  })
+
+  it('keeps root classes inside non-virtual components', () => {
+    defineComponent('wv-non-virtual-host-class', {
+      template: createTemplate('<view class="root is-active"></view>'),
+      component: {
+        options: {
+          virtualHost: false,
+        },
+      },
+    })
+
+    const element = document.createElement('wv-non-virtual-host-class') as any
+    element.setAttribute('class', 'caller-class')
+    document.body.append(element)
+
+    expect(element.getAttribute('class')).toBe('caller-class')
+  })
+
+  it('exposes compiled Vue slot presence to template expressions', () => {
+    defineComponent('wv-vue-slot-presence', {
+      template: createTemplate(`
+        <view wx:if="{{$slots.default}}"><slot></slot></view>
+        <view wx:else>fallback</view>
+        <view wx:if="{{$slots.header}}"><slot name="header"></slot></view>
+      `),
+      component: {
+        properties: {
+          vueSlots: { type: null, value: null },
+        },
+      },
+    })
+
+    const element = document.createElement('wv-vue-slot-presence') as any
+    element.vueSlots = { default: true }
+    element.append('projected content')
+    document.body.append(element)
+
+    expect(element.shadowRoot?.innerHTML).toContain('<slot')
+    expect(element.shadowRoot?.innerHTML).not.toContain('fallback')
+
+    element.vueSlots = ['header']
+    expect(element.shadowRoot?.innerHTML).toContain('name="header"')
+    expect(element.shadowRoot?.innerHTML).toContain('fallback')
+
+    element.vueSlots = {}
+    expect(element.shadowRoot?.innerHTML).not.toContain('<slot')
+  })
+
+  it('resolves the nearest composed parent component', () => {
+    defineComponent('wv-owner-parent', {
+      template: createTemplate('<slot></slot>'),
+      component: {},
+    })
+    defineComponent('wv-owner-child', {
+      template: createTemplate('<view></view>'),
+      component: {},
+    })
+
+    const parent = document.createElement('wv-owner-parent') as any
+    const child = document.createElement('wv-owner-child') as any
+    parent.append(child)
+    document.body.append(parent)
+
+    expect(child.selectOwnerComponent()).toBe(parent)
+  })
+
+  it('runs setData callbacks after the rendered update completes', async () => {
+    defineComponent('wv-set-data-callback-child', {
+      template: createTemplate('<view></view>'),
+      component: {},
+    })
+    defineComponent('wv-set-data-callback-host', {
+      template: state => state.visible
+        ? '<wv-set-data-callback-child class="late-child"></wv-set-data-callback-child>'
+        : '',
+      component: {
+        data: { visible: false },
+      },
+    })
+
+    const host = document.createElement('wv-set-data-callback-host') as any
+    document.body.append(host)
+
+    const callback = vi.fn(() => host.selectComponent('.late-child'))
+    await host.setData({ visible: true }, callback)
+
+    expect(callback).toHaveReturnedWith(expect.objectContaining({ tagName: 'WV-SET-DATA-CALLBACK-CHILD' }))
+  })
+
   it('provides createSelectorQuery/selectComponent/selectAllComponents on component instance', () => {
     defineComponent('wv-selector-host', {
       template: createTemplate(`
@@ -1289,7 +1784,7 @@ describe('web runtime wx utility APIs', () => {
     expect(typeof myBridge?.env?.USER_DATA_PATH).toBe('string')
   })
 
-  it('supports route and file system bridge through aliased host globals', () => {
+  it('supports route and file system bridge through aliased host globals', async () => {
     const myBridge = (globalThis as any).my as {
       env?: {
         USER_DATA_PATH?: string
@@ -1311,10 +1806,13 @@ describe('web runtime wx utility APIs', () => {
       'pages/detail/index',
     ])
 
-    myBridge.navigateTo?.({ url: '/pages/detail/index' })
+    await reLaunch({ url: '/pages/home/index' })
+    await myBridge.navigateTo?.({ url: '/pages/detail/index' })
     const currentPages = (globalThis as any).getCurrentPages?.() ?? []
-    expect(currentPages).toHaveLength(1)
-    expect(currentPages[0]).toBeTruthy()
+    expect(currentPages.map((page: any) => page.route)).toEqual([
+      'pages/home/index',
+      'pages/detail/index',
+    ])
 
     const fsManager = myBridge.getFileSystemManager?.()
     const filePath = `${myBridge.env?.USER_DATA_PATH ?? ''}/alias.txt`
@@ -2057,6 +2555,12 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.openLocation')).toBe(true)
     expect(canIUse('wx.showTabBar')).toBe(true)
     expect(canIUse('wx.hideTabBar')).toBe(true)
+    expect(canIUse('wx.setTabBarItem')).toBe(true)
+    expect(canIUse('wx.setTabBarStyle')).toBe(true)
+    expect(canIUse('wx.setTabBarBadge')).toBe(true)
+    expect(canIUse('wx.removeTabBarBadge')).toBe(true)
+    expect(canIUse('wx.showTabBarRedDot')).toBe(true)
+    expect(canIUse('wx.hideTabBarRedDot')).toBe(true)
     expect(canIUse('wx.setBackgroundColor')).toBe(true)
     expect(canIUse('wx.setBackgroundTextStyle')).toBe(true)
     expect(canIUse('wx.requestPayment')).toBe(true)
@@ -2306,6 +2810,21 @@ describe('web runtime wx utility APIs', () => {
       await expect(getImageInfo({ src: 'https://example.com/fail.png' })).rejects.toMatchObject({
         errMsg: expect.stringContaining('getImageInfo:fail'),
       })
+      const fail = vi.fn()
+      const complete = vi.fn()
+      await expect(getImageInfo({
+        src: 'https://example.com/fail.png',
+        fail,
+        complete,
+      })).resolves.toMatchObject({
+        errMsg: expect.stringContaining('getImageInfo:fail'),
+      })
+      expect(fail).toHaveBeenCalledWith(expect.objectContaining({
+        errMsg: expect.stringContaining('getImageInfo:fail'),
+      }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({
+        errMsg: expect.stringContaining('getImageInfo:fail'),
+      }))
       await expect(getImageInfo({ src: '' })).rejects.toMatchObject({
         errMsg: expect.stringContaining('getImageInfo:fail'),
       })
@@ -2839,6 +3358,332 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('scopes selector queries through a Vue public instance $el render root', () => {
+    const host = document.createElement('div') as HTMLElement & { renderRoot?: ShadowRoot }
+    const renderRoot = host.attachShadow({ mode: 'open' })
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'vue-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 5,
+      top: 6,
+      right: 35,
+      bottom: 46,
+      width: 30,
+      height: 40,
+      x: 5,
+      y: 6,
+      toJSON: () => ({}),
+    })
+    renderRoot.appendChild(probe)
+    host.renderRoot = renderRoot
+    document.body.appendChild(host)
+
+    const callback = vi.fn()
+    createSelectorQuery()
+      .in({ $el: host })
+      .select('.vue-query-probe')
+      .boundingClientRect(callback)
+      .exec()
+
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      left: 5,
+      top: 6,
+      width: 30,
+      height: 40,
+    }))
+    host.parentNode?.removeChild(host)
+  })
+
+  it('waits for the underlying component host update before a scoped query', async () => {
+    let resolveUpdate!: () => void
+    const updateComplete = new Promise<void>((resolve) => {
+      resolveUpdate = resolve
+    })
+    const host = document.createElement('div') as HTMLElement & {
+      renderRoot?: ShadowRoot
+    }
+    const inheritedPrototype = Object.create(Object.getPrototypeOf(host), {
+      updateComplete: {
+        configurable: true,
+        get: () => updateComplete,
+      },
+    })
+    Object.setPrototypeOf(host, inheritedPrototype)
+    const renderRoot = host.attachShadow({ mode: 'open' })
+    host.renderRoot = renderRoot
+    const publicInstance = createComponentPublicInstance(host as any, {})
+    const callback = vi.fn()
+
+    createSelectorQuery()
+      .in({ $: {}, $el: publicInstance, renderRoot })
+      .select('.deferred-query-probe')
+      .boundingClientRect(callback)
+      .exec()
+
+    expect(callback).not.toHaveBeenCalled()
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'deferred-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 1,
+      top: 2,
+      right: 11,
+      bottom: 12,
+      width: 10,
+      height: 10,
+      x: 1,
+      y: 2,
+      toJSON: () => ({}),
+    })
+    renderRoot.appendChild(probe)
+    resolveUpdate()
+    await updateComplete
+    await Promise.resolve()
+
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      left: 1,
+      top: 2,
+      width: 10,
+      height: 10,
+    }))
+  })
+
+  it('falls back through Vue public instance ancestor roots for sibling selectors', () => {
+    const host = document.createElement('div') as unknown as HTMLElement & {
+      renderRoot?: ShadowRoot
+      getRootNode?: () => ParentNode
+    }
+    const renderRoot = host.attachShadow({ mode: 'open' })
+    host.renderRoot = renderRoot
+    const pageRoot = document.createElement('div')
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'page-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 8,
+      top: 12,
+      right: 48,
+      bottom: 32,
+      width: 40,
+      height: 20,
+      x: 8,
+      y: 12,
+      toJSON: () => ({}),
+    })
+    pageRoot.appendChild(probe)
+    host.getRootNode = () => pageRoot
+
+    const callback = vi.fn()
+    createSelectorQuery()
+      .in({ $: {}, $el: host })
+      .select('.page-query-probe')
+      .boundingClientRect(callback)
+      .exec()
+
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      left: 8,
+      top: 12,
+      width: 40,
+      height: 20,
+    }))
+  })
+
+  it('falls back to the current page root for Vue component selector queries', () => {
+    const host = document.createElement('div') as HTMLElement & { renderRoot?: ShadowRoot }
+    host.renderRoot = host.attachShadow({ mode: 'open' })
+    const page = document.createElement('div') as HTMLElement & { renderRoot?: ShadowRoot }
+    const pageRoot = page.attachShadow({ mode: 'open' })
+    page.renderRoot = pageRoot
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'current-page-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 3,
+      top: 4,
+      right: 23,
+      bottom: 14,
+      width: 20,
+      height: 10,
+      x: 3,
+      y: 4,
+      toJSON: () => ({}),
+    })
+    pageRoot.appendChild(probe)
+    document.body.appendChild(page)
+    const restorePages = overrideGlobalProperty('getCurrentPages', () => [page])
+
+    try {
+      const callback = vi.fn()
+      createSelectorQuery()
+        .in({ $: {}, $el: host })
+        .select('.current-page-query-probe')
+        .boundingClientRect(callback)
+        .exec()
+
+      expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+        left: 3,
+        top: 4,
+        width: 20,
+        height: 10,
+      }))
+    }
+    finally {
+      restorePages()
+      page.parentNode?.removeChild(page)
+    }
+  })
+
+  it('queries the current page root when no selector scope is provided', () => {
+    const page = document.createElement('div') as HTMLElement & { renderRoot?: ShadowRoot }
+    const pageRoot = page.attachShadow({ mode: 'open' })
+    page.renderRoot = pageRoot
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'unscoped-page-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 2,
+      top: 5,
+      right: 14,
+      bottom: 13,
+      width: 12,
+      height: 8,
+      x: 2,
+      y: 5,
+      toJSON: () => ({}),
+    })
+    pageRoot.appendChild(probe)
+    document.body.appendChild(page)
+    const restorePages = overrideGlobalProperty('getCurrentPages', () => [page])
+
+    try {
+      const callback = vi.fn()
+      createSelectorQuery()
+        .select('.unscoped-page-query-probe')
+        .boundingClientRect(callback)
+        .exec()
+
+      expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+        left: 2,
+        top: 5,
+        width: 12,
+        height: 8,
+      }))
+    }
+    finally {
+      restorePages()
+      page.parentNode?.removeChild(page)
+    }
+  })
+
+  it('bridges scoped intersection observers with mini-program margins and entries', () => {
+    const host = document.createElement('div') as HTMLElement & { renderRoot?: ShadowRoot }
+    const renderRoot = host.attachShadow({ mode: 'open' })
+    const probe = document.createElement('div')
+    probe.setAttribute('id', 'intersection-probe')
+    probe.setAttribute('data-role', 'sticky')
+    probe.getBoundingClientRect = () => ({
+      left: 1,
+      top: 2,
+      right: 31,
+      bottom: 42,
+      width: 30,
+      height: 40,
+      x: 1,
+      y: 2,
+      toJSON: () => ({}),
+    })
+    renderRoot.appendChild(probe)
+    host.renderRoot = renderRoot
+
+    let observerCallback: IntersectionObserverCallback | undefined
+    let observerInit: IntersectionObserverInit | undefined
+    const observe = vi.fn()
+    const disconnect = vi.fn()
+    const restoreObserver = overrideGlobalProperty('IntersectionObserver', class {
+      constructor(callback: IntersectionObserverCallback, init?: IntersectionObserverInit) {
+        observerCallback = callback
+        observerInit = init
+      }
+
+      observe = observe
+      disconnect = disconnect
+    })
+
+    try {
+      const callback = vi.fn()
+      const observer = createIntersectionObserver({ $: {}, $el: host }, { thresholds: [0, 0.5] })
+        .relativeToViewport({ top: -24 })
+        .observe('#intersection-probe', callback)
+
+      expect(observe).toHaveBeenCalledWith(probe)
+      expect(observerInit).toMatchObject({
+        root: null,
+        rootMargin: '-24px 0px 0px 0px',
+        threshold: [0, 0.5],
+      })
+      observerCallback?.([{
+        target: probe,
+        intersectionRatio: 0.5,
+        intersectionRect: probe.getBoundingClientRect(),
+        boundingClientRect: probe.getBoundingClientRect(),
+        rootBounds: null,
+        time: 12,
+        isIntersecting: true,
+      } as unknown as IntersectionObserverEntry], {} as IntersectionObserver)
+      expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'intersection-probe',
+        dataset: { role: 'sticky' },
+        intersectionRatio: 0.5,
+      }))
+
+      observer.disconnect()
+      expect(disconnect).toHaveBeenCalledTimes(1)
+    }
+    finally {
+      restoreObserver()
+    }
+  })
+
+  it('waits for the scoped component render before executing selector queries', async () => {
+    const host = document.createElement('div') as HTMLElement & {
+      renderRoot?: ShadowRoot
+      updateComplete?: Promise<void>
+    }
+    const renderRoot = host.attachShadow({ mode: 'open' })
+    let finishRender!: () => void
+    host.updateComplete = new Promise<void>((resolve) => {
+      finishRender = resolve
+    })
+    const callback = vi.fn()
+
+    createSelectorQuery()
+      .in({ $el: host })
+      .select('.late-query-probe')
+      .boundingClientRect(callback)
+      .exec()
+
+    expect(callback).not.toHaveBeenCalled()
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'late-query-probe')
+    probe.getBoundingClientRect = () => ({
+      left: 1,
+      top: 2,
+      right: 11,
+      bottom: 22,
+      width: 10,
+      height: 20,
+      x: 1,
+      y: 2,
+      toJSON: () => ({}),
+    })
+    renderRoot.appendChild(probe)
+    host.renderRoot = renderRoot
+    finishRender()
+    await host.updateComplete
+    await Promise.resolve()
+
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      width: 10,
+      height: 20,
+    }))
+  })
+
   it('supports createCanvasContext drawing commands', () => {
     const canvas = document.createElement('canvas') as HTMLCanvasElement & {
       width: number
@@ -2858,6 +3703,14 @@ describe('web runtime wx utility APIs', () => {
     const lineTo = vi.fn()
     const stroke = vi.fn()
     const closePath = vi.fn()
+    const arc = vi.fn()
+    const rect = vi.fn()
+    const fill = vi.fn()
+    const save = vi.fn()
+    const restore = vi.fn()
+    const translate = vi.fn()
+    const rotate = vi.fn()
+    const scale = vi.fn()
     const runtimeContext = {
       clearRect,
       fillRect,
@@ -2868,9 +3721,18 @@ describe('web runtime wx utility APIs', () => {
       lineTo,
       stroke,
       closePath,
+      arc,
+      rect,
+      fill,
+      save,
+      restore,
+      translate,
+      rotate,
+      scale,
       fillStyle: '',
       strokeStyle: '',
       lineWidth: 0,
+      lineCap: 'butt',
       font: '',
     } as unknown as CanvasRenderingContext2D
     const getContext = vi.fn(() => runtimeContext)
@@ -2883,6 +3745,7 @@ describe('web runtime wx utility APIs', () => {
       context.fillRect(20, 20, 140, 80)
       context.setStrokeStyle('#f59e0b')
       context.setLineWidth(4)
+      context.setLineCap('round')
       context.strokeRect(20, 120, 200, 90)
       context.setFontSize(20)
       context.fillText('WeVU Canvas', 24, 170)
@@ -2891,18 +3754,36 @@ describe('web runtime wx utility APIs', () => {
       context.lineTo(220, 200)
       context.stroke()
       context.closePath()
+      context.save()
+      context.translate(10, 12)
+      context.rotate(Math.PI / 4)
+      context.scale(2, 3)
+      context.beginPath()
+      context.rect(4, 6, 80, 40)
+      context.arc(44, 26, 20, 0, Math.PI * 2)
+      context.fill()
+      context.restore()
       context.draw()
 
       expect(getContext).toHaveBeenCalledWith('2d')
       expect(clearRect).toHaveBeenCalledWith(0, 0, 300, 220)
       expect(fillRect).toHaveBeenCalledWith(20, 20, 140, 80)
       expect(strokeRect).toHaveBeenCalledWith(20, 120, 200, 90)
+      expect(runtimeContext.lineCap).toBe('round')
       expect(fillText).toHaveBeenCalledWith('WeVU Canvas', 24, 170)
-      expect(beginPath).toHaveBeenCalledTimes(1)
+      expect(beginPath).toHaveBeenCalledTimes(2)
       expect(moveTo).toHaveBeenCalledWith(20, 200)
       expect(lineTo).toHaveBeenCalledWith(220, 200)
       expect(stroke).toHaveBeenCalledTimes(1)
       expect(closePath).toHaveBeenCalledTimes(1)
+      expect(save).toHaveBeenCalledTimes(1)
+      expect(translate).toHaveBeenCalledWith(10, 12)
+      expect(rotate).toHaveBeenCalledWith(Math.PI / 4)
+      expect(scale).toHaveBeenCalledWith(2, 3)
+      expect(rect).toHaveBeenCalledWith(4, 6, 80, 40)
+      expect(arc).toHaveBeenCalledWith(44, 26, 20, 0, Math.PI * 2, false)
+      expect(fill).toHaveBeenCalledTimes(1)
+      expect(restore).toHaveBeenCalledTimes(1)
 
       const done = vi.fn()
       context.draw(true, done)
@@ -3052,23 +3933,14 @@ describe('web runtime wx utility APIs', () => {
     expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'stopPullDownRefresh:ok' }))
     expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'stopPullDownRefresh:ok' }))
 
-    const scrollTo = vi.fn()
-    const runtimeWindow = (globalThis as any).window
-    const restoreWindow = overrideGlobalProperty('window', {
-      ...runtimeWindow,
-      scrollTo,
-    })
-    try {
-      const scrollResult = await pageScrollTo({
-        scrollTop: 128,
-        duration: 0,
-      }) as { errMsg: string }
-      expect(scrollResult.errMsg).toBe('pageScrollTo:ok')
-      expect(scrollTo).toHaveBeenCalledWith(0, 128)
-    }
-    finally {
-      restoreWindow()
-    }
+    const pageContainer = document.querySelector('#app') as HTMLElement
+    pageContainer.scrollTop = 0
+    const scrollResult = await pageScrollTo({
+      scrollTop: 128,
+      duration: 0,
+    }) as { errMsg: string }
+    expect(scrollResult.errMsg).toBe('pageScrollTo:ok')
+    expect(pageContainer.scrollTop).toBe(128)
   })
 
   it('shows and hides loading overlay', async () => {
@@ -3832,6 +4704,42 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('loads a font face into the browser font set', async () => {
+    const loadedFace = { family: 'uicon-iconfont' }
+    const load = vi.fn().mockResolvedValue(loadedFace)
+    const constructorCalls: unknown[][] = []
+    class FontFaceMock {
+      load = load
+
+      constructor(...args: unknown[]) {
+        constructorCalls.push(args)
+      }
+    }
+    const add = vi.fn()
+    const restoreFontFace = overrideGlobalProperty('FontFace', FontFaceMock)
+    const originalFonts = document.fonts
+    Object.defineProperty(document, 'fonts', {
+      configurable: true,
+      value: { add },
+    })
+
+    try {
+      await expect(loadFontFace({
+        family: 'uicon-iconfont',
+        source: 'url("/fonts/uicon.ttf")',
+      })).resolves.toEqual({ errMsg: 'loadFontFace:ok' })
+      expect(constructorCalls).toContainEqual(['uicon-iconfont', 'url("/fonts/uicon.ttf")', undefined])
+      expect(add).toHaveBeenCalledWith(loadedFace)
+    }
+    finally {
+      restoreFontFace()
+      Object.defineProperty(document, 'fonts', {
+        configurable: true,
+        value: originalFonts,
+      })
+    }
+  })
+
   it('writes clipboard by navigator.clipboard when available', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     const runtimeNavigator = (globalThis as any).navigator
@@ -3949,6 +4857,39 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('normalizes the browser locale for uni-app consumers', () => {
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      language: 'zh-TW',
+    })
+    try {
+      expect(getLocale()).toBe('zh-Hant')
+      expect((globalThis as any).wx.getLocale()).toBe('zh-Hant')
+    }
+    finally {
+      restoreNavigator()
+    }
+  })
+
+  it('provides the uni-app event bus contract', () => {
+    const persistent = vi.fn()
+    const once = vi.fn()
+    $on('component:update', persistent)
+    $once('component:update', once)
+
+    $emit('component:update', 1, 'first')
+    $emit('component:update', 2, 'second')
+
+    expect(persistent).toHaveBeenNthCalledWith(1, 1, 'first')
+    expect(persistent).toHaveBeenNthCalledWith(2, 2, 'second')
+    expect(once).toHaveBeenCalledOnce()
+    expect(once).toHaveBeenCalledWith(1, 'first')
+
+    $off('component:update', persistent)
+    $emit('component:update', 3)
+    expect(persistent).toHaveBeenCalledTimes(2)
+    $off()
+  })
+
   it('supports getSystemInfo async wrapper', async () => {
     const restoreNavigator = overrideGlobalProperty('navigator', {
       language: 'zh-CN',
@@ -4035,6 +4976,14 @@ describe('web runtime wx utility APIs', () => {
           height: 844,
         },
       })
+
+      expect(getSystemInfoSync()).toMatchObject({
+        safeAreaInsets: { left: 0, right: 0, top: 0, bottom: 0 },
+        windowTop: 0,
+        windowBottom: 0,
+      })
+      expect(rpx2px(750)).toBe(390)
+      expect(upx2px(375)).toBe(195)
 
       const menuRect = getMenuButtonBoundingClientRect()
       expect(menuRect).toMatchObject({

@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import {
   APP_PRELUDE_CHUNK_MARKER,
   APP_PRELUDE_GUARD_KEY,
@@ -17,11 +18,12 @@ import {
   REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME,
   REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER,
 } from '@weapp-core/constants'
+import MagicString from 'magic-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
-import { normalizeWatchPath } from '../../../utils/path'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 import { collectActiveHmrImportedChunkIds, createSubPackageMatcher, shouldWarmupBundleScriptAnalysis } from './emit/generate'
+import { resolveRequestGlobalsExportName, resolveRequestGlobalsInstallerName } from './emit/requestGlobals'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => 'globalThis.__probe = (globalThis.__probe || 0) + 1'))
 const transformWithOxcMock = vi.hoisted(() => vi.fn(async (code: string) => ({ code })))
@@ -39,7 +41,6 @@ const createBundleChunkSnapshotMock = vi.hoisted(() => vi.fn((bundle: Record<str
 const filterPluginBundleOutputsMock = vi.hoisted(() => vi.fn())
 const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
 const formatBytesMock = vi.hoisted(() => vi.fn((value: number) => `${value}B`))
-const refreshModuleGraphMock = vi.hoisted(() => vi.fn())
 const refreshPartialSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const refreshSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
@@ -78,7 +79,6 @@ vi.mock('../helpers', () => ({
   filterPluginBundleOutputs: filterPluginBundleOutputsMock,
   flushIndependentBuilds: flushIndependentBuildsMock,
   formatBytes: formatBytesMock,
-  refreshModuleGraph: refreshModuleGraphMock,
   refreshPartialSharedChunkImporters: refreshPartialSharedChunkImportersMock,
   refreshSharedChunkImporters: refreshSharedChunkImportersMock,
   removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
@@ -125,8 +125,6 @@ function createState(overrides: Record<string, any> = {}) {
     },
     entriesMap: new Map(),
     pendingIndependentBuilds: [],
-    moduleImporters: new Map(),
-    entryModuleIds: new Set(),
     watchFilesSnapshot: [],
     hmrState: {
       didEmitAllEntries: false,
@@ -173,6 +171,17 @@ function createBundleAssetEmitter(bundle: Record<string, any>) {
 }
 
 describe('core lifecycle emit hook extra branches', () => {
+  it('distinguishes the public request globals installer from its internal target helper', () => {
+    const code = [
+      'function installSingleTarget(host,target){if(target==="fetch")host.fetch=fetch;if(target==="Headers")host.Headers=Headers;if(target==="Request")host.Request=Request;if(target==="Response")host.Response=Response;if(target==="TextEncoder")host.TextEncoder=TextEncoder;if(target==="TextDecoder")host.TextDecoder=TextDecoder;if(target==="AbortController")host.AbortController=AbortController;if(target==="AbortSignal")host.AbortSignal=AbortSignal;if(target==="XMLHttpRequest")host.XMLHttpRequest=XMLHttpRequest;if(target==="WebSocket")host.WebSocket=WebSocket}',
+      'function installWebRuntimeGlobals(options={}){const targets=resolveInstallTargets(options.targets??["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"]);for(const target of targets)installSingleTarget(globalThis,target);return globalThis}',
+      'Object.defineProperty(exports,"installWebRuntimeGlobals",{enumerable:true,get:function(){return installWebRuntimeGlobals}})',
+    ].join(';')
+
+    expect(resolveRequestGlobalsInstallerName(code)).toBe('installWebRuntimeGlobals')
+    expect(resolveRequestGlobalsExportName(code)).toBe('installWebRuntimeGlobals')
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     flushIndependentBuildsMock.mockResolvedValue(undefined)
@@ -241,7 +250,7 @@ describe('core lifecycle emit hook extra branches', () => {
     })).toBe(false)
   })
 
-  it('creates renderStart runtime and stores watch files snapshot', async () => {
+  it('creates renderStart runtime without forwarding module dependencies as watch files', async () => {
     emitWxmlAssetsWithCacheMock.mockImplementationOnce(({ runtime }) => {
       runtime.addWatchFile?.('foo\\\\bar//main.wxml')
       runtime.emitFile({ type: 'asset', fileName: 'a.wxml', source: '<view />' })
@@ -259,7 +268,7 @@ describe('core lifecycle emit hook extra branches', () => {
     })
 
     expect(emitJsonAssetsMock).toHaveBeenCalledTimes(1)
-    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('foo\\\\bar//main.wxml'))
+    expect(addWatchFile).not.toHaveBeenCalled()
     expect(emitFile).toHaveBeenCalledWith({
       type: 'asset',
       fileName: 'a.wxml',
@@ -469,10 +478,9 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(flushIndependentBuildsMock).toHaveBeenCalledTimes(1)
     expect(filterPluginBundleOutputsMock).toHaveBeenCalledWith(bundle, state.ctx.configService)
     expect(removeImplicitPagePreloadsMock).not.toHaveBeenCalled()
-    expect(refreshModuleGraphMock).not.toHaveBeenCalled()
   })
 
-  it('drops js chunks during metadata-only dev hmr to keep stable shared chunks on disk', async () => {
+  it('drops graph-only chunks during metadata-only dev hmr', async () => {
     const state = createState({
       subPackageMeta: undefined,
       ctx: {
@@ -514,10 +522,6 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(refreshSharedChunkImportersMock).not.toHaveBeenCalled()
     expect(refreshPartialSharedChunkImportersMock).not.toHaveBeenCalled()
     expect(applySharedChunkStrategyMock).not.toHaveBeenCalled()
-    expect(applyRuntimeChunkLocalizationMock).not.toHaveBeenCalled()
-    expect(removeImplicitPagePreloadsMock).not.toHaveBeenCalled()
-    expect(syncChunkImportsFromRequireCallsMock).not.toHaveBeenCalled()
-    expect(refreshModuleGraphMock).not.toHaveBeenCalled()
   })
 
   it('drops incomplete stable shared chunks during partial dev hmr rebuilds', async () => {
@@ -575,7 +579,7 @@ describe('core lifecycle emit hook extra branches', () => {
     )
   })
 
-  it('keeps active runtime vendor chunks during partial dev hmr rebuilds', async () => {
+  it('keeps infrastructure runtimes without emitting partial wevu vendors during hmr', async () => {
     const emittedChunkFileNames = new Set<string>()
     const state = createState({
       subPackageMeta: undefined,
@@ -866,7 +870,6 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(state.hmrState.hasBuiltOnce).toBe(true)
     expect(state.watchFilesSnapshot).toEqual([])
     expect(removeImplicitPagePreloadsMock).toHaveBeenCalledTimes(1)
-    expect(refreshModuleGraphMock).toHaveBeenCalledTimes(1)
   })
 
   it('uses partial shared chunk importer refresh during hmr incremental builds', async () => {
@@ -2116,7 +2119,8 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'common.js',
         code: [
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'const __keep__ = [XMLHttpRequest, WebSocket];',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: [],
@@ -2377,7 +2381,7 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(code).not.toContain('require("./weapp-vendors/request-globals-web-apis-shared.js")')
   })
 
-  it('injects bundled runtime installation right after the first require when installer chunk has imports', async () => {
+  it('injects bundled runtime installation after installer chunk initialization', async () => {
     const state = createState({
       subPackageMeta: null,
       entriesMap: new Map([
@@ -2402,7 +2406,8 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'const e=require("./common.js");',
           'const __keep__ = [Request, WebSocket];',
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'const hosts = [globalThis];',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return hosts[0] || { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: ['common.js'],
@@ -2414,9 +2419,10 @@ describe('core lifecycle emit hook extra branches', () => {
 
     const code = bundle['dist.js'].code
     expect(code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
-    expect(code).toContain(`const e=require("./common.js");const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
+    expect(code).toContain(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
     expect(code).not.toContain(`Request = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.Request`)
-    expect(code.indexOf(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn`)).toBeLessThan(code.indexOf('Object.defineProperty(exports,`At`'))
+    expect(code.indexOf(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn`)).toBeGreaterThan(code.indexOf('const hosts = [globalThis]'))
+    expect(code.indexOf(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn`)).toBeGreaterThan(code.indexOf('Object.defineProperty(exports,`At`'))
   })
 
   it('does not overwrite same-named module locals when ESM runtime installation is appended', async () => {
@@ -2855,6 +2861,100 @@ describe('core lifecycle emit hook extra branches', () => {
     const appCode = bundle['app.js'].code
     expect(appCode).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(appCode).not.toContain(APP_PRELUDE_CHUNK_MARKER)
+  })
+
+  it('emits synthetic request globals prelude in default require mode without user app.prelude file', async () => {
+    const emittedAssets: Array<{ fileName: string, source: string, type: 'asset' }> = []
+    const source = 'src/pages/issue-764/sourcemap.ts'
+    const pageSource = [
+      `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ const before = 1`,
+      'const issue764SourcemapMarker = "issue 764 sourcemap marker"',
+      'Page({ data: { before, issue764SourcemapMarker } })',
+    ].join('\n')
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: undefined,
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(''),
+        imports: [],
+        dynamicImports: [],
+      },
+      'axios.js': {
+        type: 'chunk',
+        fileName: 'axios.js',
+        code: 'const common = require("./common.js");const supportsXhr = typeof XMLHttpRequest !== "undefined"',
+        imports: ['common.js'],
+        dynamicImports: [],
+      },
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: 'require("./axios.js");App({})',
+        imports: ['axios.js'],
+        dynamicImports: [],
+      },
+      'pages/issue-764/sourcemap.js': {
+        type: 'chunk',
+        fileName: 'pages/issue-764/sourcemap.js',
+        isEntry: true,
+        code: pageSource,
+        map: new MagicString(pageSource).generateMap({
+          hires: 'boundary',
+          includeContent: true,
+          source,
+        }),
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({ emitFile: (asset: any) => emittedAssets.push(asset) }, {}, bundle)
+
+    const axiosCode = bundle['axios.js'].code
+    const pageChunk = bundle['pages/issue-764/sourcemap.js']
+    const appPreludeAsset = emittedAssets.find(asset => asset.fileName === 'app.prelude.js')
+    const generatedIndex = pageChunk.code.indexOf('issue 764 sourcemap marker')
+    const generatedBeforeMarker = pageChunk.code.slice(0, generatedIndex).split('\n')
+    const generatedMarkerLinePrefix = generatedBeforeMarker[generatedBeforeMarker.length - 1]
+    const originalPosition = originalPositionFor(new TraceMap(pageChunk.map), {
+      line: generatedBeforeMarker.length,
+      column: generatedMarkerLinePrefix?.length ?? 0,
+    })
+    expect(axiosCode).toContain(`/* ${APP_PRELUDE_REQUIRE_MARKER} */require("./app.prelude.js")`)
+    expect(pageChunk.code).toContain(`/* ${APP_PRELUDE_REQUIRE_MARKER} */require("../../app.prelude.js")`)
+    expect(originalPosition.source).toBe(source)
+    expect(originalPosition.line).toBe(2)
+    expect(appPreludeAsset?.source).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
+    expect(appPreludeAsset?.source).toContain('"XMLHttpRequest"')
+    expect(appPreludeAsset?.source).not.toContain(APP_PRELUDE_CHUNK_MARKER)
   })
 
   it('patches axios chunk defaults env through emit injection', async () => {

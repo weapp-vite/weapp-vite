@@ -132,6 +132,51 @@ const local = 'ok'
     expect(resolveUsingComponentPath).toHaveBeenCalled()
   })
 
+  it('matches lower camel and single-word imports used through kebab-case template tags', async () => {
+    const sfc = parse(`
+<template>
+  <year-panel />
+  <month />
+</template>
+<script setup lang="ts">
+import yearPanel from './yearPanel/year-panel.vue'
+import Month from './month/month.vue'
+</script>
+    `.trim(), { filename: '/project/src/components/calendar-view/index.vue' })
+
+    const resolveUsingComponentPath = vi.fn(async (importSource: string) => ({
+      from: `/components/${importSource.slice(2, -4)}`,
+    }))
+    const componentSourceInfo = await collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/components/calendar-view/index.vue',
+      compileOptions: undefined,
+      autoUsingComponents: {
+        resolveUsingComponentPath,
+      },
+      autoImportTags: undefined,
+    })
+
+    const result = await compileScriptPhase(
+      sfc.descriptor as any,
+      sfc.descriptor as any,
+      '/project/src/components/calendar-view/index.vue',
+      undefined,
+      { resolveUsingComponentPath },
+      undefined,
+      false,
+      componentSourceInfo,
+    )
+
+    expect(result.autoUsingComponentsMap).toEqual({
+      'month': '/components/month/month',
+      'year-panel': '/components/yearPanel/year-panel',
+    })
+    expect(result.script).not.toContain('import yearPanel')
+    expect(result.script).not.toContain('import Month')
+  })
+
   it('keeps a real default export for script-setup-only components', async () => {
     const sfc = parse(`
 <template>
@@ -158,6 +203,28 @@ const props = defineProps({
     expect(result.script).toContain('createWevuComponent')
   })
 
+  it('exports component options without registering when the logical entry owns registration', async () => {
+    const sfc = parse(`
+<template><view /></template>
+<script setup lang="ts">
+const label = 'logical entry component'
+</script>
+    `.trim(), { filename: '/project/src/components/LogicalEntry/index.vue' })
+
+    const result = await compileScriptPhase(
+      sfc.descriptor as any,
+      sfc.descriptor as any,
+      '/project/src/components/LogicalEntry/index.vue',
+      { skipComponentTransform: true },
+      undefined,
+      undefined,
+      false,
+    )
+
+    expect(result.script).toContain('export default')
+    expect(result.script).not.toContain('createWevuComponent')
+  })
+
   it('uses the compiled script setup fast path through compileVueFile when sourcemap is disabled', async () => {
     const result = await compileVueFile(`
 <template><view /></template>
@@ -179,6 +246,20 @@ const shared = createSharedLabel('sfc-page')
     expect(result.script).not.toContain('from \'vue\'')
     expect(result.script).not.toContain('__isScriptSetup')
     expect(result.script).not.toContain('__expose')
+  })
+
+  it('removes TypeScript non-null assertions from compiled script setup output', async () => {
+    const result = await compileVueFile(`
+<template><view :class="child.$.exposed!.getShowPop() ? 'active' : ''" /></template>
+<script setup lang="ts">
+const value = child.$.exposed!.getShowPop()
+</script>
+    `.trim(), '/project/src/components/TypedCard/index.vue', {
+      sourceMap: false,
+    })
+
+    expect(result.script).toContain('child.$.exposed.getShowPop()')
+    expect(result.script).not.toContain('exposed!')
   })
 
   it('adds fallback default export for normal script without default export', async () => {
@@ -533,8 +614,8 @@ import SecondCard from './second-card.vue'
 
     const result = await resultPromise
     expect(result.autoUsingComponentsMap).toEqual({
-      FirstCard: '/components/first-card',
-      SecondCard: '/components/second-card',
+      'first-card': '/components/first-card',
+      'second-card': '/components/second-card',
     })
     expect([...result.wevuComponentTags]).toEqual([
       'FirstCard',
@@ -735,7 +816,7 @@ import FirstCard from './first-card.vue'
 
     const result = await resultPromise
     expect(result.autoUsingComponentsMap).toEqual({
-      FirstCard: '/components/first-card',
+      'first-card': '/components/first-card',
     })
     expect(result.autoImportTagsMap).toEqual({
       'auto-card': '/components/auto-card',

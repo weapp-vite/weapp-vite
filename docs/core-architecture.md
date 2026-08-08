@@ -29,9 +29,12 @@ packages/weapp-vite/
 ├── src/                          # 源代码目录
 │   ├── cli/                      # CLI 命令实现
 │   │   └── commands/             # 各个子命令（build, serve, npm 等）
+│   ├── backends/                 # 内部平台后端 contract、registry 与内置 driver
 │   ├── context/                  # 编译器上下文管理
+│   ├── moduleGraph/              # 真实模块图 adapter 与逻辑入口协议
 │   ├── plugins/                  # 核心 Vite 插件
 │   ├── runtime/                  # 运行时服务实现
+│   ├── runtimeProviders/         # 编译产物 runtime contract、registry 与 resolver
 │   ├── types/                    # TypeScript 类型定义
 │   ├── utils/                    # 工具函数
 │   ├── auto-import-components/   # 自动导入组件
@@ -53,9 +56,14 @@ packages/weapp-vite/
 
 ### 1. 整体架构
 
-weapp-vite 采用**服务导向架构（Service-Oriented Architecture）**，通过 `CompilerContext` 将各个服务协调起来：
+weapp-vite 采用**服务导向架构（Service-Oriented Architecture）**。CLI 先通过内部 platform backend registry 生成有序执行计划，再由 backend driver 委托 `CompilerContext` 中的既有服务：
 
 ```
+┌─────────────────────────────────────────────────────────────┐
+│ PlatformBackendRegistry / ResolvedBackendExecution          │
+│ miniprogram backend → web backend（按 capability 过滤）      │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ driver delegation
 ┌─────────────────────────────────────────────────────────────┐
 │                     CompilerContext                         │
 ├─────────────────────────────────────────────────────────────┤
@@ -69,10 +77,12 @@ weapp-vite 采用**服务导向架构（Service-Oriented Architecture）**，通
 │  │WatcherService│  │AutoImportSvc │  │AutoRoutesSvc │      │
 │  └──────────────┘  └──────────────┘  └──────────────┘      │
 │  ┌──────────────┐  ┌──────────────┐                        │
-│  │ WebService   │  │ RuntimeState │                        │
-│  └──────────────┘  └──────────────┘                        │
+│  │ WebService   │  │ModuleGraphSvc│  │ RuntimeState │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+platform backend 是 CLI 与服务层之间的内部编排边界，不是第三方注册 API。第一阶段的详细 contract、执行顺序与后续阶段边界见 [平台后端运行时架构](./architecture/platform-backend-runtime.md)。
 
 ### 2. 入口文件
 
@@ -190,6 +200,7 @@ export function vitePluginWeapp(ctx, subPackageMeta?): Plugin[] {
 
 **核心功能**:
 - 入口加载和模块解析
+- 通过逻辑虚拟入口把 script、template、style、JSON、WXS、layout 与 `usingComponents` 接入真实模块图
 - WXML 文件处理和组件注册
 - Chunk 共享策略（主包与分包之间）
 - 独立分包构建
@@ -307,6 +318,47 @@ JSON 配置处理服务。
 
 Web 运行时服务，用于 H5 平台构建。
 
+### 11. **Platform Backend** (`src/backends/`)
+
+平台后端层负责：
+
+- 通过 `PlatformBackendDescriptor` 声明 backend id、别名、runtime 和 capabilities。
+- 通过 `PlatformBackendRegistry` 校验唯一性、解析平台别名并确定执行顺序。
+- 通过 `ResolvedBackendExecution` 向 CLI 提供单一执行计划，替代散落的 `runMini` / `runWeb` 控制流。
+- 通过内置 driver 生成目标 inline config，并委托 `BuildService`、`WebService` 与现有 config merge 实现。
+- 在命令结束时关闭 backend 持有的 watcher 或 Vite dev server 资源。
+
+`runtimeTarget.ts` 继续保留公开兼容门面，但其目标解析来自 backend registry。六个小程序平台的标识、别名与静态平台能力仍统一来自 `@weapp-core/shared` 的 `MiniProgramPlatformDescriptor`。
+
+### 12. **ModuleGraphService** (`src/moduleGraph/`)
+
+`ModuleGraphService` 是 `CompilerContext` 内部的 compiler/build infrastructure，不是公开 API，也不是 platform backend。它通过窄 adapter 统一读取两类真实图：
+
+- 构建期 `PluginContext` 的 `getModuleIds()`、`getModuleInfo()`、`resolve()` 与 `load()`。
+- Vite dev server 的只读 `moduleGraph` 查询和模块失效。
+
+源码 import/importer 关系只由 Vite/Rolldown 图持有。app、page、component 与 layout 使用稳定的逻辑虚拟入口；逻辑入口静态导入物理 script，并通过 sidecar virtual module 静态关联 template、style、JSON、WXS、layout 和 `usingComponents`。sidecar source 使用带稳定 marker 的 raw module request，仍经过正常 resolver 链，因此 alias、npm 和 `srcRoot` 外部 linked module 与普通源码依赖采用相同解析语义。
+
+`addWatchFile` 只用于配置依赖、glob/目录拓扑、缺失 sidecar 候选和预处理器 include 等不能合理表示为模块的外部输入。无法直接映射到现有模块的 create/delete 会进入唯一的 topology full rescan 请求，不存在静默全量 fallback。
+
+源码图与输出图分开管理：`ModuleGraphService` 负责源码 importer 追溯和失效；core plugin 只缓存 chunk module membership、chunk imports 与 chunk 到逻辑入口的输出归属。`generateBundle` 不再从 bundle 反推源码 import graph，最终文件仍完全由 Vite/Rolldown emit/generate/write。
+
+### 13. **Runtime Provider** (`src/runtimeProviders/`)
+
+Runtime provider 是 backend 与编译器之间的内部运行时绑定层，不是第三方注册 API。backend 决定构建目标和生命周期，编译模式决定当前产物需要哪一种 runtime：
+
+| Provider | Backend | 编译模式 | 注入方式 |
+|----------|---------|----------|----------|
+| `native-miniprogram` | miniprogram | native | 不注入框架 runtime |
+| `wevu-miniprogram` | miniprogram | Vue SFC | 通过稳定虚拟入口注入 wevu runtime |
+| `web-runtime` | web | Web | 通过稳定虚拟入口注入 `@weapp-vite/web/runtime` |
+
+编译器只生成 `virtual:weapp-vite/runtime` 模块族，不直接引用具体 runtime 包路径。`@weapp-core/constants` 持有 contract version 和虚拟 ID，`@weapp-core/shared` 持有跨包 descriptor 类型，`RuntimeProviderRegistry` 根据 backend 与编译模式选择唯一 provider。Vite resolver 再把虚拟入口解析到 provider 声明的 development/production 入口。Web provider 会先按 Node package exports 定位自身物理入口，避免应用 tsconfig alias 把包子路径改写到错误位置，然后仍交给 Vite resolve/load 和 Rolldown bundle。
+
+wevu 保留 runtime、reactivity 与 template 三个语义入口，避免破坏既有 shared chunk 拆分。Web 编译器的 runtime import 与 HMR accept footer 都由 `web-runtime` provider 注入。provider 缺少入口、入口无法解析或 contract version 不匹配时直接报错，不允许静默切换到其他 runtime。
+
+该层只负责模块绑定和 HMR contract，不拥有源码 import graph、output graph 或文件写入。最终 runtime chunk 仍由 Vite/Rolldown 的 resolve、load、emit 和 write 生命周期生成。
+
 ---
 
 ## Chunk 共享策略
@@ -343,6 +395,8 @@ type SharedChunkStrategy = 'hoist' | 'duplicate'
 | `src/context/CompilerContext.ts` | 14-29 | 上下文类型定义 |
 | `src/types/config.ts` | 329-477 | 配置类型定义 |
 | `src/runtime/buildPlugin.ts` | 31-374 | 构建服务实现 |
+| `src/backends/` | - | 内部平台后端 contract、registry、执行计划与内置 driver |
+| `src/runtimeProviders/` | - | 内部 runtime provider contract、registry、选择与 Vite resolver |
 
 ---
 

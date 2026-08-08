@@ -1,7 +1,7 @@
 {
   "name": "@weapp-core/shared",
   "type": "module",
-  "version": "3.0.5",
+  "version": "3.1.0",
   "description": "@weapp-core/shared",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -28,6 +28,10 @@
       "./fs": {
         "types": "./src/fs/index.ts",
         "default": "./src/fs/index.ts"
+      },
+      "./platforms": {
+        "types": "./src/platforms/index.ts",
+        "default": "./src/platforms/index.ts"
       }
     },
     "main": "./src/index.ts",
@@ -46,6 +50,10 @@
     "./fs": {
       "types": "./dist/fs/index.d.ts",
       "import": "./dist/fs/index.js"
+    },
+    "./platforms": {
+      "types": "./dist/platforms/index.d.ts",
+      "import": "./dist/platforms/index.js"
     }
   },
   "main": "./dist/index.js",
@@ -81,6 +89,10 @@
       "./fs": {
         "types": "./dist/fs/index.d.ts",
         "import": "./dist/fs/index.js"
+      },
+      "./platforms": {
+        "types": "./dist/platforms/index.d.ts",
+        "import": "./dist/platforms/index.js"
       }
     },
     "main": "./dist/index.js",

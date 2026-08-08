@@ -1,3 +1,4 @@
+import type { ModuleGraphService } from '../moduleGraph'
 import type { AutoImportService } from '../runtime/autoImportPlugin'
 import type { AutoRoutesService } from '../runtime/autoRoutesPlugin'
 import type { BuildService } from '../runtime/buildPlugin'
@@ -19,6 +20,7 @@ export interface CompilerContext {
   npmService: NpmService
   wxmlService: WxmlService
   jsonService: JsonService
+  moduleGraphService: ModuleGraphService
   watcherService: WatcherService
   webService: WebService
   autoImportService: AutoImportService
@@ -26,6 +28,7 @@ export interface CompilerContext {
   buildService: BuildService
   scanService: ScanService
   currentBuildTarget?: BuildTarget
+  onStatefulHmrSourceChange?: (file: string, dirtyReasonSummary: string[]) => void
 }
 
 export type MutableCompilerContext = Partial<Omit<CompilerContext, 'runtimeState'>> & {
@@ -34,6 +37,7 @@ export type MutableCompilerContext = Partial<Omit<CompilerContext, 'runtimeState
   npmService?: NpmService
   wxmlService?: WxmlService
   jsonService?: JsonService
+  moduleGraphService: ModuleGraphService
   watcherService?: WatcherService
   webService?: WebService
   autoImportService?: AutoImportService
@@ -41,4 +45,5 @@ export type MutableCompilerContext = Partial<Omit<CompilerContext, 'runtimeState
   buildService?: BuildService
   scanService?: ScanService
   currentBuildTarget?: BuildTarget
+  onStatefulHmrSourceChange?: (file: string, dirtyReasonSummary: string[]) => void
 }

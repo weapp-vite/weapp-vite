@@ -1,4 +1,5 @@
 import { getMiniProgramDirectivePrefix, getSupportedMiniProgramPlatforms } from '@weapp-core/shared'
+import { resolveNativeComponentWebTag } from './nativeComponents'
 
 const CONTROL_ATTR_SUFFIXES = [
   'if',
@@ -82,35 +83,11 @@ export function hasControlAttribute(
 }
 
 export function normalizeTagName(name: string) {
+  const nativeComponentTag = resolveNativeComponentWebTag(name)
+  if (nativeComponentTag) {
+    return nativeComponentTag
+  }
   switch (name) {
-    case 'view':
-    case 'cover-view':
-    case 'navigator':
-    case 'scroll-view':
-    case 'swiper':
-    case 'swiper-item':
-    case 'movable-area':
-    case 'movable-view':
-    case 'cover-image':
-      return 'div'
-    case 'text':
-    case 'icon':
-      return 'span'
-    case 'image':
-      return 'img'
-    case 'button':
-      return 'weapp-button'
-    case 'input':
-      return 'input'
-    case 'textarea':
-      return 'textarea'
-    case 'form':
-      return 'form'
-    case 'label':
-      return 'label'
-    case 'picker':
-    case 'picker-view':
-      return 'select'
     case 'block':
       return '#fragment'
     case 'slot':
@@ -123,9 +100,6 @@ export function normalizeTagName(name: string) {
 export function normalizeAttributeName(name: string) {
   if (name === 'class' || name === 'style' || name.startsWith('data-')) {
     return name
-  }
-  if (name === 'hover-class') {
-    return 'data-hover-class'
   }
   return name.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`)
 }

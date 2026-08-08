@@ -118,6 +118,9 @@ Page({
       })
     })
   },
+  neverResolve() {
+    return new Promise(() => {})
+  },
 })
 `)
   writeText(path.join(root, 'dist/pages/index/index.wxml'), `
@@ -198,7 +201,9 @@ Page({
   goDetailWithCallbacks() {
     wx.navigateTo({
       url: '../detail/index?from=home-callback',
-      success: () => this.push('home:navigateTo:success'),
+      success: () => {
+        this.push('home:navigateTo:success:' + getCurrentPages().at(-1).route)
+      },
       complete: () => this.push('home:navigateTo:complete'),
     })
   },
@@ -351,6 +356,10 @@ Page({
   },
 })
 `)
+
+  for (const page of ['home', 'detail', 'settings', 'profile']) {
+    writeText(path.join(root, `dist/pages/${page}/index.wxml`), `<view>${page}</view>`)
+  }
 
   return root
 }
@@ -1850,6 +1859,14 @@ Page({
       })
     })
   },
+  async inspectReadyBeforeSelection() {
+    await Promise.resolve()
+    const card = this.selectComponent('#status-card')
+    return {
+      card: Boolean(card),
+      ready: globalThis.__statusCardReady === true
+    }
+  },
   inspectScopedQuery() {
     const card = this.selectComponent('#status-card')
     wx.createSelectorQuery()
@@ -1933,6 +1950,13 @@ Component({
       blur: '',
       change: '',
       input: ''
+    }
+  },
+  lifetimes: {
+    ready() {
+      Promise.resolve().then(() => {
+        globalThis.__statusCardReady = true
+      })
     }
   },
   methods: {

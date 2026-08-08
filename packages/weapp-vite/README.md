@@ -28,11 +28,14 @@
 - ⚡️ **Vite 构建**：带来了 `typescript` / `scss` / `less` 等等的原生支持
 - ♻️ **实验性状态保持 HMR**：微信开发者工具中可保留 Page/Component/wevu 状态并替换 JavaScript 方法
 - 🔌 **插件生态**：Vite 插件生态支持，也可以自定义编写插件，方便扩展
+- 🌐 **实验性 Web Runtime**：同一份原生 WXML/WXSS/TS 或 wevu Vue SFC 源码可通过 `-p web` 启动和构建浏览器版本
+- 🧩 **实验性 uni-app 组件库兼容**：通过显式依赖白名单与 `WotUiResolver()` 在微信小程序和 Web 中使用 Wot UI Vue SFC
 - 🧰 **IDE 命令增强**：可直接透传 `weapp-ide-cli` 全量命令（`preview/upload/config/automator` 等）
+- 🧪 **真实产物单测**：`weapp-vite/test` 提供不启动 CLI 的程序化测试构建入口，可配合 `@mpcore/test` 测试页面和组件
 
 ## 快速开始
 
-微信项目可选择开启实验性状态保持热更新：
+微信项目默认会根据微信开发者工具的热重载设置选择 HMR 模式。也可以显式锁定模式：
 
 ```ts
 export default defineConfig({
@@ -44,9 +47,20 @@ export default defineConfig({
 })
 ```
 
-默认仍为 `classic`。实验模式要求微信开发者工具开启热重载；CSS、资源、配置和不兼容更新会自动回退完整构建与当前路由重载。
+未配置 `weapp.hmr.runtime` 时，`wv dev` 会在启动时读取 `project.private.config.json.setting.compileHotReLoad`：开启时使用 `stateful-experimental`，关闭或无法确认时使用 `classic`。启动日志会以 `HMR 模式` 和 `HMR 切换` 两行显示最终模式、选择来源和切换方法。显式设置 `classic` 或 `stateful-experimental` 会覆盖自动选择。修改 DevTools 设置后请重启 `wv dev`；CSS、资源、配置和不兼容更新会自动回退完整构建与当前路由重载。
 
 > 说明：CLI 同时支持完整命令 `weapp-vite` 与简写命令 `wv`，两者等价。下面的示例默认使用 `weapp-vite`，你也可以按个人习惯替换成 `wv`。
+
+### Web 项目
+
+项目根目录提供引用 `/@weapp-vite/web/entry` 的 `index.html` 后，可以直接运行同一份小程序源码：
+
+```bash
+wv dev -p web --host
+wv build -p web
+```
+
+`web` 是浏览器 runtime 的规范平台名，`h5` 仅作为向后兼容别名保留；未选择 Web 平台时不改变现有小程序构建。完整配置和兼容边界见 [Web 运行时配置](https://vite.icebreaker.top/config/web) 与 [`@weapp-vite/web`](https://vite.icebreaker.top/packages/web)。
 
 ### Vue 项目
 
@@ -112,6 +126,7 @@ function handleClick() {
 - defineConfig 重载说明：[docs/define-config-overloads.md](./docs/define-config-overloads.md)
 - Vite 插件识别 weapp-vite 宿主：https://vite.icebreaker.top/guide/vite-plugin-host
 - MCP 集成使用指南：[docs/mcp.md](./docs/mcp.md)
+- Wot UI 与 uni-app 组件库：[docs/packaged/uni-app-component-libraries.md](./docs/packaged/uni-app-component-libraries.md)
 
 ## AI 项目指引
 
@@ -143,6 +158,7 @@ function handleClick() {
 - `ai-workflows.md`
 - `project-structure.md`
 - `weapp-config.md`
+- `uni-app-component-libraries.md`
 - `wevu-authoring.md`
 - `vue-sfc.md`
 - `troubleshooting.md`
@@ -369,6 +385,18 @@ export default defineConfig({
 ```
 
 详细说明见：[docs/mcp.md](./docs/mcp.md)
+
+## 小程序页面与组件测试
+
+`buildTestArtifact()` 会通过 Vite/Rolldown 把真实编译产物输出到隔离目录，供 mpcore 测试环境消费：
+
+```ts
+import { buildTestArtifact } from 'weapp-vite/test'
+
+const artifact = await buildTestArtifact({ cwd: process.cwd() })
+```
+
+默认输出目录是 `.weapp-vite/test-artifacts/`。完整的 render、查询、交互和 Vitest 接入见 [测试指南](./docs/packaged/testing.md)。
 
 ## Contribute
 

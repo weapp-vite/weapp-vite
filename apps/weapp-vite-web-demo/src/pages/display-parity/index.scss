@@ -1,0 +1,160 @@
+page {
+  min-height: 100%;
+  color: #18202a;
+  background: #eef1f4;
+}
+
+.display-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 12px 13.5px;
+  background: #eef1f4;
+}
+
+.display-page__eyebrow,
+.display-page__title,
+.display-page__caption,
+.section-heading__title,
+.section-heading__value,
+.icon-item__label,
+.progress-row__label,
+.event-result__label,
+.event-result__value {
+  display: block;
+}
+
+.display-page__intro {
+  box-sizing: border-box;
+  height: 60.5px;
+  padding: 2px 2px 10px;
+}
+
+.display-page__eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 11px;
+  color: #087f5b;
+}
+
+.display-page__title {
+  margin-top: 3px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.display-page__caption {
+  margin-top: 3px;
+  font-size: 10.5px;
+  line-height: 13px;
+  color: #66717f;
+}
+
+.icon-panel,
+.progress-panel,
+.rich-panel {
+  box-sizing: border-box;
+  padding: 9px;
+  background: #fff;
+  border: 0.5px solid #dce1e7;
+  border-radius: 5px;
+}
+
+.progress-panel,
+.rich-panel {
+  margin-top: 7px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 14px;
+}
+
+.section-heading__title {
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.section-heading__value {
+  font-size: 8.5px;
+  font-weight: 600;
+  color: #087f5b;
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px 3px;
+  padding-top: 10px;
+}
+
+.icon-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.icon-item__label {
+  margin-top: 4px;
+  font-size: 8.5px;
+  line-height: 10px;
+  color: #65727d;
+}
+
+.progress-panel {
+  height: 92px;
+}
+
+.progress-row {
+  display: grid;
+  grid-template-columns: 31px minmax(0, 1fr);
+  align-items: center;
+  margin-top: 11px;
+}
+
+.progress-row__label {
+  font-size: 9.5px;
+  color: #5e6b76;
+}
+
+.rich-panel {
+  height: 125px;
+}
+
+.rich-block {
+  margin-top: 7px;
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.rich-block--html {
+  padding: 7px 9px;
+  background: #f8faf9;
+  border-left: 2px solid #0b7f5b;
+}
+
+.event-result {
+  box-sizing: border-box;
+  height: 39px;
+  padding: 7.5px 9px;
+  margin-top: 7px;
+  background: #18202a;
+  border-radius: 4px;
+}
+
+.event-result__label {
+  font-size: 8.5px;
+  font-weight: 600;
+  line-height: 10px;
+  color: #6ee7b7;
+}
+
+.event-result__value {
+  margin-top: 2.5px;
+  font-size: 9.5px;
+  line-height: 11.5px;
+  color: #fff;
+}

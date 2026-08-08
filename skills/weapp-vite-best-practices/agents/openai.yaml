@@ -1,16 +1,11 @@
 interface:
   display_name: Weapp-vite Best Practices
-  short_description: weapp-vite 项目配置、CLI 透传、AI 合约、分包与构建调优
+  short_description: 配置、CLI、HMR、插件、分包、Web runtime 与 native AST 性能治理
   default_prompt: >-
-    当任务主轴是 `weapp-vite` 项目的工程架构、`vite.config.ts` 的 `weapp` 配置、
-    `wv` / `weapp-vite` CLI、`weapp-ide-cli` 透传边界、`preview/upload/config`、
-    `dist/docs`、自动路由、分包、chunk、MCP、Web runtime、lib mode、worker，
-    或下游 app/template 的验证策略时，使用
-    $weapp-vite-best-practices。优先读取项目根 `AGENTS.md` 与本地
-    `node_modules/weapp-vite/dist/docs/`，必要时先重建被修改的包再做窄范围验证。
-    若主轴转为 `.vue` SFC，切到 $weapp-vite-vue-sfc-best-practices；若主轴转为
-    wevu runtime，切到 $wevu-best-practices；若主轴是原生迁移，切到
-    $native-to-weapp-vite-wevu-migration。
+    当任务主轴是 weapp-vite 工程配置、CLI 透传、自动路由、分包、插件、stateful HMR、
+    Web runtime、lib mode、worker 或 native AST 性能时，使用
+    $weapp-vite-best-practices。先读取根 AGENTS.md 与本地 node_modules/weapp-vite/dist/docs/，
+    再给出诊断、最小改动和验证命令。若主轴转为 SFC、wevu runtime、迁移或文档同步，切换对应 skill。
 
 policy:
   allow_implicit_invocation: true

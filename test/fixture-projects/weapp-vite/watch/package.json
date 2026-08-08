@@ -23,7 +23,7 @@
     "g": "weapp-vite generate"
   },
   "dependencies": {
-    "gm-crypto": "^0.1.12"
+    "gm-crypto": "catalog:"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",

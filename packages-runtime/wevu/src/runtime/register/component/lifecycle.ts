@@ -1,3 +1,4 @@
+import type { MiniProgramPageLike } from '../../../routerInternal/shared'
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, RuntimeApp } from '../../types'
 import type { WatchMap } from '../watch'
 import {
@@ -5,6 +6,7 @@ import {
   WEVU_READY_CALLED_KEY,
   WEVU_ROUTE_DONE_CALLED_KEY,
 } from '@weapp-core/constants'
+import { notifyRouteStateSync } from '../../../router/routeSync'
 import { callHookList } from '../../hooks'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
@@ -132,6 +134,12 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
         ;(this as any)[WEVU_ROUTE_DONE_CALLED_KEY] = false
       }
       setRuntimeSetDataVisibility(this, true)
+      if (isPage) {
+        notifyRouteStateSync({
+          page: this as MiniProgramPageLike,
+          source: 'page',
+        })
+      }
       callHookList(this, 'onShow', args)
       if (typeof userOnShow === 'function') {
         return userOnShow.apply(this, args)

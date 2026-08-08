@@ -11,6 +11,7 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/plugin-demo')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const PLUGIN_DIST_ROOT = path.join(APP_ROOT, 'dist-plugin')
 const HOST_ROUTE = '/pages/index/index'
+const PLUGIN_VUE_ROUTE_RE = /^(?:plugin-private:\/\/|__plugin__\/)wxb3d842a4a7e3440d\/pages\/hello-page\/index$/
 
 async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
   let timer: ReturnType<typeof setTimeout> | null = null
@@ -124,7 +125,6 @@ async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
-      skipWarmup: true,
     })
   }
   return sharedMiniProgram
@@ -152,7 +152,11 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
-      const page = await miniProgram.currentPage({ retries: 1, timeout: 5_000 })
+      const page = await miniProgram.currentPage({
+        appFunctionFallback: false,
+        retries: 1,
+        timeout: 5_000,
+      })
       if (normalizeRoutePath(page?.path ?? '') === normalizedExpectedPath) {
         return page
       }
@@ -162,6 +166,45 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
     await delay(220)
   }
   return null
+}
+
+async function waitForVuePluginPage(miniProgram: any, timeoutMs = 12_000) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    try {
+      const page = await miniProgram.currentPage({ retries: 1, timeout: 5_000 })
+      if (PLUGIN_VUE_ROUTE_RE.test(normalizeRoutePath(page?.path ?? ''))) {
+        return page
+      }
+    }
+    catch {
+    }
+    await delay(220)
+  }
+  return null
+}
+
+async function openVuePluginPage(miniProgram: any) {
+  let navigationPage: any = null
+  let navigationError: unknown
+  try {
+    navigationPage = await miniProgram.navigateTo('plugin://hello-plugin/hello-page')
+  }
+  catch (error) {
+    navigationError = error
+  }
+
+  const currentPage = await waitForVuePluginPage(miniProgram)
+  if (currentPage) {
+    return currentPage
+  }
+  if (PLUGIN_VUE_ROUTE_RE.test(normalizeRoutePath(navigationPage?.path ?? ''))) {
+    return navigationPage
+  }
+  if (navigationError) {
+    throw navigationError
+  }
+  throw new Error('Plugin Vue page did not become current after navigateTo')
 }
 
 async function waitForRuntimeLog(
@@ -202,7 +245,11 @@ async function resolveHostPage(miniProgram: any) {
   try {
     if (!page) {
       page = await runWithTimeout(
-        () => miniProgram.currentPage({ retries: 1, timeout: 3_000 }),
+        () => miniProgram.currentPage({
+          appFunctionFallback: false,
+          retries: 1,
+          timeout: 3_000,
+        }),
         4_000,
         'read plugin host current page',
       )
@@ -284,11 +331,9 @@ describe.sequential('plugin-demo runtime (ide)', () => {
 
       const vuePluginPage = await runStep(
         'host-open-vue-plugin',
-        () => miniProgram.navigateTo('plugin://hello-plugin/hello-page'),
+        () => openVuePluginPage(miniProgram),
       )
-      expect(normalizeRoutePath(vuePluginPage.path)).toMatch(
-        /^(?:plugin-private:\/\/|__plugin__\/)wxb3d842a4a7e3440d\/pages\/hello-page\/index$/,
-      )
+      expect(normalizeRoutePath(vuePluginPage.path)).toMatch(PLUGIN_VUE_ROUTE_RE)
       await runStep(
         'vue-plugin-ready-log',
         () => waitForRuntimeLog(

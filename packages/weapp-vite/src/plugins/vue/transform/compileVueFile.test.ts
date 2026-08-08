@@ -558,7 +558,7 @@ defineAppSetup((app) => {
     )
 
     expect(result.script).toContain('defineAppSetup')
-    expect(result.script).toContain('from "wevu/internal-runtime";')
+    expect(result.script).toContain('from "virtual:weapp-vite/runtime";')
     expect(result.script).toContain(`app.provide('token', 1)`)
   })
 

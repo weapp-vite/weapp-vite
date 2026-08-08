@@ -12,7 +12,6 @@ const createBundleChunkSnapshotMock = vi.hoisted(() => vi.fn((bundle: Record<str
   chunksByFileName: new Map(Object.entries(bundle).filter(([, output]) => (output as any).type === 'chunk')),
 })))
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
-const refreshModuleGraphMock = vi.hoisted(() => vi.fn())
 const rewriteWevuInternalRuntimeImportsMock = vi.hoisted(() => vi.fn())
 const stabilizeWevuRuntimeChunkAccessMock = vi.hoisted(() => vi.fn())
 const syncChunkImportsFromRequireCallsMock = vi.hoisted(() => vi.fn())
@@ -51,7 +50,6 @@ vi.mock('../helpers', () => ({
   filterPluginBundleOutputs: vi.fn(),
   flushIndependentBuilds: flushIndependentBuildsMock,
   formatBytes: vi.fn(() => '0B'),
-  refreshModuleGraph: refreshModuleGraphMock,
   refreshSharedChunkImporters: vi.fn(),
   removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
   rewriteWevuInternalRuntimeImports: rewriteWevuInternalRuntimeImportsMock,
@@ -98,8 +96,6 @@ function createState(overrides: Record<string, any> = {}) {
     subPackageMeta: null,
     entriesMap: new Map(),
     pendingIndependentBuilds: [],
-    moduleImporters: new Map(),
-    entryModuleIds: new Set(),
     watchFilesSnapshot: [],
     hmrState: {
       didEmitAllEntries: false,
@@ -176,7 +172,6 @@ describe('core lifecycle emit edge branches', () => {
     expect(bundle['main.js'].code).toBe('const x = 1')
     expect(flushIndependentBuildsMock).toHaveBeenCalledTimes(1)
     expect(removeImplicitPagePreloadsMock).toHaveBeenCalledTimes(1)
-    expect(refreshModuleGraphMock).toHaveBeenCalledTimes(1)
   })
 
   it('covers hasDependencyPrefix edge cases for empty and overlong dependency tokens', async () => {

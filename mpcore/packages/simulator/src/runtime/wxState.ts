@@ -50,6 +50,7 @@ import type {
   HeadlessWxUploadFileSuccessResult,
   HeadlessWxWriteFileOption,
 } from '../host'
+import type { RuntimeScheduler } from '../kernel'
 
 export interface HeadlessWxLoadingSnapshot {
   mask: boolean
@@ -874,7 +875,19 @@ function listParentDirectories(input: string) {
   return parents
 }
 
-export function createHeadlessWxState() {
+const nativeScheduler: Pick<RuntimeScheduler, 'clearTimeout' | 'setTimeout'> = {
+  clearTimeout,
+  setTimeout,
+}
+
+export interface HeadlessWxStateOptions {
+  strictMocks?: boolean
+}
+
+export function createHeadlessWxState(
+  scheduler: Pick<RuntimeScheduler, 'clearTimeout' | 'setTimeout'> = nativeScheduler,
+  options: HeadlessWxStateOptions = {},
+) {
   const actionSheetLogs: HeadlessWxActionSheetLogEntry[] = []
   const actionSheetMocks: HeadlessWxActionSheetMockDefinition[] = []
   const downloadFileLogs: HeadlessWxDownloadFileLogEntry[] = []
@@ -924,7 +937,7 @@ export function createHeadlessWxState() {
     }
 
     let completed = false
-    const timer = setTimeout(() => {
+    const timer = scheduler.setTimeout(() => {
       if (completed) {
         return
       }
@@ -938,7 +951,7 @@ export function createHeadlessWxState() {
           return
         }
         completed = true
-        clearTimeout(timer)
+        scheduler.clearTimeout(timer)
         onFail(new Error(abortMessage))
       },
     }
@@ -1422,6 +1435,9 @@ export function createHeadlessWxState() {
   }
 
   return {
+    close() {
+      networkStatusChangeCallbacks.clear()
+    },
     clearStorageSync() {
       storage.clear()
     },
@@ -1435,6 +1451,9 @@ export function createHeadlessWxState() {
         }
         downloadFileLogs.push(logEntry)
         const error = new Error(`No downloadFile mock matched in headless runtime: ${option.url}`)
+        if (options.strictMocks) {
+          throw error
+        }
         option.fail?.(error)
         option.complete?.()
         return createNoopTask()
@@ -1963,6 +1982,9 @@ export function createHeadlessWxState() {
         }
         requestLogs.push(logEntry)
         const error = new Error(`No request mock matched in headless runtime: ${normalizeMethod(option.method)} ${option.url}`)
+        if (options.strictMocks) {
+          throw error
+        }
         option.fail?.(error)
         option.complete?.()
         return createNoopTask()
@@ -2070,6 +2092,9 @@ export function createHeadlessWxState() {
       }
 
       const nextMock = actionSheetMocks.shift()
+      if (!nextMock && options.strictMocks) {
+        throw new Error('No actionSheet mock matched in headless runtime.')
+      }
       if (nextMock?.cancel) {
         actionSheetLogs.push({
           itemList: [...itemList],
@@ -2122,6 +2147,9 @@ export function createHeadlessWxState() {
     showModal(option: HeadlessWxShowModalOption) {
       const showCancel = option.showCancel !== false
       const nextMock = modalMocks.shift()
+      if (!nextMock && options.strictMocks) {
+        throw new Error('No modal mock matched in headless runtime.')
+      }
       let confirm = nextMock?.confirm ?? true
       let cancel = nextMock?.cancel ?? !confirm
 
@@ -2190,6 +2218,9 @@ export function createHeadlessWxState() {
       if (!matchedMock) {
         uploadFileLogs.push(logEntry)
         const error = new Error(`No uploadFile mock matched in headless runtime: ${option.url}`)
+        if (options.strictMocks) {
+          throw error
+        }
         option.fail?.(error)
         option.complete?.()
         return createNoopTask()

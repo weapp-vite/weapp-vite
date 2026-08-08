@@ -50,10 +50,7 @@ export class RequestGlobalsEventTarget implements RequestGlobalsEventTargetLike 
 }
 
 export function resolveRequestGlobalsHost() {
-  if (typeof globalThis !== 'undefined') {
-    return globalThis as Record<string, any>
-  }
-  return {} as Record<string, any>
+  return globalThis as Record<string, any>
 }
 
 function isRequestGlobalsHostCandidate(value: unknown): value is Record<string, any> {

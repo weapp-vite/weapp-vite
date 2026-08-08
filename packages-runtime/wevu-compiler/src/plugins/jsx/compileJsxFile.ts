@@ -106,7 +106,7 @@ export async function compileJsxFile(
 
   const normalizedScriptSource = stripRenderOptionFromScript(scriptSource, filename, options?.warn)
   const transformedScript = transformScript(normalizedScriptSource, {
-    skipComponentTransform: options?.isApp,
+    skipComponentTransform: options?.skipComponentTransform ?? options?.isApp,
     isApp: options?.isApp,
     isPage: options?.isPage,
     minify: options?.minify,
