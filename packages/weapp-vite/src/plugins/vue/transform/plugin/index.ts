@@ -54,7 +54,7 @@ export function invalidateComponentMetaCache(
   componentMetaCache.delete(normalizeFsResolvedId(id))
 }
 
-export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
+export function createVueTransformPlugin(ctx: CompilerContext, options: { react?: boolean } = {}): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, styleIndependentSignature?: string }>()
   let appShell: ResolvedAppShell | undefined
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
@@ -128,6 +128,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     },
 
     async transform(code, id) {
+      if (options.react && /\.(?:jsx|tsx)(?:\?.*)?$/.test(id)) {
+        return null
+      }
       if (parseSidecarSourceRequest(id) || !VUE_TRANSFORM_FILTER_RE.test(id) || !isVueLikeId(id)) {
         return null
       }

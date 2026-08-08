@@ -25,15 +25,18 @@ const EXPECTATION_OVERRIDES: Readonly<Record<string, WebProjectExpectation>> = O
 
 interface PackageManifest {
   name?: unknown
+  weappVite?: {
+    web?: unknown
+  }
 }
 
-async function readPackageName(filename: string) {
+async function readPackageManifest(filename: string) {
   const source = await readFile(filename, 'utf8')
   const manifest = JSON.parse(source) as PackageManifest
   if (typeof manifest.name !== 'string' || !manifest.name.trim()) {
     throw new TypeError(`[web-project-matrix] ${filename} 缺少有效的 package name。`)
   }
-  return manifest.name
+  return manifest
 }
 
 async function listProjectDirectories(root: string, directory: string) {
@@ -53,9 +56,9 @@ export async function discoverWebProjects(root = path.resolve(import.meta.dirnam
     for (const entry of entries) {
       const relativeRoot = path.posix.join(group.directory, entry.name)
       const projectRoot = path.join(root, relativeRoot)
-      let name: string
+      let manifest: PackageManifest
       try {
-        name = await readPackageName(path.join(projectRoot, 'package.json'))
+        manifest = await readPackageManifest(path.join(projectRoot, 'package.json'))
       }
       catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -63,10 +66,13 @@ export async function discoverWebProjects(root = path.resolve(import.meta.dirnam
         }
         throw error
       }
+      if (manifest.weappVite?.web === false) {
+        continue
+      }
       projects.push({
         id: relativeRoot.replaceAll('/', ':'),
         kind: group.kind,
-        name,
+        name: manifest.name as string,
         relativeRoot,
         root: projectRoot,
         expectation: EXPECTATION_OVERRIDES[relativeRoot] ?? 'runtime',

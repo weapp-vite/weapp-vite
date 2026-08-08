@@ -1745,6 +1745,25 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['importer-graph:2'])
   })
 
+  it('marks React static template owners for a stateful snapshot refresh', async () => {
+    const dependencyId = '/project/src/pages/react/view.tsx'
+    const pageEntry = '/project/src/pages/react/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([pageEntry]))
+    const state = createState()
+    state.ctx.configService.weappViteConfig.react = true
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    const hook = createWatchChangeHook(state)
+
+    await hook(dependencyId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntry, 'dependency')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['react-template:1'])
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledWith(
+      dependencyId,
+      ['react-template:1'],
+    )
+  })
+
   it('marks shared chunk source updates as dependency dirties', async () => {
     const dependencyId = '/project/src/shared/tokens.ts'
     collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set([

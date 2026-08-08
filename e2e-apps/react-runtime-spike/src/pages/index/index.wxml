@@ -1,0 +1,2 @@
+<import src="../../runtime/base.wxml" />
+<template is="react_root" data="{{root:root}}" />

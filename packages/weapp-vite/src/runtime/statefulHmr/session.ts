@@ -17,6 +17,7 @@ import path from 'pathe'
 import { createServer, transformWithOxc } from 'vite'
 import { logger } from '../../context/shared'
 import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
+import { isReactStaticTemplateSource } from '../../plugins/react'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { writeStatefulHmrOutput } from './outputWriter'
@@ -193,7 +194,11 @@ class StatefulHmrSession {
     if (normalizedFile === normalizedOutDir || normalizedFile.startsWith(`${normalizedOutDir}/`)) {
       return
     }
-    if (shouldRestartStatefulHmrServer([normalizedFile], this.ctx.configService?.configFileDependencies)) {
+    if (shouldRestartStatefulHmrServer(
+      [normalizedFile],
+      this.ctx.configService?.configFileDependencies,
+      this.ctx.configService?.weappViteConfig?.react,
+    )) {
       this.requestServerRestart()
       return
     }
@@ -361,11 +366,15 @@ class StatefulHmrSession {
 export function shouldRestartStatefulHmrServer(
   files: Iterable<string>,
   configFileDependencies: Iterable<string> = [],
+  react?: Parameters<typeof isReactStaticTemplateSource>[0],
 ): boolean {
   const normalizedConfigDependencies = new Set(
     Array.from(configFileDependencies, dependency => normalizeFsResolvedId(dependency)),
   )
-  return Array.from(files).some(file => normalizedConfigDependencies.has(normalizeFsResolvedId(file)))
+  return Array.from(files).some(file =>
+    normalizedConfigDependencies.has(normalizeFsResolvedId(file))
+    || isReactStaticTemplateSource(react, file),
+  )
 }
 
 export function mergeStatefulHmrSnapshotAssets(
@@ -510,7 +519,7 @@ export function isStatefulHmrAssetFile(file: string): boolean {
 }
 
 function isUnsafeStatefulHmrReason(reason: string): boolean {
-  return /^(?:entry-json-only|entry-local-asset|entry-style-only|tailwind-content):/.test(reason)
+  return /^(?:entry-json-only|entry-local-asset|entry-style-only|react-template|tailwind-content):/.test(reason)
 }
 
 export function shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary: string[]): boolean {

@@ -1,0 +1,6 @@
+{
+  "pages": ["pages/index/index"],
+  "window": {
+    "navigationBarTitleText": "React 小程序"
+  }
+}

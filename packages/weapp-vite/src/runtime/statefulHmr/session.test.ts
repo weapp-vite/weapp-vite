@@ -100,6 +100,8 @@ describe('stateful hmr session', () => {
     expect(shouldRestartStatefulHmrServer(['/project/src/app.css'], configDependencies)).toBe(false)
     expect(shouldRestartStatefulHmrServer(['/project/weapp-vite.config.ts'], configDependencies)).toBe(true)
     expect(shouldRestartStatefulHmrServer(['C:\\project\\shared.config.ts'], ['C:/project/shared.config.ts'])).toBe(true)
+    expect(shouldRestartStatefulHmrServer(['/project/src/pages/index/view.tsx'], [], true)).toBe(true)
+    expect(shouldRestartStatefulHmrServer(['/project/src/pages/index/view.tsx'], [], { renderMode: 'dynamic' })).toBe(false)
   })
 
   it('schedules snapshots for sidecars and unsafe script or Vue updates', () => {
@@ -109,6 +111,7 @@ describe('stateful hmr session', () => {
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.vue', ['entry-direct:1'])).toBe(false)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.vue', ['entry-style-only:1'])).toBe(true)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.ts', ['tailwind-content:2'])).toBe(true)
+    expect(requiresStatefulHmrSnapshot('/project/src/pages/index/view.tsx', ['react-template:1'])).toBe(true)
   })
 
   it('keeps asset-only Tailwind updates out of the DevEngine full build path', () => {

@@ -1,0 +1,58 @@
+{
+  "name": "@weapp-vite/react",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "React 19 runtime for weapp-vite mini programs",
+  "license": "MIT",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./dev": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/dev/index.mjs"
+    },
+    "./components": {
+      "types": "./dist/components.d.mts",
+      "import": "./dist/components.mjs"
+    },
+    "./types": {
+      "types": "./dist/types.d.mts",
+      "import": "./dist/types.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": ["dist"],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsdown -w",
+    "build": "tsdown",
+    "build:types": "tsdown --dts",
+    "test": "vitest run",
+    "test:types": "tsd",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "peerDependencies": {
+    "miniprogram-api-typings": "^5.0.0",
+    "react": "^19.2.0",
+    "react-reconciler": "0.33.0"
+  },
+  "dependencies": {
+    "@weapp-core/constants": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.17",
+    "@types/react-reconciler": "0.33.0",
+    "miniprogram-api-typings": "catalog:",
+    "react": "19.2.7",
+    "react-reconciler": "0.33.0"
+  }
+}

@@ -284,6 +284,7 @@ const communitySidebarItems: DefaultTheme.SidebarItem[] = [
     text: '生态集成',
     collapsed: false,
     items: [
+      { text: 'React 小程序接入', link: '/integration/react' },
       { text: 'Tailwindcss 集成', link: '/integration/tailwindcss' },
       { text: 'Vue-mini 集成', link: '/integration/vue-mini' },
       { text: 'Wot UI 与 uni-app', link: '/integration/wot-ui' },
@@ -600,6 +601,11 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'WXS 配置', link: '/config/wxs' },
       { text: '共享配置', link: '/config/shared' },
     ],
+  },
+  {
+    text: 'React',
+    collapsed: false,
+    items: [{ text: 'React 配置', link: '/config/react' }],
   },
   {
     text: 'Prelude 与 Web 注入',

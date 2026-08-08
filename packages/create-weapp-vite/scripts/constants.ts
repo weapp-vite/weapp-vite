@@ -18,6 +18,10 @@ export const Templates = [
     dest: TemplateName.wevu,
   },
   {
+    target: 'weapp-vite-react-template',
+    dest: TemplateName.react,
+  },
+  {
     target: 'weapp-vite-wevu-tailwindcss-tdesign-template',
     dest: TemplateName.wevuTdesign,
   },

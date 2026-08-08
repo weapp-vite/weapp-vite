@@ -5,6 +5,7 @@ import { expectAssignable, expectError, expectType } from 'tsd'
 expectAssignable<TemplateName>(TemplateName.default)
 expectAssignable<TemplateName>(TemplateName.plugin)
 expectAssignable<TemplateName>(TemplateName.wevu)
+expectAssignable<TemplateName>(TemplateName.react)
 
 expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.default))
 

@@ -1,0 +1,9 @@
+node_modules
+coverage
+.DS_Store
+*.log
+.turbo
+dist
+dist-web
+.weapp-vite/
+vite.config.ts.timestamp-*.mjs

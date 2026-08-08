@@ -46,6 +46,14 @@ const objectConfig = defineConfig({
     chunks: {
       dynamicImports: 'native' as const,
     },
+    react: {
+      compiler: {
+        compilationMode: 'infer' as const,
+        engine: 'swc' as const,
+      },
+      devWarnings: true,
+      renderMode: 'auto' as const,
+    },
     mcp: {
       autoStart: 'ai',
       port: 'auto',
@@ -143,6 +151,14 @@ expectAssignable<string | string[] | {
   include?: string[]
 } | undefined>(objectConfig.weapp?.buildScope)
 expectAssignable<'preserve' | 'inline' | 'native' | undefined>(objectConfig.weapp?.chunks?.dynamicImports)
+expectAssignable<boolean | {
+  compiler?: boolean | {
+    compilationMode?: 'infer' | 'syntax' | 'annotation' | 'all'
+    engine?: 'swc'
+  }
+  renderMode?: 'auto' | 'dynamic' | 'static'
+  devWarnings?: boolean
+} | undefined>(objectConfig.weapp?.react)
 expectAssignable<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
 expectAssignable<boolean | 'auto' | undefined>(objectConfig.weapp?.vue?.template?.formatWxml)
