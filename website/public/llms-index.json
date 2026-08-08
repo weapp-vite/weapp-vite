@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-08T04:27:53.923Z",
+  "generatedAt": "2026-08-08T08:24:37.163Z",
   "site": "https://vite.icebreaker.top",
-  "count": 275,
+  "count": 276,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -3646,6 +3646,26 @@
       ],
       "updatedAt": "2026-07-13",
       "source": "integration/miniprogram-computed.md"
+    },
+    {
+      "id": "doc-dd0e60209d",
+      "title": "React 小程序接入",
+      "summary": "使用 React 19、react-reconciler 与可选 React Compiler 开发微信小程序。",
+      "url": "/integration/react",
+      "canonical": "https://vite.icebreaker.top/integration/react",
+      "keywords": [
+        "react",
+        "React Compiler",
+        "微信小程序",
+        "weapp-vite",
+        "integration",
+        "小程序接入"
+      ],
+      "headings": [
+        "React 小程序支持"
+      ],
+      "updatedAt": "2026-08-08",
+      "source": "integration/react.md"
     },
     {
       "id": "doc-9939a9f8d9",
