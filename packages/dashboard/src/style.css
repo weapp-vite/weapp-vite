@@ -47,7 +47,7 @@
   body {
     min-height: 100vh;
     margin: 0;
-    overflow: hidden;
+    overflow: hidden auto;
     font-family: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
     color: var(--dashboard-text);
     background-color: var(--dashboard-bg);
@@ -57,8 +57,8 @@
   }
 
   #app {
-    height: 100vh;
-    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   ::selection {

@@ -62,7 +62,7 @@ const {
           type="search"
         >
       </div>
-      <div class="grid grid-cols-3 gap-2">
+      <div class="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
         <select
           v-model="actionToneFilter"
           class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"

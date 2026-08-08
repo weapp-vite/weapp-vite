@@ -39,14 +39,14 @@ function handleThemeChange(event: Event): void {
             <DashboardIcon name="nav-menu" />
           </span>
         </button>
-        <div>
+        <div class="min-w-0 md:flex md:flex-wrap md:items-baseline md:gap-x-3">
           <p class="text-[11px] uppercase tracking-[0.28em] text-(--dashboard-accent)">
             weapp-vite dashboard
           </p>
-          <h1 class="mt-1 text-2xl font-semibold tracking-tight md:text-[1.8rem]">
+          <h1 class="mt-1 text-2xl font-semibold tracking-tight md:mt-0 md:text-[1.8rem]">
             {{ title }}
           </h1>
-          <p v-if="description" class="mt-1 max-w-3xl text-sm leading-6 text-(--dashboard-text-muted)">
+          <p v-if="description" class="mt-1 w-full max-w-3xl text-sm leading-6 text-(--dashboard-text-muted)">
             {{ description }}
           </p>
         </div>

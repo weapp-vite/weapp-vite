@@ -53,6 +53,7 @@ export type DashboardIconName
     | 'metric-bookmark'
     | 'metric-link'
     | 'metric-reset'
+    | 'metric-drag'
     | 'token-color'
     | 'token-surface'
     | 'token-type'

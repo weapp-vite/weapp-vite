@@ -84,7 +84,7 @@ const {
 </script>
 
 <template>
-  <div class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden">
+  <div class="grid min-h-[calc(100dvh-8rem)] grid-rows-[auto_minmax(44rem,1fr)] gap-4">
     <AnalyzeEmptyPayloadPanel v-if="!resultRef" />
 
     <AnalyzeToolbar
