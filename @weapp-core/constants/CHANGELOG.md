@@ -1,5 +1,11 @@
 # @weapp-core/constants
 
+## 0.1.17
+
+### Patch Changes
+
+- 🐛 **新增 React 19 小程序运行时、React JSX 构建配置和 React 项目模板，支持可选的 SWC React Compiler。** [#718](https://github.com/weapp-vite/weapp-vite/pull/718) by @sonofmagic
+
 ## 0.1.16
 
 ### Patch Changes

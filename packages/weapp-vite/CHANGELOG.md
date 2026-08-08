@@ -1,5 +1,20 @@
 # weapp-vite
 
+## 6.20.0
+
+### Minor Changes
+
+- ✨ **新增 React 19 小程序运行时、React JSX 构建配置和 React 项目模板，支持可选的 SWC React Compiler。** [#718](https://github.com/weapp-vite/weapp-vite/pull/718) by @sonofmagic
+
+### Patch Changes
+
+- 📦 Updated 5 dependencies [`e875000`](https://github.com/weapp-vite/weapp-vite/commit/e875000d671519de16c60a7abebe179abe685957)
+  <details><summary>Details</summary>
+
+  `@weapp-core/constants@0.1.17`, `@weapp-vite/web@1.4.5`, `@wevu/web-apis@1.2.33`, `wevu@6.20.0`, `@weapp-vite/ast@6.20.0`
+
+  </details>
+
 ## 6.19.4
 
 ### Patch Changes

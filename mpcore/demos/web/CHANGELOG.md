@@ -1,5 +1,12 @@
 # @mpcore/simulator-web-demo
 
+## 0.0.12
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `@mpcore/simulator@0.3.2`
+
 ## 0.0.11
 
 ### Patch Changes

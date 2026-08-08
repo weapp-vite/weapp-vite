@@ -1,5 +1,12 @@
 # @mpcore/test
 
+## 0.1.2
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `@mpcore/simulator@0.3.2`
+
 ## 0.1.1
 
 ### Patch Changes

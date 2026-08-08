@@ -1,5 +1,15 @@
 # create-weapp-vite
 
+## 2.7.0
+
+### Minor Changes
+
+- ✨ **新增 React 19 小程序运行时、React JSX 构建配置和 React 项目模板，支持可选的 SWC React Compiler。** [#718](https://github.com/weapp-vite/weapp-vite/pull/718) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **优化 dashboard 的宽屏空间利用率与纵向滚动体验，压缩双语标题和拖拽控制占用，并修复问题中心在较窄视口下的横向拥挤。** [#788](https://github.com/weapp-vite/weapp-vite/pull/788) by @sonofmagic
+
 ## 2.6.4
 
 ### Patch Changes
