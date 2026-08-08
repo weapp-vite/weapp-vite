@@ -61,7 +61,7 @@ function ensureWevuInstalled(ctx: CompilerContext) {
   }
 }
 
-export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
+export function createVueResolverPlugin(ctx: CompilerContext, options: { react?: boolean } = {}): Plugin {
   const isWeappVueStyleVirtualId = (id: string) => {
     return id.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX) || id.startsWith(LEGACY_WEAPP_VUE_STYLE_VIRTUAL_PREFIX)
   }
@@ -89,6 +89,9 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
 
       // 处理显式的 .vue/.tsx/.jsx 文件引用
       if (isVueLikeFile(id)) {
+        if (options.react && /\.(?:jsx|tsx)(?:\?.*)?$/.test(id)) {
+          return null
+        }
         ensureWevuInstalled(ctx)
         if (!isExplicitFileRequest(id)) {
           return null

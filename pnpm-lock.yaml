@@ -1633,6 +1633,9 @@ importers:
 
   e2e-apps/react-runtime-spike:
     dependencies:
+      '@weapp-vite/react':
+        specifier: workspace:*
+        version: link:../../packages-runtime/weapp-react
       react:
         specifier: 19.2.7
         version: 19.2.7
@@ -2202,6 +2205,28 @@ importers:
         specifier: 'catalog:'
         version: 5.2.3
 
+  packages-runtime/weapp-react:
+    dependencies:
+      '@weapp-core/constants':
+        specifier: workspace:*
+        version: link:../../@weapp-core/constants
+    devDependencies:
+      '@types/react':
+        specifier: 19.2.17
+        version: 19.2.17
+      '@types/react-reconciler':
+        specifier: 0.33.0
+        version: 0.33.0(@types/react@19.2.17)
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+      react:
+        specifier: 19.2.7
+        version: 19.2.7
+      react-reconciler:
+        specifier: 0.33.0
+        version: 0.33.0(react@19.2.7)
+
   packages-runtime/web:
     dependencies:
       '@babel/parser':
@@ -2703,6 +2728,10 @@ importers:
       ts-morph:
         specifier: 'catalog:'
         version: 28.0.0
+    optionalDependencies:
+      '@swc/core':
+        specifier: ^1.15.47
+        version: 1.15.47
 
   templates/weapp-vite-lib-template:
     devDependencies:
@@ -2779,6 +2808,55 @@ importers:
       wevu:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
+
+  templates/weapp-vite-react-template:
+    dependencies:
+      '@weapp-vite/react':
+        specifier: workspace:*
+        version: link:../../packages-runtime/weapp-react
+      react:
+        specifier: 19.2.7
+        version: 19.2.7
+      react-reconciler:
+        specifier: 0.33.0
+        version: 0.33.0(react@19.2.7)
+    devDependencies:
+      '@icebreakers/eslint-config':
+        specifier: 'catalog:'
+        version: 7.0.2(@next/eslint-plugin-next@16.2.4)(@unocss/eslint-plugin@66.6.8(eslint@10.8.1(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint-plugin-jsx-a11y@6.10.2(eslint@10.8.1(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-pnpm@1.7.0(eslint@10.8.1(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-vuejs-accessibility@2.5.0(eslint@10.8.1(jiti@2.7.0)(supports-color@10.2.2))(globals@17.9.0)(supports-color@10.2.2))(eslint@10.8.1(jiti@2.7.0)(supports-color@10.2.2))(postcss@8.5.26)(stylelint@17.14.1(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.3)(ts-declaration-location@1.0.7(typescript@6.0.3))(typescript@6.0.3)(vitest@4.1.10)
+      '@icebreakers/stylelint-config':
+        specifier: 'catalog:'
+        version: 5.0.3(postcss@8.5.26)(stylelint@17.14.1(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.3)
+      '@swc/core':
+        specifier: ^1.15.47
+        version: 1.15.47
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.2.0
+      '@types/react':
+        specifier: 19.2.17
+        version: 19.2.17
+      '@types/react-reconciler':
+        specifier: 0.33.0
+        version: 0.33.0(@types/react@19.2.17)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)(supports-color@10.2.2)
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+      stylelint:
+        specifier: 'catalog:'
+        version: 17.14.1(supports-color@10.2.2)(typescript@6.0.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.1(@types/node@26.2.0)(esbuild@0.28.1)(jiti@2.7.0)(less@4.8.1(supports-color@10.2.2))(sass-embedded@1.100.0)(sass@1.102.0)(terser@5.34.1)(tsx@4.23.11)(yaml@2.9.0)
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
   templates/weapp-vite-tailwindcss-tdesign-template:
     dependencies:
@@ -19493,7 +19571,7 @@ snapshots:
     dependencies:
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 26.1.2
+      '@types/node': 26.2.0
       '@types/yargs': 15.0.20
       chalk: 4.1.2
 

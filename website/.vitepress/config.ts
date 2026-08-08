@@ -602,6 +602,11 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
     ],
   },
   {
+    text: 'React',
+    collapsed: false,
+    items: [{ text: 'React 配置', link: '/config/react' }],
+  },
+  {
     text: 'Prelude 与 Web 注入',
     collapsed: false,
     items: [

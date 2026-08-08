@@ -14,6 +14,7 @@ import type {
   WeappInjectWebRuntimeGlobalsConfig,
   WeappMcpConfig,
   WeappNpmConfig,
+  WeappReactConfig,
   WeappRouteRules,
   WeappSubPackageConfig,
   WeappUniAppConfig,
@@ -222,6 +223,7 @@ export interface WeappViteConfig {
   worker?: WeappWorkerConfig
   vue?: WeappVueConfig
   wevu?: WeappWevuConfig
+  react?: boolean | WeappReactConfig
   routeRules?: WeappRouteRules
   appPrelude?: boolean | WeappAppPreludeConfig
   injectWeapi?: boolean | WeappInjectWeapiConfig

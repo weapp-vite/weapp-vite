@@ -1,6 +1,6 @@
+import { createReactMiniProgramRoot } from '@weapp-vite/react'
 import { createElement } from 'react'
 import { ReactSpikePage } from 'virtual:react-runtime-spike-page'
-import { createReactMiniProgramRoot } from '../../runtime/renderer'
 
 const roots = new WeakMap<object, ReturnType<typeof createReactMiniProgramRoot>>()
 

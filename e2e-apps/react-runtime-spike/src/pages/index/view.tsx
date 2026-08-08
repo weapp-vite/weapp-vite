@@ -1,5 +1,5 @@
+import { Button, Input, Text, View } from '@weapp-vite/react'
 import { createContext, useContext, useMemo, useState } from 'react'
-import { Button, Input, Text, View } from '../../runtime/components'
 
 const ThemeContext = createContext('light')
 

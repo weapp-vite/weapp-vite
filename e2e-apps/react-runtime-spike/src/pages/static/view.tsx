@@ -1,5 +1,5 @@
+import { Button, Input, Text, View } from '@weapp-vite/react'
 import { useMemo, useState } from 'react'
-import { Button, Input, Text, View } from '../../runtime/components'
 
 export function ReactStaticPage() {
   const [count, setCount] = useState(0)

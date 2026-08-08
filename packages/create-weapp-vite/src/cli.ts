@@ -19,6 +19,10 @@ const TEMPLATE_CHOICES: Array<{ name: string, value: TemplateName }> = [
     value: TemplateName.wevu,
   },
   {
+    name: 'React 模板 (React 19 + 小程序 runtime)',
+    value: TemplateName.react,
+  },
+  {
     name: 'Wevu + TDesign 模板 (wevu + tdesign + tailwindcss)',
     value: TemplateName.wevuTdesign,
   },

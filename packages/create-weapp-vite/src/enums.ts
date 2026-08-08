@@ -6,5 +6,6 @@ export enum TemplateName {
   vant = 'vant',
   tdesign = 'tdesign',
   wevuTdesign = 'wevu-tdesign',
+  react = 'react',
   lib = 'lib',
 }

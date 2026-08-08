@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import logger from '@weapp-core/logger'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+import { version as reactRuntimeVersion } from '../../../packages-runtime/weapp-react/package.json'
 import { version as wevuVersion } from '../../../packages-runtime/wevu/package.json'
 import { version as dashboardVersion } from '../../dashboard/package.json'
 import { version } from '../../weapp-vite/package.json'
@@ -24,6 +25,7 @@ const TEMPLATE_DIR_MAP: Record<TemplateName, string> = {
   [TemplateName.plugin]: 'weapp-vite-plugin-template',
   [TemplateName.lib]: 'weapp-vite-lib-template',
   [TemplateName.wevu]: 'weapp-vite-wevu-template',
+  [TemplateName.react]: 'weapp-vite-react-template',
   [TemplateName.wevuTdesign]: 'weapp-vite-wevu-tailwindcss-tdesign-template',
   [TemplateName.tailwindcss]: 'weapp-vite-tailwindcss-template',
   [TemplateName.tdesign]: 'weapp-vite-tailwindcss-tdesign-template',
@@ -337,6 +339,7 @@ export async function createProject(
   }
 
   upsertExistingDependencyVersion(pkgJson, 'weapp-vite', toCaretVersion(version))
+  upsertExistingDependencyVersion(pkgJson, '@weapp-vite/react', toCaretVersion(reactRuntimeVersion))
   upsertExistingDependencyVersion(pkgJson, 'wevu', toCaretVersion(wevuVersion))
   upsertExistingDependencyVersion(pkgJson, '@weapp-vite/dashboard', toCaretVersion(dashboardVersion))
   await upsertTailwindcssVersion(pkgJson)

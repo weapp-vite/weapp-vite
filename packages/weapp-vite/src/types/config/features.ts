@@ -362,6 +362,17 @@ export interface WeappWevuConfig {
   runtime?: 'auto' | 'dev' | 'build'
 }
 
+export interface WeappReactCompilerConfig {
+  compilationMode?: 'infer' | 'syntax' | 'annotation' | 'all'
+  engine?: 'swc'
+}
+
+export interface WeappReactConfig {
+  compiler?: boolean | WeappReactCompilerConfig
+  renderMode?: 'auto' | 'dynamic' | 'static'
+  devWarnings?: boolean
+}
+
 export interface WeappRouteRule {
   appLayout?: PageLayoutMeta
 }

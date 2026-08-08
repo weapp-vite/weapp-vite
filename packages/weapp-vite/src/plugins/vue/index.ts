@@ -11,6 +11,7 @@ export interface VuePluginOptions {
    * 是否启用 Vue 支持
    */
   enable?: boolean
+  react?: boolean
 }
 
 export function vuePlugin(ctx: CompilerContext, options?: VuePluginOptions): Plugin[] {
@@ -19,8 +20,8 @@ export function vuePlugin(ctx: CompilerContext, options?: VuePluginOptions): Plu
   }
 
   return [
-    createVueResolverPlugin(ctx),
-    createVueTransformPlugin(ctx),
+    createVueResolverPlugin(ctx, options),
+    createVueTransformPlugin(ctx, options),
     createVueWatchPlugin(ctx),
   ]
 }

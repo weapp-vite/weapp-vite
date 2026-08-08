@@ -11,6 +11,7 @@ import { weappVite } from './core'
 import { css } from './css'
 import { createOutputFinalizerPlugin } from './outputFinalizer'
 import { preflight } from './preflight'
+import { createReactPlugin, isReactEnabled } from './react'
 import { uniAppCompatibility } from './uniApp'
 import { vue } from './vue'
 import { wevu } from './wevu'
@@ -62,14 +63,16 @@ export function vitePluginWeapp(
 ): Plugin<WeappVitePluginApi>[] {
   const libModeEnabled = ctx.configService?.weappLibConfig?.enabled
   const vueEnabled = ctx.configService?.weappViteConfig?.vue?.enable !== false
-  const runtimeProvider = resolveRuntimeProvider('miniprogram', vueEnabled ? 'vue' : 'native')
+  const reactEnabled = isReactEnabled(ctx)
+  const runtimeProvider = resolveRuntimeProvider('miniprogram', reactEnabled ? 'native' : vueEnabled ? 'vue' : 'native')
   const groups: Plugin[][] = [
     [createContextPlugin(ctx), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
     preflight(ctx),
     uniAppCompatibility(ctx),
-    vue(ctx, { enable: vueEnabled }),
+    createReactPlugin(ctx),
+    vue(ctx, { enable: vueEnabled, react: reactEnabled }),
   ]
-  if (vueEnabled && !libModeEnabled) {
+  if (vueEnabled && !libModeEnabled && !reactEnabled) {
     groups.push(wevu(ctx))
   }
   const autoRoutesEnabled = resolveWeappAutoRoutesConfig(ctx.configService?.weappViteConfig?.autoRoutes).enabled
