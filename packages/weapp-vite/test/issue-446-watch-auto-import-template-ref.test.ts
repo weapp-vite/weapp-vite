@@ -143,6 +143,12 @@ describe.sequential('issue #446 watch auto-import component template ref', () =>
         },
       },
     })
+    ctxResult.ctx.configService.weappViteConfig.autoRoutes = {
+      include: [
+        'pages/issue-446/**',
+        'components/issue-446/**',
+      ],
+    }
     ctxResult.ctx.configService.weappViteConfig.hmr = { runtime: 'classic' }
 
     let watcher: WatcherEmitter | undefined

@@ -143,6 +143,12 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
         },
       },
     })
+    ctxResult.ctx.configService.weappViteConfig.autoRoutes = {
+      include: [
+        'pages/issue-391/**',
+        'pages/issue-391-peer/**',
+      ],
+    }
     ctxResult.ctx.configService.weappViteConfig.hmr = { runtime: 'classic' }
 
     let watcher: WatcherEmitter | undefined
