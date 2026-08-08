@@ -302,7 +302,7 @@
     "tsdown": "0.22.14",
     "tslib": "catalog:",
     "tsx": "catalog:",
-    "turbo": "^2.10.8",
+    "turbo": "^2.10.9",
     "type-fest": "^5.8.0",
     "typescript": "catalog:",
     "unbuild": "^3.6.1",
