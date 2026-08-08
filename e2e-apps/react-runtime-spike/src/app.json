@@ -1,7 +1,8 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/static/index"
+    "pages/static/index",
+    "pages/interop/index"
   ],
   "window": {
     "navigationBarTitleText": "React Runtime Spike"

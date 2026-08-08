@@ -41,6 +41,30 @@ describe('vitePluginWeapp plugin api', () => {
     expect(names).not.toContain('weapp-vite:wevu:page-features')
   })
 
+  it('keeps pure React projects on the native provider', () => {
+    const ctx = createCompilerContext('plugin-api:react-native')
+    ctx.configService.inlineConfig.weapp = { react: true }
+
+    const names = vitePluginWeapp(ctx).map(plugin => plugin.name)
+
+    expect(names).toContain('weapp-vite:runtime-provider:native-miniprogram')
+    expect(names).not.toContain('weapp-vite:runtime-provider:wevu-miniprogram')
+    expect(names).toContain('weapp-vite:vue:transform')
+    expect(names).not.toContain('weapp-vite:wevu:page-features')
+  })
+
+  it('selects the Wevu provider for mixed React and Wevu projects', () => {
+    const ctx = createCompilerContext('plugin-api:react-wevu')
+    ctx.configService.inlineConfig.weapp = { react: true }
+    ctx.configService.packageJson.dependencies = { wevu: 'workspace:*' }
+
+    const names = vitePluginWeapp(ctx).map(plugin => plugin.name)
+
+    expect(names).toContain('weapp-vite:runtime-provider:wevu-miniprogram')
+    expect(names).not.toContain('weapp-vite:runtime-provider:native-miniprogram')
+    expect(names).toContain('weapp-vite:vue:transform')
+  })
+
   it('exposes compiler context when workers are used', () => {
     const ctx = createCompilerContext('plugin-api:workers')
     const plugins = vitePluginWeappWorkers(ctx)

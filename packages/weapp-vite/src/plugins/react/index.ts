@@ -6,10 +6,19 @@ import path from 'node:path'
 import process from 'node:process'
 import { transformWithOxc } from 'vite'
 import { baseTemplate } from './baseTemplate'
-import { compileStaticReactPage } from './staticTemplate/index'
+import {
+  compileStaticReactPage,
+  hasNativeComponentBridge,
+  ReactNativeBridgeStaticError,
+} from './staticTemplate/index'
 
 export const REACT_PLUGIN_NAME = 'weapp-vite:react'
 const REACT_FILE_RE = /\.(?:jsx|tsx)(?:\?.*)?$/
+
+interface ReactTemplateAsset {
+  nativeComponents: string[]
+  source: string
+}
 
 function resolveStaticTemplateFileName(cwd: string, id: string) {
   const cleanId = id.split('?', 1)[0] ?? id
@@ -21,6 +30,12 @@ function resolveStaticTemplateFileName(cwd: string, id: string) {
     fileName = fileName.replace(/\/view\.wxml$/, '/index.wxml')
   }
   return fileName
+}
+
+function createDynamicTemplate(fileName: string) {
+  const relative = path.posix.relative(path.posix.dirname(fileName), 'runtime/base.wxml')
+  const importPath = relative.startsWith('.') ? relative : `./${relative}`
+  return `<import src="${importPath}" />\n<template is="react_root" data="{{root:root}}" />`
 }
 
 function resolveReactConfig(value: boolean | WeappReactConfig | undefined): WeappReactConfig | undefined {
@@ -94,7 +109,7 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
   const reactConfig = resolved
 
   let config: ResolvedConfig | undefined
-  const staticTemplates = new Map<string, string>()
+  const templates = new Map<string, ReactTemplateAsset>()
   async function refreshStaticTemplate(
     id: string,
     event: 'create' | 'delete' | 'update',
@@ -106,18 +121,28 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
     const cleanId = id.split('?', 1)[0] ?? id
     const fileName = resolveStaticTemplateFileName(ctx.configService?.cwd ?? process.cwd(), cleanId)
     if (event === 'delete') {
-      staticTemplates.delete(fileName)
+      templates.delete(fileName)
       return
     }
     try {
       const source = await readFile(cleanId, 'utf8')
-      staticTemplates.set(fileName, compileStaticReactPage(source, cleanId).template)
+      const compiled = compileStaticReactPage(source, cleanId)
+      templates.set(fileName, {
+        nativeComponents: compiled.nativeComponents,
+        source: compiled.template,
+      })
     }
     catch (error) {
-      staticTemplates.delete(fileName)
+      if (error instanceof ReactNativeBridgeStaticError) {
+        throw error
+      }
       if (reactConfig.renderMode === 'static') {
         throw error
       }
+      templates.set(fileName, {
+        nativeComponents: [],
+        source: createDynamicTemplate(fileName),
+      })
       if (reactConfig.devWarnings && error instanceof Error) {
         warn(`[react] dynamic island fallback for ${cleanId}: ${error.message}`)
       }
@@ -141,28 +166,40 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
       }
 
       let transformedSource = source
+      const fileName = resolveStaticTemplateFileName(
+        ctx.configService?.cwd ?? process.cwd(),
+        id,
+      )
+      if (resolved.renderMode === 'dynamic' && hasNativeComponentBridge(source)) {
+        throw new Error(`[react] ${id} 使用了原生组件 bridge，renderMode: 'dynamic' 不支持自定义组件`)
+      }
       if (resolved.renderMode !== 'dynamic') {
         try {
           const compiled = compileStaticReactPage(source, id)
-          const fileName = resolveStaticTemplateFileName(
-            ctx.configService?.cwd ?? process.cwd(),
-            id,
-          )
-          staticTemplates.set(fileName, compiled.template)
+          templates.set(fileName, {
+            nativeComponents: compiled.nativeComponents,
+            source: compiled.template,
+          })
           transformedSource = compiled.code
         }
         catch (error) {
-          staticTemplates.delete(resolveStaticTemplateFileName(
-            ctx.configService?.cwd ?? process.cwd(),
-            id,
-          ))
-          if (resolved.renderMode === 'static') {
+          if (resolved.renderMode === 'static' || error instanceof ReactNativeBridgeStaticError) {
             throw error
           }
+          templates.set(fileName, {
+            nativeComponents: [],
+            source: createDynamicTemplate(fileName),
+          })
           if (resolved.devWarnings && error instanceof Error) {
             this.warn(`[react] dynamic island fallback for ${id}: ${error.message}`)
           }
         }
+      }
+      else {
+        templates.set(fileName, {
+          nativeComponents: [],
+          source: createDynamicTemplate(fileName),
+        })
       }
 
       const useCompiler = resolved.compiler !== false
@@ -191,13 +228,35 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
       })
     },
     generateBundle(_options, bundle) {
-      for (const [fileName, source] of staticTemplates) {
+      for (const [fileName, template] of templates) {
+        if (template.nativeComponents.length > 0) {
+          const jsonFileName = fileName.replace(/\.wxml$/, '.json')
+          const jsonAsset = bundle[jsonFileName]
+          if (jsonAsset?.type !== 'asset') {
+            throw new Error(`[react] ${fileName} 使用了原生组件 bridge，但缺少对应配置 ${jsonFileName}`)
+          }
+          let json: Record<string, unknown>
+          try {
+            json = JSON.parse(String(jsonAsset.source)) as Record<string, unknown>
+          }
+          catch (error) {
+            throw new Error(`[react] 无法解析原生组件配置 ${jsonFileName}`, { cause: error })
+          }
+          const usingComponents = json.usingComponents
+          const registered = usingComponents && typeof usingComponents === 'object' && !Array.isArray(usingComponents)
+            ? usingComponents as Record<string, unknown>
+            : {}
+          const missing = template.nativeComponents.filter(tag => typeof registered[tag] !== 'string')
+          if (missing.length > 0) {
+            throw new Error(`[react] ${fileName} 的原生组件 bridge 未在 ${jsonFileName} 的 usingComponents 注册：${missing.join(', ')}`)
+          }
+        }
         const existing = bundle[fileName]
         if (existing?.type === 'asset') {
-          existing.source = source
+          existing.source = template.source
         }
         else {
-          this.emitFile({ type: 'asset', fileName, source })
+          this.emitFile({ type: 'asset', fileName, source: template.source })
         }
       }
       if (resolved.renderMode !== 'static' && !bundle['runtime/base.wxml']) {

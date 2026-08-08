@@ -402,12 +402,17 @@ function expectCompatibilityResult(page: Record<string, any>) {
 function expectStructurallyStableObjectProperty(page: Record<string, any>) {
   const initialTarget = page.selectComponent('#boolean-target')
   expect(initialTarget?.properties.metadata).toEqual({ default: true })
+  expect(initialTarget?.data.metadata).toEqual({ default: true })
   expect(initialTarget?.properties.optionalObject).toBeNull()
+  expect(initialTarget?.data.optionalObject).toBeNull()
+  expect(initialTarget?.data.enabled).toBe(true)
   expect(initialTarget?.data.structurallyStableObserverCalls).toBe(1)
 
   page.setData({ unrelatedUpdate: 1 })
   const updatedTarget = page.selectComponent('#boolean-target')
   expect(updatedTarget?.properties.metadata).toEqual({ default: true })
+  expect(updatedTarget?.data.metadata).toEqual(updatedTarget?.properties.metadata)
+  expect(updatedTarget?.data.enabled).toBe(updatedTarget?.properties.enabled)
   expect(updatedTarget?.data.structurallyStableObserverCalls).toBe(1)
 }
 

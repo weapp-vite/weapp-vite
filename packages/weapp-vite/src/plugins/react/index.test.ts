@@ -49,6 +49,108 @@ describe('react plugin', () => {
     }))
   })
 
+  it('emits the dynamic page wrapper and shared runtime template after static fallback', async () => {
+    const plugin = createReactPlugin({
+      configService: {
+        cwd: '/project',
+        weappViteConfig: { react: true },
+      },
+    } as any)[0]
+    await plugin.transform!.call({ warn: vi.fn() } as any, `
+      export function View({ items }) {
+        return <view>{items.map(item => <text key={item}>{item}</text>)}</view>
+      }
+    `, '/project/src/pages/home/view.tsx')
+
+    const emitted: Array<Record<string, unknown>> = []
+    plugin.generateBundle!.call({
+      emitFile(asset: Record<string, unknown>) {
+        emitted.push(asset)
+      },
+    } as any, {} as any, {})
+
+    expect(emitted).toContainEqual(expect.objectContaining({
+      fileName: 'pages/home/index.wxml',
+      source: '<import src="../../runtime/base.wxml" />\n<template is="react_root" data="{{root:root}}" />',
+    }))
+    expect(emitted).toContainEqual(expect.objectContaining({
+      fileName: 'runtime/base.wxml',
+    }))
+  })
+
+  it('validates native bridge registrations before emitting WXML', async () => {
+    const plugin = createReactPlugin({
+      configService: {
+        cwd: '/project',
+        weappViteConfig: { react: true },
+      },
+    } as any)[0]
+    await plugin.transform!.call({ warn: vi.fn() } as any, `
+      import { createNativeComponent } from '@weapp-vite/react'
+      const NativeCard = createNativeComponent('native-card')
+      export function View() { return <NativeCard label="ready" /> }
+    `, '/project/src/pages/home/view.tsx')
+
+    const emitted: Array<Record<string, unknown>> = []
+    plugin.generateBundle!.call({
+      emitFile(asset: Record<string, unknown>) {
+        emitted.push(asset)
+      },
+    } as any, {} as any, {
+      'pages/home/index.json': {
+        fileName: 'pages/home/index.json',
+        name: undefined,
+        names: [],
+        needsCodeReference: false,
+        originalFileName: undefined,
+        originalFileNames: [],
+        source: '{"usingComponents":{"native-card":"/components/native-card/index"}}',
+        type: 'asset',
+      },
+    } as any)
+
+    expect(emitted).toContainEqual(expect.objectContaining({
+      fileName: 'pages/home/index.wxml',
+      source: '<native-card label="ready" />',
+    }))
+  })
+
+  it('rejects missing native bridge registrations', async () => {
+    const plugin = createReactPlugin({
+      configService: {
+        cwd: '/project',
+        weappViteConfig: { react: true },
+      },
+    } as any)[0]
+    await plugin.transform!.call({ warn: vi.fn() } as any, `
+      import { createNativeComponent } from '@weapp-vite/react'
+      const NativeCard = createNativeComponent('native-card')
+      export function View() { return <NativeCard /> }
+    `, '/project/src/pages/home/view.tsx')
+
+    expect(() => plugin.generateBundle!.call({ emitFile: vi.fn() } as any, {} as any, {
+      'pages/home/index.json': {
+        source: '{"usingComponents":{}}',
+        type: 'asset',
+      },
+    } as any)).toThrow('未在 pages/home/index.json 的 usingComponents 注册：native-card')
+  })
+
+  it('rejects native bridges in dynamic render mode', async () => {
+    const plugin = createReactPlugin({
+      configService: {
+        cwd: '/project',
+        weappViteConfig: { react: { renderMode: 'dynamic' } },
+      },
+    } as any)[0]
+
+    await expect(plugin.transform!.call({ warn: vi.fn() } as any, `
+      import { createNativeComponent } from '@weapp-vite/react'
+      const NativeCard = createNativeComponent('native-card')
+      export function View() { return <NativeCard /> }
+    `, '/project/src/pages/home/view.tsx')).rejects.toThrow('renderMode: \'dynamic\' 不支持自定义组件')
+  })
+
   it('refreshes an emitted static template when its TSX owner changes', async () => {
     const cwd = await mkdtemp(path.join(os.tmpdir(), 'weapp-react-watch-'))
     const file = path.join(cwd, 'src/pages/home/view.tsx')

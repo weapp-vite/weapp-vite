@@ -1,8 +1,7 @@
-import type { HostProps, SerializedHostNode } from '../src/runtime/types'
+import type { HostProps, SerializedHostNode } from '@weapp-vite/react'
 import { Buffer } from 'node:buffer'
+import { Button, createReactMiniProgramRoot, Text, View } from '@weapp-vite/react'
 import React, { createElement, useState } from 'react'
-import { Button, Text, View } from '../src/runtime/components'
-import { createReactMiniProgramRoot } from '../src/runtime/renderer'
 
 function findNode(nodes: SerializedHostNode[], id: string): SerializedHostNode | undefined {
   for (const node of nodes) {

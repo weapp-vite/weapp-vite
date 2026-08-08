@@ -884,6 +884,26 @@ describe('core helper bundle', () => {
     expect(bundle['pages/hmr/index.js'].imports).toEqual(['common.js'])
   })
 
+  it('does not synthesize stable aliases from statements outside export getters', () => {
+    const bundle = {
+      'weapp-vendors/wevu-reactivity.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-reactivity.js',
+        code: [
+          'function to(value) { return value }',
+          'Object.defineProperty(exports, "ref", { enumerable: true, get: function() { return to; } });',
+          'function update(value) { return if (value) value; }',
+        ].join('\n'),
+        imports: [],
+      },
+    } as any
+
+    stabilizeWevuRuntimeChunkAccess(bundle)
+
+    expect(bundle['weapp-vendors/wevu-reactivity.js'].code).not.toContain('__wevuDefineComponent')
+    expect(bundle['weapp-vendors/wevu-reactivity.js'].code).not.toContain('__wevuCreateWevuComponent')
+  })
+
   it('skips runtime chunk usage collection for chunks without vendor references', () => {
     const bundle = {
       'pages/runtime/index.js': {

@@ -45,4 +45,50 @@ describe('static React template compiler', () => {
       }
     `, 'dynamic.tsx')).toThrow('暂不支持动态结构表达式')
   })
+
+  it('compiles native component props, events and default slots', () => {
+    const result = compileStaticReactPage(`
+      import { createNativeComponent as bridge, Slot, Text, View } from '@weapp-vite/react'
+      const NativeCard = bridge('native-card')
+      function formatLabel(value) {
+        return String(value)
+      }
+      export function InteropView({ label, onChange }) {
+        return (
+          <View>
+            <NativeCard data-e2e-result={label} label={label} onValueChange={onChange}>
+              <Text>projected</Text>
+            </NativeCard>
+            <NativeCard onChange={onChange} onValueChangeCapture={onChange} />
+            <Slot />
+          </View>
+        )
+      }
+    `, 'interop.tsx')
+
+    expect(result.nativeComponents).toEqual(['native-card'])
+    expect(result.template).toContain('<native-card data-e2e-result="{{slots.s1[\'data-e2e-result\']}}" label="{{slots.s1.label}}" bind:value-change="__weapp_vite_react_event" data-sid="s1">')
+    expect(result.template).toContain('<native-card bind:change="__weapp_vite_react_event" capture-bind:value-change="__weapp_vite_react_event" data-sid="s3" />')
+    expect(result.template).toContain('<text>projected</text>')
+    expect(result.template).toContain('<slot />')
+    expect(result.code).toContain('__bindingFields="data-e2e-result,label"')
+  })
+
+  it('does not let bridge files fall back when no static component can be selected', () => {
+    expect(() => compileStaticReactPage(`
+      import { createNativeComponent } from '@weapp-vite/react'
+      const NativeCard = createNativeComponent('native-card')
+      export const InteropView = () => <NativeCard />
+    `, 'interop-arrow.tsx')).toThrow('原生组件 bridge，组件结构必须可静态分析')
+  })
+
+  it('rejects dynamic structures when a native component bridge is declared', () => {
+    expect(() => compileStaticReactPage(`
+      import { createNativeComponent, View } from '@weapp-vite/react'
+      const NativeCard = createNativeComponent('native-card')
+      export function InteropView({ visible }) {
+        return <View>{visible && <NativeCard />}</View>
+      }
+    `, 'interop-dynamic.tsx')).toThrow('原生组件 bridge，组件结构必须可静态分析')
+  })
 })

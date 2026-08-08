@@ -1,0 +1,11 @@
+<view id="native-parent" class="parent">
+  <text class="parent-title">Native parent</text>
+  <wevu-leaf id="native-parent-wevu" label="native-to-wevu" value="{{3}}" bind:change="onWevuChange">
+    <text id="slot-native-to-wevu" class="interop-slot" data-e2e-slot="native-to-wevu" style="display:block;width:160px;height:24px">slot:native-to-wevu</text>
+  </wevu-leaf>
+  <react-leaf id="native-parent-react" label="native-to-react" value="4" bind:change="onReactChange">
+    <text id="slot-native-to-react" class="interop-slot" data-e2e-slot="native-to-react" style="display:block;width:160px;height:24px">slot:native-to-react</text>
+  </react-leaf>
+  <text id="native-wevu-result">{{wevuResult}}</text>
+  <text id="native-react-result">{{reactResult}}</text>
+</view>

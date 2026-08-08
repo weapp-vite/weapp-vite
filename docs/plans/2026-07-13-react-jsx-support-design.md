@@ -478,14 +478,16 @@ runtime：
 首版提供：
 
 ```ts
-const NativeCard = createNativeComponent('native-card')
+const NativeCard = createNativeComponent<CardProps>('native-card')
 ```
 
-要求页面 JSON 的 `usingComponents` 已声明同名组件。构建端从 JSON 生成 native template，并收集允许的 props/events。
+要求 bridge 在当前 TSX 顶层声明、tag 为非空字符串字面量，且页面或组件 JSON 的 `usingComponents` 已声明同名组件。构建端收集实际使用 catalog，在 bundle 阶段校验 JSON，并把动态 props、自定义事件和默认 children 编译进原生模板。事件采用 `onValueChange` → `bind:value-change`、`onValueChangeCapture` → `capture-bind:value-change` 的稳定映射。
 
 React function component 只存在 JS/Fiber 树中，不生成小程序自定义组件文件。只有显式 native component 才进入 `usingComponents`。
 
-首版不把 `.vue` 文件直接 import 为 React component。需要混用时，先把 Vue/Wevu 组件编译成原生自定义组件，再通过 native bridge 使用。
+React-backed 小程序组件通过 `Slot` host component 声明默认 `<slot />`。首版不把 `.vue` 文件直接 import 为 React component；React 项目显式依赖 `wevu` 时，miniprogram runtime provider 同时解析 Wevu SFC virtual modules，TSX 仍由 React owner 处理，`.vue` 由 Wevu compiler 处理。编译后的 Wevu 组件作为原生自定义组件通过 bridge 使用，因此 React、Wevu、原生三类 parent/leaf 可以双向组合。
+
+首版 bridge 结构必须可静态分析，不支持跨文件声明、条件/列表中的 bridge、作用域插槽和双向 model。`renderMode: 'auto'` 对 bridge 静态分析失败直接报错，不能静默退回无法表达自定义组件的 dynamic tree。
 
 ### 5.11 生产环境与 chunk
 
@@ -656,6 +658,8 @@ React 18 阶段首次真实运行暴露 production HostConfig 缺少 `insertBefo
 
 ### 6.6 Spike 限制
 
+以下记录是实验期边界；正式实现已经把 renderer/compiler 迁移到 `@weapp-vite/react` 与内置 React 插件，并补齐原生/Wevu bridge、JSON catalog 校验和双 provider 构建链。仍保留的静态边界以 5.10 为准。
+
 - 不是正式插件，TSX 通过 app 内虚拟模块实验性接管。
 - 只有 4 种 host component。
 - 模板深度固定为 5，没有递归组件 fallback。
@@ -665,7 +669,7 @@ React 18 阶段首次真实运行暴露 production HostConfig 缺少 `insertBefo
 - 同一静态组件被实例化多次会产生 slot 冲突；正式实现需要 template site + instance scope。
 - 运行时结构变化目前明确报 mismatch，尚未自动 remount 为 dynamic island。
 - 没有页面生命周期 hooks。
-- 没有原生自定义组件。
+- 实验期没有原生自定义组件；正式实现已由 `createNativeComponent` 与 `Slot` 覆盖。
 - 没有受控 input 真运行时断言。
 - 没有 custom-wrapper、React Refresh、分包和多平台。
 - 没有 DOM/BOM 兼容层。

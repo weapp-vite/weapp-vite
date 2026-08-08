@@ -1,7 +1,7 @@
 import type { HostProps, SerializedHostNode } from './types'
 import { createElement, useState } from 'react'
 import { describe, expect, it } from 'vitest'
-import { Button, Text, View } from './components'
+import { Button, createNativeComponent, Slot, Text, View } from './components'
 import { createReactMiniProgramRoot } from './renderer'
 
 function findNode(nodes: SerializedHostNode[], predicate: (node: SerializedHostNode) => boolean): SerializedHostNode | undefined {
@@ -18,6 +18,26 @@ function findNode(nodes: SerializedHostNode[], predicate: (node: SerializedHostN
 }
 
 describe('react runtime spike renderer', () => {
+  it('represents native component bridges and default slots as host nodes', () => {
+    const NativeCard = createNativeComponent<{ label: string }>('native-card')
+    const root = createReactMiniProgramRoot({ setData() {} })
+
+    root.render(
+      <NativeCard label="from-react">
+        <Slot />
+      </NativeCard>,
+    )
+
+    expect(root.getSnapshot().cn).toMatchObject([{
+      cn: [{ nn: 'slot' }],
+      nn: 'native-card',
+    }])
+  })
+
+  it('rejects empty native component bridge names', () => {
+    expect(() => createNativeComponent('')).toThrow('non-empty string')
+  })
+
   it('renders hooks and routes host events into path-level setData updates', () => {
     const calls: Record<string, unknown>[] = []
 

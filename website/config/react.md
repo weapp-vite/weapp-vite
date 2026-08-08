@@ -37,6 +37,22 @@ export default defineConfig({
 
 运行时包为 `@weapp-vite/react`，固定验证组合为 React `19.2.x` 与 `react-reconciler` `0.33.x`，不依赖 `react-dom`。首版仅支持微信小程序。
 
-`renderMode: 'auto'` 会将稳定的 host shape、静态属性和可绑定字段生成原生 WXML；动态条件、列表、render prop 与动态组件进入 reconciler dynamic island。`renderMode: 'static'` 无法证明结构时会直接失败，避免静默丢失语义。
+`renderMode: 'auto'` 会将稳定的 host shape、静态属性和可绑定字段生成原生 WXML；不含 bridge 的动态条件、列表、render prop 与动态组件进入 reconciler dynamic island。`renderMode: 'static'` 无法证明结构时会直接失败，避免静默丢失语义。
+
+## 自定义组件 bridge
+
+`@weapp-vite/react` 导出 `createNativeComponent<Props>(tagName)`，用于引用已在当前 JSON `usingComponents` 注册的原生或 Wevu 组件；`Slot` 用于 React-backed 小程序组件声明默认插槽。
+
+```tsx
+import { createNativeComponent, Slot } from '@weapp-vite/react'
+
+const WevuCard = createNativeComponent<{ label: string }>('wevu-card')
+```
+
+- `onValueChange` 编译为 `bind:value-change`，Capture 后缀编译为 `capture-bind:*`。
+- bridge 支持动态 props、自定义事件与默认 children。
+- bridge 必须在当前 TSX 顶层使用字符串字面量声明，并与 JSON 注册同名。
+- bridge 暂不支持条件/列表动态结构、跨文件声明、作用域插槽或双向 model；`auto` 模式会直接报告可操作的静态编译错误。
+- React + Wevu SFC 项目需要显式依赖 `wevu`；TSX 仍归 React，`.vue` 归 Wevu compiler。
 
 更多页面、Hooks、Context 和事件示例见 [React 小程序接入](/integration/react)。

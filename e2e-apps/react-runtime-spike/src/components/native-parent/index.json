@@ -1,0 +1,7 @@
+{
+  "component": true,
+  "usingComponents": {
+    "react-leaf": "../react-leaf/index",
+    "wevu-leaf": "../wevu-leaf/index"
+  }
+}

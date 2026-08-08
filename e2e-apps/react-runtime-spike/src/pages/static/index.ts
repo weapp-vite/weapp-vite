@@ -1,6 +1,6 @@
 import { createReactMiniProgramRoot } from '@weapp-vite/react'
 import { createElement } from 'react'
-import { ReactStaticPage } from 'virtual:react-static-binding-spike-page'
+import { ReactStaticPage } from './view'
 
 const roots = new WeakMap<object, ReturnType<typeof createReactMiniProgramRoot>>()
 

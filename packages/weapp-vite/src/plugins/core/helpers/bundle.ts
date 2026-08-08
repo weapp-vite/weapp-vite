@@ -1129,35 +1129,38 @@ function resolveWevuExportAliasMap(wevuChunk: OutputChunk) {
   }
 
   const propertyExports = Array.from(
-    code.matchAll(/Object\.defineProperty\(exports,\s*["']([^"']+)["'][\s\S]*?return\s+([A-Za-z_$][\w$]*)\s*(?:;\s*)?\}/g),
-  )
+    code.matchAll(/Object\.defineProperty\(exports,\s*(["'`])([^"'`]+)\1,\s*\{[^{}]*\bget\s*:\s*function\s*\(\)\s*\{([^{}]*)\}\s*\}\s*\)/g),
+  ).flatMap((match) => {
+    const getterReturn = /^return\s+([A-Za-z_$][\w$]*);?$/.exec((match[3] ?? '').trim())
+    return getterReturn?.[1] ? [[match[2], getterReturn[1]] as const] : []
+  })
   for (const [exportName] of WEVU_EXPORT_ALIASES) {
     if (aliases.has(exportName)) {
       continue
     }
-    const semanticExport = propertyExports.find(match => match[1] === exportName)
-    if (semanticExport?.[2]) {
-      aliases.set(exportName, semanticExport[2])
+    const semanticExport = propertyExports.find(match => match[0] === exportName)
+    if (semanticExport?.[1]) {
+      aliases.set(exportName, semanticExport[1])
       continue
     }
-    const stableExport = propertyExports.find(match => match[1] === `__wevu${exportName[0].toUpperCase()}${exportName.slice(1)}`)
-    if (stableExport?.[2]) {
-      aliases.set(exportName, stableExport[2])
+    const stableExport = propertyExports.find(match => match[0] === `__wevu${exportName[0].toUpperCase()}${exportName.slice(1)}`)
+    if (stableExport?.[1]) {
+      aliases.set(exportName, stableExport[1])
       continue
     }
   }
 
-  if (!aliases.has('defineComponent') && localIdentifiers.has('eo')) {
+  if (WEVU_SRC_CHUNK_RE.test(wevuChunk.fileName) && !aliases.has('defineComponent') && localIdentifiers.has('eo')) {
     aliases.set('defineComponent', 'eo')
   }
-  if (!aliases.has('createWevuComponent') && localIdentifiers.has('to')) {
+  if (WEVU_SRC_CHUNK_RE.test(wevuChunk.fileName) && !aliases.has('createWevuComponent') && localIdentifiers.has('to')) {
     aliases.set('createWevuComponent', 'to')
   }
 
   if (!aliases.has('defineComponent')) {
-    const createWevuComponentExport = propertyExports.find(match => match[1] === 'createWevuComponent')
-      ?? propertyExports.find(match => match[1] === '__wevuCreateWevuComponent')
-    const createWevuComponentLocal = createWevuComponentExport?.[2]
+    const createWevuComponentExport = propertyExports.find(match => match[0] === 'createWevuComponent')
+      ?? propertyExports.find(match => match[0] === '__wevuCreateWevuComponent')
+    const createWevuComponentLocal = createWevuComponentExport?.[1]
     if (createWevuComponentLocal) {
       const functionRe = new RegExp(`function\\s+${createWevuComponentLocal}\\s*\\([^)]*\\)\\s*\\{[\\s\\S]{0,500}?\\b([A-Za-z_$][\\w$]*)\\s*\\(`)
       const functionMatch = functionRe.exec(code)
@@ -1270,7 +1273,7 @@ function appendWevuRuntimeExports(
 
   for (const [exportName, stableName] of WEVU_EXPORT_ALIASES) {
     const localName = aliases.get(exportName)
-    if (!localName || existingExports.has(stableName)) {
+    if (!localName || !localIdentifiers.has(localName) || existingExports.has(stableName)) {
       continue
     }
     lines.push(`Object.defineProperty(exports, ${JSON.stringify(stableName)}, { enumerable: false, get: function() { return ${localName}; } });`)

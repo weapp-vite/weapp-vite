@@ -1,0 +1,5 @@
+<view class="leaf" data-e2e-leaf="native">
+  <text class="leaf-label">{{label}}:{{value}}</text>
+  <slot />
+  <button id="native-leaf-action" size="mini" bindtap="emitChange">native +1</button>
+</view>

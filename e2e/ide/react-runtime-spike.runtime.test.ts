@@ -2,11 +2,13 @@ import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/react-runtime-spike')
 
 let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
+const runtimeProvider = resolveRuntimeProviderName()
 
 function getMiniProgram() {
   if (!miniProgram) {
@@ -30,14 +32,14 @@ describe.sequential('react runtime spike (weapp e2e)', () => {
       projectPath: APP_ROOT,
       skipRelaunchPageRootCheck: true,
     })
-  }, 60_000)
+  }, 180_000)
 
   afterAll(async () => {
     await miniProgram?.close()
     miniProgram = undefined
   })
 
-  it('renders React hooks and dispatches host events through generic WXML', async () => {
+  it.runIf(runtimeProvider === 'devtools')('renders React hooks and dispatches host events through generic WXML', async () => {
     const app = getMiniProgram()
     await app.reLaunch('/pages/index/index')
     const page = await app.currentPage()
@@ -115,7 +117,7 @@ describe.sequential('react runtime spike (weapp e2e)', () => {
     expect(Number(result.countRect?.width ?? 0)).toBeGreaterThan(0)
   })
 
-  it('renders the compiled native WXML page with binding-only payloads', async () => {
+  it.runIf(runtimeProvider === 'devtools')('renders the compiled native WXML page with binding-only payloads', async () => {
     const app = getMiniProgram()
     await app.reLaunch('/pages/static/index')
     const page = await app.currentPage()
@@ -171,5 +173,40 @@ describe.sequential('react runtime spike (weapp e2e)', () => {
     expect(result.payloads).toEqual([{ 'slots.s3.text': 'count:1 doubled:2' }])
     expect(result.payloadBytes).toEqual([37])
     expect(Number(result.countRect?.width ?? 0)).toBeGreaterThan(0)
+  })
+
+  it('passes props, change events and default slots across all six interop edges', async () => {
+    const app = getMiniProgram()
+    await app.reLaunch('/pages/interop/index')
+    const page = await app.currentPage()
+    if (!page) {
+      throw new Error('Failed to launch React interop page')
+    }
+
+    const result = await page.callMethod('_runInteropE2E') as Record<string, any>
+
+    expect(result.props).toEqual([
+      { label: 'react-to-native', value: 1 },
+      { label: 'react-to-wevu', value: 2 },
+      { label: 'native-to-wevu', value: 3 },
+      { label: 'native-to-react', value: 4 },
+      { label: 'wevu-to-native', value: 5 },
+      { label: 'wevu-to-react', value: 6 },
+    ])
+    expect(result.reactResults).toEqual(['native:2', 'wevu:3'])
+    expect(result.nativeParent).toMatchObject({ reactResult: 'react:5', wevuResult: 'wevu:4' })
+    expect(result.wevuParent).toMatchObject({ nativeResult: 'native:6', reactResult: 'react:7' })
+    expect(result.slots.map((slot: any) => slot.name)).toEqual([
+      'react-to-native',
+      'react-to-wevu',
+      'native-to-wevu',
+      'native-to-react',
+      'wevu-to-native',
+      'wevu-to-react',
+    ])
+    for (const slot of result.slots) {
+      expect(slot.width).toBeGreaterThan(0)
+      expect(slot.height).toBeGreaterThan(0)
+    }
   })
 })

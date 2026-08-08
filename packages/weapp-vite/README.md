@@ -138,7 +138,7 @@ export default defineConfig({
 })
 ```
 
-安装 `react@19.2.x`、`react-reconciler@0.33.x` 和 `@weapp-vite/react` 后即可使用 `View`、`Text`、`Button` 等小程序 host components。完整的生命周期、事件代理、Compiler 和限制说明见 [React 小程序接入](https://vite.icebreaker.top/integration/react)。
+安装 `react@19.2.x`、`react-reconciler@0.33.x` 和 `@weapp-vite/react` 后即可使用 `View`、`Text`、`Button` 等小程序 host components。`createNativeComponent<Props>('tag-name')` 可桥接 JSON 中已注册的原生或 Wevu 组件，支持动态 props、自定义事件和默认 slot；React-backed 小程序组件可用 `Slot` 声明默认插槽。React + Wevu SFC 项目还需显式安装 `wevu`，TSX 和 `.vue` 分别由 React 与 Wevu compiler 处理。完整的生命周期、事件代理、Compiler 和静态 bridge 限制见 [React 小程序接入](https://vite.icebreaker.top/integration/react)。
 
 - 配置智能提示文档：[docs/volar.md](./docs/volar.md)
 - defineConfig 重载说明：[docs/define-config-overloads.md](./docs/define-config-overloads.md)

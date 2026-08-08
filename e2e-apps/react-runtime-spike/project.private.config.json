@@ -15,6 +15,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/interop/index",
+          "pathName": "pages/interop/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

@@ -1,0 +1,15 @@
+.parent {
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  background: #fff;
+  border: 1rpx solid #9aa5b1;
+}
+
+.parent-title,
+.interop-slot {
+  display: block;
+}
+
+.parent-title {
+  font-weight: 600;
+}

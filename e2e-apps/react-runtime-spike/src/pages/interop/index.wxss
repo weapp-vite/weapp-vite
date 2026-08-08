@@ -1,0 +1,34 @@
+.interop-page {
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #f4f6f8;
+}
+
+.interop-title,
+.interop-heading,
+.interop-slot {
+  display: block;
+}
+
+.interop-title {
+  margin-bottom: 20rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.interop-panel {
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  background: #fff;
+  border: 1rpx solid #d5d9df;
+  border-radius: 8rpx;
+}
+
+.interop-heading {
+  margin-bottom: 12rpx;
+  font-weight: 600;
+}
+
+.interop-slot {
+  color: #52606d;
+}

@@ -1,4 +1,0 @@
-<view class="page">
-  <text>{{slots.s1.text}}</text>
-  <button bindtap="__weapp_vite_react_event" data-sid="s2">add</button>
-</view>

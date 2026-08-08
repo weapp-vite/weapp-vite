@@ -1,0 +1,11 @@
+.leaf {
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  background: #fff;
+  border: 1rpx solid #9aa5b1;
+}
+
+.label {
+  display: block;
+  font-weight: 600;
+}

@@ -57,6 +57,11 @@ function flatten(groups: Plugin[][]): Plugin[] {
   }, [])
 }
 
+function hasWevuDependency(ctx: CompilerContext) {
+  const packageJson = ctx.configService?.packageJson
+  return Boolean(packageJson?.dependencies?.wevu || packageJson?.devDependencies?.wevu)
+}
+
 export function vitePluginWeapp(
   ctx: CompilerContext,
   subPackageMeta?: SubPackageMetaValue,
@@ -64,7 +69,8 @@ export function vitePluginWeapp(
   const libModeEnabled = ctx.configService?.weappLibConfig?.enabled
   const vueEnabled = ctx.configService?.weappViteConfig?.vue?.enable !== false
   const reactEnabled = isReactEnabled(ctx)
-  const runtimeProvider = resolveRuntimeProvider('miniprogram', reactEnabled ? 'native' : vueEnabled ? 'vue' : 'native')
+  const vueRuntimeEnabled = vueEnabled && (!reactEnabled || hasWevuDependency(ctx))
+  const runtimeProvider = resolveRuntimeProvider('miniprogram', vueRuntimeEnabled ? 'vue' : 'native')
   const groups: Plugin[][] = [
     [createContextPlugin(ctx), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
     preflight(ctx),

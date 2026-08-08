@@ -12,14 +12,16 @@
     "dev:open": "wv dev -o",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "stylelint": "stylelint \"src/**/*.{css,scss,wxss}\" --allow-empty-input",
-    "stylelint:fix": "stylelint \"src/**/*.{css,scss,wxss}\" --fix --allow-empty-input",
-    "typecheck": "tsc --noEmit"
+    "postinstall": "wv prepare",
+    "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --allow-empty-input",
+    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --fix --allow-empty-input",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json"
   },
   "dependencies": {
     "@weapp-vite/react": "workspace:*",
     "react": "19.2.7",
-    "react-reconciler": "0.33.0"
+    "react-reconciler": "0.33.0",
+    "wevu": "workspace:*"
   },
   "devDependencies": {
     "@icebreakers/eslint-config": "catalog:",
@@ -33,6 +35,7 @@
     "stylelint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
+    "vue-tsc": "catalog:",
     "weapp-vite": "workspace:*"
   }
 }

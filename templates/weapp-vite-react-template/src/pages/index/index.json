@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "native-leaf": "/components/native-leaf/index",
+    "wevu-leaf": "/components/wevu-leaf/index"
+  }
+}

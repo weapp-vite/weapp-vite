@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "native-leaf": "/components/native-leaf/index",
+    "native-parent": "/components/native-parent/index",
+    "wevu-leaf": "/components/wevu-leaf/index",
+    "wevu-parent": "/components/wevu-parent/index"
+  }
+}

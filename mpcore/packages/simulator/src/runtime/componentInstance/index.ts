@@ -14,11 +14,15 @@ export { cloneValue, coerceComponentPropertyValue, hasComponentPropertyValueChan
 
 export function createComponentInstance(options: CreateComponentInstanceOptions): HeadlessComponentInstance {
   const definition = normalizeComponentDefinition(options.definition)
+  const properties = resolveInitialProperties(definition, options.properties ?? {})
   const instance: HeadlessComponentInstance = {
     __definition__: definition,
-    data: resolveInitialData(definition),
+    data: {
+      ...resolveInitialData(definition),
+      ...properties,
+    },
     __propertySnapshots__: {},
-    properties: resolveInitialProperties(definition, options.properties ?? {}),
+    properties,
     setData(patch, callback) {
       const changedKeys = Object.keys(patch)
       for (const [key, value] of Object.entries(patch)) {

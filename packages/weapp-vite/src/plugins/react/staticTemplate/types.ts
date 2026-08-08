@@ -8,13 +8,17 @@ export interface StaticTemplateSlot {
 
 export interface StaticTemplateCompileResult {
   code: string
+  nativeComponents: string[]
   slots: StaticTemplateSlot[]
   template: string
 }
 
 export interface StaticTemplateRenderContext {
+  nativeComponentTags: Map<string, string>
   slots: StaticTemplateSlot[]
   slotSeed: number
+  slotComponentNames: Set<string>
+  usedNativeComponents: Set<string>
 }
 
 export type StaticTemplateRoot = JSXElement | JSXFragment

@@ -1,1 +1,20 @@
-.page { padding: 32rpx; }
+.page {
+  min-height: 100vh;
+  padding: 32rpx;
+  background: #f4f6f8;
+}
+
+.title,
+.slot-content {
+  display: block;
+}
+
+.title {
+  margin-bottom: 24rpx;
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.slot-content {
+  color: #52606d;
+}

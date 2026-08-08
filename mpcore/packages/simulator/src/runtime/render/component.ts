@@ -215,6 +215,7 @@ export function syncComponentProperties(
     if (hasComponentPropertyValueChanged(instance.properties[key], previousSnapshot, nextValue, bindingAffected)) {
       previousProperties[key] = instance.properties[key]
       instance.properties[key] = nextValue
+      instance.data[key] = nextValue
       changedRootKeys.push(key)
     }
     instance.__propertySnapshots ??= {}

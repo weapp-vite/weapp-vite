@@ -30,6 +30,7 @@ const EVENT_NAMES: Record<string, string> = {
   onTapCapture: 'capture-bind:tap',
 }
 const EVENT_PROP_RE = /^on[A-Z]/
+const IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
 
 function escapeAttribute(value: string) {
   return value
@@ -53,15 +54,28 @@ function normalizeJsxText(value: string) {
     .join(' ')
 }
 
-function readTagName(node: JSXElement['openingElement']['name']) {
+interface ResolvedTag {
+  kind: 'host' | 'native' | 'slot'
+  tag: string
+}
+
+function readTagName(node: JSXElement['openingElement']['name'], context: StaticTemplateRenderContext): ResolvedTag {
   if (!t.isJSXIdentifier(node)) {
     throw new Error('static template 暂不支持 member/namespaced JSX tag')
   }
   const tag = HOST_TAGS[node.name]
-  if (!tag) {
-    throw new Error(`static template 暂不支持动态组件 <${node.name}>`)
+  if (tag) {
+    return { kind: 'host', tag }
   }
-  return tag
+  if (context.slotComponentNames.has(node.name) || node.name === 'slot') {
+    return { kind: 'slot', tag: 'slot' }
+  }
+  const nativeTag = context.nativeComponentTags.get(node.name)
+  if (nativeTag) {
+    context.usedNativeComponents.add(nativeTag)
+    return { kind: 'native', tag: nativeTag }
+  }
+  throw new Error(`static template 暂不支持动态组件 <${node.name}>`)
 }
 
 function readAttributeExpression(attribute: JSXAttribute) {
@@ -93,7 +107,34 @@ function appendInternalAttribute(element: JSXElement, name: string, value: strin
   )
 }
 
-function compileAttributes(element: JSXElement, slot: string, bindingFields: Set<string>) {
+function toKebabCase(value: string) {
+  return value.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+}
+
+function resolveNativeEvent(name: string) {
+  if (!EVENT_PROP_RE.test(name)) {
+    return undefined
+  }
+  const capture = name.endsWith('Capture')
+  const eventName = name.slice(2, capture ? -7 : undefined)
+  if (!eventName) {
+    return undefined
+  }
+  return `${capture ? 'capture-bind' : 'bind'}:${toKebabCase(eventName)}`
+}
+
+function renderBindingExpression(slot: string, name: string) {
+  return IDENTIFIER_RE.test(name)
+    ? `slots.${slot}.${name}`
+    : `slots.${slot}['${name}']`
+}
+
+function compileAttributes(
+  element: JSXElement,
+  slot: string,
+  bindingFields: Set<string>,
+  tagKind: ResolvedTag['kind'],
+) {
   const output: string[] = []
   let hasEvent = false
   for (const attribute of element.openingElement.attributes) {
@@ -104,7 +145,7 @@ function compileAttributes(element: JSXElement, slot: string, bindingFields: Set
     if (name === 'key') {
       continue
     }
-    const eventName = EVENT_NAMES[name]
+    const eventName = tagKind === 'native' ? resolveNativeEvent(name) : EVENT_NAMES[name]
     if (eventName) {
       hasEvent = true
       output.push(`${eventName}="${WEAPP_REACT_EVENT_METHOD_NAME}"`)
@@ -131,7 +172,7 @@ function compileAttributes(element: JSXElement, slot: string, bindingFields: Set
       continue
     }
     bindingFields.add(name)
-    output.push(`${outputName}="{{slots.${slot}.${name}}}"`)
+    output.push(`${outputName}="{{${renderBindingExpression(slot, name)}}}"`)
   }
   if (hasEvent) {
     output.push(`data-sid="${slot}"`)
@@ -177,7 +218,8 @@ function compileStaticFragment(fragment: JSXFragment, context: StaticTemplateRen
 }
 
 function compileStaticElement(element: JSXElement, context: StaticTemplateRenderContext): string {
-  const tag = readTagName(element.openingElement.name)
+  const resolvedTag = readTagName(element.openingElement.name, context)
+  const { tag } = resolvedTag
   const slot = `s${context.slotSeed++}`
   const bindingFields = new Set<string>()
   const slotRecord = {
@@ -186,7 +228,7 @@ function compileStaticElement(element: JSXElement, context: StaticTemplateRender
     tag,
   }
   context.slots.push(slotRecord)
-  const attributes = compileAttributes(element, slot, bindingFields)
+  const attributes = compileAttributes(element, slot, bindingFields, resolvedTag.kind)
   const children = element.children as Array<JSXText | JSXExpressionContainer | JSXElement | JSXFragment>
   const hasDynamicText = (tag === 'text' || tag === 'button')
     && children.some(child => t.isJSXExpressionContainer(child) && isDynamicTextExpression(child))
@@ -210,6 +252,9 @@ function compileStaticElement(element: JSXElement, context: StaticTemplateRender
   slotRecord.bindings = [...bindingFields]
 
   const attributeSegment = attributes.length > 0 ? ` ${attributes.join(' ')}` : ''
+  if (resolvedTag.kind === 'slot' && children.length > 0) {
+    throw new Error('static template 的 <Slot> 不支持子节点')
+  }
   if (element.openingElement.selfClosing) {
     return `<${tag}${attributeSegment} />`
   }
