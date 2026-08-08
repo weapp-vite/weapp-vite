@@ -986,17 +986,24 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const pageMap = JSON.parse(await fs.readFile(pageMapPath, 'utf-8')) as Parameters<typeof TraceMap>[0]
     const sourceTs = await fs.readFile(path.join(APP_ROOT, sourceFile), 'utf-8')
-    const expectedSourceLine = sourceTs
-      .split('\n')
-      .findIndex(line => line.includes(`camelCase('issue 769 sourcemap marker')`)) + 1
-    const generatedPosition = findGeneratedPosition(pageJs, 'issue 769 sourcemap marker')
-    const originalPosition = originalPositionFor(new TraceMap(pageMap), generatedPosition)
+    const sourceLines = sourceTs.split('\n')
+    const sourceMap = new TraceMap(pageMap)
+    const mappedMarkers = [
+      ['issue 769 sourcemap marker', `camelCase('issue 769 sourcemap marker')`],
+      ['Page({', 'Page({'],
+      ['_runE2E() {', '_runE2E() {'],
+      ['issue769SourcemapMarker', `ok: issue769NpmMarker === 'issue769SourcemapMarker'`],
+    ]
 
     expect(pageJs).toMatch(/require\((['"])\.\.\/miniprogram_npm\/camelcase(?:\/index)?\1\)/)
     expect(await fs.pathExists(pageMapPath)).toBe(true)
-    expect(expectedSourceLine).toBeGreaterThan(0)
-    expect(originalPosition.source?.replaceAll('\\', '/')).toContain(sourceFile)
-    expect(originalPosition.line).toBe(expectedSourceLine)
+    for (const [generatedMarker, sourceMarker] of mappedMarkers) {
+      const expectedSourceLine = sourceLines.findIndex(line => line.includes(sourceMarker)) + 1
+      const originalPosition = originalPositionFor(sourceMap, findGeneratedPosition(pageJs, generatedMarker))
+      expect(expectedSourceLine).toBeGreaterThan(0)
+      expect(originalPosition.source?.replaceAll('\\', '/')).toContain(sourceFile)
+      expect(originalPosition.line).toBe(expectedSourceLine)
+    }
   })
 
   it('issue #479: injects indirect wevu page feature hooks from local helpers', async () => {

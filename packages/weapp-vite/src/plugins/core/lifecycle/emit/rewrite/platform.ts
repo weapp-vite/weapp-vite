@@ -1,20 +1,22 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { ScriptAnalysisResult } from '../../../../../ast'
 import type { MpPlatform } from '../../../../../types'
+import MagicString from 'magic-string'
 import { analyzeScript, analyzeScripts, mayContainPlatformApiAccess, mayContainStaticRequireLiteral, platformApiIdentifiers } from '../../../../../ast'
-import { generate, parseJsLike, traverse } from '../../../../../utils/babel'
+import { parseJsLike, traverse } from '../../../../../utils/babel'
 import {
   hasNpmDependencyPrefix,
   normalizeNpmImportLookupPath,
   normalizeNpmImportPathByPlatform,
   resolveNpmDependencyId,
 } from '../../../../../utils/npmImport'
-import { rewriteMiniProgramPlatformApiAccess } from '../../platformApiRewrite'
+import { createMiniProgramPlatformApiRewrite, rewriteMiniProgramPlatformApiAccess } from '../../platformApiRewrite'
 import {
   BROWSER_GLOBAL_HOST_TERNARY_RE,
   DYNAMIC_GLOBAL_RESOLUTION_RE,
 } from '../constants'
-import { getRequireImportLiteral, setRequireImportLiteral } from './literals'
+import { getRequireImportLiteral } from './literals'
+import { applyMagicStringChunkRewrite } from './sourcemap'
 
 function mayNeedChunkScriptAnalysis(code: string) {
   if (code.includes('require')) {
@@ -152,7 +154,7 @@ export function normalizeNpmImportByPlatform(
   })
 }
 
-export function rewriteChunkNpmImportsByPlatform(
+function createPlatformNpmImportRewrite(
   platform: MpPlatform | undefined,
   code: string,
   dependencies: Record<string, string> | undefined,
@@ -163,11 +165,12 @@ export function rewriteChunkNpmImportsByPlatform(
   },
 ) {
   if (!(options?.analysis?.hasStaticRequireLiteral ?? mayContainStaticRequireLiteral(code, { engine: options?.astEngine }))) {
-    return code
+    return
   }
 
   try {
     const ast = parseJsLike(code)
+    const magicString = new MagicString(code)
     let mutated = false
 
     traverse(ast as any, {
@@ -196,20 +199,39 @@ export function rewriteChunkNpmImportsByPlatform(
           return
         }
 
-        setRequireImportLiteral(firstArg, nextValue)
+        if (
+          typeof firstArg.start !== 'number'
+          || typeof firstArg.end !== 'number'
+          || firstArg.start < 0
+          || firstArg.end < firstArg.start
+        ) {
+          return
+        }
+
+        magicString.update(firstArg.start, firstArg.end, JSON.stringify(nextValue))
         mutated = true
       },
     })
 
-    if (!mutated) {
-      return code
+    if (mutated) {
+      return magicString
     }
-
-    return generate(ast as any).code
   }
   catch {
-    return code
   }
+}
+
+export function rewriteChunkNpmImportsByPlatform(
+  platform: MpPlatform | undefined,
+  code: string,
+  dependencies: Record<string, string> | undefined,
+  mode?: string,
+  options?: {
+    analysis?: Pick<ChunkScriptAnalysis, 'hasStaticRequireLiteral'>
+    astEngine?: 'babel' | 'oxc'
+  },
+) {
+  return createPlatformNpmImportRewrite(platform, code, dependencies, mode, options)?.toString() ?? code
 }
 
 export function rewriteBundleNpmImportsByPlatform(
@@ -237,14 +259,14 @@ export function rewriteBundleNpmImportsByPlatform(
       astEngine: options?.astEngine,
       cache: options?.analysisCache,
     })
-    const nextCode = rewriteChunkNpmImportsByPlatform(platform, chunk.code, dependencies, mode, {
+    const magicString = createPlatformNpmImportRewrite(platform, chunk.code, dependencies, mode, {
       ...options,
       analysis,
     })
-    if (nextCode === chunk.code) {
+    if (!magicString) {
       continue
     }
-    chunk.code = nextCode
+    applyMagicStringChunkRewrite(chunk, magicString)
     rememberChunkScriptAnalysis(chunk, analysis, {
       cache: options?.analysisCache,
     })
@@ -274,18 +296,32 @@ export function rewriteBundlePlatformApi(
       astEngine: options?.astEngine,
       cache: options?.analysisCache,
     })
-    const nextCode = replacePlatformApiAccess(chunk.code, globalName, {
+    if (analysis && !analysis.hasPlatformApiAccess) {
+      continue
+    }
+    const magicString = createMiniProgramPlatformApiRewrite(chunk.code, globalName, {
       ...options,
       analysis,
     })
-    if (nextCode === chunk.code) {
+    if (!magicString) {
       continue
     }
-    chunk.code = nextCode
+    applyMagicStringChunkRewrite(chunk, magicString)
   }
 }
 
 export function rewriteBundleDynamicGlobalResolution(bundle: OutputBundle) {
+  const applyPatternRewrite = (chunk: OutputChunk, expression: RegExp) => {
+    expression.lastIndex = 0
+    const magicString = new MagicString(chunk.code)
+    for (const match of chunk.code.matchAll(expression)) {
+      if (typeof match.index === 'number') {
+        magicString.update(match.index, match.index + match[0].length, 'globalThis')
+      }
+    }
+    applyMagicStringChunkRewrite(chunk, magicString)
+  }
+
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
@@ -301,16 +337,15 @@ export function rewriteBundleDynamicGlobalResolution(bundle: OutputBundle) {
 
     const hasDynamicGlobalResolution = DYNAMIC_GLOBAL_RESOLUTION_RE.test(chunk.code)
     DYNAMIC_GLOBAL_RESOLUTION_RE.lastIndex = 0
-    const hasBrowserGlobalHostTernary = BROWSER_GLOBAL_HOST_TERNARY_RE.test(chunk.code)
-    BROWSER_GLOBAL_HOST_TERNARY_RE.lastIndex = 0
-
-    if (!hasDynamicGlobalResolution && !hasBrowserGlobalHostTernary) {
-      continue
+    if (hasDynamicGlobalResolution) {
+      applyPatternRewrite(chunk, DYNAMIC_GLOBAL_RESOLUTION_RE)
     }
 
-    chunk.code = chunk.code
-      .replaceAll(DYNAMIC_GLOBAL_RESOLUTION_RE, 'globalThis')
-      .replaceAll(BROWSER_GLOBAL_HOST_TERNARY_RE, 'globalThis')
+    const hasBrowserGlobalHostTernary = BROWSER_GLOBAL_HOST_TERNARY_RE.test(chunk.code)
+    BROWSER_GLOBAL_HOST_TERNARY_RE.lastIndex = 0
+    if (hasBrowserGlobalHostTernary) {
+      applyPatternRewrite(chunk, BROWSER_GLOBAL_HOST_TERNARY_RE)
+    }
   }
 }
 
