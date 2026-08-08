@@ -32,6 +32,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Build shared runtime dependency
+        run: pnpm --filter @weapp-core/shared build
+
       - name: Crawl WeChat configuration metadata
         run: pnpm --filter @weapp-core/schematics crawl:wechat-config -- app page
 
