@@ -1635,7 +1635,7 @@ importers:
     dependencies:
       '@weapp-vite/react':
         specifier: workspace:*
-        version: link:../../packages-runtime/weapp-react
+        version: link:../../packages-runtime/react
       react:
         specifier: 19.2.7
         version: 19.2.7
@@ -2190,22 +2190,7 @@ importers:
         specifier: 'catalog:'
         version: 8.2.1(@types/node@26.2.0)(esbuild@0.28.1)(jiti@2.7.0)(less@4.8.1(supports-color@10.2.2))(sass-embedded@1.100.0)(sass@1.102.0)(terser@5.34.1)(tsx@4.23.11)(yaml@2.9.0)
 
-  packages-runtime/weapi:
-    dependencies:
-      '@douyin-microapp/typings':
-        specifier: 'catalog:'
-        version: 1.3.1
-      '@mini-types/alipay':
-        specifier: 'catalog:'
-        version: 3.0.14
-      '@weapp-core/shared':
-        specifier: workspace:*
-        version: link:../../@weapp-core/shared
-      miniprogram-api-typings:
-        specifier: 'catalog:'
-        version: 5.2.3
-
-  packages-runtime/weapp-react:
+  packages-runtime/react:
     dependencies:
       '@weapp-core/constants':
         specifier: workspace:*
@@ -2226,6 +2211,21 @@ importers:
       react-reconciler:
         specifier: 0.33.0
         version: 0.33.0(react@19.2.7)
+
+  packages-runtime/weapi:
+    dependencies:
+      '@douyin-microapp/typings':
+        specifier: 'catalog:'
+        version: 1.3.1
+      '@mini-types/alipay':
+        specifier: 'catalog:'
+        version: 3.0.14
+      '@weapp-core/shared':
+        specifier: workspace:*
+        version: link:../../@weapp-core/shared
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
 
   packages-runtime/web:
     dependencies:
@@ -2813,7 +2813,7 @@ importers:
     dependencies:
       '@weapp-vite/react':
         specifier: workspace:*
-        version: link:../../packages-runtime/weapp-react
+        version: link:../../packages-runtime/react
       react:
         specifier: 19.2.7
         version: 19.2.7

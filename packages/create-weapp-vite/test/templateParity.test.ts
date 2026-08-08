@@ -254,7 +254,7 @@ async function buildExpectedPackageJson(templateName: TemplateName): Promise<Pac
     path.resolve(import.meta.dirname, '../../..', 'packages-runtime/wevu/package.json'),
   )
   const { version: reactRuntimeVersion } = await readPackageJson(
-    path.resolve(import.meta.dirname, '../../..', 'packages-runtime/weapp-react/package.json'),
+    path.resolve(import.meta.dirname, '../../..', 'packages-runtime/react/package.json'),
   )
   const { version: dashboardVersion } = await readPackageJson(
     path.resolve(import.meta.dirname, '../../..', 'packages/dashboard/package.json'),

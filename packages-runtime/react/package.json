@@ -40,6 +40,9 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "miniprogram-api-typings": "^5.0.0",
     "react": "^19.2.0",

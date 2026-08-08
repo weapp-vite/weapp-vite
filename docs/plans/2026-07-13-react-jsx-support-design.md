@@ -190,7 +190,7 @@ native WXML binding       generic island WXML
 新增运行时包：
 
 ```text
-packages-runtime/weapp-react/
+packages-runtime/react/
   package name: @weapp-vite/react
 ```
 
