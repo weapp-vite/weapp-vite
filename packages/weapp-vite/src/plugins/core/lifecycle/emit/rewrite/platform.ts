@@ -296,6 +296,9 @@ export function rewriteBundlePlatformApi(
       astEngine: options?.astEngine,
       cache: options?.analysisCache,
     })
+    if (analysis && !analysis.hasPlatformApiAccess) {
+      continue
+    }
     const magicString = createMiniProgramPlatformApiRewrite(chunk.code, globalName, {
       ...options,
       analysis,
@@ -308,6 +311,17 @@ export function rewriteBundlePlatformApi(
 }
 
 export function rewriteBundleDynamicGlobalResolution(bundle: OutputBundle) {
+  const applyPatternRewrite = (chunk: OutputChunk, expression: RegExp) => {
+    expression.lastIndex = 0
+    const magicString = new MagicString(chunk.code)
+    for (const match of chunk.code.matchAll(expression)) {
+      if (typeof match.index === 'number') {
+        magicString.update(match.index, match.index + match[0].length, 'globalThis')
+      }
+    }
+    applyMagicStringChunkRewrite(chunk, magicString)
+  }
+
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
@@ -323,23 +337,15 @@ export function rewriteBundleDynamicGlobalResolution(bundle: OutputBundle) {
 
     const hasDynamicGlobalResolution = DYNAMIC_GLOBAL_RESOLUTION_RE.test(chunk.code)
     DYNAMIC_GLOBAL_RESOLUTION_RE.lastIndex = 0
+    if (hasDynamicGlobalResolution) {
+      applyPatternRewrite(chunk, DYNAMIC_GLOBAL_RESOLUTION_RE)
+    }
+
     const hasBrowserGlobalHostTernary = BROWSER_GLOBAL_HOST_TERNARY_RE.test(chunk.code)
     BROWSER_GLOBAL_HOST_TERNARY_RE.lastIndex = 0
-
-    if (!hasDynamicGlobalResolution && !hasBrowserGlobalHostTernary) {
-      continue
+    if (hasBrowserGlobalHostTernary) {
+      applyPatternRewrite(chunk, BROWSER_GLOBAL_HOST_TERNARY_RE)
     }
-
-    const magicString = new MagicString(chunk.code)
-    for (const expression of [DYNAMIC_GLOBAL_RESOLUTION_RE, BROWSER_GLOBAL_HOST_TERNARY_RE]) {
-      expression.lastIndex = 0
-      for (const match of chunk.code.matchAll(expression)) {
-        if (typeof match.index === 'number') {
-          magicString.update(match.index, match.index + match[0].length, 'globalThis')
-        }
-      }
-    }
-    applyMagicStringChunkRewrite(chunk, magicString)
   }
 }
 

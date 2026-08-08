@@ -239,11 +239,13 @@ describe('bundle script analysis warmup', () => {
     const setupFunction = createChunk('pages/setup.js', `function runSetupFunction(setup) { return setup() }`)
     const functionGlobal = createChunk('pages/function.js', `const root = Function("return this")()`)
     const browserTernary = createChunk('pages/browser.js', `const root = typeof self<"u"?self:typeof window<"u"?window:globalThis`)
+    const nestedBrowserTernary = createChunk('pages/nested.js', `const root = typeof self<"u"?self:typeof window<"u"?window:Function("return this")()`)
     const bundle: OutputBundle = {
       [plain.fileName]: plain,
       [setupFunction.fileName]: setupFunction,
       [functionGlobal.fileName]: functionGlobal,
       [browserTernary.fileName]: browserTernary,
+      [nestedBrowserTernary.fileName]: nestedBrowserTernary,
     }
 
     rewriteBundleDynamicGlobalResolution(bundle)
@@ -252,6 +254,7 @@ describe('bundle script analysis warmup', () => {
     expect(setupFunction.code).toBe(`function runSetupFunction(setup) { return setup() }`)
     expect(functionGlobal.code).toBe(`const root = globalThis`)
     expect(browserTernary.code).toBe(`const root = globalThis`)
+    expect(nestedBrowserTernary.code).toBe(`const root = globalThis`)
   })
 
   it('keeps sourcemaps aligned after platform api and dynamic global rewrites', () => {
