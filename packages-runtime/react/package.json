@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/react",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React 19 runtime for weapp-vite mini programs",
   "license": "MIT",
   "sideEffects": false,
@@ -26,7 +26,9 @@
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
