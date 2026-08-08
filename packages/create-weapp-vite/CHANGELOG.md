@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.6.4
+
+### Patch Changes
+
+- 🐛 **修复增强 scoped slot 的宿主属性早于 runtime 挂载时，owner proxy 与 slot props 未同步到新 runtime、导致模板计算值回退为空的问题。** [#787](https://github.com/weapp-vite/weapp-vite/pull/787) by @sonofmagic
+
+- 🐛 **修复构建后 npm 路径、平台 API 和动态全局对象重写继续沿用旧 sourcemap，导致原生 TypeScript 产物无法准确回溯源码位置的问题。** [#785](https://github.com/weapp-vite/weapp-vite/pull/785) by @sonofmagic
+
 ## 2.6.3
 
 ### Patch Changes

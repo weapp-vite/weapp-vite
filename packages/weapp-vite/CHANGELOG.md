@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.19.4
+
+### Patch Changes
+
+- 🐛 **修复构建后 npm 路径、平台 API 和动态全局对象重写继续沿用旧 sourcemap，导致原生 TypeScript 产物无法准确回溯源码位置的问题。** [#785](https://github.com/weapp-vite/weapp-vite/pull/785) by @sonofmagic
+- 📦 **Dependencies** [`e9856a1`](https://github.com/weapp-vite/weapp-vite/commit/e9856a11c2d687a8cb3244f6672dbfe1bd67194e)
+  → `wevu@6.19.4`, `@weapp-vite/web@1.4.4`, `@weapp-vite/ast@6.19.4`
+
 ## 6.19.3
 
 ### Patch Changes
