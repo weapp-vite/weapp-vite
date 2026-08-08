@@ -59,7 +59,6 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   ],
   'github-issues.runtime.issue558.test.ts': [
     'pages/issue-558/**',
-    'components/issue-558/**',
   ],
   'github-issues.runtime.issue554.test.ts': [
     'pages/issue-554/**',
@@ -222,7 +221,6 @@ function resolveGithubIssuesAutoRoutes() {
     return {
       include: [
         'pages/issue-558/**',
-        'components/issue-558/**',
       ],
     }
   }

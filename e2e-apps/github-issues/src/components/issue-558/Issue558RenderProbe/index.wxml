@@ -1,0 +1,6 @@
+<text
+  class="issue558-result"
+  data-issue558-case="{{caseName}}"
+>
+  {{value}}
+</text>
