@@ -3,7 +3,7 @@
   "name": "@weapp-vite/vscode",
   "displayName": "weapp-vite",
   "type": "module",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "private": true,
   "description": "为 weapp-vite 项目提供命令入口、状态栏、代码片段、自定义块高亮与轻量编辑器增强的 VS Code 扩展。",
   "license": "MIT",
@@ -96,27 +96,57 @@
   "contributes": {
     "jsonValidation": [
       {
-        "fileMatch": ["**/app.json", "**/app.jsonc", "**/app.json.ts", "**/app.json.js"],
+        "fileMatch": [
+          "**/app.json",
+          "**/app.jsonc",
+          "**/app.json.ts",
+          "**/app.json.js"
+        ],
         "url": "https://vite.icebreaker.top/app.json"
       },
       {
-        "fileMatch": ["**/page.json", "**/page.jsonc", "**/page.json.ts", "**/page.json.js"],
+        "fileMatch": [
+          "**/page.json",
+          "**/page.jsonc",
+          "**/page.json.ts",
+          "**/page.json.js"
+        ],
         "url": "https://vite.icebreaker.top/page.json"
       },
       {
-        "fileMatch": ["**/component.json", "**/component.jsonc", "**/component.json.ts", "**/component.json.js"],
+        "fileMatch": [
+          "**/component.json",
+          "**/component.jsonc",
+          "**/component.json.ts",
+          "**/component.json.js"
+        ],
         "url": "https://vite.icebreaker.top/component.json"
       },
       {
-        "fileMatch": ["**/sitemap.json", "**/sitemap.jsonc", "**/sitemap.json.ts", "**/sitemap.json.js"],
+        "fileMatch": [
+          "**/sitemap.json",
+          "**/sitemap.jsonc",
+          "**/sitemap.json.ts",
+          "**/sitemap.json.js"
+        ],
         "url": "https://vite.icebreaker.top/sitemap.json"
       },
       {
-        "fileMatch": ["**/theme.json", "**/theme.jsonc", "**/theme.json.ts", "**/theme.json.js"],
+        "fileMatch": [
+          "**/theme.json",
+          "**/theme.jsonc",
+          "**/theme.json.ts",
+          "**/theme.json.js"
+        ],
         "url": "https://vite.icebreaker.top/theme.json"
       },
       {
-        "fileMatch": ["**/plugin.json", "**/plugin.jsonc", "**/plugin.json.ts", "**/plugin.json.js"],
+        "fileMatch": [
+          "**/plugin.json",
+          "**/plugin.jsonc",
+          "**/plugin.json.ts",
+          "**/plugin.json.js"
+        ],
         "url": "https://vite.icebreaker.top/plugin.json"
       }
     ],

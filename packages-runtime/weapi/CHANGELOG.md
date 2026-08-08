@@ -1,5 +1,12 @@
 # @wevu/api
 
+## 0.2.15
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`8d7c0a2`](https://github.com/weapp-vite/weapp-vite/commit/8d7c0a292cd98462ba127f7ab4fd5077a09b54de) by @sonofmagic
+  - 默认 catalog 变更键：miniprogram-api-typings, tsx, weapp-tailwindcss。命名 catalog 变更键：latest(miniprogram-api-typings)；weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
 ## 0.2.14
 
 ### Patch Changes
