@@ -1,6 +1,7 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../../context'
 import type { WeappReactConfig } from '../../types'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { transformWithOxc } from 'vite'
@@ -9,6 +10,18 @@ import { compileStaticReactPage } from './staticTemplate/index'
 
 export const REACT_PLUGIN_NAME = 'weapp-vite:react'
 const REACT_FILE_RE = /\.(?:jsx|tsx)(?:\?.*)?$/
+
+function resolveStaticTemplateFileName(cwd: string, id: string) {
+  const cleanId = id.split('?', 1)[0] ?? id
+  const relative = path.relative(cwd, cleanId).replaceAll('\\', '/')
+  let fileName = relative
+    .replace(/\.(?:jsx|tsx)$/, '.wxml')
+    .replace(/^src\//, '')
+  if (fileName.endsWith('/view.wxml')) {
+    fileName = fileName.replace(/\/view\.wxml$/, '/index.wxml')
+  }
+  return fileName
+}
 
 function resolveReactConfig(value: boolean | WeappReactConfig | undefined): WeappReactConfig | undefined {
   if (!value) {
@@ -31,6 +44,19 @@ export function resolveReactConfigValue(value: boolean | WeappReactConfig | unde
     renderMode: config.renderMode ?? 'auto',
     devWarnings: config.devWarnings ?? true,
   } as const
+}
+
+export function isReactStaticTemplateSource(
+  value: boolean | WeappReactConfig | undefined,
+  id: string,
+) {
+  const config = resolveReactConfigValue(value)
+  return Boolean(
+    config
+    && config.renderMode !== 'dynamic'
+    && REACT_FILE_RE.test(id)
+    && !id.includes('/node_modules/'),
+  )
 }
 
 async function transformWithSwc(source: string, id: string, compilationMode: 'infer' | 'syntax' | 'annotation' | 'all') {
@@ -65,17 +91,49 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
   if (!resolved) {
     return []
   }
+  const reactConfig = resolved
 
   let config: ResolvedConfig | undefined
   const staticTemplates = new Map<string, string>()
+  async function refreshStaticTemplate(
+    id: string,
+    event: 'create' | 'delete' | 'update',
+    warn: (message: string) => void,
+  ) {
+    if (!isReactStaticTemplateSource(reactConfig, id)) {
+      return
+    }
+    const cleanId = id.split('?', 1)[0] ?? id
+    const fileName = resolveStaticTemplateFileName(ctx.configService?.cwd ?? process.cwd(), cleanId)
+    if (event === 'delete') {
+      staticTemplates.delete(fileName)
+      return
+    }
+    try {
+      const source = await readFile(cleanId, 'utf8')
+      staticTemplates.set(fileName, compileStaticReactPage(source, cleanId).template)
+    }
+    catch (error) {
+      staticTemplates.delete(fileName)
+      if (reactConfig.renderMode === 'static') {
+        throw error
+      }
+      if (reactConfig.devWarnings && error instanceof Error) {
+        warn(`[react] dynamic island fallback for ${cleanId}: ${error.message}`)
+      }
+    }
+  }
   return [{
     name: REACT_PLUGIN_NAME,
     enforce: 'pre',
     configResolved(next) {
       config = next
     },
-    buildStart() {
-      staticTemplates.clear()
+    async watchChange(id, change) {
+      await refreshStaticTemplate(id, change.event, message => this.warn(message))
+    },
+    async handleHotUpdate(context) {
+      await refreshStaticTemplate(context.file, 'update', message => this.warn(message))
     },
     transform: async function transformReact(source, id) {
       if (!REACT_FILE_RE.test(id) || id.includes('/node_modules/')) {
@@ -86,20 +144,18 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
       if (resolved.renderMode !== 'dynamic') {
         try {
           const compiled = compileStaticReactPage(source, id)
-          const relative = path.relative(
+          const fileName = resolveStaticTemplateFileName(
             ctx.configService?.cwd ?? process.cwd(),
             id,
-          ).replaceAll('\\', '/')
-          let fileName = relative
-            .replace(/\.(?:jsx|tsx)$/, '.wxml')
-            .replace(/^src\//, '')
-          if (fileName.endsWith('/view.wxml')) {
-            fileName = fileName.replace(/\/view\.wxml$/, '/index.wxml')
-          }
+          )
           staticTemplates.set(fileName, compiled.template)
           transformedSource = compiled.code
         }
         catch (error) {
+          staticTemplates.delete(resolveStaticTemplateFileName(
+            ctx.configService?.cwd ?? process.cwd(),
+            id,
+          ))
           if (resolved.renderMode === 'static') {
             throw error
           }

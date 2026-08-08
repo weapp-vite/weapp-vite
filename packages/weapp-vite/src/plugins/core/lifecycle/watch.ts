@@ -16,6 +16,7 @@ import { findCssEntry, findJsEntry, findVueEntry } from '../../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
+import { isReactStaticTemplateSource } from '../../react'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
 import { extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
@@ -308,6 +309,8 @@ async function processChangedFile(
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
   const pathKind = resolveWatchPathKind(normalizedId)
+  const isReactStaticTemplateUpdate = event === 'update'
+    && isReactStaticTemplateSource(configService.weappViteConfig?.react, normalizedId)
   const isScriptModuleSidecar = pathKind.isScriptModuleSidecar
   const concreteChangedEntryId = isAppVueFile(normalizedId) && scanService.appEntry?.path
     ? normalizeFsResolvedId(scanService.appEntry.path)
@@ -594,13 +597,15 @@ async function processChangedFile(
       ? 'metadata'
       : (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct'
     const directDirtyCause = sidecarDirtyCause
-      ?? (isJsonOnlyVueEntryUpdate
-        ? isAutoRoutesStaleAppEntry ? 'entry-auto-routes' : 'entry-json-only'
-        : isAppShellTopologyChanged
-          ? 'entry-direct'
-          : isLocalAssetOnlyVueEntryUpdate
-            ? isStyleOnlyVueEntryUpdate ? 'entry-style-only' : 'entry-local-asset'
-            : 'entry-direct')
+      ?? (isReactStaticTemplateUpdate
+        ? 'react-template'
+        : isJsonOnlyVueEntryUpdate
+          ? isAutoRoutesStaleAppEntry ? 'entry-auto-routes' : 'entry-json-only'
+          : isAppShellTopologyChanged
+            ? 'entry-direct'
+            : isLocalAssetOnlyVueEntryUpdate
+              ? isStyleOnlyVueEntryUpdate ? 'entry-style-only' : 'entry-local-asset'
+              : 'entry-direct')
     markChangedEntryDirty(
       directDirtyReason,
       directDirtyCause,
@@ -608,7 +613,11 @@ async function processChangedFile(
   }
   else if (!handledSidecarMetadataUpdate && importerGraphAffectedEntryIds.size) {
     for (const entryId of importerGraphAffectedEntryIds) {
-      markEntryDirtyWithCause(entryId, 'dependency', 'importer-graph')
+      markEntryDirtyWithCause(
+        entryId,
+        'dependency',
+        isReactStaticTemplateUpdate ? 'react-template' : 'importer-graph',
+      )
     }
   }
   await markAppEntryForTailwindContent()

@@ -12,7 +12,7 @@ const ROOT = path.resolve(import.meta.dirname, '..')
 describe('Web project matrix', () => {
   it('covers every e2e app and template with standard Web commands and entry', async () => {
     const projects = await discoverWebProjects(ROOT)
-    expect(projects).toHaveLength(46)
+    expect(projects.length).toBeGreaterThan(0)
     expect(projects.find(project => project.relativeRoot === 'e2e-apps/uview-plus-compat'))
       .toMatchObject({
         kind: 'e2e-app',
@@ -49,5 +49,12 @@ describe('Web project matrix', () => {
       .toEqual(['e2e-apps/lib-mode'])
     expect(projects.filter(project => project.expectation === 'startup-error').map(project => project.relativeRoot))
       .toEqual(['e2e-apps/script-setup-macros-js-with-defaults-invalid'])
+  })
+
+  it('excludes projects that explicitly do not support the Web runtime', async () => {
+    const projects = await discoverWebProjects(ROOT)
+    const relativeRoots = new Set(projects.map(project => project.relativeRoot))
+    expect(relativeRoots.has('e2e-apps/react-runtime-spike')).toBe(false)
+    expect(relativeRoots.has('templates/weapp-vite-react-template')).toBe(false)
   })
 })

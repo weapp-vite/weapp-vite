@@ -1,6 +1,13 @@
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { parseStatefulHmrControlSource, resolveHmrScriptOutputPath, resolveWorkspaceHmrRuntime } from './workspace-hmr/scenarios'
+import {
+  injectReactTemplateMarker,
+  isReactTemplateSource,
+  parseStatefulHmrControlSource,
+  resolveHmrScriptOutputPath,
+  resolveReactTemplateOutputPath,
+  resolveWorkspaceHmrRuntime,
+} from './workspace-hmr/scenarios'
 
 describe('workspace HMR script output', () => {
   it('detects the runtime from the stateful control artifact', () => {
@@ -36,5 +43,22 @@ describe('workspace HMR script output', () => {
     }, path.join('project', 'src', 'pages', 'index.ts'))).toBe(
       path.join('project', 'dist', 'pages', 'index.js'),
     )
+  })
+
+  it('maps a React view owner to its page WXML output', () => {
+    const project = {
+      distRoot: path.join('project', 'dist'),
+      sourceRoot: path.join('project', 'src'),
+    }
+    const sourcePath = path.join('project', 'src', 'pages', 'index', 'view.tsx')
+
+    expect(isReactTemplateSource(sourcePath)).toBe(true)
+    expect(resolveReactTemplateOutputPath(project, sourcePath)).toBe(
+      path.join('project', 'dist', 'pages', 'index', 'index.wxml'),
+    )
+    expect(injectReactTemplateMarker(
+      'export function View() { return <View className="page">hello</View> }',
+      'HMR_MARKER',
+    )).toContain('<View className="page" data-hmr-marker="HMR_MARKER">')
   })
 })

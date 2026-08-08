@@ -2,6 +2,9 @@
   "name": "e2e-app-react-runtime-spike",
   "version": "0.0.0",
   "private": true,
+  "weappVite": {
+    "web": false
+  },
   "scripts": {
     "build": "wv build",
     "build:baseline": "wv build --mode baseline",

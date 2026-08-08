@@ -43,3 +43,27 @@ export function resolveHmrScriptOutputPath(
   const parsed = path.parse(relative)
   return path.join(project.distRoot, parsed.dir, `${parsed.name}.js`)
 }
+
+export function isReactTemplateSource(sourcePath: string) {
+  return /(?:^|[/\\])view\.[jt]sx$/.test(sourcePath)
+}
+
+export function resolveReactTemplateOutputPath(
+  project: {
+    distRoot: string
+    sourceRoot: string
+  },
+  sourcePath: string,
+) {
+  const relative = path.relative(project.sourceRoot, sourcePath)
+  return path.join(project.distRoot, path.dirname(relative), 'index.wxml')
+}
+
+export function injectReactTemplateMarker(source: string, marker: string) {
+  return source.replace(
+    /<(?:[A-Z][\w$]*|view)\b[^>]*>/,
+    tag => tag.endsWith('/>')
+      ? `${tag.slice(0, -2)} data-hmr-marker="${marker}" />`
+      : `${tag.slice(0, -1)} data-hmr-marker="${marker}">`,
+  )
+}

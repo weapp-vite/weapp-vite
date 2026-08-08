@@ -228,6 +228,20 @@
         }
       }
     },
+    "templates/weapp-vite-react-template": {
+      "startupMs": 2790,
+      "scenarios": {
+        "react-template": {
+          "impactFiles": 6
+        },
+        "native-script": {
+          "impactFiles": 1
+        },
+        "native-style": {
+          "impactFiles": 1
+        }
+      }
+    },
     "templates/weapp-vite-tailwindcss-tdesign-template": {
       "startupMs": 3265,
       "scenarios": {

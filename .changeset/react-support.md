@@ -1,5 +1,6 @@
 ---
 '@weapp-vite/react': minor
+'@weapp-core/constants': patch
 weapp-vite: minor
 create-weapp-vite: minor
 ---

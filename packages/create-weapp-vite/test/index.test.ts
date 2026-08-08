@@ -133,6 +133,7 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     expect(lastSelectChoices?.map(c => c.value)).toEqual([
       'default',
       'wevu',
+      'react',
       'wevu-tdesign',
       'tailwindcss',
       'tdesign',

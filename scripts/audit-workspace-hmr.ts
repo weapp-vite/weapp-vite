@@ -19,7 +19,14 @@ import {
   parseThresholdOverrides,
   renderThresholdMarkdown,
 } from './workspace-hmr/baseline'
-import { parseStatefulHmrControlSource, resolveHmrScriptOutputPath, resolveWorkspaceHmrRuntime } from './workspace-hmr/scenarios'
+import {
+  injectReactTemplateMarker,
+  isReactTemplateSource,
+  parseStatefulHmrControlSource,
+  resolveHmrScriptOutputPath,
+  resolveReactTemplateOutputPath,
+  resolveWorkspaceHmrRuntime,
+} from './workspace-hmr/scenarios'
 
 const execFile = promisify(execFileCallback)
 
@@ -582,7 +589,11 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     result.scenarios = scenarioResults
   }
   catch (error) {
-    result.error = error instanceof Error ? error.message : String(error)
+    const message = error instanceof Error ? error.message : String(error)
+    const devOutput = dev.getOutput().trim()
+    result.error = devOutput
+      ? `${message}\n\nRecent dev output:\n${devOutput.slice(-12_000)}`
+      : message
   }
   finally {
     await dev.stop(5_000).catch(() => {})
@@ -716,8 +727,12 @@ async function discoverScenarios(project: ProjectCase): Promise<ScenarioCase[]> 
   const nativeStyle = findPreferredSource(files, filePath => isStyle(filePath) && isEntryLikeSource(project.sourceRoot, filePath) && isSidecarEntryFile(filePath))
   const nativeScript = findPreferredSource(files, filePath => isScript(filePath) && isAuditableScriptEntry(project.sourceRoot, filePath))
   const vueFile = findPreferredVueSource(files, project.sourceRoot)
+  const reactTemplate = findPreferredSource(files, filePath => isReactTemplateSource(filePath) && isPageLikeSource(project.sourceRoot, filePath))
 
-  if (nativeTemplate) {
+  if (reactTemplate) {
+    scenarios.push(createReactTemplateScenario(project, reactTemplate))
+  }
+  else if (nativeTemplate) {
     scenarios.push(createNativeTemplateScenario(project, nativeTemplate))
   }
   if (nativeScript) {
@@ -733,6 +748,16 @@ async function discoverScenarios(project: ProjectCase): Promise<ScenarioCase[]> 
   }
 
   return dedupeScenarios(scenarios)
+}
+
+function createReactTemplateScenario(project: ProjectCase, sourcePath: string): ScenarioCase {
+  return {
+    id: 'react-template',
+    label: 'React TSX template',
+    sourcePath,
+    outputPath: resolveReactTemplateOutputPath(project, sourcePath),
+    mutate: injectReactTemplateMarker,
+  }
 }
 
 function createNativeTemplateScenario(project: ProjectCase, sourcePath: string): ScenarioCase {
