@@ -9,6 +9,7 @@
   "scripts": {
     "build": "wv build",
     "dev": "wv dev",
+    "dev:open": "wv dev -o",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "stylelint": "stylelint \"src/**/*.{css,scss,wxss}\" --allow-empty-input",

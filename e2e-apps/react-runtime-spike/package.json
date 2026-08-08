@@ -9,6 +9,7 @@
     "build": "wv build",
     "build:baseline": "wv build --mode baseline",
     "build:compiler": "wv build --mode react-compiler",
+    "dev:open": "wv dev -o",
     "measure": "tsx scripts/measure.tsx",
     "postinstall": "wv prepare",
     "test": "vitest run --config vitest.config.ts",
