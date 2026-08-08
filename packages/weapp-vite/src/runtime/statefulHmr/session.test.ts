@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getChangedStatefulHmrSnapshotAssets,
   isSafeJavaScriptPatch,
+  isStatefulHmrAssetFile,
   isStatefulHmrBoundary,
   mergeStatefulHmrSnapshotAssets,
   redirectNativeComponentRegistration,
   requiresStatefulHmrSnapshot,
   shouldResetStatefulHmrRetention,
   shouldRestartStatefulHmrServer,
+  shouldUseStatefulHmrSnapshotOnly,
   stampStatefulHmrFullBuild,
 } from './session'
 
@@ -108,6 +111,27 @@ describe('stateful hmr session', () => {
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.ts', ['tailwind-content:2'])).toBe(true)
   })
 
+  it('keeps asset-only Tailwind updates out of the DevEngine full build path', () => {
+    expect(shouldUseStatefulHmrSnapshotOnly([
+      'entry-local-asset:1',
+      'tailwind-content:2',
+    ])).toBe(true)
+    expect(shouldUseStatefulHmrSnapshotOnly(['entry-style-only:1'])).toBe(true)
+    expect(shouldUseStatefulHmrSnapshotOnly(['entry-json-only:1'])).toBe(true)
+    expect(shouldUseStatefulHmrSnapshotOnly([
+      'entry-direct:1',
+      'tailwind-content:2',
+    ])).toBe(false)
+    expect(shouldUseStatefulHmrSnapshotOnly(['tailwind-content:2'])).toBe(false)
+  })
+
+  it('classifies native asset updates without relying on dirty reason labels', () => {
+    expect(isStatefulHmrAssetFile('/project/pages/index/index.wxml')).toBe(true)
+    expect(isStatefulHmrAssetFile('/project/app.wxss')).toBe(true)
+    expect(isStatefulHmrAssetFile('/project/pages/index/index.js')).toBe(false)
+    expect(isStatefulHmrAssetFile('/project/src/pages/index.vue')).toBe(false)
+  })
+
   it('stamps every JavaScript chunk in a full build with the same build id', () => {
     const output = [
       { code: 'app();', fileName: 'app.js', type: 'chunk' },
@@ -140,6 +164,22 @@ describe('stateful hmr session', () => {
       { fileName: 'app.wxss', source: '.bg{}', type: 'asset' },
       { fileName: 'server-only.json', source: '{}', type: 'asset' },
       { fileName: 'pages/index/index.wxml', source: '<view/>', type: 'asset' },
+    ])
+  })
+
+  it('only submits changed snapshot assets during a refresh', () => {
+    const changed = getChangedStatefulHmrSnapshotAssets([
+      { fileName: 'app.wxss', source: '.same{}', type: 'asset' },
+      { fileName: 'pages/index/index.wxml', source: '<view/>', type: 'asset' },
+    ], [
+      { fileName: 'app.wxss', source: '.same{}', type: 'asset' },
+      { fileName: 'pages/index/index.wxml', source: '<view class="updated"/>', type: 'asset' },
+      { fileName: 'pages/about/index.wxml', source: '<view/>', type: 'asset' },
+    ])
+
+    expect(changed).toEqual([
+      { fileName: 'pages/index/index.wxml', source: '<view class="updated"/>', type: 'asset' },
+      { fileName: 'pages/about/index.wxml', source: '<view/>', type: 'asset' },
     ])
   })
 })

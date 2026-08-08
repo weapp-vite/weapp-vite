@@ -22,6 +22,7 @@ import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
+import { StatefulHmrSnapshotScheduler } from './snapshotScheduler'
 import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
@@ -106,14 +107,13 @@ export async function runStatefulHmrDev(
 }
 
 class StatefulHmrSession {
+  private activeSnapshotBatch?: { isSuperseded: () => boolean }
   private readonly adapter: StatefulHmrViteAdapter
   private readonly initialBundle = Promise.withResolvers<void>()
+  private readonly snapshotScheduler: StatefulHmrSnapshotScheduler
   private readonly transport: StatefulHmrTransport
-  private fullBuildTimer?: ReturnType<typeof setTimeout>
   private outputChain: Promise<void> = Promise.resolve()
   private restartTimer?: ReturnType<typeof setTimeout>
-  private snapshotTimer?: ReturnType<typeof setTimeout>
-  private readonly snapshotFiles = new Set<string>()
   private snapshotAssets = new Map<string, StatefulHmrOutputFile>()
   private readonly sourceChangeListener = (file: string, dirtyReasonSummary: string[]) => {
     this.handleSourceUpdate(file, dirtyReasonSummary)
@@ -151,6 +151,12 @@ class StatefulHmrSession {
       onPatch: (files, output) => this.handlePatch(files, output),
       waitForInitialBundle: () => this.waitForInitialBundle(),
     })
+    this.snapshotScheduler = new StatefulHmrSnapshotScheduler({
+      execute: batch => this.executeSnapshotBatch(batch),
+      onError: error => this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', {
+        error: error instanceof Error ? error : new Error(String(error)),
+      }),
+    })
   }
 
   install(): void {
@@ -160,12 +166,6 @@ class StatefulHmrSession {
   }
 
   async close(): Promise<void> {
-    if (this.fullBuildTimer) {
-      clearTimeout(this.fullBuildTimer)
-    }
-    if (this.snapshotTimer) {
-      clearTimeout(this.snapshotTimer)
-    }
     if (this.restartTimer) {
       clearTimeout(this.restartTimer)
     }
@@ -173,6 +173,7 @@ class StatefulHmrSession {
       this.ctx.onStatefulHmrSourceChange = undefined
     }
     this.transport.close()
+    await this.snapshotScheduler.close()
     await this.outputChain
   }
 
@@ -200,7 +201,7 @@ class StatefulHmrSession {
       normalizedFile,
       dirtyReasonSummary,
     )) {
-      if (!this.snapshotTimer && !this.fullBuildTimer) {
+      if (!this.snapshotScheduler.isPending()) {
         logger.info('HMR 更新：正在同步模板、样式与静态资源...')
       }
       this.requestSnapshotRefresh([normalizedFile])
@@ -208,7 +209,11 @@ class StatefulHmrSession {
   }
 
   private handleOutput(output: StatefulHmrOutputFile[]): void {
+    const snapshotBatch = this.activeSnapshotBatch
     void this.enqueueOutput(async () => {
+      if (snapshotBatch?.isSuperseded()) {
+        return
+      }
       const compatibleOutput = await transformOutput(output)
       const fullBuild = compatibleOutput.some(item => item.fileName === 'app.js')
       if (fullBuild) {
@@ -246,6 +251,14 @@ class StatefulHmrSession {
       if (shouldRestartStatefulHmrServer(files, this.ctx.configService?.configFileDependencies)) {
         this.requestServerRestart()
       }
+      else if (
+        (files.length > 0 && files.every(isStatefulHmrAssetFile))
+        || shouldUseStatefulHmrSnapshotOnly(this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary ?? [])
+      ) {
+        if (!this.snapshotScheduler.isPending()) {
+          this.requestSnapshotRefresh(files)
+        }
+      }
       else {
         this.requestFullBuild(files)
       }
@@ -273,39 +286,11 @@ class StatefulHmrSession {
   }
 
   private requestFullBuild(files: Iterable<string> = []): void {
-    for (const file of files) {
-      this.snapshotFiles.add(file)
-    }
-    if (this.snapshotTimer) {
-      clearTimeout(this.snapshotTimer)
-      this.snapshotTimer = undefined
-    }
-    if (this.fullBuildTimer) {
-      return
-    }
-    this.fullBuildTimer = setTimeout(() => {
-      this.fullBuildTimer = undefined
-      const snapshotFiles = this.takeSnapshotFiles()
-      void this.rebuildFromSnapshot(snapshotFiles).catch((error) => {
-        this.server.config.logger.error('[weapp-vite] stateful HMR full rebuild failed', { error })
-      })
-    }, 100)
+    this.snapshotScheduler.request('full', files)
   }
 
   private requestSnapshotRefresh(files: Iterable<string> = []): void {
-    for (const file of files) {
-      this.snapshotFiles.add(file)
-    }
-    if (this.fullBuildTimer || this.snapshotTimer) {
-      return
-    }
-    this.snapshotTimer = setTimeout(() => {
-      this.snapshotTimer = undefined
-      const snapshotFiles = this.takeSnapshotFiles()
-      void this.refreshSnapshotAssets(snapshotFiles).catch((error) => {
-        this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', { error })
-      })
-    }, 100)
+    this.snapshotScheduler.request('refresh', files)
   }
 
   private requestServerRestart(): void {
@@ -327,20 +312,36 @@ class StatefulHmrSession {
     return this.outputChain
   }
 
-  private async rebuildFromSnapshot(files: string[]): Promise<void> {
-    await this.adapter.rebuild(async () => {
-      this.replaceSnapshotAssets(await this.snapshots.rebuild(files))
+  private async executeSnapshotBatch(batch: {
+    files: string[]
+    isSuperseded: () => boolean
+    mode: 'full' | 'refresh'
+  }): Promise<void> {
+    const output = await this.snapshots.rebuild(batch.files)
+    if (batch.isSuperseded()) {
+      return
+    }
+    if (batch.mode === 'full') {
+      this.replaceSnapshotAssets(output)
+      this.activeSnapshotBatch = batch
+      try {
+        await this.adapter.rebuild()
+        await this.outputChain
+      }
+      finally {
+        if (this.activeSnapshotBatch === batch) {
+          this.activeSnapshotBatch = undefined
+        }
+      }
+      return
+    }
+    const changedOutput = getChangedStatefulHmrSnapshotAssets(this.snapshotAssets.values(), output)
+    this.replaceSnapshotAssets(output)
+    await this.enqueueOutput(async () => {
+      if (!batch.isSuperseded()) {
+        await writeStatefulHmrOutput(this.ctx.configService!.outDir, changedOutput)
+      }
     })
-  }
-
-  private async refreshSnapshotAssets(files: string[]): Promise<void> {
-    this.replaceSnapshotAssets(await this.snapshots.rebuild(files))
-  }
-
-  private takeSnapshotFiles(): string[] {
-    const files = [...this.snapshotFiles]
-    this.snapshotFiles.clear()
-    return files
   }
 
   private replaceSnapshotAssets(output: StatefulHmrOutputFile[]): void {
@@ -383,6 +384,33 @@ export function mergeStatefulHmrSnapshotAssets(
       output.push(asset)
     }
   }
+}
+
+export function getChangedStatefulHmrSnapshotAssets(
+  previous: Iterable<StatefulHmrOutputFile>,
+  next: Iterable<StatefulHmrOutputFile>,
+): StatefulHmrOutputFile[] {
+  const previousAssets = new Map(
+    Array.from(previous).flatMap(item => item.type === 'asset' ? [[item.fileName, item.source] as const] : []),
+  )
+  return Array.from(next).filter((item) => {
+    if (item.type !== 'asset') {
+      return true
+    }
+    const previousSource = previousAssets.get(item.fileName)
+    return previousSource === undefined || !statefulHmrAssetSourcesEqual(previousSource, item.source)
+  })
+}
+
+type StatefulHmrAssetSource = Extract<StatefulHmrOutputFile, { type: 'asset' }>['source']
+
+function statefulHmrAssetSourcesEqual(left: StatefulHmrAssetSource, right: StatefulHmrAssetSource): boolean {
+  if (left === right) {
+    return true
+  }
+  const leftBuffer = Buffer.isBuffer(left) ? left : Buffer.from(left)
+  const rightBuffer = Buffer.isBuffer(right) ? right : Buffer.from(right)
+  return leftBuffer.equals(rightBuffer)
 }
 
 function createWatcherAdapter(server: ViteDevServer, session: StatefulHmrSession): RolldownWatcher {
@@ -477,8 +505,21 @@ export function requiresStatefulHmrSnapshot(file: string, dirtyReasonSummary: st
     || dirtyReasonSummary.some(isUnsafeStatefulHmrReason)
 }
 
+export function isStatefulHmrAssetFile(file: string): boolean {
+  return !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
+}
+
 function isUnsafeStatefulHmrReason(reason: string): boolean {
   return /^(?:entry-json-only|entry-local-asset|entry-style-only|tailwind-content):/.test(reason)
+}
+
+export function shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary: string[]): boolean {
+  const hasAssetOnlyEntry = dirtyReasonSummary.some(reason =>
+    /^(?:entry-json-only|entry-local-asset|entry-style-only):/.test(reason),
+  )
+  return hasAssetOnlyEntry && dirtyReasonSummary.every(reason =>
+    /^(?:entry-json-only|entry-local-asset|entry-style-only|tailwind-content):/.test(reason),
+  )
 }
 
 function isNonJavaScriptSidecarId(id: string): boolean {

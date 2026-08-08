@@ -420,6 +420,38 @@ describe('runtime buildPlugin service', () => {
     expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('HMR 切换：关闭微信开发者工具“热重载”后重启 wv dev'))
   })
 
+  it('keeps stateful snapshot builds in memory until the session writer commits them', async () => {
+    const watcher = { close: vi.fn(async () => {}) }
+    buildMock
+      .mockResolvedValueOnce({ output: [{ fileName: 'app.wxss', source: '.initial{}', type: 'asset' }] })
+      .mockResolvedValueOnce({ output: [{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }] })
+    runStatefulHmrDevMock.mockResolvedValue(watcher)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+
+    await createBuildService(ctx).build({ skipNpm: true })
+
+    const initialOptions = buildMock.mock.calls[0]![0]
+    const snapshots = runStatefulHmrDevMock.mock.calls[0]![3]
+    expect(initialOptions).toEqual(expect.objectContaining({
+      build: expect.objectContaining({
+        watch: undefined,
+        write: false,
+      }),
+    }))
+
+    const output = await snapshots.rebuild(['/project/src/pages/index.vue'])
+    const refreshOptions = buildMock.mock.calls[1]![0]
+    expect(refreshOptions).toEqual(expect.objectContaining({
+      build: expect.objectContaining({
+        emptyOutDir: false,
+        watch: undefined,
+        write: false,
+      }),
+    }))
+    expect(output).toEqual([{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }])
+  })
+
   it('keeps explicit classic runtime when WeChat hot reload is enabled', async () => {
     const watcher = createManualWatcher()
     buildMock.mockResolvedValueOnce(watcher)
