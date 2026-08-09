@@ -13,6 +13,9 @@ export default defineConfig({
     ],
   })],
   weapp: {
+    hmr: {
+      runtime: 'classic',
+    },
     srcRoot: 'src',
   },
 })

@@ -21,6 +21,7 @@ Solid signal -> binding effect -> microtask batch -> setData
 - template 标识符与 runtime binding 目前通过名称约定关联，编译器尚未生成或校验 binding metadata
 - 尚未实现事件桥接、自定义组件、动态组件和无法静态化节点的 fallback
 - compiler plugin 与 runtime 都是 benchmark 工程内部实现，不代表公开配置或包接口
+- 当前显式使用 classic HMR；app-local compiler 尚未接入 stateful HMR patch 协议
 
 ## 验证
 
