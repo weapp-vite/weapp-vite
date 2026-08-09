@@ -12,7 +12,9 @@ async function main() {
 
   const paths = await collectMarkdownPaths()
   const targetPaths = paths.filter(relativePath => !isPartialDocument(relativePath))
-  const documents = await collectDocuments(targetPaths)
+  const documents = (await collectDocuments(targetPaths)).filter((document) => {
+    return document.frontmatter.noindex !== true && document.frontmatter.draft !== true
+  })
 
   const result = await buildAuditResult({
     documents,

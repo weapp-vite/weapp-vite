@@ -32,7 +32,6 @@
 - 🧩 **实验性 uni-app 组件库兼容**：通过显式依赖白名单与 `WotUiResolver()` 在微信小程序和 Web 中使用 Wot UI Vue SFC
 - 🧰 **IDE 命令增强**：可直接透传 `weapp-ide-cli` 全量命令（`preview/upload/config/automator` 等）
 - 🧪 **真实产物单测**：`weapp-vite/test` 提供不启动 CLI 的程序化测试构建入口，可配合 `@mpcore/test` 测试页面和组件
-- ⚛️ **React 19 小程序支持**：通过 `@weapp-vite/react` 使用 React hooks、Context、事件和 `react-reconciler`，支持静态 WXML slots 与显式 opt-in 的 React Compiler
 
 ## 快速开始
 
@@ -122,23 +121,6 @@ function handleClick() {
 ```
 
 📚 **完整文档**: [Vue 支持文档](./test/vue/README.md)
-
-### React 项目
-
-React 支持是项目级开关，启用后项目内 `.jsx` / `.tsx` 统一由 React 编译链接管：
-
-```ts
-export default defineConfig({
-  weapp: {
-    react: {
-      renderMode: 'auto',
-      compiler: false,
-    },
-  },
-})
-```
-
-安装 `react@19.2.x`、`react-reconciler@0.33.x` 和 `@weapp-vite/react` 后即可使用 `View`、`Text`、`Button` 等小程序 host components。`createNativeComponent<Props>('tag-name')` 可桥接 JSON 中已注册的原生或 Wevu 组件，支持动态 props、自定义事件和默认 slot；React-backed 小程序组件可用 `Slot` 声明默认插槽。React + Wevu SFC 项目还需显式安装 `wevu`，TSX 和 `.vue` 分别由 React 与 Wevu compiler 处理。完整的生命周期、事件代理、Compiler 和静态 bridge 限制见 [React 小程序接入](https://vite.icebreaker.top/integration/react)。
 
 - 配置智能提示文档：[docs/volar.md](./docs/volar.md)
 - defineConfig 重载说明：[docs/define-config-overloads.md](./docs/define-config-overloads.md)

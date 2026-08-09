@@ -53,7 +53,9 @@ async function main() {
   const outputFile = readOption('output', path.resolve(websiteRoot, 'public', 'llms-index.json'))
   const paths = await collectMarkdownPaths()
   const targets = paths.filter(relativePath => !isPartialDocument(relativePath))
-  const documents = await collectDocuments(targets)
+  const documents = (await collectDocuments(targets)).filter((document) => {
+    return document.frontmatter.noindex !== true && document.frontmatter.draft !== true
+  })
 
   const items = await Promise.all(documents.map(async (document) => {
     const title = inferTitle(document)

@@ -1,6 +1,7 @@
 ---
 title: React 配置
 description: 在微信小程序中使用 React 19、react-reconciler 与可选 React Compiler 的 weapp-vite 配置。
+noindex: true
 keywords:
   - React
   - React Compiler

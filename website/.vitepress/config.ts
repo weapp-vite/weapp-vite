@@ -284,7 +284,6 @@ const communitySidebarItems: DefaultTheme.SidebarItem[] = [
     text: '生态集成',
     collapsed: false,
     items: [
-      { text: 'React 小程序接入', link: '/integration/react' },
       { text: 'Tailwindcss 集成', link: '/integration/tailwindcss' },
       { text: 'Vue-mini 集成', link: '/integration/vue-mini' },
       { text: 'Wot UI 与 uni-app', link: '/integration/wot-ui' },
@@ -603,11 +602,6 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
     ],
   },
   {
-    text: 'React',
-    collapsed: false,
-    items: [{ text: 'React 配置', link: '/config/react' }],
-  },
-  {
     text: 'Prelude 与 Web 注入',
     collapsed: false,
     items: [
@@ -813,6 +807,9 @@ export default withMermaid(
     ],
     sitemap: {
       hostname: 'https://vite.icebreaker.top',
+      transformItems: items => items.filter((item) => {
+        return !String(item.url).includes('/react')
+      }),
     },
     lastUpdated: true,
     vite: {
@@ -840,7 +837,7 @@ export default withMermaid(
         tailwindcss(),
         llmstxt({
           excludeBlog: false,
-          ignoreFiles: ['dist/**'],
+          ignoreFiles: ['dist/**', 'config/react.md', 'integration/react.md'],
           sidebar: configSidebar => sanitizeSidebarLinks(configSidebar),
         }),
         AutoImport({

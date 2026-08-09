@@ -1,8 +1,8 @@
+import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import process from 'node:process'
-import { execFileSync } from 'node:child_process'
-import { collectMarkdownPaths, isPartialDocument } from './frontmatter'
 import { repoRoot, websiteRoot } from './constants'
+import { collectMarkdownPaths, isPartialDocument } from './frontmatter'
 import { summarizeQuality } from './metadata'
 import { collectDocuments, pickQualityIssueCounts } from './report'
 
@@ -49,7 +49,9 @@ async function main() {
 
   const paths = diffBase ? getChangedMarkdownPaths(diffBase) : await collectMarkdownPaths()
   const targets = paths.filter(relativePath => !isPartialDocument(relativePath))
-  const documents = await collectDocuments(targets)
+  const documents = (await collectDocuments(targets)).filter((document) => {
+    return document.frontmatter.noindex !== true && document.frontmatter.draft !== true
+  })
 
   const quality = summarizeQuality(documents)
   const issueCounts = pickQualityIssueCounts(quality)
