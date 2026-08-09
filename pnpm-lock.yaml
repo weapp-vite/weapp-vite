@@ -860,6 +860,37 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  apps/runtime-bench-react:
+    dependencies:
+      '@weapp-vite/react':
+        specifier: workspace:*
+        version: link:../../packages-runtime/react
+      react:
+        specifier: 19.2.7
+        version: 19.2.7
+      react-reconciler:
+        specifier: 0.33.0
+        version: 0.33.0(react@19.2.7)
+    devDependencies:
+      '@types/react':
+        specifier: 19.2.17
+        version: 19.2.17
+      '@types/react-reconciler':
+        specifier: 0.33.0
+        version: 0.33.0(@types/react@19.2.17)
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.9(typescript@6.0.3)
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   apps/runtime-bench-vue:
     devDependencies:
       '@weapp-vite/dashboard':

@@ -1,0 +1,27 @@
+{
+  "name": "runtime-bench-react",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "React 19 小程序运行时 benchmark 基准工程",
+  "scripts": {
+    "build": "wv build",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "postinstall": "wv prepare",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json"
+  },
+  "dependencies": {
+    "@weapp-vite/react": "workspace:*",
+    "react": "19.2.7",
+    "react-reconciler": "0.33.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.17",
+    "@types/react-reconciler": "0.33.0",
+    "miniprogram-api-typings": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:",
+    "weapp-vite": "workspace:*"
+  }
+}

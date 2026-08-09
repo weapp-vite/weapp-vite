@@ -131,6 +131,10 @@ interface WorkerResult {
     diff: BenchUpdateSummary
     patch?: BenchUpdateSummary
   }
+  staticBinding?: {
+    updateSingleCommit: BenchUpdateSummary
+    updateMicroCommit: BenchUpdateSummary
+  }
 }
 
 async function measureDetailNavigation(miniProgram: any, projectRoot: string): Promise<BenchScenarioSummary> {
@@ -260,6 +264,13 @@ async function main() {
     if (path.basename(projectRoot) === 'runtime-bench-vue') {
       result.updateSingleCommit.patch = (logStep(projectRoot, 'measure single commit update patch'), await measureUpdate(miniProgram, projectRoot, '/pages/update-patch/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180))
       result.updateMicroCommit.patch = (logStep(projectRoot, 'measure micro commit update patch'), await measureUpdate(miniProgram, projectRoot, '/pages/update-patch/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40))
+    }
+
+    if (path.basename(projectRoot) === 'runtime-bench-react') {
+      result.staticBinding = {
+        updateSingleCommit: (logStep(projectRoot, 'measure single commit static binding'), await measureUpdate(miniProgram, projectRoot, '/pages/static-update/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180)),
+        updateMicroCommit: (logStep(projectRoot, 'measure micro commit static binding'), await measureUpdate(miniProgram, projectRoot, '/pages/static-update/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40)),
+      }
     }
 
     process.stdout.write(`RUNTIME_BENCH_RESULT ${JSON.stringify(result)}\n`)

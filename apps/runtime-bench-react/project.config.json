@@ -1,0 +1,16 @@
+{
+  "description": "React runtime benchmark",
+  "miniprogramRoot": "dist/",
+  "compileType": "miniprogram",
+  "setting": {
+    "postcss": false,
+    "minified": false,
+    "enhance": false,
+    "compileHotReLoad": false,
+    "es6": true,
+    "minifyWXML": true
+  },
+  "simulatorType": "wechat",
+  "libVersion": "3.13.2",
+  "appid": "wxb3d842a4a7e3440d"
+}

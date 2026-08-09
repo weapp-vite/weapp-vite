@@ -10,6 +10,7 @@ import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 const WORKER_PATH = path.resolve(import.meta.dirname, './runtime-bench.worker.ts')
 const NATIVE_ROOT = path.resolve(import.meta.dirname, '../../apps/runtime-bench-native')
 const VUE_ROOT = path.resolve(import.meta.dirname, '../../apps/runtime-bench-vue')
+const REACT_ROOT = path.resolve(import.meta.dirname, '../../apps/runtime-bench-react')
 const LOGIN_CHECK_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const LINE_SPLIT_RE = /\r?\n/
@@ -58,21 +59,25 @@ interface WorkerResult {
     diff: BenchUpdateSummary
     patch?: BenchUpdateSummary
   }
+  staticBinding?: {
+    updateSingleCommit: BenchUpdateSummary
+    updateMicroCommit: BenchUpdateSummary
+  }
 }
 
-function compareUpdateSummary(native: BenchUpdateSummary, vue: BenchUpdateSummary) {
+function compareUpdateSummary(native: BenchUpdateSummary, candidate: BenchUpdateSummary, label: 'react' | 'vue') {
   return {
     native,
-    vue,
-    deltaWallMs: vue.wallMsMedian - native.wallMsMedian,
-    deltaMetricMs: vue.metricMsMedian - native.metricMsMedian,
-    deltaComputeMs: vue.computeMsMedian - native.computeMsMedian,
-    deltaCommitMs: vue.commitMsMedian - native.commitMsMedian,
-    deltaDispatchMs: vue.dispatchMsMedian - native.dispatchMsMedian,
-    deltaFlushMs: vue.flushMsMedian - native.flushMsMedian,
-    deltaSetDataCalls: vue.setDataCallsMedian - native.setDataCallsMedian,
-    vueSetDataDiagnostics: vue.setDataDiagnosticsMedian,
-    vueFallbackReasons: vue.fallbackReasons,
+    [label]: candidate,
+    deltaWallMs: candidate.wallMsMedian - native.wallMsMedian,
+    deltaMetricMs: candidate.metricMsMedian - native.metricMsMedian,
+    deltaComputeMs: candidate.computeMsMedian - native.computeMsMedian,
+    deltaCommitMs: candidate.commitMsMedian - native.commitMsMedian,
+    deltaDispatchMs: candidate.dispatchMsMedian - native.dispatchMsMedian,
+    deltaFlushMs: candidate.flushMsMedian - native.flushMsMedian,
+    deltaSetDataCalls: candidate.setDataCallsMedian - native.setDataCallsMedian,
+    [`${label}SetDataDiagnostics`]: candidate.setDataDiagnosticsMedian,
+    [`${label}FallbackReasons`]: candidate.fallbackReasons,
   }
 }
 
@@ -131,40 +136,66 @@ async function main() {
   }
   const native = await runWorker(NATIVE_ROOT)
   const vue = await runWorker(VUE_ROOT)
+  const react = await runWorker(REACT_ROOT)
 
   const comparison = {
     firstScreen: {
       native,
       vue,
+      react,
       deltaWallMs: vue.firstScreen.wallMsMedian - native.firstScreen.wallMsMedian,
       deltaReadyMs: vue.firstScreen.readyMsMedian - native.firstScreen.readyMsMedian,
       deltaFirstCommitMs: vue.firstScreen.firstCommitMsMedian - native.firstScreen.firstCommitMsMedian,
+      vueDelta: {
+        wallMs: vue.firstScreen.wallMsMedian - native.firstScreen.wallMsMedian,
+        readyMs: vue.firstScreen.readyMsMedian - native.firstScreen.readyMsMedian,
+        firstCommitMs: vue.firstScreen.firstCommitMsMedian - native.firstScreen.firstCommitMsMedian,
+      },
+      reactDelta: {
+        wallMs: react.firstScreen.wallMsMedian - native.firstScreen.wallMsMedian,
+        readyMs: react.firstScreen.readyMsMedian - native.firstScreen.readyMsMedian,
+        firstCommitMs: react.firstScreen.firstCommitMsMedian - native.firstScreen.firstCommitMsMedian,
+      },
     },
     detailNavigation: {
       native,
       vue,
+      react,
       deltaWallMs: vue.detailNavigation.wallMsMedian - native.detailNavigation.wallMsMedian,
       deltaReadyMs: vue.detailNavigation.readyMsMedian - native.detailNavigation.readyMsMedian,
       deltaFirstCommitMs: vue.detailNavigation.firstCommitMsMedian - native.detailNavigation.firstCommitMsMedian,
+      vueDelta: {
+        wallMs: vue.detailNavigation.wallMsMedian - native.detailNavigation.wallMsMedian,
+        readyMs: vue.detailNavigation.readyMsMedian - native.detailNavigation.readyMsMedian,
+        firstCommitMs: vue.detailNavigation.firstCommitMsMedian - native.detailNavigation.firstCommitMsMedian,
+      },
+      reactDelta: {
+        wallMs: react.detailNavigation.wallMsMedian - native.detailNavigation.wallMsMedian,
+        readyMs: react.detailNavigation.readyMsMedian - native.detailNavigation.readyMsMedian,
+        firstCommitMs: react.detailNavigation.firstCommitMsMedian - native.detailNavigation.firstCommitMsMedian,
+      },
     },
     updateSingleCommit: {
-      diff: compareUpdateSummary(native.updateSingleCommit.diff, vue.updateSingleCommit.diff),
+      diff: compareUpdateSummary(native.updateSingleCommit.diff, vue.updateSingleCommit.diff, 'vue'),
       patch: vue.updateSingleCommit.patch
-        ? compareUpdateSummary(native.updateSingleCommit.diff, vue.updateSingleCommit.patch)
+        ? compareUpdateSummary(native.updateSingleCommit.diff, vue.updateSingleCommit.patch, 'vue')
         : undefined,
       patchVsDiff: vue.updateSingleCommit.patch
         ? compareVuePatchVsDiff(vue.updateSingleCommit.diff, vue.updateSingleCommit.patch)
         : undefined,
+      reactDynamic: compareUpdateSummary(native.updateSingleCommit.diff, react.updateSingleCommit.diff, 'react'),
     },
     updateMicroCommit: {
-      diff: compareUpdateSummary(native.updateMicroCommit.diff, vue.updateMicroCommit.diff),
+      diff: compareUpdateSummary(native.updateMicroCommit.diff, vue.updateMicroCommit.diff, 'vue'),
       patch: vue.updateMicroCommit.patch
-        ? compareUpdateSummary(native.updateMicroCommit.diff, vue.updateMicroCommit.patch)
+        ? compareUpdateSummary(native.updateMicroCommit.diff, vue.updateMicroCommit.patch, 'vue')
         : undefined,
       patchVsDiff: vue.updateMicroCommit.patch
         ? compareVuePatchVsDiff(vue.updateMicroCommit.diff, vue.updateMicroCommit.patch)
         : undefined,
+      reactDynamic: compareUpdateSummary(native.updateMicroCommit.diff, react.updateMicroCommit.diff, 'react'),
     },
+    reactStaticBinding: react.staticBinding,
   }
 
   process.stdout.write(`${JSON.stringify(comparison, null, 2)}\n`)
