@@ -1,9 +1,10 @@
+import type { RecoverableSession } from './runtimeBench'
 import fs from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
-import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { createRuntimeBenchSession } from './runtimeBenchSession'
 
 process.env.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK = '1'
 process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP = '1'
@@ -94,21 +95,34 @@ async function runBuild(projectRoot: string) {
   })
 }
 
-async function measureFirstScreen(miniProgram: any, projectRoot: string): Promise<BenchScenarioSummary> {
+type MiniProgramSession = RecoverableSession<any>
+
+async function createBenchSession(projectRoot: string): Promise<MiniProgramSession> {
+  return await createRuntimeBenchSession({
+    log: message => logStep(projectRoot, message),
+    projectRoot,
+    runtimeProvider,
+  })
+}
+
+async function measureFirstScreen(session: MiniProgramSession, projectRoot: string): Promise<BenchScenarioSummary> {
   const samples: BenchScenarioSummary['samples'] = []
 
   for (let index = 0; index < SAMPLE_COUNT; index += 1) {
-    logStep(projectRoot, `first screen sample ${index + 1}/${SAMPLE_COUNT}`)
-    const startedAt = Date.now()
-    const page = await miniProgram.reLaunch('/pages/index/index')
-    await page.waitFor('#bench-ready-marker')
-    await page.waitFor(120)
-    const state = await page.callMethod('readBenchState')
-    samples.push({
-      wallMs: Date.now() - startedAt,
-      readyMs: Number(state?.metrics?.loadToReadyMs ?? 0),
-      firstCommitMs: Number(state?.metrics?.firstCommitMs ?? 0),
-    })
+    const label = `first screen sample ${index + 1}/${SAMPLE_COUNT}`
+    logStep(projectRoot, label)
+    samples.push(await session.run(label, async (miniProgram) => {
+      const startedAt = Date.now()
+      const page = await miniProgram.reLaunch('/pages/index/index')
+      await page.waitFor('#bench-ready-marker')
+      await page.waitFor(120)
+      const state = await page.callMethod('readBenchState')
+      return {
+        wallMs: Date.now() - startedAt,
+        readyMs: Number(state?.metrics?.loadToReadyMs ?? 0),
+        firstCommitMs: Number(state?.metrics?.firstCommitMs ?? 0),
+      }
+    }))
   }
 
   return {
@@ -137,24 +151,27 @@ interface WorkerResult {
   }
 }
 
-async function measureDetailNavigation(miniProgram: any, projectRoot: string): Promise<BenchScenarioSummary> {
+async function measureDetailNavigation(session: MiniProgramSession, projectRoot: string): Promise<BenchScenarioSummary> {
   const samples: BenchScenarioSummary['samples'] = []
 
   for (let index = 0; index < SAMPLE_COUNT; index += 1) {
-    logStep(projectRoot, `detail navigation sample ${index + 1}/${SAMPLE_COUNT}`)
-    const indexPage = await miniProgram.reLaunch('/pages/index/index')
-    await indexPage.waitFor('#bench-ready-marker')
-    const startedAt = Date.now()
-    await indexPage.callMethod('navigateToDetail')
-    const page = await miniProgram.currentPage()
-    await page.waitFor('#bench-ready-marker')
-    await page.waitFor(120)
-    const state = await page.callMethod('readBenchState')
-    samples.push({
-      wallMs: Date.now() - startedAt,
-      readyMs: Number(state?.metrics?.loadToReadyMs ?? 0),
-      firstCommitMs: Number(state?.metrics?.firstCommitMs ?? 0),
-    })
+    const label = `detail navigation sample ${index + 1}/${SAMPLE_COUNT}`
+    logStep(projectRoot, label)
+    samples.push(await session.run(label, async (miniProgram) => {
+      const indexPage = await miniProgram.reLaunch('/pages/index/index')
+      await indexPage.waitFor('#bench-ready-marker')
+      const startedAt = Date.now()
+      await indexPage.callMethod('navigateToDetail')
+      const page = await miniProgram.currentPage()
+      await page.waitFor('#bench-ready-marker')
+      await page.waitFor(120)
+      const state = await page.callMethod('readBenchState')
+      return {
+        wallMs: Date.now() - startedAt,
+        readyMs: Number(state?.metrics?.loadToReadyMs ?? 0),
+        firstCommitMs: Number(state?.metrics?.firstCommitMs ?? 0),
+      }
+    }))
   }
 
   return {
@@ -165,39 +182,42 @@ async function measureDetailNavigation(miniProgram: any, projectRoot: string): P
   }
 }
 
-async function measureUpdate(miniProgram: any, projectRoot: string, route: string, method: 'runSingleCommitBench' | 'runMicroCommitBench', metricKey: 'singleCommitMs' | 'microCommitMs', callKey: 'singleCommitSetDataCalls' | 'microCommitSetDataCalls', rounds: number): Promise<BenchUpdateSummary> {
+async function measureUpdate(session: MiniProgramSession, projectRoot: string, route: string, method: 'runSingleCommitBench' | 'runMicroCommitBench', metricKey: 'singleCommitMs' | 'microCommitMs', callKey: 'singleCommitSetDataCalls' | 'microCommitSetDataCalls', rounds: number): Promise<BenchUpdateSummary> {
   const samples: BenchUpdateSummary['samples'] = []
 
   for (let index = 0; index < SAMPLE_COUNT; index += 1) {
-    logStep(projectRoot, `${method} route=${route} sample ${index + 1}/${SAMPLE_COUNT}`)
-    const page = await miniProgram.reLaunch(route)
-    await page.waitFor('#bench-ready-marker')
-    await page.waitFor(100)
-    const startedAt = Date.now()
-    const state = await page.callMethod(method, rounds)
-    const diagnostics = state?.setDataDiagnostics?.[metricKey === 'singleCommitMs' ? 'singleCommit' : 'microCommit'] ?? {}
-    samples.push({
-      wallMs: Date.now() - startedAt,
-      metricMs: Number(state?.metrics?.[metricKey] ?? 0),
-      computeMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitComputeMs' : 'microCommitComputeMs'] ?? 0),
-      commitMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitCommitMs' : 'microCommitCommitMs'] ?? 0),
-      dispatchMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitDispatchMs' : 'microCommitDispatchMs'] ?? 0),
-      flushMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitFlushMs' : 'microCommitFlushMs'] ?? 0),
-      setDataCalls: Number(state?.metrics?.[callKey] ?? 0),
-      setDataDiagnostics: {
-        flushes: Number(diagnostics.flushes ?? 0),
-        patchFlushes: Number(diagnostics.patchFlushes ?? 0),
-        diffFlushes: Number(diagnostics.diffFlushes ?? 0),
-        fallbackFlushes: Number(diagnostics.fallbackFlushes ?? 0),
-        avgPayloadKeys: Number(diagnostics.avgPayloadKeys ?? 0),
-        maxPayloadKeys: Number(diagnostics.maxPayloadKeys ?? 0),
-        avgPendingPatchKeys: Number(diagnostics.avgPendingPatchKeys ?? 0),
-        maxPendingPatchKeys: Number(diagnostics.maxPendingPatchKeys ?? 0),
-        avgBytes: Number(diagnostics.avgBytes ?? 0),
-        maxBytes: Number(diagnostics.maxBytes ?? 0),
-        fallbackReasons: diagnostics.fallbackReasons ?? {},
-      },
-    })
+    const label = `${method} route=${route} sample ${index + 1}/${SAMPLE_COUNT}`
+    logStep(projectRoot, label)
+    samples.push(await session.run(label, async (miniProgram) => {
+      const page = await miniProgram.reLaunch(route)
+      await page.waitFor('#bench-ready-marker')
+      await page.waitFor(100)
+      const startedAt = Date.now()
+      const state = await page.callMethod(method, rounds)
+      const diagnostics = state?.setDataDiagnostics?.[metricKey === 'singleCommitMs' ? 'singleCommit' : 'microCommit'] ?? {}
+      return {
+        wallMs: Date.now() - startedAt,
+        metricMs: Number(state?.metrics?.[metricKey] ?? 0),
+        computeMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitComputeMs' : 'microCommitComputeMs'] ?? 0),
+        commitMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitCommitMs' : 'microCommitCommitMs'] ?? 0),
+        dispatchMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitDispatchMs' : 'microCommitDispatchMs'] ?? 0),
+        flushMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitFlushMs' : 'microCommitFlushMs'] ?? 0),
+        setDataCalls: Number(state?.metrics?.[callKey] ?? 0),
+        setDataDiagnostics: {
+          flushes: Number(diagnostics.flushes ?? 0),
+          patchFlushes: Number(diagnostics.patchFlushes ?? 0),
+          diffFlushes: Number(diagnostics.diffFlushes ?? 0),
+          fallbackFlushes: Number(diagnostics.fallbackFlushes ?? 0),
+          avgPayloadKeys: Number(diagnostics.avgPayloadKeys ?? 0),
+          maxPayloadKeys: Number(diagnostics.maxPayloadKeys ?? 0),
+          avgPendingPatchKeys: Number(diagnostics.avgPendingPatchKeys ?? 0),
+          maxPendingPatchKeys: Number(diagnostics.maxPendingPatchKeys ?? 0),
+          avgBytes: Number(diagnostics.avgBytes ?? 0),
+          maxBytes: Number(diagnostics.maxBytes ?? 0),
+          fallbackReasons: diagnostics.fallbackReasons ?? {},
+        },
+      }
+    }))
   }
 
   const fallbackReasons = samples.reduce<Record<string, number>>((result, sample) => {
@@ -241,42 +261,38 @@ async function main() {
   logStep(projectRoot, `build start provider=${runtimeProvider}`)
   await runBuild(projectRoot)
   logStep(projectRoot, 'launch automator')
-  const miniProgram = await launchAutomator({
-    projectPath: projectRoot,
-    runtimeProvider,
-    trustProject: true,
-  })
+  const session = await createBenchSession(projectRoot)
 
   try {
     logStep(projectRoot, 'measure first screen')
     const result: WorkerResult = {
       project: path.basename(projectRoot),
-      firstScreen: await measureFirstScreen(miniProgram, projectRoot),
-      detailNavigation: (logStep(projectRoot, 'measure detail navigation'), await measureDetailNavigation(miniProgram, projectRoot)),
+      firstScreen: await measureFirstScreen(session, projectRoot),
+      detailNavigation: (logStep(projectRoot, 'measure detail navigation'), await measureDetailNavigation(session, projectRoot)),
       updateSingleCommit: {
-        diff: (logStep(projectRoot, 'measure single commit update diff'), await measureUpdate(miniProgram, projectRoot, '/pages/update/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180)),
+        diff: (logStep(projectRoot, 'measure single commit update diff'), await measureUpdate(session, projectRoot, '/pages/update/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180)),
       },
       updateMicroCommit: {
-        diff: (logStep(projectRoot, 'measure micro commit update diff'), await measureUpdate(miniProgram, projectRoot, '/pages/update/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40)),
+        diff: (logStep(projectRoot, 'measure micro commit update diff'), await measureUpdate(session, projectRoot, '/pages/update/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40)),
       },
     }
 
     if (path.basename(projectRoot) === 'runtime-bench-vue') {
-      result.updateSingleCommit.patch = (logStep(projectRoot, 'measure single commit update patch'), await measureUpdate(miniProgram, projectRoot, '/pages/update-patch/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180))
-      result.updateMicroCommit.patch = (logStep(projectRoot, 'measure micro commit update patch'), await measureUpdate(miniProgram, projectRoot, '/pages/update-patch/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40))
+      result.updateSingleCommit.patch = (logStep(projectRoot, 'measure single commit update patch'), await measureUpdate(session, projectRoot, '/pages/update-patch/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180))
+      result.updateMicroCommit.patch = (logStep(projectRoot, 'measure micro commit update patch'), await measureUpdate(session, projectRoot, '/pages/update-patch/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40))
     }
 
     if (path.basename(projectRoot) === 'runtime-bench-react') {
       result.staticBinding = {
-        updateSingleCommit: (logStep(projectRoot, 'measure single commit static binding'), await measureUpdate(miniProgram, projectRoot, '/pages/static-update/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180)),
-        updateMicroCommit: (logStep(projectRoot, 'measure micro commit static binding'), await measureUpdate(miniProgram, projectRoot, '/pages/static-update/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40)),
+        updateSingleCommit: (logStep(projectRoot, 'measure single commit static binding'), await measureUpdate(session, projectRoot, '/pages/static-update/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180)),
+        updateMicroCommit: (logStep(projectRoot, 'measure micro commit static binding'), await measureUpdate(session, projectRoot, '/pages/static-update/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40)),
       }
     }
 
     process.stdout.write(`RUNTIME_BENCH_RESULT ${JSON.stringify(result)}\n`)
   }
   finally {
-    await miniProgram.close()
+    await session.close()
   }
 }
 

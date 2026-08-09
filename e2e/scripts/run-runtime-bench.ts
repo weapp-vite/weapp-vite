@@ -1,4 +1,6 @@
+import type { BenchUpdateSummary, WorkerResult } from './runtimeBench'
 import fs from 'node:fs'
+import fsPromises from 'node:fs/promises'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
@@ -6,6 +8,13 @@ import path from 'pathe'
 import { assertDevtoolsLoggedIn } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import {
+
+  readRuntimeBenchCheckpoint,
+  resolveRuntimeBenchCheckpointPath,
+
+  writeRuntimeBenchCheckpoint,
+} from './runtimeBench'
 
 const WORKER_PATH = path.resolve(import.meta.dirname, './runtime-bench.worker.ts')
 const NATIVE_ROOT = path.resolve(import.meta.dirname, '../../apps/runtime-bench-native')
@@ -13,57 +22,21 @@ const VUE_ROOT = path.resolve(import.meta.dirname, '../../apps/runtime-bench-vue
 const REACT_ROOT = path.resolve(import.meta.dirname, '../../apps/runtime-bench-react')
 const LOGIN_CHECK_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
+const CHECKPOINT_ROOT = path.resolve(import.meta.dirname, '../../.tmp/runtime-bench/checkpoints')
 const LINE_SPLIT_RE = /\r?\n/
 const runtimeProvider = resolveRuntimeProviderName()
+const RESUME = process.argv.includes('--resume')
 
-interface BenchUpdateSummary {
-  wallMsMedian: number
-  metricMsMedian: number
-  computeMsMedian: number
-  commitMsMedian: number
-  dispatchMsMedian: number
-  flushMsMedian: number
-  setDataCallsMedian: number
-  setDataDiagnosticsMedian: {
-    flushes: number
-    patchFlushes: number
-    diffFlushes: number
-    fallbackFlushes: number
-    avgPayloadKeys: number
-    maxPayloadKeys: number
-    avgPendingPatchKeys: number
-    maxPendingPatchKeys: number
-    avgBytes: number
-    maxBytes: number
-  }
-  fallbackReasons: Record<string, number>
+interface BenchProject {
+  key: 'native' | 'react' | 'vue'
+  root: string
 }
 
-interface WorkerResult {
-  project: string
-  firstScreen: {
-    wallMsMedian: number
-    readyMsMedian: number
-    firstCommitMsMedian: number
-  }
-  detailNavigation: {
-    wallMsMedian: number
-    readyMsMedian: number
-    firstCommitMsMedian: number
-  }
-  updateSingleCommit: {
-    diff: BenchUpdateSummary
-    patch?: BenchUpdateSummary
-  }
-  updateMicroCommit: {
-    diff: BenchUpdateSummary
-    patch?: BenchUpdateSummary
-  }
-  staticBinding?: {
-    updateSingleCommit: BenchUpdateSummary
-    updateMicroCommit: BenchUpdateSummary
-  }
-}
+const BENCH_PROJECTS: BenchProject[] = [
+  { key: 'native', root: NATIVE_ROOT },
+  { key: 'vue', root: VUE_ROOT },
+  { key: 'react', root: REACT_ROOT },
+]
 
 function compareUpdateSummary(native: BenchUpdateSummary, candidate: BenchUpdateSummary, label: 'react' | 'vue') {
   return {
@@ -127,16 +100,79 @@ async function runWorker(projectRoot: string): Promise<WorkerResult> {
   return JSON.parse(line.slice('RUNTIME_BENCH_RESULT '.length)) as WorkerResult
 }
 
+async function resolveGitCommit() {
+  const { stdout } = await execa('git', ['rev-parse', 'HEAD'], {
+    cwd: path.resolve(import.meta.dirname, '../..'),
+  })
+  return stdout.trim()
+}
+
+function checkpointPath(commit: string, project: BenchProject) {
+  return resolveRuntimeBenchCheckpointPath({
+    checkpointRoot: CHECKPOINT_ROOT,
+    commit,
+    project: project.key,
+    provider: runtimeProvider,
+  })
+}
+
+async function runProjects(commit: string) {
+  const results: Partial<Record<BenchProject['key'], WorkerResult>> = {}
+  const failures: Partial<Record<BenchProject['key'], string>> = {}
+
+  for (const project of BENCH_PROJECTS) {
+    const filePath = checkpointPath(commit, project)
+    if (RESUME) {
+      const checkpoint = await readRuntimeBenchCheckpoint(filePath)
+      if (checkpoint) {
+        process.stdout.write(`[runtime-bench] resume project=${project.key} checkpoint=${path.relative(path.resolve(import.meta.dirname, '../..'), filePath)}\n`)
+        results[project.key] = checkpoint
+        continue
+      }
+    }
+
+    try {
+      const result = await runWorker(project.root)
+      results[project.key] = result
+      await writeRuntimeBenchCheckpoint(filePath, result)
+      process.stdout.write(`[runtime-bench] checkpoint project=${project.key} status=passed\n`)
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      failures[project.key] = message
+      process.stderr.write(`[runtime-bench] project=${project.key} status=failed reason=${message.replace(/\s+/g, ' ').trim().slice(0, 320)}\n`)
+    }
+  }
+
+  return { failures, results }
+}
+
 async function main() {
   process.stdout.write(`[runtime-bench] provider=${runtimeProvider}\n`)
+  const commit = await resolveGitCommit()
+  if (!RESUME) {
+    await fsPromises.rm(path.join(CHECKPOINT_ROOT, commit, runtimeProvider), { recursive: true, force: true })
+  }
   if (runtimeProvider === 'devtools') {
     process.stdout.write(`[runtime-bench] preflight=devtools-login-check project=${path.basename(LOGIN_CHECK_ROOT)}\n`)
     await ensureLoginCheckProjectReady(LOGIN_CHECK_ROOT)
     await assertDevtoolsLoggedIn(LOGIN_CHECK_ROOT)
   }
-  const native = await runWorker(NATIVE_ROOT)
-  const vue = await runWorker(VUE_ROOT)
-  const react = await runWorker(REACT_ROOT)
+  const { failures, results } = await runProjects(commit)
+  const native = results.native
+  const vue = results.vue
+  const react = results.react
+  if (!native || !vue || !react) {
+    process.stdout.write(`${JSON.stringify({
+      complete: false,
+      commit,
+      failures,
+      provider: runtimeProvider,
+      results,
+    }, null, 2)}\n`)
+    process.exitCode = 1
+    return
+  }
 
   const comparison = {
     firstScreen: {
