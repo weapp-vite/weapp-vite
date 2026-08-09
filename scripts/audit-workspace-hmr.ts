@@ -27,6 +27,7 @@ import {
   resolveReactTemplateOutputPath,
   resolveWorkspaceHmrRuntime,
 } from './workspace-hmr/scenarios'
+import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
 
 const execFile = promisify(execFileCallback)
 
@@ -192,6 +193,7 @@ const SKIPPED_PROJECT_IDS = new Set([
   'e2e-apps/github-issues',
   'e2e-apps/script-setup-macros-js-with-defaults-invalid',
 ])
+const statefulHmrAuditClients = new Map<string, StatefulHmrAuditClient>()
 const WORKSPACE_HMR_BASELINE_PROJECT_ALIASES = new Map<string, string>([
   ['e2e-apps/template-wevu-tdesign-regression', 'templates/weapp-vite-wevu-tailwindcss-tdesign-template'],
 ])
@@ -530,6 +532,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
 
   await rm(path.join(project.root, 'dist'), { recursive: true, force: true }).catch(() => {})
   await rm(profilePath, { force: true }).catch(() => {})
+  statefulHmrAuditClients.delete(project.root)
   await cleanupResidualDevProcesses()
 
   const dev = startDevProcess(process.execPath, [
@@ -600,6 +603,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     for (const [filePath, source] of backups) {
       await writeFile(filePath, source, 'utf8').catch(() => {})
     }
+    statefulHmrAuditClients.delete(project.root)
     await cleanupResidualDevProcesses()
   }
 
@@ -866,34 +870,16 @@ function resolveOutputPath(project: ProjectCase, sourcePath: string, outputExt: 
 
 async function publishStatefulHmrUpdate(project: ProjectCase) {
   const controlPath = path.join(project.distRoot, '__weapp_vite_hmr/control.js')
+  const client = statefulHmrAuditClients.get(project.root) ?? new StatefulHmrAuditClient()
+  statefulHmrAuditClients.set(project.root, client)
   const deadline = Date.now() + scenarioTimeoutMs
   let lastError: unknown
   while (Date.now() < deadline) {
     try {
       const control = parseStatefulHmrControlSource(await readFile(controlPath, 'utf8'))
-      const sessionId = `workspace-hmr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
-      const report = async (action: 'poll' | 'register') => {
-        const response = await fetch(control.url, {
-          body: JSON.stringify({
-            action,
-            buildId: control.buildId,
-            sessionId,
-            token: control.token,
-            version: 0,
-          }),
-          headers: { 'content-type': 'application/json' },
-          method: 'POST',
-          signal: AbortSignal.timeout(Math.max(1, Math.min(30_000, deadline - Date.now()))),
-        })
-        if (!response.ok) {
-          throw new Error(`Stateful HMR audit client ${action} failed with HTTP ${response.status}.`)
-        }
-        return await response.json() as { type?: string }
-      }
-
-      await report('register')
+      await client.ensureRegistered(control, Math.min(30_000, deadline - Date.now()))
       while (Date.now() < deadline) {
-        const response = await report('poll')
+        const response = await client.poll(Math.min(30_000, deadline - Date.now()))
         if (response.type === 'batch-published') {
           return
         }
