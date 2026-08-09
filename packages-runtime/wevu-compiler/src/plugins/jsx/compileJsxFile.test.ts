@@ -1,8 +1,42 @@
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { getMiniProgramTemplatePlatform } from '../vue/compiler/template/platforms'
 import { compileJsxFile } from './compileJsxFile'
 
 describe('compileJsxFile', () => {
+  it('inlines JSX fragments and factories imported from sibling modules', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-shared-'))
+    const shared = path.join(root, 'shared.tsx')
+    const entry = path.join(root, 'page.tsx')
+    await writeFile(shared, `
+      export const sss = <><view>sss</view></>
+      export const createPanel = (title: string) => <view className="panel"><text>{title}</text></view>
+    `)
+    await writeFile(entry, `
+      import { sss, createPanel } from './shared'
+      import { defineComponent } from 'wevu'
+      export default defineComponent({ render() { return <view>{sss}{createPanel('标题')}</view> } })
+    `)
+    const result = await compileJsxFile(await readFile(entry, 'utf8'), entry)
+    expect(result.template).toContain('<view>sss</view>')
+    expect(result.template).toContain('<view class="panel"><text>{{\'标题\'}}</text></view>')
+  })
+
+  it('resolves JSX fragments through re-export modules', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-reexport-'))
+    const shared = path.join(root, 'shared.tsx')
+    const barrel = path.join(root, 'barrel.tsx')
+    const entry = path.join(root, 'page.tsx')
+    await writeFile(shared, 'export const sss = <view>re-exported</view>')
+    await writeFile(barrel, 'export { sss } from \'./shared\'')
+    await writeFile(entry, `import { sss } from './barrel'
+      import { defineComponent } from 'wevu'
+      export default defineComponent({ render() { return <view>{sss}</view> } })`)
+    const result = await compileJsxFile(await readFile(entry, 'utf8'), entry)
+    expect(result.template).toContain('<view>re-exported</view>')
+  })
   const defaultPlatform = getMiniProgramTemplatePlatform()
 
   it('compiles render JSX to wxml template and script wrapper', async () => {

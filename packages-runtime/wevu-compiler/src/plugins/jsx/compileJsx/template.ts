@@ -1,10 +1,12 @@
 import type { File } from '@weapp-vite/ast/babelTypes'
 import type { CompileVueFileOptions } from '../../vue/transform/compileVueFile/types'
 import type { JsxCompileContext } from './types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
 import { formatWxml } from '../../vue/compiler/template/format'
 import { getMiniProgramTemplatePlatform } from '../../vue/compiler/template/platforms'
 import * as analysis from './analysis'
+import { createJsxModuleResolver } from './moduleResolver'
 import { compileRenderableExpression } from './render'
 
 export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCompileContext {
@@ -16,12 +18,36 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     inlineExpressions: [],
     inlineExpressionSeed: 0,
     scopeStack: [],
+    moduleResolver: undefined,
+    importedBindings: new Map(),
+    resolvingExports: new Set(),
+  }
+}
+
+function collectImportedBindings(ast: File, context: JsxCompileContext) {
+  for (const statement of ast.program.body) {
+    if (!t.isImportDeclaration(statement)) {
+      continue
+    }
+    const source = statement.source.value
+    for (const specifier of statement.specifiers) {
+      if (t.isImportSpecifier(specifier) && t.isIdentifier(specifier.local)) {
+        const importedName = t.isIdentifier(specifier.imported) ? specifier.imported.name : specifier.imported.value
+        context.importedBindings?.set(specifier.local.name, { source, importedName })
+      }
+      else if (t.isImportDefaultSpecifier(specifier) && t.isIdentifier(specifier.local)) {
+        context.importedBindings?.set(specifier.local.name, { source, importedName: 'default' })
+      }
+    }
   }
 }
 
 export function compileJsxTemplate(source: string, filename: string, options?: CompileVueFileOptions) {
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
   const context = createJsxCompileContext(options)
+  context.filename = filename
+  context.moduleResolver = createJsxModuleResolver(options?.warn)
+  collectImportedBindings(ast, context)
 
   const { renderExpression } = analysis.analyzeJsxAst(ast, context)
   if (!renderExpression) {
@@ -59,6 +85,9 @@ export function collectJsxAutoComponents(source: string, filename: string, optio
 export function compileJsxTemplateAndCollectComponents(source: string, filename: string, options?: CompileVueFileOptions) {
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
   const context = createJsxCompileContext(options)
+  context.filename = filename
+  context.moduleResolver = createJsxModuleResolver(options?.warn)
+  collectImportedBindings(ast, context)
 
   const { renderExpression, autoComponentContext } = analysis.analyzeJsxAst(ast, context)
 

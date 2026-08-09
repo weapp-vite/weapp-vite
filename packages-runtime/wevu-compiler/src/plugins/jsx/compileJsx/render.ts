@@ -9,6 +9,7 @@ import type {
 } from '@weapp-vite/ast/babelTypes'
 import type { JsxCompileContext } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { traverse } from '../../../utils/babel'
 import {
   escapeText,
   normalizeInterpolationExpression,
@@ -25,6 +26,76 @@ type JSXChild = JSXText | JSXExpressionContainer | JSXSpreadChild | JSXElement |
 
 function compileListExpression(exp: Expression) {
   return normalizeInterpolationExpression(exp)
+}
+
+function resolveImportedExpression(node: Expression, context: JsxCompileContext) {
+  if (!t.isIdentifier(node) || !context.filename || !context.moduleResolver) {
+    return undefined
+  }
+  const binding = context.importedBindings?.get(node.name)
+  if (!binding) {
+    return undefined
+  }
+  const key = `${context.filename}:${node.name}`
+  if (context.resolvingExports?.has(key)) {
+    context.warnings.push(`[JSX 编译] 跨文件 JSX 导出循环引用：${node.name}`)
+    return undefined
+  }
+  context.resolvingExports?.add(key)
+  try {
+    return context.moduleResolver.resolveImport(context.filename, binding.source, binding.importedName)
+  }
+  finally {
+    context.resolvingExports?.delete(key)
+  }
+}
+
+function compileImportedExpression(node: Expression, context: JsxCompileContext): string | null {
+  const resolved = resolveImportedExpression(node, context)
+  if (!resolved || resolved.params.length > 0) {
+    return null
+  }
+  return compileRenderableExpression(resolved.expression, context)
+}
+
+function compileImportedFactoryCall(node: t.CallExpression, context: JsxCompileContext): string | null {
+  if (!t.isIdentifier(node.callee) || !context.filename || !context.moduleResolver) {
+    return null
+  }
+  const binding = context.importedBindings?.get(node.callee.name)
+  if (!binding) {
+    return null
+  }
+  const resolved = context.moduleResolver.resolveImport(context.filename, binding.source, binding.importedName)
+  if (!resolved || resolved.params.length === 0) {
+    return null
+  }
+  const replacements = new Map<string, Expression>()
+  resolved.params.forEach((param, index) => {
+    const argument = node.arguments[index]
+    if (argument && t.isExpression(argument)) {
+      replacements.set(param, argument)
+    }
+  })
+  if (replacements.size !== resolved.params.length) {
+    context.warnings.push(`[JSX 编译] JSX 工厂 ${node.callee.name} 调用参数不足，已保留运行时表达式。`)
+    return null
+  }
+  const expression = t.cloneNode(resolved.expression, true)
+  const file = t.file(t.program([t.expressionStatement(expression)]))
+  traverse(file, {
+    ReferencedIdentifier(path) {
+      const replacement = replacements.get(path.node.name)
+      if (replacement) {
+        path.replaceWith(t.cloneNode(replacement, true))
+      }
+    },
+  })
+  const output = file.program.body[0]
+  if (!t.isExpressionStatement(output)) {
+    return null
+  }
+  return compileRenderableExpression(output.expression as Expression, context)
 }
 
 function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext): string | null {
@@ -135,6 +206,10 @@ export function compileRenderableExpression(exp: Expression, context: JsxCompile
     return compileLogicalExpression(node, context)
   }
   if (t.isCallExpression(node)) {
+    const importedFactory = compileImportedFactoryCall(node, context)
+    if (importedFactory != null) {
+      return importedFactory
+    }
     const mapped = compileMapExpression(node, context)
     if (mapped != null) {
       return mapped
@@ -149,6 +224,12 @@ export function compileRenderableExpression(exp: Expression, context: JsxCompile
         return compileRenderableExpression(element, context)
       })
       .join('')
+  }
+  if (t.isIdentifier(node)) {
+    const imported = compileImportedExpression(node, context)
+    if (imported != null) {
+      return imported
+    }
   }
   if (t.isNullLiteral(node) || t.isBooleanLiteral(node)) {
     return ''
