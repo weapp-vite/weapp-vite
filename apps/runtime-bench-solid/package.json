@@ -1,0 +1,23 @@
+{
+  "name": "runtime-bench-solid",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Solid-style JSX 小程序运行时 benchmark POC",
+  "scripts": {
+    "build": "wv build",
+    "dev": "wv dev",
+    "postinstall": "wv prepare",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json"
+  },
+  "dependencies": {
+    "solid-js": "1.9.14"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

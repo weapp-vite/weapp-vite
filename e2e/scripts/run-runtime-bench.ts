@@ -20,6 +20,7 @@ const WORKER_PATH = path.resolve(import.meta.dirname, './runtime-bench.worker.ts
 const NATIVE_ROOT = path.resolve(import.meta.dirname, '../../apps/runtime-bench-native')
 const VUE_ROOT = path.resolve(import.meta.dirname, '../../apps/runtime-bench-vue')
 const REACT_ROOT = path.resolve(import.meta.dirname, '../../apps/runtime-bench-react')
+const SOLID_ROOT = path.resolve(import.meta.dirname, '../../apps/runtime-bench-solid')
 const LOGIN_CHECK_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const CHECKPOINT_ROOT = path.resolve(import.meta.dirname, '../../.tmp/runtime-bench/checkpoints')
@@ -28,7 +29,7 @@ const runtimeProvider = resolveRuntimeProviderName()
 const RESUME = process.argv.includes('--resume')
 
 interface BenchProject {
-  key: 'native' | 'react' | 'vue'
+  key: 'native' | 'react' | 'solid' | 'vue'
   root: string
 }
 
@@ -36,9 +37,10 @@ const BENCH_PROJECTS: BenchProject[] = [
   { key: 'native', root: NATIVE_ROOT },
   { key: 'vue', root: VUE_ROOT },
   { key: 'react', root: REACT_ROOT },
+  { key: 'solid', root: SOLID_ROOT },
 ]
 
-function compareUpdateSummary(native: BenchUpdateSummary, candidate: BenchUpdateSummary, label: 'react' | 'vue') {
+function compareUpdateSummary(native: BenchUpdateSummary, candidate: BenchUpdateSummary, label: 'react' | 'solid' | 'vue') {
   return {
     native,
     [label]: candidate,
@@ -162,7 +164,8 @@ async function main() {
   const native = results.native
   const vue = results.vue
   const react = results.react
-  if (!native || !vue || !react) {
+  const solid = results.solid
+  if (!native || !vue || !react || !solid) {
     process.stdout.write(`${JSON.stringify({
       complete: false,
       commit,
@@ -179,6 +182,7 @@ async function main() {
       native,
       vue,
       react,
+      solid,
       deltaWallMs: vue.firstScreen.wallMsMedian - native.firstScreen.wallMsMedian,
       deltaReadyMs: vue.firstScreen.readyMsMedian - native.firstScreen.readyMsMedian,
       deltaFirstCommitMs: vue.firstScreen.firstCommitMsMedian - native.firstScreen.firstCommitMsMedian,
@@ -192,11 +196,17 @@ async function main() {
         readyMs: react.firstScreen.readyMsMedian - native.firstScreen.readyMsMedian,
         firstCommitMs: react.firstScreen.firstCommitMsMedian - native.firstScreen.firstCommitMsMedian,
       },
+      solidDelta: {
+        wallMs: solid.firstScreen.wallMsMedian - native.firstScreen.wallMsMedian,
+        readyMs: solid.firstScreen.readyMsMedian - native.firstScreen.readyMsMedian,
+        firstCommitMs: solid.firstScreen.firstCommitMsMedian - native.firstScreen.firstCommitMsMedian,
+      },
     },
     detailNavigation: {
       native,
       vue,
       react,
+      solid,
       deltaWallMs: vue.detailNavigation.wallMsMedian - native.detailNavigation.wallMsMedian,
       deltaReadyMs: vue.detailNavigation.readyMsMedian - native.detailNavigation.readyMsMedian,
       deltaFirstCommitMs: vue.detailNavigation.firstCommitMsMedian - native.detailNavigation.firstCommitMsMedian,
@@ -210,6 +220,11 @@ async function main() {
         readyMs: react.detailNavigation.readyMsMedian - native.detailNavigation.readyMsMedian,
         firstCommitMs: react.detailNavigation.firstCommitMsMedian - native.detailNavigation.firstCommitMsMedian,
       },
+      solidDelta: {
+        wallMs: solid.detailNavigation.wallMsMedian - native.detailNavigation.wallMsMedian,
+        readyMs: solid.detailNavigation.readyMsMedian - native.detailNavigation.readyMsMedian,
+        firstCommitMs: solid.detailNavigation.firstCommitMsMedian - native.detailNavigation.firstCommitMsMedian,
+      },
     },
     updateSingleCommit: {
       diff: compareUpdateSummary(native.updateSingleCommit.diff, vue.updateSingleCommit.diff, 'vue'),
@@ -220,6 +235,7 @@ async function main() {
         ? compareVuePatchVsDiff(vue.updateSingleCommit.diff, vue.updateSingleCommit.patch)
         : undefined,
       reactDynamic: compareUpdateSummary(native.updateSingleCommit.diff, react.updateSingleCommit.diff, 'react'),
+      solidSignals: compareUpdateSummary(native.updateSingleCommit.diff, solid.updateSingleCommit.diff, 'solid'),
     },
     updateMicroCommit: {
       diff: compareUpdateSummary(native.updateMicroCommit.diff, vue.updateMicroCommit.diff, 'vue'),
@@ -230,6 +246,7 @@ async function main() {
         ? compareVuePatchVsDiff(vue.updateMicroCommit.diff, vue.updateMicroCommit.patch)
         : undefined,
       reactDynamic: compareUpdateSummary(native.updateMicroCommit.diff, react.updateMicroCommit.diff, 'react'),
+      solidSignals: compareUpdateSummary(native.updateMicroCommit.diff, solid.updateMicroCommit.diff, 'solid'),
     },
     reactStaticBinding: react.staticBinding,
   }
