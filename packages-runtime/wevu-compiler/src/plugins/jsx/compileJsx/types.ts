@@ -11,6 +11,13 @@ export interface JsxModuleResolver {
   resolveImport: (filename: string, source: string, importedName: string) => JsxModuleExport | undefined
 }
 
+export interface JsxDynamicIslandMetadata {
+  id: string
+  expression: string
+  reason: 'closure' | 'unsupported-import' | 'unsupported-call'
+  captures: string[]
+}
+
 export interface JsxCompileContext {
   platform: NonNullable<TemplateCompileOptions['platform']>
   mustacheInterpolation: NonNullable<TemplateCompileOptions['mustacheInterpolation']>
@@ -23,6 +30,8 @@ export interface JsxCompileContext {
   moduleResolver?: JsxModuleResolver
   importedBindings?: Map<string, { source: string, importedName: string }>
   resolvingExports?: Set<string>
+  dynamicIslands?: JsxDynamicIslandMetadata[]
+  dynamicIslandSeed?: number
 }
 
 export interface JsxImportedComponent {

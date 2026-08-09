@@ -44,6 +44,12 @@ export interface VueTransformResult {
       autoImportTagsMap?: Record<string, string>
       autoUsingComponentsMap: Record<string, string>
     }
+    jsxDynamicIslands?: Array<{
+      id: string
+      expression: string
+      reason: 'closure' | 'unsupported-import' | 'unsupported-call'
+      captures: string[]
+    }>
   }
 }
 

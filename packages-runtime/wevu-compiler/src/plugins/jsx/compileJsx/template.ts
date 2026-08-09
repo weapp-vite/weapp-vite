@@ -21,6 +21,8 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     moduleResolver: undefined,
     importedBindings: new Map(),
     resolvingExports: new Set(),
+    dynamicIslands: [],
+    dynamicIslandSeed: 0,
   }
 }
 
@@ -60,6 +62,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
       template: undefined,
       warnings: context.warnings,
       inlineExpressions: context.inlineExpressions,
+      dynamicIslands: context.dynamicIslands,
     }
   }
 
@@ -111,5 +114,6 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
     warnings: context.warnings,
     inlineExpressions: context.inlineExpressions,
     autoComponentContext,
+    dynamicIslands: context.dynamicIslands,
   }
 }

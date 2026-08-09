@@ -51,7 +51,7 @@ export async function compileJsxFile(
     }
   }
 
-  const { template: compiledTemplateStr, warnings: templateWarnings, inlineExpressions, autoComponentContext } = compileJsxTemplateAndCollectComponents(source, filename, options)
+  const { template: compiledTemplateStr, warnings: templateWarnings, inlineExpressions, autoComponentContext, dynamicIslands } = compileJsxTemplateAndCollectComponents(source, filename, options)
 
   const autoUsingComponentsMap: Record<string, string> = {}
   if (options?.autoUsingComponents?.resolveUsingComponentPath && autoComponentContext.templateTags.size > 0) {
@@ -168,6 +168,7 @@ export async function compileJsxFile(
       hasScriptSetup: false,
       hasSetupOption: SETUP_CALL_RE.test(normalizedScriptSource),
       jsonMacroHash: scriptMacroHash,
+      jsxDynamicIslands: dynamicIslands,
     },
   }
 

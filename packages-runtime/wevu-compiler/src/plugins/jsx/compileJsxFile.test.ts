@@ -37,6 +37,21 @@ describe('compileJsxFile', () => {
     const result = await compileJsxFile(await readFile(entry, 'utf8'), entry)
     expect(result.template).toContain('<view>re-exported</view>')
   })
+
+  it('emits structured metadata for imported JSX closures that cannot be statically expanded', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-island-'))
+    const shared = path.join(root, 'shared.tsx')
+    const entry = path.join(root, 'page.tsx')
+    await writeFile(shared, 'export const createPanel = (factory: () => any) => factory()')
+    await writeFile(entry, `import { createPanel } from './shared'
+      import { defineComponent } from 'wevu'
+      export default defineComponent({ render() { return <view>{createPanel(() => <text>dynamic</text>)}</view> } })`)
+    const result = await compileJsxFile(await readFile(entry, 'utf8'), entry)
+    expect(result.template).toContain('data-wv-jsx-island')
+    expect(result.meta?.jsxDynamicIslands).toEqual([
+      expect.objectContaining({ reason: 'unsupported-call' }),
+    ])
+  })
   const defaultPlatform = getMiniProgramTemplatePlatform()
 
   it('compiles render JSX to wxml template and script wrapper', async () => {

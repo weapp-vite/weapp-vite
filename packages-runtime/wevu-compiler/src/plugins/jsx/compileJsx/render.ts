@@ -28,6 +28,19 @@ function compileListExpression(exp: Expression) {
   return normalizeInterpolationExpression(exp)
 }
 
+function registerDynamicIsland(exp: Expression, context: JsxCompileContext, reason: 'closure' | 'unsupported-import' | 'unsupported-call') {
+  const id = `i${context.dynamicIslandSeed ?? 0}`
+  context.dynamicIslandSeed = (context.dynamicIslandSeed ?? 0) + 1
+  const expression = normalizeInterpolationExpression(exp)
+  context.dynamicIslands?.push({
+    id,
+    expression,
+    reason,
+    captures: [],
+  })
+  return `<block data-wv-jsx-island="${id}" />`
+}
+
 function resolveImportedExpression(node: Expression, context: JsxCompileContext) {
   if (!t.isIdentifier(node) || !context.filename || !context.moduleResolver) {
     return undefined
@@ -53,6 +66,10 @@ function resolveImportedExpression(node: Expression, context: JsxCompileContext)
 function compileImportedExpression(node: Expression, context: JsxCompileContext): string | null {
   const resolved = resolveImportedExpression(node, context)
   if (!resolved || resolved.params.length > 0) {
+    if (context.importedBindings?.has(t.isIdentifier(node) ? node.name : '')) {
+      context.warnings.push(`[JSX 编译] 无法静态展开跨文件 JSX 导出，已生成 dynamic island：${t.isIdentifier(node) ? node.name : 'unknown'}`)
+      return registerDynamicIsland(node, context, 'unsupported-import')
+    }
     return null
   }
   return compileRenderableExpression(resolved.expression, context)
@@ -68,7 +85,8 @@ function compileImportedFactoryCall(node: t.CallExpression, context: JsxCompileC
   }
   const resolved = context.moduleResolver.resolveImport(context.filename, binding.source, binding.importedName)
   if (!resolved || resolved.params.length === 0) {
-    return null
+    context.warnings.push(`[JSX 编译] 无法静态展开 JSX 工厂 ${node.callee.name}，已生成 dynamic island。`)
+    return registerDynamicIsland(node, context, 'unsupported-call')
   }
   const replacements = new Map<string, Expression>()
   resolved.params.forEach((param, index) => {
