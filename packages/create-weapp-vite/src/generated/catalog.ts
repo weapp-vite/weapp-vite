@@ -19,7 +19,7 @@ export const TEMPLATE_CATALOG = {
   '@types/semver': '^7.8.0',
   '@vant/weapp': '^1.11.7',
   '@vitejs/plugin-vue': '^6.0.8',
-  '@vue/babel-plugin-jsx': '^3.0.0',
+  '@vue/babel-plugin-jsx': '3.0.0',
   '@vue/compiler-core': '^3.5.41',
   '@vue/compiler-dom': '^3.5.41',
   '@vue/language-core': '^3.3.9',

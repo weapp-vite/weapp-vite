@@ -13,6 +13,9 @@ import {
   vShow,
   withDirectives,
 } from '../src/runtime/jsxIsland'
+import { normalizeClass, normalizeStyle } from '../src/runtime/template'
+
+const islandAdapters = { normalizeClass, normalizeStyle }
 
 describe('Wevu JSX dynamic island runtime', () => {
   it('normalizes host vnodes into serializable island data', () => {
@@ -22,7 +25,7 @@ describe('Wevu JSX dynamic island runtime', () => {
       style: [{ color: 'red' }, 'width:10px'],
     }, [
       createVNode(Fragment, null, [createTextVNode('hello'), createVNode('text', null, 'world')]),
-    ]), 'i0')
+    ]), 'i0', islandAdapters)
 
     expect(node).toEqual(expect.objectContaining({
       kind: 'element',
@@ -40,7 +43,7 @@ describe('Wevu JSX dynamic island runtime', () => {
       [vShow, false],
       [vModelText, 'hello'],
     ])
-    const node = normalizeJsxIsland.call(target, vnode, 'i3')!
+    const node = normalizeJsxIsland.call(target, vnode, 'i3', islandAdapters)!
 
     expect(node.props).toMatchObject({ hidden: true, value: 'hello' })
     const handlerId = node.events?.input
@@ -54,7 +57,7 @@ describe('Wevu JSX dynamic island runtime', () => {
   it('keeps event functions outside serializable node data and dispatches by id', () => {
     const tap = vi.fn()
     const target = {}
-    const node = normalizeJsxIsland.call(target, createVNode('button', { onTap: tap }, 'tap'), 'i1')!
+    const node = normalizeJsxIsland.call(target, createVNode('button', { onTap: tap }, 'tap'), 'i1', islandAdapters)!
     const handlerId = node.events?.tap
 
     expect(handlerId).toBe('i1:0')
@@ -70,8 +73,8 @@ describe('Wevu JSX dynamic island runtime', () => {
     const oldTap = vi.fn()
     const nextTap = vi.fn()
     const target = {}
-    normalizeJsxIsland.call(target, createVNode('view', { onTap: oldTap }), 'i2')
-    normalizeJsxIsland.call(target, createVNode('view', { onTap: nextTap }), 'i2')
+    normalizeJsxIsland.call(target, createVNode('view', { onTap: oldTap }), 'i2', islandAdapters)
+    normalizeJsxIsland.call(target, createVNode('view', { onTap: nextTap }), 'i2', islandAdapters)
 
     const handlers = (target as any)[WEVU_JSX_ISLAND_HANDLER_MAP_KEY]
     expect(Object.keys(handlers)).toEqual(['i2:0'])
@@ -89,7 +92,7 @@ describe('Wevu JSX dynamic island runtime', () => {
       [vModelText, 'hello', 'query'],
     ])
     const target = {}
-    const node = normalizeJsxIsland.call(target, vnode, 'i4')!
+    const node = normalizeJsxIsland.call(target, vnode, 'i4', islandAdapters)!
 
     expect(resolveComponent('Panel')).toBe('Panel')
     expect(node.props?.query).toBe('hello')

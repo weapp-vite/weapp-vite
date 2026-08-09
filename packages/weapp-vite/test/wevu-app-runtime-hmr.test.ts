@@ -251,10 +251,18 @@ describe.sequential('wevu app runtime HMR', () => {
         content => content.includes('wevu-hmr-probe'),
         'initial app output contains hmr probe',
       )
+      const initialGeneratedJsFiles = await readGeneratedJsFiles(ctxResult.ctx.configService.outDir)
+      const initialVendorPaths = initialGeneratedJsFiles
+        .map(file => file.relativePath)
+        .filter(relativePath => relativePath.startsWith('weapp-vendors/'))
+        .sort()
       expectNoBareWevuRuntimeReferences(initialAppOutput)
       expect(await fs.pathExists(runtimeVendorPath)).toBe(true)
       expect(await fs.pathExists(reactivityVendorPath)).toBe(true)
-      expect(await fs.pathExists(templateVendorPath)).toBe(true)
+      expect(
+        await fs.pathExists(templateVendorPath),
+        `generated vendor files: ${initialVendorPaths.join(', ')}`,
+      ).toBe(true)
 
       const originalLayoutSource = await fs.readFile(layoutSourcePath, 'utf8')
       const updatedLayoutSource = originalLayoutSource.replace(

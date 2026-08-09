@@ -1,5 +1,4 @@
 import { WEVU_JSX_ISLAND_HANDLER_MAP_KEY } from '@weapp-core/constants'
-import { normalizeClass, normalizeStyle } from './template'
 
 export const Fragment = Symbol.for('wevu.jsx.fragment')
 
@@ -16,6 +15,11 @@ export interface WevuJsxIslandNode {
   props?: Record<string, any>
   tag?: string
   text?: string
+}
+
+export interface WevuJsxIslandAdapters {
+  normalizeClass: (value: unknown) => string
+  normalizeStyle: (value: unknown) => string
 }
 
 export function createVNode(type: unknown, props?: Record<string, any> | null, children?: unknown): WevuJsxVNode {
@@ -125,29 +129,41 @@ function getHandlerMap(target: any): Record<string, (...args: any[]) => any> {
   return next
 }
 
-function normalizeChildren(value: unknown, target: any, islandId: string, seed: { value: number }): WevuJsxIslandNode[] {
+function normalizeChildren(
+  value: unknown,
+  target: any,
+  islandId: string,
+  seed: { value: number },
+  adapters: WevuJsxIslandAdapters,
+): WevuJsxIslandNode[] {
   const resolved = typeof value === 'function' ? value() : value
   if (resolved == null || resolved === false || resolved === true) {
     return []
   }
   if (Array.isArray(resolved)) {
-    return resolved.flatMap(item => normalizeChildren(item, target, islandId, seed))
+    return resolved.flatMap(item => normalizeChildren(item, target, islandId, seed, adapters))
   }
   if (typeof resolved === 'object' && !isVNode(resolved)) {
     const slots = resolved as Record<string, unknown>
-    return normalizeChildren(slots.default, target, islandId, seed)
+    return normalizeChildren(slots.default, target, islandId, seed, adapters)
   }
   // eslint-disable-next-line ts/no-use-before-define
-  const node = normalizeNode(resolved, target, islandId, seed)
+  const node = normalizeNode(resolved, target, islandId, seed, adapters)
   return node ? [node] : []
 }
 
-function normalizeNode(value: unknown, target: any, islandId: string, seed: { value: number }): WevuJsxIslandNode | undefined {
+function normalizeNode(
+  value: unknown,
+  target: any,
+  islandId: string,
+  seed: { value: number },
+  adapters: WevuJsxIslandAdapters,
+): WevuJsxIslandNode | undefined {
   if (value == null || value === false || value === true) {
     return undefined
   }
   if (Array.isArray(value)) {
-    return { kind: 'fragment', children: normalizeChildren(value, target, islandId, seed) }
+    return { kind: 'fragment', children: normalizeChildren(value, target, islandId, seed, adapters) }
   }
   if (typeof value === 'string' || typeof value === 'number') {
     return { kind: 'text', text: String(value) }
@@ -156,16 +172,16 @@ function normalizeNode(value: unknown, target: any, islandId: string, seed: { va
     return { kind: 'text', text: String(value) }
   }
   if (value.type === Fragment) {
-    return { kind: 'fragment', children: normalizeChildren(value.children, target, islandId, seed) }
+    return { kind: 'fragment', children: normalizeChildren(value.children, target, islandId, seed, adapters) }
   }
   if (value.type === 'text') {
     return { kind: 'text', text: String(value.children ?? '') }
   }
   if (typeof value.type === 'function') {
-    return normalizeNode(value.type(value.props ?? {}, value.children), target, islandId, seed)
+    return normalizeNode(value.type(value.props ?? {}, value.children), target, islandId, seed, adapters)
   }
   if (value.type && typeof value.type === 'object' && typeof (value.type as any).render === 'function') {
-    return normalizeNode((value.type as any).render.call(value.props ?? {}), target, islandId, seed)
+    return normalizeNode((value.type as any).render.call(value.props ?? {}), target, islandId, seed, adapters)
   }
   const tag = typeof value.type === 'string' ? value.type : undefined
   if (!tag) {
@@ -187,10 +203,10 @@ function normalizeNode(value: unknown, target: any, islandId: string, seed: { va
       continue
     }
     if (name === 'class' || name === 'className') {
-      props.class = normalizeClass(raw)
+      props.class = adapters.normalizeClass(raw)
     }
     else if (name === 'style') {
-      props.style = normalizeStyle(raw)
+      props.style = adapters.normalizeStyle(raw)
     }
     else {
       props[name] = raw
@@ -201,18 +217,23 @@ function normalizeNode(value: unknown, target: any, islandId: string, seed: { va
     tag,
     props,
     events,
-    children: normalizeChildren(value.children, target, islandId, seed),
+    children: normalizeChildren(value.children, target, islandId, seed, adapters),
   }
 }
 
-export function normalizeJsxIsland(this: any, value: unknown, islandId: string): WevuJsxIslandNode | null {
+export function normalizeJsxIsland(
+  this: any,
+  value: unknown,
+  islandId: string,
+  adapters: WevuJsxIslandAdapters,
+): WevuJsxIslandNode | null {
   const handlers = getHandlerMap(this)
   for (const key of Object.keys(handlers)) {
     if (key.startsWith(`${islandId}:`)) {
       delete handlers[key]
     }
   }
-  return normalizeNode(value, this, islandId, { value: 0 }) ?? null
+  return normalizeNode(value, this, islandId, { value: 0 }, adapters) ?? null
 }
 
 export function runJsxIslandHandler(target: any, event: any) {

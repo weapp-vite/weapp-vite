@@ -72,10 +72,17 @@ vi.mock('node:module', async () => {
 
   return {
     ...actual,
-    createRequire: vi.fn(() => ({
-      ...actual.createRequire(import.meta.url),
-      resolve: resolveDashboardPackageMock,
-    })),
+    createRequire: vi.fn((filename: string | URL) => {
+      const require = actual.createRequire(filename)
+      const resolve = require.resolve.bind(require)
+      require.resolve = ((id: string, options?: { paths?: string[] }) => {
+        if (id === '@weapp-vite/dashboard/package.json') {
+          return resolveDashboardPackageMock(id, options)
+        }
+        return resolve(id, options)
+      }) as typeof require.resolve
+      return require
+    }),
   }
 })
 

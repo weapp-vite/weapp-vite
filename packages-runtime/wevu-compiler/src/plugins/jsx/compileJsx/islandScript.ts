@@ -23,7 +23,15 @@ function injectIslandComputed(optionsObject: ObjectExpression, islands: JsxDynam
     }
     const normalized = t.callExpression(
       t.memberExpression(t.identifier('__wevuNormalizeJsxIsland'), t.identifier('call')),
-      [t.thisExpression(), expression, t.stringLiteral(island.id)],
+      [
+        t.thisExpression(),
+        expression,
+        t.stringLiteral(island.id),
+        t.objectExpression([
+          t.objectProperty(t.identifier('normalizeClass'), t.identifier('__wevuNormalizeClass')),
+          t.objectProperty(t.identifier('normalizeStyle'), t.identifier('__wevuNormalizeStyle')),
+        ]),
+      ],
     )
     return [t.objectProperty(t.stringLiteral(island.id), normalized)]
   })
@@ -113,5 +121,9 @@ export function injectDynamicIslandRuntime(source: string, islands: JsxDynamicIs
   ast.program.body.unshift(t.importDeclaration([
     t.importSpecifier(t.identifier('__wevuNormalizeJsxIsland'), t.identifier('normalizeJsxIsland')),
   ], t.stringLiteral('wevu')))
+  ast.program.body.unshift(t.importDeclaration([
+    t.importSpecifier(t.identifier('__wevuNormalizeClass'), t.identifier('normalizeClass')),
+    t.importSpecifier(t.identifier('__wevuNormalizeStyle'), t.identifier('normalizeStyle')),
+  ], t.stringLiteral('wevu/internal-template')))
   return generate(ast).code
 }

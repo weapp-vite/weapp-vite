@@ -1,9 +1,7 @@
 import type { EncodedSourceMapLike } from '../../utils/sourcemap'
-import { createRequire } from 'node:module'
+import vueJsxPlugin from '@vue/babel-plugin-jsx'
 import { transformSync } from '@weapp-vite/ast/babelCore'
 import * as t from '@weapp-vite/ast/babelTypes'
-
-const require = createRequire(import.meta.url)
 
 export interface VueJsxTransformOptions {
   enableObjectSlots?: boolean
@@ -79,12 +77,11 @@ export function transformVueJsxScript(
   sourceMaps = true,
   options?: VueJsxTransformOptions,
 ) {
-  const plugin = require('@vue/babel-plugin-jsx')
   const result = transformSync(source, {
     filename,
     sourceType: 'module',
     sourceMaps,
-    plugins: [createWevuJsxDirectiveCompatibilityPlugin, [plugin, { ...DEFAULT_VUE_JSX_TRANSFORM_OPTIONS, ...options }]],
+    plugins: [createWevuJsxDirectiveCompatibilityPlugin, [vueJsxPlugin, { ...DEFAULT_VUE_JSX_TRANSFORM_OPTIONS, ...options }]],
     parserOpts: {
       plugins: ['typescript', 'jsx'],
     },

@@ -105,6 +105,9 @@ export default defineComponent({
     expect(result.template).toContain('template name="__wv_jsx_node"')
     expect(result.script).toContain('__wv_jsx_islands')
     expect(result.script).toContain('normalizeJsxIsland')
+    expect(result.script).toContain('normalizeClass')
+    expect(result.script).toContain('normalizeStyle')
+    expect(result.script).toContain('from "wevu/internal-template"')
     expect(result.script).not.toContain('from "vue"')
     expect(result.meta?.jsxDynamicIslands).toEqual([
       expect.objectContaining({ reason: 'unsupported-call' }),
