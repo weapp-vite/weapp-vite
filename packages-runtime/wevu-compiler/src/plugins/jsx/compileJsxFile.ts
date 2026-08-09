@@ -7,6 +7,7 @@ import { createJsonMerger } from '../vue/transform/jsonMerge'
 import { transformScript } from '../vue/transform/script'
 import { stripRenderOptionFromScript } from './compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from './compileJsx/template'
+import { transformVueJsxScript } from './vueJsxTransform'
 
 const LEADING_DOT_RE = /^\./
 const SETUP_CALL_RE = /\bsetup\s*\(/
@@ -105,7 +106,8 @@ export async function compileJsxFile(
   }
 
   const normalizedScriptSource = stripRenderOptionFromScript(scriptSource, filename, options?.warn)
-  const transformedScript = transformScript(normalizedScriptSource, {
+  const vueJsxTransformed = transformVueJsxScript(normalizedScriptSource, filename, options?.sourceMap !== false)
+  const transformedScript = transformScript(vueJsxTransformed.code, {
     skipComponentTransform: options?.skipComponentTransform ?? options?.isApp,
     isApp: options?.isApp,
     isPage: options?.isPage,
@@ -159,7 +161,7 @@ export async function compileJsxFile(
 
   const result: VueTransformResult = {
     script: transformedScript.code,
-    scriptMap: transformedScript.map ?? null,
+    scriptMap: transformedScript.map ?? vueJsxTransformed.map,
     template: compiledTemplateStr,
     config: configObj && Object.keys(configObj).length > 0
       ? JSON.stringify(configObj, null, 2)

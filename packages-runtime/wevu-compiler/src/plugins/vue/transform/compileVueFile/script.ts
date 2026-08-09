@@ -9,6 +9,7 @@ import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
 import { stripRenderOptionFromScript } from '../../../jsx/compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from '../../../jsx/compileJsx/template'
+import { transformVueJsxScript } from '../../../jsx/vueJsxTransform'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
 import { transformScript } from '../script'
 import { warnReservedScriptSetupProps } from './reservedProps'
@@ -313,7 +314,10 @@ export async function compileScriptPhase(
       jsxTemplate = compileJsxTemplateAndCollectComponents(scriptCode, filename, options)
       scriptCode = stripRenderOptionFromScript(scriptCode, filename, options?.warn)
     }
-    const transformed = transformScript(scriptCode, {
+    const jsxTransformed = isJsxScript
+      ? transformVueJsxScript(scriptCode, filename, options?.sourceMap !== false)
+      : { code: scriptCode, map: null }
+    const transformed = transformScript(jsxTransformed.code, {
       isTypeScript: descriptor.script?.lang === 'ts'
         || descriptor.script?.lang === 'tsx'
         || descriptor.scriptSetup?.lang === 'ts'
@@ -339,7 +343,7 @@ export async function compileScriptPhase(
     })
     return {
       script: transformed.code,
-      scriptMap: composeSourceMaps(transformed.map ?? null, scriptMap),
+      scriptMap: composeSourceMaps(transformed.map ?? jsxTransformed.map, scriptMap),
       template: jsxTemplate?.template,
       inlineExpressions: jsxTemplate?.inlineExpressions,
       autoUsingComponentsMap,

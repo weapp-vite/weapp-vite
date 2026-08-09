@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "@jridgewell/remapping": "^2.3.5",
+    "@vue/babel-plugin-jsx": "catalog:",
     "@vue/compiler-core": "catalog:",
     "@vue/compiler-dom": "catalog:",
     "@weapp-core/constants": "workspace:*",
