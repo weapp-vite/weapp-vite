@@ -1,0 +1,36 @@
+{
+  "description": "项目私有配置文件",
+  "projectname": "runtime-bench-solid",
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "Solid index",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "Solid detail",
+          "pathName": "pages/detail/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "Solid update",
+          "pathName": "pages/update/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  },
+  "setting": {
+    "compileHotReLoad": true,
+    "urlCheck": false
+  },
+  "libVersion": "3.15.0"
+}

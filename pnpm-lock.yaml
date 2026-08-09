@@ -891,6 +891,28 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  apps/runtime-bench-solid:
+    dependencies:
+      solid-js:
+        specifier: 1.9.14
+        version: 1.9.14
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.9(typescript@6.0.3)
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
+
   apps/runtime-bench-vue:
     devDependencies:
       '@weapp-vite/dashboard':
@@ -15461,6 +15483,16 @@ packages:
     resolution: {integrity: sha512-1gnZf7DFcoIcajTjTwjwuDjzuz4PPcY2StKPlsGAQ1+YH20IRVrBaXSWmdjowTJ6u8Rc01PoYOGHXfP1mYcZNQ==}
     engines: {node: '>= 18'}
 
+  seroval-plugins@1.5.6:
+    resolution: {integrity: sha512-HXuLAX2pu/UByPpaeo/TaMfvMIi+1QqIoPJYCcAtU8QkVNwgR6MPlGuCQTErV1JwraaMbYaWVIBX7mppzGLATQ==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      seroval: ^1.0
+
+  seroval@1.5.6:
+    resolution: {integrity: sha512-rVQVWjjSvlINzaQPZH5JFqsqEsIWdTxY3iJZCnTL/5gQbXIRooVZKI60tVCkOVfzcRPejboxO2t0P89dg5mQaA==}
+    engines: {node: '>=10'}
+
   serve-static@1.16.3:
     resolution: {integrity: sha512-x0RTqQel6g5SY7Lg6ZreMmsOzncHFU7nhnRWkKgWuMTu5NN0DR5oruckMqRvacAN9d5w6ARnRBXl9xhDCgfMeA==}
     engines: {node: '>= 0.8.0'}
@@ -15604,6 +15636,9 @@ packages:
   socks@2.8.9:
     resolution: {integrity: sha512-LJhUYUvItdQ0LkJTmPeaEObWXAqFyfmP85x0tch/ez9cahmhlBBLbIqDFnvBnUJGagb0JbIQrkBs1wJ+yRYpEw==}
     engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
+
+  solid-js@1.9.14:
+    resolution: {integrity: sha512-sAEXC0Kk0S1EDg+8ysEWJDbYhA3RRoEjwuySUGlKIemeo0I5YZfOyumNjNs9Sv3y2nmhD+0rW66ag2HsMuQiGQ==}
 
   sort-keys-length@1.0.1:
     resolution: {integrity: sha512-GRbEOUqCxemTAk/b32F2xa8wDTs+Z1QHOkbhJDQTvv/6G3ZkbJ+frYWsTcc7cBB3Fu4wy4XlLCuNtJuMn7Gsvw==}
@@ -30267,6 +30302,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  seroval-plugins@1.5.6(seroval@1.5.6):
+    dependencies:
+      seroval: 1.5.6
+
+  seroval@1.5.6: {}
+
   serve-static@1.16.3(supports-color@10.2.2):
     dependencies:
       encodeurl: 2.0.0
@@ -30514,6 +30555,12 @@ snapshots:
     dependencies:
       ip-address: 10.4.0
       smart-buffer: 4.2.0
+
+  solid-js@1.9.14:
+    dependencies:
+      csstype: 3.2.3
+      seroval: 1.5.6
+      seroval-plugins: 1.5.6(seroval@1.5.6)
 
   sort-keys-length@1.0.1:
     dependencies:
