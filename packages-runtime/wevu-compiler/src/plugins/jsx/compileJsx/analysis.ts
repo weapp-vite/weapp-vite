@@ -4,6 +4,7 @@ import type { JsxAutoComponentContext, JsxCompileContext } from './types'
 import {
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
   collectJsxTemplateTagsFromBabelExpression,
+  getObjectPropertyByKey,
   getRenderPropertyFromComponentOptions,
   resolveRenderExpressionFromComponentOptions,
 } from '@weapp-vite/ast'
@@ -20,16 +21,38 @@ function resolveRenderExpression(componentExpr: Expression, context: JsxCompileC
   }
 
   const renderExpression = resolveRenderExpressionFromComponentOptions(componentExpr)
-  if (!renderExpression) {
-    if (!getRenderPropertyFromComponentOptions(componentExpr)) {
-      context.warnings.push('未找到 render()，请在默认导出组件中声明 render 函数。')
-      return null
-    }
+  if (renderExpression) {
+    return renderExpression
+  }
+
+  if (getRenderPropertyFromComponentOptions(componentExpr)) {
     context.warnings.push('render 不是可执行函数。')
     return null
   }
 
-  return renderExpression
+  const setup = getObjectPropertyByKey(componentExpr, 'setup')
+  if (setup && (t.isObjectMethod(setup) || t.isObjectProperty(setup))) {
+    const body = t.isObjectMethod(setup) ? setup.body : setup.value
+    if (t.isBlockStatement(body)) {
+      for (const statement of body.body) {
+        if (!t.isReturnStatement(statement) || !statement.argument) {
+          continue
+        }
+        if (t.isArrowFunctionExpression(statement.argument) || t.isFunctionExpression(statement.argument)) {
+          const renderBody = statement.argument.body
+          if (t.isExpression(renderBody)) {
+            return renderBody
+          }
+          const returned = renderBody.body.find(item => t.isReturnStatement(item) && item.argument)
+          if (returned && t.isReturnStatement(returned) && returned.argument) {
+            return returned.argument as Expression
+          }
+        }
+      }
+    }
+  }
+  context.warnings.push('未找到 render() 或 setup() 返回的 render closure。')
+  return null
 }
 
 function isCollectableJsxTemplateTag(tag: string) {

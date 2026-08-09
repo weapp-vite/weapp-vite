@@ -14,9 +14,11 @@ export interface JsxModuleResolver {
 export interface JsxDynamicIslandMetadata {
   id: string
   expression: string
-  reason: 'closure' | 'unsupported-import' | 'unsupported-call'
+  reason: 'closure' | 'dynamic-component' | 'dynamic-spread' | 'spread-child' | 'unsupported-import' | 'unsupported-call'
   captures: string[]
 }
+
+export type JsxDynamicIslandReason = JsxDynamicIslandMetadata['reason']
 
 export interface JsxCompileContext {
   platform: NonNullable<TemplateCompileOptions['platform']>
@@ -32,6 +34,7 @@ export interface JsxCompileContext {
   resolvingExports?: Set<string>
   dynamicIslands?: JsxDynamicIslandMetadata[]
   dynamicIslandSeed?: number
+  dynamicIslandMode?: 'auto' | 'static' | 'dynamic'
 }
 
 export interface JsxImportedComponent {

@@ -1,11 +1,21 @@
 import * as t from '@weapp-vite/ast/babelTypes'
 import { describe, expect, it } from 'vitest'
 import { getMiniProgramTemplatePlatform } from '../../vue/compiler/template/platforms'
-import { compileRenderableExpression } from './render'
+import { compileRenderableExpression, renderDynamicIslandSupportTemplate } from './render'
 import { createJsxCompileContext } from './template'
 
 describe('compileJsx render helpers', () => {
   const defaultPlatform = getMiniProgramTemplatePlatform()
+
+  it('emits one event handler dataset per dynamic island host node', () => {
+    const template = renderDynamicIslandSupportTemplate(createJsxCompileContext())
+    const input = template.match(/<input\b[^>]+\/>/)?.[0]
+
+    expect(input).toBeTruthy()
+    expect(input?.match(/data-wv-jsx-handler=/g)).toHaveLength(1)
+    expect(input).toContain('node.events.input||node.events.change')
+    expect(template).toContain('node.events.tap')
+  })
 
   it('renders array expressions while skipping null and boolean branches', () => {
     const context = createJsxCompileContext()
@@ -27,7 +37,7 @@ describe('compileJsx render helpers', () => {
     expect(rendered).toContain('<view />')
   })
 
-  it('warns when map callback is invalid and falls back to interpolation', () => {
+  it('warns when map callback is invalid and falls back to a dynamic island', () => {
     const context = createJsxCompileContext()
     const rendered = compileRenderableExpression(
       t.callExpression(
@@ -37,11 +47,11 @@ describe('compileJsx render helpers', () => {
       context,
     )
 
-    expect(rendered).toContain('{{list.map(renderItem)}}')
+    expect(rendered).toContain('data-wv-jsx-island="i0"')
     expect(context.warnings).toContain('仅支持 map(fn) 形式的列表渲染。')
   })
 
-  it('warns on jsx spread child and falls back member tags to view', () => {
+  it('routes spread children and member tags to deterministic dynamic islands', () => {
     const context = createJsxCompileContext()
     const rendered = compileRenderableExpression(
       t.jsxFragment(
@@ -63,9 +73,14 @@ describe('compileJsx render helpers', () => {
       context,
     )
 
-    expect(rendered).toContain('<view />')
-    expect(context.warnings).toContain('暂不支持 JSX spread child，已忽略。')
-    expect(context.warnings).toContain('暂不支持 JSX 成员标签（如 <Foo.Bar />），已回退为 <view />。')
+    expect(rendered).toContain('data-wv-jsx-island="i0"')
+    expect(rendered).toContain('data-wv-jsx-island="i1"')
+    expect(context.dynamicIslands).toEqual([
+      expect.objectContaining({ id: 'i0', reason: 'spread-child' }),
+      expect.objectContaining({ id: 'i1', reason: 'dynamic-component' }),
+    ])
+    expect(context.warnings).toContain('JSX spread child 无法映射为静态 WXML，已生成 dynamic island。')
+    expect(context.warnings).toContain('JSX 成员标签（如 <Foo.Bar />）无法映射为小程序 WXML 组件标签，已生成 dynamic island。')
   })
 
   it('renders logical-or fallback and list map blocks', () => {
@@ -152,7 +167,10 @@ describe('compileJsx render helpers', () => {
     expect(conditional).toContain('<view />')
     expect(logicalAnd).toContain(`${defaultPlatform.directives.ifAttr}="{{visible}}"`)
     expect(logicalAnd).toContain('<text>shown</text>')
-    expect(fallbackCall).toContain('{{renderItem(item)}}')
+    expect(fallbackCall).toContain('data-wv-jsx-island="i0"')
+    expect(context.dynamicIslands).toEqual([
+      expect.objectContaining({ reason: 'unsupported-call' }),
+    ])
     expect(fallbackLogical).toContain('{{value!=null?value:other}}')
   })
 

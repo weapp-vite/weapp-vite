@@ -1,26 +1,102 @@
-import type { TransformResult } from '@babel/core'
+import type { EncodedSourceMapLike } from '../../utils/sourcemap'
 import { createRequire } from 'node:module'
 import { transformSync } from '@weapp-vite/ast/babelCore'
+import * as t from '@weapp-vite/ast/babelTypes'
 
 const require = createRequire(import.meta.url)
 
-export function transformVueJsxScript(source: string, filename: string, sourceMaps = true) {
+export interface VueJsxTransformOptions {
+  enableObjectSlots?: boolean
+  mergeProps?: boolean
+  optimize?: boolean
+  resolveType?: boolean
+  transformOn?: boolean
+}
+
+export const DEFAULT_VUE_JSX_TRANSFORM_OPTIONS: Required<VueJsxTransformOptions> = {
+  enableObjectSlots: true,
+  mergeProps: true,
+  optimize: true,
+  resolveType: false,
+  transformOn: true,
+}
+
+function readDirectiveExpression(attribute: t.JSXAttribute) {
+  if (!attribute.value) {
+    return t.booleanLiteral(true)
+  }
+  if (!t.isJSXExpressionContainer(attribute.value) || t.isJSXEmptyExpression(attribute.value.expression)) {
+    return undefined
+  }
+  return t.isExpression(attribute.value.expression) ? attribute.value.expression : undefined
+}
+
+function createWevuJsxDirectiveCompatibilityPlugin() {
+  return {
+    name: 'wevu-jsx-directive-compatibility',
+    visitor: {
+      JSXElement(path: any) {
+        const attributes = path.node.openingElement.attributes as Array<t.JSXAttribute | t.JSXSpreadAttribute>
+        let ifExpression: t.Expression | undefined
+        let textExpression: t.Expression | undefined
+        path.node.openingElement.attributes = attributes.filter((attribute) => {
+          if (!t.isJSXAttribute(attribute)) {
+            return true
+          }
+          const name = t.isJSXIdentifier(attribute.name)
+            ? attribute.name.name
+            : t.isJSXNamespacedName(attribute.name)
+              ? attribute.name.namespace.name
+              : undefined
+          if (name === 'v-if') {
+            ifExpression = readDirectiveExpression(attribute)
+            return false
+          }
+          if (name === 'v-text') {
+            textExpression = readDirectiveExpression(attribute)
+            return false
+          }
+          if (name?.startsWith('v-') && !['v-html', 'v-model', 'v-models', 'v-show', 'v-slots'].includes(name)) {
+            return false
+          }
+          return true
+        })
+
+        if (textExpression) {
+          path.node.children = [t.jsxExpressionContainer(textExpression)]
+        }
+        if (ifExpression) {
+          path.replaceWith(t.conditionalExpression(ifExpression, path.node, t.nullLiteral()))
+        }
+      },
+    },
+  }
+}
+
+export function transformVueJsxScript(
+  source: string,
+  filename: string,
+  sourceMaps = true,
+  options?: VueJsxTransformOptions,
+) {
   const plugin = require('@vue/babel-plugin-jsx')
   const result = transformSync(source, {
     filename,
     sourceType: 'module',
     sourceMaps,
-    plugins: [[plugin, { optimize: true }]],
+    plugins: [createWevuJsxDirectiveCompatibilityPlugin, [plugin, { ...DEFAULT_VUE_JSX_TRANSFORM_OPTIONS, ...options }]],
     parserOpts: {
       plugins: ['typescript', 'jsx'],
     },
     generatorOpts: {
       retainLines: !sourceMaps,
     },
-  }) as TransformResult | null
+  })
 
   return {
     code: result?.code ?? source,
-    map: result?.map ?? null,
+    map: result?.map
+      ? { ...result.map, file: result.map.file ?? undefined } as EncodedSourceMapLike
+      : null,
   }
 }

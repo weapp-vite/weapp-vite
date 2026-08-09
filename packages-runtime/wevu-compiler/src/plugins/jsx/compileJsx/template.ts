@@ -7,7 +7,7 @@ import { formatWxml } from '../../vue/compiler/template/format'
 import { getMiniProgramTemplatePlatform } from '../../vue/compiler/template/platforms'
 import * as analysis from './analysis'
 import { createJsxModuleResolver } from './moduleResolver'
-import { compileRenderableExpression } from './render'
+import { compileRenderableExpression, renderDynamicIslandSupportTemplate } from './render'
 
 export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCompileContext {
   return {
@@ -23,6 +23,7 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     resolvingExports: new Set(),
     dynamicIslands: [],
     dynamicIslandSeed: 0,
+    dynamicIslandMode: 'auto',
   }
 }
 
@@ -39,6 +40,9 @@ function collectImportedBindings(ast: File, context: JsxCompileContext) {
       }
       else if (t.isImportDefaultSpecifier(specifier) && t.isIdentifier(specifier.local)) {
         context.importedBindings?.set(specifier.local.name, { source, importedName: 'default' })
+      }
+      else if (t.isImportNamespaceSpecifier(specifier) && t.isIdentifier(specifier.local)) {
+        context.importedBindings?.set(specifier.local.name, { source, importedName: '*' })
       }
     }
   }
@@ -66,11 +70,15 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
     }
   }
 
-  const template = compileRenderableExpression(renderExpression, context)
+  let template = compileRenderableExpression(renderExpression, context)
+  if (context.dynamicIslands?.length) {
+    template += renderDynamicIslandSupportTemplate(context)
+  }
   return {
     template: context.formatWxml ? formatWxml(template) : template,
     warnings: context.warnings,
     inlineExpressions: context.inlineExpressions,
+    dynamicIslands: context.dynamicIslands,
   }
 }
 
@@ -97,6 +105,9 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
   let template: string | undefined
   if (renderExpression) {
     template = compileRenderableExpression(renderExpression, context)
+    if (context.dynamicIslands?.length) {
+      template += renderDynamicIslandSupportTemplate(context)
+    }
     if (context.formatWxml) {
       template = formatWxml(template)
     }

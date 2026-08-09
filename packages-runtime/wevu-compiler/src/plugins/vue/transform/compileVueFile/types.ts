@@ -47,7 +47,7 @@ export interface VueTransformResult {
     jsxDynamicIslands?: Array<{
       id: string
       expression: string
-      reason: 'closure' | 'unsupported-import' | 'unsupported-call'
+      reason: 'closure' | 'dynamic-component' | 'dynamic-spread' | 'spread-child' | 'unsupported-import' | 'unsupported-call'
       captures: string[]
     }>
   }

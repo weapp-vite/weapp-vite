@@ -7,7 +7,7 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
-import { stripRenderOptionFromScript } from '../../../jsx/compileJsx/script'
+import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from '../../../jsx/compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from '../../../jsx/compileJsx/template'
 import { transformVueJsxScript } from '../../../jsx/vueJsxTransform'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
@@ -312,7 +312,10 @@ export async function compileScriptPhase(
     let jsxTemplate: ReturnType<typeof compileJsxTemplateAndCollectComponents> | undefined
     if (isJsxScript) {
       jsxTemplate = compileJsxTemplateAndCollectComponents(scriptCode, filename, options)
-      scriptCode = stripRenderOptionFromScript(scriptCode, filename, options?.warn)
+      scriptCode = injectDynamicIslandRuntime(
+        stripRenderOptionFromScript(scriptCode, filename, options?.warn),
+        jsxTemplate.dynamicIslands,
+      )
     }
     const jsxTransformed = isJsxScript
       ? transformVueJsxScript(scriptCode, filename, options?.sourceMap !== false)

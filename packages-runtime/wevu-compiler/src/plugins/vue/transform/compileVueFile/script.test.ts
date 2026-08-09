@@ -30,6 +30,26 @@ vi.mock('../../../../utils/fs', () => ({
 }))
 
 describe('compileScriptPhase', () => {
+  it.each(['js', 'ts', 'jsx', 'tsx'] as const)(
+    'compiles Vue SFC script setup lang=%s through the shared pipeline',
+    async (lang) => {
+      const jsxDeclaration = lang === 'jsx' || lang === 'tsx'
+        ? `const fragment = <text>{label}</text>`
+        : `const fragment = label`
+      const source = `<script setup lang="${lang}">
+const label${lang === 'ts' || lang === 'tsx' ? ': string' : ''} = 'hello'
+${jsxDeclaration}
+</script>
+<template><view>{{ label }}</view></template>`
+      const result = await compileVueFile(source, `/project/src/pages/setup-${lang}.vue`)
+      expect(result.template).toContain('<view>{{label}}</view>')
+      expect(result.script).not.toContain('<text>')
+      expect(result.script).not.toMatch(/from ['"]vue['"]/)
+      expect(result.script).toContain('label')
+      expect(result.script).toContain('fragment')
+    },
+  )
+
   it('compiles JSX and TSX SFC script blocks into WXML', async () => {
     for (const lang of ['jsx', 'tsx'] as const) {
       const source = `<script lang="${lang}">

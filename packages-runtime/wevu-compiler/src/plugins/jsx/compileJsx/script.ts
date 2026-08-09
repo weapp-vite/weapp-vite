@@ -4,6 +4,8 @@ import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse
 import { JSON_MACROS } from '../../vue/transform/jsonMacros/parse'
 import { toStaticObjectKey } from './ast'
 
+export { injectDynamicIslandRuntime } from './islandScript'
+
 function removeRenderOptionFromObjectExpression(node: ObjectExpression) {
   const nextProps = node.properties.filter((prop) => {
     if (t.isObjectMethod(prop)) {
@@ -21,6 +23,81 @@ function removeRenderOptionFromObjectExpression(node: ObjectExpression) {
   return removed
 }
 
+function resolveReturnedJsxClosureExpression(expression: t.Expression) {
+  if (!t.isArrowFunctionExpression(expression) && !t.isFunctionExpression(expression)) {
+    return undefined
+  }
+  if (t.isJSXElement(expression.body) || t.isJSXFragment(expression.body)) {
+    return expression.body
+  }
+  if (!t.isBlockStatement(expression.body)) {
+    return undefined
+  }
+  const returned = expression.body.body.find(statement => t.isReturnStatement(statement) && statement.argument)
+  if (!returned || !t.isReturnStatement(returned)) {
+    return undefined
+  }
+  return returned.argument && (t.isJSXElement(returned.argument) || t.isJSXFragment(returned.argument))
+    ? returned.argument
+    : undefined
+}
+
+function rewriteSetupRenderClosure(node: ObjectExpression) {
+  const setup = node.properties.find((property) => {
+    if (!t.isObjectMethod(property) && !t.isObjectProperty(property)) {
+      return false
+    }
+    return toStaticObjectKey(property.key) === 'setup'
+  })
+  if (!setup || !t.isObjectMethod(setup)) {
+    return false
+  }
+
+  const localNames = new Set<string>()
+  for (const param of setup.params) {
+    if (t.isIdentifier(param)) {
+      localNames.add(param.name)
+    }
+  }
+  for (const statement of setup.body.body) {
+    if (t.isVariableDeclaration(statement)) {
+      for (const declaration of statement.declarations) {
+        if (t.isIdentifier(declaration.id)) {
+          localNames.add(declaration.id.name)
+        }
+      }
+    }
+    else if (t.isFunctionDeclaration(statement) && statement.id) {
+      localNames.add(statement.id.name)
+    }
+  }
+
+  for (const statement of setup.body.body) {
+    if (!t.isReturnStatement(statement) || !statement.argument || !t.isExpression(statement.argument)) {
+      continue
+    }
+    const jsx = resolveReturnedJsxClosureExpression(statement.argument)
+    if (!jsx) {
+      continue
+    }
+
+    const captures = new Set<string>()
+    const file = t.file(t.program([t.expressionStatement(t.cloneNode(jsx, true) as t.Expression)]))
+    traverse(file, {
+      ReferencedIdentifier(path) {
+        if (localNames.has(path.node.name)) {
+          captures.add(path.node.name)
+        }
+      },
+    })
+    statement.argument = t.objectExpression([...captures].map(name => (
+      t.objectProperty(t.identifier(name), t.identifier(name), false, true)
+    )))
+    return true
+  }
+  return false
+}
+
 export function stripRenderOptionFromScript(source: string, filename: string, warn?: (message: string) => void) {
   let ast: t.File
   try {
@@ -32,6 +109,7 @@ export function stripRenderOptionFromScript(source: string, filename: string, wa
 
   const defineComponentAliases = new Set<string>(['defineComponent', '_defineComponent'])
   const defineComponentDecls = new Map<string, ObjectExpression>()
+  let hasDefaultExport = false
   let removedRender = false
   let removedJsonMacroImport = false
 
@@ -100,13 +178,16 @@ export function stripRenderOptionFromScript(source: string, filename: string, wa
       }
     },
     ExportDefaultDeclaration(path) {
+      hasDefaultExport = true
       const declaration = path.node.declaration
       if (t.isDeclaration(declaration)) {
         return
       }
 
       if (t.isObjectExpression(declaration)) {
-        removedRender = removeRenderOptionFromObjectExpression(declaration) || removedRender
+        removedRender = removeRenderOptionFromObjectExpression(declaration)
+          || rewriteSetupRenderClosure(declaration)
+          || removedRender
         return
       }
 
@@ -117,7 +198,9 @@ export function stripRenderOptionFromScript(source: string, filename: string, wa
         }
         const first = declaration.arguments[0]
         if (t.isObjectExpression(first)) {
-          removedRender = removeRenderOptionFromObjectExpression(first) || removedRender
+          removedRender = removeRenderOptionFromObjectExpression(first)
+            || rewriteSetupRenderClosure(first)
+            || removedRender
         }
         return
       }
@@ -125,13 +208,15 @@ export function stripRenderOptionFromScript(source: string, filename: string, wa
       if (t.isIdentifier(declaration)) {
         const target = defineComponentDecls.get(declaration.name)
         if (target) {
-          removedRender = removeRenderOptionFromObjectExpression(target) || removedRender
+          removedRender = removeRenderOptionFromObjectExpression(target)
+            || rewriteSetupRenderClosure(target)
+            || removedRender
         }
       }
     },
   })
 
-  if (!removedRender) {
+  if (hasDefaultExport && !removedRender) {
     warn?.(`[JSX 编译] 未在 ${filename} 中移除 render 选项，输出脚本可能包含 JSX。`)
   }
 

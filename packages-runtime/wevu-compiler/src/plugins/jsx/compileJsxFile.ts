@@ -5,7 +5,7 @@ import { isAutoImportCandidateTag } from '../../utils/vueTemplateTags'
 import { extractJsonMacroFromScriptSetup, mayContainJsonMacro } from '../vue/transform/jsonMacros'
 import { createJsonMerger } from '../vue/transform/jsonMerge'
 import { transformScript } from '../vue/transform/script'
-import { stripRenderOptionFromScript } from './compileJsx/script'
+import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from './compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from './compileJsx/template'
 import { transformVueJsxScript } from './vueJsxTransform'
 
@@ -105,7 +105,10 @@ export async function compileJsxFile(
     }
   }
 
-  const normalizedScriptSource = stripRenderOptionFromScript(scriptSource, filename, options?.warn)
+  const normalizedScriptSource = injectDynamicIslandRuntime(
+    stripRenderOptionFromScript(scriptSource, filename, options?.warn),
+    dynamicIslands,
+  )
   const vueJsxTransformed = transformVueJsxScript(normalizedScriptSource, filename, options?.sourceMap !== false)
   const transformedScript = transformScript(vueJsxTransformed.code, {
     skipComponentTransform: options?.skipComponentTransform ?? options?.isApp,
