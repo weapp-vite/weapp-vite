@@ -30,6 +30,18 @@ vi.mock('../../../../utils/fs', () => ({
 }))
 
 describe('compileScriptPhase', () => {
+  it('compiles JSX and TSX SFC script blocks into WXML', async () => {
+    for (const lang of ['jsx', 'tsx'] as const) {
+      const source = `<script lang="${lang}">
+import { defineComponent } from 'wevu'
+export default defineComponent({ render() { return <view><text>hello</text></view> } })
+</script>`
+      const result = await compileVueFile(source, `/project/src/pages/${lang}.vue`)
+      expect(result.template).toContain('<view><text>hello</text></view>')
+      expect(result.script).not.toContain('render()')
+    }
+  })
+
   it('skips props-derived analysis when compiled script has no props', () => {
     expect(resolveEffectivePropsDerivedKeys(
       {

@@ -7,6 +7,8 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
+import { stripRenderOptionFromScript } from '../../../jsx/compileJsx/script'
+import { compileJsxTemplateAndCollectComponents } from '../../../jsx/compileJsx/template'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
 import { transformScript } from '../script'
 import { warnReservedScriptSetupProps } from './reservedProps'
@@ -17,6 +19,8 @@ const EXPORT_DEFAULT_RE = /\bexport\s+default\b/
 export interface ScriptPhaseResult {
   script?: string
   scriptMap?: EncodedSourceMapLike | null
+  template?: string
+  inlineExpressions?: TemplateCompileResult['inlineExpressions']
   autoUsingComponentsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
 }
@@ -302,6 +306,13 @@ export async function compileScriptPhase(
   }
 
   if (scriptCode) {
+    const scriptLang = descriptor.script?.lang ?? descriptor.scriptSetup?.lang
+    const isJsxScript = scriptLang === 'jsx' || scriptLang === 'tsx'
+    let jsxTemplate: ReturnType<typeof compileJsxTemplateAndCollectComponents> | undefined
+    if (isJsxScript) {
+      jsxTemplate = compileJsxTemplateAndCollectComponents(scriptCode, filename, options)
+      scriptCode = stripRenderOptionFromScript(scriptCode, filename, options?.warn)
+    }
     const transformed = transformScript(scriptCode, {
       isTypeScript: descriptor.script?.lang === 'ts'
         || descriptor.script?.lang === 'tsx'
@@ -329,6 +340,8 @@ export async function compileScriptPhase(
     return {
       script: transformed.code,
       scriptMap: composeSourceMaps(transformed.map ?? null, scriptMap),
+      template: jsxTemplate?.template,
+      inlineExpressions: jsxTemplate?.inlineExpressions,
       autoUsingComponentsMap,
       autoComponentMeta,
     }
