@@ -281,6 +281,7 @@ describe('dev process env isolation', () => {
           stdout: [
             '111 1 pnpm --dir /repo/e2e-apps/base run dev -- --platform weapp',
             '222 1 pnpm --dir /repo/docs-site run dev',
+            '333 1 node /repo/packages/weapp-vite/bin/weapp-vite.js mcp --transport streamable-http --workspace-root /repo/templates/weapp-vite-wevu-tailwindcss-tdesign-template --rest-endpoint /api/weapp/devtools',
           ].join('\n'),
         })
       }
@@ -291,7 +292,7 @@ describe('dev process env isolation', () => {
       })
     })
 
-    const alivePids = new Set([111])
+    const alivePids = new Set([111, 333])
     const killedPids: number[] = []
     vi.spyOn(process, 'kill').mockImplementation(((pid: number, signal?: NodeJS.Signals | 0) => {
       if (signal === 0) {
@@ -318,6 +319,9 @@ describe('dev process env isolation', () => {
     expect(execaMock).toHaveBeenCalledWith('pkill', ['-f', 'pnpm.*--dir.*e2e-apps/.+ run '], expect.objectContaining({
       reject: false,
     }))
-    expect(killedPids).toEqual([111])
+    expect(execaMock).toHaveBeenCalledWith('pkill', ['-f', 'weapp-vite.js mcp.*--workspace-root.*templates/'], expect.objectContaining({
+      reject: false,
+    }))
+    expect(killedPids).toEqual([111, 333])
   })
 })

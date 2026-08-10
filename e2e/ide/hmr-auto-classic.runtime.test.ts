@@ -66,18 +66,6 @@ async function waitForRuntimeState(
   throw new Error(`Timed out waiting for classic runtime state: ${JSON.stringify(latest)}`)
 }
 
-async function waitForAutomatorSessionReset(timeoutMs = 30_000): Promise<void> {
-  const startedAt = Date.now()
-  while (Date.now() - startedAt < timeoutMs) {
-    const connected = await miniProgram.evaluate(() => true).catch(() => false)
-    if (!connected) {
-      return
-    }
-    await new Promise(resolve => setTimeout(resolve, 250))
-  }
-  throw new Error('Timed out waiting for classic full reload to reset the automator session')
-}
-
 async function connectAutomatorSession() {
   return await launchAutomator({
     launchMode: 'bridge',
@@ -177,11 +165,7 @@ describe.sequential('automatic classic HMR in real WeChat DevTools', () => {
       waitForFileContains(DIST_NATIVE_JS, 'this.data.count + 2'),
       'classic HMR direct page output update',
     )
-    await waitForAutomatorSessionReset()
 
-    // Classic 全量重载会按预期关闭旧 bridge；共享 helper 只在这里恢复同一项目的连接。
-    await Promise.resolve(miniProgram.disconnect?.()).catch(() => {})
-    miniProgram = await connectAutomatorSession()
     await miniProgram.reLaunch(NATIVE_ROUTE)
     const reloaded = await waitForRuntimeState(state => state.marker === 'STATEFUL-NATIVE-PATCHED')
     expect(reloaded).toEqual({

@@ -6,7 +6,6 @@ import process from 'node:process'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
-  connectOpenedAutomator,
   resolveProjectAutomatorPort,
 } from 'weapp-ide-cli'
 import {
@@ -14,20 +13,27 @@ import {
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { waitForFileContains } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { waitForOpenedAutomator } from '../utils/opened-automator'
 import { runLayoutFeedbackE2E } from './layout-power-demo.runtime.shared'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.resolve(WORKSPACE_ROOT, 'apps/layout-power-demo')
+const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const CLI_PATH = path.join(APP_ROOT, 'node_modules/weapp-vite/bin/weapp-vite.js')
+const PAGE_WXML_DIST = path.join(APP_ROOT, 'dist/pages/index/index.wxml')
+const HMR_CONTROL_DIST = path.join(APP_ROOT, 'dist/__weapp_vite_hmr/control.js')
 const INDEX_ROUTE = '/pages/index/index'
 const BASELINE_MARKER = 'runtime-vendor-hmr-baseline'
 const TD_MESSAGE_DUPLICATE_SLOT_RE = /More than one slot named .*tdesign-miniprogram\/message\/message/
 const LAYOUTS = ['default', 'command', 'studio', 'split', 'poster'] as const
+const LAYOUT_COMPONENT_SELECTORS = LAYOUTS.map(layout => `weapp-layout-${layout}`)
 const CONNECTION_CLOSED_RE = /Connection closed|WebSocket is not open|other side closed|not connected/i
 const PROTOCOL_TIMEOUT_RE = /DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond to protocol method App\.(?:callFunction|getCurrentPage|getPageStack)|Operation timed out after/i
 const DOM_NOT_READY_RE = /Timed out waiting layout-power DOM/i
+const PAGE_NOT_READY_RE = /Timed out waiting layout-power page ready/i
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -47,28 +53,6 @@ async function removeAutomatorSessionFiles() {
   ])
 }
 
-async function waitForOpenedAutomator(projectPath: string, timeoutMs = 120_000) {
-  const start = Date.now()
-  let lastError: unknown
-  const port = resolveProjectAutomatorPort(projectPath)
-
-  while (Date.now() - start <= timeoutMs) {
-    try {
-      return await connectOpenedAutomator({
-        projectPath,
-        port,
-        timeout: 30_000,
-      })
-    }
-    catch (error) {
-      lastError = error
-    }
-    await delay(1_000)
-  }
-
-  throw lastError instanceof Error ? lastError : new Error(String(lastError))
-}
-
 async function waitForLayoutPowerDom(page: any, timeoutMs = 15_000) {
   const startedAt = Date.now()
   let lastResult: Record<string, any> | null = null
@@ -76,9 +60,9 @@ async function waitForLayoutPowerDom(page: any, timeoutMs = 15_000) {
   while (Date.now() - startedAt <= timeoutMs) {
     try {
       const [roots, triggers, switches] = await Promise.all([
-        page.renderedNodes('#layout-power-index-page', { timeout: 3_000 }),
-        page.renderedNodes('.feedback-trigger', { timeout: 3_000 }),
-        page.renderedNodes('.switch', { timeout: 3_000 }),
+        page.renderedNodes('#layout-power-index-page', { componentSelectors: LAYOUT_COMPONENT_SELECTORS, timeout: 3_000 }),
+        page.renderedNodes('.feedback-trigger', { componentSelectors: LAYOUT_COMPONENT_SELECTORS, timeout: 3_000 }),
+        page.renderedNodes('.switch', { componentSelectors: LAYOUT_COMPONENT_SELECTORS, timeout: 3_000 }),
       ])
       const root = roots?.[0]
       const result = {
@@ -110,28 +94,63 @@ async function waitForLayoutPowerDom(page: any, timeoutMs = 15_000) {
   throw new Error(`Timed out waiting layout-power DOM: ${JSON.stringify(lastResult, null, 2)}`)
 }
 
-async function waitForCurrentIndexPageDom(miniProgram: any, timeoutMs = 30_000) {
+async function waitForLayoutPowerPageReady(miniProgram: any, timeoutMs = 30_000) {
   const startedAt = Date.now()
-  let lastError: unknown
+  let lastResult: unknown
 
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const page = await miniProgram.currentPage()
-      await waitForLayoutPowerDom(page, 3_000)
-      return page
+      lastResult = await miniProgram.evaluateWithOptions((expectedMarker: string) => {
+        const normalizeRoute = (value: unknown) => String(value || '')
+          .split('?', 1)[0]
+          .split('#', 1)[0]
+          .replace(/^\/+/, '')
+          .replace(/\/+$/g, '')
+        const expected = normalizeRoute('/pages/index/index')
+        const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+        const page = pages
+          .slice()
+          .reverse()
+          .find((item: any) => [item?.route, item?.__route__, item?.path]
+            .some(value => normalizeRoute(value) === expected)) as any
+        return {
+          currentPages: pages.map((item: any) => ({
+            route: item?.route || item?.__route__ || item?.path || '',
+            currentLayout: item?.data?.currentLayout,
+            marker: item?.data?.e2eRuntimeVendorMarker,
+            hasRunE2E: typeof item?.runE2E === 'function',
+          })),
+          ready: Boolean(page)
+            && page?.data?.currentLayout === 'default'
+            && page?.data?.e2eRuntimeVendorMarker === expectedMarker
+            && typeof page?.runE2E === 'function'
+            && typeof page?.runLayoutFeedbackE2E === 'function',
+        }
+      }, {
+        timeout: 5_000,
+      }, BASELINE_MARKER)
+      if ((lastResult as any)?.ready === true) {
+        return lastResult
+      }
     }
     catch (error) {
-      lastError = error
+      lastResult = {
+        error: error instanceof Error ? error.message : String(error),
+      }
     }
-    await delay(300)
+    await delay(250)
   }
 
-  throw lastError instanceof Error ? lastError : new Error(String(lastError))
+  throw new Error(`Timed out waiting layout-power page ready; lastResult=${JSON.stringify(lastResult)}`)
 }
 
 async function relaunchIndexPage(miniProgram: any) {
-  await miniProgram.reLaunch(INDEX_ROUTE)
-  return await waitForCurrentIndexPageDom(miniProgram)
+  const page = await miniProgram.reLaunch(INDEX_ROUTE)
+  await waitForLayoutPowerPageReady(miniProgram)
+  await waitForLayoutPowerDom(page, 5_000).catch((error) => {
+    process.stdout.write(`[layout-power-demo:message] dom-query-limited reason=${error instanceof Error ? error.message : String(error)}\n`)
+  })
+  return page
 }
 
 async function waitForRunE2EMarker(page: any, marker: string, timeoutMs = 30_000) {
@@ -157,6 +176,7 @@ function isRecoverableRuntimeSessionError(error: unknown) {
   return CONNECTION_CLOSED_RE.test(message)
     || PROTOCOL_TIMEOUT_RE.test(message)
     || DOM_NOT_READY_RE.test(message)
+    || PAGE_NOT_READY_RE.test(message)
     || (error instanceof Error
       && 'code' in error
       && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT')
@@ -210,6 +230,7 @@ describe.sequential('layout-power-demo message feedback in real WeChat DevTools'
 
   beforeAll(async () => {
     await removeAutomatorSessionFiles()
+    await fs.rm(DIST_ROOT, { force: true, recursive: true })
     await cleanupResidualIdeProcesses()
   }, 60_000)
 
@@ -247,16 +268,27 @@ describe.sequential('layout-power-demo message feedback in real WeChat DevTools'
       env: createDevProcessEnv(),
       reject: false,
     })
-    miniProgram = await devProcess.waitFor(
-      waitForOpenedAutomator(APP_ROOT, 180_000),
+    await devProcess.waitFor(
+      waitForFileContains(PAGE_WXML_DIST, 'layout-power-index-page', 90_000),
+      'layout-power-demo index template ready',
+    )
+    await devProcess.waitFor(
+      waitForFileContains(HMR_CONTROL_DIST, 'http://127.0.0.1:', 90_000),
+      'layout-power-demo stateful HMR control ready',
+    )
+    const session = await devProcess.waitFor(
+      waitForOpenedAutomator(APP_ROOT, {
+        connectTimeoutMs: 5_000,
+        timeoutMs: 180_000,
+      }),
       'layout-power-demo opened automator',
     )
+    miniProgram = session.miniProgram
     runtimeErrorCollector = attachRuntimeErrorCollector(miniProgram)
   }
 
   async function runMessageTapScenario() {
     const page = await relaunchIndexPage(miniProgram)
-    await waitForLayoutPowerDom(page)
     await waitForRunE2EMarker(page, BASELINE_MARKER)
     if (!runtimeErrorCollector) {
       throw new Error('Runtime error collector is not initialized')

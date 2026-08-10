@@ -6,8 +6,10 @@ import { cleanupProcessesByCommandPatterns, cleanupTrackedDevProcesses } from '.
 const DEV_PROCESS_MATCH_PATTERNS = [
   /(?:^|\s)(?:\S*\/)?pnpm(?:\.[cm]?js)?(?:\s+--dir\s+\S*(?:e2e-apps|apps)\/\S+\s+run\s+\S+|\s+run\s+\S+\s+--dir\s+\S*(?:e2e-apps|apps)\/\S+)/,
   /(?:^|\s)weapp-vite\/bin\/weapp-vite\.js\s+dev[^\n]*(?:e2e-apps|apps|\.tmp)\//,
+  /(?:^|\s)(?:\S*\/)?weapp-vite\.js\s+mcp[^\n]*--workspace-root\s+\S*(?:e2e-apps|apps|templates|\.tmp)\//,
   /(?:^|\s)packages\/weapp-vite\/src\/cli\.ts\s+dev[^\n]*(?:e2e-apps|apps|\.tmp)\//,
   /(?:^|\s)packages\/weapp-vite\/dist\/cli\.mjs\s+dev[^\n]*(?:e2e-apps|apps|\.tmp)\//,
+  /(?:^|\s)packages\/weapp-vite\/bin\/weapp-vite\.js\s+mcp[^\n]*--workspace-root\s+\S*(?:e2e-apps|apps|templates|\.tmp)\//,
 ]
 
 const DEV_PROCESS_PKILL_PATTERNS = [
@@ -16,12 +18,20 @@ const DEV_PROCESS_PKILL_PATTERNS = [
   'weapp-vite/bin/weapp-vite.js dev.*e2e-apps/',
   'weapp-vite/bin/weapp-vite.js dev.*apps/',
   'weapp-vite/bin/weapp-vite.js dev.*.tmp/',
+  'weapp-vite.js mcp.*--workspace-root.*e2e-apps/',
+  'weapp-vite.js mcp.*--workspace-root.*apps/',
+  'weapp-vite.js mcp.*--workspace-root.*templates/',
+  'weapp-vite.js mcp.*--workspace-root.*.tmp/',
   'packages/weapp-vite/src/cli.ts dev.*e2e-apps/',
   'packages/weapp-vite/src/cli.ts dev.*apps/',
   'packages/weapp-vite/src/cli.ts dev.*.tmp/',
   'packages/weapp-vite/dist/cli.mjs dev.*e2e-apps/',
   'packages/weapp-vite/dist/cli.mjs dev.*apps/',
   'packages/weapp-vite/dist/cli.mjs dev.*.tmp/',
+  'packages/weapp-vite/bin/weapp-vite.js mcp.*--workspace-root.*e2e-apps/',
+  'packages/weapp-vite/bin/weapp-vite.js mcp.*--workspace-root.*apps/',
+  'packages/weapp-vite/bin/weapp-vite.js mcp.*--workspace-root.*templates/',
+  'packages/weapp-vite/bin/weapp-vite.js mcp.*--workspace-root.*.tmp/',
 ]
 
 function sleep(ms: number) {

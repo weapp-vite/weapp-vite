@@ -253,8 +253,10 @@ async function assertDistJsKeepsBundledAliasMarker(marker: string, markerFile = 
 async function connectAutomatorSession() {
   return await launchAutomator({
     launchMode: 'bridge',
+    refreshProjectAfterConnect: true,
     projectPath: APP_ROOT,
     timeout: 120_000,
+    retryWarmupTimeout: true,
     warmupRootSelectors: ['.app-vue-hmr-alias-page'],
     warmupRoute: INDEX_ROUTE,
   })

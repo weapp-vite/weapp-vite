@@ -7,6 +7,7 @@ import {
   launchAutomator,
 } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/lifecycle-compare')
@@ -384,6 +385,8 @@ async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) 
     throw new Error(sharedInfraUnavailableMessage)
   }
   if (!sharedBuildPrepared) {
+    await cleanupResidualIdeProcesses()
+    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
     await runBuild()
     sharedBuildPrepared = true
   }
