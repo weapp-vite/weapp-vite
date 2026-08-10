@@ -372,6 +372,21 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
   })
 
+  it.each(['jsx', 'tsx'] as const)('tracks %s entry cache invalidation for direct HMR', async (extension) => {
+    const entry = `/project/src/pages/index/index.${extension}`
+    collectAffectedEntriesMock.mockReturnValue(new Set([entry]))
+    const state = createState({
+      loadedEntrySet: new Set([entry]),
+      resolvedEntryMap: new Map([[entry, { id: entry }]]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(entry, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entry, 'direct')
+    expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([entry]))
+  })
+
   it('does not force vue recompilation for dependency-only shared chunk updates', async () => {
     const sharedModuleId = '/project/src/shared/tokens.ts'
     const vueEntry = '/project/src/pages/index/index.vue'

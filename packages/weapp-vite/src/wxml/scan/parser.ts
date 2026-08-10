@@ -3,7 +3,6 @@ import type { Token } from '../shared'
 import type { RemovalRange, WxmlToken } from './types'
 import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
-import { jsExtensions } from '../../constants'
 import { getWxmlPlatformTransformOptions } from '../../platform'
 import {
   getScriptModuleImportAttrs,
@@ -16,6 +15,8 @@ import {
   shouldNormalizeTemplateImportSource,
 } from '../shared'
 import { resolveEventDirectiveName } from './events'
+
+const wxsScriptExtensions = new Set(['js', 'ts'])
 
 const TAG_NAME_LOWER_TO_UPPER_RE = /([a-z0-9])([A-Z])/g
 const TAG_NAME_MULTI_UPPER_RE = /([A-Z]+)([A-Z][a-z])/g
@@ -178,7 +179,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
           }
         }
         // 移除内联 wxs 的 lang
-        if (currentTagName && isScriptModuleTagName(currentTagName) && name === 'lang' && jsExtensions.includes(value)) {
+        if (currentTagName && isScriptModuleTagName(currentTagName) && name === 'lang' && wxsScriptExtensions.has(value)) {
           removeWxsLangAttrTokens.push({
             start: parser.startIndex,
             end: parser.endIndex,
@@ -246,7 +247,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
         tagStartIndex = 0
       },
       ontext(data) {
-        if (currentTagName && isScriptModuleTagName(currentTagName) && jsExtensions.includes(attrs.lang)) {
+        if (currentTagName && isScriptModuleTagName(currentTagName) && wxsScriptExtensions.has(attrs.lang)) {
           inlineWxsTokens.push({
             start: parser.startIndex,
             end: parser.endIndex,

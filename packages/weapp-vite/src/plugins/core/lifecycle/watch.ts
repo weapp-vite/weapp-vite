@@ -298,7 +298,7 @@ async function processChangedFile(
     cause: string,
   ) => {
     state.markEntryDirty(entryId, reason)
-    if (entryId.endsWith('.vue') && reason !== 'dependency') {
+    if (/\.(?:vue|jsx|tsx)$/.test(entryId) && reason !== 'dependency') {
       const hmr = ctx.runtimeState.build.hmr
       hmr.dirtyVueEntryIds ??= new Set<string>()
       hmr.dirtyVueEntryIds.add(entryId)
@@ -619,6 +619,14 @@ async function processChangedFile(
         isReactStaticTemplateUpdate ? 'react-template' : 'importer-graph',
       )
     }
+  }
+  else if (
+    !handledSidecarMetadataUpdate
+    && event === 'update'
+    && /\.(?:vue|jsx|tsx)$/.test(normalizedId)
+    && resolvedEntryMap.has(normalizedId)
+  ) {
+    markChangedEntryDirty('direct', 'entry-direct')
   }
   await markAppEntryForTailwindContent()
   const relativeCwd = configService.relativeCwd(normalizedId)

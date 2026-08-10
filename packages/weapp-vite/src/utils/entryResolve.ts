@@ -1,6 +1,6 @@
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { jsExtensions, vueExtensions } from '../constants'
+import { scriptExtensions, vueExtensions } from '../constants'
 import { pathExists as pathExistsCached } from '../plugins/utils/cache'
 import { getPathExistsTtlMs } from './cachePolicy'
 import { changeFileExtension } from './file'
@@ -42,8 +42,8 @@ export function resolveEntryExtensions(
 ) {
   const jsFirst = kind === 'named' || isDir
   return jsFirst
-    ? [...jsExtensions, ...vueExtensions]
-    : [...vueExtensions, ...jsExtensions]
+    ? [...scriptExtensions, ...vueExtensions]
+    : [...vueExtensions, ...scriptExtensions]
 }
 
 export function createCachedEntryResolveOptions(

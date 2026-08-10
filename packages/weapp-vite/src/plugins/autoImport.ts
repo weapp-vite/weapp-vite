@@ -6,7 +6,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import chokidar from 'chokidar'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
-import { configExtensions, jsExtensions, templateExtensions, vueExtensions } from '../constants'
+import { configExtensions, scriptExtensions, templateExtensions, vueExtensions } from '../constants'
 import { logger, resolvedComponentName } from '../context/shared'
 import { defaultExcluded } from '../defaults'
 import { getAutoImportConfig } from '../runtime/autoImport/config'
@@ -30,7 +30,7 @@ const GLOB_WILDCARD_RE = /[*?[{]/
 const TRAILING_SLASHES_RE = /\/+$/
 const AUTO_IMPORT_WATCHER_KEY = '__auto-import-vue-watcher__'
 const AUTO_IMPORT_CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
-const AUTO_IMPORT_JS_SUFFIXES = new Set(jsExtensions.map(ext => `.${ext}`))
+const AUTO_IMPORT_JS_SUFFIXES = new Set(scriptExtensions.map(ext => `.${ext}`))
 const AUTO_IMPORT_TEMPLATE_SUFFIXES = new Set(templateExtensions.map(ext => `.${ext}`))
 const AUTO_IMPORT_VUE_SUFFIXES = new Set(vueExtensions.map(ext => `.${ext}`))
 

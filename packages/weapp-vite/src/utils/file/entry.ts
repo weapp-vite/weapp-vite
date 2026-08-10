@@ -1,6 +1,6 @@
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../../constants'
+import { configExtensions, scriptExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../../constants'
 
 const pathExistsInFlight = new Map<string, Promise<boolean>>()
 const JS_OR_TS_RE = /\.[jt]s$/
@@ -34,7 +34,7 @@ export function normalizeFileExtension(extension: string) {
 
 const knownEntryExtensions = new Set([
   ...configExtensions,
-  ...jsExtensions,
+  ...scriptExtensions,
   ...supportedCssLangs,
   ...templateExtensions,
   ...vueExtensions,
@@ -86,7 +86,7 @@ export async function findJsEntry(filepath: string): Promise<{
   predictions: string[]
   path?: string
 }> {
-  return findEntryByExtensions(filepath, jsExtensions)
+  return findEntryByExtensions(filepath, scriptExtensions)
 }
 
 export async function findJsonEntry(filepath: string): Promise<{

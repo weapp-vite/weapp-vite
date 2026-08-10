@@ -2,7 +2,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
-import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../../constants'
+import { configExtensions, scriptExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../../constants'
 import { toPosixPath } from '../../utils/path'
 import { isAutoRoutesGeneratedDirectoryName, isAutoRoutesGeneratedRelativePath } from './generatedPaths'
 import { createAutoRoutesMatcher } from './matcher'
@@ -16,7 +16,7 @@ export interface CandidateEntry {
   jsonPath?: string
 }
 
-const SCRIPT_EXTENSIONS = new Set(jsExtensions.map(ext => `.${ext}`))
+const SCRIPT_EXTENSIONS = new Set(scriptExtensions.map(ext => `.${ext}`))
 const TEMPLATE_EXTENSIONS = new Set(templateExtensions.map(ext => `.${ext}`))
 const VUE_EXTENSIONS = new Set(vueExtensions.map(ext => `.${ext}`))
 const STYLE_EXTENSIONS = new Set(supportedCssLangs.map(ext => `.${ext}`))

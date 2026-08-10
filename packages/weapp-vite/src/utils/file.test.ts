@@ -3,7 +3,6 @@ import path from 'node:path'
 
 import { fs } from '@weapp-core/shared/fs'
 import { describe, expect, it, vi } from 'vitest'
-import { jsExtensions } from '../constants'
 import {
   changeFileExtension,
   extractConfigFromVue,
@@ -565,7 +564,7 @@ defineAppJson(nonExistentMacroValue)
 
       await Promise.all([findJsEntry(base), findJsEntry(base)])
 
-      expect(spy.mock.calls.length).toBe(jsExtensions.length)
+      expect(spy.mock.calls.length).toBe(4)
       spy.mockRestore()
     })
 
@@ -599,6 +598,8 @@ defineAppJson(nonExistentMacroValue)
           expect(startedBeforeRelease.map(normalizePath)).toEqual([
             normalizePath(tsEntry),
             normalizePath(jsEntry),
+            normalizePath(`${base}.tsx`),
+            normalizePath(`${base}.jsx`),
           ])
         })
         releaseTs?.()
@@ -609,6 +610,8 @@ defineAppJson(nonExistentMacroValue)
         expect(result.predictions.map(normalizePath)).toEqual([
           normalizePath(tsEntry),
           normalizePath(jsEntry),
+          normalizePath(`${base}.tsx`),
+          normalizePath(`${base}.jsx`),
         ])
       }
       finally {
@@ -629,6 +632,8 @@ defineAppJson(nonExistentMacroValue)
         expect(result.predictions.map(normalizePath)).toEqual([
           normalizePath(`${appPreludeBase}.ts`),
           normalizePath(`${appPreludeBase}.js`),
+          normalizePath(`${appPreludeBase}.tsx`),
+          normalizePath(`${appPreludeBase}.jsx`),
         ])
       }
       finally {

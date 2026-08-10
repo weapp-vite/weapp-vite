@@ -23,6 +23,7 @@ import {
   resolveNativeLayoutStaticAssetEntries,
 } from '../../../utils/nativeLayout'
 import { expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
+import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { emitWxmlAssetFile, resolveWxmlEmitContext } from '../../../utils/wxmlEmit'
 import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectStyleImports } from './watch'
@@ -411,6 +412,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     const normalizedResolvedId = normalizeFsResolvedId(resolvedId.id)
     if (normalizedResolvedId && !isSkippableResolvedId(normalizedResolvedId)) {
       resolvedEntryMap.set(normalizedResolvedId, resolvedId)
+      addNormalizedWatchFile(pluginCtx, normalizedResolvedId)
     }
 
     const isForcedEntry = forceEmitEntrySet?.has(entry) === true
