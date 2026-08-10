@@ -62,6 +62,25 @@ export default defineComponent({ render() { return <view><text>hello</text></vie
     }
   })
 
+  it.each(['jsx', 'tsx'] as const)('does not warn about render for templated script setup lang=%s', async (lang) => {
+    const warnings: string[] = []
+    const source = `<script setup lang="${lang}">
+const label${lang === 'tsx' ? ': string' : ''} = 'ready'
+const fragment = <text>{label}</text>
+void fragment
+</script>
+<template><view>{{ label }}</view></template>`
+    const result = await compileVueFile(source, `/project/src/pages/setup-${lang}.vue`, {
+      sourceMap: true,
+      warn: message => warnings.push(message),
+    })
+
+    expect(result.template).toContain('<view>{{label}}</view>')
+    expect(result.script).not.toContain('<text>')
+    expect(result.scriptMap).toBeTruthy()
+    expect(warnings).not.toContainEqual(expect.stringContaining('移除 render 选项'))
+  })
+
   it('skips props-derived analysis when compiled script has no props', () => {
     expect(resolveEffectivePropsDerivedKeys(
       {

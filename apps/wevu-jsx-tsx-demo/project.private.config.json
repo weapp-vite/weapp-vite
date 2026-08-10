@@ -24,7 +24,44 @@
     },
     "miniProgram": {
       "current": -1,
-      "list": []
+      "list": [
+        {
+          "name": "JSX basic",
+          "pathName": "pages/jsx-basic/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "TSX basic",
+          "pathName": "pages/tsx-basic/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "Vue TSX",
+          "pathName": "pages/vue-tsx/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "Setup render",
+          "pathName": "pages/setup-render/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "SFC JSX",
+          "pathName": "pages/sfc-script-jsx/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "SFC setup TSX",
+          "pathName": "pages/sfc-script-setup-tsx/index",
+          "query": "",
+          "scene": null
+        }
+      ]
     }
   },
   "libVersion": "3.15.0"

@@ -55,6 +55,7 @@ export async function tryReuseVueCompilation(options: {
   if (
     configService.isDev
     && cachedCompilation
+    && (filename.endsWith('.vue') || (cachedCompilation.refreshToken ?? 0) === 0)
     && !ctx.runtimeState.scan.isDirty
     && cachedCompilation.source === source
     && cachedCompilation.autoRoutesSignature === autoRoutesSignature

@@ -23,3 +23,6 @@ pnpm --filter wevu-jsx-tsx-demo build
 - `pages/jsx-basic/index`：纯 JSX
 - `pages/tsx-basic/index`：纯 TSX
 - `pages/vue-tsx/index`：Vue 风格 TSX
+- `pages/setup-render/index`：`setup()` 返回 TSX render closure
+- `pages/sfc-script-jsx/index`：Vue SFC `<script lang="jsx">`
+- `pages/sfc-script-setup-tsx/index`：Vue SFC `<script setup lang="tsx">`

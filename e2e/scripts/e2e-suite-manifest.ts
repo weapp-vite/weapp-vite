@@ -28,6 +28,8 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/wevu-runtime.core-hmr.test.ts', '900000'],
   ['ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts', '900000'],
   ['ide/wevu-runtime.weapp.test.ts', '600000'],
+  ['ide/wevu-jsx-tsx.hmr.runtime.test.ts', '900000'],
+  ['ide/wevu-jsx-tsx.runtime.test.ts', '600000'],
   ['ide/wot-ui-compat.runtime.test.ts', '1200000'],
 ])
 const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
@@ -38,6 +40,7 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/github-issues.runtime.require-async.test.ts',
   'ide/stateful-hmr.runtime.test.ts',
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
+  'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
 export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
@@ -113,6 +116,11 @@ const IDE_HMR_PATTERNS = [
   'ide/stateful-hmr.runtime.test.ts',
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
+  'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
+]
+const IDE_WEVU_JSX_PATTERNS = [
+  'ide/wevu-jsx-tsx.runtime.test.ts',
+  'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
 ]
 const IDE_COMPONENT_LIBRARY_PATTERNS = [
   'ide/uview-plus-compat.runtime.test.ts',
@@ -143,6 +151,7 @@ const IDE_HEADLESS_FULL_TESTS = [
   ...IDE_GATE_TESTS,
   path.resolve(ROOT, 'ide/github-issues.runtime.issue705.test.ts'),
   path.resolve(ROOT, 'ide/github-issues.runtime.require-async.test.ts'),
+  path.resolve(ROOT, 'ide/wevu-jsx-tsx.runtime.test.ts'),
 ]
 export const SKIP_CI_HMR_GUARD_ENV = 'WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD'
 
@@ -338,6 +347,10 @@ export function getIdeTemplatesTasks() {
   return getIdePatternTasks(IDE_TEMPLATES_PATTERNS)
 }
 
+export function getIdeWevuJsxTasks() {
+  return getIdePatternTasks(IDE_WEVU_JSX_PATTERNS)
+}
+
 export function getIdeChunkModesTasks() {
   return getIdePatternTasks(IDE_CHUNK_MODES_PATTERNS)
 }
@@ -487,6 +500,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ide-full:templates',
     description: 'IDE regression suite focused on template runtime coverage',
     tasks: getIdeTemplatesTasks,
+  },
+  'ide-full:wevu-jsx': {
+    name: 'ide-full:wevu-jsx',
+    description: 'IDE and stateful HMR regression suite for Wevu JSX/TSX',
+    tasks: getIdeWevuJsxTasks,
   },
   'ide-full:chunk-modes': {
     name: 'ide-full:chunk-modes',

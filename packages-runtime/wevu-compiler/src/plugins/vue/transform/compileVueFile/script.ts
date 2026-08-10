@@ -313,7 +313,11 @@ export async function compileScriptPhase(
     if (isJsxScript) {
       jsxTemplate = compileJsxTemplateAndCollectComponents(scriptCode, filename, options)
       scriptCode = injectDynamicIslandRuntime(
-        stripRenderOptionFromScript(scriptCode, filename, options?.warn),
+        stripRenderOptionFromScript(
+          scriptCode,
+          filename,
+          descriptor.template ? undefined : options?.warn,
+        ),
         jsxTemplate.dynamicIslands,
       )
     }

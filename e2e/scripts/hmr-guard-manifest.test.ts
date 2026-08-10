@@ -56,6 +56,7 @@ describe('hmr-guard manifest', () => {
       'ci/style-import-vue.test.ts',
       'ci/template-tailwind-hmr.test.ts',
       'ci/wevu-root-import-hmr.test.ts',
+      'ci/wevu-jsx-tsx.hmr.test.ts',
       'ci/wevu-router-hmr.test.ts',
       'ci/wevu-runtime.hmr.test.ts',
     ], {
@@ -103,6 +104,7 @@ describe('hmr-guard manifest', () => {
       'ide/stateful-hmr.runtime.test.ts',
       'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
       'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
+      'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
       'ci/wevu-router-hmr.test.ts',
       'hmr-guard:smoke',
       'hmr-guard:full',

@@ -2,6 +2,9 @@
   "name": "wevu-jsx-tsx-demo",
   "version": "0.0.0",
   "private": true,
+  "workspaceHmr": {
+    "runtime": "stateful"
+  },
   "scripts": {
     "dev": "wv dev",
     "dev:open": "wv dev -o",

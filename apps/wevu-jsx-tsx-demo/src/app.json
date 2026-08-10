@@ -2,7 +2,10 @@
   "pages": [
     "pages/jsx-basic/index",
     "pages/tsx-basic/index",
-    "pages/vue-tsx/index"
+    "pages/vue-tsx/index",
+    "pages/setup-render/index",
+    "pages/sfc-script-jsx/index",
+    "pages/sfc-script-setup-tsx/index"
   ],
   "window": {
     "navigationBarTitleText": "wevu JSX/TSX demo",

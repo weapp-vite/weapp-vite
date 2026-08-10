@@ -5,16 +5,26 @@ interface Props {
 }
 
 defineProps<Props>()
+const emit = defineEmits<{
+  change: [value: string]
+}>()
+
+function emitChange() {
+  emit('change', 'info-card-change')
+}
 </script>
 
 <template>
-  <view class="card-wrap">
+  <view id="tsx-info-card" class="card-wrap">
     <text class="card-title">
       {{ title }}
     </text>
     <text class="card-desc">
       {{ description }}
     </text>
+    <button id="tsx-info-card-action" size="mini" @tap="emitChange">
+      emit
+    </button>
   </view>
 </template>
 

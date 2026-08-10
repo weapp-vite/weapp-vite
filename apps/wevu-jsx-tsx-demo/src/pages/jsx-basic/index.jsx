@@ -15,6 +15,14 @@ export default defineComponent({
     increase() {
       this.count += 1
     },
+    runE2E() {
+      const initial = this.count
+      this.increase()
+      return {
+        initial,
+        next: this.count,
+      }
+    },
     goTsx() {
       wx.navigateTo({ url: '/pages/tsx-basic/index' })
     },
@@ -27,11 +35,11 @@ export default defineComponent({
       <view className="page">
         <view className="title">纯 JSX（.jsx）</view>
         <view className="desc">这个页面完全由 JSX 编写并编译为 WXML。</view>
-        <view className="card">
+        <view id="jsx-count" className="card">
           当前计数：
           {this.count}
         </view>
-        <button className="btn" onTap={this.increase}>计数 +1</button>
+        <button id="jsx-increase" className="btn" onTap={this.increase}>计数 +1</button>
         <button className="btn" onTap={this.goTsx}>打开 TSX 页面</button>
         <button className="btn" onTap={this.goVueTsx}>打开 Vue TSX 页面</button>
       </view>
