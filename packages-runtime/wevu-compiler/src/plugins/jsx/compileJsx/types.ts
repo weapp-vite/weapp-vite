@@ -1,4 +1,24 @@
+import type { Expression, JSXElement, JSXFragment } from '@weapp-vite/ast/babelTypes'
 import type { InlineExpressionAsset, TemplateCompileOptions } from '../../vue/compiler/template/types'
+
+export interface JsxModuleExport {
+  expression: Expression | JSXElement | JSXFragment
+  params: string[]
+}
+
+export interface JsxModuleResolver {
+  resolveExport: (filename: string, localName: string) => JsxModuleExport | undefined
+  resolveImport: (filename: string, source: string, importedName: string) => JsxModuleExport | undefined
+}
+
+export interface JsxDynamicIslandMetadata {
+  id: string
+  expression: string
+  reason: 'closure' | 'dynamic-component' | 'dynamic-spread' | 'spread-child' | 'unsupported-import' | 'unsupported-call'
+  captures: string[]
+}
+
+export type JsxDynamicIslandReason = JsxDynamicIslandMetadata['reason']
 
 export interface JsxCompileContext {
   platform: NonNullable<TemplateCompileOptions['platform']>
@@ -8,6 +28,13 @@ export interface JsxCompileContext {
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
   scopeStack: string[]
+  filename?: string
+  moduleResolver?: JsxModuleResolver
+  importedBindings?: Map<string, { source: string, importedName: string }>
+  resolvingExports?: Set<string>
+  dynamicIslands?: JsxDynamicIslandMetadata[]
+  dynamicIslandSeed?: number
+  dynamicIslandMode?: 'auto' | 'static' | 'dynamic'
 }
 
 export interface JsxImportedComponent {

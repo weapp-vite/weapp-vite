@@ -54,4 +54,29 @@ const value = ref(1)
     expect(code).toContain(`import { fetch } from 'wevu'`)
     expect(code).not.toContain('type Ref')
   })
+
+  it('moves Vue JSX helper imports to the Wevu runtime adapter', () => {
+    const ast = parseJsLike(`
+import transformOn from '@vue/babel-helper-vue-transform-on'
+import { resolveComponent } from 'vue'
+const props = transformOn({ tap })
+const Panel = resolveComponent('Panel')
+    `.trim())
+
+    const state: any = {
+      transformed: false,
+      defineComponentAliases: new Set<string>(),
+      defineComponentDecls: new Map(),
+      defaultExportPath: null,
+    }
+
+    traverse(ast, createImportVisitors(ast.program, state) as any)
+    const code = generate(ast).code
+
+    expect(code).toContain('virtual:weapp-vite/runtime')
+    expect(code).toContain('transformOn')
+    expect(code).toContain('resolveComponent')
+    expect(code).not.toContain('@vue/babel-helper-vue-transform-on')
+    expect(code).not.toContain(`from 'vue'`)
+  })
 })

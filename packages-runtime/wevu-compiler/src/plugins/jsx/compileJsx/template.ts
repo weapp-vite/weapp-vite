@@ -1,11 +1,13 @@
 import type { File } from '@weapp-vite/ast/babelTypes'
 import type { CompileVueFileOptions } from '../../vue/transform/compileVueFile/types'
 import type { JsxCompileContext } from './types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
 import { formatWxml } from '../../vue/compiler/template/format'
 import { getMiniProgramTemplatePlatform } from '../../vue/compiler/template/platforms'
 import * as analysis from './analysis'
-import { compileRenderableExpression } from './render'
+import { createJsxModuleResolver } from './moduleResolver'
+import { compileRenderableExpression, renderDynamicIslandSupportTemplate } from './render'
 
 export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCompileContext {
   return {
@@ -16,12 +18,42 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     inlineExpressions: [],
     inlineExpressionSeed: 0,
     scopeStack: [],
+    moduleResolver: undefined,
+    importedBindings: new Map(),
+    resolvingExports: new Set(),
+    dynamicIslands: [],
+    dynamicIslandSeed: 0,
+    dynamicIslandMode: 'auto',
+  }
+}
+
+function collectImportedBindings(ast: File, context: JsxCompileContext) {
+  for (const statement of ast.program.body) {
+    if (!t.isImportDeclaration(statement)) {
+      continue
+    }
+    const source = statement.source.value
+    for (const specifier of statement.specifiers) {
+      if (t.isImportSpecifier(specifier) && t.isIdentifier(specifier.local)) {
+        const importedName = t.isIdentifier(specifier.imported) ? specifier.imported.name : specifier.imported.value
+        context.importedBindings?.set(specifier.local.name, { source, importedName })
+      }
+      else if (t.isImportDefaultSpecifier(specifier) && t.isIdentifier(specifier.local)) {
+        context.importedBindings?.set(specifier.local.name, { source, importedName: 'default' })
+      }
+      else if (t.isImportNamespaceSpecifier(specifier) && t.isIdentifier(specifier.local)) {
+        context.importedBindings?.set(specifier.local.name, { source, importedName: '*' })
+      }
+    }
   }
 }
 
 export function compileJsxTemplate(source: string, filename: string, options?: CompileVueFileOptions) {
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
   const context = createJsxCompileContext(options)
+  context.filename = filename
+  context.moduleResolver = createJsxModuleResolver(options?.warn)
+  collectImportedBindings(ast, context)
 
   const { renderExpression } = analysis.analyzeJsxAst(ast, context)
   if (!renderExpression) {
@@ -34,14 +66,19 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
       template: undefined,
       warnings: context.warnings,
       inlineExpressions: context.inlineExpressions,
+      dynamicIslands: context.dynamicIslands,
     }
   }
 
-  const template = compileRenderableExpression(renderExpression, context)
+  let template = compileRenderableExpression(renderExpression, context)
+  if (context.dynamicIslands?.length) {
+    template += renderDynamicIslandSupportTemplate(context)
+  }
   return {
     template: context.formatWxml ? formatWxml(template) : template,
     warnings: context.warnings,
     inlineExpressions: context.inlineExpressions,
+    dynamicIslands: context.dynamicIslands,
   }
 }
 
@@ -59,12 +96,18 @@ export function collectJsxAutoComponents(source: string, filename: string, optio
 export function compileJsxTemplateAndCollectComponents(source: string, filename: string, options?: CompileVueFileOptions) {
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
   const context = createJsxCompileContext(options)
+  context.filename = filename
+  context.moduleResolver = createJsxModuleResolver(options?.warn)
+  collectImportedBindings(ast, context)
 
   const { renderExpression, autoComponentContext } = analysis.analyzeJsxAst(ast, context)
 
   let template: string | undefined
   if (renderExpression) {
     template = compileRenderableExpression(renderExpression, context)
+    if (context.dynamicIslands?.length) {
+      template += renderDynamicIslandSupportTemplate(context)
+    }
     if (context.formatWxml) {
       template = formatWxml(template)
     }
@@ -82,5 +125,6 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
     warnings: context.warnings,
     inlineExpressions: context.inlineExpressions,
     autoComponentContext,
+    dynamicIslands: context.dynamicIslands,
   }
 }

@@ -51,6 +51,23 @@ export {
   setCurrentSetupContext,
 } from './runtime/hooks'
 export { useIntersectionObserver } from './runtime/intersectionObserver'
+export {
+  createTextVNode,
+  createVNode,
+  Fragment,
+  isVNode,
+  mergeProps,
+  normalizeJsxIsland,
+  resolveComponent,
+  resolveDirective,
+  transformOn,
+  vModelCheckbox,
+  vModelRadio,
+  vModelSelect,
+  vModelText,
+  vShow,
+  withDirectives,
+} from './runtime/jsxIsland'
 
 export {
   resolveLayoutBridge,

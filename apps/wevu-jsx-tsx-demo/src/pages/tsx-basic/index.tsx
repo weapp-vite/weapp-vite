@@ -1,5 +1,6 @@
 import { definePageJson } from 'weapp-vite'
 import { defineComponent } from 'wevu'
+import { createDynamicBlock, createSharedPanel, sharedFragment } from '../../shared'
 
 interface FeatureItem {
   label: string
@@ -13,6 +14,7 @@ definePageJson({
 export default defineComponent({
   data() {
     return {
+      islandCount: 0,
       features: [
         {
           label: '1) TS 类型约束',
@@ -30,6 +32,9 @@ export default defineComponent({
     }
   },
   methods: {
+    increaseIslandCount(this: { islandCount: number }) {
+      this.islandCount += 1
+    },
     backHome() {
       wx.redirectTo({ url: '/pages/jsx-basic/index' })
     },
@@ -42,6 +47,13 @@ export default defineComponent({
         <view className="card">
           这里展示了 TSX 页面里直接写类型与 JSX 的组合能力。
         </view>
+        {sharedFragment}
+        {createSharedPanel('跨文件参数化 JSX factory')}
+        {createDynamicBlock(() => (
+          <button className="btn" onTap={this.increaseIslandCount}>
+            dynamic island: {this.islandCount}
+          </button>
+        ))}
         <view>
           {(this.features as FeatureItem[]).map((item, index) => (
             <view key={index} className="row">

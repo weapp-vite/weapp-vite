@@ -7,6 +7,9 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
+import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from '../../../jsx/compileJsx/script'
+import { compileJsxTemplateAndCollectComponents } from '../../../jsx/compileJsx/template'
+import { transformVueJsxScript } from '../../../jsx/vueJsxTransform'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
 import { transformScript } from '../script'
 import { warnReservedScriptSetupProps } from './reservedProps'
@@ -17,6 +20,8 @@ const EXPORT_DEFAULT_RE = /\bexport\s+default\b/
 export interface ScriptPhaseResult {
   script?: string
   scriptMap?: EncodedSourceMapLike | null
+  template?: string
+  inlineExpressions?: TemplateCompileResult['inlineExpressions']
   autoUsingComponentsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
 }
@@ -302,7 +307,20 @@ export async function compileScriptPhase(
   }
 
   if (scriptCode) {
-    const transformed = transformScript(scriptCode, {
+    const scriptLang = descriptor.script?.lang ?? descriptor.scriptSetup?.lang
+    const isJsxScript = scriptLang === 'jsx' || scriptLang === 'tsx'
+    let jsxTemplate: ReturnType<typeof compileJsxTemplateAndCollectComponents> | undefined
+    if (isJsxScript) {
+      jsxTemplate = compileJsxTemplateAndCollectComponents(scriptCode, filename, options)
+      scriptCode = injectDynamicIslandRuntime(
+        stripRenderOptionFromScript(scriptCode, filename, options?.warn),
+        jsxTemplate.dynamicIslands,
+      )
+    }
+    const jsxTransformed = isJsxScript
+      ? transformVueJsxScript(scriptCode, filename, options?.sourceMap !== false)
+      : { code: scriptCode, map: null }
+    const transformed = transformScript(jsxTransformed.code, {
       isTypeScript: descriptor.script?.lang === 'ts'
         || descriptor.script?.lang === 'tsx'
         || descriptor.scriptSetup?.lang === 'ts'
@@ -328,7 +346,9 @@ export async function compileScriptPhase(
     })
     return {
       script: transformed.code,
-      scriptMap: composeSourceMaps(transformed.map ?? null, scriptMap),
+      scriptMap: composeSourceMaps(transformed.map ?? jsxTransformed.map, scriptMap),
+      template: jsxTemplate?.template,
+      inlineExpressions: jsxTemplate?.inlineExpressions,
       autoUsingComponentsMap,
       autoComponentMeta,
     }

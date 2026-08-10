@@ -138,6 +138,6 @@ export function toJsxTagName(
     return `${name.namespace.name}:${name.name.name}`
   }
 
-  context.warnings.push('暂不支持 JSX 成员标签（如 <Foo.Bar />），已回退为 <view />。')
-  return 'view'
+  context.warnings.push('JSX 成员标签（如 <Foo.Bar />）无法映射为小程序 WXML 组件标签，已生成 dynamic island。')
+  return 'block'
 }

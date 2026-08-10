@@ -24,6 +24,7 @@ const CATCH_EVENT_RE = /^catch[A-Z]/
 const CAPTURE_BIND_EVENT_RE = /^captureBind[A-Z]/
 const CAPTURE_CATCH_EVENT_RE = /^captureCatch[A-Z]/
 const MUT_BIND_EVENT_RE = /^mutBind[A-Z]/
+const UPPERCASE_STYLE_RE = /[A-Z]/g
 
 function isEventBinding(name: string) {
   return ON_EVENT_RE.test(name)
@@ -82,7 +83,7 @@ function toEventBindingName(rawName: string, context: JsxCompileContext) {
   return context.platform.eventBindingAttr(`bind:${eventName}`)
 }
 
-function readJsxAttributeExpression(value: JSXAttribute['value']) {
+export function readJsxAttributeExpression(value: JSXAttribute['value']) {
   if (!value) {
     return t.booleanLiteral(true) as Expression
   }
@@ -175,8 +176,57 @@ function compileNormalAttribute(
     return `${normalizedName}="${renderMustache(String(exp.value), context)}"`
   }
 
+  if (normalizedName === 'class') {
+    // eslint-disable-next-line ts/no-use-before-define
+    const value = resolveStaticClass(exp)
+    if (value != null) {
+      return `class="${escapeAttr(value)}"`
+    }
+  }
+  if (normalizedName === 'style') {
+    // eslint-disable-next-line ts/no-use-before-define
+    const value = resolveStaticStyle(exp)
+    if (value != null) {
+      return `style="${escapeAttr(value)}"`
+    }
+  }
+
   const normalizedExp = normalizeInterpolationExpression(exp)
   return `${normalizedName}="${renderMustache(normalizedExp, context)}"`
+}
+
+function compileNamedAttribute(
+  name: string,
+  value: JSXAttribute['value'],
+  context: JsxCompileContext,
+): string[] {
+  if (name === 'key') {
+    return []
+  }
+  if (name === 'v-html') {
+    context.warnings.push('小程序不支持 JSX v-html，请使用 rich-text 组件替代。')
+    return []
+  }
+  if (name === 'v-if' || name === 'v-show' || name === 'v-text' || name === 'v-for') {
+    return []
+  }
+  if (name === 'v-slots' || name === 'v-model' || name === 'v-models') {
+    context.warnings.push(`JSX ${name} 需要 Wevu runtime 语义，已生成确定性诊断。`)
+    return []
+  }
+  if (name.startsWith('v-')) {
+    context.warnings.push(`小程序不支持 JSX 自定义指令 ${name}，已移除该指令。`)
+    return []
+  }
+  if (name === 'innerHTML' || name.startsWith('domProps')) {
+    context.warnings.push(`小程序不支持 JSX DOM property ${name}，已移除该属性。`)
+    return []
+  }
+  if (isEventBinding(name)) {
+    return compileEventAttribute(name, value, context)
+  }
+  const normalAttr = compileNormalAttribute(name, value, context)
+  return normalAttr ? [normalAttr] : []
 }
 
 export function compileJsxAttributes(
@@ -186,28 +236,120 @@ export function compileJsxAttributes(
   const output: string[] = []
   for (const attr of attributes) {
     if (t.isJSXSpreadAttribute(attr)) {
-      context.warnings.push('暂不支持 JSX spread attributes，已忽略。')
+      const argument = unwrapTsExpression(attr.argument as Expression)
+      if (t.isObjectExpression(argument)) {
+        for (const property of argument.properties) {
+          if (t.isObjectProperty(property) && !property.computed && (t.isIdentifier(property.key) || t.isStringLiteral(property.key))) {
+            const value = property.value
+            if (t.isExpression(value)) {
+              const name = t.isIdentifier(property.key) ? property.key.name : property.key.value
+              output.push(...compileNamedAttribute(name, t.jsxExpressionContainer(value), context))
+            }
+          }
+          else {
+            context.warnings.push('JSX spread attributes 包含无法静态展开的属性，已保留为 dynamic island。')
+          }
+        }
+      }
+      else {
+        context.warnings.push('动态 JSX spread attributes 无法映射为静态 WXML，已生成确定性诊断。')
+      }
+      continue
+    }
+    if (t.isJSXNamespacedName(attr.name)) {
+      const namespace = attr.name.namespace.name
+      const name = attr.name.name.name
+      if (namespace.startsWith('v-')) {
+        context.warnings.push(`小程序不支持 JSX 自定义指令 ${namespace}:${name}，已移除该指令。`)
+      }
+      else {
+        context.warnings.push(`小程序不支持 JSX 命名属性 ${namespace}:${name}，已移除该属性。`)
+      }
       continue
     }
     if (!t.isJSXIdentifier(attr.name)) {
-      context.warnings.push('暂不支持 JSX 动态属性名，已忽略。')
+      context.warnings.push('小程序不支持 JSX 动态属性名，已移除该属性。')
       continue
     }
 
     const name = attr.name.name
-    if (name === 'key') {
-      continue
-    }
-
-    if (isEventBinding(name)) {
-      output.push(...compileEventAttribute(name, attr.value, context))
-      continue
-    }
-
-    const normalAttr = compileNormalAttribute(name, attr.value, context)
-    if (normalAttr) {
-      output.push(normalAttr)
-    }
+    output.push(...compileNamedAttribute(name, attr.value, context))
   }
   return output
+}
+
+function staticObjectKey(node: t.ObjectProperty['key']) {
+  if (t.isIdentifier(node) && !node.computed) {
+    return node.name
+  }
+  if (t.isStringLiteral(node)) {
+    return node.value
+  }
+  return undefined
+}
+
+function resolveStaticClass(exp: Expression): string | undefined {
+  if (t.isStringLiteral(exp) || t.isNumericLiteral(exp)) {
+    return String(exp.value)
+  }
+  if (t.isArrayExpression(exp)) {
+    const values = exp.elements.map((element) => {
+      if (!element || !t.isExpression(element)) {
+        return ''
+      }
+      return resolveStaticClass(element)
+    })
+    return values.some(value => value == null) ? undefined : values.filter(Boolean).join(' ')
+  }
+  if (t.isObjectExpression(exp)) {
+    const values: string[] = []
+    for (const property of exp.properties) {
+      if (!t.isObjectProperty(property) || property.computed || !t.isBooleanLiteral(property.value)) {
+        return undefined
+      }
+      const key = staticObjectKey(property.key)
+      if (key == null) {
+        return undefined
+      }
+      if (property.value.value) {
+        values.push(key)
+      }
+    }
+    return values.join(' ')
+  }
+  return undefined
+}
+
+function resolveStaticStyle(exp: Expression): string | undefined {
+  if (t.isStringLiteral(exp)) {
+    return exp.value
+  }
+  if (t.isArrayExpression(exp)) {
+    const values = exp.elements.map((element) => {
+      if (!element || !t.isExpression(element)) {
+        return ''
+      }
+      return resolveStaticStyle(element)
+    })
+    return values.some(value => value == null) ? undefined : values.filter(Boolean).join(';')
+  }
+  if (!t.isObjectExpression(exp)) {
+    return undefined
+  }
+  const values: string[] = []
+  for (const property of exp.properties) {
+    if (!t.isObjectProperty(property) || property.computed) {
+      return undefined
+    }
+    const key = staticObjectKey(property.key)?.replace(UPPERCASE_STYLE_RE, char => `-${char.toLowerCase()}`)
+    if (!key || (!t.isStringLiteral(property.value) && !t.isNumericLiteral(property.value))) {
+      return undefined
+    }
+    values.push(`${key}:${property.value.value}`)
+  }
+  return values.join(';')
+}
+
+export function isStaticClassStyleExpression(exp: Expression) {
+  return resolveStaticClass(exp) != null || resolveStaticStyle(exp) != null
 }

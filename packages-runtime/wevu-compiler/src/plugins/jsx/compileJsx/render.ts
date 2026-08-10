@@ -7,8 +7,14 @@ import type {
   JSXSpreadChild,
   JSXText,
 } from '@weapp-vite/ast/babelTypes'
-import type { JsxCompileContext } from './types'
+import type { JsxCompileContext, JsxDynamicIslandReason } from './types'
+import {
+  WEVU_JSX_ISLAND_DATA_KEY,
+  WEVU_JSX_ISLAND_HANDLER,
+  WEVU_JSX_ISLAND_TEMPLATE_NAME,
+} from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { traverse } from '../../../utils/babel'
 import {
   escapeText,
   normalizeInterpolationExpression,
@@ -19,12 +25,166 @@ import {
   toJsxTagName,
   unwrapTsExpression,
 } from './ast'
-import { compileJsxAttributes, extractJsxKeyExpression } from './attributes'
+import { compileJsxAttributes, extractJsxKeyExpression, isStaticClassStyleExpression, readJsxAttributeExpression } from './attributes'
 
 type JSXChild = JSXText | JSXExpressionContainer | JSXSpreadChild | JSXElement | JSXFragment
 
 function compileListExpression(exp: Expression) {
   return normalizeInterpolationExpression(exp)
+}
+
+function registerDynamicIsland(exp: Expression, context: JsxCompileContext, reason: JsxDynamicIslandReason) {
+  if (context.dynamicIslandMode === 'static') {
+    context.warnings.push(`[JSX 编译] static 模式不允许 dynamic island（${reason}）。`)
+    return ''
+  }
+  const id = `i${context.dynamicIslandSeed ?? 0}`
+  context.dynamicIslandSeed = (context.dynamicIslandSeed ?? 0) + 1
+  const expression = normalizeInterpolationExpression(exp)
+  const captures = new Set<string>()
+  const file = t.file(t.program([t.expressionStatement(t.cloneNode(exp, true))]))
+  traverse(file, {
+    ReferencedIdentifier(path) {
+      if (path.scope.hasBinding(path.node.name)) {
+        return
+      }
+      if (context.importedBindings?.has(path.node.name)) {
+        return
+      }
+      captures.add(path.node.name)
+    },
+    ThisExpression() {
+      captures.add('this')
+    },
+  })
+  context.dynamicIslands?.push({
+    id,
+    expression,
+    reason,
+    captures: [...captures],
+  })
+  return `<template is="${WEVU_JSX_ISLAND_TEMPLATE_NAME}" data-wv-jsx-island="${id}" data="{{node:${WEVU_JSX_ISLAND_DATA_KEY}.${id},islandId:'${id}'}}" />`
+}
+
+export function renderDynamicIslandSupportTemplate(context: JsxCompileContext) {
+  const { directives } = context.platform
+  const bindTap = context.platform.eventBindingAttr('bind:tap')
+  const bindInput = context.platform.eventBindingAttr('bind:input')
+  const bindChange = context.platform.eventBindingAttr('bind:change')
+  const childTemplate = `<block ${directives.forAttr}="{{node.children}}" ${directives.forItemAttr}="child" ${directives.keyAttr}="index"><template is="${WEVU_JSX_ISLAND_TEMPLATE_NAME}" data="{{node:child,islandId:islandId}}" /></block>`
+  const attrs = `id="{{node.props.id}}" class="{{node.props.class}}" style="{{node.props.style}}" hidden="{{node.props.hidden}}"`
+  const tapAttrs = `${attrs} data-wv-jsx-handler="{{node.events.tap}}" ${bindTap}="${WEVU_JSX_ISLAND_HANDLER}"`
+  return `<template name="${WEVU_JSX_ISLAND_TEMPLATE_NAME}">`
+    + `<block ${directives.ifAttr}="{{node.kind=='text'}}">{{node.text}}</block>`
+    + `<block ${directives.elifAttr}="{{node.kind=='fragment'}}">${childTemplate}</block>`
+    + `<view ${directives.elifAttr}="{{node.tag=='view'}}" ${tapAttrs}>${childTemplate}</view>`
+    + `<text ${directives.elifAttr}="{{node.tag=='text'}}" ${tapAttrs}>${childTemplate}</text>`
+    + `<button ${directives.elifAttr}="{{node.tag=='button'}}" ${tapAttrs}>${childTemplate}</button>`
+    + `<input ${directives.elifAttr}="{{node.tag=='input'}}" ${attrs} value="{{node.props.value}}" data-wv-jsx-handler="{{node.events.input||node.events.change}}" ${bindInput}="${WEVU_JSX_ISLAND_HANDLER}" ${bindChange}="${WEVU_JSX_ISLAND_HANDLER}" />`
+    + `<image ${directives.elifAttr}="{{node.tag=='image'}}" ${tapAttrs} src="{{node.props.src}}" />`
+    + `<block ${directives.elseAttr}>${childTemplate}</block>`
+    + `</template>`
+}
+
+function resolveImportedExpression(node: Expression, context: JsxCompileContext) {
+  if (!context.filename || !context.moduleResolver) {
+    return undefined
+  }
+  let localName: string | undefined
+  let importedName: string | undefined
+  if (t.isIdentifier(node)) {
+    localName = node.name
+  }
+  else if (
+    t.isMemberExpression(node)
+    && !node.computed
+    && t.isIdentifier(node.object)
+    && t.isIdentifier(node.property)
+  ) {
+    localName = node.object.name
+    importedName = node.property.name
+  }
+  if (!localName) {
+    return undefined
+  }
+  const binding = context.importedBindings?.get(localName)
+  if (!binding) {
+    return undefined
+  }
+  if (binding.importedName !== '*' && importedName) {
+    return undefined
+  }
+  const resolvedName = importedName ?? binding.importedName
+  const key = `${context.filename}:${localName}:${resolvedName}`
+  if (context.resolvingExports?.has(key)) {
+    context.warnings.push(`[JSX 编译] 跨文件 JSX 导出循环引用：${localName}`)
+    return undefined
+  }
+  context.resolvingExports?.add(key)
+  try {
+    return context.moduleResolver.resolveImport(context.filename, binding.source, resolvedName)
+  }
+  finally {
+    context.resolvingExports?.delete(key)
+  }
+}
+
+function compileImportedExpression(node: Expression, context: JsxCompileContext): string | null {
+  const resolved = resolveImportedExpression(node, context)
+  if (!resolved || resolved.params.length > 0) {
+    const importedLocal = t.isIdentifier(node)
+      ? node.name
+      : t.isMemberExpression(node) && t.isIdentifier(node.object)
+        ? node.object.name
+        : ''
+    if (context.importedBindings?.has(importedLocal)) {
+      context.warnings.push(`[JSX 编译] 无法静态展开跨文件 JSX 导出，已生成 dynamic island：${importedLocal || 'unknown'}`)
+      return registerDynamicIsland(node, context, 'unsupported-import')
+    }
+    return null
+  }
+  return compileRenderableExpression(resolved.expression, context)
+}
+
+function compileImportedFactoryCall(node: t.CallExpression, context: JsxCompileContext): string | null {
+  if (!t.isIdentifier(node.callee) || !context.filename || !context.moduleResolver) {
+    return null
+  }
+  const binding = context.importedBindings?.get(node.callee.name)
+  if (!binding) {
+    return null
+  }
+  const resolved = context.moduleResolver.resolveImport(context.filename, binding.source, binding.importedName)
+  if (!resolved || resolved.params.length === 0) {
+    context.warnings.push(`[JSX 编译] 无法静态展开 JSX 工厂 ${node.callee.name}，已生成 dynamic island。`)
+    return registerDynamicIsland(node, context, 'unsupported-call')
+  }
+  const replacements = new Map<string, Expression>()
+  resolved.params.forEach((param, index) => {
+    const argument = node.arguments[index]
+    if (argument && t.isExpression(argument)) {
+      replacements.set(param, argument)
+    }
+  })
+  if (replacements.size !== resolved.params.length) {
+    context.warnings.push(`[JSX 编译] JSX 工厂 ${node.callee.name} 调用参数不足，已保留运行时表达式。`)
+    return null
+  }
+  const expression = t.cloneNode(resolved.expression, true)
+  const file = t.file(t.program([t.expressionStatement(expression)]))
+  traverse(file, {
+    ReferencedIdentifier(path) {
+      const replacement = replacements.get(path.node.name)
+      if (replacement) {
+        path.replaceWith(t.cloneNode(replacement, true))
+      }
+    },
+  })
+  const output = file.program.body[0]
+  if (!t.isExpressionStatement(output)) {
+    return null
+  }
+  return compileRenderableExpression(output.expression as Expression, context)
 }
 
 function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext): string | null {
@@ -135,10 +295,16 @@ export function compileRenderableExpression(exp: Expression, context: JsxCompile
     return compileLogicalExpression(node, context)
   }
   if (t.isCallExpression(node)) {
+    const importedFactory = compileImportedFactoryCall(node, context)
+    if (importedFactory != null) {
+      return importedFactory
+    }
     const mapped = compileMapExpression(node, context)
     if (mapped != null) {
       return mapped
     }
+    context.warnings.push('无法证明 JSX 子节点函数调用返回静态文本，已生成 dynamic island。')
+    return registerDynamicIsland(node, context, 'unsupported-call')
   }
   if (t.isArrayExpression(node)) {
     return node.elements
@@ -149,6 +315,12 @@ export function compileRenderableExpression(exp: Expression, context: JsxCompile
         return compileRenderableExpression(element, context)
       })
       .join('')
+  }
+  if (t.isIdentifier(node) || t.isMemberExpression(node)) {
+    const imported = compileImportedExpression(node, context)
+    if (imported != null) {
+      return imported
+    }
   }
   if (t.isNullLiteral(node) || t.isBooleanLiteral(node)) {
     return ''
@@ -192,7 +364,8 @@ function compileJsxChildren(children: JSXChild[], context: JsxCompileContext): s
       continue
     }
     if (t.isJSXSpreadChild(child)) {
-      context.warnings.push('暂不支持 JSX spread child，已忽略。')
+      parts.push(registerDynamicIsland(child.expression as Expression, context, 'spread-child'))
+      context.warnings.push('JSX spread child 无法映射为静态 WXML，已生成 dynamic island。')
     }
   }
   return parts.join('')
@@ -203,12 +376,113 @@ function compileJsxFragment(node: JSXFragment, context: JsxCompileContext): stri
 }
 
 function compileJsxElement(node: JSXElement, context: JsxCompileContext): string {
-  const tag = toJsxTagName(node.openingElement.name, context)
-  const attrs = compileJsxAttributes(node.openingElement.attributes, context)
-  const attrsSegment = attrs.length ? ` ${attrs.join(' ')}` : ''
-  if (node.openingElement.selfClosing) {
-    return `<${tag}${attrsSegment} />`
+  if (t.isJSXMemberExpression(node.openingElement.name)) {
+    context.warnings.push('JSX 成员标签（如 <Foo.Bar />）无法映射为小程序 WXML 组件标签，已生成 dynamic island。')
+    return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
   }
-  const children = compileJsxChildren(node.children, context)
-  return `<${tag}${attrsSegment}>${children}</${tag}>`
+  const dynamicSpread = node.openingElement.attributes.find((attr) => {
+    if (!t.isJSXSpreadAttribute(attr)) {
+      return false
+    }
+    const argument = unwrapTsExpression(attr.argument as Expression)
+    return !t.isObjectExpression(argument) || argument.properties.some(property => (
+      !t.isObjectProperty(property)
+      || property.computed
+      || (!t.isIdentifier(property.key) && !t.isStringLiteral(property.key))
+      || !t.isExpression(property.value)
+    ))
+  })
+  if (dynamicSpread && t.isJSXSpreadAttribute(dynamicSpread)) {
+    context.warnings.push('动态 JSX spread attributes 无法映射为静态 WXML，已生成 dynamic island。')
+    return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-spread')
+  }
+  const tag = toJsxTagName(node.openingElement.name, context)
+  if (tag === 'component') {
+    context.warnings.push('JSX 动态 component 无法映射为静态 WXML，已生成 dynamic island。')
+    return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
+  }
+  if (tag === 'Teleport') {
+    context.warnings.push('小程序不支持 JSX <Teleport>，已生成 dynamic island。')
+    return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
+  }
+  if (tag === 'Transition') {
+    context.warnings.push('JSX <Transition> 需要 Web 动画运行时，当前仅渲染子节点。')
+    return compileJsxChildren(node.children, context)
+  }
+  if (tag === 'KeepAlive') {
+    context.warnings.push('JSX <KeepAlive> 需要运行时缓存管理，当前仅保留标记并渲染子节点。')
+    return `<block data-keep-alive="true">${compileJsxChildren(node.children, context)}</block>`
+  }
+  const hasRuntimeSlots = node.children.some((child) => {
+    if (!t.isJSXExpressionContainer(child) || t.isJSXEmptyExpression(child.expression)) {
+      return false
+    }
+    const expression = unwrapTsExpression(child.expression as Expression)
+    return t.isObjectExpression(expression) || t.isFunctionExpression(expression) || t.isArrowFunctionExpression(expression)
+  })
+  if (hasRuntimeSlots) {
+    context.warnings.push('JSX slot 函数或对象 slots 无法映射为静态 WXML，已生成 dynamic island。')
+    return registerDynamicIsland(node as unknown as Expression, context, 'closure')
+  }
+  const hasDynamicClassStyle = node.openingElement.attributes.some((attribute) => {
+    if (!t.isJSXAttribute(attribute) || !t.isJSXIdentifier(attribute.name)) {
+      return false
+    }
+    if (attribute.name.name !== 'class' && attribute.name.name !== 'className' && attribute.name.name !== 'style') {
+      return false
+    }
+    const expression = readJsxAttributeExpression(attribute.value)
+    return !!expression
+      && (t.isArrayExpression(expression) || t.isObjectExpression(expression))
+      && !isStaticClassStyleExpression(expression)
+  })
+  if (hasDynamicClassStyle) {
+    context.warnings.push('动态 JSX class/style 数组或对象需要运行时合并，已生成 dynamic island。')
+    return registerDynamicIsland(node as unknown as Expression, context, 'closure')
+  }
+  const directives = new Map<string, Expression>()
+  for (const attribute of node.openingElement.attributes) {
+    if (!t.isJSXAttribute(attribute)) {
+      continue
+    }
+    const name = t.isJSXIdentifier(attribute.name)
+      ? attribute.name.name
+      : t.isJSXNamespacedName(attribute.name)
+        ? attribute.name.namespace.name
+        : undefined
+    if (!name?.startsWith('v-')) {
+      continue
+    }
+    const expression = readJsxAttributeExpression(attribute.value)
+    if (expression) {
+      directives.set(name, expression)
+    }
+  }
+  if (directives.has('v-for') || directives.has('v-slots') || directives.has('v-model') || directives.has('v-models')) {
+    const directive = ['v-for', 'v-slots', 'v-model', 'v-models'].find(name => directives.has(name))!
+    context.warnings.push(`JSX ${directive} 无法直接映射当前静态 WXML，已生成 dynamic island。`)
+    return registerDynamicIsland(node as unknown as Expression, context, 'closure')
+  }
+  const attrs = compileJsxAttributes(node.openingElement.attributes, context)
+  const showExpression = directives.get('v-show')
+  if (showExpression) {
+    attrs.push(`hidden="${renderMustache(`!(${normalizeInterpolationExpression(showExpression)})`, context)}"`)
+  }
+  const attrsSegment = attrs.length ? ` ${attrs.join(' ')}` : ''
+  const textExpression = directives.get('v-text')
+  const content = textExpression
+    ? renderMustache(normalizeInterpolationExpression(textExpression), context)
+    : compileJsxChildren(node.children, context)
+  const element = node.openingElement.selfClosing && !textExpression
+    ? `<${tag}${attrsSegment} />`
+    : `<${tag}${attrsSegment}>${content}</${tag}>`
+  const ifExpression = directives.get('v-if')
+  if (ifExpression) {
+    return context.platform.wrapIf(
+      normalizeInterpolationExpression(ifExpression),
+      element,
+      expression => renderMustache(expression, context),
+    )
+  }
+  return element
 }

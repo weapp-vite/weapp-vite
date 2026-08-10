@@ -5,8 +5,9 @@ import { isAutoImportCandidateTag } from '../../utils/vueTemplateTags'
 import { extractJsonMacroFromScriptSetup, mayContainJsonMacro } from '../vue/transform/jsonMacros'
 import { createJsonMerger } from '../vue/transform/jsonMerge'
 import { transformScript } from '../vue/transform/script'
-import { stripRenderOptionFromScript } from './compileJsx/script'
+import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from './compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from './compileJsx/template'
+import { transformVueJsxScript } from './vueJsxTransform'
 
 const LEADING_DOT_RE = /^\./
 const SETUP_CALL_RE = /\bsetup\s*\(/
@@ -51,7 +52,7 @@ export async function compileJsxFile(
     }
   }
 
-  const { template: compiledTemplateStr, warnings: templateWarnings, inlineExpressions, autoComponentContext } = compileJsxTemplateAndCollectComponents(source, filename, options)
+  const { template: compiledTemplateStr, warnings: templateWarnings, inlineExpressions, autoComponentContext, dynamicIslands } = compileJsxTemplateAndCollectComponents(source, filename, options)
 
   const autoUsingComponentsMap: Record<string, string> = {}
   if (options?.autoUsingComponents?.resolveUsingComponentPath && autoComponentContext.templateTags.size > 0) {
@@ -104,8 +105,12 @@ export async function compileJsxFile(
     }
   }
 
-  const normalizedScriptSource = stripRenderOptionFromScript(scriptSource, filename, options?.warn)
-  const transformedScript = transformScript(normalizedScriptSource, {
+  const normalizedScriptSource = injectDynamicIslandRuntime(
+    stripRenderOptionFromScript(scriptSource, filename, options?.warn),
+    dynamicIslands,
+  )
+  const vueJsxTransformed = transformVueJsxScript(normalizedScriptSource, filename, options?.sourceMap !== false)
+  const transformedScript = transformScript(vueJsxTransformed.code, {
     skipComponentTransform: options?.skipComponentTransform ?? options?.isApp,
     isApp: options?.isApp,
     isPage: options?.isPage,
@@ -159,7 +164,7 @@ export async function compileJsxFile(
 
   const result: VueTransformResult = {
     script: transformedScript.code,
-    scriptMap: transformedScript.map ?? null,
+    scriptMap: transformedScript.map ?? vueJsxTransformed.map,
     template: compiledTemplateStr,
     config: configObj && Object.keys(configObj).length > 0
       ? JSON.stringify(configObj, null, 2)
@@ -168,6 +173,7 @@ export async function compileJsxFile(
       hasScriptSetup: false,
       hasSetupOption: SETUP_CALL_RE.test(normalizedScriptSource),
       jsonMacroHash: scriptMacroHash,
+      jsxDynamicIslands: dynamicIslands,
     },
   }
 

@@ -2,6 +2,7 @@ import type { InternalRuntimeState, MethodDefinitions } from '../../types'
 import {
   WEVU_INLINE_HANDLER,
   WEVU_INLINE_MAP_KEY,
+  WEVU_JSX_ISLAND_HANDLER,
   WEVU_MODEL_HANDLER,
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_OWNER_HANDLER,
@@ -9,6 +10,7 @@ import {
   WEVU_RUNTIME_KEY,
 } from '@weapp-core/constants'
 import { parseModelEventValue } from '../../internal'
+import { runJsxIslandHandler } from '../../jsxIsland'
 import { runInlineExpression } from '../inline'
 
 export function createComponentMethods(options: {
@@ -47,6 +49,12 @@ export function createComponentMethods(options: {
         // 忽略异常
       }
       return undefined
+    }
+  }
+
+  if (!finalMethods[WEVU_JSX_ISLAND_HANDLER]) {
+    finalMethods[WEVU_JSX_ISLAND_HANDLER] = function __weapp_vite_jsx_island(this: InternalRuntimeState, event: any) {
+      return runJsxIslandHandler(this, event)
     }
   }
 

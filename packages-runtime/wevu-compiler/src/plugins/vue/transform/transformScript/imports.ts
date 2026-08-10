@@ -7,6 +7,8 @@ const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
   'addMutationRecorder',
   'batch',
   'computed',
+  'createTextVNode',
+  'createVNode',
   'createApp',
   'createWevuComponent',
   'createWevuScopedSlotComponent',
@@ -21,6 +23,7 @@ const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
   'getCurrentScope',
   'getCurrentSetupContext',
   'getDeepWatchStrategy',
+  'Fragment',
   'getNavigationBarMetrics',
   'getReactiveVersion',
   'hasInjectionContext',
@@ -34,12 +37,15 @@ const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
   'isRef',
   'isShallowReactive',
   'isShallowRef',
+  'isVNode',
   'markNoSetData',
   'markRaw',
   'mergeModels',
+  'mergeProps',
   'mountRuntimeInstance',
   'nextTick',
   'normalizeClass',
+  'normalizeJsxIsland',
   'normalizeStyle',
   'onActivated',
   'onAddToFavorites',
@@ -80,6 +86,8 @@ const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
   'provide',
   'provideGlobal',
   'reactive',
+  'resolveDirective',
+  'resolveComponent',
   'readonly',
   'ref',
   'registerApp',
@@ -110,6 +118,7 @@ const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
   'toRef',
   'toRefs',
   'toValue',
+  'transformOn',
   'touchReactive',
   'traverse',
   'triggerRef',
@@ -139,6 +148,12 @@ const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
   'useTemplateRef',
   'useUpdatePerformanceListener',
   'version',
+  'vModelCheckbox',
+  'vModelRadio',
+  'vModelSelect',
+  'vModelText',
+  'vShow',
+  'withDirectives',
   'waitForLayoutHost',
   'watch',
   'watchEffect',
@@ -201,14 +216,39 @@ function splitWevuNamedImportsToInternalRuntime(path: any, program: t.Program, s
 export function createImportVisitors(program: t.Program, state: TransformState) {
   return {
     ImportDeclaration(path: any) {
+      if (path.node.source.value === '@vue/babel-helper-vue-transform-on') {
+        const defaultImport = path.node.specifiers.find((specifier: t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier) => (
+          t.isImportDefaultSpecifier(specifier)
+        ))
+        if (defaultImport) {
+          ensureRuntimeImport(program, 'transformOn', defaultImport.local.name)
+          state.transformed = true
+          path.remove()
+          return
+        }
+      }
+
       // 移除 defineComponent 的导入，同时记录本地别名
       if (path.node.source.value === 'vue') {
         const movedVueRuntimeAPIs = new Set([
+          'createTextVNode',
+          'createVNode',
+          'Fragment',
+          'isVNode',
+          'mergeProps',
+          'resolveComponent',
+          'resolveDirective',
           'useAttrs',
           'useSlots',
           'useModel',
           'mergeModels',
           'useTemplateRef',
+          'vModelCheckbox',
+          'vModelRadio',
+          'vModelSelect',
+          'vModelText',
+          'vShow',
+          'withDirectives',
         ])
 
         // 将 Vue SFC 编译产物中的部分 Vue runtime API 迁移到 wevu：

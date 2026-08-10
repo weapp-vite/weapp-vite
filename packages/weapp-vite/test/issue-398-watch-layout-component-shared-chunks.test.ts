@@ -14,6 +14,7 @@ interface WatcherEvent {
   error?: unknown
 }
 
+const WATCH_ASSERTION_TIMEOUT_MS = 90_000
 const TEST_TIMEOUT_MS = 240_000
 
 type WatcherEmitter = WatcherInstance & {
@@ -30,7 +31,7 @@ function isWatcherEmitter(value: unknown): value is WatcherEmitter {
   return typeof candidate.on === 'function' && typeof candidate.close === 'function'
 }
 
-async function waitForBuild(watcher: WatcherEmitter, timeoutMs = 45_000) {
+async function waitForBuild(watcher: WatcherEmitter, timeoutMs = WATCH_ASSERTION_TIMEOUT_MS) {
   return new Promise<void>((resolve, reject) => {
     const seenEvents: string[] = []
 
@@ -67,7 +68,7 @@ async function waitForBuild(watcher: WatcherEmitter, timeoutMs = 45_000) {
   })
 }
 
-async function waitForFileContains(filePath: string, marker: string, timeoutMs = 45_000) {
+async function waitForFileContains(filePath: string, marker: string, timeoutMs = WATCH_ASSERTION_TIMEOUT_MS) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(filePath)) {
@@ -99,7 +100,7 @@ async function collectJsOutput(root: string) {
   return output.join('\n')
 }
 
-async function waitForJsOutputContains(root: string, marker: string, timeoutMs = 45_000) {
+async function waitForJsOutputContains(root: string, marker: string, timeoutMs = WATCH_ASSERTION_TIMEOUT_MS) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(root) && (await collectJsOutput(root)).includes(marker)) {

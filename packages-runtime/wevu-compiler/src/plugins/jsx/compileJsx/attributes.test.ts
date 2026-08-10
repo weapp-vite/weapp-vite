@@ -98,12 +98,15 @@ describe('compileJsx attributes helpers', () => {
     expect(attrs).toContain('mut-bind:tap="mutateTap"')
   })
 
-  it('warns for spread and dynamic attribute names', () => {
+  it('expands static spread attributes and diagnoses dynamic attribute names', () => {
     const context = createJsxCompileContext()
     const openingElement = t.jsxOpeningElement(
       t.jsxIdentifier('view'),
       [
-        t.jsxSpreadAttribute(t.identifier('rest')),
+        t.jsxSpreadAttribute(t.objectExpression([
+          t.objectProperty(t.identifier('title'), t.stringLiteral('spread')),
+          t.objectProperty(t.identifier('onTap'), t.identifier('tap')),
+        ])),
         t.jsxAttribute(
           t.jsxNamespacedName(t.jsxIdentifier('ns'), t.jsxIdentifier('prop')),
           t.stringLiteral('value'),
@@ -114,10 +117,9 @@ describe('compileJsx attributes helpers', () => {
 
     const attrs = compileJsxAttributes(openingElement.attributes as any, context)
 
-    expect(attrs).toEqual([])
+    expect(attrs).toEqual(['title="spread"', 'bindtap="tap"'])
     expect(context.warnings).toEqual([
-      '暂不支持 JSX spread attributes，已忽略。',
-      '暂不支持 JSX 动态属性名，已忽略。',
+      '小程序不支持 JSX 命名属性 ns:prop，已移除该属性。',
     ])
   })
 

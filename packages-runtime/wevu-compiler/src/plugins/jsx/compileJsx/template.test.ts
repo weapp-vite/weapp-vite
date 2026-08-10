@@ -11,6 +11,17 @@ afterEach(() => {
 })
 
 describe.sequential('compileJsx template helpers', () => {
+  it('extracts a render closure returned from setup', async () => {
+    const { compileJsxTemplate } = await import('./template')
+    const result = compileJsxTemplate(
+      `export default { setup() { return () => <view><text>setup render</text></view> } }`,
+      '/project/src/setup.tsx',
+    )
+
+    expect(result.template).toBe('<view><text>setup render</text></view>')
+    expect(result.warnings).toEqual([])
+  })
+
   it('creates compile context from defaults and template overrides', async () => {
     const { createJsxCompileContext } = await import('./template')
     const defaultContext = createJsxCompileContext()

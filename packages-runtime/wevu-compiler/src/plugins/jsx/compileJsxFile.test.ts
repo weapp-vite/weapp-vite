@@ -1,8 +1,131 @@
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { getMiniProgramTemplatePlatform } from '../vue/compiler/template/platforms'
 import { compileJsxFile } from './compileJsxFile'
 
 describe('compileJsxFile', () => {
+  it('does not report a missing render option for JSX utility modules', async () => {
+    const warnings: string[] = []
+    await compileJsxFile(
+      'export const shared = <view>shared</view>',
+      '/project/src/shared.tsx',
+      { warn: message => warnings.push(message) },
+    )
+    expect(warnings).not.toContainEqual(expect.stringContaining('移除 render 选项'))
+  })
+
+  it('compiles setup-returned static JSX render closures', async () => {
+    const source = `
+import { defineComponent } from 'wevu'
+export default defineComponent({
+  setup() {
+    return () => <view><text>setup render</text></view>
+  },
+})
+`
+    const result = await compileJsxFile(source, '/project/src/pages/setup/index.tsx', { isPage: true })
+    expect(result.template).toBe('<view><text>setup render</text></view>')
+    expect(result.script).not.toContain('<view>')
+    expect(result.script).not.toContain('createVNode')
+  })
+
+  it('keeps setup captures required by an extracted JSX template', async () => {
+    const source = `
+import { defineComponent, ref } from 'wevu'
+export default defineComponent({
+  setup() {
+    const count = ref(1)
+    return () => <text>{count.value}</text>
+  },
+})
+`
+    const result = await compileJsxFile(source, '/project/src/pages/setup-capture/index.tsx', { isPage: true })
+    expect(result.template).toContain('{{count.value}}')
+    expect(result.script).toMatch(/return\s*\{\s*count\s*\}/)
+    expect(result.script).not.toContain('createVNode')
+  })
+
+  it('inlines JSX fragments and factories imported from sibling modules', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-shared-'))
+    const shared = path.join(root, 'shared.tsx')
+    const entry = path.join(root, 'page.tsx')
+    await writeFile(shared, `
+      export const sss = <><view>sss</view></>
+      export const createPanel = (title: string) => <view className="panel"><text>{title}</text></view>
+    `)
+    await writeFile(entry, `
+      import { sss, createPanel } from './shared'
+      import { defineComponent } from 'wevu'
+      export default defineComponent({ render() { return <view>{sss}{createPanel('标题')}</view> } })
+    `)
+    const result = await compileJsxFile(await readFile(entry, 'utf8'), entry)
+    expect(result.template).toContain('<view>sss</view>')
+    expect(result.template).toContain('<view class="panel"><text>{{\'标题\'}}</text></view>')
+  })
+
+  it('resolves JSX fragments through re-export modules', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-reexport-'))
+    const shared = path.join(root, 'shared.tsx')
+    const barrel = path.join(root, 'barrel.tsx')
+    const entry = path.join(root, 'page.tsx')
+    await writeFile(shared, 'export const sss = <view>re-exported</view>')
+    await writeFile(barrel, 'export { sss } from \'./shared\'')
+    await writeFile(entry, `import { sss } from './barrel'
+      import { defineComponent } from 'wevu'
+      export default defineComponent({ render() { return <view>{sss}</view> } })`)
+    const result = await compileJsxFile(await readFile(entry, 'utf8'), entry)
+    expect(result.template).toContain('<view>re-exported</view>')
+  })
+
+  it('resolves JSX fragments through namespace imports', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-namespace-'))
+    const shared = path.join(root, 'shared.tsx')
+    const entry = path.join(root, 'page.tsx')
+    await writeFile(shared, 'export const sss = <view>namespace</view>')
+    await writeFile(entry, `import * as fragments from './shared'
+      import { defineComponent } from 'wevu'
+      export default defineComponent({ render() { return <view>{fragments.sss}</view> } })`)
+    const result = await compileJsxFile(await readFile(entry, 'utf8'), entry)
+    expect(result.template).toContain('<view>namespace</view>')
+    expect(result.meta?.jsxDynamicIslands).toEqual([])
+  })
+
+  it('emits structured metadata for imported JSX closures that cannot be statically expanded', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-island-'))
+    const shared = path.join(root, 'shared.tsx')
+    const entry = path.join(root, 'page.tsx')
+    await writeFile(shared, 'export const createPanel = (factory: () => any) => factory()')
+    await writeFile(entry, `import { createPanel } from './shared'
+      import { defineComponent } from 'wevu'
+      export default defineComponent({ render() { return <view>{createPanel(() => <text>dynamic</text>)}</view> } })`)
+    const result = await compileJsxFile(await readFile(entry, 'utf8'), entry)
+    expect(result.template).toContain('data-wv-jsx-island')
+    expect(result.template).toContain('template name="__wv_jsx_node"')
+    expect(result.script).toContain('__wv_jsx_islands')
+    expect(result.script).toContain('normalizeJsxIsland')
+    expect(result.script).toContain('normalizeClass')
+    expect(result.script).toContain('normalizeStyle')
+    expect(result.script).toContain('from "wevu/internal-template"')
+    expect(result.script).not.toContain('from "vue"')
+    expect(result.meta?.jsxDynamicIslands).toEqual([
+      expect.objectContaining({ reason: 'unsupported-call' }),
+    ])
+  })
+
+  it('records free variables and this in dynamic island capture metadata', async () => {
+    const source = `
+import { defineComponent } from 'wevu'
+const renderDynamic = value => value
+export default defineComponent({
+  render() {
+    return <view>{renderDynamic(this.count)}</view>
+  },
+})`
+    const result = await compileJsxFile(source, '/project/src/pages/capture/index.tsx')
+    expect(result.meta?.jsxDynamicIslands?.[0]?.captures).toContain('this')
+  })
   const defaultPlatform = getMiniProgramTemplatePlatform()
 
   it('compiles render JSX to wxml template and script wrapper', async () => {
