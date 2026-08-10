@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@weapp-vite/react": "workspace:*",
-    "react": "19.2.7",
+    "react": "19.2.8",
     "react-reconciler": "0.33.0",
     "wevu": "workspace:*"
   },
@@ -28,7 +28,7 @@
     "@icebreakers/stylelint-config": "catalog:",
     "@swc/core": "^1.15.47",
     "@types/node": "catalog:",
-    "@types/react": "19.2.17",
+    "@types/react": "19.2.18",
     "@types/react-reconciler": "0.33.0",
     "eslint": "catalog:",
     "miniprogram-api-typings": "catalog:",
