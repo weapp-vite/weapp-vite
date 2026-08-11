@@ -23,7 +23,7 @@ export const TEMPLATE_CATALOG = {
   '@vue/compiler-core': '^3.5.41',
   '@vue/compiler-dom': '^3.5.41',
   '@vue/language-core': '^3.3.9',
-  '@wot-ui/ui': '2.3.1',
+  '@wot-ui/ui': '2.3.2',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
   'class-variance-authority': '^0.7.1',
@@ -34,7 +34,7 @@ export const TEMPLATE_CATALOG = {
   'lru-cache': '^11.5.2',
   'magic-string': '^1.1.0',
   'miniprogram-api-typings': '^5.2.3',
-  'oxc-parser': '^0.143.0',
+  'oxc-parser': '^0.144.0',
   'oxc-walker': '^1.1.1',
   'pkg-types': '^2.3.1',
   'sass-embedded': '^1.100.0',
@@ -45,7 +45,7 @@ export const TEMPLATE_CATALOG = {
   'uview-plus': '3.8.86',
   'vite-plugin-inspect': '^12.0.2',
   'vue-tsc': '^3.3.9',
-  'weapp-tailwindcss': '^5.2.13',
+  'weapp-tailwindcss': '^5.2.14',
   autoprefixer: '^10.5.4',
   clsx: '^2.1.1',
   dayjs: '^1.11.21',
@@ -64,7 +64,7 @@ export const TEMPLATE_CATALOG = {
   stylelint: '^17.14.1',
   tailwindcss: '^4.3.3',
   tslib: '^2.8.1',
-  tsx: '^4.23.11',
+  tsx: '^4.23.12',
   typescript: '^6.0.3',
   vite: '8.2.1',
   vue: '^3.5.41',
@@ -76,7 +76,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.16.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.2.13'
+    'weapp-tailwindcss': '5.2.14'
   },
   latest: {
     'miniprogram-api-typings': '^5.2.3',
