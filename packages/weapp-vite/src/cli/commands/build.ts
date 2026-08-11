@@ -13,6 +13,7 @@ import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { formatDuration } from '../formatDuration'
 import { logBuildAppFinish } from '../logBuildAppFinish'
 import { logBuildPackageSizeReport } from '../logBuildPackageSizeReport'
+import { initializeNodeEnv } from '../nodeEnv'
 import { openIde, resolveIdeProjectPath } from '../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
@@ -153,6 +154,7 @@ export function registerBuildCommand(cli: CAC) {
       let buildCompleted = false
       try {
         filterDuplicateOptions(options)
+        initializeNodeEnv('production')
         const cwd = root ?? process.cwd()
         const configFile = resolveConfigFile(options)
         targets = resolveRuntimeTargets(options)
