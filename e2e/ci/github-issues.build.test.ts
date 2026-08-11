@@ -562,6 +562,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('/pages/issue-431')
     expect(pageJs).toContain('importMetaSnapshot')
     expect(pageJs).toMatch(createObjectPropertyPattern('url', '/pages/issue-431/index.js'))
+    expect(pageJs).toMatch(/issue792\s*:\s*\{\s*dev\s*:\s*false\s*,\s*mode\s*:\s*["']production["']\s*,\s*nodeEnv\s*:\s*["']production["']\s*,\s*prod\s*:\s*true\s*\}/)
     expect(pageJs).not.toContain('import.meta.url')
     expect(pageJs).not.toContain('import.meta.dirname')
     expect(pageJs).not.toContain('import.meta.env')

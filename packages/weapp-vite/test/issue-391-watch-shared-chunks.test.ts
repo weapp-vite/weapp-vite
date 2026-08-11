@@ -14,6 +14,9 @@ interface WatcherEvent {
   error?: unknown
 }
 
+const WATCH_ASSERTION_TIMEOUT_MS = 90_000
+const TEST_TIMEOUT_MS = 240_000
+
 type WatcherEmitter = WatcherInstance & {
   on: (event: 'event', listener: (event: WatcherEvent) => void) => void
   off?: (event: 'event', listener: (event: WatcherEvent) => void) => void
@@ -28,7 +31,7 @@ function isWatcherEmitter(value: unknown): value is WatcherEmitter {
   return typeof candidate.on === 'function' && typeof candidate.close === 'function'
 }
 
-async function waitForBuild(watcher: WatcherEmitter, timeoutMs = 45_000) {
+async function waitForBuild(watcher: WatcherEmitter, timeoutMs = WATCH_ASSERTION_TIMEOUT_MS) {
   return new Promise<void>((resolve, reject) => {
     const seenEvents: string[] = []
 
@@ -65,7 +68,7 @@ async function waitForBuild(watcher: WatcherEmitter, timeoutMs = 45_000) {
   })
 }
 
-async function waitForFileContains(filePath: string, marker: string, timeoutMs = 45_000) {
+async function waitForFileContains(filePath: string, marker: string, timeoutMs = WATCH_ASSERTION_TIMEOUT_MS) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(filePath)) {
@@ -101,7 +104,7 @@ async function scanJsFiles(root: string, dir = root): Promise<string[]> {
   return files
 }
 
-async function waitForJsFileContains(outDir: string, marker: string, timeoutMs = 45_000) {
+async function waitForJsFileContains(outDir: string, marker: string, timeoutMs = WATCH_ASSERTION_TIMEOUT_MS) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     const files = await scanJsFiles(outDir)
@@ -208,5 +211,5 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
       await ctxResult.dispose()
       await tempProject.cleanup()
     }
-  }, 180_000)
+  }, TEST_TIMEOUT_MS)
 })

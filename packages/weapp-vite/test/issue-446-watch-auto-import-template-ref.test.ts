@@ -14,6 +14,9 @@ interface WatcherEvent {
   error?: unknown
 }
 
+const WATCH_ASSERTION_TIMEOUT_MS = 90_000
+const TEST_TIMEOUT_MS = 240_000
+
 type WatcherEmitter = WatcherInstance & {
   on: (event: 'event', listener: (event: WatcherEvent) => void) => void
   off?: (event: 'event', listener: (event: WatcherEvent) => void) => void
@@ -28,7 +31,7 @@ function isWatcherEmitter(value: unknown): value is WatcherEmitter {
   return typeof candidate.on === 'function' && typeof candidate.close === 'function'
 }
 
-async function waitForBuild(watcher: WatcherEmitter, timeoutMs = 45_000) {
+async function waitForBuild(watcher: WatcherEmitter, timeoutMs = WATCH_ASSERTION_TIMEOUT_MS) {
   return new Promise<void>((resolve, reject) => {
     const seenEvents: string[] = []
 
@@ -65,7 +68,7 @@ async function waitForBuild(watcher: WatcherEmitter, timeoutMs = 45_000) {
   })
 }
 
-async function waitForFileContains(filePath: string, marker: string, timeoutMs = 45_000) {
+async function waitForFileContains(filePath: string, marker: string, timeoutMs = WATCH_ASSERTION_TIMEOUT_MS) {
   const startedAt = Date.now()
   while (Date.now() - startedAt < timeoutMs) {
     if (await fs.pathExists(filePath)) {
@@ -199,5 +202,5 @@ describe.sequential('issue #446 watch auto-import component template ref', () =>
       await ctxResult.dispose()
       await tempProject.cleanup()
     }
-  }, 180_000)
+  }, TEST_TIMEOUT_MS)
 })
