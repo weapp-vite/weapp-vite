@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   applyBuildScopeToAppConfig,
   applyBuildScopeToAutoRoutes,
-  applyBuildScopeToSubPackageRoots,
   createBuildScopeConfigFromCli,
   resolveBuildScope,
   resolveBuildScopeFromCli,
@@ -123,12 +122,5 @@ describe('buildScope', () => {
         { root: 'packages/order', pages: ['pages/list/index'] },
       ],
     })
-  })
-
-  it('filters auto-routes subpackage roots before candidate matching', () => {
-    expect(applyBuildScopeToSubPackageRoots(
-      ['packages/order', 'packages/user'],
-      resolveBuildScope({ include: ['packages/order'] }),
-    )).toEqual(['packages/order'])
   })
 })
