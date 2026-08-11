@@ -126,6 +126,7 @@ describe.sequential('stateful HMR with root source directory', () => {
       await expect(fs.readFile(path.join(DIST_ROOT, 'app.wxss'), 'utf8')).resolves.toContain('--color-brand: #006241')
       await expect(fs.readFile(path.join(DIST_ROOT, 'sub-normal/pages/index.wxss'), 'utf8')).resolves.toContain('.text-red-500')
       await expect(fs.readFile(path.join(DIST_ROOT, 'sub-independent/pages/index.wxss'), 'utf8')).resolves.toContain('.text-blue-500')
+      await expect(fs.pathExists(path.join(DIST_ROOT, 'tailwind.wxss'))).resolves.toBe(false)
     }
     finally {
       await dev.stop(5_000)
