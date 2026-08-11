@@ -4,6 +4,14 @@
   "version": "0.2.0",
   "description": "React 19 runtime for weapp-vite mini programs",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages-runtime/react"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
   "sideEffects": false,
   "exports": {
     ".": {
