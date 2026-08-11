@@ -3,6 +3,7 @@ import type { Subprocess } from 'execa'
 import type { Browser, Page } from 'playwright'
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
+import { get } from 'node:http'
 import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as sleep } from 'node:timers/promises'
@@ -76,8 +77,15 @@ async function waitForServer(server: Subprocess, logs: { value: string }) {
       throw new Error(`Web dev server exited with ${server.nodeChildProcess.exitCode}.\n${logs.value}`)
     }
     try {
-      const response = await fetch(WEB_URL)
-      if (response.ok) {
+      const statusCode = await new Promise<number | undefined>((resolve, reject) => {
+        const request = get(WEB_URL, (response) => {
+          response.resume()
+          response.once('end', () => resolve(response.statusCode))
+        })
+        request.once('error', reject)
+        request.setTimeout(5_000, () => request.destroy(new Error(`Timed out requesting ${WEB_URL}.`)))
+      })
+      if (statusCode && statusCode >= 200 && statusCode < 400) {
         return
       }
     }
