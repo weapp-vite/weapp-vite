@@ -120,6 +120,10 @@ export async function parse(argv: string[]) {
   configureLocaleFromArgv(argv, await getConfiguredLocale())
 
   const cli = createCli()
+  if (argv.length === 0 || argv[0] === '--help' || argv[0] === '-h') {
+    cli.outputHelp()
+    return
+  }
   cli.parse(['node', 'weapp', ...argv], { run: false })
 
   const matchedCommand = cli.matchedCommandName

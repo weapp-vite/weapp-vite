@@ -13,9 +13,13 @@
   <view class="metric-card">本周跟进事项 {{metrics.0.value}}</view>
   <view class="metric-card">交付进度 {{metrics.1.value}}</view>
   <view class="metric-card">服务可用率 {{metrics.2.value}}</view>
+  <template is="metric-summary" data="{{metric:metrics.0}}" />
   <view class="section-title">常用入口</view>
   <view class="entry-card" bindtap="openOverview">运营概览</view>
   <view class="entry-card" bindtap="openWorkspace">进入工作台</view>
   <view class="entry-card" bindtap="openSettings">项目设置</view>
   <view class="entry-card" bindtap="openLayouts">布局演示</view>
 </view>
+<template name="metric-summary">
+  <view id="template-metric-summary">模板指标 {{metric.value}}</view>
+</template>

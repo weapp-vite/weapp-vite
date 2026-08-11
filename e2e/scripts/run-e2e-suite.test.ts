@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { orderSuiteTasks, shouldCleanupIdeBeforeEachTask, shouldStopIdeSuiteAfterTaskFailure } from './run-e2e-suite'
+import { describe, expect, it, vi } from 'vitest'
+import { createIdeSuiteCleanupHooks, orderSuiteTasks, shouldCleanupIdeBeforeEachTask, shouldStopIdeSuiteAfterTaskFailure } from './run-e2e-suite'
 
 describe('run-e2e-suite ide cleanup hooks', () => {
   it('orders tasks from a rolling start point and then wraps to the beginning', () => {
@@ -44,6 +44,17 @@ describe('run-e2e-suite ide cleanup hooks', () => {
     expect(shouldCleanupIdeBeforeEachTask('ide-full')).toBe(true)
     expect(shouldCleanupIdeBeforeEachTask('ide-full:templates')).toBe(true)
     expect(shouldCleanupIdeBeforeEachTask('hmr-regression')).toBe(true)
+  })
+
+  it('cleans DevTools once before an IDE suite and once after it', async () => {
+    const cleanup = vi.fn(async () => {})
+    const hooks = createIdeSuiteCleanupHooks('ide-full', cleanup)
+
+    await hooks.beforeEachTask?.()
+    await hooks.beforeEachTask?.()
+    await hooks.afterAll?.()
+
+    expect(cleanup).toHaveBeenCalledTimes(2)
   })
 
   it('skips cleanup hooks for non-devtools or headless suites', () => {

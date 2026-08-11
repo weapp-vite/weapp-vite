@@ -1,5 +1,6 @@
 import type { HeadlessComponentDefinition } from '../../host'
 import type { HeadlessComponentInstance } from '../../runtime/componentInstance'
+import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { BrowserVirtualFiles } from '../virtualFiles'
 import type { BrowserComponentRegistryEntry, BrowserRendererContext, BrowserRenderScope, BrowserSlotContent, DomNodeLike } from './types'
 import { dirname, join, normalize } from 'pathe'
@@ -14,6 +15,7 @@ import {
 } from '../../runtime/componentInstance'
 import { collectMiniProgramEventBindings } from '../../view/eventBinding'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
+import { createTemplateRenderState } from '../../view/templateRuntime'
 import { readBrowserVirtualFile } from '../virtualFiles'
 import {
   CLASS_SPLIT_RE,
@@ -330,6 +332,7 @@ export function renderBrowserComponentTemplate(
     ownerFilePath: string,
     instancePath: string,
     seenComponentScopes: Set<string>,
+    templateRenderState: TemplateRenderState<DomNodeLike>,
   ) => DomNodeLike,
   componentScope: BrowserRenderScope,
   componentScopeId: string,
@@ -338,6 +341,7 @@ export function renderBrowserComponentTemplate(
   const componentTemplate = readTemplateSource(context.files, componentEntry.templatePath)
   const componentDocument = parseTemplateDocument(componentTemplate)
   const componentRoot = (componentDocument.children ?? [])[0] ?? componentDocument
+  const templateRenderState = createTemplateRenderState(componentRoot)
   return renderNodeTree(
     componentRoot,
     componentScope,
@@ -346,5 +350,6 @@ export function renderBrowserComponentTemplate(
     componentEntry.filePath,
     componentScopeId,
     seenComponentScopes,
+    templateRenderState,
   )
 }

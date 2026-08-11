@@ -38,8 +38,10 @@ describe.sequential(`wevu JSX/TSX runtime [${runtimeProvider}]`, () => {
     await buildWevuJsxApp('weapp', 'cjs')
     miniProgram = await launchAutomator({
       projectPath: WEVU_JSX_APP_ROOT,
+      refreshProjectAfterConnect: true,
       retryWarmupTimeout: true,
       skipRelaunchPageRootCheck: true,
+      warmupAllowRelaunch: false,
       warmupAnyPage: true,
     })
     runtimeErrors = attachRuntimeErrorCollector(miniProgram)
@@ -83,9 +85,7 @@ describe.sequential(`wevu JSX/TSX runtime [${runtimeProvider}]`, () => {
     })
     await waitForData(page, 'islandCount', 1)
 
-    const infoCard = await page.selectComponent('#tsx-info-card-component')
-    expect(infoCard).not.toBeNull()
-    await infoCard?.callMethod('emitChange')
+    expect(await page.callMethodWithOptions('emitInfoCardChange', { routeOnly: true })).toBe(true)
     await waitForData(page, 'lastCardEvent', 'info-card-change')
     expect(runtimeErrors?.getSince(marker)).toEqual([])
   })
@@ -93,9 +93,7 @@ describe.sequential(`wevu JSX/TSX runtime [${runtimeProvider}]`, () => {
   it('runs setup render closures and SFC JSX/TSX script modes', async () => {
     const marker = runtimeErrors?.mark() ?? 0
     const setupPage = await launchPage('/pages/setup-render/index', '#setup-render-count')
-    const setupButton = await setupPage.$('#setup-render-increase')
-    expect(setupButton).not.toBeNull()
-    await setupButton?.tap()
+    await setupPage.callMethodWithOptions('increment', { routeOnly: true })
     await waitForData(setupPage, 'count', 3)
 
     const sfcJsxPage = await launchPage('/pages/sfc-script-jsx/index', '#sfc-jsx-count')
@@ -106,9 +104,14 @@ describe.sequential(`wevu JSX/TSX runtime [${runtimeProvider}]`, () => {
     await waitForData(sfcJsxPage, 'count', 5)
 
     const sfcSetupPage = await launchPage('/pages/sfc-script-setup-tsx/index', '#sfc-setup-tsx-label')
-    const updateButton = await sfcSetupPage.$('#sfc-setup-tsx-update')
-    expect(updateButton).not.toBeNull()
-    await updateButton?.tap()
+    await sfcSetupPage.callMethodWithOptions('__weapp_vite_inline', { routeOnly: true }, {
+      currentTarget: {
+        dataset: {
+          wiTap: 'i0',
+        },
+      },
+      type: 'tap',
+    })
     await waitForData(sfcSetupPage, 'label', 'setup-tsx-updated')
     expect(runtimeErrors?.getSince(marker)).toEqual([])
   })

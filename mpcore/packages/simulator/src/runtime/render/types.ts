@@ -1,6 +1,7 @@
 import type { HeadlessComponentDefinition } from '../../host'
 import type { ArtifactSource } from '../../kernel'
 import type { HeadlessProjectDescriptor } from '../../project'
+import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { HeadlessComponentInstance } from '../componentInstance'
 import type { HeadlessModuleLoader } from '../moduleLoader'
 
@@ -35,6 +36,7 @@ export interface RuntimeSlotContent {
   ownerFilePath: string
   ownerJsonPath: string
   scope: RuntimeRenderScope
+  templateRenderState: TemplateRenderState<DomNodeLike>
 }
 
 export interface RuntimeComponentRegistryEntry {

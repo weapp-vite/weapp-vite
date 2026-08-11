@@ -60,6 +60,14 @@ export default defineComponent({
         nodeTag: island?.tag,
       }
     },
+    emitInfoCardChange(this: any) {
+      const infoCard = this.selectComponent('#tsx-info-card-component')
+      if (!infoCard) {
+        return false
+      }
+      infoCard.emitChange()
+      return true
+    },
     backHome() {
       wx.redirectTo({ url: '/pages/jsx-basic/index' })
     },
@@ -82,7 +90,9 @@ export default defineComponent({
         {createSharedPanel('跨文件参数化 JSX factory')}
         {createDynamicBlock(() => (
           <button id="tsx-island-button" className="btn" onTap={this.increaseIslandCount}>
-            dynamic island: {this.islandCount}
+            dynamic island:
+            {' '}
+            {this.islandCount}
           </button>
         ))}
         <view>

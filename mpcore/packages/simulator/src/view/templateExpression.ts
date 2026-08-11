@@ -5,7 +5,7 @@ type ExpressionNode = Record<string, any>
 
 const expressionCache = new Map<string, ExpressionNode | null>()
 const BLOCKED_MEMBER_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
-const NUMERIC_DOT_PATH_RE = /\.(\d+)(?=[.[\s]|$)/g
+const NUMERIC_DOT_PATH_RE = /\.(\d+)(?=[.[\s,}\]]|$)/g
 
 function isMustacheOnly(value: string) {
   const trimmed = value.trim()

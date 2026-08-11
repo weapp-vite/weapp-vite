@@ -1,7 +1,9 @@
 import type { HeadlessPageInstance } from '../../runtime/pageInstance'
+import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { BrowserRenderedPageTree, BrowserRendererContext, BrowserRenderScope, BrowserSlotContent, DomNodeLike } from './types'
 import { join } from 'pathe'
 import { runComponentLifecycle } from '../../runtime/componentInstance'
+import { createTemplateRenderState, isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
 import {
   createBrowserComponentInstance,
   createComponentScope,
@@ -52,6 +54,7 @@ function renderNodeVariants(
   ownerFilePath: string,
   instancePath: string,
   seenComponentScopes: Set<string>,
+  templateRenderState: TemplateRenderState<DomNodeLike>,
 ) {
   // eslint-disable-next-line ts/no-use-before-define
   return expandNodeByFor(node, scope).map(({ node: expandedNode, scope: expandedScope, instanceSuffix }) => renderNodeTree(
@@ -62,6 +65,7 @@ function renderNodeVariants(
     ownerFilePath,
     `${instancePath}${instanceSuffix}`,
     seenComponentScopes,
+    templateRenderState,
   ))
 }
 
@@ -73,13 +77,18 @@ function renderChildren(
   ownerFilePath: string,
   instancePath: string,
   seenComponentScopes: Set<string>,
+  templateRenderState: TemplateRenderState<DomNodeLike>,
 ) {
   const renderedChildren: DomNodeLike[] = []
 
   for (let index = 0; index < children.length; index += 1) {
     const child = children[index]!
     if (!isTagNode(child)) {
-      renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes))
+      renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState))
+      continue
+    }
+
+    if (isTemplateDefinition(child)) {
       continue
     }
 
@@ -105,7 +114,7 @@ function renderChildren(
         const isElseOnly = branch.attribs?.['wx:else'] != null
         const shouldRender = isElseOnly ? !branchMatched : (!branchMatched && evaluateConditionalBranch(branch, scope))
         if (shouldRender) {
-          renderedChildren.push(...renderNodeVariants(branch, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${cursor}`, seenComponentScopes))
+          renderedChildren.push(...renderNodeVariants(branch, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${cursor}`, seenComponentScopes, templateRenderState))
           branchMatched = true
         }
 
@@ -130,7 +139,7 @@ function renderChildren(
       continue
     }
 
-    renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes))
+    renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState))
   }
 
   return renderedChildren
@@ -142,6 +151,7 @@ function collectComponentSlots(
   ownerJsonPath: string,
   ownerFilePath: string,
   instancePath: string,
+  templateRenderState: TemplateRenderState<DomNodeLike>,
 ) {
   const slots = new Map<string, BrowserSlotContent[]>()
   ;(componentNode.children ?? []).forEach((node, index) => {
@@ -155,6 +165,7 @@ function collectComponentSlots(
       ownerFilePath,
       ownerJsonPath,
       scope,
+      templateRenderState,
     })
     slots.set(slotName, entries)
   })
@@ -187,11 +198,54 @@ function renderNodeTree(
   ownerFilePath: string,
   instancePath: string,
   seenComponentScopes: Set<string>,
+  templateRenderState: TemplateRenderState<DomNodeLike>,
 ): DomNodeLike {
   const clonedNode = cloneNode(node)
   if (!isTagNode(clonedNode)) {
     applyNodeBindings(clonedNode, scope)
     return clonedNode
+  }
+
+  if (isTemplateDefinition(clonedNode)) {
+    return {
+      type: 'tag',
+      name: 'block',
+      attribs: {},
+      children: [],
+    }
+  }
+
+  const templateName = resolveTemplateCall(clonedNode, scope.data)
+  if (templateName) {
+    const definition = templateRenderState.definitions.get(templateName)
+    const templateScope = {
+      ...scope,
+      data: resolveTemplateData(clonedNode, scope.data),
+    }
+    const children = definition && !templateRenderState.stack.includes(templateName)
+      ? renderChildren(
+          definition.children ?? [],
+          templateScope,
+          context,
+          ownerJsonPath,
+          ownerFilePath,
+          `${instancePath}/template-${templateName}`,
+          seenComponentScopes,
+          {
+            definitions: templateRenderState.definitions,
+            stack: [...templateRenderState.stack, templateName],
+          },
+        )
+      : []
+    return {
+      type: 'tag',
+      name: 'block',
+      attribs: {
+        'data-sim-node': instancePath,
+        'data-sim-scope': scope.getScopeId(),
+      },
+      children,
+    }
   }
 
   if (clonedNode.name === 'slot') {
@@ -206,6 +260,7 @@ function renderNodeTree(
           entry.ownerFilePath,
           entry.instancePath,
           seenComponentScopes,
+          entry.templateRenderState,
         ))
       : renderChildren(
           clonedNode.children ?? [],
@@ -215,6 +270,7 @@ function renderNodeTree(
           ownerFilePath,
           `${instancePath}/slot-fallback-${slotName}`,
           seenComponentScopes,
+          templateRenderState,
         )
     return {
       type: 'tag',
@@ -272,6 +328,7 @@ function renderNodeTree(
       ownerJsonPath,
       ownerFilePath,
       componentScopeId,
+      templateRenderState,
     )
     const componentScope = createComponentScope(
       clonedNode,
@@ -311,6 +368,7 @@ function renderNodeTree(
     ownerFilePath,
     `${instancePath}/${clonedNode.name}`,
     seenComponentScopes,
+    templateRenderState,
   )
   return clonedNode
 }
@@ -337,6 +395,7 @@ export function renderBrowserPageTree(
   context.componentScopes.set(pageScopeId, pageScope)
   const seenComponentScopes = new Set<string>()
   const root = (document.children ?? [])[0] ?? document
+  const templateRenderState = createTemplateRenderState(root)
   const renderedRoot = renderNodeTree(
     root,
     pageScope,
@@ -345,6 +404,7 @@ export function renderBrowserPageTree(
     `${route}.js`,
     pageScopeId,
     seenComponentScopes,
+    templateRenderState,
   )
 
   for (const [scopeId, instance] of [...context.componentCache.entries()]) {

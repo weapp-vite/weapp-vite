@@ -363,6 +363,19 @@ describe('cli parsing', () => {
     expect(runMinidevMock).toHaveBeenCalledWith(['ide', '--project', mockCwd])
   })
 
+  it.each([[[]], [['--help']], [['-h']]])('prints root help locally for argv %j', async (argv) => {
+    const { parse } = await loadRunModule()
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+
+    await parse(argv)
+
+    expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('Usage'))
+    expect(dispatchWechatCliCommandMock).not.toHaveBeenCalled()
+    expect(resolveCliPathMock).not.toHaveBeenCalled()
+    expect(executeMock).not.toHaveBeenCalled()
+    infoSpy.mockRestore()
+  })
+
   it('prints automator command help via "help <command>"', async () => {
     const { parse } = await loadRunModule()
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})

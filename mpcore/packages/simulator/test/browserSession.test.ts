@@ -4295,6 +4295,41 @@ Page({
     expect(rendered.wxml).not.toContain('>empty<')
   })
 
+  it('renders template calls with isolated data and stops recursive definitions', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    card: { detail: 'nested', label: 'ready' },
+    templateName: 'card'
+  }
+})
+`],
+      ['pages/lab/index.wxml', `
+<template is="{{templateName}}" data="{{item:card}}" />
+<template is="recursive" />
+<template name="card">
+  <view id="template-card">{{item.label}}</view>
+  <template is="detail" data="{{value:item.detail}}" />
+</template>
+<template name="detail"><text id="template-detail">{{value}}</text></template>
+<template name="recursive"><template is="recursive" /></template>
+`],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/lab/index')
+    const rendered = session.renderCurrentPage().wxml
+
+    expect(rendered).toContain('id="template-card"')
+    expect(rendered).toContain('>ready<')
+    expect(rendered).toContain('id="template-detail"')
+    expect(rendered).toContain('>nested<')
+    expect(rendered).not.toContain('<template')
+  })
+
   it('updates loop-driven component properties after page setData patches', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

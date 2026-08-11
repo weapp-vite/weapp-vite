@@ -363,10 +363,15 @@ Page({
     expect(await panelRows[0]?.text()).toBe('Status: ready')
     expect(await panelRows[3]?.text()).toBe('Target: index snapshot')
 
+    const templateSummary = await page.$('#template-summary')
+    expect(await templateSummary?.text()).toBe('Template: index snapshot')
+
     const wxml = await root?.wxml()
     expect(wxml).toContain('<view id="greeting-button" data-phase="initial" data-card-type="primary" bind:tap="onTap">Hello</view>')
     expect(wxml).toContain('Status: ready')
     expect(wxml).toContain('Greeting: Hello')
+    expect(wxml).toContain('Template: index snapshot')
+    expect(wxml).not.toContain('<template')
   })
 
   it('exposes automator-compatible rendered node probes', async () => {

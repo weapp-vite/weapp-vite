@@ -1,9 +1,11 @@
 import type { HeadlessComponentDefinition } from '../../host'
+import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { HeadlessComponentInstance } from '../componentInstance'
 import type { DomNodeLike, RuntimeComponentRegistryEntry, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import path from 'node:path'
 import { collectMiniProgramEventBindings } from '../../view/eventBinding'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
+import { createTemplateRenderState } from '../../view/templateRuntime'
 import {
   cloneValue,
   createComponentInstance,
@@ -329,6 +331,7 @@ export function renderRuntimeComponentTemplate(
     ownerFilePath: string,
     instancePath: string,
     seenComponentScopes: Set<string>,
+    templateRenderState: TemplateRenderState<DomNodeLike>,
   ) => DomNodeLike,
   componentScope: RuntimeRenderScope,
   componentScopeId: string,
@@ -337,6 +340,7 @@ export function renderRuntimeComponentTemplate(
   const componentTemplate = readTemplateSource(context.artifactSource, componentEntry.absoluteTemplatePath)
   const componentDocument = parseTemplateDocument(componentTemplate)
   const componentRoot = (componentDocument.children ?? [])[0] ?? componentDocument
+  const templateRenderState = createTemplateRenderState(componentRoot)
   return renderNodeTree(
     componentRoot,
     componentScope,
@@ -345,5 +349,6 @@ export function renderRuntimeComponentTemplate(
     componentEntry.filePath,
     componentScopeId,
     seenComponentScopes,
+    templateRenderState,
   )
 }

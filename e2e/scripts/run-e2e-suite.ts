@@ -34,6 +34,27 @@ export function shouldStopIdeSuiteAfterTaskFailure(mode: string) {
   return shouldCleanupIdeBeforeEachTask(mode)
 }
 
+export function createIdeSuiteCleanupHooks(
+  mode: string,
+  cleanup: () => Promise<void> = cleanupResidualIdeProcesses,
+) {
+  if (!shouldCleanupIdeBeforeEachTask(mode)) {
+    return {}
+  }
+
+  let initialized = false
+  return {
+    beforeEachTask: async () => {
+      if (initialized) {
+        return
+      }
+      initialized = true
+      await cleanup()
+    },
+    afterAll: cleanup,
+  }
+}
+
 function readOption(args: string[], name: string, envName: string) {
   const prefix = `--${name}=`
   const option = args.find(arg => arg.startsWith(prefix))
@@ -128,17 +149,9 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
     console.log(`[e2e:${mode}] selected ${tasks.length} task(s)${from ? ` from=${from}` : ''}${rollFrom ? ` roll-from=${rollFrom}` : ''}${filter ? ` filter=${filter}` : ''}`)
   }
 
+  const cleanupHooks = createIdeSuiteCleanupHooks(mode)
   await runTaskSuite(`e2e:${mode}`, tasks, {
-    beforeEachTask: shouldCleanupIdeBeforeEachTask(mode)
-      ? async () => {
-        await cleanupResidualIdeProcesses()
-      }
-      : undefined,
-    afterAll: shouldCleanupIdeBeforeEachTask(mode)
-      ? async () => {
-        await cleanupResidualIdeProcesses()
-      }
-      : undefined,
+    ...cleanupHooks,
     failOnTaskFailure: !allowFailures,
     stopOnTaskFailure: !allowFailures && shouldStopIdeSuiteAfterTaskFailure(mode),
   })

@@ -17,6 +17,10 @@ import { normalizeWxmlExpression } from '../../vue/compiler/template/expression/
 
 const ESCAPED_TEXT_RE = /[&<>]/g
 const ESCAPED_ATTR_RE = /[&"<>]/g
+const WXML_EXPRESSION_GENERATE_OPTIONS = {
+  compact: true,
+  jsescOption: { quotes: 'single' as const, minimal: true },
+}
 
 const ESCAPED_TEXT_MAP: Record<string, string> = {
   '&': '&amp;',
@@ -46,7 +50,13 @@ export function normalizeJsxText(value: string) {
 }
 
 export function printExpression(exp: Expression) {
-  return generate(exp).code
+  const normalized = t.cloneNode(exp, true) as Expression
+  t.traverseFast(normalized, (node) => {
+    if (t.isStringLiteral(node)) {
+      node.extra = undefined
+    }
+  })
+  return generate(normalized, WXML_EXPRESSION_GENERATE_OPTIONS).code
 }
 
 export function unwrapTsExpression(exp: Expression): Expression {

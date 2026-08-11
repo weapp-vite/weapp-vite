@@ -15,6 +15,9 @@ describe('compileJsx render helpers', () => {
     expect(input?.match(/data-wv-jsx-handler=/g)).toHaveLength(1)
     expect(input).toContain('node.events.input||node.events.change')
     expect(template).toContain('node.events.tap')
+    expect(template).toContain('template name="__wv_jsx_node"')
+    expect(template).toContain('template is="__wv_jsx_node_1"')
+    expect(template).not.toContain('template is="__wv_jsx_node"')
   })
 
   it('renders array expressions while skipping null and boolean branches', () => {
@@ -33,7 +36,7 @@ describe('compileJsx render helpers', () => {
       context,
     )
 
-    expect(rendered).toContain('{{"hello"}}')
+    expect(rendered).toContain('{{\'hello\'}}')
     expect(rendered).toContain('<view />')
   })
 
@@ -234,7 +237,7 @@ describe('compileJsx render helpers', () => {
     expect(mappedText).toContain(`${defaultPlatform.directives.keyAttr}="index"`)
     expect(mappedText).toContain('{{item}}')
     expect(emptyBody).toBe('')
-    expect(sparseArray).toContain('{{"tail"}}')
+    expect(sparseArray).toContain('{{\'tail\'}}')
     expect(nestedElement).toBe('<view> hello world  nested </view>')
   })
 

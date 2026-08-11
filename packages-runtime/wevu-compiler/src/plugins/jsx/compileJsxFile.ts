@@ -115,7 +115,8 @@ export async function compileJsxFile(
         continue
       }
 
-      autoImportTagsMap[resolved.name || tag] = resolved.from
+      const resolvedName = resolved.name || tag
+      autoImportTagsMap[localComponentAliases.get(resolvedName) ?? resolvedName] = resolved.from
     }
   }
 

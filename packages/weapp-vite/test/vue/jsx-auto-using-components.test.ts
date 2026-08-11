@@ -115,7 +115,7 @@ export default defineComponent({
       expect(JSON.parse(jsonAsset!.source)).toEqual({
         usingComponents: {
           't-cell-group': 'lib/t-cell-group',
-          'Card': '/components/card/index',
+          'card': '/components/card/index',
         },
       })
     }
@@ -181,7 +181,7 @@ export default defineComponent({
       expect(jsonAsset).toBeDefined()
       expect(JSON.parse(jsonAsset!.source)).toEqual({
         usingComponents: {
-          TButton: '/components/t-button/index',
+          't-button': '/components/t-button/index',
         },
       })
 

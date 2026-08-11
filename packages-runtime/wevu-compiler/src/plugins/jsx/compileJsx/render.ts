@@ -28,6 +28,13 @@ import {
 import { compileJsxAttributes, extractJsxKeyExpression, isStaticClassStyleExpression, readJsxAttributeExpression } from './attributes'
 
 type JSXChild = JSXText | JSXExpressionContainer | JSXSpreadChild | JSXElement | JSXFragment
+const DYNAMIC_ISLAND_TEMPLATE_DEPTH = 8
+
+function resolveDynamicIslandTemplateName(depth: number) {
+  return depth === 0
+    ? WEVU_JSX_ISLAND_TEMPLATE_NAME
+    : `${WEVU_JSX_ISLAND_TEMPLATE_NAME}_${depth}`
+}
 
 function compileListExpression(exp: Expression) {
   return normalizeInterpolationExpression(exp)
@@ -71,19 +78,25 @@ export function renderDynamicIslandSupportTemplate(context: JsxCompileContext) {
   const bindTap = context.platform.eventBindingAttr('bind:tap')
   const bindInput = context.platform.eventBindingAttr('bind:input')
   const bindChange = context.platform.eventBindingAttr('bind:change')
-  const childTemplate = `<block ${directives.forAttr}="{{node.children}}" ${directives.forItemAttr}="child" ${directives.keyAttr}="index"><template is="${WEVU_JSX_ISLAND_TEMPLATE_NAME}" data="{{node:child,islandId:islandId}}" /></block>`
   const attrs = `id="{{node.props.id}}" class="{{node.props.class}}" style="{{node.props.style}}" hidden="{{node.props.hidden}}"`
   const tapAttrs = `${attrs} data-wv-jsx-handler="{{node.events.tap}}" ${bindTap}="${WEVU_JSX_ISLAND_HANDLER}"`
-  return `<template name="${WEVU_JSX_ISLAND_TEMPLATE_NAME}">`
-    + `<block ${directives.ifAttr}="{{node.kind=='text'}}">{{node.text}}</block>`
-    + `<block ${directives.elifAttr}="{{node.kind=='fragment'}}">${childTemplate}</block>`
-    + `<view ${directives.elifAttr}="{{node.tag=='view'}}" ${tapAttrs}>${childTemplate}</view>`
-    + `<text ${directives.elifAttr}="{{node.tag=='text'}}" ${tapAttrs}>${childTemplate}</text>`
-    + `<button ${directives.elifAttr}="{{node.tag=='button'}}" ${tapAttrs}>${childTemplate}</button>`
-    + `<input ${directives.elifAttr}="{{node.tag=='input'}}" ${attrs} value="{{node.props.value}}" data-wv-jsx-handler="{{node.events.input||node.events.change}}" ${bindInput}="${WEVU_JSX_ISLAND_HANDLER}" ${bindChange}="${WEVU_JSX_ISLAND_HANDLER}" />`
-    + `<image ${directives.elifAttr}="{{node.tag=='image'}}" ${tapAttrs} src="{{node.props.src}}" />`
-    + `<block ${directives.elseAttr}>${childTemplate}</block>`
-    + `</template>`
+  return Array.from({ length: DYNAMIC_ISLAND_TEMPLATE_DEPTH }, (_, depth) => {
+    const templateName = resolveDynamicIslandTemplateName(depth)
+    const childTemplateName = resolveDynamicIslandTemplateName(depth + 1)
+    const childTemplate = depth + 1 < DYNAMIC_ISLAND_TEMPLATE_DEPTH
+      ? `<block ${directives.forAttr}="{{node.children}}" ${directives.forItemAttr}="child" ${directives.keyAttr}="index"><template is="${childTemplateName}" data="{{node:child,islandId:islandId}}" /></block>`
+      : ''
+    return `<template name="${templateName}">`
+      + `<block ${directives.ifAttr}="{{node.kind=='text'}}">{{node.text}}</block>`
+      + `<block ${directives.elifAttr}="{{node.kind=='fragment'}}">${childTemplate}</block>`
+      + `<view ${directives.elifAttr}="{{node.tag=='view'}}" ${tapAttrs}>${childTemplate}</view>`
+      + `<text ${directives.elifAttr}="{{node.tag=='text'}}" ${tapAttrs}>${childTemplate}</text>`
+      + `<button ${directives.elifAttr}="{{node.tag=='button'}}" ${tapAttrs}>${childTemplate}</button>`
+      + `<input ${directives.elifAttr}="{{node.tag=='input'}}" ${attrs} value="{{node.props.value}}" data-wv-jsx-handler="{{node.events.input||node.events.change}}" ${bindInput}="${WEVU_JSX_ISLAND_HANDLER}" ${bindChange}="${WEVU_JSX_ISLAND_HANDLER}" />`
+      + `<image ${directives.elifAttr}="{{node.tag=='image'}}" ${tapAttrs} src="{{node.props.src}}" />`
+      + `<block ${directives.elseAttr}>${childTemplate}</block>`
+      + `</template>`
+  }).join('')
 }
 
 function resolveImportedExpression(node: Expression, context: JsxCompileContext) {

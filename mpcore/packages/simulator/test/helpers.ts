@@ -132,6 +132,8 @@ Page({
 <view class="panel-row">Detail: {{__e2eResult.detail}}</view>
 <view class="panel-row">Greeting: {{__e2eData.greeting}}</view>
 <view class="panel-row">Target: {{__e2eData.target}}</view>
+<template is="summary" data="{{value:__e2eData.target}}" />
+<template name="summary"><view id="template-summary">Template: {{value}}</view></template>
 `)
 
   return root

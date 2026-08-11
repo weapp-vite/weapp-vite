@@ -73,6 +73,23 @@ describe('compileJsx attributes helpers', () => {
     expect(attrs).toContain('data-wv-s0="{{item}}"')
   })
 
+  it('normalizes dynamic attribute string literals for valid wxml quoting', () => {
+    const context = createJsxCompileContext()
+    const openingElement = parseOpeningElement(`
+<view
+  class={enabled ? "card card-on" : "card card-off"}
+  title={enabled ? "ready" : "waiting"}
+/>
+    `)
+
+    const attrs = compileJsxAttributes(openingElement.attributes, context)
+
+    expect(attrs).toEqual([
+      'class="{{enabled?\'card card-on\':\'card card-off\'}}"',
+      'title="{{enabled?\'ready\':\'waiting\'}}"',
+    ])
+  })
+
   it('supports shorthand attrs, escaped string handlers, identifier handlers, and platform event prefixes', () => {
     const context = createJsxCompileContext()
     const openingElement = parseOpeningElement(`

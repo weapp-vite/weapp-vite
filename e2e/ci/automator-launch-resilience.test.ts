@@ -298,6 +298,19 @@ describe.sequential('automator launch resilience', () => {
     expect(launchMock).not.toHaveBeenCalled()
   })
 
+  it('confirms a transient logged-out result before failing login preflight', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    execaMock
+      .mockResolvedValueOnce({ exitCode: 0, stdout: '{"login":false}', stderr: '' })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: '{"login":true}', stderr: '' })
+
+    const { assertDevtoolsLoggedIn } = await import('../utils/automator')
+    await expect(assertDevtoolsLoggedIn(sandboxRoot)).resolves.toBeUndefined()
+
+    expect(execaMock).toHaveBeenCalledTimes(2)
+    expect(launchMock).not.toHaveBeenCalled()
+  })
+
   it('retries launch when simulator boot throws subPackages undefined error', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'

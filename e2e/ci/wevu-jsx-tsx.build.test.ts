@@ -50,7 +50,7 @@ describe.sequential('wevu JSX/TSX build outputs', () => {
       fs.readFile(sfcSetupOutput.script, 'utf8'),
     ])
 
-    expect(tsxTemplate).toContain(`${directive}="{{this.features}}"`)
+    expect(tsxTemplate).toContain(`${directive}="{{features}}"`)
     expect(tsxTemplate).toContain('data-wv-jsx-island="i0"')
     expect(tsxTemplate).toContain('template name="__wv_jsx_node"')
     expect(tsxTemplate).toContain('跨文件静态 JSX fragment')
@@ -59,7 +59,7 @@ describe.sequential('wevu JSX/TSX build outputs', () => {
     expect(tsxScript).not.toContain('<view')
     expect(tsxConfig).toMatchObject({
       usingComponents: {
-        InfoCard: '/components/info-card/index',
+        'info-card': '/components/info-card/index',
       },
     })
     expect(setupTemplate).toContain('setup count:')

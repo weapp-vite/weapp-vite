@@ -1,6 +1,7 @@
 import type { HeadlessComponentDefinition } from '../../host'
 import type { HeadlessProjectDescriptor } from '../../project/createProjectDescriptor'
 import type { HeadlessComponentInstance } from '../../runtime/componentInstance'
+import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { BrowserModuleLoader } from '../moduleLoader'
 import type { BrowserVirtualFiles } from '../virtualFiles'
 
@@ -35,6 +36,7 @@ export interface BrowserSlotContent {
   ownerFilePath: string
   ownerJsonPath: string
   scope: BrowserRenderScope
+  templateRenderState: TemplateRenderState<DomNodeLike>
 }
 
 export interface BrowserComponentRegistryEntry {

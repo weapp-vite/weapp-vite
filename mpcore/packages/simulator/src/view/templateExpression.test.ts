@@ -15,6 +15,9 @@ describe('template expression', () => {
     expect(resolveTemplateExpression(source, `type === 'month' || type === 'monthrange'`)).toBe(true)
     expect(resolveTemplateExpression(source, `active ? items[index].label : ''`)).toBe('second')
     expect(resolveTemplateExpression(source, 'items.1.label')).toBe('second')
+    expect(resolveTemplateExpression(source, '{ current: items.1 }')).toEqual({
+      current: source.items[1],
+    })
     expect(resolveTemplateExpression(source, 'index + 1')).toBe(2)
   })
 

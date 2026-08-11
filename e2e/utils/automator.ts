@@ -70,6 +70,8 @@ const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
 const RUNTIME_LOG_META_KEY = '__weappViteRuntimeLogMeta'
 const RELAUNCH_PATCH_META_KEY = '__weappViteRelaunchPatchMeta'
 const DEFAULT_LOGIN_PREFLIGHT_TIMEOUT = 30_000
+const DEVTOOLS_LOGIN_CONFIRM_ATTEMPTS = 3
+const DEVTOOLS_LOGIN_CONFIRM_DELAY = 750
 const DEFAULT_RELUNCH_READY_TIMEOUT = 30_000
 const DEFAULT_RELUNCH_SETTLE_DELAY = 260
 const QUICK_CURRENT_ROUTE_READY_TIMEOUT = 300
@@ -625,27 +627,42 @@ export function extractDevtoolsCliLoginState(output: string | undefined) {
   return match[1]?.toLowerCase() === 'true'
 }
 
+function sleep(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
 async function resolveDevtoolsCliLoginState(cliPath?: string) {
   const resolvedCliPath = resolveWechatCliPath(cliPath)
-  const result = await execa(resolvedCliPath, ['islogin'], {
-    reject: false,
-    timeout: DEFAULT_LOGIN_PREFLIGHT_TIMEOUT,
-  })
-  const stdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
-  const stderr = typeof result.stderr === 'string' ? result.stderr.trim() : ''
-  const loginState = extractDevtoolsCliLoginState(`${stdout}\n${stderr}`)
+  for (let attempt = 1; attempt <= DEVTOOLS_LOGIN_CONFIRM_ATTEMPTS; attempt += 1) {
+    const result = await execa(resolvedCliPath, ['islogin'], {
+      reject: false,
+      timeout: DEFAULT_LOGIN_PREFLIGHT_TIMEOUT,
+    })
+    const stdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
+    const stderr = typeof result.stderr === 'string' ? result.stderr.trim() : ''
+    const loginState = extractDevtoolsCliLoginState(`${stdout}\n${stderr}`)
 
-  if (loginState !== null) {
-    return loginState
-  }
-
-  if ((result.exitCode ?? 1) !== 0) {
-    const output = `${stderr}\n${stdout}`
-    if (isLikelyDevtoolsInfraErrorMessage(output)
-      || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(output))) {
-      return null
+    if (loginState === true) {
+      return true
     }
-    throw new Error(stderr || stdout || `Failed to verify WeChat DevTools login: exit ${(result.exitCode ?? 1)}`)
+    if (loginState === false) {
+      if (attempt < DEVTOOLS_LOGIN_CONFIRM_ATTEMPTS) {
+        await sleep(DEVTOOLS_LOGIN_CONFIRM_DELAY)
+        continue
+      }
+      return false
+    }
+
+    if ((result.exitCode ?? 1) !== 0) {
+      const output = `${stderr}\n${stdout}`
+      if (isLikelyDevtoolsInfraErrorMessage(output)
+        || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(output))) {
+        return null
+      }
+      throw new Error(stderr || stdout || `Failed to verify WeChat DevTools login: exit ${(result.exitCode ?? 1)}`)
+    }
+
+    return null
   }
 
   return null
@@ -771,10 +788,6 @@ async function cleanupDevtoolsProcessStateAfterLaunchFailure(error: unknown, pro
     const cleanupMessage = cleanupError instanceof Error ? cleanupError.message : String(cleanupError)
     process.stdout.write(`[warn] [runtime:launch-recover] cleanup-devtools-failed project=${project} reason=${cleanupMessage.slice(0, 240)}\n`)
   })
-}
-
-function sleep(ms: number) {
-  return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
 function createDevtoolsSimulatorBootLogMonitor(project: string) {

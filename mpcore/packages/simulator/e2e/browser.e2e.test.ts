@@ -140,6 +140,9 @@ describe.sequential('simulator browser e2e', () => {
     expect(state.currentRoute).toBe('pages/index/index')
     expect(state.pageStack).toEqual(['pages/index/index'])
     expect(state.previewMarkup).toContain('page')
+    expect(state.previewMarkup).toContain('id="template-metric-summary"')
+    expect(state.previewMarkup).toContain('模板指标 12')
+    expect(state.previewMarkup).not.toContain('<template')
     expect(getBridge()!.sessionSnapshot().deviceInfo).toMatchObject({
       brand: 'devtools',
       model: 'headless-simulator',
