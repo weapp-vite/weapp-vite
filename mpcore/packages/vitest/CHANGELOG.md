@@ -1,5 +1,12 @@
 # @mpcore/vitest
 
+## 0.1.2
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `@mpcore/test@0.1.2`
+
 ## 0.1.1
 
 ### Patch Changes

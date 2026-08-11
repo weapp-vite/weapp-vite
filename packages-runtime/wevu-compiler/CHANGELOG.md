@@ -1,5 +1,17 @@
 # @wevu/compiler
 
+## 6.20.0
+
+### Patch Changes
+
+- 🐛 **支持从相邻 JSX/TSX 模块导入并复用静态 JSX 片段、JSX 工厂函数以及经过 barrel 文件 re-export 的 JSX 片段。编译器升级到 `@vue/babel-plugin-jsx 3.0.0`，在生成 WXML 前完成静态分析，并将无法静态映射的闭包、model、slot、spread 和动态组件交给结构化 Wevu island runtime；Vue SFC 的 `<script setup lang="js|ts|jsx|tsx">` 与普通 JSX/TSX script 也进入同一编译流程。** [#791](https://github.com/weapp-vite/weapp-vite/pull/791) by @sonofmagic
+
+- 🐛 **修复 JSX/TSX 动态属性表达式中的字符串引号导致生成的 WXML 无法编译、dynamic island 模板自递归被微信运行时截断、模拟器未展开 WXML template 调用，以及 `weapp-ide-cli --help` 被错误透传到微信 CLI 的问题。** [`952d280`](https://github.com/weapp-vite/weapp-vite/commit/952d2801c97c962448348acd92b8a57ecd151662) by @sonofmagic
+
+- 🐛 **补充 wevu JSX/TSX 编译、运行时和 HMR 回归测试覆盖。** [`187e12c`](https://github.com/weapp-vite/weapp-vite/commit/187e12c85876163b7283eb26f53e4ebe948c467f) by @sonofmagic
+- 📦 **Dependencies** [`e5a8f23`](https://github.com/weapp-vite/weapp-vite/commit/e5a8f23e9bdceadaaebc0c9d747303ba221b42b8)
+  → `@weapp-core/constants@0.1.17`, `@weapp-vite/ast@6.20.0`
+
 ## 6.19.4
 
 ### Patch Changes

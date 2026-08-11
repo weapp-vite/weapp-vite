@@ -1,5 +1,27 @@
 # weapp-vite
 
+## 6.20.0
+
+### Minor Changes
+
+- ✨ **新增 React 19 小程序运行时、React JSX 构建配置和 React 项目模板，支持可选的 SWC React Compiler，并支持 React、Wevu 与原生组件通过动态 props、自定义事件和默认插槽双向互操作。** [#718](https://github.com/weapp-vite/weapp-vite/pull/718) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复 CLI 构建模式与外部 `NODE_ENV` 冲突时环境变量错误的问题，确保 `process.env.NODE_ENV` 与 `import.meta.env.DEV`、`import.meta.env.PROD` 和命令模式保持一致。** [#795](https://github.com/weapp-vite/weapp-vite/pull/795) by @sonofmagic
+
+- 🐛 **修复 `buildScope` 与自动路由分包识别冲突导致的分包页面被错误加入主包并参与构建的问题。** [#794](https://github.com/weapp-vite/weapp-vite/pull/794) by @sonofmagic
+
+- 🐛 **修复 JSX/TSX 页面入口解析、自动路由扫描与开发模式 HMR 脏入口追踪。** [`6a30db7`](https://github.com/weapp-vite/weapp-vite/commit/6a30db785a917debb3fac1dcb7c85ff007ad5cad) by @sonofmagic
+
+- 🐛 **补充 wevu JSX/TSX 编译、运行时和 HMR 回归测试覆盖。** [`187e12c`](https://github.com/weapp-vite/weapp-vite/commit/187e12c85876163b7283eb26f53e4ebe948c467f) by @sonofmagic
+- 📦 Updated 6 dependencies [`e5a8f23`](https://github.com/weapp-vite/weapp-vite/commit/e5a8f23e9bdceadaaebc0c9d747303ba221b42b8)
+  <details><summary>Details</summary>
+
+  `@weapp-core/constants@0.1.17`, `wevu@6.20.0`, `@weapp-vite/ast@6.20.0`, `weapp-ide-cli@6.0.5`, `@weapp-vite/web@1.4.5`, `@wevu/web-apis@1.2.33`
+
+  </details>
+
 ## 6.19.4
 
 ### Patch Changes

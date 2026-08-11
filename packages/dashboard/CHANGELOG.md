@@ -1,5 +1,11 @@
 # @weapp-vite/dashboard
 
+## 6.20.0
+
+### Patch Changes
+
+- 🐛 **优化 dashboard 的宽屏空间利用率与纵向滚动体验，压缩双语标题和拖拽控制占用，并修复问题中心在较窄视口下的横向拥挤。** [#788](https://github.com/weapp-vite/weapp-vite/pull/788) by @sonofmagic
+
 ## 6.19.4
 
 ## 6.19.3

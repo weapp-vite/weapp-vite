@@ -1,5 +1,23 @@
 # create-weapp-vite
 
+## 2.7.0
+
+### Minor Changes
+
+- ✨ **新增 React 19 小程序运行时、React JSX 构建配置和 React 项目模板，支持可选的 SWC React Compiler，并支持 React、Wevu 与原生组件通过动态 props、自定义事件和默认插槽双向互操作。** [#718](https://github.com/weapp-vite/weapp-vite/pull/718) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **支持从相邻 JSX/TSX 模块导入并复用静态 JSX 片段、JSX 工厂函数以及经过 barrel 文件 re-export 的 JSX 片段。编译器升级到 `@vue/babel-plugin-jsx 3.0.0`，在生成 WXML 前完成静态分析，并将无法静态映射的闭包、model、slot、spread 和动态组件交给结构化 Wevu island runtime；Vue SFC 的 `<script setup lang="js|ts|jsx|tsx">` 与普通 JSX/TSX script 也进入同一编译流程。** [#791](https://github.com/weapp-vite/weapp-vite/pull/791) by @sonofmagic
+
+- 🐛 **修复 CLI 构建模式与外部 `NODE_ENV` 冲突时环境变量错误的问题，确保 `process.env.NODE_ENV` 与 `import.meta.env.DEV`、`import.meta.env.PROD` 和命令模式保持一致。** [#795](https://github.com/weapp-vite/weapp-vite/pull/795) by @sonofmagic
+
+- 🐛 **修复 `buildScope` 与自动路由分包识别冲突导致的分包页面被错误加入主包并参与构建的问题。** [#794](https://github.com/weapp-vite/weapp-vite/pull/794) by @sonofmagic
+
+- 🐛 **优化 dashboard 的宽屏空间利用率与纵向滚动体验，压缩双语标题和拖拽控制占用，并修复问题中心在较窄视口下的横向拥挤。** [#788](https://github.com/weapp-vite/weapp-vite/pull/788) by @sonofmagic
+
+- 🐛 **修复 JSX/TSX 页面入口解析、自动路由扫描与开发模式 HMR 脏入口追踪。** [`6a30db7`](https://github.com/weapp-vite/weapp-vite/commit/6a30db785a917debb3fac1dcb7c85ff007ad5cad) by @sonofmagic
+
 ## 2.6.4
 
 ### Patch Changes

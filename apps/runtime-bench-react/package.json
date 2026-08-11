@@ -1,7 +1,7 @@
 {
   "name": "runtime-bench-react",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "React 19 小程序运行时 benchmark 基准工程",
   "scripts": {
