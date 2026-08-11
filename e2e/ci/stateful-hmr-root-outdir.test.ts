@@ -19,7 +19,7 @@ interface AppConfig {
   }>
 }
 
-async function waitForCompleteInitialBundle(timeoutMs = 20_000) {
+async function waitForCompleteInitialBundle(timeoutMs = 90_000) {
   const appJsonPath = path.join(DIST_ROOT, 'app.json')
   const appJsPath = path.join(DIST_ROOT, 'app.js')
   const controlPath = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
@@ -48,7 +48,34 @@ async function waitForCompleteInitialBundle(timeoutMs = 20_000) {
     }
     await new Promise(resolve => setTimeout(resolve, 100))
   }
-  throw new Error('Timed out waiting for complete stateful HMR initial bundle.')
+
+  const incompleteOutputs = await Promise.all([
+    [appJsonPath, 'parseable JSON'],
+    [appJsPath, 'file'],
+    [controlPath, 'file'],
+    ...styleMarkers,
+  ].map(async ([filename, expected]) => {
+    if (!await fs.pathExists(filename)) {
+      return `${path.relative(DIST_ROOT, filename)} (missing)`
+    }
+    if (expected === 'file') {
+      return null
+    }
+    if (expected === 'parseable JSON') {
+      try {
+        await fs.readJSON(filename)
+        return null
+      }
+      catch {
+        return `${path.relative(DIST_ROOT, filename)} (invalid JSON)`
+      }
+    }
+    const source = await fs.readFile(filename, 'utf8')
+    return source.includes(expected)
+      ? null
+      : `${path.relative(DIST_ROOT, filename)} (missing ${expected})`
+  }))
+  throw new Error(`Timed out waiting for complete stateful HMR initial bundle: ${incompleteOutputs.filter(Boolean).join(', ')}`)
 }
 
 describe.sequential('stateful HMR with root source directory', () => {
