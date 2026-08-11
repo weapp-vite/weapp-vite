@@ -55,6 +55,7 @@ describe('Web project matrix', () => {
     const projects = await discoverWebProjects(ROOT)
     const relativeRoots = new Set(projects.map(project => project.relativeRoot))
     expect(relativeRoots.has('e2e-apps/react-runtime-spike')).toBe(false)
+    expect(relativeRoots.has('e2e-apps/stateful-hmr-root-tailwind')).toBe(false)
     expect(relativeRoots.has('templates/weapp-vite-react-template')).toBe(false)
   })
 })

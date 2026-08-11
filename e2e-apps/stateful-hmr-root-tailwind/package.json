@@ -8,6 +8,9 @@
     "dev:open": "wv dev -o",
     "postinstall": "wv prepare"
   },
+  "weappVite": {
+    "web": false
+  },
   "devDependencies": {
     "tailwindcss": "catalog:tailwind4",
     "weapp-tailwindcss": "catalog:weapp-tailwindcss-fixed",

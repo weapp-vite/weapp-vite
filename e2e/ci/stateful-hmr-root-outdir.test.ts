@@ -23,6 +23,11 @@ async function waitForCompleteInitialBundle(timeoutMs = 20_000) {
   const appJsonPath = path.join(DIST_ROOT, 'app.json')
   const appJsPath = path.join(DIST_ROOT, 'app.js')
   const controlPath = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
+  const styleMarkers = [
+    [path.join(DIST_ROOT, 'app.wxss'), '--color-brand: #006241'],
+    [path.join(DIST_ROOT, 'sub-normal/pages/index.wxss'), '.text-red-500'],
+    [path.join(DIST_ROOT, 'sub-independent/pages/index.wxss'), '.text-blue-500'],
+  ] as const
   const startedAt = Date.now()
   while (Date.now() - startedAt < timeoutMs) {
     if (
@@ -31,7 +36,13 @@ async function waitForCompleteInitialBundle(timeoutMs = 20_000) {
       && await fs.pathExists(controlPath)
     ) {
       try {
-        return await fs.readJSON(appJsonPath) as AppConfig
+        const [appConfig, styles] = await Promise.all([
+          fs.readJSON(appJsonPath) as Promise<AppConfig>,
+          Promise.all(styleMarkers.map(([filename]) => fs.readFile(filename, 'utf8'))),
+        ])
+        if (styles.every((source, index) => source.includes(styleMarkers[index][1]))) {
+          return appConfig
+        }
       }
       catch {}
     }
