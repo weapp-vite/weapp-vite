@@ -14,6 +14,7 @@ const issue595ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_595_SCOPED ===
 const issue642ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_642_SCOPED === 'true'
 const issue724ProbeEnabled = process.env.WEAPP_GITHUB_ISSUE_724_PROBE === 'true'
 const issue779CssPreEnabled = process.env.WEAPP_GITHUB_ISSUE_779_CSS_PRE === 'true'
+const issue793BuildScopeEnabled = process.env.WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE === 'true'
 const issue651NoExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverNoExt/index')
 const issue651WithExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverWithExt/index.vue')
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
@@ -195,6 +196,14 @@ const matchedGithubIssuesTestFile = Object.keys(githubIssuesRouteGroups)
   .find(testFile => e2eTargetFile.endsWith(testFile))
 
 function resolveGithubIssuesAutoRoutes() {
+  if (issue793BuildScopeEnabled) {
+    return {
+      include: [
+        'pages/issue-793/**',
+        'subs/issue-793/**',
+      ],
+    }
+  }
   if (issue724ProbeEnabled) {
     return {
       include: [
@@ -442,9 +451,20 @@ export default defineConfig({
     },
     srcRoot: 'src',
     autoRoutes: resolveGithubIssuesAutoRoutes(),
-    subPackages: {
-      'subpackages/require-async': {},
-    },
+    subPackages: issue793BuildScopeEnabled
+      ? {
+          subs: {},
+        }
+      : {
+          'subpackages/require-async': {},
+        },
+    ...(issue793BuildScopeEnabled
+      ? {
+          buildScope: {
+            include: ['pages'],
+          },
+        }
+      : {}),
     typescript: {
       app: {
         compilerOptions: {
@@ -531,41 +551,47 @@ export default defineConfig({
           minify: false,
         },
       }
-    : issue724ProbeEnabled
+    : issue793BuildScopeEnabled
       ? {
           build: {
-            outDir: 'dist-issue-724',
+            outDir: 'dist-issue-793',
           },
         }
-      : issue510AugmentedEnabled
+      : issue724ProbeEnabled
         ? {
             build: {
-              outDir: 'dist-issue-510',
+              outDir: 'dist-issue-724',
             },
           }
-        : slotFallbackCompilerOffEnabled
+        : issue510AugmentedEnabled
           ? {
               build: {
-                outDir: 'dist-slot-fallback-compiler-off',
+                outDir: 'dist-issue-510',
               },
             }
-          : issue595ScopedBuildEnabled
+          : slotFallbackCompilerOffEnabled
             ? {
                 build: {
-                  outDir: 'dist-issue-595',
+                  outDir: 'dist-slot-fallback-compiler-off',
                 },
               }
-            : issue642ScopedBuildEnabled
+            : issue595ScopedBuildEnabled
               ? {
                   build: {
-                    outDir: 'dist-issue-642',
+                    outDir: 'dist-issue-595',
                   },
                 }
-              : issue779CssPreEnabled
+              : issue642ScopedBuildEnabled
                 ? {
                     build: {
-                      outDir: 'dist-issue-779',
+                      outDir: 'dist-issue-642',
                     },
                   }
-                : {}),
+                : issue779CssPreEnabled
+                  ? {
+                      build: {
+                        outDir: 'dist-issue-779',
+                      },
+                    }
+                  : {}),
 })

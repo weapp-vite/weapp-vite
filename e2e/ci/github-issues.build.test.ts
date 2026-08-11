@@ -17,6 +17,7 @@ const ISSUE_510_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-510')
 const ISSUE_595_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-595')
 const ISSUE_642_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-642')
 const ISSUE_724_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-724')
+const ISSUE_793_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-793')
 const SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT = path.join(APP_ROOT, 'dist-slot-fallback-compiler-off')
 const SLOT_OWNER_ATTR = `__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"`
 let standardBuildPromise: Promise<void> | null = null
@@ -400,7 +401,44 @@ async function runSlotFallbackCompilerOffBuild() {
   distVariant = null
 }
 
+async function runIssue793Build() {
+  await fs.remove(ISSUE_793_DIST_ROOT)
+
+  await execa('node', [
+    CLI_PATH,
+    'build',
+    APP_ROOT,
+    '--platform',
+    'weapp',
+    '--skipNpm',
+    '--config',
+    path.join(APP_ROOT, 'weapp-vite.config.ts'),
+  ], {
+    stdio: 'inherit',
+    env: {
+      ...sanitizeBuildCommandEnv(),
+      WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE: 'true',
+    },
+  })
+
+  standardBuildPromise = null
+  distVariant = null
+}
+
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #793: excludes out-of-scope subpackages from routes and output', async () => {
+    await runIssue793Build()
+
+    const appJson = await fs.readJSON(path.join(ISSUE_793_DIST_ROOT, 'app.json')) as {
+      pages?: string[]
+      subPackages?: Array<{ root?: string, pages?: string[] }>
+    }
+
+    expect(appJson.pages).toEqual(['pages/issue-793/index'])
+    expect(appJson.subPackages).toEqual([])
+    expect(await fs.pathExists(path.join(ISSUE_793_DIST_ROOT, 'subs'))).toBe(false)
+  })
+
   it('issue #724: keeps Vue SFC script, template, and style requests isolated', async () => {
     await runIssue724Build()
 

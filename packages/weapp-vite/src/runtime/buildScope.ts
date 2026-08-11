@@ -215,17 +215,3 @@ export function applyBuildScopeToAutoRoutes(
     subPackages,
   }
 }
-
-export function applyBuildScopeToSubPackageRoots(
-  roots: string[],
-  scope: ResolvedBuildScope | undefined,
-) {
-  if (!scope?.enabled) {
-    return roots
-  }
-
-  const scopedRoots = new Set(scope.subPackageRoots)
-  return roots
-    .map(root => normalizeRoot(root))
-    .filter(root => scopedRoots.has(root))
-}

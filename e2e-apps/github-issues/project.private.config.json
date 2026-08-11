@@ -694,6 +694,20 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-793/index",
+          "pathName": "pages/issue-793/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subs/issue-793/index",
+          "pathName": "subs/issue-793/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/require-async/index",
           "pathName": "pages/require-async/index",
           "query": "",
