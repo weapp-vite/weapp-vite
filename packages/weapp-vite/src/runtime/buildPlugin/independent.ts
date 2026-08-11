@@ -1,11 +1,13 @@
 import type { RolldownOutput } from 'rolldown'
+import type { ResolvedConfig } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import { build } from 'vite'
-import { getActiveCompilerContextKey, resetCompilerContext, setActiveCompilerContextKey } from '../../context/getInstance'
+import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { logger } from '../../context/shared'
-import { createCompilerContext } from '../../createContext'
+import { findAutoImportCandidates } from '../../plugins/autoImport'
 import { pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
+import { getAutoImportConfig } from '../autoImport/config'
 import { createIndependentBuildError } from '../independentError'
 
 interface IndependentBuilderState {
@@ -55,56 +57,64 @@ export function createIndependentBuilder(
     const task = (async () => {
       try {
         const chunkRoot = meta.subPackage.root ?? root
-        const isolatedKey = `independent-build:${configService.cwd}:${root}`
-        const activeContextKey = getActiveCompilerContextKey()
-        try {
-          resetCompilerContext(isolatedKey)
-          const isolatedCtx = await createCompilerContext({
-            key: isolatedKey,
-            cwd: configService.cwd,
-            isDev: configService.isDev,
-            mode: configService.mode,
-            configFile: configService.configFilePath,
-            cliPlatform: configService.platform,
-            projectConfigPath: configService.projectConfigPath,
-            syncSupportFiles: false,
-            preloadAppEntry: false,
-          })
-          const isolatedConfigService = isolatedCtx.configService
-          const inlineConfig = isolatedConfigService.merge(meta, meta.subPackage.inlineConfig, {
-            build: {
-              write: false,
-              watch: null,
-              rolldownOptions: {
-                output: {
-                  chunkFileNames() {
-                    return `${chunkRoot}/[name].js`
-                  },
+        const isolatedCtx = createCompilerContextInstance()
+        await isolatedCtx.configService.load({
+          cwd: configService.cwd,
+          isDev: configService.isDev,
+          mode: configService.mode,
+          configFile: configService.configFilePath,
+          cliPlatform: configService.platform,
+          projectConfigPath: configService.projectConfigPath,
+        })
+        const isolatedConfigService = isolatedCtx.configService
+        isolatedConfigService.options = {
+          ...isolatedConfigService.options,
+          currentSubPackageRoot: chunkRoot,
+        }
+        const inlineConfig = isolatedConfigService.merge(meta, meta.subPackage.inlineConfig, {
+          build: {
+            write: false,
+            watch: null,
+            rolldownOptions: {
+              output: {
+                chunkFileNames() {
+                  return `${chunkRoot}/[name].js`
                 },
               },
             },
+          },
+        })
+        const autoImportGlobs = getAutoImportConfig(isolatedConfigService)?.globs
+        if (autoImportGlobs?.length) {
+          const candidates = await findAutoImportCandidates({
+            ctx: isolatedCtx,
+            resolvedConfig: {
+              build: {
+                outDir: isolatedConfigService.outDir,
+              },
+            } as ResolvedConfig,
+          }, autoImportGlobs)
+          await isolatedCtx.autoImportService.runWithoutOutputWrites(async () => {
+            await Promise.all(candidates.map(candidate => isolatedCtx.autoImportService.registerPotentialComponent(candidate)))
           })
-          const restoreDefineEnv = syncImportMetaEnvDefineOverride(isolatedConfigService, inlineConfig.define as Record<string, unknown> | undefined)
-          let result: RolldownOutput | RolldownOutput[]
-          try {
-            result = await build(
-              inlineConfig,
-            ) as RolldownOutput | RolldownOutput[]
-          }
-          finally {
-            restoreDefineEnv()
-          }
-
-          const output = Array.isArray(result) ? result[0] : result
-          if (!output) {
-            throw new Error(`独立分包 ${root} 未产生输出`)
-          }
-          storeIndependentOutput(root, output)
-          return output
+        }
+        const restoreDefineEnv = syncImportMetaEnvDefineOverride(isolatedConfigService, inlineConfig.define as Record<string, unknown> | undefined)
+        let result: RolldownOutput | RolldownOutput[]
+        try {
+          result = await build(
+            inlineConfig,
+          ) as RolldownOutput | RolldownOutput[]
         }
         finally {
-          setActiveCompilerContextKey(activeContextKey)
+          restoreDefineEnv()
         }
+
+        const output = Array.isArray(result) ? result[0] : result
+        if (!output) {
+          throw new Error(`独立分包 ${root} 未产生输出`)
+        }
+        storeIndependentOutput(root, output)
+        return output
       }
       catch (error) {
         const normalized = createIndependentBuildError(root, error)

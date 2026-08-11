@@ -31,7 +31,7 @@ interface AutoImportActionsOptions {
 
 export function createAutoImportActions(
   options: AutoImportActionsOptions,
-): Omit<AutoImportService, 'getVersion' | 'runInBatch'> {
+): Omit<AutoImportService, 'getVersion' | 'runInBatch' | 'runWithoutOutputWrites'> {
   function bumpVersion() {
     options.autoImportState.version += 1
   }

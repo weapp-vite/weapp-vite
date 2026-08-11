@@ -20,6 +20,7 @@ export interface AutoImportService {
   reset: () => void
   getVersion: () => number
   runInBatch: <T>(task: () => T | Promise<T>) => Promise<T>
+  runWithoutOutputWrites: <T>(task: () => T | Promise<T>) => Promise<T>
   registerPotentialComponent: (filePath: string) => Promise<void>
   removePotentialComponent: (filePath: string) => void
   resolve: (componentName: string, importerBaseName?: string) => AutoImportMatch | undefined

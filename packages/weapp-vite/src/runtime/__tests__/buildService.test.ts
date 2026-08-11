@@ -8,9 +8,22 @@ import { createRuntimeState } from '../runtimeState'
 import { createWatcherServicePlugin } from '../watcherPlugin'
 
 const buildMock = vi.hoisted(() => vi.fn())
+const isolatedConfigServiceMock = vi.hoisted(() => ({
+  load: vi.fn(),
+  merge: vi.fn((_meta: any, _inline: any, overrides: any) => overrides ?? {}),
+  importMetaEnvDefineOverride: undefined,
+  setImportMetaEnvDefineOverride: vi.fn(),
+}))
+const createCompilerContextInstanceMock = vi.hoisted(() => vi.fn(() => ({
+  configService: isolatedConfigServiceMock,
+})))
 
 vi.mock('vite', () => ({
   build: buildMock,
+}))
+
+vi.mock('../../context/createCompilerContextInstance', () => ({
+  createCompilerContextInstance: createCompilerContextInstanceMock,
 }))
 
 function createMockCompilerContext() {
@@ -86,6 +99,10 @@ function createChunk(fileName: string) {
 describe('buildService independent bundles', () => {
   beforeEach(() => {
     buildMock.mockReset()
+    createCompilerContextInstanceMock.mockClear()
+    isolatedConfigServiceMock.load.mockClear()
+    isolatedConfigServiceMock.merge.mockClear()
+    isolatedConfigServiceMock.setImportMetaEnvDefineOverride.mockClear()
     loggerErrorSpy.mockClear()
   })
 

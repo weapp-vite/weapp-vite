@@ -5,10 +5,9 @@ import { createIndependentBuilder } from './independent'
 
 const buildMock = vi.hoisted(() => vi.fn())
 const loggerErrorMock = vi.hoisted(() => vi.fn())
-const createCompilerContextMock = vi.hoisted(() => vi.fn())
-const getActiveCompilerContextKeyMock = vi.hoisted(() => vi.fn(() => 'main'))
-const resetCompilerContextMock = vi.hoisted(() => vi.fn())
-const setActiveCompilerContextKeyMock = vi.hoisted(() => vi.fn())
+const createCompilerContextInstanceMock = vi.hoisted(() => vi.fn())
+const findAutoImportCandidatesMock = vi.hoisted(() => vi.fn())
+const getAutoImportConfigMock = vi.hoisted(() => vi.fn())
 const createIndependentBuildErrorMock = vi.hoisted(() => vi.fn((root: string, error: unknown) => {
   const message = error instanceof Error ? error.message : String(error)
   return new Error(`normalized:${root}:${message}`)
@@ -18,14 +17,16 @@ vi.mock('vite', () => ({
   build: buildMock,
 }))
 
-vi.mock('../../createContext', () => ({
-  createCompilerContext: createCompilerContextMock,
+vi.mock('../../context/createCompilerContextInstance', () => ({
+  createCompilerContextInstance: createCompilerContextInstanceMock,
 }))
 
-vi.mock('../../context/getInstance', () => ({
-  getActiveCompilerContextKey: getActiveCompilerContextKeyMock,
-  resetCompilerContext: resetCompilerContextMock,
-  setActiveCompilerContextKey: setActiveCompilerContextKeyMock,
+vi.mock('../../plugins/autoImport', () => ({
+  findAutoImportCandidates: findAutoImportCandidatesMock,
+}))
+
+vi.mock('../autoImport/config', () => ({
+  getAutoImportConfig: getAutoImportConfigMock,
 }))
 
 vi.mock('../../context/shared', () => ({
@@ -46,6 +47,7 @@ function createConfigService() {
   })
   return {
     defineEnv,
+    load: vi.fn(),
     get importMetaEnvDefineOverride() {
       return importMetaEnvDefineOverride
     },
@@ -84,13 +86,21 @@ function createBuilder() {
     projectConfigPath: '/project/project.config.json',
   })
   const isolatedConfigService = createConfigService()
-  createCompilerContextMock.mockResolvedValue({
+  const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+  const runWithoutOutputWrites = vi.fn(async (task: () => unknown) => await task())
+  createCompilerContextInstanceMock.mockReturnValue({
+    autoImportService: {
+      registerPotentialComponent,
+      runWithoutOutputWrites,
+    },
     configService: isolatedConfigService,
   })
   return {
     builder: createIndependentBuilder(configService, runtimeState.build),
     configService,
     isolatedConfigService,
+    registerPotentialComponent,
+    runWithoutOutputWrites,
     runtimeState,
   }
 }
@@ -98,6 +108,7 @@ function createBuilder() {
 describe('runtime buildPlugin independent builder', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getAutoImportConfigMock.mockReturnValue(undefined)
   })
 
   it('builds and stores independent output with subpackage chunk root', async () => {
@@ -115,19 +126,15 @@ describe('runtime buildPlugin independent builder', () => {
 
     expect(result).toBe(output)
     expect(buildMock).toHaveBeenCalledTimes(1)
-    expect(createCompilerContextMock).toHaveBeenCalledWith({
-      key: 'independent-build:/project:packageA',
+    expect(createCompilerContextInstanceMock).toHaveBeenCalledTimes(1)
+    expect(isolatedConfigService.load).toHaveBeenCalledWith({
       cwd: '/project',
       isDev: true,
       mode: 'development',
       configFile: '/project/vite.config.ts',
       cliPlatform: 'weapp',
       projectConfigPath: '/project/project.config.json',
-      syncSupportFiles: false,
-      preloadAppEntry: false,
     })
-    expect(resetCompilerContextMock).toHaveBeenCalledWith('independent-build:/project:packageA')
-    expect(setActiveCompilerContextKeyMock).toHaveBeenCalledWith('main')
     const inlineConfig = buildMock.mock.calls[0]?.[0]
     expect(inlineConfig.build.write).toBe(false)
     expect(inlineConfig.build.watch).toBeNull()
@@ -137,6 +144,37 @@ describe('runtime buildPlugin independent builder', () => {
     expect(configService.merge).not.toHaveBeenCalled()
     builder.invalidateIndependentOutput('packageA')
     expect(builder.getIndependentOutput('packageA')).toBeUndefined()
+  })
+
+  it('initializes scoped auto imports inside the isolated context without output writes', async () => {
+    const output = { output: [{ fileName: 'packageA/index.js' }] } as any
+    const candidates = [
+      '/project/src/packageA/components/OrderMetrics/OrderMetrics.wxml',
+    ]
+    buildMock.mockResolvedValueOnce(output)
+    getAutoImportConfigMock.mockReturnValue({
+      globs: ['packageA/components/**/*.wxml'],
+    })
+    findAutoImportCandidatesMock.mockResolvedValue(candidates)
+    const {
+      builder,
+      isolatedConfigService,
+      registerPotentialComponent,
+      runWithoutOutputWrites,
+    } = createBuilder()
+
+    await builder.buildIndependentBundle('packageA', {
+      subPackage: {
+        root: 'packageA',
+        inlineConfig: {},
+      },
+    } as any)
+
+    expect(isolatedConfigService.options.currentSubPackageRoot).toBe('packageA')
+    expect(getAutoImportConfigMock).toHaveBeenCalledWith(isolatedConfigService)
+    expect(findAutoImportCandidatesMock).toHaveBeenCalledTimes(1)
+    expect(runWithoutOutputWrites).toHaveBeenCalledTimes(1)
+    expect(registerPotentialComponent).toHaveBeenCalledWith(candidates[0])
   })
 
   it('syncs subpackage import.meta.env override registry during independent build and restores previous state', async () => {

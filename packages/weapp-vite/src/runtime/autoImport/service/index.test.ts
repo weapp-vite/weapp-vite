@@ -171,6 +171,54 @@ describe('autoImport service index', () => {
     expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
   })
 
+  it('updates in-memory state without scheduling support file outputs', async () => {
+    const resolverHelpers = createResolverHelpers({
+      resolveWithResolvers: vi.fn(() => ({ name: 'TButton', from: 'tdesign-miniprogram/button/button' })),
+    })
+    const outputsHelpers = {
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    }
+    let registerLocalComponent: ReturnType<typeof vi.fn>
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockReturnValue(outputsHelpers)
+    createRegistryHelpersMock.mockImplementation((args: any) => {
+      registerLocalComponent = vi.fn(async () => {
+        args.bumpVersion()
+        args.scheduleManifestWrite(true)
+        args.scheduleTypedComponentsWrite(true)
+      })
+      return {
+        registerLocalComponent,
+        removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+        ensureMatcher: vi.fn(),
+      }
+    })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: true })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: true })
+
+    const service = createAutoImportService(createContext())
+
+    await service.runWithoutOutputWrites(async () => {
+      await service.registerPotentialComponent('/project/src/components/Foo/index.vue')
+      service.resolve('TButton')
+    })
+
+    expect(registerLocalComponent!).toHaveBeenCalledTimes(1)
+    expect(service.getVersion()).toBe(2)
+    expect(outputsHelpers.scheduleManifestWrite).not.toHaveBeenCalled()
+    expect(outputsHelpers.scheduleTypedComponentsWrite).not.toHaveBeenCalled()
+    expect(outputsHelpers.scheduleHtmlCustomDataWrite).not.toHaveBeenCalled()
+    expect(outputsHelpers.scheduleVueComponentsWrite).not.toHaveBeenCalled()
+  })
+
   it('syncs full resolver support outputs without resetting runtime resolver state', async () => {
     const resolverHelpers = createResolverHelpers({
       collectStaticResolverComponentsForSupportFiles: vi.fn(() => ({
