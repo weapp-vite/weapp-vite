@@ -66,6 +66,20 @@ async function runBuildWithSourcemap() {
   distVariant = 'sourcemap'
 }
 
+async function runBuildWithNodeEnv(nodeEnv: string) {
+  await fs.remove(DIST_ROOT)
+
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
+    cwd: APP_ROOT,
+    env: { NODE_ENV: nodeEnv },
+    label: `ci:github-issues-node-env-${nodeEnv}`,
+    skipNpm: true,
+  })
+}
+
 async function scanFiles(root: string) {
   // eslint-disable-next-line new-cap
   const fd = new fdir({
@@ -103,6 +117,10 @@ function findGeneratedPosition(code: string, needle: string) {
 
 function createObjectPropertyPattern(property: string, value: string) {
   return new RegExp(`${escapeRegex(JSON.stringify(property))}\\s*:\\s*${escapeRegex(JSON.stringify(value))}`)
+}
+
+function expectProductionEnvironment(pageJs: string) {
+  expect(pageJs).toMatch(/issue792\s*:\s*\{\s*dev\s*:\s*false\s*,\s*mode\s*:\s*["']production["']\s*,\s*nodeEnv\s*:\s*["']production["']\s*,\s*prod\s*:\s*true\s*\}/)
 }
 
 function expectSetDataPickKeys(code: string, keys: string[]) {
@@ -562,10 +580,18 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('/pages/issue-431')
     expect(pageJs).toContain('importMetaSnapshot')
     expect(pageJs).toMatch(createObjectPropertyPattern('url', '/pages/issue-431/index.js'))
-    expect(pageJs).toMatch(/issue792\s*:\s*\{\s*dev\s*:\s*false\s*,\s*mode\s*:\s*["']production["']\s*,\s*nodeEnv\s*:\s*["']production["']\s*,\s*prod\s*:\s*true\s*\}/)
+    expectProductionEnvironment(pageJs)
     expect(pageJs).not.toContain('import.meta.url')
     expect(pageJs).not.toContain('import.meta.dirname')
     expect(pageJs).not.toContain('import.meta.env')
+  })
+
+  it('issue #792: production build overrides an inherited development NODE_ENV', async () => {
+    await runBuildWithNodeEnv('development')
+
+    const pageJs = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-431/index.js'), 'utf-8')
+
+    expectProductionEnvironment(pageJs)
   })
 
   it('issue #429: prefers local component auto import and warns when name collides with a builtin component tag', async () => {

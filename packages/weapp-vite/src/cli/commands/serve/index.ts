@@ -13,7 +13,7 @@ import { formatDuration } from '../../formatDuration'
 import { maybeStartForwardConsole } from '../../forwardConsole'
 import { logBuildAppFinish } from '../../logBuildAppFinish'
 import { applyMcpCliOptions } from '../../mcpOptions'
-import { initializeNodeEnv } from '../../nodeEnv'
+import { setCommandNodeEnv } from '../../nodeEnv'
 import { openIde, resolveIdeProjectRoot } from '../../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../../runtime'
@@ -46,7 +46,7 @@ export function registerServeCommand(cli: CAC) {
     .option('--scope <scope>', `[string] 局部构建范围，例如 main,packages/order`)
     .action(async (root: string, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
-      initializeNodeEnv('development')
+      setCommandNodeEnv('development')
       const cwd = root ?? process.cwd()
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
