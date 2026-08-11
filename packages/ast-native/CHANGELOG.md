@@ -1,5 +1,14 @@
 # @weapp-vite/ast-native
 
+## 0.0.5
+
+### Patch Changes
+
+- 🐛 **自动补充依赖升级发布记录。** [`4197538`](https://github.com/weapp-vite/weapp-vite/commit/4197538abacf278136db75cdb1e84c4cfb88c5a8) by @sonofmagic
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+
 ## 0.0.4
 
 ### Patch Changes

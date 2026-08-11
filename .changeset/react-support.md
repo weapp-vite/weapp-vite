@@ -1,8 +1,0 @@
----
-'@weapp-vite/react': minor
-'@weapp-core/constants': patch
-weapp-vite: minor
-create-weapp-vite: minor
----
-
-新增 React 19 小程序运行时、React JSX 构建配置和 React 项目模板，支持可选的 SWC React Compiler，并支持 React、Wevu 与原生组件通过动态 props、自定义事件和默认插槽双向互操作。

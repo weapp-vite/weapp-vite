@@ -1,5 +1,13 @@
 # @mpcore/simulator
 
+## 0.3.2
+
+### Patch Changes
+
+- 🐛 **修复 JSX/TSX 动态属性表达式中的字符串引号导致生成的 WXML 无法编译、dynamic island 模板自递归被微信运行时截断、模拟器未展开 WXML template 调用，以及 `weapp-ide-cli --help` 被错误透传到微信 CLI 的问题。** [`952d280`](https://github.com/weapp-vite/weapp-vite/commit/952d2801c97c962448348acd92b8a57ecd151662) by @sonofmagic
+- 📦 **Dependencies** [`e5a8f23`](https://github.com/weapp-vite/weapp-vite/commit/e5a8f23e9bdceadaaebc0c9d747303ba221b42b8)
+  → `@weapp-core/constants@0.1.17`
+
 ## 0.3.1
 
 ### Patch Changes
