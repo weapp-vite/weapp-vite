@@ -328,7 +328,7 @@ describe('openIde', () => {
     expect(parseMock).not.toHaveBeenCalled()
   })
 
-  it('does not reuse an opened weapp project when screenshot protocol health check fails', async () => {
+  it('keeps the connected window without launching another automator when project health check fails', async () => {
     const screenshotMock = vi.fn().mockRejectedValueOnce(new Error('App.captureScreenshot timeout'))
     connectOpenedAutomatorMock.mockResolvedValueOnce({
       disconnect: miniProgramDisconnectMock,
@@ -342,16 +342,43 @@ describe('openIde', () => {
     })
 
     expect(screenshotMock).toHaveBeenCalledWith({ timeout: 3000 })
-    expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(2)
+    expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.info).not.toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。')
-    expect(launchAutomatorMock).toHaveBeenCalledWith({
-      persistAsDefaultSession: true,
-      preserveProjectRoot: true,
-      projectPath: 'dist/dev/mp-weixin',
-      port: 9633,
-      timeout: 120_000,
-      trustProject: true,
+    expect(loggerMock.warn).toHaveBeenCalledWith('已连接到目标微信开发者工具项目，但协议健康检查暂未就绪；已保留当前窗口并跳过重复启动。')
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(parseMock).not.toHaveBeenCalled()
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
+  })
+
+  it('bounds a hanging opened-project health check before keeping the connected window', async () => {
+    vi.useFakeTimers()
+    const screenshotMock = vi.fn(() => new Promise(() => {}))
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
+      disconnect: miniProgramDisconnectMock,
+      screenshot: screenshotMock,
     })
+
+    try {
+      const { openIde } = await import('./openIde')
+      const pendingOpen = openIde('weapp', 'dist/dev/mp-weixin', {
+        prepareAutomatorSession: true,
+        reuseOpenedProject: true,
+        skipPostOpenHealthCheck: true,
+        useAutomatorOpen: true,
+      })
+
+      await vi.advanceTimersByTimeAsync(3_000)
+      await expect(pendingOpen).resolves.toBeUndefined()
+
+      expect(screenshotMock).toHaveBeenCalledWith({ timeout: 3000 })
+      expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
+      expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+      expect(parseMock).not.toHaveBeenCalled()
+      expect(launchAutomatorMock).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 
   it('closes current devtools window and reopens when user confirms retry for an opened weapp project', async () => {

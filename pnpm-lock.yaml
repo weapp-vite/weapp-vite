@@ -1802,6 +1802,18 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
 
+  e2e-apps/stateful-hmr-root-tailwind:
+    devDependencies:
+      tailwindcss:
+        specifier: catalog:tailwind4
+        version: 4.3.3
+      weapp-tailwindcss:
+        specifier: catalog:weapp-tailwindcss-fixed
+        version: 5.2.14(@oxc-project/types@0.144.0)(jiti@2.7.0)(rolldown@1.2.3)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   e2e-apps/style-import-vue:
     devDependencies:
       '@weapp-vite/dashboard':
@@ -2456,7 +2468,7 @@ importers:
     devDependencies:
       '@napi-rs/cli':
         specifier: ^3.8.5
-        version: 3.8.5(@emnapi/runtime@1.11.2)(@types/node@26.2.0)(node-addon-api@7.1.1)(supports-color@10.2.2)
+        version: 3.8.5(@emnapi/runtime@1.9.2)(@types/node@26.2.0)(node-addon-api@7.1.1)(supports-color@10.2.2)
       '@types/node':
         specifier: 'catalog:'
         version: 26.2.0
@@ -20202,7 +20214,7 @@ snapshots:
   '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.4':
     optional: true
 
-  '@napi-rs/cli@3.8.5(@emnapi/runtime@1.11.2)(@types/node@26.2.0)(node-addon-api@7.1.1)(supports-color@10.2.2)':
+  '@napi-rs/cli@3.8.5(@emnapi/runtime@1.9.2)(@types/node@26.2.0)(node-addon-api@7.1.1)(supports-color@10.2.2)':
     dependencies:
       '@inquirer/prompts': 8.5.2(@types/node@26.2.0)
       '@napi-rs/cross-toolchain': 1.0.3(supports-color@10.2.2)
@@ -20218,7 +20230,7 @@ snapshots:
       typanion: 3.14.0
       typescript: 6.0.3
     optionalDependencies:
-      '@emnapi/runtime': 1.11.2
+      '@emnapi/runtime': 1.9.2
     transitivePeerDependencies:
       - '@napi-rs/cross-toolchain-arm64-target-aarch64'
       - '@napi-rs/cross-toolchain-arm64-target-armv7'

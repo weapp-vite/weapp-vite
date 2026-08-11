@@ -1,7 +1,7 @@
 /* eslint-disable ts/no-use-before-define */
 
 import type { RolldownWatcher } from 'rolldown'
-import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
+import type { InlineConfig, Matcher, Plugin, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
@@ -19,6 +19,7 @@ import { logger } from '../../context/shared'
 import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
 import { isReactStaticTemplateSource } from '../../plugins/react'
 import { parseJsLike, traverse } from '../../utils/babel'
+import { isPathInside } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { createStatefulHmrControlSource } from './runtimeSource'
@@ -85,6 +86,14 @@ export async function runStatefulHmrDev(
       ...(buildOptions.server ?? {}),
       host: '127.0.0.1',
       port: 0,
+      watch: {
+        ...(buildOptions.server?.watch ?? {}),
+        ignored: createStatefulHmrWatchIgnored(
+          buildOptions.root ?? configService.cwd,
+          configService.outDir,
+          buildOptions.server?.watch?.ignored,
+        ),
+      },
     },
     build: {
       ...(buildOptions.build ?? {}),
@@ -105,6 +114,24 @@ export async function runStatefulHmrDev(
     await server.close().catch(() => {})
     throw error
   }
+}
+
+export function createStatefulHmrWatchIgnored(
+  root: string,
+  outDir: string,
+  ignored?: Matcher,
+): Matcher {
+  const normalizedRoot = normalizeFsResolvedId(root)
+  const normalizedOutDir = normalizeFsResolvedId(path.isAbsolute(outDir) ? outDir : path.resolve(root, outDir))
+  const patterns = ignored === undefined ? [] : Array.isArray(ignored) ? ignored : [ignored]
+
+  return [
+    ...patterns,
+    (id: string) => {
+      const normalizedId = normalizeFsResolvedId(path.isAbsolute(id) ? id : path.resolve(normalizedRoot, id))
+      return isPathInside(normalizedOutDir, normalizedId)
+    },
+  ]
 }
 
 class StatefulHmrSession {
