@@ -298,7 +298,8 @@ async function processChangedFile(
     cause: string,
   ) => {
     state.markEntryDirty(entryId, reason)
-    if (/\.(?:vue|jsx|tsx)$/.test(entryId) && reason !== 'dependency') {
+    const isJsxTemplateDependency = reason === 'dependency' && /\.(?:jsx|tsx)$/.test(normalizedId)
+    if (/\.(?:vue|jsx|tsx)$/.test(entryId) && (reason !== 'dependency' || isJsxTemplateDependency)) {
       const hmr = ctx.runtimeState.build.hmr
       hmr.dirtyVueEntryIds ??= new Set<string>()
       hmr.dirtyVueEntryIds.add(entryId)

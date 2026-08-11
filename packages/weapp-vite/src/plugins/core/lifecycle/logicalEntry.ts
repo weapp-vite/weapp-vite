@@ -119,7 +119,7 @@ async function collectLogicalEntryDependencies(
   }
   dependencies.push(...collectTemplateDependencies(state, templatePath))
   dependencies.push(...await collectUsingComponentDependencies(state, ownerId, entry?.json))
-  for (const kind of ['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
+  for (const kind of ['json', 'jsx', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
     state.ctx.moduleGraphService.replaceEntryDependencies(
       ownerId,
       kind,

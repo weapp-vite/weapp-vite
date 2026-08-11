@@ -108,6 +108,8 @@ describe('stateful hmr session', () => {
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.wxml')).toBe(true)
     expect(requiresStatefulHmrSnapshot('/project/src/app.css')).toBe(true)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.ts')).toBe(false)
+    expect(requiresStatefulHmrSnapshot('/project/src/pages/index.jsx', ['entry-direct:1'])).toBe(true)
+    expect(requiresStatefulHmrSnapshot('/project/src/pages/index.tsx', ['entry-direct:1'])).toBe(true)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.vue', ['entry-direct:1'])).toBe(false)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.vue', ['entry-style-only:1'])).toBe(true)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.ts', ['tailwind-content:2'])).toBe(true)

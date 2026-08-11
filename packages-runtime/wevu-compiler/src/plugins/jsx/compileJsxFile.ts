@@ -19,6 +19,13 @@ function normalizeUsingComponentFrom(value: ResolvedUsingComponentPath | undefin
   return typeof value === 'string' ? value : value.from
 }
 
+function toMiniProgramComponentTag(name: string) {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .toLowerCase()
+}
+
 /**
  * 编译 JSX/TSX 文件，输出 wevu 脚本与 WXML 模板。
  */
@@ -52,9 +59,10 @@ export async function compileJsxFile(
     }
   }
 
-  const { template: compiledTemplateStr, warnings: templateWarnings, inlineExpressions, autoComponentContext, dynamicIslands } = compileJsxTemplateAndCollectComponents(source, filename, options)
+  const { template: rawTemplate, warnings: templateWarnings, inlineExpressions, autoComponentContext, dynamicIslands, dependencies } = compileJsxTemplateAndCollectComponents(source, filename, options)
 
   const autoUsingComponentsMap: Record<string, string> = {}
+  const localComponentAliases = new Map<string, string>()
   if (options?.autoUsingComponents?.resolveUsingComponentPath && autoComponentContext.templateTags.size > 0) {
     for (const imported of autoComponentContext.importedComponents) {
       if (!autoComponentContext.templateTags.has(imported.localName)) {
@@ -78,7 +86,13 @@ export async function compileJsxFile(
         continue
       }
 
-      autoUsingComponentsMap[imported.localName] = resolved
+      const componentName = imported.importSource.startsWith('.') || imported.importSource.startsWith('/')
+        ? toMiniProgramComponentTag(imported.localName)
+        : imported.localName
+      autoUsingComponentsMap[componentName] = resolved
+      if (componentName !== imported.localName) {
+        localComponentAliases.set(imported.localName, componentName)
+      }
     }
   }
 
@@ -162,6 +176,15 @@ export async function compileJsxFile(
     configObj = mergeJson(configObj ?? {}, scriptMacroConfig, 'macro')
   }
 
+  let compiledTemplateStr = rawTemplate
+  for (const [from, to] of localComponentAliases) {
+    if (compiledTemplateStr) {
+      compiledTemplateStr = compiledTemplateStr
+        .replaceAll(`<${from}`, `<${to}`)
+        .replaceAll(`</${from}>`, `</${to}>`)
+    }
+  }
+
   const result: VueTransformResult = {
     script: transformedScript.code,
     scriptMap: transformedScript.map ?? vueJsxTransformed.map,
@@ -174,6 +197,7 @@ export async function compileJsxFile(
       hasSetupOption: SETUP_CALL_RE.test(normalizedScriptSource),
       jsonMacroHash: scriptMacroHash,
       jsxDynamicIslands: dynamicIslands,
+      jsxDependencies: dependencies,
     },
   }
 

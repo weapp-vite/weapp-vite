@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import {
   REQUEST_GLOBAL_ACTUALS_KEY,
@@ -1004,6 +1004,64 @@ describe('core lifecycle options hook', () => {
     })
     expect(options.input).not.toHaveProperty('pages/missing/index')
     expect(options.input).not.toHaveProperty('vendor-ui/button/index')
+  })
+
+  it('promotes Vue components statically imported by page scripts to logical inputs', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-logical-inputs-'))
+    await writeFile(path.join(root, 'app.ts'), 'App({})')
+    await mkdir(path.join(root, 'pages/home'), { recursive: true })
+    await mkdir(path.join(root, 'components/card'), { recursive: true })
+    await writeFile(path.join(root, 'pages/home/index.tsx'), 'import Card from "../../components/card/index.vue"; export default Card')
+    await writeFile(path.join(root, 'components/card/index.vue'), '<template><view /></template>')
+
+    findJsEntryMock.mockImplementation(async (id: string) => {
+      if (id.endsWith('/pages/home/index')) {
+        return { path: `${id}.tsx`, predictions: [] }
+      }
+      return { path: undefined, predictions: [] }
+    })
+    findVueEntryMock.mockImplementation(async (id: string) => {
+      if (id.endsWith('/components/card/index')) {
+        return `${id}.vue`
+      }
+      return undefined
+    })
+
+    const configService = {
+      absoluteSrcRoot: root,
+      weappLibConfig: undefined,
+      isDev: false,
+      options: {},
+      relativeAbsoluteSrcRoot: (id: string) => id.replace(`${root}/`, ''),
+    }
+    const appEntry = {
+      path: path.join(root, 'app.ts'),
+      json: { pages: ['pages/home/index'] },
+    }
+    const state = {
+      ctx: {
+        runtimeState: { lib: { enabled: false, entries: new Map() } },
+        configService,
+        scanService: {
+          appEntry,
+          loadAppEntry: vi.fn(async () => appEntry),
+          loadSubPackages: vi.fn(),
+          drainIndependentDirtyRoots: vi.fn(() => []),
+          independentSubPackageMap: new Map(),
+        },
+        buildService: {},
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+    } as any
+
+    const options: Record<string, any> = {}
+    await createOptionsHook(state)(options)
+
+    expect(options.input).toHaveProperty(
+      'components/card/index',
+      createLogicalEntryId(path.join(root, 'components/card/index.vue'), 'component'),
+    )
   })
 
   it('loads lib entries when weapp lib mode is enabled', async () => {

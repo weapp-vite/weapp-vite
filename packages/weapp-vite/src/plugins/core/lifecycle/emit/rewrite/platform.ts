@@ -299,10 +299,7 @@ export function rewriteBundlePlatformApi(
     if (analysis && !analysis.hasPlatformApiAccess) {
       continue
     }
-    const magicString = createMiniProgramPlatformApiRewrite(chunk.code, globalName, {
-      ...options,
-      analysis,
-    })
+    const magicString = createMiniProgramPlatformApiRewrite(chunk.code, globalName)
     if (!magicString) {
       continue
     }

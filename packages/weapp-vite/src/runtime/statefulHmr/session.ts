@@ -257,7 +257,8 @@ class StatefulHmrSession {
         this.requestServerRestart()
       }
       else if (
-        (files.length > 0 && files.every(isStatefulHmrAssetFile))
+        this.snapshotScheduler.isPending()
+        || (files.length > 0 && files.every(isStatefulHmrAssetFile))
         || shouldUseStatefulHmrSnapshotOnly(this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary ?? [])
       ) {
         if (!this.snapshotScheduler.isPending()) {
@@ -510,7 +511,8 @@ export function isSafeJavaScriptPatch(
 }
 
 export function requiresStatefulHmrSnapshot(file: string, dirtyReasonSummary: string[] = []): boolean {
-  return !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
+  return /\.(?:jsx|tsx)$/.test(file)
+    || !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
     || dirtyReasonSummary.some(isUnsafeStatefulHmrReason)
 }
 

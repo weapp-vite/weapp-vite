@@ -29,6 +29,11 @@ describe('template expression parse helpers', () => {
     expect(normalizeWxmlExpression('column.$.exposed!.sortDirection.value')).toBe('column.$.exposed.sortDirection.value')
   })
 
+  it('removes Vue-style this prefixes from WXML expressions', () => {
+    expect(normalizeWxmlExpression('this.count')).toBe('count')
+    expect(normalizeWxmlExpression('this.list.map(item => item.value)')).toBe('list.map(item=>item.value)')
+  })
+
   it('rewrites Vue slot presence checks to mini-program slot metadata', () => {
     expect(normalizeWxmlExpression('!$slots.content && mode === \'normal\''))
       .toBe('!(vueSlots&&vueSlots.content)&&mode===\'normal\'')

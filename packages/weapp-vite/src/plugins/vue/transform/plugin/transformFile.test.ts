@@ -27,6 +27,7 @@ const createCompileVueFileOptionsMock = vi.hoisted(() => vi.fn(() => ({})))
 const emitScopedSlotChunksMock = vi.hoisted(() => vi.fn())
 const registerScopedSlotHostGenericsMock = vi.hoisted(() => vi.fn())
 const addNormalizedWatchFileMock = vi.hoisted(() => vi.fn())
+const addNormalizedWatchFilesMock = vi.hoisted(() => vi.fn())
 const resolveVueSfcStyleIndependentSignatureMock = vi.hoisted(() => vi.fn((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, '')))
 
 vi.mock('wevu/compiler', async (importOriginal) => {
@@ -48,6 +49,7 @@ vi.mock('../../../utils/invalidateEntry', () => ({
 
 vi.mock('../../../utils/watchFiles', () => ({
   addNormalizedWatchFile: addNormalizedWatchFileMock,
+  addNormalizedWatchFiles: addNormalizedWatchFilesMock,
 }))
 
 vi.mock('../../../wevu', () => ({
@@ -227,6 +229,51 @@ describe('transformVueLikeFile cache reuse', () => {
     expect(dirtyVueEntryIds.size).toBe(0)
     expect(options.compilationCache.get('/project/src/components/card.vue').refreshToken).toBe(0)
     expect(resolveVueSfcStyleIndependentSignatureMock).not.toHaveBeenCalled()
+  })
+
+  it('recompiles a JSX entry when a template dependency changes', async () => {
+    const filename = '/project/src/pages/card.tsx'
+    const source = 'export default { render: () => <view /> }'
+    const dirtyVueEntryIds = new Set([filename])
+    const options = createBaseOptions({
+      code: source,
+      id: filename,
+      ctx: {
+        ...createBaseOptions().ctx,
+        runtimeState: {
+          scan: {
+            isDirty: false,
+          },
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+              profile: {
+                file: '/project/src/shared/view.tsx',
+                dirtyReasonSummary: ['importer-graph:1'],
+              },
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        [filename, {
+          result: {
+            template: '<view>cached</view>',
+            script: 'Component({ cached: true })',
+          },
+          source,
+          isPage: false,
+          refreshToken: 0,
+        }],
+      ]),
+    })
+
+    await expect(transformVueLikeFile(options)).resolves.toMatchObject({
+      code: expect.stringContaining('Component({ refreshed: true })'),
+    })
+
+    expect(compileJsxFileMock).toHaveBeenCalledTimes(1)
+    expect(dirtyVueEntryIds.size).toBe(0)
   })
 
   it('recompiles dirty vue entries when transformed source changes', async () => {

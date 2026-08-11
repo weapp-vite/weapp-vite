@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig(() => ({
@@ -5,6 +6,7 @@ export default defineConfig(() => ({
     hmr: {
       logLevel: 'verbose',
       profileJson: true,
+      runtime: process.env.WEAPP_VITE_JSX_HMR_RUNTIME === 'classic' ? 'classic' : 'auto',
     },
     srcRoot: 'src',
   },

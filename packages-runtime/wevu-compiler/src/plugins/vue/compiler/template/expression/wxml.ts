@@ -188,7 +188,8 @@ export function normalizeWxmlExpression(exp: string): string {
     || /^\s*<[^>]+>/.test(exp)
   )
   const needsVueSlotsRewrite = exp.includes('$slots')
-  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.') && !hasTypeScriptSyntax && !needsVueSlotsRewrite) {
+  const needsThisRewrite = /\bthis\./.test(exp)
+  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.') && !hasTypeScriptSyntax && !needsVueSlotsRewrite && !needsThisRewrite) {
     return exp
   }
 
@@ -207,6 +208,16 @@ export function normalizeWxmlExpression(exp: string): string {
     }
 
     traverse(ast, {
+      MemberExpression: {
+        exit(path) {
+          const node = path.node
+          if (!t.isThisExpression(node.object) || node.computed || !t.isIdentifier(node.property)) {
+            return
+          }
+          path.replaceWith(t.identifier(node.property.name))
+          path.skip()
+        },
+      },
       TSAsExpression(path) {
         path.replaceWith(path.node.expression)
       },

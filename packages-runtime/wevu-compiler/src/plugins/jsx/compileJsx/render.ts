@@ -184,7 +184,26 @@ function compileImportedFactoryCall(node: t.CallExpression, context: JsxCompileC
   if (!t.isExpressionStatement(output)) {
     return null
   }
-  return compileRenderableExpression(output.expression as Expression, context)
+  let expanded = output.expression as Expression
+  if (t.isCallExpression(expanded) && expanded.arguments.length === 0) {
+    const callee = expanded.callee
+    if (t.isArrowFunctionExpression(callee) || t.isFunctionExpression(callee)) {
+      const body = callee.body
+      let capturesThis = false
+      if (t.isExpression(body)) {
+        const file = t.file(t.program([t.expressionStatement(body)]))
+        traverse(file, {
+          ThisExpression() {
+            capturesThis = true
+          },
+        })
+        if (!capturesThis) {
+          expanded = body
+        }
+      }
+    }
+  }
+  return compileRenderableExpression(expanded, context)
 }
 
 function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext): string | null {

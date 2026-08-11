@@ -18,6 +18,7 @@ export async function tryReuseVueCompilation(options: {
   dirtyVueEntryIds?: Set<string>
   isCssImporterDirty: boolean
   canAttemptStyleOnlyReuse: boolean
+  isJsxTemplateDependencyDirty: boolean
   sourceMap: boolean
   isApp: boolean
   styleBlocksCache: VueStyleBlocksCache
@@ -40,6 +41,7 @@ export async function tryReuseVueCompilation(options: {
     dirtyVueEntryIds,
     isCssImporterDirty,
     canAttemptStyleOnlyReuse,
+    isJsxTemplateDependencyDirty,
     sourceMap,
     isApp,
     styleBlocksCache,
@@ -55,6 +57,7 @@ export async function tryReuseVueCompilation(options: {
   if (
     configService.isDev
     && cachedCompilation
+    && !isJsxTemplateDependencyDirty
     && (filename.endsWith('.vue') || (cachedCompilation.refreshToken ?? 0) === 0)
     && !ctx.runtimeState.scan.isDirty
     && cachedCompilation.source === source

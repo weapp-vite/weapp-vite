@@ -63,6 +63,7 @@ export default defineComponent({
     const result = await compileJsxFile(await readFile(entry, 'utf8'), entry)
     expect(result.template).toContain('<view>sss</view>')
     expect(result.template).toContain('<view class="panel"><text>{{\'标题\'}}</text></view>')
+    expect(result.meta?.jsxDependencies).toEqual([shared])
   })
 
   it('resolves JSX fragments through re-export modules', async () => {
@@ -77,6 +78,7 @@ export default defineComponent({
       export default defineComponent({ render() { return <view>{sss}</view> } })`)
     const result = await compileJsxFile(await readFile(entry, 'utf8'), entry)
     expect(result.template).toContain('<view>re-exported</view>')
+    expect(result.meta?.jsxDependencies).toEqual([barrel, shared])
   })
 
   it('resolves JSX fragments through namespace imports', async () => {
@@ -92,7 +94,7 @@ export default defineComponent({
     expect(result.meta?.jsxDynamicIslands).toEqual([])
   })
 
-  it('emits structured metadata for imported JSX closures that cannot be statically expanded', async () => {
+  it('statically expands imported JSX factory closures', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-island-'))
     const shared = path.join(root, 'shared.tsx')
     const entry = path.join(root, 'page.tsx')
@@ -101,17 +103,11 @@ export default defineComponent({
       import { defineComponent } from 'wevu'
       export default defineComponent({ render() { return <view>{createPanel(() => <text>dynamic</text>)}</view> } })`)
     const result = await compileJsxFile(await readFile(entry, 'utf8'), entry)
-    expect(result.template).toContain('data-wv-jsx-island')
-    expect(result.template).toContain('template name="__wv_jsx_node"')
-    expect(result.script).toContain('__wv_jsx_islands')
-    expect(result.script).toContain('normalizeJsxIsland')
-    expect(result.script).toContain('normalizeClass')
-    expect(result.script).toContain('normalizeStyle')
-    expect(result.script).toContain('from "wevu/internal-template"')
+    expect(result.template).toContain('<view><text>dynamic</text></view>')
+    expect(result.template).not.toContain('data-wv-jsx-island')
+    expect(result.script).not.toContain('__wv_jsx_islands')
     expect(result.script).not.toContain('from "vue"')
-    expect(result.meta?.jsxDynamicIslands).toEqual([
-      expect.objectContaining({ reason: 'unsupported-call' }),
-    ])
+    expect(result.meta?.jsxDynamicIslands).toEqual([])
   })
 
   it('records free variables and this in dynamic island capture metadata', async () => {
@@ -268,8 +264,8 @@ export default defineComponent({
       },
     })
 
-    expect(result.template).toContain('hidden="{{ this.ok }}"')
-    expect(result.template).toContain(`${defaultPlatform.directives.forAttr}="{{ this.list }}"`)
+    expect(result.template).toContain('hidden="{{ ok }}"')
+    expect(result.template).toContain(`${defaultPlatform.directives.forAttr}="{{ list }}"`)
     expect(result.template).toContain('{{ item }}')
   })
 
@@ -299,7 +295,7 @@ export default defineComponent({
       },
     })
 
-    expect(result.template).toContain(`${forAttr}="{{this.list}}"`)
+    expect(result.template).toContain(`${forAttr}="{{list}}"`)
     expect(result.template).toContain(`${keyAttr}="index"`)
   })
 

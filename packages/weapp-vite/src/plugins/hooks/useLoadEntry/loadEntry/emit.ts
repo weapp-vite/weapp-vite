@@ -412,7 +412,9 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     const normalizedResolvedId = normalizeFsResolvedId(resolvedId.id)
     if (normalizedResolvedId && !isSkippableResolvedId(normalizedResolvedId)) {
       resolvedEntryMap.set(normalizedResolvedId, resolvedId)
-      addNormalizedWatchFile(pluginCtx, normalizedResolvedId)
+      if (/\.(?:jsx|tsx)$/.test(normalizedResolvedId)) {
+        addNormalizedWatchFile(pluginCtx, normalizedResolvedId)
+      }
     }
 
     const isForcedEntry = forceEmitEntrySet?.has(entry) === true

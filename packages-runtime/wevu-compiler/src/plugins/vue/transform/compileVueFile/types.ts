@@ -50,6 +50,12 @@ export interface VueTransformResult {
       reason: 'closure' | 'dynamic-component' | 'dynamic-spread' | 'spread-child' | 'unsupported-import' | 'unsupported-call'
       captures: string[]
     }>
+    /**
+     * JSX 模板静态展开时读取的源码依赖。
+     *
+     * @internal
+     */
+    jsxDependencies?: string[]
   }
 }
 

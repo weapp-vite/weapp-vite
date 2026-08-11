@@ -67,7 +67,10 @@ describe.sequential('wevu JSX/TSX disk HMR', () => {
     ], {
       all: true,
       cwd: WEVU_JSX_APP_ROOT,
-      env: createDevProcessEnv(),
+      env: {
+        ...createDevProcessEnv(),
+        WEAPP_VITE_JSX_HMR_RUNTIME: 'classic',
+      },
       reject: false,
     })
     await devProcess.waitFor(

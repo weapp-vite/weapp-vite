@@ -30,6 +30,7 @@ vi.mock('../../../../utils/invalidateEntry', () => ({
 
 vi.mock('../../../../utils/watchFiles', () => ({
   addNormalizedWatchFile: vi.fn(),
+  addNormalizedWatchFiles: vi.fn(),
 }))
 
 vi.mock('../../../wevu', () => ({

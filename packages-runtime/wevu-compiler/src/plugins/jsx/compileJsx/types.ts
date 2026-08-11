@@ -7,6 +7,7 @@ export interface JsxModuleExport {
 }
 
 export interface JsxModuleResolver {
+  getDependencies: () => string[]
   resolveExport: (filename: string, localName: string) => JsxModuleExport | undefined
   resolveImport: (filename: string, source: string, importedName: string) => JsxModuleExport | undefined
 }

@@ -85,6 +85,9 @@ describe('ModuleGraphService', () => {
     service.replaceEntryDependencies(pageId, 'layout', [layoutId, nativeLayoutId])
     expect(service.isLogicalLayoutEntry(layoutId)).toBe(true)
     expect(service.isLogicalLayoutEntry(nativeLayoutId)).toBe(true)
+    const jsxDependency = '/project/src/shared/view.tsx'
+    service.replaceEntryDependencies(pageId, 'jsx', [jsxDependency])
+    expect(service.collectAffectedEntries(jsxDependency)).toEqual(new Set([pageId]))
   })
 
   it('keeps build graphs isolated by scope while plugin contexts change', () => {

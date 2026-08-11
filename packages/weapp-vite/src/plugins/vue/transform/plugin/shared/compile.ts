@@ -11,6 +11,7 @@ import { resolveVueSfcHmrSignatures } from '../../../../../utils/file/vueSfcSign
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
+import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
 import { hasAppShellTemplate, resolveAppShellLayout } from '../../appShell'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs, mayNeedScopedSlotHostPropertiesForSetupSlotsInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from '../../injectSetDataPick'
@@ -266,6 +267,9 @@ export async function finalizeTransformCompiledResult(options: {
   if (Array.isArray(result.meta?.sfcSrcDeps)) {
     ctx.moduleGraphService.replaceEntryDependencies(filename, 'style', result.meta.sfcSrcDeps)
   }
+  const jsxDependencies = result.meta?.jsxDependencies ?? []
+  addNormalizedWatchFiles(pluginCtx, jsxDependencies)
+  ctx.moduleGraphService.replaceEntryDependencies(filename, 'jsx', jsxDependencies)
 
   await finalizeTransformEntryScript({
     result: transformResult,

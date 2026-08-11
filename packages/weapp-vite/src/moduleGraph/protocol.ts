@@ -13,6 +13,7 @@ export type LogicalEntryType = 'app' | 'page' | 'component' | 'layout'
 
 export type SidecarModuleKind
   = | 'json'
+    | 'jsx'
     | 'layout'
     | 'script'
     | 'style'
@@ -133,7 +134,7 @@ export function parseSidecarModuleId(id: string): SidecarModuleRequest | undefin
     || !kind
     || !ownerId
     || !sourceId
-    || !['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'].includes(kind)
+    || !['json', 'jsx', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'].includes(kind)
   ) {
     return
   }
@@ -158,7 +159,7 @@ export function parseSidecarSourceRequest(id: string): SidecarSourceRequest | un
   const query = new URLSearchParams(id.slice(queryIndex + 1))
   const kind = query.get(WEAPP_VITE_SIDECAR_QUERY_MARKER)
   const ownerId = query.get(WEAPP_VITE_SIDECAR_OWNER_QUERY_MARKER)
-  if (!kind || !['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'].includes(kind)) {
+  if (!kind || !['json', 'jsx', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'].includes(kind)) {
     return
   }
   if (!ownerId) {

@@ -70,11 +70,13 @@ function resolveRuntimeBindingPlaceholderData(
 export function resolveInitialComputedData(options: {
   data: Record<string, any>
   computed: ComputedDefinitions | undefined
+  methods?: Record<string, any>
   setData: SetDataSnapshotOptions | undefined
 }) {
   const {
     data,
     computed,
+    methods,
     setData,
   } = options
   const computedKeys = computed ? Object.keys(computed) : []
@@ -150,6 +152,10 @@ export function resolveInitialComputedData(options: {
         if (hasOwn(data, key)) {
           return Reflect.get(target, key, receiver)
         }
+        if (methods && hasOwn(methods, key)) {
+          const method = methods[key]
+          return typeof method === 'function' ? method.bind(proxy) : method
+        }
         if (computed && hasOwn(computed, key)) {
           const computedValue = resolveComputedValue(key)
           if (computedValue.ok) {
@@ -184,6 +190,7 @@ export function resolveNativeInitialData(
   data: unknown,
   computed: ComputedDefinitions | undefined,
   setData: SetDataSnapshotOptions | undefined,
+  methods?: Record<string, any>,
 ) {
   if (!data || typeof data !== 'object') {
     return data
@@ -191,6 +198,7 @@ export function resolveNativeInitialData(
   const initialComputedData = resolveInitialComputedData({
     data: data as Record<string, any>,
     computed,
+    methods,
     setData,
   })
   const runtimeBindingPlaceholderData = resolveRuntimeBindingPlaceholderData(data as Record<string, any>, setData)

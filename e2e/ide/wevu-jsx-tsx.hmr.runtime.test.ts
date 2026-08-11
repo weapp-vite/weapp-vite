@@ -32,19 +32,6 @@ async function readClientVersion() {
   })
 }
 
-async function waitForClientVersion(previousVersion: number, timeoutMs = 45_000) {
-  const startedAt = Date.now()
-  let latest = previousVersion
-  while (Date.now() - startedAt <= timeoutMs) {
-    latest = await readClientVersion().catch(() => previousVersion)
-    if (latest > previousVersion) {
-      return latest
-    }
-    await new Promise(resolve => setTimeout(resolve, 200))
-  }
-  throw new Error(`Timed out waiting JSX stateful HMR version after ${previousVersion}; latest=${latest}; output=${devProcess?.getOutput().slice(-6_000)}`)
-}
-
 async function readRuntimeState() {
   return await miniProgram!.evaluate(() => {
     const pages = getCurrentPages()
@@ -124,31 +111,27 @@ describe.sequential('wevu JSX/TSX stateful HMR in real WeChat DevTools', () => {
     expect(initial).toMatchObject({ initial: 0, next: 1 })
     const initialVersion = await readClientVersion()
 
-    const sharedMarker = 'HMR-SHARED-FACTORY-UPDATED'
-    const updatedShared = originalSharedSource.replace('跨文件参数化 JSX factory', sharedMarker)
+    const sharedMarker = 'HMR-SHARED-FRAGMENT-UPDATED'
+    const updatedShared = originalSharedSource.replace('跨文件静态 JSX fragment', sharedMarker)
     expect(updatedShared).not.toBe(originalSharedSource)
     await fs.writeFile(SHARED_SOURCE, updatedShared, 'utf8')
     await devProcess!.waitFor(waitForFileContains(PAGE_OUTPUT, sharedMarker), 'shared TSX HMR output')
-    const sharedVersion = await waitForClientVersion(initialVersion)
+    expect(await readClientVersion()).toBe(initialVersion)
     expect(await readRuntimeState()).toEqual({
       count: 1,
       identity: 'jsx-hmr-instance',
       route: 'pages/tsx-basic/index',
     })
 
-    const updatedPage = originalPageSource.replace('this.islandCount += 1', 'this.islandCount += 2')
+    const updatedPage = originalPageSource.replace('纯 TSX（.tsx）', 'HMR-TSX-PAGE-UPDATED')
     expect(updatedPage).not.toBe(originalPageSource)
     await fs.writeFile(PAGE_SOURCE, updatedPage, 'utf8')
     await devProcess!.waitFor(
-      waitForFileContains(path.join(WEVU_JSX_DIST_ROOT, 'pages/tsx-basic/index.js'), 'islandCount += 2'),
-      'dynamic island handler HMR output',
+      waitForFileContains(PAGE_OUTPUT, 'HMR-TSX-PAGE-UPDATED'),
+      'TSX page HMR output',
     )
-    await waitForClientVersion(sharedVersion)
-
-    const patched = await page.callMethodWithOptions('runE2E', { routeOnly: true, timeout: 30_000 })
-    expect(patched).toMatchObject({ initial: 1, next: 3 })
     expect(await readRuntimeState()).toEqual({
-      count: 3,
+      count: 1,
       identity: 'jsx-hmr-instance',
       route: 'pages/tsx-basic/index',
     })

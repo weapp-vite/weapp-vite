@@ -279,7 +279,7 @@ export function compileJsxAttributes(
 }
 
 function staticObjectKey(node: t.ObjectProperty['key']) {
-  if (t.isIdentifier(node) && !node.computed) {
+  if (t.isIdentifier(node)) {
     return node.name
   }
   if (t.isStringLiteral(node)) {

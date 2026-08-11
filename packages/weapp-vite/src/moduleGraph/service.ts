@@ -122,6 +122,14 @@ export function createModuleGraphService(): ModuleGraphService {
   const collectAffectedEntries = (rawFile: string) => {
     const file = normalizeSourceId(rawFile)
     const affected = new Set<string>()
+    for (const [ownerId, dependenciesByKind] of entryDependencies) {
+      for (const sourceIds of dependenciesByKind.values()) {
+        if (sourceIds.has(file)) {
+          affected.add(ownerId)
+          break
+        }
+      }
+    }
     if (devServer) {
       collectFromDevGraph(file, affected)
     }

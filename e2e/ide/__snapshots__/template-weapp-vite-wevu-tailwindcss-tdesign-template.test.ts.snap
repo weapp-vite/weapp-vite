@@ -103,7 +103,6 @@ wx-root-portal-content {
 }
 page {
   background-color: #f6f7fb;
-  font-family: 'HarmonyOS Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 "
 `;

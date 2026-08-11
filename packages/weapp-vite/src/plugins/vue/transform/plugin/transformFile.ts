@@ -133,6 +133,10 @@ export async function transformVueLikeFile(options: {
     }
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
+    const isJsxTemplateDependencyDirty = Boolean(
+      dirtyEntryId
+      && /\.(?:jsx|tsx)$/.test(ctx.runtimeState?.build?.hmr?.profile?.file ?? ''),
+    )
     const isCssImporterDirty = isVueCssImporterDirtyReasonSummary(
       ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary,
     )
@@ -151,6 +155,7 @@ export async function transformVueLikeFile(options: {
       dirtyVueEntryIds,
       isCssImporterDirty,
       canAttemptStyleOnlyReuse,
+      isJsxTemplateDependencyDirty,
       sourceMap,
       isApp,
       styleBlocksCache,

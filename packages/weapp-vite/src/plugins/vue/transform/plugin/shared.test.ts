@@ -1371,6 +1371,9 @@ console.log(pages, routeSubPackages)
             hmr,
           },
         },
+        moduleGraphService: {
+          replaceEntryDependencies: vi.fn(),
+        },
       } as any,
       pluginCtx: {},
       filename: '/project/src/components/card.vue',

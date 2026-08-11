@@ -2,6 +2,7 @@ import type { LogicalEntryType } from '../../../../moduleGraph/protocol'
 import type { AppEntry } from '../../../../types'
 import type { CorePluginState, IndependentBuildResult } from '../../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createLogicalEntryId } from '../../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
@@ -15,7 +16,54 @@ interface LogicalInputSource {
   type: LogicalEntryType
 }
 
-function collectMainLogicalInputs(state: CorePluginState, appEntry: AppEntry) {
+// eslint-disable-next-line regexp/no-super-linear-backtracking -- import 语法需要兼容默认、命名和副作用导入。
+const LOCAL_IMPORT_RE = /\bimport\s+(?:[\s\S]*?\s+from\s+)?(['"])([^'"\n]+)\1/g
+
+async function collectImportedVueComponents(
+  state: CorePluginState,
+  candidates: Array<{ entry: string, type: LogicalEntryType }>,
+) {
+  const { absoluteSrcRoot } = state.ctx.configService
+  const importedComponents = new Set<string>()
+  for (const candidate of candidates) {
+    if (candidate.type !== 'page' || candidate.entry.includes(':')) {
+      continue
+    }
+    const pageBase = path.resolve(absoluteSrcRoot, candidate.entry)
+    const scriptEntry = await findJsEntry(pageBase)
+    const pageSource = scriptEntry.path ?? await findVueEntry(pageBase)
+    if (!pageSource || !await fs.pathExists(pageSource)) {
+      continue
+    }
+    let source: string
+    try {
+      source = await fs.readFile(pageSource, 'utf8')
+    }
+    catch {
+      continue
+    }
+    for (const match of source.matchAll(LOCAL_IMPORT_RE)) {
+      const importSource = match[2]
+      if (!importSource.startsWith('.') && !importSource.startsWith('/')) {
+        continue
+      }
+      const importedBase = path.resolve(path.dirname(pageSource), importSource)
+      const importedVue = importedBase.endsWith('.vue')
+        ? importedBase
+        : await findVueEntry(importedBase)
+      if (!importedVue || !await fs.pathExists(importedVue)) {
+        continue
+      }
+      const relativeEntry = path.relative(absoluteSrcRoot, removeExtensionDeep(importedVue)).replaceAll('\\', '/')
+      if (relativeEntry && !relativeEntry.startsWith('../')) {
+        importedComponents.add(relativeEntry)
+      }
+    }
+  }
+  return [...importedComponents]
+}
+
+async function collectMainLogicalInputs(state: CorePluginState, appEntry: AppEntry) {
   const { absoluteSrcRoot } = state.ctx.configService
   const appJson = normalizeAppJson(appEntry.json ?? {})
   const inputs: Record<string, LogicalInputSource> = {
@@ -46,6 +94,10 @@ function collectMainLogicalInputs(state: CorePluginState, appEntry: AppEntry) {
   }
   if (appJson.appBar) {
     candidates.push({ entry: 'app-bar/index', type: 'component' })
+  }
+
+  for (const entry of await collectImportedVueComponents(state, candidates)) {
+    candidates.push({ entry, type: 'component' })
   }
 
   for (const { entry: rawEntry, type } of candidates) {
@@ -227,7 +279,7 @@ export function createOptionsHook(state: CorePluginState) {
           }
         }
         state.pendingIndependentBuilds = pendingIndependentBuilds
-        scannedInput = collectMainLogicalInputs(state, appEntry)
+        scannedInput = await collectMainLogicalInputs(state, appEntry)
       }
     }
 

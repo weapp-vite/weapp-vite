@@ -64,4 +64,18 @@ describe('runtime: initial computed data', () => {
       __wv_bind_1: null,
     })
   })
+
+  it('evaluates computed getters that call component methods', () => {
+    const result = resolveInitialComputedData({
+      data: { count: 0 },
+      methods: {
+        increment() {
+          return this.count + 1
+        },
+      },
+      computed: { value(this: any) { return this.increment() } },
+      setData: undefined,
+    })
+    expect(result).toEqual({ value: 1 })
+  })
 })

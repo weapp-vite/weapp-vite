@@ -126,5 +126,6 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
     inlineExpressions: context.inlineExpressions,
     autoComponentContext,
     dynamicIslands: context.dynamicIslands,
+    dependencies: context.moduleResolver.getDependencies(),
   }
 }

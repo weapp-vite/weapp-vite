@@ -307,7 +307,7 @@ export function defineComponent(
           : (nativeData as any)?.[WEVU_SLOT_OWNER_ID_KEY] || '',
       }
     : nativeData
-  const nativeInitialData = resolveNativeInitialData(seededNativeData, computed as ComputedDefinitions, resolvedSetData)
+  const nativeInitialData = resolveNativeInitialData(seededNativeData, computed as ComputedDefinitions, resolvedSetData, methods as Record<string, any> | undefined)
   const mpOptionsWithProps = nativeInitialData !== undefined
     ? {
         ...normalizedMpOptions,

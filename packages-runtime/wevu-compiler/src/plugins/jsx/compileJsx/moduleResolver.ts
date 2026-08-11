@@ -55,7 +55,7 @@ function expressionFromDeclaration(node: t.Declaration | t.Expression | null): J
     else {
       body = node.body
     }
-    if (body && (t.isJSXElement(body) || t.isJSXFragment(body))) {
+    if (body) {
       return {
         expression: body,
         params: node.params.filter(t.isIdentifier).map(param => param.name),
@@ -64,7 +64,7 @@ function expressionFromDeclaration(node: t.Declaration | t.Expression | null): J
   }
   if (t.isFunctionDeclaration(node)) {
     const body = node.body.body.find(statement => t.isReturnStatement(statement) && !!statement.argument)
-    if (body && t.isReturnStatement(body) && body.argument && (t.isJSXElement(body.argument) || t.isJSXFragment(body.argument))) {
+    if (body && t.isReturnStatement(body) && body.argument && t.isExpression(body.argument)) {
       return {
         expression: body.argument,
         params: node.params.filter(t.isIdentifier).map(param => param.name),
@@ -131,6 +131,7 @@ function collectExports(ast: File) {
 export function createJsxModuleResolver(warn?: (message: string) => void): JsxModuleResolver {
   const cache = new Map<string, { code: string, exports: ReturnType<typeof collectExports> }>()
   const active = new Set<string>()
+  const dependencies = new Set<string>()
 
   function read(filename: string) {
     const code = readFileSync(filename, 'utf8')
@@ -161,6 +162,9 @@ export function createJsxModuleResolver(warn?: (message: string) => void): JsxMo
         return undefined
       }
       const target = resolveFile(forwarded.source, filename)
+      if (target) {
+        dependencies.add(target)
+      }
       return target ? resolveExport(target, forwarded.importedName) : undefined
     }
     finally {
@@ -173,8 +177,13 @@ export function createJsxModuleResolver(warn?: (message: string) => void): JsxMo
     if (!target) {
       return undefined
     }
+    dependencies.add(target)
     return resolveExport(target, importedName === 'default' ? 'default' : importedName)
   }
 
-  return { resolveExport, resolveImport }
+  return {
+    getDependencies: () => [...dependencies],
+    resolveExport,
+    resolveImport,
+  }
 }

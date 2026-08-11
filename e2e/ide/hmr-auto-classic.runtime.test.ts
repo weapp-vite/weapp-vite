@@ -166,8 +166,12 @@ describe.sequential('automatic classic HMR in real WeChat DevTools', () => {
       'classic HMR direct page output update',
     )
 
-    await miniProgram.reLaunch(NATIVE_ROUTE)
-    const reloaded = await waitForRuntimeState(state => state.marker === 'STATEFUL-NATIVE-PATCHED')
+    await miniProgram.disconnect()
+    miniProgram = await connectAutomatorSession()
+    const reloaded = await waitForRuntimeState(state => (
+      state.marker === 'STATEFUL-NATIVE-PATCHED'
+      && state.source === 'classic-auto-e2e'
+    ))
     expect(reloaded).toEqual({
       count: 0,
       identity: '',
