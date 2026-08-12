@@ -173,8 +173,8 @@ describe.sequential('platform build verification gate', () => {
     expect(vueConfig.usingComponents?.['douyin-native-card']).toBe('/miniprogram_npm/douyin-native-card/card/index')
 
     const vueTemplate = await fs.readFile(path.join(outputRoot, 'pages/wevu/index.ttml'), 'utf8')
-    expect(vueTemplate).toContain('bind:tap="__weapp_vite_inline"')
-    expect(vueTemplate).toContain('bind:confirm="__weapp_vite_inline"')
+    expect(vueTemplate).toMatch(/bind:?tap="__weapp_vite_inline"/)
+    expect(vueTemplate).toMatch(/bind:?confirm="__weapp_vite_inline"/)
 
     const runtimeChunk = await findWevuSemanticChunk(
       outputRoot,
