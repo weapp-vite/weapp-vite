@@ -57,8 +57,36 @@ pnpm exec wv open --platform alipay
 ```
 
 - 产物扩展名自动变更为 `axml` / `acss` / `sjs`。
+- 原生支付宝源码可以直接使用 `.axml` / `.acss`，不需要先改写成微信后缀，也不要求引入 wevu。
+- 同一个项目可以保留原生 `Page()` / `Component()` 页面、组件和分包，同时逐页加入 Vue SFC。
 - 在支付宝 IDE 中导入 `dist/` 目录即可预览。
 - `open --platform alipay` 会自动通过 `minidev ide` 打开支付宝开发者工具（需先安装 `minidev`）。
+
+支付宝构建会按平台选择同名 sidecar。模板优先级为 `.axml`、`.wxml`、`.html`，样式优先级为 `.acss`、`.wxss`、`.css` 和预处理器。因此迁移现有支付宝项目时，可以保留原生目录：
+
+```text
+src/
+├─ app.ts
+├─ app.json
+├─ app.acss
+├─ pages/index/
+│  ├─ index.ts
+│  ├─ index.json
+│  ├─ index.axml
+│  ├─ index.acss
+│  └─ utils.sjs
+├─ components/native-counter/
+│  ├─ index.ts
+│  ├─ index.json
+│  ├─ index.axml
+│  └─ index.acss
+└─ pages/profile/index.vue
+```
+
+原生 `.axml` 输入会保留支付宝自身的 `onTap`、`a:if`、`import-sjs from/name` 等语法。使用便携 `.wxml` 或 Vue SFC 时，编译器仍会按支付宝目标进行模板归一化。这让两种迁移路线都成立：项目可以停留在 `weapp-vite + 原生支付宝`，也可以在构建稳定后逐步迁移到 Vue SFC。
+
+> [!NOTE]
+> 当前自动化覆盖 App、Page、Component、分包、SJS、npm 组件、原生 layout 和 Vue SFC 共存。支付、授权、云服务、插件和真机专属 API 仍应由业务项目在支付宝开发者工具和真机中单独验收。
 
 ## 字节系（抖音 / 今日头条）小程序 {#platform-tt}
 

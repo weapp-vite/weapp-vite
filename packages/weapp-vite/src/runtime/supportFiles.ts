@@ -135,7 +135,7 @@ async function collectAutoImportTemplateTags(ctx: MutableCompilerContext) {
     pathSeparator: '/',
   })
     .withFullPaths()
-    .filter(filePath => filePath.endsWith('.vue') || filePath.endsWith('.wxml'))
+    .filter(filePath => filePath.endsWith('.vue') || filePath.endsWith('.wxml') || filePath.endsWith('.axml'))
     .crawl(srcRoot)
     .withPromise()
 

@@ -674,7 +674,7 @@ describe('core lifecycle watch hook', () => {
     await hook(pageEntryId, { event: 'update' })
 
     expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalled()
-    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId)
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId, 'weapp')
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
     expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)
@@ -703,7 +703,7 @@ describe('core lifecycle watch hook', () => {
     await hook(pageEntryId, { event: 'update' })
 
     expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalled()
-    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId)
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId, 'weapp')
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
     expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'metadata')
     expect(invalidateSharedStyleCacheMock).not.toHaveBeenCalled()
@@ -814,7 +814,7 @@ const count = 1
 
     await hook(pageEntryId, { event: 'update' })
 
-    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId)
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId, 'weapp')
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
     expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)

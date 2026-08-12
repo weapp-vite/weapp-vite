@@ -418,7 +418,7 @@ describe('resolveVueLayoutAssetOptions', () => {
     await emitters.emitNativeLayout('layouts/native-default/index')
     await emitters.emitVueLayout('/project/layouts/vue-default/index.vue')
 
-    expect(collectNativeLayoutAssetsMock).toHaveBeenCalledWith('layouts/native-default/index')
+    expect(collectNativeLayoutAssetsMock).toHaveBeenCalledWith('layouts/native-default/index', undefined)
     expect(compileVueLikeFileMock).toHaveBeenCalledTimes(1)
   })
 
@@ -571,7 +571,7 @@ describe('resolveVueLayoutAssetOptions', () => {
       },
     })
 
-    expect(collectNativeLayoutAssetsMock).toHaveBeenCalledWith('layouts/native-default/index')
+    expect(collectNativeLayoutAssetsMock).toHaveBeenCalledWith('layouts/native-default/index', undefined)
     expect(emitSfcTemplateIfMissingMock).toHaveBeenCalledWith(
       expect.anything(),
       {},

@@ -4,6 +4,14 @@
     "pages/index/index",
     "pages/wevu/index"
   ],
+  "subPackages": [
+    {
+      "root": "package-native",
+      "pages": [
+        "pages/detail/index"
+      ]
+    }
+  ],
   "window": {
     "defaultTitle": "Alipay antd-mini Demo"
   },

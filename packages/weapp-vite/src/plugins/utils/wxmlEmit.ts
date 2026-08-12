@@ -1,6 +1,7 @@
 import type { BuildTarget, CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import type { ImportMetaDefineRegistry } from '../../utils/importMeta'
+import { isNativeTemplateSource } from '../../platforms/sourceAssets'
 import { isTemplate } from '../../utils'
 import { changeFileExtension } from '../../utils/file'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
@@ -123,8 +124,9 @@ export function emitWxmlAssetFile(options: {
   scriptModuleExtension?: string
   scriptModuleTag?: string
   templateExtension: string
+  platform?: CompilerContext['configService']['platform']
 }) {
-  const { runtime, id, fileName, token, deps, emittedCodeCache, importMetaDefineRegistry, scriptModuleExtension, scriptModuleTag, templateExtension } = options
+  const { runtime, id, fileName, token, deps, emittedCodeCache, importMetaDefineRegistry, scriptModuleExtension, scriptModuleTag, templateExtension, platform } = options
 
   runtime.addWatchFile?.(normalizeWatchPath(id))
   if (deps) {
@@ -140,6 +142,7 @@ export function emitWxmlAssetFile(options: {
     scriptModuleExtension,
     scriptModuleTag,
     templateExtension,
+    transformPlatformSyntax: !isNativeTemplateSource(id, platform),
   })
   const previous = emittedCodeCache.get(fileName)
   if (previous === result.code) {
@@ -180,6 +183,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
       scriptModuleExtension,
       scriptModuleTag,
       templateExtension,
+      platform: configService.platform,
     })
   }
 

@@ -600,6 +600,31 @@ const cover = '/cover.png'
     expect(payload.source).not.toContain('catchtap=')
   })
 
+  it('preserves native Alipay template syntax when the source is AXML', () => {
+    ctx = createMockCompiler({
+      outputExtensions: { wxml: 'axml', wxs: 'sjs' },
+      platform: 'alipay',
+    })
+    const nativeFilePath = '/project/src/pages/native/index.axml'
+    const source = '<import-sjs from="./helper.sjs" name="helper" /><HelloWorld a:if="{{ok}}" onTap="handleTap" />'
+    const token = ctx.wxmlService!.analyze(source)
+    ctx.wxmlService!.tokenMap.set(nativeFilePath, token)
+    ctx.wxmlService!.depsMap.set(nativeFilePath, new Set(['/project/src/pages/native/helper.sjs']))
+
+    const emitFile = vi.fn()
+    const addWatchFile = vi.fn()
+    const result = emitWxmlAssetsWithCache({
+      runtime: { addWatchFile, emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    expect(result).toEqual(['pages/native/index.axml'])
+    expect(emitFile.mock.calls[0]?.[0].source).toBe(source)
+    expect(addWatchFile).toHaveBeenCalledWith(nativeFilePath)
+    expect(addWatchFile).toHaveBeenCalledWith('/project/src/pages/native/helper.sjs')
+  })
+
   it('respects custom json extension', () => {
     const emitFile = vi.fn()
     emitJsonAsset({ emitFile }, 'pages/index/index.wxml', '{}', 'json5')

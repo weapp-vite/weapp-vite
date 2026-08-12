@@ -1,4 +1,4 @@
-import type { Entry } from '../../types'
+import type { Entry, MpPlatform } from '../../types'
 import type { ResolvedPageLayout } from '../vue/transform/pageLayout/types'
 import { collectNativeLayoutAssets } from '../vue/transform/pageLayout'
 
@@ -9,6 +9,7 @@ export async function registerResolvedPageLayoutEntries(options: {
   nativeScriptEntries?: Set<string>
   normalizeEntry: (entry: string, jsonPath: string) => string
   jsonPath: string
+  platform?: MpPlatform
 }) {
   const {
     layouts,
@@ -17,11 +18,12 @@ export async function registerResolvedPageLayoutEntries(options: {
     nativeScriptEntries,
     normalizeEntry,
     jsonPath,
+    platform,
   } = options
 
   for (const layout of layouts) {
     if (layout.kind === 'native') {
-      const nativeAssets = await collectNativeLayoutAssets(layout.file)
+      const nativeAssets = await collectNativeLayoutAssets(layout.file, platform)
       if (!nativeAssets.script) {
         continue
       }

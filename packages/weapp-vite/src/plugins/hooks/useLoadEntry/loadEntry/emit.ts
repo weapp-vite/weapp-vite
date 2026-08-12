@@ -273,7 +273,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       return
     }
 
-    const assets = await collectNativeLayoutAssets(layoutBasePath)
+    const assets = await collectNativeLayoutAssets(layoutBasePath, configService.platform)
     const emittedLayoutAssets: Set<string> = (pluginCtx as any).__weappViteNativeLayoutAssets ?? ((pluginCtx as any).__weappViteNativeLayoutAssets = new Set<string>())
 
     if (assets.json) {
@@ -481,7 +481,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       })
       if (layoutPlan) {
         const layoutDependencies = new Set<string>()
-        for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
+        for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts, configService.platform)) {
           layoutDependencies.add(normalizeFsResolvedId(file))
         }
         replaceLayoutDependencies(id, layoutDependencies)

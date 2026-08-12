@@ -152,8 +152,9 @@ export async function ensureTemplateScanned(
   scanTemplateEntry: (templateEntry: string) => Promise<void>,
   existsCache: Map<string, boolean>,
   ttlMs: number,
+  platform?: import('../../../../types').MpPlatform,
 ) {
-  const { path: templateEntry, predictions } = await findTemplateEntry(id)
+  const { path: templateEntry, predictions } = await findTemplateEntry(id, platform)
   await addPredictedWatchTargets(pluginCtx, predictions, existsCache, ttlMs, templateEntry)
 
   if (!templateEntry) {

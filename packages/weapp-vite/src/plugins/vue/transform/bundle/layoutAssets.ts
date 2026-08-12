@@ -56,7 +56,10 @@ export async function resolveNativeLayoutAssetState(options: {
     return undefined
   }
 
-  const assets = await collectNativeLayoutAssets(options.layoutBasePath)
+  const assets = await collectNativeLayoutAssets(
+    options.layoutBasePath,
+    options.configService.platform,
+  )
 
   return {
     resolvedOptions,

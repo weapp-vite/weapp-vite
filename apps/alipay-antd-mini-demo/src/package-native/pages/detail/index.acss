@@ -1,0 +1,4 @@
+.subpackage-page {
+  padding: 48rpx 32rpx;
+  color: #1677ff;
+}

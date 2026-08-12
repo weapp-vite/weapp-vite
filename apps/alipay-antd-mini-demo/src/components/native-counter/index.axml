@@ -1,0 +1,4 @@
+<view class="native-counter" data-mounted="{{mounted}}">
+  <text class="native-counter__value">原生组件计数：{{current}}</text>
+  <button class="native-counter__button" onTap="increase">原生 +1</button>
+</view>

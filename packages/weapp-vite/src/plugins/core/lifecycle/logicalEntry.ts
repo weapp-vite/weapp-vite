@@ -105,8 +105,8 @@ async function collectLogicalEntryDependencies(
   const entry = resolveEntryRecord(state, ownerId)
   const [jsonEntry, templateEntry, styleEntry] = await Promise.all([
     findJsonEntry(ownerId),
-    findTemplateEntry(ownerId),
-    findCssEntry(ownerId),
+    findTemplateEntry(ownerId, state.ctx.configService.platform),
+    findCssEntry(ownerId, state.ctx.configService.platform),
   ])
   await addExistingDependency('json', entry?.jsonPath ?? jsonEntry.path)
   await addExistingDependency('json', entry && 'sitemapJsonPath' in entry ? entry.sitemapJsonPath : undefined)

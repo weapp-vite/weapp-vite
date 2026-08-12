@@ -6,7 +6,7 @@ function hasOwn(source: object, key: PropertyKey) {
 
 export interface ParseRequestResponse {
   filename: string
-  query: Record<string, string | boolean> & { wxss?: boolean }
+  query: Record<string, string | boolean> & { nativeStyle?: string, wxss?: boolean }
 }
 
 /**
@@ -41,6 +41,9 @@ export function parseRequest(id: string): ParseRequestResponse {
  * @returns 返回文件的真实路径。
  */
 export function getCssRealPath(res: ParseRequestResponse) {
+  if (typeof res.query.nativeStyle === 'string' && res.query.nativeStyle) {
+    return changeFileExtension(res.filename, res.query.nativeStyle)
+  }
   if (res.query.wxss) {
     return changeFileExtension(res.filename, 'wxss')
   }

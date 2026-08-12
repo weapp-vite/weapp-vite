@@ -34,6 +34,7 @@ describe('utils/file', () => {
   describe('isTemplateRequest', () => {
     it('detects template resources', () => {
       expect(isTemplateRequest('/pages/index.wxml')).toBe(true)
+      expect(isTemplateRequest('/pages/index.axml')).toBe(true)
       expect(isTemplateRequest('/pages/index.html')).toBe(true)
       expect(isTemplateRequest('/pages/index.js')).toBe(false)
     })
@@ -78,6 +79,7 @@ describe('utils/file', () => {
   describe('isTemplate', () => {
     it('checks template extensions list', () => {
       expect(isTemplate('pages/index.wxml')).toBe(true)
+      expect(isTemplate('pages/index.axml')).toBe(true)
       expect(isTemplate('pages/index.js')).toBe(false)
     })
   })
@@ -716,6 +718,30 @@ defineAppJson(nonExistentMacroValue)
         expect(cssResult.predictions.length).toBeGreaterThan(0)
         expect(templateResult.path).toBeUndefined()
         expect(templateResult.predictions.length).toBeGreaterThan(0)
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
+
+    it('prefers native Alipay source assets without changing the portable default order', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-alipay-entry-'))
+      try {
+        const base = path.join(root, 'pages/home/index')
+        await fs.ensureDir(path.dirname(base))
+        await Promise.all([
+          fs.writeFile(`${base}.wxml`, '<view>portable</view>'),
+          fs.writeFile(`${base}.axml`, '<view>alipay</view>'),
+          fs.writeFile(`${base}.wxss`, '.portable {}'),
+          fs.writeFile(`${base}.acss`, '.alipay {}'),
+        ])
+
+        expect((await findTemplateEntry(base)).path).toBe(`${base}.wxml`)
+        expect((await findCssEntry(base)).path).toBe(`${base}.wxss`)
+        expect((await findTemplateEntry(base, 'alipay')).path).toBe(`${base}.axml`)
+        expect((await findCssEntry(base, 'alipay')).path).toBe(`${base}.acss`)
+        expect((await findTemplateEntry(base, 'weapp')).path).toBe(`${base}.wxml`)
+        expect((await findCssEntry(base, 'weapp')).path).toBe(`${base}.wxss`)
       }
       finally {
         await fs.remove(root)

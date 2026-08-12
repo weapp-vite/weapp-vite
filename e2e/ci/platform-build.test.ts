@@ -86,15 +86,31 @@ describe.sequential('platform build verification gate', () => {
     const outputRoot = path.join(ALIPAY_DEMO_ROOT, 'dist')
     await fs.remove(outputRoot)
 
+    expect(await fs.pathExists(path.join(ALIPAY_DEMO_ROOT, 'src/pages/index/index.axml'))).toBe(true)
+    expect(await fs.pathExists(path.join(ALIPAY_DEMO_ROOT, 'src/pages/index/index.acss'))).toBe(true)
+    expect(await fs.pathExists(path.join(ALIPAY_DEMO_ROOT, 'src/pages/index/index.wxml'))).toBe(false)
+
     await runBuild(ALIPAY_DEMO_ROOT, 'alipay', { skipNpm: false })
 
     const nativeTemplate = await fs.readFile(path.join(outputRoot, 'pages/index/index.axml'), 'utf8')
     expect(nativeTemplate).toContain('<import-sjs from="./utils.sjs" name="util"')
     expect(nativeTemplate).toContain('onTap="openWevuPage"')
+    expect(nativeTemplate).toContain('<native-counter')
+    expect(nativeTemplate).toContain('onTap="openNativeSubpackage"')
     expect(nativeTemplate).toContain('<ant-button')
     const nativeSjs = await fs.readFile(path.join(outputRoot, 'pages/index/utils.sjs'), 'utf8')
     expect(nativeSjs).toContain('export default')
     expect(nativeSjs).not.toContain('module.exports')
+
+    const nativeComponentTemplate = await fs.readFile(path.join(outputRoot, 'components/native-counter/index.axml'), 'utf8')
+    const nativeComponentScript = await fs.readFile(path.join(outputRoot, 'components/native-counter/index.js'), 'utf8')
+    expect(nativeComponentTemplate).toContain('onTap="increase"')
+    expect(nativeComponentScript).toContain('deriveDataFromProps')
+    expect(nativeComponentScript).toContain('didMount')
+
+    const nativeSubpackageTemplate = await fs.readFile(path.join(outputRoot, 'package-native/pages/detail/index.axml'), 'utf8')
+    expect(nativeSubpackageTemplate).toContain('a:if="{{ready}}"')
+    expect(nativeSubpackageTemplate).toContain('原生支付宝分包页面')
 
     const vueTemplate = await fs.readFile(path.join(outputRoot, 'pages/wevu/index.axml'), 'utf8')
     const vueConfig = await fs.readJson(path.join(outputRoot, 'pages/wevu/index.json')) as {

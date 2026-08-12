@@ -44,6 +44,13 @@ describe('parseRequest', () => {
     })
   })
 
+  it('should preserve the native style extension query', () => {
+    expect(parseRequest('example/file.css?nativeStyle=acss')).toEqual({
+      filename: 'example/file.css',
+      query: { nativeStyle: 'acss' },
+    })
+  })
+
   it('should handle an empty string', () => {
     const id = ''
     const result = parseRequest(id)
@@ -75,6 +82,16 @@ describe('getCssRealPath', () => {
 
     expect(result).toBe('example/file.wxss')
     expect(changeFileExtension).toHaveBeenCalledWith('example/file.js', 'wxss')
+  })
+
+  it('should restore the native style extension from the query', () => {
+    const result = getCssRealPath({
+      filename: 'example/file.css',
+      query: { nativeStyle: 'acss' },
+    })
+
+    expect(result).toBe('example/file.acss')
+    expect(changeFileExtension).toHaveBeenCalledWith('example/file.css', 'acss')
   })
 
   it('should handle files without extensions', () => {

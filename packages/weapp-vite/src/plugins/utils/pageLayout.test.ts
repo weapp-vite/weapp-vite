@@ -23,13 +23,17 @@ describe('page layout helpers', () => {
         kind: 'native',
         file: '/project/src/layouts/default/index',
       },
-    ] as any)).toEqual([
+    ] as any, 'alipay')).toEqual([
       '/project/src/layouts/dashboard.vue',
       '/project/src/layouts/default/index.json',
       '/project/src/layouts/default/index.wxml',
       '/project/src/layouts/default/index.wxss',
       '/project/src/layouts/default/index.ts',
     ])
+    expect(collectNativeLayoutAssetsMock).toHaveBeenCalledWith(
+      '/project/src/layouts/default/index',
+      'alipay',
+    )
   })
 
   it('registers resolved layouts as logical entry dependencies', async () => {
@@ -41,6 +45,9 @@ describe('page layout helpers', () => {
     await registerResolvedPageLayoutDependencies({
       moduleGraphService: {
         replaceEntryDependencies,
+      },
+      configService: {
+        platform: 'alipay',
       },
       wxmlService: {
         depsMap: new Map([
@@ -68,5 +75,9 @@ describe('page layout helpers', () => {
       ]),
     )
     expect(scan).toHaveBeenCalledWith('/project/src/layouts/default/index.wxml')
+    expect(collectNativeLayoutAssetsMock).toHaveBeenCalledWith(
+      '/project/src/layouts/default/index',
+      'alipay',
+    )
   })
 })

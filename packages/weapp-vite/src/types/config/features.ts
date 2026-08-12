@@ -84,6 +84,7 @@ export interface HandleWxmlOptions {
   importMetaExtension?: string
   removeComment?: boolean
   transformEvent?: boolean
+  transformPlatformSyntax?: boolean
   scriptModuleExtension?: string
   scriptModuleTag?: string
   templateExtension?: string

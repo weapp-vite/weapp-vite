@@ -3,11 +3,17 @@
   <view class="title">纯支付宝小程序示例</view>
   <view class="desc">{{util.description}}</view>
 
+  <native-counter value="{{nativeCount}}" onChange="handleNativeChange" />
+
   <ant-button type="primary" className="action-btn">
     Hello antd-mini
   </ant-button>
 
   <ant-button type="default" className="action-btn" onTap="openWevuPage">
     打开 wevu SFC 示例
+  </ant-button>
+
+  <ant-button type="default" className="action-btn" onTap="openNativeSubpackage">
+    打开原生分包页面
   </ant-button>
 </view>

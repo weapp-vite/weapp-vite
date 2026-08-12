@@ -65,8 +65,8 @@ type SharedStyleImportCache = Map<string, string[]>
 
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
 const TAILWIND_CONTENT_HMR_NONCE_RE = /\n\/\* weapp-vite tailwind-content [^*\n]+ \*\/$/
-const SOURCE_STYLE_ASSET_RE = /\.(?:wxss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
-const VITE_PREPROCESS_STYLE_RE = /\.(?:css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
+const SOURCE_STYLE_ASSET_RE = /\.(?:wxss|acss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
+const VITE_PREPROCESS_STYLE_RE = /\.(?:acss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
 
 function stripLeadingBlankLines(code: string) {
   return code.replace(LEADING_BLANK_LINES_RE, '')
@@ -109,6 +109,7 @@ function isStyleBundleAsset(output: OutputBundle[string], bundleKey: string): ou
   const fileName = output.fileName || bundleKey
   return fileName.endsWith('.css')
     || fileName.endsWith('.wxss')
+    || fileName.endsWith('.acss')
     || isSourceStyleAsset(fileName)
 }
 

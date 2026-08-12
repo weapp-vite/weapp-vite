@@ -1,0 +1,16 @@
+.native-counter {
+  padding: 20rpx;
+  margin-bottom: 24rpx;
+  background: #fff;
+  border: 2rpx solid #1677ff;
+}
+
+.native-counter__value {
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.native-counter__button {
+  color: #fff;
+  background: #1677ff;
+}

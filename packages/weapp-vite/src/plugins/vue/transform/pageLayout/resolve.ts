@@ -316,11 +316,14 @@ export function isLayoutFile(
   return normalizedFile.startsWith(layoutsRoot)
 }
 
-export async function collectNativeLayoutAssets(basePath: string): Promise<NativeLayoutAssets> {
+export async function collectNativeLayoutAssets(
+  basePath: string,
+  platform?: ConfigService['platform'],
+): Promise<NativeLayoutAssets> {
   const [jsonEntry, templateEntry, styleEntry, scriptEntry] = await Promise.all([
     findJsonEntry(basePath),
-    findTemplateEntry(basePath),
-    findCssEntry(basePath),
+    findTemplateEntry(basePath, platform),
+    findCssEntry(basePath, platform),
     findJsEntry(basePath),
   ])
 

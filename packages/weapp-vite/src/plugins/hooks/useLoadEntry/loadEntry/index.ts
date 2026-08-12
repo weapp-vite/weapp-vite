@@ -432,7 +432,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     ) => {
       if (options?.trackLayoutDependencies) {
         const layoutDependencies = new Set<string>()
-        for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
+        for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts, configService.platform)) {
           layoutDependencies.add(normalizeFsResolvedId(file))
         }
         replaceLayoutDependencies(normalizedId, layoutDependencies)
@@ -446,6 +446,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         nativeScriptEntries: nativeLayoutScriptEntries,
         normalizeEntry,
         jsonPath,
+        platform: configService.platform,
       })
       for (const layout of layoutPlan.layouts) {
         if (layout.kind === 'native') {
@@ -571,7 +572,14 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         const cachedTemplatePath = isJsonStableHmr
           ? templateEntryPathCache.get(normalizedId)
           : undefined
-        templatePath = cachedTemplatePath ?? await scanTemplateEntry(this, id, scanTemplateEntryFn, existsCache, pathExistsTtlMs)
+        templatePath = cachedTemplatePath ?? await scanTemplateEntry(
+          this,
+          id,
+          scanTemplateEntryFn,
+          existsCache,
+          pathExistsTtlMs,
+          configService.platform,
+        )
         templateEntryPathCache.set(normalizedId, templatePath)
       }
       finally {
@@ -581,7 +589,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       if (libEntry && libConfig) {
         const componentJson = libConfig.componentJson ?? 'auto'
         const hasTemplate = Boolean(templatePath) || id.endsWith('.vue')
-        const styleEntry = await findCssEntry(baseName)
+        const styleEntry = await findCssEntry(baseName, configService.platform)
         const hasStyle = Boolean(styleEntry.path)
         const shouldTreatAsComponent = hasTemplate || hasStyle || Boolean(json?.component)
 

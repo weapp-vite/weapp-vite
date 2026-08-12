@@ -29,7 +29,7 @@ import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyD
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
-const tailwindContentExtensions = new Set(['.vue', '.wxml', '.js', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.mjs', '.cjs'])
+const tailwindContentExtensions = new Set(['.vue', '.wxml', '.axml', '.js', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.mjs', '.cjs'])
 const TAILWIND_APP_STYLE_RE = /@import\s+['"]tailwindcss['"]|@source\b|weapp-tailwindcss|tailwindcss\/vite/
 
 interface WatchPathKind {
@@ -389,7 +389,7 @@ async function processChangedFile(
     if (!appEntryId || appEntryId === normalizedId || !resolvedEntryMap.has(appEntryId)) {
       return false
     }
-    const styleEntry = await findCssEntry(appEntryId)
+    const styleEntry = await findCssEntry(appEntryId, ctx.configService.platform)
     if (!styleEntry.path) {
       return false
     }
