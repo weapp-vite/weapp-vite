@@ -58,7 +58,7 @@ catalog:
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
   lru-cache: ^11.5.2
-  magic-string: ^1.1.0
+  magic-string: ^1.1.1
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.3
   obug: ^2.1.4
@@ -67,7 +67,7 @@ catalog:
   pathe: ^2.0.3
   pkg-types: ^2.3.1
   postcss: ^8.5.26
-  rolldown: 1.2.3
+  rolldown: 1.2.4
   sass: ^1.102.0
   sass-embedded: ^1.100.0
   stylelint: ^17.14.1

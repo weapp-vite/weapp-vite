@@ -18,7 +18,7 @@
     "camelcase": "^9.0.0",
     "dayjs": "catalog:",
     "merge": "catalog:",
-    "miniprogram-computed": "^8.0.0",
+    "miniprogram-computed": "^8.1.0",
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
