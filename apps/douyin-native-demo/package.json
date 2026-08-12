@@ -1,0 +1,21 @@
+{
+  "name": "douyin-native-demo",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "抖音原生小程序与 wevu Vue SFC 渐进共存示例",
+  "license": "MIT",
+  "scripts": {
+    "dev": "wv dev",
+    "build": "wv build",
+    "postinstall": "wv prepare"
+  },
+  "dependencies": {
+    "douyin-native-card": "file:./fixtures/douyin-native-card"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

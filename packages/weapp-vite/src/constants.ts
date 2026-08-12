@@ -1,3 +1,5 @@
+import { ALL_SOURCE_STYLE_EXTENSIONS, ALL_SOURCE_TEMPLATE_EXTENSIONS } from './platforms/sourceAssets'
+
 export const VERSION = '__VERSION__'
 /**
  * 源代码支持的 js 文件格式
@@ -21,8 +23,8 @@ export const configExtensions = [
 /**
  * 源代码支持的 css 文件格式
  */
-export const supportedCssLangs = ['wxss', 'acss', 'css', 'scss', 'less', 'sass', 'styl']
+export const supportedCssLangs = ALL_SOURCE_STYLE_EXTENSIONS
 /**
  * 源代码支持的 wxml 文件格式
  */
-export const templateExtensions = ['wxml', 'axml', 'html']
+export const templateExtensions = ALL_SOURCE_TEMPLATE_EXTENSIONS

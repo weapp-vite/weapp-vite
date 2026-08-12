@@ -1,0 +1,17 @@
+<wxs src="./utils.wxs" module="util" />
+<view class="page" id="native-home">
+  <view class="title">抖音原生与 Vue 渐进共存</view>
+  <view class="marker" id="runtime-marker">{{util.platformLabel}}</view>
+  <view class="hint" tt:if="{{nativeCount >= 1}}">原生 TTML / TTSS 已加载</view>
+
+  <native-counter value="{{nativeCount}}" bind:change="handleNativeChange" />
+
+  <douyin-native-card
+    label="本地 npm 原生组件"
+    bind:confirm="handleNpmConfirm"
+  />
+  <view class="result" id="npm-result">{{npmMessage}}</view>
+
+  <button id="open-subpackage" bind:tap="openNativeSubpackage">打开原生分包</button>
+  <button id="open-wevu" bind:tap="openWevuPage">打开 Vue / wevu 页面</button>
+</view>

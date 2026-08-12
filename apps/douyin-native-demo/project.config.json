@@ -1,0 +1,10 @@
+{
+  "appid": "testAppId",
+  "projectname": "douyin-native-demo",
+  "miniprogramRoot": "dist",
+  "setting": {
+    "es6": true,
+    "urlCheck": false,
+    "compileHotReLoad": false
+  }
+}

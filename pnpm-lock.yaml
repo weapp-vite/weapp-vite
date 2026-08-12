@@ -659,6 +659,22 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
 
+  apps/douyin-native-demo:
+    dependencies:
+      douyin-native-card:
+        specifier: file:./fixtures/douyin-native-card
+        version: file:apps/douyin-native-demo/fixtures/douyin-native-card
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
+
   apps/forward-console-demo:
     devDependencies:
       miniprogram-api-typings:
@@ -11162,6 +11178,9 @@ packages:
   dotenv@8.6.0:
     resolution: {integrity: sha512-IrPdXQsk2BbzvCBGBOTmmSH5SodmqZNt4ERAZDmW4CT+tL8VtvinqywuANaFu4bOMWki16nqf0e4oC0QIaDr/g==}
     engines: {node: '>=10'}
+
+  douyin-native-card@file:apps/douyin-native-demo/fixtures/douyin-native-card:
+    resolution: {directory: apps/douyin-native-demo/fixtures/douyin-native-card, type: directory}
 
   download@8.0.0:
     resolution: {integrity: sha512-ASRY5QhDk7FK+XrQtQyvhpDKanLluEEQtWl/J7Lxuf/b+i8RYh997QeXvL85xitrmRKVlx9c7eTrcRdq2GS4eA==}
@@ -25371,6 +25390,8 @@ snapshots:
   dotenv@17.4.2: {}
 
   dotenv@8.6.0: {}
+
+  douyin-native-card@file:apps/douyin-native-demo/fixtures/douyin-native-card: {}
 
   download@8.0.0:
     dependencies:

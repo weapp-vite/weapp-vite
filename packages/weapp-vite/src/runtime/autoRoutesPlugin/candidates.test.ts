@@ -229,6 +229,24 @@ describe('auto routes candidates helpers', () => {
     expect(candidate.hasTemplate).toBe(true)
   })
 
+  it('treats native Douyin template and style files as route candidates', () => {
+    const candidate: CandidateEntry = {
+      base: '/project/src/pages/douyin/index',
+      files: new Set(),
+      hasScript: false,
+      hasTemplate: false,
+    }
+
+    applyCandidateEntryFile(candidate, '/project/src/pages/douyin/index.ttml')
+    applyCandidateEntryFile(candidate, '/project/src/pages/douyin/index.ttss')
+
+    expect(candidate.files).toEqual(new Set([
+      '/project/src/pages/douyin/index.ttml',
+      '/project/src/pages/douyin/index.ttss',
+    ]))
+    expect(candidate.hasTemplate).toBe(true)
+  })
+
   it('applies resolved entries into candidate map', () => {
     const candidates = new Map<string, CandidateEntry>()
 

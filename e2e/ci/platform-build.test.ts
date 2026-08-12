@@ -10,6 +10,7 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 const WEVU_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-runtime-e2e')
 const ALIPAY_DEMO_ROOT = path.resolve(import.meta.dirname, '../../apps/alipay-antd-mini-demo')
+const DOUYIN_DEMO_ROOT = path.resolve(import.meta.dirname, '../../apps/douyin-native-demo')
 
 async function runBuild(root: string, platform: string, options: { skipNpm?: boolean } = {}) {
   const args = [CLI_PATH, 'build', root, '--platform', platform]
@@ -132,5 +133,55 @@ describe.sequential('platform build verification gate', () => {
     )
     expect(runtimeChunk.code).toMatch(/["']MP_PLATFORM["']:\s*["']alipay["']/)
     expect(runtimeChunk.code).toMatch(/\?\.my\b|\.my\b|["']my["']/)
+  })
+
+  it('builds the Douyin native, Vue SFC, WXS, subpackage, and npm integration', async () => {
+    const outputRoot = path.join(DOUYIN_DEMO_ROOT, 'dist')
+    await fs.remove(outputRoot)
+
+    expect(await fs.pathExists(path.join(DOUYIN_DEMO_ROOT, 'src/pages/index/index.ttml'))).toBe(true)
+    expect(await fs.pathExists(path.join(DOUYIN_DEMO_ROOT, 'src/pages/index/index.ttss'))).toBe(true)
+    expect(await fs.pathExists(path.join(DOUYIN_DEMO_ROOT, 'src/pages/index/index.wxml'))).toBe(false)
+
+    await runBuild(DOUYIN_DEMO_ROOT, 'tt', { skipNpm: false })
+
+    const nativeTemplate = await fs.readFile(path.join(outputRoot, 'pages/index/index.ttml'), 'utf8')
+    expect(nativeTemplate).toContain('<wxs src="./utils.wxs" module="util"')
+    expect(nativeTemplate).toContain('tt:if="{{nativeCount >= 1}}"')
+    expect(nativeTemplate).toContain('bind:tap="openNativeSubpackage"')
+    expect(nativeTemplate).toContain('<native-counter')
+    expect(nativeTemplate).toContain('<douyin-native-card')
+    expect(await fs.pathExists(path.join(outputRoot, 'pages/index/index.ttss'))).toBe(true)
+    expect(await fs.pathExists(path.join(outputRoot, 'pages/index/index.wxml'))).toBe(false)
+    expect(await fs.readFile(path.join(outputRoot, 'pages/index/utils.wxs'), 'utf8')).toContain('MP_PLATFORM=tt')
+
+    expect(await fs.readFile(path.join(outputRoot, 'components/native-counter/index.ttml'), 'utf8')).toContain('bind:tap="increase"')
+    expect(await fs.readFile(path.join(outputRoot, 'package-native/pages/detail/index.ttml'), 'utf8')).toContain('tt:if="{{ready}}"')
+
+    const npmRoot = path.join(outputRoot, 'miniprogram_npm/douyin-native-card/card')
+    expect(await fs.pathExists(path.join(npmRoot, 'index.ttml'))).toBe(true)
+    expect(await fs.pathExists(path.join(npmRoot, 'index.ttss'))).toBe(true)
+    expect(await fs.pathExists(path.join(npmRoot, 'label.wxs'))).toBe(true)
+
+    const nativeConfig = await fs.readJson(path.join(outputRoot, 'pages/index/index.json')) as {
+      usingComponents?: Record<string, string>
+    }
+    const vueConfig = await fs.readJson(path.join(outputRoot, 'pages/wevu/index.json')) as {
+      usingComponents?: Record<string, string>
+    }
+    expect(nativeConfig.usingComponents?.['douyin-native-card']).toBe('/miniprogram_npm/douyin-native-card/card/index')
+    expect(vueConfig.usingComponents?.['douyin-native-card']).toBe('/miniprogram_npm/douyin-native-card/card/index')
+
+    const vueTemplate = await fs.readFile(path.join(outputRoot, 'pages/wevu/index.ttml'), 'utf8')
+    expect(vueTemplate).toMatch(/bind:?tap="__weapp_vite_inline"/)
+    expect(vueTemplate).toMatch(/bind:?confirm="__weapp_vite_inline"/)
+
+    const runtimeChunk = await findWevuSemanticChunk(
+      outputRoot,
+      code => code.includes('"MP_PLATFORM"') && code.includes('"tt"'),
+      'douyin demo runtime',
+    )
+    expect(runtimeChunk.code).toMatch(/["']MP_PLATFORM["']:\s*["']tt["']/)
+    expect(runtimeChunk.code).toMatch(/\?\.tt\b|\.tt\b|["']tt["']/)
   })
 })

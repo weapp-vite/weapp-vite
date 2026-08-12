@@ -1,0 +1,4 @@
+<view class="subpackage-page" id="native-subpackage" tt:if="{{ready}}">
+  <view>原生抖音分包页面</view>
+  <button id="subpackage-back" bind:tap="goBack">返回首页</button>
+</view>

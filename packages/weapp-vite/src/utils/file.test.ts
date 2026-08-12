@@ -747,6 +747,28 @@ defineAppJson(nonExistentMacroValue)
         await fs.remove(root)
       }
     })
+
+    it('prefers native Douyin source assets without changing the portable default order', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-douyin-entry-'))
+      try {
+        const base = path.join(root, 'pages/home/index')
+        await fs.ensureDir(path.dirname(base))
+        await Promise.all([
+          fs.writeFile(`${base}.wxml`, '<view>portable</view>'),
+          fs.writeFile(`${base}.ttml`, '<view>douyin</view>'),
+          fs.writeFile(`${base}.wxss`, '.portable {}'),
+          fs.writeFile(`${base}.ttss`, '.douyin {}'),
+        ])
+
+        expect((await findTemplateEntry(base)).path).toBe(`${base}.wxml`)
+        expect((await findCssEntry(base)).path).toBe(`${base}.wxss`)
+        expect((await findTemplateEntry(base, 'tt')).path).toBe(`${base}.ttml`)
+        expect((await findCssEntry(base, 'tt')).path).toBe(`${base}.ttss`)
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
   })
 
   describe('touch helpers', () => {

@@ -1,0 +1,6 @@
+.counter {
+  padding: 24rpx;
+  margin: 24rpx 0;
+  background: #fff;
+  border-left: 6rpx solid #fe2c55;
+}

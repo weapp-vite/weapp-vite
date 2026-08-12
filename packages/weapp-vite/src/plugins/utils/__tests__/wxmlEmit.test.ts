@@ -625,6 +625,31 @@ const cover = '/cover.png'
     expect(addWatchFile).toHaveBeenCalledWith('/project/src/pages/native/helper.sjs')
   })
 
+  it('preserves native Douyin template syntax when the source is TTML', () => {
+    ctx = createMockCompiler({
+      outputExtensions: { wxml: 'ttml', wxs: 'wxs' },
+      platform: 'tt',
+    })
+    const nativeFilePath = '/project/src/pages/native/index.ttml'
+    const source = '<wxs src="./helper.wxs" module="helper" /><native-counter tt:if="{{ok}}" bind:tap="handleTap" />'
+    const token = ctx.wxmlService!.analyze(source)
+    ctx.wxmlService!.tokenMap.set(nativeFilePath, token)
+    ctx.wxmlService!.depsMap.set(nativeFilePath, new Set(['/project/src/pages/native/helper.wxs']))
+
+    const emitFile = vi.fn()
+    const addWatchFile = vi.fn()
+    const result = emitWxmlAssetsWithCache({
+      runtime: { addWatchFile, emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    expect(result).toEqual(['pages/native/index.ttml'])
+    expect(emitFile.mock.calls[0]?.[0].source).toBe(source)
+    expect(addWatchFile).toHaveBeenCalledWith(nativeFilePath)
+    expect(addWatchFile).toHaveBeenCalledWith('/project/src/pages/native/helper.wxs')
+  })
+
   it('respects custom json extension', () => {
     const emitFile = vi.fn()
     emitJsonAsset({ emitFile }, 'pages/index/index.wxml', '{}', 'json5')

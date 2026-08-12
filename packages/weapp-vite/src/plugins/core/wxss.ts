@@ -1,9 +1,11 @@
 import type { Plugin } from 'vite'
 import type { CorePluginState } from './helpers'
+import { ALL_NATIVE_STYLE_RESOLVER_EXTENSIONS } from '../../platforms/sourceAssets'
 import { recordHmrProfileDuration, recordHmrProfileOperation } from '../../utils/hmrProfile'
 
+const nativeStyleExtensionRe = new RegExp(`\\.(${ALL_NATIVE_STYLE_RESOLVER_EXTENSIONS.join('|')})$`)
+
 export function createWxssResolverPlugin(state: CorePluginState): Plugin {
-  const nativeStyleExtensionRe = /\.(wxss|acss)$/
   return {
     name: 'weapp-vite:pre:native-style',
     enforce: 'pre',

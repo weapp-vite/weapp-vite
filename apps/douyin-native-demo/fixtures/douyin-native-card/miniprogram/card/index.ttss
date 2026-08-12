@@ -1,0 +1,6 @@
+.npm-card {
+  padding: 24rpx;
+  margin: 24rpx 0;
+  background: #fff;
+  border: 2rpx solid #d7d8dc;
+}

@@ -146,6 +146,27 @@ describe('utils/json resolveJson', () => {
     expect(source).toContain('"t-button": "/miniprogram_npm/tdesign-miniprogram/button/button"')
   })
 
+  it('rewrites dependency usingComponents paths for Douyin', () => {
+    const source = resolveJson(
+      {
+        json: {
+          usingComponents: {
+            'douyin-native-card': 'douyin-native-card/card/index',
+          },
+        },
+      },
+      undefined,
+      'tt',
+      {
+        dependencies: {
+          'douyin-native-card': 'file:./fixtures/douyin-native-card',
+        },
+      },
+    )
+
+    expect(source).toContain('"douyin-native-card": "/miniprogram_npm/douyin-native-card/card/index"')
+  })
+
   it('adds alipay default placeholder for boolean componentGenerics', () => {
     const source = resolveJson(
       {

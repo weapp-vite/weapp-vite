@@ -1,0 +1,18 @@
+{
+  "$schema": "https://vite.icebreaker.top/app.json",
+  "pages": [
+    "pages/index/index",
+    "pages/wevu/index"
+  ],
+  "subPackages": [
+    {
+      "root": "package-native",
+      "pages": [
+        "pages/detail/index"
+      ]
+    }
+  ],
+  "window": {
+    "navigationBarTitleText": "抖音跨端兼容"
+  }
+}

@@ -22,6 +22,7 @@ export interface PlatformVerificationCapability {
   build: VerificationStatus
   ideCli: VerificationStatus
   runtimeAutomator: VerificationStatus
+  simulator: VerificationStatus
   expectation?: PlatformBuildExpectation
   limitation?: string
 }
@@ -38,6 +39,7 @@ export const PLATFORM_VERIFICATION_CAPABILITIES = [
     build: 'required',
     ideCli: 'required',
     runtimeAutomator: 'required',
+    simulator: 'required',
     expectation: {
       platform: 'weapp',
       templateExt: 'wxml',
@@ -56,6 +58,7 @@ export const PLATFORM_VERIFICATION_CAPABILITIES = [
     build: 'required',
     ideCli: 'unsupported',
     runtimeAutomator: 'unsupported',
+    simulator: 'optional',
     expectation: {
       platform: 'tt',
       templateExt: 'ttml',
@@ -66,7 +69,7 @@ export const PLATFORM_VERIFICATION_CAPABILITIES = [
       projectConfigFile: 'project.config.json',
       runtimeGlobal: 'tt',
     },
-    limitation: '当前只提供构建产物复验，尚无稳定的开发者工具自动化后端。',
+    limitation: '官方开发者工具可通过沙盒应用完成本机模拟器复验，但尚无稳定的公开 CLI 或 automator。',
   },
   {
     id: 'ks',
@@ -75,6 +78,7 @@ export const PLATFORM_VERIFICATION_CAPABILITIES = [
     build: 'planned',
     ideCli: 'planned',
     runtimeAutomator: 'planned',
+    simulator: 'planned',
     limitation: '尚未进入公开 MpPlatform，也未验证模板、样式和脚本模块契约。',
   },
   {
@@ -84,6 +88,7 @@ export const PLATFORM_VERIFICATION_CAPABILITIES = [
     build: 'required',
     ideCli: 'optional',
     runtimeAutomator: 'unsupported',
+    simulator: 'optional',
     expectation: {
       platform: 'alipay',
       templateExt: 'axml',
@@ -103,6 +108,7 @@ export const PLATFORM_VERIFICATION_CAPABILITIES = [
     build: 'planned',
     ideCli: 'planned',
     runtimeAutomator: 'planned',
+    simulator: 'planned',
     limitation: '尚未进入公开 MpPlatform，也未验证与支付宝语法族的差异边界。',
   },
   {
@@ -112,6 +118,7 @@ export const PLATFORM_VERIFICATION_CAPABILITIES = [
     build: 'required',
     ideCli: 'optional',
     runtimeAutomator: 'optional',
+    simulator: 'optional',
     expectation: {
       platform: 'swan',
       templateExt: 'swan',
@@ -131,6 +138,7 @@ export const PLATFORM_VERIFICATION_CAPABILITIES = [
     build: 'required',
     ideCli: 'unsupported',
     runtimeAutomator: 'unsupported',
+    simulator: 'unsupported',
     expectation: {
       platform: 'jd',
       templateExt: 'jxml',
@@ -149,6 +157,7 @@ export const PLATFORM_VERIFICATION_CAPABILITIES = [
     build: 'required',
     ideCli: 'unsupported',
     runtimeAutomator: 'unsupported',
+    simulator: 'unsupported',
     expectation: {
       platform: 'xhs',
       templateExt: 'xhsml',

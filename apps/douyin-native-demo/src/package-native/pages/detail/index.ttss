@@ -1,0 +1,4 @@
+.subpackage-page {
+  padding: 48rpx 28rpx;
+  font-size: 32rpx;
+}

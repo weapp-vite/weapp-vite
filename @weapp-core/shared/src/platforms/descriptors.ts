@@ -208,9 +208,13 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       autoTouchAppStyle: false,
     },
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
-    json: {},
+    json: {
+      normalizeUsingComponents: true,
+      rewriteBundleNpmImports: true,
+    },
     npm: {
       distDirName: () => 'miniprogram_npm',
+      normalizeImportPath: true,
     },
     wxml: {
       eventBindingStyle: 'default',

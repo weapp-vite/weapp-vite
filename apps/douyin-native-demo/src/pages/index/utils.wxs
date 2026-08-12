@@ -1,0 +1,5 @@
+var platformLabel = 'MP_PLATFORM=tt'
+
+module.exports = {
+  platformLabel: platformLabel,
+}

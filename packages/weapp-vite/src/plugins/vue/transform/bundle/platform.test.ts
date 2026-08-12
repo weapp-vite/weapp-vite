@@ -138,6 +138,41 @@ describe('bundle platform helpers', () => {
     expect(resolveJsonMock).toHaveBeenCalledTimes(1)
   })
 
+  it('passes Douyin npm component context to json normalization', () => {
+    const config = JSON.stringify({
+      usingComponents: {
+        'douyin-native-card': 'douyin-native-card/card/index',
+      },
+    })
+
+    const result = normalizeVueConfigForPlatform(config, {
+      platform: 'tt',
+      dependencies: {
+        'douyin-native-card': 'file:./fixtures/douyin-native-card',
+      },
+    })
+
+    expect(result).toBe(config)
+    expect(resolveJsonMock).toHaveBeenCalledWith(
+      {
+        json: {
+          usingComponents: {
+            'douyin-native-card': 'douyin-native-card/card/index',
+          },
+        },
+        type: undefined,
+      },
+      undefined,
+      'tt',
+      {
+        dependencies: {
+          'douyin-native-card': 'file:./fixtures/douyin-native-card',
+        },
+        alipayNpmMode: undefined,
+      },
+    )
+  })
+
   it('normalizes app vue config even on weapp platform', () => {
     const config = JSON.stringify({
       pages: ['pages/index/index'],
