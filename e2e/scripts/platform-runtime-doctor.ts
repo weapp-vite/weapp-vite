@@ -1,5 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- 平台 CLI doctor 需要跨平台进程退出码、超时和 stdio 控制。 */
-import { access } from 'node:fs/promises'
+import { access, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -11,6 +11,8 @@ export interface PlatformRuntimeDiagnostic {
   build: string
   ideCli: string
   runtimeAutomator: string
+  simulator: string
+  version?: string
   ready: boolean
   reason: string
 }
@@ -18,6 +20,9 @@ export interface PlatformRuntimeDiagnostic {
 const DARWIN_CLI_CANDIDATES: Readonly<Record<string, readonly string[]>> = {
   weapp: ['/Applications/wechatwebdevtools.app/Contents/MacOS/cli'],
   swan: ['/Applications/百度开发者工具.app/Contents/Resources/app/bin/cli'],
+}
+const DARWIN_APP_CANDIDATES: Readonly<Record<string, readonly string[]>> = {
+  tt: ['/Applications/抖音开发者工具.app'],
 }
 
 async function pathExists(filePath: string) {
@@ -62,6 +67,31 @@ async function findCli(platform: string) {
   return undefined
 }
 
+async function findApp(platform: string) {
+  if (process.env.WEAPP_VITE_PLATFORM_DOCTOR_SKIP_DEFAULT_PATHS === '1') {
+    return undefined
+  }
+  for (const candidate of DARWIN_APP_CANDIDATES[platform] ?? []) {
+    if (await pathExists(candidate)) {
+      return candidate
+    }
+  }
+  return undefined
+}
+
+async function readDarwinAppVersion(appPath: string | undefined) {
+  if (!appPath) {
+    return undefined
+  }
+  try {
+    const plist = await readFile(path.join(appPath, 'Contents/Info.plist'), 'utf8')
+    return plist.match(/<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/)?.[1]
+  }
+  catch {
+    return undefined
+  }
+}
+
 export async function diagnosePlatformRuntime(id: string): Promise<PlatformRuntimeDiagnostic> {
   const capability = PLATFORM_VERIFICATION_CAPABILITIES.find(item => item.id === id)
   if (!capability) {
@@ -69,6 +99,8 @@ export async function diagnosePlatformRuntime(id: string): Promise<PlatformRunti
   }
 
   const cli = await findCli(id)
+  const app = await findApp(id)
+  const version = id === 'tt' ? await readDarwinAppVersion(app) : undefined
   const swanEndpoint = process.env.WEAPP_VITE_SWAN_WS_ENDPOINT?.trim()
   const ready = id === 'swan'
     ? Boolean(cli && swanEndpoint)
@@ -76,9 +108,13 @@ export async function diagnosePlatformRuntime(id: string): Promise<PlatformRunti
       ? Boolean(cli)
       : id === 'weapp'
         ? Boolean(cli)
-        : false
+        : id === 'tt'
+          ? Boolean(app)
+          : false
   const reason = ready
-    ? `环境已就绪：${cli}`
+    ? id === 'tt'
+      ? `已检测到抖音开发者工具${version ? ` ${version}` : ''}，可使用沙盒应用进行模拟器复验。`
+      : `环境已就绪：${cli}`
     : id === 'swan' && cli && !swanEndpoint
       ? '已检测到百度开发者工具，但缺少 WEAPP_VITE_SWAN_WS_ENDPOINT。'
       : capability.limitation ?? `未检测到 ${id} 的可执行 IDE CLI。`
@@ -88,6 +124,8 @@ export async function diagnosePlatformRuntime(id: string): Promise<PlatformRunti
     build: capability.build,
     ideCli: capability.ideCli,
     runtimeAutomator: capability.runtimeAutomator,
+    simulator: capability.simulator,
+    ...(version ? { version } : {}),
     ready,
     reason,
   }

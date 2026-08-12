@@ -31,4 +31,13 @@ describe('platform verification capabilities', () => {
     expect(planned.map(item => item.id)).toEqual(['ks', 'dingtalk'])
     expect(planned.every(item => !('expectation' in item))).toBe(true)
   })
+
+  it('records Douyin simulator verification without inventing automator support', () => {
+    expect(PLATFORM_VERIFICATION_CAPABILITIES.find(item => item.id === 'tt')).toMatchObject({
+      build: 'required',
+      ideCli: 'unsupported',
+      runtimeAutomator: 'unsupported',
+      simulator: 'optional',
+    })
+  })
 })

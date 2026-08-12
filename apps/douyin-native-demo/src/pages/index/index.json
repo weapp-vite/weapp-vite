@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "native-counter": "/components/native-counter/index",
+    "douyin-native-card": "douyin-native-card/card/index"
+  }
+}

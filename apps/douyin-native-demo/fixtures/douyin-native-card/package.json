@@ -1,0 +1,6 @@
+{
+  "name": "douyin-native-card",
+  "version": "1.0.0",
+  "main": "miniprogram/card/index.js",
+  "miniprogram": "miniprogram"
+}

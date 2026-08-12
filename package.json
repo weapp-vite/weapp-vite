@@ -61,6 +61,8 @@
     "e2e:platform:doctor": "node --import tsx ./e2e/scripts/platform-runtime-doctor.ts",
     "e2e:platform:doctor:alipay": "node --import tsx ./e2e/scripts/platform-runtime-doctor.ts --require alipay",
     "e2e:platform:runtime:alipay": "node --import tsx ./e2e/scripts/alipay-minidev-smoke.ts",
+    "e2e:platform:doctor:tt": "node --import tsx ./e2e/scripts/platform-runtime-doctor.ts --require tt",
+    "e2e:platform:open:tt": "node --import tsx ./e2e/scripts/douyin-devtools-open.ts",
     "e2e:platform:doctor:swan": "node --import tsx ./e2e/scripts/platform-runtime-doctor.ts --require swan",
     "e2e:platform:runtime:swan": "vitest run -c ./e2e/vitest.e2e.devtools.config.ts e2e/ide/swan-runtime.optional.test.ts",
     "e2e:ci:hmr": "pnpm run e2e:ci:hmr:all",

@@ -48,4 +48,26 @@ describe('platform runtime doctor', () => {
       }),
     ])
   })
+
+  it('uses a stable non-zero exit code when Douyin DevTools is missing', async () => {
+    const result = await execa(process.execPath, ['--import', 'tsx', SCRIPT_PATH, '--require', 'tt'], {
+      env: {
+        WEAPP_VITE_PLATFORM_DOCTOR_PATH: '',
+        WEAPP_VITE_PLATFORM_DOCTOR_SKIP_DEFAULT_PATHS: '1',
+      },
+      reject: false,
+    })
+    expect(result.exitCode).toBe(1)
+    const report = JSON.parse(result.stdout) as {
+      diagnostics: Array<{ id: string, ready: boolean, simulator: string, reason: string }>
+    }
+    expect(report.diagnostics).toEqual([
+      expect.objectContaining({
+        id: 'tt',
+        ready: false,
+        simulator: 'optional',
+        reason: expect.stringContaining('模拟器'),
+      }),
+    ])
+  })
 })

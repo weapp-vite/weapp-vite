@@ -1,0 +1,4 @@
+<view class="counter">
+  <text id="native-count">原生计数：{{current}}</text>
+  <button id="native-increase" bind:tap="increase">原生 +1</button>
+</view>

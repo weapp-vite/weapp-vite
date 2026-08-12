@@ -1,0 +1,5 @@
+<wxs src="./label.wxs" module="labelUtil" />
+<view class="npm-card" id="npm-native-card">
+  <view>{{labelUtil.prefix}}：{{label}}</view>
+  <button id="npm-confirm" bind:tap="confirm">触发 npm 组件事件</button>
+</view>
