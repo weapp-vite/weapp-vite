@@ -1,6 +1,8 @@
+import type { MpPlatform } from '../../types'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { configExtensions, scriptExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../../constants'
+import { getSourceStyleExtensions, getSourceTemplateExtensions, isSourceTemplateExtension } from '../../platforms/sourceAssets'
 
 const pathExistsInFlight = new Map<string, Promise<boolean>>()
 const JS_OR_TS_RE = /\.[jt]s$/
@@ -25,7 +27,7 @@ export function isJsOrTs(name?: string) {
 }
 
 export function isTemplateRequest(request: string) {
-  return request.endsWith('.wxml') || request.endsWith('.html')
+  return isSourceTemplateExtension(path.extname(request))
 }
 
 export function normalizeFileExtension(extension: string) {
@@ -96,22 +98,22 @@ export async function findJsonEntry(filepath: string): Promise<{
   return findEntryByExtensions(filepath, configExtensions)
 }
 
-export async function findCssEntry(filepath: string): Promise<{
+export async function findCssEntry(filepath: string, platform?: MpPlatform): Promise<{
   predictions: string[]
   path?: string
 }> {
-  return findEntryByExtensions(filepath, supportedCssLangs)
+  return findEntryByExtensions(filepath, getSourceStyleExtensions(platform))
 }
 
-export async function findTemplateEntry(filepath: string): Promise<{
+export async function findTemplateEntry(filepath: string, platform?: MpPlatform): Promise<{
   predictions: string[]
   path?: string
 }> {
-  return findEntryByExtensions(filepath, templateExtensions)
+  return findEntryByExtensions(filepath, getSourceTemplateExtensions(platform))
 }
 
 export function isTemplate(filepath: string) {
-  return templateExtensions.some(ext => filepath.endsWith(`.${ext}`))
+  return isSourceTemplateExtension(path.extname(filepath))
 }
 
 export function touchSync(filename: string) {

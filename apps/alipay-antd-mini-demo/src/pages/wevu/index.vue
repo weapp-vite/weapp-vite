@@ -20,8 +20,8 @@ function increase() {
   <view class="page">
     <view class="panel" :class="{ odd: isOdd }">
       <text class="title">wevu SFC 页面</text>
-      <text class="desc">当前计数：{{ count }}</text>
-      <text class="desc">这个块使用了动态 class（会触发脚本模块标签转换）</text>
+      <text v-if="count >= 0" class="desc">当前计数：{{ count }}</text>
+      <text class="desc">这个块使用了动态 class</text>
     </view>
 
     <ant-button type="primary" className="action-btn" @tap="increase">

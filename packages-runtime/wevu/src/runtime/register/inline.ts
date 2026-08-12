@@ -59,6 +59,17 @@ function normalizeEventToken(value: string): string {
 }
 
 const DASH_ALNUM_RE = /-([a-z0-9])/g
+const DATASET_KEY_SEPARATOR_RE = /[-_]/g
+
+function resolveNormalizedDatasetValue(dataset: Record<string, any>, key: string) {
+  const normalizedKey = key.replace(DATASET_KEY_SEPARATOR_RE, '').toLowerCase()
+  for (const [datasetKey, value] of Object.entries(dataset ?? {})) {
+    if (datasetKey.replace(DATASET_KEY_SEPARATOR_RE, '').toLowerCase() === normalizedKey) {
+      return value
+    }
+  }
+  return undefined
+}
 
 function resolveEventDatasetKey(baseKey: string, event: any): string | undefined {
   const eventType = typeof event?.type === 'string' ? event.type : ''
@@ -90,10 +101,20 @@ function resolveDatasetValueByBaseKey(
     if (specificKey && dataset?.[specificKey] !== undefined) {
       return dataset[specificKey]
     }
+    if (specificKey) {
+      const normalizedValue = resolveNormalizedDatasetValue(dataset, specificKey)
+      if (normalizedValue !== undefined) {
+        return normalizedValue
+      }
+    }
   }
   for (const aliasKey of aliasKeys) {
     if (dataset?.[aliasKey] !== undefined) {
       return dataset[aliasKey]
+    }
+    const normalizedValue = resolveNormalizedDatasetValue(dataset, aliasKey)
+    if (normalizedValue !== undefined) {
+      return normalizedValue
     }
   }
   return undefined

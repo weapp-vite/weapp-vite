@@ -88,6 +88,20 @@ describe('invalidateEntry sidecar watcher', () => {
     vi.restoreAllMocks()
   })
 
+  it('watches native Alipay template and style sidecars', () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+    const watcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(watcher)
+
+    ensureSidecarWatcher(createContext(), '/project/src')
+
+    const patterns = chokidarWatchMock.mock.calls[0]?.[0] as string[]
+    expect(patterns).toContain('/project/src/**/*.axml')
+    expect(patterns).toContain('/project/src/**/*.acss')
+  })
+
   it('treats raw rename on an existing known sidecar file as update after settle', async () => {
     vi.stubEnv('VITEST', '')
     vi.stubEnv('NODE_ENV', 'development')

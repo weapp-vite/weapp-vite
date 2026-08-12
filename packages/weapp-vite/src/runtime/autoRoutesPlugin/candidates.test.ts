@@ -211,6 +211,24 @@ describe('auto routes candidates helpers', () => {
     expect(candidate.jsonPath).toBe('/project/src/pages/home/index.json')
   })
 
+  it('treats native Alipay template and style files as route candidates', () => {
+    const candidate: CandidateEntry = {
+      base: '/project/src/pages/alipay/index',
+      files: new Set(),
+      hasScript: false,
+      hasTemplate: false,
+    }
+
+    applyCandidateEntryFile(candidate, '/project/src/pages/alipay/index.axml')
+    applyCandidateEntryFile(candidate, '/project/src/pages/alipay/index.acss')
+
+    expect(candidate.files).toEqual(new Set([
+      '/project/src/pages/alipay/index.axml',
+      '/project/src/pages/alipay/index.acss',
+    ]))
+    expect(candidate.hasTemplate).toBe(true)
+  })
+
   it('applies resolved entries into candidate map', () => {
     const candidates = new Map<string, CandidateEntry>()
 

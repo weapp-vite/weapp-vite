@@ -80,8 +80,9 @@ export async function scanTemplateEntry(
   scanTemplateEntryFn: (templateEntry: string) => Promise<void>,
   existsCache: Map<string, boolean>,
   ttlMs: number,
+  platform?: CompilerContext['configService']['platform'],
 ) {
-  return ensureTemplateScanned(pluginCtx, id, scanTemplateEntryFn, existsCache, ttlMs)
+  return ensureTemplateScanned(pluginCtx, id, scanTemplateEntryFn, existsCache, ttlMs, platform)
 }
 
 export async function applyScriptSetupUsingComponents(options: {

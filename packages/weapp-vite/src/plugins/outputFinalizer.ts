@@ -13,6 +13,7 @@ import path from 'pathe'
 import { parseLogicalEntryId, parseSidecarModuleId } from '../moduleGraph/protocol'
 import { getWxmlPlatformTransformOptions } from '../platform'
 import { changeFileExtension } from '../utils'
+import { resolveScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { handleWxml, scanWxml } from '../wxml'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
@@ -252,6 +253,10 @@ function normalizeTemplateAssetEntries(
     })
     const result = handleWxml(token, {
       scriptModuleExtension: configService?.outputExtensions?.wxs,
+      scriptModuleTag: resolveScriptModuleTagName({
+        platform: configService?.platform,
+        scriptModuleExtension: configService?.outputExtensions?.wxs,
+      }),
       templateExtension: configService?.outputExtensions?.wxml,
     })
     if (result.code !== code) {

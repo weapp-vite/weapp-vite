@@ -1,0 +1,3 @@
+<view class="subpackage-page" a:if="{{ready}}">
+  原生支付宝分包页面
+</view>

@@ -2,7 +2,7 @@
 
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/class-style/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Class Style</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -67,7 +67,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/diff/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Diff</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -101,7 +101,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/hmr/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <e2e-template-probe marker="HMR" storage-key="__weapp_vite_core_hmr_template_probe__" />
     <view class="title">HMR</view>
@@ -132,7 +132,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/hmr-html/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="hmr-html-page">
     <view class="title">HMR-HTML</view>
     <view class="content">HMR-HTML-TEMPLATE</view>
@@ -157,7 +157,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/hmr-sfc/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="hmr-sfc-page">
     <view class="title">HMR-SFC</view>
     <view class="marker">{{marker}}</view>
@@ -184,8 +184,9 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/layouts/index 1`] = `
-"<block wx:if="{{__wv_page_layout_name === 'admin'}}">
+"<block tt:if="{{__wv_page_layout_name === 'admin'}}">
   <weapp-layout-admin
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
     title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
     subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
     <view class="page">
@@ -199,7 +200,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
         <view class="hero__desc">script: {{scriptMarker}}</view>
       </view>
 
-      <view wx:for="{{cards}}" wx:key="title" class="card">
+      <view tt:for="{{cards}}" tt:key="title" class="card">
         <view class="card__title">{{item.title}}</view>
         <view class="card__desc">{{item.desc}}</view>
       </view>
@@ -212,8 +213,9 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
     </view>
   </weapp-layout-admin>
 </block>
-<block wx:elif="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}">
+<block tt:elif="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}">
   <weapp-layout-default
+    __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"
     title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"
     subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
     <view class="page">
@@ -227,7 +229,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
         <view class="hero__desc">script: {{scriptMarker}}</view>
       </view>
 
-      <view wx:for="{{cards}}" wx:key="title" class="card">
+      <view tt:for="{{cards}}" tt:key="title" class="card">
         <view class="card__title">{{item.title}}</view>
         <view class="card__desc">{{item.desc}}</view>
       </view>
@@ -240,7 +242,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
     </view>
   </weapp-layout-default>
 </block>
-<block wx:else>
+<block tt:else>
   <view class="page">
     <e2e-template-probe
       marker="LAYOUTS-PAGE-TEMPLATE-BASE"
@@ -252,7 +254,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
       <view class="hero__desc">script: {{scriptMarker}}</view>
     </view>
 
-    <view wx:for="{{cards}}" wx:key="title" class="card">
+    <view tt:for="{{cards}}" tt:key="title" class="card">
       <view class="card__title">{{item.title}}</view>
       <view class="card__desc">{{item.desc}}</view>
     </view>
@@ -311,7 +313,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/reactivity/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Reactivity</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -341,7 +343,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/root-guard/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Root Guard Class</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -375,7 +377,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/runtime/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Runtime</view>
     <view id="runtime-ref" class="ref-target">template-ref</view>
@@ -418,7 +420,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/store/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Store</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -448,7 +450,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/store-share/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Store Share</view>
     <view class="summary">ok: {{__e2e.ok}}</view>
@@ -478,7 +480,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/style-matrix/index 1`] = `
-"<weapp-layout-default>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
   <view class="page">
     <view class="title">Style Matrix</view>
     <view class="summary">ok: {{__e2e.ok}}</view>

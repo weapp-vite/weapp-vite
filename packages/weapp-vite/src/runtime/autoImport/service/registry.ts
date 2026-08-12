@@ -101,7 +101,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     const [{ path: jsEntry }, { path: jsonPath }, { path: templatePath }] = await Promise.all([
       findJsEntry(baseName),
       findJsonEntry(baseName),
-      findTemplateEntry(baseName),
+      findTemplateEntry(baseName, state.ctx.configService.platform),
     ])
 
     let vueEntry = filePath.endsWith('.vue') ? filePath : undefined

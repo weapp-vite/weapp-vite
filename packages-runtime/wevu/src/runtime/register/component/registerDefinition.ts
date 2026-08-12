@@ -26,9 +26,11 @@ import {
 import { callHookList } from '../../hooks'
 import { registerRuntimeLayoutHosts, unregisterRuntimeLayoutHosts } from '../../layoutBridge'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../../pageLayout'
+import { getMiniProgramRuntimeGlobalObject } from '../../platform'
 import { getOwnerProxy } from '../../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
+import { registerNativeComponentDefinition } from './registerNativeDefinition'
 
 function scheduleOwnerTemplateRefUpdate(target: InternalRuntimeState) {
   const selectOwnerComponent = (target as any).selectOwnerComponent
@@ -410,7 +412,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     },
     options: finalOptions,
   }
-  const statefulHmrBridge = (globalThis as Record<string, any>)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+  const statefulHmrBridge = getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
   if (typeof statefulHmrBridge?.trackWevuComponent === 'function') {
     const definition = statefulHmrBridge.trackWevuComponent(componentDefinition, (
       instance: InternalRuntimeState,
@@ -426,10 +428,10 @@ export function registerComponentDefinition<D extends object, C extends Computed
       enableDeferredSetData(instance, { rehydrateSetupState: true })
     })
     if (!statefulHmrBridge.isApplying()) {
-      Component(definition)
+      registerNativeComponentDefinition(definition, isPage)
     }
   }
   else {
-    Component(componentDefinition)
+    registerNativeComponentDefinition(componentDefinition, isPage)
   }
 }

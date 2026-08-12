@@ -123,7 +123,7 @@ export function createLoadHook(state: CorePluginState) {
 
       if (isCSSRequest(id)) {
         const parsed = parseRequest(id)
-        if (parsed.query.wxss) {
+        if (parsed.query.wxss || parsed.query.nativeStyle) {
           const realPath = getCssRealPath(parsed)
           try {
             const css = await readFileCached(realPath, { checkMtime: configService.isDev })

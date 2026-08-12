@@ -50,6 +50,7 @@ keywords:
 
 - 决定当前构建按哪个小程序平台解析扩展名和 project config
 - 影响平台分支逻辑、模板兼容策略、部分 JSON / npm 输出行为
+- 决定原生模板和样式 sidecar 的选择顺序；目标平台原生后缀优先，便携后缀作为回退
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -65,6 +66,8 @@ export default defineConfig({
 
 - 单平台项目：直接写死即可
 - 多平台项目：通常配合 CLI 的 `--platform` 与 `weapp.multiPlatform` 使用
+
+支付宝平台可以直接接收原生 `.axml` / `.acss` 源码。若同一入口同时存在多种 sidecar，`platform: 'alipay'` 的模板选择顺序为 `.axml`、`.wxml`、`.html`，样式选择顺序为 `.acss`、`.wxss`、`.css` 和预处理器；页面、组件、分包、自动路由、watcher 与原生 layout 共用这套规则。原生 `.axml` 保留支付宝宿主语法，便携 `.wxml` 和 Vue SFC 则继续转换为支付宝产物。
 
 ## `weapp.multiPlatform` {#weapp-multiplatform}
 

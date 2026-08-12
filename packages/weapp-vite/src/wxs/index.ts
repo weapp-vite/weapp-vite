@@ -19,6 +19,7 @@ export {
 export function transformWxsCode(code: string, options?: TransformWxsCodeOptions) {
   const filename = options?.filename ?? 'script.ts'
   const extension = options?.extension ?? 'wxs'
+  const preserveEsmExports = extension.replace(/^\./, '') === 'sjs'
   const importees: Array<{ source: string }> = []
 
   const maybePushImportee = (value: unknown) => {
@@ -54,7 +55,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
     babelrc: false,
     configFile: false,
     presets: [
-      [babelPresetEnv, { modules: 'commonjs', targets: { ie: '11' } }] as BabelPresetItem,
+      [babelPresetEnv, { modules: preserveEsmExports ? false : 'commonjs', targets: { ie: '11' } }] as BabelPresetItem,
       babelPresetTypescript as BabelPresetItem,
     ],
     filename,
@@ -139,6 +140,9 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
           },
           MemberExpression: {
             enter(p: babel.NodePath<t.MemberExpression>) {
+              if (preserveEsmExports) {
+                return
+              }
               const node = p.node
               if (!t.isIdentifier(node.object, { name: 'exports' })) {
                 return

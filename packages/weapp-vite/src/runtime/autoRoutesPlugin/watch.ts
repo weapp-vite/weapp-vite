@@ -74,7 +74,10 @@ export function matchesRouteFile(
   return false
 }
 
-async function rebuildCandidateForBase(base: string): Promise<CandidateEntry | undefined> {
+async function rebuildCandidateForBase(
+  base: string,
+  platform: NonNullable<MutableCompilerContext['configService']>['platform'],
+): Promise<CandidateEntry | undefined> {
   const files = new Set<string>()
   let hasScript = false
   let hasTemplate = false
@@ -88,8 +91,8 @@ async function rebuildCandidateForBase(base: string): Promise<CandidateEntry | u
   ] = await Promise.all([
     findVueEntry(base),
     findJsEntry(base),
-    findTemplateEntry(base),
-    findCssEntry(base),
+    findTemplateEntry(base, platform),
+    findCssEntry(base, platform),
     findJsonEntry(base),
   ])
 
@@ -180,7 +183,7 @@ export async function updateCandidateFromFile(
     return removed
   }
 
-  const candidate = await rebuildCandidateForBase(base)
+  const candidate = await rebuildCandidateForBase(base, ctx.configService.platform)
   if (!candidate) {
     const removed = stateCandidates.delete(base)
     return removed

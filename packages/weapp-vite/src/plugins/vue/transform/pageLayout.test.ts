@@ -9,7 +9,7 @@ import {
 import { fs as fsExtra } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { applyPageLayout, applyPageLayoutPlan, applyPageLayoutPlanToNativePage, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, injectNativePageLayoutRuntime, invalidateResolvedPageLayoutsCache, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
+import { applyPageLayout, applyPageLayoutPlan, applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, injectNativePageLayoutRuntime, invalidateResolvedPageLayoutsCache, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
 import { getPlatformLayoutConditionalDirective, getPlatformLayoutElseDirective } from './pageLayout/shared'
 
 const tempDirs: string[] = []
@@ -31,6 +31,33 @@ describe('page layouts', () => {
         await fs.rm(dir, { recursive: true, force: true })
       }
     }
+  })
+
+  it('selects native layout sidecars for the target platform', async () => {
+    const projectRoot = await createTempProject()
+    const layoutBase = path.join(projectRoot, 'src/layouts/default/index')
+    await fs.mkdir(path.dirname(layoutBase), { recursive: true })
+    await Promise.all([
+      fs.writeFile(`${layoutBase}.json`, '{"component":true}'),
+      fs.writeFile(`${layoutBase}.ts`, 'Component({})'),
+      fs.writeFile(`${layoutBase}.wxml`, '<slot />'),
+      fs.writeFile(`${layoutBase}.wxss`, '.layout {}'),
+      fs.writeFile(`${layoutBase}.axml`, '<slot />'),
+      fs.writeFile(`${layoutBase}.acss`, '.layout {}'),
+    ])
+
+    await expect(collectNativeLayoutAssets(layoutBase, 'alipay')).resolves.toEqual({
+      json: `${layoutBase}.json`,
+      template: `${layoutBase}.axml`,
+      style: `${layoutBase}.acss`,
+      script: `${layoutBase}.ts`,
+    })
+    await expect(collectNativeLayoutAssets(layoutBase, 'weapp')).resolves.toEqual({
+      json: `${layoutBase}.json`,
+      template: `${layoutBase}.wxml`,
+      style: `${layoutBase}.wxss`,
+      script: `${layoutBase}.ts`,
+    })
   })
 
   it('extracts layout name from definePageMeta', () => {

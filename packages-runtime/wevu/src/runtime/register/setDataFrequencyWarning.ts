@@ -1,5 +1,5 @@
 import type { SetDataSnapshotOptions } from '../types'
-import { getCurrentMiniProgramHostConfig, getMiniProgramGlobalObject } from '../platform'
+import { getCurrentMiniProgramHostConfig, getMiniProgramGlobalObject, getMiniProgramRuntimeConsoleWarn } from '../platform'
 
 interface ResolvedHighFrequencyWarningOptions {
   enabled: boolean
@@ -116,7 +116,7 @@ export function createSetDataHighFrequencyWarningMonitor(
 
   const now = options.now ?? (() => Date.now())
   const logger = options.logger ?? ((message: string) => {
-    const runtimeConsoleWarn = (globalThis as Record<string, any>)?.console?.warn
+    const runtimeConsoleWarn = getMiniProgramRuntimeConsoleWarn()
     if (typeof runtimeConsoleWarn === 'function') {
       runtimeConsoleWarn(message)
     }

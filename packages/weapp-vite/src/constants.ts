@@ -21,8 +21,8 @@ export const configExtensions = [
 /**
  * 源代码支持的 css 文件格式
  */
-export const supportedCssLangs = ['wxss', 'css', 'scss', 'less', 'sass', 'styl']
+export const supportedCssLangs = ['wxss', 'acss', 'css', 'scss', 'less', 'sass', 'styl']
 /**
  * 源代码支持的 wxml 文件格式
  */
-export const templateExtensions = ['wxml', 'html']
+export const templateExtensions = ['wxml', 'axml', 'html']

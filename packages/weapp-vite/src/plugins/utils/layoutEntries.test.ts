@@ -33,6 +33,7 @@ describe('layout entry helpers', () => {
       nativeScriptEntries,
       normalizeEntry: (entry, jsonPath) => `${entry}:${jsonPath}`,
       jsonPath: '/project/src/pages/home/index.json',
+      platform: 'alipay',
     })
 
     expect(entries).toEqual([
@@ -46,6 +47,10 @@ describe('layout entry helpers', () => {
     expect(nativeScriptEntries).toEqual(new Set([
       '/layouts/native/index:/project/src/pages/home/index.json',
     ]))
+    expect(collectNativeLayoutAssetsMock).toHaveBeenCalledWith(
+      '/project/src/layouts/native/index',
+      'alipay',
+    )
   })
 
   it('skips native layouts without script sidecars', async () => {

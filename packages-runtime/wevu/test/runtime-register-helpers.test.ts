@@ -46,6 +46,25 @@ describe('runtime: register helpers', () => {
     expect(runInlineExpression(ctx, undefined, event)).toBeUndefined()
   })
 
+  it.each(['wiTap', 'wi-tap', 'witap'])('resolves platform dataset key %s', (datasetKey) => {
+    const handler = vi.fn()
+    runInlineExpression(
+      { handler },
+      undefined,
+      {
+        type: 'tap',
+        currentTarget: { dataset: { [datasetKey]: 'i0' } },
+      },
+      {
+        i0: {
+          keys: [],
+          fn: ctx => ctx.handler(),
+        },
+      },
+    )
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
   it('injects runtime into setup context', () => {
     const setup = vi.fn((props: any, ctx: any) => ({ props, runtime: ctx.runtime }))
     const context: any = {}

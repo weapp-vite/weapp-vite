@@ -214,7 +214,7 @@ function createCacheKey(options: Required<HandleWxmlOptions>) {
   const defineKeys = resolvedDefineImportMetaEnv
     ? Object.keys(resolvedDefineImportMetaEnv).sort().map(key => `${key}:${String(resolvedDefineImportMetaEnv[key])}`).join(',')
     : ''
-  return `${options.removeComment ? 1 : 0}|${options.transformEvent ? 1 : 0}|${extension}|${tag}|${templateExt}|${importMetaExtension}|${importMetaRelativePath}|${defineKeys}`
+  return `${options.removeComment ? 1 : 0}|${options.transformEvent ? 1 : 0}|${options.transformPlatformSyntax ? 1 : 0}|${extension}|${tag}|${templateExt}|${importMetaExtension}|${importMetaRelativePath}|${defineKeys}`
 }
 
 function getCachedResult(data: ScanResult, cacheKey: string) {
@@ -259,6 +259,7 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
     importMetaExtension: undefined,
     removeComment: true,
     transformEvent: true,
+    transformPlatformSyntax: true,
     scriptModuleExtension: undefined,
     scriptModuleTag: undefined,
     templateExtension: undefined,
@@ -304,14 +305,15 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
     scriptModuleExtension: normalizedScriptExtension,
     scriptModuleTag: opts.scriptModuleTag,
   })
-  const shouldNormalizeImports = wxsImportNormalizeTokens.length > 0
-  const shouldNormalizeTemplateImports = templateImportNormalizeTokens.length > 0 && normalizedTemplateExtension
-  const shouldRemoveLang = removeWxsLangAttrTokens.length > 0
-  const shouldTransformInlineWxs = inlineWxsTokens.length > 0
-  const shouldTransformEvents = opts.transformEvent && eventTokens.length > 0
-  const shouldTransformDirectives = directiveTokens.length > 0
-  const shouldTransformTagNames = tagNameTokens.length > 0
-  const shouldTransformScriptModuleTags = resolvedScriptTag !== 'wxs' && scriptModuleTagTokens.length > 0
+  const shouldTransformPlatformSyntax = opts.transformPlatformSyntax
+  const shouldNormalizeImports = shouldTransformPlatformSyntax && wxsImportNormalizeTokens.length > 0
+  const shouldNormalizeTemplateImports = shouldTransformPlatformSyntax && templateImportNormalizeTokens.length > 0 && normalizedTemplateExtension
+  const shouldRemoveLang = shouldTransformPlatformSyntax && removeWxsLangAttrTokens.length > 0
+  const shouldTransformInlineWxs = shouldTransformPlatformSyntax && inlineWxsTokens.length > 0
+  const shouldTransformEvents = shouldTransformPlatformSyntax && opts.transformEvent && eventTokens.length > 0
+  const shouldTransformDirectives = shouldTransformPlatformSyntax && directiveTokens.length > 0
+  const shouldTransformTagNames = shouldTransformPlatformSyntax && tagNameTokens.length > 0
+  const shouldTransformScriptModuleTags = shouldTransformPlatformSyntax && resolvedScriptTag !== 'wxs' && scriptModuleTagTokens.length > 0
   const shouldRemoveConditionals = removalRanges.length > 0
   const shouldRemoveComments = opts.removeComment && commentTokens.length > 0
   const resolvedDefineImportMetaEnv = resolveDefineImportMetaEnv(opts)
@@ -402,7 +404,7 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
     }
   }
 
-  const finalCode = shouldNormalizeScriptModuleAttributes(resolvedScriptTag)
+  const finalCode = shouldTransformPlatformSyntax && shouldNormalizeScriptModuleAttributes(resolvedScriptTag)
     ? normalizeImportSjsAttributes(ms.toString())
     : ms.toString()
   const codeWithDefine = replaceDefineImportMetaEnv(finalCode, resolvedDefineImportMetaEnv)

@@ -24,6 +24,10 @@ interface WxsPluginState {
   wxsMap: Map<string, { emittedFile: EmittedFile }>
 }
 
+function createWxsCodeCacheKey(rawCode: string, scriptModuleExtension?: string) {
+  return `${scriptModuleExtension ?? 'wxs'}::${rawCode}`
+}
+
 function resolveWxsOutputFileName(
   ctx: CompilerContext,
   wxsPath: string,
@@ -57,7 +61,8 @@ async function transformWxsFile(
     filename: wxsPath,
     extension: scriptModuleExtension,
   })
-  const code = wxsCodeCache.get(rawCode) ?? result?.code
+  const cacheKey = createWxsCodeCacheKey(rawCode, scriptModuleExtension)
+  const code = wxsCodeCache.get(cacheKey) ?? result?.code
   const dirname = path.dirname(wxsPath)
   const importeePaths = importees.map(({ source }) => path.resolve(dirname, source))
   await Promise.all(
@@ -77,7 +82,7 @@ async function transformWxsFile(
   state.wxsMap.set(wxsPath, {
     emittedFile,
   })
-  wxsCodeCache.set(rawCode, code)
+  wxsCodeCache.set(cacheKey, code)
 }
 
 async function handleWxsDeps(

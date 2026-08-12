@@ -33,6 +33,13 @@ function getGlobalRuntime() {
   return globalThis as MiniProgramGlobal
 }
 
+function getStaticMiniProgramGlobalObject(): MiniProgramGlobal | undefined {
+  if (typeof my !== 'undefined') {
+    return my as MiniProgramGlobal
+  }
+  return undefined
+}
+
 export function resolveCurrentMiniProgramPlatform() {
   const globalRuntime = getGlobalRuntime()
   const compiledPlatform = (import.meta as ImportMetaWithEnv).env?.PLATFORM
@@ -64,7 +71,12 @@ export function getCurrentMiniProgramPages(): Array<Record<string, any>> {
   if (!supportsCurrentMiniProgramRuntimeCapability('globalPageStack')) {
     return []
   }
-  const getCurrentPagesFn = (globalThis as Record<string, unknown>).getCurrentPages
+  const globalRuntime = getGlobalRuntime()
+  const platform = resolveCurrentMiniProgramPlatform()
+  const runtimeGlobalKey = platform ? getMiniProgramRuntimeGlobalKey(platform) : undefined
+  const getCurrentPagesFn = (runtimeGlobalKey ? globalRuntime?.[runtimeGlobalKey]?.getCurrentPages : undefined)
+    ?? getStaticMiniProgramGlobalObject()?.getCurrentPages
+    ?? globalRuntime?.getCurrentPages
   if (typeof getCurrentPagesFn !== 'function') {
     return []
   }
@@ -92,6 +104,7 @@ export function getMiniProgramGlobalObject(platformInput?: string): MiniProgramG
   if (resolvedCompiledPlatform) {
     const globalKey = getMiniProgramRuntimeGlobalKey(resolvedCompiledPlatform)
     return globalRuntime?.[globalKey] as MiniProgramGlobal | undefined
+      ?? (resolvedCompiledPlatform === 'alipay' ? getStaticMiniProgramGlobalObject() : undefined)
   }
 
   for (const globalKey of getMiniProgramRuntimeGlobalKeys()) {
@@ -101,6 +114,14 @@ export function getMiniProgramGlobalObject(platformInput?: string): MiniProgramG
     }
   }
   return undefined
+}
+
+export function getMiniProgramRuntimeGlobalObject(): MiniProgramGlobal | undefined {
+  return getMiniProgramGlobalObject() ?? getGlobalRuntime()
+}
+
+export function getMiniProgramRuntimeConsoleWarn(): ((message: string) => void) | undefined {
+  return getMiniProgramRuntimeGlobalObject()?.console?.warn
 }
 
 export function getCurrentMiniProgramGlobalRouter(): MiniProgramGlobalRouter | undefined {
