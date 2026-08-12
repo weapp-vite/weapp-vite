@@ -145,6 +145,11 @@ describe('platform adapter registry', () => {
       fillComponentGenericsDefault: true,
       rewriteBundleNpmImports: true,
     })
+    expect(getJsonPlatformOptions('tt')).toEqual({
+      normalizeUsingComponents: true,
+      fillComponentGenericsDefault: false,
+      rewriteBundleNpmImports: true,
+    })
     expect(shouldNormalizeUsingComponents()).toBe(false)
     expect(shouldNormalizeUsingComponents('weapp')).toBe(false)
     expect(shouldNormalizeUsingComponents('alipay')).toBe(true)
@@ -215,6 +220,16 @@ describe('platform adapter registry', () => {
       copyEsModuleDirectory: true,
       hoistNestedDependencies: true,
       shouldRebuildCachedPackage: true,
+    })
+    expect(getNpmPlatformOptions('tt')).toEqual({
+      distDirName: 'miniprogram_npm',
+      preservedDirNames: ['miniprogram_npm'],
+      importPrefix: '/miniprogram_npm/',
+      normalizeImportPath: true,
+      normalizeMiniprogramPackage: false,
+      copyEsModuleDirectory: false,
+      hoistNestedDependencies: false,
+      shouldRebuildCachedPackage: false,
     })
     expect(shouldNormalizePlatformNpmImportPath('weapp')).toBe(false)
     expect(shouldNormalizePlatformNpmImportPath('alipay')).toBe(true)

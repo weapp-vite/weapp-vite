@@ -8,12 +8,20 @@ function uniqueExtensions(extensions: readonly (string | undefined)[]) {
   return Array.from(new Set(extensions.filter((extension): extension is string => Boolean(extension))))
 }
 
-const ALL_NATIVE_TEMPLATE_EXTENSIONS = uniqueExtensions(
+export const ALL_NATIVE_TEMPLATE_EXTENSIONS = uniqueExtensions(
   MINI_PROGRAM_PLATFORM_ADAPTERS.map(adapter => adapter.outputExtensions.wxml),
 )
-const ALL_NATIVE_STYLE_EXTENSIONS = uniqueExtensions(
+export const ALL_NATIVE_STYLE_EXTENSIONS = uniqueExtensions(
   MINI_PROGRAM_PLATFORM_ADAPTERS.map(adapter => adapter.outputExtensions.wxss),
 )
+export const ALL_SOURCE_TEMPLATE_EXTENSIONS = uniqueExtensions([
+  ...PORTABLE_TEMPLATE_EXTENSIONS,
+  ...ALL_NATIVE_TEMPLATE_EXTENSIONS,
+])
+export const ALL_SOURCE_STYLE_EXTENSIONS = uniqueExtensions([
+  ...PORTABLE_STYLE_EXTENSIONS,
+  ...ALL_NATIVE_STYLE_EXTENSIONS,
+])
 
 function getAdapter(platform?: MpPlatform) {
   return platform
@@ -29,7 +37,7 @@ export function getSourceTemplateExtensions(platform?: MpPlatform) {
   const nativeExtension = getAdapter(platform)?.outputExtensions.wxml
   return platform
     ? uniqueExtensions([nativeExtension, ...PORTABLE_TEMPLATE_EXTENSIONS])
-    : uniqueExtensions([...PORTABLE_TEMPLATE_EXTENSIONS, ...ALL_NATIVE_TEMPLATE_EXTENSIONS])
+    : ALL_SOURCE_TEMPLATE_EXTENSIONS
 }
 
 /**
@@ -40,7 +48,7 @@ export function getSourceStyleExtensions(platform?: MpPlatform) {
   const nativeExtension = getAdapter(platform)?.outputExtensions.wxss
   return platform
     ? uniqueExtensions([nativeExtension, ...PORTABLE_STYLE_EXTENSIONS])
-    : uniqueExtensions([...PORTABLE_STYLE_EXTENSIONS, ...ALL_NATIVE_STYLE_EXTENSIONS])
+    : ALL_SOURCE_STYLE_EXTENSIONS
 }
 
 export function isSourceTemplateExtension(extension: string) {

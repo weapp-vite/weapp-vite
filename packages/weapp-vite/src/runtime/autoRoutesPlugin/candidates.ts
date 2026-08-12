@@ -23,7 +23,7 @@ const STYLE_EXTENSIONS = new Set(supportedCssLangs.map(ext => `.${ext}`))
 const CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
 const SKIPPED_DIRECTORIES = new Set(['.git', '.husky', '.idea', '.turbo'])
 const SCRIPT_SIDECAR_PATTERN = /\.(?:wxs|sjs)\.[jt]s$/i
-const TEMPLATE_SIDECAR_PATTERN = /\.wxml\.[jt]s$/i
+const TEMPLATE_SIDECAR_PATTERN = new RegExp(`\\.(?:${templateExtensions.join('|')})\\.[jt]s$`, 'i')
 
 export function isConfigFile(filePath: string) {
   return CONFIG_SUFFIXES.some(ext => filePath.endsWith(ext))

@@ -6,6 +6,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { preprocessCSS } from 'vite'
 import { parseLogicalEntryId, parseSidecarSourceRequest } from '../moduleGraph/protocol'
+import { isSourceStyleExtension } from '../platforms/sourceAssets'
 import { changeFileExtension, isJsOrTs } from '../utils'
 import { getPathExistsTtlMs } from '../utils/cachePolicy'
 import { normalizeWatchPath } from '../utils/path'
@@ -65,7 +66,6 @@ type SharedStyleImportCache = Map<string, string[]>
 
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
 const TAILWIND_CONTENT_HMR_NONCE_RE = /\n\/\* weapp-vite tailwind-content [^*\n]+ \*\/$/
-const SOURCE_STYLE_ASSET_RE = /\.(?:wxss|acss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
 const VITE_PREPROCESS_STYLE_RE = /\.(?:acss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
 
 function stripLeadingBlankLines(code: string) {
@@ -73,7 +73,9 @@ function stripLeadingBlankLines(code: string) {
 }
 
 function isSourceStyleAsset(fileName: string) {
-  return SOURCE_STYLE_ASSET_RE.test(fileName)
+  const extension = path.extname(fileName)
+  return isSourceStyleExtension(extension)
+    || /\.(?:stylus|pcss|postcss|sss)$/.test(fileName)
 }
 
 function hasStyleDirtyReason(dirtyReasonSummary: string[]) {
@@ -107,10 +109,7 @@ function isStyleBundleAsset(output: OutputBundle[string], bundleKey: string): ou
     return false
   }
   const fileName = output.fileName || bundleKey
-  return fileName.endsWith('.css')
-    || fileName.endsWith('.wxss')
-    || fileName.endsWith('.acss')
-    || isSourceStyleAsset(fileName)
+  return isSourceStyleAsset(fileName)
 }
 
 function hasStyleBundleAsset(bundle: OutputBundle) {

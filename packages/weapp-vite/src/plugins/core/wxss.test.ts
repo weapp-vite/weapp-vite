@@ -5,6 +5,7 @@ describe('native style resolver', () => {
   it.each([
     ['/project/src/app.wxss', '/project/src/app.css?nativeStyle=wxss'],
     ['/project/src/app.acss', '/project/src/app.css?nativeStyle=acss'],
+    ['/project/src/app.ttss', '/project/src/app.css?nativeStyle=ttss'],
   ])('routes %s through the CSS pipeline', (source, expected) => {
     const plugin = createWxssResolverPlugin({
       ctx: {
