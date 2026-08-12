@@ -9,9 +9,14 @@ import { findWevuSemanticChunk } from '../utils/wevu-vendor'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 const WEVU_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-runtime-e2e')
+const ALIPAY_DEMO_ROOT = path.resolve(import.meta.dirname, '../../apps/alipay-antd-mini-demo')
 
-async function runBuild(root: string, platform: string) {
-  await execa('node', [CLI_PATH, 'build', root, '--platform', platform, '--skipNpm'], {
+async function runBuild(root: string, platform: string, options: { skipNpm?: boolean } = {}) {
+  const args = [CLI_PATH, 'build', root, '--platform', platform]
+  if (options.skipNpm !== false) {
+    args.push('--skipNpm')
+  }
+  await execa('node', args, {
     stdio: 'inherit',
   })
 }
@@ -75,5 +80,41 @@ describe.sequential('platform build verification gate', () => {
     )
     expect(runtimeChunk.code).toMatch(new RegExp(`["']MP_PLATFORM["']:\\s*["']${id}["']`))
     expect(runtimeChunk.code).toMatch(new RegExp(`\\.${runtimeGlobal}\\b|["']${runtimeGlobal}["']`))
+  })
+
+  it('builds the Alipay native, Vue SFC, SJS, and antd-mini integration', async () => {
+    const outputRoot = path.join(ALIPAY_DEMO_ROOT, 'dist')
+    await fs.remove(outputRoot)
+
+    await runBuild(ALIPAY_DEMO_ROOT, 'alipay', { skipNpm: false })
+
+    const nativeTemplate = await fs.readFile(path.join(outputRoot, 'pages/index/index.axml'), 'utf8')
+    expect(nativeTemplate).toContain('<import-sjs from="./utils.sjs" name="util"')
+    expect(nativeTemplate).toContain('onTap="openWevuPage"')
+    expect(nativeTemplate).toContain('<ant-button')
+    const nativeSjs = await fs.readFile(path.join(outputRoot, 'pages/index/utils.sjs'), 'utf8')
+    expect(nativeSjs).toContain('export default')
+    expect(nativeSjs).not.toContain('module.exports')
+
+    const vueTemplate = await fs.readFile(path.join(outputRoot, 'pages/wevu/index.axml'), 'utf8')
+    const vueConfig = await fs.readJson(path.join(outputRoot, 'pages/wevu/index.json')) as {
+      usingComponents?: Record<string, string>
+    }
+    expect(vueTemplate).toContain('onTap="__weapp_vite_inline"')
+    expect(vueTemplate).toContain('a:if=')
+    expect(vueConfig.usingComponents?.['ant-button']).toBe('/node_modules/antd-mini/es/Button/index')
+
+    const antdButtonRoot = path.join(outputRoot, 'node_modules/antd-mini/es/Button')
+    expect(await fs.pathExists(path.join(antdButtonRoot, 'index.axml'))).toBe(true)
+    expect(await fs.pathExists(path.join(antdButtonRoot, 'index.acss'))).toBe(true)
+    expect(await fs.pathExists(path.join(antdButtonRoot, 'index.sjs'))).toBe(true)
+
+    const runtimeChunk = await findWevuSemanticChunk(
+      outputRoot,
+      code => code.includes('"MP_PLATFORM"') && code.includes('"alipay"'),
+      'alipay demo runtime',
+    )
+    expect(runtimeChunk.code).toMatch(/["']MP_PLATFORM["']:\s*["']alipay["']/)
+    expect(runtimeChunk.code).toMatch(/\?\.my\b|\.my\b|["']my["']/)
   })
 })

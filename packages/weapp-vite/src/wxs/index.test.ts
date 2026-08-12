@@ -23,4 +23,17 @@ describe('transformWxsCode', () => {
 
     expect(output).toMatch(/require\(['"]\.\/utils\.wxs['"]\)/)
   })
+
+  it('preserves ESM default exports for Alipay SJS', () => {
+    const code = `
+      export default {
+        description: 'Alipay SJS',
+      }
+    `
+    const { result } = transformWxsCode(code, { extension: 'sjs' })
+    const output = result?.code ?? ''
+
+    expect(output).toContain('export default')
+    expect(output).not.toContain('module.exports')
+  })
 })

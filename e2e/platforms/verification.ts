@@ -90,7 +90,7 @@ export const PLATFORM_VERIFICATION_CAPABILITIES = [
       styleExt: 'acss',
       scriptModuleExt: 'sjs',
       eventAttr: 'onTap',
-      scriptModuleTag: '<sjs',
+      scriptModuleTag: '<import-sjs',
       projectConfigFile: 'mini.project.json',
       runtimeGlobal: 'my',
     },

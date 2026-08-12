@@ -22,16 +22,17 @@ const SELECTED_PLATFORM = typeof process.env.E2E_PLATFORM === 'string' && proces
   ? process.env.E2E_PLATFORM as RuntimePlatform
   : undefined
 
-const SHOULD_VALIDATE_WEAPP = !SELECTED_PLATFORM || SELECTED_PLATFORM === 'weapp'
+const SUPPORTED_PLATFORMS: RuntimePlatform[] = [
+  'weapp',
+  'alipay',
+  'tt',
+]
+const SHOULD_VALIDATE_RUNTIME_PLATFORM = !SELECTED_PLATFORM || SUPPORTED_PLATFORMS.includes(SELECTED_PLATFORM)
 
-const PLATFORM_LIST = SHOULD_VALIDATE_WEAPP
-  ? resolvePlatformMatrix<RuntimePlatform>([
-      'weapp',
-      'alipay',
-      'tt',
-    ], {
+const PLATFORM_LIST = SHOULD_VALIDATE_RUNTIME_PLATFORM
+  ? resolvePlatformMatrix<RuntimePlatform>(SUPPORTED_PLATFORMS, {
       localDefault: 'weapp',
-    }).filter(platform => platform === 'weapp')
+    })
   : []
 
 const PLATFORM_STYLE_EXT: Record<RuntimePlatform, string> = {
@@ -115,7 +116,7 @@ async function expectPlatformSnapshot(platform: RuntimePlatform, key: string, va
   expect(normalizedValue).toBe(normalizedExpectedValue)
 }
 
-const describeRuntimePlatforms = SHOULD_VALIDATE_WEAPP ? describe.sequential : describe.skip.sequential
+const describeRuntimePlatforms = SHOULD_VALIDATE_RUNTIME_PLATFORM ? describe.sequential : describe.skip.sequential
 
 describeRuntimePlatforms('wevu runtime platform outputs', () => {
   it.each(PLATFORM_LIST)('builds and snapshots %s outputs', async (platform) => {

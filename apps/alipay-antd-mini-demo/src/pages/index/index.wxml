@@ -1,12 +1,13 @@
+<import-sjs from="./utils.sjs" name="util" />
 <view class="page">
   <view class="title">纯支付宝小程序示例</view>
-  <view class="desc">组件来自 antd-mini</view>
+  <view class="desc">{{util.description}}</view>
 
   <ant-button type="primary" className="action-btn">
     Hello antd-mini
   </ant-button>
 
-  <ant-button type="default" className="action-btn" bindtap="openWevuPage">
+  <ant-button type="default" className="action-btn" onTap="openWevuPage">
     打开 wevu SFC 示例
   </ant-button>
 </view>

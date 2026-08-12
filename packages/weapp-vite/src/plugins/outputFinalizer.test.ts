@@ -204,6 +204,29 @@ describe('weapp-vite output finalizer', () => {
     expect((bundle['pages/index/index.wxml'] as any).source).toContain('bind:tap="handleTap"')
   })
 
+  it('preserves the Alipay import-sjs tag during final template normalization', () => {
+    const bundle = {
+      'pages/index/index.axml': {
+        type: 'asset',
+        fileName: 'pages/index/index.axml',
+        source: '<import-sjs from="./utils.sjs" name="util" /><view onTap="handleTap">{{util.value}}</view>',
+      },
+    } as unknown as OutputBundle
+
+    normalizeTemplateAssets({
+      configService: {
+        platform: 'alipay',
+        outputExtensions: {
+          wxml: 'axml',
+          wxs: 'sjs',
+        },
+      },
+    } as any, bundle)
+
+    expect((bundle['pages/index/index.axml'] as any).source).toContain('<import-sjs from="./utils.sjs" name="util"')
+    expect((bundle['pages/index/index.axml'] as any).source).not.toContain('<sjs ')
+  })
+
   it('skips template parser for assets without normalization markers', () => {
     expect(mayNeedTemplateNormalization('<view class="page"><text>Hello</text></view>', 'weapp')).toBe(false)
     expect(mayNeedTemplateNormalization('<view @tap="handleTap" />', 'weapp')).toBe(true)
