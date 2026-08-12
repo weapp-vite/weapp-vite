@@ -17,4 +17,15 @@ describe('native style resolver', () => {
     expect(hook.filter.id.test(source)).toBe(true)
     expect(hook.handler(source)).toBe(expected)
   })
+
+  it('leaves standard CSS imports to Vite module resolution', () => {
+    const plugin = createWxssResolverPlugin({
+      ctx: {
+        runtimeState: {},
+      },
+    } as any)
+    const hook = plugin.resolveId as any
+
+    expect(hook.filter.id.test('vant/es/space/index.css')).toBe(false)
+  })
 })

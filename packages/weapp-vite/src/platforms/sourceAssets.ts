@@ -14,6 +14,9 @@ export const ALL_NATIVE_TEMPLATE_EXTENSIONS = uniqueExtensions(
 export const ALL_NATIVE_STYLE_EXTENSIONS = uniqueExtensions(
   MINI_PROGRAM_PLATFORM_ADAPTERS.map(adapter => adapter.outputExtensions.wxss),
 )
+export const ALL_NATIVE_STYLE_RESOLVER_EXTENSIONS = ALL_NATIVE_STYLE_EXTENSIONS.filter(
+  extension => extension !== 'css',
+)
 export const ALL_SOURCE_TEMPLATE_EXTENSIONS = uniqueExtensions([
   ...PORTABLE_TEMPLATE_EXTENSIONS,
   ...ALL_NATIVE_TEMPLATE_EXTENSIONS,
