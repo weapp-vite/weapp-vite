@@ -13,6 +13,7 @@ import {
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { isDeepEqualValue } from './app/setData/snapshot'
+import { getScopedSlotHostGlobalObject } from './platform'
 
 type OwnerSubscriber = (snapshot: Record<string, any>, proxy: ComponentPublicInstance<any, any, any> | undefined) => void
 
@@ -28,7 +29,7 @@ type RuntimeInstanceWithOwnerSnapshot = RuntimeInstance<any, any, any> & {
 }
 
 function getScopedSlotGlobalStore() {
-  const globalObject = globalThis as Record<string, any>
+  const globalObject = getScopedSlotHostGlobalObject() ?? Object.create(null)
   if (!(globalObject[WEVU_SCOPED_SLOT_OWNER_STORE_KEY] instanceof Map)) {
     globalObject[WEVU_SCOPED_SLOT_OWNER_STORE_KEY] = new Map<string, OwnerRecord>()
   }

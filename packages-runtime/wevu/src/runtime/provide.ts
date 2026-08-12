@@ -1,4 +1,5 @@
 import { getCurrentInstance } from './hooks'
+import { getMiniProgramRuntimeConsoleWarn } from './platform'
 import {
   getInstanceProvides,
   isRuntimeAppInstance,
@@ -95,7 +96,7 @@ export function inject<T>(key: any, defaultValue?: T): T | undefined {
     return defaultValue as T
   }
 
-  const warn = globalThis.console?.warn
+  const warn = getMiniProgramRuntimeConsoleWarn()
   if (typeof warn === 'function') {
     warn(`wevu.inject：未找到对应 key 的值：${String(key)}`)
   }
