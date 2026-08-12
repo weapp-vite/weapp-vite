@@ -5,6 +5,9 @@ import { createIndependentBuilder } from './independent'
 
 const buildMock = vi.hoisted(() => vi.fn())
 const loggerErrorMock = vi.hoisted(() => vi.fn())
+const createCompilerContextInstanceMock = vi.hoisted(() => vi.fn())
+const findAutoImportCandidatesMock = vi.hoisted(() => vi.fn())
+const getAutoImportConfigMock = vi.hoisted(() => vi.fn())
 const createIndependentBuildErrorMock = vi.hoisted(() => vi.fn((root: string, error: unknown) => {
   const message = error instanceof Error ? error.message : String(error)
   return new Error(`normalized:${root}:${message}`)
@@ -12,6 +15,18 @@ const createIndependentBuildErrorMock = vi.hoisted(() => vi.fn((root: string, er
 
 vi.mock('vite', () => ({
   build: buildMock,
+}))
+
+vi.mock('../../context/createCompilerContextInstance', () => ({
+  createCompilerContextInstance: createCompilerContextInstanceMock,
+}))
+
+vi.mock('../../plugins/autoImport', () => ({
+  findAutoImportCandidates: findAutoImportCandidatesMock,
+}))
+
+vi.mock('../autoImport/config', () => ({
+  getAutoImportConfig: getAutoImportConfigMock,
 }))
 
 vi.mock('../../context/shared', () => ({
@@ -32,6 +47,7 @@ function createConfigService() {
   })
   return {
     defineEnv,
+    load: vi.fn(),
     get importMetaEnvDefineOverride() {
       return importMetaEnvDefineOverride
     },
@@ -58,17 +74,47 @@ function createConfigService() {
   } as any
 }
 
+function createBuilder() {
+  const runtimeState = createRuntimeState()
+  const configService = createConfigService()
+  Object.assign(configService, {
+    configFilePath: '/project/vite.config.ts',
+    cwd: '/project',
+    isDev: true,
+    mode: 'development',
+    platform: 'weapp',
+    projectConfigPath: '/project/project.config.json',
+  })
+  const isolatedConfigService = createConfigService()
+  const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+  const runWithoutOutputWrites = vi.fn(async (task: () => unknown) => await task())
+  createCompilerContextInstanceMock.mockReturnValue({
+    autoImportService: {
+      registerPotentialComponent,
+      runWithoutOutputWrites,
+    },
+    configService: isolatedConfigService,
+  })
+  return {
+    builder: createIndependentBuilder(configService, runtimeState.build),
+    configService,
+    isolatedConfigService,
+    registerPotentialComponent,
+    runWithoutOutputWrites,
+    runtimeState,
+  }
+}
+
 describe('runtime buildPlugin independent builder', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getAutoImportConfigMock.mockReturnValue(undefined)
   })
 
   it('builds and stores independent output with subpackage chunk root', async () => {
     const output = { output: [{ fileName: 'pkg/common.js' }] } as any
     buildMock.mockResolvedValueOnce(output)
-    const runtimeState = createRuntimeState()
-    const configService = createConfigService()
-    const builder = createIndependentBuilder(configService, runtimeState.build)
+    const { builder, configService, isolatedConfigService } = createBuilder()
     const meta = {
       subPackage: {
         root: 'packageA',
@@ -80,22 +126,63 @@ describe('runtime buildPlugin independent builder', () => {
 
     expect(result).toBe(output)
     expect(buildMock).toHaveBeenCalledTimes(1)
+    expect(createCompilerContextInstanceMock).toHaveBeenCalledTimes(1)
+    expect(isolatedConfigService.load).toHaveBeenCalledWith({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      configFile: '/project/vite.config.ts',
+      cliPlatform: 'weapp',
+      projectConfigPath: '/project/project.config.json',
+    })
     const inlineConfig = buildMock.mock.calls[0]?.[0]
     expect(inlineConfig.build.write).toBe(false)
     expect(inlineConfig.build.watch).toBeNull()
     expect(inlineConfig.build.rolldownOptions.output.chunkFileNames()).toBe('packageA/[name].js')
     expect(builder.getIndependentOutput('packageA')).toBe(output)
+    expect(isolatedConfigService.merge).toHaveBeenCalledTimes(1)
+    expect(configService.merge).not.toHaveBeenCalled()
     builder.invalidateIndependentOutput('packageA')
     expect(builder.getIndependentOutput('packageA')).toBeUndefined()
+  })
+
+  it('initializes scoped auto imports inside the isolated context without output writes', async () => {
+    const output = { output: [{ fileName: 'packageA/index.js' }] } as any
+    const candidates = [
+      '/project/src/packageA/components/OrderMetrics/OrderMetrics.wxml',
+    ]
+    buildMock.mockResolvedValueOnce(output)
+    getAutoImportConfigMock.mockReturnValue({
+      globs: ['packageA/components/**/*.wxml'],
+    })
+    findAutoImportCandidatesMock.mockResolvedValue(candidates)
+    const {
+      builder,
+      isolatedConfigService,
+      registerPotentialComponent,
+      runWithoutOutputWrites,
+    } = createBuilder()
+
+    await builder.buildIndependentBundle('packageA', {
+      subPackage: {
+        root: 'packageA',
+        inlineConfig: {},
+      },
+    } as any)
+
+    expect(isolatedConfigService.options.currentSubPackageRoot).toBe('packageA')
+    expect(getAutoImportConfigMock).toHaveBeenCalledWith(isolatedConfigService)
+    expect(findAutoImportCandidatesMock).toHaveBeenCalledTimes(1)
+    expect(runWithoutOutputWrites).toHaveBeenCalledTimes(1)
+    expect(registerPotentialComponent).toHaveBeenCalledWith(candidates[0])
   })
 
   it('syncs subpackage import.meta.env override registry during independent build and restores previous state', async () => {
     const output = { output: [{ fileName: 'pkg/common.js' }] } as any
     buildMock.mockResolvedValueOnce(output)
-    const runtimeState = createRuntimeState()
-    const configService = createConfigService()
+    const { builder, configService, isolatedConfigService } = createBuilder()
     configService.defineEnv.EXISTING = 'kept'
-    const builder = createIndependentBuilder(configService, runtimeState.build)
+    isolatedConfigService.defineEnv.EXISTING = 'kept'
     const meta = {
       subPackage: {
         root: 'packageA',
@@ -109,14 +196,14 @@ describe('runtime buildPlugin independent builder', () => {
 
     await builder.buildIndependentBundle('packageA', meta)
 
-    expect(configService.setImportMetaEnvDefineOverride).toHaveBeenCalledWith({
+    expect(isolatedConfigService.setImportMetaEnvDefineOverride).toHaveBeenCalledWith({
       'import.meta.env.VITE_SUB_PACKAGE_B': '"sub-package-b"',
     })
     expect(configService.defineEnv).toEqual({
       EXISTING: 'kept',
     })
-    expect(configService.importMetaDefineRegistry.envMemberAccess.VITE_SUB_PACKAGE_B).toBeUndefined()
-    expect(configService.importMetaDefineRegistry.envObject.VITE_SUB_PACKAGE_B).toBeUndefined()
+    expect(isolatedConfigService.importMetaDefineRegistry.envMemberAccess.VITE_SUB_PACKAGE_B).toBeUndefined()
+    expect(isolatedConfigService.importMetaDefineRegistry.envObject.VITE_SUB_PACKAGE_B).toBeUndefined()
   })
 
   it('dedupes concurrent independent builds and allows retry after task settles', async () => {
@@ -126,9 +213,7 @@ describe('runtime buildPlugin independent builder', () => {
     buildMock.mockImplementationOnce(() => new Promise((resolve) => {
       resolveBuild = resolve
     }))
-    const runtimeState = createRuntimeState()
-    const configService = createConfigService()
-    const builder = createIndependentBuilder(configService, runtimeState.build)
+    const { builder } = createBuilder()
     const meta = {
       subPackage: {
         inlineConfig: {},
@@ -138,7 +223,9 @@ describe('runtime buildPlugin independent builder', () => {
     const taskA = builder.buildIndependentBundle('pkg', meta)
     const taskB = builder.buildIndependentBundle('pkg', meta)
 
-    expect(buildMock).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => {
+      expect(buildMock).toHaveBeenCalledTimes(1)
+    })
     resolveBuild?.(firstOutput)
     await expect(taskA).resolves.toBe(firstOutput)
     await expect(taskB).resolves.toBe(firstOutput)
@@ -149,9 +236,7 @@ describe('runtime buildPlugin independent builder', () => {
   })
 
   it('normalizes independent build errors and clears stale output state', async () => {
-    const runtimeState = createRuntimeState()
-    const configService = createConfigService()
-    const builder = createIndependentBuilder(configService, runtimeState.build)
+    const { builder, runtimeState } = createBuilder()
     const meta = {
       subPackage: {
         inlineConfig: {},

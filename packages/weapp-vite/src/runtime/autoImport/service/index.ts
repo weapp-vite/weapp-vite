@@ -132,5 +132,8 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     async runInBatch<T>(task: () => T | Promise<T>) {
       return await scheduling.runInBatch(task)
     },
+    async runWithoutOutputWrites<T>(task: () => T | Promise<T>) {
+      return await scheduling.runWithoutOutputWrites(task)
+    },
   }
 }

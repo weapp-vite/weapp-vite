@@ -247,11 +247,8 @@ export function createOptionsHook(state: CorePluginState) {
         scanService.loadSubPackages()
         const dirtyIndependentRoots = scanService.drainIndependentDirtyRoots()
         const pendingIndependentBuilds: Promise<IndependentBuildResult>[] = []
-        // Serialize prod builds to avoid shared runtime state races.
-        const shouldSerializeIndependentBuilds = !configService.isDev && dirtyIndependentRoots.length > 0
-        const previousSubPackageRoot = shouldSerializeIndependentBuilds
-          ? configService.currentSubPackageRoot
-          : undefined
+        // 独立分包和主包共用编译上下文，必须串行构建并恢复主包配置。
+        const previousSubPackageRoot = configService.currentSubPackageRoot
         for (const root of dirtyIndependentRoots) {
           const meta = scanService.independentSubPackageMap.get(root)
           if (!meta) {
@@ -265,14 +262,12 @@ export function createOptionsHook(state: CorePluginState) {
           })
           buildTask.catch(() => {})
           pendingIndependentBuilds.push(buildTask)
-          if (shouldSerializeIndependentBuilds) {
-            try {
-              await buildTask
-            }
-            catch {}
+          try {
+            await buildTask
           }
+          catch {}
         }
-        if (shouldSerializeIndependentBuilds && configService.currentSubPackageRoot !== previousSubPackageRoot) {
+        if (configService.currentSubPackageRoot !== previousSubPackageRoot) {
           configService.options = {
             ...configService.options,
             currentSubPackageRoot: previousSubPackageRoot,

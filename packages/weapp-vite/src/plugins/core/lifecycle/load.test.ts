@@ -1176,6 +1176,65 @@ describe('core lifecycle options hook', () => {
     expect(Array.from(state.hmrRootInputIds)).toEqual(['/project/src/app.ts'])
   })
 
+  it('waits for independent dev builds before resolving main inputs and restores the package root', async () => {
+    let releaseIndependentBuild: (() => void) | undefined
+    const configService = {
+      absoluteSrcRoot: '/project/src',
+      weappLibConfig: undefined,
+      isDev: true,
+      currentSubPackageRoot: undefined as string | undefined,
+      options: {},
+      relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+    }
+    const appEntry = {
+      path: '/project/src/app.ts',
+      json: { pages: ['pages/index/index'] },
+    }
+    const scanService = {
+      appEntry,
+      loadAppEntry: vi.fn(async () => appEntry),
+      loadSubPackages: vi.fn(),
+      drainIndependentDirtyRoots: vi.fn(() => ['sub-independent']),
+      independentSubPackageMap: new Map([
+        ['sub-independent', { subPackage: { root: 'sub-independent' } }],
+      ]),
+    }
+    const buildService = {
+      buildIndependentBundle: vi.fn(async () => {
+        configService.currentSubPackageRoot = 'sub-independent'
+        await new Promise<void>((resolve) => {
+          releaseIndependentBuild = resolve
+        })
+        return { output: [] }
+      }),
+    }
+    const state = {
+      ctx: {
+        runtimeState: { lib: { enabled: false, entries: new Map() } },
+        configService,
+        scanService,
+        buildService,
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+    } as any
+
+    const options: Record<string, any> = {}
+    const task = createOptionsHook(state)(options)
+    await vi.waitFor(() => {
+      expect(buildService.buildIndependentBundle).toHaveBeenCalledTimes(1)
+    })
+
+    expect(options.input).toBeUndefined()
+    releaseIndependentBuild?.()
+    await task
+
+    expect(configService.options.currentSubPackageRoot).toBeUndefined()
+    expect(options.input).toEqual({
+      app: createLogicalEntryId('/project/src/app.ts', 'app'),
+    })
+  })
+
   it('uses plugin main entry as root input in pluginOnly mode', async () => {
     findJsEntryMock.mockResolvedValueOnce({
       path: '/project/plugin/index.ts',

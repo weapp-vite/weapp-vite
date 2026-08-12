@@ -1,0 +1,19 @@
+{
+  "name": "e2e-app-stateful-hmr-root-tailwind",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "wv build",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "postinstall": "wv prepare"
+  },
+  "weappVite": {
+    "web": false
+  },
+  "devDependencies": {
+    "tailwindcss": "catalog:tailwind4",
+    "weapp-tailwindcss": "catalog:weapp-tailwindcss-fixed",
+    "weapp-vite": "workspace:*"
+  }
+}

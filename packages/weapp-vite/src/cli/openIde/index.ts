@@ -144,6 +144,9 @@ async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIde
   if (reuseResult?.reopened) {
     return 'reopened'
   }
+  if (reuseResult?.unhealthy) {
+    return 'unhealthy'
+  }
 
   await openWechatIdeByAutomator(projectPath)
   return 'opened'
@@ -428,7 +431,11 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
       if (openResult === 'reused') {
         return
       }
-      if (openResult) {
+      if (openResult === 'unhealthy') {
+        logger.warn('已连接到目标微信开发者工具项目，但协议健康检查暂未就绪；已保留当前窗口并跳过重复启动。')
+        return
+      }
+      else if (openResult) {
         if (!normalizedOptions.skipPostOpenHealthCheck) {
           await verifyAndRecoverOpenedWechatIdeProject(platform, projectPath, bootstrapResult?.servicePortEnabled, normalizedOptions)
         }

@@ -1,0 +1,3 @@
+import './app.css'
+
+App({})

@@ -1,9 +1,13 @@
 import type { RolldownOutput } from 'rolldown'
+import type { ResolvedConfig } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import { build } from 'vite'
+import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { logger } from '../../context/shared'
+import { findAutoImportCandidates } from '../../plugins/autoImport'
 import { pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
+import { getAutoImportConfig } from '../autoImport/config'
 import { createIndependentBuildError } from '../independentError'
 
 interface IndependentBuilderState {
@@ -53,7 +57,21 @@ export function createIndependentBuilder(
     const task = (async () => {
       try {
         const chunkRoot = meta.subPackage.root ?? root
-        const inlineConfig = configService.merge(meta, meta.subPackage.inlineConfig, {
+        const isolatedCtx = createCompilerContextInstance()
+        await isolatedCtx.configService.load({
+          cwd: configService.cwd,
+          isDev: configService.isDev,
+          mode: configService.mode,
+          configFile: configService.configFilePath,
+          cliPlatform: configService.platform,
+          projectConfigPath: configService.projectConfigPath,
+        })
+        const isolatedConfigService = isolatedCtx.configService
+        isolatedConfigService.options = {
+          ...isolatedConfigService.options,
+          currentSubPackageRoot: chunkRoot,
+        }
+        const inlineConfig = isolatedConfigService.merge(meta, meta.subPackage.inlineConfig, {
           build: {
             write: false,
             watch: null,
@@ -66,7 +84,21 @@ export function createIndependentBuilder(
             },
           },
         })
-        const restoreDefineEnv = syncImportMetaEnvDefineOverride(configService, inlineConfig.define as Record<string, unknown> | undefined)
+        const autoImportGlobs = getAutoImportConfig(isolatedConfigService)?.globs
+        if (autoImportGlobs?.length) {
+          const candidates = await findAutoImportCandidates({
+            ctx: isolatedCtx,
+            resolvedConfig: {
+              build: {
+                outDir: isolatedConfigService.outDir,
+              },
+            } as ResolvedConfig,
+          }, autoImportGlobs)
+          await isolatedCtx.autoImportService.runWithoutOutputWrites(async () => {
+            await Promise.all(candidates.map(candidate => isolatedCtx.autoImportService.registerPotentialComponent(candidate)))
+          })
+        }
+        const restoreDefineEnv = syncImportMetaEnvDefineOverride(isolatedConfigService, inlineConfig.define as Record<string, unknown> | undefined)
         let result: RolldownOutput | RolldownOutput[]
         try {
           result = await build(

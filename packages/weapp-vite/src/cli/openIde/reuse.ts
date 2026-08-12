@@ -6,6 +6,11 @@ interface DisconnectableMiniProgram {
   screenshot?: (options?: { timeout?: number }) => Promise<unknown>
 }
 
+type OpenedProjectConnectionResult
+  = | { status: 'connected', miniProgram: DisconnectableMiniProgram }
+    | { status: 'not-connected' }
+    | { status: 'unhealthy' }
+
 const OPENED_PROJECT_HEALTH_CHECK_TIMEOUT = 3_000
 const OPEN_AUTOMATOR_TIMEOUT = 120_000
 
@@ -52,22 +57,26 @@ async function openWechatIdeByAutomator(projectPath: string) {
   disconnectMiniProgram(miniProgram)
 }
 
-async function connectOpenedProject(projectPath: string) {
-  let miniProgram: DisconnectableMiniProgram | null = null
+async function connectOpenedProject(projectPath: string): Promise<OpenedProjectConnectionResult> {
+  let miniProgram: DisconnectableMiniProgram
   try {
     miniProgram = await connectOpenedAutomator({
       projectPath,
       port: resolveProjectAutomatorPort(projectPath),
       timeout: 3_000,
     }) as DisconnectableMiniProgram
-    await verifyOpenedProjectHealth(miniProgram)
-    return miniProgram
   }
   catch {
-    if (miniProgram) {
-      disconnectMiniProgram(miniProgram)
-    }
-    return null
+    return { status: 'not-connected' }
+  }
+
+  try {
+    await verifyOpenedProjectHealth(miniProgram)
+    return { status: 'connected', miniProgram }
+  }
+  catch {
+    disconnectMiniProgram(miniProgram)
+    return { status: 'unhealthy' }
   }
 }
 
@@ -81,11 +90,19 @@ export async function tryReuseOpenedWechatIde(
     promptReopen?: boolean
   } = {},
 ) {
-  const miniProgram = await connectOpenedProject(projectPath)
-  if (!miniProgram) {
+  const connection = await connectOpenedProject(projectPath)
+  if (connection.status === 'unhealthy') {
+    return {
+      reopened: false,
+      reused: false,
+      unhealthy: true,
+    } as const
+  }
+  if (connection.status === 'not-connected') {
     return null
   }
 
+  const { miniProgram } = connection
   disconnectMiniProgram(miniProgram)
   if (options.promptReopen === false) {
     logger.info('目标项目已在微信开发者工具中打开，已跳过重复打开。')
@@ -125,11 +142,12 @@ export async function reopenOpenedWechatIde(
   projectPath: string,
   closeIde: () => Promise<boolean>,
 ) {
-  const miniProgram = await connectOpenedProject(projectPath)
-  if (!miniProgram) {
+  const connection = await connectOpenedProject(projectPath)
+  if (connection.status !== 'connected') {
     return false
   }
 
+  const { miniProgram } = connection
   disconnectMiniProgram(miniProgram)
   logger.info('目标项目已在微信开发者工具中打开，当前命令将主动重开以刷新最新构建产物。')
   const closed = await closeIde()

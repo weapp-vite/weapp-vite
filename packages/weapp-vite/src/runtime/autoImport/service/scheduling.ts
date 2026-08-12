@@ -25,6 +25,7 @@ export function createAutoImportScheduling(options: SchedulingOptions) {
     html: undefined,
     vue: undefined,
   }
+  let outputWritesSuppressed = 0
   let outputSettingsSnapshot: AutoImportOutputSettingsSnapshot | undefined
 
   function getOutputSettingsSnapshot(): AutoImportOutputSettingsSnapshot {
@@ -39,6 +40,9 @@ export function createAutoImportScheduling(options: SchedulingOptions) {
   }
 
   function deferOrSchedule(kind: 'manifest' | 'typed' | 'html' | 'vue', shouldWrite: boolean) {
+    if (outputWritesSuppressed > 0) {
+      return
+    }
     if (batchedWrites.depth > 0) {
       const previous = batchedWrites[kind]
       batchedWrites[kind] = previous === undefined ? shouldWrite : previous || shouldWrite
@@ -97,9 +101,20 @@ export function createAutoImportScheduling(options: SchedulingOptions) {
     }
   }
 
+  async function runWithoutOutputWrites<T>(task: () => T | Promise<T>) {
+    outputWritesSuppressed += 1
+    try {
+      return await task()
+    }
+    finally {
+      outputWritesSuppressed -= 1
+    }
+  }
+
   return {
     getOutputSettingsSnapshot,
     deferOrSchedule,
     runInBatch,
+    runWithoutOutputWrites,
   }
 }

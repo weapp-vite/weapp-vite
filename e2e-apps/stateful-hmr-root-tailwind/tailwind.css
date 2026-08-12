@@ -1,0 +1,6 @@
+@import "tailwindcss" source(none);
+@source "./pages/**/*.{wxml,ts}";
+
+page {
+  --color-brand: #006241;
+}
