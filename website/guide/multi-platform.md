@@ -98,7 +98,44 @@ pnpm exec wv build --platform tt
 ```
 
 - 支持字节全家桶（抖音 / 今日头条 / 番茄小说等）所需的 `ttml` / `ttss` 扩展名。
-- 推荐使用字节小程序开发者工具导入构建产物。
+- 原生抖音源码可以直接使用 `.ttml` / `.ttss`，不需要先改写成微信后缀，也不要求引入 wevu。
+- 同一个项目可以保留原生 `App()` / `Page()` / `Component()`、分包和 npm 原生组件，同时逐页加入 Vue SFC。
+- 推荐使用抖音开发者工具导入构建产物并完成模拟器复验。
+
+抖音构建会按平台选择同名 sidecar。模板优先级为 `.ttml`、`.wxml`、`.html`，样式优先级为 `.ttss`、`.wxss`、`.css` 和预处理器。迁移现有项目时可以保留原生目录：
+
+```text
+src/
+├─ app.ts
+├─ app.json
+├─ app.ttss
+├─ pages/index/
+│  ├─ index.ts
+│  ├─ index.json
+│  ├─ index.ttml
+│  ├─ index.ttss
+│  └─ utils.wxs
+├─ components/native-counter/
+│  ├─ index.ts
+│  ├─ index.json
+│  ├─ index.ttml
+│  └─ index.ttss
+└─ pages/profile/index.vue
+```
+
+原生 `.ttml` 输入会保留 `tt:*`、`bind:tap` / `catch:tap`、`wxs` 标签、原生组件标签和宿主表达式。使用便携 `.wxml` 或 Vue SFC 时，编译器仍会按抖音目标生成 TTML。原生页面、WXS、原生分包和 npm 原生组件可以留在原生区，新页面则可以渐进进入 Vue/wevu 区。
+
+本仓库提供确定性的构建门禁和本机工具诊断：
+
+```sh
+pnpm e2e:platform:doctor:tt
+pnpm e2e:platform:open:tt
+```
+
+`doctor:tt` 检测 macOS 上的抖音开发者工具和版本；`open:tt` 构建 `apps/douyin-native-demo` 并打开可导入的项目根。抖音开发者工具目前没有纳入本项目的稳定公开 CLI 或 automator，因此该入口只负责启动官方工具，模拟器交互仍需在本机完成，不会被描述为 `wv open -p tt` 的公开自动化能力。
+
+> [!NOTE]
+> 当前自动化构建覆盖原生 App、Page、Component、分包、layout、WXS、本地 npm 原生组件和 Vue SFC 共存；本机模拟器复验覆盖渲染、事件、路由、响应式状态与 `tt` runtime marker。支付、授权、直播、广告、云服务、插件、真机专属 API 和业务域能力不在本次兼容声明内。
 
 ## 百度智能小程序 {#platform-swan}
 

@@ -69,6 +69,8 @@ export default defineConfig({
 
 支付宝平台可以直接接收原生 `.axml` / `.acss` 源码。若同一入口同时存在多种 sidecar，`platform: 'alipay'` 的模板选择顺序为 `.axml`、`.wxml`、`.html`，样式选择顺序为 `.acss`、`.wxss`、`.css` 和预处理器；页面、组件、分包、自动路由、watcher 与原生 layout 共用这套规则。原生 `.axml` 保留支付宝宿主语法，便携 `.wxml` 和 Vue SFC 则继续转换为支付宝产物。
 
+抖音平台同样可以直接接收原生 `.ttml` / `.ttss` 源码。`platform: 'tt'` 的模板选择顺序为 `.ttml`、`.wxml`、`.html`，样式选择顺序为 `.ttss`、`.wxss`、`.css` 和预处理器。原生 `.ttml` 保留 `tt:*`、`bind:tap` / `catch:tap`、WXS 和原生组件语法；便携 `.wxml` 与 Vue SFC 继续转换为 TTML。该规则同时作用于页面、组件、分包、自动路由、watcher、layout 和 npm 原生组件落位。
+
 ## `weapp.multiPlatform` {#weapp-multiplatform}
 
 - **类型**：`boolean | { enabled?: boolean; projectConfigRoot?: string }`

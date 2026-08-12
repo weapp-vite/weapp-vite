@@ -10,14 +10,16 @@ status: implemented
 
 六个平台路线固定为微信、字节、快手、支付宝、钉钉和百度。当前公开可构建平台中，微信、字节、支付宝和百度进入必跑构建门禁；快手和钉钉仅登记为 `planned`，不新增公开 `MpPlatform`，也不猜测尚未验证的模板、样式或脚本模块契约。
 
-既有京东和小红书平台继续提供兼容性构建回归，但不属于六个平台路线。平台基建完成后，支付宝兼容继续形成了完整闭环：原生 `.axml` / `.acss` 成为一等输入，页面、组件、分包、自动路由、watcher 和原生 layout 共用平台感知的 sidecar 选择契约；最终产物归一化不再把官方 `import-sjs` 标签错误降级为 `sjs`，独立 SJS 也不会被错误转换成支付宝禁止的 `module.exports` 格式。集成验收同时覆盖原生页面、原生组件、原生分包、Vue SFC、wevu runtime、SJS 与 `antd-mini`。该源码行为变化需要 changeset，并按仓库规则联动 `create-weapp-vite`。
+既有京东和小红书平台继续提供兼容性构建回归，但不属于六个平台路线。平台基建完成后，支付宝兼容继续形成了完整闭环：原生 `.axml` / `.acss` 成为一等输入，页面、组件、分包、自动路由、watcher 和原生 layout 共用平台感知的 sidecar 选择契约；最终产物归一化不再把官方 `import-sjs` 标签错误降级为 `sjs`，独立 SJS 也不会被错误转换成支付宝禁止的 `module.exports` 格式。集成验收同时覆盖原生页面、原生组件、原生分包、Vue SFC、wevu runtime、SJS 与 `antd-mini`。
+
+抖音兼容在同一基础上补齐原生 `.ttml` / `.ttss` 一等输入，模板、样式、watcher、自动路由、layout 和 sidecar 选择统一从共享平台描述派生。集成验收覆盖原生 App、Page、Component、WXS、原生分包、本地 npm 原生组件以及 Vue/wevu 页面共存。支付宝与抖音的源码行为变化都需要 changeset，并按仓库规则联动 `create-weapp-vite`。
 
 ## 单一验收清单
 
 `e2e/platforms/verification.ts` 是平台复验能力的单一事实源，每个平台显式记录：
 
 - 标准 ID、别名以及目标或兼容平台分类；
-- 构建、IDE CLI、runtime automator 三层状态；
+- 构建、IDE CLI、runtime automator 和模拟器四层状态；
 - 已验证平台的模板、样式、脚本模块、事件、项目配置和 runtime 全局对象预期；
 - 工具、登录、协议或实现缺口。
 
@@ -25,17 +27,19 @@ status: implemented
 
 ## 分级复验
 
-| 平台          | 构建产物               | IDE CLI              | Runtime automator               |
-| ------------- | ---------------------- | -------------------- | ------------------------------- |
-| 微信          | required               | required             | required                        |
-| 字节          | required               | unsupported          | unsupported                     |
-| 快手          | planned                | planned              | planned                         |
-| 支付宝        | required               | optional (`minidev`) | unsupported                     |
-| 钉钉          | planned                | planned              | planned                         |
-| 百度          | required               | optional             | optional（显式 WebSocket 端点） |
-| 京东 / 小红书 | compatibility required | unsupported          | unsupported                     |
+| 平台          | 构建产物               | IDE CLI              | Runtime automator               | 模拟器      |
+| ------------- | ---------------------- | -------------------- | ------------------------------- | ----------- |
+| 微信          | required               | required             | required                        | required    |
+| 字节          | required               | unsupported          | unsupported                     | optional    |
+| 快手          | planned                | planned              | planned                         | planned     |
+| 支付宝        | required               | optional (`minidev`) | unsupported                     | optional    |
+| 钉钉          | planned                | planned              | planned                         | planned     |
+| 百度          | required               | optional             | optional（显式 WebSocket 端点） | optional    |
+| 京东 / 小红书 | compatibility required | unsupported          | unsupported                     | unsupported |
 
 `pnpm e2e:platform:build` 串行构建全部公开小程序平台。原生 fixture 断言文件后缀、模板引用、事件和脚本模块语义；wevu fixture 单独断言框架 runtime 平台 marker，避免把框架注入错误地当作原生构建契约。微信、支付宝和字节的 wevu 模板快照也在该入口中实际执行，显式选择平台时不再把支付宝或字节静默跳过。
+
+抖音额外构建 `apps/douyin-native-demo`。fixture 以 `.ttml` / `.ttss` 为原生源码，覆盖原生 App、Page、Component、分包、layout、WXS、本地 `file:` npm 原生组件、Vue SFC、wevu runtime 和 `MP_PLATFORM=tt` marker。源码优先级为 `.ttml > .wxml > .html` 与 `.ttss > .wxss > .css > 预处理器`；原生 TTML 进入保留模式，便携 WXML 与 Vue SFC 继续执行目标平台转换。
 
 支付宝额外构建 `apps/alipay-antd-mini-demo`。fixture 直接以 `.axml` / `.acss` 作为原生源码，不保留 `.wxml` 回退文件，并覆盖原生 App/Page/Component、`props` / `deriveDataFromProps` / `didMount` / methods、原生分包、`a:if`、`onTap`、`import-sjs`、保留 `export default` 且不依赖 `module.exports` 的 SJS、Vue SFC、`antd-mini` npm 组件落位以及 `MP_PLATFORM=alipay` runtime marker。
 
@@ -52,6 +56,15 @@ pnpm e2e:platform:doctor
 ```
 
 支付宝可用 `pnpm e2e:platform:doctor:alipay` 要求 `minidev` 存在；缺失时稳定返回非零退出码和安装提示。
+
+抖音可运行：
+
+```sh
+pnpm e2e:platform:doctor:tt
+pnpm e2e:platform:open:tt
+```
+
+前者检测 macOS 抖音开发者工具路径和版本，后者构建 demo 并打开官方开发者工具。抖音目前没有稳定公开的 IDE CLI 或 automator，真实交互通过本机沙盒应用和模拟器完成，不进入通用 CI。固定复验覆盖原生首页、计数组件、npm 原生组件事件、原生分包往返、Vue/wevu 响应式更新、Vue 内 npm 组件事件、`tt` runtime marker 和控制台错误检查。
 
 本机存在 `minidev` 时，可运行：
 
