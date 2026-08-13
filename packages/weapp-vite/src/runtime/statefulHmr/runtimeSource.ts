@@ -61,6 +61,7 @@ class WeappViteDevRuntime extends BaseDevRuntime {
   createModuleHotContext(moduleId) {
     const previous = this.contexts.get(moduleId);
     const context = new WeappViteHotContext(moduleId);
+    this.registrationModuleId = moduleId;
     if (previous) {
       context.callbacks = previous.callbacks;
       context.data = previous.data;
@@ -156,6 +157,10 @@ function rememberInstanceState(instance, moduleId) {
 function trackInstance(instance, moduleId) {
   getInstances(moduleId).add(instance);
   if (instanceSnapshots.has(instance)) return;
+  if ((wevuRefreshGenerations.get(moduleId) || 0) > 0) {
+    rememberInstanceState(instance, moduleId);
+    return;
+  }
   const snapshot = moduleSnapshots.get(moduleId);
   if (snapshot) {
     instanceSnapshots.set(instance, snapshot);
@@ -183,7 +188,11 @@ function rememberTrackedInstances() {
 }
 function restoreTrackedInstances() {
   for (const [moduleId, values] of instances) {
-    for (const instance of values) restoreInstanceState(instance, moduleId);
+    for (const instance of values) {
+      const generation = wevuRefreshGenerations.get(moduleId) || 0;
+      if (generation > 0 && wevuInstanceGenerations.get(instance)?.get(moduleId) === generation) continue;
+      restoreInstanceState(instance, moduleId);
+    }
   }
 }
 function refreshWevuInstance(instance, moduleId) {
@@ -258,63 +267,81 @@ function decorateObject(value, moduleId, prefix = '', trackLifecycle = false) {
 }
 function decorateWevuComponent(definition, moduleId) {
   const result = { ...definition };
+  const resolveWevuDefinition = () => definitions.get(moduleId) || definition;
+  const callLatestWevuFunction = (instance, path, fallback, args) => {
+    const segments = path.split('.');
+    let value = resolveWevuDefinition();
+    for (const segment of segments) value = value && value[segment];
+    return (typeof value === 'function' ? value : fallback)?.apply(instance, args);
+  };
   const methods = { ...(definition.methods || {}) };
-  for (const [name, method] of Object.entries(methods)) {
-    if (typeof method !== 'function') continue;
+  for (const name of Object.keys(methods)) {
+    const fallback = methods[name];
+    if (typeof fallback !== 'function') continue;
     methods[name] = function (...args) {
       trackInstance(this, moduleId);
       refreshWevuInstance(this, moduleId);
       try {
-        return method.apply(this, args);
+        return callLatestWevuFunction(this, 'methods.' + name, fallback, args);
       } finally {
         rememberInstanceState(this, moduleId);
       }
     };
   }
   result.methods = methods;
-  const onLoad = definition.onLoad;
-  const onUnload = definition.onUnload;
-  if (typeof onLoad === 'function') {
-    result.onLoad = function (...args) {
+  const pageHookNames = ['onLoad', 'onShow', 'onReady', 'onHide', 'onResize', 'onUnload', 'onPullDownRefresh', 'onReachBottom', 'onShareAppMessage', 'onShareTimeline', 'onAddToFavorites'];
+  for (const name of pageHookNames) {
+    const fallback = result[name];
+    if (typeof fallback !== 'function') continue;
+    result[name] = function (...args) {
       trackInstance(this, moduleId);
       refreshWevuInstance(this, moduleId);
-      if (suppressLifecycles) return;
-      return onLoad.apply(this, args);
-    };
-  }
-  if (typeof onUnload === 'function') {
-    result.onUnload = function (...args) {
-      if (suppressLifecycles) return;
+      if (suppressLifecycles && /^(?:onLoad|onShow|onHide|onUnload)$/.test(name)) return;
       try {
-        return onUnload.apply(this, args);
+        return callLatestWevuFunction(this, name, fallback, args);
       } finally {
-        forgetInstance(this, moduleId);
+        rememberInstanceState(this, moduleId);
+        if (name === 'onUnload') forgetInstance(this, moduleId);
       }
     };
   }
   const lifetimes = { ...(definition.lifetimes || {}) };
-  const attached = lifetimes.attached;
-  const detached = lifetimes.detached;
-  lifetimes.attached = function (...args) {
-    trackInstance(this, moduleId);
-    refreshWevuInstance(this, moduleId);
-    if (suppressLifecycles) return;
-    return attached?.apply(this, args);
-  };
-  lifetimes.detached = function (...args) {
-    if (suppressLifecycles) return;
-    try {
-      return detached?.apply(this, args);
-    } finally {
-      forgetInstance(this, moduleId);
-    }
-  };
-  return { ...result, lifetimes };
+  for (const name of Object.keys(lifetimes)) {
+    const fallback = lifetimes[name];
+    if (typeof fallback !== 'function') continue;
+    lifetimes[name] = function (...args) {
+      if (suppressLifecycles) return;
+      if (name === 'created' || name === 'attached') {
+        trackInstance(this, moduleId);
+        refreshWevuInstance(this, moduleId);
+      }
+      try {
+        return callLatestWevuFunction(this, 'lifetimes.' + name, fallback, args);
+      } finally {
+        if (name === 'detached') forgetInstance(this, moduleId);
+      }
+    };
+  }
+  const pageLifetimes = { ...(definition.pageLifetimes || {}) };
+  for (const name of Object.keys(pageLifetimes)) {
+    const fallback = pageLifetimes[name];
+    if (typeof fallback !== 'function') continue;
+    pageLifetimes[name] = function (...args) {
+      trackInstance(this, moduleId);
+      refreshWevuInstance(this, moduleId);
+      try {
+        return callLatestWevuFunction(this, 'pageLifetimes.' + name, fallback, args);
+      } finally {
+        rememberInstanceState(this, moduleId);
+      }
+    };
+  }
+  return { ...result, lifetimes, pageLifetimes };
 }
 function registerDefinition(name, definition, nativeRegistration) {
   const moduleId = runtime.currentModuleId || runtime.registrationModuleId || name;
   if (!runtime.applyingPatch && runtime.patchedModules.has(moduleId)) return;
-  definitions.set(moduleId, definition);
+  if (!wevuRefreshes.has(moduleId)) definitions.set(moduleId, definition);
   if (registered.has(moduleId)) {
     return;
   }
@@ -343,8 +370,17 @@ globalThis[bridgeKey] = {
     return pending;
   },
   isApplying() { return runtime.applyingPatch; },
+  getDebugSnapshot() {
+    return {
+      definitions: [...definitions.keys()],
+      instances: [...instances.entries()].map(([moduleId, values]) => ({ moduleId, count: values.size })),
+      registered: [...registered.values()],
+      refreshes: [...wevuRefreshes.keys()],
+      refreshGenerations: [...wevuRefreshGenerations.entries()],
+    };
+  },
   trackWevuComponent(definition, refresh) {
-    const moduleId = runtime.registrationModuleId || runtime.currentModuleId || 'Component';
+    const moduleId = runtime.currentModuleId || runtime.registrationModuleId || 'Component';
     if (!runtime.applyingPatch && runtime.patchedModules.has(moduleId)) {
       return decorateWevuComponent(definition, moduleId);
     }
@@ -369,6 +405,8 @@ globalThis[bridgeKey] = {
     setTimeout(() => { suppressLifecycles = false; });
   }
 };
+const runtimeGlobal = globalThis.wx || globalThis.my || globalThis.swan || globalThis.tt || globalThis.ali || globalThis.hd || globalThis.qq || globalThis.ks || globalThis.zfb || globalThis.jd || globalThis.xhs;
+if (runtimeGlobal && !runtimeGlobal[bridgeKey]) runtimeGlobal[bridgeKey] = globalThis[bridgeKey];
 `
 
 export function createStatefulHmrControlSource(control: StatefulHmrControl): string {

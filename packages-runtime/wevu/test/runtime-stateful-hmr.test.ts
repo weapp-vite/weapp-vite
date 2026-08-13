@@ -6,10 +6,12 @@ describe('runtime: stateful HMR', () => {
   let applying = false
   let refresh: ((instance: any, stateSnapshot?: Record<string, any>) => void) | undefined
   let registeredDefinition: Record<string, any> | undefined
+  let trackedDefinition: Record<string, any> | undefined
 
   beforeEach(() => {
     refresh = undefined
     registeredDefinition = undefined
+    trackedDefinition = undefined
     applying = false
     ;(globalThis as any).Component = vi.fn((definition: Record<string, any>) => {
       registeredDefinition = definition
@@ -21,8 +23,18 @@ describe('runtime: stateful HMR', () => {
         callback: (instance: any, stateSnapshot?: Record<string, any>) => void,
       ) {
         refresh = callback
-        return definition
+        trackedDefinition = {
+          ...definition,
+          __tracked: true,
+        }
+        return trackedDefinition
       },
+      Component: vi.fn((definition: Record<string, any>) => {
+        ;(globalThis as any).Component(definition)
+      }),
+      Page: vi.fn((definition: Record<string, any>) => {
+        ;(globalThis as any).Page?.(definition)
+      }),
     }
   })
 
@@ -55,6 +67,8 @@ describe('runtime: stateful HMR', () => {
       },
     })
     defineRuntime(1)
+    expect(registeredDefinition).toBe(trackedDefinition)
+    expect(registeredDefinition?.__tracked).toBe(true)
 
     const instance: any = {
       data: {},
@@ -102,5 +116,37 @@ describe('runtime: stateful HMR', () => {
     expect(instance.data.input).toBe('held-input')
     expect(attached).toHaveBeenCalledTimes(1)
     expect(unloaded).not.toHaveBeenCalled()
+  })
+
+  it('keeps ref snapshots while letting plain setup values refresh from new code', async () => {
+    const defineRuntime = (label: string) => defineComponent({
+      setup() {
+        const input = ref('')
+        return { input, label }
+      },
+    })
+    defineRuntime('before')
+
+    const instance: any = {
+      data: {},
+      properties: {},
+      setData(payload: Record<string, any>) {
+        Object.assign(this.data, payload)
+      },
+    }
+    registeredDefinition!.lifetimes.attached.call(instance)
+    expect(instance.data).toMatchObject({ input: '', label: 'before' })
+
+    instance.__wevu.setupState.input.value = 'held-input'
+    await nextTick()
+    await nextTick()
+    applying = true
+    defineRuntime('after')
+    refresh!(instance, { input: 'held-input', label: 'before' })
+    applying = false
+
+    expect(instance.__wevu.setupState.input.value).toBe('held-input')
+    expect(instance.__wevu.setupState.label).toBe('after')
+    expect(instance.data).toMatchObject({ input: 'held-input', label: 'after' })
   })
 })

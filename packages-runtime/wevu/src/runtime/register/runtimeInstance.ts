@@ -549,14 +549,31 @@ function createRuntimeStateSnapshot(
     if (!Object.prototype.hasOwnProperty.call(runtimeState, key)) {
       continue
     }
+    const setupBinding = setupState?.[key]
+    if (setupState && Object.prototype.hasOwnProperty.call(setupState, key) && !isRef(setupBinding)) {
+      continue
+    }
     if (preferredState && Object.prototype.hasOwnProperty.call(preferredState, key)) {
       snapshot[key] = cloneInitialSnapshotValue(preferredState[key])
       continue
     }
-    const setupBinding = setupState?.[key]
     snapshot[key] = cloneInitialSnapshotValue(isRef(setupBinding) ? setupBinding.value : runtimeState[key])
   }
   return snapshot
+}
+
+function collectPlainSetupSnapshotKeys(
+  runtime: RuntimeInstance<any, any, any>,
+  nativeData: Record<string, any> | undefined,
+) {
+  const setupState = runtime.setupState as Record<string, any> | undefined
+  if (!setupState || !nativeData || typeof nativeData !== 'object') {
+    return []
+  }
+  return Object.keys(nativeData).filter((key) => {
+    const setupBinding = setupState[key]
+    return Object.prototype.hasOwnProperty.call(setupState, key) && !isRef(setupBinding)
+  })
 }
 
 function syncRuntimeStateFromNativeData(
@@ -689,6 +706,9 @@ export function refreshRuntimeInstance<D extends object, C extends ComputedDefin
   const previousRuntimeState = previousRuntime
     ? createRuntimeStateSnapshot(previousRuntime, (target as any).data, options?.stateSnapshot)
     : undefined
+  const plainSetupSnapshotKeys = previousRuntime
+    ? collectPlainSetupSnapshotKeys(previousRuntime, (target as any).data)
+    : []
   teardownRuntimeInstance(target, { skipHooks: true })
   const nextRuntime = mountRuntimeInstance(target, runtimeApp, watchMap, setup, {
     deferSetData: true,
@@ -697,6 +717,9 @@ export function refreshRuntimeInstance<D extends object, C extends ComputedDefin
   if (previousRuntimeState) {
     const nativeData = (target as any).data
     if (nativeData && typeof nativeData === 'object') {
+      for (const key of plainSetupSnapshotKeys) {
+        delete nativeData[key]
+      }
       Object.assign(nativeData, cloneInitialSnapshotValue(previousRuntimeState))
     }
     syncRuntimeStateFromNativeData(target, {
