@@ -28,6 +28,7 @@ const colorsMock = vi.hoisted(() => ({
   bold: vi.fn((value: string) => value),
 }))
 const execFileMock = vi.hoisted(() => vi.fn())
+const readFileSyncMock = vi.hoisted(() => vi.fn())
 const createCompilerContextMock = vi.hoisted(() => vi.fn())
 const [resolveRuntimeTargetsMock, runtimeTargetsMock] = vi.hoisted(() => {
   const targets = {
@@ -77,6 +78,18 @@ vi.mock('node:child_process', () => ({
   execFile: execFileMock,
 }))
 
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+  return {
+    ...actual,
+    default: {
+      ...actual.default,
+      readFileSync: readFileSyncMock,
+    },
+    readFileSync: readFileSyncMock,
+  }
+})
+
 vi.mock('../createContext', () => ({
   createCompilerContext: createCompilerContextMock,
 }))
@@ -115,6 +128,7 @@ describe('openIde', () => {
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
     execFileMock.mockReset()
+    readFileSyncMock.mockReset()
     createCompilerContextMock.mockReset()
     miniProgramDisconnectMock.mockReset()
     connectOpenedAutomatorMock.mockReset()
@@ -131,6 +145,9 @@ describe('openIde', () => {
     delete process.env.WEAPP_VITE_RESET_IDE_FILEUTILS
 
     parseMock.mockResolvedValue(undefined)
+    readFileSyncMock.mockImplementation(() => {
+      throw new Error('missing project config')
+    })
     closeWechatIdeProjectMock.mockResolvedValue(undefined)
     compileWechatIdeByAutomatorMock.mockResolvedValue(undefined)
     openWechatIdeProjectByHttpMock.mockResolvedValue(undefined)
@@ -234,6 +251,60 @@ describe('openIde', () => {
     })
     expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses automator wrapper when preparing plugin projects with miniprogramRoot', async () => {
+    readFileSyncMock.mockImplementation((filePath: string) => {
+      if (filePath.endsWith('project.config.json')) {
+        return JSON.stringify({
+          compileType: 'plugin',
+          miniprogramRoot: 'dist/',
+          pluginRoot: 'dist-plugin/',
+        })
+      }
+      throw new Error('missing project config')
+    })
+
+    const { openIde } = await import('./openIde')
+    await openIde('weapp', 'templates/weapp-vite-plugin-template')
+
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
+      persistAsDefaultSession: true,
+      preserveProjectRoot: false,
+      projectPath: 'templates/weapp-vite-plugin-template',
+      port: 9633,
+      timeout: 8000,
+      trustProject: true,
+    })
+  })
+
+  it('uses automator wrapper when opening plugin projects through automator', async () => {
+    readFileSyncMock.mockImplementation((filePath: string) => {
+      if (filePath.endsWith('project.config.json')) {
+        return JSON.stringify({
+          compileType: 'plugin',
+          miniprogramRoot: 'dist/',
+          pluginRoot: 'dist-plugin/',
+        })
+      }
+      throw new Error('missing project config')
+    })
+    connectOpenedAutomatorMock.mockRejectedValueOnce(new Error('not opened'))
+
+    const { openIde } = await import('./openIde')
+    await openIde('weapp', 'templates/weapp-vite-plugin-template', {
+      skipPostOpenHealthCheck: true,
+      useAutomatorOpen: true,
+    })
+
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
+      persistAsDefaultSession: true,
+      preserveProjectRoot: false,
+      projectPath: 'templates/weapp-vite-plugin-template',
+      port: 9633,
+      timeout: 120_000,
+      trustProject: true,
+    })
   })
 
   it('enables cli fallback for engine build refresh', async () => {

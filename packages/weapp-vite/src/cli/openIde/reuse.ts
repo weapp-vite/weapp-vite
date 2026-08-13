@@ -45,10 +45,14 @@ async function verifyOpenedProjectHealth(miniProgram: DisconnectableMiniProgram)
   await withTimeout(miniProgram.screenshot({ timeout: OPENED_PROJECT_HEALTH_CHECK_TIMEOUT }), OPENED_PROJECT_HEALTH_CHECK_TIMEOUT)
 }
 
-async function openWechatIdeByAutomator(projectPath: string) {
+interface OpenWechatIdeByAutomatorOptions {
+  preserveProjectRoot?: boolean
+}
+
+async function openWechatIdeByAutomator(projectPath: string, options: OpenWechatIdeByAutomatorOptions = {}) {
   const miniProgram = await launchAutomator({
     persistAsDefaultSession: true,
-    preserveProjectRoot: true,
+    preserveProjectRoot: options.preserveProjectRoot ?? true,
     projectPath,
     port: resolveProjectAutomatorPort(projectPath),
     timeout: OPEN_AUTOMATOR_TIMEOUT,
@@ -87,6 +91,7 @@ export async function tryReuseOpenedWechatIde(
   projectPath: string,
   closeIde: () => Promise<boolean>,
   options: {
+    preserveProjectRoot?: boolean
     promptReopen?: boolean
   } = {},
 ) {
@@ -128,7 +133,9 @@ export async function tryReuseOpenedWechatIde(
     logger.warn('关闭当前微信开发者工具失败，仍继续尝试重新打开目标项目。')
   }
 
-  await openWechatIdeByAutomator(projectPath)
+  await openWechatIdeByAutomator(projectPath, {
+    preserveProjectRoot: options.preserveProjectRoot,
+  })
   return {
     reopened: true,
     reused: false,
@@ -141,6 +148,7 @@ export async function tryReuseOpenedWechatIde(
 export async function reopenOpenedWechatIde(
   projectPath: string,
   closeIde: () => Promise<boolean>,
+  options: OpenWechatIdeByAutomatorOptions = {},
 ) {
   const connection = await connectOpenedProject(projectPath)
   if (connection.status !== 'connected') {
@@ -155,7 +163,7 @@ export async function reopenOpenedWechatIde(
     logger.warn('关闭当前微信开发者工具失败，仍继续尝试重新打开目标项目。')
   }
 
-  await openWechatIdeByAutomator(projectPath)
+  await openWechatIdeByAutomator(projectPath, options)
   return true
 }
 

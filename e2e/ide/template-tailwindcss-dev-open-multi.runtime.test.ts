@@ -100,6 +100,13 @@ function isDevtoolsProtocolTimeout(error: unknown) {
     )
 }
 
+function isDevtoolsPageMetaMissingError(error: unknown) {
+  return error instanceof Error
+    && error.message.includes('getPageMetaByWebviewId')
+    && error.message.includes('rawPath')
+    && error.message.includes('is null')
+}
+
 function canRetryOnCurrentAutomatorSession(error: unknown) {
   return isDevtoolsProtocolTimeout(error)
     || (error instanceof Error && /timeout waiting for automator response/i.test(error.message))
@@ -110,6 +117,17 @@ async function removeAutomatorSessionFiles(projectPath: string) {
     fs.rm(resolveAutomatorSessionFile(projectPath), { force: true }).catch(() => {}),
     fs.rm(resolveAutomatorSessionFile(projectPath, resolveProjectAutomatorPort(projectPath)), { force: true }).catch(() => {}),
   ])
+}
+
+async function reconnectOpenedAutomator(currentMiniProgram: any, projectPath: string, route: string) {
+  await Promise.resolve(currentMiniProgram.disconnect?.()).catch(() => {})
+  await closeSharedMiniProgram(projectPath).catch(() => {})
+  await removeAutomatorSessionFiles(projectPath)
+  await delay(1_000)
+  return (await waitForOpenedAutomator(projectPath, {
+    readyRoute: route,
+    timeoutMs: 120_000,
+  })).miniProgram
 }
 
 async function waitForPageText(miniProgram: any, projectPath: string, route: string, text: string, timeoutMs = 90_000) {
@@ -155,19 +173,15 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
       }
     }
     catch (error) {
-      if (!isDevtoolsProtocolTimeout(error) && !isLikelyRelaunchRetryableError(error)) {
+      if (!isDevtoolsProtocolTimeout(error) && !isLikelyRelaunchRetryableError(error) && !isDevtoolsPageMetaMissingError(error)) {
         throw error
       }
       lastProtocolTimeout = error.message
-      if (canRetryOnCurrentAutomatorSession(error)) {
+      if (canRetryOnCurrentAutomatorSession(error) && !isDevtoolsPageMetaMissingError(error)) {
         await delay(1_000)
         continue
       }
-      await Promise.resolve(currentMiniProgram.disconnect?.()).catch(() => {})
-      await closeSharedMiniProgram(projectPath).catch(() => {})
-      await removeAutomatorSessionFiles(projectPath)
-      await delay(1_000)
-      currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 120_000 })).miniProgram
+      currentMiniProgram = await reconnectOpenedAutomator(currentMiniProgram, projectPath, route)
     }
     await delay(1_000)
   }
@@ -186,9 +200,13 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
     infraOutput = output.length > 4_000 ? output.slice(-4_000) : output
   }).catch(() => {})
 
-  const readySession = waitForOpenedAutomator(process.root, { timeoutMs: 120_000 }).catch((error) => {
+  const readySession = waitForOpenedAutomator(process.root, {
+    readyRoute: INDEX_ROUTE,
+    timeoutMs: 120_000,
+  }).catch((error) => {
     const details = infraOutput ? `\nRecent infra output:\n${infraOutput}` : ''
-    throw new Error(`WeChat DevTools automator unavailable while opening ${process.name}${details}`, {
+    const reason = error instanceof Error ? error.message : String(error)
+    throw new Error(`WeChat DevTools automator unavailable while opening ${process.name}: ${reason}${details}`, {
       cause: error as Error,
     })
   })

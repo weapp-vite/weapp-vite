@@ -19,6 +19,19 @@ async function readIssue621Runtime(miniProgram: any) {
   })
 }
 
+async function waitForIssue621Runtime(miniProgram: any, timeoutMs = 15_000) {
+  const startedAt = Date.now()
+  let latest: unknown
+  while (Date.now() - startedAt <= timeoutMs) {
+    latest = await readIssue621Runtime(miniProgram).catch(() => undefined)
+    if ((latest as { ok?: boolean } | undefined)?.ok === true) {
+      return latest
+    }
+    await new Promise(resolve => setTimeout(resolve, 220))
+  }
+  throw new Error(`Timed out waiting for issue-621 runtime readiness. Latest runtime: ${JSON.stringify(latest)}`)
+}
+
 async function callInlineTap(miniProgram: any, inlineId: string) {
   await miniProgram.evaluate((targetInlineId: string) => {
     const pages = getCurrentPages()
@@ -59,17 +72,14 @@ describe.sequential('e2e app: github-issues / issue #621', () => {
         'issue-621 inline assignment event',
         45_000,
         {
-          readiness: async () => {
-            const result = await readIssue621Runtime(miniProgram)
-            return result?.ok === true
-          },
+          readiness: 'route',
         },
       )
       if (!issuePage) {
         throw new Error('Failed to launch issue-621 page')
       }
 
-      const initialRuntime = await readIssue621Runtime(miniProgram)
+      const initialRuntime = await waitForIssue621Runtime(miniProgram)
       expect(initialRuntime).toMatchObject({
         count: 0,
         explicitCount: 0,

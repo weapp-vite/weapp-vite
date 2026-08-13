@@ -133,6 +133,7 @@ const projects = [
         'e2e/scripts/suiteRunner.test.ts',
         'e2e/utils/automator.test.ts',
         'e2e/utils/dev-memory.test.ts',
+        'e2e/utils/opened-automator.test.ts',
         'e2e/utils/shared-hmr-fixture.test.ts',
         'e2e/utils/vitestTargetFile.test.ts',
         'e2e/utils/wevu-root-hmr-exports.test.ts',

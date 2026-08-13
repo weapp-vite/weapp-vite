@@ -1372,6 +1372,52 @@ function startBridgeWrapperDistSync(
   return closeSync
 }
 
+function routeToPageScriptPath(projectRoot: string, route: string) {
+  const normalizedRoute = route
+    .split('?', 1)[0]!
+    .split('#', 1)[0]!
+    .replace(LEADING_SLASH_PATTERN, '')
+  if (!normalizedRoute) {
+    return undefined
+  }
+  return path.join(projectRoot, `${normalizedRoute}.js`)
+}
+
+function isReadablePageScript(source: string) {
+  return source.includes('Page(')
+    || source.includes('Component(')
+    || source.includes('module.exports')
+    || source.includes('exports.')
+    || source.includes('createWevuComponent')
+}
+
+async function waitForBridgeWrapperWarmupAsset(
+  bridgeWrapperProject: BridgeWrapperProject | undefined,
+  route: string | undefined,
+  project: string,
+) {
+  if (!bridgeWrapperProject?.stopSync || !route) {
+    return
+  }
+  const pageScriptPath = routeToPageScriptPath(bridgeWrapperProject.path, route)
+  if (!pageScriptPath) {
+    return
+  }
+
+  const startedAt = Date.now()
+  let latest = ''
+  while (Date.now() - startedAt <= APP_CONFIG_READY_TIMEOUT) {
+    latest = fs.existsSync(pageScriptPath) ? fs.readFileSync(pageScriptPath, 'utf8') : ''
+    if (isReadablePageScript(latest)) {
+      process.stdout.write(`[info] [runtime:launch-step] bridge-wrapper-warmup-asset-ready route=${route} project=${project}\n`)
+      return
+    }
+    await sleep(120)
+  }
+
+  throw new Error(`Timed out waiting bridge wrapper warmup page script: ${resolveReportProjectPath(pageScriptPath)}\nLatest content:\n${latest.slice(0, 1000)}`)
+}
+
 function prepareAutomatorBridgeWrapperProject(
   projectPath: string | undefined,
   projectMeta: LaunchProjectMeta | undefined,
@@ -2715,6 +2761,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             bridgeWrapperProject = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
               ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta)
               : undefined
+            await waitForBridgeWrapperWarmupAsset(bridgeWrapperProject, resolvedWarmupRoute, project)
             const launchProjectPath = bridgeWrapperProject?.path ?? rest.projectPath
             const launchRest = {
               ...rest,

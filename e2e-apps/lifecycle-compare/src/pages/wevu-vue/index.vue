@@ -18,7 +18,7 @@ import {
   onTabItemTap,
   onUnload,
 } from 'wevu'
-import { finalizeLifecycleLogs, PAGE_HOOKS, recordLifecycle } from '../../shared/lifecycle'
+import { finalizeLifecycleLogs, PAGE_HOOKS, recordLifecycle, resetLifecycleLogs } from '../../shared/lifecycle'
 
 const SOURCE = 'page.wevu.vue'
 
@@ -35,6 +35,7 @@ export default defineComponent({
   setup(_, ctx) {
     const instance = ctx.instance as unknown as LifecyclePageInstance
     const finalize = () => finalizeLifecycleLogs(instance, PAGE_HOOKS, { source: SOURCE })
+    const reset = () => resetLifecycleLogs(instance)
     onLoad((query) => {
       recordLifecycle(instance, 'onLoad', [query], { source: SOURCE })
     })
@@ -98,6 +99,7 @@ export default defineComponent({
     })
     return {
       finalizeLifecycleLogs: finalize,
+      resetLifecycleLogs: reset,
     }
   },
   data: () => ({

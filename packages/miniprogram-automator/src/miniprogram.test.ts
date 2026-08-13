@@ -152,6 +152,9 @@ describe('MiniProgram', () => {
 
     connection.send.mockResolvedValueOnce({ SDKVersion: 'dev' })
     await expect(miniProgram.checkVersion()).resolves.toBeUndefined()
+
+    connection.send.mockResolvedValueOnce({ version: '2.01.2510290' })
+    await expect(miniProgram.checkVersion()).resolves.toBeUndefined()
   })
 
   it('waits for App domain readiness before returning a launched session', async () => {
