@@ -245,15 +245,17 @@ export function normalizeWxmlExpression(exp: string): string {
           path.skip()
         },
       },
-      LogicalExpression(path) {
-        if (path.node.operator !== '??') {
-          return
-        }
-        const left = path.node.left
-        const right = path.node.right
-        const test = t.binaryExpression('!=', t.cloneNode(left), t.nullLiteral())
-        path.replaceWith(t.conditionalExpression(test, t.cloneNode(left), t.cloneNode(right)))
-        path.skip()
+      LogicalExpression: {
+        exit(path) {
+          if (path.node.operator !== '??') {
+            return
+          }
+          const left = path.node.left
+          const right = path.node.right
+          const test = t.binaryExpression('!=', t.cloneNode(left), t.nullLiteral())
+          path.replaceWith(t.conditionalExpression(test, t.cloneNode(left), t.cloneNode(right)))
+          path.skip()
+        },
       },
       TemplateLiteral(path) {
         if (t.isTaggedTemplateExpression(path.parent)) {
