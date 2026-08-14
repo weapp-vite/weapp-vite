@@ -1,5 +1,17 @@
 # @wevu/compiler
 
+## 6.20.2
+
+### Patch Changes
+
+- 🐛 **统一 Rolldown 依赖的 workspace catalog 引用，避免 pnpm 更新后将 catalog 协议写回为固定版本；同时同步 magic-string、sass-embedded 及相关构建依赖版本，并更新脚手架模板 catalog。** [`b8e2739`](https://github.com/weapp-vite/weapp-vite/commit/b8e2739f3d72bcc939146d1e744ef2a341f25423) by @sonofmagic
+
+- 🐛 **修复 Vue 模板中 optional chaining 嵌套在空值合并表达式时未被降级的问题，确保生成的 WXML 不再包含小程序不支持的 `?.`。** [#808](https://github.com/weapp-vite/weapp-vite/pull/808) by @sonofmagic
+
+- 🐛 **默认将 Vue 模板中的 PascalCase 组件标签及其自动生成的 `usingComponents` 配置转换为 kebab-case，避免微信开发者工具因 WXML 标签含大写字母而无法识别。** [#809](https://github.com/weapp-vite/weapp-vite/pull/809) by @sonofmagic
+- 📦 **Dependencies** [`b8e2739`](https://github.com/weapp-vite/weapp-vite/commit/b8e2739f3d72bcc939146d1e744ef2a341f25423)
+  → `rolldown-require@2.0.25`, `@weapp-core/shared@3.1.1`, `@weapp-vite/ast@6.20.2`
+
 ## 6.20.1
 
 ### Patch Changes

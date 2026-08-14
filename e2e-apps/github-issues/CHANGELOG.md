@@ -1,5 +1,12 @@
 # e2e-app-github-issues
 
+## 0.0.28
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `@wevu/web-apis@1.2.34`
+
 ## 0.0.27
 
 ### Patch Changes

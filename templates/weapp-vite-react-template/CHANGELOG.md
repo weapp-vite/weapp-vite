@@ -1,5 +1,12 @@
 # weapp-vite-react-template
 
+## 0.0.3
+
+### Patch Changes
+
+- 📦 **Dependencies** [`6fcfa80`](https://github.com/weapp-vite/weapp-vite/commit/6fcfa804012cf20ea694f244cf7f51c50fdc6b5d)
+  → `wevu@6.20.2`
+
 ## 0.0.2
 
 ### Patch Changes

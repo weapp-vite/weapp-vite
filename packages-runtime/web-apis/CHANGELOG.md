@@ -1,5 +1,12 @@
 # @wevu/web-apis
 
+## 1.2.34
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `@wevu/api@0.2.16`
+
 ## 1.2.33
 
 ### Patch Changes
