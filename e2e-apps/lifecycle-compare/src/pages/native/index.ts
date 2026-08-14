@@ -1,5 +1,5 @@
 import type { LifecycleEntry } from '../../shared/lifecycle'
-import { finalizeLifecycleLogs, PAGE_HOOKS, recordLifecycle } from '../../shared/lifecycle'
+import { finalizeLifecycleLogs, PAGE_HOOKS, recordLifecycle, resetLifecycleLogs } from '../../shared/lifecycle'
 
 const SOURCE = 'page.native'
 
@@ -91,5 +91,8 @@ Page({
   },
   finalizeLifecycleLogs() {
     return finalizeLifecycleLogs(this, PAGE_HOOKS, { source: SOURCE })
+  },
+  resetLifecycleLogs() {
+    return resetLifecycleLogs(this)
   },
 })

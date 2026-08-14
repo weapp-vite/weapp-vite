@@ -7,7 +7,7 @@ describe('stateful HMR Vite adapter', () => {
     const banner = createStatefulHmrBanner({ fileName: 'pages/index/index.js', isEntry: true })
 
     expect(banner).toContain('installNative(\'Page\', definition => Page(definition))')
-    expect(banner).not.toContain('installNative(\'Component\'')
+    expect(banner).toContain('installNative(\'Component\', definition => Component(definition))')
     expect(createStatefulHmrFooter({ fileName: 'pages/index/index.js', isEntry: true }))
       .toContain('takeNativeDefinitions(\'Component\')')
   })

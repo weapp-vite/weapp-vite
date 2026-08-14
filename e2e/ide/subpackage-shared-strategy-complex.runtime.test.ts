@@ -10,7 +10,6 @@ interface FixtureSuiteOptions {
   suiteName: string
   label: string
   appRoot: string
-  warmupRootSelector: string
   routes: Array<{
     dataPaths: string[]
     expected: string[]
@@ -80,7 +79,7 @@ async function readRenderedRouteSnapshot(page: any, routeCase: FixtureSuiteOptio
 }
 
 function createRuntimeSuite(options: FixtureSuiteOptions) {
-  const { suiteName, label, appRoot, routes, warmupRootSelector } = options
+  const { suiteName, label, appRoot, routes } = options
 
   async function runBuild() {
     const outputRoot = path.join(appRoot, 'dist')
@@ -108,7 +107,6 @@ function createRuntimeSuite(options: FixtureSuiteOptions) {
       sharedMiniProgram = await launchAutomator({
         projectPath: appRoot,
         skipRelaunchPageRootCheck: true,
-        warmupRootSelectors: [warmupRootSelector],
       })
     }
     return sharedMiniProgram
@@ -200,7 +198,6 @@ createRuntimeSuite({
   suiteName: 'e2e app: subpackage-shared-strategy-complex-a runtime',
   label: 'ide:subpackage-shared-strategy-complex-a',
   appRoot: path.resolve(import.meta.dirname, '../../e2e-apps/subpackage-shared-strategy-complex-a'),
-  warmupRootSelector: '#complex-a-main',
   routes: [
     {
       route: '/pages/index/index',
@@ -233,7 +230,6 @@ createRuntimeSuite({
   suiteName: 'e2e app: subpackage-shared-strategy-complex-b runtime',
   label: 'ide:subpackage-shared-strategy-complex-b',
   appRoot: path.resolve(import.meta.dirname, '../../e2e-apps/subpackage-shared-strategy-complex-b'),
-  warmupRootSelector: '#complex-b-home',
   routes: [
     {
       route: '/pages/home/index',

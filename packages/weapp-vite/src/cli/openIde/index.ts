@@ -1,4 +1,5 @@
 import type { MpPlatform } from '../../types'
+import fs from 'node:fs'
 import process from 'node:process'
 import path from 'pathe'
 import {
@@ -75,6 +76,26 @@ function shouldLogAutomatorFallbackError() {
 const PREPARE_AUTOMATOR_SESSION_TIMEOUT = 8_000
 const RESET_FILEUTILS_ENV = 'WEAPP_VITE_RESET_IDE_FILEUTILS'
 
+function readProjectConfigObject(projectPath: string) {
+  try {
+    const raw = fs.readFileSync(path.join(projectPath, 'project.config.json'), 'utf8')
+    const value = JSON.parse(raw) as unknown
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? value as Record<string, unknown>
+      : undefined
+  }
+  catch {
+    return undefined
+  }
+}
+
+function shouldUseAutomatorProjectWrapper(projectPath: string) {
+  const projectConfig = readProjectConfigObject(projectPath)
+  return projectConfig?.compileType === 'plugin'
+    && typeof projectConfig.miniprogramRoot === 'string'
+    && projectConfig.miniprogramRoot.trim().length > 0
+}
+
 function isWechatIdeOpenRecoveryDisabled(options: OpenIdeOptions) {
   if (options.openRecovery === false) {
     return true
@@ -128,14 +149,18 @@ export async function closeIde() {
 }
 
 async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIdeOptions) {
+  const preserveProjectRoot = !shouldUseAutomatorProjectWrapper(projectPath)
   if (options.reuseOpenedProject === false) {
-    const reopened = await reopenOpenedWechatIde(projectPath, closeIde)
+    const reopened = await reopenOpenedWechatIde(projectPath, closeIde, {
+      preserveProjectRoot,
+    })
     if (reopened) {
       return 'reopened'
     }
   }
 
   const reuseResult = await tryReuseOpenedWechatIde(projectPath, closeIde, {
+    preserveProjectRoot,
     promptReopen: options.reuseOpenedProject !== true,
   })
   if (reuseResult?.reused) {
@@ -148,7 +173,9 @@ async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIde
     return 'unhealthy'
   }
 
-  await openWechatIdeByAutomator(projectPath)
+  await openWechatIdeByAutomator(projectPath, {
+    preserveProjectRoot,
+  })
   return 'opened'
 }
 
@@ -192,10 +219,11 @@ function createIdeOpenArgv(platform?: MpPlatform, projectPath?: string, options:
 }
 
 async function prepareOpenedWechatIdeAutomatorSession(projectPath: string, options: OpenIdeOptions): Promise<WechatIdeOpenHealthResult> {
+  const preserveProjectRoot = !shouldUseAutomatorProjectWrapper(projectPath)
   try {
     const miniProgram = await launchAutomator({
       persistAsDefaultSession: true,
-      preserveProjectRoot: true,
+      preserveProjectRoot,
       projectPath,
       port: resolveProjectAutomatorPort(projectPath),
       timeout: PREPARE_AUTOMATOR_SESSION_TIMEOUT,
@@ -298,7 +326,7 @@ async function stabilizeOpenedWechatIdeProject(
         await executeWechatIdeCliCommand(appendLoginRetryArgv(['compile'], options), {
           automatorMode: 'require',
           httpMode: 'skip',
-          preserveProjectRoot: true,
+          preserveProjectRoot: !shouldUseAutomatorProjectWrapper(projectPath),
           projectPath,
         })
       }

@@ -67,16 +67,39 @@ async function copyProjectRoot(sourceProjectPath: string, wrapperProjectPath: st
   })
 }
 
+function createWrapperProjectConfig(source: Record<string, unknown>, patch: Record<string, unknown>) {
+  const {
+    miniprogramRoot: _miniprogramRoot,
+    qcloudRoot: _qcloudRoot,
+    srcMiniprogramRoot: _srcMiniprogramRoot,
+    ...rest
+  } = source
+  const sourceSetting = source.setting && typeof source.setting === 'object'
+    ? source.setting as Record<string, unknown>
+    : {}
+  const patchSetting = patch.setting && typeof patch.setting === 'object'
+    ? patch.setting as Record<string, unknown>
+    : {}
+
+  return {
+    ...rest,
+    ...patch,
+    setting: {
+      ...sourceSetting,
+      ...patchSetting,
+      packNpmManually: false,
+      packNpmRelationList: [],
+    },
+  }
+}
+
 async function copyJsonConfigAsWrapper(sourcePath: string, targetPath: string, patch: Record<string, unknown>) {
   const source = await readJsonObject(sourcePath)
   if (!source) {
     return
   }
 
-  await writeJsonObject(targetPath, {
-    ...source,
-    ...patch,
-  })
+  await writeJsonObject(targetPath, createWrapperProjectConfig(source, patch))
 }
 
 async function ensureWrapperAppConfig(wrapperProjectPath: string) {
@@ -137,6 +160,7 @@ export async function resolveAutomatorProjectPath(projectPath: string): Promise<
   }
 
   const rootPatch = {
+    compileType: projectConfig?.compileType === 'plugin' ? 'plugin' : 'miniprogram',
     miniprogramRoot: './',
     srcMiniprogramRoot: './',
   }

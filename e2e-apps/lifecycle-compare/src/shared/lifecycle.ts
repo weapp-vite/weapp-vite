@@ -291,3 +291,27 @@ export function finalizeLifecycleLogs<TData extends LifecycleData>(
   updateSummary(instance)
   return data.__lifecycleLogs ?? []
 }
+
+export function resetLifecycleLogs<TData extends LifecycleData>(
+  instance: LifecycleInstance<TData>,
+) {
+  const data = ensureLifecycleData(instance)
+  data.__lifecycleLogs = []
+  data.__lifecycleOrder = 0
+  data.__lifecycleSeen = {}
+  data.__lifecycleState = {
+    tick: 0,
+    lastHook: '',
+  }
+  syncLifecycleCache(instance, data)
+  if (typeof instance.setData === 'function') {
+    instance.setData({
+      __lifecycleLogs: data.__lifecycleLogs,
+      __lifecycleOrder: data.__lifecycleOrder,
+      __lifecycleSeen: data.__lifecycleSeen,
+      __lifecycleState: data.__lifecycleState,
+    } as LifecycleSetDataPayload<TData>)
+  }
+  updateSummary(instance)
+  return data.__lifecycleLogs
+}

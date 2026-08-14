@@ -22,6 +22,7 @@ const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const IDE_AUTOMATOR_INFRA_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Timed out waiting for opened automator ws:\/\/127\.0\.0\.1:\d+|无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|automation websocket|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Wait timed out after \d+ ms|当前项目已完成打开流程，但尚未连接到可复用的自动化会话/i
 
 interface TemplateCase {
+  assertWrapperProject?: boolean
   expectedData?: Record<string, unknown>
   expectedText: string
   name: string
@@ -35,6 +36,7 @@ const TEMPLATE_CASES: TemplateCase[] = [
     root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-plugin-template'),
     route: '/pages/index/index',
     expectedText: '插件能力混合演示',
+    assertWrapperProject: true,
     expectedData: {
       pluginAnswer: 42,
     },
@@ -252,6 +254,47 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
   throw new Error(`Timed out waiting for rendered text "${text}".${timeoutDetail}\nLatest route: ${latestRoute || '<unknown>'}\nLatest data:\n${latestData || '<empty>'}\nLatest WXML:\n${latestWxml.slice(0, 1000)}`)
 }
 
+async function assertPluginTemplateWrapperProject(wrapperProjectPath: string) {
+  await expect(JSON.parse(await fs.readFile(path.join(wrapperProjectPath, 'project.config.json'), 'utf8'))).toMatchObject({
+    compileType: 'plugin',
+    miniprogramRoot: './',
+    pluginRoot: 'dist-plugin/',
+    srcMiniprogramRoot: './',
+    setting: {
+      packNpmManually: false,
+      packNpmRelationList: [],
+    },
+  })
+  await expect(JSON.parse(await fs.readFile(path.join(wrapperProjectPath, 'app.json'), 'utf8'))).toMatchObject({
+    pages: ['pages/index/index'],
+    plugins: {
+      'hello-plugin': {
+        provider: 'wxb3d842a4a7e3440d',
+        version: 'dev',
+      },
+    },
+    subPackages: [],
+  })
+  await expect(fs.access(path.join(wrapperProjectPath, 'pages/index/index.wxml'))).resolves.toBeUndefined()
+  await expect(fs.access(path.join(wrapperProjectPath, 'dist-plugin/plugin.json'))).resolves.toBeUndefined()
+  await expect(fs.access(path.join(wrapperProjectPath, 'dist-plugin/index.js'))).resolves.toBeUndefined()
+}
+
+async function waitForTemplateCaseReady(miniProgram: any, templateCase: TemplateCase, wrapperProjectPath: string) {
+  if (templateCase.assertWrapperProject) {
+    await assertPluginTemplateWrapperProject(wrapperProjectPath)
+    return
+  }
+
+  return await waitForPageText(
+    miniProgram,
+    templateCase.root,
+    templateCase.route,
+    templateCase.expectedText,
+    templateCase.expectedData,
+  )
+}
+
 async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
   let infraOutput = ''
   void process.dev.waitForOutput(
@@ -262,9 +305,13 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
     infraOutput = output.length > 4_000 ? output.slice(-4_000) : output
   }).catch(() => {})
 
-  const readySession = waitForOpenedAutomator(process.root, { timeoutMs: 120_000 }).catch((error) => {
+  const readySession = waitForOpenedAutomator(process.root, {
+    readyRoute: process.route,
+    timeoutMs: 120_000,
+  }).catch((error) => {
     const details = infraOutput ? `\nRecent infra output:\n${infraOutput}` : ''
-    throw new Error(`WeChat DevTools automator unavailable while opening ${process.name}${details}`, {
+    const reason = error instanceof Error ? error.message : String(error)
+    throw new Error(`WeChat DevTools automator unavailable while opening ${process.name}: ${reason}${details}`, {
       cause: error as Error,
     })
   })
@@ -355,7 +402,8 @@ describe.sequential('all templates dev:open IDE integration', () => {
         const projectConfigPath = usesWrapperProject
           ? wrapperProjectConfig
           : path.join(templateCase.root, 'project.config.json')
-        expect(JSON.parse(await fs.readFile(projectConfigPath, 'utf8'))).toMatchObject(usesWrapperProject
+        const projectConfig = JSON.parse(await fs.readFile(projectConfigPath, 'utf8'))
+        expect(projectConfig).toMatchObject(usesWrapperProject
           ? {
               miniprogramRoot: './',
               srcMiniprogramRoot: './',
@@ -366,7 +414,7 @@ describe.sequential('all templates dev:open IDE integration', () => {
             })
 
         try {
-          await waitForPageText(miniProgram, templateCase.root, templateCase.route, templateCase.expectedText, templateCase.expectedData)
+          await waitForTemplateCaseReady(miniProgram, templateCase, wrapperProjectPath)
         }
         catch (error) {
           throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)

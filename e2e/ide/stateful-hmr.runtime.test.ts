@@ -61,7 +61,7 @@ async function readRuntimeState(page?: any): Promise<RuntimeState> {
       source: String(currentPage.options?.source ?? ''),
     }
   })
-  const data = page ? await page.data() : metadata.data
+  const data = metadata.data ?? (page ? await page.data() : undefined)
   return {
     count: Number(data?.count),
     identity: metadata.identity,
@@ -83,32 +83,39 @@ async function prepareRuntimeState(identity: string) {
 
 async function triggerIncrement(runtime: 'component' | 'native' | 'wevu', page?: any): Promise<unknown> {
   if (runtime === 'wevu') {
-    return await page.callMethod('__weapp_vite_inline', {
-      type: 'tap',
-      currentTarget: {
-        dataset: {
-          wiTap: 'i0',
+    return await miniProgram.evaluate(() => {
+      const pages = getCurrentPages()
+      const page = pages[pages.length - 1] as any
+      if (typeof page.__weapp_vite_inline !== 'function') {
+        throw new TypeError('wevu inline handler is unavailable')
+      }
+      return page.__weapp_vite_inline({
+        type: 'tap',
+        currentTarget: {
+          dataset: {
+            wiTap: 'i0',
+          },
         },
-      },
+      })
     })
-    return
   }
-  if (runtime === 'component') {
-    await page.callMethod('increment')
+  const result = await miniProgram.evaluate(() => {
+    const pages = getCurrentPages()
+    const currentPage = pages[pages.length - 1] as any
+    if (typeof currentPage.increment !== 'function') {
+      return { called: false, route: String(currentPage?.route ?? currentPage?.__route__ ?? '') }
+    }
+    currentPage.increment()
+    return { called: true, route: String(currentPage?.route ?? currentPage?.__route__ ?? '') }
+  }, runtime)
+  if (result?.called) {
     return
   }
   if (page && typeof page.callMethod === 'function') {
     await page.callMethod('increment')
     return
   }
-  await miniProgram.evaluate((expectedRuntime: 'native' | 'wevu') => {
-    const pages = getCurrentPages()
-    const page = pages[pages.length - 1] as any
-    if (typeof page.increment !== 'function') {
-      throw new TypeError(`${expectedRuntime} page increment is unavailable`)
-    }
-    page.increment()
-  }, runtime)
+  throw new TypeError(`${runtime} page increment is unavailable on ${result?.route || 'unknown route'}`)
 }
 
 async function waitForPatchedBehavior(expectedCount: number, page?: any, timeoutMs = 30_000): Promise<RuntimeState> {

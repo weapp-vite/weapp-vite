@@ -1,5 +1,6 @@
 import type { InternalRuntimeState } from '../../types'
-import { resolveCurrentMiniProgramPlatform } from '../../platform'
+import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
+import { getMiniProgramRuntimeGlobalObject, resolveCurrentMiniProgramPlatform } from '../../platform'
 
 function createAlipayPageDefinition(componentDefinition: Record<string, any>) {
   const {
@@ -52,8 +53,18 @@ export function registerNativeComponentDefinition(
   componentDefinition: Record<string, any>,
   isPage: boolean,
 ) {
+  const statefulHmrBridge = getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
   if (isPage && resolveCurrentMiniProgramPlatform() === 'alipay') {
-    Page(createAlipayPageDefinition(componentDefinition))
+    const pageDefinition = createAlipayPageDefinition(componentDefinition)
+    if (typeof statefulHmrBridge?.Page === 'function') {
+      statefulHmrBridge.Page(pageDefinition)
+      return
+    }
+    Page(pageDefinition)
+    return
+  }
+  if (typeof statefulHmrBridge?.Component === 'function') {
+    statefulHmrBridge.Component(componentDefinition)
     return
   }
   Component(componentDefinition)

@@ -255,6 +255,7 @@ export function createStatefulHmrBanner(chunk: { fileName: string, isEntry?: boo
   return [
     `require(${JSON.stringify(`${prefix}rolldown-runtime.js`)});`,
     `globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)}].installNative('Page', definition => Page(definition));`,
+    `globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)}].installNative('Component', definition => Component(definition));`,
     `require(${JSON.stringify(`${prefix}${WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE}`)});`,
     `require(${JSON.stringify(`${prefix}${WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE}`)});`,
   ].join('')

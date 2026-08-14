@@ -246,6 +246,7 @@ describe('suiteRunner', () => {
     const ideSmokeTasks = await getSuiteTasks('ide-smoke')
     const ideGateTasks = await getSuiteTasks('ide-gate')
     const ideFullTasks = await getSuiteTasks('ide-full')
+    const ideExhaustiveTasks = await getSuiteTasks('ide-full:exhaustive')
     const ideHeadlessSmokeTasks = await getSuiteTasks('ide-headless-smoke')
     const ideHeadlessGateTasks = await getSuiteTasks('ide-headless-gate')
     const ideHeadlessFullTasks = await getSuiteTasks('ide-headless-full')
@@ -258,28 +259,30 @@ describe('suiteRunner', () => {
     const ideSmokeLabels = ideSmokeTasks.map(task => task.label)
     const ideGateLabels = ideGateTasks.map(task => task.label)
     const ideFullLabels = ideFullTasks.map(task => task.label)
+    const ideExhaustiveLabels = ideExhaustiveTasks.map(task => task.label)
     const ideHeadlessSmokeLabels = ideHeadlessSmokeTasks.map(task => task.label)
     const ideHeadlessGateLabels = ideHeadlessGateTasks.map(task => task.label)
     const ideHeadlessFullLabels = ideHeadlessFullTasks.map(task => task.label)
     const ideChunkModesLabels = ideChunkModesTasks.map(task => task.label)
     const ideGithubIssuesLabels = ideGithubIssuesTasks.map(task => task.label)
     const ideWevuJsxLabels = ideWevuJsxTasks.map(task => task.label)
-    const coreHmrTask = ideFullTasks.find(task => task.label === 'ide/wevu-runtime.core-hmr.test.ts')
+    const coreHmrTask = ideExhaustiveTasks.find(task => task.label === 'ide/wevu-runtime.core-hmr.test.ts')
     const devtoolsCliWorkflowTask = ideFullTasks.find(task => task.label === 'ide/devtools-cli-workflow.runtime.test.ts')
     const githubIssuesAggregateTask = ideFullTasks.find(task => task.label === IDE_GITHUB_ISSUES_AGGREGATE_LABEL)
     const statefulHmrTask = ideFullTasks.find(task => task.label === 'ide/stateful-hmr.runtime.test.ts')
     const subpackageSharedStrategyComplexTask = ideFullTasks.find(task => task.label === 'ide/subpackage-shared-strategy-complex.runtime.test.ts')
     const templateDevOpenAllTask = ideFullTasks.find(task => task.label === 'ide/template-dev-open-all.runtime.test.ts')
     const templateTailwindDevOpenMultiTask = ideFullTasks.find(task => task.label === 'ide/template-tailwindcss-dev-open-multi.runtime.test.ts')
-    const templateTailwindTdesignHmrTask = ideFullTasks.find(task => task.label === 'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts')
+    const templateTailwindTdesignHmrTask = ideExhaustiveTasks.find(task => task.label === 'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts')
     const templateWevuTailwindTdesignHmrTask = ideFullTasks.find(task => task.label === 'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts')
     const uviewPlusCompatTask = ideComponentLibraryTasks.find(task => task.label === 'ide/uview-plus-compat.runtime.test.ts')
     const wevuRuntimeTask = ideFullTasks.find(task => task.label === 'ide/wevu-runtime.weapp.test.ts')
-    const wevuJsxHmrTask = ideFullTasks.find(task => task.label === 'ide/wevu-jsx-tsx.hmr.runtime.test.ts')
+    const wevuJsxHmrTask = ideExhaustiveTasks.find(task => task.label === 'ide/wevu-jsx-tsx.hmr.runtime.test.ts')
     const wotUiCompatTask = ideComponentLibraryTasks.find(task => task.label === 'ide/wot-ui-compat.runtime.test.ts')
 
     expect(ideSmokeTasks.length).toBeLessThan(ideGateTasks.length)
     expect(ideGateTasks.length).toBeLessThan(ideFullTasks.length)
+    expect(ideFullTasks.length).toBeLessThan(ideExhaustiveTasks.length)
     expect(ideHeadlessSmokeTasks.length).toBeLessThan(ideHeadlessGateTasks.length)
     expect(ideHeadlessGateTasks.length).toBeLessThanOrEqual(ideHeadlessFullTasks.length)
     expect(ideSmokeLabels).toContain('ide/index.test.ts')
@@ -287,9 +290,14 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/index.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
-    expect(ideFullLabels).not.toContain('ide/runtimeErrors.test.ts')
-    expect(ideFullLabels).not.toContain('ide/uview-plus-compat.runtime.test.ts')
-    expect(ideFullLabels).not.toContain('ide/wot-ui-compat.runtime.test.ts')
+    expect(ideFullLabels).toContain('ide/devtools-cli-workflow.runtime.test.ts')
+    expect(ideFullLabels).toContain('ide/github-issues.runtime.aggregate.test.ts')
+    expect(ideFullLabels).toContain('ide/template-dev-open-all.runtime.test.ts')
+    expect(ideFullLabels).toContain('ide/stateful-hmr.runtime.test.ts')
+    expect(ideFullLabels).not.toContain('ide/chunk-modes.runtime.duplicate.test.ts')
+    expect(ideExhaustiveLabels).not.toContain('ide/runtimeErrors.test.ts')
+    expect(ideExhaustiveLabels).not.toContain('ide/uview-plus-compat.runtime.test.ts')
+    expect(ideExhaustiveLabels).not.toContain('ide/wot-ui-compat.runtime.test.ts')
     expect(ideComponentLibraryTasks.map(task => task.label)).toEqual([
       'ide/uview-plus-compat.runtime.test.ts',
       'ide/wot-ui-compat.runtime.test.ts',
@@ -327,21 +335,24 @@ describe('suiteRunner', () => {
       'ide/chunk-modes.runtime.extras.test.ts',
       'ide/chunk-modes.runtime.hoist.test.ts',
     ])
-    expect(ideFullLabels.slice(-3)).toEqual(ideChunkModesLabels)
-    expect(ideFullTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
-    expect(ideFullTasks.find(task => task.label === 'ide/app-vue-hmr-alias.runtime.test.ts')?.env).toMatchObject({
+    expect(ideExhaustiveLabels.slice(-3)).toEqual(ideChunkModesLabels)
+    expect(ideExhaustiveTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
+    expect(ideExhaustiveTasks.find(task => task.label === 'ide/app-vue-hmr-alias.runtime.test.ts')?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
-    expect(ideFullTasks.find(task => task.label === 'ide/automator-bridge-wrapper-hmr.runtime.test.ts')?.env).toMatchObject({
+    expect(ideExhaustiveTasks.find(task => task.label === 'ide/automator-bridge-wrapper-hmr.runtime.test.ts')?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
-    expect(ideFullTasks.find(task => task.label === 'ide/automator-concurrent-sessions.runtime.test.ts')?.env).toMatchObject({
+    expect(ideExhaustiveTasks.find(task => task.label === 'ide/automator-concurrent-sessions.runtime.test.ts')?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
-    expect(ideFullTasks.find(task => task.label === 'ide/github-issues.runtime.issue547.test.ts')?.env).toMatchObject({
+    expect(ideExhaustiveTasks.find(task => task.label === 'ide/github-issues.runtime.issue547.test.ts')?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
-    expect(ideFullTasks.find(task => task.label === 'ide/github-issues.runtime.require-async.test.ts')?.env).toMatchObject({
+    expect(ideExhaustiveTasks.find(task => task.label === 'ide/github-issues.runtime.require-async.test.ts')?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
+    expect(ideFullTasks.find(task => task.label === 'ide/react-runtime-spike.runtime.test.ts')?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
     expect(statefulHmrTask?.env).toMatchObject({

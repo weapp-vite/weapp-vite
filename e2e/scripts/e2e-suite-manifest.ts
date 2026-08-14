@@ -38,6 +38,7 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/automator-concurrent-sessions.runtime.test.ts',
   'ide/github-issues.runtime.issue547.test.ts',
   'ide/github-issues.runtime.require-async.test.ts',
+  'ide/react-runtime-spike.runtime.test.ts',
   'ide/stateful-hmr.runtime.test.ts',
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
@@ -117,6 +118,22 @@ const IDE_HMR_PATTERNS = [
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
+]
+const IDE_FULL_CORE_PATTERNS = [
+  'ide/app-lifecycle.test.ts',
+  'ide/auto-routes-define-app-json.runtime.test.ts',
+  'ide/devtools-cli-workflow.runtime.test.ts',
+  IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
+  'ide/github-issues.runtime.issue621.test.ts',
+  'ide/lifecycle-compare.test.ts',
+  'ide/react-runtime-spike.runtime.test.ts',
+  'ide/stateful-hmr.runtime.test.ts',
+  'ide/subpackage-shared-strategy-complex.runtime.test.ts',
+  'ide/template-dev-open-all.runtime.test.ts',
+  'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
+  'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
+  'ide/wevu-features.runtime.behavior.test.ts',
+  'ide/wevu-runtime.weapp.test.ts',
 ]
 const IDE_WEVU_JSX_PATTERNS = [
   'ide/wevu-jsx-tsx.runtime.test.ts',
@@ -274,7 +291,7 @@ export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
   return tasks
 }
 
-export function getIdeTasks() {
+export function getIdeExhaustiveTasks() {
   const tasks = fg.sync('ide/**/*.test.ts', {
     cwd: ROOT,
     absolute: true,
@@ -303,6 +320,10 @@ function getIdePatternTasks(patterns: string[], env: Record<string, string> = {}
     task.env = { ...task.env, ...env }
     return task
   })
+}
+
+export function getIdeTasks() {
+  return getIdePatternTasks(IDE_FULL_CORE_PATTERNS)
 }
 
 export function getIdeGateTasks() {
@@ -483,8 +504,13 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
   },
   'ide-full': {
     name: 'ide-full',
-    description: 'Full IDE regression suite across all devtools runtime tests',
+    description: 'PR-oriented full IDE gate with core devtools runtime coverage',
     tasks: getIdeTasks,
+  },
+  'ide-full:exhaustive': {
+    name: 'ide-full:exhaustive',
+    description: 'Nightly exhaustive IDE regression suite across all devtools runtime tests',
+    tasks: getIdeExhaustiveTasks,
   },
   'ide-full:github-issues': {
     name: 'ide-full:github-issues',

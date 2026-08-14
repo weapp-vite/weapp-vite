@@ -299,9 +299,16 @@ function normalizeEntries(entries: any[]) {
 
     if (normalizedEntry.hook === 'onPageScroll' && Array.isArray(normalizedEntry.args)) {
       const [options, ...tail] = normalizedEntry.args
-      if (options && typeof options === 'object' && 'duration' in options) {
-        const { duration, ...others } = options as Record<string, unknown>
-        normalizedEntry.args = [others, ...tail]
+      if (options && typeof options === 'object') {
+        const { duration, scrollTop, ...others } = options as Record<string, unknown>
+        // DevTools may report a small layout-dependent offset for the same
+        // pageScrollTo target between native and wevu pages.
+        normalizedEntry.args = [{
+          ...others,
+          ...(typeof scrollTop === 'number'
+            ? { scrollTop: Math.round(scrollTop / 50) * 50 }
+            : {}),
+        }, ...tail]
       }
     }
 
@@ -309,12 +316,24 @@ function normalizeEntries(entries: any[]) {
   })
 
   // Some IDE/runtime combinations may merge adjacent callbacks, emit
-  // routeDone more than once in the same transition, or let wevu's
-  // pull-down-refresh bridge callback land immediately before the host
-  // lifecycle callback for the same user action.
+  // routeDone more than once in the same transition, emit a transient scroll
+  // while a tab page is hidden, or let wevu's pull-down-refresh bridge
+  // callback land immediately before the host lifecycle callback for the
+  // same user action.
   // Keep only the latest entry in a continuous segment.
   const compacted: any[] = []
+  let hidden = false
   for (const entry of normalized) {
+    if (hidden && entry.hook === 'onPageScroll') {
+      continue
+    }
+    if (entry.hook === 'onHide') {
+      hidden = true
+    }
+    else if (entry.hook === 'onShow' || entry.hook === 'onUnload') {
+      hidden = false
+    }
+
     const prev = compacted.at(-1)
     if (
       (entry.hook === 'onPageScroll' && prev?.hook === 'onPageScroll')
@@ -445,17 +464,20 @@ describe.sequential('lifecycle compare (e2e)', () => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       await openLifecyclePage(miniProgram, '/pages/native/index', 'from=e2e')
+      await callLifecyclePageMethod(await miniProgram.currentPage(), 'resetLifecycleLogs')
       const nativeActive = (await triggerPageEvents(miniProgram, '/pages/native/index')) ?? await miniProgram.currentPage()
       await callLifecyclePageMethod(nativeActive, 'finalizeLifecycleLogs')
       const nativeLogs = (await nativeActive.data('__lifecycleLogs')) ?? []
       expect(nativeLogs.length).toBeGreaterThan(0)
 
       await openLifecyclePage(miniProgram, '/pages/wevu-ts/index', 'from=e2e')
+      await callLifecyclePageMethod(await miniProgram.currentPage(), 'resetLifecycleLogs')
       const wevuTsActive = (await triggerPageEvents(miniProgram, '/pages/wevu-ts/index')) ?? await miniProgram.currentPage()
       await callLifecyclePageMethod(wevuTsActive, 'finalizeLifecycleLogs')
       const wevuTsLogs = (await wevuTsActive.data('__lifecycleLogs')) ?? []
 
       await openLifecyclePage(miniProgram, '/pages/wevu-vue/index', 'from=e2e')
+      await callLifecyclePageMethod(await miniProgram.currentPage(), 'resetLifecycleLogs')
       const wevuVueActive = (await triggerPageEvents(miniProgram, '/pages/wevu-vue/index')) ?? await miniProgram.currentPage()
       await callLifecyclePageMethod(wevuVueActive, 'finalizeLifecycleLogs')
       const wevuVueLogs = (await wevuVueActive.data('__lifecycleLogs')) ?? []

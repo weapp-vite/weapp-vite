@@ -12,7 +12,7 @@ import {
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
@@ -20,6 +20,7 @@ const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-ta
 const FIXTURE_PARENT = path.resolve(WORKSPACE_ROOT, '.tmp/e2e/ide-wevu-tailwind-hmr')
 const INDEX_ROUTE = '/pages/index/index'
 const PROBE_ID = 'wevu-tailwind-hmr-probe'
+const STARTUP_ATTEMPTS = 3
 const INITIAL_BACKGROUND_CLASS = 'bg-[#f6f7fb]'
 const INITIAL_BACKGROUND_HEX = 'f6f7fb'
 const BACKGROUND_UPDATES = [
@@ -33,6 +34,10 @@ const FORBIDDEN_RUNTIME_ERRORS = [
   'appLaunch with non-empty page stack',
   'Page route 错误',
 ] as const
+
+function findRuntimeProbe(nodes: Array<{ dataset?: Record<string, unknown> }>, expectedHex: string) {
+  return nodes.find(node => String(node.dataset?.e2eBg ?? '') === expectedHex)
+}
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -91,6 +96,7 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
   let currentVue = ''
   let devProcess: ReturnType<typeof startDevProcess> | undefined
   let distAppJs = ''
+  let indexJsDist = ''
   let distWevuRuntimeJs = ''
   let fixtureRoot = ''
   let indexVue = ''
@@ -124,15 +130,20 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
   async function waitForAppRuntimeReady(timeoutMs = 120_000) {
     const startedAt = Date.now()
     let latestApp = ''
+    let latestPage = ''
     let latestRuntime = ''
     while (Date.now() - startedAt <= timeoutMs) {
-      [latestApp, latestRuntime] = await Promise.all([
+      [latestApp, latestPage, latestRuntime] = await Promise.all([
         fs.readFile(distAppJs, 'utf8').catch(() => ''),
+        fs.readFile(indexJsDist, 'utf8').catch(() => ''),
         fs.readFile(distWevuRuntimeJs, 'utf8').catch(() => ''),
       ])
       if (
         latestApp.includes('require("./weapp-vendors/wevu-runtime.js")')
         && latestApp.includes('setWevuDefaults')
+        && latestPage.includes('require("../../weapp-vendors/wevu-runtime.js")')
+        && latestPage.includes('createWevuComponent')
+        && latestPage.includes('module.exports = __wevuOptions')
         && latestRuntime.includes('Object.defineProperty(exports, "createApp"')
         && latestRuntime.includes('Object.defineProperty(exports, "setWevuDefaults"')
         && !latestApp.includes('from "wevu/internal-runtime"')
@@ -141,7 +152,7 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
       }
       await delay(500)
     }
-    throw new Error(`Timed out waiting for the isolated fixture to emit the stable wevu runtime.\nLatest app:\n${latestApp.slice(0, 1000)}\nLatest runtime:\n${latestRuntime.slice(0, 1000)}`)
+    throw new Error(`Timed out waiting for the isolated fixture to emit the stable wevu runtime.\nLatest app:\n${latestApp.slice(0, 1000)}\nLatest page:\n${latestPage.slice(0, 1000)}\nLatest runtime:\n${latestRuntime.slice(0, 1000)}`)
   }
 
   async function waitForIndexPage(timeoutMs = 90_000) {
@@ -160,32 +171,63 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
 
   async function waitForRuntimeState(expectedHex: string, timeoutMs = 45_000) {
     const startedAt = Date.now()
+    let latestNodes: unknown[] = []
     let latestError: unknown
     while (Date.now() - startedAt <= timeoutMs) {
       const page = await waitForIndexPage(8_000)
       try {
-        await page.waitForRendered({
-          dataset: { e2eBg: expectedHex },
-          selector: `#${PROBE_ID}`,
-          timeout: 1_000,
+        const nodes = await page.renderedNodes(`#${PROBE_ID}`, {
+          timeout: 6_000,
         })
-        return
+        latestNodes = nodes
+        if (findRuntimeProbe(nodes, expectedHex)) {
+          return
+        }
+        latestError = undefined
       }
       catch (error) {
         latestError = error
-        await delay(50)
       }
+      try {
+        const element = await page.$(`#${PROBE_ID}`, { timeout: 1_000 })
+        const dataE2eBg = await element.attribute('data-e2e-bg')
+        latestNodes = [{ dataset: { e2eBg: dataE2eBg } }]
+        if (dataE2eBg === expectedHex) {
+          return
+        }
+      }
+      catch (error) {
+        latestError = error
+      }
+      await delay(120)
     }
     const page = await waitForIndexPage(8_000)
+    try {
+      const nodes = await page.renderedNodes(`#${PROBE_ID}`, {
+        timeout: 6_000,
+      })
+      latestNodes = nodes
+      if (findRuntimeProbe(nodes, expectedHex)) {
+        return
+      }
+    }
+    catch (error) {
+      latestError = error
+    }
     const element = await page.$(`#${PROBE_ID}`, { timeout: 1_000 }).catch(() => null)
     const latestWxml = element ? await element.outerWxml().catch(() => '') : ''
-    throw new Error(`Timed out waiting for the active DevTools page to render data-e2e-bg=${expectedHex}.\nLatest error:\n${String(latestError)}\nLatest WXML:\n${latestWxml.slice(0, 1000)}`)
+    throw new Error(`Timed out waiting for the active DevTools page to render data-e2e-bg=${expectedHex}.\nLatest error:\n${String(latestError)}\nLatest WXML:\n${latestWxml.slice(0, 1000)}\nLatest rendered nodes:\n${JSON.stringify(latestNodes).slice(0, 1000)}`)
   }
 
   async function startDevSession() {
     let lastError: unknown
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
+    for (let attempt = 1; attempt <= STARTUP_ATTEMPTS; attempt += 1) {
       await stopDevSession()
+      if (attempt > 1) {
+        await cleanDevtoolsCache('all', { cwd: fixtureRoot }).catch(() => {})
+        await removeAutomatorSessionFiles()
+        await delay(1_600)
+      }
       devProcess = startDevProcess('pnpm', ['exec', 'wv', 'dev', '--non-interactive'], {
         cwd: fixtureRoot,
         env: createDevProcessEnv(),
@@ -197,7 +239,13 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
           `wevu Tailwind stateful HMR initial runtime attempt ${attempt}`,
         )
         miniProgram = await launchAutomator({
+          engineBuildFallbackSettleMs: 5_000,
+          launchMode: 'bridge',
+          maxLaunchRetries: 2,
           projectPath: fixtureRoot,
+          refreshProjectAfterConnect: true,
+          warmupRoute: INDEX_ROUTE,
+          warmupRootSelectors: [`#${PROBE_ID}`],
         })
         await waitForIndexPage()
         await waitForFileContains(indexWxmlDist, PROBE_ID)
@@ -233,6 +281,7 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
     appWxssDist = path.join(distRoot, 'app.wxss')
     distAppJs = path.join(distRoot, 'app.js')
     distWevuRuntimeJs = path.join(distRoot, 'weapp-vendors/wevu-runtime.js')
+    indexJsDist = path.join(distRoot, 'pages/index/index.js')
     indexWxmlDist = path.join(distRoot, 'pages/index/index.wxml')
     currentVue = addRuntimeProbe(await fs.readFile(indexVue, 'utf8'))
     await fs.writeFile(indexVue, currentVue, 'utf8')

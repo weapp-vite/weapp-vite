@@ -33,9 +33,19 @@ describe('resolveAutomatorProjectPath', () => {
     const root = await createTempProject()
     await writeJson(path.join(root, 'project.config.json'), {
       appid: 'wx-test',
+      compileType: 'plugin',
       miniprogramRoot: 'dist/',
       pluginRoot: 'dist-plugin/',
       srcMiniprogramRoot: 'dist/',
+      setting: {
+        packNpmManually: true,
+        packNpmRelationList: [
+          {
+            packageJsonPath: './package.json',
+            miniprogramNpmDistDir: './dist',
+          },
+        ],
+      },
     })
     await writeJson(path.join(root, 'project.private.config.json'), {
       condition: {},
@@ -62,13 +72,23 @@ describe('resolveAutomatorProjectPath', () => {
       isFile: expect.any(Function),
     })
     await expect(readJson(path.join(result.projectPath, 'project.config.json'))).resolves.toMatchObject({
+      compileType: 'plugin',
       miniprogramRoot: './',
       pluginRoot: 'dist-plugin/',
       srcMiniprogramRoot: './',
+      setting: {
+        packNpmManually: false,
+        packNpmRelationList: [],
+      },
     })
     await expect(readJson(path.join(result.projectPath, 'project.private.config.json'))).resolves.toMatchObject({
+      compileType: 'plugin',
       miniprogramRoot: './',
       srcMiniprogramRoot: './',
+      setting: {
+        packNpmManually: false,
+        packNpmRelationList: [],
+      },
     })
     await expect(readJson(path.join(result.projectPath, 'app.json'))).resolves.toMatchObject({
       pages: ['pages/index/index'],

@@ -51,6 +51,9 @@ interface RuntimeElementSnapshot {
 interface RuntimeSnapshot {
   route: string
   pageData: Record<string, unknown>
+  runtimeState?: Record<string, unknown>
+  setupState?: Record<string, unknown>
+  bridgeSnapshot?: Record<string, unknown>
   elements: RuntimeElementSnapshot[]
   visibleCount: number
 }
@@ -89,9 +92,23 @@ async function readVisibleRuntimeSnapshot(miniProgram: any): Promise<RuntimeSnap
       query.select('.app-vue-hmr-alias-page').fields({ size: true })
       query.select('.app-vue-hmr-alias-page__label').fields({ size: true })
       query.select('.app-vue-hmr-alias-page__bootstrap').fields({ size: true })
-      query.exec(results => resolve({ route: page.route, pageData: page.data, results }))
+      query.exec(results => resolve({
+        route: page.route,
+        pageData: page.data,
+        runtimeState: (page as any).__wevu?.state,
+        setupState: (page as any).__wevu?.setupState,
+        bridgeSnapshot: globalThis.__WEAPP_VITE_STATEFUL_HMR_BRIDGE__?.getDebugSnapshot?.(),
+        results,
+      }))
     })
-  }) as { route?: string, pageData?: Record<string, unknown>, results?: Array<{ width?: number, height?: number } | null> }
+  }) as {
+    route?: string
+    pageData?: Record<string, unknown>
+    runtimeState?: Record<string, unknown>
+    setupState?: Record<string, unknown>
+    bridgeSnapshot?: Record<string, unknown>
+    results?: Array<{ width?: number, height?: number } | null>
+  }
   const results = Array.isArray(result.results) ? result.results : []
   const elements = MARKER_SELECTORS.map((selector, index) => {
     const item = results[index]
@@ -107,6 +124,9 @@ async function readVisibleRuntimeSnapshot(miniProgram: any): Promise<RuntimeSnap
   return {
     route: String(result.route ?? ''),
     pageData: result.pageData ?? {},
+    runtimeState: result.runtimeState ?? {},
+    setupState: result.setupState ?? {},
+    bridgeSnapshot: result.bridgeSnapshot ?? {},
     elements,
     visibleCount: elements.filter(item => item.visible).length,
   }
@@ -121,13 +141,16 @@ async function waitForVisibleRuntime(miniProgram: any, markers: string[], timeou
       pageData: {
         error: error instanceof Error ? error.message : String(error),
       },
+      runtimeState: {},
+      setupState: {},
+      bridgeSnapshot: {},
       elements: [],
       visibleCount: 0,
     }))
-    const dataText = JSON.stringify(latest.pageData)
+    const stateText = JSON.stringify([latest.pageData, latest.runtimeState, latest.setupState])
     const routeReady = latest.route === 'pages/index/index'
     const visibleReady = latest.visibleCount === MARKER_SELECTORS.length
-    const markersReady = markers.every(marker => dataText.includes(marker))
+    const markersReady = markers.every(marker => stateText.includes(marker))
     if (routeReady && visibleReady && markersReady) {
       return latest
     }
@@ -135,7 +158,7 @@ async function waitForVisibleRuntime(miniProgram: any, markers: string[], timeou
   }
   const runtimeLogs = miniProgram?.__weappViteRuntimeLogMeta?.entries ?? []
   const devOutput = devProcess?.getOutput().slice(-8_000) ?? ''
-  throw new Error(`Timed out waiting visible runtime markers ${markers.join(', ')}. latest=${JSON.stringify(latest)}; logs=${JSON.stringify(runtimeLogs)}; devOutput=${devOutput}`)
+  throw new Error(`Timed out waiting visible runtime markers ${markers.join(', ')}. latest=${JSON.stringify(latest)}; runtimeState=${JSON.stringify(latest?.runtimeState)}; setupState=${JSON.stringify(latest?.setupState)}; bridgeSnapshot=${JSON.stringify(latest?.bridgeSnapshot)}; logs=${JSON.stringify(runtimeLogs)}; devOutput=${devOutput}`)
 }
 
 async function waitForCurrentRoute(miniProgram: any, timeoutMs = 15_000) {
@@ -162,10 +185,37 @@ async function waitForIdeHmrSettled(delayMs = 5_000) {
   await new Promise(resolve => setTimeout(resolve, delayMs))
 }
 
-async function relaunchIndexPage(miniProgram: any) {
-  const page = await miniProgram.reLaunch(INDEX_ROUTE)
-  await page.waitFor(5_000)
-  return page
+async function readStatefulHmrClientVersion(miniProgram: any) {
+  return await miniProgram.evaluate(() => {
+    const client = (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__
+    return typeof client?.getVersion === 'function' ? Number(client.getVersion()) : -1
+  })
+}
+
+async function waitForStatefulHmrClientVersion(miniProgram: any, expectedVersion: number, timeoutMs = 40_000) {
+  const start = Date.now()
+  let latest = -1
+  let lastApply: unknown
+  while (Date.now() - start <= timeoutMs) {
+    const result = await miniProgram.evaluate(() => {
+      const client = (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__
+      return {
+        lastApply: typeof client?.getLastApply === 'function' ? client.getLastApply() : null,
+        version: typeof client?.getVersion === 'function' ? Number(client.getVersion()) : -1,
+      }
+    }).catch(() => ({ lastApply: undefined, version: -1 }))
+    latest = result.version
+    lastApply = result.lastApply
+    if (latest === expectedVersion) {
+      return
+    }
+    if (latest > expectedVersion) {
+      break
+    }
+    await new Promise(resolve => setTimeout(resolve, 250))
+  }
+  const devOutput = devProcess?.getOutput().slice(-8_000) ?? ''
+  throw new Error(`Timed out waiting for stateful HMR client version ${expectedVersion}; latest=${latest}; lastApply=${JSON.stringify(lastApply)}; devOutput=${devOutput}`)
 }
 
 function replaceLayoutMarker(source: string, nextMarker: string) {
@@ -387,19 +437,11 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
     await waitForVisibleRuntime(miniProgram, [PAGE_MARKER, BOOTSTRAP_MARKER])
 
     const pageMarker = createHmrMarker('APP-VUE-ALIAS-PAGE', 'weapp')
+    const pageClientVersion = await readStatefulHmrClientVersion(miniProgram)
     await replaceFileByRename(PAGE_VUE_PATH, replaceMarker(originalPageSource, PAGE_MARKER, pageMarker, 'index page'))
     await devProcess.waitFor(waitForFileContains(HMR_UPDATE_DIST, pageMarker), 'updated page script patch published')
     await assertDistJsKeepsBundledAliasMarker(BOOTSTRAP_MARKER)
-    await waitForIdeHmrSettled()
-    try {
-      await relaunchIndexPage(miniProgram)
-    }
-    catch (error) {
-      if (isDevtoolsRouteInfraError(error)) {
-        ctx.skip(`WeChat DevTools 页面路由协议不可用，跳过 app.vue alias HMR IDE runtime：${error instanceof Error ? error.message : String(error)}`)
-      }
-      throw error
-    }
+    await waitForStatefulHmrClientVersion(miniProgram, pageClientVersion + 1)
     await waitForVisibleRuntime(miniProgram, [pageMarker, BOOTSTRAP_MARKER])
 
     const bootstrapMarker = createHmrMarker('APP-VUE-ALIAS-BOOTSTRAP', 'weapp')

@@ -10,6 +10,8 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/react-runtime-spike')
 const DIST_ROOT = path.resolve(APP_ROOT, 'dist')
 const PAGE_READY_TIMEOUT = 20_000
+const STARTUP_READY_TIMEOUT = 15_000
+const STARTUP_ATTEMPTS = 3
 
 let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
 const runtimeProvider = resolveRuntimeProviderName()
@@ -141,6 +143,51 @@ async function waitForReactInteropResult(
   throw new Error(`Timed out waiting React interop result; lastResult=${JSON.stringify(lastResult)}`)
 }
 
+async function closeReactRuntimeSpikeAutomator(app: Awaited<ReturnType<typeof launchAutomator>> | undefined) {
+  try {
+    await app?.close()
+  }
+  catch {}
+}
+
+async function launchReactRuntimeSpikeAutomator() {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= STARTUP_ATTEMPTS; attempt += 1) {
+    const app = await launchAutomator({
+      projectPath: APP_ROOT,
+      engineBuildFallbackSettleMs: 5_000,
+      maxLaunchRetries: 7,
+      refreshProjectAfterConnect: true,
+      retryWarmupTimeout: true,
+      skipRelaunchPageRootCheck: true,
+    })
+
+    try {
+      await app.reLaunch('/pages/index/index')
+      await waitForReactRuntimePageReady(
+        app,
+        '/pages/index/index',
+        result => Array.isArray(result?.data?.root?.cn),
+        STARTUP_READY_TIMEOUT,
+      )
+      return app
+    }
+    catch (error) {
+      lastError = error
+      const message = error instanceof Error ? error.message : String(error)
+      process.stdout.write(`[react-runtime-spike:start-retry] attempt=${attempt}/${STARTUP_ATTEMPTS} reason=${message.replace(/\s+/g, ' ').slice(0, 240)}\n`)
+      await closeReactRuntimeSpikeAutomator(app)
+      if (attempt < STARTUP_ATTEMPTS) {
+        await cleanDevtoolsCache('compile', { cwd: APP_ROOT }).catch(() => {})
+        await cleanupResidualIdeProcesses().catch(() => {})
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError ?? 'React runtime spike startup failed'))
+}
+
 describe.sequential('react runtime spike (weapp e2e)', () => {
   beforeAll(async () => {
     await cleanupResidualIdeProcesses()
@@ -155,17 +202,11 @@ describe.sequential('react runtime spike (weapp e2e)', () => {
       skipNpm: true,
     })
 
-    miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-      refreshProjectAfterConnect: true,
-      retryWarmupTimeout: true,
-      warmupRootSelectors: ['#title'],
-      skipRelaunchPageRootCheck: true,
-    })
+    miniProgram = await launchReactRuntimeSpikeAutomator()
   }, 360_000)
 
   afterAll(async () => {
-    await miniProgram?.close()
+    await closeReactRuntimeSpikeAutomator(miniProgram)
     miniProgram = undefined
   })
 
