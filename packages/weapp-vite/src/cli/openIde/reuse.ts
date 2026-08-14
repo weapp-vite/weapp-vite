@@ -47,6 +47,7 @@ async function verifyOpenedProjectHealth(miniProgram: DisconnectableMiniProgram)
 
 interface OpenWechatIdeByAutomatorOptions {
   preserveProjectRoot?: boolean
+  trustProject?: boolean
 }
 
 async function openWechatIdeByAutomator(projectPath: string, options: OpenWechatIdeByAutomatorOptions = {}) {
@@ -56,7 +57,7 @@ async function openWechatIdeByAutomator(projectPath: string, options: OpenWechat
     projectPath,
     port: resolveProjectAutomatorPort(projectPath),
     timeout: OPEN_AUTOMATOR_TIMEOUT,
-    trustProject: true,
+    trustProject: options.trustProject !== false,
   }) as DisconnectableMiniProgram
   disconnectMiniProgram(miniProgram)
 }
@@ -92,6 +93,7 @@ export async function tryReuseOpenedWechatIde(
   closeIde: () => Promise<boolean>,
   options: {
     preserveProjectRoot?: boolean
+    trustProject?: boolean
     promptReopen?: boolean
   } = {},
 ) {
@@ -135,6 +137,7 @@ export async function tryReuseOpenedWechatIde(
 
   await openWechatIdeByAutomator(projectPath, {
     preserveProjectRoot: options.preserveProjectRoot,
+    trustProject: options.trustProject,
   })
   return {
     reopened: true,

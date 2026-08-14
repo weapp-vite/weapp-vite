@@ -6,11 +6,16 @@ const resolveForwardConsoleOptionsMock = vi.hoisted(() => vi.fn())
 const startForwardConsoleBridgeMock = vi.hoisted(() => vi.fn())
 const readLatestHmrProfileSummaryMock = vi.hoisted(() => vi.fn())
 const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
+const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
+const detectWechatDevtoolsServicePortMock = vi.hoisted(() => vi.fn())
 const getWechatIdeTestAccountsMock = vi.hoisted(() => vi.fn())
 const getWechatIdeTicketMock = vi.hoisted(() => vi.fn())
 const getWechatIdeToolInfoMock = vi.hoisted(() => vi.fn())
 const refreshWechatIdeTicketMock = vi.hoisted(() => vi.fn())
 const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn())
+const resolveCliPathMock = vi.hoisted(() => vi.fn())
+const isWechatIdeLoggedInMock = vi.hoisted(() => vi.fn())
+const readCustomConfigMock = vi.hoisted(() => vi.fn())
 const setWechatIdeTicketMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
@@ -26,11 +31,17 @@ vi.mock('../openIde', () => ({
 
 vi.mock('weapp-ide-cli', () => ({
   bootstrapWechatDevtoolsSettings: bootstrapWechatDevtoolsSettingsMock,
+  defaultCustomConfigFilePath: '/tmp/.weapp-ide-cli/config.json',
+  connectOpenedAutomator: connectOpenedAutomatorMock,
+  detectWechatDevtoolsServicePort: detectWechatDevtoolsServicePortMock,
   getWechatIdeTestAccounts: getWechatIdeTestAccountsMock,
   getWechatIdeTicket: getWechatIdeTicketMock,
   getWechatIdeToolInfo: getWechatIdeToolInfoMock,
   refreshWechatIdeTicket: refreshWechatIdeTicketMock,
+  resolveCliPath: resolveCliPathMock,
   resolveProjectAutomatorPort: resolveProjectAutomatorPortMock,
+  isWechatIdeLoggedIn: isWechatIdeLoggedInMock,
+  readCustomConfig: readCustomConfigMock,
   setWechatIdeTicket: setWechatIdeTicketMock,
 }))
 
@@ -61,11 +72,16 @@ describe('ide logs command', () => {
     startForwardConsoleBridgeMock.mockReset()
     readLatestHmrProfileSummaryMock.mockReset()
     bootstrapWechatDevtoolsSettingsMock.mockReset()
+    connectOpenedAutomatorMock.mockReset()
+    detectWechatDevtoolsServicePortMock.mockReset()
     getWechatIdeTestAccountsMock.mockReset()
     getWechatIdeTicketMock.mockReset()
     getWechatIdeToolInfoMock.mockReset()
     refreshWechatIdeTicketMock.mockReset()
     resolveProjectAutomatorPortMock.mockReset()
+    resolveCliPathMock.mockReset()
+    isWechatIdeLoggedInMock.mockReset()
+    readCustomConfigMock.mockReset()
     setWechatIdeTicketMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
@@ -102,11 +118,24 @@ describe('ide logs command', () => {
       updatedSecurityCount: 0,
       trustedProjectCount: 1,
     })
+    connectOpenedAutomatorMock.mockResolvedValue({
+      disconnect: vi.fn(),
+      toolInfo: vi.fn().mockResolvedValue({ version: '2.02.2607271', SDKVersion: '3.0.0' }),
+    })
+    detectWechatDevtoolsServicePortMock.mockResolvedValue({
+      servicePort: 14757,
+      servicePortEnabled: true,
+      touchedInstanceCount: 1,
+      detectedSecurityCount: 1,
+    })
     getWechatIdeTestAccountsMock.mockResolvedValue(['tester-a'])
     getWechatIdeTicketMock.mockResolvedValue({ ticket: 'ticket-a' })
     getWechatIdeToolInfoMock.mockResolvedValue({ SDKVersion: '3.0.0' })
     refreshWechatIdeTicketMock.mockResolvedValue(undefined)
     resolveProjectAutomatorPortMock.mockReturnValue(10261)
+    resolveCliPathMock.mockResolvedValue({ cliPath: 'C:/Program Files/Tencent/微信web开发者工具/cli.bat', source: 'custom' })
+    isWechatIdeLoggedInMock.mockResolvedValue(undefined)
+    readCustomConfigMock.mockResolvedValue({ autoBootstrapDevtools: true, autoTrustProject: true })
     setWechatIdeTicketMock.mockResolvedValue(undefined)
     startForwardConsoleBridgeMock.mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
@@ -136,6 +165,33 @@ describe('ide logs command', () => {
       weappViteConfig: {},
     })
     expect(processOffSpy).toHaveBeenCalled()
+  })
+
+  it('runs a non-invasive ide doctor report', async () => {
+    const { runIdeCommand } = await import('./ide')
+    const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+
+    await runIdeCommand('doctor', undefined, { json: true })
+
+    expect(detectWechatDevtoolsServicePortMock).toHaveBeenCalledTimes(1)
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev',
+      port: 10261,
+      timeout: 3_000,
+    })
+    expect(isWechatIdeLoggedInMock).toHaveBeenCalledWith({ nonInteractive: true, silent: true })
+    expect(stdoutWriteSpy).toHaveBeenCalledWith(expect.stringContaining('2.02.2607271'))
+    stdoutWriteSpy.mockRestore()
+  })
+
+  it('fails strict ide doctor when the service port is disabled', async () => {
+    detectWechatDevtoolsServicePortMock.mockResolvedValueOnce({
+      servicePort: 14757,
+      servicePortEnabled: false,
+    })
+    const { runIdeCommand } = await import('./ide')
+
+    await expect(runIdeCommand('doctor', undefined, { strict: true })).rejects.toThrow('环境诊断未通过')
   })
 
   it('prints latest hmr summary before attaching ide logs bridge', async () => {

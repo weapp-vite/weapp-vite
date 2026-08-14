@@ -1,5 +1,25 @@
 import logger from '../../logger'
 
+/**
+ * @description 将 automator 启动错误归类为用户可执行的恢复提示。
+ */
+export function formatWechatIdeAutomatorFailure(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  if (/需要重新登录|need\s+re-?login|code\s*[:=]\s*10/i.test(message)) {
+    return '登录状态失效，请先登录微信开发者工具。'
+  }
+  if (/service port|http port|ECONNREFUSED|listen EPERM|EACCES/i.test(message)) {
+    return '服务端口不可用，请在设置 -> 安全设置中开启服务端口。'
+  }
+  if (/protocol method|protocol timeout|automator.*timeout|Wait timed out|websocket|ws:\/\//i.test(message)) {
+    return '自动化 websocket 或协议尚未就绪，已保留普通 CLI 打开的项目。'
+  }
+  if (/cliPath|not found|spawn/i.test(message)) {
+    return '微信开发者工具 CLI 路径不可用，请执行 `wv ide doctor` 检查配置。'
+  }
+  return '当前 DevTools 自动化能力不可用，已保留普通 CLI 打开的项目。'
+}
+
 interface WechatIdeRecoveryHintOptions {
   projectPath?: string
   reason: string

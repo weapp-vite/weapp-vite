@@ -219,7 +219,13 @@ weapp-vite ide logs --open
 # 等价写法
 wv ide logs
 wv ide logs --open
+
+# 检查 DevTools CLI、服务端口、登录和已打开 automator 会话
+wv ide doctor
+wv ide doctor --json
 ```
+
+`wv open`、`wv dev -o`、`wv build -o` 和 `wv ide logs --open` 默认使用官方 CLI 打开项目，再连接 automator。需要调试旧版自动化启动链路时，可显式传入 `--ide-open-strategy automator`；项目自动信任与打开策略相互独立。
 
 除了日志桥接，`ide` 子命令现在也支持直接读取已打开 DevTools 会话的信息：
 

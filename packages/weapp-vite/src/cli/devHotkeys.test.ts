@@ -812,7 +812,8 @@ describe('devHotkeys', () => {
     stdin.emit('data', 's')
     stdin.emit('data', 'm')
 
-    expect(loggerMock.warn).toHaveBeenCalledWith('[dev action] 当前正在截图当前页面，请稍后再试。')
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('[dev action] 当前正在截图当前页面'))
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('已忽略重复请求'))
 
     resolveScreenshot?.({ path: '/project/.weapp-vite/dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
     await flushMicrotasks(10)

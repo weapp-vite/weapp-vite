@@ -103,4 +103,15 @@ describe('runWechatCliWithRetry', () => {
 
     expect(setRuntimeWechatDevtoolsServicePortMock).toHaveBeenCalledWith(44650)
   })
+
+  it('does not flush cli output for silent probes', async () => {
+    executeMock.mockResolvedValue({ stdout: 'login output', stderr: '' })
+    const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+
+    const { runWechatCliWithRetry } = await import('../src/cli/run-login')
+    await runWechatCliWithRetry('/Applications/wechat-cli', ['islogin'], { silent: true })
+
+    expect(stdoutWriteSpy).not.toHaveBeenCalled()
+    stdoutWriteSpy.mockRestore()
+  })
 })

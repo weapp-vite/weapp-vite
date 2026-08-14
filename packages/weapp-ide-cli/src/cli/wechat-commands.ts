@@ -200,8 +200,17 @@ export async function loginWechatIde(options: LoginWechatIdeOptions = {}) {
 /**
  * @description 调用微信开发者工具 islogin 命令。
  */
-export async function isWechatIdeLoggedIn() {
-  await runWechatCliCommand(['islogin'])
+export async function isWechatIdeLoggedIn(options: { nonInteractive?: boolean, silent?: boolean } = {}) {
+  const argv = ['islogin']
+  if (options.nonInteractive) {
+    argv.push('--non-interactive')
+  }
+  if (options.silent) {
+    await runWechatCliCommand(argv, { silent: true })
+  }
+  else {
+    await runWechatCliCommand(argv)
+  }
 }
 
 /**

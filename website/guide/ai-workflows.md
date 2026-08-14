@@ -91,11 +91,12 @@ pnpm --filter website-weapp-vite build
 推荐流程：
 
 1. 使用 `$weapp-devtools-e2e-best-practices`。
-2. 先确认没有残留 E2E、DevTools 或 watch 进程。
-3. 同一个 app suite 内只启动一次 automator。
-4. 多页面场景通过 `miniProgram.reLaunch(...)` 切换。
-5. 截图优先用 `wv screenshot` 或 `take_weapp_screenshot`。
-6. 日志优先用 `wv ide logs --open` 或 MCP DevTools runtime tools。
+2. 如果 IDE 已打开但 automator 未连接，先运行 `wv ide doctor --json`，根据 CLI、登录和服务端口结果修复环境。
+3. 先确认没有残留 E2E、DevTools 或 watch 进程。
+4. 同一个 app suite 内只启动一次 automator。
+5. 多页面场景通过 `miniProgram.reLaunch(...)` 切换。
+6. 截图优先用 `wv screenshot` 或 `take_weapp_screenshot`。
+7. 日志优先用 `wv ide logs --open` 或 MCP DevTools runtime tools。
 
 ```sh
 wv screenshot --json

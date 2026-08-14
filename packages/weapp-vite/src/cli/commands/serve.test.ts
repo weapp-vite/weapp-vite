@@ -464,6 +464,7 @@ describe('serve cli command', () => {
       loginRetryTimeout: '1000',
       nonInteractive: true,
       openRecovery: false,
+      openStrategy: 'cli',
       prepareAutomatorSession: 'connect-opened',
       reuseOpenedProject: true,
       skipAutomatorCompile: true,
@@ -517,13 +518,17 @@ describe('serve cli command', () => {
     await actionPromise
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      loginRetry: undefined,
+      loginRetryTimeout: undefined,
+      nonInteractive: undefined,
       openRecovery: false,
-      prepareAutomatorSession: true,
+      openStrategy: 'cli',
+      prepareAutomatorSession: 'connect-opened',
       reuseOpenedProject: true,
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: true,
+      useAutomatorOpen: false,
     })
     expect(maybeStartForwardConsoleMock).toHaveBeenCalledWith({
       platform: 'weapp',
@@ -549,13 +554,17 @@ describe('serve cli command', () => {
     await actionPromise
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      loginRetry: undefined,
+      loginRetryTimeout: undefined,
+      nonInteractive: undefined,
       openRecovery: false,
-      prepareAutomatorSession: true,
+      openStrategy: 'cli',
+      prepareAutomatorSession: 'connect-opened',
       reuseOpenedProject: true,
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: true,
+      useAutomatorOpen: false,
     })
   })
 
@@ -804,13 +813,17 @@ describe('serve cli command', () => {
       forceReopen: true,
     })
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      loginRetry: undefined,
+      loginRetryTimeout: undefined,
+      nonInteractive: undefined,
       openRecovery: false,
-      prepareAutomatorSession: true,
+      openStrategy: 'cli',
+      prepareAutomatorSession: 'connect-opened',
       reuseOpenedProject: false,
       skipAutomatorCompile: false,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: true,
+      useAutomatorOpen: false,
     })
     expect(openResult).toBe('已重新打开微信开发者工具项目')
 
@@ -859,13 +872,17 @@ describe('serve cli command', () => {
       forceReopen: true,
     })
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/ide-root', {
+      loginRetry: undefined,
+      loginRetryTimeout: undefined,
+      nonInteractive: undefined,
       openRecovery: false,
-      prepareAutomatorSession: true,
+      openStrategy: 'cli',
+      prepareAutomatorSession: 'connect-opened',
       reuseOpenedProject: false,
       skipAutomatorCompile: false,
       skipPostOpenHealthCheck: true,
       trustProject: true,
-      useAutomatorOpen: true,
+      useAutomatorOpen: false,
     })
     expect(openResult).toBe('已重新打开微信开发者工具项目')
 

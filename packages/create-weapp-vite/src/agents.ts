@@ -59,6 +59,8 @@ export function createAgentsGuidelines(templateName: TemplateName) {
     '## WeChat DevTools',
     '',
     '- Before using screenshot, preview, upload, automator, or `--open`, ensure WeChat DevTools is logged in and the service port is enabled.',
+    '- `wv open`, `wv dev -o`, and `wv build -o` use the official DevTools CLI first, then connect automator; if the IDE is open but automator is unavailable, run `wv ide doctor --json` before retrying.',
+    '- Use `--ide-open-strategy automator` only for explicit compatibility debugging; do not treat it as the default startup path.',
     '- Prefer writing screenshots to workspace paths such as `.tmp/acceptance.png`.',
     '',
     '## AI Skills',

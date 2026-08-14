@@ -20,12 +20,14 @@ export interface GlobalCLIOptions {
   'open'?: boolean
   'host'?: boolean | string
   'json'?: boolean | string
+  'strict'?: boolean | string
   'output'?: string
   'p'?: string
   'platform'?: string
   'projectConfig'?: string
   'ticket'?: string
   'trustProject'?: boolean
+  'ideOpenStrategy'?: 'cli' | 'automator'
   'openRecovery'?: boolean
   'loginRetry'?: string
   'loginRetryTimeout'?: string

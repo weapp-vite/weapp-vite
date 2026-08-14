@@ -84,6 +84,7 @@ wv mcp doctor codex
 - 小程序截图对比验收优先使用 `weapp-vite compare` / `wv compare`
 - 不要退化成普通浏览器截图来替代小程序运行时截图
 - 查看 DevTools 终端日志优先使用 `weapp-vite ide logs --open` / `wv ide logs --open`
+- DevTools CLI、服务端口或 automator 连接异常时优先执行 `wv ide doctor --json`
 
 ## AI 意图映射
 

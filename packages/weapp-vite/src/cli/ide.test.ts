@@ -144,6 +144,24 @@ describe('tryRunIdeCommand', () => {
     expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
   })
 
+  it('keeps native ide doctor command untouched', async () => {
+    const { tryRunIdeCommand } = await import('./ide')
+
+    const forwarded = await tryRunIdeCommand(['ide', 'doctor', '--json'])
+
+    expect(forwarded).toBe(false)
+    expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps native ide help untouched', async () => {
+    const { tryRunIdeCommand } = await import('./ide')
+
+    const forwarded = await tryRunIdeCommand(['ide', '--help'])
+
+    expect(forwarded).toBe(false)
+    expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
+  })
+
   it('keeps native weapp-vite open command untouched', async () => {
     const { tryRunIdeCommand } = await import('./ide')
 
