@@ -39,7 +39,7 @@
     "@iconify-json/bi": "^1.2.7",
     "@iconify-json/logos": "^1.2.12",
     "@iconify-json/mdi": "catalog:",
-    "@iconify-json/vscode-icons": "^1.2.71",
+    "@iconify-json/vscode-icons": "^1.2.72",
     "@shikijs/vitepress-twoslash": "^4.4.3",
     "@tailwindcss/vite": "catalog:",
     "create-weapp-vite": "workspace:*",
@@ -49,7 +49,7 @@
     "unplugin-vue-components": "^32.1.0",
     "vitepress": "2.0.0-alpha.18",
     "vitepress-plugin-group-icons": "^1.7.6",
-    "vitepress-plugin-llms": "1.13.4",
+    "vitepress-plugin-llms": "1.13.5",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*"
   }

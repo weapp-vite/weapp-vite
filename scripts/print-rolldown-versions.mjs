@@ -8,6 +8,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 
+import { globSync } from 'tinyglobby'
 import { parse } from 'yaml'
 
 const DEFAULT_MODE = 'strict'
@@ -459,23 +460,56 @@ function resolveWorkspacePackageSpecVersion(spec, dependencyName, workspaceManif
   return range
 }
 
-function getManagedRolldownCatalogReferences(projectRoot) {
-  return [
-    {
-      expected: 'catalog:',
-      filePath: path.join(projectRoot, 'packages/weapp-vite/package.json'),
-      section: 'dependencies',
-    },
-    {
-      expected: 'catalog:',
-      filePath: path.join(projectRoot, 'packages/rolldown-require/package.json'),
-      section: 'peerDependencies',
-    },
-  ]
+function getManagedRolldownCatalogReferences(projectRoot, readPackageJsonImpl = readPackageJson) {
+  const references = [
+    ['package.json', 'devDependencies'],
+    ['packages-runtime/web/package.json', 'dependencies'],
+    ['packages/weapp-vite/package.json', 'dependencies'],
+    ['packages/rolldown-require/package.json', 'peerDependencies'],
+  ].map(([relativePath, section]) => ({
+    expected: 'catalog:',
+    filePath: path.join(projectRoot, relativePath),
+    section,
+  }))
+
+  // pnpm update may materialize catalog references as literal versions. Keep
+  // every workspace rolldown declaration under the same synchronization rule.
+  for (const filePath of collectAllWorkspacePackageJsonPaths(projectRoot)) {
+    const packageJson = readPackageJsonImpl(filePath)
+    for (const section of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
+      if (typeof packageJson[section]?.rolldown !== 'string') {
+        continue
+      }
+      if (references.some(reference => reference.filePath === filePath && reference.section === section)) {
+        continue
+      }
+      references.push({ expected: 'catalog:', filePath, section })
+    }
+  }
+
+  return references
+}
+
+function collectAllWorkspacePackageJsonPaths(projectRoot) {
+  if (!existsSync(path.join(projectRoot, 'pnpm-workspace.yaml'))) {
+    return []
+  }
+  const workspaceManifest = readWorkspaceManifest(projectRoot)
+  const packagePatterns = (workspaceManifest.packages ?? [])
+    .map(pattern => `${pattern}/package.json`)
+  const packageJsonPaths = globSync(packagePatterns, {
+    cwd: projectRoot,
+    absolute: true,
+    onlyFiles: true,
+    ignore: ['**/node_modules/**', '**/dist/**', '**/.git/**'],
+  })
+
+  packageJsonPaths.push(path.join(projectRoot, 'package.json'))
+  return [...new Set(packageJsonPaths)].sort((a, b) => a.localeCompare(b))
 }
 
 function verifyRolldownCatalogReferences(projectRoot, readPackageJsonImpl = readPackageJson) {
-  const checks = getManagedRolldownCatalogReferences(projectRoot)
+  const checks = getManagedRolldownCatalogReferences(projectRoot, readPackageJsonImpl)
 
   for (const check of checks) {
     const packageJson = readPackageJsonImpl(check.filePath)
@@ -501,7 +535,7 @@ function syncRolldownCatalogReferences(
 ) {
   const changedFiles = []
 
-  for (const check of getManagedRolldownCatalogReferences(projectRoot)) {
+  for (const check of getManagedRolldownCatalogReferences(projectRoot, readPackageJsonImpl)) {
     const packageJson = readPackageJsonImpl(check.filePath)
     const section = packageJson[check.section] ?? {}
 
@@ -853,6 +887,7 @@ function main(options = {}) {
 }
 
 export {
+  collectAllWorkspacePackageJsonPaths,
   collectNonViteRolldownVersions,
   collectRolldownDependencyMatrix,
   collectRolldownExpectedPublishedSpecs,

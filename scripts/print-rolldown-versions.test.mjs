@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { it } from 'vitest'
 
 import {
+  collectAllWorkspacePackageJsonPaths,
   collectNonViteRolldownVersions,
   collectRolldownDependencyMatrix,
   collectRolldownExpectedPublishedSpecs,
@@ -17,6 +18,7 @@ import {
   formatRolldownWarningReport,
   packWorkspacePackageJson,
   readPackedPackageJsonFromTarball,
+  readWorkspaceManifest,
   resolveAnsiEnabled,
   resolveCatalogDependencyVersion,
   resolveDependencySpecVersion,
@@ -30,6 +32,25 @@ import {
 } from './print-rolldown-versions.mjs'
 
 const ANSI_ESCAPE_RE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g')
+
+it('collectAllWorkspacePackageJsonPaths discovers package manifests from workspace patterns', () => {
+  const projectRoot = mkdtempSync(path.join(os.tmpdir(), 'rolldown-catalog-workspace-'))
+  const packageRoot = path.join(projectRoot, 'apps/example')
+
+  try {
+    mkdirSync(packageRoot, { recursive: true })
+    writeFileSync(path.join(projectRoot, 'pnpm-workspace.yaml'), 'packages:\n  - apps/*\n')
+    writeFileSync(path.join(packageRoot, 'package.json'), '{"name":"example"}\n')
+
+    assert.deepEqual(collectAllWorkspacePackageJsonPaths(projectRoot), [
+      path.join(projectRoot, 'apps/example/package.json'),
+      path.join(projectRoot, 'package.json'),
+    ])
+  }
+  finally {
+    rmSync(projectRoot, { force: true, recursive: true })
+  }
+})
 
 it('formatRolldownVersionReport appends a compact summary after detailed sections', () => {
   const report = formatRolldownVersionReport('/workspace', new Map([
@@ -306,6 +327,16 @@ it('collectRolldownDependencyMatrix and formatter print package specs', () => {
 it('verifyRolldownCatalogReferences accepts package manifests wired to catalog', () => {
   const projectRoot = '/workspace'
   const manifests = new Map([
+    [`${projectRoot}/package.json`, {
+      devDependencies: {
+        rolldown: 'catalog:',
+      },
+    }],
+    [`${projectRoot}/packages-runtime/web/package.json`, {
+      dependencies: {
+        rolldown: 'catalog:',
+      },
+    }],
     [`${projectRoot}/packages/weapp-vite/package.json`, {
       dependencies: {
         rolldown: 'catalog:',
@@ -326,6 +357,16 @@ it('verifyRolldownCatalogReferences accepts package manifests wired to catalog',
 it('verifyRolldownCatalogReferences rejects literal rolldown versions in managed manifests', () => {
   const projectRoot = '/workspace'
   const manifests = new Map([
+    [`${projectRoot}/package.json`, {
+      devDependencies: {
+        rolldown: '1.0.0-rc.12',
+      },
+    }],
+    [`${projectRoot}/packages-runtime/web/package.json`, {
+      dependencies: {
+        rolldown: '1.0.0-rc.12',
+      },
+    }],
     [`${projectRoot}/packages/weapp-vite/package.json`, {
       dependencies: {
         rolldown: '1.0.0-rc.9',
@@ -346,6 +387,16 @@ it('verifyRolldownCatalogReferences rejects literal rolldown versions in managed
 it('syncRolldownCatalogReferences rewrites managed manifests back to catalog protocol', () => {
   const projectRoot = '/workspace'
   const manifests = new Map([
+    [`${projectRoot}/package.json`, {
+      devDependencies: {
+        rolldown: '1.0.0-rc.12',
+      },
+    }],
+    [`${projectRoot}/packages-runtime/web/package.json`, {
+      dependencies: {
+        rolldown: '1.0.0-rc.12',
+      },
+    }],
     [`${projectRoot}/packages/weapp-vite/package.json`, {
       dependencies: {
         rolldown: '1.0.0-rc.12',
@@ -369,9 +420,13 @@ it('syncRolldownCatalogReferences rewrites managed manifests back to catalog pro
   })
 
   assert.deepEqual(changedFiles, [
+    `${projectRoot}/package.json`,
+    `${projectRoot}/packages-runtime/web/package.json`,
     `${projectRoot}/packages/weapp-vite/package.json`,
     `${projectRoot}/packages/rolldown-require/package.json`,
   ])
+  assert.equal(writes.get(`${projectRoot}/package.json`)?.devDependencies?.rolldown, 'catalog:')
+  assert.equal(writes.get(`${projectRoot}/packages-runtime/web/package.json`)?.dependencies?.rolldown, 'catalog:')
   assert.equal(writes.get(`${projectRoot}/packages/weapp-vite/package.json`)?.dependencies?.rolldown, 'catalog:')
   assert.equal(writes.get(`${projectRoot}/packages/rolldown-require/package.json`)?.peerDependencies?.rolldown, 'catalog:')
 })
@@ -379,6 +434,16 @@ it('syncRolldownCatalogReferences rewrites managed manifests back to catalog pro
 it('syncRolldownCatalogReferences keeps already-synced manifests untouched', () => {
   const projectRoot = '/workspace'
   const manifests = new Map([
+    [`${projectRoot}/package.json`, {
+      devDependencies: {
+        rolldown: 'catalog:',
+      },
+    }],
+    [`${projectRoot}/packages-runtime/web/package.json`, {
+      dependencies: {
+        rolldown: 'catalog:',
+      },
+    }],
     [`${projectRoot}/packages/weapp-vite/package.json`, {
       dependencies: {
         rolldown: 'catalog:',
@@ -412,10 +477,12 @@ it('verifyRolldownCatalogReferences accepts the real workspace manifests', () =>
 })
 
 it('packWorkspacePackageJson reads the packed manifest using pnpm pack output', () => {
-  const packedPackageJson = packWorkspacePackageJson(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../packages/rolldown-require'))
+  const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const packedPackageJson = packWorkspacePackageJson(path.join(projectRoot, 'packages/rolldown-require'))
+  const expectedRolldownVersion = resolveCatalogDependencyVersion(readWorkspaceManifest(projectRoot), 'rolldown')
 
   assert.equal(packedPackageJson.name, 'rolldown-require')
-  assert.equal(packedPackageJson.peerDependencies.rolldown, '1.1.2')
+  assert.equal(packedPackageJson.peerDependencies.rolldown, expectedRolldownVersion)
 })
 
 it('readPackedPackageJsonFromTarball reads package/package.json from a pnpm pack tarball', () => {
