@@ -27,6 +27,7 @@ const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.en
 const issue558AugmentedEnabled = issue558AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue558.test.ts')
 const issue564AugmentedEnabled = issue564AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue564.test.ts')
 const issue615AugmentedEnabled = issue615AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue615.test.ts')
+const issue804WebRuntimeEnabled = e2eTargetFile.endsWith('github-issues.runtime.web-runtime.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.app-shell.test.ts': [
@@ -167,6 +168,8 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.web-runtime.test.ts': [
     'pages/issue-448/**',
     'pages/issue-459/**',
+    'pages/issue-804/**',
+    'components/issue-804/**',
   ],
 }
 const githubIssuesAggregateRouteGroupFiles = [
@@ -527,6 +530,13 @@ export default defineConfig({
       },
     },
     npm: resolveGithubIssuesNpm(),
+    ...(issue804WebRuntimeEnabled
+      ? {
+          appPrelude: {
+            webRuntime: true,
+          },
+        }
+      : {}),
     chunks: {
       dynamicImports: issue393ChunkModeEnabled ? 'preserve' : 'native',
       ...(issue393ChunkModeEnabled

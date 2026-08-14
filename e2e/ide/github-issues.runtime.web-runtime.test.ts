@@ -52,4 +52,20 @@ describe.sequential('github-issues runtime web runtime globals', () => {
     expect(pageJs).toContain('Object.keys(response).join(",")')
     expect(pageJs).toContain('_runE2E')
   })
+
+  it('issue #804: keeps web runtime platform exports available to custom components', async () => {
+    const pageWxml = await readDistFile('pages/issue-804/index.wxml')
+    const vendorRoot = path.join(DIST_ROOT, 'weapp-vendors')
+    const vendorFiles = await fs.readdir(vendorRoot)
+    const vendorJs = (await Promise.all(
+      vendorFiles
+        .filter(file => file.endsWith('.js'))
+        .map(file => fs.readFile(path.join(vendorRoot, file), 'utf8')),
+    )).join('\n')
+
+    expect(pageWxml).toContain('id="issue804-page"')
+    expect(pageWxml).toContain('<Pressable')
+    expect(vendorJs).toContain('resolveMiniProgramPlatform')
+    expect(vendorJs).not.toContain('request-globals-wevu-web-apis-fetch.js')
+  })
 })
