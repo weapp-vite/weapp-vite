@@ -1,5 +1,37 @@
 # weapp-vite
 
+## 6.20.2
+
+### Patch Changes
+
+- 🐛 **修复插件模板在微信开发者工具自动化打开时被错误按小程序模式校验的问题，保留插件项目的 `compileType: "plugin"` 与 `version: "dev"` 开发配置；同时增强已打开 automator 会话的就绪检查、缺失 SDKVersion 兼容和 IDE E2E 分层入口，使 `e2e:ide:full` 默认执行核心高信号套件，完整逐文件回归保留在 `e2e:ide:full:exhaustive`。** [#802](https://github.com/weapp-vite/weapp-vite/pull/802) by @sonofmagic
+
+- 🐛 **支持原生支付宝项目直接使用 `.axml` / `.acss` 接入 weapp-vite，并让页面、组件、分包、自动路由、watcher 与原生 layout 按目标平台稳定选择 sidecar；原生支付宝语法保持不变，便携 WXML 和 Vue SFC 仍会转换为支付宝产物，因此原生页面与 Vue 页面可以在同一项目渐进共存。同时修复 `import-sjs` 被错误降级以及独立 SJS 被转换为 `module.exports` 的问题，并补充原生组件、原生分包、wevu runtime、`antd-mini` 与官方 `minidev` 编译复验。** [#799](https://github.com/weapp-vite/weapp-vite/pull/799) by @sonofmagic
+
+- 🐛 **统一 Rolldown 依赖的 workspace catalog 引用，避免 pnpm 更新后将 catalog 协议写回为固定版本；同时同步 magic-string、sass-embedded 及相关构建依赖版本，并更新脚手架模板 catalog。** [`b8e2739`](https://github.com/weapp-vite/weapp-vite/commit/b8e2739f3d72bcc939146d1e744ef2a341f25423) by @sonofmagic
+
+- 🐛 **修复 Vue 模板中 optional chaining 嵌套在空值合并表达式时未被降级的问题，确保生成的 WXML 不再包含小程序不支持的 `?.`。** [#808](https://github.com/weapp-vite/weapp-vite/pull/808) by @sonofmagic
+
+- 🐛 **修复开发模式启用 Web Runtime 后使用自定义组件时运行时共享模块导出缺失的问题，避免微信开发者工具加载组件时报 `resolveMiniProgramPlatform is not a function`。** [#810](https://github.com/weapp-vite/weapp-vite/pull/810) by @sonofmagic
+
+- 🐛 **支持原生抖音项目直接使用 `.ttml` / `.ttss` 接入 weapp-vite，并让页面、组件、分包、自动路由、watcher、layout、WXS 与 npm 原生组件按目标平台稳定选择和输出资源；原生抖音语法保持不变，便携 WXML 与 Vue SFC 仍会转换为抖音产物，因此原生业务与 Vue/wevu 页面可以在同一项目渐进共存。** [#801](https://github.com/weapp-vite/weapp-vite/pull/801) by @sonofmagic
+
+- 🐛 **修复 `wv prepare` 扫描不含脚本块的 Vue SFC 时误用 JSX 解析模板的问题，纯模板组件现在可以正常生成自动导入与类型支持文件，不再输出相邻 JSX 元素或 Vue 绑定语法解析错误。** [#803](https://github.com/weapp-vite/weapp-vite/pull/803) by @sonofmagic
+
+- 🐛 **补齐抖音平台描述符在 `@weapp-core/shared` 中的发布记录，并同步脚手架模板 catalog 与运行时依赖版本：模板依赖更新到 `magic-string@^1.1.1`、`rolldown@1.2.4`，`weapp-vite` 同步 `@vercel/detect-agent@^1.2.5`，Web runtime 统一使用 workspace catalog 中的 Rolldown 版本。** [`5fab295`](https://github.com/weapp-vite/weapp-vite/commit/5fab295bf59c714e39ebae7c617040c93692650b) by @sonofmagic
+
+- 🐛 **修复 wevu 页面在微信开发者工具 stateful HMR 中的原生注册与运行时刷新衔接问题，避免已装饰的生命周期定义被再次写回 HMR bridge 导致递归调用，并在保留 ref 状态的同时让普通 setup 返回值跟随新代码刷新；同时补强 app/layout/page/bootstrap alias HMR 的 IDE 回归覆盖。** [#802](https://github.com/weapp-vite/weapp-vite/pull/802) by @sonofmagic
+
+- 🐛 **统一微信开发者工具的 CLI-first 打开流程，默认先打开项目再连接 automator，避免部分 DevTools 版本在自动化启动阶段反复回退。新增 `wv ide doctor` 诊断 CLI、服务端口、登录、项目会话和 DevTools 能力，并改进开发快捷键重复操作提示。** [#807](https://github.com/weapp-vite/weapp-vite/pull/807) by @sonofmagic
+
+- 🐛 **默认将 Vue 模板中的 PascalCase 组件标签及其自动生成的 `usingComponents` 配置转换为 kebab-case，避免微信开发者工具因 WXML 标签含大写字母而无法识别。** [#809](https://github.com/weapp-vite/weapp-vite/pull/809) by @sonofmagic
+- 📦 Updated 11 dependencies [`dcee1d2`](https://github.com/weapp-vite/weapp-vite/commit/dcee1d2c7efe5dca0ff3751c4c9d4f5ea83a4e89)
+  <details><summary>Details</summary>
+
+  `weapp-ide-cli@6.0.6`, `@weapp-vite/miniprogram-automator@1.2.13`, `wevu@6.20.2`, `rolldown-require@2.0.25`, `@weapp-core/shared@3.1.1`, `@weapp-vite/web@1.4.7`, `@weapp-core/init@6.0.14`, `@wevu/api@0.2.16`, `@weapp-vite/ast@6.20.2`, `@weapp-vite/mcp@1.4.14`, `@wevu/web-apis@1.2.34`
+
+  </details>
+
 ## 6.20.1
 
 ### Patch Changes

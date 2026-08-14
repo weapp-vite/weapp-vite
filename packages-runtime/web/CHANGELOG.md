@@ -1,5 +1,13 @@
 # @weapp-vite/web
 
+## 1.4.7
+
+### Patch Changes
+
+- 🐛 **补齐抖音平台描述符在 `@weapp-core/shared` 中的发布记录，并同步脚手架模板 catalog 与运行时依赖版本：模板依赖更新到 `magic-string@^1.1.1`、`rolldown@1.2.4`，`weapp-vite` 同步 `@vercel/detect-agent@^1.2.5`，Web runtime 统一使用 workspace catalog 中的 Rolldown 版本。** [`5fab295`](https://github.com/weapp-vite/weapp-vite/commit/5fab295bf59c714e39ebae7c617040c93692650b) by @sonofmagic
+- 📦 **Dependencies** [`6fcfa80`](https://github.com/weapp-vite/weapp-vite/commit/6fcfa804012cf20ea694f244cf7f51c50fdc6b5d)
+  → `wevu@6.20.2`, `rolldown-require@2.0.25`, `@weapp-core/shared@3.1.1`
+
 ## 1.4.6
 
 ### Patch Changes

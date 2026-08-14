@@ -1,5 +1,23 @@
 # wevu
 
+## 6.20.2
+
+### Patch Changes
+
+- 🐛 **支持原生支付宝项目直接使用 `.axml` / `.acss` 接入 weapp-vite，并让页面、组件、分包、自动路由、watcher 与原生 layout 按目标平台稳定选择 sidecar；原生支付宝语法保持不变，便携 WXML 和 Vue SFC 仍会转换为支付宝产物，因此原生页面与 Vue 页面可以在同一项目渐进共存。同时修复 `import-sjs` 被错误降级以及独立 SJS 被转换为 `module.exports` 的问题，并补充原生组件、原生分包、wevu runtime、`antd-mini` 与官方 `minidev` 编译复验。** [#799](https://github.com/weapp-vite/weapp-vite/pull/799) by @sonofmagic
+
+- 🐛 **修复 Vue 模板中 optional chaining 嵌套在空值合并表达式时未被降级的问题，确保生成的 WXML 不再包含小程序不支持的 `?.`。** [#808](https://github.com/weapp-vite/weapp-vite/pull/808) by @sonofmagic
+
+- 🐛 **支持原生抖音项目直接使用 `.ttml` / `.ttss` 接入 weapp-vite，并让页面、组件、分包、自动路由、watcher、layout、WXS 与 npm 原生组件按目标平台稳定选择和输出资源；原生抖音语法保持不变，便携 WXML 与 Vue SFC 仍会转换为抖音产物，因此原生业务与 Vue/wevu 页面可以在同一项目渐进共存。** [#801](https://github.com/weapp-vite/weapp-vite/pull/801) by @sonofmagic
+
+- 🐛 **修复 wevu 页面在微信开发者工具 stateful HMR 中的原生注册与运行时刷新衔接问题，避免已装饰的生命周期定义被再次写回 HMR bridge 导致递归调用，并在保留 ref 状态的同时让普通 setup 返回值跟随新代码刷新；同时补强 app/layout/page/bootstrap alias HMR 的 IDE 回归覆盖。** [#802](https://github.com/weapp-vite/weapp-vite/pull/802) by @sonofmagic
+- 📦 Updated 4 dependencies [`b8e2739`](https://github.com/weapp-vite/weapp-vite/commit/b8e2739f3d72bcc939146d1e744ef2a341f25423)
+  <details><summary>Details</summary>
+
+  `@wevu/compiler@6.20.2`, `@weapp-core/shared@3.1.1`, `@wevu/api@0.2.16`, `@wevu/web-apis@1.2.34`
+
+  </details>
+
 ## 6.20.1
 
 ### Patch Changes

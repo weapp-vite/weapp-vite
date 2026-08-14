@@ -1,5 +1,11 @@
 # rolldown-require
 
+## 2.0.25
+
+### Patch Changes
+
+- 🐛 **统一 Rolldown 依赖的 workspace catalog 引用，避免 pnpm 更新后将 catalog 协议写回为固定版本；同时同步 magic-string、sass-embedded 及相关构建依赖版本，并更新脚手架模板 catalog。** [`b8e2739`](https://github.com/weapp-vite/weapp-vite/commit/b8e2739f3d72bcc939146d1e744ef2a341f25423) by @sonofmagic
+
 ## 2.0.24
 
 ### Patch Changes

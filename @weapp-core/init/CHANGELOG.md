@@ -1,5 +1,12 @@
 # @weapp-core/init
 
+## 6.0.14
+
+### Patch Changes
+
+- 📦 **Dependencies** [`5fab295`](https://github.com/weapp-vite/weapp-vite/commit/5fab295bf59c714e39ebae7c617040c93692650b)
+  → `@weapp-core/shared@3.1.1`
+
 ## 6.0.13
 
 ### Patch Changes
