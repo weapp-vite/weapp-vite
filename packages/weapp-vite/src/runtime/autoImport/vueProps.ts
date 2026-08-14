@@ -7,14 +7,15 @@ import { extractInlinePropsTypeFromCode } from './dtsProps'
 export function extractVueComponentProps(source: string, filename: string, options: {
   astEngine?: 'babel' | 'oxc'
 } = {}): ComponentPropMap {
-  const inlineProps = extractInlinePropsTypeFromCode(source)
-  if (inlineProps.size > 0) {
-    return inlineProps
-  }
-
   const { descriptor, errors } = parse(source, { filename })
   if (errors.length || (!descriptor.script && !descriptor.scriptSetup)) {
     return new Map()
+  }
+
+  const scriptSource = descriptor.scriptSetup?.content ?? descriptor.script?.content ?? ''
+  const inlineProps = extractInlinePropsTypeFromCode(scriptSource)
+  if (inlineProps.size > 0) {
+    return inlineProps
   }
 
   const compiled = compileScript(descriptor, {
