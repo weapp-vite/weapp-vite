@@ -81,7 +81,7 @@ describe('runWechatCliCommand', () => {
       '--project',
       '/tmp/demo',
       '--trust-project',
-    ])
+    ], {})
   })
 
   it('opens the target project before auto-preview so devtools is foregrounded', async () => {
@@ -103,14 +103,14 @@ describe('runWechatCliCommand', () => {
       'open',
       '--project',
       '/tmp/demo',
-    ])
+    ], {})
     expect(runWechatCliWithRetryMock).toHaveBeenNthCalledWith(2, '/Applications/wechat-cli', [
       'auto-preview',
       '--project',
       '/tmp/demo',
       '--info-output',
       '/tmp/auto-preview.json',
-    ])
+    ], {})
   })
 
   it('passes configured project trust to the auto-preview foreground open command', async () => {
@@ -128,14 +128,14 @@ describe('runWechatCliCommand', () => {
       '--ext-appid',
       'wx456',
       '--trust-project',
-    ])
+    ], {})
     expect(runWechatCliWithRetryMock).toHaveBeenNthCalledWith(2, '/Applications/wechat-cli', [
       'auto-preview',
       '--appid',
       'wx123',
       '--ext-appid',
       'wx456',
-    ])
+    ], {})
   })
 
   it('prompts for cli path when resolver returns missing', async () => {
