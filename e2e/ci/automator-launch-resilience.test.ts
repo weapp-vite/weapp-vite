@@ -1746,7 +1746,7 @@ describe.sequential('automator launch resilience', () => {
     expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
-  it('does not prebuild project index by default for cli bridge launch', async () => {
+  it('does not wait for an emitted warmup bundle when cli bridge launch skips prebuild', async () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
     process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'

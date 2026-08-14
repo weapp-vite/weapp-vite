@@ -1400,7 +1400,14 @@ async function waitForBridgeWrapperWarmupAsset(
     return
   }
   const pageScriptPath = routeToPageScriptPath(bridgeWrapperProject.path, route)
-  if (!pageScriptPath) {
+  const sourcePageScriptPath = routeToPageScriptPath(bridgeWrapperProject.distRoot, route)
+  if (!pageScriptPath || !sourcePageScriptPath) {
+    return
+  }
+  const source = fs.existsSync(sourcePageScriptPath)
+    ? fs.readFileSync(sourcePageScriptPath, 'utf8')
+    : ''
+  if (!isReadablePageScript(source)) {
     return
   }
 
