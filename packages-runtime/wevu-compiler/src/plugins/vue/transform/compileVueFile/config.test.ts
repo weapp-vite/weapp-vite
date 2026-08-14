@@ -11,7 +11,7 @@ describe('compileConfigPhase', () => {
 <json lang="json">
 {
   "usingComponents": {
-    "legacy": "./legacy"
+    "LegacyCard": "./legacy"
   }
 }
 </json>
@@ -66,9 +66,9 @@ describe('compileConfigPhase', () => {
 
     const parsed = JSON.parse(result.config)
     expect(parsed.usingComponents).toEqual({
-      'legacy': './legacy',
+      'legacy-card': './legacy',
       't-card': 'tdesign/card/card',
-      'TButton': 'tdesign/button/button',
+      't-button': 'tdesign/button/button',
     })
     expect(parsed.componentGenerics).toEqual({
       genericA: true,

@@ -521,20 +521,26 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('<view><text>hello</text></view>')
   })
 
-  it('keeps PascalCase and kebab-case component tags untouched when html mapping is enabled', () => {
+  it('normalizes component tags to kebab-case when html mapping is enabled', () => {
     const template = `
 <div>
   <HelloCard />
   <hello-card />
+  <HelloCard>
+    <template #header><view>Header</view></template>
+  </HelloCard>
 </div>
     `.trim()
 
-    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue', {
+      scopedSlotsRequireProps: false,
+    })
 
     expect(code).toContain('<view class="div">')
-    expect(code).toContain('<HelloCard />')
     expect(code).toContain('<hello-card />')
-    expect(code).not.toContain('<textCard')
+    expect(code).toContain('<hello-card />')
+    expect(code).toContain('<hello-card ')
+    expect(code).not.toContain('<HelloCard')
   })
 
   it('treats mapped html tags as builtin elements rather than component nodes', () => {
@@ -987,14 +993,14 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<Provider')
-    expect(code).not.toContain('<Leaf />')
+    expect(code).toContain('<provider')
+    expect(code).not.toContain('<leaf />')
     expect(code).toContain('generic:scoped-slots-default="')
     expect(code).toContain(`vue-slots="{{ {default:true} }}"`)
     expect(classStyleBindings?.some(binding => binding.exp === `{['default']:true}`)).not.toBe(true)
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.slotKey).toBe('default')
-    expect(scopedSlotComponents?.[0]?.template).toContain('<Leaf />')
+    expect(scopedSlotComponents?.[0]?.template).toContain('<leaf />')
   })
 
   it('assigns template refs inside augmented slots to the scoped slot asset', () => {
@@ -1042,8 +1048,8 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<Provider')
-    expect(code).toContain('<Leaf />')
+    expect(code).toContain('<provider')
+    expect(code).toContain('<leaf />')
     expect(code).not.toContain('vue-slots=')
     expect(code).not.toContain('generic:scoped-slots-default="')
     expect(scopedSlotComponents).toBeUndefined()
@@ -1065,10 +1071,10 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('generic:scoped-slots-default="')
     expect(code).toContain(`vue-slots="{{ {default:true} }}"`)
     expect(code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
-    expect(code).not.toContain('<Leaf')
+    expect(code).not.toContain('<leaf')
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.slotKey).toBe('default')
-    expect(scopedSlotComponents?.[0]?.template).toContain('<Leaf item="{{__wvSlotPropsData.item}}" />')
+    expect(scopedSlotComponents?.[0]?.template).toContain('<leaf item="{{__wvSlotPropsData.item}}" />')
   })
 
   it('keeps plain named template slots native when default component children are augmented', () => {
@@ -1139,7 +1145,7 @@ describe('compileVueTemplateToWxml', () => {
       { scopedSlotsRequireProps: false },
     )
 
-    expect(code).toContain(`<Provider vue-slots="{{ {default:true} }}"><view>Default</view></Provider>`)
+    expect(code).toContain(`<provider vue-slots="{{ {default:true} }}"><view>Default</view></provider>`)
     expect(code).not.toContain('vue-slot-flags')
     expect(code).not.toContain('generic:scoped-slots-default')
     expect(classStyleBindings?.some(binding => binding.exp === `{['default']:true}`)).not.toBe(true)
@@ -1161,7 +1167,7 @@ describe('compileVueTemplateToWxml', () => {
       { scopedSlotsRequireProps: false },
     )
 
-    expect(code).toContain(`<Provider vue-slots="{{ {default:true} }}"><view><Leaf /></view></Provider>`)
+    expect(code).toContain(`<provider vue-slots="{{ {default:true} }}"><view><leaf /></view></provider>`)
     expect(code).not.toContain('vue-slot-flags')
     expect(code).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents).toBeUndefined()
@@ -1182,8 +1188,8 @@ describe('compileVueTemplateToWxml', () => {
       { scopedSlotsCompiler: 'augmented' },
     )
 
-    expect(code).toContain('<Provider')
-    expect(code).toContain('<view><Leaf /></view>')
+    expect(code).toContain('<provider')
+    expect(code).toContain('<view><leaf /></view>')
     expect(code).not.toContain('generic:scoped-slots-default="')
     expect(scopedSlotComponents).toBeUndefined()
   })
@@ -1207,9 +1213,9 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain('generic:scoped-slots-default="')
-    expect(code).not.toContain('<view><Leaf /></view>')
+    expect(code).not.toContain('<view><leaf /></view>')
     expect(scopedSlotComponents).toHaveLength(1)
-    expect(scopedSlotComponents?.[0]?.template).toContain('<view><Leaf /></view>')
+    expect(scopedSlotComponents?.[0]?.template).toContain('<view><leaf /></view>')
   })
 
   it('augments wrapped wevu component default children when explicitly augmented', () => {
@@ -1253,7 +1259,7 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toBe('<Cell vue-slots="{{ {default:true} }}"><text>{{__wv_bind_0}}</text></Cell>')
+    expect(code).toBe('<cell vue-slots="{{ {default:true} }}"><text>{{__wv_bind_0}}</text></cell>')
     expect(scopedSlotComponents).toBeUndefined()
   })
 
@@ -1298,9 +1304,9 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('generic:scoped-slots-header="')
     expect(code).toContain('generic:scoped-slots-default="')
     expect(code).toContain('generic:scoped-slots-footer="')
-    expect(code).toContain('<Cell vue-slots="{{ {default:true} }}"><text>{{__wv_bind_0}}</text></Cell>')
+    expect(code).toContain('<cell vue-slots="{{ {default:true} }}"><text>{{__wv_bind_0}}</text></cell>')
     expect(code).not.toContain('slot="header"')
-    expect(code).toContain('<Issue558NestedSlotCell vue-slots="{{ {default:true} }}"><text>{{__wv_bind_1}}</text></Issue558NestedSlotCell>')
+    expect(code).toContain('<issue558-nested-slot-cell vue-slots="{{ {default:true} }}"><text>{{__wv_bind_1}}</text></issue558-nested-slot-cell>')
     expect(classStyleBindings?.some(binding => binding.exp === 'func(text)')).toBe(true)
     expect(classStyleBindings?.some(binding => binding.exp === 'func(nestedText)')).toBe(true)
     expect(scopedSlotComponents).toHaveLength(5)
@@ -1369,10 +1375,10 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain('generic:scoped-slots-default="')
-    expect(code).not.toContain('<MyCell ')
+    expect(code).not.toContain('<my-cell ')
     expect(scopedSlotComponents).toHaveLength(2)
-    expect(scopedSlotComponents?.[0]?.template).toContain('<MyCell generic:scoped-slots-default=')
-    expect(scopedSlotComponents?.[1]?.template).toContain('<MyImage />')
+    expect(scopedSlotComponents?.[0]?.template).toContain('<my-cell generic:scoped-slots-default=')
+    expect(scopedSlotComponents?.[1]?.template).toContain('<my-image />')
   })
 
   it('augments nested wevu component default children when explicitly augmented', () => {
@@ -1395,11 +1401,11 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain('generic:scoped-slots-default="')
     expect(code).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
-    expect(code).not.toContain('<Cell ')
+    expect(code).not.toContain('<cell ')
     expect(scopedSlotComponents).toHaveLength(2)
-    expect(scopedSlotComponents?.[0]?.template).toContain('<Cell generic:scoped-slots-default=')
+    expect(scopedSlotComponents?.[0]?.template).toContain('<cell generic:scoped-slots-default=')
     expect(scopedSlotComponents?.[0]?.template).toContain('__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"')
-    expect(scopedSlotComponents?.[1]?.template).toContain('<Leaf />')
+    expect(scopedSlotComponents?.[1]?.template).toContain('<leaf />')
   })
 
   it('keeps default content with a forwarded slot outlet on its owner component', () => {
@@ -1421,7 +1427,7 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<Transition vue-slots="{{ {default:true} }}"><view><slot /><Icon /></view></Transition>')
+    expect(code).toContain('<transition vue-slots="{{ {default:true} }}"><view><slot /><icon /></view></transition>')
     expect(code).not.toContain('generic:scoped-slots-default=')
     expect(scopedSlotComponents).toBeUndefined()
   })
@@ -1482,7 +1488,7 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(scopedSlotComponents).toHaveLength(1)
-    expect(scopedSlotComponents?.[0]?.template).toContain('<TabbarItem wx:for="{{__wv_bind_0}}"')
+    expect(scopedSlotComponents?.[0]?.template).toContain('<tabbar-item wx:for="{{__wv_bind_0}}"')
     expect(scopedSlotComponents?.[0]?.template).toContain('<text data-label="{{item.label}}">{{item.label}}</text>')
     expect(scopedSlotComponents?.[0]?.template).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents?.[0]?.componentGenerics).toBeUndefined()
@@ -1506,7 +1512,7 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<Provider vue-slots="{{ {default:true} }}"><view><Leaf /></view></Provider>')
+    expect(code).toContain('<provider vue-slots="{{ {default:true} }}"><view><leaf /></view></provider>')
     expect(code).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents).toBeUndefined()
   })
@@ -1547,7 +1553,7 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain('<t-button>')
-    expect(code).toContain('<MyIcon />')
+    expect(code).toContain('<my-icon />')
     expect(code).toContain('保存')
     expect(code).toContain('</t-button>')
     expect(code).not.toContain('generic:scoped-slots-default')
@@ -1584,7 +1590,7 @@ describe('compileVueTemplateToWxml', () => {
       `,
       [
         '<van-cell>',
-        '<view slot="title"><MyTitle /></view>',
+        '<view slot="title"><my-title /></view>',
         '<view slot="label">说明</view>',
         '</van-cell>',
       ],
@@ -1647,7 +1653,7 @@ describe('compileVueTemplateToWxml', () => {
       { scopedSlotsRequireProps: false },
     )
 
-    expect(code).toContain('<view><Leaf /></view>')
+    expect(code).toContain('<view><leaf /></view>')
     expect(code).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents).toBeUndefined()
   })
@@ -2004,7 +2010,7 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain('<cover-view slot="header"><slot /></cover-view>')
     expect(code).toContain('<text slot="footer"><slot /></text>')
-    expect(code).toContain('<OtherAlias vue-slots="{{ {header:true} }}"><cover-view slot="header"><slot /></cover-view></OtherAlias>')
+    expect(code).toContain('<other-alias vue-slots="{{ {header:true} }}"><cover-view slot="header"><slot /></cover-view></other-alias>')
   })
 
   it('uses component-level and slot-specific local fallback wrapper config', () => {
@@ -2027,7 +2033,7 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<Child')
+    expect(code).toContain('<child')
     expect(code).not.toContain('slot-wrapper=')
     expect(code).not.toContain('slot-wrapper-footer=')
     expect(code).toContain('<cover-view slot="header"><slot /></cover-view>')
@@ -2344,7 +2350,7 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('<MyCell ')
+    expect(code).toContain('<my-cell ')
     expect(code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{items}}"`)
     expect(code).toContain(`${DEFAULT_DIRECTIVES.forItemAttr}="__wv_item_0"`)
     expect(code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="key"`)
@@ -2366,7 +2372,7 @@ describe('compileVueTemplateToWxml', () => {
       { scopedSlotsCompiler: 'off' },
     )
 
-    expect(code).toContain('<MyCell ')
+    expect(code).toContain('<my-cell ')
     expect(code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{items}}"`)
     expect(code).toContain(`vue-slots="{{__wv_bind_0[__wv_index_1]}}"`)
     expect(code).not.toContain('vue-slots="{{ {default:true} }}"')
@@ -2423,7 +2429,7 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain(`<Card vue-slots="{{ {header:true} }}">`)
+    expect(code).toContain(`<card vue-slots="{{ {header:true} }}">`)
     expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{abc}}"><view slot="header"><view /></view></block>`)
     expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elseAttr}><view slot="header"><text /></view></block>`)
     expect(code).not.toContain('<view slot="header"><text /></view></Card>')
@@ -2441,7 +2447,7 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain(`<Card vue-slots="{{__wv_bind_0}}">`)
+    expect(code).toContain(`<card vue-slots="{{__wv_bind_0}}">`)
     expect(code).toContain('<view slot="foo-bar"><view /></view>')
     expect(code).not.toContain('vue-slots="{{ {foo-bar:true} }}"')
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{['foo-bar']:true}`)).toBe(true)

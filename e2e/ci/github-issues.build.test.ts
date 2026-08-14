@@ -516,6 +516,22 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(appPreludeJs).toContain('"URL"')
   })
 
+  it('issue #806: emits PascalCase Vue components as kebab-case WXML tags and registrations', async () => {
+    await runBuild()
+
+    const pageWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-806/index.wxml'), 'utf8')
+    const pageJson = await fs.readJSON(path.join(DIST_ROOT, 'pages/issue-806/index.json')) as {
+      usingComponents?: Record<string, string>
+    }
+
+    expect(pageWxml).toContain('<pascal-card vue-slots="{{ {default:true} }}">issue-806</pascal-card>')
+    expect(pageWxml).not.toContain('<PascalCard')
+    expect(pageJson.usingComponents).toMatchObject({
+      'pascal-card': '/components/issue-806/PascalCard/index',
+    })
+    expect(pageJson.usingComponents).not.toHaveProperty('PascalCard')
+  })
+
   it('discussion #338: emits mapped wxml tags from vue html-style templates', async () => {
     await runBuild()
 

@@ -78,8 +78,8 @@ definePageJson({
       usingComponents: {
         'legacy-card': '/components/legacy-card/index',
         't-button': 'tdesign/button/button',
-        'AutoCard': '/components/auto-card/index',
-        'macroCard': '/components/macro-card/index',
+        'auto-card': '/components/auto-card/index',
+        'macro-card': '/components/macro-card/index',
       },
       componentGenerics: {
         selectable: true,
