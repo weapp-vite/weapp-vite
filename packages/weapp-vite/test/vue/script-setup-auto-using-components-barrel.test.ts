@@ -91,7 +91,7 @@ import { VueCard } from '../../components'
       expect(jsonAsset).toBeDefined()
       expect(JSON.parse(jsonAsset!.source)).toEqual({
         usingComponents: {
-          VueCard: '/components/vue-card/index',
+          'vue-card': '/components/vue-card/index',
         },
       })
     }
