@@ -39,17 +39,17 @@ describe.sequential('e2e app: wevu-vue-demo (script setup macros mapping)', () =
     const modelInputJs = await fs.readFile(modelInputJsPath, 'utf-8')
 
     expect(pageJson.usingComponents).toMatchObject({
-      NativeBadge: '/native/native-badge/index',
-      NativeMeterTs: '/native/native-meter-ts/index',
-      CompatPanel: '/pages/vue-compat/components/CompatPanel',
-      CompatAltPanel: '/pages/vue-compat/components/CompatAltPanel',
-      ModelInput: '/pages/vue-compat/components/ModelInput',
+      'native-badge': '/native/native-badge/index',
+      'native-meter-ts': '/native/native-meter-ts/index',
+      'compat-panel': '/pages/vue-compat/components/CompatPanel',
+      'compat-alt-panel': '/pages/vue-compat/components/CompatAltPanel',
+      'model-input': '/pages/vue-compat/components/ModelInput',
     })
 
-    expect(pageWxml).toContain('<NativeBadge')
-    expect(pageWxml).toContain('<NativeMeterTs')
-    expect(pageWxml).toContain('<CompatPanel')
-    expect(pageWxml).toContain('<CompatAltPanel')
+    expect(pageWxml).toContain('<native-badge')
+    expect(pageWxml).toContain('<native-meter-ts')
+    expect(pageWxml).toContain('<compat-panel')
+    expect(pageWxml).toContain('<compat-alt-panel')
     expect(pageWxml).toContain('bindrun="__weapp_vite_inline"')
     expect(pageWxml).toContain('bindrunevent="__weapp_vite_inline"')
     expect(pageWxml).toContain('data-wd-run="1"')

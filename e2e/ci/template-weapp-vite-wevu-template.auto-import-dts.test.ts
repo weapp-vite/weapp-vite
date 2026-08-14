@@ -29,8 +29,8 @@ describe.sequential('e2e app: template-wevu-regression auto-import dts', () => {
 
     const pageJson = await fs.readJson(pageJsonPath)
     expect(pageJson.usingComponents).toMatchObject({
-      InfoPanel: '/components/InfoPanel/index',
-      StatusPill: '/components/StatusPill/index',
+      'info-panel': '/components/InfoPanel/index',
+      'status-pill': '/components/StatusPill/index',
     })
 
     expect(await fs.pathExists(COMPONENTS_DTS)).toBe(false)

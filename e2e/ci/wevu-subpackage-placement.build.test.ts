@@ -119,7 +119,7 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
       ])
 
       expect(mainPageJson.usingComponents).toEqual({
-        'MainVueCard': '/components/main-vue-card/index',
+        'main-vue-card': '/components/main-vue-card/index',
         'native-badge': '/native/native-badge/index',
       })
       expectModuleReference(mainPageJs, toRelativeImport(mainPageJsPath, mainRuntimeChunk.path))
@@ -127,7 +127,7 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
       expect(mainPageJs).not.toContain('../../components/main-vue-card/index.vue')
       expect(mainPageJs).not.toContain('../../native/native-badge/index')
       expect(mainPageWxml).toContain('__WSP_MAIN_VUE__')
-      expect(mainPageWxml).toContain('<MainVueCard')
+      expect(mainPageWxml).toContain('<main-vue-card')
       expect(mainPageWxml).toContain('<native-badge')
       expect(mainComponentJs).toMatch(/props:\s*\{\s*title:\s*null,\s*count:\s*null,\s*double:\s*null\s*\}/)
       expect(mainComponentJs).toContain('setup(__props, { expose })')

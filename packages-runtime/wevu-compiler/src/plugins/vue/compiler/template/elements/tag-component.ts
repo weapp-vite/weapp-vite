@@ -556,7 +556,7 @@ export function transformComponentWithSlots(
   for (const decl of scopedSlotDeclarations) {
     const slotKey = resolveSlotKey(context, decl.name)
     const { componentName } = createScopedSlotComponent(context, slotKey, decl.props, decl.children, transformNode, {
-      hostComponentName: node.tag,
+      hostComponentName: resolveTemplateTagName(node.tag, context),
     })
     slotNames.push({ name: stringifySlotName(decl.name, context), condition: decl.condition })
     slotGenericAttrs.push(`generic:scoped-slots-${slotKey}="${componentName}"`)

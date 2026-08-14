@@ -58,21 +58,21 @@ describe.sequential('e2e app: script-setup-macros-mapping (build)', () => {
     const jsRuntimeObjectJs = await fs.readFile(jsRuntimeObjectJsPath, 'utf8')
 
     expect(pageJson.usingComponents).toMatchObject({
-      NativeBadge: '/native/native-badge/index',
-      TsWithDefaults: '/components/ts-with-defaults/index',
-      TsWithDefaultsAlias: '/components/ts-with-defaults-alias/index',
-      TsRuntimeObject: '/components/ts-runtime-object/index',
-      JsRuntimeArray: '/components/js-runtime-array/index',
-      JsRuntimeObject: '/components/js-runtime-object/index',
+      'native-badge': '/native/native-badge/index',
+      'ts-with-defaults': '/components/ts-with-defaults/index',
+      'ts-with-defaults-alias': '/components/ts-with-defaults-alias/index',
+      'ts-runtime-object': '/components/ts-runtime-object/index',
+      'js-runtime-array': '/components/js-runtime-array/index',
+      'js-runtime-object': '/components/js-runtime-object/index',
     })
     expect(pageJson.navigationBarTitleText).toBe('script setup macros mapping')
 
-    expect(pageWxml).toContain('<NativeBadge')
-    expect(pageWxml).toContain('<TsWithDefaults')
-    expect(pageWxml).toContain('<TsWithDefaultsAlias')
-    expect(pageWxml).toContain('<TsRuntimeObject')
-    expect(pageWxml).toContain('<JsRuntimeArray')
-    expect(pageWxml).toContain('<JsRuntimeObject')
+    expect(pageWxml).toContain('<native-badge')
+    expect(pageWxml).toContain('<ts-with-defaults')
+    expect(pageWxml).toContain('<ts-with-defaults-alias')
+    expect(pageWxml).toContain('<ts-runtime-object')
+    expect(pageWxml).toContain('<js-runtime-array')
+    expect(pageWxml).toContain('<js-runtime-object')
     expect(pageWxml).toContain('bindsave="__weapp_vite_inline"')
     expect(pageWxml).toContain('bindreset="__weapp_vite_inline"')
     expect(pageWxml).toContain('bindpick="__weapp_vite_inline"')

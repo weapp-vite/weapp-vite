@@ -543,6 +543,26 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('<HelloCard')
   })
 
+  it('normalizes scoped slot host component names to match usingComponents keys', () => {
+    const template = `
+<PascalCard v-slot="{ value }">
+  <view>{{ value }}</view>
+</PascalCard>
+    `.trim()
+
+    const { scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        scopedSlotsRequireProps: false,
+      },
+    )
+
+    expect(scopedSlotComponents).toHaveLength(1)
+    expect(scopedSlotComponents?.[0]?.hostComponentName).toBe('pascal-card')
+  })
+
   it('treats mapped html tags as builtin elements rather than component nodes', () => {
     const template = `
 <span @tap="onTap">text</span>
