@@ -168,14 +168,26 @@ wv open [root]
 
 参数：
 
-| 参数                        | 说明                                     |
-| --------------------------- | ---------------------------------------- |
-| `-p, --platform <platform>` | 目标平台（`weapp` \| `web` \| `alipay`） |
+| 参数                             | 说明                                                |
+| -------------------------------- | --------------------------------------------------- |
+| `-p, --platform <platform>`      | 目标平台（`weapp` \| `web` \| `alipay`）            |
+| `--ide-open-strategy <strategy>` | DevTools 打开策略（`cli` 默认，或显式 `automator`） |
 
 说明：
 
-- 当目标平台为 `weapp` 时，`wv open` 会先复用 `weapp-ide-cli` 的底层能力，自动尝试预热微信开发者工具安全设置。
+- 当目标平台为 `weapp` 时，`wv open` 默认先调用官方 CLI 打开项目，再连接已打开的 automator；automator 失败不会阻止项目打开。
+- `--ide-open-strategy automator` 仅用于兼容旧版 DevTools 或调试 automator-first 流程。
 - 若你通过 `weapp config set autoTrustProject true` 开启了默认项目信任，未显式传 `--trust-project` 时也会按该策略执行。
+
+如果打开、MCP 或截图仍不可用，先执行：
+
+```bash
+wv ide doctor
+wv ide doctor --json
+wv ide doctor --strict
+```
+
+doctor 会检查 CLI 路径、服务端口、登录状态、已打开项目的 automator websocket 和 `Tool.getInfo`；不会自动启动或关闭微信开发者工具。
 
 ### 5) `close`
 
@@ -416,6 +428,7 @@ wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline 
 wv cache --clean all
 wv config set autoBootstrapDevtools true
 wv config set autoTrustProject true
+wv ide doctor --json
 ```
 
 和 DevTools 自动预热相关的高频配置：

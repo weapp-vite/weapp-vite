@@ -139,6 +139,7 @@ wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 
 1. AI 客户端已接入 `weapp-vite` MCP。
 2. 微信开发者工具已登录，并开启「设置 -> 安全设置 -> 服务端口」。
+3. 如果连接失败，先执行 `wv ide doctor --json`，根据诊断结果修复 CLI、登录或服务端口问题。
 
 可直接复制的提示词：
 

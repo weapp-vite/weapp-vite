@@ -17,6 +17,10 @@ type WechatCliExecutionResult
   = { kind: 'result', value: unknown }
     | { error: unknown, kind: 'retryable' }
 
+export interface RunWechatCliWithRetryOptions {
+  silent?: boolean
+}
+
 const IDE_SERVER_STARTED_RE = /IDE server has started,\s*listening on\s+https?:\/\/127\.0\.0\.1:(\d+)/i
 
 function unwrapWechatCliExecutionError(result: WechatCliExecutionResult) {
@@ -92,7 +96,7 @@ function captureWechatDevtoolsServicePort(result: unknown) {
 /**
  * @description 运行微信开发者工具 CLI，并在登录失效时允许按键重试。
  */
-export async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
+export async function runWechatCliWithRetry(cliPath: string, argv: string[], options: RunWechatCliWithRetryOptions = {}) {
   const loginRetryOptions = resolveLoginRetryConfig(argv)
   const result = await runWithSuspendedSharedInput(async () => {
     return await runRetryableCommand<WechatCliExecutionResult, 'retry' | 'cancel' | 'timeout'>({
@@ -137,5 +141,7 @@ export async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
   }
 
   captureWechatDevtoolsServicePort(result.value)
-  flushExecutionOutput(result.value)
+  if (!options.silent) {
+    flushExecutionOutput(result.value)
+  }
 }

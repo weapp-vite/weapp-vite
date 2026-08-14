@@ -34,6 +34,7 @@ export function registerServeCommand(cli: CAC) {
     .option('-p, --platform <platform>', `[string] target platform (weapp | web | all)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
+    .option('--ide-open-strategy <strategy>', '[string] IDE open strategy (cli | automator)', { default: 'cli' })
     .option('--login-retry <mode>', '[string] login retry mode for Wechat DevTools (never | once | always)')
     .option('--login-retry-timeout <ms>', '[number] login retry prompt timeout in milliseconds')
     .option('--non-interactive', '[boolean] fail immediately when Wechat DevTools login has expired')
@@ -81,7 +82,8 @@ export function registerServeCommand(cli: CAC) {
         fallbackProjectPath: configService.cwd,
         openIde: async (projectPath, openOptions) => {
           const forceReopen = openOptions?.forceReopen === true
-          const useAutomatorOpen = forceReopen || openOptions?.useAutomatorOpen === true
+          const useAutomatorOpen = openOptions?.openStrategy === 'automator'
+            || openOptions?.useAutomatorOpen === true
           await openIde(configService.platform, projectPath, {
             loginRetry: options.loginRetry,
             loginRetryTimeout: options.loginRetryTimeout,
@@ -92,6 +94,7 @@ export function registerServeCommand(cli: CAC) {
             skipAutomatorCompile: !forceReopen,
             skipPostOpenHealthCheck: true,
             trustProject: options.trustProject,
+            openStrategy: openOptions?.openStrategy ?? options.ideOpenStrategy ?? 'cli',
             useAutomatorOpen,
           })
           writePostOpenSeparator()
@@ -220,7 +223,7 @@ export function registerServeCommand(cli: CAC) {
             await miniProgramDevActions.openIde({
               forceOpen: true,
               forceReopen: false,
-              useAutomatorOpen: options.trustProject !== false,
+              openStrategy: options.ideOpenStrategy ?? 'cli',
             })
           }
           finally {

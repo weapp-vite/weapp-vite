@@ -1,3 +1,4 @@
+import type { RunWechatCliWithRetryOptions } from './run-login'
 import { readCustomConfig } from '../config/custom'
 import { i18nText } from '../i18n'
 import logger, { colors } from '../logger'
@@ -106,7 +107,7 @@ async function maybeBootstrapWechatDevtoolsSettings(argv: readonly string[]) {
 /**
  * @description 执行微信开发者工具 CLI 阶段，包括环境检查、路径解析、bootstrap 与登录重试。
  */
-export async function runWechatCliCommand(argv: string[]) {
+export async function runWechatCliCommand(argv: string[], options: RunWechatCliWithRetryOptions = {}) {
   if (!isOperatingSystemSupported(operatingSystemName)) {
     logger.warn(i18nText(
       `微信web开发者工具不支持当前平台：${operatingSystemName} !`,
@@ -124,8 +125,8 @@ export async function runWechatCliCommand(argv: string[]) {
   const bootstrapContext = await maybeBootstrapWechatDevtoolsSettings(argv)
   const wakeArgv = createAutoPreviewWakeArgv(argv, bootstrapContext?.trustProject)
   if (wakeArgv) {
-    await runWechatCliWithRetry(cliPath, wakeArgv)
+    await runWechatCliWithRetry(cliPath, wakeArgv, options)
   }
 
-  await runWechatCliWithRetry(cliPath, argv)
+  await runWechatCliWithRetry(cliPath, argv, options)
 }

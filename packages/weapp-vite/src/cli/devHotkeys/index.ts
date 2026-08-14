@@ -41,6 +41,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   let onKeypress: ((str: string, key: { name?: string, ctrl?: boolean } | undefined) => void) | undefined
   let onSigcont: (() => void) | undefined
   let currentAction: string | undefined
+  let actionStartedAt: number | undefined
   let lastAction: string | undefined
   let lastRenderedPanel = ''
   const recentInputs = new Map<string, string>()
@@ -147,11 +148,13 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   ) => {
     if (running) {
       const current = currentAction ?? '已有命令'
-      logger.warn(`[dev action] 当前正在${current.replace(REG_PENDING_PREFIX, '')}，请稍后再试。`)
+      const elapsed = actionStartedAt === undefined ? '' : `（已运行 ${Math.max(0, Date.now() - actionStartedAt)} ms）`
+      logger.warn(`[dev action] 当前正在${current.replace(REG_PENDING_PREFIX, '')}${elapsed}，已忽略重复请求。`)
       return
     }
 
     running = true
+    actionStartedAt = Date.now()
     currentAction = pendingLabel
     printHint()
     void action()
@@ -165,6 +168,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       })
       .finally(() => {
         running = false
+        actionStartedAt = undefined
         currentAction = undefined
         if (!closed) {
           printHint()
@@ -182,6 +186,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
 
     running = true
+    actionStartedAt = Date.now()
     currentAction = pendingLabel
     void action()
       .then((summary) => {
@@ -194,6 +199,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       })
       .finally(() => {
         running = false
+        actionStartedAt = undefined
         currentAction = undefined
       })
   }

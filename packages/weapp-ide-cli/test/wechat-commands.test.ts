@@ -93,6 +93,22 @@ describe('wechat command helpers', () => {
     expect(runWechatCliCommandMock).toHaveBeenCalledWith(['islogin'])
   })
 
+  it('supports non-interactive islogin probes', async () => {
+    const { isWechatIdeLoggedIn } = await import('../src/cli/wechat-commands')
+
+    await isWechatIdeLoggedIn({ nonInteractive: true })
+
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith(['islogin', '--non-interactive'])
+  })
+
+  it('supports silent islogin probes', async () => {
+    const { isWechatIdeLoggedIn } = await import('../src/cli/wechat-commands')
+
+    await isWechatIdeLoggedIn({ nonInteractive: true, silent: true })
+
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith(['islogin', '--non-interactive'], { silent: true })
+  })
+
   it('builds npm through official cli wrapper with normalized project path', async () => {
     const { buildWechatIdeNpm } = await import('../src/cli/wechat-commands')
 

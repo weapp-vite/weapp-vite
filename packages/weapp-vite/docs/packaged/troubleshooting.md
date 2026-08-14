@@ -37,6 +37,8 @@ weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index 
 weapp-vite ide logs --open
 ```
 
+如果 DevTools 未能自动连接，先运行 `wv ide doctor --json`。`wv open`、`wv dev -o` 和 `wv ide logs --open` 默认先通过官方 CLI 打开项目，再连接 automator；只有需要兼容旧链路时才使用 `--ide-open-strategy automator`。
+
 如果项目启用了 `weapp.forwardConsole.enabled = 'auto'`，AI 终端场景下 `dev --open` 也可能自动附加日志桥。
 
 ## `.vue` 文件存在，但提示未安装 `wevu`

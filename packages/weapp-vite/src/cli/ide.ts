@@ -28,7 +28,7 @@ export async function tryRunIdeCommand(argv: string[]) {
   }
 
   if (command === 'ide') {
-    if (argv[1] === 'logs') {
+    if (argv[1] === 'logs' || argv[1] === 'doctor' || argv[1] === '--help' || argv[1] === '-h') {
       return false
     }
     const handledByHelper = await dispatchWechatCliCommand(argv.slice(1))

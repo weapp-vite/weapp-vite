@@ -20,6 +20,7 @@ import {
 import { createInlineConfig, resolveRuntimeTargets } from '../runtime'
 import { closeIde as closeWechatIde } from './close'
 import {
+  formatWechatIdeAutomatorFailure,
   logWechatIdeRecoveryHint,
   logWechatIdeServicePortDisabledHint,
 } from './diagnostics'
@@ -48,6 +49,7 @@ export interface ResolvedIdeCommandContext {
 }
 
 export interface OpenIdeOptions {
+  openStrategy?: 'cli' | 'automator'
   trustProject?: boolean
   reuseOpenedProject?: boolean
   useAutomatorOpen?: boolean
@@ -153,6 +155,7 @@ async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIde
   if (options.reuseOpenedProject === false) {
     const reopened = await reopenOpenedWechatIde(projectPath, closeIde, {
       preserveProjectRoot,
+      trustProject: options.trustProject,
     })
     if (reopened) {
       return 'reopened'
@@ -162,6 +165,7 @@ async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIde
   const reuseResult = await tryReuseOpenedWechatIde(projectPath, closeIde, {
     preserveProjectRoot,
     promptReopen: options.reuseOpenedProject !== true,
+    trustProject: options.trustProject,
   })
   if (reuseResult?.reused) {
     return 'reused'
@@ -175,6 +179,7 @@ async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIde
 
   await openWechatIdeByAutomator(projectPath, {
     preserveProjectRoot,
+    trustProject: options.trustProject,
   })
   return 'opened'
 }
@@ -369,7 +374,7 @@ async function verifyOpenedWechatIdeProject(
     return stabilizeResult
   }
   if (options.useAutomatorOpen === false && servicePortEnabled !== false) {
-    return await prepareOpenedWechatIdeAutomatorSession(projectPath, options)
+    return await connectOpenedWechatIdeAutomatorSession(projectPath)
   }
   return stabilizeResult
 }
@@ -430,9 +435,11 @@ async function verifyAndRecoverOpenedWechatIdeProject(
 
 export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
   let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
-  const useAutomatorOpen = options.useAutomatorOpen === true
+  const openStrategy = options.openStrategy ?? (options.useAutomatorOpen === true ? 'automator' : 'cli')
+  const useAutomatorOpen = openStrategy === 'automator'
   const normalizedOptions: OpenIdeOptions = {
     ...options,
+    openStrategy,
     useAutomatorOpen,
   }
 
@@ -453,7 +460,7 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
     logWechatIdeServicePortDisabledHint(projectPath)
   }
 
-  if (platform === 'weapp' && projectPath && normalizedOptions.trustProject !== false && bootstrapResult?.servicePortEnabled !== false && useAutomatorOpen) {
+  if (platform === 'weapp' && projectPath && bootstrapResult?.servicePortEnabled !== false && useAutomatorOpen) {
     try {
       const openResult = await tryOpenWechatIdeByAutomator(projectPath, normalizedOptions)
       if (openResult === 'reused') {
@@ -475,7 +482,7 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
         logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
         logger.warn(formatAutomatorLoginError(error))
       }
-      logger.warn('通过 automator 启动微信开发者工具并自动信任项目失败，回退到普通 open 流程。')
+      logger.warn(`通过 automator 启动微信开发者工具失败，回退到普通 open 流程：${formatWechatIdeAutomatorFailure(error)}`)
       if (shouldLogAutomatorFallbackError()) {
         logger.error(error)
       }
