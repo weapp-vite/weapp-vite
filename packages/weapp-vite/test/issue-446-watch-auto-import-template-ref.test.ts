@@ -169,7 +169,7 @@ describe.sequential('issue #446 watch auto-import component template ref', () =>
       const pageSourcePath = path.resolve(cwd, 'src/pages/issue-446/index.vue')
 
       await waitForFileContains(pageOutputPath, 'issue-446-short-bind')
-      await waitForFileContains(pageJsonPath, '"ShortBindProbe": "/components/issue-446/ShortBindProbe/index"')
+      await waitForFileContains(pageJsonPath, '"short-bind-probe": "/components/issue-446/ShortBindProbe/index"')
 
       const initialPageOutput = await fs.readFile(pageOutputPath, 'utf8')
       const initialComputedExport = resolveComputedExportName(initialPageOutput)

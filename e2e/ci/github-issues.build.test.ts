@@ -484,13 +484,13 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(pageJs).toContain('issue-724-script-marker')
     expect(pageWxml).toContain('issue-724-template-marker')
-    expect(pageWxml).toContain('<Issue724RoutingProbe />')
+    expect(pageWxml).toContain('<issue724-routing-probe />')
     expect(pageWxss).toContain('.issue-724-page')
     expect(pageWxss).toContain('.issue-724-template-marker')
     expect(pageWxss).toContain('.issue-724-style-src')
     expect(pageWxss).not.toContain('.issue-724-component')
     expect(pageJson.usingComponents).toMatchObject({
-      Issue724RoutingProbe: '/components/issue-724/RoutingProbe/index',
+      'issue724-routing-probe': '/components/issue-724/RoutingProbe/index',
     })
 
     expect(componentJs).toContain('issue-724-component-script-marker')
@@ -514,6 +514,22 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(appPreludeJs).toContain('"fetch"')
     expect(appPreludeJs).toContain('"XMLHttpRequest"')
     expect(appPreludeJs).toContain('"URL"')
+  })
+
+  it('issue #806: emits PascalCase Vue components as kebab-case WXML tags and registrations', async () => {
+    await runBuild()
+
+    const pageWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-806/index.wxml'), 'utf8')
+    const pageJson = await fs.readJSON(path.join(DIST_ROOT, 'pages/issue-806/index.json')) as {
+      usingComponents?: Record<string, string>
+    }
+
+    expect(pageWxml).toContain('<pascal-card vue-slots="{{ {default:true} }}">issue-806</pascal-card>')
+    expect(pageWxml).not.toContain('<PascalCard')
+    expect(pageJson.usingComponents).toMatchObject({
+      'pascal-card': '/components/issue-806/PascalCard/index',
+    })
+    expect(pageJson.usingComponents).not.toHaveProperty('PascalCard')
   })
 
   it('discussion #338: emits mapped wxml tags from vue html-style templates', async () => {
@@ -629,9 +645,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
 
     expect(pageJson.usingComponents).toMatchObject({
-      Issue520ResolverSlotCard: '/components/issue-520/ResolverSlotCard/index',
+      'issue520-resolver-slot-card': '/components/issue-520/ResolverSlotCard/index',
     })
-    expect(pageWxml).toContain('Issue520ResolverSlotCard vue-slots="{{ {header:true,default:true} }}"')
+    expect(pageWxml).toContain('issue520-resolver-slot-card vue-slots="{{ {header:true,default:true} }}"')
     expect(pageWxml).not.toContain('vue-slots="{{{')
     expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).toContain('issue-520 resolver slot header')
@@ -653,13 +669,13 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const withExtComponentWxss = await fs.readFile(withExtComponentWxssPath, 'utf-8')
 
     expect(pageJson.usingComponents).toMatchObject({
-      Issue651ResolverNoExt: '/issue-fixtures/issue-651/ResolverNoExt/index',
-      Issue651ResolverWithExt: '/issue-fixtures/issue-651/ResolverWithExt/index',
+      'issue651-resolver-no-ext': '/issue-fixtures/issue-651/ResolverNoExt/index',
+      'issue651-resolver-with-ext': '/issue-fixtures/issue-651/ResolverWithExt/index',
     })
-    expect(pageWxml).toContain('Issue651ResolverNoExt vue-slots="{{ {default:true} }}"')
+    expect(pageWxml).toContain('issue651-resolver-no-ext vue-slots="{{ {default:true} }}"')
     expect(pageWxml).not.toContain('vue-slots="{{{')
     expect(pageWxml).not.toContain('vue-slots="{{ {[')
-    expect(pageWxml).toContain('Issue651ResolverWithExt')
+    expect(pageWxml).toContain('issue651-resolver-with-ext')
     expect(noExtComponentWxml).toContain('<slot />')
     expect(noExtComponentWxss).toContain('.issue651-no-ext')
     expect(withExtComponentWxss).toContain('.issue651-with-ext')
@@ -673,7 +689,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('Issue528SlotFallbackCard class="issue528-card-provided" vue-slots="{{ {header:true,default:true} }}"')
+    expect(pageWxml).toContain('issue528-slot-fallback-card class="issue528-card-provided" vue-slots="{{ {header:true,default:true} }}"')
     expect(pageWxml).not.toContain('vue-slots="{{{')
     expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).not.toContain('vue-slot-flags')
@@ -695,7 +711,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
     const providedProbe = pageWxml
-      .match(/<Issue530SlotFallbackProbe[^>]*\/>/g)
+      .match(/<issue530-slot-fallback-probe[^>]*\/>/g)
       ?.find(tag => tag.includes('class="issue530-card-provided"'))
     expect(providedProbe).toBeDefined()
     expect(providedProbe!).toContain('vue-slots=')
@@ -714,7 +730,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('BackList class="scoped-slot-outlet-fallback-card"')
+    expect(pageWxml).toContain('back-list class="scoped-slot-outlet-fallback-card"')
     expect(pageWxml).toContain('slot="main"')
     expect(pageWxml).toContain('slot="footer"')
     expect(pageWxml).not.toContain('generic:scoped-slots-main=')
@@ -734,7 +750,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('PlainSlotFallbackCard class="slot-fallback-off-card-provided" vue-slots="{{ {header:true,default:true} }}"')
+    expect(pageWxml).toContain('plain-slot-fallback-card class="slot-fallback-off-card-provided" vue-slots="{{ {header:true,default:true} }}"')
     expect(pageWxml).not.toContain('vue-slots="{{{')
     expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).not.toContain('generic:scoped-slots-')
@@ -789,7 +805,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
     const componentJs = await fs.readFile(componentJsPath, 'utf-8')
 
-    expect(pageWxml).toContain('<ModelArgumentProbe')
+    expect(pageWxml).toContain('<model-argument-probe')
     expect(pageWxml).toContain('abc="{{abc}}"')
     expect(pageWxml).toContain('modelValue="{{modelValue}}"')
     expect(pageWxml).toContain('bind:update-abc="__weapp_vite_inline"')
@@ -818,9 +834,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
 
     expect(pageJson.usingComponents).toMatchObject({
-      LoopSlotCell: '/components/issue-554/LoopSlotCell/index',
+      'loop-slot-cell': '/components/issue-554/LoopSlotCell/index',
     })
-    expect(pageWxml).toContain('LoopSlotCell')
+    expect(pageWxml).toContain('loop-slot-cell')
     expect(pageWxml).toContain('wx:for="{{items}}"')
     expect(pageWxml).toContain('wx:for-item="__wv_item_')
     expect(pageWxml).toContain('wx:key="key"')
@@ -843,7 +859,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(pageWxml).toContain('generic:scoped-slots-default=')
     expect(scopedSlotWxmlFiles).toContain('pages/issue-615/index.__scoped-slot-default-0.wxml')
-    expect(scopedSlotWxml).toContain('TabbarItem wx:for="{{__wv_bind_0}}"')
+    expect(scopedSlotWxml).toContain('tabbar-item wx:for="{{__wv_bind_0}}"')
     expect(scopedSlotWxml).not.toContain('wx:for="{{__wvOwner.list}}"')
     expect(scopedSlotWxml).toContain('data-issue615-label="{{item.label}}"')
     expect(scopedSlotWxml).toContain('{{item.label}}')
@@ -898,7 +914,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const scopedProbeWxml = await fs.readFile(scopedProbeWxmlPath, 'utf-8')
     const scopedProbeJs = await fs.readFile(scopedProbeJsPath, 'utf-8')
 
-    expect(pageWxml).toContain('Issue642SlotProbe')
+    expect(pageWxml).toContain('issue642-slot-probe')
     expect(pageWxml).toContain('vue-slots="{{ {header:true,default:true} }}"')
     expect(pageWxml).toContain('vue-slots="{{ {default:true} }}"')
     expect(pageWxml).not.toContain('vue-slots="{{{')
@@ -930,7 +946,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const slotProbeWxml = await fs.readFile(slotProbeWxmlPath, 'utf-8')
     const slotProbeJs = await fs.readFile(slotProbeJsPath, 'utf-8')
 
-    expect(pageWxml).toContain('Issue674SlotProbe')
+    expect(pageWxml).toContain('issue674-slot-probe')
     expect(pageWxml).toContain('vue-slots=')
     expect(pageWxml).toContain('header:true')
     expect(pageWxml).toContain('default:true')
@@ -1043,7 +1059,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('{{pageLabel}}')
     expect(pageWxml).toContain('{{pageTraceLabel}}')
     expect(pageWxml).toContain('{{pageEnvLabel}}')
-    expect(pageWxml).toContain('<SourceMapProbe />')
+    expect(pageWxml).toContain('<source-map-probe />')
     expect(pageJs).toContain('//#region src/pages/issue-475/index.vue')
     expect(pageJs).toContain('issue-475 page marker')
     expect(pageJs).toMatch(createCachedEnvLinePattern('pageEnv'))
@@ -1239,7 +1255,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(defaultIndex).toBeGreaterThanOrEqual(0)
     expect(footer1Index).toBeGreaterThan(defaultIndex)
     expect(footer2Index).toBeGreaterThan(footer1Index)
-    expect(pageWxml).toContain('VanCell vue-slots="{{ {footer1:true,footer2:true,default:true} }}"')
+    expect(pageWxml).toContain('van-cell vue-slots="{{ {footer1:true,footer2:true,default:true} }}"')
     expect(pageWxml).not.toContain('vue-slots="{{{')
     expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).toContain('<view slot="footer1" class="issue574-footer1" data-order="footer1" />')
@@ -1284,7 +1300,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const componentJs = await fs.readFile(componentJsPath, 'utf-8')
 
     expect(pageWxml).toContain('issue-590 no setup props computed style')
-    expect(pageJson.usingComponents?.SimpleBadge).toBe('/components/issue-590/SimpleBadge/index')
+    expect(pageJson.usingComponents?.['simple-badge']).toBe('/components/issue-590/SimpleBadge/index')
     expect(componentWxml).toContain('id="issue590-badge"')
     expect(componentWxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
     expect(componentWxml).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
@@ -1311,7 +1327,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const componentJs = await fs.readFile(componentJsPath, 'utf-8')
 
     expect(pageWxml).toContain('issue-599 data prop computed')
-    expect(pageJson.usingComponents?.DataPropProbe).toBe('/components/issue-599/DataPropProbe/index')
+    expect(pageJson.usingComponents?.['data-prop-probe']).toBe('/components/issue-599/DataPropProbe/index')
     expect(componentWxml).toContain('data-issue599-label="{{data.label}}"')
     expect(componentWxml).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
     expect(componentJs).toContain('allowNullPropInput: true')
@@ -1358,7 +1374,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const nativeComponentJs = await fs.readFile(nativeComponentJsPath, 'utf-8')
 
     expect(pageWxml).toContain('issue-627 reserved props')
-    expect(pageJson.usingComponents?.ReservedPropsProbe).toBe('/components/issue-627/ReservedPropsProbe/index')
+    expect(pageJson.usingComponents?.['reserved-props-probe']).toBe('/components/issue-627/ReservedPropsProbe/index')
     expect(pageJs).toContain('readProbe("#issue627-sfc-probe-literal")')
     expect(pageJs).toContain('readProbe("#issue627-sfc-probe-dynamic")')
     expect(pageWxml).toContain('class="issue-627-class-prop"')
@@ -1409,12 +1425,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('Issue597Card vue-slots="{{ {header:true} }}"')
+    expect(pageWxml).toContain('issue597-card vue-slots="{{ {header:true} }}"')
     expect(pageWxml).not.toContain('vue-slots="{{{')
     expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).toContain('<block wx:if="{{abc}}"><view slot="header" class="issue597-header-a" data-issue597-branch="if" /></block>')
     expect(pageWxml).toContain('<block wx:else><text slot="header" class="issue597-header-b" data-issue597-branch="else" /></block>')
-    expect(pageWxml).not.toContain('<text slot="header" class="issue597-header-b" data-issue597-branch="else" />\n</Issue597Card>')
+    expect(pageWxml).not.toContain('<text slot="header" class="issue597-header-b" data-issue597-branch="else" />\n</issue597-card>')
     expect(pageJs).toContain('_runE2E')
     expect(componentWxml).toContain('<slot name="header" />')
   })
@@ -1447,11 +1463,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const legacyForwarderJson = await fs.readJSON(legacyForwarderJsonPath) as { usingComponents?: Record<string, string> }
     const blockForwarderWxml = await fs.readFile(blockForwarderWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('<Issue613Card data-issue613-case="compiled-fragment"')
+    expect(pageWxml).toContain('<issue613-card data-issue613-case="compiled-fragment"')
     expect(pageWxml).toContain('<weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper>')
     expect(pageWxml).not.toContain('<slot slot="header"')
     expect(pageWxml).toContain('issue613-block-forwarder')
-    expect(forwarderWxml).toContain('<Issue613Card vue-slots="{{ {header:true,footer:true} }}"')
+    expect(forwarderWxml).toContain('<issue613-card vue-slots="{{ {header:true,footer:true} }}"')
     expect(forwarderWxml).not.toContain('vue-slots="{{{')
     expect(forwarderWxml).not.toContain('vue-slots="{{ {[')
     expect(forwarderWxml).toContain('<weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper>')
@@ -1553,15 +1569,15 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('generic:scoped-slots-default=')
     expect(pageWxml).toContain(SLOT_OWNER_ATTR)
     expect(pageJson.usingComponents).toMatchObject({
-      ScopedFlexHost: '/components/issue-521/ScopedFlexHost/index',
-      FlexItem: '/components/issue-521/FlexItem/index',
+      'scoped-flex-host': '/components/issue-521/ScopedFlexHost/index',
+      'flex-item': '/components/issue-521/FlexItem/index',
     })
     expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-521/index.__scoped-slot-default-0')
     expect(scopedSlotJson).toMatchObject({
       component: true,
       styleIsolation: 'apply-shared',
     })
-    expect(scopedSlotWxml).toContain('<FlexItem label="A" value="{{__wvSlotPropsData.xyz}}" /><FlexItem label="B" value="{{__wvSlotPropsData.xyz}}" />')
+    expect(scopedSlotWxml).toContain('<flex-item label="A" value="{{__wvSlotPropsData.xyz}}" /><flex-item label="B" value="{{__wvSlotPropsData.xyz}}" />')
     expect(await fs.readFile(scopedSlotWxmlPath.replace(/\.wxml$/, '.js'), 'utf-8')).toContain('createWevuScopedSlotComponent()')
     expect(hostWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
     expect(runtime.code).toContain('virtualHost')
@@ -1584,13 +1600,13 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('issue-510 augmented slot provide inject')
     expect(pageWxml).toContain('generic:scoped-slots-default=')
     expect(pageWxml).toContain(SLOT_OWNER_ATTR)
-    expect(pageWxml).not.toContain('<view class="issue510-wrapper"><AugmentedSlotLeaf /></view>')
+    expect(pageWxml).not.toContain('<view class="issue510-wrapper"><augmented-slot-leaf /></view>')
     expect(pageJson.usingComponents).toMatchObject({
-      AugmentedSlotHost: '/components/issue-510/AugmentedSlotHost/index',
-      AugmentedSlotLeaf: '/components/issue-510/AugmentedSlotLeaf/index',
+      'augmented-slot-host': '/components/issue-510/AugmentedSlotHost/index',
+      'augmented-slot-leaf': '/components/issue-510/AugmentedSlotLeaf/index',
     })
     expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-510/index.__scoped-slot-default-0')
-    expect(scopedSlotWxml).toContain('<view class="issue510-wrapper"><AugmentedSlotLeaf /></view>')
+    expect(scopedSlotWxml).toContain('<view class="issue510-wrapper"><augmented-slot-leaf /></view>')
     expect(hostWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
   })
 
@@ -1611,18 +1627,18 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(pageWxml).toContain('issue-547 nested augmented slot')
     expect(pageWxml).toContain('generic:scoped-slots-default=')
-    expect(pageWxml).not.toContain('<NestedSlotCell')
+    expect(pageWxml).not.toContain('<nested-slot-cell')
     expect(pageJson.usingComponents).toMatchObject({
-      NestedSlotGroup: '/components/issue-547/NestedSlotGroup/index',
-      NestedSlotCell: '/components/issue-547/NestedSlotCell/index',
-      NestedSlotImage: '/components/issue-547/NestedSlotImage/index',
+      'nested-slot-group': '/components/issue-547/NestedSlotGroup/index',
+      'nested-slot-cell': '/components/issue-547/NestedSlotCell/index',
+      'nested-slot-image': '/components/issue-547/NestedSlotImage/index',
     })
     expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-547/index.__scoped-slot-default-0')
-    expect(parentScopedSlotWxml).toContain('<NestedSlotCell generic:scoped-slots-default=')
-    expect(parentScopedSlotWxml).not.toContain('<NestedSlotImage')
+    expect(parentScopedSlotWxml).toContain('<nested-slot-cell generic:scoped-slots-default=')
+    expect(parentScopedSlotWxml).not.toContain('<nested-slot-image')
     expect(parentScopedSlotJson.componentGenerics).toBeUndefined()
     expect(Object.values(parentScopedSlotJson.usingComponents ?? {})).toContain('/pages/issue-547/index.__scoped-slot-default-1')
-    expect(childScopedSlotWxml).toContain('<NestedSlotImage />')
+    expect(childScopedSlotWxml).toContain('<nested-slot-image />')
   })
 
   it('issue #558: augmented scoped slot runtime bindings read owner proxy', async () => {
@@ -1671,13 +1687,13 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('generic:scoped-slots-header=')
     expect(pageWxml).toContain('generic:scoped-slots-footer=')
     expect(pageJson.usingComponents).toMatchObject({
-      'Cell': '/components/issue-558/Cell/index',
-      'DefaultScopedCell': '/components/issue-558/DefaultScopedCell/index',
-      'Issue558NestedSlotCell': '/components/issue-558/Issue558NestedSlotCell/index',
-      'Issue558NestedSlotGroup': '/components/issue-558/Issue558NestedSlotGroup/index',
+      'cell': '/components/issue-558/Cell/index',
+      'default-scoped-cell': '/components/issue-558/DefaultScopedCell/index',
+      'issue558-nested-slot-cell': '/components/issue-558/Issue558NestedSlotCell/index',
+      'issue558-nested-slot-group': '/components/issue-558/Issue558NestedSlotGroup/index',
       'issue-558-render-probe': '/components/issue-558/Issue558RenderProbe/index',
-      'ListScopedCell': '/components/issue-558/ListScopedCell/index',
-      'NamedSlotCard': '/components/issue-558/NamedSlotCard/index',
+      'list-scoped-cell': '/components/issue-558/ListScopedCell/index',
+      'named-slot-card': '/components/issue-558/NamedSlotCard/index',
     })
     expect(Object.values(pageJson.usingComponents ?? {}).some(value => value.startsWith('/pages/issue-558/index.__scoped-slot-'))).toBe(true)
     expect(scopedSlotFiles.length).toBeGreaterThanOrEqual(5)
@@ -2134,7 +2150,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('__wevuTemplateRefs')
     expect(pageJs).toContain('name: "nativeAnchor"')
     expect(pageJs).toContain('name: "shortBindProbe"')
-    expect(pageJson).toContain('"ShortBindProbe": "/components/issue-446/ShortBindProbe/index"')
+    expect(pageJson).toContain('"short-bind-probe": "/components/issue-446/ShortBindProbe/index"')
     expect(componentWxml).toContain('{{props.visible ? \'visible\' : \'hidden\'}}')
     expect(componentWxml).toContain('{{props.fooBar}}')
   })
@@ -2191,7 +2207,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(navPageJs).toContain('/pages/issue-289/root-class/index')
     expect(navPageJs).toContain('/pages/issue-289/computed-class/index')
 
-    expect(objectPageWxml).toContain('<ObjectLiteralExample')
+    expect(objectPageWxml).toContain('<object-literal-example')
     expect(objectPageWxml).toContain('show-list="{{controlState.showList}}"')
     expect(objectPageWxml).toContain('compact-mode="{{controlState.compactMode}}"')
     expect(objectPageWxml).toContain('active-id="{{activeId || \'\'}}"')
@@ -2209,7 +2225,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(objectPageJs).toContain('runE2E')
     expect(objectPageJs).toContain('showListRoundTripWorked')
 
-    expect(mapPageWxml).toContain('<MapClassExample')
+    expect(mapPageWxml).toContain('<map-class-example')
     expect(mapPageWxml).toContain('callout-expanded="{{controlState.calloutExpanded}}"')
     expect(mapPageWxml).toContain('show-callout-list="{{controlState.showCalloutList}}"')
     expect(mapPageWxml).toContain('selected-event-idx="{{controlState.selectedIndex}}"')
@@ -2228,7 +2244,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(mapPageJs).toContain('runE2E')
     expect(mapPageJs).toContain('showCalloutListChanged')
 
-    expect(rootPageWxml).toContain('<RootClassExample')
+    expect(rootPageWxml).toContain('<root-class-example')
     expect(rootPageWxml).toContain('show-options="{{controlState.showOptions}}"')
     expect(rootPageWxml).toContain('selected-option-id="{{selectedOptionId || \'\'}}"')
     expect(rootPageWxml).toContain('issue289-root-toggle-options')
@@ -2242,7 +2258,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(rootPageJs).toContain('runE2E')
     expect(rootPageJs).toContain('selectedIndexChanged')
 
-    expect(computedPageWxml).toContain('<ComputedClassExample')
+    expect(computedPageWxml).toContain('<computed-class-example')
     expect(computedPageWxml).toContain('source-enabled="{{controlState.sourceEnabled}}"')
     expect(computedPageWxml).toContain('show-items="{{controlState.showItems}}"')
     expect(computedPageWxml).toContain('selected-index="{{controlState.selectedIndex}}"')
@@ -2799,7 +2815,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const probeJs = await fs.readFile(probeJsPath, 'utf-8')
 
     expect(issuePageWxml).toContain('issue-328 setup ref prop first paint')
-    expect(issuePageWxml).toContain('ValueProbe')
+    expect(issuePageWxml).toContain('value-probe')
     expect(issuePageWxml).toContain('issue328-toggle')
     expect(issuePageWxml).toContain('toggle value: {{value1}}')
     expect(issuePageWxml).toContain('value="{{value1}}"')

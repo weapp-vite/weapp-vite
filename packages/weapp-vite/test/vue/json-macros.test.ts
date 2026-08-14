@@ -301,7 +301,7 @@ definePageJson({
       expect(jsonAsset).toBeDefined()
       expect(JSON.parse(jsonAsset!.source)).toEqual({
         usingComponents: {
-          X: '/from-import/x',
+          x: '/from-import/x',
         },
       })
     }

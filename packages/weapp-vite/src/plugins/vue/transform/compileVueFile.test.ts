@@ -40,7 +40,7 @@ describe('compileVueFile - auto import tags', () => {
     expect(result.config).toBeTruthy()
     expect(JSON.parse(result.config!)).toEqual({
       usingComponents: {
-        TButton: 'tdesign-miniprogram/button/button',
+        't-button': 'tdesign-miniprogram/button/button',
       },
     })
   })

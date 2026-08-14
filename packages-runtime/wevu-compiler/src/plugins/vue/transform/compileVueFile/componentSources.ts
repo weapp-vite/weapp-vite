@@ -10,6 +10,7 @@ import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '.
 import * as fs from '../../../../utils/fs'
 import { collectVueTemplateTags, isAutoImportCandidateTag } from '../../../../utils/vueTemplateTags'
 import { resolveWarnHandler } from '../../../../utils/warn'
+import { normalizeTemplateTagName } from '../../compiler/template/htmlTagMapping'
 
 type SfcDescriptorForCompile = Pick<SFCDescriptor, 'scriptSetup'>
 
@@ -62,13 +63,6 @@ function isWevuSfcComponent(result: ReturnType<typeof normalizeResolvedUsingComp
 
 function isVueSfcSource(source: string) {
   return source.endsWith('.vue')
-}
-
-function pascalToKebab(name: string) {
-  return name
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
-    .toLowerCase()
 }
 
 function kebabToCamel(name: string) {
@@ -222,7 +216,7 @@ function registerComponentName(result: ComponentSourceInfo, tag: string, compone
     return
   }
   result.componentNameMap[tag] = componentName
-  result.componentNameMap[pascalToKebab(tag)] = componentName
+  result.componentNameMap[normalizeTemplateTagName(tag)] = componentName
 }
 
 function registerMiniProgramComponentTag(result: ComponentSourceInfo, tag: string, isComponent: boolean) {
@@ -230,7 +224,7 @@ function registerMiniProgramComponentTag(result: ComponentSourceInfo, tag: strin
     return
   }
   result.miniProgramComponentTags.add(tag)
-  result.miniProgramComponentTags.add(pascalToKebab(tag))
+  result.miniProgramComponentTags.add(normalizeTemplateTagName(tag))
 }
 
 function createComponentSourceInfo(): ComponentSourceInfo {
@@ -400,7 +394,7 @@ async function collectScriptSetupUsingComponents(options: {
       }
       if (isVueSfcSource(importSource) || isWevuSfcComponent(resolved)) {
         result.wevuComponentTags.add(localName)
-        result.wevuComponentTags.add(pascalToKebab(localName))
+        result.wevuComponentTags.add(normalizeTemplateTagName(localName))
       }
       registerComponentName(result, localName, componentMeta.componentName)
       for (const tag of templateTags) {

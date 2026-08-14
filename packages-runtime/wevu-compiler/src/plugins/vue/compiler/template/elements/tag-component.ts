@@ -531,7 +531,7 @@ export function transformComponentWithSlots(
     }
     const mergedAttrs = [...extraAttrs, ...attrs]
     const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
-    const { tag } = node
+    const tag = resolveTemplateTagName(node.tag, context)
     return children
       ? `<${tag}${attrString}>${children}</${tag}>`
       : `<${tag}${attrString} />`
@@ -556,7 +556,7 @@ export function transformComponentWithSlots(
   for (const decl of scopedSlotDeclarations) {
     const slotKey = resolveSlotKey(context, decl.name)
     const { componentName } = createScopedSlotComponent(context, slotKey, decl.props, decl.children, transformNode, {
-      hostComponentName: node.tag,
+      hostComponentName: resolveTemplateTagName(node.tag, context),
     })
     slotNames.push({ name: stringifySlotName(decl.name, context), condition: decl.condition })
     slotGenericAttrs.push(`generic:scoped-slots-${slotKey}="${componentName}"`)
@@ -586,7 +586,7 @@ export function transformComponentWithSlots(
   }
 
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
-  const { tag } = node
+  const tag = resolveTemplateTagName(node.tag, context)
   const plainSlotContent = slotDirective
     ? plainSlotDeclarations
         .map(decl => renderSlotFallback(decl, context, transformNode, {
@@ -699,7 +699,7 @@ export function transformComponentWithSlotsFallback(
     }
     const mergedAttrs = [...extraAttrs, ...attrs]
     const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
-    const { tag } = node
+    const tag = resolveTemplateTagName(node.tag, context)
     return children
       ? `<${tag}${attrString}>${children}</${tag}>`
       : `<${tag}${attrString} />`
@@ -743,7 +743,7 @@ export function transformComponentWithSlotsFallback(
     )
   }
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
-  const { tag } = node
+  const tag = resolveTemplateTagName(node.tag, context)
   return renderedSlots
     ? `<${tag}${attrString}>${renderedSlots}</${tag}>`
     : `<${tag}${attrString} />`

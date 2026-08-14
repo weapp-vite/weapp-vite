@@ -3,6 +3,7 @@ import type { JsonMergeContext } from '../../../../types/json'
 import type { AutoImportTagsOptions, AutoUsingComponentsOptions, VueTransformResult } from './types'
 import { collectVueTemplateTags, isAutoImportCandidateTag } from '../../../../utils/vueTemplateTags'
 import { resolveWarnHandler } from '../../../../utils/warn'
+import { normalizeTemplateTagName } from '../../compiler/template/htmlTagMapping'
 import { compileConfigBlocks } from '../config'
 
 type JsonMerger = (
@@ -19,6 +20,18 @@ function collectTemplateAutoImportTags(template: string, filename: string, warn?
     warn: (message: string) => warnHandler(message),
     shouldCollect: isAutoImportCandidateTag,
   })
+}
+
+function normalizeUsingComponents(config: Record<string, any>) {
+  const raw = config.usingComponents
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return
+  }
+  const usingComponents: Record<string, any> = {}
+  for (const [name, from] of Object.entries(raw)) {
+    usingComponents[normalizeTemplateTagName(name)] = from
+  }
+  config.usingComponents = usingComponents
 }
 
 export async function compileConfigPhase(params: {
@@ -89,26 +102,31 @@ export async function compileConfigPhase(params: {
 
   if (shouldMergeUsingComponents) {
     const existingRaw = configObj?.usingComponents
-    const usingComponents: Record<string, string> = (existingRaw && typeof existingRaw === 'object' && !Array.isArray(existingRaw))
-      ? existingRaw
-      : {}
+    const usingComponents: Record<string, string> = {}
+    if (existingRaw && typeof existingRaw === 'object' && !Array.isArray(existingRaw)) {
+      for (const [name, from] of Object.entries(existingRaw)) {
+        usingComponents[normalizeTemplateTagName(name)] = from as string
+      }
+    }
 
     for (const [name, from] of Object.entries(autoImportTagsMap)) {
-      if (Reflect.has(usingComponents, name) && usingComponents[name] !== from) {
+      const normalizedName = normalizeTemplateTagName(name)
+      if (Reflect.has(usingComponents, normalizedName) && usingComponents[normalizedName] !== from) {
         autoImportTags?.warn?.(
-          `[Vue 编译] usingComponents 冲突：${filename} 中 <json>.usingComponents['${name}']='${usingComponents[name]}' 将被模板标签自动引入覆盖为 '${from}'`,
+          `[Vue 编译] usingComponents 冲突：${filename} 中 <json>.usingComponents['${normalizedName}']='${usingComponents[normalizedName]}' 将被模板标签自动引入覆盖为 '${from}'`,
         )
       }
-      usingComponents[name] = from
+      usingComponents[normalizedName] = from
     }
 
     for (const [name, from] of Object.entries(autoUsingComponentsMap)) {
-      if (Reflect.has(usingComponents, name) && usingComponents[name] !== from) {
+      const normalizedName = normalizeTemplateTagName(name)
+      if (Reflect.has(usingComponents, normalizedName) && usingComponents[normalizedName] !== from) {
         autoUsingComponents?.warn?.(
-          `[Vue 编译] usingComponents 冲突：${filename} 中 <json>.usingComponents['${name}']='${usingComponents[name]}' 将被 <script setup> 导入覆盖为 '${from}'`,
+          `[Vue 编译] usingComponents 冲突：${filename} 中 <json>.usingComponents['${normalizedName}']='${usingComponents[normalizedName]}' 将被 <script setup> 导入覆盖为 '${from}'`,
         )
       }
-      usingComponents[name] = from
+      usingComponents[normalizedName] = from
     }
 
     configObj = mergeJson(configObj ?? {}, { usingComponents }, 'auto-using-components')
@@ -131,6 +149,10 @@ export async function compileConfigPhase(params: {
 
   if (scriptSetupMacroConfig && Object.keys(scriptSetupMacroConfig).length > 0) {
     configObj = mergeJson(configObj ?? {}, scriptSetupMacroConfig, 'macro')
+  }
+
+  if (configObj) {
+    normalizeUsingComponents(configObj)
   }
 
   if (configObj && Object.keys(configObj).length > 0) {

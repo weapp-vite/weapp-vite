@@ -68,11 +68,18 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-function resolveComponentKey(platform: RuntimePlatform, name: string) {
+function resolveVueComponentKey(name: string) {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .toLowerCase()
+}
+
+function resolveNativeComponentKey(platform: RuntimePlatform, name: string) {
   if (platform !== 'alipay') {
     return name
   }
-  return name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+  return resolveVueComponentKey(name)
 }
 
 async function runBuild(root: string, platform: RuntimePlatform) {
@@ -374,9 +381,9 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
       expect(await fs.pathExists(nativeComponentJsonPath)).toBe(true)
       expect(await fs.pathExists(nativeComponentTemplatePath)).toBe(true)
 
-      const autoCardKey = resolveComponentKey(platform, 'AutoCard')
-      const nativeCardKey = resolveComponentKey(platform, 'NativeCard')
-      const resolverCardKey = resolveComponentKey(platform, 'ResolverCard')
+      const autoCardKey = resolveVueComponentKey('AutoCard')
+      const nativeCardKey = resolveVueComponentKey('NativeCard')
+      const resolverCardKey = resolveVueComponentKey('ResolverCard')
 
       const vuePageJson = await fs.readJson(vuePageJsonPath)
       expect(vuePageJson.usingComponents).toMatchObject({
@@ -388,8 +395,8 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
       const nativePageJson = await fs.readJson(nativePageJsonPath)
       if (platform !== 'alipay') {
         expect(nativePageJson.usingComponents).toMatchObject({
-          [nativeCardKey]: '/components/NativeCard/index',
-          [resolverCardKey]: '/components/NativeCard/index',
+          [resolveNativeComponentKey(platform, 'NativeCard')]: '/components/NativeCard/index',
+          [resolveNativeComponentKey(platform, 'ResolverCard')]: '/components/NativeCard/index',
         })
       }
       else {
@@ -517,7 +524,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
 
       try {
         const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
-        const autoCardKey = resolveComponentKey(platform, 'AutoCard')
+        const autoCardKey = resolveVueComponentKey('AutoCard')
         await devProcess.waitFor(
           waitForFileContains(pageJsonPath, ['"usingComponents"']),
           `${platform} initial usingComponents`,
@@ -640,7 +647,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
 
       try {
         const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
-        const autoCardKey = resolveComponentKey(platform, 'AutoCard')
+        const autoCardKey = resolveVueComponentKey('AutoCard')
         await devProcess.waitFor(
           waitForFileContains(pageJsonPath, ['"usingComponents"']),
           `${platform} crlf initial usingComponents`,
@@ -750,7 +757,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
 
       try {
         const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
-        const hotCardKey = resolveComponentKey(platform, 'HotCard')
+        const hotCardKey = resolveVueComponentKey('HotCard')
         await devProcess.waitFor(
           waitForFileContains(pageJsonPath, ['"usingComponents"']),
           `${platform} initial usingComponents`,

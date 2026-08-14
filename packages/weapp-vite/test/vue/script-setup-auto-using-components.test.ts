@@ -80,7 +80,7 @@ import Child from '../child/index.vue'
     expect(JSON.parse(jsonAsset!.source)).toEqual({
       component: true,
       usingComponents: {
-        Child: '/components/child/index',
+        child: '/components/child/index',
       },
     })
   })
@@ -124,7 +124,7 @@ import Child from '../child/index.vue'
     expect(JSON.parse(jsonAsset!.source)).toEqual({
       component: true,
       usingComponents: {
-        Child: '/components/child/index',
+        child: '/components/child/index',
       },
     })
 
