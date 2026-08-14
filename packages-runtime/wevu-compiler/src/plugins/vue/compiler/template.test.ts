@@ -68,6 +68,22 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('??')
   })
 
+  it('rewrites optional chaining nested in nullish coalescing bindings', () => {
+    const template = `
+<view>{{ a?.b?.d ?? 4 }}</view>
+<view>{{ a?.b?.d || 4 }}</view>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/issue-805/index.vue')
+
+    const normalized = code.replace(WHITESPACE_RE, '')
+    expect(normalized).not.toContain('?.')
+    expect(normalized).not.toContain('??')
+    expect(normalized).toContain('a==null?undefined:a.b==null?undefined:a.b.d')
+    expect(normalized).toContain('!=null?')
+    expect(normalized).toContain(':4')
+  })
+
   it('rewrites optional chaining in template expressions', () => {
     const template = `
 <view :title="routeMeta?.title || '首页'">{{ routeMeta?.group || '模块' }}</view>

@@ -457,6 +457,18 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(await fs.pathExists(path.join(ISSUE_793_DIST_ROOT, 'subs'))).toBe(false)
   })
 
+  it('issue #805: lowers optional chaining inside nullish coalescing expressions', async () => {
+    await runBuild()
+
+    const pageWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-805/index.wxml'), 'utf-8')
+
+    expect(pageWxml).not.toContain('?.')
+    expect(pageWxml).not.toContain('??')
+    expect(pageWxml).toContain('a==null?undefined:a.b==null?undefined:a.b.d')
+    expect(pageWxml).toContain('!=null?')
+    expect(pageWxml).toContain(':4')
+  })
+
   it('issue #724: keeps Vue SFC script, template, and style requests isolated', async () => {
     await runIssue724Build()
 

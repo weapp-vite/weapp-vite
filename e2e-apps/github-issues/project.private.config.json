@@ -701,6 +701,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-805/index",
+          "pathName": "pages/issue-805/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/issue-804/index",
           "pathName": "pages/issue-804/index",
           "query": "",
