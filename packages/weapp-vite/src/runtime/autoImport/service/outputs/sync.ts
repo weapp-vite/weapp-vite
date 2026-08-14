@@ -153,14 +153,13 @@ async function collectLayoutSyncState(ctx: MutableCompilerContext): Promise<Layo
       else {
         try {
           const source = await fs.readFile(full, 'utf8')
-          const inlineProps = extractInlinePropsTypeFromCode(source)
-          if (inlineProps.size > 0) {
-            propMap = inlineProps
-          }
-          else {
+          if (ext === '.vue') {
             propMap = extractVueComponentProps(source, full, {
               astEngine: resolveAstEngine(configService.weappViteConfig),
             })
+          }
+          else {
+            propMap = extractInlinePropsTypeFromCode(source)
           }
         }
         catch {

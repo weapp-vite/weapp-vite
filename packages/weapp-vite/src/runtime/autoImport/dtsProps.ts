@@ -1,6 +1,5 @@
 import type * as t from '@weapp-vite/ast/babelTypes'
 import type { ComponentPropMap } from '../componentProps'
-import { parse as parseSfc } from 'vue/compiler-sfc'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, generate, getVisitorKeys, parse, traverse } from '../../utils/babel'
 import { mapConstructorName } from '../utils/constructorType'
 
@@ -243,14 +242,8 @@ export function extractComponentPropsFromDts(code: string): ComponentPropMap {
 }
 
 export function extractInlinePropsTypeFromCode(code: string): ComponentPropMap {
-  const source = code.includes('<script')
-    ? (() => {
-        const parsed = parseSfc(code, { filename: 'layout.vue' })
-        return parsed.descriptor.scriptSetup?.content ?? parsed.descriptor.script?.content ?? code
-      })()
-    : code
   const props: ComponentPropMap = new Map()
-  const ast = parse(source, {
+  const ast = parse(code, {
     ...BABEL_TS_MODULE_PARSER_OPTIONS,
     errorRecovery: true,
   })
