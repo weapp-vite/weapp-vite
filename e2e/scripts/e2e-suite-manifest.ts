@@ -41,6 +41,7 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/react-runtime-spike.runtime.test.ts',
   'ide/stateful-hmr.runtime.test.ts',
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
+  'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'

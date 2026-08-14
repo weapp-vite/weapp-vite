@@ -64,7 +64,7 @@ describe.sequential('github-issues runtime web runtime globals', () => {
     )).join('\n')
 
     expect(pageWxml).toContain('id="issue804-page"')
-    expect(pageWxml).toContain('<Pressable')
+    expect(pageWxml).toContain('<pressable')
     expect(vendorJs).toContain('resolveMiniProgramPlatform')
     expect(vendorJs).not.toContain('request-globals-wevu-web-apis-fetch.js')
   })

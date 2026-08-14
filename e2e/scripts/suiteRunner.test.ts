@@ -361,6 +361,9 @@ describe('suiteRunner', () => {
     expect(templateTailwindTdesignHmrTask?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
+    expect(templateWevuTailwindTdesignHmrTask?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
     expect(ideFullLabels).toContain(IDE_GITHUB_ISSUES_AGGREGATE_LABEL)
     expect(ideGithubIssuesLabels).toEqual([
       IDE_GITHUB_ISSUES_AGGREGATE_LABEL,

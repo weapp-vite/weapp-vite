@@ -65,7 +65,7 @@ describe.sequential('e2e app: github-issues / issue #554', () => {
       ])
 
       const pageWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-554/index.wxml'), 'utf8')
-      expect(pageWxml).toContain('<LoopSlotCell')
+      expect(pageWxml).toContain('<loop-slot-cell')
       expect(pageWxml).toContain('vue-slots="{{__wv_bind_0[__wv_index_1]}}"')
       expect(pageWxml).toContain('class="issue554-image"')
       expect(pageWxml).toContain(`src="{{__wv_item_0.src}}"`)

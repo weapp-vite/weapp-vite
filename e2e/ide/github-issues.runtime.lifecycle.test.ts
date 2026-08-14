@@ -639,7 +639,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('foo-bar="{{fooBar}}"')
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('_runE2E')
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('issue-446-short-bind')
-    expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('"ShortBindProbe": "/components/issue-446/ShortBindProbe/index"')
+    expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('"short-bind-probe": "/components/issue-446/ShortBindProbe/index"')
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {

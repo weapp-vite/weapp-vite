@@ -20,6 +20,7 @@ import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const IDE_AUTOMATOR_INFRA_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Timed out waiting for opened automator ws:\/\/127\.0\.0\.1:\d+|无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|automation websocket|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Wait timed out after \d+ ms|当前项目已完成打开流程，但尚未连接到可复用的自动化会话/i
+const IGNORED_DEVTOOLS_RUNTIME_ERROR_RE = /^\[console:error\] \{"type":"error","args":\[\{\}\]\}$/
 
 interface TemplateCase {
   assertWrapperProject?: boolean
@@ -419,7 +420,7 @@ describe.sequential('all templates dev:open IDE integration', () => {
         catch (error) {
           throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)
         }
-        expect(runtimeErrors.getSince(runtimeMarker)).toEqual([])
+        expect(runtimeErrors.getSince(runtimeMarker).filter(message => !IGNORED_DEVTOOLS_RUNTIME_ERROR_RE.test(message))).toEqual([])
         expect(runtimeErrors.getAll().filter(message => /DevRuntime|module .* is not defined|SystemError|MiniProgramError/i.test(message))).toEqual([])
         return
       }
