@@ -453,6 +453,12 @@ function toRequireRequestPath(fromFileName: string, toFileName: string) {
   return relativePath.startsWith('.') ? relativePath : `./${relativePath}`
 }
 
+function isRequestGlobalsSupportChunkFileName(fileName: string) {
+  const baseName = path.basename(toPosixPath(fileName))
+  return baseName.startsWith('request-globals-')
+    || baseName === 'web-apis-shared.js'
+}
+
 function rewriteChunkRequireLiteral(
   chunk: OutputChunk,
   fromFileName: string,
@@ -690,7 +696,7 @@ export function collapseRequestGlobalsRuntimeSupportChunk(bundle: OutputBundle) 
     }
     if (
       resolvedImport === REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME
-      || (!resolvedImport.startsWith('request-globals-') && !resolvedImport.endsWith('web-apis-shared.js'))
+      || !isRequestGlobalsSupportChunkFileName(resolvedImport)
     ) {
       continue
     }

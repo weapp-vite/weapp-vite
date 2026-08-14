@@ -2215,6 +2215,63 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['app.js'].code).toContain('require("./weapp-vendors/request-globals-runtime.js")')
   })
 
+  it('collapses hashed web-apis support chunks and rewrites runtime consumers', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'weapp-vendors/request-globals-runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/request-globals-runtime.js',
+        code: 'const require_fetch = require("./request-globals-wevu-web-apis-fetch.js"); function installWebRuntimeGlobals(){return require_fetch} Object.defineProperty(exports,"installWebRuntimeGlobals",{get:function(){return installWebRuntimeGlobals}})',
+        imports: ['weapp-vendors/request-globals-wevu-web-apis-fetch.js'],
+        dynamicImports: [],
+      },
+      'weapp-vendors/request-globals-wevu-web-apis-fetch.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/request-globals-wevu-web-apis-fetch.js',
+        code: 'function resolveMiniProgramPlatform(){return "weapp"} Object.defineProperty(exports,"resolveMiniProgramPlatform",{get:function(){return resolveMiniProgramPlatform}})',
+        imports: [],
+        dynamicImports: [],
+      },
+      'weapp-vendors/wevu-reactivity.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-reactivity.js',
+        code: 'const require_fetch = require("./request-globals-wevu-web-apis-fetch.js"); require_fetch.resolveMiniProgramPlatform()',
+        imports: ['weapp-vendors/request-globals-wevu-web-apis-fetch.js'],
+        dynamicImports: [],
+      },
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'App({})',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['weapp-vendors/request-globals-wevu-web-apis-fetch.js']).toBeUndefined()
+    expect(bundle['weapp-vendors/request-globals-runtime.js'].code).toContain('resolveMiniProgramPlatform')
+    expect(bundle['weapp-vendors/wevu-reactivity.js'].code).toContain('require("./request-globals-runtime.js")')
+    expect(bundle['weapp-vendors/wevu-reactivity.js'].code).not.toContain('request-globals-wevu-web-apis-fetch.js')
+  })
+
   it('registers request globals installer chunks from app.js for page-only usage', async () => {
     const state = createState({
       subPackageMeta: null,
