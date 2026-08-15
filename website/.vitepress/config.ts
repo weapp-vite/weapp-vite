@@ -630,6 +630,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
 // https://github.com/emersonbottero/vitepress-plugin-mermaid/issues/47
 export default withMermaid(
   defineConfig({
+    lang: 'zh-CN',
     title: 'Weapp-vite',
     description:
       '面向小程序的现代工程化工具链，覆盖开发、构建、Vue SFC、Wevu、自动化、MCP 与多平台能力。',
