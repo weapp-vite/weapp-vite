@@ -2,15 +2,17 @@ import type { OutputChunk } from 'rolldown'
 import type { SharedChunkDuplicateDetail, SharedChunkRuntimeContext } from './types'
 import { Buffer } from 'node:buffer'
 import { posix as path } from 'pathe'
+import { applyMagicStringChunkRewrite } from '../../../../utils/outputChunk'
 import { resolveSubPackagePrefix } from '../../collector'
 import { SUB_PACKAGE_SHARED_DIR } from '../../constants'
 import {
   cloneSourceLike,
   collectSourceMapKeys,
   findSourceMapAsset,
+  resolveEncodedSourceMap,
   resolveSourceMapSource,
 } from '../../sourcemap'
-import { createChunkSourceFileNameCandidates, reserveUniqueFileName, rewriteChunkImportSpecifiersInCode } from '../rewrite'
+import { createChunkImportSpecifiersRewrite, createChunkSourceFileNameCandidates, reserveUniqueFileName } from '../rewrite'
 import { chunkReferencesRuntime } from '../runtime'
 
 export const ROLLDOWN_RUNTIME_FILE_NAME = 'rolldown-runtime.js'
@@ -75,7 +77,13 @@ export function rewriteDuplicatedChunkSource(args: {
   chunk: OutputChunk
 }) {
   const runtimeFileName = path.join(args.root, ROLLDOWN_RUNTIME_FILE_NAME)
-  let rewrittenSource = rewriteChunkImportSpecifiersInCode(args.chunk.code ?? '', {
+  const sourceMapKeys = collectSourceMapKeys(args.sourceFileName, args.chunk)
+  const sourceMapAssetInfo = findSourceMapAsset(args.runtimeContext.bundle, sourceMapKeys)
+  const rewrittenChunk = {
+    ...args.chunk,
+    map: resolveEncodedSourceMap(args.chunk.map, sourceMapAssetInfo?.asset.source),
+  }
+  const rewrite = createChunkImportSpecifiersRewrite(rewrittenChunk.code ?? '', {
     sourceFileNames: createChunkSourceFileNameCandidates(args.sourceFileName),
     targetFileName: args.targetFileName,
     imports: args.chunk.imports,
@@ -90,6 +98,7 @@ export function rewriteDuplicatedChunkSource(args: {
       })
     },
   })
+  applyMagicStringChunkRewrite(rewrittenChunk, rewrite)
 
   for (const specifier of [...args.chunk.imports, ...args.chunk.dynamicImports]) {
     const localizedSpecifier = ensureLocalizedDuplicate({
@@ -101,7 +110,7 @@ export function rewriteDuplicatedChunkSource(args: {
     if (!localizedSpecifier || localizedSpecifier === specifier) {
       continue
     }
-    rewrittenSource = rewriteChunkImportSpecifiersInCode(rewrittenSource, {
+    const localizedRewrite = createChunkImportSpecifiersRewrite(rewrittenChunk.code, {
       sourceFileName: args.targetFileName,
       targetFileName: args.targetFileName,
       imports: [specifier],
@@ -109,9 +118,10 @@ export function rewriteDuplicatedChunkSource(args: {
       runtimeFileName,
       resolveImportTarget: () => localizedSpecifier,
     })
+    applyMagicStringChunkRewrite(rewrittenChunk, localizedRewrite)
   }
 
-  return rewrittenSource
+  return rewrittenChunk
 }
 
 export function emitDuplicatedChunkAsset(args: {
@@ -132,7 +142,7 @@ export function emitDuplicatedChunkAsset(args: {
     return
   }
 
-  const duplicatedSource = rewriteDuplicatedChunkSource({
+  const duplicatedChunk = rewriteDuplicatedChunkSource({
     runtimeContext: args.runtimeContext,
     pendingLocalizedDuplicates: args.pendingLocalizedDuplicates,
     root: args.root,
@@ -143,18 +153,28 @@ export function emitDuplicatedChunkAsset(args: {
   args.runtimeContext.pluginContext.emitFile({
     type: 'asset',
     fileName: args.targetFileName,
-    source: duplicatedSource,
+    source: duplicatedChunk.code,
   })
 
   const sourceMapKeys = collectSourceMapKeys(args.sourceFileName, args.chunk)
   const sourceMapAssetInfo = findSourceMapAsset(args.runtimeContext.bundle, sourceMapKeys)
-  const resolvedSourceMap = resolveSourceMapSource(args.chunk.map, sourceMapAssetInfo?.asset.source)
-  if (resolvedSourceMap) {
+  const unchangedSourceMap = duplicatedChunk.code === args.chunk.code
+    ? resolveSourceMapSource(args.chunk.map, sourceMapAssetInfo?.asset.source)
+    : undefined
+  if (duplicatedChunk.map) {
     const sourceMapFileName = reserveUniqueFileName(args.runtimeContext.reservedFileNames, `${args.targetFileName}.map`)
     args.runtimeContext.pluginContext.emitFile({
       type: 'asset',
       fileName: sourceMapFileName,
-      source: cloneSourceLike(resolvedSourceMap),
+      source: JSON.stringify(duplicatedChunk.map),
+    })
+  }
+  else if (unchangedSourceMap) {
+    const sourceMapFileName = reserveUniqueFileName(args.runtimeContext.reservedFileNames, `${args.targetFileName}.map`)
+    args.runtimeContext.pluginContext.emitFile({
+      type: 'asset',
+      fileName: sourceMapFileName,
+      source: cloneSourceLike(unchangedSourceMap),
     })
   }
 

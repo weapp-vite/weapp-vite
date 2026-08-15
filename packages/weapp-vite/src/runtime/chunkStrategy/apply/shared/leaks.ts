@@ -2,11 +2,12 @@ import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import type { ChunkImporterIndex } from '../../bundle'
 import type { SharedChunkDuplicateDetail, SharedChunkDuplicatePayload } from './types'
 import { posix as path } from 'pathe'
+import { applyMagicStringChunkRewrite } from '../../../../utils/outputChunk'
 import { createChunkImporterIndex, findChunkImporters, updateImporters } from '../../bundle'
 import { resolveSubPackagePrefix } from '../../collector'
 import { SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from '../../constants'
-import { cloneSourceLike, collectSourceMapKeys, findSourceMapAsset, resolveSourceMapSource } from '../../sourcemap'
-import { reserveUniqueFileName, rewriteChunkImportSpecifiersInCode } from '../rewrite'
+import { cloneSourceLike, collectSourceMapKeys, findSourceMapAsset, resolveEncodedSourceMap, resolveSourceMapSource } from '../../sourcemap'
+import { createChunkImportSpecifiersRewrite, reserveUniqueFileName } from '../rewrite'
 import {
   buildDuplicateDiagnostics,
   createCrossSubPackageDuplicateBaseName,
@@ -73,7 +74,7 @@ export function localizeCrossSubPackageChunkLeaks(
     const chunk = output as OutputChunk
     const sourceMapKeys = collectSourceMapKeys(fileName, chunk)
     const sourceMapAssetInfo = findSourceMapAsset(bundle, sourceMapKeys)
-    const resolvedSourceMap = resolveSourceMapSource(chunk.map, sourceMapAssetInfo?.asset.source)
+    const resolvedSourceMap = resolveEncodedSourceMap(chunk.map, sourceMapAssetInfo?.asset.source)
     const importerToChunk = new Map<string, string>()
     const duplicates: SharedChunkDuplicateDetail[] = []
 
@@ -89,26 +90,42 @@ export function localizeCrossSubPackageChunkLeaks(
       })()
       const runtimeFileName = path.join(targetRoot, ROLLDOWN_RUNTIME_FILE_NAME)
       if (!existingDuplicateFileName) {
-        const duplicatedSource = rewriteChunkImportSpecifiersInCode(chunk.code ?? '', {
+        const duplicatedChunk = {
+          ...chunk,
+          map: resolvedSourceMap,
+        }
+        const rewrite = createChunkImportSpecifiersRewrite(duplicatedChunk.code ?? '', {
           sourceFileName: fileName,
           targetFileName: uniqueFileName,
           imports: chunk.imports,
           dynamicImports: chunk.dynamicImports,
           runtimeFileName,
         })
+        applyMagicStringChunkRewrite(duplicatedChunk, rewrite)
         this.emitFile({
           type: 'asset',
           fileName: uniqueFileName,
-          source: duplicatedSource,
+          source: duplicatedChunk.code,
         })
 
-        if (resolvedSourceMap) {
+        if (duplicatedChunk.map) {
           const sourceMapFileName = reserveUniqueFileName(reservedFileNames, `${uniqueFileName}.map`)
           this.emitFile({
             type: 'asset',
             fileName: sourceMapFileName,
-            source: cloneSourceLike(resolvedSourceMap),
+            source: JSON.stringify(duplicatedChunk.map),
           })
+        }
+        else if (duplicatedChunk.code === chunk.code) {
+          const unchangedSourceMap = resolveSourceMapSource(chunk.map, sourceMapAssetInfo?.asset.source)
+          if (unchangedSourceMap) {
+            const sourceMapFileName = reserveUniqueFileName(reservedFileNames, `${uniqueFileName}.map`)
+            this.emitFile({
+              type: 'asset',
+              fileName: sourceMapFileName,
+              source: cloneSourceLike(unchangedSourceMap),
+            })
+          }
         }
       }
 

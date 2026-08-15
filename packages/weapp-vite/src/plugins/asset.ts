@@ -17,7 +17,9 @@ import path from 'pathe'
 import picomatch from 'picomatch'
 import { defaultAssetExtensions, defaultExcluded } from '../defaults'
 import { resolveJson, WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER } from '../utils'
+import { applyOutputChunkTransform, replaceOutputChunkCode, resolveOutputChunkTransformCode } from '../utils/outputChunk'
 import { normalizePath, toPosixPath } from '../utils/path'
+import { normalizeEncodedSourceMapLike } from '../utils/sourcemap'
 import { emitAlipayGenericPlaceholderAssetsByBase, resolveWeappScopedSlotGenericPlaceholderBase } from './vue/transform/bundle/platform'
 import { injectScopedSlotHostPropertiesInJs } from './vue/transform/injectSetDataPick'
 
@@ -216,12 +218,24 @@ function patchScopedSlotHostAssetForBundle(
     if (typeof current !== 'string') {
       return false
     }
-    const next = withScopedSlotHostProperties(ctx, fileName, current)
-    if (next === current) {
+    const keys = getScopedSlotGenericKeys(ctx, fileName)
+    if (!keys?.size || ctx.configService.platform !== 'weapp' || current.includes(WEVU_SLOT_OWNER_ID_PROP)) {
       return false
     }
-    output.code = next
-    return true
+
+    const transformCode = resolveOutputChunkTransformCode(output)
+    const hasSourceMap = Boolean(normalizeEncodedSourceMapLike(output.map)) || transformCode !== current
+    const injected = injectScopedSlotHostPropertiesInJs(transformCode, { sourceMap: hasSourceMap })
+    if (injected.transformed) {
+      return applyOutputChunkTransform(output, injected.code, injected.map)
+    }
+
+    const propertySource = createScopedSlotHostPropertiesSource()
+    return replaceOutputChunkCode(
+      output,
+      /Component\(\s*\{/,
+      match => `${match[0]} properties: { ${propertySource} },`,
+    )
   }
 
   const current = output.source

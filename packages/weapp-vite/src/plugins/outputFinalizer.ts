@@ -13,6 +13,7 @@ import path from 'pathe'
 import { parseLogicalEntryId, parseSidecarModuleId } from '../moduleGraph/protocol'
 import { getWxmlPlatformTransformOptions } from '../platform'
 import { changeFileExtension } from '../utils'
+import { syncOutputChunkSourceMapAssets } from '../utils/outputChunk'
 import { resolveScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { handleWxml, scanWxml } from '../wxml'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
@@ -388,6 +389,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
         pruneUnchangedDevHmrOutputs(ctx, outputBundle, wevuRuntimeRewriteOptions, {
           runtimeRewriteDone: true,
         })
+        syncOutputChunkSourceMapAssets(outputBundle)
       },
     },
   }

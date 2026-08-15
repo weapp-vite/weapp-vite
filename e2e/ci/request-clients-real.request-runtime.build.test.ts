@@ -1,13 +1,16 @@
 import type { TestJsFormat } from '../utils/jsFormat'
+import { eachMapping, originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import {
   REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
   REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME,
 } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
+import MagicString from 'magic-string'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../packages/weapp-vite/src/runtime/config/internal/injectRequestGlobals'
+import { composeSourceMaps } from '../../packages/weapp-vite/src/utils/sourcemap'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { REQUEST_CLIENTS_REAL_NETWORK_DEFAULTS } from '../utils/requestClientsRealHostTraceRuntime'
 import { toRelativeImport } from '../utils/wevu-vendor'
@@ -68,7 +71,7 @@ function expectOneModuleReference(code: string, specifiers: string[]) {
   }) || code.includes(REQUEST_GLOBAL_APP_MODULE_EXPRESSION)).toBe(true)
 }
 
-async function runBuild(appRoot: string, label: string, jsFormat: TestJsFormat) {
+async function runBuild(appRoot: string, label: string, jsFormat: TestJsFormat, sourcemap = false) {
   const distRoot = path.join(appRoot, 'dist')
   await fs.remove(distRoot)
   await runWeappViteBuildWithLogCapture({
@@ -78,8 +81,34 @@ async function runBuild(appRoot: string, label: string, jsFormat: TestJsFormat) 
     cwd: appRoot,
     label: `ci:${label}:request-runtime:${jsFormat}`,
     jsFormat,
+    sourcemap,
   })
   return distRoot
+}
+
+function findGeneratedPosition(code: string, marker: string) {
+  const index = code.indexOf(marker)
+  expect(index).toBeGreaterThanOrEqual(0)
+  const lines = code.slice(0, index).split('\n')
+  return {
+    column: lines[lines.length - 1]?.length ?? 0,
+    line: lines.length,
+  }
+}
+
+function expectMarkerMapping(
+  traceMap: TraceMap,
+  generatedCode: string,
+  generatedMarker: string,
+  sourceFile: string,
+  sourceLines: string[],
+  sourceMarker = generatedMarker,
+) {
+  const expectedLine = sourceLines.findIndex(line => line.includes(sourceMarker)) + 1
+  const originalPosition = originalPositionFor(traceMap, findGeneratedPosition(generatedCode, generatedMarker))
+  expect(expectedLine).toBeGreaterThan(0)
+  expect(originalPosition.source?.replaceAll('\\', '/')).toContain(sourceFile)
+  expect(originalPosition.line).toBe(expectedLine)
 }
 
 async function resolveRuntimeChunkPath(distRoot: string) {
@@ -185,4 +214,48 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
       })
     }
   }
+
+  it('keeps native fetch page mappings valid through request globals and another map composition', async () => {
+    const testCase = CASES[1]
+    const distRoot = await runBuild(testCase.appRoot, testCase.label, 'cjs', true)
+    const sourceFile = 'src/pages/fetch/index.ts'
+    const sourceCode = await fs.readFile(path.join(testCase.appRoot, sourceFile), 'utf8')
+    const sourceLines = sourceCode.split('\n')
+    const pagePath = path.join(distRoot, 'pages/fetch/index.js')
+    const pageCode = await fs.readFile(pagePath, 'utf8')
+    const pageMap = JSON.parse(await fs.readFile(`${pagePath}.map`, 'utf8')) as Parameters<typeof TraceMap>[0]
+    const traceMap = new TraceMap(pageMap)
+    const markers = [
+      ['Page({', 'Page({'],
+      ['async runCase()', 'async runCase()'],
+      ['missing baseUrl', 'missing baseUrl'],
+      ['await fetch', 'const response = await fetch'],
+      ['async runE2E()', 'async runE2E()'],
+    ] as const
+
+    for (const [generatedMarker, sourceMarker] of markers) {
+      expectMarkerMapping(traceMap, pageCode, generatedMarker, sourceFile, sourceLines, sourceMarker)
+    }
+    eachMapping(traceMap, (mapping) => {
+      if (mapping.source?.replaceAll('\\', '/').includes(sourceFile) && mapping.originalLine != null) {
+        expect(mapping.originalLine).toBeLessThanOrEqual(sourceLines.length)
+      }
+    })
+
+    const platformRewrite = new MagicString(pageCode)
+    platformRewrite.prepend('const __platformProbe = "weapp"\n')
+    const platformCode = platformRewrite.toString()
+    const platformMap = platformRewrite.generateMap({
+      hires: true,
+      includeContent: true,
+      source: 'pages/fetch/index.js',
+    })
+    const composedMap = composeSourceMaps(platformMap as any, pageMap as any)
+    expect(composedMap).not.toBeNull()
+    const composedTraceMap = new TraceMap(composedMap as any)
+
+    for (const [generatedMarker, sourceMarker] of markers) {
+      expectMarkerMapping(composedTraceMap, platformCode, generatedMarker, sourceFile, sourceLines, sourceMarker)
+    }
+  })
 })

@@ -6,6 +6,7 @@ import type {
   SharedChunkRuntimeContext,
 } from './shared/types'
 import { posix as path } from 'pathe'
+import { applyMagicStringChunkRewrite } from '../../../utils/outputChunk'
 import { createChunkImporterIndex, findChunkImporters, removeChunkFromImporterIndex, updateImporters } from '../bundle'
 import { resolveSubPackagePrefix } from '../collector'
 import { SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from '../constants'
@@ -13,10 +14,11 @@ import {
   collectSourceMapKeys,
   emitSourceMapAsset,
   findSourceMapAsset,
+  resolveEncodedSourceMap,
   resolveSourceMapSource,
 } from '../sourcemap'
 import { consumeSharedChunkDiagnostics, hasForceDuplicateSharedChunks, isForceDuplicateSharedChunk } from '../state'
-import { createChunkSourceFileNameCandidates, reserveUniqueFileName, rewriteChunkImportSpecifiersInCode } from './rewrite'
+import { createChunkImportSpecifiersRewrite, createChunkSourceFileNameCandidates, reserveUniqueFileName } from './rewrite'
 import { localizeCrossSubPackageChunkLeaks } from './shared/leaks'
 import {
   buildDuplicateDiagnostics,
@@ -68,7 +70,6 @@ export function applySharedChunkStrategy(
 
     const originalSharedFileName = fileName
     const chunk = output as OutputChunk
-    const originalMap = chunk.map
     const importers = findChunkImporters(bundle, fileName, importerIndex)
     if (importers.length === 0) {
       continue
@@ -76,7 +77,10 @@ export function applySharedChunkStrategy(
 
     const sourceMapKeys = collectSourceMapKeys(fileName, chunk)
     const sourceMapAssetInfo = findSourceMapAsset(bundle, sourceMapKeys)
-    const resolvedSourceMap = resolveSourceMapSource(originalMap, sourceMapAssetInfo?.asset.source)
+    const resolvedSourceMap = resolveEncodedSourceMap(chunk.map, sourceMapAssetInfo?.asset.source)
+    if (resolvedSourceMap) {
+      chunk.map = resolvedSourceMap as any
+    }
     const importerMap = new Map<string, { newFileName: string, importers: string[] }>()
     const mainImporters: string[] = []
     let hasMainImporter = false
@@ -114,19 +118,25 @@ export function applySharedChunkStrategy(
       let finalFileName = chunk.fileName
       if (fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
         const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
-        chunk.code = rewriteChunkImportSpecifiersInCode(chunk.code ?? '', {
+        const rewrite = createChunkImportSpecifiersRewrite(chunk.code ?? '', {
           sourceFileNames: createChunkSourceFileNameCandidates(fileName),
           targetFileName: newFileName,
           imports: chunk.imports,
           dynamicImports: chunk.dynamicImports,
           runtimeFileName: ROLLDOWN_RUNTIME_FILE_NAME,
         })
+        const codeRewritten = applyMagicStringChunkRewrite(chunk, rewrite)
         chunk.fileName = newFileName
         if (typeof chunk.sourcemapFileName === 'string' && chunk.sourcemapFileName) {
           chunk.sourcemapFileName = `${newFileName}.map`
         }
         const targetKey = `${newFileName}.map`
-        emitSourceMapAsset(this, targetKey, sourceMapAssetInfo, resolvedSourceMap)
+        emitSourceMapAsset(
+          this,
+          targetKey,
+          codeRewritten ? undefined : sourceMapAssetInfo,
+          resolveSourceMapSource(chunk.map, undefined),
+        )
         for (const mapKey of sourceMapKeys) {
           if (!mapKey || mapKey === targetKey) {
             continue
@@ -155,19 +165,25 @@ export function applySharedChunkStrategy(
 
     if (shouldRetainOriginalChunk && fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
       const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
-      chunk.code = rewriteChunkImportSpecifiersInCode(chunk.code ?? '', {
+      const rewrite = createChunkImportSpecifiersRewrite(chunk.code ?? '', {
         sourceFileNames: createChunkSourceFileNameCandidates(fileName),
         targetFileName: newFileName,
         imports: chunk.imports,
         dynamicImports: chunk.dynamicImports,
         runtimeFileName: ROLLDOWN_RUNTIME_FILE_NAME,
       })
+      const codeRewritten = applyMagicStringChunkRewrite(chunk, rewrite)
       chunk.fileName = newFileName
       if (typeof chunk.sourcemapFileName === 'string' && chunk.sourcemapFileName) {
         chunk.sourcemapFileName = `${newFileName}.map`
       }
       const targetKey = `${newFileName}.map`
-      emitSourceMapAsset(this, targetKey, sourceMapAssetInfo, resolvedSourceMap)
+      emitSourceMapAsset(
+        this,
+        targetKey,
+        codeRewritten ? undefined : sourceMapAssetInfo,
+        resolveSourceMapSource(chunk.map, undefined),
+      )
       for (const mapKey of sourceMapKeys) {
         if (!mapKey || mapKey === targetKey) {
           continue

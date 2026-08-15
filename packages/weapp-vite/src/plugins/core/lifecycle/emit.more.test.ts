@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
+import { eachMapping, originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import {
   APP_PRELUDE_CHUNK_MARKER,
   APP_PRELUDE_GUARD_KEY,
@@ -1808,6 +1808,97 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var URL = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.URL`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var WebSocket = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.WebSocket`)
+  })
+
+  it('preserves native page sourcemaps through the complete request globals hook', async () => {
+    const source = 'src/pages/request-globals/fetch.ts'
+    const pageSource = [
+      'const baseUrl = getBaseUrl()',
+      'async function runCase() {',
+      '  if (!baseUrl) throw new Error("missing baseUrl")',
+      '  const response = await fetch(baseUrl + "/get")',
+      '  return response.status',
+      '}',
+      'Page({',
+      '  async _runE2E() {',
+      '    return runCase()',
+      '  },',
+      '})',
+    ].join('\n')
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/request-globals/fetch.js': {
+        type: 'chunk',
+        fileName: 'pages/request-globals/fetch.js',
+        code: `const common = require("../../common.js")\n${pageSource}`,
+        map: new MagicString(`const common = require("../../common.js")\n${pageSource}`).generateMap({
+          hires: true,
+          includeContent: true,
+          source,
+        }),
+        imports: ['common.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const pageChunk = bundle['pages/request-globals/fetch.js']
+    const traceMap = new TraceMap(pageChunk.map)
+    const sourceLines = (`const common = require("../../common.js")\n${pageSource}`).split('\n')
+    const markers = [
+      'const baseUrl',
+      'async function runCase',
+      'missing baseUrl',
+      'await fetch',
+      'Page({',
+      'async _runE2E',
+    ]
+    for (const marker of markers) {
+      const generatedIndex = pageChunk.code.indexOf(marker)
+      const generatedPrefix = pageChunk.code.slice(0, generatedIndex).split('\n')
+      const expectedLine = sourceLines.findIndex(line => line.includes(marker)) + 1
+      const originalPosition = originalPositionFor(traceMap, {
+        column: generatedPrefix[generatedPrefix.length - 1]?.length ?? 0,
+        line: generatedPrefix.length,
+      })
+      expect(generatedIndex).toBeGreaterThanOrEqual(0)
+      expect(expectedLine).toBeGreaterThan(0)
+      expect(originalPosition.source).toBe(source)
+      expect(originalPosition.line).toBe(expectedLine)
+    }
+
+    eachMapping(traceMap, (mapping) => {
+      if (mapping.source === source && mapping.originalLine != null) {
+        expect(mapping.originalLine).toBeLessThanOrEqual(sourceLines.length)
+      }
+    })
   })
 
   it('creates a private installer export for bundled runtime chunks when the installer is not publicly exported', async () => {

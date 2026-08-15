@@ -13,6 +13,7 @@ import { transformWithOxc } from 'vite'
 import { toPosixPath } from '../../../../utils'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { changeFileExtension } from '../../../../utils/file'
+import { applyMagicStringChunkRewrite } from '../../../../utils/outputChunk'
 import { replaceImportMetaAccess } from '../transform/importMeta'
 import {
   APP_PRELUDE_CHUNK_MARKER,
@@ -30,7 +31,6 @@ import {
   createRequestGlobalsPreludeCode,
   resolveRequestGlobalsInstallerImport,
 } from './requestGlobals'
-import { applyMagicStringChunkRewrite } from './rewrite/sourcemap'
 
 interface ResolvedAppPreludeOptions {
   enabled: boolean

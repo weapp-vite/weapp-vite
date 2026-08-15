@@ -564,7 +564,18 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     ms.prepend(`import '${styleImport}';\n`)
   }
 
-  return {
+  const result: {
+    code: string
+    map?: ReturnType<MagicString['generateMap']>
+  } = {
     code: ms.toString(),
   }
+  if (configService.inlineConfig?.build?.sourcemap) {
+    result.map = ms.generateMap({
+      hires: true,
+      includeContent: true,
+      source: id,
+    })
+  }
+  return result
 }

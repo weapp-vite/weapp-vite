@@ -25,6 +25,13 @@ import {
 import { toPosixPath } from '../../../../utils'
 import { generate, parseJsLike, traverse } from '../../../../utils/babel'
 import {
+  appendOutputChunkCode,
+  editOutputChunkCode,
+  prependOutputChunkCode,
+  replaceOutputChunkCode,
+  replaceOutputChunkCodeRanges,
+} from '../../../../utils/outputChunk'
+import {
   AXIOS_MODULE_ID_RE,
   REQUEST_GLOBAL_ENTRY_NAME_RE,
   REQUEST_GLOBAL_EXPORT_RE,
@@ -258,7 +265,10 @@ export function injectRequestGlobalsBundleRuntime(
       ...bindingTargets.map(target => `try{globalThis[${JSON.stringify(target)}]=${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}}catch{}`),
     ].join(';')
     const bundlePrelude = `/* ${REQUEST_GLOBAL_BUNDLE_MARKER} */ ${passiveBindingsCode ? `${passiveBindingsCode}\n` : ''}`
-    chunk.code = `${bundlePrelude}${syntheticExportCode}${chunk.code}\n;${runtimeBindingCode};\n`
+    editOutputChunkCode(chunk, (magicString) => {
+      magicString.prepend(`${bundlePrelude}${syntheticExportCode}`)
+      magicString.append(`\n;${runtimeBindingCode};\n`)
+    })
   }
 
   return installerChunks
@@ -303,7 +313,7 @@ export function injectRequestGlobalsPassiveBindings(
     if (!passiveBindingsCode) {
       continue
     }
-    chunk.code = `/* ${REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER} */ ${passiveBindingsCode}\n${chunk.code}`
+    prependOutputChunkCode(chunk, `/* ${REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER} */ ${passiveBindingsCode}\n`)
   }
 }
 
@@ -340,7 +350,7 @@ export function injectRequestGlobalsLocalBindings(
       continue
     }
     const inlineInstallerName = resolveRequestGlobalsInstallerName(chunk.code)
-    const firstRequireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)
+    const firstRequireMatch = chunk.code.matchAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE).next().value
     let requireImportLiteral: string | null = null
     let exportName: string | undefined
     for (const requireMatch of chunk.code.matchAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)) {
@@ -367,7 +377,7 @@ export function injectRequestGlobalsLocalBindings(
       if (!passiveBindingsCode) {
         continue
       }
-      chunk.code = `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ ${passiveBindingsCode}\n${chunk.code}`
+      prependOutputChunkCode(chunk, `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ ${passiveBindingsCode}\n`)
       continue
     }
     const injectionCode = [
@@ -380,11 +390,20 @@ export function injectRequestGlobalsLocalBindings(
       ...bindingTargets.map(target => `try{globalThis[${JSON.stringify(target)}]=${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}}catch{}`),
       ...bindingTargets.map(target => `var ${target} = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
     ].join(';')
-    if (inlineInstallerName && firstRequireMatch?.[0]) {
-      chunk.code = `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ ${chunk.code.replace(firstRequireMatch[0], match => `${match};${injectionCode}`)}\n`
+    if (inlineInstallerName && firstRequireMatch?.[0] && typeof firstRequireMatch.index === 'number') {
+      const firstRequireIndex = firstRequireMatch.index
+      editOutputChunkCode(chunk, (magicString) => {
+        magicString.prepend(`/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ `)
+        magicString.overwrite(
+          firstRequireIndex,
+          firstRequireIndex + firstRequireMatch[0].length,
+          `${firstRequireMatch[0]};${injectionCode}`,
+        )
+        magicString.append('\n')
+      })
       continue
     }
-    chunk.code = `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ ${injectionCode};\n${chunk.code}`
+    prependOutputChunkCode(chunk, `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ ${injectionCode};\n`)
   }
 }
 
@@ -464,27 +483,20 @@ function rewriteChunkRequireLiteral(
   fromFileName: string,
   toFileName: string,
 ) {
-  let didRewrite = false
-  const nextCode = chunk.code.replaceAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE, (...args) => {
-    const match = args[0] as string
-    const requireLiteral = args[2] as string | undefined
-    const importee = (args[3] ?? args[4] ?? args[5]) as string | undefined
+  replaceOutputChunkCode(chunk, REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE, (match) => {
+    const requireLiteral = match[2]
+    const importee = match[3] ?? match[4] ?? match[5]
     if (!requireLiteral || !importee) {
-      return match
+      return undefined
     }
 
     const resolvedImport = normalizeRelativeChunkImport(chunk.fileName, importee)
     if (resolvedImport !== fromFileName) {
-      return match
+      return undefined
     }
 
-    didRewrite = true
-    return match.replace(requireLiteral, JSON.stringify(toRequireRequestPath(chunk.fileName, toFileName)))
+    return match[0].replace(requireLiteral, JSON.stringify(toRequireRequestPath(chunk.fileName, toFileName)))
   })
-
-  if (didRewrite) {
-    chunk.code = nextCode
-  }
 }
 
 function hasBareRequireRegistration(code: string, requirePath: string) {
@@ -524,21 +536,17 @@ function rewriteChunkRequireCallsToExpression(
   targetFileName: string,
   expression: string,
 ) {
-  let didRewrite = false
-  const nextCode = rewriteRequireCallLiterals(chunk.code, (_requireLiteral, importee) => {
+  return replaceOutputChunkCode(chunk, REQUEST_GLOBAL_REQUIRE_CALL_RE, (match) => {
+    const importee = match[2] ?? match[3] ?? match[4]
+    if (!importee) {
+      return undefined
+    }
     const resolvedImport = normalizeRelativeChunkImport(chunk.fileName, importee)
     if (resolvedImport !== targetFileName) {
       return undefined
     }
-
-    didRewrite = true
     return expression
   })
-
-  if (didRewrite) {
-    chunk.code = nextCode
-  }
-  return didRewrite
 }
 
 function createRequestGlobalsStaticImportReplacement(node: any, expression: string) {
@@ -623,12 +631,14 @@ function rewriteChunkStaticImportsToExpression(
       return false
     }
 
-    let nextCode = chunk.code
-    for (const replacement of replacements.sort((left, right) => right.start - left.start)) {
-      nextCode = `${nextCode.slice(0, replacement.start)}${replacement.value}${nextCode.slice(replacement.end)}`
-    }
-    chunk.code = nextCode
-    return true
+    return replaceOutputChunkCodeRanges(
+      chunk,
+      replacements.map(replacement => ({
+        content: replacement.value,
+        end: replacement.end,
+        start: replacement.start,
+      })),
+    )
   }
   catch {
     return false
@@ -717,25 +727,35 @@ export function collapseRequestGlobalsRuntimeSupportChunk(bundle: OutputBundle) 
 
   const supportModuleRef = '__wvRGS__'
   const supportRequireIdentifier = runtimeRequireMatch[1]
-  runtimeOutput.code = runtimeOutput.code.replace(
-    runtimeRequireMatch[0],
-    `${supportRequireIdentifier} = ${supportModuleRef}`,
-  )
-  runtimeOutput.code = [
-    `const ${supportModuleRef} = (() => {`,
-    '  const module = { exports: {} }',
-    '  const exports = module.exports',
-    String((supportChunk as OutputChunk).code),
-    '  return module.exports',
-    '})();',
-    runtimeOutput.code,
-    `for (const __wvRGK__ in ${supportModuleRef}) {`,
-    '  if (__wvRGK__ in exports) {',
-    '    continue',
-    '  }',
-    `  Object.defineProperty(exports, __wvRGK__, { enumerable: true, get: () => ${supportModuleRef}[__wvRGK__] })`,
-    '}',
-  ].join('\n')
+  editOutputChunkCode(runtimeOutput, (magicString) => {
+    const runtimeRequireIndex = runtimeRequireMatch.index
+    if (typeof runtimeRequireIndex !== 'number') {
+      return
+    }
+    magicString.overwrite(
+      runtimeRequireIndex,
+      runtimeRequireIndex + runtimeRequireMatch[0].length,
+      `${supportRequireIdentifier} = ${supportModuleRef}`,
+    )
+    magicString.prepend([
+      `const ${supportModuleRef} = (() => {`,
+      '  const module = { exports: {} }',
+      '  const exports = module.exports',
+      String((supportChunk as OutputChunk).code),
+      '  return module.exports',
+      '})();',
+      '',
+    ].join('\n'))
+    magicString.append([
+      '',
+      `for (const __wvRGK__ in ${supportModuleRef}) {`,
+      '  if (__wvRGK__ in exports) {',
+      '    continue',
+      '  }',
+      `  Object.defineProperty(exports, __wvRGK__, { enumerable: true, get: () => ${supportModuleRef}[__wvRGK__] })`,
+      '}',
+    ].join('\n'))
+  })
 
   delete bundle[supportChunkFileName]
 
@@ -780,7 +800,7 @@ export function injectRequestGlobalsAppRegistration(
   if (requireStatements.length === 0) {
     return
   }
-  appChunk.code = `${requireStatements.join('\n')}\n${appChunk.code}`
+  prependOutputChunkCode(appChunk, `${requireStatements.join('\n')}\n`)
 }
 
 export function inlineRequestGlobalsAppRegisteredInstallerChunks(
@@ -857,7 +877,7 @@ export function inlineRequestGlobalsAppRegisteredInstallerChunks(
   if (inlinedModules.length === 0) {
     return
   }
-  appChunk.code = `${inlinedModules.join('\n')}\n${appChunk.code}`
+  prependOutputChunkCode(appChunk, `${inlinedModules.join('\n')}\n`)
 }
 
 export function createRequestGlobalsPreludeCode(
@@ -992,6 +1012,6 @@ export function injectAxiosFetchAdapterEnv(bundle: OutputBundle) {
     if (!isAxiosChunk) {
       continue
     }
-    chunk.code = `${chunk.code}\n${axiosEnvPatchCode}`
+    appendOutputChunkCode(chunk, `\n${axiosEnvPatchCode}`)
   }
 }

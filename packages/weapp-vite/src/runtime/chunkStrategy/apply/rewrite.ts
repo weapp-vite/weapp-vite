@@ -1,4 +1,5 @@
 /* eslint-disable ts/no-use-before-define */
+import MagicString from 'magic-string'
 import { posix as path } from 'pathe'
 import { SHARED_CHUNK_VIRTUAL_PREFIX } from '../constants'
 
@@ -44,10 +45,18 @@ export function rewriteChunkImportSpecifiersInCode(
     resolveImportTarget?: (specifier: string) => string | undefined
   },
 ) {
+  return createChunkImportSpecifiersRewrite(sourceCode, options).toString()
+}
+
+export function createChunkImportSpecifiersRewrite(
+  sourceCode: string,
+  options: Parameters<typeof rewriteChunkImportSpecifiersInCode>[1],
+) {
   const { sourceFileName, sourceFileNames, targetFileName, imports, dynamicImports, runtimeFileName, resolveImportTarget } = options
   const sourceFileNameCandidates = (sourceFileNames ?? [sourceFileName ?? '']).filter(Boolean)
   const specifiers = new Set([...imports, ...dynamicImports].filter(Boolean))
-  let rewrittenCode = sourceCode
+  const magicString = new MagicString(sourceCode)
+  const rewrittenRanges = new Set<string>()
   for (const specifier of specifiers) {
     const resolvedTargetSpecifier = path.basename(specifier) === ROLLDOWN_RUNTIME_FILE_NAME
       ? runtimeFileName
@@ -61,10 +70,16 @@ export function rewriteChunkImportSpecifiersInCode(
       if (!sourceImportPath || sourceImportPath === targetImportPath) {
         continue
       }
-      rewrittenCode = replaceQuotedImportLiteralValue(rewrittenCode, sourceImportPath, targetImportPath)
+      replaceQuotedImportLiteralValue(
+        magicString,
+        sourceCode,
+        sourceImportPath,
+        targetImportPath,
+        rewrittenRanges,
+      )
     }
   }
-  return rewrittenCode
+  return magicString
 }
 
 function resolveChunkSourceFileNameForRewrite(fileName: string) {
@@ -74,12 +89,28 @@ function resolveChunkSourceFileNameForRewrite(fileName: string) {
   return fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
 }
 
-function replaceQuotedImportLiteralValue(sourceCode: string, sourcePath: string, targetPath: string) {
+function replaceQuotedImportLiteralValue(
+  magicString: MagicString,
+  sourceCode: string,
+  sourcePath: string,
+  targetPath: string,
+  rewrittenRanges: Set<string>,
+) {
   const escapedSourcePath = escapeRegExpForPattern(sourcePath)
-  return sourceCode.replace(
-    new RegExp(`(['"\`])${escapedSourcePath}\\1`, 'g'),
-    (_match, quote: string) => `${quote}${targetPath}${quote}`,
-  )
+  const pattern = new RegExp(`(['"\`])${escapedSourcePath}\\1`, 'g')
+  for (const match of sourceCode.matchAll(pattern)) {
+    if (typeof match.index !== 'number') {
+      continue
+    }
+    const end = match.index + match[0].length
+    const rangeKey = `${match.index}:${end}`
+    if (rewrittenRanges.has(rangeKey)) {
+      continue
+    }
+    const quote = match[1]
+    magicString.overwrite(match.index, end, `${quote}${targetPath}${quote}`)
+    rewrittenRanges.add(rangeKey)
+  }
 }
 
 function escapeRegExpForPattern(value: string) {
