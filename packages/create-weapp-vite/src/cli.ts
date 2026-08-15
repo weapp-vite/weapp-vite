@@ -19,6 +19,10 @@ const TEMPLATE_CHOICES: Array<{ name: string, value: TemplateName }> = [
     value: TemplateName.multiPlatform,
   },
   {
+    name: 'Vue SFC 多平台 + Web 模板',
+    value: TemplateName.multiPlatformSfc,
+  },
+  {
     name: 'Wevu 模板 (Vue SFC)',
     value: TemplateName.wevu,
   },

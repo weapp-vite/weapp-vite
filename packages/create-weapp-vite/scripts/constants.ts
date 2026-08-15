@@ -10,6 +10,10 @@ export const Templates = [
     dest: TemplateName.multiPlatform,
   },
   {
+    target: 'weapp-vite-multi-platform-sfc-template',
+    dest: TemplateName.multiPlatformSfc,
+  },
+  {
     target: 'weapp-vite-plugin-template',
     dest: TemplateName.plugin,
   },

@@ -26,7 +26,14 @@ keywords:
 
 ## 从多平台模板开始 {#template-quick-start}
 
-新项目可以直接选择不含 Wevu 和额外 UI 依赖的原生多平台模板：
+脚手架提供两条并列路线，默认模板保持不变：
+
+| 模板                 | 适用场景                             | 页面与组件                                |
+| -------------------- | ------------------------------------ | ----------------------------------------- |
+| `multi-platform`     | 保留原生小程序写法，不引入额外运行时 | 原生 `Page()` / `Component()` + WXML/WXSS |
+| `multi-platform-sfc` | 用 Wevu 响应式能力编写统一的 Vue SFC | `<script setup lang="ts">` + Vue SFC      |
+
+创建原生模板：
 
 ```sh
 pnpm create weapp-vite my-app multi-platform
@@ -35,7 +42,16 @@ pnpm install
 pnpm dev:weapp
 ```
 
-交互执行 `pnpm create weapp-vite` 时，也可以选择“原生多平台 + Web”。模板保留一个原生 Page 和一个原生 Component，用同一组平台标识、状态与计数交互作为各端验收契约。
+创建 Vue SFC 模板：
+
+```sh
+pnpm create weapp-vite my-app multi-platform-sfc
+cd my-app
+pnpm install
+pnpm dev:weapp
+```
+
+交互执行 `pnpm create weapp-vite` 时，也可以选择“原生多平台 + Web”或“Vue SFC 多平台 + Web 模板”。两个模板都保留一个页面和一个组件，并用同一组平台标识、ready 状态与计数交互作为各端验收契约。
 
 模板坚持单目标构建。`pnpm build:weapp` 只构建微信，`pnpm build:web` 只构建 Web，不提供会在一次命令里隐式遍历全部平台的脚本。
 
@@ -51,8 +67,9 @@ my-app/
 │  ├─ jd/project.config.json
 │  └─ xhs/project.config.json
 ├─ src/
-│  ├─ components/PlatformCard/
-│  └─ pages/index/
+│  ├─ app.vue                    # SFC 模板；原生模板为 app.ts/app.json/app.scss
+│  ├─ components/PlatformCard/   # SFC 模板为 index.vue
+│  └─ pages/index/               # SFC 模板为 index.vue
 ├─ index.html
 └─ vite.config.ts
 ```
@@ -71,11 +88,16 @@ my-app/
 
 ## 便携源码规则 {#portable-source}
 
-- 公共业务逻辑使用原生 `Page()` / `Component()`，不要在共享源码中依赖某个宿主独有的 TypeScript 类型。
-- 公共模板可以使用 WXML/WXSS 作为便携输入；构建器会按目标生成 AXML/ACSS、TTML/TTSS、Swan/CSS、JXML/JXSS 或 XHSML/CSS。
+- 原生模板使用 `Page()` / `Component()` 和 WXML/WXSS 作为便携输入；构建器会按目标生成 AXML/ACSS、TTML/TTSS、Swan/CSS、JXML/JXSS 或 XHSML/CSS。
+- SFC 模板从 `wevu` 导入 `ref`、`computed` 等 Runtime API，页面和组件使用 `<script setup lang="ts">`，不要从 Vue Web Runtime 导入运行时 API。
+- SFC 的 App、Page、Component 分别使用 `defineAppJson`、`definePageJson`、`defineComponentJson`。一个 SFC 只使用对应的单一 JSON 宏体系，不同时维护另一套 JSON 配置来源。
+- 跨平台 SFC 使用显式 props 与事件；不要使用 `v-bind="object"`、不可赋值表达式上的 `v-model`，也不要假设 DOM、Vue Router 或其他 Web-only Vue 行为存在。
+- 两种模板都不要在共享源码中依赖某个宿主独有的 TypeScript 类型。
 - 公共运行时 API 可以保留 `wx` 调用，模板启用的 `injectWeapi.replaceWx` 会按目标替换为 `my`、`tt`、`swan`、`jd` 或 `xhs`。
 - WXS 会按平台转换为对应脚本模块和标签语法。平台专属能力应隔离在独立模块或条件入口中，不要把宿主差异散落进公共页面。
 - Web Runtime 复用公共源码，但浏览器兼容不代表小程序宿主兼容；涉及授权、支付、插件、云服务和真机 API 时仍需平台侧验收。
+
+SFC 模板在安装后通过 `wv prepare -p weapp` 生成 `.weapp-vite` 受管类型文件。不要手工维护该目录；类型漂移时重新执行 `pnpm exec wv prepare -p weapp`，再运行 `pnpm typecheck`。
 
 ## Web 联调 {#template-web-runtime}
 
@@ -84,7 +106,7 @@ pnpm dev:web
 pnpm build:web
 ```
 
-模板使用 history 路由并输出到 `dist/web`。Web 适合快速检查路由、平台标识、状态更新、浏览器错误和样式兼容；发布前仍应回到目标小程序 IDE 或真机验证宿主行为。更多可调字段见 [Web 运行时配置](/config/web)。
+两个模板都使用 history 路由并输出到 `dist/web`。Web 适合快速检查路由、`MP_PLATFORM=web`、ready 状态、响应式更新、浏览器错误和样式兼容；发布前仍应回到目标小程序 IDE 或真机验证宿主行为。Web Runtime 不能替代小程序 IDE 或真机验收。更多可调字段见 [Web 运行时配置](/config/web)。
 
 ## AppID 配置 {#template-appid}
 
@@ -133,7 +155,7 @@ export default defineConfig({
 })
 ```
 
-`multiPlatform` 不会一次构建所有平台。`wv build -p weapp`、`wv build -p alipay`、`wv build -p web` 都是独立的单目标构建。`multiPlatform.targets` 是小程序平台 allowlist；上面的显式声明与 `multi-platform` 模板一致。
+`multiPlatform` 不会一次构建所有平台。`wv build -p weapp`、`wv build -p alipay`、`wv build -p web` 都是独立的单目标构建。`multiPlatform.targets` 是小程序平台 allowlist；上面的显式声明与 `multi-platform`、`multi-platform-sfc` 两个模板一致。
 
 ## 支付宝小程序 {#platform-alipay}
 

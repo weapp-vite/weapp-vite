@@ -4,6 +4,7 @@ function supportsWevu(templateName: TemplateName) {
   return [
     TemplateName.wevu,
     TemplateName.wevuTdesign,
+    TemplateName.multiPlatformSfc,
   ].includes(templateName)
 }
 
@@ -16,7 +17,10 @@ function supportsPlugin(templateName: TemplateName) {
 }
 
 function supportsMultiPlatform(templateName: TemplateName) {
-  return templateName === TemplateName.multiPlatform
+  return [
+    TemplateName.multiPlatform,
+    TemplateName.multiPlatformSfc,
+  ].includes(templateName)
 }
 
 /**

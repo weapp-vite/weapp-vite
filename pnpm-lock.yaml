@@ -2856,6 +2856,42 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
 
+  templates/weapp-vite-multi-platform-sfc-template:
+    devDependencies:
+      '@icebreakers/eslint-config':
+        specifier: 'catalog:'
+        version: 7.0.2(@next/eslint-plugin-next@16.2.4)(@unocss/eslint-plugin@66.6.8(eslint@10.8.1(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint-plugin-jsx-a11y@6.10.2(eslint@10.8.1(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-pnpm@1.7.0(eslint@10.8.1(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-vuejs-accessibility@2.5.0(eslint@10.8.1(jiti@2.7.0)(supports-color@10.2.2))(globals@17.9.0)(supports-color@10.2.2))(eslint@10.8.1(jiti@2.7.0)(supports-color@10.2.2))(postcss@8.5.26)(stylelint@17.14.1(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.3)(ts-declaration-location@1.0.7(typescript@6.0.3))(typescript@6.0.3)(vitest@4.1.10)
+      '@icebreakers/stylelint-config':
+        specifier: 'catalog:'
+        version: 5.0.3(postcss@8.5.26)(stylelint@17.14.1(supports-color@10.2.2)(typescript@6.0.3))(tailwindcss@4.3.3)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.2.0
+      '@weapp-vite/dashboard':
+        specifier: workspace:*
+        version: link:../../packages/dashboard
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)(supports-color@10.2.2)
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+      stylelint:
+        specifier: 'catalog:'
+        version: 17.14.1(supports-color@10.2.2)(typescript@6.0.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.9(typescript@6.0.3)
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
+
   templates/weapp-vite-multi-platform-template:
     devDependencies:
       '@icebreakers/eslint-config':

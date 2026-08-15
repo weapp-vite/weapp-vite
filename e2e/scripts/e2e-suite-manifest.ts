@@ -103,6 +103,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-weapp-vite-tailwindcss-template.test.ts',
   'ide/template-weapp-vite-tailwindcss-vant-template.test.ts',
   'ide/template-weapp-vite-multi-platform-template.test.ts',
+  'ide/template-weapp-vite-multi-platform-sfc-template.test.ts',
   'ide/template-weapp-vite-template.test.ts',
   'ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts',
   'ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts',

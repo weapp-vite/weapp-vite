@@ -43,7 +43,7 @@
 
 ## 特性亮点
 
-- 新项目：用 [`create-weapp-vite`](packages/create-weapp-vite) 选择原生、多平台 + Web、Wevu、Tailwind CSS、TDesign、Vant、插件或组件库模板，并自动对齐依赖组合。
+- 新项目：用 [`create-weapp-vite`](packages/create-weapp-vite) 选择原生、多平台 + Web、Vue SFC 多平台 + Web、Wevu、Tailwind CSS、TDesign、Vant、插件或组件库模板，并自动对齐依赖组合。
 - 存量项目：通过手动集成或 `wv init` 接入现有小程序，保留原有页面结构和平台能力。
 - Vue SFC：在小程序里使用 `.vue`、`<script setup>`、JSON 宏、class/style 绑定和 Wevu 响应式运行时。
 - uni-app 组件库：通过 `WotUiResolver()` 或 `UviewPlusResolver()` 在微信小程序与 Web 中使用经过全组件矩阵验证的 Wot UI、uview-plus Vue SFC。
@@ -59,13 +59,17 @@
 pnpm create weapp-vite
 ```
 
-需要用同一份原生源码覆盖微信、支付宝、抖音、百度、京东、小红书与 Web 时，可以直接选择多平台模板：
+需要用同一份源码覆盖微信、支付宝、抖音、百度、京东、小红书与 Web 时，可以按写法选择原生或 Vue SFC 多平台模板：
 
 ```bash
+# 原生 Page / Component
 pnpm create weapp-vite my-app multi-platform
+
+# Wevu + Vue SFC
+pnpm create weapp-vite my-app multi-platform-sfc
 ```
 
-该模板坚持单目标构建，具体命令、输出目录和验收边界见[多平台构建指南](https://vite.icebreaker.top/guide/multi-platform)。
+两个模板都坚持单目标构建，具体命令、输出目录和验收边界见[多平台构建指南](https://vite.icebreaker.top/guide/multi-platform)。
 
 也可以使用：
 

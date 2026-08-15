@@ -7,7 +7,7 @@
 ## 特性
 
 - 交互式创建或非交互式参数创建
-- 内置多种模板（默认、多平台 + Web、Wevu、Wevu + TDesign、Tailwindcss、TDesign、Vant、插件、组件库）
+- 内置多种模板（默认、原生多平台 + Web、Vue SFC 多平台 + Web、Wevu、Wevu + TDesign、Tailwindcss、TDesign、Vant、插件、组件库）
 - 自动对齐 `weapp-vite` 与 `wevu` 版本
 - 自动处理 `.gitignore` 写入
 - 可选安装推荐的 AI skills（`sonofmagic/skills`）
@@ -48,6 +48,9 @@ pnpm create weapp-vite my-app wevu
 # 原生多平台 + Web 模板
 pnpm create weapp-vite my-app multi-platform
 
+# Vue SFC 多平台 + Web 模板
+pnpm create weapp-vite my-app multi-platform-sfc
+
 # 显式安装推荐 skills
 pnpm create weapp-vite my-app wevu --install-skills
 
@@ -70,6 +73,7 @@ await createProject('my-app', TemplateName.wevu, { installSkills: true })
 
 - `default`
 - `multi-platform`
+- `multi-platform-sfc`
 - `wevu`
 - `react`
 - `wevu-tdesign`
@@ -80,6 +84,8 @@ await createProject('my-app', TemplateName.wevu, { installSkills: true })
 - `lib`
 
 `multi-platform` 使用原生 Page/Component，覆盖微信、支付宝、抖音、百度、京东、小红书与 Web Runtime。它按命令构建单个目标，不会隐式生成全部平台产物；创建后请使用 `dev:<platform>` / `build:<platform>` 脚本。
+
+`multi-platform-sfc` 使用 Wevu + Vue SFC 覆盖相同目标，并提供 `defineAppJson` / `definePageJson` / `defineComponentJson`、受管类型文件和稳定响应式交互示例。Web Runtime 用于浏览器联调，不能替代目标小程序 IDE 或真机验收。
 
 ## 相关链接
 

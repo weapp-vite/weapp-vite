@@ -362,7 +362,10 @@ describe('template parity', () => {
     expect(await fs.pathExists(path.join(root, '.gitignore'))).toBe(true)
     expect(await fs.pathExists(path.join(root, 'gitignore'))).toBe(false)
     expect(await fs.pathExists(path.join(root, 'package.json'))).toBe(true)
-    const projectConfigPath = templateName === TemplateName.multiPlatform
+    const projectConfigPath = [
+      TemplateName.multiPlatform,
+      TemplateName.multiPlatformSfc,
+    ].includes(templateName)
       ? path.join(root, 'config/weapp/project.config.json')
       : path.join(root, 'project.config.json')
     expect(await fs.pathExists(projectConfigPath)).toBe(true)

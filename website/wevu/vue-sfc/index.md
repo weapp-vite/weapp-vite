@@ -23,6 +23,14 @@ Weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 
 ## 快速开始
 
+- 新项目需要同时覆盖六个小程序目标和 Web 时，可以直接使用多平台 SFC 模板：
+
+```sh
+pnpm create weapp-vite my-app multi-platform-sfc
+```
+
+模板已配置 Wevu、SFC JSON 宏、受管类型文件和逐平台脚本，完整工作流与 Runtime 验收边界见[多平台构建指南](/guide/multi-platform)。
+
 - 需要安装 `wevu`：
 
 ::: code-group

@@ -124,6 +124,7 @@ describe('createProject', () => {
   it.each(Object.values(TemplateName).filter(templateName => ![
     TemplateName.plugin,
     TemplateName.multiPlatform,
+    TemplateName.multiPlatformSfc,
   ].includes(templateName)))('rewrites generated project.config.json appid to touristappid for template %s', async (templateName) => {
     const root = await createTmpRoot(`tourist-appid-${templateName}`)
 
@@ -135,12 +136,15 @@ describe('createProject', () => {
     expect(projectConfig.appid).toBe('touristappid')
   })
 
-  it('rewrites the nested WeChat AppID for the multi-platform template', async () => {
-    const root = await createTmpRoot('multi-platform-appid')
+  it.each([
+    TemplateName.multiPlatform,
+    TemplateName.multiPlatformSfc,
+  ])('rewrites the nested WeChat AppID and writes multi-platform guidance for %s', async (templateName) => {
+    const root = await createTmpRoot(`${templateName}-appid`)
 
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
-    await createProject(root, TemplateName.multiPlatform)
+    await createProject(root, templateName)
 
     const projectConfig = await readJsonAs<{ appid?: string }>(
       path.join(root, 'config/weapp/project.config.json'),
@@ -151,6 +155,11 @@ describe('createProject', () => {
     expect(agents).toContain('## Multi-platform Workflow')
     expect(agents).toContain('`config/<platform>`')
     expect(agents).toContain('`pnpm dev:web`')
+    if (templateName === TemplateName.multiPlatformSfc) {
+      expect(agents).toContain('## Wevu Authoring')
+      expect(agents).toContain('$wevu-best-practices')
+      expect(agents).not.toContain('## Native Mini-program Authoring')
+    }
   })
 
   it('preserves the real plugin AppID for plugin templates', async () => {

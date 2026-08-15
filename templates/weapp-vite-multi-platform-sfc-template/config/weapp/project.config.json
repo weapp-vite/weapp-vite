@@ -1,0 +1,23 @@
+{
+  "description": "weapp-vite 多平台 SFC 模板",
+  "miniprogramRoot": "dist",
+  "srcMiniprogramRoot": "dist",
+  "compileType": "miniprogram",
+  "setting": {
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    },
+    "postcss": false,
+    "minified": false,
+    "ignoreUploadUnusedFiles": true,
+    "compileHotReLoad": false,
+    "packNpmManually": true,
+    "es6": true
+  },
+  "simulatorType": "wechat",
+  "libVersion": "3.13.2",
+  "condition": {},
+  "appid": "wxb3d842a4a7e3440d"
+}

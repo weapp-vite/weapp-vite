@@ -145,7 +145,10 @@ async function waitForExpectedRuntimeState(page: Page, expectation: 'runtime' | 
 }
 
 async function assertProjectRuntimeContract(page: Page, relativeRoot: string) {
-  if (relativeRoot !== 'templates/weapp-vite-multi-platform-template') {
+  if (![
+    'templates/weapp-vite-multi-platform-template',
+    'templates/weapp-vite-multi-platform-sfc-template',
+  ].includes(relativeRoot)) {
     return
   }
 
@@ -154,6 +157,10 @@ async function assertProjectRuntimeContract(page: Page, relativeRoot: string) {
   await expect.poll(() => page.locator('#counter-value').textContent()).toBe('0')
   await page.locator('#increment-button').click()
   await expect.poll(() => page.locator('#counter-value').textContent()).toBe('1')
+  if (relativeRoot === 'templates/weapp-vite-multi-platform-sfc-template') {
+    await expect.poll(() => page.locator('#counter-doubled').textContent()).toContain('doubled=2')
+    await expect.poll(() => page.locator('#component-platform').textContent()).toContain('web')
+  }
 }
 
 describeWeb.sequential('workspace Web project matrix', async () => {

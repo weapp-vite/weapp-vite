@@ -1,0 +1,9 @@
+{
+  "desc": "多平台 SFC 模板 sitemap",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 export enum TemplateName {
   default = 'default',
   multiPlatform = 'multi-platform',
+  multiPlatformSfc = 'multi-platform-sfc',
   plugin = 'plugin',
   wevu = 'wevu',
   tailwindcss = 'tailwindcss',

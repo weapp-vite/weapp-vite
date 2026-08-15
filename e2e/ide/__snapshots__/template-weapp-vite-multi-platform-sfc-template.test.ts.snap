@@ -1,0 +1,38 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`template e2e: weapp-vite-multi-platform-sfc-template > renders and updates the WeChat SFC target > weapp-vite-multi-platform-sfc-template::app.wxss 1`] = `
+"page {
+  background: #f4f6f8;
+  color: #17212b;
+  min-height: 100%;
+}
+"
+`;
+
+exports[`template e2e: weapp-vite-multi-platform-sfc-template > renders and updates the WeChat SFC target > weapp-vite-multi-platform-sfc-template::pages/index/index 1`] = `
+"<view class="page-shell">
+  <view class="page-heading">
+    <view class="page-heading__eyebrow">weapp-vite + wevu</view>
+    <view class="page-heading__title">Vue SFC 多平台 + Web</view>
+    <view class="page-heading__description">同一份 SFC 源码，按目标平台独立构建和验收。</view>
+  </view>
+  <view class="runtime-marker" id="platform-marker">MP_PLATFORM={{platform}}</view>
+  <view class="runtime-status" id="runtime-status">status={{status}}</view>
+  <platform-card platform="{{platform}}" />
+  <view class="counter-panel">
+    <view class="counter-panel__label">SFC 响应式交互检查</view>
+    <view class="counter-panel__value" id="counter-value">{{count}}</view>
+    <view class="counter-panel__doubled" id="counter-doubled">doubled={{doubled}}</view>
+    <button
+      activity-type="0"
+      entrance-path=""
+      need-show-entrance=""
+      class="counter-panel__button"
+      id="increment-button"
+      data-wi-tap="i0">
+      增加计数
+    </button>
+  </view>
+</view>
+"
+`;

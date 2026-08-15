@@ -1,0 +1,10 @@
+{
+  "appid": "your_appid",
+  "projectname": "weapp-vite-multi-platform-sfc-template",
+  "miniprogramRoot": "dist",
+  "setting": {
+    "es6": true,
+    "urlCheck": false,
+    "compileHotReLoad": false
+  }
+}

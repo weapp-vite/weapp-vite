@@ -50,6 +50,19 @@ describe('create-weapp-vite release pack', () => {
 
       expect(packedFiles.has('templates/default/project.config.json')).toBe(true)
       expect(packedFiles.has('templates/multi-platform/config/weapp/project.config.json')).toBe(true)
+      for (const configPath of [
+        'config/alipay/mini.project.json',
+        'config/jd/project.config.json',
+        'config/swan/project.swan.json',
+        'config/tt/project.config.json',
+        'config/weapp/project.config.json',
+        'config/xhs/project.config.json',
+      ]) {
+        expect(packedFiles.has(`templates/multi-platform-sfc/${configPath}`)).toBe(true)
+      }
+      expect(packedFiles.has('templates/multi-platform-sfc/src/app.vue')).toBe(true)
+      expect(packedFiles.has('templates/multi-platform-sfc/src/pages/index/index.vue')).toBe(true)
+      expect(packedFiles.has('templates/multi-platform-sfc/src/components/PlatformCard/index.vue')).toBe(true)
       expect([...packedFiles].some(file => file.startsWith('templates/plugin/dist-'))).toBe(false)
     }
     finally {

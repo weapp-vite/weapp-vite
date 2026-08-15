@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-15T17:22:55.149Z",
+  "generatedAt": "2026-08-15T18:08:48.344Z",
   "site": "https://vite.icebreaker.top",
   "count": 274,
   "items": [
@@ -2649,7 +2649,7 @@
         "Vue SFC 开发",
         "目录"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-08-16",
       "source": "guide/vue-sfc/index.md"
     },
     {
@@ -7014,7 +7014,7 @@
         "心智模型",
         "章节导航"
       ],
-      "updatedAt": "2026-05-29",
+      "updatedAt": "2026-08-16",
       "source": "wevu/vue-sfc/index.md"
     },
     {

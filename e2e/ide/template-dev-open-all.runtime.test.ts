@@ -63,6 +63,20 @@ const TEMPLATE_CASES: TemplateCase[] = [
     },
   },
   {
+    name: 'weapp-vite-multi-platform-sfc-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-multi-platform-sfc-template'),
+    projectRoot: 'dist/weapp',
+    platform: 'weapp',
+    route: '/pages/index/index',
+    expectedText: 'Vue SFC 多平台 + Web',
+    expectedData: {
+      count: 0,
+      doubled: 0,
+      platform: 'weapp',
+      status: 'ready',
+    },
+  },
+  {
     name: 'weapp-vite-lib-template',
     root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-lib-template'),
     route: '/pages/index/index',
