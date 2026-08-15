@@ -18,6 +18,12 @@ packages:
   - '!benchmarks/**/test/**'
   - '!@weapp-core/**/test/**'
 
+versioning:
+  fixed:
+    - ['@weapp-vite/ast', weapp-vite, '@weapp-vite/dashboard', wevu, '@wevu/compiler']
+  changelog:
+    storage: repository
+
 catalog:
   '@babel/core': ^8.0.1
   '@babel/generator': ^8.0.0

@@ -44,7 +44,7 @@ $native-to-weapp-vite-wevu-migration
 1. 面向用户公开分发的流程优先沉淀到 `skills/*`。
 2. 项目架构、分包、构建编排问题优先用 `weapp-vite-best-practices`。
 3. 根据现有代码同步 `website`、`skills`、AI 指南时优先用 `docs-and-website-sync`。
-4. GitHub issue 修复、`e2e-apps/github-issues` 复现、changeset、PR 闭环优先用 `release-and-changeset-best-practices`。
+4. GitHub issue 修复、`e2e-apps/github-issues` 复现、pnpm change intent、repoctl 发布与 PR 闭环优先用 `release-and-changeset-best-practices`。
 5. WeChat DevTools runtime e2e、automator 复用、`reLaunch` 方案优先用 `weapp-devtools-e2e-best-practices`。
 6. `.vue` 宏、模板兼容、`v-model`/`usingComponents` 问题优先用 `weapp-vite-vue-sfc-best-practices`。
 7. React 19 JSX/TSX、`weapp.react`、render mode、React Compiler 和原生/Wevu bridge 优先用 `weapp-vite-react-best-practices`。

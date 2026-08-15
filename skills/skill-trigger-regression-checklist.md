@@ -232,13 +232,13 @@ pnpm skills:score:json
 
 ### J. release-and-changeset-best-practices
 
-1. 提问：这个改动要不要加 changeset？如果要，顺便看看 commit 类型该怎么写。
+1. 提问：这个改动要不要用 `pnpm change` 加 change intent？如果要，顺便看看 commit 类型该怎么写。
    预期 skill：`release-and-changeset-best-practices`
 
 2. 提问：我改了 `weapp-vite`、模板生成的 `AGENTS.md` 和随包 `dist/docs`，帮我判断是不是还要补 `create-weapp-vite` 的 changeset。
    预期 skill：`release-and-changeset-best-practices`
 
-3. 提问：请按仓库规则检查这次发布前还缺哪些 changeset 和 release 校验。
+3. 提问：请按仓库规则检查这次发布前还缺哪些 pnpm change intent，并给出 `repo release stable` 或 `repo release pre` 的正确入口。
    预期 skill：`release-and-changeset-best-practices`
 
 4. 提问：这个 bugfix 要走 commit-only 还是 PR？changeset summary 应该怎么写才符合规范？

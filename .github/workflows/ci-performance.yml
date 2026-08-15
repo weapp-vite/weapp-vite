@@ -71,7 +71,7 @@ permissions:
 jobs:
   auto-import-performance:
     name: Auto Import Performance (Ubuntu / Node 24)
-    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'changeset-release/')
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release/pnpm-version')
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -131,7 +131,7 @@ jobs:
 
   templates-performance:
     name: Templates Performance (${{ matrix.os }} / Node 24)
-    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'changeset-release/')
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release/pnpm-version')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     strategy:

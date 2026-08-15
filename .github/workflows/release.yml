@@ -1,25 +1,53 @@
+# repoctl-managed: release/v2
 name: Release
 
 on:
   push:
     branches:
       - main
+      - alpha
+      - beta
+      - rc
+      - next
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Release operation
+        required: true
+        default: auto
+        type: choice
+        options:
+          - auto
+          - prepare
+          - publish
+          - publish-unpublished
+      package:
+        description: Package used for unpublished-version recovery
+        required: false
+        type: string
+      version:
+        description: Version used for unpublished-version recovery
+        required: false
+        type: string
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
+
 env:
   HUSKY: 0
+  NPM_CONFIG_PROVENANCE: true
+  REPOCTL_LANG: zh-CN
+  pnpm_config_provenance: true
+  pnpm_config_registry: https://registry.npmjs.org
 
 permissions:
-  contents: write # to create release (changesets/action)
-  issues: write # to post issue comments (changesets/action)
-  pull-requests: write # to create pull request (changesets/action)
-  id-token: write # to use OpenID Connect token for provenance (changesets/action)
+  contents: write
+  pull-requests: write
+  id-token: write
 
 jobs:
   release:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     name: Release
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -34,55 +62,16 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+          registry-url: https://registry.npmjs.org
 
       - name: Install Dependencies
-        run: pnpm i
+        run: pnpm install --frozen-lockfile
 
-      - name: Validate changeset frontmatter
-        run: pnpm check:changeset:frontmatter
-
-      - name: Validate constants release guards
-        run: |
-          pnpm check:publishable-workspace-dependency-protocols
-          pnpm check:weapp-core-constants-changeset
-          pnpm check:weapp-core-constants-dependency-range
-
-      - name: Create Release Pull Request or Publish to npm
-        id: changesets
-        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
-        with:
-          # This expects you to have a script called release which does a build for your packages and calls changeset publish
-          publish: pnpm publish-packages
+      - name: Run repo release CI
         env:
-          # this doesn't work but semantic-release works
-          # see https://github.com/sonofmagic/npm-lib-rollup-template/blob/main/.github/workflows/release.yml#L46
-          # NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          pnpm_config_registry: https://registry.npmjs.org
-          # https://github.com/changesets/changesets/pull/1659
-          pnpm_config_provenance: true
-          NPM_CONFIG_PROVENANCE: true
-
-      - name: Plan VS Code Marketplace release
-        id: vscode_marketplace
-        env:
-          CHANGESETS_PUBLISHED: ${{ steps.changesets.outputs.published }}
-        run: pnpm --dir extensions/vscode run release:marketplace:plan
-
-      - name: Publish VS Code extension to Marketplace
-        if: steps.vscode_marketplace.outputs.should_publish == 'true'
-        env:
+          REPO_RELEASE_MODE: ${{ inputs.mode || 'auto' }}
+          REPO_RELEASE_PACKAGE: ${{ inputs.package }}
+          REPO_RELEASE_VERSION: ${{ inputs.version }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: pnpm --dir extensions/vscode run publish:vsce
-
-      - name: Tag VS Code Marketplace release
-        if: steps.vscode_marketplace.outputs.should_publish == 'true'
-        run: |
-          git tag "${{ steps.vscode_marketplace.outputs.release_tag }}"
-          git push origin "${{ steps.vscode_marketplace.outputs.release_tag }}"
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: pnpm exec repo release ci

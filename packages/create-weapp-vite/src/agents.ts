@@ -81,7 +81,7 @@ export function createAgentsGuidelines(templateName: TemplateName) {
     '- In Codex/Claude environments, prefer these skills first when available:',
     '  - `$weapp-vite-best-practices` for config, build, subpackage, route, DevTools CLI orchestration, and screenshot/compare command work.',
     '  - `$weapp-vite-vue-sfc-best-practices` for `.vue` SFC macros, JSON blocks, and template compatibility.',
-    '  - `$release-and-changeset-best-practices` for issue delivery, changesets, release decisions, and PR workflow.',
+    '  - `$release-and-changeset-best-practices` for issue delivery, pnpm change intents, repoctl release decisions, and PR workflow.',
     '  - `$docs-and-website-sync` when documentation or AI guidance must be refreshed together with code changes.',
     '  - Use `$weapp-vite-best-practices` for stateful HMR, pluginRoot/dist-plugin, Web runtime compatibility, and native AST profiling; use `$wevu-best-practices` for `wevu/router` navigation semantics.',
     '  - Use `$weapp-devtools-e2e-best-practices` for serialized DevTools runtime suites, shared automator sessions, and known host compatibility skips.',

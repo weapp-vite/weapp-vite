@@ -46,8 +46,11 @@ pnpm e2e:dev          # Watch mode for E2E tests
 ### Linting & Publishing
 
 ```bash
-pnpm lint             # Run linters via turbo
-pnpm publish-packages # Publish to npm
+pnpm lint                    # Run linters via turbo
+pnpm change                  # Add a pnpm change intent
+pnpm change status           # Inspect pending release changes
+pnpm release:stable:prepare  # Prepare the stable Release PR
+pnpm release:stable:publish  # Publish stable packages
 ```
 
 ### Utility Scripts
@@ -62,14 +65,20 @@ pnpm script:clean     # Clean generated files
 pnpm script:mirror    # Mirror configuration across packages
 ```
 
-### Changesets (Version Management)
+### pnpm Versioning
 
 ```bash
-pnpm release          # Add changeset
-pnpm cv               # Version changesets
-pnpm pr/pr:beta/pr:rc # Enter pre-release mode
-pnpm pr:exit          # Exit pre-release mode
+pnpm change                 # Add a change intent under .changeset/
+pnpm change status          # Show pending version changes
+pnpm release:pre:alpha      # Enter the alpha lane
+pnpm release:pre:beta       # Enter the beta lane
+pnpm release:pre:rc         # Enter the rc lane
+pnpm release:pre:next       # Enter the next lane
+pnpm release:pre:publish    # Publish the current prerelease lane
+pnpm release:pre:exit       # Exit prerelease mode
 ```
+
+`.changeset/` is pnpm's change-intent storage directory. This repository does not use the Changesets CLI.
 
 ## Project Skills (Codex + Claude Code)
 
@@ -208,7 +217,7 @@ The system uses a **service-oriented architecture** centered around `CompilerCon
 ### 语言规范
 
 - 所有 AI 添加的 JSDoc 代码注释必须使用中文
-- 所有 AI 添加的 changeset 摘要段落必须使用中文
+- 所有 AI 添加的 pnpm change-intent 摘要段落必须使用中文
 
 ### 编码规范
 
@@ -234,9 +243,10 @@ The system uses a **service-oriented architecture** centered around `CompilerCon
 - 每次提交前必须先跑与 staged 改动范围匹配的最小 lint 校验，不能把 eslint/stylelint 问题留给 CI 兜底
 - `lint-staged` 与 `.husky/pre-commit` 属于强制校验层；如果调整 lint 范围或提交流程，必须同步更新两者，保证 staged 文件在本地提交前就会失败，包括 `git worktree` 场景
 - 推送前或提 PR 前，必须按改动范围补跑最小必要的 `lint` / `test` / `build` 校验，不能把 `pre-commit` 当成完整验证
-- 对于用户可见或影响行为的变更，必须添加 changeset
-- 对于源码 bug 修复（包括带有单元/e2e 更新的 GitHub issue 修复），必须添加 changeset
-- 如果发布包含 `weapp-vite`、`wevu` 或 `templates/` 下的内容，还需包含 `create-weapp-vite` 的 bump changeset
+- 对于用户可见或影响行为的变更，必须通过 `pnpm change` 添加 change intent
+- 对于源码 bug 修复（包括带有单元/e2e 更新的 GitHub issue 修复），必须添加 change intent
+- 如果发布包含 `weapp-vite`、`wevu` 或 `templates/` 下的内容，还需包含 `create-weapp-vite` 的 bump intent
+- `.changeset/*.md` 是 pnpm change-intent 存储格式，不代表仓库仍使用 Changesets CLI
 - 默认操作是仅提交：检查通过后直接提交变更，除非用户明确要求推送，否则不推送
 
 ## Development Workflow
@@ -247,7 +257,7 @@ When making changes:
 2. For changes in templates/apps, use specific filters: `pnpm dev --filter=<name>`
 3. Run tests before committing: `pnpm test`
 4. Use `pnpm lint` to check code style
-5. Add changesets for user-facing changes: `pnpm release`
+5. Add pnpm change intents for user-facing changes: `pnpm change`
 
 ### Updating Component Lists
 

@@ -7,12 +7,14 @@
 - 是否涉及 `weapp-vite` / `wevu` / `@weapp-vite/react` / mpcore / `templates/*` / `skills/*` / AI 合约。
 - 是否涉及跨平台 launcher、路径、换行符或文件系统假设。
 
-## changeset 规则
+## pnpm change intent 规则
 
 - 用户可见或行为变化：通常需要。
 - 源码 bug fix：必须需要。
 - summary 段落：中文。
 - 公开 skill、脚手架 `AGENTS.md` 和任务路由变化属于用户可见 AI 合约。
+- 使用 `pnpm change` 创建 intent，使用 `pnpm change status` 检查发布计划。
+- `.changeset/*.md` 只是 pnpm change-intent 存储格式，不使用 Changesets CLI。
 
 ## 联动规则
 
@@ -22,8 +24,12 @@
 
 ## 常用检查
 
+- `pnpm change status`
 - `node --import tsx scripts/check-create-weapp-vite-changeset.ts`
 - `node --import tsx scripts/check-catalog-changeset.ts`
+- `repo release stable prepare` / `repo release stable publish`
+- `repo release pre enter <alpha|beta|rc|next>` / `repo release pre publish` / `repo release pre exit`
+- `repo release ci --mode publish-unpublished --package <name> --version <version>`
 - 平台敏感变更运行 owning package 的最小跨平台单测，并核对最早 OS 分歧。
 - touched DevTools parity 场景核对 devtools/headless 与 mpcore 对应覆盖。
 

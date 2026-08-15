@@ -1,6 +1,6 @@
 # 发布说明（VSCode Marketplace）
 
-这个扩展现在通过仓库统一的 changeset release 流程发布到 VS Code Marketplace，不再使用独立的版本自动递增工作流。
+这个扩展通过仓库统一的 pnpm versioning + repoctl release 流程发布到 VS Code Marketplace，不再依赖 Changesets CLI 或独立的版本自动递增工作流。
 
 ## 1）设置 publisher
 
@@ -13,19 +13,20 @@
 - 在 https://marketplace.visualstudio.com/ 创建 publisher
 - 创建带有 Marketplace 发布权限的 Azure DevOps Personal Access Token（PAT）
 
-## 3）通过 changeset 自动发布
+## 3）通过 repoctl 自动发布
 
 在仓库 secrets 配置完成后：
 
-- 当 `extensions/vscode` 有需要发布的改动时，新增一条指向 `@weapp-vite/vscode` 的 changeset
-- release PR 由仓库统一的 changeset 流程生成，扩展版本号与 `CHANGELOG.md` 也由该流程统一写入
+- 当 `extensions/vscode` 有需要发布的改动时，通过 `pnpm change` 新增一条指向 `@weapp-vite/vscode` 的 change intent
+- `.changeset/*.md` 是 pnpm change-intent 存储格式，不表示仓库仍使用 Changesets CLI
+- Release PR 由 `repo release stable prepare` 生成，扩展版本号与 `CHANGELOG.md` 由 pnpm versioning 统一写入
 - release PR 合并到 `main` 后，会触发 `.github/workflows/release.yml`
-- `release.yml` 只允许在 `main` ref 上执行实际发布；即使手动 dispatch 到 `changeset-release/main` 这类未合并分支，也不会发布 Marketplace
-- `release.yml` 会先执行仓库统一的 Changesets 发布动作
-- 随后会检查 VS Code 插件是否满足 Marketplace 发布条件：当前 ref 必须是 `main`，`extensions/vscode/package.json` 当前版本必须高于 Marketplace 线上版本，且对应 tag 尚不存在
-- 发布判断不依赖 `changesets/action` 当次是否报告 published，也不依赖 action 执行后的本地 `HEAD` 是否还能反映版本提升；只要线上版本仍然落后，后续成功的 release workflow 就会自动补发
-- 单独向 `main` 提交一个 `.changeset` 文件只会进入 release PR / version 流程，因为此时仓库版本并未高于 Marketplace；手动提升插件版本并合入 `main` 后，则可按版本差异触发 Marketplace 发布
-- 发布成功后，会创建类似 `vscode-extension-v0.1.0` 的 git tag，但不会发布到 npm
+- `release.yml` 在 `main/alpha/beta/rc/next` 上统一执行 `repo release ci`；Marketplace hook 只在 `main` 实际运行
+- npm 与 GitHub Release 处理完成后，repoctl 的 `afterPublish` hook 会执行根脚本 `release:vscode-marketplace`
+- Marketplace 版本低于仓库版本时发布扩展，不受 tag 是否已存在影响
+- Marketplace 已是当前版本但远端 tag 缺失时只补建 `vscode-extension-vX.Y.Z` tag；Marketplace 发布后 tag 推送失败也可由后续 workflow 单独恢复
+- Marketplace 版本高于仓库版本时发布会明确失败并报告版本漂移
+- 扩展是 private workspace 包，不发布到 npm；即使本轮没有 npm 包需要发布，repoctl 仍会执行 Marketplace hook
 
 必须配置的仓库 secret：
 
@@ -41,8 +42,8 @@ cd extensions/vscode
 # 先跑本地发布前校验
 pnpm run check:publish
 
-# 查看当前提交是否会在 release 流程里触发 Marketplace 发布
-pnpm run release:marketplace:plan
+# 按远端 Marketplace 与 tag 状态执行幂等发布或恢复
+pnpm run release:marketplace
 
 # 编译 TypeScript 到 dist/
 pnpm run build
@@ -77,7 +78,7 @@ VSCE_PAT=your_token pnpm run publish:vsce
 - `pnpm run open:vsix:e2e:standalone` / `pnpm run open:vsix:e2e:vue-official` 可直接拉起对应安装态 VS Code，便于发布前手工检查；打开的工作区已经预置配置文件、分包、缺失页、未注册页、legacy `<json>` 页面、缺失组件和 `.wxml` 文件，适合集中回归插件入口
 - `pnpm run check:vsix` 会打出本地 `.vsix`，并校验最终归档里的文件列表
 - `check:publish` 已经包含 `lint`、`test` 和打包校验，是最稳妥的发布前关卡
-- `release:marketplace:plan` 会检测当前版本是否高于 Marketplace 线上版本，并在 CI 中写入 GitHub Actions 输出变量
+- `release:marketplace` 会检测 Marketplace 线上版本与远端 tag，仅补齐缺失的发布状态；本地运行实际发布时必须处于 `main` 且配置 `VSCE_PAT`
 
 ## 推荐 CI 校验
 

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { bundleRequire } from 'bundle-require'
 import { it } from 'vitest'
 import {
   collectChangesetPackages as collectChangesetPackagesFromUtils,
@@ -204,31 +205,42 @@ it('collectConstantsDependentReleaseIssues accepts complete constants release se
   assert.deepEqual(issues, [])
 })
 
-it('publish-packages runs release guards without rechecking consumed changesets', async () => {
-  const packageJsonPath = path.resolve(
+it('repoctl release lifecycle keeps PR-only intent guards outside main push checks', async () => {
+  const configPath = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
-    '../package.json',
+    '../repoctl.config.ts',
   )
-  const content = await fs.readFile(packageJsonPath, 'utf8')
-  const packageJson = JSON.parse(content) as {
-    scripts?: Record<string, string>
-  }
+  const { mod } = await bundleRequire<{
+    default: {
+      commands: {
+        release: {
+          hooks: Record<string, string[]>
+          qualityScripts: string[]
+        }
+      }
+    }
+  }>({ filepath: configPath })
+  const config = mod.default
+  const releaseConfig = config.commands.release
 
-  const publishScript = packageJson.scripts?.['publish-packages'] ?? ''
-  const workspaceChangesetGuardIndex = publishScript.indexOf('check:publishable-workspace-changeset')
-  const changesetGuardIndex = publishScript.indexOf('check:weapp-core-constants-changeset')
-  const versionIndex = publishScript.indexOf('changeset version')
-  const versionGuardIndex = publishScript.indexOf('check:weapp-core-constants-release-version')
-  const publishIndex = publishScript.indexOf('changeset publish')
-
-  assert.equal(workspaceChangesetGuardIndex, -1)
-  assert.notEqual(changesetGuardIndex, -1)
-  assert.notEqual(versionIndex, -1)
-  assert.notEqual(versionGuardIndex, -1)
-  assert.notEqual(publishIndex, -1)
-  assert.equal(changesetGuardIndex < versionIndex, true)
-  assert.equal(versionIndex < versionGuardIndex, true)
-  assert.equal(versionGuardIndex < publishIndex, true)
+  assert.deepEqual(releaseConfig.qualityScripts, [
+    'check:changeset:frontmatter',
+    'check:publishable-workspace-dependency-protocols',
+    'check:weapp-core-constants-dependency-range',
+    'check:rolldown:single-version',
+    'lint',
+    'ci:release',
+    'test:packages',
+    'test:types',
+  ])
+  assert.equal(releaseConfig.qualityScripts.includes('check:publishable-workspace-changeset'), false)
+  assert.equal(releaseConfig.qualityScripts.includes('check:weapp-core-constants-changeset'), false)
+  assert.deepEqual(releaseConfig.hooks, {
+    beforeVersion: ['catalog:sync:create-weapp-vite'],
+    afterVersion: ['check:weapp-core-constants-release-version'],
+    beforePublish: ['check:weapp-core-constants-release-version'],
+    afterPublish: ['release:vscode-marketplace'],
+  })
 })
 
 it('ci:release keeps release build concurrency bounded', async () => {

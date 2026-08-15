@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-15T18:53:42.523Z",
+  "generatedAt": "2026-08-15T21:20:56.624Z",
   "site": "https://vite.icebreaker.top",
   "count": 274,
   "items": [
@@ -1267,6 +1267,7 @@
         "工作流总览",
         "文档同步",
         "GitHub issue 修复",
+        "包版本与发布",
         "DevTools runtime 验收",
         "SFC 与 wevu 排障",
         "原生迁移",
