@@ -27,6 +27,8 @@ interface TemplateCase {
   expectedData?: Record<string, unknown>
   expectedText: string
   name: string
+  platform?: string
+  projectRoot?: string
   route: string
   root: string
 }
@@ -47,6 +49,18 @@ const TEMPLATE_CASES: TemplateCase[] = [
     root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-template'),
     route: '/pages/index/index',
     expectedText: 'Hello weapp-vite',
+  },
+  {
+    name: 'weapp-vite-multi-platform-template',
+    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-multi-platform-template'),
+    projectRoot: 'dist/weapp',
+    platform: 'weapp',
+    route: '/pages/index/index',
+    expectedText: '原生多平台 + Web',
+    expectedData: {
+      platform: 'weapp',
+      status: 'ready',
+    },
   },
   {
     name: 'weapp-vite-lib-template',
@@ -105,6 +119,10 @@ const ACTIVE_TEMPLATE_CASES = TEMPLATE_FILTER
 
 type TemplateDevProcess = TemplateCase & {
   dev: ReturnType<typeof startDevProcess>
+}
+
+function resolveTemplateProjectRoot(templateCase: TemplateCase) {
+  return path.resolve(templateCase.root, templateCase.projectRoot ?? '.')
 }
 
 function resolveAutomatorSessionFile(projectPath: string, port?: number) {
@@ -289,7 +307,7 @@ async function waitForTemplateCaseReady(miniProgram: any, templateCase: Template
 
   return await waitForPageText(
     miniProgram,
-    templateCase.root,
+    resolveTemplateProjectRoot(templateCase),
     templateCase.route,
     templateCase.expectedText,
     templateCase.expectedData,
@@ -306,7 +324,7 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
     infraOutput = output.length > 4_000 ? output.slice(-4_000) : output
   }).catch(() => {})
 
-  const readySession = waitForOpenedAutomator(process.root, {
+  const readySession = waitForOpenedAutomator(resolveTemplateProjectRoot(process), {
     readyRoute: process.route,
     timeoutMs: 120_000,
   }).catch((error) => {
@@ -324,16 +342,22 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
 }
 
 async function cleanupTemplateAutomatorState(templateCase: TemplateCase) {
+  const projectRoot = resolveTemplateProjectRoot(templateCase)
   await Promise.all([
-    removeAutomatorSessionFiles(templateCase.root),
-    fs.rm(resolveAutomatorWrapperProjectPath(templateCase.root), { force: true, recursive: true }).catch(() => {}),
+    removeAutomatorSessionFiles(projectRoot),
+    fs.rm(resolveAutomatorWrapperProjectPath(projectRoot), { force: true, recursive: true }).catch(() => {}),
   ])
 }
 
 function startTemplateDevProcess(templateCase: TemplateCase): TemplateDevProcess {
+  const args = ['exec', 'wv', 'dev']
+  if (templateCase.platform) {
+    args.push('-p', templateCase.platform)
+  }
+  args.push('-o', '--non-interactive', '--login-retry', 'never')
   return {
     ...templateCase,
-    dev: startDevProcess('pnpm', ['exec', 'wv', 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
+    dev: startDevProcess('pnpm', args, {
       cwd: templateCase.root,
       env: createDevProcessEnv(),
       reject: false,
@@ -358,7 +382,8 @@ async function openTemplateDevProcess(templateCase: TemplateCase) {
     catch (error) {
       lastError = error
       await devProcess.dev.stop().catch(() => {})
-      await closeSharedMiniProgram(templateCase.root, resolveProjectAutomatorPort(templateCase.root)).catch(() => {})
+      const projectRoot = resolveTemplateProjectRoot(templateCase)
+      await closeSharedMiniProgram(projectRoot, resolveProjectAutomatorPort(projectRoot)).catch(() => {})
       await cleanupResidualIdeProcesses()
       if (attempt < 2) {
         process.stdout.write(`[warn] [template-dev-open-all] retry dev:open template=${templateCase.name} reason=${error instanceof Error ? error.message : String(error)}\n`)
@@ -377,8 +402,8 @@ describe.sequential('all templates dev:open IDE integration', () => {
   afterAll(async () => {
     await cleanupTrackedDevProcesses()
     await Promise.all(ACTIVE_TEMPLATE_CASES.map(async templateCase => await closeSharedMiniProgram(
-      templateCase.root,
-      resolveProjectAutomatorPort(templateCase.root),
+      resolveTemplateProjectRoot(templateCase),
+      resolveProjectAutomatorPort(resolveTemplateProjectRoot(templateCase)),
     ).catch(() => {})))
     await cleanupResidualIdeProcesses()
   }, 180_000)
@@ -386,7 +411,8 @@ describe.sequential('all templates dev:open IDE integration', () => {
   it.each(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', async (templateCase) => {
     let lastError: unknown
     for (let attempt = 1; attempt <= 2; attempt += 1) {
-      const port = resolveProjectAutomatorPort(templateCase.root)
+      const projectRoot = resolveTemplateProjectRoot(templateCase)
+      const port = resolveProjectAutomatorPort(projectRoot)
       const { devProcess, session } = await openTemplateDevProcess(templateCase)
       let miniProgram: any
       let runtimeErrors: ReturnType<typeof attachRuntimeErrorCollector> | undefined
@@ -395,24 +421,29 @@ describe.sequential('all templates dev:open IDE integration', () => {
         runtimeErrors = attachRuntimeErrorCollector(miniProgram)
         const runtimeMarker = runtimeErrors.mark()
         const { metadata } = session
-        expect(path.resolve(metadata.projectPath)).toBe(templateCase.root)
+        expect(path.resolve(metadata.projectPath)).toBe(projectRoot)
         expect(metadata.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
-        const wrapperProjectPath = resolveAutomatorWrapperProjectPath(templateCase.root)
+        const wrapperProjectPath = resolveAutomatorWrapperProjectPath(projectRoot)
         const wrapperProjectConfig = path.join(wrapperProjectPath, 'project.config.json')
         const usesWrapperProject = await fs.access(wrapperProjectConfig).then(() => true).catch(() => false)
         const projectConfigPath = usesWrapperProject
           ? wrapperProjectConfig
-          : path.join(templateCase.root, 'project.config.json')
+          : path.join(projectRoot, 'project.config.json')
         const projectConfig = JSON.parse(await fs.readFile(projectConfigPath, 'utf8'))
         expect(projectConfig).toMatchObject(usesWrapperProject
           ? {
               miniprogramRoot: './',
               srcMiniprogramRoot: './',
             }
-          : {
-              miniprogramRoot: 'dist/',
-              srcMiniprogramRoot: 'dist/',
-            })
+          : templateCase.projectRoot
+            ? {
+                miniprogramRoot: 'dist',
+                srcMiniprogramRoot: 'dist',
+              }
+            : {
+                miniprogramRoot: 'dist/',
+                srcMiniprogramRoot: 'dist/',
+              })
 
         try {
           await waitForTemplateCaseReady(miniProgram, templateCase, wrapperProjectPath)
@@ -439,7 +470,7 @@ describe.sequential('all templates dev:open IDE integration', () => {
         catch {}
         await devProcess.dev.stop().catch(() => {})
         await closeSharedMiniProgram(
-          templateCase.root,
+          projectRoot,
           port,
         ).catch(() => {})
         await cleanupResidualIdeProcesses()

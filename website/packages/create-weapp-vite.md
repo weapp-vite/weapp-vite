@@ -50,6 +50,9 @@ npx skills add sonofmagic/skills
 ```bash
 pnpm create weapp-vite my-app wevu
 
+# 原生多平台 + Web
+pnpm create weapp-vite my-app multi-platform
+
 # 显式安装推荐 skills
 pnpm create weapp-vite my-app wevu --install-skills
 
@@ -96,16 +99,20 @@ await createProject('my-app', TemplateName.wevu, { installSkills: true })
 
 ## 可选模板（当前实现）
 
-| 模板名         | 说明                         |
-| -------------- | ---------------------------- |
-| `default`      | 默认原生小程序模板           |
-| `plugin`       | 微信小程序插件模板           |
-| `lib`          | 组件库模板（lib 模式）       |
-| `wevu`         | Wevu + Vue SFC 模板          |
-| `wevu-tdesign` | Wevu + TDesign + TailwindCSS |
-| `tailwindcss`  | 原生小程序 + TailwindCSS     |
-| `vant`         | Vant + TailwindCSS           |
-| `tdesign`      | TDesign + TailwindCSS        |
+| 模板名           | 说明                          |
+| ---------------- | ----------------------------- |
+| `default`        | 默认原生小程序模板            |
+| `multi-platform` | 原生多平台 + Web Runtime 模板 |
+| `plugin`         | 微信小程序插件模板            |
+| `lib`            | 组件库模板（lib 模式）        |
+| `wevu`           | Wevu + Vue SFC 模板           |
+| `react`          | React 模板                    |
+| `wevu-tdesign`   | Wevu + TDesign + TailwindCSS  |
+| `tailwindcss`    | 原生小程序 + TailwindCSS      |
+| `vant`           | Vant + TailwindCSS            |
+| `tdesign`        | TDesign + TailwindCSS         |
+
+`multi-platform` 不引入 Wevu 或额外 UI 依赖，使用同一份原生 Page/Component 源码覆盖微信、支付宝、抖音、百度、京东、小红书与 Web。每条 `dev:<platform>` / `build:<platform>` 命令只处理一个目标，详细目录、命令和验收边界见[多平台构建指南](/guide/multi-platform)。
 
 ## 初始化后会做什么
 

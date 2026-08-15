@@ -1,0 +1,8 @@
+{
+  "format": 2,
+  "compileType": "mini",
+  "miniprogramRoot": "dist",
+  "compileOptions": {
+    "typescript": false
+  }
+}

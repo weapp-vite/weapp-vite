@@ -7,7 +7,7 @@
 ## 特性
 
 - 交互式创建或非交互式参数创建
-- 内置多种模板（默认、Wevu、Wevu + TDesign、Tailwindcss、TDesign、Vant、插件、组件库）
+- 内置多种模板（默认、多平台 + Web、Wevu、Wevu + TDesign、Tailwindcss、TDesign、Vant、插件、组件库）
 - 自动对齐 `weapp-vite` 与 `wevu` 版本
 - 自动处理 `.gitignore` 写入
 - 可选安装推荐的 AI skills（`sonofmagic/skills`）
@@ -45,6 +45,9 @@ npx skills add sonofmagic/skills
 ```bash
 pnpm create weapp-vite my-app wevu
 
+# 原生多平台 + Web 模板
+pnpm create weapp-vite my-app multi-platform
+
 # 显式安装推荐 skills
 pnpm create weapp-vite my-app wevu --install-skills
 
@@ -66,13 +69,17 @@ await createProject('my-app', TemplateName.wevu, { installSkills: true })
 `TemplateName` 支持以下模板：
 
 - `default`
+- `multi-platform`
 - `wevu`
+- `react`
 - `wevu-tdesign`
 - `tailwindcss`
 - `tdesign`
 - `vant`
 - `plugin`
 - `lib`
+
+`multi-platform` 使用原生 Page/Component，覆盖微信、支付宝、抖音、百度、京东、小红书与 Web Runtime。它按命令构建单个目标，不会隐式生成全部平台产物；创建后请使用 `dev:<platform>` / `build:<platform>` 脚本。
 
 ## 相关链接
 

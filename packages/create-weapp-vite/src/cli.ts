@@ -15,6 +15,10 @@ const TEMPLATE_CHOICES: Array<{ name: string, value: TemplateName }> = [
     value: TemplateName.default,
   },
   {
+    name: '原生多平台 + Web 模板',
+    value: TemplateName.multiPlatform,
+  },
+  {
     name: 'Wevu 模板 (Vue SFC)',
     value: TemplateName.wevu,
   },

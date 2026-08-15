@@ -7,6 +7,7 @@ export default defineConfig({
       path.resolve(import.meta.dirname, './platforms/verification.test.ts').replaceAll('\\', '/'),
       path.resolve(import.meta.dirname, './scripts/platform-runtime-doctor.test.ts').replaceAll('\\', '/'),
       path.resolve(import.meta.dirname, './ci/platform-build.test.ts').replaceAll('\\', '/'),
+      path.resolve(import.meta.dirname, './ci/template-multi-platform.build.test.ts').replaceAll('\\', '/'),
       path.resolve(import.meta.dirname, './ci/wevu-runtime.platforms.test.ts').replaceAll('\\', '/'),
     ],
     testTimeout: 36_000_000,

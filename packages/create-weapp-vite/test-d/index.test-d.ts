@@ -3,11 +3,13 @@ import { createProject, TemplateName } from 'create-weapp-vite'
 import { expectAssignable, expectError, expectType } from 'tsd'
 
 expectAssignable<TemplateName>(TemplateName.default)
+expectAssignable<TemplateName>(TemplateName.multiPlatform)
 expectAssignable<TemplateName>(TemplateName.plugin)
 expectAssignable<TemplateName>(TemplateName.wevu)
 expectAssignable<TemplateName>(TemplateName.react)
 
 expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.default))
+expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.multiPlatform))
 
 const options: CreateProjectOptions = {
   installSkills: true,

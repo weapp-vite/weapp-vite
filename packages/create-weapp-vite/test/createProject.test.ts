@@ -121,7 +121,10 @@ describe('createProject', () => {
     expect(files).toContain('AGENTS.md')
   })
 
-  it.each(Object.values(TemplateName).filter(templateName => templateName !== TemplateName.plugin))('rewrites generated project.config.json appid to touristappid for template %s', async (templateName) => {
+  it.each(Object.values(TemplateName).filter(templateName => ![
+    TemplateName.plugin,
+    TemplateName.multiPlatform,
+  ].includes(templateName)))('rewrites generated project.config.json appid to touristappid for template %s', async (templateName) => {
     const root = await createTmpRoot(`tourist-appid-${templateName}`)
 
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
@@ -130,6 +133,24 @@ describe('createProject', () => {
 
     const projectConfig = await readJsonAs<{ appid?: string }>(path.join(root, 'project.config.json'))
     expect(projectConfig.appid).toBe('touristappid')
+  })
+
+  it('rewrites the nested WeChat AppID for the multi-platform template', async () => {
+    const root = await createTmpRoot('multi-platform-appid')
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, TemplateName.multiPlatform)
+
+    const projectConfig = await readJsonAs<{ appid?: string }>(
+      path.join(root, 'config/weapp/project.config.json'),
+    )
+    expect(projectConfig.appid).toBe('touristappid')
+
+    const agents = await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')
+    expect(agents).toContain('## Multi-platform Workflow')
+    expect(agents).toContain('`config/<platform>`')
+    expect(agents).toContain('`pnpm dev:web`')
   })
 
   it('preserves the real plugin AppID for plugin templates', async () => {

@@ -22,6 +22,7 @@ const TOURIST_APP_ID = 'touristappid'
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
 const TEMPLATE_DIR_MAP: Record<TemplateName, string> = {
   [TemplateName.default]: 'weapp-vite-template',
+  [TemplateName.multiPlatform]: 'weapp-vite-multi-platform-template',
   [TemplateName.plugin]: 'weapp-vite-plugin-template',
   [TemplateName.lib]: 'weapp-vite-lib-template',
   [TemplateName.wevu]: 'weapp-vite-wevu-template',
@@ -159,23 +160,29 @@ async function ensureDotGitignore(root: string) {
 }
 
 async function rewriteProjectConfigAppId(targetDir: string) {
-  const projectConfigPath = path.resolve(targetDir, 'project.config.json')
-  if (!await fs.pathExists(projectConfigPath)) {
-    return
-  }
+  const projectConfigPaths = [
+    path.resolve(targetDir, 'project.config.json'),
+    path.resolve(targetDir, 'config/weapp/project.config.json'),
+  ]
 
-  const projectConfig = await fs.readJSON(projectConfigPath) as Record<string, any>
-  if (
-    !projectConfig
-    || typeof projectConfig !== 'object'
-    || projectConfig.compileType === 'plugin'
-    || projectConfig.appid === TOURIST_APP_ID
-  ) {
-    return
-  }
+  for (const projectConfigPath of projectConfigPaths) {
+    if (!await fs.pathExists(projectConfigPath)) {
+      continue
+    }
 
-  projectConfig.appid = TOURIST_APP_ID
-  await writeJsonFile(projectConfigPath, projectConfig)
+    const projectConfig = await fs.readJSON(projectConfigPath) as Record<string, any>
+    if (
+      !projectConfig
+      || typeof projectConfig !== 'object'
+      || projectConfig.compileType === 'plugin'
+      || projectConfig.appid === TOURIST_APP_ID
+    ) {
+      continue
+    }
+
+    projectConfig.appid = TOURIST_APP_ID
+    await writeJsonFile(projectConfigPath, projectConfig)
+  }
 }
 
 function createEmptyPackageJson(): PackageJson {

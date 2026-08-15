@@ -1,0 +1,13 @@
+{
+  "$schema": "https://vite.icebreaker.top/app.json",
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "多平台模板",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f4f6f8"
+  },
+  "sitemapLocation": "sitemap.json"
+}

@@ -12,7 +12,6 @@ import { runWeappViteBuildWithLogCapture } from './utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 const APP_JSON_PATH = 'src/app.json'
 const APP_VUE_PATH = 'src/app.vue'
-const DIST_APP_JSON_PATH = 'dist/app.json'
 const TEMPLATE_E2E_DEBUG = process.env.WEAPP_VITE_TEMPLATE_E2E_DEBUG === '1'
 const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
 const TAP_ATTR_RE = /\s+(?:@tap|bind:tap|bindtap)=["'][^"']*["']/g
@@ -59,7 +58,11 @@ function debugTemplateE2E(templateName: string, phase: string, detail?: string) 
 }
 
 export interface TemplateE2EOptions {
+  buildPlatform?: string
+  distRoot?: string
+  ideProjectRoot?: string
   jsFormat?: 'cjs' | 'esm'
+  runtimeAssert?: (page: any, pagePath: string) => Promise<void>
   skip?: (message?: string) => void
   templateRoot: string
   templateName: string
@@ -565,8 +568,8 @@ function skipOrThrow(skip: TemplateE2EOptions['skip'], message: string, error: u
   throw error instanceof Error ? error : new Error(`${message}reason=${String(error)}`)
 }
 
-async function loadAppConfig(templateRoot: string) {
-  const distAppJsonPath = path.resolve(templateRoot, DIST_APP_JSON_PATH)
+async function loadAppConfig(templateRoot: string, distRoot = 'dist') {
+  const distAppJsonPath = path.resolve(templateRoot, distRoot, 'app.json')
   if (await pathExists(distAppJsonPath)) {
     return await readJson<Record<string, any>>(distAppJsonPath)
   }
@@ -639,7 +642,7 @@ function resolvePages(config: Record<string, any>) {
   return pages
 }
 
-async function runBuild(templateRoot: string, jsFormat?: 'cjs' | 'esm') {
+async function runBuild(templateRoot: string, jsFormat?: 'cjs' | 'esm', platform = 'weapp') {
   const packageJsonPath = path.resolve(templateRoot, 'package.json')
   const packageJson = await readJson<Record<string, any>>(packageJsonPath)
   const hasDependencies = packageJson?.dependencies && Object.keys(packageJson.dependencies).length > 0
@@ -657,7 +660,7 @@ async function runBuild(templateRoot: string, jsFormat?: 'cjs' | 'esm') {
     cliPath: CLI_PATH,
     jsFormat,
     projectRoot: templateRoot,
-    platform: 'weapp',
+    platform,
     cwd: templateRoot,
     label: `ide:${path.basename(templateRoot)}${jsFormat ? `:${jsFormat}` : ''}`,
     skipNpm: !hasDependencies || hasPrebuiltNpm,
@@ -665,11 +668,21 @@ async function runBuild(templateRoot: string, jsFormat?: 'cjs' | 'esm') {
 }
 
 export async function runTemplateE2E(options: TemplateE2EOptions) {
-  const { templateRoot, templateName, jsFormat, skip, warmupRoute } = options
+  const {
+    buildPlatform = 'weapp',
+    distRoot = 'dist',
+    ideProjectRoot = '.',
+    jsFormat,
+    runtimeAssert,
+    skip,
+    templateName,
+    templateRoot,
+    warmupRoute,
+  } = options
   debugTemplateE2E(templateName, 'start')
-  await runBuild(templateRoot, jsFormat)
+  await runBuild(templateRoot, jsFormat, buildPlatform)
   debugTemplateE2E(templateName, 'build-done')
-  const config = await loadAppConfig(templateRoot)
+  const config = await loadAppConfig(templateRoot, distRoot)
   debugTemplateE2E(templateName, 'config-loaded')
   const pages = resolvePages(config)
   debugTemplateE2E(templateName, 'pages-resolved', `count=${pages.length}`)
@@ -679,7 +692,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   }
   const launchWarmupRoute = warmupRoute ?? `/${pages[0]}`
 
-  const appWxssPath = path.join(templateRoot, 'dist', 'app.wxss')
+  const appWxssPath = path.join(templateRoot, distRoot, 'app.wxss')
   if (!(await pathExists(appWxssPath))) {
     throw new Error(`[${templateName}] Missing app.wxss in dist output`)
   }
@@ -689,7 +702,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
 
   const runtimeSelectorMap = new Map<string, string[]>()
   for (const pagePath of pages) {
-    const pageWxmlPath = path.join(templateRoot, 'dist', `${pagePath}.wxml`)
+    const pageWxmlPath = path.join(templateRoot, distRoot, `${pagePath}.wxml`)
     if (!(await pathExists(pageWxmlPath))) {
       throw new Error(`[${templateName}] Missing page WXML in dist output: ${pagePath}`)
     }
@@ -703,7 +716,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   async function launchTemplateAutomator() {
     debugTemplateE2E(templateName, 'automator-launching')
     return await launchAutomator({
-      projectPath: templateRoot,
+      projectPath: path.resolve(templateRoot, ideProjectRoot),
       projectConfig: {
         setting: {
           skylineRenderEnable: false,
@@ -786,6 +799,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
       }
       await waitForRuntimeRendered(page, runtimeSelectorMap.get(pagePath) ?? [], templateName, route)
       debugTemplateE2E(templateName, 'page-runtime-ready', route)
+      await runtimeAssert?.(page, pagePath)
     }
   }
   finally {

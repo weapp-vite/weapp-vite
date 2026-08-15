@@ -1,0 +1,9 @@
+{
+  "$schema": "https://vite.icebreaker.top/sitemap.json",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

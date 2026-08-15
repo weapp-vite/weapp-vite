@@ -6,6 +6,10 @@ export const Templates = [
     dest: TemplateName.default,
   },
   {
+    target: 'weapp-vite-multi-platform-template',
+    dest: TemplateName.multiPlatform,
+  },
+  {
     target: 'weapp-vite-plugin-template',
     dest: TemplateName.plugin,
   },

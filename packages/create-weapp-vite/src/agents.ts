@@ -15,6 +15,10 @@ function supportsPlugin(templateName: TemplateName) {
   return templateName === TemplateName.plugin
 }
 
+function supportsMultiPlatform(templateName: TemplateName) {
+  return templateName === TemplateName.multiPlatform
+}
+
 /**
  * @description 生成新项目的 AGENTS 指引
  */
@@ -98,6 +102,18 @@ export function createAgentsGuidelines(templateName: TemplateName) {
       '- Keep native page/component structure consistent with the template unless there is a clear migration goal.',
       '- Prefer `weapp-vite generate` or `wv generate` for new app/page/component scaffolds.',
       '- If migrating this project, first decide whether the target is `weapp-vite + native` or a further Vue SFC / `wevu` migration, then keep each migration wave explicit.',
+    )
+  }
+
+  if (supportsMultiPlatform(templateName)) {
+    lines.push(
+      '',
+      '## Multi-platform Workflow',
+      '',
+      '- This project builds one target at a time. Always pass an explicit platform or use `pnpm dev:<platform>` / `pnpm build:<platform>`.',
+      '- Keep platform IDE configuration under `config/<platform>` and import `dist/<platform>` into the matching mini-program IDE.',
+      '- Use `pnpm dev:web` for browser compatibility work, but keep mini-program DevTools or device acceptance as the release authority.',
+      '- Treat WeChat, Web, official IDE compilation, and unsupported automator targets as separate verification layers; do not report a build-only check as runtime E2E.',
     )
   }
 

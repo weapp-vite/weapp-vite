@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-14T03:57:44.324Z",
+  "generatedAt": "2026-08-15T17:22:55.149Z",
   "site": "https://vite.icebreaker.top",
   "count": 274,
   "items": [
@@ -1013,7 +1013,7 @@
         "vite",
         "什么时候适合开启"
       ],
-      "updatedAt": "2026-07-26",
+      "updatedAt": "2026-08-16",
       "source": "config/web.md"
     },
     {
@@ -2340,14 +2340,19 @@
       ],
       "headings": [
         "面向多平台构建 experimental {#multi-platform}",
+        "从多平台模板开始 {#template-quick-start}",
+        "目录与输出 {#template-directories}",
+        "便携源码规则 {#portable-source}",
+        "Web 联调 {#template-web-runtime}",
+        "AppID 配置 {#template-appid}",
+        "分层验收 {#template-verification}",
         "目标声明 {#targets}",
         "支付宝小程序 {#platform-alipay}",
         "字节系（抖音 / 今日头条）小程序 {#platform-tt}",
         "百度智能小程序 {#platform-swan}",
-        "京东小程序 {#platform-jd}",
-        "小红书小程序 {#platform-xhs}"
+        "京东小程序 {#platform-jd}"
       ],
-      "updatedAt": "2026-08-14",
+      "updatedAt": "2026-08-16",
       "source": "guide/multi-platform.md"
     },
     {
@@ -3952,7 +3957,7 @@
         "初始化后会做什么",
         "与主文档的关系"
       ],
-      "updatedAt": "2026-05-06",
+      "updatedAt": "2026-08-16",
       "source": "packages/create-weapp-vite.md"
     },
     {

@@ -1,0 +1,5 @@
+<view class="platform-card">
+  <view class="platform-card__label">当前构建目标</view>
+  <view class="platform-card__value">{{platform}}</view>
+  <view class="platform-card__hint">同一份原生源码由 weapp-vite 转换为目标平台产物</view>
+</view>

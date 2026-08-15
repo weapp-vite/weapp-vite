@@ -144,6 +144,18 @@ async function waitForExpectedRuntimeState(page: Page, expectation: 'runtime' | 
   return runtime
 }
 
+async function assertProjectRuntimeContract(page: Page, relativeRoot: string) {
+  if (relativeRoot !== 'templates/weapp-vite-multi-platform-template') {
+    return
+  }
+
+  await expect.poll(() => page.locator('#platform-marker').textContent()).toContain('MP_PLATFORM=web')
+  await expect.poll(() => page.locator('#runtime-status').textContent()).toContain('status=ready')
+  await expect.poll(() => page.locator('#counter-value').textContent()).toBe('0')
+  await page.locator('#increment-button').click()
+  await expect.poll(() => page.locator('#counter-value').textContent()).toBe('1')
+}
+
 describeWeb.sequential('workspace Web project matrix', async () => {
   const projects = (await discoverWebProjects(ROOT))
     .filter(project => !DEDICATED_WEB_PROJECTS.has(project.relativeRoot))
@@ -233,6 +245,7 @@ describeWeb.sequential('workspace Web project matrix', async () => {
           else {
             expect(runtime.pageCount).toBeGreaterThan(0)
             expect(runtime.route).toBeTruthy()
+            await assertProjectRuntimeContract(page, project.relativeRoot)
           }
           expect(pageErrors).toEqual([])
         }

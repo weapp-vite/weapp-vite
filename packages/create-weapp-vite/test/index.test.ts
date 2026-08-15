@@ -132,6 +132,7 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     await waitForFile(path.join(out, 'package.json'))
     expect(lastSelectChoices?.map(c => c.value)).toEqual([
       'default',
+      'multi-platform',
       'wevu',
       'react',
       'wevu-tdesign',

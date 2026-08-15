@@ -35,6 +35,8 @@ wv build -p web
 
 推荐将它们固定为 `dev:web` 和 `build:web` scripts。`web` 是浏览器 runtime 的规范平台名，`h5` 仅作为向后兼容别名保留；未选择 Web 平台时，原有小程序构建行为不变。
 
+新项目如果还需要输出微信、支付宝、抖音、百度、京东和小红书，可以直接创建 `multi-platform` 模板。它已配置独立的 Web 脚本和输出目录，完整工作流见[多平台构建指南](/guide/multi-platform)。
+
 ## `weapp.web` {#weapp-web}
 
 - **类型**：

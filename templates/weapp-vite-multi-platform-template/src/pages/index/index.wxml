@@ -1,0 +1,22 @@
+<wxs module="platformTools" src="./platform.wxs" />
+
+<view class="page-shell">
+  <view class="page-heading">
+    <view class="page-heading__eyebrow">weapp-vite</view>
+    <view class="page-heading__title">原生多平台 + Web</view>
+    <view class="page-heading__description">一次维护，按目标平台独立构建和验收。</view>
+  </view>
+
+  <view id="platform-marker" class="runtime-marker">MP_PLATFORM={{platformTools.label(platform)}}</view>
+  <view id="runtime-status" class="runtime-status">status={{status}}</view>
+
+  <PlatformCard platform="{{platform}}" />
+
+  <view class="counter-panel">
+    <view class="counter-panel__label">跨端交互检查</view>
+    <view id="counter-value" class="counter-panel__value">{{count}}</view>
+    <button id="increment-button" class="counter-panel__button" bind:tap="increment">
+      增加计数
+    </button>
+  </view>
+</view>

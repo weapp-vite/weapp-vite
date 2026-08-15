@@ -1,0 +1,10 @@
+{
+  "description": "weapp-vite 多平台模板",
+  "miniprogramRoot": "dist",
+  "compileType": "miniprogram",
+  "setting": {
+    "es6": true,
+    "compileHotReload": false
+  },
+  "appid": "your_appid"
+}

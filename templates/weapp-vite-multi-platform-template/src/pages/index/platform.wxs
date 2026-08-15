@@ -1,0 +1,7 @@
+function label(value) {
+  return value || 'unknown'
+}
+
+module.exports = {
+  label: label,
+}

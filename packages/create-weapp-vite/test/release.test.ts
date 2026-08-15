@@ -49,6 +49,7 @@ describe('create-weapp-vite release pack', () => {
       }
 
       expect(packedFiles.has('templates/default/project.config.json')).toBe(true)
+      expect(packedFiles.has('templates/multi-platform/config/weapp/project.config.json')).toBe(true)
       expect([...packedFiles].some(file => file.startsWith('templates/plugin/dist-'))).toBe(false)
     }
     finally {
