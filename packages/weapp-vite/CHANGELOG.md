@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.20.4
+
+### Patch Changes
+
+- 🐛 **新增 React 小程序最佳实践 skill，更新全部公开 skills、官网 AI 入口与脚手架生成的协作指引，并加入公开 skill 防漂移校验。** [`71c046b`](https://github.com/weapp-vite/weapp-vite/commit/71c046b72455367bfeeee62286dac6c463629820) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.20.4`, `wevu@6.20.4`, `@weapp-vite/web@1.4.9`
+
 ## 6.20.3
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # create-weapp-vite
 
+## 2.8.0
+
+### Minor Changes
+
+- ✨ **新增可直接选择的多平台 Vue SFC 与 Web 模板，覆盖六个小程序构建目标、受管类型支持和分层运行时验收工作流。** [`ed325d3`](https://github.com/weapp-vite/weapp-vite/commit/ed325d34088f2fa63a1a2010dbde96068069a593) by @sonofmagic
+
+- ✨ **新增可交互选择或通过 `multi-platform` 参数创建的原生多平台与 Web 模板，并在发布包中包含完整的平台配置和专属 AI 协作指引。** [`374be22`](https://github.com/weapp-vite/weapp-vite/commit/374be228fb0d055cf5ca3d14cf153137ba8c89d7) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **新增 React 小程序最佳实践 skill，更新全部公开 skills、官网 AI 入口与脚手架生成的协作指引，并加入公开 skill 防漂移校验。** [`71c046b`](https://github.com/weapp-vite/weapp-vite/commit/71c046b72455367bfeeee62286dac6c463629820) by @sonofmagic
+
 ## 2.7.3
 
 ### Patch Changes

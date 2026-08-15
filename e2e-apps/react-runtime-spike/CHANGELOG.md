@@ -1,5 +1,12 @@
 # e2e-app-react-runtime-spike
 
+## 0.0.5
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.20.4`
+
 ## 0.0.4
 
 ### Patch Changes

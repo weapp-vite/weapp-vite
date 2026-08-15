@@ -1,7 +1,7 @@
 {
   "name": "weapp-vite-react-template",
   "type": "module",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "private": true,
   "weappVite": {
     "web": false
