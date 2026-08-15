@@ -1,4 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
+import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
+import MagicString from 'magic-string'
 import { describe, expect, it, vi } from 'vitest'
 import { createChunkImporterIndex, ensureUniqueFileName, findChunkImporters, updateImporters } from './bundle'
 
@@ -205,6 +207,48 @@ describe('chunkStrategy bundle', () => {
     expect(sameChunk.code).toContain('../chunks/shared.js')
     expect(sameChunk.imports).toEqual(['chunks/shared.js'])
     expect(sameChunk.dynamicImports).toEqual([])
+  })
+
+  it('preserves importer mappings when rewriting a shared chunk path', () => {
+    const source = 'src/pages/home.ts'
+    const code = [
+      'const dep = require("../chunks/shared.js")',
+      'Page({})',
+    ].join('\n')
+    const importerChunk = createChunk('pages/home.js', {
+      code,
+      imports: ['chunks/shared.js'],
+      map: new MagicString(code).generateMap({
+        hires: true,
+        includeContent: true,
+        source,
+      }) as any,
+    })
+    const bundle: OutputBundle = {
+      'pages/home.js': importerChunk,
+      'chunks/shared.js': createChunk('chunks/shared.js'),
+      'chunks/shared.copy.js': createChunk('chunks/shared.copy.js'),
+    }
+
+    updateImporters(
+      bundle,
+      new Map([['pages/home.js', 'chunks/shared.copy.js']]),
+      'chunks/shared.js',
+    )
+
+    const generatedIndex = importerChunk.code.indexOf('Page({})')
+    const generatedPrefix = importerChunk.code.slice(0, generatedIndex)
+    const generatedLines = generatedPrefix.split('\n')
+    const originalPosition = originalPositionFor(new TraceMap(importerChunk.map as any), {
+      column: generatedLines[generatedLines.length - 1]?.length ?? 0,
+      line: generatedLines.length,
+    })
+    expect(importerChunk.code).toContain('../chunks/shared.copy.js')
+    expect(originalPosition).toMatchObject({
+      source,
+      line: 2,
+      column: 0,
+    })
   })
 
   it('keeps a reused importer index in sync after importer updates', () => {

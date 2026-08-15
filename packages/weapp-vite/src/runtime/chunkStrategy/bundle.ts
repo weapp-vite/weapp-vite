@@ -1,11 +1,42 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import { posix as path } from 'pathe'
-import { createRelativeImport, replaceAll } from './utils'
+import { replaceOutputChunkCode } from '../../utils/outputChunk'
+import { createRelativeImport } from './utils'
 
 export interface ChunkImporterIndex {
   directImporters: Map<string, Set<string>>
   codeImporters: Map<string, Set<string>>
   chunks: Map<string, OutputChunk>
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function replaceChunkCodeAll(chunk: OutputChunk, searchValue: string, replaceValue: string) {
+  if (!searchValue) {
+    return false
+  }
+  const replaceExact = () => replaceOutputChunkCode(
+    chunk,
+    new RegExp(escapeRegExp(searchValue), 'g'),
+    () => replaceValue,
+  )
+  if (chunk.code.includes(searchValue)) {
+    return replaceExact()
+  }
+  if (searchValue.startsWith('./') && replaceValue.startsWith('./')) {
+    const trimmedSearch = searchValue.slice(2)
+    const trimmedReplace = replaceValue.slice(2)
+    if (trimmedSearch && chunk.code.includes(trimmedSearch)) {
+      return replaceOutputChunkCode(
+        chunk,
+        new RegExp(escapeRegExp(trimmedSearch), 'g'),
+        () => trimmedReplace,
+      )
+    }
+  }
+  return false
 }
 
 type BundleEntry = [string, OutputBundle[string]]
@@ -459,11 +490,7 @@ export function updateImporters(
       if (originalImportPath === newImportPath) {
         continue
       }
-      const updated = replaceAll(importerChunk.code, originalImportPath, newImportPath)
-      if (updated !== importerChunk.code) {
-        importerChunk.code = updated
-        codeUpdated = true
-      }
+      codeUpdated = replaceChunkCodeAll(importerChunk, originalImportPath, newImportPath) || codeUpdated
     }
 
     importerChunk.imports = replaceInArray(importerChunk.imports, originalFileNames, newChunkFile, codeUpdated)

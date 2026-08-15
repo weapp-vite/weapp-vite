@@ -10,13 +10,13 @@ import {
   normalizeNpmImportPathByPlatform,
   resolveNpmDependencyId,
 } from '../../../../../utils/npmImport'
+import { applyMagicStringChunkRewrite } from '../../../../../utils/outputChunk'
 import { createMiniProgramPlatformApiRewrite, rewriteMiniProgramPlatformApiAccess } from '../../platformApiRewrite'
 import {
   BROWSER_GLOBAL_HOST_TERNARY_RE,
   DYNAMIC_GLOBAL_RESOLUTION_RE,
 } from '../constants'
 import { getRequireImportLiteral } from './literals'
-import { applyMagicStringChunkRewrite } from './sourcemap'
 
 function mayNeedChunkScriptAnalysis(code: string) {
   if (code.includes('require')) {

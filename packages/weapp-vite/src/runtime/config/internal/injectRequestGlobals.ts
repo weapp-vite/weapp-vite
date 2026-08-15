@@ -834,14 +834,7 @@ export function createInjectRequestGlobalsSfcCode(
   return `<script${scriptAttrs}>\n${createInjectRequestGlobalsCode(targets, options)}</script>\n`
 }
 
-function injectCodeIntoSfcBlock(source: string, startOffset: number, injection: string) {
-  return `${source.slice(0, startOffset)}${injection}${source.slice(startOffset)}`
-}
-
-/**
- * @description 将请求全局对象注入到现有 SFC 脚本块，避免生成额外的重复 `<script>`。
- */
-export function injectRequestGlobalsIntoSfc(
+export function resolveRequestGlobalsSfcInjection(
   source: string,
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
@@ -851,7 +844,7 @@ export function injectRequestGlobalsIntoSfc(
   },
 ) {
   if (targets.length === 0) {
-    return source
+    return null
   }
 
   const { descriptor, errors } = parseSfc(source, {
@@ -873,33 +866,67 @@ export function injectRequestGlobalsIntoSfc(
           localBindings: false,
         }
       : options
-    return `${createInjectRequestGlobalsSfcCode(targets, fallbackOptions)}${source}`
+    return {
+      code: createInjectRequestGlobalsSfcCode(targets, fallbackOptions),
+      index: 0,
+    }
   }
 
   const inlineScript = descriptor.script && !descriptor.script.src
     ? descriptor.script
     : undefined
   if (inlineScript) {
-    return injectCodeIntoSfcBlock(source, inlineScript.loc.start.offset, injection)
+    return {
+      code: injection,
+      index: inlineScript.loc.start.offset,
+    }
   }
 
   const inlineScriptSetup = descriptor.scriptSetup && !descriptor.scriptSetup.src
     ? descriptor.scriptSetup
     : undefined
   if (inlineScriptSetup) {
-    return `${createInjectRequestGlobalsSfcCode(targets, injectionOptions)}${source}`
+    return {
+      code: createInjectRequestGlobalsSfcCode(targets, injectionOptions),
+      index: 0,
+    }
   }
 
   if (!descriptor.script) {
-    return `${createInjectRequestGlobalsSfcCode(targets, injectionOptions)}${source}`
+    return {
+      code: createInjectRequestGlobalsSfcCode(targets, injectionOptions),
+      index: 0,
+    }
   }
 
   if (!descriptor.scriptSetup) {
-    return `${createInjectRequestGlobalsSfcCode(targets, {
-      ...options,
-      setup: true,
-    })}${source}`
+    return {
+      code: createInjectRequestGlobalsSfcCode(targets, {
+        ...options,
+        setup: true,
+      }),
+      index: 0,
+    }
   }
 
-  return source
+  return null
+}
+
+/**
+ * @description 将请求全局对象注入到现有 SFC 脚本块，避免生成额外的重复 `<script>`。
+ */
+export function injectRequestGlobalsIntoSfc(
+  source: string,
+  targets: WeappInjectRequestGlobalsTarget[],
+  options?: {
+    localBindings?: boolean
+    networkDefaults?: MiniProgramNetworkDefaults
+    passiveLocalBindings?: boolean
+  },
+) {
+  const injection = resolveRequestGlobalsSfcInjection(source, targets, options)
+  if (!injection) {
+    return source
+  }
+  return `${source.slice(0, injection.index)}${injection.code}${source.slice(injection.index)}`
 }

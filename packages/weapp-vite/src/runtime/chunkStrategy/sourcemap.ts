@@ -1,5 +1,6 @@
 import type { OutputAsset, OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import { Buffer } from 'node:buffer'
+import { normalizeEncodedSourceMapLike } from '../../utils/sourcemap'
 
 export type SourceLike = string | Uint8Array | Buffer
 
@@ -65,6 +66,29 @@ export function resolveSourceMapSource(
   }
 
   return undefined
+}
+
+export function resolveEncodedSourceMap(
+  originalMap: OutputChunk['map'],
+  assetSource: unknown,
+) {
+  const chunkMap = normalizeEncodedSourceMapLike(originalMap)
+  if (chunkMap) {
+    return chunkMap
+  }
+  if (!isSourceLike(assetSource)) {
+    return null
+  }
+
+  try {
+    const source = typeof assetSource === 'string'
+      ? assetSource
+      : Buffer.from(assetSource).toString('utf8')
+    return normalizeEncodedSourceMapLike(JSON.parse(source))
+  }
+  catch {
+    return null
+  }
 }
 
 export function emitSourceMapAsset(

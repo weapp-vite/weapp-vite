@@ -28,6 +28,7 @@ interface BuildCommandOptions {
   label?: string
   outDir?: string
   skipNpm?: boolean
+  sourcemap?: boolean
   env?: Record<string, string | undefined>
 }
 
@@ -189,6 +190,7 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
     label = projectRoot,
     outDir = 'dist',
     skipNpm = false,
+    sourcemap = false,
     env,
   } = options
 
@@ -218,6 +220,9 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
   const args = [cliPath, 'build', projectRoot, '--platform', platform]
   if (safeSkipNpm) {
     args.push('--skipNpm')
+  }
+  if (sourcemap) {
+    args.push('--sourcemap')
   }
   if (configOverride.configFile) {
     args.push('--config', configOverride.configFile)

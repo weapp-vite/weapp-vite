@@ -4,12 +4,12 @@ import MagicString from 'magic-string'
 import path from 'pathe'
 import { toPosixPath } from '../../../../../utils'
 import { parseJsLike, traverse } from '../../../../../utils/babel'
+import { applyMagicStringChunkRewrite } from '../../../../../utils/outputChunk'
 import {
   getRequireImportLiteral,
   normalizeWeappLocalNpmImport,
 } from './literals'
 import { getChunkScriptAnalysis, matchesSubPackageDependency, rememberChunkScriptAnalysis } from './platform'
-import { applyMagicStringChunkRewrite } from './sourcemap'
 
 export interface LocalRootNpmRewriteSubPackageMeta {
   root: string

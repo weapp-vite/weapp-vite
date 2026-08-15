@@ -1,11 +1,13 @@
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import os from 'node:os'
+import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import {
   REQUEST_GLOBAL_ACTUALS_KEY,
   REQUEST_GLOBAL_EXPOSE_HELPER,
   REQUEST_GLOBAL_INSTALLER_HOST_REF,
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
 } from '@weapp-core/constants'
+import MagicString from 'magic-string'
 import { parseSync } from 'oxc-parser'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -82,6 +84,60 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).not.toContain('"XMLHttpRequest"')
     expect(code).not.toContain('"fetch"')
     expect(code).not.toContain('"WebSocket"')
+  })
+
+  it('composes request globals injection with an existing entry sourcemap', async () => {
+    const sourceId = '/project/src/pages/fetch/index.ts'
+    const source = [
+      'const response = fetch("/api")',
+      'Page({ response })',
+    ].join('\n')
+    const loadEntry = vi.fn(async () => ({
+      code: source,
+      map: new MagicString(source).generateMap({
+        hires: true,
+        includeContent: true,
+        source: sourceId,
+      }),
+    }))
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          inlineConfig: {
+            build: {
+              sourcemap: true,
+            },
+          },
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              axios: '^1.0.0',
+            },
+          },
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'pages/fetch/index',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set([sourceId]),
+      entriesMap: new Map([
+        ['pages/fetch/index', { type: 'page' }],
+      ]),
+    } as any)
+
+    const result = await load.call({}, sourceId) as { code: string, map: any }
+    const markerIndex = result.code.indexOf('Page({ response })')
+    const markerPrefix = result.code.slice(0, markerIndex).split('\n')
+    const originalPosition = originalPositionFor(new TraceMap(result.map), {
+      column: markerPrefix[markerPrefix.length - 1]?.length ?? 0,
+      line: markerPrefix.length,
+    })
+
+    expect(result.code).toContain('__weappViteInstallRequestGlobals')
+    expect(originalPosition.source).toBe(sourceId)
+    expect(originalPosition.line).toBe(2)
   })
 
   it('injects request globals into existing app vue script without creating a duplicate script block', async () => {

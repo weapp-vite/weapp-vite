@@ -1,10 +1,11 @@
 import type { MiniProgramNetworkDefaults } from '@wevu/web-apis'
 import {
   createInjectRequestGlobalsCode,
-  injectRequestGlobalsIntoSfc,
   resolveAutoRequestGlobalsTargets,
   resolveManualRequestGlobalsTargets,
+  resolveRequestGlobalsSfcInjection,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
+import { editCodeTransformResult } from '../../../../utils/codeTransform'
 
 const NORMAL_SFC_SCRIPT_RE = /<script(?![^>]*setup)[^>]*>/u
 
@@ -48,6 +49,7 @@ export function injectRequestGlobalsIntoLoadResult(
     localBindings?: boolean
     networkDefaults?: MiniProgramNetworkDefaults
     passiveLocalBindings?: boolean
+    sourceMap?: boolean
   },
 ) {
   if (!result || typeof result !== 'object' || !('code' in result) || typeof result.code !== 'string' || targets.length === 0) {
@@ -55,14 +57,23 @@ export function injectRequestGlobalsIntoLoadResult(
   }
 
   if (sourceId.endsWith('.vue')) {
-    return {
-      ...result,
-      code: injectRequestGlobalsIntoSfc(result.code, targets as any, options),
+    const injection = resolveRequestGlobalsSfcInjection(result.code, targets as any, options)
+    if (!injection) {
+      return result
     }
+    return editCodeTransformResult(
+      result,
+      sourceId,
+      magicString => magicString.appendLeft(injection.index, injection.code),
+      { sourceMap: options?.sourceMap },
+    )
   }
 
-  return {
-    ...result,
-    code: `${createInjectRequestGlobalsCode(targets as any, options)}${result.code}`,
-  }
+  const injection = createInjectRequestGlobalsCode(targets as any, options)
+  return editCodeTransformResult(
+    result,
+    sourceId,
+    magicString => magicString.prepend(injection),
+    { sourceMap: options?.sourceMap },
+  )
 }

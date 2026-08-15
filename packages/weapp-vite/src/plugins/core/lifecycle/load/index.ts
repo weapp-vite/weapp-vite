@@ -88,7 +88,10 @@ export function createLoadHook(state: CorePluginState) {
   ) {
     const startedAt = performance.now()
     try {
-      return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets as any, options)
+      return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets as any, {
+        ...options,
+        sourceMap: Boolean(configService.inlineConfig?.build?.sourcemap),
+      })
     }
     finally {
       recordLoadDuration('requestGlobalsMs', startedAt)

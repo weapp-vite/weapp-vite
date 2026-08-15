@@ -1,6 +1,8 @@
 import type { OutputAsset, OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import type { SharedChunkDuplicatePayload } from './chunkStrategy'
 import { Buffer } from 'node:buffer'
+import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
+import MagicString from 'magic-string'
 import { posix as path } from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
 import { __clearSharedChunkDiagnosticsForTest, applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, markTakeModuleImporter, resetTakeImportRegistry, resolveSharedChunkName, SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
@@ -1137,16 +1139,25 @@ describe('applySharedChunkStrategy', () => {
     }
   })
 
-  it('re-emits sourcemap assets when they are stored separately from chunk metadata', () => {
+  it('composes duplicated chunk rewrites with sourcemaps stored as assets', () => {
     const sharedFileName = `${SHARED_CHUNK_VIRTUAL_PREFIX}/packageA+packageB/common.js`
-    const sharedMapSource = '{"version":3,"sources":["common.ts"],"mappings":""}'
+    const source = 'src/common.ts'
+    const sharedCode = [
+      'const runtime = require("../../rolldown-runtime.js"); const value = originalValue',
+      'Page({ value })',
+    ].join('\n')
+    const sharedMapSource = JSON.stringify(new MagicString(sharedCode).generateMap({
+      hires: true,
+      includeContent: true,
+      source,
+    }))
     const sharedChunk: OutputChunk = {
       type: 'chunk',
-      code: '// shared chunk duplicated into sub-packages',
+      code: sharedCode,
       fileName: sharedFileName,
       name: 'common',
       modules: {},
-      imports: [],
+      imports: ['rolldown-runtime.js'],
       dynamicImports: [],
       exports: [],
       isEntry: false,
@@ -1238,6 +1249,24 @@ describe('applySharedChunkStrategy', () => {
     for (const chunkName of expectedChunkNames) {
       expect(emitted.map(item => item.fileName)).toContain(chunkName)
       expect(emitted.map(item => item.fileName)).toContain(`${chunkName}.map`)
+
+      const duplicatedChunk = emitted.find(item => item.fileName === chunkName)
+      const duplicatedMap = emitted.find(item => item.fileName === `${chunkName}.map`)
+      expect(duplicatedChunk?.source).toContain('require("../rolldown-runtime.js")')
+      const marker = 'originalValue'
+      const generatedIndex = duplicatedChunk?.source.indexOf(marker) ?? -1
+      expect(generatedIndex).toBeGreaterThanOrEqual(0)
+      const generatedPrefix = duplicatedChunk?.source.slice(0, generatedIndex) ?? ''
+      const generatedLines = generatedPrefix.split('\n')
+      const originalPosition = originalPositionFor(new TraceMap(JSON.parse(duplicatedMap?.source ?? '')), {
+        column: generatedLines[generatedLines.length - 1]?.length ?? 0,
+        line: generatedLines.length,
+      })
+      expect(originalPosition).toMatchObject({
+        source,
+        line: 1,
+        column: sharedCode.indexOf(marker),
+      })
     }
 
     expect(bundle[`${sharedFileName}.map`]).toBeUndefined()
