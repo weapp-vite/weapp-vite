@@ -38,6 +38,12 @@ export default defineComponent({
 - hooks 在同步 `setup()` 中注册
 - 需要唯一性的 page hook 返回值按实例隔离
 
+## JSX / TSX ownership
+
+- 纯 `.jsx/.tsx`、Vue 风格 TSX 和 SFC 内 JSX/TSX 在 Wevu 项目中由 Wevu compiler 处理。
+- 保持小程序事件名和 class 语义，确认自定义组件 tag 输出为 kebab-case。
+- 项目启用 `weapp.react` 后，不再让 Wevu 拥有独立 `.jsx/.tsx`；React 与 Wevu 通过小程序自定义组件 bridge 互操作。
+
 ## Host composables
 
 ```ts

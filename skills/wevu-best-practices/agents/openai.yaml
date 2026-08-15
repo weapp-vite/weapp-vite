@@ -1,9 +1,7 @@
 interface:
-  display_name: Wevu Best Practices
-  short_description: wevu 生命周期、状态、router、layout、事件和运行时性能
-  default_prompt: >-
-    当任务主轴是 wevu 生命周期、响应式状态、事件、store、router、layout、页面切换或运行时性能时，
-    使用 $wevu-best-practices。先区分 wevu、wevu/router 与宿主 API 边界，再检查 runtime 信号。
+  display_name: 'Wevu Best Practices'
+  short_description: 'Wevu 生命周期、响应式、JSX、路由与运行时性能'
+  default_prompt: 'Use $wevu-best-practices to implement or debug Wevu-owned JSX, lifecycle, reactivity, events, stores, routing, layout, and runtime performance rather than a React-owned component bridge.'
 
 policy:
   allow_implicit_invocation: true

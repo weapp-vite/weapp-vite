@@ -1,6 +1,6 @@
 ---
 name: release-and-changeset-best-practices
-description: 面向采用 weapp-vite monorepo 布局仓库的 release、changeset 与 issue 交付工作流。适用于判断某次改动是否需要 changeset、是否联动 `create-weapp-vite`，以及从 issue 复现、worktree、回归覆盖到 PR 的仓库交付闭环。
+description: 面向 weapp-vite monorepo 的 release、changeset 与 issue 交付工作流。适用于 `weapp-vite`、`wevu`、`@weapp-vite/react`、mpcore、模板、公开 skills 或 AI 合约变更，判断 changeset、`create-weapp-vite` 联动、跨平台验证，以及从 issue worktree 到中文 PR/CI 的交付闭环。
 ---
 
 # release-and-changeset-best-practices
@@ -14,7 +14,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 release、changese
 - 用户问“这个改动要不要加 changeset”。
 - 用户要补 `.changeset/*.md`。
 - 用户准备发布。
-- 用户改了 `weapp-vite` / `wevu` / `templates/*` / `skills/*` / `dist/docs` / `AGENTS.md` / website。
+- 用户改了 `weapp-vite` / `wevu` / `@weapp-vite/react` / mpcore / `templates/*` / `skills/*` / `dist/docs` / `AGENTS.md` / website。
 - 用户改了 AI 使用路径，如 screenshot / compare / MCP / logs / skills 安装。
 - 用户要求按仓库流程修 GitHub issue，包括 worktree、最小复现、PR、中文变更说明与 CI 收尾。
 
@@ -36,6 +36,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 release、changese
    - `prepare` / `mcp init|print|doctor` / `forwardConsole`
    - `wv screenshot` / `wv compare` / `wv ide logs`
    - `web` runtime / `lib` mode
+   - React runtime、React 模板、mpcore provider parity 与多平台构建合约
 3. 若 release 涉及 `weapp-vite`、`wevu` 或 `templates/*`，默认联动补 `create-weapp-vite` bump。
 4. changeset summary 用中文，描述用户感知结果，不写成内部重构流水账。
 5. 若任务来自 GitHub issue：
@@ -43,6 +44,8 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 release、changese
    - 优先在 `e2e-apps/github-issues` 或最小入口稳定复现
    - 先补根因相关 unit / e2e，再做 PR 收尾
 6. 交付遵循 Conventional Commits；默认 commit-only，issue 修复走 PR 流程。
+   - 平台敏感改动先定位最早 OS 分歧，检查 command launch、path normalization、line endings 和 filesystem assumptions。
+   - touched DevTools parity 场景同时核对 mpcore unit/integration、browser e2e 和必要的 type tests。
 7. 发布前优先跑仓库脚本：
    - `node --import tsx scripts/check-create-weapp-vite-changeset.ts`
    - `node --import tsx scripts/check-catalog-changeset.ts`
@@ -61,6 +64,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 release、changese
 - 不要写英文或空泛的 summary。
 - 不要把用户可见的 AI / docs / template 合约误判成纯内部改动。
 - 不要在复现不稳定时直接修源码并开 PR。
+- 不要把仅某个 OS、DevTools 登录、端口或 automator 连接失败当作产品行为回归。
 
 ## 输出
 

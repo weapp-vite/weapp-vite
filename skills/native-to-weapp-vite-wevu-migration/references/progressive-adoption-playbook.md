@@ -45,6 +45,7 @@
 ## 阶段 0：原生项目体检
 
 - 读取 `app.json`、分包配置、页面列表、`usingComponents`、插件、npm 依赖和 CI 命令。
+- 记录当前平台、模板/样式/script module 扩展名，以及微信、支付宝、抖音、百度、京东、小红书和 Web 中实际需要覆盖的目标。
 - 标记高风险资产：复杂 `wxs/sjs`、原生插件、云开发、地图/直播/支付、跨页面共享实例、全局 monkey patch。
 - 标记低风险试点：新页面、内部页面、展示页、无复杂宿主 API 的组件。
 - 记录当前 DevTools 打开方式、构建输出目录、预览/上传流程。
@@ -54,10 +55,12 @@
 目标是“不改业务行为，只替换工程入口”。
 
 - 新增或修正 `vite.config.ts` 的 `weapp` 配置。
+- 多平台项目显式启用 `multiPlatform`，一次只构建一个目标；保留 `.wxml/.wxss`、`.axml/.acss`、`.ttml/.ttss` 等原生资产。
 - 保留原生页面和组件目录结构，先让 `dev/build/open` 产物等价。
 - 接入 `wv prepare`，确认 `.weapp-vite` 类型和 AI 支持文件生成稳定。
 - 对齐路径别名、静态资源、环境变量、npm 包构建、输出目录和 DevTools 项目配置。
 - 建立最小验证：构建成功、DevTools 可打开、首页可进入、关键接口无新增 runtime error。
+- Web runtime 只验证浏览器兼容；发布前仍在目标小程序 IDE 或真机验证宿主 API 与页面行为。
 
 如果选择路线 A，这一阶段之后进入“原生链路收口”，而不是继续改页面。
 
@@ -116,3 +119,4 @@
 - 页面族迁移：构建 + 关键交互 + runtime error 日志检查。
 - 视觉敏感页面：截图 + `wv compare`。
 - DevTools 相关问题：使用 IDE e2e 或 `wv ide logs --open` 验证真实运行时。
+- 多平台原生接入：按目标分别 build，并检查对应模板、样式、script module 和 project config 输出。

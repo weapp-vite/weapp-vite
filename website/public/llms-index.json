@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-15T18:08:48.344Z",
+  "generatedAt": "2026-08-15T18:53:42.523Z",
   "site": "https://vite.icebreaker.top",
   "count": 274,
   "items": [
@@ -1249,7 +1249,7 @@
     {
       "id": "doc-40a9999290",
       "title": "AI 任务工作流",
-      "summary": "将 Weapp-vite 常见 AI 协作任务拆成可执行流程，覆盖 issue 修复、文档同步、DevTools e2e、SFC 排障和原生迁移。",
+      "summary": "将 Weapp-vite 常见 AI 协作任务拆成可执行流程，覆盖 issue 修复、文档同步、DevTools/headless e2e、React、SFC 排障和原生迁移。",
       "url": "/guide/ai-workflows",
       "canonical": "https://vite.icebreaker.top/guide/ai-workflows",
       "keywords": [
@@ -1306,7 +1306,7 @@
         "相关配置",
         "llms.txt"
       ],
-      "updatedAt": "2026-08-14",
+      "updatedAt": "2026-08-16",
       "source": "guide/ai.md"
     },
     {

@@ -232,6 +232,11 @@ export default await defineEslintConfig({
         'no-self-assign': 'off',
       },
     }, {
+      files: ['skills/*/agents/openai.yaml'],
+      rules: {
+        'yaml/plain-scalar': 'off',
+      },
+    }, {
       files: ['**/*.json'],
       rules: {
         'style/eol-last': 'off',

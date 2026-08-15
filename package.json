@@ -191,6 +191,7 @@
     "sync:project-private-lib-version": "node scripts/sync-project-private-lib-version.mjs",
     "skills:link": "node scripts/link-agent-skills.mjs",
     "skills:link:dry": "node scripts/link-agent-skills.mjs --dry-run",
+    "skills:check": "pnpm skills:check:yaml && node skills/scripts/check-public-skill-sync.mjs",
     "skills:check:yaml": "node skills/scripts/validate-skills-yaml.mjs",
     "skills:score": "node skills/scripts/score-skill-trigger-regression.mjs",
     "skills:score:json": "node skills/scripts/score-skill-trigger-regression.mjs --json",

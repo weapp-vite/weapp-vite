@@ -1,0 +1,7 @@
+interface:
+  display_name: 'Weapp-vite React Best Practices'
+  short_description: 'React 19 小程序配置、TSX、运行时与组件互操作'
+  default_prompt: 'Use $weapp-vite-react-best-practices to configure and validate React-owned TSX for a React 19 WeChat mini-program, including render modes and bridges to native or Wevu custom components.'
+
+policy:
+  allow_implicit_invocation: true

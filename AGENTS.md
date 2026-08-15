@@ -297,6 +297,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - `release-and-changeset-best-practices`
   - `weapp-devtools-e2e-best-practices`
   - `weapp-vite-vue-sfc-best-practices`
+  - `weapp-vite-react-best-practices`
   - `wevu-best-practices`
   - `native-to-weapp-vite-wevu-migration`
 - Recommended remote install source for all public skills is `sonofmagic/skills`:

@@ -38,10 +38,11 @@ npx skills add sonofmagic/skills
 | `$release-and-changeset-best-practices` | changeset 判断、发布检查、GitHub issue 修复、worktree 与 PR 闭环                    | `.changeset/**`、`e2e-apps/github-issues`、发布检查脚本                     |
 | `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 复用、`miniProgram.reLaunch(...)`、真实运行时截图和日志验收 | `e2e/ide/**`、`e2e/scripts/**`、DevTools 配置                               |
 | `$weapp-vite-vue-sfc-best-practices`    | 小程序 `.vue`、JSON 宏、`definePageMeta`、layout、`v-model`、模板兼容               | `.weapp-vite` 类型文件、Vue SFC 文档、模板兼容清单                          |
+| `$weapp-vite-react-best-practices`      | React 19、JSX/TSX、render mode、React Compiler、原生/Wevu 组件 bridge               | React 配置类型、`@weapp-vite/react`、React 模板与 runtime e2e               |
 | `$wevu-best-practices`                  | wevu 生命周期、事件、store、router、layout、运行时性能治理                          | `packages-runtime/wevu`、wevu 文档、运行时排障清单                          |
 | `$native-to-weapp-vite-wevu-migration`  | 原生小程序迁移到 `weapp-vite + 原生`，或继续升级到 `weapp-vite + wevu + Vue SFC`    | 路线选择、迁移清单、API 映射、回滚与验收计划                                |
 
-近期能力按主题归入现有 skill：stateful HMR、pluginRoot/dist-plugin、Web runtime 和 native AST 归 `$weapp-vite-best-practices`；`wevu/router` 归 `$wevu-best-practices`；DevTools URL 构造器兼容和真实运行时隔离归 `$weapp-devtools-e2e-best-practices`。
+近期能力按主题归入现有 skill：stateful HMR、pluginRoot/dist-plugin、Web runtime、native AST 与六平台单目标构建归 `$weapp-vite-best-practices`；React 19 JSX/TSX 和组件 bridge 归 `$weapp-vite-react-best-practices`；Wevu JSX/TSX 与 `wevu/router` 归 `$wevu-best-practices`；DevTools/headless parity 归 `$weapp-devtools-e2e-best-practices`。
 
 ## 任务路由建议
 
@@ -52,6 +53,7 @@ npx skills add sonofmagic/skills
 | “这个 issue 要按仓库流程修完并开 PR”                     | `$release-and-changeset-best-practices` | `$wevu-best-practices` 或 `$weapp-vite-best-practices` |
 | “新增 DevTools runtime e2e 或截图验收”                   | `$weapp-devtools-e2e-best-practices`    | `$weapp-vite-best-practices`                           |
 | “`.vue` 宏、模板或 `usingComponents` 不生效”             | `$weapp-vite-vue-sfc-best-practices`    | `$weapp-vite-best-practices`                           |
+| “React TSX、render mode 或原生组件 bridge 不生效”        | `$weapp-vite-react-best-practices`      | `$weapp-vite-best-practices`                           |
 | “wevu 生命周期、store 或页面切换行为异常”                | `$wevu-best-practices`                  | `$weapp-vite-vue-sfc-best-practices`                   |
 | “原生项目先接入 weapp-vite，或逐步迁移到 Vue SFC / wevu” | `$native-to-weapp-vite-wevu-migration`  | `$weapp-vite-best-practices` 或 `$wevu-best-practices` |
 | “微信状态保持 HMR、插件双产物或 native AST profile”      | `$weapp-vite-best-practices`            | `$weapp-devtools-e2e-best-practices`                   |
@@ -76,6 +78,7 @@ npx skills add sonofmagic/skills
 | `skills/<name>/agents/openai.yaml`                  | display name、short description、隐式触发提示 |
 | `skills/skill-trigger-regression-checklist.md`      | 主用例、边界用例、冲突场景                    |
 | `skills/scripts/score-skill-trigger-regression.mjs` | 预期 skill 映射与统计分组                     |
+| `skills/scripts/check-public-skill-sync.mjs`        | 公开目录、元数据、评分映射与入口一致性检查    |
 | `website/guide/skills.md`                           | 对外索引、任务路由和关联文档                  |
 | `website/guide/ai.md` 与 `/ai` 页面                 | 安装方式和公开 skill 清单                     |
 | `CLAUDE.md` / 脚手架 `AGENTS.md` 模板               | AI 客户端可见的默认清单                       |
@@ -83,7 +86,7 @@ npx skills add sonofmagic/skills
 完成后至少运行：
 
 ```sh
-pnpm skills:check:yaml
+pnpm skills:check
 pnpm skills:score:json
 pnpm seo-quality-check
 ```

@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-vue-sfc-best-practices
-description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册，覆盖 `<script setup lang="ts">`、JSON 宏、`definePageMeta`/layout、`defineModel`、`usingComponents`、模板指令兼容、`.weapp-vite` 类型支持文件、受管 `prepare` 工作流，以及和脚手架 `AGENTS.md` / 本地 `dist/docs` 对齐的当前 SFC 约定。
+description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册，覆盖 script setup、纯模板 SFC、JSON 宏、`definePageMeta`/layout、`defineModel`、`usingComponents`、JSX/TSX script block、模板指令兼容、多平台 SFC、`.weapp-vite` 类型支持文件与受管 `prepare` 工作流。
 ---
 
 # weapp-vite-vue-sfc-best-practices
@@ -17,6 +17,7 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 - 用户遇到模板兼容或编译错误。
 - 用户遇到 `.weapp-vite` 类型输出、组件声明或 route type 漂移。
 - 用户要在微信小程序与 Web 中使用 Wot UI、uview-plus 等 uni-app Vue SFC 组件库。
+- 用户要使用纯模板 `.vue`、`<script lang="jsx">` / `<script setup lang="tsx">`，或处理多平台 SFC 编译差异。
 
 ## 不适用场景
 
@@ -25,6 +26,7 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 - 项目级构建配置：使用 `weapp-vite-best-practices`。
 - `wevu` 生命周期和 store：使用 `wevu-best-practices`。
 - 迁移规划：使用 `native-to-weapp-vite-wevu-migration`。
+- 项目启用 `weapp.react` 后的 React JSX/TSX：使用 `weapp-vite-react-best-practices`。
 
 ## 核心流程
 
@@ -33,6 +35,8 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
    - 运行期：事件、hooks、响应式
    - 工具层：Volar、`.weapp-vite`、typed outputs
 2. 默认使用 `<script setup lang="ts">`。
+   - 纯模板 SFC 允许没有 script block；`wv prepare` 必须按 SFC 模板扫描，不能把模板文本误交给 JSX parser。
+   - Wevu JSX/TSX 与 SFC 内 JSX/TSX 归 Wevu compiler；项目级 `weapp.react` 启用后，独立 `.jsx/.tsx` 归 React owner。
 3. JSON 优先走宏：`defineAppJson`、`definePageJson`、`defineComponentJson`；页面元信息走 `definePageMeta`。
 4. 套用模板兼容规则：
    - `v-model` 只能作用于可赋值左值
@@ -43,8 +47,10 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
    - 只有存在明确 slot props（如 `<template #item="{ item }">`）或显式增强作用域插槽场景时，才应生成 `generic:scoped-slots-*`
    - 转发 `<slot />` 到子组件具名插槽时不要生成或建议 `<block slot="..."><slot /></block>`；真实 DevTools 运行时会丢失转发内容。微信平台默认使用内部 `virtualHost` wrapper，需要回到旧版真实节点行为时配置 `weapp.vue.template.slotFallbackWrapperStrategy: 'view'`，需要自定义时优先用组件内静态属性 `slot-wrapper="cover-view"`、`slot-wrapper-footer="view"`、`slot-wrapper-class="..."`、`slot-wrapper-footer-class="..."` 或项目配置 `weapp.vue.template.slotFallbackWrapper`；全局规则里 `component` 匹配模板标签名，`componentName` 匹配子组件静态 `defineOptions({ name })`
    - 自定义 slot wrapper 必须能承载实际子内容；例如 `text` 不适合包裹 `<view>`，`block` 会被编译器回退为 `view`
+   - Vue/Wevu 组件标签输出保持 kebab-case；可选链与空值合并必须转换成目标小程序模板可执行的表达式
 5. 若 `typed-router.d.ts`、`typed-components.d.ts`、`components.d.ts` 漂移，先跑 `wv prepare`。
 6. 若项目有根 `AGENTS.md` 或本地 `dist/docs/vue-sfc.md`，SFC 写法要与其约束一致。
+7. 多平台 SFC 每次只验证一个 `-p <platform>` 目标；Web runtime 用于浏览器兼容联调，不替代目标小程序 IDE/真机。
 
 ## 工具链与热更新边界
 

@@ -3,7 +3,8 @@
 ## 前提
 
 - 只支持微信小程序；确认 `DevTools` 服务端口、热重载和 `setting.compileHotReLoad: true`。
-- 先用 `classic` 建立行为基线，再启用 `weapp.hmr.runtime: 'stateful-experimental'`。
+- 显式 `weapp.hmr.runtime` 优先；未配置时核对工作区 `compileHotReLoad` 自动选择结果。
+- 排障时先用 `classic` 建立行为基线，再显式启用 `stateful-experimental`。
 
 ## 判断
 

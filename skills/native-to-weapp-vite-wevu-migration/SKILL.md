@@ -1,6 +1,6 @@
 ---
 name: native-to-weapp-vite-wevu-migration
-description: 面向原生微信/支付宝/抖音小程序渐进迁移到 `weapp-vite + 原生` 或继续升级到 `weapp-vite + wevu + Vue SFC` 的结构化工作流，重点覆盖路线选择、工具链接入、原生保留、Vue SFC 试点、wevu 响应式升级、截图/日志/e2e 验证与 AI 维护约束。
+description: 面向原生微信、支付宝、抖音等小程序渐进迁移到 `weapp-vite + 原生` 或继续升级到 `weapp-vite + wevu + Vue SFC` 的结构化工作流，覆盖六平台单目标构建、原生扩展名保留、Web 联调边界、路线选择、工具链接入、SFC 试点、响应式升级与可回滚验证。
 ---
 
 # native-to-weapp-vite-wevu-migration
@@ -27,6 +27,7 @@ description: 面向原生微信/支付宝/抖音小程序渐进迁移到 `weapp-
 - 用户要迁移 `properties/observers/triggerEvent`。
 - 用户要引入 `definePageMeta` / layout / autoRoutes / 受管 TS。
 - 用户要在迁移后让 AI 能稳定使用项目。
+- 用户要把原生支付宝 `.axml/.acss`、抖音 `.ttml/.ttss` 纳入同一套单目标构建和 watcher。
 
 ## 不适用场景
 
@@ -35,10 +36,11 @@ description: 面向原生微信/支付宝/抖音小程序渐进迁移到 `weapp-
 - 普通 weapp-vite 配置问题：使用 `weapp-vite-best-practices`。
 - `.vue` 宏或模板兼容：使用 `weapp-vite-vue-sfc-best-practices`。
 - `wevu` 运行时写法优化：使用 `wevu-best-practices`。
+- 目标是 React 19 小程序或 React/原生/Wevu bridge：使用 `weapp-vite-react-best-practices`，不要把它塞进路线 B。
 
 ## 核心流程
 
-1. 先盘点原生项目：`app.json`、页面路由、自定义组件、分包、npm 构建、插件、wxs/sjs、云开发、宿主 API、CI 与 DevTools 打开方式。
+1. 先盘点原生项目：平台、原生模板/样式/script module 扩展名、`app.json`、页面路由、自定义组件、分包、npm、插件、云开发、宿主 API、CI 与 IDE 打开方式。
 2. 先选择目标路线：
    - 路线 A：只迁工具链，原生页面继续作为一等资产。
    - 路线 B：先完成路线 A，再做 SFC 试点和页面族迁移。
@@ -51,6 +53,8 @@ description: 面向原生微信/支付宝/抖音小程序渐进迁移到 `weapp-
 5. 建立双轨边界：明确哪些页面仍是原生资产，哪些页面进入 Vue SFC；每一波次只改变一个边界。
 6. 先做工具链接入：
    - 补齐 `vite.config.ts` / `weapp` 配置。
+   - 多平台项目显式启用 `multiPlatform`，把各平台 project config 放在稳定目录，并始终一次只构建一个 `-p <platform>`。
+   - 保留支付宝 `.axml/.acss`、抖音 `.ttml/.ttss` 等原生资产，不通过复制或重命名伪装成微信文件。
    - 接入 `wv prepare` 与 `.weapp-vite` 支持文件。
    - 跑通 dev/build/open/screenshot/logs 的最小闭环。
 7. 如果目标是路线 A，到这里先收口，不继续改业务页面：
@@ -68,6 +72,7 @@ description: 面向原生微信/支付宝/抖音小程序渐进迁移到 `weapp-
    - 平台分支收敛到 `import.meta.env.PLATFORM`
 10. 迁移后统一 AI/工具链约束：先读根 `AGENTS.md` 与 `node_modules/weapp-vite/dist/docs/*.md`，先跑 `wv prepare`，明确 `wv screenshot` / `wv compare` / `wv ide logs --open`。
 11. 每波次独立验证并保留回滚点；布局或视觉变化再补截图对比。
+12. Web runtime 只做浏览器兼容联调；目标小程序 IDE、真机和宿主 API 仍是发布验收来源。
 
 ## 渐进迁移波次模板
 
@@ -96,6 +101,7 @@ description: 面向原生微信/支付宝/抖音小程序渐进迁移到 `weapp-
 - 不要把原生实例对象暴露到模板状态。
 - 不要跳过 `prepare` 和 `.weapp-vite` 支持文件验证。
 - 不要只看 dev 环境，不看构建产物和真实运行时。
+- 不要把多平台理解成单次同时产出所有平台，也不要用 Web 通过替代支付宝、抖音等目标 IDE 验收。
 
 ## 输出
 

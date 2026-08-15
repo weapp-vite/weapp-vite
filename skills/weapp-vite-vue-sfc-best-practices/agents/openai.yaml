@@ -1,9 +1,7 @@
 interface:
-  display_name: Weapp-vite Vue SFC Best Practices
-  short_description: Vue SFC 宏、模板兼容、Volar 类型和 JSON HMR
-  default_prompt: >-
-    当任务主轴是小程序 Vue SFC、JSON 宏、definePageMeta、usingComponents、模板兼容、Volar、.weapp-vite 或 JSON HMR 时，
-    使用 $weapp-vite-vue-sfc-best-practices。先判断问题阶段，再给出 SFC 级改动和最小验证。
+  display_name: 'Weapp-vite Vue SFC Best Practices'
+  short_description: 'Vue SFC 宏、JSX/TSX、模板兼容与受管类型'
+  default_prompt: 'Use $weapp-vite-vue-sfc-best-practices to implement or debug Vue SFC macros, Wevu-owned JSX or TSX boundaries, template compatibility, and managed type outputs in a weapp-vite project.'
 
 policy:
   allow_implicit_invocation: true

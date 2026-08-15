@@ -120,6 +120,8 @@ await createProject('my-app', TemplateName.wevu, { installSkills: true })
 
 `multi-platform-sfc` 使用 Wevu + Vue SFC 覆盖相同目标。Runtime API 从 `wevu` 导入，App、Page、Component 使用对应 JSON 宏；安装后由 `wv prepare -p weapp` 管理 `.weapp-vite` 类型文件。Web Runtime 只承担浏览器联调，不能替代小程序 IDE 或真机验收。
 
+`react` 使用 React 19、`react-reconciler` 与 `@weapp-vite/react` 构建微信小程序。生成的 `AGENTS.md` 会把 React JSX/TSX、render mode、root 生命周期和原生/Wevu 组件 bridge 路由到 `$weapp-vite-react-best-practices`，并明确当前 React runtime 不以 Web、支付宝或抖音构建作为兼容结论。
+
 ## 初始化后会做什么
 
 - 复制对应模板目录

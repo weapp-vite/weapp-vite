@@ -8,8 +8,12 @@ function supportsWevu(templateName: TemplateName) {
   ].includes(templateName)
 }
 
+function supportsReact(templateName: TemplateName) {
+  return templateName === TemplateName.react
+}
+
 function supportsNativePages(templateName: TemplateName) {
-  return !supportsWevu(templateName)
+  return !supportsWevu(templateName) && !supportsReact(templateName)
 }
 
 function supportsPlugin(templateName: TemplateName) {
@@ -94,6 +98,21 @@ export function createAgentsGuidelines(templateName: TemplateName) {
       '- Prefer `ref`, `reactive`, `computed`, and explicit event contracts over large opaque state writes.',
       '- Use `storeToRefs` when destructuring store state/getters.',
       '- Treat mini-program runtime constraints as primary; do not assume Vue web-only behavior.',
+    )
+  }
+
+  if (supportsReact(templateName)) {
+    lines.push(
+      '  - `$weapp-vite-react-best-practices` for React 19 JSX/TSX ownership, render modes, root lifecycle, React Compiler, and native/Wevu component bridges.',
+      '',
+      '## React Mini-program Authoring',
+      '',
+      '- Keep `weapp.react` as the project-level owner for all `.jsx` and `.tsx` modules; do not mix Wevu JSX in the same build.',
+      '- Use React 19.2.x, `react-reconciler` 0.33.x, and `@weapp-vite/react` without `react-dom`.',
+      '- Start with `renderMode: \'auto\'`; use `dynamic` only for reconciler-tree diagnostics and `static` for strict static-shape validation.',
+      '- Create and unmount `createReactMiniProgramRoot` in the native page/component lifecycle, and forward host events through the root.',
+      '- Register native or Wevu custom components in `usingComponents` before declaring a top-level `createNativeComponent()` bridge in the current TSX file.',
+      '- Treat the current React runtime as WeChat-only; Web, Alipay, and Douyin builds are not runtime compatibility evidence.',
     )
   }
 

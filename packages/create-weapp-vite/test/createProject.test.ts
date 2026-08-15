@@ -220,6 +220,23 @@ describe('createProject', () => {
     expect(agents).not.toContain('## Native Mini-program Authoring')
   })
 
+  it('writes React-specific AGENTS guidance for React templates', async () => {
+    const root = await createTmpRoot('react-agents')
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, TemplateName.react)
+
+    const agents = await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')
+    expect(agents).toContain('$weapp-vite-react-best-practices')
+    expect(agents).toContain('## React Mini-program Authoring')
+    expect(agents).toContain('`weapp.react`')
+    expect(agents).toContain('createReactMiniProgramRoot')
+    expect(agents).toContain('createNativeComponent()')
+    expect(agents).not.toContain('## Native Mini-program Authoring')
+    expect(agents).not.toContain('$native-to-weapp-vite-wevu-migration')
+  })
+
   it('writes plugin-specific guidance and local provider defaults for plugin templates', async () => {
     const root = await createTmpRoot('plugin-template')
 

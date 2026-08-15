@@ -28,6 +28,9 @@ export default {
     return [`node scripts/fix-wechat-devtools-project-config-eof.mjs ${projectConfigFiles.join(' ')}`]
   },
   'skills/**/*.{yaml,yml}': ['node skills/scripts/validate-skills-yaml.mjs'],
+  '{AGENTS.md,CLAUDE.md,skills/**/*,website/guide/{ai,ai-workflows,skills}.md,website/packages/create-weapp-vite.md,website/.vitepress/components/AiLearningPage.vue,packages/create-weapp-vite/src/agents.ts}': [
+    'node skills/scripts/check-public-skill-sync.mjs',
+  ],
   '!(apps)/**/*.{js,jsx,mjs,ts,tsx,mts,vue}': [
     'eslint --fix --max-warnings=0 --no-warn-ignored',
   ],

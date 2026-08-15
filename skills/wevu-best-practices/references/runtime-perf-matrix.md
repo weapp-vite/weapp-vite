@@ -8,6 +8,7 @@
 - 是否启用 `autoSetDataPick`
 - 是否需要 `setData.strategy: 'diff' | 'patch'`
 - 是否应启用 `suspendWhenHidden`
+- 同一轮多个 ref/reactive 写入是否完整合并，后到的数组或对象 patch 是否被调度去重吞掉
 
 ## 渲染
 

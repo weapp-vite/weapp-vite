@@ -1,6 +1,6 @@
 ---
 name: docs-and-website-sync
-description: 面向采用 weapp-vite monorepo 布局仓库的文档、website 与 skills 同步工作流。适用于代码能力已变化但 website/docs/README/skills/AI 指南/packaged docs 可能过期的场景，尤其覆盖 `weapp` 配置页、`dist/docs`、`AGENTS.md` 模板、AI skills 安装、`prepare`、MCP、`forwardConsole`、`screenshot/compare/ide logs`、Web runtime、lib mode、多平台与 routeRules/layout 等入口同步。
+description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同步工作流。适用于源码能力变化后同步配置、CLI、React/Wevu/Vue SFC、多平台、mpcore、README、packaged docs、脚手架 `AGENTS.md`、AI skills 元数据和触发回归入口。
 ---
 
 # docs-and-website-sync
@@ -21,6 +21,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的文档、website �
   - `wv screenshot` / `wv compare` / `wv ide logs`
   - `wv analyze --markdown|--report pr|--budget-check|--hmr-profile` 与 `weapp.analyze`
   - `web` runtime / `lib` mode / 多平台 / npm / 分包 / worker
+  - React 19 / JSX/TSX / mpcore headless parity
   - `create-weapp-vite` 的 AI skills 安装与 `AGENTS.md`
 
 ## 不适用场景
@@ -31,6 +32,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的文档、website �
 - `.vue` 宏、模板和 SFC 兼容：使用 `weapp-vite-vue-sfc-best-practices`。
 - `wevu` 运行时语义：使用 `wevu-best-practices`。
 - DevTools runtime e2e：使用 `weapp-devtools-e2e-best-practices`。
+- React runtime、render mode 和组件 bridge：使用 `weapp-vite-react-best-practices`。
 
 ## 核心流程
 
@@ -38,6 +40,9 @@ description: 面向采用 weapp-vite monorepo 布局仓库的文档、website �
    - `packages/weapp-vite/src/types/config/**`
    - `packages/weapp-vite/src/cli/**`
    - `packages/weapp-ide-cli/src/cli/**`
+   - `packages-runtime/react/src/**`
+   - `packages-runtime/wevu/src/**`
+   - `mpcore/packages/**`
    - `packages/weapp-vite/docs/README.md`
    - `packages/weapp-vite/docs/mcp.md`
    - `packages/weapp-vite/docs/volar.md`
@@ -52,6 +57,8 @@ description: 面向采用 weapp-vite monorepo 布局仓库的文档、website �
    - CLI / AI / MCP：`website/guide/**`、`website/packages/**`、`website/.vitepress/components/AiLearningPage.vue`、`packages/weapp-vite/README.md`
    - 脚手架与 AI 约束：`website/packages/create-weapp-vite.md`、`packages/create-weapp-vite/src/agents.ts`
    - 运行时与框架：`website/config/vue.md`、`website/config/wevu.md`、`website/packages/web.md`
+   - React：`website/config/react.md`、`docs/integration/react.md`、React 模板与 `@weapp-vite/react` README
+   - 多平台与 headless：`website/guide/multi-platform.md`、mpcore package docs、provider-compatible e2e
 3. 同步 AI 合约口径：
    - 先读根 `AGENTS.md`
    - 再读 `node_modules/weapp-vite/dist/docs/*.md`
@@ -84,6 +91,8 @@ description: 面向采用 weapp-vite monorepo 布局仓库的文档、website �
 - 插件：以 `pluginRoot` 类型、`website/guide/plugin.md`、模板 AGENTS 和 `dist-plugin` 验收为准。
 - router/Web runtime：分别核对 `packages-runtime/wevu/docs/router-*.md` 与 `website/guide/web-runtime-*.md`，不要合并成浏览器语义。
 - native AST/HMR 性能：同步 profile、fallback 和 correctness 结论，不只同步倍率宣传。
+- React/Wevu JSX：明确项目级 owner、微信平台限制和 bridge 边界，不把两条 JSX 编译链混写。
+- mpcore parity：同步 provider 选择、三层覆盖和“真实 DevTools 行为为准”的增量规则。
 - skill 元数据：每个公开 skill 都应有 `agents/openai.yaml`，并在触发回归清单中有主场景、边界场景和冲突场景。
 
 ## 约束

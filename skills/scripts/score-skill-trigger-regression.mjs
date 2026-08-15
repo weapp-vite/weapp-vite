@@ -7,7 +7,7 @@ import process from 'node:process'
 const DEFAULT_FILE = 'skills/skill-trigger-regression-checklist.md'
 const BACKTICK_REGEX = /`/g
 const WHITESPACE_REGEX = /\s+/g
-const CHECKLIST_ID_REGEX = /^[A-KX]\d+$/
+const CHECKLIST_ID_REGEX = /^[A-LX]\d+$/
 
 const EXPECTED_BY_ID = {
   A1: 'weapp-vite-best-practices',
@@ -35,6 +35,11 @@ const EXPECTED_BY_ID = {
   J3: 'release-and-changeset-best-practices',
   J4: 'release-and-changeset-best-practices',
   J5: 'release-and-changeset-best-practices',
+  L1: 'weapp-vite-react-best-practices',
+  L2: 'weapp-vite-react-best-practices',
+  L3: 'weapp-vite-react-best-practices',
+  L4: 'weapp-vite-react-best-practices',
+  L5: 'wevu-best-practices',
   B1: 'weapp-vite-vue-sfc-best-practices',
   B2: 'weapp-vite-vue-sfc-best-practices',
   B3: 'weapp-vite-vue-sfc-best-practices',
@@ -69,26 +74,34 @@ const EXPECTED_BY_ID = {
   X7: 'release-and-changeset-best-practices',
   X8: 'weapp-devtools-e2e-best-practices',
   X9: 'release-and-changeset-best-practices',
+  X10: 'weapp-vite-react-best-practices',
+  X11: 'weapp-vite-react-best-practices',
+  X12: 'weapp-devtools-e2e-best-practices',
+  X13: 'weapp-vite-react-best-practices',
   K1: 'weapp-vite-best-practices',
   K2: 'weapp-vite-best-practices',
   K3: 'wevu-best-practices',
   K4: 'weapp-devtools-e2e-best-practices',
   K5: 'weapp-vite-best-practices',
   K6: 'docs-and-website-sync',
+  K7: 'weapp-vite-best-practices',
+  K8: 'weapp-devtools-e2e-best-practices',
+  K9: 'weapp-vite-react-best-practices',
 }
 
-const BOUNDARY_IDS = new Set(['A5', 'B5', 'C5', 'D5', 'E5', 'F5', 'G5', 'H5', 'I5', 'J5'])
-const CONFLICT_IDS = new Set(['X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9'])
+const BOUNDARY_IDS = new Set(['A5', 'B5', 'C5', 'D5', 'E5', 'F5', 'G5', 'H5', 'I5', 'J5', 'L5'])
+const CONFLICT_IDS = new Set(['X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9', 'X10', 'X11', 'X12', 'X13'])
 
 const MAIN_SKILL_CASES = {
   'weapp-vite-best-practices': ['A1', 'A2', 'A3', 'A4', 'E1', 'E2', 'E3', 'E4'],
   'weapp-vite-vue-sfc-best-practices': ['B1', 'B2', 'B3', 'B4'],
+  'weapp-vite-react-best-practices': ['L1', 'L2', 'L3', 'L4'],
   'wevu-best-practices': ['C1', 'C2', 'C3', 'C4', 'F1', 'F2', 'F3', 'F4'],
   'native-to-weapp-vite-wevu-migration': ['D1', 'D2', 'D3', 'D4'],
   'docs-and-website-sync': ['G1', 'G2', 'G3', 'G4'],
   'weapp-devtools-e2e-best-practices': ['I1', 'I2', 'I3', 'I4'],
   'release-and-changeset-best-practices': ['H1', 'H2', 'H3', 'H4', 'J1', 'J2', 'J3', 'J4'],
-  'recent-capability-routing': ['K1', 'K2', 'K3', 'K4', 'K5', 'K6'],
+  'recent-capability-routing': ['K1', 'K2', 'K3', 'K4', 'K5', 'K6', 'K7', 'K8', 'K9'],
 }
 
 function parseArgs(argv) {
@@ -283,12 +296,12 @@ function printHuman(report, filePath) {
   }
   console.log('')
 
-  console.log('Boundary Rule (A5/B5/C5/D5/E5/F5/G5/H5/I5/J5)')
+  console.log('Boundary Rule (A5/B5/C5/D5/E5/F5/G5/H5/I5/J5/L5)')
   console.log(`- Boundary pass: ${formatGate(report.boundary.pass)}`)
   console.log(`- Wrong-skill distribution: ${JSON.stringify(report.boundary.wrongSkillCounter)}`)
   console.log('')
 
-  console.log('Conflict Rule (X1/X2/X3/X4/X5/X6/X7/X8/X9)')
+  console.log('Conflict Rule (X1/X2/X3/X4/X5/X6/X7/X8/X9/X10/X11/X12/X13)')
   console.log(`- Conflict pass: ${report.conflict.pass}/${report.conflict.filled} (${toPercent(report.conflict.pass, report.conflict.filled)})`)
   console.log(`- All conflict cases pass: ${formatGate(report.conflict.allPass)}`)
   console.log('')

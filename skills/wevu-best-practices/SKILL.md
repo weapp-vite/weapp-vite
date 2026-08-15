@@ -1,6 +1,6 @@
 ---
 name: wevu-best-practices
-description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周期注册、响应式更新、事件契约、`bindModel/useBindModel`、`setPageLayout/usePageLayout`、根入口 `useNativeRouter/useNativePageRouter`、`wevu/router`、store 约束，以及 `setData`、渲染、页面切换、资源与内存性能治理。
+description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周期注册、响应式更新、JSX/TSX、事件契约、`bindModel/useBindModel`、layout、原生 router helpers、`wevu/router`、store 约束，以及 `setData` 调度、渲染、页面切换、资源与内存性能治理。
 ---
 
 # wevu-best-practices
@@ -16,6 +16,7 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
 - 用户问 props / emit / 双向绑定 / store。
 - 用户问 `setPageLayout`、`useNativeRouter` 或 `wevu/router`。
 - 用户问 AI 应如何保持 wevu 代码和模板约定一致。
+- 用户使用纯 `.jsx/.tsx`、Vue 风格 TSX 或 SFC 内 JSX/TSX 编写 Wevu 页面和组件。
 - 用户反馈卡顿、掉帧、页面切换慢、白屏、内存告警，且问题主轴在 `wevu` 运行时状态、渲染或副作用管理。
 
 ## 不适用场景
@@ -25,12 +26,14 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
 - 构建配置和分包：使用 `weapp-vite-best-practices`。
 - `.vue` 模板和宏：使用 `weapp-vite-vue-sfc-best-practices`。
 - 原生迁移：使用 `native-to-weapp-vite-wevu-migration`。
+- 项目级 `weapp.react`、React hooks 或 `@weapp-vite/react` bridge：使用 `weapp-vite-react-best-practices`。
 
 ## 核心流程
 
 1. 运行时 API 从 `wevu` 导入，页面和组件边界明确；选项式 `data` 若存在，保持函数形式。
 2. 生命周期和 hook 必须在同步 `setup()` 中注册，不要在 `await` 之后注册。
 3. 响应式更新优先 `ref/reactive/computed`，避免大对象和不透明状态写入；模板状态要可序列化。
+   - 同一轮多个 ref/reactive 变更必须由调度器完整合并，不能因先到的刷新任务吞掉后续数组或对象 patch。
 4. 事件和双向绑定遵循小程序语义：
    - 事件走 `emit`
    - 通用字段优先 `bindModel/useBindModel`
@@ -45,12 +48,14 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
    - resource / memory：图片尺寸、缓存、监听与定时器是否清理
 7. store 以小 domain 为先，解构 state/getters 用 `storeToRefs`，避免巨大跨页 store。
 8. 写法同时对照项目根 `AGENTS.md` 和本地 `dist/docs/wevu-authoring.md`。
+9. JSX/TSX 中保持小程序事件、class 和组件 tag 语义；编译后的自定义组件标签应为 kebab-case，可选链/空值合并不得残留为目标模板不支持的表达式。
 
 ## Router 与平台边界
 
 - 只需要宿主 `navigateTo/redirectTo` 时使用根入口 native router helpers；需要统一 route records、guards、`resolve` 和导航结果时使用 `wevu/router`。
 - 小程序路由栈不提供标准前进语义；`router.forward()` 返回预期的 aborted failure，不应当按浏览器 bug 处理。
 - router、layout host、页面栈和 request globals 都以小程序生命周期为边界，不能套用浏览器 Vue 的挂载/卸载假设。
+- React 项目需要复用 Wevu SFC 时，把 Wevu 组件作为小程序自定义组件注册并由 React bridge 引用；不要让 Wevu 和 React 同时拥有同一个 JSX/TSX 模块。
 - 性能回归必须记录高频更新信号、页面切换链路和资源清理结果，再决定是否调整 runtime 或业务状态结构。
 
 Router 选择和迁移见 `references/router-runtime-matrix.md`。

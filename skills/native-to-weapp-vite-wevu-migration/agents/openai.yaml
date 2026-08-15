@@ -1,9 +1,7 @@
 interface:
-  display_name: Native To Weapp-vite Wevu Migration
-  short_description: 原生小程序渐进迁移到 weapp-vite、wevu 和 Vue SFC
-  default_prompt: >-
-    当任务主轴是原生小程序迁移到 weapp-vite、wevu 或 Vue SFC 时，使用
-    $native-to-weapp-vite-wevu-migration。先选择路线 A/B，盘点资产和回滚点，再按波次验证构建与真实 runtime。
+  display_name: 'Native To Weapp-vite Wevu Migration'
+  short_description: '原生多平台小程序渐进迁移到 Weapp-vite 与 Wevu'
+  default_prompt: 'Use $native-to-weapp-vite-wevu-migration to plan a reversible migration from native mini-program code to weapp-vite, then route later Wevu/Vue SFC or React adoption to its dedicated authoring skill.'
 
 policy:
   allow_implicit_invocation: true

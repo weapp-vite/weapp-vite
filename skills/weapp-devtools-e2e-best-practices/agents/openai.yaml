@@ -1,9 +1,7 @@
 interface:
-  display_name: Weapp DevTools E2E Best Practices
-  short_description: WeChat DevTools runtime e2e、automator 复用和截图日志验收
-  default_prompt: >-
-    当任务主轴是 e2e/ide、miniprogram-automator、真实 DevTools runtime、截图、日志或 MCP 页面验收时，
-    使用 $weapp-devtools-e2e-best-practices。先检查环境、残留进程和 suite 结构，再复用 automator 并用 reLaunch 串场景。
+  display_name: 'Weapp DevTools E2E Best Practices'
+  short_description: 'DevTools 与 Headless Runtime E2E、Parity 和验收'
+  default_prompt: 'Use $weapp-devtools-e2e-best-practices to design serialized DevTools and headless runtime E2E coverage with residual-process cleanup, shared sessions, provider parity, stable assertions, and mpcore unit/browser/type regression layers.'
 
 policy:
   allow_implicit_invocation: true

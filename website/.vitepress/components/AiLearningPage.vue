@@ -63,6 +63,7 @@ const directSkills = [
   'release-and-changeset-best-practices',
   'weapp-devtools-e2e-best-practices',
   'weapp-vite-vue-sfc-best-practices',
+  'weapp-vite-react-best-practices',
   'wevu-best-practices',
   'native-to-weapp-vite-wevu-migration',
 ]

@@ -80,6 +80,7 @@ This repo includes installable user-facing skills in `./skills`:
 - `release-and-changeset-best-practices`
 - `weapp-devtools-e2e-best-practices`
 - `weapp-vite-vue-sfc-best-practices`
+- `weapp-vite-react-best-practices`
 - `wevu-best-practices`
 - `native-to-weapp-vite-wevu-migration`
 - Project-specific Claude skills can also live in `./.claude/skills` (for example: `playwright-cli`).
@@ -107,7 +108,7 @@ Notes:
 - Maintainer-only skills live in `maintainers/skills/*` and should not be treated as user-facing defaults.
 - Running `pnpm skills:link` syncs both `skills/*` and `./.claude/skills/*`, so Codex can directly use project Claude skills too.
 - When tasks clearly match one of the skill scopes above, load the corresponding `SKILL.md` and follow its workflow and references.
-- 近期能力路由：stateful HMR、pluginRoot/dist-plugin、Web runtime、native AST 归 `weapp-vite-best-practices`；`wevu/router` 归 `wevu-best-practices`；真实 DevTools runtime 和宿主兼容性归 `weapp-devtools-e2e-best-practices`。
+- 近期能力路由：stateful HMR、pluginRoot/dist-plugin、Web runtime、native AST、多平台原生构建归 `weapp-vite-best-practices`；React 19 JSX/TSX、render mode 和组件 bridge 归 `weapp-vite-react-best-practices`；Wevu JSX/TSX 与 `wevu/router` 归 `wevu-best-practices`；真实 DevTools/headless parity 归 `weapp-devtools-e2e-best-practices`。
 - 每个公开 skill 的隐式触发元数据位于 `skills/*/agents/openai.yaml`；新增或调整 skill 时同步触发回归清单和评分脚本。
 
 ## Architecture Overview

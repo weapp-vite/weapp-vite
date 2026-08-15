@@ -1,6 +1,6 @@
 ---
 title: AI 任务工作流
-description: 将 Weapp-vite 常见 AI 协作任务拆成可执行流程，覆盖 issue 修复、文档同步、DevTools e2e、SFC 排障和原生迁移。
+description: 将 Weapp-vite 常见 AI 协作任务拆成可执行流程，覆盖 issue 修复、文档同步、DevTools/headless e2e、React、SFC 排障和原生迁移。
 keywords:
   - Weapp-vite
   - AI
@@ -24,6 +24,7 @@ date: 2026-05-03
 | 修 GitHub issue                   | `$release-and-changeset-best-practices` | issue 描述、最小复现、单测、e2e                             | 复现先失败后通过，changeset 判定清楚    |
 | 调整项目配置或 CLI                | `$weapp-vite-best-practices`            | `vite.config.ts`、`packages/weapp-vite/src/**`、`dist/docs` | 目标包先 build，下游窄范围验证通过      |
 | 排查 Vue SFC 编译或模板           | `$weapp-vite-vue-sfc-best-practices`    | `.vue`、JSON 宏、`.weapp-vite` 类型支持文件                 | `wv prepare` 后类型与产物一致           |
+| 接入或排查 React 19 小程序        | `$weapp-vite-react-best-practices`      | React 配置、TSX、runtime、bridge、构建与 IDE e2e            | owner、产物和真实 runtime 行为一致      |
 | 排查 wevu 运行时行为              | `$wevu-best-practices`                  | 生命周期、事件、store、router、运行时日志                   | 单测或 DevTools runtime 信号稳定        |
 | 新增 DevTools e2e                 | `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 会话、项目配置                      | suite 复用 automator，`reLaunch` 串场景 |
 | 原生迁移到 Weapp-vite / Wevu      | `$native-to-weapp-vite-wevu-migration`  | 原生页面、路线选择、迁移映射、回滚点、截图日志              | 分波次迁移，每波有可回滚验收            |
@@ -48,7 +49,7 @@ date: 2026-05-03
 6. 运行最小验证。
 
 ```sh
-pnpm skills:check:yaml
+pnpm skills:check
 pnpm seo-quality-check
 pnpm --filter website-weapp-vite build
 ```
@@ -105,6 +106,16 @@ wv ide logs --open
 ```
 
 ## SFC 与 wevu 排障
+
+如果主问题是 React 19 JSX/TSX、`weapp.react`、render mode、React Compiler 或原生/Wevu 组件 bridge，优先使用 `$weapp-vite-react-best-practices`。
+
+执行顺序：
+
+1. 确认 React 19.2.x、`react-reconciler` 0.33.x、`@weapp-vite/react`，且没有 `react-dom`。
+2. 从 `renderMode: 'auto'` 建立基线，区分静态 WXML/binding slots 与 dynamic tree。
+3. 检查页面 root 的 create/render/dispatch/unmount 生命周期。
+4. bridge tag 必须在当前 TSX 顶层声明并与 JSON `usingComponents` 同名。
+5. 最后跑 runtime 单测、编译测试、构建 e2e 和需要的 DevTools runtime 用例。
 
 如果主问题是 `.vue` 宏、模板编译、`v-model` 或 `usingComponents`，优先使用 `$weapp-vite-vue-sfc-best-practices`。
 

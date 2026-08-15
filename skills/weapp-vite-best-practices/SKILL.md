@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-best-practices
-description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite` 依赖项目的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、自动路由、routeRules/layout、自动导入组件、分包、npm、多平台、受管 TypeScript、`prepare`、`forwardConsole`、`mcp`、`screenshot/compare/ide logs`、Web runtime、lib mode、worker、`dist/docs`、脚手架 `AGENTS.md`、AI skills 安装，以及与 `weapp-ide-cli` 的命令治理和透传边界。
+description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite` 依赖项目的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、自动路由、routeRules/layout、buildScope、自动导入组件、分包、npm、六平台单目标构建、受管 TypeScript、HMR、sourcemap、`prepare`、MCP、Web runtime、lib mode、worker、AI skills，以及与 `weapp-ide-cli` 的命令治理边界。
 ---
 
 # weapp-vite-best-practices
@@ -14,6 +14,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 用户要配置 `vite.config.ts` 里的 `weapp`。
 - 用户要排查输出缺页、路径不对、自动路由不生效、layout 不生效。
 - 用户要接入分包、npm 落位、多平台、worker、web runtime、lib mode。
+- 用户要处理支付宝 `.axml/.acss`、抖音 `.ttml/.ttss`、`buildScope`、sourcemap 或自动 HMR 模式选择。
 - 用户要用 Vitest 对真实小程序编译产物进行页面或组件测试。
 - 用户要让 AI 正确使用项目，包括 `AGENTS.md`、`dist/docs`、screenshot / compare / logs / mcp。
 - 用户要梳理 `weapp-vite` 与 `weapp-ide-cli` 的命令归属、透传边界、`preview/upload/open/config` 这类 DevTools CLI 能力。
@@ -25,6 +26,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - `.vue` 宏和模板兼容：使用 `weapp-vite-vue-sfc-best-practices`。
 - `wevu` 生命周期、状态和事件：使用 `wevu-best-practices`。
 - 原生迁移：使用 `native-to-weapp-vite-wevu-migration`。
+- React 19 JSX/TSX、render mode 和组件 bridge：使用 `weapp-vite-react-best-practices`。
 
 ## 核心流程
 
@@ -39,12 +41,14 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp.srcRoot`
    - `weapp.platform`
    - `weapp.multiPlatform`
+   - 多平台始终单目标构建；显式选择微信、支付宝、抖音、百度、京东、小红书或 Web，不把一次构建描述成同时产出全部平台
    - `weapp.autoRoutes`
    - `weapp.autoImportComponents`
    - `weapp.uniApp`：实验性外部 uni-app Vue SFC 转换；npm 包必须显式加入 `include` 白名单
    - `weapp.routeRules`
+   - `weapp.buildScope` / `wv dev|build --scope`：限定页面或分包构建时保持 autoRoutes 的主包/分包归属
    - `weapp.typescript`
-   - `weapp.hmr.runtime`：默认 `classic`；微信开发者工具需要保留 Page/Component/wevu 状态时可实验性使用 `stateful-experimental`
+   - `weapp.hmr.runtime`：显式配置优先；未配置时结合工作区 `compileHotReLoad` 选择 classic 或实验性 stateful 模式
    - `weapp.vue.template.slotFallbackWrapperStrategy`：微信平台默认使用内部 `virtualHost` 组件承载转发 `<slot />` 的具名插槽 fallback；需要旧版真实节点行为时显式设为 `view`
    - `weapp.vue.template.slotFallbackWrapper`：普通具名插槽 fallback 的真实 wrapper，可用全局默认、按模板标签名 `component`、子组件静态 `defineOptions({ name })` 的 `componentName`、slot 规则和组件内 `slot-wrapper` / `slot-wrapper-footer` / `slot-wrapper-class` / `slot-wrapper-footer-class` 静态覆盖；显式配置后优先于默认策略；不要把 `block` 当作转发 `<slot />` 的 wrapper
 3. 按目标启用能力：
@@ -52,6 +56,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`、`weapp.analyze.budgets` / `history`
    - 进阶链路：`web`、`lib`
    - 页面/组件单测：`@mpcore/weapp-vite` 构建产物，`@mpcore/test` 提供 render/query/user，`@mpcore/vitest` 提供每测试隔离和 matcher
+   - React 项目：这里只判断项目级 `weapp.react` 和构建所有权，TSX/runtime/bridge 细节转交 `weapp-vite-react-best-practices`
 4. CLI 与 IDE 所有权保持清晰：
    - `weapp-vite` 原生命令优先
    - `weapp-ide-cli` 只在 catalog 命中后透传
@@ -61,6 +66,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 不要让未知命令盲目 passthrough
 5. 常见症状先分诊：
    - 输出路径不对：查 `srcRoot`、project config、`build.outDir`
+   - 支付宝/抖音原生文件缺失：先核对目标平台描述符、模板/样式扩展名和单目标 `-p <platform>`，不要回退成微信扩展名复制
    - `.weapp-vite` 类型异常：先跑 `wv prepare`
    - 页面 / layout 不对：查 `autoRoutes`、`routeRules`、`definePageMeta`
    - 自动导入异常：查 `autoImportComponents` 与 resolver
@@ -68,6 +74,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`
    - 状态保持 HMR 不生效：确认平台为微信、DevTools 开启服务端口与热重载、`compileHotReLoad: true`，并区分安全 JS/Vue 补丁与 CSS/资源/配置的完整重载回退
+   - sourcemap 漂移：检查 CLI `--sourcemap` 透传和构建后 npm、平台 API、shared chunk 重写是否组合原 map，不接受只保留旧 map
 6. 评估 Rust/native 加速时，先看真实 profile 和跨边界调用次数：
    - 默认把 JS ↔ Rust 往返、序列化/反序列化和 AST 数据搬运视为热路径成本。
    - 优先 batch analysis，一次传源码、一次 parse、一次返回多个分析结果。

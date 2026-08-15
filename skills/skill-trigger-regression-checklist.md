@@ -2,13 +2,14 @@
 
 ## 目标
 
-验证以下 7 个主 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
+验证以下 8 个主 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
 
 - `weapp-vite-best-practices`
 - `docs-and-website-sync`
 - `release-and-changeset-best-practices`
 - `weapp-devtools-e2e-best-practices`
 - `weapp-vite-vue-sfc-best-practices`
+- `weapp-vite-react-best-practices`
 - `wevu-best-practices`
 - `native-to-weapp-vite-wevu-migration`
 
@@ -246,6 +247,23 @@ pnpm skills:score:json
 5. 边界提问：我现在不是准备发版，而是要补 GitHub issue 的复现和 PR 闭环。
    预期 skill：`release-and-changeset-best-practices`
 
+### L. weapp-vite-react-best-practices
+
+1. 提问：`weapp.react` 的 auto、dynamic、static 三种 render mode 应该怎么选，哪些结构会直接编译失败？
+   预期 skill：`weapp-vite-react-best-practices`
+
+2. 提问：React 小程序页面里 `createReactMiniProgramRoot` 应该放在哪些 Page 生命周期，宿主 tap 事件怎么转发？
+   预期 skill：`weapp-vite-react-best-practices`
+
+3. 提问：React TSX 怎么通过 `createNativeComponent` 同时复用原生组件和 Wevu 组件，`usingComponents` 有什么约束？
+   预期 skill：`weapp-vite-react-best-practices`
+
+4. 提问：我想给 React 19 小程序开启 SWC React Compiler，缺少 native transform 时应该怎么回退和验证？
+   预期 skill：`weapp-vite-react-best-practices`
+
+5. 边界提问：这是纯 Wevu TSX 页面，没有启用 `weapp.react`，组件标签和响应式更新应该怎么处理？
+   预期 skill：`wevu-best-practices`
+
 ## 冲突场景回归
 
 1. 提问：我这个页面 `v-model` 报错，同时首包也超了，而且 AI 还需要按当前模板约定继续改这个页面，先看哪个？
@@ -284,6 +302,22 @@ pnpm skills:score:json
    预期主 skill：`release-and-changeset-best-practices`
    预期次 skill：`release-and-changeset-best-practices`
 
+10. 提问：React TSX 页面里要引入一个 `.vue` 组件，同时还想在 TSX 里使用 Wevu JSX 语义，应该由谁拥有这些文件？
+    预期主 skill：`weapp-vite-react-best-practices`
+    预期次 skill：`weapp-vite-vue-sfc-best-practices`
+
+11. 提问：存量原生页面准备改成 React 19，同时要保留一个 Wevu 自定义组件，这还是原生到 Wevu 的路线 B 吗？
+    预期主 skill：`weapp-vite-react-best-practices`
+    预期次 skill：`native-to-weapp-vite-wevu-migration`
+
+12. 提问：React runtime 的 DevTools 用例通过，但 headless provider 行为不同，先改测试断言还是修 mpcore？
+    预期主 skill：`weapp-devtools-e2e-best-practices`
+    预期次 skill：`weapp-vite-react-best-practices`
+
+13. 提问：我既要调 `weapp.react` 的 render mode，又要处理分包和 buildScope，先看哪个？
+    预期主 skill：`weapp-vite-react-best-practices`
+    预期次 skill：`weapp-vite-best-practices`
+
 ## 通过标准
 
 1. 每个 skill 的 4 条主用例至少命中 3 条（>=75%）。
@@ -307,8 +341,14 @@ pnpm skills:score:json
    预期 skill：`weapp-vite-best-practices`
 6. 提问：新增一个公开 skill 后，website、AGENTS、元数据和触发评分需要怎么同步。
    预期 skill：`docs-and-website-sync`
+7. 提问：同一份原生源码要覆盖微信、支付宝、抖音、百度、京东、小红书和 Web，是不是一次构建就能产出全部平台？
+   预期 skill：`weapp-vite-best-practices`
+8. 提问：同一个 IDE 场景要通过 runtime provider 同时跑 DevTools 和 headless，出现差异时该按谁的行为修复？
+   预期 skill：`weapp-devtools-e2e-best-practices`
+9. 提问：项目启用了 `weapp.react`，独立 TSX 和 `.vue` 里的 TSX 分别由哪条编译链处理？
+   预期 skill：`weapp-vite-react-best-practices`
 
-这些用例使用 K1-K6 作为评分脚本的稳定 ID。
+这些用例使用 K1-K9 作为评分脚本的稳定 ID。
 
 ## 记录模板
 
@@ -372,10 +412,22 @@ pnpm skills:score:json
 | J3   |      |            |            |           |      |
 | J4   |      |            |            |           |      |
 | J5   |      |            |            |           |      |
+| L1   |      |            |            |           |      |
+| L2   |      |            |            |           |      |
+| L3   |      |            |            |           |      |
+| L4   |      |            |            |           |      |
+| L5   |      |            |            |           |      |
 | X9   |      |            |            |           |      |
+| X10  |      |            |            |           |      |
+| X11  |      |            |            |           |      |
+| X12  |      |            |            |           |      |
+| X13  |      |            |            |           |      |
 | K1   |      |            |            |           |      |
 | K2   |      |            |            |           |      |
 | K3   |      |            |            |           |      |
 | K4   |      |            |            |           |      |
 | K5   |      |            |            |           |      |
 | K6   |      |            |            |           |      |
+| K7   |      |            |            |           |      |
+| K8   |      |            |            |           |      |
+| K9   |      |            |            |           |      |

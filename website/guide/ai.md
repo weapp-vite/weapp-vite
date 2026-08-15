@@ -32,6 +32,7 @@ $docs-and-website-sync
 $release-and-changeset-best-practices
 $weapp-devtools-e2e-best-practices
 $weapp-vite-vue-sfc-best-practices
+$weapp-vite-react-best-practices
 $wevu-best-practices
 $native-to-weapp-vite-wevu-migration
 ```
@@ -46,10 +47,11 @@ $native-to-weapp-vite-wevu-migration
 4. GitHub issue 修复、`e2e-apps/github-issues` 复现、changeset、PR 闭环优先用 `release-and-changeset-best-practices`。
 5. WeChat DevTools runtime e2e、automator 复用、`reLaunch` 方案优先用 `weapp-devtools-e2e-best-practices`。
 6. `.vue` 宏、模板兼容、`v-model`/`usingComponents` 问题优先用 `weapp-vite-vue-sfc-best-practices`。
-7. `wevu` 生命周期、状态、事件、store，以及卡顿、掉帧、白屏、内存告警这类运行时治理优先用 `wevu-best-practices`。
-8. 原生小程序迁移到 `weapp-vite + 原生`，或继续迁移到 `weapp-vite + wevu + Vue SFC`，优先用 `native-to-weapp-vite-wevu-migration`。
-9. DevTools 自动化、`preview/upload/automator/config` 命令治理优先用 `weapp-vite-best-practices`。
-10. 先让 AI 明确使用哪个 Skill，再开始具体任务。
+7. React 19 JSX/TSX、`weapp.react`、render mode、React Compiler 和原生/Wevu bridge 优先用 `weapp-vite-react-best-practices`。
+8. `wevu` 生命周期、状态、事件、store、Wevu JSX/TSX，以及卡顿、掉帧、白屏、内存告警这类运行时治理优先用 `wevu-best-practices`。
+9. 原生小程序迁移到 `weapp-vite + 原生`，或继续迁移到 `weapp-vite + wevu + Vue SFC`，优先用 `native-to-weapp-vite-wevu-migration`。
+10. DevTools 自动化、`preview/upload/automator/config` 命令治理优先用 `weapp-vite-best-practices`。
+11. 先让 AI 明确使用哪个 Skill，再开始具体任务。
 
 ## MCP
 
