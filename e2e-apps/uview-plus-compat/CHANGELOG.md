@@ -1,5 +1,12 @@
 # e2e-app-uview-plus-compat
 
+## 0.0.9
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.20.3`
+
 ## 0.0.8
 
 ### Patch Changes
