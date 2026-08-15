@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.20.3
+
+### Patch Changes
+
+- 🐛 **修复入口注入、请求运行时兼容、shared chunk 路径调整和构建后代码重写未完整组合 sourcemap 的问题，统一提交外部、hidden 与 inline 最终映射，避免生成代码行号偏移或映射越过原始源码范围。** [#811](https://github.com/weapp-vite/weapp-vite/pull/811) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.20.3`, `wevu@6.20.3`, `@weapp-vite/web@1.4.8`
+
 ## 6.20.2
 
 ### Patch Changes
