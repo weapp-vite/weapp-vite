@@ -82,7 +82,7 @@ export function rewriteDuplicatedChunkSource(args: {
   const rewrittenChunk = {
     ...args.chunk,
     map: resolveEncodedSourceMap(args.chunk.map, sourceMapAssetInfo?.asset.source),
-  }
+  } as OutputChunk
   const rewrite = createChunkImportSpecifiersRewrite(rewrittenChunk.code ?? '', {
     sourceFileNames: createChunkSourceFileNameCandidates(args.sourceFileName),
     targetFileName: args.targetFileName,

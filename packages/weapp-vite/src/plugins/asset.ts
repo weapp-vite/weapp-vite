@@ -1,4 +1,4 @@
-import type { OutputBundle } from 'rolldown'
+import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../context'
 import type { CopyGlobs } from '../types'
@@ -214,7 +214,8 @@ function patchScopedSlotHostAssetForBundle(
   output: Record<string, any>,
 ) {
   if (output.type === 'chunk') {
-    const current = output.code
+    const chunk = output as OutputChunk
+    const current = chunk.code
     if (typeof current !== 'string') {
       return false
     }
@@ -223,16 +224,16 @@ function patchScopedSlotHostAssetForBundle(
       return false
     }
 
-    const transformCode = resolveOutputChunkTransformCode(output)
-    const hasSourceMap = Boolean(normalizeEncodedSourceMapLike(output.map)) || transformCode !== current
+    const transformCode = resolveOutputChunkTransformCode(chunk)
+    const hasSourceMap = Boolean(normalizeEncodedSourceMapLike(chunk.map)) || transformCode !== current
     const injected = injectScopedSlotHostPropertiesInJs(transformCode, { sourceMap: hasSourceMap })
     if (injected.transformed) {
-      return applyOutputChunkTransform(output, injected.code, injected.map)
+      return applyOutputChunkTransform(chunk, injected.code, injected.map)
     }
 
     const propertySource = createScopedSlotHostPropertiesSource()
     return replaceOutputChunkCode(
-      output,
+      chunk,
       /Component\(\s*\{/,
       match => `${match[0]} properties: { ${propertySource} },`,
     )

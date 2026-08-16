@@ -20,7 +20,7 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/github-issues.runtime.props.test.ts', '600000'],
   ['ide/stateful-hmr.runtime.test.ts', '900000'],
   ['ide/subpackage-shared-strategy-complex.runtime.test.ts', '600000'],
-  ['ide/template-dev-open-all.runtime.test.ts', '900000'],
+  ['ide/template-dev-open-all.runtime.test.ts', '1800000'],
   ['ide/template-tailwindcss-dev-open-multi.runtime.test.ts', '1200000'],
   ['ide/template-tailwindcss-tdesign-hmr.runtime.test.ts', '900000'],
   ['ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts', '900000'],

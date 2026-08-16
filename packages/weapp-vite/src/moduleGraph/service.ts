@@ -44,6 +44,20 @@ export function createModuleGraphService(): ModuleGraphService {
   const entryDependencies = new Map<string, Map<SidecarModuleKind, Set<string>>>()
   const pendingChanges = new Map<string, string>()
 
+  const hasRegisteredEntryDependency = (file: string) => {
+    if (entryDependencies.has(file)) {
+      return true
+    }
+    for (const dependenciesByKind of entryDependencies.values()) {
+      for (const sourceIds of dependenciesByKind.values()) {
+        if (sourceIds.has(file)) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
   const collectFromBuildGraph = (file: string, affected: Set<string>) => {
     for (const buildContext of buildContexts.values()) {
       if (typeof buildContext.getModuleInfo !== 'function') {
@@ -189,6 +203,9 @@ export function createModuleGraphService(): ModuleGraphService {
     },
     hasModule(rawFile) {
       const file = normalizeSourceId(rawFile)
+      if (hasRegisteredEntryDependency(file)) {
+        return true
+      }
       if (devServer) {
         return collectDevStartNodes(devServer, file).size > 0
       }

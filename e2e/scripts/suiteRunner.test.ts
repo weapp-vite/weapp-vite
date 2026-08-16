@@ -308,7 +308,7 @@ describe('suiteRunner', () => {
     expect(githubIssuesAggregateTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('3600000')
     expect(statefulHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(subpackageSharedStrategyComplexTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
-    expect(templateDevOpenAllTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
+    expect(templateDevOpenAllTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1800000')
     expect(templateTailwindDevOpenMultiTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1200000')
     expect(templateTailwindTdesignHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(templateWevuTailwindTdesignHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')

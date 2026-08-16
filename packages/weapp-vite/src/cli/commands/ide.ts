@@ -48,11 +48,13 @@ interface IdeDoctorReport {
 
 async function runIdeDoctor(projectPath: string | undefined, options: GlobalCLIOptions) {
   const resolvedCli = await resolveCliPath()
-  const servicePort = await detectWechatDevtoolsServicePort().catch(error => ({
-    servicePortEnabled: undefined,
-    servicePort: undefined,
-    error,
-  }))
+  const servicePort = await detectWechatDevtoolsServicePort()
+    .then(result => ({ ...result, error: undefined }))
+    .catch(error => ({
+      servicePortEnabled: undefined,
+      servicePort: undefined,
+      error,
+    }))
   const cliCheck: IdeDoctorCheck = resolvedCli.cliPath
     ? { status: 'ok', value: { path: resolvedCli.cliPath, source: resolvedCli.source } }
     : {
@@ -233,18 +235,18 @@ export async function runIdeCommand(action: string | undefined, root: string | u
   if (action !== 'doctor' && resolved.platform !== 'weapp') {
     throw new Error('`weapp-vite ide logs` 当前仅支持微信小程序平台。')
   }
-  if (action !== 'doctor' && !resolved.projectPath) {
-    throw new Error('无法解析微信开发者工具项目目录，请显式传入 root 或检查 project.config.json。')
-  }
-
   if (action === 'doctor') {
     await runIdeDoctor(resolved.projectPath, options)
     return
   }
+  const projectPath = resolved.projectPath
+  if (!projectPath) {
+    throw new Error('无法解析微信开发者工具项目目录，请显式传入 root 或检查 project.config.json。')
+  }
 
   if (action === 'setup') {
     const result = await bootstrapWechatDevtoolsSettings({
-      projectPath: resolved.projectPath,
+      projectPath,
       trustProject: options.trustProject,
     })
     logger.info(`已完成微信开发者工具配置预热：扫描实例 ${result.touchedInstanceCount} 个，检测服务端口配置 ${result.detectedSecurityCount} 处，写入项目信任 ${result.trustedProjectCount} 处。`)
@@ -252,7 +254,7 @@ export async function runIdeCommand(action: string | undefined, root: string | u
   }
 
   if (options.open) {
-    await openIde(resolved.platform, resolved.projectPath, {
+    await openIde(resolved.platform, projectPath, {
       openRecovery: options.openRecovery,
       trustProject: options.trustProject,
       openStrategy: options.ideOpenStrategy,
@@ -261,7 +263,7 @@ export async function runIdeCommand(action: string | undefined, root: string | u
 
   if (action === 'info') {
     const result = await getWechatIdeToolInfo({
-      projectPath: resolved.projectPath,
+      projectPath,
     })
     logger.info(formatIdeOutput(result, options))
     return
@@ -269,7 +271,7 @@ export async function runIdeCommand(action: string | undefined, root: string | u
 
   if (action === 'test-accounts') {
     const result = await getWechatIdeTestAccounts({
-      projectPath: resolved.projectPath,
+      projectPath,
     })
     logger.info(formatIdeOutput(result, options))
     return
@@ -277,7 +279,7 @@ export async function runIdeCommand(action: string | undefined, root: string | u
 
   if (action === 'ticket') {
     const result = await getWechatIdeTicket({
-      projectPath: resolved.projectPath,
+      projectPath,
     })
     logger.info(formatIdeOutput(result, options))
     return
@@ -288,7 +290,7 @@ export async function runIdeCommand(action: string | undefined, root: string | u
       throw new Error('`weapp-vite ide ticket:set` 需要提供 --ticket。')
     }
     await setWechatIdeTicket({
-      projectPath: resolved.projectPath,
+      projectPath,
       ticket: options.ticket,
     })
     logger.info(`已设置微信开发者工具 ticket：${options.ticket}`)
@@ -297,7 +299,7 @@ export async function runIdeCommand(action: string | undefined, root: string | u
 
   if (action === 'ticket:refresh') {
     await refreshWechatIdeTicket({
-      projectPath: resolved.projectPath,
+      projectPath,
     })
     logger.info('已刷新微信开发者工具 ticket。')
     return
@@ -323,8 +325,8 @@ export async function runIdeCommand(action: string | undefined, root: string | u
   }
 
   const session = await startForwardConsoleBridge({
-    projectPath: resolved.projectPath,
-    port: resolveProjectAutomatorPort(resolved.projectPath),
+    projectPath,
+    port: resolveProjectAutomatorPort(projectPath),
     agentName: undefined,
     logLevels: forwardConsoleOptions.logLevels,
     unhandledErrors: forwardConsoleOptions.unhandledErrors,

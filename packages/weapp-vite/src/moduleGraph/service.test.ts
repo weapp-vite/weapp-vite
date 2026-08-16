@@ -179,6 +179,25 @@ describe('ModuleGraphService', () => {
     expect(service.collectAffectedEntries(file)).toEqual(new Set([currentEntry]))
   })
 
+  it('keeps registered sidecars managed while the dev graph is temporarily missing them', () => {
+    const componentId = '/project/src/components/child/index.ts'
+    const templateId = '/project/src/components/child/index.wxml'
+    const service = createModuleGraphService()
+
+    service.replaceEntryDependencies(componentId, 'template', [templateId])
+    service.bindDevServer({
+      moduleGraph: {
+        getModulesByFile: () => undefined,
+        getModuleById: () => undefined,
+        invalidateModule: vi.fn(),
+      },
+    })
+
+    expect(service.hasModule(componentId)).toBe(true)
+    expect(service.hasModule(templateId)).toBe(true)
+    expect(service.hasModule('/project/src/components/other/index.wxml')).toBe(false)
+  })
+
   it('warms logical roots and their current dev graph dependencies without caching edges', async () => {
     const pageId = '/project/src/pages/home/index.ts'
     const logicalId = createLogicalEntryId(pageId, 'page')

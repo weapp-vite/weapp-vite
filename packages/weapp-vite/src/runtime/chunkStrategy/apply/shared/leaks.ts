@@ -93,7 +93,7 @@ export function localizeCrossSubPackageChunkLeaks(
         const duplicatedChunk = {
           ...chunk,
           map: resolvedSourceMap,
-        }
+        } as OutputChunk
         const rewrite = createChunkImportSpecifiersRewrite(duplicatedChunk.code ?? '', {
           sourceFileName: fileName,
           targetFileName: uniqueFileName,
