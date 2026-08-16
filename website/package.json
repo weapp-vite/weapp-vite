@@ -19,6 +19,9 @@
     "dev": "vitepress dev",
     "dev:docs": "vitepress dev",
     "build": "pnpm -w seo:prepare && vitepress build",
+    "deploy": "wrangler deploy",
+    "deploy:dry-run": "wrangler deploy --dry-run",
+    "deploy:preview": "wrangler versions upload",
     "test": "vitest run",
     "preview": "vitepress preview",
     "get-tree": "tree ../templates/weapp-vite-template -I \"node_modules|dist\" > snippets/template-tree.txt",
@@ -51,6 +54,7 @@
     "vitepress-plugin-group-icons": "^1.7.6",
     "vitepress-plugin-llms": "1.13.5",
     "vitepress-plugin-mermaid": "^2.0.17",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "wrangler": "^4.123.0"
   }
 }

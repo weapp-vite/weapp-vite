@@ -132,6 +132,7 @@ allowBuilds:
   sharp: false
   vue-demi: false
   weapp-tailwindcss: false
+  workerd: true
 
 shamefullyHoist: true
 

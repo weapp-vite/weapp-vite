@@ -1,0 +1,7 @@
+/*
+  Access-Control-Allow-Origin: *
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+https://:version.:subdomain.workers.dev/*
+  X-Robots-Tag: noindex
