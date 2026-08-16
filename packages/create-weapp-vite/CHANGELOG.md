@@ -1,5 +1,21 @@
 # create-weapp-vite
 
+## 2.8.0
+
+### Minor Changes
+
+- 新增可直接选择的多平台 Vue SFC 与 Web 模板，覆盖六个小程序构建目标、受管类型支持和分层运行时验收工作流。
+
+- 新增可交互选择或通过 `multi-platform` 参数创建的原生多平台与 Web 模板，并在发布包中包含完整的平台配置和专属 AI 协作指引。
+
+### Patch Changes
+
+- 将包版本、预发布、恢复发布和公开 AI 发布指引统一迁移到 pnpm versioning 与 repoctl，并明确 `.changeset` 仅作为 pnpm change-intent 存储目录。
+
+- 修复开发模式下原生组件模板等 sidecar 文件在原子保存时可能因模块图短暂缺失而漏掉增量构建的问题，确保已注册的入口依赖持续参与 HMR。
+
+- 新增 React 小程序最佳实践 skill，更新全部公开 skills、官网 AI 入口与脚手架生成的协作指引，并加入公开 skill 防漂移校验。
+
 ## 2.7.3
 
 ### Patch Changes

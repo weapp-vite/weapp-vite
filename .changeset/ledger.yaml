@@ -1,0 +1,14 @@
+create-weapp-vite@2.8.0:
+  dir: packages/create-weapp-vite
+  intents:
+    - bright-sfc-platforms
+    - calm-platforms-build
+    - repoctl-release-migration
+    - steady-native-hmr
+    - wise-skills-react
+weapp-vite@6.20.4:
+  dir: packages/weapp-vite
+  intents:
+    - repoctl-release-migration
+    - steady-native-hmr
+    - wise-skills-react

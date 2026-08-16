@@ -1,5 +1,20 @@
 # weapp-vite
 
+## 6.20.4
+
+### Patch Changes
+
+- 将包版本、预发布、恢复发布和公开 AI 发布指引统一迁移到 pnpm versioning 与 repoctl，并明确 `.changeset` 仅作为 pnpm change-intent 存储目录。
+
+- 修复开发模式下原生组件模板等 sidecar 文件在原子保存时可能因模块图短暂缺失而漏掉增量构建的问题，确保已注册的入口依赖持续参与 HMR。
+
+- 新增 React 小程序最佳实践 skill，更新全部公开 skills、官网 AI 入口与脚手架生成的协作指引，并加入公开 skill 防漂移校验。
+
+- Updated dependencies:
+  - @weapp-vite/ast@6.20.4
+  - @weapp-vite/web@1.4.9
+  - wevu@6.20.4
+
 ## 6.20.3
 
 ### Patch Changes

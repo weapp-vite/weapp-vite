@@ -1,5 +1,12 @@
 # @wevu/compiler
 
+## 6.20.4
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/ast@6.20.4
+
 ## 6.20.3
 
 ### Patch Changes
