@@ -846,7 +846,7 @@
     "check": "pnpm run lint && pnpm run test && pnpm run build && pnpm run smoke:dist",
     "check:package": "node --import tsx scripts/check-package.ts",
     "check:publish": "pnpm run check && pnpm run check:package",
-    "release:marketplace:plan": "node --import tsx scripts/plan-marketplace-release.ts",
+    "release:marketplace": "node --import tsx scripts/plan-marketplace-release.ts",
     "package:dry-run": "pnpm run build && node --import tsx scripts/package-dry-run.ts package",
     "check:vsix": "pnpm run package:dry-run && node --import tsx scripts/check-vsix.ts",
     "publish:vsce": "pnpm run check:publish && node --import tsx scripts/release-vsce.ts publish"
@@ -861,6 +861,7 @@
     "@types/node": "catalog:",
     "@types/vscode": "^1.125.0",
     "@vscode/test-electron": "^3.1.0",
-    "@weapp-vite/ast": "workspace:*"
+    "@weapp-vite/ast": "workspace:*",
+    "tinyexec": "^1.3.0"
   }
 }

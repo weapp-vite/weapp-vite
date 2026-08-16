@@ -74,7 +74,7 @@ export function collectConstantsReleaseVersionIssues(options: {
     [
       `${options.packageName} is still at ${options.version}, but releasable files changed since ${tagName}.`,
       `Changed files: ${releaseWorthyFiles.join(', ')}`,
-      `Run changeset version with a ${options.packageName} changeset before publishing.`,
+      `Run repo release stable prepare with a ${options.packageName} change intent before publishing.`,
     ].join('\n'),
   ]
 }

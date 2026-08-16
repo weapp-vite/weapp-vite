@@ -31,16 +31,16 @@ npx skills add sonofmagic/skills
 
 当前公开分发的 skill 以仓库 `skills/*/SKILL.md` 为准：
 
-| Skill                                   | 适用任务                                                                            | 优先读取                                                                    |
-| --------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `$weapp-vite-best-practices`            | `vite.config.ts`、分包、chunk、自动路由、CLI、MCP、DevTools 命令归属                | 根 `AGENTS.md`、`node_modules/weapp-vite/dist/docs/`、`website/config/**`   |
-| `$docs-and-website-sync`                | 根据真实实现同步 `website`、README、skills、AI 指南和随包 `dist/docs`               | 源码、CLI、类型定义、`packages/weapp-vite/docs/**`、`website/.vitepress/**` |
-| `$release-and-changeset-best-practices` | changeset 判断、发布检查、GitHub issue 修复、worktree 与 PR 闭环                    | `.changeset/**`、`e2e-apps/github-issues`、发布检查脚本                     |
-| `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 复用、`miniProgram.reLaunch(...)`、真实运行时截图和日志验收 | `e2e/ide/**`、`e2e/scripts/**`、DevTools 配置                               |
-| `$weapp-vite-vue-sfc-best-practices`    | 小程序 `.vue`、JSON 宏、`definePageMeta`、layout、`v-model`、模板兼容               | `.weapp-vite` 类型文件、Vue SFC 文档、模板兼容清单                          |
-| `$weapp-vite-react-best-practices`      | React 19、JSX/TSX、render mode、React Compiler、原生/Wevu 组件 bridge               | React 配置类型、`@weapp-vite/react`、React 模板与 runtime e2e               |
-| `$wevu-best-practices`                  | wevu 生命周期、事件、store、router、layout、运行时性能治理                          | `packages-runtime/wevu`、wevu 文档、运行时排障清单                          |
-| `$native-to-weapp-vite-wevu-migration`  | 原生小程序迁移到 `weapp-vite + 原生`，或继续升级到 `weapp-vite + wevu + Vue SFC`    | 路线选择、迁移清单、API 映射、回滚与验收计划                                |
+| Skill                                   | 适用任务                                                                            | 优先读取                                                                     |
+| --------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `$weapp-vite-best-practices`            | `vite.config.ts`、分包、chunk、自动路由、CLI、MCP、DevTools 命令归属                | 根 `AGENTS.md`、`node_modules/weapp-vite/dist/docs/`、`website/config/**`    |
+| `$docs-and-website-sync`                | 根据真实实现同步 `website`、README、skills、AI 指南和随包 `dist/docs`               | 源码、CLI、类型定义、`packages/weapp-vite/docs/**`、`website/.vitepress/**`  |
+| `$release-and-changeset-best-practices` | pnpm change intent、repoctl 发布检查、GitHub issue 修复、worktree 与 PR 闭环        | `repoctl.config.ts`、`.changeset/**`、`e2e-apps/github-issues`、发布检查脚本 |
+| `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 复用、`miniProgram.reLaunch(...)`、真实运行时截图和日志验收 | `e2e/ide/**`、`e2e/scripts/**`、DevTools 配置                                |
+| `$weapp-vite-vue-sfc-best-practices`    | 小程序 `.vue`、JSON 宏、`definePageMeta`、layout、`v-model`、模板兼容               | `.weapp-vite` 类型文件、Vue SFC 文档、模板兼容清单                           |
+| `$weapp-vite-react-best-practices`      | React 19、JSX/TSX、render mode、React Compiler、原生/Wevu 组件 bridge               | React 配置类型、`@weapp-vite/react`、React 模板与 runtime e2e                |
+| `$wevu-best-practices`                  | wevu 生命周期、事件、store、router、layout、运行时性能治理                          | `packages-runtime/wevu`、wevu 文档、运行时排障清单                           |
+| `$native-to-weapp-vite-wevu-migration`  | 原生小程序迁移到 `weapp-vite + 原生`，或继续升级到 `weapp-vite + wevu + Vue SFC`    | 路线选择、迁移清单、API 映射、回滚与验收计划                                 |
 
 近期能力按主题归入现有 skill：stateful HMR、pluginRoot/dist-plugin、Web runtime、native AST 与六平台单目标构建归 `$weapp-vite-best-practices`；React 19 JSX/TSX 和组件 bridge 归 `$weapp-vite-react-best-practices`；Wevu JSX/TSX 与 `wevu/router` 归 `$wevu-best-practices`；DevTools/headless parity 归 `$weapp-devtools-e2e-best-practices`。
 
@@ -51,6 +51,7 @@ npx skills add sonofmagic/skills
 | “帮我调分包、chunk、自动路由或 CLI”                      | `$weapp-vite-best-practices`            | `$weapp-vite-vue-sfc-best-practices`                   |
 | “根据当前实现更新 website / skills / README”             | `$docs-and-website-sync`                | `$weapp-vite-best-practices`                           |
 | “这个 issue 要按仓库流程修完并开 PR”                     | `$release-and-changeset-best-practices` | `$wevu-best-practices` 或 `$weapp-vite-best-practices` |
+| “添加 pnpm change intent 或用 repoctl 准备、恢复发布”    | `$release-and-changeset-best-practices` | `$docs-and-website-sync`                               |
 | “新增 DevTools runtime e2e 或截图验收”                   | `$weapp-devtools-e2e-best-practices`    | `$weapp-vite-best-practices`                           |
 | “`.vue` 宏、模板或 `usingComponents` 不生效”             | `$weapp-vite-vue-sfc-best-practices`    | `$weapp-vite-best-practices`                           |
 | “React TSX、render mode 或原生组件 bridge 不生效”        | `$weapp-vite-react-best-practices`      | `$weapp-vite-best-practices`                           |

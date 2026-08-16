@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   measure:
-    if: ${{ !startsWith(github.head_ref, 'changeset-release/') }}
+    if: ${{ !startsWith(github.head_ref, 'release/pnpm-version') }}
     name: Runtime Size (Ubuntu / Node 24)
     runs-on: ubuntu-latest
     timeout-minutes: 20

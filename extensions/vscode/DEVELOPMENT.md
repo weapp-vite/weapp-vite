@@ -43,7 +43,7 @@ pnpm --dir extensions/vscode run smoke:dist
 pnpm --dir extensions/vscode run check:package
 pnpm --dir extensions/vscode run check:vsix
 pnpm --dir extensions/vscode run check:publish
-pnpm --dir extensions/vscode run release:marketplace:plan
+pnpm --dir extensions/vscode run release:marketplace
 ```
 
 ## 4. 构建与测试说明
@@ -71,8 +71,8 @@ pnpm --dir extensions/vscode run release:marketplace:plan
 
 ## 5. 发布说明
 
-扩展版本通过 changeset 驱动，Marketplace 发布说明单独维护在：
+扩展版本通过 pnpm change intent 驱动，Marketplace 发布说明单独维护在：
 
 - [PUBLISHING.md](./PUBLISHING.md)
 
-目前 release 流程除了限制 `main` ref 外，还要求满足合法发布入口之一：要么 `changesets/action` 本次实际完成发布，要么当前提交把插件版本手动往上提升。未合并的 `changeset-release/*` 分支、以及仅新增 changeset 但尚未进入真正 release publish 的提交，都不会直接发布 Marketplace。
+`.changeset/*.md` 是 pnpm change-intent 存储格式，不使用 Changesets CLI。repoctl 的 `afterPublish` hook 只在 `main` 执行幂等 Marketplace 命令：线上版本落后时补发扩展，远端 tag 缺失时补 tag，线上版本领先仓库时明确失败。未合并的 `release/pnpm-version` PR 和预发布 lane 不会发布 Marketplace。

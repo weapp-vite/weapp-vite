@@ -18,18 +18,19 @@ date: 2026-05-03
 
 ## 工作流总览
 
-| 任务                              | 主 skill                                | 事实源                                                      | 验收信号                                |
-| --------------------------------- | --------------------------------------- | ----------------------------------------------------------- | --------------------------------------- |
-| 同步网站和 skills 文档            | `$docs-and-website-sync`                | 源码、CLI、类型定义、随包 docs、VitePress 配置              | 相关入口一致，`seo-quality-check` 通过  |
-| 修 GitHub issue                   | `$release-and-changeset-best-practices` | issue 描述、最小复现、单测、e2e                             | 复现先失败后通过，changeset 判定清楚    |
-| 调整项目配置或 CLI                | `$weapp-vite-best-practices`            | `vite.config.ts`、`packages/weapp-vite/src/**`、`dist/docs` | 目标包先 build，下游窄范围验证通过      |
-| 排查 Vue SFC 编译或模板           | `$weapp-vite-vue-sfc-best-practices`    | `.vue`、JSON 宏、`.weapp-vite` 类型支持文件                 | `wv prepare` 后类型与产物一致           |
-| 接入或排查 React 19 小程序        | `$weapp-vite-react-best-practices`      | React 配置、TSX、runtime、bridge、构建与 IDE e2e            | owner、产物和真实 runtime 行为一致      |
-| 排查 wevu 运行时行为              | `$wevu-best-practices`                  | 生命周期、事件、store、router、运行时日志                   | 单测或 DevTools runtime 信号稳定        |
-| 新增 DevTools e2e                 | `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 会话、项目配置                      | suite 复用 automator，`reLaunch` 串场景 |
-| 原生迁移到 Weapp-vite / Wevu      | `$native-to-weapp-vite-wevu-migration`  | 原生页面、路线选择、迁移映射、回滚点、截图日志              | 分波次迁移，每波有可回滚验收            |
-| stateful HMR / 插件 / Web runtime | `$weapp-vite-best-practices`            | 配置类型、产物结构、平台前提和 profile                      | classic 基线或 host/plugin 双产物通过   |
-| wevu/router 与导航性能            | `$wevu-best-practices`                  | router 文档、页面栈、导航结果和 runtime 信号                | 目标页面真实运行时行为稳定              |
+| 任务                              | 主 skill                                | 事实源                                                      | 验收信号                                 |
+| --------------------------------- | --------------------------------------- | ----------------------------------------------------------- | ---------------------------------------- |
+| 同步网站和 skills 文档            | `$docs-and-website-sync`                | 源码、CLI、类型定义、随包 docs、VitePress 配置              | 相关入口一致，`seo-quality-check` 通过   |
+| 修 GitHub issue                   | `$release-and-changeset-best-practices` | issue 描述、最小复现、单测、e2e                             | 复现先失败后通过，change intent 判定清楚 |
+| 准备或恢复包发布                  | `$release-and-changeset-best-practices` | `repoctl.config.ts`、pnpm versioning、release workflow      | Release PR、npm、tag 与 Release 状态一致 |
+| 调整项目配置或 CLI                | `$weapp-vite-best-practices`            | `vite.config.ts`、`packages/weapp-vite/src/**`、`dist/docs` | 目标包先 build，下游窄范围验证通过       |
+| 排查 Vue SFC 编译或模板           | `$weapp-vite-vue-sfc-best-practices`    | `.vue`、JSON 宏、`.weapp-vite` 类型支持文件                 | `wv prepare` 后类型与产物一致            |
+| 接入或排查 React 19 小程序        | `$weapp-vite-react-best-practices`      | React 配置、TSX、runtime、bridge、构建与 IDE e2e            | owner、产物和真实 runtime 行为一致       |
+| 排查 wevu 运行时行为              | `$wevu-best-practices`                  | 生命周期、事件、store、router、运行时日志                   | 单测或 DevTools runtime 信号稳定         |
+| 新增 DevTools e2e                 | `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 会话、项目配置                      | suite 复用 automator，`reLaunch` 串场景  |
+| 原生迁移到 Weapp-vite / Wevu      | `$native-to-weapp-vite-wevu-migration`  | 原生页面、路线选择、迁移映射、回滚点、截图日志              | 分波次迁移，每波有可回滚验收             |
+| stateful HMR / 插件 / Web runtime | `$weapp-vite-best-practices`            | 配置类型、产物结构、平台前提和 profile                      | classic 基线或 host/plugin 双产物通过    |
+| wevu/router 与导航性能            | `$wevu-best-practices`                  | router 文档、页面栈、导航结果和 runtime 信号                | 目标页面真实运行时行为稳定               |
 
 ## 文档同步
 
@@ -69,17 +70,38 @@ pnpm --filter website-weapp-vite build
 3. 先补最小复现，确认修复前失败。
 4. 再分析根因并修改对应包。
 5. 包源码变化后，先重建 touched package，再做下游验证。
-6. 判断是否需要 changeset；行为修复通常需要。
+6. 判断是否需要 `pnpm change` intent；行为修复通常需要。
 7. 本地验证完成后开中文 PR。
 
 验收输出应包含：
 
-| 项   | 要求                         |
-| ---- | ---------------------------- |
-| 复现 | 说明新增的最小用例和失败信号 |
-| 修复 | 说明根因和修改文件           |
-| 验证 | 列出实际运行的窄范围命令     |
-| 发布 | 说明 changeset 和 PR 状态    |
+| 项   | 要求                          |
+| ---- | ----------------------------- |
+| 复现 | 说明新增的最小用例和失败信号  |
+| 修复 | 说明根因和修改文件            |
+| 验证 | 列出实际运行的窄范围命令      |
+| 发布 | 说明 change intent 和 PR 状态 |
+
+## 包版本与发布
+
+`.changeset/*.md` 是 pnpm 的 change-intent 存储格式，不表示项目使用 Changesets CLI。新增发布意图与检查待发布状态统一使用：
+
+```sh
+pnpm change
+pnpm change status
+```
+
+稳定版由 repoctl 准备 Release PR 并发布，预发布通过独立 lane 管理：
+
+```sh
+repo release stable prepare
+repo release stable publish
+repo release pre enter alpha
+repo release pre publish
+repo release pre exit
+```
+
+CI 只执行 `repo release ci`。需要恢复某个 npm 未发布版本时，使用 `repo release ci --mode publish-unpublished --package <name> --version <version>`，不要绕过 repoctl 直接运行 `pnpm publish`。
 
 ## DevTools runtime 验收
 
