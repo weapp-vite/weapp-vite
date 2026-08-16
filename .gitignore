@@ -54,6 +54,7 @@ packages/ast-native/*.node
 .wevu-config
 **/.weapp-vite/auto-routes.cache.json
 **/.weapp-vite/
+**/.wrangler/
 **/.smartapp-automator/
 dist-web
 packages/wevu/.cache
