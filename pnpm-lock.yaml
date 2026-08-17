@@ -91,8 +91,8 @@ catalogs:
       specifier: ^5.0.0
       version: 5.0.0
     dayjs:
-      specifier: ^1.11.22
-      version: 1.11.22
+      specifier: ^1.11.23
+      version: 1.11.23
     echarts:
       specifier: ^6.1.0
       version: 6.1.0
@@ -813,7 +813,7 @@ importers:
     dependencies:
       dayjs:
         specifier: 'catalog:'
-        version: 1.11.22
+        version: 1.11.23
       lodash:
         specifier: 'catalog:'
         version: 4.18.1
@@ -1033,7 +1033,7 @@ importers:
     dependencies:
       dayjs:
         specifier: 'catalog:'
-        version: 1.11.22
+        version: 1.11.23
       tdesign-miniprogram:
         specifier: catalog:tdesign-miniprogram-fixed
         version: 1.16.0
@@ -1098,7 +1098,7 @@ importers:
         version: 1.8.0
       dayjs:
         specifier: 'catalog:'
-        version: 1.11.22
+        version: 1.11.23
       magic-string:
         specifier: 'catalog:'
         version: 1.2.0
@@ -1564,7 +1564,7 @@ importers:
         version: 9.0.0
       dayjs:
         specifier: 'catalog:'
-        version: 1.11.22
+        version: 1.11.23
       merge:
         specifier: 'catalog:'
         version: 2.1.1
@@ -2618,8 +2618,8 @@ importers:
         specifier: ^5.4.0
         version: 5.4.0(rollup@4.62.4)
       get-tsconfig:
-        specifier: ^4.14.2
-        version: 4.14.2
+        specifier: ^4.14.3
+        version: 4.14.3
       rolldown:
         specifier: 1.2.4
         version: 1.2.4
@@ -2936,7 +2936,7 @@ importers:
     dependencies:
       dayjs:
         specifier: 'catalog:'
-        version: 1.11.22
+        version: 1.11.23
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
@@ -3228,7 +3228,7 @@ importers:
     dependencies:
       dayjs:
         specifier: 'catalog:'
-        version: 1.11.22
+        version: 1.11.23
       tdesign-miniprogram:
         specifier: catalog:tdesign-miniprogram-fixed
         version: 1.16.0
@@ -3620,7 +3620,7 @@ importers:
         version: 2.1.1
       dayjs:
         specifier: 'catalog:'
-        version: 1.11.22
+        version: 1.11.23
       gm-crypto:
         specifier: 'catalog:'
         version: 0.1.12
@@ -3663,7 +3663,7 @@ importers:
         version: 2.1.1
       dayjs:
         specifier: 'catalog:'
-        version: 1.11.22
+        version: 1.11.23
     devDependencies:
       typescript:
         specifier: 'catalog:'
@@ -3682,7 +3682,7 @@ importers:
         version: 2.1.1
       dayjs:
         specifier: 'catalog:'
-        version: 1.11.22
+        version: 1.11.23
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.16.0
@@ -11145,6 +11145,9 @@ packages:
   dayjs@1.11.22:
     resolution: {integrity: sha512-1YRnxzt/AabP3GHxnaB9/b+ZScCKu5TeF+co+BWG+lnWVIwEcTFc1FVE0WLNmNO3sA6GGXL40i5qkHfbLzpwrg==}
 
+  dayjs@1.11.23:
+    resolution: {integrity: sha512-QDTCU0M0MxR3hQfnlDJfwekQiaanm1ubOD231u73WBckQ/fsamwRLiE2GBz6D3a/xF1NgfiDLJjXBa1hYOYTtQ==}
+
   dayjs@1.11.7:
     resolution: {integrity: sha512-+Yw9U6YO5TQohxLcIkrXBeY73WP3ejHWVvx8XCk3gxvQDCTEmS48ZrSZCKciI7Bhl/uCMyxYtE9UqRILmFphkQ==}
 
@@ -12359,6 +12362,9 @@ packages:
 
   get-tsconfig@4.14.2:
     resolution: {integrity: sha512-XpwZALwwl/BaKTAyC6+c5T8y6kCg2jk+XGqOVrKIQmW49pNypYLMRjCUXqa28tQgJlhS2RlzP7sc+Rx7W6qsfw==}
+
+  get-tsconfig@4.14.3:
+    resolution: {integrity: sha512-++QEw4DIY7WGoukz+/+A/8dGYPT9l9yIadnmSgZ8Rjr3YVSVDipQSO9CdnJo9ePqFqUUqh+wk9uIaoiAwsiPkA==}
 
   get-tsconfig@5.0.0-beta.5:
     resolution: {integrity: sha512-/6gFNr0N04nob252sTQxyFLi3eKFRqIg1I87YcqAMT1i6SQrSF6KujUEQrtrjMV0H/eejTCltLdDSTEMzHbnsQ==}
@@ -25173,6 +25179,8 @@ snapshots:
 
   dayjs@1.11.22: {}
 
+  dayjs@1.11.23: {}
+
   dayjs@1.11.7: {}
 
   debounce@3.0.0: {}
@@ -26794,6 +26802,10 @@ snapshots:
     optional: true
 
   get-tsconfig@4.14.2:
+    dependencies:
+      resolve-pkg-maps: 1.0.0
+
+  get-tsconfig@4.14.3:
     dependencies:
       resolve-pkg-maps: 1.0.0
 

@@ -48,7 +48,7 @@ export const TEMPLATE_CATALOG = {
   'weapp-tailwindcss': '^5.3.0',
   autoprefixer: '^10.5.4',
   clsx: '^2.1.1',
-  dayjs: '^1.11.22',
+  dayjs: '^1.11.23',
   echarts: '^6.1.0',
   esbuild: '^0.28.2',
   eslint: '^10.8.1',
