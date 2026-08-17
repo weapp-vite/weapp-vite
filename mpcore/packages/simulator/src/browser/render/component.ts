@@ -295,9 +295,16 @@ export function createBrowserComponentInstance(
   nextProperties: Record<string, any>,
   ownerScopeId: string | undefined,
 ) {
+  const isWevuNativeDefinition = Object.keys(componentEntry.definition.methods ?? {}).some(key => key.startsWith('__weapp_vite_'))
+    || Object.hasOwn(componentEntry.definition.properties ?? {}, '__wvSlotOwnerId')
+  const componentProperties = isWevuNativeDefinition
+    ? Object.fromEntries(Object.keys(componentEntry.definition.properties ?? {})
+        .filter(key => Object.hasOwn(nextProperties, key))
+        .map(key => [key, nextProperties[key]]))
+    : nextProperties
   const componentInstance = createComponentInstance({
     definition: componentEntry.definition,
-    properties: nextProperties,
+    properties: componentProperties,
     requestRender: callback => context.session.requestRender(callback),
     triggerEvent: buildComponentTrigger(componentScopeId, context, clonedNode),
   })
@@ -312,7 +319,7 @@ export function createBrowserComponentInstance(
     : null
   context.componentCache.set(componentScopeId, componentInstance)
   runComponentLifecycle(componentInstance, 'created')
-  runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(nextProperties), {})
+  runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(componentProperties), {})
   componentInstance.__propertySnapshots = Object.fromEntries(
     Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
   )

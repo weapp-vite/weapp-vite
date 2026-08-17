@@ -1,6 +1,7 @@
 import type { HeadlessProjectDescriptor } from '../../project'
 import type { HeadlessSession } from '../../runtime'
 import type { HeadlessTestingWaitOptions } from '../pageWait'
+import vm from 'node:vm'
 import { HeadlessTestingPageHandle } from '../pageHandle'
 import { HeadlessTestingScopeHandle } from './scope'
 import { normalizeNonEmptyInput, normalizeRoute, pollUntil, runWithTimeout } from './shared'
@@ -11,6 +12,8 @@ export interface HeadlessTestingProtocolOptions {
   timeout?: number
 }
 
+export type HeadlessTestingEvaluator<T = unknown> = ((...args: any[]) => T | PromiseLike<T>) | string
+
 export class HeadlessTestingSessionHandle {
   constructor(
     private readonly project: HeadlessProjectDescriptor,
@@ -19,6 +22,37 @@ export class HeadlessTestingSessionHandle {
 
   async close() {
     this.session.close()
+  }
+
+  on(eventName: string, handler: (...args: any[]) => void) {
+    this.session.on(eventName, handler)
+    return this
+  }
+
+  removeListener(eventName: string, handler: (...args: any[]) => void) {
+    this.session.removeListener(eventName, handler)
+    return this
+  }
+
+  off(eventName: string, handler: (...args: any[]) => void) {
+    return this.removeListener(eventName, handler)
+  }
+
+  async evaluate<T = unknown>(evaluator: HeadlessTestingEvaluator<T>, ...args: any[]): Promise<T> {
+    return await this.evaluateWithOptions<T>(evaluator, {}, ...args)
+  }
+
+  async evaluateWithOptions<T = unknown>(
+    evaluator: HeadlessTestingEvaluator<T>,
+    options: HeadlessTestingProtocolOptions = {},
+    ...args: any[]
+  ): Promise<T> {
+    this.session.assertActive()
+    return await runWithTimeout(
+      () => this.evaluateInRuntime(evaluator, args),
+      options.timeout,
+      'Timed out evaluating code in headless testing runtime.',
+    )
   }
 
   async currentPage() {
@@ -186,5 +220,45 @@ export class HeadlessTestingSessionHandle {
       throw new Error(`Failed to ${methodName} route "${route}" through the headless wx runtime.`)
     }
     return page
+  }
+
+  private async evaluateInRuntime<T>(evaluator: HeadlessTestingEvaluator<T>, args: any[]) {
+    const runtimeGlobals: Record<string, unknown> = {
+      getApp: () => this.session.getApp(),
+      getCurrentPages: () => this.session.getCurrentPages(),
+      wx: this.session.getWx(),
+    }
+    const host = globalThis as Record<string, unknown>
+    const previous = new Map<string, PropertyDescriptor | undefined>()
+
+    for (const [name, value] of Object.entries(runtimeGlobals)) {
+      previous.set(name, Object.getOwnPropertyDescriptor(host, name))
+      Object.defineProperty(host, name, {
+        configurable: true,
+        enumerable: false,
+        value,
+        writable: true,
+      })
+    }
+
+    try {
+      const fn = typeof evaluator === 'string'
+        ? new vm.Script(`(${evaluator})`).runInThisContext() as (...values: any[]) => T
+        : evaluator
+      if (typeof fn !== 'function') {
+        throw new TypeError('Headless evaluator must be a function or function source string.')
+      }
+      return await fn(...args)
+    }
+    finally {
+      for (const [name, descriptor] of previous) {
+        if (descriptor) {
+          Object.defineProperty(host, name, descriptor)
+        }
+        else {
+          delete host[name]
+        }
+      }
+    }
   }
 }
