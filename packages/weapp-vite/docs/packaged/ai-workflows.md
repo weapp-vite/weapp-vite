@@ -41,6 +41,7 @@ CLI 同时支持完整命令 `weapp-vite` 与简写命令 `wv`，两者等价。
 weapp-vite prepare
 weapp-vite dev --open
 weapp-vite build
+weapp-vite analyze --preload --json --output reports/preload.json
 weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
 weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 weapp-vite ide logs --open
@@ -55,6 +56,7 @@ weapp-vite mcp doctor codex
 wv prepare
 wv dev --open
 wv build
+wv analyze --preload --json --output reports/preload.json
 wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
 wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 wv ide logs --open

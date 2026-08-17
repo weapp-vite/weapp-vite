@@ -374,8 +374,19 @@ export interface WeappReactConfig {
   devWarnings?: boolean
 }
 
+export type WeappPreloadNetwork = 'all' | 'wifi'
+
+/**
+ * @description 页面进入后的分包预下载规则。
+ */
+export interface WeappPreloadRule {
+  packages: string[]
+  network?: WeappPreloadNetwork
+}
+
 export interface WeappRouteRule {
   appLayout?: PageLayoutMeta
+  preload?: WeappPreloadRule
 }
 
 export type WeappRouteRules = Record<string, WeappRouteRule>

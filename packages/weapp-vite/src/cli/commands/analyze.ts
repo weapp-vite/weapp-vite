@@ -1,5 +1,6 @@
 import type { CAC } from 'cac'
 import type { HmrProfileAnalyzeResult } from '../../analyze/hmr'
+import type { PreloadAnalyzeResult } from '../../analyze/preload'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
 import type { ConfigService } from '../../runtime/config/types'
 import type { AnalyzeCLIOptions } from '../types'
@@ -7,6 +8,7 @@ import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { analyzeHmrProfile } from '../../analyze/hmr'
+import { analyzePreloadRules } from '../../analyze/preload'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../analyze/subpackages/history'
 import { createAnalyzeBudgetCheck, createAnalyzeMarkdownReport, createAnalyzePrMarkdownReport, formatAnalyzeBytes } from '../../analyze/subpackages/report'
@@ -202,8 +204,31 @@ function printWebAnalysisSummary(result: WebAnalyzeResult) {
   }
 }
 
+function printPreloadAnalysisSummary(result: PreloadAnalyzeResult) {
+  logger.success('preloadRule 静态分析完成')
+  if (result.suggestions.length === 0) {
+    logger.info('未检测到可以证明的跨分包静态跳转。')
+  }
+  for (const suggestion of result.suggestions) {
+    const packages = suggestion.packages.join('、')
+    const covered = suggestion.alreadyConfigured.length > 0
+      ? `，已配置：${suggestion.alreadyConfigured.join('、')}`
+      : ''
+    logger.info(`- ${suggestion.page} -> ${packages}${covered}`)
+    for (const evidence of suggestion.evidence.slice(0, 5)) {
+      logger.info(`  - ${evidence.source}：${evidence.target}`)
+    }
+  }
+  if (result.uncoveredPages.length > 0) {
+    logger.warn(`- 未找到可扫描源码的页面：${result.uncoveredPages.join('、')}`)
+  }
+  for (const limitation of result.limitations) {
+    logger.warn(`- 限制：${limitation}`)
+  }
+}
+
 async function writeAnalyzeResult(
-  result: AnalyzeSubpackagesResult | WebAnalyzeResult | HmrProfileAnalyzeResult,
+  result: AnalyzeSubpackagesResult | WebAnalyzeResult | HmrProfileAnalyzeResult | PreloadAnalyzeResult,
   outputOption: string,
   configService: ConfigService,
   format: 'json' | 'markdown' | 'pr' = 'json',
@@ -334,6 +359,7 @@ export function registerAnalyzeCommand(cli: CAC) {
     .option('--markdown', `[boolean] 输出 Markdown 报告`)
     .option('--report <type>', `[string] 输出指定报告类型（pr）`)
     .option('--budget-check', `[boolean] 检查 analyze 预算，超过预算时返回非 0 退出码`)
+    .option('--preload', `[boolean] 分析静态页面跳转并输出 preloadRule 建议`)
     .option('--output <file>', `[string] 将分析结果写入指定文件（JSON 或 Markdown）`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | web)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
@@ -390,6 +416,21 @@ export function registerAnalyzeCommand(cli: CAC) {
           }
           return
         }
+        if (coerceBooleanOption(options.preload)) {
+          if (targets.kind !== 'miniprogram' || ctx.configService.platform !== 'weapp') {
+            throw new Error('preloadRule 分析目前仅支持微信小程序平台。')
+          }
+          const preloadResult = await analyzePreloadRules(ctx)
+          const writtenPath = await writeAnalyzeResult(preloadResult, outputOption, ctx.configService)
+          if (outputJson && !writtenPath) {
+            process.stdout.write(`${JSON.stringify(preloadResult, null, 2)}\n`)
+          }
+          if (!outputJson && !writtenPath) {
+            printPreloadAnalysisSummary(preloadResult)
+          }
+          return
+        }
+
         const webBackend = getBackendForCapability(targets, 'web', 'analyze')
         if (webBackend) {
           const webResult = createWebAnalyzeResult(ctx.configService, {

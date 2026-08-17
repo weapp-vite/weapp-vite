@@ -529,7 +529,8 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
 
   if (!isPluginBuild || type !== 'app') {
     registerJsonAsset({
-      jsonPath,
+      // app 入口继续作为 JSON 所有者；规范化内容来自 collectAppEntries，路径保持既有 emit key。
+      jsonPath: type === 'app' ? id : jsonPath,
       json,
       type,
     })

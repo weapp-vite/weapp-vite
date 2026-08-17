@@ -50,6 +50,12 @@ export interface WeappViteConfig {
     autoStart?: boolean | 'ai'
     port?: number | 'auto'
   }
+  routeRules?: Record<string, {
+    preload?: {
+      packages: string[]
+      network?: 'all' | 'wifi'
+    }
+  }>
   autoImportComponents?: boolean | AutoImportComponentsConfig
   vue?: {
     template?: {
