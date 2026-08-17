@@ -30,6 +30,7 @@ export function createRouteFallbackElement(
   index: number,
   route: string,
   query: Record<string, any>,
+  scopeSelectors: string[] = [],
 ) {
   const nodeId = typeof node.id === 'string' && node.id
     ? normalizeFallbackIdPart(node.id)
@@ -44,5 +45,6 @@ export function createRouteFallbackElement(
     routeFallbackIndex: index,
     routeFallbackRoute: route,
     routeFallbackQuery: query,
+    routeFallbackScopeSelectors: [...scopeSelectors],
   }, elementMap)
 }

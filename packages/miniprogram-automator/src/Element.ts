@@ -17,6 +17,7 @@ export interface IElementOptions {
   routeFallbackIndex?: number
   routeFallbackRoute?: string
   routeFallbackQuery?: Record<string, any>
+  routeFallbackScopeSelectors?: string[]
   tagName: string
 }
 /** ITouch 的类型定义。 */
@@ -261,6 +262,7 @@ export class RouteFallbackElement extends Element {
   private readonly routeIndex?: number
   private readonly routeRoute?: string
   private readonly routeQuery?: Record<string, any>
+  private readonly routeScopeSelectors: string[]
 
   constructor(connection: Connection, options: IElementOptions, elementMap: Map<string, Element>) {
     super(connection, options, elementMap)
@@ -268,6 +270,7 @@ export class RouteFallbackElement extends Element {
     this.routeIndex = options.routeFallbackIndex
     this.routeRoute = options.routeFallbackRoute
     this.routeQuery = options.routeFallbackQuery
+    this.routeScopeSelectors = options.routeFallbackScopeSelectors ?? []
   }
 
   /**
@@ -284,12 +287,21 @@ export class RouteFallbackElement extends Element {
       this.routeQuery ?? {},
       this.routeSelector,
       this.routeIndex,
+      this.routeScopeSelectors,
       styleNames,
     )
   }
 
   private missingSnapshot(what: string): Error {
     return new Error(`route fallback 元素未取到${what}: ${this.routeSelector ?? '(未知选择器)'}(页面已切换或元素已卸载)`)
+  }
+
+  async $(selector: string, _options: ElementQueryOptions = {}) {
+    return this.unsupported(`Element.$(${selector})`)
+  }
+
+  async $$(selector: string, _options: ElementQueryOptions = {}) {
+    return this.unsupported(`Element.$$(${selector})`)
   }
 
   async offset() {

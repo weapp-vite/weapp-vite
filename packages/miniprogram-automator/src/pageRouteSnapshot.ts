@@ -28,7 +28,7 @@ const ROUTE_ELEMENT_SNAPSHOT_TIMEOUT = 5_000
  * 先按 route/query 找到目标页面,再逐层进入自定义组件作用域查询,
  * 返回首个命中作用域里 selectAll(selector)[index] 的快照;未命中返回 null。
  */
-const ROUTE_ELEMENT_SNAPSHOT_FUNCTION_DECLARATION = `function (route, query, selector, index, styleNames) {
+const ROUTE_ELEMENT_SNAPSHOT_FUNCTION_DECLARATION = `function (route, query, selector, index, scopeSelectors, styleNames) {
   function normalizeRoute(value) {
     return String(value || '').replace(/^\\/+/, '').replace(/\\/+$/g, '');
   }
@@ -101,7 +101,7 @@ const ROUTE_ELEMENT_SNAPSHOT_FUNCTION_DECLARATION = `function (route, query, sel
     seen[id] = true;
     list.push(item);
   }
-  function collectScopes(root) {
+  function collectScopes(root, scopeSelectors) {
     var scopes = [];
     var seen = {};
     var queue = [];
@@ -113,7 +113,8 @@ const ROUTE_ELEMENT_SNAPSHOT_FUNCTION_DECLARATION = `function (route, query, sel
         continue;
       }
       var children = [];
-      var componentSelectors = [selector, '*', 'weapp-app-shell', 'weapp-layout-default'];
+      var componentSelectors = Array.isArray(scopeSelectors) ? scopeSelectors.slice() : [];
+      componentSelectors.push(selector, '*', 'weapp-app-shell', 'weapp-layout-default');
       for (var selectorIndex = 0; selectorIndex < componentSelectors.length; selectorIndex += 1) {
         if (!componentSelectors[selectorIndex]) {
           continue;
@@ -182,7 +183,7 @@ const ROUTE_ELEMENT_SNAPSHOT_FUNCTION_DECLARATION = `function (route, query, sel
   }
   return new Promise(function (resolve) {
     try {
-      var scopes = collectScopes(page);
+      var scopes = collectScopes(page, scopeSelectors);
       var scopeIndex = 0;
       function next() {
         if (scopeIndex >= scopes.length) {
@@ -219,12 +220,13 @@ export async function readRouteElementSnapshot(
   query: Record<string, any>,
   selector: string,
   index: number,
+  scopeSelectors: string[] = [],
   styleNames: string[] = [],
   timeout = ROUTE_ELEMENT_SNAPSHOT_TIMEOUT,
 ): Promise<RouteElementSnapshot | null> {
   const { result } = await connection.send('App.callFunction', {
     functionDeclaration: ROUTE_ELEMENT_SNAPSHOT_FUNCTION_DECLARATION,
-    args: [route, query, selector, index, styleNames],
+    args: [route, query, selector, index, scopeSelectors, styleNames],
   }, {
     timeout,
   }) as { result?: RouteElementSnapshot | null }

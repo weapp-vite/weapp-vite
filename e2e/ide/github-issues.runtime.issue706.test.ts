@@ -46,6 +46,10 @@ describe.sequential('e2e app: github-issues / issue #706', () => {
       const startedAt = Date.now()
       const helloElements = await issuePage.$$('.hello', { timeout: 5_000 })
       const hello = await issuePage.$('.hello', { timeout: 5_000 })
+      const helloOffset = await hello?.offset()
+      const helloSize = await hello?.size()
+      const helloDisplay = await hello?.style('display')
+      const helloStatus = await hello?.attribute('data-issue706-status')
       const status = await issuePage.data('probeStatus', { timeout: 5_000 })
       await issuePage.setData({ probeStatus: 'updated' })
       const updatedStatus = await issuePage.data('probeStatus', { timeout: 5_000 })
@@ -53,6 +57,18 @@ describe.sequential('e2e app: github-issues / issue #706', () => {
 
       expect(helloElements.length).toBeGreaterThan(0)
       expect(hello).not.toBeNull()
+      expect(helloOffset).toEqual(expect.objectContaining({
+        height: expect.any(Number),
+        left: expect.any(Number),
+        top: expect.any(Number),
+        width: expect.any(Number),
+      }))
+      expect(helloSize).toEqual({
+        height: helloOffset?.height,
+        width: helloOffset?.width,
+      })
+      expect(helloDisplay).toEqual(expect.any(String))
+      expect(helloStatus).toBe('ready')
       expect(status).toBe('ready')
       expect(updatedStatus).toBe('updated')
       expect(runtime).toMatchObject({ ok: false, status: 'method' })

@@ -271,7 +271,7 @@ describe('Page', () => {
       throw new Error(`${method} should not be called`)
     })
     const page = new Page(createConnection(send), { id: 7, path: '/pages/index', query: {} })
-    const element = await page.$('.hero')
+    const element = await page.$('.hero', { componentSelectors: ['weapp-layout-admin'] })
 
     await expect(element?.offset()).resolves.toEqual({ left: 12, top: 34, width: 100, height: 40 })
     await expect(element?.size()).resolves.toEqual({ width: 100, height: 40 })
@@ -284,9 +284,16 @@ describe('Page', () => {
         && (params?.functionDeclaration as string).includes('computedStyle'),
     )
     // offset/size/attribute 不带 styleNames;style 调用携带请求的样式名
-    expect(snapshotCalls[0]?.[1]?.args).toEqual(['/pages/index', {}, '.hero', 0, []])
+    expect(snapshotCalls[0]?.[1]?.args).toEqual([
+      '/pages/index',
+      {},
+      '.hero',
+      0,
+      ['weapp-layout-admin'],
+      [],
+    ])
     expect(
-      snapshotCalls.some(([, params]) => JSON.stringify(params?.args?.[4]) === JSON.stringify(['display'])),
+      snapshotCalls.some(([, params]) => JSON.stringify(params?.args?.[5]) === JSON.stringify(['display'])),
     ).toBe(true)
   })
 
@@ -348,6 +355,32 @@ describe('Page', () => {
 
     await expect(element?.text()).rejects.toThrow('route fallback 元素不支持 text')
     expect(send).not.toHaveBeenCalledWith('Element.getDOMProperties', expect.anything(), expect.anything())
+  })
+
+  it('rejects nested queries on app-service route fallback elements without page-frame RPCs', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method Page.getElement within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'Page.getElement',
+      },
+    )
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.getElement') {
+        throw timeoutError
+      }
+      if (method === 'App.callFunction') {
+        return { result: [{ id: 'hero' }] }
+      }
+      throw new Error(`${method} should not be called for route fallback nested queries`)
+    })
+    const page = new Page(createConnection(send), { id: 7, path: '/pages/index', query: {} })
+    const element = await page.$('.hero')
+
+    await expect(element?.$('.label')).rejects.toThrow('route fallback 元素不支持 Element.$')
+    await expect(element?.$$('.label')).rejects.toThrow('route fallback 元素不支持 Element.$$')
+    expect(send).not.toHaveBeenCalledWith('Element.getElement', expect.anything(), expect.anything())
+    expect(send).not.toHaveBeenCalledWith('Element.getElements', expect.anything(), expect.anything())
   })
 
   it('forces native Page RPC when fallback is disabled after a prior protocol timeout', async () => {

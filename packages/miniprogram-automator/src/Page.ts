@@ -958,6 +958,7 @@ export default class Page {
       index,
       this.path,
       this.query,
+      options.componentSelectors,
     ))
   }
 

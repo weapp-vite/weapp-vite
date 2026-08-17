@@ -119,6 +119,7 @@ await page.waitFor(500)
 | `page.data()` / `page.setData()` / `page.callMethod()`    | ✅          | 经 App-Service 读写页面数据、调用页面方法                                                      |
 | `element.offset()` / `element.size()` / `element.style()` | ✅          | 实时经 `createSelectorQuery` 读取 rect 与 computedStyle（每次读取都重新查询，不缓存）          |
 | `element.attribute('id')` / `element.attribute('data-*')` | ✅          | 经快照读取 id 与 dataset                                                                       |
+| `element.$()` / `element.$$()`                            | ❌ 明确报错 | 元素级查询依赖 page-frame 协议；请改用 `page.$()` / `page.$$()`                                |
 | `element.text()`                                          | ❌ 明确报错 | `SelectorQuery` 无法读取 `innerText`；请改用 `page.data()` 或 `page.callMethod()` 断言文案来源 |
 | `element.tap()` / `trigger()` 等真实交互                  | ❌ 明确报错 | AppService 无法合成真实触摸事件；请改用 `page.callMethod()` 或 `evaluate` 间接触发页面逻辑     |
 | `scroll-view` 容器滚动                                    | ❌          | 需 page-frame 协议支持，降级模式不可用                                                         |
