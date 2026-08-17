@@ -72,16 +72,19 @@ jobs:
         include:
           - os: ubuntu-latest
             build-command: pnpm build:pkgs:ci
+            timeout_minutes: 35
           - os: windows-latest
             build-command: pnpm build:pkgs:ci:windows
+            timeout_minutes: 50
           - os: macos-latest
             build-command: pnpm build:pkgs:ci:macos
+            timeout_minutes: 35
       max-parallel: 3
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ${{ matrix.os }}
       node_version: '22'
-      timeout_minutes: 35
+      timeout_minutes: ${{ matrix.timeout_minutes }}
       build_command: ${{ matrix.build-command }}
       main_command: pnpm e2e:ci:hmr
       e2e_platform: weapp
@@ -142,26 +145,32 @@ jobs:
           - os: ubuntu-latest
             node-version: 22
             build-command: pnpm build:pkgs:ci
+            timeout_minutes: 35
           - os: windows-latest
             node-version: 22
             build-command: pnpm build:pkgs:ci:windows
+            timeout_minutes: 50
           - os: macos-latest
             node-version: 22
             build-command: pnpm build:pkgs:ci:macos
+            timeout_minutes: 35
           - os: ubuntu-latest
             node-version: 24
             build-command: pnpm build:pkgs:ci
+            timeout_minutes: 35
           - os: windows-latest
             node-version: 24
             build-command: pnpm build:pkgs:ci:windows
+            timeout_minutes: 50
           - os: macos-latest
             node-version: 24
             build-command: pnpm build:pkgs:ci:macos
+            timeout_minutes: 35
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
-      timeout_minutes: 35
+      timeout_minutes: ${{ matrix.timeout_minutes }}
       build_command: ${{ matrix.build-command }}
       main_command: pnpm e2e:ci:hmr
       e2e_platform: weapp
