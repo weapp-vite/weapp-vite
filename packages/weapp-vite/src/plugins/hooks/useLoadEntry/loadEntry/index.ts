@@ -525,6 +525,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         extendedLibManager,
         cache: appEntriesCache,
       })
+      if (appResult.appJson) {
+        json = appResult.appJson
+      }
       autoRoutesSignature = configService.isDev
         ? ctx.autoRoutesService?.getSignature?.()
         : undefined

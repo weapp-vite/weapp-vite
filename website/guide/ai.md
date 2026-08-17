@@ -77,6 +77,8 @@ $native-to-weapp-vite-wevu-migration
   - 默认使用 `wv compare`
 - 提到 `DevTools 日志`、`运行时日志`
   - 默认使用 `wv ide logs --open`
+- 提到 `preloadRule`、分包预下载或跨分包跳转审计
+  - 默认使用 `wv analyze --preload`
 
 除非目标明确是 Web runtime，否则不要退化成普通浏览器截图工具。
 

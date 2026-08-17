@@ -83,7 +83,24 @@ const moduleExport = await import('../../packages/order/modules/price.ts')
 
 ### `routeRules`
 
-用于给页面路由追加规则，例如 layout、运行时行为等。它属于项目级编排，而不是组件内部语义。
+用于给页面路由追加规则，例如 layout、微信分包预下载等。它属于项目级编排，而不是组件内部语义。
+
+```ts
+export default defineConfig({
+  weapp: {
+    routeRules: {
+      'pages/home/**': {
+        preload: {
+          packages: ['packages/order'],
+          network: 'wifi',
+        },
+      },
+    },
+  },
+})
+```
+
+微信构建会把 `preload` 合成为 `app.json.preloadRule`；手写的同一路由规则优先，其他平台不会生成微信专属字段。多条 glob 命中时选择具体程度最高的一条。需要检查静态跨分包跳转时，运行 `wv analyze --preload`，它只输出建议，不修改源码。
 
 ### `vue.template.htmlTagToWxml`
 

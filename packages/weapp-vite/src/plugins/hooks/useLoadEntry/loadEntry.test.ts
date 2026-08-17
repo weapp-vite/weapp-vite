@@ -237,6 +237,7 @@ interface CreateLoaderOptions {
   pluginOnly?: boolean
   normalizeEntry?: (entry: string, jsonPath: string) => string
   withWxmlService?: boolean
+  weappViteConfig?: Record<string, any>
 }
 
 function createLoader(options?: CreateLoaderOptions) {
@@ -252,7 +253,7 @@ function createLoader(options?: CreateLoaderOptions) {
     relativeCwd: vi.fn((id: string) => id),
     absoluteSrcRoot: '/project/src',
     options: { cwd: '/project' },
-    weappViteConfig: {},
+    weappViteConfig: options?.weappViteConfig ?? {},
     isDev: options?.isDev,
     pluginOnly: options?.pluginOnly === true,
     relativeAbsoluteSrcRoot: vi.fn((id: string) => id.replace('/project/src/', '')),
@@ -413,6 +414,50 @@ describe('createEntryLoader', () => {
       json: {
         pages: ['pages/home/home'],
         subPackages: [{ root: 'pages/goods', pages: ['details/index'] }],
+      },
+    })
+  })
+
+  it('emits route-rule preload configuration in the final app json asset', async () => {
+    const { loader, jsonService, registerJsonAsset, configService } = createLoader({
+      weappViteConfig: {
+        routeRules: {
+          'pages/home/**': {
+            preload: {
+              packages: ['packages/order'],
+              network: 'wifi',
+            },
+          },
+        },
+      },
+    })
+    const pluginCtx = createPluginContext()
+
+    configService.platform = 'weapp'
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/app.ts') {
+        return { path: '/project/src/app.json', predictions: [] }
+      }
+      return { path: undefined, predictions: [] }
+    })
+    jsonService.read.mockResolvedValue({
+      pages: ['pages/home/index'],
+      subPackages: [{ root: 'packages/order', pages: ['index'] }],
+    })
+
+    await loader.call(pluginCtx, '/project/src/app.ts', 'app')
+
+    const appAssets = registerJsonAsset.mock.calls
+      .map(([entry]) => entry)
+      .filter(entry => entry.type === 'app')
+    expect(appAssets).toHaveLength(1)
+    const appAsset = appAssets[0]
+    expect(appAsset?.json).toMatchObject({
+      preloadRule: {
+        'pages/home/index': {
+          packages: ['packages/order'],
+          network: 'wifi',
+        },
       },
     })
   })

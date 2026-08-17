@@ -32,6 +32,7 @@ const logRuntimeTargetMock = vi.hoisted(() => vi.fn())
 const createCompilerContextMock = vi.hoisted(() => vi.fn())
 const analyzeSubpackagesMock = vi.hoisted(() => vi.fn())
 const analyzeHmrProfileMock = vi.hoisted(() => vi.fn())
+const analyzePreloadRulesMock = vi.hoisted(() => vi.fn())
 const readLatestAnalyzeHistorySnapshotMock = vi.hoisted(() => vi.fn())
 const writeAnalyzeHistorySnapshotMock = vi.hoisted(() => vi.fn())
 const startAnalyzeDashboardMock = vi.hoisted(() => vi.fn())
@@ -88,6 +89,10 @@ vi.mock('../../analyze/subpackages', () => ({
 
 vi.mock('../../analyze/hmr', () => ({
   analyzeHmrProfile: analyzeHmrProfileMock,
+}))
+
+vi.mock('../../analyze/preload', () => ({
+  analyzePreloadRules: analyzePreloadRulesMock,
 }))
 
 vi.mock('../../analyze/subpackages/history', () => ({
@@ -220,6 +225,91 @@ describe('analyze cli command', () => {
         },
       ],
     })
+    analyzePreloadRulesMock.mockResolvedValue({
+      runtime: 'mini',
+      kind: 'preload',
+      generatedAt: '2026-04-23T12:00:00.000Z',
+      platform: 'weapp',
+      pages: ['pages/index/index'],
+      configuredRules: {},
+      suggestions: [{
+        page: 'pages/index/index',
+        packages: ['packages/order'],
+        evidence: [{
+          target: 'packages/order/index',
+          packageRoot: 'packages/order',
+          source: 'script',
+        }],
+        alreadyConfigured: [],
+      }],
+      uncoveredPages: [],
+      limitations: ['静态分析限制'],
+    })
+  })
+
+  it('runs preload analysis without opening the dashboard', async () => {
+    const action = createAnalyzeActionHandler()
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+
+    await action('/project', {
+      platform: 'weapp',
+      preload: true,
+      json: true,
+    })
+
+    expect(analyzePreloadRulesMock).toHaveBeenCalledTimes(1)
+    expect(analyzeSubpackages).not.toHaveBeenCalled()
+    expect(startAnalyzeDashboard).not.toHaveBeenCalled()
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('"kind": "preload"'))
+    writeSpy.mockRestore()
+  })
+
+  it('rejects preload analysis for non-WeChat targets', async () => {
+    const action = createAnalyzeActionHandler()
+    createCompilerContextMock.mockResolvedValueOnce({
+      configService: {
+        platform: 'alipay',
+        cwd: '/project',
+        mode: 'production',
+        packageManager: { agent: 'pnpm' },
+        weappViteConfig: {},
+      },
+    })
+
+    await action('/project', { platform: 'alipay', preload: true })
+
+    expect(analyzePreloadRulesMock).not.toHaveBeenCalled()
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'preloadRule 分析目前仅支持微信小程序平台。',
+    }))
+    expect(process.exitCode).toBe(1)
+  })
+
+  it('rejects preload analysis for the web runtime before web analysis', async () => {
+    const webBackend = {
+      descriptor: {
+        id: 'web',
+        capabilities: { analyze: true },
+      },
+      platform: 'web',
+    }
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'web',
+      label: 'web',
+      entries: [webBackend],
+      platform: undefined,
+      rawPlatform: 'web',
+      get: (id: string) => id === 'web' ? webBackend : undefined,
+    })
+    const action = createAnalyzeActionHandler()
+
+    await action('/project', { platform: 'web', preload: true })
+
+    expect(analyzePreloadRulesMock).not.toHaveBeenCalled()
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'preloadRule 分析目前仅支持微信小程序平台。',
+    }))
+    expect(process.exitCode).toBe(1)
   })
 
   it('analyzes hmr profile with default fallback path and skips dashboard', async () => {

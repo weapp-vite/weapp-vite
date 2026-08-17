@@ -133,6 +133,22 @@ wv analyze --hmr-profile .tmp/weapp-vite-hmr-profile.jsonl --json
 
 该模式会输出样本数量、阶段平均耗时、最大耗时、事件分布、dirty / pending 原因和最慢样本，适合定位 HMR 变慢的阶段。
 
+## 分包预下载建议 {#preload-rule}
+
+微信小程序可以通过 `app.json.preloadRule` 在进入页面后预下载其他分包。`wv analyze --preload` 会扫描已声明页面的原生模板、Vue SFC 和静态路由调用，找出能够证明的跨分包跳转：
+
+```bash
+# 直接查看建议与证据
+wv analyze --preload
+
+# 输出给 CI 或脚本消费
+wv analyze --preload --json --output reports/preload.json
+```
+
+输出中的 `suggestions` 按触发页面聚合，包含目标分包、目标页面和 `template` / `script` 证据；`alreadyConfigured` 用于标记现有 `app.json.preloadRule` 已覆盖的目标。
+
+该命令是只读审计，不会自动编辑 `app.json` 或源码。它不会推断动态路由、后端返回的 URL、权限/业务守卫，也不会替代对微信预下载额度的检查。要在构建时显式生成规则，请使用 [`weapp.routeRules.<pattern>.preload`](./route-rules.md#weapp-routerules)。
+
 ## Web 平台边界 {#web-platform}
 
 ```bash
@@ -146,3 +162,4 @@ Web 模式当前只做静态配置分析，覆盖 `weapp.web` 是否启用、`ro
 - [CLI：analyze](../guide/cli.md#_3-analyze)
 - [分包指南：分析产物布局](../guide/subpackage.md#分析产物布局)
 - [开发态 HMR 配置](./hmr.md)
+- [Route Rules 与 Layout](./route-rules.md)

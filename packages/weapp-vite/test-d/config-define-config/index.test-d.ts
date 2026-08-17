@@ -43,6 +43,14 @@ const objectConfig = defineConfig({
       includeMainPackage: true,
       include: ['main', 'subpackages/item'],
     },
+    routeRules: {
+      'pages/home/**': {
+        preload: {
+          packages: ['subpackages/item'],
+          network: 'wifi',
+        },
+      },
+    },
     chunks: {
       dynamicImports: 'native' as const,
     },
@@ -146,10 +154,29 @@ expectAssignable<UserConfig>({
     },
   },
 })
+expectAssignable<UserConfig>({
+  weapp: {
+    routeRules: {
+      'pages/home/**': {
+        preload: {
+          packages: ['subpackages/item'],
+          network: 'all',
+        },
+      },
+    },
+  },
+})
 expectAssignable<string | string[] | {
   includeMainPackage?: boolean
   include?: string[]
 } | undefined>(objectConfig.weapp?.buildScope)
+expectAssignable<Record<string, {
+  appLayout?: unknown
+  preload?: {
+    packages: string[]
+    network?: 'all' | 'wifi'
+  }
+}> | undefined>(objectConfig.weapp?.routeRules)
 expectAssignable<'preserve' | 'inline' | 'native' | undefined>(objectConfig.weapp?.chunks?.dynamicImports)
 expectAssignable<boolean | {
   compiler?: boolean | {
