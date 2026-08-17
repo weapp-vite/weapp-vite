@@ -28,6 +28,8 @@ export function createRouteFallbackElement(
   selector: string,
   node: RouteRenderedNode,
   index: number,
+  route: string,
+  query: Record<string, any>,
 ) {
   const nodeId = typeof node.id === 'string' && node.id
     ? normalizeFallbackIdPart(node.id)
@@ -38,5 +40,9 @@ export function createRouteFallbackElement(
     pageId,
     routeFallback: true,
     tagName: resolveFallbackTagName(selector),
+    routeFallbackSelector: selector,
+    routeFallbackIndex: index,
+    routeFallbackRoute: route,
+    routeFallbackQuery: query,
   }, elementMap)
 }

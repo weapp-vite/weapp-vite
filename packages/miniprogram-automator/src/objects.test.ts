@@ -237,6 +237,119 @@ describe('Page', () => {
     expect(send).not.toHaveBeenCalledWith('Element.tap', expect.anything())
   })
 
+  it('reads offset/size/style/attributes on route fallback elements via app-service snapshot', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method Page.getElement within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'Page.getElement',
+      },
+    )
+    const send = vi.fn(async (method: string, params?: Record<string, any>) => {
+      if (method === 'Page.getElement') {
+        throw timeoutError
+      }
+      if (method === 'App.callFunction') {
+        const declaration = params?.functionDeclaration as string
+        // 快照读取(functionDeclaration 带 computedStyle 字段)
+        if (declaration.includes('computedStyle')) {
+          return {
+            result: {
+              id: 'hero',
+              dataset: { type: 'banner' },
+              left: 12,
+              top: 34,
+              width: 100,
+              height: 40,
+              display: 'block',
+            },
+          }
+        }
+        // renderedNodes 元素查询
+        return { result: [{ id: 'hero' }] }
+      }
+      throw new Error(`${method} should not be called`)
+    })
+    const page = new Page(createConnection(send), { id: 7, path: '/pages/index', query: {} })
+    const element = await page.$('.hero')
+
+    await expect(element?.offset()).resolves.toEqual({ left: 12, top: 34, width: 100, height: 40 })
+    await expect(element?.size()).resolves.toEqual({ width: 100, height: 40 })
+    await expect(element?.style('display')).resolves.toBe('block')
+    await expect(element?.attribute('id')).resolves.toBe('hero')
+    await expect(element?.attribute('data-type')).resolves.toBe('banner')
+
+    const snapshotCalls = vi.mocked(send).mock.calls.filter(
+      ([method, params]) => method === 'App.callFunction'
+        && (params?.functionDeclaration as string).includes('computedStyle'),
+    )
+    // offset/size/attribute 不带 styleNames;style 调用携带请求的样式名
+    expect(snapshotCalls[0]?.[1]?.args).toEqual(['/pages/index', {}, '.hero', 0, []])
+    expect(
+      snapshotCalls.some(([, params]) => JSON.stringify(params?.args?.[4]) === JSON.stringify(['display'])),
+    ).toBe(true)
+  })
+
+  it('re-queries the snapshot on every read so values stay fresh', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method Page.getElement within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'Page.getElement',
+      },
+    )
+    const rects = [
+      { left: 0, top: 0, width: 10, height: 10 },
+      { left: 0, top: 200, width: 10, height: 10 },
+    ]
+    let snapshotReads = 0
+    const send = vi.fn(async (method: string, params?: Record<string, any>) => {
+      if (method === 'Page.getElement') {
+        throw timeoutError
+      }
+      if (method === 'App.callFunction') {
+        const declaration = params?.functionDeclaration as string
+        if (declaration.includes('computedStyle')) {
+          const result = rects[Math.min(snapshotReads, rects.length - 1)]
+          snapshotReads += 1
+          return { result }
+        }
+        return { result: [{ id: 'hero' }] }
+      }
+      throw new Error(`${method} should not be called`)
+    })
+    const page = new Page(createConnection(send), { id: 7, path: '/pages/index', query: {} })
+    const element = await page.$('.hero')
+
+    await expect(element?.offset()).resolves.toMatchObject({ top: 0 })
+    await expect(element?.offset()).resolves.toMatchObject({ top: 200 })
+    expect(snapshotReads).toBe(2)
+  })
+
+  it('throws a clear error for text() on route fallback elements', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method Page.getElement within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'Page.getElement',
+      },
+    )
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.getElement') {
+        throw timeoutError
+      }
+      if (method === 'App.callFunction') {
+        return { result: [{ id: 'hero' }] }
+      }
+      throw new Error(`${method} should not be called`)
+    })
+    const page = new Page(createConnection(send), { id: 7, path: '/pages/index', query: {} })
+    const element = await page.$('.hero')
+
+    await expect(element?.text()).rejects.toThrow('route fallback 元素不支持 text')
+    expect(send).not.toHaveBeenCalledWith('Element.getDOMProperties', expect.anything(), expect.anything())
+  })
+
   it('forces native Page RPC when fallback is disabled after a prior protocol timeout', async () => {
     const timeoutError = Object.assign(
       new Error('DevTools did not respond to protocol method Page.getElements within 2500ms'),

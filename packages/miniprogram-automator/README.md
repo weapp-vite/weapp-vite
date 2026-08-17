@@ -107,6 +107,24 @@ await button?.tap()
 await page.waitFor(500)
 ```
 
+### 4.5 App-Service 降级（route fallback）能力边界
+
+部分 DevTools 版本（如 `2.01.2510290`）的 page-frame 定向协议失效，表现为 `Page.*` RPC 全部超时。此时本库自动切换到 App-Service 降级通道（`App.callFunction` + `wx.createSelectorQuery`），无需任何配置。
+
+降级模式下各能力可用性：
+
+| 能力                                                      | 状态        | 说明                                                                                           |
+| --------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| `page.$` / `page.$$`                                      | ✅          | 经 route 查询返回降级元素                                                                      |
+| `page.data()` / `page.setData()` / `page.callMethod()`    | ✅          | 经 App-Service 读写页面数据、调用页面方法                                                      |
+| `element.offset()` / `element.size()` / `element.style()` | ✅          | 实时经 `createSelectorQuery` 读取 rect 与 computedStyle（每次读取都重新查询，不缓存）          |
+| `element.attribute('id')` / `element.attribute('data-*')` | ✅          | 经快照读取 id 与 dataset                                                                       |
+| `element.text()`                                          | ❌ 明确报错 | `SelectorQuery` 无法读取 `innerText`；请改用 `page.data()` 或 `page.callMethod()` 断言文案来源 |
+| `element.tap()` / `trigger()` 等真实交互                  | ❌ 明确报错 | AppService 无法合成真实触摸事件；请改用 `page.callMethod()` 或 `evaluate` 间接触发页面逻辑     |
+| `scroll-view` 容器滚动                                    | ❌          | 需 page-frame 协议支持，降级模式不可用                                                         |
+
+> 降级元素上的不支持操作会**立即抛出带替代建议的错误**，不会再像旧版那样挂起 30s 才超时。
+
 ## 5. 主要导出
 
 | 导出                      | 说明                                     |
