@@ -1,6 +1,6 @@
 ---
 title: Route Rules 与 Layout
-description: 使用 weapp.routeRules 为页面批量声明默认 layout，并结合 srcRoot/layouts 与 definePageMeta 实现页面外壳复用。
+description: 使用 weapp.routeRules 为页面批量声明默认 layout 和微信分包预下载规则，并结合 srcRoot/layouts 与 definePageMeta 实现页面外壳复用。
 keywords:
   - 配置
   - config
@@ -8,15 +8,17 @@ keywords:
   - layout
   - definePageMeta
   - setPageLayout
+  - preloadRule
 ---
 
 # Route Rules 与 Layout {#route-rules-layout}
 
-`weapp-vite` 当前已经支持页面级 layout。它不是单独某一个开关，而是由以下几部分协同工作：
+`weapp-vite` 当前已经支持页面级 layout 和微信分包预下载规则。它们不是单独某一个开关，而是由以下几部分协同工作：
 
 - `srcRoot/layouts/**`：声明可用的 layout 组件或原生 layout 目录
 - `definePageMeta({ layout })`：在页面里显式指定 layout
 - `weapp.routeRules`：在配置层为一批页面声明默认 layout
+- `weapp.routeRules.<pattern>.preload`：在配置层为匹配页面声明 `app.json.preloadRule`
 - `setPageLayout()` / `usePageLayout()`：在运行时切换或读取当前页面 layout 状态
 
 [[toc]]
@@ -35,6 +37,10 @@ keywords:
             name: string;
             props?: Record<string, unknown>;
           };
+      preload?: {
+        packages: string[];
+        network?: 'all' | 'wifi';
+      };
     }
   >;
   ```
@@ -60,6 +66,12 @@ export default defineConfig({
           },
         },
       },
+      "pages/home/index": {
+        preload: {
+          packages: ["packages/order"],
+          network: "wifi",
+        },
+      },
     },
   },
 });
@@ -70,6 +82,18 @@ export default defineConfig({
 - 为一批页面提供默认 layout
 - 当页面本身没有写 `definePageMeta({ layout })` 时，作为回退规则生效
 - 适合后台壳子、仪表盘壳子、营销页壳子这类“按目录批量套 layout”的场景
+- 仅在微信构建中，把匹配页面的 `preload` 合成为 `app.json.preloadRule`
+- 已经手写的同一路由 `app.json.preloadRule` 保持优先；支付宝、抖音等平台不会生成这个微信专属字段
+- 多条 glob 同时命中时选择具体程度最高的规则，建议 `packages` 使用分包 root
+
+`preload` 只负责声明构建产物中的规则，不会根据模块依赖图猜测业务访问策略。需要审计静态跨分包跳转时，运行：
+
+```bash
+wv analyze --preload
+wv analyze --preload --json --output reports/preload.json
+```
+
+该分析会检查原生模板、Vue SFC 和静态路由调用，输出页面、目标分包和证据；动态路由、后端配置、运行时守卫以及预下载额度仍需人工复核，命令不会改写源码。
 
 ## 优先级
 

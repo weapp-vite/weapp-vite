@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-17T09:20:17.113Z",
+  "generatedAt": "2026-08-17T10:19:39.228Z",
   "site": "https://vite.icebreaker.top",
   "count": 275,
   "items": [
@@ -432,6 +432,7 @@
         "budget",
         "history",
         "report",
+        "分包",
         "报告配置"
       ],
       "headings": [
@@ -440,10 +441,11 @@
         "weapp.analyze.history {#weapp-analyze-history}",
         "报告输出工作流 {#report-workflow}",
         "HMR profile 分析 {#hmr-profile}",
+        "分包预下载建议 {#preload-rule}",
         "Web 平台边界 {#web-platform}",
         "关联阅读"
       ],
-      "updatedAt": "2026-07-26",
+      "updatedAt": "2026-08-17",
       "source": "config/analyze.md"
     },
     {
@@ -797,7 +799,7 @@
     {
       "id": "doc-f94bbbe341",
       "title": "Route Rules 与 Layout",
-      "summary": "使用 weapp.routeRules 为页面批量声明默认 layout，并结合 srcRoot/layouts 与 definePageMeta 实现页面外壳复用。",
+      "summary": "使用 weapp.routeRules 为页面批量声明默认 layout 和微信分包预下载规则，并结合 srcRoot/layouts 与 definePageMeta 实现页面外壳复用。",
       "url": "/config/route-rules",
       "canonical": "https://vite.icebreaker.top/config/route-rules",
       "keywords": [
@@ -807,8 +809,8 @@
         "layout",
         "definepagemeta",
         "setpagelayout",
-        "运行时",
-        "route"
+        "preloadrule",
+        "运行时"
       ],
       "headings": [
         "Route Rules 与 Layout {#route-rules-layout}",
@@ -824,7 +826,7 @@
         "适用场景",
         "相关文档"
       ],
-      "updatedAt": "2026-04-13",
+      "updatedAt": "2026-08-17",
       "source": "config/route-rules.md"
     },
     {
@@ -1266,6 +1268,7 @@
         "AI 任务工作流",
         "工作流总览",
         "文档同步",
+        "分包预下载审计",
         "GitHub issue 修复",
         "包版本与发布",
         "DevTools runtime 验收",
@@ -1307,7 +1310,7 @@
         "相关配置",
         "llms.txt"
       ],
-      "updatedAt": "2026-08-16",
+      "updatedAt": "2026-08-17",
       "source": "guide/ai.md"
     },
     {
@@ -1530,7 +1533,7 @@
         "7) ide setup",
         "8) ide info / ide test-accounts / ide ticket*"
       ],
-      "updatedAt": "2026-08-14",
+      "updatedAt": "2026-08-17",
       "source": "guide/cli.md"
     },
     {

@@ -39,6 +39,17 @@ weapp-vite ide logs --open
 weapp-vite build
 ```
 
+### 4. 分包预下载审计
+
+微信小程序可以检查静态跨分包跳转，并把建议输出为 JSON：
+
+```bash
+wv analyze --preload
+wv analyze --preload --json --output reports/preload.json
+```
+
+该命令只读扫描原生模板、Vue SFC 和路由调用，不会修改源码；动态路由、业务守卫和微信预下载额度仍需人工确认。构建时的显式规则见 `weapp-config.md` 中的 `weapp.routeRules.<pattern>.preload`。
+
 ### Web 预览与构建
 
 项目根目录准备引用 `/@weapp-vite/web/entry` 的 `index.html` 后，可以复用原有小程序源码：
@@ -50,13 +61,13 @@ wv build -p web
 
 推荐将两条命令分别固定为 `dev:web` 和 `build:web` scripts。`web` 是规范平台名，`h5` 仅作为向后兼容别名保留。Web runtime 适合浏览器兼容验证，但不替代微信 DevTools 或真机验收。
 
-### 4. 截图验收
+### 5. 截图验收
 
 ```bash
 weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
 ```
 
-### 5. 启动 MCP
+### 6. 启动 MCP
 
 ```bash
 weapp-vite mcp

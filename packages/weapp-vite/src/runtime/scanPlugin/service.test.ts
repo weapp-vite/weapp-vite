@@ -14,6 +14,9 @@ vi.mock('../../utils', () => ({
   findJsonEntry: findJsonEntryMock,
   findJsEntry: findJsEntryMock,
   findVueEntry: findVueEntryMock,
+  applyPreloadRulesToAppJson(json: any) {
+    return json
+  },
   normalizeAppJson(json: any) {
     if (!json || typeof json !== 'object' || Array.isArray(json)) {
       return json

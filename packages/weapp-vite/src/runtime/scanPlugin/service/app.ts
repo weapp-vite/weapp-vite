@@ -4,7 +4,7 @@ import type { AppEntry, SubPackage } from '../../../types'
 import type { ScanServiceStateLike } from './shared'
 import { isObject } from '@weapp-core/shared'
 import path from 'pathe'
-import { findJsEntry, findJsonEntry, findVueEntry, normalizeAppJson } from '../../../utils'
+import { applyPreloadRulesToAppJson, findJsEntry, findJsonEntry, findVueEntry, normalizeAppJson } from '../../../utils'
 import { applyBuildScopeToAppConfig, resolveBuildScope } from '../../buildScope'
 import { createWarnOnce, mergeAutoRoutePages } from './shared'
 
@@ -243,6 +243,11 @@ export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanS
       }
     }
     await applyAutoRoutesToAppConfigIfNeeded(ctx, config)
+    applyPreloadRulesToAppJson(
+      config,
+      ctx.configService.weappViteConfig.routeRules,
+      ctx.configService.platform,
+    )
     applyBuildScopeToAppConfig(config, resolveBuildScope(ctx.configService.weappViteConfig.buildScope))
 
     if (isObject(config)) {

@@ -7,13 +7,14 @@ import type { ResolvedEntryRecord } from './resolve'
 import { createHash } from 'node:crypto'
 import { get, removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
-import { normalizeAppJson } from '../../../../utils'
+import { applyPreloadRulesToAppJson, normalizeAppJson } from '../../../../utils'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { analyzeAppJson, analyzePluginJson } from '../../../utils/analyze'
 import { collectAppSideFiles, collectMiniappConfigFile } from './watch'
 
 export interface AppEntryResult {
   entries: string[]
+  appJson?: any
   pluginResolvedRecords?: ResolvedEntryRecord[]
   pluginEntryTypes?: Array<{ entry: string, type: Entry['type'] }>
   pluginJsonPathForRegistration?: string
@@ -26,6 +27,7 @@ export interface AppEntryResult {
 
 export interface AppEntriesCache {
   appSignature: string
+  appJson?: any
   pluginSignature?: string
   pluginJsonPath?: string
   entries: string[]
@@ -86,6 +88,7 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   let pluginJsonPathForRegistration: string | undefined
   let pluginJsonForRegistration: any
   let pluginSignature: string | undefined
+  let appJson: any
 
   if (!isPluginBuild) {
     extendedLibManager.syncFromAppJson(json)
@@ -132,6 +135,7 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
     if (cached.appSignature === appSignature && pluginPathMatches && pluginSignatureMatches) {
       return {
         entries: cached.entries,
+        appJson: cached.appJson,
         pluginResolvedRecords: cached.pluginResolvedRecords,
         pluginEntryTypes: cached.pluginEntryTypes,
         pluginJsonPathForRegistration: cached.pluginJsonPathForRegistration,
@@ -145,12 +149,11 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   }
 
   if (!isPluginBuild) {
-    const appJson = normalizeAppJson(json)
-    registerJsonAsset({
-      json: appJson,
-      jsonPath: id,
-      type: 'app',
-    })
+    appJson = applyPreloadRulesToAppJson(
+      normalizeAppJson(json),
+      configService.weappViteConfig.routeRules,
+      configService.platform,
+    )
     entries.push(...analyzeAppJson(appJson))
   }
 
@@ -192,6 +195,7 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   if (useCache && cache) {
     cache.current = {
       appSignature,
+      appJson,
       pluginSignature,
       pluginJsonPath,
       entries: [...entries],
@@ -204,6 +208,7 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
 
   return {
     entries,
+    appJson,
     pluginResolvedRecords,
     pluginEntryTypes,
     pluginJsonPathForRegistration,

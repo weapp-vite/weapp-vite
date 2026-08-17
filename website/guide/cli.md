@@ -136,6 +136,7 @@ wv analyze [root]
 | `--markdown`                | 输出完整 Markdown 报告                                                             |
 | `--report <type>`           | 输出指定报告类型，当前支持 `pr`                                                    |
 | `--budget-check`            | 检查 analyze 预算，超限时返回非 0 退出码                                           |
+| `--preload`                 | 扫描静态跨分包跳转并输出 `preloadRule` 建议（仅微信小程序）                        |
 | `--output <file>`           | 将分析结果写入文件，格式随 `--json` / `--markdown` / `--report pr` 决定            |
 | `-p, --platform <platform>` | 目标平台（`weapp` \| `web`）                                                       |
 | `--project-config <path>`   | 小程序 `project.config.json` 路径                                                  |
@@ -152,11 +153,12 @@ wv analyze --markdown --output reports/analyze.md
 wv analyze --report pr --output reports/analyze-pr.md
 wv analyze --budget-check
 wv analyze --hmr-profile .tmp/weapp-vite-hmr-profile.jsonl --json
+wv analyze --preload --json --output reports/preload.json
 wv analyze --platform web --json
 ```
 
 > [!TIP]
-> HMR profile 需要先在 `weapp.hmr.profileJson` 中开启，或通过 `--hmr-profile <file>` 指向已有 JSONL 文件。Web 平台当前只做 `weapp.web` 与 `executionMode` 静态分析，不提供小程序分包体积和 dashboard。
+> HMR profile 需要先在 `weapp.hmr.profileJson` 中开启，或通过 `--hmr-profile <file>` 指向已有 JSONL 文件。`--preload` 只分析静态模板、Vue SFC 和路由调用，不会修改源码；动态路由、业务守卫和预下载额度仍需人工复核。Web 平台当前只做 `weapp.web` 与 `executionMode` 静态分析，不提供小程序分包体积和 dashboard。
 
 ### 4) `open`
 
