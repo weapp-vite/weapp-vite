@@ -267,9 +267,6 @@ export function assertAuditStrict(result: AuditResult) {
   if (!llmAssets.llmsEntry) {
     failures.push('缺少 llms.md 入口页面。')
   }
-  if (!llmAssets.llmsIndexPublic) {
-    failures.push('缺少 website/public/llms-index.json。')
-  }
 
   if (result.quality.issues.length > 0) {
     failures.push(`质量问题未清零：${result.quality.issues.length} 项。`)

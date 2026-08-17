@@ -93,6 +93,10 @@ docs/reports/*-e2e-ci-suite-report/
 docs/reports/*-e2e-ide-full-suite-report/
 docs/reports/*-hmr-guard-*-suite-report/
 
+# website build-generated SEO/LLM assets
+website/public/llms-index.json
+website/public/seo-quality-report.json
+
 # simulator browser test artifacts
 mpcore/packages/simulator/.vitest-attachments/
 mpcore/packages/simulator/e2e/__screenshots__/
