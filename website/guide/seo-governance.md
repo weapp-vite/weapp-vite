@@ -47,6 +47,8 @@ pnpm -w seo:prepare
 
 随后再进行 `vitepress build`，确保构建产物与当前文档内容同步。
 
+`website/public/llms-index.json` 和 `website/public/seo-quality-report.json` 是构建生成物，已加入 `.gitignore`，不应提交到 Git。需要查看或部署它们时运行 `pnpm --filter website-weapp-vite build`，不要在分支之间手工合并这些文件。
+
 ## CI 门禁
 
 PR 流程中的 `CI Policy` 已接入：

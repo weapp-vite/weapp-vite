@@ -15,7 +15,20 @@ export type {
 export * from './app'
 export { resetWevuDefaults, setWevuDefaults } from './defaults'
 export type { WevuDefaults } from './defaults'
-export * from './define'
+export {
+  createWevuComponent,
+  createWevuScopedSlotComponent,
+  defineComponent,
+} from './define'
+export type {
+  ComponentDefinition,
+  DefineComponentTypePropsOptions,
+  DefineComponentWithTypeProps,
+  SetupContextWithTypeProps,
+  SetupFunctionWithTypeProps,
+  WevuComponentConstructor,
+  WevuDefinedComponent,
+} from './define'
 export * from './disposables'
 export * from './elementIntersectionObserver'
 export * from './hooks'

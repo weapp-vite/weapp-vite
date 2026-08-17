@@ -2,6 +2,19 @@
 
 `@mpcore/test` 直接执行小程序编译产物，提供逻辑 WXML 查询、交互、宿主 mock 和诊断。它不会伪造浏览器 `document/window`。
 
+如果只需要验证 Wevu 组件的 setup、props、data、computed、methods、watch、emits、provide/inject 和生命周期，可以使用 `@wevu/test-utils` 的 `mountComponent()`。在 Vitest 配置中加入 `wevuSfc()` 后即可直接导入 `.vue` SFC：
+
+```ts
+import { wevuSfc } from '@wevu/test-utils/vitest'
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  plugins: [wevuSfc()],
+})
+```
+
+该入口只编译并执行 SFC script，不渲染模板、WXML、CSS 或 DOM；`app.vue` 和页面组件也不属于测试对象。完整编译产物、WXML 查询、组件树、宿主 mock 和用户交互仍使用 `@mpcore/test`。
+
 ## 接入
 
 ```ts

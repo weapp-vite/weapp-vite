@@ -33,6 +33,7 @@ import { registerComponent, runSetupFunction } from './register'
 import { allocateOwnerId } from './scopedSlots'
 
 let scopedSlotCreator: (() => void) | undefined
+const componentLifecycleDefinitions = new WeakMap<object, Record<string, any>>()
 
 function ensureScopedSlotComponentGlobal() {
   const globalObject = getScopedSlotHostGlobalObject()
@@ -213,7 +214,17 @@ export function defineComponent(
   options: DefineComponentOptions<any, any, any, any, any>,
 ): WevuComponentConstructor<Record<string, any>, Record<string, any>, Record<string, any>, ComputedDefinitions, MethodDefinitions>
   & ComponentDefinition<any, any, any> {
-  ensureScopedSlotComponentGlobal()
+  // eslint-disable-next-line ts/no-use-before-define -- 重载实现需保持在内部共享工厂之前。
+  return createComponentDefinition(options, true) as any
+}
+
+function createComponentDefinition(
+  options: DefineComponentOptions<any, any, any, any, any>,
+  registerNative: boolean,
+) {
+  if (registerNative) {
+    ensureScopedSlotComponentGlobal()
+  }
   const resolvedOptions = resolveVueComponentOptions(applyWevuComponentDefaults(options))
   const {
     __typeProps: _typeProps,
@@ -325,13 +336,21 @@ export function defineComponent(
     mpOptions: mpOptionsWithProps,
   }
 
-  registerComponent(runtimeApp as any, methods ?? {}, watch as any, setupWrapper as any, mpOptionsWithProps as any)
+  const lifecycleDefinition = registerComponent(
+    runtimeApp as any,
+    methods ?? {},
+    watch as any,
+    setupWrapper as any,
+    mpOptionsWithProps as any,
+    { registerNative },
+  )
 
   // 返回组件定义，便于外部自行注册
   const definition: ComponentDefinition<any, any, any> = {
     __wevu_runtime: runtimeApp as any,
     __wevu_options: componentOptions as ComponentDefinition<any, any, any>['__wevu_options'],
   }
+  componentLifecycleDefinitions.set(definition, lifecycleDefinition)
 
   return definition as unknown as WevuComponentConstructor<
     ResolveProps<ComponentPropsOptions>,
@@ -340,6 +359,28 @@ export function defineComponent(
     ComputedDefinitions,
     MethodDefinitions
   > & ComponentDefinition<any, any, any>
+}
+
+/**
+ * 创建不触发宿主全局注册的 Wevu 组件定义。
+ *
+ * @param options 组件选项
+ * @internal
+ */
+export function createWevuComponentDefinition(
+  options: DefineComponentOptions<any, any, any, any, any>,
+) {
+  return createComponentDefinition(options, false)
+}
+
+/**
+ * 获取组件定义对应的宿主生命周期定义。
+ *
+ * @param definition Wevu 组件定义
+ * @internal
+ */
+export function getWevuComponentLifecycleDefinition(definition: object) {
+  return componentLifecycleDefinitions.get(definition)
 }
 
 /**

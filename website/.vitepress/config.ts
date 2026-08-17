@@ -344,6 +344,7 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'rolldown-require', link: '/packages/rolldown-require/index.zh' },
       { text: 'vite-plugin-performance', link: '/packages/vite-plugin-performance' },
       { text: 'mpcore 小程序测试', link: '/packages/mpcore-test' },
+      { text: '@wevu/test-utils', link: '/packages/wevu-test-utils' },
     ],
   },
   {

@@ -22,7 +22,7 @@ const VUE_COMPONENTS_DTS = path.join(DIST_ROOT, 'components.d.ts')
 const PAGE_SOURCE_PATH = path.join(APP_ROOT, 'src/pages/index/index.vue')
 const HOT_COMPONENT_DIR = path.join(APP_ROOT, 'src/components/HotCard')
 const HOT_COMPONENT_SOURCE_PATH = path.join(HOT_COMPONENT_DIR, 'index.vue')
-const HOT_COMPONENT_TEMPLATE_TIMEOUT_MS = process.platform === 'darwin'
+const HOT_COMPONENT_TIMEOUT_MS = process.platform === 'darwin'
   ? 240_000
   : process.platform === 'win32'
     ? 120_000
@@ -791,6 +791,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
                 touchContent: pageSourceWithHotCard,
               },
             ],
+            HOT_COMPONENT_TIMEOUT_MS,
           ),
           `${platform} hotCard registration`,
         )
@@ -818,7 +819,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
                 touchContent: pageSourceWithHotCard,
               },
             ],
-            HOT_COMPONENT_TEMPLATE_TIMEOUT_MS,
+            HOT_COMPONENT_TIMEOUT_MS,
           ),
           `${platform} hotCard template output`,
         )
