@@ -40,34 +40,14 @@ permissions:
   pull-requests: write
   id-token: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  detect-release-trigger:
-    name: Detect release trigger
-    runs-on: ubuntu-latest
-    outputs:
-      should_run: ${{ steps.detect.outputs.should_run }}
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 24
-
-      - name: Detect release trigger
-        id: detect
-        run: node --experimental-strip-types scripts/release-trigger.ts
-
   release:
-    needs: detect-release-trigger
-    if: needs.detect-release-trigger.outputs.should_run == 'true'
     name: Release
     runs-on: ubuntu-latest
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: false
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
