@@ -7,8 +7,10 @@ export {
 } from './runtime/defaults'
 export {
   createWevuComponent,
+  createWevuComponentDefinition,
   createWevuScopedSlotComponent,
   defineComponent,
+  getWevuComponentLifecycleDefinition,
 } from './runtime/define'
 export { useDisposables } from './runtime/disposables'
 export { useElementIntersectionObserver } from './runtime/elementIntersectionObserver'

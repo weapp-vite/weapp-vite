@@ -18,6 +18,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   watch: WatchMap | undefined,
   setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
   mpOptions: MiniProgramComponentRawOptions,
+  options: { registerNative?: boolean } = {},
 ) {
   const {
     userMethods,
@@ -181,7 +182,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     hasHook,
   })
 
-  registerComponentDefinition({
+  return registerComponentDefinition({
     runtimeApp,
     watch,
     setup,
@@ -203,5 +204,6 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     isPage,
     vueLifecycles,
     getRuntimeOwnerLabel,
+    registerNative: options.registerNative,
   })
 }

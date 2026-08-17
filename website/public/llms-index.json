@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-17T08:16:03.579Z",
+  "generatedAt": "2026-08-17T09:20:17.113Z",
   "site": "https://vite.icebreaker.top",
   "count": 275,
   "items": [
@@ -6018,14 +6018,15 @@
         "测试",
         "vitest",
         "@wevu/test-utils",
+        "Vue SFC",
         "api",
-        "packages",
-        "test"
+        "packages"
       ],
       "headings": [
         "Wevu Composition API 测试",
         "什么时候使用",
         "基础用法",
+        "Vue SFC 逻辑测试",
         "API",
         "mountComposable(setup, options?)",
         "wrapper"

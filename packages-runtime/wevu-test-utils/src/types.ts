@@ -1,6 +1,7 @@
 import type {
   ComponentPropsOptions,
   CreateAppOptions,
+  DefineComponentOptions,
   InternalRuntimeState,
   MiniProgramAdapter,
   RuntimeInstance,
@@ -43,6 +44,32 @@ export interface MountOptions<
   adapter?: Pick<MiniProgramAdapter, 'setData'>
 }
 
+export interface ComponentMountOptions<Props extends Record<string, any> = Record<string, any>>
+  extends Omit<MountOptions<Props>, 'props' | 'data' | 'computed' | 'methods' | 'watch' | 'setData'> {
+  props?: Partial<Props>
+  componentName?: string
+}
+
+export type WevuComponentInput<
+  Props extends Record<string, any> = Record<string, any>,
+> = DefineComponentOptions<ComponentPropsOptions, any, any, any, any>
+  | (new () => { $props: Props } & Record<string, any>)
+  | Record<string, any>
+
+type ComponentInstance<Component> = Component extends abstract new (...args: any[]) => infer Instance
+  ? Instance
+  : Record<string, any>
+
+export type ComponentPropsOf<Component> = ComponentInstance<Component> extends { $props: infer Props }
+  ? Props extends Record<string, any> ? Props : Record<string, any>
+  : Component extends { props: infer Props }
+    ? Props extends ComponentPropsOptions ? import('wevu').InferProps<Props> : Record<string, any>
+    : Record<string, any>
+
+export type ComponentBindingsOf<Component> = ComponentInstance<Component> extends infer Instance
+  ? Instance extends Record<string, any> ? Omit<Instance, '$props'> : Record<string, any>
+  : Record<string, any>
+
 export interface EmittedEventMap {
   [eventName: string]: unknown[][]
 }
@@ -52,7 +79,7 @@ export interface WevuTestWrapper<
   Props extends Record<string, any> = Record<string, any>,
   Data extends Record<string, any> = Record<string, any>,
 > {
-  readonly vm: Record<string, any> & Bindings
+  readonly vm: Record<string, any> & Bindings & { $props: Props }
   readonly instance: RuntimeInstance<Data, any, any>
   readonly host: InternalRuntimeState
   readonly setDataCalls: readonly Record<string, any>[]

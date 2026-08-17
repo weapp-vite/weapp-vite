@@ -174,6 +174,12 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
             return props
           }
         }
+        if (key === '$props') {
+          const props = (target as any)[WEVU_PROPS_KEY]
+          if (props && typeof props === 'object') {
+            return props
+          }
+        }
         const props = (target as any)[WEVU_PROPS_KEY]
         if (props && typeof props === 'object' && hasOwn(props, key)) {
           return Reflect.get(props, key)

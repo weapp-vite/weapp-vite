@@ -24,6 +24,10 @@
     ".": {
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
+    },
+    "./vitest": {
+      "types": "./dist/vitest.d.mts",
+      "import": "./dist/vitest.mjs"
     }
   },
   "main": "./dist/index.mjs",
@@ -50,7 +54,8 @@
     "wevu": ">=6.20.4"
   },
   "dependencies": {
-    "@weapp-core/constants": "workspace:*"
+    "@weapp-core/constants": "workspace:*",
+    "@wevu/compiler": "workspace:*"
   },
   "devDependencies": {
     "wevu": "workspace:*"

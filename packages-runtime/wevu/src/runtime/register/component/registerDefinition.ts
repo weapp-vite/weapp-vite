@@ -70,6 +70,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
   isPage: boolean
   vueLifecycles: Record<string, unknown>
   getRuntimeOwnerLabel: (instance: InternalRuntimeState) => string
+  registerNative?: boolean
 }) {
   const {
     runtimeApp,
@@ -92,6 +93,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     isPage,
     vueLifecycles,
     getRuntimeOwnerLabel,
+    registerNative = true,
   } = options
 
   const resolveRuntime = (instance: InternalRuntimeState) => {
@@ -412,6 +414,10 @@ export function registerComponentDefinition<D extends object, C extends Computed
     },
     options: finalOptions,
   }
+  if (!registerNative) {
+    return componentDefinition
+  }
+
   const statefulHmrBridge = getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
   if (typeof statefulHmrBridge?.trackWevuComponent === 'function') {
     const definition = statefulHmrBridge.trackWevuComponent(componentDefinition, (
@@ -430,8 +436,8 @@ export function registerComponentDefinition<D extends object, C extends Computed
     if (!statefulHmrBridge.isApplying()) {
       registerNativeComponentDefinition(definition, isPage)
     }
+    return definition
   }
-  else {
-    registerNativeComponentDefinition(componentDefinition, isPage)
-  }
+  registerNativeComponentDefinition(componentDefinition, isPage)
+  return componentDefinition
 }

@@ -11,7 +11,7 @@ keywords:
 
 # Wevu Composition API 测试
 
-`@wevu/test-utils` 为不依赖 WXML 的 Wevu 逻辑提供轻量测试宿主。它直接创建真实 Wevu runtime 实例，因此 `ref`、`computed`、`watch`、`provide/inject`、setup 上下文和生命周期仍然走 Wevu 的实现。
+`@wevu/test-utils` 为不依赖 WXML 的 Wevu 逻辑提供轻量测试宿主。它直接创建真实 Wevu runtime 实例，因此 `ref`、`computed`、`watch`、`provide/inject`、setup 上下文和生命周期仍然走 Wevu 的实现，也可以挂载真实 Vue SFC 的逻辑层。
 
 ## 什么时候使用
 
@@ -19,6 +19,7 @@ keywords:
 - 验证响应式状态、watch 回调和 `nextTick` 更新。
 - 验证 `onMounted`、`onUnmounted` 等已接入小程序生命周期的 hook。
 - 验证 `emit` 事件、插件安装和全局 provide。
+- 使用 `wevuSfc()` 转换 `.vue`，验证 `<script setup>`、Options API、props、emits 和组件生命周期。
 
 需要测试编译后的页面/组件、逻辑 WXML 树、选择器查询、用户交互或微信宿主 mock 时，使用 [`@mpcore/test`](/packages/mpcore-test)。两者是互补关系，不是两套不同的渲染器。
 
@@ -53,6 +54,37 @@ expect(wrapper.vm.doubled.value).toBe(4)
 
 wrapper.unmount()
 ```
+
+## Vue SFC 逻辑测试
+
+SFC 测试需要显式配置 `@wevu/test-utils/vitest`：
+
+```ts
+import { wevuSfc } from '@wevu/test-utils/vitest'
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  plugins: [wevuSfc()],
+})
+```
+
+```ts
+import { mountComponent } from '@wevu/test-utils'
+import Counter from './Counter.vue'
+
+const wrapper = mountComponent(Counter, { props: { initial: 1 } })
+expect(wrapper.vm.$props.initial).toBe(1)
+wrapper.vm.increment()
+await wrapper.nextTick()
+expect(wrapper.emitted('change')).toEqual([[2]])
+wrapper.unmount()
+```
+
+`wevuSfc()` 只把 `@wevu/compiler` 生成的 script 交给 Vitest，保留 source map，并把 `virtual:weapp-vite/runtime`、`/reactivity`、`/template` 映射到 Wevu internal runtime。它不使用 `@vitejs/plugin-vue`，不渲染模板、WXML、CSS 或 DOM。
+
+`mountComponent()` 可接收编译后的 SFC 默认导出、`DefineComponentOptions` 或 Wevu component definition。它复用组件 props 默认值、data、computed、methods、watch、setup、Options API provide/inject、emits 和生命周期，执行 `created -> attached -> ready`，卸载时调用 `detached`。`mount()` 会自动识别组件定义；需要保持 `{ setup }` composable 的明确语义时可继续使用 `mountComposable()`。
+
+app/page SFC、完整构建产物、逻辑 WXML、选择器、布局、宿主 mock 和真实交互不属于 `mountComponent()`；这些场景使用 [`@mpcore/test`](/packages/mpcore-test)。`onUpdated` 仍沿用 Wevu runtime 语义，本工具不会伪造生产更新。
 
 ## API
 

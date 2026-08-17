@@ -18,6 +18,8 @@ import {
   mountRuntimeInstance,
   teardownRuntimeInstance,
 } from 'wevu/internal-runtime'
+import { isComponentSubject, mountComponent } from './mountComponent'
+import { applyDataPayload, applyGlobalOptions, createEmitted } from './mountHelpers'
 
 type MountSubject<Bindings extends Record<string, any>, Props extends Record<string, any>>
   = | TestSetupFunction<Bindings, Props>
@@ -30,30 +32,6 @@ function resolveData<Data extends Record<string, any>>(data: MountOptions<any, D
   return (data ?? {}) as Data
 }
 
-function setDataPath(target: Record<string, any>, path: string, value: unknown) {
-  const segments = path.split('.').filter(Boolean)
-  if (segments.length < 2) {
-    target[path] = value
-    return
-  }
-
-  let current = target
-  for (const segment of segments.slice(0, -1)) {
-    const existing = current[segment]
-    if (!existing || typeof existing !== 'object' || Array.isArray(existing)) {
-      current[segment] = {}
-    }
-    current = current[segment]
-  }
-  current[segments[segments.length - 1]] = value
-}
-
-function applyDataPayload(target: Record<string, any>, payload: Record<string, any>) {
-  for (const [path, value] of Object.entries(payload)) {
-    setDataPath(target, path, value)
-  }
-}
-
 function resolveSetup<Bindings extends Record<string, any>, Props extends Record<string, any>>(
   subject: MountSubject<Bindings, Props>,
 ): TestSetupFunction<Bindings, Props> {
@@ -64,45 +42,17 @@ function resolveSetup<Bindings extends Record<string, any>, Props extends Record
   return setup
 }
 
-function applyGlobalOptions(runtimeApp: RuntimeApp<any, any, any>, options: MountOptions) {
-  const globalOptions = options.global
-  if (!globalOptions) {
-    return
-  }
-
-  Object.assign(runtimeApp.config.globalProperties, globalOptions.config?.globalProperties)
-  Object.assign(runtimeApp.config.globalProperties, globalOptions.mocks)
-
-  if (globalOptions.provide instanceof Map) {
-    for (const [key, value] of globalOptions.provide) {
-      runtimeApp.provide(key, value)
-    }
-  }
-  else if (globalOptions.provide) {
-    for (const key of Reflect.ownKeys(globalOptions.provide)) {
-      runtimeApp.provide(key, globalOptions.provide[key as keyof typeof globalOptions.provide])
-    }
-  }
-
-  for (const pluginEntry of globalOptions.plugins ?? []) {
-    if (Array.isArray(pluginEntry)) {
-      const [plugin, ...pluginOptions] = pluginEntry
-      runtimeApp.use(plugin, ...pluginOptions)
-    }
-    else {
-      runtimeApp.use(pluginEntry)
-    }
-  }
-}
-
 export function mount<
   Bindings extends Record<string, any> = Record<string, any>,
   Props extends Record<string, any> = Record<string, any>,
   Data extends Record<string, any> = Record<string, any>,
 >(
-  subject: MountSubject<Bindings, Props>,
+  subject: MountSubject<Bindings, Props> | Record<string, any>,
   options: MountOptions<Props, Data> = {},
 ): WevuTestWrapper<Bindings, Props, Data> {
+  if (isComponentSubject(subject)) {
+    return mountComponent(subject as any, options as any) as WevuTestWrapper<Bindings, Props, Data>
+  }
   const setup = resolveSetup(subject)
   const props = { ...(options.props ?? {}) } as Props
   const initialData = resolveData(options.data)
@@ -174,7 +124,7 @@ export function mount<
 
   const wrapper: WevuTestWrapper<Bindings, Props, Data> = {
     get vm() {
-      return runtime.proxy as Record<string, any> & Bindings
+      return runtime.proxy as Record<string, any> & Bindings & { $props: Props }
     },
     instance: runtime as WevuTestWrapper<Bindings, Props, Data>['instance'],
     host,
@@ -196,15 +146,7 @@ export function mount<
       Object.assign(runtime.state, data)
       await nextTick()
     },
-    emitted(eventName?: string) {
-      if (eventName) {
-        const entries = emissions[eventName]
-        return entries?.map(args => [...args])
-      }
-      return Object.fromEntries(
-        Object.entries(emissions).map(([name, entries]) => [name, entries.map(args => [...args])]),
-      )
-    },
+    emitted: createEmitted(emissions),
     async triggerHook(name, ...args) {
       if (unmounted) {
         throw new Error('不能在已卸载的 wrapper 上调用 triggerHook()')
@@ -235,3 +177,5 @@ export function mountComposable<
 ) {
   return mount(setup, options)
 }
+
+export { mountComponent }

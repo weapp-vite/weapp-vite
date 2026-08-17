@@ -2449,6 +2449,9 @@ importers:
       '@weapp-core/constants':
         specifier: workspace:*
         version: link:../../@weapp-core/constants
+      '@wevu/compiler':
+        specifier: workspace:*
+        version: link:../wevu-compiler
     devDependencies:
       wevu:
         specifier: workspace:*
