@@ -57,7 +57,7 @@ export function collectWorkspaceProtocolViolations(options: {
     }
 
     for (const [dependencyName, spec] of Object.entries(deps)) {
-      if (!options.workspacePackageNames.has(dependencyName) || !spec.startsWith('workspace:')) {
+      if (!options.workspacePackageNames.has(dependencyName)) {
         continue
       }
 

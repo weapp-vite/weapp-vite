@@ -311,6 +311,20 @@ it('collectWorkspaceProtocolViolations requires exact workspace protocol for pub
 
   assert.equal(violations.length, 1)
   assert.match(violations[0]!, /workspace:\^/)
+
+  const peerViolations = collectWorkspaceProtocolViolations({
+    file: 'packages-runtime/wevu-test-utils/package.json',
+    packageJson: {
+      name: '@wevu/test-utils',
+      peerDependencies: {
+        wevu: '>=6.20.4',
+      },
+    },
+    workspacePackageNames,
+  })
+
+  assert.equal(peerViolations.length, 1)
+  assert.match(peerViolations[0]!, /peerDependencies\.wevu=>=6\.20\.4/)
 })
 
 it('collectWorkspaceProtocolViolations ignores private package manifests', () => {

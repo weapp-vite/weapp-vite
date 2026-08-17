@@ -51,7 +51,7 @@
     "lint:fix": "eslint . --fix"
   },
   "peerDependencies": {
-    "wevu": ">=6.20.4"
+    "wevu": "workspace:*"
   },
   "dependencies": {
     "@weapp-core/constants": "workspace:*",
