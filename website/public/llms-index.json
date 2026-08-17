@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-15T21:20:56.624Z",
+  "generatedAt": "2026-08-17T08:16:03.579Z",
   "site": "https://vite.icebreaker.top",
-  "count": 274,
+  "count": 275,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -3983,7 +3983,7 @@
         "已有独立文档模块",
         "说明"
       ],
-      "updatedAt": "2026-07-30",
+      "updatedAt": "2026-08-17",
       "source": "packages/index.md"
     },
     {
@@ -6005,6 +6005,33 @@
       ],
       "updatedAt": "2026-04-13",
       "source": "packages/wevu-compiler.md"
+    },
+    {
+      "id": "doc-0f43e8ecea",
+      "title": "Wevu Composition API 测试",
+      "summary": "使用 @wevu/test-utils 测试 Wevu Composition API、响应式逻辑、生命周期和事件。",
+      "url": "/packages/wevu-test-utils",
+      "canonical": "https://vite.icebreaker.top/packages/wevu-test-utils",
+      "keywords": [
+        "wevu",
+        "Composition API",
+        "测试",
+        "vitest",
+        "@wevu/test-utils",
+        "api",
+        "packages",
+        "test"
+      ],
+      "headings": [
+        "Wevu Composition API 测试",
+        "什么时候使用",
+        "基础用法",
+        "API",
+        "mountComposable(setup, options?)",
+        "wrapper"
+      ],
+      "updatedAt": "2026-08-17",
+      "source": "packages/wevu-test-utils.md"
     },
     {
       "id": "doc-c6d110bdf1",

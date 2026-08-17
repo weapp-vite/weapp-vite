@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "types": [
+      "node",
+      "vitest/globals",
+      "miniprogram-api-typings"
+    ]
+  },
+  "include": [
+    "src",
+    "test-d"
+  ]
+}

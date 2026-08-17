@@ -2444,6 +2444,16 @@ importers:
         specifier: 'catalog:'
         version: 3.5.41(typescript@6.0.3)
 
+  packages-runtime/wevu-test-utils:
+    dependencies:
+      '@weapp-core/constants':
+        specifier: workspace:*
+        version: link:../../@weapp-core/constants
+    devDependencies:
+      wevu:
+        specifier: workspace:*
+        version: link:../wevu
+
   packages/ast:
     dependencies:
       '@babel/core':

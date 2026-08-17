@@ -1,6 +1,10 @@
 export { createApp } from './runtime/app'
 export { takePendingRuntimeAppRegistration } from './runtime/app/pending'
-export { resetWevuDefaults, setWevuDefaults } from './runtime/defaults'
+export {
+  INTERNAL_DEFAULTS_SCOPE_KEY,
+  resetWevuDefaults,
+  setWevuDefaults,
+} from './runtime/defaults'
 export {
   createWevuComponent,
   createWevuScopedSlotComponent,
