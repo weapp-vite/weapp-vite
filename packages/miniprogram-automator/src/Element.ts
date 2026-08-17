@@ -2,7 +2,9 @@
  * @file 页面元素能力封装。
  */
 import type Connection from './Connection'
+import type { RouteElementSnapshot } from './pageRouteSnapshot'
 import { isStr, isUndef, sleep } from './internal/compat'
+import { readRouteElementSnapshot } from './pageRouteSnapshot'
 /** IElementOptions 的类型定义。 */
 export interface IElementOptions {
   elementId: string
@@ -10,6 +12,12 @@ export interface IElementOptions {
   videoId?: string
   pageId: number
   routeFallback?: boolean
+  /** route 降级元素的定位信息:用于只读方法经 App-service 实时重查快照。 */
+  routeFallbackSelector?: string
+  routeFallbackIndex?: number
+  routeFallbackRoute?: string
+  routeFallbackQuery?: Record<string, any>
+  routeFallbackScopeSelectors?: string[]
   tagName: string
 }
 /** ITouch 的类型定义。 */
@@ -47,7 +55,7 @@ export default class Element {
   private id: string
   private pageId: number
   private publicProps?: Record<string, any>
-  constructor(private connection: Connection, options: IElementOptions, private elementMap: ElementMap) {
+  constructor(protected readonly connection: Connection, options: IElementOptions, private elementMap: ElementMap) {
     this.id = options.elementId
     this.pageId = options.pageId
     this.nodeId = options.nodeId || null
@@ -250,8 +258,123 @@ export default class Element {
 }
 /** App-Service 路由降级元素仅用于只读查询，不能伪装成交互协议元素。 */
 export class RouteFallbackElement extends Element {
+  private readonly routeSelector?: string
+  private readonly routeIndex?: number
+  private readonly routeRoute?: string
+  private readonly routeQuery?: Record<string, any>
+  private readonly routeScopeSelectors: string[]
+
+  constructor(connection: Connection, options: IElementOptions, elementMap: Map<string, Element>) {
+    super(connection, options, elementMap)
+    this.routeSelector = options.routeFallbackSelector
+    this.routeIndex = options.routeFallbackIndex
+    this.routeRoute = options.routeFallbackRoute
+    this.routeQuery = options.routeFallbackQuery
+    this.routeScopeSelectors = options.routeFallbackScopeSelectors ?? []
+  }
+
+  /**
+   * 经 App-service SelectorQuery 实时重查元素快照(rect/size/dataset/computedStyle)。
+   * 每次读取都重新查询,保证滚动/重渲染后拿到的是当前值;未命中返回 null。
+   */
+  private async readSnapshot(styleNames: string[] = []): Promise<RouteElementSnapshot | null> {
+    if (!this.routeSelector || this.routeIndex === undefined || !this.routeRoute) {
+      return null
+    }
+    return await readRouteElementSnapshot(
+      this.connection,
+      this.routeRoute,
+      this.routeQuery ?? {},
+      this.routeSelector,
+      this.routeIndex,
+      this.routeScopeSelectors,
+      styleNames,
+    )
+  }
+
+  private missingSnapshot(what: string): Error {
+    return new Error(`route fallback 元素未取到${what}: ${this.routeSelector ?? '(未知选择器)'}(页面已切换或元素已卸载)`)
+  }
+
+  async $(selector: string, _options: ElementQueryOptions = {}) {
+    return this.unsupported(`Element.$(${selector})`)
+  }
+
+  async $$(selector: string, _options: ElementQueryOptions = {}) {
+    return this.unsupported(`Element.$$(${selector})`)
+  }
+
+  async offset() {
+    const snapshot = await this.readSnapshot()
+    if (snapshot?.left === undefined || snapshot.top === undefined) {
+      throw this.missingSnapshot('坐标')
+    }
+    return { left: snapshot.left, top: snapshot.top, width: snapshot.width, height: snapshot.height }
+  }
+
+  async size() {
+    const snapshot = await this.readSnapshot()
+    if (snapshot?.width === undefined || snapshot.height === undefined) {
+      throw this.missingSnapshot('尺寸')
+    }
+    return { width: snapshot.width, height: snapshot.height }
+  }
+
+  async style(name: string) {
+    if (!isStr(name)) {
+      throw new Error('name must be a string')
+    }
+    const snapshot = await this.readSnapshot([name])
+    const value = snapshot?.[name]
+    if (value === undefined) {
+      throw this.missingSnapshot(`样式 ${name}`)
+    }
+    return value as string
+  }
+
+  async attribute(name: string) {
+    if (!isStr(name)) {
+      throw new Error('name must be a string')
+    }
+    const snapshot = await this.readSnapshot()
+    if (name === 'id') {
+      return snapshot?.id as string | undefined
+    }
+    if (name.startsWith('data-')) {
+      const key = name.slice(5).replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase())
+      return snapshot?.dataset?.[key] as string | undefined
+    }
+    throw new Error(`route fallback 元素仅支持读取 id 与 data-* 属性,不支持 attribute(${name})`)
+  }
+
   private unsupported(method: string): never {
-    throw new Error(`App-Service route fallback 元素不支持 ${method}`)
+    throw new Error(
+      `App-Service route fallback 元素不支持 ${method}(真实交互依赖已失效的 page-frame 协议);`
+      + '可改用 page.callMethod()/evaluate 间接触发页面逻辑',
+    )
+  }
+
+  async text() {
+    throw new Error(
+      'App-Service route fallback 元素不支持 text(SelectorQuery 无法读取 innerText);'
+      + '请改用 page.data() 断言数据源,或 page.callMethod()/evaluate 读取',
+    )
+  }
+
+  async value() {
+    this.unsupported('Element.value')
+  }
+
+  async property(name: string) {
+    this.unsupported(`Element.property(${name})`)
+  }
+
+  async wxml() {
+    this.unsupported('Element.wxml')
+  }
+
+  async outerWxml() {
+    this.unsupported('Element.outerWxml')
   }
 
   async tap() {

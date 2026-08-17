@@ -956,6 +956,9 @@ export default class Page {
       selector,
       node,
       index,
+      this.path,
+      this.query,
+      options.componentSelectors,
     ))
   }
 
