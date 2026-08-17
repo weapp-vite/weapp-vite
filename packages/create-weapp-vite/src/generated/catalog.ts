@@ -9,8 +9,8 @@ export const TEMPLATE_CATALOG = {
   '@babel/types': '^8.0.4',
   '@douyin-microapp/typings': '^1.3.1',
   '@egoist/tailwindcss-icons': '^1.9.2',
-  '@icebreakers/eslint-config': '^7.0.2',
-  '@icebreakers/stylelint-config': '^5.0.3',
+  '@icebreakers/eslint-config': '^7.0.4',
+  '@icebreakers/stylelint-config': '^5.0.5',
   '@iconify-json/mdi': '^1.2.3',
   '@iconify/tailwind4': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
@@ -22,7 +22,7 @@ export const TEMPLATE_CATALOG = {
   '@vue/babel-plugin-jsx': '3.0.0',
   '@vue/compiler-core': '^3.5.41',
   '@vue/compiler-dom': '^3.5.41',
-  '@vue/language-core': '^3.3.9',
+  '@vue/language-core': '^3.3.10',
   '@wot-ui/ui': '2.3.2',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
@@ -44,11 +44,11 @@ export const TEMPLATE_CATALOG = {
   'ts-morph': '^28.0.0',
   'uview-plus': '3.8.86',
   'vite-plugin-inspect': '^12.0.2',
-  'vue-tsc': '^3.3.9',
-  'weapp-tailwindcss': '^5.2.14',
+  'vue-tsc': '^3.3.10',
+  'weapp-tailwindcss': '^5.3.0',
   autoprefixer: '^10.5.4',
   clsx: '^2.1.1',
-  dayjs: '^1.11.21',
+  dayjs: '^1.11.22',
   echarts: '^6.1.0',
   esbuild: '^0.28.2',
   eslint: '^10.8.1',
@@ -76,7 +76,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.16.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.2.14'
+    'weapp-tailwindcss': '5.3.0'
   },
   latest: {
     'miniprogram-api-typings': '^5.2.3',

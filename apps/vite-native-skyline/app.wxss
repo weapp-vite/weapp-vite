@@ -1,5 +1,5 @@
 @import "./common.wxss";
-@import '@vant/weapp/common/index.css';
+@import './node_modules/@vant/weapp/dist/common/index.wxss';
 
 /* @import '@vant/weapp/common/index.wxss'; */
 @tailwind base;

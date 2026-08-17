@@ -167,7 +167,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "optionalDependencies": {
-    "@swc/core": "^1.15.47"
+    "@swc/core": "^1.16.0"
   },
   "devDependencies": {
     "oxc-parser": "catalog:",

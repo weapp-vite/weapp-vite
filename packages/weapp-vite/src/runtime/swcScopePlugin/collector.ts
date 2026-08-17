@@ -10,6 +10,7 @@ import type {
   ImportDeclaration,
   Param,
   Pattern,
+  Statement,
   VariableDeclaration,
 } from '@swc/types'
 import type { BindingInfo, ScopeAnalysisResult } from './types'
@@ -98,6 +99,15 @@ export class ScopeCollector extends Visitor {
   }
 
   /**
+   * 遍历函数体语句，不额外创建块级作用域
+   */
+  private visitFunctionBodyStatements(stmts: Statement[]): void {
+    for (const stmt of stmts) {
+      this.visitStatement(stmt)
+    }
+  }
+
+  /**
    * 处理标识符 - 检查是否是外部引用
    */
   override visitIdentifier(node: Identifier): Identifier {
@@ -133,7 +143,7 @@ export class ScopeCollector extends Visitor {
 
     // 访问函数体（不创建额外的块作用域）
     if (node.body) {
-      this.visitBlockStatement(node.body, true)
+      this.visitFunctionBodyStatements(node.body.stmts)
     }
 
     // 退出函数作用域
@@ -158,7 +168,7 @@ export class ScopeCollector extends Visitor {
 
     // 访问函数体（不创建额外的块作用域）
     if (node.body) {
-      this.visitBlockStatement(node.body, true)
+      this.visitFunctionBodyStatements(node.body.stmts)
     }
     this.scopeManager.popScope()
 
@@ -181,9 +191,9 @@ export class ScopeCollector extends Visitor {
       }
     }
 
-    // 访问函数体（箭头函数的 body 可能是 BlockStatement 或 Expression）
-    if (node.body.type === 'BlockStatement') {
-      this.visitBlockStatement(node.body, true)
+    // SWC 1.15/1.16 分别使用 BlockStatement/FunctionBody 表示语句体
+    if ('stmts' in node.body) {
+      this.visitFunctionBodyStatements(node.body.stmts)
     }
     else {
       // 表达式体 - 直接访问表达式
@@ -250,6 +260,7 @@ export class ScopeCollector extends Visitor {
 
   /**
    * 处理块语句
+   * @param node - 块语句节点
    * @param skipScope - 如果为 true，则不创建新的块作用域（用于函数体）
    */
   override visitBlockStatement(node: BlockStatement, skipScope = false): BlockStatement {
@@ -257,10 +268,7 @@ export class ScopeCollector extends Visitor {
       this.scopeManager.pushScope('block')
     }
 
-    // 手动遍历语句
-    for (const stmt of node.stmts) {
-      this.visitStatement(stmt)
-    }
+    this.visitFunctionBodyStatements(node.stmts)
 
     if (!skipScope) {
       this.scopeManager.popScope()

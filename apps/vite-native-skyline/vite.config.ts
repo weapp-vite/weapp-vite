@@ -11,11 +11,6 @@ export default defineConfig({
       rem2rpx: true,
     }),
   ],
-  resolve: {
-    alias: {
-      '@vant/weapp/common/index.css': path.resolve(__dirname, './node_modules/@vant/weapp/dist/common/index.wxss'),
-    },
-  },
   weapp: {
     hmr: {
       logLevel: 'verbose',
