@@ -16,7 +16,7 @@ export interface ReleaseTriggerContext {
 }
 
 function normalizePath(file: string) {
-  return file.replaceAll('\\', '/').replace(/^\.?\//, '')
+  return file.replaceAll('\\', '/').replace(/^\.\//, '')
 }
 
 export function hasPendingChangeset(files: string[]) {
@@ -104,14 +104,14 @@ async function readGitOutput(args: string[]) {
 }
 
 async function readChangedFiles() {
-  const before = process.env.GITHUB_EVENT_NAME === 'push'
+  const eventPath = process.env.GITHUB_EVENT_NAME === 'push'
     ? process.env.GITHUB_EVENT_PATH
     : undefined
   let diffRange: string[] = []
 
-  if (before) {
+  if (eventPath) {
     try {
-      const event = JSON.parse(await fs.readFile(before, 'utf8')) as { before?: string, after?: string }
+      const event = JSON.parse(await fs.readFile(eventPath, 'utf8')) as { before?: string, after?: string }
       if (event.before && event.after && !/^0+$/.test(event.before)) {
         diffRange = [event.before, event.after]
       }

@@ -1,3 +1,4 @@
+# repoctl-managed: release/v2
 name: Release
 
 on:
@@ -32,9 +33,7 @@ on:
 env:
   HUSKY: 0
   NPM_CONFIG_PROVENANCE: true
-  REPOCTL_LANG: zh-CN
-  pnpm_config_provenance: true
-  pnpm_config_registry: https://registry.npmjs.org
+  npm_config_registry: https://registry.npmjs.org
 
 permissions:
   contents: write
@@ -49,11 +48,11 @@ jobs:
       should_run: ${{ steps.detect.outputs.should_run }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
 
@@ -71,14 +70,14 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: pnpm
@@ -89,9 +88,8 @@ jobs:
 
       - name: Run repo release CI
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token }}
           REPO_RELEASE_MODE: ${{ inputs.mode || 'auto' }}
           REPO_RELEASE_PACKAGE: ${{ inputs.package }}
           REPO_RELEASE_VERSION: ${{ inputs.version }}
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: pnpm exec repo release ci
