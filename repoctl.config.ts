@@ -5,7 +5,6 @@ export default {
     release: {
       qualityScripts: [
         'check:changeset:frontmatter',
-        'check:publishable-workspace-dependency-protocols',
         'check:weapp-core-constants-dependency-range',
         'check:rolldown:single-version',
         'lint',

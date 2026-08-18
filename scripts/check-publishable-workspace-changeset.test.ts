@@ -225,7 +225,6 @@ it('repoctl release lifecycle keeps PR-only intent guards outside main push chec
 
   assert.deepEqual(releaseConfig.qualityScripts, [
     'check:changeset:frontmatter',
-    'check:publishable-workspace-dependency-protocols',
     'check:weapp-core-constants-dependency-range',
     'check:rolldown:single-version',
     'lint',
@@ -233,6 +232,7 @@ it('repoctl release lifecycle keeps PR-only intent guards outside main push chec
     'test:packages',
     'test:types',
   ])
+  assert.equal(releaseConfig.qualityScripts.includes('check:publishable-workspace-dependency-protocols'), false)
   assert.equal(releaseConfig.qualityScripts.includes('check:publishable-workspace-changeset'), false)
   assert.equal(releaseConfig.qualityScripts.includes('check:weapp-core-constants-changeset'), false)
   assert.deepEqual(releaseConfig.hooks, {
