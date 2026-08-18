@@ -212,6 +212,30 @@ describe('Page', () => {
     })
   })
 
+  it('retries transient empty app-service selector results across consecutive queries', async () => {
+    const snapshots = [
+      [{ id: 'first' }],
+      [],
+      [{ id: 'recovered' }],
+    ]
+    const send = vi.fn(async (method: string) => {
+      if (method !== 'App.callFunction') {
+        throw new Error(`${method} should not use the page-frame protocol`)
+      }
+      return { result: snapshots.shift() ?? [] }
+    })
+    const page = new Page(
+      createAppServicePageConnection(send),
+      { id: 7, path: '/pages/index', query: {} },
+    )
+
+    await expect(page.$$('.hello')).resolves.toHaveLength(1)
+    await expect(page.$('.hello')).resolves.not.toBeNull()
+
+    expect(send).toHaveBeenCalledTimes(3)
+    expect(vi.mocked(compat.sleep)).toHaveBeenCalledWith(220)
+  })
+
   it('rejects interaction methods on app-service route fallback elements', async () => {
     const timeoutError = Object.assign(
       new Error('DevTools did not respond to protocol method Page.getElement within 2500ms'),
@@ -331,6 +355,35 @@ describe('Page', () => {
     await expect(element?.offset()).resolves.toMatchObject({ top: 0 })
     await expect(element?.offset()).resolves.toMatchObject({ top: 200 })
     expect(snapshotReads).toBe(2)
+  })
+
+  it('retries transient empty route fallback snapshots', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method Page.getElement within 2500ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'Page.getElement',
+      },
+    )
+    const snapshots = [null, { left: 12, top: 34, width: 100, height: 40, display: 'block' }]
+    const send = vi.fn(async (method: string, params?: Record<string, any>) => {
+      if (method === 'Page.getElement') {
+        throw timeoutError
+      }
+      if (method === 'App.callFunction') {
+        const declaration = params?.functionDeclaration as string
+        if (declaration.includes('computedStyle')) {
+          return { result: snapshots.shift() ?? null }
+        }
+        return { result: [{ id: 'hero' }] }
+      }
+      throw new Error(`${method} should not be called`)
+    })
+    const page = new Page(createConnection(send), { id: 7, path: '/pages/index', query: {} })
+    const element = await page.$('.hero')
+
+    await expect(element?.style('display')).resolves.toBe('block')
+    expect(vi.mocked(compat.sleep)).toHaveBeenCalledWith(220)
   })
 
   it('throws a clear error for text() on route fallback elements', async () => {

@@ -7,6 +7,7 @@
  * 在 AppService 内实时取回——每次读取都重新查询,避免滚动/重渲染后拿到过期快照。
  */
 import type Connection from './Connection'
+import { sleep } from './internal/compat'
 
 /** 降级元素只读快照(rect 字段平铺在节点上;computedStyle 按请求的属性名平铺)。 */
 export interface RouteElementSnapshot {
@@ -22,6 +23,8 @@ export interface RouteElementSnapshot {
 }
 
 const ROUTE_ELEMENT_SNAPSHOT_TIMEOUT = 5_000
+const ROUTE_ELEMENT_SNAPSHOT_EMPTY_RETRIES = 2
+const ROUTE_ELEMENT_SNAPSHOT_RETRY_DELAY = 220
 
 /**
  * 页面定位 + 组件作用域遍历逻辑与 Page.renderedNodes 保持一致:
@@ -224,11 +227,25 @@ export async function readRouteElementSnapshot(
   styleNames: string[] = [],
   timeout = ROUTE_ELEMENT_SNAPSHOT_TIMEOUT,
 ): Promise<RouteElementSnapshot | null> {
-  const { result } = await connection.send('App.callFunction', {
-    functionDeclaration: ROUTE_ELEMENT_SNAPSHOT_FUNCTION_DECLARATION,
-    args: [route, query, selector, index, scopeSelectors, styleNames],
-  }, {
-    timeout,
-  }) as { result?: RouteElementSnapshot | null }
-  return result ?? null
+  const startedAt = Date.now()
+  for (let attempt = 0; attempt <= ROUTE_ELEMENT_SNAPSHOT_EMPTY_RETRIES; attempt += 1) {
+    const remaining = attempt === 0
+      ? timeout
+      : Math.max(1, timeout - (Date.now() - startedAt))
+    const { result } = await connection.send('App.callFunction', {
+      functionDeclaration: ROUTE_ELEMENT_SNAPSHOT_FUNCTION_DECLARATION,
+      args: [route, query, selector, index, scopeSelectors, styleNames],
+    }, {
+      timeout: remaining,
+    }) as { result?: RouteElementSnapshot | null }
+    if (result != null || attempt === ROUTE_ELEMENT_SNAPSHOT_EMPTY_RETRIES) {
+      return result ?? null
+    }
+    const retryRemaining = timeout - (Date.now() - startedAt)
+    if (retryRemaining <= 0) {
+      break
+    }
+    await sleep(Math.min(ROUTE_ELEMENT_SNAPSHOT_RETRY_DELAY, retryRemaining))
+  }
+  return null
 }

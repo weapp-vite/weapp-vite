@@ -43,7 +43,7 @@ describe.sequential('e2e app: github-issues / issue #547', () => {
 
       const pageWxml = await readDistWxml('pages/issue-547/index.wxml')
       expect(pageWxml).toContain('issue-547 nested augmented slot')
-      expect(pageWxml).toContain('NestedSlotGroup')
+      expect(pageWxml).toContain('nested-slot-group')
       expect(pageWxml).toContain('generic:scoped-slots-default')
 
       const imageWxml = await readDistWxml('components/issue-547/NestedSlotImage/index.wxml')

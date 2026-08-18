@@ -61,6 +61,7 @@ const PAGE_CALL_METHOD_FALLBACK_RETRY_DELAY = 300
 const PAGE_RENDERED_TIMEOUT = 15_000
 const PAGE_RENDERED_POLL_DELAY = 220
 const PAGE_RENDERED_QUERY_TIMEOUT = 5_000
+const PAGE_RENDERED_EMPTY_RETRIES = 2
 const PAGE_ROOT_SELECTORS = ['page', 'body', 'weapp-app-shell', 'view'] as const
 const PAGE_DIRECT_RENDERED_QUERY_TIMEOUT = 800
 const PAGE_DIRECT_RENDERED_MAX_SCOPES = 12
@@ -945,10 +946,26 @@ export default class Page {
   }
 
   private async queryRouteElements(selector: string, options: PageQueryOptions) {
-    const nodes = await this.renderedNodes(selector, {
-      componentSelectors: options.componentSelectors,
-      timeout: options.timeout ?? PAGE_QUERY_TIMEOUT,
-    })
+    const timeout = options.timeout ?? PAGE_QUERY_TIMEOUT
+    const startedAt = Date.now()
+    let nodes: RenderedNodeSnapshot[] = []
+    for (let attempt = 0; attempt <= PAGE_RENDERED_EMPTY_RETRIES; attempt += 1) {
+      const requestTimeout = attempt === 0
+        ? timeout
+        : Math.max(1, timeout - (Date.now() - startedAt))
+      nodes = await this.renderedNodes(selector, {
+        componentSelectors: options.componentSelectors,
+        timeout: requestTimeout,
+      })
+      if (nodes.length > 0 || attempt === PAGE_RENDERED_EMPTY_RETRIES) {
+        break
+      }
+      const remaining = timeout - (Date.now() - startedAt)
+      if (remaining <= 0) {
+        break
+      }
+      await sleep(Math.min(PAGE_RENDERED_POLL_DELAY, remaining))
+    }
     return nodes.map((node, index) => createRouteFallbackElement(
       this.connection,
       this.elementMap,
