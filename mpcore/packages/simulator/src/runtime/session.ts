@@ -196,6 +196,7 @@ export class HeadlessSession {
   private appDefinition: HeadlessAppDefinition | null = null
   private appInstance: HeadlessAppInstance | null = null
   private readonly moduleLoader
+  private readonly eventListeners = new Map<string, Set<(...args: any[]) => void>>()
   private readonly registries: HeadlessHostRegistries
   private currentPageInstance: HeadlessPageInstance | null = null
   private readonly pages: HeadlessPageInstance[] = []
@@ -345,6 +346,7 @@ export class HeadlessSession {
         artifactSource: this.project.artifactSource,
         globals: options.globals,
         kernel: this.kernel,
+        onConsole: entry => this.emit('console', entry),
       },
     )
   }
@@ -363,11 +365,35 @@ export class HeadlessSession {
     this.renderRequestPending = false
     this.wxState.close()
     this.moduleLoader.close()
+    this.eventListeners.clear()
     this.kernel.close()
   }
 
   getDiagnostics(): RuntimeDiagnosticEntry[] {
     return this.kernel.diagnostics.getEntries()
+  }
+
+  on(eventName: string, handler: (...args: any[]) => void) {
+    if (!eventName || typeof handler !== 'function') {
+      return
+    }
+    const listeners = this.eventListeners.get(eventName) ?? new Set<(...args: any[]) => void>()
+    listeners.add(handler)
+    this.eventListeners.set(eventName, listeners)
+  }
+
+  removeListener(eventName: string, handler: (...args: any[]) => void) {
+    const listeners = this.eventListeners.get(eventName)
+    listeners?.delete(handler)
+    if (listeners?.size === 0) {
+      this.eventListeners.delete(eventName)
+    }
+  }
+
+  private emit(eventName: string, ...args: any[]) {
+    for (const handler of [...(this.eventListeners.get(eventName) ?? [])]) {
+      handler(...args)
+    }
   }
 
   get isClosed() {
@@ -382,6 +408,11 @@ export class HeadlessSession {
   getCurrentPages() {
     this.assertActive()
     return this.pages.slice()
+  }
+
+  getWx() {
+    this.assertActive()
+    return this.moduleLoader.wx
   }
 
   callWxMethod(methodName: string, ...args: any[]) {
@@ -944,8 +975,25 @@ export class HeadlessSession {
     this.appDefinition = this.moduleLoader.executeAppModule(appModulePath)
     this.appInstance = createAppInstance(this.appDefinition)
     this.appInstance.onLaunch?.(launchOptions)
+    this.syncRuntimeAppState()
     this.appInstance.onShow?.(launchOptions)
     return this.appInstance
+  }
+
+  private syncRuntimeAppState() {
+    const runtimeApp = this.appInstance?.__wevuRuntimeApp
+    if (!runtimeApp || typeof runtimeApp !== 'object' || !this.appInstance) {
+      return
+    }
+    if (runtimeApp.globalData && typeof runtimeApp.globalData === 'object') {
+      this.appInstance.globalData = {
+        ...this.appInstance.globalData,
+        ...runtimeApp.globalData,
+      }
+    }
+    if (Object.hasOwn(runtimeApp, 'routes')) {
+      this.appInstance.routes = runtimeApp.routes
+    }
   }
 
   reLaunch(url: string) {

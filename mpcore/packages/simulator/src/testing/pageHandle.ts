@@ -92,6 +92,10 @@ export class HeadlessTestingPageHandle {
       this.session?.renderCurrentPage()
       const method = this.page[normalizedMethodName]
       if (typeof method !== 'function') {
+        if (options.routeOnly) {
+          return undefined
+        }
+        // Keep missing-method wording compatible with automator providers.
         throw new TypeError(`Method "${normalizedMethodName}" does not exist on headless page ${this.page.route}.`)
       }
       return cloneProtocolValue(await method.apply(this.page, args))

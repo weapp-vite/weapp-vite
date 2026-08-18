@@ -36,4 +36,20 @@ describe('transformWxsCode', () => {
     expect(output).toContain('export default')
     expect(output).not.toContain('module.exports')
   })
+
+  it('converts CommonJS default exports for Alipay SJS', () => {
+    const code = `
+      function label(value) {
+        return value || 'unknown'
+      }
+      module.exports = {
+        label: label,
+      }
+    `
+    const { result } = transformWxsCode(code, { extension: 'sjs' })
+    const output = result?.code ?? ''
+
+    expect(output).toContain('export default')
+    expect(output).not.toContain('module.exports')
+  })
 })

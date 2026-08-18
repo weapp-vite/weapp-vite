@@ -106,6 +106,26 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
               p.remove()
             }
           },
+          AssignmentExpression: {
+            enter(p: babel.NodePath<t.AssignmentExpression>) {
+              if (!preserveEsmExports || p.node.operator !== '=') {
+                return
+              }
+
+              const left = p.node.left
+              if (
+                !t.isMemberExpression(left)
+                || left.computed
+                || !t.isIdentifier(left.object, { name: 'module' })
+                || !t.isIdentifier(left.property, { name: 'exports' })
+                || !p.parentPath.isExpressionStatement()
+              ) {
+                return
+              }
+
+              p.parentPath.replaceWith(t.exportDefaultDeclaration(p.node.right))
+            },
+          },
           NewExpression: {
             enter(p: babel.NodePath<t.NewExpression>) {
               const node = p.node

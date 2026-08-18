@@ -111,12 +111,23 @@ function parseNumericLikeValue(value?: string) {
   return match ? Number(match[0]) : 0
 }
 
-function resolveRect(node: DomNodeLike): HeadlessWxSelectorQueryBoundingClientRectResult {
+function resolveRect(node: DomNodeLike, windowInfo?: HeadlessWxWindowInfoResult): HeadlessWxSelectorQueryBoundingClientRectResult {
   const style = parseStyleDeclarations(node.attribs?.style)
   const left = parseNumericLikeValue(node.attribs?.['data-sim-left'] ?? style.left)
   const top = parseNumericLikeValue(node.attribs?.['data-sim-top'] ?? style.top)
-  const width = parseNumericLikeValue(node.attribs?.['data-sim-width'] ?? style.width)
-  const height = parseNumericLikeValue(node.attribs?.['data-sim-height'] ?? style.height)
+  const rawWidth = node.attribs?.['data-sim-width'] ?? style.width
+  const rawHeight = node.attribs?.['data-sim-height'] ?? style.height
+  const isTopLevelView = node.name === 'view' && node.parent?.name === 'page' && windowInfo?.windowWidth != null
+  const width = rawWidth != null
+    ? parseNumericLikeValue(rawWidth)
+    : isTopLevelView && windowInfo
+      ? windowInfo.windowWidth
+      : 0
+  const height = rawHeight != null
+    ? parseNumericLikeValue(rawHeight)
+    : isTopLevelView && windowInfo
+      ? windowInfo.windowHeight
+      : 0
   return {
     bottom: top + height,
     height,
@@ -196,7 +207,7 @@ function resolveFieldsResult(
     result.mark = collectMark(node)
   }
   if (fields.rect || fields.size) {
-    const rect = resolveRect(node)
+    const rect = resolveRect(node, options.root.name === 'page' ? options.windowInfo : undefined)
     if (fields.rect) {
       Object.assign(result, rect)
     }

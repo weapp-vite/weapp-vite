@@ -47,6 +47,51 @@ describe('HeadlessSession', () => {
     expect(session.getCurrentPages()).toHaveLength(1)
   })
 
+  it('loads static ESM imports for app and page artifacts', () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'dist/shared.js'), `
+export const marker = 'esm-shared'
+`)
+    writeFixtureFile(path.join(projectPath, 'dist/app.js'), `
+import { marker } from './shared.js'
+App({ globalData: { marker } })
+`)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/index/index.js'), `
+import { marker } from '../../shared.js'
+Page({ data: { marker } })
+`)
+
+    const session = createHeadlessSession({ projectPath })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(session.getApp()?.globalData.marker).toBe('esm-shared')
+    expect(page.data.marker).toBe('esm-shared')
+  })
+
+  it('selects the final Component definition when a bundled page has helpers', () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/index/index.js'), `
+Component({ data: { helper: true } })
+Component({
+  data: { page: true },
+  methods: {
+    runE2E() {
+      return this.data.page
+    },
+  },
+})
+`)
+
+    const session = createHeadlessSession({ projectPath })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(page.data).toMatchObject({ page: true })
+    expect(page.data.helper).toBeUndefined()
+    expect(page.runE2E()).toBe(true)
+  })
+
   it('loads and caches modules through require.async', async () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)

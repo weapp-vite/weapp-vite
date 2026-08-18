@@ -12,6 +12,7 @@ import type { BrowserVirtualFiles } from './virtualFiles'
 import { dirname, join, normalize } from 'pathe'
 import {
   createHeadlessWx,
+  normalizeComponentPageDefinition,
   registerAppDefinition,
   registerComponentDefinition,
   registerExportedComponentDefinition,
@@ -188,6 +189,7 @@ export function createBrowserModuleLoader(
         .filter(definition => !registeredDefinitionsBefore.has(definition))
       module.componentDefinitions = [...new Set([
         ...requiredComponentDefinitions,
+        ...(loadContext?.componentDefinitions ?? []),
         ...registeredDefinitions,
       ])]
       return module
@@ -209,8 +211,14 @@ export function createBrowserModuleLoader(
       return registries.appDefinition
     },
     executePageModule(filePath, route) {
-      executeModule(filePath, { kind: 'page', route })
+      const componentDefinitions: HeadlessComponentDefinition[] = []
+      const loadedModule = executeModule(filePath, { kind: 'page', route, componentDefinitions })
+      const fallbackDefinition = loadedModule.componentDefinitions.at(-1)
       const definition = registries.pages.get(route)
+        ?? (fallbackDefinition ? normalizeComponentPageDefinition(fallbackDefinition) : undefined)
+      if (!registries.pages.has(route) && definition) {
+        registerPageDefinition(registries, definition, route)
+      }
       if (!definition) {
         throw new Error(`Page() was not registered for route "${route}" while executing ${normalize(filePath)}.`)
       }

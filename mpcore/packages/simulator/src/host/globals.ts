@@ -10,6 +10,7 @@ export interface HeadlessBehaviorDefinition extends Record<string, any> {
 
 export interface HeadlessHostLoadContext {
   kind: 'app' | 'page' | 'component'
+  componentDefinitions?: HeadlessComponentDefinition[]
   route?: string
 }
 
@@ -34,7 +35,7 @@ function callDefinitionMethod(
   }
 }
 
-function normalizeComponentPageDefinition(definition: HeadlessComponentDefinition): HeadlessPageDefinition {
+export function normalizeComponentPageDefinition(definition: HeadlessComponentDefinition): HeadlessPageDefinition {
   const {
     lifetimes = {},
     methods = {},
@@ -97,8 +98,8 @@ export function registerAppDefinition(registries: HeadlessHostRegistries, defini
   return definition
 }
 
-export function registerPageDefinition(registries: HeadlessHostRegistries, definition: HeadlessPageDefinition) {
-  const route = registries.currentLoadContext?.route
+export function registerPageDefinition(registries: HeadlessHostRegistries, definition: HeadlessPageDefinition, explicitRoute?: string) {
+  const route = explicitRoute ?? registries.currentLoadContext?.route
   if (!route) {
     throw new Error('Cannot register Page() without an active page load context in headless runtime.')
   }
@@ -111,6 +112,10 @@ export function registerPageDefinition(registries: HeadlessHostRegistries, defin
 
 export function registerComponentDefinition(registries: HeadlessHostRegistries, definition: HeadlessComponentDefinition) {
   if (registries.currentLoadContext?.kind === 'page') {
+    if (registries.currentLoadContext.componentDefinitions) {
+      registries.currentLoadContext.componentDefinitions.push(definition)
+      return definition
+    }
     return registerPageDefinition(registries, normalizeComponentPageDefinition(definition))
   }
   const id = registries.currentLoadContext?.route ?? `anonymous:${registries.components.size}`

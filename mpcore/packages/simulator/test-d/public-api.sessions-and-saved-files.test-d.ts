@@ -1,5 +1,6 @@
 import type {
   HeadlessTestingRenderedNodeSnapshot,
+  HeadlessTestingSessionHandle,
   HeadlessWxDeviceInfoResult,
   HeadlessWxDownloadFileMockDefinition,
   HeadlessWxGetLocationResult,
@@ -795,6 +796,13 @@ launchResult.then((session) => {
   expectType<Promise<unknown>>(session.callWxMethodWithOptions('getStorageSync', {
     timeout: 1_000,
   }, 'probe'))
+  expectType<Promise<number>>(session.evaluate(() => 42))
+  expectType<Promise<string>>(session.evaluateWithOptions('(value) => String(value)', {
+    timeout: 1_000,
+  }, 'probe'))
+  expectType<HeadlessTestingSessionHandle>(session.on('console', () => {}))
+  expectType<HeadlessTestingSessionHandle>(session.removeListener('console', () => {}))
+  expectType<HeadlessTestingSessionHandle>(session.off('console', () => {}))
   session.reLaunch('/pages/index/index').then((page) => {
     expectType<string>(page.path)
     expectType<Record<string, string>>(page.query)

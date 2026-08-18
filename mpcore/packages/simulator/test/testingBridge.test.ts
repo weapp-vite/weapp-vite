@@ -30,6 +30,27 @@ describe('headless testing bridge', () => {
     expect(await currentPage?.data('__e2eData.greeting')).toBe('Hello')
   })
 
+  it('opens the configured entry page when launching a session', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+
+    const miniProgram = await launch({ projectPath })
+    const currentPage = await miniProgram.currentPage()
+
+    expect(currentPage?.path).toBe('pages/index/index')
+    expect(await currentPage?.data('__e2eResult.status')).toBe('ready')
+
+    const query = await miniProgram.callWxMethod('createSelectorQuery') as any
+    const [rootRect] = query
+      .select('#greeting-button')
+      .boundingClientRect()
+      .exec()
+    expect(rootRect).toMatchObject({
+      height: 667,
+      width: 375,
+    })
+  })
+
   it('calls page methods through the testing bridge', async () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)
@@ -44,6 +65,20 @@ describe('headless testing bridge', () => {
       status: 'tapped',
       detail: 'tap handled',
     })
+  })
+
+  it('returns undefined for an optional route-only method that is absent', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({ projectPath })
+    const page = await miniProgram.currentPage()
+
+    expect(page).not.toBeNull()
+    if (!page) {
+      throw new Error('Expected the configured page to be active.')
+    }
+    await expect(page.callMethodWithOptions('runE2E', { routeOnly: true })).resolves.toBeUndefined()
+    await expect(page.callMethod('runE2E')).rejects.toThrow('does not exist')
   })
 
   it('renders component lifecycles before invoking page methods', async () => {
@@ -326,7 +361,11 @@ Page({
       projectPath,
     })
 
-    const homePage = await miniProgram.reLaunch('/pages/home/index')
+    const homePage = await miniProgram.currentPage()
+    expect(homePage).not.toBeNull()
+    if (!homePage) {
+      throw new Error('Expected the configured home page to be active.')
+    }
     await homePage.callMethod('goDetailLater')
 
     const detailPage = await miniProgram.waitForCurrentPage('/pages/detail/index')

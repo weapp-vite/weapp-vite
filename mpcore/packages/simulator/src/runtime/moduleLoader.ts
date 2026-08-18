@@ -14,6 +14,7 @@ import vm from 'node:vm'
 import { normalize } from 'pathe'
 import {
   createHeadlessWx,
+  normalizeComponentPageDefinition,
   registerAppDefinition,
   registerComponentDefinition,
   registerExportedComponentDefinition,
@@ -36,6 +37,146 @@ interface ModuleCacheEntry {
 interface LocalRequire {
   (request: string): any
   async: (request: string) => Promise<any>
+}
+
+const ESM_IMPORT_LINE_RE = /^[ \t]*import[^\n]*$/gm
+const ESM_EXPORT_LIST_RE = /^[ \t]*export[ \t]*\{([^}\n]+)\}[ \t]*;?$/gm
+const ESM_EXPORT_DECLARATION_RE = /\bexport\s+(const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/g
+const ESM_EXPORT_DEFAULT_DECLARATION_RE = /\bexport\s+default\s+(function|class)\s+([A-Za-z_$][\w$]*)/g
+
+function isImportWhitespace(value: string | undefined) {
+  return value === ' ' || value === '\t'
+}
+
+type ParsedEsmImport
+  = | { request: string, sideEffect: true }
+    | { request: string, sideEffect: false, specifier: string }
+
+function parseEsmImportLine(line: string): ParsedEsmImport | undefined {
+  let statement = line.trim().slice('import'.length).trim()
+  if (statement.endsWith(';')) {
+    statement = statement.slice(0, -1).trimEnd()
+  }
+
+  if (statement.startsWith('"') || statement.startsWith('\'')) {
+    const quote = statement[0]
+    if (statement.endsWith(quote) && statement.length > 1) {
+      return {
+        request: statement.slice(1, -1),
+        sideEffect: true,
+      }
+    }
+    return
+  }
+
+  let fromIndex = statement.indexOf('from')
+  while (fromIndex >= 0) {
+    if (isImportWhitespace(statement[fromIndex - 1]) && isImportWhitespace(statement[fromIndex + 4])) {
+      break
+    }
+    fromIndex = statement.indexOf('from', fromIndex + 4)
+  }
+  if (fromIndex < 0) {
+    return
+  }
+
+  const specifier = statement.slice(0, fromIndex).trim()
+  const requestLiteral = statement.slice(fromIndex + 4).trim()
+  const quote = requestLiteral[0]
+  if (
+    !specifier
+    || (quote !== '"' && quote !== '\'')
+    || requestLiteral.length < 2
+    || !requestLiteral.endsWith(quote)
+  ) {
+    return
+  }
+  return {
+    request: requestLiteral.slice(1, -1),
+    sideEffect: false,
+    specifier,
+  }
+}
+
+function createEsmImportBindings(specifier: string, request: string, index: number) {
+  const namespaceName = `__headlessEsmImport${index}`
+  const statements = [`const ${namespaceName} = require(${JSON.stringify(request)});`]
+  const normalizedSpecifier = specifier.trim()
+
+  if (normalizedSpecifier.startsWith('{') && normalizedSpecifier.endsWith('}')) {
+    const entries = normalizedSpecifier.slice(1, -1).split(',')
+    for (const entry of entries) {
+      const [importedName, localName] = entry.trim().split(/\s+as\s+/)
+      if (!importedName) {
+        continue
+      }
+      const bindingName = localName || importedName
+      statements.push(`const ${bindingName} = ${namespaceName}[${JSON.stringify(importedName)}];`)
+    }
+    return statements.join('\n')
+  }
+
+  if (normalizedSpecifier.startsWith('* as ')) {
+    const bindingName = normalizedSpecifier.slice('* as '.length).trim()
+    statements.push(`const ${bindingName} = ${namespaceName};`)
+    return statements.join('\n')
+  }
+
+  const [defaultName, namedPart] = normalizedSpecifier.split(/\s*,\s*/, 2)
+  if (defaultName) {
+    statements.push(`const ${defaultName.trim()} = ${namespaceName}.default ?? ${namespaceName};`)
+  }
+  if (namedPart?.startsWith('{') && namedPart.endsWith('}')) {
+    statements.push(createEsmImportBindings(namedPart, request, index).split('\n').slice(1).join('\n'))
+  }
+  return statements.join('\n')
+}
+
+function transformEsmToCommonJs(source: string) {
+  if (!/^\s*(?:import|export)\b/m.test(source)) {
+    return source
+  }
+
+  let importIndex = 0
+  const exportedNames: Array<{ exported: string, local: string }> = []
+  let transformed = source.replace(ESM_IMPORT_LINE_RE, (line) => {
+    const parsed = parseEsmImportLine(line)
+    if (!parsed) {
+      return line
+    }
+    if (parsed.sideEffect) {
+      return `require(${JSON.stringify(parsed.request)});`
+    }
+    return createEsmImportBindings(parsed.specifier, parsed.request, importIndex++)
+  })
+  transformed = transformed.replace(ESM_EXPORT_LIST_RE, (_match, entries: string) => {
+    for (const entry of entries.split(',')) {
+      const [local, exported] = entry.trim().split(/\s+as\s+/)
+      if (local) {
+        exportedNames.push({
+          exported: exported || local,
+          local,
+        })
+      }
+    }
+    return ''
+  })
+  transformed = transformed.replace(ESM_EXPORT_DEFAULT_DECLARATION_RE, (_match, kind: string, local: string) => {
+    exportedNames.push({ exported: 'default', local })
+    return `${kind} ${local}`
+  })
+  transformed = transformed.replace(ESM_EXPORT_DECLARATION_RE, (_match, kind: string, local: string) => {
+    exportedNames.push({ exported: local, local })
+    return `${kind} ${local}`
+  })
+  transformed = transformed.replace(/\bexport\s+default\s+/g, 'module.exports.default = ')
+
+  if (exportedNames.length > 0) {
+    transformed += `\n${exportedNames
+      .map(({ exported, local }) => `module.exports[${JSON.stringify(exported)}] = ${local};`)
+      .join('\n')}`
+  }
+  return transformed
 }
 
 function createRequireNotFoundError(request: string, importer: string) {
@@ -71,6 +212,7 @@ function createExecutionContext(
   wxDriver: Parameters<typeof createHeadlessWx>[0],
   kernel: RuntimeKernel,
   globals: Record<string, unknown>,
+  onConsole?: (entry: import('../kernel').RuntimeConsoleEntry) => void,
 ) {
   const wx = createHeadlessWx(wxDriver)
 
@@ -90,7 +232,7 @@ function createExecutionContext(
     Page(definition: HeadlessPageDefinition) {
       return registerPageDefinition(registries, definition)
     },
-    console: kernel.diagnostics.createConsole(),
+    console: kernel.diagnostics.createConsole(console, onConsole),
     clearInterval: (handle: ReturnType<typeof setInterval>) => kernel.scheduler.clearInterval(handle),
     clearTimeout: (handle: ReturnType<typeof setTimeout>) => kernel.scheduler.clearTimeout(handle),
     getApp,
@@ -100,6 +242,10 @@ function createExecutionContext(
     require: undefined as any,
     setInterval: kernel.scheduler.setInterval.bind(kernel.scheduler),
     setTimeout: kernel.scheduler.setTimeout.bind(kernel.scheduler),
+    TextDecoder: globalThis.TextDecoder,
+    TextEncoder: globalThis.TextEncoder,
+    URL: globalThis.URL,
+    URLSearchParams: globalThis.URLSearchParams,
     wx,
     ...globals,
   }
@@ -114,6 +260,7 @@ export function createModuleLoader(
     artifactSource: ArtifactSource
     globals?: Record<string, unknown>
     kernel: RuntimeKernel
+    onConsole?: (entry: import('../kernel').RuntimeConsoleEntry) => void
   },
 ): HeadlessModuleLoader {
   const moduleCache = new Map<string, ModuleCacheEntry>()
@@ -124,6 +271,7 @@ export function createModuleLoader(
     wxDriver,
     options.kernel,
     options.globals ?? {},
+    options.onConsole,
   )
   executionContext.globalThis = executionContext
 
@@ -166,7 +314,7 @@ export function createModuleLoader(
 
     try {
       const script = new vm.Script(
-        `(function (exports, module, require, __filename, __dirname) { ${source}\n})`,
+        `(function (exports, module, require, __filename, __dirname) { ${transformEsmToCommonJs(source)}\n})`,
         {
           filename: resolvedPath,
         },
@@ -177,6 +325,7 @@ export function createModuleLoader(
         .filter(definition => !registeredDefinitionsBefore.has(definition))
       module.componentDefinitions = [...new Set([
         ...requiredComponentDefinitions,
+        ...(loadContext?.componentDefinitions ?? []),
         ...registeredDefinitions,
       ])]
       return module
@@ -198,8 +347,14 @@ export function createModuleLoader(
       return registries.appDefinition
     },
     executePageModule(filePath, route) {
-      executeModule(filePath, { kind: 'page', route })
+      const componentDefinitions: HeadlessComponentDefinition[] = []
+      const loadedModule = executeModule(filePath, { kind: 'page', route, componentDefinitions })
+      const fallbackDefinition = loadedModule.componentDefinitions.at(-1)
       const definition = registries.pages.get(route)
+        ?? (fallbackDefinition ? normalizeComponentPageDefinition(fallbackDefinition) : undefined)
+      if (!registries.pages.has(route) && definition) {
+        registerPageDefinition(registries, definition, route)
+      }
       if (!definition) {
         throw new Error(`Page() was not registered for route "${route}" while executing ${normalize(filePath)}.`)
       }

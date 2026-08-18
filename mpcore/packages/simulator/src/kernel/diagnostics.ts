@@ -6,6 +6,11 @@ export interface RuntimeDiagnosticEntry {
   timestamp: number
 }
 
+export interface RuntimeConsoleEntry {
+  args: unknown[]
+  level: 'debug' | 'error' | 'info' | 'log' | 'warn'
+}
+
 export class RuntimeDiagnostics {
   private readonly entries: RuntimeDiagnosticEntry[] = []
 
@@ -28,15 +33,23 @@ export class RuntimeDiagnostics {
     })
   }
 
-  createConsole(baseConsole: Console = console): Console {
+  createConsole(baseConsole: Console = console, onConsole?: (entry: RuntimeConsoleEntry) => void): Console {
     const runtimeConsole = Object.create(baseConsole) as Console
+    const wrap = (level: RuntimeConsoleEntry['level'], method: (...args: unknown[]) => void) => (...args: unknown[]) => {
+      if (level === 'error' || level === 'warn') {
+        this.record(level, args)
+      }
+      onConsole?.({ args: [...args], level })
+      method(...args)
+    }
+    runtimeConsole.debug = wrap('debug', baseConsole.debug.bind(baseConsole))
+    runtimeConsole.info = wrap('info', baseConsole.info.bind(baseConsole))
+    runtimeConsole.log = wrap('log', baseConsole.log.bind(baseConsole))
     runtimeConsole.error = (...args: unknown[]) => {
-      this.record('error', args)
-      baseConsole.error(...args)
+      wrap('error', baseConsole.error.bind(baseConsole))(...args)
     }
     runtimeConsole.warn = (...args: unknown[]) => {
-      this.record('warn', args)
-      baseConsole.warn(...args)
+      wrap('warn', baseConsole.warn.bind(baseConsole))(...args)
     }
     return runtimeConsole
   }
