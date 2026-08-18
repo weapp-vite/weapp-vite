@@ -68,7 +68,7 @@ catalog:
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.3
   obug: ^2.1.4
-  oxc-parser: ^0.144.0
+  oxc-parser: ^0.145.0
   oxc-walker: ^1.1.1
   pathe: ^2.0.3
   pkg-types: ^2.3.1
