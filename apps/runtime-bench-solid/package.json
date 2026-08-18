@@ -11,7 +11,7 @@
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json"
   },
   "dependencies": {
-    "solid-js": "1.9.14"
+    "solid-js": "1.9.15"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",
