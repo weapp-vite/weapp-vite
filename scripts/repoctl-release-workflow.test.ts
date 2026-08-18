@@ -51,4 +51,5 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
     releaseStep?.env?.GITHUB_TOKEN,
     githubExpression('secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token'),
   )
+  assert.equal(releaseStep?.env?.VSCE_PAT, githubExpression('secrets.VSCE_PAT'))
 })

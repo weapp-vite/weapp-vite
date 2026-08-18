@@ -72,4 +72,5 @@ jobs:
           REPO_RELEASE_MODE: ${{ inputs.mode || 'auto' }}
           REPO_RELEASE_PACKAGE: ${{ inputs.package }}
           REPO_RELEASE_VERSION: ${{ inputs.version }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: pnpm exec repo release ci

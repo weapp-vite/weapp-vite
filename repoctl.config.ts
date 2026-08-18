@@ -16,7 +16,7 @@ export default {
         beforeVersion: ['catalog:sync:create-weapp-vite'],
         afterVersion: ['check:weapp-core-constants-release-version'],
         beforePublish: ['check:weapp-core-constants-release-version'],
-        afterPublish: ['release:vscode-marketplace'],
+        afterPublish: [{ script: 'release:vscode-marketplace' }],
       },
     },
     upgrade: {
