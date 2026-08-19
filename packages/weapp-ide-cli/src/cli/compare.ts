@@ -89,7 +89,7 @@ ${colors.bold('参数:')}
       --diff-output <path>       diff 图片输出路径
       --page <path>              对比前先跳转页面
       --full-page                对比时使用整页长截图
-      --threshold <number>       pixelmatch threshold（默认：0.1）
+      --threshold <number>       blazediff threshold（默认：0.1）
       --max-diff-pixels <count>  最大允许差异像素数
       --max-diff-ratio <number>  最大允许差异占比（0-1）
   -t, --timeout <ms>             连接超时时间（默认：30000）
@@ -118,7 +118,7 @@ ${colors.bold('Options:')}
       --diff-output <path>       Output file path for diff image
       --page <path>              Navigate to page before comparison
       --full-page                Use stitched full-page screenshots for comparison
-      --threshold <number>       Pixelmatch threshold (default: 0.1)
+      --threshold <number>       Blazediff threshold (default: 0.1)
       --max-diff-pixels <count>  Maximum allowed diff pixels
       --max-diff-ratio <number>  Maximum allowed diff ratio (0-1)
   -t, --timeout <ms>             Connection timeout in milliseconds (default: 30000)

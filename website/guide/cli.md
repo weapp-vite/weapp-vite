@@ -479,17 +479,17 @@ wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline 
 
 关键参数：
 
-| 参数                        | 说明                             |
-| --------------------------- | -------------------------------- |
-| `--project <path>`          | 小程序项目目录                   |
-| `--baseline <path>`         | baseline 图片，必填              |
-| `--page <path>`             | 对比前先跳转页面                 |
-| `--current-output <path>`   | 保存当前截图                     |
-| `--diff-output <path>`      | 保存 diff 图                     |
-| `--threshold <number>`      | pixelmatch threshold，默认 `0.1` |
-| `--max-diff-pixels <count>` | 最大允许差异像素数               |
-| `--max-diff-ratio <number>` | 最大允许差异占比                 |
-| `--json`                    | JSON 输出                        |
+| 参数                        | 说明                            |
+| --------------------------- | ------------------------------- |
+| `--project <path>`          | 小程序项目目录                  |
+| `--baseline <path>`         | baseline 图片，必填             |
+| `--page <path>`             | 对比前先跳转页面                |
+| `--current-output <path>`   | 保存当前截图                    |
+| `--diff-output <path>`      | 保存 diff 图                    |
+| `--threshold <number>`      | blazediff threshold，默认 `0.1` |
+| `--max-diff-pixels <count>` | 最大允许差异像素数              |
+| `--max-diff-ratio <number>` | 最大允许差异占比                |
+| `--json`                    | JSON 输出                       |
 
 使用约束：
 
