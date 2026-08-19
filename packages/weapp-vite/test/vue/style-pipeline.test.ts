@@ -14,6 +14,11 @@ function createCtx(root: string) {
   return {
     moduleGraphService: createTestModuleGraphService(),
     runtimeState: {
+      build: {
+        hmr: {
+          externalComponentEntryMap: new Map<string, string>(),
+        },
+      },
       scan: {
         isDirty: false,
       },
