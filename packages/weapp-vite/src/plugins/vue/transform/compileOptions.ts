@@ -107,16 +107,18 @@ function buildCompileVueFileOptions(
     const resolved = await resolveUsingComponentPath(importSource, importerFilename, info)
     if (typeof resolved !== 'string' && resolved?.from && resolved.resolvedId) {
       const externalComponentEntryMap = ctx.runtimeState?.build?.hmr?.externalComponentEntryMap
-      const outputKey = removeExtensionDeep(resolved.from).replace(/^\/+/, '')
-      const isNewEntry = externalComponentEntryMap?.get(outputKey) !== resolved.resolvedId
-      externalComponentEntryMap?.set(outputKey, resolved.resolvedId)
-      if (isNewEntry && typeof pluginCtx.emitFile === 'function') {
-        pluginCtx.emitFile({
-          type: 'chunk',
-          id: createLogicalEntryId(resolved.resolvedId, 'component'),
-          fileName: resolveRelativeOutputFileNameWithExtension(configService, resolved.resolvedId, '.js'),
-          preserveSignature: 'exports-only',
-        })
+      if (externalComponentEntryMap) {
+        const outputKey = removeExtensionDeep(resolved.from).replace(/^\/+/, '')
+        const isNewEntry = externalComponentEntryMap.get(outputKey) !== resolved.resolvedId
+        externalComponentEntryMap.set(outputKey, resolved.resolvedId)
+        if (isNewEntry && typeof pluginCtx.emitFile === 'function') {
+          pluginCtx.emitFile({
+            type: 'chunk',
+            id: createLogicalEntryId(resolved.resolvedId, 'component'),
+            fileName: resolveRelativeOutputFileNameWithExtension(configService, resolved.resolvedId, '.js'),
+            preserveSignature: 'exports-only',
+          })
+        }
       }
     }
     return resolved

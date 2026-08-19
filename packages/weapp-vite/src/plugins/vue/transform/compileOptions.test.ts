@@ -565,6 +565,51 @@ describe('resolveVueTemplatePlatformOptions', () => {
     })
   })
 
+  it('does not emit logical component entries without the shared external component registry', async () => {
+    const resolvedVueEntry = '/project/src/components/RoutingProbe.vue'
+    const emitFile = vi.fn()
+    createUsingComponentPathResolverMock.mockReturnValueOnce(vi.fn(async () => ({
+      resolvedId: resolvedVueEntry,
+      from: '/components/RoutingProbe',
+      sourceType: 'wevu-sfc' as const,
+    })))
+
+    const options = createCompileVueFileOptions(
+      {
+        runtimeState: {
+          build: { hmr: {} },
+        },
+      } as any,
+      { emitFile } as any,
+      '/project/src/pages/index/index.vue',
+      true,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        absoluteSrcRoot: '/project/src',
+        weappViteConfig: {},
+        relativeOutputPath: () => 'components/RoutingProbe',
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    await options.autoUsingComponents?.resolveUsingComponentPath?.(
+      '../../components/RoutingProbe.vue',
+      '/project/src/pages/index/index.vue',
+      {
+        localName: 'RoutingProbe',
+        importedName: 'default',
+        kind: 'default',
+      },
+    )
+
+    expect(emitFile).not.toHaveBeenCalled()
+  })
+
   it('defaults plain slots to augmented scoped slot compilation', () => {
     const options = createCompileVueFileOptions(
       {} as any,

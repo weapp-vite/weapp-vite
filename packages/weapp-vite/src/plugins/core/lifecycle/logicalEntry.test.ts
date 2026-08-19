@@ -33,17 +33,18 @@ describe('core logical entry lifecycle', () => {
     findCssEntryMock.mockResolvedValue({ path: stylePath, predictions: [stylePath] })
     const getEntryDependencies = vi.fn(() => [
       { kind: 'layout', sourceId: layoutPath },
-      { kind: 'using-component', sourceId: linkedComponent },
     ])
     const load = vi.fn(async () => ({ exports: ['default'] }))
-    const resolve = vi.fn(async (source: string) => source === '@ui/card' ? { id: linkedComponent } : null)
+    const staleResolve = vi.fn(async () => {
+      throw new Error('不应使用被其他 hook 覆盖的模块图上下文')
+    })
     const state = {
       loadEntry: vi.fn(async () => undefined),
       entriesMap: new Map([
         ['pages/home/index', {
           json: {
             usingComponents: {
-              card: '@ui/card',
+              card: linkedComponent,
             },
           },
           jsonPath,
@@ -61,13 +62,15 @@ describe('core logical entry lifecycle', () => {
           bindPluginContext: vi.fn(),
           load,
           replaceEntryDependencies: vi.fn(),
-          resolve,
+          resolve: staleResolve,
           getEntryDependencies,
         },
         runtimeState: {
           build: {
             hmr: {
-              externalComponentEntryMap: new Map(),
+              externalComponentEntryMap: new Map([
+                ['workspace/ui/card/index', linkedComponent],
+              ]),
             },
           },
         },
@@ -81,7 +84,7 @@ describe('core logical entry lifecycle', () => {
     } as any
     const pluginCtx = {
       load: vi.fn(async () => ({ code: 'Page({})' })),
-      resolve: vi.fn(async (source: string) => source === '@ui/card' ? { id: linkedComponent } : null),
+      resolve: vi.fn(async (source: string) => source === linkedComponent ? { id: linkedComponent } : null),
     } as any
 
     const result = await createLogicalEntryLoadHook(state)
@@ -89,6 +92,8 @@ describe('core logical entry lifecycle', () => {
     const code = result?.code ?? ''
 
     expect(load).not.toHaveBeenCalled()
+    expect(staleResolve).not.toHaveBeenCalled()
+    expect(pluginCtx.resolve).toHaveBeenCalledWith(linkedComponent, sourceId)
     expect(state.loadEntry).toHaveBeenCalledWith(sourceId, 'page')
     expect(code).toContain(`import ${JSON.stringify(sourceId)};`)
     expect(code).not.toContain('export default __weappViteLogicalEntry.default;')
@@ -143,27 +148,32 @@ describe('core logical entry lifecycle', () => {
 
   it('resolves virtual protocol ids and sidecar sources through the graph service', async () => {
     const sourceId = '/project/src/app.ts'
+    const staleResolve = vi.fn(async () => {
+      throw new Error('不应使用被其他 hook 覆盖的模块图上下文')
+    })
     const resolve = vi.fn(async (source: string) => ({ id: `/resolved${source}` }))
     const state = {
       ctx: {
         moduleGraphService: {
           bindPluginContext: vi.fn(),
-          resolve,
+          resolve: staleResolve,
         },
       },
     } as any
     const resolveId = createLogicalEntryResolveHook(state)
+    const pluginContext = { resolve } as any
     const logicalId = createLogicalEntryId(sourceId, 'app')
     const sidecarId = createSidecarModuleId(sourceId, '/project/src/app.json', 'json')
     const sidecarSource = createSidecarSourceSpecifier(sourceId, '/project/src/app.json', 'json')
 
-    await expect(resolveId.call({} as any, logicalId)).resolves.toEqual({ id: logicalId, moduleSideEffects: 'no-treeshake' })
-    await expect(resolveId.call({} as any, sidecarId)).resolves.toEqual({ id: sidecarId, moduleSideEffects: 'no-treeshake' })
-    await expect(resolveId.call({} as any, sidecarSource, logicalId)).resolves.toEqual({
+    await expect(resolveId.call(pluginContext, logicalId)).resolves.toEqual({ id: logicalId, moduleSideEffects: 'no-treeshake' })
+    await expect(resolveId.call(pluginContext, sidecarId)).resolves.toEqual({ id: sidecarId, moduleSideEffects: 'no-treeshake' })
+    await expect(resolveId.call(pluginContext, sidecarSource, logicalId)).resolves.toEqual({
       id: '/resolved/project/src/app.json?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fapp.ts&weapp-vite-sidecar=json&lang.js',
       moduleSideEffects: 'no-treeshake',
     })
-    await expect(resolveId.call({} as any, sourceId)).resolves.toBeNull()
+    await expect(resolveId.call(pluginContext, sourceId)).resolves.toBeNull()
+    expect(staleResolve).not.toHaveBeenCalled()
     expect(resolve).toHaveBeenCalledWith(sidecarSource, logicalId, { skipSelf: true })
   })
 })
