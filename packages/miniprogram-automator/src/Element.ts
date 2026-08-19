@@ -90,7 +90,17 @@ export default class Element {
   }
 
   async offset() {
-    return await this.send('Element.getOffset')
+    const offset = await this.send('Element.getOffset')
+    if (offset?.width !== undefined && offset.height !== undefined) {
+      return offset
+    }
+    try {
+      const dimensions = await this.size()
+      return { ...offset, ...dimensions }
+    }
+    catch {
+      return offset
+    }
   }
 
   async text() {
