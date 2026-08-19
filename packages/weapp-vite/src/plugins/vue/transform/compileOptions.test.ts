@@ -568,11 +568,12 @@ describe('resolveVueTemplatePlatformOptions', () => {
   it('does not emit logical component entries without the shared external component registry', async () => {
     const resolvedVueEntry = '/project/src/components/RoutingProbe.vue'
     const emitFile = vi.fn()
-    createUsingComponentPathResolverMock.mockReturnValueOnce(vi.fn(async () => ({
+    const resolver = vi.fn(async () => ({
       resolvedId: resolvedVueEntry,
       from: '/components/RoutingProbe',
       sourceType: 'wevu-sfc' as const,
-    })))
+    }))
+    createUsingComponentPathResolverMock.mockReturnValueOnce(resolver)
 
     const options = createCompileVueFileOptions(
       {
@@ -597,6 +598,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
       },
     )
 
+    expect(options.autoUsingComponents?.resolveUsingComponentPath).toBe(resolver)
     await options.autoUsingComponents?.resolveUsingComponentPath?.(
       '../../components/RoutingProbe.vue',
       '/project/src/pages/index/index.vue',

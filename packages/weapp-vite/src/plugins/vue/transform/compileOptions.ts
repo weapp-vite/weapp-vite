@@ -102,12 +102,12 @@ function buildCompileVueFileOptions(
     version: number
   }>()
   const resolveUsingComponentPath = createUsingComponentPathResolver(pluginCtx, configService, state.reExportResolutionCache)
-  const registerResolvedComponentEntry = async (...args: Parameters<typeof resolveUsingComponentPath>) => {
-    const [importSource, importerFilename, info] = args
-    const resolved = await resolveUsingComponentPath(importSource, importerFilename, info)
-    if (typeof resolved !== 'string' && resolved?.from && resolved.resolvedId) {
-      const externalComponentEntryMap = ctx.runtimeState?.build?.hmr?.externalComponentEntryMap
-      if (externalComponentEntryMap) {
+  const externalComponentEntryMap = ctx.runtimeState?.build?.hmr?.externalComponentEntryMap
+  const registerResolvedComponentEntry = externalComponentEntryMap
+    ? async (...args: Parameters<typeof resolveUsingComponentPath>) => {
+      const [importSource, importerFilename, info] = args
+      const resolved = await resolveUsingComponentPath(importSource, importerFilename, info)
+      if (typeof resolved !== 'string' && resolved?.from && resolved.resolvedId) {
         const outputKey = removeExtensionDeep(resolved.from).replace(/^\/+/, '')
         const isNewEntry = externalComponentEntryMap.get(outputKey) !== resolved.resolvedId
         externalComponentEntryMap.set(outputKey, resolved.resolvedId)
@@ -120,9 +120,9 @@ function buildCompileVueFileOptions(
           })
         }
       }
+      return resolved
     }
-    return resolved
-  }
+    : resolveUsingComponentPath
   const scopedSlotsCompiler = configService.weappViteConfig?.vue?.template?.scopedSlotsCompiler ?? 'auto'
   const scopedSlotsRequirePropsConfig = configService.weappViteConfig?.vue?.template?.scopedSlotsRequireProps
   const scopedSlotsRequireProps = scopedSlotsRequirePropsConfig ?? false
