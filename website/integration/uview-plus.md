@@ -1,6 +1,6 @@
 ---
 title: uview-plus 与 uni-app 组件库
-description: 使用 UviewPlusResolver 和实验性的 uni-app 源码兼容层，在 Web、微信开发者工具与 headless 中运行 uview-plus 3.8.86 的 135 个具名组件。
+description: 使用 UviewPlusResolver 和实验性的 uni-app 源码兼容层，在 Web、微信开发者工具与 headless 中运行 uview-plus 3.8.108 的 137 个具名组件。
 keywords:
   - uview-plus
   - uni-app
@@ -13,14 +13,14 @@ keywords:
 # uview-plus 与 uni-app 组件库兼容（实验性）
 
 > [!WARNING]
-> 当前兼容基线固定为 `uview-plus@3.8.86`。该能力默认关闭，npm 依赖必须显式加入 `weapp.uniApp.include`。
+> 当前兼容基线固定为 `uview-plus@3.8.108`。该能力默认关闭，npm 依赖必须显式加入 `weapp.uniApp.include`。
 
-仓库测试基线同时应用 `patches/uview-plus@3.8.86.patch`，修复该版本 `u-slider` 设置 `height` 时引用未定义变量 `val` 的缺陷。升级 uview-plus 时应先确认上游修复状态，再决定是否移除补丁。
+仓库测试基线同时应用 `patches/uview-plus@3.8.108.patch`，保留 9 项小程序选择器与微信组件主题变量兼容调整。3.8.86 基线中的 `u-slider` 和 `u-tabbar-item` 修复已经进入上游版本，因此新版补丁不再包含它们。
 
 ## 安装
 
 ```bash
-pnpm add weapp-vite wevu uview-plus@3.8.86
+pnpm add weapp-vite wevu uview-plus@3.8.108
 ```
 
 ## 配置
@@ -79,14 +79,14 @@ app.config.globalProperties.$u = uni.$u
 
 ## 兼容矩阵
 
-矩阵扫描 `uview-plus@3.8.86/components`，并与 resolver 的 137 个源码入口互相校验。135 个具名组件分别生成独立页面，并在三种 runtime 逐页执行：
+矩阵扫描 `uview-plus@3.8.108/components`，并与 resolver 的 139 个源码入口互相校验。137 个具名组件分别生成独立页面，并在三种 runtime 逐页执行：
 
 | Runtime        | 行为覆盖 | 视觉覆盖   |
 | -------------- | -------- | ---------- |
-| Web 移动端     | 135 页   | 135 张基线 |
-| Web 桌面端     | 135 页   | 135 张基线 |
-| 微信开发者工具 | 135 页   | 135 张基线 |
-| Headless       | 135 页   | 不截图     |
+| Web 移动端     | 137 页   | 137 张基线 |
+| Web 桌面端     | 137 页   | 137 张基线 |
+| 微信开发者工具 | 137 页   | 137 张基线 |
+| Headless       | 137 页   | 不截图     |
 
 每页都验证目标组件存在、目标与场景容器具有可见边界、没有运行时错误，并完成稳定交互或状态断言。上传、媒体、网络、权限和时钟类能力使用本地资源或确定性测试替身。
 
@@ -95,11 +95,11 @@ app.config.globalProperties.$u = uni.$u
 组件库 IDE 回归按运行时与视觉检查分层，避免把截图协议的稳定性问题混入行为门禁：
 
 ```bash
-# 135 个页面的真实运行时行为与交互（不截图）
+# 137 个页面的真实运行时行为与交互（不截图）
 pnpm e2e:ide:uview-plus
 # 10 个代表组件的截图对比
 pnpm e2e:ide:uview-plus:visual
-# 135 个页面的全量截图对比
+# 137 个页面的全量截图对比
 pnpm e2e:ide:uview-plus:visual:full
 ```
 

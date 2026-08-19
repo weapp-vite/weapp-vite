@@ -5,9 +5,11 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../logger'
+import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../utils/entryResolve'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
+import { resolveRelativeOutputFileNameWithExtension } from '../../utils/outputFileName'
 import { createSfcResolveSrcOptions } from '../../utils/vueSfc'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
 import { createUsingComponentPathResolver } from './usingComponentResolver'
@@ -99,6 +101,26 @@ function buildCompileVueFileOptions(
     match: ReturnType<NonNullable<CompilerContext['autoImportService']>['resolve']>
     version: number
   }>()
+  const resolveUsingComponentPath = createUsingComponentPathResolver(pluginCtx, configService, state.reExportResolutionCache)
+  const registerResolvedComponentEntry = async (...args: Parameters<typeof resolveUsingComponentPath>) => {
+    const [importSource, importerFilename, info] = args
+    const resolved = await resolveUsingComponentPath(importSource, importerFilename, info)
+    if (typeof resolved !== 'string' && resolved?.from && resolved.resolvedId) {
+      const externalComponentEntryMap = ctx.runtimeState?.build?.hmr?.externalComponentEntryMap
+      const outputKey = removeExtensionDeep(resolved.from).replace(/^\/+/, '')
+      const isNewEntry = externalComponentEntryMap?.get(outputKey) !== resolved.resolvedId
+      externalComponentEntryMap?.set(outputKey, resolved.resolvedId)
+      if (isNewEntry && typeof pluginCtx.emitFile === 'function') {
+        pluginCtx.emitFile({
+          type: 'chunk',
+          id: createLogicalEntryId(resolved.resolvedId, 'component'),
+          fileName: resolveRelativeOutputFileNameWithExtension(configService, resolved.resolvedId, '.js'),
+          preserveSignature: 'exports-only',
+        })
+      }
+    }
+    return resolved
+  }
   const scopedSlotsCompiler = configService.weappViteConfig?.vue?.template?.scopedSlotsCompiler ?? 'auto'
   const scopedSlotsRequirePropsConfig = configService.weappViteConfig?.vue?.template?.scopedSlotsRequireProps
   const scopedSlotsRequireProps = scopedSlotsRequirePropsConfig ?? false
@@ -242,7 +264,7 @@ function buildCompileVueFileOptions(
     autoUsingComponents: {
       enabled: true,
       warn: (message: string) => logger.warn(message),
-      resolveUsingComponentPath: createUsingComponentPathResolver(pluginCtx, configService, state.reExportResolutionCache),
+      resolveUsingComponentPath: registerResolvedComponentEntry,
     },
     autoImportTags: {
       enabled: true,

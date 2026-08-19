@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'wevu'
 
-definePageJson({ navigationBarTitleText: 'up-qrcode' })
+definePageJson({ navigationBarTitleText: 'up-tabs-pro' })
 
 const interactionCount = ref(0)
 const scenarioState = ref('pending')
 const e2eComponent = ref<Record<string, unknown> | null>(null)
+const modelValue = ref(0)
+const tabs = [{ name: 'Alpha' }, { name: 'Beta' }]
 
 async function runE2E() {
   await nextTick()
@@ -22,24 +24,26 @@ async function runE2E() {
   const slotOwner = parent?.selectComponent?.('scoped-slots-default') as SelectorOwner | null | undefined
   const parentProxy = (parent as any)?.__wevu?.proxy
   const registeredChild = Array.isArray(parentProxy?.children)
-    ? parentProxy.children.find((child: any) => ['up-qrcode', 'u-qrcode'].includes(child?.$options?.name))
+    ? parentProxy.children.find((child: any) => ['up-tabs-pro', 'u-tabs-pro'].includes(child?.$options?.name))
     : null
   const target = e2eComponent.value
     ?? page?.selectComponent?.('#e2e-component')
     ?? parent?.selectComponent?.('#e2e-component')
     ?? slotOwner?.selectComponent?.('#e2e-component')
-    ?? page?.selectComponent?.('up-qrcode')
-    ?? page?.selectComponent?.('up-qrcode')
+    ?? page?.selectComponent?.('up-tabs-pro')
+    ?? page?.selectComponent?.('up-tabs-pro')
     ?? registeredChild
     ?? null
   const rendered = target !== null
-  scenarioState.value = rendered ? 'pass:render' : 'fail:render'
+  modelValue.value = 1
   await nextTick()
+  const ok = rendered && true
+  scenarioState.value = ok ? 'pass:model:modelValue' : 'fail:model:modelValue'
   return {
-    ok: rendered,
-    component: 'up-qrcode',
+    ok,
+    component: 'up-tabs-pro',
     rendered,
-    capability: 'render' as const,
+    capability: 'model' as const,
     state: scenarioState.value,
     interactionCount: interactionCount.value,
   }
@@ -47,13 +51,13 @@ async function runE2E() {
 </script>
 
 <template>
-  <view id="e2e-root" class="scenario-page" data-component="up-qrcode">
+  <view id="e2e-root" class="scenario-page" data-component="up-tabs-pro">
     <view class="scenario-header">
-      <view class="scenario-title">up-qrcode</view>
+      <view class="scenario-title">up-tabs-pro</view>
       <view class="scenario-status">rendered / interactive</view>
     </view>
     <view id="e2e-target" class="scenario-subject">
-      <up-qrcode id="e2e-component" ref="e2eComponent" value="uview-plus-3.8.108" :size="128" />
+      <up-tabs-pro id="e2e-component" ref="e2eComponent" v-model:current="modelValue" :list="tabs"><view>Stable tab content</view></up-tabs-pro>
     </view>
     <button id="e2e-action" class="scenario-action" @click="runE2E">
       Exercise interaction

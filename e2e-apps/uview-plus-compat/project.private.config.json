@@ -9,12 +9,6 @@
     "miniprogram": {
       "list": [
         {
-          "name": "启动页",
-          "pathName": "pages/bootstrap/index",
-          "query": "",
-          "scene": null
-        },
-        {
           "name": "组件索引",
           "pathName": "pages/index/index",
           "query": "",
@@ -465,6 +459,12 @@
           "scene": null
         },
         {
+          "name": "up-novel-reader",
+          "pathName": "pages/components/up-novel-reader/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "up-number-box",
           "pathName": "pages/components/up-number-box/index",
           "query": "",
@@ -731,6 +731,12 @@
         {
           "name": "up-tabs-item",
           "pathName": "pages/components/up-tabs-item/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "up-tabs-pro",
+          "pathName": "pages/components/up-tabs-pro/index",
           "query": "",
           "scene": null
         },

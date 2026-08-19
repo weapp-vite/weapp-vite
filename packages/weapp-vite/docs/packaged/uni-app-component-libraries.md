@@ -1,12 +1,12 @@
 # uni-app 组件库兼容（实验性）
 
 > [!WARNING]
-> 这是实验性能力，当前兼容基线固定为 `@wot-ui/ui@2.2.0` 与 `uview-plus@3.8.86`。默认完全关闭；只有项目源码和 `weapp.uniApp.include` 明确列出的 npm 包会进入 uni-app 方言转换。
+> 这是实验性能力，当前兼容基线固定为 `@wot-ui/ui@2.2.0` 与 `uview-plus@3.8.108`。默认完全关闭；只有项目源码和 `weapp.uniApp.include` 明确列出的 npm 包会进入 uni-app 方言转换。
 
 ## uview-plus
 
 ```bash
-pnpm add weapp-vite wevu uview-plus@3.8.86
+pnpm add weapp-vite wevu uview-plus@3.8.108
 ```
 
 ```ts
@@ -36,9 +36,9 @@ export default defineConfig({
 
 应用启动时调用 `mount$u()`，再把 `uni.$u` 同步到 `app.config.globalProperties.$u`；全局样式引入 `uview-plus/index.scss`。不要使用会在 Web 调用 `Vue.component` 的默认插件注册流程。
 
-仓库兼容矩阵还通过 pnpm patch 修复了 3.8.86 中 `u-slider` 设置 `height` 时引用未定义变量 `val` 的缺陷。复用同一基线时应保留 `patches/uview-plus@3.8.86.patch`；升级 uview-plus 后先确认上游是否已经修复，再决定是否移除补丁。
+仓库兼容矩阵通过 `patches/uview-plus@3.8.108.patch` 保留 9 项小程序选择器与微信组件主题变量兼容调整。3.8.86 基线中的 `u-slider` 和 `u-tabbar-item` 补丁已经由上游修复，新版不再重复应用。
 
-`UviewPlusResolver()` 同时解析 `u-*` 与 `up-*` 标签。静态清单以 3.8.86 npm 发布包中的 137 个顶层 SFC 为准，双前缀共 274 个标签；135 个具名组件各有独立测试页。`u-action-sheet-data` 与 `u-column-notice` 没有组件名，分别由 action-sheet 和 notice-bar 页面覆盖。
+`UviewPlusResolver()` 同时解析 `u-*` 与 `up-*` 标签。静态清单以 3.8.108 npm 发布包中的 139 个顶层 SFC 为准，双前缀共 278 个标签；137 个具名组件各有独立测试页。`u-action-sheet-data` 与 `u-column-notice` 没有组件名，分别由 action-sheet 和 notice-bar 页面覆盖。
 
 `supportFilesStrategy` 默认为 `'used'`；需要生成全量组件辅助文件时可传入 `UviewPlusResolver({ supportFilesStrategy: 'full' })`。
 

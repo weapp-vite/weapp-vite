@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createCompileVueFileOptions, isVueTransformSourceMapEnabled, resolveVueTemplatePlatformOptions } from './compileOptions'
 
 const loggerWarnMock = vi.hoisted(() => vi.fn())
@@ -508,6 +509,60 @@ describe('resolveVueTemplatePlatformOptions', () => {
       sourceType: 'wevu-sfc',
     })
     expect(externalComponentEntryMap.get('weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button')).toBe(resolvedVueEntry)
+  })
+
+  it('emits Options API local SFC entries through logical component registration', async () => {
+    const resolvedVueEntry = '/project/node_modules/uview-plus/components/u-calendar/header.vue'
+    const externalComponentEntryMap = new Map<string, string>()
+    const emitFile = vi.fn()
+    const resolver = vi.fn(async () => ({
+      resolvedId: resolvedVueEntry,
+      from: '/weapp_vite_external/uview-plus/components/u-calendar/header',
+      sourceType: 'wevu-sfc' as const,
+    }))
+    createUsingComponentPathResolverMock.mockReturnValueOnce(resolver)
+
+    const options = createCompileVueFileOptions(
+      {
+        runtimeState: {
+          build: { hmr: { externalComponentEntryMap } },
+        },
+      } as any,
+      { emitFile } as any,
+      '/project/src/pages/index/index.vue',
+      true,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        absoluteSrcRoot: '/project/src',
+        weappViteConfig: {},
+        relativeOutputPath: (id: string) => id === resolvedVueEntry
+          ? 'weapp_vite_external/uview-plus/components/u-calendar/header'
+          : undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    await expect(options.autoUsingComponents?.resolveUsingComponentPath?.('./header.vue', '/project/src/components/calendar/index.vue', {
+      localName: 'uHeader',
+      importedName: 'default',
+      kind: 'default',
+    })).resolves.toEqual({
+      resolvedId: resolvedVueEntry,
+      from: '/weapp_vite_external/uview-plus/components/u-calendar/header',
+      sourceType: 'wevu-sfc',
+    })
+    expect(externalComponentEntryMap.get('weapp_vite_external/uview-plus/components/u-calendar/header')).toBe(resolvedVueEntry)
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'chunk',
+      id: createLogicalEntryId(resolvedVueEntry, 'component'),
+      fileName: 'weapp_vite_external/uview-plus/components/u-calendar/header.js',
+      preserveSignature: 'exports-only',
+    })
   })
 
   it('defaults plain slots to augmented scoped slot compilation', () => {

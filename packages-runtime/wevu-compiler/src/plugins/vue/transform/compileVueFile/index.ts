@@ -37,7 +37,7 @@ export async function compileVueFile(
   }
 
   const autoUsingComponents = (options?.autoUsingComponents?.enabled
-    && parsed.descriptor.scriptSetup
+    && (parsed.descriptor.scriptSetup || parsed.descriptor.script)
     && parsed.descriptor.template
     && options.autoUsingComponents.resolveUsingComponentPath)
     ? options.autoUsingComponents

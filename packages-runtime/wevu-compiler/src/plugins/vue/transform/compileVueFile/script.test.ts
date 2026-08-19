@@ -22,6 +22,9 @@ defineComponentJson({ component: true })
 </script>
 <template><slot /></template>`
   }
+  if (filename.endsWith('/child-card.vue')) {
+    return `<template><view>child</view></template>`
+  }
   throw new Error(`unexpected readFile: ${filename}`)
 }))
 
@@ -226,6 +229,53 @@ import Month from './month/month.vue'
     })
     expect(result.script).not.toContain('import yearPanel')
     expect(result.script).not.toContain('import Month')
+  })
+
+  it('collects Options API local SFC registrations into usingComponents', async () => {
+    const source = `
+<template>
+  <child-card />
+</template>
+<script>
+import ChildCard from './child-card.vue'
+
+export default {
+  components: {
+    ChildCard,
+  },
+}
+</script>
+    `.trim()
+    const resolveUsingComponentPath = vi.fn(async (importSource: string) => ({
+      from: `/components/${importSource.slice(2, -4)}`,
+      resolvedId: `/project/src/components/${importSource.slice(2)}`,
+      sourceType: 'wevu-sfc' as const,
+    }))
+
+    const result = await compileVueFile(source, '/project/src/components/reader/index.vue', {
+      autoUsingComponents: {
+        enabled: true,
+        resolveUsingComponentPath,
+      },
+    })
+
+    expect(result.meta?.jsonConfigCache?.autoUsingComponentsMap).toEqual({
+      'child-card': '/components/child-card',
+    })
+    expect(JSON.parse(result.config!).usingComponents).toEqual({
+      'child-card': '/components/child-card',
+    })
+    expect(result.template).toContain('<child-card')
+    expect(result.script).not.toContain(`import ChildCard from './child-card.vue'`)
+    expect(resolveUsingComponentPath).toHaveBeenCalledWith(
+      './child-card.vue',
+      '/project/src/components/reader/index.vue',
+      {
+        importedName: 'default',
+        kind: 'default',
+        localName: 'ChildCard',
+      },
+    )
   })
 
   it('keeps a real default export for script-setup-only components', async () => {
