@@ -176,34 +176,41 @@ index 8e971c0..7d644b3 100644
                  <node :childs="td.children" :opts="opts" />
                </view>
              </view>
-@@ -126,6 +126,27 @@ export default {
-   data () {
-     return {
-       ctrl: {},
-+      handler: {
-+        isInline (tagName, style) {
-+          return {
-+            abbr: true,
-+            b: true,
-+            big: true,
-+            code: true,
-+            del: true,
-+            em: true,
-+            i: true,
-+            ins: true,
-+            label: true,
-+            q: true,
-+            small: true,
-+            span: true,
-+            strong: true,
-+            sub: true,
-+            sup: true
-+          }[tagName] || (style || '').indexOf('display:inline') !== -1
-+        }
-+      },
-       // #ifdef MP-WEIXIN
-       isiOS: uni.getSystemInfoSync().system.includes('iOS')
-       // #endif
+@@ -70,7 +70,7 @@
+       <!-- insert -->
+       <!-- 富文本 -->
+       <!-- #ifdef H5 || ((MP-WEIXIN || MP-QQ || APP-PLUS || MP-360) && VUE2) -->
+-      <rich-text v-else-if="!n.c&&!handler.isInline(n.name, n.attrs.style)" :id="n.attrs.id" :style="n.f" :user-select="opts[4]" :nodes="[n]" />
++      <rich-text v-else-if="!n.c&&!isInlineTag(n.name, n.attrs.style)" :id="n.attrs.id" :style="n.f" :user-select="opts[4]" :nodes="[n]" />
+       <!-- #endif -->
+       <!-- #ifndef H5 || ((MP-WEIXIN || MP-QQ || APP-PLUS || MP-360) && VUE2) -->
+       <rich-text v-else-if="!n.c" :id="n.attrs.id" :style="'display:inline;'+n.f" :preview="false" :selectable="opts[4]" :user-select="opts[4]" :nodes="[n]" />
+@@ -185,6 +185,25 @@ export default {
+     // #ifdef MP-WEIXIN
+     toJSON () { return this },
+     // #endif
++    isInlineTag (tagName, style) {
++      return {
++        abbr: true,
++        b: true,
++        big: true,
++        code: true,
++        del: true,
++        em: true,
++        i: true,
++        ins: true,
++        label: true,
++        q: true,
++        small: true,
++        span: true,
++        strong: true,
++        sub: true,
++        sup: true
++      }[tagName] || (style || '').indexOf('display:inline') !== -1
++    },
+     /**
+      * @description 规范化链接地址
+      * @param {any} href
 diff --git a/components/u-subsection/theme-vars.scss b/components/u-subsection/theme-vars.scss
 index eeb867e..cff76f5 100644
 --- a/components/u-subsection/theme-vars.scss
