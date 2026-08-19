@@ -1,4 +1,7 @@
 {
+  "setting": {
+    "urlCheck": false
+  },
   "xasd": "fdsa",
   "miniprogramRoot": "dist/"
 }

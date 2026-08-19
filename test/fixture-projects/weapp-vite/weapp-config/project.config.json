@@ -1,3 +1,6 @@
 {
+  "setting": {
+    "urlCheck": false
+  },
   "miniprogramRoot": "dist"
 }

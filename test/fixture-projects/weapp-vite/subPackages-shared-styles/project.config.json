@@ -5,6 +5,7 @@
   "compileType": "miniprogram",
   "appid": "wxb3d842a4a7e3440d",
   "setting": {
+    "urlCheck": false,
     "es6": true,
     "minified": false,
     "packNpmManually": true,

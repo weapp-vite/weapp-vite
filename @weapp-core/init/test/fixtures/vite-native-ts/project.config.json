@@ -3,6 +3,7 @@
   "miniprogramRoot": "dist/",
   "compileType": "miniprogram",
   "setting": {
+    "urlCheck": false,
     "useCompilerPlugins": [
       "typescript"
     ],

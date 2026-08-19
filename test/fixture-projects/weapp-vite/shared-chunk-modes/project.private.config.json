@@ -1,4 +1,7 @@
 {
+  "setting": {
+    "urlCheck": false
+  },
   "description": "shared chunk modes fixture",
   "libVersion": "3.15.0"
 }

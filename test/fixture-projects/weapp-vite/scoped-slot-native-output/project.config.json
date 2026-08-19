@@ -3,6 +3,7 @@
   "miniprogramRoot": "dist/",
   "compileType": "miniprogram",
   "setting": {
+    "urlCheck": false,
     "postcss": false,
     "minified": false,
     "es6": true

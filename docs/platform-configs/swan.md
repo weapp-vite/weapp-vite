@@ -20,7 +20,7 @@
   "appid": "your_appid",
   "compileType": "miniprogram",
   "setting": {
-    "urlCheck": true
+    "urlCheck": false
   },
   "compilation-args": {
     "common": {

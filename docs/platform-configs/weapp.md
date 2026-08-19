@@ -9,7 +9,7 @@
 - `description`: 项目名称。
 - `miniprogramRoot`: 小程序源码目录(相对路径)。
 - `compileType`: 编译类型, 一般为 `miniprogram`。
-- `setting`: 编译/上传相关设置(例如 `es6`、`minified`、`packNpmRelationList`)。
+- `setting`: 编译/上传相关设置(例如 `es6`、`minified`、`urlCheck`、`packNpmRelationList`)。
 - `libVersion`: 基础库版本。
 - `appid`: 小程序 AppID。
 
@@ -39,6 +39,7 @@
     ],
     "ignoreUploadUnusedFiles": true,
     "compileHotReLoad": false,
+    "urlCheck": false,
     "skylineRenderEnable": true,
     "packNpmManually": true,
     "es6": true

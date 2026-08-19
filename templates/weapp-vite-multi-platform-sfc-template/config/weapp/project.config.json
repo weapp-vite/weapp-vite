@@ -4,6 +4,7 @@
   "srcMiniprogramRoot": "dist",
   "compileType": "miniprogram",
   "setting": {
+    "urlCheck": false,
     "babelSetting": {
       "ignore": [],
       "disablePlugins": [],
