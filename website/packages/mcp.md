@@ -176,7 +176,7 @@ pnpm --filter @weapp-vite/mcp start
 | `page`              | 可选；对比前先跳转页面                                                    |
 | `currentOutputPath` | 可选；保存当前截图                                                        |
 | `diffOutputPath`    | 可选；保存 diff 图                                                        |
-| `threshold`         | 可选；pixelmatch threshold，范围 `0-1`                                    |
+| `threshold`         | 可选；blazediff threshold，范围 `0-1`                                     |
 | `maxDiffPixels`     | 可选；最大允许差异像素数                                                  |
 | `maxDiffRatio`      | 可选；最大允许差异占比，范围 `0-1`                                        |
 | `timeoutMs`         | 可选；命令超时                                                            |
