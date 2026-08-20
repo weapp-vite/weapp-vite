@@ -34,7 +34,7 @@ describe('runtime: alipay page registration', () => {
             fn: (ctx: Record<string, any>) => ctx.increase(),
           },
         },
-      },
+      } as any,
       setup() {
         const count = ref(0)
         function increase() {

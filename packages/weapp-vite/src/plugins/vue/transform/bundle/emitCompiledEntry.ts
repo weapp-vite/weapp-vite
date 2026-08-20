@@ -213,7 +213,13 @@ export async function emitCompiledVueEntryAssets(
     return
   }
 
-  const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache, componentMetaCache }
+  const compileOptionsState = {
+    reExportResolutionCache,
+    classStyleRuntimeWarned,
+    compileOptionsCache,
+    componentMetaCache,
+    emitResolvedComponentEntries: false,
+  }
   const {
     outputExtensions,
     templateExtension,

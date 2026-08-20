@@ -17,6 +17,7 @@
       "vue/jsx"
     ],
     "allowJs": true,
+    "allowImportingTsExtensions": true,
     "strict": true,
     "noEmit": true,
     "allowSyntheticDefaultImports": true,

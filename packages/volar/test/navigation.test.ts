@@ -13,6 +13,7 @@ const vueCompilerOptions = {
   extensions: ['.vue'],
   vitePressExtensions: [],
   petiteVueExtensions: [],
+  vapor: false,
   jsxSlots: false,
   strictVModel: false,
   strictCssModules: false,

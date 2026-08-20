@@ -26,7 +26,7 @@
   "devDependencies": {
     "@icebreakers/eslint-config": "catalog:",
     "@icebreakers/stylelint-config": "catalog:",
-    "@swc/core": "^1.16.0",
+    "@swc/core": "^1.16.1",
     "@types/node": "catalog:",
     "@types/react": "19.2.18",
     "@types/react-reconciler": "0.33.0",

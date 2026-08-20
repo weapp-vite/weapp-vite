@@ -13,7 +13,7 @@ function normalizeRelativeDir(value: string) {
   return normalized || '.'
 }
 
-function isSafeRelativeDir(value: unknown) {
+function isSafeRelativeDir(value: unknown): value is string {
   return typeof value === 'string'
     && value.trim().length > 0
     && !path.isAbsolute(value)

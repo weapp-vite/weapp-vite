@@ -54,4 +54,5 @@ export interface VueBundleCompileOptionsState {
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
   componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
+  emitResolvedComponentEntries?: boolean
 }

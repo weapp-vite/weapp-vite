@@ -22,6 +22,7 @@ interface CompileOptionsContext {
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
   componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
+  emitResolvedComponentEntries?: boolean
 }
 
 type AutoImportComponentSourceType = 'wevu-sfc' | 'native'
@@ -35,8 +36,9 @@ export function getCompileVueFileOptionsCacheKey(
   isPage: boolean,
   isApp: boolean,
   delegatesComponentRegistration = false,
+  emitResolvedComponentEntries = true,
 ) {
-  return `${vuePath}::${isPage ? 'page' : 'component'}::${isApp ? 'app' : 'entry'}::${delegatesComponentRegistration ? 'logical-registration' : 'module-registration'}`
+  return `${vuePath}::${isPage ? 'page' : 'component'}::${isApp ? 'app' : 'entry'}::${delegatesComponentRegistration ? 'logical-registration' : 'module-registration'}::${emitResolvedComponentEntries ? 'emit-entries' : 'resolve-only'}`
 }
 
 function shouldDelegateComponentRegistration(
@@ -111,7 +113,7 @@ function buildCompileVueFileOptions(
         const outputKey = removeExtensionDeep(resolved.from).replace(/^\/+/, '')
         const isNewEntry = externalComponentEntryMap.get(outputKey) !== resolved.resolvedId
         externalComponentEntryMap.set(outputKey, resolved.resolvedId)
-        if (isNewEntry && typeof pluginCtx.emitFile === 'function') {
+        if (isNewEntry && state.emitResolvedComponentEntries !== false && typeof pluginCtx.emitFile === 'function') {
           pluginCtx.emitFile({
             type: 'chunk',
             id: createLogicalEntryId(resolved.resolvedId, 'component'),
@@ -357,7 +359,13 @@ export function createCompileVueFileOptions(
     isApp,
     configService,
   )
-  const cacheKey = getCompileVueFileOptionsCacheKey(vuePath, isPage, isApp, delegatesComponentRegistration)
+  const cacheKey = getCompileVueFileOptionsCacheKey(
+    vuePath,
+    isPage,
+    isApp,
+    delegatesComponentRegistration,
+    state.emitResolvedComponentEntries !== false,
+  )
   const cached = state.compileOptionsCache?.get(cacheKey)
   if (cached) {
     return cached

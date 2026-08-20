@@ -73,9 +73,12 @@ describe('configFiles', () => {
     ctx.projectLayout.srcRoot = 'miniprogram'
 
     const { tsconfigApp } = await initTsJsonFiles({ root, write: false })
+    const tsconfigAppValue = ctx.tsconfigApp.value as {
+      compilerOptions?: { paths?: Record<string, string[]> }
+    } | null
 
     expect(tsconfigApp.include).toContain('../miniprogram/**/*.ts')
-    expect(ctx.tsconfigApp.value?.compilerOptions?.paths?.['@/*']).toEqual(['../miniprogram/*'])
+    expect(tsconfigAppValue?.compilerOptions?.paths?.['@/*']).toEqual(['../miniprogram/*'])
   })
 
   it('writes tsconfig files to disk by default', async () => {

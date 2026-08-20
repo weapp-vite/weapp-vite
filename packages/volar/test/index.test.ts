@@ -47,6 +47,7 @@ function createLanguagePlugin(skipTemplateCodegen = false) {
       extensions: ['.vue'],
       vitePressExtensions: [],
       petiteVueExtensions: [],
+      vapor: false,
       jsxSlots: false,
       strictVModel: false,
       strictCssModules: false,

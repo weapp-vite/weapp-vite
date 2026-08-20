@@ -565,6 +565,53 @@ describe('resolveVueTemplatePlatformOptions', () => {
     })
   })
 
+  it('only registers Options API local SFC entries during bundle asset emission', async () => {
+    const resolvedVueEntry = '/project/node_modules/uview-plus/components/u-calendar/header.vue'
+    const externalComponentEntryMap = new Map<string, string>()
+    const emitFile = vi.fn()
+    const resolver = vi.fn(async () => ({
+      resolvedId: resolvedVueEntry,
+      from: '/weapp_vite_external/uview-plus/components/u-calendar/header',
+      sourceType: 'wevu-sfc' as const,
+    }))
+    createUsingComponentPathResolverMock.mockReturnValueOnce(resolver)
+
+    const options = createCompileVueFileOptions(
+      {
+        runtimeState: {
+          build: { hmr: { externalComponentEntryMap } },
+        },
+      } as any,
+      { emitFile } as any,
+      '/project/src/pages/index/index.vue',
+      true,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        absoluteSrcRoot: '/project/src',
+        weappViteConfig: {},
+        relativeOutputPath: (id: string) => id === resolvedVueEntry
+          ? 'weapp_vite_external/uview-plus/components/u-calendar/header'
+          : undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+        emitResolvedComponentEntries: false,
+      },
+    )
+
+    await options.autoUsingComponents?.resolveUsingComponentPath?.('./header.vue', '/project/src/components/calendar/index.vue', {
+      localName: 'uHeader',
+      importedName: 'default',
+      kind: 'default',
+    })
+
+    expect(externalComponentEntryMap.get('weapp_vite_external/uview-plus/components/u-calendar/header')).toBe(resolvedVueEntry)
+    expect(emitFile).not.toHaveBeenCalled()
+  })
+
   it('does not emit logical component entries without the shared external component registry', async () => {
     const resolvedVueEntry = '/project/src/components/RoutingProbe.vue'
     const emitFile = vi.fn()

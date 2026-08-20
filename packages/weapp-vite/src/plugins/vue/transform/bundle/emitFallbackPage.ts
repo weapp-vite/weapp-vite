@@ -107,7 +107,13 @@ export async function emitFallbackPageAssets(
     return
   }
 
-  const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache, componentMetaCache }
+  const compileOptionsState = {
+    reExportResolutionCache,
+    classStyleRuntimeWarned,
+    compileOptionsCache,
+    componentMetaCache,
+    emitResolvedComponentEntries: false,
+  }
   const {
     outputExtensions,
     templateExtension,

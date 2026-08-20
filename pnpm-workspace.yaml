@@ -60,21 +60,21 @@ catalog:
   estree-walker: ^3.0.3
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
-  happy-dom: ^20.11.2
+  happy-dom: ^20.11.6
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
   lru-cache: ^11.5.2
-  magic-string: ^1.2.0
+  magic-string: ^1.2.2
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.3
   obug: ^2.1.4
-  oxc-parser: ^0.145.0
+  oxc-parser: ^0.146.0
   oxc-walker: ^1.1.1
   pathe: ^2.0.3
   pkg-types: ^2.3.1
   postcss: ^8.5.26
-  rolldown: 1.2.4
-  sass: ^1.102.0
+  rolldown: 1.2.5
+  sass: ^1.103.0
   sass-embedded: ^1.102.0
   stylelint: ^17.14.1
   tailwind-merge: ^3.6.0
@@ -90,7 +90,7 @@ catalog:
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.41
   vue-tsc: ^3.3.10
-  weapp-tailwindcss: ^5.3.1
+  weapp-tailwindcss: ^5.3.2
   zod: ^4.4.3
 
 catalogs:
@@ -104,7 +104,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.16.0
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.3.1
+    weapp-tailwindcss: 5.3.2
 
 gitChecks: false
 
