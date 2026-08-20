@@ -73,6 +73,7 @@ function isDevtoolsPageProtocolUnavailable(error: unknown) {
     || message.includes('DevTools did not respond to protocol method App.getPageStack')
     || message.includes('DevTools did not respond to protocol method App.callFunction')
     || message.includes('DevTools did not respond to protocol method App.captureScreenshot')
+    || message.includes('Timeout in raw reLaunch')
     || message.includes('Operation timed out after')
     || message.includes('Connection closed, check if wechat web devTools is still running')
     || message.includes('WebSocket is not open')
@@ -296,7 +297,16 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
         await restartDevSessionForDist(label, expectedDist.escapedClass, expectedDist.backgroundCss, error)
       }
     }
-    await relaunchIndexPage(miniProgram)
+    try {
+      await relaunchIndexPage(miniProgram)
+    }
+    catch (error) {
+      if (!isDevtoolsPageProtocolUnavailable(error)) {
+        throw error
+      }
+      await restartDevSessionForDist(label, expectedDist.escapedClass, expectedDist.backgroundCss, error)
+      await waitForIndexPage(miniProgram)
+    }
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] hmr-settle-ready label=${label} route=${INDEX_ROUTE}\n`)
   }
 

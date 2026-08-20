@@ -77,10 +77,10 @@ async function main() {
     readFile(resolverListPath, 'utf8'),
   ])
   const resolverComponents = (JSON.parse(resolverSource) as string[]).toSorted()
-  if (sourceEntries.length !== 137 || JSON.stringify(sourceEntries) !== JSON.stringify(resolverComponents)) {
+  if (sourceEntries.length !== 139 || JSON.stringify(sourceEntries) !== JSON.stringify(resolverComponents)) {
     throw new Error(`uview-plus 源码入口与 resolver 不一致: source=${sourceEntries.length}, resolver=${resolverComponents.length}`)
   }
-  if (namedEntries.length !== 135 || JSON.stringify(unnamedEntries) !== JSON.stringify(anonymousEntries)) {
+  if (namedEntries.length !== 137 || JSON.stringify(unnamedEntries) !== JSON.stringify(anonymousEntries)) {
     throw new Error(`uview-plus 具名组件清单异常: named=${namedEntries.length}, anonymous=${unnamedEntries.join(',')}`)
   }
   const components = namedEntries.map(component => `up-${component.slice('u-'.length)}`)
@@ -93,7 +93,7 @@ async function main() {
     projectDescription: 'uview-plus 全组件启动条件',
     projectName: 'uview-plus-compat',
     title: 'uview-plus',
-    versionLabel: 'uview-plus 3.8.86',
+    versionLabel: 'uview-plus 3.8.108',
   })
 }
 

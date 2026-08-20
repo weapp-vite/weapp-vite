@@ -10,7 +10,7 @@ function open(route: string) {
 
 <template>
   <view class="index-page">
-    <view class="index-title">uview-plus 3.8.86</view>
+    <view class="index-title">uview-plus 3.8.108</view>
     <view class="index-summary">{{ componentScenarios.length }} component scenarios</view>
     <view
       v-for="scenario in componentScenarios"

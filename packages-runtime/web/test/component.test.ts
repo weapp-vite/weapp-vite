@@ -1582,6 +1582,31 @@ describe('component selector helpers', () => {
     expect(callback).toHaveReturnedWith(expect.objectContaining({ tagName: 'WV-SET-DATA-CALLBACK-CHILD' }))
   })
 
+  it('applies setData dot paths and array index paths to nested state', async () => {
+    defineComponent('wv-set-data-paths', {
+      template: state => `<view>${state.profile.name}:${state.items[0]?.label ?? ''}</view>`,
+      component: {
+        data: {
+          items: [] as Array<{ label: string }>,
+          profile: { name: 'before' },
+        },
+      },
+    })
+
+    const element = document.createElement('wv-set-data-paths') as any
+    document.body.append(element)
+    await element.setData({
+      'items[0].label': 'first',
+      'profile.name': 'after',
+    })
+
+    expect(element.data.profile).toEqual({ name: 'after' })
+    expect(element.data.items).toEqual([{ label: 'first' }])
+    expect(Object.hasOwn(element.data, 'profile.name')).toBe(false)
+    expect(Object.hasOwn(element.data, 'items[0].label')).toBe(false)
+    expect(element.shadowRoot?.innerHTML).toContain('after:first')
+  })
+
   it('provides createSelectorQuery/selectComponent/selectAllComponents on component instance', () => {
     defineComponent('wv-selector-host', {
       template: createTemplate(`

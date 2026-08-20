@@ -175,7 +175,10 @@ defineAppJson({ pages: ['pages/index/index'] })
             write: false,
             minify: false,
             lib: {
-              entry: pageFile,
+              entry: {
+                component: componentFile,
+                page: pageFile,
+              },
               formats: ['es'],
               name: 'Issue724RoutingFixture',
               cssFileName: 'issue-724-routing',

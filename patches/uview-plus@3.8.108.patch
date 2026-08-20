@@ -1,5 +1,5 @@
 diff --git a/components/u-cascader/u-cascader.vue b/components/u-cascader/u-cascader.vue
-index b4f6fc5fa11948d5f39c2fa8128202534037954b..4cf24ce837c5b33be2fbbd0f1d8e8c12dfcf0815 100644
+index b4f6fc5..4cf24ce 100644
 --- a/components/u-cascader/u-cascader.vue
 +++ b/components/u-cascader/u-cascader.vue
 @@ -348,7 +348,7 @@
@@ -12,7 +12,7 @@ index b4f6fc5fa11948d5f39c2fa8128202534037954b..4cf24ce837c5b33be2fbbd0f1d8e8c12
  			transition: transform 0.3s ease-in-out 0s;
  			transform: translateX(0);
 diff --git a/components/u-cropper/u-cropper.vue b/components/u-cropper/u-cropper.vue
-index 041612381a7b494fffc77164bce9a72ee6afb8c1..1b52a4eca1af62edba2ca0460a08e51cb52dff24 100644
+index 7a5f60d..54b71d8 100644
 --- a/components/u-cropper/u-cropper.vue
 +++ b/components/u-cropper/u-cropper.vue
 @@ -7,25 +7,25 @@
@@ -66,7 +66,7 @@ index 041612381a7b494fffc77164bce9a72ee6afb8c1..1b52a4eca1af62edba2ca0460a08e51c
  			align-items: center;
  			justify-content: center;
 diff --git a/components/u-float-button/u-float-button.vue b/components/u-float-button/u-float-button.vue
-index 4ffc32baf1727c4ba5304ae6f24fa49fd9539dab..420fa8307ac4d188a266e0f43283e1160af42474 100644
+index 4ffc32b..420fa83 100644
 --- a/components/u-float-button/u-float-button.vue
 +++ b/components/u-float-button/u-float-button.vue
 @@ -159,7 +159,7 @@ export default {
@@ -79,7 +79,7 @@ index 4ffc32baf1727c4ba5304ae6f24fa49fd9539dab..420fa8307ac4d188a266e0f43283e116
          }
      }
 diff --git a/components/u-goods-sku/u-goods-sku.vue b/components/u-goods-sku/u-goods-sku.vue
-index e20abfc61f5ebc19f4bf07a52b5271e0f87fe80a..dfb8ed2ebaea5d150a530e8658bf16ea299bf6c3 100644
+index e20abfc..dfb8ed2 100644
 --- a/components/u-goods-sku/u-goods-sku.vue
 +++ b/components/u-goods-sku/u-goods-sku.vue
 @@ -15,7 +15,7 @@
@@ -101,7 +101,7 @@ index e20abfc61f5ebc19f4bf07a52b5271e0f87fe80a..dfb8ed2ebaea5d150a530e8658bf16ea
  					height: 100%;
  				}
 diff --git a/components/u-navbar/theme-vars.scss b/components/u-navbar/theme-vars.scss
-index d057ee6ac974fe51931f67dc0f93acb8f1f77ba0..1d58993f60a7d198ba08efec3f4afe0739f7e95b 100644
+index d057ee6..1d58993 100644
 --- a/components/u-navbar/theme-vars.scss
 +++ b/components/u-navbar/theme-vars.scss
 @@ -1,3 +1,16 @@
@@ -121,13 +121,13 @@ index d057ee6ac974fe51931f67dc0f93acb8f1f77ba0..1d58993f60a7d198ba08efec3f4afe07
  :root,
  page,
  body {
-@@ -19,3 +32,4 @@ [data-up-theme='light'] {
+@@ -19,3 +32,4 @@ body {
  [data-up-theme='dark'] {
  	--up-navbar-bg-color: #1c1c1e;
  }
 +/* #endif */
 diff --git a/components/u-notice-bar/theme-vars.scss b/components/u-notice-bar/theme-vars.scss
-index ed4c8ea58e4a17ee80ca34ef63dba0044084a947..da02a26a13b80c6dd6e74a0e3d5d4512c9f14b7b 100644
+index ed4c8ea..da02a26 100644
 --- a/components/u-notice-bar/theme-vars.scss
 +++ b/components/u-notice-bar/theme-vars.scss
 @@ -1,3 +1,18 @@
@@ -149,26 +149,70 @@ index ed4c8ea58e4a17ee80ca34ef63dba0044084a947..da02a26a13b80c6dd6e74a0e3d5d4512
  :root,
  page,
  body {
-@@ -23,3 +38,4 @@ [data-up-theme='dark'] {
+@@ -23,3 +38,4 @@ body {
  	--up-notice-bar-color: #f9ae3d;
  	--up-notice-bar-bg-color: #3d2f1b;
  }
 +/* #endif */
-diff --git a/components/u-slider/u-slider.vue b/components/u-slider/u-slider.vue
-index 3a6fb1df181491a0f7432f1db4b35dacefd8b55d..def8acce354fa94ac001c4b366927c19b73b75e3 100644
---- a/components/u-slider/u-slider.vue
-+++ b/components/u-slider/u-slider.vue
-@@ -180,7 +180,7 @@
- 		},
- 		async mounted() {
- 			if (this.height != '') {
--				this.sizeLocal = val
-+				this.sizeLocal = this.height
- 			} else {
- 				this.sizeLocal = this.size
- 			}
+diff --git a/components/u-parse/node/node.vue b/components/u-parse/node/node.vue
+index 8e971c0..7d644b3 100644
+--- a/components/u-parse/node/node.vue
++++ b/components/u-parse/node/node.vue
+@@ -53,14 +53,14 @@
+       <!-- #endif -->
+       <view v-else-if="(n.name==='table'&&n.c)||n.name==='li'" :id="n.attrs.id" :class="'_'+n.name+' '+n.attrs.class" :style="n.attrs.style">
+         <node v-if="n.name==='li'" :childs="n.children" :opts="opts" />
+-        <view v-else v-for="(tbody, x) in n.children" v-bind:key="x" :class="'_'+tbody.name+' '+tbody.attrs.class" :style="tbody.attrs.style">
++        <view v-else v-for="(tbody, x) in (n && n.children || [])" v-bind:key="x" :class="'_'+tbody.name+' '+tbody.attrs.class" :style="tbody.attrs.style">
+           <node v-if="tbody.name==='td'||tbody.name==='th'" :childs="tbody.children" :opts="opts" />
+-          <block v-else v-for="(tr, y) in tbody.children" v-bind:key="y">
++            <block v-else v-for="(tr, y) in (tbody && tbody.children || [])" v-bind:key="y">
+             <view v-if="tr.name==='td'||tr.name==='th'" :class="'_'+tr.name+' '+tr.attrs.class" :style="tr.attrs.style">
+               <node :childs="tr.children" :opts="opts" />
+             </view>
+             <view v-else :class="'_'+tr.name+' '+tr.attrs.class" :style="tr.attrs.style">
+-              <view v-for="(td, z) in tr.children" v-bind:key="z" :class="'_'+td.name+' '+td.attrs.class" :style="td.attrs.style">
++                <view v-for="(td, z) in (tr && tr.children || [])" v-bind:key="z" :class="'_'+td.name+' '+td.attrs.class" :style="td.attrs.style">
+                 <node :childs="td.children" :opts="opts" />
+               </view>
+             </view>
+@@ -70,7 +70,7 @@
+       <!-- insert -->
+       <!-- 富文本 -->
+       <!-- #ifdef H5 || ((MP-WEIXIN || MP-QQ || APP-PLUS || MP-360) && VUE2) -->
+-      <rich-text v-else-if="!n.c&&!handler.isInline(n.name, n.attrs.style)" :id="n.attrs.id" :style="n.f" :user-select="opts[4]" :nodes="[n]" />
++      <rich-text v-else-if="!n.c&&!isInlineTag(n.name, n.attrs.style)" :id="n.attrs.id" :style="n.f" :user-select="opts[4]" :nodes="[n]" />
+       <!-- #endif -->
+       <!-- #ifndef H5 || ((MP-WEIXIN || MP-QQ || APP-PLUS || MP-360) && VUE2) -->
+       <rich-text v-else-if="!n.c" :id="n.attrs.id" :style="'display:inline;'+n.f" :preview="false" :selectable="opts[4]" :user-select="opts[4]" :nodes="[n]" />
+@@ -185,6 +185,25 @@ export default {
+     // #ifdef MP-WEIXIN
+     toJSON () { return this },
+     // #endif
++    isInlineTag (tagName, style) {
++      return {
++        abbr: true,
++        b: true,
++        big: true,
++        code: true,
++        del: true,
++        em: true,
++        i: true,
++        ins: true,
++        label: true,
++        q: true,
++        small: true,
++        span: true,
++        strong: true,
++        sub: true,
++        sup: true
++      }[tagName] || (style || '').indexOf('display:inline') !== -1
++    },
+     /**
+      * @description 规范化链接地址
+      * @param {any} href
 diff --git a/components/u-subsection/theme-vars.scss b/components/u-subsection/theme-vars.scss
-index eeb867e9ea2b7128d1a63eed29ddd72037a3df71..cff76f5e7578f6c97dba20aaceba13b4fe806cf6 100644
+index eeb867e..cff76f5 100644
 --- a/components/u-subsection/theme-vars.scss
 +++ b/components/u-subsection/theme-vars.scss
 @@ -1,3 +1,26 @@
@@ -198,13 +242,13 @@ index eeb867e9ea2b7128d1a63eed29ddd72037a3df71..cff76f5e7578f6c97dba20aaceba13b4
  :root,
  page,
  body {
-@@ -39,3 +62,4 @@ [data-up-theme='dark'] {
+@@ -39,3 +62,4 @@ body {
  	--up-subsection-disabled-border-color: #3a3a3c;
  	--up-subsection-disabled-bar-color: #3a3a3c;
  }
 +/* #endif */
 diff --git a/components/u-switch/theme-vars.scss b/components/u-switch/theme-vars.scss
-index 1ca759530de0d1490a21f29d351b4c87d7765e99..ba1d9cd9d3f443813d7aca903b59b772b410d486 100644
+index 1ca7595..ba1d9cd 100644
 --- a/components/u-switch/theme-vars.scss
 +++ b/components/u-switch/theme-vars.scss
 @@ -1,3 +1,26 @@
@@ -234,43 +278,13 @@ index 1ca759530de0d1490a21f29d351b4c87d7765e99..ba1d9cd9d3f443813d7aca903b59b772
  :root,
  page,
  body {
-@@ -39,3 +62,4 @@ [data-up-theme='dark'] {
+@@ -39,3 +62,4 @@ body {
  	--up-switch-loading-inactive-color: #9ca3af;
  	--up-switch-border-color: #4b5563;
  }
 +/* #endif */
-diff --git a/components/u-tabbar-item/u-tabbar-item.vue b/components/u-tabbar-item/u-tabbar-item.vue
-index 4ae2d54e43376c76a1b07ec8d1c52661826a45dc..2e9d6bf4d5874737a2d54a3a206e2437579f0683 100644
---- a/components/u-tabbar-item/u-tabbar-item.vue
-+++ b/components/u-tabbar-item/u-tabbar-item.vue
-@@ -12,8 +12,8 @@
- 					:class="iconClassNames"
- 				>
- 					<view v-if="isMidButton" class="u-tabbar-item__mid-button-arc">
--						<svg viewBox="0 0 72 72" preserveAspectRatio="none">
--							<path d="M 4 36 A 32 32 0 0 1 68 36"></path>
-+						<svg class="u-tabbar-item__mid-button-svg" viewBox="0 0 72 72" preserveAspectRatio="none">
-+							<path class="u-tabbar-item__mid-button-path" d="M 4 36 A 32 32 0 0 1 68 36"></path>
- 						</svg>
- 					</view>
- 					<view v-if="isMidButton" class="u-tabbar-item__mid-button-inner"></view>
-@@ -411,12 +411,12 @@
- 		z-index: 0;
- 	}
- 
--	.u-tabbar-item__mid-button-arc svg {
-+	.u-tabbar-item__mid-button-svg {
- 		width: 100%;
- 		height: 100%;
- 	}
- 
--	.u-tabbar-item__mid-button-arc path {
-+	.u-tabbar-item__mid-button-path {
- 		fill: none;
- 		stroke: none;
- 		stroke-width: 0;
 diff --git a/components/u-tag/theme-vars.scss b/components/u-tag/theme-vars.scss
-index bf38484930d6c6e924e1b2ab75709795ffd7a35e..d69eb01c44c9ae904e6023b5fb6559b30de22bab 100644
+index bf38484..d69eb01 100644
 --- a/components/u-tag/theme-vars.scss
 +++ b/components/u-tag/theme-vars.scss
 @@ -1,3 +1,16 @@
@@ -290,7 +304,7 @@ index bf38484930d6c6e924e1b2ab75709795ffd7a35e..d69eb01c44c9ae904e6023b5fb6559b3
  :root,
  page,
  body {
-@@ -19,3 +32,4 @@ [data-up-theme='light'] {
+@@ -19,3 +32,4 @@ body {
  [data-up-theme='dark'] {
  	--up-tag-close-bg-color: #4b5563;
  }

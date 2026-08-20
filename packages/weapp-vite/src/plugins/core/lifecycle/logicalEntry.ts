@@ -22,13 +22,17 @@ function resolveEntryRecord(state: CorePluginState, sourceId: string) {
     ?? state.entriesMap.get(removeExtensionDeep(sourceId))
 }
 
-async function resolveLocalModule(state: CorePluginState, source: string, importer: string) {
+async function resolveLocalModule(
+  pluginContext: PluginContext,
+  source: string,
+  importer: string,
+) {
   const localBase = path.isAbsolute(source)
     ? source
     : source.startsWith('/')
       ? source
       : path.resolve(path.dirname(importer), source)
-  const resolved = await state.ctx.moduleGraphService.resolve(localBase, importer)
+  const resolved = await pluginContext.resolve(localBase, importer)
   if (resolved?.id) {
     return normalizeFsResolvedId(resolved.id)
   }
@@ -36,7 +40,7 @@ async function resolveLocalModule(state: CorePluginState, source: string, import
     const jsEntry = await findJsEntry(localBase)
     const localEntry = jsEntry.path ?? await findVueEntry(localBase)
     if (localEntry) {
-      const fallbackResolved = await state.ctx.moduleGraphService.resolve(localEntry, importer)
+      const fallbackResolved = await pluginContext.resolve(localEntry, importer)
       return normalizeFsResolvedId(fallbackResolved?.id ?? localEntry)
     }
   }
@@ -44,6 +48,7 @@ async function resolveLocalModule(state: CorePluginState, source: string, import
 
 async function collectUsingComponentDependencies(
   state: CorePluginState,
+  pluginContext: PluginContext,
   ownerId: string,
   json: unknown,
 ) {
@@ -65,7 +70,7 @@ async function collectUsingComponentDependencies(
       ?? (value.startsWith('/')
         ? path.resolve(state.ctx.configService.absoluteSrcRoot, value.slice(1))
         : value)
-    const resolved = await resolveLocalModule(state, candidate, ownerId)
+    const resolved = await resolveLocalModule(pluginContext, candidate, ownerId)
     if (resolved) {
       dependencies.push({ kind: 'using-component', sourceId: resolved })
     }
@@ -89,6 +94,7 @@ function collectTemplateDependencies(state: CorePluginState, templatePath?: stri
 
 async function collectLogicalEntryDependencies(
   state: CorePluginState,
+  pluginContext: PluginContext,
   ownerId: string,
 ) {
   const pendingDependencies = state.ctx.moduleGraphService.getEntryDependencies(ownerId)
@@ -118,7 +124,7 @@ async function collectLogicalEntryDependencies(
     await state.ctx.wxmlService?.scan(templatePath)
   }
   dependencies.push(...collectTemplateDependencies(state, templatePath))
-  dependencies.push(...await collectUsingComponentDependencies(state, ownerId, entry?.json))
+  dependencies.push(...await collectUsingComponentDependencies(state, pluginContext, ownerId, entry?.json))
   for (const kind of ['json', 'jsx', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
     state.ctx.moduleGraphService.replaceEntryDependencies(
       ownerId,
@@ -140,7 +146,7 @@ export function createLogicalEntryResolveHook(state: CorePluginState) {
       return null
     }
     state.ctx.moduleGraphService.bindPluginContext(this)
-    const resolved = await state.ctx.moduleGraphService.resolve(id, importer, { skipSelf: true })
+    const resolved = await this.resolve(id, importer, { skipSelf: true })
     return {
       id: resolved?.id ?? createSidecarSourceSpecifier(sidecarSource.ownerId, sidecarSource.sourceId, sidecarSource.kind),
       moduleSideEffects: 'no-treeshake' as const,
@@ -162,7 +168,7 @@ export function createLogicalEntryLoadHook(state: CorePluginState) {
             : logicalEntry.type === 'page' ? 'page' : 'component',
         )
       }
-      const dependencies = await collectLogicalEntryDependencies(state, logicalEntry.sourceId)
+      const dependencies = await collectLogicalEntryDependencies(state, this, logicalEntry.sourceId)
       return {
         code: createLogicalEntryModuleCode(logicalEntry, dependencies),
         moduleSideEffects: 'no-treeshake',

@@ -213,7 +213,7 @@ jobs:
     with:
       runs_on: ubuntu-latest
       node_version: '24'
-      timeout_minutes: 20
+      timeout_minutes: 45
       build_command: pnpm build:pkgs:ci
       main_command: pnpm e2e:web:browser-smoke
       install_playwright: true

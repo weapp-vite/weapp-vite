@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'wevu'
 
-definePageJson({ navigationBarTitleText: 'up-qrcode' })
+definePageJson({ navigationBarTitleText: 'up-novel-reader' })
 
 const interactionCount = ref(0)
 const scenarioState = ref('pending')
 const e2eComponent = ref<Record<string, unknown> | null>(null)
+const novelChapters = [
+  { id: 'chapter-1', index: 0, title: 'Compatibility Chapter', content: ['The reader renders deterministic local content.', 'A second paragraph exercises nested reader components and layout measurement.'] },
+]
+const novelChapter = novelChapters[0]
 
 async function runE2E() {
   await nextTick()
@@ -22,14 +26,14 @@ async function runE2E() {
   const slotOwner = parent?.selectComponent?.('scoped-slots-default') as SelectorOwner | null | undefined
   const parentProxy = (parent as any)?.__wevu?.proxy
   const registeredChild = Array.isArray(parentProxy?.children)
-    ? parentProxy.children.find((child: any) => ['up-qrcode', 'u-qrcode'].includes(child?.$options?.name))
+    ? parentProxy.children.find((child: any) => ['up-novel-reader', 'u-novel-reader'].includes(child?.$options?.name))
     : null
   const target = e2eComponent.value
     ?? page?.selectComponent?.('#e2e-component')
     ?? parent?.selectComponent?.('#e2e-component')
     ?? slotOwner?.selectComponent?.('#e2e-component')
-    ?? page?.selectComponent?.('up-qrcode')
-    ?? page?.selectComponent?.('up-qrcode')
+    ?? page?.selectComponent?.('up-novel-reader')
+    ?? page?.selectComponent?.('up-novel-reader')
     ?? registeredChild
     ?? null
   const rendered = target !== null
@@ -37,7 +41,7 @@ async function runE2E() {
   await nextTick()
   return {
     ok: rendered,
-    component: 'up-qrcode',
+    component: 'up-novel-reader',
     rendered,
     capability: 'render' as const,
     state: scenarioState.value,
@@ -47,13 +51,13 @@ async function runE2E() {
 </script>
 
 <template>
-  <view id="e2e-root" class="scenario-page" data-component="up-qrcode">
+  <view id="e2e-root" class="scenario-page" data-component="up-novel-reader">
     <view class="scenario-header">
-      <view class="scenario-title">up-qrcode</view>
+      <view class="scenario-title">up-novel-reader</view>
       <view class="scenario-status">rendered / interactive</view>
     </view>
     <view id="e2e-target" class="scenario-subject">
-      <up-qrcode id="e2e-component" ref="e2eComponent" value="uview-plus-3.8.108" :size="128" />
+      <view style="height: 280px"><up-novel-reader id="e2e-component" ref="e2eComponent" :chapters="novelChapters" :current-chapter="novelChapter" book-id="compatibility-book" :persist="false" :safe-area-inset-top="false" :safe-area-inset-bottom="false" :page-animation="false" /></view>
     </view>
     <button id="e2e-action" class="scenario-action" @click="runE2E">
       Exercise interaction

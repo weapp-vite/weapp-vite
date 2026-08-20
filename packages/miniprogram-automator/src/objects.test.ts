@@ -1456,6 +1456,25 @@ describe('Element', () => {
     vi.clearAllMocks()
   })
 
+  it('fills missing offset dimensions from DOM properties', async () => {
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Element.getOffset') {
+        return { left: 12, top: 20 }
+      }
+      if (method === 'Element.getDOMProperties') {
+        return { properties: [366, 22.5] }
+      }
+      throw new Error(`Unexpected method: ${method}`)
+    })
+    const element = new Element(createConnection(send), {
+      elementId: 'hello',
+      pageId: 1,
+      tagName: 'view',
+    }, new Map())
+
+    await expect(element.offset()).resolves.toEqual({ left: 12, top: 20, width: 366, height: 22.5 })
+  })
+
   it('creates specialized element subclasses', () => {
     const elementMap = new Map<string, Element>()
     const connection = createConnection(vi.fn())

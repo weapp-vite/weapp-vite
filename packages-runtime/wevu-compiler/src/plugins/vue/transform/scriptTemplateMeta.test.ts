@@ -88,4 +88,48 @@ export default {
     expect(output).toContain(`console.log(Foo)`)
     expect(output).toContain(`get Foo()`)
   })
+
+  it('removes Options API registrations that are only used by the template', () => {
+    const ast = parseJsLike(`
+import Child from './child.vue'
+import Kept from './kept.vue'
+
+export default {
+  components: {
+    Child,
+    Kept,
+  },
+  mounted() {
+    console.log(Kept)
+  },
+}
+    `.trim())
+
+    const changed = pruneTemplateComponentMeta(ast, {
+      Child: '/components/child',
+      Kept: '/components/kept',
+    })
+
+    expect(changed).toBe(true)
+    const output = generate(ast).code
+    expect(output).not.toContain(`import Child`)
+    expect(output).not.toContain(`Child,`)
+    expect(output).toContain(`import Kept`)
+    expect(output).toContain(`console.log(Kept)`)
+  })
+
+  it('removes an empty Options API components object', () => {
+    const ast = parseJsLike(`
+import Child from './child.vue'
+export default defineComponent({ components: { Child } })
+    `.trim())
+
+    expect(pruneTemplateComponentMeta(ast, {
+      Child: '/components/child',
+    })).toBe(true)
+
+    const output = generate(ast).code
+    expect(output).not.toContain(`import Child`)
+    expect(output).not.toContain(`components`)
+  })
 })

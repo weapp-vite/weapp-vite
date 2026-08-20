@@ -187,8 +187,8 @@ describe('UviewPlusResolver', () => {
   const resolver = UviewPlusResolver()
 
   it('maps all published Vue SFC entries under both supported prefixes', () => {
-    expect(Object.keys(resolver.components ?? {})).toHaveLength(274)
-    expect(uviewPlusComponents).toHaveLength(137)
+    expect(Object.keys(resolver.components ?? {})).toHaveLength(278)
+    expect(uviewPlusComponents).toHaveLength(139)
     expect(resolveWithResolver(resolver, 'u-button')).toEqual({
       name: 'u-button',
       from: 'uview-plus/components/u-button/u-button.vue',
@@ -205,6 +205,10 @@ describe('UviewPlusResolver', () => {
     })
     expect(resolveWithResolver(resolver, 'up-action-sheet-data')?.from)
       .toBe('uview-plus/components/u-action-sheet-data/u-action-sheet-data.vue')
+    expect(resolveWithResolver(resolver, 'up-novel-reader')?.from)
+      .toBe('uview-plus/components/u-novel-reader/u-novel-reader.vue')
+    expect(resolveWithResolver(resolver, 'up-tabs-pro')?.from)
+      .toBe('uview-plus/components/u-tabs-pro/u-tabs-pro.vue')
     expect(resolveWithResolver(resolver, 'up-unknown')).toBeUndefined()
   })
 

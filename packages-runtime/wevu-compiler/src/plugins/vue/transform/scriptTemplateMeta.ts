@@ -60,12 +60,54 @@ function isTemplateReturnPropertyReference(path: NodePath<t.Identifier>) {
   return false
 }
 
+function isStaticPropertyNamed(node: t.ObjectProperty, name: string) {
+  return !node.computed && (
+    t.isIdentifier(node.key, { name })
+    || t.isStringLiteral(node.key, { value: name })
+  )
+}
+
+function isOptionsApiComponentsObject(path: NodePath<t.ObjectExpression>) {
+  const componentsProperty = path.parentPath
+  if (!componentsProperty?.isObjectProperty() || !isStaticPropertyNamed(componentsProperty.node, 'components')) {
+    return false
+  }
+
+  const optionsObject = componentsProperty.parentPath
+  if (!optionsObject?.isObjectExpression()) {
+    return false
+  }
+  const optionsParent = optionsObject.parentPath
+  if (optionsParent?.isExportDefaultDeclaration()) {
+    return true
+  }
+  return Boolean(
+    optionsParent?.isCallExpression()
+    && optionsParent.node.arguments[0] === optionsObject.node
+    && optionsParent.parentPath?.isExportDefaultDeclaration(),
+  )
+}
+
+function isOptionsApiComponentRegistrationReference(path: NodePath<t.Identifier>) {
+  const property = path.parentPath
+  return Boolean(
+    property?.isObjectProperty()
+    && property.node.value === path.node
+    && property.parentPath?.isObjectExpression()
+    && isOptionsApiComponentsObject(property.parentPath),
+  )
+}
+
 function isReferencedOutsideTemplateReturn(path: NodePath<t.Identifier>) {
   if (!path.isReferencedIdentifier()) {
     return false
   }
 
-  if (isTemplateReturnGetterReference(path) || isTemplateReturnPropertyReference(path)) {
+  if (
+    isTemplateReturnGetterReference(path)
+    || isTemplateReturnPropertyReference(path)
+    || isOptionsApiComponentRegistrationReference(path)
+  ) {
     return false
   }
 
@@ -142,6 +184,51 @@ function removeSetupReturnProperties(ast: BabelFile, removableNames: Set<string>
   return changed
 }
 
+function removeOptionsApiComponentRegistrations(ast: BabelFile, removableNames: Set<string>) {
+  if (!removableNames.size) {
+    return false
+  }
+
+  let changed = false
+  traverse(ast, {
+    ObjectProperty(path) {
+      if (
+        !path.parentPath?.isObjectExpression()
+        || !isOptionsApiComponentsObject(path.parentPath)
+        || !t.isIdentifier(path.node.value)
+        || !removableNames.has(path.node.value.name)
+      ) {
+        return
+      }
+      path.remove()
+      changed = true
+    },
+  })
+  traverse(ast, {
+    ObjectProperty(path) {
+      if (
+        !t.isObjectExpression(path.node.value)
+        || !isStaticPropertyNamed(path.node, 'components')
+        || path.node.value.properties.length > 0
+        || !path.parentPath?.isObjectExpression()
+      ) {
+        return
+      }
+      const optionsParent = path.parentPath.parentPath
+      const isDefaultExport = optionsParent?.isExportDefaultDeclaration()
+        || (
+          optionsParent?.isCallExpression()
+          && optionsParent.node.arguments[0] === path.parentPath.node
+          && optionsParent.parentPath?.isExportDefaultDeclaration()
+        )
+      if (isDefaultExport) {
+        path.remove()
+      }
+    },
+  })
+  return changed
+}
+
 export function pruneTemplateComponentMeta(
   ast: BabelFile,
   templateComponentMeta: Record<string, string>,
@@ -181,6 +268,7 @@ export function pruneTemplateComponentMeta(
   })
 
   changed = removeSetupReturnProperties(ast, removableNames) || changed
+  changed = removeOptionsApiComponentRegistrations(ast, removableNames) || changed
 
   return changed
 }

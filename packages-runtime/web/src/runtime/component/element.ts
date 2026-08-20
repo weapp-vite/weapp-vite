@@ -26,7 +26,7 @@ import { runComponentObservers } from './observers'
 import { createComponentPublicInstance } from './publicInstance'
 import { resolveRelationNodes } from './relations'
 import { createWebSlotsProxy } from './slots'
-import { cloneValue, coerceValue, toCamelCase } from './utils'
+import { assignDataPath, cloneValue, coerceValue, parseDataPath, resolveDataPath, toCamelCase } from './utils'
 import {
   clearVirtualHostClasses,
   clearVirtualHostParts,
@@ -282,17 +282,20 @@ export function createComponentElementClass({
       let changed = false
       const changedKeys: string[] = []
       const previousProperties: DataRecord = {}
-      for (const [key, value] of Object.entries(patch)) {
-        if (this.#state[key] === value) {
+      for (const [path, value] of Object.entries(patch)) {
+        const segments = parseDataPath(path)
+        const topKey = segments[0]
+        if (!topKey || Object.is(resolveDataPath(this.#state, segments), value)) {
           continue
         }
-        const oldValue = this.#state[key]
-        this.#state[key] = value
-        if (hasOwn(this.#properties, key)) {
-          previousProperties[key] = oldValue
-          this.#properties[key] = value
+        if (hasOwn(this.#properties, topKey) && !hasOwn(previousProperties, topKey)) {
+          previousProperties[topKey] = this.#properties[topKey]
         }
-        changedKeys.push(key)
+        assignDataPath(this.#state, segments, value)
+        if (hasOwn(this.#properties, topKey)) {
+          this.#properties[topKey] = this.#state[topKey]
+        }
+        changedKeys.push(path)
         changed = true
       }
       if (changed) {
