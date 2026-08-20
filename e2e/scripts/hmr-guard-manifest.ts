@@ -20,6 +20,7 @@ export const HMR_GUARD_TEST_GROUPS = {
     'hmr-delete.test.ts',
     'hmr-app-config.test.ts',
     'hmr-package-scripts.test.ts',
+    'skyline-hmr-fallback.test.ts',
     'issue-340-comment.hmr.test.ts',
     'wevu-router-hmr.test.ts',
   ]),

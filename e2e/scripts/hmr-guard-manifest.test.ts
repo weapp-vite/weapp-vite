@@ -53,6 +53,7 @@ describe('hmr-guard manifest', () => {
       'ci/e2e-app-tailwind-memory-guard.test.ts',
       'ci/external-linked-vue-component.hmr.test.ts',
       'ci/issue-340-comment.hmr.test.ts',
+      'ci/skyline-hmr-fallback.test.ts',
       'ci/style-import-vue.test.ts',
       'ci/template-tailwind-hmr.test.ts',
       'ci/wevu-root-import-hmr.test.ts',

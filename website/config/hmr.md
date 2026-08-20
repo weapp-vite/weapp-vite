@@ -42,15 +42,18 @@ export default defineConfig({
 })
 ```
 
-`auto` 会在 `wv dev` 启动时读取微信项目的 `project.private.config.json`：当 `setting.compileHotReLoad` 严格为 `true` 时使用 `stateful-experimental`，否则使用 `classic`。非微信平台也会回退到 `classic`。该判断只发生在启动阶段，修改微信开发者工具设置后需要重启 `wv dev` 才会重新选择模式。启动日志会显示最终模式、选择来源，以及通过 DevTools 热重载开关或 `weapp.hmr.runtime` 切换模式的方法。显式配置 `classic` 或 `stateful-experimental` 时始终优先于自动判断。
+`auto` 会在 `wv dev` 启动时读取微信项目的 `project.private.config.json`：当 `setting.compileHotReLoad` 严格为 `true` 时使用 `stateful-experimental`，否则使用 `classic`。非微信平台也会回退到 `classic`。该判断只发生在启动阶段，修改微信开发者工具设置后需要重启 `wv dev` 才会重新选择模式。启动日志会显示最终模式、选择来源，以及通过 DevTools 热重载开关或 `weapp.hmr.runtime` 切换模式的方法。显式配置通常优先，但 Skyline 兼容降级不受显式配置覆盖。
 
 `stateful-experimental` 目前只支持微信小程序平台。它使用 Vite bundled dev graph 和微信 App Service 内的增量补丁协议，JavaScript/Vue 安全更新会在现有实例上替换方法并恢复状态。CSS、静态资源、JSON/配置变化、模块边界不兼容、补丁积压超过保留上限或补丁执行失败时，会回退到完整构建并通过 `wx.reLaunch` 恢复当前 route/query。
+
+微信开发者工具[暂不支持 Skyline 热重载](https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/migration/compatibility.html#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98)。首次编译检测到任意生成的应用或页面 JSON 使用 `renderer: 'skyline'` 时，`wv dev` 会输出兼容性警告，将当前项目私有配置中的 `setting.compileHotReLoad` 持久化为 `false`，并强制使用 `classic`，即使用户显式配置了 `stateful-experimental`。其他私有配置字段不会改变；切回 WebView 后需要由开发者按需重新开启热重载。
 
 使用前请确认：
 
 - 微信开发者工具已开启服务端口，并在项目设置中启用热重载。
 - `project.private.config.json` 的 `setting.compileHotReLoad` 为 `true`。
-- 这是实验能力；需要完全沿用既有写盘/刷新语义时保持默认 `classic`。
+- 当前项目没有使用 Skyline；Skyline 会自动关闭 DevTools 热重载并降级为 `classic`。
+- 这是实验能力；需要完全沿用既有写盘/刷新语义时显式配置 `classic`。
 - 状态恢复只覆盖可序列化的小程序 data 和 wevu setup ref；定时器、网络连接、原生句柄等副作用仍应由应用生命周期管理。
 
 ## `weapp.hmr.sharedChunks` {#weapp-hmr-sharedchunks}

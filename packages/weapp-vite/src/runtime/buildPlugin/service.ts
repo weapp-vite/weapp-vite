@@ -7,6 +7,7 @@ import type {
 import type { InlineConfig } from 'vite'
 import type { BuildTarget, MutableCompilerContext } from '../../context'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
+import type { HmrRuntimeDecision } from '../hmrRuntime'
 import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
 import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
@@ -32,9 +33,9 @@ import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
 import { touch } from '../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJsonEnvOption, resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
-import { syncProjectConfigToOutput } from '../../utils/projectConfig'
+import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { formatHmrRuntimeStartupMessages, resolveHmrRuntime } from '../hmrRuntime'
+import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
 import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
@@ -361,8 +362,76 @@ function createSnapshotSidecarIgnoredMatcher(ctx: MutableCompilerContext) {
 
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let lastHmrSlowTipProfileCount = 0
-  let devHmrRuntime: ReturnType<typeof resolveHmrRuntime> | undefined
+  let devHmrDecision: HmrRuntimeDecision | undefined
   let devHmrRuntimeNoticeLogged = false
+  let skylineHmrFallbackApplied = false
+
+  const SKYLINE_HMR_COMPATIBILITY_URL = 'https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/migration/compatibility.html#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98'
+
+  function logHmrRuntimeDecision(decision: HmrRuntimeDecision) {
+    if (devHmrRuntimeNoticeLogged) {
+      return
+    }
+    devHmrRuntimeNoticeLogged = true
+    for (const message of formatHmrRuntimeStartupMessages(decision)) {
+      logger.info(message)
+    }
+  }
+
+  async function applySkylineHmrFallback(options: {
+    compileHotReLoad?: unknown
+    configured?: HmrRuntimeDecision['configured']
+    files: string[]
+  }) {
+    const currentDecision = devHmrDecision ?? resolveHmrRuntimeDecision({
+      platform: ctx.configService.platform,
+      configured: options.configured,
+      compileHotReLoad: options.compileHotReLoad,
+    })
+    if (
+      skylineHmrFallbackApplied
+      || (currentDecision.runtime === 'classic' && options.compileHotReLoad !== true)
+    ) {
+      return false
+    }
+
+    skylineHmrFallbackApplied = true
+    devHmrDecision = resolveHmrRuntimeDecision({
+      platform: ctx.configService.platform,
+      configured: currentDecision.configured,
+      compileHotReLoad: options.compileHotReLoad,
+      skyline: true,
+    })
+
+    const detectedFiles = options.files.slice(0, 3).join('、')
+    const detectedSuffix = detectedFiles ? `（${detectedFiles}）` : ''
+    const privateConfigPath = ctx.configService.projectPrivateConfigPath
+    const privateConfigDisplay = privateConfigPath
+      ? ctx.configService.relativeCwd(privateConfigPath)
+      : 'project.private.config.json'
+
+    if (options.compileHotReLoad === true) {
+      try {
+        if (!privateConfigPath) {
+          throw new Error('无法解析项目私有配置路径')
+        }
+        await disableProjectPrivateConfigHotReload(privateConfigPath)
+        const privateConfig = ctx.configService.projectPrivateConfig
+        const setting = privateConfig.setting && typeof privateConfig.setting === 'object' && !Array.isArray(privateConfig.setting)
+          ? privateConfig.setting as Record<string, unknown>
+          : {}
+        privateConfig.setting = { ...setting, compileHotReLoad: false }
+        logger.warn(`检测到 Skyline 渲染配置${detectedSuffix}。微信开发者工具暂不支持 Skyline 热重载，已将 ${privateConfigDisplay} 中的 setting.compileHotReLoad 设为 false，并降级为 classic。详情：${SKYLINE_HMR_COMPATIBILITY_URL}`)
+      }
+      catch (error) {
+        logger.warn(`检测到 Skyline 渲染配置${detectedSuffix}。已降级为 classic，但无法自动关闭 ${privateConfigDisplay} 中的 setting.compileHotReLoad：${error instanceof Error ? error.message : String(error)}。请手动关闭微信开发者工具“热重载”。详情：${SKYLINE_HMR_COMPATIBILITY_URL}`)
+      }
+    }
+    else {
+      logger.warn(`检测到 Skyline 渲染配置${detectedSuffix}。微信开发者工具暂不支持 Skyline 热重载，weapp.hmr.runtime="stateful-experimental" 已自动降级为 classic。详情：${SKYLINE_HMR_COMPATIBILITY_URL}`)
+    }
+    return true
+  }
 
   function createHmrProfileJsonSample(totalMs: number): HmrProfileJsonSample {
     const profile = ctx.runtimeState.build.hmr.profile
@@ -1169,42 +1238,60 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     debug?.(`[${target}] dev build watcher start`)
     const { hasWorkersDir, workersDir } = checkWorkersOptions(target, configService, scanService)
-    // eslint-disable-next-line ts/no-use-before-define
-    const createDevBuildOptions = () => appendHmrMetricsPlugin(applyTargetBuildOverride(
-      configService.merge(
+    const configuredHmrRuntime = configService.weappViteConfig.hmr?.runtime
+    const compileHotReLoad = configService.projectPrivateConfig.setting?.compileHotReLoad
+    devHmrDecision ??= resolveHmrRuntimeDecision({
+      platform: configService.platform,
+      configured: configuredHmrRuntime,
+      compileHotReLoad,
+    })
+    const createDevBuildOptions = () => {
+      // eslint-disable-next-line ts/no-use-before-define
+      const options = applyTargetBuildOverride(configService.merge(
         undefined,
         createSharedBuildConfig(configService, scanService),
         // eslint-disable-next-line ts/no-use-before-define
         resolveTargetBuildOverride(target),
-      ),
-      target,
-    ))
+      ), target)
+      if (target === 'app' && devHmrDecision?.runtime === 'classic') {
+        let skylineFiles: string[] = []
+        options.plugins = [
+          ...(options.plugins ?? []),
+          {
+            name: 'weapp-vite:skyline-hmr-compatibility',
+            enforce: 'post',
+            generateBundle(_options, bundle) {
+              skylineFiles = findSkylineRendererFiles(Object.values(bundle))
+            },
+            writeBundle() {
+              if (skylineFiles.length === 0) {
+                return
+              }
+              const detectedFiles = skylineFiles
+              skylineFiles = []
+              setTimeout(() => {
+                void applySkylineHmrFallback({
+                  compileHotReLoad,
+                  configured: devHmrDecision?.configured,
+                  files: detectedFiles,
+                })
+              }, 0)
+            },
+          },
+        ]
+      }
+      return appendHmrMetricsPlugin(options)
+    }
     let buildOptions = createDevBuildOptions()
     buildOptions.build = {
       ...(buildOptions.build ?? {}),
       write: true,
     }
-    const configuredHmrRuntime = configService.weappViteConfig.hmr?.runtime
-    const compileHotReLoad = configService.projectPrivateConfig.setting?.compileHotReLoad
-    devHmrRuntime ??= resolveHmrRuntime({
-      platform: configService.platform,
-      configured: configuredHmrRuntime,
-      compileHotReLoad,
-    })
-    const hmrRuntime = devHmrRuntime
-    if (target === 'app' && !devHmrRuntimeNoticeLogged) {
-      devHmrRuntimeNoticeLogged = true
-      const messages = formatHmrRuntimeStartupMessages({
-        platform: configService.platform,
-        configured: configuredHmrRuntime,
-        compileHotReLoad,
-        runtime: hmrRuntime,
-      })
-      for (const message of messages) {
-        logger.info(message)
-      }
+    const hmrDecision = devHmrDecision
+    if (target === 'app' && hmrDecision.runtime !== 'stateful-experimental') {
+      logHmrRuntimeDecision(hmrDecision)
     }
-    if (target === 'app' && hmrRuntime === 'stateful-experimental') {
+    if (target === 'app' && hmrDecision.runtime === 'stateful-experimental') {
       try {
         const snapshotBuildOptions: InlineConfig = {
           ...buildOptions,
@@ -1215,6 +1302,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           },
         }
         const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
+        const skylineFiles = findSkylineRendererFiles(initialSnapshot)
+        if (skylineFiles.length > 0) {
+          await applySkylineHmrFallback({
+            compileHotReLoad,
+            configured: hmrDecision.configured,
+            files: skylineFiles,
+          })
+        }
+        if (devHmrDecision?.runtime === 'classic') {
+          resetRuntimeStateForFreshBuild(ctx.runtimeState)
+          await configService.load(configService.loadOptions)
+          await scanService.loadAppEntry()
+          scanService.loadSubPackages()
+          return await runDev(target)
+        }
+        logHmrRuntimeDecision(hmrDecision)
         await configService.load(configService.loadOptions)
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
         await scanService.loadAppEntry()
@@ -1279,12 +1382,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         return watcher
       }
       catch (error) {
-        if (configuredHmrRuntime !== 'auto' || !isStatefulHmrRuntimeCompatibilityError(error)) {
+        if (hmrDecision.configured !== 'auto' || !isStatefulHmrRuntimeCompatibilityError(error)) {
           throw error
         }
-        devHmrRuntime = 'classic'
+        devHmrDecision = {
+          configured: hmrDecision.configured,
+          reason: 'runtime-compatibility-fallback',
+          runtime: 'classic',
+        }
         logger.warn(`微信状态保持 HMR 运行时不可用，已自动降级为 classic：${error instanceof Error ? error.message : String(error)}`)
-        logger.info('HMR 模式：classic（自动降级：stateful HMR 运行时兼容性检查失败）')
+        logger.info(formatHmrRuntimeStartupMessages(devHmrDecision)[0])
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
         await configService.load(configService.loadOptions)
         await scanService.loadAppEntry()

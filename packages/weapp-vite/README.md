@@ -47,7 +47,7 @@ export default defineConfig({
 })
 ```
 
-未配置 `weapp.hmr.runtime` 时，`wv dev` 会在启动时读取 `project.private.config.json.setting.compileHotReLoad`：开启时使用 `stateful-experimental`，关闭或无法确认时使用 `classic`。启动日志会以 `HMR 模式` 和 `HMR 切换` 两行显示最终模式、选择来源和切换方法。显式设置 `classic` 或 `stateful-experimental` 会覆盖自动选择。修改 DevTools 设置后请重启 `wv dev`；CSS、资源、配置和不兼容更新会自动回退完整构建与当前路由重载。
+未配置 `weapp.hmr.runtime` 时，`wv dev` 会在启动时读取 `project.private.config.json.setting.compileHotReLoad`：开启时使用 `stateful-experimental`，关闭或无法确认时使用 `classic`。启动日志会以 `HMR 模式` 和 `HMR 切换` 两行显示最终模式、选择来源和切换方法。显式设置 `classic` 或 `stateful-experimental` 会覆盖自动选择，但 Skyline 例外：微信开发者工具暂不支持 Skyline 热重载，首次编译检测到任意应用或页面配置使用 `renderer: 'skyline'` 时，会显示兼容性警告、自动将项目私有配置中的 `compileHotReLoad` 设为 `false`，并强制降级到 `classic`。切回 WebView 后可按需手动重新开启热重载。修改 DevTools 设置后请重启 `wv dev`；CSS、资源、配置和不兼容更新会自动回退完整构建与当前路由重载。
 
 > 说明：CLI 同时支持完整命令 `weapp-vite` 与简写命令 `wv`，两者等价。下面的示例默认使用 `weapp-vite`，你也可以按个人习惯替换成 `wv`。
 

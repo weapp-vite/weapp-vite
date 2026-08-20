@@ -4,6 +4,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  disableProjectPrivateConfigHotReload,
   getProjectConfig,
   getProjectConfigFileName,
   getProjectConfigRootKeys,
@@ -103,6 +104,40 @@ describe('projectConfig utils', () => {
     expect(readJsonSpy).toHaveBeenCalledWith(basePath)
     expect(readJsonSpy).toHaveBeenCalledWith(privatePath)
     readJsonSpy.mockRestore()
+  })
+
+  it('disables project private hot reload without changing unrelated settings', async () => {
+    const root = await createTempDir()
+    const privatePath = path.join(root, 'config', 'weapp', 'project.private.config.weapp.json')
+    await fs.ensureDir(path.dirname(privatePath))
+    await fs.writeJson(privatePath, {
+      projectname: 'skyline-demo',
+      setting: {
+        compileHotReLoad: true,
+        skylineRenderEnable: true,
+        urlCheck: false,
+      },
+    }, { spaces: 2 })
+
+    await expect(disableProjectPrivateConfigHotReload(privatePath)).resolves.toBe(true)
+    expect(await fs.readJson(privatePath)).toEqual({
+      projectname: 'skyline-demo',
+      setting: {
+        compileHotReLoad: false,
+        skylineRenderEnable: true,
+        urlCheck: false,
+      },
+    })
+    await expect(disableProjectPrivateConfigHotReload(privatePath)).resolves.toBe(false)
+  })
+
+  it('reports missing and invalid private config files when disabling hot reload', async () => {
+    const root = await createTempDir()
+    const privatePath = path.join(root, 'project.private.config.json')
+    await expect(disableProjectPrivateConfigHotReload(privatePath)).rejects.toThrow('找不到项目配置文件')
+
+    await fs.writeFile(privatePath, '{invalid', 'utf8')
+    await expect(disableProjectPrivateConfigHotReload(privatePath)).rejects.toThrow('非法的 json 格式')
   })
 
   it('allows missing private config file when private merge is enabled', async () => {
