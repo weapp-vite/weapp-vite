@@ -419,7 +419,7 @@ async function runSlotFallbackCompilerOffBuild() {
   distVariant = null
 }
 
-async function runIssue793Build(scope: 'main' | 'subpackage' = 'main') {
+async function runIssue793Build(scope: 'main' | 'main-with-subpackage' | 'subpackage' = 'main') {
   await fs.remove(ISSUE_793_DIST_ROOT)
 
   await execa('node', [
@@ -435,7 +435,7 @@ async function runIssue793Build(scope: 'main' | 'subpackage' = 'main') {
     stdio: 'inherit',
     env: {
       ...sanitizeBuildCommandEnv(),
-      WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE: scope === 'main' ? 'true' : 'subpackage',
+      WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE: scope === 'main' ? 'true' : scope,
     },
   })
 
@@ -487,6 +487,37 @@ describe.sequential('e2e app: github-issues (build)', () => {
     ])
     expect(subpackageAppJson.tabBar).toBeUndefined()
     expect(await fs.pathExists(path.join(ISSUE_793_DIST_ROOT, 'pages'))).toBe(false)
+
+    await runIssue793Build('main-with-subpackage')
+
+    const mainWithSubpackageAppJson = await fs.readJSON(path.join(ISSUE_793_DIST_ROOT, 'app.json')) as {
+      pages?: string[]
+      preloadRule?: Record<string, { packages?: string[] }>
+      subPackages?: Array<{ root?: string, pages?: string[] }>
+      tabBar?: { list?: Array<{ pagePath?: string }> }
+    }
+
+    expect(mainWithSubpackageAppJson.pages).toEqual(expect.arrayContaining([
+      'pages/issue-793/index',
+      'pages/issue-793-settings/index',
+    ]))
+    expect(mainWithSubpackageAppJson.subPackages).toEqual([
+      { root: 'subs', pages: ['issue-793/index'] },
+    ])
+    expect(mainWithSubpackageAppJson.preloadRule).toEqual({
+      'pages/issue-793/index': {
+        packages: ['subs'],
+      },
+      'subs/issue-793/index': {
+        packages: ['__APP__'],
+      },
+    })
+    expect(mainWithSubpackageAppJson.tabBar?.list?.map(item => item.pagePath)).toEqual([
+      'pages/issue-793/index',
+      'pages/issue-793-settings/index',
+    ])
+    expect(await fs.pathExists(path.join(ISSUE_793_DIST_ROOT, 'pages/issue-793/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.join(ISSUE_793_DIST_ROOT, 'subs/issue-793/index.js'))).toBe(true)
   })
 
   it('issue #805: lowers optional chaining inside nullish coalescing expressions', async () => {

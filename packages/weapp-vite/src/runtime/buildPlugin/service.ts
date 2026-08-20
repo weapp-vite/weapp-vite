@@ -383,8 +383,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     configured?: HmrRuntimeDecision['configured']
     files: string[]
   }) {
+    const configService = ctx.configService
+    if (!configService) {
+      return false
+    }
     const currentDecision = devHmrDecision ?? resolveHmrRuntimeDecision({
-      platform: ctx.configService.platform,
+      platform: configService.platform,
       configured: options.configured,
       compileHotReLoad: options.compileHotReLoad,
     })
@@ -397,7 +401,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
     skylineHmrFallbackApplied = true
     devHmrDecision = resolveHmrRuntimeDecision({
-      platform: ctx.configService.platform,
+      platform: configService.platform,
       configured: currentDecision.configured,
       compileHotReLoad: options.compileHotReLoad,
       skyline: true,
@@ -405,9 +409,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
     const detectedFiles = options.files.slice(0, 3).join('、')
     const detectedSuffix = detectedFiles ? `（${detectedFiles}）` : ''
-    const privateConfigPath = ctx.configService.projectPrivateConfigPath
+    const privateConfigPath = configService.projectPrivateConfigPath
     const privateConfigDisplay = privateConfigPath
-      ? ctx.configService.relativeCwd(privateConfigPath)
+      ? configService.relativeCwd(privateConfigPath)
       : 'project.private.config.json'
 
     if (options.compileHotReLoad === true) {
@@ -416,7 +420,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           throw new Error('无法解析项目私有配置路径')
         }
         await disableProjectPrivateConfigHotReload(privateConfigPath)
-        const privateConfig = ctx.configService.projectPrivateConfig
+        const privateConfig = configService.projectPrivateConfig
         const setting = privateConfig.setting && typeof privateConfig.setting === 'object' && !Array.isArray(privateConfig.setting)
           ? privateConfig.setting as Record<string, unknown>
           : {}

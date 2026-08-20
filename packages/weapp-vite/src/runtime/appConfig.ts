@@ -9,12 +9,12 @@ export interface AppConfigBuildOptions {
   routeRules?: WeappRouteRules
 }
 
-export function finalizeAppConfigForBuild(
-  config: Record<string, any>,
+export function finalizeAppConfigForBuild<T extends object>(
+  config: T,
   options: AppConfigBuildOptions,
-) {
+): T {
   const normalizedConfig = normalizeAppJson(config) as BuildScopeAppJson
-  return applyBuildScopeToAppConfig(
+  const finalizedConfig = applyBuildScopeToAppConfig(
     applyPreloadRulesToAppJson(
       normalizedConfig,
       options.routeRules,
@@ -22,4 +22,5 @@ export function finalizeAppConfigForBuild(
     ),
     resolveBuildScope(options.buildScope),
   )
+  return finalizedConfig as T
 }
