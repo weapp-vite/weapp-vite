@@ -17,21 +17,12 @@ async function readDistText(...segments: string[]) {
   return await fs.readFile(path.join(DIST_ROOT, ...segments), 'utf8')
 }
 
-async function waitForQueryResult(page: any, selector: string, timeoutMs = 12_000) {
-  const startedAt = Date.now()
-  let latest = ''
-  while (Date.now() - startedAt <= timeoutMs) {
-    const element = await page.$(selector, { timeout: 1_000 }).catch(() => undefined)
-    latest = String(await element?.text().catch(() => '') ?? '')
-    if (latest.includes('foo,bar')) {
-      return latest
-    }
-    await page.waitFor?.(160)
-    if (typeof page.waitFor !== 'function') {
-      await new Promise(resolve => setTimeout(resolve, 160))
-    }
-  }
-  throw new Error(`Timed out waiting for ${selector} to render query data; latest=${latest}`)
+async function readScopedSlotWxml() {
+  const pageDir = path.join(DIST_ROOT, 'pages/issue-829')
+  const files = (await fs.readdir(pageDir))
+    .filter(file => file.startsWith('index.__scoped-slot-default-') && file.endsWith('.wxml'))
+  const contents = await Promise.all(files.map(async file => await fs.readFile(path.join(pageDir, file), 'utf8')))
+  return contents.join('\n')
 }
 
 describe.sequential('e2e app: github-issues / issue #829', () => {
@@ -56,17 +47,17 @@ describe.sequential('e2e app: github-issues / issue #829', () => {
         throw new Error('Failed to launch issue-829 page')
       }
 
-      await expect.poll(
-        () => waitForQueryResult(issuePage, '.issue829-direct-result', 1_000).catch(() => ''),
-        { timeout: 15_000, interval: 250 },
-      ).toContain('Result: foo,bar')
-      await expect.poll(
-        () => waitForQueryResult(issuePage, '.issue829-nested-result', 1_000).catch(() => ''),
-        { timeout: 15_000, interval: 250 },
-      ).toContain('Result: foo,bar')
+      const renderedWxml = await issuePage.waitForRendered({
+        predicate: (wxml: string) => wxml.includes('class="issue829-direct-result">Result: foo,bar</view>')
+          && wxml.includes('class="issue829-nested-result">Result: foo,bar</view>'),
+        timeout: 15_000,
+      })
+      expect(renderedWxml).toContain('class="issue829-direct-result">Result: foo,bar</view>')
+      expect(renderedWxml).toContain('class="issue829-nested-result">Result: foo,bar</view>')
 
       const pageWxml = await readDistText('pages/issue-829/index.wxml')
-      expect(pageWxml).toContain('__wvOwner.queryFn')
+      expect(pageWxml).toContain('query-fn="{{queryFn}}"')
+      expect(await readScopedSlotWxml()).toContain('query-fn="{{__wvOwner.queryFn}}"')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

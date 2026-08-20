@@ -78,6 +78,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue642-bug7-default.test.ts',
   'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
   'ide/github-issues.runtime.issue642-bug8.test.ts',
+  'ide/github-issues.runtime.issue829.test.ts',
   'ide/github-issues.runtime.require-async.test.ts',
   'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
 ]

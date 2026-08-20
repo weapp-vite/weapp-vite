@@ -34,6 +34,7 @@ const SLOT_FALLBACK_COMPILER_OFF_ENV = 'WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF'
 const SCOPED_BUILD_TARGETS = new Set([
   AGGREGATE_TARGET,
   'github-issues.runtime.app-shell.test.ts',
+  'github-issues.runtime.issue829.test.ts',
   'github-issues.runtime.require-async.test.ts',
 ])
 const APP_SHELL_FREE_TARGETS = new Set([

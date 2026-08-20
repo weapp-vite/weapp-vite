@@ -901,6 +901,23 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(scopedSlotJs).not.toContain('模板运行时表达式执行失败: __wv_bind_0 = list')
   })
 
+  it('issue #829: keeps nested scoped-slot function props on the owner path', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-829/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-829/index.js')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf8')
+    const pageJs = await fs.readFile(pageJsPath, 'utf8')
+    const scopedSlotWxmlFiles = (await scanFiles(path.join(DIST_ROOT, 'pages/issue-829')))
+      .filter(file => file.startsWith('index.__scoped-slot-default-') && file.endsWith('.wxml'))
+    const scopedSlotWxml = await Promise.all(scopedSlotWxmlFiles.map(async file => await fs.readFile(path.join(DIST_ROOT, 'pages/issue-829', file), 'utf8')))
+
+    expect(pageWxml).toContain('query-fn="{{queryFn}}"')
+    expect(pageJs).toContain('__wevuFunctionPropPaths')
+    expect(pageJs).toContain('"queryFn"')
+    expect(scopedSlotWxml.some(content => content.includes('query-fn="{{__wvOwner.queryFn}}"'))).toBe(true)
+  })
+
   it('issue #621: compiles inline assignment events against setup ref values', async () => {
     await runIssue621AugmentedBuild()
 
