@@ -3,6 +3,7 @@ import type { CompilerContext } from '../../../../../context'
 import type { JsonMergeStrategy } from '../../../../../types'
 import type { ClassStyleWxsAsset } from './types'
 import { getClassStyleWxsSource } from 'wevu/compiler'
+import { finalizeAppConfigForBuild } from '../../../../../runtime/appConfig'
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { processCssWithCache } from '../../../../css/shared/preprocessor'
 import { resolveClassStyleWxsLocationForBase } from '../../classStyle'
@@ -58,6 +59,7 @@ export function emitSharedVueEntryJsonAsset(options: {
     defaultConfig?: Record<string, any>
     mergeExistingAsset?: boolean
     defaults?: Record<string, any>
+    finalizeConfig?: (config: Record<string, any>) => Record<string, any>
     mergeStrategy?: JsonMergeStrategy
     kind: 'app' | 'page' | 'component'
     extension: string
@@ -404,6 +406,14 @@ export async function emitCompiledEntryBundleAssets(options: {
     )
   }
 
+  const finalizeJsonConfig = isAppVue
+    ? (config: Record<string, any>) => finalizeAppConfigForBuild(config, {
+        buildScope: options.configService.weappViteConfig?.buildScope,
+        platform: options.configService.platform,
+        routeRules: options.configService.weappViteConfig?.routeRules,
+      })
+    : undefined
+
   if (options.result.config || shouldEmitComponentJson) {
     emitSharedVueEntryJsonAsset({
       bundle: options.bundle,
@@ -417,6 +427,7 @@ export async function emitCompiledEntryBundleAssets(options: {
         mergeExistingAsset: shouldMergeJsonAsset,
         mergeStrategy: jsonConfig?.mergeStrategy,
         defaults: jsonConfig?.defaults?.[jsonKind],
+        ...(finalizeJsonConfig ? { finalizeConfig: finalizeJsonConfig } : {}),
         kind: jsonKind,
         extension: options.jsonExtension,
       },

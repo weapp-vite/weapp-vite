@@ -609,6 +609,9 @@ describe('emitSharedVueEntryAssets', () => {
       isPage: false,
       configService: {
         weappViteConfig: {
+          buildScope: {
+            include: ['subs'],
+          },
           json: {
             defaults: {
               app: {
@@ -651,10 +654,62 @@ describe('emitSharedVueEntryAssets', () => {
         mergeExistingAsset: true,
         mergeStrategy: 'override',
         defaults: { lazyCodeLoading: 'requiredComponents' },
+        finalizeConfig: expect.any(Function),
         kind: 'app',
         extension: 'json',
       },
     )
+    const finalizeConfig = emitSfcJsonAssetMock.mock.calls[0][4].finalizeConfig
+    expect(finalizeConfig({
+      pages: [
+        'pages/issue-793/index',
+        'pages/issue-793-settings/index',
+      ],
+      preloadRule: {
+        'pages/issue-793/index': {
+          packages: ['subs', 'missing'],
+        },
+      },
+      subPackages: [
+        {
+          root: 'subs',
+          pages: ['issue-793/index'],
+        },
+        {
+          root: 'excluded',
+          pages: ['index'],
+        },
+      ],
+      tabBar: {
+        list: [
+          { pagePath: 'pages/issue-793/index', text: '首页' },
+          { pagePath: 'pages/issue-793-settings/index', text: '设置' },
+          { pagePath: 'subs/issue-793/index', text: '分包' },
+        ],
+      },
+    })).toEqual({
+      pages: [
+        'pages/issue-793/index',
+        'pages/issue-793-settings/index',
+      ],
+      preloadRule: {
+        'pages/issue-793/index': {
+          packages: ['subs'],
+        },
+      },
+      subPackages: [
+        {
+          root: 'subs',
+          pages: ['issue-793/index'],
+        },
+      ],
+      tabBar: {
+        list: [
+          { pagePath: 'pages/issue-793/index', text: '首页' },
+          { pagePath: 'pages/issue-793-settings/index', text: '设置' },
+        ],
+      },
+    })
     expect(result).toEqual({
       isAppVue: true,
       shouldEmitComponentJson: false,

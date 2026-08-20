@@ -7,7 +7,7 @@ import type { ResolvedEntryRecord } from './resolve'
 import { createHash } from 'node:crypto'
 import { get, removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
-import { applyPreloadRulesToAppJson, normalizeAppJson } from '../../../../utils'
+import { finalizeAppConfigForBuild } from '../../../../runtime/appConfig'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { analyzeAppJson, analyzePluginJson } from '../../../utils/analyze'
 import { collectAppSideFiles, collectMiniappConfigFile } from './watch'
@@ -149,11 +149,11 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   }
 
   if (!isPluginBuild) {
-    appJson = applyPreloadRulesToAppJson(
-      normalizeAppJson(json),
-      configService.weappViteConfig.routeRules,
-      configService.platform,
-    )
+    appJson = finalizeAppConfigForBuild(json, {
+      buildScope: configService.weappViteConfig.buildScope,
+      platform: configService.platform,
+      routeRules: configService.weappViteConfig.routeRules,
+    })
     entries.push(...analyzeAppJson(appJson))
   }
 

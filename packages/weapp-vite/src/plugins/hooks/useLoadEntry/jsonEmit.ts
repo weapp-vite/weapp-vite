@@ -1,5 +1,5 @@
 import type { CompilerContext } from '../../../context'
-import { normalizeAppJson } from '../../../utils'
+import { finalizeAppConfigForBuild } from '../../../runtime/appConfig'
 import { resolveRelativeJsonOutputFileName } from '../../utils/outputFileName'
 
 export interface JsonEmitFileEntry {
@@ -26,10 +26,15 @@ export function createJsonEmitManager(
 
     const fileName = entry.fileName ?? resolveRelativeJsonOutputFileName(configService, entry.jsonPath!)
     const shouldNormalizeAppJson = entry.type === 'app' && fileName === 'app.json'
+    const weappViteConfig = configService.weappViteConfig ?? {}
     const normalizedEntry = shouldNormalizeAppJson
       ? {
           ...entry,
-          json: normalizeAppJson(entry.json),
+          json: finalizeAppConfigForBuild(entry.json, {
+            buildScope: weappViteConfig.buildScope,
+            platform: configService.platform,
+            routeRules: weappViteConfig.routeRules,
+          }),
         }
       : entry
 

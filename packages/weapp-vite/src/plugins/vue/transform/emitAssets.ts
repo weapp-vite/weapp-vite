@@ -118,6 +118,7 @@ export function emitSfcJsonAsset(
     emitIfMissingOnly?: boolean
     mergeStrategy?: JsonMergeStrategy
     defaults?: Record<string, any>
+    finalizeConfig?: (config: Record<string, any>) => Record<string, any>
     kind?: 'app' | 'page' | 'component'
     extension?: string
   },
@@ -160,6 +161,7 @@ export function emitSfcJsonAsset(
 
   if (options.emitIfMissingOnly) {
     if (!bundle[jsonFileName]) {
+      nextConfig = options.finalizeConfig?.(nextConfig) ?? nextConfig
       const nextSource = JSON.stringify(nextConfig, null, 2)
       if (emittedAssetSourceCache.get(cacheKey) !== nextSource) {
         ctx.emitFile({ type: 'asset', fileName: jsonFileName, source: nextSource })
@@ -172,16 +174,19 @@ export function emitSfcJsonAsset(
   if (options.mergeExistingAsset && existing && existing.type === 'asset') {
     try {
       const existingConfig = JSON.parse(existing.source.toString())
-      const merged = mergeJson(existingConfig, nextConfig, 'merge-existing')
+      const mergedConfig = mergeJson(existingConfig, nextConfig, 'merge-existing')
+      const merged = options.finalizeConfig?.(mergedConfig) ?? mergedConfig
       existing.source = JSON.stringify(merged, null, 2)
     }
     catch {
+      nextConfig = options.finalizeConfig?.(nextConfig) ?? nextConfig
       existing.source = JSON.stringify(nextConfig, null, 2)
     }
     return
   }
 
   if (existing && existing.type === 'asset') {
+    nextConfig = options.finalizeConfig?.(nextConfig) ?? nextConfig
     const nextSource = JSON.stringify(nextConfig, null, 2)
     const current = existing.source?.toString?.() ?? ''
     if (current !== nextSource) {
@@ -191,6 +196,7 @@ export function emitSfcJsonAsset(
     return
   }
 
+  nextConfig = options.finalizeConfig?.(nextConfig) ?? nextConfig
   const nextSource = JSON.stringify(nextConfig, null, 2)
   if (emittedAssetSourceCache.get(cacheKey) === nextSource) {
     return

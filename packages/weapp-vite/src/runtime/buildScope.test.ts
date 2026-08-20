@@ -1,3 +1,4 @@
+import type { BuildScopeAppJson } from './buildScope'
 import { describe, expect, it } from 'vitest'
 import {
   applyBuildScopeToAppConfig,
@@ -69,9 +70,78 @@ describe('buildScope', () => {
     })
   })
 
-  it('can build only a target subpackage when main package is disabled', () => {
+  it('keeps scoped package names and the main package preload marker', () => {
     const appConfig = {
       pages: ['pages/home/index'],
+      subPackages: [
+        {
+          root: 'packages/independent',
+          name: 'independent',
+          pages: ['index'],
+          independent: true,
+        },
+        {
+          root: 'packages/user',
+          name: 'user',
+          pages: ['index'],
+        },
+      ],
+      preloadRule: {
+        'pages/home/index': {
+          packages: ['packages/independent', 'independent', 'packages/user', 'user'],
+        },
+        'packages/independent/index': {
+          packages: ['__APP__', 'packages/user'],
+        },
+      },
+    }
+
+    applyBuildScopeToAppConfig(appConfig, resolveBuildScope({
+      include: ['packages/independent'],
+    }))
+
+    expect(appConfig.preloadRule).toEqual({
+      'pages/home/index': {
+        packages: ['packages/independent', 'independent'],
+      },
+      'packages/independent/index': {
+        packages: ['__APP__'],
+      },
+    })
+  })
+
+  it('filters tab bar pages and removes an invalid short tab bar', () => {
+    const appConfig: BuildScopeAppJson = {
+      pages: ['pages/home/index', 'pages/profile/index'],
+      tabBar: {
+        color: '#000000',
+        selectedColor: '#ffffff',
+        backgroundColor: '#ffffff',
+        list: [
+          { pagePath: 'pages/home/index', text: 'home' },
+          { pagePath: 'pages/profile/index', text: 'profile' },
+          { pagePath: 'pages/missing/index', text: 'missing' },
+        ],
+      },
+    }
+
+    applyBuildScopeToAppConfig(appConfig, resolveBuildScope({ include: [] }))
+
+    expect(appConfig.tabBar?.list).toEqual([
+      { pagePath: 'pages/home/index', text: 'home' },
+      { pagePath: 'pages/profile/index', text: 'profile' },
+    ])
+
+    appConfig.pages = ['pages/home/index']
+    applyBuildScopeToAppConfig(appConfig, resolveBuildScope({ include: [] }))
+
+    expect(appConfig.tabBar).toBeUndefined()
+  })
+
+  it('can build only a target subpackage when main package is disabled', () => {
+    const appConfig: BuildScopeAppJson = {
+      pages: ['pages/home/index'],
+      entryPagePath: 'pages/home/index',
       subpackages: [
         { root: 'packages/order', pages: ['pages/list/index'] },
         { root: 'packages/user', pages: ['pages/profile/index'] },
@@ -83,6 +153,15 @@ describe('buildScope', () => {
         'packages/order/pages/list/index': {
           packages: ['packages/user'],
         },
+      },
+      tabBar: {
+        color: '#000000',
+        selectedColor: '#ffffff',
+        backgroundColor: '#ffffff',
+        list: [
+          { pagePath: 'pages/home/index', text: 'home' },
+          { pagePath: 'pages/profile/index', text: 'profile' },
+        ],
       },
     }
 
@@ -96,6 +175,8 @@ describe('buildScope', () => {
       { root: 'packages/order', pages: ['pages/list/index'] },
     ])
     expect(appConfig.preloadRule).toBeUndefined()
+    expect(appConfig.tabBar).toBeUndefined()
+    expect(appConfig.entryPagePath).toBeUndefined()
   })
 
   it('filters auto-routes module snapshot by build scope', () => {

@@ -462,6 +462,69 @@ describe('createEntryLoader', () => {
     })
   })
 
+  it('applies build scope to the final app json asset', async () => {
+    const { loader, jsonService, registerJsonAsset } = createLoader({
+      weappViteConfig: {
+        buildScope: {
+          include: ['packages/order'],
+        },
+      },
+    })
+    const pluginCtx = createPluginContext()
+
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/app.ts') {
+        return { path: '/project/src/app.json', predictions: [] }
+      }
+      return { path: undefined, predictions: [] }
+    })
+    jsonService.read.mockResolvedValue({
+      pages: ['pages/home/index', 'pages/profile/index'],
+      subPackages: [
+        { root: 'packages/order', pages: ['index'] },
+        { root: 'packages/user', pages: ['index'] },
+      ],
+      preloadRule: {
+        'pages/home/index': {
+          packages: ['packages/order', 'packages/user'],
+        },
+      },
+      tabBar: {
+        color: '#000000',
+        selectedColor: '#ffffff',
+        backgroundColor: '#ffffff',
+        list: [
+          { pagePath: 'pages/home/index', text: 'home' },
+          { pagePath: 'pages/profile/index', text: 'profile' },
+          { pagePath: 'pages/missing/index', text: 'missing' },
+        ],
+      },
+    })
+
+    await loader.call(pluginCtx, '/project/src/app.ts', 'app')
+
+    const appAsset = registerJsonAsset.mock.calls
+      .map(([entry]) => entry)
+      .find(entry => entry.type === 'app')
+    expect(appAsset?.json).toMatchObject({
+      pages: ['pages/home/index', 'pages/profile/index'],
+      subPackages: [
+        { root: 'packages/order', pages: ['index'] },
+      ],
+      preloadRule: {
+        'pages/home/index': {
+          packages: ['packages/order'],
+        },
+      },
+      tabBar: {
+        list: [
+          { pagePath: 'pages/home/index', text: 'home' },
+          { pagePath: 'pages/profile/index', text: 'profile' },
+        ],
+      },
+    })
+  })
+
   it('registers app side json files without app config normalization', async () => {
     const { loader, jsonService, registerJsonAsset } = createLoader()
     const pluginCtx = createPluginContext()

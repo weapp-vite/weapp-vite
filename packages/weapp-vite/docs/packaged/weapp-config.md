@@ -46,7 +46,7 @@ export default defineConfig({
 })
 ```
 
-`main` 表示主包，`packages/order` 匹配 `app.json.subPackages[].root`。启用后，产物 `app.json.subPackages` 只保留参与 scope 的分包，`preloadRule`、自动路由和 typed router 也会按同一范围裁剪。发布前建议再跑不带 scope 的完整构建。
+`main` 表示主包，`packages/order` 匹配 `app.json.subPackages[].root`。启用后，产物 `app.json.subPackages` 只保留参与 scope 的分包，`preloadRule`、`tabBar`、`entryPagePath`、自动路由和 typed router 也会按同一注册图裁剪。`preloadRule.packages` 支持分包 `root`、`name` 和主包标记 `__APP__`；`tabBar.list` 不足微信要求的 2 项时会删除整个 `tabBar`。发布前建议再跑不带 scope 的完整构建。
 
 ### 分包异步模块
 

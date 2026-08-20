@@ -104,23 +104,18 @@ function normalizeScopedSubPackage<T extends { root?: string, pages?: string[] }
 
 function filterPreloadRule(
   preloadRule: Record<string, unknown> | undefined,
-  scope: ResolvedBuildScope,
-  allSubPackageRoots: ReadonlySet<string>,
+  scopedPages: ReadonlySet<string>,
+  scopedPackageIdentifiers: ReadonlySet<string>,
+  includeMainPackage: boolean,
 ) {
   if (!preloadRule || typeof preloadRule !== 'object') {
     return preloadRule
   }
 
-  const scopedRoots = new Set(scope.subPackageRoots)
   const scopedPreloadRule: Record<string, unknown> = {}
   for (const [pagePath, rule] of Object.entries(preloadRule)) {
     const normalizedPagePath = normalizeRoot(pagePath)
-    const pageSubPackageRoot = [...allSubPackageRoots]
-      .find(root => normalizedPagePath === root || normalizedPagePath.startsWith(`${root}/`))
-    const isPageInScope = pageSubPackageRoot
-      ? scopedRoots.has(pageSubPackageRoot)
-      : scope.includeMainPackage
-    if (!isPageInScope) {
+    if (!scopedPages.has(normalizedPagePath)) {
       continue
     }
 
@@ -136,7 +131,13 @@ function filterPreloadRule(
     }
 
     const filteredPackages = packages.filter((packageRoot) => {
-      return typeof packageRoot === 'string' && scopedRoots.has(normalizeRoot(packageRoot))
+      if (typeof packageRoot !== 'string') {
+        return false
+      }
+      const normalizedPackageRoot = normalizeRoot(packageRoot)
+      return normalizedPackageRoot === '__APP__'
+        ? includeMainPackage
+        : scopedPackageIdentifiers.has(normalizedPackageRoot)
     })
     if (filteredPackages.length > 0) {
       scopedPreloadRule[pagePath] = {
@@ -147,6 +148,53 @@ function filterPreloadRule(
   }
 
   return Object.keys(scopedPreloadRule).length > 0 ? scopedPreloadRule : undefined
+}
+
+function collectScopedAppGraph(
+  pages: string[],
+  subPackages: BuildScopeSubPackage[],
+) {
+  const mainPages = new Set(pages.map(page => normalizeRoot(page)))
+  const allPages = new Set(mainPages)
+  const packageIdentifiers = new Set<string>()
+
+  for (const subPackage of subPackages) {
+    const root = normalizeRoot(subPackage.root ?? '')
+    if (!root) {
+      continue
+    }
+    packageIdentifiers.add(root)
+    if (typeof subPackage.name === 'string' && subPackage.name.trim()) {
+      packageIdentifiers.add(normalizeRoot(subPackage.name))
+    }
+    for (const page of subPackage.pages ?? []) {
+      allPages.add(normalizeRoot(`${root}/${page}`))
+    }
+  }
+
+  return {
+    allPages,
+    mainPages,
+    packageIdentifiers,
+  }
+}
+
+function filterTabBar(tabBar: AppJson['tabBar'], mainPages: ReadonlySet<string>) {
+  if (!tabBar || !Array.isArray(tabBar.list)) {
+    return tabBar
+  }
+
+  const list = tabBar.list.filter((item) => {
+    return typeof item.pagePath === 'string' && mainPages.has(normalizeRoot(item.pagePath))
+  })
+  if (list.length < 2) {
+    return undefined
+  }
+
+  return {
+    ...tabBar,
+    list,
+  } as NonNullable<AppJson['tabBar']>
 }
 
 export function applyBuildScopeToAppConfig(
@@ -163,11 +211,6 @@ export function applyBuildScopeToAppConfig(
     : Array.isArray(config.subpackages)
       ? config.subpackages
       : []
-  const allSubPackageRoots = new Set(
-    sourceSubPackages
-      .map(subPackage => subPackage.root ? normalizeRoot(subPackage.root) : undefined)
-      .filter((root): root is string => Boolean(root)),
-  )
   const scopedSubPackages = sourceSubPackages
     .filter(subPackage => isSubPackageInScope(subPackage, scopedRoots))
     .map(normalizeScopedSubPackage)
@@ -178,12 +221,33 @@ export function applyBuildScopeToAppConfig(
   ;(config as { subPackages: BuildScopeSubPackage[] }).subPackages = scopedSubPackages
   delete config.subpackages
 
-  const preloadRule = filterPreloadRule(config.preloadRule, scope, allSubPackageRoots)
+  const scopedGraph = collectScopedAppGraph(config.pages, scopedSubPackages)
+  const preloadRule = filterPreloadRule(
+    config.preloadRule,
+    scopedGraph.allPages,
+    scopedGraph.packageIdentifiers,
+    scope.includeMainPackage,
+  )
   if (preloadRule) {
     config.preloadRule = preloadRule
   }
   else {
     delete config.preloadRule
+  }
+
+  const tabBar = filterTabBar(config.tabBar, scopedGraph.mainPages)
+  if (tabBar) {
+    config.tabBar = tabBar
+  }
+  else {
+    delete config.tabBar
+  }
+
+  if (
+    typeof config.entryPagePath === 'string'
+    && !scopedGraph.mainPages.has(normalizeRoot(config.entryPagePath))
+  ) {
+    delete config.entryPagePath
   }
 
   return config
