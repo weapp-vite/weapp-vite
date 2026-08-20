@@ -63,6 +63,22 @@ export async function getProjectPrivateConfig(root: string, options?: Pick<Proje
   return await readProjectConfigFile(privateJsonPath, false) as Record<string, any>
 }
 
+export async function disableProjectPrivateConfigHotReload(filePath: string): Promise<boolean> {
+  const config = await readProjectConfigFile(filePath, true) as Record<string, any>
+  const setting = config.setting && typeof config.setting === 'object' && !Array.isArray(config.setting)
+    ? config.setting as Record<string, unknown>
+    : {}
+  if (setting.compileHotReLoad === false) {
+    return false
+  }
+  config.setting = {
+    ...setting,
+    compileHotReLoad: false,
+  }
+  await fs.writeFile(filePath, `${JSON.stringify(config, null, 2)}\n`, 'utf8')
+  return true
+}
+
 export function resolveProjectConfigSyncDirs(options: {
   outDir: string
   projectConfigPath: string

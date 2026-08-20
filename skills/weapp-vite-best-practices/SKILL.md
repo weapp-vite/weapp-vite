@@ -48,7 +48,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp.routeRules`
    - `weapp.buildScope` / `wv dev|build --scope`：限定页面或分包构建时保持 autoRoutes 的主包/分包归属
    - `weapp.typescript`
-   - `weapp.hmr.runtime`：显式配置优先；未配置时结合工作区 `compileHotReLoad` 选择 classic 或实验性 stateful 模式
+   - `weapp.hmr.runtime`：显式配置优先；未配置时结合工作区 `compileHotReLoad` 选择 classic 或实验性 stateful 模式；实际 bundle 含 Skyline renderer 时强制关闭 DevTools 热重载并降级 classic
    - `weapp.vue.template.slotFallbackWrapperStrategy`：微信平台默认使用内部 `virtualHost` 组件承载转发 `<slot />` 的具名插槽 fallback；需要旧版真实节点行为时显式设为 `view`
    - `weapp.vue.template.slotFallbackWrapper`：普通具名插槽 fallback 的真实 wrapper，可用全局默认、按模板标签名 `component`、子组件静态 `defineOptions({ name })` 的 `componentName`、slot 规则和组件内 `slot-wrapper` / `slot-wrapper-footer` / `slot-wrapper-class` / `slot-wrapper-footer-class` 静态覆盖；显式配置后优先于默认策略；不要把 `block` 当作转发 `<slot />` 的 wrapper
 3. 按目标启用能力：
@@ -73,7 +73,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - Wot UI / uview-plus / uni-app 组件库异常：同时检查 `weapp.uniApp.include`、resolver 的真实 `resolvedId` / `sourceType: 'wevu-sfc'`，以及目标端条件分支
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`
-   - 状态保持 HMR 不生效：确认平台为微信、DevTools 开启服务端口与热重载、`compileHotReLoad: true`，并区分安全 JS/Vue 补丁与 CSS/资源/配置的完整重载回退
+   - 状态保持 HMR 不生效：先确认生成的应用/页面 JSON 未使用 Skyline；WebView 项目再确认平台为微信、DevTools 开启服务端口与热重载、`compileHotReLoad: true`，并区分安全 JS/Vue 补丁与 CSS/资源/配置的完整重载回退
    - sourcemap 漂移：检查 CLI `--sourcemap` 透传和构建后 npm、平台 API、shared chunk 重写是否组合原 map，不接受只保留旧 map
 6. 评估 Rust/native 加速时，先看真实 profile 和跨边界调用次数：
    - 默认把 JS ↔ Rust 往返、序列化/反序列化和 AST 数据搬运视为热路径成本。
@@ -85,10 +85,10 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 ## 近期能力决策
 
 - 插件项目先确认 `weapp.pluginRoot`，结构变化必须同时检查主应用 `dist/` 和插件 `dist-plugin/`；不要只验证 host 产物。
-- 状态保持 HMR 仅适用于微信小程序：需要 DevTools 服务端口、热重载和 `setting.compileHotReLoad: true`。JS/Vue 安全补丁可保留实例状态；CSS、资源、JSON、配置、边界不兼容或补丁失败时应接受完整构建回退。
+- 状态保持 HMR 仅适用于微信小程序 WebView：需要 DevTools 服务端口、热重载和 `setting.compileHotReLoad: true`。实际 bundle 检测到 Skyline renderer 时，即使显式选择 stateful 也会输出官方兼容性警告、关闭项目私有配置中的热重载并降级 classic；切回 WebView 后不自动重新开启。JS/Vue 安全补丁可保留实例状态；CSS、资源、JSON、配置、边界不兼容或补丁失败时应接受完整构建回退。
 - Web runtime 只验证 Web 语义，不把它当成小程序真机等价环境；请求 globals、URL 和平台 API 兼容问题要分别在目标 runtime 验证。
 - 小程序单测不使用 jsdom；`@mpcore/test` 只暴露逻辑 WXML 树。测试产物必须通过 `weapp-vite/test` 交给 Vite/Rolldown emit，不能由适配器手写 bundle。
-- uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 与 uview-plus 分别以 `@wot-ui/ui@2.2.0`、`uview-plus@3.8.108` 的 npm 发布包 SFC 清单为兼容基线，不把它们泛化成完整 uni-app runtime。
+- uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 与 uview-plus 分别以 `@wot-ui/ui@2.2.0`、`uview-plus@3.8.86` 的 npm 发布包 SFC 清单为兼容基线，不把它们泛化成完整 uni-app runtime。
 - 分包、插件、worker 和 lib mode 的性能判断都先看产物结构与 `wv analyze`，再改 chunk/shared 策略。
 
 ## 参考决策表

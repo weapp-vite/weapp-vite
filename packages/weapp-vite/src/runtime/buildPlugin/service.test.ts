@@ -22,6 +22,7 @@ const createCompilerContextMock = vi.hoisted(() => vi.fn(async () => ({
     closeAll: vi.fn(),
   },
 })))
+const disableProjectPrivateConfigHotReloadMock = vi.hoisted(() => vi.fn(async () => true))
 const syncProjectConfigToOutputMock = vi.hoisted(() => vi.fn(async () => {}))
 const generateLibDtsMock = vi.hoisted(() => vi.fn(async () => {}))
 const createSharedBuildConfigMock = vi.hoisted(() => vi.fn(() => ({ shared: true })))
@@ -105,6 +106,7 @@ vi.mock('../../createContext', () => ({
 }))
 
 vi.mock('../../utils/projectConfig', () => ({
+  disableProjectPrivateConfigHotReload: disableProjectPrivateConfigHotReloadMock,
   syncProjectConfigToOutput: syncProjectConfigToOutputMock,
 }))
 
@@ -322,6 +324,8 @@ describe('runtime buildPlugin service', () => {
     devBuildWatcherQueue.length = 0
     vi.clearAllMocks()
     buildMock.mockReset()
+    disableProjectPrivateConfigHotReloadMock.mockReset()
+    disableProjectPrivateConfigHotReloadMock.mockResolvedValue(true)
     runStatefulHmrDevMock.mockReset()
     resetEmittedOutputCachesMock.mockReset()
     isOutputRootInsideOutDirMock.mockImplementation((outDir: string, pluginOutputRoot: string) => {
@@ -420,6 +424,73 @@ describe('runtime buildPlugin service', () => {
     expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('HMR 切换：关闭微信开发者工具“热重载”后重启 wv dev'))
   })
 
+  it.each([
+    { configured: undefined, compileHotReLoad: true },
+    { configured: 'auto' as const, compileHotReLoad: true },
+    { configured: 'stateful-experimental' as const, compileHotReLoad: false },
+  ])('forces classic dev for Skyline ($configured, hot reload: $compileHotReLoad)', async ({ configured, compileHotReLoad }) => {
+    const watcher = createManualWatcher()
+    buildMock
+      .mockResolvedValueOnce({
+        output: [{ fileName: 'app.json', source: JSON.stringify({ renderer: 'skyline' }), type: 'asset' }],
+      })
+      .mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    if (configured) {
+      ctx.configService.weappViteConfig.hmr = { runtime: configured }
+    }
+    ctx.configService.projectPrivateConfig = {
+      setting: { compileHotReLoad },
+    }
+
+    const buildPromise = createBuildService(ctx).build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    expect(runStatefulHmrDevMock).not.toHaveBeenCalled()
+    expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(watcher, '/')
+    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('app.json'))
+    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('developers.weixin.qq.com'))
+    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（自动降级：Skyline 暂不支持微信开发者工具热重载）')
+    if (compileHotReLoad) {
+      expect(disableProjectPrivateConfigHotReloadMock).toHaveBeenCalledWith('/project/project.private.config.json')
+      expect(ctx.configService.projectPrivateConfig.setting.compileHotReLoad).toBe(false)
+    }
+    else {
+      expect(disableProjectPrivateConfigHotReloadMock).not.toHaveBeenCalled()
+    }
+  })
+
+  it('keeps the Skyline classic fallback when private config writeback fails', async () => {
+    const watcher = createManualWatcher()
+    buildMock
+      .mockResolvedValueOnce({
+        output: [
+          { fileName: 'app.json', source: JSON.stringify({ pages: ['pages/skyline/index'] }), type: 'asset' },
+          { fileName: 'pages/skyline/index.json', source: JSON.stringify({ renderer: 'skyline' }), type: 'asset' },
+        ],
+      })
+      .mockResolvedValueOnce(watcher)
+    disableProjectPrivateConfigHotReloadMock.mockRejectedValueOnce(new Error('read-only config'))
+    const ctx = createMockContext()
+    ctx.configService.projectPrivateConfig = {
+      setting: { compileHotReLoad: true },
+    }
+
+    const buildPromise = createBuildService(ctx).build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    expect(runStatefulHmrDevMock).not.toHaveBeenCalled()
+    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('无法自动关闭'))
+    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('read-only config'))
+    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（自动降级：Skyline 暂不支持微信开发者工具热重载）')
+  })
+
   it('keeps stateful snapshot builds in memory until the session writer commits them', async () => {
     const watcher = { close: vi.fn(async () => {}) }
     buildMock
@@ -478,7 +549,6 @@ describe('runtime buildPlugin service', () => {
     runStatefulHmrDevMock.mockRejectedValueOnce(new StatefulHmrRuntimeCompatibilityError('missing DevRuntime'))
     buildMock.mockResolvedValueOnce(watcher)
     const ctx = createMockContext()
-    ctx.configService.weappViteConfig.hmr = { runtime: 'auto' }
     ctx.configService.projectPrivateConfig = {
       setting: { compileHotReLoad: true },
     }

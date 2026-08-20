@@ -2,8 +2,9 @@
 
 ## 前提
 
-- 只支持微信小程序；确认 `DevTools` 服务端口、热重载和 `setting.compileHotReLoad: true`。
-- 显式 `weapp.hmr.runtime` 优先；未配置时核对工作区 `compileHotReLoad` 自动选择结果。
+- 只支持微信小程序 WebView；确认 `DevTools` 服务端口、热重载和 `setting.compileHotReLoad: true`。
+- 先检查实际 bundle 中的应用/页面 JSON 是否使用 Skyline；命中时工具会关闭项目私有配置中的热重载并强制降级 classic。
+- 显式 `weapp.hmr.runtime` 通常优先；Skyline 兼容降级会覆盖显式 stateful，其他场景未配置时核对工作区 `compileHotReLoad` 自动选择结果。
 - 排障时先用 `classic` 建立行为基线，再显式启用 `stateful-experimental`。
 
 ## 判断

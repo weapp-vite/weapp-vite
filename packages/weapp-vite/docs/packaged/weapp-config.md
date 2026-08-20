@@ -344,9 +344,9 @@ export default defineConfig({
 
 安全的 JavaScript/Vue 更新会保留当前 Page/Component 实例、route/query、输入和可序列化 data/setup ref，并替换原生 Page、原生 Component 与 wevu 方法。CSS、资源、JSON/配置、不兼容模块图或补丁失败会回退完整构建与当前路由重载。
 
-`auto` 在 `project.private.config.json` 的 `setting.compileHotReLoad` 严格为 `true` 时选择 `stateful-experimental`，否则选择 `classic`；非微信平台也会回退到 `classic`。该判断只在启动时执行，修改开发者工具设置后需要重启 `wv dev`。启动日志会以 `HMR 模式` 和 `HMR 切换` 两行显示最终模式、选择来源，以及通过 DevTools 热重载开关或 `weapp.hmr.runtime` 切换模式的方法。显式配置 `classic` 或 `stateful-experimental` 始终优先。
+`auto` 在 `project.private.config.json` 的 `setting.compileHotReLoad` 严格为 `true` 时选择 `stateful-experimental`，否则选择 `classic`；非微信平台也会回退到 `classic`。该判断只在启动时执行，修改开发者工具设置后需要重启 `wv dev`。启动日志会以 `HMR 模式` 和 `HMR 切换` 两行显示最终模式、选择来源，以及通过 DevTools 热重载开关或 `weapp.hmr.runtime` 切换模式的方法。显式配置通常优先，但 Skyline 兼容降级不受显式配置覆盖。
 
-状态保持模式目前只支持微信小程序，需要微信开发者工具开启服务端口和热重载。需要既有写盘/刷新行为时显式配置 `classic`。
+状态保持模式目前只支持微信小程序 WebView，需要微信开发者工具开启服务端口和热重载。微信开发者工具暂不支持 Skyline 热重载；首次编译检测到任意生成的应用或页面 JSON 使用 `renderer: 'skyline'` 时，`wv dev` 会输出带官方兼容文档链接的警告，将当前项目私有配置中的 `setting.compileHotReLoad` 持久化为 `false`，并强制使用 `classic`，包括显式配置 `stateful-experimental` 的场景。其他私有配置字段不会改变，切回 WebView 后也不会自动重新开启热重载。需要既有写盘/刷新行为时显式配置 `classic`。
 
 ### `hmr.logLevel` / `hmr.profileJson`
 
