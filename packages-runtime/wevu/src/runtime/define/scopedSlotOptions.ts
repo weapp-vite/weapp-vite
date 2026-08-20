@@ -294,6 +294,68 @@ function setOwnerProxy(instance: any, proxy: any) {
   return changed
 }
 
+function isSnapshotObject(value: unknown): value is Record<string, any> {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
+function splitOwnerSnapshotFunctions(
+  value: any,
+  path: string,
+  functionPayload: Record<string, any>,
+  visiting: WeakSet<object>,
+): any {
+  if (typeof value === 'function') {
+    functionPayload[path] = value
+    return undefined
+  }
+  if (value == null || typeof value !== 'object') {
+    return value
+  }
+  if (visiting.has(value)) {
+    return undefined
+  }
+  if (Array.isArray(value)) {
+    visiting.add(value)
+    const output = value.map((item, index) => {
+      const next = splitOwnerSnapshotFunctions(item, `${path}.${index}`, functionPayload, visiting)
+      return next === undefined ? null : next
+    })
+    visiting.delete(value)
+    return output
+  }
+  if (!isSnapshotObject(value)) {
+    return cloneSnapshotValue(value)
+  }
+  visiting.add(value)
+  const output: Record<string, any> = {}
+  for (const [key, child] of Object.entries(value)) {
+    const next = splitOwnerSnapshotFunctions(child, `${path}.${key}`, functionPayload, visiting)
+    if (next !== undefined) {
+      output[key] = next
+    }
+  }
+  visiting.delete(value)
+  return output
+}
+
+function createOwnerSetDataPayload(snapshot: Record<string, any>) {
+  const functionPayload: Record<string, any> = {}
+  const ownerSnapshot = splitOwnerSnapshotFunctions(
+    snapshot,
+    WEVU_SLOT_OWNER_KEY,
+    functionPayload,
+    new WeakSet(),
+  )
+  return {
+    [WEVU_SLOT_OWNER_KEY]: ownerSnapshot,
+    ...functionPayload,
+  }
+}
+
 function updateOwnerBindings(instance: any, snapshot: Record<string, any>, proxy: any, computed?: ComputedDefinitions) {
   const proxyChanged = setOwnerProxy(instance, proxy)
   const { snapshotChanged: slotPropsChanged } = syncSlotPropsData(instance)
@@ -314,7 +376,7 @@ function updateOwnerBindings(instance: any, snapshot: Record<string, any>, proxy
     }
   }
   if (ownerChanged && typeof instance?.setData === 'function') {
-    instance.setData({ [WEVU_SLOT_OWNER_KEY]: nextOwnerSnapshot })
+    instance.setData(createOwnerSetDataPayload(nextOwnerSnapshot))
   }
   if (ownerChanged || proxyChanged || slotPropsChanged) {
     flushScopedSlotComputedBindings(instance, computed)

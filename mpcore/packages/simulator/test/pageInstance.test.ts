@@ -48,4 +48,22 @@ describe('createPageInstance', () => {
 
     expect(callback).toHaveBeenCalledWith(1, 'entry', 'pages/demo/index')
   })
+
+  it('keeps function values when setData uses nested paths', () => {
+    const queryFn = vi.fn(() => ['foo', 'bar'])
+    const page = createPageInstance('/pages/demo/index', {
+      data: {
+        __wvOwner: {
+          label: 'Result',
+        },
+      },
+    })
+
+    page.setData({
+      '__wvOwner.queryFn': queryFn,
+    })
+
+    expect(page.data.__wvOwner.queryFn).toBe(queryFn)
+    expect(page.data.__wvOwner.queryFn()).toEqual(['foo', 'bar'])
+  })
 })
