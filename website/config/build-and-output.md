@@ -162,7 +162,9 @@ wv build --scope packages/order
 
 - 产物 `app.json.pages` 只在包含主包时保留。
 - 产物 `app.json.subPackages` 只保留参与 scope 的分包。
-- `preloadRule` 会同步过滤到参与 scope 的页面和分包。
+- `preloadRule` 只保留参与 scope 的触发页，并按分包 `root` / `name` 过滤 `packages`；`__APP__` 仅在主包参与构建时保留。
+- `tabBar.list` 只保留仍在本次主包中的页面；过滤后少于微信要求的 2 项时会删除整个 `tabBar`。
+- `entryPagePath` 指向被排除的主包页面时会删除，由本次主包 `pages` 的第一项接管默认启动页。
 - 开启 `weapp.autoRoutes` 时，`weapp-vite/auto-routes` 导出的 `pages`、`subPackages`、typed router 也会基于 scope 后的结果生成。
 - 开发态 watcher 会收窄到主包 `pages/**` 与参与 scope 的分包 root。
 

@@ -200,17 +200,11 @@ describe.sequential('wevu app runtime HMR', () => {
           [
             'import { onLaunch, ref } from \'wevu\'',
             'import { normalizeClass } from \'wevu/internal-template\'',
-          ].join('\n'),
-        )
-        .replace(
-          'const tabBarList = [',
-          [
+            '',
             'const hmrProbeRef = ref(0)',
             'const hmrProbeClass = normalizeClass([\'wevu-hmr-probe\'])',
             'void hmrProbeRef',
             'void hmrProbeClass',
-            '',
-            'const tabBarList = [',
           ].join('\n'),
         ),
       'utf8',

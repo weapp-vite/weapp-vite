@@ -217,6 +217,8 @@ wv build --scope packages/order
 - `wv build --scope packages/order` 默认仍包含主包。
 - 最终产物 `app.json.subPackages` 只包含参与 scope 的分包。
 - 未参与 scope 的分包页面不会被注册到本次产物。
+- `preloadRule.packages` 会按参与 scope 的分包 `root` / `name` 裁剪；主包标记 `__APP__` 也会跟随主包范围。
+- `tabBar.list` 会删除未注册的页面，剩余不足 2 项时直接删除整个 `tabBar`，避免生成微信无法加载的配置。
 - 开启 `autoRoutes` 时，`weapp-vite/auto-routes` 也只导出参与 scope 的主包页面和分包页面。
 
 也可以把常用 scope 固化到配置里：

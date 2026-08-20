@@ -117,7 +117,7 @@ wv build --scope main,packages/order --analyze
 - CLI `--scope` 的优先级高于配置文件中的 `weapp.buildScope`。
 - 不传 `--scope` 时保持完整构建行为。
 - 传入 `--scope packages/order` 时默认仍包含主包，因此最终产物会包含主包页面和 `packages/order` 分包。
-- 生成的 `app.json` 会同步裁剪 `subPackages` 与 `preloadRule`，未参与 scope 的分包不会被注册到本次产物。
+- 生成的 `app.json` 会同步裁剪 `subPackages`、`preloadRule`、`tabBar` 与失效的 `entryPagePath`，未参与 scope 的页面和分包不会被派生配置继续引用。
 
 ### 3) `analyze`
 

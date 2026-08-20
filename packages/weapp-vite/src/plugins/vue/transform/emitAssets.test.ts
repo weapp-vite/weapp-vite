@@ -63,6 +63,40 @@ describe('emitAssets', () => {
     ])
   })
 
+  it('finalizes merged json config after combining the existing asset', () => {
+    const emitter = createEmitter()
+    const bundle: Record<string, any> = {
+      'app.json': {
+        type: 'asset',
+        fileName: 'app.json',
+        source: JSON.stringify({ fromExisting: true }),
+      },
+    }
+    const finalizeConfig = vi.fn(config => ({
+      ...config,
+      finalized: true,
+    }))
+
+    emitSfcJsonAsset(emitter.ctx, bundle, 'app', {
+      config: JSON.stringify({ fromVue: true }),
+    }, {
+      finalizeConfig,
+      kind: 'app',
+      mergeExistingAsset: true,
+    })
+
+    expect(finalizeConfig).toHaveBeenCalledWith({
+      fromExisting: true,
+      fromVue: true,
+    })
+    expect(JSON.parse(bundle['app.json'].source)).toEqual({
+      finalized: true,
+      fromExisting: true,
+      fromVue: true,
+    })
+    expect(emitter.emitFile).not.toHaveBeenCalled()
+  })
+
   it('replaces an existing script chunk code without emitting a duplicate file', () => {
     const emitter = createEmitter()
     const existingChunk = {

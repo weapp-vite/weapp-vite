@@ -3,7 +3,7 @@ import routes from 'weapp-vite/auto-routes'
 import { onLaunch } from 'wevu'
 import { ensureGithubIssuesRouter } from './shared/appRouter'
 
-const tabBarList = [
+const defaultTabBarList = [
   {
     pagePath: 'pages/issue-705/index',
     text: 'issue-705',
@@ -22,15 +22,50 @@ const tabBarList = [
   },
 ].filter(item => routes.pages.includes(item.pagePath))
 
+const issue793BuildScopeEnabled = routes.pages.includes('pages/issue-793/index')
+  || routes.subPackages.some(subPackage => subPackage.root === 'subs')
+const tabBarList = issue793BuildScopeEnabled
+  ? [
+      {
+        pagePath: 'pages/issue-793/index',
+        text: 'issue-793',
+      },
+      {
+        pagePath: 'pages/issue-793-settings/index',
+        text: 'issue-793-settings',
+      },
+      {
+        pagePath: 'subs/issue-793/index',
+        text: 'issue-793-subpackage',
+      },
+    ]
+  : defaultTabBarList
+
 defineAppJson({
   pages: routes.pages,
   subPackages: routes.subPackages,
   subpackages: routes.subPackages,
+  ...(issue793BuildScopeEnabled
+    ? {
+        entryPagePath: 'pages/issue-793/index',
+        preloadRule: {
+          'pages/issue-793/index': {
+            packages: ['subs', 'missing'],
+          },
+          'subs/issue-793/index': {
+            packages: ['__APP__'],
+          },
+        },
+      }
+    : {}),
   ...(tabBarList.length >= 2
     ? {
         tabBar: {
+          backgroundColor: '#ffffff',
+          color: '#000000',
           custom: true,
           list: tabBarList,
+          selectedColor: '#000000',
         },
       }
     : {}),

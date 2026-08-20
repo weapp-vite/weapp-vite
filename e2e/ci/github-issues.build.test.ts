@@ -419,7 +419,7 @@ async function runSlotFallbackCompilerOffBuild() {
   distVariant = null
 }
 
-async function runIssue793Build() {
+async function runIssue793Build(scope: 'main' | 'subpackage' = 'main') {
   await fs.remove(ISSUE_793_DIST_ROOT)
 
   await execa('node', [
@@ -435,7 +435,7 @@ async function runIssue793Build() {
     stdio: 'inherit',
     env: {
       ...sanitizeBuildCommandEnv(),
-      WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE: 'true',
+      WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE: scope === 'main' ? 'true' : 'subpackage',
     },
   })
 
@@ -444,17 +444,49 @@ async function runIssue793Build() {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
-  it('issue #793: excludes out-of-scope subpackages from routes and output', async () => {
+  it('issue #793: keeps derived app config aligned with the scoped routes', async () => {
     await runIssue793Build()
 
     const appJson = await fs.readJSON(path.join(ISSUE_793_DIST_ROOT, 'app.json')) as {
+      entryPagePath?: string
       pages?: string[]
+      preloadRule?: Record<string, unknown>
       subPackages?: Array<{ root?: string, pages?: string[] }>
+      tabBar?: { list?: Array<{ pagePath?: string }> }
     }
 
-    expect(appJson.pages).toEqual(['pages/issue-793/index'])
+    expect(appJson.entryPagePath).toBe('pages/issue-793/index')
+    expect(appJson.pages).toHaveLength(2)
+    expect(appJson.pages).toEqual(expect.arrayContaining([
+      'pages/issue-793/index',
+      'pages/issue-793-settings/index',
+    ]))
+    expect(appJson.preloadRule).toBeUndefined()
     expect(appJson.subPackages).toEqual([])
+    expect(appJson.tabBar?.list?.map(item => item.pagePath)).toEqual([
+      'pages/issue-793/index',
+      'pages/issue-793-settings/index',
+    ])
     expect(await fs.pathExists(path.join(ISSUE_793_DIST_ROOT, 'subs'))).toBe(false)
+
+    await runIssue793Build('subpackage')
+
+    const subpackageAppJson = await fs.readJSON(path.join(ISSUE_793_DIST_ROOT, 'app.json')) as {
+      entryPagePath?: string
+      pages?: string[]
+      preloadRule?: Record<string, unknown>
+      subPackages?: Array<{ root?: string, pages?: string[] }>
+      tabBar?: unknown
+    }
+
+    expect(subpackageAppJson.entryPagePath).toBeUndefined()
+    expect(subpackageAppJson.pages).toEqual([])
+    expect(subpackageAppJson.preloadRule).toBeUndefined()
+    expect(subpackageAppJson.subPackages).toEqual([
+      { root: 'subs', pages: ['issue-793/index'] },
+    ])
+    expect(subpackageAppJson.tabBar).toBeUndefined()
+    expect(await fs.pathExists(path.join(ISSUE_793_DIST_ROOT, 'pages'))).toBe(false)
   })
 
   it('issue #805: lowers optional chaining inside nullish coalescing expressions', async () => {

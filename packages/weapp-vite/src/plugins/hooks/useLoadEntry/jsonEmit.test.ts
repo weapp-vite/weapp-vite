@@ -106,6 +106,58 @@ describe('createJsonEmitManager', () => {
     })
   })
 
+  it('applies build scope whenever the final app json asset is registered', () => {
+    const manager = createJsonEmitManager({
+      platform: 'weapp',
+      relativeOutputPath(filePath: string) {
+        return filePath.replace('/project/src/', '')
+      },
+      weappViteConfig: {
+        buildScope: {
+          include: [],
+        },
+      },
+    } as any)
+
+    manager.register({
+      type: 'app',
+      json: {
+        pages: ['pages/home/index', 'pages/profile/index'],
+        preloadRule: {
+          'pages/home/index': {
+            packages: ['packages/excluded'],
+          },
+        },
+        subPackages: [
+          { root: 'packages/excluded', pages: ['index'] },
+        ],
+        tabBar: {
+          color: '#000000',
+          selectedColor: '#ffffff',
+          backgroundColor: '#ffffff',
+          list: [
+            { pagePath: 'pages/home/index', text: 'home' },
+            { pagePath: 'pages/profile/index', text: 'profile' },
+            { pagePath: 'pages/missing/index', text: 'missing' },
+          ],
+        },
+      },
+      jsonPath: '/project/src/app.json',
+    })
+
+    expect(manager.map.get('app.json')?.entry.json).toMatchObject({
+      pages: ['pages/home/index', 'pages/profile/index'],
+      subPackages: [],
+      tabBar: {
+        list: [
+          { pagePath: 'pages/home/index', text: 'home' },
+          { pagePath: 'pages/profile/index', text: 'profile' },
+        ],
+      },
+    })
+    expect(manager.map.get('app.json')?.entry.json.preloadRule).toBeUndefined()
+  })
+
   it('does not normalize app side json files as app config', () => {
     const manager = createJsonEmitManager({
       relativeOutputPath(filePath: string) {

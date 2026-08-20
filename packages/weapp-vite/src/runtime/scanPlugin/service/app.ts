@@ -4,8 +4,8 @@ import type { AppEntry, SubPackage } from '../../../types'
 import type { ScanServiceStateLike } from './shared'
 import { isObject } from '@weapp-core/shared'
 import path from 'pathe'
-import { applyPreloadRulesToAppJson, findJsEntry, findJsonEntry, findVueEntry, normalizeAppJson } from '../../../utils'
-import { applyBuildScopeToAppConfig, resolveBuildScope } from '../../buildScope'
+import { findJsEntry, findJsonEntry, findVueEntry, normalizeAppJson } from '../../../utils'
+import { finalizeAppConfigForBuild } from '../../appConfig'
 import { createWarnOnce, mergeAutoRoutePages } from './shared'
 
 export function resolveScanAppBasename(absoluteSrcRoot: string) {
@@ -243,15 +243,13 @@ export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanS
       }
     }
     await applyAutoRoutesToAppConfigIfNeeded(ctx, config)
-    applyPreloadRulesToAppJson(
-      config,
-      ctx.configService.weappViteConfig.routeRules,
-      ctx.configService.platform,
-    )
-    applyBuildScopeToAppConfig(config, resolveBuildScope(ctx.configService.weappViteConfig.buildScope))
+    config = finalizeAppConfigForBuild(config, {
+      buildScope: ctx.configService.weappViteConfig.buildScope,
+      platform: ctx.configService.platform,
+      routeRules: ctx.configService.weappViteConfig.routeRules,
+    })
 
     if (isObject(config)) {
-      normalizeAppConfigSubPackages(config)
       const finalEntryPath = appEntryPath || vueAppPath!
       const resolvedAppEntry: AppEntry = {
         path: finalEntryPath,
