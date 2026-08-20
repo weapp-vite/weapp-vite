@@ -108,6 +108,10 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue706.test.ts': [
     'pages/issue-706/**',
   ],
+  'github-issues.runtime.issue829.test.ts': [
+    'pages/issue-829/**',
+    'components/issue-829/**',
+  ],
   'github-issues.runtime.require-async.test.ts': [
     'pages/require-async/**',
     'subpackages/require-async/**',
