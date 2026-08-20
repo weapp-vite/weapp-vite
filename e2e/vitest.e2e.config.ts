@@ -1,8 +1,8 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
-import { ensureIdeWarningReportEnv } from './utils/ideWarningReport'
-import { resolveE2EMaxWorkers } from './utils/max-workers'
-import { resolveVitestIncludePatterns } from './utils/vitestTargetFile'
+import { ensureIdeWarningReportEnv } from './utils/ideWarningReport.ts'
+import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
+import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
 
 const RETAIL_PARITY_TEST_PATH = path.resolve(
   import.meta.dirname,

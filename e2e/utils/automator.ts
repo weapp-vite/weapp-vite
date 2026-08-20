@@ -1763,8 +1763,13 @@ function handleLaunchError(error: unknown, project: string): never {
 
 async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIMEOUT, rootSelectors: string[] = []) {
   const start = Date.now()
-  const renderedSelectors = [...rootSelectors, 'view', 'text', 'button', 'input', 'scroll-view', 'image', '*']
-  const selectors = [...rootSelectors, 'page', 'body', 'weapp-app-shell', 'view']
+  const hasExplicitRootSelectors = rootSelectors.length > 0
+  const renderedSelectors = hasExplicitRootSelectors
+    ? rootSelectors
+    : ['view', 'text', 'button', 'input', 'scroll-view', 'image', '*']
+  const selectors = hasExplicitRootSelectors
+    ? rootSelectors
+    : ['page', 'body', 'weapp-app-shell', 'view']
   while (Date.now() - start <= timeoutMs) {
     try {
       if (typeof page?.waitForRendered === 'function') {
@@ -1826,7 +1831,7 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
           return root
         }
       }
-      if (typeof page?.data === 'function') {
+      if (!hasExplicitRootSelectors && typeof page?.data === 'function') {
         const remaining = Math.max(1, timeoutMs - (Date.now() - start))
         const queryTimeout = Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, remaining)
         await runWithTimeout(
@@ -2019,6 +2024,7 @@ async function resolveCurrentPageAfterWarmupFailure(
   route: string,
   error: unknown,
   project: string,
+  rootSelectors: string[] = [],
 ) {
   if (typeof miniProgram.currentPage !== 'function') {
     return undefined
@@ -2038,7 +2044,7 @@ async function resolveCurrentPageAfterWarmupFailure(
       return undefined
     }
 
-    const pageRoot = await waitForRelaunchPageRoot(currentPage)
+    const pageRoot = await waitForRelaunchPageRoot(currentPage, RELAUNCH_READY_TIMEOUT, rootSelectors)
     if (!pageRoot) {
       process.stdout.write(`[info] [runtime:warmup-current-page] route=${route} current=${currentRoute} root=<missing> project=${project}\n`)
       return undefined
@@ -2078,6 +2084,7 @@ async function warmupMiniProgramRoute(
     checkDevtoolsLog: options.checkDevtoolsLog,
     closeOnQueryTimeout: options.allowRelaunch === false,
     queryTimeoutMs: currentPageReadyTimeout,
+    rootSelectors: options.rootSelectors,
   })
   if (currentPage) {
     process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page project=${project}\n`)
@@ -2115,7 +2122,7 @@ async function warmupMiniProgramRoute(
   }
   catch (error) {
     const currentPage = isLikelyRelaunchRetryableError(error)
-      ? await resolveCurrentPageAfterWarmupFailure(miniProgram, route, error, project)
+      ? await resolveCurrentPageAfterWarmupFailure(miniProgram, route, error, project, options.rootSelectors)
       : undefined
     if (!currentPage) {
       if (isWarmupRelaunchTimeoutError(error)) {

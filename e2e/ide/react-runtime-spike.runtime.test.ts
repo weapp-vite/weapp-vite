@@ -159,8 +159,8 @@ async function launchReactRuntimeSpikeAutomator() {
       engineBuildFallbackSettleMs: 5_000,
       maxLaunchRetries: 7,
       refreshProjectAfterConnect: true,
-      retryWarmupTimeout: true,
       skipRelaunchPageRootCheck: true,
+      skipWarmup: true,
     })
 
     try {

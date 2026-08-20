@@ -193,16 +193,23 @@ async function expectRenderedSelectorBox(miniProgram: any, selector: string, tim
     throw new TypeError('current page does not support renderedNodes')
   }
 
+  const startedAt = Date.now()
   await waitForRenderedSelector(miniProgram, selector, timeoutMs)
-  const nodes = await page.renderedNodes(selector, {
-    timeout: timeoutMs,
-  })
-  const visibleNode = nodes.find((node: { height?: number, width?: number }) => {
-    return Number(node.width ?? 0) > 0 && Number(node.height ?? 0) > 0
-  })
+  let latestNodes: Array<{ height?: number, width?: number }> = []
+  while (Date.now() - startedAt <= timeoutMs) {
+    latestNodes = await page.renderedNodes(selector, {
+      timeout: Math.min(2_000, Math.max(1, timeoutMs - (Date.now() - startedAt))),
+    })
+    const visibleNode = latestNodes.find((node) => {
+      return Number(node.width ?? 0) > 0 && Number(node.height ?? 0) > 0
+    })
+    if (visibleNode) {
+      return visibleNode
+    }
+    await new Promise(resolve => setTimeout(resolve, 160))
+  }
 
-  expect(visibleNode, `${selector} should be rendered with a real layout box: ${JSON.stringify(nodes).slice(0, 500)}`).toBeTruthy()
-  return visibleNode
+  expect(undefined, `${selector} should be rendered with a real layout box: ${JSON.stringify(latestNodes).slice(0, 500)}`).toBeTruthy()
 }
 
 function isRecoverableAutomatorConnectionError(error: unknown) {
@@ -413,6 +420,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       retryWarmupTimeout: true,
       timeout: AUTOMATOR_LAUNCH_TIMEOUT,
       warmupRoute: INDEX_ROUTE,
+      warmupRootSelectors: [COUNT_BUTTON_WRAPPER_SELECTOR],
     })
   }
 

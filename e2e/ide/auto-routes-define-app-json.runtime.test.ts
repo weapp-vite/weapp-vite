@@ -8,6 +8,7 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/auto-routes-define-app-json')
 const HOME_ROUTE = '/pages/home/index'
+const HOME_ROOT_SELECTOR = '#auto-routes-home'
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const LEADING_SLASH_RE = /^\/+/
 
@@ -294,6 +295,8 @@ async function getSharedMiniProgram() {
       delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
       sharedMiniProgram = await launchAutomator({
         projectPath: APP_ROOT,
+        warmupRootSelectors: [HOME_ROOT_SELECTOR],
+        warmupRoute: HOME_ROUTE,
       })
     }
     finally {

@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
-import { resolveE2EMaxWorkers } from './utils/max-workers'
+import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 
 export default defineConfig({
   oxc: {

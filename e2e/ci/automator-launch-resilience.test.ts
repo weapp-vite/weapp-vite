@@ -866,10 +866,13 @@ describe.sequential('automator launch resilience', () => {
     })
 
     const missingRootPage = createMockPage('/pages/index/index')
-    missingRootPage.$ = vi.fn(async () => null)
-    missingRootPage.$$ = vi.fn(async () => [])
+    missingRootPage.$ = vi.fn(async (selector: string) => selector === '#ready-root' ? null : { tag: 'generic-root' })
+    missingRootPage.$$ = vi.fn(async (selector: string) => selector === '#ready-root' ? [] : [{ tag: 'generic-root' }])
     const firstMiniProgram = createMockMiniProgram({ currentPage: missingRootPage })
-    firstMiniProgram.reLaunch = firstMiniProgram.__rawReLaunch = vi.fn(async () => missingRootPage)
+    firstMiniProgram.reLaunch = firstMiniProgram.__rawReLaunch = vi.fn(async () => {
+      await new Promise(resolve => setTimeout(resolve, 80))
+      return missingRootPage
+    })
     const secondMiniProgram = createMockMiniProgram({ currentPage: createMockPage('/pages/index/index') })
     launchMock
       .mockResolvedValueOnce(firstMiniProgram)
