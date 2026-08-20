@@ -12,11 +12,16 @@ export interface TransformWxsCodeOptions {
   extension?: string
 }
 
+export interface TransformWxsCodeResult {
+  result: ReturnType<typeof babel.transformSync>
+  importees: Array<{ source: string }>
+}
+
 export {
   normalizeWxsFilename,
 }
 
-export function transformWxsCode(code: string, options?: TransformWxsCodeOptions) {
+export function transformWxsCode(code: string, options?: TransformWxsCodeOptions): TransformWxsCodeResult {
   const filename = options?.filename ?? 'script.ts'
   const extension = options?.extension ?? 'wxs'
   const preserveEsmExports = extension.replace(/^\./, '') === 'sjs'

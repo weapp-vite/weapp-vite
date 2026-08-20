@@ -15,7 +15,9 @@ const issue642ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_642_SCOPED ===
 const issue724ProbeEnabled = process.env.WEAPP_GITHUB_ISSUE_724_PROBE === 'true'
 const issue779CssPreEnabled = process.env.WEAPP_GITHUB_ISSUE_779_CSS_PRE === 'true'
 const issue793BuildScope = process.env.WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE
-const issue793BuildScopeEnabled = issue793BuildScope === 'true' || issue793BuildScope === 'subpackage'
+const issue793BuildScopeEnabled = issue793BuildScope === 'true'
+  || issue793BuildScope === 'subpackage'
+  || issue793BuildScope === 'main-with-subpackage'
 const issue651NoExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverNoExt/index')
 const issue651WithExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverWithExt/index.vue')
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
@@ -469,7 +471,9 @@ export default defineConfig({
             ...(issue793BuildScope === 'subpackage'
               ? { includeMainPackage: false }
               : {}),
-            include: issue793BuildScope === 'subpackage' ? ['subs'] : ['pages'],
+            include: issue793BuildScope === 'subpackage'
+              ? ['subs']
+              : ['pages', ...(issue793BuildScope === 'main-with-subpackage' ? ['subs'] : [])],
           },
         }
       : {}),
