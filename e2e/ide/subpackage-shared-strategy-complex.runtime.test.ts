@@ -107,6 +107,7 @@ function createRuntimeSuite(options: FixtureSuiteOptions) {
       sharedMiniProgram = await launchAutomator({
         projectPath: appRoot,
         skipRelaunchPageRootCheck: true,
+        skipWarmup: true,
       })
     }
     return sharedMiniProgram

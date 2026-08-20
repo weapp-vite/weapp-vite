@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config'
-import { HMR_GUARD_ALL_TESTS } from './scripts/hmr-guard-manifest'
-import { resolveE2EMaxWorkers } from './utils/max-workers'
+import { HMR_GUARD_ALL_TESTS } from './scripts/hmr-guard-manifest.ts'
+import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 
 export default defineConfig({
   test: {

@@ -127,7 +127,8 @@ for (const jsFormat of JS_FORMATS) {
       if (!sharedMiniProgram) {
         sharedMiniProgram = await launchAutomator({
           projectPath: APP_ROOT,
-          retryWarmupTimeout: true,
+          skipRelaunchPageRootCheck: true,
+          skipWarmup: true,
         })
       }
       return sharedMiniProgram

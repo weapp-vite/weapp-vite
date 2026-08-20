@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
-import { resolveE2EMaxWorkers } from './utils/max-workers'
-import { resolveVitestIncludePatterns } from './utils/vitestTargetFile'
+import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
+import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
 
 export default defineConfig({
   test: {

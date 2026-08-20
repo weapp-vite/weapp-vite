@@ -374,9 +374,8 @@ export async function getSharedMiniProgram() {
     sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
       skipRelaunchPageRootCheck: true,
+      skipWarmup: true,
       timeout: 120_000,
-      warmupAnyPage: true,
-      warmupAllowRelaunch: false,
     })
   }
   return sharedMiniProgram
@@ -409,8 +408,7 @@ export async function launchIsolatedMiniProgram() {
   return await launchAutomator({
     projectPath: APP_ROOT,
     skipRelaunchPageRootCheck: true,
+    skipWarmup: true,
     timeout: 120_000,
-    warmupAnyPage: true,
-    warmupAllowRelaunch: false,
   })
 }
