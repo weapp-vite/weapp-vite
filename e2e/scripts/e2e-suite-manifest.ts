@@ -59,6 +59,7 @@ export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
   'ide/github-issues.runtime.issue642.test.ts',
   'ide/github-issues.runtime.issue705.test.ts',
   'ide/github-issues.runtime.issue706.test.ts',
+  'ide/github-issues.runtime.issue829.test.ts',
   'ide/github-issues.runtime.lifecycle.test.ts',
   'ide/github-issues.runtime.miniprogram-computed.test.ts',
   'ide/github-issues.runtime.props.test.ts',

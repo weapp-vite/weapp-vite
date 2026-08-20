@@ -52,6 +52,37 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).not.toHaveBeenCalled()
   })
 
+  it('writes owner function props through nested setData paths', () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()!
+    const ownerId = allocateOwnerId()
+    const queryFn = vi.fn(() => Promise.resolve(['foo', 'bar']))
+    const nestedHandler = vi.fn()
+    updateOwnerSnapshot(ownerId, {
+      label: 'Result',
+      queryFn,
+      handlers: {
+        nestedHandler,
+        ignored: 'value',
+      },
+    }, { queryFn, handlers: { nestedHandler } } as any)
+
+    const inst: any = {
+      properties: { __wvOwnerId: ownerId },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+
+    expect(inst.setData).toHaveBeenCalledWith({
+      '__wvOwner': {
+        label: 'Result',
+        handlers: { ignored: 'value' },
+      },
+      '__wvOwner.queryFn': queryFn,
+      '__wvOwner.handlers.nestedHandler': nestedHandler,
+    })
+  })
+
   it('does not publish equivalent owner snapshots repeatedly', () => {
     createWevuScopedSlotComponent()
     const opts = registeredComponents.pop()!
