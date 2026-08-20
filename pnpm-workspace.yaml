@@ -86,7 +86,7 @@ catalog:
   tsx: ^4.23.12
   typescript: ^6.0.3
   uview-plus: 3.8.108
-  vite: 8.2.1
+  vite: 8.2.2
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.41
   vue-tsc: ^3.3.10

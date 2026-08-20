@@ -66,7 +66,7 @@ export const TEMPLATE_CATALOG = {
   tslib: '^2.8.1',
   tsx: '^4.23.12',
   typescript: '^6.0.3',
-  vite: '8.2.1',
+  vite: '8.2.2',
   vue: '^3.5.41',
   zod: '^4.4.3'
 } as const
