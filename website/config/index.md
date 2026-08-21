@@ -146,7 +146,7 @@ export default defineConfig(env => ({
 | [Vue SFC 配置](./vue.md) | `weapp.vue.template`、模板编译开关、自动导入保留字段 |
 | [Wevu 编译期配置](./wevu.md) | `weapp.wevu.preset` / `defaults` / `autoSetDataPick` |
 | [开发态 HMR 配置](./hmr.md) | `weapp.hmr.runtime` / `sharedChunks` / `touchAppWxss` / `logLevel` / `profileJson` |
-| [分包配置](./subpackages.md) | `weapp.subPackages`、共享样式、分包级 `inlineConfig` |
+| [分包与共享样式配置](./subpackages.md) | `weapp.styles`、`weapp.subPackages`、共享样式、分包级 `inlineConfig` |
 | [Worker 配置](./worker.md) | `weapp.worker.entry` |
 | [库模式配置](./lib.md) | `weapp.lib` 入口、路径、组件 JSON 与 DTS |
 | [生成脚手架配置](./generate.md) | `weapp.generate` 目录、后缀、文件名、模板 |

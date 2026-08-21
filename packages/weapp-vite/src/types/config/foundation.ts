@@ -83,32 +83,40 @@ export interface SubPackage {
   inlineConfig?: Partial<InlineConfig>
 }
 
-export type SubPackageStyleScope = 'all' | 'pages' | 'components'
+export type StyleScope = 'all' | 'pages' | 'components'
 
-export interface SubPackageStyleConfigObject {
-  /** 样式文件路径，可以是相对分包 root、相对 `srcRoot` 或绝对路径 */
+export interface StyleConfigObject {
+  /** 样式文件路径，可以是相对当前包 root、相对 `srcRoot` 或绝对路径 */
   source: string
   /**
    * @description 作用范围快捷配置
    */
-  scope?: SubPackageStyleScope
-  /** 自定义包含路径，支持传入单个 glob 或数组，默认覆盖分包内所有文件 */
+  scope?: StyleScope
+  /** 自定义包含路径，支持传入单个 glob 或数组，默认覆盖当前包内所有文件 */
   include?: string | string[]
   /** 自定义排除路径，支持传入单个 glob 或数组 */
   exclude?: string | string[]
+  /** 是否自动向命中的页面或组件样式注入 `@import`，关闭后只生成独立样式文件 */
+  inject?: boolean
 }
 
-export type SubPackageStyleConfigEntry = string | SubPackageStyleConfigObject
+export type StyleConfigEntry = string | StyleConfigObject
 
-export interface SubPackageStyleEntry {
+export interface StyleEntry {
   source: string
   absolutePath: string
   outputRelativePath: string
   inputExtension: string
-  scope: SubPackageStyleScope
+  scope: StyleScope
   include: string[]
   exclude: string[]
+  inject?: boolean
 }
+
+export type SubPackageStyleScope = StyleScope
+export type SubPackageStyleConfigObject = StyleConfigObject
+export type SubPackageStyleConfigEntry = StyleConfigEntry
+export type SubPackageStyleEntry = StyleEntry
 
 export type GenerateExtensionsOptions = Partial<{
   js: 'js' | 'ts' | (string & {})

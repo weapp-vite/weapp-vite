@@ -36,6 +36,9 @@ describe('sharedStyles helpers', () => {
   })
 
   it('collects style entries from scan service and filters by current subpackage root', () => {
+    const mainEntry = createStyleEntry({
+      outputRelativePath: 'styles/main.wxss',
+    })
     const entryA = createStyleEntry()
     const entryB = createStyleEntry({
       outputRelativePath: 'pkgB/styles/common.wxss',
@@ -43,6 +46,7 @@ describe('sharedStyles helpers', () => {
 
     const ctx = {
       scanService: {
+        mainPackageStyleEntries: [mainEntry],
         subPackageMap: new Map([
           ['pkgA', { styleEntries: [entryA] }],
           ['pkgB', { styleEntries: [entryB] }],
@@ -58,8 +62,50 @@ describe('sharedStyles helpers', () => {
       currentSubPackageRoot: 'pkgB',
     } as any)
 
-    expect(Array.from(all.keys())).toEqual(['pkgA', 'pkgB'])
+    expect(Array.from(all.keys())).toEqual(['', 'pkgA', 'pkgB'])
     expect(Array.from(onlyPkgB.keys())).toEqual(['pkgB'])
+  })
+
+  it('injects main-package styles into pages but not app styles', () => {
+    const sharedStyles = new Map<string, SubPackageStyleEntry[]>([
+      ['', [createStyleEntry({
+        outputRelativePath: 'styles/main.wxss',
+      })]],
+    ])
+    const configService = createConfigService(id => id.includes('/app.') ? 'app.ts' : 'pkgA/pages/foo.ts')
+
+    expect(injectSharedStyleImports(
+      '.page{}',
+      '/abs/pkgA/pages/foo.ts',
+      'pkgA/pages/foo.wxss',
+      sharedStyles,
+      configService,
+    )).toBe('@import \'../../styles/main.wxss\';\n.page{}')
+
+    expect(injectSharedStyleImports(
+      '.app{}',
+      '/abs/app.ts',
+      'app.wxss',
+      sharedStyles,
+      configService,
+    )).toBe('.app{}')
+  })
+
+  it('emits but does not inject entries configured with inject false', () => {
+    const sharedStyles = new Map<string, SubPackageStyleEntry[]>([
+      ['', [createStyleEntry({
+        inject: false,
+        outputRelativePath: 'styles/manual.wxss',
+      })]],
+    ])
+
+    expect(injectSharedStyleImports(
+      '.page{}',
+      '/abs/pages/foo.ts',
+      'pages/foo.wxss',
+      sharedStyles,
+      createConfigService(() => 'pages/foo.ts'),
+    )).toBe('.page{}')
   })
 
   it('returns original css when module path cannot be resolved into src root', () => {

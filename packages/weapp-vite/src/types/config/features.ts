@@ -12,7 +12,7 @@ import type {
   NpmPluginPackageConfig,
   NpmStrategy,
   NpmSubPackageConfig,
-  SubPackageStyleConfigEntry,
+  StyleConfigEntry,
 } from './foundation'
 import type { Resolver } from '@/auto-import-components/resolvers'
 
@@ -272,7 +272,7 @@ export interface WeappSubPackageConfig {
   inlineConfig?: Partial<InlineConfig>
   autoImportComponents?: AutoImportComponentsOption
   watchSharedStyles?: boolean
-  styles?: SubPackageStyleConfigEntry | SubPackageStyleConfigEntry[]
+  styles?: StyleConfigEntry | StyleConfigEntry[]
 }
 
 /**

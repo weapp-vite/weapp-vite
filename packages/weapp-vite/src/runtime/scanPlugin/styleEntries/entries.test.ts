@@ -38,11 +38,12 @@ describe('styleEntries entries', () => {
   })
 
   it('builds stable dedupe keys from normalized output and scopes', () => {
-    expect(createStyleEntryDedupeKey('pkgA/index.wxss', ['**/*'], ['pages/internal/**'])).toBe(
+    expect(createStyleEntryDedupeKey('pkgA/index.wxss', ['**/*'], ['pages/internal/**'], true)).toBe(
       JSON.stringify({
         file: 'pkgA/index.wxss',
         include: ['**/*'],
         exclude: ['pages/internal/**'],
+        inject: true,
       }),
     )
   })
@@ -73,16 +74,18 @@ describe('styleEntries entries', () => {
       scope: 'components',
       include: ['components/**'],
       exclude: ['components/internal/**'],
+      inject: true,
       explicitScope: true,
-    }, '/project/src/shared.scss', 'shared.wxss', 'packages/order', 'packages/order', dedupe, entries)
+    }, '/project/src/shared.scss', 'shared.wxss', 'packages/order', '[分包] 分包 packages/order ', dedupe, entries)
 
     addStyleEntry({
       source: 'shared-duplicate.scss',
       scope: 'components',
       include: ['./components/**'],
       exclude: ['./components/internal/**'],
+      inject: true,
       explicitScope: true,
-    }, '/project/src/shared-duplicate.scss', 'shared.wxss', 'packages/order', 'packages/order', dedupe, entries)
+    }, '/project/src/shared-duplicate.scss', 'shared.wxss', 'packages/order', '[分包] 分包 packages/order ', dedupe, entries)
 
     expect(entries).toEqual([
       {
@@ -93,6 +96,7 @@ describe('styleEntries entries', () => {
         scope: 'components',
         include: ['components/**'],
         exclude: ['components/internal/**'],
+        inject: true,
       },
     ])
   })

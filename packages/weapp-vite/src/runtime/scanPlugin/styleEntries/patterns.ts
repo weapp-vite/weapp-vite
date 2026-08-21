@@ -1,4 +1,4 @@
-import type { SubPackageStyleScope } from '../../../types'
+import type { StyleScope } from '../../../types'
 import { toPosixPath } from '../../../utils'
 import { DEFAULT_SCOPE_INCLUDES } from './config'
 
@@ -35,7 +35,7 @@ export function normalizePattern(pattern: string, normalizedRoot: string): strin
 }
 
 export function resolveIncludePatterns(
-  descriptor: Pick<{ scope: SubPackageStyleScope, include?: string | string[] }, 'scope' | 'include'>,
+  descriptor: Pick<{ scope: StyleScope, include?: string | string[] }, 'scope' | 'include'>,
   normalizedRoot: string,
 ): string[] {
   const normalized = new Set<string>()

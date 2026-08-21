@@ -1,7 +1,7 @@
 import type { FsStats } from '@weapp-core/shared/fs'
 import type { ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../../../context'
-import type { SubPackageStyleEntry } from '../../../types'
+import type { StyleEntry } from '../../../types'
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { fs } from '@weapp-core/shared/fs'
@@ -66,7 +66,7 @@ export interface PreprocessedStyleResult {
 }
 
 export async function renderSharedStyleEntry(
-  entry: SubPackageStyleEntry,
+  entry: StyleEntry,
   _configService: CompilerContext['configService'],
   resolvedConfig?: ResolvedConfig,
 ): Promise<PreprocessedStyleResult> {

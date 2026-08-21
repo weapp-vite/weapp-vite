@@ -34,6 +34,7 @@ describe('styleEntries config', () => {
     expect(coerceStyleConfig(' ./shared/index.scss ')).toEqual({
       source: './shared/index.scss',
       scope: 'all',
+      inject: true,
       explicitScope: false,
     })
 
@@ -50,6 +51,7 @@ describe('styleEntries config', () => {
       scope: 'all',
       include: ['pages/**'],
       exclude: ['pages/internal/**'],
+      inject: true,
       explicitScope: false,
     })
 
@@ -61,7 +63,16 @@ describe('styleEntries config', () => {
       scope: 'components',
       include: undefined,
       exclude: undefined,
+      inject: true,
       explicitScope: true,
+    })
+
+    expect(coerceStyleConfig({
+      source: 'shared/manual.scss',
+      inject: false,
+    })).toMatchObject({
+      source: 'shared/manual.scss',
+      inject: false,
     })
   })
 
