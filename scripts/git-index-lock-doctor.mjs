@@ -33,7 +33,8 @@ function parseWindowsProcessList(output) {
 }
 
 export function isGitProcessCommand(command) {
-  return /(?:^|[\\/\s])git(?:\.exe)?(?:\s|$)/i.test(command.trim())
+  const executable = command.trim().split(/\s+/, 1)[0]?.replace(/^['"]|['"]$/g, '') ?? ''
+  return /(?:^|[\\/])git(?:\.exe)?$/i.test(executable)
 }
 
 export function findActiveGitProcesses(processes) {

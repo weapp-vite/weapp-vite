@@ -22,6 +22,7 @@ it('parses Unix and Windows process listings and detects Git processes', () => {
   assert.deepEqual(findActiveGitProcesses([
     { pid: 101, command: '/usr/bin/git status' },
     { pid: 102, command: 'node build.js' },
+    { pid: 103, command: '/bin/zsh -c git status' },
   ]), [{ pid: 101, command: '/usr/bin/git status' }])
 })
 
