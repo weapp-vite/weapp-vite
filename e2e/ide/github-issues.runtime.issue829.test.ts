@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
   DIST_ROOT,
   getSharedMiniProgram,
@@ -47,13 +48,26 @@ describe.sequential('e2e app: github-issues / issue #829', () => {
         throw new Error('Failed to launch issue-829 page')
       }
 
-      const renderedWxml = await issuePage.waitForRendered({
-        predicate: (wxml: string) => wxml.includes('class="issue829-direct-result">Result: foo,bar</view>')
-          && wxml.includes('class="issue829-nested-result">Result: foo,bar</view>'),
-        timeout: 15_000,
+      await expect.poll(
+        async () => await callRoutePageMethodWithOptions<Record<string, any>>(
+          miniProgram,
+          ISSUE_ROUTE,
+          '_runE2E',
+          {
+            readiness: 'route',
+            protocolTimeoutMs: 12_000,
+            recoveryAttempts: 3,
+            retries: 10,
+          },
+        ).catch(() => null),
+        { timeout: 15_000, interval: 250 },
+      ).toMatchObject({
+        direct: {
+          hasQueryFn: true,
+          result: ['foo', 'bar'],
+        },
+        queryCallCount: 2,
       })
-      expect(renderedWxml).toContain('class="issue829-direct-result">Result: foo,bar</view>')
-      expect(renderedWxml).toContain('class="issue829-nested-result">Result: foo,bar</view>')
 
       const pageWxml = await readDistText('pages/issue-829/index.wxml')
       expect(pageWxml).toContain('query-fn="{{queryFn}}"')

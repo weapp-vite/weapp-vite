@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onShow, ref } from 'wevu'
+import { onAttached, ref } from 'wevu'
 
 const props = defineProps<{
   label?: string
@@ -8,8 +8,19 @@ const props = defineProps<{
 
 const data = ref<string[]>()
 
-onShow(async () => {
+onAttached(async () => {
   data.value = await props.queryFn?.()
+})
+
+function _runE2E() {
+  return {
+    hasQueryFn: typeof props.queryFn === 'function',
+    result: data.value,
+  }
+}
+
+defineExpose({
+  _runE2E,
 })
 </script>
 
