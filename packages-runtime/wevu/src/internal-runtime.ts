@@ -6,6 +6,7 @@ export {
   setWevuDefaults,
 } from './runtime/defaults'
 export {
+  createIsolatedWevuComponentDefinition,
   createWevuComponent,
   createWevuComponentDefinition,
   createWevuScopedSlotComponent,

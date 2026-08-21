@@ -5,6 +5,16 @@ import { defineConfig } from '.'
 const objectConfig = defineConfig({
   weapp: {
     srcRoot: 'src',
+    styles: [
+      'styles/theme.scss',
+      {
+        source: 'styles/manual.less',
+        scope: 'components' as const,
+        include: ['components/**', 'packages/*/components/**'],
+        exclude: 'components/legacy/**',
+        inject: false,
+      },
+    ],
     hmr: {
       runtime: 'auto',
     },
@@ -114,6 +124,19 @@ const objectConfig = defineConfig({
   },
 })
 expectAssignable<string | undefined>(objectConfig.weapp?.srcRoot)
+expectAssignable<string | Array<string | {
+  source: string
+  scope?: 'all' | 'pages' | 'components'
+  include?: string | string[]
+  exclude?: string | string[]
+  inject?: boolean
+}> | {
+  source: string
+  scope?: 'all' | 'pages' | 'components'
+  include?: string | string[]
+  exclude?: string | string[]
+  inject?: boolean
+} | undefined>(objectConfig.weapp?.styles)
 expectAssignable<'auto' | 'classic' | 'stateful-experimental' | undefined>(objectConfig.weapp?.hmr?.runtime)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.wevu?.defaults?.component?.allowNullPropInput)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.wevu?.minify)

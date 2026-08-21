@@ -13,7 +13,9 @@ export default defineConfig({
 })
 ```
 
-该入口只编译并执行 SFC script，不渲染模板、WXML、CSS 或 DOM；`app.vue` 和页面组件也不属于测试对象。完整编译产物、WXML 查询、组件树、宿主 mock 和用户交互仍使用 `@mpcore/test`。
+每次 `mountComponent()` 都会创建独立的 Wevu app context，因此 `global.provide`、插件、mocks、全局属性和卸载状态不会在 wrapper 之间共享。
+
+该入口只编译并执行 SFC script，不渲染模板、WXML、CSS 或 DOM；`app.vue` 和页面组件也不属于测试对象。默认页面判定允许 `pages/**/components/**` 中的普通组件；使用自定义页面目录时，可通过 `wevuSfc({ isPage: filename => boolean })` 提供同步或异步判定。完整编译产物、WXML 查询、组件树、宿主 mock 和用户交互仍使用 `@mpcore/test`。
 
 ## 接入
 

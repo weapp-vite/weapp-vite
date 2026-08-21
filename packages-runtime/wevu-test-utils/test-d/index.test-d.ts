@@ -1,5 +1,6 @@
 import type { Ref } from 'wevu'
 import { mount, mountComponent, mountComposable } from '@wevu/test-utils'
+import { wevuSfc } from '@wevu/test-utils/vitest'
 import { expectType } from 'tsd'
 
 const wrapper = mountComposable<{ count: Ref<number>, increment: () => void }, { initial: number }>((props) => {
@@ -34,3 +35,11 @@ const optionsWrapper = mount<{ label: string }, { label: string }>({
   setup: (props: { label: string }) => ({ label: props.label }),
 })
 expectType<string>(optionsWrapper.vm.label)
+
+const sfcPlugin = wevuSfc({
+  async isPage(filename) {
+    expectType<string>(filename)
+    return filename.endsWith('.page.vue')
+  },
+})
+expectType<'pre'>(sfcPlugin.enforce)

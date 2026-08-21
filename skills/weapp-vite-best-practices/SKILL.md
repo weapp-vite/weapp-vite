@@ -46,6 +46,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp.autoImportComponents`
    - `weapp.uniApp`：实验性外部 uni-app Vue SFC 转换；npm 包必须显式加入 `include` 白名单
    - `weapp.routeRules`
+   - `weapp.styles`：生成主包独立样式入口并按规则注入主包与普通分包；不修改 `app.wxss`，也不跨入独立分包
    - `weapp.buildScope` / `wv dev|build --scope`：限定页面或分包构建时保持 autoRoutes 的主包/分包归属
    - `weapp.typescript`
    - `weapp.hmr.runtime`：显式配置优先；未配置时结合工作区 `compileHotReLoad` 选择 classic 或实验性 stateful 模式；实际 bundle 含 Skyline renderer 时强制关闭 DevTools 热重载并降级 classic
@@ -61,7 +62,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp-vite` 原生命令优先
    - `weapp-ide-cli` 只在 catalog 命中后透传
    - 原生命令包含 `dev` / `serve` / `build` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
-   - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`，分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`
+   - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`、`--preload`；分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`，预下载审计按触发包汇总实际分包体积与共享的 2 MB 额度
    - `preview` / `upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定
    - 不要让未知命令盲目 passthrough
 5. 常见症状先分诊：
@@ -73,6 +74,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - Wot UI / uview-plus / uni-app 组件库异常：同时检查 `weapp.uniApp.include`、resolver 的真实 `resolvedId` / `sourceType: 'wevu-sfc'`，以及目标端条件分支
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`
+   - `preloadRule` 或跨分包跳转：先跑 `wv analyze --preload`，只把宿主导航 API 和可证明路由 binding 作为证据；结合按触发包聚合的实际体积与 2 MB 额度后，再显式配置 `weapp.routeRules.<pattern>.preload`
    - 状态保持 HMR 不生效：先确认生成的应用/页面 JSON 未使用 Skyline；WebView 项目再确认平台为微信、DevTools 开启服务端口与热重载、`compileHotReLoad: true`，并区分安全 JS/Vue 补丁与 CSS/资源/配置的完整重载回退
    - sourcemap 漂移：检查 CLI `--sourcemap` 透传和构建后 npm、平台 API、shared chunk 重写是否组合原 map，不接受只保留旧 map
 6. 评估 Rust/native 加速时，先看真实 profile 和跨边界调用次数：
@@ -90,6 +92,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 小程序单测不使用 jsdom；`@mpcore/test` 只暴露逻辑 WXML 树。测试产物必须通过 `weapp-vite/test` 交给 Vite/Rolldown emit，不能由适配器手写 bundle。
 - uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 与 uview-plus 分别以 `@wot-ui/ui@2.2.0`、`uview-plus@3.8.86` 的 npm 发布包 SFC 清单为兼容基线，不把它们泛化成完整 uni-app runtime。
 - 分包、插件、worker 和 lib mode 的性能判断都先看产物结构与 `wv analyze`，再改 chunk/shared 策略。
+- 主包共享样式优先使用 `weapp.styles` 保持独立产物；`inject: false` 只 emit，独立分包必须通过自己的 `subPackages.<root>.styles` 持有副本。
 
 ## 参考决策表
 

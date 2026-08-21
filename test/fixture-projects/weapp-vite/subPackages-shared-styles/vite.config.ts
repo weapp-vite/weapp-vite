@@ -3,6 +3,16 @@ import { defineConfig } from 'weapp-vite'
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
+    styles: [
+      {
+        source: 'styles/main.scss',
+        include: ['pages/**', 'packageA/**'],
+      },
+      {
+        source: 'styles/manual.less',
+        inject: false,
+      },
+    ],
     subPackages: {
       packageA: {
         styles: [
@@ -24,6 +34,7 @@ export default defineConfig({
           },
         ],
       },
+      packageB: {},
     },
   },
 })

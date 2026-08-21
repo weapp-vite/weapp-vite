@@ -1,5 +1,4 @@
 import type { CAC } from 'cac'
-import type { ChildProcess } from 'node:child_process'
 import type { InlineConfig } from 'vite'
 import type { AnalyzeDashboardHandle, DashboardRuntimeEventInput } from '../analyze/dashboard'
 import type { GlobalCLIOptions } from '../types'
@@ -16,34 +15,8 @@ import { logBuildPackageSizeReport } from '../logBuildPackageSizeReport'
 import { setCommandNodeEnv } from '../nodeEnv'
 import { openIde, resolveIdeProjectPath } from '../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
+import { terminateStaleSassEmbeddedProcess } from '../processCleanup'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
-
-function isSassEmbeddedChild(handle: unknown): handle is ChildProcess {
-  return Boolean(
-    handle
-    && typeof handle === 'object'
-    && 'kill' in handle
-    && 'spawnfile' in handle
-    && typeof (handle as ChildProcess).spawnfile === 'string'
-    && (handle as ChildProcess).spawnfile?.includes('sass-embedded'),
-  )
-}
-
-function terminateStaleSassEmbeddedProcess() {
-  const getHandles = (process as typeof process & { _getActiveHandles?: () => unknown[] })._getActiveHandles
-  const handles = typeof getHandles === 'function' ? getHandles() : undefined
-  if (!Array.isArray(handles)) {
-    return
-  }
-  for (const handle of handles) {
-    if (isSassEmbeddedChild(handle)) {
-      try {
-        handle.kill()
-      }
-      catch { }
-    }
-  }
-}
 
 function emitDashboardEvents(handle: AnalyzeDashboardHandle | undefined, events: DashboardRuntimeEventInput[]) {
   handle?.emitRuntimeEvents(events)

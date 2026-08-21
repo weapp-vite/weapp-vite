@@ -94,7 +94,8 @@ import './pages/index/index.styl'
 
 - 使用 `@/`、`./` 等路径导入图片时，Rolldown 会自动复制并生成正确的产物路径。
 - 若资源位于 `public/`，请改用绝对路径 `/icons/logo.png`，该目录会被原样复制。
-- 可结合 [`weapp.subPackages[].styles`](/config/subpackages.md#subpackages-styles) 在普通或独立分包中注入共享主题、变量。
+- 使用 [`weapp.styles`](/config/subpackages.md#weapp-styles) 生成主包独立样式入口，并在主包与普通分包中按规则复用。
+- 使用 [`weapp.subPackages[].styles`](/config/subpackages.md#subpackages-styles) 为普通或独立分包声明包内共享主题、变量；独立分包不能引用 `weapp.styles` 生成的主包资源。
 
 ## 常见问题
 

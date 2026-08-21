@@ -1,7 +1,7 @@
 import type { OutputAsset, OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
-import type { SubPackageStyleEntry } from '../types'
+import type { StyleEntry } from '../types'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { preprocessCSS } from 'vite'
@@ -38,7 +38,7 @@ interface PreparedStyleAsset {
 }
 
 interface SharedStyleEmissionTask {
-  entry: SubPackageStyleEntry
+  entry: StyleEntry
   fileName: string
   absolutePath: string
 }
@@ -302,7 +302,7 @@ function injectSharedStyleImportsCached(
   css: string,
   modulePath: string,
   fileName: string,
-  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  sharedStyles: Map<string, StyleEntry[]>,
   configService: CompilerContext['configService'],
   cache: SharedStyleImportCache,
 ) {
@@ -408,7 +408,7 @@ async function handleBundleEntry(
   bundleKey: string,
   asset: OutputAsset | OutputBundle[string],
   configService: CompilerContext['configService'],
-  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  sharedStyles: Map<string, StyleEntry[]>,
   cssAssetOwners: Map<string, Set<string>>,
   emitted: Set<string>,
   sharedStyleImportCache: SharedStyleImportCache,
@@ -571,7 +571,7 @@ async function handleBundleEntry(
 async function emitSharedStyleEntries(
   this: any,
   ctx: CompilerContext,
-  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  sharedStyles: Map<string, StyleEntry[]>,
   emitted: Set<string>,
   configService: CompilerContext['configService'],
   bundle: OutputBundle,
@@ -646,7 +646,7 @@ async function emitSharedStyleEntries(
 }
 
 async function prepareSharedStyleImportForModule(
-  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  sharedStyles: Map<string, StyleEntry[]>,
   configService: CompilerContext['configService'],
   sharedStyleImportCache: SharedStyleImportCache,
   moduleId: string,
@@ -690,7 +690,7 @@ async function prepareSharedStyleImportForModule(
 async function emitSharedStyleImportsForChunks(
   this: any,
   ctx: CompilerContext,
-  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  sharedStyles: Map<string, StyleEntry[]>,
   emitted: Set<string>,
   configService: CompilerContext['configService'],
   bundle: OutputBundle,

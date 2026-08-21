@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { watch } from 'wevu'
+import { inject, watch } from 'wevu'
 import OptionsLogic from './fixtures/OptionsLogic.vue'
 import { mount, mountComponent } from './index'
 
@@ -90,5 +90,51 @@ describe('Vue SFC logic mounting', () => {
     await wrapper.setProps({ value: 2 })
     expect(calls).toEqual(['observer:2', 'watch:2'])
     wrapper.unmount()
+  })
+
+  it('isolates app context between live component wrappers', () => {
+    const token = Symbol('isolated-component-token')
+    const cleanup = vi.fn()
+    const install = vi.fn((app: { onUnmount: (cleanup: () => void) => void }) => {
+      app.onUnmount(cleanup)
+    })
+    const component = {
+      setup() {
+        return {
+          injected: inject(token, 'missing'),
+        }
+      },
+    }
+
+    const first = mountComponent(component, {
+      global: {
+        mocks: { $mountName: 'first' },
+        plugins: [{ install }],
+        provide: { [token]: 'first' },
+      },
+    })
+    expect(first.vm.injected).toBe('first')
+    expect(first.vm.$mountName).toBe('first')
+
+    const second = mountComponent(component, {
+      global: {
+        mocks: { $mountName: 'second' },
+        plugins: [{ install }],
+        provide: { [token]: 'second' },
+      },
+    })
+    expect(second.vm.injected).toBe('second')
+    expect(second.vm.$mountName).toBe('second')
+    expect(first.vm.injected).toBe('first')
+    expect(first.vm.$mountName).toBe('first')
+    expect(install).toHaveBeenCalledTimes(2)
+
+    second.unmount()
+    expect(cleanup).toHaveBeenCalledTimes(1)
+    expect(first.isUnmounted).toBe(false)
+    expect(first.vm.$mountName).toBe('first')
+
+    first.unmount()
+    expect(cleanup).toHaveBeenCalledTimes(2)
   })
 })

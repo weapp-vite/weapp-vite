@@ -2,7 +2,7 @@ import type { MutableCompilerContext } from '../../../context'
 import type { SubPackage, SubPackageMetaValue } from '../../../types'
 import { normalizeRoot } from '../../../utils/path'
 import { requireConfigService } from '../../utils/requireConfigService'
-import { normalizeSubPackageStyleEntries } from '../styleEntries'
+import { normalizeMainPackageStyleEntries, normalizeSubPackageStyleEntries } from '../styleEntries'
 import { resolveSubPackageEntries } from '../subpackages'
 
 export function loadSubPackages(ctx: MutableCompilerContext) {
@@ -14,6 +14,10 @@ export function loadSubPackages(ctx: MutableCompilerContext) {
   if (scanState.isDirty || subPackageMap.size === 0) {
     subPackageMap.clear()
     independentSubPackageMap.clear()
+    scanState.mainPackageStyleEntries = normalizeMainPackageStyleEntries(
+      configService.weappViteConfig?.styles,
+      configService,
+    )
     if (scanState.isDirty) {
       independentDirtyRoots.clear()
     }

@@ -51,6 +51,7 @@ describe('subPackages shared styles', () => {
     expect(pageContent).toContain('@import \'../../pages.wxss\';')
     expect(pageContent).toContain('@import \'../../styles/common.wxss\';')
     expect(pageContent).toContain('@import \'../../styles/pages.wxss\';')
+    expect(pageContent).toContain('@import \'../../../styles/main.wxss\';')
     expect(pageContent).not.toContain('@import \'../../components.wxss\';')
     expect(pageContent).not.toContain('@import \'../../styles/components.wxss\';')
 
@@ -119,9 +120,25 @@ describe('subPackages shared styles', () => {
     expect(normalizeEol(rootComponentsContent).trim()).toBe('.package-components {\n  border: 1px dashed #999;\n}')
   })
 
-  it('keeps main package styles untouched', async () => {
+  it('emits main-package entries and injects them without modifying app.wxss', async () => {
     const mainStylePath = path.resolve(distDir, 'pages/index/index.wxss')
     const content = await read(mainStylePath)
-    expect(content).not.toContain('@import')
+    expect(content).toContain('@import \'../../styles/main.wxss\';')
+    expect(content).not.toContain('manual.wxss')
+
+    const sharedContent = await read(path.resolve(distDir, 'styles/main.wxss'))
+    const manualContent = await read(path.resolve(distDir, 'styles/manual.wxss'))
+    expect(sharedContent).toContain('color: #3367d6;')
+    expect(manualContent).toContain('color: #8b5cf6;')
+    const appContent = await read(path.resolve(distDir, 'app.wxss'))
+    expect(appContent).toContain('.app-root')
+    expect(appContent).not.toContain('styles/main.wxss')
+  })
+
+  it('does not inject main-package entries into independent subpackages', async () => {
+    const independentStylePath = path.resolve(distDir, 'packageB/pages/bar/index.wxss')
+    const content = await read(independentStylePath)
+    expect(content).toContain('.independent-page')
+    expect(content).not.toContain('styles/main.wxss')
   })
 })

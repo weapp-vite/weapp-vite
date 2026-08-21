@@ -65,7 +65,9 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       return runtimeApp
     },
     provide(key: any, value: any) {
-      setRuntimeAppProvidedValue(runtimeApp, key, value)
+      setRuntimeAppProvidedValue(runtimeApp, key, value, {
+        syncGlobal: defaultsScope !== 'component',
+      })
       return runtimeApp
     },
     onUnmount(cleanup: () => void) {

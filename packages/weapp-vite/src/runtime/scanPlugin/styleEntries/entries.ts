@@ -1,5 +1,5 @@
 import type { MutableCompilerContext } from '../../../context'
-import type { SubPackageStyleEntry } from '../../../types'
+import type { StyleEntry } from '../../../types'
 import type { ResolvedStyleConfig } from './config'
 import fs from 'node:fs'
 import path from 'pathe'
@@ -16,11 +16,13 @@ export function createStyleEntryDedupeKey(
   posixOutput: string,
   include: string[],
   exclude: string[],
+  inject: boolean,
 ) {
   return JSON.stringify({
     file: posixOutput,
     include,
     exclude,
+    inject,
   })
 }
 
@@ -44,10 +46,10 @@ export function addStyleEntry(
   descriptor: ResolvedStyleConfig,
   absolutePath: string,
   posixOutput: string,
-  root: string,
   normalizedRoot: string,
+  warningPrefix: string,
   dedupe: Set<string>,
-  normalized: SubPackageStyleEntry[],
+  normalized: StyleEntry[],
 ) {
   const include = resolveIncludePatterns({ scope: descriptor.scope, include: descriptor.include }, normalizedRoot)
   const exclude = resolveExcludePatterns({ exclude: descriptor.exclude }, normalizedRoot)
@@ -55,11 +57,11 @@ export function addStyleEntry(
   exclude.sort()
 
   if (!include.length) {
-    logger.warn(`[分包] 分包 ${root} 样式入口 \`${descriptor.source}\` 缺少有效作用范围，已按 \`**/*\` 处理。`)
+    logger.warn(`${warningPrefix}样式入口 \`${descriptor.source}\` 缺少有效作用范围，已按 \`**/*\` 处理。`)
     include.push('**/*')
   }
 
-  const key = createStyleEntryDedupeKey(posixOutput, include, exclude)
+  const key = createStyleEntryDedupeKey(posixOutput, include, exclude, descriptor.inject)
   if (dedupe.has(key)) {
     return
   }
@@ -73,6 +75,7 @@ export function addStyleEntry(
     scope: descriptor.scope,
     include,
     exclude,
+    inject: descriptor.inject,
   })
 }
 
@@ -81,7 +84,7 @@ export function appendDefaultScopedStyleEntries(
   normalizedRoot: string,
   service: NonNullable<MutableCompilerContext['configService']>,
   dedupe: Set<string>,
-  normalized: SubPackageStyleEntry[],
+  normalized: StyleEntry[],
 ) {
   let previousBase = ''
   let matchedCurrentBase = false
@@ -100,6 +103,7 @@ export function appendDefaultScopedStyleEntries(
       scope: candidate.scope,
       include: undefined,
       exclude: undefined,
+      inject: true,
       explicitScope: true,
     }
     const outputAbsolutePath = changeFileExtension(candidate.absolutePath, service.outputExtensions.wxss)
@@ -108,7 +112,7 @@ export function appendDefaultScopedStyleEntries(
       continue
     }
     const posixOutput = toPosixPath(outputRelativePath)
-    addStyleEntry(descriptor, candidate.absolutePath, posixOutput, root, normalizedRoot, dedupe, normalized)
+    addStyleEntry(descriptor, candidate.absolutePath, posixOutput, normalizedRoot, `[分包] 分包 ${root} `, dedupe, normalized)
     matchedCurrentBase = true
   }
 }

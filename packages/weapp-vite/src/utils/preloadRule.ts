@@ -16,6 +16,7 @@ export interface PreloadRuleAppJson {
 export interface PreloadPage {
   route: string
   packageRoot?: string
+  independent?: boolean
 }
 
 export interface PreloadRuleMatch {
@@ -148,6 +149,7 @@ function collectSubPackages(appJson: PreloadRuleAppJson) {
     return pages.map(page => ({
       route: normalizePagePath(path.posix.join(root, page)),
       packageRoot: root,
+      ...(item.independent === true ? { independent: true } : {}),
     }))
   })
 }
@@ -165,6 +167,34 @@ export function findPreloadRuleKey(page: string, preloadRule: Record<string, unk
   const candidates = pageCandidates(page)
   const key = Object.keys(preloadRule).find(candidate => candidates.includes(normalizePagePath(candidate)))
   return key
+}
+
+export function resolvePreloadPackageIdentifier(
+  value: string,
+  appJson: PreloadRuleAppJson,
+) {
+  const normalized = value === '__APP__'
+    ? value
+    : normalizePackageRoot(value)
+  if (!normalized || normalized === '__APP__') {
+    return normalized || undefined
+  }
+
+  const source = Array.isArray(appJson.subPackages)
+    ? appJson.subPackages
+    : Array.isArray(appJson.subpackages)
+      ? appJson.subpackages
+      : []
+  for (const item of source) {
+    if (!isObject(item) || typeof item.root !== 'string') {
+      continue
+    }
+    const root = normalizePackageRoot(item.root)
+    if (root === normalized || (typeof item.name === 'string' && item.name === value)) {
+      return root
+    }
+  }
+  return normalized
 }
 
 function cloneRule(rule: unknown) {
@@ -229,7 +259,7 @@ export function suggestPreloadRules(
   pageSources: ReadonlyMap<string, { template?: string, script?: string }>,
 ): PreloadRuleSuggestions {
   const pages = collectPreloadPages(appJson)
-  const packageByRoute = new Map(pages.map(page => [page.route, page.packageRoot]))
+  const pageByRoute = new Map(pages.map(page => [page.route, page]))
   const suggestions: PreloadRuleSuggestion[] = []
   const uncovered = new Set<string>()
 
@@ -237,7 +267,11 @@ export function suggestPreloadRules(
     const source = pageSources.get(page.route)
     for (const kind of ['template', 'script'] as const) {
       for (const target of collectStaticRouteTargets(source?.[kind] ?? '', kind, page.route)) {
-        const packageRoot = packageByRoute.get(target)
+        const targetPage = pageByRoute.get(target)
+        if (!targetPage) {
+          continue
+        }
+        const packageRoot = targetPage.packageRoot ?? (page.independent ? '__APP__' : undefined)
         if (!packageRoot || packageRoot === page.packageRoot) {
           continue
         }

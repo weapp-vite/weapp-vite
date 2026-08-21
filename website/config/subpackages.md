@@ -1,6 +1,6 @@
 ---
 title: 分包配置
-description: weapp-vite 会读取 app.json.subPackages 生成分包产物；weapp.subPackages 则提供独立分包、分包级内联配置、自动导入覆盖与共享样式等增强能力。
+description: weapp-vite 支持主包共享样式入口，并会读取 app.json.subPackages 生成分包产物；weapp.subPackages 则提供独立分包、分包级内联配置、自动导入覆盖与共享样式等增强能力。
 keywords:
   - 配置
   - config
@@ -12,14 +12,50 @@ keywords:
 
 # 分包配置 {#subpackages-config}
 
-`app.json.subPackages` 决定“小程序有哪些分包”，而 `weapp.subPackages` 决定“这些分包在构建阶段还需要哪些额外能力”。
+`weapp.styles` 负责主包与普通分包可复用的共享样式入口；`app.json.subPackages` 决定“小程序有哪些分包”，而 `weapp.subPackages` 决定“这些分包在构建阶段还需要哪些额外能力”。
 
-这两者要一起看：
+这些配置要一起看：
 
 - `app.json.subPackages`：声明分包本身
 - `weapp.subPackages`：补充构建期增强
 
 [[toc]]
+
+## `weapp.styles` {#weapp-styles}
+
+- **类型**：`StyleConfigEntry | StyleConfigEntry[]`
+- **默认值**：`undefined`
+
+用于把主包源码目录中的样式编译为独立产物，并按规则向主包与普通分包的页面或组件样式注入相对 `@import`。它不会把内容合并进 `app.wxss`。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    styles: [
+      {
+        source: 'styles/theme.scss',
+        include: ['pages/**', 'components/**', 'packages/*/**'],
+      },
+      {
+        source: 'styles/manual.less',
+        inject: false,
+      },
+    ],
+  },
+})
+```
+
+构建后会生成 `styles/theme.wxss` 和 `styles/manual.wxss`：
+
+- `theme.wxss` 会被命中的主包、普通分包页面或组件引用。
+- `manual.wxss` 只生成文件，供源码使用 `@wv-keep-import` 或其他原生方式手动引用。
+- `app.wxss` 不会被自动修改。
+- 独立分包不能依赖主包资源，因此不会注入这些入口。需要在独立分包使用同一主题时，应在对应的 `weapp.subPackages.<root>.styles` 中显式声明一份分包内入口。
+
+> [!NOTE]
+> `weapp.styles` 的 `include` / `exclude` 相对 `srcRoot` 匹配。`scope: 'pages'` 和 `scope: 'components'` 的默认规则分别是根级 `pages/**` 与 `components/**`；要覆盖分包目录，请使用显式 glob。
 
 ## `weapp.subPackages` {#weapp-subpackages}
 
@@ -30,7 +66,7 @@ keywords:
     inlineConfig?: Partial<InlineConfig>
     autoImportComponents?: AutoImportComponents | boolean
     watchSharedStyles?: boolean
-    styles?: SubPackageStyleConfigEntry | SubPackageStyleConfigEntry[]
+    styles?: StyleConfigEntry | StyleConfigEntry[]
   }>
   ```
 - **默认值**：`undefined`
@@ -107,13 +143,13 @@ export default defineConfig({
 
 ### `styles`
 
-- **类型**：`SubPackageStyleConfigEntry | SubPackageStyleConfigEntry[]`
+- **类型**：`StyleConfigEntry | StyleConfigEntry[]`
 
 用于声明分包共享样式入口。
 
 ## `subPackages.*.styles` {#subpackages-styles}
 
-`SubPackageStyleConfigEntry` 支持两种形式：
+`StyleConfigEntry` 支持两种形式：
 
 - 字符串
 - 对象
@@ -126,6 +162,7 @@ export default defineConfig({
   scope?: 'all' | 'pages' | 'components'
   include?: string | string[]
   exclude?: string | string[]
+  inject?: boolean
 }
 ```
 
@@ -158,6 +195,7 @@ export default defineConfig({
   - `pages`：只作用于页面
   - `components`：只作用于组件
 - `include` / `exclude`：更精细的 glob 匹配
+- `inject`：默认 `true`；设为 `false` 时只生成独立样式文件，不自动插入 `@import`
 
 ## 与自动路由的关系
 

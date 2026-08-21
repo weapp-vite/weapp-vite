@@ -30,8 +30,9 @@ import type {
   JsFormat,
   JsonConfig,
   MpPlatform,
+  StyleConfigEntry,
+  StyleEntry,
   SubPackage,
-  SubPackageStyleEntry,
   WeappLibConfig,
   WeappManagedTypeScriptConfig,
   WeappWebConfig,
@@ -46,7 +47,7 @@ export interface SubPackageMetaValue {
   entries: string[]
   subPackage: SubPackage
   autoImportComponents?: AutoImportComponentsOption
-  styleEntries?: SubPackageStyleEntry[]
+  styleEntries?: StyleEntry[]
   watchSharedStyles?: boolean
 }
 
@@ -196,6 +197,10 @@ export interface WeappViteConfig {
   npm?: WeappNpmConfig
   generate?: GenerateOptions
   tsconfigPaths?: boolean | TsconfigPathsOptions
+  /**
+   * 主包共享样式入口。生成独立样式文件，并按配置注入主包与普通分包页面或组件。
+   */
+  styles?: StyleConfigEntry | StyleConfigEntry[]
   subPackages?: Record<string, WeappSubPackageConfig>
   copy?: CopyOptions
   web?: WeappWebConfig

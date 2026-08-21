@@ -93,6 +93,10 @@ export default defineConfig({
         },
       },
     },
+    styles: {
+      source: 'shared/styles/theme.scss',
+      include: ['pages/**', 'components/**', 'packages/*/**'],
+    },
     subPackages: {
       'packages/order': {
         independent: true,
@@ -128,6 +132,8 @@ export default defineConfig({
 ```
 
 > 提示：`styles` 支持 `wxss/css/scss/less/stylus` 等格式，`weapp-vite` 会统一转换为目标平台后缀并按作用域注入。
+
+> 主包入口：顶层 `weapp.styles` 会生成独立样式资产，并注入主包与普通分包中命中的页面或组件，但不会修改 `app.wxss`。独立分包不能依赖主包资源，仍需使用自己的 `subPackages.<root>.styles`。对象配置设为 `inject: false` 时只生成文件，不自动注入。
 
 > 路径解析说明：`styles.source` 以“分包根目录”为基准。以上示例里，`packages/order` 访问 `src/shared/styles/components.scss` 需要写成 `../../shared/styles/components.scss`，而不是 `../shared/styles/components.scss`。
 
@@ -316,9 +322,9 @@ export default defineConfig({
 
 ### 分包预加载
 
-- 在 `app.json` 的 `preloadRule` 中声明触发页、目标分包、网络条件与超时时间。
+- 在 `app.json` 的 `preloadRule` 中声明触发页、目标分包与网络条件。
 - 也可以在 `weapp.routeRules.<pattern>.preload` 中显式声明，微信构建时由 `weapp-vite` 合成为 `app.json.preloadRule`；手写的同一路由规则优先。
-- 使用 `wv analyze --preload` 审计静态模板和路由调用，获取跨分包预下载建议；动态路由和业务访问策略仍需人工确认。
+- 使用 `wv analyze --preload` 审计静态模板和可证明来源的路由调用，获取跨分包预下载建议；命令会通过不写盘的分析构建读取实际分包体积，并按触发页所属包汇总共享的 2 MB 额度。动态路由和业务访问策略仍需人工确认。
 - 首屏页通常指定为触发页，将次屏高频路径加入 `packages`，并配置 `network: "all"` 以便 Wi-Fi/4G 均可预下载。
 - 如需更细粒度控制，可以在页面 `onLoad` 中结合 `wx.preloadSubpackage` 做二次确认。
 

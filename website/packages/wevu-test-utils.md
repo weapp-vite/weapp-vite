@@ -68,6 +68,16 @@ export default defineConfig({
 })
 ```
 
+默认页面判定会拒绝 `app.vue` 和 `pages/**` 下的页面文件，同时允许 `pages/**/components/**` 中的普通组件。自定义路由目录可通过同步或异步 `isPage(filename)` 覆盖页面判定；回调收到的文件名已移除查询参数并统一为 `/` 分隔符：
+
+```ts
+export default defineConfig({
+  plugins: [wevuSfc({
+    isPage: filename => filename.includes('/routes/'),
+  })],
+})
+```
+
 ```ts
 import { mountComponent } from '@wevu/test-utils'
 import Counter from './Counter.vue'
@@ -82,7 +92,7 @@ wrapper.unmount()
 
 `wevuSfc()` 只把 `@wevu/compiler` 生成的 script 交给 Vitest，保留 source map，并把 `virtual:weapp-vite/runtime`、`/reactivity`、`/template` 映射到 Wevu internal runtime。它不使用 `@vitejs/plugin-vue`，不渲染模板、WXML、CSS 或 DOM。
 
-`mountComponent()` 可接收编译后的 SFC 默认导出、`DefineComponentOptions` 或 Wevu component definition。它复用组件 props 默认值、data、computed、methods、watch、setup、Options API provide/inject、emits 和生命周期，执行 `created -> attached -> ready`，卸载时调用 `detached`。`mount()` 会自动识别组件定义；需要保持 `{ setup }` composable 的明确语义时可继续使用 `mountComposable()`。
+`mountComponent()` 可接收编译后的 SFC 默认导出、`DefineComponentOptions` 或 Wevu component definition。它复用组件 props 默认值、data、computed、methods、watch、setup、Options API provide/inject、emits 和生命周期，执行 `created -> attached -> ready`，卸载时调用 `detached`。每个 wrapper 都拥有独立的 Wevu app context，`global.provide`、插件、mocks、全局属性和卸载状态不会跨挂载共享。`mount()` 会自动识别组件定义；需要保持 `{ setup }` composable 的明确语义时可继续使用 `mountComposable()`。
 
 app/page SFC、完整构建产物、逻辑 WXML、选择器、布局、宿主 mock 和真实交互不属于 `mountComponent()`；这些场景使用 [`@mpcore/test`](/packages/mpcore-test)。`onUpdated` 仍沿用 Wevu runtime 语义，本工具不会伪造生产更新。
 

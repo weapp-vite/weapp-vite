@@ -1,4 +1,4 @@
-import type { SubPackageStyleConfigEntry, SubPackageStyleScope } from '../../../types'
+import type { StyleConfigEntry, StyleScope } from '../../../types'
 import logger from '../../../logger'
 import { hasOwn } from '../../utils/object'
 
@@ -18,19 +18,20 @@ export const SUPPORTED_SHARED_STYLE_EXTS = new Set(SUPPORTED_SHARED_STYLE_EXTENS
 
 export interface ResolvedStyleConfig {
   source: string
-  scope: SubPackageStyleScope
+  scope: StyleScope
   include?: string | string[]
   exclude?: string | string[]
+  inject: boolean
   explicitScope: boolean
 }
 
-export const DEFAULT_SCOPE_INCLUDES: Record<SubPackageStyleScope, string[]> = {
+export const DEFAULT_SCOPE_INCLUDES: Record<StyleScope, string[]> = {
   all: ['**/*'],
   pages: ['pages/**'],
   components: ['components/**'],
 }
 
-export const DEFAULT_SCOPED_FILES: Array<{ base: string, scope: SubPackageStyleScope }> = [
+export const DEFAULT_SCOPED_FILES: Array<{ base: string, scope: StyleScope }> = [
   { base: 'index', scope: 'all' },
   { base: 'pages', scope: 'pages' },
   { base: 'components', scope: 'components' },
@@ -38,7 +39,7 @@ export const DEFAULT_SCOPED_FILES: Array<{ base: string, scope: SubPackageStyleS
 
 export const DEFAULT_SCOPED_EXTENSIONS = Array.from(SUPPORTED_SHARED_STYLE_EXTS)
 
-export function coerceScope(scope: unknown): SubPackageStyleScope {
+export function coerceScope(scope: unknown): StyleScope {
   const value = typeof scope === 'string' ? scope.trim() : ''
   if (value === 'pages' || value === 'components') {
     return value
@@ -49,7 +50,7 @@ export function coerceScope(scope: unknown): SubPackageStyleScope {
   return 'all'
 }
 
-export function coerceStyleConfig(entry: SubPackageStyleConfigEntry): ResolvedStyleConfig | undefined {
+export function coerceStyleConfig(entry: StyleConfigEntry): ResolvedStyleConfig | undefined {
   if (typeof entry === 'string') {
     const source = entry.trim()
     if (!source) {
@@ -58,6 +59,7 @@ export function coerceStyleConfig(entry: SubPackageStyleConfigEntry): ResolvedSt
     return {
       source,
       scope: 'all',
+      inject: true,
       explicitScope: false,
     }
   }
@@ -78,6 +80,7 @@ export function coerceStyleConfig(entry: SubPackageStyleConfigEntry): ResolvedSt
     scope,
     include: entry.include,
     exclude: entry.exclude,
+    inject: entry.inject !== false,
     explicitScope: hasExplicitScope,
   }
 }

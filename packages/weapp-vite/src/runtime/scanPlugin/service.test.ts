@@ -7,6 +7,7 @@ const findVueEntryMock = vi.hoisted(() => vi.fn<(id: string) => Promise<string |
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 const extractConfigFromVueMock = vi.hoisted(() => vi.fn<(id: string) => Promise<Record<string, any> | undefined>>())
 const requireConfigServiceMock = vi.hoisted(() => vi.fn((ctx: any) => ctx.configService))
+const normalizeMainPackageStyleEntriesMock = vi.hoisted(() => vi.fn(() => []))
 const normalizeSubPackageStyleEntriesMock = vi.hoisted(() => vi.fn(() => []))
 const resolveSubPackageEntriesMock = vi.hoisted(() => vi.fn((subPackage: any) => [`${subPackage.root}/index`]))
 
@@ -52,6 +53,7 @@ vi.mock('../utils/requireConfigService', () => ({
 }))
 
 vi.mock('./styleEntries', () => ({
+  normalizeMainPackageStyleEntries: normalizeMainPackageStyleEntriesMock,
   normalizeSubPackageStyleEntries: normalizeSubPackageStyleEntriesMock,
 }))
 
@@ -133,6 +135,7 @@ function mockAppScriptEntries(options: {
 describe('scanPlugin service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    normalizeMainPackageStyleEntriesMock.mockReturnValue([])
     vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
   })
 
@@ -651,7 +654,10 @@ describe('scanPlugin service', () => {
   })
 
   it('builds subpackage metadata, tracks independent roots and reuses cached entries while clean', async () => {
+    const mainPackageStyleEntries = [{ source: 'styles/main.scss' }]
+    normalizeMainPackageStyleEntriesMock.mockReturnValue(mainPackageStyleEntries)
     const ctx = createCtx()
+    ctx.configService.weappViteConfig.styles = ['styles/main.scss']
     ctx.runtimeState.scan.appEntry = {
       path: '/project/src/app.ts',
       jsonPath: '/project/src/app.json',
@@ -668,6 +674,11 @@ describe('scanPlugin service', () => {
     const metas = service.loadSubPackages()
     expect(metas).toHaveLength(2)
     expect(service.subPackageMap.has('pkgA')).toBe(true)
+    expect(service.mainPackageStyleEntries).toBe(mainPackageStyleEntries)
+    expect(normalizeMainPackageStyleEntriesMock).toHaveBeenCalledWith(
+      ['styles/main.scss'],
+      ctx.configService,
+    )
     expect(service.independentSubPackageMap.has('pkgA')).toBe(true)
     expect(service.subPackageMap.get('pkgA')?.subPackage.dependencies).toEqual(['dep-a-from-npm'])
     expect(ctx.runtimeState.scan.appEntry.json.subPackages[0]).not.toHaveProperty('dependencies')
