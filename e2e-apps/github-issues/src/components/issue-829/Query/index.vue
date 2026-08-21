@@ -11,17 +11,6 @@ const data = ref<string[]>()
 onAttached(async () => {
   data.value = await props.queryFn?.()
 })
-
-function _runE2E() {
-  return {
-    hasQueryFn: typeof props.queryFn === 'function',
-    result: data.value,
-  }
-}
-
-defineExpose({
-  _runE2E,
-})
 </script>
 
 <template>
