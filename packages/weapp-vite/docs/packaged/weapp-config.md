@@ -81,6 +81,29 @@ const moduleExport = await import('../../packages/order/modules/price.ts')
 
 适合用目录扫描自动注册组件的项目。组件重名时要先解决命名冲突，不要让自动引入规则长期处于歧义状态。
 
+### `styles`
+
+用于生成主包独立样式入口，并按规则向主包与普通分包的页面或组件样式注入相对 `@import`，不会把内容合并进 `app.wxss`：
+
+```ts
+export default defineConfig({
+  weapp: {
+    styles: [
+      {
+        source: 'styles/theme.scss',
+        include: ['pages/**', 'components/**', 'packages/*/**'],
+      },
+      {
+        source: 'styles/manual.less',
+        inject: false,
+      },
+    ],
+  },
+})
+```
+
+`inject: false` 只生成目标平台样式文件，适合由源码手动 `@import`。独立分包不能依赖主包资源，不会收到 `weapp.styles` 的自动注入；需要在 `weapp.subPackages.<root>.styles` 中声明分包自己的入口。
+
 ### `routeRules`
 
 用于给页面路由追加规则，例如 layout、微信分包预下载等。它属于项目级编排，而不是组件内部语义。

@@ -56,6 +56,7 @@ export function resetRuntimeStateForFreshBuild(runtimeState: RuntimeState): void
   wxml.emittedCode.clear()
 
   const scan = runtimeState.scan
+  scan.mainPackageStyleEntries = undefined
   scan.subPackageMap.clear()
   scan.independentSubPackageMap.clear()
   scan.warnedMessages.clear()

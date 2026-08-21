@@ -8,6 +8,13 @@
       "pages": [
         "pages/foo/index"
       ]
+    },
+    {
+      "root": "packageB",
+      "pages": [
+        "pages/bar/index"
+      ],
+      "independent": true
     }
   ]
 }

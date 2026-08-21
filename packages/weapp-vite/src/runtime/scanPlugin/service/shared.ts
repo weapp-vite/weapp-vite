@@ -1,10 +1,11 @@
 import type { App as AppJson, Plugin as PluginJson } from '@weapp-core/schematics'
-import type { AppEntry } from '../../../types'
+import type { AppEntry, StyleEntry } from '../../../types'
 import logger from '../../../logger'
 import { normalizeRoot, toPosixPath } from '../../../utils/path'
 
 export interface ScanServiceStateLike {
   appEntry?: AppEntry
+  mainPackageStyleEntries?: StyleEntry[]
   pluginJson?: PluginJson
   pluginJsonPath?: string
   warnedMessages: Set<string>

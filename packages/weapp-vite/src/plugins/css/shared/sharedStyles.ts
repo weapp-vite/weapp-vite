@@ -1,5 +1,5 @@
 import type { CompilerContext } from '../../../context'
-import type { SubPackageStyleEntry } from '../../../types'
+import type { StyleEntry } from '../../../types'
 import path from 'pathe'
 import picomatch from 'picomatch'
 import { normalizeRoot, toPosixPath } from '../../../utils/path'
@@ -11,18 +11,22 @@ interface StyleMatcher {
   exclude?: (test: string) => boolean
 }
 
-const styleMatcherCache = new WeakMap<SubPackageStyleEntry, StyleMatcher>()
+const styleMatcherCache = new WeakMap<StyleEntry, StyleMatcher>()
 
 export function collectSharedStyleEntries(
   ctx: CompilerContext,
   configService: CompilerContext['configService'],
 ) {
-  const map = new Map<string, SubPackageStyleEntry[]>()
+  const map = new Map<string, StyleEntry[]>()
+  const mainPackageEntries = ctx.scanService?.mainPackageStyleEntries
+  const currentRoot = configService.currentSubPackageRoot
+  if (!currentRoot && mainPackageEntries?.length) {
+    map.set('', mainPackageEntries)
+  }
   const registry = ctx.scanService?.subPackageMap
   if (!registry?.size) {
     return map
   }
-  const currentRoot = configService.currentSubPackageRoot
   for (const [root, meta] of registry.entries()) {
     if (!meta.styleEntries?.length) {
       continue
@@ -65,7 +69,11 @@ function relativeToRoot(pathname: string, root: string) {
   }
 }
 
-function getStyleMatcher(entry: SubPackageStyleEntry): StyleMatcher {
+function isMainAppStyleFile(fileName: string) {
+  return !fileName.includes('/') && path.posix.basename(fileName, path.posix.extname(fileName)) === 'app'
+}
+
+function getStyleMatcher(entry: StyleEntry): StyleMatcher {
   const cached = styleMatcherCache.get(entry)
   if (cached) {
     return cached
@@ -87,7 +95,7 @@ function getStyleMatcher(entry: SubPackageStyleEntry): StyleMatcher {
 }
 
 function matchesStyleEntry(
-  entry: SubPackageStyleEntry,
+  entry: StyleEntry,
   relativeModule: string | undefined,
   relativeFile: string | undefined,
 ) {
@@ -118,14 +126,17 @@ function matchesStyleEntry(
 function findSharedStylesForModule(
   modulePath: string,
   fileName: string,
-  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  sharedStyles: Map<string, StyleEntry[]>,
 ) {
   const sanitizedModule = sanitizeRelativePath(modulePath)
   const sanitizedFile = sanitizeRelativePath(fileName)
-  const matched: SubPackageStyleEntry[] = []
+  const matched: StyleEntry[] = []
   for (const [root, entries] of sharedStyles.entries()) {
     const normalizedRoot = normalizeRoot(root)
-    if (!normalizedRoot) {
+    if (root && !normalizedRoot) {
+      continue
+    }
+    if (!normalizedRoot && isMainAppStyleFile(sanitizedFile)) {
       continue
     }
     if (!isWithinRoot(sanitizedFile, normalizedRoot)) {
@@ -134,6 +145,9 @@ function findSharedStylesForModule(
     const relativeModule = relativeToRoot(sanitizedModule, normalizedRoot)
     const relativeFile = relativeToRoot(sanitizedFile, normalizedRoot)
     for (const entry of entries) {
+      if (entry.inject === false) {
+        continue
+      }
       if (matchesStyleEntry(entry, relativeModule, relativeFile)) {
         matched.push(entry)
       }
@@ -144,7 +158,7 @@ function findSharedStylesForModule(
 
 function resolveImportSpecifiers(
   fileName: string,
-  entries: SubPackageStyleEntry[],
+  entries: StyleEntry[],
 ) {
   const posixFileName = toPosixPath(fileName)
   const dir = path.posix.dirname(posixFileName)
@@ -197,7 +211,7 @@ export function prependSharedStyleImports(css: string, statements: string[]) {
 export function resolveSharedStyleImportStatements(
   modulePath: string,
   fileName: string,
-  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  sharedStyles: Map<string, StyleEntry[]>,
   configService: CompilerContext['configService'],
 ) {
   const relativeModulePath = configService.relativeAbsoluteSrcRoot(modulePath)
@@ -238,7 +252,7 @@ export function injectSharedStyleImports(
   css: string,
   modulePath: string,
   fileName: string,
-  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  sharedStyles: Map<string, StyleEntry[]>,
   configService: CompilerContext['configService'],
 ) {
   const statements = resolveSharedStyleImportStatements(modulePath, fileName, sharedStyles, configService)

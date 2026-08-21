@@ -2,6 +2,7 @@ import type { App as AppJson, Plugin as PluginJson } from '@weapp-core/schematic
 import type { MutableCompilerContext } from '../../../context'
 import type {
   AppEntry,
+  StyleEntry,
   SubPackageMetaValue,
 } from '../../../types'
 import { loadAppEntry } from './app'
@@ -19,6 +20,7 @@ export interface ScanService {
   appEntry?: AppEntry
   pluginJson?: PluginJson
   pluginJsonPath?: string
+  readonly mainPackageStyleEntries: StyleEntry[] | undefined
   subPackageMap: Map<string, SubPackageMetaValue>
   independentSubPackageMap: Map<string, SubPackageMetaValue>
   loadAppEntry: () => Promise<AppEntry>
@@ -54,6 +56,9 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
     set pluginJsonPath(value: string | undefined) {
       scanState.pluginJsonPath = value
     },
+    get mainPackageStyleEntries() {
+      return scanState.mainPackageStyleEntries
+    },
     subPackageMap,
     independentSubPackageMap,
     async loadAppEntry() {
@@ -75,6 +80,7 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
     markDirty() {
       scanState.isDirty = true
       scanState.appEntry = undefined
+      scanState.mainPackageStyleEntries = undefined
       scanState.pluginJson = undefined
       scanState.pluginJsonPath = undefined
     },

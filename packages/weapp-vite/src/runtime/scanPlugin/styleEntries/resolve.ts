@@ -1,5 +1,5 @@
 import type { MutableCompilerContext } from '../../../context'
-import type { SubPackageStyleScope } from '../../../types'
+import type { StyleScope } from '../../../types'
 import path from 'pathe'
 import { isPathInside, toPosixPath } from '../../../utils'
 
@@ -78,7 +78,7 @@ export function getRelativePathWithinSubPackage(pathname: string, normalizedRoot
   return pathname
 }
 
-export function inferScopeFromRelativePath(relativePath: string | undefined): SubPackageStyleScope | undefined {
+export function inferScopeFromRelativePath(relativePath: string | undefined): StyleScope | undefined {
   if (!relativePath) {
     return undefined
   }

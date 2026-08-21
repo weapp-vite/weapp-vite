@@ -6,6 +6,7 @@ import logger from '../../../logger'
 import { toPosixPath } from '../../../utils'
 import {
   isSupportedSharedStyleExtension,
+  normalizeMainPackageStyleEntries,
   normalizeSubPackageStyleEntries,
   resolveStyleEntryScope,
 } from './index'
@@ -87,6 +88,7 @@ describe('normalizeSubPackageStyleEntries', () => {
         scope: 'components',
         include: ['components/**'],
         exclude: [],
+        inject: true,
       },
     ])
     expect(warnSpy).not.toHaveBeenCalled()
@@ -109,5 +111,38 @@ describe('normalizeSubPackageStyleEntries', () => {
     expect(warnSpy).toHaveBeenCalledWith(
       '[分包] 分包 packages/order 样式入口 `../shared/styles/components.scss` 对应文件不存在，已忽略。',
     )
+  })
+
+  it('collects explicit main-package entries without subpackage conventions', async () => {
+    await fs.writeFile(path.join(tempRoot, 'pages.scss'), '.page {}')
+    await fs.writeFile(path.join(tempRoot, 'components.scss'), '.component {}')
+
+    const entries = normalizeMainPackageStyleEntries([
+      {
+        source: 'shared/styles/components.scss',
+        include: ['pages/**', 'packages/*/pages/**'],
+      },
+      {
+        source: 'pages.scss',
+        inject: false,
+      },
+    ], createConfigService(tempRoot))
+
+    expect(entries).toEqual([
+      expect.objectContaining({
+        source: 'shared/styles/components.scss',
+        outputRelativePath: 'shared/styles/components.wxss',
+        include: ['packages/*/pages/**', 'pages/**'],
+        inject: true,
+      }),
+      expect.objectContaining({
+        source: 'pages.scss',
+        outputRelativePath: 'pages.wxss',
+        scope: 'pages',
+        inject: false,
+      }),
+    ])
+    expect(entries).toHaveLength(2)
+    expect(entries?.some(entry => entry.source === 'components.scss')).toBe(false)
   })
 })

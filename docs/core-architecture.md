@@ -131,13 +131,14 @@ interface WeappViteConfig {
   }
 
   // 分包独立构建
+  styles?: StyleConfigEntry | StyleConfigEntry[]
   subPackages?: Record<string, {
     independent?: boolean
     dependencies?: (string | RegExp)[]
     inlineConfig?: InlineConfig
     autoImportComponents?: AutoImportComponentsOption
     watchSharedStyles?: boolean
-    styles?: SubPackageStyleConfigEntry[]
+    styles?: StyleConfigEntry | StyleConfigEntry[]
   }>
 
   // Web 运行时
