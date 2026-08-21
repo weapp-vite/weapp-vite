@@ -14,6 +14,7 @@ const issue595ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_595_SCOPED ===
 const issue642ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_642_SCOPED === 'true'
 const issue724ProbeEnabled = process.env.WEAPP_GITHUB_ISSUE_724_PROBE === 'true'
 const issue779CssPreEnabled = process.env.WEAPP_GITHUB_ISSUE_779_CSS_PRE === 'true'
+const issue826PreserveEnabled = process.env.WEAPP_GITHUB_ISSUE_826_PRESERVE === 'true'
 const issue793BuildScope = process.env.WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE
 const issue793BuildScopeEnabled = issue793BuildScope === 'true'
   || issue793BuildScope === 'subpackage'
@@ -207,6 +208,13 @@ const matchedGithubIssuesTestFile = Object.keys(githubIssuesRouteGroups)
   .find(testFile => e2eTargetFile.endsWith(testFile))
 
 function resolveGithubIssuesAutoRoutes() {
+  if (issue826PreserveEnabled) {
+    return {
+      include: [
+        'pages/issue-826/**',
+      ],
+    }
+  }
   if (issue793BuildScopeEnabled) {
     return {
       include: [
@@ -448,6 +456,39 @@ const issue779CssPrePlugin = issue779CssPreEnabled
     ]
   : undefined
 
+function resolveGithubIssuesBuildConfig() {
+  if (issue826PreserveEnabled) {
+    return { outDir: 'dist-issue-826', minify: false }
+  }
+  if (issue393ChunkModeEnabled) {
+    return { outDir: 'dist-issue-393', minify: false }
+  }
+  if (issue793BuildScopeEnabled) {
+    return { outDir: 'dist-issue-793' }
+  }
+  if (issue724ProbeEnabled) {
+    return { outDir: 'dist-issue-724' }
+  }
+  if (issue510AugmentedEnabled) {
+    return { outDir: 'dist-issue-510' }
+  }
+  if (slotFallbackCompilerOffEnabled) {
+    return { outDir: 'dist-slot-fallback-compiler-off' }
+  }
+  if (issue595ScopedBuildEnabled) {
+    return { outDir: 'dist-issue-595' }
+  }
+  if (issue642ScopedBuildEnabled) {
+    return { outDir: 'dist-issue-642' }
+  }
+  if (issue779CssPreEnabled) {
+    return { outDir: 'dist-issue-779' }
+  }
+  return undefined
+}
+
+const githubIssuesBuildConfig = resolveGithubIssuesBuildConfig()
+
 export default defineConfig({
   plugins: [
     ...issue724ProbePlugins,
@@ -552,6 +593,14 @@ export default defineConfig({
         }
       : {}),
     chunks: {
+      ...(issue826PreserveEnabled
+        ? {
+            preserveModules: [
+              'issue-fixtures/issue-826/utils/**',
+              'issue-fixtures/issue-826/services/**',
+            ],
+          }
+        : {}),
       dynamicImports: issue393ChunkModeEnabled ? 'preserve' : 'native',
       ...(issue393ChunkModeEnabled
         ? {
@@ -568,54 +617,7 @@ export default defineConfig({
         : {}),
     },
   },
-  ...(issue393ChunkModeEnabled
-    ? {
-        build: {
-          outDir: 'dist-issue-393',
-          minify: false,
-        },
-      }
-    : issue793BuildScopeEnabled
-      ? {
-          build: {
-            outDir: 'dist-issue-793',
-          },
-        }
-      : issue724ProbeEnabled
-        ? {
-            build: {
-              outDir: 'dist-issue-724',
-            },
-          }
-        : issue510AugmentedEnabled
-          ? {
-              build: {
-                outDir: 'dist-issue-510',
-              },
-            }
-          : slotFallbackCompilerOffEnabled
-            ? {
-                build: {
-                  outDir: 'dist-slot-fallback-compiler-off',
-                },
-              }
-            : issue595ScopedBuildEnabled
-              ? {
-                  build: {
-                    outDir: 'dist-issue-595',
-                  },
-                }
-              : issue642ScopedBuildEnabled
-                ? {
-                    build: {
-                      outDir: 'dist-issue-642',
-                    },
-                  }
-                : issue779CssPreEnabled
-                  ? {
-                      build: {
-                        outDir: 'dist-issue-779',
-                      },
-                    }
-                  : {}),
+  ...(githubIssuesBuildConfig
+    ? { build: githubIssuesBuildConfig }
+    : {}),
 })

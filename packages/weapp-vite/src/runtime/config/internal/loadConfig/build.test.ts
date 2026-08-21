@@ -115,6 +115,36 @@ describe('loadConfig build helpers', () => {
     expect((config as { build?: { rolldownOptions?: { transform?: { tsconfig?: unknown } } } }).build?.rolldownOptions?.transform?.tsconfig).toBe(false)
   })
 
+  it('uses an entry signature compatible with preserved module groups', async () => {
+    const root = await createTempProject('weapp-vite-preserve-modules-signature-')
+    const config = {
+      weapp: {
+        chunks: {
+          preserveModules: ['utils/**'],
+        },
+      },
+      build: {
+        rolldownOptions: {
+          preserveEntrySignatures: 'exports-only' as const,
+        },
+      },
+    }
+
+    configureBuildAndPlugins({
+      config,
+      pluginOnly: false,
+      oxcRolldownPlugin: undefined,
+      oxcVitePlugin: undefined,
+      injectBuiltinAliases: vi.fn(),
+      resolvedLibConfig: undefined,
+      cliPlatform: 'weapp',
+      projectConfigPath: undefined,
+      cwd: root,
+    })
+
+    expect(config.build.rolldownOptions.preserveEntrySignatures).toBe('allow-extension')
+  })
+
   it('preserves explicit user OXC and transform tsconfig options', async () => {
     const root = await createTempProject('weapp-vite-oxc-explicit-tsconfig-')
     await writeFile(path.join(root, 'tsconfig.json'), '{}\n', 'utf8')

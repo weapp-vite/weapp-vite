@@ -1,7 +1,7 @@
 import type { WeappWebPluginOptions } from '@weapp-vite/web/plugin'
 import type { InlineConfig, PluginOption } from 'vite'
 import type { WevuRuntimeAliasMode } from '../../../packageAliases'
-import type { ResolvedWeappWebConfig } from '../../types'
+import type { ConfigService, ResolvedWeappWebConfig } from '../../types'
 import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import { defu } from '@weapp-core/shared'
 import { weappWebPlugin } from '@weapp-vite/web'
@@ -11,9 +11,11 @@ import {
   resolveRuntimeProvider,
   resolveRuntimeProviderHmrFooter,
 } from '../../../../runtimeProviders'
+import { normalizePreserveModulesRolldownOptions } from '../../../preserveModules'
 import { stripRollupOptions } from './inline'
 
 interface MergeWebOptions {
+  configService: ConfigService
   config: InlineConfig
   web: ResolvedWeappWebConfig | undefined
   mode: string
@@ -98,6 +100,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
     },
   )
   stripRollupOptions(inline)
+  normalizePreserveModulesRolldownOptions(options.configService, inline.build?.rolldownOptions as Record<string, unknown> ?? (inline.build!.rolldownOptions = {}))
 
   inline.root = web.root
   inline.configFile = false

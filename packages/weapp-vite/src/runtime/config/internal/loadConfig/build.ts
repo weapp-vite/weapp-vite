@@ -107,7 +107,16 @@ export function configureBuildAndPlugins(options: {
     rdTransform.tsconfig = false
   }
   rdOptions.transform = rdTransform
-  rdOptions.preserveEntrySignatures ??= 'exports-only'
+  if (
+    config.weapp?.chunks?.preserveModules?.length
+    && (rdOptions.preserveEntrySignatures === undefined
+      || rdOptions.preserveEntrySignatures === 'exports-only')
+  ) {
+    rdOptions.preserveEntrySignatures = 'allow-extension'
+  }
+  else {
+    rdOptions.preserveEntrySignatures ??= 'exports-only'
+  }
   if (Array.isArray(rdOptions.output)) {
     rdOptions.output = rdOptions.output.map(output => ({ ...output, format: jsFormat }))
   }

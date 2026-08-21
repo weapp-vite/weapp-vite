@@ -3,6 +3,7 @@ import type { MutableCompilerContext } from '../../../../context'
 import { defu } from '@weapp-core/shared'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
 import { vitePluginWeappWorkers } from '../../../../plugins'
+import { normalizePreserveModulesRolldownOptions } from '../../../preserveModules'
 import { stripRollupOptions } from './inline'
 
 interface MergeWorkersOptions {
@@ -55,6 +56,7 @@ export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<I
     )
     applyWeappViteHostMeta(inline, 'miniprogram', platform)
     stripRollupOptions(inline)
+    normalizePreserveModulesRolldownOptions(ctx.configService!, inline.build?.rolldownOptions as Record<string, unknown> ?? (inline.build!.rolldownOptions = {}))
     injectBuiltinAliases(inline)
     return inline
   }
@@ -73,6 +75,7 @@ export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<I
   applyWeappViteHostMeta(inlineConfig, 'miniprogram', platform)
   stripRollupOptions(inlineConfig)
   inlineConfig.logLevel = 'info'
+  normalizePreserveModulesRolldownOptions(ctx.configService!, inlineConfig.build?.rolldownOptions as Record<string, unknown> ?? (inlineConfig.build!.rolldownOptions = {}))
   injectBuiltinAliases(inlineConfig)
   return inlineConfig
 }

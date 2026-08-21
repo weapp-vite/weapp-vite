@@ -13,6 +13,7 @@ import { applyWeappViteHostMeta } from '../../../../pluginHost'
 import { resolveBuildScope } from '../../../buildScope'
 import { resolveNpmBuildCandidateDependenciesSync } from '../../../npmPlugin/service'
 import { resolveBuiltinPackageAliases } from '../../../packageAliases'
+import { normalizePreserveModulesRolldownOptions } from '../../../preserveModules'
 import { stripRollupOptions } from './inline'
 import { arrangePlugins } from './plugins'
 
@@ -97,6 +98,7 @@ function normalizeInlineConfigAfterDefu(
       ...(userRolldownOptions?.output ?? {}),
     },
   }
+  normalizePreserveModulesRolldownOptions(ctx.configService!, mergedRolldownOptions)
   const defaultTsconfig = resolveDefaultRolldownTsconfig(cwd, configFilePath)
   const resolveOptions = mergedRolldownOptions.resolve as Record<string, unknown> | undefined
   if (defaultTsconfig) {

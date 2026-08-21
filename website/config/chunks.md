@@ -39,6 +39,7 @@ keywords:
       mode: 'common' | 'path' | 'inline'
     }>
     sharedPathRoot?: string
+    preserveModules?: Array<string | RegExp>
     dynamicImports?: 'preserve' | 'native' | 'inline'
     logOptimization?: boolean
     forceDuplicatePatterns?: Array<string | RegExp>
@@ -283,6 +284,26 @@ export default defineConfig({
 
 - 希望产物更贴近源码结构时，通常设置为 `src` 或更具体的公共目录；
 - 若配置的目录不在 `srcRoot` 内，构建会自动回退到 `srcRoot`。
+
+## `preserveModules`
+
+- **类型**：`Array<string | RegExp>`
+- **默认值**：未配置
+- **作用**：按 `srcRoot` 相对路径匹配源码模块，为命中的模块保留独立输出文件和目录边界。
+
+```ts
+export default defineConfig({
+  weapp: {
+    chunks: {
+      preserveModules: ['utils/**', 'services/**'],
+    },
+  },
+})
+```
+
+匹配模块会按源码相对路径输出，例如 `src/utils/request.ts` 会生成 `utils/request.js`，页面或其他 chunk 会引用这个稳定路径。该配置也会保留 barrel 模块的静态依赖边界，适合调试定位、产物审计和逐目录比对。
+
+它只控制输出边界，不承诺减少总包体积或提升冷启动速度；仍应结合实际构建产物评估体积与加载影响。配置后，`weapp-vite` 会自动使用兼容的 entry signature 设置。
 
 ## `dynamicImports`
 

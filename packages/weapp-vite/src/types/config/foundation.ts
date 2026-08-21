@@ -334,6 +334,10 @@ export interface ChunksConfig {
   sharedMode?: SharedChunkMode
   sharedOverrides?: SharedChunkOverride[]
   sharedPathRoot?: string
+  /**
+   * @description 按 srcRoot 相对路径保留匹配源码模块的独立输出边界
+   */
+  preserveModules?: (string | RegExp)[]
   dynamicImports?: SharedChunkDynamicImports
   logOptimization?: boolean
   forceDuplicatePatterns?: (string | RegExp)[]

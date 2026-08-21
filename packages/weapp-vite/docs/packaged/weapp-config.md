@@ -48,6 +48,22 @@ export default defineConfig({
 
 `main` 表示主包，`packages/order` 匹配 `app.json.subPackages[].root`。启用后，产物 `app.json.subPackages` 只保留参与 scope 的分包，`preloadRule`、`tabBar`、`entryPagePath`、自动路由和 typed router 也会按同一注册图裁剪。`preloadRule.packages` 支持分包 `root`、`name` 和主包标记 `__APP__`；`tabBar.list` 不足微信要求的 2 项时会删除整个 `tabBar`。发布前建议再跑不带 scope 的完整构建。
 
+### `chunks.preserveModules`
+
+按 `srcRoot` 相对路径匹配源码模块，并为命中的模块保留独立输出文件和目录边界：
+
+```ts
+export default defineConfig({
+  weapp: {
+    chunks: {
+      preserveModules: ['utils/**', 'services/**'],
+    },
+  },
+})
+```
+
+例如 `src/utils/request.ts` 会输出到 `utils/request.js`，引用方会保留对该文件的引用；barrel 模块的静态依赖也会保持独立。该配置用于调试定位和产物审计，不保证减少总包体积或提升冷启动；构建会自动选择兼容的 entry signature。
+
 ### 分包异步模块
 
 跨分包 JS 使用微信官方 callback 或 Promise API：
