@@ -157,6 +157,31 @@ describe('sharedBuildConfig', () => {
     expect(output.minifyInternalExports).toBe(false)
   })
 
+  it('relaxes entry signatures when preserved modules are configured', () => {
+    expect(createSharedBuildConfig(createConfigService({
+      preserveModules: ['utils/**'],
+    }), {
+      subPackageMap: {
+        keys: () => [],
+      },
+    } as any).build?.rolldownOptions).toMatchObject({
+      preserveEntrySignatures: 'allow-extension',
+    })
+  })
+
+  it('places preserved module grouping before generic shared chunks', () => {
+    const output = createSharedBuildOutput(createConfigService({
+      preserveModules: ['utils/**'],
+    }), () => [])
+
+    expect(output.codeSplitting.groups).toHaveLength(2)
+    expect(output.codeSplitting.groups[0]).toMatchObject({
+      priority: 100,
+      minShareCount: 1,
+      includeDependenciesRecursively: false,
+    })
+  })
+
   it('keeps web shared chunk names without changing miniprogram vendor naming', () => {
     const miniprogramOutput = createSharedBuildOutput(createConfigService(), () => [])
     const webOutput = createSharedBuildOutput(createConfigService(), () => [], { runtime: 'web' })

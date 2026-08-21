@@ -18,6 +18,7 @@ const ISSUE_595_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-595')
 const ISSUE_642_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-642')
 const ISSUE_724_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-724')
 const ISSUE_793_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-793')
+const ISSUE_826_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-826')
 const SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT = path.join(APP_ROOT, 'dist-slot-fallback-compiler-off')
 const SLOT_OWNER_ATTR = `__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"`
 let standardBuildPromise: Promise<void> | null = null
@@ -462,7 +463,54 @@ async function runIssue793Build(scope: 'main' | 'main-with-subpackage' | 'subpac
   distVariant = null
 }
 
+async function runIssue826Build() {
+  await fs.remove(ISSUE_826_DIST_ROOT)
+
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
+    cwd: APP_ROOT,
+    label: 'ci:github-issues:issue826',
+    outDir: 'dist-issue-826',
+    skipNpm: true,
+    env: {
+      WEAPP_GITHUB_ISSUE_826_PRESERVE: 'true',
+    },
+  })
+
+  standardBuildPromise = null
+  distVariant = null
+}
+
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #826: preserves configured source module paths for debugging', async () => {
+    await runIssue826Build()
+
+    const files = await scanFiles(ISSUE_826_DIST_ROOT)
+    expect(files).toEqual(expect.arrayContaining([
+      'issue-fixtures/issue-826/services/shared.js',
+      'issue-fixtures/issue-826/services/single.js',
+      'issue-fixtures/issue-826/utils/barrel.js',
+      'issue-fixtures/issue-826/utils/leafA.js',
+      'issue-fixtures/issue-826/utils/leafB.js',
+      'issue-fixtures/issue-826/utils/shared.js',
+      'issue-fixtures/issue-826/utils/single.js',
+    ]))
+
+    const pageCode = await fs.readFile(path.join(ISSUE_826_DIST_ROOT, 'pages/issue-826/index.js'), 'utf8')
+    expect(pageCode).not.toContain('__ISSUE_826_UTIL_SINGLE__')
+    expect(pageCode).not.toContain('__ISSUE_826_SERVICE_SINGLE__')
+    expect(pageCode).toMatch(/issue-fixtures\/issue-826\/utils\/single\.js/)
+    expect(pageCode).toMatch(/issue-fixtures\/issue-826\/services\/single\.js/)
+
+    const barrelCode = await fs.readFile(path.join(ISSUE_826_DIST_ROOT, 'issue-fixtures/issue-826/utils/barrel.js'), 'utf8')
+    expect(barrelCode).not.toContain('__ISSUE_826_UTIL_LEAF_A__')
+    expect(barrelCode).not.toContain('__ISSUE_826_UTIL_LEAF_B__')
+    expect(barrelCode).toMatch(/(?:require\((['"`])\.\/leafA\.js\1\)|from\s+(['"`])\.\/leafA\.js\2)/)
+    expect(barrelCode).toMatch(/(?:require\((['"`])\.\/leafB\.js\1\)|from\s+(['"`])\.\/leafB\.js\2)/)
+  })
+
   it('issue #793: keeps derived app config aligned with the scoped routes', async () => {
     await runIssue793Build()
 

@@ -13,6 +13,7 @@ import { isRegexp } from '../utils/regexp'
 import { normalizeViteId } from '../utils/viteId'
 import { createAdvancedChunkNameResolver } from './advancedChunks'
 import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
+import { createPreserveModulesGroup } from './preserveModules'
 import { isWevuStableVendorFileName, resolveWevuStableVendorFileName } from './wevuModules'
 
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
@@ -407,6 +408,7 @@ export function createSharedBuildOutput(
   getSubPackageRoots: () => Iterable<string>,
   options: { runtime?: 'miniprogram' | 'web' } = {},
 ) {
+  const preserveModulesGroup = createPreserveModulesGroup(configService, getSubPackageRoots)
   const { resolveAdvancedChunkName } = createSharedBuildResolver(
     configService,
     getSubPackageRoots,
@@ -415,6 +417,7 @@ export function createSharedBuildOutput(
   const output = {
     codeSplitting: {
       groups: [
+        ...(preserveModulesGroup ? [preserveModulesGroup] : []),
         ...configService.isDev
           ? [
               {
@@ -465,9 +468,13 @@ export function createSharedBuildConfig(
   scanService: ScanService,
 ): Partial<InlineConfig> {
   const output = createSharedBuildOutput(configService, () => scanService.subPackageMap.keys())
+  const preserveEntrySignatures = configService.weappViteConfig?.chunks?.preserveModules?.length
+    ? 'allow-extension' as const
+    : undefined
   return {
     build: {
       rolldownOptions: {
+        ...(preserveEntrySignatures ? { preserveEntrySignatures } : {}),
         output,
       },
     },

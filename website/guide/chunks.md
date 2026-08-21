@@ -140,6 +140,24 @@ export default defineConfig({
 })
 ```
 
+## preserveModules：保留源码模块边界
+
+如果你希望 `utils`、`services` 等目录中的模块始终以独立文件输出，可以使用 `preserveModules`：
+
+```ts
+export default defineConfig({
+  weapp: {
+    chunks: {
+      preserveModules: ['utils/**', 'services/**'],
+    },
+  },
+})
+```
+
+规则按 `srcRoot` 相对路径匹配。命中的模块会沿用源码目录输出，例如 `src/utils/request.ts` 对应 `utils/request.js`；页面不会再内联这些模块的实现，barrel 文件的静态依赖也会保留为独立边界。
+
+这个选项主要服务于调试、源码定位和产物审计，不等同于体积优化。它可以和 `sharedStrategy`、`sharedMode` 一起配置；构建会自动处理与该拆分方式兼容的 entry signature。
+
 ## dynamicImports：动态 import 的处理方式
 
 - `preserve`（默认）：保留独立的动态 chunk。

@@ -22,6 +22,18 @@
     "miniprogram": {
       "list": [
         {
+          "name": "issue 826 preserve modules",
+          "pathName": "pages/issue-826/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "issue 826 preserve modules second",
+          "pathName": "pages/issue-826/second",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "pages/issue-338/index",
           "pathName": "pages/issue-338/index",
           "query": "",

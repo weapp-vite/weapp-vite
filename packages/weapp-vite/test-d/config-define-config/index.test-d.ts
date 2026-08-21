@@ -63,6 +63,7 @@ const objectConfig = defineConfig({
     },
     chunks: {
       dynamicImports: 'native' as const,
+      preserveModules: ['utils/**', /services\//],
     },
     react: {
       compiler: {
@@ -201,6 +202,7 @@ expectAssignable<Record<string, {
   }
 }> | undefined>(objectConfig.weapp?.routeRules)
 expectAssignable<'preserve' | 'inline' | 'native' | undefined>(objectConfig.weapp?.chunks?.dynamicImports)
+expectAssignable<(string | RegExp)[] | undefined>(objectConfig.weapp?.chunks?.preserveModules)
 expectAssignable<boolean | {
   compiler?: boolean | {
     compilationMode?: 'infer' | 'syntax' | 'annotation' | 'all'
