@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-use-before-define */
 
+import type { DevEngine, DevOptions } from 'rolldown/experimental'
 import type { ResolvedConfig, ViteDevServer } from 'vite'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import path from 'node:path'
@@ -9,6 +10,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE,
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
+import { dev } from 'rolldown/experimental'
 import { assertStatefulHmrRuntimeOutput, createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 
 const clientId = 'weapp-vite-stateful-hmr'
@@ -27,26 +29,18 @@ export type StatefulHmrDevEngineUpdate
       sourcemapFilename?: string
     }
 
+type StatefulHmrDevEngine = DevEngine & {
+  registerModules?: (clientId: string, modules: string[]) => Promise<void> | void
+}
+
+type StatefulHmrDevWatchOptions = Pick<
+  NonNullable<DevOptions['watch']>,
+  'compareContentsForPolling' | 'pollInterval' | 'usePolling'
+>
+
 interface BundledDevInternal {
-  _devEngine?: {
-    ensureCurrentBuildFinish: () => Promise<void>
-    ensureLatestBuildOutput: () => Promise<unknown>
-    getBundleState: () => Promise<{ lastBuildErrored: boolean }>
-    notifyPayloadDelivered?: (filename: string) => Promise<void> | void
-    registerClient?: (clientId: string) => Promise<void> | void
-    registerModules?: (clientId: string, modules: string[]) => Promise<void> | void
-    triggerFullBuild: () => void
-  }
-  clients: {
-    setupIfNeeded: (client: { send: (payload: unknown) => void }, clientId: string) => void
-  }
+  _devEngine?: StatefulHmrDevEngine
   getRolldownOptions: () => Promise<Record<string, any>>
-  handleHmrOutput: (
-    client: { send: (payload: unknown) => void },
-    files: string[],
-    output: StatefulHmrDevEngineUpdate,
-    info?: unknown,
-  ) => void
   listen: () => Promise<void>
   storeOutputFiles: (output: StatefulHmrOutputFile[]) => void
 }
@@ -64,6 +58,8 @@ export class StatefulHmrViteAdapter {
       onPatch: (files: string[], output: StatefulHmrDevEngineUpdate) => boolean
       waitForInitialBundle: () => Promise<void>
     },
+    private readonly watchOptions: StatefulHmrDevWatchOptions = {},
+    private readonly createDevEngine: typeof dev = dev,
   ) {}
 
   install(): void {
@@ -77,7 +73,6 @@ export class StatefulHmrViteAdapter {
     this.bundledDev = bundledDev
     this.installOptions(bundledDev)
     this.installOutput(bundledDev)
-    this.installPatches(bundledDev)
     this.installListener(bundledDev)
   }
 
@@ -195,29 +190,37 @@ export class StatefulHmrViteAdapter {
     }
   }
 
-  private installPatches(bundledDev: BundledDevInternal): void {
-    const original = bundledDev.handleHmrOutput.bind(bundledDev)
-    bundledDev.handleHmrOutput = (client, files, output, info) => {
-      if (output.type === 'Noop') {
-        this.callbacks.onPatch(files, output)
-        return
-      }
-      if (this.callbacks.onPatch(files, output)) {
-        original(client, files, output, info)
-      }
-    }
-  }
-
   private installListener(bundledDev: BundledDevInternal): void {
-    const original = bundledDev.listen.bind(bundledDev)
     bundledDev.listen = async () => {
-      await original()
-      bundledDev.clients.setupIfNeeded({ send: payload => this.handlePayload(payload) }, clientId)
-      const engine = bundledDev._devEngine
-      if (!engine) {
-        throw new Error('Vite 未初始化微信状态保持 HMR 所需的 DevEngine。')
+      const rolldownOptions = await bundledDev.getRolldownOptions()
+      if (Array.isArray(rolldownOptions.output) && rolldownOptions.output.length > 1) {
+        throw new Error('stateful-experimental HMR 不支持多组 Rolldown output 配置。')
       }
-      await engine.registerClient?.(clientId)
+      const outputOptions = Array.isArray(rolldownOptions.output)
+        ? rolldownOptions.output[0]
+        : rolldownOptions.output
+      const engine = await this.createDevEngine(rolldownOptions, outputOptions, {
+        onAdditionalAssets: result => bundledDev.storeOutputFiles(result.output as StatefulHmrOutputFile[]),
+        onHmrUpdates: result => this.handleHmrUpdates(result),
+        onOutput: (result) => {
+          if (result instanceof Error) {
+            this.initialOutputError = result
+            this.callbacks.onError(result.message)
+            return
+          }
+          bundledDev.storeOutputFiles(result.output as StatefulHmrOutputFile[])
+        },
+        watch: {
+          skipWrite: true,
+          ...this.watchOptions,
+        },
+      }) as StatefulHmrDevEngine
+      bundledDev._devEngine = engine
+      void engine.run().catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error)
+        this.callbacks.onError(message)
+      })
+      await engine.registerClient(clientId)
       await engine.ensureCurrentBuildFinish()
       if (this.initialOutputError) {
         throw this.initialOutputError
@@ -229,13 +232,18 @@ export class StatefulHmrViteAdapter {
     }
   }
 
-  private handlePayload(payload: unknown): void {
-    if (!payload || typeof payload !== 'object') {
+  private handleHmrUpdates(result: Parameters<NonNullable<DevOptions['onHmrUpdates']>>[0]): void {
+    if (result instanceof Error) {
+      this.callbacks.onError(result.message)
       return
     }
-    const candidate = payload as { err?: { message?: unknown }, type?: unknown }
-    if (candidate.type === 'error' && typeof candidate.err?.message === 'string') {
-      this.callbacks.onError(candidate.err.message)
+    if (result.changedFiles.length === 0) {
+      return
+    }
+    for (const { clientId: updateClientId, update } of result.updates) {
+      if (updateClientId === clientId) {
+        this.callbacks.onPatch(result.changedFiles, update as StatefulHmrDevEngineUpdate)
+      }
     }
   }
 }

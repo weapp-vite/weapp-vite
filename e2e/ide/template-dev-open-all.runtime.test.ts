@@ -130,6 +130,7 @@ const TEMPLATE_FILTER = process.env.WEAPP_VITE_E2E_TEMPLATE?.trim()
 const ACTIVE_TEMPLATE_CASES = TEMPLATE_FILTER
   ? TEMPLATE_CASES.filter(templateCase => templateCase.name === TEMPLATE_FILTER)
   : TEMPLATE_CASES
+const PROTOCOL_TIMEOUT_RECONNECT_THRESHOLD = 3
 
 type TemplateDevProcess = TemplateCase & {
   dev: ReturnType<typeof startDevProcess>
@@ -225,6 +226,7 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
   let latestData = ''
   let latestRoute = ''
   let lastProtocolTimeout = ''
+  let consecutiveProtocolTimeouts = 0
   let currentMiniProgram = miniProgram
 
   while (Date.now() - start <= timeoutMs) {
@@ -264,6 +266,7 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
       catch {
         // Page 域 DOM 不稳定时，data fallback 也可能短暂不可读，继续轮询。
       }
+      consecutiveProtocolTimeouts = 0
     }
     catch (error) {
       if (!isDevtoolsProtocolTimeout(error) && !isLikelyRelaunchRetryableError(error)) {
@@ -271,9 +274,17 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
       }
       lastProtocolTimeout = error.message
       if (canRetryOnCurrentAutomatorSession(error)) {
+        consecutiveProtocolTimeouts += 1
+      }
+      if (
+        canRetryOnCurrentAutomatorSession(error)
+        && consecutiveProtocolTimeouts < PROTOCOL_TIMEOUT_RECONNECT_THRESHOLD
+      ) {
         await delay(1_000)
         continue
       }
+      // 连续短协议超时通常表示 DevTools 会话已经失去响应，重建会话比继续轮询更可靠。
+      consecutiveProtocolTimeouts = 0
       await Promise.resolve(currentMiniProgram.disconnect?.()).catch(() => {})
       await closeSharedMiniProgram(projectPath, resolveProjectAutomatorPort(projectPath)).catch(() => {})
       await removeAutomatorSessionFiles(projectPath)
@@ -383,6 +394,10 @@ function isTemplateRuntimeInfraError(error: unknown) {
   return error instanceof Error && IDE_AUTOMATOR_INFRA_RE.test(error.message)
 }
 
+function isTemplateProtocolTimeout(error: unknown) {
+  return error instanceof Error && /Latest DevTools protocol timeout|DevTools did not respond to protocol method/i.test(error.message)
+}
+
 async function openTemplateDevProcess(templateCase: TemplateCase) {
   let lastError: unknown
   for (let attempt = 1; attempt <= 2; attempt += 1) {
@@ -471,7 +486,8 @@ describe.sequential('all templates dev:open IDE integration', () => {
       }
       catch (error) {
         lastError = error
-        if (attempt >= 2 || !isTemplateRuntimeInfraError(error)) {
+        const canRetry = isTemplateRuntimeInfraError(error) || isTemplateProtocolTimeout(error)
+        if (attempt >= 2 || !canRetry) {
           throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)
         }
         process.stdout.write(`[warn] [template-dev-open-all] retry runtime template=${templateCase.name} reason=${error instanceof Error ? error.message : String(error)}\n`)

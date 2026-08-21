@@ -1306,6 +1306,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           },
         }
         const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
+        const initialEntryIds = new Set(ctx.runtimeState.build.hmr.resolvedEntryMap.keys())
         const skylineFiles = findSkylineRendererFiles(initialSnapshot)
         if (skylineFiles.length > 0) {
           await applySkylineHmrFallback({
@@ -1346,6 +1347,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             await runDev(target)
             logger.success('微信状态保持 HMR 构建已完成完整重载。')
           }, {
+            entryIds: initialEntryIds,
             initial: initialSnapshot,
             rebuild: async (files) => {
               for (const file of files) {

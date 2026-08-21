@@ -75,7 +75,7 @@ export class StatefulHmrTransport {
     return {
       buildId: this.state.buildId,
       token: this.token,
-      url: `http://127.0.0.1:${port}${endpointPath}`,
+      url: `http://localhost:${port}${endpointPath}`,
     }
   }
 

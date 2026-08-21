@@ -179,20 +179,27 @@ describe('automator', () => {
         },
       },
     }, {
+      libVersion: '3.15.0',
+      miniprogramRoot: 'private-dist/',
       setting: {
+        compileHotReLoad: true,
         packNpmRelationList: [],
+        urlCheck: false,
       },
     })
 
     expect(config).toMatchObject({
       appid: 'wxb3d842a4a7e3440d',
       compileType: 'miniprogram',
+      libVersion: '3.15.0',
       miniprogramRoot: './',
       srcMiniprogramRoot: './',
       pluginRoot: 'plugin/',
       setting: {
+        compileHotReLoad: true,
         es6: true,
         packNpmRelationList: [],
+        urlCheck: false,
       },
       condition: {
         miniprogram: {

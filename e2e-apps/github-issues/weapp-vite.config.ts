@@ -194,6 +194,7 @@ const githubIssuesAggregateRouteGroupFiles = [
   'github-issues.runtime.issue642.test.ts',
   'github-issues.runtime.issue705.test.ts',
   'github-issues.runtime.issue706.test.ts',
+  'github-issues.runtime.issue829.test.ts',
   'github-issues.runtime.lifecycle.test.ts',
   'github-issues.runtime.miniprogram-computed.test.ts',
   'github-issues.runtime.props.test.ts',

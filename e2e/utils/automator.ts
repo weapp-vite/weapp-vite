@@ -1006,6 +1006,12 @@ export function createBridgeWrapperProjectConfig(source: Record<string, any>, pa
     qcloudRoot: _qcloudRoot,
     ...rest
   } = source
+  const {
+    miniprogramRoot: _patchMiniprogramRoot,
+    srcMiniprogramRoot: _patchSrcMiniprogramRoot,
+    qcloudRoot: _patchQcloudRoot,
+    ...patchRest
+  } = patch
 
   const sourceSetting = source.setting && typeof source.setting === 'object' ? source.setting : {}
   const patchSetting = patch.setting && typeof patch.setting === 'object' ? patch.setting : {}
@@ -1019,7 +1025,7 @@ export function createBridgeWrapperProjectConfig(source: Record<string, any>, pa
   return {
     compileType: 'miniprogram',
     ...rest,
-    ...patch,
+    ...patchRest,
     miniprogramRoot: './',
     srcMiniprogramRoot: './',
     setting,
@@ -1458,10 +1464,12 @@ function prepareAutomatorBridgeWrapperProject(
     copyProjectRootForBridgeWrapper(projectPath, wrapperRoot, pluginRoot)
   }
 
-  const wrapperProjectConfig = createBridgeWrapperProjectConfig(projectConfig)
+  const projectPrivateConfigPath = path.join(projectPath, 'project.private.config.json')
+  const projectPrivateConfig = readJsonObject(projectPrivateConfigPath) ?? {}
+  const wrapperProjectConfig = createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig)
   writeJsonObject(path.join(wrapperRoot, 'project.config.json'), wrapperProjectConfig)
   copyJsonConfigAsBridgeWrapper(
-    path.join(projectPath, 'project.private.config.json'),
+    projectPrivateConfigPath,
     path.join(wrapperRoot, 'project.private.config.json'),
   )
 

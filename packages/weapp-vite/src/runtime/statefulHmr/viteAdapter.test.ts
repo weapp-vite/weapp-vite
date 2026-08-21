@@ -28,34 +28,46 @@ describe('stateful HMR Vite adapter', () => {
     })).toBe(true)
   })
 
-  it('registers the stateful HMR client with Vite bundled dev engines', async () => {
+  it('owns one stateful DevEngine and maps polling options to its watcher', async () => {
     let registeredClientId = ''
+    let legacyListenCalls = 0
+    let devOptions: any
+    const engine = {
+      ensureCurrentBuildFinish: async () => {},
+      ensureLatestBuildOutput: async () => {},
+      getBundleState: async () => ({ lastBuildErrored: false }),
+      registerClient: (clientId: string) => {
+        registeredClientId = clientId
+      },
+      run: async () => {},
+      triggerFullBuild: () => {},
+    }
     const adapter = new StatefulHmrViteAdapter(
-      { root: '/project' } as any,
-      {} as any,
+      { build: { rolldownOptions: {} }, root: '/project' } as any,
+      {
+        environments: {
+          client: {
+            bundledDev: undefined,
+          },
+        },
+      } as any,
       {
         onError: () => {},
         onOutput: () => {},
         onPatch: () => true,
         waitForInitialBundle: async () => {},
       },
+      { compareContentsForPolling: true, pollInterval: 120, usePolling: true },
+      (async (_input: unknown, _output: unknown, options: unknown) => {
+        devOptions = options
+        return engine
+      }) as any,
     )
     const bundledDev = {
-      _devEngine: {
-        ensureCurrentBuildFinish: async () => {},
-        ensureLatestBuildOutput: async () => {},
-        getBundleState: async () => ({ lastBuildErrored: false }),
-        registerClient: (clientId: string) => {
-          registeredClientId = clientId
-        },
-        triggerFullBuild: () => {},
-      },
-      clients: {
-        setupIfNeeded: () => {},
-      },
       getRolldownOptions: async () => ({}),
-      handleHmrOutput: () => {},
-      listen: async () => {},
+      listen: async () => {
+        legacyListenCalls += 1
+      },
       storeOutputFiles: () => {},
     }
 
@@ -71,6 +83,14 @@ describe('stateful HMR Vite adapter', () => {
     await bundledDev.listen()
 
     expect(registeredClientId).toBe('weapp-vite-stateful-hmr')
+    expect(legacyListenCalls).toBe(0)
+    expect(bundledDev._devEngine).toBe(engine)
+    expect(devOptions.watch).toEqual({
+      compareContentsForPolling: true,
+      pollInterval: 120,
+      skipWrite: true,
+      usePolling: true,
+    })
   })
 
   it('passes one complete runtime and disables Rolldown implicit injection', async () => {
@@ -131,21 +151,22 @@ describe('stateful HMR Vite adapter', () => {
     expect(calls).toEqual(['prepare', 'trigger-full', 'latest-output'])
   })
 
-  it('routes bundled-dev no-op updates through the fallback without forwarding them', () => {
+  it('routes DevEngine no-op updates through the stateful fallback', async () => {
     const fallbackFiles: string[][] = []
-    let forwarded = 0
+    let devOptions: any
+    const engine = {
+      ensureCurrentBuildFinish: async () => {},
+      getBundleState: async () => ({ lastBuildErrored: false }),
+      registerClient: async () => {},
+      run: async () => {},
+    }
     const adapter = new StatefulHmrViteAdapter(
       { build: { rolldownOptions: {} }, root: '/project' } as any,
       {
         environments: {
           client: {
             bundledDev: {
-              _devEngine: {},
-              clients: { setupIfNeeded: () => {} },
               getRolldownOptions: async () => ({}),
-              handleHmrOutput: () => {
-                forwarded += 1
-              },
               listen: async () => {},
               storeOutputFiles: () => {},
             },
@@ -161,14 +182,25 @@ describe('stateful HMR Vite adapter', () => {
         },
         waitForInitialBundle: async () => {},
       },
+      {},
+      (async (_input: unknown, _output: unknown, options: unknown) => {
+        devOptions = options
+        return engine
+      }) as any,
     )
 
     adapter.install()
     const bundledDev = (adapter as any).bundledDev
-    bundledDev.handleHmrOutput({}, ['src/pages/index.wxml'], { type: 'Noop' })
+    await bundledDev.listen()
+    devOptions.onHmrUpdates({
+      changedFiles: ['src/pages/index.wxml'],
+      updates: [{
+        clientId: 'weapp-vite-stateful-hmr',
+        update: { type: 'Noop' },
+      }],
+    })
 
     expect(fallbackFiles).toEqual([['src/pages/index.wxml']])
-    expect(forwarded).toBe(0)
   })
 
   it('keeps Vite 7 module registration compatibility when available', async () => {

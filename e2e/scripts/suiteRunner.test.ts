@@ -266,9 +266,13 @@ describe('suiteRunner', () => {
     const ideChunkModesLabels = ideChunkModesTasks.map(task => task.label)
     const ideGithubIssuesLabels = ideGithubIssuesTasks.map(task => task.label)
     const ideWevuJsxLabels = ideWevuJsxTasks.map(task => task.label)
+    const appLifecycleTask = ideFullTasks.find(task => task.label === 'ide/app-lifecycle.test.ts')
+    const autoRoutesDefineAppJsonTask = ideFullTasks.find(task => task.label === 'ide/auto-routes-define-app-json.runtime.test.ts')
     const coreHmrTask = ideExhaustiveTasks.find(task => task.label === 'ide/wevu-runtime.core-hmr.test.ts')
     const devtoolsCliWorkflowTask = ideFullTasks.find(task => task.label === 'ide/devtools-cli-workflow.runtime.test.ts')
     const githubIssuesAggregateTask = ideFullTasks.find(task => task.label === IDE_GITHUB_ISSUES_AGGREGATE_LABEL)
+    const githubIssuesIssue621Task = ideFullTasks.find(task => task.label === 'ide/github-issues.runtime.issue621.test.ts')
+    const lifecycleCompareTask = ideFullTasks.find(task => task.label === 'ide/lifecycle-compare.test.ts')
     const statefulHmrTask = ideFullTasks.find(task => task.label === 'ide/stateful-hmr.runtime.test.ts')
     const subpackageSharedStrategyComplexTask = ideFullTasks.find(task => task.label === 'ide/subpackage-shared-strategy-complex.runtime.test.ts')
     const templateDevOpenAllTask = ideFullTasks.find(task => task.label === 'ide/template-dev-open-all.runtime.test.ts')
@@ -337,6 +341,21 @@ describe('suiteRunner', () => {
     ])
     expect(ideExhaustiveLabels.slice(-3)).toEqual(ideChunkModesLabels)
     expect(ideExhaustiveTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
+    expect(appLifecycleTask?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
+    expect(autoRoutesDefineAppJsonTask?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
+    expect(devtoolsCliWorkflowTask?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
+    expect(githubIssuesIssue621Task?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
+    expect(lifecycleCompareTask?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
     expect(ideExhaustiveTasks.find(task => task.label === 'ide/app-vue-hmr-alias.runtime.test.ts')?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
@@ -353,6 +372,9 @@ describe('suiteRunner', () => {
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
     expect(ideFullTasks.find(task => task.label === 'ide/react-runtime-spike.runtime.test.ts')?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
+    expect(ideFullTasks.find(task => task.label === 'ide/subpackage-shared-strategy-complex.runtime.test.ts')?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
     expect(statefulHmrTask?.env).toMatchObject({
