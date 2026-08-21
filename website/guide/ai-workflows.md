@@ -57,7 +57,7 @@ pnpm --filter website-weapp-vite build
 
 ### 分包预下载审计
 
-当用户希望根据静态页面跳转检查微信分包预下载时，使用 `wv analyze --preload`。它会返回触发页面、目标分包、模板/脚本证据和现有配置状态；只读扫描不会自动编辑源码，动态路由、业务守卫和预下载额度需要人工复核。需要在构建产物中声明规则时，再配置 `weapp.routeRules.<pattern>.preload`。
+当用户希望根据静态页面跳转检查微信分包预下载时，使用 `wv analyze --preload`。它会返回触发页面、目标分包、模板/脚本证据、现有配置状态，以及按触发包聚合的实际体积与 2 MB 额度；只读分析不会自动编辑源码。动态路由、业务守卫和真实访问频率需要人工复核。需要在构建产物中声明规则时，再配置 `weapp.routeRules.<pattern>.preload`。
 
 ## GitHub issue 修复
 

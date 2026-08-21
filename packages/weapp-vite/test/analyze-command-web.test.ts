@@ -74,6 +74,12 @@ function createContext(overrides: Record<string, unknown> = {}) {
       relativeCwd: (input: string) => input.replace('/virtual/project/', ''),
       ...overrides,
     },
+    watcherService: {
+      closeAll: vi.fn(),
+    },
+    webService: {
+      close: vi.fn(async () => {}),
+    },
   } as any
 }
 
@@ -106,8 +112,9 @@ describe('analyze command web branch', () => {
   it('prints web static result in h5 mode and skips mini analyzer', async () => {
     const action = createCliActionHandler()
     const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const context = createContext()
 
-    vi.mocked(createCompilerContext).mockResolvedValue(createContext())
+    vi.mocked(createCompilerContext).mockResolvedValue(context)
 
     await action('/virtual/project', {
       platform: 'h5',
@@ -125,6 +132,8 @@ describe('analyze command web branch', () => {
     expect(parsed.web.enabled).toBe(true)
     expect(parsed.web.executionMode).toBe('safe')
     expect(parsed.unsupportedScopes).toContain('分包产物体积分析（仅小程序）')
+    expect(context.webService.close).toHaveBeenCalledTimes(1)
+    expect(context.watcherService.closeAll).not.toHaveBeenCalled()
   })
 
   it('runs mini analyze and prints JSON when --json is enabled', async () => {
@@ -135,10 +144,11 @@ describe('analyze command web branch', () => {
       modules: [],
       subPackages: [],
     }
-
-    vi.mocked(createCompilerContext).mockResolvedValue(createContext({
+    const context = createContext({
       weappWebConfig: undefined,
-    }))
+    })
+
+    vi.mocked(createCompilerContext).mockResolvedValue(context)
     vi.mocked(analyzeSubpackages).mockResolvedValue(miniResult as any)
 
     await action('/virtual/project', {
@@ -150,6 +160,8 @@ describe('analyze command web branch', () => {
     expect(startAnalyzeDashboard).not.toHaveBeenCalled()
     expect(stdout).toHaveBeenCalledTimes(1)
     expect(JSON.parse(String(stdout.mock.calls[0]?.[0] ?? ''))).toEqual(miniResult)
+    expect(context.watcherService.closeAll).toHaveBeenCalledTimes(1)
+    expect(context.webService.close).not.toHaveBeenCalled()
   })
 
   it('runs mini analyze summary and opens dashboard in non-json mode', async () => {

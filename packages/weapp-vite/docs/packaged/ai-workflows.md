@@ -65,6 +65,8 @@ wv mcp init codex
 wv mcp doctor codex
 ```
 
+`wv analyze --preload` 会识别宿主导航 API 与由 `useRouter()` / `createRouter()` 创建的路由 binding，输出静态跨分包跳转证据，并通过不写盘的分析构建按触发包汇总实际体积和 2 MB 预下载额度。它不会把普通对象的同名 `push` / `replace` 当作路由，也不会根据静态可达性自动改写业务配置。
+
 `wv mcp` 既可以启动服务，也可以管理 AI 客户端配置：
 
 - `wv mcp init <codex|claude-code|cursor>`：写入客户端配置。

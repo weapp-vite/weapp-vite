@@ -1,10 +1,18 @@
-import type { CompilerContext } from '../context'
-import type { MpPlatform } from '../types'
+import type { CompilerContext } from '../../context'
+import type { MpPlatform } from '../../types'
+import type { AnalyzeSubpackagesResult } from '../subpackages'
+import type { PreloadAnalyzeBudget } from './budget'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
-import { findJsEntry, findTemplateEntry, findVueEntry } from '../utils'
-import { collectPreloadPages, findPreloadRuleKey, suggestPreloadRules } from '../utils/preloadRule'
+import { findJsEntry, findTemplateEntry, findVueEntry } from '../../utils'
+import {
+  collectPreloadPages,
+  findPreloadRuleKey,
+  resolvePreloadPackageIdentifier,
+  suggestPreloadRules,
+} from '../../utils/preloadRule'
+import { createPreloadBudgets } from './budget'
 
 export interface PreloadAnalyzeSuggestion {
   page: string
@@ -25,8 +33,14 @@ export interface PreloadAnalyzeResult {
   pages: string[]
   configuredRules: Record<string, unknown>
   suggestions: PreloadAnalyzeSuggestion[]
+  budgets: PreloadAnalyzeBudget[]
   uncoveredPages: string[]
   limitations: string[]
+}
+
+export interface AnalyzePreloadRulesOptions {
+  now?: Date
+  packageAnalysis?: AnalyzeSubpackagesResult
 }
 
 async function readFileIfExists(filePath?: string) {
@@ -80,6 +94,7 @@ async function collectPageSources(ctx: CompilerContext, route: string) {
 function aggregateSuggestions(
   result: ReturnType<typeof suggestPreloadRules>,
   configuredRules: Record<string, unknown>,
+  appJson: Record<string, unknown>,
 ) {
   const byPage = new Map<string, PreloadAnalyzeSuggestion>()
   for (const suggestion of result.suggestions) {
@@ -103,7 +118,12 @@ function aggregateSuggestions(
     const existingPackages = existingRule && typeof existingRule === 'object' && 'packages' in existingRule
       ? (existingRule as { packages?: unknown }).packages
       : undefined
-    if (Array.isArray(existingPackages) && existingPackages.includes(suggestion.packageRoot)) {
+    const normalizedExistingPackages = Array.isArray(existingPackages)
+      ? existingPackages.flatMap(item => typeof item === 'string'
+          ? [resolvePreloadPackageIdentifier(item, appJson)]
+          : [])
+      : []
+    if (normalizedExistingPackages.includes(suggestion.packageRoot)) {
       current.alreadyConfigured.push(suggestion.packageRoot)
     }
     byPage.set(suggestion.page, current)
@@ -117,7 +137,10 @@ function aggregateSuggestions(
   }))
 }
 
-export async function analyzePreloadRules(ctx: CompilerContext, now = new Date()): Promise<PreloadAnalyzeResult> {
+export async function analyzePreloadRules(
+  ctx: CompilerContext,
+  options: AnalyzePreloadRulesOptions = {},
+): Promise<PreloadAnalyzeResult> {
   const appEntry = await ctx.scanService.loadAppEntry()
   const appJson = appEntry.json as Record<string, unknown>
   const pages = collectPreloadPages(appJson)
@@ -137,16 +160,20 @@ export async function analyzePreloadRules(ctx: CompilerContext, now = new Date()
   return {
     runtime: 'mini',
     kind: 'preload',
-    generatedAt: now.toISOString(),
+    generatedAt: (options.now ?? new Date()).toISOString(),
     platform: ctx.configService.platform,
     pages: pages.map(page => page.route),
     configuredRules,
-    suggestions: aggregateSuggestions(suggestions, configuredRules),
+    suggestions: aggregateSuggestions(suggestions, configuredRules, appJson),
+    budgets: createPreloadBudgets(appJson, suggestions, configuredRules, options.packageAnalysis),
     uncoveredPages: suggestions.uncovered,
     limitations: [
       '仅分析静态路由字面量；动态路由、后端配置和运行时守卫不会被推断。',
-      '建议使用分包 root 作为 packages 值，正式启用前仍需结合业务访问频率和 2 MB 预下载额度复核。',
+      '建议使用分包 root 作为 packages 值；预算按触发页所属包聚合，未知体积目标仍需人工复核。',
+      '静态跳转只能证明可达性，不能代表真实访问频率，正式启用前仍需结合业务数据确认。',
       '该命令只提供可审计建议，不会自动修改源码或覆盖手写的 app.json.preloadRule。',
     ],
   }
 }
+
+export type { PreloadAnalyzeBudget, PreloadAnalyzeBudgetTarget } from './budget'

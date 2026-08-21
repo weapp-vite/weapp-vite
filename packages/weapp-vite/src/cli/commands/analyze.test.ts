@@ -8,6 +8,8 @@ import { createWebAnalyzeResult, registerAnalyzeCommand } from './analyze'
 
 const filterDuplicateOptionsMock = vi.hoisted(() => vi.fn())
 const resolveConfigFileMock = vi.hoisted(() => vi.fn())
+const analyzeBackendCloseMock = vi.hoisted(() => vi.fn())
+const terminateStaleSassEmbeddedProcessMock = vi.hoisted(() => vi.fn())
 const resolveRuntimeTargetsMock = vi.hoisted(() => {
   const miniBackend = {
     descriptor: {
@@ -17,6 +19,9 @@ const resolveRuntimeTargetsMock = vi.hoisted(() => {
       },
     },
     platform: 'weapp',
+    driver: {
+      close: analyzeBackendCloseMock,
+    },
   }
   return vi.fn(() => ({
     kind: 'miniprogram',
@@ -77,6 +82,10 @@ vi.mock('../runtime', () => ({
   resolveRuntimeTargets: resolveRuntimeTargetsMock,
   createInlineConfig: createInlineConfigMock,
   logRuntimeTarget: logRuntimeTargetMock,
+}))
+
+vi.mock('../processCleanup', () => ({
+  terminateStaleSassEmbeddedProcess: terminateStaleSassEmbeddedProcessMock,
 }))
 
 vi.mock('../../createContext', () => ({
@@ -242,6 +251,7 @@ describe('analyze cli command', () => {
         }],
         alreadyConfigured: [],
       }],
+      budgets: [],
       uncoveredPages: [],
       limitations: ['静态分析限制'],
     })
@@ -257,9 +267,14 @@ describe('analyze cli command', () => {
       json: true,
     })
 
-    expect(analyzePreloadRulesMock).toHaveBeenCalledTimes(1)
-    expect(analyzeSubpackages).not.toHaveBeenCalled()
+    expect(analyzeSubpackagesMock).toHaveBeenCalledTimes(1)
+    expect(analyzePreloadRulesMock).toHaveBeenCalledWith(
+      expect.anything(),
+      { packageAnalysis: { packages: [], modules: [], subPackages: [] } },
+    )
     expect(startAnalyzeDashboard).not.toHaveBeenCalled()
+    expect(analyzeBackendCloseMock).toHaveBeenCalledTimes(1)
+    expect(terminateStaleSassEmbeddedProcessMock).toHaveBeenCalledTimes(1)
     expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('"kind": "preload"'))
     writeSpy.mockRestore()
   })
