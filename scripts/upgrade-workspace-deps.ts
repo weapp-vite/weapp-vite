@@ -20,6 +20,10 @@ export function createUpgradeWorkspaceDepsCommands(extraArgs: string[]): Upgrade
     },
     {
       command: 'pnpm',
+      args: ['run', 'catalog:sync:workspace'],
+    },
+    {
+      command: 'pnpm',
       args: ['run', 'check:rolldown:single-version'],
     },
     {

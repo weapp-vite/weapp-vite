@@ -16,6 +16,10 @@ it('runs generated catalog syncs before dependency upgrade changesets', () => {
     },
     {
       command: 'pnpm',
+      args: ['run', 'catalog:sync:workspace'],
+    },
+    {
+      command: 'pnpm',
       args: ['run', 'check:rolldown:single-version'],
     },
     {

@@ -1,15 +1,13 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { inspect } from 'node:util'
 import { parse } from 'yaml'
 import { syncRolldownCatalogReferences } from './print-rolldown-versions.mjs'
 
 const ROOT_DIR = path.dirname(fileURLToPath(new URL('../package.json', import.meta.url)))
-const WORKSPACE_PATH = path.resolve(ROOT_DIR, 'pnpm-workspace.yaml')
-const GENERATED_CATALOG_PATH = path.resolve(ROOT_DIR, 'packages/create-weapp-vite/src/generated/catalog.ts')
-const ROOT_WEAPP_VITE_LINK_PATH = path.resolve(ROOT_DIR, 'node_modules/weapp-vite')
-const ROOT_WEAPP_VITE_TARGET_PATH = path.resolve(ROOT_DIR, 'packages/weapp-vite')
+const MODES = new Set(['check', 'sync'])
 const CHUNK_MODE_FAKE_PKG_FILES = [
   {
     filePath: path.resolve(ROOT_DIR, 'e2e-apps/chunk-modes/node_modules/fake-pkg/package.json'),
@@ -63,7 +61,7 @@ function normalizeNamedCatalogs(catalogs = {}) {
   return normalized
 }
 
-function renderGeneratedCatalogFile(catalog, namedCatalogs) {
+export function renderGeneratedCatalogFile(catalog, namedCatalogs) {
   const catalogLiteral = inspect(catalog, {
     depth: null,
     compact: false,
@@ -84,21 +82,36 @@ export const TEMPLATE_NAMED_CATALOG = ${namedCatalogLiteral} as const
 `
 }
 
-async function syncTemplateCatalog() {
-  const workspaceContent = await fs.readFile(WORKSPACE_PATH, 'utf8')
+async function syncTemplateCatalog(rootDir = ROOT_DIR) {
+  const workspacePath = path.resolve(rootDir, 'pnpm-workspace.yaml')
+  const generatedCatalogPath = path.resolve(rootDir, 'packages/create-weapp-vite/src/generated/catalog.ts')
+  const workspaceContent = await fs.readFile(workspacePath, 'utf8')
   const workspace = parse(workspaceContent) ?? {}
   const generated = renderGeneratedCatalogFile(
     normalizeCatalog(workspace.catalog),
     normalizeNamedCatalogs(workspace.catalogs),
   )
-  const current = await fs.readFile(GENERATED_CATALOG_PATH, 'utf8').catch(() => '')
+  const current = await fs.readFile(generatedCatalogPath, 'utf8').catch(() => '')
 
   if (current === generated) {
     return false
   }
 
-  await fs.writeFile(GENERATED_CATALOG_PATH, generated, 'utf8')
+  await fs.writeFile(generatedCatalogPath, generated, 'utf8')
   return true
+}
+
+async function hasTemplateCatalogDrift(rootDir = ROOT_DIR) {
+  const workspacePath = path.resolve(rootDir, 'pnpm-workspace.yaml')
+  const generatedCatalogPath = path.resolve(rootDir, 'packages/create-weapp-vite/src/generated/catalog.ts')
+  const workspaceContent = await fs.readFile(workspacePath, 'utf8')
+  const workspace = parse(workspaceContent) ?? {}
+  const expected = renderGeneratedCatalogFile(
+    normalizeCatalog(workspace.catalog),
+    normalizeNamedCatalogs(workspace.catalogs),
+  )
+  const current = await fs.readFile(generatedCatalogPath, 'utf8').catch(() => '')
+  return current !== expected
 }
 
 async function fileChanged(filePath, runner) {
@@ -108,10 +121,16 @@ async function fileChanged(filePath, runner) {
   return before !== after
 }
 
-async function ensureChunkModeFakePkg() {
+async function ensureChunkModeFakePkg(rootDir = ROOT_DIR) {
   const changedFiles = []
 
-  for (const entry of CHUNK_MODE_FAKE_PKG_FILES) {
+  for (const entry of CHUNK_MODE_FAKE_PKG_FILES.map(entry => ({
+    ...entry,
+    filePath: path.relative(ROOT_DIR, entry.filePath),
+  })).map(entry => ({
+    ...entry,
+    filePath: path.resolve(rootDir, entry.filePath),
+  }))) {
     const current = await fs.readFile(entry.filePath, 'utf8').catch(() => '')
     if (current === entry.content) {
       continue
@@ -125,55 +144,101 @@ async function ensureChunkModeFakePkg() {
   return changedFiles
 }
 
-async function ensureRootWeappViteLink() {
+async function ensureRootWeappViteLink(rootDir = ROOT_DIR) {
+  const rootLinkPath = path.resolve(rootDir, 'node_modules/weapp-vite')
+  const targetPath = path.resolve(rootDir, 'packages/weapp-vite')
   const expectedRelativeTarget = path.relative(
-    path.dirname(ROOT_WEAPP_VITE_LINK_PATH),
-    ROOT_WEAPP_VITE_TARGET_PATH,
+    path.dirname(rootLinkPath),
+    targetPath,
   )
-  const currentTarget = await fs.readlink(ROOT_WEAPP_VITE_LINK_PATH).catch(() => null)
+  const currentTarget = await fs.readlink(rootLinkPath).catch(() => null)
   const resolvedTarget = currentTarget
-    ? path.resolve(path.dirname(ROOT_WEAPP_VITE_LINK_PATH), currentTarget)
+    ? path.resolve(path.dirname(rootLinkPath), currentTarget)
     : null
 
-  if (resolvedTarget === ROOT_WEAPP_VITE_TARGET_PATH) {
+  if (resolvedTarget === targetPath) {
     return false
   }
 
-  const currentStat = await fs.lstat(ROOT_WEAPP_VITE_LINK_PATH).catch(() => null)
+  const currentStat = await fs.lstat(rootLinkPath).catch(() => null)
   if (currentStat) {
-    await fs.rm(ROOT_WEAPP_VITE_LINK_PATH, { force: true, recursive: true })
+    await fs.rm(rootLinkPath, { force: true, recursive: true })
   }
 
-  await fs.mkdir(path.dirname(ROOT_WEAPP_VITE_LINK_PATH), { recursive: true })
-  await fs.symlink(expectedRelativeTarget, ROOT_WEAPP_VITE_LINK_PATH, 'junction')
+  await fs.mkdir(path.dirname(rootLinkPath), { recursive: true })
+  await fs.symlink(expectedRelativeTarget, rootLinkPath, 'junction')
   return true
 }
 
-async function main() {
-  const changedFiles = []
-
-  const catalogChanged = await fileChanged(GENERATED_CATALOG_PATH, async () => {
-    await syncTemplateCatalog()
-  })
-  if (catalogChanged) {
-    changedFiles.push(GENERATED_CATALOG_PATH)
-  }
-
-  changedFiles.push(...syncRolldownCatalogReferences(ROOT_DIR))
-  changedFiles.push(...await ensureChunkModeFakePkg())
-
-  if (await ensureRootWeappViteLink()) {
-    changedFiles.push(ROOT_WEAPP_VITE_LINK_PATH)
-  }
-
-  if (changedFiles.length === 0) {
-    return
-  }
-
-  console.log([
-    '[workspace] synced postinstall artifacts',
-    ...changedFiles.map(filePath => `- ${path.relative(ROOT_DIR, filePath)}`),
-  ].join('\n'))
+function resolveMode(argv = process.argv.slice(2)) {
+  const mode = argv.find(arg => MODES.has(arg)) ?? 'check'
+  return mode
 }
 
-await main()
+async function collectRolldownDrift(rootDir = ROOT_DIR) {
+  return syncRolldownCatalogReferences(rootDir, {
+    writePackageJsonImpl() {},
+  })
+}
+
+function formatChangedFiles(prefix, rootDir, files) {
+  if (files.length === 0) {
+    return ''
+  }
+  return [
+    prefix,
+    ...files.map(filePath => `- ${path.relative(rootDir, filePath)}`),
+  ].join('\n')
+}
+
+export async function runPostinstall({ rootDir = ROOT_DIR, mode = 'check' } = {}) {
+  if (!MODES.has(mode)) {
+    throw new Error(`Unknown postinstall sync mode: ${mode}`)
+  }
+
+  const changedFiles = []
+
+  if (mode === 'sync') {
+    const generatedCatalogPath = path.resolve(rootDir, 'packages/create-weapp-vite/src/generated/catalog.ts')
+    const catalogChanged = await fileChanged(generatedCatalogPath, async () => {
+      await syncTemplateCatalog(rootDir)
+    })
+    if (catalogChanged) {
+      changedFiles.push(generatedCatalogPath)
+    }
+    changedFiles.push(...syncRolldownCatalogReferences(rootDir))
+  }
+  else {
+    if (await hasTemplateCatalogDrift(rootDir)) {
+      changedFiles.push(path.resolve(rootDir, 'packages/create-weapp-vite/src/generated/catalog.ts'))
+    }
+    changedFiles.push(...await collectRolldownDrift(rootDir))
+  }
+
+  const ignoredFiles = []
+  ignoredFiles.push(...await ensureChunkModeFakePkg(rootDir))
+
+  if (await ensureRootWeappViteLink(rootDir)) {
+    ignoredFiles.push(path.resolve(rootDir, 'node_modules/weapp-vite'))
+  }
+
+  if (mode === 'check' && changedFiles.length > 0) {
+    console.warn(formatChangedFiles(
+      '[workspace] install completed; tracked workspace artifacts need synchronization. Run `pnpm deps:up` or `pnpm run catalog:sync:workspace`.',
+      rootDir,
+      changedFiles,
+    ))
+  }
+  else if (mode === 'sync' && changedFiles.length > 0) {
+    console.log(formatChangedFiles('[workspace] synced tracked workspace artifacts', rootDir, changedFiles))
+  }
+  if (ignoredFiles.length > 0) {
+    console.log(formatChangedFiles('[workspace] synced ignored install artifacts', rootDir, ignoredFiles))
+  }
+
+  return { changedFiles, ignoredFiles }
+}
+
+if (process.argv[1] && path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1])) {
+  await runPostinstall({ mode: resolveMode() })
+}
