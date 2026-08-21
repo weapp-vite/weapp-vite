@@ -100,7 +100,7 @@ export default defineConfig({
 })
 ```
 
-微信构建会把 `preload` 合成为 `app.json.preloadRule`；手写的同一路由规则优先，其他平台不会生成微信专属字段。多条 glob 命中时选择具体程度最高的一条。需要检查静态跨分包跳转时，运行 `wv analyze --preload`，它只输出建议，不修改源码。
+微信构建会把 `preload` 合成为 `app.json.preloadRule`；手写的同一路由规则优先，其他平台不会生成微信专属字段。多条 glob 命中时选择具体程度最高的一条。需要检查静态跨分包跳转时，运行 `wv analyze --preload`；它只输出建议，不修改源码，并按触发页所属包汇总实际分包体积与共享的 2 MB 额度。
 
 ### `vue.template.htmlTagToWxml`
 

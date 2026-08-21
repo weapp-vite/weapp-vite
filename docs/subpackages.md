@@ -316,9 +316,9 @@ export default defineConfig({
 
 ### 分包预加载
 
-- 在 `app.json` 的 `preloadRule` 中声明触发页、目标分包、网络条件与超时时间。
+- 在 `app.json` 的 `preloadRule` 中声明触发页、目标分包与网络条件。
 - 也可以在 `weapp.routeRules.<pattern>.preload` 中显式声明，微信构建时由 `weapp-vite` 合成为 `app.json.preloadRule`；手写的同一路由规则优先。
-- 使用 `wv analyze --preload` 审计静态模板和路由调用，获取跨分包预下载建议；动态路由和业务访问策略仍需人工确认。
+- 使用 `wv analyze --preload` 审计静态模板和可证明来源的路由调用，获取跨分包预下载建议；命令会通过不写盘的分析构建读取实际分包体积，并按触发页所属包汇总共享的 2 MB 额度。动态路由和业务访问策略仍需人工确认。
 - 首屏页通常指定为触发页，将次屏高频路径加入 `packages`，并配置 `network: "all"` 以便 Wi-Fi/4G 均可预下载。
 - 如需更细粒度控制，可以在页面 `onLoad` 中结合 `wx.preloadSubpackage` 做二次确认。
 

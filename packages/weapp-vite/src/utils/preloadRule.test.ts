@@ -108,7 +108,10 @@ describe('preloadRule helpers', () => {
     const result = suggestPreloadRules(
       {
         pages: ['pages/index/index'],
-        subPackages: [{ root: 'packages/order', pages: ['index'] }],
+        subPackages: [
+          { root: 'packages/order', pages: ['index'] },
+          { root: 'packages/profile', pages: ['index'] },
+        ],
       },
       new Map([
         ['pages/index/index', {
@@ -144,7 +147,7 @@ describe('preloadRule helpers', () => {
       },
       new Map([
         ['pages/index/index', {
-          script: 'router.push({ path: \'/packages/order/index?id=1\' }); router.push(getOrderPath(id))',
+          script: 'const router = useRouter(); router.push({ path: \'/packages/order/index?id=1\' }); router.push(getOrderPath(id))',
         }],
       ]),
     )
@@ -153,6 +156,105 @@ describe('preloadRule helpers', () => {
       page: 'pages/index/index',
       packageRoot: 'packages/order',
       target: 'packages/order/index',
+      source: 'script',
+    }])
+  })
+
+  it('only reports host navigation and proven router bindings', () => {
+    const result = suggestPreloadRules(
+      {
+        pages: ['pages/index/index'],
+        subPackages: [{ root: 'packages/order', pages: ['index'] }],
+      },
+      new Map([
+        ['pages/index/index', {
+          script: [
+            'const values = []; values.push(\'/packages/order/index\')',
+            'history.replace({ path: \'/packages/order/index\' })',
+            'push(\'/packages/order/index\')',
+            'const appRouter = useRouter()',
+            'function shadowed(appRouter) { appRouter.push(\'/packages/profile/index\') }',
+            'appRouter.push(\'/packages/order/index\')',
+          ].join(';'),
+        }],
+      ]),
+    )
+
+    expect(result.suggestions).toEqual([{
+      page: 'pages/index/index',
+      packageRoot: 'packages/order',
+      target: 'packages/order/index',
+      source: 'script',
+    }])
+  })
+
+  it('tracks imported factory aliases and rejects locally shadowed factories', () => {
+    const result = suggestPreloadRules(
+      {
+        pages: ['pages/index/index'],
+        subPackages: [
+          { root: 'packages/order', pages: ['index'] },
+          { root: 'packages/profile', pages: ['index'] },
+        ],
+      },
+      new Map([
+        ['pages/index/index', {
+          script: [
+            'import { useRouter as useAppRouter } from \'wevu/router\'',
+            'import { useNativeRouter as useNative } from \'wevu\'',
+            'const appRouter = useAppRouter()',
+            'const nativeRouter = useNative()',
+            'appRouter.push(\'/packages/order/index\')',
+            'nativeRouter.navigateTo({ url: \'/packages/profile/index\' })',
+            'function ignored(useAppRouter) {',
+            '  const shadowedRouter = useAppRouter()',
+            '  shadowedRouter.push(\'/packages/profile/index\')',
+            '}',
+            'function useRouter() { return { push() {} } }',
+            'const localRouter = useRouter()',
+            'localRouter.push(\'/packages/profile/index\')',
+          ].join('\n'),
+        }],
+      ]),
+    )
+
+    expect(result.suggestions).toEqual([
+      {
+        page: 'pages/index/index',
+        packageRoot: 'packages/order',
+        target: 'packages/order/index',
+        source: 'script',
+      },
+      {
+        page: 'pages/index/index',
+        packageRoot: 'packages/profile',
+        target: 'packages/profile/index',
+        source: 'script',
+      },
+    ])
+  })
+
+  it('suggests preloading the main package from an independent subpackage', () => {
+    const result = suggestPreloadRules(
+      {
+        pages: ['pages/index/index'],
+        subPackages: [{
+          root: 'packages/independent',
+          independent: true,
+          pages: ['index'],
+        }],
+      },
+      new Map([
+        ['packages/independent/index', {
+          script: 'wx.reLaunch({ url: \'/pages/index/index\' })',
+        }],
+      ]),
+    )
+
+    expect(result.suggestions).toEqual([{
+      page: 'packages/independent/index',
+      packageRoot: '__APP__',
+      target: 'pages/index/index',
       source: 'script',
     }])
   })

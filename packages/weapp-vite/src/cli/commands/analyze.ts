@@ -18,6 +18,7 @@ import logger, { colors } from '../../logger'
 import { resolveHmrProfileJsonPath } from '../../utils/hmrProfile'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { coerceBooleanOption, filterDuplicateOptions, resolveConfigFile } from '../options'
+import { terminateStaleSassEmbeddedProcess } from '../processCleanup'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
 
 export interface WebAnalyzeResult {
@@ -222,6 +223,17 @@ function printPreloadAnalysisSummary(result: PreloadAnalyzeResult) {
   if (result.uncoveredPages.length > 0) {
     logger.warn(`- 未找到可扫描源码的页面：${result.uncoveredPages.join('、')}`)
   }
+  if (result.budgets.length > 0) {
+    logger.info('预下载额度：')
+    for (const budget of result.budgets) {
+      const size = `${formatAnalyzeBytes(budget.estimatedBytes)} / ${formatAnalyzeBytes(budget.limitBytes)}`
+      const unknown = budget.unknownPackages.length > 0
+        ? `，未知：${budget.unknownPackages.join('、')}`
+        : ''
+      const status = budget.status === 'exceeded' ? '超限' : budget.status === 'unknown' ? '待确认' : '正常'
+      logger.info(`- ${budget.sourcePackage}：${size}，${status}${unknown}`)
+    }
+  }
   for (const limitation of result.limitations) {
     logger.warn(`- 限制：${limitation}`)
   }
@@ -359,7 +371,7 @@ export function registerAnalyzeCommand(cli: CAC) {
     .option('--markdown', `[boolean] 输出 Markdown 报告`)
     .option('--report <type>', `[string] 输出指定报告类型（pr）`)
     .option('--budget-check', `[boolean] 检查 analyze 预算，超过预算时返回非 0 退出码`)
-    .option('--preload', `[boolean] 分析静态页面跳转并输出 preloadRule 建议`)
+    .option('--preload', `[boolean] 分析静态页面跳转、实际分包体积和 preloadRule 额度`)
     .option('--output <file>', `[string] 将分析结果写入指定文件（JSON 或 Markdown）`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | web)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
@@ -376,8 +388,9 @@ export function registerAnalyzeCommand(cli: CAC) {
       const budgetCheck = coerceBooleanOption(options.budgetCheck)
       const targets = resolveRuntimeTargets(options)
       const inlineConfig = createInlineConfig(targets)
+      let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
       try {
-        const ctx = await createCompilerContext({
+        ctx = await createCompilerContext({
           cwd: root,
           mode: options.mode ?? 'production',
           configFile,
@@ -420,7 +433,8 @@ export function registerAnalyzeCommand(cli: CAC) {
           if (targets.kind !== 'miniprogram' || ctx.configService.platform !== 'weapp') {
             throw new Error('preloadRule 分析目前仅支持微信小程序平台。')
           }
-          const preloadResult = await analyzePreloadRules(ctx)
+          const packageAnalysis = await analyzeSubpackages(ctx)
+          const preloadResult = await analyzePreloadRules(ctx, { packageAnalysis })
           const writtenPath = await writeAnalyzeResult(preloadResult, outputOption, ctx.configService)
           if (outputJson && !writtenPath) {
             process.stdout.write(`${JSON.stringify(preloadResult, null, 2)}\n`)
@@ -498,6 +512,16 @@ export function registerAnalyzeCommand(cli: CAC) {
       catch (error) {
         logger.error(error)
         process.exitCode = 1
+      }
+      finally {
+        if (ctx) {
+          for (const backend of [...targets.entries].reverse()) {
+            if (backend.descriptor.capabilities.analyze) {
+              await backend.driver?.close?.(ctx)
+            }
+          }
+        }
+        terminateStaleSassEmbeddedProcess()
       }
     })
 }

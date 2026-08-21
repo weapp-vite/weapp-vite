@@ -48,7 +48,7 @@ wv analyze --preload
 wv analyze --preload --json --output reports/preload.json
 ```
 
-该命令只读扫描原生模板、Vue SFC 和路由调用，不会修改源码；动态路由、业务守卫和微信预下载额度仍需人工确认。构建时的显式规则见 `weapp-config.md` 中的 `weapp.routeRules.<pattern>.preload`。
+该命令只读扫描原生模板、Vue SFC 和可证明来源的路由调用，不会修改源码；同时通过不写盘的分析构建读取实际分包体积，按触发页所属包汇总共享的 2 MB 额度。动态路由、业务守卫和真实访问频率仍需人工确认。构建时的显式规则见 `weapp-config.md` 中的 `weapp.routeRules.<pattern>.preload`。
 
 ### Web 预览与构建
 

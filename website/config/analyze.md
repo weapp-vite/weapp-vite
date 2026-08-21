@@ -145,9 +145,9 @@ wv analyze --preload
 wv analyze --preload --json --output reports/preload.json
 ```
 
-输出中的 `suggestions` 按触发页面聚合，包含目标分包、目标页面和 `template` / `script` 证据；`alreadyConfigured` 用于标记现有 `app.json.preloadRule` 已覆盖的目标。
+输出中的 `suggestions` 按触发页面聚合，包含目标分包、目标页面和 `template` / `script` 证据；`alreadyConfigured` 用于标记现有 `app.json.preloadRule` 已覆盖的目标。脚本扫描只接受微信宿主导航 API，以及可证明由 `useRouter()` / `createRouter()` 等 factory 创建的路由 binding，普通对象的同名 `push` / `replace` 不会被当作跳转。
 
-该命令是只读审计，不会自动编辑 `app.json` 或源码。它不会推断动态路由、后端返回的 URL、权限/业务守卫，也不会替代对微信预下载额度的检查。要在构建时显式生成规则，请使用 [`weapp.routeRules.<pattern>.preload`](./route-rules.md#weapp-routerules)。
+该命令是只读审计，不会自动编辑 `app.json` 或源码。它会执行一次不写盘的分析构建，以实际产物体积按触发页所属包汇总 `budgets`；同一主包或分包中的多个页面共享官方 2 MB 预下载额度，独立分包跳转主包会建议 `__APP__`。动态路由、后端返回的 URL、权限/业务守卫和真实访问频率仍需人工复核。要在构建时显式生成规则，请使用 [`weapp.routeRules.<pattern>.preload`](./route-rules.md#weapp-routerules)。
 
 ## Web 平台边界 {#web-platform}
 
