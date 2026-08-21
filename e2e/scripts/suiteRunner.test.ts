@@ -394,6 +394,7 @@ describe('suiteRunner', () => {
       'ide/github-issues.runtime.issue558.test.ts',
       'ide/github-issues.runtime.issue615.test.ts',
       'ide/github-issues.runtime.issue621.test.ts',
+      'ide/github-issues.runtime.issue826.test.ts',
       'ide/github-issues.runtime.issue642-bug7-default.test.ts',
       'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
       'ide/github-issues.runtime.issue642-bug8.test.ts',
