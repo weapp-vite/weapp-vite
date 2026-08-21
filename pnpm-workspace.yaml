@@ -74,8 +74,8 @@ catalog:
   pkg-types: ^2.3.1
   postcss: ^8.5.26
   rolldown: 1.2.5
-  sass: ^1.103.0
-  sass-embedded: ^1.102.0
+  sass: ^1.103.1
+  sass-embedded: ^1.103.1
   stylelint: ^17.14.1
   tailwind-merge: ^3.6.0
   tailwind-variants: ^3.3.1
@@ -90,7 +90,7 @@ catalog:
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.41
   vue-tsc: ^3.3.10
-  weapp-tailwindcss: ^5.3.2
+  weapp-tailwindcss: ^5.3.3
   zod: ^4.4.3
 
 catalogs:
@@ -104,7 +104,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.16.0
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.3.2
+    weapp-tailwindcss: 5.3.3
 
 gitChecks: false
 

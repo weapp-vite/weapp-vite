@@ -303,7 +303,7 @@
     "prettier": "^3.9.6",
     "repoctl": "^5.4.1",
     "rolldown": "catalog:",
-    "rollup": "^4.62.4",
+    "rollup": "^4.62.5",
     "rollup-plugin-dts": "^6.5.1",
     "rollup-plugin-visualizer": "^7.1.1",
     "sass-embedded": "catalog:",
