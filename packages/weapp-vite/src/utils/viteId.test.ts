@@ -21,6 +21,10 @@ describe('normalizeViteId', () => {
     expect(normalizeViteId('/@fs/C:/project/src/a.ts')).toBe('C:/project/src/a.ts')
   })
 
+  it('normalizes POSIX file URLs when the host platform cannot convert them', () => {
+    expect(normalizeViteId('file:///project/src/a%20b.ts?raw')).toBe('/project/src/a b.ts')
+  })
+
   it('strips vue virtual prefix when enabled', () => {
     expect(normalizeViteId('\0vue:/a/b.vue?vue&type=script', { stripVueVirtualPrefix: true })).toBe('/a/b.vue')
   })
