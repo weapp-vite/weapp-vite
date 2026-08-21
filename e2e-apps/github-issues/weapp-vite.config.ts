@@ -14,14 +14,15 @@ const issue595ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_595_SCOPED ===
 const issue642ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_642_SCOPED === 'true'
 const issue724ProbeEnabled = process.env.WEAPP_GITHUB_ISSUE_724_PROBE === 'true'
 const issue779CssPreEnabled = process.env.WEAPP_GITHUB_ISSUE_779_CSS_PRE === 'true'
+const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const issue826PreserveEnabled = process.env.WEAPP_GITHUB_ISSUE_826_PRESERVE === 'true'
+  || e2eTargetFile.endsWith('github-issues.runtime.issue826.test.ts')
 const issue793BuildScope = process.env.WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE
 const issue793BuildScopeEnabled = issue793BuildScope === 'true'
   || issue793BuildScope === 'subpackage'
   || issue793BuildScope === 'main-with-subpackage'
 const issue651NoExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverNoExt/index')
 const issue651WithExtResolvedId = path.resolve(import.meta.dirname, 'src/issue-fixtures/issue-651/ResolverWithExt/index.vue')
-const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.slot-fallback-compiler-off.test.ts')
 const issue642Bug7DefaultEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue642-bug7-default.test.ts')
@@ -112,6 +113,10 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue829.test.ts': [
     'pages/issue-829/**',
     'components/issue-829/**',
+  ],
+  'github-issues.runtime.issue826.test.ts': [
+    'pages/issue-826/**',
+    'issue-fixtures/issue-826/**',
   ],
   'github-issues.runtime.require-async.test.ts': [
     'pages/require-async/**',
@@ -458,7 +463,10 @@ const issue779CssPrePlugin = issue779CssPreEnabled
 
 function resolveGithubIssuesBuildConfig() {
   if (issue826PreserveEnabled) {
-    return { outDir: 'dist-issue-826', minify: false }
+    return {
+      outDir: process.env.WEAPP_GITHUB_ISSUE_826_OUT_DIR ?? 'dist-issue-826',
+      minify: false,
+    }
   }
   if (issue393ChunkModeEnabled) {
     return { outDir: 'dist-issue-393', minify: false }

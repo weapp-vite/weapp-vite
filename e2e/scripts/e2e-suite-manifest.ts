@@ -44,6 +44,7 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/github-issues.runtime.require-async.test.ts',
   'ide/lifecycle-compare.test.ts',
   'ide/react-runtime-spike.runtime.test.ts',
+  'ide/shared-styles.runtime.test.ts',
   'ide/stateful-hmr.runtime.test.ts',
   'ide/subpackage-shared-strategy-complex.runtime.test.ts',
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
@@ -81,6 +82,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue558.test.ts',
   'ide/github-issues.runtime.issue615.test.ts',
   'ide/github-issues.runtime.issue621.test.ts',
+  'ide/github-issues.runtime.issue826.test.ts',
   'ide/github-issues.runtime.issue642-bug7-default.test.ts',
   'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
   'ide/github-issues.runtime.issue642-bug8.test.ts',
@@ -137,6 +139,7 @@ const IDE_FULL_CORE_PATTERNS = [
   'ide/github-issues.runtime.issue621.test.ts',
   'ide/lifecycle-compare.test.ts',
   'ide/react-runtime-spike.runtime.test.ts',
+  'ide/shared-styles.runtime.test.ts',
   'ide/stateful-hmr.runtime.test.ts',
   'ide/subpackage-shared-strategy-complex.runtime.test.ts',
   'ide/template-dev-open-all.runtime.test.ts',
@@ -177,7 +180,9 @@ const IDE_GATE_TESTS = [
 const IDE_HEADLESS_FULL_TESTS = [
   ...IDE_GATE_TESTS,
   path.resolve(ROOT, 'ide/github-issues.runtime.issue705.test.ts'),
+  path.resolve(ROOT, 'ide/github-issues.runtime.issue826.test.ts'),
   path.resolve(ROOT, 'ide/github-issues.runtime.require-async.test.ts'),
+  path.resolve(ROOT, 'ide/shared-styles.runtime.test.ts'),
   path.resolve(ROOT, 'ide/wevu-jsx-tsx.runtime.test.ts'),
 ]
 export const SKIP_CI_HMR_GUARD_ENV = 'WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD'

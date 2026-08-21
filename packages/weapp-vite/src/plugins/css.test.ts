@@ -354,6 +354,62 @@ describe('css plugin shared style injection', () => {
     expect(processCssWithCache).toHaveBeenCalledWith('@import \'../styles/index.wxss\';\n', configService)
   })
 
+  it('injects shared style imports when the target style extension is css', async () => {
+    const pageStylePath = resolve(absoluteSrcRoot, 'pages/index/index.wxss')
+    const mainStyleEntry: SubPackageStyleEntry = {
+      ...subPackageStyleEntry,
+      absolutePath: resolve(absoluteSrcRoot, 'styles/main.scss'),
+      outputRelativePath: 'styles/main.css',
+      source: 'styles/main.scss',
+    }
+    const cssConfigService = {
+      ...configService,
+      outputExtensions: { wxss: 'css' },
+    }
+    const plugin = css({
+      ...ctx,
+      configService: cssConfigService,
+      scanService: {
+        mainPackageStyleEntries: [mainStyleEntry],
+        subPackageMap: new Map(),
+      },
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'pages/index/index.css': {
+        type: 'asset',
+        fileName: 'pages/index/index.css',
+        originalFileNames: [pageStylePath],
+        source: '.page{color:red}',
+      },
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'pages/index/index.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+        viteMetadata: {
+          importedAssets: new Set(),
+          importedCss: new Set(['pages/index/index.css']),
+          importedScripts: new Set(),
+          importedUrls: new Set(),
+        },
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(bundle['pages/index/index.css']?.source).toBe(
+      '@import \'../../styles/main.css\';\n.page{color:red}',
+    )
+  })
+
   it('prepares shared style import assets concurrently while committing in chunk order', async () => {
     const plugin = css(ctx)[0]
     const events: string[] = []

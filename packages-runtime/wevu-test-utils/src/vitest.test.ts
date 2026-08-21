@@ -31,6 +31,7 @@ describe('wevuSfc()', () => {
     const transform = plugin.transform as any
     await expect(transform.call({}, '', '/virtual/app.vue')).rejects.toThrow('@mpcore/test')
     await expect(transform.call({}, '', '/virtual/pages/index.vue')).rejects.toThrow('@mpcore/test')
+    await expect(transform.call({}, '', 'C:\\project\\src\\pages\\home\\index.vue?vue&type=script')).rejects.toThrow('@mpcore/test')
   })
 
   it('allows ordinary components nested below a pages directory', async () => {
@@ -61,5 +62,36 @@ describe('wevuSfc()', () => {
       '/virtual/routes/home.vue?vue&type=script',
     )).rejects.toThrow('@mpcore/test')
     expect(filenames).toEqual(['/virtual/routes/home.vue'])
+  })
+
+  it('supports synchronous page matching without overriding the app boundary', async () => {
+    const filenames: string[] = []
+    const plugin = wevuSfc({
+      isPage(filename) {
+        filenames.push(filename)
+        return filename.endsWith('/screens/home.vue')
+      },
+    })
+    const transform = plugin.transform as any
+
+    await expect(transform.call(
+      {},
+      '<script setup>const route = \'home\'</script>',
+      'C:\\project\\src\\screens\\home.vue?vue&type=script',
+    )).rejects.toThrow('@mpcore/test')
+
+    const component = await transform.call(
+      {},
+      '<script setup>const label = \'component\'</script>',
+      'C:\\project\\src\\pages\\home\\components\\Panel.vue?vue&type=script',
+    )
+    expect(component.code).toContain('component')
+
+    await expect(transform.call({}, '', 'C:\\project\\src\\app.vue?vue&type=script')).rejects.toThrow('@mpcore/test')
+    expect(filenames).toEqual([
+      'C:/project/src/screens/home.vue',
+      'C:/project/src/pages/home/components/Panel.vue',
+      'C:/project/src/app.vue',
+    ])
   })
 })

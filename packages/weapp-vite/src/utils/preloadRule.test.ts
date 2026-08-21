@@ -288,4 +288,48 @@ describe('preloadRule helpers', () => {
       },
     ])
   })
+
+  it('supports destructured router factories while rejecting shadowed and reassigned bindings', () => {
+    const result = suggestPreloadRules(
+      {
+        pages: ['pages/index/index'],
+        subPackages: [
+          { root: 'packages/order', pages: ['index'] },
+          { root: 'packages/profile', pages: ['index'] },
+        ],
+      },
+      new Map([
+        ['pages/index/index', {
+          script: [
+            'import { createRouter as createAppRouter } from \'vue-router\'',
+            'import { useNativeRouter } from \'wevu\'',
+            'const { push: openPage } = createAppRouter()',
+            'const { navigateTo: openNative } = useNativeRouter()',
+            'openPage({ path: \'/packages/order/index\' })',
+            'openNative({ url: \'/packages/profile/index\' })',
+            'let mutableRouter = createAppRouter()',
+            'mutableRouter = history',
+            'mutableRouter.push(\'/packages/profile/index\')',
+            'function local(wx) { wx.navigateTo({ url: \'/packages/profile/index\' }) }',
+            'const values = []; values.push(\'/packages/profile/index\')',
+          ].join('\n'),
+        }],
+      ]),
+    )
+
+    expect(result.suggestions).toEqual([
+      {
+        page: 'pages/index/index',
+        packageRoot: 'packages/order',
+        target: 'packages/order/index',
+        source: 'script',
+      },
+      {
+        page: 'pages/index/index',
+        packageRoot: 'packages/profile',
+        target: 'packages/profile/index',
+        source: 'script',
+      },
+    ])
+  })
 })

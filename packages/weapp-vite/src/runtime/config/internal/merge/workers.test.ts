@@ -30,6 +30,9 @@ describe('runtime config merge workers', () => {
       ctx: {
         configService: {
           platform: 'swan',
+          weappViteConfig: {
+            chunks: { preserveModules: ['shared/**'] },
+          },
         },
       } as any,
       isDev: true,
@@ -51,6 +54,7 @@ describe('runtime config merge workers', () => {
     expect(result.plugins).toEqual([
       [{ name: 'weapp-worker-plugin' }],
     ])
+    expect(result.build?.rolldownOptions?.preserveEntrySignatures).toBe('allow-extension')
     expect(injectBuiltinAliases).toHaveBeenCalledWith(result)
   })
 
@@ -59,6 +63,9 @@ describe('runtime config merge workers', () => {
       ctx: {
         configService: {
           platform: 'jd',
+          weappViteConfig: {
+            chunks: { preserveModules: ['shared/**'] },
+          },
         },
       } as any,
       isDev: false,
@@ -75,5 +82,6 @@ describe('runtime config merge workers', () => {
       platform: 'jd',
     })
     expect(result.logLevel).toBe('info')
+    expect(result.build?.rolldownOptions?.preserveEntrySignatures).toBe('allow-extension')
   })
 })

@@ -1,0 +1,29 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "launchMode": "default",
+          "name": "pages/index/index",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "launchMode": "default",
+          "name": "packageA/pages/foo/index",
+          "pathName": "packageA/pages/foo/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "launchMode": "default",
+          "name": "packageB/pages/bar/index",
+          "pathName": "packageB/pages/bar/index",
+          "query": "",
+          "scene": null
+        }
+      ]
+    }
+  }
+}

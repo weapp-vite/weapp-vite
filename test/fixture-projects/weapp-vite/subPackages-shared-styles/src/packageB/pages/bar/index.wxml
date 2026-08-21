@@ -1,1 +1,1 @@
-<view class="independent-page">independent</view>
+<view id="shared-styles-independent-page" class="independent-page main-shared manual-shared">independent</view>

@@ -2,13 +2,19 @@ import type { ChildProcess } from 'node:child_process'
 import process from 'node:process'
 
 function isSassEmbeddedChild(handle: unknown): handle is ChildProcess {
+  if (!handle || typeof handle !== 'object') {
+    return false
+  }
+  const child = handle as Partial<ChildProcess> & { spawnargs?: string[] }
+  const spawnfile = typeof child.spawnfile === 'string' ? child.spawnfile : ''
+  const spawnargs = Array.isArray(child.spawnargs) ? child.spawnargs : []
   return Boolean(
-    handle
-    && typeof handle === 'object'
-    && 'kill' in handle
+    'kill' in handle
     && 'spawnfile' in handle
-    && typeof (handle as ChildProcess).spawnfile === 'string'
-    && (handle as ChildProcess).spawnfile?.includes('sass-embedded'),
+    && (
+      spawnfile.includes('sass-embedded')
+      || (spawnfile.includes('dart-sass') && spawnargs.includes('--embedded'))
+    ),
   )
 }
 

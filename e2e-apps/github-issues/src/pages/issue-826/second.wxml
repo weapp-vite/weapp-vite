@@ -1,1 +1,1 @@
-<view>issue 826 second</view>
+<view id="issue826-second-page">{{value}}</view>
