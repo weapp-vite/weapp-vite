@@ -95,6 +95,27 @@ describe('@wevu/test-utils', () => {
     expect(observed).toEqual([1, 3])
   })
 
+  it('isolates app provides between composable wrappers', () => {
+    const token = Symbol('isolated-composable-token')
+    const first = mountComposable(() => ({
+      injected: inject(token, 'missing'),
+    }), {
+      global: {
+        provide: { [token]: 'first' },
+      },
+    })
+
+    expect(first.vm.injected).toBe('first')
+    first.unmount()
+
+    const second = mountComposable(() => ({
+      injected: inject(token, 'missing'),
+    }))
+
+    expect(second.vm.injected).toBe('missing')
+    second.unmount()
+  })
+
   it('updates runtime data through the wrapper and records emitted details', async () => {
     const wrapper = mountComposable((_props, { emit }) => {
       const count = ref(0)

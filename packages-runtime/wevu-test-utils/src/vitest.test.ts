@@ -32,4 +32,34 @@ describe('wevuSfc()', () => {
     await expect(transform.call({}, '', '/virtual/app.vue')).rejects.toThrow('@mpcore/test')
     await expect(transform.call({}, '', '/virtual/pages/index.vue')).rejects.toThrow('@mpcore/test')
   })
+
+  it('allows ordinary components nested below a pages directory', async () => {
+    const plugin = wevuSfc()
+    const transform = plugin.transform as any
+    const result = await transform.call(
+      {},
+      '<script setup>const label = \'nested component\'</script>',
+      '/virtual/pages/home/components/Panel.vue',
+    )
+
+    expect(result.code).toContain('nested component')
+  })
+
+  it('supports project-aware page matching for nonstandard routes', async () => {
+    const filenames: string[] = []
+    const plugin = wevuSfc({
+      async isPage(filename) {
+        filenames.push(filename)
+        return filename.endsWith('/routes/home.vue')
+      },
+    })
+    const transform = plugin.transform as any
+
+    await expect(transform.call(
+      {},
+      '<script setup>const route = \'home\'</script>',
+      '/virtual/routes/home.vue?vue&type=script',
+    )).rejects.toThrow('@mpcore/test')
+    expect(filenames).toEqual(['/virtual/routes/home.vue'])
+  })
 })

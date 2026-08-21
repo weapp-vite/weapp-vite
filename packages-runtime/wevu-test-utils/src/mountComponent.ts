@@ -9,6 +9,7 @@ import type {
 import { nextTick } from 'wevu'
 import {
   callHookList,
+  createIsolatedWevuComponentDefinition,
   createWevuComponentDefinition,
   getWevuComponentLifecycleDefinition,
 } from 'wevu/internal-runtime'
@@ -66,7 +67,7 @@ export function isComponentSubject(value: unknown): value is Record<string, any>
 
 function resolveComponentDefinition(component: unknown): ComponentDefinitionLike {
   if (isComponentDefinition(component)) {
-    return component
+    return createIsolatedWevuComponentDefinition(component) as ComponentDefinitionLike
   }
   if (!component || typeof component !== 'object') {
     throw new TypeError('mountComponent() 需要接收编译后的 Vue SFC、组件选项或 Wevu 组件定义')

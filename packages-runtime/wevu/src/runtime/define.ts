@@ -1,3 +1,4 @@
+import type { RuntimeComponentDefinitionOptions } from './define/componentDefinition'
 import type { InlineExpressionMap } from './register/inline'
 import type { TemplateRefBinding } from './templateRefs'
 import type {
@@ -20,8 +21,10 @@ import {
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { hasOwn } from '../utils'
-import { createApp } from './app'
-import { applyWevuComponentDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
+import { applyWevuComponentDefaults } from './defaults'
+import {
+  createRuntimeComponentDefinition,
+} from './define/componentDefinition'
 import { resolveNativeInitialData } from './define/initialComputed'
 import { resolveVueComponentOptions } from './define/options'
 import { applyOptionsApiProvide, resolveOptionsApiInjections } from './define/optionsApi'
@@ -29,7 +32,7 @@ import { normalizeProps } from './define/props'
 import { createScopedSlotOptions } from './define/scopedSlotOptions'
 import { applySetupResult } from './define/setupResult'
 import { getScopedSlotHostGlobalObject } from './platform'
-import { registerComponent, runSetupFunction } from './register'
+import { runSetupFunction } from './register'
 import { allocateOwnerId } from './scopedSlots'
 
 let scopedSlotCreator: (() => void) | undefined
@@ -127,6 +130,19 @@ export interface ComponentDefinition<
     setup: ((props: any, ctx: any) => any) | undefined
     mpOptions: MiniProgramComponentRawOptions
   }
+}
+
+function materializeComponentDefinition(
+  componentOptions: RuntimeComponentDefinitionOptions,
+  registerNative = false,
+) {
+  const { lifecycleDefinition, runtimeApp } = createRuntimeComponentDefinition(componentOptions, registerNative)
+  const definition: ComponentDefinition<any, any, any> = {
+    __wevu_runtime: runtimeApp as any,
+    __wevu_options: componentOptions as ComponentDefinition<any, any, any>['__wevu_options'],
+  }
+  componentLifecycleDefinitions.set(definition, lifecycleDefinition)
+  return definition
 }
 
 type SetupBindings<S> = Exclude<S, void> extends never ? Record<string, never> : Exclude<S, void>
@@ -273,14 +289,6 @@ function createComponentDefinition(
     ? () => data.call(initialDataContext)
     : data
 
-  const runtimeApp = createApp({
-    data: resolvedData,
-    computed,
-    methods,
-    setData: resolvedSetData,
-    [INTERNAL_DEFAULTS_SCOPE_KEY]: 'component',
-  } as any)
-
   const hasOptionsApiContext = injectOptions != null || provideOptions != null
   const setupWrapper = typeof setup === 'function' || hasOptionsApiContext
     ? ((props, ctx) => {
@@ -326,31 +334,17 @@ function createComponentDefinition(
       }
     : normalizedMpOptions
 
-  const componentOptions = {
+  const componentOptions: RuntimeComponentDefinitionOptions = {
     data: resolvedData as () => Record<string, any>,
     computed: computed as ComputedDefinitions,
     methods: methods as MethodDefinitions,
     setData: resolvedSetData,
     watch,
     setup: setupWrapper,
-    mpOptions: mpOptionsWithProps,
+    mpOptions: mpOptionsWithProps as MiniProgramComponentRawOptions,
   }
 
-  const lifecycleDefinition = registerComponent(
-    runtimeApp as any,
-    methods ?? {},
-    watch as any,
-    setupWrapper as any,
-    mpOptionsWithProps as any,
-    { registerNative },
-  )
-
-  // 返回组件定义，便于外部自行注册
-  const definition: ComponentDefinition<any, any, any> = {
-    __wevu_runtime: runtimeApp as any,
-    __wevu_options: componentOptions as ComponentDefinition<any, any, any>['__wevu_options'],
-  }
-  componentLifecycleDefinitions.set(definition, lifecycleDefinition)
+  const definition = materializeComponentDefinition(componentOptions, registerNative)
 
   return definition as unknown as WevuComponentConstructor<
     ResolveProps<ComponentPropsOptions>,
@@ -371,6 +365,20 @@ export function createWevuComponentDefinition(
   options: DefineComponentOptions<any, any, any, any, any>,
 ) {
   return createComponentDefinition(options, false)
+}
+
+/**
+ * 从现有组件定义派生拥有独立应用上下文的组件定义。
+ *
+ * @param definition 已解析的 Wevu 组件定义
+ * @internal
+ */
+export function createIsolatedWevuComponentDefinition(definition: object) {
+  const componentOptions = (definition as ComponentDefinition<any, any, any>).__wevu_options
+  if (!componentOptions) {
+    throw new TypeError('无法从非 Wevu 组件定义创建独立运行时')
+  }
+  return materializeComponentDefinition(componentOptions)
 }
 
 /**

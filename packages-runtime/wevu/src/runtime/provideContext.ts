@@ -80,9 +80,16 @@ export function ensureRuntimeAppProvides(runtimeApp: RuntimeApp<any, any, any>):
   return getRuntimeAppProvides(runtimeApp)
 }
 
-export function setRuntimeAppProvidedValue<T>(runtimeApp: RuntimeApp<any, any, any>, key: any, value: T): void {
+export function setRuntimeAppProvidedValue<T>(
+  runtimeApp: RuntimeApp<any, any, any>,
+  key: any,
+  value: T,
+  options: { syncGlobal?: boolean } = {},
+): void {
   getRuntimeAppProvides(runtimeApp)[key as PropertyKey] = value
-  setGlobalProvidedValue(key, value)
+  if (options.syncGlobal !== false) {
+    setGlobalProvidedValue(key, value)
+  }
 }
 
 export function attachRuntimeProvideContext(

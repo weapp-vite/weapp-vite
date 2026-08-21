@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { setCurrentInstance } from './hooks'
 import {
   inject,
+  injectGlobal,
   provide,
 } from './provide'
 import {
@@ -108,5 +109,17 @@ describe('runtime provide/inject', () => {
       expect(inject('layout')).toBe('layout-value')
       expect(inject('page')).toBe('page-value')
     })
+  })
+
+  it('keeps component-scoped app provides out of the global fallback store', () => {
+    const runtimeApp = createRuntimeApp()
+    const token = Symbol('component-scoped-provide')
+    setRuntimeAppProvidedValue(runtimeApp, token, 'local-value', { syncGlobal: false })
+
+    const component = createRuntimeState(undefined, runtimeApp)
+    runWithInstance(component, () => {
+      expect(inject(token)).toBe('local-value')
+    })
+    expect(injectGlobal(token, 'missing')).toBe('missing')
   })
 })

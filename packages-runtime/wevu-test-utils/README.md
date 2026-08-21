@@ -51,6 +51,16 @@ export default defineConfig({
 })
 ```
 
+默认情况下，`wevuSfc()` 会拒绝 `app.vue` 和 `pages/**` 下的页面文件，但允许 `pages/**/components/**` 中的普通组件。项目使用自定义页面目录时，可传入同步或异步的 `isPage(filename)` 判定；回调收到的是移除查询参数并统一为 `/` 分隔符的文件名：
+
+```ts
+export default defineConfig({
+  plugins: [wevuSfc({
+    isPage: filename => filename.includes('/routes/'),
+  })],
+})
+```
+
 ```ts
 import { mountComponent } from '@wevu/test-utils'
 import Counter from './Counter.vue'
@@ -69,7 +79,7 @@ expect(wrapper.vm.count.value).toBe(2)
 wrapper.unmount()
 ```
 
-`mountComponent()` 接收编译后的 SFC 默认导出、组件选项或 Wevu component definition，不接收源码路径或字符串。它复用组件自身的 props 默认值、data、computed、methods、watch、setup、Options API provide/inject、emits 和生命周期，挂载顺序为 `created -> attached -> ready`，卸载时调用 `detached`。
+`mountComponent()` 接收编译后的 SFC 默认导出、组件选项或 Wevu component definition，不接收源码路径或字符串。它复用组件自身的 props 默认值、data、computed、methods、watch、setup、Options API provide/inject、emits 和生命周期，挂载顺序为 `created -> attached -> ready`，卸载时调用 `detached`。每次挂载都会创建独立的 Wevu app context，因此 `global.provide`、插件、mocks、全局属性和卸载状态不会在 wrapper 之间共享。
 
 `app.vue` 和页面组件不属于该入口的测试对象；需要验证完整编译产物、WXML 查询、组件树、宿主 mock 或交互时，请使用 `@mpcore/test`。
 
