@@ -2,7 +2,6 @@ import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
-  callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
   DIST_ROOT,
   getSharedMiniProgram,
@@ -48,26 +47,25 @@ describe.sequential('e2e app: github-issues / issue #829', () => {
         throw new Error('Failed to launch issue-829 page')
       }
 
-      await expect.poll(
-        async () => await callRoutePageMethodWithOptions<Record<string, any>>(
-          miniProgram,
-          ISSUE_ROUTE,
-          '_runE2E',
-          {
-            readiness: 'route',
-            protocolTimeoutMs: 12_000,
-            recoveryAttempts: 3,
-            retries: 10,
-          },
-        ).catch(() => null),
-        { timeout: 15_000, interval: 250 },
-      ).toMatchObject({
-        direct: {
-          hasQueryFn: true,
-          result: ['foo', 'bar'],
-        },
-        queryCallCount: 2,
-      })
+      const renderedOptions = {
+        dataset: { queryResolveCount: 2 },
+        timeout: 15_000,
+      }
+      await issuePage.waitForRendered({ ...renderedOptions, selector: '#issue-829-page' })
+
+      const pageNodes = await issuePage.renderedNodes('#issue-829-page', renderedOptions)
+      expect(pageNodes).toHaveLength(1)
+      const pageNode = pageNodes[0]
+      expect(pageNode).toEqual(expect.objectContaining({
+        dataset: expect.objectContaining({ queryResolveCount: 2 }),
+        height: expect.any(Number),
+        width: expect.any(Number),
+      }))
+      expect(pageNode!.height).toBeGreaterThan(0)
+      expect(pageNode!.width).toBeGreaterThan(0)
+
+      const runtimeEntries = miniProgram?.__weappViteRuntimeLogMeta?.entries ?? []
+      expect(runtimeEntries.filter((entry: { level?: string }) => entry.level === 'error' || entry.level === 'exception')).toEqual([])
 
       const pageWxml = await readDistText('pages/issue-829/index.wxml')
       expect(pageWxml).toContain('query-fn="{{queryFn}}"')
