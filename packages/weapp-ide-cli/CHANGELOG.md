@@ -1,5 +1,13 @@
 # weapp-ide-cli
 
+## 6.0.7
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/devtools-runtime@0.4.15
+  - @weapp-vite/miniprogram-automator@1.2.14
+
 ## 6.0.6
 
 ### Patch Changes

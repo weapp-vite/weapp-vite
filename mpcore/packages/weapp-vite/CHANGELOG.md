@@ -1,5 +1,15 @@
 # @mpcore/weapp-vite
 
+## 0.1.10
+
+### Patch Changes
+
+- 升级工作区非 TypeScript 依赖并同步公共包的发布意图，覆盖 SWC、Vue tooling、Tailwind CSS、dayjs 等版本；同时兼容 SWC 1.16 函数体 AST 结构和 weapp-tailwindcss 5.3 的 Skyline 样式入口。
+
+- Updated dependencies:
+  - @mpcore/test@0.1.3
+  - weapp-vite@6.20.5
+
 ## 0.1.9
 
 ### Patch Changes

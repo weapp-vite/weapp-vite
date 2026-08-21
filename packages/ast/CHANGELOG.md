@@ -1,5 +1,15 @@
 # @weapp-vite/ast
 
+## 6.20.5
+
+### Patch Changes
+
+- 升级工作区非 TypeScript 依赖并同步公共包的发布意图，覆盖 SWC、Vue tooling、Tailwind CSS、dayjs 等版本；同时兼容 SWC 1.16 函数体 AST 结构和 weapp-tailwindcss 5.3 的 Skyline 样式入口。
+
+- 升级 Oxc 与 Vitest 依赖，并将脚手架模板使用的 weapp-tailwindcss 版本同步至 5.3.1，确保发布包和新建项目采用一致的依赖基线。
+
+- 升级除 TypeScript 外的工作区依赖，同步 Oxc、Rolldown、SWC、Sass、weapp-tailwindcss 与脚手架模板依赖基线，并保持构建产物使用一致版本。
+
 ## 6.20.4
 
 ## 6.20.3

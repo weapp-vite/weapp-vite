@@ -4,6 +4,13 @@
 
 ### Patch Changes
 
+- Updated dependencies:
+  - @mpcore/simulator@0.3.3
+
+## 0.0.12
+
+### Patch Changes
+
 - 📦 **Dependencies** [`952d280`](https://github.com/weapp-vite/weapp-vite/commit/952d2801c97c962448348acd92b8a57ecd151662)
   → `@mpcore/simulator@0.3.2`
 

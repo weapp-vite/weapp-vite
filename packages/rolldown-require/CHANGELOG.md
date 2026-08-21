@@ -1,5 +1,11 @@
 # rolldown-require
 
+## 2.0.26
+
+### Patch Changes
+
+- 升级除 TypeScript 外的工作区依赖，同步 Oxc、Rolldown、SWC、Sass、weapp-tailwindcss 与脚手架模板依赖基线，并保持构建产物使用一致版本。
+
 ## 2.0.25
 
 ### Patch Changes

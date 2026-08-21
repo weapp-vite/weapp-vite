@@ -1,5 +1,13 @@
 # @weapp-vite/dashboard
 
+## 6.20.5
+
+### Patch Changes
+
+- 同步 ESLint、Stylelint、Vue language tools、dayjs 与 weapp-tailwindcss 等 catalog 依赖版本，确保工作区和脚手架使用一致的依赖基线。
+
+- 升级工作区非 TypeScript 依赖并同步公共包的发布意图，覆盖 SWC、Vue tooling、Tailwind CSS、dayjs 等版本；同时兼容 SWC 1.16 函数体 AST 结构和 weapp-tailwindcss 5.3 的 Skyline 样式入口。
+
 ## 6.20.4
 
 ## 6.20.3

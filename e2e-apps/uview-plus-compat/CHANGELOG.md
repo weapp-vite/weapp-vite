@@ -5,6 +5,13 @@
 ### Patch Changes
 
 - Updated dependencies:
+  - wevu@6.20.5
+
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies:
   - wevu@6.20.4
 
 ## 0.0.9

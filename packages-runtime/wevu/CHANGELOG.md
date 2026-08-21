@@ -1,5 +1,20 @@
 # wevu
 
+## 6.20.5
+
+### Patch Changes
+
+- 升级工作区非 TypeScript 依赖并同步公共包的发布意图，覆盖 SWC、Vue tooling、Tailwind CSS、dayjs 等版本；同时兼容 SWC 1.16 函数体 AST 结构和 weapp-tailwindcss 5.3 的 Skyline 样式入口。
+
+- 修复嵌套默认插槽中的自定义组件接收函数类型 Prop 时，函数在微信原生数据同步中丢失的问题，确保直接和嵌套使用方式保持一致。
+
+- 将 uview-plus 兼容基线升级至 3.8.108，补充小说阅读器与增强 Tabs 的自动导入和全运行时测试矩阵，同步新版小程序兼容补丁，并确保 Options API 局部 SFC 组件入口在并发构建中稳定注册和解析。
+
+- 扩展 `@wevu/test-utils`，新增 `wevuSfc()` Vitest 入口和 `mountComponent()`，可以直接导入真实 Vue SFC 并在不构建 WXML 的情况下测试 setup、props、data、computed、methods、watch、emits、provide/inject、响应式状态和生命周期。保留 `mountComposable` 兼容入口，并继续由 `@mpcore/test` 负责完整编译产物、WXML 查询和宿主交互。同步补充 Wevu 的不注册组件定义运行时入口，避免轻量测试污染小程序全局注册状态。
+
+- Updated dependencies:
+  - @wevu/compiler@6.20.5
+
 ## 6.20.4
 
 ### Patch Changes
