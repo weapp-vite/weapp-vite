@@ -15,7 +15,7 @@ import { normalizePreserveModulesRolldownOptions } from '../../../preserveModule
 import { stripRollupOptions } from './inline'
 
 interface MergeWebOptions {
-  configService: ConfigService
+  configService?: ConfigService
   config: InlineConfig
   web: ResolvedWeappWebConfig | undefined
   mode: string
@@ -100,7 +100,9 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
     },
   )
   stripRollupOptions(inline)
-  normalizePreserveModulesRolldownOptions(options.configService, inline.build?.rolldownOptions as Record<string, unknown> ?? (inline.build!.rolldownOptions = {}))
+  if (options.configService) {
+    normalizePreserveModulesRolldownOptions(options.configService, inline.build?.rolldownOptions as Record<string, unknown> ?? (inline.build!.rolldownOptions = {}))
+  }
 
   inline.root = web.root
   inline.configFile = false

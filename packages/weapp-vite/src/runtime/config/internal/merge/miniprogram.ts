@@ -98,7 +98,9 @@ function normalizeInlineConfigAfterDefu(
       ...(userRolldownOptions?.output ?? {}),
     },
   }
-  normalizePreserveModulesRolldownOptions(ctx.configService!, mergedRolldownOptions)
+  if (ctx.configService) {
+    normalizePreserveModulesRolldownOptions(ctx.configService, mergedRolldownOptions)
+  }
   const defaultTsconfig = resolveDefaultRolldownTsconfig(cwd, configFilePath)
   const resolveOptions = mergedRolldownOptions.resolve as Record<string, unknown> | undefined
   if (defaultTsconfig) {
