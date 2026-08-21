@@ -53,6 +53,12 @@ describe.sequential('main-package shared styles build e2e', () => {
           path.join(outDir, `packageA/pages/foo/index.${styleExt}`),
           'utf8',
         )
+        const mainComponentJson = await fs.readJSON(
+          path.join(outDir, 'components/main-card/index.json'),
+        ) as { component?: boolean }
+        const normalComponentJson = await fs.readJSON(
+          path.join(outDir, 'packageA/components/card/index.json'),
+        ) as { component?: boolean }
         const independentPageStyle = await fs.readFile(
           path.join(outDir, `packageB/pages/bar/index.${styleExt}`),
           'utf8',
@@ -65,8 +71,10 @@ describe.sequential('main-package shared styles build e2e', () => {
         expect(mainComponentStyle).toContain(`@import '../../styles/main.${styleExt}';`)
         expect(mainComponentStyle).toContain(`@import '../../styles/components.${styleExt}';`)
         expect(mainComponentStyle).not.toContain(`styles/pages.${styleExt}`)
+        expect(mainComponentJson.component).toBe(true)
         expect(normalPageStyle).toContain(`@import '../../../styles/main.${styleExt}';`)
         expect(normalPageStyle).toContain(`@import '../../../styles/pages.${styleExt}';`)
+        expect(normalComponentJson.component).toBe(true)
         if (id === 'weapp') {
           expect(independentPageStyle).not.toContain(`styles/main.${styleExt}`)
           expect(independentPageStyle).not.toContain(`styles/manual.${styleExt}`)
