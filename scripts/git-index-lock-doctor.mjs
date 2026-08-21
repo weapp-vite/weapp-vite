@@ -107,7 +107,7 @@ export function assessIndexLock({
 
 function formatAge(ageMs) {
   if (ageMs < 1000) {
-    return `${ageMs}ms`
+    return `${Math.round(ageMs)}ms`
   }
   return `${Math.round(ageMs / 1000)}s`
 }
