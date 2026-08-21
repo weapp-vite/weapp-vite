@@ -1,3 +1,52 @@
+"@mpcore/simulator@0.3.3":
+  dir: mpcore/packages/simulator
+  intents:
+    - steady-headless-runtime
+"@mpcore/vitest@0.1.3":
+  dir: mpcore/packages/vitest
+  intents:
+    - fresh-tailwind-catalog
+"@mpcore/weapp-vite@0.1.10":
+  dir: mpcore/packages/weapp-vite
+  intents:
+    - dependency-upgrade-auto-generated
+"@weapp-vite/ast-native@0.0.6":
+  dir: packages/ast-native
+  intents:
+    - fresh-tailwind-catalog
+"@weapp-vite/ast@6.20.5":
+  dir: packages/ast
+  intents:
+    - dependency-upgrade-auto-generated
+    - fresh-tailwind-catalog
+    - swift-workspace-dependencies
+"@weapp-vite/dashboard@6.20.5":
+  dir: packages/dashboard
+  intents:
+    - catalog-auto-generated
+    - dependency-upgrade-auto-generated
+"@weapp-vite/miniprogram-automator@1.2.14":
+  dir: packages/miniprogram-automator
+  intents:
+    - bright-route-element-rects
+    - quiet-route-snapshot-retries
+    - route-fallback-element-reads
+"@weapp-vite/web@1.4.10":
+  dir: packages-runtime/web
+  intents:
+    - dependency-upgrade-auto-generated
+    - fresh-uview-plus-baseline
+    - swift-workspace-dependencies
+"@wevu/compiler@6.20.5":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - dependency-upgrade-auto-generated
+    - fresh-uview-plus-baseline
+    - swift-workspace-dependencies
+"@wevu/test-utils@0.2.0":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - quiet-wevu-test-utils
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -6,9 +55,46 @@ create-weapp-vite@2.8.0:
     - repoctl-release-migration
     - steady-native-hmr
     - wise-skills-react
+create-weapp-vite@2.8.1:
+  dir: packages/create-weapp-vite
+  intents:
+    - calm-build-scope-app-config
+    - calm-skyline-hmr
+    - dependency-upgrade-auto-generated
+    - fix-issue-829-scoped-function-props
+    - fresh-tailwind-catalog
+    - fresh-uview-plus-baseline
+    - quiet-preload-rules
+    - quiet-url-check
+    - quiet-wevu-test-utils
+    - steady-headless-runtime
+    - steady-stateful-watch-polling
+    - swift-workspace-dependencies
+rolldown-require@2.0.26:
+  dir: packages/rolldown-require
+  intents:
+    - swift-workspace-dependencies
 weapp-vite@6.20.4:
   dir: packages/weapp-vite
   intents:
     - repoctl-release-migration
     - steady-native-hmr
     - wise-skills-react
+weapp-vite@6.20.5:
+  dir: packages/weapp-vite
+  intents:
+    - calm-build-scope-app-config
+    - calm-skyline-hmr
+    - dependency-upgrade-auto-generated
+    - fresh-uview-plus-baseline
+    - quiet-preload-rules
+    - steady-headless-runtime
+    - steady-stateful-watch-polling
+    - swift-workspace-dependencies
+wevu@6.20.5:
+  dir: packages-runtime/wevu
+  intents:
+    - dependency-upgrade-auto-generated
+    - fix-issue-829-scoped-function-props
+    - fresh-uview-plus-baseline
+    - quiet-wevu-test-utils

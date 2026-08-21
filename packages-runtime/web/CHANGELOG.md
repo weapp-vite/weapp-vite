@@ -1,5 +1,19 @@
 # @weapp-vite/web
 
+## 1.4.10
+
+### Patch Changes
+
+- 升级工作区非 TypeScript 依赖并同步公共包的发布意图，覆盖 SWC、Vue tooling、Tailwind CSS、dayjs 等版本；同时兼容 SWC 1.16 函数体 AST 结构和 weapp-tailwindcss 5.3 的 Skyline 样式入口。
+
+- 将 uview-plus 兼容基线升级至 3.8.108，补充小说阅读器与增强 Tabs 的自动导入和全运行时测试矩阵，同步新版小程序兼容补丁，并确保 Options API 局部 SFC 组件入口在并发构建中稳定注册和解析。
+
+- 升级除 TypeScript 外的工作区依赖，同步 Oxc、Rolldown、SWC、Sass、weapp-tailwindcss 与脚手架模板依赖基线，并保持构建产物使用一致版本。
+
+- Updated dependencies:
+  - rolldown-require@2.0.26
+  - wevu@6.20.5
+
 ## 1.4.9
 
 ### Patch Changes

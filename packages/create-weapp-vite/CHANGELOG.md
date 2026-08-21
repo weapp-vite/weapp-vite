@@ -1,5 +1,33 @@
 # create-weapp-vite
 
+## 2.8.1
+
+### Patch Changes
+
+- 修复局部构建后 `preloadRule`、`tabBar` 与默认启动页仍引用未参与构建页面或分包的问题，确保生成的 `app.json` 与本次构建范围保持一致。
+
+- 开发模式检测到 Skyline 渲染配置时，提示微信开发者工具的热重载限制，自动关闭项目私有配置中的热重载并降级为 classic，避免修改源码后预览无响应。
+
+- 升级工作区非 TypeScript 依赖并同步公共包的发布意图，覆盖 SWC、Vue tooling、Tailwind CSS、dayjs 等版本；同时兼容 SWC 1.16 函数体 AST 结构和 weapp-tailwindcss 5.3 的 Skyline 样式入口。
+
+- 修复嵌套默认插槽中的自定义组件接收函数类型 Prop 时，函数在微信原生数据同步中丢失的问题，确保直接和嵌套使用方式保持一致。
+
+- 升级 Oxc 与 Vitest 依赖，并将脚手架模板使用的 weapp-tailwindcss 版本同步至 5.3.1，确保发布包和新建项目采用一致的依赖基线。
+
+- 将 uview-plus 兼容基线升级至 3.8.108，补充小说阅读器与增强 Tabs 的自动导入和全运行时测试矩阵，同步新版小程序兼容补丁，并确保 Options API 局部 SFC 组件入口在并发构建中稳定注册和解析。
+
+- 新增微信分包预下载规则的显式配置合成与 `wv analyze --preload` 静态建议，帮助审计跨分包跳转并保持手写 `preloadRule` 优先。
+
+- 关闭所有小程序项目的合法域名校验，便于本地开发和测试。
+
+- 扩展 `@wevu/test-utils`，新增 `wevuSfc()` Vitest 入口和 `mountComponent()`，可以直接导入真实 Vue SFC 并在不构建 WXML 的情况下测试 setup、props、data、computed、methods、watch、emits、provide/inject、响应式状态和生命周期。保留 `mountComposable` 兼容入口，并继续由 `@mpcore/test` 负责完整编译产物、WXML 查询和宿主交互。同步补充 Wevu 的不注册组件定义运行时入口，避免轻量测试污染小程序全局注册状态。
+
+- 修复 headless simulator 对入口页、ESM/CJS 模块、测试桥接事件与运行时状态的处理，并修复支付宝 SJS 顶层 CommonJS 导出转换，补充对应回归测试。
+
+- 修复状态保持 HMR 未继承轮询 watcher 配置的问题，确保原子重命名保存源码时能够稳定检测变更并生成增量补丁。
+
+- 升级除 TypeScript 外的工作区依赖，同步 Oxc、Rolldown、SWC、Sass、weapp-tailwindcss 与脚手架模板依赖基线，并保持构建产物使用一致版本。
+
 ## 2.8.0
 
 ### Minor Changes

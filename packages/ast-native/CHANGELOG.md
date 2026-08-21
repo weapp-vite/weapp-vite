@@ -1,5 +1,11 @@
 # @weapp-vite/ast-native
 
+## 0.0.6
+
+### Patch Changes
+
+- 升级 Oxc 与 Vitest 依赖，并将脚手架模板使用的 weapp-tailwindcss 版本同步至 5.3.1，确保发布包和新建项目采用一致的依赖基线。
+
 ## 0.0.5
 
 ### Patch Changes
