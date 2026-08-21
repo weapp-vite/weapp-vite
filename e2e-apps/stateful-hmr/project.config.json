@@ -3,7 +3,10 @@
   "miniprogramRoot": "dist",
   "setting": {
     "es6": true,
-    "minifyWXML": true
+    "minifyWXML": true,
+    "urlCheck": false,
+    "useIsolateContext": false,
+    "useMultiFrameRuntime": false
   },
   "libVersion": "3.13.2"
 }

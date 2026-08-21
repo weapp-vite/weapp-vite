@@ -21,6 +21,7 @@ import { isReactStaticTemplateSource } from '../../plugins/react'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { isPathInside } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { resolvePollingWatchOptions } from '../watch/options'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
@@ -31,25 +32,34 @@ import { StatefulHmrViteAdapter } from './viteAdapter'
 const maxRetainedDeltaCount = 1_000
 const maxRetainedDeltaBytes = 16 * 1024 * 1024
 
+interface StatefulHmrSnapshots {
+  entryIds: Iterable<string>
+  initial: StatefulHmrOutputFile[]
+  rebuild: (files: string[]) => Promise<StatefulHmrOutputFile[]>
+}
+
 export async function runStatefulHmrDev(
   ctx: MutableCompilerContext,
   buildOptions: InlineConfig,
   restart: () => Promise<void>,
-  snapshots: {
-    initial: StatefulHmrOutputFile[]
-    rebuild: (files: string[]) => Promise<StatefulHmrOutputFile[]>
-  },
+  snapshots: StatefulHmrSnapshots,
 ): Promise<RolldownWatcher> {
   const configService = ctx.configService!
   if (configService.platform !== 'weapp') {
     throw new Error('weapp.hmr.runtime="stateful-experimental" 目前仅支持微信小程序平台。')
   }
   let session: StatefulHmrSession | undefined
+  const entryIds = new Set(Array.from(snapshots.entryIds, id => normalizeFsResolvedId(id)))
+  const pollingWatchOptions = resolvePollingWatchOptions(configService)
   const installPlugin: Plugin = {
     name: 'weapp-vite:stateful-hmr-session',
     enforce: 'post',
     configureServer(server) {
-      const currentSession = new StatefulHmrSession(ctx, server, restart, snapshots)
+      const currentSession = new StatefulHmrSession(ctx, server, restart, entryIds, snapshots, {
+        compareContentsForPolling: pollingWatchOptions.usePolling === true ? true : undefined,
+        pollInterval: pollingWatchOptions.interval,
+        usePolling: pollingWatchOptions.usePolling,
+      })
       session = currentSession
       currentSession.install()
     },
@@ -58,7 +68,7 @@ export async function runStatefulHmrDev(
         !isStatefulHmrBoundary(
           id,
           configService.absoluteSrcRoot,
-          ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
+          entryIds,
         )
         || code.includes('import.meta.hot.accept')
       ) {
@@ -151,10 +161,9 @@ class StatefulHmrSession {
     private readonly ctx: MutableCompilerContext,
     private readonly server: ViteDevServer,
     private readonly restart: () => Promise<void>,
-    private readonly snapshots: {
-      initial: StatefulHmrOutputFile[]
-      rebuild: (files: string[]) => Promise<StatefulHmrOutputFile[]>
-    },
+    private readonly entryIds: ReadonlySet<string>,
+    private readonly snapshots: StatefulHmrSnapshots,
+    devWatchOptions: { compareContentsForPolling?: boolean, pollInterval?: number, usePolling?: boolean },
   ) {
     this.replaceSnapshotAssets(snapshots.initial)
     this.transport = new StatefulHmrTransport(
@@ -178,7 +187,7 @@ class StatefulHmrSession {
       onOutput: output => this.handleOutput(output),
       onPatch: (files, output) => this.handlePatch(files, output),
       waitForInitialBundle: () => this.waitForInitialBundle(),
-    })
+    }, devWatchOptions)
     this.snapshotScheduler = new StatefulHmrSnapshotScheduler({
       execute: batch => this.executeSnapshotBatch(batch),
       onError: error => this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', {
@@ -277,7 +286,7 @@ class StatefulHmrSession {
       files,
       output,
       this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
-      this.ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
+      this.entryIds,
       this.server.config.root,
     )) {
       if (shouldRestartStatefulHmrServer(files, this.ctx.configService?.configFileDependencies)) {

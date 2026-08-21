@@ -382,6 +382,9 @@ describe('runtime buildPlugin service', () => {
       .mockResolvedValueOnce(secondWatcher)
     const ctx = createMockContext()
     ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/index.ts', {
+      id: '/project/src/pages/index.ts',
+    })
     const service = createBuildService(ctx)
 
     await service.build({ skipNpm: true })
@@ -392,6 +395,9 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.configService.load).toHaveBeenCalledWith(ctx.configService.loadOptions)
     expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
     const restart = runStatefulHmrDevMock.mock.calls[0]![2]
+    expect(runStatefulHmrDevMock.mock.calls[0]![3].entryIds).toEqual(new Set([
+      '/project/src/pages/index.ts',
+    ]))
 
     await restart()
 

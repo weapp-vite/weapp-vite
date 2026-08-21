@@ -420,6 +420,8 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
   let pendingBatch;
   let requestGeneration = 0;
   let activeRequest;
+  let lastRequestError;
+  let lastResponse;
   let timer;
   const sessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
   const schedule = (delay) => {
@@ -443,7 +445,9 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       success(result) {
         if (generation !== requestGeneration) return;
         activeRequest = undefined;
+        lastRequestError = undefined;
         const type = result?.data?.type;
+        lastResponse = { action, statusCode: result?.statusCode, type };
         if (action === 'register' && type === 'registered') {
           phase = 'polling';
           if (pendingBatch) globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].receiveBatch(pendingBatch.meta, pendingBatch.apply);
@@ -453,9 +457,14 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
         else if (type === 'rebuilding') schedule(1000);
         else schedule(500);
       },
-      fail() {
+      fail(error) {
         if (generation !== requestGeneration) return;
         activeRequest = undefined;
+        lastRequestError = {
+          action,
+          errMsg: String(error?.errMsg || ''),
+          errno: error?.errno,
+        };
         schedule(500);
       }
     });
@@ -475,6 +484,7 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
     lastApply: undefined,
     getVersion() { return version; },
     getLastApply() { return this.lastApply; },
+    getTransportState() { return { phase, version, lastRequestError, lastResponse }; },
     stop() {
       phase = 'stopped';
       if (timer) {

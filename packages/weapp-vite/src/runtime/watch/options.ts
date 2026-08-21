@@ -14,7 +14,10 @@ interface SidecarWatchOptionsInput {
   }
 }
 
-function resolvePollingWatchConfig(configService: Pick<ConfigService, 'inlineConfig'>) {
+/**
+ * 解析主 watcher 与 sidecar watcher 共享的轮询配置。
+ */
+export function resolvePollingWatchOptions(configService: Pick<ConfigService, 'inlineConfig'>) {
   const buildWatch = configService.inlineConfig?.build?.watch
   const chokidar = buildWatch && typeof buildWatch === 'object' && 'chokidar' in buildWatch
     ? (buildWatch as { chokidar?: Record<string, unknown> }).chokidar
@@ -46,7 +49,7 @@ export function createSidecarWatchOptions(
   configService: Pick<ConfigService, 'inlineConfig'>,
   input: SidecarWatchOptionsInput,
 ) {
-  const polling = resolvePollingWatchConfig(configService)
+  const polling = resolvePollingWatchOptions(configService)
 
   return {
     ...input,

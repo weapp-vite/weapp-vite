@@ -45,6 +45,25 @@ async function runBuild() {
   distVariant = 'standard'
 }
 
+async function runAggregateBuild() {
+  standardBuildPromise = null
+  await fs.remove(DIST_ROOT)
+
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
+    cwd: APP_ROOT,
+    label: 'ci:github-issues:aggregate',
+    skipNpm: true,
+    env: {
+      WEAPP_VITE_E2E_TARGET_FILE: 'e2e/ide/github-issues.runtime.aggregate.test.ts',
+    },
+  })
+
+  distVariant = null
+}
+
 async function runBuildWithSourcemap() {
   standardBuildPromise = null
   await fs.remove(DIST_ROOT)
@@ -933,7 +952,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
   })
 
   it('issue #829: keeps nested scoped-slot function props on the owner path', async () => {
-    await runBuild()
+    await runAggregateBuild()
 
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-829/index.wxml')
     const pageJsPath = path.join(DIST_ROOT, 'pages/issue-829/index.js')

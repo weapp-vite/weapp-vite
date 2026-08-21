@@ -17,10 +17,30 @@ async function launchPage(miniProgram: any, route: string) {
 }
 
 async function runPageE2E(page: any, method = 'runE2E') {
-  const result = await page.callMethodWithOptions(method, {
-    routeOnly: true,
-    timeout: 60_000,
-  })
+  let currentPage = page
+  let result: any
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    result = await currentPage.callMethodWithOptions(method, {
+      routeOnly: true,
+      timeout: 60_000,
+    })
+    if (result?.ok === true) {
+      return result
+    }
+    if (attempt === 2) {
+      break
+    }
+
+    const route = String(currentPage?.path ?? '')
+    if (!route) {
+      break
+    }
+    // 连续 IDE 场景可能留下失效的共享 app-service 会话，重连后再保留一次真实断言机会。
+    process.stdout.write(`[wevu-features:session-retry] route=${route} method=${method} attempt=2/2\n`)
+    await closeSharedMiniProgram()
+    const refreshedMiniProgram = await getSharedMiniProgram()
+    currentPage = await launchPage(refreshedMiniProgram, route)
+  }
   expect(result?.ok, JSON.stringify(result)).toBe(true)
   return result
 }

@@ -49,7 +49,7 @@ describe('stateful hmr runtime source', () => {
     const source = createStatefulHmrControlSource({
       buildId: 'build-a',
       token: 'token-a',
-      url: 'http://127.0.0.1:1234/__weapp_vite_stateful_hmr__',
+      url: 'http://localhost:1234/__weapp_vite_stateful_hmr__',
     })
     expect(source).toContain('build-a')
     expect(source).toContain('token-a')
@@ -57,6 +57,8 @@ describe('stateful hmr runtime source', () => {
     expect(source).toContain('send(\'rebuild\')')
     expect(source).toContain('getVersion() { return version; }')
     expect(source).toContain('getLastApply() { return this.lastApply; }')
+    expect(source).toContain('getTransportState()')
+    expect(source).toContain('lastRequestError')
     expect(source).toContain('?.stop?.()')
     expect(source).toContain('stop() {')
     expect(source).not.toContain(']) return;')
