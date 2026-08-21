@@ -170,9 +170,31 @@ async function ensureRootWeappViteLink(rootDir = ROOT_DIR) {
   return true
 }
 
-function resolveMode(argv = process.argv.slice(2)) {
-  const mode = argv.find(arg => MODES.has(arg)) ?? 'check'
-  return mode
+export function resolveMode(argv = process.argv.slice(2)) {
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index]
+    if (MODES.has(arg)) {
+      return arg
+    }
+    if (arg === '--check' || arg === '--sync') {
+      return arg.slice(2)
+    }
+    if (arg === '--mode') {
+      const mode = argv[index + 1]
+      if (MODES.has(mode)) {
+        return mode
+      }
+      continue
+    }
+    if (arg.startsWith('--mode=')) {
+      const mode = arg.slice('--mode='.length)
+      if (MODES.has(mode)) {
+        return mode
+      }
+    }
+  }
+
+  return 'check'
 }
 
 async function collectRolldownDrift(rootDir = ROOT_DIR) {

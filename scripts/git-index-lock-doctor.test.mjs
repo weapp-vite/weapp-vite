@@ -10,6 +10,15 @@ import {
   findActiveGitProcesses,
   parseProcessList,
 } from './git-index-lock-doctor.mjs'
+import { resolveMode } from './postinstall-sync.mjs'
+
+it('resolves explicit postinstall sync flags', () => {
+  assert.equal(resolveMode(['--mode', 'sync']), 'sync')
+  assert.equal(resolveMode(['--mode=sync']), 'sync')
+  assert.equal(resolveMode(['--sync']), 'sync')
+  assert.equal(resolveMode(['--check']), 'check')
+  assert.equal(resolveMode([]), 'check')
+})
 
 it('parses Unix and Windows process listings and detects Git processes', () => {
   assert.deepEqual(parseProcessList(' 101 1 /usr/bin/git status\n 102 1 node build.js\n', 'darwin'), [
