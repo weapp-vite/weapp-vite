@@ -1,6 +1,6 @@
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import { launchAutomator, resetAutomatorRuntimeLogs } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
@@ -74,6 +74,7 @@ describe.sequential('e2e app: main-package shared styles', () => {
   it('loads main, normal subpackage and independent subpackage styles in one session', async () => {
     const provider = resolveRuntimeProviderName()
     const mainPage = await relaunch('/pages/index/index', '#shared-styles-main-page')
+    resetAutomatorRuntimeLogs(miniProgram)
     const mainProbe = await mainPage.$('#shared-styles-main-page')
     expect(mainProbe).not.toBeNull()
     const mainColor = provider === 'devtools'
@@ -99,6 +100,10 @@ describe.sequential('e2e app: main-package shared styles', () => {
     const independentColor = provider === 'devtools'
       ? await readStyle(independentProbe, 'color', '/packageB/pages/bar/index')
       : undefined
+
+    // DevTools emits one anonymous console error for each Element.getStyles query.
+    // The style values are asserted above; clear this protocol noise before checking app errors.
+    resetAutomatorRuntimeLogs(miniProgram)
 
     if (provider === 'devtools') {
       expect(mainColor).toBe('rgb(51, 103, 214)')
