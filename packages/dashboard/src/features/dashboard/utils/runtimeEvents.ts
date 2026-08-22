@@ -130,7 +130,7 @@ function mergeRuntimeSourceSummaryAccumulator(
   return {
     count: existing.count + 1,
     errorCount: existing.errorCount + (event.level === 'error' ? 1 : 0),
-    latestTimestamp: existing.latestTimestamp,
+    latestTimestamp: event.timestamp,
     durationTotal: existing.durationTotal + (event.durationMs ?? 0),
     timedCount: existing.timedCount + (typeof event.durationMs === 'number' ? 1 : 0),
   }
