@@ -7,7 +7,7 @@ import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import { resolveVueSfcStyleIndependentSignature } from '../../../../../utils/file/vueSfcSignature'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
 import { readAndParseSfc } from '../../../../utils/vueSfc'
-import { createCompileVueFileOptions } from '../../compileOptions'
+import { createCompileVueFileOptions, resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs, mayNeedScopedSlotHostPropertiesForSetupSlotsInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from '../../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
@@ -210,7 +210,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
         source,
         checkMtime: configService.isDev,
       })
-      if (!await refreshStyleOnlyVueTransformResult(cached.result, filename, descriptor.styles)) {
+      if (!await refreshStyleOnlyVueTransformResult(cached.result, filename, descriptor.styles, resolveSfcStylePreprocessOptions(configService))) {
         cached.styleIndependentSignature = undefined
       }
       else {

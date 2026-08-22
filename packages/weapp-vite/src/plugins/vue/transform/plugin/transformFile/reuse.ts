@@ -2,6 +2,7 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../../../../context'
 import type { TransformStageMeasurer, VueCompilationCacheEntry, VueHmrStageMeasurer, VueStyleBlocksCache } from './types'
 import { resolveVueSfcStyleIndependentSignature } from '../../../../../utils/file/vueSfcSignature'
+import { resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { refreshStyleOnlyVueTransformResult } from '../../styleOnly'
 import { finalizeTransformEntryCode, normalizeVueTransformResult } from '../shared'
 import { createSfcStyleBlocksSignature, loadStyleBlocksForStyleOnlyRefresh } from '../styleOnlyRefresh'
@@ -78,7 +79,7 @@ export async function tryReuseVueCompilation(options: {
         pluginCtx,
         configService,
       }))
-      const didRefreshStyle = await refreshStyleOnlyVueTransformResult(cachedResult, filename, refreshedStyleBlocks)
+      const didRefreshStyle = await refreshStyleOnlyVueTransformResult(cachedResult, filename, refreshedStyleBlocks, resolveSfcStylePreprocessOptions(configService))
       if (!didRefreshStyle) {
         cachedCompilation.styleIndependentSignature = undefined
         canReturnCachedCompilation = false
@@ -154,7 +155,7 @@ export async function tryReuseVueCompilation(options: {
       pluginCtx,
       configService,
     }))
-    const didRefreshStyle = await refreshStyleOnlyVueTransformResult(cachedResult, filename, styleBlocks)
+    const didRefreshStyle = await refreshStyleOnlyVueTransformResult(cachedResult, filename, styleBlocks, resolveSfcStylePreprocessOptions(configService))
     if (!didRefreshStyle) {
       cachedCompilation.styleIndependentSignature = undefined
     }

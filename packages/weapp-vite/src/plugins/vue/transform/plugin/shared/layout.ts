@@ -4,6 +4,7 @@ import type { CompilerContext } from '../../../../../context'
 import { compileVueStyleToWxss, generateScopedId } from 'wevu/compiler'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
+import { resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
 import { ensureSfcStyleBlocks, isAppEntry, loadTransformPageEntries } from './state'
 
@@ -242,6 +243,7 @@ export async function loadTransformStyleBlock(options: {
     filename,
     scoped: block.scoped,
     modules: block.module,
+    preprocessOptions: resolveSfcStylePreprocessOptions(configService)?.[block.lang || 'css'],
   })
   for (const dependency of compiled.dependencies ?? []) {
     pluginCtx.addWatchFile(dependency)
