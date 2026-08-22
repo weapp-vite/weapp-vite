@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { wevuCompatibilityCatalog } from './compatibility'
@@ -26,8 +27,8 @@ function collectModuleTypeExports(entry: string) {
 
 describe('Wevu same-name Vue types', () => {
   it('classifies every public type with the same exported name', () => {
-    const wevuTypes = collectModuleTypeExports(new URL('../../../packages-runtime/wevu/src/index.ts', import.meta.url).pathname)
-    const vueTypes = collectModuleTypeExports(new URL('../../../node_modules/vue/dist/vue.d.ts', import.meta.url).pathname)
+    const wevuTypes = collectModuleTypeExports(fileURLToPath(new URL('../../../packages-runtime/wevu/src/index.ts', import.meta.url)))
+    const vueTypes = collectModuleTypeExports(fileURLToPath(new URL('../../../node_modules/vue/dist/vue.d.ts', import.meta.url)))
     const overlaps = [...wevuTypes].filter(name => vueTypes.has(name)).sort()
     const classified = new Set(wevuCompatibilityCatalog
       .filter(item => item.upstream === 'vue' && item.surfaces.includes('type'))

@@ -246,7 +246,7 @@ export async function loadTransformStyleBlock(options: {
     preprocessOptions: resolveSfcStylePreprocessOptions(configService)?.[block.lang || 'css'],
   })
   for (const dependency of compiled.dependencies ?? []) {
-    pluginCtx.addWatchFile(dependency)
+    pluginCtx.addWatchFile?.(dependency)
   }
 
   return {
