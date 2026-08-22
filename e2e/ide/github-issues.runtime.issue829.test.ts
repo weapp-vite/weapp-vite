@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { resetAutomatorRuntimeLogs } from '../utils/automator'
 import {
   closeSharedMiniProgram,
   DIST_ROOT,
@@ -37,6 +38,7 @@ describe.sequential('e2e app: github-issues / issue #829', () => {
   it('preserves function props for direct and nested scoped-slot components', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
+      resetAutomatorRuntimeLogs(miniProgram)
       const issuePage = await relaunchPage(miniProgram, ISSUE_ROUTE, undefined, 45_000, {
         readiness: async (page) => {
           await page.waitForRendered({ selector: '#issue-829-page', timeout: 5_000 })

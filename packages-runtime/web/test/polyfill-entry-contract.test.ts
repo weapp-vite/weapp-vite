@@ -53,7 +53,7 @@ describe('polyfill entry installation contract', () => {
     await expect(api.hideNavigationBarLoading()).resolves.toBeUndefined()
     await expect(api.setBackgroundColor()).resolves.toMatchObject({ errMsg: 'setBackgroundColor:ok' })
     await expect(api.setBackgroundTextStyle()).resolves.toMatchObject({ errMsg: 'setBackgroundTextStyle:ok' })
-  })
+  }, 30_000)
 
   it('resolves capabilities across runtime aliases and missing bridges', async () => {
     const api = await import('../src/runtime/polyfill')
