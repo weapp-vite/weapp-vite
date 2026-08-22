@@ -596,6 +596,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'JS 配置', link: '/config/js' },
       { text: 'Vue SFC 配置', link: '/config/vue' },
       { text: 'Wevu 编译期配置', link: '/config/wevu' },
+      { text: 'i18n 配置', link: '/config/i18n' },
       { text: '开发态 HMR 配置', link: '/config/hmr' },
       { text: 'WXML 配置', link: '/config/wxml' },
       { text: 'WXS 配置', link: '/config/wxs' },

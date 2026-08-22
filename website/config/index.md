@@ -123,7 +123,7 @@ export default defineConfig(env => ({
 | 想减少手写 `app.json.pages` / `usingComponents` | [共享配置](./shared.md)、[自动导入组件配置](./auto-import-components.md) |
 | 想按目录批量套 layout | [Route Rules 与 Layout](./route-rules.md) |
 | 项目有分包、独立分包、共享样式或分包独立 npm | [分包配置](./subpackages.md)、[npm 配置](./npm.md)、[共享 Chunk 配置](./chunks.md) |
-| 使用 Vue SFC / Wevu，需要调模板编译、setData 策略或 HMR | [Vue SFC 配置](./vue.md)、[Wevu 编译期配置](./wevu.md)、[开发态 HMR 配置](./hmr.md) |
+| 使用 Vue SFC / Wevu，需要调模板编译、setData 策略、i18n 或 HMR | [Vue SFC 配置](./vue.md)、[Wevu 编译期配置](./wevu.md)、[i18n 配置](./i18n.md)、[开发态 HMR 配置](./hmr.md) |
 | 想把分包体积、重复模块和 HMR profile 纳入本地或 CI 检查 | [Analyze 报告配置](./analyze.md)、[分包配置](./subpackages.md)、[开发态 HMR 配置](./hmr.md) |
 | 想让小程序产物兼容 `fetch` / `XMLHttpRequest` / `WebSocket` 等 Web 风格全局对象 | [Web Runtime 全局对象注入配置](./web-runtime-globals.md) |
 | 想做浏览器预览、AI 协作、截图、日志桥接 | [共享配置](./shared.md)、[Web 运行时配置](./web.md) |
@@ -145,6 +145,7 @@ export default defineConfig(env => ({
 | [JS 配置](./js.md) | `tsconfigPaths` / `ast` 与顶层 `resolve.alias` 的边界 |
 | [Vue SFC 配置](./vue.md) | `weapp.vue.template`、模板编译开关、自动导入保留字段 |
 | [Wevu 编译期配置](./wevu.md) | `weapp.wevu.preset` / `defaults` / `autoSetDataPick` |
+| [i18n 配置](./i18n.md) | `weapp.i18n`、locale JSON、WXS 模板翻译与运行时切换 |
 | [开发态 HMR 配置](./hmr.md) | `weapp.hmr.runtime` / `sharedChunks` / `touchAppWxss` / `logLevel` / `profileJson` |
 | [分包与共享样式配置](./subpackages.md) | `weapp.styles`、`weapp.subPackages`、共享样式、分包级 `inlineConfig` |
 | [Worker 配置](./worker.md) | `weapp.worker.entry` |

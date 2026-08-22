@@ -169,6 +169,7 @@ export function compileVueTemplateToWxml(
       inlineExpressionSeed: 0,
       functionPropPaths: new Set(),
       functionPropNames: Array.from(options?.functionPropNames ?? []),
+      templateSafeCallNames: new Set(options?.templateSafeCallNames ?? []),
       wevuComponentTags: options?.wevuComponentTags ? new Set(options.wevuComponentTags) : undefined,
       miniProgramComponentTags: options?.miniProgramComponentTags ? new Set(options.miniProgramComponentTags) : undefined,
     }

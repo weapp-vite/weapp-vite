@@ -1,10 +1,17 @@
-import type { UserConfig } from '.'
+import type { UserConfig, WeappI18nConfig } from '.'
 import { expectAssignable, expectError } from 'tsd'
 import { defineConfig } from '.'
 
 const objectConfig = defineConfig({
   weapp: {
     srcRoot: 'src',
+    i18n: {
+      defaultLocale: 'zh-CN',
+      fallbackLocale: 'en-US',
+      include: ['locales/*.json', 'features/*/i18n/*.json'],
+      functionName: 'translate',
+      moduleName: 'translations',
+    },
     styles: [
       'styles/theme.scss',
       {
@@ -123,6 +130,9 @@ const objectConfig = defineConfig({
     },
   },
 })
+
+expectAssignable<WeappI18nConfig>({ defaultLocale: 'zh-CN' })
+expectError<WeappI18nConfig>({})
 expectAssignable<string | undefined>(objectConfig.weapp?.srcRoot)
 expectAssignable<string | Array<string | {
   source: string

@@ -74,6 +74,10 @@ export function parseWxml(options: ParserOptions): ParserResult {
   const commentTokens: Token[] = []
   // 内联wxs
   const inlineWxsTokens: Token[] = []
+  // 可包含 mustache 的模板文本与属性
+  const templateTokens: Token[] = []
+  // WXS/SJS 声明，保留完整属性用于模块冲突等语义检查
+  const scriptModules: Array<{ attrs: Record<string, string>, tagName: string }> = []
   // 脚本模块标签替换（wxs/sjs）
   const scriptModuleTagTokens: Token[] = []
   // 处理 xxx.wxs.ts 转变为合法引用
@@ -117,6 +121,13 @@ export function parseWxml(options: ParserOptions): ParserResult {
       },
       onattribute(name, value, quote) {
         attrs[name] = value
+        if (!currentTagName || !isScriptModuleTagName(currentTagName)) {
+          templateTokens.push({
+            start: parser.startIndex,
+            end: parser.endIndex + 1,
+            value,
+          })
+        }
         if (importAttrs && currentTagName) {
           for (const attrName of importAttrs) {
             if (attrName === name) {
@@ -187,6 +198,11 @@ export function parseWxml(options: ParserOptions): ParserResult {
           })
         }
       },
+      onopentag(name, attributes) {
+        if (isScriptModuleTagName(name)) {
+          scriptModules.push({ attrs: attributes, tagName: name })
+        }
+      },
       onclosetag(name) {
         currentTagName = tagStack.pop()
         if (currentTagName) {
@@ -254,6 +270,13 @@ export function parseWxml(options: ParserOptions): ParserResult {
             value: data,
           })
         }
+        else {
+          templateTokens.push({
+            start: parser.startIndex,
+            end: parser.endIndex + 1,
+            value: data,
+          })
+        }
       },
       // <!--  #ifdef  %PLATFORM% -->
       // 平台特有的组件
@@ -303,6 +326,8 @@ export function parseWxml(options: ParserOptions): ParserResult {
     removalRanges,
     commentTokens,
     inlineWxsTokens,
+    scriptModules,
+    templateTokens,
     wxsImportNormalizeTokens,
     removeWxsLangAttrTokens,
     templateImportNormalizeTokens,

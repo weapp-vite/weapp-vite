@@ -23,6 +23,8 @@ export interface WxmlToken {
   removalRanges: RemovalRange[]
   commentTokens: Token[]
   inlineWxsTokens: Token[]
+  scriptModules?: Array<{ attrs: Record<string, string>, tagName: string }>
+  templateTokens?: Token[]
   wxsImportNormalizeTokens: Token[]
   removeWxsLangAttrTokens: Token[]
   templateImportNormalizeTokens: Token[]

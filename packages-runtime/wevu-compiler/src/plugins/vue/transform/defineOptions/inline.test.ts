@@ -246,6 +246,31 @@ defineOptions({
     })
   })
 
+  it('keeps the first-party i18n behavior identifier for runtime replacement', async () => {
+    await withTempProject(async (projectDir) => {
+      const filename = path.join(projectDir, 'index.ts')
+      const behaviorFile = path.join(projectDir, 'i18n.ts')
+      const source = `
+import { I18n } from './i18n'
+
+defineOptions({
+  behaviors: [I18n],
+})
+    `.trim()
+
+      await fs.writeFile(
+        behaviorFile,
+        `export const I18n = { __WEAPP_VITE_I18N__: true }\n`,
+        'utf8',
+      )
+
+      const result = await inlineScriptSetupDefineOptionsArgs(source, filename, 'ts')
+
+      expect(result.code).toContain('behaviors: [I18n]')
+      expect(result.code).not.toContain('behaviors: [{}]')
+    })
+  })
+
   it('ignores type-only imports when collecting defineOptions scope values', async () => {
     await withTempProject(async (projectDir) => {
       const filename = path.join(projectDir, 'app.ts')

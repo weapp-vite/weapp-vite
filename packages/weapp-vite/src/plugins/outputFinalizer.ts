@@ -1,7 +1,7 @@
 import type { EmittedAsset, OutputBundle } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
-import type { MpPlatform } from '../types'
+import type { MpPlatform, SubPackageMetaValue } from '../types'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
 import { Buffer } from 'node:buffer'
 import {
@@ -17,6 +17,7 @@ import { syncOutputChunkSourceMapAssets } from '../utils/outputChunk'
 import { resolveScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { handleWxml, scanWxml } from '../wxml'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
+import { transformI18nOutputTemplate } from './i18n'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
@@ -233,9 +234,10 @@ export function normalizePreprocessorStyleAssets(
 function normalizeTemplateAssetEntries(
   ctx: CompilerContext,
   entries: OutputAssetEntry[],
+  subPackageMeta?: SubPackageMetaValue,
 ) {
   const { configService } = ctx
-  for (const { output } of entries) {
+  for (const { bundleFileName, output } of entries) {
     const source = output.source
     const code = typeof source === 'string'
       ? source
@@ -245,23 +247,28 @@ function normalizeTemplateAssetEntries(
     if (code === undefined) {
       continue
     }
-    if (!mayNeedTemplateNormalization(code, configService?.platform)) {
-      continue
-    }
-
-    const token = scanWxml(code, {
-      platform: configService?.platform,
-    })
-    const result = handleWxml(token, {
-      scriptModuleExtension: configService?.outputExtensions?.wxs,
-      scriptModuleTag: resolveScriptModuleTagName({
+    let normalized = code
+    if (mayNeedTemplateNormalization(code, configService?.platform)) {
+      const token = scanWxml(code, {
         platform: configService?.platform,
+      })
+      normalized = handleWxml(token, {
         scriptModuleExtension: configService?.outputExtensions?.wxs,
-      }),
-      templateExtension: configService?.outputExtensions?.wxml,
-    })
-    if (result.code !== code) {
-      output.source = result.code
+        scriptModuleTag: resolveScriptModuleTagName({
+          platform: configService?.platform,
+          scriptModuleExtension: configService?.outputExtensions?.wxs,
+        }),
+        templateExtension: configService?.outputExtensions?.wxml,
+      }).code
+    }
+    const transformed = transformI18nOutputTemplate(
+      ctx,
+      output.fileName || bundleFileName,
+      normalized,
+      subPackageMeta,
+    )
+    if (transformed !== code) {
+      output.source = transformed
     }
   }
 }
@@ -341,7 +348,7 @@ export function pruneUnchangedDevHmrOutputs(
   }
 }
 
-export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
+export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
   const wevuRuntimeRewriteOptions: RewriteWevuInternalRuntimeImportsOptions = {
     get runtimeFileName() {
       return ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName
@@ -385,7 +392,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext): Plugin {
           ctx.configService.outputExtensions?.wxss,
           asset => this.emitFile(asset),
         )
-        normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets)
+        normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta)
         pruneUnchangedDevHmrOutputs(ctx, outputBundle, wevuRuntimeRewriteOptions, {
           runtimeRewriteDone: true,
         })

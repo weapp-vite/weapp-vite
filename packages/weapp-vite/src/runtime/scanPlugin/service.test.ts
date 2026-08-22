@@ -701,6 +701,34 @@ describe('scanPlugin service', () => {
     expect(resolveSubPackageEntriesMock).toHaveBeenCalledTimes(4)
   })
 
+  it('uses subpackage config as the independent fallback without overriding app json', async () => {
+    const ctx = createCtx()
+    ctx.configService.weappViteConfig.subPackages.pkgA.independent = true
+    ctx.configService.weappViteConfig.subPackages.pkgB = { independent: true }
+    ctx.runtimeState.scan.appEntry = {
+      path: '/project/src/app.ts',
+      jsonPath: '/project/src/app.json',
+      type: 'app',
+      json: {
+        subPackages: [
+          { root: 'pkgA', pages: ['pages/a'] },
+          { root: 'pkgB', pages: ['pages/b'], independent: false },
+        ],
+      },
+    }
+
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+
+    service.loadSubPackages()
+
+    expect(service.subPackageMap.get('pkgA')?.subPackage.independent).toBe(true)
+    expect(service.subPackageMap.get('pkgB')?.subPackage.independent).toBe(false)
+    expect(service.independentSubPackageMap.has('pkgA')).toBe(true)
+    expect(service.independentSubPackageMap.has('pkgB')).toBe(false)
+    expect(service.drainIndependentDirtyRoots()).toEqual(['pkgA'])
+  })
+
   it('normalizes windows-style subpackage roots before config lookup and tracking', async () => {
     const ctx = createCtx({
       runtimeState: {

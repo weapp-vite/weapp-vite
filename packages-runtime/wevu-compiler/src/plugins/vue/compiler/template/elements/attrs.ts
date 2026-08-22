@@ -187,7 +187,7 @@ export function collectElementAttributes(
       }
       if (prop.name === 'text' && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
         const rawExp = prop.exp.content
-        const runtimeExp = shouldFallbackToRuntimeBinding(rawExp)
+        const runtimeExp = shouldFallbackToRuntimeBinding(rawExp, context.templateSafeCallNames)
           ? registerRuntimeBindingExpression(rawExp, context, { hint: 'v-text' })
           : null
         vTextExp = runtimeExp ?? normalizeWxmlExpressionWithContext(rawExp, context)

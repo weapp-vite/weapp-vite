@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-best-practices
-description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite` 依赖项目的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、自动路由、routeRules/layout、buildScope、自动导入组件、分包、npm、六平台单目标构建、受管 TypeScript、HMR、sourcemap、`prepare`、MCP、Web runtime、lib mode、worker、AI skills，以及与 `weapp-ide-cli` 的命令治理边界。
+description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite` 依赖项目的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、内置 i18n、自动路由、routeRules/layout、buildScope、自动导入组件、分包、npm、六平台单目标构建、受管 TypeScript、HMR、sourcemap、`prepare`、MCP、Web runtime、lib mode、worker、AI skills，以及与 `weapp-ide-cli` 的命令治理边界。
 ---
 
 # weapp-vite-best-practices
@@ -44,6 +44,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 多平台始终单目标构建；显式选择微信、支付宝、抖音、百度、京东、小红书或 Web，不把一次构建描述成同时产出全部平台
    - `weapp.autoRoutes`
    - `weapp.autoImportComponents`
+   - `weapp.i18n`：微信平台内置 locale JSON 编译与运行时切换；`defaultLocale` 必填，默认扫描 `**/i18n/*.json`
    - `weapp.uniApp`：实验性外部 uni-app Vue SFC 转换；npm 包必须显式加入 `include` 白名单
    - `weapp.routeRules`
    - `weapp.styles`：生成主包独立样式入口并按规则注入主包与普通分包；不修改 `app.wxss`，也不跨入独立分包
@@ -57,6 +58,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`、`weapp.analyze.budgets` / `history`
    - 进阶链路：`web`、`lib`
    - 页面/组件单测：`@mpcore/weapp-vite` 构建产物，`@mpcore/test` 提供 render/query/user，`@mpcore/vitest` 提供每测试隔离和 matcher
+   - i18n：原生 Page 使用 `I18nPage`，原生 Component 使用 `behaviors: [I18n]`；主包与普通分包共享实例，独立分包从默认语言创建实例
    - React 项目：这里只判断项目级 `weapp.react` 和构建所有权，TSX/runtime/bridge 细节转交 `weapp-vite-react-best-practices`
 4. CLI 与 IDE 所有权保持清晰：
    - `weapp-vite` 原生命令优先
@@ -71,6 +73,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `.weapp-vite` 类型异常：先跑 `wv prepare`
    - 页面 / layout 不对：查 `autoRoutes`、`routeRules`、`definePageMeta`
    - 自动导入异常：查 `autoImportComponents` 与 resolver
+   - i18n 构建失败或模板未翻译：查 locale 文件名、重复/非字符串叶子、default/fallback 是否存在、WXS module 是否重名，以及模板是否显式接入 `I18n` / `I18nPage`
    - Wot UI / uview-plus / uni-app 组件库异常：同时检查 `weapp.uniApp.include`、resolver 的真实 `resolvedId` / `sourceType: 'wevu-sfc'`，以及目标端条件分支
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`
@@ -93,6 +96,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 与 uview-plus 分别以 `@wot-ui/ui@2.2.0`、`uview-plus@3.8.86` 的 npm 发布包 SFC 清单为兼容基线，不把它们泛化成完整 uni-app runtime。
 - 分包、插件、worker 和 lib mode 的性能判断都先看产物结构与 `wv analyze`，再改 chunk/shared 策略。
 - 主包共享样式优先使用 `weapp.styles` 保持独立产物；`inject: false` 只 emit，独立分包必须通过自己的 `subPackages.<root>.styles` 持有副本。
+- 内置 i18n v1 只支持 `{name}` / `{user.name}` 插值，不提供 ICU、复数、日期/数字格式化或自动 storage 持久化；非微信平台不要启用。
 
 ## 参考决策表
 

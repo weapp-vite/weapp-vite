@@ -251,7 +251,7 @@ export function transformBindDirective(
     return createBindRuntimeAttr(argValue, rawExpValue, context)
   }
 
-  if (shouldFallbackToRuntimeBinding(rawExpValue)) {
+  if (shouldFallbackToRuntimeBinding(rawExpValue, context.templateSafeCallNames)) {
     const runtimeAttr = createBindRuntimeAttr(argValue, rawExpValue, context)
     if (runtimeAttr) {
       return runtimeAttr

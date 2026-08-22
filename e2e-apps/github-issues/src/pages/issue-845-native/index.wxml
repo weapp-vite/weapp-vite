@@ -1,0 +1,3 @@
+<view id="issue-845-native">{{ t('issue845.greeting', { user }) }}</view>
+<view>{{ t('issue845.fallbackOnly') }}</view>
+<issue-845-i18n-card user="{{ user }}" />

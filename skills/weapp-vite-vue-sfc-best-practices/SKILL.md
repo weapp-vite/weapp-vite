@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-vue-sfc-best-practices
-description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册，覆盖 script setup、纯模板 SFC、JSON 宏、`definePageMeta`/layout、`defineModel`、`usingComponents`、JSX/TSX script block、模板指令兼容、多平台 SFC、`.weapp-vite` 类型支持文件与受管 `prepare` 工作流。
+description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册，覆盖 script setup、纯模板 SFC、JSON 宏、`definePageMeta`/layout、`defineModel`、`usingComponents`、内置 i18n Behavior、JSX/TSX script block、模板指令兼容、多平台 SFC、`.weapp-vite` 类型支持文件与受管 `prepare` 工作流。
 ---
 
 # weapp-vite-vue-sfc-best-practices
@@ -48,6 +48,8 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
    - 转发 `<slot />` 到子组件具名插槽时不要生成或建议 `<block slot="..."><slot /></block>`；真实 DevTools 运行时会丢失转发内容。微信平台默认使用内部 `virtualHost` wrapper，需要回到旧版真实节点行为时配置 `weapp.vue.template.slotFallbackWrapperStrategy: 'view'`，需要自定义时优先用组件内静态属性 `slot-wrapper="cover-view"`、`slot-wrapper-footer="view"`、`slot-wrapper-class="..."`、`slot-wrapper-footer-class="..."` 或项目配置 `weapp.vue.template.slotFallbackWrapper`；全局规则里 `component` 匹配模板标签名，`componentName` 匹配子组件静态 `defineOptions({ name })`
    - 自定义 slot wrapper 必须能承载实际子内容；例如 `text` 不适合包裹 `<view>`，`block` 会被编译器回退为 `view`
    - Vue/Wevu 组件标签输出保持 kebab-case；可选链与空值合并必须转换成目标小程序模板可执行的表达式
+   - 启用 `weapp.i18n` 时，从 `weapp-vite/i18n` 导入 `I18n`，并用 `defineOptions({ behaviors: [I18n] })` 显式接入；模板可直接调用配置的 `t(...)`
+   - i18n 只放行配置函数的直接模板调用；`t(resolveKey())` 或其他嵌套调用仍回退逻辑线程，不要依赖任意函数在 WXML 中执行
 5. 若 `typed-router.d.ts`、`typed-components.d.ts`、`components.d.ts` 漂移，先跑 `wv prepare`。
 6. 若项目有根 `AGENTS.md` 或本地 `dist/docs/vue-sfc.md`，SFC 写法要与其约束一致。
 7. 多平台 SFC 每次只验证一个 `-p <platform>` 目标；Web runtime 用于浏览器兼容联调，不替代目标小程序 IDE/真机。
@@ -69,6 +71,7 @@ description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册�
 - 不要把 `t-*`、`van-*` 等 kebab-case 第三方原生组件的普通默认插槽误判为增强作用域插槽。
 - 不要忽略 `prepare` 和 `.weapp-vite` 产物。
 - 不要在修 SFC 语法时顺手做无关运行时重构。
+- 不要把内置 i18n 当作 ICU/MessageFormat runtime；v1 只支持简单 key 查询和 `{name}` / `{user.name}` 插值。
 
 ## 输出
 
