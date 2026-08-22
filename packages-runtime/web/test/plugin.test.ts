@@ -537,8 +537,8 @@ const ready = ref(true)
       {},
       `${childPath}.scss?weapp-web-sfc-style&inline`,
     ) as string
-    expect(styleCode).toContain('rgba(0, 0, 0, .7)')
-    expect(styleCode).toContain('&__title')
+    expect(styleCode).toContain('rgba(0, 0, 0, 0.7)')
+    expect(styleCode).toContain('.card__title')
     expect(styleCode).not.toContain('[data-v-')
   })
 

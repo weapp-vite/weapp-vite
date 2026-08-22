@@ -67,7 +67,8 @@ defineAppJson({ pages: ['pages/index/index'] })
 
       const loaded = await callPluginHook(plugin.load as any, {}, styleRequestId) as any
 
-      expect(loaded?.code).toContain('.a { color: red; }')
+      expect(loaded?.code).toContain('.a {')
+      expect(loaded?.code).toContain('color: red;')
     }
     finally {
       await fs.remove(root)

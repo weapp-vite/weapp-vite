@@ -74,7 +74,7 @@ export function transformVueDeepSelectors(source: string) {
     })
   })
   root.walkRules((rule) => {
-    rule.selector = processor.processSync(rule.selector)
+    rule.selector = processor.processSync(rule.selector).replace(/\s{2,}/g, ' ').trim()
   })
   return root.toString()
 }
