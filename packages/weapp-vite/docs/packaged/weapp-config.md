@@ -64,6 +64,28 @@ export default defineConfig({
 
 例如 `src/utils/request.ts` 会输出到 `utils/request.js`，引用方会保留对该文件的引用；barrel 模块的静态依赖也会保持独立。该配置用于调试定位和产物审计，不保证减少总包体积或提升冷启动；构建会自动选择兼容的 entry signature。
 
+例如一个已经手动分包、包含大量 `utils` 和 `services` 模块的原生项目，可以这样配置：
+
+```ts
+import { defineConfig } from 'weapp-vite'
+
+export default defineConfig({
+  weapp: {
+    srcRoot: 'src',
+    chunks: {
+      preserveModules: [
+        'utils/**',
+        'services/**',
+      ],
+    },
+  },
+})
+```
+
+规则相对于 `srcRoot`，因此不要添加 `src/` 前缀。构建后，已进入依赖图的 `src/utils/request.ts` 和 `src/services/user.ts` 会分别输出为 `utils/request.js` 和 `services/user.js`；页面保留对这些文件的引用。CJS 和 ESM 均支持该配置。
+
+`preserveModules` 保留的是构建后的文件和目录边界。源码仍会经过模块解析、TypeScript 转换并由构建器写入，不会被原样复制；未被入口引用的文件也不会仅因匹配规则而输出。如果只需要改变共享模块的输出位置，不要求单次引用模块保持独立，请使用 `chunks.sharedMode: 'path'`。
+
 ### 分包异步模块
 
 跨分包 JS 使用微信官方 callback 或 Promise API：

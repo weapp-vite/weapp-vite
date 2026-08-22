@@ -158,6 +158,46 @@ export default defineConfig({
 
 这个选项主要服务于调试、源码定位和产物审计，不等同于体积优化。它可以和 `sharedStrategy`、`sharedMode` 一起配置；构建会自动处理与该拆分方式兼容的 entry signature。
 
+### 案例：保留原生项目的 utils 和 services 目录
+
+[issue #826](https://github.com/weapp-vite/weapp-vite/issues/826) 中的项目已经手动规划分包，并包含大量 `utils`、`services` 模块。默认 chunk 策略会把这些模块合并到共享 chunk，导致产物目录无法直接对应源码。此时可以按目录保留模块边界：
+
+```text
+src/
+├─ pages/index/index.ts
+├─ services/user.ts
+└─ utils/request.ts
+```
+
+```ts
+import { defineConfig } from 'weapp-vite'
+
+export default defineConfig({
+  weapp: {
+    srcRoot: 'src',
+    chunks: {
+      preserveModules: [
+        'utils/**',
+        'services/**',
+      ],
+    },
+  },
+})
+```
+
+构建后，已进入模块依赖图的匹配文件会保留对应目录：
+
+```text
+dist/
+├─ pages/index/index.js
+├─ services/user.js
+└─ utils/request.js
+```
+
+页面会引用 `utils/request.js` 和 `services/user.js`，而不是内联它们的实现。配置规则相对于 `srcRoot`，因此这里应写 `utils/**`，不要写 `src/utils/**`。`jsFormat: 'cjs'` 和 `jsFormat: 'esm'` 均支持该配置。
+
+`preserveModules` 仍由构建器完成模块解析、TypeScript 转换和产物写入；它不会原样复制源码，也不会输出未被页面、组件或其他入口引用的文件。如果目标只是调整多个入口共享模块的输出位置，而不要求单次引用的模块也保持独立，应优先使用 `sharedMode: 'path'`。
+
 ## dynamicImports：动态 import 的处理方式
 
 - `preserve`（默认）：保留独立的动态 chunk。

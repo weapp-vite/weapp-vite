@@ -305,6 +305,8 @@ export default defineConfig({
 
 它只控制输出边界，不承诺减少总包体积或提升冷启动速度；仍应结合实际构建产物评估体积与加载影响。配置后，`weapp-vite` 会自动使用兼容的 entry signature 设置。
 
+以 `srcRoot: 'src'` 为例，保留大型原生项目的工具和服务目录时应配置 `['utils/**', 'services/**']`，而不是 `['src/utils/**', 'src/services/**']`。只有进入构建依赖图的模块会生成对应文件；源码仍会经过模块解析和 TypeScript 转换，不是原样复制。完整目录与产物示例见[代码分块指南](/guide/chunks#案例-保留原生项目的-utils-和-services-目录)。
+
 ## `dynamicImports`
 
 - **类型**：`'preserve' | 'native' | 'inline'`
