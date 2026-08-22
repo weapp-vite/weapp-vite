@@ -16,7 +16,10 @@ function buildForIndexAccess(context: TransformContext): string {
 /**
  * 检测表达式是否包含小程序模板不稳定的调用语义。
  */
-export function shouldFallbackToRuntimeBinding(exp: string): boolean {
+export function shouldFallbackToRuntimeBinding(
+  exp: string,
+  templateSafeCallNames: ReadonlySet<string> = new Set(),
+): boolean {
   const trimmed = exp.trim()
   if (!trimmed) {
     return false
@@ -30,6 +33,12 @@ export function shouldFallbackToRuntimeBinding(exp: string): boolean {
   let shouldFallback = false
   traverse(parsed.ast, {
     CallExpression(path) {
+      if (
+        path.node.callee.type === 'Identifier'
+        && templateSafeCallNames.has(path.node.callee.name)
+      ) {
+        return
+      }
       shouldFallback = true
       path.stop()
     },

@@ -1,0 +1,82 @@
+{
+  "name": "@weapp-vite/i18n",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "First-party i18n runtime and compiler for native WeChat mini programs",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages-runtime/i18n"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "i18n",
+    "miniprogram",
+    "weapp",
+    "wechat"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/cjs/index.cjs"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.mts",
+      "import": "./dist/runtime.mjs",
+      "require": "./dist/cjs/runtime.cjs"
+    },
+    "./compiler": {
+      "types": "./dist/compiler.d.mts",
+      "import": "./dist/compiler.mjs",
+      "require": "./dist/cjs/compiler.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "miniprogram": "./dist/miniprogram",
+  "bin": {
+    "weapp-i18n": "./bin/weapp-i18n.js"
+  },
+  "files": [
+    "README.md",
+    "bin",
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "pretest": "pnpm build",
+    "dev": "tsdown -w --sourcemap",
+    "build": "tsdown",
+    "test": "vitest run",
+    "test:types": "pnpm build && tsd",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "miniprogram-api-typings": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "miniprogram-api-typings": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@weapp-core/constants": "workspace:*"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "catalog:"
+  }
+}

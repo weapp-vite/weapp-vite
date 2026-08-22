@@ -1,0 +1,1 @@
+<view id="issue-845-normal">{{ t('issue845.greeting', { user }) }}</view>

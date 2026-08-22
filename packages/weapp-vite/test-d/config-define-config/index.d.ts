@@ -11,8 +11,17 @@ export interface AutoImportComponentsConfig {
   }>
 }
 
+export interface WeappI18nConfig {
+  defaultLocale: string
+  fallbackLocale?: string
+  include?: string | string[]
+  functionName?: string
+  moduleName?: string
+}
+
 export interface WeappViteConfig {
   srcRoot?: string
+  i18n?: WeappI18nConfig
   platform?: 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'
   hmr?: {
     runtime?: 'auto' | 'classic' | 'stateful-experimental'

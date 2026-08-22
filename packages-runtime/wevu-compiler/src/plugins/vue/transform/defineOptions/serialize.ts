@@ -1,3 +1,4 @@
+import { WEAPP_I18N_RUNTIME_MARKER } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../../utils/babel'
 import { hasOwn } from '../../../../utils/object'
@@ -40,6 +41,15 @@ const OBJECT_TO_STRING = Object.prototype.toString
 
 function isIdentifierLikeKey(key: string) {
   return IDENTIFIER_LIKE_KEY_RE.test(key)
+}
+
+function resolveRuntimeMarkerIdentifier(value: object, scopeValues: Record<string, unknown>) {
+  const runtimeValue = value as Record<string, unknown>
+  if (runtimeValue[WEAPP_I18N_RUNTIME_MARKER] !== true) {
+    return
+  }
+  return Object.entries(scopeValues)
+    .find(([name, scopeValue]) => isIdentifierLikeKey(name) && scopeValue === value)?.[0]
 }
 
 function getObjectTag(value: unknown) {
@@ -237,6 +247,10 @@ export function serializeStaticValueToExpression(
   }
 
   if (value && typeof value === 'object') {
+    const runtimeIdentifier = resolveRuntimeMarkerIdentifier(value, scopeValues)
+    if (runtimeIdentifier) {
+      return runtimeIdentifier
+    }
     if (seen.has(value as object)) {
       throw new Error('defineOptions 的参数中不支持循环引用。')
     }

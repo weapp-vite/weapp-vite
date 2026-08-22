@@ -32,6 +32,7 @@
 - 🧩 **实验性 uni-app 组件库兼容**：通过显式依赖白名单与 `WotUiResolver()` 在微信小程序和 Web 中使用 Wot UI Vue SFC
 - 🧰 **IDE 命令增强**：可直接透传 `weapp-ide-cli` 全量命令（`preview/upload/config/automator` 等）
 - 🧪 **真实产物单测**：`weapp-vite/test` 提供不启动 CLI 的程序化测试构建入口，可配合 `@mpcore/test` 测试页面和组件
+- 🌍 **内置 i18n**：构建期编译 locale JSON，通过 WXS 翻译模板，并在逻辑层安全切换已构建语言
 
 ## 快速开始
 
@@ -122,6 +123,25 @@ function handleClick() {
 
 📚 **完整文档**: [Vue 支持文档](./test/vue/README.md)
 
+### 一方维护的 i18n
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    i18n: {
+      defaultLocale: 'zh-CN',
+      fallbackLocale: 'en-US',
+    },
+  },
+})
+```
+
+默认扫描 `src/**/i18n/*.json`。Native Component 和使用 Component 构造的 Page 都通过 `behaviors: [I18n]` 接入；只有传统 `Page({...})` 项目需要兼容适配器 `I18nPage(options)`。Vue/Wevu 使用 `defineOptions({ behaviors: [I18n] })`。模板中的 `t('key', params)` 会在构建时改写为 WXS 调用；逻辑层从 `weapp-vite/i18n` 导入 `setLocale`、`t` 和订阅 API。
+
+底层运行时与 catalog 编译器由独立包 `@weapp-vite/i18n` 提供，也可以在完全不使用 Vite 的原生微信小程序中安装。v1 只支持 `{name}` / `{user.name}` 占位符，不自动持久化语言，也不包含 ICU、复数和日期/数字格式化。完整配置见 [i18n 配置](https://vite.icebreaker.top/config/i18n)。
+
 - 配置智能提示文档：[docs/volar.md](./docs/volar.md)
 - defineConfig 重载说明：[docs/define-config-overloads.md](./docs/define-config-overloads.md)
 - Vite 插件识别 weapp-vite 宿主：https://vite.icebreaker.top/guide/vite-plugin-host
@@ -158,6 +178,7 @@ function handleClick() {
 - `ai-workflows.md`
 - `project-structure.md`
 - `weapp-config.md`
+- `i18n.md`
 - `uni-app-component-libraries.md`
 - `wevu-authoring.md`
 - `vue-sfc.md`

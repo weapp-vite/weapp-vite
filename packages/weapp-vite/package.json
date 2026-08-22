@@ -46,6 +46,10 @@
       "types": "./dist/runtime.d.mts",
       "import": "./dist/runtime.mjs"
     },
+    "./i18n": {
+      "types": "./dist/i18n.d.mts",
+      "import": "./dist/i18n.mjs"
+    },
     "./web-apis": {
       "types": "./dist/web-apis.d.mts",
       "import": "./dist/web-apis.mjs"
@@ -110,7 +114,7 @@
     "benchmark:auto-import:ci": "node --import tsx scripts/benchmark-auto-import-ci.ts",
     "test:dev": "vitest",
     "test": "vitest run",
-    "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../config-define-config && tsd && cd ../internal-src-types && tsd && cd ../resolvers-public-types && tsd && cd ../runtime-public-types && tsd && cd ../test-artifact-public-types && tsd",
+    "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../config-define-config && tsd && cd ../i18n-public-types && tsd && cd ../internal-src-types && tsd && cd ../resolvers-public-types && tsd && cd ../runtime-public-types && tsd && cd ../test-artifact-public-types && tsd",
     "lint:src": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync": "cnpm sync weapp-vite"
@@ -128,6 +132,7 @@
     "@weapp-core/schematics": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/ast": "workspace:*",
+    "@weapp-vite/i18n": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
     "@weapp-vite/miniprogram-automator": "workspace:*",
     "@weapp-vite/volar": "workspace:*",

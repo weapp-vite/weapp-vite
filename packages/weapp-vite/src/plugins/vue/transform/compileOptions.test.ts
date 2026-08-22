@@ -317,7 +317,12 @@ describe('resolveVueTemplatePlatformOptions', () => {
         platform: 'weapp',
         isDev: false,
         outputExtensions: {},
-        weappViteConfig: {},
+        weappViteConfig: {
+          i18n: {
+            defaultLocale: 'zh-CN',
+            functionName: 'translate',
+          },
+        },
         relativeOutputPath: () => undefined,
       } as any,
       {
@@ -325,6 +330,8 @@ describe('resolveVueTemplatePlatformOptions', () => {
         classStyleRuntimeWarned: { value: false },
       },
     )
+
+    expect(weappOptions.template.templateSafeCallNames).toEqual(['translate'])
 
     const alipayOptions = createCompileVueFileOptions(
       {} as any,

@@ -657,6 +657,30 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === 'sayHello()')).toBe(true)
   })
 
+  it('preserves configured safe calls without widening other template calls', () => {
+    const template = `
+<view :title="t('common.title')" v-if="t('common.visible')">
+  {{ t('common.greeting', { name }) }}
+  {{ t(resolveKey()) }}
+  {{ other() }}
+</view>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { templateSafeCallNames: ['t'] },
+    )
+
+    expect(code).toContain(`title="{{t('common.title')}}"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.ifAttr}="{{t('common.visible')}}"`)
+    expect(code).toContain(`{{t('common.greeting', { name })}}`)
+    expect(code).not.toContain('t(resolveKey())')
+    expect(code).not.toContain('other()')
+    expect(classStyleBindings?.some(binding => binding.exp === 't(resolveKey())')).toBe(true)
+    expect(classStyleBindings?.some(binding => binding.exp === 'other()')).toBe(true)
+  })
+
   it('falls back v-bind and v-text call expressions to runtime bindings', () => {
     const template = `
 <view :title="sayHello()" v-text="sayHello()" />

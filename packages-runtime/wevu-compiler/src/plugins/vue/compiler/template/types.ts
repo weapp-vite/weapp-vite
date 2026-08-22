@@ -112,6 +112,7 @@ export interface TransformContext {
   inlineExpressionSeed: number
   functionPropPaths: Set<string>
   functionPropNames: FunctionPropNameMatcher[]
+  templateSafeCallNames: Set<string>
   wevuComponentTags?: Set<string>
 }
 
@@ -159,6 +160,10 @@ export interface TemplateCompileOptions {
   wxsExtension?: string
   classStyleWxsSrc?: string
   functionPropNames?: Iterable<FunctionPropNameMatcher>
+  /**
+   * 允许保留在小程序模板中的直接函数调用名。
+   */
+  templateSafeCallNames?: Iterable<string>
   wevuComponentTags?: Iterable<string>
   componentNameMap?: Record<string, string>
   miniProgramComponentTags?: Iterable<string>

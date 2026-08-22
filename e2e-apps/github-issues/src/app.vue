@@ -24,6 +24,17 @@ const defaultTabBarList = [
 
 const issue793BuildScopeEnabled = routes.pages.includes('pages/issue-793/index')
   || routes.subPackages.some(subPackage => subPackage.root === 'subs')
+const appSubPackages = routes.subPackages.map((subPackage) => {
+  if (
+    routes.pages.length === 2
+    && routes.pages.includes('pages/issue-845-native/index')
+    && routes.pages.includes('pages/issue-845-vue/index')
+    && subPackage.root === 'subpackages/issue-845-independent'
+  ) {
+    return { ...subPackage, independent: true }
+  }
+  return subPackage
+})
 const tabBarList = issue793BuildScopeEnabled
   ? [
       {
@@ -43,8 +54,8 @@ const tabBarList = issue793BuildScopeEnabled
 
 defineAppJson({
   pages: routes.pages,
-  subPackages: routes.subPackages,
-  subpackages: routes.subPackages,
+  subPackages: appSubPackages,
+  subpackages: appSubPackages,
   ...(issue793BuildScopeEnabled
     ? {
         entryPagePath: 'pages/issue-793/index',

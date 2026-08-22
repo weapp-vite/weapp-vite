@@ -18,6 +18,7 @@ const ISSUE_595_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-595')
 const ISSUE_642_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-642')
 const ISSUE_724_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-724')
 const ISSUE_793_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-793')
+const ISSUE_845_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-845')
 const issue826DistRoot = (jsFormat: 'cjs' | 'esm') => path.join(APP_ROOT, `dist-issue-826-${jsFormat}`)
 const SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT = path.join(APP_ROOT, 'dist-slot-fallback-compiler-off')
 const SLOT_OWNER_ATTR = `__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"`
@@ -63,6 +64,21 @@ async function runAggregateBuild() {
   })
 
   distVariant = null
+}
+
+async function runIssue845Build() {
+  await fs.remove(ISSUE_845_DIST_ROOT)
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
+    cwd: APP_ROOT,
+    label: 'ci:github-issues:issue845',
+    skipNpm: true,
+    env: {
+      WEAPP_GITHUB_ISSUE_845_I18N: 'true',
+    },
+  })
 }
 
 async function runBuildWithSourcemap() {
@@ -487,6 +503,55 @@ async function runIssue826Build(jsFormat: 'cjs' | 'esm') {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #845: emits first-party i18n assets for native and Vue templates', async () => {
+    await runIssue845Build()
+
+    const nativeWxml = await fs.readFile(path.join(ISSUE_845_DIST_ROOT, 'pages/issue-845-native/index.wxml'), 'utf8')
+    const nativeComponentWxml = await fs.readFile(path.join(ISSUE_845_DIST_ROOT, 'components/issue-845-i18n-card/index.wxml'), 'utf8')
+    const vueJs = await fs.readFile(path.join(ISSUE_845_DIST_ROOT, 'pages/issue-845-vue/index.js'), 'utf8')
+    const vueWxml = await fs.readFile(path.join(ISSUE_845_DIST_ROOT, 'pages/issue-845-vue/index.wxml'), 'utf8')
+    const localesWxs = await fs.readFile(path.join(ISSUE_845_DIST_ROOT, 'i18n/locales.wxs'), 'utf8')
+    const localesJs = await fs.readFile(path.join(ISSUE_845_DIST_ROOT, 'i18n/locales.js'), 'utf8')
+    const runtimePath = resolveSharedRuntimeImport(path.join(ISSUE_845_DIST_ROOT, 'i18n/locales.js'), localesJs)
+    expect(runtimePath).toBeTruthy()
+    const runtimeJs = await fs.readFile(runtimePath!, 'utf8')
+    const ordinaryWxml = await fs.readFile(path.join(ISSUE_845_DIST_ROOT, 'subpackages/issue-845-normal/index.wxml'), 'utf8')
+    const independentWxml = await fs.readFile(path.join(ISSUE_845_DIST_ROOT, 'subpackages/issue-845-independent/index.wxml'), 'utf8')
+    const independentJs = await fs.readFile(path.join(ISSUE_845_DIST_ROOT, 'subpackages/issue-845-independent/index.js'), 'utf8')
+    const independentRoot = path.join(ISSUE_845_DIST_ROOT, 'subpackages/issue-845-independent')
+    const independentRuntimeEntryPath = path.join(independentRoot, 'i18n/locales.js')
+    const independentRuntimeEntryJs = await fs.readFile(independentRuntimeEntryPath, 'utf8')
+    const independentRuntimePath = resolveSharedRuntimeImport(independentRuntimeEntryPath, independentRuntimeEntryJs)
+    expect(independentRuntimePath).toBeTruthy()
+    const independentRuntimeJs = await fs.readFile(independentRuntimePath!, 'utf8')
+    const appJson = await fs.readJSON(path.join(ISSUE_845_DIST_ROOT, 'app.json')) as {
+      subPackages?: Array<{ independent?: boolean, root?: string }>
+    }
+
+    expect(nativeWxml).toContain('<wxs module="i18n" src="../../i18n/locales.wxs"/>')
+    expect(nativeWxml).toContain('i18n.t(__wv_i18n_locale, \'issue845.greeting\', { user })')
+    expect(nativeComponentWxml).toContain('i18n.t(__wv_i18n_locale, \'issue845.greeting\', { user })')
+    expect(vueJs).toMatch(/behaviors:\s*\[[^\]]+\.I18n\]/)
+    expect(vueJs).not.toContain('behaviors: [{}]')
+    expect(vueWxml).toContain('i18n.t(__wv_i18n_locale, \'issue845.greeting\', { user })')
+    expect(ordinaryWxml).toContain('<wxs module="i18n" src="./i18n/locales.wxs"/>')
+    expect(independentWxml).toContain('<wxs module="i18n" src="./i18n/locales.wxs"/>')
+    expect(appJson.subPackages).toContainEqual(expect.objectContaining({
+      independent: true,
+      root: 'subpackages/issue-845-independent',
+    }))
+    expect(independentJs).not.toContain('require("../../')
+    expect(path.relative(independentRoot, independentRuntimePath!)).not.toMatch(/^\.\.(?:[/\\]|$)/)
+    expect(independentRuntimeJs).toContain('RangeError')
+    expect(independentRuntimeJs).toContain('__WEAPP_VITE_I18N__')
+    expect(localesWxs).toContain('Fallback text')
+    expect(runtimeJs).toContain('RangeError')
+    for (const root of ['subpackages/issue-845-normal', 'subpackages/issue-845-independent']) {
+      expect(await fs.pathExists(path.join(ISSUE_845_DIST_ROOT, root, 'i18n/locales.js'))).toBe(true)
+      expect(await fs.pathExists(path.join(ISSUE_845_DIST_ROOT, root, 'i18n/locales.wxs'))).toBe(true)
+    }
+  })
+
   it('issue #826: preserves configured source module paths for debugging', async () => {
     for (const jsFormat of ['cjs', 'esm'] as const) {
       await runIssue826Build(jsFormat)
