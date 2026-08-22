@@ -118,7 +118,7 @@
     "benchmark:auto-import:ci": "node --import tsx scripts/benchmark-auto-import-ci.ts",
     "test:dev": "vitest",
     "test": "vitest run",
-    "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../compatibility-eslint-public-types && tsd && cd ../config-define-config && tsd && cd ../internal-src-types && tsd && cd ../resolvers-public-types && tsd && cd ../runtime-public-types && tsd && cd ../test-artifact-public-types && tsd",
+    "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../config-define-config && tsd && cd ../internal-src-types && tsd && cd ../resolvers-public-types && tsd && cd ../runtime-public-types && tsd && cd ../test-artifact-public-types && tsd",
     "lint:src": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync": "cnpm sync weapp-vite"
@@ -126,14 +126,6 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
-  },
-  "peerDependencies": {
-    "eslint": ">=9"
-  },
-  "peerDependenciesMeta": {
-    "eslint": {
-      "optional": true
-    }
   },
   "dependencies": {
     "@babel/preset-env": "^8.0.2",
@@ -148,6 +140,7 @@
     "@weapp-core/schematics": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/ast": "workspace:*",
+    "@weapp-vite/eslint": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
     "@weapp-vite/miniprogram-automator": "workspace:*",
     "@weapp-vite/volar": "workspace:*",

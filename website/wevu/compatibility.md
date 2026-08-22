@@ -27,4 +27,4 @@ keywords:
 - **setData diff 规则**：缺失字段与 `undefined` 会被归一化为 `null`；运行时只下发 state + computed 的差量路径；`setData()` 返回 Promise 时会吞掉 reject 以避免阻塞更新链路。
 - **组件与模板规则**：小程序组件必须声明 `usingComponents`（可写在 `<json>`，也可用 Script Setup JSON 宏注入）；`@tap`、`v-if`、`v-for` 等语法由编译侧（如 Weapp-vite）转换为 WXML。
 - **SFC 样式**：微信目标稳定支持 scoped CSS、默认/命名 CSS Modules、`useCssModule()` 和 CSS `v-bind()`；`:deep()`、`:global()`、`:slotted()` 仅接受可安全映射的选择器。相同编译实现在其他小程序平台仍标为实验性，不能据此宣称 IDE/真机等价。
-- **静态防护边界**：`weapp-vite/eslint` 的 recommended preset 可禁止项目源码中静态可确定的不支持导入和 `RouterLink`，并提示同名风险 API；动态属性访问、依赖内部代码和宿主能力不能承诺完全静态判定。
+- **静态防护边界**：`@weapp-vite/eslint` 的 recommended preset 可禁止项目源码中静态可确定的不支持导入和 `RouterLink`，并提示同名风险 API；动态属性访问、依赖内部代码和宿主能力不能承诺完全静态判定。旧项目可继续使用 `weapp-vite/eslint` 兼容入口。

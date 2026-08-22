@@ -1,5 +1,5 @@
 import { icebreaker } from '@icebreakers/eslint-config'
-import { wevuCompatibilityRecommended } from 'weapp-vite/eslint'
+import { wevuCompatibilityRecommended } from '@weapp-vite/eslint'
 
 export default icebreaker(
   {

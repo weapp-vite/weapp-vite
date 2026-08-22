@@ -2,6 +2,7 @@
 "@wevu/compiler": minor
 "wevu": minor
 "weapp-vite": minor
+"@weapp-vite/eslint": minor
 "create-weapp-vite": patch
 ---
 

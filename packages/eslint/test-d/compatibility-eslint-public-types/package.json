@@ -8,12 +8,13 @@
       "moduleResolution": "bundler",
       "target": "ES2023",
       "strict": true,
+      "baseUrl": ".",
       "paths": {
-        "weapp-vite/compatibility": [
-          "../../dist/compatibility.d.mts"
+        "@weapp-vite/eslint": [
+          "../../dist/index.d.mts"
         ],
-        "weapp-vite/eslint": [
-          "../../dist/eslint.d.mts"
+        "weapp-vite/compatibility": [
+          "../../../weapp-vite/dist/compatibility.d.mts"
         ]
       },
       "types": [

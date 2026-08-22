@@ -2,7 +2,7 @@ import tsParser from '@typescript-eslint/parser'
 import { RuleTester } from 'eslint'
 import { describe } from 'vitest'
 import vueParser from 'vue-eslint-parser'
-import { wevuCompatibilityPlugin } from './eslint'
+import { wevuCompatibilityPlugin } from './index'
 
 const unsupportedRule = wevuCompatibilityPlugin.rules['no-unsupported-api']
 const riskyRule = wevuCompatibilityPlugin.rules['no-risky-api']

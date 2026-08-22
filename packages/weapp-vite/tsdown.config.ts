@@ -41,6 +41,7 @@ export default defineConfig({
       '@weapp-vite/ast/babelTypes',
       '@weapp-vite/ast/operations/onPageScroll',
       '@weapp-vite/ast/operations/setDataPick',
+      '@weapp-vite/eslint',
       '@babel/preset-env',
       '@babel/preset-typescript',
       'cac',

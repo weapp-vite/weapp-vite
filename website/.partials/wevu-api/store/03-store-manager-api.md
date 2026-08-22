@@ -1,3 +1,12 @@
+---
+description: Wevu Store Manager 的安装、插件和时序差异说明。
+keywords:
+  - Wevu Store Manager
+  - createStore
+  - Store 插件
+  - Pinia 迁移
+---
+
 ## Store Manager API
 
 ### `manager.install()` {#storemanager-install}
