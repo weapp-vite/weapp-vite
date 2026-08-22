@@ -268,7 +268,7 @@
     "es-toolkit": "^1.51.0",
     "esbuild": "catalog:",
     "eslint": "catalog:",
-    "esrap": "^2.3.5",
+    "esrap": "^2.3.6",
     "estree-walker": "catalog:",
     "execa": "^10.0.1",
     "express": "^5.2.1",
