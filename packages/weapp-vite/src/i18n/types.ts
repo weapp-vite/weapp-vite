@@ -15,11 +15,14 @@ export interface ResolvedWeappI18nConfig {
 }
 
 export type {
-  I18nBehaviorMethods,
   I18nCatalog,
   I18nCompiledMessages,
-  I18nLocaleChangeSubscription,
+  I18nGlobal,
+  I18nLocaleMessages,
+  I18nMessages,
   I18nMessageToken,
+  I18nMessageValue,
+  I18nOptions,
   I18nPlaceholderToken,
 } from '@weapp-vite/i18n'
 export type { I18nLocaleFileInput } from '@weapp-vite/i18n/compiler'

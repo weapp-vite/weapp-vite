@@ -10,7 +10,7 @@ export default defineConfig([
     entry: {
       ...runtimeEntry,
       cli: './src/cli.ts',
-      compiler: './src/compiler.ts',
+      compiler: './src/native.ts',
     },
     format: ['esm'],
     hash: false,
@@ -28,7 +28,7 @@ export default defineConfig([
   {
     entry: {
       ...runtimeEntry,
-      compiler: './src/compiler.ts',
+      compiler: './src/native.ts',
     },
     outDir: './dist/cjs',
     format: ['cjs'],

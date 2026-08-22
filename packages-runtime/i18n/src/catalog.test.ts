@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compileI18nCatalog, compileI18nMessage } from './catalog'
+import { compileI18nCatalog, compileI18nMessage } from './compiler'
 
 describe('i18n catalog compiler', () => {
   it('flattens messages and compiles supported placeholders', () => {

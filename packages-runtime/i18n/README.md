@@ -20,6 +20,7 @@ pnpm exec weapp-i18n compile \
 const { createI18n } = require('@weapp-vite/i18n')
 const catalog = require('./i18n/locales')
 
+// locales.js 是 compile 命令生成的预编译 catalog
 const i18n = createI18n(catalog)
 
 module.exports = i18n
@@ -28,19 +29,19 @@ module.exports = i18n
 Component 和使用 Component 构造的 Page 直接接入 Behavior：
 
 ```js
-const { I18n } = require('../../i18n')
+const { i18n } = require('../../i18n')
 
 Component({
-  behaviors: [I18n],
+  behaviors: [i18n.behavior],
 })
 ```
 
 传统 `Page({...})` 使用显式适配器：
 
 ```js
-const { definePage } = require('../../i18n')
+const { i18n } = require('../../i18n')
 
-definePage({
+i18n.page({
   data: {},
 })
 ```
@@ -52,7 +53,9 @@ WXML 显式引用生成的 WXS：
 <view>{{ i18n.t(__wv_i18n_locale, 'greeting', { user }) }}</view>
 ```
 
-需要从 `@miniprogram-i18n/core` 渐进迁移时，也可以在 `app.js` 中调用 `initI18n(catalog)`，继续使用模块级 `I18n`、`I18nPage`、`t` 和 locale API。这里是迁移兼容入口，不承诺旧包 select/ICU 消息的无差异兼容；推荐新代码使用 `createI18n()`，避免模块级 singleton 影响测试与实例隔离。
+本包不提供 `@miniprogram-i18n/core` 的 singleton 兼容入口。迁移时请把词典转换为普通 `locale -> key -> string` 消息对象，并为每个小程序运行时显式创建一个 `createI18n()` 实例；旧包的 select/ICU 消息需要按 v1 占位符语义调整。
+
+实例通过 `i18n.global.t()`、`i18n.global.locale` 和 `i18n.global.onLocaleChange()` 访问运行时状态；不自动读写 storage，也不修改宿主的 Page/Component 构造器。
 
 ## weapp-vite
 

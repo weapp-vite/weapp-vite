@@ -5,7 +5,7 @@ import {
   generateI18nCatalogModuleSource,
   generateI18nRuntimeSource,
   generateI18nWxsSource,
-} from './source'
+} from './compiler'
 
 const catalog: I18nCatalog = {
   defaultLocale: 'zh-CN',

@@ -138,7 +138,7 @@ export default defineConfig({
 })
 ```
 
-默认扫描 `src/**/i18n/*.json`。Native Component 和使用 Component 构造的 Page 都通过 `behaviors: [I18n]` 接入；只有传统 `Page({...})` 项目需要兼容适配器 `I18nPage(options)`。Vue/Wevu 使用 `defineOptions({ behaviors: [I18n] })`。模板中的 `t('key', params)` 会在构建时改写为 WXS 调用；逻辑层从 `weapp-vite/i18n` 导入 `setLocale`、`t` 和订阅 API。
+默认扫描 `src/**/i18n/*.json`。Native Component 和使用 Component 构造的 Page 通过 `behaviors: [i18n.behavior]` 接入；传统 `Page({...})` 使用 `i18n.page(options)` 适配生命周期。Vue/Wevu 使用 `defineOptions({ behaviors: [i18n.behavior] })`。模板中的 `t('key', params)` 会在构建时改写为 WXS 调用；逻辑层从 `weapp-vite/i18n` 导入构建实例，并通过 `i18n.global` 访问翻译和 locale。
 
 底层运行时与 catalog 编译器由独立包 `@weapp-vite/i18n` 提供，也可以在完全不使用 Vite 的原生微信小程序中安装。v1 只支持 `{name}` / `{user.name}` 占位符，不自动持久化语言，也不包含 ICU、复数和日期/数字格式化。完整配置见 [i18n 配置](https://vite.icebreaker.top/config/i18n)。
 

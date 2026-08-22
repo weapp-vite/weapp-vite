@@ -1,9 +1,7 @@
+import { compileI18nCatalog } from '@weapp-vite/i18n/compiler'
 import { describe, expect, it } from 'vitest'
-import {
-  compileI18nCatalog,
-  resolveWeappI18nConfig,
-  transformI18nTemplate,
-} from './index'
+import { resolveWeappI18nConfig } from './config'
+import { transformI18nTemplate } from './template'
 
 describe('weapp i18n', () => {
   it('resolves deterministic defaults', () => {

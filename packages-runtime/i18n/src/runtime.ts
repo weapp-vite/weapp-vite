@@ -1,25 +1,19 @@
 import type {
   I18nBehavior,
-  I18nBehaviorMethods,
   I18nCatalog,
+  I18nGlobal,
   I18nHost,
   I18nInstance,
   I18nLocaleChangeSubscription,
   I18nMessageToken,
+  I18nOptions,
 } from './types'
 import { WEAPP_I18N_LOCALE_DATA_KEY } from '@weapp-core/constants'
+import { compileI18nMessages } from './compiler'
 
 interface RuntimeInstance {
   setData: (data: Record<string, unknown>) => void
 }
-
-const I18N_METHOD_NAMES = [
-  't',
-  'getLocale',
-  'setLocale',
-  'getFallbackLocale',
-  'onLocaleChange',
-] as const
 
 function hasOwn(object: unknown, key: PropertyKey) {
   return object != null && Object.prototype.hasOwnProperty.call(object, key)
@@ -62,76 +56,71 @@ function validateCatalog(catalog: I18nCatalog) {
   }
 }
 
-function resolveHost(host?: Partial<I18nHost>, allowFallback = false): I18nHost {
+function normalizeOptions(options: I18nOptions | I18nCatalog): I18nCatalog {
+  if ('defaultLocale' in options && 'locales' in options) {
+    validateCatalog(options)
+    return options
+  }
+
+  const locale = options.locale.trim()
+  const fallbackLocale = options.fallbackLocale?.trim() || locale
+  if (!locale) {
+    throw new Error('i18n locale 不能为空。')
+  }
+  const messages = compileI18nMessages(options.messages)
+  const locales = Object.keys(messages).sort()
+  const catalog = { defaultLocale: locale, fallbackLocale, locales, messages }
+  validateCatalog(catalog)
+  return catalog
+}
+
+function resolveHost(host?: Partial<I18nHost>): I18nHost {
   const behavior = host?.Behavior ?? (typeof Behavior === 'function' ? Behavior : undefined)
   const page = host?.Page ?? (typeof Page === 'function' ? Page : undefined)
   if (!behavior || !page) {
-    if (allowFallback) {
-      return {
-        Behavior: ((options: unknown) => options) as unknown as I18nHost['Behavior'],
-        Page: ((options: unknown) => options) as unknown as I18nHost['Page'],
-      }
-    }
     throw new Error('i18n 运行时需要小程序 Behavior 和 Page 全局 API。')
   }
   return { Behavior: behavior, Page: page }
 }
 
-function createI18nState(initialCatalog?: I18nCatalog) {
-  let catalog: I18nCatalog | undefined
-  let currentLocale = ''
+function createState(catalog: I18nCatalog) {
+  let currentLocale = catalog.defaultLocale
   const instances = new Set<RuntimeInstance>()
   const listeners = new Set<(locale: string) => void>()
 
-  function initialize(nextCatalog: I18nCatalog) {
-    validateCatalog(nextCatalog)
-    catalog = nextCatalog
-    currentLocale = nextCatalog.defaultLocale
+  function setLocale(locale: string) {
+    if (!catalog.locales.includes(locale)) {
+      throw new RangeError(`Unknown i18n locale: ${locale}`)
+    }
+    if (locale === currentLocale) {
+      return
+    }
+    currentLocale = locale
     for (const instance of instances) {
-      instance.setData({ [WEAPP_I18N_LOCALE_DATA_KEY]: currentLocale })
+      instance.setData({ [WEAPP_I18N_LOCALE_DATA_KEY]: locale })
+    }
+    for (const listener of listeners) {
+      listener(locale)
     }
   }
 
-  function requireCatalog() {
-    if (!catalog) {
-      throw new Error('i18n 尚未初始化，请先调用 initI18n()。')
-    }
-    return catalog
-  }
-
-  const methods: I18nBehaviorMethods = {
+  const global: I18nGlobal = {
     t(key, params = {}) {
-      const activeCatalog = requireCatalog()
-      const current = activeCatalog.messages[currentLocale] ?? {}
-      const fallback = activeCatalog.messages[activeCatalog.fallbackLocale] ?? {}
+      const current = catalog.messages[currentLocale] ?? {}
+      const fallback = catalog.messages[catalog.fallbackLocale] ?? {}
       const tokens = hasOwn(current, key)
         ? current[key]
         : hasOwn(fallback, key) ? fallback[key] : undefined
       return tokens ? render(tokens, params) : key
     },
-    getLocale() {
-      requireCatalog()
+    get locale() {
       return currentLocale
     },
-    setLocale(locale) {
-      const activeCatalog = requireCatalog()
-      if (!activeCatalog.locales.includes(locale)) {
-        throw new RangeError(`Unknown i18n locale: ${locale}`)
-      }
-      if (locale === currentLocale) {
-        return
-      }
-      currentLocale = locale
-      for (const instance of instances) {
-        instance.setData({ [WEAPP_I18N_LOCALE_DATA_KEY]: locale })
-      }
-      for (const listener of listeners) {
-        listener(locale)
-      }
+    set locale(locale: string) {
+      setLocale(locale)
     },
-    getFallbackLocale() {
-      return requireCatalog().fallbackLocale
-    },
+    fallbackLocale: catalog.fallbackLocale,
+    availableLocales: Object.freeze([...catalog.locales]),
     onLocaleChange(handler): I18nLocaleChangeSubscription {
       listeners.add(handler)
       let active = true
@@ -146,39 +135,23 @@ function createI18nState(initialCatalog?: I18nCatalog) {
     },
   }
 
-  function attach(instance: RuntimeInstance) {
-    requireCatalog()
-    instances.add(instance)
-    instance.setData({ [WEAPP_I18N_LOCALE_DATA_KEY]: currentLocale })
-  }
-
-  function detach(instance: RuntimeInstance) {
-    instances.delete(instance)
-  }
-
-  if (initialCatalog) {
-    initialize(initialCatalog)
-  }
-
   return {
-    attach,
-    detach,
-    initialize,
-    methods,
-    initialLocale() {
-      return catalog?.defaultLocale ?? ''
+    currentLocale: () => currentLocale,
+    global,
+    attach(instance: RuntimeInstance) {
+      instances.add(instance)
+      instance.setData({ [WEAPP_I18N_LOCALE_DATA_KEY]: currentLocale })
     },
-    requireCatalog,
+    detach(instance: RuntimeInstance) {
+      instances.delete(instance)
+    },
   }
 }
 
-function createBehavior(
-  state: ReturnType<typeof createI18nState>,
-  host: I18nHost,
-): I18nBehavior {
+function createBehavior(state: ReturnType<typeof createState>, host: I18nHost): I18nBehavior {
   return host.Behavior({
     data: {
-      [WEAPP_I18N_LOCALE_DATA_KEY]: state.initialLocale(),
+      [WEAPP_I18N_LOCALE_DATA_KEY]: state.currentLocale(),
     },
     lifetimes: {
       attached() {
@@ -188,29 +161,20 @@ function createBehavior(
         state.detach(this as RuntimeInstance)
       },
     },
-    methods: state.methods as unknown as WechatMiniprogram.Component.MethodOption,
   }) as unknown as I18nBehavior
 }
 
-function createPageAdapter(
-  state: ReturnType<typeof createI18nState>,
-  host: I18nHost,
-) {
+function createPageAdapter(state: ReturnType<typeof createState>, host: I18nHost) {
   return ((options: WechatMiniprogram.Page.Options<WechatMiniprogram.IAnyObject, WechatMiniprogram.IAnyObject>) => {
     if (hasOwn(options.data, WEAPP_I18N_LOCALE_DATA_KEY)) {
       throw new Error(`i18n Page data 与保留字段 \`${WEAPP_I18N_LOCALE_DATA_KEY}\` 冲突。`)
     }
-    for (const methodName of I18N_METHOD_NAMES) {
-      if (hasOwn(options, methodName)) {
-        throw new Error(`i18n Page 方法与保留字段 \`${methodName}\` 冲突。`)
-      }
-    }
 
     const originalLoad = options.onLoad
     const originalUnload = options.onUnload
-    const next = Object.assign({}, options, state.methods, {
+    const next = Object.assign({}, options, {
       data: Object.assign({}, options.data, {
-        [WEAPP_I18N_LOCALE_DATA_KEY]: state.requireCatalog().defaultLocale,
+        [WEAPP_I18N_LOCALE_DATA_KEY]: state.currentLocale(),
       }),
       onLoad(this: RuntimeInstance, ...args: unknown[]) {
         state.attach(this)
@@ -235,48 +199,22 @@ function createPageAdapter(
   }) as typeof Page
 }
 
-function createInstance(
-  state: ReturnType<typeof createI18nState>,
-  host: I18nHost,
-): I18nInstance {
-  const behavior = createBehavior(state, host)
-  const definePage = createPageAdapter(state, host)
+export function createI18n(options: I18nOptions | I18nCatalog, host?: Partial<I18nHost>): I18nInstance {
+  const resolvedHost = resolveHost(host)
+  const state = createState(normalizeOptions(options))
   return {
-    ...state.methods,
-    I18n: behavior,
-    I18nPage: definePage,
-    behavior,
-    definePage,
-  }
-}
-
-export function createI18n(catalog: I18nCatalog, host?: Partial<I18nHost>): I18nInstance {
-  return createInstance(createI18nState(catalog), resolveHost(host))
-}
-
-export function createUninitializedI18n(host?: Partial<I18nHost>) {
-  const resolvedHost = resolveHost(host, true)
-  const state = createI18nState()
-  const instance = createInstance(state, resolvedHost)
-  let initialized = false
-  return {
-    init(catalog: I18nCatalog) {
-      state.initialize(catalog)
-      initialized = true
-      return instance
-    },
-    get() {
-      return initialized ? instance : undefined
-    },
-    instance,
+    global: state.global,
+    behavior: createBehavior(state, resolvedHost),
+    page: createPageAdapter(state, resolvedHost),
   }
 }
 
 export type {
   I18nBehavior,
-  I18nBehaviorMethods,
   I18nCatalog,
+  I18nGlobal,
   I18nHost,
   I18nInstance,
   I18nLocaleChangeSubscription,
+  I18nOptions,
 } from './types'

@@ -531,7 +531,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(nativeWxml).toContain('<wxs module="i18n" src="../../i18n/locales.wxs"/>')
     expect(nativeWxml).toContain('i18n.t(__wv_i18n_locale, \'issue845.greeting\', { user })')
     expect(nativeComponentWxml).toContain('i18n.t(__wv_i18n_locale, \'issue845.greeting\', { user })')
-    expect(vueJs).toMatch(/behaviors:\s*\[[^\]]+\.I18n\]/)
+    expect(vueJs).toContain('__WEAPP_VITE_I18N__')
     expect(vueJs).not.toContain('behaviors: [{}]')
     expect(vueWxml).toContain('i18n.t(__wv_i18n_locale, \'issue845.greeting\', { user })')
     expect(ordinaryWxml).toContain('<wxs module="i18n" src="./i18n/locales.wxs"/>')

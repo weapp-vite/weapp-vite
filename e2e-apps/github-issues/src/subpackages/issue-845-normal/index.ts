@@ -1,6 +1,6 @@
-import { I18nPage } from 'weapp-vite/i18n'
+import { i18n } from 'weapp-vite/i18n'
 
-I18nPage({
+i18n.page({
   data: {
     user: { name: 'Normal' },
   },

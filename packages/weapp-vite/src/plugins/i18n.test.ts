@@ -40,7 +40,7 @@ describe('i18n plugin', () => {
     const resolvedId = plugin.resolveId('weapp-vite/i18n')
     expect(resolvedId).toContain('virtual:weapp-vite/i18n')
     expect(plugin.load(resolvedId)).toContain('初始标题')
-    expect(addWatchFile).toHaveBeenCalledWith(localeFile)
+    expect(addWatchFile).toHaveBeenCalledWith(localeFile.replaceAll(path.sep, '/'))
 
     await writeFile(localeFile, JSON.stringify({ title: '更新标题' }))
     const runtimeModule = { id: resolvedId }

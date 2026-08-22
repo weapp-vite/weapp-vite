@@ -1,7 +1,7 @@
-import { I18n } from 'weapp-vite/i18n'
+import { i18n } from 'weapp-vite/i18n'
 
 Component({
-  behaviors: [I18n],
+  behaviors: [i18n.behavior],
   properties: {
     user: Object,
   },

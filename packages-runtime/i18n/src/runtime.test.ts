@@ -40,21 +40,29 @@ function createHost() {
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  vi.resetModules()
 })
 
 describe('i18n runtime', () => {
-  it('resolves current, fallback and missing messages', () => {
+  it('accepts vue-i18n shaped options and resolves messages', () => {
     const { host } = createHost()
-    const i18n = createI18n(catalog, host)
+    const i18n = createI18n({
+      locale: 'zh-CN',
+      fallbackLocale: 'en-US',
+      messages: {
+        'en-US': { fallback: 'Fallback', greeting: 'Hello {user.name}' },
+        'zh-CN': { greeting: '你好 {user.name}', value: 'Value: {value}' },
+      },
+    }, host)
 
-    expect(i18n.t('greeting', { user: { name: '小程序' } })).toBe('你好 小程序')
-    expect(i18n.t('greeting')).toBe('你好 {user.name}')
-    expect(i18n.t('fallback')).toBe('Fallback')
-    expect(i18n.t('missing')).toBe('missing')
-    expect(i18n.t('constructor')).toBe('constructor')
-    expect(i18n.t('toString')).toBe('toString')
-    expect(i18n.t('value', { value: 0 })).toBe('Value: 0')
+    expect(i18n.global.t('greeting', { user: { name: '小程序' } })).toBe('你好 小程序')
+    expect(i18n.global.t('greeting')).toBe('你好 {user.name}')
+    expect(i18n.global.t('fallback')).toBe('Fallback')
+    expect(i18n.global.t('missing')).toBe('missing')
+    expect(i18n.global.t('constructor')).toBe('constructor')
+    expect(i18n.global.t('toString')).toBe('toString')
+    expect(i18n.global.t('value', { value: 0 })).toBe('Value: 0')
+    expect(i18n.global.availableLocales).toEqual(['en-US', 'zh-CN'])
+    expect(i18n.global.fallbackLocale).toBe('en-US')
   })
 
   it('broadcasts locale changes inside one instance', () => {
@@ -63,34 +71,36 @@ describe('i18n runtime', () => {
     const setData = vi.fn()
     const component = { setData }
     const listener = vi.fn()
-    const subscription = i18n.onLocaleChange(listener)
+    const subscription = i18n.global.onLocaleChange(listener)
 
     getBehaviorOptions().lifetimes.attached.call(component)
     expect(setData).toHaveBeenLastCalledWith({ __wv_i18n_locale: 'zh-CN' })
 
-    i18n.setLocale('en-US')
-    expect(i18n.getLocale()).toBe('en-US')
+    i18n.global.locale = 'en-US'
+    expect(i18n.global.locale).toBe('en-US')
     expect(setData).toHaveBeenLastCalledWith({ __wv_i18n_locale: 'en-US' })
     expect(listener).toHaveBeenCalledOnce()
 
-    i18n.setLocale('en-US')
+    i18n.global.locale = 'en-US'
     expect(listener).toHaveBeenCalledOnce()
-    expect(() => i18n.setLocale('ja-JP')).toThrow(RangeError)
+    expect(() => {
+      i18n.global.locale = 'ja-JP'
+    }).toThrow(RangeError)
 
     subscription.off()
     subscription.off()
     getBehaviorOptions().lifetimes.detached.call(component)
-    i18n.setLocale('zh-CN')
+    i18n.global.locale = 'zh-CN'
     expect(setData).toHaveBeenCalledTimes(2)
   })
 
-  it('adapts traditional Page lifecycle and rejects reserved fields', () => {
+  it('adapts traditional Page lifecycle without injecting methods', () => {
     const { getPageOptions, host } = createHost()
     const i18n = createI18n(catalog, host)
     const onLoad = vi.fn()
     const onUnload = vi.fn()
 
-    i18n.definePage({ data: { ready: true }, onLoad, onUnload })
+    i18n.page({ data: { ready: true }, onLoad, onUnload })
     const options = getPageOptions()
     const setData = vi.fn()
     const page = { setData }
@@ -98,34 +108,15 @@ describe('i18n runtime', () => {
     expect(options.data).toEqual({ ready: true, __wv_i18n_locale: 'zh-CN' })
     options.onLoad.call(page, { source: 'test' })
     expect(onLoad).toHaveBeenCalledWith({ source: 'test' })
-    i18n.setLocale('en-US')
+    i18n.global.locale = 'en-US'
     expect(setData).toHaveBeenLastCalledWith({ __wv_i18n_locale: 'en-US' })
     options.onUnload.call(page)
     expect(onUnload).toHaveBeenCalledOnce()
-    i18n.setLocale('zh-CN')
+    i18n.global.locale = 'zh-CN'
     expect(setData).toHaveBeenCalledTimes(2)
 
-    expect(() => i18n.definePage({
+    expect(() => i18n.page({
       data: { __wv_i18n_locale: 'custom' },
     })).toThrow(/保留字段/)
-    expect(() => i18n.definePage({
-      data: {},
-      t() {},
-    })).toThrow(/保留字段/)
-  })
-
-  it('provides a stable singleton compatibility behavior', async () => {
-    const behavior = vi.fn(options => options)
-    const page = vi.fn(options => options)
-    vi.stubGlobal('Behavior', behavior)
-    vi.stubGlobal('Page', page)
-    const runtime = await import('./index')
-
-    const stableBehavior = runtime.I18n
-    expect(runtime.getI18nInstance()).toBeUndefined()
-    runtime.initI18n(catalog)
-    expect(runtime.I18n).toBe(stableBehavior)
-    expect(runtime.t('fallback')).toBe('Fallback')
-    expect(runtime.getI18nInstance()?.I18n).toBe(stableBehavior)
   })
 })

@@ -58,7 +58,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`、`weapp.analyze.budgets` / `history`
    - 进阶链路：`web`、`lib`
    - 页面/组件单测：`@mpcore/weapp-vite` 构建产物，`@mpcore/test` 提供 render/query/user，`@mpcore/vitest` 提供每测试隔离和 matcher
-   - i18n：Native Component 与 Component Page 使用 `behaviors: [I18n]`；传统 `Page({...})` 才使用兼容适配器 `I18nPage`；主包与普通分包共享实例，独立分包从默认语言创建实例；无 Vite 原生项目直接使用 `@weapp-vite/i18n`
+   - i18n：通过 `import { i18n } from 'weapp-vite/i18n'` 获取构建实例；Native Component 与 Component Page 使用 `behaviors: [i18n.behavior]`，传统 `Page({...})` 使用 `i18n.page(options)`；主包与普通分包共享实例，独立分包从默认语言创建实例；无 Vite 原生项目直接使用 `@weapp-vite/i18n`
    - React 项目：这里只判断项目级 `weapp.react` 和构建所有权，TSX/runtime/bridge 细节转交 `weapp-vite-react-best-practices`
 4. CLI 与 IDE 所有权保持清晰：
    - `weapp-vite` 原生命令优先
@@ -73,7 +73,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `.weapp-vite` 类型异常：先跑 `wv prepare`
    - 页面 / layout 不对：查 `autoRoutes`、`routeRules`、`definePageMeta`
    - 自动导入异常：查 `autoImportComponents` 与 resolver
-   - i18n 构建失败或模板未翻译：查 locale 文件名、重复/非字符串叶子、default/fallback 是否存在、WXS module 是否重名，以及模板是否通过 `I18n` 或传统 Page 的 `I18nPage` 接入；原生无 Vite 项目再检查 `weapp-i18n compile` 产物和 WXS 显式引用
+   - i18n 构建失败或模板未翻译：查 locale 文件名、重复/非字符串叶子、default/fallback 是否存在、WXS module 是否重名，以及模板是否通过 `i18n.behavior` 或传统 Page 的 `i18n.page()` 接入；原生无 Vite 项目再检查 `weapp-i18n compile` 产物和 WXS 显式引用
    - Wot UI / uview-plus / uni-app 组件库异常：同时检查 `weapp.uniApp.include`、resolver 的真实 `resolvedId` / `sourceType: 'wevu-sfc'`，以及目标端条件分支
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`

@@ -44,9 +44,9 @@
 
 ```vue
 <script setup lang="ts">
-import { I18n } from 'weapp-vite/i18n'
+import { i18n } from 'weapp-vite/i18n'
 
-defineOptions({ behaviors: [I18n] })
+defineOptions({ behaviors: [i18n.behavior] })
 </script>
 
 <template>

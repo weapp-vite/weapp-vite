@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { I18n, setLocale } from 'weapp-vite/i18n'
+import { i18n } from 'weapp-vite/i18n'
 
-defineOptions({ behaviors: [I18n] })
+defineOptions({ behaviors: [i18n.behavior] })
 
 const user = { name: 'Vue' }
 
 function switchLocale() {
-  setLocale('en-US')
+  i18n.global.locale = 'en-US'
 }
 </script>
 

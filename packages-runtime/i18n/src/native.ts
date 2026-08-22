@@ -1,8 +1,11 @@
 import type { CompileNativeI18nOptions, CompileNativeI18nResult, I18nLocaleFileInput } from './types'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import { compileI18nCatalog } from './catalog'
-import { generateI18nCatalogModuleSource, generateI18nWxsSource } from './source'
+import {
+  compileI18nCatalog,
+  generateI18nCatalogModuleSource,
+  generateI18nWxsSource,
+} from './compiler'
 
 async function collectLocaleFiles(root: string, files: string[]) {
   const entries = await fs.readdir(root, { withFileTypes: true })
@@ -57,3 +60,21 @@ export async function compileNativeI18n(
   ])
   return { catalog, files, jsFile, wxsFile }
 }
+
+export {
+  compileI18nCatalog,
+  compileI18nMessage,
+  compileI18nMessages,
+  generateI18nCatalogModuleSource,
+  generateI18nRuntimeSource,
+  generateI18nWxsSource,
+} from './compiler'
+export type {
+  CompileNativeI18nOptions,
+  CompileNativeI18nResult,
+  I18nCatalog,
+  I18nCompileOptions,
+  I18nLocaleFileInput,
+  I18nMessageToken,
+  I18nPlaceholderToken,
+} from './types'
