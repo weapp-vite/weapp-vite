@@ -43,6 +43,11 @@ describe('runtime config merge web', () => {
     const resolveAppConfig = vi.fn()
 
     const result = mergeWeb({
+      configService: {
+        weappViteConfig: {
+          chunks: { preserveModules: ['shared/**'] },
+        },
+      } as any,
       config: {
         plugins: [{ name: 'user-plugin' }],
       } as any,
@@ -75,6 +80,7 @@ describe('runtime config merge web', () => {
       runtime: 'web',
       platform: 'web',
     })
+    expect(result?.build?.rolldownOptions?.preserveEntrySignatures).toBe('allow-extension')
     expect(result?.plugins?.map((plugin: any) => plugin.name)).toEqual([
       'weapp-vite:runtime-provider:web-runtime',
       'weapp-web-plugin',

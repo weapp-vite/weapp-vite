@@ -1,12 +1,23 @@
+import process from 'node:process'
 import { defineConfig } from 'weapp-vite'
+
+const outDir = process.env.WEAPP_SHARED_STYLES_OUT_DIR ?? 'dist'
 
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
     styles: [
+      'styles/main.scss',
+      'styles/main.scss',
       {
-        source: 'styles/main.scss',
-        include: ['pages/**', 'packageA/**'],
+        source: 'styles/pages.scss',
+        scope: 'pages',
+        include: ['pages/**', 'packageA/pages/**'],
+      },
+      {
+        source: 'styles/components.scss',
+        scope: 'components',
+        include: ['components/**', 'packageA/components/**'],
       },
       {
         source: 'styles/manual.less',
@@ -36,5 +47,9 @@ export default defineConfig({
       },
       packageB: {},
     },
+  },
+  build: {
+    outDir,
+    minify: false,
   },
 })

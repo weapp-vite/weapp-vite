@@ -1,3 +1,3 @@
-<view class="card">
+<view id="shared-styles-normal-component" class="card main-shared main-component-shared">
   <text>{{title}}</text>
 </view>

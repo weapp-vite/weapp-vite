@@ -57,6 +57,12 @@ describe('preserveModules', () => {
 
     expect(defaults.preserveEntrySignatures).toBe('allow-extension')
     expect(explicitFalse.preserveEntrySignatures).toBe(false)
+    expect(normalizePreserveModulesRolldownOptions(configService, {
+      preserveEntrySignatures: 'strict',
+    }).preserveEntrySignatures).toBe('strict')
+    expect(normalizePreserveModulesRolldownOptions(createConfigService([]), {
+      preserveEntrySignatures: 'exports-only',
+    }).preserveEntrySignatures).toBe('exports-only')
   })
 
   it('preserves physical modules by srcRoot-relative path', () => {
@@ -87,6 +93,21 @@ describe('preserveModules', () => {
     expect(resolve(pageId, [pageEntryId])).toBeUndefined()
     expect(resolve(createSidecarSourceSpecifier(pageId, pageId, 'style'))).toBeUndefined()
     expect(resolve('/project/node_modules/pkg/index.js')).toBeUndefined()
+  })
+
+  it('normalizes file URLs, Vite prefixes, query strings and source extensions', () => {
+    const configService = createConfigService(['utils/**'])
+    const resolve = (id: string) => resolvePreservedModuleName({
+      configService,
+      ctx: { getModuleInfo: () => ({ importers: ['/project/src/pages/index.ts'] }) },
+      getSubPackageRoots: () => [],
+      id,
+    })
+
+    expect(resolve('file:///project/src/utils/deep/item.test.ts?raw')).toBe('utils/deep/item')
+    expect(resolve('/@fs//project/src/utils/single.ts?v=1')).toBe('utils/single')
+    expect(resolve('/project/src')).toBeUndefined()
+    expect(resolve('utils/single.ts')).toBeUndefined()
   })
 
   it('keeps subpackage boundary validation for preserved modules', () => {

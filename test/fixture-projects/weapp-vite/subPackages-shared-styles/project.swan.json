@@ -1,0 +1,7 @@
+{
+  "setting": {
+    "urlCheck": false
+  },
+  "miniprogramRoot": "dist/",
+  "smartProgramRoot": "dist/"
+}

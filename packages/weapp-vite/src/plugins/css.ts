@@ -463,7 +463,7 @@ async function handleBundleEntry(
   const emitStyleAssetForOwner = async (owner: string, preprocessId: string, shouldPreprocess: boolean) => {
     const fileName = resolveOutputStyleFileName(configService, owner)
     if (!fileName) {
-      return
+      return undefined
     }
     const normalizedFileName = toPosixPath(fileName)
     const rawCss = asset.source.toString()
@@ -480,10 +480,12 @@ async function handleBundleEntry(
 
     emitCssAssetIfChanged(ctx, this, bundle, fileName, cssWithImports)
     emitted.add(normalizedFileName)
+    return normalizedFileName
   }
 
-  const isFinalStyleAsset = bundleKey.endsWith(`.${configService.outputExtensions.wxss}`)
   const isCssAsset = bundleKey.endsWith('.css')
+  const isFinalStyleAsset = bundleKey.endsWith(`.${configService.outputExtensions.wxss}`)
+    && (!isCssAsset || path.posix.basename(bundleKey, '.css') === 'app')
   const isSourceStyleAssetKey = isSourceStyleAsset(bundleKey)
 
   if (isFinalStyleAsset) {
@@ -560,12 +562,15 @@ async function handleBundleEntry(
     return
   }
 
-  await Promise.all(Array.from(owners).map(async (owner) => {
+  const emittedOwners = await Promise.all(Array.from(owners).map(async (owner) => {
     const modulePath = owner
-    await emitStyleAssetForOwner(modulePath, resolveOriginalStylePath(), !isCssAsset)
+    return await emitStyleAssetForOwner(modulePath, resolveOriginalStylePath(), !isCssAsset)
   }))
 
-  delete bundle[bundleKey]
+  const normalizedBundleKey = toPosixPath(bundleKey)
+  if (!isCssAsset || !emittedOwners.includes(normalizedBundleKey)) {
+    delete bundle[bundleKey]
+  }
 }
 
 async function emitSharedStyleEntries(

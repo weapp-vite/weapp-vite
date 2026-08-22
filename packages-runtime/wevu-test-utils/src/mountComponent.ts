@@ -227,8 +227,12 @@ export function mountComponent<
         return
       }
       unmounted = true
-      lifetimes.detached?.call(host)
-      runtimeApp.unmount()
+      try {
+        lifetimes.detached?.call(host)
+      }
+      finally {
+        runtimeApp.unmount()
+      }
     },
   }
   return wrapper

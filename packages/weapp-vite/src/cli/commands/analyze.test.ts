@@ -279,6 +279,38 @@ describe('analyze cli command', () => {
     writeSpy.mockRestore()
   })
 
+  it('closes analyze backends in reverse order and always runs process cleanup', async () => {
+    const closeOrder: string[] = []
+    const backends = ['first', 'second'].map(id => ({
+      descriptor: {
+        id,
+        capabilities: { analyze: true },
+      },
+      driver: {
+        close: vi.fn(async () => closeOrder.push(id)),
+      },
+      platform: 'weapp',
+    }))
+    resolveRuntimeTargetsMock.mockReturnValueOnce({
+      kind: 'miniprogram',
+      label: 'weapp',
+      entries: backends,
+      platform: 'weapp',
+      rawPlatform: 'weapp',
+      get: (id: string) => backends.find(backend => backend.descriptor.id === id),
+    })
+    const action = createAnalyzeActionHandler()
+
+    await action('/project', {
+      platform: 'weapp',
+      preload: true,
+      json: true,
+    })
+
+    expect(closeOrder).toEqual(['second', 'first'])
+    expect(terminateStaleSassEmbeddedProcessMock).toHaveBeenCalledTimes(1)
+  })
+
   it('rejects preload analysis for non-WeChat targets', async () => {
     const action = createAnalyzeActionHandler()
     createCompilerContextMock.mockResolvedValueOnce({
@@ -684,6 +716,7 @@ describe('analyze cli command', () => {
     await action('/project', {})
     expect(loggerMock.error).toHaveBeenCalledWith(expect.objectContaining({ message: 'invalid config' }))
     expect(process.exitCode).toBe(1)
+    expect(terminateStaleSassEmbeddedProcessMock).toHaveBeenCalledTimes(1)
   })
 
   it('prints hmr, web and mini JSON or Markdown when no output file is provided', async () => {

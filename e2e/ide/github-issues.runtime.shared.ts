@@ -11,6 +11,7 @@ import {
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { appendIdeReportEvent, resolveReportProjectPath } from '../utils/ideWarningReport'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 
 const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
@@ -30,11 +31,13 @@ const DEVTOOLS_UNUSED_BUILD_ENTRIES = [
 ] as const
 const AGGREGATE_TARGET = 'github-issues.runtime.aggregate.test.ts'
 const SLOT_FALLBACK_COMPILER_OFF_TARGET = 'github-issues.runtime.slot-fallback-compiler-off.test.ts'
+const ISSUE_826_TARGET = 'github-issues.runtime.issue826.test.ts'
 const SLOT_FALLBACK_COMPILER_OFF_ENV = 'WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF'
 const SCOPED_BUILD_TARGETS = new Set([
   AGGREGATE_TARGET,
   'github-issues.runtime.app-shell.test.ts',
   'github-issues.runtime.issue829.test.ts',
+  ISSUE_826_TARGET,
   'github-issues.runtime.require-async.test.ts',
 ])
 const APP_SHELL_FREE_TARGETS = new Set([
@@ -70,6 +73,9 @@ function resolveGithubIssuesDistDir() {
     || targetFile.endsWith(SLOT_FALLBACK_COMPILER_OFF_TARGET)
   ) {
     return 'dist-slot-fallback-compiler-off'
+  }
+  if (targetFile.endsWith(ISSUE_826_TARGET)) {
+    return 'dist-issue-826'
   }
   return 'dist'
 }
@@ -530,9 +536,14 @@ export async function prepareGithubIssuesBuild() {
 
   // 同一路径重复打开 github-issues 项目时，微信开发者工具可能沿用旧 compile cache /
   // fileutils 状态，先消费旧 app.json，再去索引新的页面产物，出现“app.json 指向的 wxml 未找到”。
-  await cleanupResidualIdeProcesses()
+  const useDevtools = resolveRuntimeProviderName() === 'devtools'
+  if (useDevtools) {
+    await cleanupResidualIdeProcesses()
+  }
   await prepareIsolatedProjectRoot()
-  await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+  if (useDevtools) {
+    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+  }
   await runBuild()
   await assertGithubIssuesAppConfigReady()
   if (getNormalizedTargetFile().endsWith(AGGREGATE_TARGET)) {
@@ -540,7 +551,9 @@ export async function prepareGithubIssuesBuild() {
   }
   // DevTools 的 FileUtils 会扫描项目根；构建完成后只保留运行期输入，避免大目录和依赖链接干扰产物索引。
   await pruneGithubIssuesBuildInputs()
-  await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+  if (useDevtools) {
+    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+  }
   await delay(600)
   sharedBuildPrepared = true
 }

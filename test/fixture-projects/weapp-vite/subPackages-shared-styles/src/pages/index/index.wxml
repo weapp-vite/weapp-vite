@@ -1,1 +1,2 @@
-<view>main page</view>
+<view id="shared-styles-main-page" class="main-shared main-page-shared">main page</view>
+<main-card />

@@ -1,1 +1,1 @@
-<view>issue 826 index</view>
+<view id="issue826-page">{{value}}</view>

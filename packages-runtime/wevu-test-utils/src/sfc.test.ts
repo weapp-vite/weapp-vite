@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { inject, watch } from 'wevu'
+import { inject, injectGlobal, watch } from 'wevu'
 import OptionsLogic from './fixtures/OptionsLogic.vue'
 import { mount, mountComponent } from './index'
 
@@ -127,6 +127,7 @@ describe('Vue SFC logic mounting', () => {
     expect(second.vm.$mountName).toBe('second')
     expect(first.vm.injected).toBe('first')
     expect(first.vm.$mountName).toBe('first')
+    expect(() => injectGlobal(token)).toThrow('未找到对应 key')
     expect(install).toHaveBeenCalledTimes(2)
 
     second.unmount()
@@ -136,5 +137,79 @@ describe('Vue SFC logic mounting', () => {
 
     first.unmount()
     expect(cleanup).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not reuse app context after every live wrapper is unmounted', () => {
+    const token = Symbol('repeated-component-token')
+    const installs: string[] = []
+    const cleanups: string[] = []
+    const component = {
+      setup() {
+        return {
+          injected: inject(token, 'missing'),
+        }
+      },
+    }
+
+    const createPlugin = (name: string) => ({
+      install(app: { onUnmount: (cleanup: () => void) => void }) {
+        installs.push(name)
+        app.onUnmount(() => cleanups.push(name))
+      },
+    })
+
+    const first = mountComponent(component, {
+      global: {
+        mocks: { $mountName: 'first' },
+        plugins: [createPlugin('first')],
+        provide: { [token]: 'first' },
+      },
+    })
+    first.unmount()
+    first.unmount()
+
+    const second = mountComponent(component, {
+      global: {
+        mocks: { $mountName: 'second' },
+        plugins: [createPlugin('second')],
+      },
+    })
+
+    expect(second.vm.injected).toBe('missing')
+    expect(second.vm.$mountName).toBe('second')
+    expect(installs).toEqual(['first', 'second'])
+    expect(cleanups).toEqual(['first'])
+
+    second.unmount()
+    expect(cleanups).toEqual(['first', 'second'])
+  })
+
+  it('runs app cleanup when the component detached hook throws', () => {
+    const cleanup = vi.fn()
+    const wrapper = mountComponent({
+      lifetimes: {
+        detached() {
+          throw new Error('detached failed')
+        },
+      },
+      setup() {
+        return { ready: true }
+      },
+    }, {
+      global: {
+        plugins: [{
+          install(app: { onUnmount: (callback: () => void) => void }) {
+            app.onUnmount(cleanup)
+          },
+        }],
+      },
+    })
+
+    expect(() => wrapper.unmount()).toThrow('detached failed')
+    expect(wrapper.isUnmounted).toBe(true)
+    expect(cleanup).toHaveBeenCalledTimes(1)
+
+    wrapper.unmount()
+    expect(cleanup).toHaveBeenCalledTimes(1)
   })
 })

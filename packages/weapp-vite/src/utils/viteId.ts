@@ -67,7 +67,13 @@ export function normalizeViteId(id: string, options?: NormalizeViteIdOptions) {
       clean = fileURLToPath(clean)
     }
     catch {
-      // 忽略
+      // Windows 无法将无盘符的 POSIX file URL 转为本地路径时，保留其规范化 pathname。
+      try {
+        clean = decodeURIComponent(new URL(clean).pathname)
+      }
+      catch {
+        // 忽略无效的 file URL。
+      }
     }
   }
 
