@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import pixelmatch from 'pixelmatch'
+import { diff as blazediff } from '@blazediff/core'
 import { chromium } from 'playwright'
 import { PNG } from 'pngjs'
 import sharp from 'sharp'
@@ -122,7 +122,7 @@ async function compareScreenshots(targetPath, actualPath, diffPath) {
   actualCropped.data.fill(255)
   PNG.bitblt(actual, actualCropped, 0, 0, Math.min(target.width, actual.width), Math.min(target.height, actual.height), 0, 0)
   const diff = new PNG({ width, height })
-  const mismatched = pixelmatch(target.data, actualCropped.data, diff.data, width, height, {
+  const mismatched = blazediff(target.data, actualCropped.data, diff.data, width, height, {
     threshold: 0.16,
     alpha: 0.45,
     includeAA: true,
@@ -337,7 +337,7 @@ async function writeReport(rows) {
   const lines = [
     '# NOVA X1 商品详情页 TDesign 基准迭代截图报告',
     '',
-    '基准采用 `apps/tdesign-miniprogram-starter-retail/pages/goods/details` 的详情页信息结构和本地真实商品图；Diff 由 `pixelmatch` 逐像素生成。',
+    '基准采用 `apps/tdesign-miniprogram-starter-retail/pages/goods/details` 的详情页信息结构和本地真实商品图；Diff 由 `@blazediff/core` 逐像素生成。',
     '',
     `视口：${viewport.width}x${viewport.height}`,
     '',
@@ -389,7 +389,7 @@ async function main() {
       await normalizeReportFrame(paddedScreenshotPath, croppedScreenshotPath, targetSize.width - 24)
       await normalizeCanvas(croppedScreenshotPath, normalizedScreenshotPath, targetSize)
       const similarity = await compareScreenshots(targetPath, normalizedScreenshotPath, rawDiffPath)
-      const label = `pixelmatch ${similarity}%`
+      const label = `blazediff ${similarity}%`
       await Promise.all([
         addSimilarityOverlay(normalizedScreenshotPath, screenshotPath, label),
         addSimilarityOverlay(rawDiffPath, diffPath, label),

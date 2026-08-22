@@ -1,6 +1,6 @@
 import type { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
-import pixelmatch from 'pixelmatch'
+import { diff as blazediff } from '@blazediff/core'
 import { PNG } from 'pngjs'
 import { i18nText } from '../i18n'
 
@@ -66,7 +66,7 @@ export async function comparePngWithBaseline(
   }
 
   const diffPng = new PNG({ width: currentPng.width, height: currentPng.height })
-  const diffPixels = pixelmatch(
+  const diffPixels = blazediff(
     baselinePng.data,
     currentPng.data,
     diffPng.data,
