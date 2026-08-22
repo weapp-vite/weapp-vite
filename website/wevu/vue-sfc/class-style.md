@@ -17,6 +17,37 @@ keywords:
 
 `weapp-vite + Wevu` 在小程序侧对齐 Vue 3 的 `:class` / `:style` 绑定语法，支持字符串、数组、对象与嵌套组合，并会输出小程序可识别的字符串 class/style。
 
+## SFC 样式能力
+
+- `<style scoped>` 使用基于项目相对路径的稳定 scope 属性，同时注入到当前 SFC 的多个模板根节点。
+- `<style module>` 暴露默认 `$style`，`<style module="theme">` 暴露命名 `theme`；两者都可在模板或同步 setup 中使用。
+- CSS `v-bind(expression)` 由 compiler-sfc 改写为自定义属性，Wevu 把响应式结果合并到每个模板根节点的 style，不覆盖已有静态或动态 style。
+- `:deep()`、`:global()`、`:slotted()` 经过 PostCSS selector AST 转换；无法安全映射到小程序选择器的写法会在编译期报错。
+
+微信目标为稳定支持。其他小程序平台复用同一编译结果，但在取得对应 IDE/真机证据前保持实验性。
+
+## `useCssModule()` {#usecssmodule}
+
+在带有 `<style module>` 或命名 module 的 SFC 中，`useCssModule(name = '$style')` 可在同步 `setup()` 读取类名映射。名称不存在时会抛出确定性错误，避免模板静默得到空 class。
+
+```vue
+<script setup lang="ts">
+import { useCssModule } from 'wevu'
+
+const classes = useCssModule()
+</script>
+
+<template>
+  <view :class="classes.card" />
+</template>
+
+<style module>
+.card {
+  display: flex;
+}
+</style>
+```
+
 ```vue
 <template>
   <view

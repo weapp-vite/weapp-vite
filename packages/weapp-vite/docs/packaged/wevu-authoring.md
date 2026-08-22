@@ -30,9 +30,17 @@
 - `storeToRefs`
 - 避免巨型跨页面全局 store
 
+`createStore()` 只设置全局活动 manager，插件必须在 Store 第一次创建前注册；`install()` 是 no-op，`useXxx()` 不接收 manager 参数。Wevu Store 不提供 Pinia SSR、HMR 或 devtools 契约。
+
 ## router
 
 如果项目使用 `wevu/router`，优先把导航、route、参数解析看成小程序运行时约束下的路由抽象，而不是浏览器路由。
+
+`currentRoute` 是 readonly 响应式对象而不是 `Ref`，`isReady()` 创建后立即完成；没有 Web history、`RouterView` 或 `RouterLink`，页面栈前进和 tabBar query 受宿主限制。
+
+## 静态兼容检查
+
+Wevu 模板默认接入 `weapp-vite/eslint` 的 `wevuCompatibilityRecommended`，用于禁止静态可确定的不支持 API，并警告同名但参数、时序或宿主语义不同的 API。动态访问和第三方依赖内部代码不在完整判定范围内。
 
 ## 什么时候看这篇
 

@@ -124,6 +124,29 @@
   color: var(--vp-c-text-2);
 }
 
+.wevu-api-reference__migration,
+.wevu-api-reference__replacement {
+  display: block;
+  min-width: 0;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--vp-c-text-2);
+  overflow-wrap: anywhere;
+}
+
+.wevu-api-reference__migration strong,
+.wevu-api-reference__replacement strong {
+  margin-right: 6px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.wevu-api-reference__replacement code {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .wevu-api-reference__transform {
   display: flex;
   gap: 5px;

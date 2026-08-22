@@ -181,6 +181,7 @@ describe('wevu API catalog', () => {
     const storeNames = new Set(wevuApiCatalog.filter(item => item.entry === 'wevu/store').map(item => item.name))
     const expectedNames = [
       'defineStore()',
+      'createPinia()',
       'createStore()',
       'storeToRefs()',
       '$id',
@@ -236,6 +237,8 @@ describe('wevu API catalog', () => {
     const routerNames = new Set(wevuApiCatalog.filter(item => item.entry === 'wevu/router').map(item => item.name))
     const expectedNames = [
       'createRouter()',
+      '<RouterLink>',
+      '<router-link>',
       'useRouter()',
       'useRoute()',
       'useNativeRouter()',

@@ -26,6 +26,20 @@
 - 用途：从上层读取依赖。
 - 源码：`runtime/provide.ts`。
 
+### `hasInjectionContext()` {#hasinjectioncontext}
+
+<!-- api-reference-details -->
+
+**类型签名：** `typeof import('wevu')['hasInjectionContext']`
+
+**运行时说明：** 仅判断当前是否处于 Wevu 同步 `setup()` 注入上下文，不会创建或延长上下文生命周期。
+
+**示例：** 见 [本组示例](/wevu/api/setup-context#example-setup-provide)。
+
+- 返回 `true` 时可以安全调用 `provide()` / `inject()`。
+- 异步回调中当前实例已清除，结果为 `false`。
+- 源码：`runtime/provide.ts`。
+
 ### `provideGlobal()` / `injectGlobal()`（Deprecated） {#provideglobal}
 
 <!-- api-reference-details -->

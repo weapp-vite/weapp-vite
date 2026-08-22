@@ -1,0 +1,27 @@
+{
+  "name": "compatibility-eslint-public-types-tsd",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+      "target": "ES2023",
+      "strict": true,
+      "paths": {
+        "weapp-vite/compatibility": [
+          "../../dist/compatibility.d.mts"
+        ],
+        "weapp-vite/eslint": [
+          "../../dist/eslint.d.mts"
+        ]
+      },
+      "types": [
+        "node"
+      ]
+    }
+  },
+  "devDependencies": {
+    "eslint": "catalog:"
+  }
+}

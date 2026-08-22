@@ -14,6 +14,7 @@ import type {
   ShallowUnwrapRef,
 } from './types'
 import {
+  WEVU_CSS_MODULES_KEY,
   WEVU_FUNCTION_PROP_PATHS_KEY,
   WEVU_SCOPED_SLOT_CREATOR_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
@@ -254,6 +255,7 @@ function createComponentDefinition(
     inject: injectOptions,
     provide: provideOptions,
     allowFunctionProps,
+    [WEVU_CSS_MODULES_KEY]: cssModules,
     ...mpOptions
   } = resolvedOptions
 
@@ -290,8 +292,11 @@ function createComponentDefinition(
     : data
 
   const hasOptionsApiContext = injectOptions != null || provideOptions != null
-  const setupWrapper = typeof setup === 'function' || hasOptionsApiContext
+  const setupWrapper = typeof setup === 'function' || hasOptionsApiContext || cssModules
     ? ((props, ctx) => {
+      if (cssModules && typeof cssModules === 'object') {
+        ;((ctx as any).instance as Record<string, any>)[WEVU_CSS_MODULES_KEY] = cssModules
+      }
       const publicInstance = (ctx as any)?.proxy ?? (ctx as any)?.instance ?? Object.create(null)
       const injected = resolveOptionsApiInjections(injectOptions, publicInstance)
       if (provideOptions != null) {
@@ -302,6 +307,7 @@ function createComponentDefinition(
         : undefined
       const result = {
         ...injected,
+        ...(cssModules ?? {}),
         ...(setupResult ?? {}),
       }
       if (ctx && Object.keys(result).length) {

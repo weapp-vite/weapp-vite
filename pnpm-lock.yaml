@@ -2737,6 +2737,9 @@ importers:
       comment-json:
         specifier: 'catalog:'
         version: 5.0.0
+      eslint:
+        specifier: '>=9'
+        version: 10.9.0(jiti@2.7.0)(supports-color@10.2.2)
       fdir:
         specifier: 'catalog:'
         version: 6.5.0(picomatch@4.0.5)

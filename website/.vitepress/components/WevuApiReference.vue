@@ -265,6 +265,14 @@ onBeforeUnmount(() => {
                     <code>{{ item.transform }}</code>
                   </span>
                   <span class="wevu-api-reference__description">{{ item.description }}</span>
+                  <span v-if="item.migrationSummary" class="wevu-api-reference__migration">
+                    <strong>迁移结论</strong>
+                    {{ item.migrationSummary }}
+                  </span>
+                  <span v-if="item.replacement" class="wevu-api-reference__replacement">
+                    <strong>替代 API</strong>
+                    <code>{{ item.replacement }}</code>
+                  </span>
                   <span class="wevu-api-reference__meta">
                     <span
                       class="wevu-api-reference__tag"

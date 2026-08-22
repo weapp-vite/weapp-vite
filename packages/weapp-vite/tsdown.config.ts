@@ -15,6 +15,8 @@ export default defineConfig({
     'auto-routes': './src/auto-routes.ts',
     'types': './src/types/index.ts',
     'test': './src/testArtifact.ts',
+    'compatibility': './src/compatibility.ts',
+    'eslint': './src/eslint.ts',
   },
   dts: true,
   clean: true,

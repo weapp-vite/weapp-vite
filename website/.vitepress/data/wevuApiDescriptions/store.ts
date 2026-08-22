@@ -1,4 +1,5 @@
 export const storeApiDescriptions: Record<string, string> = {
+  'createPinia()': 'Pinia 根实例 API 在 Wevu Store 中不可用。',
   'defineStore()': '使用 Setup 或 Options 写法定义单例 Store。',
   'createStore()': '创建 Store Manager 并注册全局插件。',
   'storeToRefs()': '把 Store 状态和 getter 转换为可解构 Ref。',

@@ -78,7 +78,7 @@ export async function tryReuseVueCompilation(options: {
         pluginCtx,
         configService,
       }))
-      const didRefreshStyle = refreshStyleOnlyVueTransformResult(cachedResult, filename, refreshedStyleBlocks)
+      const didRefreshStyle = await refreshStyleOnlyVueTransformResult(cachedResult, filename, refreshedStyleBlocks)
       if (!didRefreshStyle) {
         cachedCompilation.styleIndependentSignature = undefined
         canReturnCachedCompilation = false
@@ -154,7 +154,7 @@ export async function tryReuseVueCompilation(options: {
       pluginCtx,
       configService,
     }))
-    const didRefreshStyle = refreshStyleOnlyVueTransformResult(cachedResult, filename, styleBlocks)
+    const didRefreshStyle = await refreshStyleOnlyVueTransformResult(cachedResult, filename, styleBlocks)
     if (!didRefreshStyle) {
       cachedCompilation.styleIndependentSignature = undefined
     }

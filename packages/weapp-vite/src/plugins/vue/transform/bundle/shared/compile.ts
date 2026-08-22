@@ -210,7 +210,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
         source,
         checkMtime: configService.isDev,
       })
-      if (!refreshStyleOnlyVueTransformResult(cached.result, filename, descriptor.styles)) {
+      if (!await refreshStyleOnlyVueTransformResult(cached.result, filename, descriptor.styles)) {
         cached.styleIndependentSignature = undefined
       }
       else {

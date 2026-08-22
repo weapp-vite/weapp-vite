@@ -2,7 +2,7 @@ import type { File as BabelFile, ObjectExpression, Program } from '@weapp-vite/a
 import type { WevuDefaults } from '../../../../../types/wevu'
 import type { WevuPageFeatureFlag } from '../../../../wevu/pageFeatures'
 import type { TransformScriptOptions, TransformState } from '../utils'
-import { WEVU_FUNCTION_PROP_PATHS_KEY, WEVU_IS_PAGE_KEY, WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY } from '@weapp-core/constants'
+import { WEVU_CSS_MODULES_KEY, WEVU_FUNCTION_PROP_PATHS_KEY, WEVU_IS_PAGE_KEY, WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { injectWevuPageFeatureFlagsIntoOptionsObject } from '../../../../wevu/pageFeatures'
@@ -46,6 +46,25 @@ function injectFunctionPropPaths(componentOptionsObject: ObjectExpression, paths
       t.identifier(WEVU_FUNCTION_PROP_PATHS_KEY),
       t.arrayExpression(uniquePaths.map(path => t.stringLiteral(path))),
     ),
+  )
+  return true
+}
+
+function createObjectLiteral(value: Record<string, any>): ObjectExpression {
+  return t.objectExpression(Object.entries(value).map(([key, item]) => t.objectProperty(
+    t.stringLiteral(key),
+    item && typeof item === 'object' && !Array.isArray(item)
+      ? createObjectLiteral(item)
+      : t.valueToNode(item),
+  )))
+}
+
+function injectCssModules(componentOptionsObject: ObjectExpression, modules: Record<string, Record<string, string>>) {
+  if (hasStaticProperty(componentOptionsObject, WEVU_CSS_MODULES_KEY)) {
+    return false
+  }
+  componentOptionsObject.properties.push(
+    t.objectProperty(t.stringLiteral(WEVU_CSS_MODULES_KEY), createObjectLiteral(modules)),
   )
   return true
 }
@@ -316,6 +335,10 @@ export function rewriteDefaultExport(
 
   if (componentOptionsObject && options?.scopedSlotHostProperties) {
     transformed = injectScopedSlotHostProperties(componentOptionsObject) || transformed
+  }
+
+  if (componentOptionsObject && options?.cssModules && Object.keys(options.cssModules).length) {
+    transformed = injectCssModules(componentOptionsObject, options.cssModules) || transformed
   }
 
   if (componentOptionsObject) {

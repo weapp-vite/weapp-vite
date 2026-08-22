@@ -1,4 +1,6 @@
 export const routerApiDescriptions: Record<string, string> = {
+  '<RouterLink>': 'Vue Router 链接组件在小程序模板中不可用。',
+  '<router-link>': 'Vue Router 链接标签在小程序模板中不可用。',
   'createRouter()': '创建并注册具有守卫、动态路由和失败分类的 Router。',
   'useRouter()': '获取当前已经创建的高阶 Router 实例。',
   'useRoute()': '响应式读取当前页面的标准化路由位置。',

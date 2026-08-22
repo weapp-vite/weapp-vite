@@ -96,6 +96,10 @@ export interface TransformScriptOptions {
    * 当前组件模板包含 scoped slot outlet，需要接收 scoped slot 桥接属性。
    */
   scopedSlotHostProperties?: boolean
+  /**
+   * 当前 SFC 的 CSS Modules 映射。
+   */
+  cssModules?: Record<string, Record<string, string>>
 }
 
 export interface TransformState {

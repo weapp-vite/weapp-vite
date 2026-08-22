@@ -3,7 +3,7 @@ import type { VueTransformResult } from './types'
 import { compileVueStyleToWxss } from '../../compiler/style'
 import { generateScopedId } from '../scopedId'
 
-export function compileStylePhase(
+export async function compileStylePhase(
   descriptor: Pick<SFCDescriptor, 'styles'>,
   filename: string,
   result: VueTransformResult,
@@ -13,20 +13,21 @@ export function compileStylePhase(
   },
 ) {
   if (descriptor.styles.length === 0) {
-    return
+    return { usesSlotted: false }
   }
 
   const scopedId = generateScopedId(filename)
 
-  const compiledStyles = descriptor.styles.map((styleBlock) => {
-    return compileVueStyleToWxss(styleBlock, {
+  const compiledStyles = await Promise.all(descriptor.styles.map(async (styleBlock) => {
+    return await compileVueStyleToWxss(styleBlock, {
       id: scopedId,
+      filename,
       scoped: styleBlock.scoped,
       modules: styleBlock.module,
       preserveDeepSelectors: options?.preserveDeepSelectors,
       transformScoped: options?.transformScoped,
     })
-  })
+  }))
 
   result.style = compiledStyles
     .map(s => s.code.trim())
@@ -35,7 +36,7 @@ export function compileStylePhase(
 
   const hasModules = compiledStyles.some(s => s.modules)
   if (!hasModules) {
-    return
+    return { usesSlotted: compiledStyles.some(style => style.usesSlotted) }
   }
 
   const modulesMap: Record<string, Record<string, string>> = {}
@@ -48,11 +49,5 @@ export function compileStylePhase(
 
   result.cssModules = modulesMap
 
-  if (result.script !== undefined) {
-    result.script = `
-// 模块化样式（CSS Modules）
-const __cssModules = ${JSON.stringify(modulesMap, null, 2)}
-${result.script}
-`
-  }
+  return { usesSlotted: compiledStyles.some(style => style.usesSlotted) }
 }

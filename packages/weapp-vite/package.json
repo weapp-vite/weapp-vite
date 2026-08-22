@@ -62,6 +62,14 @@
       "types": "./dist/test.d.mts",
       "import": "./dist/test.mjs"
     },
+    "./compatibility": {
+      "types": "./dist/compatibility.d.mts",
+      "import": "./dist/compatibility.mjs"
+    },
+    "./eslint": {
+      "types": "./dist/eslint.d.mts",
+      "import": "./dist/eslint.mjs"
+    },
     "./auto-import-components/resolvers": {
       "types": "./dist/auto-import-components/resolvers.d.mts",
       "import": "./dist/auto-import-components/resolvers.mjs"
@@ -110,10 +118,22 @@
     "benchmark:auto-import:ci": "node --import tsx scripts/benchmark-auto-import-ci.ts",
     "test:dev": "vitest",
     "test": "vitest run",
-    "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../config-define-config && tsd && cd ../internal-src-types && tsd && cd ../resolvers-public-types && tsd && cd ../runtime-public-types && tsd && cd ../test-artifact-public-types && tsd",
+    "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../compatibility-eslint-public-types && tsd && cd ../config-define-config && tsd && cd ../internal-src-types && tsd && cd ../resolvers-public-types && tsd && cd ../runtime-public-types && tsd && cd ../test-artifact-public-types && tsd",
     "lint:src": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync": "cnpm sync weapp-vite"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "peerDependencies": {
+    "eslint": ">=9"
+  },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@babel/preset-env": "^8.0.2",
@@ -161,10 +181,6 @@
     "vue-tsc": "catalog:",
     "weapp-ide-cli": "workspace:*",
     "wevu": "workspace:*"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org"
   },
   "optionalDependencies": {
     "@swc/core": "^1.16.1"

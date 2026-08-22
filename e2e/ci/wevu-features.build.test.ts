@@ -25,6 +25,9 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     const useAttrsPageWxmlPath = path.join(DIST_ROOT, 'pages/use-attrs/index.wxml')
     const useAttrsPageJsPath = path.join(DIST_ROOT, 'pages/use-attrs/index.js')
     const useAttrsFeatureWxmlPath = path.join(DIST_ROOT, 'components/use-attrs-feature/index.wxml')
+    const sfcStylesPageWxmlPath = path.join(DIST_ROOT, 'pages/sfc-styles/index.wxml')
+    const sfcStylesPageWxssPath = path.join(DIST_ROOT, 'pages/sfc-styles/index.wxss')
+    const sfcStylesPageJsPath = path.join(DIST_ROOT, 'pages/sfc-styles/index.js')
 
     expect(await fs.pathExists(appJsonPath)).toBe(true)
     expect(await fs.pathExists(indexWxmlPath)).toBe(true)
@@ -32,6 +35,9 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(await fs.pathExists(useAttrsPageWxmlPath)).toBe(true)
     expect(await fs.pathExists(useAttrsPageJsPath)).toBe(true)
     expect(await fs.pathExists(useAttrsFeatureWxmlPath)).toBe(true)
+    expect(await fs.pathExists(sfcStylesPageWxmlPath)).toBe(true)
+    expect(await fs.pathExists(sfcStylesPageWxssPath)).toBe(true)
+    expect(await fs.pathExists(sfcStylesPageJsPath)).toBe(true)
 
     const appJson = await fs.readJson(appJsonPath)
     const indexWxml = await fs.readFile(indexWxmlPath, 'utf8')
@@ -39,6 +45,9 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     const useAttrsPageWxml = await fs.readFile(useAttrsPageWxmlPath, 'utf8')
     const useAttrsPageJs = await fs.readFile(useAttrsPageJsPath, 'utf8')
     const useAttrsFeatureWxml = await fs.readFile(useAttrsFeatureWxmlPath, 'utf8')
+    const sfcStylesPageWxml = await fs.readFile(sfcStylesPageWxmlPath, 'utf8')
+    const sfcStylesPageWxss = await fs.readFile(sfcStylesPageWxssPath, 'utf8')
+    const sfcStylesPageJs = await fs.readFile(sfcStylesPageJsPath, 'utf8')
 
     expect(appJson.pages).toEqual([
       'pages/index/index',
@@ -51,6 +60,7 @@ describe.sequential('e2e app: wevu-features (build)', () => {
       'pages/router-stability/sub/index',
       'pages/router-stability/sub/target/index',
       'pages/router-stability/target/index',
+      'pages/sfc-styles/index',
       'pages/subpath-entries/index',
       'pages/use-attrs/index',
       'pages/use-model/index',
@@ -74,6 +84,7 @@ describe.sequential('e2e app: wevu-features (build)', () => {
 
     expect(indexWxml).toContain('url="{{item.path}}"')
     expect(indexJs).toContain('/pages/use-attrs/index')
+    expect(indexJs).toContain('/pages/sfc-styles/index')
     expect(indexJs).toContain('/pages/use-slots/index')
     expect(indexJs).toContain('/pages/use-model/index')
     expect(indexJs).toContain('/pages/use-provide-inject/index')
@@ -122,6 +133,15 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(useAttrsFeatureWxml).toContain('wx:if="{{visible}}"')
     expect(useAttrsFeatureWxml).toContain('wx:for="{{attrRows}}"')
     expect(useAttrsFeatureWxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
+
+    expect(sfcStylesPageWxml).toContain('id="sfc-style-probe"')
+    expect(sfcStylesPageWxml).toMatch(/data-v-[a-z0-9]+=""/)
+    expect(sfcStylesPageWxml).toMatch(/data-v-[a-z0-9]+-s=""/)
+    expect(sfcStylesPageWxss).toContain('var(--')
+    expect(sfcStylesPageWxss).not.toContain('v-bind(')
+    expect(sfcStylesPageJs).toContain('__wevuCssModules')
+    expect(sfcStylesPageJs).toContain('__wv_css_vars_style')
+    expect(sfcStylesPageJs).toContain('border: 4rpx solid #111827')
 
     const useSlotsPageWxmlPath = path.join(DIST_ROOT, 'pages/use-slots/index.wxml')
     const useSlotsPageJsPath = path.join(DIST_ROOT, 'pages/use-slots/index.js')

@@ -34,6 +34,31 @@
 <input v-model="x + y" />
 ```
 
+## SFC 样式
+
+微信目标稳定支持 `<style scoped>`、默认/命名 CSS Modules、`useCssModule()` 和 CSS `v-bind()`。CSS 变量会合并到所有模板根节点的 style，不覆盖用户已有 style；`:deep()`、`:global()`、`:slotted()` 只支持可安全映射到小程序选择器的形式。
+
+```vue
+<script setup lang="ts">
+import { ref, useCssModule } from 'wevu'
+
+const color = ref('red')
+const classes = useCssModule('theme')
+</script>
+
+<template>
+  <view :class="classes.card" style="padding: 8px" />
+</template>
+
+<style scoped module="theme">
+.card {
+  color: v-bind(color);
+}
+</style>
+```
+
+其他小程序平台使用相同编译实现，但在完成对应 IDE/真机验证前视为实验性。
+
 ## `usingComponents`
 
 当你在页面或组件里需要显式注册原生小程序组件时，优先明确当前文件使用的 JSON 宏与配置来源，避免多个入口互相覆盖。

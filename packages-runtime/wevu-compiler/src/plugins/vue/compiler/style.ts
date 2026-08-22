@@ -1,50 +1,10 @@
-import type { SFCStyleBlock } from 'vue/compiler-sfc'
+import type { SFCStyleBlock, SFCStyleCompileOptions } from 'vue/compiler-sfc'
 import postcss from 'postcss'
 import selectorParser from 'postcss-selector-parser'
+import { compileStyleAsync } from 'vue/compiler-sfc'
 import { DEFAULT_HTML_TO_WXML_TAG_MAP } from './template/htmlTagMapping'
 
 export { transformNestedWxssVars } from './wxss'
-
-const CSS_RULE_RE = /([^{]+)(\{[^}]*\})/g
-const CSS_CLASS_RE = /\.([a-z_][\w-]*)(?:\[[^\]]+\])?\s*\{/gi
-
-export function transformVueDeepSelectors(source: string) {
-  if (!source.includes(':deep') && !source.includes('::v-deep')) {
-    return source
-  }
-  const root = postcss.parse(source)
-  const processor = selectorParser((selectors) => {
-    selectors.walkTags((tag) => {
-      const name = tag.value.toLowerCase()
-      if (DEFAULT_HTML_TO_WXML_TAG_MAP[name] !== name && DEFAULT_HTML_TO_WXML_TAG_MAP[name]) {
-        tag.replaceWith(selectorParser.className({ value: name }))
-      }
-    })
-    selectors.walkPseudos((pseudo) => {
-      if (pseudo.value !== ':deep' && pseudo.value !== '::v-deep') {
-        return
-      }
-      const replacement = pseudo.nodes?.[0]?.nodes.map(node => node.clone()) ?? []
-      if (replacement.length > 0) {
-        pseudo.replaceWith(...replacement)
-      }
-      else {
-        const previous = pseudo.prev()
-        const next = pseudo.next()
-        if (next?.type === 'combinator' && (!previous || previous.type === 'combinator')) {
-          next.remove()
-        }
-        pseudo.remove()
-      }
-    })
-  })
-  root.walkRules((rule) => {
-    if (rule.selector.includes(':deep') || rule.selector.includes('::v-deep')) {
-      rule.selector = processor.processSync(rule.selector)
-    }
-  })
-  return root.toString()
-}
 
 /**
  * 样式编译结果。
@@ -53,7 +13,9 @@ export interface StyleCompileResult {
   code: string
   map?: string
   scopedId?: string
+  usesSlotted?: boolean
   modules?: Record<string, Record<string, string>>
+  dependencies?: string[]
 }
 
 /**
@@ -61,6 +23,7 @@ export interface StyleCompileResult {
  */
 export interface StyleCompileOptions {
   id: string
+  filename?: string
   scoped?: boolean
   transformScoped?: boolean
   modules?: boolean | string
@@ -68,138 +31,91 @@ export interface StyleCompileOptions {
   preserveDeepSelectors?: boolean
 }
 
-/**
- * 转换 scoped CSS
- * 为每个选择器添加特定的 scoped 属性
- */
-function transformScopedCss(source: string, id: string): string {
-  const scopedId = `data-v-${id}`
+function normalizeStyleError(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
 
-  // 更智能的 CSS 处理：找到选择器并在其后添加 [data-v-xxx]
-  // 使用正则匹配 CSS 规则
-
-  return source.replace(CSS_RULE_RE, (match, selector, rules) => {
-    const trimmedSelector = selector.trim()
-
-    // 跳过空选择器
-    if (!trimmedSelector) {
-      return match
-    }
-
-    // 跳过已经是 scoped 的选择器
-    if (trimmedSelector.includes('[') || trimmedSelector.includes(':deep(') || trimmedSelector.includes(':slotted(')) {
-      return match
-    }
-
-    // 跳过 @ 规则
-    if (trimmedSelector.startsWith('@')) {
-      return match
-    }
-
-    // 为选择器添加 scoped 属性
-    // 处理多个选择器（用逗号分隔）
-    const selectors = trimmedSelector.split(',').map((s: string) => {
-      const sTrimmed = s.trim()
-      // 为简单选择器添加 scoped
-      return `${sTrimmed}[${scopedId}]`
+function hasSlottedScopeSelector(source: string, slottedScopeId: string) {
+  let found = false
+  const processor = selectorParser((selectors) => {
+    selectors.walkAttributes((attribute) => {
+      if (attribute.attribute === slottedScopeId) {
+        found = true
+      }
     })
-
-    return `${selectors.join(', ')} ${rules}`
   })
+  const root = postcss.parse(source)
+  root.walkRules((rule) => {
+    if (!found) {
+      processor.processSync(rule.selector)
+    }
+  })
+  return found
 }
 
 /**
- * 样式转换：CSS → WXSS
- * 处理小程序不支持的 CSS 特性
+ * compiler-sfc 已在 scoped 插件中处理 deep 选择器，此函数保留为兼容入口。
  */
-/**
- * 生成简单的 hash
- */
-function generateHash(str: string): string {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash // 转为 32 位整数
-  }
-  // 使用更好的散列方法
-  const h = Math.abs(hash).toString(36)
-  // 如果 hash 太短，添加一些变化
-  return h + str.length.toString(36)
+export function transformVueDeepSelectors(source: string) {
+  const root = postcss.parse(source)
+  const processor = selectorParser((selectors) => {
+    selectors.walkTags((tag) => {
+      const mapped = DEFAULT_HTML_TO_WXML_TAG_MAP[tag.value.toLowerCase()]
+      if (mapped && mapped !== tag.value.toLowerCase()) {
+        tag.replaceWith(selectorParser.className({ value: tag.value.toLowerCase() }))
+      }
+    })
+    selectors.walkPseudos((pseudo) => {
+      if (![':deep', '::v-deep'].includes(pseudo.value)) {
+        return
+      }
+      const replacement = pseudo.nodes?.[0]?.nodes.map(node => node.clone()) ?? []
+      replacement.length ? pseudo.replaceWith(...replacement) : pseudo.remove()
+    })
+  })
+  root.walkRules((rule) => {
+    rule.selector = processor.processSync(rule.selector)
+  })
+  return root.toString()
 }
 
 /**
- * 转换 CSS Modules
+ * 将 Vue SFC style 块编译为可交给 Vite CSS 管线的内容。
  */
-function transformCssModules(source: string, id: string): {
-  code: string
-  classes: Record<string, string>
-} {
-  const classes: Record<string, string> = {}
-  const hash = generateHash(id)
-
-  // 匹配所有 .className { 形式的类
-  const classRegex = new RegExp(CSS_CLASS_RE.source, CSS_CLASS_RE.flags)
-  const foundClasses: string[] = []
-
-  let result: RegExpExecArray | null = classRegex.exec(source)
-  while (result !== null) {
-    foundClasses.push(result[1])
-    result = classRegex.exec(source)
-  }
-
-  // 为每个类生成 scoped 名称
-  for (const className of foundClasses) {
-    const scopedClassName = `${className}_${hash}`
-    classes[className] = scopedClassName
-  }
-
-  // 替换源码中的类名
-  let code = source
-  for (const [original, scoped] of Object.entries(classes)) {
-    // 使用正则替换所有出现的类名
-    const regex = new RegExp(`\\.${original}\\b`, 'g')
-    code = code.replace(regex, `.${scoped}`)
-  }
-
-  return {
-    code,
-    classes,
-  }
-}
-
-/**
- * 将 Vue SFC 的 style 块转换为 WXSS
- */
-export function compileVueStyleToWxss(
+export async function compileVueStyleToWxss(
   styleBlock: SFCStyleBlock,
   options: StyleCompileOptions,
-): StyleCompileResult {
-  const { id, scoped, modules, preserveDeepSelectors, transformScoped = true } = options
-  const source = styleBlock.content
+): Promise<StyleCompileResult> {
+  const filename = options.filename ?? `style-${options.id}.${styleBlock.lang || 'css'}`
+  const moduleName = typeof styleBlock.module === 'string'
+    ? styleBlock.module
+    : typeof options.modules === 'string'
+      ? options.modules
+      : '$style'
+  const modules = Boolean(options.modules || styleBlock.module)
+  const result = await compileStyleAsync({
+    filename,
+    id: `data-v-${options.id}`,
+    source: styleBlock.content,
+    scoped: options.transformScoped !== false && Boolean(options.scoped || styleBlock.scoped),
+    modules,
+    modulesOptions: modules
+      ? { generateScopedName: (name: string) => `${name}_${options.id}` }
+      : undefined,
+    preprocessLang: styleBlock.lang as SFCStyleCompileOptions['preprocessLang'],
+    preprocessOptions: options.preprocessOptions,
+  })
 
-  let code = source
-
-  // 1. 处理 scoped 样式
-  if (transformScoped && (scoped || styleBlock.scoped)) {
-    code = transformScopedCss(code, id)
-  }
-
-  // 2. 处理 CSS Modules
-  if (modules || styleBlock.module) {
-    const moduleName = typeof styleBlock.module === 'string' ? styleBlock.module : '$style'
-    const moduleResult = transformCssModules(code, id)
-    return {
-      code: preserveDeepSelectors
-        ? moduleResult.code
-        : transformVueDeepSelectors(moduleResult.code),
-      modules: {
-        [moduleName]: moduleResult.classes,
-      },
-    }
+  if (result.errors.length) {
+    throw new Error(`SFC 样式编译失败（${filename}）：${result.errors.map(normalizeStyleError).join('; ')}`)
   }
 
   return {
-    code: preserveDeepSelectors ? code : transformVueDeepSelectors(code),
+    code: options.preserveDeepSelectors ? result.code : transformVueDeepSelectors(result.code),
+    map: result.map ? JSON.stringify(result.map) : undefined,
+    scopedId: options.scoped || styleBlock.scoped ? `data-v-${options.id}` : undefined,
+    usesSlotted: hasSlottedScopeSelector(result.code, `data-v-${options.id}-s`),
+    modules: result.modules ? { [moduleName]: result.modules } : undefined,
+    dependencies: [...result.dependencies],
   }
 }

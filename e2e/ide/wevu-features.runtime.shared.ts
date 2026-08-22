@@ -278,12 +278,22 @@ export async function resolveSelectorById(page: any, id: string) {
   throw new Error(`Failed to resolve id selector: ${id}`)
 }
 
+async function readElementAttribute(element: any, name: string) {
+  if (typeof element.attribute === 'function') {
+    return await element.attribute(name)
+  }
+  if (typeof element.attr === 'function') {
+    return await element.attr(name)
+  }
+  throw new TypeError(`Element provider does not support reading attribute: ${name}`)
+}
+
 export async function readClassName(page: any, selector: string) {
   const element = await page.$(selector)
   if (!element) {
     throw new Error(`Failed to find element: ${selector}`)
   }
-  return normalizeValue(await element.attribute('class') ?? '')
+  return normalizeValue(await readElementAttribute(element, 'class') ?? '')
 }
 
 export async function readStyleValue(page: any, selector: string) {
@@ -291,7 +301,7 @@ export async function readStyleValue(page: any, selector: string) {
   if (!element) {
     throw new Error(`Failed to find element: ${selector}`)
   }
-  return normalizeValue(await element.attribute('style') ?? '')
+  return normalizeValue(await readElementAttribute(element, 'style') ?? '')
 }
 
 export async function tapControlUntil(page: any, tapSelector: string, checker: () => Promise<boolean>) {

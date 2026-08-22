@@ -22,7 +22,7 @@ keywords:
 
 ### `AppConfig` {#appconfig}
 
-Wevu 应用配置类型，当前公开 `globalProperties: Record<string, any>`。
+Wevu 应用配置类型，当前只公开 `globalProperties: Record<string, any>`。它不包含 Vue DOM App 的 error/warn handler、option merge strategies、compiler options 等配置面。
 
 ### `WevuPlugin` {#wevuplugin}
 
@@ -42,7 +42,11 @@ Wevu 应用配置类型，当前公开 `globalProperties: Record<string, any>`�
 
 ### `SetupContext` {#setupcontext}
 
-`setup(props, ctx)` 中 `ctx` 的类型。
+`setup(props, ctx)` 中 `ctx` 的类型。除 `attrs`、`slots`、`emit`、`expose` 外还包含小程序 `instance`、router、selector query 和 Wevu runtime 桥接；`emit` 使用单个 `detail` 载荷，不是 Vue 的可变参数事件。
+
+### `ComponentPublicInstance` {#componentpublicinstance}
+
+Wevu state、computed、methods、props 与 `$nextTick/$watch/$emit` 的代理交集。它不是 Vue DOM 组件代理，不承诺 `$el`、DOM vnode 树或 renderer internals。
 
 ### `RuntimeInstance` {#runtimeinstance}
 
@@ -58,7 +62,15 @@ Wevu 应用配置类型，当前公开 `globalProperties: Record<string, any>`�
 
 ### `PropType<T>` {#proptype}
 
-用于给运行时 props 构造器附加 TypeScript 值类型，语义与 Vue `PropType<T>` 对齐。
+用于给小程序 `properties` 构造器附加 TypeScript 值类型。它接受 Wevu 的 `PropConstructor` 或构造器数组，但运行时仍要归一化为宿主支持的 property type，不能视为 Vue runtime props validator 的完整替代。
+
+### `VNode` / `VNodeProps` {#vnode}
+
+公开名称用于兼容 Vue 类型导入；Wevu 实际渲染由静态 WXML 或 JSX island 承载，不提供 Vue DOM renderer 的 vnode patch 契约。
+
+### `ObjectDirective` {#objectdirective}
+
+类型形状复用 Vue 指令定义，只有编译器可识别或 Wevu 能桥接的指令语义可用；声明同名类型不代表任意 DOM directive hook 可在小程序执行。
 
 ### `MaybeRef<T>` {#mayberef}
 
@@ -86,11 +98,13 @@ watch 停止句柄类型。
 
 ### `ExtractPropTypes<T>` {#extractproptypes}
 
-从 Wevu `ComponentPropsOptions` 推导组件内部可见的 props 类型。
+从 Wevu `ComponentPropsOptions` 推导组件内部可见的 props 类型，required/default 判定按小程序 properties 归一化规则处理。
 
 ### `ExtractPublicPropTypes<T>` {#extractpublicproptypes}
 
-从 Wevu props 配置推导父组件可传入的公开 props 类型。
+从 Wevu props 配置推导父组件可传入的公开 props 类型。当前与 `InferProps` 使用同一推导边界，不复刻 Vue 内部/公开 props 的全部差异。
+
+> 同名不等于同契约。公开 compatibility catalog 会通过 TypeScript AST 审计 `wevu` 与 `vue` 的重名类型；每个重名项必须被标为兼容或给出差异摘要，新增类型不能静默进入文档。
 
 ### `ComponentCustomProps` {#componentcustomprops}
 

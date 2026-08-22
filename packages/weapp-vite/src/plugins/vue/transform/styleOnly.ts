@@ -6,7 +6,7 @@ function hasCssModules(styleBlocks: SFCStyleBlock[] | undefined) {
   return styleBlocks?.some(styleBlock => Boolean(styleBlock.module)) === true
 }
 
-export function refreshStyleOnlyVueTransformResult(
+export async function refreshStyleOnlyVueTransformResult(
   result: VueTransformResult,
   filename: string,
   styleBlocks: SFCStyleBlock[] | undefined,
@@ -21,14 +21,7 @@ export function refreshStyleOnlyVueTransformResult(
   }
 
   const scopedId = generateScopedId(filename)
-  const style = styleBlocks
-    .map(styleBlock => compileVueStyleToWxss(styleBlock, {
-      id: scopedId,
-      scoped: styleBlock.scoped,
-      modules: styleBlock.module,
-    }).code.trim())
-    .filter(Boolean)
-    .join('\n\n')
+  const style = (await Promise.all(styleBlocks.map(async styleBlock => await compileVueStyleToWxss(styleBlock, { id: scopedId, filename, scoped: styleBlock.scoped, modules: styleBlock.module })))).map(result => result.code.trim()).filter(Boolean).join('\n\n')
 
   result.style = style || undefined
   return true
