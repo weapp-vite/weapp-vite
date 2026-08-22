@@ -1,5 +1,28 @@
 # weapp-vite
 
+## 6.21.0
+
+### Minor Changes
+
+- 新增 `weapp.styles` 主包共享样式入口，可生成独立的目标平台样式文件，并按作用范围注入主包与普通分包页面或组件；支持通过 `inject: false` 仅生成文件，同时保持独立分包的资源隔离。
+
+### Patch Changes
+
+- 新增 `weapp.chunks.preserveModules` 配置，可按 `srcRoot` 相对路径保留匹配源码模块的独立产物路径，便于调试定位和构建产物审计。
+
+- 修复 `pnpm deps:up` 无法进入显式工作区同步模式的问题，确保依赖升级后能正确恢复 `catalog:` 声明并通过 Rolldown 单版本校验。
+
+- 修正分包预下载分析中的同名路由方法误报，支持独立分包到主包的 `__APP__` 建议，按触发页所属包汇总实际产物体积与共享的 2 MB 预下载额度，并确保只读分析完成后回收构建资源。
+
+- 将工作区依赖声明同步从普通 `pnpm i` 中移出，避免安装后改写受 Git 跟踪的 manifest 和生成 catalog；新增 `pnpm deps:up` 作为显式升级入口，并提供 Git 索引锁诊断与安全清理命令。
+
+- 修复 Sass Embedded 子进程在构建和分析命令结束后未被清理、导致 CLI 无法自然退出的问题，确保目标样式扩展为 CSS 时仍会注入共享样式入口，并兼容 Windows 上无盘符 POSIX file URL 的模块路径归一化。
+
+- Updated dependencies:
+  - @weapp-vite/ast@6.21.0
+  - @weapp-vite/web@1.4.11
+  - wevu@6.21.0
+
 ## 6.20.5
 
 ### Patch Changes
