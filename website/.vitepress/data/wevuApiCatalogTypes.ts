@@ -20,6 +20,7 @@ export type ApiKind
     | 'tag'
     | 'store'
     | 'runtime'
+    | 'style'
     | 'type'
 
 export type ApiPhase = 'compile' | 'runtime' | 'type'
@@ -40,6 +41,7 @@ export type CoreApiCategory
     | 'html-tags'
     | 'types'
     | 'runtime'
+    | 'styles'
 
 export interface CoreApiCategoryOption {
   value: CoreApiCategory
@@ -60,6 +62,8 @@ export interface WevuApiItem {
   scopes?: ApiScope[]
   keywords?: string[]
   transform?: string
+  migrationSummary?: string
+  replacement?: string
 }
 
 export interface WevuApiSeed extends Omit<WevuApiItem, 'entry'> {

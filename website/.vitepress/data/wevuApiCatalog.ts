@@ -1,4 +1,6 @@
+import type { WevuCompatibilityEntry } from 'weapp-vite/compatibility'
 import type { ApiCompatibility, ApiEntryTab, ApiKind, ApiScope, CoreApiCategory, CoreApiCategoryOption, WevuApiItem, WevuApiSeed } from './wevuApiCatalogTypes'
+import { wevuCompatibilityCatalog } from 'weapp-vite/compatibility'
 import { getWevuApiDescription } from './wevuApiDescriptions'
 import { wevuDirectiveSeeds, wevuElementSeeds, wevuHtmlTagSeeds } from './wevuApiTemplateMatrix'
 import { wevuTypeSeeds } from './wevuApiTypeMatrix'
@@ -20,6 +22,7 @@ export const wevuCoreCategories: CoreApiCategoryOption[] = [
   { value: 'html-tags', label: 'HTML 标签', group: 'HTML 标签转换' },
   { value: 'types', label: 'TypeScript', group: 'TypeScript 类型' },
   { value: 'runtime', label: '运行时桥接', group: '运行时桥接' },
+  { value: 'styles', label: 'SFC 样式', group: 'SFC 样式' },
 ]
 
 export function getApiEntryHref(value: ApiEntryTab) {
@@ -79,6 +82,41 @@ function fromSeed(seed: WevuApiSeed): WevuApiItem {
   return {
     ...seed,
     entry: seed.entry || 'wevu',
+  }
+}
+
+function publicCompatibility(upstream: WevuCompatibilityEntry['upstream'], name: string, surface?: WevuCompatibilityEntry['surfaces'][number]) {
+  return wevuCompatibilityCatalog.find(item => item.upstream === upstream && item.api === name && (!surface || item.surfaces.includes(surface)))
+}
+
+function toApiCompatibility(entry: WevuCompatibilityEntry): ApiCompatibility {
+  if (entry.compatibility === 'unsupported') {
+    return 'unsupported'
+  }
+  if (entry.compatibility === 'supported') {
+    return 'vue-compatible'
+  }
+  return entry.compatibility === 'experimental' ? 'vue-different' : 'vue-compatible-with-notes'
+}
+
+function compatibilityApi(
+  upstream: WevuCompatibilityEntry['upstream'],
+  upstreamName: string,
+  displayName: string,
+  href: string,
+  group: string,
+  kind: ApiKind,
+  options: Pick<WevuApiItem, 'entry'> & Partial<Pick<WevuApiItem, 'phase' | 'keywords'>>,
+  surface?: WevuCompatibilityEntry['surfaces'][number],
+) {
+  const compatibility = publicCompatibility(upstream, upstreamName, surface)
+  if (!compatibility) {
+    throw new Error(`缺少公开 Wevu 兼容条目：${upstream}:${upstreamName}`)
+  }
+  return {
+    ...api(displayName, href, group, kind, toApiCompatibility(compatibility), options),
+    migrationSummary: compatibility.summary,
+    replacement: compatibility.replacement,
   }
 }
 
@@ -159,6 +197,7 @@ export const wevuApiCatalog: WevuApiItem[] = [
   ...['onBeforeMount', 'onMounted', 'onBeforeUpdate', 'onUpdated', 'onBeforeUnmount', 'onUnmounted', 'onActivated', 'onDeactivated', 'onErrorCaptured', 'onServerPrefetch']
     .map(name => lifecycle(name, name === 'onServerPrefetch' ? 'vue-different' : 'vue-different', ['page', 'component'])),
   ...['getCurrentInstance', 'getCurrentSetupContext', 'provide', 'inject'].map(name => setup(name, name.toLowerCase(), 'vue-compatible')),
+  compatibilityApi('vue', 'hasInjectionContext', 'hasInjectionContext()', '/wevu/api/setup-context#hasinjectioncontext', 'Setup 与宿主能力', 'setup', { entry: 'wevu' }, 'runtime'),
   ...['provideGlobal', 'injectGlobal', 'useNativeInstance', 'useNativeRouter', 'useNativePageRouter', 'useBindModel', 'useChangeModel', 'useIntersectionObserver', 'useElementIntersectionObserver', 'useSelectorQuery', 'useBoundingClientRect', 'useSelectorFields', 'useScrollOffset', 'useDisposables', 'usePageLayout', 'setPageLayout', 'usePageStack', 'getCurrentPageStackSnapshot', 'useNavigationBarMetrics', 'getNavigationBarMetrics', 'usePageScrollThrottle', 'useUpdatePerformanceListener', 'useAsyncPullDownRefresh']
     .map((name) => {
       const sharedAnchor: Record<string, string> = {
@@ -181,7 +220,26 @@ export const wevuApiCatalog: WevuApiItem[] = [
   ...wevuElementSeeds.map(fromSeed),
   ...wevuHtmlTagSeeds.map(fromSeed),
   ...wevuTypeSeeds.map(fromSeed),
+  ...[
+    ['CSS v-bind()', 'CSS v-bind()'],
+    ['scoped CSS', 'scoped CSS'],
+    [':deep()', ':deep()'],
+    [':global()', ':global()'],
+    [':slotted()', ':slotted()'],
+    ['CSS Modules', 'CSS Modules'],
+    ['useCssModule()', 'useCssModule()'],
+  ].map(([displayName, upstreamName]) => compatibilityApi(
+    'vue',
+    upstreamName,
+    displayName,
+    upstreamName === 'useCssModule()' ? '/wevu/vue-sfc/class-style#usecssmodule' : '/wevu/vue-sfc/class-style',
+    'SFC 样式',
+    upstreamName === 'useCssModule()' ? 'setup' : 'style',
+    { entry: 'wevu', phase: upstreamName === 'useCssModule()' ? 'runtime' : 'compile', keywords: ['SFC', 'CSS', '样式'] },
+    'sfc-style',
+  )),
   api('defineStore()', '/wevu/api/store#definestore', 'Store 入口', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['Pinia', '定义'] }),
+  compatibilityApi('pinia', 'createPinia', 'createPinia()', '/wevu/api/store#createpinia', 'Store 入口', 'store', { entry: 'wevu/store', keywords: ['Pinia', '不支持'] }, 'runtime'),
   api('createStore()', '/wevu/api/store#createstore', 'Store 入口', 'store', 'wevu-extension', { entry: 'wevu/store', keywords: ['Manager', '隔离'] }),
   api('storeToRefs()', '/wevu/api/store#storetorefs', 'Store 入口', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['Pinia', '解构', '响应式'] }),
   ...[
@@ -214,6 +272,8 @@ export const wevuApiCatalog: WevuApiItem[] = [
     ['useRouter()', 'userouter'],
     ['useRoute()', 'useroute'],
   ].map(([name, anchor]) => routerApi(name, anchor, 'Router 入口', 'runtime', 'vue-different', ['Vue Router', '路由实例'])),
+  compatibilityApi('vue-router', 'RouterLink', '<RouterLink>', '/wevu/api/router#routerlink', 'Router 入口', 'tag', { entry: 'wevu/router', keywords: ['Vue Router', '组件'] }, 'template'),
+  compatibilityApi('vue-router', '<router-link>', '<router-link>', '/wevu/api/router#routerlink', 'Router 入口', 'tag', { entry: 'wevu/router', keywords: ['Vue Router', '模板'] }, 'template'),
   ...[
     ['useNativeRouter()', 'usenativerouter'],
     ['useNativePageRouter()', 'usenativepagerouter'],

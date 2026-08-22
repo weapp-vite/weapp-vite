@@ -15,6 +15,8 @@ keywords:
 
 本页对应 `wevu/router` 的公开导出，以及 `createRouter()` 返回实例的公共契约。Wevu Router 对齐 Vue Router 的主要使用心智，但最终导航仍受小程序页面栈、tabBar 和宿主 API 约束。
 
+> `createRouter()`、`useRouter()` 和 `useRoute()` 依赖同步 setup 时序；`currentRoute` 是 readonly 响应式对象而不是 `Ref`，`isReady()` 创建后立即完成。这里没有 Web history、`RouterView` 或 `RouterLink`，hash-only、正向历史和 tabBar query 也不能按浏览器语义理解。
+
 ```ts
 import { createRouter, useRoute, useRouter } from 'wevu/router'
 ```

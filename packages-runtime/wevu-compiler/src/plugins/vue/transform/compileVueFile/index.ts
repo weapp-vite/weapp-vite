@@ -1,5 +1,6 @@
 import type { CompileVueFileOptions, VueTransformResult } from './types'
 import { compileScript } from 'vue/compiler-sfc'
+import { generateScopedId } from '../scopedId'
 import { collectComponentSourceInfo } from './componentSources'
 import { compileConfigPhase } from './config'
 import { finalizeResult } from './finalize'
@@ -28,6 +29,7 @@ export async function compileVueFile(
   options?: CompileVueFileOptions,
 ): Promise<VueTransformResult> {
   const parsed = await parseVueFile(source, filename, options)
+  const sfcId = generateScopedId(filename)
 
   const result: VueTransformResult = {
     meta: {
@@ -60,7 +62,7 @@ export async function compileVueFile(
 
   const scriptCompiled = parsed.descriptor.script || parsed.descriptor.scriptSetup
     ? compileScript(parsed.descriptorForCompile, {
-        id: filename,
+        id: sfcId,
         isProd: false,
       })
     : undefined
@@ -71,6 +73,11 @@ export async function compileVueFile(
     ? resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCompiled.content)
     : undefined
 
+  const styleCompiled = await compileStylePhase(parsed.descriptor, filename, result, options?.style)
+
+  const scopedId = parsed.descriptor.styles.some(style => style.scoped)
+    ? `data-v-${sfcId}`
+    : undefined
   const baseTemplateOptions = parsed.isAppFile
     ? {
         ...options?.template,
@@ -79,6 +86,9 @@ export async function compileVueFile(
         propsDerivedKeys,
         scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
         scopedSlotsRequireProps: true,
+        scopeId: scopedId,
+        slottedScopeId: scopedId && styleCompiled.usesSlotted ? `${scopedId}-s` : undefined,
+        cssVars: parsed.descriptor.cssVars.length > 0,
       }
     : {
         ...options?.template,
@@ -86,6 +96,9 @@ export async function compileVueFile(
         propsAliases,
         propsDerivedKeys,
         scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
+        scopeId: scopedId,
+        slottedScopeId: scopedId && styleCompiled.usesSlotted ? `${scopedId}-s` : undefined,
+        cssVars: parsed.descriptor.cssVars.length > 0,
       }
 
   const templateOptions = componentSourceInfo.wevuComponentTags.size
@@ -122,6 +135,7 @@ export async function compileVueFile(
     {
       propsAliases,
       propsDerivedKeys,
+      cssModules: result.cssModules,
     },
   )
   result.script = scriptPhase.script
@@ -129,8 +143,6 @@ export async function compileVueFile(
   if (scriptPhase.template) {
     result.template = scriptPhase.template
   }
-
-  compileStylePhase(parsed.descriptor, filename, result, options?.style)
 
   await compileConfigPhase({
     descriptor: parsed.descriptor,

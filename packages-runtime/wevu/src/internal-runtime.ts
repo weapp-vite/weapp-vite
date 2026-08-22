@@ -1,5 +1,6 @@
 export { createApp } from './runtime/app'
 export { takePendingRuntimeAppRegistration } from './runtime/app/pending'
+export { useCssModule, useCssVars } from './runtime/css'
 export {
   INTERNAL_DEFAULTS_SCOPE_KEY,
   resetWevuDefaults,

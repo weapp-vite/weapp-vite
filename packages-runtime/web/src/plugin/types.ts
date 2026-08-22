@@ -77,6 +77,8 @@ export interface WeappWebPluginOptions {
   __resolveAppConfig?: (appConfigPath: string) => Promise<Record<string, unknown> | undefined>
 }
 
+export type WebStylePreprocessOptions = Record<string, Record<string, unknown>>
+
 export interface WebResolvedComponent {
   name: string
   from: string

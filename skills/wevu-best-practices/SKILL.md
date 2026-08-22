@@ -49,11 +49,13 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
 7. store 以小 domain 为先，解构 state/getters 用 `storeToRefs`，避免巨大跨页 store。
 8. 写法同时对照项目根 `AGENTS.md` 和本地 `dist/docs/wevu-authoring.md`。
 9. JSX/TSX 中保持小程序事件、class 和组件 tag 语义；编译后的自定义组件标签应为 kebab-case，可选链/空值合并不得残留为目标模板不支持的表达式。
+10. 项目使用 Wevu 模板时启用 `@weapp-vite/eslint` 的 `wevuCompatibilityRecommended`；它检查项目源码中静态可确定的不支持/风险 API，不代表能分析动态访问或依赖内部代码。旧项目可继续从 `weapp-vite/eslint` 兼容入口导入。
 
 ## Router 与平台边界
 
 - 只需要宿主 `navigateTo/redirectTo` 时使用根入口 native router helpers；需要统一 route records、guards、`resolve` 和导航结果时使用 `wevu/router`。
 - 小程序路由栈不提供标准前进语义；`router.forward()` 返回预期的 aborted failure，不应当按浏览器 bug 处理。
+- `currentRoute` 不是 `Ref`，`isReady()` 立即完成；不要引入 `RouterView` / `RouterLink` 或 Web history。
 - router、layout host、页面栈和 request globals 都以小程序生命周期为边界，不能套用浏览器 Vue 的挂载/卸载假设。
 - React 项目需要复用 Wevu SFC 时，把 Wevu 组件作为小程序自定义组件注册并由 React bridge 引用；不要让 Wevu 和 React 同时拥有同一个 JSX/TSX 模块。
 - 性能回归必须记录高频更新信号、页面切换链路和资源清理结果，再决定是否调整 runtime 或业务状态结构。
@@ -64,6 +66,7 @@ Router 选择和迁移见 `references/router-runtime-matrix.md`。
 
 - 不要在 `await` 后注册 hooks。
 - 不要直接解构 store 丢失响应性。
+- 不要调用 `createPinia()` 或向 `useStore()` 传 manager；`createStore()` 是全局时序敏感的可选插件入口，`install()` 不执行额外逻辑。
 - 不要返回不可序列化原生实例到模板状态。
 - 不要把浏览器 Vue 行为当成 wevu 默认行为。
 - 不要在没有基线时同时修改性能、运行时和业务逻辑三类变量。

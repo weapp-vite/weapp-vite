@@ -8,7 +8,7 @@
 
 **运行时说明：** 解析和守卫在 JavaScript 层执行，真正跳转仍由小程序 Router 完成，因此页面栈、tabBar 和宿主失败回调是最终边界。
 
-**Vue Router 差异：** 调用形式接近 Vue Router，但导航最终映射到 `navigateTo`、`redirectTo`、`switchTab`、`reLaunch` 或 `navigateBack`，受页面栈和 tabBar 约束。
+**Vue Router 差异：** 这是宿主 `SetupContextRouter`，不是 Vue Router 的 history 对象；方法最终受页面栈和 tabBar 约束。
 
 **示例：** 见 [本组示例](/wevu/api/router#example-router-instance)。
 
@@ -22,7 +22,7 @@ Router 内部使用的原生 `SetupContextRouter`。
 
 **运行时说明：** 解析和守卫在 JavaScript 层执行，真正跳转仍由小程序 Router 完成，因此页面栈、tabBar 和宿主失败回调是最终边界。
 
-**Vue Router 差异：** 调用形式接近 Vue Router，但导航最终映射到 `navigateTo`、`redirectTo`、`switchTab`、`reLaunch` 或 `navigateBack`，受页面栈和 tabBar 约束。
+**Vue Router 差异：** 这是创建时的 Wevu 配置快照，不包含 Web history 实现。
 
 **示例：** 见 [本组示例](/wevu/api/router#example-router-instance)。
 
@@ -36,7 +36,7 @@ Router 内部使用的原生 `SetupContextRouter`。
 
 **运行时说明：** 解析和守卫在 JavaScript 层执行，真正跳转仍由小程序 Router 完成，因此页面栈、tabBar 和宿主失败回调是最终边界。
 
-**Vue Router 差异：** 调用形式接近 Vue Router，但导航最终映射到 `navigateTo`、`redirectTo`、`switchTab`、`reLaunch` 或 `navigateBack`，受页面栈和 tabBar 约束。
+**Vue Router 差异：** 该值是 readonly 响应式路由对象本身，不是 `Ref`；读取时不要写 `.value`。它由小程序生命周期和导航完成事件同步，不监听浏览器 URL。
 
 **示例：** 见 [本组示例](/wevu/api/router#example-router-instance)。
 
@@ -64,7 +64,7 @@ Router 内部使用的原生 `SetupContextRouter`。
 
 **运行时说明：** 解析和守卫在 JavaScript 层执行，真正跳转仍由小程序 Router 完成，因此页面栈、tabBar 和宿主失败回调是最终边界。
 
-**Vue Router 差异：** 调用形式接近 Vue Router，但导航最终映射到 `navigateTo`、`redirectTo`、`switchTab`、`reLaunch` 或 `navigateBack`，受页面栈和 tabBar 约束。
+**Vue Router 差异：** 小程序没有初始 Web history 导航，`isReady()` 在 Router 创建后立即完成；它不能用来等待页面组件挂载或宿主跳转结束。
 
 **示例：** 见 [本组示例](/wevu/api/router#example-router-instance)。
 

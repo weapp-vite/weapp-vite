@@ -63,6 +63,7 @@ vi.mock('../../resolver', () => ({
 vi.mock('../compileOptions', () => ({
   createCompileVueFileOptions: createCompileVueFileOptionsMock,
   isVueTransformSourceMapEnabled: vi.fn(() => false),
+  resolveSfcStylePreprocessOptions: vi.fn(() => undefined),
 }))
 
 vi.mock('../scopedSlot', () => ({
