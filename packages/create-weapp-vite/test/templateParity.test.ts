@@ -259,9 +259,13 @@ async function buildExpectedPackageJson(templateName: TemplateName): Promise<Pac
   const { version: dashboardVersion } = await readPackageJson(
     path.resolve(import.meta.dirname, '../../..', 'packages/dashboard/package.json'),
   )
+  const { version: eslintPackageVersion } = await readPackageJson(
+    path.resolve(import.meta.dirname, '../../..', 'packages/eslint/package.json'),
+  )
   normalizeDependencySpecs(expectedPackageJson)
   expectedPackageJson.devDependencies ??= {}
   upsertDependencyVersion(expectedPackageJson, 'weapp-vite', `^${weappViteVersion}`)
+  upsertDependencyVersion(expectedPackageJson, '@weapp-vite/eslint', `^${eslintPackageVersion}`)
   upsertDependencyVersion(expectedPackageJson, '@weapp-vite/react', `^${reactRuntimeVersion}`)
   upsertDependencyVersion(expectedPackageJson, 'wevu', `^${wevuVersion}`)
   upsertDependencyVersion(expectedPackageJson, '@weapp-vite/dashboard', `^${dashboardVersion}`)
