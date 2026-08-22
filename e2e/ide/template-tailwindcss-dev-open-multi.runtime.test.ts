@@ -41,6 +41,7 @@ const TEMPLATE_CASES = [
 ] as const
 const PLAIN_TEMPLATE = TEMPLATE_CASES[0]
 const TDESIGN_TEMPLATE = TEMPLATE_CASES[2]
+const MAX_PAGE_TEXT_SESSION_RECONNECTS = 1
 const IDE_AUTOMATOR_INFRA_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Timed out waiting for opened automator ws:\/\/127\.0\.0\.1:\d+|无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|automation websocket|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Wait timed out after \d+ ms|当前项目已完成打开流程，但尚未连接到可复用的自动化会话/i
 
 type TemplateDevProcess = typeof TEMPLATE_CASES[number] & {
@@ -132,12 +133,13 @@ async function reconnectOpenedAutomator(currentMiniProgram: any, projectPath: st
 
 async function waitForPageText(miniProgram: any, projectPath: string, route: string, text: string, timeoutMs = 90_000) {
   const normalizedRoute = normalizeRoutePath(route)
-  const start = Date.now()
+  let deadline = Date.now() + timeoutMs
   let latestWxml = ''
   let lastProtocolTimeout = ''
   let currentMiniProgram = miniProgram
+  let sessionReconnects = 0
 
-  while (Date.now() - start <= timeoutMs) {
+  while (Date.now() <= deadline) {
     try {
       const currentPage = await currentMiniProgram.currentPage?.()
       const page = normalizeRoutePath(String(currentPage?.path ?? '')) === normalizedRoute
@@ -147,7 +149,7 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
       try {
         latestWxml = await page.waitForRendered({
           text,
-          timeout: Math.min(5_000, Math.max(1, timeoutMs - (Date.now() - start))),
+          timeout: Math.min(5_000, Math.max(1, deadline - Date.now())),
         })
         return latestWxml
       }
@@ -181,7 +183,13 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
         await delay(1_000)
         continue
       }
+      if (sessionReconnects >= MAX_PAGE_TEXT_SESSION_RECONNECTS) {
+        break
+      }
+      sessionReconnects += 1
+      process.stdout.write(`[template-dev-open-multi:session-retry] project=${path.basename(projectPath)} route=${route} attempt=${sessionReconnects}/${MAX_PAGE_TEXT_SESSION_RECONNECTS} error=${error.message}\n`)
       currentMiniProgram = await reconnectOpenedAutomator(currentMiniProgram, projectPath, route)
+      deadline = Date.now() + timeoutMs
     }
     await delay(1_000)
   }

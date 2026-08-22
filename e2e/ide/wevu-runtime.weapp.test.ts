@@ -10,6 +10,7 @@ import {
 } from '../wevu-runtime.utils'
 
 const JS_FORMATS: TestJsFormat[] = ['esm', 'cjs']
+const RUNTIME_READY_ROUTE = '/pages/reactivity/index'
 
 function resolveConsolePayload(entry: any) {
   if (entry && typeof entry === 'object' && entry.entry && typeof entry.entry === 'object') {
@@ -114,6 +115,35 @@ async function waitForRenderedPage(page: any, route: string, timeoutMs = 15_000)
   throw new Error(`Timed out waiting rendered page for ${route}; latest=${JSON.stringify(latest)}`)
 }
 
+async function launchReadyMiniProgram(jsFormat: TestJsFormat) {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const miniProgram = await launchAutomator({
+      projectPath: APP_ROOT,
+      skipRelaunchPageRootCheck: true,
+      skipWarmup: true,
+    })
+    try {
+      const page = await miniProgram.reLaunch(RUNTIME_READY_ROUTE)
+      if (!page) {
+        throw new Error(`Failed to launch runtime ready page: ${RUNTIME_READY_ROUTE}`)
+      }
+      await waitForRenderedPage(page, RUNTIME_READY_ROUTE)
+      return miniProgram
+    }
+    catch (error) {
+      lastError = error
+      await miniProgram.close().catch(() => {})
+      if (attempt === 2) {
+        break
+      }
+      const reason = error instanceof Error ? error.message : String(error)
+      process.stdout.write(`[wevu-runtime:session-retry] format=${jsFormat} route=${RUNTIME_READY_ROUTE} attempt=2/2 error=${reason}\n`)
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError))
+}
+
 for (const jsFormat of JS_FORMATS) {
   describe.sequential(`wevu runtime (weapp e2e) [${jsFormat}]`, () => {
     let sharedMiniProgram: any = null
@@ -125,11 +155,7 @@ for (const jsFormat of JS_FORMATS) {
         sharedBuildPrepared = true
       }
       if (!sharedMiniProgram) {
-        sharedMiniProgram = await launchAutomator({
-          projectPath: APP_ROOT,
-          skipRelaunchPageRootCheck: true,
-          skipWarmup: true,
-        })
+        sharedMiniProgram = await launchReadyMiniProgram(jsFormat)
       }
       return sharedMiniProgram
     }
