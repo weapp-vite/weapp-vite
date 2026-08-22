@@ -14,6 +14,10 @@
   dir: packages/ast-native
   intents:
     - fresh-tailwind-catalog
+"@weapp-vite/ast-native@0.0.7":
+  dir: packages/ast-native
+  intents:
+    - catalog-auto-generated
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
@@ -47,6 +51,11 @@
   dir: packages-runtime/wevu-test-utils
   intents:
     - quiet-wevu-test-utils
+"@wevu/test-utils@0.2.1":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - quiet-wrappers-isolate
+    - tidy-tools-unmount
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -70,6 +79,14 @@ create-weapp-vite@2.8.1:
     - steady-headless-runtime
     - steady-stateful-watch-polling
     - swift-workspace-dependencies
+create-weapp-vite@2.8.2:
+  dir: packages/create-weapp-vite
+  intents:
+    - bright-main-package-styles
+    - bright-paths-preserve-modules
+    - fair-preload-budgets
+    - quiet-sass-cleanup
+    - quiet-wrappers-isolate
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -91,6 +108,15 @@ weapp-vite@6.20.5:
     - steady-headless-runtime
     - steady-stateful-watch-polling
     - swift-workspace-dependencies
+weapp-vite@6.21.0:
+  dir: packages/weapp-vite
+  intents:
+    - bright-main-package-styles
+    - bright-paths-preserve-modules
+    - deps-up-sync-mode
+    - fair-preload-budgets
+    - quiet-install-sync
+    - quiet-sass-cleanup
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -98,3 +124,7 @@ wevu@6.20.5:
     - fix-issue-829-scoped-function-props
     - fresh-uview-plus-baseline
     - quiet-wevu-test-utils
+wevu@6.21.0:
+  dir: packages-runtime/wevu
+  intents:
+    - quiet-wrappers-isolate

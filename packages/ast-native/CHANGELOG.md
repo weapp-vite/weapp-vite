@@ -1,5 +1,12 @@
 # @weapp-vite/ast-native
 
+## 0.0.7
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@vue/language-core, eslint, vue-tsc。命名 catalog 变更键：无。
+
 ## 0.0.6
 
 ### Patch Changes
