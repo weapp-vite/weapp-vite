@@ -40,7 +40,7 @@
 
 ## 静态兼容检查
 
-Wevu 模板默认接入 `weapp-vite/eslint` 的 `wevuCompatibilityRecommended`，用于禁止静态可确定的不支持 API，并警告同名但参数、时序或宿主语义不同的 API。动态访问和第三方依赖内部代码不在完整判定范围内。
+Wevu 模板默认接入 `@weapp-vite/eslint` 的 `wevuCompatibilityRecommended`，用于禁止静态可确定的不支持 API，并警告同名但参数、时序或宿主语义不同的 API。动态访问和第三方依赖内部代码不在完整判定范围内；旧项目可继续使用 `weapp-vite/eslint` 兼容入口。
 
 ## 什么时候看这篇
 
