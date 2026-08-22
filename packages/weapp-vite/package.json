@@ -132,6 +132,7 @@
     "@weapp-core/schematics": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/ast": "workspace:*",
+    "@weapp-vite/i18n": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
     "@weapp-vite/miniprogram-automator": "workspace:*",
     "@weapp-vite/volar": "workspace:*",

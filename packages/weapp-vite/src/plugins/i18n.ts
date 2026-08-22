@@ -1,6 +1,7 @@
+import type { I18nCatalog, I18nLocaleFileInput } from '@weapp-vite/i18n/compiler'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
-import type { I18nCatalog, I18nLocaleFileInput, ResolvedWeappI18nConfig } from '../i18n/types'
+import type { ResolvedWeappI18nConfig } from '../i18n/types'
 import type { SubPackageMetaValue } from '../types'
 import {
   WEAPP_I18N_JS_FILE,
@@ -11,12 +12,16 @@ import {
   WEAPP_I18N_WXS_FILE,
 } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
+import {
+  compileI18nCatalog,
+  generateI18nCatalogModuleSource,
+  generateI18nRuntimeSource,
+  generateI18nWxsSource,
+} from '@weapp-vite/i18n/compiler'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 import picomatch from 'picomatch'
-import { compileI18nCatalog } from '../i18n/catalog'
 import { resolveWeappI18nConfig } from '../i18n/config'
-import { generateI18nRuntimeSource, generateI18nWxsSource } from '../i18n/source'
 import { transformI18nTemplate } from '../i18n/template'
 import { toPosixPath } from '../utils/path'
 
@@ -211,7 +216,7 @@ export function i18n(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue)
         return
       }
       const wxsSource = generateI18nWxsSource(state.catalog)
-      const catalogSource = `module.exports = ${JSON.stringify(state.catalog)}\n`
+      const catalogSource = generateI18nCatalogModuleSource(state.catalog)
       const currentRoot = resolveCurrentPackageRoot(subPackageMeta)
       for (const root of resolveEmittedPackageRoots(ctx, subPackageMeta)) {
         this.emitFile({

@@ -44,7 +44,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 多平台始终单目标构建；显式选择微信、支付宝、抖音、百度、京东、小红书或 Web，不把一次构建描述成同时产出全部平台
    - `weapp.autoRoutes`
    - `weapp.autoImportComponents`
-   - `weapp.i18n`：微信平台内置 locale JSON 编译与运行时切换；`defaultLocale` 必填，默认扫描 `**/i18n/*.json`
+   - `weapp.i18n`：基于 `@weapp-vite/i18n` 的微信平台 locale JSON 编译与运行时切换；`defaultLocale` 必填，默认扫描 `**/i18n/*.json`
    - `weapp.uniApp`：实验性外部 uni-app Vue SFC 转换；npm 包必须显式加入 `include` 白名单
    - `weapp.routeRules`
    - `weapp.styles`：生成主包独立样式入口并按规则注入主包与普通分包；不修改 `app.wxss`，也不跨入独立分包
@@ -58,7 +58,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`、`weapp.analyze.budgets` / `history`
    - 进阶链路：`web`、`lib`
    - 页面/组件单测：`@mpcore/weapp-vite` 构建产物，`@mpcore/test` 提供 render/query/user，`@mpcore/vitest` 提供每测试隔离和 matcher
-   - i18n：原生 Page 使用 `I18nPage`，原生 Component 使用 `behaviors: [I18n]`；主包与普通分包共享实例，独立分包从默认语言创建实例
+   - i18n：Native Component 与 Component Page 使用 `behaviors: [I18n]`；传统 `Page({...})` 才使用兼容适配器 `I18nPage`；主包与普通分包共享实例，独立分包从默认语言创建实例；无 Vite 原生项目直接使用 `@weapp-vite/i18n`
    - React 项目：这里只判断项目级 `weapp.react` 和构建所有权，TSX/runtime/bridge 细节转交 `weapp-vite-react-best-practices`
 4. CLI 与 IDE 所有权保持清晰：
    - `weapp-vite` 原生命令优先
@@ -73,7 +73,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `.weapp-vite` 类型异常：先跑 `wv prepare`
    - 页面 / layout 不对：查 `autoRoutes`、`routeRules`、`definePageMeta`
    - 自动导入异常：查 `autoImportComponents` 与 resolver
-   - i18n 构建失败或模板未翻译：查 locale 文件名、重复/非字符串叶子、default/fallback 是否存在、WXS module 是否重名，以及模板是否显式接入 `I18n` / `I18nPage`
+   - i18n 构建失败或模板未翻译：查 locale 文件名、重复/非字符串叶子、default/fallback 是否存在、WXS module 是否重名，以及模板是否通过 `I18n` 或传统 Page 的 `I18nPage` 接入；原生无 Vite 项目再检查 `weapp-i18n compile` 产物和 WXS 显式引用
    - Wot UI / uview-plus / uni-app 组件库异常：同时检查 `weapp.uniApp.include`、resolver 的真实 `resolvedId` / `sourceType: 'wevu-sfc'`，以及目标端条件分支
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`

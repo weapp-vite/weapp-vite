@@ -353,6 +353,7 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
     items: [
       { text: '@wevu/compiler', link: '/packages/wevu-compiler' },
       { text: '@wevu/api', link: '/packages/weapi/' },
+      { text: '@weapp-vite/i18n', link: '/packages/i18n' },
       { text: '@weapp-vite/web', link: '/packages/web' },
     ],
   },

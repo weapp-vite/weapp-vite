@@ -123,7 +123,7 @@ function handleClick() {
 
 📚 **完整文档**: [Vue 支持文档](./test/vue/README.md)
 
-### 内置 i18n
+### 一方维护的 i18n
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -138,9 +138,9 @@ export default defineConfig({
 })
 ```
 
-默认扫描 `src/**/i18n/*.json`。原生 Page 使用 `I18nPage(options)`，原生 Component 使用 `behaviors: [I18n]`，Vue/Wevu 使用 `defineOptions({ behaviors: [I18n] })`。模板中的 `t('key', params)` 会在构建时改写为 WXS 调用；逻辑层从 `weapp-vite/i18n` 导入 `setLocale`、`t` 和订阅 API。
+默认扫描 `src/**/i18n/*.json`。Native Component 和使用 Component 构造的 Page 都通过 `behaviors: [I18n]` 接入；只有传统 `Page({...})` 项目需要兼容适配器 `I18nPage(options)`。Vue/Wevu 使用 `defineOptions({ behaviors: [I18n] })`。模板中的 `t('key', params)` 会在构建时改写为 WXS 调用；逻辑层从 `weapp-vite/i18n` 导入 `setLocale`、`t` 和订阅 API。
 
-v1 只支持 `{name}` / `{user.name}` 占位符，不自动持久化语言，也不包含 ICU、复数和日期/数字格式化。完整配置见 [i18n 配置](https://vite.icebreaker.top/config/i18n)。
+底层运行时与 catalog 编译器由独立包 `@weapp-vite/i18n` 提供，也可以在完全不使用 Vite 的原生微信小程序中安装。v1 只支持 `{name}` / `{user.name}` 占位符，不自动持久化语言，也不包含 ICU、复数和日期/数字格式化。完整配置见 [i18n 配置](https://vite.icebreaker.top/config/i18n)。
 
 - 配置智能提示文档：[docs/volar.md](./docs/volar.md)
 - defineConfig 重载说明：[docs/define-config-overloads.md](./docs/define-config-overloads.md)

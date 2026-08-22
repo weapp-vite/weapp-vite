@@ -138,7 +138,7 @@ const moduleExport = await import('../../packages/order/modules/price.ts')
 
 ### `i18n`
 
-微信项目可以通过 `weapp.i18n` 启用内置 locale 编译与运行时切换：
+微信项目可以通过 `weapp.i18n` 启用由 `@weapp-vite/i18n` 提供核心语义的 locale 编译与运行时切换：
 
 ```ts
 export default defineConfig({
@@ -151,7 +151,7 @@ export default defineConfig({
 })
 ```
 
-默认扫描 `**/i18n/*.json`。接入方式、分包实例边界和 v1 占位符限制见 `i18n.md`。
+默认扫描 `**/i18n/*.json`。Component Page、传统 Page、分包实例边界、原生无 Vite 用法和 v1 占位符限制见 `i18n.md`。
 
 ### `styles`
 

@@ -1,11 +1,14 @@
-import { I18nPage, setLocale, t } from 'weapp-vite/i18n'
+import { I18n, setLocale, t } from 'weapp-vite/i18n'
 
-I18nPage({
+Component({
+  behaviors: [I18n],
   data: {
     user: { name: 'Native' },
   },
-  onLoad() {
-    setLocale('en-US')
-    this.setData({ logicText: t('issue845.greeting', this.data) })
+  lifetimes: {
+    attached() {
+      setLocale('en-US')
+      this.setData({ logicText: t('issue845.greeting', this.data) })
+    },
   },
 })

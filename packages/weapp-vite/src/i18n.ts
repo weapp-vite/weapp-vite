@@ -1,4 +1,4 @@
-import type { I18nBehaviorMethods, I18nLocaleChangeSubscription } from './i18n/types'
+import type { I18nBehaviorMethods, I18nLocaleChangeSubscription } from '@weapp-vite/i18n'
 import { WEAPP_I18N_RUNTIME_MARKER } from '@weapp-core/constants'
 
 function unavailable(): never {
@@ -15,4 +15,5 @@ export const setLocale = unavailable as unknown as I18nBehaviorMethods['setLocal
 export const getFallbackLocale = unavailable as unknown as I18nBehaviorMethods['getFallbackLocale']
 export const onLocaleChange = unavailable as unknown as ((handler: (locale: string) => void) => I18nLocaleChangeSubscription)
 
-export type { I18nBehaviorMethods, I18nLocaleChangeSubscription, WeappI18nConfig } from './i18n/types'
+export type { WeappI18nConfig } from './i18n/types'
+export type { I18nBehaviorMethods, I18nLocaleChangeSubscription } from '@weapp-vite/i18n'

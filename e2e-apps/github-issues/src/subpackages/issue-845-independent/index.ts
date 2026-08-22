@@ -1,6 +1,7 @@
-import { I18nPage } from 'weapp-vite/i18n'
+import { I18n } from 'weapp-vite/i18n'
 
-I18nPage({
+Component({
+  behaviors: [I18n],
   data: {
     user: { name: 'Independent' },
   },
