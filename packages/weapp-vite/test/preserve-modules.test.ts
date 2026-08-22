@@ -64,4 +64,55 @@ describe('preserve modules', () => {
       await fs.remove(outDir)
     }
   })
+
+  it.each(['cjs', 'esm'] as const)('keeps all imported source modules with the ** pattern in %s builds', async (jsFormat) => {
+    const outDir = path.resolve(cwd, `dist-preserve-all-${jsFormat}`)
+    await fs.remove(outDir)
+
+    const { ctx, dispose } = await createTestCompilerContext({
+      cwd,
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {
+        build: {
+          outDir,
+          minify: false,
+        },
+        weapp: {
+          jsFormat,
+          chunks: {
+            preserveModules: ['**'],
+          },
+          npm: {
+            enable: false,
+          },
+        },
+      },
+    })
+
+    try {
+      await ctx.buildService.build({ skipNpm: true })
+
+      const files = await scanFiles(outDir)
+      expect(files).toEqual(expect.arrayContaining([
+        'root-single.js',
+        ...preservedFiles,
+      ]))
+
+      const pageCode = await fs.readFile(path.join(outDir, 'pages/index/index.js'), 'utf8')
+      expect(pageCode).not.toContain('__ROOT_SINGLE_MARKER__')
+      expect(pageCode).toMatch(/(?:require\((['"`])\.\.\/\.\.\/root-single\.js\1\)|from\s+(['"`])\.\.\/\.\.\/root-single\.js\2)/)
+
+      const rootCode = await fs.readFile(path.join(outDir, 'root-single.js'), 'utf8')
+      expect(rootCode).toContain('__ROOT_SINGLE_MARKER__')
+
+      const nestedCode = await fs.readFile(path.join(outDir, 'shared/single.js'), 'utf8')
+      expect(nestedCode).toContain('__SINGLE_MARKER__')
+      expect(nestedCode).toMatch(/(?:require\((['"`])\.\/single-leaf\.js\1\)|from\s+(['"`])\.\/single-leaf\.js\2)/)
+    }
+    finally {
+      await dispose()
+      await fs.remove(outDir)
+    }
+  })
 })

@@ -307,6 +307,8 @@ export default defineConfig({
 
 以 `srcRoot: 'src'` 为例，保留大型原生项目的工具和服务目录时应配置 `['utils/**', 'services/**']`，而不是 `['src/utils/**', 'src/services/**']`。只有进入构建依赖图的模块会生成对应文件；源码仍会经过模块解析和 TypeScript 转换，不是原样复制。完整目录与产物示例见[代码分块指南](/guide/chunks#案例-保留原生项目的-utils-和-services-目录)。
 
+需要保留 `srcRoot` 下所有已引用源码模块时，可以配置 `preserveModules: ['**']`。`**` 同时匹配顶层和嵌套模块；`*/**` 不匹配 `srcRoot` 顶层文件。该用法已通过 CJS、ESM 实际构建回归，完整说明见[全量保留案例](/guide/chunks#案例-保留-srcroot-下的所有模块)。
+
 ## `dynamicImports`
 
 - **类型**：`'preserve' | 'native' | 'inline'`

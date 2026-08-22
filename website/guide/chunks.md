@@ -198,6 +198,29 @@ dist/
 
 `preserveModules` 仍由构建器完成模块解析、TypeScript 转换和产物写入；它不会原样复制源码，也不会输出未被页面、组件或其他入口引用的文件。如果目标只是调整多个入口共享模块的输出位置，而不要求单次引用的模块也保持独立，应优先使用 `sharedMode: 'path'`。
 
+### 案例：保留 srcRoot 下的所有模块
+
+如果希望所有进入构建依赖图的源码模块都保持独立文件，可以使用 `**`：
+
+```ts
+import { defineConfig } from 'weapp-vite'
+
+export default defineConfig({
+  weapp: {
+    srcRoot: 'src',
+    chunks: {
+      preserveModules: ['**'],
+    },
+  },
+})
+```
+
+该配置同时匹配 `src/helper.ts`、`src/utils/request.ts` 和更深层级的模块。不要使用 `*/**` 代替：它要求路径至少包含一层目录，不会匹配 `src/helper.ts` 这样的 `srcRoot` 顶层文件。
+
+例如页面同时引用 `src/root-single.ts` 和 `src/shared/single.ts` 时，构建会生成 `root-single.js` 与 `shared/single.js`，页面分别引用这两个文件。仓库回归测试已覆盖 CJS 和 ESM 两种输出格式，并实际检查顶层、嵌套模块及其引用路径。
+
+这个规则不会把页面、组件等逻辑入口改成普通模块，也不会捕获 `srcRoot` 外的依赖或强制输出未引用文件。全量保留会增加 JS 文件数量，建议构建后结合 `wv analyze` 检查包体积和 chunk 分布；只需要保留少数稳定目录时，优先使用更具体的规则。
+
 ## dynamicImports：动态 import 的处理方式
 
 - `preserve`（默认）：保留独立的动态 chunk。

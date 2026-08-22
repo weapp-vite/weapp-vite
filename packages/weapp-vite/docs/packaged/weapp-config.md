@@ -86,6 +86,23 @@ export default defineConfig({
 
 `preserveModules` 保留的是构建后的文件和目录边界。源码仍会经过模块解析、TypeScript 转换并由构建器写入，不会被原样复制；未被入口引用的文件也不会仅因匹配规则而输出。如果只需要改变共享模块的输出位置，不要求单次引用模块保持独立，请使用 `chunks.sharedMode: 'path'`。
 
+需要保留 `srcRoot` 下所有已引用源码模块时，使用 `**`：
+
+```ts
+export default defineConfig({
+  weapp: {
+    srcRoot: 'src',
+    chunks: {
+      preserveModules: ['**'],
+    },
+  },
+})
+```
+
+`**` 同时匹配 `src/helper.ts` 这样的顶层模块和 `src/utils/request.ts` 这样的嵌套模块。不要使用 `*/**` 代替，因为它不会匹配 `srcRoot` 顶层文件。该配置已通过 CJS、ESM 构建回归，顶层模块和嵌套模块都会按相对路径生成独立文件，引用方保留对应文件引用。
+
+页面、组件等逻辑入口仍走各自的入口构建流程，`srcRoot` 外部依赖和未引用文件不会被强制输出。全量保留会增加文件数量，建议结合 `wv analyze` 检查实际包体积；只需要固定目录时优先使用更具体的 glob。
+
 ### 分包异步模块
 
 跨分包 JS 使用微信官方 callback 或 Promise API：
