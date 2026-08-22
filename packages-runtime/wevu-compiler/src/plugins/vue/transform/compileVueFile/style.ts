@@ -10,6 +10,7 @@ export async function compileStylePhase(
   options?: {
     preserveDeepSelectors?: boolean
     transformScoped?: boolean
+    preprocessOptions?: Record<string, Record<string, unknown>>
   },
 ) {
   if (descriptor.styles.length === 0) {
@@ -24,6 +25,7 @@ export async function compileStylePhase(
       filename,
       scoped: styleBlock.scoped,
       modules: styleBlock.module,
+      preprocessOptions: options?.preprocessOptions?.[styleBlock.lang || 'css'],
       preserveDeepSelectors: options?.preserveDeepSelectors,
       transformScoped: options?.transformScoped,
     })

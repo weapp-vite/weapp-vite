@@ -27,7 +27,7 @@ export interface StyleCompileOptions {
   scoped?: boolean
   transformScoped?: boolean
   modules?: boolean | string
-  preprocessOptions?: Record<string, any>
+  preprocessOptions?: Record<string, unknown>
   preserveDeepSelectors?: boolean
 }
 

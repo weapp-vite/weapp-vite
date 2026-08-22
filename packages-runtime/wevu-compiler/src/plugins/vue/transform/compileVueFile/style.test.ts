@@ -51,4 +51,20 @@ describe('compileStylePhase', () => {
     expect(result.style).toContain('.card__title')
     expect(result.style).not.toContain('[data-v-')
   })
+
+  it('passes language-specific preprocess options to compiler-sfc', async () => {
+    const descriptor = parse(`
+<template><view /></template>
+<style lang="scss">.card { color: $brand-color; }</style>
+    `.trim(), { filename: '/project/src/components/card.vue' }).descriptor
+    const result: any = {}
+
+    await compileStylePhase(descriptor, '/project/src/components/card.vue', result, {
+      preprocessOptions: {
+        scss: { additionalData: '$brand-color: red;' },
+      },
+    })
+
+    expect(result.style).toContain('color: red')
+  })
 })
