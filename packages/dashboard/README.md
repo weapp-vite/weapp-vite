@@ -71,6 +71,7 @@ packages/dashboard
 │       └── index.vue
 ├── tsconfig.json
 ├── vite.config.test.ts
+├── vite.shared.ts
 └── vite.config.ts
 ```
 
@@ -106,6 +107,14 @@ pnpm --filter @weapp-vite/dashboard dev
 ```bash
 pnpm --filter @weapp-vite/dashboard build
 ```
+
+Tailwind 配置矩阵与构建性能对照：
+
+```bash
+pnpm benchmark:dashboard-tailwind
+```
+
+该命令使用独立 Node 进程构建相同 dashboard，比较 `@tailwindcss/vite`、完整 `weapp-tailwindcss/vite`、Generic Web 最小配置和 source candidate 消融场景。结果校验 selector、class、Iconify 图标与 CSS 变量，并报告多轮中位数；不设置固定耗时或 CSS 字节阈值。
 
 ## 发布约束
 

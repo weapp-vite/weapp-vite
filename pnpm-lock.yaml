@@ -270,6 +270,9 @@ importers:
       '@swc/core':
         specifier: ^1.16.1
         version: 1.16.1
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.0(supports-color@10.2.2))(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.34.1)(tsx@4.23.12)(yaml@2.9.0))
       '@types/babel__core':
         specifier: ^7.20.5
         version: 7.20.5
@@ -471,6 +474,9 @@ importers:
       postcss-load-config:
         specifier: ^6.0.1
         version: 6.0.1(jiti@2.7.0)(postcss@8.5.26)(tsx@4.23.12)(yaml@2.9.0)
+      postcss-selector-parser:
+        specifier: ^7.1.5
+        version: 7.1.5
       prettier:
         specifier: ^3.9.6
         version: 3.9.6
