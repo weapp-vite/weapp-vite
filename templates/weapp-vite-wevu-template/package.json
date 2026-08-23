@@ -36,7 +36,6 @@
     "@icebreakers/stylelint-config": "catalog:",
     "@types/node": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
-    "@weapp-vite/eslint": "workspace:*",
     "eslint": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "stylelint": "catalog:",

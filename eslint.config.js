@@ -60,6 +60,20 @@ export default await defineEslintConfig({
         'vue/no-useless-template-attributes': 'off',
       },
     }, {
+      files: ['packages/dashboard/**/*.{js,ts,mjs,cjs,vue}'],
+      rules: {
+        'wevu/no-risky-api': 'off',
+        'wevu/no-unsupported-api': 'off',
+        'wevu/no-unsupported-template-feature': 'off',
+      },
+    }, {
+      files: ['**/*.md', '**/*.md/**'],
+      rules: {
+        'wevu/no-risky-api': 'off',
+        'wevu/no-unsupported-api': 'off',
+        'wevu/no-unsupported-template-feature': 'off',
+      },
+    }, {
       files: ['**/*.vue'],
       rules: {
         'vue/valid-v-on': ['error', { modifiers: ['catch', 'mut', 'capture'] }],

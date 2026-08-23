@@ -1,5 +1,4 @@
 import { icebreaker } from '@icebreakers/eslint-config'
-import { wevuCompatibilityRecommended } from '@weapp-vite/eslint'
 
 export default icebreaker(
   {
@@ -16,10 +15,6 @@ export default icebreaker(
       '.weapp-vite/**',
       'src/pages/category/components/goods-category/components/c-sidebar/README.md',
     ],
-  },
-  {
-    ...wevuCompatibilityRecommended,
-    files: ['src/**/*.{js,jsx,ts,tsx,vue}'],
   },
   {
     files: ['src/**/*.{ts,vue,md}'],
