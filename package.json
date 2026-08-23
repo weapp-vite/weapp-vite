@@ -319,7 +319,7 @@
     "supertest": "^7.2.2",
     "tailwindcss": "catalog:tailwind4",
     "tinyexec": "^1.3.0",
-    "tinypool": "^2.1.0",
+    "tinypool": "^2.1.2",
     "ts-morph": "catalog:",
     "tsd": "^0.33.0",
     "tsdown": "0.22.14",
