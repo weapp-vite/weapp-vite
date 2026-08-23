@@ -12,6 +12,7 @@ import type {
 import type { ClassAttributeElement } from './virtualHost'
 import { html } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
+import { createIntersectionObserverBridge } from '../polyfill/intersectionObserver'
 import { createRenderContext } from '../renderContext'
 import { hasOwn } from '../utils/object'
 import { supportsLit } from './constants'
@@ -158,6 +159,14 @@ export function createComponentElementClass({
 
     createSelectorQuery() {
       return createScopedSelectorQuery(this)
+    }
+
+    createIntersectionObserver(options?: {
+      initialRatio?: number
+      observeAll?: boolean
+      thresholds?: number[]
+    }) {
+      return createIntersectionObserverBridge(this, options)
     }
 
     selectComponent(selector: string) {
