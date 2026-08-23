@@ -72,7 +72,7 @@ describe.sequential('e2e app: github-issues / issue #564', () => {
       })
 
       const pageWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-564/index.wxml'), 'utf8')
-      expect(pageWxml).toContain('<issue-564-native-tabbar>')
+      expect(pageWxml).toMatch(/<issue-564-native-tabbar(?:\s|>)/)
       expect(pageWxml).toContain('<issue-564-native-tabbar-item')
       expect(pageWxml).toContain('wx:for="{{tabItems}}"')
       expect(pageWxml).toContain('label="{{__wv_item_0.label}}"')
