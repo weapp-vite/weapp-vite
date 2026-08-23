@@ -1,8 +1,8 @@
 import { resolve } from 'node:path'
-import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import VueRouter from 'vue-router/vite'
+import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { createVueOxcTsconfigGuard } from '../../scripts/vite/vueOxcTsconfigGuard.js'
 
 const dashboardRoot = import.meta.dirname
@@ -48,7 +48,16 @@ export default defineConfig({
     }),
     dashboardVuePlugin,
     createVueOxcTsconfigGuard(dashboardVuePlugin, 'dashboard-vue-oxc-tsconfig-guard'),
-    tailwindcss(),
+    WeappTailwindcss({
+      // Dashboard 是 Web SPA，显式选择 generic Vite 分支，避免被 monorepo 根目录识别为小程序项目。
+      appType: 'native',
+      cssEntries: [resolve(dashboardRoot, 'src/style.css')],
+      generator: {
+        target: 'web',
+      },
+      logLevel: 'silent',
+      tailwindcssBasedir: dashboardRoot,
+    }),
   ],
   resolve: {
     alias: {

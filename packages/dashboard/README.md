@@ -69,8 +69,8 @@ packages/dashboard
 │   ├── useTreemapData.ts
 │   └── pages
 │       └── index.vue
-├── tailwind.config.ts
 ├── tsconfig.json
+├── vite.config.test.ts
 └── vite.config.ts
 ```
 
@@ -89,8 +89,11 @@ packages/dashboard
 - `vue-router`
 - `echarts`
 - `tailwindcss`
+- `weapp-tailwindcss`（Web generator）
 
 ## 开发
+
+源码构建使用的 `weapp-tailwindcss` 需要 Node.js `^22.18.0 || >=24.11.0`。发布包只包含预构建的静态资源，不会把该开发依赖带入用户运行时。
 
 在仓库根目录执行：
 

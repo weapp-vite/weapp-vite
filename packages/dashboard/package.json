@@ -49,12 +49,12 @@
   "devDependencies": {
     "@iconify-json/mdi": "catalog:",
     "@iconify/tailwind4": "catalog:",
-    "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vue-tsc": "catalog:"
+    "vue-tsc": "catalog:",
+    "weapp-tailwindcss": "catalog:"
   },
   "publishConfig": {
     "access": "public",
