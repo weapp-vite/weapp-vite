@@ -1,0 +1,21 @@
+{
+  "name": "i18n-public-types-tsd",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+      "target": "ES2023",
+      "strict": true,
+      "paths": {
+        "weapp-vite/i18n": [
+          "../../dist/i18n.d.mts"
+        ]
+      },
+      "types": [
+        "miniprogram-api-typings"
+      ]
+    }
+  }
+}

@@ -42,6 +42,14 @@ export const WEAPP_VITE_RUNTIME_VIRTUAL_IDS = {
   template: WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID,
 } as const
 
+export const WEAPP_I18N_PUBLIC_MODULE_ID = 'weapp-vite/i18n'
+export const WEAPP_I18N_VIRTUAL_MODULE_ID = 'virtual:weapp-vite/i18n'
+export const WEAPP_I18N_RUNTIME_MARKER = '__WEAPP_VITE_I18N__'
+export const WEAPP_I18N_LOCALE_DATA_KEY = '__wv_i18n_locale'
+export const WEAPP_I18N_DIRECTORY = 'i18n'
+export const WEAPP_I18N_JS_FILE = `${WEAPP_I18N_DIRECTORY}/locales.js`
+export const WEAPP_I18N_WXS_FILE = `${WEAPP_I18N_DIRECTORY}/locales.wxs`
+
 export const WEAPP_VITE_STATEFUL_HMR_DIRECTORY = '__weapp_vite_hmr'
 export const WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE = `${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/control.js`
 export const WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE = `${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/preload.js`

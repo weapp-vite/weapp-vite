@@ -1,0 +1,5 @@
+{
+  "issue845": {
+    "greeting": "你好 {user.name}"
+  }
+}

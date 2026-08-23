@@ -30,7 +30,7 @@ function transformInterpolation(node: any, context: TransformContext): string {
   const { content } = node
   if (content.type === NodeTypes.SIMPLE_EXPRESSION) {
     const rawExpValue = content.content
-    const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue)
+    const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue, context.templateSafeCallNames)
       ? registerRuntimeBindingExpression(rawExpValue, context, { hint: '插值表达式' })
       : null
     const expValue = runtimeExp ?? normalizeWxmlExpressionWithContext(rawExpValue, context)

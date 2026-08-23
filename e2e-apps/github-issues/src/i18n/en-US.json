@@ -1,0 +1,6 @@
+{
+  "issue845": {
+    "fallbackOnly": "Fallback text",
+    "greeting": "Hello {user.name}"
+  }
+}

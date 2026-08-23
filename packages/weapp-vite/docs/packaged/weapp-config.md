@@ -136,6 +136,23 @@ const moduleExport = await import('../../packages/order/modules/price.ts')
 
 适合用目录扫描自动注册组件的项目。组件重名时要先解决命名冲突，不要让自动引入规则长期处于歧义状态。
 
+### `i18n`
+
+微信项目可以通过 `weapp.i18n` 启用由 `@weapp-vite/i18n` 提供核心语义的 locale 编译与运行时切换：
+
+```ts
+export default defineConfig({
+  weapp: {
+    i18n: {
+      defaultLocale: 'zh-CN',
+      fallbackLocale: 'en-US',
+    },
+  },
+})
+```
+
+默认扫描 `**/i18n/*.json`。Component Page、传统 Page、分包实例边界、原生无 Vite 用法和 v1 占位符限制见 `i18n.md`。
+
 ### `styles`
 
 用于生成主包独立样式入口，并按规则向主包与普通分包的页面或组件样式注入相对 `@import`，不会把内容合并进 `app.wxss`：

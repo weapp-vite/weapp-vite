@@ -63,6 +63,24 @@ const classes = useCssModule('theme')
 
 当你在页面或组件里需要显式注册原生小程序组件时，优先明确当前文件使用的 JSON 宏与配置来源，避免多个入口互相覆盖。
 
+## i18n Behavior
+
+启用 `weapp.i18n` 后，Vue/Wevu 页面或组件需要显式接入 Behavior：
+
+```vue
+<script setup lang="ts">
+import { i18n } from 'weapp-vite/i18n'
+
+defineOptions({ behaviors: [i18n.behavior] })
+</script>
+
+<template>
+  <view>{{ t('common.greeting', { user }) }}</view>
+</template>
+```
+
+编译器只保留当前配置的 i18n 直接调用；其他函数调用仍回退逻辑线程。完整限制见 `i18n.md`。
+
 ## HTML 标签迁移辅助
 
 如果你把偏 Web 风格的模板迁到 `.vue`，可以优先关注这两个配置：

@@ -139,6 +139,15 @@ describe('template expression globals', () => {
     expect(shouldFallbackToRuntimeBinding('content === \'text\'')).toBe(false)
   })
 
+  it('only preserves configured direct template calls', () => {
+    const safeCalls = new Set(['t'])
+
+    expect(shouldFallbackToRuntimeBinding('t(\'common.title\')', safeCalls)).toBe(false)
+    expect(shouldFallbackToRuntimeBinding('other(\'common.title\')', safeCalls)).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('t(other())', safeCalls)).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('messages?.t(\'common.title\')', safeCalls)).toBe(true)
+  })
+
   it('preserves vue slot metadata in scoped-slot expressions', () => {
     const context = createContext()
     context.rewriteScopedSlot = true

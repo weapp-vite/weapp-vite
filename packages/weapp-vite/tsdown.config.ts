@@ -9,6 +9,7 @@ export default defineConfig({
     'json': './src/json.ts',
     'volar': './src/volar.ts',
     'runtime': './src/plugins/vue/runtime.ts',
+    'i18n': './src/i18n.ts',
     'mcp': './src/mcp.ts',
     'auto-import-components/resolvers': './src/auto-import-components/resolvers/index.ts',
     'resolvers': './src/resolvers.ts',

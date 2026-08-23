@@ -9,6 +9,7 @@ import { autoImport } from './autoImport'
 import { autoRoutes } from './autoRoutes'
 import { weappVite } from './core'
 import { css } from './css'
+import { i18n } from './i18n'
 import { createOutputFinalizerPlugin } from './outputFinalizer'
 import { preflight } from './preflight'
 import { createReactPlugin, isReactEnabled } from './react'
@@ -91,8 +92,8 @@ export function vitePluginWeapp(
     groups.push(autoImport(ctx))
   }
 
-  groups.push(weappVite(ctx, subPackageMeta), wxs(ctx), css(ctx))
-  groups.push([createOutputFinalizerPlugin(ctx)])
+  groups.push(i18n(ctx, subPackageMeta), weappVite(ctx, subPackageMeta), wxs(ctx), css(ctx))
+  groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta)])
 
   const assembled = attachRuntimePlugins(ctx, flatten(groups))
   if (subPackageMeta) {

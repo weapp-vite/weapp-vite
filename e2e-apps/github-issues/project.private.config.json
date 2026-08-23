@@ -767,6 +767,34 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-845-native/index",
+          "pathName": "pages/issue-845-native/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-845-vue/index",
+          "pathName": "pages/issue-845-vue/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/issue-845-normal/index",
+          "pathName": "subpackages/issue-845-normal/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/issue-845-independent/index",
+          "pathName": "subpackages/issue-845-independent/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

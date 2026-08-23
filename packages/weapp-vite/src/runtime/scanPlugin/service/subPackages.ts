@@ -31,9 +31,11 @@ export function loadSubPackages(ctx: MutableCompilerContext) {
         const normalizedRoot = subPackage.root ? normalizeRoot(subPackage.root) : undefined
         const subPackageConfig = normalizedRoot ? configService.weappViteConfig?.subPackages?.[normalizedRoot] : undefined
         const npmSubPackageConfig = normalizedRoot ? configService.weappViteConfig?.npm?.subPackages?.[normalizedRoot] : undefined
+        const independent = subPackage.independent ?? subPackageConfig?.independent
         const resolvedSubPackage = {
           ...subPackage,
           ...(normalizedRoot ? { root: normalizedRoot } : {}),
+          ...(independent === undefined ? {} : { independent }),
           dependencies: npmSubPackageConfig?.dependencies,
           inlineConfig: subPackageConfig?.inlineConfig,
         }
@@ -50,7 +52,7 @@ export function loadSubPackages(ctx: MutableCompilerContext) {
         meta.watchSharedStyles = subPackageConfig?.watchSharedStyles ?? true
         if (normalizedRoot) {
           subPackageMap.set(normalizedRoot, meta)
-          if (subPackage.independent) {
+          if (resolvedSubPackage.independent) {
             independentSubPackageMap.set(normalizedRoot, meta)
             if (scanState.isDirty) {
               independentDirtyRoots.add(normalizedRoot)

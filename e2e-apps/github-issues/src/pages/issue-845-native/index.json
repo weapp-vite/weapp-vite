@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "issue-845-native",
+  "usingComponents": {
+    "issue-845-i18n-card": "../../components/issue-845-i18n-card/index"
+  }
+}

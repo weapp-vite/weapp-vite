@@ -17,6 +17,7 @@ const issue779CssPreEnabled = process.env.WEAPP_GITHUB_ISSUE_779_CSS_PRE === 'tr
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const issue826PreserveEnabled = process.env.WEAPP_GITHUB_ISSUE_826_PRESERVE === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.issue826.test.ts')
+const issue845I18nEnabled = process.env.WEAPP_GITHUB_ISSUE_845_I18N === 'true'
 const issue793BuildScope = process.env.WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE
 const issue793BuildScopeEnabled = issue793BuildScope === 'true'
   || issue793BuildScope === 'subpackage'
@@ -213,6 +214,17 @@ const matchedGithubIssuesTestFile = Object.keys(githubIssuesRouteGroups)
   .find(testFile => e2eTargetFile.endsWith(testFile))
 
 function resolveGithubIssuesAutoRoutes() {
+  if (issue845I18nEnabled) {
+    return {
+      include: [
+        'pages/issue-845-native/**',
+        'pages/issue-845-vue/**',
+        'components/issue-845-i18n-card/**',
+        'subpackages/issue-845-normal/**',
+        'subpackages/issue-845-independent/**',
+      ],
+    }
+  }
   if (issue826PreserveEnabled) {
     return {
       include: [
@@ -462,6 +474,9 @@ const issue779CssPrePlugin = issue779CssPreEnabled
   : undefined
 
 function resolveGithubIssuesBuildConfig() {
+  if (issue845I18nEnabled) {
+    return { outDir: 'dist-issue-845', minify: false }
+  }
   if (issue826PreserveEnabled) {
     return {
       outDir: process.env.WEAPP_GITHUB_ISSUE_826_OUT_DIR ?? 'dist-issue-826',
@@ -506,19 +521,34 @@ export default defineConfig({
     'import.meta.env.ISSUE_484_FLAG': '123456',
   },
   weapp: {
+    ...(issue845I18nEnabled
+      ? {
+          i18n: {
+            defaultLocale: 'zh-CN',
+            fallbackLocale: 'en-US',
+          },
+        }
+      : {}),
     hmr: {
       logLevel: 'verbose',
       profileJson: true,
     },
     srcRoot: 'src',
     autoRoutes: resolveGithubIssuesAutoRoutes(),
-    subPackages: issue793BuildScopeEnabled
+    subPackages: issue845I18nEnabled
       ? {
-          subs: {},
+          'subpackages/issue-845-normal': {},
+          'subpackages/issue-845-independent': {
+            independent: true,
+          },
         }
-      : {
-          'subpackages/require-async': {},
-        },
+      : issue793BuildScopeEnabled
+        ? {
+            subs: {},
+          }
+        : {
+            'subpackages/require-async': {},
+          },
     ...(issue793BuildScopeEnabled
       ? {
           buildScope: {

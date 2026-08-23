@@ -31,6 +31,7 @@ keywords:
 - 需要“打包后执行配置文件”：用 `rolldown-require`
 - 想追踪 Vite 插件耗时瓶颈：用 `vite-plugin-performance`
 - 想在非 Vite 场景复用 Wevu 编译能力：用 `@wevu/compiler`
+- 想在不使用 Vite 的原生微信小程序中使用一方维护的 i18n：用 `@weapp-vite/i18n`
 - 想统一多端小程序 API 调用风格：用 `@wevu/api`
 - 想在浏览器里做小程序语法预览、调试与兼容验证：用 `@weapp-vite/web`（实验）
 - 想增强 `<json>` 配置块智能提示：用 `@weapp-vite/volar`
@@ -47,6 +48,7 @@ keywords:
 | `rolldown-require`        | 以 Rolldown 为核心的 bundle+require 工具 | 加载 TS/MJS/CJS 配置文件                           | [/packages/rolldown-require/index.zh](/packages/rolldown-require/index.zh) |
 | `vite-plugin-performance` | Vite 插件 Hook 耗时分析                  | 定位构建慢点、插件调优                             | [/packages/vite-plugin-performance](/packages/vite-plugin-performance)     |
 | `@wevu/compiler`          | Wevu 编译能力底座                        | 复用 SFC/模板编译管线                              | [/packages/wevu-compiler](/packages/wevu-compiler)                         |
+| `@weapp-vite/i18n`        | 原生微信小程序 i18n 运行时与编译器       | Native Page/Component、WXS 模板翻译与 locale 切换  | [/packages/i18n](/packages/i18n)                                           |
 | `@wevu/api`               | 跨平台小程序 API 封装                    | Promise 风格统一调用                               | [/packages/weapi/](/packages/weapi/)                                       |
 | `@weapp-vite/web`         | Web 端实验运行时与插件                   | 浏览器侧验证小程序语法/页面                        | [/packages/web](/packages/web)                                             |
 | `@weapp-vite/mcp`         | MCP 服务实现                             | AI 代码助手接入与仓库能力开放                      | [/packages/mcp](/packages/mcp)                                             |

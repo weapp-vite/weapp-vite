@@ -38,7 +38,10 @@ import type {
   WeappWebConfig,
 } from './foundation'
 import type { WeappAstConfig } from '@/ast'
+import type { WeappI18nConfig } from '@/i18n/types'
 import type { LoggerConfig } from '@/logger'
+
+export type { WeappI18nConfig } from '@/i18n/types'
 
 /**
  * @description 分包元信息
@@ -169,6 +172,10 @@ export interface WeappViteConfig {
    * - `object`: 启用自动路由并允许细粒度控制
    */
   autoRoutes?: boolean | WeappAutoRoutesConfig
+  /**
+   * 小程序 i18n 构建与运行时配置。
+   */
+  i18n?: WeappI18nConfig
   /**
    * 插件入口目录（`plugin.json` 所在目录）。
    */
