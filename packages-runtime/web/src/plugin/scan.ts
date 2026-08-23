@@ -1,5 +1,5 @@
 import type { WebTabBarConfig } from '../shared/tabBar'
-import type { ComponentEntry, LayoutEntry, ModuleMeta, PageEntry, ResolveWebAutoImportTag, ResolveWebModuleId, ScanState, WarnFn } from './types'
+import type { ComponentEntry, LayoutEntry, ModuleMeta, PageEntry, ResolveWebAutoImportTag, ResolveWebModuleId, ScanState, WarnFn, WebStylePreprocessOptions } from './types'
 
 import { readdir } from 'node:fs/promises'
 import process from 'node:process'
@@ -21,6 +21,7 @@ interface ScanProjectOptions {
   resolveAutoImportTag?: ResolveWebAutoImportTag
   resolveAppConfig?: (appConfigPath: string) => Promise<Record<string, unknown> | undefined>
   uniApp?: { include: string[] }
+  stylePreprocessOptions?: WebStylePreprocessOptions
 }
 
 export function getStableWebComponentId(script: string, srcRoot: string) {
@@ -47,7 +48,7 @@ function resolveComponentBase(raw: string, importerDir: string, srcRoot: string)
   return undefined
 }
 
-export async function scanProject({ srcRoot, warn, state, resolveId, resolveAutoImportTag, resolveAppConfig, uniApp }: ScanProjectOptions) {
+export async function scanProject({ srcRoot, warn, state, resolveId, resolveAutoImportTag, resolveAppConfig, uniApp, stylePreprocessOptions }: ScanProjectOptions) {
   state.moduleMeta.clear()
   state.pageNavigationMap.clear()
   state.templateComponentMap.clear()
@@ -162,7 +163,7 @@ export async function scanProject({ srcRoot, warn, state, resolveId, resolveAuto
 
     const componentJsonBasePath = `${script.replace(new RegExp(`${extname(script)}$`), '')}.json`
     const sfcConfig = script.endsWith('.vue')
-      ? (await compileScannedSfc({ filename: script, meta: componentMeta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp })).config
+      ? (await compileScannedSfc({ filename: script, meta: componentMeta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp, stylePreprocessOptions })).config
       : undefined
     const componentTags = sfcConfig
       ? await collectComponentTagsFromConfig({
@@ -228,7 +229,7 @@ export async function scanProject({ srcRoot, warn, state, resolveId, resolveAuto
     }
 
     const sfcConfig = script.endsWith('.vue')
-      ? (await compileScannedSfc({ filename: script, meta: pageMeta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp })).config
+      ? (await compileScannedSfc({ filename: script, meta: pageMeta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp, stylePreprocessOptions })).config
       : undefined
     const resolvedNavigationConfig = mergeNavigationConfig(
       appNavigationDefaults,
@@ -334,7 +335,7 @@ export async function scanProject({ srcRoot, warn, state, resolveId, resolveAuto
     : undefined
   if (appScript?.endsWith('.vue')) {
     const appMeta = state.moduleMeta.get(normalizePath(appScript))!
-    const sfcConfig = (await compileScannedSfc({ filename: appScript, meta: appMeta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp })).config
+    const sfcConfig = (await compileScannedSfc({ filename: appScript, meta: appMeta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp, stylePreprocessOptions })).config
     appJson = {
       ...(sfcConfig ?? {}),
       ...(appJson ?? {}),

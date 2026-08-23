@@ -1,5 +1,17 @@
 ## Router 入口
 
+### `<RouterLink>` / `<router-link>` {#routerlink}
+
+<!-- api-reference-details -->
+
+**类型签名：** Wevu 不导出 `RouterLink` 组件。
+
+**运行时说明：** 小程序没有 Web history 链接组件。模板内使用原生 `<navigator>`，命令式场景使用 `router.push()`。
+
+**Vue Router 差异：** 不提供 `RouterView`、`RouterLink` 或 Web history；导航由宿主页面栈和 tabBar 决定。
+
+**示例：** 见 [本组示例](/wevu/api/router#example-router-entry)。
+
 ### `createRouter()` {#createrouter}
 
 <!-- api-reference-details -->

@@ -667,7 +667,10 @@ describe('vue transform plugin', () => {
     await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const res = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 1))
-    expect(res).toEqual({ code: '.b{color:blue}', map: null })
+    expect(res).toMatchObject({ map: null })
+    expect(res.code).toContain('.b_')
+    expect(res.code).toContain('[data-v-')
+    expect(res.code).toContain('color:blue')
   })
 
   it('load() strips query before reading vue file', async () => {

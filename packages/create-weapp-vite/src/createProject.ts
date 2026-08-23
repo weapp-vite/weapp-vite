@@ -6,6 +6,7 @@ import path from 'pathe'
 import { version as reactRuntimeVersion } from '../../../packages-runtime/react/package.json'
 import { version as wevuVersion } from '../../../packages-runtime/wevu/package.json'
 import { version as dashboardVersion } from '../../dashboard/package.json'
+import { version as eslintPackageVersion } from '../../eslint/package.json'
 import { version } from '../../weapp-vite/package.json'
 import { createAgentsGuidelines } from './agents'
 import { TemplateName } from './enums'
@@ -347,6 +348,7 @@ export async function createProject(
   }
 
   upsertExistingDependencyVersion(pkgJson, 'weapp-vite', toCaretVersion(version))
+  upsertExistingDependencyVersion(pkgJson, '@weapp-vite/eslint', toCaretVersion(eslintPackageVersion))
   upsertExistingDependencyVersion(pkgJson, '@weapp-vite/react', toCaretVersion(reactRuntimeVersion))
   upsertExistingDependencyVersion(pkgJson, 'wevu', toCaretVersion(wevuVersion))
   upsertExistingDependencyVersion(pkgJson, '@weapp-vite/dashboard', toCaretVersion(dashboardVersion))

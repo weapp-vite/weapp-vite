@@ -1,0 +1,72 @@
+{
+  "name": "@weapp-vite/eslint",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Wevu compatibility ESLint plugin and recommended configuration",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "homepage": "https://vite.icebreaker.top/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/eslint"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "eslint",
+    "wevu",
+    "vue",
+    "pinia",
+    "vue-router",
+    "weapp-vite"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsdown -w --sourcemap",
+    "build": "tsdown",
+    "test": "vitest run --config ./vitest.config.ts",
+    "test:types": "cd test-d/compatibility-eslint-public-types && tsd",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "release": "pnpm publish",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "peerDependencies": {
+    "eslint": ">=9"
+  },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    }
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@typescript-eslint/parser": "^8.67.0",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "^4.1.11",
+    "vue-eslint-parser": "^10.4.1"
+  }
+}

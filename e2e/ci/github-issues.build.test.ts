@@ -113,6 +113,10 @@ function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+function stripGeneratedScopeAttrs(code: string) {
+  return code.replace(/\sdata-v-[\w-]+=""/g, '')
+}
+
 function expectModuleReference(code: string, specifier: string) {
   const escapedSpecifier = escapeRegex(specifier)
   const escapedBuiltSpecifier = `(?:\\.\\.\\/)+miniprogram_npm\\/${escapedSpecifier}(?:\\/index)?`
@@ -679,7 +683,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     await runBuild()
 
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-338/index.wxml')
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
 
     expect(pageWxml).toContain(`<weapp-layout-default ${SLOT_OWNER_ATTR}>`)
     expect(pageWxml).toContain('<block wx:if="{{true}}"><view')
@@ -974,7 +978,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-554/index.json')
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-554/index.wxml')
     const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
 
     expect(pageJson.usingComponents).toMatchObject({
       'loop-slot-cell': '/components/issue-554/LoopSlotCell/index',
@@ -1213,7 +1217,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-475/index.wxml')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const componentJs = await fs.readFile(componentJsPath, 'utf-8')
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
 
     expect(pageWxml).toContain('class="issue475-page"')
     expect(pageWxml).toContain('{{pageLabel}}')
@@ -1405,7 +1409,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageJsPath = path.join(DIST_ROOT, 'pages/issue-574/index.js')
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-574/VanCell/index.wxml')
 
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
     const defaultIndex = pageWxml.indexOf('data-order="default"')
@@ -1581,7 +1585,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageJsPath = path.join(DIST_ROOT, 'pages/issue-597/index.js')
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-597/Issue597Card/index.wxml')
 
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
@@ -1610,7 +1614,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const legacyForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613LegacyViewForwarder/index.wxml')
     const legacyForwarderJsonPath = path.join(DIST_ROOT, 'components/issue-613/Issue613LegacyViewForwarder/index.json')
     const blockForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/block-forwarder/index.wxml')
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
     const forwarderWxml = await fs.readFile(forwarderWxmlPath, 'utf-8')
@@ -1722,7 +1726,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
     const scopedSlotJson = await fs.readJson(scopedSlotJsonPath) as { component?: boolean, styleIsolation?: string }
-    const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')
+    const scopedSlotWxml = stripGeneratedScopeAttrs(await fs.readFile(scopedSlotWxmlPath, 'utf-8'))
     const hostWxml = await fs.readFile(hostWxmlPath, 'utf-8')
 
     expect(pageWxml).toContain('issue-521 scoped slot flex layout')
@@ -1754,7 +1758,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
-    const scopedSlotWxml = await fs.readFile(scopedSlotWxmlPath, 'utf-8')
+    const scopedSlotWxml = stripGeneratedScopeAttrs(await fs.readFile(scopedSlotWxmlPath, 'utf-8'))
     const hostWxml = await fs.readFile(hostWxmlPath, 'utf-8')
 
     expect(pageWxml).toContain('issue-510 augmented slot provide inject')
@@ -1781,9 +1785,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
-    const parentScopedSlotWxml = await fs.readFile(parentScopedSlotWxmlPath, 'utf-8')
+    const parentScopedSlotWxml = stripGeneratedScopeAttrs(await fs.readFile(parentScopedSlotWxmlPath, 'utf-8'))
     const parentScopedSlotJson = await fs.readJson(parentScopedSlotJsonPath) as { componentGenerics?: Record<string, true>, usingComponents?: Record<string, string> }
-    const childScopedSlotWxml = await fs.readFile(childScopedSlotWxmlPath, 'utf-8')
+    const childScopedSlotWxml = stripGeneratedScopeAttrs(await fs.readFile(childScopedSlotWxmlPath, 'utf-8'))
 
     expect(pageWxml).toContain('issue-547 nested augmented slot')
     expect(pageWxml).toContain('generic:scoped-slots-default=')
@@ -1829,9 +1833,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
       'issue #558 owner proxy runtime',
     )
 
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
     const pageJson = await fs.readJson(pageJsonPath) as { usingComponents?: Record<string, string> }
-    const scopedSlotWxml = (await Promise.all(scopedSlotFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf-8')))).join('\n')
+    const scopedSlotWxml = stripGeneratedScopeAttrs((await Promise.all(scopedSlotFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf-8')))).join('\n'))
     const scopedSlotJs = (await Promise.all(scopedSlotJsFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf-8')))).join('\n')
     const scopedSlotJson = (await Promise.all(scopedSlotJsonFiles.map(file => fs.readFile(path.join(DIST_ROOT, file), 'utf-8')))).join('\n')
     const cellWxml = await fs.readFile(cellWxmlPath, 'utf-8')
@@ -1957,7 +1961,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageJsPath = path.join(DIST_ROOT, 'pages/slot-flex-layout/index.js')
     const componentWxmlPath = path.join(DIST_ROOT, 'components/slot-flex-host/index.wxml')
 
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
@@ -2033,7 +2037,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const dialogIndexPath = path.join(DIST_ROOT, 'subpackages/issue-466/miniprogram_npm/tdesign-miniprogram/dialog/index.js')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const nativePageJs = await fs.readFile(nativePageJsPath, 'utf-8')
-    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
     const pageJson = await fs.readJson(pageJsonPath)
 
     expect(await fs.pathExists(dialogIndexPath)).toBe(true)
@@ -2736,7 +2740,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-322/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-322/index.js')
-    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageWxml = stripGeneratedScopeAttrs(await fs.readFile(issuePageWxmlPath, 'utf-8'))
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
 
     expect(issuePageWxml).toContain('issue-322 class/v-show first paint flicker')

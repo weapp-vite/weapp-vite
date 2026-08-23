@@ -1,7 +1,7 @@
 import type { NodePath } from '@babel/traverse'
 import type { CallExpression } from '@babel/types'
 import type { VueTransformResult } from 'wevu/compiler'
-import type { ModuleMeta, ResolveWebAutoImportTag, ResolveWebModuleId, ScanState } from './types'
+import type { ModuleMeta, ResolveWebAutoImportTag, ResolveWebModuleId, ScanState, WebStylePreprocessOptions } from './types'
 import { parse } from '@babel/parser'
 import _babelTraverse from '@babel/traverse'
 import * as t from '@babel/types'
@@ -43,8 +43,9 @@ export async function compileWebVueSfc(options: {
   resolveId?: ResolveWebModuleId
   resolveAutoImportTag?: ResolveWebAutoImportTag
   uniApp?: { include: string[] }
+  stylePreprocessOptions?: WebStylePreprocessOptions
 }) {
-  const { filename, meta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp } = options
+  const { filename, meta, srcRoot, state, resolveId, resolveAutoImportTag, uniApp, stylePreprocessOptions } = options
   const source = uniApp && isUniAppCompatibilityFile(filename, srcRoot, uniApp.include)
     ? transformUniAppSource(options.source, { filename, target: 'h5' }).code
     : options.source
@@ -53,6 +54,7 @@ export async function compileWebVueSfc(options: {
     isPage: meta.kind === 'page',
     sourceMap: false,
     style: {
+      preprocessOptions: stylePreprocessOptions,
       preserveDeepSelectors: true,
       transformScoped: false,
     },
@@ -107,6 +109,7 @@ export async function ensureWebVueSfcResult(options: {
   resolveId?: ResolveWebModuleId
   resolveAutoImportTag?: ResolveWebAutoImportTag
   uniApp?: { include: string[] }
+  stylePreprocessOptions?: WebStylePreprocessOptions
 }) {
   const cached = options.state.sfcResults.get(options.filename)
   if (cached) {

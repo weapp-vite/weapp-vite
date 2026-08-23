@@ -71,6 +71,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/sfc-styles/index",
+          "pathName": "pages/sfc-styles/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/subpath-entries/index",
           "pathName": "pages/subpath-entries/index",
           "query": "",

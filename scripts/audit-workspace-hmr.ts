@@ -786,7 +786,7 @@ function createNativeScriptScenario(project: ProjectCase, sourcePath: string): S
     sourcePath,
     outputPath: resolveHmrScriptOutputPath(project, sourcePath),
     statefulClient: project.hmrRuntime === 'stateful',
-    mutate: (source, marker) => `${source.trimEnd()}\nconsole.log('${marker}')\n`,
+    mutate: (source, marker) => `${source.trimEnd()}\nglobalThis.__WEAPP_VITE_HMR_AUDIT__ = '${marker}'\n`,
   }
 }
 
@@ -819,7 +819,7 @@ function createVueScenarios(project: ProjectCase, sourcePath: string, source: st
       sourcePath,
       outputPath: scriptOutput,
       statefulClient: project.hmrRuntime === 'stateful',
-      mutate: (source, marker) => insertBeforeClosingTag(source, 'script', `\nconsole.log('${marker}')\n`),
+      mutate: (source, marker) => insertBeforeClosingTag(source, 'script', `\nglobalThis.__WEAPP_VITE_HMR_AUDIT__ = '${marker}'\n`),
     },
     {
       id: 'vue-style',

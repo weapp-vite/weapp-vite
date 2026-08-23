@@ -128,6 +128,7 @@ export const WEVU_ROOT_HMR_EXPORTS = Object.freeze([
   'useBindModel',
   'useBoundingClientRect',
   'useChangeModel',
+  'useCssModule',
   'useDisposables',
   'useElementIntersectionObserver',
   'useIntersectionObserver',

@@ -141,7 +141,6 @@ export const wevuVueGapSeeds: WevuApiSeed[] = [
   unsupported('onWatcherCleanup()', '响应式与调度', 'reactivity', 'reactivity-core', 'onwatchercleanup'),
   unsupported('onRenderTracked()', '生命周期', 'lifecycle', 'composition-api-lifecycle', 'onrendertracked'),
   unsupported('onRenderTriggered()', '生命周期', 'lifecycle', 'composition-api-lifecycle', 'onrendertriggered'),
-  unsupported('hasInjectionContext()', 'Setup 与宿主能力', 'setup', 'composition-api-dependency-injection', 'has-injection-context'),
   unsupported('useId()', 'Setup 与宿主能力', 'setup', 'composition-api-helpers', 'useid'),
   ...[
     ['expose', 'options-state'],

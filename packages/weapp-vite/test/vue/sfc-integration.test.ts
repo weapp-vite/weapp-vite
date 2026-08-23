@@ -4,7 +4,7 @@ import { compileVueFile } from '../../src/plugins/vue/transform'
 
 describe('Vue SFC Integration Tests', () => {
   describe('Complete SFC Compilation', () => {
-    it('should compile a simple Vue SFC', () => {
+    it('should compile a simple Vue SFC', async () => {
       const sfc = `
 <template>
   <view class="container">
@@ -46,7 +46,7 @@ const handleClick = () => {
       expect(scriptCompiled.content).toContain('message')
 
       // 3. Compile style
-      const styleResult = compileVueStyleToWxss(descriptor.styles[0], {
+      const styleResult = await compileVueStyleToWxss(descriptor.styles[0], {
         id: 'test123',
         scoped: true,
       })
@@ -170,7 +170,7 @@ import SlotHost from './SlotHost.vue'
       expect(result.template).not.toContain('<view slot="icon">')
     })
 
-    it('should compile SFC with CSS Modules', () => {
+    it('should compile SFC with CSS Modules', async () => {
       const sfc = `
 <template>
   <view :class="$style.container">
@@ -195,7 +195,7 @@ export default {}
       const { descriptor } = parse(sfc, { filename: 'test.vue' })
 
       // Compile style
-      const styleResult = compileVueStyleToWxss(descriptor.styles[0], {
+      const styleResult = await compileVueStyleToWxss(descriptor.styles[0], {
         id: 'test123',
         modules: true,
       })
@@ -207,7 +207,7 @@ export default {}
       expect($style?.title).toMatch(/title_\w+/)
     })
 
-    it('should compile SFC with dynamic component', () => {
+    it('should compile SFC with dynamic component', async () => {
       const sfc = `
 <template>
   <component :is="currentView" :data="data" />
@@ -337,7 +337,7 @@ const computedValue = computed(() => Boolean(source))
   })
 
   describe('Complex SFC Scenarios', () => {
-    it('should handle nested components', () => {
+    it('should handle nested components', async () => {
       const sfc = `
 <template>
   <view class="outer">
@@ -376,14 +376,14 @@ const handleUpdate = (val) => {
       expect(templateResult.code).toContain('value="{{data}}"')
 
       // Style
-      const styleResult = compileVueStyleToWxss(descriptor.styles[0], {
+      const styleResult = await compileVueStyleToWxss(descriptor.styles[0], {
         id: 'test456',
         scoped: true,
       })
       expect(styleResult.code).toContain('[data-v-test456]')
     })
 
-    it('should handle multiple style blocks', () => {
+    it('should handle multiple style blocks', async () => {
       const sfc = `
 <template>
   <view class="container">Content</view>
@@ -407,8 +407,8 @@ const handleUpdate = (val) => {
       expect(descriptor.styles).toHaveLength(2)
 
       // Compile both styles
-      const style1 = compileVueStyleToWxss(descriptor.styles[0], { id: 'test1', scoped: true })
-      const style2 = compileVueStyleToWxss(descriptor.styles[1], { id: 'test2', scoped: false })
+      const style1 = await compileVueStyleToWxss(descriptor.styles[0], { id: 'test1', scoped: true })
+      const style2 = await compileVueStyleToWxss(descriptor.styles[1], { id: 'test2', scoped: false })
 
       expect(style1.code).toContain('[data-v-test1]')
       expect(style2.code).not.toContain('[data-v-')

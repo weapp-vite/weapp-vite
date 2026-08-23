@@ -1,7 +1,7 @@
 {
   "version": 1,
   "scope": "templates",
-  "generatedAt": "2026-04-29T01:44:40.651Z",
+  "generatedAt": "2026-08-22T18:58:25.106Z",
   "mode": "templates-baseline",
   "thresholds": {
     "maxStartupMs": 30000,
@@ -199,6 +199,32 @@
           "pendingCount": 1,
           "emittedCount": 1,
           "impactFiles": 5
+        }
+      }
+    },
+    "templates/weapp-vite-multi-platform-sfc-template": {
+      "startupMs": 2774,
+      "scenarios": {
+        "vue-template": {
+          "totalMs": 209,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "vue-script": {
+          "totalMs": 210,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "vue-style": {
+          "totalMs": 216,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
         }
       }
     },

@@ -125,6 +125,10 @@ export interface CompileVueFileOptions {
      * 是否在当前阶段改写 scoped 选择器。预处理语言应由最终 CSS 管线完成隔离时可关闭。
      */
     transformScoped?: boolean
+    /**
+     * 按预处理语言传递的 Vite CSS 预处理选项。
+     */
+    preprocessOptions?: Record<string, Record<string, unknown>>
   }
   json?: {
     kind?: 'app' | 'page' | 'component'
