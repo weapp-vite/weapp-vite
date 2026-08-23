@@ -184,8 +184,8 @@ catalogs:
       specifier: ^6.0.3
       version: 6.0.3
     uview-plus:
-      specifier: 3.8.108
-      version: 3.8.108
+      specifier: 3.8.112
+      version: 3.8.112
     vite:
       specifier: 8.2.2
       version: 8.2.2
@@ -228,7 +228,7 @@ overrides:
   rolldown: 1.2.5
 
 patchedDependencies:
-  uview-plus@3.8.108: d2b54ed3b10ce973a3037ef6ecf93c5e43bbfc01d588d557721fdc971c5bccab
+  uview-plus@3.8.112: 4d6c82883ae98217ed3a768ceba8473511d60f5a18775c79acd621a5ce35756f
 
 importers:
 
@@ -1983,7 +1983,7 @@ importers:
     dependencies:
       uview-plus:
         specifier: 'catalog:'
-        version: 3.8.108(patch_hash=d2b54ed3b10ce973a3037ef6ecf93c5e43bbfc01d588d557721fdc971c5bccab)
+        version: 3.8.112(patch_hash=4d6c82883ae98217ed3a768ceba8473511d60f5a18775c79acd621a5ce35756f)
       wevu:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
@@ -17147,8 +17147,8 @@ packages:
     deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
-  uview-plus@3.8.108:
-    resolution: {integrity: sha512-tn3zfY+2NF0934CnCezVkrXW16hvyt1Jn62ORfyMq2QDs2KDrDLqrHsddTlhejJx5F/SVlu9X+g9vfULj/9zVA==}
+  uview-plus@3.8.112:
+    resolution: {integrity: sha512-IkwKy6QBHAEgBnGtursqogt5qgyNo1eA2ph7zJJJwMK2TWJj4DQFWB9Zh7bmy0mTJ4ufLk02BI1lbTU+kHmGQQ==}
     engines: {HBuilderX: ^3.1.0, uni-app: ^4.66, uni-app-x: ''}
 
   valibot@1.4.2:
@@ -32260,7 +32260,7 @@ snapshots:
 
   uuid@9.0.1: {}
 
-  uview-plus@3.8.108(patch_hash=d2b54ed3b10ce973a3037ef6ecf93c5e43bbfc01d588d557721fdc971c5bccab): {}
+  uview-plus@3.8.112(patch_hash=4d6c82883ae98217ed3a768ceba8473511d60f5a18775c79acd621a5ce35756f): {}
 
   valibot@1.4.2(typescript@6.0.3):
     optionalDependencies:

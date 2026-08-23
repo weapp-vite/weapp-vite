@@ -13,6 +13,6 @@ defineComponentLibraryWebSuite({
   progressLabel: 'uview-plus-web',
   scenarios: componentScenarios,
   serverPortEnv: 'UVIEW_PLUS_WEB_PORT',
-  suiteName: 'uview-plus 3.8.108 Web 全组件兼容',
+  suiteName: 'uview-plus 3.8.112 Web 全组件兼容',
   updateBaselinesEnv: 'UVIEW_PLUS_UPDATE_BASELINES',
 })

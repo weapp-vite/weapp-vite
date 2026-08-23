@@ -42,7 +42,7 @@ export const TEMPLATE_CATALOG = {
   'tailwind-variants': '^3.3.1',
   'tdesign-miniprogram': '^1.16.0',
   'ts-morph': '^28.0.0',
-  'uview-plus': '3.8.108',
+  'uview-plus': '3.8.112',
   'vite-plugin-inspect': '^12.0.2',
   'vue-tsc': '^3.3.11',
   'weapp-tailwindcss': '^5.3.4',

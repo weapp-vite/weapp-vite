@@ -93,7 +93,7 @@ async function main() {
     projectDescription: 'uview-plus 全组件启动条件',
     projectName: 'uview-plus-compat',
     title: 'uview-plus',
-    versionLabel: 'uview-plus 3.8.108',
+    versionLabel: 'uview-plus 3.8.112',
   })
 }
 

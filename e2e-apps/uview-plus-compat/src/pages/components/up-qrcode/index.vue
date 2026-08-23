@@ -53,7 +53,7 @@ async function runE2E() {
       <view class="scenario-status">rendered / interactive</view>
     </view>
     <view id="e2e-target" class="scenario-subject">
-      <up-qrcode id="e2e-component" ref="e2eComponent" value="uview-plus-3.8.108" :size="128" />
+      <up-qrcode id="e2e-component" ref="e2eComponent" value="uview-plus-3.8.112" :size="128" />
     </view>
     <button id="e2e-action" class="scenario-action" @click="runE2E">
       Exercise interaction
