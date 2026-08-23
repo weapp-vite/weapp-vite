@@ -18,19 +18,18 @@ function createStyleBlock(content: string, overrides: Partial<SFCStyleBlock> = {
 }
 
 describe('compileVueStyleToWxss', () => {
-  it('keeps source code when no scoped/modules option is enabled', () => {
-    const result = compileVueStyleToWxss(
+  it('keeps source code when no scoped/modules option is enabled', async () => {
+    const result = await compileVueStyleToWxss(
       createStyleBlock('.card { color: red; }'),
       { id: 'abc123' },
     )
 
-    expect(result).toEqual({
-      code: '.card { color: red; }',
-    })
+    expect(result.code).toContain('.card')
+    expect(result.code).toContain('color: red')
   })
 
-  it('lowers Vue deep selectors to selectors accepted by WXSS', () => {
-    const result = compileVueStyleToWxss(
+  it('lowers Vue deep selectors to selectors accepted by WXSS', async () => {
+    const result = await compileVueStyleToWxss(
       createStyleBlock(`
 .host :deep() .child, :deep(.dialog:not(:last-child)) {
   color: red;
@@ -45,8 +44,8 @@ describe('compileVueStyleToWxss', () => {
     expect(result.code).not.toContain(':deep')
   })
 
-  it('lowers legacy v-deep selectors and mapped HTML tags', () => {
-    const result = compileVueStyleToWxss(
+  it('lowers legacy v-deep selectors and mapped HTML tags', async () => {
+    const result = await compileVueStyleToWxss(
       createStyleBlock(`
 .markdown ::v-deep h1,
 .markdown ::v-deep table th,
@@ -58,26 +57,27 @@ describe('compileVueStyleToWxss', () => {
       { id: 'legacy-deep-selector' },
     )
 
-    expect(result.code).toContain('.markdown .h1')
-    expect(result.code).toContain('.markdown .table .th')
-    expect(result.code).toContain('.panel > .title')
+    expect(result.code).toMatch(/\.markdown\s+\.h1/)
+    expect(result.code).toMatch(/\.markdown\s+\.table \.th/)
+    expect(result.code).toMatch(/\.panel\s+>\s+\.title/)
     expect(result.code).toContain('.code-block')
     expect(result.code).not.toContain('::v-deep')
     expect(result.code).not.toMatch(/(^|[\s,])h1(?=[\s,{])/)
   })
 
-  it('preserves Vue deep selectors for a target-specific final CSS stage', () => {
+  it('preserves Vue deep selectors for a target-specific final CSS stage', async () => {
     const source = '.host :deep(.child).active { color: red; }'
-    const result = compileVueStyleToWxss(
+    const result = await compileVueStyleToWxss(
       createStyleBlock(source),
       { id: 'web-deep-selector', preserveDeepSelectors: true },
     )
 
-    expect(result.code).toBe(source)
+    expect(result.code).toContain('.host :deep(.child).active')
+    expect(result.code).toContain('color: red')
   })
 
-  it('adds scoped attribute to plain selectors', () => {
-    const result = compileVueStyleToWxss(
+  it('adds scoped attribute to plain selectors', async () => {
+    const result = await compileVueStyleToWxss(
       createStyleBlock('.card, .title { color: red; }'),
       { id: 'abc123', scoped: true },
     )
@@ -86,8 +86,8 @@ describe('compileVueStyleToWxss', () => {
     expect(result.code).toContain('.title[data-v-abc123]')
   })
 
-  it('supports scoped style block flag', () => {
-    const result = compileVueStyleToWxss(
+  it('supports scoped style block flag', async () => {
+    const result = await compileVueStyleToWxss(
       createStyleBlock('.button { color: blue; }', { scoped: true }),
       { id: 'scope-flag' },
     )
@@ -95,8 +95,8 @@ describe('compileVueStyleToWxss', () => {
     expect(result.code).toContain('.button[data-v-scope-flag]')
   })
 
-  it('transforms css modules with default module name', () => {
-    const result = compileVueStyleToWxss(
+  it('transforms css modules with default module name', async () => {
+    const result = await compileVueStyleToWxss(
       createStyleBlock('.card { color: red; }', { module: true }),
       { id: 'module-1' },
     )
@@ -107,8 +107,8 @@ describe('compileVueStyleToWxss', () => {
     expect(result.code).not.toContain('.card {')
   })
 
-  it('supports named css modules and scoped + modules pipeline', () => {
-    const result = compileVueStyleToWxss(
+  it('supports named css modules and scoped + modules pipeline', async () => {
+    const result = await compileVueStyleToWxss(
       createStyleBlock('.item { color: red; }', { module: 'styles', scoped: true }),
       { id: 'module-2' },
     )

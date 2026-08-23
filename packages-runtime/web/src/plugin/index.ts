@@ -1,5 +1,5 @@
 import type { SourceMap } from 'magic-string'
-import type { ResolveWebAutoImportTag, ResolveWebModuleId, WeappWebPluginOptions, WebResolvedComponent } from './types'
+import type { ResolveWebAutoImportTag, ResolveWebModuleId, WeappWebPluginOptions, WebResolvedComponent, WebStylePreprocessOptions } from './types'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 
@@ -36,11 +36,13 @@ interface WebPostcssConfig {
 
 interface WebCssConfig {
   postcss?: string | WebPostcssConfig
+  preprocessorOptions?: WebStylePreprocessOptions
 }
 
 interface WebUserConfig {
   css?: {
     postcss?: string | WebPostcssConfig
+    preprocessorOptions?: WebStylePreprocessOptions
   }
 }
 
@@ -132,7 +134,32 @@ function createWebCssConfig(
       ...postcssConfig,
       plugins: [...plugins, createWxssPostcssPlugin(wxssOptions)],
     },
+    preprocessorOptions: config.css?.preprocessorOptions,
   }
+}
+
+function resolveStylePreprocessOptions(
+  options: WebStylePreprocessOptions | undefined,
+  root: string,
+): WebStylePreprocessOptions | undefined {
+  if (!options) {
+    return undefined
+  }
+
+  const nodeModules = resolve(root, 'node_modules')
+  return Object.fromEntries(Object.entries(options).map(([language, languageOptions]) => {
+    if (!['sass', 'scss'].includes(language)) {
+      return [language, languageOptions]
+    }
+
+    const loadPaths = Array.isArray(languageOptions.loadPaths)
+      ? languageOptions.loadPaths.filter((value): value is string => typeof value === 'string')
+      : []
+    return [language, {
+      ...languageOptions,
+      loadPaths: Array.from(new Set([...loadPaths, nodeModules])),
+    }]
+  }))
 }
 
 export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVitePlugin {
@@ -141,6 +168,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
   let enableHmr = false
   let resolveWebModuleId: ResolveWebModuleId | undefined
   let resolveWebAutoImportTag: ResolveWebAutoImportTag | undefined
+  let stylePreprocessOptions: WebStylePreprocessOptions | undefined
   const componentImportIdMap = new Map<string, string>()
 
   const state = createEmptyScanState()
@@ -204,6 +232,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       resolveAutoImportTag: resolveWebAutoImportTag,
       resolveAppConfig: options.__resolveAppConfig,
       uniApp: options.__uniApp,
+      stylePreprocessOptions,
     })
     componentImportIdMap.clear()
     for (const component of state.scanResult.components) {
@@ -223,6 +252,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     async configResolved(this: WebPluginContext, config: WebResolvedConfig) {
       root = config.root
       srcRoot = resolve(root, options.srcDir ?? 'src')
+      stylePreprocessOptions = resolveStylePreprocessOptions(config.css?.preprocessorOptions, root)
       enableHmr = config.command === 'serve'
       resolveWebModuleId = config.createResolver?.()
       resolveWebAutoImportTag = createAutoImportTagResolver()
@@ -350,6 +380,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           resolveId: resolveWebModuleId,
           resolveAutoImportTag: resolveWebAutoImportTag,
           uniApp: options.__uniApp,
+          stylePreprocessOptions,
         })
         const compiled = generateWebVueSfcTemplate(result, meta, filename, srcRoot)
         for (const dependency of compiled.dependencies) {
@@ -374,6 +405,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           resolveId: resolveWebModuleId,
           resolveAutoImportTag: resolveWebAutoImportTag,
           uniApp: options.__uniApp,
+          stylePreprocessOptions,
         })
         return generateWebVueSfcStyle(result)
       }
@@ -429,6 +461,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           resolveId: resolveWebModuleId,
           resolveAutoImportTag: resolveWebAutoImportTag,
           uniApp: options.__uniApp,
+          stylePreprocessOptions,
         })
         return transformWebVueSfcScript({
           code: result.script!,

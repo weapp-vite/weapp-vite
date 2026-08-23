@@ -11,6 +11,7 @@ import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from '../../.
 import { compileJsxTemplateAndCollectComponents } from '../../../jsx/compileJsx/template'
 import { transformVueJsxScript } from '../../../jsx/vueJsxTransform'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
+import { generateScopedId } from '../scopedId'
 import { transformScript } from '../script'
 import { warnReservedScriptSetupProps } from './reservedProps'
 
@@ -29,6 +30,7 @@ export interface ScriptPhaseResult {
 export interface PrecomputedScriptPhaseInfo {
   propsAliases?: Record<string, string>
   propsDerivedKeys?: string[]
+  cssModules?: Record<string, Record<string, string>>
 }
 
 type SfcDescriptor = Parameters<typeof compileScript>[0]
@@ -270,7 +272,7 @@ export async function compileScriptPhase(
   let propsDerivedKeys: string[] | undefined
   if (descriptor.script || descriptor.scriptSetup) {
     const scriptCompiled = precompiledScript ?? compileScript(descriptorForCompile, {
-      id: filename,
+      id: generateScopedId(filename),
       isProd: false,
     })
     warnReservedScriptSetupProps(descriptorForCompile.scriptSetup?.content, options?.warn, {
@@ -345,6 +347,7 @@ export async function compileScriptPhase(
       functionPropPaths: templateCompiled?.functionPropPaths,
       propsAliases,
       propsDerivedKeys,
+      cssModules: precomputedScriptPhaseInfo?.cssModules,
       relaxStructuredTypeOnlyProps,
       scopedSlotHostProperties: Boolean(templateCompiled?.componentGenerics && Object.keys(templateCompiled.componentGenerics).length > 0),
     })

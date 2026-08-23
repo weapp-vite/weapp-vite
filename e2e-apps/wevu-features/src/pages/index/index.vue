@@ -37,6 +37,12 @@ const featureList = [
     path: '/pages/use-store/index',
   },
   {
+    key: 'sfc-styles',
+    title: 'SFC styles',
+    summary: '展示 scoped、CSS Modules 与响应式 CSS 变量',
+    path: '/pages/sfc-styles/index',
+  },
+  {
     key: 'subpath-entries',
     title: 'subpath entries',
     summary: '展示 wevu/router|store|api|fetch 子路径入口联动',

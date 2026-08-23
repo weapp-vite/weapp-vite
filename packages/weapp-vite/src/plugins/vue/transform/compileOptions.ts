@@ -17,6 +17,8 @@ import { isWevuMinifyEnabled, resolveWevuDefaultsWithPreset } from './wevuPreset
 
 export type CompileVueFileResolvedOptions = CompileVueFileOptions
 
+export type SfcStylePreprocessOptions = NonNullable<NonNullable<CompileVueFileOptions['style']>['preprocessOptions']>
+
 interface CompileOptionsContext {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   classStyleRuntimeWarned: { value: boolean }
@@ -56,6 +58,31 @@ function shouldDelegateComponentRegistration(
 
 export function isVueTransformSourceMapEnabled(configService: NonNullable<CompilerContext['configService']>) {
   return Boolean(configService.inlineConfig?.build?.sourcemap)
+}
+
+export function resolveSfcStylePreprocessOptions(
+  configService: NonNullable<CompilerContext['configService']>,
+): SfcStylePreprocessOptions | undefined {
+  const options = configService.inlineConfig?.css?.preprocessorOptions as SfcStylePreprocessOptions | undefined
+  if (!options) {
+    return undefined
+  }
+
+  const root = path.resolve(configService.cwd, configService.inlineConfig?.root ?? '.')
+  const nodeModules = path.resolve(root, 'node_modules')
+  return Object.fromEntries(Object.entries(options).map(([language, languageOptions]) => {
+    if (!['sass', 'scss'].includes(language)) {
+      return [language, languageOptions]
+    }
+
+    const loadPaths = Array.isArray(languageOptions.loadPaths)
+      ? languageOptions.loadPaths.filter((value): value is string => typeof value === 'string')
+      : []
+    return [language, {
+      ...languageOptions,
+      loadPaths: Array.from(new Set([...loadPaths, nodeModules])),
+    }]
+  }))
 }
 
 export function resolveVueTemplatePlatformOptions(options: {
@@ -336,6 +363,9 @@ function buildCompileVueFileOptions(
       formatWxml,
       wxsExtension: templatePlatformOptions.wxsExtension,
       classStyleWxsSrc,
+    },
+    style: {
+      preprocessOptions: resolveSfcStylePreprocessOptions(configService),
     },
     json: {
       kind: jsonKind,

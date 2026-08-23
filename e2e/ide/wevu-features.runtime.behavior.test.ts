@@ -2,6 +2,8 @@ import { afterAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
+  readClassName,
+  readStyleValue,
   releaseSharedMiniProgram,
 } from './wevu-features.runtime.shared'
 
@@ -170,6 +172,35 @@ describe.sequential('e2e app: wevu-features / behavior', () => {
       expect(nativeResult?.checks?.countChanged).toBe(true)
       expect(nativeResult?.state?.mode).toBe('contrast')
       expect(nativeResult?.state?.count).toBe(2)
+    }
+    finally {
+      await releaseSharedMiniProgram(session.miniProgram)
+    }
+  })
+
+  it('renders scoped CSS, CSS Modules and reactive CSS variables', async () => {
+    const session = { miniProgram: await getSharedMiniProgram() }
+
+    try {
+      const page = await launchPage(session, '/pages/sfc-styles/index')
+      const result = await runPageE2E(session, page)
+      expect(result?.checks?.cssVarChanged).toBe(true)
+      expect(result?.checks?.defaultModule).toBe(true)
+      expect(result?.checks?.namedModule).toBe(true)
+
+      const className = await readClassName(page, '#sfc-style-probe')
+      expect(className).toContain(result.state.defaultClass)
+      expect(className).toContain(result.state.namedClass)
+
+      const style = await readStyleValue(page, '#sfc-style-probe')
+      expect(style).toMatch(/border: (?:4rpx|2px) solid #111827/)
+      expect(style).toContain('#2563eb')
+
+      if (typeof page.renderedSelectorNodes === 'function') {
+        const nodes = await page.renderedSelectorNodes(['#sfc-style-probe'], { timeout: 5_000 })
+        expect(nodes['#sfc-style-probe']?.[0]?.width).toBeGreaterThan(0)
+        expect(nodes['#sfc-style-probe']?.[0]?.height).toBeGreaterThan(0)
+      }
     }
     finally {
       await releaseSharedMiniProgram(session.miniProgram)

@@ -444,6 +444,9 @@ function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, tra
     .join('')
 
   const slotAttrs: string[] = []
+  if (context.slottedScopeId) {
+    slotAttrs.push(`${context.slottedScopeId}=""`)
+  }
   const nameAttr = renderSlotNameAttribute(slotNameInfo, context, 'name')
   if (nameAttr) {
     slotAttrs.push(nameAttr)
@@ -568,6 +571,9 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   }
 
   const slotAttrs: string[] = []
+  if (context.slottedScopeId) {
+    slotAttrs.push(`${context.slottedScopeId}=""`)
+  }
   const nameAttr = renderSlotNameAttribute(slotNameInfo, context, 'name')
   if (nameAttr) {
     slotAttrs.push(nameAttr)
@@ -608,6 +614,9 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     `${WEVU_SLOT_OWNER_ID_ATTR}="${renderMustache(WEVU_SLOT_OWNER_ID_PROP, context)}"`,
     `${WEVU_SLOT_PROPS_ATTR}="${renderMustache(slotPropsExp, context)}"`,
   ]
+  if (context.slottedScopeId) {
+    scopedAttrs.push(`${context.slottedScopeId}=""`)
+  }
   if (context.slotMultipleInstance) {
     scopedAttrs.push(`${WEVU_SLOT_SCOPE_ATTR}="${renderMustache(WEVU_SLOT_SCOPE_KEY, context)}"`)
   }

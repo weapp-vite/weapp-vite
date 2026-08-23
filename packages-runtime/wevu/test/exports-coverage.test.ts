@@ -135,6 +135,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'useAsyncPullDownRefresh',
   'useAttrs',
   'useBindModel',
+  'useCssModule',
   'useDisposables',
   'useChangeModel',
   'useBoundingClientRect',

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
-import { createCompileVueFileOptions, isVueTransformSourceMapEnabled, resolveVueTemplatePlatformOptions } from './compileOptions'
+import { createCompileVueFileOptions, isVueTransformSourceMapEnabled, resolveSfcStylePreprocessOptions, resolveVueTemplatePlatformOptions } from './compileOptions'
 
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 const createSfcResolveSrcOptionsMock = vi.hoisted(() => vi.fn((pluginCtx: any) => ({
@@ -1138,5 +1138,29 @@ describe('resolveVueTemplatePlatformOptions', () => {
     version = 2
     await options.autoImportTags.resolveUsingComponent('FooCard')
     expect(autoImportResolve).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('resolveSfcStylePreprocessOptions', () => {
+  it('preserves configured Sass options and adds the project node_modules path', () => {
+    const result = resolveSfcStylePreprocessOptions({
+      cwd: '/project',
+      inlineConfig: {
+        root: '/project',
+        css: {
+          preprocessorOptions: {
+            scss: {
+              additionalData: '$brand-color: red;',
+              loadPaths: ['/project/shared-styles'],
+            },
+          },
+        },
+      },
+    } as any)
+
+    expect(result?.scss).toMatchObject({
+      additionalData: '$brand-color: red;',
+      loadPaths: ['/project/shared-styles', '/project/node_modules'],
+    })
   })
 })

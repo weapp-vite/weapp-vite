@@ -114,6 +114,9 @@ export interface TransformContext {
   functionPropNames: FunctionPropNameMatcher[]
   templateSafeCallNames: Set<string>
   wevuComponentTags?: Set<string>
+  scopeId?: string
+  slottedScopeId?: string
+  cssVars?: boolean
 }
 
 /**
@@ -167,6 +170,9 @@ export interface TemplateCompileOptions {
   wevuComponentTags?: Iterable<string>
   componentNameMap?: Record<string, string>
   miniProgramComponentTags?: Iterable<string>
+  scopeId?: string
+  slottedScopeId?: string
+  cssVars?: boolean
 }
 
 /**

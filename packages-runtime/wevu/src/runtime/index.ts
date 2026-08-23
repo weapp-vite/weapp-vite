@@ -13,6 +13,7 @@ export type {
   WeappIntrinsicEventHandler,
 } from '../miniprogramIntrinsicElements'
 export * from './app'
+export { useCssModule } from './css'
 export { resetWevuDefaults, setWevuDefaults } from './defaults'
 export type { WevuDefaults } from './defaults'
 export {

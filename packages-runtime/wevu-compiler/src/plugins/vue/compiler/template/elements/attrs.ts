@@ -3,6 +3,7 @@ import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import {
+  WEVU_CSS_VARS_STYLE_KEY,
   WEVU_LAYOUT_HOST_ID_PREFIX,
   WEVU_LAYOUT_HOST_REF_PREFIX,
   WEVU_TEMPLATE_REF_CLASS_PREFIX,
@@ -44,6 +45,9 @@ export function collectElementAttributes(
   const resolvedTag = options?.resolvedTag ?? resolveTemplateTagName(node.tag, context)
   const isComponentElement = options?.isComponent ?? !isBuiltinTag(resolvedTag)
   const attrs: string[] = options?.extraAttrs ? [...options.extraAttrs] : []
+  if (context.scopeId) {
+    attrs.push(`${context.scopeId}=""`)
+  }
   const mappedTagClass = resolveMappedHtmlTagClassName(node.tag, context, resolvedTag)
   let staticClass: string | undefined
   let staticId: string | undefined
@@ -251,7 +255,9 @@ export function collectElementAttributes(
   }
   const styleAttr = renderStyleAttribute(
     staticStyle,
-    dynamicStyleExp,
+    context.cssVars
+      ? dynamicStyleExp ? `[${dynamicStyleExp}, ${WEVU_CSS_VARS_STYLE_KEY}]` : WEVU_CSS_VARS_STYLE_KEY
+      : dynamicStyleExp,
     vShowExp,
     context,
   )

@@ -13,4 +13,9 @@ describe('generateScopedId', () => {
 
     expect(a).not.toBe(b)
   })
+
+  it('does not depend on the local workspace root', () => {
+    expect(generateScopedId('/Users/example/project/src/pages/home/index.vue'))
+      .toBe(generateScopedId('/builds/ci/project/src/pages/home/index.vue'))
+  })
 })

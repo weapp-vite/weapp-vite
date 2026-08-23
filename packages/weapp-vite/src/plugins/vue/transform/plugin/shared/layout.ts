@@ -1,8 +1,10 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
+import { compileVueStyleToWxss, generateScopedId } from 'wevu/compiler'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
+import { resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
 import { ensureSfcStyleBlocks, isAppEntry, loadTransformPageEntries } from './state'
 
@@ -236,8 +238,19 @@ export async function loadTransformStyleBlock(options: {
   const dependencies = syncVueSfcStyleDependencies(ctx, filename, styles)
   ctx.moduleGraphService.replaceEntryDependencies(filename, 'style', dependencies)
 
+  const compiled = await compileVueStyleToWxss(block, {
+    id: generateScopedId(filename),
+    filename,
+    scoped: block.scoped,
+    modules: block.module,
+    preprocessOptions: resolveSfcStylePreprocessOptions(configService)?.[block.lang || 'css'],
+  })
+  for (const dependency of compiled.dependencies ?? []) {
+    pluginCtx.addWatchFile?.(dependency)
+  }
+
   return {
-    code: block.content,
-    map: null,
+    code: compiled.code,
+    map: compiled.map ? JSON.parse(compiled.map) : null,
   }
 }

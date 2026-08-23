@@ -66,6 +66,14 @@
       "types": "./dist/test.d.mts",
       "import": "./dist/test.mjs"
     },
+    "./compatibility": {
+      "types": "./dist/compatibility.d.mts",
+      "import": "./dist/compatibility.mjs"
+    },
+    "./eslint": {
+      "types": "./dist/eslint.d.mts",
+      "import": "./dist/eslint.mjs"
+    },
     "./auto-import-components/resolvers": {
       "types": "./dist/auto-import-components/resolvers.d.mts",
       "import": "./dist/auto-import-components/resolvers.mjs"
@@ -119,6 +127,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync": "cnpm sync weapp-vite"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "dependencies": {
     "@babel/preset-env": "^8.0.2",
     "@babel/preset-typescript": "^8.0.1",
@@ -132,6 +144,7 @@
     "@weapp-core/schematics": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/ast": "workspace:*",
+    "@weapp-vite/eslint": "workspace:*",
     "@weapp-vite/i18n": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
     "@weapp-vite/miniprogram-automator": "workspace:*",
@@ -166,10 +179,6 @@
     "vue-tsc": "catalog:",
     "weapp-ide-cli": "workspace:*",
     "wevu": "workspace:*"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org"
   },
   "optionalDependencies": {
     "@swc/core": "^1.16.1"

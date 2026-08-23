@@ -1,3 +1,12 @@
+---
+description: Wevu Store Manager 的安装、插件和时序差异说明。
+keywords:
+  - Wevu Store Manager
+  - createStore
+  - Store 插件
+  - Pinia 迁移
+---
+
 ## Store Manager API
 
 ### `manager.install()` {#storemanager-install}
@@ -32,7 +41,7 @@
 
 ### 本组示例 {#example-store-manager}
 
-Manager 插件只影响之后创建的 Store，适合隔离测试和注入横切能力。
+Manager 是全局活动实例，插件只影响之后首次创建的 Store。再次调用 `createStore()` 会替换后续 Store 捕获的 manager；`useXxx()` 不接收 manager 参数，因此不要依赖并行 manager 隔离。
 
 ```ts
 import { createStore, defineStore } from 'wevu'
@@ -44,5 +53,5 @@ manager.use(({ store }) => {
 manager.install()
 
 const useSession = defineStore('session', { state: () => ({ token: '' }) })
-const session = useSession(manager)
+const session = useSession()
 ```

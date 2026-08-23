@@ -113,6 +113,8 @@ export const WEVU_INTERNAL_KEY_IDENTIFIER = '__wv_key'
 
 export const WEVU_PROPS_KEY = '__wevuProps'
 export const WEVU_SETUP_STATE_KEY = '__wevuSetupState'
+export const WEVU_CSS_VARS_STYLE_KEY = '__wv_css_vars_style'
+export const WEVU_CSS_MODULES_KEY = '__wevuCssModules'
 export const WEVU_PROPS_ALIASES_KEY = '__wevuPropsAliases'
 export const WEVU_PROPS_DERIVED_KEYS_KEY = '__wevuPropsDerivedKeys'
 export const WEVU_ATTRS_KEY = '__wevuAttrs'

@@ -172,6 +172,9 @@ export function compileVueTemplateToWxml(
       templateSafeCallNames: new Set(options?.templateSafeCallNames ?? []),
       wevuComponentTags: options?.wevuComponentTags ? new Set(options.wevuComponentTags) : undefined,
       miniProgramComponentTags: options?.miniProgramComponentTags ? new Set(options.miniProgramComponentTags) : undefined,
+      scopeId: options?.scopeId,
+      slottedScopeId: options?.slottedScopeId,
+      cssVars: options?.cssVars,
     }
 
     // 转换 AST 到 WXML

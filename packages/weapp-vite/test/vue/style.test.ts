@@ -2,18 +2,18 @@ import { compileVueStyleToWxss } from 'wevu/compiler'
 
 describe('Vue Style Compiler', () => {
   describe('Basic Style Conversion', () => {
-    it('should convert simple CSS to WXSS', () => {
+    it('should convert simple CSS to WXSS', async () => {
       const styleBlock = {
         content: '.container { color: red; }',
         scoped: false,
         module: false,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'test' })
       expect(result.code).toContain('.container')
       expect(result.code).toContain('color: red')
     })
 
-    it('should handle multiple selectors', () => {
+    it('should handle multiple selectors', async () => {
       const styleBlock = {
         content: `
 .title { font-size: 16px; }
@@ -22,56 +22,56 @@ describe('Vue Style Compiler', () => {
         scoped: false,
         module: false,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'test' })
       expect(result.code).toContain('.title')
       expect(result.code).toContain('.content')
     })
   })
 
   describe('Unit Conversion', () => {
-    it('should keep rem as-is', () => {
+    it('should keep rem as-is', async () => {
       const styleBlock = {
         content: '.box { width: 2rem; }',
         scoped: false,
         module: false,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'test' })
       expect(result.code).toContain('2rem')
     })
 
-    it('should keep vw as-is', () => {
+    it('should keep vw as-is', async () => {
       const styleBlock = {
         content: '.box { width: 50vw; }',
         scoped: false,
         module: false,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'test' })
       expect(result.code).toContain('50vw')
     })
 
-    it('should keep vh as-is', () => {
+    it('should keep vh as-is', async () => {
       const styleBlock = {
         content: '.box { height: 100vh; }',
         scoped: false,
         module: false,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'test' })
       expect(result.code).toContain('100vh')
     })
   })
 
   describe('Scoped CSS', () => {
-    it('should add scoped attribute to selectors', () => {
+    it('should add scoped attribute to selectors', async () => {
       const styleBlock = {
         content: '.container { color: red; }',
         scoped: true,
         module: false,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'abc123' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'abc123' })
       expect(result.code).toContain('[data-v-abc123]')
     })
 
-    it('should handle multiple scoped selectors', () => {
+    it('should handle multiple scoped selectors', async () => {
       const styleBlock = {
         content: `
 .title { font-size: 16px; }
@@ -80,13 +80,13 @@ describe('Vue Style Compiler', () => {
         scoped: true,
         module: false,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'test' })
       expect(result.code).toMatch(/\[data-v-test\]/g)
     })
   })
 
   describe('CSS Modules', () => {
-    it('should transform class names in modules mode', () => {
+    it('should transform class names in modules mode', async () => {
       const styleBlock = {
         content: `
 .container { display: flex; }
@@ -95,7 +95,7 @@ describe('Vue Style Compiler', () => {
         scoped: false,
         module: true,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'test' })
       expect(result.modules).toBeDefined()
       // CSS modules are wrapped in a module name
       const modules = result.modules?.$style || result.modules
@@ -103,42 +103,42 @@ describe('Vue Style Compiler', () => {
       expect(modules.title).toMatch(/title_\w+/)
     })
 
-    it('should generate unique class names', () => {
+    it('should generate unique class names', async () => {
       const styleBlock = {
         content: '.box { width: 100px; }',
         scoped: false,
         module: true,
       }
-      const result1 = compileVueStyleToWxss(styleBlock, { id: 'test1' })
-      const result2 = compileVueStyleToWxss(styleBlock, { id: 'test2' })
+      const result1 = await compileVueStyleToWxss(styleBlock, { id: 'test1' })
+      const result2 = await compileVueStyleToWxss(styleBlock, { id: 'test2' })
       const modules1 = result1.modules?.$style || result1.modules
       const modules2 = result2.modules?.$style || result2.modules
       expect(modules1.box).not.toBe(modules2.box)
     })
 
-    it('should transform class names in compiled code', () => {
+    it('should transform class names in compiled code', async () => {
       const styleBlock = {
         content: '.myClass { color: red; }',
         scoped: false,
         module: true,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'test' })
       expect(result.code).toContain('.myClass_')
     })
   })
 
   describe('Edge Cases', () => {
-    it('should handle empty styles', () => {
+    it('should handle empty styles', async () => {
       const styleBlock = {
         content: '',
         scoped: false,
         module: false,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'test' })
       expect(result.code).toBe('')
     })
 
-    it('should handle comments', () => {
+    it('should handle comments', async () => {
       const styleBlock = {
         content: `
 /* This is a comment */
@@ -147,11 +147,11 @@ describe('Vue Style Compiler', () => {
         scoped: false,
         module: false,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'test' })
       expect(result.code).toContain('/*')
     })
 
-    it('should handle @media queries', () => {
+    it('should handle @media queries', async () => {
       const styleBlock = {
         content: `
 @media (min-width: 768px) {
@@ -161,7 +161,7 @@ describe('Vue Style Compiler', () => {
         scoped: false,
         module: false,
       }
-      const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
+      const result = await compileVueStyleToWxss(styleBlock, { id: 'test' })
       expect(result.code).toContain('@media')
     })
   })
