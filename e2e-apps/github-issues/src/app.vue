@@ -26,6 +26,12 @@ const issue793BuildScopeEnabled = routes.pages.includes('pages/issue-793/index')
   || routes.subPackages.some(subPackage => subPackage.root === 'subs')
 const appSubPackages = routes.subPackages.map((subPackage) => {
   if (
+    routes.pages.includes('pages/issue-850/index')
+    && subPackage.root === 'subpackages/issue-850'
+  ) {
+    return { ...subPackage, independent: true }
+  }
+  if (
     routes.pages.length === 2
     && routes.pages.includes('pages/issue-845-native/index')
     && routes.pages.includes('pages/issue-845-vue/index')

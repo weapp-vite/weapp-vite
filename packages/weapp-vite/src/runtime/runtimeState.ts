@@ -111,6 +111,7 @@ export interface RuntimeState {
     npmBuilt: boolean
     independent: {
       outputs: Map<string, RolldownOutput>
+      pendingOutputs: Promise<RolldownOutput>[]
     }
     output: {
       emittedSource: Map<string, string>
@@ -345,6 +346,7 @@ export function createRuntimeState(): RuntimeState {
       npmBuilt: false,
       independent: {
         outputs: new Map<string, RolldownOutput>(),
+        pendingOutputs: [],
       },
       output: {
         emittedSource: new Map<string, string>(),

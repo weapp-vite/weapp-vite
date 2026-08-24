@@ -574,6 +574,42 @@ describe('runtime config internal loadConfig', () => {
     })
   })
 
+  it('does not merge an explicitly loaded weapp config with itself', async () => {
+    loadViteConfigFileMock.mockResolvedValueOnce({
+      config: {
+        plugins: [{ name: 'user-plugin' }],
+        css: {
+          postcss: {
+            plugins: ['postcss-user-plugin'],
+          },
+        },
+        weapp: {
+          srcRoot: 'src',
+        },
+      },
+      path: '/project/weapp-vite.config.ts',
+    })
+    resolveWeappConfigFileMock.mockResolvedValueOnce('/project/weapp-vite.config.ts')
+    resolveProjectConfigRootMock.mockReturnValueOnce('dist')
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/weapp-vite.config.ts',
+    } as any)
+
+    expect(loadViteConfigFileMock).toHaveBeenCalledTimes(1)
+    expect(result.config.plugins).toEqual([
+      { name: 'oxc-vite' },
+      { name: 'user-plugin' },
+    ])
+    expect(result.config.css?.postcss?.plugins).toEqual(['postcss-user-plugin'])
+  })
+
   it('does not merge root weapp config when an explicit custom config file is passed', async () => {
     loadViteConfigFileMock.mockResolvedValueOnce({
       config: {

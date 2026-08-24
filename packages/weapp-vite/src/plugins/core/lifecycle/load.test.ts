@@ -986,7 +986,6 @@ describe('core lifecycle options hook', () => {
       subPackageMeta: {
         entries: ['pages/a/index', 'pages/b/index'],
       },
-      pendingIndependentBuilds: [],
     } as any
     const optionsHook = createOptionsHook(state)
 
@@ -1011,6 +1010,12 @@ describe('core lifecycle options hook', () => {
       predictions: [`${id}.ts`],
     }))
     const runtimeState = {
+      build: {
+        independent: {
+          outputs: new Map(),
+          pendingOutputs: [],
+        },
+      },
       lib: {
         enabled: false,
         entries: new Map(),
@@ -1047,7 +1052,6 @@ describe('core lifecycle options hook', () => {
         buildService: {},
       },
       entriesMap: new Map(),
-      pendingIndependentBuilds: [],
     } as any
 
     const options: Record<string, any> = {}
@@ -1096,7 +1100,15 @@ describe('core lifecycle options hook', () => {
     }
     const state = {
       ctx: {
-        runtimeState: { lib: { enabled: false, entries: new Map() } },
+        runtimeState: {
+          build: {
+            independent: {
+              outputs: new Map(),
+              pendingOutputs: [],
+            },
+          },
+          lib: { enabled: false, entries: new Map() },
+        },
         configService,
         scanService: {
           appEntry,
@@ -1108,7 +1120,6 @@ describe('core lifecycle options hook', () => {
         buildService: {},
       },
       entriesMap: new Map(),
-      pendingIndependentBuilds: [],
     } as any
 
     const options: Record<string, any> = {}
@@ -1153,7 +1164,6 @@ describe('core lifecycle options hook', () => {
         buildService: {},
       },
       subPackageMeta: undefined,
-      pendingIndependentBuilds: [],
     } as any
     const optionsHook = createOptionsHook(state)
 
@@ -1174,6 +1184,12 @@ describe('core lifecycle options hook', () => {
       lib: {
         enabled: true,
         entries: new Map([['/project/src/old.ts', { input: '/project/src/old.ts' }]]),
+      },
+      build: {
+        independent: {
+          outputs: new Map(),
+          pendingOutputs: [Promise.resolve({ output: [] })],
+        },
       },
     }
     const configService = {
@@ -1213,7 +1229,6 @@ describe('core lifecycle options hook', () => {
         buildService,
       },
       subPackageMeta: undefined,
-      pendingIndependentBuilds: [],
     } as any
 
     const optionsHook = createOptionsHook(state)
@@ -1227,9 +1242,13 @@ describe('core lifecycle options hook', () => {
     expect(runtimeState.lib.entries.size).toBe(0)
     expect(configService.options.weappLibOutputMap).toBeUndefined()
     expect(configService.options.currentSubPackageRoot).toBe('pkgA')
-    expect(state.pendingIndependentBuilds).toHaveLength(1)
+    expect(runtimeState.build.independent.pendingOutputs).toHaveLength(1)
     expect(buildService.buildIndependentBundle).toHaveBeenCalledWith('pkgA', pkgAMeta)
     expect(Array.from(state.hmrRootInputIds)).toEqual(['/project/src/app.ts'])
+
+    scanService.drainIndependentDirtyRoots.mockReturnValueOnce([])
+    await optionsHook({})
+    expect(runtimeState.build.independent.pendingOutputs).toHaveLength(0)
   })
 
   it('waits for independent dev builds before resolving main inputs and restores the package root', async () => {
@@ -1266,13 +1285,20 @@ describe('core lifecycle options hook', () => {
     }
     const state = {
       ctx: {
-        runtimeState: { lib: { enabled: false, entries: new Map() } },
+        runtimeState: {
+          lib: { enabled: false, entries: new Map() },
+          build: {
+            independent: {
+              outputs: new Map(),
+              pendingOutputs: [],
+            },
+          },
+        },
         configService,
         scanService,
         buildService,
       },
       entriesMap: new Map(),
-      pendingIndependentBuilds: [],
     } as any
 
     const options: Record<string, any> = {}
@@ -1335,7 +1361,6 @@ describe('core lifecycle options hook', () => {
         },
       },
       subPackageMeta: undefined,
-      pendingIndependentBuilds: [],
     } as any
 
     const optionsHook = createOptionsHook(state)

@@ -1,6 +1,6 @@
 import type { LogicalEntryType } from '../../../../moduleGraph/protocol'
 import type { AppEntry } from '../../../../types'
-import type { CorePluginState, IndependentBuildResult } from '../../helpers'
+import type { CorePluginState } from '../../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -185,7 +185,6 @@ export function createOptionsHook(state: CorePluginState) {
     if (this) {
       ctx.moduleGraphService?.bindPluginContext(this)
     }
-    state.pendingIndependentBuilds = []
     state.hmrRootInputIds ??= new Set<string>()
     state.hmrRootInputIds.clear()
     let scannedInput: Record<string, LogicalInputSource>
@@ -244,24 +243,20 @@ export function createOptionsHook(state: CorePluginState) {
         )
       }
       else {
+        const independentState = ctx.runtimeState.build.independent
+        independentState.pendingOutputs = []
         scanService.loadSubPackages()
         const dirtyIndependentRoots = scanService.drainIndependentDirtyRoots()
-        const pendingIndependentBuilds: Promise<IndependentBuildResult>[] = []
-        // 独立分包和主包共用编译上下文，必须串行构建并恢复主包配置。
+        // 独立分包按根串行构建，避免第三方插件的进程级状态在配置加载时竞争。
         const previousSubPackageRoot = configService.currentSubPackageRoot
         for (const root of dirtyIndependentRoots) {
           const meta = scanService.independentSubPackageMap.get(root)
           if (!meta) {
             continue
           }
-          const buildTask = buildService.buildIndependentBundle(root, meta).then((rollup: any) => {
-            return {
-              meta,
-              rollup,
-            }
-          })
+          const buildTask = buildService.buildIndependentBundle(root, meta)
           buildTask.catch(() => {})
-          pendingIndependentBuilds.push(buildTask)
+          independentState.pendingOutputs.push(buildTask)
           try {
             await buildTask
           }
@@ -273,7 +268,6 @@ export function createOptionsHook(state: CorePluginState) {
             currentSubPackageRoot: previousSubPackageRoot,
           }
         }
-        state.pendingIndependentBuilds = pendingIndependentBuilds
         scannedInput = await collectMainLogicalInputs(state, appEntry)
       }
     }

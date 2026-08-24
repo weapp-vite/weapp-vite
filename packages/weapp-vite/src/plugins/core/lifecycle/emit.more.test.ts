@@ -39,7 +39,6 @@ const createBundleChunkSnapshotMock = vi.hoisted(() => vi.fn((bundle: Record<str
   ),
 })))
 const filterPluginBundleOutputsMock = vi.hoisted(() => vi.fn())
-const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
 const formatBytesMock = vi.hoisted(() => vi.fn((value: number) => `${value}B`))
 const refreshPartialSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const refreshSharedChunkImportersMock = vi.hoisted(() => vi.fn())
@@ -77,7 +76,6 @@ vi.mock('../helpers', () => ({
   createBundleChunkSnapshot: createBundleChunkSnapshotMock,
   emitJsonAssets: emitJsonAssetsMock,
   filterPluginBundleOutputs: filterPluginBundleOutputsMock,
-  flushIndependentBuilds: flushIndependentBuildsMock,
   formatBytes: formatBytesMock,
   refreshPartialSharedChunkImporters: refreshPartialSharedChunkImportersMock,
   refreshSharedChunkImporters: refreshSharedChunkImportersMock,
@@ -124,7 +122,6 @@ function createState(overrides: Record<string, any> = {}) {
       },
     },
     entriesMap: new Map(),
-    pendingIndependentBuilds: [],
     watchFilesSnapshot: [],
     hmrState: {
       didEmitAllEntries: false,
@@ -184,7 +181,6 @@ describe('core lifecycle emit hook extra branches', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    flushIndependentBuildsMock.mockResolvedValue(undefined)
   })
 
   it('matches subpackage roots with stable order and cached misses', () => {
@@ -475,7 +471,6 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(flushIndependentBuildsMock).toHaveBeenCalledTimes(1)
     expect(filterPluginBundleOutputsMock).toHaveBeenCalledWith(bundle, state.ctx.configService)
     expect(removeImplicitPagePreloadsMock).not.toHaveBeenCalled()
   })

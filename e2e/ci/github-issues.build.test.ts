@@ -19,6 +19,7 @@ const ISSUE_642_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-642')
 const ISSUE_724_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-724')
 const ISSUE_793_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-793')
 const ISSUE_845_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-845')
+const ISSUE_850_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-850')
 const issue826DistRoot = (jsFormat: 'cjs' | 'esm') => path.join(APP_ROOT, `dist-issue-826-${jsFormat}`)
 const SLOT_FALLBACK_COMPILER_OFF_DIST_ROOT = path.join(APP_ROOT, 'dist-slot-fallback-compiler-off')
 const SLOT_OWNER_ATTR = `__wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"`
@@ -77,6 +78,21 @@ async function runIssue845Build() {
     skipNpm: true,
     env: {
       WEAPP_GITHUB_ISSUE_845_I18N: 'true',
+    },
+  })
+}
+
+async function runIssue850Build() {
+  await fs.remove(ISSUE_850_DIST_ROOT)
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
+    cwd: APP_ROOT,
+    label: 'ci:github-issues:issue850',
+    skipNpm: true,
+    env: {
+      WEAPP_GITHUB_ISSUE_850_OUTPUT_REPLAY: 'true',
     },
   })
 }
@@ -507,6 +523,24 @@ async function runIssue826Build(jsFormat: 'cjs' | 'esm') {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #850: processes completed independent outputs only once', async () => {
+    await runIssue850Build()
+
+    const independentStyle = await fs.readFile(
+      path.join(ISSUE_850_DIST_ROOT, 'subpackages/issue-850/index.wxss'),
+      'utf8',
+    )
+    const appJson = await fs.readJSON(path.join(ISSUE_850_DIST_ROOT, 'app.json')) as {
+      subPackages?: Array<{ independent?: boolean, root?: string }>
+    }
+
+    expect(independentStyle.match(/issue-850-output-marker/g)).toHaveLength(1)
+    expect(appJson.subPackages).toContainEqual(expect.objectContaining({
+      independent: true,
+      root: 'subpackages/issue-850',
+    }))
+  })
+
   it('issue #845: emits first-party i18n assets for native and Vue templates', async () => {
     await runIssue845Build()
 

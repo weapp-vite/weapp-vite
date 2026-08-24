@@ -18,6 +18,7 @@ import { resolveScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { handleWxml, scanWxml } from '../wxml'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 import { transformI18nOutputTemplate } from './i18n'
+import { flushIndependentOutputs } from './outputFinalizer/independent'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
@@ -379,7 +380,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
     enforce: 'post',
     generateBundle: {
       order: 'post',
-      handler(_options, bundle) {
+      async handler(_options, bundle) {
         const outputBundle = bundle as unknown as OutputBundle
         rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
         stabilizeWevuRuntimeChunkAccess(bundle as unknown as OutputBundle)
@@ -397,6 +398,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
           runtimeRewriteDone: true,
         })
         syncOutputChunkSourceMapAssets(outputBundle)
+        await flushIndependentOutputs(ctx, subPackageMeta, asset => this.emitFile(asset))
       },
     },
   }

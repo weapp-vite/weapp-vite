@@ -265,8 +265,9 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const loadedConfig = loaded?.config ?? {}
 
     let weappLoaded: Awaited<ReturnType<typeof loadViteConfigFile>> | undefined
+    const reuseLoadedWeappConfig = shouldReuseLoadedWeappConfig(weappConfigFilePath, loaded?.path)
     if (weappConfigFilePath) {
-      if (shouldReuseLoadedWeappConfig(weappConfigFilePath, loaded?.path)) {
+      if (reuseLoadedWeappConfig) {
         weappLoaded = loaded
       }
       else {
@@ -291,7 +292,9 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
 
     const mergedLoadedConfig = weappLoaded?.config
-      ? defu(weappLoaded.config, loadedConfig)
+      ? reuseLoadedWeappConfig
+        ? loadedConfig
+        : defu(weappLoaded.config, loadedConfig)
       : loadedConfig
 
     const config = defu<InlineConfig, (InlineConfig | undefined)[]>(
