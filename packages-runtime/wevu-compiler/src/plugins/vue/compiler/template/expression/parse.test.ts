@@ -7,6 +7,39 @@ import {
 } from './parse'
 import { normalizeWxmlExpression } from './wxml'
 
+const MDN_NUMERIC_LITERAL_CASES = [
+  ['1234567890', '1234567890'],
+  ['42', '42'],
+  ['0b10000000000000000000000000000000', '2147483648'],
+  ['0b01111111100000000000000000000000', '2139095040'],
+  ['0B00000000011111111111111111111111', '8388607'],
+  ['0O755', '493'],
+  ['0o644', '420'],
+  ['0xFFFFFFFFFFFFFFFFF', '295147905179352830000'],
+  ['0x123456789ABCDEF', '81985529216486900'],
+  ['0XA', '10'],
+  ['1_000_000_000_000', '1000000000000'],
+  ['1_050.95', '1050.95'],
+  ['0b1010_0001_1000_0101', '41349'],
+  ['0o2_2_5_6', '1198'],
+  ['0xA0_B0_C0', '10531008'],
+  ['1_000_000_000_000_000_000_000n', `'1000000000000000000000'`],
+] as const
+
+const MDN_INVALID_NUMERIC_SEPARATOR_CASES = [
+  '100__000',
+  '100_',
+  '0_1',
+] as const
+
+const BIGINT_WXML_BOUNDARY_CASES = [
+  ['42n', '42'],
+  ['-42n', '-42'],
+  ['9007199254740991n', '9007199254740991'],
+  ['9007199254740992n', `'9007199254740992'`],
+  ['-9007199254740992n', `'-9007199254740992'`],
+] as const
+
 describe('template expression parse helpers', () => {
   it('parses expression and reuses cache for same source', () => {
     const first = parseBabelExpression('foo + bar')
@@ -32,6 +65,24 @@ describe('template expression parse helpers', () => {
   it('removes Vue-style this prefixes from WXML expressions', () => {
     expect(normalizeWxmlExpression('this.count')).toBe('count')
     expect(normalizeWxmlExpression('this.list.map(item => item.value)')).toBe('list.map(item=>item.value)')
+  })
+
+  it.each(MDN_NUMERIC_LITERAL_CASES)('normalizes the MDN numeric literal %s for WXML', (source, expected) => {
+    expect(normalizeWxmlExpression(source)).toBe(expected)
+  })
+
+  it.each(MDN_INVALID_NUMERIC_SEPARATOR_CASES)('keeps the invalid MDN numeric separator case %s rejected', (source) => {
+    expect(parseBabelExpression(source)).toBeNull()
+    expect(normalizeWxmlExpression(source)).toBe(source)
+  })
+
+  it.each(BIGINT_WXML_BOUNDARY_CASES)('serializes the BigInt boundary case %s without precision loss', (source, expected) => {
+    expect(normalizeWxmlExpression(source)).toBe(expected)
+  })
+
+  it('does not rewrite numeric-looking string contents', () => {
+    expect(normalizeWxmlExpression(`label === '1_000_000'`))
+      .toBe(`label==='1_000_000'`)
   })
 
   it('rewrites Vue slot presence checks to mini-program slot metadata', () => {

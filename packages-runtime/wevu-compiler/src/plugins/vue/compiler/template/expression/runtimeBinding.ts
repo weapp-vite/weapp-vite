@@ -53,6 +53,10 @@ export function shouldFallbackToRuntimeBinding(
       shouldFallback = true
       path.stop()
     },
+    BigIntLiteral(path) {
+      shouldFallback = true
+      path.stop()
+    },
   })
   return shouldFallback
 }

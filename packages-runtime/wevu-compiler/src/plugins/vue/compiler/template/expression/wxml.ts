@@ -1,5 +1,6 @@
 import * as t from '@weapp-vite/ast/babelTypes'
 import { parse as babelParse, traverse } from '../../../../../utils/babel'
+import { canonicalizeNumericLiteral, hasExtendedNumericLiteralSyntax, normalizeTopLevelBigInt } from './numeric'
 import { generateExpression } from './parse'
 
 type OptionalChainNode = t.OptionalMemberExpression | t.OptionalCallExpression
@@ -189,7 +190,8 @@ export function normalizeWxmlExpression(exp: string): string {
   )
   const needsVueSlotsRewrite = exp.includes('$slots')
   const needsThisRewrite = /\bthis\./.test(exp)
-  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.') && !hasTypeScriptSyntax && !needsVueSlotsRewrite && !needsThisRewrite) {
+  const needsNumericLiteralRewrite = hasExtendedNumericLiteralSyntax(exp)
+  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.') && !hasTypeScriptSyntax && !needsVueSlotsRewrite && !needsThisRewrite && !needsNumericLiteralRewrite) {
     return exp
   }
 
@@ -206,6 +208,9 @@ export function normalizeWxmlExpression(exp: string): string {
     if (needsVueSlotsRewrite) {
       rewriteVueSlotsExpression(ast)
     }
+
+    const expressionStatement = stmt as { expression: t.Expression }
+    expressionStatement.expression = normalizeTopLevelBigInt(expressionStatement.expression)
 
     traverse(ast, {
       MemberExpression: {
@@ -226,6 +231,9 @@ export function normalizeWxmlExpression(exp: string): string {
       },
       TSTypeAssertion(path) {
         path.replaceWith(path.node.expression)
+      },
+      NumericLiteral(path) {
+        canonicalizeNumericLiteral(path.node)
       },
       OptionalMemberExpression: {
         exit(path) {

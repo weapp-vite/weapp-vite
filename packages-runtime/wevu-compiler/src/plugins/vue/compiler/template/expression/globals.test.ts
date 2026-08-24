@@ -139,6 +139,11 @@ describe('template expression globals', () => {
     expect(shouldFallbackToRuntimeBinding('content === \'text\'')).toBe(false)
   })
 
+  it('keeps BigInt operations in JS runtime bindings', () => {
+    expect(shouldFallbackToRuntimeBinding('5n / 2n')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('1_000_000_000_000_000_000_000n')).toBe(false)
+  })
+
   it('only preserves configured direct template calls', () => {
     const safeCalls = new Set(['t'])
 

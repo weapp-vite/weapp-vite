@@ -11,6 +11,21 @@ afterEach(() => {
 })
 
 describe.sequential('compileJsx template helpers', () => {
+  it('normalizes JavaScript numeric literals for WXML expressions', async () => {
+    const { compileJsxTemplate } = await import('./template')
+    const result = compileJsxTemplate(
+      `export default { render() { return <view data-binary={0b1010_0001_1000_0101} data-octal={0o2_2_5_6} data-hex={0xA0_B0_C0} data-bigint={1_000_000_000_000_000_000_000n}>{1_050.95}</view> } }`,
+      '/project/src/pages/issue-852/index.tsx',
+    )
+
+    expect(result.template).toContain('data-binary="{{41349}}"')
+    expect(result.template).toContain('data-octal="{{1198}}"')
+    expect(result.template).toContain('data-hex="{{10531008}}"')
+    expect(result.template).toContain(`data-bigint="{{'1000000000000000000000'}}"`)
+    expect(result.template).toContain('>{{1050.95}}</view>')
+    expect(result.template).not.toMatch(/(?:\d_\d|0[bxo]|\d+n\b)/i)
+  })
+
   it('extracts a render closure returned from setup', async () => {
     const { compileJsxTemplate } = await import('./template')
     const result = compileJsxTemplate(
