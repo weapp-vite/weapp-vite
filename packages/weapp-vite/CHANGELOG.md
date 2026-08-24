@@ -1,5 +1,32 @@
 # weapp-vite
 
+## 6.22.0
+
+### Minor Changes
+
+- 新增可脱离 Vite 使用的 `@weapp-vite/i18n` 运行时、编译器、原生 catalog 命令和微信构建 npm 入口。运行时统一采用 `createI18n()` 工厂实例和 `i18n.global`，通过 `i18n.behavior` 接入组件、通过 `i18n.page()` 适配传统 Page，并移除未发布的旧 singleton 入口；weapp-vite 同时提供 locale JSON 扫描校验、简单占位符预编译、WXS 模板改写、HMR，以及主包、普通分包和独立分包的资产与实例边界。
+
+- 新增 Wevu 兼容性清单与静态 API 防护，补齐 SFC scoped、CSS Modules 和 CSS `v-bind()` 的编译及运行时桥接，并同步模板、网站和迁移文档。
+
+### Patch Changes
+
+- 修复独立分包最终产物在主构建中被输出插件重复处理的问题。
+
+- 修复 Vue 与 JSX 模板中的 JavaScript 数字字面量被原样输出到 WXML 的问题。编译时会将二进制、八进制、十六进制和带分隔符的 Number 转为十进制，并按小程序数据边界安全转换 BigInt，避免模板编译错误和精度丢失。
+
+- 修复 `weapp.styles.include` 显式匹配 `app.vue` 时未向 `app.wxss` 注入共享样式的问题，同时保持默认配置不修改应用级样式入口。
+
+- 升级 uview-plus 兼容基线至 3.8.112，更新小程序兼容补丁、组件矩阵和模板依赖目录。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.0
+  - @weapp-vite/ast@6.22.0
+  - @weapp-vite/eslint@0.2.0
+  - @weapp-vite/i18n@0.2.0
+  - @weapp-vite/web@1.4.12
+  - @wevu/web-apis@1.2.35
+  - wevu@6.22.0
+
 ## 6.21.0
 
 ### Minor Changes
