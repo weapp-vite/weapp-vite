@@ -69,10 +69,6 @@ function relativeToRoot(pathname: string, root: string) {
   }
 }
 
-function isMainAppStyleFile(fileName: string) {
-  return !fileName.includes('/') && path.posix.basename(fileName, path.posix.extname(fileName)) === 'app'
-}
-
 function getStyleMatcher(entry: StyleEntry): StyleMatcher {
   const cached = styleMatcherCache.get(entry)
   if (cached) {
@@ -134,9 +130,6 @@ function findSharedStylesForModule(
   for (const [root, entries] of sharedStyles.entries()) {
     const normalizedRoot = normalizeRoot(root)
     if (root && !normalizedRoot) {
-      continue
-    }
-    if (!normalizedRoot && isMainAppStyleFile(sanitizedFile)) {
       continue
     }
     if (!isWithinRoot(sanitizedFile, normalizedRoot)) {

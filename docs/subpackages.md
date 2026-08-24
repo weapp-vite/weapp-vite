@@ -133,7 +133,7 @@ export default defineConfig({
 
 > 提示：`styles` 支持 `wxss/css/scss/less/stylus` 等格式，`weapp-vite` 会统一转换为目标平台后缀并按作用域注入。
 
-> 主包入口：顶层 `weapp.styles` 会生成独立样式资产，并注入主包与普通分包中命中的页面或组件，但不会修改 `app.wxss`。独立分包不能依赖主包资源，仍需使用自己的 `subPackages.<root>.styles`。对象配置设为 `inject: false` 时只生成文件，不自动注入。
+> 主包入口：顶层 `weapp.styles` 会生成独立样式资产，并注入主包与普通分包中命中的样式。默认不修改 `app.wxss`；对象配置通过 `include: 'app.vue'` 等显式匹配应用入口时，可以向 `app.wxss` 注入。独立分包不能依赖主包资源，仍需使用自己的 `subPackages.<root>.styles`。对象配置设为 `inject: false` 时只生成文件，不自动注入。
 
 > 路径解析说明：`styles.source` 以“分包根目录”为基准。以上示例里，`packages/order` 访问 `src/shared/styles/components.scss` 需要写成 `../../shared/styles/components.scss`，而不是 `../shared/styles/components.scss`。
 

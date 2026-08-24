@@ -26,7 +26,7 @@ keywords:
 - **类型**：`StyleConfigEntry | StyleConfigEntry[]`
 - **默认值**：`undefined`
 
-用于把主包源码目录中的样式编译为独立产物，并按规则向主包与普通分包的页面或组件样式注入相对 `@import`。它不会把内容合并进 `app.wxss`。
+用于把主包源码目录中的样式编译为独立产物，并按规则向主包与普通分包的样式注入相对 `@import`。默认不会修改 `app.wxss`；`include` 显式匹配 `app.vue` 等应用入口时，可以向 `app.wxss` 注入。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -42,6 +42,10 @@ export default defineConfig({
         source: 'styles/manual.less',
         inject: false,
       },
+      {
+        source: 'styles/app-theme.scss',
+        include: 'app.vue',
+      },
     ],
   },
 })
@@ -51,11 +55,12 @@ export default defineConfig({
 
 - `theme.wxss` 会被命中的主包、普通分包页面或组件引用。
 - `manual.wxss` 只生成文件，供源码使用 `@wv-keep-import` 或其他原生方式手动引用。
-- `app.wxss` 不会被自动修改。
+- 未显式配置 `include` 时，app 默认被排除，避免共享样式意外变成全局样式。
+- `include: 'app.vue'` 会让生成的 `app.wxss` 引用对应共享样式资产。
 - 独立分包不能依赖主包资源，因此不会注入这些入口。需要在独立分包使用同一主题时，应在对应的 `weapp.subPackages.<root>.styles` 中显式声明一份分包内入口。
 
 > [!NOTE]
-> `weapp.styles` 的 `include` / `exclude` 相对 `srcRoot` 匹配。`scope: 'pages'` 和 `scope: 'components'` 的默认规则分别是根级 `pages/**` 与 `components/**`；要覆盖分包目录，请使用显式 glob。
+> `weapp.styles` 的 `include` / `exclude` 相对 `srcRoot` 匹配。`scope: 'pages'` 和 `scope: 'components'` 的默认规则分别是根级 `pages/**` 与 `components/**`；要覆盖分包目录或 app，请使用显式 glob。
 
 ## `weapp.subPackages` {#weapp-subpackages}
 

@@ -145,4 +145,33 @@ describe('normalizeSubPackageStyleEntries', () => {
     expect(entries).toHaveLength(2)
     expect(entries?.some(entry => entry.source === 'components.scss')).toBe(false)
   })
+
+  it('excludes app by default but preserves an explicit app.vue include', async () => {
+    await fs.writeFile(path.join(tempRoot, 'main.scss'), '.shared {}')
+
+    const defaultEntries = normalizeMainPackageStyleEntries(
+      'main.scss',
+      createConfigService(tempRoot),
+    )
+    const explicitEntries = normalizeMainPackageStyleEntries(
+      {
+        source: 'main.scss',
+        include: 'app.vue',
+      },
+      createConfigService(tempRoot),
+    )
+
+    expect(defaultEntries).toEqual([
+      expect.objectContaining({
+        include: ['**/*'],
+        exclude: ['app.*'],
+      }),
+    ])
+    expect(explicitEntries).toEqual([
+      expect.objectContaining({
+        include: ['app.vue'],
+        exclude: [],
+      }),
+    ])
+  })
 })
