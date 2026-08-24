@@ -23,19 +23,18 @@ import type {
   WeapiWechatMiniProgramRawAdapterSource,
   WeapiWxRawAdapter,
 } from './miniProgramTypes'
-import type { WeapiNonPromisifiedMethodName } from './nonPromisifiedMethods'
 import type {
   WeapiAlipayRawAdapter,
   WeapiCrossPlatformRawAdapter,
   WeapiDouyinRawAdapter,
   WeapiMiniProgramCrossPlatformRawAdapter,
 } from './platformAdapters'
+import type { WeapiAdapter, WeapiPromisify } from './promisify'
 import type { WeapiCrossPlatformMethodDocs } from './types/methodDocs'
 
 /// <reference types="miniprogram-api-typings" />
 /// <reference types="@mini-types/alipay" />
 /// <reference types="@douyin-microapp/typings" />
-export type WeapiAdapter = Record<string, any>
 export type {
   WeapiAlipayMiniProgramRawAdapterSource,
   WeapiAlipayRawAdapter,
@@ -65,78 +64,7 @@ export type {
   WeapiWechatMiniProgramRawAdapterSource,
   WeapiWxRawAdapter,
 }
-
-type HasCallbackKey<T> = T extends object
-  ? 'success' extends keyof T
-    ? true
-    : 'fail' extends keyof T
-      ? true
-      : 'complete' extends keyof T
-        ? true
-        : false
-  : false
-type HasCallbackOption<T> = T extends { success: unknown }
-  ? true
-  : T extends { fail: unknown }
-    ? true
-    : T extends { complete: unknown }
-      ? true
-      : false
-
-type ExtractSuccessResult<T> = T extends { success?: (...args: infer A) => unknown } ? A[0] : void
-
-type PromisifyOptionMethod<
-  Prefix extends any[],
-  Option extends object,
-  Result,
-  IsOptional extends boolean,
-> = IsOptional extends true
-  ? {
-      <TOption extends Option>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
-        ? Result
-        : Promise<ExtractSuccessResult<Option>>
-      (...args: Prefix): Promise<ExtractSuccessResult<Option>>
-    }
-  : {
-      <TOption extends Option>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
-        ? Result
-        : Promise<ExtractSuccessResult<Option>>
-    }
-
-type NormalizePromisifyReturn<T> = T extends Promise<any> ? T : Promise<T>
-type NormalizeTupleArgs<Args extends any[]> = { [Key in keyof Args]-?: Args[Key] }
-type DecomposeTrailingArg<Args extends any[]> = NormalizeTupleArgs<Args> extends [...infer Prefix, infer Last] ? { prefix: Prefix, last: Last } : never
-type IsOptionalTrailingArg<Args extends any[], Prefix extends any[]> = Record<never, never> extends Pick<Args, Prefix['length']> ? true : false
-type RequiredObjectKeys<T extends object> = {
-  [Key in keyof T]-?: Pick<T, Key> extends Required<Pick<T, Key>> ? Key : never
-}[keyof T]
-type IsStructurallyOmittableObject<T> = T extends object ? (RequiredObjectKeys<T> extends never ? true : false) : false
-type IsOmittableTrailingArg<Args extends any[], Prefix extends any[], Last> = IsOptionalTrailingArg<Args, Prefix> extends true ? true : IsStructurallyOmittableObject<NonNullable<Last>>
-
-type PromisifyMethod<TMethod> = TMethod extends (...args: infer Args) => infer Result
-  ? Args extends []
-    ? (...args: Args) => NormalizePromisifyReturn<Result>
-    : DecomposeTrailingArg<Args> extends {
-      prefix: infer Prefix extends any[]
-      last: infer Last
-    }
-      ? true extends HasCallbackKey<NonNullable<Last>>
-        ? PromisifyOptionMethod<Prefix, NonNullable<Last>, Result, IsOmittableTrailingArg<Args, Prefix, Last>>
-        : (...args: Args) => NormalizePromisifyReturn<Result>
-      : (...args: Args) => NormalizePromisifyReturn<Result>
-  : TMethod
-
-export type WeapiPromisify<TAdapter extends WeapiAdapter> = {
-  [Key in keyof TAdapter]: Key extends string
-    ? Key extends `${string}Sync`
-      ? TAdapter[Key]
-      : Key extends WeapiNonPromisifiedMethodName
-        ? TAdapter[Key]
-        : Key extends `on${Capitalize<string>}` | `off${Capitalize<string>}`
-          ? TAdapter[Key]
-          : PromisifyMethod<TAdapter[Key]>
-    : TAdapter[Key]
-}
+export type { WeapiAdapter, WeapiError, WeapiPromise, WeapiPromisify } from './promisify'
 
 /**
  * @description 微信小程序 API 适配器类型
