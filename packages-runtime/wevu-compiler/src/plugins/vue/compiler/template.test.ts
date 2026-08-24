@@ -56,16 +56,32 @@ function expectScopedSlotComputed(
 }
 
 describe('compileVueTemplateToWxml', () => {
-  it('lowers numeric separators in template expressions', () => {
+  it('normalizes JavaScript numeric literals for WXML expressions', () => {
     const template = `
-<view :data-value="1_000_000">{{ 1_000_000 }}</view>
+<view
+  :data-binary="0b1010_0001_1000_0101"
+  :data-octal="0o2_2_5_6"
+  :data-hex="0xA0_B0_C0"
+  :data-bigint="1_000_000_000_000_000_000_000n"
+>
+  {{ 1_050.95 }}
+</view>
+<view>{{ 5n / 2n }}</view>
     `.trim()
 
-    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/issue-852/index.vue')
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/issue-852/index.vue')
 
-    expect(code).toContain('data-value="{{1000000}}"')
-    expect(code).toContain('>{{1000000}}</view>')
-    expect(code).not.toContain('1_000_000')
+    expect(code).toContain('data-binary="{{41349}}"')
+    expect(code).toContain('data-octal="{{1198}}"')
+    expect(code).toContain('data-hex="{{10531008}}"')
+    expect(code).toContain(`data-bigint="{{'1000000000000000000000'}}"`)
+    expect(code).toContain('{{1050.95}}')
+    expect(code).toMatch(/\{\{__wv_bind_\d+\}\}/)
+    expect(classStyleBindings).toContainEqual(expect.objectContaining({
+      exp: '5n / 2n',
+      type: 'bind',
+    }))
+    expect(code).not.toMatch(/(?:\d_\d|0[bxo]|\d+n\b)/i)
   })
 
   it('rewrites nullish coalescing in bindings', () => {

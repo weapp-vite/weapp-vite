@@ -1,5 +1,6 @@
 import * as t from '@weapp-vite/ast/babelTypes'
 import { parse as babelParse, traverse } from '../../../../../utils/babel'
+import { canonicalizeNumericLiteral, hasExtendedNumericLiteralSyntax, normalizeTopLevelBigInt } from './numeric'
 import { generateExpression } from './parse'
 
 type OptionalChainNode = t.OptionalMemberExpression | t.OptionalCallExpression
@@ -125,8 +126,6 @@ function lowerOptionalChain(node: OptionalChainNode): t.Expression {
 }
 
 const TEMPLATE_INTERPOLATION_RE = /\$\{([^}]+)\}/g
-const DIGIT_NUMERIC_SEPARATOR_RE = /\d_\d/
-const HEX_NUMERIC_SEPARATOR_RE = /\b0x[\da-f]*_[\da-f]/i
 const EMPTY_STRING_CONCAT_LEFT_RE = /'\s*\+\s*''/g
 const EMPTY_STRING_CONCAT_RIGHT_RE = /''\s*\+\s*'/g
 const LEADING_EMPTY_CONCAT_RE = /^\s*''\s*\+\s*/g
@@ -191,8 +190,8 @@ export function normalizeWxmlExpression(exp: string): string {
   )
   const needsVueSlotsRewrite = exp.includes('$slots')
   const needsThisRewrite = /\bthis\./.test(exp)
-  const needsNumericSeparatorRewrite = DIGIT_NUMERIC_SEPARATOR_RE.test(exp) || HEX_NUMERIC_SEPARATOR_RE.test(exp)
-  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.') && !hasTypeScriptSyntax && !needsVueSlotsRewrite && !needsThisRewrite && !needsNumericSeparatorRewrite) {
+  const needsNumericLiteralRewrite = hasExtendedNumericLiteralSyntax(exp)
+  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.') && !hasTypeScriptSyntax && !needsVueSlotsRewrite && !needsThisRewrite && !needsNumericLiteralRewrite) {
     return exp
   }
 
@@ -209,6 +208,9 @@ export function normalizeWxmlExpression(exp: string): string {
     if (needsVueSlotsRewrite) {
       rewriteVueSlotsExpression(ast)
     }
+
+    const expressionStatement = stmt as { expression: t.Expression }
+    expressionStatement.expression = normalizeTopLevelBigInt(expressionStatement.expression)
 
     traverse(ast, {
       MemberExpression: {
@@ -231,10 +233,7 @@ export function normalizeWxmlExpression(exp: string): string {
         path.replaceWith(path.node.expression)
       },
       NumericLiteral(path) {
-        if (typeof path.node.extra?.raw === 'string' && path.node.extra.raw.includes('_')) {
-          delete path.node.extra.raw
-          delete path.node.extra.rawValue
-        }
+        canonicalizeNumericLiteral(path.node)
       },
       OptionalMemberExpression: {
         exit(path) {
