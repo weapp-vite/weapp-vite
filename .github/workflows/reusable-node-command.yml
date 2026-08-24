@@ -51,6 +51,14 @@ on:
         required: false
         type: string
         default: ''
+      build_artifact_name:
+        required: false
+        type: string
+        default: ''
+      consume_build_artifact:
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -62,6 +70,8 @@ jobs:
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: ${{ startsWith(inputs.node_version, '22') && '22' || '24' }}
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ github.sha }}
 
     steps:
       - name: Enable Git long paths on Windows
@@ -78,10 +88,28 @@ jobs:
         with:
           node-version: ${{ inputs.node_version }}
 
-      - if: inputs.build_command != ''
+      - if: inputs.build_command != '' && inputs.consume_build_artifact == ''
         uses: ./.github/actions/refresh-workspace-deps
         with:
           build-command: ${{ inputs.build_command }}
+
+      - name: Download workspace build artifact
+        if: inputs.consume_build_artifact != ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.consume_build_artifact }}
+          path: .
+
+      - name: Refresh workspace links after artifact restore
+        if: inputs.consume_build_artifact != ''
+        shell: bash
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          node scripts/verify-build-artifact-manifest.mjs
+
+      - name: Create workspace build artifact manifest
+        if: inputs.build_artifact_name != ''
+        run: node scripts/create-build-artifact-manifest.mjs
 
       - name: Increase file descriptor limit
         if: inputs.increase_ulimit && runner.os != 'Windows'
@@ -117,3 +145,23 @@ jobs:
           name: ${{ inputs.artifact_name }}
           path: ${{ inputs.artifact_path }}
           if-no-files-found: warn
+
+      - name: Upload workspace build artifact
+        if: ${{ success() && inputs.build_artifact_name != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ inputs.build_artifact_name }}
+          path: |
+            packages/*/dist/**
+            packages-runtime/*/dist/**
+            packages-private/*/dist/**
+            @weapp-core/*/dist/**
+            benchmarks/*/dist/**
+            mpcore/packages/*/dist/**
+            packages/*/bin/**
+            packages-runtime/*/bin/**
+            packages-private/*/bin/**
+            @weapp-core/*/bin/**
+            mpcore/packages/*/bin/**
+            .tmp/build-artifact-manifest.json
+          if-no-files-found: error

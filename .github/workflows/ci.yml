@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   build-pr:
-    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release/pnpm-version'))
+    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release/pnpm-version')
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -30,35 +30,40 @@ jobs:
             build_pkgs_script: build:pkgs:ci
             build_script: build:ci
             lint_script: lint
+            main_command: |
+              pnpm lint
+              pnpm build:ci
+              pnpm test:coverage
           - os: ubuntu-latest
             node-version: 24
             timeout_minutes: 25
             build_pkgs_script: build:pkgs:ci
             build_script: build:ci
             lint_script: lint
+            main_command: pnpm test:types
           - os: windows-latest
             node-version: 22
             timeout_minutes: 40
             build_pkgs_script: build:pkgs:ci:windows
             build_script: build:ci:windows
             lint_script: lint:ci:windows
+            main_command: pnpm build:ci:windows
           - os: macos-latest
             node-version: 22
             timeout_minutes: 40
             build_pkgs_script: build:pkgs:ci:macos
             build_script: build:ci:macos
             lint_script: lint
-      max-parallel: 2
+            main_command: pnpm build:ci:macos
+      max-parallel: 4
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: ${{ matrix.timeout_minutes }}
-      build_command: pnpm ${{ matrix.build_pkgs_script }}
-      main_command: |
-        pnpm ${{ matrix.lint_script }}
-        pnpm ${{ matrix.build_script }}
-        pnpm test:coverage
+      # Each PR command owns its single build stage; avoid a second package build in setup.
+      build_command: ''
+      main_command: ${{ matrix.main_command }}
       upload_codecov: true
     secrets: inherit
 
@@ -96,7 +101,7 @@ jobs:
     secrets: inherit
 
   build-full:
-    if: github.event_name == 'schedule'
+    if: github.event_name != 'pull_request'
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -153,7 +158,7 @@ jobs:
     secrets: inherit
 
   weapi-compat-pr:
-    if: github.event_name != 'schedule'
+    if: github.event_name == 'pull_request'
     name: Weapi Compatibility Guard (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -182,7 +187,7 @@ jobs:
     secrets: inherit
 
   weapi-compat-full:
-    if: github.event_name == 'schedule'
+    if: github.event_name != 'pull_request'
     name: Weapi Compatibility Guard (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false

@@ -185,6 +185,28 @@ const IDE_HEADLESS_FULL_TESTS = [
   path.resolve(ROOT, 'ide/shared-styles.runtime.test.ts'),
   path.resolve(ROOT, 'ide/wevu-jsx-tsx.runtime.test.ts'),
 ]
+
+// PR 只验证最能代表构建、运行时、路由和平台契约的短路径；完整清单由 nightly 执行。
+const CI_PR_PATTERNS = [
+  'ci/app-prelude-native.build.test.ts',
+  'ci/auto-routes-define-app-json.test.ts',
+  'ci/config-merge.e2e.test.ts',
+  'ci/github-issues-runtime-shared.test.ts',
+  'ci/github-issues.build.test.ts',
+  'ci/headless-automator-provider.test.ts',
+  'ci/platform-build.test.ts',
+  'ci/platform-matrix.test.ts',
+  'ci/request-clients-real.request-runtime.build.test.ts',
+  'ci/runtime-provider.test.ts',
+  'ci/shared-styles.build.test.ts',
+  'ci/template-e2e.utils.test.ts',
+  'ci/wevu-features.build.test.ts',
+  'ci/wevu-jsx-tsx.build.test.ts',
+  'ci/wevu-runtime.platform-dependency-modes.test.ts',
+  'ci/wevu-runtime.platforms.test.ts',
+  'ci/wevu-runtime.utils.test.ts',
+  'ci/wevu-subpackage-placement.build.test.ts',
+] as const
 export const SKIP_CI_HMR_GUARD_ENV = 'WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD'
 
 interface SuiteTaskFactoryOptions {
@@ -199,12 +221,70 @@ export interface E2ESuiteDefinition {
   tasks: SuiteFactory
 }
 
+export interface E2ETaskShardOptions {
+  index: number
+  total: number
+}
+
 function toPosixPath(filePath: string) {
   return filePath.replaceAll('\\', '/')
 }
 
 function toRelativeLabel(filePath: string) {
   return toPosixPath(path.relative(ROOT, filePath))
+}
+
+function resolveTaskWeight(label: string) {
+  const configured = process.env.WEAPP_VITE_E2E_TASK_DURATIONS
+  if (configured) {
+    try {
+      const durations = JSON.parse(configured) as Record<string, unknown>
+      const duration = durations[label]
+      if (typeof duration === 'number' && Number.isFinite(duration) && duration > 0) {
+        return duration
+      }
+    }
+    catch {
+      // 使用稳定的类别权重作为无效历史数据的回退。
+    }
+  }
+
+  if (label.startsWith('hmr-guard:')) {
+    return 8
+  }
+  if (label.includes('.e2e.') || label.includes('.integration.')) {
+    return 5
+  }
+  if (label.includes('platform') || label.includes('template')) {
+    return 4
+  }
+  return 2
+}
+
+/** 按历史耗时优先的确定性 LPT 算法划分任务，保证 shard 间不重叠。 */
+export function partitionE2ETasks<T extends { label: string }>(tasks: T[], options: E2ETaskShardOptions) {
+  const { index, total } = options
+  if (!Number.isInteger(index) || !Number.isInteger(total) || total < 1 || index < 0 || index >= total) {
+    throw new Error(`Invalid e2e shard: index=${index}, total=${total}`)
+  }
+
+  const buckets = Array.from({ length: total }, () => ({ load: 0, tasks: [] as T[] }))
+  const weightedTasks = tasks
+    .map((task, taskIndex) => ({ task, taskIndex, weight: resolveTaskWeight(task.label) }))
+    .sort((left, right) => right.weight - left.weight || left.taskIndex - right.taskIndex)
+
+  for (const entry of weightedTasks) {
+    let targetIndex = 0
+    for (let bucketIndex = 1; bucketIndex < buckets.length; bucketIndex += 1) {
+      if (buckets[bucketIndex].load < buckets[targetIndex].load) {
+        targetIndex = bucketIndex
+      }
+    }
+    buckets[targetIndex].tasks.push(entry.task)
+    buckets[targetIndex].load += entry.weight
+  }
+
+  return buckets[index].tasks.sort((left, right) => tasks.indexOf(left) - tasks.indexOf(right))
 }
 
 const HMR_GUARD_CI_TESTS = new Set(
@@ -304,6 +384,28 @@ export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
   ]
 
   return tasks
+}
+
+export async function getCiPrTasks(options: SuiteTaskFactoryOptions = {}) {
+  const fullTasks = await getCiTasks({ ...options })
+  const taskByLabel = new Map(fullTasks.map(task => [task.label, task]))
+  return CI_PR_PATTERNS.map(label => taskByLabel.get(label)).filter((task): task is SuiteTask => task != null)
+}
+
+export async function getCiFullTasks(options: SuiteTaskFactoryOptions = {}) {
+  const previous = process.env[SKIP_CI_HMR_GUARD_ENV]
+  process.env[SKIP_CI_HMR_GUARD_ENV] = '1'
+  try {
+    return await getCiTasks(options)
+  }
+  finally {
+    if (previous == null) {
+      delete process.env[SKIP_CI_HMR_GUARD_ENV]
+    }
+    else {
+      process.env[SKIP_CI_HMR_GUARD_ENV] = previous
+    }
+  }
 }
 
 export function getIdeExhaustiveTasks() {
@@ -481,6 +583,16 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ci',
     description: 'Miniapp CI e2e baseline with aggregated failure summary',
     tasks: getCiTasks,
+  },
+  'ci-pr': {
+    name: 'ci-pr',
+    description: 'PR miniapp CI smoke suite with core build and runtime coverage',
+    tasks: getCiPrTasks,
+  },
+  'ci-full': {
+    name: 'ci-full',
+    description: 'Complete miniapp CI suite for nightly and manual matrix runs',
+    tasks: getCiFullTasks,
   },
   'web': {
     name: 'web',
