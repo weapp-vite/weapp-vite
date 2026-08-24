@@ -7,6 +7,7 @@ import type {
   WeapiDouyinMethodName,
   WeapiDouyinMiniProgramRawAdapterSource,
   WeapiDouyinRawAdapter,
+  WeapiError,
   WeapiInstance,
   WeapiMethodSupportQueryOptions,
   WeapiMiniProgramAdapter,
@@ -39,6 +40,7 @@ import type {
   WeapiMiniProgramWxMethodName,
   WeapiMiniProgramWxRawAdapter,
   WeapiPlatformTypeSourceName,
+  WeapiPromise,
   WeapiResolvedTarget,
   WeapiRuntimeTypeSourceName,
   WeapiSupportLevel,
@@ -55,7 +57,7 @@ import {
   WEAPI_TYPE_SOURCES,
   wpi,
 } from '@wevu/api'
-import { expectAssignable, expectType } from 'tsd'
+import { expectAssignable, expectError, expectType } from 'tsd'
 
 type AssertTrue<T extends true> = T
 type IsNever<T> = [T] extends [never] ? true : false
@@ -82,6 +84,8 @@ type _myMethodCoverage = AssertTrue<IsNever<Exclude<MyMethodKeys, WeapiRawKeys>>
 type _ttMethodCoverage = AssertTrue<IsNever<Exclude<TtMethodKeys, WeapiRawKeys>>>
 
 expectType<string | undefined>(wpi.platform)
+expectAssignable<WeapiError>({ errMsg: 'failed' })
+expectAssignable<WeapiError>({ errMsg: 'failed', errno: 10001 })
 expectType<DouyinMethodKeys>('showToast' as DouyinMethodKeys)
 expectType<WeapiWechatMethodName>('showToast' as WeapiWechatMethodName)
 expectType<WeapiAlipayMethodName>('alert' as WeapiAlipayMethodName)
@@ -169,6 +173,48 @@ expectType<void>(wpi.offMemoryWarning(() => {}))
 
 const _requestPromise = wpi.request({
   url: 'https://example.com',
+})
+_requestPromise.catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number>(error.errno)
+})
+expectAssignable<Promise<WeapiMiniProgramRequestSuccessResult>>(_requestPromise)
+expectAssignable<PromiseLike<WeapiMiniProgramRequestSuccessResult>>(_requestPromise)
+expectType<Promise<WeapiMiniProgramRequestSuccessResult>>(Promise.resolve(_requestPromise))
+
+const requestThenRejected = _requestPromise.then(undefined, (error) => {
+  expectType<string>(error.errMsg)
+  expectType<number>(error.errno)
+  return 'recovered' as const
+})
+expectAssignable<Promise<WeapiMiniProgramRequestSuccessResult | 'recovered'>>(requestThenRejected)
+
+_requestPromise.then().catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number>(error.errno)
+})
+_requestPromise.finally(() => {}).catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number>(error.errno)
+})
+
+async function verifyAwaitCompatibility() {
+  expectType<WeapiMiniProgramRequestSuccessResult>(await _requestPromise)
+}
+void verifyAwaitCompatibility
+
+interface TypedPromiseError {
+  code: 'TYPED_PROMISE_ERROR'
+}
+const typedPromise = {} as WeapiPromise<number, TypedPromiseError>
+expectAssignable<Promise<number>>(typedPromise)
+typedPromise.then(value => value.toString()).catch((error) => {
+  expectType<TypedPromiseError>(error)
+})
+const defaultTypedPromise = {} as WeapiPromise<number>
+defaultTypedPromise.catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number | undefined>(error.errno)
 })
 expectType<WeapiDefaultInstance['request']>(wpi.request)
 expectType<WeapiDefaultInstance['canvasGetImageData']>(wpi.canvasGetImageData)
@@ -358,6 +404,10 @@ const requestTask = wpi.request({
   success: (result) => {
     expectType<WeapiMiniProgramRequestSuccessResult>(result)
   },
+  fail: (error) => {
+    expectType<WechatMiniprogram.RequestFailCallbackErr>(error)
+    expectType<number>(error.errno)
+  },
 })
 expectType<WeapiMiniProgramRequestTask>(requestTask)
 
@@ -376,33 +426,58 @@ expectType<ReturnType<WeapiDefaultInstance['saveFile']>>(saveFilePromise)
 const createBleConnectionPromise = wpi.createBLEConnection({
   deviceId: 'device-id',
 })
-expectType<Promise<WeapiMiniProgramBluetoothError>>(createBleConnectionPromise)
+expectAssignable<Promise<WeapiMiniProgramBluetoothError>>(createBleConnectionPromise)
+createBleConnectionPromise.catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number>(error.errCode)
+  expectType<number | undefined>(error.errno)
+})
 
 const closeBleConnectionPromise = wpi.closeBLEConnection({
   deviceId: 'device-id',
 })
-expectType<Promise<WeapiMiniProgramBluetoothError>>(closeBleConnectionPromise)
+expectAssignable<Promise<WeapiMiniProgramBluetoothError>>(closeBleConnectionPromise)
 
 const getSystemInfoAsyncPromise = wpi.getSystemInfoAsync()
-expectType<Promise<WeapiMiniProgramSystemInfo>>(getSystemInfoAsyncPromise)
+expectAssignable<Promise<WeapiMiniProgramSystemInfo>>(getSystemInfoAsyncPromise)
+getSystemInfoAsyncPromise.catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number | undefined>(error.errno)
+})
 
 const clipboardPromise = wpi.getClipboardData()
-expectType<Promise<WeapiMiniProgramClipboardDataResult>>(clipboardPromise)
+expectAssignable<Promise<WeapiMiniProgramClipboardDataResult>>(clipboardPromise)
 
 const getSettingPromise = wpi.getSetting()
-expectType<Promise<WechatMiniprogram.GetSettingSuccessCallbackResult>>(getSettingPromise)
+expectAssignable<Promise<WechatMiniprogram.GetSettingSuccessCallbackResult>>(getSettingPromise)
 
 const scanCodePromise = wpi.scanCode()
-expectType<Promise<WechatMiniprogram.ScanCodeSuccessCallbackResult>>(scanCodePromise)
+expectAssignable<Promise<WechatMiniprogram.ScanCodeSuccessCallbackResult>>(scanCodePromise)
 
 const scanCodePromiseWithOption = wpi.scanCode({})
-expectType<Promise<WechatMiniprogram.ScanCodeSuccessCallbackResult>>(scanCodePromiseWithOption)
+expectAssignable<Promise<WechatMiniprogram.ScanCodeSuccessCallbackResult>>(scanCodePromiseWithOption)
 
 const stopPullDownRefreshPromise = wpi.stopPullDownRefresh()
-expectType<Promise<WechatMiniprogram.GeneralCallbackResult>>(stopPullDownRefreshPromise)
+expectAssignable<Promise<WechatMiniprogram.GeneralCallbackResult>>(stopPullDownRefreshPromise)
+stopPullDownRefreshPromise.catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number | undefined>(error.errno)
+})
 
 interface CustomAdapter {
   foo: (option: { success?: (res: { ok: true }) => void }) => number
+  anyError: (option: {
+    fail?: (error: any) => void
+    success?: (res: { ok: true }) => void
+  }) => number
+  customError: (option: {
+    fail?: (error: { code: 'CUSTOM_ERROR', detail: string }) => void
+    success?: (res: { ok: true }) => void
+  }) => number
+  unknownError: (option: {
+    fail?: (error: unknown) => void
+    success?: (res: { ok: true }) => void
+  }) => number
   bazSync: (value: string) => number
   onReady: (callback: () => void) => void
 }
@@ -422,7 +497,52 @@ const queueNetwork = createWeapi({
 })
 
 const fooPromise = custom.foo({})
-expectType<Promise<{ ok: true }>>(fooPromise)
+expectAssignable<Promise<{ ok: true }>>(fooPromise)
+fooPromise.catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number | undefined>(error.errno)
+})
+
+custom.anyError({}).catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number | undefined>(error.errno)
+})
+custom.unknownError({}).catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number | undefined>(error.errno)
+})
+custom.customError({}).catch((error) => {
+  expectType<'CUSTOM_ERROR'>(error.code)
+  expectType<string>(error.detail)
+  expectError(error.errno)
+})
+const customCallbackReturn = custom.customError({
+  fail: (error) => {
+    expectType<'CUSTOM_ERROR'>(error.code)
+    expectType<string>(error.detail)
+  },
+})
+expectType<number>(customCallbackReturn)
+
+const wechat = createWeapi({ adapter: wx })
+wechat.stopPullDownRefresh().catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number | undefined>(error.errno)
+})
+
+const alipay = createWeapi({ adapter: my })
+alipay.showToast({ content: 'done' }).catch((error) => {
+  expectType<number | undefined>(error.error)
+  expectType<string | undefined>(error.errorMessage)
+  expectError(error.errno)
+})
+
+const douyin = createWeapi({ adapter: tt })
+douyin.showToast({ title: 'done' }).catch((error) => {
+  expectType<string>(error.errMsg)
+  expectType<number | undefined>(error.errNo)
+  expectError(error.errno)
+})
 
 const fooReturn = custom.foo({
   success: (res) => {
