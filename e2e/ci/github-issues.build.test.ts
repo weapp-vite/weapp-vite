@@ -18,6 +18,7 @@ const ISSUE_595_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-595')
 const ISSUE_642_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-642')
 const ISSUE_724_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-724')
 const ISSUE_793_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-793')
+const ISSUE_838_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-838')
 const ISSUE_845_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-845')
 const ISSUE_850_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-850')
 const issue826DistRoot = (jsFormat: 'cjs' | 'esm') => path.join(APP_ROOT, `dist-issue-826-${jsFormat}`)
@@ -78,6 +79,21 @@ async function runIssue845Build() {
     skipNpm: true,
     env: {
       WEAPP_GITHUB_ISSUE_845_I18N: 'true',
+    },
+  })
+}
+
+async function runIssue838Build() {
+  await fs.remove(ISSUE_838_DIST_ROOT)
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
+    cwd: APP_ROOT,
+    label: 'ci:github-issues:issue838',
+    skipNpm: true,
+    env: {
+      WEAPP_GITHUB_ISSUE_838_APP_VUE_STYLES: 'true',
     },
   })
 }
@@ -536,6 +552,19 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(wxml).toContain(`data-bigint="{{'1000000000000000000000'}}"`)
     expect(wxml).toContain('{{81985529216486900}}')
     expect(wxml).not.toMatch(/(?:\d_\d|0[bxo]|\d+n\b)/i)
+  })
+
+  it('PR #838: injects explicitly included shared styles into app.vue', async () => {
+    await runIssue838Build()
+
+    const appStyle = await fs.readFile(path.join(ISSUE_838_DIST_ROOT, 'app.wxss'), 'utf8')
+    const sharedStyle = await fs.readFile(
+      path.join(ISSUE_838_DIST_ROOT, 'styles/issue-838-app-vue.wxss'),
+      'utf8',
+    )
+
+    expect(appStyle).toContain('@import \'./styles/issue-838-app-vue.wxss\';')
+    expect(sharedStyle).toContain('color: #123456;')
   })
 
   it('issue #850: processes completed independent outputs only once', async () => {

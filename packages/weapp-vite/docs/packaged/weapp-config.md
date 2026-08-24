@@ -155,7 +155,7 @@ export default defineConfig({
 
 ### `styles`
 
-用于生成主包独立样式入口，并按规则向主包与普通分包的页面或组件样式注入相对 `@import`，不会把内容合并进 `app.wxss`：
+用于生成主包独立样式入口，并按规则向主包与普通分包的样式注入相对 `@import`。默认不会修改 `app.wxss`；对象配置的 `include` 显式匹配 `app.vue` 等应用入口时，可以向 `app.wxss` 注入：
 
 ```ts
 export default defineConfig({
@@ -169,12 +169,16 @@ export default defineConfig({
         source: 'styles/manual.less',
         inject: false,
       },
+      {
+        source: 'styles/app-theme.scss',
+        include: 'app.vue',
+      },
     ],
   },
 })
 ```
 
-`inject: false` 只生成目标平台样式文件，适合由源码手动 `@import`。独立分包不能依赖主包资源，不会收到 `weapp.styles` 的自动注入；需要在 `weapp.subPackages.<root>.styles` 中声明分包自己的入口。
+`inject: false` 只生成目标平台样式文件，适合由源码手动 `@import`。未显式配置 `include` 时仍默认排除 app，避免意外把共享样式提升为全局样式。独立分包不能依赖主包资源，不会收到 `weapp.styles` 的自动注入；需要在 `weapp.subPackages.<root>.styles` 中声明分包自己的入口。
 
 ### `routeRules`
 

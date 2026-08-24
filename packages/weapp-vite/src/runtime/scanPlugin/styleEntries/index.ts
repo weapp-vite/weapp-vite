@@ -20,11 +20,32 @@ import {
   SUPPORTED_SHARED_STYLE_EXTS,
 } from './config'
 import { addStyleEntry, appendDefaultScopedStyleEntries } from './entries'
+import { normalizePattern } from './patterns'
 import {
   getRelativePathWithinSubPackage,
   inferScopeFromRelativePath,
   resolveStyleEntryAbsolutePath,
 } from './resolve'
+
+function hasExplicitIncludePattern(
+  include: string | string[] | undefined,
+  normalizedRoot: string,
+) {
+  const patterns = include === undefined
+    ? []
+    : Array.isArray(include) ? include : [include]
+  return patterns.some(pattern => normalizePattern(pattern, normalizedRoot) !== undefined)
+}
+
+function appendExcludePattern(
+  exclude: string | string[] | undefined,
+  pattern: string,
+) {
+  if (exclude === undefined) {
+    return [pattern]
+  }
+  return Array.isArray(exclude) ? [...exclude, pattern] : [exclude, pattern]
+}
 
 export function isSupportedSharedStyleExtension(absolutePath: string) {
   return SUPPORTED_SHARED_STYLE_EXTS.has(path.extname(absolutePath).toLowerCase())
@@ -50,6 +71,7 @@ function normalizeStyleEntries(
   options: {
     warningPrefix: string
     appendDefaultEntries: boolean
+    excludeRootAppByDefault: boolean
   },
 ): StyleEntry[] | undefined {
   const service = configService
@@ -97,6 +119,10 @@ function normalizeStyleEntries(
     const posixOutput = toPosixPath(outputRelativePath)
     const resolvedDescriptor: ResolvedStyleConfig = {
       ...descriptor,
+      exclude: options.excludeRootAppByDefault
+        && !hasExplicitIncludePattern(descriptor.include, normalizedRoot)
+        ? appendExcludePattern(descriptor.exclude, 'app.*')
+        : descriptor.exclude,
       scope: resolveStyleEntryScope(descriptor, posixOutput, normalizedRoot),
     }
 
@@ -123,6 +149,7 @@ export function normalizeSubPackageStyleEntries(
   return normalizeStyleEntries(styles, root, configService, {
     warningPrefix: `[分包] 分包 ${root} `,
     appendDefaultEntries: true,
+    excludeRootAppByDefault: false,
   })
 }
 
@@ -137,5 +164,6 @@ export function normalizeMainPackageStyleEntries(
   return normalizeStyleEntries(styles, '', configService, {
     warningPrefix: '[样式] 主包 ',
     appendDefaultEntries: false,
+    excludeRootAppByDefault: true,
   })
 }

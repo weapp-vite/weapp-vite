@@ -92,7 +92,7 @@ export interface StyleConfigObject {
    * @description 作用范围快捷配置
    */
   scope?: StyleScope
-  /** 自定义包含路径，支持传入单个 glob 或数组，默认覆盖当前包内所有文件 */
+  /** 自定义包含路径，支持传入单个 glob 或数组；主包默认不包含 app，需显式匹配 `app.vue` 等应用入口 */
   include?: string | string[]
   /** 自定义排除路径，支持传入单个 glob 或数组 */
   exclude?: string | string[]

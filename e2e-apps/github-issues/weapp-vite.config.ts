@@ -18,6 +18,7 @@ const issue779CssPreEnabled = process.env.WEAPP_GITHUB_ISSUE_779_CSS_PRE === 'tr
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
 const issue826PreserveEnabled = process.env.WEAPP_GITHUB_ISSUE_826_PRESERVE === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.issue826.test.ts')
+const issue838AppVueStylesEnabled = process.env.WEAPP_GITHUB_ISSUE_838_APP_VUE_STYLES === 'true'
 const issue845I18nEnabled = process.env.WEAPP_GITHUB_ISSUE_845_I18N === 'true'
 const issue850OutputReplayEnabled = process.env.WEAPP_GITHUB_ISSUE_850_OUTPUT_REPLAY === 'true'
 const issue793BuildScope = process.env.WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE
@@ -502,6 +503,9 @@ const issue850OutputReplayPlugin = issue850OutputReplayEnabled
   : undefined
 
 function resolveGithubIssuesBuildConfig() {
+  if (issue838AppVueStylesEnabled) {
+    return { outDir: 'dist-issue-838', minify: false }
+  }
   if (issue850OutputReplayEnabled) {
     return { outDir: 'dist-issue-850', minify: false }
   }
@@ -566,6 +570,14 @@ export default defineConfig({
       profileJson: true,
     },
     srcRoot: 'src',
+    ...(issue838AppVueStylesEnabled
+      ? {
+          styles: {
+            source: 'styles/issue-838-app-vue.scss',
+            include: 'app.vue',
+          },
+        }
+      : {}),
     autoRoutes: resolveGithubIssuesAutoRoutes(),
     subPackages: issue850OutputReplayEnabled
       ? {

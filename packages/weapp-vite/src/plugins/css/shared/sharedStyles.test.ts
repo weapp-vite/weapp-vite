@@ -66,29 +66,47 @@ describe('sharedStyles helpers', () => {
     expect(Array.from(onlyPkgB.keys())).toEqual(['pkgB'])
   })
 
-  it('injects main-package styles into pages but not app styles', () => {
+  it('injects default main-package styles into pages but not app styles', () => {
     const sharedStyles = new Map<string, SubPackageStyleEntry[]>([
       ['', [createStyleEntry({
+        include: ['pages/**', 'components/**'],
         outputRelativePath: 'styles/main.wxss',
       })]],
     ])
-    const configService = createConfigService(id => id.includes('/app.') ? 'app.ts' : 'pkgA/pages/foo.ts')
+    const configService = createConfigService(id => id.includes('/app.') ? 'app.vue' : 'pages/foo.ts')
 
     expect(injectSharedStyleImports(
       '.page{}',
-      '/abs/pkgA/pages/foo.ts',
-      'pkgA/pages/foo.wxss',
+      '/abs/pages/foo.ts',
+      'pages/foo.wxss',
       sharedStyles,
       configService,
-    )).toBe('@import \'../../styles/main.wxss\';\n.page{}')
+    )).toBe('@import \'../styles/main.wxss\';\n.page{}')
 
     expect(injectSharedStyleImports(
       '.app{}',
-      '/abs/app.ts',
+      '/abs/app.vue',
       'app.wxss',
       sharedStyles,
       configService,
     )).toBe('.app{}')
+  })
+
+  it('injects main-package styles explicitly included for app.vue', () => {
+    const sharedStyles = new Map<string, SubPackageStyleEntry[]>([
+      ['', [createStyleEntry({
+        include: ['app.vue'],
+        outputRelativePath: 'styles/main.wxss',
+      })]],
+    ])
+
+    expect(injectSharedStyleImports(
+      '.app{}',
+      '/abs/app.vue',
+      'app.wxss',
+      sharedStyles,
+      createConfigService(() => 'app.vue'),
+    )).toBe('@import \'./styles/main.wxss\';\n.app{}')
   })
 
   it('emits but does not inject entries configured with inject false', () => {
