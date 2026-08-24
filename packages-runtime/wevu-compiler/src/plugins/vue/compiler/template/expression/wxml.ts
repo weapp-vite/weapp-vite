@@ -125,6 +125,8 @@ function lowerOptionalChain(node: OptionalChainNode): t.Expression {
 }
 
 const TEMPLATE_INTERPOLATION_RE = /\$\{([^}]+)\}/g
+const DIGIT_NUMERIC_SEPARATOR_RE = /\d_\d/
+const HEX_NUMERIC_SEPARATOR_RE = /\b0x[\da-f]*_[\da-f]/i
 const EMPTY_STRING_CONCAT_LEFT_RE = /'\s*\+\s*''/g
 const EMPTY_STRING_CONCAT_RIGHT_RE = /''\s*\+\s*'/g
 const LEADING_EMPTY_CONCAT_RE = /^\s*''\s*\+\s*/g
@@ -189,7 +191,8 @@ export function normalizeWxmlExpression(exp: string): string {
   )
   const needsVueSlotsRewrite = exp.includes('$slots')
   const needsThisRewrite = /\bthis\./.test(exp)
-  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.') && !hasTypeScriptSyntax && !needsVueSlotsRewrite && !needsThisRewrite) {
+  const needsNumericSeparatorRewrite = DIGIT_NUMERIC_SEPARATOR_RE.test(exp) || HEX_NUMERIC_SEPARATOR_RE.test(exp)
+  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.') && !hasTypeScriptSyntax && !needsVueSlotsRewrite && !needsThisRewrite && !needsNumericSeparatorRewrite) {
     return exp
   }
 
@@ -226,6 +229,12 @@ export function normalizeWxmlExpression(exp: string): string {
       },
       TSTypeAssertion(path) {
         path.replaceWith(path.node.expression)
+      },
+      NumericLiteral(path) {
+        if (typeof path.node.extra?.raw === 'string' && path.node.extra.raw.includes('_')) {
+          delete path.node.extra.raw
+          delete path.node.extra.rawValue
+        }
       },
       OptionalMemberExpression: {
         exit(path) {

@@ -56,6 +56,18 @@ function expectScopedSlotComputed(
 }
 
 describe('compileVueTemplateToWxml', () => {
+  it('lowers numeric separators in template expressions', () => {
+    const template = `
+<view :data-value="1_000_000">{{ 1_000_000 }}</view>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/issue-852/index.vue')
+
+    expect(code).toContain('data-value="{{1000000}}"')
+    expect(code).toContain('>{{1000000}}</view>')
+    expect(code).not.toContain('1_000_000')
+  })
+
   it('rewrites nullish coalescing in bindings', () => {
     const template = `
 <t-icon :name="item.icon ?? 'app'" />

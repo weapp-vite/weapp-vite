@@ -11,6 +11,18 @@ afterEach(() => {
 })
 
 describe.sequential('compileJsx template helpers', () => {
+  it('lowers numeric separators in template expressions', async () => {
+    const { compileJsxTemplate } = await import('./template')
+    const result = compileJsxTemplate(
+      `export default { render() { return <view data-value={1_000_000}>{1_000_000}</view> } }`,
+      '/project/src/pages/issue-852/index.tsx',
+    )
+
+    expect(result.template).toContain('data-value="{{1000000}}"')
+    expect(result.template).toContain('>{{1000000}}</view>')
+    expect(result.template).not.toContain('1_000_000')
+  })
+
   it('extracts a render closure returned from setup', async () => {
     const { compileJsxTemplate } = await import('./template')
     const result = compileJsxTemplate(

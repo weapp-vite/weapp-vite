@@ -34,6 +34,13 @@ describe('template expression parse helpers', () => {
     expect(normalizeWxmlExpression('this.list.map(item => item.value)')).toBe('list.map(item=>item.value)')
   })
 
+  it('lowers numeric separators for WXML without rewriting string contents', () => {
+    expect(normalizeWxmlExpression('1_000_000 + 0xFF_FF + 0b1010_0001 + 0o7_7'))
+      .toBe('1000000+65535+161+63')
+    expect(normalizeWxmlExpression(`label === '1_000_000'`))
+      .toBe(`label==='1_000_000'`)
+  })
+
   it('rewrites Vue slot presence checks to mini-program slot metadata', () => {
     expect(normalizeWxmlExpression('!$slots.content && mode === \'normal\''))
       .toBe('!(vueSlots&&vueSlots.content)&&mode===\'normal\'')

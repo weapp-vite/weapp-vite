@@ -523,6 +523,16 @@ async function runIssue826Build(jsFormat: 'cjs' | 'esm') {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #852: lowers numeric separators in WXML expressions', async () => {
+    await runBuild()
+
+    const wxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-852/index.wxml'), 'utf8')
+
+    expect(wxml).toContain('data-value="{{1000000}}"')
+    expect(wxml).toContain('>{{1000000}}</view>')
+    expect(wxml).not.toContain('1_000_000')
+  })
+
   it('issue #850: processes completed independent outputs only once', async () => {
     await runIssue850Build()
 
