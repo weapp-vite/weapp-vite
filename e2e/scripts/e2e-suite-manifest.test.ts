@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getSuiteTasks, getWebTasks } from './e2e-suite-manifest'
+import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getSuiteTasks, getWebTasks, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
   it('runs the web suite through its dedicated Vitest config', () => {
@@ -22,6 +22,30 @@ describe('e2e suite manifest', () => {
 
   it('registers component library IDE coverage as a standalone entry', async () => {
     expect(await getSuiteTasks('ide-component-libraries')).toEqual(getIdeComponentLibraryTasks())
+  })
+
+  it('keeps the PR CI suite as a stable subset of the full CI suite', async () => {
+    const fullLabels = new Set((await getCiTasks({ skipDiskBackedDevProbe: true })).map(task => task.label))
+    const prTasks = await getCiPrTasks({ skipDiskBackedDevProbe: true })
+
+    expect(prTasks.length).toBeGreaterThan(0)
+    expect(prTasks.every(task => fullLabels.has(task.label))).toBe(true)
+    expect(prTasks.some(task => task.label.startsWith('hmr-guard:'))).toBe(false)
+    expect(await getSuiteTasks('ci-pr')).toEqual(await getCiPrTasks())
+    expect(await getSuiteTasks('ci-full')).toEqual(await getCiFullTasks())
+  })
+
+  it('partitions the full CI list without overlap and preserves task order per shard', async () => {
+    const tasks = await getCiTasks({ skipDiskBackedDevProbe: true })
+    const shards = [0, 1, 2, 3].map(index => partitionE2ETasks(tasks, { index, total: 4 }))
+    const labels = shards.flat().map(task => task.label)
+
+    expect(labels).toHaveLength(tasks.length)
+    expect(new Set(labels).size).toBe(tasks.length)
+    expect(new Set(labels)).toEqual(new Set(tasks.map(task => task.label)))
+    for (const shard of shards) {
+      expect(shard.map(task => tasks.indexOf(task))).toEqual(shard.map(task => tasks.indexOf(task)).sort((a, b) => a - b))
+    }
   })
 
   it('registers runtime and visual component library entries separately', async () => {

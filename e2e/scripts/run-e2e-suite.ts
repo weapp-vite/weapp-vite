@@ -2,12 +2,14 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
-import { getSuiteTasks, listE2ESuites } from './e2e-suite-manifest'
+import { getSuiteTasks, listE2ESuites, partitionE2ETasks } from './e2e-suite-manifest'
 import { runTaskSuite } from './suiteRunner'
 
 const TASK_FILTER_ENV = 'WEAPP_VITE_E2E_TASK_FILTER'
 const TASK_FROM_ENV = 'WEAPP_VITE_E2E_TASK_FROM'
 const TASK_ROLL_FROM_ENV = 'WEAPP_VITE_E2E_TASK_ROLL_FROM'
+const TASK_SHARD_INDEX_ENV = 'WEAPP_VITE_E2E_SHARD_INDEX'
+const TASK_SHARD_TOTAL_ENV = 'WEAPP_VITE_E2E_SHARD_TOTAL'
 
 function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: string) {
   if (!entryArg) {
@@ -113,6 +115,8 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
   const filter = readOption(args, 'filter', TASK_FILTER_ENV)
   const from = readOption(args, 'from', TASK_FROM_ENV)
   const rollFrom = readOption(args, 'roll-from', TASK_ROLL_FROM_ENV)
+  const shardIndex = readOption(args, 'shard-index', TASK_SHARD_INDEX_ENV)
+  const shardTotal = readOption(args, 'shard-total', TASK_SHARD_TOTAL_ENV)
   const mode = args.find(arg => !arg.startsWith('--')) ?? 'full'
 
   if (mode === 'list') {
@@ -134,6 +138,14 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
   }
   try {
     tasks = orderSuiteTasks(tasks, { filter, from, rollFrom })
+    if (shardIndex || shardTotal) {
+      const oneBasedIndex = Number(shardIndex)
+      const total = Number(shardTotal)
+      if (!Number.isInteger(oneBasedIndex) || !Number.isInteger(total) || oneBasedIndex < 1 || oneBasedIndex > total) {
+        throw new Error(`Invalid e2e shard: expected --shard-index=1..${total}, --shard-total=<positive integer>`)
+      }
+      tasks = partitionE2ETasks(tasks, { index: oneBasedIndex - 1, total })
+    }
   }
   catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
@@ -145,12 +157,13 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
     process.exitCode = 1
     return
   }
-  if (filter || from || rollFrom) {
-    console.log(`[e2e:${mode}] selected ${tasks.length} task(s)${from ? ` from=${from}` : ''}${rollFrom ? ` roll-from=${rollFrom}` : ''}${filter ? ` filter=${filter}` : ''}`)
+  const shardLabel = shardIndex && shardTotal ? ` shard=${shardIndex}/${shardTotal}` : ''
+  if (filter || from || rollFrom || shardLabel) {
+    console.log(`[e2e:${mode}] selected ${tasks.length} task(s)${shardLabel}${from ? ` from=${from}` : ''}${rollFrom ? ` roll-from=${rollFrom}` : ''}${filter ? ` filter=${filter}` : ''}`)
   }
 
   const cleanupHooks = createIdeSuiteCleanupHooks(mode)
-  await runTaskSuite(`e2e:${mode}`, tasks, {
+  await runTaskSuite(`e2e:${mode}${shardLabel.replace('/', '-')}`, tasks, {
     ...cleanupHooks,
     failOnTaskFailure: !allowFailures,
     stopOnTaskFailure: !allowFailures && shouldStopIdeSuiteAfterTaskFailure(mode),
