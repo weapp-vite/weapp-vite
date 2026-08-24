@@ -87,6 +87,8 @@ interface MockMiniProgramRuntime {
   __rawReLaunch: ReturnType<typeof vi.fn>
 }
 
+const activeMockMiniPrograms = new Set<MockMiniProgramRuntime>()
+
 function createMockPage(pagePath = 'pages/index/index'): MockPage {
   return {
     path: pagePath,
@@ -106,7 +108,7 @@ function createMockMiniProgram(options?: { currentPage?: MockPage, reLaunchError
         throw options.reLaunchError
       })
     : vi.fn(async () => page)
-  return {
+  const miniProgram = {
     compile: rawCompile,
     on: vi.fn(),
     removeListener: vi.fn(),
@@ -117,6 +119,20 @@ function createMockMiniProgram(options?: { currentPage?: MockPage, reLaunchError
     __rawClose: rawClose,
     __rawCurrentPage: rawCurrentPage,
     __rawReLaunch: rawReLaunch,
+  }
+  activeMockMiniPrograms.add(miniProgram)
+  return miniProgram
+}
+
+async function closeActiveMockMiniPrograms() {
+  const miniPrograms = Array.from(activeMockMiniPrograms)
+  activeMockMiniPrograms.clear()
+  const results = await Promise.allSettled(miniPrograms.map(miniProgram => miniProgram.close()))
+  const errors = results
+    .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+    .map(result => result.reason)
+  if (errors.length > 0) {
+    throw new AggregateError(errors, 'Failed to close mock mini-programs')
   }
 }
 
@@ -266,10 +282,30 @@ describe.sequential('automator launch resilience', () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = '0'
   })
 
-  afterEach(() => {
-    clearLaunchEnv()
-    vi.resetModules()
-    fs.rmSync(sandboxRoot, { recursive: true, force: true })
+  afterEach(async () => {
+    try {
+      await closeActiveMockMiniPrograms()
+    }
+    finally {
+      clearLaunchEnv()
+      vi.resetModules()
+      fs.rmSync(sandboxRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('closes tracked mini-programs before removing their fixture', async () => {
+    const lifecycle: string[] = []
+    const miniProgram = createMockMiniProgram()
+    miniProgram.close.mockImplementationOnce(async () => {
+      lifecycle.push('close')
+    })
+
+    await closeActiveMockMiniPrograms()
+    lifecycle.push('remove')
+    await closeActiveMockMiniPrograms()
+
+    expect(lifecycle).toEqual(['close', 'remove'])
+    expect(miniProgram.close).toHaveBeenCalledTimes(1)
   })
 
   it('extracts DevTools service port from cli bridge output', async () => {

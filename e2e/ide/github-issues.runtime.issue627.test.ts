@@ -9,6 +9,7 @@ import {
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
   relaunchPage,
+  releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
 
 describe.sequential('e2e app: github-issues / issue #627', () => {
@@ -19,7 +20,7 @@ describe.sequential('e2e app: github-issues / issue #627', () => {
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
   afterAll(async () => {
-    await miniProgram?.close?.().catch(() => {})
+    await releaseSharedMiniProgram(miniProgram)
     miniProgram = null
     await closeSharedMiniProgram()
   })

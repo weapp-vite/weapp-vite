@@ -82,6 +82,11 @@ export interface ComponentPublicInstance extends HTMLElement {
   setData: (patch: DataRecord, callback?: () => void) => void | Promise<void>
   triggerEvent: (name: string, detail?: any, options?: TriggerEventOptions) => void
   createSelectorQuery: () => any
+  createIntersectionObserver: (options?: {
+    initialRatio?: number
+    observeAll?: boolean
+    thresholds?: number[]
+  }) => any
   selectComponent: (selector: string) => ComponentPublicInstance | null
   selectAllComponents: (selector: string) => ComponentPublicInstance[]
   getRelationNodes: (relationPath: string) => ComponentPublicInstance[]

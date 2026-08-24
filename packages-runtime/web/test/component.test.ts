@@ -1648,6 +1648,47 @@ describe('component selector helpers', () => {
     }))
   })
 
+  it('provides scoped createIntersectionObserver on component instance', () => {
+    defineComponent('wv-intersection-observer-host', {
+      template: createTemplate('<view class="intersection-target"></view>'),
+      component: {},
+    })
+
+    const host = document.createElement('wv-intersection-observer-host') as HTMLElement & {
+      createIntersectionObserver: (options?: { thresholds?: number[] }) => ReturnType<typeof createIntersectionObserver>
+    }
+    document.body.append(host)
+    const target = host.shadowRoot?.querySelector('.intersection-target')
+    expect(target).toBeTruthy()
+    ;(target as HTMLElement).getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 20,
+      bottom: 20,
+      width: 20,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    })
+    const observe = vi.fn()
+    const restoreObserver = overrideGlobalProperty('IntersectionObserver', class {
+      observe = observe
+      disconnect = vi.fn()
+    })
+
+    try {
+      host.createIntersectionObserver({ thresholds: [0.5] })
+        .relativeToViewport({ top: -12 })
+        .observe('.intersection-target', vi.fn())
+
+      expect(observe).toHaveBeenCalledWith(target)
+    }
+    finally {
+      restoreObserver()
+    }
+  })
+
   it('falls back to non-wechat mini-program globals for scoped selector query', () => {
     const originalWx = (globalThis as any).wx
     const originalMy = (globalThis as any).my
