@@ -7,7 +7,6 @@ const mayContainPlatformApiAccessMock = vi.hoisted(() => vi.fn(() => true))
 const mayContainStaticRequireLiteralMock = vi.hoisted(() => vi.fn(() => true))
 const resolveAstEngineMock = vi.hoisted(() => vi.fn(() => 'babel'))
 
-const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
 const createBundleChunkSnapshotMock = vi.hoisted(() => vi.fn((bundle: Record<string, any>) => ({
   chunksByFileName: new Map(Object.entries(bundle).filter(([, output]) => (output as any).type === 'chunk')),
 })))
@@ -48,7 +47,6 @@ vi.mock('../helpers', () => ({
   createBundleChunkSnapshot: createBundleChunkSnapshotMock,
   emitJsonAssets: vi.fn(),
   filterPluginBundleOutputs: vi.fn(),
-  flushIndependentBuilds: flushIndependentBuildsMock,
   formatBytes: vi.fn(() => '0B'),
   refreshSharedChunkImporters: vi.fn(),
   removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
@@ -95,7 +93,6 @@ function createState(overrides: Record<string, any> = {}) {
     ctx: mergedCtx,
     subPackageMeta: null,
     entriesMap: new Map(),
-    pendingIndependentBuilds: [],
     watchFilesSnapshot: [],
     hmrState: {
       didEmitAllEntries: false,
@@ -170,7 +167,6 @@ describe('core lifecycle emit edge branches', () => {
     await hook.call({}, {}, bundle)
 
     expect(bundle['main.js'].code).toBe('const x = 1')
-    expect(flushIndependentBuildsMock).toHaveBeenCalledTimes(1)
     expect(removeImplicitPagePreloadsMock).toHaveBeenCalledTimes(1)
   })
 

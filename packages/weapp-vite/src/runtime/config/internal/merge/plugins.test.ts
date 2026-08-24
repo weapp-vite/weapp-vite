@@ -29,7 +29,17 @@ describe('runtime config merge plugins', () => {
         { name: 'user-a' },
         [{ name: 'vite-tsconfig-paths' }],
         { name: 'weapp-vite:context' },
-        { name: 'user-b' },
+        {
+          name: 'user-enforce-post',
+          enforce: 'post',
+        },
+        {
+          name: 'user-order-post',
+          generateBundle: {
+            order: 'post',
+            handler: vi.fn(),
+          },
+        },
       ],
     }
 
@@ -39,7 +49,8 @@ describe('runtime config merge plugins', () => {
     expect(config.plugins).toEqual([
       { name: 'weapp-vite:context' },
       { name: 'user-a' },
-      { name: 'user-b' },
+      expect.objectContaining({ name: 'user-enforce-post' }),
+      expect.objectContaining({ name: 'user-order-post' }),
       { name: 'vite-tsconfig-paths' },
       { name: 'weapp-vite:output-finalizer' },
     ])

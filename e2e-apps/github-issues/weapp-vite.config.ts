@@ -1,3 +1,4 @@
+import type { OutputBundle } from 'rolldown'
 import path from 'node:path'
 import process from 'node:process'
 import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
@@ -18,6 +19,7 @@ const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '
 const issue826PreserveEnabled = process.env.WEAPP_GITHUB_ISSUE_826_PRESERVE === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.issue826.test.ts')
 const issue845I18nEnabled = process.env.WEAPP_GITHUB_ISSUE_845_I18N === 'true'
+const issue850OutputReplayEnabled = process.env.WEAPP_GITHUB_ISSUE_850_OUTPUT_REPLAY === 'true'
 const issue793BuildScope = process.env.WEAPP_GITHUB_ISSUE_793_BUILD_SCOPE
 const issue793BuildScopeEnabled = issue793BuildScope === 'true'
   || issue793BuildScope === 'subpackage'
@@ -214,6 +216,14 @@ const matchedGithubIssuesTestFile = Object.keys(githubIssuesRouteGroups)
   .find(testFile => e2eTargetFile.endsWith(testFile))
 
 function resolveGithubIssuesAutoRoutes() {
+  if (issue850OutputReplayEnabled) {
+    return {
+      include: [
+        'pages/issue-850/**',
+        'subpackages/issue-850/**',
+      ],
+    }
+  }
   if (issue845I18nEnabled) {
     return {
       include: [
@@ -473,7 +483,28 @@ const issue779CssPrePlugin = issue779CssPreEnabled
     ]
   : undefined
 
+const issue850OutputMarker = '/* issue-850-output-marker */'
+const issue850OutputReplayPlugin = issue850OutputReplayEnabled
+  ? {
+      name: 'github-issues:issue-850-output-replay',
+      enforce: 'post' as const,
+      generateBundle: {
+        order: 'post' as const,
+        handler(_options: unknown, bundle: OutputBundle) {
+          const output = bundle['subpackages/issue-850/index.wxss']
+          if (output?.type !== 'asset') {
+            return
+          }
+          output.source = `${String(output.source)}\n${issue850OutputMarker}`
+        },
+      },
+    }
+  : undefined
+
 function resolveGithubIssuesBuildConfig() {
+  if (issue850OutputReplayEnabled) {
+    return { outDir: 'dist-issue-850', minify: false }
+  }
   if (issue845I18nEnabled) {
     return { outDir: 'dist-issue-845', minify: false }
   }
@@ -516,6 +547,7 @@ export default defineConfig({
   plugins: [
     ...issue724ProbePlugins,
     ...(issue779CssPrePlugin ?? []),
+    ...(issue850OutputReplayPlugin ? [issue850OutputReplayPlugin] : []),
   ],
   define: {
     'import.meta.env.ISSUE_484_FLAG': '123456',
@@ -535,20 +567,26 @@ export default defineConfig({
     },
     srcRoot: 'src',
     autoRoutes: resolveGithubIssuesAutoRoutes(),
-    subPackages: issue845I18nEnabled
+    subPackages: issue850OutputReplayEnabled
       ? {
-          'subpackages/issue-845-normal': {},
-          'subpackages/issue-845-independent': {
+          'subpackages/issue-850': {
             independent: true,
           },
         }
-      : issue793BuildScopeEnabled
+      : issue845I18nEnabled
         ? {
-            subs: {},
+            'subpackages/issue-845-normal': {},
+            'subpackages/issue-845-independent': {
+              independent: true,
+            },
           }
-        : {
-            'subpackages/require-async': {},
-          },
+        : issue793BuildScopeEnabled
+          ? {
+              subs: {},
+            }
+          : {
+              'subpackages/require-async': {},
+            },
     ...(issue793BuildScopeEnabled
       ? {
           buildScope: {

@@ -23,10 +23,7 @@ export {
   refreshSharedChunkImporters,
 } from './graph'
 
-export { flushIndependentBuilds } from './independent'
-
 export type {
   CorePluginState,
-  IndependentBuildResult,
   RemoveImplicitPagePreloadOptions,
 } from './types'

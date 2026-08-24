@@ -1,14 +1,8 @@
-import type { RolldownOutput } from 'rolldown'
 import type { ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry, SubPackageMetaValue } from '../../../types'
 
 type LoadEntryApi = ReturnType<typeof import('../../hooks/useLoadEntry').useLoadEntry>
-
-export interface IndependentBuildResult {
-  meta: SubPackageMetaValue
-  rollup: RolldownOutput
-}
 
 export interface CorePluginState {
   ctx: CompilerContext
@@ -21,7 +15,6 @@ export interface CorePluginState {
   jsonEmitFilesMap: LoadEntryApi['jsonEmitFilesMap']
   resolvedEntryMap: LoadEntryApi['resolvedEntryMap']
   requireAsyncEmittedChunks: Set<string>
-  pendingIndependentBuilds: Promise<IndependentBuildResult>[]
   watchFilesSnapshot: string[]
   buildTarget: BuildTarget
   resolvedConfig?: ResolvedConfig

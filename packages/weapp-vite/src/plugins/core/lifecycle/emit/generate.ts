@@ -21,7 +21,6 @@ import { normalizePreprocessorStyleAssets, pruneUneventedDevHmrChunks } from '..
 import {
   createBundleChunkSnapshot,
   filterPluginBundleOutputs,
-  flushIndependentBuilds,
   formatBytes,
   refreshPartialSharedChunkImporters,
   refreshSharedChunkImporters,
@@ -471,7 +470,6 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       ctx.moduleGraphService?.bindPluginContext(this)
       const rolldownBundle = bundle as unknown as OutputBundle
       const scriptAnalysisCache: ChunkScriptAnalysisCache = new WeakMap()
-      await flushIndependentBuilds.call(this, state)
       const hasChunkOutput = pruneHmrMetadataOnlyChunks(rolldownBundle, state)
       await emitCurrentStyleSidecarAsset.call(this, state, rolldownBundle)
       const assetOnlyDevHmrBundle = isAssetOnlyDevHmrBundle(hasChunkOutput, state)

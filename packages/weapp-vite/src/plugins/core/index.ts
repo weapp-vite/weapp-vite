@@ -76,7 +76,6 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     jsonEmitFilesMap,
     resolvedEntryMap,
     requireAsyncEmittedChunks: new Set<string>(),
-    pendingIndependentBuilds: [],
     watchFilesSnapshot: [],
     buildTarget,
     hmrState,

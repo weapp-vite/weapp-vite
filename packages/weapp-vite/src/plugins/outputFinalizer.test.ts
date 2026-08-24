@@ -12,10 +12,10 @@ function createBundleAssetEmitter(bundle: OutputBundle) {
   }
 }
 
-function runGenerateBundle(plugin: ReturnType<typeof createOutputFinalizerPlugin>, bundle: OutputBundle) {
+async function runGenerateBundle(plugin: ReturnType<typeof createOutputFinalizerPlugin>, bundle: OutputBundle) {
   const hook = plugin.generateBundle
   const handler = typeof hook === 'function' ? hook : hook?.handler
-  handler?.call({
+  await handler?.call({
     emitFile: createBundleAssetEmitter(bundle),
   } as any, {} as any, bundle, false)
 }
@@ -238,7 +238,7 @@ describe('weapp-vite output finalizer', () => {
     expect(mayNeedTemplateNormalization('<HelloWorld />', 'alipay')).toBe(true)
   })
 
-  it('runs as a post generateBundle plugin', () => {
+  it('runs as a post generateBundle plugin', async () => {
     const plugin = createOutputFinalizerPlugin({
       configService: {
         outputExtensions: {
@@ -254,7 +254,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    runGenerateBundle(plugin, bundle)
+    await runGenerateBundle(plugin, bundle)
 
     expect(plugin.enforce).toBe('post')
     expect(typeof plugin.generateBundle === 'object' && plugin.generateBundle.order).toBe('post')
@@ -265,7 +265,53 @@ describe('weapp-vite output finalizer', () => {
     })
   })
 
-  it('rewrites app vue hmr bare wevu runtime imports after late script replacement', () => {
+  it('merges completed independent outputs after finalizing the main bundle', async () => {
+    const plugin = createOutputFinalizerPlugin({
+      configService: {
+        outputExtensions: {
+          wxss: 'wxss',
+        },
+      },
+      runtimeState: {
+        build: {
+          independent: {
+            outputs: new Map(),
+            pendingOutputs: [Promise.resolve({
+              output: [{
+                type: 'asset',
+                fileName: 'pkg/index.wxss',
+                names: ['index.wxss'],
+                originalFileNames: ['/project/src/pkg/index.css'],
+                source: '.child{}',
+                needsCodeReference: false,
+              }],
+            })],
+          },
+          output: {
+            emittedSource: new Map(),
+          },
+        },
+      },
+    } as any)
+    const bundle = {
+      'app.wxss': {
+        type: 'asset',
+        fileName: 'app.wxss',
+        source: '.app{}',
+      },
+    } as unknown as OutputBundle
+
+    await runGenerateBundle(plugin, bundle)
+
+    expect(bundle['pkg/index.wxss']).toMatchObject({
+      type: 'asset',
+      fileName: 'pkg/index.wxss',
+      originalFileName: '/project/src/pkg/index.css',
+      source: '.child{}',
+    })
+  })
+
+  it('rewrites app vue hmr bare wevu runtime imports after late script replacement', async () => {
     const plugin = createOutputFinalizerPlugin({
       configService: {
         outputExtensions: {
@@ -302,13 +348,13 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    runGenerateBundle(plugin, bundle)
+    await runGenerateBundle(plugin, bundle)
 
     expect((bundle['app.js'] as any).source).toContain('require("./weapp-vendors/wevu-watch.js")')
     expect((bundle['app.js'] as any).source).not.toContain('wevu/internal-runtime')
   })
 
-  it('rewrites app vue partial hmr runtime imports with the remembered vendor chunk', () => {
+  it('rewrites app vue partial hmr runtime imports with the remembered vendor chunk', async () => {
     const plugin = createOutputFinalizerPlugin({
       configService: {
         isDev: true,
@@ -346,7 +392,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    runGenerateBundle(plugin, fullBundle)
+    await runGenerateBundle(plugin, fullBundle)
 
     const hmrBundle = {
       'app.js': {
@@ -356,13 +402,13 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    runGenerateBundle(plugin, hmrBundle)
+    await runGenerateBundle(plugin, hmrBundle)
 
     expect((hmrBundle['app.js'] as any).source).toContain('require("./weapp-vendors/wevu-watch.js")')
     expect((hmrBundle['app.js'] as any).source).not.toContain('wevu/internal-runtime')
   })
 
-  it('prunes unchanged dev hmr outputs after the plugin runtime rewrite pass only once', () => {
+  it('prunes unchanged dev hmr outputs after the plugin runtime rewrite pass only once', async () => {
     const emittedSource = new Map<string, string>()
     const plugin = createOutputFinalizerPlugin({
       configService: {
@@ -401,7 +447,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    runGenerateBundle(plugin, bundle)
+    await runGenerateBundle(plugin, bundle)
 
     const finalSource = (bundle['app.js'] as any).source
     expect(finalSource).toContain('require("./weapp-vendors/wevu-watch.js")')
