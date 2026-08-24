@@ -40,7 +40,9 @@ jobs:
             build_pkgs_script: build:pkgs:ci
             build_script: build:ci
             lint_script: lint
-            main_command: pnpm test:types
+            main_command: |
+              pnpm build:pkgs:ci
+              pnpm test:types
           - os: windows-latest
             node-version: 22
             timeout_minutes: 40
