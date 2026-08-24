@@ -1,7 +1,7 @@
 {
   "name": "@weapp-core/constants",
   "type": "module",
-  "version": "0.1.17",
+  "version": "0.2.0",
   "description": "Shared runtime-safe constants for weapp-vite and related packages",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -72,7 +72,5 @@
     "main": "./dist/index.js",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts"
-  },
-  "dependencies": {},
-  "devDependencies": {}
+  }
 }

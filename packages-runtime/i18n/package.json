@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/i18n",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "First-party i18n runtime and compiler for native WeChat mini programs",
   "license": "MIT",
   "repository": {

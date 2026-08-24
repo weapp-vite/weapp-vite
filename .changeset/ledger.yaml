@@ -2,6 +2,11 @@
   dir: mpcore/packages/simulator
   intents:
     - steady-headless-runtime
+"@mpcore/simulator@0.3.4":
+  dir: mpcore/packages/simulator
+  intents:
+    - curly-apis-remember
+    - first-party-i18n
 "@mpcore/vitest@0.1.3":
   dir: mpcore/packages/vitest
   intents:
@@ -10,6 +15,11 @@
   dir: mpcore/packages/weapp-vite
   intents:
     - dependency-upgrade-auto-generated
+"@weapp-core/constants@0.2.0":
+  dir: "@weapp-core/constants"
+  intents:
+    - first-party-i18n
+    - shared-css-runtime-constants
 "@weapp-vite/ast-native@0.0.6":
   dir: packages/ast-native
   intents:
@@ -29,24 +39,49 @@
   intents:
     - catalog-auto-generated
     - dependency-upgrade-auto-generated
+"@weapp-vite/eslint@0.2.0":
+  dir: packages/eslint
+  intents:
+    - steady-wevu-compatibility
+"@weapp-vite/i18n@0.2.0":
+  dir: packages-runtime/i18n
+  intents:
+    - first-party-i18n
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator
   intents:
     - bright-route-element-rects
     - quiet-route-snapshot-retries
     - route-fallback-element-reads
+"@weapp-vite/react@0.2.1":
+  dir: packages-runtime/react
+  intents:
+    - curly-apis-remember
+    - first-party-i18n
 "@weapp-vite/web@1.4.10":
   dir: packages-runtime/web
   intents:
     - dependency-upgrade-auto-generated
     - fresh-uview-plus-baseline
     - swift-workspace-dependencies
+"@weapp-vite/web@1.4.12":
+  dir: packages-runtime/web
+  intents:
+    - curly-apis-remember
+    - first-party-i18n
+    - fuzzy-web-observers
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
     - dependency-upgrade-auto-generated
     - fresh-uview-plus-baseline
     - swift-workspace-dependencies
+"@wevu/compiler@6.22.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - first-party-i18n
+    - lower-wxml-numeric-separators
+    - steady-wevu-compatibility
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -56,6 +91,16 @@
   intents:
     - quiet-wrappers-isolate
     - tidy-tools-unmount
+"@wevu/test-utils@0.2.2":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - curly-apis-remember
+    - first-party-i18n
+"@wevu/web-apis@1.2.35":
+  dir: packages-runtime/web-apis
+  intents:
+    - curly-apis-remember
+    - first-party-i18n
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -87,6 +132,16 @@ create-weapp-vite@2.8.2:
     - fair-preload-budgets
     - quiet-sass-cleanup
     - quiet-wrappers-isolate
+create-weapp-vite@2.8.3:
+  dir: packages/create-weapp-vite
+  intents:
+    - fair-plums-build
+    - first-party-i18n
+    - lower-wxml-numeric-separators
+    - quiet-eslint-presets
+    - steady-wevu-compatibility
+    - tidy-app-vue-styles
+    - uview-plus-3-8-112
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -117,6 +172,15 @@ weapp-vite@6.21.0:
     - fair-preload-budgets
     - quiet-install-sync
     - quiet-sass-cleanup
+weapp-vite@6.22.0:
+  dir: packages/weapp-vite
+  intents:
+    - fair-plums-build
+    - first-party-i18n
+    - lower-wxml-numeric-separators
+    - steady-wevu-compatibility
+    - tidy-app-vue-styles
+    - uview-plus-3-8-112
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -128,3 +192,9 @@ wevu@6.21.0:
   dir: packages-runtime/wevu
   intents:
     - quiet-wrappers-isolate
+wevu@6.22.0:
+  dir: packages-runtime/wevu
+  intents:
+    - first-party-i18n
+    - lower-wxml-numeric-separators
+    - steady-wevu-compatibility
