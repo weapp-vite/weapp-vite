@@ -64,6 +64,11 @@ export function createIndependentBuilder(
           mode: configService.mode,
           configFile: configService.configFilePath,
           cliPlatform: configService.platform,
+          inlineConfig: {
+            weapp: {
+              platform: configService.platform,
+            },
+          },
           projectConfigPath: configService.projectConfigPath,
         })
         const isolatedConfigService = isolatedCtx.configService

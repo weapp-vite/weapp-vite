@@ -133,6 +133,11 @@ describe('runtime buildPlugin independent builder', () => {
       mode: 'development',
       configFile: '/project/vite.config.ts',
       cliPlatform: 'weapp',
+      inlineConfig: {
+        weapp: {
+          platform: 'weapp',
+        },
+      },
       projectConfigPath: '/project/project.config.json',
     })
     const inlineConfig = buildMock.mock.calls[0]?.[0]
