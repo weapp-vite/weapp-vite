@@ -22,6 +22,12 @@
     "miniprogram": {
       "list": [
         {
+          "name": "issue 862 output watcher",
+          "pathName": "pages/issue-862/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "issue 826 preserve modules",
           "pathName": "pages/issue-826/index",
           "query": "",

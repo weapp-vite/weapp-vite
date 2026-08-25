@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createSidecarWatchOptions } from './options'
+import { createSidecarWatchOptions, createViteWatchIgnored } from './options'
 
 describe('runtime sidecar watch options', () => {
   afterEach(() => {
@@ -52,5 +52,33 @@ describe('runtime sidecar watch options', () => {
       interval: 120,
       binaryInterval: 240,
     })
+  })
+})
+
+describe('Vite watch ignored', () => {
+  it('keeps user ignores and excludes generated output across Windows path formats', () => {
+    const userMatcher = (id: string) => id.endsWith('.generated.ts')
+    const ignored = createViteWatchIgnored(
+      'C:\\project',
+      'C:\\project\\dist',
+      ['**/.cache/**', /ignored-package/, userMatcher],
+    ) as Array<string | RegExp | ((id: string) => boolean)>
+
+    expect(ignored.slice(0, 3)).toEqual(['**/.cache/**', /ignored-package/, userMatcher])
+    const outDirMatcher = ignored[3] as (id: string) => boolean
+    expect(outDirMatcher('dist\\miniprogram_npm\\@vant\\weapp\\field\\index.json')).toBe(true)
+    expect(outDirMatcher('C:\\project\\dist\\pages\\index.js')).toBe(true)
+    expect(outDirMatcher('C:/project/dist-other/app.json')).toBe(false)
+    expect(outDirMatcher('C:\\project\\pages\\index.ts')).toBe(false)
+  })
+
+  it('resolves relative output directories from POSIX and Windows roots', () => {
+    const posixIgnored = createViteWatchIgnored('/', 'dist') as Array<(id: string) => boolean>
+    const windowsIgnored = createViteWatchIgnored('C:\\', 'dist') as Array<(id: string) => boolean>
+
+    expect(posixIgnored[0]!('/dist/app.js')).toBe(true)
+    expect(posixIgnored[0]!('/dist-other/app.js')).toBe(false)
+    expect(windowsIgnored[0]!('C:\\dist\\app.js')).toBe(true)
+    expect(windowsIgnored[0]!('C:\\dist-other\\app.js')).toBe(false)
   })
 })

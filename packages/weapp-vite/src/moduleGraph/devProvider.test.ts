@@ -34,7 +34,12 @@ describe('dev module graph provider', () => {
     const resolver = { name: 'vite-tsconfig-paths' }
     const internal = { name: 'weapp-vite:pre' }
     const bindDevServer = vi.fn()
+    const userIgnored = (id: string) => id.endsWith('.generated.ts')
     const ctx = {
+      configService: {
+        cwd: '/project',
+        outDir: '/project/dist',
+      },
       moduleGraphService: {
         bindDevServer,
         getEntryDependencies: vi.fn(() => []),
@@ -45,10 +50,19 @@ describe('dev module graph provider', () => {
     const provider = await createDevModuleGraphProvider(ctx, {
       plugins: [internal, resolver],
       build: { write: true, watch: {} },
+      server: {
+        watch: {
+          ignored: userIgnored,
+        },
+      },
     }, onChange)
 
     const config = createServerMock.mock.calls[0]![0]
     expect(config.server).toMatchObject({ hmr: true, middlewareMode: true })
+    const ignored = config.server.watch.ignored as Array<(id: string) => boolean>
+    expect(ignored[0]).toBe(userIgnored)
+    expect(ignored[1]!('/project/dist/miniprogram_npm/@vant/weapp/field/index.json')).toBe(true)
+    expect(ignored[1]!('/project/src/pages/index.ts')).toBe(false)
     expect(config.build).toMatchObject({ watch: undefined, write: false })
     expect(config.plugins).toEqual([expect.objectContaining({ name: 'weapp-vite:module-graph-provider' }), resolver])
     expect(bindDevServer).toHaveBeenCalledWith(server)

@@ -1,7 +1,7 @@
 /* eslint-disable ts/no-use-before-define */
 
 import type { RolldownWatcher } from 'rolldown'
-import type { InlineConfig, Matcher, Plugin, ViteDevServer } from 'vite'
+import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
@@ -19,9 +19,8 @@ import { logger } from '../../context/shared'
 import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
 import { isReactStaticTemplateSource } from '../../plugins/react'
 import { parseJsLike, traverse } from '../../utils/babel'
-import { isPathInside } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { resolvePollingWatchOptions } from '../watch/options'
+import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
@@ -98,7 +97,7 @@ export async function runStatefulHmrDev(
       port: 0,
       watch: {
         ...(buildOptions.server?.watch ?? {}),
-        ignored: createStatefulHmrWatchIgnored(
+        ignored: createViteWatchIgnored(
           buildOptions.root ?? configService.cwd,
           configService.outDir,
           buildOptions.server?.watch?.ignored,
@@ -124,24 +123,6 @@ export async function runStatefulHmrDev(
     await server.close().catch(() => {})
     throw error
   }
-}
-
-export function createStatefulHmrWatchIgnored(
-  root: string,
-  outDir: string,
-  ignored?: Matcher,
-): Matcher {
-  const normalizedRoot = normalizeFsResolvedId(root)
-  const normalizedOutDir = normalizeFsResolvedId(path.isAbsolute(outDir) ? outDir : path.resolve(root, outDir))
-  const patterns = ignored === undefined ? [] : Array.isArray(ignored) ? ignored : [ignored]
-
-  return [
-    ...patterns,
-    (id: string) => {
-      const normalizedId = normalizeFsResolvedId(path.isAbsolute(id) ? id : path.resolve(normalizedRoot, id))
-      return isPathInside(normalizedOutDir, normalizedId)
-    },
-  ]
 }
 
 class StatefulHmrSession {

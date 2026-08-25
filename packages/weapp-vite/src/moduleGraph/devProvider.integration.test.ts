@@ -1,4 +1,4 @@
-import { mkdtemp, realpath, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -36,7 +36,14 @@ describe('dev module graph provider integration', () => {
     moduleGraphService.replaceEntryDependencies(pageId, 'template', [templateId])
     moduleGraphService.replaceEntryDependencies(pageId, 'style', [styleId])
     const onChange = vi.fn()
-    const provider = await createDevModuleGraphProvider({ moduleGraphService } as any, {
+    const outDir = path.join(root, 'dist')
+    const provider = await createDevModuleGraphProvider({
+      configService: {
+        cwd: root,
+        outDir,
+      },
+      moduleGraphService,
+    } as any, {
       root,
       resolve: {
         alias: {
@@ -68,6 +75,17 @@ describe('dev module graph provider integration', () => {
         event: 'update',
         file: normalizeSourceId(styleId),
       }))
+
+      onChange.mockClear()
+      const generatedVantConfig = path.join(
+        outDir,
+        'miniprogram_npm/@vant/weapp/field/index.json',
+      )
+      await mkdir(path.dirname(generatedVantConfig), { recursive: true })
+      await writeFile(generatedVantConfig, '{"component":true}\n', 'utf8')
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      expect(onChange).not.toHaveBeenCalled()
     }
     finally {
       await provider.close()
