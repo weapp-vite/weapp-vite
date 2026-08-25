@@ -184,7 +184,7 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
         for (const target of REQUEST_GLOBAL_BINARY_BINDING_TARGETS) {
           expect(runtimeJs).toContain(target)
         }
-        expect(runtimeJs).toContain('request-globals.bin')
+        expect(runtimeJs).toContain('installWebRuntimeGlobals')
         expect(runtimeJs).toContain('File')
         expect(runtimeJs).toContain('FormData')
 

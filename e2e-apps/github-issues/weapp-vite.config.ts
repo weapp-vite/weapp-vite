@@ -38,6 +38,9 @@ const githubIssuesAggregateTargets = {
     'github-issues.runtime.issue297-302.test.ts',
     'github-issues.runtime.web-runtime.test.ts',
     'github-issues.runtime.import-meta.test.ts',
+    'github-issues.runtime.issue706.test.ts',
+    'github-issues.runtime.issue829.test.ts',
+    'github-issues.runtime.slot-fallback.test.ts',
   ],
 } as const
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
