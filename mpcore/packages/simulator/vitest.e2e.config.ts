@@ -11,6 +11,9 @@ const mpcoreRoot = path.resolve(simulatorRoot, '../..')
 
 export default defineConfig({
   root: demoWebRoot,
+  oxc: {
+    tsconfig: false,
+  },
   plugins: [vue(), tailwindcss()],
   server: {
     fs: {

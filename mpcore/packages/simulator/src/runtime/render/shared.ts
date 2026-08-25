@@ -24,13 +24,16 @@ function toDatasetKey(attributeName: string) {
     .replace(DATASET_NAME_RE, (_match, char: string) => char.toUpperCase())
 }
 
-export function collectDataset(node: DomNodeLike) {
+export function collectDataset(node: DomNodeLike, source?: Record<string, unknown>) {
   const dataset: Record<string, string> = {}
   for (const [key, value] of Object.entries(node.attribs ?? {})) {
     if (!key.startsWith('data-') || key === 'data-sim-scope' || key === 'data-sim-tap' || key === 'data-sim-component') {
       continue
     }
-    dataset[toDatasetKey(key)] = String(value)
+    const resolvedValue = source && isMustacheOnly(value)
+      ? resolveTemplateExpression(source, value)
+      : value
+    dataset[toDatasetKey(key)] = String(resolvedValue ?? '')
   }
   return dataset
 }

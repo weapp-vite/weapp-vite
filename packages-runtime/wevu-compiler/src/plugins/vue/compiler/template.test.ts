@@ -1,5 +1,5 @@
 import { runInNewContext } from 'node:vm'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { buildClassStyleComputedCode } from '../transform/classStyleComputed'
 import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from './template'
 
@@ -894,6 +894,45 @@ describe('compileVueTemplateToWxml', () => {
     expect(projected).not.toBe(column)
     expect(projected[0]).not.toBe(column[0])
     expect(Object.prototype.hasOwnProperty.call(column[0] ?? {}, '__wv_key_0')).toBe(false)
+  })
+
+  it('warns before reserved projection fields override user fields', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<GalleryCard v-for="entry in column" :key="entry.item.id" />',
+      '/project/src/components/Gallery.vue',
+    )
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    const warn = vi.fn()
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console: {
+        error: vi.fn(),
+        warn,
+      },
+    }) as {
+      __wv_bind_0: (this: Record<string, unknown>) => Array<Record<string, unknown>>
+    }
+    const column = [
+      {
+        __wv_key_0: 'user-key',
+        __wv_value_0: 'user-value',
+        item: { id: 'gallery-collision' },
+      },
+    ]
+    const projected = computed.__wv_bind_0.call({
+      $state: { column },
+      __wevuProps: {},
+      column,
+    })
+
+    expect(projected[0]?.__wv_key_0).toBe('gallery-collision')
+    expect(projected[0]?.__wv_value_0).toBe(column[0])
+    expect(column[0]?.__wv_key_0).toBe('user-key')
+    expect(column[0]?.__wv_value_0).toBe('user-value')
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('内部字段冲突'),
+      column[0],
+    )
   })
 
   it('reuses runtime v-for sources when projecting nested keys', () => {
