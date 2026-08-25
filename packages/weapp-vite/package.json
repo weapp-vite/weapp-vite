@@ -165,7 +165,7 @@
     "p-queue": "^9.3.3",
     "package-manager-detector": "^1.8.0",
     "pathe": "catalog:",
-    "picomatch": "^4.0.5",
+    "picomatch": "^4.0.7",
     "postcss": "catalog:",
     "rolldown": "catalog:",
     "rolldown-plugin-dts": "0.28.2",
