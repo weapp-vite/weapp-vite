@@ -3,6 +3,7 @@ import { createDefu } from 'defu'
 export * from './layoutHostRegistry'
 export * from './platforms'
 export * from './runtimeProviders'
+export * from './wxml'
 export { default as defu } from 'defu'
 export { default as get } from 'get-value'
 

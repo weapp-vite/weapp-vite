@@ -57,6 +57,43 @@ describe('analyze component usage', () => {
     ])
   })
 
+  it('follows componentGenerics default dependencies', () => {
+    const result = analyzeComponentUsage({
+      subPackages: [],
+      jsonConfigs: [
+        {
+          file: 'app.json',
+          config: { pages: ['pages/index/index'] },
+        },
+        {
+          file: 'pages/index/index.json',
+          config: {
+            usingComponents: { list: '/components/list' },
+          },
+        },
+        {
+          file: 'components/list.json',
+          config: {
+            component: true,
+            componentGenerics: {
+              item: { default: './default-item' },
+              optional: true,
+            },
+          },
+        },
+        {
+          file: 'components/default-item.json',
+          config: { component: true },
+        },
+      ],
+    })
+
+    expect(result.map(item => item.component)).toEqual([
+      'components/default-item',
+      'components/list',
+    ])
+  })
+
   it('suggests shared package strategy for main package components used by multiple subpackages', () => {
     const result = analyzeComponentUsage({
       subPackages: [

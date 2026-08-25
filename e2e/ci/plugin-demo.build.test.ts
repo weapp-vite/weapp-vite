@@ -31,6 +31,11 @@ describe.sequential('plugin-demo build e2e', () => {
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.js'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.wxml'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'components/native-meter/index.js'))).toBe(true)
+    const pluginConfig = await fs.readJSON(path.join(PLUGIN_DIST_ROOT, 'plugin.json')) as Record<string, unknown>
+    expect(pluginConfig).toMatchObject({
+      componentFramework: 'glass-easel',
+      glassEaselWebview: true,
+    })
 
     const pluginVendor = await findWevuVendorChunkContaining(PLUGIN_DIST_ROOT, [
       'miniprogram_npm/dayjs/index',

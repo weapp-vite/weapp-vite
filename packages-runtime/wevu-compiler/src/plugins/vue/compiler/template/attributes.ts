@@ -2,6 +2,7 @@ import type { AttributeNode } from '@vue/compiler-core'
 import type { ClassStyleBinding, TransformContext } from './types'
 import { NodeTypes } from '@vue/compiler-core'
 import { WEVU_CLASS_STYLE_RUNTIME_MODULE } from '@weapp-core/constants'
+import { escapeWxmlAttribute } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { generate } from '../../../../utils/babel'
 import {
@@ -313,7 +314,7 @@ export function transformAttribute(node: AttributeNode, _context: TransformConte
 
   // 处理静态属性
   if (value.type === NodeTypes.TEXT) {
-    return `${name}="${value.content}"`
+    return `${name}="${escapeWxmlAttribute(value.content)}"`
   }
 
   return `${name}=""`

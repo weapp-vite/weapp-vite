@@ -236,6 +236,27 @@ describe('weapp-vite output finalizer', () => {
     expect(mayNeedTemplateNormalization('<import src="./shared.wxml" />', 'alipay')).toBe(true)
     expect(mayNeedTemplateNormalization('<button bind:tap="handleTap" />', 'alipay')).toBe(true)
     expect(mayNeedTemplateNormalization('<HelloWorld />', 'alipay')).toBe(true)
+    expect(mayNeedTemplateNormalization('<view wx-if="{{ready}}" />', 'weapp')).toBe(true)
+  })
+
+  it('normalizes legacy glass-easel directives in final template assets', () => {
+    const bundle = {
+      'pages/index/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index/index.wxml',
+        source: '<view wx-if="{{ready}}"><block wx-for="{{list}}" /></view>',
+      },
+    } as unknown as OutputBundle
+
+    normalizeTemplateAssets({
+      configService: {
+        platform: 'weapp',
+        outputExtensions: { wxml: 'wxml', wxs: 'wxs' },
+      },
+    } as any, bundle)
+
+    expect((bundle['pages/index/index.wxml'] as any).source).toContain('wx:if="{{ready}}"')
+    expect((bundle['pages/index/index.wxml'] as any).source).toContain('wx:for="{{list}}"')
   })
 
   it('runs as a post generateBundle plugin', async () => {

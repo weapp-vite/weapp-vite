@@ -5,6 +5,7 @@ import {
   WEVU_INLINE_HANDLER,
   WEVU_OWNER_HANDLER,
 } from '@weapp-core/constants'
+import { escapeWxmlAttribute } from '@weapp-core/shared'
 import {
   INLINE_DATASET_KEY,
   INLINE_EVENT_DETAIL_KEY,
@@ -26,18 +27,16 @@ function shouldUseDetailPayload(options?: { isComponent?: boolean }) {
   return options?.isComponent === true
 }
 
-const QUOTE_RE = /"/g
-
 function buildInlineScopeAttrs(scopeBindings: string[], context: TransformContext): string[] {
   return scopeBindings.map((binding, index) => {
-    const escaped = binding.replace(QUOTE_RE, '&quot;')
+    const escaped = escapeWxmlAttribute(binding)
     return `data-wv-s${index}="${renderMustache(escaped, context)}"`
   })
 }
 
 function buildInlineIndexAttrs(indexBindings: string[], context: TransformContext): string[] {
   return indexBindings.map((binding, index) => {
-    const escaped = binding.replace(QUOTE_RE, '&quot;')
+    const escaped = escapeWxmlAttribute(binding)
     return `data-wv-i${index}="${renderMustache(escaped, context)}"`
   })
 }
@@ -128,7 +127,7 @@ export function transformOnDirective(
     ].filter(Boolean).join(' ')
   }
   if (isInlineExpression) {
-    const escaped = inlineSource.replace(QUOTE_RE, '&quot;')
+    const escaped = escapeWxmlAttribute(inlineSource)
     return [detailAttr, `data-wv-inline-${eventSuffix}="${escaped}"`, `${bindAttr}="${WEVU_INLINE_HANDLER}"`].filter(Boolean).join(' ')
   }
   return [detailAttr, `${bindAttr}="${expValue}"`].filter(Boolean).join(' ')

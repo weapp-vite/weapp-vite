@@ -122,6 +122,59 @@ Page({
     })
   })
 
+  it('loads local plugin exports, public components, and pages', () => {
+    const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'mpcore-local-plugin-'))
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'project.config.json'), JSON.stringify({
+      appid: 'wx1234567890abcdef',
+      miniprogramRoot: 'dist/',
+      pluginRoot: 'dist-plugin/',
+    }))
+    writeFixtureFile(path.join(projectPath, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+      plugins: {
+        hello: { provider: 'wxpluginprovider', version: 'dev' },
+      },
+    }))
+    writeFixtureFile(path.join(projectPath, 'dist/app.js'), 'App({})')
+    writeFixtureFile(path.join(projectPath, 'dist/pages/index/index.json'), JSON.stringify({
+      usingComponents: {
+        'plugin-card': 'plugin://hello/card',
+      },
+    }))
+    writeFixtureFile(path.join(projectPath, 'dist/pages/index/index.js'), `
+const plugin = requirePlugin('hello')
+Page({
+  data: { answer: plugin.answer },
+  openPluginPage() {
+    wx.navigateTo({ url: 'plugin://hello/hello-page' })
+  },
+})
+`)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/index/index.wxml'), '<plugin-card label="{{answer}}" />')
+    writeFixtureFile(path.join(projectPath, 'dist-plugin/plugin.json'), JSON.stringify({
+      main: 'index.js',
+      pages: { 'hello-page': 'pages/hello/index' },
+      publicComponents: { card: 'components/card/index' },
+    }))
+    writeFixtureFile(path.join(projectPath, 'dist-plugin/index.js'), 'exports.answer = 42')
+    writeFixtureFile(path.join(projectPath, 'dist-plugin/components/card/index.json'), '{}')
+    writeFixtureFile(path.join(projectPath, 'dist-plugin/components/card/index.js'), 'Component({ properties: { label: Number } })')
+    writeFixtureFile(path.join(projectPath, 'dist-plugin/components/card/index.wxml'), '<view id="plugin-card">{{label}}</view>')
+    writeFixtureFile(path.join(projectPath, 'dist-plugin/pages/hello/index.json'), '{}')
+    writeFixtureFile(path.join(projectPath, 'dist-plugin/pages/hello/index.js'), 'Page({ data: { title: "plugin page" } })')
+    writeFixtureFile(path.join(projectPath, 'dist-plugin/pages/hello/index.wxml'), '<view>{{title}}</view>')
+
+    const session = createHeadlessSession({ projectPath })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(page.data.answer).toBe(42)
+    expect(session.renderCurrentPage().wxml).toContain('id="plugin-card"')
+    page.openPluginPage()
+    expect(session.getCurrentPages().at(-1)?.route).toBe('plugin-private://wxpluginprovider/pages/hello/index')
+    expect(session.renderCurrentPage().wxml).toContain('plugin page')
+  })
+
   it('binds page methods to the page instance and applies setData', () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)

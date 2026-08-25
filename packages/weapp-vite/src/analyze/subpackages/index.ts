@@ -5,6 +5,7 @@ import type { AnalyzeSubpackagesResult, ModuleAccumulator, PackageAccumulator, P
 import { build } from 'vite'
 import { createSharedBuildConfig } from '../../runtime/sharedBuildConfig'
 import { analyzeComponentUsage, collectAnalyzeComponentJsonConfigs } from '../components'
+import { createGlassEaselAnalyzeResult } from '../glassEasel'
 import { createAnalyzeMetadata } from './metadata'
 import { processOutput } from './output'
 import { expandVirtualModulePlacements, summarizeModules, summarizePackages, summarizeSubPackages } from './summary'
@@ -97,5 +98,6 @@ export async function analyzeSubpackages(ctx: CompilerContext): Promise<AnalyzeS
       jsonConfigs: componentJsonConfigs,
       subPackages,
     }),
+    glassEasel: createGlassEaselAnalyzeResult(ctx),
   }
 }

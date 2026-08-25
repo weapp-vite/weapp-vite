@@ -133,6 +133,21 @@ wv analyze --hmr-profile .tmp/weapp-vite-hmr-profile.jsonl --json
 
 该模式会输出样本数量、阶段平均耗时、最大耗时、事件分布、dirty / pending 原因和最慢样本，适合定位 HMR 变慢的阶段。
 
+## glass-easel 迁移检查 {#glass-easel-check}
+
+WebView glass-easel 需要基础库 `3.8.12` 或更高，weapp-vite 模板默认不启用。开发者工具只提供 `3.7.1` 等低于该门槛的基础库时应保持回退；`componentFramework: "glass-easel"` 单独存在不会开启或触发迁移告警。确认开发者工具与真机基础库满足要求后，再由用户在 App、Page 或 Plugin JSON 中显式成对声明 `componentFramework: "glass-easel"` 与 `glassEaselWebview: true`。检查命令为：
+
+```bash
+wv analyze --glass-easel-check
+wv analyze --glass-easel-check --json
+```
+
+JSON 报告通过稳定的 `glassEasel` 节点输出 `GE001` 到 `GE006`。GE001、GE003、GE004、GE005 会让检查返回非 0 退出码；GE002 会在最终 WXML 阶段将 `wx-if` / `wx-for` 安全归一化为冒号写法；GE006 仅建议将 `wx.createSelectorQuery().in(this)` 改为 `this.createSelectorQuery()`。
+
+循环作用域内 `<include>`、不兼容的属性引号转义和数字开头选择器可能改变业务语义，因此只提供文件与位置诊断，不自动改写。普通 `wv dev` / `wv build` 检测到 glass-easel 时也会输出去重警告。
+
+配置和差异以微信官方 [glass-easel 适配指引](https://developers.weixin.qq.com/miniprogram/dev/framework/custom-component/glass-easel/migration.html) 为准。
+
 ## 分包预下载建议 {#preload-rule}
 
 微信小程序可以通过 `app.json.preloadRule` 在进入页面后预下载其他分包。`wv analyze --preload` 会扫描已声明页面的原生模板、Vue SFC 和静态路由调用，找出能够证明的跨分包跳转：

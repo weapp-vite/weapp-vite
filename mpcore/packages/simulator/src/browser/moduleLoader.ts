@@ -8,6 +8,7 @@ import type {
   HeadlessWx,
 } from '../host'
 import type { RuntimeKernel } from '../kernel'
+import type { HeadlessPluginDescriptor } from '../project'
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { dirname, join, normalize } from 'pathe'
 import {
@@ -114,10 +115,12 @@ export function createBrowserModuleLoader(
   options: {
     globals?: Record<string, unknown>
     kernel: RuntimeKernel
+    miniprogramRootPath: string
+    plugins: HeadlessPluginDescriptor[]
   },
 ): BrowserModuleLoader {
   const moduleCache = new Map<string, ModuleCacheEntry>()
-  const executionContext = createExecutionContext(
+  const executionContext: Record<string, any> = createExecutionContext(
     registries,
     getCurrentPages,
     getApp,
@@ -197,6 +200,18 @@ export function createBrowserModuleLoader(
     finally {
       registries.currentLoadContext = previousLoadContext
     }
+  }
+
+  executionContext.requirePlugin = (alias: string) => {
+    const plugin = options.plugins.find(item => item.alias === alias)
+    if (!plugin) {
+      throw new Error(`Unknown local plugin "${alias}" in browser simulator runtime.`)
+    }
+    const main = typeof plugin.config.main === 'string' && plugin.config.main
+      ? plugin.config.main
+      : 'index.js'
+    const entryPath = normalize(join(options.miniprogramRootPath, plugin.virtualRoot, main))
+    return executeModule(entryPath, null).exports
   }
 
   return {

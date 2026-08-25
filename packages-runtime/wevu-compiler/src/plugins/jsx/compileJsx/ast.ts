@@ -4,6 +4,7 @@ import type {
   JSXNamespacedName,
 } from '@weapp-vite/ast/babelTypes'
 import type { JsxCompileContext } from './types'
+import { escapeWxmlAttribute, escapeWxmlText } from '@weapp-core/shared'
 import {
   getObjectPropertyByKey,
   resolveRenderableExpression,
@@ -15,33 +16,13 @@ import { createInlineExpressionId } from '../../../inlineDataset'
 import { generate, traverse } from '../../../utils/babel'
 import { normalizeWxmlExpression } from '../../vue/compiler/template/expression/wxml'
 
-const ESCAPED_TEXT_RE = /[&<>]/g
-const ESCAPED_ATTR_RE = /[&"<>]/g
 const WXML_EXPRESSION_GENERATE_OPTIONS = {
   compact: true,
   jsescOption: { quotes: 'single' as const, minimal: true },
 }
 
-const ESCAPED_TEXT_MAP: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-}
-
-const ESCAPED_ATTR_MAP: Record<string, string> = {
-  '&': '&amp;',
-  '"': '&quot;',
-  '<': '&lt;',
-  '>': '&gt;',
-}
-
-export function escapeText(value: string) {
-  return value.replace(ESCAPED_TEXT_RE, ch => ESCAPED_TEXT_MAP[ch] || ch)
-}
-
-export function escapeAttr(value: string) {
-  return value.replace(ESCAPED_ATTR_RE, ch => ESCAPED_ATTR_MAP[ch] || ch)
-}
+export const escapeText = escapeWxmlText
+export const escapeAttr = escapeWxmlAttribute
 
 const WHITESPACE_RE = /\s+/g
 

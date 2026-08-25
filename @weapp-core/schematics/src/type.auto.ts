@@ -22,9 +22,9 @@ export interface App {
     [k: string]: unknown;
   };
   /**
-   * 组件框架。
+   * 组件框架。仅在主动启用 WebView glass-easel 时需同时开启 glassEaselWebview。
    */
-  componentFramework?: string;
+  componentFramework?: "exparser" | "glass-easel";
   /**
    * 是否将 rpx 单位转换为 vw 单位。
    */
@@ -69,6 +69,10 @@ export interface App {
    * 是否启用插件功能页。
    */
   functionalPages?: boolean;
+  /**
+   * 显式启用 WebView glass-easel，最低基础库为 3.8.12，默认不启用；需与 componentFramework: glass-easel 配套使用。
+   */
+  glassEaselWebview?: boolean;
   /**
    * 视频号直播半屏场景设置。
    */
@@ -395,7 +399,7 @@ export interface Component {
   /**
    * 组件框架。
    */
-  componentFramework?: string;
+  componentFramework?: "exparser" | "glass-easel";
   /**
    * 组件泛型配置。
    */
@@ -453,9 +457,9 @@ export interface Page {
    */
   backgroundTextStyle?: "dark" | "light";
   /**
-   * 组件框架。
+   * 组件框架。仅在主动启用 WebView glass-easel 时需同时开启 glassEaselWebview。
    */
-  componentFramework?: string;
+  componentFramework?: "exparser" | "glass-easel";
   componentPlaceholder?: {
     [k: string]: unknown;
   };
@@ -475,6 +479,10 @@ export interface Page {
    * 是否开启当前页面下拉刷新。详见 Page.onPullDownRefresh
    */
   enablePullDownRefresh?: boolean;
+  /**
+   * 显式启用 WebView glass-easel，最低基础库为 3.8.12，默认不启用；需与 componentFramework: glass-easel 配套使用。
+   */
+  glassEaselWebview?: boolean;
   /**
    * 控制预加载下个页面的时机。支持 static / manual / auto
    */
@@ -606,6 +614,14 @@ export interface Theme {
  * https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/development.html#%E6%8F%92%E4%BB%B6%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6
  */
 export interface Plugin {
+  /**
+   * 插件组件框架。仅在主动启用 WebView glass-easel 时需同时开启 glassEaselWebview。
+   */
+  componentFramework?: "exparser" | "glass-easel";
+  /**
+   * 显式启用 WebView glass-easel，最低基础库为 3.8.12，默认不启用；需与 componentFramework: glass-easel 配套使用。
+   */
+  glassEaselWebview?: boolean;
   /**
    * 插件主入口文件。
    */

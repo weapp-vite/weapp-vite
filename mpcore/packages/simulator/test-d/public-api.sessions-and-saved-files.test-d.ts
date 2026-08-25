@@ -1,4 +1,5 @@
 import type {
+  HeadlessPluginDescriptor,
   HeadlessTestingRenderedNodeSnapshot,
   HeadlessTestingSessionHandle,
   HeadlessWxDeviceInfoResult,
@@ -22,6 +23,7 @@ const browserFiles = createBrowserVirtualFiles([
 ])
 
 const browserSession = createBrowserHeadlessSession({ files: browserFiles })
+expectType<HeadlessPluginDescriptor[]>(browserSession.project.plugins)
 expectType<ReturnType<typeof createBrowserHeadlessSession>>(createBrowserHeadlessSession({
   files: browserFiles,
   onRender: () => {},

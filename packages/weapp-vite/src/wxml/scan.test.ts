@@ -217,6 +217,67 @@ describe('scanWxml', () => {
     ])
   })
 
+  it('normalizes legacy wx-if and wx-for while recording glass-easel diagnostics', () => {
+    const result = scanWxml('<view wx-if="{{ready}}"><block wx-for="{{list}}" /></view>')
+
+    expect(result.directiveTokens).toEqual([
+      expect.objectContaining({ value: 'wx:if' }),
+      expect.objectContaining({ value: 'wx:for' }),
+    ])
+    expect(result.glassEaselFindings).toEqual([
+      expect.objectContaining({ code: 'GE002', normalized: true }),
+      expect.objectContaining({ code: 'GE002', normalized: true }),
+    ])
+  })
+
+  it('reports include inside a wx:for scope without rewriting it', () => {
+    const result = scanWxml('<block wx:for="{{list}}"><view><include src="./item.wxml" /></view></block>')
+
+    expect(result.glassEaselFindings).toContainEqual(expect.objectContaining({
+      code: 'GE003',
+      severity: 'error',
+    }))
+  })
+
+  it('does not report include after leaving a wx:for scope', () => {
+    const result = scanWxml([
+      '<block wx:for="{{list}}"><include src="./item.wxml" /></block>',
+      '<include src="./footer.wxml" />',
+    ].join(''))
+
+    expect(result.glassEaselFindings.filter(({ code }) => code === 'GE003')).toHaveLength(1)
+  })
+
+  it('tracks nested wx:for scopes without leaking loop depth', () => {
+    const result = scanWxml([
+      '<block wx:for="{{groups}}">',
+      '<block wx:for="{{item.children}}"><include src="./child.wxml" /></block>',
+      '<include src="./group.wxml" />',
+      '</block>',
+      '<include src="./footer.wxml" />',
+    ].join(''))
+
+    expect(result.glassEaselFindings.filter(({ code }) => code === 'GE003')).toHaveLength(2)
+  })
+
+  it('does not leak loop depth from a self-closing wx:for node', () => {
+    const result = scanWxml([
+      '<view wx:for="{{list}}" />',
+      '<include src="./footer.wxml" />',
+    ].join(''))
+
+    expect(result.glassEaselFindings.filter(({ code }) => code === 'GE003')).toHaveLength(0)
+  })
+
+  it('reports legacy backslash quote escaping in attributes', () => {
+    const result = scanWxml(String.raw`<view title="\"legacy\"" />`)
+
+    expect(result.glassEaselFindings).toContainEqual(expect.objectContaining({
+      code: 'GE004',
+      severity: 'error',
+    }))
+  })
+
   it('should rewrite other mini-program directive prefixes for alipay', () => {
     const wxml = '<view tt:if="ok" s:for="{{list}}" tt:key="id" />'
     const result = scanWxml(wxml, { platform: 'alipay' })

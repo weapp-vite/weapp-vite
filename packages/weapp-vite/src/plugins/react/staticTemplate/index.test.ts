@@ -37,6 +37,18 @@ describe('static React template compiler', () => {
     ])
   })
 
+  it('serializes static output for both exparser and glass-easel', () => {
+    const result = compileStaticReactPage(`
+      import { Text } from '../../runtime/components'
+      export function EscapedText() {
+        return <Text title={'A "B" & C < D'}>A & B {'<'}</Text>
+      }
+    `, 'escaped.tsx')
+
+    expect(result.template).toContain('title="A &quot;B&quot; &amp; C &lt; D"')
+    expect(result.template).toContain('>A &amp; B&lt;</text>')
+  })
+
   it('fails unsupported dynamic structures explicitly', () => {
     expect(() => compileStaticReactPage(`
       import { Text, View } from '../../runtime/components'

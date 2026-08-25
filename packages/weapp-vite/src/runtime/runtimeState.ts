@@ -2,6 +2,7 @@ import type { Plugin as PluginJson } from '@weapp-core/schematics'
 import type { Buffer } from 'node:buffer'
 import type { DetectResult } from 'package-manager-detector'
 import type { ResolvedId, RolldownOutput } from 'rolldown'
+import type { GlassEaselDiagnostic } from '../analyze/glassEasel/types'
 import type { AppEntry, ChangeEvent, ComponentsMap, Entry, StyleEntry, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
 import type { ScanWxmlResult } from '../wxml'
@@ -84,6 +85,12 @@ function createDefaultPackageManager(): DetectResult {
 }
 
 export interface RuntimeState {
+  glassEasel: {
+    detected: boolean
+    diagnostics: Map<string, GlassEaselDiagnostic>
+    warnedDiagnostics: Set<string>
+    silent: boolean
+  }
   autoRoutes: {
     routes: AutoRoutes
     serialized: string
@@ -320,6 +327,12 @@ export function createRuntimeState(): RuntimeState {
   const emptyAutoRoutesSnapshot = createEmptyAutoRoutesSnapshot()
   const emptyAutoRoutesArtifacts = createAutoRoutesArtifacts(emptyAutoRoutesSnapshot)
   return {
+    glassEasel: {
+      detected: false,
+      diagnostics: new Map<string, GlassEaselDiagnostic>(),
+      warnedDiagnostics: new Set<string>(),
+      silent: false,
+    },
     autoRoutes: {
       routes: emptyAutoRoutesSnapshot,
       serialized: emptyAutoRoutesArtifacts.serialized,
