@@ -20,7 +20,7 @@ const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-ta
 const FIXTURE_PARENT = path.resolve(WORKSPACE_ROOT, '.tmp/e2e/ide-wevu-tailwind-hmr')
 const INDEX_ROUTE = '/pages/index/index'
 const PROBE_ID = 'wevu-tailwind-hmr-probe'
-const STARTUP_ATTEMPTS = 3
+const STARTUP_ATTEMPTS = 1
 const INITIAL_BACKGROUND_CLASS = 'bg-[#f6f7fb]'
 const INITIAL_BACKGROUND_HEX = 'f6f7fb'
 const BACKGROUND_UPDATES = [
@@ -241,9 +241,8 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
         miniProgram = await launchAutomator({
           engineBuildFallbackSettleMs: 5_000,
           launchMode: 'bridge',
-          maxLaunchRetries: 2,
+          maxLaunchRetries: 1,
           projectPath: fixtureRoot,
-          refreshProjectAfterConnect: true,
           warmupRoute: INDEX_ROUTE,
           warmupRootSelectors: [`#${PROBE_ID}`],
         })

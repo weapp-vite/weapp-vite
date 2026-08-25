@@ -85,6 +85,7 @@ const DEFAULT_TOOL_COMPILE_TIMEOUT = 30_000
 const DEFAULT_PAGE_ROOT_QUERY_TIMEOUT = 1_000
 const ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT = 1_500
 const DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY = 5_000
+const DEFAULT_BRIDGE_WRAPPER_ASSET_SETTLE_DELAY = 2_000
 const DEFAULT_BRIDGE_WARMUP_READY_TIMEOUT = DEFAULT_RELUNCH_READY_TIMEOUT
 const DEVTOOLS_LOG_SCAN_INTERVAL = 500
 const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
@@ -99,6 +100,7 @@ const AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_D
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const AUTOMATOR_CLI_BRIDGE_PATH = path.resolve(import.meta.dirname, './automator.cli-bridge.ts')
 const AUTOMATOR_BRIDGE_WRAPPER_ROOT = path.resolve(import.meta.dirname, '../../.tmp/e2e-ide-bridge-projects')
+let bridgeWrapperLaunchSequence = 0
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /simulator not found/i,
@@ -234,6 +236,10 @@ const BRIDGE_CONNECT_SETTLE_DELAY = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY,
   DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY,
 )
+const BRIDGE_WRAPPER_ASSET_SETTLE_DELAY = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_BRIDGE_WRAPPER_ASSET_SETTLE_DELAY,
+  DEFAULT_BRIDGE_WRAPPER_ASSET_SETTLE_DELAY,
+)
 const BRIDGE_WARMUP_READY_TIMEOUT = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_BRIDGE_WARMUP_READY_TIMEOUT,
   DEFAULT_BRIDGE_WARMUP_READY_TIMEOUT,
@@ -299,6 +305,7 @@ interface LaunchProjectMeta {
 }
 
 interface BridgeWrapperProject {
+  activate?: () => boolean | Promise<boolean>
   distRoot: string
   path: string
   stopSync?: () => void
@@ -331,6 +338,7 @@ interface LaunchAppConfigValidationResult {
 type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
+  deferBridgeWrapperSyncUntilConnected?: boolean
   disableRelaunchSessionRecovery?: boolean
   engineBuildFallbackSettleMs?: number
   launchMode?: 'bridge' | 'direct'
@@ -798,9 +806,9 @@ function createDevtoolsSimulatorBootLogMonitor(project: string) {
   const strictBootLog = process.env.WEAPP_VITE_E2E_STRICT_DEVTOOLS_BOOT_LOG === '1'
 
   return {
-    assertClean(label: string) {
+    assertClean(label: string, force = false) {
       const now = Date.now()
-      if (now - lastScanAt < DEVTOOLS_LOG_SCAN_INTERVAL) {
+      if (!force && now - lastScanAt < DEVTOOLS_LOG_SCAN_INTERVAL) {
         return
       }
       lastScanAt = now
@@ -988,18 +996,34 @@ function writeJsonObject(filePath: string, value: Record<string, any>) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
 }
 
-function copyJsonConfigAsBridgeWrapper(sourcePath: string, targetPath: string, patch: Record<string, any> = {}) {
-  const source = readJsonObject(sourcePath)
-  if (!source) {
-    return
+function writeJsonObjectIfChanged(filePath: string, value: Record<string, any>) {
+  const nextSource = `${JSON.stringify(value, null, 2)}\n`
+  try {
+    if (fs.readFileSync(filePath, 'utf8') === nextSource) {
+      return false
+    }
   }
-  writeJsonObject(targetPath, {
-    ...source,
-    ...patch,
-  })
+  catch {
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true })
+  fs.writeFileSync(filePath, nextSource, 'utf8')
+  return true
 }
 
-export function createBridgeWrapperProjectConfig(source: Record<string, any>, patch: Record<string, any> = {}) {
+function normalizeBridgeWrapperRuntimeConfig(config: Record<string, any>) {
+  const normalized = { ...config }
+  if (normalized.setting && typeof normalized.setting === 'object') {
+    normalized.setting = { ...normalized.setting }
+    delete normalized.setting.es6
+  }
+  return normalized
+}
+
+export function createBridgeWrapperProjectConfig(
+  source: Record<string, any>,
+  patch: Record<string, any> = {},
+  options: { bootstrap?: boolean, precompiled?: boolean } = {},
+) {
   const {
     miniprogramRoot: _miniprogramRoot,
     srcMiniprogramRoot: _srcMiniprogramRoot,
@@ -1015,25 +1039,60 @@ export function createBridgeWrapperProjectConfig(source: Record<string, any>, pa
 
   const sourceSetting = source.setting && typeof source.setting === 'object' ? source.setting : {}
   const patchSetting = patch.setting && typeof patch.setting === 'object' ? patch.setting : {}
-  const setting = {
+  const finalSetting = {
     ...sourceSetting,
     ...patchSetting,
   }
-  setting.packNpmManually = false
-  setting.packNpmRelationList = []
+  finalSetting.packNpmManually = false
+  finalSetting.packNpmRelationList = []
 
-  return {
+  if (options.precompiled) {
+    const {
+      simulatorPluginLibVersion: _simulatorPluginLibVersion,
+      simulatorType: _simulatorType,
+      ...stableRest
+    } = {
+      ...rest,
+      ...patchRest,
+    }
+    return {
+      compileType: 'miniprogram',
+      ...stableRest,
+      miniprogramRoot: './',
+      srcMiniprogramRoot: './',
+      setting: options.bootstrap
+        ? {
+            es6: false,
+            packNpmManually: false,
+            packNpmRelationList: [],
+          }
+        : finalSetting,
+      condition: {
+        ...(source.condition && typeof source.condition === 'object' ? source.condition : {}),
+        ...(patch.condition && typeof patch.condition === 'object' ? patch.condition : {}),
+      },
+    }
+  }
+
+  const config = {
     compileType: 'miniprogram',
     ...rest,
     ...patchRest,
     miniprogramRoot: './',
     srcMiniprogramRoot: './',
-    setting,
+    setting: finalSetting,
     condition: {
       ...(source.condition && typeof source.condition === 'object' ? source.condition : {}),
       ...(patch.condition && typeof patch.condition === 'object' ? patch.condition : {}),
     },
   }
+  if (options.bootstrap) {
+    config.simulatorType = typeof config.simulatorType === 'string' && config.simulatorType.trim()
+      ? config.simulatorType
+      : 'wechat'
+    config.simulatorPluginLibVersion ??= {}
+  }
+  return config
 }
 
 function resolveMiniprogramRoot(projectPath: string) {
@@ -1192,7 +1251,16 @@ function copyBridgeWrapperDistSnapshot(
   fs.mkdirSync(wrapperRoot, { recursive: true })
   removeStaleBridgeWrapperDistEntries(distRoot, wrapperRoot, preserveRoots)
 
-  for (const entry of distEntries) {
+  const orderedEntries = [...distEntries].sort((left, right) => {
+    if (left.name === 'app.json') {
+      return 1
+    }
+    if (right.name === 'app.json') {
+      return -1
+    }
+    return 0
+  })
+  for (const entry of orderedEntries) {
     const sourcePath = path.join(distRoot, entry.name)
     const targetPath = path.join(wrapperRoot, entry.name)
     const relativePath = path.relative(wrapperRoot, targetPath)
@@ -1215,6 +1283,22 @@ function copyProjectRootForBridgeWrapper(projectPath: string, wrapperRoot: strin
     return
   }
   copyDistEntryForBridgeWrapper(sourcePath, targetPath, entry.isDirectory())
+}
+
+function prepareBridgeWrapperBootstrap(wrapperRoot: string, route: string | undefined) {
+  const pageRoute = (route || '/pages/index/index').replace(LEADING_SLASH_PATTERN, '')
+  const pageRoot = path.join(wrapperRoot, pageRoute)
+  fs.rmSync(wrapperRoot, { force: true, recursive: true })
+  writeJsonObject(path.join(wrapperRoot, 'app.json'), {
+    pages: [pageRoute],
+    subPackages: [],
+  })
+  fs.writeFileSync(path.join(wrapperRoot, 'app.js'), 'App({})\n', 'utf8')
+  fs.writeFileSync(path.join(wrapperRoot, 'app.wxss'), '', 'utf8')
+  writeJsonObject(`${pageRoot}.json`, {})
+  fs.writeFileSync(`${pageRoot}.js`, 'Page({})\n', 'utf8')
+  fs.writeFileSync(`${pageRoot}.wxml`, '<view id="weapp-vite-automator-bootstrap">ready</view>\n', 'utf8')
+  fs.writeFileSync(`${pageRoot}.wxss`, '', 'utf8')
 }
 
 function isPathInsideRoot(root: string, candidate: string) {
@@ -1434,6 +1518,10 @@ async function waitForBridgeWrapperWarmupAsset(
 function prepareAutomatorBridgeWrapperProject(
   projectPath: string | undefined,
   projectMeta: LaunchProjectMeta | undefined,
+  options: {
+    deferSyncUntilConnected?: boolean
+    warmupRoute?: string
+  } = {},
 ): BridgeWrapperProject | undefined {
   if (!projectPath || !projectMeta) {
     return projectPath ? { distRoot: '', path: projectPath } : undefined
@@ -1448,15 +1536,26 @@ function prepareAutomatorBridgeWrapperProject(
     return { distRoot, path: projectPath }
   }
 
+  // DevTools keeps Builder state keyed by the project path. Reusing a wrapper
+  // path across launches can reopen a stale project before its bootstrap config
+  // is observed, which triggers a simulator rebuild during connection.
+  const wrapperLaunchId = `${Date.now()}-${process.pid}-${bridgeWrapperLaunchSequence += 1}`
   const hash = crypto
     .createHash('sha1')
     .update(path.resolve(projectPath))
     .update('\0')
     .update(path.resolve(distRoot))
+    .update('\0')
+    .update(wrapperLaunchId)
     .digest('hex')
     .slice(0, 16)
   const wrapperRoot = path.join(AUTOMATOR_BRIDGE_WRAPPER_ROOT, hash)
-  copyBridgeWrapperDistSnapshot(distRoot, wrapperRoot)
+  if (options.deferSyncUntilConnected) {
+    prepareBridgeWrapperBootstrap(wrapperRoot, options.warmupRoute)
+  }
+  else {
+    copyBridgeWrapperDistSnapshot(distRoot, wrapperRoot)
+  }
 
   const pluginRoot = normalizeProjectRelativeRoot(projectConfig.pluginRoot)
   const preserveRoots = pluginRoot ? [pluginRoot] : []
@@ -1466,17 +1565,58 @@ function prepareAutomatorBridgeWrapperProject(
 
   const projectPrivateConfigPath = path.join(projectPath, 'project.private.config.json')
   const projectPrivateConfig = readJsonObject(projectPrivateConfigPath) ?? {}
-  const wrapperProjectConfig = createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig)
-  writeJsonObject(path.join(wrapperRoot, 'project.config.json'), wrapperProjectConfig)
-  copyJsonConfigAsBridgeWrapper(
-    projectPrivateConfigPath,
-    path.join(wrapperRoot, 'project.private.config.json'),
+  const bridgePrivateConfig = {
+    ...projectPrivateConfig,
+    simulatorType: 'wechat',
+    simulatorPluginLibVersion: {},
+  }
+  const wrapperProjectConfigPath = path.join(wrapperRoot, 'project.config.json')
+  const finalWrapperProjectConfig = normalizeBridgeWrapperRuntimeConfig(
+    createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig),
   )
+  const initialWrapperProjectConfig = options.deferSyncUntilConnected
+    ? createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig, { bootstrap: true })
+    : finalWrapperProjectConfig
+  const normalizedInitialWrapperProjectConfig = options.deferSyncUntilConnected
+    ? normalizeBridgeWrapperRuntimeConfig(initialWrapperProjectConfig)
+    : initialWrapperProjectConfig
+  writeJsonObject(wrapperProjectConfigPath, normalizedInitialWrapperProjectConfig)
+  const wrapperPrivateConfigPath = path.join(wrapperRoot, 'project.private.config.json')
+  if (Object.keys(bridgePrivateConfig).length > 0) {
+    writeJsonObject(wrapperPrivateConfigPath, bridgePrivateConfig)
+  }
+  else {
+    fs.rmSync(wrapperPrivateConfigPath, { force: true })
+  }
+
+  let stopSync: (() => void) | undefined
+  const activate = async () => {
+    if (stopSync || !options.deferSyncUntilConnected) {
+      return false
+    }
+    const appConfigPath = path.join(distRoot, 'app.json')
+    copyBridgeWrapperDistSnapshot(distRoot, wrapperRoot, {
+      preserveRoots: [...preserveRoots, 'app.json'],
+    })
+    process.stdout.write(`[info] [runtime:launch-step] bridge-wrapper-assets-ready project=${resolveReportProjectPath(projectPath)} settle=${BRIDGE_WRAPPER_ASSET_SETTLE_DELAY}ms\n`)
+    await sleep(BRIDGE_WRAPPER_ASSET_SETTLE_DELAY)
+    writeJsonObjectIfChanged(wrapperProjectConfigPath, finalWrapperProjectConfig)
+    process.stdout.write(`[info] [runtime:launch-step] bridge-wrapper-config-ready project=${resolveReportProjectPath(projectPath)} settle=${BRIDGE_WRAPPER_ASSET_SETTLE_DELAY}ms\n`)
+    await sleep(BRIDGE_WRAPPER_ASSET_SETTLE_DELAY)
+    copyBridgeWrapperDistPath(distRoot, wrapperRoot, appConfigPath)
+    await sleep(BRIDGE_WRAPPER_ASSET_SETTLE_DELAY)
+    stopSync = startBridgeWrapperDistSync(distRoot, wrapperRoot, { preserveRoots })
+    return true
+  }
+  if (!options.deferSyncUntilConnected) {
+    stopSync = startBridgeWrapperDistSync(distRoot, wrapperRoot, { preserveRoots })
+  }
 
   return {
+    activate,
     distRoot,
     path: wrapperRoot,
-    stopSync: startBridgeWrapperDistSync(distRoot, wrapperRoot, { preserveRoots }),
+    stopSync: () => stopSync?.(),
   }
 }
 
@@ -2025,6 +2165,35 @@ function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
 export function resetAutomatorRuntimeLogs(miniProgram: any) {
   const meta = (miniProgram as Record<string, any>)[RUNTIME_LOG_META_KEY] as RuntimeLogMeta | undefined
   meta?.reset()
+}
+
+async function clearAutomatorStartupLogs(
+  miniProgram: any,
+  project: string,
+  checkDevtoolsLog: (label: string, force?: boolean) => void,
+) {
+  checkDevtoolsLog('bridge wrapper warmup', true)
+  if (typeof miniProgram?.evaluate !== 'function') {
+    throw new TypeError(`Automator cannot clear startup console after bridge wrapper warmup: ${project}`)
+  }
+
+  const cleared = await runWithTimeout(
+    () => miniProgram.evaluate(() => {
+      const runtimeConsole = Reflect.get(globalThis, 'console') as { clear?: () => void } | undefined
+      if (typeof runtimeConsole?.clear !== 'function') {
+        return false
+      }
+      runtimeConsole.clear()
+      return true
+    }),
+    5_000,
+    `clear startup console ${project}`,
+  )
+  if (!cleared) {
+    throw new Error(`Automator runtime does not support console.clear after bridge wrapper warmup: ${project}`)
+  }
+  resetAutomatorRuntimeLogs(miniProgram)
+  process.stdout.write(`[info] [runtime:launch-step] startup-logs-cleared project=${project}\n`)
 }
 
 async function resolveCurrentPageAfterWarmupFailure(
@@ -2748,7 +2917,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { deferBridgeWrapperSyncUntilConnected, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
@@ -2781,7 +2950,10 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 }
               : undefined
             bridgeWrapperProject = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
-              ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta)
+              ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta, {
+                  deferSyncUntilConnected: deferBridgeWrapperSyncUntilConnected,
+                  warmupRoute: resolvedWarmupRoute,
+                })
               : undefined
             await waitForBridgeWrapperWarmupAsset(bridgeWrapperProject, resolvedWarmupRoute, project)
             const launchProjectPath = bridgeWrapperProject?.path ?? rest.projectPath
@@ -2827,6 +2999,8 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             }
 
             const withRuntimeLogs = await enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
+            const bridgeWrapperActivated = await bridgeWrapperProject?.activate?.() === true
+            devtoolsLogMonitor.assertClean('bridge wrapper activation')
             const shouldRefreshProject = refreshProjectAfterConnect
               || shouldRefreshAutomatorBridgeProjectAfterConnect()
               || forceProjectRefreshAfterRetry
@@ -2845,7 +3019,8 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               resetAutomatorRuntimeLogs(withRuntimeLogs)
               forceProjectRefreshAfterRetry = false
             }
-            if (resolvedWarmupRoute && !shouldSkipAutomatorWarmup(skipWarmup)) {
+            const shouldWarmup = bridgeWrapperActivated || !shouldSkipAutomatorWarmup(skipWarmup)
+            if (resolvedWarmupRoute && shouldWarmup) {
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${resolvedWarmupRoute} project=${project}\n`)
               await warmupMiniProgramRoute(withRuntimeLogs, resolvedWarmupRoute, project, {
                 allowAnyPage: warmupAnyPage,
@@ -2853,6 +3028,12 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 checkDevtoolsLog: devtoolsLogMonitor.assertClean,
                 rootSelectors: warmupRootSelectors,
               })
+            }
+            else if (bridgeWrapperActivated) {
+              throw new Error(`Bridge wrapper activation requires a real app warmup route: ${project}`)
+            }
+            if (bridgeWrapperActivated) {
+              await clearAutomatorStartupLogs(withRuntimeLogs, project, devtoolsLogMonitor.assertClean)
             }
             const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs, {
               checkDevtoolsLog: devtoolsLogMonitor.assertClean,

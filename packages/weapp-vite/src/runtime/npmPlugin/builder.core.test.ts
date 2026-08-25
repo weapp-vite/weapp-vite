@@ -523,6 +523,52 @@ describe('runtime npm package builder core', () => {
     expect(await fs.pathExists(path.resolve(outRoot, 'mini-pkg/beta.js'))).toBe(true)
   })
 
+  it('copies only configured files from miniprogram packages', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'mini-pkg')
+    const sourceRoot = path.resolve(pkgRoot, 'miniprogram')
+    const outRoot = path.resolve(root, 'dist/miniprogram_npm')
+
+    await fs.outputFile(path.resolve(sourceRoot, 'dialog/index.js'), 'module.exports = "dialog"')
+    await fs.outputFile(path.resolve(sourceRoot, 'dialog/index.d.ts'), 'export default {}')
+    await fs.outputFile(path.resolve(sourceRoot, 'button/index.js'), 'module.exports = "button"')
+
+    const ctx = createMockContext({
+      cwd: root,
+      platform: 'weapp',
+      weappViteConfig: {
+        npm: {
+          packageFiles: {
+            'mini-pkg': {
+              include: ['dialog/**'],
+              exclude: ['**/*.d.ts'],
+            },
+          },
+        },
+      },
+    })
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'mini-pkg',
+        version: '0.0.0',
+        miniprogram: 'miniprogram',
+        dependencies: {},
+      },
+    })
+
+    await builder.buildPackage({
+      dep: 'mini-pkg',
+      outDir: outRoot,
+      isDependenciesCacheOutdate: true,
+    })
+
+    expect(await fs.pathExists(path.resolve(outRoot, 'mini-pkg/dialog/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(outRoot, 'mini-pkg/dialog/index.d.ts'))).toBe(false)
+    expect(await fs.pathExists(path.resolve(outRoot, 'mini-pkg/button/index.js'))).toBe(false)
+  })
+
   it('normalizes esm js files inside copied miniprogram packages for weapp interop', async () => {
     const root = await createTempDir()
     const pkgRoot = path.resolve(root, 'mini-pkg')

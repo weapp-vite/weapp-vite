@@ -161,6 +161,7 @@ describe('automator', () => {
     const config = createBridgeWrapperProjectConfig({
       appid: 'wxb3d842a4a7e3440d',
       miniprogramRoot: 'dist/',
+      simulatorType: 'wechat',
       srcMiniprogramRoot: 'dist/',
       pluginRoot: 'plugin/',
       compileType: 'miniprogram',
@@ -206,6 +207,60 @@ describe('automator', () => {
           list: [],
         },
       },
+    })
+    expect(config).toHaveProperty('simulatorType', 'wechat')
+  })
+
+  it('removes simulator selection while preserving compiler settings in precompiled bridge wrapper config', () => {
+    const config = createBridgeWrapperProjectConfig({
+      appid: 'wxb3d842a4a7e3440d',
+      miniprogramRoot: 'dist/',
+      simulatorPluginLibVersion: {},
+      simulatorType: 'wechat',
+      setting: {
+        es6: true,
+        postcss: true,
+        urlCheck: false,
+      },
+    }, {}, {
+      precompiled: true,
+    })
+
+    expect(config).not.toHaveProperty('simulatorType')
+    expect(config).not.toHaveProperty('simulatorPluginLibVersion')
+    expect(config.setting).toEqual({
+      es6: true,
+      packNpmManually: false,
+      packNpmRelationList: [],
+      postcss: true,
+      urlCheck: false,
+    })
+  })
+
+  it('uses the complete stable compiler settings in bootstrap bridge wrapper config', () => {
+    const config = createBridgeWrapperProjectConfig({
+      appid: 'wxb3d842a4a7e3440d',
+      simulatorPluginLibVersion: {},
+      simulatorType: 'wechat',
+      setting: {
+        es6: true,
+        postcss: true,
+        urlCheck: false,
+      },
+    }, {}, {
+      bootstrap: true,
+    })
+
+    expect(config).toMatchObject({
+      simulatorType: 'wechat',
+      simulatorPluginLibVersion: {},
+    })
+    expect(config.setting).toEqual({
+      es6: true,
+      packNpmManually: false,
+      packNpmRelationList: [],
+      postcss: true,
+      urlCheck: false,
     })
   })
 

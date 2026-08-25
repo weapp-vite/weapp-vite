@@ -426,43 +426,6 @@ export function createRequestGlobalsPassiveBindingsCode(
     if (target === 'URL') {
       return `var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},["123","fake://abc"],"fake://abc/123")?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.URL,["123","fake://abc"],"fake://abc/123")?globalThis.URL:${placeholderFactory})`
     }
-    if (target === 'URLSearchParams') {
-      return `var URLSearchParams = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URLSearchParams",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},["client=graphql-request"])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.URLSearchParams,["client=graphql-request"])?globalThis.URLSearchParams:${placeholderFactory})`
-    }
-    if (target === 'Blob') {
-      return `var Blob = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Blob",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.Blob,[])?globalThis.Blob:${placeholderFactory})`
-    }
-    if (target === 'File') {
-      return `var File = ${REQUEST_GLOBAL_EXPOSE_HELPER}("File",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[[],"request-globals.bin"])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.File,[[],"request-globals.bin"])?globalThis.File:${placeholderFactory})`
-    }
-    if (target === 'FormData') {
-      return `var FormData = ${REQUEST_GLOBAL_EXPOSE_HELPER}("FormData",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.FormData,[])?globalThis.FormData:${placeholderFactory})`
-    }
-    if (target === 'Headers') {
-      return `var Headers = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Headers",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.Headers,[])?globalThis.Headers:${placeholderFactory})`
-    }
-    if (target === 'Request') {
-      return `var Request = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Request",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},["https://request-globals.invalid"])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.Request,["https://request-globals.invalid"])?globalThis.Request:${placeholderFactory})`
-    }
-    if (target === 'Response') {
-      return `var Response = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Response",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[null])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.Response,[null])?globalThis.Response:${placeholderFactory})`
-    }
-    if (target === 'TextEncoder') {
-      return `var TextEncoder = ${REQUEST_GLOBAL_EXPOSE_HELPER}("TextEncoder",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.TextEncoder,[])?globalThis.TextEncoder:${placeholderFactory})`
-    }
-    if (target === 'TextDecoder') {
-      return `var TextDecoder = ${REQUEST_GLOBAL_EXPOSE_HELPER}("TextDecoder",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.TextDecoder,[])?globalThis.TextDecoder:${placeholderFactory})`
-    }
-    if (target === 'XMLHttpRequest') {
-      return `var XMLHttpRequest = ${REQUEST_GLOBAL_EXPOSE_HELPER}("XMLHttpRequest",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${placeholderFactory})`
-    }
-    if (target === 'WebSocket') {
-      return `var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},["wss://request-globals.invalid"])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:${placeholderFactory})`
-    }
-    if (target === 'AbortController') {
-      return `var AbortController = ${REQUEST_GLOBAL_EXPOSE_HELPER}("AbortController",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.AbortController,[])?globalThis.AbortController:${placeholderFactory})`
-    }
-
     return `var ${target} = ${REQUEST_GLOBAL_EXPOSE_HELPER}(${JSON.stringify(target)},typeof ${actualRef}==="function"&&${actualRef}?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${actualRef}:typeof globalThis.${target}==="function"&&globalThis.${target}?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.${target}:${placeholderFactory})`
   }).join(';')
 

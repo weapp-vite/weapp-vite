@@ -32,6 +32,7 @@
     }
   },
   "compileType": "miniprogram",
+  "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},
   "packOptions": {
     "ignore": [],

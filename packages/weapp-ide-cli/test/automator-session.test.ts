@@ -52,6 +52,15 @@ describe('automator session diagnostics', () => {
     expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('wechatwebdevtools cli auto --project'))
   })
 
+  it('maps a stale occupied automator port to the current-project diagnostic', async () => {
+    launchAutomatorMock.mockRejectedValueOnce(new Error('Port 10651 is in use, please specify another port'))
+    const { connectMiniProgram } = await import('../src/cli/automator-session')
+
+    await expect(connectMiniProgram({ projectPath: '/workspace/project' })).rejects.toThrow('DEVTOOLS_WS_CONNECT_ERROR')
+    expect(loggerMock.error).toHaveBeenCalledWith('无法连接到当前项目的微信开发者工具自动化 websocket。')
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('wechatwebdevtools cli auto --project'))
+  })
+
   it('maps protocol request timeouts to a friendly diagnostic error', async () => {
     connectOpenedAutomatorMock.mockRejectedValueOnce(Object.assign(
       new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
@@ -114,6 +123,21 @@ describe('automator session diagnostics', () => {
 
     expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
       openedOnly: true,
+      projectPath: '/workspace/project',
+    })
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
+  })
+
+  it('does not replace an explicitly selected opened port with a new session', async () => {
+    const { connectMiniProgram } = await import('../src/cli/automator-session')
+
+    await expect(connectMiniProgram({
+      port: 19510,
+      projectPath: '/workspace/project',
+    })).rejects.toThrow('DEVTOOLS_WS_CONNECT_ERROR')
+
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      port: 19510,
       projectPath: '/workspace/project',
     })
     expect(launchAutomatorMock).not.toHaveBeenCalled()

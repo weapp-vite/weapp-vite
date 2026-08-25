@@ -48,6 +48,8 @@ interface CommandDefinition {
 const COMMON_OPTION_DEFINITIONS: CommandOptionDefinition[] = [
   { flag: '-p, --project <path>', description: { zh: '项目路径（默认：当前目录）', en: 'Project path (default: current directory)' } },
   { flag: '-t, --timeout <ms>', description: { zh: '连接超时时间（默认：30000）', en: 'Connection timeout (default: 30000)' } },
+  { flag: '--port <port>', description: { zh: '连接已打开的 automator 端口', en: 'Connect to an opened automator port' } },
+  { flag: '--session-id <id>', description: { zh: '复用指定的 automator 会话', en: 'Reuse a named automator session' } },
   { flag: '--runtime-url <url>', description: { zh: '复用本地 runtime service 地址', en: 'Runtime service URL for shared sessions' } },
   { flag: '--no-runtime-service', description: { zh: '跳过 runtime service，直接连接 DevTools', en: 'Skip runtime service and connect to DevTools directly' } },
   { flag: '--json', description: { zh: '支持时以 JSON 输出', en: 'Output as JSON when supported' } },
@@ -55,7 +57,7 @@ const COMMON_OPTION_DEFINITIONS: CommandOptionDefinition[] = [
   { flag: '-h, --help', description: { zh: '显示命令帮助', en: 'Show command help' } },
 ]
 
-const COMMON_ALLOWED_OPTIONS = new Set(['-p', '--project', '-t', '--timeout', '--runtime-url', '--no-runtime-service', '--json', '--lang', '-h', '--help'])
+const COMMON_ALLOWED_OPTIONS = new Set(['-p', '--project', '-t', '--timeout', '--port', '--session-id', '--runtime-url', '--no-runtime-service', '--json', '--lang', '-h', '--help'])
 
 function createDefinition(input: {
   description: LocalizedText

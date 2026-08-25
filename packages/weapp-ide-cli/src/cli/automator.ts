@@ -40,6 +40,7 @@ const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please m
 const DEVTOOLS_EXTENSION_CONTEXT_INVALIDATED_RE = /Extension context invalidated/i
 const AUTOMATOR_LAUNCH_TIMEOUT_RE = /Wait timed out after \d+ ms/i
 const AUTOMATOR_WS_CONNECT_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+/i
+const AUTOMATOR_PORT_IN_USE_RE = /Port \d+ is in use, please specify another port/i
 const DEVTOOLS_PROTOCOL_TIMEOUT_RE = /DevTools did not respond to protocol method (\S+) within \d+ms/i
 const DEVTOOLS_INFRA_ERROR_PATTERNS = [
   /#initialize-error:\s*wait IDE port timeout/i,
@@ -228,6 +229,14 @@ export function isRetryableAutomatorLaunchError(error: unknown): boolean {
 export function isAutomatorWsConnectError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
   return AUTOMATOR_WS_CONNECT_RE.test(message)
+}
+
+/**
+ * @description 判断错误是否属于目标项目 automator 端口仍被旧会话占用。
+ */
+export function isAutomatorPortInUseError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return AUTOMATOR_PORT_IN_USE_RE.test(message)
 }
 
 /**

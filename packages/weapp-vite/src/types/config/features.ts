@@ -9,6 +9,7 @@ import type {
   NpmBuildOptions,
   NpmDependencyPattern,
   NpmMainPackageConfig,
+  NpmPackageFilesConfig,
   NpmPluginPackageConfig,
   NpmStrategy,
   NpmSubPackageConfig,
@@ -260,6 +261,8 @@ export interface WeappNpmConfig {
   mainPackage?: NpmMainPackageConfig
   pluginPackage?: NpmPluginPackageConfig
   subPackages?: Record<string, NpmSubPackageConfig>
+  /** 按包名限制原生小程序 npm 包复制到产物中的文件 */
+  packageFiles?: Record<string, NpmPackageFilesConfig>
   buildOptions?: (options: NpmBuildOptions, pkgMeta: BuildNpmPackageMeta) => NpmBuildOptions | undefined
   alipayNpmMode?: AlipayNpmMode
 }

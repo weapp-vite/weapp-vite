@@ -287,6 +287,13 @@ export interface NpmPluginPackageConfig {
   dependencies?: false | NpmDependencyPattern[]
 }
 
+export interface NpmPackageFilesConfig {
+  /** 包内需要复制的文件 glob，默认包含全部文件 */
+  include?: string[]
+  /** 包内需要排除的文件 glob */
+  exclude?: string[]
+}
+
 export type JsFormat = 'cjs' | 'esm'
 
 export type SharedChunkStrategy = 'hoist' | 'duplicate'

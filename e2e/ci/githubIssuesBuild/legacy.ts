@@ -640,6 +640,13 @@ export function registerGithubIssuesBuildLegacyCases() {
   })
 
   it('issue #793: keeps derived app config aligned with the scoped routes', async () => {
+    await runBuild()
+
+    const standardAppJson = await fs.readJSON(path.join(DIST_ROOT, 'app.json')) as {
+      preloadRule?: Record<string, unknown>
+    }
+    expect(standardAppJson.preloadRule).toBeUndefined()
+
     await runIssue793Build()
 
     const appJson = await fs.readJSON(path.join(ISSUE_793_DIST_ROOT, 'app.json')) as {

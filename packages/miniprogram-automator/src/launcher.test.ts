@@ -2,7 +2,9 @@
  * @file 启动器测试。
  */
 import { EventEmitter } from 'node:events'
+import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { resolveWechatDevtoolsBootstrapArgs } from './launcher/wechatCliFallback'
 
 const spawnMock = vi.hoisted(() => vi.fn())
 const accessMock = vi.hoisted(() => vi.fn(async () => undefined))
@@ -74,6 +76,27 @@ async function loadLauncherModule(isWindows = false) {
   return await import('./Launcher')
 }
 
+describe('resolveWechatDevtoolsBootstrapArgs', () => {
+  it('keeps global options and removes automator-specific arguments', () => {
+    expect(resolveWechatDevtoolsBootstrapArgs([
+      '--port',
+      '9420',
+      'auto',
+      '--project',
+      '/repo/project',
+      '--auto-port',
+      '9527',
+      '--ticket',
+      'ticket',
+      '--trust-project',
+    ])).toEqual([
+      '--port',
+      '9420',
+      'islogin',
+    ])
+  })
+})
+
 describe('Launcher', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -85,6 +108,7 @@ describe('Launcher', () => {
   })
 
   afterEach(() => {
+    vi.unstubAllGlobals()
     delete process.env.WEAPP_VITE_AUTOMATOR_RUNTIME_PROVIDER
     delete process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER
   })
@@ -140,7 +164,7 @@ describe('Launcher', () => {
     waitUntilMock
       .mockRejectedValueOnce(new Error('Wait timed out after 1 ms'))
       .mockImplementationOnce(rawWaitUntil)
-    vi.spyOn(launcher as any, 'connectTool').mockResolvedValueOnce({ checkVersion: vi.fn(async () => {}) })
+    const connectToolSpy = vi.spyOn(launcher as any, 'connectTool').mockResolvedValueOnce({ checkVersion: vi.fn(async () => {}) })
 
     await launcher.launch({
       cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
@@ -149,7 +173,10 @@ describe('Launcher', () => {
     })
 
     expect(acquirePortLeaseMock).toHaveBeenCalledTimes(2)
-    expect(spawnMock.mock.calls[1]?.[1]).toContain('9421')
+    expect(connectToolSpy).toHaveBeenCalledWith({
+      timeout: 3_000,
+      wsEndpoint: 'ws://127.0.0.1:9421',
+    })
   })
 
   it('spawns the cli and connects to the computed endpoint', async () => {
@@ -169,16 +196,9 @@ describe('Launcher', () => {
     })
 
     expect(spawnMock).toHaveBeenCalledWith('/Applications/wechatwebdevtools.app/Contents/MacOS/cli', [
-      'auto',
-      '--project',
-      '/tmp/project',
-      '--auto-port',
-      '9420',
-      '--auto-account',
-      'tester',
-      '--trust-project',
+      'islogin',
     ], {
-      stdio: 'ignore',
+      stdio: ['ignore', 'pipe', 'pipe'],
       cwd: undefined,
     })
     expect(checkVersion).toHaveBeenCalledTimes(1)
@@ -322,9 +342,9 @@ describe('Launcher', () => {
       '/d',
       '/s',
       '/c',
-      '""C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat" auto --project /tmp/project --auto-port 9420"',
+      '""C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat" islogin"',
     ], {
-      stdio: 'ignore',
+      stdio: ['ignore', 'pipe', 'pipe'],
       cwd: undefined,
       windowsHide: true,
       windowsVerbatimArguments: true,
@@ -396,6 +416,64 @@ describe('Launcher', () => {
     expect(result).toEqual(secondCandidate)
   })
 
+  it('enables automator through the DevTools HTTP service after a successful cli exit', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    const child = new EventEmitter() as EventEmitter & {
+      stderr: PassThrough
+      stdout: PassThrough
+      unref: () => void
+    }
+    child.stderr = new PassThrough()
+    child.stdout = new PassThrough()
+    child.unref = vi.fn()
+    spawnMock.mockReturnValue(child)
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ autoPort: 9527 }))))
+
+    const launcher = new Launcher()
+    const candidate = {
+      checkVersion: vi.fn(async () => {}),
+    }
+    const connectToolSpy = vi.spyOn(launcher as any, 'connectTool')
+    connectToolSpy
+      .mockImplementationOnce(async () => {
+        child.stdout.write('IDE server started successfully, listening on http://127.0.0.1:9420\n')
+        child.emit('exit', 0, null)
+        throw new Error('Failed connecting to ws://127.0.0.1:9420, check if target project window is opened with automation enabled')
+      })
+      .mockResolvedValueOnce(candidate)
+
+    const result = await launcher.launch({
+      account: 'tester',
+      cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+      port: 9420,
+      projectPath: '/tmp/project',
+      ticket: 'test-ticket',
+      trustProject: true,
+    })
+
+    expect(fetch).toHaveBeenCalledOnce()
+    const endpoint = new URL(String(vi.mocked(fetch).mock.calls[0]?.[0]))
+    expect(Object.fromEntries(endpoint.searchParams)).toEqual({
+      account: 'tester',
+      autoPort: '9420',
+      project: '/tmp/project',
+      ticket: 'test-ticket',
+      trustProject: 'true',
+    })
+    expect(connectToolSpy).toHaveBeenNthCalledWith(2, {
+      timeout: 3_000,
+      wsEndpoint: 'ws://127.0.0.1:9527',
+    })
+    expect(result).toEqual({
+      ...candidate,
+      __WEAPP_VITE_SESSION_METADATA: {
+        port: 9527,
+        projectPath: '/tmp/project',
+        wsEndpoint: 'ws://127.0.0.1:9527',
+      },
+    })
+  })
+
   it('retries automatic launch when cli exits before the automator socket is ready', async () => {
     const { default: Launcher } = await loadLauncherModule()
     const firstChild = new EventEmitter() as EventEmitter & { unref: () => void }
@@ -424,8 +502,14 @@ describe('Launcher', () => {
     })
 
     expect(acquirePortLeaseMock).toHaveBeenCalledTimes(2)
-    expect(spawnMock.mock.calls[0]?.[1]).toContain('9420')
-    expect(spawnMock.mock.calls[1]?.[1]).toContain('9421')
+    expect(connectToolSpy).toHaveBeenNthCalledWith(1, {
+      timeout: 3_000,
+      wsEndpoint: 'ws://127.0.0.1:9420',
+    })
+    expect(connectToolSpy).toHaveBeenNthCalledWith(2, {
+      timeout: 3_000,
+      wsEndpoint: 'ws://127.0.0.1:9421',
+    })
   })
 
   it('fails fast when a custom port launch cli exits with a non-zero code', async () => {

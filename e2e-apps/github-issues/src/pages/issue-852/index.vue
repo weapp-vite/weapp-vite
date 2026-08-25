@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import Count from '@/components/issue-852/Count.vue'
+</script>
+
 <template>
   <view
     id="issue-852"
@@ -11,4 +15,5 @@
     <!-- eslint-disable-next-line vue/no-loss-of-precision -->
     {{ 0x123456789ABCDEF }}
   </view>
+  <Count id="issue-852-count-component" :value="1_000_000" />
 </template>

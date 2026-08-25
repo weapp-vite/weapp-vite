@@ -36,8 +36,10 @@ describe('resolveAutomatorProjectPath', () => {
       compileType: 'plugin',
       miniprogramRoot: 'dist/',
       pluginRoot: 'dist-plugin/',
+      simulatorType: 'wechat',
       srcMiniprogramRoot: 'dist/',
       setting: {
+        es6: false,
         packNpmManually: true,
         packNpmRelationList: [
           {
@@ -48,8 +50,15 @@ describe('resolveAutomatorProjectPath', () => {
       },
     })
     await writeJson(path.join(root, 'project.private.config.json'), {
-      condition: {},
+      condition: {
+        miniprogram: {
+          list: [],
+        },
+      },
       miniprogramRoot: 'dist/',
+      setting: {
+        es6: true,
+      },
     })
     await writeJson(path.join(root, 'dist/app.json'), {
       pages: ['pages/index/index'],
@@ -77,19 +86,18 @@ describe('resolveAutomatorProjectPath', () => {
       pluginRoot: 'dist-plugin/',
       srcMiniprogramRoot: './',
       setting: {
+        es6: true,
         packNpmManually: false,
         packNpmRelationList: [],
       },
-    })
-    await expect(readJson(path.join(result.projectPath, 'project.private.config.json'))).resolves.toMatchObject({
-      compileType: 'plugin',
-      miniprogramRoot: './',
-      srcMiniprogramRoot: './',
-      setting: {
-        packNpmManually: false,
-        packNpmRelationList: [],
+      condition: {
+        miniprogram: {
+          list: [],
+        },
       },
     })
+    expect(await readJson(path.join(result.projectPath, 'project.config.json'))).toHaveProperty('simulatorType', 'wechat')
+    await expect(fs.access(path.join(result.projectPath, 'project.private.config.json'))).rejects.toThrow()
     await expect(readJson(path.join(result.projectPath, 'app.json'))).resolves.toMatchObject({
       pages: ['pages/index/index'],
       subPackages: [],

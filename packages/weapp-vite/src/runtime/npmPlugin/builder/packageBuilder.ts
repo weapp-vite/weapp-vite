@@ -26,6 +26,7 @@ import {
   shouldRebuildCachedAlipayMiniprogramPackage,
 } from './alipay'
 import { normalizeMiniprogramPackageJsModules } from './jsModule'
+import { createNpmPackageCopyFilter } from './packageFiles'
 import { resolvePreferredPackageEntry } from './shared'
 
 export interface PackageBuilder {
@@ -204,9 +205,13 @@ export function createPackageBuilder(
     await runResolvedBundleBuild(resolvedTarget.options)
   }
 
-  async function copyBuild({ from, to }: { from: string, to: string, name: string }) {
+  async function copyBuild({ from, to, name }: { from: string, to: string, name: string }) {
     await fs.remove(to)
     await fs.copy(from, to, {
+      filter: createNpmPackageCopyFilter(
+        from,
+        ctx.configService?.weappViteConfig?.npm?.packageFiles?.[name],
+      ),
       overwrite: true,
     })
   }

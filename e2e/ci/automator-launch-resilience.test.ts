@@ -76,6 +76,7 @@ interface MockPage {
 
 interface MockMiniProgramRuntime {
   compile: ReturnType<typeof vi.fn>
+  evaluate: ReturnType<typeof vi.fn>
   on: ReturnType<typeof vi.fn>
   removeListener: ReturnType<typeof vi.fn>
   close: ReturnType<typeof vi.fn>
@@ -110,6 +111,7 @@ function createMockMiniProgram(options?: { currentPage?: MockPage, reLaunchError
     : vi.fn(async () => page)
   const miniProgram = {
     compile: rawCompile,
+    evaluate: vi.fn(async () => true),
     on: vi.fn(),
     removeListener: vi.fn(),
     close: rawClose,
@@ -197,6 +199,7 @@ function clearLaunchEnv() {
   delete process.env.WEAPP_VITE_E2E_RELUNCH_RETRY_DELAY
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP
   delete process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY
+  delete process.env.WEAPP_VITE_E2E_BRIDGE_WRAPPER_ASSET_SETTLE_DELAY
   delete process.env.WEAPP_VITE_E2E_BRIDGE_WARMUP_READY_TIMEOUT
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH
@@ -1438,6 +1441,107 @@ describe.sequential('automator launch resilience', () => {
     })
     expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    expect(connectedMiniProgram.waitForAppReady).toBeUndefined()
+  })
+
+  it('warms the real app and clears startup logs after deferred bridge wrapper activation', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_BRIDGE_WRAPPER_ASSET_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+      window: {
+        navigationBarTitleText: 'real app',
+      },
+    }, {
+      setting: {
+        es6: true,
+        postcss: true,
+      },
+      simulatorType: 'wechat',
+    })
+
+    const connectedMiniProgram = createMockMiniProgram({
+      currentPage: createMockPage('pages/automator-bootstrap/index'),
+    })
+    let wrapperProjectPath = ''
+    execaMock.mockImplementationOnce(async (_command, args: string[]) => {
+      const rawPayload = args.find(arg => arg.startsWith('{'))
+      const payload = JSON.parse(rawPayload!) as { projectPath: string }
+      wrapperProjectPath = payload.projectPath
+      expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({
+        setting: {
+          es6: true,
+          packNpmManually: false,
+          packNpmRelationList: [],
+          postcss: true,
+        },
+      })
+      expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({ simulatorType: 'wechat' })
+      expect(readJson(path.join(wrapperProjectPath, 'app.json'))).toEqual({
+        pages: ['pages/index/index'],
+        subPackages: [],
+      })
+      expect(readJson(path.join(wrapperProjectPath, 'project.private.config.json'))).toMatchObject({
+        condition: {
+          miniprogram: {
+            list: [],
+          },
+        },
+      })
+      return {
+        exitCode: 0,
+        stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
+        stderr: '',
+      }
+    })
+    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+    connectedMiniProgram.__rawReLaunch.mockImplementationOnce(async () => {
+      expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({
+        setting: {
+          es6: true,
+          postcss: true,
+        },
+      })
+      expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({ simulatorType: 'wechat' })
+      expect(readJson(path.join(wrapperProjectPath, 'app.json'))).toMatchObject({
+        window: {
+          navigationBarTitleText: 'real app',
+        },
+      })
+      return createMockPage()
+    })
+    const writeFileSyncSpy = vi.spyOn(fs, 'writeFileSync')
+    const copyFileSyncSpy = vi.spyOn(fs, 'copyFileSync')
+
+    const { launchAutomator } = await import('../utils/automator')
+    const launchedMiniProgram = await launchAutomator({
+      deferBridgeWrapperSyncUntilConnected: true,
+      projectPath: sandboxRoot,
+      refreshProjectAfterConnect: false,
+      skipWarmup: true,
+      timeout: 12_345,
+    })
+
+    expect(connectMock).toHaveBeenCalledTimes(1)
+    expect(connectedMiniProgram.__rawReLaunch).toHaveBeenCalledTimes(1)
+    expect(connectedMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
+    expect(connectedMiniProgram.evaluate).toHaveBeenCalledTimes(1)
+    expect(connectedMiniProgram.__rawReLaunch.mock.invocationCallOrder[0]).toBeLessThan(
+      connectedMiniProgram.evaluate.mock.invocationCallOrder[0]!,
+    )
+    expect(launchedMiniProgram.__weappViteRuntimeLogMeta.entries).toEqual([])
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(runWechatIdeEngineBuildByHttpMock).not.toHaveBeenCalled()
+    expect(connectedMiniProgram.__rawCompile).not.toHaveBeenCalled()
+    const realAppConfigCopy = copyFileSyncSpy.mock.calls.findIndex(([, target]) => {
+      return target === path.join(wrapperProjectPath, 'app.json')
+    })
+    expect(realAppConfigCopy).toBeGreaterThanOrEqual(0)
+    expect(writeFileSyncSpy.mock.calls.some(([target]) => target === path.join(wrapperProjectPath, 'project.config.json'))).toBe(true)
   })
 
   it('keeps compileType plugin projects on their original roots in bridge mode', async () => {

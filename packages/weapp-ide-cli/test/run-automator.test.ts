@@ -124,6 +124,21 @@ describe('run-automator', () => {
     })
   })
 
+  it('reuses an opened automator port for direct commands', async () => {
+    const { runAutomatorCommand } = await loadModule()
+
+    await runAutomatorCommand('tap', ['#button', '-p', '/tmp/demo', '--port', '19510', '--session-id', 'shared'])
+
+    expect(commandMocks.tap).toHaveBeenCalledWith({
+      json: false,
+      port: 19510,
+      positionals: ['#button'],
+      projectPath: '/tmp/demo',
+      selector: '#button',
+      sessionId: 'shared',
+    })
+  })
+
   it('disables opened session reuse for direct commands when runtime service is skipped', async () => {
     const { runAutomatorCommand } = await loadModule()
 
@@ -156,6 +171,7 @@ describe('run-automator', () => {
     expect(commandMocks.navigateTo).not.toHaveBeenCalled()
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Usage: weapp navigate <url> -p <project-path>'))
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('参数：'))
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('--port <port>'))
   })
 
   it('throws when required input args are missing', async () => {

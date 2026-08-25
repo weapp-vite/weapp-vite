@@ -18,6 +18,7 @@ vi.mock('../src/cli/automator', () => ({
   launchAutomator: launchAutomatorMock,
   getAutomatorProtocolTimeoutMethod: vi.fn(() => undefined),
   isAutomatorLoginError: vi.fn(() => false),
+  isAutomatorPortInUseError: vi.fn(() => false),
   isAutomatorProtocolTimeoutError: vi.fn(() => false),
   isAutomatorWsConnectError: vi.fn(() => false),
   isDevtoolsExtensionContextInvalidatedError: vi.fn(() => false),

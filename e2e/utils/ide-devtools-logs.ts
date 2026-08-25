@@ -14,9 +14,6 @@ const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
   /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
 ] as const
-const DEVTOOLS_SIMULATOR_LAUNCH_ERROR_PATTERN = /simulator launch catch error/i
-const DEVTOOLS_SIMULATOR_LAUNCH_SUCCESS_PATTERN = /\[appservice\]\s+simulator launch success\b/i
-const DEVTOOLS_APPSERVICE_POST_LAUNCH_ERROR_PATTERN = /\[Devtools\]\s+appservice\.js checkPluginInfo fail with error:/i
 const DEVTOOLS_SIMULATOR_NOT_FOUND_PATTERN = /\[SimulatorService\]\s+updateSimulatorCompileOptions:\s+simulator not found\s+(\S+)/i
 const DEVTOOLS_SIMULATOR_INIT_PATTERN = /\[SimulatorService\]\s+init simulator\s+(\S+)\s+with clientSid\b/i
 
@@ -26,6 +23,14 @@ export interface DevtoolsLogIssue {
 }
 
 export type DevtoolsLogBaseline = Record<string, number>
+
+const DEFAULT_LOG_QUIET_WINDOW_MS = 1_000
+const DEFAULT_LOG_QUIET_POLL_INTERVAL_MS = 100
+const DEFAULT_LOG_QUIET_TIMEOUT_MS = 5_000
+
+function sleep(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
 
 function resolveDefaultDevtoolsDataRoot() {
   if (process.platform === 'darwin') {
@@ -101,6 +106,42 @@ export function captureDevtoolsLogBaseline(options: {
   return baseline
 }
 
+function isSameDevtoolsLogBaseline(left: DevtoolsLogBaseline, right: DevtoolsLogBaseline) {
+  const leftEntries = Object.entries(left)
+  const rightKeys = Object.keys(right)
+  return leftEntries.length === rightKeys.length
+    && leftEntries.every(([filePath, size]) => right[filePath] === size)
+}
+
+export async function waitForDevtoolsLogQuiescence(options: {
+  pollIntervalMs?: number
+  quietWindowMs?: number
+  rootDir?: string
+  timeoutMs?: number
+} = {}) {
+  const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_LOG_QUIET_POLL_INTERVAL_MS
+  const quietWindowMs = options.quietWindowMs ?? DEFAULT_LOG_QUIET_WINDOW_MS
+  const timeoutMs = options.timeoutMs ?? DEFAULT_LOG_QUIET_TIMEOUT_MS
+  let baseline = captureDevtoolsLogBaseline(options)
+  let quietSince = Date.now()
+  const deadline = quietSince + timeoutMs
+
+  while (Date.now() < deadline) {
+    await sleep(pollIntervalMs)
+    const current = captureDevtoolsLogBaseline(options)
+    if (!isSameDevtoolsLogBaseline(baseline, current)) {
+      baseline = current
+      quietSince = Date.now()
+      continue
+    }
+    if (Date.now() - quietSince >= quietWindowMs) {
+      return baseline
+    }
+  }
+
+  return baseline
+}
+
 function isSimulatorBootIssue(line: string) {
   return DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS.some(pattern => pattern.test(line))
 }
@@ -114,22 +155,6 @@ function isTransientSimulatorNotFoundWarning(lines: string[], index: number) {
   return lines.some((line) => {
     return line.match(DEVTOOLS_SIMULATOR_INIT_PATTERN)?.[1] === simulatorId
   })
-}
-
-function isRecoveredSimulatorLaunchError(lines: string[], index: number) {
-  if (!DEVTOOLS_SIMULATOR_LAUNCH_ERROR_PATTERN.test(lines[index] || '')) {
-    return false
-  }
-
-  const laterLines = lines.slice(index + 1)
-  const successIndex = laterLines.findIndex(line => DEVTOOLS_SIMULATOR_LAUNCH_SUCCESS_PATTERN.test(line))
-  if (successIndex < 0) {
-    return false
-  }
-
-  return !laterLines
-    .slice(successIndex + 1)
-    .some(line => DEVTOOLS_APPSERVICE_POST_LAUNCH_ERROR_PATTERN.test(line))
 }
 
 function parseDevtoolsLogLineTime(line: string) {
@@ -171,7 +196,6 @@ export function scanRecentDevtoolsSimulatorBootIssues(options: {
       if (
         isSimulatorBootIssue(line)
         && !isTransientSimulatorNotFoundWarning(lines, index)
-        && !isRecoveredSimulatorLaunchError(lines, index)
       ) {
         issues.push({ file: filePath, line: line.trim() })
       }

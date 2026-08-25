@@ -93,15 +93,6 @@ function createWrapperProjectConfig(source: Record<string, unknown>, patch: Reco
   }
 }
 
-async function copyJsonConfigAsWrapper(sourcePath: string, targetPath: string, patch: Record<string, unknown>) {
-  const source = await readJsonObject(sourcePath)
-  if (!source) {
-    return
-  }
-
-  await writeJsonObject(targetPath, createWrapperProjectConfig(source, patch))
-}
-
 async function ensureWrapperAppConfig(wrapperProjectPath: string) {
   const appConfigPath = path.join(wrapperProjectPath, 'app.json')
   const appConfig = await readJsonObject(appConfigPath)
@@ -129,6 +120,7 @@ export async function resolveAutomatorProjectPath(projectPath: string): Promise<
       sourceProjectPath,
     }
   }
+  const sourceProjectConfig = projectConfig ?? {}
 
   const distRoot = path.join(sourceProjectPath, miniprogramRoot)
   if (!await pathExists(path.join(distRoot, 'app.json'))) {
@@ -154,26 +146,25 @@ export async function resolveAutomatorProjectPath(projectPath: string): Promise<
     recursive: true,
   })
 
-  const pluginRoot = normalizeProjectRelativeRoot(projectConfig?.pluginRoot)
+  const pluginRoot = normalizeProjectRelativeRoot(sourceProjectConfig.pluginRoot)
   if (pluginRoot) {
     await copyProjectRoot(sourceProjectPath, wrapperProjectPath, pluginRoot)
   }
 
   const rootPatch = {
-    compileType: projectConfig?.compileType === 'plugin' ? 'plugin' : 'miniprogram',
+    compileType: sourceProjectConfig.compileType === 'plugin' ? 'plugin' : 'miniprogram',
     miniprogramRoot: './',
     srcMiniprogramRoot: './',
   }
-  await copyJsonConfigAsWrapper(
-    path.join(sourceProjectPath, 'project.config.json'),
+  const projectPrivateConfig = await readJsonObject(path.join(sourceProjectPath, 'project.private.config.json')) ?? {}
+  await writeJsonObject(
     path.join(wrapperProjectPath, 'project.config.json'),
-    rootPatch,
+    createWrapperProjectConfig(sourceProjectConfig, {
+      ...projectPrivateConfig,
+      ...rootPatch,
+    }),
   )
-  await copyJsonConfigAsWrapper(
-    path.join(sourceProjectPath, 'project.private.config.json'),
-    path.join(wrapperProjectPath, 'project.private.config.json'),
-    rootPatch,
-  )
+  await fs.rm(path.join(wrapperProjectPath, 'project.private.config.json'), { force: true })
   await ensureWrapperAppConfig(wrapperProjectPath)
 
   return {

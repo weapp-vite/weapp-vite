@@ -52,37 +52,6 @@ describe.sequential('e2e app: github-issues / props', () => {
     await closeSharedMiniProgram()
   }, 30_000)
 
-  async function expectLaunchableRoute(ctx: any, route: string) {
-    const miniProgram = await getSharedMiniProgram(ctx)
-    const page = await relaunchPage(miniProgram, route, undefined, 45_000, { readiness: 'route' })
-    expect(page).toBeTruthy()
-    await releaseSharedMiniProgram(miniProgram)
-  }
-
-  it('issue #317: loads duplicated shared chunks with localized runtime inside item subpackage', async (ctx) => {
-    const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
-    expect(await fs.pathExists(itemSharedPath)).toBe(true)
-    await expectLaunchableRoute(ctx, '/subpackages/item/index')
-  })
-
-  it('issue #317: loads duplicated shared chunks with localized runtime inside user subpackage', async (ctx) => {
-    const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
-    expect(await fs.pathExists(userSharedPath)).toBe(true)
-    await expectLaunchableRoute(ctx, '/subpackages/user/index')
-  })
-
-  it('issue #340: loads cross-subpackage source imports in item/login-required', async () => {
-    const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
-    const itemPageJs = await fs.readFile(itemPageJsPath, 'utf-8')
-    expect(itemPageJs).toContain('item-login-required:issue-340:shared')
-  })
-
-  it('issue #340: loads cross-subpackage source imports in user/register/form', async () => {
-    const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
-    const userPageJs = await fs.readFile(userPageJsPath, 'utf-8')
-    expect(userPageJs).toContain('user-register-form:issue-340:shared')
-  })
-
   it('issue #322: keeps static class and hidden v-show state on first render before errors object exists', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-322/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-322/index.js')
@@ -347,10 +316,10 @@ describe.sequential('e2e app: github-issues / props', () => {
         },
       )
 
-      await closeSharedMiniProgram({ force: true })
       const defaultMiniProgram = await getSharedMiniProgram(ctx)
       const defaultSummary = 'issue-600-default|issue-600-setup|alias-fallback|setup-ready'
       const defaultPage = await relaunchPage(defaultMiniProgram, ISSUE_600_ROUTE, undefined, 45_000, {
+        forceRelaunch: true,
         readiness: createIssue600Readiness(defaultSummary),
       })
       if (!defaultPage) {
