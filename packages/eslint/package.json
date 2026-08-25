@@ -62,7 +62,7 @@
     }
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.67.0",
+    "@typescript-eslint/parser": "^8.68.0",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "^4.1.11",
