@@ -11,6 +11,7 @@ import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { traverse } from '../../../../../utils/babel'
 import { hasOwn } from '../../../../../utils/object'
+import { rewriteForItemAccess } from './forItemAccess'
 import { parseBabelExpression, parseBabelExpressionFile } from './parse'
 import { collectScopedSlotLocals, collectSlotPropMapping } from './scopedSlot'
 import { normalizeWxmlExpression } from './wxml'
@@ -227,7 +228,12 @@ function shouldUnrefMemberAccess(node: t.MemberExpression, parent: t.Node | unde
 export function normalizeJsExpressionWithContext(
   exp: string,
   context: TransformContext,
-  options?: { hint?: string, runtimePropAccess?: 'default' | 'helper', unrefMemberAccess?: boolean },
+  options?: {
+    hint?: string
+    runtimePropAccess?: 'default' | 'helper'
+    unrefMemberAccess?: boolean
+    preserveForItems?: boolean
+  },
 ): t.Expression | null {
   const trimmed = exp.trim()
   if (!trimmed) {
@@ -275,6 +281,11 @@ export function normalizeJsExpressionWithContext(
       if (locals.has(name)) {
         return
       }
+      if (options?.preserveForItems && context.forStack.some((forInfo) => {
+        return forInfo.item === name || forInfo.index === name || forInfo.key === name
+      })) {
+        return
+      }
 
       let replacement: t.Expression
       if (context.rewriteScopedSlot) {
@@ -316,6 +327,8 @@ export function normalizeJsExpressionWithContext(
       path.skip()
     },
   })
+
+  rewriteForItemAccess(ast, context)
 
   if (options?.unrefMemberAccess) {
     traverse(ast, {

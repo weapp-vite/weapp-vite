@@ -1,4 +1,4 @@
-import { isReactive, isRef, reactive } from '../../reactivity'
+import { isRef } from '../../reactivity'
 
 export interface InlineExpressionEntry {
   keys: string[]
@@ -33,16 +33,15 @@ export function decodeWxmlEntities(value: string) {
     .replace(LT_RE, '<')
     .replace(GT_RE, '>')
 }
+const DATASET_ARRAY_INDEX_RE = /^(?:0|[1-9]\d*)$/
 
-function normalizeDatasetIndex(value: unknown): number | undefined {
+function normalizeDatasetIndex(value: unknown): number | string | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value
   }
   if (typeof value === 'string' && value.trim()) {
-    const parsed = Number(value)
-    if (Number.isFinite(parsed)) {
-      return parsed
-    }
+    const trimmed = value.trim()
+    return DATASET_ARRAY_INDEX_RE.test(trimmed) ? Number(trimmed) : trimmed
   }
   return undefined
 }
@@ -165,18 +164,7 @@ function getByPath(target: any, path: string) {
 }
 
 function normalizeResolvedScopeValue(value: any) {
-  if (value == null || typeof value !== 'object') {
-    return value
-  }
-  if (isRef(value) || isReactive(value)) {
-    return value
-  }
-  try {
-    return reactive(value)
-  }
-  catch {
-    return value
-  }
+  return value
 }
 
 export function runInlineExpression(

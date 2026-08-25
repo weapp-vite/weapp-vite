@@ -2,6 +2,7 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { hasOwn } from '../../../../../utils/object'
+import { getForItemAccess } from '../expression/forItemAccess'
 import { FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression } from './forExpression'
 
 export { FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression }
@@ -159,7 +160,7 @@ export function buildScopePropsExpression(context: TransformContext): string | n
   if (!keys.length) {
     return null
   }
-  return `[${keys.map(key => `${toWxmlStringLiteral(key)},${key}`).join(',')}]`
+  return `[${keys.map(key => `${toWxmlStringLiteral(key)},${getForItemAccess(context, key)}`).join(',')}]`
 }
 
 export function hashString(input: string) {

@@ -12,7 +12,8 @@ export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseCont
       'utf8',
     )
 
-    expect(pageWxml).toContain('wx:key="item.id"')
+    expect(pageWxml).toContain('wx:key="__wv_key_0"')
+    expect(pageWxml).not.toContain('wx:key="item.id"')
     expect(pageWxml).not.toContain('wx:key="item"')
   })
 }

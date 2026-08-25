@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import { buildClassStyleComputedCode } from '../transform/classStyleComputed'
 import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from './template'
@@ -765,6 +766,340 @@ describe('compileVueTemplateToWxml', () => {
     ])
   })
 
+  it('projects nested v-for keys without changing direct key fast paths', () => {
+    const nested = compileVueTemplateToWxml(`
+<GalleryCard
+  v-for="entry in column"
+  :key="entry.item.id"
+  @tap="select(entry)"
+/>
+    `.trim(), '/project/src/components/Gallery.vue')
+
+    expect(nested.code).toContain(
+      `${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_0}}" `
+      + `${DEFAULT_DIRECTIVES.forItemAttr}="entry" `
+      + `${DEFAULT_DIRECTIVES.forIndexAttr}="__wv_index_0" `
+      + `${DEFAULT_DIRECTIVES.keyAttr}="__wv_key_0"`,
+    )
+    expect(nested.code).not.toContain(`${DEFAULT_DIRECTIVES.keyAttr}="item"`)
+    expect(nested.warnings).toEqual([])
+    expect(nested.classStyleBindings).toContainEqual(expect.objectContaining({
+      name: '__wv_bind_0',
+      type: 'bind',
+      exp: 'v-for :key entry.item.id',
+      forStack: [],
+    }))
+    const computedCode = buildComputedCode(nested.classStyleBindings ?? [])
+    expect(computedCode).toContain('Object.assign')
+    expect(computedCode).toContain('__wv_key_0')
+    expect(computedCode).toContain('entry.item')
+    expect(computedCode).toContain('[wevu]')
+    expect(nested.inlineExpressions?.[0]?.scopeResolvers).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        key: 'entry',
+        expression: expect.stringContaining('path:"column"'),
+      }),
+    ]))
+
+    const direct = compileVueTemplateToWxml(
+      '<GalleryCard v-for="entry in column" :key="entry.id" />',
+      '/project/src/components/Gallery.vue',
+    )
+    expect(direct.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{column}}"`)
+    expect(direct.code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="id"`)
+    expect(direct.classStyleBindings).toBeUndefined()
+  })
+
+  it('only keeps simple key identifiers on native paths when they belong to the loop scope', () => {
+    const external = compileVueTemplateToWxml(
+      '<GalleryCard v-for="entry in column" :key="externalKey" />',
+      '/project/src/components/Gallery.vue',
+    )
+    expect(external.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_0}}"`)
+    expect(external.code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="__wv_key_0"`)
+    expect(external.classStyleBindings).toContainEqual(expect.objectContaining({
+      exp: 'v-for :key externalKey',
+    }))
+
+    const destructured = compileVueTemplateToWxml(
+      '<GalleryCard v-for="{ id } in column" :key="id" />',
+      '/project/src/components/Gallery.vue',
+    )
+    expect(destructured.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{column}}"`)
+    expect(destructured.code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="id"`)
+    expect(destructured.classStyleBindings).toBeUndefined()
+
+    const keyAlias = compileVueTemplateToWxml(
+      '<GalleryCard v-for="(entry, key, index) in column" :key="key" />',
+      '/project/src/components/Gallery.vue',
+    )
+    expect(keyAlias.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{column}}"`)
+    expect(keyAlias.code).toContain(`${DEFAULT_DIRECTIVES.forIndexAttr}="index"`)
+    expect(keyAlias.code).toContain(DEFAULT_TEMPLATE_PLATFORM.keyAttr(DEFAULT_TEMPLATE_PLATFORM.keyThisValue))
+    expect(keyAlias.classStyleBindings).toBeUndefined()
+  })
+
+  it('emits unique ancestor indexes for nested key projections in wxs mode', () => {
+    const compiled = compileVueTemplateToWxml(`
+<view v-for="group in groups" :key="group.id">
+  <GalleryCard
+    v-for="entry in group.column"
+    :key="entry.item.id"
+    @tap="select(entry)"
+  />
+</view>
+    `.trim(), '/project/src/components/NestedGallery.vue', {
+      classStyleRuntime: 'wxs',
+      wxsExtension: 'wxs',
+    })
+
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forIndexAttr}="__wv_index_0"`)
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_0[__wv_index_0]}}"`)
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forIndexAttr}="__wv_index_1"`)
+    expect(compiled.code).toContain('data-wv-i0="{{__wv_index_0}}"')
+    expect(compiled.code).toContain('data-wv-i1="{{__wv_index_1}}"')
+  })
+  it('evaluates nested key projections without mutating source items', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<GalleryCard v-for="entry in column" :key="entry.item.id" />',
+      '/project/src/components/Gallery.vue',
+    )
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    expect(computedCode).toBeTruthy()
+
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console,
+    }) as {
+      __wv_bind_0: (this: {
+        $state: { column: Array<{ item: { id: string }, label: string }> }
+        __wevuProps: Record<string, unknown>
+        column: Array<{ item: { id: string }, label: string }>
+      }) => Array<{ __wv_key_0: string, item: { id: string }, label: string }>
+    }
+    const column = [
+      { item: { id: 'gallery-a' }, label: 'A' },
+      { item: { id: 'gallery-b' }, label: 'B' },
+    ]
+    const projected = computed.__wv_bind_0.call({
+      $state: { column },
+      __wevuProps: {},
+      column,
+    })
+
+    expect(projected).toEqual([
+      { __wv_key_0: 'gallery-a', __wv_value_0: column[0], item: column[0]?.item, label: 'A' },
+      { __wv_key_0: 'gallery-b', __wv_value_0: column[1], item: column[1]?.item, label: 'B' },
+    ])
+    expect(projected).not.toBe(column)
+    expect(projected[0]).not.toBe(column[0])
+    expect(Object.prototype.hasOwnProperty.call(column[0] ?? {}, '__wv_key_0')).toBe(false)
+  })
+
+  it('reuses runtime v-for sources when projecting nested keys', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<GalleryCard v-for="entry in getColumn()" :key="entry.item.id" />',
+      '/project/src/components/Gallery.vue',
+    )
+
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_1}}"`)
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="__wv_key_1"`)
+    expect(compiled.classStyleBindings).toEqual([
+      expect.objectContaining({
+        name: '__wv_bind_0',
+        exp: 'getColumn()',
+      }),
+      expect.objectContaining({
+        name: '__wv_bind_1',
+        exp: 'v-for :key entry.item.id',
+      }),
+    ])
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    expect(computedCode).toContain('this.__wv_bind_0')
+  })
+
+  it('projects complex keys across parent, child, wrapper, and sibling loops', () => {
+    const compiled = compileVueTemplateToWxml(`
+<view v-for="group in groups" :key="group.meta.id">
+  <view>
+    <GalleryCard
+      v-for="entry in group.left"
+      :key="entry.item?.meta?.id ?? entry.fallbackId"
+      @tap="select(group, entry)"
+    />
+    <GalleryCard
+      v-for="entry in group.right"
+      :key="entry.items[0].id"
+      @tap="select(entry)"
+    />
+  </view>
+</view>
+    `.trim(), '/project/src/components/NestedGallery.vue')
+
+    expect(compiled.warnings).toEqual([])
+    expect(compiled.code).toContain(
+      `${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_0}}" `
+      + `${DEFAULT_DIRECTIVES.forItemAttr}="group" `
+      + `${DEFAULT_DIRECTIVES.forIndexAttr}="__wv_index_0" `
+      + `${DEFAULT_DIRECTIVES.keyAttr}="__wv_key_0"`,
+    )
+    expect(compiled.code).toContain(
+      `${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_1[__wv_index_0]}}" `
+      + `${DEFAULT_DIRECTIVES.forItemAttr}="entry" `
+      + `${DEFAULT_DIRECTIVES.forIndexAttr}="__wv_index_1" `
+      + `${DEFAULT_DIRECTIVES.keyAttr}="__wv_key_1"`,
+    )
+    expect(compiled.code).toContain(
+      `${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_2[__wv_index_0]}}" `
+      + `${DEFAULT_DIRECTIVES.forItemAttr}="entry" `
+      + `${DEFAULT_DIRECTIVES.forIndexAttr}="__wv_index_2" `
+      + `${DEFAULT_DIRECTIVES.keyAttr}="__wv_key_2"`,
+    )
+    expect(compiled.classStyleBindings?.map(binding => ({
+      exp: binding.exp,
+      depth: binding.forStack.length,
+    }))).toEqual([
+      { exp: 'v-for :key group.meta.id', depth: 0 },
+      { exp: 'v-for :key entry.item?.meta?.id ?? entry.fallbackId', depth: 1 },
+      { exp: 'v-for :key entry.items[0].id', depth: 1 },
+    ])
+
+    const firstResolvers = compiled.inlineExpressions?.[0]?.scopeResolvers ?? []
+    expect(firstResolvers).toContainEqual(expect.objectContaining({
+      key: 'group',
+      expression: expect.stringContaining('path:"groups"'),
+    }))
+    const firstEntryResolver = firstResolvers.find(resolver => resolver.key === 'entry')?.expression ?? ''
+    expect(firstEntryResolver).toContain('ctx.groups')
+    expect(firstEntryResolver).toContain('scope.__wv_i0')
+    expect(firstEntryResolver).toContain('.left')
+    expect(firstEntryResolver).toContain('scope.__wv_i1')
+
+    const secondEntryResolver = compiled.inlineExpressions?.[1]?.scopeResolvers
+      ?.find(resolver => resolver.key === 'entry')
+      ?.expression ?? ''
+    expect(secondEntryResolver).toContain('ctx.groups')
+    expect(secondEntryResolver).toContain('.right')
+    expect(secondEntryResolver).toContain('scope.__wv_i1')
+  })
+
+  it('restores destructured child aliases under object-map parent loops', () => {
+    const compiled = compileVueTemplateToWxml(`
+<view v-for="(group, groupName) in groupMap" :key="group.meta.id">
+  <GalleryCard
+    v-for="({ item }, childIndex) in group.column"
+    :key="item.meta.id"
+    @tap="select(item)"
+  />
+</view>
+    `.trim(), '/project/src/components/NestedGallery.vue')
+
+    expect(compiled.warnings).toEqual([])
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_0}}"`)
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forIndexAttr}="groupName"`)
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_1[groupName]}}"`)
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="__wv_key_1"`)
+    const itemResolver = compiled.inlineExpressions?.[0]?.scopeResolvers
+      ?.find(resolver => resolver.key === 'item')
+      ?.expression ?? ''
+    expect(itemResolver).toContain('ctx.groupMap')
+    expect(itemResolver).toContain('scope.__wv_i0')
+    expect(itemResolver).toContain('.column')
+    expect(itemResolver).toContain('scope.__wv_i1')
+    expect(itemResolver).toContain('.item')
+  })
+
+  it('evaluates nested key projections for object v-for sources', () => {
+    const compiled = compileVueTemplateToWxml(`
+<view v-for="(group, groupName) in groupMap" :key="group.meta.id">
+  <GalleryCard
+    v-for="entry in group.column"
+    :key="entry.item.meta.id"
+  />
+</view>
+    `.trim(), '/project/src/components/NestedGallery.vue')
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    expect(computedCode).toBeTruthy()
+
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console,
+    }) as {
+      __wv_bind_0: (this: Record<string, unknown>) => Record<string, Record<string, unknown>>
+      __wv_bind_1: (this: Record<string, unknown>) => Record<string, Array<Record<string, unknown>>>
+    }
+    const groupMap = {
+      alpha: {
+        meta: { id: 'group-alpha' },
+        column: [
+          { item: { meta: { id: 'entry-alpha' } } },
+        ],
+      },
+      beta: {
+        meta: { id: 'group-beta' },
+        column: [
+          { item: { meta: { id: 'entry-beta' } } },
+        ],
+      },
+    }
+    const context = {
+      $state: { groupMap },
+      __wevuProps: {},
+      groupMap,
+    }
+    const projectedGroups = computed.__wv_bind_0.call(context)
+    const projectedColumns = computed.__wv_bind_1.call(context)
+
+    expect(projectedGroups.alpha?.__wv_key_0).toBe('group-alpha')
+    expect(projectedGroups.beta?.__wv_key_0).toBe('group-beta')
+    expect(projectedColumns.alpha?.[0]?.__wv_key_1).toBe('entry-alpha')
+    expect(projectedColumns.beta?.[0]?.__wv_key_1).toBe('entry-beta')
+    expect(Object.prototype.hasOwnProperty.call(groupMap.alpha, '__wv_key_0')).toBe(false)
+    expect(Object.prototype.hasOwnProperty.call(groupMap.alpha.column[0] ?? {}, '__wv_key_1')).toBe(false)
+  })
+
+  it('evaluates parent-child projections as parallel nested arrays', () => {
+    const compiled = compileVueTemplateToWxml(`
+<view v-for="group in groups" :key="group.meta.id">
+  <GalleryCard
+    v-for="entry in group.column"
+    :key="entry.item.meta.id"
+  />
+</view>
+    `.trim(), '/project/src/components/NestedGallery.vue')
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    expect(computedCode).toBeTruthy()
+
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console,
+    }) as {
+      __wv_bind_0: (this: Record<string, unknown>) => Array<Record<string, unknown>>
+      __wv_bind_1: (this: Record<string, unknown>) => Array<Array<Record<string, unknown>>>
+    }
+    const groups = [
+      {
+        meta: { id: 'group-a' },
+        column: [
+          { item: { meta: { id: 'entry-a' } } },
+          { item: { meta: { id: 'entry-b' } } },
+        ],
+      },
+    ]
+    const context = {
+      $state: { groups },
+      __wevuProps: {},
+      groups,
+    }
+    const projectedGroups = computed.__wv_bind_0.call(context)
+    const projectedColumns = computed.__wv_bind_1.call(context)
+
+    expect(projectedGroups[0]?.__wv_key_0).toBe('group-a')
+    expect(projectedColumns[0]?.map(entry => entry.__wv_key_1)).toEqual(['entry-a', 'entry-b'])
+    expect(Object.prototype.hasOwnProperty.call(groups[0] ?? {}, '__wv_key_0')).toBe(false)
+    expect(Object.prototype.hasOwnProperty.call(groups[0]?.column[0] ?? {}, '__wv_key_1')).toBe(false)
+  })
+
   it('falls back structural call expressions to runtime bindings', () => {
     const template = `
 <view v-if="isVisible()">A</view>
@@ -877,10 +1212,137 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/issue-868/index.vue')
 
-    expect(code).toContain('wx:for="{{column}}"')
+    expect(code).toContain('wx:for="{{__wv_bind_0}}"')
     expect(code).toContain('wx:for-item="entry"')
-    expect(code).toContain('wx:key="item.id"')
-    expect(code).not.toContain('wx:key="item"')
+    expect(code).toContain('wx:key="__wv_key_0"')
+    expect(code).not.toContain('wx:key="item.id"')
+  })
+
+  it('projects primitive loop items while preserving their template value', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="item in values" :key="item + \'-key\'">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+
+    expect(compiled.code).toContain('wx:for="{{__wv_bind_0}}"')
+    expect(compiled.code).toContain('{{item.__wv_value_0}}')
+    expect(compiled.code).toContain('wx:key="__wv_key_0"')
+
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console,
+    }) as {
+      __wv_bind_0: (this: Record<string, unknown>) => Array<Record<string, unknown>>
+    }
+    const values = ['a', 'b']
+    const projected = computed.__wv_bind_0.call({
+      $state: { values },
+      __wevuProps: {},
+      values,
+    })
+
+    expect(projected).toEqual([
+      { __wv_key_0: 'a-key', __wv_value_0: 'a' },
+      { __wv_key_0: 'b-key', __wv_value_0: 'b' },
+    ])
+  })
+
+  it('falls back to *this for statically known primitive key sources', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="item in [\'a\', \'b\']" :key="item + \'-key\'">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+
+    expect(compiled.code).toContain('wx:for="{{[\'a\', \'b\']}}"')
+    expect(compiled.code).toContain('wx:key="*this"')
+    expect(compiled.warnings.some(message => message.includes('无法生成运行时 key 投影'))).toBe(true)
+  })
+
+  it('projects mixed static object and primitive loop sources', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="item in [{ id: \'a\' }, \'b\']" :key="item.id ?? item">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+
+    expect(compiled.code).toContain('wx:for="{{__wv_bind_0}}"')
+    expect(compiled.code).toContain('wx:key="__wv_key_0"')
+    expect(compiled.code).toContain('{{item.__wv_value_0}}')
+    expect(compiled.code).not.toContain('wx:key="*this"')
+  })
+
+  it('keeps sparse dynamic loop items safe during key projection', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="item in values" :key="item.id || item.index">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    const consoleError = () => {
+      throw new Error('unexpected key projection error')
+    }
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console: { error: consoleError },
+    }) as {
+      __wv_bind_0: (this: Record<string, unknown>) => Array<Record<string, unknown>>
+    }
+    const values = [{ id: 'a' }, undefined]
+    const projected = computed.__wv_bind_0.call({
+      $state: { values },
+      __wevuProps: {},
+      values,
+    })
+
+    expect(projected[0]?.__wv_key_0).toBe('a')
+    expect(projected[1]?.__wv_key_0).toBeUndefined()
+    expect(projected[1]?.__wv_value_0).toBeUndefined()
+  })
+
+  it('evaluates safe fallback keys for null and undefined loop items', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="(item, key) in values" :key="item?.id ?? key">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console: { error: () => undefined },
+    }) as {
+      __wv_bind_0: (this: Record<string, unknown>) => Array<Record<string, unknown>>
+    }
+    const values = [null, undefined, { id: 'entry-c' }]
+    const projected = computed.__wv_bind_0.call({
+      $state: { values },
+      __wevuProps: {},
+      values,
+    })
+
+    expect(projected.map(item => item?.__wv_key_0)).toEqual([0, 1, 'entry-c'])
+    expect(projected[0]?.__wv_value_0).toBeNull()
+    expect(projected[1]?.__wv_value_0).toBeUndefined()
+  })
+
+  it('projects dynamic primitive keys without losing item values', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="item in values" :key="String(item)">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console,
+    }) as {
+      __wv_bind_0: (this: Record<string, unknown>) => Array<Record<string, unknown>>
+    }
+    const values = [0, false, '']
+    const projected = computed.__wv_bind_0.call({
+      $state: { values },
+      __wevuProps: {},
+      values,
+    })
+
+    expect(projected.map(item => item?.__wv_key_0)).toEqual(['0', 'false', ''])
+    expect(projected.map(item => item?.__wv_value_0)).toEqual(values)
   })
 
   it('rewrites component simple event handlers to inline payload handlers', () => {

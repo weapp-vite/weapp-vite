@@ -2,12 +2,13 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { transformBindDirective } from '../directives/bind'
+import { createForKeyProjection, resolveNativeForKeyValue } from '../directives/forKey'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
-import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression, withForScope, withScope } from './helpers'
+import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, getBindDirectiveExpression, parseForExpression, withForScope, withScope } from './helpers'
 import { shouldTransformAsComponentWithSlots, transformComponentWithSlots } from './tag-component'
 import { transformNormalElement } from './tag-normal'
 import { transformSlotElement } from './tag-slot'
@@ -26,6 +27,29 @@ function resolveListExpression(rawExpValue: string, context: TransformContext, h
     ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
     : null
   return runtimeExp ?? normalizeWxmlExpressionWithContext(rawExpValue, context)
+}
+
+function requiresRuntimeForKeyProjection(node: ElementNode, context: TransformContext): boolean {
+  const forDirective = node.props.find((prop): prop is DirectiveNode => {
+    return prop.type === NodeTypes.DIRECTIVE && prop.name === 'for'
+  })
+  const keyDirective = node.props.find((prop): prop is DirectiveNode => {
+    return prop.type === NodeTypes.DIRECTIVE
+      && prop.name === 'bind'
+      && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+      && prop.arg.content === 'key'
+  })
+  if (forDirective?.exp?.type === NodeTypes.SIMPLE_EXPRESSION && keyDirective) {
+    const forInfo = parseForExpression(forDirective.exp.content)
+    const rawKeyExp = getBindDirectiveExpression(keyDirective).trim()
+    if (rawKeyExp && !resolveNativeForKeyValue(rawKeyExp, forInfo, context.platform.keyThisValue)) {
+      return true
+    }
+  }
+  return node.children.some((child) => {
+    return child.type === NodeTypes.ELEMENT
+      && requiresRuntimeForKeyProjection(child as ElementNode, context)
+  })
 }
 
 export function transformIfElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
@@ -98,9 +122,10 @@ export function transformForElement(node: ElementNode, context: TransformContext
       )
     }
   }
-  if (context.classStyleRuntime === 'js' && !forInfo.index) {
+  if ((context.classStyleRuntime === 'js' || requiresRuntimeForKeyProjection(node, context)) && !forInfo.index) {
     forInfo.index = `__wv_index_${context.forIndexSeed++}`
   }
+  const rawListExp = forInfo.listExp?.trim()
   const listExp = forInfo.listExp
     ? resolveListExpression(forInfo.listExp, context, 'v-for 列表')
     : undefined
@@ -108,8 +133,8 @@ export function transformForElement(node: ElementNode, context: TransformContext
     ? normalizeJsExpressionWithContext(forInfo.listExp, context, { hint: 'v-for 列表' })
     : undefined
   const scopedForInfo: ForParseResult = listExp
-    ? { ...forInfo, listExp, listExpAst: listExpAst ?? undefined }
-    : { ...forInfo, listExpAst: listExpAst ?? undefined }
+    ? { ...forInfo, listExp, rawListExp, listExpAst: listExpAst ?? undefined }
+    : { ...forInfo, rawListExp, listExpAst: listExpAst ?? undefined }
   const scopeNames = [
     forInfo.item,
     forInfo.index,
@@ -120,26 +145,64 @@ export function transformForElement(node: ElementNode, context: TransformContext
   return withForScope(context, scopedForInfo, () => withScope(context, scopeNames, () => {
     const otherProps = node.props.filter(prop => prop !== forDirective)
     const elementWithoutFor: ElementNode = { ...node, props: otherProps }
-
-    const extraAttrs: string[] = listExp
-      ? context.platform.forAttrs(listExp, renderTemplateMustache, forInfo.item, forInfo.index)
+    const keyDirective = otherProps.find((prop): prop is DirectiveNode => {
+      return prop.type === NodeTypes.DIRECTIVE
+        && prop.name === 'bind'
+        && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+        && prop.arg.content === 'key'
+    })
+    const keyProjection = keyDirective
+      ? createForKeyProjection(keyDirective, scopedForInfo, context)
+      : null
+    if (keyProjection) {
+      scopedForInfo.itemAccess = keyProjection.itemAccess
+      const projectionContext: TransformContext = {
+        ...context,
+        forStack: context.forStack.map(forInfo => ({ ...forInfo, itemAccess: undefined })),
+      }
+      const projectedListExpAst = normalizeJsExpressionWithContext(
+        keyProjection.listExp,
+        projectionContext,
+        {
+          hint: 'v-for 投影列表',
+          runtimePropAccess: 'helper',
+          unrefMemberAccess: true,
+          preserveForItems: true,
+        },
+      )
+      scopedForInfo.projectedListExp = keyProjection.listExp
+      scopedForInfo.projectedListExpAst = projectedListExpAst ?? scopedForInfo.projectedListExpAst
+      const currentForInfo = context.forStack[context.forStack.length - 1]
+      if (currentForInfo) {
+        currentForInfo.itemAccess = keyProjection.itemAccess
+        currentForInfo.projectedListExp = scopedForInfo.projectedListExp
+        currentForInfo.projectedListExpAst = scopedForInfo.projectedListExpAst
+      }
+    }
+    const renderElement: ElementNode = keyProjection
+      ? {
+          ...elementWithoutFor,
+          props: otherProps.filter(prop => prop !== keyDirective),
+        }
+      : elementWithoutFor
+    const templateListExp = keyProjection?.listExp ?? listExp
+    const extraAttrs: string[] = templateListExp
+      ? context.platform.forAttrs(templateListExp, renderTemplateMustache, forInfo.item, forInfo.index)
       : []
+    if (keyProjection) {
+      extraAttrs.push(keyProjection.keyAttr)
+    }
 
-    if (elementWithoutFor.tag === 'slot') {
-      const keyDirective = elementWithoutFor.props.find((prop): prop is DirectiveNode => {
-        return prop.type === NodeTypes.DIRECTIVE
-          && prop.name === 'bind'
-          && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
-          && prop.arg.content === 'key'
-      })
+    if (renderElement.tag === 'slot') {
+      const slotKeyDirective = keyProjection ? undefined : keyDirective
       const slotElementWithoutForKey: ElementNode = {
-        ...elementWithoutFor,
-        props: elementWithoutFor.props.filter((prop) => {
-          return prop !== keyDirective
-        }),
+        ...renderElement,
+        props: renderElement.props.filter(prop => prop !== slotKeyDirective),
       }
       const content = transformSlotElement(slotElementWithoutForKey, context, transformNode)
-      const keyAttr = keyDirective ? transformBindDirective(keyDirective, context, forInfo) : null
+      const keyAttr = slotKeyDirective
+        ? transformBindDirective(slotKeyDirective, context, scopedForInfo)
+        : null
       if (keyAttr) {
         extraAttrs.push(keyAttr)
       }
@@ -147,20 +210,23 @@ export function transformForElement(node: ElementNode, context: TransformContext
       return attrString ? `<block${attrString}>${content}</block>` : content
     }
 
-    const resolvedTag = resolveTemplateTagName(elementWithoutFor.tag, context)
-    if (shouldTransformAsComponentWithSlots(elementWithoutFor, context, resolvedTag)) {
-      return transformComponentWithSlots(elementWithoutFor, context, transformNode, { extraAttrs, forInfo })
+    const resolvedTag = resolveTemplateTagName(renderElement.tag, context)
+    if (shouldTransformAsComponentWithSlots(renderElement, context, resolvedTag)) {
+      return transformComponentWithSlots(renderElement, context, transformNode, {
+        extraAttrs,
+        forInfo: scopedForInfo,
+      })
     }
 
-    const { attrs, vTextExp } = collectElementAttributes(elementWithoutFor, context, {
-      forInfo,
+    const { attrs, vTextExp } = collectElementAttributes(renderElement, context, {
+      forInfo: scopedForInfo,
       extraAttrs,
       resolvedTag,
     })
 
     let children = ''
-    if (elementWithoutFor.children.length > 0) {
-      children = elementWithoutFor.children
+    if (renderElement.children.length > 0) {
+      children = renderElement.children
         .map(child => transformNode(child, context))
         .join('')
     }
