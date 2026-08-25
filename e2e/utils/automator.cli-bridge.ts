@@ -150,6 +150,7 @@ function readCliArgument(args: string[] | undefined, names: string[]) {
 export async function enableAutomatorViaHttp(options: EnableAutomatorViaHttpOptions) {
   const endpoint = new URL('/auto', `http://127.0.0.1:${options.servicePort}`)
   endpoint.searchParams.set('project', options.projectPath)
+  endpoint.searchParams.set('port', String(options.autoPort))
   endpoint.searchParams.set('autoPort', String(options.autoPort))
 
   const account = readCliArgument(options.args, ['--auto-account', '--autoAccount'])
@@ -181,14 +182,19 @@ export async function enableAutomatorViaHttp(options: EnableAutomatorViaHttpOpti
       cause: error as Error,
     })
   }
-  if (!result || typeof result !== 'object' || !('autoPort' in result)) {
-    throw new Error('WeChat DevTools HTTP automator fallback returned no autoPort')
+  if (result && typeof result === 'object' && 'autoPort' in result) {
+    const autoPort = Number(result.autoPort)
+    if (!Number.isInteger(autoPort) || autoPort <= 0 || autoPort > 65535) {
+      throw new Error(`WeChat DevTools HTTP automator fallback returned invalid autoPort: ${String(result.autoPort)}`)
+    }
+    return autoPort
   }
-  const autoPort = Number(result.autoPort)
-  if (!Number.isInteger(autoPort) || autoPort <= 0 || autoPort > 65535) {
-    throw new Error(`WeChat DevTools HTTP automator fallback returned invalid autoPort: ${String(result.autoPort)}`)
+
+  if (typeof result === 'string' && /^s\d+$/.test(result)) {
+    return options.autoPort
   }
-  return autoPort
+
+  throw new Error(`WeChat DevTools HTTP automator fallback returned unsupported response: ${summarizeTextOutput(body)}`)
 }
 
 const AUTOMATOR_VALUE_OPTIONS = new Set([

@@ -456,6 +456,7 @@ describe('Launcher', () => {
     expect(Object.fromEntries(endpoint.searchParams)).toEqual({
       account: 'tester',
       autoPort: '9420',
+      port: '9420',
       project: '/tmp/project',
       ticket: 'test-ticket',
       trustProject: 'true',

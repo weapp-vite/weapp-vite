@@ -220,9 +220,66 @@ describe('enableAutomatorViaHttp', () => {
     expect(Object.fromEntries(parsedUrl.searchParams)).toEqual({
       account: 'test-account',
       autoPort: '45678',
+      port: '45678',
       project: '/repo/demo app',
       ticket: 'ignored-ticket',
     })
+  })
+
+  it.each(['s0', 's1'])('uses the requested port for the new DevTools status response %s', async (status) => {
+    const server = net.createServer((socket) => {
+      socket.once('data', () => {
+        socket.end([
+          'HTTP/1.1 200 OK',
+          'Content-Type: application/json',
+          'Connection: close',
+          '',
+          JSON.stringify(status),
+        ].join('\r\n'))
+      })
+    })
+    servers.push(server)
+    const servicePort = await new Promise<number>((resolve, reject) => {
+      server.once('error', reject)
+      server.listen(0, '127.0.0.1', () => {
+        const address = server.address()
+        resolve(typeof address === 'object' && address ? address.port : 0)
+      })
+    })
+
+    await expect(enableAutomatorViaHttp({
+      autoPort: 45678,
+      projectPath: '/repo/demo app',
+      servicePort,
+    })).resolves.toBe(45678)
+  })
+
+  it('rejects an unknown successful response shape', async () => {
+    const server = net.createServer((socket) => {
+      socket.once('data', () => {
+        socket.end([
+          'HTTP/1.1 200 OK',
+          'Content-Type: application/json',
+          'Connection: close',
+          '',
+          JSON.stringify({ status: 'ok' }),
+        ].join('\r\n'))
+      })
+    })
+    servers.push(server)
+    const servicePort = await new Promise<number>((resolve, reject) => {
+      server.once('error', reject)
+      server.listen(0, '127.0.0.1', () => {
+        const address = server.address()
+        resolve(typeof address === 'object' && address ? address.port : 0)
+      })
+    })
+
+    await expect(enableAutomatorViaHttp({
+      autoPort: 45678,
+      projectPath: '/repo/demo app',
+      servicePort,
+    })).rejects.toThrow('unsupported response')
   })
 })
 
