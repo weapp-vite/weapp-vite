@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { extendProjectConfig, resolveCliSpawnOptions, waitForSocketReady } from './automator.cli-bridge'
+import { enableAutomatorViaHttp, extendProjectConfig, resolveBootstrapCliArgs, resolveCliSpawnOptions, waitForSocketReady } from './automator.cli-bridge'
 
 function createMockChild(spawnfile = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli') {
   const stdout = new PassThrough()
@@ -108,7 +108,39 @@ describe('waitForSocketReady', () => {
       child: child as any,
       port: reserved.port,
       timeoutMs: 2_000,
-    })).resolves.toBeUndefined()
+    })).resolves.toEqual({
+      port: reserved.port,
+      servicePort: undefined,
+    })
+  })
+
+  it('waits for project registration before enabling automation after a successful cli exit', async () => {
+    const { child, stdout } = createMockChild()
+    const requestedPort = 6554
+    const fallbackPort = await reservePort()
+    closers.push(fallbackPort.close)
+    const onSuccessfulCliExit = vi.fn(async () => fallbackPort.port)
+
+    const task = waitForSocketReady({
+      child: child as any,
+      onSuccessfulCliExit,
+      port: requestedPort,
+      successfulCliExitSettleMs: 80,
+      timeoutMs: 2_000,
+    })
+
+    stdout.write('IDE server started successfully, listening on http://127.0.0.1:9420\n')
+    child.emit('exit', 0, null)
+
+    await new Promise(resolve => setTimeout(resolve, 30))
+    expect(onSuccessfulCliExit).not.toHaveBeenCalled()
+
+    await expect(task).resolves.toEqual({
+      port: fallbackPort.port,
+      servicePort: 9420,
+    })
+    expect(onSuccessfulCliExit).toHaveBeenCalledOnce()
+    expect(onSuccessfulCliExit).toHaveBeenCalledWith(9420)
   })
 
   it('does not fail fast on an early successful cli exit without a fatal error signature', async () => {
@@ -138,6 +170,77 @@ describe('waitForSocketReady', () => {
     child.emit('error', new Error('spawn /Applications/wechatwebdevtools.app/Contents/MacOS/cli ENOENT'))
 
     await expect(task).rejects.toThrow(/Failed to spawn WeChat DevTools CLI/)
+  })
+})
+
+describe('enableAutomatorViaHttp', () => {
+  const servers: net.Server[] = []
+
+  afterEach(async () => {
+    while (servers.length > 0) {
+      const server = servers.pop()
+      await new Promise<void>((resolve, reject) => {
+        server?.close(error => error ? reject(error) : resolve())
+      })
+    }
+  })
+
+  it('passes the project and requested port to the local devtools service', async () => {
+    let requestUrl = ''
+    const server = net.createServer((socket) => {
+      socket.once('data', (chunk) => {
+        requestUrl = chunk.toString('utf8').split(' ')[1] ?? ''
+        socket.end([
+          'HTTP/1.1 200 OK',
+          'Content-Type: application/json',
+          'Connection: close',
+          '',
+          JSON.stringify({ autoPort: 45679 }),
+        ].join('\r\n'))
+      })
+    })
+    servers.push(server)
+    const servicePort = await new Promise<number>((resolve, reject) => {
+      server.once('error', reject)
+      server.listen(0, '127.0.0.1', () => {
+        const address = server.address()
+        resolve(typeof address === 'object' && address ? address.port : 0)
+      })
+    })
+
+    await expect(enableAutomatorViaHttp({
+      args: ['--auto-account', 'test-account', '--ticket', 'ignored-ticket'],
+      autoPort: 45678,
+      projectPath: '/repo/demo app',
+      servicePort,
+    })).resolves.toBe(45679)
+
+    const parsedUrl = new URL(requestUrl, 'http://127.0.0.1')
+    expect(parsedUrl.pathname).toBe('/auto')
+    expect(Object.fromEntries(parsedUrl.searchParams)).toEqual({
+      account: 'test-account',
+      autoPort: '45678',
+      project: '/repo/demo app',
+      ticket: 'ignored-ticket',
+    })
+  })
+})
+
+describe('resolveBootstrapCliArgs', () => {
+  it('starts the devtools service without opening the project twice', () => {
+    expect(resolveBootstrapCliArgs([
+      '--port',
+      '9420',
+      '--auto-account',
+      'tester',
+      '--ticket',
+      'ticket',
+      '--trust-project',
+    ])).toEqual([
+      '--port',
+      '9420',
+      'islogin',
+    ])
   })
 })
 

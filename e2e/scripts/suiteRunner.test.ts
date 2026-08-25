@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import {
   getSuiteTasks,
-  IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
+  IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS,
   listE2ESuites,
 } from './e2e-suite-manifest'
@@ -270,7 +270,7 @@ describe('suiteRunner', () => {
     const autoRoutesDefineAppJsonTask = ideFullTasks.find(task => task.label === 'ide/auto-routes-define-app-json.runtime.test.ts')
     const coreHmrTask = ideExhaustiveTasks.find(task => task.label === 'ide/wevu-runtime.core-hmr.test.ts')
     const devtoolsCliWorkflowTask = ideFullTasks.find(task => task.label === 'ide/devtools-cli-workflow.runtime.test.ts')
-    const githubIssuesAggregateTask = ideFullTasks.find(task => task.label === IDE_GITHUB_ISSUES_AGGREGATE_LABEL)
+    const githubIssuesAggregateTasks = ideFullTasks.filter(task => IDE_GITHUB_ISSUES_AGGREGATE_LABELS.includes(task.label))
     const githubIssuesIssue621Task = ideFullTasks.find(task => task.label === 'ide/github-issues.runtime.issue621.test.ts')
     const lifecycleCompareTask = ideFullTasks.find(task => task.label === 'ide/lifecycle-compare.test.ts')
     const statefulHmrTask = ideFullTasks.find(task => task.label === 'ide/stateful-hmr.runtime.test.ts')
@@ -295,7 +295,7 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
     expect(ideFullLabels).toContain('ide/devtools-cli-workflow.runtime.test.ts')
-    expect(ideFullLabels).toContain('ide/github-issues.runtime.aggregate.test.ts')
+    expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
     expect(ideFullLabels).toContain('ide/template-dev-open-all.runtime.test.ts')
     expect(ideFullLabels).toContain('ide/stateful-hmr.runtime.test.ts')
     expect(ideFullLabels).not.toContain('ide/chunk-modes.runtime.duplicate.test.ts')
@@ -309,7 +309,7 @@ describe('suiteRunner', () => {
     expect(ideComponentLibraryVisualTasks.map(task => task.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE)).toEqual(['visual', 'visual'])
     expect(ideComponentLibraryVisualFullTasks.map(task => task.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE)).toEqual(['visual-full', 'visual-full'])
     expect(devtoolsCliWorkflowTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
-    expect(githubIssuesAggregateTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('3600000')
+    expect(githubIssuesAggregateTasks.map(task => task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS)).toEqual(['3600000'])
     expect(statefulHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(subpackageSharedStrategyComplexTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
     expect(templateDevOpenAllTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1800000')
@@ -344,12 +344,8 @@ describe('suiteRunner', () => {
     expect(appLifecycleTask?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
-    expect(autoRoutesDefineAppJsonTask?.env).toMatchObject({
-      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
-    })
-    expect(devtoolsCliWorkflowTask?.env).toMatchObject({
-      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
-    })
+    expect(autoRoutesDefineAppJsonTask?.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER).toBeUndefined()
+    expect(devtoolsCliWorkflowTask?.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER).toBeUndefined()
     expect(githubIssuesIssue621Task?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
@@ -383,12 +379,10 @@ describe('suiteRunner', () => {
     expect(templateTailwindTdesignHmrTask?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
-    expect(templateWevuTailwindTdesignHmrTask?.env).toMatchObject({
-      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
-    })
-    expect(ideFullLabels).toContain(IDE_GITHUB_ISSUES_AGGREGATE_LABEL)
+    expect(templateWevuTailwindTdesignHmrTask?.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER).toBeUndefined()
+    expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
     expect(ideGithubIssuesLabels).toEqual([
-      IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
+      ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
       'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
       'ide/github-issues.runtime.issue547.test.ts',
       'ide/github-issues.runtime.issue558.test.ts',
@@ -399,16 +393,19 @@ describe('suiteRunner', () => {
       'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
       'ide/github-issues.runtime.issue642-bug8.test.ts',
       'ide/github-issues.runtime.require-async.test.ts',
+      'ide/github-issues.runtime.issue852.test.ts',
       'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
+      'ide/github-issues.runtime.subpackage-item.test.ts',
+      'ide/github-issues.runtime.subpackage-user.test.ts',
     ])
     for (const sourceLabel of IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS) {
       expect(ideFullLabels).not.toContain(sourceLabel)
       expect(ideGithubIssuesLabels).not.toContain(sourceLabel)
     }
-    const aggregateSource = fs.readFileSync(
-      path.resolve(import.meta.dirname, '../ide/github-issues.runtime.aggregate.test.ts'),
+    const aggregateSource = IDE_GITHUB_ISSUES_AGGREGATE_LABELS.map(label => fs.readFileSync(
+      path.resolve(import.meta.dirname, `../${label}`),
       'utf8',
-    )
+    )).join('\n')
     for (const sourceLabel of IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS) {
       const importPath = `./${path.posix.basename(sourceLabel, '.ts')}`
       expect(aggregateSource).toContain(`import '${importPath}'`)

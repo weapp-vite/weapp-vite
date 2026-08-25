@@ -7,11 +7,21 @@ import {
   isRenderedProtocolSessionError,
   pruneGithubIssuesBuildInputs,
   relaunchPage,
+  resolveGithubIssuesScopedTargetFile,
   resolveSharedMiniProgramRestartRoute,
   shouldDeferSharedMiniProgramClose,
 } from '../ide/github-issues.runtime.shared'
 
 describe('github issues runtime shared relaunch helper', () => {
+  it('pins the WeChat simulator type before DevTools creates the project builder', async () => {
+    const projectConfig = await fs.readJSON(path.resolve(
+      import.meta.dirname,
+      '../../e2e-apps/github-issues/project.config.json',
+    )) as Record<string, unknown>
+
+    expect(projectConfig.simulatorType).toBe('wechat')
+  })
+
   it('removes build-only inputs before DevTools indexes the isolated project', async () => {
     const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-github-issues-'))
     try {
@@ -36,6 +46,17 @@ describe('github issues runtime shared relaunch helper', () => {
     finally {
       await fs.remove(projectRoot)
     }
+  })
+
+  it('scopes every github-issues runtime build to its current test target', () => {
+    expect(resolveGithubIssuesScopedTargetFile(
+      'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
+    )).toBe('ide/github-issues.runtime.issue448-formdata-upload.test.ts')
+    expect(resolveGithubIssuesScopedTargetFile(
+      'ide/github-issues.runtime.aggregate.compiler.test.ts',
+    )).toBe('ide/github-issues.runtime.aggregate.compiler.test.ts')
+    expect(resolveGithubIssuesScopedTargetFile('ide/app-lifecycle.test.ts')).toBeUndefined()
+    expect(resolveGithubIssuesScopedTargetFile('')).toBeUndefined()
   })
 
   it('defers aggregate suite cleanup while preserving explicit runtime restarts', () => {
@@ -87,6 +108,27 @@ describe('github issues runtime shared relaunch helper', () => {
 
     expect(page).toBe(targetPage)
     expect(miniProgram.reLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
+
+  it('force relaunches the same route to clear current query parameters', async () => {
+    const targetPage = {
+      path: '/pages/issue-600/index',
+      query: {},
+    }
+    const miniProgram = {
+      currentPage: vi.fn(async () => targetPage),
+      reLaunch: vi.fn(async () => targetPage),
+      evaluate: vi.fn(async () => '/pages/issue-600/index'),
+    }
+
+    const page = await relaunchPage(miniProgram, '/pages/issue-600/index', undefined, 1, {
+      forceRelaunch: true,
+      readiness: 'route',
+    })
+
+    expect(page).toBe(targetPage)
+    expect(miniProgram.reLaunch).toHaveBeenCalledTimes(1)
+    expect(miniProgram.reLaunch).toHaveBeenCalledWith('/pages/issue-600/index')
   })
 
   it('retries rendered root selectors during the readiness window', async () => {

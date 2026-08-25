@@ -24,13 +24,24 @@ interface AutomatorCliBridgeResult {
 }
 
 interface WaitForSocketReadyResult {
+  port: number
   servicePort?: number
 }
 
 interface WaitForSocketReadyOptions {
   child?: ChildProcessWithoutNullStreams
+  onSuccessfulCliExit?: (servicePort: number) => Promise<number | undefined>
   timeoutMs: number
   port: number
+  successfulCliExitSettleMs?: number
+}
+
+interface EnableAutomatorViaHttpOptions {
+  args?: string[]
+  autoPort: number
+  projectPath: string
+  servicePort: number
+  trustProject?: boolean
 }
 
 interface ResolvedCliSpawnOptions {
@@ -126,6 +137,89 @@ export function extractWechatDevtoolsServicePort(output: string) {
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
+function readCliArgument(args: string[] | undefined, names: string[]) {
+  if (!args?.length) {
+    return undefined
+  }
+  const index = args.findIndex(arg => names.includes(arg))
+  return index >= 0 ? args[index + 1] : undefined
+}
+
+export async function enableAutomatorViaHttp(options: EnableAutomatorViaHttpOptions) {
+  const endpoint = new URL('/auto', `http://127.0.0.1:${options.servicePort}`)
+  endpoint.searchParams.set('project', options.projectPath)
+  endpoint.searchParams.set('autoPort', String(options.autoPort))
+
+  const account = readCliArgument(options.args, ['--auto-account', '--autoAccount'])
+  if (account) {
+    endpoint.searchParams.set('account', account)
+  }
+  const ticket = readCliArgument(options.args, ['--ticket', '--test-ticket'])
+  if (ticket) {
+    endpoint.searchParams.set('ticket', ticket)
+  }
+  if (options.trustProject) {
+    endpoint.searchParams.set('trustProject', 'true')
+  }
+
+  const response = await fetch(endpoint, {
+    redirect: 'follow',
+  })
+  const body = await response.text()
+  if (!response.ok) {
+    const details = summarizeTextOutput(body)
+    throw new Error(`WeChat DevTools HTTP automator fallback failed with status ${response.status}${details ? `: ${details}` : ''}`)
+  }
+  let result: unknown
+  try {
+    result = JSON.parse(body) as unknown
+  }
+  catch (error) {
+    throw new Error('WeChat DevTools HTTP automator fallback returned invalid JSON', {
+      cause: error as Error,
+    })
+  }
+  if (!result || typeof result !== 'object' || !('autoPort' in result)) {
+    throw new Error('WeChat DevTools HTTP automator fallback returned no autoPort')
+  }
+  const autoPort = Number(result.autoPort)
+  if (!Number.isInteger(autoPort) || autoPort <= 0 || autoPort > 65535) {
+    throw new Error(`WeChat DevTools HTTP automator fallback returned invalid autoPort: ${String(result.autoPort)}`)
+  }
+  return autoPort
+}
+
+const AUTOMATOR_VALUE_OPTIONS = new Set([
+  '--auto-account',
+  '--auto-port',
+  '--autoAccount',
+  '--autoPort',
+  '--project',
+  '--test-ticket',
+  '--ticket',
+])
+
+const AUTOMATOR_FLAG_OPTIONS = new Set([
+  '--trust-project',
+])
+
+export function resolveBootstrapCliArgs(args: string[]) {
+  const bootstrapArgs: string[] = []
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]!
+    if (AUTOMATOR_VALUE_OPTIONS.has(arg)) {
+      index += 1
+      continue
+    }
+    if (AUTOMATOR_FLAG_OPTIONS.has(arg) || arg === 'auto') {
+      continue
+    }
+    bootstrapArgs.push(arg)
+  }
+  bootstrapArgs.push('islogin')
+  return bootstrapArgs
 }
 
 function isMissingProcessError(error: unknown) {
@@ -285,9 +379,11 @@ async function reserveLoopbackPort() {
 }
 
 export async function waitForSocketReady(options: WaitForSocketReadyOptions): Promise<WaitForSocketReadyResult> {
-  const { child, timeoutMs, port } = options
+  const { child, onSuccessfulCliExit, timeoutMs, port, successfulCliExitSettleMs = 0 } = options
   const startedAt = Date.now()
   let lastError: unknown
+  let targetPort = port
+  let successfulExitHandled = false
   let childSpawnError: Error | null = null
   const stdoutChunks: Buffer[] = []
   const stderrChunks: Buffer[] = []
@@ -301,11 +397,11 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions): Pr
 
   const getStdout = () => Buffer.concat(stdoutChunks).toString('utf8')
   const getStderr = () => Buffer.concat(stderrChunks).toString('utf8')
-  let childExit: { exitCode: number | null, signal: NodeJS.Signals | null } | null = null
+  let childExit: { at: number, exitCode: number | null, signal: NodeJS.Signals | null } | null = null
 
   if (child) {
     child.once('exit', (exitCode, signal) => {
-      childExit = { exitCode, signal }
+      childExit = { at: Date.now(), exitCode, signal }
     })
     child.once('error', (error) => {
       childSpawnError = error instanceof Error ? error : new Error(String(error))
@@ -337,7 +433,7 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions): Pr
       await new Promise<void>((resolve, reject) => {
         const socket = net.createConnection({
           host: '127.0.0.1',
-          port,
+          port: targetPort,
         })
         socket.once('connect', () => {
           socket.end()
@@ -346,13 +442,34 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions): Pr
         socket.once('error', reject)
       })
       return {
+        port: targetPort,
         servicePort: extractWechatDevtoolsServicePort(`${getStdout()}\n${getStderr()}`),
       }
     }
     catch (error) {
       lastError = error
-      await sleep(400)
     }
+
+    if (
+      childExit?.exitCode === 0
+      && !childExit.signal
+      && !successfulExitHandled
+      && onSuccessfulCliExit
+    ) {
+      const servicePort = extractWechatDevtoolsServicePort(`${getStdout()}\n${getStderr()}`)
+      if (servicePort) {
+        const settleRemaining = successfulCliExitSettleMs - (Date.now() - childExit.at)
+        if (settleRemaining > 0) {
+          await sleep(Math.min(400, settleRemaining))
+          continue
+        }
+        successfulExitHandled = true
+        targetPort = await onSuccessfulCliExit(servicePort) ?? targetPort
+        continue
+      }
+    }
+
+    await sleep(400)
   }
 
   if (childSpawnError) {
@@ -377,7 +494,7 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions): Pr
     })
   }
 
-  throw new Error(`Timed out waiting for automator socket 127.0.0.1:${port}`, {
+  throw new Error(`Timed out waiting for automator socket 127.0.0.1:${targetPort}`, {
     cause: lastError as Error,
   })
 }
@@ -419,29 +536,25 @@ async function main() {
   await extendProjectConfig(resolvedProjectPath, payload.projectConfig)
   const autoPort = await reserveLoopbackPort()
   const cliPath = resolveCliPath(payload.cliPath)
-  const args = [
-    'auto',
-    '--project',
-    resolvedProjectPath,
-    '--auto-port',
-    String(autoPort),
-    ...(payload.args || []),
-  ]
-  if (payload.trustProject) {
-    args.push('--trust-project')
-  }
+  const args = resolveBootstrapCliArgs(payload.args || [])
 
   const spawnOptions = resolveCliSpawnOptions(cliPath, args, payload.cwd)
   const child = spawn(spawnOptions.command, spawnOptions.args, spawnOptions.options)
   child.unref()
 
-  const wsEndpoint = `ws://127.0.0.1:${autoPort}`
   let socketReadyResult: WaitForSocketReadyResult
   try {
     socketReadyResult = await waitForSocketReady({
       child,
       port: autoPort,
       timeoutMs: payload.timeout ?? 30_000,
+      onSuccessfulCliExit: async servicePort => await enableAutomatorViaHttp({
+        args: payload.args,
+        autoPort,
+        projectPath: resolvedProjectPath,
+        servicePort,
+        trustProject: payload.trustProject,
+      }),
     })
   }
   catch (error) {
@@ -451,7 +564,7 @@ async function main() {
 
   const result: AutomatorCliBridgeResult = {
     ...(socketReadyResult.servicePort ? { servicePort: socketReadyResult.servicePort } : {}),
-    wsEndpoint,
+    wsEndpoint: `ws://127.0.0.1:${socketReadyResult.port}`,
     cliPid: typeof child.pid === 'number' && child.pid > 0 ? child.pid : undefined,
   }
   process.stdout.write(JSON.stringify(result))

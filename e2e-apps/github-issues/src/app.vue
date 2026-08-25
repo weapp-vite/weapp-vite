@@ -22,8 +22,17 @@ const defaultTabBarList = [
   },
 ].filter(item => routes.pages.includes(item.pagePath))
 
-const issue793BuildScopeEnabled = routes.pages.includes('pages/issue-793/index')
-  || routes.subPackages.some(subPackage => subPackage.root === 'subs')
+const issue793BuildScopeEnabled = (
+  routes.pages.length + routes.subPackages.length > 0
+  && routes.pages.every(page => (
+    page === 'pages/issue-793/index'
+    || page === 'pages/issue-793-settings/index'
+  ))
+  && routes.subPackages.every(subPackage => (
+    subPackage.root === 'subs'
+    && subPackage.pages.every(page => page === 'issue-793/index')
+  ))
+)
 const appSubPackages = routes.subPackages.map((subPackage) => {
   if (
     routes.pages.includes('pages/issue-850/index')

@@ -1,4 +1,5 @@
 import type { OutputBundle } from 'rolldown'
+import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import process from 'node:process'
 import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
@@ -30,7 +31,18 @@ const slotFallbackCompilerOffEnabled = process.env.WEAPP_GITHUB_SLOT_FALLBACK_CO
   || e2eTargetFile.endsWith('github-issues.runtime.slot-fallback-compiler-off.test.ts')
 const issue642Bug7DefaultEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue642-bug7-default.test.ts')
 const issue642Bug7PerformanceEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue642-bug7-performance.test.ts')
-const githubIssuesAggregateTarget = 'github-issues.runtime.aggregate.test.ts'
+const githubIssuesAggregateTargets = {
+  'github-issues.runtime.aggregate.test.ts': [
+    'github-issues.runtime.app-shell.test.ts',
+    'github-issues.runtime.issue289.test.ts',
+    'github-issues.runtime.issue297-302.test.ts',
+    'github-issues.runtime.web-runtime.test.ts',
+    'github-issues.runtime.import-meta.test.ts',
+    'github-issues.runtime.issue706.test.ts',
+    'github-issues.runtime.issue829.test.ts',
+    'github-issues.runtime.slot-fallback.test.ts',
+  ],
+} as const
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
 const issue558AugmentedEnabled = issue558AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue558.test.ts')
 const issue564AugmentedEnabled = issue564AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue564.test.ts')
@@ -117,6 +129,9 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-829/**',
     'components/issue-829/**',
   ],
+  'github-issues.runtime.issue852.test.ts': [
+    'pages/issue-852/**',
+  ],
   'github-issues.runtime.issue826.test.ts': [
     'pages/issue-826/**',
     'issue-fixtures/issue-826/**',
@@ -166,6 +181,12 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'components/issue-597/**',
     'components/issue-613/**',
     'components/issue-599/**',
+  ],
+  'github-issues.runtime.subpackage-item.test.ts': [
+    'subpackages/item/**',
+    'subpackages/user/**',
+  ],
+  'github-issues.runtime.subpackage-user.test.ts': [
     'subpackages/item/**',
     'subpackages/user/**',
   ],
@@ -188,30 +209,11 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'components/issue-804/**',
   ],
 }
-const githubIssuesAggregateRouteGroupFiles = [
-  'github-issues.runtime.app-shell.test.ts',
-  'github-issues.runtime.issue289.test.ts',
-  'github-issues.runtime.issue297-302.test.ts',
-  'github-issues.runtime.web-runtime.test.ts',
-  'github-issues.runtime.import-meta.test.ts',
-  'github-issues.runtime.issue466.test.ts',
-  'github-issues.runtime.issue553-555.test.ts',
-  'github-issues.runtime.issue554.test.ts',
-  'github-issues.runtime.issue564.test.ts',
-  'github-issues.runtime.issue581.test.ts',
-  'github-issues.runtime.issue627.test.ts',
-  'github-issues.runtime.issue642.test.ts',
-  'github-issues.runtime.issue705.test.ts',
-  'github-issues.runtime.issue706.test.ts',
-  'github-issues.runtime.issue829.test.ts',
-  'github-issues.runtime.lifecycle.test.ts',
-  'github-issues.runtime.miniprogram-computed.test.ts',
-  'github-issues.runtime.props.test.ts',
-  'github-issues.runtime.slot-fallback.test.ts',
-] as const
-githubIssuesRouteGroups[githubIssuesAggregateTarget] = [
-  ...new Set(githubIssuesAggregateRouteGroupFiles.flatMap(testFile => githubIssuesRouteGroups[testFile] ?? [])),
-]
+for (const [aggregateTarget, testFiles] of Object.entries(githubIssuesAggregateTargets)) {
+  githubIssuesRouteGroups[aggregateTarget] = [
+    ...new Set(testFiles.flatMap(testFile => githubIssuesRouteGroups[testFile] ?? [])),
+  ]
+}
 const matchedGithubIssuesTestFile = Object.keys(githubIssuesRouteGroups)
   .find(testFile => e2eTargetFile.endsWith(testFile))
 
@@ -332,8 +334,29 @@ function resolveGithubIssuesAutoRoutes() {
 }
 
 function resolveGithubIssuesNpm() {
+  const tdesignDialogPackageFiles = {
+    exclude: [
+      '**/*.d.ts',
+      '**/type.js',
+      'common/shared/**',
+    ],
+    include: [
+      'button/**',
+      'common/**',
+      'dialog/**',
+      'icon/**',
+      'loading/**',
+      'miniprogram_npm/tslib/**',
+      'mixins/**',
+      'overlay/**',
+      'popup/**',
+    ],
+  }
   const fullNpmConfig = {
     enable: true,
+    packageFiles: {
+      'tdesign-miniprogram': tdesignDialogPackageFiles,
+    },
     mainPackage: {
       dependencies: [
         /^tdesign-miniprogram$/,
@@ -377,14 +400,16 @@ function resolveGithubIssuesNpm() {
   if (matchedGithubIssuesTestFile === 'github-issues.runtime.issue466.test.ts') {
     return {
       mainPackage: fullNpmConfig.mainPackage,
-      subPackages: {
-        'subpackages/issue-466': fullNpmConfig.subPackages['subpackages/issue-466'],
-      },
+      packageFiles: fullNpmConfig.packageFiles,
     }
   }
 
   if (matchedGithubIssuesTestFile === 'github-issues.runtime.miniprogram-computed.test.ts') {
     return {
+      mainPackage: {
+        dependencies: false,
+      },
+      packageFiles: fullNpmConfig.packageFiles,
       subPackages: {
         'subpackages/issue-466-computed': fullNpmConfig.subPackages['subpackages/issue-466-computed'],
       },
@@ -393,6 +418,17 @@ function resolveGithubIssuesNpm() {
 
   if (matchedGithubIssuesTestFile === 'github-issues.runtime.props.test.ts') {
     return {
+      mainPackage: {
+        dependencies: false,
+      },
+    }
+  }
+
+  if (matchedGithubIssuesTestFile === 'github-issues.runtime.subpackage-item.test.ts') {
+    return {
+      mainPackage: {
+        dependencies: false,
+      },
       subPackages: {
         'subpackages/item': fullNpmConfig.subPackages['subpackages/item'],
         'subpackages/user': fullNpmConfig.subPackages['subpackages/user'],
@@ -400,15 +436,21 @@ function resolveGithubIssuesNpm() {
     }
   }
 
-  if (matchedGithubIssuesTestFile === githubIssuesAggregateTarget) {
+  if (matchedGithubIssuesTestFile === 'github-issues.runtime.subpackage-user.test.ts') {
     return {
-      mainPackage: fullNpmConfig.mainPackage,
+      mainPackage: {
+        dependencies: false,
+      },
       subPackages: {
-        'subpackages/issue-466': fullNpmConfig.subPackages['subpackages/issue-466'],
-        'subpackages/issue-466-computed': fullNpmConfig.subPackages['subpackages/issue-466-computed'],
         'subpackages/item': fullNpmConfig.subPackages['subpackages/item'],
         'subpackages/user': fullNpmConfig.subPackages['subpackages/user'],
       },
+    }
+  }
+
+  if (matchedGithubIssuesTestFile === 'github-issues.runtime.aggregate.test.ts') {
+    return {
+      enable: false,
     }
   }
 
@@ -501,6 +543,43 @@ const issue850OutputReplayPlugin = issue850OutputReplayEnabled
     }
   : undefined
 
+const devtoolsRuntimeSubpackageRoot = e2eTargetFile.endsWith('github-issues.runtime.subpackage-item.test.ts')
+  ? 'subpackages/item'
+  : e2eTargetFile.endsWith('github-issues.runtime.subpackage-user.test.ts')
+    ? 'subpackages/user'
+    : undefined
+const devtoolsSingleSubpackagePlugin = devtoolsRuntimeSubpackageRoot
+  ? {
+      name: 'github-issues:devtools-single-runtime-subpackage',
+      enforce: 'post' as const,
+      generateBundle: {
+        order: 'post' as const,
+        handler(_options: unknown, bundle: OutputBundle) {
+          const output = bundle['app.json']
+          if (output?.type !== 'asset') {
+            throw new Error('DevTools single-subpackage build did not emit app.json')
+          }
+
+          const source = typeof output.source === 'string'
+            ? output.source
+            : Buffer.from(output.source).toString('utf8')
+          const config = JSON.parse(source) as Record<string, unknown>
+          if (!Array.isArray(config.subPackages)) {
+            throw new TypeError('DevTools single-subpackage app.json did not emit subPackages')
+          }
+
+          config.subPackages = config.subPackages.filter((subPackage) => {
+            return subPackage
+              && typeof subPackage === 'object'
+              && 'root' in subPackage
+              && subPackage.root === devtoolsRuntimeSubpackageRoot
+          })
+          output.source = `${JSON.stringify(config, null, 2)}\n`
+        },
+      },
+    }
+  : undefined
+
 function resolveGithubIssuesBuildConfig() {
   if (issue850OutputReplayEnabled) {
     return { outDir: 'dist-issue-850', minify: false }
@@ -548,6 +627,7 @@ export default defineConfig({
     ...issue724ProbePlugins,
     ...(issue779CssPrePlugin ?? []),
     ...(issue850OutputReplayPlugin ? [issue850OutputReplayPlugin] : []),
+    ...(devtoolsSingleSubpackagePlugin ? [devtoolsSingleSubpackagePlugin] : []),
   ],
   define: {
     'import.meta.env.ISSUE_484_FLAG': '123456',

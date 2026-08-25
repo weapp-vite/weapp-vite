@@ -21,6 +21,12 @@ export interface WeappI18nConfig {
 
 export interface WeappViteConfig {
   srcRoot?: string
+  npm?: {
+    packageFiles?: Record<string, {
+      include?: string[]
+      exclude?: string[]
+    }>
+  }
   i18n?: WeappI18nConfig
   platform?: 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'
   hmr?: {

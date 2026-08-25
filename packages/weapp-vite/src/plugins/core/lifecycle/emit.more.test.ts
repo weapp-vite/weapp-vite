@@ -11,7 +11,6 @@ import {
   REQUEST_GLOBAL_CHUNK_MODULE_REF,
   REQUEST_GLOBAL_EXPOSE_HELPER,
   REQUEST_GLOBAL_INSTALLER_HOST_REF,
-  REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER,
   REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
   REQUEST_GLOBAL_PRELUDE_MARKER,
@@ -1791,8 +1790,9 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['common.js'].code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
     expect(bundle['common.js'].code).toContain(`const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis["${REQUEST_GLOBAL_ACTUALS_KEY}"] || (globalThis["${REQUEST_GLOBAL_ACTUALS_KEY}"] = Object.create(null))`)
     expect(bundle['common.js'].code).toContain(`function ${REQUEST_GLOBAL_EXPOSE_HELPER}(name,value)`)
-    expect(bundle['common.js'].code).toContain(`var XMLHttpRequest = ${REQUEST_GLOBAL_EXPOSE_HELPER}("XMLHttpRequest",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["XMLHttpRequest"],[])?${REQUEST_GLOBAL_ACTUALS_KEY}["XMLHttpRequest"]:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}("XMLHttpRequest"))`)
-    expect(bundle['common.js'].code).toContain(`var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"],["wss://request-globals.invalid"])?${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"]:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}("WebSocket"))`)
+    expect(bundle['common.js'].code).toContain(`var XMLHttpRequest = ${REQUEST_GLOBAL_EXPOSE_HELPER}("XMLHttpRequest",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["XMLHttpRequest"]==="function"`)
+    expect(bundle['common.js'].code).toContain(`var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"]==="function"`)
+    expect(bundle['common.js'].code).not.toContain(`${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"]`)
     expect(bundle['common.js'].code).toContain(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
     expect(bundle['common.js'].code).toContain(`${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"] = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.WebSocket`)
     expect(bundle['common.js'].code).toContain(`try{globalThis["WebSocket"]=${REQUEST_GLOBAL_BUNDLE_HOST_REF}.WebSocket}catch{}`)
@@ -2872,6 +2872,75 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(String(bundle['app.prelude.js'].source)).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(String(bundle['app.prelude.js'].source)).toContain(`require("./common.js")["At"]({ targets: ${FULL_REQUEST_GLOBAL_TARGETS_LITERAL} }) || globalThis`)
     expect(String(bundle['app.prelude.js'].source).indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(String(bundle['app.prelude.js'].source).indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
+  })
+
+  it('preserves an app prelude installer chunk that would otherwise be registered through app.js', async () => {
+    const state = createState({
+      subPackageMeta: undefined,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {
+            appPrelude: {
+              mode: 'require',
+              requestRuntime: {
+                enabled: true,
+              },
+            },
+          },
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: undefined,
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const installerChunkFileName = 'weapp-vendors/request-globals-web-apis-shared.js'
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: 'App({})',
+        imports: [],
+        dynamicImports: [],
+      },
+      [installerChunkFileName]: {
+        type: 'chunk',
+        fileName: installerChunkFileName,
+        code: [
+          `function installWebRuntimeGlobals(){return ${FULL_REQUEST_GLOBAL_TARGETS_LITERAL}&&globalThis}`,
+          'Object.defineProperty(exports,`installWebRuntimeGlobals`,{enumerable:true,get:function(){return installWebRuntimeGlobals}})',
+        ].join(''),
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    const emitFile = vi.fn((asset: any) => {
+      bundle[asset.fileName] = {
+        type: 'asset',
+        fileName: asset.fileName,
+        source: asset.source,
+      }
+    })
+
+    await hook.call({ emitFile }, {}, bundle)
+
+    expect(bundle[installerChunkFileName]).toBeDefined()
+    expect(String(bundle['app.prelude.js'].source)).toContain(`require("./${installerChunkFileName}")`)
+    expect(bundle['app.js'].code).toContain('require("./app.prelude.js")')
   })
 
   it('emits request globals prelude into app.prelude.js for esm entry chunks when mode is require', async () => {

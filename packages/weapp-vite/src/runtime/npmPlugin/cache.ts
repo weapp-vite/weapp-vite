@@ -62,6 +62,7 @@ export function createDependenciesCache(ctx: MutableCompilerContext): Dependenci
     const configService = requireConfigService(ctx, '读取依赖缓存哈希前必须初始化 configService。')
     return objectHash({
       dependencies: configService.packageJson.dependencies ?? {},
+      packageFiles: configService.weappViteConfig?.npm?.packageFiles ?? {},
       scope: serializeDependencyScope(resolveDependencyScope(root)),
     })
   }

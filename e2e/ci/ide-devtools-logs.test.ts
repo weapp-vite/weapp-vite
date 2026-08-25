@@ -6,6 +6,7 @@ import {
   assertNoRecentDevtoolsSimulatorBootIssues,
   captureDevtoolsLogBaseline,
   scanRecentDevtoolsSimulatorBootIssues,
+  waitForDevtoolsLogQuiescence,
 } from '../utils/ide-devtools-logs'
 
 function writeLog(rootDir: string, content: string) {
@@ -85,6 +86,47 @@ describe('ide devtools logs', () => {
     expect(issues[0]?.line).toContain('subPackages')
   })
 
+  it('absorbs a previous task delayed log append before capturing the next task baseline', async () => {
+    const logFile = writeLog(sandboxRoot, '[INFO] previous task closing\n')
+    const previousTaskTimestamp = formatDevtoolsLogTimestamp(new Date())
+    const delayedAppend = setTimeout(() => {
+      fs.appendFileSync(
+        logFile,
+        `[${previousTaskTimestamp}][ERROR] simulator launch catch error Error: cant find runtimeid by projectpath /previous/task\n`,
+        'utf8',
+      )
+    }, 20)
+
+    const nextTaskBaseline = await waitForDevtoolsLogQuiescence({
+      pollIntervalMs: 10,
+      quietWindowMs: 40,
+      rootDir: sandboxRoot,
+      timeoutMs: 500,
+    })
+    clearTimeout(delayedAppend)
+
+    expect(scanRecentDevtoolsSimulatorBootIssues({
+      baseline: nextTaskBaseline,
+      rootDir: sandboxRoot,
+      sinceMs: Date.now() - 1_000,
+    })).toEqual([])
+
+    const currentTaskTimestamp = formatDevtoolsLogTimestamp(new Date())
+    fs.appendFileSync(
+      logFile,
+      `[${currentTaskTimestamp}][ERROR] simulator launch catch error Error: current task failed\n`,
+      'utf8',
+    )
+
+    const issues = scanRecentDevtoolsSimulatorBootIssues({
+      baseline: nextTaskBaseline,
+      rootDir: sandboxRoot,
+      sinceMs: Date.now() - 1_000,
+    })
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.line).toContain('current task failed')
+  })
+
   it('ignores stale simulator boot lines with a timezone offset', () => {
     const startedAt = Date.now() - 1_000
     writeLog(
@@ -118,7 +160,7 @@ describe('ide devtools logs', () => {
     expect(issues[0]?.line).toContain('simulator not found s2')
   })
 
-  it('ignores a simulator launch error when the appservice subsequently launches successfully', () => {
+  it('reports a simulator launch error even when the appservice subsequently launches successfully', () => {
     const startedAt = Date.now() - 1_000
     const timestamp = formatDevtoolsLogTimestamp(new Date())
     writeLog(sandboxRoot, [
@@ -126,10 +168,30 @@ describe('ide devtools logs', () => {
       `[${timestamp}][INFO] [appservice] simulator launch success, set src dist/app-service.js`,
     ].join('\n'))
 
-    expect(scanRecentDevtoolsSimulatorBootIssues({
+    const issues = scanRecentDevtoolsSimulatorBootIssues({
       rootDir: sandboxRoot,
       sinceMs: startedAt,
-    })).toEqual([])
+    })
+
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.line).toContain('slot-wrapper/index.json')
+  })
+
+  it('reports a missing runtime id even when the appservice subsequently launches successfully', () => {
+    const startedAt = Date.now() - 1_000
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    writeLog(sandboxRoot, [
+      `[${timestamp}][ERROR] [appservice] simulator launch catch error Error: cant find runtimeid by projectpath /repo/project`,
+      `[${timestamp}][INFO] [appservice] simulator launch success, set src dist/app-service.js`,
+    ].join('\n'))
+
+    const issues = scanRecentDevtoolsSimulatorBootIssues({
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })
+
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.line).toContain('cant find runtimeid by projectpath')
   })
 
   it('reports a simulator launch error when appservice validation fails after the success marker', () => {

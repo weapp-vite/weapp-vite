@@ -44,15 +44,8 @@ export function createIdeSuiteCleanupHooks(
     return {}
   }
 
-  let initialized = false
   return {
-    beforeEachTask: async () => {
-      if (initialized) {
-        return
-      }
-      initialized = true
-      await cleanup()
-    },
+    beforeEachTask: cleanup,
     afterAll: cleanup,
   }
 }

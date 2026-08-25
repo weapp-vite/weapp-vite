@@ -200,24 +200,30 @@ export function emitAppPreludeRequireAssets(
       ...scopeChunks.filter(chunk => !requestGlobalsPreludeOptions.installerChunks.has(toPosixPath(chunk.fileName))),
       ...scopeChunks.filter(chunk => requestGlobalsPreludeOptions.installerChunks.has(toPosixPath(chunk.fileName))),
     ]
-    const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled
-      ? sortedScopeChunks
-          .map(chunk => createRequestGlobalsPreludeAssetCode(
-            fileName,
-            chunk,
-            requestGlobalsPreludeOptions.installerChunks,
-            requestGlobalsPreludeOptions.targets,
-            requestGlobalsPreludeOptions.mode,
-            requestGlobalsPreludeOptions.networkDefaults,
-          ))
-          .find(Boolean)
-      : undefined
-    if (requestGlobalsPreludeCode) {
-      const installerImport = scopeChunks
-        .map(chunk => resolveRequestGlobalsInstallerImport(chunk, requestGlobalsPreludeOptions.installerChunks))
-        .find(Boolean)
-      if (installerImport?.installerChunkFileName) {
-        preservedRequestGlobalsInstallerChunks.add(installerImport.installerChunkFileName)
+    let requestGlobalsPreludeCode: string | undefined
+    if (requestGlobalsPreludeOptions.enabled) {
+      for (const chunk of sortedScopeChunks) {
+        const code = createRequestGlobalsPreludeAssetCode(
+          fileName,
+          chunk,
+          requestGlobalsPreludeOptions.installerChunks,
+          requestGlobalsPreludeOptions.targets,
+          requestGlobalsPreludeOptions.mode,
+          requestGlobalsPreludeOptions.networkDefaults,
+        )
+        if (!code) {
+          continue
+        }
+        requestGlobalsPreludeCode = code
+        const installerImport = resolveRequestGlobalsInstallerImport(chunk, requestGlobalsPreludeOptions.installerChunks)
+        const installerChunkFileName = installerImport?.installerChunkFileName
+          ?? (requestGlobalsPreludeOptions.installerChunks.has(toPosixPath(chunk.fileName))
+            ? toPosixPath(chunk.fileName)
+            : undefined)
+        if (installerChunkFileName) {
+          preservedRequestGlobalsInstallerChunks.add(installerChunkFileName)
+        }
+        break
       }
     }
     const source = [requestGlobalsPreludeCode, appPreludeCode].filter(Boolean).join('\n')

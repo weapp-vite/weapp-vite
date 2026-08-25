@@ -19,6 +19,7 @@ import {
   formatAutomatorLoginError,
   getAutomatorProtocolTimeoutMethod,
   isAutomatorLoginError,
+  isAutomatorPortInUseError,
   isAutomatorProtocolTimeoutError,
   isAutomatorWsConnectError,
   isDevtoolsExtensionContextInvalidatedError,
@@ -94,7 +95,7 @@ function normalizeMiniProgramConnectionError(error: unknown) {
     return new Error('DEVTOOLS_EXTENSION_CONTEXT_INVALIDATED')
   }
 
-  if (isAutomatorWsConnectError(error)) {
+  if (isAutomatorWsConnectError(error) || isAutomatorPortInUseError(error)) {
     logger.error(i18nText(
       '无法连接到当前项目的微信开发者工具自动化 websocket。',
       'Cannot connect to the Wechat DevTools automation websocket for the current project.',
@@ -158,7 +159,9 @@ export async function connectMiniProgram(options: AutomatorSessionOptions): Prom
       }
       catch (error) {
         const normalizedOpenSessionError = normalizeMiniProgramConnectionError(error)
-        if (options.openedOnly) {
+        const requiresOpenedSession = options.openedOnly
+          || ((options.preferOpenedSession as boolean | undefined) !== false && Boolean(options.port || options.sessionId))
+        if (requiresOpenedSession) {
           throw normalizedOpenSessionError
         }
         if (normalizedOpenSessionError instanceof Error && normalizedOpenSessionError.message === 'DEVTOOLS_PROTOCOL_TIMEOUT') {

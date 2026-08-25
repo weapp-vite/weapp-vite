@@ -6,10 +6,10 @@ import process from 'node:process'
 import { execa } from 'execa'
 import { cleanupProcessesByCommandPatterns } from './dev-process'
 import { cleanupResidualDevProcesses } from './dev-process-cleanup'
+import { waitForDevtoolsLogQuiescence } from './ide-devtools-logs'
 
 const AUTOMATOR_SESSION_DIR = path.join(os.tmpdir(), 'weapp-vite-automator-sessions')
 const AUTOMATOR_PORT_LEASE_DIR = path.join(os.tmpdir(), 'weapp-vite-automator-port-leases')
-const IDE_PROCESS_SETTLE_DELAY = 1_000
 const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 const DEFAULT_WECHAT_CLI_WINDOWS_PATH = 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
 const COMPACT_WHITESPACE_PATTERN = /\s+/g
@@ -22,15 +22,12 @@ const DEVTOOLS_CACHE_CLEAN_STALE_PORT_PATTERNS = [
 const UNIX_DEVTOOLS_PROCESS_PATTERNS = [
   'e2e/utils/automator.cli-bridge.ts',
   'wechatwebdevtools.app/Contents/MacOS/cli',
+  'wechatwebdevtools.app/Contents/MacOS/Electron',
   'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
   'wechatwebdevtools',
 ] as const
 
 type DevtoolsCacheCleanType = 'compile' | 'network' | 'all'
-
-function sleep(ms: number) {
-  return new Promise<void>(resolve => setTimeout(resolve, ms))
-}
 
 export function resolveIdeDevtoolsProcessPatterns(platform = process.platform) {
   if (platform === 'win32') {
@@ -116,8 +113,6 @@ async function cleanupAutomatorSessionArtifacts() {
       force: true,
     }).catch(() => {}),
   ])
-
-  await sleep(IDE_PROCESS_SETTLE_DELAY)
 }
 
 export async function cleanupResidualDevtoolsProcesses(platform = process.platform) {
@@ -140,6 +135,7 @@ export async function cleanupResidualDevtoolsProcesses(platform = process.platfo
   }
 
   await cleanupAutomatorSessionArtifacts()
+  await waitForDevtoolsLogQuiescence()
 }
 
 export async function cleanDevtoolsCache(
@@ -159,6 +155,17 @@ export async function cleanDevtoolsCache(
     await cleanupResidualDevtoolsProcesses()
     await runCleanDevtoolsCacheCommand(cleanType, options)
   }
+}
+
+export async function cleanDevtoolsCacheAndStop(
+  cleanType: DevtoolsCacheCleanType,
+  options: {
+    cliPath?: string
+    cwd?: string
+  } = {},
+) {
+  await cleanDevtoolsCache(cleanType, options)
+  await cleanupResidualDevtoolsProcesses()
 }
 
 export async function cleanupResidualIdeProcesses(platform = process.platform) {

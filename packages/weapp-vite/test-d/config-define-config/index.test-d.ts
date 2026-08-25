@@ -5,6 +5,14 @@ import { defineConfig } from '.'
 const objectConfig = defineConfig({
   weapp: {
     srcRoot: 'src',
+    npm: {
+      packageFiles: {
+        'tdesign-miniprogram': {
+          include: ['dialog/**', 'popup/**'],
+          exclude: ['**/*.d.ts'],
+        },
+      },
+    },
     i18n: {
       defaultLocale: 'zh-CN',
       fallbackLocale: 'en-US',

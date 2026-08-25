@@ -188,6 +188,8 @@ describe.sequential('github-issues runtime issue #448 FormData upload', () => {
       expect(runtime.rawFetchUploadPayload).toContain('blob-request')
       expect(serverHandle?.requestCounts.formDataUpload).toBe(3)
       expect(serverHandle?.requestCounts.rawUpload).toBe(9)
+      const runtimeEntries = activeMiniProgram?.__weappViteRuntimeLogMeta?.entries ?? []
+      expect(runtimeEntries.filter((entry: { level?: string }) => entry.level === 'error' || entry.level === 'exception')).toEqual([])
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

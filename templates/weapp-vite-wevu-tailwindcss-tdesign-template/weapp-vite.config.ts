@@ -28,6 +28,26 @@ export default defineConfig({
       vueComponents: true,
       vueComponentsModule: 'wevu',
     },
+    npm: {
+      packageFiles: {
+        'tdesign-miniprogram': {
+          exclude: [
+            '**/*.d.ts',
+            '**/type.js',
+            'common/shared/**',
+          ],
+          include: [
+            'button/**',
+            'common/**',
+            'icon/**',
+            'loading/**',
+            'miniprogram_npm/tslib/**',
+            'mixins/**',
+            'tag/**',
+          ],
+        },
+      },
+    },
     wevu: {
       defaults: {
         component: {

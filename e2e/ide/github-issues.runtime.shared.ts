@@ -9,7 +9,7 @@ import {
   launchAutomator,
 } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanDevtoolsCache, cleanDevtoolsCacheAndStop, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { appendIdeReportEvent, resolveReportProjectPath } from '../utils/ideWarningReport'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
@@ -23,23 +23,17 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..')
 const SOURCE_APP_ROOT = path.join(REPO_ROOT, 'e2e-apps/github-issues')
 const SOURCE_NODE_MODULES = path.join(SOURCE_APP_ROOT, 'node_modules')
-const AGGREGATE_STABLE_LAUNCH_ROUTE = '/pages/issue-431/index'
+const AGGREGATE_STABLE_LAUNCH_ROUTES = new Map([
+  ['github-issues.runtime.aggregate.test.ts', '/pages/issue-431/index'],
+])
 const DEVTOOLS_UNUSED_BUILD_ENTRIES = [
   '.weapp-vite',
   'node_modules',
   'src',
 ] as const
-const AGGREGATE_TARGET = 'github-issues.runtime.aggregate.test.ts'
 const SLOT_FALLBACK_COMPILER_OFF_TARGET = 'github-issues.runtime.slot-fallback-compiler-off.test.ts'
 const ISSUE_826_TARGET = 'github-issues.runtime.issue826.test.ts'
 const SLOT_FALLBACK_COMPILER_OFF_ENV = 'WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF'
-const SCOPED_BUILD_TARGETS = new Set([
-  AGGREGATE_TARGET,
-  'github-issues.runtime.app-shell.test.ts',
-  'github-issues.runtime.issue829.test.ts',
-  ISSUE_826_TARGET,
-  'github-issues.runtime.require-async.test.ts',
-])
 const APP_SHELL_FREE_TARGETS = new Set([
   'github-issues.runtime.issue642-bug7-default.test.ts',
   'github-issues.runtime.issue642-bug7-performance.test.ts',
@@ -84,6 +78,27 @@ function getNormalizedTargetFile() {
   return process.env[E2E_TARGET_FILE_ENV]?.replaceAll('\\', '/') ?? ''
 }
 
+export function resolveGithubIssuesScopedTargetFile(targetFile = getNormalizedTargetFile()) {
+  const normalizedTarget = targetFile.replaceAll('\\', '/')
+  const targetName = normalizedTarget.split('/').at(-1) ?? ''
+  return /^github-issues\.runtime\..+\.test\.ts$/.test(targetName)
+    ? normalizedTarget
+    : undefined
+}
+
+function resolveAggregateStableLaunchRoute(targetFile = getNormalizedTargetFile()) {
+  for (const [aggregateTarget, route] of AGGREGATE_STABLE_LAUNCH_ROUTES) {
+    if (targetFile.endsWith(aggregateTarget)) {
+      return route
+    }
+  }
+  return undefined
+}
+
+function isAggregateTarget(targetFile = getNormalizedTargetFile()) {
+  return resolveAggregateStableLaunchRoute(targetFile) != null
+}
+
 function isAppShellFreeTarget() {
   const targetFile = getNormalizedTargetFile()
   return [...APP_SHELL_FREE_TARGETS].some(target => targetFile.endsWith(target))
@@ -91,7 +106,7 @@ function isAppShellFreeTarget() {
 
 export const APP_ROOT = path.join(REPO_ROOT, '.tmp/e2e-projects/github-issues', resolveGithubIssuesProjectId())
 export const DIST_ROOT = path.join(APP_ROOT, resolveGithubIssuesDistDir())
-const GITHUB_ISSUES_LAUNCH_RETRIES = 2
+const GITHUB_ISSUES_LAUNCH_RETRIES = 1
 const GITHUB_ISSUES_LAUNCH_RETRY_DELAY = 1_200
 const CURRENT_PAGE_PROTOCOL_TIMEOUT = 3_000
 const PAGE_ROOT_QUERY_PROTOCOL_TIMEOUT = 1_000
@@ -105,6 +120,7 @@ export const PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT = 120_000
 type RelaunchPageReadiness = 'wxml' | 'route' | ((page: any, miniProgram: any) => boolean | Promise<boolean>)
 
 export interface RelaunchPageOptions {
+  forceRelaunch?: boolean
   readiness?: RelaunchPageReadiness
   readinessTimeoutMs?: number
 }
@@ -257,9 +273,7 @@ async function prepareIsolatedProjectRoot() {
 async function runBuild() {
   await fs.remove(DIST_ROOT)
   const targetFile = getNormalizedTargetFile()
-  const scopedTargetFile = [...SCOPED_BUILD_TARGETS].some(target => targetFile.endsWith(target))
-    ? targetFile
-    : undefined
+  const scopedTargetFile = resolveGithubIssuesScopedTargetFile(targetFile)
 
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
@@ -312,6 +326,38 @@ function resolveAppConfigRoutePaths(config: Record<string, any>) {
   }
 
   return routes
+}
+
+function assertAppConfigPreloadRules(config: Record<string, any>) {
+  if (config.preloadRule == null) {
+    return
+  }
+  if (!isRecord(config.preloadRule)) {
+    throw new TypeError('github-issues dist app.json preloadRule is not an object')
+  }
+
+  const routePaths = new Set(resolveAppConfigRoutePaths(config))
+  const packageRoots = new Set(
+    resolveAppConfigRoutes(config).subPackages.map(subPackage => typeof subPackage.root === 'string' ? normalizeRoutePath(subPackage.root) : '').filter(Boolean),
+  )
+
+  for (const [routePath, rule] of Object.entries(config.preloadRule)) {
+    if (!routePaths.has(normalizeRoutePath(routePath))) {
+      throw new Error(`github-issues dist app.json preloadRule references missing route: ${routePath}`)
+    }
+    if (!isRecord(rule) || !Array.isArray(rule.packages)) {
+      continue
+    }
+    for (const packageName of rule.packages) {
+      if (
+        typeof packageName === 'string'
+        && packageName !== '__APP__'
+        && !packageRoots.has(normalizeRoutePath(packageName))
+      ) {
+        throw new Error(`github-issues dist app.json preloadRule references missing package: ${packageName}`)
+      }
+    }
+  }
 }
 
 async function normalizeDistAppConfigPackageAliases(config: Record<string, any>) {
@@ -515,6 +561,7 @@ async function assertGithubIssuesAppConfigReady() {
     throw new Error(`github-issues dist app.json has no routable pages: ${appConfigPath}`)
   }
 
+  assertAppConfigPreloadRules(config)
   await normalizeDistConfigCustomTabBar(appConfigPath, config)
   await normalizeDistAppShellConfigCustomTabBar()
   await normalizeDistAppConfigPackageAliases(config)
@@ -546,15 +593,17 @@ export async function prepareGithubIssuesBuild() {
   }
   await runBuild()
   await assertGithubIssuesAppConfigReady()
-  if (getNormalizedTargetFile().endsWith(AGGREGATE_TARGET)) {
-    await prioritizeDistLaunchRoute(AGGREGATE_STABLE_LAUNCH_ROUTE)
+  const aggregateStableLaunchRoute = resolveAggregateStableLaunchRoute()
+  if (aggregateStableLaunchRoute) {
+    await prioritizeDistLaunchRoute(aggregateStableLaunchRoute)
   }
   // DevTools 的 FileUtils 会扫描项目根；构建完成后只保留运行期输入，避免大目录和依赖链接干扰产物索引。
   await pruneGithubIssuesBuildInputs()
   if (useDevtools) {
-    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+    // cache 命令会临时启动 DevTools；必须等该维护进程完全退出后再启动 automator，
+    // 否则新版 DevTools 会让 cache worker 与 simulator 初始化并发，触发模拟器启动失败。
+    await cleanDevtoolsCacheAndStop('all', { cwd: APP_ROOT })
   }
-  await delay(600)
   sharedBuildPrepared = true
 }
 
@@ -1014,15 +1063,15 @@ function isGithubIssuesLaunchInfraUnavailableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return isDevtoolsHttpPortError(error)
     || isDevtoolsLoginRequiredError(error)
-    || isDevtoolsSimulatorBootError(error)
     || message.includes('Timeout in read current page for route')
 }
 
 async function launchGithubIssuesMiniProgramOnce() {
   const miniProgram = await launchAutomator({
+    deferBridgeWrapperSyncUntilConnected: true,
+    maxLaunchRetries: 1,
     projectPath: APP_ROOT,
     skipRelaunchPageRootCheck: true,
-    skipWarmup: true,
     warmupAllowRelaunch: true,
   })
   await delay(600)
@@ -1068,16 +1117,14 @@ export function shouldDeferSharedMiniProgramClose(
   options: CloseSharedMiniProgramOptions = {},
   targetFile = getNormalizedTargetFile(),
 ) {
-  return !options.force && targetFile.endsWith(AGGREGATE_TARGET)
+  return !options.force && isAggregateTarget(targetFile)
 }
 
 export function resolveSharedMiniProgramRestartRoute(
   launchRoute: string | undefined,
   targetFile = getNormalizedTargetFile(),
 ) {
-  return targetFile.endsWith(AGGREGATE_TARGET)
-    ? AGGREGATE_STABLE_LAUNCH_ROUTE
-    : launchRoute
+  return resolveAggregateStableLaunchRoute(targetFile) ?? launchRoute
 }
 
 export async function closeSharedMiniProgram(options: CloseSharedMiniProgramOptions = {}) {
@@ -1090,9 +1137,15 @@ export async function closeSharedMiniProgram(options: CloseSharedMiniProgramOpti
   const miniProgram = sharedMiniProgram
   sharedMiniProgram = null
   await closeMiniProgramSafely(miniProgram)
+  if (resolveRuntimeProviderName() === 'devtools') {
+    await cleanupResidualIdeProcesses()
+  }
 }
 
-export function disconnectSharedMiniProgram() {
+export function disconnectSharedMiniProgram(options: CloseSharedMiniProgramOptions = {}) {
+  if (shouldDeferSharedMiniProgramClose(options)) {
+    return
+  }
   if (!sharedMiniProgram) {
     return
   }
@@ -1225,11 +1278,13 @@ export async function relaunchPage(
 
   async function runAttempts(targetMiniProgram: any, phase: 'primary' | 'restart') {
     process.stdout.write(`[github-issues:relaunch] phase=${phase} route=${route}\n`)
-    const alreadyCurrentPage = await waitForRoutePage(
-      targetMiniProgram,
-      `${phase}:current`,
-      Math.min(timeoutMs, phase === 'restart' ? 30_000 : 8_000),
-    )
+    const alreadyCurrentPage = options.forceRelaunch
+      ? null
+      : await waitForRoutePage(
+          targetMiniProgram,
+          `${phase}:current`,
+          Math.min(timeoutMs, phase === 'restart' ? 30_000 : 8_000),
+        )
     const page = alreadyCurrentPage ?? await triggerRelaunch(targetMiniProgram, phase)
     if (!page) {
       return null

@@ -44,6 +44,7 @@ describe('ide devtools cleanup', () => {
     expect(resolveIdeDevtoolsProcessPatterns('darwin')).toEqual([
       'e2e/utils/automator.cli-bridge.ts',
       'wechatwebdevtools.app/Contents/MacOS/cli',
+      'wechatwebdevtools.app/Contents/MacOS/Electron',
       'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
       'wechatwebdevtools',
     ])
@@ -75,6 +76,7 @@ describe('ide devtools cleanup', () => {
     expect(cleanupProcessesByCommandPatternsMock).toHaveBeenCalledWith([
       'e2e/utils/automator.cli-bridge.ts',
       'wechatwebdevtools.app/Contents/MacOS/cli',
+      'wechatwebdevtools.app/Contents/MacOS/Electron',
       'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
       'wechatwebdevtools',
     ], 2_500)
@@ -116,10 +118,25 @@ describe('ide devtools cleanup', () => {
     expect(cleanupProcessesByCommandPatternsMock).toHaveBeenCalledWith([
       'e2e/utils/automator.cli-bridge.ts',
       'wechatwebdevtools.app/Contents/MacOS/cli',
+      'wechatwebdevtools.app/Contents/MacOS/Electron',
       'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
       'wechatwebdevtools',
     ], 2_500)
     expect(execaMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('stops the DevTools maintenance process after cache cleanup', async () => {
+    const { cleanDevtoolsCacheAndStop } = await import('./ide-devtools-cleanup')
+
+    const task = cleanDevtoolsCacheAndStop('all')
+    await vi.runAllTimersAsync()
+    await task
+
+    expect(execaMock).toHaveBeenCalledTimes(1)
+    expect(cleanupProcessesByCommandPatternsMock).toHaveBeenCalledTimes(1)
+    expect(execaMock.mock.invocationCallOrder[0]).toBeLessThan(
+      cleanupProcessesByCommandPatternsMock.mock.invocationCallOrder[0]!,
+    )
   })
 
   it('runs full ide cleanup by chaining dev cleanup and devtools cleanup', async () => {

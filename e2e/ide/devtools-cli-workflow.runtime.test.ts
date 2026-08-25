@@ -7,7 +7,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { connectMiniProgram } from 'weapp-ide-cli'
+import { connectMiniProgram, resolveProjectAutomatorPort } from 'weapp-ide-cli'
 import { registerRuntimeTools } from '../../packages/mcp/src/server/runtime'
 import { closeWechatIdeProject } from '../../packages/weapp-ide-cli/src/cli/wechat-commands'
 import { launchAutomator } from '../utils/automator'
@@ -24,6 +24,7 @@ const COUNT_LABEL_SELECTOR = '#count-label'
 const COUNT_BUTTON_SELECTOR = '.count-button-control'
 const COUNT_BUTTON_WRAPPER_SELECTOR = '#count-button'
 const AUTOMATOR_LAUNCH_TIMEOUT = 60_000
+const AUTOMATOR_PORT = resolveProjectAutomatorPort(TEMPLATE_ROOT)
 const SCREENSHOT_PROTOCOL_TIMEOUT = 90_000
 const SCRIPT_BIN = '/usr/bin/script'
 const SHOULD_RUN_TTY_HOTKEY_SMOKE = process.platform === 'darwin' && process.stdin.isTTY && process.stdout.isTTY
@@ -406,6 +407,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
   let weappIdeOpenExitCode: number | undefined
   let weappViteOpenExitCode: number | undefined
   let screenshotExitCode: number | undefined
+  let automatorPort: number | undefined
   let ideInfraStage: 'open' | 'screenshot' | undefined
   let preScreenshotDomReady = false
 
@@ -416,12 +418,20 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     }
     await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
     miniProgram = await launchAutomator({
+      launchMode: 'bridge',
+      maxLaunchRetries: 1,
+      port: AUTOMATOR_PORT,
       projectPath: TEMPLATE_ROOT,
       retryWarmupTimeout: true,
       timeout: AUTOMATOR_LAUNCH_TIMEOUT,
       warmupRoute: INDEX_ROUTE,
       warmupRootSelectors: [COUNT_BUTTON_WRAPPER_SELECTOR],
     })
+    const sessionMetadata = Reflect.get(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA') as { port?: number } | undefined
+    if (!Number.isInteger(sessionMetadata?.port) || Number(sessionMetadata?.port) <= 0) {
+      throw new Error('automator session metadata does not contain a valid port')
+    }
+    automatorPort = sessionMetadata?.port
   }
 
   async function runWithMiniProgramRecovery<T>(runner: () => Promise<T>) {
@@ -514,6 +524,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     weappIdeOpenExitCode = weappOpen.exitCode
 
     await closeWechatIdeProject().catch(() => {})
+    await cleanupResidualIdeProcesses()
     await ensureCliWorkflowDomReady()
 
     const screenshot = await runWeappIdeCli([
@@ -526,7 +537,8 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       SCREENSHOT_OUTPUT,
       '--timeout',
       String(SCREENSHOT_PROTOCOL_TIMEOUT),
-      '--no-runtime-service',
+      '--port',
+      String(automatorPort),
       '--json',
     ], {
       cwd: TEMPLATE_ROOT,
@@ -614,6 +626,8 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       COUNT_BUTTON_SELECTOR,
       '-p',
       TEMPLATE_ROOT,
+      '--port',
+      String(automatorPort),
     ], {
       cwd: TEMPLATE_ROOT,
       reject: false,
@@ -631,6 +645,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     const { manager, tools } = await createRuntimeTools()
     try {
       const connectResult = await getTool(tools, 'weapp_devtools_connect')({
+        port: automatorPort,
         projectPath: TEMPLATE_ROOT,
         timeout: 30_000,
       })
@@ -639,6 +654,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       })
 
       const findResult = await getTool(tools, 'weapp_runtime_find_node')({
+        port: automatorPort,
         projectPath: TEMPLATE_ROOT,
         selector: COUNT_LABEL_SELECTOR,
         withWxml: true,
@@ -649,6 +665,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
 
       const tapResult = await getTool(tools, 'weapp_runtime_tap_node')({
         projectPath: TEMPLATE_ROOT,
+        port: automatorPort,
         selector: COUNT_BUTTON_WRAPPER_SELECTOR,
         innerSelector: COUNT_BUTTON_SELECTOR,
         waitMs: 300,
@@ -659,19 +676,17 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       })
     }
     finally {
-      await manager.close({ projectPath: TEMPLATE_ROOT }).catch(() => {})
+      await manager.close({ port: automatorPort, projectPath: TEMPLATE_ROOT }).catch(() => {})
     }
 
-    await miniProgram.close().catch(() => {})
-    miniProgram = undefined
-    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
     await runDevHotkeyScreenshotSmoke()
 
-    await closeWechatIdeProject().catch(() => {})
     await expectHelpfulCliFailure([
       'current-page',
       '-p',
       TEMPLATE_ROOT,
+      '--port',
+      '1',
       '--timeout',
       '3000',
       '--no-runtime-service',
@@ -686,8 +701,6 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       return
     }
 
-    await closeWechatIdeProject().catch(() => {})
-    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
     await runDevHotkeyScreenshotSmoke({ open: true })
   }, 240_000)
 })

@@ -9,8 +9,9 @@ import path from 'node:path'
 import process from 'node:process'
 import Connection from './Connection'
 import { launchHeadlessAutomator } from './headless'
-import { endWith, extendDeep, isEmpty, isRelative, isWindows, sleep, toStr, waitUntil } from './internal/compat'
+import { endWith, extendDeep, isEmpty, isRelative, isWindows, sleep, waitUntil } from './internal/compat'
 import { acquireAutomatorPortLease } from './launcher/portLease'
+import { enableAutomatorViaHttp, extractWechatDevtoolsServicePort, resolveWechatDevtoolsBootstrapArgs } from './launcher/wechatCliFallback'
 import MiniProgram from './MiniProgram'
 import { normalizePlatform } from './platform'
 import SwanLauncher from './SwanLauncher'
@@ -237,29 +238,18 @@ export default class Launcher {
       let processError: unknown = null
       let processExitCode: number | null = null
       let processSignal: NodeJS.Signals | null = null
-      args = [
-        ...args,
-        'auto',
-        '--project',
-        resolvedProjectPath,
-        '--auto-port',
-        toStr(port),
-      ]
-      if (account) {
-        args.push('--auto-account', account)
-      }
-      else if (ticket) {
-        args.push('--ticket', ticket)
-      }
-      if (trustProject) {
-        args.push('--trust-project')
-      }
+      let successfulCliExitSettled = false
+      let httpFallbackAttempted = false
+      let httpFallbackError: unknown = null
+      let targetPort = port
+      const cliOutput: string[] = []
+      args = resolveWechatDevtoolsBootstrapArgs(args)
       try {
         const spawnTarget = shouldUseWindowsCommandShell(cliPath)
           ? resolveWindowsBatchSpawn(cliPath, args)
           : { file: cliPath, args }
         const child = spawn(spawnTarget.file, spawnTarget.args, {
-          stdio: 'ignore',
+          stdio: ['ignore', 'pipe', 'pipe'],
           cwd: cwd || undefined,
           ...(shouldUseWindowsCommandShell(cliPath)
             ? {
@@ -271,11 +261,20 @@ export default class Launcher {
         child.on('error', (error) => {
           processError = error
         })
+        child.stdout?.on('data', (chunk) => {
+          cliOutput.push(String(chunk))
+        })
+        child.stderr?.on('data', (chunk) => {
+          cliOutput.push(String(chunk))
+        })
         child.on('exit', (code, signal) => {
           processExitCode = code
           processSignal = signal
           if (code !== 0 || signal) {
             processError = new Error(`DevTools cli exited unexpectedly with code ${code ?? 'null'}${signal ? ` and signal ${signal}` : ''}`)
+          }
+          else {
+            successfulCliExitSettled = true
           }
         })
         child.unref()
@@ -290,9 +289,29 @@ export default class Launcher {
           if (processError) {
             return true
           }
+          if (successfulCliExitSettled && !httpFallbackAttempted) {
+            const servicePort = extractWechatDevtoolsServicePort(cliOutput.join('\n'))
+            if (servicePort) {
+              httpFallbackAttempted = true
+              try {
+                targetPort = await enableAutomatorViaHttp({
+                  account,
+                  autoPort: port,
+                  projectPath: resolvedProjectPath,
+                  servicePort,
+                  ticket,
+                  trustProject,
+                })
+              }
+              catch (error) {
+                httpFallbackError = error
+                return true
+              }
+            }
+          }
           const candidate = await this.connectTool({
             timeout: 3_000,
-            wsEndpoint: `ws://127.0.0.1:${port}`,
+            wsEndpoint: `ws://127.0.0.1:${targetPort}`,
           })
           try {
             await candidate.checkVersion()
@@ -317,6 +336,9 @@ export default class Launcher {
         }
       }, timeout, 1000)
       if (!miniProgram) {
+        if (httpFallbackError) {
+          throw httpFallbackError
+        }
         if (processError) {
           throw new Error('Failed to launch wechat web devTools, please make sure cliPath is correctly specified')
         }
@@ -330,9 +352,9 @@ export default class Launcher {
       }
       const resolvedMiniProgram = miniProgram as MiniProgram
       Reflect.set(resolvedMiniProgram, '__WEAPP_VITE_SESSION_METADATA', {
-        port,
+        port: targetPort,
         projectPath: resolvedProjectPath,
-        wsEndpoint: `ws://127.0.0.1:${port}`,
+        wsEndpoint: `ws://127.0.0.1:${targetPort}`,
       } satisfies ILauncherSessionMetadata)
       releasePortLeaseOnExit = !retainPortLeaseUntilSessionClose(resolvedMiniProgram, portLease)
       await sleep(5000)

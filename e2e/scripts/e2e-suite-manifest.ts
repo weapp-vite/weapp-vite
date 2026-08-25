@@ -13,6 +13,10 @@ const HEADLESS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.headless.config.ts')
 const WEB_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.web.config.ts')
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
+export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
+export const IDE_GITHUB_ISSUES_AGGREGATE_LABELS = [
+  IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
+] as const
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/devtools-cli-workflow.runtime.test.ts', '900000'],
   ['ide/github-issues.runtime.aggregate.test.ts', '3600000'],
@@ -34,13 +38,12 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
 ])
 const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/app-lifecycle.test.ts',
-  'ide/auto-routes-define-app-json.runtime.test.ts',
   'ide/app-vue-hmr-alias.runtime.test.ts',
   'ide/automator-bridge-wrapper-hmr.runtime.test.ts',
   'ide/automator-concurrent-sessions.runtime.test.ts',
-  'ide/devtools-cli-workflow.runtime.test.ts',
   'ide/github-issues.runtime.issue621.test.ts',
   'ide/github-issues.runtime.issue547.test.ts',
+  ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   'ide/github-issues.runtime.require-async.test.ts',
   'ide/lifecycle-compare.test.ts',
   'ide/react-runtime-spike.runtime.test.ts',
@@ -48,10 +51,8 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/stateful-hmr.runtime.test.ts',
   'ide/subpackage-shared-strategy-complex.runtime.test.ts',
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
-  'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
 ])
-export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
 export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
   'ide/github-issues.runtime.app-shell.test.ts',
   'ide/github-issues.runtime.import-meta.test.ts',
@@ -75,7 +76,7 @@ export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
 ] as const
 const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
 const IDE_GITHUB_ISSUES_PATTERNS = [
-  IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
+  ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   // wx.downloadFile 的域名校验依赖完整独立项目，不能复用聚合目标的裁剪构建。
   'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
   'ide/github-issues.runtime.issue547.test.ts',
@@ -87,7 +88,10 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
   'ide/github-issues.runtime.issue642-bug8.test.ts',
   'ide/github-issues.runtime.require-async.test.ts',
+  'ide/github-issues.runtime.issue852.test.ts',
   'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
+  'ide/github-issues.runtime.subpackage-item.test.ts',
+  'ide/github-issues.runtime.subpackage-user.test.ts',
 ]
 const IDE_CHUNK_MODES_PATTERNS = [
   'ide/chunk-modes.runtime.duplicate.test.ts',
@@ -135,8 +139,11 @@ const IDE_FULL_CORE_PATTERNS = [
   'ide/app-lifecycle.test.ts',
   'ide/auto-routes-define-app-json.runtime.test.ts',
   'ide/devtools-cli-workflow.runtime.test.ts',
-  IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
+  ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   'ide/github-issues.runtime.issue621.test.ts',
+  'ide/github-issues.runtime.issue852.test.ts',
+  'ide/github-issues.runtime.subpackage-item.test.ts',
+  'ide/github-issues.runtime.subpackage-user.test.ts',
   'ide/lifecycle-compare.test.ts',
   'ide/react-runtime-spike.runtime.test.ts',
   'ide/shared-styles.runtime.test.ts',

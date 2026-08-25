@@ -115,6 +115,19 @@ function hasUsableConstructor(value: unknown, args: unknown[] = []) {
   }
 }
 
+function hasUsablePrototypeMethods(value: unknown, methods: string[], properties: string[] = []) {
+  if (typeof value !== 'function' || isPlaceholderRequestGlobal(value)) {
+    return false
+  }
+
+  const prototype = value.prototype as Record<string, unknown> | undefined
+  return Boolean(
+    prototype
+    && methods.every(method => typeof prototype[method] === 'function')
+    && properties.every(property => property in prototype),
+  )
+}
+
 function hasWebCompatibleUrlConstructor(value: unknown) {
   if (!hasUsableConstructor(value, ['https://request-globals.invalid'])) {
     return false
@@ -213,7 +226,10 @@ function sortUrlSearchParams(this: URLSearchParams) {
 function patchUrlSearchParamsConstructor(host: Record<string, any>) {
   const URLSearchParamsConstructor = host.URLSearchParams
   const prototype = URLSearchParamsConstructor?.prototype as Record<string, any> | undefined
-  if (!prototype) {
+  if (
+    !prototype
+    || !['append', 'delete', 'entries', 'forEach'].every(method => typeof prototype[method] === 'function')
+  ) {
     return false
   }
 
@@ -387,16 +403,16 @@ function installUrlGlobals(host: Record<string, any>) {
   if (!hasWebCompatibleUrlConstructor(host.URL) || !patchUrlConstructor(host)) {
     assignHostGlobal(host, 'URL', URLPolyfill)
   }
-  if (!hasUsableConstructor(host.URLSearchParams, ['client=graphql-request']) || !patchUrlSearchParamsConstructor(host)) {
+  if (!patchUrlSearchParamsConstructor(host)) {
     assignHostGlobal(host, 'URLSearchParams', URLSearchParamsPolyfill)
   }
-  if (!hasUsableConstructor(host.Blob)) {
+  if (!hasUsablePrototypeMethods(host.Blob, ['arrayBuffer', 'slice'])) {
     assignHostGlobal(host, 'Blob', BlobPolyfill)
   }
-  if (!hasUsableConstructor(host.File, [[], 'request-globals.bin'])) {
+  if (!hasUsablePrototypeMethods(host.File, ['arrayBuffer', 'slice'], ['name'])) {
     assignHostGlobal(host, 'File', FilePolyfill)
   }
-  if (!hasUsableConstructor(host.FormData)) {
+  if (!hasUsablePrototypeMethods(host.FormData, ['append', 'entries'])) {
     assignHostGlobal(host, 'FormData', FormDataPolyfill)
   }
 }

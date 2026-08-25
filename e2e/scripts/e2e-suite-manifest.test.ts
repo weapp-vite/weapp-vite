@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getSuiteTasks, getWebTasks, partitionE2ETasks } from './e2e-suite-manifest'
+import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
   it('runs the web suite through its dedicated Vitest config', () => {
@@ -22,6 +22,16 @@ describe('e2e suite manifest', () => {
 
   it('registers component library IDE coverage as a standalone entry', async () => {
     expect(await getSuiteTasks('ide-component-libraries')).toEqual(getIdeComponentLibraryTasks())
+  })
+
+  it('runs the github issue aggregate once with a bridge wrapper', () => {
+    const tasks = getIdeExhaustiveTasks()
+    const aggregateTasks = tasks.filter(task => IDE_GITHUB_ISSUES_AGGREGATE_LABELS.includes(task.label))
+    const labels = new Set(tasks.map(task => task.label))
+
+    expect(aggregateTasks).toHaveLength(1)
+    expect(aggregateTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER === '1')).toBe(true)
+    expect(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS.every(pattern => !labels.has(pattern))).toBe(true)
   })
 
   it('keeps the PR CI suite as a stable subset of the full CI suite', async () => {
