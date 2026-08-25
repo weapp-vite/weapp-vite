@@ -870,6 +870,19 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('{{key}} = {{value}}')
   })
 
+  it('preserves nested member paths in v-for keys', () => {
+    const template = `
+<GalleryCard v-for="entry in column" :key="entry.item.id" />
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/issue-868/index.vue')
+
+    expect(code).toContain('wx:for="{{column}}"')
+    expect(code).toContain('wx:for-item="entry"')
+    expect(code).toContain('wx:key="item.id"')
+    expect(code).not.toContain('wx:key="item"')
+  })
+
   it('rewrites component simple event handlers to inline payload handlers', () => {
     const template = `
 <CompatAltPanel @run="onPanelRun" />
