@@ -2,13 +2,13 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { transformBindDirective } from '../directives/bind'
-import { createForKeyProjection } from '../directives/forKey'
+import { createForKeyProjection, resolveNativeForKeyValue } from '../directives/forKey'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
-import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression, withForScope, withScope } from './helpers'
+import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, getBindDirectiveExpression, parseForExpression, withForScope, withScope } from './helpers'
 import { shouldTransformAsComponentWithSlots, transformComponentWithSlots } from './tag-component'
 import { transformNormalElement } from './tag-normal'
 import { transformSlotElement } from './tag-slot'
@@ -27,6 +27,29 @@ function resolveListExpression(rawExpValue: string, context: TransformContext, h
     ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
     : null
   return runtimeExp ?? normalizeWxmlExpressionWithContext(rawExpValue, context)
+}
+
+function requiresRuntimeForKeyProjection(node: ElementNode, context: TransformContext): boolean {
+  const forDirective = node.props.find((prop): prop is DirectiveNode => {
+    return prop.type === NodeTypes.DIRECTIVE && prop.name === 'for'
+  })
+  const keyDirective = node.props.find((prop): prop is DirectiveNode => {
+    return prop.type === NodeTypes.DIRECTIVE
+      && prop.name === 'bind'
+      && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+      && prop.arg.content === 'key'
+  })
+  if (forDirective?.exp?.type === NodeTypes.SIMPLE_EXPRESSION && keyDirective) {
+    const forInfo = parseForExpression(forDirective.exp.content)
+    const rawKeyExp = getBindDirectiveExpression(keyDirective).trim()
+    if (rawKeyExp && !resolveNativeForKeyValue(rawKeyExp, forInfo, context.platform.keyThisValue)) {
+      return true
+    }
+  }
+  return node.children.some((child) => {
+    return child.type === NodeTypes.ELEMENT
+      && requiresRuntimeForKeyProjection(child as ElementNode, context)
+  })
 }
 
 export function transformIfElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
@@ -99,7 +122,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
       )
     }
   }
-  if (context.classStyleRuntime === 'js' && !forInfo.index) {
+  if ((context.classStyleRuntime === 'js' || requiresRuntimeForKeyProjection(node, context)) && !forInfo.index) {
     forInfo.index = `__wv_index_${context.forIndexSeed++}`
   }
   const listExp = forInfo.listExp

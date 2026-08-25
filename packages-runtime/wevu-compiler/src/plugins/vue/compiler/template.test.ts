@@ -809,6 +809,47 @@ describe('compileVueTemplateToWxml', () => {
     expect(direct.code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="id"`)
     expect(direct.classStyleBindings).toBeUndefined()
   })
+
+  it('only keeps simple key identifiers on native paths when they belong to the loop scope', () => {
+    const external = compileVueTemplateToWxml(
+      '<GalleryCard v-for="entry in column" :key="externalKey" />',
+      '/project/src/components/Gallery.vue',
+    )
+    expect(external.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_0}}"`)
+    expect(external.code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="__wv_key_0"`)
+    expect(external.classStyleBindings).toContainEqual(expect.objectContaining({
+      exp: 'v-for :key externalKey',
+    }))
+
+    const destructured = compileVueTemplateToWxml(
+      '<GalleryCard v-for="{ id } in column" :key="id" />',
+      '/project/src/components/Gallery.vue',
+    )
+    expect(destructured.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{column}}"`)
+    expect(destructured.code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="id"`)
+    expect(destructured.classStyleBindings).toBeUndefined()
+  })
+
+  it('emits unique ancestor indexes for nested key projections in wxs mode', () => {
+    const compiled = compileVueTemplateToWxml(`
+<view v-for="group in groups" :key="group.id">
+  <GalleryCard
+    v-for="entry in group.column"
+    :key="entry.item.id"
+    @tap="select(entry)"
+  />
+</view>
+    `.trim(), '/project/src/components/NestedGallery.vue', {
+      classStyleRuntime: 'wxs',
+      wxsExtension: 'wxs',
+    })
+
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forIndexAttr}="__wv_index_0"`)
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_0[__wv_index_0]}}"`)
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forIndexAttr}="__wv_index_1"`)
+    expect(compiled.code).toContain('data-wv-i0="{{__wv_index_0}}"')
+    expect(compiled.code).toContain('data-wv-i1="{{__wv_index_1}}"')
+  })
   it('evaluates nested key projections without mutating source items', () => {
     const compiled = compileVueTemplateToWxml(
       '<GalleryCard v-for="entry in column" :key="entry.item.id" />',

@@ -13,12 +13,23 @@ export interface ForKeyProjection {
   listExp: string
 }
 
+function resolveItemAliasKeyField(trimmed: string, forInfo: ForParseResult) {
+  const aliasExp = forInfo.itemAliases?.[trimmed]?.trim()
+  if (!aliasExp || !forInfo.item || !aliasExp.startsWith(`${forInfo.item}.`)) {
+    return null
+  }
+  const remainder = aliasExp.slice(forInfo.item.length + 1)
+  return SIMPLE_MEMBER_PATH_RE.test(remainder) && !remainder.includes('.')
+    ? remainder
+    : null
+}
+
 export function resolveNativeForKeyValue(exp: string, forInfo: ForParseResult | undefined, keyThisValue: string) {
   const trimmed = exp.trim()
   if (!forInfo) {
     return null
   }
-  if ((forInfo.item && trimmed === forInfo.item) || (forInfo.key && trimmed === forInfo.key)) {
+  if (forInfo.item && trimmed === forInfo.item) {
     return keyThisValue
   }
   if (forInfo.item && trimmed.startsWith(`${forInfo.item}.`)) {
@@ -29,7 +40,10 @@ export function resolveNativeForKeyValue(exp: string, forInfo: ForParseResult | 
     return null
   }
   if (SIMPLE_IDENTIFIER_RE.test(trimmed)) {
-    return trimmed
+    if (forInfo.index === trimmed) {
+      return trimmed
+    }
+    return resolveItemAliasKeyField(trimmed, forInfo)
   }
   return null
 }
