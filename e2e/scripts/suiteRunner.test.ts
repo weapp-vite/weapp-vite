@@ -309,15 +309,7 @@ describe('suiteRunner', () => {
     expect(ideComponentLibraryVisualTasks.map(task => task.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE)).toEqual(['visual', 'visual'])
     expect(ideComponentLibraryVisualFullTasks.map(task => task.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE)).toEqual(['visual-full', 'visual-full'])
     expect(devtoolsCliWorkflowTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
-    expect(githubIssuesAggregateTasks.map(task => task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS)).toEqual([
-      '3600000',
-      '1200000',
-      '1200000',
-      '1200000',
-      '1200000',
-      '1200000',
-      '1200000',
-    ])
+    expect(githubIssuesAggregateTasks.map(task => task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS)).toEqual(['3600000'])
     expect(statefulHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(subpackageSharedStrategyComplexTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
     expect(templateDevOpenAllTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1800000')
@@ -400,11 +392,8 @@ describe('suiteRunner', () => {
       'ide/github-issues.runtime.issue642-bug7-default.test.ts',
       'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
       'ide/github-issues.runtime.issue642-bug8.test.ts',
-      'ide/github-issues.runtime.issue706.test.ts',
-      'ide/github-issues.runtime.issue829.test.ts',
       'ide/github-issues.runtime.require-async.test.ts',
       'ide/github-issues.runtime.issue852.test.ts',
-      'ide/github-issues.runtime.slot-fallback.test.ts',
       'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
       'ide/github-issues.runtime.subpackage-item.test.ts',
       'ide/github-issues.runtime.subpackage-user.test.ts',
