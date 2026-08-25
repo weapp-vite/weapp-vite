@@ -41,6 +41,7 @@ describe('e2e suite manifest', () => {
     expect(prTasks.length).toBeGreaterThan(0)
     expect(prTasks.every(task => fullLabels.has(task.label))).toBe(true)
     expect(prTasks.some(task => task.label.startsWith('hmr-guard:'))).toBe(false)
+    expect(prTasks.some(task => task.label === 'ci/issue-862-output-watch.test.ts')).toBe(true)
     expect(await getSuiteTasks('ci-pr')).toEqual(await getCiPrTasks())
     expect(await getSuiteTasks('ci-full')).toEqual(await getCiFullTasks())
   })
