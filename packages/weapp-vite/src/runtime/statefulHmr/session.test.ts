@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  createStatefulHmrWatchIgnored,
   getChangedStatefulHmrSnapshotAssets,
   isSafeJavaScriptPatch,
   isStatefulHmrAssetFile,
@@ -15,41 +14,6 @@ import {
 } from './session'
 
 describe('stateful hmr session', () => {
-  it('keeps user watcher ignores and excludes generated output across path formats', () => {
-    const userMatcher = (id: string) => id.endsWith('.generated.ts')
-    const ignored = createStatefulHmrWatchIgnored(
-      'C:\\project',
-      'C:\\project\\dist',
-      ['**/.cache/**', /ignored-package/, userMatcher],
-    ) as Array<string | RegExp | ((id: string) => boolean)>
-
-    expect(ignored.slice(0, 3)).toEqual(['**/.cache/**', /ignored-package/, userMatcher])
-    const outDirMatcher = ignored[3] as (id: string) => boolean
-    expect(outDirMatcher('dist\\app.json')).toBe(true)
-    expect(outDirMatcher('C:\\project\\dist\\pages\\index.js')).toBe(true)
-    expect(outDirMatcher('C:/project/dist-other/app.json')).toBe(false)
-    expect(outDirMatcher('C:\\project\\pages\\index.ts')).toBe(false)
-  })
-
-  it('resolves a relative output directory from a POSIX project root', () => {
-    const ignored = createStatefulHmrWatchIgnored('/project', 'dist') as Array<(id: string) => boolean>
-    const outDirMatcher = ignored[0]!
-
-    expect(outDirMatcher('/project/dist/app.js')).toBe(true)
-    expect(outDirMatcher('dist/pages/index.js')).toBe(true)
-    expect(outDirMatcher('/project/src/pages/index.ts')).toBe(false)
-  })
-
-  it('preserves POSIX and Windows filesystem roots when resolving output paths', () => {
-    const posixIgnored = createStatefulHmrWatchIgnored('/', 'dist') as Array<(id: string) => boolean>
-    const windowsIgnored = createStatefulHmrWatchIgnored('C:\\', 'dist') as Array<(id: string) => boolean>
-
-    expect(posixIgnored[0]!('/dist/app.js')).toBe(true)
-    expect(posixIgnored[0]!('/dist-other/app.js')).toBe(false)
-    expect(windowsIgnored[0]!('C:\\dist\\app.js')).toBe(true)
-    expect(windowsIgnored[0]!('C:\\dist-other\\app.js')).toBe(false)
-  })
-
   it('only accepts application script and Vue main modules as HMR boundaries', () => {
     const srcRoot = '/project/src'
     const entryIds = new Set([

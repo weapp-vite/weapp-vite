@@ -1,6 +1,10 @@
 import type chokidar from 'chokidar'
+import type { Matcher } from 'vite'
 import type { ConfigService } from '../config/types'
 import process from 'node:process'
+import path from 'pathe'
+import { isPathInside } from '../../utils/path'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 
 type ChokidarWatchOptions = NonNullable<Parameters<typeof chokidar.watch>[1]>
 
@@ -57,4 +61,29 @@ export function createSidecarWatchOptions(
     ...(typeof polling.interval === 'number' ? { interval: polling.interval } : {}),
     ...(typeof polling.binaryInterval === 'number' ? { binaryInterval: polling.binaryInterval } : {}),
   } as ChokidarWatchOptions
+}
+
+/**
+ * 合并用户配置并排除 Vite 开发服务器不应监听的构建输出目录。
+ */
+export function createViteWatchIgnored(
+  root: string,
+  outDir: string,
+  ignored?: Matcher,
+): Matcher {
+  const normalizedRoot = normalizeFsResolvedId(root)
+  const normalizedOutDir = normalizeFsResolvedId(
+    path.isAbsolute(outDir) ? outDir : path.resolve(root, outDir),
+  )
+  const patterns = ignored === undefined ? [] : Array.isArray(ignored) ? ignored : [ignored]
+
+  return [
+    ...patterns,
+    (id: string) => {
+      const normalizedId = normalizeFsResolvedId(
+        path.isAbsolute(id) ? id : path.resolve(normalizedRoot, id),
+      )
+      return isPathInside(normalizedOutDir, normalizedId)
+    },
+  ]
 }

@@ -3,6 +3,7 @@ import type { CompilerContext, MutableCompilerContext } from '../context'
 import { createLogger, createServer, transformWithOxc } from 'vite'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
+import { createViteWatchIgnored } from '../runtime/watch/options'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
 import {
   parseLogicalEntryId,
@@ -172,6 +173,15 @@ export async function createDevModuleGraphProvider(
   buildConfig: InlineConfig,
   onChange: (change: DevModuleGraphChange) => void,
 ): Promise<DevModuleGraphProvider> {
+  const configService = ctx.configService
+  const userWatch = buildConfig.server?.watch
+  const ignored = configService?.outDir
+    ? createViteWatchIgnored(
+        buildConfig.root ?? configService.cwd,
+        configService.outDir,
+        userWatch?.ignored,
+      )
+    : userWatch?.ignored
   const server: ViteDevServer = await createServer({
     ...buildConfig,
     appType: 'custom',
@@ -185,6 +195,10 @@ export async function createDevModuleGraphProvider(
       ...(buildConfig.server ?? {}),
       hmr: true,
       middlewareMode: true,
+      watch: {
+        ...(userWatch ?? {}),
+        ...(ignored !== undefined ? { ignored } : {}),
+      },
     },
     build: {
       ...(buildConfig.build ?? {}),
