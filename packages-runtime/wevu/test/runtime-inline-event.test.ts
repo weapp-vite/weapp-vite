@@ -1,3 +1,4 @@
+import type { InlineExpressionMap } from '@/runtime/register/inline'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '@/index'
 import { isReactive, ref } from '@/reactivity'
@@ -7,6 +8,13 @@ const registeredComponents: Record<string, any>[] = []
 
 ;(globalThis as any).Component = (options: Record<string, any>) => {
   registeredComponents.push(options)
+}
+
+function isQuantityEntry(value: unknown): value is { quantity: number } {
+  return value !== null
+    && typeof value === 'object'
+    && 'quantity' in value
+    && typeof value.quantity === 'number'
 }
 
 describe('runtime: inline event handler', () => {
@@ -725,6 +733,125 @@ describe('runtime: inline event handler', () => {
     expect(source[0].quantity).toBe(1)
     expect(source[1].quantity).toBe(5)
     expect(itemSnapshot.quantity).toBe(2)
+  })
+
+  it('restores nested v-for arguments through parent and child indexes', () => {
+    const source = {
+      groups: [
+        {
+          column: [
+            { id: 'entry-a', quantity: 1 },
+            { id: 'entry-b', quantity: 2 },
+          ],
+        },
+      ],
+    }
+    const itemSnapshot = { id: 'entry-b', quantity: 2 }
+    const updateQuantity = vi.fn((item: { quantity: number }) => {
+      item.quantity += 1
+    })
+    const inlineMap = {
+      __wv_inline_nested: {
+        keys: ['entry'],
+        indexKeys: ['__wv_i0', '__wv_i1'],
+        scopeResolvers: [
+          (ctx: typeof source, scope: Record<string, unknown>) => {
+            const groupIndex = scope.__wv_i0
+            const entryIndex = scope.__wv_i1
+            if (typeof groupIndex !== 'number' || typeof entryIndex !== 'number') {
+              return undefined
+            }
+            return ctx.groups[groupIndex]?.column[entryIndex]
+          },
+        ],
+        fn: (
+          ctx: typeof source & { updateQuantity: typeof updateQuantity },
+          scope: Record<string, unknown>,
+        ) => {
+          if (isQuantityEntry(scope.entry)) {
+            ctx.updateQuantity(scope.entry)
+          }
+        },
+      },
+    } satisfies InlineExpressionMap
+
+    runInlineExpression(
+      {
+        ...source,
+        updateQuantity,
+      },
+      undefined,
+      {
+        currentTarget: {
+          dataset: {
+            wvInlineId: '__wv_inline_nested',
+            wvS0: itemSnapshot,
+            wvI0: '0',
+            wvI1: '1',
+          },
+        },
+      },
+      inlineMap,
+    )
+
+    expect(updateQuantity).toHaveBeenCalledWith(source.groups[0]?.column[1])
+    expect(source.groups[0]?.column[1]?.quantity).toBe(3)
+    expect(itemSnapshot.quantity).toBe(2)
+  })
+
+  it('preserves object-map keys while restoring v-for arguments', () => {
+    const source = {
+      alpha: { id: 'entry-a', quantity: 1 },
+      beta: { id: 'entry-b', quantity: 2 },
+    }
+    const itemSnapshot = { id: 'entry-a', quantity: 1 }
+    const updateQuantity = vi.fn((item: { quantity: number }) => {
+      item.quantity += 1
+    })
+    const inlineMap = {
+      __wv_inline_object: {
+        keys: ['entry'],
+        indexKeys: ['__wv_i0'],
+        scopeResolvers: [
+          {
+            type: 'for-item',
+            path: 'entryMap',
+            indexKey: '__wv_i0',
+          },
+        ],
+        fn: (
+          ctx: { updateQuantity: typeof updateQuantity },
+          scope: Record<string, unknown>,
+        ) => {
+          if (isQuantityEntry(scope.entry)) {
+            ctx.updateQuantity(scope.entry)
+          }
+        },
+      },
+    } satisfies InlineExpressionMap
+
+    runInlineExpression(
+      {
+        entryMap: source,
+        updateQuantity,
+      },
+      undefined,
+      {
+        currentTarget: {
+          dataset: {
+            wvInlineId: '__wv_inline_object',
+            wvS0: itemSnapshot,
+            wvI0: 'alpha',
+          },
+        },
+      },
+      inlineMap,
+    )
+
+    expect(updateQuantity).toHaveBeenCalledWith(source.alpha)
+    expect(source.alpha.quantity).toBe(2)
+    expect(source.beta.quantity).toBe(2)
+    expect(itemSnapshot.quantity).toBe(1)
   })
 
   it('resolves list path from ref-like source for resolver metadata object', () => {
