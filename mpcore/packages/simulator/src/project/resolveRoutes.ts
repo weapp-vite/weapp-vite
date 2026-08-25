@@ -1,7 +1,10 @@
+import type { HeadlessPluginDescriptor } from './plugins'
+
 export interface HeadlessRouteRecord {
   kind: 'page'
   route: string
-  source: 'pages' | 'subPackages'
+  source: 'pages' | 'plugin' | 'subPackages'
+  resourcePath?: string
   subpackageRoot?: string
 }
 
@@ -25,7 +28,10 @@ function pushRoute(
   records.push(record)
 }
 
-export function resolveRoutesFromAppConfig(config: Record<string, any>) {
+export function resolveRoutesFromAppConfig(
+  config: Record<string, any>,
+  plugins: HeadlessPluginDescriptor[] = [],
+) {
   const records: HeadlessRouteRecord[] = []
   const seen = new Set<string>()
 
@@ -76,6 +82,24 @@ export function resolveRoutesFromAppConfig(config: Record<string, any>) {
         route,
         source: 'subPackages',
         subpackageRoot: root || undefined,
+      })
+    }
+  }
+
+  for (const plugin of plugins) {
+    const pages = plugin.config.pages
+    if (!pages || typeof pages !== 'object' || Array.isArray(pages)) {
+      continue
+    }
+    for (const resourcePath of Object.values(pages)) {
+      if (typeof resourcePath !== 'string' || !resourcePath) {
+        continue
+      }
+      pushRoute(records, seen, {
+        kind: 'page',
+        resourcePath: `${plugin.virtualRoot}/${resourcePath}`,
+        route: `plugin-private://${plugin.provider}/${resourcePath}`,
+        source: 'plugin',
       })
     }
   }

@@ -18,6 +18,7 @@ import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
 import { RuntimeKernel } from '../kernel'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
+import { resolvePluginRequest } from '../project/plugins'
 import { createAppInstance } from '../runtime/appInstance'
 import { runComponentPageLifetime } from '../runtime/componentInstance'
 import { createPageInstance } from '../runtime/pageInstance'
@@ -354,6 +355,8 @@ export class BrowserHeadlessSession {
       {
         globals: options.globals,
         kernel: this.kernel,
+        miniprogramRootPath: this.project.miniprogramRootPath,
+        plugins: this.project.plugins,
       },
     )
   }
@@ -1348,8 +1351,9 @@ export class BrowserHeadlessSession {
   }
 
   private createFreshPage(target: ResolvedNavigationTarget) {
-    const pageModulePath = join(this.project.miniprogramRootPath, `${target.routeRecord.route}.js`)
-    const pageConfigPath = join(this.project.miniprogramRootPath, `${target.routeRecord.route}.json`)
+    const resourcePath = target.routeRecord.resourcePath ?? target.routeRecord.route
+    const pageModulePath = join(this.project.miniprogramRootPath, `${resourcePath}.js`)
+    const pageConfigPath = join(this.project.miniprogramRootPath, `${resourcePath}.json`)
     const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
     const pageConfig = readJsonObject(this.files, pageConfigPath)
     const pageInstance = createPageInstance(target.routeRecord.route, pageDefinition, target.query, {
@@ -1389,7 +1393,10 @@ export class BrowserHeadlessSession {
     const baseRoute = this.currentPageInstance
       ? stripLeadingSlash(this.currentPageInstance.route)
       : undefined
-    const normalizedRoute = resolveNavigationPath(pathname, baseRoute)
+    const pluginRequest = resolvePluginRequest(this.project.plugins, pathname, 'page')
+    const normalizedRoute = pluginRequest
+      ? `plugin-private://${pluginRequest.plugin.provider}/${pluginRequest.resourcePath.slice(pluginRequest.plugin.virtualRoot.length + 1)}`
+      : resolveNavigationPath(pathname, baseRoute)
     const routeRecord = this.project.routes.find(item => item.route === normalizedRoute)
     if (!routeRecord) {
       this.bootstrap(createAppLaunchOptions(normalizedRoute, query))

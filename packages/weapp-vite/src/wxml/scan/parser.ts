@@ -25,6 +25,8 @@ const SCRIPT_MODULE_IMPORT_RE = /\.(?:wxs|sjs)(?:\.[jt]s)?$/i
 const COMMENT_IFDEF_RE = /#ifdef\s+(\w+)/
 const COMMENT_ENDIF_RE = /#endif/
 const MP_DIRECTIVE_NAME_RE = /^([a-z]+):(if|elif|else|for|for-item|for-index|key)$/
+const LEGACY_WEAPP_DIRECTIVE_NAME_RE = /^wx-(if|for)$/
+const GLASS_EASEL_ESCAPE_RE = /\\["']/
 const SUPPORTED_MP_DIRECTIVE_PREFIXES = new Set(getSupportedMiniProgramDirectivePrefixes())
 
 interface ParserResult {
@@ -90,10 +92,14 @@ export function parseWxml(options: ParserOptions): ParserResult {
   const eventTokens: Token[] = []
   // 平台模板指令（wx:* -> a:*）
   const directiveTokens: Token[] = []
+  const glassEaselFindings: WxmlToken['glassEaselFindings'] = []
   // 平台标签名（HelloWorld -> hello-world）
   const tagNameTokens: Token[] = []
   // 标签调用栈（tag stack）
   const tagStack: string[] = []
+  const loopStack: boolean[] = []
+  let loopDepth = 0
+  let currentHasLoopDirective = false
   const parser = new Parser(
     {
       onopentagname(name) {
@@ -101,6 +107,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
         currentTagName = name
         importAttrs = getScriptModuleImportAttrs(currentTagName) ?? getTemplateImportAttrs(currentTagName)
         tagStartIndex = parser.startIndex
+        currentHasLoopDirective = false
         if (normalizeComponentTagName && shouldNormalizeTagName(name)) {
           const normalized = toKebabCaseTagName(name)
           if (normalized !== name) {
@@ -121,6 +128,35 @@ export function parseWxml(options: ParserOptions): ParserResult {
       },
       onattribute(name, value, quote) {
         attrs[name] = value
+        const legacyDirectiveMatch = LEGACY_WEAPP_DIRECTIVE_NAME_RE.exec(name)
+        if (legacyDirectiveMatch) {
+          const start = parser.startIndex
+          const end = start + name.length
+          directiveTokens.push({
+            start,
+            end,
+            value: `${directivePrefix}:${legacyDirectiveMatch[1]}`,
+          })
+          glassEaselFindings.push({
+            code: 'GE002',
+            severity: 'warning',
+            message: `${name} 不受 glass-easel 支持，已安全归一化为 ${directivePrefix}:${legacyDirectiveMatch[1]}。`,
+            start,
+            normalized: true,
+          })
+        }
+        if (name === 'wx:for' || name === 'wx-for' || name === 'let:for') {
+          currentHasLoopDirective = true
+        }
+        const rawAttribute = source.slice(parser.startIndex, parser.endIndex + 1)
+        if (GLASS_EASEL_ESCAPE_RE.test(rawAttribute)) {
+          glassEaselFindings.push({
+            code: 'GE004',
+            severity: 'error',
+            message: '属性仍使用反斜杠转义引号，请改用 &quot;、&apos; 或调整属性外层引号。',
+            start: parser.startIndex,
+          })
+        }
         if (!currentTagName || !isScriptModuleTagName(currentTagName)) {
           templateTokens.push({
             start: parser.startIndex,
@@ -199,11 +235,26 @@ export function parseWxml(options: ParserOptions): ParserResult {
         }
       },
       onopentag(name, attributes) {
+        if (name === 'include' && loopDepth > 0) {
+          glassEaselFindings.push({
+            code: 'GE003',
+            severity: 'error',
+            message: 'wx:for 作用域内的 <include> 无法向 glass-easel 传递循环变量，请改用 <template>。',
+            start: tagStartIndex,
+          })
+        }
+        loopStack.push(currentHasLoopDirective)
+        if (currentHasLoopDirective) {
+          loopDepth += 1
+        }
         if (isScriptModuleTagName(name)) {
           scriptModules.push({ attrs: attributes, tagName: name })
         }
       },
       onclosetag(name) {
+        if (loopStack.pop()) {
+          loopDepth -= 1
+        }
         currentTagName = tagStack.pop()
         if (currentTagName) {
           const componentName = normalizeComponentTagName && shouldNormalizeTagName(currentTagName)
@@ -335,6 +386,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
     eventTokens,
     directiveTokens,
     tagNameTokens,
+    glassEaselFindings,
     code: source,
   }
 

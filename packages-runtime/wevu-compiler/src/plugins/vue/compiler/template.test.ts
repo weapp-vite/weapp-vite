@@ -491,7 +491,7 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain(`${DEFAULT_DIRECTIVES.ifAttr}="{{ ok }}"`)
-    expect(code).toContain('title="a & b"')
+    expect(code).toContain('title="a &amp; b"')
     expect(code).toContain('{{ label }}')
     expect(code).not.toContain('v-if="ok"')
     expect(warnings).not.toContainEqual(expect.stringContaining('decodeEntities'))

@@ -140,7 +140,16 @@
     },
     "componentFramework": {
       "type": "string",
-      "description": "组件框架。"
+      "description": "组件框架。仅在主动启用 WebView glass-easel 时需同时开启 glassEaselWebview。",
+      "enum": [
+        "exparser",
+        "glass-easel"
+      ]
+    },
+    "glassEaselWebview": {
+      "type": "boolean",
+      "description": "显式启用 WebView glass-easel，最低基础库为 3.8.12，默认不启用；需与 componentFramework: glass-easel 配套使用。",
+      "x-wechat-min-version": "3.8.12"
     },
     "styleIsolation": {
       "type": "string",

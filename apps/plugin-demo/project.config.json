@@ -22,7 +22,7 @@
     ],
     "minifyWXSS": true,
     "minifyWXML": true,
-    "localPlugins": false,
+    "localPlugins": true,
     "condition": false,
     "swc": false,
     "disableSWC": true,

@@ -45,3 +45,16 @@ export default defineAppJson({
   subPackages: autoRoutes.subPackages,
 })
 ```
+
+## glass-easel 配置
+
+WebView glass-easel 是显式启用的兼容方案，weapp-vite 模板默认不启用。开发者工具只提供低于 `3.8.12` 的基础库时应保持回退；`componentFramework: "glass-easel"` 单独存在不会开启 WebView glass-easel。确认开发者工具与真机基础库均不低于 `3.8.12` 后，再由用户在宿主 JSON 中成对配置：
+
+```json
+{
+  "componentFramework": "glass-easel",
+  "glassEaselWebview": true
+}
+```
+
+Page 和 Plugin 也使用相同字段；插件必须直接写在 `plugin.json`。weapp-vite 不提供 `weapp.glassEasel` 之类的重复配置，宿主 JSON 是唯一配置源；删除或关闭 `glassEaselWebview` 即可回退。显式启用后可运行 `wv analyze --glass-easel-check`，详见 [Analyze 报告配置](/config/analyze#glass-easel-check)。

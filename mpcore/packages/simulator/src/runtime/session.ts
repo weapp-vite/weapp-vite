@@ -18,6 +18,7 @@ import { createHostRegistries } from '../host'
 import { RuntimeKernel } from '../kernel'
 import { loadProject } from '../project'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
+import { resolvePluginRequest } from '../project/plugins'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
 import { createHeadlessAnimation } from '../view/animation'
 import { createHeadlessCanvasContext } from '../view/canvasContext'
@@ -346,7 +347,9 @@ export class HeadlessSession {
         artifactSource: this.project.artifactSource,
         globals: options.globals,
         kernel: this.kernel,
+        miniprogramRootPath: this.project.miniprogramRootPath,
         onConsole: entry => this.emit('console', entry),
+        plugins: this.project.plugins,
       },
     )
   }
@@ -1247,8 +1250,9 @@ export class HeadlessSession {
   }
 
   private createFreshPage(target: ResolvedNavigationTarget) {
-    const pageModulePath = path.resolve(this.project.miniprogramRootPath, `${target.routeRecord.route}.js`)
-    const pageConfigPath = path.resolve(this.project.miniprogramRootPath, `${target.routeRecord.route}.json`)
+    const resourcePath = target.routeRecord.resourcePath ?? target.routeRecord.route
+    const pageModulePath = path.resolve(this.project.miniprogramRootPath, `${resourcePath}.js`)
+    const pageConfigPath = path.resolve(this.project.miniprogramRootPath, `${resourcePath}.json`)
     const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
     const pageConfig = readJsonObject(this.project, pageConfigPath)
     const pageInstance = createPageInstance(`/${target.routeRecord.route}`, pageDefinition, target.query, {
@@ -1297,7 +1301,10 @@ export class HeadlessSession {
     const baseRoute = this.currentPageInstance
       ? stripLeadingSlash(this.currentPageInstance.route)
       : undefined
-    const normalizedRoute = resolveNavigationPath(pathname, baseRoute)
+    const pluginRequest = resolvePluginRequest(this.project.plugins, pathname, 'page')
+    const normalizedRoute = pluginRequest
+      ? `plugin-private://${pluginRequest.plugin.provider}/${pluginRequest.resourcePath.slice(pluginRequest.plugin.virtualRoot.length + 1)}`
+      : resolveNavigationPath(pathname, baseRoute)
     const routeRecord = this.project.routes.find(item => item.route === normalizedRoute)
     if (!routeRecord) {
       this.bootstrap(createAppLaunchOptions(normalizedRoute, query))

@@ -73,7 +73,7 @@ describe('compileJsx attributes helpers', () => {
     expect(attrs).toContain('data-wv-s0="{{item}}"')
   })
 
-  it('normalizes dynamic attribute string literals for valid wxml quoting', () => {
+  it('normalizes dynamic attribute string literals for exparser and glass-easel quoting', () => {
     const context = createJsxCompileContext()
     const openingElement = parseOpeningElement(`
 <view

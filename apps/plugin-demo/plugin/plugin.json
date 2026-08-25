@@ -1,4 +1,6 @@
 {
+  "componentFramework": "glass-easel",
+  "glassEaselWebview": true,
   "publicComponents": {
     "hello-component": "components/hello-component/index",
     "native-meter": "components/native-meter/index"

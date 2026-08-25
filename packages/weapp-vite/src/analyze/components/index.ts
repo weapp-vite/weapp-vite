@@ -52,6 +52,18 @@ function readUsingComponents(config: unknown) {
     .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim() !== '')
 }
 
+function readComponentGenericDefaults(config: unknown) {
+  if (!isRecord(config) || !isRecord(config.componentGenerics)) {
+    return []
+  }
+
+  return Object.entries(config.componentGenerics)
+    .map(([name, value]) => isRecord(value) && typeof value.default === 'string' && value.default.trim() !== ''
+      ? [name, value.default] as const
+      : undefined)
+    .filter((entry): entry is readonly [string, string] => Boolean(entry))
+}
+
 function readComponentPlaceholder(config: unknown) {
   if (!isRecord(config) || !isRecord(config.componentPlaceholder)) {
     return new Set<string>()
@@ -197,7 +209,7 @@ export function analyzeComponentUsage(options: AnalyzeComponentUsageOptions): An
 
   for (const [owner, config] of configs) {
     const placeholders = readComponentPlaceholder(config)
-    const edges = readUsingComponents(config)
+    const edges = [...readUsingComponents(config), ...readComponentGenericDefaults(config)]
       .map(([name, request]) => {
         const component = resolveComponentRoute(owner, request)
         return component && configs.has(component)
@@ -205,6 +217,7 @@ export function analyzeComponentUsage(options: AnalyzeComponentUsageOptions): An
           : undefined
       })
       .filter((edge): edge is ComponentEdge => Boolean(edge))
+      .filter((edge, index, all) => all.findIndex(item => item.component === edge.component) === index)
 
     if (edges.length > 0) {
       graph.set(owner, edges)

@@ -1,4 +1,5 @@
 import type { ArtifactSource } from '../kernel'
+import type { HeadlessPluginDescriptor } from './plugins'
 import type { HeadlessRouteRecord } from './resolveRoutes'
 import { createFileSystemArtifactSource } from '../kernel'
 import { resolveRoutesFromAppConfig } from './resolveRoutes'
@@ -14,6 +15,7 @@ export interface HeadlessProjectDescriptor {
   appConfigPath: string
   miniprogramRoot: string
   miniprogramRootPath: string
+  plugins: HeadlessPluginDescriptor[]
   projectPath: string
   projectConfigFiles: HeadlessProjectConfigFile[]
   routes: HeadlessRouteRecord[]
@@ -25,6 +27,7 @@ export interface CreateProjectDescriptorOptions {
   appConfigPath: string
   miniprogramRoot: string
   miniprogramRootPath: string
+  plugins?: HeadlessPluginDescriptor[]
   projectPath: string
   projectConfigFiles?: HeadlessProjectConfigFile[]
 }
@@ -36,8 +39,9 @@ export function createProjectDescriptor(options: CreateProjectDescriptorOptions)
     appConfigPath: options.appConfigPath,
     miniprogramRoot: options.miniprogramRoot,
     miniprogramRootPath: options.miniprogramRootPath,
+    plugins: options.plugins ?? [],
     projectPath: options.projectPath,
     projectConfigFiles: options.projectConfigFiles ?? [],
-    routes: resolveRoutesFromAppConfig(options.appConfig),
+    routes: resolveRoutesFromAppConfig(options.appConfig, options.plugins ?? []),
   }
 }

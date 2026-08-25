@@ -5,7 +5,7 @@
     "styleIsolation": { "type": "string", "enum": ["isolated", "apply-shared", "shared"], "default": "isolated", "description": "组件样式隔离策略。" },
     "componentGenerics": { "type": "object", "description": "组件泛型配置。" },
     "componentPlaceholder": { "type": "object", "description": "组件占位配置。" },
-    "componentFramework": { "type": "string", "description": "组件框架。" },
+    "componentFramework": { "type": "string", "enum": ["exparser", "glass-easel"], "description": "组件框架。" },
     "usingComponents": { "type": "object", "description": "组件依赖的自定义组件配置。" }
   }
 }

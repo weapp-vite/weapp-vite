@@ -3,6 +3,7 @@ import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { HeadlessComponentInstance } from '../componentInstance'
 import type { DomNodeLike, RuntimeComponentRegistryEntry, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import path from 'node:path'
+import { resolvePluginRequest } from '../../project/plugins'
 import { collectMiniProgramEventBindings } from '../../view/eventBinding'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
 import { createTemplateRenderState } from '../../view/templateRuntime'
@@ -34,7 +35,7 @@ export function resolveComponentRegistryEntry(
   genericComponentBasePath?: string,
 ) {
   // eslint-disable-next-line ts/no-use-before-define
-  const usingComponents = resolveUsingComponents(context.artifactSource, ownerJsonPath, ownerFilePath)
+  const usingComponents = resolveUsingComponents(context, ownerJsonPath, ownerFilePath)
   const componentBasePath = genericComponentBasePath ?? usingComponents.get(alias)
   if (!componentBasePath) {
     return null
@@ -64,12 +65,12 @@ function readComponentConfig(artifactSource: RuntimeRendererContext['artifactSou
 }
 
 function resolveUsingComponents(
-  artifactSource: RuntimeRendererContext['artifactSource'],
+  context: RuntimeRendererContext,
   ownerJsonPath: string,
   ownerFilePath: string,
 ) {
   try {
-    const parsed = readComponentConfig(artifactSource, ownerJsonPath)
+    const parsed = readComponentConfig(context.artifactSource, ownerJsonPath)
     const usingComponents = parsed.usingComponents
     if (!usingComponents || typeof usingComponents !== 'object' || Array.isArray(usingComponents)) {
       return new Map<string, string>()
@@ -80,9 +81,10 @@ function resolveUsingComponents(
       if (typeof rawPath !== 'string') {
         continue
       }
-      const basePath = rawPath.startsWith('/')
+      const pluginRequest = resolvePluginRequest(context.project.plugins, rawPath, 'publicComponent')
+      const basePath = pluginRequest?.resourcePath ?? (rawPath.startsWith('/')
         ? rawPath.replace(LEADING_SLASH_RE, '')
-        : path.posix.normalize(path.posix.join(path.posix.dirname(ownerFilePath), rawPath))
+        : path.posix.normalize(path.posix.join(path.posix.dirname(ownerFilePath), rawPath)))
       resolved.set(alias, basePath.replace(LEADING_SLASH_RE, ''))
     }
     return resolved
@@ -108,7 +110,7 @@ export function resolveComponentGenerics(
     return undefined
   }
 
-  const ownerComponents = resolveUsingComponents(context.artifactSource, ownerJsonPath, ownerFilePath)
+  const ownerComponents = resolveUsingComponents(context, ownerJsonPath, ownerFilePath)
   const resolved = new Map<string, string>()
   for (const [genericName, definition] of Object.entries(componentGenerics)) {
     const selectedAlias = hostNode.attribs?.[`generic:${genericName}`]

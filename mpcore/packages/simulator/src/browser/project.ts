@@ -1,9 +1,11 @@
 import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
+import type { HeadlessPluginDescriptor } from '../project/plugins'
 import type { BrowserVirtualFiles } from './virtualFiles'
 import {
   createProjectDescriptor,
 
 } from '../project/createProjectDescriptor'
+import { createPluginVirtualRoot } from '../project/plugins'
 import {
 
   hasBrowserVirtualFile,
@@ -31,7 +33,36 @@ export interface CreateBrowserProjectOptions {
   appConfigPath?: string
   miniprogramRoot?: string
   miniprogramRootPath?: string
+  plugins?: HeadlessPluginDescriptor[]
   projectPath?: string
+}
+
+function resolveBrowserPlugins(files: BrowserVirtualFiles, appConfig: Record<string, any>) {
+  const configuredPlugins = appConfig.plugins
+  if (!configuredPlugins || typeof configuredPlugins !== 'object' || Array.isArray(configuredPlugins)) {
+    return []
+  }
+  const plugins: HeadlessPluginDescriptor[] = []
+  for (const [alias, definition] of Object.entries(configuredPlugins)) {
+    if (!definition || typeof definition !== 'object' || Array.isArray(definition)) {
+      continue
+    }
+    const provider = (definition as Record<string, any>).provider
+    const version = (definition as Record<string, any>).version
+    const virtualRoot = createPluginVirtualRoot(alias)
+    const config = readJsonObject(files, `${virtualRoot}/plugin.json`)
+    if (typeof provider !== 'string' || !provider || version !== 'dev' || !config) {
+      continue
+    }
+    plugins.push({
+      alias,
+      config,
+      provider,
+      rootPath: virtualRoot,
+      virtualRoot,
+    })
+  }
+  return plugins
 }
 
 export function createBrowserProject(
@@ -48,6 +79,7 @@ export function createBrowserProject(
     throw new Error(`Failed to read built app.json for browser simulator project: ${appConfigPath}`)
   }
 
+  const plugins = options.plugins ?? resolveBrowserPlugins(files, appConfig)
   return createProjectDescriptor({
     appConfig,
     appConfigPath,
@@ -57,6 +89,7 @@ export function createBrowserProject(
     },
     miniprogramRoot: options.miniprogramRoot ?? '.',
     miniprogramRootPath: options.miniprogramRootPath ?? '/',
+    plugins,
     projectPath: options.projectPath ?? 'browser://simulator',
     projectConfigFiles: [],
   })

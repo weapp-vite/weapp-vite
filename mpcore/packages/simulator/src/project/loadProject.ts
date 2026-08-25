@@ -1,11 +1,18 @@
+import type { HeadlessProjectConfigFile, HeadlessProjectDescriptor } from './createProjectDescriptor'
+import type { HeadlessPluginDescriptor } from './plugins'
 import fs from 'node:fs'
 import path from 'node:path'
 import { normalize } from 'pathe'
+import { createFileSystemArtifactSource } from '../kernel'
 import {
   createProjectDescriptor,
-  type HeadlessProjectConfigFile,
-  type HeadlessProjectDescriptor,
+
 } from './createProjectDescriptor'
+import {
+  createPluginArtifactSource,
+  createPluginVirtualRoot,
+
+} from './plugins'
 
 function readJsonObject(filePath: string) {
   try {
@@ -51,6 +58,54 @@ function resolveMiniprogramRoot(projectPath: string, configFiles: HeadlessProjec
   )
 }
 
+function resolveConfiguredRoot(configFiles: HeadlessProjectConfigFile[], key: string) {
+  for (const configFile of [...configFiles].reverse()) {
+    const value = configFile.value[key]
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+  }
+  return undefined
+}
+
+function resolveLocalPlugins(
+  projectPath: string,
+  projectConfigFiles: HeadlessProjectConfigFile[],
+  appConfig: Record<string, any>,
+) {
+  const pluginRoot = resolveConfiguredRoot(projectConfigFiles, 'pluginRoot')
+  const configuredPlugins = appConfig.plugins
+  if (!pluginRoot || !configuredPlugins || typeof configuredPlugins !== 'object' || Array.isArray(configuredPlugins)) {
+    return []
+  }
+  const rootPath = path.resolve(projectPath, pluginRoot)
+  const pluginConfig = readJsonObject(path.resolve(rootPath, 'plugin.json'))
+  if (!pluginConfig) {
+    return []
+  }
+  const plugins: HeadlessPluginDescriptor[] = []
+  const projectAppId = resolveConfiguredRoot(projectConfigFiles, 'appid')
+  for (const [alias, definition] of Object.entries(configuredPlugins)) {
+    if (!definition || typeof definition !== 'object' || Array.isArray(definition)) {
+      continue
+    }
+    const provider = (definition as Record<string, any>).provider
+    const version = (definition as Record<string, any>).version
+    const isLocalPlugin = version === 'dev' || (projectAppId && provider === projectAppId)
+    if (typeof provider !== 'string' || !provider || !isLocalPlugin) {
+      continue
+    }
+    plugins.push({
+      alias,
+      config: pluginConfig,
+      provider,
+      rootPath,
+      virtualRoot: createPluginVirtualRoot(alias),
+    })
+  }
+  return plugins
+}
+
 function ensureFileExists(filePath: string, label: string) {
   if (fs.existsSync(filePath)) {
     return
@@ -85,11 +140,19 @@ export function loadProject(projectPath: string): HeadlessProjectDescriptor {
   ensureFileExists(appConfigPath, 'built app.json')
 
   const appConfig = loadAppConfig(appConfigPath)
+  const plugins = resolveLocalPlugins(normalizedProjectPath, projectConfigFiles, appConfig)
+  const artifactSource = createPluginArtifactSource(
+    createFileSystemArtifactSource(),
+    miniprogramRootPath,
+    plugins,
+  )
   return createProjectDescriptor({
     appConfig,
     appConfigPath,
+    artifactSource,
     miniprogramRoot,
     miniprogramRootPath,
+    plugins,
     projectPath: normalizedProjectPath,
     projectConfigFiles,
   })

@@ -114,7 +114,11 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "x-wechat-min-version": "3.7.8",
     },
     "componentFramework": {
-      "description": "组件框架。",
+      "description": "组件框架。仅在主动启用 WebView glass-easel 时需同时开启 glassEaselWebview。",
+      "enum": [
+        "exparser",
+        "glass-easel",
+      ],
       "type": "string",
     },
     "convertRpxToVw": {
@@ -170,6 +174,11 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "description": "是否启用插件功能页。",
       "type": "boolean",
       "x-wechat-min-version": "2.1.0",
+    },
+    "glassEaselWebview": {
+      "description": "显式启用 WebView glass-easel，最低基础库为 3.8.12，默认不启用；需与 componentFramework: glass-easel 配套使用。",
+      "type": "boolean",
+      "x-wechat-min-version": "3.8.12",
     },
     "halfPage": {
       "additionalProperties": {},
@@ -616,6 +625,10 @@ exports[`json > jsonSchema  > componentJsonSchema 1`] = `
     },
     "componentFramework": {
       "description": "组件框架。",
+      "enum": [
+        "exparser",
+        "glass-easel",
+      ],
       "type": "string",
     },
     "componentGenerics": {
@@ -697,7 +710,11 @@ exports[`json > jsonSchema  > pageJsonSchema 1`] = `
       "type": "string",
     },
     "componentFramework": {
-      "description": "组件框架。",
+      "description": "组件框架。仅在主动启用 WebView glass-easel 时需同时开启 glassEaselWebview。",
+      "enum": [
+        "exparser",
+        "glass-easel",
+      ],
       "type": "string",
     },
     "componentPlaceholder": {
@@ -729,6 +746,11 @@ exports[`json > jsonSchema  > pageJsonSchema 1`] = `
       "default": false,
       "description": "是否开启当前页面下拉刷新。详见 Page.onPullDownRefresh",
       "type": "boolean",
+    },
+    "glassEaselWebview": {
+      "description": "显式启用 WebView glass-easel，最低基础库为 3.8.12，默认不启用；需与 componentFramework: glass-easel 配套使用。",
+      "type": "boolean",
+      "x-wechat-min-version": "3.8.12",
     },
     "handleWebviewPreload": {
       "default": "static",

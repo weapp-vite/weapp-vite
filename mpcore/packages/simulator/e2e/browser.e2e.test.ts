@@ -170,6 +170,28 @@ describe.sequential('simulator browser e2e', () => {
       .toBe('async-default:async-named')
   })
 
+  it('loads local plugin exports, components, and pages in the browser demo', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('plugin-runtime')
+    const hostState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'plugin-runtime'
+        && state.currentRoute === 'pages/index/index'
+        && state.previewMarkup.includes('id="plugin-runtime-card"'),
+      20_000,
+    )
+
+    expect(hostState.previewMarkup).toContain('plugin card: 42')
+    bridge.runPageMethod('openPluginPage')
+    const pluginState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'plugin-private://wxpluginprovider/pages/hello/index',
+      20_000,
+    )
+    expect(pluginState.previewMarkup).toContain('id="plugin-runtime-page"')
+    expect(pluginState.previewMarkup).toContain('plugin page')
+  })
+
   it('keeps wx storage state observable through the browser debug bridge', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('component-lab')

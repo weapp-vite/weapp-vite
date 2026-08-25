@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "plugins": {
+    "hello": {
+      "provider": "wxpluginprovider",
+      "version": "dev"
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import type { SubPackageMetaValue } from '../../types'
 import type { AnalyzeComponentUsage } from '../components'
+import type { GlassEaselAnalyzeResult } from '../glassEasel/types'
 
 export type PackageType = 'main' | 'subPackage' | 'independent' | 'virtual'
 export type ModuleSourceType = 'src' | 'plugin' | 'node_modules' | 'workspace'
@@ -73,6 +74,7 @@ export interface AnalyzeSubpackagesResult {
   modules: ModuleUsage[]
   subPackages: SubPackageDescriptor[]
   components?: AnalyzeComponentUsage[]
+  glassEasel: GlassEaselAnalyzeResult
 }
 
 export interface PackageAccumulator {

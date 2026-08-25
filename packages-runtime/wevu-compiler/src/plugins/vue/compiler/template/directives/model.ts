@@ -5,6 +5,7 @@ import {
   WEVU_INLINE_HANDLER,
   WEVU_MODEL_HANDLER,
 } from '@weapp-core/constants'
+import { escapeWxmlAttribute } from '@weapp-core/shared'
 import {
   INLINE_DATASET_KEY,
   INLINE_EVENT_DETAIL_KEY,
@@ -34,7 +35,6 @@ function getElementType(element: ElementNode | undefined): string {
   return ''
 }
 
-const QUOTE_RE = /"/g
 const CAMELIZE_RE = /-([a-z0-9])/gi
 const IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
 const NATIVE_MODEL_TAGS = new Set(['input', 'textarea', 'select', 'switch', 'checkbox', 'slider', 'picker'])
@@ -62,7 +62,7 @@ function transformVModel(
   expValue: string,
   context: TransformContext,
 ): string | null {
-  const escapedModel = expValue.replace(QUOTE_RE, '&quot;')
+  const escapedModel = escapeWxmlAttribute(expValue)
   const bindModel = (event: string) => {
     const bindAttr = context.platform.eventBindingAttr(event)
     return `${bindAttr}="${WEVU_MODEL_HANDLER}" data-wv-model="${escapedModel}"`

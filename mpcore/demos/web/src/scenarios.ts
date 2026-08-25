@@ -45,6 +45,10 @@ const scenarioCatalog: Record<string, ScenarioMeta> = {
     name: 'Require Async',
     description: '验证分包模块通过 require.async 异步加载并返回完整导出。',
   },
+  'plugin-runtime': {
+    name: 'Plugin Runtime',
+    description: '验证 requirePlugin、本地插件公开组件和 plugin:// 页面导航。',
+  },
 }
 
 const rawScenarioModules = import.meta.glob('./fixtures/**/*', {

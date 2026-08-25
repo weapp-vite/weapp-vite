@@ -1,0 +1,9 @@
+{
+  "main": "index.js",
+  "pages": {
+    "hello-page": "pages/hello/index"
+  },
+  "publicComponents": {
+    "card": "components/card/index"
+  }
+}

@@ -1,3 +1,4 @@
+import type { GlassEaselTemplateFinding } from '../../analyze/glassEasel/types'
 import type { ComponentsMap, WxmlDep } from '../../types'
 import type { Token } from '../shared'
 
@@ -32,5 +33,6 @@ export interface WxmlToken {
   eventTokens: Token[]
   directiveTokens?: Token[]
   tagNameTokens?: Token[]
+  glassEaselFindings?: GlassEaselTemplateFinding[]
   code: string
 }

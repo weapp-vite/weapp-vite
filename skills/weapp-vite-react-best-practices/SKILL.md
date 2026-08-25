@@ -26,6 +26,7 @@ description: 面向使用 `weapp-vite` 与 `@weapp-vite/react` 开发 React 19 �
 6. 需要 React-backed 小程序组件的默认插槽时使用 `Slot`；不要假设 scoped slot、model 或动态 tag 已受支持。
 7. React Compiler 默认保持关闭；只有安装 `@swc/core` 并准备验证 fallback warning、sourcemap 和运行时行为时再启用。
 8. 按“runtime 单测 -> weapp-vite 编译测试 -> 构建 e2e -> DevTools runtime”逐层验证。
+9. WebView glass-easel 默认保持关闭；仅在开发者工具与真机基础库均不低于 `3.8.12` 时由用户在宿主 JSON 中成对配置 `componentFramework` 与 `glassEaselWebview`，再用 `wv analyze --glass-easel-check` 检查 static/dynamic WXML 和 SelectorQuery；React 静态模板沿用共享 WXML 实体转义契约。
 
 ## 关键边界
 

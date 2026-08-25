@@ -4,6 +4,11 @@ import { createRuntimeState } from './runtimeState'
 export function resetRuntimeStateForFreshBuild(runtimeState: RuntimeState): void {
   const fresh = createRuntimeState()
 
+  runtimeState.glassEasel.detected = false
+  runtimeState.glassEasel.diagnostics.clear()
+  runtimeState.glassEasel.warnedDiagnostics.clear()
+  runtimeState.glassEasel.silent = false
+
   const autoRoutes = runtimeState.autoRoutes
   autoRoutes.routes = fresh.autoRoutes.routes
   autoRoutes.serialized = fresh.autoRoutes.serialized

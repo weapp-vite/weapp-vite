@@ -136,6 +136,7 @@ wv analyze [root]
 | `--markdown`                | 输出完整 Markdown 报告                                                             |
 | `--report <type>`           | 输出指定报告类型，当前支持 `pr`                                                    |
 | `--budget-check`            | 检查 analyze 预算，超限时返回非 0 退出码                                           |
+| `--glass-easel-check`       | 检查 glass-easel 配置、模板与 SelectorQuery，必须修复项返回非 0 退出码             |
 | `--preload`                 | 扫描静态跨分包跳转、实际分包体积与共享 2 MB 额度（仅微信小程序）                   |
 | `--output <file>`           | 将分析结果写入文件，格式随 `--json` / `--markdown` / `--report pr` 决定            |
 | `-p, --platform <platform>` | 目标平台（`weapp` \| `web`）                                                       |
@@ -152,6 +153,7 @@ wv analyze --json --output reports/analyze.json
 wv analyze --markdown --output reports/analyze.md
 wv analyze --report pr --output reports/analyze-pr.md
 wv analyze --budget-check
+wv analyze --glass-easel-check --json
 wv analyze --hmr-profile .tmp/weapp-vite-hmr-profile.jsonl --json
 wv analyze --preload --json --output reports/preload.json
 wv analyze --platform web --json
@@ -159,6 +161,8 @@ wv analyze --platform web --json
 
 > [!TIP]
 > HMR profile 需要先在 `weapp.hmr.profileJson` 中开启，或通过 `--hmr-profile <file>` 指向已有 JSONL 文件。`--preload` 会分析静态模板、Vue SFC、可证明来源的路由调用和实际分包体积，不会修改源码；额度按触发页所属包聚合，动态路由、业务守卫和真实访问频率仍需人工复核。Web 平台当前只做 `weapp.web` 与 `executionMode` 静态分析，不提供小程序分包体积和 dashboard。
+
+`--glass-easel-check` 的 JSON 结果位于 `glassEasel` 节点。WebView glass-easel 默认不启用，只有显式配置 `glassEaselWebview: true` 后才进入迁移检查；`componentFramework: "glass-easel"` 单独存在保持低版本回退。工具只自动归一化兼容两套组件框架的 `wx-if` / `wx-for`；循环内 `<include>`、旧式属性转义和数字开头选择器只诊断，不做有语义风险的改写。
 
 ### 4) `open`
 

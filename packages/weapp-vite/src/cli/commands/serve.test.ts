@@ -65,6 +65,9 @@ const fakeProcess = vi.hoisted(() => {
   return {
     cwd: vi.fn(() => '/cwd-project'),
     env: {} as Record<string, string | undefined>,
+    versions: {
+      node: '22.0.0',
+    },
     emit(event: string, ...args: any[]) {
       listeners.get(event)?.forEach(listener => listener(...args))
     },

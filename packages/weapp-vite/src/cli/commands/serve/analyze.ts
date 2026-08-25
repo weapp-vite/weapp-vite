@@ -7,6 +7,7 @@ import fs from 'node:fs/promises'
 import process from 'node:process'
 import { brotliCompressSync, gzipSync } from 'node:zlib'
 import path from 'pathe'
+import { createGlassEaselAnalyzeResult } from '../../../analyze/glassEasel'
 import { analyzeSubpackages } from '../../../analyze/subpackages'
 import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../../analyze/subpackages/history'
 import { createAnalyzeMetadata } from '../../../analyze/subpackages/metadata'
@@ -168,6 +169,7 @@ export async function analyzeUiFallback(ctx: Awaited<ReturnType<typeof createCom
       }))
       .filter(item => item.root)
       .sort((a, b) => a.root.localeCompare(b.root)),
+    glassEasel: createGlassEaselAnalyzeResult(ctx),
   }
 }
 

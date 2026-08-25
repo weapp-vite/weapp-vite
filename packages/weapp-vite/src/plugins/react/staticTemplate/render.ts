@@ -9,6 +9,7 @@ import type {
 } from '@weapp-vite/ast/babelTypes'
 import type { StaticTemplateRenderContext } from './types'
 import { WEAPP_REACT_EVENT_METHOD_NAME } from '@weapp-core/constants'
+import { escapeWxmlAttribute, escapeWxmlText } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { compileStaticStyle } from './style'
 
@@ -31,20 +32,6 @@ const EVENT_NAMES: Record<string, string> = {
 }
 const EVENT_PROP_RE = /^on[A-Z]/
 const IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
-
-function escapeAttribute(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll('<', '&lt;')
-}
-
-function escapeText(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-}
 
 function normalizeJsxText(value: string) {
   return value
@@ -162,13 +149,13 @@ function compileAttributes(
     if (name === 'style' && t.isObjectExpression(expression)) {
       const style = compileStaticStyle(expression)
       if (style !== undefined) {
-        output.push(`style="${escapeAttribute(style)}"`)
+        output.push(`style="${escapeWxmlAttribute(style)}"`)
         continue
       }
     }
     const staticValue = readStaticPrimitive(expression)
     if (staticValue !== undefined) {
-      output.push(`${outputName}="${escapeAttribute(String(staticValue))}"`)
+      output.push(`${outputName}="${escapeWxmlAttribute(String(staticValue))}"`)
       continue
     }
     bindingFields.add(name)
@@ -191,7 +178,7 @@ function compileStaticChildren(
 ): string {
   return children.map((child) => {
     if (t.isJSXText(child)) {
-      return escapeText(normalizeJsxText(child.value))
+      return escapeWxmlText(normalizeJsxText(child.value))
     }
     if (t.isJSXElement(child)) {
       return compileStaticElement(child, context)
@@ -205,7 +192,7 @@ function compileStaticChildren(
       }
       const value = readStaticPrimitive(child.expression as Expression)
       if (value !== undefined) {
-        return escapeText(String(value))
+        return escapeWxmlText(String(value))
       }
       throw new Error('static template 的容器节点暂不支持动态结构表达式')
     }

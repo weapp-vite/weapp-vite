@@ -10,6 +10,7 @@ import {
 } from '@weapp-core/constants'
 import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
 import path from 'pathe'
+import { analyzeGlassEaselBundle } from '../analyze/glassEasel'
 import { parseLogicalEntryId, parseSidecarModuleId } from '../moduleGraph/protocol'
 import { getWxmlPlatformTransformOptions } from '../platform'
 import { changeFileExtension } from '../utils'
@@ -42,6 +43,8 @@ const TEMPLATE_STATIC_REWRITE_MARKERS = [
   '.ksml',
   '.xhsml',
   'import.meta.',
+  'wx-if',
+  'wx-for',
 ] as const
 const TEMPLATE_DIRECTIVE_PREFIXES = getSupportedMiniProgramDirectivePrefixes()
 type EmitAsset = (asset: EmittedAsset) => void
@@ -387,6 +390,9 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
         restoreNativePageLayoutOutputs(ctx, outputBundle)
         normalizeGraphOnlyAssets(ctx, outputBundle, asset => this.emitFile(asset))
         const assetEntries = collectOutputFinalizerAssetEntries(outputBundle)
+        if (ctx.configService.platform === 'weapp') {
+          analyzeGlassEaselBundle(ctx, outputBundle)
+        }
         normalizePreprocessorStyleAssetEntries(
           outputBundle,
           assetEntries.preprocessorStyleAssets,

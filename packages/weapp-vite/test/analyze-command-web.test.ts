@@ -46,6 +46,11 @@ vi.mock('@/logger', () => ({
 
 function createContext(overrides: Record<string, unknown> = {}) {
   return {
+    runtimeState: {
+      glassEasel: {
+        silent: false,
+      },
+    },
     configService: {
       cwd: '/virtual/project',
       mode: 'production',

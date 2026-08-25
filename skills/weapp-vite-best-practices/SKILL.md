@@ -64,7 +64,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp-vite` 原生命令优先
    - `weapp-ide-cli` 只在 catalog 命中后透传
    - 原生命令包含 `dev` / `serve` / `build` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
-   - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`、`--preload`；分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`，预下载审计按触发包汇总实际分包体积与共享的 2 MB 额度
+   - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`、`--preload`、`--glass-easel-check`；分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`，预下载审计按触发包汇总实际分包体积与共享的 2 MB 额度
    - `preview` / `upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定
    - 不要让未知命令盲目 passthrough
 5. 常见症状先分诊：
@@ -78,6 +78,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`
    - `preloadRule` 或跨分包跳转：先跑 `wv analyze --preload`，只把宿主导航 API 和可证明路由 binding 作为证据；结合按触发包聚合的实际体积与 2 MB 额度后，再显式配置 `weapp.routeRules.<pattern>.preload`
+   - glass-easel 迁移：WebView glass-easel 默认不启用；开发者工具与真机基础库均不低于 `3.8.12` 时，才由用户在宿主 JSON 成对配置 `componentFramework: 'glass-easel'` 与 `glassEaselWebview: true`，再跑 `wv analyze --glass-easel-check`；低版本保持回退，不要新增重复的 `weapp.glassEasel` 配置
    - 状态保持 HMR 不生效：先确认生成的应用/页面 JSON 未使用 Skyline；WebView 项目再确认平台为微信、DevTools 开启服务端口与热重载、`compileHotReLoad: true`，并区分安全 JS/Vue 补丁与 CSS/资源/配置的完整重载回退
    - sourcemap 漂移：检查 CLI `--sourcemap` 透传和构建后 npm、平台 API、shared chunk 重写是否组合原 map，不接受只保留旧 map
 6. 评估 Rust/native 加速时，先看真实 profile 和跨边界调用次数：

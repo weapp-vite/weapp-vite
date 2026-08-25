@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "plugin-card": "plugin://hello/card"
+  }
+}

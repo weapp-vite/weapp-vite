@@ -13,6 +13,10 @@
     },
     "componentFramework": {
       "description": "组件框架。",
+      "enum": [
+        "exparser",
+        "glass-easel"
+      ],
       "type": "string"
     },
     "componentGenerics": {

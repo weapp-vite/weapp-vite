@@ -1,6 +1,16 @@
 {
   "source": "https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/development.html",
   "fields": {
+    "componentFramework": {
+      "type": "string",
+      "enum": ["exparser", "glass-easel"],
+      "description": "插件组件框架。仅在主动启用 WebView glass-easel 时需同时开启 glassEaselWebview。"
+    },
+    "glassEaselWebview": {
+      "type": "boolean",
+      "description": "显式启用 WebView glass-easel，最低基础库为 3.8.12，默认不启用；需与 componentFramework: glass-easel 配套使用。",
+      "x-wechat-min-version": "3.8.12"
+    },
     "publicComponents": { "type": "object", "description": "插件对外提供的自定义组件。" },
     "pages": { "type": "object", "description": "插件页面映射。" },
     "main": { "type": "string", "description": "插件主入口文件。" }

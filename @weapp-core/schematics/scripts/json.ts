@@ -79,9 +79,11 @@ export const metaSchema = z.object({
   $schema: z.string(),
 }).partial()
 
+export const componentFrameworkSchema = z.enum(['exparser', 'glass-easel'])
+
 export const sharedSchema = z.object({
   usingComponents: z.record(z.string(), z.string()),
-  componentFramework: z.string(),
+  componentFramework: componentFrameworkSchema,
 }).partial().extend(metaSchema.shape)
 
 export const pageAndComponentSharedSchema = z.looseObject({
@@ -89,6 +91,7 @@ export const pageAndComponentSharedSchema = z.looseObject({
 }).partial().extend(sharedSchema.shape)
 
 export const appAndPageSharedSchema = z.looseObject({
+  glassEaselWebview: z.boolean(),
   style: z.string(),
   singlePage: z.looseObject({}),
   enablePassiveEvent: z.looseObject({}).or(z.boolean()),
@@ -268,6 +271,8 @@ export const ThemeJsonSchema = createJsonSchema(ThemeSchema, themeMetadata)
 export const SitemapJsonSchema = createJsonSchema(SitemapSchema, sitemapMetadata)
 
 export const PluginSchema = z.looseObject({
+  componentFramework: componentFrameworkSchema,
+  glassEaselWebview: z.boolean(),
   publicComponents: z.record(z.string(), z.string()),
   pages: z.record(z.string(), z.string()),
   main: z.string(),

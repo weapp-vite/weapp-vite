@@ -65,6 +65,53 @@ exports.named = 'async-named'
     })
   })
 
+  it('loads local plugin exports, public components, and pages', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({
+        pages: ['pages/index/index'],
+        plugins: {
+          hello: { provider: 'wxpluginprovider', version: 'dev' },
+        },
+      })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.json', JSON.stringify({
+        usingComponents: {
+          'plugin-card': 'plugin://hello/card',
+        },
+      })],
+      ['pages/index/index.js', `
+const plugin = requirePlugin('hello')
+Page({
+  data: { answer: plugin.answer },
+  openPluginPage() {
+    wx.navigateTo({ url: 'plugin://hello/hello-page' })
+  },
+})
+`],
+      ['pages/index/index.wxml', '<plugin-card label="{{answer}}" />'],
+      ['__plugins__/hello/plugin.json', JSON.stringify({
+        main: 'index.js',
+        pages: { 'hello-page': 'pages/hello/index' },
+        publicComponents: { card: 'components/card/index' },
+      })],
+      ['__plugins__/hello/index.js', 'exports.answer = 42'],
+      ['__plugins__/hello/components/card/index.json', '{}'],
+      ['__plugins__/hello/components/card/index.js', 'Component({ properties: { label: Number } })'],
+      ['__plugins__/hello/components/card/index.wxml', '<view id="plugin-card">{{label}}</view>'],
+      ['__plugins__/hello/pages/hello/index.json', '{}'],
+      ['__plugins__/hello/pages/hello/index.js', 'Page({ data: { title: "plugin page" } })'],
+      ['__plugins__/hello/pages/hello/index.wxml', '<view>{{title}}</view>'],
+    ])
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(page.data.answer).toBe(42)
+    expect(session.renderCurrentPage().wxml).toContain('id="plugin-card"')
+    page.openPluginPage()
+    expect(session.getCurrentPages().at(-1)?.route).toBe('plugin-private://wxpluginprovider/pages/hello/index')
+    expect(session.renderCurrentPage().wxml).toContain('plugin page')
+  })
+
   it('supports uni event, font, and wevu proxy selector compatibility in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

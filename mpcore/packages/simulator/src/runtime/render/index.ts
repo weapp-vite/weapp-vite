@@ -384,7 +384,9 @@ export function renderRuntimePageTree(
   page: HeadlessPageInstance,
 ): RuntimeRenderedPageTree {
   const route = page.route.replace(LEADING_SLASH_RE, '')
-  const templatePath = path.resolve(context.project.miniprogramRootPath, `${route}.wxml`)
+  const routeRecord = context.project.routes.find(item => item.route === route)
+  const resourcePath = routeRecord?.resourcePath ?? route
+  const templatePath = path.resolve(context.project.miniprogramRootPath, `${resourcePath}.wxml`)
   const templateSource = readTemplateSource(context.artifactSource, templatePath)
   const document = parseTemplateDocument(templateSource)
   const pageScopeId = `page:${route}`
@@ -406,8 +408,8 @@ export function renderRuntimePageTree(
     root,
     pageScope,
     context,
-    path.resolve(context.project.miniprogramRootPath, `${route}.json`),
-    `${route}.js`,
+    path.resolve(context.project.miniprogramRootPath, `${resourcePath}.json`),
+    `${resourcePath}.js`,
     pageScopeId,
     seenComponentScopes,
     templateRenderState,

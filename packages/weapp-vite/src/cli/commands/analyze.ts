@@ -189,6 +189,31 @@ function printBudgetCheckSummary(result: AnalyzeSubpackagesResult) {
   return true
 }
 
+function printGlassEaselCheckSummary(result: AnalyzeSubpackagesResult) {
+  const { glassEasel } = result
+  if (!glassEasel.detected) {
+    logger.info('未检测到 glass-easel 配置。')
+    return false
+  }
+  if (glassEasel.diagnostics.length === 0) {
+    logger.success('glass-easel 迁移检查通过')
+    return false
+  }
+
+  logger.info(`glass-easel 迁移检查：${glassEasel.summary.errors} 个错误，${glassEasel.summary.warnings} 个警告`)
+  for (const diagnostic of glassEasel.diagnostics) {
+    const location = diagnostic.line ? `:${diagnostic.line}:${diagnostic.column}` : ''
+    const message = `[${diagnostic.code}] ${diagnostic.file}${location} ${diagnostic.message}`
+    if (diagnostic.severity === 'error') {
+      logger.error(message)
+    }
+    else {
+      logger.warn(message)
+    }
+  }
+  return glassEasel.summary.errors > 0
+}
+
 function printWebAnalysisSummary(result: WebAnalyzeResult) {
   logger.success('Web 静态分析完成')
   logger.info(`- 配置状态：${result.web.enabled ? '已启用 weapp.web' : '未启用 weapp.web'}`)
@@ -371,6 +396,7 @@ export function registerAnalyzeCommand(cli: CAC) {
     .option('--markdown', `[boolean] 输出 Markdown 报告`)
     .option('--report <type>', `[string] 输出指定报告类型（pr）`)
     .option('--budget-check', `[boolean] 检查 analyze 预算，超过预算时返回非 0 退出码`)
+    .option('--glass-easel-check', `[boolean] 检查 glass-easel 配置、模板和 SelectorQuery 迁移兼容性`)
     .option('--preload', `[boolean] 分析静态页面跳转、实际分包体积和 preloadRule 额度`)
     .option('--output <file>', `[string] 将分析结果写入指定文件（JSON 或 Markdown）`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | web)`)
@@ -386,6 +412,7 @@ export function registerAnalyzeCommand(cli: CAC) {
         throw new Error(`不支持的 analyze report 类型：${reportType}`)
       }
       const budgetCheck = coerceBooleanOption(options.budgetCheck)
+      const glassEaselCheck = coerceBooleanOption(options.glassEaselCheck)
       const targets = resolveRuntimeTargets(options)
       const inlineConfig = createInlineConfig(targets)
       let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
@@ -468,6 +495,7 @@ export function registerAnalyzeCommand(cli: CAC) {
         }
 
         const previousResult = await readLatestAnalyzeHistorySnapshot(ctx.configService)
+        ctx.runtimeState.glassEasel.silent = Boolean(outputJson || outputMarkdown || outputPrReport || glassEaselCheck)
         const result = await analyzeSubpackages(ctx)
         await writeAnalyzeHistorySnapshot(result, ctx.configService)
         const writtenPath = await writeAnalyzeResult(
@@ -493,10 +521,13 @@ export function registerAnalyzeCommand(cli: CAC) {
           }
         }
         const budgetFailed = budgetCheck ? printBudgetCheckSummary(result) : false
-        if (budgetFailed) {
+        const glassEaselFailed = glassEaselCheck && !outputJson
+          ? printGlassEaselCheckSummary(result)
+          : glassEaselCheck && result.glassEasel.summary.errors > 0
+        if (budgetFailed || glassEaselFailed) {
           process.exitCode = 1
         }
-        if (budgetCheck) {
+        if (budgetCheck || glassEaselCheck) {
           return
         }
         if (!outputPrReport && !outputMarkdown && !outputJson) {

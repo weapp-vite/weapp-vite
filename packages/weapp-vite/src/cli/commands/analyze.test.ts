@@ -143,6 +143,11 @@ describe('analyze cli command', () => {
     ensureDirMock.mockResolvedValue(undefined)
     writeFileMock.mockResolvedValue(undefined)
     createCompilerContextMock.mockResolvedValue({
+      runtimeState: {
+        glassEasel: {
+          silent: false,
+        },
+      },
       configService: {
         platform: 'weapp',
         cwd: '/project',
@@ -161,6 +166,13 @@ describe('analyze cli command', () => {
       packages: [],
       modules: [],
       subPackages: [],
+      glassEasel: {
+        detected: false,
+        minimumBaseLibrary: '3.8.12',
+        migrationGuide: 'https://developers.weixin.qq.com/miniprogram/dev/framework/custom-component/glass-easel/migration.html',
+        diagnostics: [],
+        summary: { errors: 0, warnings: 0 },
+      },
     })
     analyzeHmrProfileMock.mockResolvedValue({
       runtime: 'mini',
@@ -270,7 +282,7 @@ describe('analyze cli command', () => {
     expect(analyzeSubpackagesMock).toHaveBeenCalledTimes(1)
     expect(analyzePreloadRulesMock).toHaveBeenCalledWith(
       expect.anything(),
-      { packageAnalysis: { packages: [], modules: [], subPackages: [] } },
+      { packageAnalysis: expect.objectContaining({ packages: [], modules: [], subPackages: [] }) },
     )
     expect(startAnalyzeDashboard).not.toHaveBeenCalled()
     expect(analyzeBackendCloseMock).toHaveBeenCalledTimes(1)
@@ -867,6 +879,33 @@ describe('analyze cli command', () => {
 
     await action('/project', { budgetCheck: true })
     expect(loggerMock.success).toHaveBeenCalledWith('包体预算检查通过')
+    expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+  })
+
+  it('returns a non-zero exit code for glass-easel migration errors', async () => {
+    analyzeSubpackagesMock.mockResolvedValueOnce({
+      packages: [],
+      modules: [],
+      subPackages: [],
+      glassEasel: {
+        detected: true,
+        minimumBaseLibrary: '3.8.12',
+        migrationGuide: 'https://developers.weixin.qq.com/miniprogram/dev/framework/custom-component/glass-easel/migration.html',
+        diagnostics: [{
+          code: 'GE001',
+          severity: 'error',
+          file: 'app.json',
+          message: 'missing paired config',
+        }],
+        summary: { errors: 1, warnings: 0 },
+      },
+    })
+    const action = createAnalyzeActionHandler()
+
+    await action('/project', { glassEaselCheck: true })
+
+    expect(process.exitCode).toBe(1)
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.stringContaining('[GE001] app.json'))
     expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
   })
 
