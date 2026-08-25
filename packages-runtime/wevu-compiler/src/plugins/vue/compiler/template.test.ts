@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import { buildClassStyleComputedCode } from '../transform/classStyleComputed'
 import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from './template'
@@ -763,6 +764,108 @@ describe('compileVueTemplateToWxml', () => {
         kind: 'component',
       },
     ])
+  })
+
+  it('projects nested v-for keys without changing direct key fast paths', () => {
+    const nested = compileVueTemplateToWxml(`
+<GalleryCard
+  v-for="entry in column"
+  :key="entry.item.id"
+  @tap="select(entry)"
+/>
+    `.trim(), '/project/src/components/Gallery.vue')
+
+    expect(nested.code).toContain(
+      `${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_0}}" `
+      + `${DEFAULT_DIRECTIVES.forItemAttr}="entry" `
+      + `${DEFAULT_DIRECTIVES.forIndexAttr}="__wv_index_0" `
+      + `${DEFAULT_DIRECTIVES.keyAttr}="__wv_key_0"`,
+    )
+    expect(nested.code).not.toContain(`${DEFAULT_DIRECTIVES.keyAttr}="item"`)
+    expect(nested.warnings).toEqual([])
+    expect(nested.classStyleBindings).toContainEqual(expect.objectContaining({
+      name: '__wv_bind_0',
+      type: 'bind',
+      exp: 'v-for :key entry.item.id',
+      forStack: [],
+    }))
+    const computedCode = buildComputedCode(nested.classStyleBindings ?? [])
+    expect(computedCode).toContain('Object.assign')
+    expect(computedCode).toContain('__wv_key_0')
+    expect(computedCode).toContain('entry.item')
+    expect(computedCode).toContain('[wevu]')
+    expect(nested.inlineExpressions?.[0]?.scopeResolvers).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        key: 'entry',
+        expression: expect.stringContaining('path:"column"'),
+      }),
+    ]))
+
+    const direct = compileVueTemplateToWxml(
+      '<GalleryCard v-for="entry in column" :key="entry.id" />',
+      '/project/src/components/Gallery.vue',
+    )
+    expect(direct.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{column}}"`)
+    expect(direct.code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="id"`)
+    expect(direct.classStyleBindings).toBeUndefined()
+  })
+  it('evaluates nested key projections without mutating source items', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<GalleryCard v-for="entry in column" :key="entry.item.id" />',
+      '/project/src/components/Gallery.vue',
+    )
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    expect(computedCode).toBeTruthy()
+
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console,
+    }) as {
+      __wv_bind_0: (this: {
+        $state: { column: Array<{ item: { id: string }, label: string }> }
+        __wevuProps: Record<string, unknown>
+        column: Array<{ item: { id: string }, label: string }>
+      }) => Array<{ __wv_key_0: string, item: { id: string }, label: string }>
+    }
+    const column = [
+      { item: { id: 'gallery-a' }, label: 'A' },
+      { item: { id: 'gallery-b' }, label: 'B' },
+    ]
+    const projected = computed.__wv_bind_0.call({
+      $state: { column },
+      __wevuProps: {},
+      column,
+    })
+
+    expect(projected).toEqual([
+      { __wv_key_0: 'gallery-a', item: column[0]?.item, label: 'A' },
+      { __wv_key_0: 'gallery-b', item: column[1]?.item, label: 'B' },
+    ])
+    expect(projected).not.toBe(column)
+    expect(projected[0]).not.toBe(column[0])
+    expect(Object.prototype.hasOwnProperty.call(column[0] ?? {}, '__wv_key_0')).toBe(false)
+  })
+
+  it('reuses runtime v-for sources when projecting nested keys', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<GalleryCard v-for="entry in getColumn()" :key="entry.item.id" />',
+      '/project/src/components/Gallery.vue',
+    )
+
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_1}}"`)
+    expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="__wv_key_1"`)
+    expect(compiled.classStyleBindings).toEqual([
+      expect.objectContaining({
+        name: '__wv_bind_0',
+        exp: 'getColumn()',
+      }),
+      expect.objectContaining({
+        name: '__wv_bind_1',
+        exp: 'v-for :key entry.item.id',
+      }),
+    ])
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    expect(computedCode).toContain('this.__wv_bind_0')
   })
 
   it('falls back structural call expressions to runtime bindings', () => {

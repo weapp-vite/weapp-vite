@@ -8,6 +8,7 @@ import { normalizeWxmlExpressionWithContext } from '../expression'
 import { generateExpression, parseBabelExpression } from '../expression/parse'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { renderMustache } from '../mustache'
+import { resolveNativeForKeyValue } from './forKey'
 
 function unwrapTsExpression(node: Expression): Expression {
   if (node.type === 'TSAsExpression' || node.type === 'TSNonNullExpression' || node.type === 'TSTypeAssertion') {
@@ -90,12 +91,6 @@ function createInlineObjectLiteralAttr(argValue: string, rawExpValue: string, co
   }
   return `${argValue}="{{ ${expValue} }}"`
 }
-
-const SIMPLE_IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
-const SIMPLE_MEMBER_PATH_RE = /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i
-
-const isSimpleIdentifier = (value: string) => SIMPLE_IDENTIFIER_RE.test(value)
-const isSimpleMemberPath = (value: string) => SIMPLE_MEMBER_PATH_RE.test(value)
 
 const COMPONENT_NON_PROP_BINDINGS = new Set([
   'class',
@@ -210,35 +205,15 @@ export function transformBindDirective(
   if (argValue === 'key') {
     const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
     const trimmed = expValue.trim()
-    const warnKeyFallback = (reason: string) => {
-      if (!forInfo) {
-        return
-      }
-      context.warnings.push(
-        `v-for :key "${trimmed}" ${reason}，已降级为 ${context.platform.keyAttr(context.platform.keyThisValue)}。`
-        + '建议使用稳定的基础类型 key（例如 item.id）。',
-      )
-    }
-    if (forInfo?.item && trimmed === forInfo.item) {
-      return context.platform.keyAttr(context.platform.keyThisValue)
-    }
-    if (forInfo?.key && trimmed === forInfo.key) {
-      return context.platform.keyAttr(context.platform.keyThisValue)
-    }
-    if (forInfo?.item && trimmed.startsWith(`${forInfo.item}.`)) {
-      const remainder = trimmed.slice(forInfo.item.length + 1)
-      if (isSimpleMemberPath(remainder)) {
-        const firstSegment = remainder.split('.')[0] || remainder
-        return context.platform.keyAttr(firstSegment)
-      }
-      warnKeyFallback('不是简单的成员路径')
-      return context.platform.keyAttr(context.platform.keyThisValue)
-    }
-    if (isSimpleIdentifier(trimmed)) {
-      return context.platform.keyAttr(trimmed)
+    const nativeKeyValue = resolveNativeForKeyValue(trimmed, forInfo, context.platform.keyThisValue)
+    if (nativeKeyValue) {
+      return context.platform.keyAttr(nativeKeyValue)
     }
     if (forInfo) {
-      warnKeyFallback('是复杂表达式')
+      context.warnings.push(
+        `v-for :key "${trimmed}" 无法生成运行时 key 投影，已降级为 ${context.platform.keyAttr(context.platform.keyThisValue)}。`
+        + '建议使用稳定的基础类型 key。',
+      )
       return context.platform.keyAttr(context.platform.keyThisValue)
     }
     return context.platform.keyAttr(expValue)

@@ -2,6 +2,7 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { transformBindDirective } from '../directives/bind'
+import { createForKeyProjection } from '../directives/forKey'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
@@ -120,26 +121,39 @@ export function transformForElement(node: ElementNode, context: TransformContext
   return withForScope(context, scopedForInfo, () => withScope(context, scopeNames, () => {
     const otherProps = node.props.filter(prop => prop !== forDirective)
     const elementWithoutFor: ElementNode = { ...node, props: otherProps }
-
-    const extraAttrs: string[] = listExp
-      ? context.platform.forAttrs(listExp, renderTemplateMustache, forInfo.item, forInfo.index)
+    const keyDirective = otherProps.find((prop): prop is DirectiveNode => {
+      return prop.type === NodeTypes.DIRECTIVE
+        && prop.name === 'bind'
+        && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+        && prop.arg.content === 'key'
+    })
+    const keyProjection = keyDirective
+      ? createForKeyProjection(keyDirective, scopedForInfo, context)
+      : null
+    const renderElement: ElementNode = keyProjection
+      ? {
+          ...elementWithoutFor,
+          props: otherProps.filter(prop => prop !== keyDirective),
+        }
+      : elementWithoutFor
+    const templateListExp = keyProjection?.listExp ?? listExp
+    const extraAttrs: string[] = templateListExp
+      ? context.platform.forAttrs(templateListExp, renderTemplateMustache, forInfo.item, forInfo.index)
       : []
+    if (keyProjection) {
+      extraAttrs.push(keyProjection.keyAttr)
+    }
 
-    if (elementWithoutFor.tag === 'slot') {
-      const keyDirective = elementWithoutFor.props.find((prop): prop is DirectiveNode => {
-        return prop.type === NodeTypes.DIRECTIVE
-          && prop.name === 'bind'
-          && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
-          && prop.arg.content === 'key'
-      })
+    if (renderElement.tag === 'slot') {
+      const slotKeyDirective = keyProjection ? undefined : keyDirective
       const slotElementWithoutForKey: ElementNode = {
-        ...elementWithoutFor,
-        props: elementWithoutFor.props.filter((prop) => {
-          return prop !== keyDirective
-        }),
+        ...renderElement,
+        props: renderElement.props.filter(prop => prop !== slotKeyDirective),
       }
       const content = transformSlotElement(slotElementWithoutForKey, context, transformNode)
-      const keyAttr = keyDirective ? transformBindDirective(keyDirective, context, forInfo) : null
+      const keyAttr = slotKeyDirective
+        ? transformBindDirective(slotKeyDirective, context, scopedForInfo)
+        : null
       if (keyAttr) {
         extraAttrs.push(keyAttr)
       }
@@ -147,20 +161,23 @@ export function transformForElement(node: ElementNode, context: TransformContext
       return attrString ? `<block${attrString}>${content}</block>` : content
     }
 
-    const resolvedTag = resolveTemplateTagName(elementWithoutFor.tag, context)
-    if (shouldTransformAsComponentWithSlots(elementWithoutFor, context, resolvedTag)) {
-      return transformComponentWithSlots(elementWithoutFor, context, transformNode, { extraAttrs, forInfo })
+    const resolvedTag = resolveTemplateTagName(renderElement.tag, context)
+    if (shouldTransformAsComponentWithSlots(renderElement, context, resolvedTag)) {
+      return transformComponentWithSlots(renderElement, context, transformNode, {
+        extraAttrs,
+        forInfo: scopedForInfo,
+      })
     }
 
-    const { attrs, vTextExp } = collectElementAttributes(elementWithoutFor, context, {
-      forInfo,
+    const { attrs, vTextExp } = collectElementAttributes(renderElement, context, {
+      forInfo: scopedForInfo,
       extraAttrs,
       resolvedTag,
     })
 
     let children = ''
-    if (elementWithoutFor.children.length > 0) {
-      children = elementWithoutFor.children
+    if (renderElement.children.length > 0) {
+      children = renderElement.children
         .map(child => transformNode(child, context))
         .join('')
     }
