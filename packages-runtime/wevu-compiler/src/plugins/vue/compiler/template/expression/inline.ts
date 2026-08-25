@@ -4,87 +4,24 @@ import type {
   InlineExpressionScopeResolverAsset,
   TransformContext,
 } from '../types'
-import {
-  WEVU_CLASS_STYLE_RUNTIME_MODULE,
-  WEVU_SLOT_PROPS_DATA_KEY,
-} from '@weapp-core/constants'
-import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
+import { WEVU_SLOT_PROPS_DATA_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { createInlineExpressionId } from '../../../../../inlineDataset'
 import { traverse } from '../../../../../utils/babel'
 import { hasOwn } from '../../../../../utils/object'
+import { buildForItemResolverExpression } from './forItemResolver'
+import {
+  createMemberAccess,
+  INLINE_GLOBALS,
+  replaceIdentifierWithExpression,
+} from './inlineShared'
 import { generateExpression, parseBabelExpressionFile } from './parse'
 import { collectScopedSlotLocals, collectSlotPropMapping } from './scopedSlot'
 
-const INLINE_GLOBALS = new Set([
-  'Math',
-  'Number',
-  'Date',
-  'Array',
-  'Object',
-  'Boolean',
-  'String',
-  'RegExp',
-  'Map',
-  'Set',
-  'JSON',
-  'Intl',
-  'Promise',
-  'console',
-  'Infinity',
-  'undefined',
-  'NaN',
-  'isFinite',
-  'isNaN',
-  'parseFloat',
-  'parseInt',
-  'decodeURI',
-  'decodeURIComponent',
-  'encodeURI',
-  'encodeURIComponent',
-  'require',
-  'arguments',
-  WEVU_CLASS_STYLE_RUNTIME_MODULE,
-  '__wevuUnref',
-  'globalThis',
-  'setTimeout',
-  'clearTimeout',
-  'setInterval',
-  'clearInterval',
-  'Page',
-  'App',
-  'Component',
-  'requirePlugin',
-  'getApp',
-  'getCurrentPages',
-  'ctx',
-  'scope',
-  ...getMiniProgramRuntimeGlobalKeys(),
-])
-
-const IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
-const SIMPLE_PATH_RE = /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i
 const SCRIPT_SETUP_REF_BINDINGS = new Set([
   'setup-ref',
   'setup-maybe-ref',
 ])
-
-function createMemberAccess(target: string, prop: string) {
-  if (IDENTIFIER_RE.test(prop)) {
-    return t.memberExpression(t.identifier(target), t.identifier(prop))
-  }
-  return t.memberExpression(t.identifier(target), t.stringLiteral(prop), true)
-}
-
-function replaceIdentifierWithExpression(path: import('@weapp-vite/ast/babelTraverse').NodePath<t.Identifier>, replacement: t.Expression) {
-  const parent = path.parentPath
-  if (parent.isObjectProperty() && parent.node.shorthand && parent.node.key === path.node) {
-    parent.node.shorthand = false
-    parent.node.value = replacement
-    return
-  }
-  path.replaceWith(replacement)
-}
 
 function resolveSlotPropBinding(slotProps: Record<string, string>, name: string): string | null {
   if (!hasOwn(slotProps, name)) {
@@ -143,50 +80,6 @@ function buildInlineIndexBindings(context: TransformContext): InlineExpressionIn
     key: `__wv_i${level}`,
     binding: forInfo.index?.trim() || 'index',
   }))
-}
-
-function buildForItemResolverExpression(
-  targetKey: string,
-  context: TransformContext,
-  slotProps: Record<string, string>,
-  indexBindings: InlineExpressionIndexBindingAsset[],
-): string | null {
-  let targetLevel = -1
-  for (let level = context.forStack.length - 1; level >= 0; level -= 1) {
-    if (context.forStack[level]?.item === targetKey) {
-      targetLevel = level
-      break
-    }
-  }
-  if (targetLevel < 0) {
-    return null
-  }
-
-  const forInfo = context.forStack[targetLevel]
-  const listExp = forInfo?.listExp?.trim() ?? ''
-  const indexBinding = indexBindings[targetLevel]
-  if (!listExp || !indexBinding || !SIMPLE_PATH_RE.test(listExp)) {
-    return null
-  }
-
-  const root = listExp.split('.')[0]
-  const localRoots = new Set<string>(Object.keys(slotProps))
-  for (let level = 0; level <= targetLevel; level += 1) {
-    const item = context.forStack[level]?.item?.trim()
-    const index = context.forStack[level]?.index?.trim()
-    if (item) {
-      localRoots.add(item)
-    }
-    if (index) {
-      localRoots.add(index)
-    }
-    localRoots.add('index')
-  }
-  if (localRoots.has(root)) {
-    return null
-  }
-
-  return `({type:'for-item',path:${JSON.stringify(listExp)},indexKey:${JSON.stringify(indexBinding.key)}})`
 }
 
 function buildScopeResolvers(
