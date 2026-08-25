@@ -136,4 +136,22 @@ describe('injectInlineExpressions', () => {
     expect(code).toContain('scopeResolvers')
     expect(code).toContain('undefined')
   })
+
+  it('keeps scope resolver positions aligned when only a later key is resolvable', () => {
+    const optionsObject = t.objectExpression([])
+    expect(injectInlineExpressions(optionsObject, [
+      {
+        id: 'e5',
+        expression: 'ctx.select(scope.label, scope.entry)',
+        scopeKeys: ['label', 'entry'],
+        scopeResolvers: [
+          { key: 'entry', expression: '({ type: \'for-item\', path: \'entries\', indexKey: \'__wv_i0\' })' },
+        ],
+      },
+    ])).toBe(true)
+
+    const code = generate(optionsObject).code
+    expect(code).toContain('scopeResolvers: [undefined, {')
+    expect(code).toContain('type: \'for-item\'')
+  })
 })

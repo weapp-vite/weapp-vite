@@ -56,6 +56,7 @@ function createProjectedItemExpression(
   keyExp: Expression,
   rawKeyExp: string,
   keyField: string,
+  valueField: string,
   seed: number,
 ) {
   const isObject = t.logicalExpression(
@@ -70,13 +71,21 @@ function createProjectedItemExpression(
       t.cloneNode(item),
       t.objectExpression([
         t.objectProperty(
+          t.stringLiteral(valueField),
+          t.cloneNode(item),
+        ),
+        t.objectProperty(
           t.stringLiteral(keyField),
           createSafeKeyExpression(keyExp, rawKeyExp, seed),
         ),
       ]),
     ],
   )
-  return t.conditionalExpression(isObject, projected, t.cloneNode(item))
+  const primitiveProjected = t.objectExpression([
+    t.objectProperty(t.stringLiteral(valueField), t.cloneNode(item)),
+    t.objectProperty(t.stringLiteral(keyField), createSafeKeyExpression(keyExp, rawKeyExp, seed)),
+  ])
+  return t.conditionalExpression(isObject, projected, primitiveProjected)
 }
 
 function createArrayProjection(
@@ -84,6 +93,7 @@ function createArrayProjection(
   keyExp: Expression,
   rawKeyExp: string,
   keyField: string,
+  valueField: string,
   forInfo: ForParseResult,
   seed: number,
 ) {
@@ -100,7 +110,7 @@ function createArrayProjection(
     ]))
   }
   body.push(t.returnStatement(
-    createProjectedItemExpression(itemId, keyExp, rawKeyExp, keyField, seed),
+    createProjectedItemExpression(itemId, keyExp, rawKeyExp, keyField, valueField, seed),
   ))
   return t.callExpression(
     t.memberExpression(t.cloneNode(sourceId), t.identifier('map')),
@@ -113,6 +123,7 @@ function createObjectProjection(
   keyExp: Expression,
   rawKeyExp: string,
   keyField: string,
+  valueField: string,
   forInfo: ForParseResult,
   seed: number,
 ) {
@@ -153,7 +164,7 @@ function createObjectProjection(
     t.assignmentExpression(
       '=',
       t.memberExpression(resultId, sourceKeyId, true),
-      createProjectedItemExpression(sourceItemId, keyExp, rawKeyExp, keyField, seed),
+      createProjectedItemExpression(sourceItemId, keyExp, rawKeyExp, keyField, valueField, seed),
     ),
   ))
 
@@ -193,6 +204,7 @@ export function createForKeyProjectionExpression(
   keyExp: Expression,
   rawKeyExp: string,
   keyField: string,
+  valueField: string,
   forInfo: ForParseResult,
   seed: number,
 ) {
@@ -215,13 +227,13 @@ export function createForKeyProjectionExpression(
             [t.cloneNode(sourceId)],
           ),
           t.blockStatement([
-            t.returnStatement(createArrayProjection(sourceId, keyExp, rawKeyExp, keyField, forInfo, seed)),
+            t.returnStatement(createArrayProjection(sourceId, keyExp, rawKeyExp, keyField, valueField, forInfo, seed)),
           ]),
         ),
         t.ifStatement(
           objectCheck,
           t.blockStatement([
-            t.returnStatement(createObjectProjection(sourceId, keyExp, rawKeyExp, keyField, forInfo, seed)),
+            t.returnStatement(createObjectProjection(sourceId, keyExp, rawKeyExp, keyField, valueField, forInfo, seed)),
           ]),
         ),
         t.returnStatement(t.cloneNode(sourceId)),

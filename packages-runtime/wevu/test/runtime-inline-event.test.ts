@@ -1,7 +1,7 @@
 import type { InlineExpressionMap } from '@/runtime/register/inline'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '@/index'
-import { isReactive, ref } from '@/reactivity'
+import { ref } from '@/reactivity'
 import { runInlineExpression } from '@/runtime/register/inline'
 
 const registeredComponents: Record<string, any>[] = []
@@ -678,6 +678,7 @@ describe('runtime: inline event handler', () => {
     )
 
     expect(updateQuantity).toHaveBeenCalledTimes(1)
+    expect(updateQuantity.mock.calls[0]?.[0]).toBe(source[0])
     expect(source[0].quantity).toBe(1)
     expect(source[1].quantity).toBe(5)
     expect(itemSnapshot.quantity).toBe(2)
@@ -903,11 +904,11 @@ describe('runtime: inline event handler', () => {
     expect(itemSnapshot.quantity).toBe(2)
   })
 
-  it('normalizes restored list item to reactive proxy before invoking handler', () => {
+  it('passes restored list item identity through before invoking handler', () => {
     const source = [{ id: 1, quantity: 2 }]
     const itemSnapshot = { id: 1, quantity: 2 }
     const updateQuantity = vi.fn((item: { quantity: number }) => {
-      expect(isReactive(item)).toBe(true)
+      expect(item).toBe(source[0])
       item.quantity -= 1
     })
 

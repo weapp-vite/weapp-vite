@@ -888,8 +888,8 @@ describe('compileVueTemplateToWxml', () => {
     })
 
     expect(projected).toEqual([
-      { __wv_key_0: 'gallery-a', item: column[0]?.item, label: 'A' },
-      { __wv_key_0: 'gallery-b', item: column[1]?.item, label: 'B' },
+      { __wv_key_0: 'gallery-a', __wv_value_0: column[0], item: column[0]?.item, label: 'A' },
+      { __wv_key_0: 'gallery-b', __wv_value_0: column[1], item: column[1]?.item, label: 'B' },
     ])
     expect(projected).not.toBe(column)
     expect(projected[0]).not.toBe(column[0])
@@ -1212,10 +1212,63 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/issue-868/index.vue')
 
-    expect(code).toContain('wx:for="{{column}}"')
+    expect(code).toContain('wx:for="{{__wv_bind_0}}"')
     expect(code).toContain('wx:for-item="entry"')
-    expect(code).toContain('wx:key="item.id"')
-    expect(code).not.toContain('wx:key="item"')
+    expect(code).toContain('wx:key="__wv_key_0"')
+    expect(code).not.toContain('wx:key="item.id"')
+  })
+
+  it('projects primitive loop items while preserving their template value', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="item in values" :key="item + \'-key\'">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+
+    expect(compiled.code).toContain('wx:for="{{__wv_bind_0}}"')
+    expect(compiled.code).toContain('{{item.__wv_value_0}}')
+    expect(compiled.code).toContain('wx:key="__wv_key_0"')
+
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console,
+    }) as {
+      __wv_bind_0: (this: Record<string, unknown>) => Array<Record<string, unknown>>
+    }
+    const values = ['a', 'b']
+    const projected = computed.__wv_bind_0.call({
+      $state: { values },
+      __wevuProps: {},
+      values,
+    })
+
+    expect(projected).toEqual([
+      { __wv_key_0: 'a-key', __wv_value_0: 'a' },
+      { __wv_key_0: 'b-key', __wv_value_0: 'b' },
+    ])
+  })
+
+  it('falls back to *this for statically known primitive key sources', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="item in [\'a\', \'b\']" :key="item + \'-key\'">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+
+    expect(compiled.code).toContain('wx:for="{{[\'a\', \'b\']}}"')
+    expect(compiled.code).toContain('wx:key="*this"')
+    expect(compiled.warnings.some(message => message.includes('无法生成运行时 key 投影'))).toBe(true)
+  })
+
+  it('projects mixed static object and primitive loop sources', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="item in [{ id: \'a\' }, \'b\']" :key="item.id ?? item">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+
+    expect(compiled.code).toContain('wx:for="{{__wv_bind_0}}"')
+    expect(compiled.code).toContain('wx:key="__wv_key_0"')
+    expect(compiled.code).toContain('{{item.__wv_value_0}}')
+    expect(compiled.code).not.toContain('wx:key="*this"')
   })
 
   it('rewrites component simple event handlers to inline payload handlers', () => {

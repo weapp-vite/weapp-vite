@@ -125,6 +125,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
   if ((context.classStyleRuntime === 'js' || requiresRuntimeForKeyProjection(node, context)) && !forInfo.index) {
     forInfo.index = `__wv_index_${context.forIndexSeed++}`
   }
+  const rawListExp = forInfo.listExp?.trim()
   const listExp = forInfo.listExp
     ? resolveListExpression(forInfo.listExp, context, 'v-for 列表')
     : undefined
@@ -132,8 +133,8 @@ export function transformForElement(node: ElementNode, context: TransformContext
     ? normalizeJsExpressionWithContext(forInfo.listExp, context, { hint: 'v-for 列表' })
     : undefined
   const scopedForInfo: ForParseResult = listExp
-    ? { ...forInfo, listExp, listExpAst: listExpAst ?? undefined }
-    : { ...forInfo, listExpAst: listExpAst ?? undefined }
+    ? { ...forInfo, listExp, rawListExp, listExpAst: listExpAst ?? undefined }
+    : { ...forInfo, rawListExp, listExpAst: listExpAst ?? undefined }
   const scopeNames = [
     forInfo.item,
     forInfo.index,
@@ -153,6 +154,13 @@ export function transformForElement(node: ElementNode, context: TransformContext
     const keyProjection = keyDirective
       ? createForKeyProjection(keyDirective, scopedForInfo, context)
       : null
+    if (keyProjection) {
+      scopedForInfo.itemAccess = keyProjection.itemAccess
+      const currentForInfo = context.forStack[context.forStack.length - 1]
+      if (currentForInfo) {
+        currentForInfo.itemAccess = keyProjection.itemAccess
+      }
+    }
     const renderElement: ElementNode = keyProjection
       ? {
           ...elementWithoutFor,

@@ -1,4 +1,4 @@
-import { isReactive, isRef, reactive } from '../../reactivity'
+import { isRef } from '../../reactivity'
 
 export interface InlineExpressionEntry {
   keys: string[]
@@ -164,18 +164,7 @@ function getByPath(target: any, path: string) {
 }
 
 function normalizeResolvedScopeValue(value: any) {
-  if (value == null || typeof value !== 'object') {
-    return value
-  }
-  if (isRef(value) || isReactive(value)) {
-    return value
-  }
-  try {
-    return reactive(value)
-  }
-  catch {
-    return value
-  }
+  return value
 }
 
 export function runInlineExpression(

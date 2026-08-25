@@ -8,6 +8,7 @@ import {
 import * as t from '@weapp-vite/ast/babelTypes'
 import { traverse } from '../../../../../utils/babel'
 import { hasOwn } from '../../../../../utils/object'
+import { rewriteForItemAccess } from './forItemAccess'
 import { generateExpression, parseBabelExpression, parseBabelExpressionFile } from './parse'
 import { normalizeWxmlExpression } from './wxml'
 
@@ -138,6 +139,8 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
     },
   })
 
+  rewriteForItemAccess(ast, context)
+
   const stmt = ast.program.body[0]
   const updatedExpression = (stmt && 'expression' in stmt) ? (stmt as any).expression as t.Expression : null
   return updatedExpression ? generateExpression(updatedExpression) : normalized
@@ -146,7 +149,7 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
 function rewriteForAliasExpression(exp: string, context: TransformContext): string {
   const normalized = normalizeWxmlExpression(exp)
   const forAliases = collectForAliasMapping(context)
-  if (!Object.keys(forAliases).length) {
+  if (!Object.keys(forAliases).length && !context.forStack.some(forInfo => forInfo.itemAccess)) {
     return normalized
   }
   const parsed = parseBabelExpressionFile(normalized)
@@ -172,6 +175,8 @@ function rewriteForAliasExpression(exp: string, context: TransformContext): stri
       }
     },
   })
+
+  rewriteForItemAccess(ast, context)
 
   const stmt = ast.program.body[0]
   const updatedExpression = (stmt && 'expression' in stmt) ? (stmt as any).expression as t.Expression : null

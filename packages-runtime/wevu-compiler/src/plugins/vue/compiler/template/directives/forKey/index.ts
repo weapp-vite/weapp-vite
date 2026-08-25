@@ -1,5 +1,6 @@
 import type { DirectiveNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext } from '../../types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { getBindDirectiveExpression } from '../../elements/helpers'
 import { normalizeJsExpressionWithContext } from '../../expression'
 import { createForKeyProjectionExpression } from './projection'
@@ -11,6 +12,30 @@ const RUNTIME_BINDING_REF_RE = /^__wv_bind_\d+(?:\[[A-Z_$][\w$]*\])*$/i
 export interface ForKeyProjection {
   keyAttr: string
   listExp: string
+  itemAccess: string
+}
+
+function createSourceContext(context: TransformContext): TransformContext {
+  return {
+    ...context,
+    forStack: context.forStack.map(forInfo => ({ ...forInfo, itemAccess: undefined })),
+  }
+}
+
+function hasKnownPrimitiveItems(exp: t.Expression) {
+  if (t.isStringLiteral(exp) || t.isNumericLiteral(exp) || t.isBooleanLiteral(exp) || t.isNullLiteral(exp)) {
+    return true
+  }
+  if (!t.isArrayExpression(exp)) {
+    return false
+  }
+  return exp.elements.every((element) => {
+    return element == null
+      || t.isStringLiteral(element)
+      || t.isNumericLiteral(element)
+      || t.isBooleanLiteral(element)
+      || t.isNullLiteral(element)
+  })
 }
 
 function resolveItemAliasKeyField(trimmed: string, forInfo: ForParseResult) {
@@ -56,27 +81,38 @@ export function createForKeyProjection(
   const rawKeyExp = getBindDirectiveExpression(node).trim()
   if (
     !rawKeyExp
-    || !forInfo.listExpAst
+    || !forInfo.listExp
     || resolveNativeForKeyValue(rawKeyExp, forInfo, context.platform.keyThisValue)
   ) {
     return null
   }
   const listExp = forInfo.listExp?.trim() ?? ''
-  const projectionSourceAst = RUNTIME_BINDING_REF_RE.test(listExp)
-    ? normalizeJsExpressionWithContext(listExp, context, {
+  const rawListExp = forInfo.rawListExp?.trim() || listExp
+  const projectionListExp = RUNTIME_BINDING_REF_RE.test(listExp) ? listExp : rawListExp
+  const sourceContext = createSourceContext(context)
+  const projectionSourceAst = RUNTIME_BINDING_REF_RE.test(projectionListExp)
+    ? normalizeJsExpressionWithContext(projectionListExp, sourceContext, {
         hint: 'v-for :key 数据源',
         runtimePropAccess: 'helper',
         unrefMemberAccess: true,
+        preserveForItems: true,
       })
-    : forInfo.listExpAst
+    : normalizeJsExpressionWithContext(projectionListExp, sourceContext, {
+        hint: 'v-for :key 数据源',
+        preserveForItems: true,
+      })
   if (!projectionSourceAst) {
     return null
   }
+  if (hasKnownPrimitiveItems(projectionSourceAst)) {
+    return null
+  }
 
-  const keyExpAst = normalizeJsExpressionWithContext(rawKeyExp, context, {
+  const keyExpAst = normalizeJsExpressionWithContext(rawKeyExp, sourceContext, {
     hint: 'v-for :key',
     runtimePropAccess: 'helper',
     unrefMemberAccess: true,
+    preserveForItems: true,
   })
   if (!keyExpAst) {
     return null
@@ -85,6 +121,7 @@ export function createForKeyProjection(
   const bindingSeed = context.classStyleBindings.filter(binding => binding.type === 'bind').length
   const bindingName = `__wv_bind_${bindingSeed}`
   const keyField = `__wv_key_${bindingSeed}`
+  const valueField = `__wv_value_${bindingSeed}`
   const outerForStack = context.forStack.slice(0, -1).map(info => ({ ...info }))
   context.classStyleBindings.push({
     name: bindingName,
@@ -95,6 +132,7 @@ export function createForKeyProjection(
       keyExpAst,
       rawKeyExp,
       keyField,
+      valueField,
       forInfo,
       bindingSeed,
     ),
@@ -107,5 +145,6 @@ export function createForKeyProjection(
   return {
     keyAttr: context.platform.keyAttr(keyField),
     listExp: `${bindingName}${indexAccess}`,
+    itemAccess: `${forInfo.item}.${valueField}`,
   }
 }
