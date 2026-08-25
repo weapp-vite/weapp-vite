@@ -156,9 +156,27 @@ export function transformForElement(node: ElementNode, context: TransformContext
       : null
     if (keyProjection) {
       scopedForInfo.itemAccess = keyProjection.itemAccess
+      const projectionContext: TransformContext = {
+        ...context,
+        forStack: context.forStack.map(forInfo => ({ ...forInfo, itemAccess: undefined })),
+      }
+      const projectedListExpAst = normalizeJsExpressionWithContext(
+        keyProjection.listExp,
+        projectionContext,
+        {
+          hint: 'v-for 投影列表',
+          runtimePropAccess: 'helper',
+          unrefMemberAccess: true,
+          preserveForItems: true,
+        },
+      )
+      scopedForInfo.projectedListExp = keyProjection.listExp
+      scopedForInfo.projectedListExpAst = projectedListExpAst ?? scopedForInfo.projectedListExpAst
       const currentForInfo = context.forStack[context.forStack.length - 1]
       if (currentForInfo) {
         currentForInfo.itemAccess = keyProjection.itemAccess
+        currentForInfo.projectedListExp = scopedForInfo.projectedListExp
+        currentForInfo.projectedListExpAst = scopedForInfo.projectedListExpAst
       }
     }
     const renderElement: ElementNode = keyProjection

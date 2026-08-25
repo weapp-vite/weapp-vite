@@ -441,7 +441,11 @@ function buildForExpression(
 
   const info = forStack[level]
   const listId = t.identifier(`__wv_list_${level}`)
-  const listExp = info.listExpAst ? t.cloneNode(info.listExpAst, true) : t.arrayExpression([])
+  const isProjectionBinding = binding.exp.startsWith('v-for :key ')
+  const listExpAst = !isProjectionBinding && info.projectedListExpAst
+    ? info.projectedListExpAst
+    : info.listExpAst
+  const listExp = listExpAst ? t.cloneNode(listExpAst, true) : t.arrayExpression([])
   const unrefHelper = helpers.unref ? t.cloneNode(helpers.unref) : t.identifier('unref')
   const listUnrefExp = t.callExpression(unrefHelper, [listExp])
 

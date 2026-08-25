@@ -126,6 +126,8 @@ export interface ForParseResult {
   listExp?: string
   rawListExp?: string
   listExpAst?: Expression
+  projectedListExp?: string
+  projectedListExpAst?: Expression
   item?: string
   itemAccess?: string
   index?: string

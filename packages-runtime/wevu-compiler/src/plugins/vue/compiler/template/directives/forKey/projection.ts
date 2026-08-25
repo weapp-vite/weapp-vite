@@ -83,7 +83,14 @@ function createProjectedItemExpression(
   )
   const primitiveProjected = t.objectExpression([
     t.objectProperty(t.stringLiteral(valueField), t.cloneNode(item)),
-    t.objectProperty(t.stringLiteral(keyField), createSafeKeyExpression(keyExp, rawKeyExp, seed)),
+    t.objectProperty(
+      t.stringLiteral(keyField),
+      t.conditionalExpression(
+        t.binaryExpression('==', t.cloneNode(item), t.nullLiteral()),
+        t.identifier('undefined'),
+        createSafeKeyExpression(keyExp, rawKeyExp, seed),
+      ),
+    ),
   ])
   return t.conditionalExpression(isObject, projected, primitiveProjected)
 }

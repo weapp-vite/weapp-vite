@@ -1271,6 +1271,33 @@ describe('compileVueTemplateToWxml', () => {
     expect(compiled.code).not.toContain('wx:key="*this"')
   })
 
+  it('keeps sparse dynamic loop items safe during key projection', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="item in values" :key="item.id || item.index">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    const consoleError = () => {
+      throw new Error('unexpected key projection error')
+    }
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console: { error: consoleError },
+    }) as {
+      __wv_bind_0: (this: Record<string, unknown>) => Array<Record<string, unknown>>
+    }
+    const values = [{ id: 'a' }, undefined]
+    const projected = computed.__wv_bind_0.call({
+      $state: { values },
+      __wevuProps: {},
+      values,
+    })
+
+    expect(projected[0]?.__wv_key_0).toBe('a')
+    expect(projected[1]?.__wv_key_0).toBeUndefined()
+    expect(projected[1]?.__wv_value_0).toBeUndefined()
+  })
+
   it('rewrites component simple event handlers to inline payload handlers', () => {
     const template = `
 <CompatAltPanel @run="onPanelRun" />
