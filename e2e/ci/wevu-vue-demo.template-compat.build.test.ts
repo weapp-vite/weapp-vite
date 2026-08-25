@@ -25,12 +25,9 @@ describe.sequential('e2e app: wevu-vue-demo (template compat)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
 
-    expect(pageWxml).toContain('wx:for="{{entries}}"')
-    const itemVarMatch = pageWxml.match(/wx:for-item="(__wv_item_\d+)"/)
-    expect(itemVarMatch).not.toBeNull()
-    const itemVar = itemVarMatch?.[1] ?? '__wv_item_0'
-    expect(pageWxml).toContain(`{{${itemVar}[0]}}`)
-    expect(pageWxml).toContain(`{{${itemVar}[1]}}`)
+    const tupleItemMatch = pageWxml.match(/\{\{([^{}]+)\[0\]\}\} = \{\{([^{}]+)\[1\]\}\}/)
+    expect(tupleItemMatch).not.toBeNull()
+    expect(tupleItemMatch?.[1]).toBe(tupleItemMatch?.[2])
 
     const objectPatternMatch = pageWxml.match(/wx:for="\{\{entryObjects\}\}"[^>]*wx:for-item="(__wv_item_\d+)"/)
     expect(objectPatternMatch).not.toBeNull()

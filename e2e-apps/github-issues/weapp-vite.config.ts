@@ -38,8 +38,19 @@ const githubIssuesAggregateTargets = {
     'github-issues.runtime.issue297-302.test.ts',
     'github-issues.runtime.web-runtime.test.ts',
     'github-issues.runtime.import-meta.test.ts',
+    'github-issues.runtime.issue466.test.ts',
+    'github-issues.runtime.issue553-555.test.ts',
+    'github-issues.runtime.issue554.test.ts',
+    'github-issues.runtime.issue564.test.ts',
+    'github-issues.runtime.issue581.test.ts',
+    'github-issues.runtime.issue627.test.ts',
+    'github-issues.runtime.issue642.test.ts',
+    'github-issues.runtime.issue705.test.ts',
     'github-issues.runtime.issue706.test.ts',
     'github-issues.runtime.issue829.test.ts',
+    'github-issues.runtime.lifecycle.test.ts',
+    'github-issues.runtime.miniprogram-computed.test.ts',
+    'github-issues.runtime.props.test.ts',
     'github-issues.runtime.slot-fallback.test.ts',
   ],
 } as const
@@ -449,9 +460,7 @@ function resolveGithubIssuesNpm() {
   }
 
   if (matchedGithubIssuesTestFile === 'github-issues.runtime.aggregate.test.ts') {
-    return {
-      enable: false,
-    }
+    return fullNpmConfig
   }
 
   return {
