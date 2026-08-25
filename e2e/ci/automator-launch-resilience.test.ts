@@ -208,9 +208,9 @@ function clearLaunchEnv() {
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER
 }
 
-function readBridgePayloadFromFirstExecaCall() {
-  const firstCall = execaMock.mock.calls[0]
-  const args = firstCall?.[1] as string[] | undefined
+function readBridgePayloadFromExecaCall(index = 0) {
+  const call = execaMock.mock.calls[index]
+  const args = call?.[1] as string[] | undefined
   const rawPayload = args?.find(arg => arg.startsWith('{'))
   return rawPayload ? JSON.parse(rawPayload) as { projectPath?: string } : undefined
 }
@@ -1435,7 +1435,7 @@ describe.sequential('automator launch resilience', () => {
 
     expect(launchMock).not.toHaveBeenCalled()
     expect(execaMock).toHaveBeenCalledTimes(1)
-    expectBridgeWrapperProjectPath(sandboxRoot, readBridgePayloadFromFirstExecaCall()?.projectPath)
+    expectBridgeWrapperProjectPath(sandboxRoot, readBridgePayloadFromExecaCall()?.projectPath)
     expect(connectMock).toHaveBeenCalledWith({
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
@@ -1474,12 +1474,12 @@ describe.sequential('automator launch resilience', () => {
       wrapperProjectPath = payload.projectPath
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({
         setting: {
-          es6: true,
           packNpmManually: false,
           packNpmRelationList: [],
           postcss: true,
         },
       })
+      expect(readJson(path.join(wrapperProjectPath, 'project.config.json')).setting).not.toHaveProperty('es6')
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({ simulatorType: 'wechat' })
       expect(readJson(path.join(wrapperProjectPath, 'app.json'))).toEqual({
         pages: ['pages/index/index'],
@@ -1502,10 +1502,10 @@ describe.sequential('automator launch resilience', () => {
     connectedMiniProgram.__rawReLaunch.mockImplementationOnce(async () => {
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({
         setting: {
-          es6: true,
           postcss: true,
         },
       })
+      expect(readJson(path.join(wrapperProjectPath, 'project.config.json')).setting).not.toHaveProperty('es6')
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({ simulatorType: 'wechat' })
       expect(readJson(path.join(wrapperProjectPath, 'app.json'))).toMatchObject({
         window: {
@@ -1571,7 +1571,7 @@ describe.sequential('automator launch resilience', () => {
     const { launchAutomator } = await import('../utils/automator')
     await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345, warmupAllowRelaunch: false })
 
-    const payload = readBridgePayloadFromFirstExecaCall()
+    const payload = readBridgePayloadFromExecaCall()
     expect(payload?.projectPath).toBe(sandboxRoot)
     expect(readJson(path.join(payload!.projectPath!, 'project.config.json'))).toMatchObject({
       compileType: 'plugin',
@@ -1608,7 +1608,7 @@ describe.sequential('automator launch resilience', () => {
     const { launchAutomator } = await import('../utils/automator')
     const launchedMiniProgram = await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
 
-    const wrapperProjectPath = readBridgePayloadFromFirstExecaCall()?.projectPath
+    const wrapperProjectPath = readBridgePayloadFromExecaCall()?.projectPath
     expectBridgeWrapperProjectPath(sandboxRoot, wrapperProjectPath)
     expect(rmSyncSpy.mock.calls.some(([target]) => String(target) === path.join(wrapperProjectPath!, 'pages'))).toBe(false)
 
@@ -1689,7 +1689,9 @@ describe.sequential('automator launch resilience', () => {
     connectMock.mockResolvedValueOnce(reconnectedMiniProgram)
 
     await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
-    expect(readJson(wrapperAppJsonPath)).toMatchObject({
+    const reconnectedWrapperProjectPath = readBridgePayloadFromExecaCall(1)?.projectPath
+    expect(reconnectedWrapperProjectPath).not.toBe(wrapperProjectPath)
+    expect(readJson(path.join(reconnectedWrapperProjectPath!, 'app.json'))).toMatchObject({
       pages: ['pages/changed/index'],
     })
     await reconnectedMiniProgram.disconnect?.()
@@ -1717,7 +1719,7 @@ describe.sequential('automator launch resilience', () => {
     const { launchAutomator } = await import('../utils/automator')
     await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
 
-    expect(readBridgePayloadFromFirstExecaCall()?.projectPath).toBe(sandboxRoot)
+    expect(readBridgePayloadFromExecaCall()?.projectPath).toBe(sandboxRoot)
     expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
   })
 
@@ -1964,7 +1966,7 @@ describe.sequential('automator launch resilience', () => {
     const { launchAutomator } = await import('../utils/automator')
     await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
 
-    const firstWrapperProjectPath = (readBridgePayloadFromFirstExecaCall()?.projectPath)
+    const firstWrapperProjectPath = (readBridgePayloadFromExecaCall()?.projectPath)
     expect(connectMock).toHaveBeenCalledTimes(2)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledTimes(2)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenNthCalledWith(1, firstWrapperProjectPath, {
