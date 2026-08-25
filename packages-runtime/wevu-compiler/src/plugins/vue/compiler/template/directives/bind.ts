@@ -228,8 +228,7 @@ export function transformBindDirective(
     if (forInfo?.item && trimmed.startsWith(`${forInfo.item}.`)) {
       const remainder = trimmed.slice(forInfo.item.length + 1)
       if (isSimpleMemberPath(remainder)) {
-        const firstSegment = remainder.split('.')[0] || remainder
-        return context.platform.keyAttr(firstSegment)
+        return context.platform.keyAttr(remainder)
       }
       warnKeyFallback('不是简单的成员路径')
       return context.platform.keyAttr(context.platform.keyThisValue)
