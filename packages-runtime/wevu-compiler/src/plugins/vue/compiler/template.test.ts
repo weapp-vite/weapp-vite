@@ -828,6 +828,15 @@ describe('compileVueTemplateToWxml', () => {
     expect(destructured.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{column}}"`)
     expect(destructured.code).toContain(`${DEFAULT_DIRECTIVES.keyAttr}="id"`)
     expect(destructured.classStyleBindings).toBeUndefined()
+
+    const keyAlias = compileVueTemplateToWxml(
+      '<GalleryCard v-for="(entry, key, index) in column" :key="key" />',
+      '/project/src/components/Gallery.vue',
+    )
+    expect(keyAlias.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{column}}"`)
+    expect(keyAlias.code).toContain(`${DEFAULT_DIRECTIVES.forIndexAttr}="index"`)
+    expect(keyAlias.code).toContain(DEFAULT_TEMPLATE_PLATFORM.keyAttr(DEFAULT_TEMPLATE_PLATFORM.keyThisValue))
+    expect(keyAlias.classStyleBindings).toBeUndefined()
   })
 
   it('emits unique ancestor indexes for nested key projections in wxs mode', () => {

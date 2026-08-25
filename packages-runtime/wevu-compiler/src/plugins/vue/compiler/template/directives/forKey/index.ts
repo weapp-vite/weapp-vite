@@ -29,7 +29,7 @@ export function resolveNativeForKeyValue(exp: string, forInfo: ForParseResult | 
   if (!forInfo) {
     return null
   }
-  if (forInfo.item && trimmed === forInfo.item) {
+  if ((forInfo.item && trimmed === forInfo.item) || (forInfo.key && trimmed === forInfo.key)) {
     return keyThisValue
   }
   if (forInfo.item && trimmed.startsWith(`${forInfo.item}.`)) {

@@ -687,12 +687,17 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('wx:key="id"')
     })
 
-    it('should fall back to "*this" for complex :key expressions', () => {
+    it('should project complex :key expressions to a direct runtime key field', () => {
       const result = compileVueTemplateToWxml(
         '<view v-for="item in items" :key="item.key ?? item.title">{{ item }}</view>',
         'test.vue',
       )
-      expect(result.code).toContain('wx:key="*this"')
+      expect(result.code).toContain('wx:for="{{__wv_bind_0}}"')
+      expect(result.code).toContain('wx:key="__wv_key_0"')
+      expect(result.classStyleBindings).toContainEqual(expect.objectContaining({
+        exp: 'v-for :key item.key ?? item.title',
+      }))
+      expect(result.warnings).toEqual([])
     })
 
     it('should handle element with multiple directives', () => {
