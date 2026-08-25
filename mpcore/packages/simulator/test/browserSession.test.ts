@@ -2669,6 +2669,70 @@ Component({
     expect(rerendered.wxml).toContain('count:3')
   })
 
+  it('preserves loop datasets on custom component events', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    entries: [{ id: 'entry-a' }],
+    snapshot: null,
+  },
+  handleChange(event) {
+    this.setData({
+      snapshot: {
+        currentTarget: event.currentTarget.dataset,
+        target: event.target.dataset,
+      },
+    })
+  },
+})
+`],
+      ['pages/lab/index.wxml', `
+<status-card
+  wx:for="{{entries}}"
+  wx:for-item="entry"
+  wx:for-index="entryIndex"
+  data-wv-i0="{{entryIndex}}"
+  data-wv-s0="{{entry}}"
+  bind:change="handleChange"
+/>
+`],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+Component({
+  methods: {
+    emitChange() {
+      this.triggerEvent('change', { value: 'updated' })
+    },
+  },
+})
+`],
+      ['components/status-card/index.wxml', '<button bindtap="emitChange">change</button>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/lab/index')
+    const rendered = session.renderCurrentPage()
+    const scopeIds = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
+    const componentScopeId = scopeIds.find(scopeId => scopeId.includes('status-card'))
+    expect(componentScopeId).toBeTruthy()
+
+    session.callTapBinding(componentScopeId!, 'emitChange')
+
+    const page = session.getCurrentPages()[0]
+    expect(page?.data.snapshot).toEqual({
+      currentTarget: expect.objectContaining({ wvI0: '0' }),
+      target: expect.objectContaining({ wvI0: '0' }),
+    })
+  })
+
   it('passes current values into component observer arguments', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

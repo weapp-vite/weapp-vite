@@ -28,6 +28,45 @@ function createConsoleErrorGuard(message: string, errorId: t.Identifier) {
   )
 }
 
+function createConsoleWarnGuard(message: string, item: t.Expression) {
+  return t.ifStatement(
+    t.logicalExpression(
+      '&&',
+      t.binaryExpression(
+        '!==',
+        t.unaryExpression('typeof', t.identifier('console')),
+        t.stringLiteral('undefined'),
+      ),
+      t.binaryExpression(
+        '===',
+        t.unaryExpression('typeof', t.memberExpression(t.identifier('console'), t.identifier('warn'))),
+        t.stringLiteral('function'),
+      ),
+    ),
+    t.blockStatement([
+      t.expressionStatement(
+        t.callExpression(
+          t.memberExpression(t.identifier('console'), t.identifier('warn')),
+          [t.stringLiteral(message), t.cloneNode(item)],
+        ),
+      ),
+    ]),
+  )
+}
+
+function createHasOwnPropertyCall(item: t.Expression, field: string) {
+  return t.callExpression(
+    t.memberExpression(
+      t.memberExpression(
+        t.memberExpression(t.identifier('Object'), t.identifier('prototype')),
+        t.identifier('hasOwnProperty'),
+      ),
+      t.identifier('call'),
+    ),
+    [t.cloneNode(item), t.stringLiteral(field)],
+  )
+}
+
 function createSafeKeyExpression(exp: Expression, rawExp: string, seed: number, item?: t.Expression) {
   const errorId = t.identifier(`__wv_for_key_error_${seed}`)
   const shouldReportError = item
@@ -73,21 +112,44 @@ function createProjectedItemExpression(
     t.binaryExpression('===', t.unaryExpression('typeof', t.cloneNode(item)), t.stringLiteral('object')),
   )
   const projected = t.callExpression(
-    t.memberExpression(t.identifier('Object'), t.identifier('assign')),
-    [
-      t.objectExpression([]),
-      t.cloneNode(item),
-      t.objectExpression([
-        t.objectProperty(
-          t.stringLiteral(valueField),
-          t.cloneNode(item),
+    t.arrowFunctionExpression(
+      [],
+      t.blockStatement([
+        t.ifStatement(
+          t.logicalExpression(
+            '||',
+            createHasOwnPropertyCall(item, keyField),
+            createHasOwnPropertyCall(item, valueField),
+          ),
+          t.blockStatement([
+            createConsoleWarnGuard(
+              `[wevu] v-for :key 内部字段冲突，投影将使用保留字段 ${keyField} / ${valueField}`,
+              item,
+            ),
+          ]),
         ),
-        t.objectProperty(
-          t.stringLiteral(keyField),
-          createSafeKeyExpression(keyExp, rawKeyExp, seed, item),
+        t.returnStatement(
+          t.callExpression(
+            t.memberExpression(t.identifier('Object'), t.identifier('assign')),
+            [
+              t.objectExpression([]),
+              t.cloneNode(item),
+              t.objectExpression([
+                t.objectProperty(
+                  t.stringLiteral(valueField),
+                  t.cloneNode(item),
+                ),
+                t.objectProperty(
+                  t.stringLiteral(keyField),
+                  createSafeKeyExpression(keyExp, rawKeyExp, seed, item),
+                ),
+              ]),
+            ],
+          ),
         ),
       ]),
-    ],
+    ),
+    [],
   )
   const primitiveProjected = t.objectExpression([
     t.objectProperty(t.stringLiteral(valueField), t.cloneNode(item)),

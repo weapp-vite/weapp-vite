@@ -1847,6 +1847,7 @@ Page({
     metaSummary: '',
     log: [],
     multiRectSummary: '',
+    role: 'main',
     scopedRect: null,
     snapshot: ''
   },
@@ -1933,7 +1934,7 @@ Page({
 })
 `)
   writeText(path.join(root, 'dist/pages/lab/index.wxml'), `
-<status-card id="status-card" class="primary-card" data-role="main" count="{{count}}" bind:pulse="onPulse" />
+<status-card id="status-card" class="primary-card" data-role="{{role}}" count="{{count}}" bind:pulse="onPulse" />
 <view>{{snapshot}}</view>
 <view>{{eventSnapshot}}</view>
 <view>{{log.0}}</view>

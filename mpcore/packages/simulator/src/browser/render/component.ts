@@ -154,9 +154,10 @@ export function buildComponentTrigger(
   ) => {
     const interactionTarget = instance.__lastInteractionEvent__?.target
     const interactionCurrentTarget = instance.__lastInteractionEvent__?.currentTarget
+    const componentDataset = context.componentScopes.get(componentScopeId)?.dataset ?? hostDataset
     const interactionMark = instance.__lastInteractionEvent__?.mark
     const target = {
-      dataset: interactionTarget?.dataset ?? hostDataset,
+      dataset: interactionTarget?.dataset ?? componentDataset,
       id: interactionTarget?.id ?? hostId,
     }
     let currentScopeId: string | undefined = componentScopeId
@@ -249,7 +250,7 @@ export function createComponentScope(
       .map(item => item.trim())
       .filter(Boolean),
     data: createMergedScopeData(scope.data, componentInstance.properties, componentInstance.data),
-    dataset: collectDataset(clonedNode),
+    dataset: collectDataset(clonedNode, scope.data),
     eventBindings: collectComponentEventBindings(clonedNode),
     getMethod: (methodName: string) => {
       const method = componentInstance?.[methodName]
