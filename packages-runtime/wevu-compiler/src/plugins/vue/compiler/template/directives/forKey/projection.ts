@@ -28,8 +28,11 @@ function createConsoleErrorGuard(message: string, errorId: t.Identifier) {
   )
 }
 
-function createSafeKeyExpression(exp: Expression, rawExp: string, seed: number) {
+function createSafeKeyExpression(exp: Expression, rawExp: string, seed: number, item?: t.Expression) {
   const errorId = t.identifier(`__wv_for_key_error_${seed}`)
+  const shouldReportError = item
+    ? t.binaryExpression('!=', t.cloneNode(item), t.nullLiteral())
+    : t.booleanLiteral(true)
   return t.callExpression(
     t.arrowFunctionExpression(
       [],
@@ -39,7 +42,12 @@ function createSafeKeyExpression(exp: Expression, rawExp: string, seed: number) 
           t.catchClause(
             errorId,
             t.blockStatement([
-              createConsoleErrorGuard(`[wevu] v-for :key 表达式执行失败: ${rawExp}`, errorId),
+              t.ifStatement(
+                shouldReportError,
+                t.blockStatement([
+                  createConsoleErrorGuard(`[wevu] v-for :key 表达式执行失败: ${rawExp}`, errorId),
+                ]),
+              ),
               t.returnStatement(t.identifier('undefined')),
             ]),
           ),
@@ -76,7 +84,7 @@ function createProjectedItemExpression(
         ),
         t.objectProperty(
           t.stringLiteral(keyField),
-          createSafeKeyExpression(keyExp, rawKeyExp, seed),
+          createSafeKeyExpression(keyExp, rawKeyExp, seed, item),
         ),
       ]),
     ],
@@ -85,11 +93,7 @@ function createProjectedItemExpression(
     t.objectProperty(t.stringLiteral(valueField), t.cloneNode(item)),
     t.objectProperty(
       t.stringLiteral(keyField),
-      t.conditionalExpression(
-        t.binaryExpression('==', t.cloneNode(item), t.nullLiteral()),
-        t.identifier('undefined'),
-        createSafeKeyExpression(keyExp, rawKeyExp, seed),
-      ),
+      createSafeKeyExpression(keyExp, rawKeyExp, seed, item),
     ),
   ])
   return t.conditionalExpression(isObject, projected, primitiveProjected)

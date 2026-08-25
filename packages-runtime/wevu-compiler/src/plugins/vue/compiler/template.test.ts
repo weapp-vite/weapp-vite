@@ -1298,6 +1298,53 @@ describe('compileVueTemplateToWxml', () => {
     expect(projected[1]?.__wv_value_0).toBeUndefined()
   })
 
+  it('evaluates safe fallback keys for null and undefined loop items', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="(item, key) in values" :key="item?.id ?? key">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console: { error: () => undefined },
+    }) as {
+      __wv_bind_0: (this: Record<string, unknown>) => Array<Record<string, unknown>>
+    }
+    const values = [null, undefined, { id: 'entry-c' }]
+    const projected = computed.__wv_bind_0.call({
+      $state: { values },
+      __wevuProps: {},
+      values,
+    })
+
+    expect(projected.map(item => item?.__wv_key_0)).toEqual([0, 1, 'entry-c'])
+    expect(projected[0]?.__wv_value_0).toBeNull()
+    expect(projected[1]?.__wv_value_0).toBeUndefined()
+  })
+
+  it('projects dynamic primitive keys without losing item values', () => {
+    const compiled = compileVueTemplateToWxml(
+      '<view v-for="item in values" :key="String(item)">{{ item }}</view>',
+      '/project/src/pages/issue-868/index.vue',
+    )
+    const computedCode = buildComputedCode(compiled.classStyleBindings ?? [])
+    const computed = runInNewContext(`(${computedCode})`, {
+      __wevuUnref: (value: unknown) => value,
+      console,
+    }) as {
+      __wv_bind_0: (this: Record<string, unknown>) => Array<Record<string, unknown>>
+    }
+    const values = [0, false, '']
+    const projected = computed.__wv_bind_0.call({
+      $state: { values },
+      __wevuProps: {},
+      values,
+    })
+
+    expect(projected.map(item => item?.__wv_key_0)).toEqual(['0', 'false', ''])
+    expect(projected.map(item => item?.__wv_value_0)).toEqual(values)
+  })
+
   it('rewrites component simple event handlers to inline payload handlers', () => {
     const template = `
 <CompatAltPanel @run="onPanelRun" />
