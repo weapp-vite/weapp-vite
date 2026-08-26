@@ -434,10 +434,38 @@ createBleConnectionPromise.catch((error) => {
 })
 
 wpi.openBluetoothAdapter({
+  success: (result) => {
+    expectType<WechatMiniprogram.BluetoothError>(result)
+    expectType<string>(result.errMsg)
+    expectType<number>(result.errCode)
+    expectError(result.errno)
+  },
   fail: (error) => {
     expectType<string>(error.errMsg)
     expectType<number>(error.errCode)
     expectType<number | undefined>(error.errno)
+  },
+  complete: (result) => {
+    expectType<WechatMiniprogram.BluetoothError>(result)
+    expectType<string>(result.errMsg)
+    expectType<number>(result.errCode)
+    expectError(result.errno)
+  },
+})
+
+wpi.request({
+  url: 'https://example.com',
+  success: (result) => {
+    expectType<WeapiMiniProgramRequestSuccessResult>(result)
+    expectType<number>(result.statusCode)
+  },
+  fail: (error) => {
+    expectType<WechatMiniprogram.RequestFailCallbackErr & { errno?: number }>(error)
+    expectType<number>(error.errno)
+  },
+  complete: (result) => {
+    expectType<WechatMiniprogram.GeneralCallbackResult>(result)
+    expectType<string>(result.errMsg)
   },
 })
 
@@ -488,6 +516,7 @@ interface CustomAdapter {
     success?: (res: { ok: true }) => void
   }) => number
   customError: (option: {
+    complete?: (result: { ok: true }) => void
     fail?: (error: { code: 'CUSTOM_ERROR', detail: string }) => void
     success?: (res: { ok: true }) => void
   }) => number
@@ -540,10 +569,16 @@ custom.customError({}).catch((error) => {
   expectError(error.errno)
 })
 const customCallbackReturn = custom.customError({
+  success: (result) => {
+    expectType<{ ok: true }>(result)
+  },
   fail: (error) => {
     expectType<'CUSTOM_ERROR'>(error.code)
     expectType<string>(error.detail)
     expectError(error.errno)
+  },
+  complete: (result) => {
+    expectType<{ ok: true }>(result)
   },
 })
 expectType<number>(customCallbackReturn)

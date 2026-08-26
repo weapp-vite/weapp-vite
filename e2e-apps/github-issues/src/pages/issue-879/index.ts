@@ -1,12 +1,20 @@
 import { wpi } from 'wevu/api'
 
-function verifyWpiFailErrorTypes() {
+function verifyWpiCallbackTypes() {
   wpi.openBluetoothAdapter({
+    success(result) {
+      const errMsg: string = result.errMsg
+      void errMsg
+    },
     fail(error) {
       const errno: number | undefined = error.errno
       const errCode: number = error.errCode
       void errno
       void errCode
+    },
+    complete(result) {
+      const errMsg: string = result.errMsg
+      void errMsg
     },
   }).catch((error) => {
     const errno: number | undefined = error.errno
@@ -26,6 +34,6 @@ function verifyWpiFailErrorTypes() {
   })
 }
 
-void verifyWpiFailErrorTypes
+void verifyWpiCallbackTypes
 
 Page({})
