@@ -206,6 +206,40 @@ const requestThenRejected = _requestPromise.then(undefined, (error) => {
 })
 expectAssignable<Promise<WeapiMiniProgramRequestSuccessResult | 'recovered'>>(requestThenRejected)
 
+const canvasPromise = wpi.canvasGetImageData({
+  canvasId: 'demo',
+  height: 1,
+  width: 1,
+  x: 0,
+  y: 0,
+})
+canvasPromise.then((result) => {
+  expectType<WechatMiniprogram.CanvasGetImageDataSuccessCallbackResult>(result)
+})
+async function verifyCanvasAwaitCompatibility() {
+  expectType<WechatMiniprogram.CanvasGetImageDataSuccessCallbackResult>(await canvasPromise)
+}
+void verifyCanvasAwaitCompatibility
+
+const canvasCallbackReturn = wpi.canvasGetImageData({
+  canvasId: 'demo',
+  height: 1,
+  width: 1,
+  x: 0,
+  y: 0,
+  success: (result) => {
+    expectType<WechatMiniprogram.CanvasGetImageDataSuccessCallbackResult>(result)
+  },
+  fail: (error) => {
+    expectType<WechatMiniprogram.GeneralCallbackResult & { errno?: number }>(error)
+    expectType<number | undefined>(error.errno)
+  },
+  complete: (result) => {
+    expectType<WechatMiniprogram.GeneralCallbackResult>(result)
+  },
+}, {} as WechatMiniprogram.Component.TrivialInstance)
+expectType<void>(canvasCallbackReturn)
+
 _requestPromise.then().catch((error) => {
   expectType<string>(error.errMsg)
   expectType<number>(error.errno)
@@ -450,7 +484,7 @@ createBleConnectionPromise.catch((error) => {
   expectType<number | undefined>(error.errno)
 })
 
-wpi.openBluetoothAdapter({
+const openBluetoothCallbackReturn = wpi.openBluetoothAdapter({
   success: (result) => {
     expectType<WechatMiniprogram.BluetoothError>(result)
     expectType<string>(result.errMsg)
@@ -469,8 +503,9 @@ wpi.openBluetoothAdapter({
     expectError(result.errno)
   },
 })
+expectType<void>(openBluetoothCallbackReturn)
 
-wpi.request({
+const requestCallbackReturn = wpi.request({
   url: 'https://example.com',
   success: (result) => {
     expectType<WeapiMiniProgramRequestSuccessResult>(result)
@@ -485,6 +520,7 @@ wpi.request({
     expectType<string>(result.errMsg)
   },
 })
+expectType<WeapiMiniProgramRequestTask>(requestCallbackReturn)
 
 wpi.createBLEConnection({
   deviceId: 'device-id',
@@ -528,6 +564,11 @@ stopPullDownRefreshPromise.catch((error) => {
 
 interface CustomAdapter {
   foo: (option: { success?: (res: { ok: true }) => void }) => number
+  leading: (option: {
+    complete?: (result: { done: true }) => void
+    fail?: (error: { code: 'LEADING_ERROR' }) => void
+    success?: (result: { value: 1 }) => void
+  }, token: string) => number
   anyError: (option: {
     fail?: (error: any) => void
     success?: (res: { ok: true }) => void
@@ -566,6 +607,24 @@ fooPromise.catch((error) => {
   expectType<number | undefined>(error.errno)
 })
 
+const leadingPromise = custom.leading({}, 'token')
+expectAssignable<Promise<{ value: 1 }>>(leadingPromise)
+leadingPromise.catch((error) => {
+  expectType<'LEADING_ERROR'>(error.code)
+})
+const leadingCallbackReturn = custom.leading({
+  success: (result) => {
+    expectType<{ value: 1 }>(result)
+  },
+  fail: (error) => {
+    expectType<'LEADING_ERROR'>(error.code)
+  },
+  complete: (result) => {
+    expectType<{ done: true }>(result)
+  },
+}, 'token')
+expectType<number>(leadingCallbackReturn)
+
 custom.anyError({}).catch((error) => {
   expectType<string>(error.errMsg)
   expectType<number | undefined>(error.errno)
@@ -577,8 +636,9 @@ custom.anyError({
   },
 })
 custom.unknownError({}).catch((error) => {
-  expectType<string>(error.errMsg)
-  expectType<number | undefined>(error.errno)
+  expectType<unknown>(error)
+  expectError(error.errMsg)
+  expectError(error.errno)
 })
 custom.customError({}).catch((error) => {
   expectType<'CUSTOM_ERROR'>(error.code)
@@ -601,6 +661,11 @@ const customCallbackReturn = custom.customError({
 expectType<number>(customCallbackReturn)
 
 const wechat = createWeapi({ adapter: wx })
+wechat.getRendererUserAgent({
+  fail: (error) => {
+    expectType<WechatMiniprogram.GeneralCallbackResult & { errno?: number }>(error)
+  },
+})
 wechat.stopPullDownRefresh().catch((error) => {
   expectType<string>(error.errMsg)
   expectType<number | undefined>(error.errno)
