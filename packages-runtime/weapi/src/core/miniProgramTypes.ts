@@ -54,15 +54,10 @@ export type WeapiMiniProgramDouyinRawAdapter = WeapiDouyinMiniProgramRawAdapterS
  */
 export type WeapiMiniProgramRawAdapter = WeapiDefaultMiniProgramRawAdapterSource
 
-type WeapiMiniProgramRawRequestOption = Parameters<WeapiMiniProgramRawAdapter['request']>[0]
-type WeapiMiniProgramRawConnectSocketOption = Parameters<WeapiMiniProgramRawAdapter['connectSocket']>[0]
-type WeapiMiniProgramCreateBleConnectionOption = Parameters<WeapiMiniProgramRawAdapter['createBLEConnection']>[0]
-type WeapiMiniProgramClipboardOption = Parameters<WeapiMiniProgramRawAdapter['getClipboardData']>[0]
-
 /**
  * @description 小程序请求参数类型（宿主中立别名）
  */
-export type WeapiMiniProgramRequestOption = WeapiMiniProgramRawRequestOption
+export type WeapiMiniProgramRequestOption = WechatMiniprogram.RequestOption
 
 /**
  * @description 小程序请求方法类型（宿主中立别名）
@@ -72,54 +67,54 @@ export type WeapiMiniProgramRequestMethod = NonNullable<WeapiMiniProgramRequestO
 /**
  * @description 小程序请求任务类型（宿主中立别名）
  */
-export type WeapiMiniProgramRequestTask = ReturnType<WeapiMiniProgramRawAdapter['request']>
+export type WeapiMiniProgramRequestTask = WechatMiniprogram.RequestTask
 
 /**
  * @description 小程序请求成功结果类型（宿主中立别名）
  */
-export type WeapiMiniProgramRequestSuccessResult = Parameters<NonNullable<WeapiMiniProgramRequestOption['success']>>[0]
+export type WeapiMiniProgramRequestSuccessResult = WechatMiniprogram.RequestSuccessCallbackResult
 
 /**
  * @description 小程序连接 WebSocket 参数类型（宿主中立别名）
  */
-export type WeapiMiniProgramConnectSocketOption = WeapiMiniProgramRawConnectSocketOption
+export type WeapiMiniProgramConnectSocketOption = WechatMiniprogram.ConnectSocketOption
 
 /**
  * @description 小程序 WebSocket 任务类型（宿主中立别名）
  */
-export type WeapiMiniProgramSocketTask = ReturnType<WeapiMiniProgramRawAdapter['connectSocket']>
+export type WeapiMiniProgramSocketTask = WechatMiniprogram.SocketTask
 
 /**
  * @description 小程序系统信息类型（宿主中立别名）
  */
-export type WeapiMiniProgramSystemInfo = ReturnType<WeapiMiniProgramRawAdapter['getSystemInfoSync']>
+export type WeapiMiniProgramSystemInfo = WechatMiniprogram.SystemInfo
 
 /**
  * @description 小程序更新管理器类型（宿主中立别名）
  */
-export type WeapiMiniProgramUpdateManager = ReturnType<WeapiMiniProgramRawAdapter['getUpdateManager']>
+export type WeapiMiniProgramUpdateManager = WechatMiniprogram.UpdateManager
 
 /**
  * @description 小程序日志管理器类型（宿主中立别名）
  */
-export type WeapiMiniProgramLogManager = ReturnType<WeapiMiniProgramRawAdapter['getLogManager']>
+export type WeapiMiniProgramLogManager = WechatMiniprogram.LogManager
 
 /**
  * @description 小程序视频上下文类型（宿主中立别名）
  */
-export type WeapiMiniProgramVideoContext = ReturnType<WeapiMiniProgramRawAdapter['createVideoContext']>
+export type WeapiMiniProgramVideoContext = WechatMiniprogram.VideoContext
 
 /**
  * @description 小程序选择器查询类型（宿主中立别名）
  */
-export type WeapiMiniProgramSelectorQuery = ReturnType<WeapiMiniProgramRawAdapter['createSelectorQuery']>
+export type WeapiMiniProgramSelectorQuery = WechatMiniprogram.SelectorQuery
 
 /**
  * @description 小程序蓝牙错误类型（宿主中立别名）
  */
-export type WeapiMiniProgramBluetoothError = Parameters<NonNullable<WeapiMiniProgramCreateBleConnectionOption['fail']>>[0]
+export type WeapiMiniProgramBluetoothError = WechatMiniprogram.BluetoothError
 
 /**
  * @description 小程序剪贴板读取结果类型（宿主中立别名）
  */
-export type WeapiMiniProgramClipboardDataResult = Parameters<NonNullable<NonNullable<WeapiMiniProgramClipboardOption>['success']>>[0]
+export type WeapiMiniProgramClipboardDataResult = WechatMiniprogram.GetClipboardDataSuccessCallbackOption

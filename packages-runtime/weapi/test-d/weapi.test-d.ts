@@ -25,6 +25,7 @@ import type {
   WeapiMiniProgramPlatformRawAdapterSourceRegistry,
   WeapiMiniProgramRawAdapter,
   WeapiMiniProgramRawAdapterSourceName,
+  WeapiMiniProgramRequestOption,
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
   WeapiMiniProgramRuntimeRawAdapterSourceName,
@@ -102,6 +103,18 @@ expectType<WeapiMiniProgramWxRawAdapter>({} as WeapiMiniProgramRawAdapter)
 expectType<WeapiWechatMiniProgramRawAdapterSource>({} as WeapiMiniProgramWechatRawAdapter)
 expectType<WeapiWechatMiniProgramRawAdapterSource>({} as WeapiMiniProgramWxRawAdapter)
 expectType<WeapiMiniProgramWxAdapter>(wpi as WeapiMiniProgramWxAdapter)
+expectType<WechatMiniprogram.RequestOption>({} as WeapiMiniProgramRequestOption)
+expectType<WechatMiniprogram.RequestTask>({} as WeapiMiniProgramRequestTask)
+expectType<WechatMiniprogram.RequestSuccessCallbackResult>({} as WeapiMiniProgramRequestSuccessResult)
+expectType<WechatMiniprogram.ConnectSocketOption>({} as WeapiMiniProgramConnectSocketOption)
+expectType<WechatMiniprogram.SocketTask>({} as WeapiMiniProgramSocketTask)
+expectType<WechatMiniprogram.SystemInfo>({} as WeapiMiniProgramSystemInfo)
+expectType<WechatMiniprogram.UpdateManager>({} as WeapiMiniProgramUpdateManager)
+expectType<WechatMiniprogram.LogManager>({} as WeapiMiniProgramLogManager)
+expectType<WechatMiniprogram.VideoContext>({} as WeapiMiniProgramVideoContext)
+expectType<WechatMiniprogram.SelectorQuery>({} as WeapiMiniProgramSelectorQuery)
+expectType<WechatMiniprogram.BluetoothError>({} as WeapiMiniProgramBluetoothError)
+expectType<WechatMiniprogram.GetClipboardDataSuccessCallbackOption>({} as WeapiMiniProgramClipboardDataResult)
 expectType<WeapiMiniProgramAlipayRawAdapter>(my)
 expectType<WeapiAlipayMiniProgramRawAdapterSource>(my)
 expectType<WeapiMiniProgramAlipayRawAdapter>({} as WeapiAlipayMiniProgramRawAdapterSource)
@@ -595,12 +608,46 @@ alipay.showToast({ content: 'done' }).catch((error) => {
   expectType<string | undefined>(error.errorMessage)
   expectError(error.errno)
 })
+alipay.showToast({
+  content: 'done',
+  success: (result) => {
+    expectAssignable<object>(result)
+    expectError(result.errMsg)
+  },
+  fail: (error) => {
+    expectType<number | undefined>(error.error)
+    expectType<string | undefined>(error.errorMessage)
+    expectError(error.errno)
+  },
+  complete: (result) => {
+    expectType<number | undefined>(result.error)
+    expectType<string | undefined>(result.errorMessage)
+    expectError(result.errno)
+  },
+})
 
 const douyin = createWeapi({ adapter: tt })
 douyin.showToast({ title: 'done' }).catch((error) => {
   expectType<string>(error.errMsg)
   expectType<number | undefined>(error.errNo)
   expectError(error.errno)
+})
+douyin.showToast({
+  title: 'done',
+  success: (result) => {
+    expectType<string>(result.errMsg)
+    expectError(result.errNo)
+  },
+  fail: (error) => {
+    expectType<string>(error.errMsg)
+    expectType<number | undefined>(error.errNo)
+    expectError(error.errno)
+  },
+  complete: (result) => {
+    expectType<string>(result.errMsg)
+    expectType<number | undefined>(result.errNo)
+    expectError(result.errno)
+  },
 })
 
 const fooReturn = custom.foo({
