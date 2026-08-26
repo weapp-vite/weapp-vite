@@ -42,12 +42,14 @@ type HasCallbackOption<T> = T extends { success: unknown }
       ? true
       : false
 
-type ExtractSuccessResult<T> = T extends { success?: (...args: infer A) => unknown } ? A[0] : void
-type ExtractFailureResult<T> = 'fail' extends keyof T
-  ? T extends { fail?: (...args: infer A) => unknown }
+type ExtractCallbackResult<T, Key extends PropertyKey, Fallback> = Key extends keyof T
+  ? T extends { [CallbackKey in Key]?: (...args: infer A) => unknown }
     ? A[0]
     : never
-  : never
+  : Fallback
+type ExtractSuccessResult<T> = ExtractCallbackResult<T, 'success', void>
+type ExtractFailureResult<T> = ExtractCallbackResult<T, 'fail', never>
+type ExtractCompleteResult<T> = ExtractCallbackResult<T, 'complete', void>
 type IsAny<T> = 0 extends (1 & T) ? true : false
 type NormalizeFailureResult<T> = IsAny<T> extends true
   ? WeapiError
@@ -59,6 +61,18 @@ type WechatErrorExtension<TAdapter> = TAdapter extends WeapiMiniProgramWechatRaw
   : object
 type PromisifyFailureResult<Option, TAdapter> = NormalizeFailureResult<ExtractFailureResult<Option>>
   & WechatErrorExtension<TAdapter>
+type PromisifyCallbackOptions<Option extends object, TAdapter>
+  = ('success' extends keyof Option
+    ? { success?: (result: ExtractSuccessResult<Option>) => void }
+    : object)
+  & ('fail' extends keyof Option
+    ? { fail?: (error: PromisifyFailureResult<Option, TAdapter>) => void }
+    : object)
+  & ('complete' extends keyof Option
+    ? { complete?: (result: ExtractCompleteResult<Option>) => void }
+    : object)
+type PromisifyOption<Option extends object, TAdapter> = Omit<Option, 'success' | 'fail' | 'complete'>
+  & PromisifyCallbackOptions<Option, TAdapter>
 
 type PromisifyOptionMethod<
   Prefix extends any[],
@@ -68,13 +82,13 @@ type PromisifyOptionMethod<
   TAdapter,
 > = IsOptional extends true
   ? {
-      <TOption extends Option>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
+      <TOption extends PromisifyOption<Option, TAdapter>>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
         ? Result
         : WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
       (...args: Prefix): WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
     }
   : {
-      <TOption extends Option>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
+      <TOption extends PromisifyOption<Option, TAdapter>>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
         ? Result
         : WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
     }
