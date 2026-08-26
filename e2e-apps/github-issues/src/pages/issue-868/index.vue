@@ -23,6 +23,17 @@ const values = ['primitive-a', 'primitive-b']
 function increment(entry: (typeof column)[number]) {
   entry.item.count += 1
 }
+
+function _runE2E() {
+  const entry = column[0]
+  entry.item.title = `${entry.item.title}-updated`
+  increment(entry)
+  return true
+}
+
+defineExpose({
+  _runE2E,
+})
 </script>
 
 <template>

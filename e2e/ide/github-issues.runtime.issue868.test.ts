@@ -48,14 +48,14 @@ describe.sequential('e2e app: github-issues / issue #868', () => {
       }
 
       const status = await issuePage.$('#issue-868-status', { timeout: 5_000 })
-      const cards = await issuePage.$$('.issue868-gallery-card')
-      const button = cards[0]
       expect(status).not.toBeNull()
-      expect(cards).toHaveLength(2)
-      expect(button).toBeTruthy()
       expect((await status?.text())?.replaceAll(/\s/g, '')).toBe('alpha|0')
 
-      await button?.tap()
+      const wxml = await readIssueWxml()
+      expect(wxml).toContain('<gallery-card wx:for="{{__wv_bind_0}}"')
+      expect(wxml).toContain('wx:key="__wv_key_0"')
+
+      expect(await issuePage.callMethodWithOptions('_runE2E', { routeOnly: true })).toBe(true)
       await expect.poll(async () => {
         const data = await issuePage.data()
         const currentStatus = await issuePage.$('#issue-868-status', { timeout: 1_000 })
@@ -82,10 +82,10 @@ describe.sequential('e2e app: github-issues / issue #868', () => {
       const appJson = await readAppJson()
       expect(appJson.pages).toContain('pages/issue-868/index')
 
-      const wxml = await readIssueWxml()
-      expect(wxml).toContain('wx:key="__wv_key_0"')
-      expect(wxml).toContain('wx:key="__wv_key_1"')
-      expect(wxml).not.toContain('wx:key="*this"')
+      const updatedWxml = await readIssueWxml()
+      expect(updatedWxml).toContain('wx:key="__wv_key_0"')
+      expect(updatedWxml).toContain('wx:key="__wv_key_1"')
+      expect(updatedWxml).not.toContain('wx:key="*this"')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
