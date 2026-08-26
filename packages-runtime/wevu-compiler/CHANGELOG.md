@@ -1,5 +1,17 @@
 # @wevu/compiler
 
+## 6.23.0
+
+### Patch Changes
+
+- 修复 Wevu 模板中 `v-for` 使用嵌套或复杂 `:key` 表达式时被截断的问题。编译器现在会自动生成带内部基础类型 key 的列表投影，覆盖父子多层、兄弟、对象映射、解构循环和基础类型列表，并在用户数据占用 `__wv_key_*` / `__wv_value_*` 保留字段时输出明确诊断。mpcore 同步按循环作用域解析自定义组件事件的动态 dataset，保持 headless 与真实宿主语义一致。
+
+- 完善 glass-easel 全链路兼容：补齐宿主 JSON schema 与显式启用配置，统一 WXML 序列化和旧指令归一化，新增 `wv analyze --glass-easel-check` 稳定诊断，并扩展组件泛型、插件产物与 DevTools/headless 插件运行时回归。WebView glass-easel 保持为基础库 `3.8.12` 以上由用户主动开启的兼容方案，脚手架不默认启用。
+
+- Updated dependencies:
+  - @weapp-core/shared@3.2.0
+  - @weapp-vite/ast@6.23.0
+
 ## 6.22.0
 
 ### Minor Changes

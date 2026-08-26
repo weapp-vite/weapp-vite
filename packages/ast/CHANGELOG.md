@@ -1,5 +1,12 @@
 # @weapp-vite/ast
 
+## 6.23.0
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/shared@3.2.0
+
 ## 6.22.0
 
 ## 6.21.0
