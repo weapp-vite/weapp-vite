@@ -110,7 +110,13 @@ function getCallbackMethods(adapterType, sourceFile) {
     const callbackArguments = Object.fromEntries(
       callbackKeys.map(key => [key, getCallbackArgument(optionType, key, sourceFile)]),
     )
-    methods.push({ name: property.name, signature, optionType, callbackArguments })
+    methods.push({
+      name: property.name,
+      signature,
+      optionType,
+      callbackArguments,
+      failureArgument: callbackArguments.fail,
+    })
   }
   return methods
 }
@@ -136,6 +142,10 @@ function isNever(type) {
 
 function isUnknown(type) {
   return (type.flags & ts.TypeFlags.Unknown) !== 0
+}
+
+function hasProperty(type, name) {
+  return Boolean(type && baseChecker.getPropertyOfType(type, name))
 }
 
 function isSamePath(left, right) {
@@ -179,6 +189,34 @@ function createVirtualProgram(configItem, methods) {
     lines.push(
       `api[${JSON.stringify(method.name)}]({ ...(null as unknown as Parameters<Raw[${JSON.stringify(method.name)}]>[0]), ${callbackChecks.join(', ')} })`,
     )
+
+    const catchParameterName = `${configItem.key}_${method.name}_catch`
+    const catchChecks = [
+      `assertUsable(${catchParameterName})`,
+    ]
+    if (hasProperty(method.failureArgument, 'errMsg')) {
+      catchChecks.push(`const ${catchParameterName}ErrMsg: string = ${catchParameterName}.errMsg; void ${catchParameterName}ErrMsg`)
+    }
+    if (configItem.key === 'wx') {
+      catchChecks.push(`const ${catchParameterName}Errno: number | undefined = ${catchParameterName}.errno; void ${catchParameterName}Errno`)
+      if (hasProperty(method.failureArgument, 'errCode')) {
+        catchChecks.push(`const ${catchParameterName}ErrCode: number | undefined = ${catchParameterName}.errCode; void ${catchParameterName}ErrCode`)
+      }
+    }
+    if (configItem.key === 'my') {
+      catchChecks.push(`const ${catchParameterName}Error: number | undefined = ${catchParameterName}.error; void ${catchParameterName}Error`)
+      catchChecks.push(`const ${catchParameterName}ErrorMessage: string | undefined = ${catchParameterName}.errorMessage; void ${catchParameterName}ErrorMessage`)
+      catchChecks.push(`// @ts-expect-error 微信专属字段\n${catchParameterName}.errno`)
+    }
+    if (configItem.key === 'tt') {
+      if (hasProperty(method.failureArgument, 'errNo')) {
+        catchChecks.push(`const ${catchParameterName}ErrNo: number | undefined = ${catchParameterName}.errNo; void ${catchParameterName}ErrNo`)
+      }
+      catchChecks.push(`// @ts-expect-error 微信专属字段\n${catchParameterName}.errno`)
+    }
+    lines.push(
+      `api[${JSON.stringify(method.name)}]({ ...(null as unknown as Parameters<Raw[${JSON.stringify(method.name)}]>[0]) }).catch((${catchParameterName}) => { ${catchChecks.join('; ')} })`,
+    )
   }
 
   const fileName = path.join(packageRoot, `.callback-types-${configItem.key}.ts`)
@@ -205,7 +243,7 @@ function getVirtualCallbackParameters(sourceFile) {
   function visit(node) {
     if (ts.isParameter(node) && ts.isIdentifier(node.name)) {
       const name = node.name.text
-      const match = name.match(/^(default|wx|my|tt)_(.+)_(success|fail|complete)$/)
+      const match = name.match(/^(default|wx|my|tt)_(.+)_(success|fail|complete|catch)$/)
       if (match) {
         parameters.push({ node, method: match[2], key: match[3] })
       }
@@ -252,8 +290,8 @@ for (const configItem of platformConfigs) {
       neverCount++
     }
     const method = methods.find(candidate => candidate.name === item.method)
-    const expected = method?.callbackArguments[item.key]
-    if (expected && !virtualChecker.isTypeAssignableTo(type, expected) && !virtualChecker.isTypeAssignableTo(expected, type)) {
+    const expected = method?.callbackArguments[item.key === 'catch' ? 'fail' : item.key]
+    if (expected && (!virtualChecker.isTypeAssignableTo(type, expected) || !virtualChecker.isTypeAssignableTo(expected, type))) {
       failures.push(
         `${configItem.name} ${item.method}.${item.key} callback 类型未与原始 adapter 对齐：actual=${virtualChecker.typeToString(type).slice(0, 160)}, expected=${baseChecker.typeToString(expected).slice(0, 160)}`,
       )
