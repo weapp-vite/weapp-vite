@@ -19,12 +19,14 @@ import type {
   WeapiMiniProgramCrossPlatformRawAdapter,
   WeapiMiniProgramDouyinMethodName,
   WeapiMiniProgramDouyinRawAdapter,
+  WeapiMiniProgramGeneralCallbackResult,
   WeapiMiniProgramLogManager,
   WeapiMiniProgramMethodName,
   WeapiMiniProgramPlatformRawAdapterSourceName,
   WeapiMiniProgramPlatformRawAdapterSourceRegistry,
   WeapiMiniProgramRawAdapter,
   WeapiMiniProgramRawAdapterSourceName,
+  WeapiMiniProgramRequestFailResult,
   WeapiMiniProgramRequestOption,
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
@@ -106,6 +108,8 @@ expectType<WeapiMiniProgramWxAdapter>(wpi as WeapiMiniProgramWxAdapter)
 expectType<WechatMiniprogram.RequestOption>({} as WeapiMiniProgramRequestOption)
 expectType<WechatMiniprogram.RequestTask>({} as WeapiMiniProgramRequestTask)
 expectType<WechatMiniprogram.RequestSuccessCallbackResult>({} as WeapiMiniProgramRequestSuccessResult)
+expectType<WechatMiniprogram.RequestFailCallbackErr>({} as WeapiMiniProgramRequestFailResult)
+expectType<WechatMiniprogram.GeneralCallbackResult>({} as WeapiMiniProgramGeneralCallbackResult)
 expectType<WechatMiniprogram.ConnectSocketOption>({} as WeapiMiniProgramConnectSocketOption)
 expectType<WechatMiniprogram.SocketTask>({} as WeapiMiniProgramSocketTask)
 expectType<WechatMiniprogram.SystemInfo>({} as WeapiMiniProgramSystemInfo)

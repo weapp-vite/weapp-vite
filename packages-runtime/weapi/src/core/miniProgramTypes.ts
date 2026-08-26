@@ -75,6 +75,16 @@ export type WeapiMiniProgramRequestTask = WechatMiniprogram.RequestTask
 export type WeapiMiniProgramRequestSuccessResult = WechatMiniprogram.RequestSuccessCallbackResult
 
 /**
+ * @description 小程序请求失败结果类型（宿主中立别名）
+ */
+export type WeapiMiniProgramRequestFailResult = WechatMiniprogram.RequestFailCallbackErr
+
+/**
+ * @description 小程序通用完成结果类型（宿主中立别名）
+ */
+export type WeapiMiniProgramGeneralCallbackResult = WechatMiniprogram.GeneralCallbackResult
+
+/**
  * @description 小程序连接 WebSocket 参数类型（宿主中立别名）
  */
 export type WeapiMiniProgramConnectSocketOption = WechatMiniprogram.ConnectSocketOption
