@@ -318,6 +318,7 @@ export async function launchAutomator(options: AutomatorOptions) {
     throw new Error('Detected WeChat DevTools service port is disabled in current settings. Please enable it manually; existing user settings were not modified.')
   }
 
+  const launchStartedAt = Date.now()
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const miniProgram = await launcher.launch({
@@ -346,7 +347,11 @@ export async function launchAutomator(options: AutomatorOptions) {
     }
     catch (error) {
       lastError = error
-      if (!isRetryableAutomatorLaunchError(error) || attempt === 1) {
+      if (
+        !isRetryableAutomatorLaunchError(error)
+        || attempt === 1
+        || Date.now() - launchStartedAt >= timeout
+      ) {
         throw error
       }
     }

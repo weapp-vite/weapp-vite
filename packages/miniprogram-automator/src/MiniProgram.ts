@@ -452,8 +452,13 @@ export default class MiniProgram extends EventEmitter {
     this.connection.dispose()
   }
 
-  async enableLog() {
-    await this.send('App.enableLog')
+  async enableLog(timeout?: number) {
+    if (timeout === undefined) {
+      await this.send('App.enableLog')
+    }
+    else {
+      await this.send('App.enableLog', {}, { timeout })
+    }
     this.logEnabled = true
   }
 
@@ -473,8 +478,10 @@ export default class MiniProgram extends EventEmitter {
     await this.send('App.addBinding', { name })
   }
 
-  async checkVersion() {
-    const toolInfo = await this.send('Tool.getInfo')
+  async checkVersion(timeout?: number) {
+    const toolInfo = timeout === undefined
+      ? await this.send('Tool.getInfo')
+      : await this.send('Tool.getInfo', {}, { timeout })
     this.connection.configureToolInfo(toolInfo)
     const sdkVersion = toolInfo.SDKVersion
     if (typeof sdkVersion !== 'string' || !sdkVersion.trim()) {
@@ -492,16 +499,20 @@ export default class MiniProgram extends EventEmitter {
     const startedAt = Date.now()
     let lastError: unknown
 
-    while (Date.now() - startedAt <= timeout) {
+    while (Date.now() - startedAt < timeout) {
+      const remainingTimeout = timeout - (Date.now() - startedAt)
       try {
         await this.send('App.captureScreenshot', {}, {
-          timeout: APP_READY_PROBE_TIMEOUT,
+          timeout: Math.min(APP_READY_PROBE_TIMEOUT, remainingTimeout),
         })
         return
       }
       catch (error) {
         lastError = error
-        await sleep(APP_READY_POLL_DELAY)
+        const remainingAfterProbe = timeout - (Date.now() - startedAt)
+        if (remainingAfterProbe > 0) {
+          await sleep(Math.min(APP_READY_POLL_DELAY, remainingAfterProbe))
+        }
       }
     }
 

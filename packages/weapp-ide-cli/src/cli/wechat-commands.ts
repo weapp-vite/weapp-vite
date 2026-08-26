@@ -141,6 +141,8 @@ export interface BuildWechatIdeIpaOptions {
   versionName?: string
 }
 
+const DEVTOOLS_SHUTDOWN_TIMEOUT_MS = 10_000
+
 function appendProjectLocatorArgv(argv: string[], options: {
   appid?: string
   extAppid?: string
@@ -351,14 +353,18 @@ export async function uploadWechatIde(options: UploadWechatIdeOptions) {
  * @description 调用微信开发者工具 close 命令。
  */
 export async function closeWechatIdeProject() {
-  await runWechatCliCommand(['close'])
+  await runWechatCliCommand(['close'], {
+    timeout: DEVTOOLS_SHUTDOWN_TIMEOUT_MS,
+  })
 }
 
 /**
  * @description 调用微信开发者工具 quit 命令。
  */
 export async function quitWechatIde() {
-  await runWechatCliCommand(['quit'])
+  await runWechatCliCommand(['quit'], {
+    timeout: DEVTOOLS_SHUTDOWN_TIMEOUT_MS,
+  })
 }
 
 /**

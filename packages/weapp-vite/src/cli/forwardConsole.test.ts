@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const determineAgentMock = vi.hoisted(() => vi.fn())
+const isRetryableAutomatorLaunchErrorMock = vi.hoisted(() => vi.fn())
 const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn())
 const startForwardConsoleMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
@@ -24,6 +25,7 @@ vi.mock('@vercel/detect-agent', () => ({
 }))
 
 vi.mock('weapp-ide-cli', () => ({
+  isRetryableAutomatorLaunchError: isRetryableAutomatorLaunchErrorMock,
   resolveProjectAutomatorPort: resolveProjectAutomatorPortMock,
   startForwardConsole: startForwardConsoleMock,
 }))
@@ -38,6 +40,7 @@ describe('forwardConsole', () => {
     vi.resetModules()
     stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     determineAgentMock.mockReset()
+    isRetryableAutomatorLaunchErrorMock.mockReset()
     resolveProjectAutomatorPortMock.mockReset()
     startForwardConsoleMock.mockReset()
     loggerMock.info.mockReset()
@@ -53,6 +56,9 @@ describe('forwardConsole', () => {
     determineAgentMock.mockResolvedValue({
       isAgent: false,
     })
+    isRetryableAutomatorLaunchErrorMock.mockImplementation((error: unknown) => (
+      error instanceof Error && /Wait timed out after \d+ ms/i.test(error.message)
+    ))
     resolveProjectAutomatorPortMock.mockReturnValue(10261)
     startForwardConsoleMock.mockResolvedValue({
       close: vi.fn(),
@@ -116,6 +122,8 @@ describe('forwardConsole', () => {
       timeout: 120_000,
       logLevels: ['log', 'info', 'warn', 'error'],
       openedOnly: undefined,
+      preferOpenedSession: undefined,
+      preserveProjectRoot: true,
       unhandledErrors: true,
     }))
     expect(resolveProjectAutomatorPortMock).toHaveBeenCalledWith('dist/dev')
@@ -146,6 +154,59 @@ describe('forwardConsole', () => {
     }))
   })
 
+  it('closes and clears the active console forwarding session', async () => {
+    const close = vi.fn()
+    startForwardConsoleMock.mockResolvedValueOnce({ close })
+    const { closeActiveForwardConsole, maybeStartForwardConsole } = await import('./forwardConsole')
+
+    await maybeStartForwardConsole({
+      platform: 'weapp',
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {
+        forwardConsole: true,
+      },
+    })
+    await closeActiveForwardConsole()
+    await closeActiveForwardConsole()
+
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes a console forwarding session that finishes after shutdown starts', async () => {
+    let resolveSession: ((value: { close: ReturnType<typeof vi.fn> }) => void) | undefined
+    const close = vi.fn()
+    startForwardConsoleMock.mockImplementationOnce(() => new Promise((resolve) => {
+      resolveSession = resolve
+    }))
+    const { closeActiveForwardConsole, maybeStartForwardConsole } = await import('./forwardConsole')
+
+    const start = maybeStartForwardConsole({
+      platform: 'weapp',
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {
+        forwardConsole: true,
+      },
+    })
+    await vi.waitFor(() => {
+      expect(resolveSession).toBeDefined()
+    })
+    const shutdown = closeActiveForwardConsole()
+    resolveSession?.({ close })
+
+    await expect(start).resolves.toBe(false)
+    await expect(shutdown).resolves.toBeUndefined()
+    expect(close).toHaveBeenCalledTimes(1)
+
+    await expect(maybeStartForwardConsole({
+      platform: 'weapp',
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {
+        forwardConsole: true,
+      },
+    })).resolves.toBe(true)
+    expect(startForwardConsoleMock).toHaveBeenCalledTimes(2)
+  })
+
   it('can restrict console forwarding to an opened automator session', async () => {
     determineAgentMock.mockResolvedValue({
       isAgent: true,
@@ -168,6 +229,143 @@ describe('forwardConsole', () => {
       projectPath: 'dist/dev',
       port: 10261,
     }))
+  })
+
+  it('can start a fresh project automator session after cli open', async () => {
+    determineAgentMock.mockResolvedValue({
+      isAgent: true,
+      agent: {
+        name: 'codex',
+      },
+    })
+    const { maybeStartForwardConsole } = await import('./forwardConsole')
+
+    const started = await maybeStartForwardConsole({
+      platform: 'weapp',
+      preferOpenedSession: false,
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {},
+    })
+
+    expect(started).toBe(true)
+    expect(startForwardConsoleMock).toHaveBeenCalledWith(expect.objectContaining({
+      preferOpenedSession: false,
+      preserveProjectRoot: true,
+      projectPath: 'dist/dev',
+      port: 10261,
+    }))
+  })
+
+  it('does not repeat a full bridge launch after the short retry window is exhausted', async () => {
+    vi.useFakeTimers()
+    startForwardConsoleMock.mockImplementationOnce(async () => {
+      await new Promise(resolve => setTimeout(resolve, 11_000))
+      throw new Error('DEVTOOLS_WS_CONNECT_ERROR')
+    })
+    const { startForwardConsoleBridge } = await import('./forwardConsole')
+
+    const started = startForwardConsoleBridge({
+      logLevels: ['error'],
+      onReadyMessage: 'ready',
+      projectPath: 'dist/dev',
+      unhandledErrors: true,
+    })
+    const rejected = expect(started).rejects.toThrow('DEVTOOLS_WS_CONNECT_ERROR')
+    await vi.advanceTimersByTimeAsync(11_000)
+
+    await rejected
+    expect(startForwardConsoleMock).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  it('reopens through automator after a cli-opened session stops answering protocol calls', async () => {
+    const close = vi.fn()
+    const recoverAutomatorSession = vi.fn().mockResolvedValue(undefined)
+    startForwardConsoleMock
+      .mockRejectedValueOnce(new Error('DEVTOOLS_PROTOCOL_TIMEOUT'))
+      .mockResolvedValueOnce({ close })
+    const { maybeStartForwardConsole } = await import('./forwardConsole')
+
+    await expect(maybeStartForwardConsole({
+      platform: 'weapp',
+      preferOpenedSession: false,
+      recoverAutomatorSession,
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {
+        forwardConsole: true,
+      },
+    })).resolves.toBe(true)
+
+    expect(recoverAutomatorSession).toHaveBeenCalledTimes(1)
+    expect(startForwardConsoleMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      timeout: 60_000,
+    }))
+    expect(startForwardConsoleMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      openedOnly: true,
+      port: 10261,
+      preferOpenedSession: true,
+      projectPath: 'dist/dev',
+    }))
+  })
+
+  it('reopens through automator after the initial launch timeout is exhausted', async () => {
+    const close = vi.fn()
+    const recoverAutomatorSession = vi.fn().mockResolvedValue(undefined)
+    startForwardConsoleMock
+      .mockRejectedValueOnce(new Error('Wait timed out after 60000 ms'))
+      .mockResolvedValueOnce({ close })
+    const { maybeStartForwardConsole } = await import('./forwardConsole')
+
+    await expect(maybeStartForwardConsole({
+      platform: 'weapp',
+      preferOpenedSession: false,
+      recoverAutomatorSession,
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {
+        forwardConsole: true,
+      },
+    })).resolves.toBe(true)
+
+    expect(recoverAutomatorSession).toHaveBeenCalledTimes(1)
+    expect(startForwardConsoleMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      openedOnly: true,
+      preferOpenedSession: true,
+    }))
+  })
+
+  it('reopens through automator after the stable websocket retries are exhausted', async () => {
+    vi.useFakeTimers()
+    const close = vi.fn()
+    const recoverAutomatorSession = vi.fn().mockResolvedValue(undefined)
+    for (let index = 0; index < 6; index += 1) {
+      startForwardConsoleMock.mockRejectedValueOnce(new Error('DEVTOOLS_WS_CONNECT_ERROR'))
+    }
+    startForwardConsoleMock.mockResolvedValueOnce({ close })
+    const { maybeStartForwardConsole } = await import('./forwardConsole')
+
+    const started = maybeStartForwardConsole({
+      platform: 'weapp',
+      preferOpenedSession: false,
+      recoverAutomatorSession,
+      mpDistRoot: 'dist/dev/mp-weixin',
+      weappViteConfig: {
+        forwardConsole: true,
+      },
+    })
+    await vi.runAllTimersAsync()
+
+    await expect(started).resolves.toBe(true)
+    expect(recoverAutomatorSession).toHaveBeenCalledTimes(1)
+    expect(startForwardConsoleMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      timeout: 60_000,
+    }))
+    expect(startForwardConsoleMock).toHaveBeenNthCalledWith(7, expect.objectContaining({
+      openedOnly: true,
+      port: 10261,
+      preferOpenedSession: true,
+      projectPath: 'dist/dev',
+    }))
+    vi.useRealTimers()
   })
 
   it('falls back to the opened default automator session when project port is unavailable', async () => {
@@ -200,6 +398,7 @@ describe('forwardConsole', () => {
     }))
     expect(startForwardConsoleMock).toHaveBeenNthCalledWith(7, expect.objectContaining({
       openedOnly: true,
+      preferOpenedSession: true,
       projectPath: 'dist/dev',
       port: undefined,
     }))

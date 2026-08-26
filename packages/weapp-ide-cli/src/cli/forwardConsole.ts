@@ -1,7 +1,7 @@
 import type { AutomatorSessionOptions, MiniProgramEventMap, MiniProgramLike } from './automator-session'
 import { inspect } from 'node:util'
 import logger, { colors } from '../logger'
-import { acquireSharedMiniProgram, connectMiniProgram, releaseSharedMiniProgram } from './automator-session'
+import { acquireSharedMiniProgram, closeSharedMiniProgram, connectMiniProgram, releaseSharedMiniProgram } from './automator-session'
 
 export type ForwardConsoleLogLevel = 'debug' | 'log' | 'info' | 'warn' | 'error'
 
@@ -25,6 +25,8 @@ export interface ForwardConsoleSession {
 const DEFAULT_FORWARD_CONSOLE_LEVELS: ForwardConsoleLogLevel[] = ['log', 'info', 'warn', 'error']
 const ENABLE_LOG_RETRY_DELAY_MS = 500
 const ENABLE_LOG_RETRY_TIMES = 5
+const ENABLE_LOG_TIMEOUT_MS = 3_000
+const FORWARD_CONSOLE_SESSION_TIMEOUT_MS = 3_000
 const ENABLE_LOG_REFRESH_INTERVAL_MS = 2000
 const AUXILIARY_FORWARD_CONSOLE_DELAY_MS = 2500
 const DUPLICATE_LOG_SUPPRESS_MS = 800
@@ -179,19 +181,51 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function enableMiniProgramConsoleLog(miniProgram: MiniProgramLike) {
+async function enableMiniProgramConsoleLog(miniProgram: MiniProgramLike, retryTimes = ENABLE_LOG_RETRY_TIMES) {
   if (typeof miniProgram.enableLog !== 'function') {
     return
   }
 
   let lastError: unknown
-  for (let attempt = 0; attempt <= ENABLE_LOG_RETRY_TIMES; attempt += 1) {
+  for (let attempt = 0; attempt <= retryTimes; attempt += 1) {
     try {
-      await miniProgram.enableLog()
+      await miniProgram.enableLog(ENABLE_LOG_TIMEOUT_MS)
       return
     }
     catch (error) {
       lastError = error
+      if (attempt < retryTimes) {
+        await sleep(ENABLE_LOG_RETRY_DELAY_MS)
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError))
+}
+
+async function acquireForwardConsoleMiniProgram(options: ForwardConsoleOptions) {
+  if (options.miniProgram) {
+    await enableMiniProgramConsoleLog(options.miniProgram)
+    return options.miniProgram
+  }
+
+  let lastError: unknown
+  for (let attempt = 0; attempt <= ENABLE_LOG_RETRY_TIMES; attempt += 1) {
+    let miniProgram: MiniProgramLike | undefined
+    try {
+      miniProgram = await acquireSharedMiniProgram({
+        ...options,
+        timeout: Math.min(options.timeout ?? FORWARD_CONSOLE_SESSION_TIMEOUT_MS, FORWARD_CONSOLE_SESSION_TIMEOUT_MS),
+      })
+      await enableMiniProgramConsoleLog(miniProgram, 0)
+      return miniProgram
+    }
+    catch (error) {
+      lastError = error
+      if (miniProgram) {
+        releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port)
+      }
+      await closeSharedMiniProgram(options.projectPath, options.sessionId || options.port)
       if (attempt < ENABLE_LOG_RETRY_TIMES) {
         await sleep(ENABLE_LOG_RETRY_DELAY_MS)
       }
@@ -224,7 +258,7 @@ function startEnableLogRefresh(
   }
 
   const timer = setInterval(() => {
-    void miniProgram.enableLog().catch(() => {})
+    void miniProgram.enableLog(ENABLE_LOG_TIMEOUT_MS).catch(() => {})
     if (refreshOpenedSession) {
       void refreshOpenedMiniProgramConsoleLog(options).catch(() => {})
     }
@@ -240,7 +274,7 @@ function startEnableLogRefresh(
  */
 export async function startForwardConsole(options: ForwardConsoleOptions): Promise<ForwardConsoleSession> {
   const usesSharedSession = !options.miniProgram
-  const miniProgram = options.miniProgram ?? await acquireSharedMiniProgram(options)
+  const miniProgram = await acquireForwardConsoleMiniProgram(options)
   const logLevels = new Set(options.logLevels?.length ? options.logLevels : DEFAULT_FORWARD_CONSOLE_LEVELS)
   const logHandler = options.onLog ?? printForwardConsoleEvent
   const recentLogTimes = new Map<string, number>()
@@ -293,14 +327,6 @@ export async function startForwardConsole(options: ForwardConsoleOptions): Promi
     if (usesSharedSession) {
       releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port)
     }
-  }
-
-  try {
-    await enableMiniProgramConsoleLog(miniProgram)
-  }
-  catch (error) {
-    await closeSession()
-    throw error
   }
 
   miniProgram.on('console', onConsole)

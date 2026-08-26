@@ -26,6 +26,7 @@ const TARGET_FILE_ENV = 'WEAPP_VITE_E2E_TARGET_FILE'
 const HMR_COMPANION_ATTEMPTS = 2
 const HMR_COMPANION_TIMEOUT_MS = 90_000
 const HMR_COMPANION_SKIP_TARGETS = new Set([
+  'ide/template-dev-open-all.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
 ])
 

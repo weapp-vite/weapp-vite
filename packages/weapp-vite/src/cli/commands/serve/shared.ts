@@ -1,5 +1,6 @@
 import type { GlobalCLIOptions } from '../../types'
 import process from 'node:process'
+import logger from '../../../logger'
 
 export interface ServeMiniProgramDevActions {
   openIde: (options?: OpenServeIdeOptions) => Promise<string>
@@ -19,21 +20,26 @@ export interface CreateServeMiniProgramDevActionsOptions {
   fallbackProjectPath?: string
   openIde: (projectPath?: string, options?: OpenServeIdeOptions) => Promise<void>
   projectPath?: string
+  startForwardConsole?: () => Promise<boolean>
   tryReuseForwardConsole?: () => Promise<boolean>
 }
 
-function startBackgroundForwardConsoleReuse(
-  tryReuseForwardConsole?: () => Promise<boolean>,
+function startBackgroundForwardConsole(
+  startForwardConsole?: () => Promise<boolean>,
 ) {
-  if (!tryReuseForwardConsole) {
+  if (!startForwardConsole) {
     return
   }
 
   try {
-    void tryReuseForwardConsole().catch(() => {})
+    void startForwardConsole().catch((error) => {
+      const message = error instanceof Error ? error.message : String(error)
+      logger.warn(`[forwardConsole] 后台启动失败：${message}`)
+    })
   }
-  catch {
-    // 日志桥只用于增强调试体验，不能阻塞 IDE 打开与 HMR。
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.warn(`[forwardConsole] 后台启动失败：${message}`)
   }
 }
 
@@ -65,7 +71,7 @@ export function createServeMiniProgramDevActions(
       }
 
       await options.openIde(projectPath, openOptions)
-      startBackgroundForwardConsoleReuse(options.tryReuseForwardConsole)
+      startBackgroundForwardConsole(options.startForwardConsole)
       return openOptions.forceReopen
         ? '已重新打开微信开发者工具项目'
         : '已打开或复用微信开发者工具项目'

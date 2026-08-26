@@ -11,6 +11,7 @@ interface WaitForOpenedAutomatorOptions {
   connectTimeoutMs?: number
   intervalMs?: number
   readyRoute?: string
+  skipAppReady?: boolean
   timeoutMs?: number
 }
 
@@ -73,6 +74,7 @@ export async function waitForOpenedAutomator(
     connectTimeoutMs = 5_000,
     intervalMs = 500,
     readyRoute,
+    skipAppReady = false,
     timeoutMs = 120_000,
   } = options
   const start = Date.now()
@@ -87,14 +89,16 @@ export async function waitForOpenedAutomator(
         port,
         timeout: connectTimeoutMs,
       })
-      try {
-        await waitForOpenedMiniProgramReady(miniProgram, appReadyTimeoutMs, readyRoute)
-      }
-      catch (error) {
-        lastError = error
-        await closeStaleMiniProgram(miniProgram)
-        await delay(intervalMs)
-        continue
+      if (!skipAppReady) {
+        try {
+          await waitForOpenedMiniProgramReady(miniProgram, appReadyTimeoutMs, readyRoute)
+        }
+        catch (error) {
+          lastError = error
+          await closeStaleMiniProgram(miniProgram)
+          await delay(intervalMs)
+          continue
+        }
       }
       return {
         metadata: {

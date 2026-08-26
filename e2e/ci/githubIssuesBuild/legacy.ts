@@ -1137,14 +1137,25 @@ export function registerGithubIssuesBuildLegacyCases() {
   it('issue #829: keeps nested scoped-slot function props on the owner path', async () => {
     await runAggregateBuild()
 
+    const appJsonPath = path.join(DIST_ROOT, 'app.json')
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-829/index.wxml')
     const pageJsPath = path.join(DIST_ROOT, 'pages/issue-829/index.js')
+    const issue466MainWxmlPath = path.join(DIST_ROOT, 'pages/issue-466/index.wxml')
+    const issue466SubpackageWxmlPath = path.join(DIST_ROOT, 'subpackages/issue-466/index.wxml')
+    const appJson = await fs.readJson(appJsonPath) as {
+      pages?: string[]
+      subPackages?: Array<{ root?: string }>
+    }
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf8')
     const pageJs = await fs.readFile(pageJsPath, 'utf8')
     const scopedSlotWxmlFiles = (await scanFiles(path.join(DIST_ROOT, 'pages/issue-829')))
       .filter(file => file.startsWith('index.__scoped-slot-default-') && file.endsWith('.wxml'))
     const scopedSlotWxml = await Promise.all(scopedSlotWxmlFiles.map(async file => await fs.readFile(path.join(DIST_ROOT, 'pages/issue-829', file), 'utf8')))
 
+    expect(appJson.pages).toContain('pages/issue-466/index')
+    expect(appJson.subPackages?.some(subPackage => subPackage.root === 'subpackages/issue-466')).toBe(true)
+    await expect(fs.pathExists(issue466MainWxmlPath)).resolves.toBe(true)
+    await expect(fs.pathExists(issue466SubpackageWxmlPath)).resolves.toBe(true)
     expect(pageWxml).toContain('query-fn="{{queryFn}}"')
     expect(pageJs).toContain('__wevuFunctionPropPaths')
     expect(pageJs).toContain('"queryFn"')

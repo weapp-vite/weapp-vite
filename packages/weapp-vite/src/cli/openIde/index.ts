@@ -9,6 +9,7 @@ import {
   isAutomatorLoginError,
   isWechatIdeEngineBuildEndpointMissingError,
   launchAutomator,
+  quitWechatIde,
   resolveProjectAutomatorPort,
 } from 'weapp-ide-cli'
 import { createCompilerContext } from '../../createContext'
@@ -76,7 +77,12 @@ function shouldLogAutomatorFallbackError() {
 }
 
 const PREPARE_AUTOMATOR_SESSION_TIMEOUT = 8_000
+const AUTOMATOR_RECOVERY_QUIT_SETTLE_MS = 5_000
 const RESET_FILEUTILS_ENV = 'WEAPP_VITE_RESET_IDE_FILEUTILS'
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 function readProjectConfigObject(projectPath: string) {
   try {
@@ -91,7 +97,7 @@ function readProjectConfigObject(projectPath: string) {
   }
 }
 
-function shouldUseAutomatorProjectWrapper(projectPath: string) {
+export function shouldUseAutomatorProjectWrapper(projectPath: string) {
   const projectConfig = readProjectConfigObject(projectPath)
   return projectConfig?.compileType === 'plugin'
     && typeof projectConfig.miniprogramRoot === 'string'
@@ -150,11 +156,23 @@ export async function closeIde() {
   return await closeWechatIde()
 }
 
+async function restartWechatIdeForAutomatorRecovery() {
+  try {
+    await quitWechatIde()
+    await sleep(AUTOMATOR_RECOVERY_QUIT_SETTLE_MS)
+    return true
+  }
+  catch {
+    return await closeIde()
+  }
+}
+
 async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIdeOptions) {
   const preserveProjectRoot = !shouldUseAutomatorProjectWrapper(projectPath)
   if (options.reuseOpenedProject === false) {
     const reopened = await reopenOpenedWechatIde(projectPath, closeIde, {
       preserveProjectRoot,
+      restartIde: restartWechatIdeForAutomatorRecovery,
       trustProject: options.trustProject,
     })
     if (reopened) {

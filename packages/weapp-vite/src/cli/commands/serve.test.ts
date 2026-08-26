@@ -48,6 +48,7 @@ const analyzeSubpackagesMock = vi.hoisted(() => vi.fn())
 const startAnalyzeDashboardMock = vi.hoisted(() => vi.fn())
 const logBuildAppFinishMock = vi.hoisted(() => vi.fn())
 const maybeStartForwardConsoleMock = vi.hoisted(() => vi.fn())
+const closeActiveForwardConsoleMock = vi.hoisted(() => vi.fn())
 const detectAiDevelopmentEnvironmentMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
 const resolveIdeProjectRootMock = vi.hoisted(() => vi.fn((root: string) => root))
@@ -156,6 +157,7 @@ vi.mock('../logBuildAppFinish', () => ({
 }))
 
 vi.mock('../forwardConsole', () => ({
+  closeActiveForwardConsole: closeActiveForwardConsoleMock,
   maybeStartForwardConsole: maybeStartForwardConsoleMock,
 }))
 
@@ -196,6 +198,8 @@ describe('serve cli command', () => {
     devHotkeysRestoreMock.mockReset()
     devHotkeysSuspendMock.mockReset()
     maybeStartForwardConsoleMock.mockReset()
+    closeActiveForwardConsoleMock.mockReset()
+    closeActiveForwardConsoleMock.mockResolvedValue(undefined)
     detectAiDevelopmentEnvironmentMock.mockReset()
     detectAiDevelopmentEnvironmentMock.mockResolvedValue({
       agentName: 'codex',
@@ -468,7 +472,7 @@ describe('serve cli command', () => {
       nonInteractive: true,
       openRecovery: false,
       openStrategy: 'cli',
-      prepareAutomatorSession: 'connect-opened',
+      prepareAutomatorSession: false,
       reuseOpenedProject: true,
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
@@ -526,7 +530,7 @@ describe('serve cli command', () => {
       nonInteractive: undefined,
       openRecovery: false,
       openStrategy: 'cli',
-      prepareAutomatorSession: 'connect-opened',
+      prepareAutomatorSession: false,
       reuseOpenedProject: true,
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
@@ -537,6 +541,8 @@ describe('serve cli command', () => {
       platform: 'weapp',
       mpDistRoot: '/project/dist',
       cwd: '/project',
+      preferOpenedSession: false,
+      recoverAutomatorSession: expect.any(Function),
       weappViteConfig: {
         analyze: {
           history: false,
@@ -562,7 +568,7 @@ describe('serve cli command', () => {
       nonInteractive: undefined,
       openRecovery: false,
       openStrategy: 'cli',
-      prepareAutomatorSession: 'connect-opened',
+      prepareAutomatorSession: false,
       reuseOpenedProject: true,
       skipAutomatorCompile: true,
       skipPostOpenHealthCheck: true,
@@ -586,6 +592,7 @@ describe('serve cli command', () => {
     await actionPromise
 
     expect(devHotkeysCloseMock).toHaveBeenCalledTimes(1)
+    expect(closeActiveForwardConsoleMock).toHaveBeenCalledTimes(1)
     expect(watcherCloseAllMock).toHaveBeenCalledTimes(1)
   })
 
@@ -821,7 +828,7 @@ describe('serve cli command', () => {
       nonInteractive: undefined,
       openRecovery: false,
       openStrategy: 'cli',
-      prepareAutomatorSession: 'connect-opened',
+      prepareAutomatorSession: false,
       reuseOpenedProject: false,
       skipAutomatorCompile: false,
       skipPostOpenHealthCheck: true,
@@ -880,7 +887,7 @@ describe('serve cli command', () => {
       nonInteractive: undefined,
       openRecovery: false,
       openStrategy: 'cli',
-      prepareAutomatorSession: 'connect-opened',
+      prepareAutomatorSession: false,
       reuseOpenedProject: false,
       skipAutomatorCompile: false,
       skipPostOpenHealthCheck: true,

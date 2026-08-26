@@ -133,7 +133,7 @@ export async function connectMiniProgram(options: AutomatorSessionOptions): Prom
       'cancelled',
     ),
     execute: async () => {
-      if (options.preferOpenedSession === false) {
+      if (options.preferOpenedSession === false && options.openedOnly !== true) {
         try {
           return {
             kind: 'result',

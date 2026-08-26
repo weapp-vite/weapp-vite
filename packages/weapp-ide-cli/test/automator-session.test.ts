@@ -128,6 +128,32 @@ describe('automator session diagnostics', () => {
     expect(launchAutomatorMock).not.toHaveBeenCalled()
   })
 
+  it('keeps opened-only mode authoritative when fresh sessions are otherwise preferred', async () => {
+    const disconnectMock = vi.fn()
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
+      disconnect: disconnectMock,
+    })
+    const { connectMiniProgram } = await import('../src/cli/automator-session')
+
+    const result = await connectMiniProgram({
+      openedOnly: true,
+      port: 19510,
+      preferOpenedSession: false,
+      projectPath: '/workspace/project',
+    })
+
+    expect(result).toMatchObject({
+      disconnect: disconnectMock,
+    })
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      openedOnly: true,
+      port: 19510,
+      preferOpenedSession: false,
+      projectPath: '/workspace/project',
+    })
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
+  })
+
   it('does not replace an explicitly selected opened port with a new session', async () => {
     const { connectMiniProgram } = await import('../src/cli/automator-session')
 

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { attachRuntimeErrorCollector } from './runtimeErrors'
+import {
+  attachRuntimeErrorCollector,
+  isUninspectableDevtoolsConsoleError,
+  UNINSPECTABLE_DEVTOOLS_CONSOLE_ERROR_RE,
+} from './runtimeErrors'
 
 function createMiniProgramEmitter() {
   const listeners = new Map<string, Set<(entry: any) => void>>()
@@ -25,6 +29,21 @@ function createMiniProgramEmitter() {
 }
 
 describe('runtimeErrors', () => {
+  it('recognizes only the exact uninspectable DevTools console error', () => {
+    expect(isUninspectableDevtoolsConsoleError({ type: 'error', args: [{}] })).toBe(true)
+    expect(isUninspectableDevtoolsConsoleError({ level: 'error', args: [{}] })).toBe(true)
+    expect(isUninspectableDevtoolsConsoleError({ level: 'error', text: '{"type":"error","args":[{}]}' })).toBe(true)
+    expect(isUninspectableDevtoolsConsoleError('[console:error] {"type":"error","args":[{}]}')).toBe(true)
+    expect(UNINSPECTABLE_DEVTOOLS_CONSOLE_ERROR_RE.test('[console:error] {"type":"error","args":[{}]}')).toBe(true)
+
+    expect(isUninspectableDevtoolsConsoleError({ type: 'exception', args: [{}] })).toBe(false)
+    expect(isUninspectableDevtoolsConsoleError({ type: 'error', args: [{ description: 'TypeError' }] })).toBe(false)
+    expect(isUninspectableDevtoolsConsoleError({ type: 'error', args: [{}, {}] })).toBe(false)
+    expect(isUninspectableDevtoolsConsoleError({ type: 'error', args: [{}], text: 'runtime error' })).toBe(false)
+    expect(isUninspectableDevtoolsConsoleError({ level: 'exception', text: '{"type":"error","args":[{}]}' })).toBe(false)
+    expect(isUninspectableDevtoolsConsoleError('[console:error] TypeError: runtime error')).toBe(false)
+  })
+
   it('keeps all console logs while preserving error-only assertions', () => {
     const miniProgram = createMiniProgramEmitter()
     const collector = attachRuntimeErrorCollector(miniProgram)

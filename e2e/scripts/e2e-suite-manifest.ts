@@ -13,6 +13,10 @@ const HEADLESS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.headless.config.ts')
 const WEB_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.web.config.ts')
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
+const TEMPLATE_DEV_OPEN_RUNNER_LABELS = new Set([
+  'ide/template-dev-open-all.runtime.test.ts',
+  'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
+])
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABELS = [
   IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
@@ -315,6 +319,10 @@ function createVitestTask(configPath: string, filePath: string, label = toRelati
 
 function createIdeVitestTask(filePath: string) {
   const task = createVitestTask(DEVTOOLS_CONFIG_PATH, filePath)
+  if (TEMPLATE_DEV_OPEN_RUNNER_LABELS.has(task.label)) {
+    task.command = 'node'
+    task.args = ['--import', 'tsx', path.resolve(ROOT, 'scripts/run-template-dev-open-suite.ts')]
+  }
   const taskTimeoutMs = IDE_TASK_TIMEOUT_MS_BY_LABEL.get(task.label)
   if (taskTimeoutMs) {
     task.env = {

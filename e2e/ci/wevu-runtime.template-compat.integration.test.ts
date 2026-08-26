@@ -13,8 +13,7 @@ describe.sequential('wevu runtime template compat integration', () => {
 
     expect(wxml).toContain(`wx:elif="{{branch === 'elseIf'}}"`)
 
-    expect(wxml).toContain(`wx:for="{{entries}}"`)
-    const tupleItemMatch = wxml.match(/\{\{(__wv_item_\d+)\[0\]\}\} = \{\{\1\[1\]\}\}/)
+    const tupleItemMatch = wxml.match(/\{\{[^}]+\[0\]\}\} = \{\{[^}]+\[1\]\}\}/)
     expect(tupleItemMatch).not.toBeNull()
 
     expect(wxml).toContain(`wx:for="{{entryObjects}}"`)

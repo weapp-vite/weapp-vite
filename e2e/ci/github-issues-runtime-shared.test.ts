@@ -4,6 +4,7 @@ import { fs } from '@weapp-core/shared/node'
 import { describe, expect, it, vi } from 'vitest'
 import {
   callRoutePageMethod,
+  createGithubIssuesLaunchAutomatorOptions,
   isRenderedProtocolSessionError,
   pruneGithubIssuesBuildInputs,
   relaunchPage,
@@ -13,6 +14,15 @@ import {
 } from '../ide/github-issues.runtime.shared'
 
 describe('github issues runtime shared relaunch helper', () => {
+  it('delegates transient DevTools launch recovery to the shared automator launcher', () => {
+    expect(createGithubIssuesLaunchAutomatorOptions('project-root')).toEqual({
+      deferBridgeWrapperSyncUntilConnected: true,
+      projectPath: 'project-root',
+      skipRelaunchPageRootCheck: true,
+      warmupAllowRelaunch: true,
+    })
+  })
+
   it('pins the WeChat simulator type before DevTools creates the project builder', async () => {
     const projectConfig = await fs.readJSON(path.resolve(
       import.meta.dirname,

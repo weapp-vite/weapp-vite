@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const acquireSharedMiniProgramMock = vi.hoisted(() => vi.fn())
+const closeSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const connectMiniProgramMock = vi.hoisted(() => vi.fn())
 const releaseSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
@@ -12,6 +13,7 @@ const loggerMock = vi.hoisted(() => ({
 
 vi.mock('../src/cli/automator-session', () => ({
   acquireSharedMiniProgram: acquireSharedMiniProgramMock,
+  closeSharedMiniProgram: closeSharedMiniProgramMock,
   connectMiniProgram: connectMiniProgramMock,
   releaseSharedMiniProgram: releaseSharedMiniProgramMock,
 }))
@@ -58,6 +60,8 @@ describe('forwardConsole', () => {
   beforeEach(() => {
     vi.resetModules()
     acquireSharedMiniProgramMock.mockReset()
+    closeSharedMiniProgramMock.mockReset()
+    closeSharedMiniProgramMock.mockResolvedValue(undefined)
     connectMiniProgramMock.mockReset()
     releaseSharedMiniProgramMock.mockReset()
     loggerMock.info.mockReset()
@@ -79,6 +83,8 @@ describe('forwardConsole', () => {
       onLog,
     })
 
+    expect(miniProgram.enableLog).toHaveBeenCalledWith(3_000)
+
     miniProgram.emit('console', {
       type: 'warning',
       args: [
@@ -98,6 +104,54 @@ describe('forwardConsole', () => {
         ],
       },
     })
+  })
+
+  it('invalidates a shared session when enabling logs keeps failing', async () => {
+    vi.useFakeTimers()
+    const miniProgram = createMiniProgramMock()
+    miniProgram.enableLog.mockRejectedValue(new Error('enable log timeout'))
+    acquireSharedMiniProgramMock.mockResolvedValue(miniProgram)
+    const { startForwardConsole } = await import('../src/cli/forwardConsole')
+
+    const started = startForwardConsole({
+      port: 9420,
+      projectPath: '/tmp/demo',
+    })
+    const rejected = expect(started).rejects.toThrow('enable log timeout')
+    await vi.runAllTimersAsync()
+
+    await rejected
+    expect(miniProgram.enableLog).toHaveBeenCalledTimes(6)
+    expect(acquireSharedMiniProgramMock).toHaveBeenCalledTimes(6)
+    expect(releaseSharedMiniProgramMock).toHaveBeenCalledTimes(6)
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledTimes(6)
+    expect(closeSharedMiniProgramMock).toHaveBeenLastCalledWith('/tmp/demo', 9420)
+    vi.useRealTimers()
+  })
+
+  it('reconnects when the initial shared session probe times out', async () => {
+    vi.useFakeTimers()
+    const miniProgram = createMiniProgramMock()
+    acquireSharedMiniProgramMock
+      .mockRejectedValueOnce(new Error('DEVTOOLS_PROTOCOL_TIMEOUT'))
+      .mockResolvedValueOnce(miniProgram)
+    const { startForwardConsole } = await import('../src/cli/forwardConsole')
+
+    const started = startForwardConsole({
+      port: 9420,
+      projectPath: '/tmp/demo',
+      timeout: 60_000,
+    })
+    await vi.advanceTimersByTimeAsync(500)
+    const session = await started
+
+    expect(acquireSharedMiniProgramMock).toHaveBeenCalledTimes(2)
+    expect(acquireSharedMiniProgramMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      timeout: 3_000,
+    }))
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/tmp/demo', 9420)
+    await session.close()
+    vi.useRealTimers()
   })
 
   it('filters out disabled log levels', async () => {
@@ -270,8 +324,10 @@ describe('forwardConsole', () => {
       message: 'enable log failed',
     }))
     expect(onReady).not.toHaveBeenCalled()
-    expect(miniProgram.off).toHaveBeenCalledTimes(2)
-    expect(releaseSharedMiniProgramMock).toHaveBeenCalledWith('/tmp/demo', undefined)
+    expect(miniProgram.off).not.toHaveBeenCalled()
+    expect(releaseSharedMiniProgramMock).toHaveBeenCalledTimes(6)
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledTimes(6)
+    expect(closeSharedMiniProgramMock).toHaveBeenLastCalledWith('/tmp/demo', undefined)
     expect(miniProgram.close).not.toHaveBeenCalled()
     vi.useRealTimers()
   })
