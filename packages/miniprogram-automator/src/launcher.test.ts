@@ -126,6 +126,20 @@ describe('Launcher', () => {
     expect(result).toEqual({ checkVersion })
   })
 
+  it('passes the connect timeout to the version probe', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    const checkVersion = vi.fn(async () => {})
+    const launcher = new Launcher()
+    vi.spyOn(launcher as any, 'connectTool').mockResolvedValueOnce({ checkVersion })
+
+    await launcher.connect({
+      timeout: 1_234,
+      wsEndpoint: 'ws://127.0.0.1:1234',
+    })
+
+    expect(checkVersion).toHaveBeenCalledWith(1_234)
+  })
+
   it('passes explicit connect timeout to websocket creation', async () => {
     const { default: Launcher } = await loadLauncherModule()
     connectCreateMock.mockResolvedValueOnce(new EventEmitter())
@@ -174,7 +188,7 @@ describe('Launcher', () => {
 
     expect(acquirePortLeaseMock).toHaveBeenCalledTimes(2)
     expect(connectToolSpy).toHaveBeenCalledWith({
-      timeout: 3_000,
+      timeout: 1,
       wsEndpoint: 'ws://127.0.0.1:9421',
     })
   })
@@ -215,6 +229,38 @@ describe('Launcher', () => {
         wsEndpoint: 'ws://127.0.0.1:9420',
       },
     })
+  })
+
+  it('shares one timeout budget across version and app readiness checks', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const { default: Launcher } = await loadLauncherModule()
+    const child = new EventEmitter() as EventEmitter & { unref: () => void }
+    child.unref = vi.fn()
+    spawnMock.mockReturnValue(child)
+    const checkVersion = vi.fn(async () => {
+      vi.setSystemTime(4_000)
+    })
+    const waitForAppReady = vi.fn(async () => {})
+    const launcher = new Launcher()
+    vi.spyOn(launcher as any, 'connectTool').mockResolvedValueOnce({
+      checkVersion,
+      waitForAppReady,
+    })
+
+    try {
+      await launcher.launch({
+        cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+        projectPath: '/tmp/project',
+        timeout: 10_000,
+      })
+
+      expect(checkVersion).toHaveBeenCalledWith(10_000)
+      expect(waitForAppReady).toHaveBeenCalledWith(6_000)
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 
   it('keeps the automatic port lease until the launched session closes', async () => {

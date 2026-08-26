@@ -15,6 +15,7 @@ const IDE_HMR_COMPANION_SENTINEL_ENV = 'WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINE
 const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const DEVTOOLS_CONFIG_BASENAME = 'vitest.e2e.devtools.config.ts'
+const TEMPLATE_DEV_OPEN_RUNNER_BASENAME = 'run-template-dev-open-suite.ts'
 
 export interface SuiteTask {
   artifacts?: SuiteTaskArtifact[]
@@ -62,6 +63,9 @@ function shouldEmitReportMarkers(env = process.env) {
 }
 
 function isDevtoolsVitestTask(task: SuiteTask) {
+  if (task.command === 'node' && task.args.some(arg => arg.endsWith(TEMPLATE_DEV_OPEN_RUNNER_BASENAME))) {
+    return true
+  }
   if (task.command !== 'pnpm') {
     return false
   }

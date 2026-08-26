@@ -17,6 +17,7 @@ import { normalizePlatform } from './platform'
 import SwanLauncher from './SwanLauncher'
 
 const DEFAULT_TIMEOUT = 30000
+const VERSION_CHECK_TIMEOUT = 30_000
 const AUTOMATOR_LAUNCH_RETRIES = 3
 const DEFAULT_RUNTIME_PROVIDER_ENV = 'WEAPP_VITE_AUTOMATOR_RUNTIME_PROVIDER'
 const LEGACY_RUNTIME_PROVIDER_ENV = 'WEAPP_VITE_E2E_RUNTIME_PROVIDER'
@@ -284,6 +285,8 @@ export default class Launcher {
       }
       let miniProgram: MiniProgram | null = null
       let lastConnectError: unknown = null
+      const readinessStartedAt = Date.now()
+      const resolveRemainingTimeout = () => Math.max(0, timeout - (Date.now() - readinessStartedAt))
       await waitUntil(async () => {
         try {
           if (processError) {
@@ -309,14 +312,28 @@ export default class Launcher {
               }
             }
           }
+          const connectTimeout = resolveRemainingTimeout()
+          if (connectTimeout <= 0) {
+            return false
+          }
           const candidate = await this.connectTool({
-            timeout: 3_000,
+            timeout: Math.min(3_000, connectTimeout),
             wsEndpoint: `ws://127.0.0.1:${targetPort}`,
           })
           try {
-            await candidate.checkVersion()
+            const checkVersionTimeout = resolveRemainingTimeout()
+            if (checkVersionTimeout <= 0) {
+              candidate.disconnect()
+              return false
+            }
+            await candidate.checkVersion(Math.min(VERSION_CHECK_TIMEOUT, checkVersionTimeout))
             if (typeof candidate.waitForAppReady === 'function') {
-              await candidate.waitForAppReady(timeout)
+              const appReadyTimeout = resolveRemainingTimeout()
+              if (appReadyTimeout <= 0) {
+                candidate.disconnect()
+                return false
+              }
+              await candidate.waitForAppReady(appReadyTimeout)
             }
           }
           catch (error) {
@@ -373,7 +390,7 @@ export default class Launcher {
       return await new SwanLauncher().connect(options)
     }
     const miniProgram = await this.connectTool(options)
-    await miniProgram.checkVersion()
+    await miniProgram.checkVersion(options.timeout)
     return miniProgram
   }
 

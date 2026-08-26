@@ -47,6 +47,7 @@ async function verifyOpenedProjectHealth(miniProgram: DisconnectableMiniProgram)
 
 interface OpenWechatIdeByAutomatorOptions {
   preserveProjectRoot?: boolean
+  restartIde?: () => Promise<boolean>
   trustProject?: boolean
 }
 
@@ -154,14 +155,21 @@ export async function reopenOpenedWechatIde(
   options: OpenWechatIdeByAutomatorOptions = {},
 ) {
   const connection = await connectOpenedProject(projectPath)
-  if (connection.status !== 'connected') {
-    return false
+  if (connection.status === 'connected') {
+    disconnectMiniProgram(connection.miniProgram)
+    logger.info('目标项目已在微信开发者工具中打开，当前命令将主动重开以刷新最新构建产物。')
+  }
+  else if (connection.status === 'unhealthy') {
+    logger.info('目标项目的 automator 会话未通过健康检查，当前命令将关闭窗口并重新拉起。')
+  }
+  else {
+    logger.info('未检测到可复用的 automator 会话，当前命令将关闭现有窗口并重新拉起目标项目。')
   }
 
-  const { miniProgram } = connection
-  disconnectMiniProgram(miniProgram)
-  logger.info('目标项目已在微信开发者工具中打开，当前命令将主动重开以刷新最新构建产物。')
-  const closed = await closeIde()
+  const closeCurrentSession = connection.status === 'connected'
+    ? closeIde
+    : options.restartIde ?? closeIde
+  const closed = await closeCurrentSession()
   if (!closed) {
     logger.warn('关闭当前微信开发者工具失败，仍继续尝试重新打开目标项目。')
   }

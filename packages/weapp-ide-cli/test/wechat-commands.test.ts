@@ -255,7 +255,9 @@ describe('wechat command helpers', () => {
 
     await closeWechatIdeProject()
 
-    expect(runWechatCliCommandMock).toHaveBeenCalledWith(['close'])
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith(['close'], {
+      timeout: 10_000,
+    })
   })
 
   it('runs quit through official cli wrapper', async () => {
@@ -263,7 +265,9 @@ describe('wechat command helpers', () => {
 
     await quitWechatIde()
 
-    expect(runWechatCliCommandMock).toHaveBeenCalledWith(['quit'])
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith(['quit'], {
+      timeout: 10_000,
+    })
   })
 
   it('runs cache through official cli wrapper', async () => {

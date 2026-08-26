@@ -19,6 +19,7 @@ type WechatCliExecutionResult
 
 export interface RunWechatCliWithRetryOptions {
   silent?: boolean
+  timeout?: number
 }
 
 const IDE_SERVER_STARTED_RE = /IDE server has started,\s*listening on\s+https?:\/\/127\.0\.0\.1:(\d+)/i
@@ -108,6 +109,7 @@ export async function runWechatCliWithRetry(cliPath: string, argv: string[], opt
             value: await execute(cliPath, loginRetryOptions.runtimeArgv, {
               pipeStdout: false,
               pipeStderr: false,
+              timeout: options.timeout,
             }),
           } as const
         }

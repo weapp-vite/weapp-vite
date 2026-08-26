@@ -1,5 +1,6 @@
 import { componentScenarios } from '../../e2e-apps/uview-plus-compat/src/scenarios'
 import { defineComponentLibraryRuntimeSuite } from '../component-library/runtimeSuite'
+import { UNINSPECTABLE_DEVTOOLS_CONSOLE_ERROR_RE } from './runtimeErrors'
 
 defineComponentLibraryRuntimeSuite({
   appRoot: 'e2e-apps/uview-plus-compat',
@@ -12,7 +13,7 @@ defineComponentLibraryRuntimeSuite({
   devtoolsWarmupScenarioRoute: false,
   expectedCount: 137,
   ignoredRuntimeErrorPatterns: [
-    /^\[console:error\] \{"type":"error","args":\[\{\}\]\}$/,
+    UNINSPECTABLE_DEVTOOLS_CONSOLE_ERROR_RE,
   ],
   methodReadinessFastPath: true,
   outputRoot: '.tmp/uview-plus-compat/wechat',

@@ -1,9 +1,9 @@
 import type { WeappForwardConsoleLogLevel, WeappViteConfig } from '../types'
 import process from 'node:process'
 import { determineAgent } from '@vercel/detect-agent'
-import { resolveProjectAutomatorPort, startForwardConsole as startWechatForwardConsole } from 'weapp-ide-cli'
+import { isRetryableAutomatorLaunchError, resolveProjectAutomatorPort, startForwardConsole as startWechatForwardConsole } from 'weapp-ide-cli'
 import logger, { colors } from '../logger'
-import { resolveIdeProjectPath } from './openIde'
+import { resolveIdeProjectPath, shouldUseAutomatorProjectWrapper } from './openIde'
 
 export interface ResolvedForwardConsoleOptions {
   enabled: boolean
@@ -14,6 +14,9 @@ export interface ResolvedForwardConsoleOptions {
 
 export interface MaybeStartForwardConsoleOptions {
   openedOnly?: boolean
+  preferOpenedSession?: boolean
+  preserveProjectRoot?: boolean
+  recoverAutomatorSession?: () => Promise<void>
   platform?: string
   mpDistRoot?: string
   cwd?: string
@@ -26,6 +29,8 @@ export interface StartForwardConsoleBridgeOptions {
   logLevels: WeappForwardConsoleLogLevel[]
   onReadyMessage: string
   openedOnly?: boolean
+  preferOpenedSession?: boolean
+  preserveProjectRoot?: boolean
   port?: number
   projectPath: string
   timeout?: number
@@ -35,8 +40,12 @@ export interface StartForwardConsoleBridgeOptions {
 const DEFAULT_FORWARD_CONSOLE_LEVELS: WeappForwardConsoleLogLevel[] = ['log', 'info', 'warn', 'error']
 let activeForwardConsoleSession: Awaited<ReturnType<typeof startWechatForwardConsole>> | undefined
 let activeForwardConsoleBridgeOptions: StartForwardConsoleBridgeOptions | undefined
+let activeForwardConsoleStart: Promise<boolean> | undefined
+let forwardConsoleLifecycle = 0
 const FORWARD_CONSOLE_RETRY_DELAY_MS = 1000
 const FORWARD_CONSOLE_RETRY_TIMES = 5
+const FORWARD_CONSOLE_RETRY_WINDOW_MS = 10_000
+const FORWARD_CONSOLE_RECOVERABLE_START_TIMEOUT_MS = 60_000
 const FORWARD_CONSOLE_START_TIMEOUT_MS = 120_000
 
 async function detectAgent() {
@@ -103,12 +112,26 @@ function isDevtoolsPortNotReadyError(error: unknown) {
   )
 }
 
+function isDevtoolsProtocolTimeoutError(error: unknown) {
+  return error instanceof Error && (
+    error.message === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    || /DevTools did not respond to protocol method \S+ within \d+ms/i.test(error.message)
+  )
+}
+
+function isRecoverableAutomatorStartError(error: unknown) {
+  return isDevtoolsPortNotReadyError(error)
+    || isDevtoolsProtocolTimeoutError(error)
+    || isRetryableAutomatorLaunchError(error)
+}
+
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 async function withForwardConsoleRetry<T>(runner: () => Promise<T>): Promise<T> {
   let lastError: unknown
+  const startedAt = Date.now()
 
   for (let attempt = 0; attempt <= FORWARD_CONSOLE_RETRY_TIMES; attempt++) {
     try {
@@ -116,7 +139,11 @@ async function withForwardConsoleRetry<T>(runner: () => Promise<T>): Promise<T> 
     }
     catch (error) {
       lastError = error
-      if (!isDevtoolsPortNotReadyError(error) || attempt === FORWARD_CONSOLE_RETRY_TIMES) {
+      if (
+        !isDevtoolsPortNotReadyError(error)
+        || attempt === FORWARD_CONSOLE_RETRY_TIMES
+        || Date.now() - startedAt >= FORWARD_CONSOLE_RETRY_WINDOW_MS
+      ) {
         break
       }
       await sleep(FORWARD_CONSOLE_RETRY_DELAY_MS)
@@ -194,6 +221,8 @@ export async function startForwardConsoleBridge(options: StartForwardConsoleBrid
       projectPath: options.projectPath,
       logLevels: options.logLevels,
       openedOnly: options.openedOnly,
+      preferOpenedSession: options.preferOpenedSession,
+      preserveProjectRoot: options.preserveProjectRoot,
       port: options.port,
       timeout: options.timeout,
       unhandledErrors: options.unhandledErrors,
@@ -243,6 +272,19 @@ export async function pauseActiveForwardConsole() {
 }
 
 /**
+ * @description 关闭当前 DevTools 日志桥并释放共享 automator 会话。
+ */
+export async function closeActiveForwardConsole() {
+  forwardConsoleLifecycle += 1
+  const session = activeForwardConsoleSession
+  const pendingStart = activeForwardConsoleStart
+  activeForwardConsoleSession = undefined
+  activeForwardConsoleBridgeOptions = undefined
+  await session?.close()
+  await pendingStart?.catch(() => {})
+}
+
+/**
  * @description 在 weapp 开发态按需启动控制台转发。
  */
 export async function maybeStartForwardConsole(options: MaybeStartForwardConsoleOptions) {
@@ -255,60 +297,127 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
     return false
   }
 
-  const resolved = await resolveForwardConsoleOptions(options.weappViteConfig)
-  if (!resolved.enabled) {
-    return false
-  }
-
   if (activeForwardConsoleSession) {
     return true
   }
-
-  const bridgeOptions: StartForwardConsoleBridgeOptions = {
-    agentName: resolved.agentName,
-    color: !resolved.agentName,
-    projectPath,
-    port: resolveProjectAutomatorPort(projectPath),
-    timeout: FORWARD_CONSOLE_START_TIMEOUT_MS,
-    logLevels: resolved.logLevels,
-    openedOnly: options.openedOnly,
-    unhandledErrors: resolved.unhandledErrors,
-    onReadyMessage: '[forwardConsole] 已连接微信开发者工具日志',
+  if (activeForwardConsoleStart) {
+    return await activeForwardConsoleStart
   }
 
-  try {
-    activeForwardConsoleSession = await startForwardConsoleBridge(bridgeOptions)
-    activeForwardConsoleBridgeOptions = bridgeOptions
-    return true
-  }
-  catch (error) {
-    if (!isDevtoolsPortNotReadyError(error)) {
-      activeForwardConsoleSession = undefined
-      activeForwardConsoleBridgeOptions = undefined
-      const message = error instanceof Error ? error.message : String(error)
-      logger.warn(`[forwardConsole] 启动失败，回退到普通 IDE 打开流程：${message}`)
+  const lifecycle = forwardConsoleLifecycle
+  const startTask = (async () => {
+    const resolved = await resolveForwardConsoleOptions(options.weappViteConfig)
+    if (!resolved.enabled || lifecycle !== forwardConsoleLifecycle) {
       return false
+    }
+
+    const bridgeOptions: StartForwardConsoleBridgeOptions = {
+      agentName: resolved.agentName,
+      color: !resolved.agentName,
+      projectPath,
+      port: resolveProjectAutomatorPort(projectPath),
+      timeout: options.recoverAutomatorSession
+        ? FORWARD_CONSOLE_RECOVERABLE_START_TIMEOUT_MS
+        : FORWARD_CONSOLE_START_TIMEOUT_MS,
+      logLevels: resolved.logLevels,
+      openedOnly: options.openedOnly,
+      preferOpenedSession: options.preferOpenedSession,
+      preserveProjectRoot: options.preserveProjectRoot ?? !shouldUseAutomatorProjectWrapper(projectPath),
+      unhandledErrors: resolved.unhandledErrors,
+      onReadyMessage: '[forwardConsole] 已连接微信开发者工具日志',
+    }
+
+    const activateSession = async (
+      session: Awaited<ReturnType<typeof startForwardConsoleBridge>>,
+      activeOptions: StartForwardConsoleBridgeOptions,
+    ) => {
+      if (lifecycle !== forwardConsoleLifecycle) {
+        await session.close()
+        return false
+      }
+      activeForwardConsoleSession = session
+      activeForwardConsoleBridgeOptions = activeOptions
+      return true
+    }
+
+    const recoverAutomatorSession = async () => {
+      try {
+        await options.recoverAutomatorSession?.()
+        if (lifecycle !== forwardConsoleLifecycle) {
+          return false
+        }
+        const recoveredOptions: StartForwardConsoleBridgeOptions = {
+          ...bridgeOptions,
+          openedOnly: true,
+          preferOpenedSession: true,
+        }
+        return await activateSession(
+          await startForwardConsoleBridge(recoveredOptions),
+          recoveredOptions,
+        )
+      }
+      catch (recoveryError) {
+        if (lifecycle !== forwardConsoleLifecycle) {
+          return false
+        }
+        const message = recoveryError instanceof Error ? recoveryError.message : String(recoveryError)
+        logger.warn(`[forwardConsole] automator 会话恢复失败，回退到普通 IDE 打开流程：${message}`)
+        return false
+      }
     }
 
     try {
-      activeForwardConsoleSession = await startForwardConsoleBridge({
-        ...bridgeOptions,
-        openedOnly: true,
-        port: undefined,
-      })
-      activeForwardConsoleBridgeOptions = {
-        ...bridgeOptions,
-        openedOnly: true,
-        port: undefined,
-      }
-      return true
+      return await activateSession(
+        await startForwardConsoleBridge(bridgeOptions),
+        bridgeOptions,
+      )
     }
-    catch (fallbackError) {
-      activeForwardConsoleSession = undefined
-      activeForwardConsoleBridgeOptions = undefined
-      const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
-      logger.warn(`[forwardConsole] 启动失败，回退到普通 IDE 打开流程：${message}`)
-      return false
+    catch (error) {
+      if (lifecycle !== forwardConsoleLifecycle) {
+        return false
+      }
+      if (
+        options.recoverAutomatorSession
+        && isRecoverableAutomatorStartError(error)
+      ) {
+        return await recoverAutomatorSession()
+      }
+      if (!isDevtoolsPortNotReadyError(error)) {
+        const message = error instanceof Error ? error.message : String(error)
+        logger.warn(`[forwardConsole] 启动失败，回退到普通 IDE 打开流程：${message}`)
+        return false
+      }
+
+      const fallbackOptions: StartForwardConsoleBridgeOptions = {
+        ...bridgeOptions,
+        openedOnly: true,
+        port: undefined,
+        preferOpenedSession: true,
+      }
+      try {
+        return await activateSession(
+          await startForwardConsoleBridge(fallbackOptions),
+          fallbackOptions,
+        )
+      }
+      catch (fallbackError) {
+        if (lifecycle !== forwardConsoleLifecycle) {
+          return false
+        }
+        const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+        logger.warn(`[forwardConsole] 启动失败，回退到普通 IDE 打开流程：${message}`)
+        return false
+      }
+    }
+  })()
+
+  activeForwardConsoleStart = startTask
+  try {
+    return await startTask
+  }
+  finally {
+    if (activeForwardConsoleStart === startTask) {
+      activeForwardConsoleStart = undefined
     }
   }
 }

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const parseMock = vi.hoisted(() => vi.fn())
 const closeWechatIdeProjectMock = vi.hoisted(() => vi.fn())
+const quitWechatIdeMock = vi.hoisted(() => vi.fn())
 const compileWechatIdeByAutomatorMock = vi.hoisted(() => vi.fn())
 const createWechatIdeLoginRequiredExitErrorMock = vi.hoisted(() => vi.fn())
 const isAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
@@ -65,6 +66,7 @@ vi.mock('weapp-ide-cli', () => ({
   openWechatIdeProjectByHttp: openWechatIdeProjectByHttpMock,
   promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
   promptRetryKeypress: promptRetryKeypressMock,
+  quitWechatIde: quitWechatIdeMock,
   RETRY_CONFIRM_KEYS: ['y'],
   resetWechatIdeFileUtilsByHttp: resetWechatIdeFileUtilsByHttpMock,
   runWithSuspendedSharedInput: runWithSuspendedSharedInputMock,
@@ -108,6 +110,7 @@ describe('openIde', () => {
   beforeEach(() => {
     parseMock.mockReset()
     closeWechatIdeProjectMock.mockReset()
+    quitWechatIdeMock.mockReset()
     compileWechatIdeByAutomatorMock.mockReset()
     createWechatIdeLoginRequiredExitErrorMock.mockReset()
     isAutomatorLoginErrorMock.mockReset()
@@ -149,6 +152,7 @@ describe('openIde', () => {
       throw new Error('missing project config')
     })
     closeWechatIdeProjectMock.mockResolvedValue(undefined)
+    quitWechatIdeMock.mockResolvedValue(undefined)
     compileWechatIdeByAutomatorMock.mockResolvedValue(undefined)
     openWechatIdeProjectByHttpMock.mockResolvedValue(undefined)
     resetWechatIdeFileUtilsByHttpMock.mockResolvedValue(undefined)
@@ -527,6 +531,71 @@ describe('openIde', () => {
       preserveProjectRoot: true,
       projectPath: 'dist/dev/mp-weixin',
     })
+  })
+
+  it('force reopens when the current automator session is unhealthy', async () => {
+    vi.useFakeTimers()
+    const screenshotMock = vi.fn().mockRejectedValueOnce(new Error('App.captureScreenshot timeout'))
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
+      disconnect: miniProgramDisconnectMock,
+      screenshot: screenshotMock,
+    })
+
+    try {
+      const { openIde } = await import('./openIde')
+      const openPromise = openIde('weapp', 'dist/dev/mp-weixin', {
+        reuseOpenedProject: false,
+        skipPostOpenHealthCheck: true,
+        useAutomatorOpen: true,
+      })
+      await vi.advanceTimersByTimeAsync(5_000)
+      await openPromise
+
+      expect(screenshotMock).toHaveBeenCalledWith({ timeout: 3000 })
+      expect(loggerMock.info).toHaveBeenCalledWith('目标项目的 automator 会话未通过健康检查，当前命令将关闭窗口并重新拉起。')
+      expect(quitWechatIdeMock).toHaveBeenCalledTimes(1)
+      expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+      expect(launchAutomatorMock).toHaveBeenCalledWith({
+        persistAsDefaultSession: true,
+        preserveProjectRoot: true,
+        projectPath: 'dist/dev/mp-weixin',
+        port: 9633,
+        timeout: 120_000,
+        trustProject: true,
+      })
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('force reopens when no current automator session can be reached', async () => {
+    vi.useFakeTimers()
+    try {
+      const { openIde } = await import('./openIde')
+      const openPromise = openIde('weapp', 'dist/dev/mp-weixin', {
+        reuseOpenedProject: false,
+        skipPostOpenHealthCheck: true,
+        useAutomatorOpen: true,
+      })
+      await vi.advanceTimersByTimeAsync(5_000)
+      await openPromise
+
+      expect(loggerMock.info).toHaveBeenCalledWith('未检测到可复用的 automator 会话，当前命令将关闭现有窗口并重新拉起目标项目。')
+      expect(quitWechatIdeMock).toHaveBeenCalledTimes(1)
+      expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+      expect(launchAutomatorMock).toHaveBeenCalledWith({
+        persistAsDefaultSession: true,
+        preserveProjectRoot: true,
+        projectPath: 'dist/dev/mp-weixin',
+        port: 9633,
+        timeout: 120_000,
+        trustProject: true,
+      })
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 
   it('does not append trust-project when explicitly disabled', async () => {

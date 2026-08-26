@@ -314,6 +314,20 @@ describe('suiteRunner', () => {
     expect(subpackageSharedStrategyComplexTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('600000')
     expect(templateDevOpenAllTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1800000')
     expect(templateTailwindDevOpenMultiTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1200000')
+    expect(templateDevOpenAllTask).toMatchObject({
+      command: 'node',
+      args: ['--import', 'tsx', expect.stringContaining('run-template-dev-open-suite.ts')],
+      env: {
+        [E2E_TARGET_FILE_ENV]: 'ide/template-dev-open-all.runtime.test.ts',
+      },
+    })
+    expect(templateTailwindDevOpenMultiTask).toMatchObject({
+      command: 'node',
+      args: ['--import', 'tsx', expect.stringContaining('run-template-dev-open-suite.ts')],
+      env: {
+        [E2E_TARGET_FILE_ENV]: 'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
+      },
+    })
     expect(templateTailwindTdesignHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(templateWevuTailwindTdesignHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(uviewPlusCompatTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('1200000')

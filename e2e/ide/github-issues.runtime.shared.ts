@@ -106,8 +106,6 @@ function isAppShellFreeTarget() {
 
 export const APP_ROOT = path.join(REPO_ROOT, '.tmp/e2e-projects/github-issues', resolveGithubIssuesProjectId())
 export const DIST_ROOT = path.join(APP_ROOT, resolveGithubIssuesDistDir())
-const GITHUB_ISSUES_LAUNCH_RETRIES = 1
-const GITHUB_ISSUES_LAUNCH_RETRY_DELAY = 1_200
 const CURRENT_PAGE_PROTOCOL_TIMEOUT = 3_000
 const PAGE_ROOT_QUERY_PROTOCOL_TIMEOUT = 1_000
 const PAGE_WXML_PROTOCOL_TIMEOUT = 1_000
@@ -1050,15 +1048,6 @@ export async function waitForCurrentPagePath(miniProgram: any, expectedPath: str
   return null
 }
 
-function isGithubIssuesLaunchRetryableError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return message.includes('Timeout in warmup reLaunch')
-    || message.includes('Timed out waiting page root after warmup reLaunch')
-    || message.includes('Timeout in read current page for route')
-    || isDevtoolsHttpPortError(error)
-    || isDevtoolsSimulatorBootError(error)
-}
-
 function isGithubIssuesLaunchInfraUnavailableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return isDevtoolsHttpPortError(error)
@@ -1066,14 +1055,17 @@ function isGithubIssuesLaunchInfraUnavailableError(error: unknown) {
     || message.includes('Timeout in read current page for route')
 }
 
-async function launchGithubIssuesMiniProgramOnce() {
-  const miniProgram = await launchAutomator({
+export function createGithubIssuesLaunchAutomatorOptions(projectPath = APP_ROOT) {
+  return {
     deferBridgeWrapperSyncUntilConnected: true,
-    maxLaunchRetries: 1,
-    projectPath: APP_ROOT,
+    projectPath,
     skipRelaunchPageRootCheck: true,
     warmupAllowRelaunch: true,
-  })
+  }
+}
+
+async function launchGithubIssuesMiniProgramOnce() {
+  const miniProgram = await launchAutomator(createGithubIssuesLaunchAutomatorOptions())
   await delay(600)
   return miniProgram
 }
@@ -1088,29 +1080,17 @@ async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) =>
 
   await prepareGithubIssuesBuild()
 
-  let lastError: unknown
-  for (let attempt = 1; attempt <= GITHUB_ISSUES_LAUNCH_RETRIES; attempt += 1) {
-    try {
-      return await launchGithubIssuesMiniProgramOnce()
-    }
-    catch (error) {
-      lastError = error
-      if (attempt < GITHUB_ISSUES_LAUNCH_RETRIES && isGithubIssuesLaunchRetryableError(error)) {
-        process.stdout.write(`[github-issues:launch] retry attempt=${attempt + 1}/${GITHUB_ISSUES_LAUNCH_RETRIES} reason=${error instanceof Error ? error.message : String(error)}\n`)
-        await cleanupResidualIdeProcesses()
-        await delay(GITHUB_ISSUES_LAUNCH_RETRY_DELAY)
-        continue
-      }
-      break
-    }
+  try {
+    return await launchGithubIssuesMiniProgramOnce()
   }
-
-  if (ctx && isGithubIssuesLaunchInfraUnavailableError(lastError)) {
-    const reason = lastError instanceof Error ? lastError.message : String(lastError)
-    sharedLaunchInfraUnavailableMessage = `WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。reason=${reason}`
-    ctx.skip(sharedLaunchInfraUnavailableMessage)
+  catch (error) {
+    if (ctx && isGithubIssuesLaunchInfraUnavailableError(error)) {
+      const reason = error instanceof Error ? error.message : String(error)
+      sharedLaunchInfraUnavailableMessage = `WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。reason=${reason}`
+      ctx.skip(sharedLaunchInfraUnavailableMessage)
+    }
+    throw error
   }
-  throw lastError
 }
 
 export function shouldDeferSharedMiniProgramClose(

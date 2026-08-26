@@ -11,6 +11,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { isUninspectableDevtoolsConsoleError } from './runtimeErrors'
 
 const ISSUE_ROUTE = '/pages/issue-852/index'
 
@@ -69,7 +70,9 @@ describe.sequential('e2e app: github-issues / issue #852', () => {
       expect(await root?.attribute('data-hex')).toBe('10531008')
 
       const runtimeEntries = miniProgram?.__weappViteRuntimeLogMeta?.entries ?? []
-      expect(runtimeEntries.filter((entry: { level?: string }) => entry.level === 'error' || entry.level === 'exception')).toEqual([])
+      expect(runtimeEntries
+        .filter((entry: { level?: string }) => entry.level === 'error' || entry.level === 'exception')
+        .filter((entry: unknown) => !isUninspectableDevtoolsConsoleError(entry))).toEqual([])
 
       const appJson = await readAppJson()
       expect(appJson.pages).toContain('pages/issue-852/index')

@@ -139,6 +139,17 @@ describe('MiniProgram', () => {
     expect(connection.send).toHaveBeenCalledWith('App.enableLog', {})
   })
 
+  it('forwards the console log enable timeout to the protocol request', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+
+    await miniProgram.enableLog(3_000)
+
+    expect(connection.send).toHaveBeenCalledWith('App.enableLog', {}, {
+      timeout: 3_000,
+    })
+  })
+
   it('checks sdk version compatibility', async () => {
     const connection = new FakeConnection()
     const miniProgram = new MiniProgram(connection as any)
@@ -155,6 +166,17 @@ describe('MiniProgram', () => {
 
     connection.send.mockResolvedValueOnce({ version: '2.01.2510290' })
     await expect(miniProgram.checkVersion()).resolves.toBeUndefined()
+  })
+
+  it('forwards the remaining launch timeout when checking sdk version', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+
+    await miniProgram.checkVersion(1_234)
+
+    expect(connection.send).toHaveBeenCalledWith('Tool.getInfo', {}, {
+      timeout: 1_234,
+    })
   })
 
   it('waits for App domain readiness before returning a launched session', async () => {
@@ -180,6 +202,26 @@ describe('MiniProgram', () => {
     })
     expect(connection.send).toHaveBeenNthCalledWith(2, 'App.captureScreenshot', {}, {
       timeout: 3_000,
+    })
+  })
+
+  it('caps the App readiness probe with the remaining launch timeout', async () => {
+    const timeoutError = new Error('App readiness timeout')
+    const connection = new FakeConnection()
+    connection.send.mockImplementationOnce(async (_method, _params, options) => {
+      await new Promise(resolve => setTimeout(resolve, Number(options?.timeout)))
+      throw timeoutError
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.waitForAppReady(1_000)
+    const expectation = expect(pending).rejects.toThrow(timeoutError)
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    await expectation
+    expect(connection.send).toHaveBeenCalledTimes(1)
+    expect(connection.send).toHaveBeenCalledWith('App.captureScreenshot', {}, {
+      timeout: 1_000,
     })
   })
 

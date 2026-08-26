@@ -320,6 +320,29 @@ describe('automator helpers', () => {
       expect(launchMock).toHaveBeenCalledTimes(2)
     })
 
+    it('does not retry after the launch timeout budget is exhausted', async () => {
+      vi.useFakeTimers()
+      launchMock.mockImplementationOnce(async () => {
+        await new Promise(resolve => setTimeout(resolve, 30_000))
+        throw new Error('Wait timed out after 30000 ms')
+      })
+
+      try {
+        const launchPromise = launchAutomator({
+          projectPath: '/workspace/project',
+          timeout: 30_000,
+        })
+        const expectation = expect(launchPromise).rejects.toThrow('Wait timed out after 30000 ms')
+
+        await vi.advanceTimersByTimeAsync(30_000)
+        await expectation
+        expect(launchMock).toHaveBeenCalledTimes(1)
+      }
+      finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('persists websocket session metadata after launch', async () => {
       launchMock.mockResolvedValueOnce({
         connected: true,

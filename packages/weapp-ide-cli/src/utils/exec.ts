@@ -3,6 +3,7 @@ import process from 'node:process'
 interface ExecuteOptions {
   pipeStdout?: boolean
   pipeStderr?: boolean
+  timeout?: number
 }
 
 /**
@@ -12,10 +13,14 @@ export async function execute(cliPath: string, argv: string[], options: ExecuteO
   const {
     pipeStdout = true,
     pipeStderr = true,
+    timeout,
   } = options
 
+  // eslint-disable-next-line e18e/ban-dependencies -- 微信 CLI 启动需要跨平台的流透传与超时控制
   const { execa } = await import('execa')
-  const task = execa(cliPath, argv)
+  const task = execa(cliPath, argv, {
+    timeout,
+  })
 
   if (pipeStdout) {
     task?.stdout?.pipe(process.stdout)

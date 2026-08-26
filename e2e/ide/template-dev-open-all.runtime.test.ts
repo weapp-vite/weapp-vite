@@ -1,8 +1,10 @@
+import type { TemplateDevOpenCase as TemplateCase } from './template-dev-open-cases'
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
@@ -16,120 +18,29 @@ import {
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
-import { attachRuntimeErrorCollector } from './runtimeErrors'
+import {
+  attachRuntimeErrorCollector,
+  isUninspectableDevtoolsConsoleError,
+} from './runtimeErrors'
+import {
+  createTemplateDevOpenArgs,
+  resolveTemplateDevOpenProjectRoot,
+  TEMPLATE_DEV_OPEN_CASES,
+} from './template-dev-open-cases'
 
-const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const IDE_AUTOMATOR_INFRA_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Timed out waiting for opened automator ws:\/\/127\.0\.0\.1:\d+|无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|automation websocket|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Wait timed out after \d+ ms|当前项目已完成打开流程，但尚未连接到可复用的自动化会话/i
-const IGNORED_DEVTOOLS_RUNTIME_ERROR_RE = /^\[console:error\] \{"type":"error","args":\[\{\}\]\}$/
+const FORWARD_CONSOLE_READY_RE = /\[forwardConsole\] 已连接微信开发者工具日志/
+const FORWARD_CONSOLE_READY_TIMEOUT_MS = 180_000
 
-interface TemplateCase {
-  assertWrapperProject?: boolean
-  expectedData?: Record<string, unknown>
-  expectedText: string
-  name: string
-  platform?: string
-  projectRoot?: string
-  route: string
-  root: string
-}
-
-const TEMPLATE_CASES: TemplateCase[] = [
-  {
-    name: 'weapp-vite-plugin-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-plugin-template'),
-    route: '/pages/index/index',
-    expectedText: '插件能力混合演示',
-    assertWrapperProject: true,
-    expectedData: {
-      pluginAnswer: 42,
-    },
-  },
-  {
-    name: 'weapp-vite-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-template'),
-    route: '/pages/index/index',
-    expectedText: 'Hello weapp-vite',
-  },
-  {
-    name: 'weapp-vite-multi-platform-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-multi-platform-template'),
-    projectRoot: 'dist/weapp',
-    platform: 'weapp',
-    route: '/pages/index/index',
-    expectedText: '原生多平台 + Web',
-    expectedData: {
-      platform: 'weapp',
-      status: 'ready',
-    },
-  },
-  {
-    name: 'weapp-vite-multi-platform-sfc-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-multi-platform-sfc-template'),
-    projectRoot: 'dist/weapp',
-    platform: 'weapp',
-    route: '/pages/index/index',
-    expectedText: 'Vue SFC 多平台 + Web',
-    expectedData: {
-      count: 0,
-      doubled: 0,
-      platform: 'weapp',
-      status: 'ready',
-    },
-  },
-  {
-    name: 'weapp-vite-lib-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-lib-template'),
-    route: '/pages/index/index',
-    expectedText: 'Hello weapp-vite lib',
-  },
-  {
-    name: 'weapp-vite-tailwindcss-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-template'),
-    route: '/pages/index/index',
-    expectedText: 'Hello weapp-vite',
-  },
-  {
-    name: 'weapp-vite-tailwindcss-tdesign-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template'),
-    route: '/pages/index/index',
-    expectedText: 'Hello weapp-vite + TDesign',
-  },
-  {
-    name: 'weapp-vite-tailwindcss-vant-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-vant-template'),
-    route: '/pages/index/index',
-    expectedText: 'Hello weapp-vite + Vant',
-  },
-  {
-    name: 'weapp-vite-wevu-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-template'),
-    route: '/pages/index/index',
-    expectedText: 'Weapp-vite + Wevu',
-    expectedData: {
-      count: 0,
-      doubled: 0,
-    },
-  },
-  {
-    name: 'weapp-vite-wevu-tailwindcss-tdesign-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template'),
-    route: '/pages/index/index',
-    expectedText: 'TDesign 最小模板',
-    expectedData: {
-      count: 0,
-    },
-  },
-  {
-    name: 'weapp-vite-wevu-tailwindcss-tdesign-retail-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template'),
-    route: '/pages/home/home',
-    expectedText: '精选推荐',
-  },
-]
 const TEMPLATE_FILTER = process.env.WEAPP_VITE_E2E_TEMPLATE?.trim()
-const ACTIVE_TEMPLATE_CASES = TEMPLATE_FILTER
-  ? TEMPLATE_CASES.filter(templateCase => templateCase.name === TEMPLATE_FILTER)
-  : TEMPLATE_CASES
+const TEMPLATE_EXCLUDE = process.env.WEAPP_VITE_E2E_EXCLUDE_TEMPLATE?.trim()
+const USE_PRESTARTED_TEMPLATE_DEV = process.env.WEAPP_VITE_E2E_PRESTARTED_TEMPLATE_DEV === '1'
+const ACTIVE_TEMPLATE_CASES = TEMPLATE_DEV_OPEN_CASES.filter((templateCase) => {
+  if (TEMPLATE_FILTER && templateCase.name !== TEMPLATE_FILTER) {
+    return false
+  }
+  return !TEMPLATE_EXCLUDE || templateCase.name !== TEMPLATE_EXCLUDE
+})
 const PROTOCOL_TIMEOUT_RECONNECT_THRESHOLD = 3
 
 type TemplateDevProcess = TemplateCase & {
@@ -137,7 +48,7 @@ type TemplateDevProcess = TemplateCase & {
 }
 
 function resolveTemplateProjectRoot(templateCase: TemplateCase) {
-  return path.resolve(templateCase.root, templateCase.projectRoot ?? '.')
+  return resolveTemplateDevOpenProjectRoot(templateCase)
 }
 
 function resolveAutomatorSessionFile(projectPath: string, port?: number) {
@@ -298,7 +209,7 @@ async function waitForPageText(miniProgram: any, projectPath: string, route: str
   throw new Error(`Timed out waiting for rendered text "${text}".${timeoutDetail}\nLatest route: ${latestRoute || '<unknown>'}\nLatest data:\n${latestData || '<empty>'}\nLatest WXML:\n${latestWxml.slice(0, 1000)}`)
 }
 
-async function assertPluginTemplateWrapperProject(wrapperProjectPath: string) {
+async function assertPluginTemplateWrapperProject(sourceProjectPath: string, wrapperProjectPath: string) {
   await expect(JSON.parse(await fs.readFile(path.join(wrapperProjectPath, 'project.config.json'), 'utf8'))).toMatchObject({
     compileType: 'plugin',
     miniprogramRoot: './',
@@ -309,14 +220,10 @@ async function assertPluginTemplateWrapperProject(wrapperProjectPath: string) {
       packNpmRelationList: [],
     },
   })
+  const sourceAppConfig = JSON.parse(await fs.readFile(path.join(sourceProjectPath, 'src/app.json'), 'utf8'))
   await expect(JSON.parse(await fs.readFile(path.join(wrapperProjectPath, 'app.json'), 'utf8'))).toMatchObject({
-    pages: ['pages/index/index'],
-    plugins: {
-      'hello-plugin': {
-        provider: 'wxb3d842a4a7e3440d',
-        version: 'dev',
-      },
-    },
+    pages: sourceAppConfig.pages,
+    plugins: sourceAppConfig.plugins,
     subPackages: [],
   })
   await expect(fs.access(path.join(wrapperProjectPath, 'pages/index/index.wxml'))).resolves.toBeUndefined()
@@ -326,7 +233,7 @@ async function assertPluginTemplateWrapperProject(wrapperProjectPath: string) {
 
 async function waitForTemplateCaseReady(miniProgram: any, templateCase: TemplateCase, wrapperProjectPath: string) {
   if (templateCase.assertWrapperProject) {
-    await assertPluginTemplateWrapperProject(wrapperProjectPath)
+    await assertPluginTemplateWrapperProject(templateCase.root, wrapperProjectPath)
     return
   }
 
@@ -349,8 +256,16 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
     infraOutput = output.length > 4_000 ? output.slice(-4_000) : output
   }).catch(() => {})
 
+  if (!process.assertWrapperProject) {
+    await process.dev.waitForOutput(
+      FORWARD_CONSOLE_READY_RE,
+      `${process.name} forward console ready`,
+      FORWARD_CONSOLE_READY_TIMEOUT_MS,
+    )
+  }
   const readySession = waitForOpenedAutomator(resolveTemplateProjectRoot(process), {
-    readyRoute: process.route,
+    readyRoute: process.assertWrapperProject ? undefined : process.route,
+    skipAppReady: process.assertWrapperProject,
     timeoutMs: 120_000,
   }).catch((error) => {
     const details = infraOutput ? `\nRecent infra output:\n${infraOutput}` : ''
@@ -375,16 +290,11 @@ async function cleanupTemplateAutomatorState(templateCase: TemplateCase) {
 }
 
 function startTemplateDevProcess(templateCase: TemplateCase): TemplateDevProcess {
-  const args = ['exec', 'wv', 'dev']
-  if (templateCase.platform) {
-    args.push('-p', templateCase.platform)
-  }
-  args.push('-o', '--non-interactive', '--login-retry', 'never')
   return {
     ...templateCase,
-    dev: startDevProcess('pnpm', args, {
+    dev: startDevProcess('pnpm', createTemplateDevOpenArgs(templateCase), {
       cwd: templateCase.root,
-      env: createDevProcessEnv(),
+      env: createDevProcessEnv({ usePolling: false }),
       reject: false,
     }),
   }
@@ -399,6 +309,18 @@ function isTemplateProtocolTimeout(error: unknown) {
 }
 
 async function openTemplateDevProcess(templateCase: TemplateCase) {
+  if (USE_PRESTARTED_TEMPLATE_DEV) {
+    const projectRoot = resolveTemplateProjectRoot(templateCase)
+    return {
+      devProcess: undefined,
+      session: await waitForOpenedAutomator(projectRoot, {
+        readyRoute: templateCase.assertWrapperProject ? undefined : templateCase.route,
+        skipAppReady: templateCase.assertWrapperProject,
+        timeoutMs: 120_000,
+      }),
+    }
+  }
+
   let lastError: unknown
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     await cleanupResidualIdeProcesses()
@@ -424,11 +346,17 @@ async function openTemplateDevProcess(templateCase: TemplateCase) {
 
 describe.sequential('all templates dev:open IDE integration', () => {
   beforeAll(async () => {
+    if (USE_PRESTARTED_TEMPLATE_DEV) {
+      return
+    }
     await cleanupResidualIdeProcesses()
     await Promise.all(ACTIVE_TEMPLATE_CASES.map(async templateCase => await cleanupTemplateAutomatorState(templateCase)))
   }, 60_000)
 
   afterAll(async () => {
+    if (USE_PRESTARTED_TEMPLATE_DEV) {
+      return
+    }
     await cleanupTrackedDevProcesses()
     await Promise.all(ACTIVE_TEMPLATE_CASES.map(async templateCase => await closeSharedMiniProgram(
       resolveTemplateProjectRoot(templateCase),
@@ -480,7 +408,7 @@ describe.sequential('all templates dev:open IDE integration', () => {
         catch (error) {
           throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)
         }
-        expect(runtimeErrors.getSince(runtimeMarker).filter(message => !IGNORED_DEVTOOLS_RUNTIME_ERROR_RE.test(message))).toEqual([])
+        expect(runtimeErrors.getSince(runtimeMarker).filter(message => !isUninspectableDevtoolsConsoleError(message))).toEqual([])
         expect(runtimeErrors.getAll().filter(message => /DevRuntime|module .* is not defined|SystemError|MiniProgramError/i.test(message))).toEqual([])
         return
       }
@@ -498,12 +426,14 @@ describe.sequential('all templates dev:open IDE integration', () => {
           miniProgram?.disconnect?.()
         }
         catch {}
-        await devProcess.dev.stop().catch(() => {})
+        await devProcess?.dev.stop().catch(() => {})
         await closeSharedMiniProgram(
           projectRoot,
           port,
         ).catch(() => {})
-        await cleanupResidualIdeProcesses()
+        if (!USE_PRESTARTED_TEMPLATE_DEV) {
+          await cleanupResidualIdeProcesses()
+        }
         await delay(2_000)
       }
     }

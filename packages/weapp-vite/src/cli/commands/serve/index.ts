@@ -10,7 +10,7 @@ import logger from '../../../logger'
 import { startAnalyzeDashboard } from '../../analyze/dashboard'
 import { startDevHotkeys } from '../../devHotkeys'
 import { formatDuration } from '../../formatDuration'
-import { maybeStartForwardConsole } from '../../forwardConsole'
+import { closeActiveForwardConsole, maybeStartForwardConsole } from '../../forwardConsole'
 import { logBuildAppFinish } from '../../logBuildAppFinish'
 import { applyMcpCliOptions } from '../../mcpOptions'
 import { setCommandNodeEnv } from '../../nodeEnv'
@@ -89,7 +89,7 @@ export function registerServeCommand(cli: CAC) {
             loginRetryTimeout: options.loginRetryTimeout,
             nonInteractive: options.nonInteractive,
             openRecovery: false,
-            prepareAutomatorSession: useAutomatorOpen ? true : 'connect-opened',
+            prepareAutomatorSession: useAutomatorOpen,
             reuseOpenedProject: !forceReopen,
             skipAutomatorCompile: !forceReopen,
             skipPostOpenHealthCheck: true,
@@ -100,8 +100,34 @@ export function registerServeCommand(cli: CAC) {
           writePostOpenSeparator()
         },
         projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd),
+        startForwardConsole: async () => {
+          return await maybeStartForwardConsole({
+            platform: configService.platform,
+            mpDistRoot: configService.mpDistRoot,
+            cwd: configService.cwd,
+            preferOpenedSession: false,
+            recoverAutomatorSession: async () => {
+              const projectPath = resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd)
+              await openIde(configService.platform, projectPath, {
+                loginRetry: options.loginRetry,
+                loginRetryTimeout: options.loginRetryTimeout,
+                nonInteractive: options.nonInteractive,
+                openRecovery: false,
+                openStrategy: 'automator',
+                prepareAutomatorSession: true,
+                reuseOpenedProject: false,
+                skipAutomatorCompile: false,
+                skipPostOpenHealthCheck: true,
+                trustProject: options.trustProject,
+                useAutomatorOpen: true,
+              })
+            },
+            weappViteConfig: configService.weappViteConfig,
+          })
+        },
         tryReuseForwardConsole: async () => {
           return await maybeStartForwardConsole({
+            openedOnly: true,
             platform: configService.platform,
             mpDistRoot: configService.mpDistRoot,
             cwd: configService.cwd,
@@ -240,6 +266,7 @@ export function registerServeCommand(cli: CAC) {
       }
       finally {
         devHotkeysSession?.close()
+        await closeActiveForwardConsole()
         for (const backend of [...targets.select('dev')].reverse()) {
           await backend.driver.close(ctx)
         }

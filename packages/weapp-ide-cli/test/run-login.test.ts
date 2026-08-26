@@ -114,4 +114,18 @@ describe('runWechatCliWithRetry', () => {
     expect(stdoutWriteSpy).not.toHaveBeenCalled()
     stdoutWriteSpy.mockRestore()
   })
+
+  it('forwards the command timeout to the process runner', async () => {
+    const { runWechatCliWithRetry } = await import('../src/cli/run-login')
+
+    await runWechatCliWithRetry('/Applications/wechat-cli', ['quit'], {
+      timeout: 10_000,
+    })
+
+    expect(executeMock).toHaveBeenCalledWith('/Applications/wechat-cli', ['quit'], {
+      pipeStderr: false,
+      pipeStdout: false,
+      timeout: 10_000,
+    })
+  })
 })

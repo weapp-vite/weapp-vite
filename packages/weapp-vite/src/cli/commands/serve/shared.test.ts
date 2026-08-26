@@ -24,26 +24,29 @@ describe('serve shared helpers', () => {
   it('forces ide open when requested by serve --open startup', async () => {
     const build = vi.fn().mockResolvedValue(undefined)
     const openIde = vi.fn().mockResolvedValue(undefined)
+    const startForwardConsole = vi.fn().mockResolvedValue(true)
     const tryReuseForwardConsole = vi.fn().mockResolvedValue(true)
     const actions = createServeMiniProgramDevActions({
       build,
       fallbackProjectPath: '/project',
       openIde,
       projectPath: '/project/dist-root',
+      startForwardConsole,
       tryReuseForwardConsole,
     })
 
     await expect(actions.openIde({ forceOpen: true })).resolves.toBe('已打开或复用微信开发者工具项目')
 
     expect(openIde).toHaveBeenCalledWith('/project/dist-root', { forceOpen: true })
-    expect(tryReuseForwardConsole).toHaveBeenCalledTimes(1)
+    expect(startForwardConsole).toHaveBeenCalledTimes(1)
+    expect(tryReuseForwardConsole).not.toHaveBeenCalled()
   })
 
   it('does not wait for forward console after opening ide', async () => {
     const build = vi.fn().mockResolvedValue(undefined)
     const openIde = vi.fn().mockResolvedValue(undefined)
     let resolveForwardConsole: ((value: boolean) => void) | undefined
-    const tryReuseForwardConsole = vi.fn(() => new Promise<boolean>((resolve) => {
+    const startForwardConsole = vi.fn(() => new Promise<boolean>((resolve) => {
       resolveForwardConsole = resolve
     }))
     const actions = createServeMiniProgramDevActions({
@@ -51,24 +54,26 @@ describe('serve shared helpers', () => {
       fallbackProjectPath: '/project',
       openIde,
       projectPath: '/project/dist-root',
-      tryReuseForwardConsole,
+      startForwardConsole,
     })
 
     await expect(actions.openIde({ forceOpen: true })).resolves.toBe('已打开或复用微信开发者工具项目')
 
     expect(resolveForwardConsole).toBeDefined()
-    expect(tryReuseForwardConsole).toHaveBeenCalledTimes(1)
+    expect(startForwardConsole).toHaveBeenCalledTimes(1)
     resolveForwardConsole?.(true)
   })
 
   it('falls back to reopening and rebuilding current mini program project', async () => {
     const build = vi.fn().mockResolvedValue(undefined)
     const openIde = vi.fn().mockResolvedValue(undefined)
+    const startForwardConsole = vi.fn().mockResolvedValue(true)
     const tryReuseForwardConsole = vi.fn().mockResolvedValue(false)
     const actions = createServeMiniProgramDevActions({
       build,
       fallbackProjectPath: '/project',
       openIde,
+      startForwardConsole,
       tryReuseForwardConsole,
     })
 
@@ -78,6 +83,7 @@ describe('serve shared helpers', () => {
     expect(actions.projectPath).toBe('/project')
     expect(build).toHaveBeenCalledTimes(1)
     expect(openIde).toHaveBeenCalledWith('/project', {})
-    expect(tryReuseForwardConsole).toHaveBeenCalledTimes(2)
+    expect(startForwardConsole).toHaveBeenCalledTimes(1)
+    expect(tryReuseForwardConsole).toHaveBeenCalledTimes(1)
   })
 })

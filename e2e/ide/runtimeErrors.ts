@@ -11,6 +11,43 @@ function resolveConsolePayload(entry: any) {
   return entry
 }
 
+const UNINSPECTABLE_DEVTOOLS_CONSOLE_ERROR_TEXT = '{"type":"error","args":[{}]}'
+
+export const UNINSPECTABLE_DEVTOOLS_CONSOLE_ERROR_RE = /^\[console:error\] \{"type":"error","args":\[\{\}\]\}$/
+
+export function isUninspectableDevtoolsConsoleError(entry: unknown) {
+  if (typeof entry === 'string') {
+    return entry === UNINSPECTABLE_DEVTOOLS_CONSOLE_ERROR_TEXT
+      || UNINSPECTABLE_DEVTOOLS_CONSOLE_ERROR_RE.test(entry)
+  }
+  if (!entry || typeof entry !== 'object') {
+    return false
+  }
+
+  const runtimeEntry = entry as Record<string, unknown>
+  if (typeof runtimeEntry.text === 'string' && typeof runtimeEntry.level === 'string') {
+    return runtimeEntry.level.toLowerCase() === 'error'
+      && runtimeEntry.text === UNINSPECTABLE_DEVTOOLS_CONSOLE_ERROR_TEXT
+  }
+
+  const payload = resolveConsolePayload(entry)
+  if (!payload || typeof payload !== 'object') {
+    return false
+  }
+  const payloadKeys = Object.keys(payload)
+  if (payloadKeys.some(key => key !== 'args' && key !== 'level' && key !== 'type')) {
+    return false
+  }
+  const level = String(payload.level ?? payload.type ?? '').toLowerCase()
+  const args = payload.args
+  return level === 'error'
+    && Array.isArray(args)
+    && args.length === 1
+    && args[0] !== null
+    && typeof args[0] === 'object'
+    && Object.keys(args[0]).length === 0
+}
+
 function normalizePreview(raw: any) {
   const properties = Array.isArray(raw?.preview?.properties)
     ? raw.preview.properties
