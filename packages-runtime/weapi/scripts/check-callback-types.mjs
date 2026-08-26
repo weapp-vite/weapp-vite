@@ -138,6 +138,10 @@ function isUnknown(type) {
   return (type.flags & ts.TypeFlags.Unknown) !== 0
 }
 
+function isSamePath(left, right) {
+  return path.resolve(left) === path.resolve(right)
+}
+
 function createVirtualProgram(configItem, methods) {
   const lines = [
     `import { ${configItem.key === 'default' ? 'wpi' : 'createWeapi'} } from '@wevu/api'`,
@@ -182,13 +186,13 @@ function createVirtualProgram(configItem, methods) {
   const host = ts.createCompilerHost(compilerOptions)
   const originalGetSourceFile = host.getSourceFile.bind(host)
   host.getSourceFile = (fileNameArg, languageVersion, onError, shouldCreateNewSourceFile) => {
-    if (fileNameArg === fileName) {
+    if (isSamePath(fileNameArg, fileName)) {
       return ts.createSourceFile(fileNameArg, sourceText, languageVersion, true, ts.ScriptKind.TS)
     }
     return originalGetSourceFile(fileNameArg, languageVersion, onError, shouldCreateNewSourceFile)
   }
-  host.fileExists = fileNameArg => fileNameArg === fileName || ts.sys.fileExists(fileNameArg)
-  host.readFile = fileNameArg => fileNameArg === fileName ? sourceText : ts.sys.readFile(fileNameArg)
+  host.fileExists = fileNameArg => isSamePath(fileNameArg, fileName) || ts.sys.fileExists(fileNameArg)
+  host.readFile = fileNameArg => isSamePath(fileNameArg, fileName) ? sourceText : ts.sys.readFile(fileNameArg)
   return {
     fileName,
     sourceText,
@@ -221,7 +225,10 @@ for (const configItem of platformConfigs) {
   const adapterType = getExportedType(moduleSymbol, configItem.rawExport)
   const methods = getCallbackMethods(adapterType, sourceFile)
   const virtual = createVirtualProgram(configItem, methods)
-  const virtualSource = virtual.program.getSourceFile(virtual.fileName)
+  const virtualSource = virtual.program.getSourceFiles().find(file => isSamePath(file.fileName, virtual.fileName))
+  if (!virtualSource) {
+    throw new Error(`无法读取虚拟 callback 类型检查文件：${virtual.fileName}`)
+  }
   const diagnostics = ts.getPreEmitDiagnostics(virtual.program)
     .filter(diagnostic => diagnostic.file?.fileName === virtual.fileName)
   for (const diagnostic of diagnostics) {
