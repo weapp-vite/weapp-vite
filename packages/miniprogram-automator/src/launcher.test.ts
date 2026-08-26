@@ -183,12 +183,12 @@ describe('Launcher', () => {
     await launcher.launch({
       cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
       projectPath: '/tmp/project',
-      timeout: 1,
+      timeout: 10_000,
     })
 
     expect(acquirePortLeaseMock).toHaveBeenCalledTimes(2)
     expect(connectToolSpy).toHaveBeenCalledWith({
-      timeout: 1,
+      timeout: 3_000,
       wsEndpoint: 'ws://127.0.0.1:9421',
     })
   })
