@@ -24,6 +24,6 @@
 
 ## 相关文档
 
-- weapp-vite: https://vite.icebreaker.top/
-- 分包指南: https://vite.icebreaker.top/config/subpackages.html
+- weapp-vite: https://vite.weapp.dev/
+- 分包指南: https://vite.weapp.dev/config/subpackages.html
 - weapp-tailwindcss: https://tw.icebreaker.top/

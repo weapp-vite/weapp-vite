@@ -43,4 +43,4 @@ pnpm build:web
 
 便携源码使用原生 `Page()` / `Component()`，公共模板采用 WXML 语法，并通过 `wx` API 编写平台无关逻辑。构建时 `injectWeapi.replaceWx` 会替换运行时 API，模板、样式、事件和脚本模块后缀会按目标平台转换。平台专属能力应隔离在独立模块或条件入口中，避免让公共页面直接依赖某个宿主的 TypeScript 类型。
 
-Web Runtime 适合浏览器联调和兼容验证，不能替代小程序开发者工具或真机验收。构建通过也不等于官方 IDE 编译或 Runtime 交互通过：微信和 Web 可以做自动化交互验收，支付宝使用官方 `minidev build` 做 IDE 编译检查，百度 Runtime 依赖可用的 WebSocket 端点，抖音、京东和小红书仍需在各自官方工具中人工复验。详细说明见 [多平台构建指南](https://vite.icebreaker.top/guide/multi-platform)。
+Web Runtime 适合浏览器联调和兼容验证，不能替代小程序开发者工具或真机验收。构建通过也不等于官方 IDE 编译或 Runtime 交互通过：微信和 Web 可以做自动化交互验收，支付宝使用官方 `minidev build` 做 IDE 编译检查，百度 Runtime 依赖可用的 WebSocket 端点，抖音、京东和小红书仍需在各自官方工具中人工复验。详细说明见 [多平台构建指南](https://vite.weapp.dev/guide/multi-platform)。

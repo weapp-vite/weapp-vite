@@ -161,7 +161,7 @@ async function navigateTo(url: string) {
           <text class="text-[22rpx] text-[#6f6b8a]">
             扫码体验
           </text>
-          <t-qrcode value="https://vite.icebreaker.top" :size="90" />
+          <t-qrcode value="https://vite.weapp.dev" :size="90" />
         </view>
       </view>
     </view>

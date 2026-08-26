@@ -19,7 +19,7 @@ export default defineConfig({
       resolvers: [VantResolver()],
     },
     // pnpm g 生成的格式
-    // https://vite.icebreaker.top/guide/generate.html
+    // https://vite.weapp.dev/guide/generate.html
     generate: {
       extensions: {
         js: 'ts',

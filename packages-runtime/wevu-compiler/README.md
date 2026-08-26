@@ -64,5 +64,5 @@ const nextCode = injectWevuPageFeaturesInJs(sourceCode, flags)
 
 ## 相关链接
 
-- weapp-vite 文档：https://vite.icebreaker.top/
+- weapp-vite 文档：https://vite.weapp.dev/
 - 仓库：https://github.com/weapp-vite/weapp-vite

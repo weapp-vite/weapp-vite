@@ -113,5 +113,5 @@ pnpm run check:release
 
 ## 相关链接
 
-- 文档：https://vite.icebreaker.top/
+- 文档：https://vite.weapp.dev/
 - 仓库：https://github.com/weapp-vite/weapp-vite

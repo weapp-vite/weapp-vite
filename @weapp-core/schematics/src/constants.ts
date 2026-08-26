@@ -1,7 +1,7 @@
 import type { App, Component, Page } from './type'
 import process from 'node:process'
 
-const SCHEMA_BASE = (process.env.WEAPP_SCHEMA_BASE ?? 'https://vite.icebreaker.top').replace(/\/$/, '')
+const SCHEMA_BASE = (process.env.WEAPP_SCHEMA_BASE ?? 'https://vite.weapp.dev').replace(/\/$/, '')
 
 function schemaUrl(filename: string) {
   return `${SCHEMA_BASE}/${filename}`

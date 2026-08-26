@@ -240,7 +240,7 @@ async function buildExpectedPackageJson(templateName: TemplateName): Promise<Pac
         dependencies: {},
         devDependencies: {},
         name: 'weapp-vite-app',
-        homepage: 'https://vite.icebreaker.top/',
+        homepage: 'https://vite.weapp.dev/',
         optionalDependencies: {},
         peerDependencies: {},
         type: 'module',

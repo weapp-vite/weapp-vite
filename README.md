@@ -15,7 +15,7 @@
 </p>
 
 <p align="center"><strong>给小程序现代化的开发体验</strong></p>
-<p align="center"><a href="https://vite.icebreaker.top">中文文档</a> · <a href="./README.en-US.md">English README</a></p>
+<p align="center"><a href="https://vite.weapp.dev">中文文档</a> · <a href="./README.en-US.md">English README</a></p>
 
 `weapp-vite` 面向正在维护小程序的团队：既保留原生小程序的目录、语法和平台能力，又把 TypeScript、Vite/Rolldown、Vue SFC、自动化调试和 AI 协作带进日常研发。你可以从一个新模板开始，也可以把已有项目渐进接入进来。
 
@@ -69,7 +69,7 @@ pnpm create weapp-vite my-app multi-platform
 pnpm create weapp-vite my-app multi-platform-sfc
 ```
 
-两个模板都坚持单目标构建，具体命令、输出目录和验收边界见[多平台构建指南](https://vite.icebreaker.top/guide/multi-platform)。
+两个模板都坚持单目标构建，具体命令、输出目录和验收边界见[多平台构建指南](https://vite.weapp.dev/guide/multi-platform)。
 
 也可以使用：
 
@@ -115,7 +115,7 @@ pnpm build:docs
 
 ## 文档
 
-- 中文文档：<https://vite.icebreaker.top>
+- 中文文档：<https://vite.weapp.dev>
 - 贡献指南：[CONTRIBUTING.md](CONTRIBUTING.md)
 - English README：[README.en-US.md](./README.en-US.md)
 

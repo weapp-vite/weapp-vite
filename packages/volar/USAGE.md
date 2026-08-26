@@ -19,7 +19,7 @@ pnpm add -D @weapp-vite/volar @weapp-core/schematics
 ```vue
 <json>
 {
-  "$schema": "https://vite.icebreaker.top/app.json",
+  "$schema": "https://vite.weapp.dev/app.json",
   "pages": [
     "pages/index/index"
   ],
@@ -72,7 +72,7 @@ export default {
 ```vue
 <json>
 {
-  "$schema": "https://vite.icebreaker.top/app.json",
+  "$schema": "https://vite.weapp.dev/app.json",
   "pages": [
     "pages/index/index",
     "pages/about/index"
@@ -109,7 +109,7 @@ export default {
 ```vue
 <json>
 {
-  "$schema": "https://vite.icebreaker.top/page.json",
+  "$schema": "https://vite.weapp.dev/page.json",
   "navigationBarTitleText": "页面标题",
   "navigationBarBackgroundColor": "#667eea",
   "navigationBarTextStyle": "white",
@@ -124,7 +124,7 @@ export default {
 ```vue
 <json>
 {
-  "$schema": "https://vite.icebreaker.top/component.json",
+  "$schema": "https://vite.weapp.dev/component.json",
   "component": true,
   "usingComponents": {
     "my-button": "/components/my-button/index"
@@ -138,9 +138,9 @@ export default {
 
 | 文件路径              | 配置类型  | Schema URL                                   |
 | --------------------- | --------- | -------------------------------------------- |
-| `app.vue`             | App       | `https://vite.icebreaker.top/app.json`       |
-| `pages/**/*.vue`      | Page      | `https://vite.icebreaker.top/page.json`      |
-| `components/**/*.vue` | Component | `https://vite.icebreaker.top/component.json` |
+| `app.vue`             | App       | `https://vite.weapp.dev/app.json`       |
+| `pages/**/*.vue`      | Page      | `https://vite.weapp.dev/page.json`      |
+| `components/**/*.vue` | Component | `https://vite.weapp.dev/component.json` |
 
 ## 常见属性
 

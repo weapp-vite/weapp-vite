@@ -26,4 +26,4 @@ bridge tag 必须在当前 TSX 顶层通过字符串字面量声明，并在页�
 
 React 项目需要使用 Wevu SFC 时，应同时安装 `wevu` 并启用 Vue 编译。React TSX 仍由 React owner 处理，`.vue` 由 Wevu compiler 处理；编译后的 Wevu 组件通过同一 bridge API 引用。
 
-完整配置和示例见 [React 小程序接入](https://vite.icebreaker.top/integration/react)。
+完整配置和示例见 [React 小程序接入](https://vite.weapp.dev/integration/react)。

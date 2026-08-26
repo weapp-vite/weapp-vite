@@ -164,7 +164,7 @@ export function getDefineConfigTemplate() {
     'import { defineConfig } from \'weapp-vite\'',
     '',
     'export default defineConfig({',
-    '  // https://vite.icebreaker.top/guide/generate.html',
+    '  // https://vite.weapp.dev/guide/generate.html',
     '})',
   ].join('\n')
 }

@@ -7,11 +7,11 @@ Page({
     hello: {
       title: 'Hello weapp-vite',
       description: '这是一个集成 Tailwind CSS 的小程序模板，开箱即可体验原子化样式与完整的 HMR 流程。',
-      docs: 'https://vite.icebreaker.top',
+      docs: 'https://vite.weapp.dev',
       links: [
         {
           text: '复制文档链接',
-          url: 'https://vite.icebreaker.top',
+          url: 'https://vite.weapp.dev',
         },
         {
           text: 'Tailwind Demo',

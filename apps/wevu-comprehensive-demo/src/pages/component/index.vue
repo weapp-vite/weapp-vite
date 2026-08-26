@@ -94,7 +94,7 @@ export default {
 
 <json>
 {
-  "$schema": "https://vite.icebreaker.top/page.json",
+  "$schema": "https://vite.weapp.dev/page.json",
   "navigationBarTitleText": "组件通信",
   "navigationBarBackgroundColor": "#f093fb",
   "navigationBarTextStyle": "white"

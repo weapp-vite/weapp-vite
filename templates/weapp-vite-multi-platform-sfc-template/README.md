@@ -40,4 +40,4 @@ pnpm build:web
 
 各平台项目配置位于 `config/<platform>`。创建项目后请替换目标平台的 AppID，再导入对应的 `dist/<platform>` 目录。
 
-Web Runtime 适合浏览器联调和兼容验证，不能替代小程序开发者工具或真机验收。微信和 Web 可以做自动化交互验收，支付宝使用官方 `minidev build` 做 IDE 编译检查，百度 Runtime 依赖可用的 WebSocket 端点，抖音、京东和小红书仍需在各自官方工具中人工复验。详细说明见 [多平台构建指南](https://vite.icebreaker.top/guide/multi-platform)。
+Web Runtime 适合浏览器联调和兼容验证，不能替代小程序开发者工具或真机验收。微信和 Web 可以做自动化交互验收，支付宝使用官方 `minidev build` 做 IDE 编译检查，百度 Runtime 依赖可用的 WebSocket 端点，抖音、京东和小红书仍需在各自官方工具中人工复验。详细说明见 [多平台构建指南](https://vite.weapp.dev/guide/multi-platform)。

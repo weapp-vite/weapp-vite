@@ -241,7 +241,7 @@ export default defineComponent({
 
 <json>
 {
-  "$schema": "https://vite.icebreaker.top/component.json",
+  "$schema": "https://vite.weapp.dev/component.json",
   "component": true,
   "styleIsolation": "apply-shared"
 }

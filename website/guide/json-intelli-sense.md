@@ -31,7 +31,7 @@ keywords:
 
 ```jsonc
 {
-  "$schema": "https://vite.icebreaker.top/page.json",
+  "$schema": "https://vite.weapp.dev/page.json",
   "navigationBarTitleText": "Home"
 }
 ```
@@ -42,11 +42,11 @@ keywords:
 
 | 文件             | `$schema` 地址                                   |
 | ---------------- | ----------------------------------------------- |
-| 组件 `component.json` | `"https://vite.icebreaker.top/component.json"` |
-| 页面 `page.json`      | `"https://vite.icebreaker.top/page.json"`      |
-| 应用 `app.json`       | `"https://vite.icebreaker.top/app.json"`       |
-| `sitemap.json`        | `"https://vite.icebreaker.top/sitemap.json"`   |
-| `theme.json`          | `"https://vite.icebreaker.top/theme.json"`     |
+| 组件 `component.json` | `"https://vite.weapp.dev/component.json"` |
+| 页面 `page.json`      | `"https://vite.weapp.dev/page.json"`      |
+| 应用 `app.json`       | `"https://vite.weapp.dev/app.json"`       |
+| `sitemap.json`        | `"https://vite.weapp.dev/sitemap.json"`   |
+| `theme.json`          | `"https://vite.weapp.dev/theme.json"`     |
 
 直接复制右侧的地址粘贴即可。如果编辑器支持“悬浮后复制按钮”，也可以将整行复制下来放入文件中。VS Code 用户无需修改 `$schema`，工作区设置会自动将在线地址重定向到本地 Schema 文件。
 

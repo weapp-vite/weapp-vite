@@ -11,7 +11,7 @@ const PLATFORM_LABELS: Record<RuntimePlatform, string> = {
 }
 
 const PLATFORM_DOCS: Partial<Record<RuntimePlatform, string>> = {
-  web: 'https://vite.icebreaker.top/guide/web.html',
+  web: 'https://vite.weapp.dev/guide/web.html',
   weapp: 'https://developers.weixin.qq.com/miniprogram/dev/framework/',
   tt: 'https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/introduction/overview',
   swan: 'https://smartprogram.baidu.com/docs/develop/tutorial/getting-started/',

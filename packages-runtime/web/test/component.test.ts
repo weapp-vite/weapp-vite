@@ -606,7 +606,7 @@ describe.skip('defineComponent', () => {
         data: () => ({
           description: '欢迎使用 weapp-vite',
           buttonText: '复制链接',
-          link: 'https://vite.icebreaker.top',
+          link: 'https://vite.weapp.dev',
           last: '-',
         }),
         methods: {
@@ -640,11 +640,11 @@ describe.skip('defineComponent', () => {
 
     button.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
 
-    expect(element.data.last).toBe('https://vite.icebreaker.top')
+    expect(element.data.last).toBe('https://vite.weapp.dev')
     const lastView = shadowRoot?.querySelector('.hello-last')
-    expect(lastView?.textContent).toBe('https://vite.icebreaker.top')
+    expect(lastView?.textContent).toBe('https://vite.weapp.dev')
     expect(handler).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { url: 'https://vite.icebreaker.top' },
+      detail: { url: 'https://vite.weapp.dev' },
     }))
   })
 })

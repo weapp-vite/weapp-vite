@@ -21,7 +21,7 @@ const FALLBACK_DEP_VERSIONS: Record<string, string> = {
 export function createDefaultPackageJson(): PackageJsonData {
   return {
     name: 'weapp-vite-app',
-    homepage: 'https://vite.icebreaker.top/',
+    homepage: 'https://vite.weapp.dev/',
     type: 'module',
     scripts: {},
     devDependencies: {},

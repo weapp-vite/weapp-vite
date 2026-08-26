@@ -291,7 +291,7 @@ describe('autoImport metadata helpers', () => {
             references: [
               {
                 name: 'weapp-vite 自动导入组件',
-                url: 'https://vite.icebreaker.top/guide/auto-import-components.html',
+                url: 'https://vite.weapp.dev/guide/auto-import-components.html',
               },
             ],
           },
@@ -379,7 +379,7 @@ describe('autoImport metadata helpers', () => {
             references: [
               {
                 name: '旧自动导入文档',
-                url: 'https://vite.icebreaker.top/guide/auto-import-components.html',
+                url: 'https://vite.weapp.dev/guide/auto-import-components.html',
               },
               {
                 name: '其他文档',
@@ -421,7 +421,7 @@ describe('autoImport metadata helpers', () => {
       expect(merged.references).toEqual([
         {
           name: 'weapp-vite 自动导入组件',
-          url: 'https://vite.icebreaker.top/guide/auto-import-components.html',
+          url: 'https://vite.weapp.dev/guide/auto-import-components.html',
         },
         {
           name: '其他文档',

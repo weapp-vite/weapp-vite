@@ -33,7 +33,7 @@ describe('createTemplate', () => {
       title: 'Hello weapp-vite',
       description: '欢迎使用 weapp-vite 模板。',
       links: [
-        { text: '查看文档', url: 'https://vite.icebreaker.top', variant: 'ghost' },
+        { text: '查看文档', url: 'https://vite.weapp.dev', variant: 'ghost' },
         { text: 'GitHub', url: 'https://github.com/weapp-vite/weapp-vite' },
       ],
     })
@@ -42,7 +42,7 @@ describe('createTemplate', () => {
     expect(html).toContain('<weapp-view class="hello-body">欢迎使用 weapp-vite 模板。</weapp-view>')
     expect(html).toContain('<weapp-view class="hello-actions">')
     expect(html).toContain('class="hello-button hello-button--ghost"')
-    expect(html).toContain('data-url="https://vite.icebreaker.top"')
+    expect(html).toContain('data-url="https://vite.weapp.dev"')
     expect(html).toContain('<weapp-view class="hello-tip">复制后即可在浏览器中打开对应链接</weapp-view>')
   })
 

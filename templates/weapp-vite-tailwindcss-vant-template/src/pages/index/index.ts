@@ -8,11 +8,11 @@ Page({
     hello: {
       title: 'Hello weapp-vite + Vant',
       description: '基于 weapp-vite 与 Tailwind CSS，并预先集成了 Vant Weapp 组件库，助你快速搭建业务界面。',
-      docs: 'https://vite.icebreaker.top',
+      docs: 'https://vite.weapp.dev',
       links: [
         {
           text: '复制文档链接',
-          url: 'https://vite.icebreaker.top',
+          url: 'https://vite.weapp.dev',
         },
         {
           text: 'Vant 组件手册',

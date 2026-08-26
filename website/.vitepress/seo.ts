@@ -1,6 +1,6 @@
 import type { HeadConfig, PageData } from 'vitepress'
+import { siteBaseUrl } from './site'
 
-const siteBaseUrl = 'https://vite.icebreaker.top'
 const siteName = 'weapp-vite'
 const defaultImage = '/logo.png'
 

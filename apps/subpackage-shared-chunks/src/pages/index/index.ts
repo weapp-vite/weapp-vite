@@ -3,11 +3,11 @@ Page({
     heroCard: {
       title: 'weapp-vite 分包最佳实践',
       description: '演示主包预加载、独立分包与共享样式注入策略。',
-      docs: 'https://vite.icebreaker.top/config/subpackages.html',
+      docs: 'https://vite.weapp.dev/config/subpackages.html',
       links: [
         {
           text: '查看分包指南',
-          url: 'https://vite.icebreaker.top/config/subpackages.html',
+          url: 'https://vite.weapp.dev/config/subpackages.html',
         },
         {
           text: 'GitHub 示例',

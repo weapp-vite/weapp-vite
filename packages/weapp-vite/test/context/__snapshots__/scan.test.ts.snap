@@ -44,7 +44,7 @@ exports[`scan > compilerContext  1`] = `
 exports[`scan > loadAppEntry  1`] = `
 {
   "json": {
-    "$schema": "https://vite.icebreaker.top/app.json",
+    "$schema": "https://vite.weapp.dev/app.json",
     "componentFramework": "glass-easel",
     "pages": [
       "pages/index/index",
@@ -77,7 +77,7 @@ exports[`scan > loadAppEntry  1`] = `
   },
   "preludePath": undefined,
   "sitemapJson": {
-    "$schema": "https://vite.icebreaker.top/sitemap.json",
+    "$schema": "https://vite.weapp.dev/sitemap.json",
     "desc": "关于本文件的更多信息，请参考文档 https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
     "rules": CommentArray [
       {
@@ -87,7 +87,7 @@ exports[`scan > loadAppEntry  1`] = `
     ],
   },
   "themeJson": {
-    "$schema": "https://vite.icebreaker.top/theme.json",
+    "$schema": "https://vite.weapp.dev/theme.json",
     "dark": {},
     "light": {},
   },

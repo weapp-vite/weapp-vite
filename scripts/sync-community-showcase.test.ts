@@ -57,7 +57,7 @@ it('parseShowcaseComment ignores maintainer follow-up comments', () => {
     body: `> 个人：@F-loat github: https://github.com/F-loat/xiaoplayer
 > <img src="https://camo.githubusercontent.com/example.jpg">
 
-已添加到 https://vite.icebreaker.top/community/showcase.html`,
+已添加到 https://vite.weapp.dev/community/showcase.html`,
   })
 
   assert.equal(entry, null)

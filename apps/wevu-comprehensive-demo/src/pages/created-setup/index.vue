@@ -139,7 +139,7 @@ export default {
 
 <json>
 {
-  "$schema": "https://vite.icebreaker.top/page.json",
+  "$schema": "https://vite.weapp.dev/page.json",
   "navigationBarTitleText": "setup@created",
   "navigationBarBackgroundColor": "#4facfe",
   "navigationBarTextStyle": "white",

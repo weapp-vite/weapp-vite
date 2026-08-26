@@ -8,7 +8,7 @@ import { } from 'weapp-vite/json'
 
 <json>
 {
-  "$schema": "https://vite.icebreaker.top/page.json",
+  "$schema": "https://vite.weapp.dev/page.json",
   "name": "the most rebel",
   "path": "/most-rebel",
   "props": true

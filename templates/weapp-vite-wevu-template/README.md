@@ -32,5 +32,5 @@
 
 ## 文档地址
 
-0. `weapp-vite`: https://vite.icebreaker.top/
-1. `wevu`: https://vite.icebreaker.top/wevu/
+0. `weapp-vite`: https://vite.weapp.dev/
+1. `wevu`: https://vite.weapp.dev/wevu/

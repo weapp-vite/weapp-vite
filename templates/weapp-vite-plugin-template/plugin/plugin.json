@@ -1,5 +1,5 @@
 {
-  "$schema": "https://vite.icebreaker.top/plugin.json",
+  "$schema": "https://vite.weapp.dev/plugin.json",
   "publicComponents": {
     "hello-component": "components/hello-component/index",
     "native-meter": "components/native-meter/index"

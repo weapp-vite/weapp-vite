@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineAppJson({
-  $schema: 'https://vite.icebreaker.top/app.json',
+  $schema: 'https://vite.weapp.dev/app.json',
   pages: [
     'pages/index/index',
     'pages/wevu/index',

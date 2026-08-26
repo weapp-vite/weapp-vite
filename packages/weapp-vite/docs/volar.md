@@ -77,7 +77,7 @@ weapp-vite 集成了 Volar 插件，为 `<json>` 代码块提供完整的智能�
 ```vue
 <json>
 {
-  "$schema": "https://vite.icebreaker.top/app.json",
+  "$schema": "https://vite.weapp.dev/app.json",
   "pages": [
     "pages/index/index"
   ],
@@ -97,7 +97,7 @@ weapp-vite 集成了 Volar 插件，为 `<json>` 代码块提供完整的智能�
 ```vue
 <json lang="jsonc">
 {
-  "$schema": "https://vite.icebreaker.top/app.json",
+  "$schema": "https://vite.weapp.dev/app.json",
   // 这是注释！jsonc 支持注释
   "pages": ["pages/index/index"],
   "window": {
@@ -187,9 +187,9 @@ export default async () => {
 
 | 文件路径              | 配置类型  | Schema URL                                   |
 | --------------------- | --------- | -------------------------------------------- |
-| `app.vue`             | App       | `https://vite.icebreaker.top/app.json`       |
-| `pages/**/*.vue`      | Page      | `https://vite.icebreaker.top/page.json`      |
-| `components/**/*.vue` | Component | `https://vite.icebreaker.top/component.json` |
+| `app.vue`             | App       | `https://vite.weapp.dev/app.json`       |
+| `pages/**/*.vue`      | Page      | `https://vite.weapp.dev/page.json`      |
+| `components/**/*.vue` | Component | `https://vite.weapp.dev/component.json` |
 
 ## 📊 配置语言模式对比
 
@@ -219,7 +219,7 @@ createApp({
 
 <json lang="jsonc">
 {
-  "$schema": "https://vite.icebreaker.top/app.json",
+  "$schema": "https://vite.weapp.dev/app.json",
   // 页面路径列表
   "pages": [
     "pages/index/index",
@@ -256,7 +256,7 @@ createApp({
 ```vue
 <json lang="jsonc">
 {
-  "$schema": "https://vite.icebreaker.top/page.json",
+  "$schema": "https://vite.weapp.dev/page.json",
   // 页面导航栏标题
   "navigationBarTitleText": "首页",
   // 导航栏背景色
@@ -274,7 +274,7 @@ createApp({
 ```vue
 <json>
 {
-  "$schema": "https://vite.icebreaker.top/component.json",
+  "$schema": "https://vite.weapp.dev/component.json",
   "component": true,
   "usingComponents": {}
 }

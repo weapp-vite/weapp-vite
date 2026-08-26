@@ -1,12 +1,13 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { siteBaseUrl } from '../../website/.vitepress/site'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 export const repoRoot = path.resolve(__dirname, '..', '..')
 export const websiteRoot = path.resolve(repoRoot, 'website')
-export const siteBaseUrl = 'https://vite.icebreaker.top'
+export { siteBaseUrl }
 
 export const markdownIgnoreGlobs = [
   '.vitepress/**',

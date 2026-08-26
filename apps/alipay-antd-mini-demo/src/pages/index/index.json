@@ -1,5 +1,5 @@
 {
-  "$schema": "https://vite.icebreaker.top/page.json",
+  "$schema": "https://vite.weapp.dev/page.json",
   "navigationBarTitleText": "支付宝 + antd-mini",
   "usingComponents": {
     "ant-button": "antd-mini/es/Button/index",

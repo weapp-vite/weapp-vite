@@ -36,5 +36,5 @@
 
 ## 文档地址
 
-0. `weapp-vite`: https://vite.icebreaker.top/
-1. 插件开发说明: https://vite.icebreaker.top/guide/plugin
+0. `weapp-vite`: https://vite.weapp.dev/
+1. 插件开发说明: https://vite.weapp.dev/guide/plugin

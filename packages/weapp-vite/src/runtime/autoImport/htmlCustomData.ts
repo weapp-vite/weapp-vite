@@ -47,7 +47,7 @@ export function createHtmlCustomDataDefinition(
     tag.references = [
       {
         name: 'weapp-vite 自动导入组件',
-        url: 'https://vite.icebreaker.top/guide/auto-import-components.html',
+        url: 'https://vite.weapp.dev/guide/auto-import-components.html',
       },
     ]
     return tag

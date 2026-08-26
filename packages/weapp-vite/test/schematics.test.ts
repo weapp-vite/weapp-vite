@@ -26,7 +26,7 @@ describe('schematics', () => {
 
       const componentJson = await readFile(outputRoot, 'case0.json')
       expect(JSON.parse(componentJson)).toEqual({
-        $schema: 'https://vite.icebreaker.top/component.json',
+        $schema: 'https://vite.weapp.dev/component.json',
         component: true,
         styleIsolation: 'apply-shared',
         usingComponents: {},
@@ -116,7 +116,7 @@ describe('schematics', () => {
           await expect(readFile(temp.outputRoot, 'index.wxml')).resolves.toBe('<view>custom template</view>')
           const json = await readFile(temp.outputRoot, 'index.json')
           expect(JSON.parse(json)).toEqual({
-            $schema: 'https://vite.icebreaker.top/component.json',
+            $schema: 'https://vite.weapp.dev/component.json',
             component: true,
             styleIsolation: 'apply-shared',
             usingComponents: {},

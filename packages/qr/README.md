@@ -16,7 +16,7 @@ process.stdout.write(renderTerminalQrCode(content, { small: true }))
 ```ts
 import { createQrCodeMatrix } from '@weapp-vite/qr'
 
-const matrix = createQrCodeMatrix('https://vite.icebreaker.top/')
+const matrix = createQrCodeMatrix('https://vite.weapp.dev/')
 ```
 
 ### 解码

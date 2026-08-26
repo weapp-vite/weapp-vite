@@ -1,5 +1,5 @@
 {
-  "$schema": "https://vite.icebreaker.top/sitemap.json",
+  "$schema": "https://vite.weapp.dev/sitemap.json",
   "rules": [
     {
       "action": "allow",

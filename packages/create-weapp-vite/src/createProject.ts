@@ -190,7 +190,7 @@ async function rewriteProjectConfigAppId(targetDir: string) {
 function createEmptyPackageJson(): PackageJson {
   return {
     name: 'weapp-vite-app',
-    homepage: 'https://vite.icebreaker.top/',
+    homepage: 'https://vite.weapp.dev/',
     type: 'module',
     scripts: {},
     devDependencies: {},

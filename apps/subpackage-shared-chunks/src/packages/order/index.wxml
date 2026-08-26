@@ -22,7 +22,7 @@
   <HelloWorld
     title="weapp-vite 分包"
     description="示例项目演示主包与订单分包的依赖协作方式。"
-    docs="https://vite.icebreaker.top"
+    docs="https://vite.weapp.dev"
     links="{{[]}}"
   />
 </view>

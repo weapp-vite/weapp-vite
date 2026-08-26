@@ -22,7 +22,7 @@ describe('decodeQrCodeFromBase64', () => {
   })
 
   it('keeps url-like payloads intact after decoding', async () => {
-    const content = 'https://vite.icebreaker.top/?from=qr&lang=zh-CN'
+    const content = 'https://vite.weapp.dev/?from=qr&lang=zh-CN'
     const matrix = createQrCodeMatrix(content)
     const base64 = await encodeQrCodeMatrixToBase64(matrix)
 

@@ -915,7 +915,7 @@ export async function showCommandPalette(state: any) {
     },
     {
       label: '$(book) 打开文档',
-      description: 'https://vite.icebreaker.top/guide/',
+      description: 'https://vite.weapp.dev/guide/',
       detail: '查看 weapp-vite 指南、generate 文档与扩展目录。',
       commandId: 'openDocs',
     },

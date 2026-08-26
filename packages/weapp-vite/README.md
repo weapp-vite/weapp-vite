@@ -1,6 +1,6 @@
 <div align="center">
-  <a href="https://vite.icebreaker.top">
-    <img width="200" height="200" hspace="10" src="https://vite.icebreaker.top/logo.png" alt="vite logo" />
+  <a href="https://vite.weapp.dev">
+    <img width="200" height="200" hspace="10" src="https://vite.weapp.dev/logo.png" alt="vite logo" />
   </a>
   <h1>Weapp Vite</h1>
   <p>
@@ -14,7 +14,7 @@
 
 <p>&nbsp;</p>
 
-## 使用文档地址: [vite.icebreaker.top](https://vite.icebreaker.top)
+## 使用文档地址: [vite.weapp.dev](https://vite.weapp.dev)
 
 ## Features
 
@@ -61,7 +61,7 @@ wv dev -p web --host
 wv build -p web
 ```
 
-`web` 是浏览器 runtime 的规范平台名，`h5` 仅作为向后兼容别名保留；未选择 Web 平台时不改变现有小程序构建。完整配置和兼容边界见 [Web 运行时配置](https://vite.icebreaker.top/config/web) 与 [`@weapp-vite/web`](https://vite.icebreaker.top/packages/web)。
+`web` 是浏览器 runtime 的规范平台名，`h5` 仅作为向后兼容别名保留；未选择 Web 平台时不改变现有小程序构建。完整配置和兼容边界见 [Web 运行时配置](https://vite.weapp.dev/config/web) 与 [`@weapp-vite/web`](https://vite.weapp.dev/packages/web)。
 
 ### Vue 项目
 
@@ -140,11 +140,11 @@ export default defineConfig({
 
 默认扫描 `src/**/i18n/*.json`。Native Component 和使用 Component 构造的 Page 通过 `behaviors: [i18n.behavior]` 接入；传统 `Page({...})` 使用 `i18n.page(options)` 适配生命周期。Vue/Wevu 使用 `defineOptions({ behaviors: [i18n.behavior] })`。模板中的 `t('key', params)` 会在构建时改写为 WXS 调用；逻辑层从 `weapp-vite/i18n` 导入构建实例，并通过 `i18n.global` 访问翻译和 locale。
 
-底层运行时与 catalog 编译器由独立包 `@weapp-vite/i18n` 提供，也可以在完全不使用 Vite 的原生微信小程序中安装。v1 只支持 `{name}` / `{user.name}` 占位符，不自动持久化语言，也不包含 ICU、复数和日期/数字格式化。完整配置见 [i18n 配置](https://vite.icebreaker.top/config/i18n)。
+底层运行时与 catalog 编译器由独立包 `@weapp-vite/i18n` 提供，也可以在完全不使用 Vite 的原生微信小程序中安装。v1 只支持 `{name}` / `{user.name}` 占位符，不自动持久化语言，也不包含 ICU、复数和日期/数字格式化。完整配置见 [i18n 配置](https://vite.weapp.dev/config/i18n)。
 
 - 配置智能提示文档：[docs/volar.md](./docs/volar.md)
 - defineConfig 重载说明：[docs/define-config-overloads.md](./docs/define-config-overloads.md)
-- Vite 插件识别 weapp-vite 宿主：https://vite.icebreaker.top/guide/vite-plugin-host
+- Vite 插件识别 weapp-vite 宿主：https://vite.weapp.dev/guide/vite-plugin-host
 - MCP 集成使用指南：[docs/mcp.md](./docs/mcp.md)
 - Wot UI 与 uni-app 组件库：[docs/packaged/uni-app-component-libraries.md](./docs/packaged/uni-app-component-libraries.md)
 

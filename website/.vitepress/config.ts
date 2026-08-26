@@ -18,6 +18,7 @@ import { createVueOxcTsconfigGuard } from '../../scripts/vite/vueOxcTsconfigGuar
 import { wevuApiSidebarItems } from './data/wevuApiSidebar'
 import { createSeoHead, transformPageDataForSeo } from './seo'
 import { WEAPI_CAPABILITY_GROUPS } from './shared/weapiCapabilities'
+import { siteBaseUrl } from './site'
 
 const vueSharedEsmPath = fileURLToPath(
   new URL(
@@ -810,7 +811,7 @@ export default withMermaid(
       ],
     ],
     sitemap: {
-      hostname: 'https://vite.icebreaker.top',
+      hostname: siteBaseUrl,
       transformItems: items => items.filter((item) => {
         return !String(item.url).includes('/react')
       }),

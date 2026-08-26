@@ -24,7 +24,7 @@ if (import.meta.env.IS_MINIPROGRAM) {
 const helloLinks = [
   {
     text: '复制文档链接',
-    url: 'https://vite.icebreaker.top',
+    url: 'https://vite.weapp.dev',
   },
   {
     text: 'GitHub 仓库',
@@ -34,7 +34,7 @@ const helloLinks = [
   isWeb
     ? {
         text: 'Web 运行时调试指南',
-        url: 'https://vite.icebreaker.top/guide/web.html#运行时',
+        url: 'https://vite.weapp.dev/guide/web.html#运行时',
         variant: 'ghost' as const,
       }
     : {
@@ -57,7 +57,7 @@ Page({
     hello: {
       title: 'Hello weapp-vite',
       description: '这是最基础的 weapp-vite 模板，包含快速开发所需的构建与热更新能力。',
-      docs: 'https://vite.icebreaker.top',
+      docs: 'https://vite.weapp.dev',
       links: helloLinks,
     },
     platform,

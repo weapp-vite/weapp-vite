@@ -117,7 +117,7 @@ describe('createHtmlCustomDataDefinition', () => {
       },
       {
         name: 'weapp-vite 自动导入组件',
-        url: 'https://vite.icebreaker.top/guide/auto-import-components.html',
+        url: 'https://vite.weapp.dev/guide/auto-import-components.html',
       },
     ]))
   })
@@ -228,7 +228,7 @@ describe('createHtmlCustomDataDefinition', () => {
           references: [
             {
               name: 'legacy auto-import ref',
-              url: 'https://vite.icebreaker.top/guide/auto-import-components.html',
+              url: 'https://vite.weapp.dev/guide/auto-import-components.html',
             },
             {
               name: 'base only',
@@ -253,7 +253,7 @@ describe('createHtmlCustomDataDefinition', () => {
     expect(tagC.references).toEqual(expect.arrayContaining([
       {
         name: 'weapp-vite 自动导入组件',
-        url: 'https://vite.icebreaker.top/guide/auto-import-components.html',
+        url: 'https://vite.weapp.dev/guide/auto-import-components.html',
       },
       {
         name: 'base only',

@@ -29,5 +29,5 @@
 
 ## 文档地址
 
-0. `weapp-vite`: https://vite.icebreaker.top/
+0. `weapp-vite`: https://vite.weapp.dev/
 1. `weapp-tailwindcss`: https://tw.icebreaker.top/

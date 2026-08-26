@@ -1,5 +1,5 @@
 {
-  "$schema": "https://vite.icebreaker.top/page.json",
+  "$schema": "https://vite.weapp.dev/page.json",
   "navigationBarTitleText": "Analyze Fixture",
   "usingComponents": {
     "SignalCard": "/components/SignalCard/SignalCard"

@@ -15,7 +15,7 @@
 </p>
 
 <p align="center"><strong>Modern development experience for mini-programs</strong></p>
-<p align="center"><a href="https://vite.icebreaker.top">Documentation</a> · <a href="./README.md">中文 README</a></p>
+<p align="center"><a href="https://vite.weapp.dev">Documentation</a> · <a href="./README.md">中文 README</a></p>
 
 weapp-vite is built for teams maintaining mini-programs. It keeps the native mini-program directory model, syntax, and platform capabilities, while adding TypeScript, Vite/Rolldown, Vue SFC, automated debugging, and AI-friendly workflows. You can start from a template or adopt it gradually in an existing project.
 
@@ -97,7 +97,7 @@ pnpm build:docs
 
 ## Documentation
 
-- Main docs: <https://vite.icebreaker.top>
+- Main docs: <https://vite.weapp.dev>
 - Contributing guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Chinese README: [README.md](./README.md)
 

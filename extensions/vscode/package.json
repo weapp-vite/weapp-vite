@@ -102,7 +102,7 @@
           "**/app.json.ts",
           "**/app.json.js"
         ],
-        "url": "https://vite.icebreaker.top/app.json"
+        "url": "https://vite.weapp.dev/app.json"
       },
       {
         "fileMatch": [
@@ -111,7 +111,7 @@
           "**/page.json.ts",
           "**/page.json.js"
         ],
-        "url": "https://vite.icebreaker.top/page.json"
+        "url": "https://vite.weapp.dev/page.json"
       },
       {
         "fileMatch": [
@@ -120,7 +120,7 @@
           "**/component.json.ts",
           "**/component.json.js"
         ],
-        "url": "https://vite.icebreaker.top/component.json"
+        "url": "https://vite.weapp.dev/component.json"
       },
       {
         "fileMatch": [
@@ -129,7 +129,7 @@
           "**/sitemap.json.ts",
           "**/sitemap.json.js"
         ],
-        "url": "https://vite.icebreaker.top/sitemap.json"
+        "url": "https://vite.weapp.dev/sitemap.json"
       },
       {
         "fileMatch": [
@@ -138,7 +138,7 @@
           "**/theme.json.ts",
           "**/theme.json.js"
         ],
-        "url": "https://vite.icebreaker.top/theme.json"
+        "url": "https://vite.weapp.dev/theme.json"
       },
       {
         "fileMatch": [
@@ -147,7 +147,7 @@
           "**/plugin.json.ts",
           "**/plugin.json.js"
         ],
-        "url": "https://vite.icebreaker.top/plugin.json"
+        "url": "https://vite.weapp.dev/plugin.json"
       }
     ],
     "iconThemes": [

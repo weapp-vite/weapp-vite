@@ -14,8 +14,8 @@ describe('createQrCodeMatrix', () => {
   })
 
   it('creates deterministic output for the same input', () => {
-    const first = createQrCodeMatrix('https://vite.icebreaker.top/')
-    const second = createQrCodeMatrix('https://vite.icebreaker.top/')
+    const first = createQrCodeMatrix('https://vite.weapp.dev/')
+    const second = createQrCodeMatrix('https://vite.weapp.dev/')
 
     expect(second).toEqual(first)
   })

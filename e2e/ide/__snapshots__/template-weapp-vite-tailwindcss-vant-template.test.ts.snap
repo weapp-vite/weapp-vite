@@ -185,10 +185,10 @@ wx-root-portal-content {
   background-image: linear-gradient(var(--tw-gradient-stops));
 }
 .bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B {
-  background-image: url(https://vite.icebreaker.top/logo.png);
+  background-image: url(https://vite.weapp.dev/logo.png);
 }
 .bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B {
-  background-image: url(https://vite.icebreaker.top/tw-logo.png);
+  background-image: url(https://vite.weapp.dev/tw-logo.png);
 }
 .from-green-400 {
   --tw-gradient-from: var(--color-green-400);
@@ -394,8 +394,8 @@ exports[`template e2e: weapp-vite-tailwindcss-vant-template > renders all pages 
         links="{{hello.links}}" />
       <view
         class="iconify {{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-8xl"></view>
-      <view class="underline" mark:url="https://vite.icebreaker.top">
-        https://vite.icebreaker.top
+      <view class="underline" mark:url="https://vite.weapp.dev">
+        https://vite.weapp.dev
       </view>
       <view class="underline" mark:url="https://tw.icebreaker.top">https://tw.icebreaker.top</view>
       <view>

@@ -42,11 +42,11 @@ Page({
     hello: {
       title: 'Hello weapp-vite + TDesign',
       description: '集成 TDesign Miniprogram 与 Tailwind CSS，帮助你快速搭建企业级交互界面。',
-      docs: 'https://vite.icebreaker.top',
+      docs: 'https://vite.weapp.dev',
       links: [
         {
           text: '复制文档链接',
-          url: 'https://vite.icebreaker.top',
+          url: 'https://vite.weapp.dev',
         },
         {
           text: 'TDesign 小程序组件',

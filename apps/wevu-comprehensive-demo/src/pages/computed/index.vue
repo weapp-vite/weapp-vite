@@ -260,7 +260,7 @@ export default {
 
 <json>
 {
-  "$schema": "https://vite.icebreaker.top/page.json",
+  "$schema": "https://vite.weapp.dev/page.json",
   "navigationBarTitleText": "计算属性",
   "navigationBarBackgroundColor": "#764ba2",
   "navigationBarTextStyle": "white",

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://vite.icebreaker.top/sitemap.xml
+Sitemap: https://vite.weapp.dev/sitemap.xml
