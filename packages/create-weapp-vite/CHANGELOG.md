@@ -1,5 +1,23 @@
 # create-weapp-vite
 
+## 2.8.4
+
+### Patch Changes
+
+- 修复 Wevu 模板中 `v-for` 使用嵌套或复杂 `:key` 表达式时被截断的问题。编译器现在会自动生成带内部基础类型 key 的列表投影，覆盖父子多层、兄弟、对象映射、解构循环和基础类型列表，并在用户数据占用 `__wv_key_*` / `__wv_value_*` 保留字段时输出明确诊断。mpcore 同步按循环作用域解析自定义组件事件的动态 dataset，保持 headless 与真实宿主语义一致。
+
+- 修复新版微信开发者工具中 automator 启动重复打开项目和嵌套就绪探针放大总超时的问题，并支持按 npm 包配置复制文件范围，减少原生小程序组件库进入构建产物的无关文件和首次启动压力。
+
+- 完善 glass-easel 全链路兼容：补齐宿主 JSON schema 与显式启用配置，统一 WXML 序列化和旧指令归一化，新增 `wv analyze --glass-easel-check` 稳定诊断，并扩展组件泛型、插件产物与 DevTools/headless 插件运行时回归。WebView glass-easel 保持为基础库 `3.8.12` 以上由用户主动开启的兼容方案，脚手架不默认启用。
+
+- 修复开发模式下内部 Vite 服务重复监听构建输出目录的问题，避免 Windows 中 Vant Weapp 等生成文件被占用时触发 `EBUSY` 并导致开发服务退出。
+
+- 修复 `dev -o` 通过官方 CLI 打开项目后未启动项目稳定 automator 端口，以及 automator 启动耗尽超时预算后重复等待的问题，确保控制台转发、截图、MCP 与 IDE 自动化能够及时恢复并连接当前项目，同时保留打开前仅复用已有会话的行为。
+
+- Updated dependencies:
+  - @weapp-core/init@6.0.15
+  - @weapp-core/shared@3.2.0
+
 ## 2.8.3
 
 ### Patch Changes

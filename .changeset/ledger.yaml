@@ -7,6 +7,11 @@
   intents:
     - curly-apis-remember
     - first-party-i18n
+"@mpcore/simulator@0.4.0":
+  dir: mpcore/packages/simulator
+  intents:
+    - bright-cards-key
+    - green-glass-easel
 "@mpcore/vitest@0.1.3":
   dir: mpcore/packages/vitest
   intents:
@@ -20,6 +25,15 @@
   intents:
     - first-party-i18n
     - shared-css-runtime-constants
+"@weapp-core/schematics@6.2.0":
+  dir: "@weapp-core/schematics"
+  intents:
+    - green-glass-easel
+    - update-wechat-json-schemas
+"@weapp-core/shared@3.2.0":
+  dir: "@weapp-core/shared"
+  intents:
+    - green-glass-easel
 "@weapp-vite/ast-native@0.0.6":
   dir: packages/ast-native
   intents:
@@ -43,6 +57,10 @@
   dir: packages/eslint
   intents:
     - steady-wevu-compatibility
+"@weapp-vite/eslint@0.2.1":
+  dir: packages/eslint
+  intents:
+    - dependency-upgrade-auto-generated
 "@weapp-vite/i18n@0.2.0":
   dir: packages-runtime/i18n
   intents:
@@ -53,6 +71,10 @@
     - bright-route-element-rects
     - quiet-route-snapshot-retries
     - route-fallback-element-reads
+"@weapp-vite/miniprogram-automator@1.2.15":
+  dir: packages/miniprogram-automator
+  intents:
+    - clean-dialog-package-files
 "@weapp-vite/react@0.2.1":
   dir: packages-runtime/react
   intents:
@@ -70,6 +92,10 @@
     - curly-apis-remember
     - first-party-i18n
     - fuzzy-web-observers
+"@wevu/api@0.2.17":
+  dir: packages-runtime/weapi
+  intents:
+    - fluffy-swans-repeat
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -82,6 +108,11 @@
     - first-party-i18n
     - lower-wxml-numeric-separators
     - steady-wevu-compatibility
+"@wevu/compiler@6.23.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - bright-cards-key
+    - green-glass-easel
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -142,10 +173,26 @@ create-weapp-vite@2.8.3:
     - steady-wevu-compatibility
     - tidy-app-vue-styles
     - uview-plus-3-8-112
+create-weapp-vite@2.8.4:
+  dir: packages/create-weapp-vite
+  intents:
+    - bright-cards-key
+    - clean-dialog-package-files
+    - green-glass-easel
+    - silent-vite-output-watch
+    - steady-cli-open-automator
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
     - swift-workspace-dependencies
+weapp-ide-cli@6.0.8:
+  dir: packages/weapp-ide-cli
+  intents:
+    - steady-cli-open-automator
+weapp-vite-plugin-template@1.0.0:
+  dir: templates/weapp-vite-plugin-template
+  intents:
+    - green-glass-easel
 weapp-vite@6.20.4:
   dir: packages/weapp-vite
   intents:
@@ -181,6 +228,14 @@ weapp-vite@6.22.0:
     - steady-wevu-compatibility
     - tidy-app-vue-styles
     - uview-plus-3-8-112
+weapp-vite@6.23.0:
+  dir: packages/weapp-vite
+  intents:
+    - bright-cards-key
+    - clean-dialog-package-files
+    - green-glass-easel
+    - silent-vite-output-watch
+    - steady-cli-open-automator
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -198,3 +253,7 @@ wevu@6.22.0:
     - first-party-i18n
     - lower-wxml-numeric-separators
     - steady-wevu-compatibility
+wevu@6.23.0:
+  dir: packages-runtime/wevu
+  intents:
+    - bright-cards-key

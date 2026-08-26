@@ -1,5 +1,12 @@
 # @wevu/web-apis
 
+## 1.2.36
+
+### Patch Changes
+
+- Updated dependencies:
+  - @wevu/api@0.2.17
+
 ## 1.2.35
 
 ### Patch Changes

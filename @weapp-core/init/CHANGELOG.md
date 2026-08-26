@@ -1,5 +1,12 @@
 # @weapp-core/init
 
+## 6.0.15
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/shared@3.2.0
+
 ## 6.0.14
 
 ### Patch Changes
