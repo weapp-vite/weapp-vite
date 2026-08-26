@@ -405,7 +405,7 @@ const requestTask = wpi.request({
     expectType<WeapiMiniProgramRequestSuccessResult>(result)
   },
   fail: (error) => {
-    expectType<WechatMiniprogram.RequestFailCallbackErr>(error)
+    expectType<WechatMiniprogram.RequestFailCallbackErr & { errno?: number }>(error)
     expectType<number>(error.errno)
   },
 })
@@ -431,6 +431,23 @@ createBleConnectionPromise.catch((error) => {
   expectType<string>(error.errMsg)
   expectType<number>(error.errCode)
   expectType<number | undefined>(error.errno)
+})
+
+wpi.openBluetoothAdapter({
+  fail: (error) => {
+    expectType<string>(error.errMsg)
+    expectType<number>(error.errCode)
+    expectType<number | undefined>(error.errno)
+  },
+})
+
+wpi.createBLEConnection({
+  deviceId: 'device-id',
+  fail: (error) => {
+    expectType<string>(error.errMsg)
+    expectType<number>(error.errCode)
+    expectType<number | undefined>(error.errno)
+  },
 })
 
 const closeBleConnectionPromise = wpi.closeBLEConnection({
@@ -507,6 +524,12 @@ custom.anyError({}).catch((error) => {
   expectType<string>(error.errMsg)
   expectType<number | undefined>(error.errno)
 })
+custom.anyError({
+  fail: (error) => {
+    expectType<string>(error.errMsg)
+    expectType<number | undefined>(error.errno)
+  },
+})
 custom.unknownError({}).catch((error) => {
   expectType<string>(error.errMsg)
   expectType<number | undefined>(error.errno)
@@ -520,6 +543,7 @@ const customCallbackReturn = custom.customError({
   fail: (error) => {
     expectType<'CUSTOM_ERROR'>(error.code)
     expectType<string>(error.detail)
+    expectError(error.errno)
   },
 })
 expectType<number>(customCallbackReturn)

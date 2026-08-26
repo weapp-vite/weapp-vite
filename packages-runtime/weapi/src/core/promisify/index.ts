@@ -59,6 +59,11 @@ type WechatErrorExtension<TAdapter> = TAdapter extends WeapiMiniProgramWechatRaw
   : object
 type PromisifyFailureResult<Option, TAdapter> = NormalizeFailureResult<ExtractFailureResult<Option>>
   & WechatErrorExtension<TAdapter>
+type PromisifyOption<Option extends object, TAdapter> = 'fail' extends keyof Option
+  ? Omit<Option, 'fail'> & {
+    fail?: (error: PromisifyFailureResult<Option, TAdapter>) => void
+  }
+  : Option
 
 type PromisifyOptionMethod<
   Prefix extends any[],
@@ -68,13 +73,13 @@ type PromisifyOptionMethod<
   TAdapter,
 > = IsOptional extends true
   ? {
-      <TOption extends Option>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
+      <TOption extends PromisifyOption<Option, TAdapter>>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
         ? Result
         : WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
       (...args: Prefix): WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
     }
   : {
-      <TOption extends Option>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
+      <TOption extends PromisifyOption<Option, TAdapter>>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
         ? Result
         : WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
     }

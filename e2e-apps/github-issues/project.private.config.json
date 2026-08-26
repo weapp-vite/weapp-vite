@@ -829,6 +829,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-879/index",
+          "pathName": "pages/issue-879/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }
