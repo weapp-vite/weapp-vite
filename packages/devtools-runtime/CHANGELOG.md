@@ -1,5 +1,12 @@
 # @weapp-vite/devtools-runtime
 
+## 0.4.16
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/miniprogram-automator@1.2.15
+
 ## 0.4.15
 
 ### Patch Changes

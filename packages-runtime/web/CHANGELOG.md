@@ -1,5 +1,13 @@
 # @weapp-vite/web
 
+## 1.4.13
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/shared@3.2.0
+  - wevu@6.23.0
+
 ## 1.4.12
 
 ### Patch Changes

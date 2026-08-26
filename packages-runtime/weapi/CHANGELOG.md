@@ -1,5 +1,14 @@
 # @wevu/api
 
+## 0.2.17
+
+### Patch Changes
+
+- 增强 wpi Promise 错误类型推导，并为微信兼容错误补充 errno 类型。
+
+- Updated dependencies:
+  - @weapp-core/shared@3.2.0
+
 ## 0.2.16
 
 ### Patch Changes
