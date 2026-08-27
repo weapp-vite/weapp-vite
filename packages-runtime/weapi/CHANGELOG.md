@@ -1,5 +1,16 @@
 # @wevu/api
 
+## 0.2.18
+
+### Patch Changes
+
+- 新增框架与运行时无关的 `@weapp-core/api` 多端小程序 API 代理包，支持内置宿主自动探测与显式 adapter 注入；`@wevu/api` 调整为兼容入口，继续保留 `wpi`、`createWeapi` 及既有类型导出。
+
+- 修复 `wpi` 的 `success`、`fail`、`complete` 以及无 callback 时 Promise 链类型与平台 API 声明不一致的问题，补充 `.then`、`.catch`、`.finally` 和 `async/await` 的全量类型校验。微信公共对象复用官方 typings，失败回调保留各平台专属错误字段，显式上游模糊类型保持原语义并仅在可识别的微信错误上补充 `errno`。
+
+- Updated dependencies:
+  - @weapp-core/api@0.2.0
+
 ## 0.2.17
 
 ### Patch Changes

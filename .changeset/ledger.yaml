@@ -20,16 +20,28 @@
   dir: mpcore/packages/weapp-vite
   intents:
     - dependency-upgrade-auto-generated
+"@weapp-core/api@0.2.0":
+  dir: "@weapp-core/api"
+  intents:
+    - clean-api-boundary
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
     - first-party-i18n
     - shared-css-runtime-constants
+"@weapp-core/init@6.0.16":
+  dir: "@weapp-core/init"
+  intents:
+    - calm-docs-domain
 "@weapp-core/schematics@6.2.0":
   dir: "@weapp-core/schematics"
   intents:
     - green-glass-easel
     - update-wechat-json-schemas
+"@weapp-core/schematics@6.2.1":
+  dir: "@weapp-core/schematics"
+  intents:
+    - calm-docs-domain
 "@weapp-core/shared@3.2.0":
   dir: "@weapp-core/shared"
   intents:
@@ -42,12 +54,20 @@
   dir: packages/ast-native
   intents:
     - catalog-auto-generated
+"@weapp-vite/ast-native@0.0.8":
+  dir: packages/ast-native
+  intents:
+    - calm-docs-domain
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
     - dependency-upgrade-auto-generated
     - fresh-tailwind-catalog
     - swift-workspace-dependencies
+"@weapp-vite/ast@6.24.0":
+  dir: packages/ast
+  intents:
+    - calm-docs-domain
 "@weapp-vite/dashboard@6.20.5":
   dir: packages/dashboard
   intents:
@@ -61,10 +81,18 @@
   dir: packages/eslint
   intents:
     - dependency-upgrade-auto-generated
+"@weapp-vite/eslint@0.2.2":
+  dir: packages/eslint
+  intents:
+    - calm-docs-domain
 "@weapp-vite/i18n@0.2.0":
   dir: packages-runtime/i18n
   intents:
     - first-party-i18n
+"@weapp-vite/mcp@1.5.0":
+  dir: packages/mcp
+  intents:
+    - modern-mcp-protocol
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator
   intents:
@@ -75,11 +103,31 @@
   dir: packages/miniprogram-automator
   intents:
     - clean-dialog-package-files
+"@weapp-vite/miniprogram-automator@1.2.16":
+  dir: packages/miniprogram-automator
+  intents:
+    - clear-xpath-response
+"@weapp-vite/qr@1.1.2":
+  dir: packages/qr
+  intents:
+    - calm-docs-domain
 "@weapp-vite/react@0.2.1":
   dir: packages-runtime/react
   intents:
     - curly-apis-remember
     - first-party-i18n
+"@weapp-vite/react@0.2.2":
+  dir: packages-runtime/react
+  intents:
+    - calm-docs-domain
+"@weapp-vite/volar@2.1.5":
+  dir: packages/volar
+  intents:
+    - calm-docs-domain
+"@weapp-vite/vscode@0.5.3":
+  dir: extensions/vscode
+  intents:
+    - calm-docs-domain
 "@weapp-vite/web@1.4.10":
   dir: packages-runtime/web
   intents:
@@ -92,10 +140,19 @@
     - curly-apis-remember
     - first-party-i18n
     - fuzzy-web-observers
+"@weapp-vite/web@1.4.14":
+  dir: packages-runtime/web
+  intents:
+    - catalog-centralization
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
     - fluffy-swans-repeat
+"@wevu/api@0.2.18":
+  dir: packages-runtime/weapi
+  intents:
+    - clean-api-boundary
+    - fix-wpi-fail-callback
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -113,6 +170,10 @@
   intents:
     - bright-cards-key
     - green-glass-easel
+"@wevu/compiler@6.24.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - calm-docs-domain
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -181,14 +242,29 @@ create-weapp-vite@2.8.4:
     - green-glass-easel
     - silent-vite-output-watch
     - steady-cli-open-automator
+create-weapp-vite@2.8.5:
+  dir: packages/create-weapp-vite
+  intents:
+    - calm-docs-domain
+    - catalog-centralization
+    - fresh-npm-esm-barrels
+    - modern-mcp-protocol
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
     - swift-workspace-dependencies
+rolldown-require@2.0.27:
+  dir: packages/rolldown-require
+  intents:
+    - calm-docs-domain
 weapp-ide-cli@6.0.8:
   dir: packages/weapp-ide-cli
   intents:
     - steady-cli-open-automator
+weapp-ide-cli@6.1.0:
+  dir: packages/weapp-ide-cli
+  intents:
+    - modern-mcp-protocol
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -236,6 +312,12 @@ weapp-vite@6.23.0:
     - green-glass-easel
     - silent-vite-output-watch
     - steady-cli-open-automator
+weapp-vite@6.24.0:
+  dir: packages/weapp-vite
+  intents:
+    - calm-docs-domain
+    - fresh-npm-esm-barrels
+    - modern-mcp-protocol
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -257,3 +339,7 @@ wevu@6.23.0:
   dir: packages-runtime/wevu
   intents:
     - bright-cards-key
+wevu@6.24.0:
+  dir: packages-runtime/wevu
+  intents:
+    - calm-docs-domain

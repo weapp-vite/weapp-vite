@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- 将包主页、随包文档、脚手架默认链接与小程序 JSON Schema 地址统一迁移到 `vite.weapp.dev`，确保新生成项目和公开元数据使用新的文档主域名。
+
+## 0.5.3
+
+### Patch Changes
+
 - 🐛 **为 VS Code 扩展注册 app、page、component、plugin、sitemap 和 theme 配置的 JSON Schema 校验与智能提示。** [`1cb87ac`](https://github.com/weapp-vite/weapp-vite/commit/1cb87ac0ab2b428f23d2217887adb6fd30ba177a) by @sonofmagic
 
 ## 0.5.2
