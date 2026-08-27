@@ -1,0 +1,278 @@
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import process from 'node:process'
+import {
+  generateApiSupportCoverageReport,
+  validateSupportMatrixConsistency,
+  WEAPI_METHOD_SUPPORT_MATRIX,
+  WEAPI_PLATFORM_SUPPORT_MATRIX,
+} from '../src/core/methodMapping.ts'
+
+interface Marker {
+  start: string
+  end: string
+}
+
+const ROOT_DIR = path.resolve(import.meta.dirname, '..')
+
+const README_MATRIX_MARKER: Marker = {
+  start: '<!-- @generated weapi-support-matrix:start -->',
+  end: '<!-- @generated weapi-support-matrix:end -->',
+}
+
+const TYPES_METHOD_DOC_MARKER: Marker = {
+  start: '  // @generated weapi-method-docs:start',
+  end: '  // @generated weapi-method-docs:end',
+}
+
+const PLATFORM_MATRIX_MARKER: Marker = {
+  start: ' * @generated weapi-platform-matrix:start',
+  end: ' * @generated weapi-platform-matrix:end',
+}
+
+function parseArgs() {
+  const args = process.argv.slice(2)
+  return {
+    check: args.includes('--check'),
+  }
+}
+
+const CRLF_RE = /\r\n/g
+const LEADING_WHITESPACE_RE = /^[ \t]*/
+
+function withIndent(line: string, indent: string) {
+  return line ? `${indent}${line}` : indent.trimEnd()
+}
+
+function normalizeLineEndings(text: string) {
+  return text.replace(CRLF_RE, '\n')
+}
+
+function isTextEquivalent(a: string, b: string) {
+  return normalizeLineEndings(a) === normalizeLineEndings(b)
+}
+
+function resolveIndent(content: string, marker: Marker) {
+  const startToken = marker.start
+  const markerIndex = content.indexOf(startToken)
+  if (markerIndex === -1) {
+    throw new Error(`Marker start not found: ${startToken}`)
+  }
+  const lineStart = content.lastIndexOf('\n', markerIndex)
+  const segment = content.slice(lineStart + 1, markerIndex)
+  const match = segment.match(LEADING_WHITESPACE_RE)
+  return match?.[0] ?? ''
+}
+
+function replaceBetween(content: string, marker: Marker, inner: string) {
+  const startIndex = content.indexOf(marker.start)
+  if (startIndex === -1) {
+    throw new Error(`Marker start not found: ${marker.start}`)
+  }
+  const endIndex = content.indexOf(marker.end)
+  if (endIndex === -1) {
+    throw new Error(`Marker end not found: ${marker.end}`)
+  }
+  if (endIndex < startIndex) {
+    throw new Error(`Marker order invalid: ${marker.start} -> ${marker.end}`)
+  }
+  const before = content.slice(0, startIndex + marker.start.length)
+  const after = content.slice(endIndex)
+  return `${before}\n${inner}\n${after}`
+}
+
+function hasMarker(content: string, marker: Marker) {
+  return content.includes(marker.start) && content.includes(marker.end)
+}
+
+function formatTsdocPlatformMatrix(indent: string, withAlignment: boolean) {
+  const header = withAlignment
+    ? `${indent}* | 平台 | 全局对象 | 类型来源 | 对齐状态 |`
+    : `${indent}* | 平台 | 类型来源 | 支持度 |`
+  const divider = withAlignment
+    ? `${indent}* | --- | --- | --- | --- |`
+    : `${indent}* | --- | --- | --- |`
+  const rows = WEAPI_PLATFORM_SUPPORT_MATRIX.map((item) => {
+    if (withAlignment) {
+      return `${indent}* | ${item.platform} | ${item.globalObject} | ${item.typeSource} | ${item.support} |`
+    }
+    if (item.globalObject === '运行时宿主对象') {
+      return `${indent}* | 其他平台对象 (\`swan/jd/xhs/...\`) | 运行时对象透传 | ${item.support} |`
+    }
+    return `${indent}* | ${item.platform} (${item.globalObject}) | ${item.typeSource} | ${item.support} |`
+  })
+  return [header, divider, ...rows].join('\n')
+}
+
+function formatCoverageReport(indent: string) {
+  const report = generateApiSupportCoverageReport()
+  const lines = [
+    withIndent('### API 支持覆盖率报告', indent),
+    '',
+    withIndent('| 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |', indent),
+    withIndent('| --- | --- | --- | --- | --- | --- | --- |', indent),
+    ...report.platforms.map(item => withIndent(`| ${item.platform} (\`${item.alias}\`) | ${item.supportedApis} | ${item.semanticAlignedApis} | ${item.fallbackApis} | ${item.totalApis} | ${item.coverage} | ${item.semanticCoverage} |`, indent)),
+    withIndent(`| 三端可调用完全对齐 (wx/my/tt) | ${report.fullyAlignedApis} | - | - | ${report.totalApis} | ${report.fullyAlignedCoverage} | - |`, indent),
+    withIndent(`| 三端语义完全对齐 (wx/my/tt) | - | ${report.fullySemanticallyAlignedApis} | - | ${report.totalApis} | - | ${report.fullySemanticallyAlignedCoverage} |`, indent),
+    '',
+    withIndent('> 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。', indent),
+  ]
+  return lines.join('\n')
+}
+
+function formatMethodDocs(indent: string) {
+  const sections: string[] = []
+  for (const item of WEAPI_METHOD_SUPPORT_MATRIX) {
+    sections.push(
+      `${indent}/**`,
+      `${indent} * ${item.description}`,
+      `${indent} *`,
+      `${indent} * | 平台 | 对齐策略 | 支持度 |`,
+      `${indent} * | --- | --- | --- |`,
+      `${indent} * | 微信 | ${item.wxStrategy} | ${item.support} |`,
+      `${indent} * | 支付宝 | ${item.alipayStrategy} | ${item.support} |`,
+      `${indent} * | 抖音 | ${item.douyinStrategy} | ${item.support} |`,
+      `${indent} */`,
+      `${indent}${item.method}: WeapiCrossPlatformAdapter['${item.method}']`,
+      '',
+    )
+  }
+  while (sections.length > 0 && sections.at(-1) === '') {
+    sections.pop()
+  }
+  return sections.join('\n')
+}
+
+async function syncReadme(check: boolean) {
+  const filePath = path.join(ROOT_DIR, 'README.md')
+  const original = await fs.readFile(filePath, 'utf8')
+  const indent = resolveIndent(original, README_MATRIX_MARKER)
+  const readmeInner = [
+    withIndent('### 平台类型对齐矩阵', indent),
+    '',
+    withIndent('| 平台 | 全局对象 | 类型来源 | 支持度 |', indent),
+    withIndent('| --- | --- | --- | --- |', indent),
+    ...WEAPI_PLATFORM_SUPPORT_MATRIX.map(item => withIndent(`| ${item.platform} | ${item.globalObject} | ${item.typeSource} | ${item.support} |`, indent)),
+    '',
+    formatCoverageReport(indent),
+    '',
+    withIndent('### 核心跨端映射矩阵', indent),
+    '',
+    withIndent('| API | 说明 | 微信策略 | 支付宝策略 | 抖音策略 | 支持度 |', indent),
+    withIndent('| --- | --- | --- | --- | --- | --- |', indent),
+    ...WEAPI_METHOD_SUPPORT_MATRIX.map(item =>
+      withIndent(`| \`${item.method}\` | ${item.description} | ${item.wxStrategy} | ${item.alipayStrategy} | ${item.douyinStrategy} | ${item.support} |`, indent),
+    ),
+  ].join('\n')
+  const next = replaceBetween(original, README_MATRIX_MARKER, readmeInner)
+  if (check) {
+    if (!isTextEquivalent(next, original)) {
+      throw new Error('README 支持矩阵未同步，请先运行 pnpm --filter @weapp-core/api docs:sync')
+    }
+    return
+  }
+  if (next !== original) {
+    await fs.writeFile(filePath, next)
+  }
+}
+
+function replacePlatformMatrixInComment(content: string, marker: Marker, withAlignment: boolean) {
+  const indent = marker.start.startsWith(' * ') ? ' ' : resolveIndent(content, marker)
+  const matrix = formatTsdocPlatformMatrix(indent, withAlignment)
+  return replaceBetween(content, marker, matrix)
+}
+
+async function syncTypeSources(check: boolean) {
+  const platformAdaptersPath = path.join(ROOT_DIR, 'src/core/platformAdapters.ts')
+  const typesSourcePath = path.join(ROOT_DIR, 'src/core/types.ts')
+  const indexSourcePath = path.join(ROOT_DIR, 'src/index.ts')
+  const declarationPath = path.join(ROOT_DIR, 'types/index.d.ts')
+
+  const platformAdaptersOriginal = await fs.readFile(platformAdaptersPath, 'utf8')
+  const platformAdaptersNext = replacePlatformMatrixInComment(platformAdaptersOriginal, PLATFORM_MATRIX_MARKER, true)
+
+  const typesSourceOriginal = await fs.readFile(typesSourcePath, 'utf8')
+  const typesWithMethods = hasMarker(typesSourceOriginal, TYPES_METHOD_DOC_MARKER)
+    ? replaceBetween(typesSourceOriginal, TYPES_METHOD_DOC_MARKER, formatMethodDocs('  '))
+    : typesSourceOriginal
+
+  const indexSourceOriginal = await fs.readFile(indexSourcePath, 'utf8')
+  const indexNext = replacePlatformMatrixInComment(indexSourceOriginal, PLATFORM_MATRIX_MARKER, false)
+
+  const declarationOriginal = await fs.readFile(declarationPath, 'utf8')
+  const declarationNext = replacePlatformMatrixInComment(declarationOriginal, PLATFORM_MATRIX_MARKER, true)
+
+  if (check) {
+    const outdated = [
+      { name: 'src/core/platformAdapters.ts', changed: !isTextEquivalent(platformAdaptersNext, platformAdaptersOriginal) },
+      { name: 'src/core/types.ts', changed: !isTextEquivalent(typesWithMethods, typesSourceOriginal) },
+      { name: 'src/index.ts', changed: !isTextEquivalent(indexNext, indexSourceOriginal) },
+      { name: 'types/index.d.ts', changed: !isTextEquivalent(declarationNext, declarationOriginal) },
+    ].filter(item => item.changed)
+    if (outdated.length > 0) {
+      throw new Error(`支持矩阵文档未同步：${outdated.map(item => item.name).join(', ')}`)
+    }
+    return
+  }
+
+  if (platformAdaptersNext !== platformAdaptersOriginal) {
+    await fs.writeFile(platformAdaptersPath, platformAdaptersNext)
+  }
+  if (typesWithMethods !== typesSourceOriginal) {
+    await fs.writeFile(typesSourcePath, typesWithMethods)
+  }
+  if (indexNext !== indexSourceOriginal) {
+    await fs.writeFile(indexSourcePath, indexNext)
+  }
+  if (declarationNext !== declarationOriginal) {
+    await fs.writeFile(declarationPath, declarationNext)
+  }
+}
+
+function ensureMatrixConsistency() {
+  const {
+    extraDouyinMappings,
+    missingCatalogMethods,
+    missingDocs,
+    missingDouyinMappings,
+    missingMappings,
+  } = validateSupportMatrixConsistency()
+  if (
+    missingDocs.length > 0
+    || missingMappings.length > 0
+    || missingDouyinMappings.length > 0
+    || extraDouyinMappings.length > 0
+    || missingCatalogMethods.length > 0
+  ) {
+    const lines = ['weapi 支持矩阵与映射规则不一致：']
+    if (missingDocs.length > 0) {
+      lines.push(`- 缺少文档方法：${missingDocs.join(', ')}`)
+    }
+    if (missingMappings.length > 0) {
+      lines.push(`- 缺少映射规则方法：${missingMappings.join(', ')}`)
+    }
+    if (missingDouyinMappings.length > 0) {
+      lines.push(`- 抖音映射缺失方法：${missingDouyinMappings.join(', ')}`)
+    }
+    if (extraDouyinMappings.length > 0) {
+      lines.push(`- 抖音映射多余方法：${extraDouyinMappings.join(', ')}`)
+    }
+    if (missingCatalogMethods.length > 0) {
+      lines.push(`- 文档方法不在三端 API 清单中：${missingCatalogMethods.join(', ')}`)
+    }
+    throw new Error(lines.join('\n'))
+  }
+}
+
+async function run() {
+  const { check } = parseArgs()
+  ensureMatrixConsistency()
+  await syncReadme(check)
+  await syncTypeSources(check)
+}
+
+run().catch((error) => {
+  console.error('[weapi-support-matrix] sync failed')
+  console.error(error)
+  process.exitCode = 1
+})

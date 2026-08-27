@@ -172,7 +172,6 @@ const WORKSPACE_HMR_IMPACT_PATH_PREFIXES = [
   '@weapp-core/',
   'packages/weapp-vite/src/',
   'packages/rolldown-require/src/',
-  'packages-runtime/weapi/src/',
   'packages-runtime/web/src/',
   'packages-runtime/web-apis/src/',
   'packages-runtime/wevu/src/',

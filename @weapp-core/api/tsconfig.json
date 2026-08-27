@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "types": [
+      "node",
+      "vitest/globals",
+      "miniprogram-api-typings",
+      "@mini-types/alipay",
+      "@douyin-microapp/typings"
+    ]
+  },
+  "include": [
+    "src",
+    "test"
+  ]
+}

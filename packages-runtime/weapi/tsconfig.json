@@ -5,23 +5,13 @@
       "@/*": [
         "./src/*"
       ],
-      "@weapp-core/shared": [
-        "../../@weapp-core/shared/src/index.ts"
-      ],
-      "@weapp-core/shared/node": [
-        "../../@weapp-core/shared/src/node.ts"
-      ],
-      "@weapp-core/shared/fs": [
-        "../../@weapp-core/shared/src/fs/index.ts"
+      "@weapp-core/api": [
+        "../../@weapp-core/api/src/index.ts"
       ]
     },
     "types": [
       "node",
-      "vitest/globals",
-      "vue/jsx",
-      "miniprogram-api-typings",
-      "@mini-types/alipay",
-      "@douyin-microapp/typings"
+      "vitest/globals"
     ]
   },
   "include": [

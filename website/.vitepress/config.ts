@@ -353,7 +353,7 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: '@wevu/compiler', link: '/packages/wevu-compiler' },
-      { text: '@wevu/api', link: '/packages/weapi/' },
+      { text: '@weapp-core/api', link: '/packages/weapi/' },
       { text: '@weapp-vite/i18n', link: '/packages/i18n' },
       { text: '@weapp-vite/web', link: '/packages/web' },
     ],
@@ -466,7 +466,7 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
 
 const weapiSidebarItems: DefaultTheme.SidebarItem[] = [
   {
-    text: '@wevu/api',
+    text: '@weapp-core/api',
     collapsed: false,
     items: [
       { text: 'Docs 首页', link: '/packages/weapi/' },

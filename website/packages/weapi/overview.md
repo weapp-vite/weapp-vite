@@ -1,9 +1,9 @@
 ---
 title: wpi 概览
-description: wpi 是 @wevu/api 提供的统一跨端 API 对象，支持 Promise、回调、能力探测与显式平台注入。
+description: wpi 是 @weapp-core/api 提供的统一跨端 API 对象，支持 Promise、回调、能力探测与显式平台注入。
 keywords:
   - wpi
-  - "@wevu/api"
+  - "@weapp-core/api"
   - weapi
   - 跨端 api
   - overview
@@ -11,7 +11,7 @@ keywords:
 
 # `wpi` 概览
 
-`wpi` 是 `@wevu/api` 提供的统一跨端 API 对象。
+`wpi` 是 `@weapp-core/api` 提供的统一跨端 API 对象。
 
 如果你熟悉 `uni` 或 `Taro` 的全局 API 心智，可以把它理解成同一类能力层：
 

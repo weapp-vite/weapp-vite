@@ -1,8 +1,8 @@
 ---
 title: API 全量清单
-description: "@wevu/api 基于微信命名体系的全量 API 目录，包含每个 API 的用途、示例与微信开放文档搜索入口。"
+description: "@weapp-core/api 基于微信命名体系的全量 API 目录，包含每个 API 的用途、示例与微信开放文档搜索入口。"
 keywords:
-  - "@wevu/api"
+  - "@weapp-core/api"
   - API 全量清单
   - 微信 API
   - wx
@@ -10,7 +10,7 @@ keywords:
 
 # API 全量清单
 
-本页按微信开放文档的能力域来组织 `@wevu/api` 当前收录的完整 API 目录。
+本页按微信开放文档的能力域来组织 `@weapp-core/api` 当前收录的完整 API 目录。
 
 能力域入口：
 

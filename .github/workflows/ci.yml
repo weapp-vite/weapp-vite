@@ -168,24 +168,30 @@ jobs:
       node_version: '24'
       timeout_minutes: 15
       main_command: |
-        pnpm --filter @wevu/api catalog:check
-        pnpm --filter @wevu/api docs:check
+        pnpm --filter @weapp-core/api catalog:check
+        pnpm --filter @weapp-core/api docs:check
+        pnpm --filter @weapp-core/api lint
+        pnpm --filter @weapp-core/api typecheck
+        pnpm --filter @weapp-core/api typecheck:test
+        pnpm --filter @weapp-core/api structure:check
+        pnpm --filter @weapp-core/api strict-alias:check
+        pnpm --filter @weapp-core/api coverage:check
+        pnpm --filter @weapp-core/api test
+        pnpm --filter @weapp-core/api test:types
+        pnpm --filter @weapp-core/api report:api
         pnpm --filter @wevu/api lint
         pnpm --filter @wevu/api typecheck
         pnpm --filter @wevu/api typecheck:test
-        pnpm --filter @wevu/api structure:check
-        pnpm --filter @wevu/api strict-alias:check
-        pnpm --filter @wevu/api coverage:check
         pnpm --filter @wevu/api test
         pnpm --filter @wevu/api test:types
-        pnpm --filter @wevu/api report:api
         git diff --exit-code -- \
-          packages-runtime/weapi/README.md \
-          packages-runtime/weapi/src/core/apiCatalog.ts \
-          packages-runtime/weapi/src/core/types.ts \
-          packages-runtime/weapi/src/index.ts \
-          packages-runtime/weapi/types/index.d.ts \
-          packages-runtime/weapi/reports/api-compat
+          @weapp-core/api/README.md \
+          @weapp-core/api/src/core/apiCatalog.ts \
+          @weapp-core/api/src/core/types.ts \
+          @weapp-core/api/src/index.ts \
+          @weapp-core/api/types/index.d.ts \
+          @weapp-core/api/reports/api-compat \
+          packages-runtime/weapi/types/index.d.ts
     secrets: inherit
 
   weapi-compat-full:
@@ -202,22 +208,28 @@ jobs:
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 15
       main_command: |
-        pnpm --filter @wevu/api catalog:check
-        pnpm --filter @wevu/api docs:check
+        pnpm --filter @weapp-core/api catalog:check
+        pnpm --filter @weapp-core/api docs:check
+        pnpm --filter @weapp-core/api lint
+        pnpm --filter @weapp-core/api typecheck
+        pnpm --filter @weapp-core/api typecheck:test
+        pnpm --filter @weapp-core/api structure:check
+        pnpm --filter @weapp-core/api strict-alias:check
+        pnpm --filter @weapp-core/api coverage:check
+        pnpm --filter @weapp-core/api test
+        pnpm --filter @weapp-core/api test:types
+        pnpm --filter @weapp-core/api report:api
         pnpm --filter @wevu/api lint
         pnpm --filter @wevu/api typecheck
         pnpm --filter @wevu/api typecheck:test
-        pnpm --filter @wevu/api structure:check
-        pnpm --filter @wevu/api strict-alias:check
-        pnpm --filter @wevu/api coverage:check
         pnpm --filter @wevu/api test
         pnpm --filter @wevu/api test:types
-        pnpm --filter @wevu/api report:api
         git diff --exit-code -- \
-          packages-runtime/weapi/README.md \
-          packages-runtime/weapi/src/core/apiCatalog.ts \
-          packages-runtime/weapi/src/core/types.ts \
-          packages-runtime/weapi/src/index.ts \
-          packages-runtime/weapi/types/index.d.ts \
-          packages-runtime/weapi/reports/api-compat
+          @weapp-core/api/README.md \
+          @weapp-core/api/src/core/apiCatalog.ts \
+          @weapp-core/api/src/core/types.ts \
+          @weapp-core/api/src/index.ts \
+          @weapp-core/api/types/index.d.ts \
+          @weapp-core/api/reports/api-compat \
+          packages-runtime/weapi/types/index.d.ts
     secrets: inherit

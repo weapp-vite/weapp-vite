@@ -4,6 +4,7 @@ description: 说明 wevu/api 的跨端 API 门面定位、与 uni/taro 风格对
 keywords:
   - wevu/api
   - "@wevu/api"
+  - "@weapp-core/api"
   - wevu
   - namespace
   - uni
@@ -20,19 +21,20 @@ keywords:
 - 统一通过一个对象来调用小程序能力
 - 由这层对象负责“平台探测、方法映射、Promise 化、能力缺失时的错误语义”
 
-在 Wevu 体系里，这个角色就是 `wpi`，而 `wevu/api` 则是 `@wevu/api` 在 `wevu/*` 命名空间下的入口。
+在 Wevu 体系里，这个角色就是 `wpi`。`wevu/api` 与 `@wevu/api` 是兼容入口，真正的框架无关实现由 `@weapp-core/api` 提供。
 
 :::warning 入口边界
-`wevu/api` 是 `wevu` 的子路径入口，本质上透传的是 `@wevu/api`。
+`wevu/api` 是 `wevu` 的子路径入口，继续通过 `@wevu/api` 兼容包透传 `@weapp-core/api`。
 
 这页讨论的是 API 门面与调用语义，不讨论“应该放到 `dependencies` 还是 `devDependencies`”这类工程落位策略；依赖安装位置应以你的实际构建方式和项目模板约定为准。
 :::
 
-## 它和 `@wevu/api` 的关系
+## 它和 `@weapp-core/api` 的关系
 
 - `wevu/api`：Wevu 体系下的子路径入口
-- `@wevu/api`：真正的独立包本体
-- 当前导出语义：`wevu/api` 等价于 `export * from '@wevu/api'`
+- `@wevu/api`：保留现有导入路径的兼容包
+- `@weapp-core/api`：框架与运行时无关的独立实现
+- 当前导出链路：`wevu/api` → `@wevu/api` → `@weapp-core/api`
 
 也就是说，`wevu/api` 本质上是“命名空间更统一的入口”，不是另一套独立实现。
 
@@ -346,21 +348,21 @@ else {
 更实用的阅读方式是：
 
 - 在这里理解“对象心智”和“调用方式”
-- 去 [@wevu/api 包文档](/packages/weapi/) 看平台支持矩阵和独立包说明
+- 去 [@weapp-core/api 包文档](/packages/weapi/) 看平台支持矩阵和独立包说明
 - 在编辑器里直接通过 `wpi.` 获得类型提示与补全
 
 换句话说，这一页回答的是“怎么用这层对象”，而不是“把 400 多个方法名机械抄一遍”。
 
-## 何时仍然直接看 `@wevu/api` 文档
+## 何时直接看 `@weapp-core/api` 文档
 
 当你需要：
 
 - 查看独立包定位与发布说明
 - 了解平台支持矩阵
-- 跟踪 `@wevu/api` 自身的能力边界
+- 跟踪 `@weapp-core/api` 自身的能力边界
 - 查看更偏独立包视角的说明
 
-请直接阅读 [@wevu/api 包文档](/packages/weapi/)。
+请直接阅读 [@weapp-core/api 包文档](/packages/weapi/)。
 
 ## 相关页面
 

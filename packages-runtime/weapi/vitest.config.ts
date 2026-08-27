@@ -12,16 +12,8 @@ export default defineProject({
         replacement: path.resolve(packageDir, './src'),
       },
       {
-        find: '@weapp-core/shared',
-        replacement: path.resolve(packageDir, '../../@weapp-core/shared/src/index.ts'),
-      },
-      {
-        find: '@weapp-core/shared/node',
-        replacement: path.resolve(packageDir, '../../@weapp-core/shared/src/node.ts'),
-      },
-      {
-        find: '@weapp-core/shared/fs',
-        replacement: path.resolve(packageDir, '../../@weapp-core/shared/src/fs/index.ts'),
+        find: '@weapp-core/api',
+        replacement: path.resolve(packageDir, '../../@weapp-core/api/src/index.ts'),
       },
     ],
     globals: true,

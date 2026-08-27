@@ -6,11 +6,11 @@ it('syncs generated API sources before benchmarking a checkout', () => {
   assert.deepEqual(createBenchmarkCheckoutPreparationCommands(), [
     {
       command: 'pnpm',
-      args: ['--filter', '@wevu/api', 'catalog:sync'],
+      args: ['--filter', '@weapp-core/api', 'catalog:sync'],
     },
     {
       command: 'pnpm',
-      args: ['--filter', '@wevu/api', 'docs:sync'],
+      args: ['--filter', '@weapp-core/api', 'docs:sync'],
     },
   ])
 })

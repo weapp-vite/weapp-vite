@@ -112,9 +112,9 @@ const filteredSections = computed(() => {
 
 <template>
   <div class="weapi-reference">
-    <h1>@wevu/api Docs</h1>
+    <h1>@weapp-core/api Docs</h1>
     <p class="weapi-reference__intro">
-      这里是 <code>@wevu/api</code> 的独立文档入口。你可以先按主题找到页面，再进入具体矩阵或全量目录。
+      这里是 <code>@weapp-core/api</code> 的独立文档入口。你可以先按主题找到页面，再进入具体矩阵或全量目录。
     </p>
 
     <div class="weapi-reference__filter">
