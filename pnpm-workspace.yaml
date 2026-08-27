@@ -38,7 +38,7 @@ catalog:
   '@iconify/tailwind4': ^1.2.3
   '@mini-types/alipay': ^3.0.14
   '@tailwindcss/vite': ^4.3.3
-  '@types/node': ^26.3.0
+  '@types/node': ^26.4.0
   '@types/semver': ^7.8.0
   '@vant/weapp': ^1.11.7
   '@vitejs/plugin-vue': ^6.0.8
@@ -60,11 +60,11 @@ catalog:
   estree-walker: ^3.0.3
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
-  happy-dom: ^20.11.6
+  happy-dom: ^20.11.8
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
   lru-cache: ^11.5.2
-  magic-string: ^1.2.2
+  magic-string: ^1.2.3
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.3
   obug: ^2.1.4
@@ -73,7 +73,7 @@ catalog:
   pathe: ^2.0.3
   pkg-types: ^2.3.1
   postcss: ^8.5.26
-  rolldown: 1.2.5
+  rolldown: 1.2.6
   sass: ^1.103.1
   sass-embedded: ^1.103.1
   stylelint: ^17.14.1
@@ -90,7 +90,7 @@ catalog:
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.41
   vue-tsc: ^3.3.11
-  weapp-tailwindcss: ^5.3.5
+  weapp-tailwindcss: ^5.3.6
   zod: ^4.4.3
 
 catalogs:
@@ -104,7 +104,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.16.0
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.3.5
+    weapp-tailwindcss: 5.3.6
 
 gitChecks: false
 

@@ -13,9 +13,9 @@
     "build:ui": "wv build --ui"
   },
   "devDependencies": {
-    "@tanstack/vue-query": "^5.102.3",
+    "@tanstack/vue-query": "^5.102.6",
     "@weapp-vite/dashboard": "workspace:*",
-    "axios": "^1.19.0",
+    "axios": "^1.20.0",
     "graphql-request": "^7.4.0",
     "miniprogram-api-typings": "catalog:latest",
     "typescript": "catalog:latest",
