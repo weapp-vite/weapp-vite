@@ -43,6 +43,7 @@
   "scripts": {
     "dev": "tsdown -w --sourcemap",
     "build": "tsdown",
+    "fixtures:generate": "node --import tsx scripts/generate-fixtures.ts",
     "test": "vitest run --config ./vitest.config.ts",
     "test:dev": "vitest --config ./vitest.config.ts",
     "test:types": "tsd",

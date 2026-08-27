@@ -269,7 +269,7 @@ describe('dev process env isolation', () => {
     expect(killedPids).toEqual([111, 333])
   })
 
-  it('cleans package-script dev commands from the residual cleanup entrypoint', async () => {
+  it('cleans package-script dev commands from process snapshots without serialized pkill calls', async () => {
     vi.useFakeTimers()
     Object.defineProperty(process, 'platform', {
       value: 'darwin',
@@ -316,12 +316,10 @@ describe('dev process env isolation', () => {
     await vi.advanceTimersByTimeAsync(1_000)
     await cleanup
 
-    expect(execaMock).toHaveBeenCalledWith('pkill', ['-f', 'pnpm.*--dir.*e2e-apps/.+ run '], expect.objectContaining({
-      reject: false,
-    }))
-    expect(execaMock).toHaveBeenCalledWith('pkill', ['-f', 'weapp-vite.js mcp.*--workspace-root.*templates/'], expect.objectContaining({
-      reject: false,
-    }))
+    expect(execaMock).toHaveBeenCalledWith('ps', ['-Ao', 'pid=,ppid=,command='], {
+      stdin: 'ignore',
+    })
+    expect(execaMock.mock.calls.every(([command]) => command === 'ps')).toBe(true)
     expect(killedPids).toEqual([111, 333])
   })
 })

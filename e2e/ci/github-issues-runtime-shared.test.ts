@@ -18,6 +18,7 @@ describe('github issues runtime shared relaunch helper', () => {
     expect(createGithubIssuesLaunchAutomatorOptions('project-root')).toEqual({
       deferBridgeWrapperSyncUntilConnected: true,
       projectPath: 'project-root',
+      retryWarmupTimeout: true,
       skipRelaunchPageRootCheck: true,
       warmupAllowRelaunch: true,
     })
@@ -209,6 +210,25 @@ describe('github issues runtime shared relaunch helper', () => {
 
     expect(page).toBe(targetPage)
     expect(targetPage.waitForRendered).not.toHaveBeenCalled()
+  })
+
+  it('passes the active automator session to custom readiness checks', async () => {
+    const targetPage = {
+      path: '/pages/issue-627-native/index',
+    }
+    const miniProgram = {
+      currentPage: vi.fn(async () => targetPage),
+      evaluate: vi.fn(async () => '/pages/issue-627-native/index'),
+    }
+    const readiness = vi.fn(async (_page: any, activeMiniProgram: any) => activeMiniProgram === miniProgram)
+
+    const page = await relaunchPage(miniProgram, '/pages/issue-627-native/index', undefined, 50, {
+      readiness,
+      readinessTimeoutMs: 50,
+    })
+
+    expect(page).toBe(targetPage)
+    expect(readiness).toHaveBeenCalledWith(targetPage, miniProgram)
   })
 
   it('stops relaunch retries when DevTools reports a simulator boot failure', async () => {

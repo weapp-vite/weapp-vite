@@ -1,37 +1,13 @@
-/* eslint-disable e18e/ban-dependencies -- e2e dev 进程清理需要 execa 调用系统进程工具。 */
 import process from 'node:process'
-import { execa } from 'execa'
 import { cleanupProcessesByCommandPatterns, cleanupTrackedDevProcesses } from './dev-process'
 
 const DEV_PROCESS_MATCH_PATTERNS = [
   /(?:^|\s)(?:\S*\/)?pnpm(?:\.[cm]?js)?(?:\s+--dir\s+\S*(?:e2e-apps|apps)\/\S+\s+run\s+\S+|\s+run\s+\S+\s+--dir\s+\S*(?:e2e-apps|apps)\/\S+)/,
-  /(?:^|\s)weapp-vite\/bin\/weapp-vite\.js\s+dev[^\n]*(?:e2e-apps|apps|\.tmp)\//,
+  /(?:^|\s)(?:\S*\/)?weapp-vite\/bin\/weapp-vite\.js\s+dev[^\n]*(?:e2e-apps|apps|\.tmp)\//,
   /(?:^|\s)(?:\S*\/)?weapp-vite\.js\s+mcp[^\n]*--workspace-root\s+\S*(?:e2e-apps|apps|templates|\.tmp)\//,
-  /(?:^|\s)packages\/weapp-vite\/src\/cli\.ts\s+dev[^\n]*(?:e2e-apps|apps|\.tmp)\//,
-  /(?:^|\s)packages\/weapp-vite\/dist\/cli\.mjs\s+dev[^\n]*(?:e2e-apps|apps|\.tmp)\//,
-  /(?:^|\s)packages\/weapp-vite\/bin\/weapp-vite\.js\s+mcp[^\n]*--workspace-root\s+\S*(?:e2e-apps|apps|templates|\.tmp)\//,
-]
-
-const DEV_PROCESS_PKILL_PATTERNS = [
-  'pnpm.*--dir.*e2e-apps/.+ run ',
-  'pnpm.*--dir.*apps/.+ run ',
-  'weapp-vite/bin/weapp-vite.js dev.*e2e-apps/',
-  'weapp-vite/bin/weapp-vite.js dev.*apps/',
-  'weapp-vite/bin/weapp-vite.js dev.*.tmp/',
-  'weapp-vite.js mcp.*--workspace-root.*e2e-apps/',
-  'weapp-vite.js mcp.*--workspace-root.*apps/',
-  'weapp-vite.js mcp.*--workspace-root.*templates/',
-  'weapp-vite.js mcp.*--workspace-root.*.tmp/',
-  'packages/weapp-vite/src/cli.ts dev.*e2e-apps/',
-  'packages/weapp-vite/src/cli.ts dev.*apps/',
-  'packages/weapp-vite/src/cli.ts dev.*.tmp/',
-  'packages/weapp-vite/dist/cli.mjs dev.*e2e-apps/',
-  'packages/weapp-vite/dist/cli.mjs dev.*apps/',
-  'packages/weapp-vite/dist/cli.mjs dev.*.tmp/',
-  'packages/weapp-vite/bin/weapp-vite.js mcp.*--workspace-root.*e2e-apps/',
-  'packages/weapp-vite/bin/weapp-vite.js mcp.*--workspace-root.*apps/',
-  'packages/weapp-vite/bin/weapp-vite.js mcp.*--workspace-root.*templates/',
-  'packages/weapp-vite/bin/weapp-vite.js mcp.*--workspace-root.*.tmp/',
+  /(?:^|\s)(?:\S*\/)?packages\/weapp-vite\/src\/cli\.ts\s+dev[^\n]*(?:e2e-apps|apps|\.tmp)\//,
+  /(?:^|\s)(?:\S*\/)?packages\/weapp-vite\/dist\/cli\.mjs\s+dev[^\n]*(?:e2e-apps|apps|\.tmp)\//,
+  /(?:^|\s)(?:\S*\/)?packages\/weapp-vite\/bin\/weapp-vite\.js\s+mcp[^\n]*--workspace-root\s+\S*(?:e2e-apps|apps|templates|\.tmp)\//,
 ]
 
 function sleep(ms: number) {
@@ -45,25 +21,16 @@ export async function cleanupResidualDevProcesses() {
 
   await cleanupTrackedDevProcesses(2_500)
 
-  for (const pattern of DEV_PROCESS_PKILL_PATTERNS) {
-    await execa('pkill', ['-f', pattern], {
-      reject: false,
-      stdin: 'ignore',
-      stdout: 'ignore',
-      stderr: 'ignore',
-    })
-
-    await execa('pkill', ['-9', '-f', pattern], {
-      reject: false,
-      stdin: 'ignore',
-      stdout: 'ignore',
-      stderr: 'ignore',
-    })
-  }
-
   try {
     await cleanupProcessesByCommandPatterns(DEV_PROCESS_MATCH_PATTERNS, 2_500)
   }
   catch {}
-  await sleep(1_000)
+  await sleep(200)
+}
+
+export function isResidualDevProcessCommand(command: string) {
+  return DEV_PROCESS_MATCH_PATTERNS.some((pattern) => {
+    pattern.lastIndex = 0
+    return pattern.test(command)
+  })
 }

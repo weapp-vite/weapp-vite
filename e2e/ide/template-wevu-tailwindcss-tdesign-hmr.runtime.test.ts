@@ -93,6 +93,7 @@ async function waitForFileContains(file: string, expected: string, timeoutMs = 9
 
 describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', () => {
   let appWxssDist = ''
+  let appJsonDist = ''
   let currentVue = ''
   let devProcess: ReturnType<typeof startDevProcess> | undefined
   let distAppJs = ''
@@ -130,29 +131,38 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
   async function waitForAppRuntimeReady(timeoutMs = 120_000) {
     const startedAt = Date.now()
     let latestApp = ''
+    let latestAppJson = ''
     let latestPage = ''
     let latestRuntime = ''
+    let latestWxml = ''
+    let latestWxss = ''
     while (Date.now() - startedAt <= timeoutMs) {
-      [latestApp, latestPage, latestRuntime] = await Promise.all([
+      [latestApp, latestAppJson, latestPage, latestRuntime, latestWxml, latestWxss] = await Promise.all([
         fs.readFile(distAppJs, 'utf8').catch(() => ''),
+        fs.readFile(appJsonDist, 'utf8').catch(() => ''),
         fs.readFile(indexJsDist, 'utf8').catch(() => ''),
         fs.readFile(distWevuRuntimeJs, 'utf8').catch(() => ''),
+        fs.readFile(indexWxmlDist, 'utf8').catch(() => ''),
+        fs.readFile(appWxssDist, 'utf8').catch(() => ''),
       ])
       if (
         latestApp.includes('require("./weapp-vendors/wevu-runtime.js")')
         && latestApp.includes('setWevuDefaults')
+        && latestAppJson.includes('pages/index/index')
         && latestPage.includes('require("../../weapp-vendors/wevu-runtime.js")')
         && latestPage.includes('createWevuComponent')
         && latestPage.includes('module.exports = __wevuOptions')
         && latestRuntime.includes('Object.defineProperty(exports, "createApp"')
         && latestRuntime.includes('Object.defineProperty(exports, "setWevuDefaults"')
+        && latestWxml.includes(PROBE_ID)
+        && latestWxss.includes('background-color: #f6f7fb')
         && !latestApp.includes('from "wevu/internal-runtime"')
       ) {
         return { app: latestApp, runtime: latestRuntime }
       }
       await delay(500)
     }
-    throw new Error(`Timed out waiting for the isolated fixture to emit the stable wevu runtime.\nLatest app:\n${latestApp.slice(0, 1000)}\nLatest page:\n${latestPage.slice(0, 1000)}\nLatest runtime:\n${latestRuntime.slice(0, 1000)}`)
+    throw new Error(`Timed out waiting for the isolated fixture to emit a complete runnable output.\nLatest app:\n${latestApp.slice(0, 1000)}\nLatest app.json:\n${latestAppJson.slice(0, 1000)}\nLatest page:\n${latestPage.slice(0, 1000)}\nLatest runtime:\n${latestRuntime.slice(0, 1000)}\nLatest WXML:\n${latestWxml.slice(0, 1000)}\nLatest WXSS:\n${latestWxss.slice(0, 1000)}`)
   }
 
   async function waitForIndexPage(timeoutMs = 90_000) {
@@ -223,11 +233,9 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
     let lastError: unknown
     for (let attempt = 1; attempt <= STARTUP_ATTEMPTS; attempt += 1) {
       await stopDevSession()
-      if (attempt > 1) {
-        await cleanDevtoolsCache('all', { cwd: fixtureRoot }).catch(() => {})
-        await removeAutomatorSessionFiles()
-        await delay(1_600)
-      }
+      await cleanDevtoolsCache('compile', { cwd: fixtureRoot })
+      await removeAutomatorSessionFiles()
+      await delay(1_600)
       devProcess = startDevProcess('pnpm', ['exec', 'wv', 'dev', '--non-interactive'], {
         cwd: fixtureRoot,
         env: createDevProcessEnv(),
@@ -239,10 +247,12 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
           `wevu Tailwind stateful HMR initial runtime attempt ${attempt}`,
         )
         miniProgram = await launchAutomator({
+          deferBridgeWrapperSyncUntilConnected: true,
           engineBuildFallbackSettleMs: 5_000,
           launchMode: 'bridge',
           maxLaunchRetries: 1,
           projectPath: fixtureRoot,
+          warmupAllowRelaunch: false,
           warmupRoute: INDEX_ROUTE,
           warmupRootSelectors: [`#${PROBE_ID}`],
         })
@@ -277,6 +287,7 @@ describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevToo
     })
     indexVue = path.join(fixtureRoot, 'src/pages/index/index.vue')
     const distRoot = path.join(fixtureRoot, 'dist')
+    appJsonDist = path.join(distRoot, 'app.json')
     appWxssDist = path.join(distRoot, 'app.wxss')
     distAppJs = path.join(distRoot, 'app.js')
     distWevuRuntimeJs = path.join(distRoot, 'weapp-vendors/wevu-runtime.js')

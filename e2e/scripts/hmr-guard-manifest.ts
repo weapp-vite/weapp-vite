@@ -64,6 +64,7 @@ export const HMR_GUARD_SPECIAL_CASES = {
 }
 
 export const HMR_GUARD_UTILITY_TESTS = [
+  path.resolve(import.meta.dirname, '..', 'utils', 'hmr-helpers.test.ts').replaceAll('\\', '/'),
   path.resolve(import.meta.dirname, '..', 'utils', 'wevu-root-hmr-exports.test.ts').replaceAll('\\', '/'),
 ]
 

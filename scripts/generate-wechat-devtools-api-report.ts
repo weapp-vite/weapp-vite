@@ -1,20 +1,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { resolveWechatDevtoolsMetadata } from './utils/wechatDevtoolsMetadata'
 
 const REPORT_PATH = path.resolve('docs/reports/wechat-devtools-api-surface.md')
 const DEFAULT_MAC_DEVTOOLS_APP_PATH = '/Applications/wechatwebdevtools.app'
 
 interface Row {
   [key: string]: string
-}
-
-interface DevtoolsMetadata {
-  appPath: string
-  buildTime: string
-  packageJsonPath: string
-  productName: string
-  version: string
 }
 
 const httpRows: Row[] = [
@@ -107,40 +100,6 @@ const mcpRows: Row[] = [
   { tool: 'weapp_devtools_host_api', mapsTo: 'App.callWxMethod', note: '调用 wx API' },
 ]
 
-function readJsonObject(filePath: string) {
-  const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf8'))
-  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-    ? parsed as Record<string, unknown>
-    : {}
-}
-
-function readString(object: Record<string, unknown>, key: string) {
-  const value = object[key]
-  return typeof value === 'string' ? value : ''
-}
-
-function resolveDevtoolsMetadata(): DevtoolsMetadata {
-  const appPath = process.env.WECHAT_DEVTOOLS_APP_PATH || DEFAULT_MAC_DEVTOOLS_APP_PATH
-  const packageJsonPath = appPath.endsWith('package.json')
-    ? appPath
-    : path.join(appPath, 'Contents/Resources/package.nw/package.json')
-  if (!fs.existsSync(packageJsonPath)) {
-    return { appPath, buildTime: '未检测到', packageJsonPath, productName: '未检测到', version: '未检测到' }
-  }
-  const json = readJsonObject(packageJsonPath)
-  const rawBuildTime = json.buildTime
-  const buildTime = typeof rawBuildTime === 'number'
-    ? `${rawBuildTime} (${new Date(rawBuildTime).toISOString()})`
-    : String(rawBuildTime ?? '未检测到')
-  return {
-    appPath,
-    buildTime,
-    packageJsonPath,
-    productName: readString(json, 'productName') || readString(json, 'name') || '未检测到',
-    version: readString(json, 'version') || '未检测到',
-  }
-}
-
 function escapeCell(value: string) {
   return value.replace(/\|/g, '\\|').replace(/\n/g, '<br>')
 }
@@ -196,7 +155,9 @@ function readExistingGeneratedAt() {
 }
 
 function createReport(generatedAt: string) {
-  const metadata = resolveDevtoolsMetadata()
+  const metadata = resolveWechatDevtoolsMetadata(
+    process.env.WECHAT_DEVTOOLS_APP_PATH || DEFAULT_MAC_DEVTOOLS_APP_PATH,
+  )
   return `# 微信开发者工具 API Surface 报告
 
 > 本报告由 \`pnpm report:wechat-devtools-api\` 生成。微信开发者工具更新后重新运行该命令；提交前可运行 \`pnpm check:wechat-devtools-api-report\` 检查报告是否与当前源码和本机 DevTools 版本一致。

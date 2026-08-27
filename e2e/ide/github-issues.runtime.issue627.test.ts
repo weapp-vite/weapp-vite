@@ -50,16 +50,17 @@ describe.sequential('e2e app: github-issues / issue #627', () => {
     expect(await fs.readFile(sfcComponentJsPath, 'utf-8')).toContain('class: {')
     expect(await fs.readFile(sfcComponentJsPath, 'utf-8')).toContain('style: {')
 
-    const miniProgram = await ensureMiniProgram(ctx)
-    const issuePage = await relaunchPage(miniProgram, '/pages/issue-627-native/index', undefined, 20_000, {
-      readiness: async () => {
-        const snapshot = await callCurrentPageMethod(miniProgram, '_runE2E')
+    const launchMiniProgram = await ensureMiniProgram(ctx)
+    const issuePage = await relaunchPage(launchMiniProgram, '/pages/issue-627-native/index', undefined, 20_000, {
+      readiness: async (_page, activeMiniProgram) => {
+        const snapshot = await callCurrentPageMethod(activeMiniProgram, '_runE2E')
         return Boolean(snapshot?.native && snapshot?.sfcLiteral && snapshot?.sfcDynamic)
       },
     })
     if (!issuePage) {
       throw new Error('Failed to launch issue-627-native page')
     }
+    miniProgram = await getSharedMiniProgram(ctx)
     const snapshot = await callCurrentPageMethod(miniProgram, '_runE2E')
 
     expect(snapshot).toMatchObject({

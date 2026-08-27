@@ -1,7 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
-import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanDevtoolsCacheAndStop, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { getSuiteTasks, listE2ESuites, partitionE2ETasks } from './e2e-suite-manifest'
 import { runTaskSuite } from './suiteRunner'
 
@@ -39,13 +39,17 @@ export function shouldStopIdeSuiteAfterTaskFailure(mode: string) {
 export function createIdeSuiteCleanupHooks(
   mode: string,
   cleanup: () => Promise<void> = cleanupResidualIdeProcesses,
+  cleanCompileCache: () => Promise<void> = () => cleanDevtoolsCacheAndStop('compile'),
 ) {
   if (!shouldCleanupIdeBeforeEachTask(mode)) {
     return {}
   }
 
   return {
-    beforeEachTask: cleanup,
+    beforeEachTask: async () => {
+      await cleanup()
+      await cleanCompileCache()
+    },
     afterAll: cleanup,
   }
 }

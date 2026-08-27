@@ -1059,6 +1059,7 @@ export function createGithubIssuesLaunchAutomatorOptions(projectPath = APP_ROOT)
   return {
     deferBridgeWrapperSyncUntilConnected: true,
     projectPath,
+    retryWarmupTimeout: true,
     skipRelaunchPageRootCheck: true,
     warmupAllowRelaunch: true,
   }

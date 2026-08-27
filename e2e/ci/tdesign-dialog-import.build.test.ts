@@ -95,7 +95,8 @@ describe.sequential('e2e app: tdesign-dialog-import (build)', () => {
     expect(dialogIndexJs).toContain('exports["default"]')
     expect(dialogIndexJs).toContain('confirm(t)')
 
-    expect(toastIndexJs).toContain('Toast as default')
+    expect(toastIndexJs).toContain('__esModule')
+    expect(toastIndexJs).toMatch(/exports\[(?:"default"|'default')\]\s*=\s*Toast/)
     expect(toastIndexJs).toContain('showToast')
     expect(toastIndexJs).toContain('hideToast')
     expect(toastIndexJs).toContain('#t-toast')

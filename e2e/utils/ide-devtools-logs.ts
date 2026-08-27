@@ -16,6 +16,9 @@ const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
 ] as const
 const DEVTOOLS_SIMULATOR_NOT_FOUND_PATTERN = /\[SimulatorService\]\s+updateSimulatorCompileOptions:\s+simulator not found\s+(\S+)/i
 const DEVTOOLS_SIMULATOR_INIT_PATTERN = /\[SimulatorService\]\s+init simulator\s+(\S+)\s+with clientSid\b/i
+const DEVTOOLS_SIMULATOR_CONTEXT_PATTERN = /\[rt:[^,\]]+,win:([^\]]+)\]/i
+const DEVTOOLS_GENERIC_SIMULATOR_LAUNCH_ERROR_PATTERN = /\bsimulator launch catch error Error:\s*simulator launch failed\s*$/i
+const DEVTOOLS_SIMULATOR_LAUNCH_SUCCESS_PATTERN = /\bsimulator launch success\b/i
 
 export interface DevtoolsLogIssue {
   file: string
@@ -157,6 +160,23 @@ function isTransientSimulatorNotFoundWarning(lines: string[], index: number) {
   })
 }
 
+function isRecoveredGenericSimulatorLaunchError(lines: string[], index: number) {
+  const line = lines[index] ?? ''
+  if (!DEVTOOLS_GENERIC_SIMULATOR_LAUNCH_ERROR_PATTERN.test(line)) {
+    return false
+  }
+
+  const simulatorContext = line.match(DEVTOOLS_SIMULATOR_CONTEXT_PATTERN)?.[1]
+  if (!simulatorContext) {
+    return false
+  }
+
+  return lines.slice(index + 1).some((candidate) => {
+    return DEVTOOLS_SIMULATOR_LAUNCH_SUCCESS_PATTERN.test(candidate)
+      && candidate.match(DEVTOOLS_SIMULATOR_CONTEXT_PATTERN)?.[1] === simulatorContext
+  })
+}
+
 function parseDevtoolsLogLineTime(line: string) {
   const match = line.match(DEVTOOLS_LOG_TIMESTAMP_PATTERN)
   if (!match) {
@@ -196,6 +216,7 @@ export function scanRecentDevtoolsSimulatorBootIssues(options: {
       if (
         isSimulatorBootIssue(line)
         && !isTransientSimulatorNotFoundWarning(lines, index)
+        && !isRecoveredGenericSimulatorLaunchError(lines, index)
       ) {
         issues.push({ file: filePath, line: line.trim() })
       }

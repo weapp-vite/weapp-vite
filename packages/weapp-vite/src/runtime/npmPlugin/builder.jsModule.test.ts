@@ -21,6 +21,26 @@ afterEach(async () => {
 })
 
 describe('runtime npm builder js module transform', () => {
+  it('normalizes minified imports and export-all barrels', async () => {
+    const output = await transformJsModuleToCjs([
+      'import{createControl}from"./control";',
+      'export*from"./superComponent";',
+      'export*from"./flatTool";',
+      'const useControl=createControl();',
+      'export{useControl};',
+    ].join(''), {
+      markEsModule: true,
+    })
+
+    expect(output).toContain('__esModule')
+    expect(output).toContain('require("./control")')
+    expect(output).toContain('require("./superComponent")')
+    expect(output).toContain('require("./flatTool")')
+    expect(output).toContain('Object.keys')
+    expect(output).toContain('exports.useControl = useControl')
+    expect(output).not.toMatch(/\b(?:import|export)(?=[\s{*])/)
+  })
+
   it('does not export function parameters when converting named function exports', async () => {
     const output = await transformJsModuleToCjs([
       'export function isFunction(t) {',

@@ -3,8 +3,9 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { describe, expect, it } from 'vitest'
-import { createBridgeWrapperProjectConfig, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldPrebuildAutomatorProject, terminateBridgeCliProcess, validateLaunchProjectAssets } from './automator'
+import { describe, expect, it, vi } from 'vitest'
+import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveBridgeWarmupReadyTimeout, resolveLaunchRetryCount, resolveWarmupCurrentPageReadyTimeout, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, terminateBridgeCliProcess, validateLaunchProjectAssets } from './automator'
+import { isResidualDevProcessCommand } from './dev-process-cleanup'
 
 function waitForSpawn(child: ReturnType<typeof spawn>) {
   return new Promise<number>((resolve, reject) => {
@@ -85,6 +86,36 @@ describe('automator', () => {
     expect(isLikelyRelaunchRetryableError(error)).toBe(true)
   })
 
+  it('treats the generic DevTools reLaunch protocol rejection as retryable', () => {
+    const error = new Error('Uncaught [object Object]')
+
+    expect(isLikelyRelaunchRetryableError(error)).toBe(true)
+  })
+
+  it('retries a generic DevTools reLaunch rejection before closing the session', async () => {
+    const targetPage = {
+      path: '/pages/index/index',
+    }
+    const rawReLaunch = vi.fn()
+      .mockRejectedValueOnce(new Error('Uncaught [object Object]'))
+      .mockResolvedValueOnce(targetPage)
+    const miniProgram = {
+      close: vi.fn(),
+      currentPage: vi.fn(async () => ({ path: '/pages/other/index' })),
+      reLaunch: rawReLaunch,
+    }
+
+    enhanceMiniProgramRelaunch(miniProgram, {
+      project: 'test-project',
+      retryDelayMs: 0,
+      skipPageRootCheck: true,
+    })
+
+    await expect(miniProgram.reLaunch('/pages/index/index')).resolves.toBe(targetPage)
+    expect(rawReLaunch).toHaveBeenCalledTimes(2)
+    expect(miniProgram.close).not.toHaveBeenCalled()
+  })
+
   it('treats a closed DevTools connection as a retryable relaunch error', () => {
     const error = new Error('Connection closed, check if wechat web devTools is still running')
 
@@ -155,6 +186,55 @@ describe('automator', () => {
     expect(resolveLaunchRetryCount(2.8)).toBe(2)
     expect(resolveLaunchRetryCount(Number.POSITIVE_INFINITY)).toBe(resolveLaunchRetryCount(undefined))
     expect(resolveLaunchRetryCount(99)).toBe(resolveLaunchRetryCount(undefined))
+  })
+
+  it('gives bridge cold compilation a separate warmup budget', () => {
+    expect(resolveBridgeWarmupReadyTimeout(undefined)).toBe(60_000)
+    expect(resolveBridgeWarmupReadyTimeout('90000')).toBe(90_000)
+    expect(resolveBridgeWarmupReadyTimeout('0')).toBe(60_000)
+    expect(resolveWarmupCurrentPageReadyTimeout(false, true, 60_000, 30_000)).toBe(60_000)
+    expect(resolveWarmupCurrentPageReadyTimeout(false, false, 60_000, 30_000)).toBe(300)
+    expect(resolveWarmupCurrentPageReadyTimeout(true, true, 60_000, 30_000)).toBe(300)
+  })
+
+  it('keeps an exhausted polling budget from closing an otherwise responsive warmup session', () => {
+    expect(shouldCloseCurrentPageQueryTimeout(true, 1)).toBe(false)
+    expect(shouldCloseCurrentPageQueryTimeout(true, 220)).toBe(false)
+    expect(shouldCloseCurrentPageQueryTimeout(true, 221)).toBe(true)
+    expect(shouldCloseCurrentPageQueryTimeout(false, 2_000)).toBe(false)
+  })
+
+  it('matches absolute and repository-relative weapp-vite dev commands for cleanup', () => {
+    expect(isResidualDevProcessCommand(
+      'node --import tsx /workspace/packages/weapp-vite/bin/weapp-vite.js dev /workspace/e2e-apps/wevu-runtime-e2e --platform weapp',
+    )).toBe(true)
+    expect(isResidualDevProcessCommand(
+      'node --import tsx packages/weapp-vite/src/cli.ts dev apps/demo --platform weapp',
+    )).toBe(true)
+  })
+
+  it('matches scoped pnpm dev commands without selecting unrelated processes', () => {
+    expect(isResidualDevProcessCommand(
+      'pnpm --dir /workspace/e2e-apps/demo run dev',
+    )).toBe(true)
+    expect(isResidualDevProcessCommand(
+      'node /workspace/packages/weapp-vite/bin/weapp-vite.js build /workspace/e2e-apps/demo',
+    )).toBe(false)
+    expect(isResidualDevProcessCommand(
+      'pnpm --dir /workspace/website run dev',
+    )).toBe(false)
+  })
+
+  it('can switch a deferred bridge wrapper to an isolated runtime root', () => {
+    const config = createBridgeWrapperProjectConfig({}, {}, {
+      miniprogramRoot: '__runtime__/',
+    })
+
+    expect(config.miniprogramRoot).toBe('__runtime__/')
+    expect(config.srcMiniprogramRoot).toBe('__runtime__/')
+    expect(createBridgeWrapperProjectConfig({}, {}, {
+      miniprogramRoot: '../outside',
+    }).miniprogramRoot).toBe('./')
   })
 
   it('creates self-contained bridge wrapper project config', () => {

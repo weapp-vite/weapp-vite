@@ -10,12 +10,12 @@
 
 | key | value |
 | --- | --- |
-| 生成时间 | 2026-06-24T03:47:40.734Z |
+| 生成时间 | 2026-08-27T13:10:03.324Z |
 | DevTools 应用路径 | /Applications/wechatwebdevtools.app |
-| DevTools package.json | /Applications/wechatwebdevtools.app/Contents/Resources/package.nw/package.json |
+| DevTools package.json | /Applications/wechatwebdevtools.app/Contents/Resources/app.asar.unpacked/package.json |
 | DevTools 产品名 | 微信开发者工具 |
-| DevTools 版本 | 2.01.2510290 |
-| DevTools buildTime | 1774078780548 (2026-03-21T07:39:40.548Z) |
+| DevTools 版本 | 2.02.2608060 |
+| DevTools buildTime | 1787647793927 (2026-08-25T08:49:53.927Z) |
 | HTTP 服务端口 | 默认 9420；运行时优先读取微信开发者工具设置/本仓库 runtime port |
 | Automator WS 地址 | 通过 DevTools CLI auto 启动，连接 ws://127.0.0.1:<auto-port> |
 
