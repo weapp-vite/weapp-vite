@@ -1,7 +1,7 @@
 import type { RuntimePlatform } from '../wevu-runtime.utils'
-import { WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
+import { WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '../../@weapp-core/constants/src'
 import { resolvePlatformMatrix } from './platform-matrix'
 
 export type { RuntimePlatform }
