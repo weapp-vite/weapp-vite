@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { McpServer } from '@modelcontextprotocol/server'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
@@ -163,7 +163,9 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
       'weapp_runtime_find_child',
       'weapp_runtime_find_children',
       'weapp_runtime_find_node',
+      'weapp_runtime_find_node_by_xpath',
       'weapp_runtime_find_nodes',
+      'weapp_runtime_find_nodes_by_xpath',
       'weapp_runtime_input_node',
       'weapp_runtime_invoke_component',
       'weapp_runtime_invoke_page',
@@ -235,6 +237,37 @@ describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
     else {
       expectToolError(rootReadyResult, /等待元素|未找到元素|超时/)
       await expectMcpDemoDistContract()
+    }
+
+    const findNodeByXpathResult = await callRawTool('weapp_runtime_find_node_by_xpath', {
+      xpath: '//view[@id="mcp-runtime-root"]',
+    })
+    if (isToolError(findNodeByXpathResult)) {
+      expectToolError(findNodeByXpathResult, /getElementByXpath|XPath|DevTools did not respond|调用/)
+    }
+    else {
+      const findNodeByXpath = expectToolResult<{ tagName?: string, xpath: string }>(findNodeByXpathResult)
+      expect(findNodeByXpath).toMatchObject({
+        xpath: '//view[@id="mcp-runtime-root"]',
+        tagName: 'view',
+      })
+    }
+
+    const findNodesByXpathResult = await callRawTool('weapp_runtime_find_nodes_by_xpath', {
+      xpath: '//view',
+    })
+    if (isToolError(findNodesByXpathResult)) {
+      expectToolError(findNodesByXpathResult, /getElementsByXpath|XPath|DevTools did not respond|调用/)
+    }
+    else {
+      const findNodesByXpath = expectToolResult<{
+        count: number
+        elements: Array<{ tagName?: string }>
+        xpath: string
+      }>(findNodesByXpathResult)
+      expect(findNodesByXpath.xpath).toBe('//view')
+      expect(findNodesByXpath.count).toBeGreaterThan(0)
+      expect(findNodesByXpath.elements.every(element => element.tagName === 'view')).toBe(true)
     }
 
     const wait = await callTool<{ waitedMs: number }>('weapp_runtime_wait', {
