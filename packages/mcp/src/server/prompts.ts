@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { McpServer } from '@modelcontextprotocol/server'
 import type { ExposedPackageId } from '../constants'
 import { z } from 'zod'
 
@@ -14,10 +14,10 @@ export function registerServerPrompts(
   server.registerPrompt('plan-weapp-vite-change', {
     title: 'Plan weapp-vite Change',
     description: '根据变更目标生成 weapp-vite / wevu 修改计划提示词',
-    argsSchema: {
+    argsSchema: z.object({
       objective: z.string().min(1),
       focusPackage: packageIdSchema.optional(),
-    },
+    }),
   }, async ({ objective, focusPackage }) => {
     const targets = focusPackage ? [focusPackage] : packageIds
     return {
@@ -41,9 +41,9 @@ export function registerServerPrompts(
   server.registerPrompt('debug-wevu-runtime', {
     title: 'Debug wevu Runtime',
     description: '用于定位 wevu runtime 生命周期/响应式问题的标准提示词',
-    argsSchema: {
+    argsSchema: z.object({
       symptom: z.string().min(1),
-    },
+    }),
   }, async ({ symptom }) => {
     return {
       messages: [
@@ -68,11 +68,11 @@ export function registerServerPrompts(
   server.registerPrompt('inspect-mini-program-page', {
     title: 'Inspect Mini Program Page',
     description: '连接微信开发者工具并检查当前小程序页面的标准流程',
-    argsSchema: {
+    argsSchema: z.object({
       projectPath: z.string().min(1),
       pagePath: z.string().optional(),
       focus: z.string().optional(),
-    },
+    }),
   }, async ({ projectPath, pagePath, focus }) => {
     return {
       messages: [
@@ -98,10 +98,10 @@ export function registerServerPrompts(
   server.registerPrompt('recover-mini-program-connection', {
     title: 'Recover Mini Program Connection',
     description: '恢复微信开发者工具 automator 连接的标准流程',
-    argsSchema: {
+    argsSchema: z.object({
       projectPath: z.string().min(1),
       lastError: z.string().optional(),
-    },
+    }),
   }, async ({ projectPath, lastError }) => {
     return {
       messages: [

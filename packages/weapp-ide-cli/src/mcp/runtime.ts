@@ -1,5 +1,5 @@
 import type { WeappIdeMcpServerOptions } from './server'
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { serveStdio } from '@modelcontextprotocol/server/stdio'
 import { withMiniProgram } from '../cli/automator-session'
 import { createWeappIdeMcpServer } from './server'
 
@@ -14,13 +14,14 @@ export async function startWeappIdeMcpServer(options: StartWeappIdeMcpServerOpti
     },
     workspaceRoot: options.workspaceRoot,
   }
-  const { server } = await createWeappIdeMcpServer(serverOptions)
-  const transport = new StdioServerTransport()
-  await server.connect(transport)
+  const handle = serveStdio(async () => {
+    const { server } = await createWeappIdeMcpServer(serverOptions)
+    return server
+  })
 
   return {
     close: async () => {
-      await transport.close()
+      await handle.close()
     },
   }
 }

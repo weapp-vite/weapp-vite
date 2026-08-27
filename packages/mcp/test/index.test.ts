@@ -1,17 +1,49 @@
 import fs from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
+import { createMcpHandler } from '@modelcontextprotocol/server'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { loadExposedCatalog } from '@/catalog'
 import { runCommand } from '@/commandOps'
 import { EXPOSED_PACKAGES } from '@/constants'
 import { resolveExposedPackage } from '@/exposedPackages'
 import { readFileContent } from '@/fileOps'
-import { createWeappViteMcpServer } from '@/server'
+import { createWeappViteMcpServerFactory } from '@/server'
 import { resolveWorkspaceRoot } from '@/workspace'
 
 const workspaceRoot = resolveWorkspaceRoot(path.resolve(import.meta.dirname, '../..'))
 const tempDirs: string[] = []
+
+interface ModernMcpClientHarness {
+  client: Client
+  close: () => Promise<void>
+}
+
+async function createModernMcpClient(root: string): Promise<ModernMcpClientHarness> {
+  const factory = await createWeappViteMcpServerFactory({ workspaceRoot: root })
+  const handler = createMcpHandler(() => factory.createServer())
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: (url, init) => handler.fetch(new Request(url, init)),
+  })
+  const client = new Client({
+    name: '@weapp-vite/mcp-test',
+    version: '1.0.0',
+  }, {
+    versionNegotiation: {
+      mode: { pin: '2026-07-28' },
+    },
+  })
+  await client.connect(transport)
+
+  return {
+    client,
+    close: async () => {
+      await client.close()
+      await handler.close()
+    },
+  }
+}
 
 async function createInstalledWorkspaceFixture() {
   const root = await fs.mkdtemp(path.join(tmpdir(), 'weapp-vite-mcp-installed-'))
@@ -119,16 +151,23 @@ describe('command runner', () => {
 })
 
 describe('mcp server registration', () => {
-  let server: any
+  let harness: ModernMcpClientHarness
 
   beforeAll(async () => {
-    const created = await createWeappViteMcpServer({ workspaceRoot })
-    server = created.server as any
+    harness = await createModernMcpClient(workspaceRoot)
   })
 
-  it('registers core tools', () => {
-    const tools = Object.keys(server._registeredTools ?? {})
-    expect(tools).toEqual(expect.arrayContaining([
+  afterAll(async () => {
+    await harness.close()
+  })
+
+  it('negotiates the MCP 2026-07-28 protocol era', () => {
+    expect(harness.client.getProtocolEra()).toBe('modern')
+  })
+
+  it('exposes core tools through the MCP v2 protocol', async () => {
+    const { tools } = await harness.client.listTools()
+    expect(tools.map(tool => tool.name)).toEqual(expect.arrayContaining([
       'workspace_catalog',
       'read_source_file',
       'search_source_code',
@@ -141,30 +180,33 @@ describe('mcp server registration', () => {
       'weapp_devtools_active_page',
       'weapp_devtools_console',
       'weapp_runtime_find_node',
+      'weapp_runtime_find_node_by_xpath',
       'weapp_runtime_tap_node',
     ]))
   })
 
-  it('registers documentation resources', () => {
-    const resources = Object.keys(server._registeredResources ?? {})
-    expect(resources).toEqual(expect.arrayContaining([
+  it('exposes documentation resources through the MCP v2 protocol', async () => {
+    const { resources } = await harness.client.listResources()
+    expect(resources.map(resource => resource.uri)).toEqual(expect.arrayContaining([
       'weapp-vite://workspace/catalog',
       'weapp-vite://docs/weapp-vite/README.md',
       'weapp-vite://docs/wevu/README.md',
     ]))
   })
 
-  it('creates an MCP server for installed-package workspaces', async () => {
+  it('creates an MCP v2 server for installed-package workspaces', async () => {
     const installedWorkspaceRoot = await createInstalledWorkspaceFixture()
+    const installedHarness = await createModernMcpClient(installedWorkspaceRoot)
+    try {
+      const installedCli = await resolveExposedPackage(installedWorkspaceRoot, 'weapp-vite')
+      const { resources } = await installedHarness.client.listResources()
 
-    const created = await createWeappViteMcpServer({
-      workspaceRoot: installedWorkspaceRoot,
-    })
-    const installedCli = await resolveExposedPackage(installedWorkspaceRoot, 'weapp-vite')
-    const registeredResources = Object.keys((created.server as any)._registeredResources ?? {})
-
-    expect(installedCli.cliPath?.endsWith(path.join('node_modules', 'weapp-vite', 'bin', 'weapp-vite.js'))).toBe(true)
-    expect(registeredResources).toContain('weapp-vite://docs/weapp-vite/README.md')
+      expect(installedCli.cliPath?.endsWith(path.join('node_modules', 'weapp-vite', 'bin', 'weapp-vite.js'))).toBe(true)
+      expect(resources.map(resource => resource.uri)).toContain('weapp-vite://docs/weapp-vite/README.md')
+    }
+    finally {
+      await installedHarness.close()
+    }
   })
 
   it('resolves installed weapp-vite cli entries for command execution', async () => {

@@ -13,6 +13,10 @@
 
 默认通过 `stdio` 运行，适合接入任意 MCP Client，也支持 `streamable-http`。
 
+当前实现基于 MCP TypeScript SDK v2，`stdio` 与 `streamable-http` 都显式支持
+`2026-07-28` 协议版本；旧版 2025-era 客户端仍可通过兼容路径接入。HTTP 模式默认校验
+`Host` 与 `Origin`，建议保持监听在 `127.0.0.1`。
+
 ## 启动
 
 ```bash
@@ -68,6 +72,7 @@ const handle = await startWeappViteMcpServer({
 - `weapp_devtools_host_api`: 调用 `wx.*` API
 - `weapp_devtools_console`: 读取 MCP 会话期间捕获的 console/exception 日志
 - `weapp_runtime_find_node` / `weapp_runtime_find_nodes` / `weapp_runtime_wait_node`: 查询和等待页面元素
+- `weapp_runtime_find_node_by_xpath` / `weapp_runtime_find_nodes_by_xpath`: 通过 XPath 查询页面元素
 - `weapp_runtime_page_state` / `weapp_runtime_update_page_state` / `weapp_runtime_invoke_page`: 操作页面实例
 - `weapp_runtime_tap_node` / `weapp_runtime_input_node`: 操作页面元素
 - `weapp_runtime_component_state` / `weapp_runtime_update_component_state` / `weapp_runtime_invoke_component`: 操作组件实例
@@ -130,5 +135,5 @@ pnpm --filter @weapp-vite/mcp build
 
 ## 相关链接
 
-- MCP SDK: https://github.com/modelcontextprotocol/sdk
+- MCP TypeScript SDK v2: https://github.com/modelcontextprotocol/typescript-sdk
 - 仓库: https://github.com/weapp-vite/weapp-vite

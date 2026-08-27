@@ -1,5 +1,6 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { McpServer } from '@modelcontextprotocol/server'
 import type {
+  MiniProgramElement,
   RuntimeSessionManager,
 } from './shared'
 import { z } from 'zod'
@@ -20,6 +21,12 @@ const selectorSchema = {
   withWxml: z.boolean().optional(),
 }
 
+const xpathSchema = {
+  ...connectionInputSchema,
+  xpath: z.string().trim().min(1),
+  withWxml: z.boolean().optional(),
+}
+
 export function registerRuntimePageTools(
   server: McpServer,
   manager: RuntimeSessionManager,
@@ -27,7 +34,7 @@ export function registerRuntimePageTools(
   server.registerTool('weapp_runtime_find_node', {
     title: 'Get Page Element',
     description: '通过选择器获取当前页面元素摘要，支持 selector[index=N]、innerSelector 与 withWxml。',
-    inputSchema: selectorSchema,
+    inputSchema: z.object(selectorSchema),
   }, async ({ selector, innerSelector, withWxml, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -48,11 +55,11 @@ export function registerRuntimePageTools(
   server.registerTool('weapp_runtime_find_nodes', {
     title: 'Get Page Elements',
     description: '通过选择器获取当前页面元素数组摘要，支持 selector[index=N] 与 withWxml。',
-    inputSchema: {
+    inputSchema: z.object({
       ...connectionInputSchema,
       selector: z.string().trim().min(1),
       withWxml: z.boolean().optional(),
-    },
+    }),
   }, async ({ selector, withWxml, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -73,15 +80,62 @@ export function registerRuntimePageTools(
     }
   })
 
+  server.registerTool('weapp_runtime_find_node_by_xpath', {
+    title: 'Get Page Element by XPath',
+    description: '通过 XPath 获取当前页面第一个匹配元素，适合按文本、属性或层级关系定位。',
+    inputSchema: z.object(xpathSchema),
+  }, async ({ xpath, withWxml, ...connection }) => {
+    try {
+      const result = await manager.withPage(connection, async (page) => {
+        const element = await callRequiredMethod<MiniProgramElement | null>(page, 'getElementByXpath', xpath)
+        if (!element) {
+          throw new Error(`XPath 未找到元素: "${xpath}"`)
+        }
+        return {
+          xpath,
+          ...await summarizeElement(element, withWxml),
+        }
+      })
+      return toToolResult(result)
+    }
+    catch (error) {
+      return toToolError(error)
+    }
+  })
+
+  server.registerTool('weapp_runtime_find_nodes_by_xpath', {
+    title: 'Get Page Elements by XPath',
+    description: '通过 XPath 获取当前页面全部匹配元素，适合批量检查结构与内容。',
+    inputSchema: z.object(xpathSchema),
+  }, async ({ xpath, withWxml, ...connection }) => {
+    try {
+      const result = await manager.withPage(connection, async (page) => {
+        const elements = await callRequiredMethod<MiniProgramElement[]>(page, 'getElementsByXpath', xpath)
+        return {
+          xpath,
+          count: elements.length,
+          elements: await Promise.all(elements.map(async (element, index) => ({
+            index,
+            ...await summarizeElement(element, withWxml),
+          }))),
+        }
+      })
+      return toToolResult(result)
+    }
+    catch (error) {
+      return toToolError(error)
+    }
+  })
+
   server.registerTool('weapp_runtime_wait_node', {
     title: 'Wait Page Element',
     description: '轮询等待元素出现，支持 selector[index=N]。',
-    inputSchema: {
+    inputSchema: z.object({
       ...connectionInputSchema,
       selector: z.string().trim().min(1),
       timeoutMs: z.number().int().positive().optional(),
       intervalMs: z.number().int().positive().optional(),
-    },
+    }),
   }, async ({ selector, timeoutMs = 5000, intervalMs = 200, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -110,10 +164,10 @@ export function registerRuntimePageTools(
   server.registerTool('weapp_runtime_wait', {
     title: 'Wait Page Timeout',
     description: '在当前页面等待指定毫秒数。',
-    inputSchema: {
+    inputSchema: z.object({
       ...connectionInputSchema,
       milliseconds: z.number().int().nonnegative(),
-    },
+    }),
   }, async ({ milliseconds, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -130,10 +184,10 @@ export function registerRuntimePageTools(
   server.registerTool('weapp_runtime_page_state', {
     title: 'Get Page Data',
     description: '读取当前页面 data，可通过 path 读取嵌套字段。',
-    inputSchema: {
+    inputSchema: z.object({
       ...connectionInputSchema,
       path: z.string().trim().min(1).optional(),
-    },
+    }),
   }, async ({ path, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async page => ({
@@ -150,11 +204,11 @@ export function registerRuntimePageTools(
   server.registerTool('weapp_runtime_update_page_state', {
     title: 'Set Page Data',
     description: '调用当前页面 setData 更新 data。',
-    inputSchema: {
+    inputSchema: z.object({
       ...connectionInputSchema,
       data: z.record(z.string(), z.unknown()),
       verify: z.boolean().optional(),
-    },
+    }),
   }, async ({ data, verify, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -174,11 +228,11 @@ export function registerRuntimePageTools(
   server.registerTool('weapp_runtime_invoke_page', {
     title: 'Call Page Method',
     description: '调用当前页面实例方法。',
-    inputSchema: {
+    inputSchema: z.object({
       ...connectionInputSchema,
       method: z.string().trim().min(1),
       args: z.array(z.unknown()).optional(),
-    },
+    }),
   }, async ({ method, args, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {

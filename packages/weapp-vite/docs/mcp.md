@@ -4,6 +4,9 @@
 
 `weapp-vite` 现在内置了对 `weapp-vite/mcp` 的集成，支持直接通过 `weapp-vite mcp` 启动 MCP Server（`stdio` 传输）。
 
+当前服务端已升级到 MCP TypeScript SDK v2。`stdio` 通过 `serveStdio`、HTTP 通过
+`createMcpHandler` 显式协商 `2026-07-28` 协议版本，同时保留对 2025-era 客户端的兼容。
+
 如果你是在其他仓库里通过 npm 依赖使用 `weapp-vite`，建议先让 AI 读取本地随包文档目录：
 
 - `node_modules/weapp-vite/dist/docs/index.md`
@@ -152,6 +155,7 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 1. 不传 `--workspace-root` 时，会从当前目录向上自动定位 `pnpm-workspace.yaml`。
 2. `--transport stdio` 通过标准输入输出通信，不会启动 HTTP 端口。
 3. `--transport streamable-http` 会启动本地 HTTP 服务，可供支持 URL 连接的 MCP Client 使用。
+4. HTTP 模式默认校验 `Host` 与 `Origin`，用于阻止本地服务的 DNS rebinding；推荐保持监听在 `127.0.0.1`。
 
 ### 3.2 程序化启动
 
@@ -237,6 +241,7 @@ await handle.close?.()
 21. `weapp_runtime_component_state` / `weapp_runtime_update_component_state` / `weapp_runtime_invoke_component`
 22. `weapp_runtime_find_child` / `weapp_runtime_find_children`
 23. `weapp_runtime_node_markup` / `weapp_runtime_node_styles` / `weapp_runtime_node_attrs` / `weapp_runtime_scroll_node` / `weapp_runtime_measure_node`
+24. `weapp_runtime_find_node_by_xpath` / `weapp_runtime_find_nodes_by_xpath`
 
 建议使用顺序：
 
@@ -276,6 +281,7 @@ MCP 服务端做了以下约束：
 1. 文件访问限制在工作区根目录内，阻止路径越界。
 2. 命令执行限制在白名单：`pnpm/node/git/rg`。
 3. 命令与文件读取有输出截断与超时控制，避免上下文爆炸。
+4. HTTP 入口校验本地主机 `Host` 与 `Origin`，阻止浏览器跨站访问和 DNS rebinding。
 
 建议在 CI 或团队环境中继续加上外层沙箱策略（容器、只读挂载、命令审计）。
 

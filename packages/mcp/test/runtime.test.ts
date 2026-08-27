@@ -28,8 +28,6 @@ interface MockHttpServer {
 }
 
 const mocks = vi.hoisted(() => {
-  const transportInstances: any[] = []
-  const mockConnect = vi.fn(async () => {})
   const mockMiniProgram = {
     callWxMethod: vi.fn(async () => ({ ok: true })),
     currentPage: vi.fn(async () => ({
@@ -61,88 +59,132 @@ const mocks = vi.hoisted(() => {
     resolveProjectPath: vi.fn((projectPath: string) => path.resolve('/workspace', projectPath)),
     resolveWorkspacePath: vi.fn((filePath: string) => path.resolve('/workspace', filePath)),
     withMiniProgram: vi.fn(async (_connection: unknown, runner: (miniProgram: typeof mockMiniProgram) => Promise<unknown>) => await runner(mockMiniProgram)),
-    withPage: vi.fn(async (_connection: unknown, runner: (page: Awaited<ReturnType<typeof mockMiniProgram.currentPage>>, miniProgram: typeof mockMiniProgram) => Promise<unknown>) => {
+    withPage: vi.fn(async (_connection: unknown, runner: (page: unknown, miniProgram: typeof mockMiniProgram) => Promise<unknown>) => {
       const page = await mockMiniProgram.currentPage()
       return await runner(page, mockMiniProgram)
     }),
   }
-  const mockCreateWeappViteMcpServer = vi.fn(async (_options?: unknown) => ({
+  const mockCreateServer = vi.fn(() => ({ name: '@weapp-vite/mcp-test' }))
+  const mockCreateWeappViteMcpServerFactory = vi.fn(async (_options?: unknown) => ({
+    createServer: mockCreateServer,
     runtimeManager: mockRuntimeManager,
-    server: {
-      connect: mockConnect,
-    },
+    workspaceRoot: '/workspace',
   }))
   const httpServers: MockHttpServer[] = []
-  const stdioInstances: any[] = []
+  const mcpHandlers: Array<{
+    close: () => Promise<void>
+    factory: () => unknown
+  }> = []
+  const nodeRequests: Array<{ method?: string, url?: string, body: unknown }> = []
+  const stdioHandles: Array<{ close: () => Promise<void> }> = []
   const mockHandleRequestImpl = vi.fn()
 
-  class MockStreamableHTTPServerTransport {
-    requests: Array<{ method?: string, url?: string, body: unknown }> = []
-    close = vi.fn(async () => {})
-
-    constructor(_options: unknown) {
-      transportInstances.push(this)
+  const mockCreateMcpHandler = vi.fn((factory: () => unknown) => {
+    const handler = {
+      close: vi.fn(async () => {}),
+      factory,
     }
-
-    async handleRequest(req: http.IncomingMessage, res: http.ServerResponse, body: unknown) {
-      this.requests.push({
-        method: req.method,
-        url: req.url,
-        body,
-      })
-      const handleRequestImpl = mocks.mockHandleRequestImpl.getMockImplementation() as ((
-        req: http.IncomingMessage,
-        res: http.ServerResponse,
-        body: unknown,
-      ) => Promise<void>) | undefined
-      if (handleRequestImpl) {
-        await handleRequestImpl(req, res, body)
-        return
+    mcpHandlers.push(handler)
+    return handler
+  })
+  const mockServeStdio = vi.fn((factory: () => unknown) => {
+    factory()
+    const handle = {
+      close: vi.fn(async () => {}),
+    }
+    stdioHandles.push(handle)
+    return handle
+  })
+  const mockToNodeHandler = vi.fn(() => async (req: http.IncomingMessage, res: http.ServerResponse) => {
+    let body: unknown
+    if (req.method === 'POST') {
+      const chunks: Buffer[] = []
+      for await (const chunk of req) {
+        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
       }
-      res.statusCode = 204
-      res.end()
+      const raw = Buffer.concat(chunks).toString('utf8').trim()
+      body = raw ? JSON.parse(raw) : undefined
     }
-  }
+    nodeRequests.push({
+      method: req.method,
+      url: req.url,
+      body,
+    })
+    const handleRequestImpl = mockHandleRequestImpl.getMockImplementation() as ((
+      req: http.IncomingMessage,
+      res: http.ServerResponse,
+      body: unknown,
+    ) => Promise<void>) | undefined
+    if (handleRequestImpl) {
+      await handleRequestImpl(req, res, body)
+      return
+    }
+    res.statusCode = 204
+    res.end()
+  })
 
-  class MockStdioServerTransport {
-    constructor() {
-      stdioInstances.push(this)
+  function createHeaderGuard(header: 'host' | 'origin', allowed: string[]) {
+    return (req: http.IncomingMessage, res: http.ServerResponse) => {
+      const value = req.headers[header]
+      if (header === 'origin' && value === undefined) {
+        return true
+      }
+      const hostname = header === 'origin'
+        ? new URL(String(value)).hostname
+        : String(value).replace(/:\d+$/, '')
+      if (allowed.includes(hostname)) {
+        return true
+      }
+      res.statusCode = 403
+      res.setHeader('content-type', 'application/json')
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: `Invalid ${header}`,
+        },
+        id: null,
+      }))
+      return false
     }
   }
 
   return {
+    createHeaderGuard,
     httpServers,
-    mockConnect,
-    mockCreateWeappViteMcpServer,
+    mcpHandlers,
+    mockCreateMcpHandler,
+    mockCreateServer,
+    mockCreateWeappViteMcpServerFactory,
     mockHandleRequestImpl,
     mockMiniProgram,
     mockRuntimeManager,
-    MockStdioServerTransport,
-    MockStreamableHTTPServerTransport,
-    stdioInstances,
-    transportInstances,
+    mockServeStdio,
+    mockToNodeHandler,
+    nodeRequests,
+    stdioHandles,
   }
 })
 
-vi.mock('@/server', async () => {
-  const actual = await vi.importActual<typeof import('@/server')>('@/server')
-  return {
-    ...actual,
-    createWeappViteMcpServer: mocks.mockCreateWeappViteMcpServer,
-  }
-})
+vi.mock('@/server', () => ({
+  createWeappViteMcpServerFactory: mocks.mockCreateWeappViteMcpServerFactory,
+}))
 
-vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => {
-  return {
-    StdioServerTransport: mocks.MockStdioServerTransport,
-  }
-})
+vi.mock('@modelcontextprotocol/server', () => ({
+  createMcpHandler: mocks.mockCreateMcpHandler,
+}))
 
-vi.mock('@modelcontextprotocol/sdk/server/streamableHttp.js', () => {
-  return {
-    StreamableHTTPServerTransport: mocks.MockStreamableHTTPServerTransport,
-  }
-})
+vi.mock('@modelcontextprotocol/server/stdio', () => ({
+  serveStdio: mocks.mockServeStdio,
+}))
+
+vi.mock('@modelcontextprotocol/node', () => ({
+  hostHeaderValidation: (allowed: string[]) => mocks.createHeaderGuard('host', allowed),
+  localhostHostValidation: () => mocks.createHeaderGuard('host', ['127.0.0.1', 'localhost', '[::1]']),
+  localhostOriginValidation: () => mocks.createHeaderGuard('origin', ['127.0.0.1', 'localhost', '::1']),
+  originValidation: (allowed: string[]) => mocks.createHeaderGuard('origin', allowed),
+  toNodeHandler: mocks.mockToNodeHandler,
+}))
 
 async function loadRuntimeModule(): Promise<RuntimeModule> {
   return import('@/runtime')
@@ -193,7 +235,10 @@ async function dispatchHttpRequest(
     {
       method: options.method,
       url: options.path,
-      headers: options.headers ?? {},
+      headers: {
+        host: '127.0.0.1',
+        ...options.headers,
+      },
     },
   ) as http.IncomingMessage
 
@@ -227,10 +272,14 @@ beforeEach(() => {
   vi.resetModules()
   vi.restoreAllMocks()
   mocks.httpServers.length = 0
-  mocks.stdioInstances.length = 0
-  mocks.transportInstances.length = 0
-  mocks.mockConnect.mockReset()
+  mocks.mcpHandlers.length = 0
+  mocks.nodeRequests.length = 0
+  mocks.stdioHandles.length = 0
+  mocks.mockCreateMcpHandler.mockClear()
+  mocks.mockCreateServer.mockClear()
   mocks.mockHandleRequestImpl.mockReset()
+  mocks.mockServeStdio.mockClear()
+  mocks.mockToNodeHandler.mockClear()
   mocks.mockMiniProgram.callWxMethod.mockClear()
   mocks.mockMiniProgram.currentPage.mockClear()
   mocks.mockMiniProgram.navigateTo.mockClear()
@@ -244,12 +293,11 @@ beforeEach(() => {
   mocks.mockRuntimeManager.resolveWorkspacePath.mockClear()
   mocks.mockRuntimeManager.withMiniProgram.mockClear()
   mocks.mockRuntimeManager.withPage.mockClear()
-  mocks.mockCreateWeappViteMcpServer.mockReset()
-  mocks.mockCreateWeappViteMcpServer.mockResolvedValue({
+  mocks.mockCreateWeappViteMcpServerFactory.mockReset()
+  mocks.mockCreateWeappViteMcpServerFactory.mockResolvedValue({
+    createServer: mocks.mockCreateServer,
     runtimeManager: mocks.mockRuntimeManager,
-    server: {
-      connect: mocks.mockConnect,
-    },
+    workspaceRoot: '/workspace',
   })
 })
 
@@ -260,10 +308,11 @@ describe('startStdioServer', () => {
 
     expect(handle).toEqual({
       transport: 'stdio',
+      close: expect.any(Function),
     })
-    expect(mocks.mockCreateWeappViteMcpServer).toHaveBeenCalledWith(undefined)
-    expect(mocks.mockConnect).toHaveBeenCalledTimes(1)
-    expect(mocks.stdioInstances).toHaveLength(1)
+    expect(mocks.mockCreateWeappViteMcpServerFactory).toHaveBeenCalledWith(undefined)
+    expect(mocks.mockServeStdio).toHaveBeenCalledTimes(1)
+    expect(mocks.mockCreateServer).toHaveBeenCalledTimes(1)
   })
 
   it('switches cwd for stdio transport when workspaceRoot is provided', async () => {
@@ -277,8 +326,9 @@ describe('startStdioServer', () => {
 
       expect(handle).toEqual({
         transport: 'stdio',
+        close: expect.any(Function),
       })
-      expect(mocks.mockCreateWeappViteMcpServer).toHaveBeenCalledWith({
+      expect(mocks.mockCreateWeappViteMcpServerFactory).toHaveBeenCalledWith({
         workspaceRoot,
       })
       expect(process.cwd()).toBe(previousCwd)
@@ -292,7 +342,7 @@ describe('startStdioServer', () => {
     const { startWeappViteMcpServer } = await loadRuntimeModule()
     const workspaceRoot = await mkdtemp(path.join(tmpdir(), 'weapp-vite-mcp-error-'))
     const previousCwd = process.cwd()
-    mocks.mockCreateWeappViteMcpServer.mockRejectedValueOnce(new Error('stdio boom'))
+    mocks.mockCreateWeappViteMcpServerFactory.mockRejectedValueOnce(new Error('stdio boom'))
 
     try {
       await expect(startWeappViteMcpServer({
@@ -325,13 +375,13 @@ describe('startStreamableHttpServer', () => {
     })
 
     expect(handle.transport).toBe('streamable-http')
-    expect(mocks.mockCreateWeappViteMcpServer).toHaveBeenCalledWith({
+    expect(mocks.mockCreateWeappViteMcpServerFactory).toHaveBeenCalledWith({
       runtimeHooks: {
         connectMiniProgram: expect.any(Function),
       },
       workspaceRoot: undefined,
     })
-    expect(mocks.mockConnect).toHaveBeenCalledTimes(1)
+    expect(mocks.mockCreateMcpHandler).toHaveBeenCalledTimes(1)
     expect(createServerSpy).toHaveBeenCalledTimes(1)
 
     const httpServer = mocks.httpServers[0]!
@@ -352,6 +402,24 @@ describe('startStreamableHttpServer', () => {
     expect(methodNotAllowed.statusCode).toBe(405)
     expect(JSON.parse(methodNotAllowed.text).error.code).toBe(-32005)
 
+    const invalidHost = await dispatchHttpRequest(httpServer, {
+      method: 'POST',
+      path: '/my-mcp',
+      headers: {
+        host: 'attacker.example',
+      },
+    })
+    expect(invalidHost.statusCode).toBe(403)
+
+    const invalidOrigin = await dispatchHttpRequest(httpServer, {
+      method: 'POST',
+      path: '/my-mcp',
+      headers: {
+        origin: 'https://attacker.example',
+      },
+    })
+    expect(invalidOrigin.statusCode).toBe(403)
+
     const invalidJson = await dispatchHttpRequest(httpServer, {
       method: 'POST',
       path: '/my-mcp',
@@ -371,16 +439,15 @@ describe('startStreamableHttpServer', () => {
     })
     expect(ok.statusCode).toBe(204)
 
-    const transport = mocks.transportInstances[0]
-    expect(transport.requests.length).toBeGreaterThan(0)
-    expect(transport.requests.at(-1)?.body).toEqual({
+    expect(mocks.nodeRequests.length).toBeGreaterThan(0)
+    expect(mocks.nodeRequests.at(-1)?.body).toEqual({
       jsonrpc: '2.0',
       id: 1,
       method: 'tools/list',
     })
 
     await handle.close?.()
-    expect(transport.close).toHaveBeenCalledTimes(1)
+    expect(mocks.mcpHandlers[0]?.close).toHaveBeenCalledTimes(1)
     expect(httpServer.close).toHaveBeenCalledTimes(1)
   })
 
@@ -418,10 +485,9 @@ describe('startStreamableHttpServer', () => {
     })
     expect(blankJson.statusCode).toBe(204)
 
-    const transport = mocks.transportInstances.at(-1)
-    expect(transport.requests.at(0)?.body).toBeUndefined()
-    expect(transport.requests.at(1)?.body).toBeUndefined()
-    expect(transport.requests.at(2)?.body).toBeUndefined()
+    expect(mocks.nodeRequests.at(-3)?.body).toBeUndefined()
+    expect(mocks.nodeRequests.at(-2)?.body).toBeUndefined()
+    expect(mocks.nodeRequests.at(-1)?.body).toBeUndefined()
     expect(onReady).toHaveBeenCalledWith(`[mcp] streamable-http ready at http://127.0.0.1:${port}/mcp`)
     expect(onReady).toHaveBeenCalledWith(`[mcp] REST runtime ready at http://127.0.0.1:${port}/api/weapp/devtools`)
 

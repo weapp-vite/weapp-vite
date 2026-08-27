@@ -1,5 +1,5 @@
 /* eslint-disable ts/no-use-before-define */
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { McpServer } from '@modelcontextprotocol/server'
 import type {
   MiniProgramElement,
   RuntimeSessionManager,
@@ -33,10 +33,10 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_tap_node', {
     title: 'Tap Element',
     description: '点击页面元素，支持 selector[index=N]、innerSelector 和点击后等待。',
-    inputSchema: {
+    inputSchema: z.object({
       ...elementSelectorSchema,
       waitMs: z.number().int().nonnegative().optional(),
-    },
+    }),
   }, async ({ selector, innerSelector, waitMs, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -61,10 +61,10 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_input_node', {
     title: 'Input Element Text',
     description: '向 input 或 textarea 元素输入文本。',
-    inputSchema: {
+    inputSchema: z.object({
       ...elementSelectorSchema,
       value: z.union([z.string(), z.number()]),
-    },
+    }),
   }, async ({ selector, innerSelector, value, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -86,11 +86,11 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_invoke_component', {
     title: 'Call Element Method',
     description: '调用自定义组件元素实例方法。',
-    inputSchema: {
+    inputSchema: z.object({
       ...elementSelectorSchema,
       method: z.string().trim().min(1),
       args: z.array(z.unknown()).optional(),
-    },
+    }),
   }, async ({ selector, innerSelector, method, args, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -114,10 +114,10 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_component_state', {
     title: 'Get Element Data',
     description: '读取自定义组件元素 data，可通过 path 读取嵌套字段。',
-    inputSchema: {
+    inputSchema: z.object({
       ...elementSelectorSchema,
       path: z.string().trim().min(1).optional(),
-    },
+    }),
   }, async ({ selector, innerSelector, path, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -139,10 +139,10 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_update_component_state', {
     title: 'Set Element Data',
     description: '调用自定义组件元素 setData 更新 data。',
-    inputSchema: {
+    inputSchema: z.object({
       ...elementSelectorSchema,
       data: z.record(z.string(), z.unknown()),
-    },
+    }),
   }, async ({ selector, innerSelector, data, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -164,11 +164,11 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_find_child', {
     title: 'Get Inner Element',
     description: '在元素范围内查询单个内部元素。',
-    inputSchema: {
+    inputSchema: z.object({
       ...elementSelectorSchema,
       targetSelector: z.string().trim().min(1),
       withWxml: z.boolean().optional(),
-    },
+    }),
   }, async ({ selector, innerSelector, targetSelector, withWxml, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -194,11 +194,11 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_find_children', {
     title: 'Get Inner Elements',
     description: '在元素范围内查询内部元素数组。',
-    inputSchema: {
+    inputSchema: z.object({
       ...elementSelectorSchema,
       targetSelector: z.string().trim().min(1),
       withWxml: z.boolean().optional(),
-    },
+    }),
   }, async ({ selector, innerSelector, targetSelector, withWxml, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -228,10 +228,10 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_node_markup', {
     title: 'Get Element WXML',
     description: '读取元素 inner WXML 或 outer WXML。',
-    inputSchema: {
+    inputSchema: z.object({
       ...elementSelectorSchema,
       outer: z.boolean().optional(),
-    },
+    }),
   }, async ({ selector, innerSelector, outer, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -254,10 +254,10 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_node_styles', {
     title: 'Get Element Styles',
     description: '读取元素样式值。',
-    inputSchema: {
+    inputSchema: z.object({
       ...elementSelectorSchema,
       names: z.array(z.string().trim().min(1)).min(1),
-    },
+    }),
   }, async ({ selector, innerSelector, names, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -281,10 +281,10 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_node_attrs', {
     title: 'Get Element Attributes',
     description: '读取元素 attribute 值。',
-    inputSchema: {
+    inputSchema: z.object({
       ...elementSelectorSchema,
       names: z.array(z.string().trim().min(1)).min(1),
-    },
+    }),
   }, async ({ selector, innerSelector, names, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -308,11 +308,11 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_scroll_node', {
     title: 'Scroll Element',
     description: '滚动 scroll-view 元素到指定位置。',
-    inputSchema: {
+    inputSchema: z.object({
       ...elementSelectorSchema,
       x: z.number(),
       y: z.number(),
-    },
+    }),
   }, async ({ selector, innerSelector, x, y, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -335,7 +335,7 @@ export function registerRuntimeNodeTools(
   server.registerTool('weapp_runtime_measure_node', {
     title: 'Get Element Bounding Rect',
     description: '读取元素视口矩形；优先使用元素 offset/size，缺失时返回可用字段。',
-    inputSchema: elementSelectorSchema,
+    inputSchema: z.object(elementSelectorSchema),
   }, async ({ selector, innerSelector, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {

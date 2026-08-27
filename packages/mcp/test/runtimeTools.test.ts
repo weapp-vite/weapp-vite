@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { McpServer } from '@modelcontextprotocol/server'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
@@ -77,6 +77,11 @@ function createMiniProgram() {
     $: vi.fn(async (): Promise<ElementFixture | null> => createElement()),
     $$: vi.fn(async (): Promise<ElementFixture[]> => [createElement(), createElement()]),
     callMethod: vi.fn(async (method: string, ...args: unknown[]) => ({ args, method })),
+    getElementByXpath: vi.fn(async (): Promise<ElementFixture | null> => createElement({ tagName: 'button' })),
+    getElementsByXpath: vi.fn(async (): Promise<ElementFixture[]> => [
+      createElement({ tagName: 'button' }),
+      createElement({ tagName: 'button' }),
+    ]),
   }
   const miniProgram = {
     on: vi.fn((name: string, handler: (payload: unknown) => void) => {
@@ -122,6 +127,8 @@ describe('runtime MCP tools', () => {
       'weapp_devtools_capture',
       'weapp_devtools_console',
       'weapp_runtime_find_node',
+      'weapp_runtime_find_node_by_xpath',
+      'weapp_runtime_find_nodes_by_xpath',
       'weapp_runtime_update_page_state',
       'weapp_runtime_tap_node',
       'weapp_runtime_node_markup',
@@ -218,6 +225,33 @@ describe('runtime MCP tools', () => {
     expect(inner.tap).toHaveBeenCalledTimes(1)
     expect(fixture.page.$$).toHaveBeenCalledWith('.item', { fallback: false })
     expect(fixture.page.waitFor).toHaveBeenCalledWith(10)
+  })
+
+  it('queries page elements by XPath', async () => {
+    const fixture = createMiniProgram()
+    mocks.acquireSharedMiniProgram.mockResolvedValue(fixture.miniProgram)
+    const { tools } = createRuntimeToolRegistry()
+    const xpath = '//button[@id="save"]'
+
+    const singleResult = await getTool(tools, 'weapp_runtime_find_node_by_xpath')({
+      projectPath: 'apps/demo',
+      xpath,
+    })
+    const multipleResult = await getTool(tools, 'weapp_runtime_find_nodes_by_xpath')({
+      projectPath: 'apps/demo',
+      xpath: '//button',
+    })
+
+    expect(fixture.page.getElementByXpath).toHaveBeenCalledWith(xpath)
+    expect(readStructuredResult(singleResult)).toMatchObject({
+      xpath,
+      tagName: 'button',
+    })
+    expect(fixture.page.getElementsByXpath).toHaveBeenCalledWith('//button')
+    expect(readStructuredResult(multipleResult)).toMatchObject({
+      xpath: '//button',
+      count: 2,
+    })
   })
 
   it('sets page data and can verify the updated page data', async () => {

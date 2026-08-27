@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { McpServer } from '@modelcontextprotocol/server'
 import type {
   RuntimeSessionManager,
 } from './shared'
@@ -12,6 +12,7 @@ import {
   captureMiniProgramScreenshot,
   compactObject,
   connectionInputSchema,
+  connectionSchema,
   DEFAULT_SCREENSHOT_TIMEOUT,
   toSerializableValue,
 } from './shared'
@@ -42,10 +43,10 @@ export function registerDevtoolsRuntimeTools(
   server.registerTool('weapp_devtools_connect', {
     title: 'Ensure Mini Program Connection',
     description: '确保微信开发者工具 automator 会话可用，并返回当前页面与系统信息。',
-    inputSchema: {
+    inputSchema: z.object({
       ...connectionInputSchema,
       reconnect: z.boolean().optional(),
-    },
+    }),
   }, async ({ reconnect, ...connection }) => {
     try {
       if (reconnect) {
@@ -74,7 +75,7 @@ export function registerDevtoolsRuntimeTools(
   server.registerTool('weapp_devtools_route', {
     title: 'Navigate Mini Program',
     description: '在小程序内执行 navigateTo、redirectTo、reLaunch、switchTab 或 navigateBack。',
-    inputSchema: navigateSchema,
+    inputSchema: z.object(navigateSchema),
   }, async ({ path: pagePath, query, transition = 'navigateTo', waitMs, ...connection }) => {
     try {
       const result = await manager.withMiniProgram(connection, async (miniProgram) => {
@@ -121,10 +122,10 @@ export function registerDevtoolsRuntimeTools(
   server.registerTool('weapp_devtools_active_page', {
     title: 'Current Mini Program Page',
     description: '获取当前页面路径、查询参数、尺寸、滚动位置；可选返回页面 data。',
-    inputSchema: {
+    inputSchema: z.object({
       ...connectionInputSchema,
       withData: z.boolean().optional(),
-    },
+    }),
   }, async ({ withData, ...connection }) => {
     try {
       const result = await manager.withPage(connection, async (page) => {
@@ -152,7 +153,7 @@ export function registerDevtoolsRuntimeTools(
   server.registerTool('weapp_devtools_page_stack', {
     title: 'Mini Program Page Stack',
     description: '获取当前小程序页面栈。',
-    inputSchema: connectionInputSchema,
+    inputSchema: connectionSchema,
   }, async (connection) => {
     try {
       const result = await manager.withMiniProgram(connection, async (miniProgram) => {
@@ -172,7 +173,7 @@ export function registerDevtoolsRuntimeTools(
   server.registerTool('weapp_devtools_capture', {
     title: 'Mini Program Screenshot',
     description: '截取当前小程序视口，返回 base64，或保存到 workspaceRoot 相对 outputPath。',
-    inputSchema: screenshotSchema,
+    inputSchema: z.object(screenshotSchema),
   }, async ({ outputPath, ...connection }) => {
     try {
       const result = await manager.withMiniProgram(connection, async (miniProgram) => {
@@ -206,7 +207,7 @@ export function registerDevtoolsRuntimeTools(
   server.registerTool('weapp_devtools_host_api', {
     title: 'Call wx Method',
     description: '调用微信小程序 wx API，例如 wx.pageScrollTo。',
-    inputSchema: hostApiSchema,
+    inputSchema: z.object(hostApiSchema),
   }, async ({ method, args, ...connection }) => {
     try {
       const result = await manager.withMiniProgram(connection, async (miniProgram) => {
@@ -228,9 +229,9 @@ export function registerDevtoolsRuntimeTools(
   server.registerTool('weapp_devtools_console', {
     title: 'Get Mini Program Logs',
     description: '读取 MCP 会话捕获到的小程序 console/exception 日志；可选读取后清空。',
-    inputSchema: {
+    inputSchema: z.object({
       clear: z.boolean().optional(),
-    },
+    }),
   }, async ({ clear }) => {
     try {
       const logs = manager.getLogs()

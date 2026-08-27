@@ -87,7 +87,7 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/server": "^2.0.0",
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/devtools-runtime": "workspace:*",
@@ -98,5 +98,8 @@
     "pixelmatch": "^7.2.0",
     "pngjs": "^7.0.0",
     "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
   }
 }

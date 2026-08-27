@@ -1,20 +1,22 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { McpServer } from '@modelcontextprotocol/server'
 import type { ExposedPackageId } from '../constants'
-import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { ResolvedExposedPackage } from '../exposedPackages'
+import { ResourceTemplate } from '@modelcontextprotocol/server'
 import { DEFAULT_MAX_FILE_CHARS } from '../constants'
 import { resolveExposedPackages } from '../exposedPackages'
 import { readFileContent } from '../fileOps'
 import { normalizeErrorMessage } from '../utils'
 import { readTextFile, resolvePackageRoot, toDocsUri } from './shared'
 
-export async function registerServerResources(
+export function registerServerResources(
   server: McpServer,
   options: {
     workspaceRoot: string
     packageIds: ExposedPackageId[]
+    exposedPackages: ResolvedExposedPackage[]
   },
 ) {
-  const { workspaceRoot, packageIds } = options
+  const { workspaceRoot, packageIds, exposedPackages } = options
 
   server.registerResource('workspace-catalog', 'weapp-vite://workspace/catalog', {
     title: 'Workspace Catalog',
@@ -32,8 +34,7 @@ export async function registerServerResources(
     }
   })
 
-  const catalog = await resolveExposedPackages(workspaceRoot)
-  for (const summary of catalog) {
+  for (const summary of exposedPackages) {
     if (summary.docs.readme) {
       const uri = toDocsUri(summary.id, 'README.md')
       server.registerResource(`docs-${summary.id}-readme`, uri, {
