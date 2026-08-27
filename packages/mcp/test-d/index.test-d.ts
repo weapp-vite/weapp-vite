@@ -1,5 +1,6 @@
-import type { McpServerHandle, StartMcpServerOptions } from '@weapp-vite/mcp'
+import type { McpServerHandle, StartMcpServerOptions, WeappViteMcpServerFactory } from '@weapp-vite/mcp'
 import {
+  createWeappViteMcpServerFactory,
   DEFAULT_MCP_ENDPOINT,
   DEFAULT_MCP_HOST,
   DEFAULT_MCP_PORT,
@@ -27,10 +28,13 @@ const options: StartMcpServerOptions = {
 
 expectType<'stdio' | 'streamable-http' | undefined>(options.transport)
 expectType<string | false | undefined>(options.restEndpoint)
-expectType<Promise<void>>(startStdioServer({
+expectType<Promise<McpServerHandle>>(startStdioServer({
   workspaceRoot: '/tmp/workspace',
 }))
 expectType<Promise<McpServerHandle>>(startWeappViteMcpServer(options))
+expectType<Promise<WeappViteMcpServerFactory>>(createWeappViteMcpServerFactory({
+  workspaceRoot: '/tmp/workspace',
+}))
 
 expectError<StartMcpServerOptions>({
   transport: 'http',

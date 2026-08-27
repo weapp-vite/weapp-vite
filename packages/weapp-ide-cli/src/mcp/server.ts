@@ -3,7 +3,7 @@ import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import { readElementSnapshot, toSerializableValue } from './shared'
 
@@ -109,7 +109,7 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
   server.registerTool('weapp_devtools_connect', {
     title: 'Connect DevTools',
     description: '连接当前项目的微信开发者工具并返回页面信息。',
-    inputSchema: defineConnectionSchema(),
+    inputSchema: z.object(defineConnectionSchema()),
   }, async (input) => {
     try {
       const result = await withConnectedMiniProgram(options.runtimeHooks, workspaceRoot, input, async (miniProgram) => {
@@ -138,7 +138,7 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
   server.registerTool('weapp_devtools_active_page', {
     title: 'Current Page',
     description: '读取当前页面路径、query、尺寸、滚动位置和页面 data。',
-    inputSchema: definePageSchema(),
+    inputSchema: z.object(definePageSchema()),
   }, async (input) => {
     try {
       const result = await withConnectedPage(options.runtimeHooks, workspaceRoot, input, async (page) => {
@@ -171,7 +171,7 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
   server.registerTool('weapp_devtools_page_stack', {
     title: 'Page Stack',
     description: '读取当前小程序页面栈。',
-    inputSchema: defineConnectionSchema(),
+    inputSchema: z.object(defineConnectionSchema()),
   }, async (input) => {
     try {
       const result = await withConnectedMiniProgram(options.runtimeHooks, workspaceRoot, input, async (miniProgram) => {
@@ -197,11 +197,11 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
   server.registerTool('weapp_runtime_find_node', {
     title: 'Find Node',
     description: '通过 selector 查找单个节点，并返回节点快照。',
-    inputSchema: {
+    inputSchema: z.object({
       ...defineElementSchema(),
       attributes: z.array(z.string().trim().min(1)).optional(),
       styles: z.array(z.string().trim().min(1)).optional(),
-    },
+    }),
   }, async (input) => {
     try {
       const result = await withConnectedPage(options.runtimeHooks, workspaceRoot, input, async (page) => {
@@ -232,10 +232,10 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
   server.registerTool('weapp_runtime_find_nodes', {
     title: 'Find Nodes',
     description: '通过 selector 查找多个节点，并返回节点快照列表。',
-    inputSchema: {
+    inputSchema: z.object({
       ...defineElementSchema(),
       limit: z.number().int().positive().max(100).optional(),
-    },
+    }),
   }, async (input) => {
     try {
       const result = await withConnectedPage(options.runtimeHooks, workspaceRoot, input, async (page) => {
@@ -262,7 +262,7 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
   server.registerTool('weapp_runtime_tap_node', {
     title: 'Tap Node',
     description: '点击指定节点。',
-    inputSchema: defineElementSchema(),
+    inputSchema: z.object(defineElementSchema()),
   }, async (input) => {
     try {
       const result = await withConnectedPage(options.runtimeHooks, workspaceRoot, input, async (page) => {
@@ -289,10 +289,10 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
   server.registerTool('weapp_runtime_input_node', {
     title: 'Input Node',
     description: '向指定节点输入文本。',
-    inputSchema: {
+    inputSchema: z.object({
       ...defineElementSchema(),
       value: z.string(),
-    },
+    }),
   }, async (input) => {
     try {
       const result = await withConnectedPage(options.runtimeHooks, workspaceRoot, input, async (page) => {
@@ -323,10 +323,10 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
   server.registerTool('weapp_devtools_capture', {
     title: 'Capture Screenshot',
     description: '截取当前小程序视口并返回 base64，支持保存到文件。',
-    inputSchema: {
+    inputSchema: z.object({
       ...defineConnectionSchema(),
       outputPath: z.string().trim().min(1).optional(),
-    },
+    }),
   }, async (input) => {
     try {
       const result = await withConnectedMiniProgram(options.runtimeHooks, workspaceRoot, input, async (miniProgram) => {
@@ -363,11 +363,11 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
   server.registerTool('weapp_devtools_host_api', {
     title: 'Call wx Method',
     description: '调用小程序 wx API。',
-    inputSchema: {
+    inputSchema: z.object({
       ...defineConnectionSchema(),
       method: z.string().trim().min(1),
       args: z.array(z.unknown()).optional(),
-    },
+    }),
   }, async (input) => {
     try {
       const result = await withConnectedMiniProgram(options.runtimeHooks, workspaceRoot, input, async (miniProgram) => {

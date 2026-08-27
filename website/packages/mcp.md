@@ -16,6 +16,10 @@ keywords:
 
 在当前版本中，`weapp-vite` 已集成该能力。大多数场景下，你不需要单独使用此包，而是直接通过 `wv mcp` 启动。
 
+当前服务端基于 MCP TypeScript SDK v2：`stdio` 与 `streamable-http` 均支持
+`2026-07-28` 协议版本，并兼容 2025-era 客户端。HTTP 入口默认校验 `Host` 与
+`Origin`，推荐使用 `127.0.0.1` 本地监听。
+
 ## 推荐使用方式
 
 ```bash
@@ -122,6 +126,7 @@ pnpm --filter @weapp-vite/mcp start
 | Tool                                                                                                                                                | 作用                                        |
 | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | `weapp_runtime_find_node` / `weapp_runtime_find_nodes` / `weapp_runtime_wait_node`                                                                  | 查询或等待页面元素                          |
+| `weapp_runtime_find_node_by_xpath` / `weapp_runtime_find_nodes_by_xpath`                                                                            | 通过 XPath 按文本、属性或层级关系查询元素   |
 | `weapp_runtime_wait`                                                                                                                                | 在当前页面等待指定毫秒数                    |
 | `weapp_runtime_page_state` / `weapp_runtime_update_page_state` / `weapp_runtime_invoke_page`                                                        | 读取页面 data、调用 `setData`、调用页面方法 |
 | `weapp_runtime_tap_node` / `weapp_runtime_input_node`                                                                                               | 点击节点、向输入节点输入文本                |
@@ -200,6 +205,7 @@ pnpm --filter @weapp-vite/mcp start
 1. 文件读取限制在 workspace 根目录内。
 2. 命令执行限制在白名单（`pnpm/node/git/rg`）。
 3. 输出内容有截断与超时保护。
+4. HTTP 入口校验本地主机 `Host` 与 `Origin`，阻止 DNS rebinding。
 
 ## 二次开发建议
 

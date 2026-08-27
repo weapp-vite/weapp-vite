@@ -1,13 +1,17 @@
-import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js'
-import type { IncomingMessage, ServerResponse } from 'node:http'
+import type { ServerResponse } from 'node:http'
 import type { CreateServerOptions } from './server'
-import { Buffer } from 'node:buffer'
-import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import process from 'node:process'
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
-import { createWeappViteMcpServer } from './server'
+import {
+  hostHeaderValidation,
+  localhostHostValidation,
+  localhostOriginValidation,
+  originValidation,
+  toNodeHandler,
+} from '@modelcontextprotocol/node'
+import { createMcpHandler } from '@modelcontextprotocol/server'
+import { serveStdio } from '@modelcontextprotocol/server/stdio'
+import { createWeappViteMcpServerFactory } from './server'
 import { DEFAULT_RUNTIME_REST_ENDPOINT, handleRuntimeRestRequest, normalizeRuntimeRestEndpoint } from './server/runtime/rest'
 
 export { DEFAULT_RUNTIME_REST_ENDPOINT }
@@ -47,25 +51,6 @@ function normalizePort(input: unknown) {
   return DEFAULT_MCP_PORT
 }
 
-async function parseJsonBody(req: IncomingMessage) {
-  if (req.method !== 'POST') {
-    return undefined
-  }
-
-  const chunks: Buffer[] = []
-  for await (const chunk of req) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
-  }
-  if (chunks.length === 0) {
-    return undefined
-  }
-  const raw = Buffer.concat(chunks).toString('utf8').trim()
-  if (!raw) {
-    return undefined
-  }
-  return JSON.parse(raw) as JSONRPCMessage | JSONRPCMessage[]
-}
-
 function writeJson(res: ServerResponse, statusCode: number, payload: Record<string, unknown>) {
   if (res.headersSent) {
     return
@@ -75,16 +60,21 @@ function writeJson(res: ServerResponse, statusCode: number, payload: Record<stri
   res.end(JSON.stringify(payload))
 }
 
-export async function startStdioServer(options?: CreateServerOptions) {
+export async function startStdioServer(options?: CreateServerOptions): Promise<McpServerHandle> {
   const previousCwd = process.cwd()
   if (options?.workspaceRoot) {
     process.chdir(options.workspaceRoot)
   }
 
   try {
-    const { server } = await createWeappViteMcpServer(options)
-    const transport = new StdioServerTransport()
-    await server.connect(transport)
+    const factory = await createWeappViteMcpServerFactory(options)
+    const handle = serveStdio(() => factory.createServer())
+    return {
+      transport: 'stdio',
+      close: async () => {
+        await handle.close()
+      },
+    }
   }
   finally {
     if (options?.workspaceRoot) {
@@ -108,19 +98,24 @@ async function startStreamableHttpServer(options: StartMcpServerOptions): Promis
   const normalizedEndpoint = normalizeEndpoint(endpoint)
   const normalizedPort = normalizePort(port)
   const normalizedRestEndpoint = normalizeRuntimeRestEndpoint(restEndpoint)
-  const { runtimeManager, server: mcpServer } = await createWeappViteMcpServer({ runtimeHooks, workspaceRoot })
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: randomUUID,
+  const factory = await createWeappViteMcpServerFactory({ runtimeHooks, workspaceRoot })
+  const mcpHandler = createMcpHandler(() => factory.createServer(), {
+    legacy: 'stateless',
   })
-  await mcpServer.connect(transport)
+  const nodeHandler = toNodeHandler(mcpHandler)
+  const isLoopback = ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(host)
+  const validateHost = isLoopback ? localhostHostValidation() : hostHeaderValidation([host])
+  const validateOrigin = isLoopback ? localhostOriginValidation() : originValidation([host])
 
   const httpServer = http.createServer(async (req, res) => {
     try {
-      const hostHeader = req.headers.host ?? `${host}:${normalizedPort}`
-      const url = new URL(req.url ?? '/', `http://${hostHeader}`)
+      if (!validateHost(req, res) || !validateOrigin(req, res)) {
+        return
+      }
+      const url = new URL(req.url ?? '/', 'http://localhost')
       const handledByRest = await handleRuntimeRestRequest(req, res, {
         endpoint: normalizedRestEndpoint,
-        manager: runtimeManager,
+        manager: factory.runtimeManager,
       })
       if (handledByRest) {
         return
@@ -151,8 +146,7 @@ async function startStreamableHttpServer(options: StartMcpServerOptions): Promis
         return
       }
 
-      const body = await parseJsonBody(req)
-      await transport.handleRequest(req, res, body)
+      await nodeHandler(req, res)
     }
     catch (error) {
       writeJson(res, 500, {
@@ -187,7 +181,7 @@ async function startStreamableHttpServer(options: StartMcpServerOptions): Promis
   return {
     transport: 'streamable-http',
     close: async () => {
-      await transport.close()
+      await mcpHandler.close()
       await new Promise<void>((resolve, reject) => {
         httpServer.close((error) => {
           if (error) {
@@ -207,8 +201,5 @@ export async function startWeappViteMcpServer(options?: StartMcpServerOptions): 
     return startStreamableHttpServer(options ?? {})
   }
 
-  await startStdioServer(options)
-  return {
-    transport: 'stdio',
-  }
+  return await startStdioServer(options)
 }
