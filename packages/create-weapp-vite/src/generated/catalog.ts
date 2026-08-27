@@ -22,8 +22,8 @@ export const TEMPLATE_CATALOG = {
   '@vant/weapp': '^1.11.7',
   '@vitejs/plugin-vue': '^6.0.8',
   '@vue/babel-plugin-jsx': '3.0.0',
-  '@vue/compiler-core': '^3.5.41',
-  '@vue/compiler-dom': '^3.5.41',
+  '@vue/compiler-core': '^3.5.42',
+  '@vue/compiler-dom': '^3.5.42',
   '@vue/language-core': '^3.3.11',
   '@wot-ui/ui': '2.3.2',
   'antd-mini': '^3.4.3',
@@ -33,7 +33,7 @@ export const TEMPLATE_CATALOG = {
   'estree-walker': '^3.0.3',
   'gm-crypto': '^0.1.12',
   'graphql-request': '^7.4.0',
-  'happy-dom': '^20.11.8',
+  'happy-dom': '^20.11.12',
   'lru-cache': '^11.5.2',
   'magic-string': '^1.2.3',
   'miniprogram-api-typings': '^5.2.3',
@@ -77,7 +77,7 @@ export const TEMPLATE_CATALOG = {
   tsx: '^4.23.12',
   typescript: '^6.0.3',
   vite: '8.2.2',
-  vue: '^3.5.41',
+  vue: '^3.5.42',
   zod: '^4.4.3'
 } as const
 

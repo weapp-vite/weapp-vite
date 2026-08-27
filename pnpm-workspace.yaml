@@ -44,8 +44,8 @@ catalog:
   '@types/semver': ^7.8.0
   '@vant/weapp': ^1.11.7
   '@vitejs/plugin-vue': ^6.0.8
-  '@vue/compiler-core': ^3.5.41
-  '@vue/compiler-dom': ^3.5.41
+  '@vue/compiler-core': ^3.5.42
+  '@vue/compiler-dom': ^3.5.42
   '@vue/babel-plugin-jsx': 3.0.0
   '@vue/language-core': ^3.3.11
   '@wot-ui/ui': 2.3.2
@@ -64,7 +64,7 @@ catalog:
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
   graphql-request: ^7.4.0
-  happy-dom: ^20.11.8
+  happy-dom: ^20.11.12
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
   lru-cache: ^11.5.2
@@ -98,7 +98,7 @@ catalog:
   uview-plus: 3.8.112
   vite: 8.2.2
   vite-plugin-inspect: ^12.0.2
-  vue: ^3.5.41
+  vue: ^3.5.42
   vue-tsc: ^3.3.11
   weapp-tailwindcss: ^5.3.6
   zod: ^4.4.3
