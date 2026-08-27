@@ -15,8 +15,8 @@
   "devDependencies": {
     "@tanstack/vue-query": "^5.102.6",
     "@weapp-vite/dashboard": "workspace:*",
-    "axios": "^1.20.0",
-    "graphql-request": "^7.4.0",
+    "axios": "catalog:",
+    "graphql-request": "catalog:",
     "miniprogram-api-typings": "catalog:latest",
     "typescript": "catalog:latest",
     "weapp-vite": "workspace:*",

@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",
-    "picocolors": "^1.1.1",
+    "picocolors": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

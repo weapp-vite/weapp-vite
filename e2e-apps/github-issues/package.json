@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@wevu/web-apis": "workspace:*",
-    "axios": "^1.20.0",
+    "axios": "catalog:",
     "camelcase": "^9.0.0",
     "dayjs": "catalog:",
     "merge": "catalog:",
@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",
-    "socket.io-client": "^4.8.3",
+    "socket.io-client": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "weapp-tailwindcss": "catalog:weapp-tailwindcss-fixed",
     "weapp-vite": "workspace:*",

@@ -69,7 +69,7 @@
     "magic-string": "catalog:",
     "pathe": "catalog:",
     "postcss": "catalog:",
-    "postcss-selector-parser": "^7.1.5",
+    "postcss-selector-parser": "catalog:",
     "rolldown": "catalog:",
     "rolldown-require": "workspace:*",
     "wevu": "workspace:*"

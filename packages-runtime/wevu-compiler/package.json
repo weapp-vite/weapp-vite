@@ -64,7 +64,7 @@
     "merge": "catalog:",
     "pathe": "catalog:",
     "postcss": "catalog:",
-    "postcss-selector-parser": "^7.1.5",
+    "postcss-selector-parser": "catalog:",
     "rolldown-require": "workspace:*",
     "vue": "catalog:"
   },

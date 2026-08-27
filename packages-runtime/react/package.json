@@ -56,16 +56,16 @@
   "peerDependencies": {
     "miniprogram-api-typings": "^5.0.0",
     "react": "^19.2.0",
-    "react-reconciler": "0.33.0"
+    "react-reconciler": "catalog:"
   },
   "dependencies": {
     "@weapp-core/constants": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "19.2.18",
-    "@types/react-reconciler": "0.33.0",
+    "@types/react": "catalog:",
+    "@types/react-reconciler": "catalog:",
     "miniprogram-api-typings": "catalog:",
-    "react": "19.2.8",
-    "react-reconciler": "0.33.0"
+    "react": "catalog:",
+    "react-reconciler": "catalog:"
   }
 }

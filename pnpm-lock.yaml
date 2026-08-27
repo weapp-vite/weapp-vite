@@ -48,6 +48,12 @@ catalogs:
     '@types/node':
       specifier: ^26.4.0
       version: 26.4.0
+    '@types/react':
+      specifier: 19.2.18
+      version: 19.2.18
+    '@types/react-reconciler':
+      specifier: 0.33.0
+      version: 0.33.0
     '@types/semver':
       specifier: ^7.8.0
       version: 7.8.0
@@ -78,6 +84,9 @@ catalogs:
     autoprefixer:
       specifier: ^10.5.4
       version: 10.5.4
+    axios:
+      specifier: ^1.20.0
+      version: 1.20.0
     bundle-require:
       specifier: ^5.1.0
       version: 5.1.0
@@ -111,6 +120,9 @@ catalogs:
     gm-crypto:
       specifier: ^0.1.12
       version: 0.1.12
+    graphql-request:
+      specifier: ^7.4.0
+      version: 7.4.0
     happy-dom:
       specifier: ^20.11.8
       version: 20.11.8
@@ -144,18 +156,36 @@ catalogs:
     pathe:
       specifier: ^2.0.3
       version: 2.0.3
+    picocolors:
+      specifier: ^1.1.1
+      version: 1.1.1
     pkg-types:
       specifier: ^2.3.1
       version: 2.3.1
     postcss:
       specifier: ^8.5.26
       version: 8.5.26
+    postcss-selector-parser:
+      specifier: ^7.1.5
+      version: 7.1.5
+    react:
+      specifier: 19.2.8
+      version: 19.2.8
+    react-reconciler:
+      specifier: 0.33.0
+      version: 0.33.0
     sass:
       specifier: ^1.103.1
       version: 1.103.1
     sass-embedded:
       specifier: ^1.103.1
       version: 1.103.1
+    sharp:
+      specifier: ^0.35.4
+      version: 0.35.4
+    socket.io-client:
+      specifier: ^4.8.3
+      version: 4.8.3
     stylelint:
       specifier: ^17.14.1
       version: 17.14.1
@@ -334,7 +364,7 @@ importers:
         specifier: workspace:*
         version: link:packages/miniprogram-automator
       axios:
-        specifier: ^1.20.0
+        specifier: 'catalog:'
         version: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       bundle-require:
         specifier: 'catalog:'
@@ -475,7 +505,7 @@ importers:
         specifier: ^6.0.1
         version: 6.0.1(jiti@2.7.0)(postcss@8.5.26)(tsx@4.23.12)(yaml@2.9.0)
       postcss-selector-parser:
-        specifier: ^7.1.5
+        specifier: 'catalog:'
         version: 7.1.5
       prettier:
         specifier: ^3.9.6
@@ -588,7 +618,7 @@ importers:
         specifier: ^3.4.2
         version: 3.4.2
       picocolors:
-        specifier: ^1.1.1
+        specifier: 'catalog:'
         version: 1.1.1
 
   '@weapp-core/schematics':
@@ -882,17 +912,17 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/react
       react:
-        specifier: 19.2.8
+        specifier: 'catalog:'
         version: 19.2.8
       react-reconciler:
-        specifier: 0.33.0
+        specifier: 'catalog:'
         version: 0.33.0(react@19.2.8)
     devDependencies:
       '@types/react':
-        specifier: 19.2.18
+        specifier: 'catalog:'
         version: 19.2.18
       '@types/react-reconciler':
-        specifier: 0.33.0
+        specifier: 'catalog:'
         version: 0.33.0(@types/react@19.2.18)
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -953,7 +983,7 @@ importers:
   apps/socket-io-chat:
     dependencies:
       axios:
-        specifier: ^1.20.0
+        specifier: 'catalog:'
         version: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       express:
         specifier: ^5.2.1
@@ -962,13 +992,13 @@ importers:
         specifier: ^17.0.2
         version: 17.0.2
       graphql-request:
-        specifier: ^7.4.0
+        specifier: 'catalog:'
         version: 7.4.0(graphql@17.0.2)
       socket.io:
         specifier: ^4.8.3
         version: 4.8.3(bufferutil@4.1.0)(supports-color@10.2.2)
       socket.io-client:
-        specifier: ^4.8.3
+        specifier: 'catalog:'
         version: 4.8.3(bufferutil@4.1.0)(supports-color@10.2.2)
       vue:
         specifier: 'catalog:'
@@ -1121,7 +1151,7 @@ importers:
         specifier: 'catalog:'
         version: 1.103.1
       sharp:
-        specifier: ^0.35.4
+        specifier: 'catalog:'
         version: 0.35.4(@types/node@26.4.0)
       svgo:
         specifier: ^4.1.0
@@ -1347,10 +1377,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/dashboard
       axios:
-        specifier: ^1.20.0
+        specifier: 'catalog:'
         version: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       graphql-request:
-        specifier: ^7.4.0
+        specifier: 'catalog:'
         version: 7.4.0(graphql@16.14.2)
       miniprogram-api-typings:
         specifier: catalog:latest
@@ -1563,7 +1593,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/web-apis
       axios:
-        specifier: ^1.20.0
+        specifier: 'catalog:'
         version: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       camelcase:
         specifier: ^9.0.0
@@ -1585,7 +1615,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/dashboard
       socket.io-client:
-        specifier: ^4.8.3
+        specifier: 'catalog:'
         version: 4.8.3(bufferutil@4.1.0)(supports-color@10.2.2)
       tailwindcss:
         specifier: catalog:tailwind4
@@ -1706,10 +1736,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/react
       react:
-        specifier: 19.2.8
+        specifier: 'catalog:'
         version: 19.2.8
       react-reconciler:
-        specifier: 0.33.0
+        specifier: 'catalog:'
         version: 0.33.0(react@19.2.8)
       wevu:
         specifier: workspace:*
@@ -1719,10 +1749,10 @@ importers:
         specifier: 1.16.1
         version: 1.16.1
       '@types/react':
-        specifier: 19.2.18
+        specifier: 'catalog:'
         version: 19.2.18
       '@types/react-reconciler':
-        specifier: 0.33.0
+        specifier: 'catalog:'
         version: 0.33.0(@types/react@19.2.18)
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -1749,13 +1779,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/dashboard
       axios:
-        specifier: ^1.20.0
+        specifier: 'catalog:'
         version: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       graphql-request:
-        specifier: ^7.4.0
+        specifier: 'catalog:'
         version: 7.4.0(graphql@16.14.2)
       socket.io-client:
-        specifier: ^4.8.3
+        specifier: 'catalog:'
         version: 4.8.3(bufferutil@4.1.0)(supports-color@10.2.2)
       weapp-vite:
         specifier: workspace:*
@@ -1770,13 +1800,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/dashboard
       axios:
-        specifier: ^1.20.0
+        specifier: 'catalog:'
         version: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       graphql-request:
-        specifier: ^7.4.0
+        specifier: 'catalog:'
         version: 7.4.0(graphql@16.14.2)
       socket.io-client:
-        specifier: ^4.8.3
+        specifier: 'catalog:'
         version: 4.8.3(bufferutil@4.1.0)(supports-color@10.2.2)
       weapp-vite:
         specifier: workspace:*
@@ -1845,7 +1875,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/dashboard
       picocolors:
-        specifier: ^1.1.1
+        specifier: 'catalog:'
         version: 1.1.1
       weapp-vite:
         specifier: workspace:*
@@ -1860,7 +1890,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/dashboard
       picocolors:
-        specifier: ^1.1.1
+        specifier: 'catalog:'
         version: 1.1.1
       weapp-vite:
         specifier: workspace:*
@@ -2291,19 +2321,19 @@ importers:
         version: link:../../@weapp-core/constants
     devDependencies:
       '@types/react':
-        specifier: 19.2.18
+        specifier: 'catalog:'
         version: 19.2.18
       '@types/react-reconciler':
-        specifier: 0.33.0
+        specifier: 'catalog:'
         version: 0.33.0(@types/react@19.2.18)
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.3
       react:
-        specifier: 19.2.8
+        specifier: 'catalog:'
         version: 19.2.8
       react-reconciler:
-        specifier: 0.33.0
+        specifier: 'catalog:'
         version: 0.33.0(react@19.2.8)
 
   packages-runtime/weapi:
@@ -2360,7 +2390,7 @@ importers:
         specifier: 'catalog:'
         version: 8.5.26
       postcss-selector-parser:
-        specifier: ^7.1.5
+        specifier: 'catalog:'
         version: 7.1.5
       rolldown:
         specifier: 1.2.6
@@ -2451,7 +2481,7 @@ importers:
         specifier: 'catalog:'
         version: 8.5.26
       postcss-selector-parser:
-        specifier: ^7.1.5
+        specifier: 'catalog:'
         version: 7.1.5
       rolldown-require:
         specifier: workspace:*
@@ -2637,13 +2667,13 @@ importers:
         specifier: ^8.18.1
         version: 8.18.1
       sharp:
-        specifier: ^0.35.4
+        specifier: 'catalog:'
         version: 0.35.4(@types/node@26.4.0)
 
   packages/qr:
     dependencies:
       sharp:
-        specifier: ^0.35.4
+        specifier: 'catalog:'
         version: 0.35.4(@types/node@26.4.0)
 
   packages/rolldown-require:
@@ -3018,10 +3048,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/react
       react:
-        specifier: 19.2.8
+        specifier: 'catalog:'
         version: 19.2.8
       react-reconciler:
-        specifier: 0.33.0
+        specifier: 'catalog:'
         version: 0.33.0(react@19.2.8)
       wevu:
         specifier: workspace:*
@@ -3040,10 +3070,10 @@ importers:
         specifier: 'catalog:'
         version: 26.4.0
       '@types/react':
-        specifier: 19.2.18
+        specifier: 'catalog:'
         version: 19.2.18
       '@types/react-reconciler':
-        specifier: 0.33.0
+        specifier: 'catalog:'
         version: 0.33.0(@types/react@19.2.18)
       eslint:
         specifier: 'catalog:'
