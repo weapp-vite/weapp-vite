@@ -393,7 +393,9 @@ describe('suiteRunner', () => {
     expect(templateTailwindTdesignHmrTask?.env).toMatchObject({
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
-    expect(templateWevuTailwindTdesignHmrTask?.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER).toBeUndefined()
+    expect(templateWevuTailwindTdesignHmrTask?.env).toMatchObject({
+      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
+    })
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
     expect(ideGithubIssuesLabels).toEqual([
       ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,

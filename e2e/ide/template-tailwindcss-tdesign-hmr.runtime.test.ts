@@ -12,11 +12,7 @@ import {
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
-import {
-  cleanDevtoolsCache,
-  cleanupResidualDevtoolsProcesses,
-  cleanupResidualIdeProcesses,
-} from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template')
@@ -37,8 +33,6 @@ const PROBE_ID = 'tailwind-hmr-probe'
 const CURRENT_PAGE_READ_TIMEOUT = 3_000
 const CURRENT_PAGE_READ_RETRIES = 2
 const ROUTE_READY_TIMEOUT = 30_000
-const RELAUNCH_AUTOMATOR_TIMEOUT = 45_000
-const RELAUNCH_AUTOMATOR_RETRIES = 1
 const PNG_SIGNATURE = '89504e470d0a1a0a'
 const SCREENSHOT_COLOR_MIN_MATCHED = 24
 const SCREENSHOT_COLOR_MIN_RATIO = 0.01
@@ -133,31 +127,6 @@ async function waitForIndexPage(miniProgram: any, timeoutMs = ROUTE_READY_TIMEOU
     : new Error(`Timed out waiting for ${INDEX_ROUTE}`)
 }
 
-async function relaunchIndexPage(miniProgram: any) {
-  let lastError: unknown
-
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      await miniProgram.reLaunch(INDEX_ROUTE)
-      return await waitForIndexPage(miniProgram)
-    }
-    catch (error) {
-      lastError = error
-      if (!isDevtoolsPageProtocolUnavailable(error)) {
-        throw error
-      }
-
-      const currentPage = await waitForIndexPage(miniProgram, 5_000).catch(() => null)
-      if (currentPage) {
-        return currentPage
-      }
-      await delay(800)
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error(`Failed to relaunch ${INDEX_ROUTE}`)
-}
-
 describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', () => {
   let initialWxml = ''
   let originalWxml = ''
@@ -205,14 +174,15 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
     await cleanupTrackedDevProcesses()
   }, 60_000)
 
-  async function launchRuntimeAutomator(options: { maxLaunchRetries?: number, timeout?: number } = {}) {
+  async function launchRuntimeAutomator() {
     miniProgram = await launchAutomator({
+      deferBridgeWrapperSyncUntilConnected: true,
       launchMode: 'bridge',
-      maxLaunchRetries: options.maxLaunchRetries,
+      maxLaunchRetries: 1,
       projectPath: TEMPLATE_ROOT,
-      skipRelaunchPageRootCheck: true,
-      skipWarmup: true,
-      timeout: options.timeout,
+      warmupAllowRelaunch: false,
+      warmupRoute: INDEX_ROUTE,
+      warmupRootSelectors: [`#${PROBE_ID}`],
     })
     return miniProgram
   }
@@ -245,68 +215,9 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
     )
   }
 
-  async function restartDevSessionForDist(label: string, escapedClass: string, backgroundCss: string, reason: unknown) {
-    const message = reason instanceof Error ? reason.message : String(reason)
-    process.stdout.write(`[warn] [template-tailwindcss-tdesign:hmr] restart-dev-session label=${label} reason=${message.replace(/\s+/g, ' ').trim().slice(0, 240)}\n`)
-    await stopDevSession()
-    await startDevSessionForDist(label, escapedClass, backgroundCss)
-  }
-
-  async function relaunchRuntimeAfterCacheClean(label: string) {
-    await Promise.resolve(miniProgram?.close?.()).catch(() => {})
-    miniProgram = undefined
-    await cleanupResidualDevtoolsProcesses()
-    await cleanDevtoolsCache('all', { cwd: TEMPLATE_ROOT })
-    await delay(1_600)
-    await launchRuntimeAutomator({
-      maxLaunchRetries: RELAUNCH_AUTOMATOR_RETRIES,
-      timeout: RELAUNCH_AUTOMATOR_TIMEOUT,
-    })
-    process.stdout.write(`[template-tailwindcss-tdesign:hmr] automator-relaunched label=${label} isolated=true mode=bridge reason=tool-compile-unimplemented\n`)
-  }
-
-  async function reconnectRuntimeAutomator(label: string, reason: unknown) {
-    const message = reason instanceof Error ? reason.message : String(reason)
-    process.stdout.write(`[warn] [template-tailwindcss-tdesign:hmr] reconnect-automator label=${label} reason=${message.replace(/\s+/g, ' ').trim().slice(0, 240)}\n`)
-    await Promise.resolve(miniProgram?.close?.()).catch(() => {})
-    miniProgram = undefined
-    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
-    await cleanupResidualDevtoolsProcesses()
-    await delay(1_600)
-    await launchRuntimeAutomator({
-      maxLaunchRetries: RELAUNCH_AUTOMATOR_RETRIES,
-      timeout: RELAUNCH_AUTOMATOR_TIMEOUT,
-    })
-    await relaunchIndexPage(miniProgram)
-    process.stdout.write(`[template-tailwindcss-tdesign:hmr] automator-reconnected label=${label} mode=bridge\n`)
-  }
-
-  async function refreshRuntimeForDistUpdate(
-    label: string,
-    requiresIsolatedRelaunch: boolean,
-    expectedDist: { backgroundCss: string, escapedClass: string },
-  ) {
+  async function refreshRuntimeForDistUpdate(label: string) {
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] hmr-settle-start label=${label}\n`)
-    await delay(5_000)
-    if (requiresIsolatedRelaunch) {
-      try {
-        // 当前 DevTools 的 Tool.compile/Tool.clearCache 均未实现，更新后的外部产物只能通过清理编译缓存并重连读取。
-        await relaunchRuntimeAfterCacheClean(label)
-      }
-      catch (error) {
-        await restartDevSessionForDist(label, expectedDist.escapedClass, expectedDist.backgroundCss, error)
-      }
-    }
-    try {
-      await relaunchIndexPage(miniProgram)
-    }
-    catch (error) {
-      if (!isDevtoolsPageProtocolUnavailable(error)) {
-        throw error
-      }
-      await restartDevSessionForDist(label, expectedDist.escapedClass, expectedDist.backgroundCss, error)
-      await waitForIndexPage(miniProgram)
-    }
+    await waitForIndexPage(miniProgram)
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] hmr-settle-ready label=${label} route=${INDEX_ROUTE}\n`)
   }
 
@@ -511,39 +422,26 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
     expectedBg: string,
     escapedClass: string,
     label: string,
-    requiresIsolatedRelaunch = false,
-    expectedDist = {
-      backgroundCss: INITIAL_BACKGROUND_CSS,
-      escapedClass: INITIAL_ESCAPED_CLASS,
-    },
   ) {
-    await refreshRuntimeForDistUpdate(label, requiresIsolatedRelaunch, expectedDist)
-    let lastError: unknown
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
+    await refreshRuntimeForDistUpdate(label)
+    try {
+      const state = await waitForProbeBackgroundColor(expectedBg, escapedClass, label, 45_000)
+      process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=dom state=${JSON.stringify(state)}\n`)
+      return state
+    }
+    catch (probeError) {
+      const probeMessage = probeError instanceof Error ? probeError.message : String(probeError)
+      process.stdout.write(`[template-tailwindcss-tdesign:hmr] dom-probe-fallback-screenshot label=${label} reason=${probeMessage}\n`)
       try {
-        const state = await waitForProbeBackgroundColor(expectedBg, escapedClass, label, 45_000)
-        process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=dom state=${JSON.stringify(state)}\n`)
-        return state
+        const analysis = await waitForScreenshotColor(expectedBg, label, 45_000)
+        process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=screenshot analysis=${JSON.stringify(analysis)}\n`)
+        return analysis
       }
-      catch (probeError) {
-        const probeMessage = probeError instanceof Error ? probeError.message : String(probeError)
-        process.stdout.write(`[template-tailwindcss-tdesign:hmr] dom-probe-fallback-screenshot label=${label} reason=${probeMessage}\n`)
-        try {
-          const analysis = await waitForScreenshotColor(expectedBg, label, 45_000)
-          process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=screenshot analysis=${JSON.stringify(analysis)}\n`)
-          return analysis
-        }
-        catch (screenshotError) {
-          const screenshotMessage = screenshotError instanceof Error ? screenshotError.message : String(screenshotError)
-          lastError = new Error(`Failed to verify ${label} from the active DevTools project. DOM: ${probeMessage}; screenshot: ${screenshotMessage}`)
-          if (attempt === 2 || !isDevtoolsPageProtocolUnavailable(lastError)) {
-            throw lastError
-          }
-          await reconnectRuntimeAutomator(label, lastError)
-        }
+      catch (screenshotError) {
+        const screenshotMessage = screenshotError instanceof Error ? screenshotError.message : String(screenshotError)
+        throw new Error(`Failed to verify ${label} from the active DevTools project. DOM: ${probeMessage}; screenshot: ${screenshotMessage}`)
       }
     }
-    throw lastError
   }
 
   it('updates the visible Tailwind arbitrary background color through dev HMR', async () => {
@@ -569,11 +467,6 @@ describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', 
       UPDATED_BACKGROUND_HEX,
       UPDATED_ESCAPED_CLASS,
       'updated Tailwind background',
-      true,
-      {
-        backgroundCss: UPDATED_BACKGROUND_CSS,
-        escapedClass: UPDATED_ESCAPED_CLASS,
-      },
     )
   }, 420_000)
 })

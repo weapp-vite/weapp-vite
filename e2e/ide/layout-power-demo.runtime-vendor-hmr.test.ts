@@ -11,7 +11,11 @@ import {
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import {
+  replaceFileByRename,
+  waitForFileContains,
+  waitForStatefulHmrControl,
+} from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
 import { runLayoutFeedbackE2E } from './layout-power-demo.runtime.shared'
@@ -462,7 +466,7 @@ describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTool
       'layout-power-demo opened automator',
     )
     await devProcess.waitFor(
-      waitForFileContains(HMR_CONTROL_DIST, 'http://127.0.0.1:'),
+      waitForStatefulHmrControl(HMR_CONTROL_DIST),
       'layout-power-demo stateful HMR control ready',
     )
     miniProgram = session.miniProgram

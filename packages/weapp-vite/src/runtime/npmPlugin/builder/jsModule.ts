@@ -2,13 +2,8 @@ import { fs } from '@weapp-core/shared/fs'
 import * as t from '@weapp-vite/ast/babelTypes'
 import path from 'pathe'
 import { generate, parseJsLike, traverse } from '../../../utils'
+import { createExportAllStatements, hasEsmSyntax } from './jsModule/helpers'
 import { collectFiles } from './shared'
-
-const ESM_SYNTAX_RE = /\bimport\s|\bexport\s/
-
-function hasEsmSyntax(source: string) {
-  return ESM_SYNTAX_RE.test(source)
-}
 
 function createExportsMember(name: string) {
   return t.memberExpression(
@@ -239,6 +234,15 @@ export async function transformJsModuleToCjs(
         }
 
         path.replaceWithMultiple(statements)
+        transformed = true
+      },
+
+      ExportAllDeclaration(path: any) {
+        hasConvertedExport = true
+        path.replaceWithMultiple(createExportAllStatements(
+          t.stringLiteral(path.node.source.value),
+          path.scope,
+        ))
         transformed = true
       },
     })

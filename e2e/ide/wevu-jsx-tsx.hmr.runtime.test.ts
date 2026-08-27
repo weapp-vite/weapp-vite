@@ -6,7 +6,7 @@ import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { waitForFileContains } from '../utils/hmr-helpers'
+import { waitForFileContains, waitForStatefulHmrControl } from '../utils/hmr-helpers'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import {
   WEVU_JSX_APP_ROOT,
@@ -67,15 +67,19 @@ describe.sequential('wevu JSX/TSX stateful HMR in real WeChat DevTools', () => {
       reject: false,
     })
     await devProcess.waitFor(
-      waitForFileContains(CONTROL_OUTPUT, 'http://127.0.0.1:'),
+      waitForStatefulHmrControl(CONTROL_OUTPUT),
       'JSX stateful HMR control ready',
     )
 
     miniProgram = await launchAutomator({
+      deferBridgeWrapperSyncUntilConnected: true,
       launchMode: 'bridge',
+      maxLaunchRetries: 1,
       projectPath: WEVU_JSX_APP_ROOT,
       retryWarmupTimeout: true,
       timeout: 120_000,
+      warmupAllowRelaunch: false,
+      warmupAnyPage: true,
       warmupRootSelectors: ['#tsx-island-button'],
       warmupRoute: ROUTE,
     })
@@ -87,13 +91,13 @@ describe.sequential('wevu JSX/TSX stateful HMR in real WeChat DevTools', () => {
     }
     catch {}
     miniProgram = undefined
-    await fs.writeFile(PAGE_SOURCE, originalPageSource, 'utf8')
-    await fs.writeFile(SHARED_SOURCE, originalSharedSource, 'utf8')
     await devProcess?.stop(5_000)
     devProcess = undefined
+    await fs.writeFile(PAGE_SOURCE, originalPageSource, 'utf8')
+    await fs.writeFile(SHARED_SOURCE, originalSharedSource, 'utf8')
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()
-  })
+  }, 60_000)
 
   it('preserves instance state while replacing shared TSX and island handlers', async () => {
     const page = await miniProgram!.reLaunch(ROUTE)

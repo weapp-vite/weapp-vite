@@ -6,7 +6,11 @@ import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import {
+  replaceFileByRename,
+  waitForFileContains,
+  waitForStatefulHmrControl,
+} from '../utils/hmr-helpers'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -236,7 +240,7 @@ describe.sequential('stateful HMR in real WeChat DevTools', () => {
       env: createDevProcessEnv(),
       reject: false,
     })
-    await devProcess.waitFor(waitForFileContains(CONTROL_FILE, 'http://localhost:'), 'stateful HMR control ready')
+    await devProcess.waitFor(waitForStatefulHmrControl(CONTROL_FILE), 'stateful HMR control ready')
 
     miniProgram = await launchAutomator({
       launchMode: 'bridge',

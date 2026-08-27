@@ -55,6 +55,7 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/stateful-hmr.runtime.test.ts',
   'ide/subpackage-shared-strategy-complex.runtime.test.ts',
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
+  'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [

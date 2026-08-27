@@ -1,6 +1,7 @@
 import type { RuntimePlatform } from '../wevu-runtime.utils'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
+import { WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '../../@weapp-core/constants/src'
 import { resolvePlatformMatrix } from './platform-matrix'
 
 export type { RuntimePlatform }
@@ -79,6 +80,81 @@ export async function waitForFileContains(filePath: string, marker: string, time
     await new Promise(resolve => setTimeout(resolve, 250))
   }
   throw new Error(`Timed out waiting for ${filePath} to contain marker: ${marker}`)
+}
+
+interface StatefulHmrControlPayload {
+  url: string
+}
+
+const STATEFUL_HMR_CONTROL_ASSIGNMENT = `globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = `
+const STATEFUL_HMR_CONTROL_ENDPOINT = '/__weapp_vite_stateful_hmr__'
+const LOOPBACK_HOSTNAMES = new Set(['127.0.0.1', '[::1]', '::1', 'localhost'])
+
+/**
+ * 从生成的控制脚本中解析状态保持 HMR 连接信息。
+ *
+ * @param source - 控制脚本源码
+ * @returns 合法的 loopback HMR 控制信息；格式或地址不符合契约时返回 undefined
+ */
+export function parseStatefulHmrControlSource(source: string): StatefulHmrControlPayload | undefined {
+  const assignmentStart = source.indexOf(STATEFUL_HMR_CONTROL_ASSIGNMENT)
+  if (assignmentStart === -1) {
+    return undefined
+  }
+
+  const jsonStart = assignmentStart + STATEFUL_HMR_CONTROL_ASSIGNMENT.length
+  const jsonEnd = source.indexOf(';', jsonStart)
+  if (jsonEnd === -1) {
+    return undefined
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(source.slice(jsonStart, jsonEnd))
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return undefined
+    }
+    const url = (parsed as Record<string, unknown>).url
+    if (typeof url !== 'string') {
+      return undefined
+    }
+    const resolvedUrl = new URL(url)
+    if (
+      resolvedUrl.protocol !== 'http:'
+      || !resolvedUrl.port
+      || !LOOPBACK_HOSTNAMES.has(resolvedUrl.hostname)
+      || resolvedUrl.pathname !== STATEFUL_HMR_CONTROL_ENDPOINT
+    ) {
+      return undefined
+    }
+    return { url }
+  }
+  catch {
+    return undefined
+  }
+}
+
+/**
+ * 等待状态保持 HMR 控制文件写入合法的 loopback 连接信息。
+ *
+ * @param filePath - 控制文件路径
+ * @param timeoutMs - 超时时间（毫秒），默认 90 秒
+ * @returns 解析后的 HMR 控制信息
+ */
+export async function waitForStatefulHmrControl(
+  filePath: string,
+  timeoutMs = 90_000,
+): Promise<StatefulHmrControlPayload> {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    if (await fs.pathExists(filePath)) {
+      const control = parseStatefulHmrControlSource(await fs.readFile(filePath, 'utf8'))
+      if (control) {
+        return control
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, 250))
+  }
+  throw new Error(`Timed out waiting for ${filePath} to contain a valid stateful HMR control payload`)
 }
 
 /**

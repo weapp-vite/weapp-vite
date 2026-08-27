@@ -46,15 +46,17 @@ describe('run-e2e-suite ide cleanup hooks', () => {
     expect(shouldCleanupIdeBeforeEachTask('hmr-regression')).toBe(true)
   })
 
-  it('cleans DevTools before every IDE task and once after the suite', async () => {
+  it('cleans processes and compile cache before every IDE task, then processes after the suite', async () => {
     const cleanup = vi.fn(async () => {})
-    const hooks = createIdeSuiteCleanupHooks('ide-full', cleanup)
+    const cleanCompileCache = vi.fn(async () => {})
+    const hooks = createIdeSuiteCleanupHooks('ide-full', cleanup, cleanCompileCache)
 
     await hooks.beforeEachTask?.()
     await hooks.beforeEachTask?.()
     await hooks.afterAll?.()
 
     expect(cleanup).toHaveBeenCalledTimes(3)
+    expect(cleanCompileCache).toHaveBeenCalledTimes(2)
   })
 
   it('skips cleanup hooks for non-devtools or headless suites', () => {

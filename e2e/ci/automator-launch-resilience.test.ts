@@ -1501,13 +1501,14 @@ describe.sequential('automator launch resilience', () => {
     connectMock.mockResolvedValueOnce(connectedMiniProgram)
     connectedMiniProgram.__rawReLaunch.mockImplementationOnce(async () => {
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({
+        miniprogramRoot: '__weapp_vite_runtime__/',
         setting: {
           postcss: true,
         },
       })
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json')).setting).not.toHaveProperty('es6')
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({ simulatorType: 'wechat' })
-      expect(readJson(path.join(wrapperProjectPath, 'app.json'))).toMatchObject({
+      expect(readJson(path.join(wrapperProjectPath, '__weapp_vite_runtime__/app.json'))).toMatchObject({
         window: {
           navigationBarTitleText: 'real app',
         },
@@ -1538,7 +1539,7 @@ describe.sequential('automator launch resilience', () => {
     expect(runWechatIdeEngineBuildByHttpMock).not.toHaveBeenCalled()
     expect(connectedMiniProgram.__rawCompile).not.toHaveBeenCalled()
     const realAppConfigCopy = copyFileSyncSpy.mock.calls.findIndex(([, target]) => {
-      return target === path.join(wrapperProjectPath, 'app.json')
+      return target === path.join(wrapperProjectPath, '__weapp_vite_runtime__/app.json')
     })
     expect(realAppConfigCopy).toBeGreaterThanOrEqual(0)
     expect(writeFileSyncSpy.mock.calls.some(([target]) => target === path.join(wrapperProjectPath, 'project.config.json'))).toBe(true)

@@ -11,7 +11,12 @@ import {
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import {
+  createHmrMarker,
+  replaceFileByRename,
+  waitForFileContains,
+  waitForStatefulHmrControl,
+} from '../utils/hmr-helpers'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
@@ -350,7 +355,7 @@ describe.sequential('app.vue alias import layout HMR runtime', () => {
 
     await devProcess.waitFor(Promise.all([
       waitForFileContains(COMMON_JS_DIST, BOOTSTRAP_MARKER),
-      waitForFileContains(HMR_CONTROL_DIST, 'http://127.0.0.1:'),
+      waitForStatefulHmrControl(HMR_CONTROL_DIST),
     ]), 'initial stateful HMR output bundles aliased bootstrap import')
 
     try {

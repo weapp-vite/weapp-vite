@@ -13,7 +13,7 @@ import {
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { waitForFileContains } from '../utils/hmr-helpers'
+import { waitForFileContains, waitForStatefulHmrControl } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
 import { runLayoutFeedbackE2E } from './layout-power-demo.runtime.shared'
@@ -273,7 +273,7 @@ describe.sequential('layout-power-demo message feedback in real WeChat DevTools'
       'layout-power-demo index template ready',
     )
     await devProcess.waitFor(
-      waitForFileContains(HMR_CONTROL_DIST, 'http://127.0.0.1:', 90_000),
+      waitForStatefulHmrControl(HMR_CONTROL_DIST, 90_000),
       'layout-power-demo stateful HMR control ready',
     )
     const session = await devProcess.waitFor(
