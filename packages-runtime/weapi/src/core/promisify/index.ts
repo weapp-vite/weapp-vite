@@ -26,13 +26,17 @@ export interface WeapiPromise<TResult, TError = WeapiError> extends Promise<TRes
 }
 
 type HasCallbackKey<T> = T extends object
-  ? 'success' extends keyof T
-    ? true
-    : 'fail' extends keyof T
-      ? true
-      : 'complete' extends keyof T
+  ? string extends keyof T
+    ? false
+    : number extends keyof T
+      ? false
+      : 'success' extends keyof T
         ? true
-        : false
+        : 'fail' extends keyof T
+          ? true
+          : 'complete' extends keyof T
+            ? true
+            : false
   : false
 type HasCallbackOption<T> = T extends { success: unknown }
   ? true
@@ -42,25 +46,23 @@ type HasCallbackOption<T> = T extends { success: unknown }
       ? true
       : false
 
+declare const MissingCallbackResultKey: unique symbol
+interface MissingCallbackResult {
+  readonly [MissingCallbackResultKey]: never
+}
 type ExtractCallbackResult<T, Key extends PropertyKey, Fallback> = Key extends keyof T
   ? T extends { [CallbackKey in Key]?: (...args: infer A) => unknown }
     ? A[0]
-    : never
+    : unknown
   : Fallback
 type ExtractSuccessResult<T> = ExtractCallbackResult<T, 'success', void>
-type ExtractFailureResult<T> = ExtractCallbackResult<T, 'fail', never>
+type ExtractFailureResult<T> = ExtractCallbackResult<T, 'fail', MissingCallbackResult>
 type ExtractCompleteResult<T> = ExtractCallbackResult<T, 'complete', void>
-type IsAny<T> = 0 extends (1 & T) ? true : false
-type NormalizeFailureResult<T> = IsAny<T> extends true
-  ? WeapiError
-  : unknown extends T
-    ? WeapiError
-    : [T] extends [never] ? WeapiError : T
-type WechatErrorExtension<TAdapter> = TAdapter extends WeapiMiniProgramWechatRawAdapter
-  ? Pick<WeapiError, 'errno'>
-  : object
-type PromisifyFailureResult<Option, TAdapter> = NormalizeFailureResult<ExtractFailureResult<Option>>
-  & WechatErrorExtension<TAdapter>
+type NormalizeFailureResult<T> = [T] extends [MissingCallbackResult] ? WeapiError : T
+type AddWechatErrorExtension<T, TAdapter> = TAdapter extends WeapiMiniProgramWechatRawAdapter
+  ? unknown extends T ? T : T & Pick<WeapiError, 'errno'>
+  : T
+type PromisifyFailureResult<Option, TAdapter> = AddWechatErrorExtension<NormalizeFailureResult<ExtractFailureResult<Option>>, TAdapter>
 type PromisifyCallbackOptions<Option extends object, TAdapter>
   = ('success' extends keyof Option
     ? { success?: (result: ExtractSuccessResult<Option>) => void }
@@ -73,36 +75,37 @@ type PromisifyCallbackOptions<Option extends object, TAdapter>
     : object)
 type PromisifyOption<Option extends object, TAdapter> = Omit<Option, 'success' | 'fail' | 'complete'>
   & PromisifyCallbackOptions<Option, TAdapter>
+type PromisifyOptionWithoutCallbacks<Option extends object> = Omit<Option, 'success' | 'fail' | 'complete'>
+type PromisifyCallbackReturn<Result, TOption> = HasCallbackOption<TOption> extends true
+  ? Result extends Promise<any> ? void : Result
+  : never
 
 type PromisifyOptionMethod<
   Prefix extends any[],
   Option extends object,
   Result,
   IsOptional extends boolean,
+  Suffix extends any[],
   TAdapter,
 > = IsOptional extends true
   ? {
-      <TOption extends PromisifyOption<Option, TAdapter>>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
-        ? Result
+      <TOption extends PromisifyOption<Option, TAdapter>>(...args: [...Prefix, TOption, ...Suffix]): HasCallbackOption<TOption> extends true
+        ? PromisifyCallbackReturn<Result, TOption>
         : WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
-      (...args: Prefix): WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
+      (...args: [...Prefix, PromisifyOptionWithoutCallbacks<Option>, ...Suffix]): WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
+      (...args: [...Prefix, ...Suffix]): WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
     }
   : {
-      <TOption extends PromisifyOption<Option, TAdapter>>(...args: [...Prefix, TOption]): HasCallbackOption<TOption> extends true
-        ? Result
+      <TOption extends PromisifyOption<Option, TAdapter>>(...args: [...Prefix, TOption, ...Suffix]): HasCallbackOption<TOption> extends true
+        ? PromisifyCallbackReturn<Result, TOption>
         : WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
+      (...args: [...Prefix, PromisifyOptionWithoutCallbacks<Option>, ...Suffix]): WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
     }
 
 type NormalizePromisifyReturn<T, TAdapter> = T extends Promise<infer TResult>
-  ? WeapiPromise<TResult, WeapiError & WechatErrorExtension<TAdapter>>
-  : WeapiPromise<T, WeapiError & WechatErrorExtension<TAdapter>>
+  ? WeapiPromise<TResult, AddWechatErrorExtension<WeapiError, TAdapter>>
+  : WeapiPromise<T, AddWechatErrorExtension<WeapiError, TAdapter>>
 type NormalizeTupleArgs<Args extends any[]> = { [Key in keyof Args]-?: Args[Key] }
-type DecomposeTrailingArg<Args extends any[]> = NormalizeTupleArgs<Args> extends [...infer Prefix, infer Last]
-  ? { prefix: Prefix, last: Last }
-  : never
-type IsOptionalTrailingArg<Args extends any[], Prefix extends any[]> = Record<never, never> extends Pick<Args, Prefix['length']>
-  ? true
-  : false
 type RequiredObjectKeys<T extends object> = {
   [Key in keyof T]-?: Pick<T, Key> extends Required<Pick<T, Key>> ? Key : never
 }[keyof T]
@@ -111,11 +114,29 @@ type IsStructurallyOmittableObject<T> = T extends object
     ? true
     : false
   : false
+type DecomposeTrailingArg<Args extends any[]> = NormalizeTupleArgs<Args> extends [...infer Prefix, infer Last]
+  ? { prefix: Prefix, last: Last }
+  : never
+type IsOptionalTrailingArg<Args extends any[], Prefix extends any[]> = Record<never, never> extends Pick<Args, Prefix['length']> ? true : false
 type IsOmittableTrailingArg<Args extends any[], Prefix extends any[], Last>
   = IsOptionalTrailingArg<Args, Prefix> extends true
     ? true
     : IsStructurallyOmittableObject<NonNullable<Last>>
 
+type FindCallbackOption<Args extends any[], Prefix extends any[] = []> = Args extends [infer Head, ...infer Suffix]
+  ? true extends HasCallbackKey<NonNullable<Head>>
+    ? {
+        prefix: Prefix
+        option: NonNullable<Head>
+        suffix: Suffix
+        optional: undefined extends Head
+          ? true
+          : Suffix extends []
+            ? IsStructurallyOmittableObject<NonNullable<Head>>
+            : false
+      }
+    : FindCallbackOption<Suffix, [...Prefix, Head]>
+  : never
 type PromisifyMethod<TMethod, TAdapter> = TMethod extends (...args: infer Args) => infer Result
   ? Args extends []
     ? (...args: Args) => NormalizePromisifyReturn<Result, TAdapter>
@@ -129,11 +150,35 @@ type PromisifyMethod<TMethod, TAdapter> = TMethod extends (...args: infer Args) 
           NonNullable<Last>,
           Result,
           IsOmittableTrailingArg<Args, Prefix, Last>,
+          [],
           TAdapter
         >
-        : (...args: Args) => NormalizePromisifyReturn<Result, TAdapter>
+        : [FindCallbackOption<Args>] extends [never]
+            ? (...args: Args) => NormalizePromisifyReturn<Result, TAdapter>
+            : FindCallbackOption<Args> extends {
+              prefix: infer OptionPrefix extends any[]
+              option: infer Option extends object
+              suffix: infer Suffix extends any[]
+              optional: infer IsOptional extends boolean
+            }
+              ? PromisifyOptionMethod<OptionPrefix, Option, Result, IsOptional, Suffix, TAdapter>
+              : (...args: Args) => NormalizePromisifyReturn<Result, TAdapter>
       : (...args: Args) => NormalizePromisifyReturn<Result, TAdapter>
   : TMethod
+
+type WechatCanvasComponent = WechatMiniprogram.Component.TrivialInstance | WechatMiniprogram.Page.TrivialInstance
+interface PromisifyCanvasMethod<Option extends object, TAdapter> {
+  <TOption extends PromisifyOption<Option, TAdapter>>(
+    option: TOption,
+    component?: WechatCanvasComponent,
+  ): HasCallbackOption<TOption> extends true
+    ? PromisifyCallbackReturn<void, TOption>
+    : WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
+  (
+    option: PromisifyOptionWithoutCallbacks<Option>,
+    component?: WechatCanvasComponent,
+  ): WeapiPromise<ExtractSuccessResult<Option>, PromisifyFailureResult<Option, TAdapter>>
+}
 
 export type WeapiPromisify<TAdapter extends WeapiAdapter> = {
   [Key in keyof TAdapter]: Key extends string
@@ -143,6 +188,18 @@ export type WeapiPromisify<TAdapter extends WeapiAdapter> = {
         ? TAdapter[Key]
         : Key extends `on${Capitalize<string>}` | `off${Capitalize<string>}`
           ? TAdapter[Key]
-          : PromisifyMethod<TAdapter[Key], TAdapter>
+          : Key extends 'canvasGetImageData'
+            ? TAdapter extends WeapiMiniProgramWechatRawAdapter
+              ? PromisifyCanvasMethod<WechatMiniprogram.CanvasGetImageDataOption, TAdapter>
+              : PromisifyMethod<TAdapter[Key], TAdapter>
+            : Key extends 'canvasPutImageData'
+              ? TAdapter extends WeapiMiniProgramWechatRawAdapter
+                ? PromisifyCanvasMethod<WechatMiniprogram.CanvasPutImageDataOption, TAdapter>
+                : PromisifyMethod<TAdapter[Key], TAdapter>
+              : Key extends 'canvasToTempFilePath'
+                ? TAdapter extends WeapiMiniProgramWechatRawAdapter
+                  ? PromisifyCanvasMethod<WechatMiniprogram.CanvasToTempFilePathOption, TAdapter>
+                  : PromisifyMethod<TAdapter[Key], TAdapter>
+                : PromisifyMethod<TAdapter[Key], TAdapter>
     : TAdapter[Key]
 }

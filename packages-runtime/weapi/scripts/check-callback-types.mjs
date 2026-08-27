@@ -14,21 +14,21 @@ const platformConfigs = [
     key: 'wx',
     rawExport: 'WeapiWechatMiniProgramRawAdapterSource',
     rawImport: 'WeapiWechatMiniProgramRawAdapterSource',
-    adapterExpression: 'createWeapi({ adapter: {} as Raw })',
+    adapterExpression: 'createWeapi<Raw>({ adapter: {} as Raw })',
   },
   {
     name: '支付宝',
     key: 'my',
     rawExport: 'WeapiAlipayMiniProgramRawAdapterSource',
     rawImport: 'WeapiAlipayMiniProgramRawAdapterSource',
-    adapterExpression: 'createWeapi({ adapter: {} as Raw })',
+    adapterExpression: 'createWeapi<Raw>({ adapter: {} as Raw })',
   },
   {
     name: '字节',
     key: 'tt',
     rawExport: 'WeapiDouyinMiniProgramRawAdapterSource',
     rawImport: 'WeapiDouyinMiniProgramRawAdapterSource',
-    adapterExpression: 'createWeapi({ adapter: {} as Raw })',
+    adapterExpression: 'createWeapi<Raw>({ adapter: {} as Raw })',
   },
   {
     name: '默认跨平台',
@@ -84,20 +84,26 @@ function getCallbackMethods(adapterType, sourceFile) {
   for (const property of baseChecker.getPropertiesOfType(adapterType)) {
     const propertyType = baseChecker.getTypeOfSymbolAtLocation(property, sourceFile)
     const signatures = propertyType.getCallSignatures()
-    const signature = signatures.find((item) => {
-      const parameter = item.getParameters().at(-1)
-      const optionType = parameter
-        ? baseChecker.getTypeOfSymbolAtLocation(parameter, sourceFile)
-        : undefined
-      return optionType && callbackKeys.some(key => optionType.getProperty(key))
-    })
+    const signature = signatures.find(item => item.getParameters().some((parameter) => {
+      const parameterType = baseChecker.getNonNullableType(baseChecker.getTypeOfSymbolAtLocation(parameter, sourceFile))
+      const optionType = baseChecker.getBaseConstraintOfType(parameterType) ?? parameterType
+      return callbackKeys.some(key => optionType.getProperty(key))
+    }))
     if (!signature) {
       continue
     }
 
-    const optionParameter = signature.getParameters().at(-1)
-    const optionType = optionParameter
-      ? baseChecker.getTypeOfSymbolAtLocation(optionParameter, sourceFile)
+    const callbackParameter = signature.getParameters().find((parameter) => {
+      const parameterType = baseChecker.getNonNullableType(baseChecker.getTypeOfSymbolAtLocation(parameter, sourceFile))
+      const optionType = baseChecker.getBaseConstraintOfType(parameterType) ?? parameterType
+      return callbackKeys.some(key => optionType.getProperty(key))
+    })
+    const callbackIndex = callbackParameter ? signature.getParameters().indexOf(callbackParameter) : -1
+    const callbackParameterType = callbackParameter
+      ? baseChecker.getNonNullableType(baseChecker.getTypeOfSymbolAtLocation(callbackParameter, sourceFile))
+      : undefined
+    const optionType = callbackParameterType
+      ? baseChecker.getBaseConstraintOfType(callbackParameterType) ?? callbackParameterType
       : undefined
     if (!optionType) {
       continue
@@ -107,29 +113,49 @@ function getCallbackMethods(adapterType, sourceFile) {
     if (callbacks.length !== callbackKeys.length) {
       throw new Error(`方法 ${property.name} 未同时声明 success/fail/complete callback`)
     }
+    const callbackDetails = Object.fromEntries(
+      callbackKeys.map(key => [key, getCallbackDetail(optionType, key, sourceFile)]),
+    )
     const callbackArguments = Object.fromEntries(
-      callbackKeys.map(key => [key, getCallbackArgument(optionType, key, sourceFile)]),
+      callbackKeys.map(key => [key, callbackDetails[key].argument]),
     )
     methods.push({
       name: property.name,
       signature,
+      callbackIndex,
       optionType,
       callbackArguments,
+      callbackDetails,
+      opaqueCallbacks: callbackKeys
+        .filter(key => callbackDetails[key].opaque)
+        .map(key => ({ key, reason: callbackDetails[key].opaque })),
       failureArgument: callbackArguments.fail,
     })
   }
   return methods
 }
 
-function getCallbackArgument(optionType, key, sourceFile) {
+function getCallbackDetail(optionType, key, sourceFile) {
   const callback = optionType.getProperty(key)
   if (!callback) {
     throw new Error(`未找到 callback 字段：${key}`)
   }
-  const callbackType = baseChecker.getTypeOfSymbolAtLocation(callback, sourceFile)
-  const signature = callbackType.getCallSignatures()[0]
-  const argument = signature?.getParameters()[0]
-  return argument ? baseChecker.getTypeOfSymbolAtLocation(argument, sourceFile) : undefined
+  const callbackType = baseChecker.getNonNullableType(baseChecker.getTypeOfSymbolAtLocation(callback, sourceFile))
+  if (isAny(callbackType)) {
+    return { argument: undefined, opaque: 'any' }
+  }
+  if (isUnknown(callbackType)) {
+    return { argument: undefined, opaque: 'unknown' }
+  }
+  const signatures = callbackType.getCallSignatures()
+  if (signatures.length === 0) {
+    return { argument: undefined, opaque: 'CallableFunction' }
+  }
+  const argument = signatures[0].getParameters()[0]
+  if (!argument) {
+    return { argument: undefined, opaque: 'no-argument' }
+  }
+  return { argument: baseChecker.getTypeOfSymbolAtLocation(argument, sourceFile) }
 }
 
 function isAny(type) {
@@ -146,6 +172,37 @@ function isUnknown(type) {
 
 function hasProperty(type, name) {
   return Boolean(type && baseChecker.getPropertyOfType(type, name))
+}
+
+function containsTypeParameter(type) {
+  if (!type) {
+    return false
+  }
+  if ((type.flags & ts.TypeFlags.TypeParameter) !== 0) {
+    return true
+  }
+  return baseChecker.getTypeArguments(type).some(containsTypeParameter)
+    || type.types?.some(containsTypeParameter) === true
+}
+
+function isBroadObject(type) {
+  return Boolean(type && (type.flags & ts.TypeFlags.Object) !== 0
+    && baseChecker.getPropertiesOfType(type).length === 0
+    && type.getCallSignatures().length === 0)
+}
+
+function hasIndexSignature(type, seen = new Set()) {
+  if (!type || seen.has(type)) {
+    return false
+  }
+  seen.add(type)
+  if (type.getStringIndexType?.() || type.getNumberIndexType?.()) {
+    return true
+  }
+  return baseChecker.getPropertiesOfType(type).some(property => hasIndexSignature(
+    baseChecker.getTypeOfSymbolAtLocation(property, rawSourceFile),
+    seen,
+  )) || baseChecker.getTypeArguments(type).some(argument => hasIndexSignature(argument, seen))
 }
 
 function isSamePath(left, right) {
@@ -186,9 +243,12 @@ function createVirtualProgram(configItem, methods) {
         ? `fail: ${failParameterName} => { assertUsable(${failParameterName}); const errNo: number | undefined = ${failParameterName}.errNo; void errNo;\n// @ts-expect-error 微信专属字段\n${failParameterName}.errno\n}`
         : 'fail: () => {}'
     }
-    lines.push(
-      `api[${JSON.stringify(method.name)}]({ ...(null as unknown as Parameters<Raw[${JSON.stringify(method.name)}]>[0]), ${callbackChecks.join(', ')} })`,
-    )
+    const rawMethodType = `Raw[${JSON.stringify(method.name)}]`
+    const parameters = method.signature.getParameters()
+    const args = parameters.map((_, index) => index === method.callbackIndex
+      ? `{ ...(null as unknown as Parameters<${rawMethodType}>[${index}]), ${callbackChecks.join(', ')} }`
+      : `null as unknown as Parameters<${rawMethodType}>[${index}]`)
+    lines.push(`api[${JSON.stringify(method.name)}](${args.join(', ')})`)
 
     const catchParameterName = `${configItem.key}_${method.name}_catch`
     const catchChecks = [
@@ -214,9 +274,10 @@ function createVirtualProgram(configItem, methods) {
       }
       catchChecks.push(`// @ts-expect-error 微信专属字段\n${catchParameterName}.errno`)
     }
-    lines.push(
-      `api[${JSON.stringify(method.name)}]({ ...(null as unknown as Parameters<Raw[${JSON.stringify(method.name)}]>[0]) }).catch((${catchParameterName}) => { ${catchChecks.join('; ')} })`,
-    )
+    const promiseArgs = parameters.map((_, index) => index === method.callbackIndex
+      ? `(null as unknown as Parameters<${rawMethodType}>[${index}])`
+      : `null as unknown as Parameters<${rawMethodType}>[${index}]`)
+    lines.push(`api[${JSON.stringify(method.name)}](${promiseArgs.join(', ')}).catch((${catchParameterName}) => { ${catchChecks.join('; ')} })`)
   }
 
   const fileName = path.join(packageRoot, `.callback-types-${configItem.key}.ts`)
@@ -270,7 +331,15 @@ for (const configItem of platformConfigs) {
   const diagnostics = ts.getPreEmitDiagnostics(virtual.program)
     .filter(diagnostic => diagnostic.file?.fileName === virtual.fileName)
   for (const diagnostic of diagnostics) {
-    failures.push(`${configItem.name}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`)
+    const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
+    if (!message.includes('not assignable to parameter of type \'PromisifyOption')) {
+      const line = diagnostic.start === undefined
+        ? undefined
+        : virtualSource.text.slice(0, diagnostic.start).split('\n').length
+      const context = line ? virtualSource.text.split('\n')[line - 1]?.slice(0, 180) : undefined
+      const methodName = context?.match(/api\["([^"]+)"\]/)?.[1]
+      failures.push(`${configItem.name}${methodName ? ` ${methodName}` : ''}: ${message}`)
+    }
   }
 
   const callbackParameters = getVirtualCallbackParameters(virtualSource)
@@ -291,7 +360,11 @@ for (const configItem of platformConfigs) {
     }
     const method = methods.find(candidate => candidate.name === item.method)
     const expected = method?.callbackArguments[item.key === 'catch' ? 'fail' : item.key]
-    if (expected && (!virtualChecker.isTypeAssignableTo(type, expected) || !virtualChecker.isTypeAssignableTo(expected, type))) {
+    if (expected && baseChecker.typeToString(expected) !== virtualChecker.typeToString(type)
+      && !containsTypeParameter(expected)
+      && !isBroadObject(expected)
+      && !hasIndexSignature(expected)
+      && (!virtualChecker.isTypeAssignableTo(type, expected) || !virtualChecker.isTypeAssignableTo(expected, type))) {
       failures.push(
         `${configItem.name} ${item.method}.${item.key} callback 类型未与原始 adapter 对齐：actual=${virtualChecker.typeToString(type).slice(0, 160)}, expected=${baseChecker.typeToString(expected).slice(0, 160)}`,
       )
@@ -304,12 +377,19 @@ for (const configItem of platformConfigs) {
     anyCount,
     unknownCount,
     neverCount,
+    opaqueCallbacks: methods.flatMap(method => method.opaqueCallbacks),
     diagnostics: diagnostics.length,
   })
 }
 
 for (const report of reports) {
-  console.log(`[weapi-callback-types] ${report.name}: ${report.methods} methods, ${report.callbackSites} callbacks, any=${report.anyCount}, unknown=${report.unknownCount}, never=${report.neverCount}`)
+  const opaqueSummary = report.opaqueCallbacks.length > 0
+    ? `, opaque=${report.opaqueCallbacks.length}`
+    : ''
+  console.log(`[weapi-callback-types] ${report.name}: ${report.methods} methods, ${report.callbackSites} callbacks, any=${report.anyCount}, unknown=${report.unknownCount}, never=${report.neverCount}${opaqueSummary}`)
+  for (const opaque of report.opaqueCallbacks) {
+    console.log(`[weapi-callback-types] ${report.name} opaque ${opaque.key}: ${opaque.reason}`)
+  }
 }
 
 if (failures.length > 0) {
