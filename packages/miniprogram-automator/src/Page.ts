@@ -196,9 +196,13 @@ export default class Page {
   }
 
   async getElementsByXpath(selector: string, options: PageQueryOptions = {}) {
-    const { elements } = await this.send('Page.getElementsByXpath', { selector }, {
+    const response = await this.send('Page.getElementsByXpath', { selector }, {
       timeout: options.timeout ?? PAGE_QUERY_TIMEOUT,
     })
+    const elements = response?.elements
+    if (!Array.isArray(elements)) {
+      throw new TypeError('DevTools Page.getElementsByXpath 返回了无效响应：缺少 elements 数组。')
+    }
     return elements.map((element: any) => {
       return Element.create(this.connection, { ...element, pageId: this.id }, this.elementMap)
     })

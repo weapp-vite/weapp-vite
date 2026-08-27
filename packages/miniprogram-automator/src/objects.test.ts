@@ -110,6 +110,21 @@ describe('Page', () => {
     })
   })
 
+  it('reports malformed XPath collection responses with protocol context', async () => {
+    const send = vi.fn(async () => ({}))
+    const page = new Page(createConnection(send), { id: 7, path: '/pages/index', query: {} })
+
+    await expect(page.getElementsByXpath('//view')).rejects.toThrow(
+      'DevTools Page.getElementsByXpath 返回了无效响应：缺少 elements 数组。',
+    )
+    expect(send).toHaveBeenCalledWith('Page.getElementsByXpath', {
+      pageId: 7,
+      selector: '//view',
+    }, {
+      timeout: 2_500,
+    })
+  })
+
   it('uses app-service Page protocol immediately for affected DevTools versions', async () => {
     const send = vi.fn(async (method: string, params?: Record<string, any>) => {
       if (method !== 'App.callFunction') {
