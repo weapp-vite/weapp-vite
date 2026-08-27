@@ -136,8 +136,8 @@ export default {
 
 ## 支持的配置类型
 
-| 文件路径              | 配置类型  | Schema URL                                   |
-| --------------------- | --------- | -------------------------------------------- |
+| 文件路径              | 配置类型  | Schema URL                              |
+| --------------------- | --------- | --------------------------------------- |
 | `app.vue`             | App       | `https://vite.weapp.dev/app.json`       |
 | `pages/**/*.vue`      | Page      | `https://vite.weapp.dev/page.json`      |
 | `components/**/*.vue` | Component | `https://vite.weapp.dev/component.json` |
