@@ -1,0 +1,189 @@
+/// <reference types="miniprogram-api-typings" />
+/// <reference types="@mini-types/alipay" />
+/// <reference types="@douyin-microapp/typings" />
+
+// eslint-disable-next-line antfu/no-import-dist
+import type {
+  CreateWeapiOptions,
+  MiniProgramApiPlatformDescriptor,
+  WeapiAdapter,
+  WeapiAlipayAdapter,
+  WeapiAlipayMethodName,
+  WeapiAlipayMiniProgramRawAdapterSource,
+  WeapiAlipayRawAdapter,
+  WeapiCrossPlatformAdapter,
+  WeapiCrossPlatformRawAdapter,
+  WeapiDefaultMiniProgramRawAdapterSource,
+  WeapiDouyinAdapter,
+  WeapiDouyinMethodName,
+  WeapiDouyinMiniProgramRawAdapterSource,
+  WeapiDouyinRawAdapter,
+  WeapiError,
+  WeapiInstance,
+  WeapiMethodSupportQueryOptions,
+  WeapiMiniProgramAdapter,
+  WeapiMiniProgramAlipayAdapter,
+  WeapiMiniProgramAlipayMethodName,
+  WeapiMiniProgramAlipayRawAdapter,
+  WeapiMiniProgramBluetoothError,
+  WeapiMiniProgramClipboardDataResult,
+  WeapiMiniProgramConnectSocketOption,
+  WeapiMiniProgramCrossPlatformAdapter,
+  WeapiMiniProgramCrossPlatformRawAdapter,
+  WeapiMiniProgramDouyinAdapter,
+  WeapiMiniProgramDouyinMethodName,
+  WeapiMiniProgramDouyinRawAdapter,
+  WeapiMiniProgramGeneralCallbackResult,
+  WeapiMiniProgramLogManager,
+  WeapiMiniProgramMethodName,
+  WeapiMiniProgramPlatformRawAdapterSourceName,
+  WeapiMiniProgramPlatformRawAdapterSourceRegistry,
+  WeapiMiniProgramRawAdapter,
+  WeapiMiniProgramRawAdapterSourceName,
+  WeapiMiniProgramRequestFailResult,
+  WeapiMiniProgramRequestMethod,
+  WeapiMiniProgramRequestOption,
+  WeapiMiniProgramRequestSuccessResult,
+  WeapiMiniProgramRequestTask,
+  WeapiMiniProgramRuntimeRawAdapterSourceName,
+  WeapiMiniProgramRuntimeRawAdapterSourceRegistry,
+  WeapiMiniProgramSelectorQuery,
+  WeapiMiniProgramSocketTask,
+  WeapiMiniProgramSystemInfo,
+  WeapiMiniProgramUpdateManager,
+  WeapiMiniProgramVideoContext,
+  WeapiMiniProgramWechatMethodName,
+  WeapiMiniProgramWechatRawAdapter,
+  WeapiMiniProgramWxAdapter,
+  WeapiMiniProgramWxMethodName,
+  WeapiMiniProgramWxRawAdapter,
+  WeapiPlatformTypeSourceName,
+  WeapiPromise,
+  WeapiPromisify,
+  WeapiResolvedTarget,
+  WeapiRuntimeTypeSourceName,
+  WeapiSupportLevel,
+  WeapiTtMiniProgramRawAdapterSource,
+  WeapiTypeSourceName,
+  WeapiWechatMethodName,
+  WeapiWechatMiniProgramRawAdapterSource,
+  WeapiWechatRawAdapter,
+  WeapiWxAdapter,
+  WeapiWxMethodName,
+  WeapiWxRawAdapter,
+} from '../dist/index.d.mts'
+
+export declare const WEAPI_PLATFORM_TYPE_SOURCES: typeof import('../dist/index.mjs').WEAPI_PLATFORM_TYPE_SOURCES
+export declare const WEAPI_RUNTIME_TYPE_SOURCES: typeof import('../dist/index.mjs').WEAPI_RUNTIME_TYPE_SOURCES
+export declare const WEAPI_TYPE_SOURCES: typeof import('../dist/index.mjs').WEAPI_TYPE_SOURCES
+export declare const MINI_PROGRAM_API_PLATFORM_DESCRIPTORS: typeof import('../dist/index.mjs').MINI_PROGRAM_API_PLATFORM_DESCRIPTORS
+
+export function normalizeMiniProgramPlatform(value?: string | null): string | undefined
+export function resolveMiniProgramPlatform(value?: string | null): MiniProgramApiPlatformDescriptor | undefined
+
+export type {
+  CreateWeapiOptions,
+  MiniProgramApiPlatformDescriptor,
+  WeapiAdapter,
+  WeapiAlipayAdapter,
+  WeapiAlipayMethodName,
+  WeapiAlipayMiniProgramRawAdapterSource,
+  WeapiAlipayRawAdapter,
+  WeapiCrossPlatformAdapter,
+  WeapiCrossPlatformRawAdapter,
+  WeapiDefaultMiniProgramRawAdapterSource,
+  WeapiDouyinAdapter,
+  WeapiDouyinMethodName,
+  WeapiDouyinMiniProgramRawAdapterSource,
+  WeapiDouyinRawAdapter,
+  WeapiError,
+  WeapiInstance,
+  WeapiMethodSupportQueryOptions,
+  WeapiMiniProgramAdapter,
+  WeapiMiniProgramAlipayAdapter,
+  WeapiMiniProgramAlipayMethodName,
+  WeapiMiniProgramAlipayRawAdapter,
+  WeapiMiniProgramBluetoothError,
+  WeapiMiniProgramClipboardDataResult,
+  WeapiMiniProgramConnectSocketOption,
+  WeapiMiniProgramCrossPlatformAdapter,
+  WeapiMiniProgramCrossPlatformRawAdapter,
+  WeapiMiniProgramDouyinAdapter,
+  WeapiMiniProgramDouyinMethodName,
+  WeapiMiniProgramDouyinRawAdapter,
+  WeapiMiniProgramGeneralCallbackResult,
+  WeapiMiniProgramLogManager,
+  WeapiMiniProgramMethodName,
+  WeapiMiniProgramPlatformRawAdapterSourceName,
+  WeapiMiniProgramPlatformRawAdapterSourceRegistry,
+  WeapiMiniProgramRawAdapter,
+  WeapiMiniProgramRawAdapterSourceName,
+  WeapiMiniProgramRequestFailResult,
+  WeapiMiniProgramRequestMethod,
+  WeapiMiniProgramRequestOption,
+  WeapiMiniProgramRequestSuccessResult,
+  WeapiMiniProgramRequestTask,
+  WeapiMiniProgramRuntimeRawAdapterSourceName,
+  WeapiMiniProgramRuntimeRawAdapterSourceRegistry,
+  WeapiMiniProgramSelectorQuery,
+  WeapiMiniProgramSocketTask,
+  WeapiMiniProgramSystemInfo,
+  WeapiMiniProgramUpdateManager,
+  WeapiMiniProgramVideoContext,
+  WeapiMiniProgramWechatMethodName,
+  WeapiMiniProgramWechatRawAdapter,
+  WeapiMiniProgramWxAdapter,
+  WeapiMiniProgramWxMethodName,
+  WeapiMiniProgramWxRawAdapter,
+  WeapiPlatformTypeSourceName,
+  WeapiPromise,
+  WeapiPromisify,
+  WeapiResolvedTarget,
+  WeapiRuntimeTypeSourceName,
+  WeapiSupportLevel,
+  WeapiTtMiniProgramRawAdapterSource,
+  WeapiTypeSourceName,
+  WeapiWechatMethodName,
+  WeapiWechatMiniProgramRawAdapterSource,
+  WeapiWechatRawAdapter,
+  WeapiWxAdapter,
+  WeapiWxMethodName,
+  WeapiWxRawAdapter,
+}
+
+export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRawAdapter>(
+  options?: CreateWeapiOptions<TAdapter>,
+): WeapiInstance<TAdapter>
+
+export const createApi: typeof createWeapi
+
+export type CreateApiOptions<TAdapter extends WeapiAdapter = WeapiCrossPlatformRawAdapter>
+  = CreateWeapiOptions<TAdapter>
+
+export type MiniProgramApiInstance<TAdapter extends WeapiAdapter = WeapiCrossPlatformRawAdapter>
+  = WeapiInstance<TAdapter>
+
+export type WeapiDefaultInstance = WeapiInstance<WeapiCrossPlatformRawAdapter>
+
+/**
+ * 默认跨平台 API 实例。
+ *
+ * @generated weapi-platform-matrix:start
+ * | 平台 | 全局对象 | 类型来源 | 对齐状态 |
+ * | --- | --- | --- | --- |
+ * | 微信小程序 | `wx` | `miniprogram-api-typings` | ✅ 全量 |
+ * | 支付宝小程序 | `my` | `@mini-types/alipay` | ✅ 全量 |
+ * | 百度智能小程序 | `swan` | 运行时透传 | ⚠️ 按宿主能力支持 |
+ * | 抖音小程序 | `tt` | `@douyin-microapp/typings` | ✅ 全量 |
+ * | QQ 小程序 | `qq` | 运行时透传 | ⚠️ 按宿主能力支持 |
+ * | 快手小程序 | `ks` | 运行时透传 | ⚠️ 按宿主能力支持 |
+ * | 京东小程序 | `jd` | 运行时透传 | ⚠️ 按宿主能力支持 |
+ * | 小红书小程序 | `xhs` | 运行时透传 | ⚠️ 按宿主能力支持 |
+ * | 钉钉小程序 | `dd` | 运行时透传 | ⚠️ 按宿主能力支持 |
+ * | 快应用 | `qa` | 运行时透传 | ⚠️ 按宿主能力支持 |
+ * | 快应用 WebView | `qapp` | 运行时透传 | ⚠️ 按宿主能力支持 |
+ * | uni-app 运行时 | `uni` | 运行时透传 | ⚠️ 按宿主能力支持 |
+ * @generated weapi-platform-matrix:end
+ */
+export const api: WeapiDefaultInstance
+export const wpi: WeapiDefaultInstance

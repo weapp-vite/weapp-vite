@@ -1,5 +1,8 @@
-import { registerWeapiIndexTests } from './index'
+import { api, createApi, createWeapi, wpi } from '../src'
 
-describe('weapi', () => {
-  registerWeapiIndexTests()
+describe('@wevu/api compatibility entry', () => {
+  it('re-exports the framework-agnostic API implementation', () => {
+    expect(api).toBe(wpi)
+    expect(createApi).toBe(createWeapi)
+  })
 })

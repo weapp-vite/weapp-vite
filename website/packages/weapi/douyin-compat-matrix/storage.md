@@ -1,6 +1,6 @@
 ---
 title: 抖音兼容矩阵 · 数据缓存
-description: "@wevu/api 的抖音兼容矩阵页，聚焦数据缓存能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。"
+description: "@weapp-core/api 的抖音兼容矩阵页，聚焦数据缓存能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。"
 keywords:
   - weapi
   - 抖音小程序

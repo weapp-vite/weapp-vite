@@ -7,11 +7,11 @@ export function createBenchmarkCheckoutPreparationCommands(): BenchmarkCheckoutP
   return [
     {
       command: 'pnpm',
-      args: ['--filter', '@wevu/api', 'catalog:sync'],
+      args: ['--filter', '@weapp-core/api', 'catalog:sync'],
     },
     {
       command: 'pnpm',
-      args: ['--filter', '@wevu/api', 'docs:sync'],
+      args: ['--filter', '@weapp-core/api', 'docs:sync'],
     },
   ]
 }

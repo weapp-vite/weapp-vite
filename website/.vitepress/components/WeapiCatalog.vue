@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { WEAPI_METHOD_SUPPORT_MATRIX } from '../../../packages-runtime/weapi/src/core/methodMapping/supportMatrix'
+import { WEAPI_METHOD_SUPPORT_MATRIX } from '../../../@weapp-core/api/src/core/methodMapping/supportMatrix'
 import { matchWeapiCapability, WEAPI_CAPABILITY_GROUPS } from '../shared/weapiCapabilities'
 
 interface WeapiCatalogItem {
@@ -28,29 +28,29 @@ let stopThemeWatcher: (() => void) | null = null
 
 function createExample(method: string) {
   if (method.startsWith('on')) {
-    return `import { wpi } from 'wevu/api'
+    return `import { api } from '@weapp-core/api'
 
-wpi.${method}((payload) => {
+api.${method}((payload) => {
   console.log(payload)
 })`
   }
 
   if (method.startsWith('off')) {
-    return `import { wpi } from 'wevu/api'
+    return `import { api } from '@weapp-core/api'
 
 const handler = () => {}
-wpi.${method}(handler)`
+api.${method}(handler)`
   }
 
   if (method.endsWith('Sync')) {
-    return `import { wpi } from 'wevu/api'
+    return `import { api } from '@weapp-core/api'
 
-const result = wpi.${method}()`
+const result = api.${method}()`
   }
 
-  return `import { wpi } from 'wevu/api'
+  return `import { api } from '@weapp-core/api'
 
-const result = await wpi.${method}({
+const result = await api.${method}({
   // ...
 })`
 }

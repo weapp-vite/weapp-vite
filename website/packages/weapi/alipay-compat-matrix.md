@@ -1,8 +1,8 @@
 ---
 title: 支付宝兼容矩阵
-description: "@wevu/api 按微信命名调用时的支付宝兼容矩阵。"
+description: "@weapp-core/api 按微信命名调用时的支付宝兼容矩阵。"
 keywords:
-  - "@wevu/api"
+  - "@weapp-core/api"
   - 支付宝
   - 兼容矩阵
   - alipay

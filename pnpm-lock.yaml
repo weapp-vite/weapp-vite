@@ -601,6 +601,18 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
 
+  '@weapp-core/api':
+    dependencies:
+      '@douyin-microapp/typings':
+        specifier: 'catalog:'
+        version: 1.3.1
+      '@mini-types/alipay':
+        specifier: 'catalog:'
+        version: 3.0.14
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+
   '@weapp-core/constants': {}
 
   '@weapp-core/init':
@@ -2338,18 +2350,9 @@ importers:
 
   packages-runtime/weapi:
     dependencies:
-      '@douyin-microapp/typings':
-        specifier: 'catalog:'
-        version: 1.3.1
-      '@mini-types/alipay':
-        specifier: 'catalog:'
-        version: 3.0.14
-      '@weapp-core/shared':
+      '@weapp-core/api':
         specifier: workspace:*
-        version: link:../../@weapp-core/shared
-      miniprogram-api-typings:
-        specifier: 'catalog:'
-        version: 5.2.3
+        version: link:../../@weapp-core/api
 
   packages-runtime/web:
     dependencies:

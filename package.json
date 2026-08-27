@@ -183,7 +183,7 @@
     "check:wevu-root-hmr-exports": "node --import tsx scripts/generate-wevu-root-hmr-exports.ts --check",
     "catalog:sync:rolldown": "node scripts/print-rolldown-versions.mjs --mode sync",
     "catalog:sync:workspace": "node scripts/postinstall-sync.mjs --mode sync",
-    "catalog:sync:weapi": "pnpm --filter @wevu/api catalog:sync",
+    "catalog:sync:weapi": "pnpm --filter @weapp-core/api catalog:sync",
     "catalog:sync:create-weapp-vite": "node --import tsx packages/create-weapp-vite/scripts/generate-template-catalog.ts",
     "deps:up": "node --import tsx scripts/upgrade-workspace-deps.ts",
     "git:index-lock:doctor": "node scripts/git-index-lock-doctor.mjs doctor",
