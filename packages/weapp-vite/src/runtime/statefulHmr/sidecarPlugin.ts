@@ -18,11 +18,14 @@ export function createStatefulHmrSidecarPlugin(): Plugin {
     enforce: 'pre',
     async load(id) {
       const request = parseSidecarSourceRequest(id)
-      if (!request || request.kind === 'style') {
+      if (!request) {
         return
       }
       this.addWatchFile(request.sourceId)
       const source = await readFile(request.sourceId, 'utf8')
+      if (request.kind === 'style') {
+        return source
+      }
       const code = createStatefulHmrSidecarModuleCode(id, source)
       return code ? { code, moduleSideEffects: 'no-treeshake' } : undefined
     },

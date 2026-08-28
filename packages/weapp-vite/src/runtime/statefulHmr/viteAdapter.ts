@@ -3,6 +3,7 @@
 import type { DevEngine, DevOptions } from 'rolldown/experimental'
 import type { ResolvedConfig, ViteDevServer } from 'vite'
 import type { StatefulHmrOutputFile } from './outputWriter'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
@@ -14,6 +15,42 @@ import { dev } from 'rolldown/experimental'
 import { assertStatefulHmrRuntimeOutput, createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 
 const clientId = 'weapp-vite-stateful-hmr'
+const initialBuildTimeoutMs = 60_000
+const require = createRequire(import.meta.url)
+
+function resolveViteDevEngine(): typeof dev {
+  try {
+    const vitePackagePath = require.resolve('vite/package.json')
+    const viteRequire = createRequire(vitePackagePath)
+    const viteRolldown = viteRequire('rolldown/experimental') as { dev?: typeof dev }
+    if (typeof viteRolldown.dev === 'function') {
+      return viteRolldown.dev
+    }
+  }
+  catch {
+    // Vite 未暴露 Rolldown 时回退到 weapp-vite 自身依赖。
+  }
+  return dev
+}
+
+async function withInitialBuildTimeout<T>(task: Promise<T>, timeoutMs = initialBuildTimeoutMs): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      task,
+      new Promise<T>((_resolve, reject) => {
+        timeout = setTimeout(() => {
+          reject(new Error(`stateful-experimental HMR 初始构建超时（>${timeoutMs}ms）。`))
+        }, timeoutMs)
+      }),
+    ])
+  }
+  finally {
+    if (timeout) {
+      clearTimeout(timeout)
+    }
+  }
+}
 
 export type StatefulHmrDevEngineUpdate
   = | { type: 'Noop' }
@@ -59,7 +96,8 @@ export class StatefulHmrViteAdapter {
       waitForInitialBundle: () => Promise<void>
     },
     private readonly watchOptions: StatefulHmrDevWatchOptions = {},
-    private readonly createDevEngine: typeof dev = dev,
+    private readonly createDevEngine: typeof dev = resolveViteDevEngine(),
+    private readonly initialBuildTimeout = initialBuildTimeoutMs,
   ) {}
 
   install(): void {
@@ -221,14 +259,14 @@ export class StatefulHmrViteAdapter {
         this.callbacks.onError(message)
       })
       await engine.registerClient(clientId)
-      await engine.ensureCurrentBuildFinish()
+      await withInitialBuildTimeout(engine.ensureCurrentBuildFinish(), this.initialBuildTimeout)
       if (this.initialOutputError) {
         throw this.initialOutputError
       }
       if ((await engine.getBundleState()).lastBuildErrored) {
         throw new Error('微信状态保持 HMR 初次构建失败。')
       }
-      await this.callbacks.waitForInitialBundle()
+      await withInitialBuildTimeout(this.callbacks.waitForInitialBundle(), this.initialBuildTimeout)
     }
   }
 
