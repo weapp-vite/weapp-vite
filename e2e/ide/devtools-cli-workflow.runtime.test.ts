@@ -419,7 +419,7 @@ describe.sequential('DevTools CLI workflow runtime', () => {
     await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
     miniProgram = await launchAutomator({
       launchMode: 'bridge',
-      maxLaunchRetries: 1,
+      maxLaunchRetries: 2,
       port: AUTOMATOR_PORT,
       projectPath: TEMPLATE_ROOT,
       retryWarmupTimeout: true,
