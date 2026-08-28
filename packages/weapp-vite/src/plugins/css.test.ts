@@ -683,6 +683,50 @@ describe('css plugin shared style injection', () => {
     expect(cssAsset?.source).toContain('.root{color:red}')
   })
 
+  it('merges multiple app style src assets into one app wxss output', async () => {
+    const appEntry = resolve(absoluteSrcRoot, 'app.vue')
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        facadeModuleId: createLogicalEntryId(appEntry, 'app'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+        viteMetadata: {
+          importedAssets: new Set(),
+          importedCss: new Set(['app-base.css', 'app-tailwind.css']),
+          importedScripts: new Set(),
+          importedUrls: new Set(),
+        },
+      },
+      'app-base.css': {
+        type: 'asset',
+        fileName: 'app-base.css',
+        source: '.app-base{display:block}',
+      },
+      'app-tailwind.css': {
+        type: 'asset',
+        fileName: 'app-tailwind.css',
+        source: '.text-red-500{color:red}',
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    const appStyles = emitted.filter(asset => asset.fileName === 'app.wxss')
+    expect(appStyles).toHaveLength(1)
+    expect(appStyles[0]?.source).toContain('.app-base{display:block}')
+    expect(appStyles[0]?.source).toContain('.text-red-500{color:red}')
+  })
+
   it('reuses processed css asset source for multiple chunk owners', async () => {
     preprocessCSSMock.mockResolvedValue({
       code: '.shared{color:red}',
