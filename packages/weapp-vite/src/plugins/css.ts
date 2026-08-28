@@ -147,6 +147,10 @@ function shouldPreprocessWithVite(fileName: string) {
   return VITE_PREPROCESS_STYLE_RE.test(fileName)
 }
 
+function hasViteStyleAssetPlaceholder(source: string) {
+  return source.includes('__VITE_ASSET__') || source.includes('__VITE_PUBLIC_ASSET__')
+}
+
 async function preprocessStyleSource(
   code: string,
   fileName: string,
@@ -446,11 +450,14 @@ async function handleBundleEntry(
     let cached = preparedStyleAssets.get(cacheKey)
     if (!cached) {
       cached = (async () => {
-        const { css, dependencies } = await preprocessStyleSource(rawCss, preprocessId, resolvedConfig, {
+        const graphSource = await readStyleGraphSource(preprocessId, rawCss)
+        const preprocessInput = shouldPreprocess && hasViteStyleAssetPlaceholder(rawCss)
+          ? graphSource
+          : rawCss
+        const { css, dependencies } = await preprocessStyleSource(preprocessInput, preprocessId, resolvedConfig, {
           enabled: shouldPreprocess,
         })
-        const graphCss = await readStyleGraphSource(preprocessId, rawCss)
-        syncCssImportDependencies(ctx, preprocessId, graphCss, dependencies)
+        syncCssImportDependencies(ctx, preprocessId, graphSource, dependencies)
         if (typeof this.addWatchFile === 'function') {
           for (const dependency of dependencies) {
             this.addWatchFile(normalizeWatchPath(dependency))
@@ -528,7 +535,7 @@ async function handleBundleEntry(
       const graphSource = await readStyleGraphSource(preprocessId, canonicalSource)
       const preprocessInput = freshHmrStyleSourcePath
         ? await resolveMemoryStyleSource(ctx, freshHmrStyleSourcePath) ?? graphSource
-        : shouldPreprocess && (canonicalSource.includes('__VITE_ASSET__') || canonicalSource.includes('__VITE_PUBLIC_ASSET__'))
+        : shouldPreprocess && hasViteStyleAssetPlaceholder(canonicalSource)
           ? graphSource
           : canonicalSource
       const { css, dependencies } = await preprocessStyleSource(preprocessInput, preprocessId, resolvedConfig, {
