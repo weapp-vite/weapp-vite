@@ -27,7 +27,6 @@ describe('output finalizer independent outputs', () => {
             names: ['index.wxss'],
             originalFileNames: ['/project/src/pkg/pages/index.css'],
             source: '.page{}',
-            needsCodeReference: true,
           },
         ],
       }),
@@ -39,7 +38,6 @@ describe('output finalizer independent outputs', () => {
             names: [],
             originalFileNames: [],
             source: '<view />',
-            needsCodeReference: false,
           },
         ],
       }),
@@ -61,13 +59,11 @@ describe('output finalizer independent outputs', () => {
       name: 'index.wxss',
       originalFileName: '/project/src/pkg/pages/index.css',
       source: '.page{}',
-      needsCodeReference: true,
     })
     expect(emitAsset).toHaveBeenNthCalledWith(3, {
       type: 'asset',
       fileName: 'other/index.wxml',
       source: '<view />',
-      needsCodeReference: false,
     })
     expect(ctx.runtimeState.build.independent.pendingOutputs).toEqual([])
   })

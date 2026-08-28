@@ -22,7 +22,6 @@ function toEmittedAsset(output: OutputAsset | OutputChunk): EmittedAsset {
     source: output.source,
     ...(name ? { name } : {}),
     ...(originalFileName ? { originalFileName } : {}),
-    needsCodeReference: output.needsCodeReference,
   }
 }
 
