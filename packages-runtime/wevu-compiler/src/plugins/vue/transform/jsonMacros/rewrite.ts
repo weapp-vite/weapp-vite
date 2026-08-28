@@ -1,4 +1,4 @@
-import type { Statement } from '@weapp-vite/ast/babelTypes'
+import type { File, Statement } from '@weapp-vite/ast/babelTypes'
 import * as t from '@weapp-vite/ast/babelTypes'
 import MagicString from 'magic-string'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, parseJsLike, traverse } from '../../../../utils/babel'
@@ -45,10 +45,10 @@ export function stripScriptSetupMacroStatements(
 }
 
 /**
- * 从任意代码中剥离 JSON 宏调用。
+ * 从任意代码中拆分 JSON 宏调用与运行时代码。
  */
-export function stripJsonMacroCallsFromCode(code: string, filename: string) {
-  let ast: any
+export function splitJsonMacroCallsFromCode(code: string, filename: string) {
+  let ast: File
   try {
     ast = babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS)
   }
@@ -66,6 +66,7 @@ export function stripJsonMacroCallsFromCode(code: string, filename: string) {
   }
 
   const ms = new MagicString(code)
+  const macroSources: string[] = []
 
   traverse(ast, {
     ExpressionStatement(path) {
@@ -80,10 +81,21 @@ export function stripJsonMacroCallsFromCode(code: string, filename: string) {
       const start = path.node.start
       const end = path.node.end
       if (typeof start === 'number' && typeof end === 'number') {
+        macroSources.push(code.slice(start, end))
         ms.remove(start, end)
       }
     },
   })
 
-  return ms.toString()
+  return {
+    macroSources,
+    stripped: ms.toString(),
+  }
+}
+
+/**
+ * 从任意代码中剥离 JSON 宏调用。
+ */
+export function stripJsonMacroCallsFromCode(code: string, filename: string) {
+  return splitJsonMacroCallsFromCode(code, filename).stripped
 }

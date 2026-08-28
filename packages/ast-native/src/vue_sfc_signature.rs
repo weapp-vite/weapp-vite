@@ -36,16 +36,6 @@ struct SfcDescriptor {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct SfcNonJsonPayload<'a> {
-    script: Option<SerializedSfcBlock<'a>>,
-    script_setup: Option<SerializedSfcBlock<'a>>,
-    template: Option<SerializedSfcBlock<'a>>,
-    styles: Vec<SerializedSfcBlock<'a>>,
-    custom_blocks: Vec<SerializedSfcBlock<'a>>,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 struct SfcScriptPayload<'a> {
     script: Option<SerializedSfcBlock<'a>>,
     script_setup: Option<SerializedSfcBlock<'a>>,
@@ -53,9 +43,29 @@ struct SfcScriptPayload<'a> {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+struct SfcTemplatePayload<'a> {
+    template: Option<SerializedSfcBlock<'a>>,
+    custom_blocks: Vec<SerializedSfcBlock<'a>>,
+}
+
+#[derive(Serialize)]
+struct SfcStylePayload<'a> {
+    styles: Vec<SerializedSfcBlock<'a>>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SfcConfigPayload<'a> {
+    custom_blocks: Vec<SerializedSfcBlock<'a>>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct VueSfcSignaturePayload<'a> {
-    non_json: SfcNonJsonPayload<'a>,
     script: SfcScriptPayload<'a>,
+    template: SfcTemplatePayload<'a>,
+    style: SfcStylePayload<'a>,
+    config: SfcConfigPayload<'a>,
     has_template: bool,
 }
 
@@ -63,21 +73,29 @@ struct VueSfcSignaturePayload<'a> {
 pub fn get_vue_sfc_signature_payload_native(source: String) -> Option<String> {
     let descriptor = parse_sfc_descriptor(&source)?;
     let payload = VueSfcSignaturePayload {
-        non_json: SfcNonJsonPayload {
-            script: descriptor.script.as_ref().map(serialize_sfc_block),
-            script_setup: descriptor.script_setup.as_ref().map(serialize_sfc_block),
-            template: descriptor.template.as_ref().map(serialize_sfc_block),
-            styles: descriptor.styles.iter().map(serialize_sfc_block).collect(),
-            custom_blocks: descriptor
-                .custom_blocks
-                .iter()
-                .filter(|block| block.block_type != "json")
-                .map(serialize_sfc_block)
-                .collect(),
-        },
         script: SfcScriptPayload {
             script: descriptor.script.as_ref().map(serialize_sfc_block),
             script_setup: descriptor.script_setup.as_ref().map(serialize_sfc_block),
+        },
+        template: SfcTemplatePayload {
+            template: descriptor.template.as_ref().map(serialize_sfc_block),
+            custom_blocks: descriptor
+                .custom_blocks
+                .iter()
+                .filter(|block| !matches!(block.block_type.as_str(), "json" | "config"))
+                .map(serialize_sfc_block)
+                .collect(),
+        },
+        style: SfcStylePayload {
+            styles: descriptor.styles.iter().map(serialize_sfc_block).collect(),
+        },
+        config: SfcConfigPayload {
+            custom_blocks: descriptor
+                .custom_blocks
+                .iter()
+                .filter(|block| matches!(block.block_type.as_str(), "json" | "config"))
+                .map(serialize_sfc_block)
+                .collect(),
         },
         has_template: descriptor
             .template
@@ -120,7 +138,7 @@ fn parse_sfc_descriptor(source: &str) -> Option<SfcDescriptor> {
         }
 
         let (block_type, attrs) = parse_open_tag(trimmed_open)?;
-        if block_type.is_empty() || !is_sfc_top_level_block(&block_type) {
+        if block_type.is_empty() {
             cursor = open_end + 1;
             continue;
         }
@@ -268,13 +286,6 @@ fn parse_open_tag(raw: &str) -> Option<(String, BTreeMap<String, SfcAttrValue>)>
 
 fn is_tag_name_char(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_')
-}
-
-fn is_sfc_top_level_block(block_type: &str) -> bool {
-    matches!(
-        block_type,
-        "template" | "script" | "style" | "json" | "config" | "wxs"
-    )
 }
 
 fn is_script_setup_block(block: &SfcBlock) -> bool {

@@ -73,14 +73,26 @@ const count = 1
 
 <template><view>{{ count }}</view></template>
 
+<i18n locale="zh-CN">
+{ "title": "首页" }
+</i18n>
+
 <style scoped lang="scss">
 .count { color: red; }
 </style>`
 
     expect(JSON.parse(getVueSfcSignaturePayloadNative(source)!)).toEqual({
+      config: {
+        customBlocks: [
+          {
+            attrs: {},
+            content: '\n{ "navigationBarTitleText": "首页" }\n',
+            type: 'json',
+          },
+        ],
+      },
       hasTemplate: true,
-      nonJson: {
-        customBlocks: [],
+      script: {
         script: null,
         scriptSetup: {
           attrs: {
@@ -90,6 +102,8 @@ const count = 1
           content: '\nconst count = 1\n',
           type: 'script',
         },
+      },
+      style: {
         styles: [
           {
             attrs: {
@@ -100,21 +114,21 @@ const count = 1
             type: 'style',
           },
         ],
+      },
+      template: {
+        customBlocks: [
+          {
+            attrs: {
+              locale: 'zh-CN',
+            },
+            content: '\n{ "title": "首页" }\n',
+            type: 'i18n',
+          },
+        ],
         template: {
           attrs: {},
           content: '<view>{{ count }}</view>',
           type: 'template',
-        },
-      },
-      script: {
-        script: null,
-        scriptSetup: {
-          attrs: {
-            lang: 'ts',
-            setup: true,
-          },
-          content: '\nconst count = 1\n',
-          type: 'script',
         },
       },
     })

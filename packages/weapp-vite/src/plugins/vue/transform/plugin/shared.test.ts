@@ -1297,9 +1297,10 @@ console.log(pages, routeSubPackages)
           build: {
             hmr: {
               vueEntryHasTemplate: new Map(),
-              vueEntryNonJsonSignatures: new Map(),
-              vueEntryScriptSignatures: new Map(),
+              vueEntrySfcSignatures: new Map(),
               vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
             },
           },
         },
@@ -1358,9 +1359,10 @@ console.log(pages, routeSubPackages)
     } as any
     const hmr = {
       vueEntryHasTemplate: new Map<string, boolean>(),
-      vueEntryNonJsonSignatures: new Map<string, string>(),
-      vueEntryScriptSignatures: new Map<string, string>(),
+      vueEntrySfcSignatures: new Map(),
       vueEntryTailwindContentSignatures: new Map<string, string>(),
+      vueEntryTailwindTemplateContentSignatures: new Map<string, string>(),
+      vueEntryTailwindScriptContentSignatures: new Map<string, string>(),
     }
     const source = '<template><view /></template><script setup>const count = 1</script>'
 
@@ -1395,8 +1397,12 @@ console.log(pages, routeSubPackages)
     })
 
     expect(hmr.vueEntryHasTemplate.get('/project/src/components/card.vue')).toBe(true)
-    expect(hmr.vueEntryNonJsonSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
-    expect(hmr.vueEntryScriptSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
+    expect(hmr.vueEntrySfcSignatures.get('/project/src/components/card.vue')).toEqual({
+      config: expect.any(String),
+      script: expect.any(String),
+      style: expect.any(String),
+      template: expect.any(String),
+    })
     expect(hmr.vueEntryTailwindContentSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
   })
 

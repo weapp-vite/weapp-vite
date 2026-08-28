@@ -2,6 +2,7 @@ import type { Plugin as PluginJson } from '@weapp-core/schematics'
 import type { Buffer } from 'node:buffer'
 import type { DetectResult } from 'package-manager-detector'
 import type { ResolvedId, RolldownOutput } from 'rolldown'
+import type { VueSfcBlockSignatures } from 'wevu/compiler'
 import type { GlassEaselDiagnostic } from '../analyze/glassEasel/types'
 import type { AppEntry, ChangeEvent, ComponentsMap, Entry, StyleEntry, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
@@ -133,9 +134,7 @@ export interface RuntimeState {
       externalComponentEntryMap: Map<string, string>
       entriesMap: Map<string, Entry | undefined>
       vueEntryHasTemplate: Map<string, boolean>
-      vueEntryNonJsonSignatures: Map<string, string>
-      vueEntryScriptSignatures: Map<string, string>
-      vueEntryStyleIndependentSignatures: Map<string, string>
+      vueEntrySfcSignatures: Map<string, VueSfcBlockSignatures>
       vueEntryTailwindContentSignatures: Map<string, string>
       vueEntryTailwindTemplateContentSignatures: Map<string, string>
       vueEntryTailwindScriptContentSignatures: Map<string, string>
@@ -374,9 +373,7 @@ export function createRuntimeState(): RuntimeState {
         externalComponentEntryMap: new Map<string, string>(),
         entriesMap: new Map<string, Entry | undefined>(),
         vueEntryHasTemplate: new Map<string, boolean>(),
-        vueEntryNonJsonSignatures: new Map<string, string>(),
-        vueEntryScriptSignatures: new Map<string, string>(),
-        vueEntryStyleIndependentSignatures: new Map<string, string>(),
+        vueEntrySfcSignatures: new Map<string, VueSfcBlockSignatures>(),
         vueEntryTailwindContentSignatures: new Map<string, string>(),
         vueEntryTailwindTemplateContentSignatures: new Map<string, string>(),
         vueEntryTailwindScriptContentSignatures: new Map<string, string>(),

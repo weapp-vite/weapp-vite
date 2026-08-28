@@ -45,6 +45,7 @@
     "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
+    "test:types": "pnpm build && tsd",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
@@ -67,6 +68,12 @@
     "postcss-selector-parser": "catalog:",
     "rolldown-require": "workspace:*",
     "vue": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   },
   "publishConfig": {
     "access": "public",

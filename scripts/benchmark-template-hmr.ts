@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { startDevProcess } from '../e2e/utils/dev-process'
 import { cleanupResidualDevProcesses } from '../e2e/utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
-import { replaceFileByRename, replaceHmrSfcTitle } from '../e2e/utils/hmr-helpers'
+import { replaceFileByRename, replaceHmrScriptName, replaceHmrSfcTitle } from '../e2e/utils/hmr-helpers'
 
 interface HmrProfileJsonSample {
   file?: string
@@ -99,7 +99,7 @@ const PROJECTS: ProjectCase[] = [
         label: 'native script',
         sourceFile: path.join(repoRoot, 'e2e-apps/wevu-runtime-e2e/src/pages/hmr/index.ts'),
         outputFile: path.join(repoRoot, 'e2e-apps/wevu-runtime-e2e/dist/pages/hmr/index.js'),
-        mutate: (original, marker) => original.replace(`buildResult('hmr'`, `buildResult('${marker}'`),
+        mutate: (original, marker) => replaceHmrScriptName(original, marker),
       },
       {
         id: 'native-style',
@@ -357,7 +357,14 @@ async function benchmarkScenario(options: {
     }
   }
   finally {
+    const restoreProfileLineCount = await countJsonlLines(profilePath)
     await replaceFileByRename(scenario.sourceFile, original)
+    await waitForHmrProfileSample(
+      profilePath,
+      scenario.sourceFile,
+      restoreProfileLineCount,
+      timeoutMs,
+    ).catch(() => undefined)
   }
 
   return {

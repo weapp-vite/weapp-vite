@@ -1,7 +1,9 @@
+import type { VueSfcBlockType } from './sfcSignature'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { resolveVueSfcHasTemplate, resolveVueSfcHmrSignatures, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } from './vueSfcSignature'
+import { classifyVueSfcBlockChanges, resolveVueSfcHasTemplate, resolveVueSfcHmrSignatures, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } from './sfcSignature'
 
 describe('vueSfcSignature', () => {
   afterEach(() => {
@@ -283,6 +285,12 @@ const count = 1
 </style>`
 
     expect(resolveVueSfcHmrSignatures(source, filename)).toEqual({
+      blockSignatures: {
+        config: expect.any(String),
+        script: expect.any(String),
+        style: expect.any(String),
+        template: expect.any(String),
+      },
       nonJsonSignature: resolveVueSfcNonJsonSignature(source, filename),
       scriptSignature: resolveVueSfcScriptSignature(source, filename),
       styleIndependentSignature: resolveVueSfcStyleIndependentSignature(source, filename),
@@ -291,6 +299,88 @@ const count = 1
       tailwindScriptContentSignature: expect.any(String),
       hasTemplate: resolveVueSfcHasTemplate(source, filename),
     })
+  })
+
+  it.each([
+    ['script', 'const count = 2'],
+    ['template', '<view class="next">{{ count }}</view>'],
+    ['style', '.count { color: blue; }'],
+    ['config', '{ "navigationBarTitleText": "新标题" }'],
+  ] as const)('classifies %s-only updates', (expectedBlock, replacement) => {
+    const filename = '/project/src/pages/index.vue'
+    const source = `<json>{ "navigationBarTitleText": "首页" }</json>
+<script setup lang="ts">const count = 1</script>
+<template><view>{{ count }}</view></template>
+<style>.count { color: red; }</style>`
+    const replacements = {
+      script: 'const count = 1',
+      template: '<view>{{ count }}</view>',
+      style: '.count { color: red; }',
+      config: '{ "navigationBarTitleText": "首页" }',
+    } satisfies Record<VueSfcBlockType, string>
+    const previous = resolveVueSfcHmrSignatures(source, filename).blockSignatures!
+    const current = resolveVueSfcHmrSignatures(
+      source.replace(replacements[expectedBlock], replacement),
+      filename,
+    ).blockSignatures!
+
+    expect(classifyVueSfcBlockChanges(previous, current)).toEqual([expectedBlock])
+  })
+
+  it('classifies JSON macro changes as config without changing runtime script', () => {
+    const filename = '/project/src/pages/index.vue'
+    const source = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const count = 1
+</script>
+<template><view>{{ count }}</view></template>`
+    const previous = resolveVueSfcHmrSignatures(source, filename).blockSignatures!
+    const current = resolveVueSfcHmrSignatures(source.replace('首页', '新标题'), filename).blockSignatures!
+
+    expect(classifyVueSfcBlockChanges(previous, current)).toEqual(['config'])
+  })
+
+  it('classifies custom SFC block changes as template assets', () => {
+    const filename = '/project/src/pages/index.vue'
+    const source = `<template><view /></template>
+<i18n locale="zh-CN">{ "title": "首页" }</i18n>`
+    const previous = resolveVueSfcHmrSignatures(source, filename).blockSignatures!
+    const current = resolveVueSfcHmrSignatures(source.replace('首页', '新标题'), filename).blockSignatures!
+
+    expect(classifyVueSfcBlockChanges(previous, current)).toEqual(['template'])
+  })
+
+  it('classifies block additions and removals symmetrically', () => {
+    const filename = '/project/src/pages/index.vue'
+    const withoutStyle = '<template><view /></template>'
+    const withStyle = `${withoutStyle}<style>.page { color: red; }</style>`
+    const previous = resolveVueSfcHmrSignatures(withoutStyle, filename).blockSignatures!
+    const current = resolveVueSfcHmrSignatures(withStyle, filename).blockSignatures!
+
+    expect(classifyVueSfcBlockChanges(previous, current)).toEqual(['style'])
+    expect(classifyVueSfcBlockChanges(current, previous)).toEqual(['style'])
+  })
+
+  it('reports mixed script and config changes in stable block order', () => {
+    const filename = '/project/src/pages/index.vue'
+    const source = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const count = 1
+</script>`
+    const next = source
+      .replace('首页', '新标题')
+      .replace('const count = 1', 'const count = 2')
+    const previous = resolveVueSfcHmrSignatures(source, filename).blockSignatures!
+    const current = resolveVueSfcHmrSignatures(next, filename).blockSignatures!
+
+    expect(classifyVueSfcBlockChanges(previous, current)).toEqual(['script', 'config'])
+  })
+
+  it('returns no signatures for malformed SFC input', () => {
+    expect(resolveVueSfcHmrSignatures(
+      '<template><view /></template',
+      '/project/src/pages/index.vue',
+    )).toEqual({})
   })
 
   it('falls back to the TypeScript backend when native module path is not configured', async () => {
@@ -309,7 +399,8 @@ const count = 1
 
     vi.stubEnv('WEAPP_VITE_NATIVE', '1')
     vi.resetModules()
-    const nativeModule = await import('./vueSfcSignature')
+    // 环境变量参与模块级 native binding 缓存，必须重新加载模块验证回退。
+    const nativeModule = await import('./sfcSignature')
 
     expect(nativeModule.resolveVueSfcNonJsonSignature(source, filename)).toBe(tsNonJson)
     expect(nativeModule.resolveVueSfcScriptSignature(source, filename)).toBe(tsScript)
@@ -328,31 +419,120 @@ const count = 1
     vi.stubEnv('WEAPP_VITE_NATIVE', '1')
     vi.stubEnv('WEAPP_VITE_NATIVE_AST_PATH', join(tmpdir(), 'missing-weapp-vite-ast-native.cjs'))
     vi.resetModules()
-    const nativeModule = await import('./vueSfcSignature')
+    // 环境变量参与模块级 native binding 缓存，必须重新加载模块验证加载失败。
+    const nativeModule = await import('./sfcSignature')
 
     expect(nativeModule.resolveVueSfcNonJsonSignature(source, filename)).toBe(tsNonJson)
     expect(nativeModule.resolveVueSfcScriptSignature(source, filename)).toBe(tsScript)
   })
 
-  it('falls back to the TypeScript backend when JSON macros are present', async () => {
+  it.each([
+    [
+      'native runtime throws',
+      `exports.getVueSfcSignaturePayloadNative = () => { throw new Error('native failed') }`,
+    ],
+    [
+      'native binding returns the legacy payload schema',
+      `exports.getVueSfcSignaturePayloadNative = () => JSON.stringify({ hasTemplate: true, nonJson: {}, script: { script: null, scriptSetup: null } })`,
+    ],
+  ])('falls back when %s', async (_case, moduleSource) => {
     const filename = '/project/src/pages/index.vue'
-    const first = `<script setup lang="ts">
+    const source = '<template><view /></template><script setup>const count = 1</script>'
+    const expected = resolveVueSfcHmrSignatures(source, filename)
+    const directory = await mkdtemp(join(tmpdir(), 'wevu-native-fallback-'))
+    const modulePath = join(directory, 'binding.cjs')
+    await writeFile(modulePath, moduleSource)
+
+    try {
+      vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+      vi.stubEnv('WEAPP_VITE_NATIVE_AST_PATH', modulePath)
+      vi.resetModules()
+      // 每个 case 使用不同的测试 binding，重新加载模块以隔离 native 缓存。
+      const nativeModule = await import('./sfcSignature')
+
+      expect(nativeModule.resolveVueSfcHmrSignatures(source, filename)).toEqual(expected)
+    }
+    finally {
+      await rm(directory, { force: true, recursive: true })
+    }
+  })
+
+  it('uses native block payloads while isolating JSON macros as config changes', async () => {
+    const filename = '/project/src/pages/index.vue'
+    const source = `<json>{"navigationBarTitleText":"首页"}</json>
+<script setup lang="ts">
 definePageJson({ navigationBarTitleText: '首页' })
 const count = 1
 </script>
-
-<template><view>{{ count }}</view></template>`
-    const second = first.replace('首页', '新标题')
-
-    vi.stubEnv('WEAPP_VITE_NATIVE', '1')
-    vi.resetModules()
-    const nativeModule = await import('./vueSfcSignature')
-
-    expect(nativeModule.resolveVueSfcNonJsonSignature(second, filename)).toBe(
-      nativeModule.resolveVueSfcNonJsonSignature(first, filename),
+<template><view>{{ count }}</view></template>
+<style>.page { color: red; }</style>`
+    const expected = resolveVueSfcHmrSignatures(source, filename)
+    const nativePayload = {
+      config: {
+        customBlocks: [
+          {
+            type: 'json',
+            attrs: {},
+            content: '{"navigationBarTitleText":"首页"}',
+          },
+        ],
+      },
+      hasTemplate: true,
+      script: {
+        script: null,
+        scriptSetup: {
+          type: 'script',
+          attrs: {
+            lang: 'ts',
+            setup: true,
+          },
+          content: `
+definePageJson({ navigationBarTitleText: '首页' })
+const count = 1
+`,
+        },
+      },
+      style: {
+        styles: [
+          {
+            type: 'style',
+            attrs: {},
+            content: '.page { color: red; }',
+          },
+        ],
+      },
+      template: {
+        template: {
+          type: 'template',
+          attrs: {},
+          content: '<view>{{ count }}</view>',
+        },
+        customBlocks: [],
+      },
+    }
+    const directory = await mkdtemp(join(tmpdir(), 'wevu-native-sfc-'))
+    const modulePath = join(directory, 'binding.cjs')
+    await writeFile(
+      modulePath,
+      `exports.getVueSfcSignaturePayloadNative = source => ${JSON.stringify(JSON.stringify(nativePayload))}.replaceAll('首页', source.includes('新标题') ? '新标题' : '首页')`,
     )
-    expect(nativeModule.resolveVueSfcScriptSignature(second, filename)).toBe(
-      nativeModule.resolveVueSfcScriptSignature(first, filename),
-    )
+
+    try {
+      vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+      vi.stubEnv('WEAPP_VITE_NATIVE_AST_PATH', modulePath)
+      vi.resetModules()
+      // 环境变量选择测试专用 binding，必须重新加载模块命中 native 路径。
+      const nativeModule = await import('./sfcSignature')
+
+      expect(nativeModule.resolveVueSfcHmrSignatures(source, filename)).toEqual(expected)
+      const next = nativeModule.resolveVueSfcHmrSignatures(source.replace('首页', '新标题'), filename)
+      expect(classifyVueSfcBlockChanges(
+        expected.blockSignatures!,
+        next.blockSignatures!,
+      )).toEqual(['config'])
+    }
+    finally {
+      await rm(directory, { force: true, recursive: true })
+    }
   })
 })

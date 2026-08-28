@@ -1,7 +1,7 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../../../../context'
 import type { TransformStageMeasurer, VueCompilationCacheEntry, VueHmrStageMeasurer, VueStyleBlocksCache } from './types'
-import { resolveVueSfcStyleIndependentSignature } from '../../../../../utils/file/vueSfcSignature'
+import { resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
 import { resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { refreshStyleOnlyVueTransformResult } from '../../styleOnly'
 import { finalizeTransformEntryCode, normalizeVueTransformResult } from '../shared'

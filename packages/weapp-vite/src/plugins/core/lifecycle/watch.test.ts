@@ -1,5 +1,8 @@
+import type { CorePluginState } from '../helpers'
 import { fs } from '@weapp-core/shared/fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
+import { storeVueSfcHmrSignatures } from '../../../runtime/storeVueSfcHmrSignatures'
 import { createBuildStartHook, createWatchChangeHook } from './watch'
 
 const invalidateFileCacheMock = vi.hoisted(() => vi.fn())
@@ -124,9 +127,7 @@ function createState(overrides: Record<string, any> = {}) {
           hmr: {
             profile: {},
             vueEntryHasTemplate: new Map(),
-            vueEntryNonJsonSignatures: new Map(),
-            vueEntryScriptSignatures: new Map(),
-            vueEntryStyleIndependentSignatures: new Map(),
+            vueEntrySfcSignatures: new Map(),
             vueEntryTailwindContentSignatures: new Map(),
             vueEntryTailwindTemplateContentSignatures: new Map(),
             vueEntryTailwindScriptContentSignatures: new Map(),
@@ -159,6 +160,14 @@ function createState(overrides: Record<string, any> = {}) {
     resolvedEntryMap: new Map(),
     ...overrides,
   } as any
+}
+
+function setVueEntrySfcSignatures(state: CorePluginState, filename: string, source: string) {
+  storeVueSfcHmrSignatures(
+    state.ctx.runtimeState.build.hmr,
+    filename,
+    resolveVueSfcHmrSignatures(source, filename),
+  )
 }
 
 describe('core lifecycle watch hook', () => {
@@ -720,7 +729,6 @@ const klass = 'text-red-500'
 
 <template><view :class="klass">{{ count }}</view></template>`
     const nextSource = previousSource.replace('const count = 1', 'const count = 2')
-    const { resolveVueSfcHmrSignatures, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } = await import('../../../utils/file/vueSfcSignature')
     resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
     const state = createState({
@@ -731,27 +739,7 @@ const klass = 'text-red-500'
       ]),
     })
     state.ctx.scanService.appEntry = { path: appEntryId }
-    const signatures = resolveVueSfcHmrSignatures(previousSource, pageEntryId)
-    state.ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(
-      pageEntryId,
-      resolveVueSfcTailwindContentSignature(previousSource, pageEntryId),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures.set(
-      pageEntryId,
-      signatures.tailwindTemplateContentSignature,
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures.set(
-      pageEntryId,
-      signatures.tailwindScriptContentSignature,
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
-      pageEntryId,
-      resolveVueSfcScriptSignature(previousSource, pageEntryId),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
-      pageEntryId,
-      resolveVueSfcStyleIndependentSignature(previousSource, pageEntryId),
-    )
+    setVueEntrySfcSignatures(state, pageEntryId, previousSource)
     vi.spyOn(fs, 'readFile').mockImplementation(async (file) => {
       return file === '/project/src/app.css' ? '@import "tailwindcss";' : nextSource
     })
@@ -775,7 +763,6 @@ const count = 1
 
 <template><view class="text-red-500">{{ count }}</view></template>`
     const nextSource = previousSource.replace('text-red-500', 'text-blue-500')
-    const { resolveVueSfcHmrSignatures, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } = await import('../../../utils/file/vueSfcSignature')
     resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
     const state = createState({
@@ -786,27 +773,7 @@ const count = 1
       ]),
     })
     state.ctx.scanService.appEntry = { path: appEntryId }
-    const signatures = resolveVueSfcHmrSignatures(previousSource, pageEntryId)
-    state.ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(
-      pageEntryId,
-      resolveVueSfcTailwindContentSignature(previousSource, pageEntryId),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures.set(
-      pageEntryId,
-      signatures.tailwindTemplateContentSignature,
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures.set(
-      pageEntryId,
-      signatures.tailwindScriptContentSignature,
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
-      pageEntryId,
-      resolveVueSfcScriptSignature(previousSource, pageEntryId),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
-      pageEntryId,
-      resolveVueSfcStyleIndependentSignature(previousSource, pageEntryId),
-    )
+    setVueEntrySfcSignatures(state, pageEntryId, previousSource)
     vi.spyOn(fs, 'readFile').mockImplementation(async (file) => {
       return file === '/project/src/app.css' ? '@import "tailwindcss";' : nextSource
     })
@@ -974,14 +941,10 @@ const count = 1
 
 <template><view>{{ count }}</view></template>`
     const nextSource = previousSource.replace('首页', '新标题')
-    const { resolveVueSfcNonJsonSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([entryId]),
     })
-    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
-      entryId,
-      resolveVueSfcNonJsonSignature(previousSource, entryId),
-    )
+    setVueEntrySfcSignatures(state, entryId, previousSource)
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
 
@@ -1000,28 +963,17 @@ const count = 1
 
 <template><view>{{ count }}</view></template>`
     const nextSource = previousSource.replace('<view>{{ count }}</view>', '<view class="next">{{ count }}</view>')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([entryId]),
     })
-    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
-      entryId,
-      resolveVueSfcNonJsonSignature(previousSource, entryId),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
-      entryId,
-      resolveVueSfcScriptSignature(previousSource, entryId),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
-      entryId,
-      resolveVueSfcStyleIndependentSignature(previousSource, entryId),
-    )
+    setVueEntrySfcSignatures(state, entryId, previousSource)
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
 
     await hook(entryId, { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(collectAffectedEntriesMock).toHaveBeenCalledWith(entryId)
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-local-asset:1'])
   })
 
@@ -1034,18 +986,10 @@ const count = 1
 
 <template><view>{{ count }}</view></template>`
     const nextSource = previousSource.replace('const count = 1', 'const count = 2')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([entryId]),
     })
-    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
-      entryId,
-      resolveVueSfcNonJsonSignature(previousSource, entryId),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
-      entryId,
-      resolveVueSfcScriptSignature(previousSource, entryId),
-    )
+    setVueEntrySfcSignatures(state, entryId, previousSource)
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
 
@@ -1064,16 +1008,12 @@ const count = 1
 
 <template><view>{{ count }}</view></template>`
     const nextSource = previousSource.replace('首页', '新标题')
-    const { resolveVueSfcNonJsonSignature } = await import('../../../utils/file/vueSfcSignature')
     vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const state = createState({
       loadedEntrySet: new Set([entryId]),
     })
-    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
-      entryId,
-      resolveVueSfcNonJsonSignature(previousSource, entryId),
-    )
+    setVueEntrySfcSignatures(state, entryId, previousSource)
     const hook = createWatchChangeHook(state)
 
     await hook(entryId, { event: 'create' })
@@ -1093,7 +1033,6 @@ const count = 1
 
 <template><view>{{ count }}</view></template>`
     const nextSource = previousSource.replace('首页', '新标题')
-    const { resolveVueSfcNonJsonSignature } = await import('../../../utils/file/vueSfcSignature')
     vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const state = createState({
@@ -1101,10 +1040,7 @@ const count = 1
         [entryId, { id: entryId }],
       ]),
     })
-    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
-      entryId,
-      resolveVueSfcNonJsonSignature(previousSource, entryId),
-    )
+    setVueEntrySfcSignatures(state, entryId, previousSource)
     const hook = createWatchChangeHook(state)
 
     await hook(entryId, { event: 'create' })
@@ -1188,7 +1124,6 @@ const count = 1
 defineAppJson({ window: { navigationBarTitleText: '首页' } })
 </script>`
     const nextSource = previousSource.replace('首页', '新标题')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([appEntry]),
       resolvedEntryMap: new Map([
@@ -1196,18 +1131,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
         [pageEntry, { id: pageEntry }],
       ]),
     })
-    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
-      appEntry,
-      resolveVueSfcNonJsonSignature(previousSource, appEntry),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
-      appEntry,
-      resolveVueSfcScriptSignature(previousSource, appEntry),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
-      appEntry,
-      resolveVueSfcStyleIndependentSignature(previousSource, appEntry),
-    )
+    setVueEntrySfcSignatures(state, appEntry, previousSource)
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
 
@@ -1228,7 +1152,6 @@ import routes from 'weapp-vite/auto-routes'
 defineAppJson({ pages: routes.pages, window: { navigationBarTitleText: '首页' } })
 </script>`
     const nextSource = previousSource.replace('首页', '新标题')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([appEntry]),
       resolvedEntryMap: new Map([
@@ -1245,14 +1168,7 @@ defineAppJson({ pages: routes.pages, window: { navigationBarTitleText: '首页' 
       },
     })
     state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = 'old-routes'
-    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
-      appEntry,
-      resolveVueSfcNonJsonSignature(previousSource, appEntry),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
-      appEntry,
-      resolveVueSfcScriptSignature(previousSource, appEntry),
-    )
+    setVueEntrySfcSignatures(state, appEntry, previousSource)
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
 
@@ -1273,7 +1189,6 @@ import routes from 'weapp-vite/auto-routes'
 defineAppJson({ pages: routes.pages, window: { navigationBarTitleText: '首页' } })
 </script>`
     const nextSource = previousSource.replace('首页', '新标题')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([appEntry]),
       resolvedEntryMap: new Map([
@@ -1290,14 +1205,7 @@ defineAppJson({ pages: routes.pages, window: { navigationBarTitleText: '首页' 
       },
     })
     state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = undefined
-    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
-      appEntry,
-      resolveVueSfcNonJsonSignature(previousSource, appEntry),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
-      appEntry,
-      resolveVueSfcScriptSignature(previousSource, appEntry),
-    )
+    setVueEntrySfcSignatures(state, appEntry, previousSource)
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
 
@@ -1320,7 +1228,6 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
 page { color: red; }
 </style>`
     const nextSource = previousSource.replace('color: red;', 'color: blue;')
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([appEntry]),
       resolvedEntryMap: new Map([
@@ -1328,18 +1235,7 @@ page { color: red; }
         [pageEntry, { id: pageEntry }],
       ]),
     })
-    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
-      appEntry,
-      resolveVueSfcNonJsonSignature(previousSource, appEntry),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
-      appEntry,
-      resolveVueSfcScriptSignature(previousSource, appEntry),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.set(
-      appEntry,
-      resolveVueSfcStyleIndependentSignature(previousSource, appEntry),
-    )
+    setVueEntrySfcSignatures(state, appEntry, previousSource)
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
 
@@ -1366,7 +1262,6 @@ page { color: red; }
 <template>
   <view class="happy"><slot /></view>
 </template>`
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
     const state = createState({
       loadedEntrySet: new Set([appEntry]),
       resolvedEntryMap: new Map([
@@ -1374,15 +1269,7 @@ page { color: red; }
         [pageEntry, { id: pageEntry }],
       ]),
     })
-    state.ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appEntry, false)
-    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
-      appEntry,
-      resolveVueSfcNonJsonSignature(previousSource, appEntry),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
-      appEntry,
-      resolveVueSfcScriptSignature(previousSource, appEntry),
-    )
+    setVueEntrySfcSignatures(state, appEntry, previousSource)
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
 
@@ -1411,7 +1298,6 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
 </template>
 
 <style>.happy { min-height: 100vh; }</style>`
-    const { resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature } = await import('../../../utils/file/vueSfcSignature')
     const baseState = createState({
       loadedEntrySet: new Set([appScriptEntry]),
       resolvedEntryMap: new Map([
@@ -1431,15 +1317,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
         },
       },
     }
-    state.ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appVueEntry, false)
-    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
-      appVueEntry,
-      resolveVueSfcNonJsonSignature(previousSource, appVueEntry),
-    )
-    state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(
-      appVueEntry,
-      resolveVueSfcScriptSignature(previousSource, appVueEntry),
-    )
+    setVueEntrySfcSignatures(state, appVueEntry, previousSource)
     vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
     const hook = createWatchChangeHook(state)
 

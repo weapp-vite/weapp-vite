@@ -409,9 +409,7 @@ async function processChangedFile(
 
   if (isDeletedMissingSelf) {
     ctx.runtimeState.build.hmr.vueEntryHasTemplate.delete(normalizedId)
-    ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.delete(normalizedId)
-    ctx.runtimeState.build.hmr.vueEntryScriptSignatures.delete(normalizedId)
-    ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntrySfcSignatures.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures?.delete(normalizedId)

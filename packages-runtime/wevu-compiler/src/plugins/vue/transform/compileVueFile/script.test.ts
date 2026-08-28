@@ -8,7 +8,7 @@ import { collectComponentSourceInfo } from './componentSources'
 import { compileVueFile } from './index'
 import { compileScriptPhase, resolveEffectivePropsDerivedKeys } from './script'
 
-const readFileMock = vi.hoisted(() => vi.fn(async (filename: string) => {
+const readFileMock = vi.hoisted(() => vi.fn(async (filename: string): Promise<string> => {
   if (filename.endsWith('/my-card.vue')) {
     return `<script setup lang="ts">
 defineComponentJson({ component: true })
@@ -730,13 +730,18 @@ import SecondCard from './second-card.vue'
     const tempDir = await mkdtemp(join(tmpdir(), 'wevu-compiler-ast-native-'))
     const modulePath = join(tempDir, 'native.cjs')
     await writeFile(modulePath, `
-exports.getVueSfcSignaturePayloadNative = () => JSON.stringify({
-  script: {
-    scriptSetup: {
-      content: "defineOptions({ name: 'NativeCard' })\\ndefineComponentJson({ component: true })",
+exports.getVueSfcSignaturePayloadNative = source => {
+  if (source.includes('NATIVE_THROW')) {
+    throw new Error('native failed')
+  }
+  return JSON.stringify({
+    script: {
+      scriptSetup: {
+        content: "defineOptions({ name: 'NativeCard' })\\ndefineComponentJson({ component: true })",
+      },
     },
-  },
-})
+  })
+}
 `)
 
     try {
@@ -753,8 +758,8 @@ import MyCard from './my-card.vue'
     `.trim(), { filename: '/project/src/pages/index/index.vue' })
 
       const result = await collectComponentSourceInfo({
-        descriptor: sfc.descriptor as any,
-        descriptorForCompile: sfc.descriptor as any,
+        descriptor: sfc.descriptor,
+        descriptorForCompile: sfc.descriptor,
         filename: '/project/src/pages/index/index.vue',
         compileOptions: undefined,
         autoUsingComponents: {
@@ -769,6 +774,36 @@ import MyCard from './my-card.vue'
       expect(result.componentNameMap.MyCard).toBe('NativeCard')
       expect(result.componentNameMap['my-card']).toBe('NativeCard')
       expect(result.miniProgramComponentTags.has('MyCard')).toBe(true)
+
+      readFileMock.mockResolvedValueOnce(`<script setup lang="ts">
+/* NATIVE_THROW */
+defineOptions({ name: 'FallbackCard' })
+defineComponentJson({ component: true })
+</script>`)
+      const fallbackSfc = parse(`
+<template>
+  <fallback-card />
+</template>
+<script setup lang="ts">
+import FallbackCard from './fallback-card.vue'
+</script>
+      `.trim(), { filename: '/project/src/pages/fallback/index.vue' })
+      const fallback = await collectComponentSourceInfo({
+        descriptor: fallbackSfc.descriptor,
+        descriptorForCompile: fallbackSfc.descriptor,
+        filename: '/project/src/pages/fallback/index.vue',
+        compileOptions: undefined,
+        autoUsingComponents: {
+          resolveUsingComponentPath: async () => ({
+            from: '/components/fallback-card',
+            resolvedId: '/project/src/components/fallback-card.vue',
+          }),
+        },
+        autoImportTags: undefined,
+      })
+
+      expect(fallback.componentNameMap.FallbackCard).toBe('FallbackCard')
+      expect(fallback.miniProgramComponentTags.has('FallbackCard')).toBe(true)
     }
     finally {
       vi.unstubAllEnvs()

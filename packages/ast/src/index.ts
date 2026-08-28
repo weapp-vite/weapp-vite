@@ -109,6 +109,11 @@ export type { DynamicImportToken, RequireCallbackToken, RequireToken } from './o
 export { analyzeScript, analyzeScripts } from './operations/scriptAnalysis'
 export type { ScriptAnalysisBatchInput, ScriptAnalysisOptions, ScriptAnalysisResult } from './operations/scriptAnalysis'
 export {
+  collectScriptCallStringLiterals,
+  collectScriptStringLiterals,
+  mayContainScriptCallOrModuleSyntax,
+} from './operations/scriptLiterals'
+export {
   collectScriptSetupImportsFromCode,
   collectScriptSetupImportsWithBabel,
   collectScriptSetupImportsWithOxc,

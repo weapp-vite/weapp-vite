@@ -3,8 +3,9 @@ import type { CompilerContext } from '../../../../../context'
 import type { CompilationCacheEntry, VueBundleCompileOptionsState } from './types'
 import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
-import { compileJsxFile, compileVueFile } from 'wevu/compiler'
-import { resolveVueSfcStyleIndependentSignature } from '../../../../../utils/file/vueSfcSignature'
+import { compileJsxFile, compileVueFile, resolveVueSfcHmrSignatures, resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
+import { storeVueSfcHmrSignatures } from '../../../../../runtime/storeVueSfcHmrSignatures'
+import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
 import { readAndParseSfc } from '../../../../utils/vueSfc'
 import { createCompileVueFileOptions, resolveSfcStylePreprocessOptions } from '../../compileOptions'
@@ -50,6 +51,14 @@ export async function compileVueLikeFile(options: {
         })
         await registerResolvedPageLayoutDependencies(ctx, filename, resolvedLayoutPlan.layouts)
       }
+    }
+    const hmr = ctx.runtimeState?.build?.hmr
+    if (configService.isDev && hmr) {
+      storeVueSfcHmrSignatures(
+        hmr,
+        normalizeFsResolvedId(filename),
+        resolveVueSfcHmrSignatures(source, filename),
+      )
     }
     return result
   }
@@ -217,9 +226,10 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
         cached.source = source
         cached.styleIndependentSignature = currentStyleIndependentSignature
         cached.refreshToken = 0
-        ctx.runtimeState?.build?.hmr?.vueEntryStyleIndependentSignatures?.set(
+        storeVueSfcHmrSignatures(
+          ctx.runtimeState.build.hmr,
           filename,
-          currentStyleIndependentSignature,
+          resolveVueSfcHmrSignatures(source, filename),
         )
         dirtyVueEntryIds?.delete(dirtyEntryId)
         return cached.result
@@ -245,12 +255,6 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
     cached.autoRoutesSignature = transformed.signature
     cached.styleIndependentSignature = nextStyleIndependentSignature
     cached.refreshToken = 0
-    if (nextStyleIndependentSignature) {
-      ctx.runtimeState?.build?.hmr?.vueEntryStyleIndependentSignatures?.set(
-        filename,
-        nextStyleIndependentSignature,
-      )
-    }
     if (dirtyEntryId) {
       dirtyVueEntryIds?.delete(dirtyEntryId)
     }
