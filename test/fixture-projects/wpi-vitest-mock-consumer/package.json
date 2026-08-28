@@ -1,0 +1,5 @@
+{
+  "name": "wpi-vitest-mock-consumer-fixture",
+  "type": "module",
+  "private": true
+}

@@ -22,12 +22,22 @@
     "adapter",
     "weapp"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/vitest/setup.mjs"
+  ],
   "weapp-vite-dev": {
     "exports": {
       ".": {
         "types": "./src/index.ts",
         "default": "./src/index.ts"
+      },
+      "./vitest": {
+        "types": "./src/vitest/index.ts",
+        "default": "./src/vitest/index.ts"
+      },
+      "./vitest/setup": {
+        "types": "./src/vitest/setup.ts",
+        "default": "./src/vitest/setup.ts"
       }
     },
     "main": "./src/index.ts",
@@ -41,6 +51,14 @@
         "types": "./types/index.d.ts",
         "default": "./dist/index.mjs"
       }
+    },
+    "./vitest": {
+      "types": "./dist/vitest.d.mts",
+      "import": "./dist/vitest.mjs"
+    },
+    "./vitest/setup": {
+      "types": "./dist/vitest/setup.d.mts",
+      "import": "./dist/vitest/setup.mjs"
     }
   },
   "main": "./dist/index.mjs",
@@ -78,10 +96,24 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json"
   },
+  "peerDependencies": {
+    "vitest": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  },
   "dependencies": {
     "@douyin-microapp/typings": "catalog:",
     "@mini-types/alipay": "catalog:",
     "miniprogram-api-typings": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   },
   "publishConfig": {
     "access": "public"

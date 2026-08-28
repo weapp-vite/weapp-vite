@@ -9,6 +9,8 @@ const entry = {
   'jsx-runtime': './src/jsx-runtime',
   'store': './src/store',
   'api': './src/api',
+  'api/vitest': './src/apiVitest',
+  'api/vitest/setup': './src/apiVitestSetup',
   'fetch': './src/fetch',
   'router': './src/router',
   'web-apis': './src/web-apis',
