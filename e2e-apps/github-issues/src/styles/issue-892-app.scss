@@ -1,11 +1,11 @@
 $issue-892-color: #2468ac;
-$issue-892-image: '../assets/images/home/goods-1.png';
 
 .issue-892-unquoted {
   color: $issue-892-color;
-  background-image: url("../assets/images/home/goods-1.png");
+  // stylelint-disable-next-line function-url-quotes
+  background-image: url(../assets/images/home/goods-1.png);
 }
 
 .issue-892-quoted {
-  background-image: url($issue-892-image);
+  background-image: url('../assets/images/home/goods-1.png');
 }

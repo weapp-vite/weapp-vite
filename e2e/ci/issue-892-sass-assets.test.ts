@@ -26,6 +26,14 @@ async function waitForStyleOutput(markers: string[], timeoutMs = 60_000) {
   throw new Error(`Timed out waiting for ${STYLE_OUTPUT_PATH} to contain ${markers.join(', ')}`)
 }
 
+function expectAssetUrl(style: string, selector: string) {
+  const selectorStart = style.indexOf(selector)
+  expect(selectorStart).toBeGreaterThanOrEqual(0)
+  const selectorEnd = style.indexOf('}', selectorStart)
+  const block = style.slice(selectorStart, selectorEnd >= 0 ? selectorEnd : undefined)
+  expect(block).toMatch(/background-image:\s*url\(["']?\.\.\/assets\/images\/home\/goods-1\.png["']?\)/)
+}
+
 describe.sequential('issue #892 Sass asset placeholders', () => {
   beforeEach(async () => {
     await cleanupResidualDevProcesses()
@@ -72,8 +80,8 @@ describe.sequential('issue #892 Sass asset placeholders', () => {
       await replaceFileByRename(STYLE_SOURCE_PATH, updatedSource)
 
       const updatedStyle = await waitForStyleOutput(['color: #ac6824;'])
-      expect(updatedStyle).toContain('url(../assets/images/home/goods-1.png)')
-      expect(updatedStyle).toContain('url("../assets/images/home/goods-1.png")')
+      expectAssetUrl(updatedStyle, '.issue-892-unquoted')
+      expectAssetUrl(updatedStyle, '.issue-892-quoted')
       expect(updatedStyle).not.toContain('__VITE_ASSET__')
       expect(updatedStyle).not.toContain('__VITE_PUBLIC_ASSET__')
       expect(devProcess.getOutput()).not.toContain('Undefined variable')
