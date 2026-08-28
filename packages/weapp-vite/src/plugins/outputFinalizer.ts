@@ -18,6 +18,7 @@ import { syncOutputChunkSourceMapAssets } from '../utils/outputChunk'
 import { resolveScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { handleWxml, scanWxml } from '../wxml'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
+import { consumePendingOwnerStyleSources } from './css'
 import { transformI18nOutputTemplate } from './i18n'
 import { flushIndependentOutputs } from './outputFinalizer/independent'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
@@ -141,6 +142,27 @@ function outputSourceToString(output: OutputBundle[string]) {
   return typeof source === 'string'
     ? source
     : Buffer.from(source).toString('base64')
+}
+
+function mergePendingOwnerStyleSources(ctx: CompilerContext, bundle: OutputBundle) {
+  const pending = consumePendingOwnerStyleSources(ctx)
+  if (!pending) {
+    return
+  }
+
+  for (const [fileName, fragments] of pending) {
+    const output = bundle[fileName]
+      ?? Object.values(bundle).find(candidate => candidate.type === 'asset' && candidate.fileName === fileName)
+    if (output?.type !== 'asset') {
+      continue
+    }
+    const source = output.source.toString()
+    const missing = fragments.filter(fragment => !source.includes(fragment))
+    if (!missing.length) {
+      continue
+    }
+    output.source = `${source.trimEnd()}\n${missing.join('\n')}\n`
+  }
 }
 
 export function mayNeedTemplateNormalization(code: string, platform?: MpPlatform) {
@@ -385,6 +407,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
       order: 'post',
       async handler(_options, bundle) {
         const outputBundle = bundle as unknown as OutputBundle
+        mergePendingOwnerStyleSources(ctx, outputBundle)
         rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
         stabilizeWevuRuntimeChunkAccess(bundle as unknown as OutputBundle)
         restoreNativePageLayoutOutputs(ctx, outputBundle)
