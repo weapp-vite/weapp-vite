@@ -504,15 +504,17 @@ async function handleBundleEntry(
       const normalizedFileName = toPosixPath(fileName)
       const freshHmrStyleSourcePath = resolveFreshHmrStyleSourcePath(ctx, normalizedFileName)
       const preprocessId = freshHmrStyleSourcePath ?? absOriginal
+      const shouldPreprocess = shouldPreprocessWithVite(preprocessId)
+      const graphSource = await readStyleGraphSource(preprocessId, canonicalSource)
       const preprocessInput = freshHmrStyleSourcePath
-        ? await resolveMemoryStyleSource(ctx, freshHmrStyleSourcePath) ?? await readStyleGraphSource(freshHmrStyleSourcePath, canonicalSource)
-        : canonicalSource
+        ? await resolveMemoryStyleSource(ctx, freshHmrStyleSourcePath) ?? graphSource
+        : shouldPreprocess && (canonicalSource.includes('__VITE_ASSET__') || canonicalSource.includes('__VITE_PUBLIC_ASSET__'))
+          ? graphSource
+          : canonicalSource
       const { css, dependencies } = await preprocessStyleSource(preprocessInput, preprocessId, resolvedConfig, {
-        enabled: shouldPreprocessWithVite(preprocessId),
+        enabled: shouldPreprocess,
       })
-      const graphCss = freshHmrStyleSourcePath
-        ? preprocessInput
-        : await readStyleGraphSource(absOriginal, canonicalSource)
+      const graphCss = freshHmrStyleSourcePath ? preprocessInput : graphSource
       syncCssImportDependencies(ctx, preprocessId, graphCss, dependencies)
       if (typeof this.addWatchFile === 'function') {
         for (const dependency of dependencies) {

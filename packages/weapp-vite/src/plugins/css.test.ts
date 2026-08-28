@@ -315,6 +315,34 @@ describe('css plugin shared style injection', () => {
     expect(emitted).toEqual([])
   })
 
+  it('preprocesses dev Sass assets from raw source instead of Vite placeholders', async () => {
+    const appScssPath = resolve(absoluteSrcRoot, 'app.scss')
+    const rawScss = '.page{background:url(../../static/images/shop-bottom.png)}'
+    const vitePlaceholder = '.page{background:url(__VITE_ASSET__$shop_bottom__)}'
+    readFileMock.mockResolvedValueOnce(rawScss)
+    const plugin = css({
+      ...ctx,
+      configService: {
+        ...configService,
+        isDev: true,
+      },
+    } as unknown as CompilerContext)[0]
+    const bundle: Record<string, any> = {
+      'app.wxss': {
+        type: 'asset',
+        fileName: 'app.wxss',
+        originalFileNames: [appScssPath],
+        source: vitePlaceholder,
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+
+    expect(preprocessCSSMock).toHaveBeenCalledWith(rawScss, appScssPath, resolvedConfig)
+    expect(preprocessCSSMock).not.toHaveBeenCalledWith(vitePlaceholder, appScssPath, resolvedConfig)
+  })
+
   it('emits wxss asset with shared style imports for modules without local styles', async () => {
     const plugin = css(ctx)[0]
     const bundle: Record<string, any> = {
