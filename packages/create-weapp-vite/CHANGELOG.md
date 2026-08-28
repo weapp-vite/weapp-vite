@@ -1,5 +1,20 @@
 # create-weapp-vite
 
+## 2.8.5
+
+### Patch Changes
+
+- 将包主页、随包文档、脚手架默认链接与小程序 JSON Schema 地址统一迁移到 `vite.weapp.dev`，确保新生成项目和公开元数据使用新的文档主域名。
+
+- 将多个工作区共享依赖集中到 pnpm catalog，并同步脚手架模板的依赖映射，后续升级无需重复修改大量 package.json。
+
+- 修复小程序 npm 包中压缩形式的 ESM 导入与 `export *` 桶文件未转换为 CommonJS 的问题，避免新版微信开发者工具加载组件依赖时出现裸 `export` 语法错误。
+
+- 将 MCP 服务端升级至 TypeScript SDK v2 并显式支持 2026-07-28 协议；stdio 与 HTTP 保持旧客户端兼容，HTTP 增加 Host/Origin 防护，并新增 XPath 元素查询工具。
+
+- Updated dependencies:
+  - @weapp-core/init@6.0.16
+
 ## 2.8.4
 
 ### Patch Changes

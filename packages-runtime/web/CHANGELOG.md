@@ -1,5 +1,15 @@
 # @weapp-vite/web
 
+## 1.4.14
+
+### Patch Changes
+
+- 将多个工作区共享依赖集中到 pnpm catalog，并同步脚手架模板的依赖映射，后续升级无需重复修改大量 package.json。
+
+- Updated dependencies:
+  - rolldown-require@2.0.27
+  - wevu@6.24.0
+
 ## 1.4.13
 
 ### Patch Changes

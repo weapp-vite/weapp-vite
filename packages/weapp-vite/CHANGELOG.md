@@ -1,5 +1,32 @@
 # weapp-vite
 
+## 6.24.0
+
+### Minor Changes
+
+- 将 MCP 服务端升级至 TypeScript SDK v2 并显式支持 2026-07-28 协议；stdio 与 HTTP 保持旧客户端兼容，HTTP 增加 Host/Origin 防护，并新增 XPath 元素查询工具。
+
+### Patch Changes
+
+- 将包主页、随包文档、脚手架默认链接与小程序 JSON Schema 地址统一迁移到 `vite.weapp.dev`，确保新生成项目和公开元数据使用新的文档主域名。
+
+- 修复小程序 npm 包中压缩形式的 ESM 导入与 `export *` 桶文件未转换为 CommonJS 的问题，避免新版微信开发者工具加载组件依赖时出现裸 `export` 语法错误。
+
+- Updated dependencies:
+  - @weapp-core/init@6.0.16
+  - @weapp-core/schematics@6.2.1
+  - @weapp-vite/ast@6.24.0
+  - @weapp-vite/eslint@0.2.2
+  - @weapp-vite/mcp@1.5.0
+  - @weapp-vite/miniprogram-automator@1.2.16
+  - @weapp-vite/volar@2.1.5
+  - @weapp-vite/web@1.4.14
+  - @wevu/api@0.2.18
+  - @wevu/web-apis@1.2.37
+  - rolldown-require@2.0.27
+  - weapp-ide-cli@6.1.0
+  - wevu@6.24.0
+
 ## 6.23.0
 
 ### Minor Changes

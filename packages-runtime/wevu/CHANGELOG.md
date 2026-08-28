@@ -1,5 +1,16 @@
 # wevu
 
+## 6.24.0
+
+### Patch Changes
+
+- 将包主页、随包文档、脚手架默认链接与小程序 JSON Schema 地址统一迁移到 `vite.weapp.dev`，确保新生成项目和公开元数据使用新的文档主域名。
+
+- Updated dependencies:
+  - @wevu/api@0.2.18
+  - @wevu/compiler@6.24.0
+  - @wevu/web-apis@1.2.37
+
 ## 6.23.0
 
 ### Patch Changes

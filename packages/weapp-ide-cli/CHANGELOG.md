@@ -1,5 +1,17 @@
 # weapp-ide-cli
 
+## 6.1.0
+
+### Minor Changes
+
+- 将 MCP 服务端升级至 TypeScript SDK v2 并显式支持 2026-07-28 协议；stdio 与 HTTP 保持旧客户端兼容，HTTP 增加 Host/Origin 防护，并新增 XPath 元素查询工具。
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/devtools-runtime@0.4.17
+  - @weapp-vite/miniprogram-automator@1.2.16
+
 ## 6.0.8
 
 ### Patch Changes
