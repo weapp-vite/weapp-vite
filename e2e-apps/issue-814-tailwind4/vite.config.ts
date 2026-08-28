@@ -1,5 +1,3 @@
-import path from 'pathe'
-import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
@@ -7,6 +5,10 @@ export default defineConfig({
     hmr: {
       logLevel: 'verbose',
       profileJson: true,
+    },
+    tailwindcss: {
+      rem2rpx: true,
+      cssEntries: ['src/app.css'],
     },
     srcRoot: 'src',
     wevu: {
@@ -20,12 +22,4 @@ export default defineConfig({
       },
     },
   },
-  plugins: [
-    WeappTailwindcss({
-      rem2rpx: true,
-      cssEntries: [
-        path.resolve(import.meta.dirname, 'src/app.css'),
-      ],
-    }),
-  ],
 })

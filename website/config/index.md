@@ -148,6 +148,7 @@ export default defineConfig(env => ({
 | [i18n 配置](./i18n.md) | `weapp.i18n`、locale JSON、WXS 模板翻译与运行时切换 |
 | [开发态 HMR 配置](./hmr.md) | `weapp.hmr.runtime` / `sharedChunks` / `touchAppWxss` / `logLevel` / `profileJson` |
 | [分包与共享样式配置](./subpackages.md) | `weapp.styles`、`weapp.subPackages`、共享样式、分包级 `inlineConfig` |
+| Tailwind CSS 集成 | `weapp.tailwindcss` 内置集成、`cssEntries` 与 core options |
 | [Worker 配置](./worker.md) | `weapp.worker.entry` |
 | [库模式配置](./lib.md) | `weapp.lib` 入口、路径、组件 JSON 与 DTS |
 | [生成脚手架配置](./generate.md) | `weapp.generate` 目录、后缀、文件名、模板 |

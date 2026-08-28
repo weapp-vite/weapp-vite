@@ -21,8 +21,24 @@ describe('vitePluginWeapp plugin api', () => {
     expect(api?.ctx).toBe(ctx)
     const names = plugins.map(plugin => plugin.name)
     expect(names).toContain('weapp-vite:runtime-provider:wevu-miniprogram')
+    expect(names).not.toContain('weapp-vite:tailwindcss')
     expect(names.indexOf('weapp-vite:runtime-provider:wevu-miniprogram'))
       .toBeLessThan(names.indexOf('weapp-vite:vue:transform'))
+  })
+
+  it('enables the managed Tailwind integration before CSS ownership and output finalization', () => {
+    const ctx = createCompilerContext('plugin-api:tailwindcss')
+    ctx.configService.inlineConfig.weapp = { tailwindcss: true }
+
+    const names = vitePluginWeapp(ctx).map(plugin => plugin.name)
+
+    expect(names).toContain('weapp-vite:tailwindcss')
+    expect(names.indexOf('weapp-vite:tailwindcss'))
+      .toBeLessThan(names.indexOf('weapp-vite:css'))
+    expect(names.indexOf('weapp-vite:tailwindcss'))
+      .toBeLessThan(names.indexOf('weapp-vite:output-finalizer'))
+    expect(names.indexOf('weapp-vite:tailwindcss:output'))
+      .toBeGreaterThan(names.indexOf('weapp-vite:output-finalizer'))
   })
 
   it('selects the native runtime provider when Vue compilation is disabled', () => {

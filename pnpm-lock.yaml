@@ -2794,6 +2794,9 @@ importers:
       '@weapp-core/shared':
         specifier: workspace:*
         version: link:../../@weapp-core/shared
+      '@weapp-tailwindcss/postcss':
+        specifier: 3.2.11
+        version: 3.2.11(jiti@2.7.0)(tailwindcss@4.3.3)(tsx@4.23.12)(yaml@2.9.0)
       '@weapp-vite/ast':
         specifier: workspace:*
         version: link:../ast
@@ -2899,6 +2902,9 @@ importers:
       weapp-ide-cli:
         specifier: workspace:*
         version: link:../weapp-ide-cli
+      weapp-tailwindcss:
+        specifier: 'catalog:'
+        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       wevu:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu

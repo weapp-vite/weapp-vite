@@ -21,6 +21,11 @@ export interface WeappI18nConfig {
 
 export interface WeappViteConfig {
   srcRoot?: string
+  tailwindcss?: boolean | {
+    cssEntries?: string[]
+    rem2rpx?: boolean | Record<string, unknown>
+    logLevel?: 'info' | 'warn' | 'error' | 'silent'
+  }
   npm?: {
     packageFiles?: Record<string, {
       include?: string[]

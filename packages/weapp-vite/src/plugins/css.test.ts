@@ -6,6 +6,10 @@ import { dirname, relative, resolve } from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId } from '../moduleGraph/protocol'
 import { normalizeWatchPath } from '../utils/path'
+import {
+  createManagedTailwindcssOutputMarker,
+  registerManagedTailwindcssEntries,
+} from './tailwindcssMarker'
 
 const readFileMock = vi.fn(async () => '.sidecar{color:red}')
 const processCssWithCache = vi.fn(async (code: string) => code)
@@ -759,7 +763,7 @@ describe('css plugin shared style injection', () => {
     expect(appStyles[0]?.source).toContain('.text-red-500{color:red}')
   })
 
-  it('keeps Tailwind entry directives out of pending owner styles', async () => {
+  it('only keeps author styles before the generator placeholder', async () => {
     const appEntry = resolve(absoluteSrcRoot, 'app.vue')
     const plugin = css(ctx)[0]
     const bundle: Record<string, any> = {
@@ -803,11 +807,58 @@ describe('css plugin shared style injection', () => {
     await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
 
     const pending = consumePendingOwnerStyleSources(ctx)?.get('app.wxss')
-    expect(pending).toEqual([
-      '.author{color:#893a6d}',
-      'page { background: #f6f7fb; }',
-    ])
+    expect(pending).toEqual(['.author{color:#893a6d}'])
     expect(pending?.join('\n')).not.toMatch(/@(plugin|source)\b/)
+    expect(pending?.join('\n')).not.toContain('page { background: #f6f7fb; }')
+  })
+
+  it('drops physical shadows of managed Tailwind entries before owner emission', async () => {
+    const appEntry = resolve(absoluteSrcRoot, 'app.vue')
+    const tailwindEntry = resolve(absoluteSrcRoot, 'app.css')
+    registerManagedTailwindcssEntries(ctx, [tailwindEntry])
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        facadeModuleId: createLogicalEntryId(appEntry, 'app'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+        viteMetadata: {
+          importedAssets: new Set(),
+          importedCss: new Set(['app-shadow.css', 'app-generated.css']),
+          importedScripts: new Set(),
+          importedUrls: new Set(),
+        },
+      },
+      'app-shadow.css': {
+        type: 'asset',
+        fileName: 'app-shadow.css',
+        originalFileNames: [tailwindEntry],
+        source: '@plugin "@iconify/tailwind4";',
+      },
+      'app-generated.css': {
+        type: 'asset',
+        fileName: 'app-generated.css',
+        originalFileNames: ['\0weapp-vite:managed-tailwindcss-entry:0.css'],
+        source: `${createManagedTailwindcssOutputMarker(0)}\n.flex{display:flex}`,
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    const appWxss = emitted.find(asset => asset.fileName === 'app.wxss')?.source ?? ''
+    expect(bundle['app-shadow.css']).toBeUndefined()
+    expect(appWxss).toContain('.flex{display:flex}')
+    expect(appWxss).not.toContain('@plugin')
+    expect(appWxss).not.toContain('managed-tailwindcss-output')
   })
 
   it('reuses processed css asset source for multiple chunk owners', async () => {
@@ -1176,6 +1227,15 @@ describe('css plugin shared style injection', () => {
     expect(readFileMock).toHaveBeenCalledWith(stylePath, 'utf8')
     expect(preprocessCSSMock).toHaveBeenCalledWith(diskSource, stylePath, resolvedConfig)
     expect(emitted[emitted.length - 1]?.source).toBe(diskSource)
+  })
+
+  it('does not re-emit a managed Tailwind entry as a raw style sidecar', async () => {
+    const stylePath = resolve(absoluteSrcRoot, 'app.css')
+    registerManagedTailwindcssEntries(ctx, [stylePath])
+
+    await expect(emitStyleSidecarAsset(ctx, pluginContext, {} as any, stylePath, resolvedConfig)).resolves.toBe(false)
+    expect(readFileMock).not.toHaveBeenCalledWith(stylePath, 'utf8')
+    expect(emitted).toHaveLength(0)
   })
 
   it('drops stale transformed source and falls back to the current disk source', async () => {

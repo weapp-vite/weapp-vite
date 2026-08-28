@@ -4,7 +4,6 @@ import type { CompilerContext } from '../context'
 import type { StyleEntry } from '../types'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import postcss from 'postcss'
 import { preprocessCSS } from 'vite'
 import { parseLogicalEntryId, parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { isSourceStyleExtension } from '../platforms/sourceAssets'
@@ -21,6 +20,12 @@ import {
   resolveSharedStyleImportStatements,
   toPosixPath,
 } from './css/shared/sharedStyles'
+import {
+  findManagedTailwindcssEntryMarker,
+  hasManagedTailwindcssOutputMarker,
+  isManagedTailwindcssEntry,
+  stripManagedTailwindcssOutputMarkers,
+} from './tailwindcssMarker'
 import { pathExists as pathExistsCached } from './utils/cache'
 import { syncCssImportDependencies } from './utils/invalidateEntry'
 
@@ -74,19 +79,7 @@ type SharedStyleImportCache = Map<string, string[]>
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
 const TAILWIND_CONTENT_HMR_NONCE_RE = /\n\/\* weapp-vite tailwind-content [^*\n]+ \*\/$/
 const VITE_PREPROCESS_STYLE_RE = /\.(?:acss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
-const TAILWIND_GENERATOR_PLACEHOLDER = 'weapp-tailwindcss generator-placeholder'
-const TAILWIND_GENERATION_AT_RULES = new Set([
-  'apply',
-  'config',
-  'custom-variant',
-  'plugin',
-  'reference',
-  'source',
-  'tailwind',
-  'theme',
-  'utility',
-  'variant',
-])
+const TAILWIND_GENERATOR_PLACEHOLDER = '/*! weapp-tailwindcss generator-placeholder */'
 
 const pendingOwnerStyleSources = new WeakMap<CompilerContext, Map<string, string[]>>()
 
@@ -96,32 +89,32 @@ export function consumePendingOwnerStyleSources(ctx: CompilerContext) {
   return sources
 }
 
+function findGeneratorBoundary(css: string) {
+  const externalIndex = css.indexOf(TAILWIND_GENERATOR_PLACEHOLDER)
+  const managedIndex = findManagedTailwindcssEntryMarker(css)
+  if (externalIndex < 0) {
+    return managedIndex
+  }
+  if (managedIndex < 0) {
+    return externalIndex
+  }
+  return Math.min(externalIndex, managedIndex)
+}
+
+function extractPendingOwnerStyleSource(css: string) {
+  const boundary = findGeneratorBoundary(css)
+  return (boundary < 0 ? css : css.slice(0, boundary)).trim()
+}
+
 export function recordPendingOwnerStyleSource(ctx: CompilerContext, fileName: string, css: string) {
-  const root = postcss.parse(css)
-  root.walkComments((comment) => {
-    if (comment.text.trim().replace(/^!\s*/, '') === TAILWIND_GENERATOR_PLACEHOLDER) {
-      comment.remove()
-    }
-  })
-  root.walkAtRules((atRule) => {
-    const name = atRule.name.toLowerCase()
-    if (TAILWIND_GENERATION_AT_RULES.has(name)
-      || (name === 'import' && /(?:^|["'])tailwindcss(?:["']|$)/.test(atRule.params))) {
-      atRule.remove()
-    }
-  })
-  const userFragments = root.nodes
-    .map(node => node.toString().trim())
-    .filter(Boolean)
-  if (!userFragments.length) {
+  const authorCss = extractPendingOwnerStyleSource(css)
+  if (!authorCss) {
     return
   }
   const sources = pendingOwnerStyleSources.get(ctx) ?? new Map<string, string[]>()
   const fragments = sources.get(fileName) ?? []
-  for (const fragment of userFragments) {
-    if (!fragments.includes(fragment)) {
-      fragments.push(fragment)
-    }
+  if (!fragments.includes(authorCss)) {
+    fragments.push(authorCss)
   }
   sources.set(fileName, fragments)
   pendingOwnerStyleSources.set(ctx, sources)
@@ -333,7 +326,6 @@ function emitCssAssetIfChanged(
   const existing = bundle[fileName]
   const forceEmit = hasTailwindContentDirtyReason(ctx)
   const emittedSource = appendTailwindContentHmrNonce(ctx, source)
-
   if (existing?.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
     if (!forceEmit && isUnchangedDevHmrStyleAsset(ctx, normalizedFileName, current, emittedSource)) {
@@ -440,6 +432,9 @@ export async function emitStyleSidecarAsset(
   if (!fileName) {
     return false
   }
+  if (isManagedTailwindcssEntry(ctx, stylePath)) {
+    return false
+  }
 
   const rawCss = await resolveMemoryStyleSource(ctx, stylePath) ?? await fs.readFile(stylePath, 'utf8')
   const { css, dependencies } = await preprocessStyleSource(rawCss, stylePath, resolvedConfig)
@@ -516,7 +511,7 @@ async function handleBundleEntry(
             this.addWatchFile(normalizeWatchPath(dependency))
           }
         }
-        const processedCss = await processCssWithCache(css, configService)
+        const processedCss = stripManagedTailwindcssOutputMarkers(await processCssWithCache(css, configService))
         return {
           processedCss,
         }
@@ -567,9 +562,17 @@ async function handleBundleEntry(
   const isFinalStyleAsset = bundleKey.endsWith(`.${configService.outputExtensions.wxss}`)
     && (!isCssAsset || path.posix.basename(bundleKey, '.css') === 'app')
   const isSourceStyleAssetKey = isSourceStyleAsset(bundleKey)
+  const originalStylePath = resolveOriginalStylePath()
+  if (
+    isManagedTailwindcssEntry(ctx, originalStylePath)
+    && !hasManagedTailwindcssOutputMarker(asset.source.toString())
+  ) {
+    delete bundle[bundleKey]
+    return
+  }
 
   if (isFinalStyleAsset) {
-    const absOriginal = resolveOriginalStylePath()
+    const absOriginal = originalStylePath
     const fileName = resolveOutputStyleFileName(configService, absOriginal)
 
     if (fileName) {
@@ -601,7 +604,7 @@ async function handleBundleEntry(
           this.addWatchFile(normalizeWatchPath(dependency))
         }
       }
-      const processedCss = await processCssWithCache(css, configService)
+      const processedCss = stripManagedTailwindcssOutputMarkers(await processCssWithCache(css, configService))
       if (fileName !== bundleKey) {
         delete bundle[bundleKey]
         emitCssAssetIfChanged(ctx, this, bundle, fileName, processedCss)
@@ -892,8 +895,20 @@ async function generateBundleSharedCss(
       configService,
       sharedStyleImportCache,
     )
-    if (group.fragments.some(fragment => fragment.includes(TAILWIND_GENERATOR_PLACEHOLDER))) {
-      recordPendingOwnerStyleSource(ctx, group.fileName, cssWithImports)
+    if (group.fragments.some(fragment => findGeneratorBoundary(fragment) >= 0)) {
+      const ownerCss = group.fragments
+        .map(extractPendingOwnerStyleSource)
+        .filter(Boolean)
+        .join('\n')
+      const ownerCssWithImports = injectSharedStyleImportsCached(
+        ownerCss,
+        group.modulePath,
+        group.fileName,
+        sharedStyles,
+        configService,
+        sharedStyleImportCache,
+      )
+      recordPendingOwnerStyleSource(ctx, group.fileName, ownerCssWithImports)
     }
     emitCssAssetIfChanged(ctx, this, bundle, group.fileName, cssWithImports)
     emitted.add(normalizedFileName)
@@ -928,14 +943,16 @@ export function css(ctx: CompilerContext): Plugin[] {
       configResolved(config) {
         resolvedConfig = config
       },
-      async generateBundle(_opts, bundle) {
-        const rolldownBundle = bundle as unknown as OutputBundle
-        if (shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle)) {
-          return
-        }
-        const styleAnalysis = analyzeBundleStyles(rolldownBundle)
-        await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
-        await emitCollectedStyleSidecars.call(this, ctx, rolldownBundle, resolvedConfig)
+      generateBundle: {
+        async handler(_opts, bundle) {
+          const rolldownBundle = bundle as unknown as OutputBundle
+          if (shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle)) {
+            return
+          }
+          const styleAnalysis = analyzeBundleStyles(rolldownBundle)
+          await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
+          await emitCollectedStyleSidecars.call(this, ctx, rolldownBundle, resolvedConfig)
+        },
       },
     },
     {

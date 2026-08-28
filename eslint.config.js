@@ -197,6 +197,12 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
+      files: ['packages/weapp-vite/package.json'],
+      rules: {
+        // weapp-vite 的版本兼容公开 API 直接依赖 semver。
+        'e18e/ban-dependencies': 'off',
+      },
+    }, {
       files: ['packages/weapp-ide-cli/package.json'],
       rules: {
         'e18e/ban-dependencies': 'off',

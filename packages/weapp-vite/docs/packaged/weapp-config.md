@@ -180,6 +180,27 @@ export default defineConfig({
 
 `inject: false` 只生成目标平台样式文件，适合由源码手动 `@import`。未显式配置 `include` 时仍默认排除 app，避免意外把共享样式提升为全局样式。独立分包不能依赖主包资源，不会收到 `weapp.styles` 的自动注入；需要在 `weapp.subPackages.<root>.styles` 中声明分包自己的入口。
 
+### `tailwindcss`
+
+内置的 `weapp-tailwindcss` 集成默认关闭。启用后，`weapp-vite` 使用 `weapp-tailwindcss/core` 处理 WXSS、WXML 和 JavaScript，使用 generator 生成 Tailwind CSS，并将结果写入正常的样式产物：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    tailwindcss: {
+      cssEntries: ['src/app.css'],
+      rem2rpx: true,
+    },
+  },
+})
+```
+
+也可以直接写 `tailwindcss: true`，此时默认使用 `src/app.css` 作为入口。入口文件仍必须被项目实际引入，例如在 `app.vue` 中使用 `<style src="./app.css"></style>`；`cssEntries` 只声明 generator 的入口集合，不能替代模块图导入。
+
+`tailwindcss` 对象会透传 `weapp-tailwindcss/core` 支持的 options。一次构建只应使用这一套内置集成，不要再额外注册 `WeappTailwindcss()` Vite 插件；两者同时存在会直接报配置冲突。
+
 ### `routeRules`
 
 用于给页面路由追加规则，例如 layout、微信分包预下载等。它属于项目级编排，而不是组件内部语义。

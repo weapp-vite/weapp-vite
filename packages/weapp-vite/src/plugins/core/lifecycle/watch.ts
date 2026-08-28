@@ -30,7 +30,7 @@ import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
 const tailwindContentExtensions = new Set(['.vue', '.wxml', '.axml', '.js', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.mjs', '.cjs'])
-const TAILWIND_APP_STYLE_RE = /@import\s+['"]tailwindcss['"]|@source\b|weapp-tailwindcss|tailwindcss\/vite/
+const TAILWIND_APP_STYLE_RE = /@import\s+['"]tailwindcss['"]|weapp-tailwindcss|tailwindcss\/vite/
 
 interface WatchPathKind {
   configSuffix?: string
