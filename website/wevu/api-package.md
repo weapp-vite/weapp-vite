@@ -306,6 +306,46 @@ await api.showToast({ title: '支付宝环境', icon: 'none' })
 - 一套能力探测接口：`resolveTarget` / `supports`
 - 一组运行时 adapter 控制接口：`platform / raw / getAdapter / setAdapter`
 
+## 在 Vitest 中隔离 API 调用
+
+在 Vitest 配置里注册 `wevu/api` 的 setup 子路径：
+
+```ts
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    setupFiles: ['wevu/api/vitest/setup'],
+  },
+})
+```
+
+业务代码仍然正常静态导入 `wpi`，测试通过同层 mock 入口配置行为：
+
+```ts
+import { wpiMock } from 'wevu/api/vitest'
+
+wpiMock.request.mockResolvedValue(responseFixture)
+wpiMock.onMemoryWarning.mockImplementation((callback) => {
+  callback({ level: 10 })
+})
+```
+
+`wpiMock` 保留 Promise、callback、同步 API 与事件 API 的参数和结果类型。setup 会让 `wevu/api`、`@wevu/api`、`@weapp-core/api` 三层入口共享同一 mock，并在每个测试前局部 reset；它不会调用 `vi.resetAllMocks()`。
+
+需要临时实例或手动控制生命周期时：
+
+```ts
+import { createWpiMock, resetApiMock } from 'wevu/api/vitest'
+
+const localWpi = createWpiMock()
+localWpi.showToast.mockResolvedValue(showToastResult)
+
+resetApiMock(localWpi)
+```
+
+没有配置实现的方法默认返回 `undefined`，不会伪造宿主结果。这套 mock 用于测试业务代码如何调用 API；页面/组件 render、WXML 查询、交互和宿主 runtime 行为应使用 [`@mpcore/test`](/packages/mpcore-test)。
+
 ## 业务里最常见的写法
 
 如果你只是日常写业务，通常只会用这两种：

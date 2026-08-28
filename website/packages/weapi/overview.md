@@ -71,6 +71,33 @@ const api = createWeapi({
 })
 ```
 
+## 在 Vitest 中 mock `wpi`
+
+在 Wevu 项目中，把 setup 子路径加入 Vitest 配置即可一次完成注册：
+
+```ts
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    setupFiles: ['wevu/api/vitest/setup'],
+  },
+})
+```
+
+```ts
+import { wpiMock } from 'wevu/api/vitest'
+
+wpiMock.request.mockResolvedValue(responseFixture)
+wpiMock.getSystemInfoSync.mockReturnValue(systemInfoFixture)
+```
+
+setup 会在业务模块静态导入前替换 `api` / `wpi`，并在每个测试前只重置自身创建的方法。`wevu/api`、`@wevu/api` 与 `@weapp-core/api` 在同一测试中混用时仍共享一个 mock 单例，不会清空用户创建的其他 Vitest mocks。
+
+只安装核心包或兼容包时，setup 路径分别使用 `@weapp-core/api/vitest/setup` 与 `@wevu/api/vitest/setup`。不希望使用全局 setup 时，可以从对应的 `/vitest` 子路径调用 `createApiMock()` / `createWpiMock()`，并通过 `resetApiMock()` 手动重置。
+
+这套工具只隔离 API 调用，不模拟小程序页面、组件、WXML、交互或宿主 runtime。需要这些能力时使用 [`@mpcore/test`](/packages/mpcore-test)。
+
 ## 行为说明
 
 - 仅在未传回调时返回 Promise

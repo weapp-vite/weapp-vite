@@ -338,6 +338,53 @@ const api = createApi({
 await api.getSystemInfo()
 ```
 
+## Vitest mock
+
+在 Vitest 配置中注册一次 setup，业务模块静态导入的 `api` / `wpi` 会被替换为同一个类型安全 mock，包内其他导出保持真实实现：
+
+```ts
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    setupFiles: ['@weapp-core/api/vitest/setup'],
+  },
+})
+```
+
+```ts
+import { wpi } from '@weapp-core/api'
+import { wpiMock } from '@weapp-core/api/vitest'
+import { expect, test } from 'vitest'
+
+test('loads user data', async () => {
+  wpiMock.request.mockResolvedValue(responseFixture)
+
+  await loadUser()
+
+  expect(wpi.request).toHaveBeenCalledWith({
+    url: '/api/user',
+  })
+})
+```
+
+`mockImplementation()` 同时保留 Promise 风格与原始 callback options 类型；`mockResolvedValue()`、同步 API、事件 API 和内部辅助方法也沿用 `wpi` 的原始契约。setup 会在每个测试前只重置已经创建的 API mock，不调用全局 `vi.resetAllMocks()`。
+
+需要独立实例时，可以直接使用 factory：
+
+```ts
+import { createWpiMock, resetApiMock } from '@weapp-core/api/vitest'
+
+const localWpi = createWpiMock({
+  platform: 'wx',
+})
+
+localWpi.getSystemInfoSync.mockReturnValue(systemInfoFixture)
+resetApiMock(localWpi)
+```
+
+未配置的方法默认返回 `undefined`，不会伪造宿主行为。该测试子路径依赖 Vitest，但不会进入 `@weapp-core/api` 的生产入口或小程序 bundle。若要测试页面、组件、WXML 查询、交互或真实宿主 mock，请使用 `@mpcore/test`；这里的工具只负责隔离 `api` / `wpi` 调用。
+
 ## 行为说明
 
 - **只在不传回调时返回 Promise**

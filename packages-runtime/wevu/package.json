@@ -25,7 +25,10 @@
     "pinia",
     "state-management"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/api/vitest/setup.mjs",
+    "./dist/dev/api/vitest/setup.mjs"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
@@ -89,6 +92,22 @@
         "types": "./dist/api.d.mts",
         "development": "./dist/dev/api.mjs",
         "default": "./dist/api.mjs"
+      }
+    },
+    "./api/vitest": {
+      "types": "./dist/api/vitest.d.mts",
+      "import": {
+        "types": "./dist/api/vitest.d.mts",
+        "development": "./dist/dev/api/vitest.mjs",
+        "default": "./dist/api/vitest.mjs"
+      }
+    },
+    "./api/vitest/setup": {
+      "types": "./dist/api/vitest/setup.d.mts",
+      "import": {
+        "types": "./dist/api/vitest/setup.d.mts",
+        "development": "./dist/dev/api/vitest/setup.mjs",
+        "default": "./dist/api/vitest/setup.mjs"
       }
     },
     "./fetch": {
@@ -179,6 +198,20 @@
         "default": "./dist/dev/api.mjs"
       }
     },
+    "./dev/api/vitest": {
+      "types": "./dist/api/vitest.d.mts",
+      "import": {
+        "types": "./dist/api/vitest.d.mts",
+        "default": "./dist/dev/api/vitest.mjs"
+      }
+    },
+    "./dev/api/vitest/setup": {
+      "types": "./dist/api/vitest/setup.d.mts",
+      "import": {
+        "types": "./dist/api/vitest/setup.d.mts",
+        "default": "./dist/dev/api/vitest/setup.mjs"
+      }
+    },
     "./dev/fetch": {
       "types": "./dist/fetch.d.mts",
       "import": {
@@ -234,7 +267,20 @@
     "lint:fix": "eslint . --fix"
   },
   "peerDependencies": {
-    "miniprogram-api-typings": "^5.0.0"
+    "miniprogram-api-typings": "^5.0.0",
+    "vitest": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "paths": {}
+    }
   },
   "dependencies": {
     "@weapp-core/constants": "workspace:*",

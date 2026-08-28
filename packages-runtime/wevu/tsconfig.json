@@ -4,6 +4,12 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@weapp-core/api/vitest": [
+        "../../@weapp-core/api/src/vitest/index.ts"
+      ],
+      "@wevu/api/vitest": [
+        "../weapi/src/vitest.ts"
       ]
     },
     "types": [

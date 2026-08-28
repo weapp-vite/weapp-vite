@@ -14,7 +14,9 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/vitest/setup.mjs"
+  ],
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
@@ -22,6 +24,14 @@
         "types": "./types/index.d.ts",
         "default": "./dist/index.mjs"
       }
+    },
+    "./vitest": {
+      "types": "./dist/vitest.d.mts",
+      "import": "./dist/vitest.mjs"
+    },
+    "./vitest/setup": {
+      "types": "./dist/vitest/setup.d.mts",
+      "import": "./dist/vitest/setup.mjs"
     }
   },
   "main": "./dist/index.mjs",
@@ -44,8 +54,23 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json"
   },
+  "peerDependencies": {
+    "vitest": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  },
   "dependencies": {
     "@weapp-core/api": "workspace:*"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "paths": {}
+    }
   },
   "publishConfig": {
     "access": "public"
