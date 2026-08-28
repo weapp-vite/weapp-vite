@@ -5,9 +5,10 @@ import type { EncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import type { ResolvedAppShell } from '../../appShell'
 import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import MagicString from 'magic-string'
+import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
-import { resolveVueSfcHmrSignatures } from '../../../../../utils/file/vueSfcSignature'
+import { storeVueSfcHmrSignatures } from '../../../../../runtime/storeVueSfcHmrSignatures'
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
@@ -293,28 +294,8 @@ export async function finalizeTransformCompiledResult(options: {
     const normalizedFilename = normalizeFsResolvedId(filename)
     const hmr = ctx.runtimeState?.build?.hmr
     const signatures = resolveVueSfcHmrSignatures(source, filename)
-    if (signatures.nonJsonSignature && hmr?.vueEntryNonJsonSignatures) {
-      hmr.vueEntryNonJsonSignatures.set(normalizedFilename, signatures.nonJsonSignature)
-    }
-    if (signatures.scriptSignature && hmr?.vueEntryScriptSignatures) {
-      hmr.vueEntryScriptSignatures.set(normalizedFilename, signatures.scriptSignature)
-    }
-    if (signatures.tailwindContentSignature && hmr?.vueEntryTailwindContentSignatures) {
-      hmr.vueEntryTailwindContentSignatures.set(normalizedFilename, signatures.tailwindContentSignature)
-    }
-    if (signatures.tailwindTemplateContentSignature && hmr?.vueEntryTailwindTemplateContentSignatures) {
-      hmr.vueEntryTailwindTemplateContentSignatures.set(normalizedFilename, signatures.tailwindTemplateContentSignature)
-    }
-    if (signatures.tailwindScriptContentSignature && hmr?.vueEntryTailwindScriptContentSignatures) {
-      hmr.vueEntryTailwindScriptContentSignatures.set(normalizedFilename, signatures.tailwindScriptContentSignature)
-    }
-    const nextStyleIndependentSignature = styleIndependentSignature
-      ?? signatures.styleIndependentSignature
-    if (nextStyleIndependentSignature && hmr?.vueEntryStyleIndependentSignatures) {
-      hmr.vueEntryStyleIndependentSignatures.set(normalizedFilename, nextStyleIndependentSignature)
-    }
-    if (signatures.hasTemplate !== undefined && hmr?.vueEntryHasTemplate) {
-      hmr.vueEntryHasTemplate.set(normalizedFilename, signatures.hasTemplate)
+    if (hmr) {
+      storeVueSfcHmrSignatures(hmr, normalizedFilename, signatures)
     }
   }
 

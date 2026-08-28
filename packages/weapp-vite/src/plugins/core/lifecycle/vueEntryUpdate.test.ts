@@ -1,5 +1,6 @@
+import type { CorePluginState } from '../helpers'
 import { describe, expect, it, vi } from 'vitest'
-import { resolveVueSfcHasTemplate, resolveVueSfcHmrSignatures, resolveVueSfcNonJsonSignature, resolveVueSfcScriptSignature, resolveVueSfcStyleIndependentSignature, resolveVueSfcTailwindContentSignature } from '../../../utils/file/vueSfcSignature'
+import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
 function createState(filename: string, source: string) {
@@ -11,19 +12,10 @@ function createState(filename: string, source: string) {
         build: {
           hmr: {
             vueEntryHasTemplate: new Map([
-              [filename, resolveVueSfcHasTemplate(source, filename)],
+              [filename, signatures.hasTemplate],
             ]),
-            vueEntryNonJsonSignatures: new Map([
-              [filename, resolveVueSfcNonJsonSignature(source, filename)],
-            ]),
-            vueEntryScriptSignatures: new Map([
-              [filename, resolveVueSfcScriptSignature(source, filename)],
-            ]),
-            vueEntryStyleIndependentSignatures: new Map([
-              [filename, resolveVueSfcStyleIndependentSignature(source, filename)],
-            ]),
-            vueEntryTailwindContentSignatures: new Map([
-              [filename, resolveVueSfcTailwindContentSignature(source, filename)],
+            vueEntrySfcSignatures: new Map([
+              [filename, signatures.blockSignatures],
             ]),
             vueEntryTailwindTemplateContentSignatures: new Map([
               [filename, signatures.tailwindTemplateContentSignature],
@@ -35,7 +27,7 @@ function createState(filename: string, source: string) {
         },
       },
     },
-  } as any
+  } as unknown as CorePluginState
 }
 
 describe('createVueEntryUpdateInspector', () => {
@@ -54,14 +46,38 @@ const title = 'same'
       readFile,
     })
 
-    await expect(inspector.isJsonOnlyUpdate()).resolves.toBe(true)
+    await expect(inspector.getChangedBlocks()).resolves.toEqual([])
+    await expect(inspector.isJsonOnlyUpdate()).resolves.toBe(false)
     await expect(inspector.isLocalAssetOnlyUpdate()).resolves.toBe(true)
-    await expect(inspector.isStyleOnlyUpdate()).resolves.toBe(true)
+    await expect(inspector.isStyleOnlyUpdate()).resolves.toBe(false)
     await expect(inspector.isTailwindContentUpdate()).resolves.toBe(false)
     await expect(inspector.isAppShellTopologyUpdate()).resolves.toBe(false)
-    await expect(inspector.isJsonOnlyUpdate()).resolves.toBe(true)
 
     expect(readFile).toHaveBeenCalledTimes(1)
     expect(readFile).toHaveBeenCalledWith(filename, 'utf-8')
+  })
+
+  it.each([
+    ['script', 'const count = 2'],
+    ['template', '<view class="next">{{ count }}</view>'],
+    ['style', '.card { color: blue; }'],
+    ['config', '{"navigationBarTitleText":"新标题"}'],
+  ] as const)('reports %s block changes', async (block, replacement) => {
+    const filename = '/project/src/pages/index.vue'
+    const source = `<script setup lang="ts">const count = 1</script>
+<template><view>{{ count }}</view></template>
+<style>.card { color: red; }</style>
+<json>{"navigationBarTitleText":"首页"}</json>`
+    const originalByBlock = {
+      script: 'const count = 1',
+      template: '<view>{{ count }}</view>',
+      style: '.card { color: red; }',
+      config: '{"navigationBarTitleText":"首页"}',
+    }
+    const inspector = createVueEntryUpdateInspector(createState(filename, source), filename, {
+      readFile: async () => source.replace(originalByBlock[block], replacement),
+    })
+
+    await expect(inspector.getChangedBlocks()).resolves.toEqual([block])
   })
 })

@@ -62,6 +62,22 @@ export type {
   TemplateRefBinding,
 } from './plugins/vue/compiler/template/types'
 
+export {
+  classifyVueSfcBlockChanges,
+  resolveVueSfcHasTemplate,
+  resolveVueSfcHmrSignatures,
+  resolveVueSfcNonJsonSignature,
+  resolveVueSfcScriptSignature,
+  resolveVueSfcStyleIndependentSignature,
+  resolveVueSfcTailwindContentSignature,
+  VUE_SFC_BLOCK_TYPES,
+} from './plugins/vue/hmr/sfcSignature'
+export type {
+  VueSfcBlockChanges,
+  VueSfcBlockSignatures,
+  VueSfcBlockType,
+  VueSfcHmrSignatures,
+} from './plugins/vue/hmr/sfcSignature'
 export { buildClassStyleComputedCode } from './plugins/vue/transform/classStyleComputed'
 export { compileVueFile as compileSfc, compileVueFile, refreshVueFileJsonConfig } from './plugins/vue/transform/compileVueFile'
 export type {

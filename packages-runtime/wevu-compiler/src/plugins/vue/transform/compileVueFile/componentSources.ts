@@ -1,16 +1,16 @@
 import type { File as BabelFile, ObjectExpression } from '@weapp-vite/ast/babelTypes'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { AutoImportTagsOptions, AutoUsingComponentsOptions, CompileVueFileOptions, ResolvedUsingComponentPath, VueSfcStaticComponentMeta } from './types'
-import { removeExtensionDeep } from '@weapp-core/shared'
+import { isObject, removeExtensionDeep } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
-import { loadNativeAstBindingSync, shouldUseNativeAst } from '../../../../ast/native'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 import * as fs from '../../../../utils/fs'
 import { collectVueTemplateTags, isAutoImportCandidateTag } from '../../../../utils/vueTemplateTags'
 import { resolveWarnHandler } from '../../../../utils/warn'
 import { normalizeTemplateTagName } from '../../compiler/template/htmlTagMapping'
+import { loadNativeSfcBindingSync, shouldUseNativeSfc } from '../../native'
 
 type SfcDescriptorForCompile = Pick<SFCDescriptor, 'scriptSetup' | 'script'>
 
@@ -32,14 +32,6 @@ interface ScriptSetupImportComponent {
 }
 
 type ScriptComponentRegistration = ScriptSetupImportComponent
-
-interface VueSfcSignaturePayload {
-  script?: {
-    scriptSetup?: {
-      content?: string
-    } | null
-  }
-}
 
 interface TemplateComponentTagInfo {
   autoImportTags: Set<string>
@@ -147,16 +139,20 @@ function extractStaticComponentMeta(scriptSetupContent: string): VueSfcStaticCom
 }
 
 function readNativeVueSfcScriptSetupContent(source: string) {
-  if (!shouldUseNativeAst()) {
-    return undefined
-  }
-  const payload = loadNativeAstBindingSync()?.getVueSfcSignaturePayloadNative?.(source)
-  if (!payload) {
+  if (!shouldUseNativeSfc()) {
     return undefined
   }
   try {
-    const parsed = JSON.parse(payload) as VueSfcSignaturePayload
-    return parsed.script?.scriptSetup?.content
+    const payload = loadNativeSfcBindingSync()?.getVueSfcSignaturePayloadNative?.(source)
+    if (!payload) {
+      return undefined
+    }
+    const parsed: unknown = JSON.parse(payload)
+    if (!isObject(parsed) || !isObject(parsed.script) || !isObject(parsed.script.scriptSetup)) {
+      return undefined
+    }
+    const content = parsed.script.scriptSetup.content
+    return typeof content === 'string' ? content : undefined
   }
   catch {
     return undefined

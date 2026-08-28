@@ -31,10 +31,14 @@ const pageMatcherMarkDirtyMock = vi.hoisted(() => vi.fn())
 const loggerErrorMock = vi.hoisted(() => vi.fn())
 const toAbsoluteIdMock = vi.hoisted(() => vi.fn((id: string) => id))
 
-vi.mock('wevu/compiler', () => ({
-  compileVueFile: compileVueFileMock,
-  compileJsxFile: compileJsxFileMock,
-}))
+vi.mock('wevu/compiler', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return {
+    ...actual,
+    compileVueFile: compileVueFileMock,
+    compileJsxFile: compileJsxFileMock,
+  }
+})
 
 vi.mock('./injectSetDataPick', () => ({
   collectSetDataPickKeysFromTemplate: collectSetDataPickKeysFromTemplateMock,

@@ -49,7 +49,6 @@ export interface NativeAstBinding {
     code: string,
     filename?: string,
   ) => NativeOnPageScrollDiagnostic[]
-  getVueSfcSignaturePayloadNative?: (source: string) => string | undefined
   mayContainPlatformApiAccessNative?: (
     code: string,
     filename?: string,

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
 import { createModuleGraphService } from '../../../../moduleGraph'
 import { transformVueLikeFile } from './transformFile'
 
@@ -36,6 +37,7 @@ vi.mock('wevu/compiler', async (importOriginal) => {
     ...actual,
     compileJsxFile: compileJsxFileMock,
     compileVueFile: compileVueFileMock,
+    resolveVueSfcStyleIndependentSignature: resolveVueSfcStyleIndependentSignatureMock,
   }
 })
 
@@ -71,14 +73,6 @@ vi.mock('../scopedSlot', () => ({
   registerScopedSlotHostGenerics: registerScopedSlotHostGenericsMock,
 }))
 
-vi.mock('../../../../utils/file/vueSfcSignature', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../../utils/file/vueSfcSignature')>()
-  return {
-    ...actual,
-    resolveVueSfcStyleIndependentSignature: resolveVueSfcStyleIndependentSignatureMock,
-  }
-})
-
 function createBaseOptions(overrides: Record<string, any> = {}) {
   return {
     ctx: {
@@ -97,6 +91,11 @@ function createBaseOptions(overrides: Record<string, any> = {}) {
         build: {
           hmr: {
             dirtyVueEntryIds: new Set<string>(),
+            vueEntryHasTemplate: new Map(),
+            vueEntrySfcSignatures: new Map(),
+            vueEntryTailwindContentSignatures: new Map(),
+            vueEntryTailwindTemplateContentSignatures: new Map(),
+            vueEntryTailwindScriptContentSignatures: new Map(),
             profile: {},
           },
         },
@@ -200,6 +199,11 @@ describe('transformVueLikeFile cache reuse', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
               profile: {},
             },
           },
@@ -248,6 +252,11 @@ describe('transformVueLikeFile cache reuse', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
               profile: {
                 file: '/project/src/shared/view.tsx',
                 dirtyReasonSummary: ['importer-graph:1'],
@@ -290,6 +299,11 @@ describe('transformVueLikeFile cache reuse', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
               profile: {},
             },
           },
@@ -352,7 +366,6 @@ describe('transformVueLikeFile cache reuse', () => {
   })
 
   it('does not parse styled sfc blocks before full dirty recompilation', async () => {
-    const { resolveVueSfcStyleIndependentSignature } = await import('../../../../utils/file/vueSfcSignature')
     const previousSource = '<template><view /></template><script>const title = "old"</script><style>.card{color:red}</style>'
     const nextSource = '<template><view /></template><script>const title = "new"</script><style>.card{color:red}</style>'
     const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
@@ -369,6 +382,11 @@ describe('transformVueLikeFile cache reuse', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
               profile: {
                 eventId: 'hmr-1',
                 dirtyReasonSummary: ['entry-style-only:1'],
@@ -405,7 +423,6 @@ describe('transformVueLikeFile cache reuse', () => {
   })
 
   it('reuses cached vue compilation for style-only dirty updates', async () => {
-    const { resolveVueSfcStyleIndependentSignature } = await import('../../../../utils/file/vueSfcSignature')
     const previousSource = '<template><view /></template><style>.card{color:red}</style>'
     const nextSource = '<template><view /></template><style>.card{color:blue}</style>'
     const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
@@ -428,6 +445,11 @@ describe('transformVueLikeFile cache reuse', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
               profile: {
                 eventId: 'hmr-1',
                 dirtyReasonSummary: ['entry-style-only:1'],
@@ -507,6 +529,11 @@ describe('transformVueLikeFile cache reuse', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
               profile: {
                 eventId: 'hmr-2',
                 dirtyReasonSummary: ['css-importer:1'],
@@ -574,6 +601,11 @@ describe('transformVueLikeFile cache reuse', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
               profile: {
                 eventId: 'hmr-css-importer',
                 dirtyReasonSummary: ['css-importer:1'],
@@ -631,6 +663,11 @@ describe('transformVueLikeFile cache reuse', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
               profile: {
                 dirtyReasonSummary: ['entry-json-only:1'],
               },

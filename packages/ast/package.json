@@ -106,6 +106,7 @@
     "check:release": "pnpm build && pnpm typecheck && pnpm test && npm pack --dry-run . --cache ../../.cache/npm",
     "test": "vitest run --config ./vitest.config.ts",
     "test:dev": "vitest --config ./vitest.config.ts",
+    "test:types": "pnpm build && tsd",
     "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "release": "pnpm publish",
     "lint": "eslint .",

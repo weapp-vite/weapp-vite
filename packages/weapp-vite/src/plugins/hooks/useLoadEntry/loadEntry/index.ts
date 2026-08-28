@@ -12,9 +12,10 @@ import { createHash } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
 import { get, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
+import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
+import { storeVueSfcHmrSignatures } from '../../../../runtime/storeVueSfcHmrSignatures'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
-import { resolveVueSfcHmrSignatures } from '../../../../utils/file/vueSfcSignature'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { isPathInside } from '../../../../utils/path'
@@ -480,24 +481,11 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           const signatures = resolveVueSfcHmrSignatures(vueSource, vueEntryPath)
           recordEntryDuration('entryVueSignatureMs', signatureStartedAt)
           appVueNonJsonSignature = signatures.nonJsonSignature
-          if (signatures.nonJsonSignature) {
-            ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(normalizedVueEntryPath!, signatures.nonJsonSignature)
-          }
-          if (signatures.scriptSignature) {
-            ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(normalizedVueEntryPath!, signatures.scriptSignature)
-          }
-          if (signatures.tailwindContentSignature) {
-            ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(normalizedVueEntryPath!, signatures.tailwindContentSignature)
-          }
-          if (signatures.tailwindTemplateContentSignature) {
-            ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures?.set(normalizedVueEntryPath!, signatures.tailwindTemplateContentSignature)
-          }
-          if (signatures.tailwindScriptContentSignature) {
-            ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures?.set(normalizedVueEntryPath!, signatures.tailwindScriptContentSignature)
-          }
-          if (signatures.hasTemplate !== undefined) {
-            ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(normalizedVueEntryPath!, signatures.hasTemplate)
-          }
+          storeVueSfcHmrSignatures(
+            ctx.runtimeState.build.hmr,
+            normalizedVueEntryPath!,
+            signatures,
+          )
         }
       }
       if (vueEntryPath && ctx.autoRoutesService?.isEnabled?.() && !ctx.runtimeState.autoRoutes.loadingAppConfig) {
@@ -710,24 +698,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           const signatureStartedAt = performance.now()
           const signatures = resolveVueSfcHmrSignatures(vueSource, vueEntryPath)
           recordEntryDuration('entryVueSignatureMs', signatureStartedAt)
-          if (signatures.nonJsonSignature) {
-            ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(normalizedId, signatures.nonJsonSignature)
-          }
-          if (signatures.scriptSignature) {
-            ctx.runtimeState.build.hmr.vueEntryScriptSignatures.set(normalizedId, signatures.scriptSignature)
-          }
-          if (signatures.tailwindContentSignature) {
-            ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures.set(normalizedId, signatures.tailwindContentSignature)
-          }
-          if (signatures.tailwindTemplateContentSignature) {
-            ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures?.set(normalizedId, signatures.tailwindTemplateContentSignature)
-          }
-          if (signatures.tailwindScriptContentSignature) {
-            ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures?.set(normalizedId, signatures.tailwindScriptContentSignature)
-          }
-          if (signatures.hasTemplate !== undefined) {
-            ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(normalizedId, signatures.hasTemplate)
-          }
+          storeVueSfcHmrSignatures(ctx.runtimeState.build.hmr, normalizedId, signatures)
         }
       }
 

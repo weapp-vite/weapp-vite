@@ -1,9 +1,11 @@
+import type { VueSfcBlockChanges, VueSfcHmrSignatures } from 'wevu/compiler'
 import type { CorePluginState } from '../helpers'
 import { fs } from '@weapp-core/shared/fs'
-import { resolveVueSfcHmrSignatures } from '../../../utils/file/vueSfcSignature'
+import { classifyVueSfcBlockChanges, resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { isAppVueFile } from '../../vue/transform/appShell'
 
 export interface VueEntryUpdateInspector {
+  getChangedBlocks: () => Promise<VueSfcBlockChanges | undefined>
   isAppShellTopologyUpdate: () => Promise<boolean>
   isJsonOnlyUpdate: () => Promise<boolean>
   isLocalAssetOnlyUpdate: () => Promise<boolean>
@@ -20,7 +22,8 @@ export function createVueEntryUpdateInspector(
 ): VueEntryUpdateInspector {
   const readFile = options.readFile ?? fs.readFile
   let sourcePromise: Promise<string | undefined> | undefined
-  let signatures: ReturnType<typeof resolveVueSfcHmrSignatures> | undefined
+  let signatures: VueSfcHmrSignatures | undefined
+  let changedBlocks: VueSfcBlockChanges | undefined
 
   async function loadSource() {
     sourcePromise ??= readFile(normalizedId, 'utf-8').catch(() => undefined)
@@ -32,13 +35,27 @@ export function createVueEntryUpdateInspector(
     if (source === undefined) {
       return undefined
     }
-    if (!signatures) {
-      signatures = resolveVueSfcHmrSignatures(source, normalizedId)
-    }
+    signatures ??= resolveVueSfcHmrSignatures(source, normalizedId)
     return signatures
   }
 
+  async function resolveChangedBlocks() {
+    if (changedBlocks) {
+      return changedBlocks
+    }
+    const previous = state.ctx.runtimeState.build.hmr.vueEntrySfcSignatures.get(normalizedId)
+    const current = (await resolveSignatures())?.blockSignatures
+    if (!previous || !current) {
+      return undefined
+    }
+    changedBlocks = classifyVueSfcBlockChanges(previous, current)
+    return changedBlocks
+  }
+
   return {
+    async getChangedBlocks() {
+      return await resolveChangedBlocks()
+    },
     async isAppShellTopologyUpdate() {
       if (!isAppVueFile(normalizedId)) {
         return false
@@ -54,30 +71,18 @@ export function createVueEntryUpdateInspector(
     },
 
     async isJsonOnlyUpdate() {
-      const previous = state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.get(normalizedId)
-      if (!previous) {
-        return false
-      }
-
-      return (await resolveSignatures())?.nonJsonSignature === previous
+      const blocks = await resolveChangedBlocks()
+      return blocks?.length === 1 && blocks[0] === 'config'
     },
 
     async isLocalAssetOnlyUpdate() {
-      const previous = state.ctx.runtimeState.build.hmr.vueEntryScriptSignatures.get(normalizedId)
-      if (!previous) {
-        return false
-      }
-
-      return (await resolveSignatures())?.scriptSignature === previous
+      const blocks = await resolveChangedBlocks()
+      return Boolean(blocks && !blocks.includes('script'))
     },
 
     async isStyleOnlyUpdate() {
-      const previous = state.ctx.runtimeState.build.hmr.vueEntryStyleIndependentSignatures.get(normalizedId)
-      if (!previous) {
-        return false
-      }
-
-      return (await resolveSignatures())?.styleIndependentSignature === previous
+      const blocks = await resolveChangedBlocks()
+      return blocks?.length === 1 && blocks[0] === 'style'
     },
 
     async isTailwindContentUpdate() {

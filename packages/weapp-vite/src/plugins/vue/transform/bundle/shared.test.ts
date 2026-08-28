@@ -1,4 +1,6 @@
+import type { CompilerContext } from '../../../../context'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
 import { compileAndFinalizeVueLikeFile, compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, getVueBundlePageLayoutPlan, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
@@ -119,6 +121,7 @@ vi.mock('wevu/compiler', async (importOriginal) => {
     compileJsxFile: compileJsxFileMock,
     compileVueFile: compileVueFileMock,
     getClassStyleWxsSource: getClassStyleWxsSourceMock,
+    resolveVueSfcStyleIndependentSignature: resolveVueSfcStyleIndependentSignatureMock,
   }
 })
 
@@ -130,14 +133,6 @@ vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
       ...actual.fs,
       readFile: readFileMock,
     },
-  }
-})
-
-vi.mock('../../../../utils/file/vueSfcSignature', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../../utils/file/vueSfcSignature')>()
-  return {
-    ...actual,
-    resolveVueSfcStyleIndependentSignature: resolveVueSfcStyleIndependentSignatureMock,
   }
 })
 
@@ -1016,6 +1011,48 @@ describe('emitSharedVueEntryAssets', () => {
     )
   })
 
+  it('stores block signatures during the initial dev bundle compilation', async () => {
+    const hmr = {
+      vueEntryHasTemplate: new Map(),
+      vueEntrySfcSignatures: new Map(),
+      vueEntryTailwindContentSignatures: new Map(),
+      vueEntryTailwindTemplateContentSignatures: new Map(),
+      vueEntryTailwindScriptContentSignatures: new Map(),
+    }
+    const filename = '/project/src/components/card.vue'
+
+    await compileVueLikeFile({
+      source: '<template><view /></template><script setup>const count = 1</script>',
+      filename,
+      ctx: {
+        runtimeState: {
+          build: {
+            hmr,
+          },
+        },
+      } as unknown as CompilerContext,
+      pluginCtx: { emitFile: vi.fn() },
+      isPage: false,
+      isApp: false,
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+      } as unknown as NonNullable<CompilerContext['configService']>,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(hmr.vueEntrySfcSignatures.get(filename)).toEqual({
+      config: expect.any(String),
+      script: expect.any(String),
+      style: expect.any(String),
+      template: expect.any(String),
+    })
+  })
+
   it('preserves native plain slot compilation when scopedSlotsRequireProps is explicit', async () => {
     await compileVueLikeFile({
       source: '<slot-host><template #header><view>Header</view></template></slot-host>',
@@ -1357,7 +1394,6 @@ describe('emitSharedVueEntryAssets', () => {
   })
 
   it('reuses cached compiled entries for style-only dirty updates in dev', async () => {
-    const { resolveVueSfcStyleIndependentSignature } = await import('../../../../utils/file/vueSfcSignature')
     const previousSource = '<template><view /></template><style>.page{color:red}</style>'
     const nextSource = '<template><view /></template><style>.page{color:blue}</style>'
     const cached = {
@@ -1382,6 +1418,11 @@ describe('emitSharedVueEntryAssets', () => {
             hmr: {
               dirtyVueEntryIds,
               profile: hmrProfile,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
             },
           },
         },
@@ -1438,6 +1479,11 @@ describe('emitSharedVueEntryAssets', () => {
           build: {
             hmr: {
               dirtyVueEntryIds,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
             },
           },
         },
