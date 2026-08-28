@@ -24,6 +24,21 @@ async function createIssue893Fixture() {
       return relativePath !== 'dist' && !relativePath.startsWith(`dist${path.sep}`)
     },
   })
+  const appVuePath = path.join(fixtureRoot, 'src/app.vue')
+  const appVue = await fs.readFile(appVuePath, 'utf8')
+  await fs.writeFile(
+    appVuePath,
+    appVue.replace(
+      '<style src="./app.css"></style>',
+      '<style src="./issue-893-base.scss" lang="scss"></style>\n\n<style src="./app.css"></style>',
+    ),
+    'utf8',
+  )
+  await fs.writeFile(
+    path.join(fixtureRoot, 'src/issue-893-base.scss'),
+    '$issue-893-color: #893a6d;\n\n.issue-893-base {\n  color: $issue-893-color;\n}\n',
+    'utf8',
+  )
   return fixtureRoot
 }
 
