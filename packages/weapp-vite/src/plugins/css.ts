@@ -73,6 +73,29 @@ type SharedStyleImportCache = Map<string, string[]>
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
 const TAILWIND_CONTENT_HMR_NONCE_RE = /\n\/\* weapp-vite tailwind-content [^*\n]+ \*\/$/
 const VITE_PREPROCESS_STYLE_RE = /\.(?:acss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
+const TAILWIND_GENERATOR_PLACEHOLDER_RE = /\/\*! weapp-tailwindcss generator-placeholder \*\/\s*(?:@source\b[^;]*;?\s*)?/g
+
+const pendingOwnerStyleSources = new WeakMap<CompilerContext, Map<string, string[]>>()
+
+export function consumePendingOwnerStyleSources(ctx: CompilerContext) {
+  const sources = pendingOwnerStyleSources.get(ctx)
+  pendingOwnerStyleSources.delete(ctx)
+  return sources
+}
+
+export function recordPendingOwnerStyleSource(ctx: CompilerContext, fileName: string, css: string) {
+  const userCss = css.replace(TAILWIND_GENERATOR_PLACEHOLDER_RE, '').trim()
+  if (!userCss) {
+    return
+  }
+  const sources = pendingOwnerStyleSources.get(ctx) ?? new Map<string, string[]>()
+  const fragments = sources.get(fileName) ?? []
+  if (!fragments.includes(userCss)) {
+    fragments.push(userCss)
+  }
+  sources.set(fileName, fragments)
+  pendingOwnerStyleSources.set(ctx, sources)
+}
 
 function stripLeadingBlankLines(code: string) {
   return code.replace(LEADING_BLANK_LINES_RE, '')
@@ -794,6 +817,7 @@ async function generateBundleSharedCss(
   analysis: BundleStyleAnalysis,
   resolvedConfig?: ResolvedConfig,
 ) {
+  pendingOwnerStyleSources.delete(ctx)
   const sharedStyles = collectSharedStyleEntries(ctx, configService)
   const {
     facadeChunks,
@@ -838,6 +862,9 @@ async function generateBundleSharedCss(
       configService,
       sharedStyleImportCache,
     )
+    if (group.fragments.some(fragment => fragment.includes('weapp-tailwindcss generator-placeholder'))) {
+      recordPendingOwnerStyleSource(ctx, group.fileName, cssWithImports)
+    }
     emitCssAssetIfChanged(ctx, this, bundle, group.fileName, cssWithImports)
     emitted.add(normalizedFileName)
   }

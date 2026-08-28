@@ -1,6 +1,7 @@
 import type { OutputBundle } from 'rolldown'
 import { Buffer } from 'node:buffer'
 import { describe, expect, it } from 'vitest'
+import { recordPendingOwnerStyleSource } from './css'
 import { createOutputFinalizerPlugin, mayNeedTemplateNormalization, normalizeGraphOnlyAssets, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
 
 function createBundleAssetEmitter(bundle: OutputBundle) {
@@ -21,6 +22,37 @@ async function runGenerateBundle(plugin: ReturnType<typeof createOutputFinalizer
 }
 
 describe('weapp-vite output finalizer', () => {
+  it('merges user CSS remembered from a Tailwind Vite asset into the final owner output', async () => {
+    const ctx = {
+      configService: {
+        outputExtensions: { wxss: 'wxss' },
+      },
+      runtimeState: {
+        build: {
+          output: { emittedSource: new Map() },
+        },
+      },
+    } as any
+    recordPendingOwnerStyleSource(
+      ctx,
+      'app.wxss',
+      '.author{color:#893a6d}\n/*! weapp-tailwindcss generator-placeholder */\n@source "./**/*.{vue}";',
+    )
+    const bundle = {
+      'app.wxss': {
+        type: 'asset',
+        fileName: 'app.wxss',
+        source: '.flex{display:flex}',
+      },
+    } as unknown as OutputBundle
+
+    await runGenerateBundle(createOutputFinalizerPlugin(ctx), bundle)
+
+    expect((bundle['app.wxss'] as any).source).toContain('.flex{display:flex}')
+    expect((bundle['app.wxss'] as any).source).toContain('.author{color:#893a6d}')
+    expect((bundle['app.wxss'] as any).source).not.toContain('generator-placeholder')
+  })
+
   it('maps graph-only virtual assets back to physical owner outputs', () => {
     const logicalAsset = 'weapp_vite_external/graph/weapp-vite:logical-entry:layout:D%3A%2Fproject%2Fsrc%2Flayouts%2Fdefault%2Findex.vue:module.wxss'
     const sidecarAsset = 'weapp_vite_external/graph/weapp-vite:sidecar:style:D%3A%2Fproject%2Fsrc%2Fapp.ts:D%3A%2Fproject%2Fsrc%2Fapp.css:module.wxss'
