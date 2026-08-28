@@ -36,7 +36,7 @@ describe('weapp-vite output finalizer', () => {
     recordPendingOwnerStyleSource(
       ctx,
       'app.wxss',
-      '.author{color:#893a6d}\n/*! weapp-tailwindcss generator-placeholder */\n@source "./**/*.{vue}";',
+      '.author{color:#893a6d}\n/*! weapp-tailwindcss generator-placeholder */\n@plugin "@iconify/tailwind4" { prefixes: mdi; }\n@source "./**/*.{vue}";',
     )
     const bundle = {
       'app.wxss': {
@@ -51,6 +51,7 @@ describe('weapp-vite output finalizer', () => {
     expect((bundle['app.wxss'] as any).source).toContain('.flex{display:flex}')
     expect((bundle['app.wxss'] as any).source).toContain('.author{color:#893a6d}')
     expect((bundle['app.wxss'] as any).source).not.toContain('generator-placeholder')
+    expect((bundle['app.wxss'] as any).source).not.toMatch(/@(plugin|source)\b/)
   })
 
   it('maps graph-only virtual assets back to physical owner outputs', () => {

@@ -4,6 +4,7 @@ import type { CompilerContext } from '../context'
 import type { StyleEntry } from '../types'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+import postcss from 'postcss'
 import { preprocessCSS } from 'vite'
 import { parseLogicalEntryId, parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { isSourceStyleExtension } from '../platforms/sourceAssets'
@@ -73,7 +74,19 @@ type SharedStyleImportCache = Map<string, string[]>
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
 const TAILWIND_CONTENT_HMR_NONCE_RE = /\n\/\* weapp-vite tailwind-content [^*\n]+ \*\/$/
 const VITE_PREPROCESS_STYLE_RE = /\.(?:acss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
-const TAILWIND_GENERATOR_PLACEHOLDER_RE = /\/\*! weapp-tailwindcss generator-placeholder \*\/\s*(?:@source\b[^;]*;?\s*)?/g
+const TAILWIND_GENERATOR_PLACEHOLDER = 'weapp-tailwindcss generator-placeholder'
+const TAILWIND_GENERATION_AT_RULES = new Set([
+  'apply',
+  'config',
+  'custom-variant',
+  'plugin',
+  'reference',
+  'source',
+  'tailwind',
+  'theme',
+  'utility',
+  'variant',
+])
 
 const pendingOwnerStyleSources = new WeakMap<CompilerContext, Map<string, string[]>>()
 
@@ -84,14 +97,31 @@ export function consumePendingOwnerStyleSources(ctx: CompilerContext) {
 }
 
 export function recordPendingOwnerStyleSource(ctx: CompilerContext, fileName: string, css: string) {
-  const userCss = css.replace(TAILWIND_GENERATOR_PLACEHOLDER_RE, '').trim()
-  if (!userCss) {
+  const root = postcss.parse(css)
+  root.walkComments((comment) => {
+    if (comment.text.trim().replace(/^!\s*/, '') === TAILWIND_GENERATOR_PLACEHOLDER) {
+      comment.remove()
+    }
+  })
+  root.walkAtRules((atRule) => {
+    const name = atRule.name.toLowerCase()
+    if (TAILWIND_GENERATION_AT_RULES.has(name)
+      || (name === 'import' && /(?:^|["'])tailwindcss(?:["']|$)/.test(atRule.params))) {
+      atRule.remove()
+    }
+  })
+  const userFragments = root.nodes
+    .map(node => node.toString().trim())
+    .filter(Boolean)
+  if (!userFragments.length) {
     return
   }
   const sources = pendingOwnerStyleSources.get(ctx) ?? new Map<string, string[]>()
   const fragments = sources.get(fileName) ?? []
-  if (!fragments.includes(userCss)) {
-    fragments.push(userCss)
+  for (const fragment of userFragments) {
+    if (!fragments.includes(fragment)) {
+      fragments.push(fragment)
+    }
   }
   sources.set(fileName, fragments)
   pendingOwnerStyleSources.set(ctx, sources)
@@ -862,7 +892,7 @@ async function generateBundleSharedCss(
       configService,
       sharedStyleImportCache,
     )
-    if (group.fragments.some(fragment => fragment.includes('weapp-tailwindcss generator-placeholder'))) {
+    if (group.fragments.some(fragment => fragment.includes(TAILWIND_GENERATOR_PLACEHOLDER))) {
       recordPendingOwnerStyleSource(ctx, group.fileName, cssWithImports)
     }
     emitCssAssetIfChanged(ctx, this, bundle, group.fileName, cssWithImports)

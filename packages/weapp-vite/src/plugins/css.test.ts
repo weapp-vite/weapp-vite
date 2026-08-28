@@ -48,7 +48,7 @@ vi.mock('./utils/cache', () => ({
   pathExists: pathExistsMock,
 }))
 
-const { css } = await import('./css')
+const { consumePendingOwnerStyleSources, css } = await import('./css')
 const { emitStyleSidecarAsset } = await import('./css')
 
 function invokeHook<T extends (...args: any[]) => any>(
@@ -757,6 +757,57 @@ describe('css plugin shared style injection', () => {
     expect(appStyles).toHaveLength(1)
     expect(appStyles[0]?.source).toContain('.app-base{display:block}')
     expect(appStyles[0]?.source).toContain('.text-red-500{color:red}')
+  })
+
+  it('keeps Tailwind entry directives out of pending owner styles', async () => {
+    const appEntry = resolve(absoluteSrcRoot, 'app.vue')
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        facadeModuleId: createLogicalEntryId(appEntry, 'app'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+        viteMetadata: {
+          importedAssets: new Set(),
+          importedCss: new Set(['app-base.css', 'app-tailwind.css']),
+          importedScripts: new Set(),
+          importedUrls: new Set(),
+        },
+      },
+      'app-base.css': {
+        type: 'asset',
+        fileName: 'app-base.css',
+        source: '.author{color:#893a6d}',
+      },
+      'app-tailwind.css': {
+        type: 'asset',
+        fileName: 'app-tailwind.css',
+        source: [
+          '/*! weapp-tailwindcss generator-placeholder */',
+          '@plugin "@iconify/tailwind4" { prefixes: mdi; }',
+          '@source "./**/*.{vue}";',
+          'page { background: #f6f7fb; }',
+        ].join('\n'),
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    const pending = consumePendingOwnerStyleSources(ctx)?.get('app.wxss')
+    expect(pending).toEqual([
+      '.author{color:#893a6d}',
+      'page { background: #f6f7fb; }',
+    ])
+    expect(pending?.join('\n')).not.toMatch(/@(plugin|source)\b/)
   })
 
   it('reuses processed css asset source for multiple chunk owners', async () => {

@@ -470,6 +470,8 @@ describe.sequential('DevTools CLI workflow runtime', () => {
       cwd: TEMPLATE_ROOT,
       label: 'ide:devtools-cli-workflow',
     })
+    const appWxss = await fs.readFile(path.join(TEMPLATE_ROOT, 'dist/app.wxss'), 'utf8')
+    expect(appWxss).not.toMatch(/@(plugin|source)\b/)
     const wvOpen = await runWeappViteCli([
       'open',
       TEMPLATE_ROOT,
