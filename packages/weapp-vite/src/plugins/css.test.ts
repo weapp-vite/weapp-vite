@@ -315,16 +315,21 @@ describe('css plugin shared style injection', () => {
     expect(emitted).toEqual([])
   })
 
-  it('preprocesses dev Sass assets from raw source instead of Vite placeholders', async () => {
+  it.each([
+    { isDev: true, mode: 'dev', placeholderToken: '__VITE_ASSET__$shop_bottom__' },
+    { isDev: true, mode: 'dev', placeholderToken: '__VITE_PUBLIC_ASSET__$shop_bottom__' },
+    { isDev: false, mode: 'production', placeholderToken: '__VITE_ASSET__$shop_bottom__' },
+    { isDev: false, mode: 'production', placeholderToken: '__VITE_PUBLIC_ASSET__$shop_bottom__' },
+  ])('preprocesses $mode Sass assets from raw source instead of $placeholderToken', async ({ isDev, placeholderToken }) => {
     const appScssPath = resolve(absoluteSrcRoot, 'app.scss')
     const rawScss = '.page{background:url(../../static/images/shop-bottom.png)}'
-    const vitePlaceholder = '.page{background:url(__VITE_ASSET__$shop_bottom__)}'
+    const vitePlaceholder = `.page{background:url(${placeholderToken})}`
     readFileMock.mockResolvedValueOnce(rawScss)
     const plugin = css({
       ...ctx,
       configService: {
         ...configService,
-        isDev: true,
+        isDev,
       },
     } as unknown as CompilerContext)[0]
     const bundle: Record<string, any> = {
@@ -341,6 +346,33 @@ describe('css plugin shared style injection', () => {
 
     expect(preprocessCSSMock).toHaveBeenCalledWith(rawScss, appScssPath, resolvedConfig)
     expect(preprocessCSSMock).not.toHaveBeenCalledWith(vitePlaceholder, appScssPath, resolvedConfig)
+  })
+
+  it.each(['scss', 'sass', 'less', 'styl'])('preprocesses source-style .%s assets from raw source when Vite leaves an asset placeholder', async (extension) => {
+    const stylePath = resolve(absoluteSrcRoot, `styles/asset.${extension}`)
+    const rawScss = '.asset{background:url(../assets/image.png)}'
+    const vitePlaceholder = '.asset{background:url(__VITE_ASSET__$image__)}'
+    readFileMock.mockResolvedValueOnce(rawScss)
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      [`styles/asset.${extension}`]: {
+        type: 'asset',
+        fileName: `styles/asset.${extension}`,
+        originalFileNames: [stylePath],
+        source: vitePlaceholder,
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
+
+    expect(preprocessCSSMock).toHaveBeenCalledWith(rawScss, stylePath, resolvedConfig)
+    expect(preprocessCSSMock).not.toHaveBeenCalledWith(vitePlaceholder, stylePath, resolvedConfig)
+    expect(bundle[`styles/asset.${extension}`]).toBeUndefined()
+    expect(emitted).toContainEqual(expect.objectContaining({
+      fileName: 'styles/asset.wxss',
+      source: rawScss,
+    }))
   })
 
   it('emits wxss asset with shared style imports for modules without local styles', async () => {
