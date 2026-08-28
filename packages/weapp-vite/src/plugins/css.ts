@@ -36,6 +36,12 @@ type OutputChunkWithViteMetadata = OutputChunk & {
 interface PreparedStyleAsset {
   processedCss: string
 }
+interface PreparedOwnedStyleAsset {
+  fileName: string
+  modulePath: string
+  normalizedFileName: string
+  processedCss: string
+}
 
 interface SharedStyleEmissionTask {
   entry: StyleEntry
@@ -460,27 +466,41 @@ async function handleBundleEntry(
     return cached
   }
 
-  const emitStyleAssetForOwner = async (owner: string, preprocessId: string, shouldPreprocess: boolean) => {
+  const prepareOwnedStyleAsset = async (
+    owner: string,
+    preprocessId: string,
+    shouldPreprocess: boolean,
+  ): Promise<PreparedOwnedStyleAsset | undefined> => {
     const fileName = resolveOutputStyleFileName(configService, owner)
     if (!fileName) {
       return undefined
     }
-    const normalizedFileName = toPosixPath(fileName)
     const rawCss = asset.source.toString()
     const { processedCss } = await prepareStyleAssetForOwner(rawCss, preprocessId, shouldPreprocess)
-
-    const cssWithImports = injectSharedStyleImportsCached(
-      processedCss,
-      owner,
+    return {
       fileName,
+      modulePath: owner,
+      normalizedFileName: toPosixPath(fileName),
+      processedCss,
+    }
+  }
+
+  const emitStyleAssetForOwner = async (owner: string, preprocessId: string, shouldPreprocess: boolean) => {
+    const prepared = await prepareOwnedStyleAsset(owner, preprocessId, shouldPreprocess)
+    if (!prepared) {
+      return undefined
+    }
+    const cssWithImports = injectSharedStyleImportsCached(
+      prepared.processedCss,
+      prepared.modulePath,
+      prepared.fileName,
       sharedStyles,
       configService,
       sharedStyleImportCache,
     )
-
-    emitCssAssetIfChanged(ctx, this, bundle, fileName, cssWithImports)
-    emitted.add(normalizedFileName)
-    return normalizedFileName
+    emitCssAssetIfChanged(ctx, this, bundle, prepared.fileName, cssWithImports)
+    emitted.add(prepared.normalizedFileName)
+    return prepared.normalizedFileName
   }
 
   const isCssAsset = bundleKey.endsWith('.css')
@@ -562,15 +582,14 @@ async function handleBundleEntry(
     return
   }
 
-  const emittedOwners = await Promise.all(Array.from(owners).map(async (owner) => {
-    const modulePath = owner
-    return await emitStyleAssetForOwner(modulePath, resolveOriginalStylePath(), !isCssAsset)
-  }))
-
+  const preparedOwners = (await Promise.all(Array.from(owners).map(async (owner) => {
+    return await prepareOwnedStyleAsset(owner, resolveOriginalStylePath(), !isCssAsset)
+  }))).filter((prepared): prepared is PreparedOwnedStyleAsset => prepared !== undefined)
   const normalizedBundleKey = toPosixPath(bundleKey)
-  if (!isCssAsset || !emittedOwners.includes(normalizedBundleKey)) {
+  if (!isCssAsset || !preparedOwners.some(prepared => prepared.normalizedFileName === normalizedBundleKey)) {
     delete bundle[bundleKey]
   }
+  return preparedOwners
 }
 
 async function emitSharedStyleEntries(
@@ -781,7 +800,38 @@ async function generateBundleSharedCss(
     return handleBundleEntry.call(this, ctx, bundle, bundleKey, asset, configService, sharedStyles, ownersByCssAsset, emitted, sharedStyleImportCache, resolvedConfig)
   })
 
-  await Promise.all(tasks)
+  const preparedOwnerStyles = (await Promise.all(tasks))
+    .flatMap(result => result ?? [])
+  const ownerStyleGroups = new Map<string, {
+    fileName: string
+    fragments: string[]
+    modulePath: string
+  }>()
+  for (const prepared of preparedOwnerStyles) {
+    let group = ownerStyleGroups.get(prepared.normalizedFileName)
+    if (!group) {
+      group = {
+        fileName: prepared.fileName,
+        fragments: [],
+        modulePath: prepared.modulePath,
+      }
+      ownerStyleGroups.set(prepared.normalizedFileName, group)
+    }
+    group.fragments.push(prepared.processedCss)
+  }
+  for (const [normalizedFileName, group] of ownerStyleGroups) {
+    const mergedCss = group.fragments.join('\n')
+    const cssWithImports = injectSharedStyleImportsCached(
+      mergedCss,
+      group.modulePath,
+      group.fileName,
+      sharedStyles,
+      configService,
+      sharedStyleImportCache,
+    )
+    emitCssAssetIfChanged(ctx, this, bundle, group.fileName, cssWithImports)
+    emitted.add(normalizedFileName)
+  }
   await emitSharedStyleEntries.call(this, ctx, sharedStyles, emitted, configService, bundle, resolvedConfig)
   await emitSharedStyleImportsForChunks.call(this, ctx, sharedStyles, emitted, configService, bundle, facadeChunks, sharedStyleImportCache)
 }
