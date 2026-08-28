@@ -65,4 +65,16 @@ describe('stateful HMR sidecar plugin', () => {
       await rm(root, { force: true, recursive: true })
     }
   })
+
+  it('leaves internal virtual sidecar ids to their owning plugin', async () => {
+    const addWatchFile = vi.fn()
+    const plugin = createStatefulHmrSidecarPlugin()
+    const load = plugin.load as (...args: any[]) => any
+
+    await expect(load.call(
+      { addWatchFile },
+      '\0weapp-vite:managed-tailwindcss-entry:0.css?weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fapp.vue&weapp-vite-sidecar=style&lang.css',
+    )).resolves.toBeUndefined()
+    expect(addWatchFile).not.toHaveBeenCalled()
+  })
 })

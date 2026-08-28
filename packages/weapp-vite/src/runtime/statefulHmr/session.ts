@@ -263,12 +263,15 @@ class StatefulHmrSession {
     if (output.type === 'Noop') {
       return false
     }
+    const dirtyReasonSummary = this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary
+    const allowTailwindContentPatch = dirtyReasonSummary.some(reason => reason.startsWith('tailwind-content:'))
     if (!isSafeJavaScriptPatch(
       files,
       output,
-      this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
+      dirtyReasonSummary,
       this.entryIds,
       this.server.config.root,
+      { allowTailwindContent: allowTailwindContentPatch },
     )) {
       if (shouldRestartStatefulHmrServer(files, this.ctx.configService?.configFileDependencies)) {
         this.requestServerRestart()
@@ -286,6 +289,10 @@ class StatefulHmrSession {
         this.requestFullBuild(files)
       }
       return false
+    }
+    if (allowTailwindContentPatch) {
+      // JS patch 与 Tailwind 样式快照可并行更新，避免仅脚本变更被错误降级为全量重建。
+      this.requestSnapshotRefresh(files)
     }
     void this.adapter.registerPatchModules(output.code).then(async () => {
       const code = await transformJavaScript(output.code, output.filename)
@@ -513,6 +520,7 @@ export function isSafeJavaScriptPatch(
   dirtyReasonSummary: string[] = [],
   entryIds?: Iterable<string>,
   root?: string,
+  options: { allowTailwindContent?: boolean } = {},
 ): output is Extract<StatefulHmrDevEngineUpdate, { type: 'Patch' }> {
   const normalizedEntryIds = entryIds
     ? new Set(Array.from(entryIds, entryId => normalizeFsResolvedId(entryId)))
@@ -524,7 +532,7 @@ export function isSafeJavaScriptPatch(
       return normalizedEntryIds.has(normalizeFsResolvedId(absoluteFile))
     }))
     && !output.changedIds?.some(isNonJavaScriptSidecarId)
-    && !dirtyReasonSummary.some(isUnsafeStatefulHmrReason)
+    && !dirtyReasonSummary.some(reason => isUnsafeStatefulHmrReason(reason, options.allowTailwindContent === true))
 }
 
 export function requiresStatefulHmrSnapshot(file: string, dirtyReasonSummary: string[] = []): boolean {
@@ -537,7 +545,10 @@ export function isStatefulHmrAssetFile(file: string): boolean {
   return !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
 }
 
-function isUnsafeStatefulHmrReason(reason: string): boolean {
+function isUnsafeStatefulHmrReason(reason: string, allowTailwindContent = false): boolean {
+  if (allowTailwindContent && reason.startsWith('tailwind-content:')) {
+    return false
+  }
   return /^(?:entry-json-only|entry-local-asset|entry-style-only|react-template|tailwind-content):/.test(reason)
 }
 

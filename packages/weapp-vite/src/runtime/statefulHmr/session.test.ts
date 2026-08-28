@@ -64,6 +64,14 @@ describe('stateful hmr session', () => {
     expect(isSafeJavaScriptPatch(['src/pages/index.vue'], patch, ['entry-style-only:1'])).toBe(false)
     expect(isSafeJavaScriptPatch(['src/pages/index.vue'], patch, ['entry-json-only:1'])).toBe(false)
     expect(isSafeJavaScriptPatch(['src/pages/index.vue'], patch, ['entry-direct:1', 'tailwind-content:1'])).toBe(false)
+    expect(isSafeJavaScriptPatch(
+      ['src/pages/index.vue'],
+      patch,
+      ['entry-direct:1', 'tailwind-content:1'],
+      undefined,
+      undefined,
+      { allowTailwindContent: true },
+    )).toBe(true)
     expect(isSafeJavaScriptPatch(['src/pages/index.vue'], {
       ...patch,
       changedIds: [
