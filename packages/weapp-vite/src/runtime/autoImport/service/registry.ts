@@ -9,6 +9,7 @@ import { resolveAstEngine } from '../../../ast'
 import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import { logger, resolvedComponentName } from '../../../context/shared'
 import { extractConfigFromVue, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
+import { toKebabCaseComponentName } from '../../../utils/json'
 import { extractComponentProps } from '../../componentProps'
 import { requireConfigService } from '../../utils/requireConfigService'
 import { getAutoImportConfig, getHtmlCustomDataSettings, getTypedComponentsSettings, getVueComponentsSettings } from '../config'
@@ -32,6 +33,7 @@ interface RegistryState {
   ctx: MutableCompilerContext
   registry: Map<string, LocalAutoImportMatch>
   autoImportState: MutableCompilerContext['runtimeState']['autoImport']
+  normalizedLocalComponents: Map<string, LocalAutoImportMatch>
   resolverComponentNames: Set<string>
   componentMetadataMap: Map<string, ComponentMetadata>
   logWarnOnce: (message: string) => void
@@ -40,6 +42,51 @@ interface RegistryState {
   scheduleTypedComponentsWrite: (shouldWrite: boolean) => void
   scheduleHtmlCustomDataWrite: (shouldWrite: boolean) => void
   scheduleVueComponentsWrite: (shouldWrite: boolean) => void
+}
+
+export function rebuildNormalizedLocalComponents(
+  registry: Map<string, LocalAutoImportMatch>,
+  normalizedLocalComponents: Map<string, LocalAutoImportMatch>,
+) {
+  normalizedLocalComponents.clear()
+  const ambiguousNames = new Set<string>()
+  for (const [componentName, match] of registry) {
+    const normalizedName = toKebabCaseComponentName(componentName)
+    if (ambiguousNames.has(normalizedName)) {
+      continue
+    }
+    if (normalizedLocalComponents.has(normalizedName)) {
+      normalizedLocalComponents.delete(normalizedName)
+      ambiguousNames.add(normalizedName)
+      continue
+    }
+    normalizedLocalComponents.set(normalizedName, match)
+  }
+}
+
+function refreshNormalizedLocalComponent(
+  registry: Map<string, LocalAutoImportMatch>,
+  normalizedLocalComponents: Map<string, LocalAutoImportMatch>,
+  normalizedName: string,
+) {
+  let normalizedMatch: LocalAutoImportMatch | undefined
+  for (const [componentName, match] of registry) {
+    if (toKebabCaseComponentName(componentName) !== normalizedName) {
+      continue
+    }
+    if (normalizedMatch) {
+      normalizedLocalComponents.delete(normalizedName)
+      return
+    }
+    normalizedMatch = match
+  }
+
+  if (normalizedMatch) {
+    normalizedLocalComponents.set(normalizedName, normalizedMatch)
+  }
+  else {
+    normalizedLocalComponents.delete(normalizedName)
+  }
 }
 
 export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
@@ -67,6 +114,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     const { baseName, templatePath, jsEntry, jsonPath } = paths
     let removed = false
     const removedNames: string[] = []
+    const removedNormalizedNames = new Set<string>()
     for (const [key, value] of state.registry) {
       if (value.kind !== 'local') {
         continue
@@ -85,8 +133,12 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
         if (state.registry.delete(key)) {
           removed = true
           removedNames.push(key)
+          removedNormalizedNames.add(toKebabCaseComponentName(key))
         }
       }
+    }
+    for (const normalizedName of removedNormalizedNames) {
+      refreshNormalizedLocalComponent(state.registry, state.normalizedLocalComponents, normalizedName)
     }
 
     return { removed, removedNames }
@@ -191,7 +243,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
       state.ctx.configService.relativeCwd(sourceWithoutExt),
     )}`
 
-    state.registry.set(componentName, {
+    const match: LocalAutoImportMatch = {
       kind: 'local',
       entry: {
         path: resolvedJsEntry,
@@ -205,7 +257,9 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
         from,
         resolvedId: resolvedJsEntry,
       },
-    })
+    }
+    state.registry.set(componentName, match)
+    refreshNormalizedLocalComponent(state.registry, state.normalizedLocalComponents, toKebabCaseComponentName(componentName))
 
     state.scheduleManifestWrite(true)
 

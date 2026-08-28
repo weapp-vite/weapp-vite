@@ -12,6 +12,7 @@ import { defaultExcluded } from '../defaults'
 import { getAutoImportConfig } from '../runtime/autoImport/config'
 import { createSidecarWatchOptions } from '../runtime/watch/options'
 import { findJsEntry, findVueEntry, toPosixPath, touch } from '../utils'
+import { toKebabCaseComponentName } from '../utils/json'
 
 interface AutoImportState {
   ctx: CompilerContext
@@ -275,6 +276,21 @@ async function runAutoImportBatch<T>(
   }
   return await task()
 }
+function findMatchingComponentName(components: ComponentsMap, componentName: string) {
+  if (hasOwn(components, componentName)) {
+    return componentName
+  }
+
+  const normalizedComponentName = toKebabCaseComponentName(componentName)
+  for (const candidateName in components) {
+    if (
+      hasOwn(components, candidateName)
+      && toKebabCaseComponentName(candidateName) === normalizedComponentName
+    ) {
+      return candidateName
+    }
+  }
+}
 
 async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath: string) {
   const { wxmlService, configService, autoImportService } = ctx
@@ -290,12 +306,13 @@ async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath:
   const touchedImporters = new Set<string>()
   const entries = Array.from(wxmlService.wxmlComponentsMap.entries()) as Array<[string, ComponentsMap]>
   for (const [baseName, components] of entries) {
-    if (!hasOwn(components, componentName)) {
+    const matchingComponentName = findMatchingComponentName(components, componentName)
+    if (!matchingComponentName) {
       continue
     }
 
     const pendingEntriesByImporter = ctx.runtimeState?.autoImport?.pendingEntriesByImporter
-    const resolvedComponent = autoImportService?.resolve(componentName, baseName)
+    const resolvedComponent = autoImportService?.resolve(matchingComponentName, baseName)
     const pendingEntry = resolvedComponent?.value.from
     if (pendingEntriesByImporter && pendingEntry) {
       const pendingEntries = pendingEntriesByImporter.get(baseName) ?? new Set<string>()

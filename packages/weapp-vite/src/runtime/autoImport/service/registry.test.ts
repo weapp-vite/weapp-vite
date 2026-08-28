@@ -105,6 +105,7 @@ function createState() {
       jsonService,
     },
     registry: new Map<string, any>(),
+    normalizedLocalComponents: new Map(),
     autoImportState,
     resolverComponentNames: new Set<string>(),
     componentMetadataMap: new Map<string, any>(),
@@ -175,9 +176,14 @@ describe('autoImport registry helpers', () => {
 
   it('removes registered local component by template/js/json/baseName', () => {
     const state = createState()
-    state.registry.set('CompA', createLocalEntry('/project/src/components/a/index'))
-    state.registry.set('CompB', createLocalEntry('/project/src/components/b/index'))
+    const compA = createLocalEntry('/project/src/components/a/index')
+    const compB = createLocalEntry('/project/src/components/b/index')
+    const semanticDuplicate = createLocalEntry('/project/src/components/a-kebab/index')
+    state.registry.set('CompA', compA)
+    state.registry.set('comp-a', semanticDuplicate)
+    state.registry.set('CompB', compB)
     state.registry.set('ResolverOnly', { kind: 'resolver', value: { name: 'ResolverOnly', from: 'pkg/a' } })
+    state.normalizedLocalComponents.set('comp-b', compB)
 
     const helpers = createRegistryHelpers(state)
 
@@ -185,10 +191,17 @@ describe('autoImport registry helpers', () => {
       removed: true,
       removedNames: ['CompA'],
     })
+    expect(state.normalizedLocalComponents.get('comp-a')).toBe(semanticDuplicate)
     expect(helpers.removeRegisteredComponent({ jsEntry: '/project/src/components/b/index.js' })).toEqual({
       removed: true,
       removedNames: ['CompB'],
     })
+    expect(state.normalizedLocalComponents.has('comp-b')).toBe(false)
+    expect(helpers.removeRegisteredComponent({ jsEntry: '/project/src/components/a-kebab/index.js' })).toEqual({
+      removed: true,
+      removedNames: ['comp-a'],
+    })
+    expect(state.normalizedLocalComponents.has('comp-a')).toBe(false)
     expect(helpers.removeRegisteredComponent({ baseName: '/project/src/components/missing/index' })).toEqual({
       removed: false,
       removedNames: [],

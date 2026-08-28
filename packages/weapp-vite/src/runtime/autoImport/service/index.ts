@@ -8,7 +8,7 @@ import {
 import { createAutoImportActions } from './actions'
 import { createMetadataHelpers } from './metadata'
 import { createOutputsHelpers } from './outputs'
-import { createRegistryHelpers } from './registry'
+import { createRegistryHelpers, rebuildNormalizedLocalComponents } from './registry'
 import { createResolverHelpers } from './resolver'
 import { createAutoImportScheduling } from './scheduling'
 import { logWarnOnce } from './shared'
@@ -19,6 +19,8 @@ export type { AutoImportMatch, AutoImportService, ResolverAutoImportMatch } from
 export function createAutoImportService(ctx: MutableCompilerContext): AutoImportService {
   const autoImportState = ctx.runtimeState.autoImport
   const registry = autoImportState.registry
+  const normalizedLocalComponents = autoImportState.normalizedLocalComponents
+  rebuildNormalizedLocalComponents(registry, normalizedLocalComponents)
   const resolvedResolverComponents = autoImportState.resolvedResolverComponents
   const manifestFileName = DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME
   const manifestCache = new Map<string, string>()
@@ -97,6 +99,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
   const registryHelpers = createRegistryHelpers({
     ctx,
     registry,
+    normalizedLocalComponents,
     autoImportState,
     resolverComponentNames,
     componentMetadataMap,
@@ -112,6 +115,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
 
   const actions = createAutoImportActions({
     registry,
+    normalizedLocalComponents,
     autoImportState,
     resolvedResolverComponents,
     componentMetadataMap,

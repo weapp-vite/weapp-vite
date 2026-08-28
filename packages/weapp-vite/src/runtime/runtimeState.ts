@@ -107,6 +107,7 @@ export interface RuntimeState {
   }
   autoImport: {
     registry: Map<string, LocalAutoImportMatch>
+    normalizedLocalComponents: Map<string, LocalAutoImportMatch>
     resolvedResolverComponents: Map<string, string>
     matcher?: (input: string) => boolean
     matcherKey: string
@@ -347,6 +348,7 @@ export function createRuntimeState(): RuntimeState {
     },
     autoImport: {
       registry: new Map<string, LocalAutoImportMatch>(),
+      normalizedLocalComponents: new Map<string, LocalAutoImportMatch>(),
       resolvedResolverComponents: new Map<string, string>(),
       matcherKey: '',
       preparedGlobsKey: undefined,

@@ -276,12 +276,12 @@ describe('createAutoImportAugmenter', () => {
     )
   })
 
-  it('registers existing local SFC candidates for unresolved template tags before retrying', async () => {
+  it('registers existing kebab SFC candidates for unresolved Pascal template tags before retrying', async () => {
     const tempRoot = path.resolve(import.meta.dirname, '../../../test/__temp__')
     await fs.ensureDir(tempRoot)
     const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-augmenter-'))
     const srcRoot = path.join(tempDir, 'src')
-    const hotCardPath = path.join(srcRoot, 'components/HotCard/index.vue')
+    const hotCardPath = path.join(srcRoot, 'components/hot-card.vue')
     await fs.ensureDir(path.dirname(hotCardPath))
     await fs.writeFile(hotCardPath, '<template><view>hot</view></template>', 'utf8')
 
@@ -290,8 +290,8 @@ describe('createAutoImportAugmenter', () => {
       if (registered && name === 'HotCard') {
         return {
           value: {
-            name: 'HotCard',
-            from: '/components/HotCard/index',
+            name: 'hot-card',
+            from: '/components/hot-card',
             resolvedId: hotCardPath,
           },
         }
@@ -332,10 +332,10 @@ describe('createAutoImportAugmenter', () => {
       expect(registerPotentialComponent).toHaveBeenCalledTimes(1)
       expect(resolve).toHaveBeenCalledWith('HotCard', path.join(srcRoot, 'pages/index/index'))
       expect(json.usingComponents).toEqual({
-        HotCard: '/components/HotCard/index',
+        'hot-card': '/components/hot-card',
       })
-      expect(injectedEntries).toEqual(['/components/HotCard/index'])
-      expect(componentEntryMap.get('components/HotCard/index')).toBe(hotCardPath)
+      expect(injectedEntries).toEqual(['/components/hot-card'])
+      expect(componentEntryMap.get('components/hot-card')).toBe(hotCardPath)
     }
     finally {
       await fs.remove(tempDir)
