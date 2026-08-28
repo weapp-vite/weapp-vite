@@ -102,6 +102,11 @@ definePageJson({ navigationBarTitleText: '旧标题' })
           build: {
             hmr: {
               dirtyVueEntryIds,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
               profile: {
                 eventId: 'hmr-json-1',
                 dirtyReasonSummary: ['entry-json-only:1'],
