@@ -43,4 +43,26 @@ describe('stateful HMR sidecar plugin', () => {
       await rm(root, { force: true, recursive: true })
     }
   })
+
+  it('loads style sidecars from their decoded source id', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'weapp-vite-stateful-style-sidecar-'))
+    const sourceId = path.join(root, 'index.scss')
+    const ownerId = path.join(root, 'index.vue')
+    const addWatchFile = vi.fn()
+    try {
+      await writeFile(sourceId, '.page { color: red; }')
+      const plugin = createStatefulHmrSidecarPlugin()
+      const load = plugin.load as (...args: any[]) => any
+      const result = await load.call(
+        { addWatchFile },
+        `${sourceId}?weapp-vite-sidecar-owner=${encodeURIComponent(ownerId)}&weapp-vite-sidecar=style&lang.css`,
+      )
+
+      expect(result).toBe('.page { color: red; }')
+      expect(addWatchFile).toHaveBeenCalledWith(normalizePath(await realpath(sourceId)))
+    }
+    finally {
+      await rm(root, { force: true, recursive: true })
+    }
+  })
 })

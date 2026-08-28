@@ -250,4 +250,39 @@ describe('stateful HMR Vite adapter', () => {
       '__weapp_vite_hmr/update.js',
     ])
   })
+
+  it('fails a hung initial build instead of keeping the dev command alive', async () => {
+    const adapter = new StatefulHmrViteAdapter(
+      { build: { rolldownOptions: {} }, root: '/project' } as any,
+      {
+        environments: {
+          client: {
+            bundledDev: {
+              getRolldownOptions: async () => ({}),
+              listen: async () => {},
+              storeOutputFiles: () => {},
+            },
+          },
+        },
+      } as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+      {},
+      (async () => ({
+        ensureCurrentBuildFinish: () => new Promise<void>(() => {}),
+        getBundleState: async () => ({ lastBuildErrored: false }),
+        registerClient: async () => {},
+        run: async () => {},
+      })) as any,
+      5,
+    )
+
+    adapter.install()
+    const bundledDev = (adapter as any).bundledDev
+    await expect(bundledDev.listen()).rejects.toThrow('初始构建超时')
+  })
 })
