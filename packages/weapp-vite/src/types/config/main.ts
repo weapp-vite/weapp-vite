@@ -164,7 +164,7 @@ export interface WeappViteConfig {
    */
   cleanOutputsInDev?: boolean
   /**
-   * 内置 weapp-tailwindcss 集成。默认关闭。
+   * 内置 weapp-tailwindcss 集成。显式配置优先；未配置时，Tailwind CSS v4 且实际引入 `@import "tailwindcss"` 会自动启用。
    * - `true`: 使用默认配置和 `srcRoot/app.css` 入口
    * - `object`: 启用并传入 weapp-tailwindcss core options
    */

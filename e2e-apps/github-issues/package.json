@@ -25,7 +25,6 @@
     "@weapp-vite/dashboard": "workspace:*",
     "socket.io-client": "catalog:",
     "tailwindcss": "catalog:tailwind4",
-    "weapp-tailwindcss": "catalog:weapp-tailwindcss-fixed",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

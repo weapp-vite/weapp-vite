@@ -2,7 +2,6 @@ import type { OutputBundle } from 'rolldown'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import process from 'node:process'
-import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
@@ -514,7 +513,6 @@ const issue779CssPrePlugin = issue779CssPreEnabled
           return `@import "tailwindcss";\n.issue-779-pre-marker { color: rgb(1, 2, 3); }`
         },
       },
-      WeappTailwindcss(),
       {
         name: 'github-issues:issue-779-css-pipeline-probe',
         transform(code: string, id: string) {

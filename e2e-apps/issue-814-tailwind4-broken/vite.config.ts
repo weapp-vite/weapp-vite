@@ -1,5 +1,3 @@
-import path from 'pathe'
-import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
@@ -9,6 +7,12 @@ export default defineConfig({
       profileJson: true,
     },
     srcRoot: 'src',
+    tailwindcss: {
+      rem2rpx: true,
+      // Keep arbitrary-value classes in JS unchanged to simulate issue #814.
+      jsPreserveClass: className => className.includes('[') && className.includes(']'),
+      cssEntries: ['src/app.css'],
+    },
     wevu: {
       defaults: {
         component: {
@@ -20,14 +24,4 @@ export default defineConfig({
       },
     },
   },
-  plugins: [
-    WeappTailwindcss({
-      rem2rpx: true,
-      // Keep arbitrary-value classes in JS unchanged to simulate issue #814.
-      jsPreserveClass: className => className.includes('[') && className.includes(']'),
-      cssEntries: [
-        path.resolve(import.meta.dirname, 'src/app.css'),
-      ],
-    }),
-  ],
 })

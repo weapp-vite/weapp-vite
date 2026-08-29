@@ -8,6 +8,7 @@ import fs from 'node:fs'
 import process from 'node:process'
 import path from 'pathe'
 import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
+import { safeGetPackageInfoSync } from '../runtime/localPkg'
 import { changeFileExtension } from '../utils'
 import { applyOutputChunkTransform } from '../utils/outputChunk'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
@@ -20,9 +21,9 @@ import {
 } from './tailwindcssMarker'
 
 const CORE_NODE_RANGE = '^22.18.0 || >=24.11.0'
-const EXTERNAL_PLUGIN_PREFIX = 'weapp-tailwindcss:'
 const MANAGED_PLUGIN_NAME = 'weapp-vite:tailwindcss'
 const VIRTUAL_ENTRY_PREFIX = '\0weapp-vite:managed-tailwindcss-entry:'
+const TAILWIND_IMPORT_RE = /@import\s+(?:url\(\s*)?['"]tailwindcss['"]\s*\)?(?:\s|;|$)/
 
 type TailwindCoreContext = ReturnType<typeof createTailwindContext>
 
@@ -30,6 +31,7 @@ interface ResolvedManagedTailwindcssOptions {
   basedir: string
   cssEntries: string[]
   generatorTarget: WeappTailwindcssGeneratorTarget
+  autoDetected: boolean
   options: UserDefinedOptions
 }
 
@@ -57,7 +59,25 @@ export function resolveManagedTailwindcssOptions(
   ctx: CompilerContext,
 ): ResolvedManagedTailwindcssOptions | undefined {
   const input = ctx.configService.weappViteConfig?.tailwindcss
-  if (!input) {
+  if (input === undefined) {
+    const packageInfo = safeGetPackageInfoSync('tailwindcss', { paths: [ctx.configService.cwd] })
+    const version = packageInfo?.version
+    if (!version || Number.parseInt(version.split('.')[0] ?? '', 10) !== 4) {
+      return undefined
+    }
+    return {
+      basedir: ctx.configService.cwd,
+      cssEntries: [],
+      generatorTarget: 'weapp',
+      autoDetected: true,
+      options: {
+        appType: 'weapp-vite',
+        platform: ctx.configService.platform,
+        tailwindcssBasedir: ctx.configService.cwd,
+      },
+    }
+  }
+  if (input === false) {
     return undefined
   }
   const userOptions: UserDefinedOptions = input === true ? {} : input
@@ -77,6 +97,7 @@ export function resolveManagedTailwindcssOptions(
     basedir,
     cssEntries,
     generatorTarget,
+    autoDetected: false,
     options: {
       ...userOptions,
       appType: 'weapp-vite',
@@ -168,15 +189,21 @@ function assertRuntimeRequirements(resolved: ResolvedManagedTailwindcssOptions) 
   }
 }
 
-function assertNoExternalTailwindcssPlugin(config: ResolvedConfig) {
-  const conflict = config.plugins.find(plugin =>
-    plugin.name !== MANAGED_PLUGIN_NAME && plugin.name.startsWith(EXTERNAL_PLUGIN_PREFIX),
-  )
-  if (conflict) {
-    throw new Error(
-      `weapp.tailwindcss cannot be used together with the external ${conflict.name} plugin. Remove WeappTailwindcss() from Vite plugins.`,
-    )
+function hasTailwindImport(code: string) {
+  return TAILWIND_IMPORT_RE.test(code)
+}
+
+async function stripTailwindSourceDirectives(css: string) {
+  if (!/@(?:config|custom-variant|layer|plugin|reference|source|tailwind|theme|utility|variant)\b/.test(css)) {
+    return css
   }
+  const {
+    postcss,
+    removeTailwindSourceDirectivesRoot,
+  } = await import('@weapp-tailwindcss/postcss')
+  const root = postcss.parse(css)
+  removeTailwindSourceDirectivesRoot(root)
+  return root.toString()
 }
 
 export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
@@ -196,6 +223,26 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   let coreContextPromise: Promise<TailwindCoreContext> | undefined
   let resolvedConfig: ResolvedConfig | undefined
   let loaded = false
+
+  function resolveAutoEntryIndex(id: string, code: string) {
+    if (!resolved.autoDetected || !hasTailwindImport(code)) {
+      return undefined
+    }
+    const sourceId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
+    if (!sourceId || !/\.(?:css|pcss|postcss|sss|scss|sass|less|styl|stylus)$/.test(sourceId)) {
+      return undefined
+    }
+    const normalizedEntry = normalizeManagedTailwindcssEntryPath(sourceId)
+    const existingIndex = entryIndex.get(normalizedEntry)
+    if (existingIndex !== undefined) {
+      return existingIndex
+    }
+    const index = resolved.cssEntries.length
+    resolved.cssEntries.push(sourceId)
+    entryIndex.set(normalizedEntry, index)
+    registerManagedTailwindcssEntries(ctx, resolved.cssEntries)
+    return index
+  }
 
   async function getCoreContext() {
     coreContextPromise ??= import('weapp-tailwindcss/core').then(({ createContext }) => createContext(resolved.options))
@@ -238,6 +285,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   }
 
   async function transformBundle(this: any, bundle: OutputBundle, options: { styles?: boolean, templates?: boolean } = {}) {
+    if (resolved.autoDetected && resolved.cssEntries.length === 0) {
+      return
+    }
     const transformStyles = options.styles !== false
     const transformTemplates = options.templates !== false
     const coreContext = await getCoreContext()
@@ -257,6 +307,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         continue
       }
       let source = outputAssetSource(output)
+      source = await stripTailwindSourceDirectives(source)
       let hasManagedEntry = false
       let isMainChunk = output.fileName === `app.${styleExtension}`
       for (let index = 0; index < generatedEntries.length; index++) {
@@ -295,7 +346,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
             : `${replacement}\n${source}`
         }
         else if (isCanonicalOutput) {
-          source = `${replacement}\n${source}`
+          source = `${replacement}\n${await stripTailwindSourceDirectives(source)}`
         }
         else {
           source = source.replace(outputMarker, replacement)
@@ -317,13 +368,18 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       output.source = stripManagedTailwindcssOutputMarkers(transformed.css)
     }
 
-    if (transformStyles && !ctx.configService.isDev && resolved.options.generator !== false && seenEntries.size !== resolved.cssEntries.length) {
-      const missing = resolved.cssEntries.filter((_entry, index) => !seenEntries.has(index))
+    if (transformStyles && !ctx.configService.isDev && resolved.options.generator !== false) {
+      const activeEntries = resolved.cssEntries.filter((_entry, index) =>
+        resolvedEntryIndexes.has(index) || loadedEntryIndexes.has(index),
+      )
+      const missing = activeEntries.filter(entry => !seenEntries.has(resolved.cssEntries.indexOf(entry)))
       const stages = missing.map((entry) => {
         const index = resolved.cssEntries.indexOf(entry)
         return `${entry} (resolved: ${resolvedEntryIndexes.has(index)}, loaded: ${loadedEntryIndexes.has(index)})`
       })
-      throw new Error(`weapp.tailwindcss CSS entries must be imported by the build graph: ${stages.join(', ')}`)
+      if (stages.length > 0) {
+        throw new Error(`weapp.tailwindcss CSS entries must be imported by the build graph: ${stages.join(', ')}`)
+      }
     }
 
     if (!transformTemplates) {
@@ -368,13 +424,14 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     },
     buildStart() {
       assertRuntimeRequirements(resolved)
+      resolvedEntryIndexes.clear()
+      loadedEntryIndexes.clear()
       for (const entry of resolved.cssEntries) {
         this.addWatchFile(entry)
       }
     },
     configResolved(config) {
       resolvedConfig = config
-      assertNoExternalTailwindcssPlugin(config)
     },
     resolveId(source) {
       if (resolved.options.generator === false) {
@@ -384,7 +441,15 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       if (!sidecar || sidecar.kind !== 'style') {
         return null
       }
-      const index = entryIndex.get(normalizeManagedTailwindcssEntryPath(sidecar.sourceId))
+      let index = entryIndex.get(normalizeManagedTailwindcssEntryPath(sidecar.sourceId))
+      if (index === undefined && resolved.autoDetected) {
+        try {
+          index = resolveAutoEntryIndex(sidecar.sourceId, fs.readFileSync(sidecar.sourceId, 'utf8'))
+        }
+        catch {
+          // 入口不存在或正在被删除时交给后续模块解析处理。
+        }
+      }
       if (index === undefined) {
         return null
       }
@@ -416,7 +481,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       if (resolved.options.generator === false) {
         return null
       }
-      const index = resolveManagedEntryIndex(id, code, entryIndex)
+      const index = resolveManagedEntryIndex(id, code, entryIndex) ?? resolveAutoEntryIndex(id, code)
       if (index === undefined) {
         return null
       }

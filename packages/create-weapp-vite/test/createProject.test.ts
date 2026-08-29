@@ -98,7 +98,7 @@ describe('createProject', () => {
 
     const pkgJson = await readPackageJson(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies['weapp-vite']).toBe(`^${weappViteVersion}`)
-    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^9.9.9')
+    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBeUndefined()
     expect(pkgJson.devDependencies['@types/node']).toBe(TEMPLATE_CATALOG['@types/node'])
     expect(pkgJson.devDependencies['typescript']).toBe(TEMPLATE_CATALOG.typescript)
     expect(pkgJson.devDependencies['miniprogram-api-typings']).toBe(TEMPLATE_CATALOG['miniprogram-api-typings'])
@@ -264,7 +264,7 @@ describe('createProject', () => {
     await createProject(root, TemplateName.tailwindcss)
 
     const pkgJson = await readPackageJson(path.join(root, 'package.json'))
-    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe(TEMPLATE_CATALOG['weapp-tailwindcss'])
+    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBeUndefined()
     const gitignore = await fs.readFile(path.join(root, '.gitignore'), 'utf8')
     expect(gitignore).toContain('# existing entry')
     expect(gitignore).toContain('dist-web')
@@ -300,7 +300,7 @@ describe('createProject', () => {
     const pkgJson = await readPackageJson(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies).toBeDefined()
     expect(pkgJson.devDependencies['@types/node']).toBe(TEMPLATE_CATALOG['@types/node'])
-    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^5.0.0')
+    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBeUndefined()
   })
 
   it('falls back to an empty package.json when template package is missing', async () => {
@@ -431,23 +431,20 @@ describe('createProject', () => {
   })
 
   it('upserts tailwindcss versions across code paths', async () => {
-    const versionSpy = vi.spyOn(npm, 'latestVersion')
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce('^1.2.3')
+    const versionSpy = vi.spyOn(npm, 'latestVersion').mockResolvedValue('^1.2.3')
     const pkgWithoutDeps: any = {}
     await createProjectInternal.upsertTailwindcssVersion(pkgWithoutDeps)
     expect(pkgWithoutDeps.devDependencies).toBeUndefined()
 
     const pkgWithFallback = { devDependencies: {} as Record<string, string> }
     await createProjectInternal.upsertTailwindcssVersion(pkgWithFallback)
-    expect(pkgWithFallback.devDependencies['weapp-tailwindcss']).toBe('^5.0.0')
+    expect(pkgWithFallback.devDependencies['weapp-tailwindcss']).toBeUndefined()
 
     const pkgWithExisting = { devDependencies: { 'weapp-tailwindcss': 'workspace:*' } }
     await createProjectInternal.upsertTailwindcssVersion(pkgWithExisting)
-    expect(pkgWithExisting.devDependencies['weapp-tailwindcss']).toBe('workspace:*')
+    expect(pkgWithExisting.devDependencies['weapp-tailwindcss']).toBe('^1.2.3')
 
-    const pkgWithResolved = { devDependencies: {} as Record<string, string> }
+    const pkgWithResolved = { devDependencies: { 'weapp-tailwindcss': '^1.0.0' } }
     await createProjectInternal.upsertTailwindcssVersion(pkgWithResolved)
     expect(versionSpy).toHaveBeenCalled()
     expect(pkgWithResolved.devDependencies['weapp-tailwindcss']).toBe('^1.2.3')

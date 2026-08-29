@@ -16,6 +16,7 @@ describe('vitePluginWeapp plugin api', () => {
 
   it('exposes compiler context for downstream plugins', () => {
     const ctx = createCompilerContext('plugin-api:app')
+    ctx.configService.inlineConfig.weapp = { tailwindcss: false }
     const plugins = vitePluginWeapp(ctx)
     const api = extractPluginApi(plugins)
     expect(api?.ctx).toBe(ctx)
