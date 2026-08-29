@@ -342,7 +342,7 @@ export default defineConfig({
 })
 ```
 
-你也可以在 `defineConfig` 里继续使用其他 Vite 插件（例如 `weapp-tailwindcss`）。
+Tailwind CSS 4 项目可以直接使用内置的 `weapp.tailwindcss` 配置，无需注册 `weapp-tailwindcss/vite` 插件；未配置时，实际引入 `@import "tailwindcss"` 会自动启用。旧项目如果仍注册外部插件，`weapp-vite` 会输出迁移警告并自动移除它。
 
 更多配置见：[/config/](/config/)
 
