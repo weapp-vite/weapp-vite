@@ -94,6 +94,16 @@ describe('stateful hmr session', () => {
     expect(isSafeJavaScriptPatch(['src/pages/index.ts'], { type: 'FullReload', reason: 'boundary' } as any)).toBe(false)
   })
 
+  it('treats an omitted dirty reason summary as empty', () => {
+    const patch = {
+      type: 'Patch',
+      code: 'void 0',
+      filename: 'update.js',
+    } as any
+
+    expect(isSafeJavaScriptPatch(['src/pages/index.ts'], patch, undefined)).toBe(true)
+  })
+
   it('resets retained deltas at the count and byte limits', () => {
     expect(shouldResetStatefulHmrRetention(999, 0, 1)).toBe(false)
     expect(shouldResetStatefulHmrRetention(1_000, 0, 1)).toBe(true)

@@ -263,7 +263,7 @@ class StatefulHmrSession {
     if (output.type === 'Noop') {
       return false
     }
-    const dirtyReasonSummary = this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary
+    const dirtyReasonSummary = this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary ?? []
     const allowTailwindContentPatch = dirtyReasonSummary.some(reason => reason.startsWith('tailwind-content:'))
     if (!isSafeJavaScriptPatch(
       files,
