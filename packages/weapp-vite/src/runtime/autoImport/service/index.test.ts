@@ -9,6 +9,7 @@ const createResolverHelpersMock = vi.hoisted(() => vi.fn())
 const createMetadataHelpersMock = vi.hoisted(() => vi.fn())
 const createOutputsHelpersMock = vi.hoisted(() => vi.fn())
 const createRegistryHelpersMock = vi.hoisted(() => vi.fn())
+const rebuildNormalizedLocalComponentsMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../config', () => ({
@@ -32,6 +33,7 @@ vi.mock('./outputs', () => ({
 
 vi.mock('./registry', () => ({
   createRegistryHelpers: createRegistryHelpersMock,
+  rebuildNormalizedLocalComponents: rebuildNormalizedLocalComponentsMock,
 }))
 
 vi.mock('../../../context/shared', () => ({
@@ -105,6 +107,10 @@ describe('autoImport service index', () => {
     ctx.runtimeState.autoImport.matcherKey = 'dirty'
     ctx.runtimeState.autoImport.preparedGlobsKey = 'components/**/*'
     const service = createAutoImportService(ctx)
+    expect(rebuildNormalizedLocalComponentsMock).toHaveBeenCalledWith(
+      ctx.runtimeState.autoImport.registry,
+      ctx.runtimeState.autoImport.normalizedLocalComponents,
+    )
 
     service.reset()
 

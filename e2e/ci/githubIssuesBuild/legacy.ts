@@ -30,7 +30,7 @@ let standardBuildPromise: Promise<void> | null = null
 let distVariant: 'standard' | 'sourcemap' | null = null
 
 async function runBuild() {
-  if (distVariant !== 'standard') {
+  if (distVariant !== 'standard' || !await fs.pathExists(path.join(DIST_ROOT, 'app.json'))) {
     standardBuildPromise = null
   }
 

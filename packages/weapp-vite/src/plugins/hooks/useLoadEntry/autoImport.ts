@@ -3,6 +3,7 @@ import { get, isObject, set } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { getAutoImportConfig } from '../../../runtime/autoImport/config/defaults'
+import { toKebabCaseComponentName } from '../../../utils/json'
 
 const GLOB_WILDCARD_RE = /[*?[{]/
 const AUTO_IMPORT_LOCAL_EXTENSIONS = ['vue', 'wxml', 'js', 'ts', 'json'] as const
@@ -44,7 +45,11 @@ function collectLocalCandidatePaths(
   globs: string[],
   absoluteSrcRoot: string,
 ) {
-  const names = new Set([componentName, toPascalTagName(componentName)])
+  const names = new Set([
+    componentName,
+    toPascalTagName(componentName),
+    toKebabCaseComponentName(componentName),
+  ])
   const candidates = new Set<string>()
   for (const glob of globs) {
     const extensions = collectAutoImportGlobExtensions(glob)

@@ -24,6 +24,7 @@ export function resetRuntimeStateForFreshBuild(runtimeState: RuntimeState): void
 
   const autoImport = runtimeState.autoImport
   autoImport.registry.clear()
+  autoImport.normalizedLocalComponents.clear()
   autoImport.resolvedResolverComponents.clear()
   autoImport.matcher = undefined
   autoImport.matcherKey = fresh.autoImport.matcherKey

@@ -1,3 +1,5 @@
+import type { ResolvedConfig } from 'vite'
+import type { CompilerContext } from '../context'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -930,21 +932,31 @@ describe('autoImport plugin', () => {
     }
   })
 
-  it('refreshes importers after watchChange registers a newly created component', async () => {
+  it('refreshes importers across component filename and tag casing on create and delete', async () => {
     const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
     await fs.ensureDir(tempRoot)
     const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-watch-change-refresh-'))
     const srcRoot = path.join(tempDir, 'src')
     const pageVueFile = path.join(srcRoot, 'pages/index/index.vue')
-    const hotCardFile = path.join(srcRoot, 'components/HotCard/index.vue')
+    const componentFile = path.join(srcRoot, 'components/VPascalKebabTagProbe.vue')
+    const pageBaseName = pageVueFile.replace(/\.vue$/, '')
     await fs.ensureDir(path.dirname(pageVueFile))
-    await fs.ensureDir(path.dirname(hotCardFile))
-    await fs.writeFile(pageVueFile, '<template><HotCard /></template>', 'utf8')
-    await fs.writeFile(hotCardFile, '<template><view>hot</view></template>', 'utf8')
+    await fs.ensureDir(path.dirname(componentFile))
+    await fs.writeFile(pageVueFile, '<template><v-pascal-kebab-tag-probe /></template>', 'utf8')
+    await fs.writeFile(componentFile, '<template><view>probe</view></template>', 'utf8')
 
     const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    const removePotentialComponent = vi.fn()
+    const resolve = vi.fn(() => ({
+      value: {
+        name: 'VPascalKebabTagProbe',
+        from: '/components/VPascalKebabTagProbe',
+      },
+    }))
+    const touchSpy = vi.spyOn(fs, 'utimes').mockResolvedValue()
     chokidarWatchMock.mockReturnValue(createMockSidecarWatcher())
 
+    // 单元测试仅提供 watch 组件刷新路径需要的最小编译上下文。
     const ctx = {
       runtimeState: {
         autoImport: {
@@ -956,8 +968,8 @@ describe('autoImport plugin', () => {
       },
       wxmlService: {
         wxmlComponentsMap: new Map([
-          [pageVueFile.replace(/\.vue$/, ''), {
-            HotCard: [{ start: 0, end: 9 }],
+          [pageBaseName, {
+            'v-pascal-kebab-tag-probe': [{ start: 0, end: 26 }],
           }],
         ]),
       },
@@ -978,38 +990,38 @@ describe('autoImport plugin', () => {
         awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
         filter: (target: string) => target.includes('components/'),
         registerPotentialComponent,
-        removePotentialComponent: vi.fn(),
-        resolve: vi.fn(() => ({
-          value: {
-            name: 'HotCard',
-            from: '/components/HotCard/index',
-          },
-        })),
+        removePotentialComponent,
+        resolve,
         getRegisteredLocalComponents: vi.fn(),
       },
-    } as any
+    } as unknown as CompilerContext
 
     try {
       const plugin = autoImport(ctx)[0]
-      plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+      const resolvedConfig = { build: { outDir: 'dist' } } as unknown as ResolvedConfig
+      plugin.configResolved?.(resolvedConfig)
       await plugin.buildStart?.()
 
       registerPotentialComponent.mockClear()
-      const initialPageStat = await fs.stat(pageVueFile)
-      await new Promise(resolve => setTimeout(resolve, 20))
+      await plugin.watchChange?.(componentFile, { event: 'create' })
 
-      await plugin.watchChange?.('components/HotCard/index.vue', { event: 'create' } as any)
+      expect(registerPotentialComponent).toHaveBeenCalledWith(componentFile)
+      expect(resolve).toHaveBeenCalledWith('v-pascal-kebab-tag-probe', pageBaseName)
+      expect(touchSpy).toHaveBeenCalledWith(pageVueFile, expect.any(Date), expect.any(Date))
+      expect(ctx.runtimeState.autoImport.pendingEntriesByImporter.get(pageBaseName)).toEqual(
+        new Set(['/components/VPascalKebabTagProbe']),
+      )
 
-      await vi.waitFor(async () => {
-        expect(registerPotentialComponent).toHaveBeenCalledWith(hotCardFile)
-        const nextPageStat = await fs.stat(pageVueFile)
-        expect(nextPageStat.mtimeMs).toBeGreaterThan(initialPageStat.mtimeMs)
-        expect(ctx.runtimeState.autoImport.pendingEntriesByImporter.get(pageVueFile.replace(/\.vue$/, ''))).toEqual(
-          new Set(['/components/HotCard/index']),
-        )
-      })
+      resolve.mockClear()
+      touchSpy.mockClear()
+      await plugin.watchChange?.(componentFile, { event: 'delete' })
+
+      expect(removePotentialComponent).toHaveBeenCalledWith(componentFile)
+      expect(resolve).toHaveBeenCalledWith('v-pascal-kebab-tag-probe', pageBaseName)
+      expect(touchSpy).toHaveBeenCalledWith(pageVueFile, expect.any(Date), expect.any(Date))
     }
     finally {
+      touchSpy.mockRestore()
       await fs.remove(tempDir)
       if (await fs.pathExists(tempRoot)) {
         const remaining = await fs.readdir(tempRoot)

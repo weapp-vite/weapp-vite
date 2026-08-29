@@ -10,7 +10,23 @@ describe('runtime state fresh build reset', () => {
     const previousHmr = state.build.hmr
 
     state.autoImport.version = 4
-    state.autoImport.registry.set('Button', {} as any)
+    const component = {
+      kind: 'local' as const,
+      entry: {
+        path: '/project/src/components/Button.vue',
+        json: { component: true },
+        jsonPath: '/project/src/components/Button.vue',
+        type: 'component' as const,
+        templatePath: '/project/src/components/Button.vue',
+      },
+      value: {
+        name: 'Button',
+        from: '/components/Button',
+        resolvedId: '/project/src/components/Button.vue',
+      },
+    }
+    state.autoImport.registry.set('Button', component)
+    state.autoImport.normalizedLocalComponents.set('button', component)
     state.build.hmr.loadedEntrySet.add('/project/src/pages/index.ts')
     state.json.emittedSource.set('app.json', '{}')
     state.css.transformedSidecarSource.set('/project/src/pages/index/index.css', {
@@ -37,6 +53,7 @@ describe('runtime state fresh build reset', () => {
     expect(state.build.hmr.loadedEntrySet.size).toBe(0)
     expect(state.autoImport.version).toBe(5)
     expect(state.autoImport.registry.size).toBe(0)
+    expect(state.autoImport.normalizedLocalComponents.size).toBe(0)
     expect(state.json.emittedSource.size).toBe(0)
     expect(state.css.transformedSidecarSource.size).toBe(0)
     expect(state.css.emittedSource.size).toBe(0)

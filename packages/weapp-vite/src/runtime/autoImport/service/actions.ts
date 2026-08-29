@@ -5,9 +5,11 @@ import type { RegistryHelpers } from './registry'
 import type { ResolverHelpers } from './resolver'
 import type { AutoImportService, ResolverAutoImportMatch } from './types'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { toKebabCaseComponentName } from '../../../utils/json'
 
 interface AutoImportActionsOptions {
   registry: Map<string, LocalAutoImportMatch>
+  normalizedLocalComponents: Map<string, LocalAutoImportMatch>
   autoImportState: MutableCompilerContext['runtimeState']['autoImport']
   resolvedResolverComponents: Map<string, string>
   componentMetadataMap: Map<string, ComponentMetadata>
@@ -90,6 +92,7 @@ export function createAutoImportActions(
     reset() {
       bumpVersion()
       options.registry.clear()
+      options.normalizedLocalComponents.clear()
       options.autoImportState.matcher = undefined
       options.autoImportState.matcherKey = ''
       options.autoImportState.preparedGlobsKey = undefined
@@ -163,6 +166,7 @@ export function createAutoImportActions(
 
     resolve(componentName: string, importerBaseName?: string) {
       const local = options.registry.get(componentName)
+        ?? options.normalizedLocalComponents.get(toKebabCaseComponentName(componentName))
       if (local) {
         return local
       }
