@@ -3239,15 +3239,17 @@ describe('compileVueTemplateToWxml', () => {
   })
 
   it('transforms component v-model arguments to matching prop and update event', () => {
-    const template = `<UseModelFeature v-model:title="panelTitle" v-model="childModelValue" />`
+    const template = `<UseModelFeature v-model:panelTitle.trim="panelTitle" v-model.trim="childModelValue" />`
     const { code, inlineExpressions, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('title="{{panelTitle}}"')
-    expect(code).toContain('modelValue="{{childModelValue}}"')
-    expect(code).toContain('bind:update-title="__weapp_vite_inline"')
+    expect(code).toContain('panel-title="{{panelTitle}}"')
+    expect(code).toContain('panel-title-modifiers=')
+    expect(code).toContain('model-value="{{childModelValue}}"')
+    expect(code).toContain('model-modifiers=')
+    expect(code).toContain('bind:update-paneltitle="__weapp_vite_inline"')
     expect(code).toContain('bind:update-modelvalue="__weapp_vite_inline"')
-    expect(code).toContain('data-wd-update-title="1"')
-    expect(code).toContain('data-wi-update-title="i0"')
+    expect(code).toContain('data-wd-update-paneltitle="1"')
+    expect(code).toContain('data-wi-update-paneltitle="i0"')
     expect(code).toContain('data-wd-update-modelvalue="1"')
     expect(code).toContain('data-wi-update-modelvalue="i1"')
     expect(inlineExpressions?.[0]?.expression).toContain('ctx.panelTitle=$event')
@@ -3269,7 +3271,7 @@ describe('compileVueTemplateToWxml', () => {
     const template = `<custom-input v-model="value" />`
     const { code, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('modelValue="{{value}}"')
+    expect(code).toContain('model-value="{{value}}"')
     expect(code).toContain('bind:update-modelvalue="__weapp_vite_inline"')
     expect(warnings).toEqual([])
   })
