@@ -1112,6 +1112,7 @@ describe('runtime: vue compat helpers', () => {
     defineComponent({
       setup(_props, ctx) {
         ctx.emit('quantityChange', { quantity: 2 })
+        ctx.emit('quantity-change', { quantity: 3 })
         return {}
       },
     })
@@ -1125,7 +1126,9 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
-    expect(triggerEvent).toHaveBeenCalledWith('quantity-change', { quantity: 2 }, undefined)
+    expect(triggerEvent).toHaveBeenNthCalledWith(1, 'quantity-change', { quantity: 2 }, undefined)
+    expect(triggerEvent).toHaveBeenNthCalledWith(2, 'quantity-change', { quantity: 3 }, undefined)
+    expect(triggerEvent).toHaveBeenCalledTimes(2)
   })
 
   it('exposes Vue style $emit through Options API methods', () => {

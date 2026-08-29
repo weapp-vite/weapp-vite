@@ -1459,27 +1459,58 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('bindoverlay-click=')
   })
 
-  it('normalizes camelCase component props and listeners to kebab-case host names', () => {
-    const template = `
+  it('accepts camelCase and kebab-case component boundary names with identical output', () => {
+    const camelTemplate = `
 <RetailCartItem
   maxQuantity="9"
   :selectedQuantity="quantity"
+  :modelValue="modelValue"
   :onQuantityChange="handlers.quantityChange"
   @quantityChange="onQuantityChange"
 />
     `.trim()
+    const kebabTemplate = `
+<retail-cart-item
+  max-quantity="9"
+  :selected-quantity="quantity"
+  :model-value="modelValue"
+  :on-quantity-change="handlers.quantityChange"
+  @quantity-change="onQuantityChange"
+/>
+    `.trim()
 
-    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/cart/index.vue')
+    const camelResult = compileVueTemplateToWxml(camelTemplate, '/project/src/pages/cart/index.vue')
+    const kebabResult = compileVueTemplateToWxml(kebabTemplate, '/project/src/pages/cart/index.vue')
+    const code = camelResult.code
+    const countMatches = (pattern: RegExp) => code.match(pattern)?.length ?? 0
 
+    expect(camelResult.code).toBe(kebabResult.code)
+    expect(countMatches(/<retail-cart-item(?=[\s/>])/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)max-quantity=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)selected-quantity=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)model-value=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)on-quantity-change=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)bind:quantity-change=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)data-wd-quantity-change=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)data-wi-quantity-change=/g)).toBe(1)
     expect(code).toContain('bind:quantity-change="__weapp_vite_inline"')
     expect(code).toContain('data-wd-quantity-change="1"')
     expect(code).toContain('data-wi-quantity-change="i0"')
     expect(code).toContain('max-quantity="9"')
     expect(code).toContain('selected-quantity="{{quantity}}"')
+    expect(code).toContain('model-value="{{modelValue}}"')
     expect(code).toContain('on-quantity-change="{{handlers.quantityChange}}"')
     expect(code).not.toContain(' maxQuantity=')
     expect(code).not.toContain(' selectedQuantity=')
+    expect(code).not.toContain(' modelValue=')
     expect(code).not.toContain(' onQuantityChange=')
+    expect(code).not.toContain('<RetailCartItem')
+    expect(code).not.toContain('bind:quantityChange')
+    expect(code).not.toContain('bind:quantitychange')
+    expect(code).not.toContain('bindquantityChange')
+    expect(code).not.toContain('bindquantitychange')
+    expect(code).not.toContain('data-wd-quantitychange')
+    expect(code).not.toContain('data-wi-quantitychange')
   })
 
   it('emits array-based scoped slot props', () => {
