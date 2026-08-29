@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 import { isSafeJavaScriptPatch } from './session'
 import { createStatefulHmrBanner, createStatefulHmrFooter, StatefulHmrViteAdapter, toStableModuleId } from './viteAdapter'
 
@@ -119,6 +120,34 @@ describe('stateful HMR Vite adapter', () => {
     expect(options.experimental.devMode.skipCommonRuntimeInjection).toBe(true)
     expect(options.experimental.devMode.implement.match(/class DevRuntime/g)).toHaveLength(1)
     expect(options.experimental.devMode.implement).toContain('class WeappViteDevRuntime')
+  })
+
+  it('only validates the common runtime on the initial full output', () => {
+    const stored: any[][] = []
+    const bundledDev = {
+      getRolldownOptions: async () => ({}),
+      storeOutputFiles: (output: any[]) => stored.push(output),
+    }
+    const adapter = new StatefulHmrViteAdapter(
+      { build: { rolldownOptions: {} }, root: '/project' } as any,
+      { environments: { client: { bundledDev } } } as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+    )
+
+    adapter.install()
+    bundledDev.storeOutputFiles([
+      { type: 'chunk', fileName: 'app.js', code: 'App({})' },
+      { type: 'chunk', fileName: 'rolldown-runtime.js', code: createStatefulHmrRolldownRuntimeSource() },
+    ])
+    expect(() => bundledDev.storeOutputFiles([
+      { type: 'chunk', fileName: 'app.js', code: 'App({ changed: true })' },
+    ])).not.toThrow()
+    expect(stored).toHaveLength(2)
   })
 
   it('prepares fallback assets before triggering and awaiting a full rebuild', async () => {

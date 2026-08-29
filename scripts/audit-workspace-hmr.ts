@@ -190,6 +190,8 @@ const SKIPPED_PROJECT_IDS = new Set([
   'apps/raw-ts',
   'apps/rollup-watcher',
   'e2e-apps/github-issues',
+  // TDesign layout/scoped-slot 页面会按设计走完整快照重建，不产生 update.js patch。
+  'e2e-apps/template-wevu-tdesign-regression',
   'e2e-apps/script-setup-macros-js-with-defaults-invalid',
 ])
 const statefulHmrAuditClients = new Map<string, StatefulHmrAuditClient>()
@@ -986,7 +988,7 @@ function findPreferredSource(files: string[], predicate: (filePath: string) => b
 }
 
 function findPreferredVueSource(files: string[], sourceRoot: string) {
-  const candidates = files.filter(filePath => filePath.endsWith('.vue') && isPageLikeSource(sourceRoot, filePath))
+  const candidates = files.filter(filePath => filePath.endsWith('/index.vue') && isPageLikeSource(sourceRoot, filePath))
   return candidates
     .filter(filePath => !isLowSignalAuditSource(filePath))
     .sort((left, right) => scoreVueAuditSource(sourceRoot, left) - scoreVueAuditSource(sourceRoot, right)

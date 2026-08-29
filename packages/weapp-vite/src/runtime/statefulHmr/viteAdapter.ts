@@ -85,6 +85,7 @@ interface BundledDevInternal {
 export class StatefulHmrViteAdapter {
   private bundledDev?: BundledDevInternal
   private initialOutputError?: Error
+  private initialRuntimeValidated = false
 
   constructor(
     private readonly config: ResolvedConfig,
@@ -215,8 +216,9 @@ export class StatefulHmrViteAdapter {
     const original = bundledDev.storeOutputFiles.bind(bundledDev)
     bundledDev.storeOutputFiles = (output) => {
       try {
-        if (output.some(item => item.fileName === 'app.js')) {
+        if (!this.initialRuntimeValidated && output.some(item => item.fileName === 'app.js')) {
           assertStatefulHmrRuntimeOutput(output)
+          this.initialRuntimeValidated = true
         }
         original(output)
         this.callbacks.onOutput(output)
