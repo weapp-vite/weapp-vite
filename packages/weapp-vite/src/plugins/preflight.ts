@@ -23,9 +23,10 @@ function createPluginPruner(): Plugin {
       }
 
       for (const removePlugin of removePlugins) {
-        const idx = config.plugins.findIndex(plugin => plugin.name === removePlugin)
+        const plugins = config.plugins as Plugin[]
+        const idx = plugins.findIndex(plugin => plugin.name === removePlugin)
         if (idx > -1) {
-          const [plugin] = (config.plugins as Plugin[]).splice(idx, 1)
+          const [plugin] = plugins.splice(idx, 1)
           plugin && debug?.('remove plugin', plugin.name)
         }
       }
@@ -36,10 +37,11 @@ function createPluginPruner(): Plugin {
       if (externalTailwindcssPlugins.length === 0) {
         return
       }
-      for (let index = config.plugins.length - 1; index >= 0; index--) {
-        const plugin = config.plugins[index]
+      const plugins = config.plugins as Plugin[]
+      for (let index = plugins.length - 1; index >= 0; index--) {
+        const plugin = plugins[index]
         if (plugin?.name.startsWith(EXTERNAL_TAILWINDCSS_PLUGIN_PREFIX)) {
-          config.plugins.splice(index, 1)
+          plugins.splice(index, 1)
           debug?.('remove plugin', plugin.name)
         }
       }

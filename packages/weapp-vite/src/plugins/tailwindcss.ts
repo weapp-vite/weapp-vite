@@ -1,7 +1,14 @@
 import type { OutputAsset, OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
-import type { createContext as createTailwindContext, UserDefinedOptions } from 'weapp-tailwindcss/core'
-import type { TailwindV4SourceOptions, WeappTailwindcssGeneratorTarget } from 'weapp-tailwindcss/generator'
+import type {
+  Compiler,
+  CompilerGenerateRequest,
+  CompilerGenerateResult,
+  CompilerSnapshot,
+  CompilerTarget,
+  CreateCompilerOptions,
+} from 'weapp-tailwindcss/core'
+import type { UserDefinedOptions } from 'weapp-tailwindcss/types'
 import type { CompilerContext } from '../context'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs'
@@ -25,14 +32,15 @@ const MANAGED_PLUGIN_NAME = 'weapp-vite:tailwindcss'
 const VIRTUAL_ENTRY_PREFIX = '\0weapp-vite:managed-tailwindcss-entry:'
 const TAILWIND_IMPORT_RE = /@import\s+(?:url\(\s*)?['"]tailwindcss['"]\s*\)?(?:\s|;|$)/
 
-type TailwindCoreContext = ReturnType<typeof createTailwindContext>
+type TailwindV4SourceOptions = Extract<CompilerGenerateRequest, { sourceOptions: unknown }>['sourceOptions']
+type ManagedTailwindcssOptions = UserDefinedOptions & Pick<CreateCompilerOptions, 'compiler'>
 
 interface ResolvedManagedTailwindcssOptions {
   basedir: string
   cssEntries: string[]
-  generatorTarget: WeappTailwindcssGeneratorTarget
+  generatorTarget: CompilerTarget
   autoDetected: boolean
-  options: UserDefinedOptions
+  options: ManagedTailwindcssOptions
 }
 
 function unique(values: string[]) {
@@ -41,7 +49,7 @@ function unique(values: string[]) {
 
 function resolveCssEntries(
   ctx: CompilerContext,
-  options: UserDefinedOptions,
+  options: ManagedTailwindcssOptions,
   basedir: string,
 ) {
   const entries = unique([
@@ -80,7 +88,7 @@ export function resolveManagedTailwindcssOptions(
   if (input === false) {
     return undefined
   }
-  const userOptions: UserDefinedOptions = input === true ? {} : input
+  const userOptions: ManagedTailwindcssOptions = input === true ? {} : input
   if (userOptions.disabled === true || (typeof userOptions.disabled === 'object' && userOptions.disabled.plugin === true)) {
     return undefined
   }
@@ -174,6 +182,10 @@ function createTailwindV4SourceOptions(
   }
 }
 
+function createCompilerRootId(index: number, entry: string) {
+  return `weapp-vite:tailwindcss:${index}:${normalizeManagedTailwindcssEntryPath(entry)}`
+}
+
 function assertRuntimeRequirements(resolved: ResolvedManagedTailwindcssOptions) {
   const [major = 0, minor = 0] = process.versions.node.split('.').map(Number)
   const supported = (major === 22 && minor >= 18) || (major >= 24 && (major > 24 || minor >= 11))
@@ -207,10 +219,11 @@ async function stripTailwindSourceDirectives(css: string) {
 }
 
 export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
-  const resolved = resolveManagedTailwindcssOptions(ctx)
-  if (!resolved) {
+  const managedOptions = resolveManagedTailwindcssOptions(ctx)
+  if (!managedOptions) {
     return []
   }
+  const resolved: ResolvedManagedTailwindcssOptions = managedOptions
 
   registerManagedTailwindcssEntries(ctx, resolved.cssEntries)
   const entryIndex = new Map(resolved.cssEntries.map((entry, index) => [normalizeManagedTailwindcssEntryPath(entry), index]))
@@ -219,10 +232,14 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   const loadedEntryIndexes = new Set<number>()
   const previousGeneratedCss = new Map<number, string>()
   const generatedOutputEntries = new Map<string, Set<number>>()
-  let generatedEntriesPromise: Promise<Awaited<ReturnType<typeof generateEntryCss>>[]> | undefined
-  let coreContextPromise: Promise<TailwindCoreContext> | undefined
+  const compilerRootIds = new Map<number, string>()
+  const compilerSourceOptions = new Map<number, TailwindV4SourceOptions>()
+  const compilerSnapshots = new Map<number, CompilerSnapshot>()
+  let generatedEntriesPromise: Promise<CompilerGenerateResult[]> | undefined
+  let compilerPromise: Promise<Compiler> | undefined
   let resolvedConfig: ResolvedConfig | undefined
   let loaded = false
+  let compilerDisposed = false
 
   function resolveAutoEntryIndex(id: string, code: string) {
     if (!resolved.autoDetected || !hasTailwindImport(code)) {
@@ -244,44 +261,60 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     return index
   }
 
-  async function getCoreContext() {
-    coreContextPromise ??= import('weapp-tailwindcss/core').then(({ createContext }) => createContext(resolved.options))
-    const coreContext = await coreContextPromise
+  async function getCompiler() {
+    compilerPromise ??= import('weapp-tailwindcss/core').then(({ createCompiler }) => createCompiler(resolved.options))
+    const compiler = await compilerPromise
     if (!loaded) {
       loaded = true
       resolved.options.onLoad?.()
     }
-    return coreContext
+    return compiler
   }
 
-  async function generateEntryCss(entry: string) {
-    const {
-      createWeappTailwindcssGenerator,
-      resolveTailwindV4Source,
-    } = await import('weapp-tailwindcss/generator')
-    const source = await resolveTailwindV4Source(createTailwindV4SourceOptions(resolved, entry))
-    const generator = createWeappTailwindcssGenerator(source)
-    try {
-      const generated = await generator.generate({
-        target: resolved.generatorTarget,
-        scanSources: true,
-        bareArbitraryValues: resolved.options.arbitraryValues?.bareArbitraryValues,
-        styleOptions: typeof resolved.options.generator === 'object'
-          ? resolved.options.generator.styleOptions
-          : undefined,
-      })
-      if (generated.target !== 'weapp') {
-        return generated
-      }
-      const { finalizeMiniProgramCss } = await import('@weapp-tailwindcss/postcss')
-      return {
-        ...generated,
-        css: finalizeMiniProgramCss(generated.css, { isTailwindcssV4: true }),
-      }
+  async function generateEntryCss(compiler: Compiler, index: number, entry: string) {
+    const sourceOptions = compilerSourceOptions.get(index) ?? createTailwindV4SourceOptions(resolved, entry)
+    compilerSourceOptions.set(index, sourceOptions)
+    const id = compilerRootIds.get(index) ?? createCompilerRootId(index, entry)
+    compilerRootIds.set(index, id)
+    const generated = await compiler.generate({
+      id,
+      sourceOptions,
+      target: resolved.generatorTarget,
+      scanSources: true,
+      bareArbitraryValues: resolved.options.arbitraryValues?.bareArbitraryValues,
+      styleOptions: typeof resolved.options.generator === 'object'
+        ? resolved.options.generator.styleOptions
+        : undefined,
+    })
+    compilerSnapshots.set(index, generated.snapshot)
+    return generated
+  }
+
+  async function disposeCompiler() {
+    if (compilerDisposed) {
+      return
     }
-    finally {
-      generator.dispose?.()
+    compilerDisposed = true
+    await compilerPromise?.then(compiler => compiler.dispose())
+  }
+
+  async function invalidateCompilerForFile(id: string, event: 'create' | 'update' | 'delete') {
+    const compiler = await getCompiler()
+    const normalizedId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
+    const index = entryIndex.get(normalizeManagedTailwindcssEntryPath(normalizedId))
+    generatedEntriesPromise = undefined
+    if (event === 'delete' && index !== undefined) {
+      const rootId = compilerRootIds.get(index)
+      if (rootId) {
+        await compiler.remove(rootId)
+      }
+      compilerSourceOptions.delete(index)
+      return
     }
+    // `@source` glob dependencies are represented as patterns by the compiler
+    // and therefore do not map every Vue/WXML source file into dependencyRoots.
+    // Invalidate known roots directly so the next bundle regenerates its snapshot.
+    compiler.invalidate([normalizedId, ...compilerRootIds.values()])
   }
 
   async function transformBundle(this: any, bundle: OutputBundle, options: { styles?: boolean, templates?: boolean } = {}) {
@@ -290,10 +323,19 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
     const transformStyles = options.styles !== false
     const transformTemplates = options.templates !== false
-    const coreContext = await getCoreContext()
+    const compiler = await getCompiler()
     const generatedEntries = resolved.options.generator === false
       ? []
-      : await (generatedEntriesPromise ??= Promise.all(resolved.cssEntries.map(generateEntryCss)))
+      : await (generatedEntriesPromise ??= Promise.all(resolved.cssEntries.map((entry, index) =>
+          generateEntryCss(compiler, index, entry))))
+    const snapshots = generatedEntries.length > 0
+      ? generatedEntries.map((generated, index) => compilerSnapshots.get(index) ?? generated.snapshot)
+      : [compiler.createSnapshot({
+          id: `${MANAGED_PLUGIN_NAME}:disabled`,
+          classSet: [],
+          target: resolved.generatorTarget,
+        })]
+    const snapshot = compiler.mergeSnapshots(snapshots)
     const seenEntries = new Set<number>()
     const styleExtension = ctx.configService.outputExtensions.wxss
     const templateExtension = ctx.configService.outputExtensions.wxml
@@ -362,7 +404,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       if (!hasManagedEntry && !output.fileName.endsWith(`.${styleExtension}`)) {
         continue
       }
-      const transformed = await coreContext.transformWxss(source, {
+      const transformed = await compiler.transformCss(source, snapshot, {
         isMainChunk,
       })
       output.source = stripManagedTailwindcssOutputMarkers(transformed.css)
@@ -385,19 +427,17 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     if (!transformTemplates) {
       return
     }
-    const runtimeSet = await coreContext.getRuntimeSet({ forceCollect: true, forceRefresh: true })
     for (const output of Object.values(bundle)) {
       if (output.type === 'asset' && output.fileName.endsWith(`.${templateExtension}`)) {
-        output.source = await coreContext.transformWxml(outputAssetSource(output), { runtimeSet })
+        output.source = await compiler.transformTemplate(outputAssetSource(output), snapshot)
         continue
       }
       if (output.type !== 'chunk' || !output.fileName.endsWith('.js')) {
         continue
       }
-      const transformed = await coreContext.transformJs(output.code, {
+      const transformed = await compiler.transformJavaScript(output.code, snapshot, {
         filename: output.fileName,
         generateMap: scriptSourceMap,
-        runtimeSet,
       })
       if (transformed.error) {
         throw transformed.error
@@ -422,8 +462,15 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         }
       },
     },
-    buildStart() {
+    async buildStart() {
+      generatedEntriesPromise = undefined
       assertRuntimeRequirements(resolved)
+      if (ctx.configService.isDev) {
+        const pendingChanges = ctx.moduleGraphService?.getPendingChanges?.() ?? []
+        if (pendingChanges.length > 0) {
+          await Promise.all(pendingChanges.map(change => invalidateCompilerForFile(change.file, change.event as 'create' | 'update' | 'delete')))
+        }
+      }
       resolvedEntryIndexes.clear()
       loadedEntryIndexes.clear()
       for (const entry of resolved.cssEntries) {
@@ -491,6 +538,15 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         map: null,
       }
     },
+    async watchChange(id, change) {
+      await invalidateCompilerForFile(id, change.event)
+    },
+    async handleHotUpdate({ file }) {
+      await invalidateCompilerForFile(file, 'update')
+    },
+    async closeWatcher() {
+      await disposeCompiler()
+    },
   }
 
   const outputPlugin: Plugin = {
@@ -507,6 +563,11 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
           resolved.options.onEnd?.()
         }
       },
+    },
+    async closeBundle() {
+      if (!ctx.configService.isDev) {
+        await disposeCompiler()
+      }
     },
   }
 

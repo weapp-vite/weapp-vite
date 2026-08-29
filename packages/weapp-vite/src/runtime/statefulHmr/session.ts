@@ -538,7 +538,7 @@ export function isSafeJavaScriptPatch(
 export function requiresStatefulHmrSnapshot(file: string, dirtyReasonSummary: string[] = []): boolean {
   return /\.(?:jsx|tsx)$/.test(file)
     || !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
-    || dirtyReasonSummary.some(isUnsafeStatefulHmrReason)
+    || dirtyReasonSummary.some(reason => isUnsafeStatefulHmrReason(reason))
 }
 
 export function isStatefulHmrAssetFile(file: string): boolean {

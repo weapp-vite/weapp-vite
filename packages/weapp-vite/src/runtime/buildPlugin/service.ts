@@ -200,7 +200,7 @@ function collectStatefulHmrEntryIds(
   cwd: string,
   srcRoot: string,
 ): Set<string> {
-  const entryIds = new Set(Array.from(initialEntryIds, normalizeFsResolvedId))
+  const entryIds = new Set(Array.from(initialEntryIds, id => normalizeFsResolvedId(id)))
   const normalizedSrcRoot = normalizeFsResolvedId(srcRoot).replace(/\/$/, '')
   for (const item of snapshot) {
     if (item.type !== 'chunk') {

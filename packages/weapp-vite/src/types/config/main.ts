@@ -1,7 +1,8 @@
 import type { UserConfig as ViteUserConfig } from 'vite'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
-import type { UserDefinedOptions } from 'weapp-tailwindcss/core'
+import type { CreateCompilerOptions } from 'weapp-tailwindcss/core'
+import type { UserDefinedOptions } from 'weapp-tailwindcss/types'
 import type {
   AutoImportComponentsOption,
   EnhanceOptions,
@@ -43,7 +44,7 @@ import type { WeappI18nConfig } from '@/i18n/types'
 import type { LoggerConfig } from '@/logger'
 
 export type { WeappI18nConfig } from '@/i18n/types'
-export type WeappTailwindcssOptions = UserDefinedOptions
+export type WeappTailwindcssOptions = UserDefinedOptions & Pick<CreateCompilerOptions, 'compiler'>
 
 /**
  * @description 分包元信息

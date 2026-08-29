@@ -25,6 +25,9 @@ export interface WeappViteConfig {
     cssEntries?: string[]
     rem2rpx?: boolean | Record<string, unknown>
     logLevel?: 'info' | 'warn' | 'error' | 'silent'
+    compiler?: {
+      maxRoots?: number
+    }
   }
   npm?: {
     packageFiles?: Record<string, {

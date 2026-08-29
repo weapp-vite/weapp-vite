@@ -7,19 +7,12 @@ import { createSidecarSourceSpecifier } from '../moduleGraph/protocol'
 import { createTailwindcssPlugin, resolveManagedTailwindcssOptions } from './tailwindcss'
 
 const mocks = vi.hoisted(() => ({
-  createContext: vi.fn(),
-  createGenerator: vi.fn(),
-  resolveSource: vi.fn(),
+  createCompiler: vi.fn(),
   packageInfo: undefined as { version?: string } | undefined,
 }))
 
 vi.mock('weapp-tailwindcss/core', () => ({
-  createContext: mocks.createContext,
-}))
-
-vi.mock('weapp-tailwindcss/generator', () => ({
-  createWeappTailwindcssGenerator: mocks.createGenerator,
-  resolveTailwindV4Source: mocks.resolveSource,
+  createCompiler: mocks.createCompiler,
 }))
 
 vi.mock('../runtime/localPkg', () => ({
@@ -53,9 +46,7 @@ describe('managed Tailwind integration', () => {
   const temporaryRoots: string[] = []
 
   beforeEach(() => {
-    mocks.createContext.mockReset()
-    mocks.createGenerator.mockReset()
-    mocks.resolveSource.mockReset()
+    mocks.createCompiler.mockReset()
     mocks.packageInfo = undefined
   })
 
@@ -80,7 +71,7 @@ describe('managed Tailwind integration', () => {
     expect(plugins).toHaveLength(2)
     const transform = getHookHandler(plugins[0]!.transform)
     expect(transform?.call({}, '.author { color: red; }', '/project/src/app.css', {} as any)).toBeNull()
-    expect(mocks.createContext).not.toHaveBeenCalled()
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
   })
 
   it('auto-detects an imported Tailwind v4 CSS entry, including nested CSS syntax', () => {
@@ -147,7 +138,7 @@ describe('managed Tailwind integration', () => {
     } as any)).not.toThrow()
   })
 
-  it('uses generator and core APIs to transform one owned bundle', async () => {
+  it('uses compiler APIs to transform one owned bundle', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tailwindcss-'))
     temporaryRoots.push(root)
     const entry = path.join(root, 'src/app.css')
@@ -158,38 +149,47 @@ describe('managed Tailwind integration', () => {
     const onLoad = vi.fn(() => calls.push('load'))
     const onStart = vi.fn(() => calls.push('start'))
     const onEnd = vi.fn(() => calls.push('end'))
-    const coreContext = {
-      transformWxss: vi.fn(async (source: string) => {
-        calls.push('wxss')
-        return { css: `${source}\n/* core wxss */` }
-      }),
-      getRuntimeSet: vi.fn(async () => {
-        calls.push('runtime')
-        return new Set(['gap-4.25'])
-      }),
-      transformWxml: vi.fn(async (source: string) => {
-        calls.push('wxml')
-        return source.replace('gap-4.25', 'gap-4_d25')
-      }),
-      transformJs: vi.fn(async (source: string) => {
-        calls.push('js')
-        return { code: source.replace('gap-4.25', 'gap-4_d25') }
-      }),
+    const snapshot = {
+      classSet: new Set(['gap-4.25']),
+      dependencies: [entry],
+      roots: [{ id: 'tailwind-root', revision: 1 }],
+      sources: [],
+      target: 'weapp',
     }
-    const dispose = vi.fn()
-    mocks.createContext.mockReturnValue(coreContext)
-    mocks.resolveSource.mockResolvedValue({ source: true })
-    mocks.createGenerator.mockReturnValue({
-      dispose,
+    const compiler = {
+      createSnapshot: vi.fn(() => snapshot),
+      mergeSnapshots: vi.fn(() => {
+        calls.push('merge')
+        return snapshot
+      }),
       generate: vi.fn(async () => {
         calls.push('generate')
         return {
           classSet: new Set(['gap-4.25']),
           css: '.gap-4_d25{gap:17rpx}',
           dependencies: [entry],
+          snapshot,
+          target: 'weapp',
         }
       }),
-    })
+      transformCss: vi.fn(async (source: string) => {
+        calls.push('wxss')
+        return { css: `${source}\n/* core wxss */` }
+      }),
+      transformTemplate: vi.fn(async (source: string) => {
+        calls.push('wxml')
+        return source.replace('gap-4.25', 'gap-4_d25')
+      }),
+      transformJavaScript: vi.fn(async (source: string) => {
+        calls.push('js')
+        return { code: source.replace('gap-4.25', 'gap-4_d25') }
+      }),
+      invalidate: vi.fn(() => []),
+      remove: vi.fn(async () => {}),
+      dispose: vi.fn(),
+    }
+    const dispose = compiler.dispose
+    mocks.createCompiler.mockReturnValue(compiler)
 
     const plugins = getPlugins({
       cssEntries: [entry],
@@ -229,6 +229,7 @@ describe('managed Tailwind integration', () => {
 
     await getHookHandler(plugin.generateBundle)?.call({ addWatchFile } as any, {} as any, bundle, false)
     await getHookHandler(outputPlugin.generateBundle)?.call({ addWatchFile } as any, {} as any, bundle, false)
+    await outputPlugin.closeBundle?.call({} as any)
 
     expect((bundle['app.wxss'] as any).source).toContain('.gap-4_d25{gap:17rpx}')
     expect((bundle['app.wxss'] as any).source).toContain('.author{color:red}')
@@ -240,10 +241,11 @@ describe('managed Tailwind integration', () => {
       'start',
       'load',
       'generate',
+      'merge',
       'wxss',
       'end',
       'start',
-      'runtime',
+      'merge',
       'wxml',
       'js',
       'end',
@@ -264,6 +266,23 @@ describe('managed Tailwind integration', () => {
       undefined,
       {} as any,
     )).toMatch(/^\0weapp-vite:managed-tailwindcss-entry:0\.css\?weapp-vite-sidecar-owner=/)
+  })
+
+  it('invalidates compiler roots from watch changes and removes deleted entries', async () => {
+    const entry = '/project/src/app.css'
+    const compiler = {
+      invalidate: vi.fn(() => ['root']),
+      remove: vi.fn(async () => {}),
+      dispose: vi.fn(async () => {}),
+    }
+    mocks.createCompiler.mockReturnValue(compiler)
+    const plugin = getPlugins({ cssEntries: [entry] })[0]
+
+    await plugin.watchChange?.('/project/src/pages/index.wxml', { event: 'update' } as any)
+    expect(compiler.invalidate).toHaveBeenCalledWith(['/project/src/pages/index.wxml'])
+
+    await plugin.watchChange?.(entry, { event: 'delete' } as any)
+    expect(compiler.remove).not.toHaveBeenCalled()
   })
 
   it('replaces the managed physical CSS entry with its generator marker', () => {

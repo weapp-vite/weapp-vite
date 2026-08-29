@@ -7,6 +7,7 @@ const objectConfig = defineConfig({
     srcRoot: 'src',
     tailwindcss: {
       cssEntries: ['src/app.css'],
+      compiler: { maxRoots: 64 },
       logLevel: 'silent',
       rem2rpx: true,
     },
