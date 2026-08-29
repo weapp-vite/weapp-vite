@@ -88,6 +88,10 @@ describe.sequential('template build: tdesign feedback layouts', () => {
 
     expectSharedFeedbackNodes(defaultLayoutWxml)
     expectNoFeedbackNodes(cartPageWxml)
+    expect(cartPageWxml).toContain('bind:handle-select-all=')
+    expect(cartPageWxml).toContain('bind:handle-to-settle=')
+    expect(cartPageWxml).not.toContain('bindhandleSelectAll=')
+    expect(cartPageWxml).not.toContain('bindhandleToSettle=')
     expectNoFeedbackNodes(orderButtonBarWxml)
     expectNoDonutFeedbackMarkers(defaultLayoutWxml)
     expectNoDonutFeedbackMarkers(cartPageWxml)

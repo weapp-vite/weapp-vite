@@ -276,8 +276,8 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain(`customStyle="{{ {backgroundColor:'#fff',display:'flex',justifyContent:'center'} }}"`)
-    expect(code).not.toContain('customStyle="{{ {\n')
+    expect(code).toContain(`custom-style="{{ {backgroundColor:'#fff',display:'flex',justifyContent:'center'} }}"`)
+    expect(code).not.toContain('custom-style="{{ {\n')
     expect(classStyleBindings).toBeUndefined()
   })
 
@@ -1457,6 +1457,60 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('data-wd-overlay-click="1"')
     expect(code).toContain('data-wi-overlay-click="i0"')
     expect(code).not.toContain('bindoverlay-click=')
+  })
+
+  it('accepts camelCase and kebab-case component boundary names with identical output', () => {
+    const camelTemplate = `
+<RetailCartItem
+  maxQuantity="9"
+  :selectedQuantity="quantity"
+  :modelValue="modelValue"
+  :onQuantityChange="handlers.quantityChange"
+  @quantityChange="onQuantityChange"
+/>
+    `.trim()
+    const kebabTemplate = `
+<retail-cart-item
+  max-quantity="9"
+  :selected-quantity="quantity"
+  :model-value="modelValue"
+  :on-quantity-change="handlers.quantityChange"
+  @quantity-change="onQuantityChange"
+/>
+    `.trim()
+
+    const camelResult = compileVueTemplateToWxml(camelTemplate, '/project/src/pages/cart/index.vue')
+    const kebabResult = compileVueTemplateToWxml(kebabTemplate, '/project/src/pages/cart/index.vue')
+    const code = camelResult.code
+    const countMatches = (pattern: RegExp) => code.match(pattern)?.length ?? 0
+
+    expect(camelResult.code).toBe(kebabResult.code)
+    expect(countMatches(/<retail-cart-item(?=[\s/>])/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)max-quantity=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)selected-quantity=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)model-value=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)on-quantity-change=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)bind:quantity-change=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)data-wd-quantity-change=/g)).toBe(1)
+    expect(countMatches(/(?:^|\s)data-wi-quantity-change=/g)).toBe(1)
+    expect(code).toContain('bind:quantity-change="__weapp_vite_inline"')
+    expect(code).toContain('data-wd-quantity-change="1"')
+    expect(code).toContain('data-wi-quantity-change="i0"')
+    expect(code).toContain('max-quantity="9"')
+    expect(code).toContain('selected-quantity="{{quantity}}"')
+    expect(code).toContain('model-value="{{modelValue}}"')
+    expect(code).toContain('on-quantity-change="{{handlers.quantityChange}}"')
+    expect(code).not.toContain(' maxQuantity=')
+    expect(code).not.toContain(' selectedQuantity=')
+    expect(code).not.toContain(' modelValue=')
+    expect(code).not.toContain(' onQuantityChange=')
+    expect(code).not.toContain('<RetailCartItem')
+    expect(code).not.toContain('bind:quantityChange')
+    expect(code).not.toContain('bind:quantitychange')
+    expect(code).not.toContain('bindquantityChange')
+    expect(code).not.toContain('bindquantitychange')
+    expect(code).not.toContain('data-wd-quantitychange')
+    expect(code).not.toContain('data-wi-quantitychange')
   })
 
   it('emits array-based scoped slot props', () => {
@@ -3171,12 +3225,15 @@ describe('compileVueTemplateToWxml', () => {
     ['weapp', '@click.catch="onTap"', 'catchtap="onTap"'],
     ['weapp', '@overlay-click="onTap"', 'bind:overlay-click="onTap"'],
     ['weapp', '@overlay-click.stop="onTap"', 'catch:overlay-click="onTap"'],
+    ['weapp', '@quantityChange="onTap"', 'bind:quantity-change="onTap"'],
     ['tt', '@tap.stop="onTap"', 'catchtap="onTap"'],
     ['tt', '@tap.catch="onTap"', 'catchtap="onTap"'],
     ['tt', '@overlay-click="onTap"', 'bind:overlay-click="onTap"'],
+    ['tt', '@quantityChange="onTap"', 'bind:quantity-change="onTap"'],
     ['swan', '@tap.stop="onTap"', 'catchtap="onTap"'],
     ['swan', '@tap.catch="onTap"', 'catchtap="onTap"'],
     ['swan', '@overlay-click="onTap"', 'bind:overlay-click="onTap"'],
+    ['swan', '@quantityChange="onTap"', 'bind:quantity-change="onTap"'],
     ['alipay', '@tap="onTap"', 'onTap="onTap"'],
     ['alipay', '@tap.stop="onTap"', 'catchTap="onTap"'],
     ['alipay', '@tap.capture.stop="onTap"', 'captureCatchTap="onTap"'],
@@ -3186,6 +3243,7 @@ describe('compileVueTemplateToWxml', () => {
     ['alipay', '@tap.prevent="onTap"', 'onTap="onTap"'],
     ['alipay', '@tap.once="onTap"', 'onTap="onTap"'],
     ['alipay', '@tap.mut="onTap"', 'onTap="onTap"'],
+    ['alipay', '@quantityChange="onTap"', 'onQuantityChange="onTap"'],
   ])('maps event modifiers for %s template events: %s', (platform, eventDirective, expectedAttr) => {
     const template = `<view ${eventDirective}>Tap</view>`
     const { code } = compileVueTemplateToWxml(
@@ -3212,15 +3270,17 @@ describe('compileVueTemplateToWxml', () => {
   })
 
   it('transforms component v-model arguments to matching prop and update event', () => {
-    const template = `<UseModelFeature v-model:title="panelTitle" v-model="childModelValue" />`
+    const template = `<UseModelFeature v-model:panelTitle.trim="panelTitle" v-model.trim="childModelValue" />`
     const { code, inlineExpressions, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('title="{{panelTitle}}"')
-    expect(code).toContain('modelValue="{{childModelValue}}"')
-    expect(code).toContain('bind:update-title="__weapp_vite_inline"')
+    expect(code).toContain('panel-title="{{panelTitle}}"')
+    expect(code).toContain('panel-title-modifiers=')
+    expect(code).toContain('model-value="{{childModelValue}}"')
+    expect(code).toContain('model-modifiers=')
+    expect(code).toContain('bind:update-paneltitle="__weapp_vite_inline"')
     expect(code).toContain('bind:update-modelvalue="__weapp_vite_inline"')
-    expect(code).toContain('data-wd-update-title="1"')
-    expect(code).toContain('data-wi-update-title="i0"')
+    expect(code).toContain('data-wd-update-paneltitle="1"')
+    expect(code).toContain('data-wi-update-paneltitle="i0"')
     expect(code).toContain('data-wd-update-modelvalue="1"')
     expect(code).toContain('data-wi-update-modelvalue="i1"')
     expect(inlineExpressions?.[0]?.expression).toContain('ctx.panelTitle=$event')
@@ -3242,7 +3302,7 @@ describe('compileVueTemplateToWxml', () => {
     const template = `<custom-input v-model="value" />`
     const { code, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('modelValue="{{value}}"')
+    expect(code).toContain('model-value="{{value}}"')
     expect(code).toContain('bind:update-modelvalue="__weapp_vite_inline"')
     expect(warnings).toEqual([])
   })

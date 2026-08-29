@@ -101,6 +101,10 @@ counter.inc()
 
 在 `setup(props, ctx)` 中可使用 `ctx.emit(eventName, detail?, options?)`，底层直接调用小程序 `triggerEvent`。
 
+组件边界遵循 Vue 的大小写约定：camelCase prop 与事件会统一映射为小程序 kebab-case 宿主名称，例如 `maxQuantity` 映射为 `max-quantity`，`emit('quantityChange')` 可由父组件的 `@quantity-change` 监听。`update:modelValue` 等带冒号事件继续沿用既有的 `update-modelvalue` 映射。
+
+组件模板中的 tag、普通/函数/model prop 和监听器源码可使用 camelCase 或 kebab-case，两者会生成相同且唯一的 kebab-case 宿主名称，不会输出重复别名。运行时 `emit('quantityChange')` 与 `emit('quantity-change')` 每次都只派发一个 `quantity-change` 宿主事件。
+
 SFC 中静态可识别的组件函数 prop 绑定默认会进入 `setData` 快照，例如 `:callback="fn"`、`:on-save="handlers.save"`。动态绑定或手写组件无法被编译器精确标记时，可设置 `allowFunctionProps: true` 全量放行；需要恢复严格过滤时，可设置 `allowFunctionProps: false`。常规父子通信仍可优先使用 `emit` / 小程序事件。
 
 `options` 支持：

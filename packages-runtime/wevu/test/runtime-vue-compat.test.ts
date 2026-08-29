@@ -1107,12 +1107,37 @@ describe('runtime: vue compat helpers', () => {
     expect(triggerEvent).toHaveBeenNthCalledWith(5, 'multi-with-options', [1, 2], { composed: true })
   })
 
+  it('normalizes camelCase emit names to kebab-case listener names', () => {
+    const triggerEvent = vi.fn()
+    defineComponent({
+      setup(_props, ctx) {
+        ctx.emit('quantityChange', { quantity: 2 })
+        ctx.emit('quantity-change', { quantity: 3 })
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst = {
+      setData() {},
+      triggerEvent,
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(triggerEvent).toHaveBeenNthCalledWith(1, 'quantity-change', { quantity: 2 }, undefined)
+    expect(triggerEvent).toHaveBeenNthCalledWith(2, 'quantity-change', { quantity: 3 }, undefined)
+    expect(triggerEvent).toHaveBeenCalledTimes(2)
+  })
+
   it('exposes Vue style $emit through Options API methods', () => {
     const triggerEvent = vi.fn()
     defineComponent({
       methods: {
         notify(this: any) {
           this.$emit('update:value', 1, 2)
+          this.$emit('quantityChange', { quantity: 3 })
         },
       },
     })
@@ -1127,7 +1152,8 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.attached.call(inst)
     opts.methods.notify.call(inst)
 
-    expect(triggerEvent).toHaveBeenCalledWith('update-value', [1, 2], undefined)
+    expect(triggerEvent).toHaveBeenNthCalledWith(1, 'update-value', [1, 2], undefined)
+    expect(triggerEvent).toHaveBeenNthCalledWith(2, 'quantity-change', { quantity: 3 }, undefined)
   })
 
   it('useModel emits through the native invocation instance for setup returned methods', () => {
