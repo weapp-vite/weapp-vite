@@ -9,10 +9,24 @@ import { createTailwindcssPlugin, resolveManagedTailwindcssOptions } from './tai
 const mocks = vi.hoisted(() => ({
   createCompiler: vi.fn(),
   packageInfo: undefined as { version?: string } | undefined,
+  parseCss: vi.fn((source: string) => ({
+    source,
+    toString() {
+      return this.source
+    },
+  })),
+  removeTailwindSourceDirectivesRoot: vi.fn((root: { source: string }) => {
+    root.source = root.source.replace(/@theme[^{}]*\{[^{}]*\}\s*/g, '')
+    return true
+  }),
 }))
 
 vi.mock('weapp-tailwindcss/core', () => ({
   createCompiler: mocks.createCompiler,
+  postcss: {
+    parse: mocks.parseCss,
+  },
+  removeTailwindSourceDirectivesRoot: mocks.removeTailwindSourceDirectivesRoot,
 }))
 
 vi.mock('../runtime/localPkg', () => ({
@@ -47,6 +61,8 @@ describe('managed Tailwind integration', () => {
 
   beforeEach(() => {
     mocks.createCompiler.mockReset()
+    mocks.parseCss.mockClear()
+    mocks.removeTailwindSourceDirectivesRoot.mockClear()
     mocks.packageInfo = undefined
   })
 
@@ -108,6 +124,7 @@ describe('managed Tailwind integration', () => {
   })
 
   it('resolves default and configured CSS entries from the project', () => {
+    const onRootEvicted = vi.fn()
     expect(resolveManagedTailwindcssOptions(createContext(true))).toMatchObject({
       basedir: '/project',
       cssEntries: ['/project/src/app.css'],
@@ -119,11 +136,19 @@ describe('managed Tailwind integration', () => {
     })
     expect(resolveManagedTailwindcssOptions(createContext({
       cssEntries: ['styles/app.css'],
+      compiler: {
+        maxRoots: 64,
+        onRootEvicted,
+      },
       rem2rpx: true,
     }))).toMatchObject({
       cssEntries: ['/project/styles/app.css'],
       options: {
         cssEntries: ['/project/styles/app.css'],
+        compiler: {
+          maxRoots: 64,
+          onRootEvicted,
+        },
         rem2rpx: true,
       },
     })
@@ -149,6 +174,8 @@ describe('managed Tailwind integration', () => {
     const onLoad = vi.fn(() => calls.push('load'))
     const onStart = vi.fn(() => calls.push('start'))
     const onEnd = vi.fn(() => calls.push('end'))
+    const onRootEvicted = vi.fn()
+    const transformedCssSources: string[] = []
     const snapshot = {
       classSet: new Set(['gap-4.25']),
       dependencies: [entry],
@@ -174,7 +201,10 @@ describe('managed Tailwind integration', () => {
       }),
       transformCss: vi.fn(async (source: string) => {
         calls.push('wxss')
-        return { css: `${source}\n/* core wxss */` }
+        transformedCssSources.push(source)
+        return {
+          css: `${source.replace(/@plugin[^\n]*\n?|@source[^\n]*\n?/g, '')}\n/* core wxss */`,
+        }
       }),
       transformTemplate: vi.fn(async (source: string) => {
         calls.push('wxml')
@@ -193,6 +223,10 @@ describe('managed Tailwind integration', () => {
 
     const plugins = getPlugins({
       cssEntries: [entry],
+      compiler: {
+        maxRoots: 32,
+        onRootEvicted,
+      },
       onEnd,
       onLoad,
       onStart,
@@ -212,7 +246,7 @@ describe('managed Tailwind integration', () => {
       'app.wxss': {
         type: 'asset',
         fileName: 'app.wxss',
-        source: `${marker}\n@plugin "@iconify/tailwind4" {}\n@source "./**/*.{wxml,js,ts,vue}";\n.author{color:red}`,
+        source: `${marker}\n@plugin "@iconify/tailwind4" {}\n@source "./**/*.{wxml,js,ts,vue}";\n@theme default { --color-brand: red; }\n.author{color:red}`,
       },
       'pages/index/index.wxml': {
         type: 'asset',
@@ -233,10 +267,25 @@ describe('managed Tailwind integration', () => {
 
     expect((bundle['app.wxss'] as any).source).toContain('.gap-4_d25{gap:17rpx}')
     expect((bundle['app.wxss'] as any).source).toContain('.author{color:red}')
-    expect((bundle['app.wxss'] as any).source).not.toMatch(/@(plugin|source)\b/)
+    expect((bundle['app.wxss'] as any).source).not.toMatch(/@(plugin|source|theme)\b/)
     expect((bundle['app.wxss'] as any).source).not.toContain('managed-tailwindcss-entry')
     expect((bundle['pages/index/index.wxml'] as any).source).toContain('gap-4_d25')
     expect((bundle['app.js'] as any).code).toContain('gap-4_d25')
+    expect(transformedCssSources[0]).toMatch(/@plugin "@iconify\/tailwind4"/)
+    expect(transformedCssSources[0]).toMatch(/@source "\.\/\*\*\/\*\.\{wxml,js,ts,vue\}"/)
+    expect(transformedCssSources[0]).toMatch(/@theme default/)
+    expect(mocks.removeTailwindSourceDirectivesRoot).toHaveBeenCalledOnce()
+    expect(compiler.transformTemplate).toHaveBeenCalledWith(
+      '<view class="gap-4.25" />',
+      snapshot,
+      { filename: 'pages/index/index.wxml' },
+    )
+    expect(mocks.createCompiler).toHaveBeenCalledWith(expect.objectContaining({
+      compiler: {
+        maxRoots: 32,
+        onRootEvicted,
+      },
+    }))
     expect(calls).toEqual([
       'start',
       'load',
@@ -268,21 +317,50 @@ describe('managed Tailwind integration', () => {
     )).toMatch(/^\0weapp-vite:managed-tailwindcss-entry:0\.css\?weapp-vite-sidecar-owner=/)
   })
 
-  it('invalidates compiler roots from watch changes and removes deleted entries', async () => {
+  it('invalidates only changed files and removes generated entries when deleted', async () => {
     const entry = '/project/src/app.css'
+    const snapshot = {
+      classSet: new Set<string>(),
+      dependencies: [entry],
+      roots: [{ id: 'tailwind-root', revision: 1 }],
+      sources: [],
+      target: 'weapp',
+    }
     const compiler = {
+      generate: vi.fn(async () => ({
+        css: '',
+        dependencies: [entry],
+        snapshot,
+      })),
+      mergeSnapshots: vi.fn(() => snapshot),
+      transformCss: vi.fn(async (source: string) => ({ css: source })),
       invalidate: vi.fn(() => ['root']),
       remove: vi.fn(async () => {}),
       dispose: vi.fn(async () => {}),
     }
     mocks.createCompiler.mockReturnValue(compiler)
     const plugin = getPlugins({ cssEntries: [entry] })[0]
+    const marker = getHookHandler(plugin.transform)?.call(
+      {} as any,
+      '@import "tailwindcss";',
+      entry,
+      {} as any,
+    )?.code
+    const bundle = {
+      'app.wxss': {
+        type: 'asset',
+        fileName: 'app.wxss',
+        source: marker,
+      },
+    } as unknown as OutputBundle
+
+    await getHookHandler(plugin.generateBundle)?.call({ addWatchFile: vi.fn() } as any, {} as any, bundle, false)
 
     await plugin.watchChange?.('/project/src/pages/index.wxml', { event: 'update' } as any)
     expect(compiler.invalidate).toHaveBeenCalledWith(['/project/src/pages/index.wxml'])
 
     await plugin.watchChange?.(entry, { event: 'delete' } as any)
-    expect(compiler.remove).not.toHaveBeenCalled()
+    expect(compiler.remove).toHaveBeenCalledWith(expect.stringContaining('weapp-vite:tailwindcss:0:'))
   })
 
   it('replaces the managed physical CSS entry with its generator marker', () => {

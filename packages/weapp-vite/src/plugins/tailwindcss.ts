@@ -31,6 +31,7 @@ const CORE_NODE_RANGE = '^22.18.0 || >=24.11.0'
 const MANAGED_PLUGIN_NAME = 'weapp-vite:tailwindcss'
 const VIRTUAL_ENTRY_PREFIX = '\0weapp-vite:managed-tailwindcss-entry:'
 const TAILWIND_IMPORT_RE = /@import\s+(?:url\(\s*)?['"]tailwindcss['"]\s*\)?(?:\s|;|$)/
+const TAILWIND_SOURCE_DIRECTIVE_RE = /@(?:config|custom-variant|layer|plugin|reference|source|tailwind|theme|utility|variant)\b/
 
 type TailwindV4SourceOptions = Extract<CompilerGenerateRequest, { sourceOptions: unknown }>['sourceOptions']
 type ManagedTailwindcssOptions = UserDefinedOptions & Pick<CreateCompilerOptions, 'compiler'>
@@ -205,19 +206,6 @@ function hasTailwindImport(code: string) {
   return TAILWIND_IMPORT_RE.test(code)
 }
 
-async function stripTailwindSourceDirectives(css: string) {
-  if (!/@(?:config|custom-variant|layer|plugin|reference|source|tailwind|theme|utility|variant)\b/.test(css)) {
-    return css
-  }
-  const {
-    postcss,
-    removeTailwindSourceDirectivesRoot,
-  } = await import('@weapp-tailwindcss/postcss')
-  const root = postcss.parse(css)
-  removeTailwindSourceDirectivesRoot(root)
-  return root.toString()
-}
-
 export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   const managedOptions = resolveManagedTailwindcssOptions(ctx)
   if (!managedOptions) {
@@ -236,6 +224,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   const compilerSourceOptions = new Map<number, TailwindV4SourceOptions>()
   const compilerSnapshots = new Map<number, CompilerSnapshot>()
   let generatedEntriesPromise: Promise<CompilerGenerateResult[]> | undefined
+  let coreModulePromise: Promise<typeof import('weapp-tailwindcss/core')> | undefined
   let compilerPromise: Promise<Compiler> | undefined
   let resolvedConfig: ResolvedConfig | undefined
   let loaded = false
@@ -261,14 +250,29 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     return index
   }
 
+  function getCoreModule() {
+    coreModulePromise ??= import('weapp-tailwindcss/core')
+    return coreModulePromise
+  }
+
   async function getCompiler() {
-    compilerPromise ??= import('weapp-tailwindcss/core').then(({ createCompiler }) => createCompiler(resolved.options))
+    compilerPromise ??= getCoreModule().then(({ createCompiler }) => createCompiler(resolved.options))
     const compiler = await compilerPromise
     if (!loaded) {
       loaded = true
       resolved.options.onLoad?.()
     }
     return compiler
+  }
+
+  async function stripResidualTailwindSourceDirectives(css: string) {
+    if (!TAILWIND_SOURCE_DIRECTIVE_RE.test(css)) {
+      return css
+    }
+    const { postcss, removeTailwindSourceDirectivesRoot } = await getCoreModule()
+    const root = postcss.parse(css)
+    removeTailwindSourceDirectivesRoot(root)
+    return root.toString()
   }
 
   async function generateEntryCss(compiler: Compiler, index: number, entry: string) {
@@ -311,10 +315,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       compilerSourceOptions.delete(index)
       return
     }
-    // `@source` glob dependencies are represented as patterns by the compiler
-    // and therefore do not map every Vue/WXML source file into dependencyRoots.
-    // Invalidate known roots directly so the next bundle regenerates its snapshot.
-    compiler.invalidate([normalizedId, ...compilerRootIds.values()])
+    compiler.invalidate([normalizedId])
   }
 
   async function transformBundle(this: any, bundle: OutputBundle, options: { styles?: boolean, templates?: boolean } = {}) {
@@ -349,7 +350,6 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         continue
       }
       let source = outputAssetSource(output)
-      source = await stripTailwindSourceDirectives(source)
       let hasManagedEntry = false
       let isMainChunk = output.fileName === `app.${styleExtension}`
       for (let index = 0; index < generatedEntries.length; index++) {
@@ -388,7 +388,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
             : `${replacement}\n${source}`
         }
         else if (isCanonicalOutput) {
-          source = `${replacement}\n${await stripTailwindSourceDirectives(source)}`
+          source = `${replacement}\n${source}`
         }
         else {
           source = source.replace(outputMarker, replacement)
@@ -407,7 +407,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       const transformed = await compiler.transformCss(source, snapshot, {
         isMainChunk,
       })
-      output.source = stripManagedTailwindcssOutputMarkers(transformed.css)
+      output.source = stripManagedTailwindcssOutputMarkers(
+        await stripResidualTailwindSourceDirectives(transformed.css),
+      )
     }
 
     if (transformStyles && !ctx.configService.isDev && resolved.options.generator !== false) {
@@ -429,7 +431,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
     for (const output of Object.values(bundle)) {
       if (output.type === 'asset' && output.fileName.endsWith(`.${templateExtension}`)) {
-        output.source = await compiler.transformTemplate(outputAssetSource(output), snapshot)
+        output.source = await compiler.transformTemplate(outputAssetSource(output), snapshot, {
+          filename: output.fileName,
+        })
         continue
       }
       if (output.type !== 'chunk' || !output.fileName.endsWith('.js')) {

@@ -27,6 +27,7 @@ export interface WeappViteConfig {
     logLevel?: 'info' | 'warn' | 'error' | 'silent'
     compiler?: {
       maxRoots?: number
+      onRootEvicted?: (id: string) => void
     }
   }
   npm?: {

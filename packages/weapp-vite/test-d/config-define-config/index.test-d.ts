@@ -2,12 +2,17 @@ import type { UserConfig, WeappI18nConfig } from '.'
 import { expectAssignable, expectError } from 'tsd'
 import { defineConfig } from '.'
 
+const onTailwindRootEvicted = (id: string) => void id
+
 const objectConfig = defineConfig({
   weapp: {
     srcRoot: 'src',
     tailwindcss: {
       cssEntries: ['src/app.css'],
-      compiler: { maxRoots: 64 },
+      compiler: {
+        maxRoots: 64,
+        onRootEvicted: onTailwindRootEvicted,
+      },
       logLevel: 'silent',
       rem2rpx: true,
     },

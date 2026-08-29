@@ -229,8 +229,8 @@ catalogs:
       specifier: ^3.3.11
       version: 3.3.11
     weapp-tailwindcss:
-      specifier: ^5.4.0
-      version: 5.4.0
+      specifier: ^5.4.1
+      version: 5.4.1
     zod:
       specifier: ^4.4.3
       version: 4.4.3
@@ -251,8 +251,8 @@ catalogs:
       version: 1.16.0
   weapp-tailwindcss-fixed:
     weapp-tailwindcss:
-      specifier: 5.4.0
-      version: 5.4.0
+      specifier: 5.4.1
+      version: 5.4.1
 
 overrides:
   rolldown: 1.2.6
@@ -846,7 +846,7 @@ importers:
         version: 3.3.11(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1075,7 +1075,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1188,7 +1188,7 @@ importers:
         version: 12.0.2(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/server@2.0.0)(cac@7.0.0)(srvx@0.12.5)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.0(supports-color@10.2.2))(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.34.1)(tsx@4.23.12)(yaml@2.9.0))
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1212,7 +1212,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1256,7 +1256,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1305,7 +1305,7 @@ importers:
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1323,7 +1323,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1456,7 +1456,7 @@ importers:
         version: 3.3.11(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1680,7 +1680,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2613,7 +2613,7 @@ importers:
         version: 3.3.11(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
 
   packages/devtools-runtime:
     dependencies:
@@ -2782,9 +2782,6 @@ importers:
       '@weapp-core/shared':
         specifier: workspace:*
         version: link:../../@weapp-core/shared
-      '@weapp-tailwindcss/postcss':
-        specifier: 3.2.12
-        version: 3.2.12(jiti@2.7.0)(tailwindcss@4.3.3)(tsx@4.23.12)(yaml@2.9.0)
       '@weapp-vite/ast':
         specifier: workspace:*
         version: link:../ast
@@ -2892,7 +2889,7 @@ importers:
         version: link:../weapp-ide-cli
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       wevu:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
@@ -3535,7 +3532,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../../../packages/weapp-vite
@@ -9786,8 +9783,8 @@ packages:
     peerDependencies:
       postcss: ^8.4.38
 
-  '@weapp-tailwindcss/postcss@3.2.12':
-    resolution: {integrity: sha512-GGfCbJhhN8/DWh7xgM5Aru6G18wPlyTuFlallhZvuL6EruFWxCQiRXScDcnQ+PKVsLrzEDks3+OxIFc3LxSBtA==}
+  '@weapp-tailwindcss/postcss@3.3.0':
+    resolution: {integrity: sha512-BGmIiSUQ4zYVDKevGK63XzzLryOGuKwn9egdWkgJ28O9Fz/mvYZz87r8hcvYSuu+PfxhSl4W8mc9mjjxukQmUA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@weapp-tailwindcss/reset@0.1.4':
@@ -17400,8 +17397,8 @@ packages:
     resolution: {integrity: sha512-QR1VGXjd9NRtP89fOvqWnz903tppM9Tw+rhGEsjYkbn4+wi7gezA1J36BgiRptJCz3V7LMmj7TaJB80IdNHeAA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
-  weapp-tailwindcss@5.4.0:
-    resolution: {integrity: sha512-T95WYgI+dRdtYTc04jUDTlYjvulXkXNoZHe/dW0geYk+O5vyDYPzfkcKVAjyIoBMHXSSp7/S1bqJpgXcPlJZbw==}
+  weapp-tailwindcss@5.4.1:
+    resolution: {integrity: sha512-k3GY0HO2GsAblD2hcNRrof/fouMJUBhxDGGi3uPhnckO27ilIninlOmbPTVO1HNRElqiVACYysSTqESL7EOgmA==}
     engines: {node: ^22.18.0 || >=24.11.0}
     peerDependencies:
       '@mpxjs/webpack-plugin': '>=2.0.0 <3.0.0'
@@ -23740,7 +23737,7 @@ snapshots:
       postcss-selector-parser: 7.1.5
       postcss-value-parser: 4.2.0
 
-  '@weapp-tailwindcss/postcss@3.2.12(jiti@2.7.0)(tailwindcss@4.3.3)(tsx@4.23.12)(yaml@2.9.0)':
+  '@weapp-tailwindcss/postcss@3.3.0(jiti@2.7.0)(tailwindcss@4.3.3)(tsx@4.23.12)(yaml@2.9.0)':
     dependencies:
       '@csstools/css-color-parser': 4.2.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
@@ -32532,7 +32529,7 @@ snapshots:
       '@weapp-tailwindcss/shared': 2.0.3
       micromatch: 4.0.8
 
-  weapp-tailwindcss@5.4.0(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12):
+  weapp-tailwindcss@5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12):
     dependencies:
       '@babel/parser': 8.0.4
       '@babel/traverse': 8.0.4
@@ -32541,7 +32538,7 @@ snapshots:
       '@vue/compiler-dom': 3.5.42
       '@weapp-core/escape': 8.0.0
       '@weapp-tailwindcss/logger': 2.0.3
-      '@weapp-tailwindcss/postcss': 3.2.12(jiti@2.7.0)(tailwindcss@4.3.3)(tsx@4.23.12)(yaml@2.9.0)
+      '@weapp-tailwindcss/postcss': 3.3.0(jiti@2.7.0)(tailwindcss@4.3.3)(tsx@4.23.12)(yaml@2.9.0)
       '@weapp-tailwindcss/reset': 0.1.4(tailwindcss@4.3.3)
       '@weapp-tailwindcss/shared': 2.0.3
       comment-json: 5.0.0
