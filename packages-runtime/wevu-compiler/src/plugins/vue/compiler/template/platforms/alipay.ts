@@ -1,5 +1,5 @@
 import type { MiniProgramPlatform } from '../platform'
-import { createMiniProgramDirectiveAttrs } from '../platform'
+import { createMiniProgramDirectiveAttrs, normalizeMiniProgramEventName } from '../platform'
 
 const eventMap: Record<string, string> = {
   click: 'tap',
@@ -24,12 +24,14 @@ const eventMap: Record<string, string> = {
   longpress: 'longpress',
 }
 
+const PASCALIZE_EVENT_RE = /(^|-)([a-z0-9])/g
+
+function toPascalEventName(eventName: string) {
+  return eventName.replace(PASCALIZE_EVENT_RE, (_match, _separator, character: string) => character.toUpperCase())
+}
+
 function toOnEventName(eventName: string) {
-  if (!eventName) {
-    return 'on'
-  }
-  const first = eventName[0] ?? ''
-  return `on${first.toUpperCase()}${eventName.slice(1)}`
+  return `on${toPascalEventName(eventName)}`
 }
 
 const EVENT_BINDING_PREFIX_RE = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/
@@ -53,8 +55,7 @@ function toAlipayDirectiveEvent(prefix: string, eventName: string) {
   if (!eventName) {
     return 'on'
   }
-  const first = eventName[0] ?? ''
-  const pascalEvent = `${first.toUpperCase()}${eventName.slice(1)}`
+  const pascalEvent = toPascalEventName(eventName)
 
   switch (prefix) {
     case 'catch':
@@ -66,10 +67,6 @@ function toAlipayDirectiveEvent(prefix: string, eventName: string) {
     default:
       return toOnEventName(eventName)
   }
-}
-
-function normalizeMiniProgramEventName(name: string) {
-  return name.includes(':') ? name.replaceAll(':', '-').toLowerCase() : name
 }
 
 /**
@@ -99,7 +96,7 @@ export const alipayPlatform: MiniProgramPlatform = {
   keyThisValue: '*this',
   keyAttr: value => `${directives.keyAttr}="${value}"`,
 
-  mapEventName: eventName => eventMap[eventName] || eventName,
+  mapEventName: eventName => eventMap[eventName.toLowerCase()] || eventName,
   eventBindingAttr: (eventName) => {
     const { prefix, name } = parseEventBinding(eventName)
     return toAlipayDirectiveEvent(prefix, normalizeMiniProgramEventName(name))

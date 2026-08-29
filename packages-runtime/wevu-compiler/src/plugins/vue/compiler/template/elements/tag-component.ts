@@ -9,6 +9,7 @@ import {
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_ATTR,
 } from '@weapp-core/constants'
+import { hyphenate } from '../../../../../utils/text'
 import { transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
 import { normalizeWxmlExpressionWithContext } from '../expression'
@@ -787,7 +788,7 @@ export function transformComponentElement(node: ElementNode, context: TransformC
 
   for (const prop of otherProps) {
     if (prop.type === NodeTypes.ATTRIBUTE) {
-      const attr = transformAttribute(prop, context)
+      const attr = transformAttribute(prop, context, hyphenate(prop.name))
       if (attr) {
         attrs.push(attr)
       }

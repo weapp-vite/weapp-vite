@@ -305,9 +305,9 @@ export function renderStyleAttribute(
   return `style="${renderMustache(`${binding.name}${indexAccess}`, context)}"`
 }
 
-export function transformAttribute(node: AttributeNode, _context: TransformContext): string {
-  const { name, value } = node
-
+export function transformAttribute(node: AttributeNode, _context: TransformContext, nameOverride?: string): string {
+  const { value } = node
+  const name = nameOverride ?? node.name
   if (!value) {
     return name
   }

@@ -14,7 +14,9 @@ import {
   WEVU_JSX_ISLAND_TEMPLATE_NAME,
 } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import { traverse } from '../../../utils/babel'
+import { hyphenate } from '../../../utils/text'
 import {
   escapeText,
   normalizeInterpolationExpression,
@@ -428,23 +430,25 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     context.warnings.push('动态 JSX spread attributes 无法映射为静态 WXML，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-spread')
   }
-  const tag = toJsxTagName(node.openingElement.name, context)
-  if (tag === 'component') {
+  const rawTag = toJsxTagName(node.openingElement.name, context)
+  if (rawTag === 'component') {
     context.warnings.push('JSX 动态 component 无法映射为静态 WXML，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
   }
-  if (tag === 'Teleport') {
+  if (rawTag === 'Teleport') {
     context.warnings.push('小程序不支持 JSX <Teleport>，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
   }
-  if (tag === 'Transition') {
+  if (rawTag === 'Transition') {
     context.warnings.push('JSX <Transition> 需要 Web 动画运行时，当前仅渲染子节点。')
     return compileJsxChildren(node.children, context)
   }
-  if (tag === 'KeepAlive') {
+  if (rawTag === 'KeepAlive') {
     context.warnings.push('JSX <KeepAlive> 需要运行时缓存管理，当前仅保留标记并渲染子节点。')
     return `<block data-keep-alive="true">${compileJsxChildren(node.children, context)}</block>`
   }
+  const isComponent = !isBuiltinComponent(rawTag)
+  const tag = isComponent ? hyphenate(rawTag) : rawTag
   const hasRuntimeSlots = node.children.some((child) => {
     if (!t.isJSXExpressionContainer(child) || t.isJSXEmptyExpression(child.expression)) {
       return false
@@ -495,7 +499,7 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     context.warnings.push(`JSX ${directive} 无法直接映射当前静态 WXML，已生成 dynamic island。`)
     return registerDynamicIsland(node as unknown as Expression, context, 'closure')
   }
-  const attrs = compileJsxAttributes(node.openingElement.attributes, context)
+  const attrs = compileJsxAttributes(node.openingElement.attributes, context, { isComponent })
   const showExpression = directives.get('v-show')
   if (showExpression) {
     attrs.push(`hidden="${renderMustache(`!(${normalizeInterpolationExpression(showExpression)})`, context)}"`)

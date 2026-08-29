@@ -276,8 +276,8 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain(`customStyle="{{ {backgroundColor:'#fff',display:'flex',justifyContent:'center'} }}"`)
-    expect(code).not.toContain('customStyle="{{ {\n')
+    expect(code).toContain(`custom-style="{{ {backgroundColor:'#fff',display:'flex',justifyContent:'center'} }}"`)
+    expect(code).not.toContain('custom-style="{{ {\n')
     expect(classStyleBindings).toBeUndefined()
   })
 
@@ -1457,6 +1457,29 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('data-wd-overlay-click="1"')
     expect(code).toContain('data-wi-overlay-click="i0"')
     expect(code).not.toContain('bindoverlay-click=')
+  })
+
+  it('normalizes camelCase component props and listeners to kebab-case host names', () => {
+    const template = `
+<RetailCartItem
+  maxQuantity="9"
+  :selectedQuantity="quantity"
+  :onQuantityChange="handlers.quantityChange"
+  @quantityChange="onQuantityChange"
+/>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/cart/index.vue')
+
+    expect(code).toContain('bind:quantity-change="__weapp_vite_inline"')
+    expect(code).toContain('data-wd-quantity-change="1"')
+    expect(code).toContain('data-wi-quantity-change="i0"')
+    expect(code).toContain('max-quantity="9"')
+    expect(code).toContain('selected-quantity="{{quantity}}"')
+    expect(code).toContain('on-quantity-change="{{handlers.quantityChange}}"')
+    expect(code).not.toContain(' maxQuantity=')
+    expect(code).not.toContain(' selectedQuantity=')
+    expect(code).not.toContain(' onQuantityChange=')
   })
 
   it('emits array-based scoped slot props', () => {
@@ -3171,12 +3194,15 @@ describe('compileVueTemplateToWxml', () => {
     ['weapp', '@click.catch="onTap"', 'catchtap="onTap"'],
     ['weapp', '@overlay-click="onTap"', 'bind:overlay-click="onTap"'],
     ['weapp', '@overlay-click.stop="onTap"', 'catch:overlay-click="onTap"'],
+    ['weapp', '@quantityChange="onTap"', 'bind:quantity-change="onTap"'],
     ['tt', '@tap.stop="onTap"', 'catchtap="onTap"'],
     ['tt', '@tap.catch="onTap"', 'catchtap="onTap"'],
     ['tt', '@overlay-click="onTap"', 'bind:overlay-click="onTap"'],
+    ['tt', '@quantityChange="onTap"', 'bind:quantity-change="onTap"'],
     ['swan', '@tap.stop="onTap"', 'catchtap="onTap"'],
     ['swan', '@tap.catch="onTap"', 'catchtap="onTap"'],
     ['swan', '@overlay-click="onTap"', 'bind:overlay-click="onTap"'],
+    ['swan', '@quantityChange="onTap"', 'bind:quantity-change="onTap"'],
     ['alipay', '@tap="onTap"', 'onTap="onTap"'],
     ['alipay', '@tap.stop="onTap"', 'catchTap="onTap"'],
     ['alipay', '@tap.capture.stop="onTap"', 'captureCatchTap="onTap"'],
@@ -3186,6 +3212,7 @@ describe('compileVueTemplateToWxml', () => {
     ['alipay', '@tap.prevent="onTap"', 'onTap="onTap"'],
     ['alipay', '@tap.once="onTap"', 'onTap="onTap"'],
     ['alipay', '@tap.mut="onTap"', 'onTap="onTap"'],
+    ['alipay', '@quantityChange="onTap"', 'onQuantityChange="onTap"'],
   ])('maps event modifiers for %s template events: %s', (platform, eventDirective, expectedAttr) => {
     const template = `<view ${eventDirective}>Tap</view>`
     const { code } = compileVueTemplateToWxml(

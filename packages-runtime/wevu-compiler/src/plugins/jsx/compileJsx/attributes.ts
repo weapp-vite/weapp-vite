@@ -11,6 +11,7 @@ import {
   INLINE_DATASET_KEY,
   normalizeEventDatasetSuffix,
 } from '../../../inlineDataset'
+import { hyphenate } from '../../../utils/text'
 import {
   escapeAttr,
   normalizeInterpolationExpression,
@@ -34,19 +35,18 @@ function isEventBinding(name: string) {
     || MUT_BIND_EVENT_RE.test(name)
 }
 
-const LEADING_UPPER_RE = /^[A-Z]/
-const UPPER_CHAR_RE = /[A-Z]/g
-function lowerEventName(name: string) {
+function lowerFirstEventName(name: string) {
   if (!name) {
     return name
   }
-  return name
-    .replace(LEADING_UPPER_RE, s => s.toLowerCase())
-    .replace(UPPER_CHAR_RE, s => s.toLowerCase())
+  return `${name.charAt(0).toLowerCase()}${name.slice(1)}`
 }
 
-function resolveMappedEventName(rawName: string, context: JsxCompileContext) {
-  const resolveEvent = (name: string) => context.platform.mapEventName(lowerEventName(name))
+function resolveMappedEventName(rawName: string, context: JsxCompileContext, isComponent: boolean) {
+  const resolveEvent = (name: string) => {
+    const eventName = lowerFirstEventName(name)
+    return isComponent ? eventName : context.platform.mapEventName(eventName)
+  }
 
   if (CAPTURE_BIND_EVENT_RE.test(rawName)) {
     return resolveEvent(rawName.slice('captureBind'.length))
@@ -64,8 +64,8 @@ function resolveMappedEventName(rawName: string, context: JsxCompileContext) {
   return resolveEvent(rawName.slice('on'.length))
 }
 
-function toEventBindingName(rawName: string, context: JsxCompileContext) {
-  const eventName = resolveMappedEventName(rawName, context)
+function toEventBindingName(rawName: string, context: JsxCompileContext, isComponent: boolean) {
+  const eventName = resolveMappedEventName(rawName, context, isComponent)
 
   if (CAPTURE_BIND_EVENT_RE.test(rawName)) {
     return context.platform.eventBindingAttr(`capture-bind:${eventName}`)
@@ -123,9 +123,10 @@ function compileEventAttribute(
   name: string,
   value: JSXAttribute['value'],
   context: JsxCompileContext,
+  isComponent: boolean,
 ): string[] {
-  const bindAttr = toEventBindingName(name, context)
-  const eventName = resolveMappedEventName(name, context)
+  const bindAttr = toEventBindingName(name, context, isComponent)
+  const eventName = resolveMappedEventName(name, context, isComponent)
   const eventSuffix = normalizeEventDatasetSuffix(eventName)
   const exp = readJsxAttributeExpression(value)
   if (!exp) {
@@ -161,8 +162,9 @@ function compileNormalAttribute(
   name: string,
   value: JSXAttribute['value'],
   context: JsxCompileContext,
+  isComponent: boolean,
 ): string | null {
-  const normalizedName = name === 'className' ? 'class' : name
+  const normalizedName = name === 'className' ? 'class' : isComponent ? hyphenate(name) : name
   const exp = readJsxAttributeExpression(value)
   if (!exp) {
     return null
@@ -199,6 +201,7 @@ function compileNamedAttribute(
   name: string,
   value: JSXAttribute['value'],
   context: JsxCompileContext,
+  isComponent: boolean,
 ): string[] {
   if (name === 'key') {
     return []
@@ -223,16 +226,18 @@ function compileNamedAttribute(
     return []
   }
   if (isEventBinding(name)) {
-    return compileEventAttribute(name, value, context)
+    return compileEventAttribute(name, value, context, isComponent)
   }
-  const normalAttr = compileNormalAttribute(name, value, context)
+  const normalAttr = compileNormalAttribute(name, value, context, isComponent)
   return normalAttr ? [normalAttr] : []
 }
 
 export function compileJsxAttributes(
   attributes: Array<JSXAttribute | JSXSpreadAttribute>,
   context: JsxCompileContext,
+  options?: { isComponent?: boolean },
 ): string[] {
+  const isComponent = options?.isComponent === true
   const output: string[] = []
   for (const attr of attributes) {
     if (t.isJSXSpreadAttribute(attr)) {
@@ -243,7 +248,7 @@ export function compileJsxAttributes(
             const value = property.value
             if (t.isExpression(value)) {
               const name = t.isIdentifier(property.key) ? property.key.name : property.key.value
-              output.push(...compileNamedAttribute(name, t.jsxExpressionContainer(value), context))
+              output.push(...compileNamedAttribute(name, t.jsxExpressionContainer(value), context, isComponent))
             }
           }
           else {
@@ -273,7 +278,7 @@ export function compileJsxAttributes(
     }
 
     const name = attr.name.name
-    output.push(...compileNamedAttribute(name, attr.value, context))
+    output.push(...compileNamedAttribute(name, attr.value, context, isComponent))
   }
   return output
 }

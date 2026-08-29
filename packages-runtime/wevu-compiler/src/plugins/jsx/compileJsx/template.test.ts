@@ -26,6 +26,39 @@ describe.sequential('compileJsx template helpers', () => {
     expect(result.template).not.toMatch(/(?:\d_\d|0[bxo]|\d+n\b)/i)
   })
 
+  it('normalizes camelCase JSX component props and listeners to kebab-case host names', async () => {
+    // 动态导入用于隔离本文件后续对编译分析模块的 mock。
+    const { compileJsxTemplate } = await import('./template')
+    const result = compileJsxTemplate(
+      `export default {
+        setup() {
+          const onQuantityChange = () => {}
+          const onClick = () => {}
+          const onLongPress = () => {}
+          return () => <view onClick={onClick} onLongPress={onLongPress}>
+            <RetailCartItem
+              maxQuantity={9}
+              onQuantityChange={onQuantityChange}
+              onClick={onClick}
+              onLongPress={onLongPress}
+            />
+          </view>
+        }
+      }`,
+      '/project/src/pages/cart/index.tsx',
+    )
+
+    expect(result.template).toContain('<retail-cart-item')
+    expect(result.template).toContain('max-quantity="{{9}}"')
+    expect(result.template).toContain('bind:quantity-change="onQuantityChange"')
+    expect(result.template).toContain('<view bindtap="onClick" bindlongpress="onLongPress">')
+    expect(result.template).toMatch(/<retail-cart-item[^>]*bindclick="onClick"[^>]*bind:long-press="onLongPress"/)
+    expect(result.template).not.toMatch(/<retail-cart-item[^>]*bindtap=/)
+    expect(result.template).not.toMatch(/<retail-cart-item[^>]*bindlongpress=/)
+    expect(result.template).not.toContain(' maxQuantity=')
+    expect(result.template).not.toContain(' bindquantitychange=')
+  })
+
   it('extracts a render closure returned from setup', async () => {
     const { compileJsxTemplate } = await import('./template')
     const result = compileJsxTemplate(
