@@ -11,7 +11,7 @@ import {
   INLINE_EVENT_DETAIL_KEY,
   normalizeEventDatasetSuffix,
 } from '../../../../../inlineDataset'
-import { hyphenate } from '../../../../../utils/text'
+import { normalizeComponentHostName } from '../../../../../utils/text'
 import { getBindDirectiveExpression } from '../elements/helpers'
 import {
   normalizeWxmlExpressionWithContext,
@@ -167,7 +167,7 @@ function transformComponentModelDirective(
   const modifierProperties = modifierNames
     .map(name => `${JSON.stringify(name)}:true`)
     .join(',')
-  const modifiersProp = hyphenate(modelProp === 'modelValue' ? 'modelModifiers' : `${modelProp}Modifiers`)
+  const modifiersProp = normalizeComponentHostName(modelProp === 'modelValue' ? 'modelModifiers' : `${modelProp}Modifiers`)
   const modifiersRef = modifierNames.length
     ? registerRuntimeBindingExpression(
         `{${modifierProperties}}`,

@@ -11,7 +11,7 @@ import {
   INLINE_DATASET_KEY,
   normalizeEventDatasetSuffix,
 } from '../../../inlineDataset'
-import { hyphenate } from '../../../utils/text'
+import { normalizeComponentHostName } from '../../../utils/text'
 import {
   escapeAttr,
   normalizeInterpolationExpression,
@@ -164,7 +164,7 @@ function compileNormalAttribute(
   context: JsxCompileContext,
   isComponent: boolean,
 ): string | null {
-  const normalizedName = name === 'className' ? 'class' : isComponent ? hyphenate(name) : name
+  const normalizedName = name === 'className' ? 'class' : isComponent ? normalizeComponentHostName(name) : name
   const exp = readJsxAttributeExpression(value)
   if (!exp) {
     return null

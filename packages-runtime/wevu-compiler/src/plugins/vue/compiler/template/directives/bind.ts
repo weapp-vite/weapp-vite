@@ -3,7 +3,7 @@ import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import * as t from '@weapp-vite/ast/babelTypes'
-import { hyphenate } from '../../../../../utils/text'
+import { normalizeComponentHostName } from '../../../../../utils/text'
 import { getBindDirectiveExpression } from '../elements/helpers'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { generateExpression, parseBabelExpression } from '../expression/parse'
@@ -177,7 +177,7 @@ export function transformBindDirective(
     return null
   }
   const argValue = arg.type === NodeTypes.SIMPLE_EXPRESSION ? arg.content : ''
-  const outputArgValue = options?.isComponent ? hyphenate(argValue) : argValue
+  const outputArgValue = options?.isComponent ? normalizeComponentHostName(argValue) : argValue
   const rawExpValue = getBindDirectiveExpression(node)
   if (!rawExpValue) {
     return null
