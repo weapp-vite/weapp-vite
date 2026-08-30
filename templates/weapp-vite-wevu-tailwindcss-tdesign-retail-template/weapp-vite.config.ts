@@ -1,5 +1,4 @@
 import path from 'node:path'
-import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
@@ -17,6 +16,10 @@ export default defineConfig({
   },
   weapp: {
     srcRoot: 'src',
+    tailwindcss: {
+      rem2rpx: true,
+      cssEntries: ['src/app.css'],
+    },
     chunks: {
       sharedStrategy: 'hoist',
     },
@@ -51,10 +54,4 @@ export default defineConfig({
     },
     // weapp-vite options
   },
-  plugins: [
-    WeappTailwindcss({
-      rem2rpx: true,
-      cssEntries: [path.resolve(import.meta.dirname, 'src/app.css')],
-    }),
-  ],
 })

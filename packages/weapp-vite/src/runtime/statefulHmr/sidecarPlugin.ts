@@ -17,6 +17,10 @@ export function createStatefulHmrSidecarPlugin(): Plugin {
     name: 'weapp-vite:stateful-hmr-sidecar',
     enforce: 'pre',
     async load(id) {
+      // 内部虚拟模块由其 owning plugin 负责加载，不能当作文件路径读取。
+      if (id.includes('\0')) {
+        return
+      }
       const request = parseSidecarSourceRequest(id)
       if (!request) {
         return

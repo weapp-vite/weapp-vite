@@ -49,7 +49,6 @@
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
     "vue-tsc": "catalog:",
-    "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

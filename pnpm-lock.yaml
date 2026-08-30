@@ -229,8 +229,8 @@ catalogs:
       specifier: ^3.3.11
       version: 3.3.11
     weapp-tailwindcss:
-      specifier: ^5.3.6
-      version: 5.3.6
+      specifier: ^5.4.1
+      version: 5.4.1
     zod:
       specifier: ^4.4.3
       version: 4.4.3
@@ -251,8 +251,8 @@ catalogs:
       version: 1.16.0
   weapp-tailwindcss-fixed:
     weapp-tailwindcss:
-      specifier: 5.3.6
-      version: 5.3.6
+      specifier: 5.4.1
+      version: 5.4.1
 
 overrides:
   rolldown: 1.2.6
@@ -846,7 +846,7 @@ importers:
         version: 3.3.11(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1075,7 +1075,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1188,7 +1188,7 @@ importers:
         version: 12.0.2(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/server@2.0.0)(cac@7.0.0)(srvx@0.12.5)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.0(supports-color@10.2.2))(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.34.1)(tsx@4.23.12)(yaml@2.9.0))
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1212,7 +1212,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1256,7 +1256,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1305,7 +1305,7 @@ importers:
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1323,7 +1323,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1456,7 +1456,7 @@ importers:
         version: 3.3.11(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1635,9 +1635,6 @@ importers:
       tailwindcss:
         specifier: catalog:tailwind4
         version: 4.3.3
-      weapp-tailwindcss:
-        specifier: catalog:weapp-tailwindcss-fixed
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1683,7 +1680,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1699,9 +1696,6 @@ importers:
       tailwindcss:
         specifier: catalog:tailwind4
         version: 4.3.3
-      weapp-tailwindcss:
-        specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1865,9 +1859,6 @@ importers:
       tailwindcss:
         specifier: catalog:tailwind4
         version: 4.3.3
-      weapp-tailwindcss:
-        specifier: catalog:weapp-tailwindcss-fixed
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2014,9 +2005,6 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.11(typescript@6.0.3)
-      weapp-tailwindcss:
-        specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2625,7 +2613,7 @@ importers:
         version: 3.3.11(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
 
   packages/devtools-runtime:
     dependencies:
@@ -2899,6 +2887,9 @@ importers:
       weapp-ide-cli:
         specifier: workspace:*
         version: link:../weapp-ide-cli
+      weapp-tailwindcss:
+        specifier: 'catalog:'
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       wevu:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
@@ -3165,9 +3156,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
-      weapp-tailwindcss:
-        specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -3216,9 +3204,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
-      weapp-tailwindcss:
-        specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -3271,9 +3256,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
-      weapp-tailwindcss:
-        specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -3365,9 +3347,6 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.11(typescript@6.0.3)
-      weapp-tailwindcss:
-        specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -3420,9 +3399,6 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.11(typescript@6.0.3)
-      weapp-tailwindcss:
-        specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -3556,7 +3532,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
+        version: 5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12)
       weapp-vite:
         specifier: workspace:*
         version: link:../../../../packages/weapp-vite
@@ -7326,22 +7302,10 @@ packages:
   '@oxc-node/core@0.1.0':
     resolution: {integrity: sha512-Spk/ey3zg1CpBU1eUHBPbAbfFddntutZPPsweh+kNh9M9Ksc8j9OCujralW9HrVyi6nNWek1PnMfSZ7NPLLCKA==}
 
-  '@oxc-parser/binding-android-arm-eabi@0.146.0':
-    resolution: {integrity: sha512-jBCZIsff/9J/zdK1KSKZREScXOtRE4wYO+MUjrE+5NHGdsslrP4biJA9QJyKwErwS8lkwxH6Z537HaL4CQr0ow==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm]
-    os: [android]
-
   '@oxc-parser/binding-android-arm-eabi@0.147.0':
     resolution: {integrity: sha512-fOtoGvIoirkvxQVw9J1WJPxz571XPgLsPf9uhRD+PJteUnvrJHMDmK9pw2yZEGGyismtRoEsp+JcXUdF/JDMDw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
-    os: [android]
-
-  '@oxc-parser/binding-android-arm64@0.146.0':
-    resolution: {integrity: sha512-BVwj6sVmgD9j5F+R5B+13pYQKOCmew+3myS19wcG5e+AeZu5ybBLEfcaKueC8MhvjtwL2Suh2tQE/Ywop2Z8rA==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
     os: [android]
 
   '@oxc-parser/binding-android-arm64@0.147.0':
@@ -7350,22 +7314,10 @@ packages:
     cpu: [arm64]
     os: [android]
 
-  '@oxc-parser/binding-darwin-arm64@0.146.0':
-    resolution: {integrity: sha512-jQGIM4zEEvvuypbBcoeoWuigRfP6R8Ow/9gfDzVoYkv5mFyVPbIePNQnV752jUynfty0nDxarIpML+7Q/MyMPg==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
-    os: [darwin]
-
   '@oxc-parser/binding-darwin-arm64@0.147.0':
     resolution: {integrity: sha512-kXvBPJL7RmDPJ2mze/vXPPVQimCDtFr9OFLjf7dyhV5Dx64cgcXh9KKrA1sMWvCObvJll9CZZUO0FBlFwD0l6A==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
-    os: [darwin]
-
-  '@oxc-parser/binding-darwin-x64@0.146.0':
-    resolution: {integrity: sha512-quDy3cvW1712l6W+qe1/xWRym6STOuGJmFzRIg5StXVJglsbqrCpHfw9PyqPs0hQeOAjAEO1USrjPaIvHiRKQw==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [x64]
     os: [darwin]
 
   '@oxc-parser/binding-darwin-x64@0.147.0':
@@ -7374,32 +7326,14 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@oxc-parser/binding-freebsd-x64@0.146.0':
-    resolution: {integrity: sha512-wx/p/9phlX4VbYk671G4WewST3pysXNQfZRx4gx69QIz0/uW2O3MCnnEQh4il6l2lYr0EDAq3kFYovIw68CXHw==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [x64]
-    os: [freebsd]
-
   '@oxc-parser/binding-freebsd-x64@0.147.0':
     resolution: {integrity: sha512-v38aiF11qufOTBcCAKL4skgQf0zJ4NEvRlivq7B5kHrlyvjCLjvNrMtNWDTz1SDUL6/xVsJRmLDxv2e+Cp4oWw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [freebsd]
 
-  '@oxc-parser/binding-linux-arm-gnueabihf@0.146.0':
-    resolution: {integrity: sha512-W9nzfbWH8Z6cIaBj6Rh/eVgymFkZ2MaOV0rQruKTLYKLAZADo9JlOmBml6Dq2QbChtmuc3DKDL42KDHaQFX8yQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm]
-    os: [linux]
-
   '@oxc-parser/binding-linux-arm-gnueabihf@0.147.0':
     resolution: {integrity: sha512-AeIiBbwUaP0H1+4/qGW9l5qHecS/+XA5iMuieVcGb1T+tyc2dVGspFW13BWk/XrLsiGP/CiDJTJqAPLLCzZHkw==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm]
-    os: [linux]
-
-  '@oxc-parser/binding-linux-arm-musleabihf@0.146.0':
-    resolution: {integrity: sha512-S5X1mEvTLBTl+xt7bRlr1n6qI+OTy1EaRkYyd4EQgEZqV7i53fQa1I72OqR0IwSQKVwh6TZPkzDcsN7fS9MynQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [linux]
@@ -7410,26 +7344,12 @@ packages:
     cpu: [arm]
     os: [linux]
 
-  '@oxc-parser/binding-linux-arm64-gnu@0.146.0':
-    resolution: {integrity: sha512-Br9UB4nnecVfj/Vp+JiJnJo2wIJtwaOm+uN7MwWKF5cx10P816urucmksG/iG2OeL7hfZ4h5fCmePrLU6TocfQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
   '@oxc-parser/binding-linux-arm64-gnu@0.147.0':
     resolution: {integrity: sha512-bmpw/RPhVXgZbtb3xBDuwW5s8+LvZYdqcDSX/sP2ltL77aTio3DP/B5ZTwwgoJ6Mr9vJs4RrmgEKW9XkLNUU1g==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
-
-  '@oxc-parser/binding-linux-arm64-musl@0.146.0':
-    resolution: {integrity: sha512-5AP+od9VGhRyCwswTfuD0jSDfIcWptEBC+K0LWmXsUJ9BPVF3KbhsjeoV+9tijX6g5is0w4H8DUV7NkOJoOVVA==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
-    os: [linux]
-    libc: [musl]
 
   '@oxc-parser/binding-linux-arm64-musl@0.147.0':
     resolution: {integrity: sha512-gd7VX/FDVOw6mjQcu45iIcp4QkgybgJwh3a0OFG2NxmPCj628mQWD96QGu1kK8+mZF9qK4b/gIEyC63vQoB7+Q==}
@@ -7438,24 +7358,10 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@oxc-parser/binding-linux-ppc64-gnu@0.146.0':
-    resolution: {integrity: sha512-Qz3jc1qgvU9B9vQu3jAJcxKlGX7zYRtKs8LPYtQi8cmirhtYcX6XvXseESaDFbi1L+SorXhjRQ/2npEX85kKBw==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [ppc64]
-    os: [linux]
-    libc: [glibc]
-
   '@oxc-parser/binding-linux-ppc64-gnu@0.147.0':
     resolution: {integrity: sha512-HnAzcfki7dSUNHf510Q2NmbJlz8Ys7rn8l9l588Pkx0tYe1BHLZnmELIgqizJ4WPhHGSwN8Ce+B/menVxS3odA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ppc64]
-    os: [linux]
-    libc: [glibc]
-
-  '@oxc-parser/binding-linux-riscv64-gnu@0.146.0':
-    resolution: {integrity: sha512-Mfmg18lOZ1IWJJJuHi1ZsMLunqNVeLEh3Byuw+Aa8dYo7qOrZOMZQz1gFgAeNga5/Z5jjRuIKuIdo9aO7HYMdg==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [riscv64]
     os: [linux]
     libc: [glibc]
 
@@ -7466,13 +7372,6 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@oxc-parser/binding-linux-riscv64-musl@0.146.0':
-    resolution: {integrity: sha512-6OdXwYnzbwYcnUH8f0LYauLNitjIcgDR/CDA/wcZ2whwJwVflGtCLF3+3HOXgs/SESnpQCWXr7Q/z9muLJ5bmQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [riscv64]
-    os: [linux]
-    libc: [musl]
-
   '@oxc-parser/binding-linux-riscv64-musl@0.147.0':
     resolution: {integrity: sha512-DlefD7L7sMXs/3hIBH23Egk0phj8kG0SA81dVGOQ3S1ekjOlmTLH2E+F2Thwfh1slKx6aH+lNc5fQYAw0GU7/g==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -7480,24 +7379,10 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@oxc-parser/binding-linux-s390x-gnu@0.146.0':
-    resolution: {integrity: sha512-BilV4Ei84A0m6r1v+LmgVrfUMbAz33IXRooVw/BQNDExUvGGNLrk6NWeot+ve99bRidTZdwWuzBHgxWCnSSa9Q==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [s390x]
-    os: [linux]
-    libc: [glibc]
-
   '@oxc-parser/binding-linux-s390x-gnu@0.147.0':
     resolution: {integrity: sha512-Xqpagk/031IvZ4svrk2FF01YEqM/iN3MJV3SVZadKg/CsGlDCGoREqKHXYnoV5+8SfGe/m6RM1szXFLusTu/Uw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [s390x]
-    os: [linux]
-    libc: [glibc]
-
-  '@oxc-parser/binding-linux-x64-gnu@0.146.0':
-    resolution: {integrity: sha512-RaMfGIpWOa87u3aD87drbPgisy7Nv6gIdjRFw6msIDKO+3FmcOTw+vpp4hVANhUIzpQta2EAsmYQRrqeprZTmQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [x64]
     os: [linux]
     libc: [glibc]
 
@@ -7508,13 +7393,6 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@oxc-parser/binding-linux-x64-musl@0.146.0':
-    resolution: {integrity: sha512-0bzF60jfQRsJ9TJOIHK+wSUirenJAyWCdP9z3P6LMS0znD4Gf7WYOiv7niONVOpRnlGjzMPd4kqgOJfCDLQAQg==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [x64]
-    os: [linux]
-    libc: [musl]
-
   '@oxc-parser/binding-linux-x64-musl@0.147.0':
     resolution: {integrity: sha512-NXy1tv/OdC+pPTwf9RiCZWPK53V/Xq/2cjSnjOSyKopajdaDqMIkgtDY+jXZemp2e8px5FeWfY2L2LwhKZQovg==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -7522,34 +7400,16 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@oxc-parser/binding-openharmony-arm64@0.146.0':
-    resolution: {integrity: sha512-O1gxUFt5FUgyFVUQK2BhZNwv7jLsqLR8uBANOhpYE5D5q+eCvcry7RvQT3DgKpWP1XRYB5UsbQGHHcwchEKb+w==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
-    os: [openharmony]
-
   '@oxc-parser/binding-openharmony-arm64@0.147.0':
     resolution: {integrity: sha512-GpGWZ6oKz4bjCWW9Mz5pCaGPyk2Aaze6zEoaslIQqpSLtpx5pXj/ap5gUNb5Jn2LIbqWyjkGLX9yv3NMuNcBVQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [openharmony]
 
-  '@oxc-parser/binding-win32-arm64-msvc@0.146.0':
-    resolution: {integrity: sha512-i46zYS0TTCt+oaXaDx4mKxuXo+h8OBWI12XFatRm5I9/l2WKhp4TQ6VAjw0r1NMRiQQZ9dwQlRyQNhyTkOaINg==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [arm64]
-    os: [win32]
-
   '@oxc-parser/binding-win32-arm64-msvc@0.147.0':
     resolution: {integrity: sha512-a8mlt7CC8z7LUdCfaxhff4kCd+vSjE+NEFL0cxA8ukfuSnvAto/pWTjytW4BuVLnQGcCVdHJwcRKOfs++H+tjw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
-    os: [win32]
-
-  '@oxc-parser/binding-win32-ia32-msvc@0.146.0':
-    resolution: {integrity: sha512-v1bb+ma2oKXwh4NHAg2NQwe9ORXFBDSCEkuO1qC4Rzm8EXcQdNhiJHpTNfulZ2P+1QpYUB6QYupW4mgMVom/tA==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [ia32]
     os: [win32]
 
   '@oxc-parser/binding-win32-ia32-msvc@0.147.0':
@@ -7558,20 +7418,11 @@ packages:
     cpu: [ia32]
     os: [win32]
 
-  '@oxc-parser/binding-win32-x64-msvc@0.146.0':
-    resolution: {integrity: sha512-uT8N1/qdNSGonvW1O2kZYNczqb/VYfnj5dpUy1FmedOPodj3MNFNWhAJkMZlI5u8xuTRtrpTccnr0U5HAMVRjQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [x64]
-    os: [win32]
-
   '@oxc-parser/binding-win32-x64-msvc@0.147.0':
     resolution: {integrity: sha512-DUaE13OwnUSlHpLZNcC/nuT10ivlWqc5EZgsfgXuAmWYw0r3nDxGeLD1zlGwYwIgVk1/ZMAxoXpV+05stvbHaA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [win32]
-
-  '@oxc-project/types@0.146.0':
-    resolution: {integrity: sha512-XC0QsnnhVe7sLIWmYmdPw7x5P0h4W8vUU3Nv1ySgWXtvCz8NizoAEpGXA0sOYoJQV2Rl13LgURAHQ5cI5ILCSA==}
 
   '@oxc-project/types@0.147.0':
     resolution: {integrity: sha512-IJ3s6ltHLp45S0bh7phkX+gJO7A1Wuz2EaqpAhb8WjqDwbzMiWKHhyyT42tskaWjEYXtHtVCPpnBJVT9+dcRLg==}
@@ -9918,26 +9769,26 @@ packages:
   '@weapp-core/escape@8.0.0':
     resolution: {integrity: sha512-dH2zPSfsqEoIuAVLUu1UCEubfFdQoJo6gUneTpvUjz30hss/MgAkj6b1WEylCqOPT6g8d4bj66TWPRsg6QGcLA==}
 
-  '@weapp-tailwindcss/logger@2.0.2':
-    resolution: {integrity: sha512-7sP025ZpBstXjBeUXWtJJZUkMZnEXW4o9QWBp/N1VkYhfg53Qg9pfMOQ3iNG3cXqTwKRN52+NKqXswaHRrr0lw==}
+  '@weapp-tailwindcss/logger@2.0.3':
+    resolution: {integrity: sha512-wksr6jNIE+Rwuq1PEDlu6tKorzzg1FhMV45SJob9C5Aj8AnQDjwRqIYsvCkRwrEu7mdzJkTldNGddG/ecSWmog==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@weapp-tailwindcss/merge@2.2.2':
     resolution: {integrity: sha512-XHP7tt76ENj67TFeYonDYFGynoIUXmAcw9IoL9yU8kS2Rwj3nBMrhnta0dQxTuilX48201zD51w3L90YcoZJlw==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
-  '@weapp-tailwindcss/postcss-calc@1.0.4':
-    resolution: {integrity: sha512-lOu5j7DWToyyweOMh3nzReJ3kUglzv0T/vG87ViwHHq6LtWjXaG7Za70zX3u0HWuY/QcmYVJ+8LwijK9v8tWOQ==}
+  '@weapp-tailwindcss/postcss-calc@1.0.5':
+    resolution: {integrity: sha512-w/jAGPs88Gk6D5wcFU+p7NBtRsDONCvt+L++ZMzxrzuxAzFgo32NX7XZm0GlHrlpHFq2Lh3UQWQiSwB0AcQAsw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       postcss: ^8.4.38
 
-  '@weapp-tailwindcss/postcss@3.2.11':
-    resolution: {integrity: sha512-wDVpQyErBHnVjxRBAkTlwB8MJ1+o86Wbz0UyB96OasoGWAW4+rJcP0l4msv59/OtMMGXgn7CM4e4Gi8W9Rp55A==}
+  '@weapp-tailwindcss/postcss@3.3.0':
+    resolution: {integrity: sha512-BGmIiSUQ4zYVDKevGK63XzzLryOGuKwn9egdWkgJ28O9Fz/mvYZz87r8hcvYSuu+PfxhSl4W8mc9mjjxukQmUA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
-  '@weapp-tailwindcss/reset@0.1.3':
-    resolution: {integrity: sha512-hIZATGJT7FnE7lLSEaxF1/Ksn1GMtWV/xxfCjDkYSFjRqgCbvVSG2rxNdY8j/W3+CxwZm3Dm7t2EV7io++U77w==}
+  '@weapp-tailwindcss/reset@0.1.4':
+    resolution: {integrity: sha512-tNZck66VQ5ckSnoTA3vhdTQ5hYGnbIvFM7hohs3wEtBLmv6g2tWzi5Hi0OfLP1s/UYE3MnuZqsOsqVe822+q5Q==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       tailwindcss: ^3.0.0 || ^4.0.0
@@ -9946,8 +9797,8 @@ packages:
     resolution: {integrity: sha512-f5FXT+vjzYoffl7ud1w0VRcb3czRgBb8IWLgZUqB15PsXOgIHb5JP9LrP61cnPuiqu1CQBCSNflawkRR27KQKQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
-  '@weapp-tailwindcss/shared@2.0.2':
-    resolution: {integrity: sha512-GuMV+SCWWnwra2pDdz7fkxEJLfUAPMXUsruIomEz7e7Mr2A49rntjgJbzkGoyO/MpnfdzP+WsGUakHXTxzKmHA==}
+  '@weapp-tailwindcss/shared@2.0.3':
+    resolution: {integrity: sha512-mvbXsYwsxQHjb1ow7QABm3cZcim3P5k3Ly+kX1GRB937WHKGmWVjEAuc2Jpy48s+e9CNsJiaS8BX4wmWCJKV/Q==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@weapp-vite/eslint@0.1.0':
@@ -14533,10 +14384,6 @@ packages:
     resolution: {integrity: sha512-qFOyK5PjiWZd+QQIh+1jhdb9LpxTF0qs7Pm8o5QHYZ0M3vKqSqzsZaEB6oWlxZ+q2sJBMI/Ktgd2N5ZwQoRHfg==}
     engines: {node: '>= 0.4'}
 
-  oxc-parser@0.146.0:
-    resolution: {integrity: sha512-hrt0Ou2mCL8dLuvfvKWFjRlWaJKt0Xs7CfacAgb9mha0gKW1lSisUzNRyALgItMPIfThxkl8jH2ONP6ZbQXpaA==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-
   oxc-parser@0.147.0:
     resolution: {integrity: sha512-5xaug6t7GfV3BO5Iv+xHW1rmQkDEQ3BEu3L8g3InsvWO5i8CYGc4tCZ2X985QcwWNycFJam+aOns6Nr2XAThTA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -16643,8 +16490,8 @@ packages:
       tailwindcss:
         optional: true
 
-  tailwindcss-config@2.0.3:
-    resolution: {integrity: sha512-bSsgT78d+bMef+L/fSt/GzH4mXrQG51RpwiBv3kuyQigcv9JTtB6SKYuR9fz6hRBAMabPiPW8euNzMb6mSMyWQ==}
+  tailwindcss-config@2.0.4:
+    resolution: {integrity: sha512-237nELCqQPPTuRzjYcQvdCU7coz9AJfFnPdF6h57UjCk/eJUoRXAkh6Oh+JR4xYYr8IU3Z6lq301+KXZEj8/BQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   tailwindcss@4.3.3:
@@ -17546,12 +17393,12 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
-  weapp-style-injector@1.0.3:
-    resolution: {integrity: sha512-yIYWY1Ruk9nlEm/JCf5AKYJZ+752E8k3kyVuHbgvih6x7kCHoMbHvyLLld2YsWDKPnfmwk2cRnZaiPeDrhsmfw==}
+  weapp-style-injector@1.0.4:
+    resolution: {integrity: sha512-QR1VGXjd9NRtP89fOvqWnz903tppM9Tw+rhGEsjYkbn4+wi7gezA1J36BgiRptJCz3V7LMmj7TaJB80IdNHeAA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
-  weapp-tailwindcss@5.3.6:
-    resolution: {integrity: sha512-JbBaFZYODykdCHITlbsVkcdBPRqi1NgSOVCgUzDavzu9UHs07a4q9U5ocNkW2m4k2AHo+31fYWL6VMn+MGwYUA==}
+  weapp-tailwindcss@5.4.1:
+    resolution: {integrity: sha512-k3GY0HO2GsAblD2hcNRrof/fouMJUBhxDGGi3uPhnckO27ilIninlOmbPTVO1HNRElqiVACYysSTqESL7EOgmA==}
     engines: {node: ^22.18.0 || >=24.11.0}
     peerDependencies:
       '@mpxjs/webpack-plugin': '>=2.0.0 <3.0.0'
@@ -21097,121 +20944,62 @@ snapshots:
       '@oxc-node/core-win32-ia32-msvc': 0.1.0
       '@oxc-node/core-win32-x64-msvc': 0.1.0
 
-  '@oxc-parser/binding-android-arm-eabi@0.146.0':
-    optional: true
-
   '@oxc-parser/binding-android-arm-eabi@0.147.0':
-    optional: true
-
-  '@oxc-parser/binding-android-arm64@0.146.0':
     optional: true
 
   '@oxc-parser/binding-android-arm64@0.147.0':
     optional: true
 
-  '@oxc-parser/binding-darwin-arm64@0.146.0':
-    optional: true
-
   '@oxc-parser/binding-darwin-arm64@0.147.0':
-    optional: true
-
-  '@oxc-parser/binding-darwin-x64@0.146.0':
     optional: true
 
   '@oxc-parser/binding-darwin-x64@0.147.0':
     optional: true
 
-  '@oxc-parser/binding-freebsd-x64@0.146.0':
-    optional: true
-
   '@oxc-parser/binding-freebsd-x64@0.147.0':
-    optional: true
-
-  '@oxc-parser/binding-linux-arm-gnueabihf@0.146.0':
     optional: true
 
   '@oxc-parser/binding-linux-arm-gnueabihf@0.147.0':
     optional: true
 
-  '@oxc-parser/binding-linux-arm-musleabihf@0.146.0':
-    optional: true
-
   '@oxc-parser/binding-linux-arm-musleabihf@0.147.0':
-    optional: true
-
-  '@oxc-parser/binding-linux-arm64-gnu@0.146.0':
     optional: true
 
   '@oxc-parser/binding-linux-arm64-gnu@0.147.0':
     optional: true
 
-  '@oxc-parser/binding-linux-arm64-musl@0.146.0':
-    optional: true
-
   '@oxc-parser/binding-linux-arm64-musl@0.147.0':
-    optional: true
-
-  '@oxc-parser/binding-linux-ppc64-gnu@0.146.0':
     optional: true
 
   '@oxc-parser/binding-linux-ppc64-gnu@0.147.0':
     optional: true
 
-  '@oxc-parser/binding-linux-riscv64-gnu@0.146.0':
-    optional: true
-
   '@oxc-parser/binding-linux-riscv64-gnu@0.147.0':
-    optional: true
-
-  '@oxc-parser/binding-linux-riscv64-musl@0.146.0':
     optional: true
 
   '@oxc-parser/binding-linux-riscv64-musl@0.147.0':
     optional: true
 
-  '@oxc-parser/binding-linux-s390x-gnu@0.146.0':
-    optional: true
-
   '@oxc-parser/binding-linux-s390x-gnu@0.147.0':
-    optional: true
-
-  '@oxc-parser/binding-linux-x64-gnu@0.146.0':
     optional: true
 
   '@oxc-parser/binding-linux-x64-gnu@0.147.0':
     optional: true
 
-  '@oxc-parser/binding-linux-x64-musl@0.146.0':
-    optional: true
-
   '@oxc-parser/binding-linux-x64-musl@0.147.0':
-    optional: true
-
-  '@oxc-parser/binding-openharmony-arm64@0.146.0':
     optional: true
 
   '@oxc-parser/binding-openharmony-arm64@0.147.0':
     optional: true
 
-  '@oxc-parser/binding-win32-arm64-msvc@0.146.0':
-    optional: true
-
   '@oxc-parser/binding-win32-arm64-msvc@0.147.0':
-    optional: true
-
-  '@oxc-parser/binding-win32-ia32-msvc@0.146.0':
     optional: true
 
   '@oxc-parser/binding-win32-ia32-msvc@0.147.0':
     optional: true
 
-  '@oxc-parser/binding-win32-x64-msvc@0.146.0':
-    optional: true
-
   '@oxc-parser/binding-win32-x64-msvc@0.147.0':
     optional: true
-
-  '@oxc-project/types@0.146.0': {}
 
   '@oxc-project/types@0.147.0': {}
 
@@ -23932,7 +23720,7 @@ snapshots:
 
   '@weapp-core/escape@8.0.0': {}
 
-  '@weapp-tailwindcss/logger@2.0.2':
+  '@weapp-tailwindcss/logger@2.0.3':
     dependencies:
       consola: 3.4.2
       picocolors: 1.1.1
@@ -23943,21 +23731,21 @@ snapshots:
       '@weapp-tailwindcss/runtime': 0.1.7
       tailwind-merge: 3.6.0
 
-  '@weapp-tailwindcss/postcss-calc@1.0.4(postcss@8.5.26)':
+  '@weapp-tailwindcss/postcss-calc@1.0.5(postcss@8.5.26)':
     dependencies:
       postcss: 8.5.26
       postcss-selector-parser: 7.1.5
       postcss-value-parser: 4.2.0
 
-  '@weapp-tailwindcss/postcss@3.2.11(jiti@2.7.0)(tailwindcss@4.3.3)(tsx@4.23.12)(yaml@2.9.0)':
+  '@weapp-tailwindcss/postcss@3.3.0(jiti@2.7.0)(tailwindcss@4.3.3)(tsx@4.23.12)(yaml@2.9.0)':
     dependencies:
       '@csstools/css-color-parser': 4.2.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-tokenizer': 4.0.0
       '@tailwindcss-mangle/engine': 0.2.0(tailwindcss@4.3.3)
       '@weapp-core/escape': 8.0.0
-      '@weapp-tailwindcss/postcss-calc': 1.0.4(postcss@8.5.26)
-      '@weapp-tailwindcss/shared': 2.0.2
+      '@weapp-tailwindcss/postcss-calc': 1.0.5(postcss@8.5.26)
+      '@weapp-tailwindcss/shared': 2.0.3
       autoprefixer: 10.5.4(postcss@8.5.26)
       es-toolkit: 1.51.0
       lru-cache: 11.5.2
@@ -23968,16 +23756,17 @@ snapshots:
       postcss-pxtrans: 1.0.4(postcss@8.5.26)
       postcss-rem-to-responsive-pixel: 7.0.5(postcss@8.5.26)
       postcss-rule-unit-converter: 0.2.3(postcss@8.5.26)
+      postcss-scss: 4.0.9(postcss@8.5.26)
       postcss-selector-parser: 7.1.5
       postcss-value-parser: 4.2.0
-      tailwindcss-config: 2.0.3
+      tailwindcss-config: 2.0.4
     transitivePeerDependencies:
       - jiti
       - tailwindcss
       - tsx
       - yaml
 
-  '@weapp-tailwindcss/reset@0.1.3(tailwindcss@4.3.3)':
+  '@weapp-tailwindcss/reset@0.1.4(tailwindcss@4.3.3)':
     dependencies:
       tailwindcss: 4.3.3
 
@@ -23986,7 +23775,7 @@ snapshots:
       '@weapp-core/escape': 8.0.0
       clsx: 2.1.1
 
-  '@weapp-tailwindcss/shared@2.0.2':
+  '@weapp-tailwindcss/shared@2.0.3':
     dependencies:
       defu: 6.1.7
       get-value: 4.1.0
@@ -29301,30 +29090,6 @@ snapshots:
       safe-push-apply: 1.0.0
     optional: true
 
-  oxc-parser@0.146.0:
-    dependencies:
-      '@oxc-project/types': 0.146.0
-    optionalDependencies:
-      '@oxc-parser/binding-android-arm-eabi': 0.146.0
-      '@oxc-parser/binding-android-arm64': 0.146.0
-      '@oxc-parser/binding-darwin-arm64': 0.146.0
-      '@oxc-parser/binding-darwin-x64': 0.146.0
-      '@oxc-parser/binding-freebsd-x64': 0.146.0
-      '@oxc-parser/binding-linux-arm-gnueabihf': 0.146.0
-      '@oxc-parser/binding-linux-arm-musleabihf': 0.146.0
-      '@oxc-parser/binding-linux-arm64-gnu': 0.146.0
-      '@oxc-parser/binding-linux-arm64-musl': 0.146.0
-      '@oxc-parser/binding-linux-ppc64-gnu': 0.146.0
-      '@oxc-parser/binding-linux-riscv64-gnu': 0.146.0
-      '@oxc-parser/binding-linux-riscv64-musl': 0.146.0
-      '@oxc-parser/binding-linux-s390x-gnu': 0.146.0
-      '@oxc-parser/binding-linux-x64-gnu': 0.146.0
-      '@oxc-parser/binding-linux-x64-musl': 0.146.0
-      '@oxc-parser/binding-openharmony-arm64': 0.146.0
-      '@oxc-parser/binding-win32-arm64-msvc': 0.146.0
-      '@oxc-parser/binding-win32-ia32-msvc': 0.146.0
-      '@oxc-parser/binding-win32-x64-msvc': 0.146.0
-
   oxc-parser@0.147.0:
     dependencies:
       '@oxc-project/types': 0.147.0
@@ -29370,12 +29135,6 @@ snapshots:
       '@oxc-resolver/binding-wasm32-wasi': 11.24.2
       '@oxc-resolver/binding-win32-arm64-msvc': 11.24.2
       '@oxc-resolver/binding-win32-x64-msvc': 11.24.2
-
-  oxc-walker@1.1.1(@oxc-project/types@0.147.0)(oxc-parser@0.146.0)(rolldown@1.2.6):
-    optionalDependencies:
-      '@oxc-project/types': 0.147.0
-      oxc-parser: 0.146.0
-      rolldown: 1.2.6
 
   oxc-walker@1.1.1(@oxc-project/types@0.147.0)(oxc-parser@0.147.0)(rolldown@1.2.6):
     optionalDependencies:
@@ -31786,9 +31545,9 @@ snapshots:
       tailwind-merge: 3.6.0
       tailwindcss: 4.3.3
 
-  tailwindcss-config@2.0.3:
+  tailwindcss-config@2.0.4:
     dependencies:
-      '@weapp-tailwindcss/shared': 2.0.2
+      '@weapp-tailwindcss/shared': 2.0.3
       jiti: 2.7.0
       lilconfig: 3.1.3
 
@@ -32765,12 +32524,12 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  weapp-style-injector@1.0.3:
+  weapp-style-injector@1.0.4:
     dependencies:
-      '@weapp-tailwindcss/shared': 2.0.2
+      '@weapp-tailwindcss/shared': 2.0.3
       micromatch: 4.0.8
 
-  weapp-tailwindcss@5.3.6(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12):
+  weapp-tailwindcss@5.4.1(@oxc-project/types@0.147.0)(jiti@2.7.0)(rolldown@1.2.6)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.12):
     dependencies:
       '@babel/parser': 8.0.4
       '@babel/traverse': 8.0.4
@@ -32778,10 +32537,10 @@ snapshots:
       '@tailwindcss-mangle/engine': 0.2.0(tailwindcss@4.3.3)
       '@vue/compiler-dom': 3.5.42
       '@weapp-core/escape': 8.0.0
-      '@weapp-tailwindcss/logger': 2.0.2
-      '@weapp-tailwindcss/postcss': 3.2.11(jiti@2.7.0)(tailwindcss@4.3.3)(tsx@4.23.12)(yaml@2.9.0)
-      '@weapp-tailwindcss/reset': 0.1.3(tailwindcss@4.3.3)
-      '@weapp-tailwindcss/shared': 2.0.2
+      '@weapp-tailwindcss/logger': 2.0.3
+      '@weapp-tailwindcss/postcss': 3.3.0(jiti@2.7.0)(tailwindcss@4.3.3)(tsx@4.23.12)(yaml@2.9.0)
+      '@weapp-tailwindcss/reset': 0.1.4(tailwindcss@4.3.3)
+      '@weapp-tailwindcss/shared': 2.0.3
       comment-json: 5.0.0
       debug: 4.4.3(supports-color@10.2.2)
       fast-glob: 3.3.3
@@ -32791,11 +32550,11 @@ snapshots:
       lru-cache: 11.5.2
       magic-string: 1.2.3
       micromatch: 4.0.8
-      oxc-parser: 0.146.0
-      oxc-walker: 1.1.1(@oxc-project/types@0.147.0)(oxc-parser@0.146.0)(rolldown@1.2.6)
+      oxc-parser: 0.147.0
+      oxc-walker: 1.1.1(@oxc-project/types@0.147.0)(oxc-parser@0.147.0)(rolldown@1.2.6)
       semver: 7.8.5
-      tailwindcss-config: 2.0.3
-      weapp-style-injector: 1.0.3
+      tailwindcss-config: 2.0.4
+      weapp-style-injector: 1.0.4
       yaml: 2.9.0
     transitivePeerDependencies:
       - '@oxc-project/types'

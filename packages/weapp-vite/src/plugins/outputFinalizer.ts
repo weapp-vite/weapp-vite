@@ -22,6 +22,7 @@ import { consumePendingOwnerStyleSources } from './css'
 import { transformI18nOutputTemplate } from './i18n'
 import { flushIndependentOutputs } from './outputFinalizer/independent'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
+import { hasManagedTailwindcssOutputMarker, isManagedTailwindcssEntry } from './tailwindcssMarker'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
 const TEMPLATE_ASSET_RE = /\.(?:wxml|axml|swan|ttml|jxml|qml|ksml|xhsml)$/i
@@ -59,7 +60,7 @@ const GRAPH_ONLY_OUTPUT_MARKERS = [
   WEAPP_VITE_SIDECAR_RESOLVED_PREFIX,
 ]
 
-function parseGraphOnlyAssetOwner(fileName: string) {
+function parseGraphOnlyAssetModuleId(fileName: string) {
   for (const marker of GRAPH_ONLY_OUTPUT_MARKERS) {
     const markerIndex = fileName.indexOf(marker)
     if (markerIndex < 0) {
@@ -68,9 +69,15 @@ function parseGraphOnlyAssetOwner(fileName: string) {
     const request = fileName.slice(markerIndex)
     const extension = path.extname(request)
     const moduleId = `${extension ? request.slice(0, -extension.length) : request}.js`
-    return parseLogicalEntryId(moduleId)?.sourceId
-      ?? parseSidecarModuleId(moduleId)?.ownerId
+    return moduleId
   }
+}
+
+function parseGraphOnlyAssetOwner(fileName: string) {
+  const moduleId = parseGraphOnlyAssetModuleId(fileName)
+  return moduleId
+    ? parseLogicalEntryId(moduleId)?.sourceId ?? parseSidecarModuleId(moduleId)?.ownerId
+    : undefined
 }
 
 export function normalizeGraphOnlyAssets(
@@ -83,6 +90,16 @@ export function normalizeGraphOnlyAssets(
       continue
     }
     const fileName = output.fileName || bundleFileName
+    const moduleId = parseGraphOnlyAssetModuleId(fileName)
+    const sidecar = moduleId ? parseSidecarModuleId(moduleId) : undefined
+    if (
+      sidecar?.kind === 'style'
+      && isManagedTailwindcssEntry(ctx, sidecar.sourceId)
+      && !hasManagedTailwindcssOutputMarker(output.source.toString())
+    ) {
+      delete bundle[bundleFileName]
+      continue
+    }
     const ownerId = parseGraphOnlyAssetOwner(fileName)
     if (!ownerId) {
       continue

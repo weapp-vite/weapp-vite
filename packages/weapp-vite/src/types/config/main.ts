@@ -1,6 +1,8 @@
 import type { UserConfig as ViteUserConfig } from 'vite'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
+import type { CreateCompilerOptions } from 'weapp-tailwindcss/core'
+import type { UserDefinedOptions } from 'weapp-tailwindcss/types'
 import type {
   AutoImportComponentsOption,
   EnhanceOptions,
@@ -42,6 +44,7 @@ import type { WeappI18nConfig } from '@/i18n/types'
 import type { LoggerConfig } from '@/logger'
 
 export type { WeappI18nConfig } from '@/i18n/types'
+export type WeappTailwindcssOptions = UserDefinedOptions & Pick<CreateCompilerOptions, 'compiler'>
 
 /**
  * @description 分包元信息
@@ -161,6 +164,12 @@ export interface WeappViteConfig {
    * 生产构建始终会清空输出目录。
    */
   cleanOutputsInDev?: boolean
+  /**
+   * 内置 weapp-tailwindcss 集成。显式配置优先；未配置时，Tailwind CSS v4 且实际引入 `@import "tailwindcss"` 会自动启用。
+   * - `true`: 使用默认配置和 `srcRoot/app.css` 入口
+   * - `object`: 启用并传入 weapp-tailwindcss core options
+   */
+  tailwindcss?: boolean | WeappTailwindcssOptions
   /**
    * 应用入口目录（`app.json` 所在目录）。
    */

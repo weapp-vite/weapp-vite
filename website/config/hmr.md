@@ -103,11 +103,11 @@ export default defineConfig({
 行为说明：
 - `true`：总是启用。
 - `false`：关闭。
-- `auto`：检测到安装 `weapp-tailwindcss` 时启用。
+- `auto`：检测到 Tailwind CSS 集成（包括 `weapp.tailwindcss` 内置集成）时启用。
 
 适用建议：
 - 如果你在开发者工具里经常遇到样式更新不稳定、必须手动刷新，优先检查这一项。
-- 若项目未使用 `weapp-tailwindcss` 且样式热更新已经稳定，可保持默认或显式关闭。
+- 若项目未使用 Tailwind CSS 且样式热更新已经稳定，可保持默认或显式关闭。
 
 ## `weapp.hmr.logLevel` {#weapp-hmr-loglevel}
 

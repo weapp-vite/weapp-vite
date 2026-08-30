@@ -64,6 +64,14 @@ describe('stateful hmr session', () => {
     expect(isSafeJavaScriptPatch(['src/pages/index.vue'], patch, ['entry-style-only:1'])).toBe(false)
     expect(isSafeJavaScriptPatch(['src/pages/index.vue'], patch, ['entry-json-only:1'])).toBe(false)
     expect(isSafeJavaScriptPatch(['src/pages/index.vue'], patch, ['entry-direct:1', 'tailwind-content:1'])).toBe(false)
+    expect(isSafeJavaScriptPatch(
+      ['src/pages/index.vue'],
+      patch,
+      ['entry-direct:1', 'tailwind-content:1'],
+      undefined,
+      undefined,
+      { allowTailwindContent: true },
+    )).toBe(true)
     expect(isSafeJavaScriptPatch(['src/pages/index.vue'], {
       ...patch,
       changedIds: [
@@ -84,6 +92,16 @@ describe('stateful hmr session', () => {
     expect(isSafeJavaScriptPatch(['src/pages/index.css'], patch)).toBe(false)
     expect(isSafeJavaScriptPatch(['src/app.json'], patch)).toBe(false)
     expect(isSafeJavaScriptPatch(['src/pages/index.ts'], { type: 'FullReload', reason: 'boundary' } as any)).toBe(false)
+  })
+
+  it('treats an omitted dirty reason summary as empty', () => {
+    const patch = {
+      type: 'Patch',
+      code: 'void 0',
+      filename: 'update.js',
+    } as any
+
+    expect(isSafeJavaScriptPatch(['src/pages/index.ts'], patch, undefined)).toBe(true)
   })
 
   it('resets retained deltas at the count and byte limits', () => {

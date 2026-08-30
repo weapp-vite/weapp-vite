@@ -178,6 +178,7 @@
     "vue": "catalog:",
     "vue-tsc": "catalog:",
     "weapp-ide-cli": "workspace:*",
+    "weapp-tailwindcss": "catalog:",
     "wevu": "workspace:*"
   },
   "optionalDependencies": {

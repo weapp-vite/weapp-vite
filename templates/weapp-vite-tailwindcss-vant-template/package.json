@@ -48,7 +48,6 @@
     "stylelint": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
-    "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

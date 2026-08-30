@@ -29,6 +29,7 @@
 - ♻️ **实验性状态保持 HMR**：微信开发者工具中可保留 Page/Component/wevu 状态并替换 JavaScript 方法
 - 🔌 **插件生态**：Vite 插件生态支持，也可以自定义编写插件，方便扩展
 - 🌐 **实验性 Web Runtime**：同一份原生 WXML/WXSS/TS 或 wevu Vue SFC 源码可通过 `-p web` 启动和构建浏览器版本
+- 🎨 **内置 Tailwind CSS**：通过 `weapp.tailwindcss` 配置 `weapp-tailwindcss` 的 core 与 generator 集成；Tailwind CSS v4 项目引入 `tailwindcss` 后可自动启用
 - 🧩 **实验性 uni-app 组件库兼容**：通过显式依赖白名单与 `WotUiResolver()` 在微信小程序和 Web 中使用 Wot UI Vue SFC
 - 🧰 **IDE 命令增强**：可直接透传 `weapp-ide-cli` 全量命令（`preview/upload/config/automator` 等）
 - 🧪 **真实产物单测**：`weapp-vite/test` 提供不启动 CLI 的程序化测试构建入口，可配合 `@mpcore/test` 测试页面和组件
