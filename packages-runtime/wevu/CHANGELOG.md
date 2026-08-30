@@ -1,5 +1,20 @@
 # wevu
 
+## 6.25.0
+
+### Minor Changes
+
+- 新增类型安全的 Vitest API mock：支持通过 setup 子路径一次替换 `api` / `wpi`，也可使用独立 factory 与局部 reset；Promise、回调、同步和事件 API 均保留原类型契约，并同步提供 `@wevu/api` 与 `wevu/api` 兼容入口。
+
+### Patch Changes
+
+- 修复 Wevu 组件 camelCase props 和事件未统一映射到小程序 kebab-case 宿主名称的问题，确保 `quantityChange` 能匹配 `@quantity-change`，同时保留 `update:modelValue` 等带冒号事件的既有命名语义。
+
+- Updated dependencies:
+  - @wevu/api@0.3.0
+  - @wevu/compiler@6.25.0
+  - @wevu/web-apis@1.2.38
+
 ## 6.24.0
 
 ### Patch Changes
