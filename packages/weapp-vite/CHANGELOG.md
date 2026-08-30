@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 6.25.1
+
+### Patch Changes
+
+- 修复内置 Tailwind CSS 集成对嵌套运行时配置、源码扫描规则和后置样式产物的处理，确保业务 utility 在最终 WXSS 中生成。
+
+- Updated dependencies:
+  - @weapp-vite/ast@6.25.1
+  - @weapp-vite/web@1.4.16
+  - wevu@6.25.1
+
 ## 6.25.0
 
 ### Patch Changes
