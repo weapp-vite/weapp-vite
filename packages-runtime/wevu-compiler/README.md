@@ -41,7 +41,7 @@ console.log(result.template)
 
 ### 编译诊断
 
-`compileTemplate` 始终返回 `diagnostics`，`compileSfc` / `compileJsxFile` 在存在模板诊断时返回 `diagnostics`。每条诊断包含稳定的 `code`、`severity`、`filename`、`source` 和可选 `loc`：
+`compileTemplate` 始终返回 `diagnostics`，`compileSfc` / `compileJsxFile` 在存在模板或 JSX 诊断时返回 `diagnostics`。每条诊断包含稳定的 `code`、`severity`、`filename`、`source` 和可选 `loc`：
 
 这是一次 clean cutover：原有 `warnings: string[]` 字段已移除，调用方应改读 `diagnostics`，需要展示文本时使用 `diagnostic.message`。
 
@@ -62,7 +62,7 @@ for (const diagnostic of result.diagnostics) {
 
 稳定 code：`WV1001`（模板转换警告）、`WV1002`（模板表达式警告）、`WV1003`（JSX 警告）、`WV2001`（模板解析错误）、`WV2002`（模板编译错误）。
 
-`loc.start` / `loc.end` 使用半开区间；`offset` 从 0 开始，`line` / `column` 从 1 开始。通过 `compileSfc` 编译内联 `<template>` 时，位置会映射到完整 SFC 源码。`warn` 回调仍用于把字符串日志交给构建工具，结构化消费应使用结果中的 `diagnostics`。
+`loc.start` / `loc.end` 使用半开区间；`offset` 从 0 开始，`line` / `column` 从 1 开始。`compileSfc` 会将内联 `<template>` 位置映射到完整 SFC 源码；外部 `<template src>` 则使用解析后的外部文件名和其自身位置。模板与 JSX 自有诊断会按 `diagnostic.message` 原样、仅一次地适配到 `warn` 回调，结构化消费应使用结果中的 `diagnostics`。
 
 使用页面特性工具：
 

@@ -117,12 +117,13 @@ export async function resolveSfcBlockSrc(
   descriptor: SFCDescriptor,
   filename: string,
   options?: ResolveSfcBlockSrcOptions,
-): Promise<{ descriptor: SFCDescriptor, deps: string[] }> {
+): Promise<{ descriptor: SFCDescriptor, deps: string[], templateResolvedId?: string }> {
   if (!options) {
     return { descriptor, deps: [] }
   }
 
   const deps = new Set<string>()
+  let templateResolvedId: string | undefined
   const nextDescriptor: SFCDescriptor = {
     ...descriptor,
     styles: descriptor.styles.slice(),
@@ -141,6 +142,9 @@ export async function resolveSfcBlockSrc(
     }
 
     const resolvedId = await resolveBlockSrcPath(block.src, filename, options)
+    if (kind === 'template') {
+      templateResolvedId = resolvedId
+    }
     const content = await readBlockContent(resolvedId, filename, options)
     deps.add(resolvedId)
     const inferredLang = block.lang ?? inferLangFromSrc(resolvedId, kind)
@@ -161,5 +165,5 @@ export async function resolveSfcBlockSrc(
     )
   }
 
-  return { descriptor: nextDescriptor, deps: [...deps] }
+  return { descriptor: nextDescriptor, deps: [...deps], templateResolvedId }
 }

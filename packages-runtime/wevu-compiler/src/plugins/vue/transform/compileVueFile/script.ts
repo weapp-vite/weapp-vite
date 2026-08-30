@@ -1,4 +1,5 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
+import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { TemplateCompileResult } from '../../compiler/template'
 import type { ComponentSourceInfo } from './componentSources'
@@ -7,6 +8,7 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
+import { createJsxDiagnostics } from '../../../jsx/compileJsx/diagnostics'
 import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from '../../../jsx/compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from '../../../jsx/compileJsx/template'
 import { transformVueJsxScript } from '../../../jsx/vueJsxTransform'
@@ -22,6 +24,7 @@ export interface ScriptPhaseResult {
   script?: string
   scriptMap?: EncodedSourceMapLike | null
   template?: string
+  diagnostics?: CompilerDiagnostic[]
   inlineExpressions?: TemplateCompileResult['inlineExpressions']
   autoUsingComponentsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
@@ -270,6 +273,7 @@ export async function compileScriptPhase(
   let scriptMap: EncodedSourceMapLike | null = null
   let propsAliases = options?.template?.propsAliases
   let propsDerivedKeys: string[] | undefined
+  let jsxDiagnostics: CompilerDiagnostic[] | undefined
   if (descriptor.script || descriptor.scriptSetup) {
     const scriptCompiled = precompiledScript ?? compileScript(descriptorForCompile, {
       id: generateScopedId(filename),
@@ -314,14 +318,21 @@ export async function compileScriptPhase(
     let jsxTemplate: ReturnType<typeof compileJsxTemplateAndCollectComponents> | undefined
     if (isJsxScript) {
       jsxTemplate = compileJsxTemplateAndCollectComponents(scriptCode, filename, options)
+      const reportJsxWarnings = !descriptor.template || Boolean(jsxTemplate.template)
       scriptCode = injectDynamicIslandRuntime(
         stripRenderOptionFromScript(
           scriptCode,
           filename,
-          descriptor.template ? undefined : options?.warn,
+          reportJsxWarnings ? jsxTemplate.warnings : undefined,
         ),
         jsxTemplate.dynamicIslands,
       )
+      if (reportJsxWarnings && jsxTemplate.warnings.length) {
+        jsxDiagnostics = createJsxDiagnostics(jsxTemplate.warnings, filename)
+        if (options?.warn) {
+          jsxDiagnostics.forEach(diagnostic => options.warn?.(diagnostic.message))
+        }
+      }
     }
     const jsxTransformed = isJsxScript
       ? transformVueJsxScript(scriptCode, filename, options?.sourceMap !== false)
@@ -355,6 +366,7 @@ export async function compileScriptPhase(
       script: transformed.code,
       scriptMap: composeSourceMaps(transformed.map ?? jsxTransformed.map, scriptMap),
       template: jsxTemplate?.template,
+      diagnostics: jsxDiagnostics,
       inlineExpressions: jsxTemplate?.inlineExpressions,
       autoUsingComponentsMap,
       autoComponentMeta,

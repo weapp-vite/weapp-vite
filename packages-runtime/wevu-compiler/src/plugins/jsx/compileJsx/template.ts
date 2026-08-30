@@ -52,7 +52,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
   const context = createJsxCompileContext(options)
   context.filename = filename
-  context.moduleResolver = createJsxModuleResolver(options?.warn)
+  context.moduleResolver = createJsxModuleResolver(context.warnings)
   collectImportedBindings(ast, context)
 
   const { renderExpression } = analysis.analyzeJsxAst(ast, context)
@@ -97,7 +97,7 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
   const context = createJsxCompileContext(options)
   context.filename = filename
-  context.moduleResolver = createJsxModuleResolver(options?.warn)
+  context.moduleResolver = createJsxModuleResolver(context.warnings)
   collectImportedBindings(ast, context)
 
   const { renderExpression, autoComponentContext } = analysis.analyzeJsxAst(ast, context)

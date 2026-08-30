@@ -34,10 +34,50 @@ function remapTemplateDiagnostics(
   }
 }
 
+function ownExternalTemplateDiagnostics(
+  diagnostics: TemplateCompileResult['diagnostics'],
+  filename: string,
+  source: string,
+) {
+  const lineStarts = [0]
+  for (const match of source.matchAll(/\r\n?|\n/g)) {
+    lineStarts.push(match.index + match[0].length)
+  }
+  const own = (position: SourcePosition) => {
+    let low = 0
+    let high = lineStarts.length
+    while (low + 1 < high) {
+      const middle = (low + high) >> 1
+      if (lineStarts[middle] <= position.offset) {
+        low = middle
+      }
+      else {
+        high = middle
+      }
+    }
+    const line = low + 1
+    return {
+      offset: position.offset,
+      line,
+      column: position.offset - lineStarts[line - 1] + 1,
+    }
+  }
+  for (const diagnostic of diagnostics) {
+    diagnostic.filename = filename
+    if (diagnostic.loc) {
+      diagnostic.loc = {
+        start: own(diagnostic.loc.start),
+        end: own(diagnostic.loc.end),
+      }
+    }
+  }
+}
+
 export function compileTemplatePhase(
   descriptor: Pick<SFCDescriptor, 'template'>,
   filename: string,
   source: string,
+  templateResolvedId: string | undefined,
   options: TemplateCompileOptions | undefined,
   result: VueTransformResult,
 ): TemplateCompileResult | undefined {
@@ -52,7 +92,21 @@ export function compileTemplatePhase(
   )
   result.template = templateCompiled.code
   if (templateCompiled.diagnostics.length) {
-    if (!descriptor.template.src) {
+    if (descriptor.template.src) {
+      if (templateResolvedId) {
+        ownExternalTemplateDiagnostics(
+          templateCompiled.diagnostics,
+          templateResolvedId,
+          descriptor.template.content,
+        )
+      }
+      else {
+        for (const diagnostic of templateCompiled.diagnostics) {
+          diagnostic.loc = undefined
+        }
+      }
+    }
+    else {
       remapTemplateDiagnostics(templateCompiled.diagnostics, descriptor.template.loc.start, source)
     }
     result.diagnostics = templateCompiled.diagnostics

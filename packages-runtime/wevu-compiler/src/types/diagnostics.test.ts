@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { compileJsxFile } from '../plugins/jsx/compileJsxFile'
 import { compileVueTemplateToWxml } from '../plugins/vue/compiler/template'
 import { compileVueFile } from '../plugins/vue/transform/compileVueFile'
@@ -76,6 +76,67 @@ describe('compiler diagnostics', () => {
       column: 9,
     })
     expect(source.slice(start?.offset, (start?.offset ?? 0) + 'v-html'.length)).toBe('v-html')
+  })
+
+  it('adapts SFC template diagnostics to the string warn callback exactly once', async () => {
+    const warn = vi.fn()
+    const result = await compileVueFile(
+      '<template><view v-html="html" /></template>',
+      filename,
+      { warn },
+    )
+
+    expect(warn.mock.calls.map(([message]) => message)).toEqual(
+      result.diagnostics?.map(diagnostic => diagnostic.message),
+    )
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not invoke the SFC warn callback without diagnostics', async () => {
+    const warn = vi.fn()
+    const result = await compileVueFile('<template><view /></template>', filename, { warn })
+
+    expect(result.diagnostics).toBeUndefined()
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it.each(['\n', '\r\n', '\r'])('attributes external template diagnostics to their source file for %j', async (lineEnding) => {
+    const externalFilename = '/project/src/pages/diagnostics/part.html'
+    const externalSource = `<view>${lineEnding}  <text v-html="html" />${lineEnding}</view>`
+    const result = await compileVueFile(
+      '<template src="./part.html"></template>',
+      filename,
+      {
+        sfcSrc: {
+          async resolveId() {
+            return externalFilename
+          },
+          async readFile() {
+            return externalSource
+          },
+        },
+      },
+    )
+    const diagnostic = result.diagnostics?.[0]
+
+    expect(diagnostic?.filename).toBe(externalFilename)
+    expect(externalSource.slice(diagnostic?.loc?.start.offset, diagnostic?.loc?.end.offset)).toBe('v-html="html"')
+    expect(diagnostic?.loc?.start).toEqual(expect.objectContaining({ line: 2, column: 9 }))
+  })
+
+  it('keeps SFC JSX diagnostics aligned with JSX-owned callback warnings', async () => {
+    const warn = vi.fn()
+    const result = await compileVueFile(
+      '<script lang="tsx">export default {}</script>',
+      '/project/src/pages/diagnostics/index.tsx',
+      { warn },
+    )
+    const jsxWarnings = warn.mock.calls
+      .map(([message]) => message)
+      .filter(message => message.startsWith('[JSX 编译]'))
+
+    expect(jsxWarnings).toEqual(result.diagnostics?.map(diagnostic => diagnostic.message))
+    expect(jsxWarnings.length).toBeGreaterThan(1)
   })
 
   it('uses the same diagnostic contract for JSX compilation', async () => {

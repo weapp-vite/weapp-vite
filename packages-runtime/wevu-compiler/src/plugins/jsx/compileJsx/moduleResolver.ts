@@ -128,7 +128,7 @@ function collectExports(ast: File) {
   return { locals, exports, reexports }
 }
 
-export function createJsxModuleResolver(warn?: (message: string) => void): JsxModuleResolver {
+export function createJsxModuleResolver(warnings?: string[]): JsxModuleResolver {
   const cache = new Map<string, { code: string, exports: ReturnType<typeof collectExports> }>()
   const active = new Set<string>()
   const dependencies = new Set<string>()
@@ -147,7 +147,7 @@ export function createJsxModuleResolver(warn?: (message: string) => void): JsxMo
 
   function resolveExport(filename: string, localName: string): JsxModuleExport | undefined {
     if (active.has(filename)) {
-      warn?.(`[JSX 编译] 检测到跨文件 JSX 循环引用：${filename}`)
+      warnings?.push(`[JSX 编译] 检测到跨文件 JSX 循环引用：${filename}`)
       return undefined
     }
     active.add(filename)

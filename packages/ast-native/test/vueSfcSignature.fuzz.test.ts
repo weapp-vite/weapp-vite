@@ -91,6 +91,14 @@ const nativeRejectedCorpus = [
   '<script setup="unterminated>const value = 1</script>',
   '<![CDATA[x]]><script>export default {}</script>',
   '<?xml version="1.0"?><script>export default {}</script>',
+  '<script setup src="./x.ts"></script>',
+  '<script src="./x.ts"></script><script setup>const value = 1</script>',
+  '<script a<b="c">export default {}</script>',
+  '<script a=pre"mid"post>export default {}</script>',
+  `<script a=pre'mid'post>export default {}</script>`,
+  '<script a=pre<post>export default {}</script>',
+  '<script a=pre=post>export default {}</script>',
+  '<script a=pre`post>export default {}</script>',
 ]
 
 function buildMutationCorpus() {

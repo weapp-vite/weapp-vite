@@ -242,9 +242,14 @@ async function createTransformScriptCase() {
       },
     },
   })
-  const templateResult = compileTemplatePhase(parsed.descriptor, filename, undefined, {
-    meta: { ...parsed.meta },
-  })
+  const templateResult = compileTemplatePhase(
+    parsed.descriptor,
+    filename,
+    source,
+    parsed.templateResolvedId,
+    undefined,
+    { meta: { ...parsed.meta } },
+  )
   const scriptCompiled = compileScript(parsed.descriptorForCompile, {
     id: filename,
     isProd: false,
@@ -443,7 +448,14 @@ async function profileCompileVueFilePhases(source: string, filename: string) {
         componentNameMap: componentSourceInfo.componentNameMap,
         miniProgramComponentTags: componentSourceInfo.miniProgramComponentTags,
       }
-  const templateCompiled = compileTemplatePhase(parsed.descriptor, filename, templateOptions, transformResult)
+  const templateCompiled = compileTemplatePhase(
+    parsed.descriptor,
+    filename,
+    source,
+    parsed.templateResolvedId,
+    templateOptions,
+    transformResult,
+  )
   result.compileTemplatePhase += performance.now() - templateStart
 
   const scriptStart = performance.now()
@@ -725,9 +737,9 @@ async function main() {
 
   console.log('\nMigration classification')
   console.table({
-    'native first': 'SFC signature, onPageScroll diagnostics, component SFC metadata, batch-style analysis-only entry points',
-    'cautious': 'setData pick, require/platform API, feature flags, template expression, JSX auto components, script setup imports',
-    'keep Babel for now': 'transformScript, npm JS rewrite, JSX script transform',
+    'native first': 'onPageScroll diagnostics, batch-style analysis-only entry points',
+    'cautious': 'template-free direct SFC signature POC, setData pick, require/platform API, feature flags, template expression, JSX auto components, script setup imports',
+    'keep JS/compiler-sfc for now': 'SFC signature, component SFC metadata, transformScript, npm JS rewrite, JSX script transform',
   })
 }
 

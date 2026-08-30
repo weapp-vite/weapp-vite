@@ -171,6 +171,9 @@ fn parse_sfc_descriptor(source: &str) -> Option<SfcDescriptor> {
 
         match block.block_type.as_str() {
             "script" if is_script_setup_block(&block) => {
+                if block.attrs.contains_key("src") {
+                    return None;
+                }
                 if descriptor.script_setup.is_some() {
                     return None;
                 }
@@ -197,6 +200,14 @@ fn parse_sfc_descriptor(source: &str) -> Option<SfcDescriptor> {
         }
 
         cursor = close_end;
+    }
+    if descriptor.script_setup.is_some()
+        && descriptor
+            .script
+            .as_ref()
+            .is_some_and(|block| block.attrs.contains_key("src"))
+    {
+        return None;
     }
 
     if descriptor.script.is_none()
@@ -297,6 +308,9 @@ fn parse_open_tag(raw: &str) -> Option<(String, BTreeMap<String, SfcAttrValue>)>
             && bytes[index] != b'='
             && bytes[index] != b'/'
         {
+            if matches!(bytes[index], b'<' | b'"' | b'\'' | b'\0') {
+                return None;
+            }
             index += 1;
         }
         if attr_start == index {
@@ -343,6 +357,12 @@ fn parse_open_tag(raw: &str) -> Option<(String, BTreeMap<String, SfcAttrValue>)>
             let value_start = index;
             while index < bytes.len() && !bytes[index].is_ascii_whitespace() && bytes[index] != b'/'
             {
+                if matches!(
+                    bytes[index],
+                    b'"' | b'\'' | b'`' | b'=' | b'<' | b'>' | b'\0'
+                ) {
+                    return None;
+                }
                 index += 1;
             }
             raw[value_start..index].to_string()

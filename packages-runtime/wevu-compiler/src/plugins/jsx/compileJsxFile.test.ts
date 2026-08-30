@@ -16,6 +16,34 @@ describe('compileJsxFile', () => {
     expect(warnings).not.toContainEqual(expect.stringContaining('移除 render 选项'))
   })
 
+  it('keeps JSX-owned callback warnings aligned with structured diagnostics', async () => {
+    const warnings: string[] = []
+    const result = await compileJsxFile(
+      'export default {}',
+      '/project/src/pages/jsx-warning/index.tsx',
+      { warn: message => warnings.push(message) },
+    )
+
+    expect(warnings).toEqual(result.diagnostics?.map(diagnostic => diagnostic.message))
+    expect(warnings.length).toBeGreaterThan(1)
+  })
+
+  it('includes resolver-cycle warnings in JSX diagnostics', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-warning-cycle-'))
+    const entry = path.join(root, 'page.tsx')
+    await writeFile(path.join(root, 'a.tsx'), 'export { value } from "./b"')
+    await writeFile(path.join(root, 'b.tsx'), 'export { value } from "./a"')
+    const warnings: string[] = []
+    const result = await compileJsxFile(
+      'import { value } from "./a"; export default { render() { return value } }',
+      entry,
+      { warn: message => warnings.push(message) },
+    )
+
+    expect(warnings.some(message => message.includes('循环引用'))).toBe(true)
+    expect(warnings).toEqual(result.diagnostics?.map(diagnostic => diagnostic.message))
+  })
+
   it('compiles setup-returned static JSX render closures', async () => {
     const source = `
 import { defineComponent } from 'wevu'
