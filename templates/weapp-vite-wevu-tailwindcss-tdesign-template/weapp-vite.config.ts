@@ -1,5 +1,4 @@
 import path from 'node:path'
-import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers'
 
@@ -11,6 +10,10 @@ export default defineConfig({
   },
   weapp: {
     srcRoot: 'src',
+    tailwindcss: {
+      rem2rpx: true,
+      cssEntries: ['src/app.css'],
+    },
     typescript: {
       app: {
         compilerOptions: {
@@ -83,10 +86,4 @@ export default defineConfig({
       },
     },
   },
-  plugins: [
-    WeappTailwindcss({
-      rem2rpx: true,
-      cssEntries: [path.resolve(import.meta.dirname, 'src/app.css')],
-    }),
-  ],
 })

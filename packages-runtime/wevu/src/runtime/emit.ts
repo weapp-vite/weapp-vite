@@ -1,5 +1,5 @@
 import type { TriggerEventOptions } from './types'
-import { hasOwn } from '../utils'
+import { hasOwn, hyphenate } from '../utils'
 
 function isTriggerEventOptions(value: unknown): value is TriggerEventOptions {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -13,7 +13,7 @@ function isTriggerEventOptions(value: unknown): value is TriggerEventOptions {
 }
 
 export function normalizeEmitEventName(eventName: string) {
-  return eventName.includes(':') ? eventName.replaceAll(':', '-').toLowerCase() : eventName
+  return eventName.includes(':') ? eventName.replaceAll(':', '-').toLowerCase() : hyphenate(eventName)
 }
 
 export function normalizeEmitPayload(args: any[]): { detail: any, options: TriggerEventOptions | undefined } {

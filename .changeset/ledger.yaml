@@ -24,6 +24,10 @@
   dir: "@weapp-core/api"
   intents:
     - clean-api-boundary
+"@weapp-core/api@0.3.0":
+  dir: "@weapp-core/api"
+  intents:
+    - typed-wpi-vitest-mocks
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -58,6 +62,10 @@
   dir: packages/ast-native
   intents:
     - calm-docs-domain
+"@weapp-vite/ast-native@0.1.0":
+  dir: packages/ast-native
+  intents:
+    - sfc-block-hmr-core
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
@@ -68,6 +76,10 @@
   dir: packages/ast
   intents:
     - calm-docs-domain
+"@weapp-vite/ast@6.25.0":
+  dir: packages/ast
+  intents:
+    - sfc-block-hmr-core
 "@weapp-vite/dashboard@6.20.5":
   dir: packages/dashboard
   intents:
@@ -153,6 +165,10 @@
   intents:
     - clean-api-boundary
     - fix-wpi-fail-callback
+"@wevu/api@0.3.0":
+  dir: packages-runtime/weapi
+  intents:
+    - typed-wpi-vitest-mocks
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -174,6 +190,11 @@
   dir: packages-runtime/wevu-compiler
   intents:
     - calm-docs-domain
+"@wevu/compiler@6.25.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - sfc-block-hmr-core
+    - wevu-camel-event-listener
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -249,6 +270,28 @@ create-weapp-vite@2.8.5:
     - catalog-centralization
     - fresh-npm-esm-barrels
     - modern-mcp-protocol
+create-weapp-vite@2.8.6:
+  dir: packages/create-weapp-vite
+  intents:
+    - feat-built-in-tailwindcss
+    - feat-tailwindcss-auto-detection
+    - feat-tailwindcss-compiler
+    - fix-dev-sass-asset-owner
+    - fix-dev-sass-asset-placeholder
+    - fix-multi-style-src-tailwind-owner
+    - fix-stateful-hmr-initial-build
+    - fix-stateful-hmr-rebuild-runtime
+    - fix-tailwind-owner-directives
+    - fix-tailwind-stateful-hmr
+    - fix-tailwind-style-src-app-wxss
+    - fuzzy-local-components
+    - sfc-block-hmr-core
+    - typed-wpi-vitest-mocks
+    - wevu-camel-event-listener
+create-weapp-vite@2.8.7:
+  dir: packages/create-weapp-vite
+  intents:
+    - tidy-tailwindcss-bundle
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -318,6 +361,27 @@ weapp-vite@6.24.0:
     - calm-docs-domain
     - fresh-npm-esm-barrels
     - modern-mcp-protocol
+weapp-vite@6.25.0:
+  dir: packages/weapp-vite
+  intents:
+    - feat-built-in-tailwindcss
+    - feat-tailwindcss-auto-detection
+    - feat-tailwindcss-compiler
+    - fix-dev-sass-asset-owner
+    - fix-dev-sass-asset-placeholder
+    - fix-multi-style-src-tailwind-owner
+    - fix-stateful-hmr-dirty-reasons
+    - fix-stateful-hmr-initial-build
+    - fix-stateful-hmr-rebuild-runtime
+    - fix-tailwind-owner-directives
+    - fix-tailwind-stateful-hmr
+    - fix-tailwind-style-src-app-wxss
+    - fuzzy-local-components
+    - sfc-block-hmr-core
+weapp-vite@6.25.1:
+  dir: packages/weapp-vite
+  intents:
+    - tidy-tailwindcss-bundle
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -343,3 +407,8 @@ wevu@6.24.0:
   dir: packages-runtime/wevu
   intents:
     - calm-docs-domain
+wevu@6.25.0:
+  dir: packages-runtime/wevu
+  intents:
+    - typed-wpi-vitest-mocks
+    - wevu-camel-event-listener

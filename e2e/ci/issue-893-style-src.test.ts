@@ -14,6 +14,7 @@ const SOURCE_APP_ROOT = path.resolve(REPO_ROOT, 'e2e-apps/issue-814-tailwind4')
 const TMP_ROOT = path.resolve(REPO_ROOT, '.tmp')
 const INITIAL_BASE_COLOR = '#893a6d'
 const UPDATED_BASE_COLOR = '#398a6d'
+const TAILWIND_CONFIG_DIRECTIVE_RE = /@(plugin|source)\b/
 
 async function createIssue893Fixture() {
   await fs.ensureDir(TMP_ROOT)
@@ -37,6 +38,16 @@ async function createIssue893Fixture() {
   await fs.writeFile(
     path.join(fixtureRoot, 'src/issue-893-base.scss'),
     '$issue-893-color: #893a6d;\n\n.issue-893-base {\n  color: $issue-893-color;\n}\n',
+    'utf8',
+  )
+  const appCssPath = path.join(fixtureRoot, 'src/app.css')
+  const appCss = await fs.readFile(appCssPath, 'utf8')
+  await fs.writeFile(
+    appCssPath,
+    appCss.replace(
+      '@source "./**/*.{wxml,js,ts,vue}";',
+      '@plugin "@iconify/tailwind4" {\n  prefixes: mdi;\n  icon-selector: \'.i-{prefix}-{name}\';\n}\n@source "./**/*.{wxml,js,ts,vue}";',
+    ),
     'utf8',
   )
   return fixtureRoot
@@ -63,6 +74,7 @@ describe.sequential('issue #893 multiple app style src assets', () => {
       expect(appWxss).toContain(INITIAL_BASE_COLOR)
       expect(appWxss).toMatch(/\.flex\s*\{/)
       expect(appWxss).toContain('display: flex')
+      expect(appWxss).not.toMatch(TAILWIND_CONFIG_DIRECTIVE_RE)
     }
     finally {
       await fs.remove(fixtureRoot)
@@ -86,6 +98,7 @@ describe.sequential('issue #893 multiple app style src assets', () => {
         'issue #893 initial author Sass',
       )
       expect(initialCss).toMatch(/\.flex\s*\{/)
+      expect(initialCss).not.toMatch(TAILWIND_CONFIG_DIRECTIVE_RE)
 
       const source = await fs.readFile(sourceFile, 'utf8')
       const updatedSource = source.replace(INITIAL_BASE_COLOR, UPDATED_BASE_COLOR)
@@ -98,6 +111,7 @@ describe.sequential('issue #893 multiple app style src assets', () => {
       )
       expect(updatedCss).toMatch(/\.flex\s*\{/)
       expect(updatedCss).toContain('display: flex')
+      expect(updatedCss).not.toMatch(TAILWIND_CONFIG_DIRECTIVE_RE)
     }
     finally {
       await dev.stop(3_000)

@@ -9,7 +9,7 @@ import {
   WEVU_TEMPLATE_REF_CLASS_PREFIX,
 } from '@weapp-core/constants'
 import { components as builtinComponents } from '../../../../../auto-import-components/builtin.auto'
-
+import { normalizeComponentHostName } from '../../../../../utils/text'
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { warn } from '../diagnostics'
 import { transformDirective } from '../directives'
@@ -109,7 +109,7 @@ export function collectElementAttributes(
         staticStyle = prop.value.content
         continue
       }
-      const attr = transformAttribute(prop, context)
+      const attr = transformAttribute(prop, context, isComponentElement ? normalizeComponentHostName(prop.name) : undefined)
       if (attr) {
         attrs.push(attr)
       }

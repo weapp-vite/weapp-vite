@@ -198,16 +198,13 @@ function createEmptyPackageJson(): PackageJson {
 }
 
 async function upsertTailwindcssVersion(pkgJson: PackageJson) {
-  if (!pkgJson.devDependencies) {
+  if (!pkgJson.devDependencies?.['weapp-tailwindcss']) {
     return
   }
 
   const resolved = await latestVersion('weapp-tailwindcss')
   if (resolved) {
     pkgJson.devDependencies['weapp-tailwindcss'] = resolved
-  }
-  else if (!pkgJson.devDependencies['weapp-tailwindcss']) {
-    pkgJson.devDependencies['weapp-tailwindcss'] = '^5.0.0'
   }
 }
 

@@ -194,6 +194,32 @@ function toStatefulHmrOutput(output: RolldownOutput | RolldownOutput[] | Rolldow
   return outputs.flatMap(result => result.output as StatefulHmrOutputFile[])
 }
 
+function collectStatefulHmrEntryIds(
+  initialEntryIds: Iterable<string>,
+  snapshot: StatefulHmrOutputFile[],
+  cwd: string,
+  srcRoot: string,
+): Set<string> {
+  const entryIds = new Set(Array.from(initialEntryIds, id => normalizeFsResolvedId(id)))
+  const normalizedSrcRoot = normalizeFsResolvedId(srcRoot).replace(/\/$/, '')
+  for (const item of snapshot) {
+    if (item.type !== 'chunk') {
+      continue
+    }
+    for (const moduleId of Object.keys(item.modules ?? {})) {
+      const sourceId = moduleId.split('?')[0]
+      const normalizedId = normalizeFsResolvedId(path.isAbsolute(sourceId) ? sourceId : path.resolve(cwd, sourceId))
+      if (
+        normalizedId.startsWith(`${normalizedSrcRoot}/`)
+        && /\.(?:[cm]?[jt]sx?|vue)$/.test(normalizedId)
+      ) {
+        entryIds.add(normalizedId)
+      }
+    }
+  }
+  return entryIds
+}
+
 function resolveSnapshotSidecarDirtySummary(
   filePath: string,
   affectedEntries?: Iterable<string>,
@@ -1306,7 +1332,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           },
         }
         const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
-        const initialEntryIds = new Set(ctx.runtimeState.build.hmr.resolvedEntryMap.keys())
+        const initialEntryIds = collectStatefulHmrEntryIds(
+          ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
+          initialSnapshot,
+          configService.cwd,
+          configService.absoluteSrcRoot,
+        )
         const skylineFiles = findSkylineRendererFiles(initialSnapshot)
         if (skylineFiles.length > 0) {
           await applySkylineHmrFallback({

@@ -387,11 +387,11 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   <block wx:if="{{featureMounted}}">
     <UseAttrsFeature
       title="组件内 useAttrs()"
-      stateClass="{{currentToneClass}}"
+      state-class="{{currentToneClass}}"
       visible="{{controlState.visible}}"
-      badgeStyle="{{currentBadgeStyle}}"
-      extraLabel="{{currentExtraLabel}}"
-      seedTag="{{controlState.seed}}" />
+      badge-style="{{currentBadgeStyle}}"
+      extra-label="{{currentExtraLabel}}"
+      seed-tag="{{controlState.seed}}" />
   </block>
 </view>
 "
@@ -421,7 +421,7 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     data-wd-update-title="1"
     data-wi-update-title="i2"
     bind:update-title="__weapp_vite_inline"
-    modelValue="{{modelValue}}"
+    model-value="{{modelValue}}"
     data-wd-update-modelvalue="1"
     data-wi-update-modelvalue="i3"
     bind:update-modelvalue="__weapp_vite_inline" />

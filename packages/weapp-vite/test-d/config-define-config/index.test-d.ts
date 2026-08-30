@@ -2,9 +2,20 @@ import type { UserConfig, WeappI18nConfig } from '.'
 import { expectAssignable, expectError } from 'tsd'
 import { defineConfig } from '.'
 
+const onTailwindRootEvicted = (id: string) => void id
+
 const objectConfig = defineConfig({
   weapp: {
     srcRoot: 'src',
+    tailwindcss: {
+      cssEntries: ['src/app.css'],
+      compiler: {
+        maxRoots: 64,
+        onRootEvicted: onTailwindRootEvicted,
+      },
+      logLevel: 'silent',
+      rem2rpx: true,
+    },
     npm: {
       packageFiles: {
         'tdesign-miniprogram': {
@@ -142,6 +153,11 @@ const objectConfig = defineConfig({
 expectAssignable<WeappI18nConfig>({ defaultLocale: 'zh-CN' })
 expectError<WeappI18nConfig>({})
 expectAssignable<string | undefined>(objectConfig.weapp?.srcRoot)
+expectAssignable<boolean | {
+  cssEntries?: string[]
+  rem2rpx?: boolean | Record<string, unknown>
+  logLevel?: 'info' | 'warn' | 'error' | 'silent'
+} | undefined>(objectConfig.weapp?.tailwindcss)
 expectAssignable<string | Array<string | {
   source: string
   scope?: 'all' | 'pages' | 'components'

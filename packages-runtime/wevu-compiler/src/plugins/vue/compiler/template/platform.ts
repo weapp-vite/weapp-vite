@@ -1,3 +1,5 @@
+export { normalizeMiniProgramEventName } from '../../../../inlineDataset'
+
 export interface MiniProgramDirectiveAttrs {
   ifAttr: string
   elifAttr: string

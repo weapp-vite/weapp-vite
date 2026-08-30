@@ -16,7 +16,6 @@
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",
     "tailwindcss": "catalog:tailwind4",
-    "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

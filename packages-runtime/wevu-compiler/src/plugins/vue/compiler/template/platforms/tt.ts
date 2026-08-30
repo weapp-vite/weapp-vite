@@ -1,5 +1,5 @@
 import type { MiniProgramPlatform } from '../platform'
-import { createMiniProgramDirectiveAttrs } from '../platform'
+import { createMiniProgramDirectiveAttrs, normalizeMiniProgramEventName } from '../platform'
 
 const eventMap: Record<string, string> = {
   click: 'tap',
@@ -45,10 +45,6 @@ function shouldUseColonEventBinding(name: string) {
   return name.includes(':') || name.includes('-')
 }
 
-function normalizeMiniProgramEventName(name: string) {
-  return name.includes(':') ? name.replaceAll(':', '-').toLowerCase() : name
-}
-
 /**
  * 抖音小程序平台适配器。
  */
@@ -76,7 +72,7 @@ export const ttPlatform: MiniProgramPlatform = {
   keyThisValue: '*this',
   keyAttr: value => `${directives.keyAttr}="${value}"`,
 
-  mapEventName: eventName => eventMap[eventName] || eventName,
+  mapEventName: eventName => eventMap[eventName.toLowerCase()] || eventName,
   eventBindingAttr: (eventName) => {
     const { prefix, name } = parseEventBinding(eventName)
     const normalizedName = normalizeMiniProgramEventName(name)

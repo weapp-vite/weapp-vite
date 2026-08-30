@@ -11,7 +11,7 @@ import {
   INLINE_EVENT_DETAIL_KEY,
   normalizeEventDatasetSuffix,
 } from '../../../../../inlineDataset'
-
+import { normalizeComponentHostName } from '../../../../../utils/text'
 import { warn } from '../diagnostics'
 import { getBindDirectiveExpression } from '../elements/helpers'
 import {
@@ -153,8 +153,8 @@ function transformComponentModelDirective(
   }
 
   const modelAttr = modelProp === 'modelValue'
-    ? `modelValue="${renderMustache(normalizeWxmlExpressionWithContext(rawExpValue, context), context)}"`
-    : transformBindDirective(node, context)
+    ? `model-value="${renderMustache(normalizeWxmlExpressionWithContext(rawExpValue, context), context)}"`
+    : transformBindDirective(node, context, undefined, { isComponent: true })
   const updateAttr = [
     `data-${INLINE_EVENT_DETAIL_KEY}-${eventSuffix}="1"`,
     `data-${INLINE_DATASET_KEY}-${eventSuffix}="${inlineExpression.id}"`,
@@ -167,7 +167,7 @@ function transformComponentModelDirective(
   const modifierProperties = modifierNames
     .map(name => `${JSON.stringify(name)}:true`)
     .join(',')
-  const modifiersProp = modelProp === 'modelValue' ? 'modelModifiers' : `${modelProp}Modifiers`
+  const modifiersProp = normalizeComponentHostName(modelProp === 'modelValue' ? 'modelModifiers' : `${modelProp}Modifiers`)
   const modifiersRef = modifierNames.length
     ? registerRuntimeBindingExpression(
         `{${modifierProperties}}`,

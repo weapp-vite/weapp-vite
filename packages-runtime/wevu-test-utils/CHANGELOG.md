@@ -1,5 +1,21 @@
 # @wevu/test-utils
 
+## 0.2.6
+
+### Patch Changes
+
+- Updated dependencies:
+  - @wevu/compiler@6.25.1
+  - wevu@6.25.1
+
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies:
+  - @wevu/compiler@6.25.0
+  - wevu@6.25.0
+
 ## 0.2.4
 
 ### Patch Changes

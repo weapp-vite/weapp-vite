@@ -13,6 +13,7 @@ import { i18n } from './i18n'
 import { createOutputFinalizerPlugin } from './outputFinalizer'
 import { preflight } from './preflight'
 import { createReactPlugin, isReactEnabled } from './react'
+import { createTailwindcssPlugin } from './tailwindcss'
 import { uniAppCompatibility } from './uniApp'
 import { vue } from './vue'
 import { wevu } from './wevu'
@@ -92,8 +93,16 @@ export function vitePluginWeapp(
     groups.push(autoImport(ctx))
   }
 
-  groups.push(i18n(ctx, subPackageMeta), weappVite(ctx, subPackageMeta), wxs(ctx), css(ctx))
+  const tailwindcssPlugins = createTailwindcssPlugin(ctx)
+  groups.push(i18n(ctx, subPackageMeta), weappVite(ctx, subPackageMeta), wxs(ctx))
+  if (tailwindcssPlugins.length > 0) {
+    groups.push([tailwindcssPlugins[0]!])
+  }
+  groups.push(css(ctx))
   groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta)])
+  if (tailwindcssPlugins.length > 1) {
+    groups.push([tailwindcssPlugins[1]!])
+  }
 
   const assembled = attachRuntimePlugins(ctx, flatten(groups))
   if (subPackageMeta) {

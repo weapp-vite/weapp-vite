@@ -175,6 +175,10 @@ defineComponent({
 - `options.composed` (default: `false`): whether the event can cross component boundaries
 - `options.capturePhase` (default: `false`): whether the event has a capture phase
 
+Component boundary names follow Vue casing conventions: camelCase props and events are normalized to kebab-case host names (`maxQuantity` → `max-quantity`, `quantityChange` → `quantity-change`). Colon events keep their existing mapping (`update:modelValue` → `update-modelvalue`).
+
+Component tags, ordinary/function/model props, and listeners may use either camelCase or kebab-case in source templates. Both forms compile to one canonical kebab-case host name without duplicate aliases. At runtime, `emit('quantityChange')` and `emit('quantity-change')` each dispatch exactly one `quantity-change` host event.
+
 This differs from Vue 3 `emit(event, ...args)`: mini-program events carry a single `detail` payload.
 
 #### `attrs` / `useAttrs()` Boundary

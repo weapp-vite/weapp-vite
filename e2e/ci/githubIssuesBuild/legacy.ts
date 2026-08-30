@@ -1072,11 +1072,11 @@ export function registerGithubIssuesBuildLegacyCases() {
 
     expect(pageWxml).toContain('<model-argument-probe')
     expect(pageWxml).toContain('abc="{{abc}}"')
-    expect(pageWxml).toContain('modelValue="{{modelValue}}"')
+    expect(pageWxml).toContain('model-value="{{modelValue}}"')
     expect(pageWxml).toContain('bind:update-abc="__weapp_vite_inline"')
     expect(pageWxml).toContain('bind:update-modelvalue="__weapp_vite_inline"')
     expect(pageWxml).not.toContain('abc="{{modelValue}}"')
-    expect(pageWxml).not.toContain('modelValue="{{abc}}"')
+    expect(pageWxml).not.toContain('model-value="{{abc}}"')
     expect(pageJs).toContain('_runE2E')
     expect(pageJs).toContain('abc-seed')
     expect(pageJs).toContain('model-seed')

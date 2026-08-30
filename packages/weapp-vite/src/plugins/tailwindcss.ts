@@ -1,0 +1,602 @@
+import type { OutputAsset, OutputBundle, OutputChunk } from 'rolldown'
+import type { Plugin, ResolvedConfig } from 'vite'
+import type {
+  Compiler,
+  CompilerGenerateRequest,
+  CompilerGenerateResult,
+  CompilerSnapshot,
+  CompilerTarget,
+  CreateCompilerOptions,
+} from 'weapp-tailwindcss/core'
+import type { UserDefinedOptions } from 'weapp-tailwindcss/types'
+import type { CompilerContext } from '../context'
+import { Buffer } from 'node:buffer'
+import fs from 'node:fs'
+import process from 'node:process'
+import path from 'pathe'
+import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
+import { safeGetPackageInfoSync } from '../runtime/localPkg'
+import { changeFileExtension } from '../utils'
+import { applyOutputChunkTransform } from '../utils/outputChunk'
+import { normalizeFsResolvedId } from '../utils/resolvedId'
+import {
+  createManagedTailwindcssEntryMarker,
+  createManagedTailwindcssOutputMarker,
+  normalizeManagedTailwindcssEntryPath,
+  registerManagedTailwindcssEntries,
+  stripManagedTailwindcssOutputMarkers,
+} from './tailwindcssMarker'
+
+const CORE_NODE_RANGE = '^22.18.0 || >=24.11.0'
+const MANAGED_PLUGIN_NAME = 'weapp-vite:tailwindcss'
+const VIRTUAL_ENTRY_PREFIX = '\0weapp-vite:managed-tailwindcss-entry:'
+const TAILWIND_IMPORT_RE = /@import\s+(?:url\(\s*)?['"]tailwindcss['"]\s*\)?(?:\s|;|$)/
+const TAILWIND_SOURCE_DIRECTIVE_RE = /@(?:config|custom-variant|layer|plugin|reference|source|tailwind|theme|utility|variant)\b/
+
+interface TailwindV4SourcePattern {
+  base: string
+  pattern: string
+  negated: boolean
+}
+type TailwindV4SourceOptions = Extract<CompilerGenerateRequest, { sourceOptions: unknown }>['sourceOptions'] & {
+  sources?: TailwindV4SourcePattern[]
+}
+type TailwindcssRuntimeConfig = NonNullable<UserDefinedOptions['tailwindcss']>
+type TailwindcssConfigWithNestedRuntime = TailwindcssRuntimeConfig & {
+  tailwindcss?: TailwindcssRuntimeConfig
+}
+type ManagedTailwindcssOptions = UserDefinedOptions & Pick<CreateCompilerOptions, 'compiler'>
+
+interface ResolvedManagedTailwindcssOptions {
+  basedir: string
+  cssEntries: string[]
+  generatorTarget: CompilerTarget
+  autoDetected: boolean
+  options: ManagedTailwindcssOptions
+}
+
+function unique(values: string[]) {
+  return [...new Set(values)]
+}
+
+function resolveCssEntries(
+  ctx: CompilerContext,
+  options: ManagedTailwindcssOptions,
+  basedir: string,
+) {
+  const tailwindcss = options.tailwindcss as TailwindcssConfigWithNestedRuntime | undefined
+  const nestedTailwindcss = tailwindcss?.tailwindcss
+  const entries = unique([
+    ...(options.cssEntries ?? []),
+    ...(options.tailwindcss?.v4?.cssEntries ?? []),
+    ...(nestedTailwindcss?.v4?.cssEntries ?? []),
+    ...(options.tailwindcssRuntimeOptions?.tailwindcss?.v4?.cssEntries ?? []),
+  ]).map(entry => path.isAbsolute(entry) ? path.normalize(entry) : path.resolve(basedir, entry))
+
+  return entries.length > 0
+    ? entries
+    : [path.resolve(ctx.configService.absoluteSrcRoot, 'app.css')]
+}
+
+export function resolveManagedTailwindcssOptions(
+  ctx: CompilerContext,
+): ResolvedManagedTailwindcssOptions | undefined {
+  const input = ctx.configService.weappViteConfig?.tailwindcss
+  if (input === undefined) {
+    const packageInfo = safeGetPackageInfoSync('tailwindcss', { paths: [ctx.configService.cwd] })
+    const version = packageInfo?.version
+    if (!version || Number.parseInt(version.split('.')[0] ?? '', 10) !== 4) {
+      return undefined
+    }
+    return {
+      basedir: ctx.configService.cwd,
+      cssEntries: [],
+      generatorTarget: 'weapp',
+      autoDetected: true,
+      options: {
+        appType: 'weapp-vite',
+        platform: ctx.configService.platform,
+        tailwindcssBasedir: ctx.configService.cwd,
+      },
+    }
+  }
+  if (input === false) {
+    return undefined
+  }
+  const userOptions: ManagedTailwindcssOptions = input === true ? {} : input
+  if (userOptions.disabled === true || (typeof userOptions.disabled === 'object' && userOptions.disabled.plugin === true)) {
+    return undefined
+  }
+  const cwd = ctx.configService.cwd
+  const basedir = userOptions.tailwindcssBasedir
+    ? path.resolve(cwd, userOptions.tailwindcssBasedir)
+    : cwd
+  const cssEntries = resolveCssEntries(ctx, userOptions, basedir)
+  const generatorTarget = typeof userOptions.generator === 'object' && userOptions.generator.target
+    ? userOptions.generator.target
+    : 'weapp'
+
+  return {
+    basedir,
+    cssEntries,
+    generatorTarget,
+    autoDetected: false,
+    options: {
+      ...userOptions,
+      appType: 'weapp-vite',
+      cssEntries,
+      platform: userOptions.platform ?? ctx.configService.platform,
+      tailwindcssBasedir: basedir,
+    },
+  }
+}
+
+function outputAssetSource(asset: OutputAsset) {
+  return typeof asset.source === 'string'
+    ? asset.source
+    : Buffer.from(asset.source).toString('utf8')
+}
+
+function createVirtualEntryId(index: number, source: string) {
+  const queryIndex = source.indexOf('?')
+  const query = queryIndex >= 0 ? source.slice(queryIndex) : ''
+  return `${VIRTUAL_ENTRY_PREFIX}${index}.css${query}`
+}
+
+function parseVirtualEntryIndex(id: string) {
+  if (!id.startsWith(VIRTUAL_ENTRY_PREFIX)) {
+    return undefined
+  }
+  const value = Number.parseInt(id.slice(VIRTUAL_ENTRY_PREFIX.length), 10)
+  return Number.isInteger(value) ? value : undefined
+}
+
+function parseManagedEntryIndex(id: string, entries: Map<string, number>) {
+  const sourceId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
+  return entries.get(normalizeManagedTailwindcssEntryPath(sourceId))
+}
+
+function isVueStyleModuleId(id: string) {
+  return id.includes('?weapp-vite-vue&type=style&')
+}
+
+function resolveManagedEntryIndex(
+  id: string,
+  code: string,
+  entries: Map<string, number>,
+) {
+  const directIndex = parseManagedEntryIndex(id, entries)
+  if (directIndex !== undefined || !isVueStyleModuleId(id)) {
+    return directIndex
+  }
+  for (const [entry, index] of entries) {
+    try {
+      if (fs.readFileSync(entry, 'utf8') === code) {
+        return index
+      }
+    }
+    catch {
+      // buildStart 已校验入口存在，这里忽略 HMR 期间的瞬时读取失败。
+    }
+  }
+}
+
+function createTailwindV4SourceOptions(
+  resolved: ResolvedManagedTailwindcssOptions,
+  entry: string,
+): TailwindV4SourceOptions {
+  const configuredTailwindcss = resolved.options.tailwindcss as TailwindcssConfigWithNestedRuntime | undefined
+  const tailwindcss = configuredTailwindcss?.tailwindcss ?? configuredTailwindcss
+  const v4 = tailwindcss?.v4
+  const runtimeV4 = resolved.options.tailwindcssRuntimeOptions?.tailwindcss?.v4
+  return {
+    projectRoot: resolved.basedir,
+    cwd: tailwindcss?.cwd,
+    base: v4?.base,
+    cssSources: v4?.cssSources,
+    cssEntries: [entry],
+    sources: v4?.sources ?? runtimeV4?.sources,
+    packageName: tailwindcss?.packageName ?? 'tailwindcss',
+  }
+}
+
+function createCompilerRootId(index: number, entry: string) {
+  return `weapp-vite:tailwindcss:${index}:${normalizeManagedTailwindcssEntryPath(entry)}`
+}
+
+function assertRuntimeRequirements(resolved: ResolvedManagedTailwindcssOptions) {
+  const [major = 0, minor = 0] = process.versions.node.split('.').map(Number)
+  const supported = (major === 22 && minor >= 18) || (major >= 24 && (major > 24 || minor >= 11))
+  if (!supported) {
+    throw new Error(
+      `weapp.tailwindcss requires Node ${CORE_NODE_RANGE}; current version is ${process.versions.node}.`,
+    )
+  }
+  for (const entry of resolved.cssEntries) {
+    if (!fs.existsSync(entry)) {
+      throw new Error(`weapp.tailwindcss CSS entry does not exist: ${entry}`)
+    }
+  }
+}
+
+function hasTailwindImport(code: string) {
+  return TAILWIND_IMPORT_RE.test(code)
+}
+
+export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
+  const managedOptions = resolveManagedTailwindcssOptions(ctx)
+  if (!managedOptions) {
+    return []
+  }
+  const resolved: ResolvedManagedTailwindcssOptions = managedOptions
+
+  registerManagedTailwindcssEntries(ctx, resolved.cssEntries)
+  const entryIndex = new Map(resolved.cssEntries.map((entry, index) => [normalizeManagedTailwindcssEntryPath(entry), index]))
+  const previousEntrySources = new Map<string, string>()
+  const resolvedEntryIndexes = new Set<number>()
+  const loadedEntryIndexes = new Set<number>()
+  const previousGeneratedCss = new Map<number, string>()
+  const generatedOutputEntries = new Map<string, Set<number>>()
+  const compilerRootIds = new Map<number, string>()
+  const compilerSourceOptions = new Map<number, TailwindV4SourceOptions>()
+  const compilerSnapshots = new Map<number, CompilerSnapshot>()
+  const processedStyleOutputs = new WeakSet<object>()
+  let generatedEntriesPromise: Promise<CompilerGenerateResult[]> | undefined
+  let coreModulePromise: Promise<typeof import('weapp-tailwindcss/core')> | undefined
+  let compilerPromise: Promise<Compiler> | undefined
+  let resolvedConfig: ResolvedConfig | undefined
+  let loaded = false
+  let compilerDisposed = false
+
+  function resolveAutoEntryIndex(id: string, code: string) {
+    if (!resolved.autoDetected || !hasTailwindImport(code)) {
+      return undefined
+    }
+    const sourceId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
+    if (!sourceId || !/\.(?:css|pcss|postcss|sss|scss|sass|less|styl|stylus)$/.test(sourceId)) {
+      return undefined
+    }
+    const normalizedEntry = normalizeManagedTailwindcssEntryPath(sourceId)
+    const existingIndex = entryIndex.get(normalizedEntry)
+    if (existingIndex !== undefined) {
+      return existingIndex
+    }
+    const index = resolved.cssEntries.length
+    resolved.cssEntries.push(sourceId)
+    entryIndex.set(normalizedEntry, index)
+    registerManagedTailwindcssEntries(ctx, resolved.cssEntries)
+    return index
+  }
+
+  function getCoreModule() {
+    coreModulePromise ??= import('weapp-tailwindcss/core')
+    return coreModulePromise
+  }
+
+  async function getCompiler() {
+    compilerPromise ??= getCoreModule().then(({ createCompiler }) => createCompiler(resolved.options))
+    const compiler = await compilerPromise
+    if (!loaded) {
+      loaded = true
+      resolved.options.onLoad?.()
+    }
+    return compiler
+  }
+
+  async function stripResidualTailwindSourceDirectives(css: string) {
+    if (!TAILWIND_SOURCE_DIRECTIVE_RE.test(css)) {
+      return css
+    }
+    const { postcss, removeTailwindSourceDirectivesRoot } = await getCoreModule()
+    const root = postcss.parse(css)
+    removeTailwindSourceDirectivesRoot(root)
+    return root.toString()
+  }
+
+  async function generateEntryCss(compiler: Compiler, index: number, entry: string) {
+    const sourceOptions = compilerSourceOptions.get(index) ?? createTailwindV4SourceOptions(resolved, entry)
+    compilerSourceOptions.set(index, sourceOptions)
+    const id = compilerRootIds.get(index) ?? createCompilerRootId(index, entry)
+    compilerRootIds.set(index, id)
+    const generated = await compiler.generate({
+      id,
+      sourceOptions,
+      target: resolved.generatorTarget,
+      scanSources: true,
+      bareArbitraryValues: resolved.options.arbitraryValues?.bareArbitraryValues,
+      styleOptions: typeof resolved.options.generator === 'object'
+        ? resolved.options.generator.styleOptions
+        : undefined,
+    })
+    compilerSnapshots.set(index, generated.snapshot)
+    return generated
+  }
+
+  async function disposeCompiler() {
+    if (compilerDisposed) {
+      return
+    }
+    compilerDisposed = true
+    await compilerPromise?.then(compiler => compiler.dispose())
+  }
+
+  async function invalidateCompilerForFile(id: string, event: 'create' | 'update' | 'delete') {
+    const compiler = await getCompiler()
+    const normalizedId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
+    const index = entryIndex.get(normalizeManagedTailwindcssEntryPath(normalizedId))
+    generatedEntriesPromise = undefined
+    if (event === 'delete' && index !== undefined) {
+      const rootId = compilerRootIds.get(index)
+      if (rootId) {
+        await compiler.remove(rootId)
+      }
+      compilerSourceOptions.delete(index)
+      return
+    }
+    compiler.invalidate([normalizedId])
+  }
+
+  async function transformBundle(this: any, bundle: OutputBundle, options: { styles?: boolean, templates?: boolean } = {}) {
+    if (resolved.autoDetected && resolved.cssEntries.length === 0) {
+      return
+    }
+    const transformStyles = options.styles !== false
+    const transformTemplates = options.templates !== false
+    const compiler = await getCompiler()
+    const generatedEntries = resolved.options.generator === false
+      ? []
+      : await (generatedEntriesPromise ??= Promise.all(resolved.cssEntries.map((entry, index) =>
+          generateEntryCss(compiler, index, entry))))
+    const snapshots = generatedEntries.length > 0
+      ? generatedEntries.map((generated, index) => compilerSnapshots.get(index) ?? generated.snapshot)
+      : [compiler.createSnapshot({
+          id: `${MANAGED_PLUGIN_NAME}:disabled`,
+          classSet: [],
+          target: resolved.generatorTarget,
+        })]
+    const snapshot = compiler.mergeSnapshots(snapshots)
+    const seenEntries = new Set<number>()
+    const styleExtension = ctx.configService.outputExtensions.wxss
+    const templateExtension = ctx.configService.outputExtensions.wxml
+    const scriptSourceMap = Boolean(resolvedConfig?.build.sourcemap)
+
+    for (const output of Object.values(bundle)) {
+      if (!transformStyles) {
+        break
+      }
+      if (output.type !== 'asset') {
+        continue
+      }
+      if (processedStyleOutputs.has(output)) {
+        generatedOutputEntries.get(output.fileName)?.forEach(index => seenEntries.add(index))
+        continue
+      }
+      let source = outputAssetSource(output)
+      let hasManagedEntry = false
+      let isMainChunk = output.fileName === `app.${styleExtension}`
+      for (let index = 0; index < generatedEntries.length; index++) {
+        const marker = createManagedTailwindcssEntryMarker(index)
+        const outputMarker = createManagedTailwindcssOutputMarker(index)
+        const hasEntryMarker = source.includes(marker)
+        const hasOutputMarker = source.includes(outputMarker)
+        const previousCss = previousGeneratedCss.get(index)
+        const outputEntries = generatedOutputEntries.get(output.fileName)
+        const isTrackedOutput = outputEntries?.has(index) === true
+        const expectedOutputFile = typeof ctx.configService.relativeOutputPath === 'function'
+          ? ctx.configService.relativeOutputPath(
+              changeFileExtension(resolved.cssEntries[index]!, styleExtension),
+            )
+          : undefined
+        const isCanonicalOutput = expectedOutputFile !== undefined
+          && normalizeManagedTailwindcssEntryPath(expectedOutputFile) === normalizeManagedTailwindcssEntryPath(output.fileName)
+        if (!hasEntryMarker && !hasOutputMarker && !isTrackedOutput && !isCanonicalOutput) {
+          continue
+        }
+        const generated = generatedEntries[index]!
+        hasManagedEntry = true
+        isMainChunk ||= normalizeManagedTailwindcssEntryPath(resolved.cssEntries[index]!)
+          === normalizeManagedTailwindcssEntryPath(path.resolve(ctx.configService.absoluteSrcRoot, 'app.css'))
+        seenEntries.add(index)
+        const replacement = `${outputMarker}\n${generated.css}`
+        if (hasEntryMarker) {
+          const markerIndex = source.indexOf(marker)
+          source = source.slice(0, markerIndex)
+            + replacement
+            + source.slice(markerIndex + marker.length).replaceAll(marker, '')
+        }
+        else if (previousCss !== undefined) {
+          source = source.includes(outputMarker)
+            ? source.replace(`${outputMarker}\n${previousCss}`, replacement)
+            : `${replacement}\n${source}`
+        }
+        else if (isCanonicalOutput) {
+          source = `${replacement}\n${source}`
+        }
+        else {
+          source = source.replace(outputMarker, replacement)
+        }
+        previousGeneratedCss.set(index, generated.css)
+        const trackedEntries = generatedOutputEntries.get(output.fileName) ?? new Set<number>()
+        trackedEntries.add(index)
+        generatedOutputEntries.set(output.fileName, trackedEntries)
+        for (const dependency of generated.dependencies) {
+          this.addWatchFile(dependency)
+        }
+      }
+      if (!hasManagedEntry && !output.fileName.endsWith(`.${styleExtension}`)) {
+        continue
+      }
+      const transformed = await compiler.transformCss(source, snapshot, {
+        isMainChunk,
+      })
+      output.source = stripManagedTailwindcssOutputMarkers(
+        await stripResidualTailwindSourceDirectives(transformed.css),
+      )
+      processedStyleOutputs.add(output)
+    }
+
+    if (transformStyles && !ctx.configService.isDev && resolved.options.generator !== false) {
+      const activeEntries = resolved.cssEntries.filter((_entry, index) =>
+        resolvedEntryIndexes.has(index) || loadedEntryIndexes.has(index),
+      )
+      const missing = activeEntries.filter(entry => !seenEntries.has(resolved.cssEntries.indexOf(entry)))
+      const stages = missing.map((entry) => {
+        const index = resolved.cssEntries.indexOf(entry)
+        return `${entry} (resolved: ${resolvedEntryIndexes.has(index)}, loaded: ${loadedEntryIndexes.has(index)})`
+      })
+      if (stages.length > 0) {
+        throw new Error(`weapp.tailwindcss CSS entries must be imported by the build graph: ${stages.join(', ')}`)
+      }
+    }
+
+    if (!transformTemplates) {
+      return
+    }
+    for (const output of Object.values(bundle)) {
+      if (output.type === 'asset' && output.fileName.endsWith(`.${templateExtension}`)) {
+        output.source = await compiler.transformTemplate(outputAssetSource(output), snapshot, {
+          filename: output.fileName,
+        })
+        continue
+      }
+      if (output.type !== 'chunk' || !output.fileName.endsWith('.js')) {
+        continue
+      }
+      const transformed = await compiler.transformJavaScript(output.code, snapshot, {
+        filename: output.fileName,
+        generateMap: scriptSourceMap,
+      })
+      if (transformed.error) {
+        throw transformed.error
+      }
+      applyOutputChunkTransform(output as OutputChunk, transformed.code, transformed.map as any)
+    }
+  }
+
+  const managerPlugin: Plugin = {
+    name: MANAGED_PLUGIN_NAME,
+    enforce: 'pre',
+    generateBundle: {
+      order: 'pre',
+      async handler(_options, bundle) {
+        generatedEntriesPromise = undefined
+        resolved.options.onStart?.()
+        try {
+          await transformBundle.call(this, bundle as unknown as OutputBundle, { templates: false })
+        }
+        finally {
+          resolved.options.onEnd?.()
+        }
+      },
+    },
+    async buildStart() {
+      generatedEntriesPromise = undefined
+      assertRuntimeRequirements(resolved)
+      if (ctx.configService.isDev) {
+        const pendingChanges = ctx.moduleGraphService?.getPendingChanges?.() ?? []
+        if (pendingChanges.length > 0) {
+          await Promise.all(pendingChanges.map(change => invalidateCompilerForFile(change.file, change.event as 'create' | 'update' | 'delete')))
+        }
+      }
+      resolvedEntryIndexes.clear()
+      loadedEntryIndexes.clear()
+      for (const entry of resolved.cssEntries) {
+        this.addWatchFile(entry)
+      }
+    },
+    configResolved(config) {
+      resolvedConfig = config
+    },
+    resolveId(source) {
+      if (resolved.options.generator === false) {
+        return null
+      }
+      const sidecar = parseSidecarSourceRequest(source)
+      if (!sidecar || sidecar.kind !== 'style') {
+        return null
+      }
+      let index = entryIndex.get(normalizeManagedTailwindcssEntryPath(sidecar.sourceId))
+      if (index === undefined && resolved.autoDetected) {
+        try {
+          index = resolveAutoEntryIndex(sidecar.sourceId, fs.readFileSync(sidecar.sourceId, 'utf8'))
+        }
+        catch {
+          // 入口不存在或正在被删除时交给后续模块解析处理。
+        }
+      }
+      if (index === undefined) {
+        return null
+      }
+      resolvedEntryIndexes.add(index)
+      return createVirtualEntryId(index, source)
+    },
+    load(id) {
+      if (resolved.options.generator === false) {
+        return null
+      }
+      const virtualIndex = parseVirtualEntryIndex(id)
+      const normalizedId = virtualIndex === undefined
+        ? normalizeFsResolvedId(id.split('?')[0])
+        : normalizeFsResolvedId(resolved.cssEntries[virtualIndex] ?? '')
+      const index = virtualIndex ?? entryIndex.get(normalizedId)
+      if (index === undefined) {
+        return null
+      }
+      loadedEntryIndexes.add(index)
+      const code = fs.readFileSync(normalizedId, 'utf8')
+      const previous = previousEntrySources.get(normalizedId)
+      if (previous !== undefined && previous !== code) {
+        resolved.options.onUpdate?.(normalizedId, previous, code)
+      }
+      previousEntrySources.set(normalizedId, code)
+      return createManagedTailwindcssEntryMarker(index)
+    },
+    transform(code, id) {
+      if (resolved.options.generator === false) {
+        return null
+      }
+      const index = resolveManagedEntryIndex(id, code, entryIndex) ?? resolveAutoEntryIndex(id, code)
+      if (index === undefined) {
+        return null
+      }
+      loadedEntryIndexes.add(index)
+      return {
+        code: createManagedTailwindcssEntryMarker(index),
+        map: null,
+      }
+    },
+    async watchChange(id, change) {
+      await invalidateCompilerForFile(id, change.event)
+    },
+    async handleHotUpdate({ file }) {
+      await invalidateCompilerForFile(file, 'update')
+    },
+    async closeWatcher() {
+      await disposeCompiler()
+    },
+  }
+
+  const outputPlugin: Plugin = {
+    name: `${MANAGED_PLUGIN_NAME}:output`,
+    enforce: 'post',
+    generateBundle: {
+      order: 'post',
+      async handler(_options, bundle) {
+        resolved.options.onStart?.()
+        try {
+          await transformBundle.call(this, bundle as unknown as OutputBundle)
+        }
+        finally {
+          resolved.options.onEnd?.()
+        }
+      },
+    },
+    async closeBundle() {
+      if (!ctx.configService.isDev) {
+        await disposeCompiler()
+      }
+    },
+  }
+
+  return [managerPlugin, outputPlugin]
+}

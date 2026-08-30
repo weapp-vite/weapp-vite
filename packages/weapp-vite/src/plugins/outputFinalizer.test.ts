@@ -3,6 +3,7 @@ import { Buffer } from 'node:buffer'
 import { describe, expect, it } from 'vitest'
 import { recordPendingOwnerStyleSource } from './css'
 import { createOutputFinalizerPlugin, mayNeedTemplateNormalization, normalizeGraphOnlyAssets, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
+import { registerManagedTailwindcssEntries } from './tailwindcssMarker'
 
 function createBundleAssetEmitter(bundle: OutputBundle) {
   return (asset: any) => {
@@ -36,7 +37,7 @@ describe('weapp-vite output finalizer', () => {
     recordPendingOwnerStyleSource(
       ctx,
       'app.wxss',
-      '.author{color:#893a6d}\n/*! weapp-tailwindcss generator-placeholder */\n@source "./**/*.{vue}";',
+      '.author{color:#893a6d}\n/*! weapp-tailwindcss generator-placeholder */\n@plugin "@iconify/tailwind4" { prefixes: mdi; }\n@source "./**/*.{vue}";\npage{background:#f6f7fb}',
     )
     const bundle = {
       'app.wxss': {
@@ -51,6 +52,8 @@ describe('weapp-vite output finalizer', () => {
     expect((bundle['app.wxss'] as any).source).toContain('.flex{display:flex}')
     expect((bundle['app.wxss'] as any).source).toContain('.author{color:#893a6d}')
     expect((bundle['app.wxss'] as any).source).not.toContain('generator-placeholder')
+    expect((bundle['app.wxss'] as any).source).not.toMatch(/@(plugin|source)\b/)
+    expect((bundle['app.wxss'] as any).source).not.toContain('page{background:#f6f7fb}')
   })
 
   it('maps graph-only virtual assets back to physical owner outputs', () => {
@@ -95,6 +98,36 @@ describe('weapp-vite output finalizer', () => {
         source: '.app{}',
       }),
     ])
+  })
+
+  it('drops managed Tailwind graph-only style shadows', () => {
+    const entry = '/project/src/app.css'
+    const bundle = {
+      'weapp_vite_external/graph/weapp-vite:sidecar:style:%2Fproject%2Fsrc%2Fapp.ts:%2Fproject%2Fsrc%2Fapp.css:module.wxss': {
+        type: 'asset',
+        fileName: 'weapp_vite_external/graph/weapp-vite:sidecar:style:%2Fproject%2Fsrc%2Fapp.ts:%2Fproject%2Fsrc%2Fapp.css:module.wxss',
+        source: '@plugin "@iconify/tailwind4";',
+      },
+      'app.wxss': {
+        type: 'asset',
+        fileName: 'app.wxss',
+        source: '.flex{display:flex}',
+      },
+    } as unknown as OutputBundle
+    const finalizerCtx = {
+      configService: { outputExtensions: { wxss: 'wxss' } },
+    } as any
+    registerManagedTailwindcssEntries(finalizerCtx, [entry])
+
+    finalizerCtx.configService.relativeOutputPath = (id: string) => id.replace('/project/src/', '')
+    normalizeGraphOnlyAssets(
+      finalizerCtx,
+      bundle,
+      createBundleAssetEmitter(bundle),
+    )
+
+    expect(bundle['app.wxss']).toMatchObject({ source: '.flex{display:flex}' })
+    expect(bundle['weapp_vite_external/graph/weapp-vite:sidecar:style:%2Fproject%2Fsrc%2Fapp.ts:%2Fproject%2Fsrc%2Fapp.css:module.wxss']).toBeUndefined()
   })
 
   it('drops duplicate preprocessor style assets', () => {

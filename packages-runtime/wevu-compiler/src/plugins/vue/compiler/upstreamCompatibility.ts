@@ -60,7 +60,7 @@ export const VUE_UPSTREAM_COMPATIBILITY_CASES: VueUpstreamCompatibilityCase[] = 
     upstream: 'compiler-core/transforms/vModel',
     tags: ['Panel'],
     directives: ['model'],
-    wxmlIncludes: ['modelValue="{{value}}"', 'bind:update-modelvalue="__weapp_vite_inline"'],
+    wxmlIncludes: ['model-value="{{value}}"', 'bind:update-modelvalue="__weapp_vite_inline"'],
   },
   {
     category: 'named-slot',

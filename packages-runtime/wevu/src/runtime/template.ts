@@ -1,20 +1,9 @@
 import { WEVU_SETUP_STATE_KEY } from '@weapp-core/constants'
 import { unref } from '../reactivity'
-
-const hyphenateRE = /\B([A-Z])/g
+import { hyphenate } from '../utils'
 
 function hasOwnProperty(target: object, key: string) {
   return Object.prototype.hasOwnProperty.call(target, key)
-}
-
-function hyphenate(value: string) {
-  if (!value) {
-    return ''
-  }
-  if (value.startsWith('--')) {
-    return value
-  }
-  return value.replace(hyphenateRE, '-$1').toLowerCase()
 }
 
 function appendStyle(base: string, part: string) {
@@ -39,7 +28,7 @@ function stringifyStyle(value: Record<string, any>) {
     if (raw == null) {
       continue
     }
-    const name = hyphenate(key)
+    const name = key.startsWith('--') ? key : hyphenate(key)
     if (Array.isArray(raw)) {
       for (const itemValue of raw) {
         const item = unref(itemValue)

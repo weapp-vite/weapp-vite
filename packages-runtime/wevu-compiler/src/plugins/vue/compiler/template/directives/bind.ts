@@ -3,7 +3,7 @@ import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import * as t from '@weapp-vite/ast/babelTypes'
-
+import { normalizeComponentHostName } from '../../../../../utils/text'
 import { warn } from '../diagnostics'
 import { getBindDirectiveExpression } from '../elements/helpers'
 import { normalizeWxmlExpressionWithContext } from '../expression'
@@ -178,6 +178,7 @@ export function transformBindDirective(
     return null
   }
   const argValue = arg.type === NodeTypes.SIMPLE_EXPRESSION ? arg.content : ''
+  const outputArgValue = options?.isComponent ? normalizeComponentHostName(argValue) : argValue
   const rawExpValue = getBindDirectiveExpression(node)
   if (!rawExpValue) {
     return null
@@ -187,7 +188,7 @@ export function transformBindDirective(
     const path = collectFunctionPropPath(rawExpValue)
     if (path) {
       if (shouldWrapStaticMemberFunctionProp(argValue, path, context)) {
-        const runtimeAttr = createFunctionPropRuntimeAttr(argValue, rawExpValue, context)
+        const runtimeAttr = createFunctionPropRuntimeAttr(outputArgValue, rawExpValue, context)
         if (runtimeAttr) {
           return runtimeAttr
         }
@@ -197,7 +198,7 @@ export function transformBindDirective(
       }
     }
     else if (shouldUseRuntimeFunctionPropBinding(argValue, context) && isComputedMemberExpression(rawExpValue)) {
-      const runtimeAttr = createFunctionPropRuntimeAttr(argValue, rawExpValue, context)
+      const runtimeAttr = createFunctionPropRuntimeAttr(outputArgValue, rawExpValue, context)
       if (runtimeAttr) {
         return runtimeAttr
       }
@@ -221,13 +222,13 @@ export function transformBindDirective(
 
   if (isTopLevelObjectLiteral(rawExpValue)) {
     if (context.objectLiteralBindMode === 'inline' || isStaticObjectLiteral(rawExpValue)) {
-      return createInlineObjectLiteralAttr(argValue, rawExpValue, context)
+      return createInlineObjectLiteralAttr(outputArgValue, rawExpValue, context)
     }
-    return createBindRuntimeAttr(argValue, rawExpValue, context)
+    return createBindRuntimeAttr(outputArgValue, rawExpValue, context)
   }
 
   if (shouldFallbackToRuntimeBinding(rawExpValue, context.templateSafeCallNames)) {
-    const runtimeAttr = createBindRuntimeAttr(argValue, rawExpValue, context)
+    const runtimeAttr = createBindRuntimeAttr(outputArgValue, rawExpValue, context)
     if (runtimeAttr) {
       return runtimeAttr
     }
@@ -235,5 +236,5 @@ export function transformBindDirective(
 
   const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
 
-  return `${argValue}="${renderMustache(expValue, context)}"`
+  return `${outputArgValue}="${renderMustache(expValue, context)}"`
 }

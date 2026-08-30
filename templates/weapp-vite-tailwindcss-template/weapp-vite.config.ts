@@ -1,10 +1,12 @@
-import path from 'node:path'
-import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
+    tailwindcss: {
+      rem2rpx: true,
+      cssEntries: ['src/app.css'],
+    },
     // pnpm g 生成的格式
     // https://vite.weapp.dev/guide/generate.html
     generate: {
@@ -30,10 +32,4 @@ export default defineConfig({
       },
     },
   },
-  plugins: [
-    WeappTailwindcss({
-      rem2rpx: true,
-      cssEntries: [path.resolve(import.meta.dirname, 'src/app.css')],
-    }),
-  ],
 })
