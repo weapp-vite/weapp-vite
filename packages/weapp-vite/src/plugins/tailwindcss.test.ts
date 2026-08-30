@@ -223,6 +223,15 @@ describe('managed Tailwind integration', () => {
 
     const plugins = getPlugins({
       cssEntries: [entry],
+      tailwindcss: {
+        v4: {
+          sources: [{
+            base: root,
+            pattern: 'src/**/*.{vue,ts}',
+            negated: false,
+          }],
+        },
+      },
       compiler: {
         maxRoots: 32,
         onRootEvicted,
@@ -262,6 +271,11 @@ describe('managed Tailwind integration', () => {
     } as unknown as OutputBundle
 
     await getHookHandler(plugin.generateBundle)?.call({ addWatchFile } as any, {} as any, bundle, false)
+    bundle['late.wxss'] = {
+      type: 'asset',
+      fileName: 'late.wxss',
+      source: marker,
+    } as any
     await getHookHandler(outputPlugin.generateBundle)?.call({ addWatchFile } as any, {} as any, bundle, false)
     await outputPlugin.closeBundle?.call({} as any)
 
@@ -269,6 +283,7 @@ describe('managed Tailwind integration', () => {
     expect((bundle['app.wxss'] as any).source).toContain('.author{color:red}')
     expect((bundle['app.wxss'] as any).source).not.toMatch(/@(plugin|source|theme)\b/)
     expect((bundle['app.wxss'] as any).source).not.toContain('managed-tailwindcss-entry')
+    expect((bundle['late.wxss'] as any).source).toContain('.gap-4_d25{gap:17rpx}')
     expect((bundle['pages/index/index.wxml'] as any).source).toContain('gap-4_d25')
     expect((bundle['app.js'] as any).code).toContain('gap-4_d25')
     expect(transformedCssSources[0]).toMatch(/@plugin "@iconify\/tailwind4"/)
@@ -286,6 +301,15 @@ describe('managed Tailwind integration', () => {
         onRootEvicted,
       },
     }))
+    expect(compiler.generate).toHaveBeenCalledWith(expect.objectContaining({
+      sourceOptions: expect.objectContaining({
+        sources: [{
+          base: root,
+          pattern: 'src/**/*.{vue,ts}',
+          negated: false,
+        }],
+      }),
+    }))
     expect(calls).toEqual([
       'start',
       'load',
@@ -295,6 +319,7 @@ describe('managed Tailwind integration', () => {
       'end',
       'start',
       'merge',
+      'wxss',
       'wxml',
       'js',
       'end',

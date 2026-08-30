@@ -33,7 +33,18 @@ const VIRTUAL_ENTRY_PREFIX = '\0weapp-vite:managed-tailwindcss-entry:'
 const TAILWIND_IMPORT_RE = /@import\s+(?:url\(\s*)?['"]tailwindcss['"]\s*\)?(?:\s|;|$)/
 const TAILWIND_SOURCE_DIRECTIVE_RE = /@(?:config|custom-variant|layer|plugin|reference|source|tailwind|theme|utility|variant)\b/
 
-type TailwindV4SourceOptions = Extract<CompilerGenerateRequest, { sourceOptions: unknown }>['sourceOptions']
+interface TailwindV4SourcePattern {
+  base: string
+  pattern: string
+  negated: boolean
+}
+type TailwindV4SourceOptions = Extract<CompilerGenerateRequest, { sourceOptions: unknown }>['sourceOptions'] & {
+  sources?: TailwindV4SourcePattern[]
+}
+type TailwindcssRuntimeConfig = NonNullable<UserDefinedOptions['tailwindcss']>
+type TailwindcssConfigWithNestedRuntime = TailwindcssRuntimeConfig & {
+  tailwindcss?: TailwindcssRuntimeConfig
+}
 type ManagedTailwindcssOptions = UserDefinedOptions & Pick<CreateCompilerOptions, 'compiler'>
 
 interface ResolvedManagedTailwindcssOptions {
@@ -53,9 +64,12 @@ function resolveCssEntries(
   options: ManagedTailwindcssOptions,
   basedir: string,
 ) {
+  const tailwindcss = options.tailwindcss as TailwindcssConfigWithNestedRuntime | undefined
+  const nestedTailwindcss = tailwindcss?.tailwindcss
   const entries = unique([
     ...(options.cssEntries ?? []),
     ...(options.tailwindcss?.v4?.cssEntries ?? []),
+    ...(nestedTailwindcss?.v4?.cssEntries ?? []),
     ...(options.tailwindcssRuntimeOptions?.tailwindcss?.v4?.cssEntries ?? []),
   ]).map(entry => path.isAbsolute(entry) ? path.normalize(entry) : path.resolve(basedir, entry))
 
@@ -171,14 +185,17 @@ function createTailwindV4SourceOptions(
   resolved: ResolvedManagedTailwindcssOptions,
   entry: string,
 ): TailwindV4SourceOptions {
-  const tailwindcss = resolved.options.tailwindcss
+  const configuredTailwindcss = resolved.options.tailwindcss as TailwindcssConfigWithNestedRuntime | undefined
+  const tailwindcss = configuredTailwindcss?.tailwindcss ?? configuredTailwindcss
   const v4 = tailwindcss?.v4
+  const runtimeV4 = resolved.options.tailwindcssRuntimeOptions?.tailwindcss?.v4
   return {
     projectRoot: resolved.basedir,
     cwd: tailwindcss?.cwd,
     base: v4?.base,
     cssSources: v4?.cssSources,
     cssEntries: [entry],
+    sources: v4?.sources ?? runtimeV4?.sources,
     packageName: tailwindcss?.packageName ?? 'tailwindcss',
   }
 }
@@ -223,6 +240,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   const compilerRootIds = new Map<number, string>()
   const compilerSourceOptions = new Map<number, TailwindV4SourceOptions>()
   const compilerSnapshots = new Map<number, CompilerSnapshot>()
+  const processedStyleOutputs = new WeakSet<object>()
   let generatedEntriesPromise: Promise<CompilerGenerateResult[]> | undefined
   let coreModulePromise: Promise<typeof import('weapp-tailwindcss/core')> | undefined
   let compilerPromise: Promise<Compiler> | undefined
@@ -349,6 +367,10 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       if (output.type !== 'asset') {
         continue
       }
+      if (processedStyleOutputs.has(output)) {
+        generatedOutputEntries.get(output.fileName)?.forEach(index => seenEntries.add(index))
+        continue
+      }
       let source = outputAssetSource(output)
       let hasManagedEntry = false
       let isMainChunk = output.fileName === `app.${styleExtension}`
@@ -410,6 +432,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       output.source = stripManagedTailwindcssOutputMarkers(
         await stripResidualTailwindSourceDirectives(transformed.css),
       )
+      processedStyleOutputs.add(output)
     }
 
     if (transformStyles && !ctx.configService.isDev && resolved.options.generator !== false) {
@@ -561,7 +584,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       async handler(_options, bundle) {
         resolved.options.onStart?.()
         try {
-          await transformBundle.call(this, bundle as unknown as OutputBundle, { styles: false })
+          await transformBundle.call(this, bundle as unknown as OutputBundle)
         }
         finally {
           resolved.options.onEnd?.()
