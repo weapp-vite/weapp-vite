@@ -118,6 +118,7 @@ export async function compileVueFile(
   const templateCompiled = compileTemplatePhase(
     parsed.descriptor,
     filename,
+    source,
     templateOptions,
     result,
   )

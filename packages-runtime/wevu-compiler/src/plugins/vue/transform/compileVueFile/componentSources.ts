@@ -1,7 +1,7 @@
 import type { File as BabelFile, ObjectExpression } from '@weapp-vite/ast/babelTypes'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { AutoImportTagsOptions, AutoUsingComponentsOptions, CompileVueFileOptions, ResolvedUsingComponentPath, VueSfcStaticComponentMeta } from './types'
-import { isObject, removeExtensionDeep } from '@weapp-core/shared'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
@@ -10,7 +10,6 @@ import * as fs from '../../../../utils/fs'
 import { collectVueTemplateTags, isAutoImportCandidateTag } from '../../../../utils/vueTemplateTags'
 import { resolveWarnHandler } from '../../../../utils/warn'
 import { normalizeTemplateTagName } from '../../compiler/template/htmlTagMapping'
-import { loadNativeSfcBindingSync, shouldUseNativeSfc } from '../../native'
 
 type SfcDescriptorForCompile = Pick<SFCDescriptor, 'scriptSetup' | 'script'>
 
@@ -138,33 +137,7 @@ function extractStaticComponentMeta(scriptSetupContent: string): VueSfcStaticCom
   }
 }
 
-function readNativeVueSfcScriptSetupContent(source: string) {
-  if (!shouldUseNativeSfc()) {
-    return undefined
-  }
-  try {
-    const payload = loadNativeSfcBindingSync()?.getVueSfcSignaturePayloadNative?.(source)
-    if (!payload) {
-      return undefined
-    }
-    const parsed: unknown = JSON.parse(payload)
-    if (!isObject(parsed) || !isObject(parsed.script) || !isObject(parsed.script.scriptSetup)) {
-      return undefined
-    }
-    const content = parsed.script.scriptSetup.content
-    return typeof content === 'string' ? content : undefined
-  }
-  catch {
-    return undefined
-  }
-}
-
 function readVueSfcScriptSetupContent(source: string, resolvedId: string) {
-  const nativeContent = readNativeVueSfcScriptSetupContent(source)
-  if (typeof nativeContent === 'string') {
-    return nativeContent
-  }
-
   const { descriptor, errors } = parseSfc(source, {
     filename: resolvedId,
   })

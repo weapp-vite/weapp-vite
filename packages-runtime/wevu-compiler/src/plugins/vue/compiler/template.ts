@@ -1,3 +1,4 @@
+import type { CompilerDiagnostic } from '../../../types/diagnostics'
 import type { ResolvedSlotFallbackWrapperConfig, SlotFallbackWrapperComponentAsset, SlotFallbackWrapperStrategy, TemplateCompileOptions, TemplateCompileResult, TransformContext } from './template/types'
 import {
   parse,
@@ -6,7 +7,9 @@ import {
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE,
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
 } from '@weapp-core/constants'
+import { CompilerDiagnosticCodes } from '../../../types/diagnostics'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
+import { emitTemplateDiagnostic } from './template/diagnostics'
 import { formatWxml } from './template/format'
 import { resolveHtmlTagToWxmlMap } from './template/htmlTagMapping'
 import { transformNode } from './template/nodes'
@@ -98,7 +101,7 @@ export function compileVueTemplateToWxml(
   filename: string,
   options?: TemplateCompileOptions,
 ): TemplateCompileResult {
-  const warnings: string[] = []
+  const diagnostics: CompilerDiagnostic[] = []
   const runtimeMode = options?.classStyleRuntime ?? 'js'
   // 这里是模板编译入口对 class/style 运行时的“第一层决策”：
   // - auto：有 wxsExtension 时优先 wxs，否则用 js。
@@ -123,15 +126,26 @@ export function compileVueTemplateToWxml(
     // 使用 compiler-dom 解析模板，确保浏览器环境自带 decodeEntities 解析能力。
     const ast = parse(template, {
       isVoidTag: tag => HTML_VOID_TAGS.has(tag),
-      onError: (error) => {
-        warnings.push(`模板解析失败：${error.message}`)
-      },
+      onError: error => emitTemplateDiagnostic(
+        {
+          diagnostics,
+          filename,
+          sourceLocationOffset: options?.sourceLocationOffset,
+          sourceLocationSource: options?.sourceLocationSource,
+        },
+        CompilerDiagnosticCodes.templateParseError,
+        `模板解析失败：${error.message}`,
+        error.loc,
+        'error',
+      ),
     })
 
     const context: TransformContext = {
       source: template,
       filename,
-      warnings,
+      diagnostics,
+      sourceLocationOffset: options?.sourceLocationOffset,
+      sourceLocationSource: options?.sourceLocationSource,
       platform: options?.platform ?? getMiniProgramTemplatePlatform(),
       isPage: resolveTemplateIsPage(filename, options),
       propsAliases: options?.propsAliases,
@@ -193,7 +207,7 @@ export function compileVueTemplateToWxml(
 
     const result: TemplateCompileResult = {
       code: wxml,
-      warnings,
+      diagnostics,
     }
 
     if (context.scopedSlotComponents.length) {
@@ -228,10 +242,21 @@ export function compileVueTemplateToWxml(
     return result
   }
   catch (error) {
-    warnings.push(`模板编译失败：${error}`)
+    emitTemplateDiagnostic(
+      {
+        diagnostics,
+        filename,
+        sourceLocationOffset: options?.sourceLocationOffset,
+        sourceLocationSource: options?.sourceLocationSource,
+      },
+      CompilerDiagnosticCodes.templateCompileError,
+      `模板编译失败：${error}`,
+      undefined,
+      'error',
+    )
     return {
       code: template,
-      warnings,
+      diagnostics,
     }
   }
 }

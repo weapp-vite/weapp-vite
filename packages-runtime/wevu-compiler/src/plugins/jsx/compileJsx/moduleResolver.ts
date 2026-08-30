@@ -37,7 +37,7 @@ function resolveFile(source: string, importer: string) {
   return undefined
 }
 
-function expressionFromDeclaration(node: t.Declaration | t.Expression | null): JsxModuleExport | undefined {
+function expressionFromDeclaration(node: t.Declaration | t.Expression | null): Omit<JsxModuleExport, 'filename'> | undefined {
   if (!node) {
     return undefined
   }
@@ -155,7 +155,7 @@ export function createJsxModuleResolver(warn?: (message: string) => void): JsxMo
       const { locals, reexports } = read(filename)
       const direct = expressionFromDeclaration(locals.get(localName) ?? null)
       if (direct) {
-        return direct
+        return { ...direct, filename }
       }
       const forwarded = reexports.get(localName)
       if (!forwarded) {

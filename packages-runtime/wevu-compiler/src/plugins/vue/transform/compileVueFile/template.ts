@@ -6,6 +6,7 @@ import { compileVueTemplateToWxml } from '../../compiler/template'
 export function compileTemplatePhase(
   descriptor: Pick<SFCDescriptor, 'template'>,
   filename: string,
+  source: string,
   options: TemplateCompileOptions | undefined,
   result: VueTransformResult,
 ): TemplateCompileResult | undefined {
@@ -16,9 +17,18 @@ export function compileTemplatePhase(
   const templateCompiled = compileVueTemplateToWxml(
     descriptor.template.content,
     filename,
-    options,
+    descriptor.template.src
+      ? options
+      : {
+          ...options,
+          sourceLocationOffset: descriptor.template.loc.start,
+          sourceLocationSource: source,
+        },
   )
   result.template = templateCompiled.code
+  if (templateCompiled.diagnostics.length) {
+    result.diagnostics = templateCompiled.diagnostics
+  }
   if (templateCompiled.scopedSlotComponents?.length) {
     result.scopedSlotComponents = templateCompiled.scopedSlotComponents
   }

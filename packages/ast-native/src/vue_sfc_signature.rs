@@ -71,7 +71,21 @@ struct VueSfcSignaturePayload<'a> {
 
 #[napi(js_name = "getVueSfcSignaturePayloadNative")]
 pub fn get_vue_sfc_signature_payload_native(source: String) -> Option<String> {
-    let descriptor = parse_sfc_descriptor(&source)?;
+    if source
+        .as_bytes()
+        .windows(b"<template".len())
+        .any(|window| window.eq_ignore_ascii_case(b"<template"))
+    {
+        return None;
+    }
+    build_vue_sfc_signature_payload(&source)
+}
+
+fn build_vue_sfc_signature_payload(source: &str) -> Option<String> {
+    let descriptor = parse_sfc_descriptor(source)?;
+    if descriptor.template.is_some() {
+        return None;
+    }
     let payload = VueSfcSignaturePayload {
         script: SfcScriptPayload {
             script: descriptor.script.as_ref().map(serialize_sfc_block),
@@ -120,13 +134,16 @@ fn parse_sfc_descriptor(source: &str) -> Option<SfcDescriptor> {
 
     while let Some(relative_open) = source[cursor..].find('<') {
         let open_start = cursor + relative_open;
-        if source[open_start..].starts_with("</")
-            || source[open_start..].starts_with("<!--")
-            || source[open_start..].starts_with("<!")
-            || source[open_start..].starts_with("<?")
-        {
-            cursor = open_start + 1;
+        if source[open_start..].starts_with("<!--") {
+            let comment_end = source[open_start + 4..].find("-->")? + open_start + 4;
+            cursor = comment_end + 3;
             continue;
+        }
+        if source[open_start..].starts_with("</") {
+            return None;
+        }
+        if source[open_start..].starts_with("<!") || source[open_start..].starts_with("<?") {
+            return None;
         }
 
         let open_end = find_tag_end(source, open_start)?;
@@ -143,9 +160,8 @@ fn parse_sfc_descriptor(source: &str) -> Option<SfcDescriptor> {
             continue;
         }
 
-        let close_tag = format!("</{}>", block_type);
         let content_start = open_end + 1;
-        let close_start = source[content_start..].find(&close_tag)? + content_start;
+        let (close_start, close_end) = find_closing_tag(source, content_start, &block_type)?;
         let content = source[content_start..close_start].to_string();
         let block = SfcBlock {
             block_type,
@@ -167,7 +183,7 @@ fn parse_sfc_descriptor(source: &str) -> Option<SfcDescriptor> {
                 descriptor.script = Some(block);
             }
             "template" => {
-                if descriptor.template.is_some() {
+                if descriptor.template.is_some() || block.attrs.contains_key("functional") {
                     return None;
                 }
                 descriptor.template = Some(block);
@@ -180,10 +196,56 @@ fn parse_sfc_descriptor(source: &str) -> Option<SfcDescriptor> {
             }
         }
 
-        cursor = close_start + close_tag.len();
+        cursor = close_end;
+    }
+
+    if descriptor.script.is_none()
+        && descriptor.script_setup.is_none()
+        && descriptor.template.is_none()
+    {
+        return None;
     }
 
     Some(descriptor)
+}
+
+fn find_closing_tag(
+    source: &str,
+    content_start: usize,
+    block_type: &str,
+) -> Option<(usize, usize)> {
+    let bytes = source.as_bytes();
+    let name = block_type.as_bytes();
+    let mut cursor = content_start;
+
+    while let Some(relative_open) = source[cursor..].find("</") {
+        let close_start = cursor + relative_open;
+        let name_start = close_start + 2;
+        if matches_tag_name(bytes, name_start, name)
+            && let Some(close_end) = resolve_closing_tag_end(bytes, name_start + name.len())
+        {
+            return Some((close_start, close_end));
+        }
+        cursor = name_start;
+    }
+
+    None
+}
+
+fn matches_tag_name(bytes: &[u8], name_start: usize, name: &[u8]) -> bool {
+    let name_end = name_start + name.len();
+    bytes.get(name_start..name_end) == Some(name)
+        && bytes
+            .get(name_end)
+            .is_some_and(|byte| byte.is_ascii_whitespace() || matches!(byte, b'>' | b'/'))
+}
+
+fn resolve_closing_tag_end(bytes: &[u8], name_end: usize) -> Option<usize> {
+    let mut index = name_end;
+    while index < bytes.len() && bytes[index].is_ascii_whitespace() {
+        index += 1;
+    }
+    (bytes.get(index) == Some(&b'>')).then_some(index + 1)
 }
 
 fn find_tag_end(source: &str, open_start: usize) -> Option<usize> {
@@ -213,6 +275,9 @@ fn parse_open_tag(raw: &str) -> Option<(String, BTreeMap<String, SfcAttrValue>)>
         return None;
     }
     let tag_name = raw[name_start..index].to_string();
+    if tag_name.bytes().any(|byte| byte.is_ascii_uppercase()) {
+        return None;
+    }
     let mut attrs = BTreeMap::new();
 
     while index < bytes.len() {
@@ -238,13 +303,18 @@ fn parse_open_tag(raw: &str) -> Option<(String, BTreeMap<String, SfcAttrValue>)>
             return None;
         }
         let attr_name = raw[attr_start..index].to_string();
+        if attr_name.bytes().any(|byte| byte.is_ascii_uppercase()) {
+            return None;
+        }
 
         while index < bytes.len() && bytes[index].is_ascii_whitespace() {
             index += 1;
         }
 
         if index >= bytes.len() || bytes[index] != b'=' {
-            attrs.insert(attr_name, SfcAttrValue::Bool(true));
+            if attrs.insert(attr_name, SfcAttrValue::Bool(true)).is_some() {
+                return None;
+            }
             continue;
         }
 
@@ -253,8 +323,7 @@ fn parse_open_tag(raw: &str) -> Option<(String, BTreeMap<String, SfcAttrValue>)>
             index += 1;
         }
         if index >= bytes.len() {
-            attrs.insert(attr_name, SfcAttrValue::String(String::new()));
-            break;
+            return None;
         }
 
         let value = if bytes[index] == b'"' || bytes[index] == b'\'' {
@@ -278,7 +347,13 @@ fn parse_open_tag(raw: &str) -> Option<(String, BTreeMap<String, SfcAttrValue>)>
             }
             raw[value_start..index].to_string()
         };
-        attrs.insert(attr_name, SfcAttrValue::String(value));
+        if value.contains('&')
+            || attrs
+                .insert(attr_name, SfcAttrValue::String(value))
+                .is_some()
+        {
+            return None;
+        }
     }
 
     Some((tag_name, attrs))

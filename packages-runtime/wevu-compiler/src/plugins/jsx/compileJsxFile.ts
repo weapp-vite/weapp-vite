@@ -59,7 +59,7 @@ export async function compileJsxFile(
     }
   }
 
-  const { template: rawTemplate, warnings: templateWarnings, inlineExpressions, autoComponentContext, dynamicIslands, dependencies } = compileJsxTemplateAndCollectComponents(source, filename, options)
+  const { template: rawTemplate, diagnostics: templateDiagnostics, inlineExpressions, autoComponentContext, dynamicIslands, dependencies } = compileJsxTemplateAndCollectComponents(source, filename, options)
 
   const autoUsingComponentsMap: Record<string, string> = {}
   const localComponentAliases = new Map<string, string>()
@@ -136,8 +136,8 @@ export async function compileJsxFile(
     inlineExpressions,
   })
 
-  if (templateWarnings.length && options?.warn) {
-    templateWarnings.forEach(message => options.warn?.(`[JSX 编译] ${message}`))
+  if (templateDiagnostics.length && options?.warn) {
+    templateDiagnostics.forEach(diagnostic => options.warn?.(`[JSX 编译] ${diagnostic.message}`))
   }
 
   let configObj: Record<string, any> | undefined
@@ -190,6 +190,7 @@ export async function compileJsxFile(
     script: transformedScript.code,
     scriptMap: transformedScript.map ?? vueJsxTransformed.map,
     template: compiledTemplateStr,
+    diagnostics: templateDiagnostics.length ? templateDiagnostics : undefined,
     config: configObj && Object.keys(configObj).length > 0
       ? JSON.stringify(configObj, null, 2)
       : undefined,

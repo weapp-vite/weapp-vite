@@ -12,6 +12,8 @@ import {
   INLINE_HANDLER_KEY,
   normalizeEventDatasetSuffix,
 } from '../../../../../inlineDataset'
+import { CompilerDiagnosticCodes } from '../../../../../types/diagnostics'
+import { emitTemplateDiagnostic } from '../diagnostics'
 import { normalizeWxmlExpressionWithContext, registerInlineExpression } from '../expression'
 import { renderMustache } from '../mustache'
 
@@ -110,7 +112,14 @@ export function transformOnDirective(
       return [detailAttr, `data-${INLINE_HANDLER_KEY}-${eventSuffix}="${rawExpValue}"`, `${bindAttr}="${WEVU_OWNER_HANDLER}"`].filter(Boolean).join(' ')
     }
     if (isInlineExpression) {
-      context.warnings.push('作用域插槽的事件处理解析失败，请使用简单的方法引用。')
+      emitTemplateDiagnostic(
+        context,
+        CompilerDiagnosticCodes.templateInvalidExpression,
+        '作用域插槽的事件处理解析失败，请使用简单的方法引用。',
+        node.loc,
+        'warning',
+        'expression',
+      )
       return [detailAttr, `${bindAttr}="${WEVU_OWNER_HANDLER}"`].filter(Boolean).join(' ')
     }
   }

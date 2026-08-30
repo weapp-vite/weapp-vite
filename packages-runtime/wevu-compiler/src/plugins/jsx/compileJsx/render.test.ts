@@ -51,7 +51,9 @@ describe('compileJsx render helpers', () => {
     )
 
     expect(rendered).toContain('data-wv-jsx-island="i0"')
-    expect(context.warnings).toContain('仅支持 map(fn) 形式的列表渲染。')
+    expect(context.diagnostics).toContainEqual(expect.objectContaining({
+      message: '仅支持 map(fn) 形式的列表渲染。',
+    }))
   })
 
   it('routes spread children and member tags to deterministic dynamic islands', () => {
@@ -82,8 +84,12 @@ describe('compileJsx render helpers', () => {
       expect.objectContaining({ id: 'i0', reason: 'spread-child' }),
       expect.objectContaining({ id: 'i1', reason: 'dynamic-component' }),
     ])
-    expect(context.warnings).toContain('JSX spread child 无法映射为静态 WXML，已生成 dynamic island。')
-    expect(context.warnings).toContain('JSX 成员标签（如 <Foo.Bar />）无法映射为小程序 WXML 组件标签，已生成 dynamic island。')
+    expect(context.diagnostics).toContainEqual(expect.objectContaining({
+      message: 'JSX spread child 无法映射为静态 WXML，已生成 dynamic island。',
+    }))
+    expect(context.diagnostics).toContainEqual(expect.objectContaining({
+      message: 'JSX 成员标签（如 <Foo.Bar />）无法映射为小程序 WXML 组件标签，已生成 dynamic island。',
+    }))
   })
 
   it('renders logical-or fallback and list map blocks', () => {

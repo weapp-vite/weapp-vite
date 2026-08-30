@@ -54,7 +54,7 @@ describe('Vue 3.5.41 / babel-plugin-jsx 3.0.0 compatibility matrix', () => {
       expect(result.template).toBeTruthy()
       expect(result.template).toContain(NATIVE_WXML_EXPECTATIONS[compatibilityCase.category])
       expect(result.dynamicIslands).toEqual([])
-      expect(result.warnings.some(message => message.includes('已忽略'))).toBe(false)
+      expect(result.diagnostics.some(message => message.message.includes('已忽略'))).toBe(false)
     },
   )
 
@@ -82,7 +82,7 @@ describe('Vue 3.5.41 / babel-plugin-jsx 3.0.0 compatibility matrix', () => {
       expect(result.dynamicIslands).toEqual([
         expect.objectContaining({ reason: 'closure' }),
       ])
-      expect(result.warnings.some(message => message.includes('已忽略'))).toBe(false)
+      expect(result.diagnostics.some(message => message.message.includes('已忽略'))).toBe(false)
     },
   )
 
@@ -90,8 +90,8 @@ describe('Vue 3.5.41 / babel-plugin-jsx 3.0.0 compatibility matrix', () => {
     'emits an explicit mini-program compatibility result for $category',
     ({ source }) => {
       const result = compileJsxTemplate(componentSource(source), '/project/src/upstream.tsx')
-      expect(result.warnings.length).toBeGreaterThan(0)
-      expect(result.warnings.some(message => message.includes('已忽略'))).toBe(false)
+      expect(result.diagnostics.length).toBeGreaterThan(0)
+      expect(result.diagnostics.some(message => message.message.includes('已忽略'))).toBe(false)
     },
   )
 

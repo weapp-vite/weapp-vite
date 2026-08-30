@@ -39,6 +39,32 @@ console.log(result.script)
 console.log(result.template)
 ```
 
+### 编译诊断
+
+`compileTemplate` 始终返回 `diagnostics`，`compileSfc` / `compileJsxFile` 在存在模板诊断时返回 `diagnostics`。每条诊断包含稳定的 `code`、`severity`、`filename`、`source` 和可选 `loc`：
+
+这是一次 clean cutover：原有 `warnings: string[]` 字段已移除，调用方应改读 `diagnostics`，需要展示文本时使用 `diagnostic.message`。
+
+```ts
+import {
+  CompilerDiagnosticCodes,
+  compileTemplate,
+} from '@wevu/compiler'
+
+const result = compileTemplate(
+  '<view v-html="html" />',
+  '/project/src/pages/index.vue',
+)
+
+for (const diagnostic of result.diagnostics) {
+  if (diagnostic.code === CompilerDiagnosticCodes.templateUnsupportedDirective) {
+    console.warn(diagnostic.message, diagnostic.loc)
+  }
+}
+```
+
+`loc.start` / `loc.end` 使用半开区间；`offset` 从 0 开始，`line` / `column` 从 1 开始。通过 `compileSfc` 编译内联 `<template>` 时，位置会映射到完整 SFC 源码。`warn` 回调仍用于把字符串日志交给构建工具，结构化消费应使用结果中的 `diagnostics`。
+
 使用页面特性工具：
 
 ```ts

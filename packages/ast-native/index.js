@@ -23,10 +23,14 @@ const {
   analyzeScriptsNative,
   collectFeatureFlagsNative,
   collectOnPageScrollDiagnosticsNative,
-  getVueSfcSignaturePayloadNative,
+  getVueSfcSignaturePayloadNative: getVueSfcSignaturePayloadNativeBinding,
   mayContainPlatformApiAccessNative,
   mayContainStaticRequireLiteralNative,
 } = require(bindingPath)
+
+function getVueSfcSignaturePayloadNative(source) {
+  return getVueSfcSignaturePayloadNativeBinding(source) ?? undefined
+}
 
 export {
   analyzeScriptNative,

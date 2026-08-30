@@ -1,8 +1,6 @@
 import type { SFCBlock, SFCDescriptor } from 'vue/compiler-sfc'
 import type { TailwindContentPayload } from './tailwindContent'
-import { isObject } from '@weapp-core/shared'
 import { parse } from 'vue/compiler-sfc'
-import { loadNativeSfcBindingSync, shouldUseNativeSfc } from '../native'
 import { splitJsonMacroCallsFromCode } from '../transform/jsonMacros/rewrite'
 import { buildTailwindContentPayload } from './tailwindContent'
 
@@ -142,83 +140,6 @@ function normalizeVueSfcPayload(raw: RawVueSfcPayload, filename: string): VueSfc
   }
 }
 
-function isSerializedSfcBlock(value: unknown): value is SerializedSfcBlock {
-  return isObject(value)
-    && isObject(value.attrs)
-    && Object.values(value.attrs).every(attr => typeof attr === 'boolean' || typeof attr === 'string')
-    && typeof value.content === 'string'
-    && typeof value.type === 'string'
-}
-
-function isSerializedSfcBlockList(value: unknown): value is SerializedSfcBlock[] {
-  return Array.isArray(value) && value.every(isSerializedSfcBlock)
-}
-
-function parseNativePayload(payload: string): RawVueSfcPayload | undefined {
-  try {
-    const parsed: unknown = JSON.parse(payload)
-    if (
-      !isObject(parsed)
-      || !isObject(parsed.script)
-      || !isObject(parsed.template)
-      || !isObject(parsed.style)
-      || !isObject(parsed.config)
-      || typeof parsed.hasTemplate !== 'boolean'
-    ) {
-      return undefined
-    }
-
-    const script = parsed.script.script
-    const scriptSetup = parsed.script.scriptSetup
-    const template = parsed.template.template
-    if (
-      (script !== null && !isSerializedSfcBlock(script))
-      || (scriptSetup !== null && !isSerializedSfcBlock(scriptSetup))
-      || (template !== null && !isSerializedSfcBlock(template))
-      || !isSerializedSfcBlockList(parsed.template.customBlocks)
-      || !isSerializedSfcBlockList(parsed.style.styles)
-      || !isSerializedSfcBlockList(parsed.config.customBlocks)
-    ) {
-      return undefined
-    }
-
-    return {
-      config: {
-        customBlocks: parsed.config.customBlocks,
-      },
-      hasTemplate: parsed.hasTemplate,
-      script: {
-        script,
-        scriptSetup,
-      },
-      style: {
-        styles: parsed.style.styles,
-      },
-      template: {
-        template,
-        customBlocks: parsed.template.customBlocks,
-      },
-    }
-  }
-  catch {
-    return undefined
-  }
-}
-
-function buildVueSfcSignaturePayloadWithNative(source: string, filename: string) {
-  try {
-    const payload = loadNativeSfcBindingSync()?.getVueSfcSignaturePayloadNative?.(source)
-    if (!payload) {
-      return undefined
-    }
-    const raw = parseNativePayload(payload)
-    return raw ? normalizeVueSfcPayload(raw, filename) : undefined
-  }
-  catch {
-    return undefined
-  }
-}
-
 function buildVueSfcSignaturePayloadWithTs(source: string, filename: string) {
   const { descriptor, errors } = parse(source, { filename })
   if (errors.length) {
@@ -228,15 +149,12 @@ function buildVueSfcSignaturePayloadWithTs(source: string, filename: string) {
 }
 
 export function resolveVueSfcSignaturePayload(source: string, filename: string) {
-  const cacheKey = `${filename}\0${source}\0${shouldUseNativeSfc() ? 'native' : 'ts'}`
+  const cacheKey = `${filename}\0${source}`
   if (signaturePayloadCache.has(cacheKey)) {
     return signaturePayloadCache.get(cacheKey)
   }
 
-  const payload = shouldUseNativeSfc()
-    ? buildVueSfcSignaturePayloadWithNative(source, filename)
-    ?? buildVueSfcSignaturePayloadWithTs(source, filename)
-    : buildVueSfcSignaturePayloadWithTs(source, filename)
+  const payload = buildVueSfcSignaturePayloadWithTs(source, filename)
   signaturePayloadCache.set(cacheKey, payload)
   return payload
 }

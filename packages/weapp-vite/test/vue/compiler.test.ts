@@ -341,7 +341,7 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('<slot />')
       expect(result.code).toContain('__wvSlotProps="{{[\'data\',slotProps]}}"')
       expect(result.code).toContain('<block wx:else><view>Scoped fallback</view></block>')
-      expect(result.warnings.some(warning => warning.includes('不支持作用域插槽的兜底内容'))).toBe(false)
+      expect(result.diagnostics.some(warning => warning.message.includes('不支持作用域插槽的兜底内容'))).toBe(false)
     })
   })
 
@@ -351,7 +351,7 @@ describe('Vue Template Compiler', () => {
         '<template v-slot:header><view>Header content</view></template>',
         'test.vue',
       )
-      expect(result.warnings.some(warning => warning.includes('template v-slot'))).toBe(true)
+      expect(result.diagnostics.some(warning => warning.message.includes('template v-slot'))).toBe(true)
       expect(result.code).toContain('Header content')
     })
 
@@ -456,7 +456,7 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain(`generic:scoped-slots-${slotComp?.slotKey}`)
       expect(result.code).toContain('vue-slots="{{__wv_bind_0}}"')
       expect(result.classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === `{[slotName]:true}`)).toBe(true)
-      expect(result.warnings.some(warning => warning.includes('动态插槽名'))).toBe(true)
+      expect(result.diagnostics.some(warning => warning.message.includes('动态插槽名'))).toBe(true)
     })
 
     it('should pass v-for scope into slot component', () => {
@@ -568,7 +568,7 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('data-v-tooltip')
-      expect(result.warnings.some(w => w.includes('v-tooltip'))).toBe(true)
+      expect(result.diagnostics.some(w => w.message.includes('v-tooltip'))).toBe(true)
     })
 
     it('should ignore v-cloak', () => {
@@ -585,7 +585,7 @@ describe('Vue Template Compiler', () => {
         '<view v-once>Once only</view>',
         'test.vue',
       )
-      expect(result.warnings.some(w => w.includes('v-once'))).toBe(true)
+      expect(result.diagnostics.some(w => w.message.includes('v-once'))).toBe(true)
     })
 
     it('should handle v-pre (content is preserved as-is)', () => {
@@ -697,7 +697,7 @@ describe('Vue Template Compiler', () => {
       expect(result.classStyleBindings).toContainEqual(expect.objectContaining({
         exp: 'v-for :key item.key ?? item.title',
       }))
-      expect(result.warnings).toEqual([])
+      expect(result.diagnostics).toEqual([])
     })
 
     it('should handle element with multiple directives', () => {
@@ -844,7 +844,9 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('<component data-is="{{is}}"></component>')
-      expect(result.warnings).not.toContain('<component> 未提供 :is 绑定，将按普通元素处理。')
+      expect(result.diagnostics).not.toContainEqual(expect.objectContaining({
+        message: '<component> 未提供 :is 绑定，将按普通元素处理。',
+      }))
     })
 
     it('should compile inline @click expression with $event to inline handler', () => {
@@ -896,7 +898,7 @@ describe('Vue Template Compiler', () => {
       // @ts-expect-error intentionally pass non-string to hit catch branch
       const result = compileVueTemplateToWxml(undefined, 'test.vue')
       expect(result.code).toBeUndefined()
-      expect(result.warnings.length).toBeGreaterThan(0)
+      expect(result.diagnostics.length).toBeGreaterThan(0)
     })
 
     it('should ignore v-if without expression and render normally', () => {
@@ -922,7 +924,7 @@ describe('Vue Template Compiler', () => {
         '<view :class="">{{</view>',
         'test.vue',
       )
-      expect(result.warnings.length).toBeGreaterThan(0)
+      expect(result.diagnostics.length).toBeGreaterThan(0)
     })
 
     it('should keep static attributes inside v-for', () => {

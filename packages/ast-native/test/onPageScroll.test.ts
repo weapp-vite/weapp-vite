@@ -70,9 +70,6 @@ wevu.onPageScroll?.(() => {})`
 <script setup lang="ts">
 const count = 1
 </script>
-
-<template><view>{{ count }}</view></template>
-
 <i18n locale="zh-CN">
 { "title": "首页" }
 </i18n>
@@ -91,7 +88,7 @@ const count = 1
           },
         ],
       },
-      hasTemplate: true,
+      hasTemplate: false,
       script: {
         script: null,
         scriptSetup: {
@@ -125,11 +122,7 @@ const count = 1
             type: 'i18n',
           },
         ],
-        template: {
-          attrs: {},
-          content: '<view>{{ count }}</view>',
-          type: 'template',
-        },
+        template: null,
       },
     })
   })

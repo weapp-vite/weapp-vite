@@ -11,12 +11,19 @@ import {
 import * as t from '@weapp-vite/ast/babelTypes'
 import { collectJsxAutoComponentsFromCode } from '../../../ast/operations/jsxAutoComponents'
 import { isBuiltinComponent } from '../../../auto-import-components/builtin'
+import { CompilerDiagnosticCodes } from '../../../types/diagnostics'
 import { RESERVED_VUE_COMPONENT_TAGS } from '../../../utils/vueTemplateTags'
 import { resolveComponentExpression } from '../../vue/transform/scriptComponent'
+import { emitJsxDiagnostic } from './diagnostics'
 
 function resolveRenderExpression(componentExpr: Expression, context: JsxCompileContext): Expression | null {
   if (!t.isObjectExpression(componentExpr)) {
-    context.warnings.push('JSX 编译仅支持对象字面量组件选项。')
+    emitJsxDiagnostic(
+      context,
+      CompilerDiagnosticCodes.jsxAnalysisError,
+      'JSX 编译仅支持对象字面量组件选项。',
+      componentExpr,
+    )
     return null
   }
 
@@ -25,8 +32,14 @@ function resolveRenderExpression(componentExpr: Expression, context: JsxCompileC
     return renderExpression
   }
 
-  if (getRenderPropertyFromComponentOptions(componentExpr)) {
-    context.warnings.push('render 不是可执行函数。')
+  const renderProperty = getRenderPropertyFromComponentOptions(componentExpr)
+  if (renderProperty) {
+    emitJsxDiagnostic(
+      context,
+      CompilerDiagnosticCodes.jsxAnalysisError,
+      'render 不是可执行函数。',
+      renderProperty,
+    )
     return null
   }
 
@@ -51,7 +64,12 @@ function resolveRenderExpression(componentExpr: Expression, context: JsxCompileC
       }
     }
   }
-  context.warnings.push('未找到 render() 或 setup() 返回的 render closure。')
+  emitJsxDiagnostic(
+    context,
+    CompilerDiagnosticCodes.jsxAnalysisError,
+    '未找到 render() 或 setup() 返回的 render closure。',
+    componentExpr,
+  )
   return null
 }
 

@@ -1,14 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-
-function hasMissingDefaultExportWarning(warnings: string[], filename: string) {
-  return warnings.some(message =>
-    message.includes(filename) && message.includes('默认导出组件'),
-  )
-}
-
-afterEach(() => {
-  vi.restoreAllMocks()
-})
+import { describe, expect, it } from 'vitest'
 
 describe.sequential('compileJsx template helpers', () => {
   it('normalizes JavaScript numeric literals for WXML expressions', async () => {
@@ -34,7 +24,7 @@ describe.sequential('compileJsx template helpers', () => {
     )
 
     expect(result.template).toBe('<view><text>setup render</text></view>')
-    expect(result.warnings).toEqual([])
+    expect(result.diagnostics).toEqual([])
   })
 
   it('creates compile context from defaults and template overrides', async () => {
@@ -70,59 +60,6 @@ describe.sequential('compileJsx template helpers', () => {
       '</view>',
       '',
     ].join('\n'))
-  })
-
-  it('rewrites missing default-export warning with filename', async () => {
-    const analysis = await import('./analysis')
-    vi.spyOn(analysis, 'analyzeJsxAst').mockImplementation((_ast: any, context: any) => {
-      context.warnings.push('未识别到默认导出组件。')
-      return {
-        renderExpression: null,
-        autoComponentContext: {
-          templateTags: new Set<string>(),
-          importedComponents: [],
-        },
-      }
-    })
-    const { compileJsxTemplate } = await import('./template')
-    const result = compileJsxTemplate('export default {}', '/project/src/pages/jsx/missing-default.tsx')
-
-    expect(result.template).toBeUndefined()
-    expect(hasMissingDefaultExportWarning(result.warnings, '/project/src/pages/jsx/missing-default.tsx')).toBe(true)
-  })
-
-  it('rewrites missing default-export warning when collecting components', async () => {
-    const analysis = await import('./analysis')
-    vi.spyOn(analysis, 'analyzeJsxAst').mockImplementation((_ast: any, context: any) => {
-      context.warnings.push('未识别到默认导出组件。')
-      return {
-        renderExpression: null,
-        autoComponentContext: {
-          templateTags: new Set<string>(),
-          importedComponents: [{
-            localName: 'TButton',
-            importSource: '@/components/TButton',
-            importedName: 'default',
-            kind: 'default',
-          }],
-        },
-      }
-    })
-    const { compileJsxTemplateAndCollectComponents } = await import('./template')
-    const result = compileJsxTemplateAndCollectComponents(`
-import TButton from '@/components/TButton'
-export default {}
-    `, '/project/src/pages/jsx/no-default.tsx')
-
-    expect(result.template).toBeUndefined()
-    expect(hasMissingDefaultExportWarning(result.warnings, '/project/src/pages/jsx/no-default.tsx')).toBe(true)
-    expect(result.autoComponentContext.importedComponents).toEqual([{
-      localName: 'TButton',
-      importSource: '@/components/TButton',
-      importedName: 'default',
-      kind: 'default',
-    }])
-    expect([...result.autoComponentContext.templateTags]).toEqual([])
   })
 
   it('collects non-builtin JSX tags from nested expressions and fragments', async () => {

@@ -1,6 +1,8 @@
 import type { TransformContext } from '../types'
 import { WEVU_CLASS_STYLE_RUNTIME_MODULE } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { CompilerDiagnosticCodes } from '../../../../../types/diagnostics'
+import { emitTemplateDiagnostic } from '../diagnostics'
 import { generateExpression, parseBabelExpression } from './parse'
 import { normalizeWxmlExpressionWithContext } from './scopedSlot'
 
@@ -26,7 +28,11 @@ export function normalizeClassBindingExpression(exp: string, context: TransformC
           continue
         }
         if (t.isSpreadElement(el)) {
-          context.warnings.push('小程序不支持 :class 的展开语法，已忽略。')
+          emitTemplateDiagnostic(
+            context,
+            CompilerDiagnosticCodes.templateUnsupportedDirective,
+            '小程序不支持 :class 的展开语法，已忽略。',
+          )
           continue
         }
         if (t.isExpression(el)) {
@@ -38,7 +44,11 @@ export function normalizeClassBindingExpression(exp: string, context: TransformC
     if (t.isObjectExpression(node)) {
       for (const prop of node.properties) {
         if (t.isSpreadElement(prop)) {
-          context.warnings.push('小程序不支持 :class 对象的展开语法，已忽略。')
+          emitTemplateDiagnostic(
+            context,
+            CompilerDiagnosticCodes.templateUnsupportedDirective,
+            '小程序不支持 :class 对象的展开语法，已忽略。',
+          )
           continue
         }
         if (!t.isObjectProperty(prop)) {
@@ -128,7 +138,11 @@ export function normalizeStyleBindingExpression(exp: string, context: TransformC
           continue
         }
         if (t.isSpreadElement(el)) {
-          context.warnings.push('小程序不支持 :style 的展开语法，已忽略。')
+          emitTemplateDiagnostic(
+            context,
+            CompilerDiagnosticCodes.templateUnsupportedDirective,
+            '小程序不支持 :style 的展开语法，已忽略。',
+          )
           continue
         }
         if (t.isExpression(el)) {
@@ -140,7 +154,11 @@ export function normalizeStyleBindingExpression(exp: string, context: TransformC
     if (t.isObjectExpression(node)) {
       for (const prop of node.properties) {
         if (t.isSpreadElement(prop)) {
-          context.warnings.push('小程序不支持 :style 对象的展开语法，已忽略。')
+          emitTemplateDiagnostic(
+            context,
+            CompilerDiagnosticCodes.templateUnsupportedDirective,
+            '小程序不支持 :style 对象的展开语法，已忽略。',
+          )
           continue
         }
         if (!t.isObjectProperty(prop)) {

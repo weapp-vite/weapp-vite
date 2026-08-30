@@ -9,7 +9,9 @@ import {
   WEVU_TEMPLATE_REF_CLASS_PREFIX,
 } from '@weapp-core/constants'
 import { components as builtinComponents } from '../../../../../auto-import-components/builtin.auto'
+import { CompilerDiagnosticCodes } from '../../../../../types/diagnostics'
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
+import { emitTemplateDiagnostic } from '../diagnostics'
 import { transformDirective } from '../directives'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
@@ -66,10 +68,20 @@ export function collectElementAttributes(
       if (prop.name === 'layout-host') {
         const rawKey = prop.value?.type === NodeTypes.TEXT ? prop.value.content.trim() : ''
         if (!isComponentElement) {
-          context.warnings.push('layout-host 仅支持声明在组件节点上，当前节点已忽略。')
+          emitTemplateDiagnostic(
+            context,
+            CompilerDiagnosticCodes.templateInvalidLayoutHost,
+            'layout-host 仅支持声明在组件节点上，当前节点已忽略。',
+            prop.loc,
+          )
         }
         else if (!rawKey) {
-          context.warnings.push('layout-host 需要提供非空字符串 key。')
+          emitTemplateDiagnostic(
+            context,
+            CompilerDiagnosticCodes.templateInvalidLayoutHost,
+            'layout-host 需要提供非空字符串 key。',
+            prop.loc,
+          )
         }
         else {
           layoutHostKey = rawKey
@@ -143,7 +155,12 @@ export function collectElementAttributes(
         && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
         && prop.arg.content === 'layout-host'
       ) {
-        context.warnings.push('暂不支持动态 layout-host，已忽略该绑定。')
+        emitTemplateDiagnostic(
+          context,
+          CompilerDiagnosticCodes.templateInvalidLayoutHost,
+          '暂不支持动态 layout-host，已忽略该绑定。',
+          prop.loc,
+        )
         continue
       }
       if (
@@ -166,7 +183,12 @@ export function collectElementAttributes(
         ) {
           continue
         }
-        context.warnings.push(`暂不支持动态 ${prop.arg.content}，已忽略该绑定。`)
+        emitTemplateDiagnostic(
+          context,
+          CompilerDiagnosticCodes.templateInvalidSlot,
+          `暂不支持动态 ${prop.arg.content}，已忽略该绑定。`,
+          prop.loc,
+        )
         continue
       }
       if (
@@ -223,7 +245,12 @@ export function collectElementAttributes(
 
   if (layoutHostKey) {
     if (!staticId && hasDynamicIdBinding) {
-      context.warnings.push('layout-host 暂不支持与动态 id 同时使用，当前节点已忽略。')
+      emitTemplateDiagnostic(
+        context,
+        CompilerDiagnosticCodes.templateInvalidLayoutHost,
+        'layout-host 暂不支持与动态 id 同时使用，当前节点已忽略。',
+        node.loc,
+      )
     }
     else {
       const hostIndex = context.layoutHostIndexSeed++
