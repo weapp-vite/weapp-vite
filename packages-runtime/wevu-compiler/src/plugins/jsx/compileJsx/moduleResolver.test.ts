@@ -2,9 +2,7 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { CompilerDiagnosticCodes } from '../../../types/diagnostics'
 import { createJsxModuleResolver } from './moduleResolver'
-import { compileJsxTemplate } from './template'
 
 describe('createJsxModuleResolver', () => {
   it('resolves extensionless jsx modules, index modules and named exports', async () => {
@@ -22,29 +20,6 @@ describe('createJsxModuleResolver', () => {
 
     const item = resolver.resolveImport(importer, './group', 'item')
     expect(item?.expression.type).toBe('JSXElement')
-  })
-
-  it('attributes imported JSX diagnostics to the dependency source', async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-resolver-'))
-    const importer = path.join(root, 'page.tsx')
-    const dependency = path.join(root, 'shared.tsx')
-    const dependencySource = 'export const panel = <Teleport />'
-    await writeFile(dependency, dependencySource)
-
-    const result = compileJsxTemplate(
-      'import { panel } from "./shared"; export default { render() { return panel } }',
-      importer,
-    )
-    const diagnostic = result.diagnostics.find(item =>
-      item.code === CompilerDiagnosticCodes.jsxUnsupportedSyntax,
-    )
-
-    expect(diagnostic?.filename).toBe(dependency)
-    expect(diagnostic?.loc?.start.offset).toBe(dependencySource.indexOf('<Teleport'))
-    expect(dependencySource.slice(
-      diagnostic?.loc?.start.offset,
-      diagnostic?.loc?.end.offset,
-    )).toBe('<Teleport />')
   })
 
   it('follows default, namespace and barrel re-exports and substitutes factory params', async () => {

@@ -1,7 +1,38 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
+import type { SourcePosition } from '../../../../types/diagnostics'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../../compiler/template'
 import type { VueTransformResult } from './types'
 import { compileVueTemplateToWxml } from '../../compiler/template'
+
+function remapTemplateDiagnostics(
+  diagnostics: TemplateCompileResult['diagnostics'],
+  base: SourcePosition,
+  source: string,
+) {
+  const lineStarts = [0]
+  for (const match of source.matchAll(/\r\n?|\n/g)) {
+    lineStarts.push(match.index + match[0].length)
+  }
+  const remap = (position: SourcePosition) => {
+    const line = base.line + position.line - 1
+    const column = position.line === 1
+      ? base.column + position.column - 1
+      : position.column
+    return {
+      offset: Math.min(source.length, (lineStarts[line - 1] ?? base.offset + position.offset) + column - 1),
+      line,
+      column,
+    }
+  }
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.loc) {
+      diagnostic.loc = {
+        start: remap(diagnostic.loc.start),
+        end: remap(diagnostic.loc.end),
+      }
+    }
+  }
+}
 
 export function compileTemplatePhase(
   descriptor: Pick<SFCDescriptor, 'template'>,
@@ -17,16 +48,13 @@ export function compileTemplatePhase(
   const templateCompiled = compileVueTemplateToWxml(
     descriptor.template.content,
     filename,
-    descriptor.template.src
-      ? options
-      : {
-          ...options,
-          sourceLocationOffset: descriptor.template.loc.start,
-          sourceLocationSource: source,
-        },
+    options,
   )
   result.template = templateCompiled.code
   if (templateCompiled.diagnostics.length) {
+    if (!descriptor.template.src) {
+      remapTemplateDiagnostics(templateCompiled.diagnostics, descriptor.template.loc.start, source)
+    }
     result.diagnostics = templateCompiled.diagnostics
   }
   if (templateCompiled.scopedSlotComponents?.length) {

@@ -3,11 +3,7 @@ import type {
   CompilerDiagnosticCode,
   SourceSpan,
 } from '@wevu/compiler'
-import {
-  CompilerDiagnosticCodes,
-  compileSfc,
-  compileTemplate,
-} from '@wevu/compiler'
+import { compileSfc, compileTemplate } from '@wevu/compiler'
 import { expectType } from 'tsd'
 
 const templateResult = compileTemplate(
@@ -15,7 +11,7 @@ const templateResult = compileTemplate(
   '/project/src/pages/index.vue',
 )
 expectType<CompilerDiagnostic[]>(templateResult.diagnostics)
-expectType<CompilerDiagnosticCode>(CompilerDiagnosticCodes.templateUnsupportedDirective)
+expectType<CompilerDiagnosticCode>('WV1001')
 expectType<SourceSpan | undefined>(templateResult.diagnostics[0]?.loc)
 
 compileSfc(

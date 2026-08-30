@@ -11,7 +11,6 @@ import {
   INLINE_DATASET_KEY,
   normalizeEventDatasetSuffix,
 } from '../../../inlineDataset'
-import { CompilerDiagnosticCodes } from '../../../types/diagnostics'
 import {
   escapeAttr,
   normalizeInterpolationExpression,
@@ -19,7 +18,6 @@ import {
   renderMustache,
   unwrapTsExpression,
 } from './ast'
-import { emitJsxDiagnostic } from './diagnostics'
 
 const ON_EVENT_RE = /^on[A-Z]/
 const CATCH_EVENT_RE = /^catch[A-Z]/
@@ -201,48 +199,27 @@ function compileNamedAttribute(
   name: string,
   value: JSXAttribute['value'],
   context: JsxCompileContext,
-  node?: t.Node,
 ): string[] {
   if (name === 'key') {
     return []
   }
   if (name === 'v-html') {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxUnsupportedSyntax,
-      '小程序不支持 JSX v-html，请使用 rich-text 组件替代。',
-      node,
-    )
+    context.warnings.push('小程序不支持 JSX v-html，请使用 rich-text 组件替代。')
     return []
   }
   if (name === 'v-if' || name === 'v-show' || name === 'v-text' || name === 'v-for') {
     return []
   }
   if (name === 'v-slots' || name === 'v-model' || name === 'v-models') {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxRuntimeRequired,
-      `JSX ${name} 需要 Wevu runtime 语义，已生成确定性诊断。`,
-      node,
-    )
+    context.warnings.push(`JSX ${name} 需要 Wevu runtime 语义，已生成确定性诊断。`)
     return []
   }
   if (name.startsWith('v-')) {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxUnsupportedSyntax,
-      `小程序不支持 JSX 自定义指令 ${name}，已移除该指令。`,
-      node,
-    )
+    context.warnings.push(`小程序不支持 JSX 自定义指令 ${name}，已移除该指令。`)
     return []
   }
   if (name === 'innerHTML' || name.startsWith('domProps')) {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxUnsupportedSyntax,
-      `小程序不支持 JSX DOM property ${name}，已移除该属性。`,
-      node,
-    )
+    context.warnings.push(`小程序不支持 JSX DOM property ${name}，已移除该属性。`)
     return []
   }
   if (isEventBinding(name)) {
@@ -266,26 +243,16 @@ export function compileJsxAttributes(
             const value = property.value
             if (t.isExpression(value)) {
               const name = t.isIdentifier(property.key) ? property.key.name : property.key.value
-              output.push(...compileNamedAttribute(name, t.jsxExpressionContainer(value), context, property))
+              output.push(...compileNamedAttribute(name, t.jsxExpressionContainer(value), context))
             }
           }
           else {
-            emitJsxDiagnostic(
-              context,
-              CompilerDiagnosticCodes.jsxDynamicIsland,
-              'JSX spread attributes 包含无法静态展开的属性，已保留为 dynamic island。',
-              property,
-            )
+            context.warnings.push('JSX spread attributes 包含无法静态展开的属性，已保留为 dynamic island。')
           }
         }
       }
       else {
-        emitJsxDiagnostic(
-          context,
-          CompilerDiagnosticCodes.jsxDynamicIsland,
-          '动态 JSX spread attributes 无法映射为静态 WXML，已生成确定性诊断。',
-          attr,
-        )
+        context.warnings.push('动态 JSX spread attributes 无法映射为静态 WXML，已生成确定性诊断。')
       }
       continue
     }
@@ -293,35 +260,20 @@ export function compileJsxAttributes(
       const namespace = attr.name.namespace.name
       const name = attr.name.name.name
       if (namespace.startsWith('v-')) {
-        emitJsxDiagnostic(
-          context,
-          CompilerDiagnosticCodes.jsxUnsupportedSyntax,
-          `小程序不支持 JSX 自定义指令 ${namespace}:${name}，已移除该指令。`,
-          attr,
-        )
+        context.warnings.push(`小程序不支持 JSX 自定义指令 ${namespace}:${name}，已移除该指令。`)
       }
       else {
-        emitJsxDiagnostic(
-          context,
-          CompilerDiagnosticCodes.jsxUnsupportedSyntax,
-          `小程序不支持 JSX 命名属性 ${namespace}:${name}，已移除该属性。`,
-          attr,
-        )
+        context.warnings.push(`小程序不支持 JSX 命名属性 ${namespace}:${name}，已移除该属性。`)
       }
       continue
     }
     if (!t.isJSXIdentifier(attr.name)) {
-      emitJsxDiagnostic(
-        context,
-        CompilerDiagnosticCodes.jsxUnsupportedSyntax,
-        '小程序不支持 JSX 动态属性名，已移除该属性。',
-        attr,
-      )
+      context.warnings.push('小程序不支持 JSX 动态属性名，已移除该属性。')
       continue
     }
 
     const name = attr.name.name
-    output.push(...compileNamedAttribute(name, attr.value, context, attr))
+    output.push(...compileNamedAttribute(name, attr.value, context))
   }
   return output
 }

@@ -108,7 +108,6 @@ export {
   injectWevuPageFeaturesInJsWithResolver,
 } from './plugins/wevu/pageFeatures'
 export type { ModuleResolver, WevuPageFeatureFlag, WevuPageHookName } from './plugins/wevu/pageFeatures'
-export { CompilerDiagnosticCodes } from './types/diagnostics'
 export type {
   CompilerDiagnostic,
   CompilerDiagnosticCode,

@@ -7,9 +7,9 @@ import {
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE,
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
 } from '@weapp-core/constants'
-import { CompilerDiagnosticCodes } from '../../../types/diagnostics'
+
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
-import { emitTemplateDiagnostic } from './template/diagnostics'
+import { warn } from './template/diagnostics'
 import { formatWxml } from './template/format'
 import { resolveHtmlTagToWxmlMap } from './template/htmlTagMapping'
 import { transformNode } from './template/nodes'
@@ -126,26 +126,13 @@ export function compileVueTemplateToWxml(
     // 使用 compiler-dom 解析模板，确保浏览器环境自带 decodeEntities 解析能力。
     const ast = parse(template, {
       isVoidTag: tag => HTML_VOID_TAGS.has(tag),
-      onError: error => emitTemplateDiagnostic(
-        {
-          diagnostics,
-          filename,
-          sourceLocationOffset: options?.sourceLocationOffset,
-          sourceLocationSource: options?.sourceLocationSource,
-        },
-        CompilerDiagnosticCodes.templateParseError,
-        `模板解析失败：${error.message}`,
-        error.loc,
-        'error',
-      ),
+      onError: error => warn({ diagnostics, filename }, `模板解析失败：${error.message}`, error.loc, 'template', 'WV2001'),
     })
 
     const context: TransformContext = {
       source: template,
       filename,
       diagnostics,
-      sourceLocationOffset: options?.sourceLocationOffset,
-      sourceLocationSource: options?.sourceLocationSource,
       platform: options?.platform ?? getMiniProgramTemplatePlatform(),
       isPage: resolveTemplateIsPage(filename, options),
       propsAliases: options?.propsAliases,
@@ -242,18 +229,7 @@ export function compileVueTemplateToWxml(
     return result
   }
   catch (error) {
-    emitTemplateDiagnostic(
-      {
-        diagnostics,
-        filename,
-        sourceLocationOffset: options?.sourceLocationOffset,
-        sourceLocationSource: options?.sourceLocationSource,
-      },
-      CompilerDiagnosticCodes.templateCompileError,
-      `模板编译失败：${error}`,
-      undefined,
-      'error',
-    )
+    warn({ diagnostics, filename }, `模板编译失败：${error}`, undefined, 'template', 'WV2002')
     return {
       code: template,
       diagnostics,

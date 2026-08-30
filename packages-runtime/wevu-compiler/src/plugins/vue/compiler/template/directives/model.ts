@@ -11,8 +11,8 @@ import {
   INLINE_EVENT_DETAIL_KEY,
   normalizeEventDatasetSuffix,
 } from '../../../../../inlineDataset'
-import { CompilerDiagnosticCodes } from '../../../../../types/diagnostics'
-import { emitTemplateDiagnostic } from '../diagnostics'
+
+import { warn } from '../diagnostics'
 import { getBindDirectiveExpression } from '../elements/helpers'
 import {
   normalizeWxmlExpressionWithContext,
@@ -115,12 +115,7 @@ function transformVModel(
     }
 
     default: {
-      emitTemplateDiagnostic(
-        context,
-        CompilerDiagnosticCodes.templateRuntimeRequired,
-        `在 <${tag}> 上使用 v-model 可能无法按预期工作，已使用默认绑定。`,
-        location,
-      )
+      warn(context, `在 <${tag}> 上使用 v-model 可能无法按预期工作，已使用默认绑定。`, location)
       return `value="${renderMustache(expValue, context)}" ${bindModel('input')}`
     }
   }
@@ -139,12 +134,7 @@ function transformComponentModelDirective(
     ? node.arg.content.trim()
     : ''
   if (node.arg?.type === NodeTypes.SIMPLE_EXPRESSION && !node.arg.isStatic) {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateInvalidBinding,
-      '暂不支持动态 v-model 参数，已忽略该 v-model。',
-      node.loc,
-    )
+    warn(context, '暂不支持动态 v-model 参数，已忽略该 v-model。', node.loc)
     return null
   }
   const modelProp = rawModelName || 'modelValue'
@@ -158,14 +148,7 @@ function transformComponentModelDirective(
   const updateExpression = buildModelAssignmentExpression(rawExpValue)
   const inlineExpression = registerInlineExpression(updateExpression, context)
   if (!inlineExpression) {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateInvalidExpression,
-      `v-model="${rawExpValue}" 需要是可赋值的成员表达式。`,
-      node.loc,
-      'warning',
-      'expression',
-    )
+    warn(context, `v-model="${rawExpValue}" 需要是可赋值的成员表达式。`, node.loc, 'expression')
     return null
   }
 
@@ -221,12 +204,7 @@ export function transformModelDirective(
   }
 
   if (node.arg) {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateInvalidBinding,
-      '原生小程序元素不支持 v-model 参数，已忽略该 v-model。',
-      node.loc,
-    )
+    warn(context, '原生小程序元素不支持 v-model 参数，已忽略该 v-model。', node.loc)
     return null
   }
 

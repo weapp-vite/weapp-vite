@@ -14,7 +14,7 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     platform: options?.template?.platform ?? getMiniProgramTemplatePlatform(),
     mustacheInterpolation: options?.template?.mustacheInterpolation ?? 'compact',
     formatWxml: options?.template?.formatWxml ?? false,
-    diagnostics: [],
+    warnings: [],
     inlineExpressions: [],
     inlineExpressionSeed: 0,
     scopeStack: [],
@@ -57,9 +57,14 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
 
   const { renderExpression } = analysis.analyzeJsxAst(ast, context)
   if (!renderExpression) {
+    context.warnings = context.warnings.map(message => (
+      message === '未识别到默认导出组件。'
+        ? `未在 ${filename} 中识别到默认导出组件。`
+        : message
+    ))
     return {
       template: undefined,
-      diagnostics: context.diagnostics,
+      warnings: context.warnings,
       inlineExpressions: context.inlineExpressions,
       dynamicIslands: context.dynamicIslands,
     }
@@ -71,7 +76,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
   }
   return {
     template: context.formatWxml ? formatWxml(template) : template,
-    diagnostics: context.diagnostics,
+    warnings: context.warnings,
     inlineExpressions: context.inlineExpressions,
     dynamicIslands: context.dynamicIslands,
   }
@@ -107,10 +112,17 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
       template = formatWxml(template)
     }
   }
+  else {
+    context.warnings = context.warnings.map(message => (
+      message === '未识别到默认导出组件。'
+        ? `未在 ${filename} 中识别到默认导出组件。`
+        : message
+    ))
+  }
 
   return {
     template,
-    diagnostics: context.diagnostics,
+    warnings: context.warnings,
     inlineExpressions: context.inlineExpressions,
     autoComponentContext,
     dynamicIslands: context.dynamicIslands,

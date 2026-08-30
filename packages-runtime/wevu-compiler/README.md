@@ -46,10 +46,7 @@ console.log(result.template)
 这是一次 clean cutover：原有 `warnings: string[]` 字段已移除，调用方应改读 `diagnostics`，需要展示文本时使用 `diagnostic.message`。
 
 ```ts
-import {
-  CompilerDiagnosticCodes,
-  compileTemplate,
-} from '@wevu/compiler'
+import { compileTemplate } from '@wevu/compiler'
 
 const result = compileTemplate(
   '<view v-html="html" />',
@@ -57,11 +54,13 @@ const result = compileTemplate(
 )
 
 for (const diagnostic of result.diagnostics) {
-  if (diagnostic.code === CompilerDiagnosticCodes.templateUnsupportedDirective) {
+  if (diagnostic.code === 'WV1001') {
     console.warn(diagnostic.message, diagnostic.loc)
   }
 }
 ```
+
+稳定 code：`WV1001`（模板转换警告）、`WV1002`（模板表达式警告）、`WV1003`（JSX 警告）、`WV2001`（模板解析错误）、`WV2002`（模板编译错误）。
 
 `loc.start` / `loc.end` 使用半开区间；`offset` 从 0 开始，`line` / `column` 从 1 开始。通过 `compileSfc` 编译内联 `<template>` 时，位置会映射到完整 SFC 源码。`warn` 回调仍用于把字符串日志交给构建工具，结构化消费应使用结果中的 `diagnostics`。
 

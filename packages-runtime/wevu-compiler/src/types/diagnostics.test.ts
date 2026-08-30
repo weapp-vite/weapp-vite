@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { compileJsxTemplate } from '../plugins/jsx/compileJsx/template'
+import { compileJsxFile } from '../plugins/jsx/compileJsxFile'
 import { compileVueTemplateToWxml } from '../plugins/vue/compiler/template'
 import { compileVueFile } from '../plugins/vue/transform/compileVueFile'
-import { CompilerDiagnosticCodes } from './diagnostics'
 
 const filename = '/project/src/pages/diagnostics/index.vue'
 
@@ -13,7 +12,7 @@ describe('compiler diagnostics', () => {
 
     expect(result.diagnostics).toEqual([
       expect.objectContaining({
-        code: CompilerDiagnosticCodes.templateUnsupportedDirective,
+        code: 'WV1001',
         severity: 'warning',
         filename,
         source: 'template',
@@ -33,7 +32,7 @@ describe('compiler diagnostics', () => {
     const result = compileVueTemplateToWxml('<view>', filename)
 
     expect(result.diagnostics).toContainEqual(expect.objectContaining({
-      code: CompilerDiagnosticCodes.templateParseError,
+      code: 'WV2001',
       severity: 'error',
       filename,
       source: 'template',
@@ -47,7 +46,7 @@ describe('compiler diagnostics', () => {
     const diagnostic = result.diagnostics?.[0]
 
     expect(diagnostic).toEqual(expect.objectContaining({
-      code: CompilerDiagnosticCodes.templateUnsupportedDirective,
+      code: 'WV1001',
       filename,
       loc: expect.objectContaining({
         start: {
@@ -79,21 +78,15 @@ describe('compiler diagnostics', () => {
     expect(source.slice(start?.offset, (start?.offset ?? 0) + 'v-html'.length)).toBe('v-html')
   })
 
-  it('uses the same diagnostic contract for JSX compilation', () => {
+  it('uses the same diagnostic contract for JSX compilation', async () => {
     const source = `export default { render() { return <Teleport /> } }`
-    const result = compileJsxTemplate(source, '/project/src/pages/diagnostics/index.tsx')
+    const result = await compileJsxFile(source, '/project/src/pages/diagnostics/index.tsx')
 
     expect(result.diagnostics).toContainEqual(expect.objectContaining({
-      code: CompilerDiagnosticCodes.jsxUnsupportedSyntax,
+      code: 'WV1003',
       severity: 'warning',
       filename: '/project/src/pages/diagnostics/index.tsx',
       source: 'jsx',
-      loc: expect.objectContaining({
-        start: expect.objectContaining({
-          offset: source.indexOf('<Teleport'),
-          line: 1,
-        }),
-      }),
     }))
   })
 })

@@ -9,9 +9,9 @@ import {
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_ATTR,
 } from '@weapp-core/constants'
-import { CompilerDiagnosticCodes } from '../../../../../types/diagnostics'
+
 import { transformAttribute } from '../attributes'
-import { emitTemplateDiagnostic } from '../diagnostics'
+import { warn } from '../diagnostics'
 import { transformDirective } from '../directives'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression } from '../expression/runtimeBinding'
@@ -324,23 +324,13 @@ function resolveLocalSlotFallbackWrapperConfig(node: ElementNode, context: Trans
           hasConfig = true
         }
         else {
-          emitTemplateDiagnostic(
-            context,
-            CompilerDiagnosticCodes.templateInvalidSlot,
-            'slot-wrapper 需要提供非空标签名，已忽略该配置。',
-            prop.loc,
-          )
+          warn(context, 'slot-wrapper 需要提供非空标签名，已忽略该配置。', prop.loc)
         }
       }
       else if (isSlotFallbackWrapperAttr(prop.name, 'slot-single-root-no-wrapper', slotName)) {
         const value = normalizeBooleanAttributeValue(prop.value?.type === NodeTypes.TEXT ? prop.value.content.trim() : undefined)
         if (value === undefined) {
-          emitTemplateDiagnostic(
-            context,
-            CompilerDiagnosticCodes.templateInvalidSlot,
-            'slot-single-root-no-wrapper 仅支持 true / false 静态值，已忽略该配置。',
-            prop.loc,
-          )
+          warn(context, 'slot-single-root-no-wrapper 仅支持 true / false 静态值，已忽略该配置。', prop.loc)
         }
         else {
           wrapper.singleRootNoWrapper = value
@@ -499,12 +489,7 @@ export function transformComponentWithSlots(
 
   if (slotDirective) {
     if (slotDeclarations.length) {
-      emitTemplateDiagnostic(
-        context,
-        CompilerDiagnosticCodes.templateInvalidSlot,
-        '组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。',
-        slotDirective.loc,
-      )
+      warn(context, '组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。', slotDirective.loc)
     }
     slotDeclarations.length = 0
     slotDeclarations.push(
@@ -520,12 +505,7 @@ export function transformComponentWithSlots(
   else if (slotDeclarations.length && defaultSlotChildren.length) {
     const hasDefault = slotDeclarations.some(decl => decl.name.type === 'default' || (decl.name.type === 'static' && decl.name.value === 'default'))
     if (hasDefault) {
-      emitTemplateDiagnostic(
-        context,
-        CompilerDiagnosticCodes.templateInvalidSlot,
-        '存在显式的 v-slot:default，默认插槽内容将被忽略。',
-        node.loc,
-      )
+      warn(context, '存在显式的 v-slot:default，默认插槽内容将被忽略。', node.loc)
     }
     else {
       implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true })
@@ -682,12 +662,7 @@ export function transformComponentWithSlotsFallback(
 
   if (slotDirective) {
     if (slotDeclarations.length) {
-      emitTemplateDiagnostic(
-        context,
-        CompilerDiagnosticCodes.templateInvalidSlot,
-        '组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。',
-        slotDirective.loc,
-      )
+      warn(context, '组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。', slotDirective.loc)
     }
     slotDeclarations.length = 0
     slotDeclarations.push(
@@ -703,12 +678,7 @@ export function transformComponentWithSlotsFallback(
   else if (slotDeclarations.length && defaultSlotChildren.length) {
     const hasDefault = slotDeclarations.some(decl => decl.name.type === 'default' || (decl.name.type === 'static' && decl.name.value === 'default'))
     if (hasDefault) {
-      emitTemplateDiagnostic(
-        context,
-        CompilerDiagnosticCodes.templateInvalidSlot,
-        '存在显式的 v-slot:default，默认插槽内容将被忽略。',
-        node.loc,
-      )
+      warn(context, '存在显式的 v-slot:default，默认插槽内容将被忽略。', node.loc)
     }
     else {
       implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context)
@@ -740,12 +710,7 @@ export function transformComponentWithSlotsFallback(
   }
 
   if (slotDeclarations.some(decl => Object.keys(decl.props).length)) {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateInvalidSlot,
-      '已禁用作用域插槽参数，插槽绑定将被忽略。',
-      node.loc,
-    )
+    warn(context, '已禁用作用域插槽参数，插槽绑定将被忽略。', node.loc)
   }
 
   const renderedSlots = slotDirective
@@ -801,23 +766,13 @@ export function transformComponentElement(node: ElementNode, context: TransformC
   }
 
   if (!isDirective) {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateInvalidBinding,
-      '<component> 未提供 :is 绑定，将按普通元素处理。',
-      node.loc,
-    )
+    warn(context, '<component> 未提供 :is 绑定，将按普通元素处理。', node.loc)
     return transformNormalElement(node, context, transformNode)
   }
 
   const componentVar = getBindDirectiveExpression(isDirective)
   if (!componentVar) {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateInvalidBinding,
-      '<component> 未提供 :is 绑定，将按普通元素处理。',
-      isDirective.loc,
-    )
+    warn(context, '<component> 未提供 :is 绑定，将按普通元素处理。', isDirective.loc)
     return transformNormalElement(node, context, transformNode)
   }
 
@@ -855,12 +810,7 @@ export function transformComponentElement(node: ElementNode, context: TransformC
 
   const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 
-  emitTemplateDiagnostic(
-    context,
-    CompilerDiagnosticCodes.templateRuntimeRequired,
-    '动态组件使用 data-is 属性，可能需要小程序运行时支持。',
-    node.loc,
-  )
+  warn(context, '动态组件使用 data-is 属性，可能需要小程序运行时支持。', node.loc)
 
   return `<component data-is="${renderMustache(componentVar, context)}"${attrString}>${children}</component>`
 }

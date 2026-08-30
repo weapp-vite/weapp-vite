@@ -135,10 +135,8 @@ describe('compileJsx attributes helpers', () => {
     const attrs = compileJsxAttributes(openingElement.attributes as any, context)
 
     expect(attrs).toEqual(['title="spread"', 'bindtap="tap"'])
-    expect(context.diagnostics).toEqual([
-      expect.objectContaining({
-        message: '小程序不支持 JSX 命名属性 ns:prop，已移除该属性。',
-      }),
+    expect(context.warnings).toEqual([
+      '小程序不支持 JSX 命名属性 ns:prop，已移除该属性。',
     ])
   })
 
@@ -160,7 +158,7 @@ describe('compileJsx attributes helpers', () => {
     )
 
     expect(compileJsxAttributes(openingElement.attributes as any, context)).toEqual([])
-    expect(context.diagnostics).toEqual([])
+    expect(context.warnings).toEqual([])
   })
 
   it('skips unsupported jsx element attribute values and normalizes multi-word event names', () => {

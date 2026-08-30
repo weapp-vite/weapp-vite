@@ -1,8 +1,8 @@
 import type { DirectiveNode, SourceLocation } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
-import { CompilerDiagnosticCodes } from '../../../../../types/diagnostics'
-import { emitTemplateDiagnostic } from '../diagnostics'
+
+import { warn } from '../diagnostics'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
 
@@ -50,11 +50,6 @@ export function transformCustomDirective(
     return `${dataAttrName}="${argValue}"`
   }
 
-  emitTemplateDiagnostic(
-    context,
-    CompilerDiagnosticCodes.templateRuntimeRequired,
-    `自定义指令 v-${name} 可能需要运行时支持。已生成 data 属性：${dataAttrName}`,
-    location,
-  )
+  warn(context, `自定义指令 v-${name} 可能需要运行时支持。已生成 data 属性：${dataAttrName}`, location)
   return dataAttrName
 }

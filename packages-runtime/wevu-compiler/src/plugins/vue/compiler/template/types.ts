@@ -1,5 +1,5 @@
 import type { Expression } from '@weapp-vite/ast/babelTypes'
-import type { CompilerDiagnostic, SourcePosition } from '../../../../types/diagnostics'
+import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { MiniProgramPlatform } from './platform'
 
 export type FunctionPropNameMatcher = string | RegExp
@@ -72,9 +72,6 @@ export interface TransformContext {
   source: string
   filename: string
   diagnostics: CompilerDiagnostic[]
-  sourceLocationOffset?: SourcePosition
-  sourceLocationSource?: string
-  sourceLocationLineStarts?: number[]
   platform: MiniProgramPlatform
   isPage?: boolean
   /**
@@ -150,18 +147,6 @@ export type TransformNode = (node: any, context: TransformContext) => string
 export interface TemplateCompileOptions {
   platform?: MiniProgramPlatform
   isPage?: boolean
-  /**
-   * 模板片段在完整源文件中的起始位置。
-   *
-   * @internal
-   */
-  sourceLocationOffset?: SourcePosition
-  /**
-   * span 所对应的完整原始源码，用于按需恢复 CRLF 偏移。
-   *
-   * @internal
-   */
-  sourceLocationSource?: string
   /**
    * Vue `<script setup>` props 解构重命名映射，key 为模板中使用的本地别名，value 为原始 prop 名。
    */

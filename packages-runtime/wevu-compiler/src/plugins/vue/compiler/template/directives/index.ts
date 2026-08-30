@@ -1,7 +1,7 @@
 import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext } from '../types'
-import { CompilerDiagnosticCodes } from '../../../../../types/diagnostics'
-import { emitTemplateDiagnostic } from '../diagnostics'
+
+import { warn } from '../diagnostics'
 import { transformBindDirective } from './bind'
 import { transformCustomDirective } from './custom'
 import { transformModelDirective } from './model'
@@ -36,12 +36,7 @@ export function transformDirective(
   }
 
   if (name === 'html') {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateUnsupportedDirective,
-      '小程序不支持 v-html，请使用 rich-text 组件替代。',
-      node.loc,
-    )
+    warn(context, '小程序不支持 v-html，请使用 rich-text 组件替代。', node.loc)
     return null
   }
 
@@ -50,12 +45,7 @@ export function transformDirective(
   }
 
   if (name === 'once') {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateUnsupportedDirective,
-      '小程序对 v-once 支持不完整，元素将按普通方式渲染。',
-      node.loc,
-    )
+    warn(context, '小程序对 v-once 支持不完整，元素将按普通方式渲染。', node.loc)
     return null
   }
 

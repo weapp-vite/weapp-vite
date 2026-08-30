@@ -16,10 +16,10 @@ import {
   WEVU_SLOT_SCOPE_ATTR,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
-import { CompilerDiagnosticCodes } from '../../../../../types/diagnostics'
+
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
-import { emitTemplateDiagnostic } from '../diagnostics'
+import { warn } from '../diagnostics'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
 import {
@@ -98,12 +98,7 @@ export function resolveSlotKey(context: TransformContext, info: SlotNameInfo): s
     return info.value || 'default'
   }
   const key = `dyn-${hashString(info.exp)}`
-  emitTemplateDiagnostic(
-    context,
-    CompilerDiagnosticCodes.templateRuntimeRequired,
-    '动态插槽名通过表达式哈希匹配，请确保提供方与使用方的表达式一致。',
-    info.loc,
-  )
+  warn(context, '动态插槽名通过表达式哈希匹配，请确保提供方与使用方的表达式一致。', info.loc)
   return key
 }
 
@@ -444,12 +439,7 @@ function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, tra
     return false
   })
   if (hasScopeBindings) {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateInvalidSlot,
-      '已禁用作用域插槽参数，插槽绑定将被忽略。',
-      node.loc,
-    )
+    warn(context, '已禁用作用域插槽参数，插槽绑定将被忽略。', node.loc)
   }
 
   const fallbackContent = node.children

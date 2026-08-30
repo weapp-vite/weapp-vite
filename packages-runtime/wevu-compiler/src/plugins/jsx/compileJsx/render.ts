@@ -14,7 +14,6 @@ import {
   WEVU_JSX_ISLAND_TEMPLATE_NAME,
 } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
-import { CompilerDiagnosticCodes } from '../../../types/diagnostics'
 import { traverse } from '../../../utils/babel'
 import {
   escapeText,
@@ -27,7 +26,6 @@ import {
   unwrapTsExpression,
 } from './ast'
 import { compileJsxAttributes, extractJsxKeyExpression, isStaticClassStyleExpression, readJsxAttributeExpression } from './attributes'
-import { emitJsxDiagnostic } from './diagnostics'
 
 type JSXChild = JSXText | JSXExpressionContainer | JSXSpreadChild | JSXElement | JSXFragment
 const DYNAMIC_ISLAND_TEMPLATE_DEPTH = 8
@@ -38,29 +36,13 @@ function resolveDynamicIslandTemplateName(depth: number) {
     : `${WEVU_JSX_ISLAND_TEMPLATE_NAME}_${depth}`
 }
 
-function withJsxSource<T>(context: JsxCompileContext, filename: string, compile: () => T): T {
-  const previousFilename = context.filename
-  context.filename = filename
-  try {
-    return compile()
-  }
-  finally {
-    context.filename = previousFilename
-  }
-}
-
 function compileListExpression(exp: Expression) {
   return normalizeInterpolationExpression(exp)
 }
 
 function registerDynamicIsland(exp: Expression, context: JsxCompileContext, reason: JsxDynamicIslandReason) {
   if (context.dynamicIslandMode === 'static') {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxDynamicIsland,
-      `[JSX 编译] static 模式不允许 dynamic island（${reason}）。`,
-      exp,
-    )
+    context.warnings.push(`[JSX 编译] static 模式不允许 dynamic island（${reason}）。`)
     return ''
   }
   const id = `i${context.dynamicIslandSeed ?? 0}`
@@ -148,12 +130,7 @@ function resolveImportedExpression(node: Expression, context: JsxCompileContext)
   const resolvedName = importedName ?? binding.importedName
   const key = `${context.filename}:${localName}:${resolvedName}`
   if (context.resolvingExports?.has(key)) {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxAnalysisError,
-      `[JSX 编译] 跨文件 JSX 导出循环引用：${localName}`,
-      node,
-    )
+    context.warnings.push(`[JSX 编译] 跨文件 JSX 导出循环引用：${localName}`)
     return undefined
   }
   context.resolvingExports?.add(key)
@@ -174,19 +151,12 @@ function compileImportedExpression(node: Expression, context: JsxCompileContext)
         ? node.object.name
         : ''
     if (context.importedBindings?.has(importedLocal)) {
-      emitJsxDiagnostic(
-        context,
-        CompilerDiagnosticCodes.jsxDynamicIsland,
-        `[JSX 编译] 无法静态展开跨文件 JSX 导出，已生成 dynamic island：${importedLocal || 'unknown'}`,
-        node,
-      )
+      context.warnings.push(`[JSX 编译] 无法静态展开跨文件 JSX 导出，已生成 dynamic island：${importedLocal || 'unknown'}`)
       return registerDynamicIsland(node, context, 'unsupported-import')
     }
     return null
   }
-  return withJsxSource(context, resolved.filename, () => (
-    compileRenderableExpression(resolved.expression, context)
-  ))
+  return compileRenderableExpression(resolved.expression, context)
 }
 
 function compileImportedFactoryCall(node: t.CallExpression, context: JsxCompileContext): string | null {
@@ -199,12 +169,7 @@ function compileImportedFactoryCall(node: t.CallExpression, context: JsxCompileC
   }
   const resolved = context.moduleResolver.resolveImport(context.filename, binding.source, binding.importedName)
   if (!resolved || resolved.params.length === 0) {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxDynamicIsland,
-      `[JSX 编译] 无法静态展开 JSX 工厂 ${node.callee.name}，已生成 dynamic island。`,
-      node,
-    )
+    context.warnings.push(`[JSX 编译] 无法静态展开 JSX 工厂 ${node.callee.name}，已生成 dynamic island。`)
     return registerDynamicIsland(node, context, 'unsupported-call')
   }
   const replacements = new Map<string, Expression>()
@@ -215,12 +180,7 @@ function compileImportedFactoryCall(node: t.CallExpression, context: JsxCompileC
     }
   })
   if (replacements.size !== resolved.params.length) {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxAnalysisError,
-      `[JSX 编译] JSX 工厂 ${node.callee.name} 调用参数不足，已保留运行时表达式。`,
-      node,
-    )
+    context.warnings.push(`[JSX 编译] JSX 工厂 ${node.callee.name} 调用参数不足，已保留运行时表达式。`)
     return null
   }
   const expression = t.cloneNode(resolved.expression, true)
@@ -256,9 +216,7 @@ function compileImportedFactoryCall(node: t.CallExpression, context: JsxCompileC
       }
     }
   }
-  return withJsxSource(context, resolved.filename, () => (
-    compileRenderableExpression(expanded, context)
-  ))
+  return compileRenderableExpression(expanded, context)
 }
 
 function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext): string | null {
@@ -269,12 +227,7 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
 
   const callback = exp.arguments[0]
   if (!callback || !(t.isArrowFunctionExpression(callback) || t.isFunctionExpression(callback))) {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxUnsupportedSyntax,
-      '仅支持 map(fn) 形式的列表渲染。',
-      exp,
-    )
+    context.warnings.push('仅支持 map(fn) 形式的列表渲染。')
     return null
   }
 
@@ -382,12 +335,7 @@ export function compileRenderableExpression(exp: Expression, context: JsxCompile
     if (mapped != null) {
       return mapped
     }
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxDynamicIsland,
-      '无法证明 JSX 子节点函数调用返回静态文本，已生成 dynamic island。',
-      node,
-    )
+    context.warnings.push('无法证明 JSX 子节点函数调用返回静态文本，已生成 dynamic island。')
     return registerDynamicIsland(node, context, 'unsupported-call')
   }
   if (t.isArrayExpression(node)) {
@@ -449,12 +397,7 @@ function compileJsxChildren(children: JSXChild[], context: JsxCompileContext): s
     }
     if (t.isJSXSpreadChild(child)) {
       parts.push(registerDynamicIsland(child.expression as Expression, context, 'spread-child'))
-      emitJsxDiagnostic(
-        context,
-        CompilerDiagnosticCodes.jsxDynamicIsland,
-        'JSX spread child 无法映射为静态 WXML，已生成 dynamic island。',
-        child,
-      )
+      context.warnings.push('JSX spread child 无法映射为静态 WXML，已生成 dynamic island。')
     }
   }
   return parts.join('')
@@ -466,12 +409,7 @@ function compileJsxFragment(node: JSXFragment, context: JsxCompileContext): stri
 
 function compileJsxElement(node: JSXElement, context: JsxCompileContext): string {
   if (t.isJSXMemberExpression(node.openingElement.name)) {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxDynamicIsland,
-      'JSX 成员标签（如 <Foo.Bar />）无法映射为小程序 WXML 组件标签，已生成 dynamic island。',
-      node,
-    )
+    context.warnings.push('JSX 成员标签（如 <Foo.Bar />）无法映射为小程序 WXML 组件标签，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
   }
   const dynamicSpread = node.openingElement.attributes.find((attr) => {
@@ -487,49 +425,24 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     ))
   })
   if (dynamicSpread && t.isJSXSpreadAttribute(dynamicSpread)) {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxDynamicIsland,
-      '动态 JSX spread attributes 无法映射为静态 WXML，已生成 dynamic island。',
-      dynamicSpread,
-    )
+    context.warnings.push('动态 JSX spread attributes 无法映射为静态 WXML，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-spread')
   }
   const tag = toJsxTagName(node.openingElement.name, context)
   if (tag === 'component') {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxDynamicIsland,
-      'JSX 动态 component 无法映射为静态 WXML，已生成 dynamic island。',
-      node,
-    )
+    context.warnings.push('JSX 动态 component 无法映射为静态 WXML，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
   }
   if (tag === 'Teleport') {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxUnsupportedSyntax,
-      '小程序不支持 JSX <Teleport>，已生成 dynamic island。',
-      node,
-    )
+    context.warnings.push('小程序不支持 JSX <Teleport>，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'dynamic-component')
   }
   if (tag === 'Transition') {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxRuntimeRequired,
-      'JSX <Transition> 需要 Web 动画运行时，当前仅渲染子节点。',
-      node,
-    )
+    context.warnings.push('JSX <Transition> 需要 Web 动画运行时，当前仅渲染子节点。')
     return compileJsxChildren(node.children, context)
   }
   if (tag === 'KeepAlive') {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxRuntimeRequired,
-      'JSX <KeepAlive> 需要运行时缓存管理，当前仅保留标记并渲染子节点。',
-      node,
-    )
+    context.warnings.push('JSX <KeepAlive> 需要运行时缓存管理，当前仅保留标记并渲染子节点。')
     return `<block data-keep-alive="true">${compileJsxChildren(node.children, context)}</block>`
   }
   const hasRuntimeSlots = node.children.some((child) => {
@@ -540,12 +453,7 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     return t.isObjectExpression(expression) || t.isFunctionExpression(expression) || t.isArrowFunctionExpression(expression)
   })
   if (hasRuntimeSlots) {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxDynamicIsland,
-      'JSX slot 函数或对象 slots 无法映射为静态 WXML，已生成 dynamic island。',
-      node,
-    )
+    context.warnings.push('JSX slot 函数或对象 slots 无法映射为静态 WXML，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'closure')
   }
   const hasDynamicClassStyle = node.openingElement.attributes.some((attribute) => {
@@ -561,12 +469,7 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
       && !isStaticClassStyleExpression(expression)
   })
   if (hasDynamicClassStyle) {
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxDynamicIsland,
-      '动态 JSX class/style 数组或对象需要运行时合并，已生成 dynamic island。',
-      node,
-    )
+    context.warnings.push('动态 JSX class/style 数组或对象需要运行时合并，已生成 dynamic island。')
     return registerDynamicIsland(node as unknown as Expression, context, 'closure')
   }
   const directives = new Map<string, Expression>()
@@ -589,12 +492,7 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
   }
   if (directives.has('v-for') || directives.has('v-slots') || directives.has('v-model') || directives.has('v-models')) {
     const directive = ['v-for', 'v-slots', 'v-model', 'v-models'].find(name => directives.has(name))!
-    emitJsxDiagnostic(
-      context,
-      CompilerDiagnosticCodes.jsxDynamicIsland,
-      `JSX ${directive} 无法直接映射当前静态 WXML，已生成 dynamic island。`,
-      node,
-    )
+    context.warnings.push(`JSX ${directive} 无法直接映射当前静态 WXML，已生成 dynamic island。`)
     return registerDynamicIsland(node as unknown as Expression, context, 'closure')
   }
   const attrs = compileJsxAttributes(node.openingElement.attributes, context)

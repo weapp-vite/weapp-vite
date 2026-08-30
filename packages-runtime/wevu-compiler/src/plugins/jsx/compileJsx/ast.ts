@@ -13,10 +13,8 @@ import {
 } from '@weapp-vite/ast'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { createInlineExpressionId } from '../../../inlineDataset'
-import { CompilerDiagnosticCodes } from '../../../types/diagnostics'
 import { generate, traverse } from '../../../utils/babel'
 import { normalizeWxmlExpression } from '../../vue/compiler/template/expression/wxml'
-import { emitJsxDiagnostic } from './diagnostics'
 
 const WXML_EXPRESSION_GENERATE_OPTIONS = {
   compact: true,
@@ -131,11 +129,6 @@ export function toJsxTagName(
     return `${name.namespace.name}:${name.name.name}`
   }
 
-  emitJsxDiagnostic(
-    context,
-    CompilerDiagnosticCodes.jsxDynamicIsland,
-    'JSX 成员标签（如 <Foo.Bar />）无法映射为小程序 WXML 组件标签，已生成 dynamic island。',
-    name,
-  )
+  context.warnings.push('JSX 成员标签（如 <Foo.Bar />）无法映射为小程序 WXML 组件标签，已生成 dynamic island。')
   return 'block'
 }

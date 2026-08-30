@@ -3,9 +3,9 @@ import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { WEVU_SLOT_FUNCTION_TOKEN } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
-import { CompilerDiagnosticCodes } from '../../../../../types/diagnostics'
+
 import { parse as babelParse } from '../../../../../utils/babel'
-import { emitTemplateDiagnostic } from '../diagnostics'
+import { warn } from '../diagnostics'
 import { normalizeWxmlExpressionWithContext, registerInlineExpression } from '../expression'
 import { getBindDirectiveExpression, toWxmlStringLiteral } from './helpers'
 
@@ -30,14 +30,7 @@ function createSlotFunctionBinding(exp: string, context: TransformContext, locat
   }
   const inline = registerInlineExpression(`(${exp})(...$event)`, context)
   if (!inline) {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateInvalidExpression,
-      '作用域插槽函数参数编译失败。',
-      location,
-      'warning',
-      'expression',
-    )
+    warn(context, '作用域插槽函数参数编译失败。', location, 'expression')
     return null
   }
   const scopeBindings = `[${inline.scopeBindings.join(',')}]`
@@ -75,12 +68,7 @@ export function parseSlotPropsExpression(
       const mapping: Record<string, string> = {}
       for (const prop of param.properties) {
         if (t.isRestElement(prop)) {
-          emitTemplateDiagnostic(
-            context,
-            CompilerDiagnosticCodes.templateInvalidSlot,
-            '小程序不支持作用域插槽的剩余解构元素。',
-            location,
-          )
+          warn(context, '小程序不支持作用域插槽的剩余解构元素。', location)
           continue
         }
         if (!t.isObjectProperty(prop)) {
@@ -93,12 +81,7 @@ export function parseSlotPropsExpression(
             ? key.value
             : undefined
         if (!propName) {
-          emitTemplateDiagnostic(
-            context,
-            CompilerDiagnosticCodes.templateInvalidSlot,
-            '小程序不支持作用域插槽的计算属性键。',
-            location,
-          )
+          warn(context, '小程序不支持作用域插槽的计算属性键。', location)
           continue
         }
         const value = prop.value
@@ -108,33 +91,16 @@ export function parseSlotPropsExpression(
         }
         if (t.isAssignmentPattern(value) && t.isIdentifier(value.left)) {
           mapping[value.left.name] = propName
-          emitTemplateDiagnostic(
-            context,
-            CompilerDiagnosticCodes.templateInvalidSlot,
-            '不支持作用域插槽参数的默认值，默认值将被忽略。',
-            location,
-          )
+          warn(context, '不支持作用域插槽参数的默认值，默认值将被忽略。', location)
           continue
         }
-        emitTemplateDiagnostic(
-          context,
-          CompilerDiagnosticCodes.templateInvalidSlot,
-          '作用域插槽解构仅支持标识符绑定。',
-          location,
-        )
+        warn(context, '作用域插槽解构仅支持标识符绑定。', location)
       }
       return mapping
     }
   }
   catch {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateInvalidExpression,
-      '作用域插槽参数解析失败，已回退为空参数。',
-      location,
-      'warning',
-      'expression',
-    )
+    warn(context, '作用域插槽参数解析失败，已回退为空参数。', location, 'expression')
   }
   return {}
 }
@@ -177,12 +143,7 @@ export function collectSlotBindingExpression(node: ElementNode, context: Transfo
   }
 
   if (bindObjectExp && namedBindings.length) {
-    emitTemplateDiagnostic(
-      context,
-      CompilerDiagnosticCodes.templateInvalidSlot,
-      '作用域插槽参数使用 v-bind 对象时，将忽略额外的命名绑定。',
-      node.loc,
-    )
+    warn(context, '作用域插槽参数使用 v-bind 对象时，将忽略额外的命名绑定。', node.loc)
     namedBindings.length = 0
   }
 

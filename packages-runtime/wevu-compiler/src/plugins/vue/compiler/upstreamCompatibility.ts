@@ -1,5 +1,4 @@
 import type { CompilerDiagnosticCode } from '../../../types/diagnostics'
-import { CompilerDiagnosticCodes } from '../../../types/diagnostics'
 
 export interface VueUpstreamCompatibilityCase {
   category: string
@@ -78,7 +77,7 @@ export const VUE_UPSTREAM_COMPATIBILITY_CASES: VueUpstreamCompatibilityCase[] = 
     tags: ['component'],
     directives: ['bind'],
     wxmlIncludes: ['data-is="{{current}}"'],
-    diagnosticCodes: [CompilerDiagnosticCodes.templateRuntimeRequired],
+    diagnosticCodes: ['WV1001'],
   },
   {
     category: 'html-void-v-model',
@@ -95,7 +94,7 @@ export const VUE_UPSTREAM_COMPATIBILITY_CASES: VueUpstreamCompatibilityCase[] = 
     tags: ['view'],
     directives: ['analytics'],
     wxmlIncludes: ['data-v-analytics'],
-    diagnosticCodes: [CompilerDiagnosticCodes.templateRuntimeRequired],
+    diagnosticCodes: ['WV1001'],
   },
   {
     category: 'v-html',
@@ -104,6 +103,6 @@ export const VUE_UPSTREAM_COMPATIBILITY_CASES: VueUpstreamCompatibilityCase[] = 
     tags: ['view'],
     directives: ['html'],
     wxmlIncludes: ['<view />'],
-    diagnosticCodes: [CompilerDiagnosticCodes.templateUnsupportedDirective],
+    diagnosticCodes: ['WV1001'],
   },
 ]

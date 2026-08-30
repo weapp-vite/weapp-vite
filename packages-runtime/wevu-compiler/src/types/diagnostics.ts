@@ -1,19 +1,10 @@
-export const CompilerDiagnosticCodes = {
-  jsxAnalysisError: 'WEVU_JSX_ANALYSIS_ERROR',
-  jsxDynamicIsland: 'WEVU_JSX_DYNAMIC_ISLAND',
-  jsxRuntimeRequired: 'WEVU_JSX_RUNTIME_REQUIRED',
-  jsxUnsupportedSyntax: 'WEVU_JSX_UNSUPPORTED_SYNTAX',
-  templateCompileError: 'WEVU_TEMPLATE_COMPILE_ERROR',
-  templateInvalidBinding: 'WEVU_TEMPLATE_INVALID_BINDING',
-  templateInvalidExpression: 'WEVU_TEMPLATE_INVALID_EXPRESSION',
-  templateInvalidLayoutHost: 'WEVU_TEMPLATE_INVALID_LAYOUT_HOST',
-  templateInvalidSlot: 'WEVU_TEMPLATE_INVALID_SLOT',
-  templateParseError: 'WEVU_TEMPLATE_PARSE_ERROR',
-  templateRuntimeRequired: 'WEVU_TEMPLATE_RUNTIME_REQUIRED',
-  templateUnsupportedDirective: 'WEVU_TEMPLATE_UNSUPPORTED_DIRECTIVE',
-} as const
+export type CompilerDiagnosticCode
+  = | 'WV1002'
+    | 'WV1003'
+    | 'WV2002'
+    | 'WV2001'
+    | 'WV1001'
 
-export type CompilerDiagnosticCode = typeof CompilerDiagnosticCodes[keyof typeof CompilerDiagnosticCodes]
 export type CompilerDiagnosticSeverity = 'error' | 'warning'
 export type CompilerDiagnosticSource = 'expression' | 'jsx' | 'script' | 'sfc' | 'style' | 'template'
 

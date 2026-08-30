@@ -1,10 +1,8 @@
 import type { Expression, JSXElement, JSXFragment } from '@weapp-vite/ast/babelTypes'
-import type { CompilerDiagnostic } from '../../../types/diagnostics'
 import type { InlineExpressionAsset, TemplateCompileOptions } from '../../vue/compiler/template/types'
 
 export interface JsxModuleExport {
   expression: Expression | JSXElement | JSXFragment
-  filename: string
   params: string[]
 }
 
@@ -27,7 +25,7 @@ export interface JsxCompileContext {
   platform: NonNullable<TemplateCompileOptions['platform']>
   mustacheInterpolation: NonNullable<TemplateCompileOptions['mustacheInterpolation']>
   formatWxml: boolean
-  diagnostics: CompilerDiagnostic[]
+  warnings: string[]
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
   scopeStack: string[]
