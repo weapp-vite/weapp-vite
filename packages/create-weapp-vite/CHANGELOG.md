@@ -1,5 +1,39 @@
 # create-weapp-vite
 
+## 2.8.6
+
+### Patch Changes
+
+- 新增可按需启用的内置 `weapp-tailwindcss` 集成。通过 `weapp.tailwindcss` 传入 `true` 或 core options，即可在不注册额外 Vite 插件的情况下生成 Tailwind 样式并完成小程序运行时兼容转换；默认保持关闭。
+
+- 内置 Tailwind CSS 集成现在会在项目使用 Tailwind CSS v4 并实际引入 `@import "tailwindcss"` 时自动启用；同时自动禁用已注册的 `weapp-tailwindcss/vite` 外部插件并给出迁移提示，模板统一改用 `weapp.tailwindcss` 配置。
+
+- 内置 Tailwind CSS 集成升级到 `weapp-tailwindcss@5.4.1` compiler API，由 core 统一完成 WXSS 最终化并按 `@source` glob 精确处理 HMR 失效；支持多入口快照复用、统一转换 WXSS、WXML、JavaScript，以及通过 `weapp.tailwindcss.compiler.maxRoots` 和 `onRootEvicted` 管理编译 root 缓存。
+
+- 修复 Sass/Less 等预处理样式资产在 Vite 占位符阶段再次处理时的 URL 解析问题，并补充 dev、HMR 与 production 回归覆盖。
+
+- 修复 dev 样式资产已经包含 Vite URL 占位符时再次进入 Sass 预处理导致无引号 `url(...)` 报未定义变量的问题；仅对占位符中间产物回读原始预处理源码，保持普通 CSS、production 和既有 HMR 输出路径不变。
+
+- 修复多个 `<style src>` 合并为同一应用样式入口时，Tailwind 后置处理覆盖用户样式的问题，确保作者 CSS 与生成的 utility 一起写入最终 `app.wxss`。
+
+- 修复 stateful-experimental HMR 初始构建与 Vite Rolldown 版本不一致、样式 sidecar 虚拟路径无法加载以及构建失败后命令持续挂起的问题。
+
+- 修复状态保持 HMR 后续完整重建输出省略公共运行时时被误判为初始构建的问题。
+
+- 修复 Vue SFC 多样式入口与 weapp-tailwindcss 同时使用时，Tailwind 配置指令被重复补写到最终 `app.wxss` 的问题，确保最终小程序样式只包含已生成的合法 WXSS。
+
+- 修复内置 `weapp-tailwindcss` 启用后 Vue 脚本变更被错误降级为全量 HMR 的问题，确保 JavaScript 增量补丁与 Tailwind 样式快照能够正确协同更新。
+
+- 修复同一入口由多个 `<style src>` 产生多个 CSS asset 时分别写入同名 wxss、导致后写样式覆盖前写样式的问题；现在按最终 owner 样式文件稳定归组并合并片段，再统一注入共享样式和写出 `app.wxss`。
+
+- 修复本地自动导入组件的文件名与模板标签分别使用 kebab-case 和 PascalCase 时无法解析的问题，统一按组件名的 kebab-case 语义匹配，同时保留原有注册名和生成路径。
+
+- 将 SFC HMR 语义下沉到 `@wevu/compiler`，新增 script、template、style、config block 级签名与变更分类，并扩展可选 native 载荷保持同构回退。`weapp-vite` 仅保存编译器快照并继续通过 `ModuleGraphService` 传播失效；脚本文本候选分析统一由 `@weapp-vite/ast` 提供。
+
+- 新增类型安全的 Vitest API mock：支持通过 setup 子路径一次替换 `api` / `wpi`，也可使用独立 factory 与局部 reset；Promise、回调、同步和事件 API 均保留原类型契约，并同步提供 `@wevu/api` 与 `wevu/api` 兼容入口。
+
+- 修复 Wevu 组件 camelCase props 和事件未统一映射到小程序 kebab-case 宿主名称的问题，确保 `quantityChange` 能匹配 `@quantity-change`，同时保留 `update:modelValue` 等带冒号事件的既有命名语义。
+
 ## 2.8.5
 
 ### Patch Changes
