@@ -288,6 +288,10 @@ create-weapp-vite@2.8.6:
     - sfc-block-hmr-core
     - typed-wpi-vitest-mocks
     - wevu-camel-event-listener
+create-weapp-vite@2.8.7:
+  dir: packages/create-weapp-vite
+  intents:
+    - tidy-tailwindcss-bundle
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -374,6 +378,10 @@ weapp-vite@6.25.0:
     - fix-tailwind-style-src-app-wxss
     - fuzzy-local-components
     - sfc-block-hmr-core
+weapp-vite@6.25.1:
+  dir: packages/weapp-vite
+  intents:
+    - tidy-tailwindcss-bundle
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
