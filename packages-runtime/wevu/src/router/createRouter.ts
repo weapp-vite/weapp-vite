@@ -2,6 +2,7 @@ import type { RouteResolveCodec } from '../routerInternal/shared'
 import type { NavigationRunResult } from './navigationResult'
 import type { RouteStateSyncPayload } from './routeSync'
 import type {
+  LocationQueryRaw,
   NavigationAfterEach,
   NavigationErrorHandler,
   NavigationGuard,
@@ -18,6 +19,7 @@ import {
   mergeMatchedRouteMeta,
   normalizeRouteRecordMatched,
   parseQuery,
+  resolveCurrentRoute,
   resolveMatchedRouteRecord,
   resolveNamedRouteLocation,
   resolvePath,
@@ -28,9 +30,11 @@ import {
 } from '../routerInternal/shared'
 import { getMiniProgramGlobalObject } from '../runtime/platform'
 import { runBackNavigationGuards } from './backNavigation'
+import { registerInitialNavigationRunner } from './initialNavigation'
 import { setActiveRouter } from './instance'
 import { createNavigationApi } from './navigationApi'
 import { createNavigationResultController } from './navigationResult'
+import { navigateWithTarget } from './navigationTarget'
 import { resolveRouteLocation } from './resolve'
 import { createRouteRegistry } from './routeRegistry'
 import { installRouteStateSyncOnNativeRouter } from './routeSync'
@@ -182,6 +186,29 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     }
   }
 
+  async function runInitialNavigation(page: Parameters<typeof resolveCurrentRoute>[1], query?: LocationQueryRaw) {
+    const from = snapshotRouteLocation(route)
+    const target = enrichRouteRecordState(resolveCurrentRoute(query, page))
+    if (!target.path || target.fullPath === from.fullPath) {
+      return undefined
+    }
+    const result = await navigateWithTarget({
+      mode: 'push',
+      target,
+      from,
+      nativeRouter,
+      routeResolveCodec,
+      namedRouteLookup,
+      beforeEachGuards,
+      beforeResolveGuards,
+      maxRedirects,
+      tabBarPathSet,
+      resolveWithCodec,
+      executeNative: false,
+    })
+    return navigationResultController.settleNavigationResult(result)
+  }
+
   function beforeEach(guard: NavigationGuard): () => void {
     beforeEachGuards.add(guard)
     return () => {
@@ -242,5 +269,6 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   }
 
   setActiveRouter(router)
+  registerInitialNavigationRunner(router, runInitialNavigation)
   return router
 }

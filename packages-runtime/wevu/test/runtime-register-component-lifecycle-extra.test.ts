@@ -22,11 +22,16 @@ const mocks = vi.hoisted(() => {
     releaseCurrentPageInstance: vi.fn(),
     resolvePageOptions: vi.fn(() => ({ from: 'resolved-options' })),
     notifyRouteStateSync: vi.fn(),
+    getInitialNavigationRunner: vi.fn(),
   }
 })
 
 vi.mock('@/router/routeSync', () => ({
   notifyRouteStateSync: mocks.notifyRouteStateSync,
+}))
+
+vi.mock('@/router/initialNavigation', () => ({
+  getInitialNavigationRunner: mocks.getInitialNavigationRunner,
 }))
 
 vi.mock('@/runtime/hooks', () => ({
@@ -64,6 +69,7 @@ describe('runtime: component page lifecycle extra', () => {
     }
     mocks.scheduleTemplateRefUpdate.mockImplementation((_target: any, task: () => void) => task())
     mocks.resolvePageOptions.mockReturnValue({ from: 'resolved-options' })
+    mocks.getInitialNavigationRunner.mockReturnValue(undefined)
     mocks.attachOptionalPageLifecycleHooks.mockImplementation((hooks: Record<string, any>, options: any) => {
       if (options?.enableOnRouteDone) {
         hooks.onRouteDone = vi.fn()
@@ -171,6 +177,63 @@ describe('runtime: component page lifecycle extra', () => {
       enableOnShareTimeline: false,
     })
     expect(mocks.callHookList).toHaveBeenCalledWith(instance, 'onLoad', [{ from: 'args' }])
+  })
+
+  it('waits for initial router navigation before mounting a page', async () => {
+    const order: string[] = []
+    let resolveNavigation!: () => void
+    const initialNavigation = vi.fn(() => {
+      order.push('guard-start')
+      return new Promise<void>((resolve) => {
+        resolveNavigation = () => {
+          order.push('guard-done')
+          resolve()
+        }
+      })
+    })
+    mocks.getInitialNavigationRunner.mockReturnValue(initialNavigation)
+    mocks.mountRuntimeInstance.mockImplementation(() => {
+      order.push('mounted')
+    })
+
+    const hooks = createPageLifecycleHooks({
+      runtimeApp: {} as any,
+      watch: undefined,
+      setup: undefined as any,
+      isPage: true,
+      enableOnSaveExitState: false,
+      enableOnPullDownRefresh: false,
+      enableOnReachBottom: false,
+      enableOnPageScroll: false,
+      enableOnRouteDone: false,
+      enableOnRouteDoneFallback: false,
+      enableOnTabItemTap: false,
+      enableOnResize: false,
+      enableOnShareAppMessage: false,
+      enableOnShareTimeline: false,
+      enableOnAddToFavorites: false,
+      effectiveOnSaveExitState: vi.fn(),
+      effectiveOnPullDownRefresh: vi.fn(),
+      effectiveOnReachBottom: vi.fn(),
+      effectiveOnPageScroll: vi.fn(),
+      effectiveOnRouteDone: vi.fn(),
+      effectiveOnTabItemTap: vi.fn(),
+      effectiveOnResize: vi.fn(),
+      effectiveOnShareAppMessage: vi.fn(),
+      effectiveOnShareTimeline: vi.fn(),
+      effectiveOnAddToFavorites: vi.fn(),
+      hasHook: vi.fn(() => false),
+    } as any)
+
+    const instance: any = {}
+    const pending = hooks.onLoad.call(instance, { from: 'args' })
+    expect(pending).toBeInstanceOf(Promise)
+    expect(order).toEqual(['guard-start'])
+    expect(mocks.mountRuntimeInstance).not.toHaveBeenCalled()
+
+    resolveNavigation()
+    await pending
+    expect(order).toEqual(['guard-start', 'guard-done', 'mounted'])
   })
 
   it('replays onLoad from onShow, resets routeDone flag, and releases page instance on hide/unload', () => {

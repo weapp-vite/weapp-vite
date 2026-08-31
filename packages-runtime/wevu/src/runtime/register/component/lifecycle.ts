@@ -6,6 +6,7 @@ import {
   WEVU_READY_CALLED_KEY,
   WEVU_ROUTE_DONE_CALLED_KEY,
 } from '@weapp-core/constants'
+import { getInitialNavigationRunner } from '../../../router/initialNavigation'
 import { notifyRouteStateSync } from '../../../router/routeSync'
 import { callHookList } from '../../hooks'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
@@ -91,23 +92,31 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
         return
       }
       ;(this as any)[WEVU_ON_LOAD_CALLED_KEY] = true
-      mountRuntimeInstance(this, runtimeApp, watch, setup)
-      const pageOptions = args[0] && typeof args[0] === 'object'
-        ? args[0]
-        : resolvePageOptions(this)
-      syncWevuPropsFromValues?.(this, pageOptions)
-      flushPageSnapshotIfPossible(this)
-      enableDeferredSetData(this)
-      if (isPage) {
-        ensurePageShareMenus({
-          enableOnShareAppMessage,
-          enableOnShareTimeline,
-        })
+      const mountPage = () => {
+        mountRuntimeInstance(this, runtimeApp, watch, setup)
+        const pageOptions = args[0] && typeof args[0] === 'object'
+          ? args[0]
+          : resolvePageOptions(this)
+        syncWevuPropsFromValues?.(this, pageOptions)
+        flushPageSnapshotIfPossible(this)
+        enableDeferredSetData(this)
+        if (isPage) {
+          ensurePageShareMenus({
+            enableOnShareAppMessage,
+            enableOnShareTimeline,
+          })
+        }
+        callHookList(this, 'onLoad', args)
+        if (typeof userOnLoad === 'function') {
+          return userOnLoad.apply(this, args.length ? args : [pageOptions])
+        }
       }
-      callHookList(this, 'onLoad', args)
-      if (typeof userOnLoad === 'function') {
-        return userOnLoad.apply(this, args.length ? args : [pageOptions])
+
+      const initialNavigationRunner = isPage ? getInitialNavigationRunner() : undefined
+      if (initialNavigationRunner) {
+        return initialNavigationRunner(this as MiniProgramPageLike, args[0]).then(mountPage)
       }
+      return mountPage()
     },
     onUnload(this: InternalRuntimeState, ...args: any[]) {
       if (isPage) {
