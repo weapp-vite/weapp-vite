@@ -1,4 +1,4 @@
-import type { AttributeNode, DirectiveNode, ElementNode } from '@vue/compiler-core'
+import type { AttributeNode, DirectiveNode, ElementNode, SourceLocation } from '@vue/compiler-core'
 import type {
   ResolvedSlotFallbackWrapper,
   ScopedSlotComponentAsset,
@@ -16,8 +16,10 @@ import {
   WEVU_SLOT_SCOPE_ATTR,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
+
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
+import { warn } from '../diagnostics'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
 import {
@@ -30,7 +32,7 @@ import {
 } from './helpers'
 import { collectSlotBindingExpression, parseSlotPropsExpression } from './slotProps'
 
-export type SlotNameInfo = { type: 'default' } | { type: 'static', value: string } | { type: 'dynamic', exp: string }
+export type SlotNameInfo = { type: 'default' } | { type: 'static', value: string } | { type: 'dynamic', exp: string, loc: SourceLocation }
 
 export interface ScopedSlotDeclaration {
   name: SlotNameInfo
@@ -67,7 +69,7 @@ export function resolveSlotNameFromDirective(slotDirective: DirectiveNode): Slot
   if (slotDirective.arg.isStatic) {
     return { type: 'static', value: slotDirective.arg.content }
   }
-  return { type: 'dynamic', exp: slotDirective.arg.content }
+  return { type: 'dynamic', exp: slotDirective.arg.content, loc: slotDirective.loc }
 }
 
 export function resolveSlotNameFromSlotElement(node: ElementNode): SlotNameInfo {
@@ -80,7 +82,7 @@ export function resolveSlotNameFromSlotElement(node: ElementNode): SlotNameInfo 
       if (prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION && prop.arg.content === 'name') {
         const raw = getBindDirectiveExpression(prop)
         if (raw) {
-          return { type: 'dynamic', exp: raw }
+          return { type: 'dynamic', exp: raw, loc: prop.loc }
         }
       }
     }
@@ -96,7 +98,7 @@ export function resolveSlotKey(context: TransformContext, info: SlotNameInfo): s
     return info.value || 'default'
   }
   const key = `dyn-${hashString(info.exp)}`
-  context.warnings.push('动态插槽名通过表达式哈希匹配，请确保提供方与使用方的表达式一致。')
+  warn(context, '动态插槽名通过表达式哈希匹配，请确保提供方与使用方的表达式一致。', info.loc)
   return key
 }
 
@@ -144,9 +146,10 @@ export function buildSlotDeclaration(
     conditionKind?: 'if' | 'else-if' | 'else'
     condition?: string
     wrapper?: SlotFallbackWrapperResolveContext['local']
+    location?: SourceLocation
   },
 ): ScopedSlotDeclaration {
-  const props = propsExp ? parseSlotPropsExpression(propsExp, context) : {}
+  const props = propsExp ? parseSlotPropsExpression(propsExp, context, options?.location) : {}
   return {
     name,
     props,
@@ -436,7 +439,7 @@ function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, tra
     return false
   })
   if (hasScopeBindings) {
-    context.warnings.push('已禁用作用域插槽参数，插槽绑定将被忽略。')
+    warn(context, '已禁用作用域插槽参数，插槽绑定将被忽略。', node.loc)
   }
 
   const fallbackContent = node.children

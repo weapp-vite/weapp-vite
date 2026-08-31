@@ -7,7 +7,8 @@ import { normalizeWxmlExpressionWithContext } from './scopedSlot'
 
 function createContext() {
   return {
-    warnings: [] as string[],
+    diagnostics: [],
+    filename: '/project/src/globals.vue',
     rewriteScopedSlot: false,
     scopeStack: [],
     slotPropStack: [],

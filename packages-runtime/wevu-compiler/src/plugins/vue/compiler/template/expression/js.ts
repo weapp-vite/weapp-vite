@@ -9,8 +9,10 @@ import {
 } from '@weapp-core/constants'
 import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
+
 import { traverse } from '../../../../../utils/babel'
 import { hasOwn } from '../../../../../utils/object'
+import { warn } from '../diagnostics'
 import { rewriteForItemAccess } from './forItemAccess'
 import { parseBabelExpression, parseBabelExpressionFile } from './parse'
 import { collectScopedSlotLocals, collectSlotPropMapping } from './scopedSlot'
@@ -243,7 +245,7 @@ export function normalizeJsExpressionWithContext(
   const parsed = parseBabelExpressionFile(normalized)
   if (!parsed) {
     const hint = options?.hint ? `${options.hint} ` : ''
-    context.warnings.push(`${hint}模板表达式解析失败，已忽略：${exp}`)
+    warn(context, `${hint}模板表达式解析失败，已忽略：${exp}`, undefined, 'expression')
     return null
   }
 

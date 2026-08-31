@@ -1,5 +1,6 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { AstEngineName } from '../../../../ast/types'
+import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { JsonConfig, JsonMergeStrategy } from '../../../../types/json'
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
@@ -23,6 +24,7 @@ export interface VueTransformResult {
   template?: string
   style?: string
   config?: string
+  diagnostics?: CompilerDiagnostic[]
   cssModules?: Record<string, Record<string, string>>
   scopedSlotComponents?: TemplateCompileResult['scopedSlotComponents']
   slotFallbackWrapperComponent?: TemplateCompileResult['slotFallbackWrapperComponent']

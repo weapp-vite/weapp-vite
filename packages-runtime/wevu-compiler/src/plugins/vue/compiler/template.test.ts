@@ -453,13 +453,15 @@ describe('compileVueTemplateToWxml', () => {
 <component :is />
     `.trim()
 
-    const { code, warnings } = compileVueTemplateToWxml(
+    const { code, diagnostics } = compileVueTemplateToWxml(
       template,
       '/project/src/pages/index/index.vue',
     )
 
     expect(code).toContain('<component data-is="{{is}}"></component>')
-    expect(warnings).not.toContain('<component> 未提供 :is 绑定，将按普通元素处理。')
+    expect(diagnostics).not.toContainEqual(expect.objectContaining({
+      message: '<component> 未提供 :is 绑定，将按普通元素处理。',
+    }))
   })
 
   it('renders mustache with spaces when interpolation mode is spaced', () => {
@@ -485,7 +487,7 @@ describe('compileVueTemplateToWxml', () => {
 <view v-if="ok" title="a &amp; b">{{ label }} &amp; more</view>
     `.trim()
 
-    const { code, warnings } = compileVueTemplateToWxml(
+    const { code, diagnostics } = compileVueTemplateToWxml(
       template,
       '/project/src/pages/index/index.vue',
       { mustacheInterpolation: 'spaced' },
@@ -495,7 +497,9 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('title="a &amp; b"')
     expect(code).toContain('{{ label }}')
     expect(code).not.toContain('v-if="ok"')
-    expect(warnings).not.toContainEqual(expect.stringContaining('decodeEntities'))
+    expect(diagnostics).not.toContainEqual(expect.objectContaining({
+      message: expect.stringContaining('decodeEntities'),
+    }))
   })
 
   it('maps common html tags to builtin wxml tags in vue templates', () => {
@@ -598,12 +602,14 @@ describe('compileVueTemplateToWxml', () => {
 <div layout-host="dialog-host" />
     `.trim()
 
-    const { code, warnings, layoutHosts } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const { code, diagnostics, layoutHosts } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('<text class="span" bindtap="onTap">text</text>')
     expect(code).not.toContain('data-wd-tap')
     expect(layoutHosts).toBeUndefined()
-    expect(warnings).toContain('layout-host 仅支持声明在组件节点上，当前节点已忽略。')
+    expect(diagnostics).toContainEqual(expect.objectContaining({
+      message: 'layout-host 仅支持声明在组件节点上，当前节点已忽略。',
+    }))
   })
 
   it('applies html tag mapping inside structural directives', () => {
@@ -782,7 +788,7 @@ describe('compileVueTemplateToWxml', () => {
       + `${DEFAULT_DIRECTIVES.keyAttr}="__wv_key_0"`,
     )
     expect(nested.code).not.toContain(`${DEFAULT_DIRECTIVES.keyAttr}="item"`)
-    expect(nested.warnings).toEqual([])
+    expect(nested.diagnostics).toEqual([])
     expect(nested.classStyleBindings).toContainEqual(expect.objectContaining({
       name: '__wv_bind_0',
       type: 'bind',
@@ -975,7 +981,7 @@ describe('compileVueTemplateToWxml', () => {
 </view>
     `.trim(), '/project/src/components/NestedGallery.vue')
 
-    expect(compiled.warnings).toEqual([])
+    expect(compiled.diagnostics).toEqual([])
     expect(compiled.code).toContain(
       `${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_0}}" `
       + `${DEFAULT_DIRECTIVES.forItemAttr}="group" `
@@ -1033,7 +1039,7 @@ describe('compileVueTemplateToWxml', () => {
 </view>
     `.trim(), '/project/src/components/NestedGallery.vue')
 
-    expect(compiled.warnings).toEqual([])
+    expect(compiled.diagnostics).toEqual([])
     expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_0}}"`)
     expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forIndexAttr}="groupName"`)
     expect(compiled.code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_1[groupName]}}"`)
@@ -1295,7 +1301,7 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(compiled.code).toContain('wx:for="{{[\'a\', \'b\']}}"')
     expect(compiled.code).toContain('wx:key="*this"')
-    expect(compiled.warnings.some(message => message.includes('无法生成运行时 key 投影'))).toBe(true)
+    expect(compiled.diagnostics.some(message => message.message.includes('无法生成运行时 key 投影'))).toBe(true)
   })
 
   it('projects mixed static object and primitive loop sources', () => {
@@ -1533,7 +1539,7 @@ describe('compileVueTemplateToWxml', () => {
 
     const result = compileVueTemplateToWxml(template, '/project/src/components/Dialog/index.vue')
 
-    expect(result.warnings).toEqual([])
+    expect(result.diagnostics).toEqual([])
     expect(result.code).toContain(`__wvSlotProps="{{['confirm',['__wv_slot_function__','i0',[],[]]]}}"`)
     expect(result.code).not.toContain('=>')
     expect(result.inlineExpressions).toHaveLength(1)
@@ -2347,7 +2353,7 @@ describe('compileVueTemplateToWxml', () => {
 </slot>
     `.trim()
 
-    const { code, warnings, componentGenerics } = compileVueTemplateToWxml(
+    const { code, diagnostics, componentGenerics } = compileVueTemplateToWxml(
       template,
       '/project/src/components/provider/index.vue',
     )
@@ -2357,7 +2363,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain(`<scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wvSlotOwnerId="{{__wvSlotOwnerId}}" __wvSlotProps="{{['item',card.item,'index',card.index]}}" __wvSlotScope="{{__wvSlotScope}}" />`)
     expect(code).toContain(`</block><block wx:else><view class="fallback">{{fallbackDefault}}</view></block>`)
     expect(code).not.toContain('不支持作用域插槽的兜底内容')
-    expect(warnings.some(message => message.includes('不支持作用域插槽的兜底内容'))).toBe(false)
+    expect(diagnostics.some(message => message.message.includes('不支持作用域插槽的兜底内容'))).toBe(false)
     expect(componentGenerics?.['scoped-slots-default']).toBe(true)
   })
 
@@ -2393,9 +2399,9 @@ describe('compileVueTemplateToWxml', () => {
 </Child>
     `.trim()
 
-    const { code, warnings, scopedSlotComponents } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const { code, diagnostics, scopedSlotComponents } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(warnings.some(message => message.includes('组件上的 v-slot 与 <template v-slot> 不能同时使用'))).toBe(true)
+    expect(diagnostics.some(message => message.message.includes('组件上的 v-slot 与 <template v-slot> 不能同时使用'))).toBe(true)
     expect(code).toContain('vue-slots=')
     expect(scopedSlotComponents).toHaveLength(1)
     expect(scopedSlotComponents?.[0]?.template).toContain('__wvSlotPropsData.item')
@@ -2412,13 +2418,13 @@ describe('compileVueTemplateToWxml', () => {
 <slot :item="card.item"><view>fallback</view></slot>
     `.trim()
 
-    const { code, warnings, classStyleBindings } = compileVueTemplateToWxml(
+    const { code, diagnostics, classStyleBindings } = compileVueTemplateToWxml(
       template,
       '/project/src/pages/index/index.vue',
       { scopedSlotsCompiler: 'off' },
     )
 
-    expect(warnings.some(message => message.includes('已禁用作用域插槽参数'))).toBe(true)
+    expect(diagnostics.some(message => message.message.includes('已禁用作用域插槽参数'))).toBe(true)
     expect(code).toContain('<view slot="header"><view>{{title}}</view></view>')
     expect(code).toContain('<slot><view>fallback</view></slot>')
     expect(code).toContain(`vue-slots="{{ {header:true} }}"`)
@@ -2955,7 +2961,7 @@ describe('compileVueTemplateToWxml', () => {
 </Child>
     `.trim()
 
-    const { code, warnings } = compileVueTemplateToWxml(
+    const { code, diagnostics } = compileVueTemplateToWxml(
       template,
       '/project/src/pages/issue-613/index.vue',
       {
@@ -2965,7 +2971,7 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain('<block slot="header"><slot /></block>')
     expect(code).not.toContain('<view slot="header"><slot /></view>')
-    expect(warnings).toEqual([])
+    expect(diagnostics).toEqual([])
   })
 
   it('emits slot presence metadata for implicit default slots', () => {
@@ -3271,7 +3277,7 @@ describe('compileVueTemplateToWxml', () => {
 
   it('transforms component v-model arguments to matching prop and update event', () => {
     const template = `<UseModelFeature v-model:panelTitle.trim="panelTitle" v-model.trim="childModelValue" />`
-    const { code, inlineExpressions, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const { code, inlineExpressions, diagnostics } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('panel-title="{{panelTitle}}"')
     expect(code).toContain('panel-title-modifiers=')
@@ -3285,26 +3291,28 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('data-wi-update-modelvalue="i1"')
     expect(inlineExpressions?.[0]?.expression).toContain('ctx.panelTitle=$event')
     expect(inlineExpressions?.[1]?.expression).toContain('ctx.childModelValue=$event')
-    expect(warnings).toEqual([])
+    expect(diagnostics).toEqual([])
   })
 
   it('warns for v-model arguments on native mini-program elements', () => {
     const template = `<input v-model:abc="xyz" />`
-    const { code, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const { code, diagnostics } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('<input />')
     expect(code).not.toContain('value="{{xyz}}"')
     expect(code).not.toContain('data-wv-model="xyz"')
-    expect(warnings).toContain('原生小程序元素不支持 v-model 参数，已忽略该 v-model。')
+    expect(diagnostics).toContainEqual(expect.objectContaining({
+      message: '原生小程序元素不支持 v-model 参数，已忽略该 v-model。',
+    }))
   })
 
   it('warns for unsupported v-model host while keeping fallback binding', () => {
     const template = `<custom-input v-model="value" />`
-    const { code, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const { code, diagnostics } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('model-value="{{value}}"')
     expect(code).toContain('bind:update-modelvalue="__weapp_vite_inline"')
-    expect(warnings).toEqual([])
+    expect(diagnostics).toEqual([])
   })
 
   it('treats input as void tag even without explicit self-closing slash', () => {
@@ -3334,7 +3342,7 @@ describe('compileVueTemplateToWxml', () => {
       '/project/src/pages/index/index.vue',
     )
     expect(withoutExp.code).toContain('data-v-analytics')
-    expect(withoutExp.warnings.some(message => message.includes('v-analytics'))).toBe(true)
+    expect(withoutExp.diagnostics.some(message => message.message.includes('v-analytics'))).toBe(true)
   })
 
   it('transforms keep-alive and transition builtin tags', () => {
@@ -3351,7 +3359,7 @@ describe('compileVueTemplateToWxml', () => {
     )
     expect(transition.code).toContain('<view>B</view>')
     expect(transition.code).not.toContain('<transition')
-    expect(transition.warnings.some(message => message.includes('<transition>'))).toBe(true)
+    expect(transition.diagnostics.some(message => message.message.includes('<transition>'))).toBe(true)
   })
 
   it('normalizes class/style object-array bindings and warns on spread syntax', () => {
@@ -3395,14 +3403,14 @@ describe('compileVueTemplateToWxml', () => {
       '/project/src/pages/index/index.vue',
     )
     expect(withoutIs.code).toContain('<component>')
-    expect(withoutIs.warnings.some(message => message.includes('<component> 未提供 :is'))).toBe(true)
+    expect(withoutIs.diagnostics.some(message => message.message.includes('<component> 未提供 :is'))).toBe(true)
 
     const withIs = compileVueTemplateToWxml(
       `<component :is="dynamicComp" :id="'id-1'"><view>slot</view></component>`,
       '/project/src/pages/index/index.vue',
     )
     expect(withIs.code).toContain('data-is="{{dynamicComp}}"')
-    expect(withIs.warnings.some(message => message.includes('动态组件使用 data-is 属性'))).toBe(true)
+    expect(withIs.diagnostics.some(message => message.message.includes('动态组件使用 data-is 属性'))).toBe(true)
   })
 
   it('renders transition with multi-children passthrough', () => {
@@ -3413,6 +3421,6 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(result.code).toContain('<view>A</view>')
     expect(result.code).toContain('<view>B</view>')
-    expect(result.warnings.some(message => message.includes('<transition>'))).toBe(true)
+    expect(result.diagnostics.some(message => message.message.includes('<transition>'))).toBe(true)
   })
 })

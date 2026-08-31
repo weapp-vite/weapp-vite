@@ -11,6 +11,7 @@ import {
 } from '@weapp-core/constants'
 import { normalizeComponentHostName } from '../../../../../utils/text'
 import { transformAttribute } from '../attributes'
+import { warn } from '../diagnostics'
 import { transformDirective } from '../directives'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression } from '../expression/runtimeBinding'
@@ -323,13 +324,13 @@ function resolveLocalSlotFallbackWrapperConfig(node: ElementNode, context: Trans
           hasConfig = true
         }
         else {
-          context.warnings.push('slot-wrapper 需要提供非空标签名，已忽略该配置。')
+          warn(context, 'slot-wrapper 需要提供非空标签名，已忽略该配置。', prop.loc)
         }
       }
       else if (isSlotFallbackWrapperAttr(prop.name, 'slot-single-root-no-wrapper', slotName)) {
         const value = normalizeBooleanAttributeValue(prop.value?.type === NodeTypes.TEXT ? prop.value.content.trim() : undefined)
         if (value === undefined) {
-          context.warnings.push('slot-single-root-no-wrapper 仅支持 true / false 静态值，已忽略该配置。')
+          warn(context, 'slot-single-root-no-wrapper 仅支持 true / false 静态值，已忽略该配置。', prop.loc)
         }
         else {
           wrapper.singleRootNoWrapper = value
@@ -465,6 +466,7 @@ export function transformComponentWithSlots(
           context,
           {
             ...templateSlotCondition,
+            location: templateSlot.loc,
             wrapper: mergeLocalSlotFallbackWrapperConfig(
               resolveLocalSlotFallbackWrapperConfig(node, context, slotName.type === 'static' ? slotName.value : undefined),
               resolveLocalSlotFallbackWrapperConfig(child as ElementNode, context),
@@ -487,7 +489,7 @@ export function transformComponentWithSlots(
 
   if (slotDirective) {
     if (slotDeclarations.length) {
-      context.warnings.push('组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。')
+      warn(context, '组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。', slotDirective.loc)
     }
     slotDeclarations.length = 0
     slotDeclarations.push(
@@ -496,14 +498,14 @@ export function transformComponentWithSlots(
         slotDirective.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.exp.content : undefined,
         node.children,
         context,
-        { wrapper: ownerWrapper },
+        { wrapper: ownerWrapper, location: slotDirective.loc },
       ),
     )
   }
   else if (slotDeclarations.length && defaultSlotChildren.length) {
     const hasDefault = slotDeclarations.some(decl => decl.name.type === 'default' || (decl.name.type === 'static' && decl.name.value === 'default'))
     if (hasDefault) {
-      context.warnings.push('存在显式的 v-slot:default，默认插槽内容将被忽略。')
+      warn(context, '存在显式的 v-slot:default，默认插槽内容将被忽略。', node.loc)
     }
     else {
       implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true })
@@ -637,6 +639,7 @@ export function transformComponentWithSlotsFallback(
           context,
           {
             ...templateSlotCondition,
+            location: templateSlot.loc,
             wrapper: mergeLocalSlotFallbackWrapperConfig(
               resolveLocalSlotFallbackWrapperConfig(node, context, slotName.type === 'static' ? slotName.value : undefined),
               resolveLocalSlotFallbackWrapperConfig(child as ElementNode, context),
@@ -659,7 +662,7 @@ export function transformComponentWithSlotsFallback(
 
   if (slotDirective) {
     if (slotDeclarations.length) {
-      context.warnings.push('组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。')
+      warn(context, '组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。', slotDirective.loc)
     }
     slotDeclarations.length = 0
     slotDeclarations.push(
@@ -668,14 +671,14 @@ export function transformComponentWithSlotsFallback(
         slotDirective.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.exp.content : undefined,
         node.children,
         context,
-        { wrapper: ownerWrapper },
+        { wrapper: ownerWrapper, location: slotDirective.loc },
       ),
     )
   }
   else if (slotDeclarations.length && defaultSlotChildren.length) {
     const hasDefault = slotDeclarations.some(decl => decl.name.type === 'default' || (decl.name.type === 'static' && decl.name.value === 'default'))
     if (hasDefault) {
-      context.warnings.push('存在显式的 v-slot:default，默认插槽内容将被忽略。')
+      warn(context, '存在显式的 v-slot:default，默认插槽内容将被忽略。', node.loc)
     }
     else {
       implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context)
@@ -707,7 +710,7 @@ export function transformComponentWithSlotsFallback(
   }
 
   if (slotDeclarations.some(decl => Object.keys(decl.props).length)) {
-    context.warnings.push('已禁用作用域插槽参数，插槽绑定将被忽略。')
+    warn(context, '已禁用作用域插槽参数，插槽绑定将被忽略。', node.loc)
   }
 
   const renderedSlots = slotDirective
@@ -763,13 +766,13 @@ export function transformComponentElement(node: ElementNode, context: TransformC
   }
 
   if (!isDirective) {
-    context.warnings.push('<component> 未提供 :is 绑定，将按普通元素处理。')
+    warn(context, '<component> 未提供 :is 绑定，将按普通元素处理。', node.loc)
     return transformNormalElement(node, context, transformNode)
   }
 
   const componentVar = getBindDirectiveExpression(isDirective)
   if (!componentVar) {
-    context.warnings.push('<component> 未提供 :is 绑定，将按普通元素处理。')
+    warn(context, '<component> 未提供 :is 绑定，将按普通元素处理。', isDirective.loc)
     return transformNormalElement(node, context, transformNode)
   }
 
@@ -807,9 +810,7 @@ export function transformComponentElement(node: ElementNode, context: TransformC
 
   const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 
-  context.warnings.push(
-    '动态组件使用 data-is 属性，可能需要小程序运行时支持。',
-  )
+  warn(context, '动态组件使用 data-is 属性，可能需要小程序运行时支持。', node.loc)
 
   return `<component data-is="${renderMustache(componentVar, context)}"${attrString}>${children}</component>`
 }

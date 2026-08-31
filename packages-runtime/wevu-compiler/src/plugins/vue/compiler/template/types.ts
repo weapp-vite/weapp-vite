@@ -1,4 +1,5 @@
 import type { Expression } from '@weapp-vite/ast/babelTypes'
+import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { MiniProgramPlatform } from './platform'
 
 export type FunctionPropNameMatcher = string | RegExp
@@ -51,7 +52,7 @@ export interface InlineExpressionAsset {
  */
 export interface TemplateCompileResult {
   code: string
-  warnings: string[]
+  diagnostics: CompilerDiagnostic[]
   scopedSlotComponents?: ScopedSlotComponentAsset[]
   slotFallbackWrapperComponent?: SlotFallbackWrapperComponentAsset
   componentGenerics?: Record<string, true>
@@ -70,7 +71,7 @@ export interface TemplateCompileResult {
 export interface TransformContext {
   source: string
   filename: string
-  warnings: string[]
+  diagnostics: CompilerDiagnostic[]
   platform: MiniProgramPlatform
   isPage?: boolean
   /**

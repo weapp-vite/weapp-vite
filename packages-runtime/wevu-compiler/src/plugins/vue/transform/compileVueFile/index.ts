@@ -118,9 +118,16 @@ export async function compileVueFile(
   const templateCompiled = compileTemplatePhase(
     parsed.descriptor,
     filename,
+    source,
+    parsed.templateResolvedId,
     templateOptions,
     result,
   )
+  if (templateCompiled?.diagnostics.length && options?.warn) {
+    for (const diagnostic of templateCompiled.diagnostics) {
+      options.warn(diagnostic.message)
+    }
+  }
 
   const scriptPhase = await compileScriptPhase(
     parsed.descriptor,
@@ -142,6 +149,9 @@ export async function compileVueFile(
   result.scriptMap = scriptPhase.scriptMap
   if (scriptPhase.template) {
     result.template = scriptPhase.template
+  }
+  if (scriptPhase.diagnostics?.length) {
+    result.diagnostics = [...(result.diagnostics ?? []), ...scriptPhase.diagnostics]
   }
 
   await compileConfigPhase({

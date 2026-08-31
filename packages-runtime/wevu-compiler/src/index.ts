@@ -108,6 +108,14 @@ export {
   injectWevuPageFeaturesInJsWithResolver,
 } from './plugins/wevu/pageFeatures'
 export type { ModuleResolver, WevuPageFeatureFlag, WevuPageHookName } from './plugins/wevu/pageFeatures'
+export type {
+  CompilerDiagnostic,
+  CompilerDiagnosticCode,
+  CompilerDiagnosticSeverity,
+  CompilerDiagnosticSource,
+  SourcePosition,
+  SourceSpan,
+} from './types/diagnostics'
 export type { JsonConfig, JsonMergeContext, JsonMergeStage, JsonMergeStrategy } from './types/json'
 
 export type { MpPlatform } from './types/platform'

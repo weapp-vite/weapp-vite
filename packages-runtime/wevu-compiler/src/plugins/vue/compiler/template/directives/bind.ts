@@ -4,6 +4,7 @@ import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { normalizeComponentHostName } from '../../../../../utils/text'
+import { warn } from '../diagnostics'
 import { getBindDirectiveExpression } from '../elements/helpers'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { generateExpression, parseBabelExpression } from '../expression/parse'
@@ -212,10 +213,8 @@ export function transformBindDirective(
       return context.platform.keyAttr(nativeKeyValue)
     }
     if (forInfo) {
-      context.warnings.push(
-        `v-for :key "${trimmed}" 无法生成运行时 key 投影，已降级为 ${context.platform.keyAttr(context.platform.keyThisValue)}。`
-        + '建议使用稳定的基础类型 key。',
-      )
+      warn(context, `v-for :key "${trimmed}" 无法生成运行时 key 投影，已降级为 ${context.platform.keyAttr(context.platform.keyThisValue)}。`
+      + '建议使用稳定的基础类型 key。', node.loc)
       return context.platform.keyAttr(context.platform.keyThisValue)
     }
     return context.platform.keyAttr(expValue)

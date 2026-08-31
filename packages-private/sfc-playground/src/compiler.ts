@@ -140,7 +140,7 @@ export async function compileWevuSfc(source: string, filename: string): Promise<
       ? compileVueTemplateToWxml(descriptor.template.content, normalizedFilename)
       : undefined
 
-    warnings.push(...(templateResult?.warnings ?? []))
+    warnings.push(...(templateResult?.diagnostics.map(diagnostic => diagnostic.message) ?? []))
 
     let scriptOutput = EMPTY_OUTPUT_TEXT.script
     if (descriptor.script || descriptor.scriptSetup) {

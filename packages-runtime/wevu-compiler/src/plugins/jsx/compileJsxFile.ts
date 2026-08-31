@@ -5,6 +5,7 @@ import { isAutoImportCandidateTag } from '../../utils/vueTemplateTags'
 import { extractJsonMacroFromScriptSetup, mayContainJsonMacro } from '../vue/transform/jsonMacros'
 import { createJsonMerger } from '../vue/transform/jsonMerge'
 import { transformScript } from '../vue/transform/script'
+import { createJsxDiagnostics } from './compileJsx/diagnostics'
 import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from './compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from './compileJsx/template'
 import { transformVueJsxScript } from './vueJsxTransform'
@@ -121,7 +122,7 @@ export async function compileJsxFile(
   }
 
   const normalizedScriptSource = injectDynamicIslandRuntime(
-    stripRenderOptionFromScript(scriptSource, filename, options?.warn),
+    stripRenderOptionFromScript(scriptSource, filename, templateWarnings),
     dynamicIslands,
   )
   const vueJsxTransformed = transformVueJsxScript(normalizedScriptSource, filename, options?.sourceMap !== false)
@@ -136,8 +137,11 @@ export async function compileJsxFile(
     inlineExpressions,
   })
 
-  if (templateWarnings.length && options?.warn) {
-    templateWarnings.forEach(message => options.warn?.(`[JSX 编译] ${message}`))
+  const diagnostics = templateWarnings.length
+    ? createJsxDiagnostics(templateWarnings, filename)
+    : undefined
+  if (diagnostics && options?.warn) {
+    diagnostics.forEach(diagnostic => options.warn?.(diagnostic.message))
   }
 
   let configObj: Record<string, any> | undefined
@@ -190,6 +194,7 @@ export async function compileJsxFile(
     script: transformedScript.code,
     scriptMap: transformedScript.map ?? vueJsxTransformed.map,
     template: compiledTemplateStr,
+    diagnostics,
     config: configObj && Object.keys(configObj).length > 0
       ? JSON.stringify(configObj, null, 2)
       : undefined,

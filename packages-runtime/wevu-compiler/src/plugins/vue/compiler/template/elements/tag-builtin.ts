@@ -1,6 +1,8 @@
 import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+
+import { warn } from '../diagnostics'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { renderMustache } from '../mustache'
@@ -18,9 +20,7 @@ function resolveConditionExpression(rawExpValue: string, context: TransformConte
 }
 
 export function transformTransitionElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
-  context.warnings.push(
-    '<transition> 组件：过渡效果需要动画库或运行时支持，仅渲染子节点。',
-  )
+  warn(context, '<transition> 组件：过渡效果需要动画库或运行时支持，仅渲染子节点。', node.loc)
 
   const children = node.children
     .map(child => transformNode(child, context))
@@ -34,9 +34,7 @@ export function transformTransitionElement(node: ElementNode, context: Transform
 }
 
 export function transformKeepAliveElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
-  context.warnings.push(
-    '<keep-alive> 组件：需要运行时状态管理，渲染子节点并添加标记。',
-  )
+  warn(context, '<keep-alive> 组件：需要运行时状态管理，渲染子节点并添加标记。', node.loc)
 
   const children = node.children
     .map(child => transformNode(child, context))
@@ -56,7 +54,7 @@ export function transformTemplateElement(node: ElementNode, context: TransformCo
   for (const prop of node.props) {
     if (prop.type === NodeTypes.DIRECTIVE) {
       if (prop.name === 'slot') {
-        context.warnings.push('<template v-slot> 应作为组件元素的子节点；已忽略。')
+        warn(context, '<template v-slot> 应作为组件元素的子节点；已忽略。', prop.loc)
         continue
       }
       hasOtherDirective = true

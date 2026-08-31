@@ -21,6 +21,7 @@ const TEMPLATE_IMPORT_META_PLACEHOLDER = '__im_meta__'
 export interface ParsedVueFile {
   descriptor: ReturnType<typeof parse>['descriptor']
   descriptorForCompile: ReturnType<typeof parse>['descriptor']
+  templateResolvedId?: string
   meta: {
     hasScriptSetup: boolean
     hasSetupOption: boolean
@@ -155,9 +156,11 @@ export async function parseVueFile(
 
   let resolvedDescriptor = descriptor
   let sfcSrcDeps: string[] | undefined
+  let templateResolvedId: string | undefined
   if (options?.sfcSrc) {
     const resolved = await resolveSfcBlockSrc(descriptor, filename, options.sfcSrc)
     resolvedDescriptor = resolved.descriptor
+    templateResolvedId = resolved.templateResolvedId
     if (resolved.deps.length) {
       sfcSrcDeps = resolved.deps
     }
@@ -293,6 +296,7 @@ export async function parseVueFile(
   return {
     descriptor: resolvedDescriptor,
     descriptorForCompile,
+    templateResolvedId,
     meta,
     scriptSetupMacroConfig,
     scriptSetupMacroHash,

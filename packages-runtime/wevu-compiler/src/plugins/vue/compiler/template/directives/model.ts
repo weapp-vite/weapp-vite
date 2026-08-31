@@ -1,4 +1,4 @@
-import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
+import type { DirectiveNode, ElementNode, SourceLocation } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import {
@@ -12,6 +12,7 @@ import {
   normalizeEventDatasetSuffix,
 } from '../../../../../inlineDataset'
 import { normalizeComponentHostName } from '../../../../../utils/text'
+import { warn } from '../diagnostics'
 import { getBindDirectiveExpression } from '../elements/helpers'
 import {
   normalizeWxmlExpressionWithContext,
@@ -62,6 +63,7 @@ function transformVModel(
   element: ElementNode | undefined,
   expValue: string,
   context: TransformContext,
+  location: SourceLocation,
 ): string | null {
   const escapedModel = escapeWxmlAttribute(expValue)
   const bindModel = (event: string) => {
@@ -113,9 +115,7 @@ function transformVModel(
     }
 
     default: {
-      context.warnings.push(
-        `在 <${tag}> 上使用 v-model 可能无法按预期工作，已使用默认绑定。`,
-      )
+      warn(context, `在 <${tag}> 上使用 v-model 可能无法按预期工作，已使用默认绑定。`, location)
       return `value="${renderMustache(expValue, context)}" ${bindModel('input')}`
     }
   }
@@ -134,7 +134,7 @@ function transformComponentModelDirective(
     ? node.arg.content.trim()
     : ''
   if (node.arg?.type === NodeTypes.SIMPLE_EXPRESSION && !node.arg.isStatic) {
-    context.warnings.push('暂不支持动态 v-model 参数，已忽略该 v-model。')
+    warn(context, '暂不支持动态 v-model 参数，已忽略该 v-model。', node.loc)
     return null
   }
   const modelProp = rawModelName || 'modelValue'
@@ -148,7 +148,7 @@ function transformComponentModelDirective(
   const updateExpression = buildModelAssignmentExpression(rawExpValue)
   const inlineExpression = registerInlineExpression(updateExpression, context)
   if (!inlineExpression) {
-    context.warnings.push(`v-model="${rawExpValue}" 需要是可赋值的成员表达式。`)
+    warn(context, `v-model="${rawExpValue}" 需要是可赋值的成员表达式。`, node.loc, 'expression')
     return null
   }
 
@@ -204,12 +204,12 @@ export function transformModelDirective(
   }
 
   if (node.arg) {
-    context.warnings.push('原生小程序元素不支持 v-model 参数，已忽略该 v-model。')
+    warn(context, '原生小程序元素不支持 v-model 参数，已忽略该 v-model。', node.loc)
     return null
   }
 
   const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
   const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
 
-  return transformVModel(elementNode, expValue, context)
+  return transformVModel(elementNode, expValue, context, node.loc)
 }

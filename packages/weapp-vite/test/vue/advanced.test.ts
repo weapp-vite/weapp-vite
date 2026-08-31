@@ -8,7 +8,7 @@ describe('Vue Advanced Features', () => {
         'test.vue',
       )
       expect(result.code).toContain('data-is="{{currentComponent}}"')
-      expect(result.warnings.some(w => w.includes('动态组件'))).toBe(true)
+      expect(result.diagnostics.some(w => w.message.includes('动态组件'))).toBe(true)
     })
 
     it('should compile <component :is> with props', () => {
@@ -25,7 +25,7 @@ describe('Vue Advanced Features', () => {
         '<component />',
         'test.vue',
       )
-      expect(result.warnings.some(w => w.includes('未提供 :is 绑定'))).toBe(true)
+      expect(result.diagnostics.some(w => w.message.includes('未提供 :is 绑定'))).toBe(true)
     })
 
     it('should compile <component :is> with children', () => {
@@ -45,7 +45,7 @@ describe('Vue Advanced Features', () => {
         'test.vue',
       )
       expect(result.code).toContain('Fade me')
-      expect(result.warnings.some(w => w.includes('transition'))).toBe(true)
+      expect(result.diagnostics.some(w => w.message.includes('transition'))).toBe(true)
     })
 
     it('should handle <transition> with multiple children', () => {
@@ -82,7 +82,7 @@ describe('Vue Advanced Features', () => {
         '<keep-alive><component :is="view" /></keep-alive>',
         'test.vue',
       )
-      expect(result.warnings.some(w => w.includes('keep-alive'))).toBe(true)
+      expect(result.diagnostics.some(w => w.message.includes('keep-alive'))).toBe(true)
     })
 
     it('should handle nested keep-alive', () => {

@@ -260,7 +260,7 @@ const show = ref(true)
 
       // transition should render its children
       expect(templateResult.code).toContain('Fade content')
-      expect(templateResult.warnings.some(w => w.includes('transition'))).toBe(true)
+      expect(templateResult.diagnostics.some(w => w.message.includes('transition'))).toBe(true)
     })
   })
 

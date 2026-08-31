@@ -47,7 +47,7 @@ describe('createJsxModuleResolver', () => {
     await writeFile(path.join(root, 'a.tsx'), 'export { value } from "./b"')
     await writeFile(path.join(root, 'b.tsx'), 'export { value } from "./a"')
     const warnings: string[] = []
-    const resolver = createJsxModuleResolver(message => warnings.push(message))
+    const resolver = createJsxModuleResolver(warnings)
 
     expect(resolver.resolveImport(importer, './a', 'value')).toBeUndefined()
     expect(warnings.some(message => message.includes('循环引用'))).toBe(true)

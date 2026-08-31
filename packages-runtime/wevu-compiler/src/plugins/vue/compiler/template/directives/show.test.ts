@@ -4,7 +4,8 @@ import { transformShowDirective } from './show'
 
 function createContext() {
   return {
-    warnings: [] as string[],
+    diagnostics: [],
+    filename: '/project/src/show.vue',
     rewriteScopedSlot: false,
     scopeStack: [],
     slotPropStack: [],

@@ -98,7 +98,11 @@ function rewriteSetupRenderClosure(node: ObjectExpression) {
   return false
 }
 
-export function stripRenderOptionFromScript(source: string, filename: string, warn?: (message: string) => void) {
+export function stripRenderOptionFromScript(
+  source: string,
+  filename: string,
+  warnings?: string[],
+) {
   let ast: t.File
   try {
     ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as t.File
@@ -217,7 +221,7 @@ export function stripRenderOptionFromScript(source: string, filename: string, wa
   })
 
   if (hasDefaultExport && !removedRender) {
-    warn?.(`[JSX 编译] 未在 ${filename} 中移除 render 选项，输出脚本可能包含 JSX。`)
+    warnings?.push(`[JSX 编译] 未在 ${filename} 中移除 render 选项，输出脚本可能包含 JSX。`)
   }
 
   if (!removedRender && !removedJsonMacroImport) {

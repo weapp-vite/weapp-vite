@@ -3,7 +3,8 @@ import { normalizeClassBindingExpression, normalizeStyleBindingExpression } from
 
 function createContext() {
   return {
-    warnings: [] as string[],
+    diagnostics: [],
+    filename: '/project/src/bindings.vue',
     rewriteScopedSlot: false,
     scopeStack: [],
     slotPropStack: [],
@@ -22,7 +23,7 @@ describe('template expression bindings', () => {
     expect(result.some(exp => exp.includes('baseClass'))).toBe(true)
     expect(result.some(exp => exp.includes('active'))).toBe(true)
     expect(result.some(exp => exp.includes('dynamicClass'))).toBe(true)
-    expect(context.warnings.some((message: string) => message.includes(':class'))).toBe(true)
+    expect(context.diagnostics.some((diagnostic: any) => diagnostic.message.includes(':class'))).toBe(true)
   })
 
   it('normalizes style bindings and records spread warnings', () => {
@@ -34,7 +35,7 @@ describe('template expression bindings', () => {
 
     expect(result.some(exp => exp.includes('__weapp_vite.stylePair'))).toBe(true)
     expect(result.some(exp => exp.includes('dynamicKey'))).toBe(true)
-    expect(context.warnings.some((message: string) => message.includes(':style'))).toBe(true)
+    expect(context.diagnostics.some((diagnostic: any) => diagnostic.message.includes(':style'))).toBe(true)
   })
 
   it('falls back to original expression when parsing fails', () => {
