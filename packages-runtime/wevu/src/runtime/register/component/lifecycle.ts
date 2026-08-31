@@ -1,3 +1,4 @@
+import type { LocationQueryRaw } from '../../../router/types'
 import type { MiniProgramPageLike } from '../../../routerInternal/shared'
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, RuntimeApp } from '../../types'
 import type { WatchMap } from '../watch'
@@ -16,9 +17,51 @@ import { attachOptionalPageLifecycleHooks } from './lifecycle/optionalHooks'
 import { bindCurrentPageInstance, ensureMiniProgramGlobalPatched, ensurePageShareMenus, releaseCurrentPageInstance, resolvePageOptions } from './lifecycle/platform'
 
 const INITIAL_NAVIGATION_PROMISE_KEY = Symbol('wevu.initialNavigationPromise')
+const INITIAL_NAVIGATION_START_KEY = Symbol('wevu.startInitialNavigation')
 
 export function getInitialNavigationPromise(instance: InternalRuntimeState) {
   return (instance as any)[INITIAL_NAVIGATION_PROMISE_KEY] as Promise<boolean> | undefined
+}
+
+export function ensureInitialNavigation(
+  instance: InternalRuntimeState,
+  query?: LocationQueryRaw,
+  options: { start?: boolean } = {},
+) {
+  const existing = getInitialNavigationPromise(instance)
+  if (existing) {
+    if (options.start !== false) {
+      ;(instance as any)[INITIAL_NAVIGATION_START_KEY]?.(query)
+    }
+    return existing
+  }
+  const initialNavigationRunner = getInitialNavigationRunner()
+  if (!initialNavigationRunner) {
+    return undefined
+  }
+  let resolveInitialNavigation!: (shouldMount: boolean) => void
+  let rejectInitialNavigation!: (error: unknown) => void
+  const initialNavigationPromise = new Promise<boolean>((resolve, reject) => {
+    resolveInitialNavigation = resolve
+    rejectInitialNavigation = reject
+  })
+  ;(instance as any)[INITIAL_NAVIGATION_PROMISE_KEY] = initialNavigationPromise
+  let started = false
+  ;(instance as any)[INITIAL_NAVIGATION_START_KEY] = (startQuery?: LocationQueryRaw) => {
+    if (started) {
+      return
+    }
+    started = true
+    void initialNavigationRunner(instance as MiniProgramPageLike, startQuery ?? query)
+      .then((result) => {
+        const shouldMount = !isNavigationFailure(result)
+        resolveInitialNavigation(shouldMount)
+      }, rejectInitialNavigation)
+  }
+  if (options.start !== false) {
+    ;(instance as any)[INITIAL_NAVIGATION_START_KEY](query)
+  }
+  return initialNavigationPromise
 }
 
 export function createPageLifecycleHooks<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
@@ -119,24 +162,15 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
         }
       }
 
-      const initialNavigationRunner = isPage ? getInitialNavigationRunner() : undefined
-      if (initialNavigationRunner) {
-        let resolveInitialNavigation!: (shouldMount: boolean) => void
-        let rejectInitialNavigation!: (error: unknown) => void
-        const initialNavigationPromise = new Promise<boolean>((resolve, reject) => {
-          resolveInitialNavigation = resolve
-          rejectInitialNavigation = reject
-        })
-        ;(this as any)[INITIAL_NAVIGATION_PROMISE_KEY] = initialNavigationPromise
-        void initialNavigationRunner(this as MiniProgramPageLike, args[0])
-          .then((result) => {
-            if (isNavigationFailure(result)) {
-              resolveInitialNavigation(false)
-              return
-            }
+      const initialNavigationPromise = isPage
+        ? ensureInitialNavigation(this, args[0])
+        : undefined
+      if (initialNavigationPromise) {
+        void initialNavigationPromise.then((shouldMount) => {
+          if (shouldMount) {
             mountPage()
-            resolveInitialNavigation(true)
-          }, rejectInitialNavigation)
+          }
+        }, () => {})
         return initialNavigationPromise
       }
       return mountPage()

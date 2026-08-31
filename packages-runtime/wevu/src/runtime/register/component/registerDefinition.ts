@@ -30,7 +30,7 @@ import { getMiniProgramRuntimeGlobalObject } from '../../platform'
 import { getOwnerProxy } from '../../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
-import { getInitialNavigationPromise } from './lifecycle'
+import { ensureInitialNavigation, getInitialNavigationPromise } from './lifecycle'
 import { registerNativeComponentDefinition } from './registerNativeDefinition'
 
 function scheduleOwnerTemplateRefUpdate(target: InternalRuntimeState) {
@@ -150,6 +150,23 @@ export function registerComponentDefinition<D extends object, C extends Computed
     return undefined
   }
 
+  const deferPageUntilNavigation = (instance: InternalRuntimeState, task: () => void) => {
+    if (!isPage) {
+      task()
+      return
+    }
+    const initialNavigationPromise = ensureInitialNavigation(instance, undefined, { start: false })
+    if (!initialNavigationPromise) {
+      task()
+      return
+    }
+    void initialNavigationPromise.then((shouldMount) => {
+      if (shouldMount) {
+        task()
+      }
+    }, () => {})
+  }
+
   const ensureReadyRuntime = (instance: InternalRuntimeState) => {
     if (resolveRuntime(instance) || typeof vueLifecycles.mounted !== 'function') {
       return
@@ -212,7 +229,6 @@ export function registerComponentDefinition<D extends object, C extends Computed
     lifetimes: {
       ...userLifetimes,
       created: function created(this: InternalRuntimeState, ...args: any[]) {
-        callVueLifecycle(this, 'beforeCreate', args)
         applyExtraInstanceFields(this)
         if (Array.isArray(templateRefs) && templateRefs.length) {
           Object.defineProperty(this, WEVU_TEMPLATE_REFS_KEY, {
@@ -223,23 +239,27 @@ export function registerComponentDefinition<D extends object, C extends Computed
           })
         }
         attachWevuPropKeys(this)
-        if (setupLifecycle === 'created') {
-          try {
-            mountRuntimeInstance(this, runtimeApp, watch, setup, {
-              deferSetData: true,
-              snapshotOmitKeys: directPropsDerivedKeys,
-            })
+        const runCreated = () => {
+          callVueLifecycle(this, 'beforeCreate', args)
+          if (setupLifecycle === 'created') {
+            try {
+              mountRuntimeInstance(this, runtimeApp, watch, setup, {
+                deferSetData: true,
+                snapshotOmitKeys: directPropsDerivedKeys,
+              })
+            }
+            catch (error) {
+              const label = getRuntimeOwnerLabel(this)
+              throw new Error(`[wevu] mount runtime failed in created (${label}): ${error instanceof Error ? error.message : String(error)}`)
+            }
+            syncWevuPropsFromInstance(this)
+            attachPageLayoutSetter(this)
           }
-          catch (error) {
-            const label = getRuntimeOwnerLabel(this)
-            throw new Error(`[wevu] mount runtime failed in created (${label}): ${error instanceof Error ? error.message : String(error)}`)
+          if (typeof (userLifetimes as any).created === 'function') {
+            ;(userLifetimes as any).created.apply(this, args)
           }
-          syncWevuPropsFromInstance(this)
-          attachPageLayoutSetter(this)
         }
-        if (typeof (userLifetimes as any).created === 'function') {
-          ;(userLifetimes as any).created.apply(this, args)
-        }
+        deferPageUntilNavigation(this, runCreated)
       },
       moved: function moved(this: InternalRuntimeState, ...args: any[]) {
         callHookList(this, 'onMoved', args)
@@ -258,30 +278,44 @@ export function registerComponentDefinition<D extends object, C extends Computed
           })
         }
         attachWevuPropKeys(this)
-        if (setupLifecycle !== 'created' || !(this as any).__wevu) {
-          try {
-            mountRuntimeInstance(this, runtimeApp, watch, setup, {
-              deferSetData: true,
-              snapshotOmitKeys: directPropsDerivedKeys,
-            })
+        deferPageUntilNavigation(this, () => {
+          if (setupLifecycle !== 'created' || !(this as any).__wevu) {
+            try {
+              mountRuntimeInstance(this, runtimeApp, watch, setup, {
+                deferSetData: true,
+                snapshotOmitKeys: directPropsDerivedKeys,
+              })
+            }
+            catch (error) {
+              const label = getRuntimeOwnerLabel(this)
+              throw new Error(`[wevu] mount runtime failed in attached (${label}): ${error instanceof Error ? error.message : String(error)}`)
+            }
           }
-          catch (error) {
-            const label = getRuntimeOwnerLabel(this)
-            throw new Error(`[wevu] mount runtime failed in attached (${label}): ${error instanceof Error ? error.message : String(error)}`)
+          syncWevuPropsFromInstance(this)
+          callVueLifecycle(this, 'created', args)
+          callVueLifecycle(this, 'beforeMount', args)
+          attachPageLayoutSetter(this)
+          attachRuntimeLayoutHosts(this)
+          enableDeferredSetData(this)
+          callHookList(this, 'onAttached', args)
+          if (typeof (userLifetimes as any).attached === 'function') {
+            ;(userLifetimes as any).attached.apply(this, args)
           }
-        }
-        syncWevuPropsFromInstance(this)
-        callVueLifecycle(this, 'created', args)
-        callVueLifecycle(this, 'beforeMount', args)
-        attachPageLayoutSetter(this)
-        attachRuntimeLayoutHosts(this)
-        enableDeferredSetData(this)
-        callHookList(this, 'onAttached', args)
-        if (typeof (userLifetimes as any).attached === 'function') {
-          ;(userLifetimes as any).attached.apply(this, args)
-        }
+        })
       },
       ready: function ready(this: InternalRuntimeState, ...args: any[]) {
+        if (isPage && !(this as any)[WEVU_READY_CALLED_KEY]) {
+          const initialNavigationPromise = ensureInitialNavigation(this, undefined, { start: true })
+          if (initialNavigationPromise && !(this as any).__wevuInitialNavigationReady) {
+            void initialNavigationPromise.then((shouldMount) => {
+              if (shouldMount) {
+                ;(this as any).__wevuInitialNavigationReady = true
+                componentDefinition.lifetimes.ready.call(this, ...args)
+              }
+            }, () => {})
+            return
+          }
+        }
         ensureReadyRuntime(this)
         if (isPage && typeof (pageLifecycleHooks as any).onReady === 'function') {
           const wasReadyCalled = Boolean((this as any)[WEVU_READY_CALLED_KEY])
