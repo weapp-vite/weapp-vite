@@ -33,7 +33,7 @@ export const TEMPLATE_CATALOG = {
   'estree-walker': '^3.0.3',
   'gm-crypto': '^0.1.12',
   'graphql-request': '^7.4.0',
-  'happy-dom': '^20.11.12',
+  'happy-dom': '^20.12.0',
   'lru-cache': '^11.5.2',
   'magic-string': '^1.2.3',
   'miniprogram-api-typings': '^5.2.3',
@@ -48,10 +48,10 @@ export const TEMPLATE_CATALOG = {
   'tailwind-variants': '^3.3.1',
   'tdesign-miniprogram': '^1.16.0',
   'ts-morph': '^28.0.0',
-  'uview-plus': '3.8.112',
+  'uview-plus': '3.8.113',
   'vite-plugin-inspect': '^12.0.2',
   'vue-tsc': '^3.3.11',
-  'weapp-tailwindcss': '^5.4.1',
+  'weapp-tailwindcss': '^5.4.2',
   autoprefixer: '^10.5.4',
   axios: '^1.20.0',
   clsx: '^2.1.1',
@@ -74,11 +74,11 @@ export const TEMPLATE_CATALOG = {
   stylelint: '^17.14.1',
   tailwindcss: '^4.3.3',
   tslib: '^2.8.1',
-  tsx: '^4.23.12',
+  tsx: '^4.23.13',
   typescript: '^6.0.3',
   vite: '8.2.2',
   vue: '^3.5.42',
-  zod: '^4.4.3'
+  zod: '^4.5.4'
 } as const
 
 export const TEMPLATE_NAMED_CATALOG = {
@@ -86,7 +86,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.16.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.4.1'
+    'weapp-tailwindcss': '5.4.2'
   },
   latest: {
     'miniprogram-api-typings': '^5.2.3',

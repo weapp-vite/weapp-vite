@@ -10,7 +10,7 @@
     "postinstall": "wv prepare"
   },
   "dependencies": {
-    "vant": "^4.10.0"
+    "vant": "^4.10.2"
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",

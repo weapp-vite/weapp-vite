@@ -55,7 +55,7 @@
   "devDependencies": {
     "@vue/language-plugin-pug": "^3.3.11",
     "@weapp-core/shared": "workspace:*",
-    "@weapp-tailwindcss/merge": "2.2.2",
+    "@weapp-tailwindcss/merge": "2.2.3",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "cos-wx-sdk-v5": "^1.8.0",
@@ -69,7 +69,7 @@
     "svgo": "^4.1.0",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vite-imagetools": "^12.0.0",
+    "vite-imagetools": "^12.0.1",
     "vite-plugin-image-optimizer": "^2.0.3",
     "vite-plugin-inspect": "catalog:",
     "weapp-tailwindcss": "catalog:",

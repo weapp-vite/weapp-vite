@@ -1,5 +1,5 @@
 diff --git a/components/u-cascader/u-cascader.vue b/components/u-cascader/u-cascader.vue
-index b4f6fc5fa11948d5f39c2fa8128202534037954b..4cf24ce837c5b33be2fbbd0f1d8e8c12dfcf0815 100644
+index b4f6fc5..4cf24ce 100644
 --- a/components/u-cascader/u-cascader.vue
 +++ b/components/u-cascader/u-cascader.vue
 @@ -348,7 +348,7 @@
@@ -12,7 +12,7 @@ index b4f6fc5fa11948d5f39c2fa8128202534037954b..4cf24ce837c5b33be2fbbd0f1d8e8c12
  			transition: transform 0.3s ease-in-out 0s;
  			transform: translateX(0);
 diff --git a/components/u-cropper/u-cropper.vue b/components/u-cropper/u-cropper.vue
-index 58049e5493d22e780c0d542ccede13a962136941..34a9cedf76cf94ffb7043c0a7fc19e152e5757eb 100644
+index 77cced5..938bd3d 100644
 --- a/components/u-cropper/u-cropper.vue
 +++ b/components/u-cropper/u-cropper.vue
 @@ -7,25 +7,25 @@
@@ -66,7 +66,7 @@ index 58049e5493d22e780c0d542ccede13a962136941..34a9cedf76cf94ffb7043c0a7fc19e15
  			align-items: center;
  			justify-content: center;
 diff --git a/components/u-float-button/u-float-button.vue b/components/u-float-button/u-float-button.vue
-index 4ffc32baf1727c4ba5304ae6f24fa49fd9539dab..420fa8307ac4d188a266e0f43283e1160af42474 100644
+index 4ffc32b..420fa83 100644
 --- a/components/u-float-button/u-float-button.vue
 +++ b/components/u-float-button/u-float-button.vue
 @@ -159,7 +159,7 @@ export default {
@@ -79,7 +79,7 @@ index 4ffc32baf1727c4ba5304ae6f24fa49fd9539dab..420fa8307ac4d188a266e0f43283e116
          }
      }
 diff --git a/components/u-goods-sku/u-goods-sku.vue b/components/u-goods-sku/u-goods-sku.vue
-index c2a1d43b5a16d49ad4831a2649f69dcd9095e53e..813c36cb591354c4bd80fbb6c9eec0d363622357 100644
+index c2a1d43..813c36c 100644
 --- a/components/u-goods-sku/u-goods-sku.vue
 +++ b/components/u-goods-sku/u-goods-sku.vue
 @@ -16,7 +16,7 @@
@@ -101,7 +101,7 @@ index c2a1d43b5a16d49ad4831a2649f69dcd9095e53e..813c36cb591354c4bd80fbb6c9eec0d3
  					height: 100%;
  				}
 diff --git a/components/u-navbar/theme-vars.scss b/components/u-navbar/theme-vars.scss
-index 8750cdcc807b653fc0d8a4d79740aa83e1ec5d8d..80ee066d4a801211e26242d601ce38f0f7815b84 100644
+index 8750cdc..80ee066 100644
 --- a/components/u-navbar/theme-vars.scss
 +++ b/components/u-navbar/theme-vars.scss
 @@ -1,3 +1,16 @@
@@ -121,13 +121,13 @@ index 8750cdcc807b653fc0d8a4d79740aa83e1ec5d8d..80ee066d4a801211e26242d601ce38f0
  :root,
  page,
  body {
-@@ -24,3 +37,4 @@ [data-up-theme='dark'] {
+@@ -24,3 +37,4 @@ body {
  	--up-navbar-bg-color: #1c1c1e;
  	--up-navbar-glass-bg-color: rgba(28, 28, 30, 0.82);
  }
 +/* #endif */
 diff --git a/components/u-notice-bar/theme-vars.scss b/components/u-notice-bar/theme-vars.scss
-index ed4c8ea58e4a17ee80ca34ef63dba0044084a947..da02a26a13b80c6dd6e74a0e3d5d4512c9f14b7b 100644
+index ed4c8ea..da02a26 100644
 --- a/components/u-notice-bar/theme-vars.scss
 +++ b/components/u-notice-bar/theme-vars.scss
 @@ -1,3 +1,18 @@
@@ -149,13 +149,13 @@ index ed4c8ea58e4a17ee80ca34ef63dba0044084a947..da02a26a13b80c6dd6e74a0e3d5d4512
  :root,
  page,
  body {
-@@ -23,3 +38,4 @@ [data-up-theme='dark'] {
+@@ -23,3 +38,4 @@ body {
  	--up-notice-bar-color: #f9ae3d;
  	--up-notice-bar-bg-color: #3d2f1b;
  }
 +/* #endif */
 diff --git a/components/u-parse/node/node.vue b/components/u-parse/node/node.vue
-index 8e971c00fd574b04104fac71e4b84a35d3ea859a..433cfe428fa12afc298b27fb5fb440be2b8816a1 100644
+index 8e971c0..433cfe4 100644
 --- a/components/u-parse/node/node.vue
 +++ b/components/u-parse/node/node.vue
 @@ -53,14 +53,14 @@
@@ -212,7 +212,7 @@ index 8e971c00fd574b04104fac71e4b84a35d3ea859a..433cfe428fa12afc298b27fb5fb440be
       * @description 规范化链接地址
       * @param {any} href
 diff --git a/components/u-subsection/theme-vars.scss b/components/u-subsection/theme-vars.scss
-index eeb867e9ea2b7128d1a63eed29ddd72037a3df71..cff76f5e7578f6c97dba20aaceba13b4fe806cf6 100644
+index eeb867e..cff76f5 100644
 --- a/components/u-subsection/theme-vars.scss
 +++ b/components/u-subsection/theme-vars.scss
 @@ -1,3 +1,26 @@
@@ -242,13 +242,13 @@ index eeb867e9ea2b7128d1a63eed29ddd72037a3df71..cff76f5e7578f6c97dba20aaceba13b4
  :root,
  page,
  body {
-@@ -39,3 +62,4 @@ [data-up-theme='dark'] {
+@@ -39,3 +62,4 @@ body {
  	--up-subsection-disabled-border-color: #3a3a3c;
  	--up-subsection-disabled-bar-color: #3a3a3c;
  }
 +/* #endif */
 diff --git a/components/u-switch/theme-vars.scss b/components/u-switch/theme-vars.scss
-index 1ca759530de0d1490a21f29d351b4c87d7765e99..ba1d9cd9d3f443813d7aca903b59b772b410d486 100644
+index 1ca7595..ba1d9cd 100644
 --- a/components/u-switch/theme-vars.scss
 +++ b/components/u-switch/theme-vars.scss
 @@ -1,3 +1,26 @@
@@ -278,13 +278,13 @@ index 1ca759530de0d1490a21f29d351b4c87d7765e99..ba1d9cd9d3f443813d7aca903b59b772
  :root,
  page,
  body {
-@@ -39,3 +62,4 @@ [data-up-theme='dark'] {
+@@ -39,3 +62,4 @@ body {
  	--up-switch-loading-inactive-color: #9ca3af;
  	--up-switch-border-color: #4b5563;
  }
 +/* #endif */
 diff --git a/components/u-tag/theme-vars.scss b/components/u-tag/theme-vars.scss
-index bf38484930d6c6e924e1b2ab75709795ffd7a35e..d69eb01c44c9ae904e6023b5fb6559b30de22bab 100644
+index bf38484..d69eb01 100644
 --- a/components/u-tag/theme-vars.scss
 +++ b/components/u-tag/theme-vars.scss
 @@ -1,3 +1,16 @@
@@ -304,7 +304,7 @@ index bf38484930d6c6e924e1b2ab75709795ffd7a35e..d69eb01c44c9ae904e6023b5fb6559b3
  :root,
  page,
  body {
-@@ -19,3 +32,4 @@ [data-up-theme='light'] {
+@@ -19,3 +32,4 @@ body {
  [data-up-theme='dark'] {
  	--up-tag-close-bg-color: #4b5563;
  }
