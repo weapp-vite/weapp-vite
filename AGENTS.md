@@ -158,6 +158,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - GitHub issue 修复是否“彻底”以目标小程序 runtime E2E 的可观察结果为最终判据；构建、typecheck 和单测只能证明局部契约，不能替代 runtime 验证。
 - Issue 修复必须把回归场景沉淀在仓库内：优先补充 `e2e-apps/github-issues` fixture、headless runtime test、真实 DevTools runtime test（或等价 provider-compatible suite），并同步 `project.private.config.json` 页面条件、真实 AppID 和 suite manifest/清单断言。
 - 真实 DevTools fixture 的 `app.json` 每个页面条目都必须有对应可生成的页面文件（至少 `index.wxml`、`index.json`、`index.js` 中宿主要求的集合）；新增或恢复原生 `Page({})` 页面后，在构建输出中检查这些文件的存在性，避免 headless 可运行但 DevTools 在 app 配置校验阶段启动失败。
+- 微信 IDE 会将以双下划线包围的目录名（`__name__`）视为保留目录并忽略其中所有文件；`donutAuthorize` 等宿主保留目录也不可用于 fixture、构建输出或 automator bridge 临时根目录。新增目录名必须先避开这类保留命名，并在真实 DevTools 启动日志中确认没有“文件将被忽略”警告。
 - runtime E2E 至少覆盖用户报告的主路径及关键边界：首次启动/首屏挂载顺序、异步 guard 完成前后的生命周期、guard abort/redirect、无 router 或普通后续导航，以及构建产物中最终路径和文件存在性等稳定语义。
 - 验证顺序固定为：先重建受影响包和下游产物，再跑 headless runtime；具备真实 IDE 基础设施时再跑 DevTools runtime，并比较两者相关可观察行为。不得用旧 `dist` 或仅源代码单测替代下游验证。
 - 当仓库没有可操作的 simulator SDK、headless bridge 无法覆盖目标观察面，或需要检查已安装 IDE 的真实 UI/runtime 时，使用 Computer Use 操作本机 IDE；操作前后重新读取应用状态，记录使用的 app、页面/路由、关键顺序和结果，且不把人工观察写成不可复现的绝对路径或机器专属值。
