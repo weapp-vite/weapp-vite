@@ -6,6 +6,7 @@ import {
   isNavigationFailure,
   NavigationFailureType,
 } from '@/router'
+import { getInitialNavigationRunner } from '@/router/initialNavigation'
 import { clearActiveRouter } from '@/router/instance'
 import { notifyRouteStateSync } from '@/router/routeSync'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
@@ -66,6 +67,50 @@ describe('router navigation helpers', () => {
     expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
       url: '/pages/home/detail?scene=1',
     }))
+  })
+
+  it('runs initial page guards before the page runtime is mounted', async () => {
+    const pages: any[] = []
+    const order: string[] = []
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const router = createRouter({
+      routes: [{ name: 'home', path: '/pages/home/index' }],
+    })
+    let resolveLogin!: () => void
+    router.beforeEach(async () => {
+      order.push('beforeEach:start')
+      await new Promise<void>((resolve) => {
+        resolveLogin = resolve
+      })
+      order.push('beforeEach:done')
+    })
+
+    pages.push({ route: 'pages/home/index', options: {} })
+    const runner = getInitialNavigationRunner()
+    expect(runner).toBeDefined()
+    const pending = runner!(pages[0], pages[0].options)
+    await Promise.resolve()
+    expect(order).toEqual(['beforeEach:start'])
+
+    resolveLogin()
+    await pending
+    expect(order).toEqual(['beforeEach:start', 'beforeEach:done'])
+    expect(router.currentRoute.path).toBe('pages/home/index')
   })
 
   it('keeps hash in route resolution but strips hash for native navigation url', async () => {

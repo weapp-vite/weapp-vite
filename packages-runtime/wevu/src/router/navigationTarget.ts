@@ -44,6 +44,7 @@ interface NavigateWithTargetOptions {
   maxRedirects: number
   tabBarPathSet: ReadonlySet<string>
   resolveWithCodec: (to: RouteLocationRaw, currentPath: string) => RouteLocationNormalizedLoaded
+  executeNative?: boolean
 }
 
 export async function navigateWithTarget(options: NavigateWithTargetOptions): Promise<NavigationRunResult> {
@@ -59,6 +60,7 @@ export async function navigateWithTarget(options: NavigateWithTargetOptions): Pr
     maxRedirects,
     tabBarPathSet,
     resolveWithCodec,
+    executeNative = true,
   } = options
   let currentTarget = target
   let currentMode: Exclude<NavigationMode, 'back'> = mode
@@ -241,6 +243,10 @@ export async function navigateWithTarget(options: NavigateWithTargetOptions): Pr
         }
         continue
       }
+    }
+
+    if (!executeNative) {
+      return createNavigationRunResult(currentMode, from, currentTarget)
     }
 
     if (tabBarTarget) {
