@@ -16,11 +16,13 @@ const mockState = vi.hoisted(() => {
   return {
     hooks,
     createPageLifecycleHooks: vi.fn(() => hooks),
+    getInitialNavigationPromise: vi.fn(() => undefined),
   }
 })
 
 vi.mock('@/runtime/register/component/lifecycle', () => ({
   createPageLifecycleHooks: mockState.createPageLifecycleHooks,
+  getInitialNavigationPromise: mockState.getInitialNavigationPromise,
 }))
 
 const componentCalls: Record<string, any>[] = []

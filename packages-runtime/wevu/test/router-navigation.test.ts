@@ -113,6 +113,112 @@ describe('router navigation helpers', () => {
     expect(router.currentRoute.path).toBe('pages/home/index')
   })
 
+  it('resolves initial guard redirects before mounting the requested page', async () => {
+    const pages = [{ route: 'pages/home/index', options: {} }]
+    const order: string[] = []
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const router = createRouter({
+      routes: [
+        { name: 'home', path: '/pages/home/index' },
+        { name: 'login', path: '/pages/login/index' },
+      ],
+    })
+    router.beforeEach((to) => {
+      order.push(`guard:${to?.path}`)
+      return to?.path.replace(/^\/+/, '') === 'pages/home/index' ? '/pages/login/index' : undefined
+    })
+
+    const runner = getInitialNavigationRunner()!
+    await runner(pages[0], pages[0].options)
+
+    expect(order).toEqual(['guard:pages/home/index', 'guard:pages/login/index'])
+    expect(router.currentRoute.path).toBe('pages/login/index')
+  })
+
+  it('rejects initial navigation failures after an aborting guard completes', async () => {
+    const pages = [{ route: 'pages/home/index', options: {} }]
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    createRouter({ routes: [{ name: 'home', path: '/pages/home/index' }] }).beforeEach(() => false)
+    const runner = getInitialNavigationRunner()!
+
+    await expect(runner(pages[0], pages[0].options)).resolves.toMatchObject({
+      __wevuNavigationFailure: true,
+      type: NavigationFailureType.aborted,
+    })
+  })
+
+  it('runs initial page guards when the router already resolved the same current page', async () => {
+    const page = { route: 'pages/home/index', options: {} }
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [page])
+
+    const router = createRouter({
+      routes: [{ name: 'home', path: '/pages/home/index' }],
+    })
+    const order: string[] = []
+    let resolveGuard!: () => void
+    router.beforeEach(async () => {
+      order.push('beforeEach:start')
+      await new Promise<void>((resolve) => {
+        resolveGuard = resolve
+      })
+      order.push('beforeEach:done')
+    })
+
+    const runner = getInitialNavigationRunner()
+    expect(runner).toBeDefined()
+    const pending = runner!(page, page.options)
+    await Promise.resolve()
+    expect(order).toEqual(['beforeEach:start'])
+
+    resolveGuard()
+    await pending
+    expect(order).toEqual(['beforeEach:start', 'beforeEach:done'])
+  })
+
   it('keeps hash in route resolution but strips hash for native navigation url', async () => {
     const navigateTo = vi.fn((options: any) => {
       options.success?.({})

@@ -2,6 +2,7 @@
 import routes from 'weapp-vite/auto-routes'
 import { onLaunch } from 'wevu'
 import { ensureGithubIssuesRouter } from './shared/appRouter'
+import { ensureIssue911Guard } from './shared/issue911'
 
 const defaultTabBarList = [
   {
@@ -98,6 +99,7 @@ defineAppJson({
 })
 
 ensureGithubIssuesRouter()
+ensureIssue911Guard()
 
 onLaunch(() => {})
 </script>

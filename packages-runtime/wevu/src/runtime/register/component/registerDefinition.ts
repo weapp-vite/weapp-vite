@@ -30,6 +30,7 @@ import { getMiniProgramRuntimeGlobalObject } from '../../platform'
 import { getOwnerProxy } from '../../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
+import { getInitialNavigationPromise } from './lifecycle'
 import { registerNativeComponentDefinition } from './registerNativeDefinition'
 
 function scheduleOwnerTemplateRefUpdate(target: InternalRuntimeState) {
@@ -286,7 +287,18 @@ export function registerComponentDefinition<D extends object, C extends Computed
           const wasReadyCalled = Boolean((this as any)[WEVU_READY_CALLED_KEY])
           ;(pageLifecycleHooks as any).onReady.call(this, ...args)
           if (!wasReadyCalled) {
-            callVueLifecycle(this, 'mounted', args)
+            const callMounted = () => callVueLifecycle(this, 'mounted', args)
+            const initialNavigationPromise = getInitialNavigationPromise(this)
+            if (initialNavigationPromise) {
+              void initialNavigationPromise.then((shouldMount) => {
+                if (shouldMount) {
+                  callMounted()
+                }
+              }, () => {})
+            }
+            else {
+              callMounted()
+            }
           }
           if (typeof (userLifetimes as any).ready === 'function') {
             ;(userLifetimes as any).ready.apply(this, args)

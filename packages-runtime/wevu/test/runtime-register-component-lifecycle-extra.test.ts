@@ -231,9 +231,59 @@ describe('runtime: component page lifecycle extra', () => {
     expect(order).toEqual(['guard-start'])
     expect(mocks.mountRuntimeInstance).not.toHaveBeenCalled()
 
+    hooks.onReady.call(instance, 'ready')
+    expect(mocks.callHookList).not.toHaveBeenCalledWith(instance, 'onReady', ['ready'])
+
     resolveNavigation()
     await pending
+    await Promise.resolve()
     expect(order).toEqual(['guard-start', 'guard-done', 'mounted'])
+    expect(mocks.callHookList).toHaveBeenCalledWith(instance, 'onReady', ['ready'])
+  })
+
+  it('does not mount or run ready hooks when the initial guard aborts', async () => {
+    const initialNavigation = vi.fn(() => Promise.resolve({
+      __wevuNavigationFailure: true,
+      type: 4,
+    } as any))
+    mocks.getInitialNavigationRunner.mockReturnValue(initialNavigation)
+    const hooks = createPageLifecycleHooks({
+      runtimeApp: {} as any,
+      watch: undefined,
+      setup: undefined as any,
+      isPage: true,
+      enableOnSaveExitState: false,
+      enableOnPullDownRefresh: false,
+      enableOnReachBottom: false,
+      enableOnPageScroll: false,
+      enableOnRouteDone: false,
+      enableOnRouteDoneFallback: false,
+      enableOnTabItemTap: false,
+      enableOnResize: false,
+      enableOnShareAppMessage: false,
+      enableOnShareTimeline: false,
+      enableOnAddToFavorites: false,
+      effectiveOnSaveExitState: vi.fn(),
+      effectiveOnPullDownRefresh: vi.fn(),
+      effectiveOnReachBottom: vi.fn(),
+      effectiveOnPageScroll: vi.fn(),
+      effectiveOnRouteDone: vi.fn(),
+      effectiveOnTabItemTap: vi.fn(),
+      effectiveOnResize: vi.fn(),
+      effectiveOnShareAppMessage: vi.fn(),
+      effectiveOnShareTimeline: vi.fn(),
+      effectiveOnAddToFavorites: vi.fn(),
+      hasHook: vi.fn(() => false),
+    } as any)
+
+    const instance: any = {}
+    const loadPromise = hooks.onLoad.call(instance, {})
+    hooks.onReady.call(instance, 'ready')
+    await loadPromise
+    await Promise.resolve()
+
+    expect(mocks.mountRuntimeInstance).not.toHaveBeenCalled()
+    expect(mocks.callHookList).not.toHaveBeenCalledWith(instance, 'onReady', ['ready'])
   })
 
   it('replays onLoad from onShow, resets routeDone flag, and releases page instance on hide/unload', () => {
