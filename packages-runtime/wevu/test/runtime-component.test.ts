@@ -15,6 +15,9 @@ import {
   resetWevuDefaults,
   setWevuDefaults,
 } from '@/index'
+import { createRouter } from '@/router'
+import { clearActiveRouter } from '@/router/instance'
+import { setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -27,6 +30,10 @@ beforeEach(() => {
 })
 afterEach(() => {
   delete (globalThis as any).Component
+  delete (globalThis as any).getCurrentPages
+  clearActiveRouter()
+  setCurrentInstance(undefined)
+  setCurrentSetupContext(undefined)
   resetWevuDefaults()
 })
 
@@ -221,6 +228,180 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     await Promise.resolve()
     expect(setData).toHaveBeenCalled()
     expect(setData.mock.calls[0]?.[0]).toMatchObject({ count: 1 })
+  })
+
+  it('does not run page setup before the initial async router guard', async () => {
+    const order: string[] = []
+    let resolveGuard!: () => void
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [{
+      route: 'pages/home/index',
+      options: {},
+    }])
+    const routerInstance: any = {
+      __wevu: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    }
+    setCurrentInstance(routerInstance)
+    setCurrentSetupContext({ instance: routerInstance, emit: vi.fn(), attrs: {}, slots: {} })
+    const router = createRouter({
+      routes: [{ name: 'home', path: '/pages/home/index' }],
+    })
+    router.beforeEach(async () => {
+      order.push('guard-start')
+      await new Promise<void>((resolve) => {
+        resolveGuard = resolve
+      })
+      order.push('guard-done')
+    })
+
+    defineComponent({
+      __wevu_isPage: true,
+      setup() {
+        order.push('setup')
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const instance: any = {
+      route: 'pages/home/index',
+      setData() {},
+    }
+    opts.lifetimes.attached.call(instance)
+    const pending = opts.onLoad.call(instance, {})
+    await Promise.resolve()
+    expect(order).toEqual(['guard-start'])
+
+    resolveGuard()
+    await pending
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(order).toEqual(['guard-start', 'guard-done', 'setup'])
+  })
+
+  it('gates created-lifecycle pages and rejects aborted initial navigation', async () => {
+    const order: string[] = []
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [{
+      route: 'pages/home/index',
+      options: {},
+    }])
+    const routerInstance: any = {
+      __wevu: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    }
+    setCurrentInstance(routerInstance)
+    setCurrentSetupContext({ instance: routerInstance, emit: vi.fn(), attrs: {}, slots: {} })
+    const router = createRouter({
+      routes: [{ name: 'home', path: '/pages/home/index' }],
+    })
+    router.beforeEach(() => {
+      order.push('guard')
+      return false
+    })
+
+    defineComponent({
+      __wevu_isPage: true,
+      setupLifecycle: 'created',
+      beforeCreate() {
+        order.push('beforeCreate')
+      },
+      setup() {
+        order.push('setup')
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const instance: any = {
+      route: 'pages/home/index',
+      setData() {},
+    }
+    opts.lifetimes.created.call(instance)
+    expect(order).toEqual([])
+    expect((instance as any).__wevu).toBeUndefined()
+
+    opts.lifetimes.attached.call(instance)
+    const pending = opts.onLoad.call(instance, {})
+    expect(order).toEqual(['guard'])
+    await expect(pending).resolves.toBe(false)
+    await Promise.resolve()
+    expect(order).toEqual(['guard'])
+    expect((instance as any).__wevu).toBeUndefined()
+  })
+
+  it('starts one initial guard when created, attached, onLoad, and ready overlap', async () => {
+    const order: string[] = []
+    let resolveGuard!: () => void
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [{
+      route: 'pages/home/index',
+      options: {},
+    }])
+    const routerInstance: any = {
+      __wevu: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    }
+    setCurrentInstance(routerInstance)
+    setCurrentSetupContext({ instance: routerInstance, emit: vi.fn(), attrs: {}, slots: {} })
+    const router = createRouter({
+      routes: [{ name: 'home', path: '/pages/home/index' }],
+    })
+    const guard = vi.fn(async () => {
+      order.push('guard-start')
+      await new Promise<void>((resolve) => {
+        resolveGuard = resolve
+      })
+      order.push('guard-done')
+    })
+    router.beforeEach(guard)
+
+    defineComponent({
+      __wevu_isPage: true,
+      setup() {
+        order.push('setup')
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const instance: any = {
+      route: 'pages/home/index',
+      setData() {},
+    }
+    opts.lifetimes.created.call(instance)
+    opts.lifetimes.attached.call(instance)
+    opts.lifetimes.ready.call(instance)
+    const pending = opts.onLoad.call(instance, {})
+    await Promise.resolve()
+    expect(guard).toHaveBeenCalledTimes(1)
+    expect(order).toEqual(['guard-start'])
+
+    resolveGuard()
+    await expect(pending).resolves.toBe(true)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(order).toContain('setup')
+    expect(order.indexOf('guard-done')).toBeLessThan(order.indexOf('setup'))
+    expect(guard).toHaveBeenCalledTimes(1)
   })
 
   it('runs setup in created when setupLifecycle is set and defers setData until attached', async () => {
