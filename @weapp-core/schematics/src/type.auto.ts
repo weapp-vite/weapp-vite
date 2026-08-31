@@ -526,7 +526,15 @@ export interface Page {
   /**
    * 渲染后端选项，详情相关文档
    */
-  rendererOptions?: string;
+  rendererOptions?: string & {
+    skyline?: {
+      defaultContentBox?: boolean;
+      defaultDisplayBlock?: boolean;
+      disableABTest?: boolean;
+      [k: string]: unknown;
+    };
+    [k: string]: unknown;
+  };
   /**
    * 重新启动策略配置
    */
@@ -534,7 +542,9 @@ export interface Page {
   /**
    * 单页模式相关配置
    */
-  singlePage?: string;
+  singlePage?: string & {
+    [k: string]: unknown;
+  };
   /**
    * 启用新版的组件样式
    */
