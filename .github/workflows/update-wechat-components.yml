@@ -72,6 +72,10 @@ jobs:
             git diff --name-only -- "${files[@]}"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Build compiler for snapshot tests
+        if: steps.changes.outputs.has_changes == 'true'
+        run: pnpm --filter @wevu/compiler build
+
       - name: Update unit test snapshots
         if: steps.changes.outputs.has_changes == 'true'
         run: pnpm vitest run -u packages/weapp-vite/test/resolvers/tdesign.test.ts packages/weapp-vite/test/resolvers/vant.test.ts
