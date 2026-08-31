@@ -37,11 +37,11 @@ export function resolveIdeDevtoolsProcessPatterns(platform = process.platform) {
   return [...UNIX_DEVTOOLS_PROCESS_PATTERNS]
 }
 
-function resolveWechatCliPath(cliPath?: string) {
+function resolveWechatCliPath(cliPath?: string, platform = process.platform) {
   if (typeof cliPath === 'string' && cliPath.trim()) {
     return cliPath.trim()
   }
-  if (process.platform === 'win32') {
+  if (platform === 'win32') {
     return DEFAULT_WECHAT_CLI_WINDOWS_PATH
   }
   return DEFAULT_WECHAT_CLI_MACOS_PATH
@@ -88,9 +88,10 @@ async function runCleanDevtoolsCacheCommand(
   options: {
     cliPath?: string
     cwd?: string
+    platform?: NodeJS.Platform
   },
 ) {
-  const result = await execa(resolveWechatCliPath(options.cliPath), ['cache', '--clean', cleanType], {
+  const result = await execa(resolveWechatCliPath(options.cliPath, options.platform), ['cache', '--clean', cleanType], {
     cwd: options.cwd,
     reject: false,
     stdin: 'ignore',
@@ -143,6 +144,7 @@ export async function cleanDevtoolsCache(
   options: {
     cliPath?: string
     cwd?: string
+    platform?: NodeJS.Platform
   } = {},
 ) {
   try {
@@ -152,7 +154,7 @@ export async function cleanDevtoolsCache(
     if (!isRecoverableCleanCachePortError(error)) {
       throw error
     }
-    await cleanupResidualDevtoolsProcesses()
+    await cleanupResidualDevtoolsProcesses(options.platform)
     await runCleanDevtoolsCacheCommand(cleanType, options)
   }
 }
@@ -162,10 +164,11 @@ export async function cleanDevtoolsCacheAndStop(
   options: {
     cliPath?: string
     cwd?: string
+    platform?: NodeJS.Platform
   } = {},
 ) {
   await cleanDevtoolsCache(cleanType, options)
-  await cleanupResidualDevtoolsProcesses()
+  await cleanupResidualDevtoolsProcesses(options.platform)
 }
 
 export async function cleanupResidualIdeProcesses(platform = process.platform) {

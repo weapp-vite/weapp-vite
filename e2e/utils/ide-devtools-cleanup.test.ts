@@ -87,7 +87,7 @@ describe('ide devtools cleanup', () => {
   it('cleans devtools compile cache via wechat cli', async () => {
     const { cleanDevtoolsCache } = await import('./ide-devtools-cleanup')
 
-    await cleanDevtoolsCache('compile')
+    await cleanDevtoolsCache('compile', { platform: 'darwin' })
 
     expect(execaMock).toHaveBeenCalledWith(
       '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
@@ -111,7 +111,7 @@ describe('ide devtools cleanup', () => {
 
     const { cleanDevtoolsCache } = await import('./ide-devtools-cleanup')
 
-    const task = cleanDevtoolsCache('all')
+    const task = cleanDevtoolsCache('all', { platform: 'darwin' })
     await vi.runAllTimersAsync()
     await task
 
@@ -128,7 +128,7 @@ describe('ide devtools cleanup', () => {
   it('stops the DevTools maintenance process after cache cleanup', async () => {
     const { cleanDevtoolsCacheAndStop } = await import('./ide-devtools-cleanup')
 
-    const task = cleanDevtoolsCacheAndStop('all')
+    const task = cleanDevtoolsCacheAndStop('all', { platform: 'darwin' })
     await vi.runAllTimersAsync()
     await task
 
