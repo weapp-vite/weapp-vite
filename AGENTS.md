@@ -152,6 +152,16 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - For long-running E2E commands, especially `pnpm e2e:ide:full`, keep the computer awake for the whole run. On macOS, prefer wrapping the command with `caffeinate -dimsu -- pnpm e2e:ide:full`; on other platforms, use the equivalent OS-level sleep inhibitor before starting the task and release it after the command exits.
   - Before starting any E2E command, first check for active residual E2E/dev-watch processes and stop them; if an E2E command is already running, wait for it to finish or terminate it intentionally before launching another one.
   - When diagnosing flaky HMR, dev-watch, DevTools, or automator failures, treat concurrent or residual E2E processes as the first suspect and eliminate concurrency before changing product code or test assertions.
+
+### 4.1 Issue 修复完成判据与测试沉淀
+
+- GitHub issue 修复是否“彻底”以目标小程序 runtime E2E 的可观察结果为最终判据；构建、typecheck 和单测只能证明局部契约，不能替代 runtime 验证。
+- Issue 修复必须把回归场景沉淀在仓库内：优先补充 `e2e-apps/github-issues` fixture、headless runtime test、真实 DevTools runtime test（或等价 provider-compatible suite），并同步 `project.private.config.json` 页面条件、真实 AppID 和 suite manifest/清单断言。
+- runtime E2E 至少覆盖用户报告的主路径及关键边界：首次启动/首屏挂载顺序、异步 guard 完成前后的生命周期、guard abort/redirect、无 router 或普通后续导航，以及构建产物中最终路径和文件存在性等稳定语义。
+- 验证顺序固定为：先重建受影响包和下游产物，再跑 headless runtime；具备真实 IDE 基础设施时再跑 DevTools runtime，并比较两者相关可观察行为。不得用旧 `dist` 或仅源代码单测替代下游验证。
+- 当仓库没有可操作的 simulator SDK、headless bridge 无法覆盖目标观察面，或需要检查已安装 IDE 的真实 UI/runtime 时，使用 Computer Use 操作本机 IDE；操作前后重新读取应用状态，记录使用的 app、页面/路由、关键顺序和结果，且不把人工观察写成不可复现的绝对路径或机器专属值。
+- 真实 IDE 启动、登录、服务端口、automator bridge 或 simulator boot 错误属于环境限制时，必须单独记录并保留可运行的 headless/其他 provider 覆盖；不得把环境失败改写成产品通过，也不得为了 CI 通过而弱化真实 runtime 断言。
+- PR 交付前持续跟踪全部必需 CI checks；只有相关构建、单测、headless/IDE runtime（或明确记录的环境限制）和跨平台矩阵均完成且无可修复失败时，才可宣称修复与测试沉淀完成。
 - For package-level TypeScript work (`packages/*`, `packages-runtime/*`, `mpcore/packages/*`), verify the owning package first with the smallest package-scoped command:
   - `pnpm --filter <package> typecheck`
   - if the package ships public types or reusable type helpers, also run `pnpm --filter <package> test:types` when available
