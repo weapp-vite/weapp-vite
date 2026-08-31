@@ -45,6 +45,7 @@ interface NavigateWithTargetOptions {
   tabBarPathSet: ReadonlySet<string>
   resolveWithCodec: (to: RouteLocationRaw, currentPath: string) => RouteLocationNormalizedLoaded
   executeNative?: boolean
+  allowSameLocation?: boolean
 }
 
 export async function navigateWithTarget(options: NavigateWithTargetOptions): Promise<NavigationRunResult> {
@@ -61,6 +62,7 @@ export async function navigateWithTarget(options: NavigateWithTargetOptions): Pr
     tabBarPathSet,
     resolveWithCodec,
     executeNative = true,
+    allowSameLocation = false,
   } = options
   let currentTarget = target
   let currentMode: Exclude<NavigationMode, 'back'> = mode
@@ -74,9 +76,9 @@ export async function navigateWithTarget(options: NavigateWithTargetOptions): Pr
       return createNavigationRunResult(currentMode, from, currentTarget, createHashOnlyNavigationFailure(currentTarget, from))
     }
 
-    const duplicated = tabBarTarget
+    const duplicated = !allowSameLocation && (tabBarTarget
       ? currentTarget.path === from.path
-      : currentTarget.fullPath === from.fullPath
+      : currentTarget.fullPath === from.fullPath)
     if (duplicated) {
       return createNavigationRunResult(currentMode, from, currentTarget, createDuplicatedFailure(currentTarget, from))
     }

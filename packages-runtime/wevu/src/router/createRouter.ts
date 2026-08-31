@@ -187,26 +187,29 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   }
 
   async function runInitialNavigation(page: Parameters<typeof resolveCurrentRoute>[1], query?: LocationQueryRaw) {
-    const from = snapshotRouteLocation(route)
-    const target = enrichRouteRecordState(resolveCurrentRoute(query, page))
-    if (!target.path || target.fullPath === from.fullPath) {
-      return undefined
-    }
-    const result = await navigateWithTarget({
-      mode: 'push',
-      target,
-      from,
-      nativeRouter,
-      routeResolveCodec,
-      namedRouteLookup,
-      beforeEachGuards,
-      beforeResolveGuards,
-      maxRedirects,
-      tabBarPathSet,
-      resolveWithCodec,
-      executeNative: false,
+    return runManagedNavigation(async () => {
+      const from = snapshotRouteLocation(route)
+      const target = enrichRouteRecordState(resolveCurrentRoute(query, page))
+      if (!target.path) {
+        return undefined
+      }
+      const result = await navigateWithTarget({
+        mode: 'push',
+        target,
+        from,
+        nativeRouter,
+        routeResolveCodec,
+        namedRouteLookup,
+        beforeEachGuards,
+        beforeResolveGuards,
+        maxRedirects,
+        tabBarPathSet,
+        resolveWithCodec,
+        executeNative: false,
+        allowSameLocation: true,
+      })
+      return navigationResultController.settleNavigationResult(result)
     })
-    return navigationResultController.settleNavigationResult(result)
   }
 
   function beforeEach(guard: NavigationGuard): () => void {

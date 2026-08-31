@@ -7,12 +7,19 @@ import {
   WEVU_ROUTE_DONE_CALLED_KEY,
 } from '@weapp-core/constants'
 import { getInitialNavigationRunner } from '../../../router/initialNavigation'
+import { isNavigationFailure } from '../../../router/navigationCore'
 import { notifyRouteStateSync } from '../../../router/routeSync'
 import { callHookList } from '../../hooks'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 import { attachOptionalPageLifecycleHooks } from './lifecycle/optionalHooks'
 import { bindCurrentPageInstance, ensureMiniProgramGlobalPatched, ensurePageShareMenus, releaseCurrentPageInstance, resolvePageOptions } from './lifecycle/platform'
+
+const INITIAL_NAVIGATION_PROMISE_KEY = Symbol('wevu.initialNavigationPromise')
+
+export function getInitialNavigationPromise(instance: InternalRuntimeState) {
+  return (instance as any)[INITIAL_NAVIGATION_PROMISE_KEY] as Promise<boolean> | undefined
+}
 
 export function createPageLifecycleHooks<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   runtimeApp: RuntimeApp<D, C, M>
@@ -114,7 +121,23 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
 
       const initialNavigationRunner = isPage ? getInitialNavigationRunner() : undefined
       if (initialNavigationRunner) {
-        return initialNavigationRunner(this as MiniProgramPageLike, args[0]).then(mountPage)
+        let resolveInitialNavigation!: (shouldMount: boolean) => void
+        let rejectInitialNavigation!: (error: unknown) => void
+        const initialNavigationPromise = new Promise<boolean>((resolve, reject) => {
+          resolveInitialNavigation = resolve
+          rejectInitialNavigation = reject
+        })
+        ;(this as any)[INITIAL_NAVIGATION_PROMISE_KEY] = initialNavigationPromise
+        void initialNavigationRunner(this as MiniProgramPageLike, args[0])
+          .then((result) => {
+            if (isNavigationFailure(result)) {
+              resolveInitialNavigation(false)
+              return
+            }
+            mountPage()
+            resolveInitialNavigation(true)
+          }, rejectInitialNavigation)
+        return initialNavigationPromise
       }
       return mountPage()
     },
@@ -190,12 +213,25 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
             }
           }, 0)
         }
-        scheduleTemplateRefUpdate(this, () => {
+        const callReadyHooks = () => {
           callHookList(this, 'onReady', args)
           if (typeof userOnReady === 'function') {
             userOnReady.apply(this, args)
           }
-        })
+        }
+        const initialNavigationPromise = getInitialNavigationPromise(this)
+        const callReadyHooksAfterInitialNavigation = () => {
+          if (initialNavigationPromise) {
+            void initialNavigationPromise.then((shouldMount) => {
+              if (shouldMount) {
+                callReadyHooks()
+              }
+            }, () => {})
+            return
+          }
+          callReadyHooks()
+        }
+        scheduleTemplateRefUpdate(this, callReadyHooksAfterInitialNavigation)
         return
       }
       if (typeof userOnReady === 'function') {

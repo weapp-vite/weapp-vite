@@ -1,10 +1,10 @@
 import type { MiniProgramPageLike } from '../routerInternal/shared'
-import type { NavigationFailure } from './types'
+import type { LocationQueryRaw, NavigationFailure } from './types'
 import { getActiveRouter } from './instance'
 
 export type InitialNavigationRunner = (
   page: MiniProgramPageLike,
-  query?: Record<string, unknown>,
+  query?: LocationQueryRaw,
 ) => Promise<void | NavigationFailure>
 
 const initialNavigationRunners = new WeakMap<object, InitialNavigationRunner>()
