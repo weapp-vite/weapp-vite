@@ -1,6 +1,12 @@
+import { Buffer } from 'node:buffer'
 import { parseAst } from 'rollup/parseAst'
 import { collectRequireTokens } from '../utils/ast'
-import { isNativeSubPackageImport, rewriteAsyncDependencies, rewriteRequireCallbacks } from './requireAnalysis'
+import {
+  isNativeSubPackageImport,
+  rewriteAsyncDependencies,
+  rewriteRequireAsyncChunkPaths,
+  rewriteRequireCallbacks,
+} from './requireAnalysis'
 
 describe('require analysis', () => {
   it.each([
@@ -89,5 +95,43 @@ const nativeModule = import('../../subpackages/native/index.ts')
     expect(result?.code).toContain(`void require.async("./callback.js").then(onLoaded, onError)`)
     expect(result?.code).toContain(`const promise = require.async("./promise.js")`)
     expect(result?.code).toContain(`const nativeModule = require.async("../../subpackages/native/index.js")`)
+  })
+
+  it.each([
+    ['source module chunk', 'dir/inner.js', '../subs/page/lib.js'],
+    ['hoisted app chunk', 'app.js', './subs/page/lib.js'],
+    ['page chunk', 'pages/page/index.js', '../../subs/page/lib.js'],
+  ])('resolves async target paths from the final %s filename', (_caseName, importerFileName, expected) => {
+    const marker = `__weapp_vite_require_async_target__${Buffer.from('subs/page/lib.js').toString('base64url')}`
+    const result = rewriteRequireAsyncChunkPaths(
+      `require.async("${marker}")`,
+      importerFileName,
+    )
+
+    expect(result?.code).toBe(`require.async(${JSON.stringify(expected)})`)
+  })
+
+  it('rewrites callback and native import conversions from the final chunk path', () => {
+    const marker = `__weapp_vite_require_async_target__${Buffer.from('subs/page/lib.js').toString('base64url')}`
+    const result = rewriteRequireAsyncChunkPaths(
+      `void require.async('${marker}').then(onLoaded, onError)`,
+      'app.js',
+    )
+
+    expect(result?.code).toBe(`void require.async("./subs/page/lib.js").then(onLoaded, onError)`)
+  })
+
+  it('leaves chunks without async target markers unchanged', () => {
+    expect(rewriteRequireAsyncChunkPaths('require.async("./existing.js")', 'app.js')).toBeNull()
+  })
+
+  it('accepts whitespace preserved around direct require.async arguments', () => {
+    const marker = `__weapp_vite_require_async_target__${Buffer.from('subs/page/lib.js').toString('base64url')}`
+    const result = rewriteRequireAsyncChunkPaths(
+      `require.async(  '${marker}' )`,
+      'app.js',
+    )
+
+    expect(result?.code).toBe(`require.async(  "./subs/page/lib.js" )`)
   })
 })

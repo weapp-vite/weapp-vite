@@ -1,15 +1,23 @@
+import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { DynamicImportToken, RequireCallbackToken, RequireToken } from '../utils/ast'
 import type { CorePluginState } from './helpers'
+import { Buffer } from 'node:buffer'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../logger'
 import { resolveSubPackagePrefix } from '../../runtime/chunkStrategy/collector'
+import { applyOutputChunkTransform } from '../../utils/outputChunk'
 import { collectRequireTokens } from '../utils/ast'
 import { resolveRelativeOutputFileNameWithExtension } from '../utils/outputFileName'
 
 const REQUIRE_ANALYSIS_FILTER_RE = /\.[jt]s$/
 const URL_SUFFIX_RE = /[?#].*$/
+const REQUIRE_ASYNC_TARGET_MARKER_PREFIX = '__weapp_vite_require_async_target__'
+const REQUIRE_ASYNC_TARGET_MARKER_RE = new RegExp(
+  `\\brequire\\.async\\(\\s*(['"])${REQUIRE_ASYNC_TARGET_MARKER_PREFIX}([\\w-]+)\\1\\s*\\)`,
+  'g',
+)
 
 interface ResolvedAsyncDependency {
   fileName: string
@@ -44,6 +52,65 @@ function cleanModuleId(id: string) {
 function createRelativeModuleSpecifier(importerFileName: string, targetFileName: string) {
   const relativePath = path.relative(path.dirname(importerFileName), targetFileName)
   return relativePath.startsWith('.') ? relativePath : `./${relativePath}`
+}
+
+function createRequireAsyncTargetMarker(fileName: string) {
+  return `${REQUIRE_ASYNC_TARGET_MARKER_PREFIX}${Buffer.from(fileName).toString('base64url')}`
+}
+
+function decodeRequireAsyncTargetMarker(value: string) {
+  if (!value.startsWith(REQUIRE_ASYNC_TARGET_MARKER_PREFIX)) {
+    return null
+  }
+
+  try {
+    return Buffer.from(value.slice(REQUIRE_ASYNC_TARGET_MARKER_PREFIX.length), 'base64url').toString('utf8')
+  }
+  catch {
+    return null
+  }
+}
+
+/**
+ * 按最终 chunk 文件名修正异步分包加载路径。
+ */
+export function rewriteRequireAsyncChunkPaths(code: string, importerFileName: string) {
+  const source = new MagicString(code)
+  let changed = false
+
+  for (const match of code.matchAll(REQUIRE_ASYNC_TARGET_MARKER_RE)) {
+    if (typeof match.index !== 'number') {
+      continue
+    }
+
+    const targetFileName = decodeRequireAsyncTargetMarker(
+      `${REQUIRE_ASYNC_TARGET_MARKER_PREFIX}${match[2]}`,
+    )
+    if (!targetFileName) {
+      continue
+    }
+
+    const literalStart = match.index + match[0].indexOf(match[1])
+    const literalEnd = literalStart
+      + REQUIRE_ASYNC_TARGET_MARKER_PREFIX.length
+      + match[2].length
+      + 2
+    source.overwrite(
+      literalStart,
+      literalEnd,
+      JSON.stringify(createRelativeModuleSpecifier(importerFileName, targetFileName)),
+    )
+    changed = true
+  }
+
+  if (!changed) {
+    return null
+  }
+
+  return {
+    code: source.toString(),
+    map: source.generateMap({ hires: 'boundary' }),
+  }
 }
 
 function resolveModulePackageRoot(
@@ -143,7 +210,6 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
           const dependencyRewrites: DependencyRewrite[] = []
           const nativeImportTokens: DynamicImportToken[] = []
           const resolvedDependencies: ResolvedAsyncDependency[] = []
-          const importerFileName = resolveRelativeOutputFileNameWithExtension(configService, cleanModuleId(id), '.js')
           const subPackageRoots = [...scanService.subPackageMap.keys()]
             .filter(Boolean)
             .sort((left, right) => right.length - left.length)
@@ -171,7 +237,7 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
                 fileName,
                 id: resolvedId,
               },
-              specifier: createRelativeModuleSpecifier(importerFileName, fileName),
+              specifier: createRequireAsyncTargetMarker(fileName),
             }
           }
 
@@ -238,6 +304,22 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
           logger.error(error)
         }
       },
+    },
+
+    generateBundle(_options, bundle) {
+      for (const output of Object.values(bundle as OutputBundle)) {
+        if (output?.type !== 'chunk') {
+          continue
+        }
+
+        const chunk = output as OutputChunk
+        const rewritten = rewriteRequireAsyncChunkPaths(chunk.code, chunk.fileName)
+        if (!rewritten) {
+          continue
+        }
+
+        applyOutputChunkTransform(chunk, rewritten.code, rewritten.map)
+      }
     },
 
     async moduleParsed(moduleInfo) {
