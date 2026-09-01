@@ -2,6 +2,7 @@ import type { RouteResolveCodec } from '../routerInternal/shared'
 import type { NavigationRunResult } from './navigationResult'
 import type { RouteStateSyncPayload } from './routeSync'
 import type {
+  InitialNavigationMode,
   LocationQueryRaw,
   NavigationAfterEach,
   NavigationErrorHandler,
@@ -30,7 +31,7 @@ import {
 } from '../routerInternal/shared'
 import { getMiniProgramGlobalObject } from '../runtime/platform'
 import { runBackNavigationGuards } from './backNavigation'
-import { registerInitialNavigationRunner } from './initialNavigation'
+import { DEFAULT_INITIAL_NAVIGATION_TIMEOUT, registerInitialNavigationRunner } from './initialNavigation'
 import { setActiveRouter } from './instance'
 import { createNavigationApi } from './navigationApi'
 import { createNavigationResultController } from './navigationResult'
@@ -51,6 +52,10 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   const afterEachHooks = new Set<NavigationAfterEach>()
   const errorHandlers = new Set<NavigationErrorHandler>()
   const maxRedirects = options.maxRedirects ?? 10
+  const initialNavigationMode: InitialNavigationMode = options.initialNavigationMode === 'blocking' ? 'blocking' : 'eager'
+  const initialNavigationTimeout = Number.isFinite(options.initialNavigationTimeout) && (options.initialNavigationTimeout ?? 0) > 0
+    ? Math.max(1, Math.trunc(options.initialNavigationTimeout!))
+    : DEFAULT_INITIAL_NAVIGATION_TIMEOUT
   const paramsMode = options.paramsMode ?? 'loose'
   const rejectOnError = options.rejectOnError ?? true
   const routeResolveCodec: RouteResolveCodec = {
@@ -72,6 +77,8 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     routeRegistry.getRoutes(),
     paramsMode,
     maxRedirects,
+    initialNavigationMode,
+    initialNavigationTimeout,
     routeResolveCodec,
     rejectOnError,
   )
@@ -186,7 +193,11 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     }
   }
 
-  async function runInitialNavigation(page: Parameters<typeof resolveCurrentRoute>[1], query?: LocationQueryRaw) {
+  async function runInitialNavigation(
+    page: Parameters<typeof resolveCurrentRoute>[1],
+    query?: LocationQueryRaw,
+    isActive: () => boolean = () => true,
+  ) {
     return runManagedNavigation(async () => {
       const from = snapshotRouteLocation(route)
       const target = enrichRouteRecordState(resolveCurrentRoute(query, page))
@@ -208,6 +219,9 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
         executeNative: false,
         allowSameLocation: true,
       })
+      if (!isActive()) {
+        return undefined
+      }
       return navigationResultController.settleNavigationResult(result)
     })
   }
@@ -272,6 +286,6 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   }
 
   setActiveRouter(router)
-  registerInitialNavigationRunner(router, runInitialNavigation)
+  registerInitialNavigationRunner(router, runInitialNavigation, initialNavigationTimeout, initialNavigationMode)
   return router
 }

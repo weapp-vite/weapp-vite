@@ -12,6 +12,8 @@ export function ensureGithubIssuesRouter() {
   }
 
   createRouter({
+    // issue-911 fixture 验证的是守卫门控语义，显式保留 blocking。
+    initialNavigationMode: 'blocking',
     routes: [
       ...autoRoutes.entries.map(path => ({
         path: `/${path}`,

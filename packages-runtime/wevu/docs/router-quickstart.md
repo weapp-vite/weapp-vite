@@ -9,6 +9,8 @@ import { createRouter, useRouter } from 'wevu/router'
 
 createRouter({
   paramsMode: 'strict',
+  // 首屏默认 eager；只有必须先完成守卫时才改为 blocking
+  initialNavigationMode: 'eager',
   routes: [
     {
       name: 'home',
@@ -29,6 +31,19 @@ createRouter({
 
 const router = useRouter()
 ```
+
+### 首屏导航模式
+
+`initialNavigationMode` 默认值为 `'eager'`。页面会先挂载并渲染，首屏守卫异步运行，不会因鉴权请求或其他慢操作造成白屏。若业务必须在页面挂载前完成鉴权、租户选择等判断，显式配置 `initialNavigationMode: 'blocking'`：
+
+```ts
+createRouter({
+  initialNavigationMode: 'blocking',
+  initialNavigationTimeout: 10_000,
+})
+```
+
+`initialNavigationTimeout` 只控制 blocking 模式，默认 `10_000ms`，超时后放行页面并输出诊断 marker。数据预加载建议由页面显示 loading 或 skeleton，不要用 blocking 代替。
 
 如果你希望沿用 Vue Router 的树状写法，也可以声明 `children`（会在内部展平为可匹配记录）：
 

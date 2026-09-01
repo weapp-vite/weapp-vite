@@ -26,7 +26,7 @@ Router 内部使用的原生 `SetupContextRouter`。
 
 **示例：** 见 [本组示例](/wevu/api/router#example-router-instance)。
 
-创建 Router 时使用的只读、规范化选项快照。
+创建 Router 时使用的只读、规范化选项快照。`initialNavigationMode` 默认为 `'eager'`，可读取实际生效的首屏模式；`initialNavigationTimeout` 仅用于 `'blocking'` 模式。
 
 ### `router.currentRoute` {#router-currentroute}
 

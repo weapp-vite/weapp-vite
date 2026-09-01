@@ -113,6 +113,28 @@ describe('router navigation helpers', () => {
     expect(router.currentRoute.path).toBe('pages/home/index')
   })
 
+  it('defaults initial navigation to eager and exposes blocking as an explicit option', () => {
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    const eagerRouter = createRouter()
+    expect(eagerRouter.options.initialNavigationMode).toBe('eager')
+
+    const blockingRouter = createRouter({ initialNavigationMode: 'blocking' })
+    expect(blockingRouter.options.initialNavigationMode).toBe('blocking')
+  })
+
   it('resolves initial guard redirects before mounting the requested page', async () => {
     const pages = [{ route: 'pages/home/index', options: {} }]
     const order: string[] = []

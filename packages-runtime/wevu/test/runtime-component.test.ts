@@ -250,6 +250,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     setCurrentInstance(routerInstance)
     setCurrentSetupContext({ instance: routerInstance, emit: vi.fn(), attrs: {}, slots: {} })
     const router = createRouter({
+      initialNavigationMode: 'blocking',
       routes: [{ name: 'home', path: '/pages/home/index' }],
     })
     router.beforeEach(async () => {
@@ -306,6 +307,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     setCurrentInstance(routerInstance)
     setCurrentSetupContext({ instance: routerInstance, emit: vi.fn(), attrs: {}, slots: {} })
     const router = createRouter({
+      initialNavigationMode: 'blocking',
       routes: [{ name: 'home', path: '/pages/home/index' }],
     })
     router.beforeEach(() => {
@@ -363,6 +365,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     setCurrentInstance(routerInstance)
     setCurrentSetupContext({ instance: routerInstance, emit: vi.fn(), attrs: {}, slots: {} })
     const router = createRouter({
+      initialNavigationMode: 'blocking',
       routes: [{ name: 'home', path: '/pages/home/index' }],
     })
     const guard = vi.fn(async () => {
