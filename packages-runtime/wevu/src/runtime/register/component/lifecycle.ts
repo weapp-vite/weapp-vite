@@ -1,4 +1,3 @@
-import type { LocationQueryRaw } from '../../../router/types'
 import type { MiniProgramPageLike } from '../../../routerInternal/shared'
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, RuntimeApp } from '../../types'
 import type { WatchMap } from '../watch'
@@ -7,62 +6,16 @@ import {
   WEVU_READY_CALLED_KEY,
   WEVU_ROUTE_DONE_CALLED_KEY,
 } from '@weapp-core/constants'
-import { getInitialNavigationRunner } from '../../../router/initialNavigation'
-import { isNavigationFailure } from '../../../router/navigationCore'
+import {
+  cancelInitialNavigation,
+  ensureInitialNavigation,
+} from '../../../router/initialNavigation'
 import { notifyRouteStateSync } from '../../../router/routeSync'
 import { callHookList } from '../../hooks'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 import { attachOptionalPageLifecycleHooks } from './lifecycle/optionalHooks'
 import { bindCurrentPageInstance, ensureMiniProgramGlobalPatched, ensurePageShareMenus, releaseCurrentPageInstance, resolvePageOptions } from './lifecycle/platform'
-
-const INITIAL_NAVIGATION_PROMISE_KEY = Symbol('wevu.initialNavigationPromise')
-const INITIAL_NAVIGATION_START_KEY = Symbol('wevu.startInitialNavigation')
-
-export function getInitialNavigationPromise(instance: InternalRuntimeState) {
-  return (instance as any)[INITIAL_NAVIGATION_PROMISE_KEY] as Promise<boolean> | undefined
-}
-
-export function ensureInitialNavigation(
-  instance: InternalRuntimeState,
-  query?: LocationQueryRaw,
-  options: { start?: boolean } = {},
-) {
-  const existing = getInitialNavigationPromise(instance)
-  if (existing) {
-    if (options.start !== false) {
-      ;(instance as any)[INITIAL_NAVIGATION_START_KEY]?.(query)
-    }
-    return existing
-  }
-  const initialNavigationRunner = getInitialNavigationRunner()
-  if (!initialNavigationRunner) {
-    return undefined
-  }
-  let resolveInitialNavigation!: (shouldMount: boolean) => void
-  let rejectInitialNavigation!: (error: unknown) => void
-  const initialNavigationPromise = new Promise<boolean>((resolve, reject) => {
-    resolveInitialNavigation = resolve
-    rejectInitialNavigation = reject
-  })
-  ;(instance as any)[INITIAL_NAVIGATION_PROMISE_KEY] = initialNavigationPromise
-  let started = false
-  ;(instance as any)[INITIAL_NAVIGATION_START_KEY] = (startQuery?: LocationQueryRaw) => {
-    if (started) {
-      return
-    }
-    started = true
-    void initialNavigationRunner(instance as MiniProgramPageLike, startQuery ?? query)
-      .then((result) => {
-        const shouldMount = !isNavigationFailure(result)
-        resolveInitialNavigation(shouldMount)
-      }, rejectInitialNavigation)
-  }
-  if (options.start !== false) {
-    ;(instance as any)[INITIAL_NAVIGATION_START_KEY](query)
-  }
-  return initialNavigationPromise
-}
 
 export function createPageLifecycleHooks<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   runtimeApp: RuntimeApp<D, C, M>
@@ -163,19 +116,21 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       }
 
       const initialNavigationPromise = isPage
-        ? ensureInitialNavigation(this, args[0])
+        ? ensureInitialNavigation(this as MiniProgramPageLike, args[0], {
+            onComplete: (shouldMount) => {
+              if (shouldMount) {
+                mountPage()
+              }
+            },
+          })
         : undefined
       if (initialNavigationPromise) {
-        void initialNavigationPromise.then((shouldMount) => {
-          if (shouldMount) {
-            mountPage()
-          }
-        }, () => {})
         return initialNavigationPromise
       }
       return mountPage()
     },
     onUnload(this: InternalRuntimeState, ...args: any[]) {
+      cancelInitialNavigation(this as MiniProgramPageLike)
       if (isPage) {
         releaseCurrentPageInstance(this)
       }
@@ -253,19 +208,20 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
             userOnReady.apply(this, args)
           }
         }
-        const initialNavigationPromise = getInitialNavigationPromise(this)
-        const callReadyHooksAfterInitialNavigation = () => {
-          if (initialNavigationPromise) {
-            void initialNavigationPromise.then((shouldMount) => {
-              if (shouldMount) {
-                callReadyHooks()
-              }
-            }, () => {})
-            return
-          }
-          callReadyHooks()
+        const scheduleReadyHooks = () => scheduleTemplateRefUpdate(this, callReadyHooks)
+        const initialNavigationPromise = isPage
+          ? ensureInitialNavigation(this as MiniProgramPageLike, undefined, {
+              start: false,
+              onComplete: (shouldMount) => {
+                if (shouldMount) {
+                  scheduleReadyHooks()
+                }
+              },
+            })
+          : undefined
+        if (!initialNavigationPromise) {
+          scheduleReadyHooks()
         }
-        scheduleTemplateRefUpdate(this, callReadyHooksAfterInitialNavigation)
         return
       }
       if (typeof userOnReady === 'function') {

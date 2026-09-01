@@ -64,6 +64,7 @@ expectType<'loose' | 'strict'>(paramsMode)
 const navigationOptions: UseRouterOptions = {
   tabBarEntries: ['pages/home/index'],
   paramsMode: 'strict',
+  initialNavigationTimeout: 12_000,
   routes: [
     {
       name: 'home',
@@ -91,6 +92,7 @@ expectType<RouterNavigation>(useRouter())
 expectType<ReturnType<typeof createApp>>(createApp({ setup() {} }).use(navigation))
 expectType<AddRoute>(navigation.addRoute)
 expectType<Readonly<UseRouterOptions>>(navigation.options)
+expectType<number | undefined>(navigation.options.initialNavigationTimeout)
 expectType<readonly RouteRecordRaw[] | undefined>(navigation.options.routes)
 expectType<void>(navigation.install())
 expectType<SetupContextRouter>(useNativeRouter())

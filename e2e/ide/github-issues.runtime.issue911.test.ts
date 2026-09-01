@@ -11,6 +11,9 @@ import {
 const ISSUE_911_ROUTE = '/pages/issue-911/index'
 const ISSUE_911_REDIRECT_ROUTE = `${ISSUE_911_ROUTE}?mode=redirect`
 const ISSUE_911_ABORT_ROUTE = `${ISSUE_911_ROUTE}?mode=abort`
+const ISSUE_911_NEVER_ROUTE = `${ISSUE_911_ROUTE}?mode=never`
+const ISSUE_911_REJECT_ROUTE = `${ISSUE_911_ROUTE}?mode=reject`
+const ISSUE_911_LATE_ROUTE = `${ISSUE_911_ROUTE}?mode=late`
 const ISSUE_550_ROUTE = '/pages/issue-550/index'
 const ISSUE_911_TRACE_STORAGE_KEY = '__weapp_vite_issue_911_trace__'
 
@@ -98,5 +101,47 @@ describe.sequential('e2e app: github-issues / issue #911', () => {
     expect(nextPage).toBeTruthy()
     expect(await waitForCurrentPagePath(miniProgram, ISSUE_550_ROUTE, 8_000)).toBeTruthy()
     expect(['', undefined]).toContain(await readIssue911Trace(miniProgram))
+  })
+
+  it('mounts after the default timeout when an initial guard never settles', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
+    await clearIssue911Trace(miniProgram)
+    await miniProgram.reLaunch(ISSUE_911_NEVER_ROUTE).catch(() => {})
+    const page = await waitForCurrentPagePath(miniProgram, ISSUE_911_ROUTE, 15_000)
+    expect(page).toBeTruthy()
+    await page?.waitForRendered({ selector: '#issue-911-page', timeout: 3_000 })
+    await expect.poll(
+      async () => await page?.callMethodWithOptions('_runE2E', { protocolTimeoutMs: 3_000 }),
+      { timeout: 12_000 },
+    ).toContain('mounted')
+  })
+
+  it('settles a rejected initial guard without leaving an unhandled promise gate', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
+    await clearIssue911Trace(miniProgram)
+    await miniProgram.reLaunch(ISSUE_911_REJECT_ROUTE).catch(() => {})
+    await expect.poll(
+      async () => (await readIssue911Trace(miniProgram))?.trace,
+      { timeout: 10_000 },
+    ).toEqual(['beforeEach:start', 'beforeEach:done'])
+  })
+
+  it('cancels a late guard when the page is replaced quickly', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
+    await clearIssue911Trace(miniProgram)
+    await miniProgram.reLaunch(ISSUE_911_LATE_ROUTE).catch(() => {})
+    const latePage = await waitForCurrentPagePath(miniProgram, ISSUE_911_ROUTE, 15_000)
+    await latePage?.waitForRendered({ selector: '#issue-911-page', timeout: 12_000 })
+    await expect.poll(
+      async () => (await readIssue911Trace(miniProgram))?.trace ?? [],
+      { timeout: 12_000 },
+    ).toContain('mounted')
+    await miniProgram.reLaunch(ISSUE_550_ROUTE).catch(() => {})
+    expect(await waitForCurrentPagePath(miniProgram, ISSUE_550_ROUTE, 8_000)).toBeTruthy()
+    await new Promise(resolve => setTimeout(resolve, 1_000))
+    const trace = (await readIssue911Trace(miniProgram))?.trace ?? []
+    expect(trace.filter(entry => entry === 'mounted')).toHaveLength(1)
+    expect(trace).toContain('unmounted')
+    expect(trace.indexOf('unmounted')).toBeGreaterThan(trace.indexOf('mounted'))
   })
 })

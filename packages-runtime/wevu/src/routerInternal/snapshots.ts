@@ -56,6 +56,7 @@ export function createRouterOptionsSnapshot(
   normalizedNamedRoutes: readonly RouteRecordRaw[],
   paramsMode: RouteParamsMode,
   maxRedirects: number,
+  initialNavigationTimeout: number,
   routeResolveCodec: RouteResolveCodec,
   rejectOnError: boolean,
 ): Readonly<UseRouterOptions> {
@@ -72,6 +73,7 @@ export function createRouterOptionsSnapshot(
     namedRoutes: routesSnapshot,
     paramsMode,
     maxRedirects,
+    initialNavigationTimeout,
     parseQuery: routeResolveCodec.parseQuery,
     stringifyQuery: routeResolveCodec.stringifyQuery,
     rejectOnError,

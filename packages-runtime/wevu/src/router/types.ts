@@ -154,6 +154,10 @@ export interface UseRouterOptions {
   namedRoutes?: NamedRoutes
   paramsMode?: RouteParamsMode
   maxRedirects?: number
+  /**
+   * 首屏异步路由守卫的最大等待时间（毫秒），超时后放行页面挂载。
+   */
+  initialNavigationTimeout?: number
   parseQuery?: RouteQueryParser
   stringifyQuery?: RouteQueryStringifier
   /**
