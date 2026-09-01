@@ -1,5 +1,12 @@
 # @mpcore/weapp-vite
 
+## 0.1.17
+
+### Patch Changes
+
+- Updated dependencies:
+  - weapp-vite@7.0.0
+
 ## 0.1.16
 
 ### Patch Changes

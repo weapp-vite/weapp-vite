@@ -46,6 +46,10 @@
   dir: "@weapp-core/schematics"
   intents:
     - calm-docs-domain
+"@weapp-core/schematics@6.2.2":
+  dir: "@weapp-core/schematics"
+  intents:
+    - catalog-auto-generated
 "@weapp-core/shared@3.2.0":
   dir: "@weapp-core/shared"
   intents:
@@ -66,6 +70,10 @@
   dir: packages/ast-native
   intents:
     - sfc-block-hmr-core
+"@weapp-vite/ast-native@0.1.1":
+  dir: packages/ast-native
+  intents:
+    - structured-compiler-diagnostics
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
@@ -105,6 +113,10 @@
   dir: packages/mcp
   intents:
     - modern-mcp-protocol
+"@weapp-vite/mcp@1.5.1":
+  dir: packages/mcp
+  intents:
+    - catalog-auto-generated
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator
   intents:
@@ -156,6 +168,10 @@
   dir: packages-runtime/web
   intents:
     - catalog-centralization
+"@weapp-vite/web@1.4.17":
+  dir: packages-runtime/web
+  intents:
+    - catalog-auto-generated
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -195,6 +211,10 @@
   intents:
     - sfc-block-hmr-core
     - wevu-camel-event-listener
+"@wevu/compiler@7.0.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - structured-compiler-diagnostics
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -292,6 +312,13 @@ create-weapp-vite@2.8.7:
   dir: packages/create-weapp-vite
   intents:
     - tidy-tailwindcss-bundle
+create-weapp-vite@2.8.8:
+  dir: packages/create-weapp-vite
+  intents:
+    - fix-issue-910-require-async-path
+    - fix-issue-911-lifecycle-gate
+    - issue-911-initial-router-guard
+    - issue-911-page-runtime-gate
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -308,6 +335,10 @@ weapp-ide-cli@6.1.0:
   dir: packages/weapp-ide-cli
   intents:
     - modern-mcp-protocol
+weapp-ide-cli@6.1.1:
+  dir: packages/weapp-ide-cli
+  intents:
+    - catalog-auto-generated
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -382,6 +413,10 @@ weapp-vite@6.25.1:
   dir: packages/weapp-vite
   intents:
     - tidy-tailwindcss-bundle
+weapp-vite@7.0.0:
+  dir: packages/weapp-vite
+  intents:
+    - fix-issue-910-require-async-path
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -412,3 +447,9 @@ wevu@6.25.0:
   intents:
     - typed-wpi-vitest-mocks
     - wevu-camel-event-listener
+wevu@7.0.0:
+  dir: packages-runtime/wevu
+  intents:
+    - fix-issue-911-lifecycle-gate
+    - issue-911-initial-router-guard
+    - issue-911-page-runtime-gate

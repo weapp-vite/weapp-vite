@@ -1,5 +1,20 @@
 # weapp-vite
 
+## 7.0.0
+
+### Patch Changes
+
+- 修复代码提升后 `require.async` 分包加载路径计算错误的问题，确保异步模块从最终输出 chunk 位置正确解析。
+
+- Updated dependencies:
+  - @weapp-core/schematics@6.2.2
+  - @weapp-vite/ast@7.0.0
+  - @weapp-vite/mcp@1.5.1
+  - @weapp-vite/volar@2.1.6
+  - @weapp-vite/web@1.4.17
+  - weapp-ide-cli@6.1.1
+  - wevu@7.0.0
+
 ## 6.25.1
 
 ### Patch Changes
