@@ -1,4 +1,5 @@
 import type {
+  InitialNavigationMode,
   LocationQuery,
   RouteLocationNormalizedLoaded,
   RouteLocationRedirectedFrom,
@@ -56,6 +57,7 @@ export function createRouterOptionsSnapshot(
   normalizedNamedRoutes: readonly RouteRecordRaw[],
   paramsMode: RouteParamsMode,
   maxRedirects: number,
+  initialNavigationMode: InitialNavigationMode,
   initialNavigationTimeout: number,
   routeResolveCodec: RouteResolveCodec,
   rejectOnError: boolean,
@@ -73,6 +75,7 @@ export function createRouterOptionsSnapshot(
     namedRoutes: routesSnapshot,
     paramsMode,
     maxRedirects,
+    initialNavigationMode,
     initialNavigationTimeout,
     parseQuery: routeResolveCodec.parseQuery,
     stringifyQuery: routeResolveCodec.stringifyQuery,

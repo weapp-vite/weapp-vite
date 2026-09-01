@@ -1,5 +1,5 @@
 import type { MiniProgramPageLike } from '../routerInternal/shared'
-import type { LocationQueryRaw, NavigationFailure } from './types'
+import type { InitialNavigationMode, LocationQueryRaw, NavigationFailure } from './types'
 import { WEVU_INITIAL_NAVIGATION_TIMEOUT_MARKER } from '@weapp-core/constants'
 import { getActiveRouter } from './instance'
 
@@ -9,16 +9,19 @@ export type InitialNavigationStatus = 'idle' | 'running' | 'allowed' | 'aborted'
 
 interface InitialNavigationRunnerRegistration {
   runner: InitialNavigationRunner
+  mode: InitialNavigationMode
   timeoutMs: number
 }
 
 export type InitialNavigationRunner = (
   page: MiniProgramPageLike,
   query?: LocationQueryRaw,
+  isActive?: () => boolean,
 ) => Promise<void | NavigationFailure>
 
 interface InitialNavigationController {
   readonly promise: Promise<boolean>
+  readonly blocking: boolean
   readonly status: () => InitialNavigationStatus
   subscribe: (callback: (shouldMount: boolean) => void) => () => void
   start: (query?: LocationQueryRaw) => void
@@ -58,9 +61,11 @@ export function registerInitialNavigationRunner(
   router: object,
   runner: InitialNavigationRunner,
   timeoutMs = DEFAULT_INITIAL_NAVIGATION_TIMEOUT,
+  mode: InitialNavigationMode = 'blocking',
 ) {
   initialNavigationRunners.set(router, {
     runner,
+    mode,
     timeoutMs: normalizeTimeout(timeoutMs),
   })
 }
@@ -73,6 +78,11 @@ export function getInitialNavigationRunner(): InitialNavigationRunner | undefine
 export function getInitialNavigationTimeout() {
   const router = getActiveRouter()
   return router ? initialNavigationRunners.get(router)?.timeoutMs ?? DEFAULT_INITIAL_NAVIGATION_TIMEOUT : DEFAULT_INITIAL_NAVIGATION_TIMEOUT
+}
+
+export function getInitialNavigationMode(): InitialNavigationMode {
+  const router = getActiveRouter()
+  return router ? initialNavigationRunners.get(router)?.mode ?? 'eager' : 'eager'
 }
 
 function isNavigationFailureResult(result: void | NavigationFailure): result is NavigationFailure {
@@ -94,19 +104,22 @@ export function ensureInitialNavigation(
 ) {
   const existing = initialNavigationControllers.get(instance as object)
   if (existing) {
-    if (options.onComplete) {
+    if (options.onComplete && existing.blocking) {
       existing.subscribe(options.onComplete)
     }
     if (options.start !== false) {
       existing.start(query)
     }
-    return existing.promise
+    return existing.blocking ? existing.promise : undefined
   }
 
-  let pendingRunner = getInitialNavigationRunner()
+  const router = getActiveRouter()
+  const registration = router ? initialNavigationRunners.get(router) : undefined
+  let pendingRunner = registration?.runner
   if (!pendingRunner) {
     return undefined
   }
+  const blocking = registration?.mode === 'blocking'
 
   let page: MiniProgramPageLike | undefined = snapshotPage(instance)
   let initialQuery = snapshotQuery(query)
@@ -149,6 +162,7 @@ export function ensureInitialNavigation(
 
   const controller: InitialNavigationController = {
     promise,
+    blocking,
     status: () => currentStatus,
     subscribe(callback) {
       const entry = { callback, active: true }
@@ -173,15 +187,17 @@ export function ensureInitialNavigation(
         return
       }
       currentStatus = 'running'
-      timeoutHandle = setTimeout(() => {
-        if (currentStatus !== 'running') {
-          return
-        }
-        // 超时是可恢复的运行时诊断，保留稳定 marker 供宿主和 E2E 观测。
-        // eslint-disable-next-line no-console
-        console.warn(`${WEVU_INITIAL_NAVIGATION_TIMEOUT_MARKER} initial navigation exceeded ${timeoutMs}ms; mounting page`, page?.route ?? page?.__route__ ?? '')
-        settle('timed-out', true)
-      }, timeoutMs)
+      if (blocking) {
+        timeoutHandle = setTimeout(() => {
+          if (currentStatus !== 'running') {
+            return
+          }
+          // 超时是可恢复的运行时诊断，保留稳定 marker 供宿主和 E2E 观测。
+          // eslint-disable-next-line no-console
+          console.warn(`${WEVU_INITIAL_NAVIGATION_TIMEOUT_MARKER} initial navigation exceeded ${timeoutMs}ms; mounting page`, page?.route ?? page?.__route__ ?? '')
+          settle('timed-out', true)
+        }, timeoutMs)
+      }
       const runnerPage = page
       const runnerQuery = snapshotQuery(startQuery ?? initialQuery)
       const runner = pendingRunner
@@ -190,7 +206,7 @@ export function ensureInitialNavigation(
         settle('aborted', false)
         return
       }
-      void runner(runnerPage, runnerQuery).then((result) => {
+      void runner(runnerPage, runnerQuery, () => currentStatus === 'running').then((result) => {
         const failed = isNavigationFailureResult(result)
         settle(failed ? 'aborted' : 'allowed', !failed)
       }, () => {
@@ -203,13 +219,13 @@ export function ensureInitialNavigation(
   }
 
   initialNavigationControllers.set(instance as object, controller)
-  if (options.onComplete) {
+  if (options.onComplete && blocking) {
     controller.subscribe(options.onComplete)
   }
   if (options.start !== false) {
     controller.start(query)
   }
-  return promise
+  return blocking ? promise : undefined
 }
 
 export function cancelInitialNavigation(instance: MiniProgramPageLike) {

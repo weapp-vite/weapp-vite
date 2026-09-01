@@ -39,6 +39,7 @@ describe('router: initial navigation state machine', () => {
     expect(runner).toHaveBeenCalledWith(
       { route: 'pages/home/index', __route__: undefined, options: { from: 'query' } },
       { from: 'query' },
+      expect.any(Function),
     )
     expect(getInitialNavigationStatus(page)).toBe('running')
     await vi.advanceTimersByTimeAsync(10_000)
@@ -122,5 +123,27 @@ describe('router: initial navigation state machine', () => {
     await Promise.resolve()
     expect(firstComplete).toHaveBeenCalledWith(true)
     expect(secondComplete).toHaveBeenCalledWith(true)
+  })
+
+  it('uses eager mode without a mount gate or timeout timer', async () => {
+    const router = state.activeRouter!
+    let resolveRunner!: () => void
+    const runner = vi.fn(() => new Promise<void>((resolve) => {
+      resolveRunner = resolve
+    }))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    registerInitialNavigationRunner(router, runner, 100, 'eager')
+    const page = {}
+    const complete = vi.fn()
+
+    expect(ensureInitialNavigation(page, {}, { onComplete: complete })).toBeUndefined()
+    expect(getInitialNavigationStatus(page)).toBe('running')
+    await vi.advanceTimersByTimeAsync(200)
+    expect(warn).not.toHaveBeenCalled()
+    expect(complete).not.toHaveBeenCalled()
+
+    resolveRunner()
+    await vi.runAllTicks()
+    expect(getInitialNavigationStatus(page)).toBe('allowed')
   })
 })

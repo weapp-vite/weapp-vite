@@ -1,5 +1,6 @@
 import type {
   AddRoute,
+  InitialNavigationMode,
   LocationQuery,
   NavigationAfterEachContext,
   NavigationErrorContext,
@@ -60,11 +61,14 @@ const route = useRoute()
 expectType<Readonly<RouteLocationNormalizedLoaded>>(route)
 const paramsMode: RouteParamsMode = 'strict'
 expectType<'loose' | 'strict'>(paramsMode)
+const initialNavigationMode: InitialNavigationMode = 'eager'
+expectType<'eager' | 'blocking'>(initialNavigationMode)
 
 const navigationOptions: UseRouterOptions = {
   tabBarEntries: ['pages/home/index'],
   paramsMode: 'strict',
   initialNavigationTimeout: 12_000,
+  initialNavigationMode,
   routes: [
     {
       name: 'home',
@@ -93,6 +97,7 @@ expectType<ReturnType<typeof createApp>>(createApp({ setup() {} }).use(navigatio
 expectType<AddRoute>(navigation.addRoute)
 expectType<Readonly<UseRouterOptions>>(navigation.options)
 expectType<number | undefined>(navigation.options.initialNavigationTimeout)
+expectType<'eager' | 'blocking' | undefined>(navigation.options.initialNavigationMode)
 expectType<readonly RouteRecordRaw[] | undefined>(navigation.options.routes)
 expectType<void>(navigation.install())
 expectType<SetupContextRouter>(useNativeRouter())

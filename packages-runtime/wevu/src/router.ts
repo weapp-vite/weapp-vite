@@ -12,6 +12,7 @@ export { resolveRouteLocation } from './router/resolve'
 export { NavigationFailureType } from './router/types'
 export type {
   AddRoute,
+  InitialNavigationMode,
   LocationQuery,
   LocationQueryRaw,
   LocationQueryValue,

@@ -70,6 +70,7 @@ export interface NavigationFailure extends Error {
 }
 
 export type NavigationMode = 'push' | 'replace' | 'back'
+export type InitialNavigationMode = 'eager' | 'blocking'
 export interface NavigationRedirect {
   to: RouteLocationRaw
   replace?: boolean
@@ -155,7 +156,11 @@ export interface UseRouterOptions {
   paramsMode?: RouteParamsMode
   maxRedirects?: number
   /**
-   * 首屏异步路由守卫的最大等待时间（毫秒），超时后放行页面挂载。
+   * 首屏导航守卫模式。默认立即挂载页面，只有明确配置 `blocking` 时才等待守卫完成。
+   */
+  initialNavigationMode?: InitialNavigationMode
+  /**
+   * blocking 首屏导航守卫的最大等待时间（毫秒），超时后放行页面挂载。
    */
   initialNavigationTimeout?: number
   parseQuery?: RouteQueryParser

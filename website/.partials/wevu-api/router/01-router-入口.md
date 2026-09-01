@@ -24,7 +24,9 @@
 
 **示例：** 见 [本组示例](/wevu/api/router#example-router-entry)。
 
-创建并注册默认 Router。选项支持路由记录、tabBar 路径、params 模式、重定向上限、query codec 和导航失败策略。
+创建并注册默认 Router。选项支持路由记录、tabBar 路径、params 模式、重定向上限、query codec、首屏导航模式和导航失败策略。
+
+首屏导航默认使用 `initialNavigationMode: 'eager'`：页面先挂载并渲染，异步守卫在后台完成。需要在守卫完成前阻止首屏（例如必须先完成鉴权并决定是否允许进入）时，显式设置 `initialNavigationMode: 'blocking'`。blocking 模式可通过 `initialNavigationTimeout` 设置最大等待时间，默认 `10_000ms`，超时后放行页面并输出诊断 marker；该超时配置对 eager 模式没有门控作用。
 
 ### `useRouter()` {#userouter}
 
