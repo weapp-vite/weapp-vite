@@ -1,5 +1,17 @@
 # create-weapp-vite
 
+## 2.8.8
+
+### Patch Changes
+
+- 修复代码提升后 `require.async` 分包加载路径计算错误的问题，确保异步模块从最终输出 chunk 位置正确解析。
+
+- 修复首屏异步路由守卫与页面 ready/mounted 生命周期并发执行的问题，并补充真实运行时回归覆盖。
+
+- 修复 Wevu 小程序首次启动时未等待 `router.beforeEach` 异步守卫的问题，页面 runtime 现在会在首屏导航守卫完成后再挂载。
+
+- 完善首屏异步路由守卫门控，确保页面 setup、created、beforeMount、ready 和 mounted 生命周期均在 app-level 守卫完成后执行，并覆盖页面生命周期重入与守卫拒绝场景。
+
 ## 2.8.7
 
 ### Patch Changes

@@ -1,5 +1,18 @@
 # wevu
 
+## 7.0.0
+
+### Patch Changes
+
+- 修复首屏异步路由守卫与页面 ready/mounted 生命周期并发执行的问题，并补充真实运行时回归覆盖。
+
+- 修复 Wevu 小程序首次启动时未等待 `router.beforeEach` 异步守卫的问题，页面 runtime 现在会在首屏导航守卫完成后再挂载。
+
+- 完善首屏异步路由守卫门控，确保页面 setup、created、beforeMount、ready 和 mounted 生命周期均在 app-level 守卫完成后执行，并覆盖页面生命周期重入与守卫拒绝场景。
+
+- Updated dependencies:
+  - @wevu/compiler@7.0.0
+
 ## 6.25.1
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @weapp-vite/volar
 
+## 2.1.6
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/schematics@6.2.2
+
 ## 2.1.5
 
 ### Patch Changes
