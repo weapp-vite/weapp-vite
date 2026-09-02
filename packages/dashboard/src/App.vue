@@ -152,7 +152,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
         class="fixed inset-y-0 left-0 z-50 flex w-[min(17rem,88vw)] flex-col border-r border-(--dashboard-border) bg-(--dashboard-panel) shadow-xl lg:hidden"
       >
         <div class="flex h-13 items-center justify-between border-b border-(--dashboard-border) px-3">
-          <strong class="text-sm">weapp-vite DevTools</strong>
+          <span class="min-w-0">
+            <strong class="block truncate text-sm">{{ dashboardDevtoolsName }}</strong>
+            <span class="block truncate font-mono text-[10px] text-(--dashboard-text-soft)">{{ projectName }}</span>
+          </span>
           <button class="h-8 w-8 rounded border border-(--dashboard-border)" type="button" aria-label="关闭导航" @click="mobileNavOpen = false">
             ×
           </button>

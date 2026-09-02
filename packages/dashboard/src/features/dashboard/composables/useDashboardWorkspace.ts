@@ -124,22 +124,47 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     }
 
     const previousFromTransport = payload.previous
+    const currentProjectChanged = Boolean(
+      resultRef.value && !isSameAnalyzeProject(incoming, resultRef.value),
+    )
+    if (currentProjectChanged) {
+      previousResultRef.value = null
+      historySnapshots.value = []
+      baselineSnapshotId.value = null
+      comparisonMode.value = 'previous'
+    }
+
     const stored = readStoredAnalyzeHistory()
-    const storedMatchesProject = stored?.current && isSameAnalyzeProject(incoming, stored.current)
-    let previousResult = storedMatchesProject ? stored.previous : previousResultRef.value
-    if (storedMatchesProject && !isSameAnalyzeResult(incoming, stored.current)) {
+    const storedMatchesProject = Boolean(
+      stored?.current && isSameAnalyzeProject(incoming, stored.current),
+    )
+    let previousResult = storedMatchesProject
+      && stored?.previous
+      && isSameAnalyzeProject(incoming, stored.previous)
+      ? stored.previous
+      : null
+    if (storedMatchesProject && stored?.current && !isSameAnalyzeResult(incoming, stored.current)) {
       previousResult = stored.current
     }
-    if (resultRef.value && !isSameAnalyzeResult(incoming, resultRef.value)) {
+    if (
+      !currentProjectChanged
+      && resultRef.value
+      && isSameAnalyzeProject(incoming, resultRef.value)
+      && !isSameAnalyzeResult(incoming, resultRef.value)
+    ) {
       previousResult = resultRef.value
     }
-    if (previousFromTransport && !isSameAnalyzeResult(incoming, previousFromTransport)) {
+    if (
+      previousFromTransport
+      && isSameAnalyzeProject(incoming, previousFromTransport)
+      && !isSameAnalyzeResult(incoming, previousFromTransport)
+    ) {
       previousResult = previousFromTransport
     }
 
-    previousResultRef.value = isSameAnalyzeResult(incoming, previousResult)
-      ? null
-      : previousResult
+    previousResultRef.value = previousResult && !isSameAnalyzeResult(incoming, previousResult)
+      ? previousResult
+      : null
     resultRef.value = incoming
     const incomingSnapshot = createAnalyzeHistorySnapshot(incoming)
     const nextSnapshots = normalizeHistorySnapshots({

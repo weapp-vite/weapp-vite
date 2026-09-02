@@ -1,6 +1,6 @@
 import type { AnalyzeSubpackagesResult } from '../types'
 import { describe, expect, it } from 'vitest'
-import { isSameAnalyzeProject, resolveInitialPreviousResult } from './analyzeHistory'
+import { createAnalyzeHistorySnapshot, isSameAnalyzeProject, normalizeHistorySnapshots, resolveInitialPreviousResult } from './analyzeHistory'
 
 function createResult(projectName?: string): AnalyzeSubpackagesResult {
   return {
@@ -37,6 +37,31 @@ describe('analyze project history', () => {
       current: stored,
       previous: null,
     })).toBeNull()
+  })
+
+  it('fails closed for nameless legacy history and foreign transport history', () => {
+    const current = createResult('@varo/realworld-weapp')
+    const legacy = createResult()
+    const foreign = createResult('@other/project')
+
+    expect(isSameAnalyzeProject(legacy, createResult())).toBe(false)
+    expect(resolveInitialPreviousResult(current, foreign, null)).toBeNull()
+  })
+
+  it('filters foreign snapshots and previous results during normalization', () => {
+    const current = createResult('@varo/realworld-weapp')
+    const foreign = createResult('@other/project')
+    const snapshots = normalizeHistorySnapshots({
+      current,
+      previous: foreign,
+      snapshots: [
+        createAnalyzeHistorySnapshot(foreign, '2026-09-01T00:00:00.000Z'),
+        createAnalyzeHistorySnapshot(current, '2026-09-02T00:00:00.000Z'),
+      ],
+    })
+
+    expect(snapshots).toHaveLength(1)
+    expect(snapshots[0]?.result.metadata?.projectName).toBe('@varo/realworld-weapp')
   })
 
   it('keeps same-project browser history eligible for comparison', () => {

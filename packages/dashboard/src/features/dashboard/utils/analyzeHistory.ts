@@ -25,6 +25,7 @@ export function createAnalyzeResultKey(result: AnalyzeSubpackagesResult | null |
     return ''
   }
   return JSON.stringify({
+    projectName: result.metadata?.projectName,
     packages: result.packages,
     modules: result.modules,
     subPackages: result.subPackages,
@@ -38,10 +39,7 @@ export function isSameAnalyzeProject(
 ) {
   const leftName = left?.metadata?.projectName
   const rightName = right?.metadata?.projectName
-  if (!leftName && !rightName) {
-    return true
-  }
-  return leftName === rightName
+  return Boolean(leftName && rightName && leftName === rightName)
 }
 
 export function isSameAnalyzeResult(
@@ -87,9 +85,10 @@ export function createAnalyzeHistorySnapshot(
 }
 
 export function normalizeHistorySnapshots(history: StoredAnalyzeResultHistory): AnalyzeHistorySnapshot[] {
-  const snapshots = [...(history.snapshots ?? [])]
+  const snapshots = (history.snapshots ?? [])
+    .filter(snapshot => isSameAnalyzeProject(history.current, snapshot.result))
 
-  if (history.previous) {
+  if (history.previous && isSameAnalyzeProject(history.current, history.previous)) {
     snapshots.push(createAnalyzeHistorySnapshot(history.previous))
   }
   snapshots.push(createAnalyzeHistorySnapshot(history.current))
@@ -144,11 +143,11 @@ export function resolveInitialPreviousResult(
   initialPreviousPayload: AnalyzeSubpackagesResult | null,
   storedHistory: StoredAnalyzeResultHistory | null,
 ) {
-  if (initialPreviousPayload) {
-    return initialPreviousPayload
-  }
   if (!initialPayload) {
     return null
+  }
+  if (initialPreviousPayload && isSameAnalyzeProject(initialPayload, initialPreviousPayload)) {
+    return initialPreviousPayload
   }
   if (storedHistory?.current && !isSameAnalyzeProject(initialPayload, storedHistory.current)) {
     return null
@@ -156,5 +155,7 @@ export function resolveInitialPreviousResult(
   if (storedHistory?.current && !isSameAnalyzeResult(initialPayload, storedHistory.current)) {
     return storedHistory.current
   }
-  return storedHistory?.previous ?? null
+  return storedHistory?.previous && isSameAnalyzeProject(initialPayload, storedHistory.previous)
+    ? storedHistory.previous
+    : null
 }

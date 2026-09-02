@@ -5,7 +5,7 @@ import type {
   AnalyzeHistorySnapshot,
   AnalyzeWorkQueueItem,
 } from '../types'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import ActionCenterPanel from './ActionCenterPanel.vue'
 import AnalyzeWorkQueuePanel from './AnalyzeWorkQueuePanel.vue'
 import HistoryBaselinePanel from './HistoryBaselinePanel.vue'
@@ -38,14 +38,16 @@ type DiagnosticsSideTab = 'work-queue' | 'history'
 
 const splitRoot = ref<HTMLElement | null>(null)
 const splitPercent = ref(66)
+const splitMaxPercent = ref(76)
 const activeSideTab = ref<DiagnosticsSideTab>('work-queue')
 const splitStyle = computed(() => ({
   '--diagnostics-primary': `${splitPercent.value}%`,
 }))
 let stopResize: (() => void) | null = null
+let splitResizeObserver: ResizeObserver | null = null
 
 function setSplitPercent(value: number) {
-  splitPercent.value = Math.min(76, Math.max(52, Math.round(value)))
+  splitPercent.value = Math.min(splitMaxPercent.value, Math.max(52, Math.round(value)))
 }
 
 function handleResizePointerDown(event: PointerEvent) {
@@ -64,10 +66,12 @@ function handleResizePointerDown(event: PointerEvent) {
   stopResize = () => {
     window.removeEventListener('pointermove', handlePointerMove)
     window.removeEventListener('pointerup', handlePointerUp)
+    window.removeEventListener('pointercancel', handlePointerUp)
     stopResize = null
   }
   window.addEventListener('pointermove', handlePointerMove)
   window.addEventListener('pointerup', handlePointerUp)
+  window.addEventListener('pointercancel', handlePointerUp)
   update(event.clientX)
 }
 
@@ -86,11 +90,54 @@ function handleResizeKeydown(event: KeyboardEvent) {
   }
   else if (event.key === 'End') {
     event.preventDefault()
-    setSplitPercent(76)
+    setSplitPercent(splitMaxPercent.value)
   }
 }
 
-onBeforeUnmount(() => stopResize?.())
+function updateSplitBounds() {
+  const width = splitRoot.value?.clientWidth ?? 0
+  if (width === 0) {
+    return
+  }
+  const minimumSideWidth = 320
+  const separatorAndGapsWidth = 28
+  splitMaxPercent.value = Math.min(
+    76,
+    Math.max(52, Math.floor(((width - minimumSideWidth - separatorAndGapsWidth) / width) * 100)),
+  )
+  setSplitPercent(splitPercent.value)
+}
+
+function setActiveSideTab(tab: DiagnosticsSideTab, focus = false) {
+  activeSideTab.value = tab
+  if (focus) {
+    document.getElementById(`diagnostics-${tab}-tab`)?.focus()
+  }
+}
+
+function handleSideTabKeydown(event: KeyboardEvent) {
+  if (event.key === 'ArrowLeft' || event.key === 'Home') {
+    event.preventDefault()
+    setActiveSideTab('work-queue', true)
+  }
+  else if (event.key === 'ArrowRight' || event.key === 'End') {
+    event.preventDefault()
+    setActiveSideTab('history', true)
+  }
+}
+
+onMounted(() => {
+  splitResizeObserver = new ResizeObserver(updateSplitBounds)
+  if (splitRoot.value) {
+    splitResizeObserver.observe(splitRoot.value)
+  }
+  updateSplitBounds()
+})
+
+onBeforeUnmount(() => {
+  stopResize?.()
+  splitResizeObserver?.disconnect()
+})
 </script>
 
 <template>
@@ -117,7 +164,7 @@ onBeforeUnmount(() => stopResize?.())
       aria-label="调整问题中心和诊断侧栏宽度"
       aria-orientation="vertical"
       aria-valuemin="52"
-      aria-valuemax="76"
+      :aria-valuemax="splitMaxPercent"
       :aria-valuenow="splitPercent"
       @keydown="handleResizeKeydown"
       @pointerdown="handleResizePointerDown"
@@ -140,8 +187,10 @@ onBeforeUnmount(() => stopResize?.())
             ? 'bg-(--dashboard-accent-soft) text-(--dashboard-accent)'
             : 'text-(--dashboard-text-soft) hover:bg-(--dashboard-panel-muted) hover:text-(--dashboard-text)'"
           :aria-selected="activeSideTab === 'work-queue'"
+          :tabindex="activeSideTab === 'work-queue' ? 0 : -1"
           aria-controls="diagnostics-work-queue-panel"
-          @click="activeSideTab = 'work-queue'"
+          @click="setActiveSideTab('work-queue')"
+          @keydown="handleSideTabKeydown"
         >
           处理清单
         </button>
@@ -154,8 +203,10 @@ onBeforeUnmount(() => stopResize?.())
             ? 'bg-(--dashboard-accent-soft) text-(--dashboard-accent)'
             : 'text-(--dashboard-text-soft) hover:bg-(--dashboard-panel-muted) hover:text-(--dashboard-text)'"
           :aria-selected="activeSideTab === 'history'"
+          :tabindex="activeSideTab === 'history' ? 0 : -1"
           aria-controls="diagnostics-history-panel"
-          @click="activeSideTab = 'history'"
+          @click="setActiveSideTab('history')"
+          @keydown="handleSideTabKeydown"
         >
           历史基线
         </button>
