@@ -1,6 +1,7 @@
 import type { SourceMap } from 'magic-string'
 import type { ResolveWebAutoImportTag, ResolveWebModuleId, WeappWebPluginOptions, WebResolvedComponent, WebStylePreprocessOptions } from './types'
 import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import process from 'node:process'
 
 import { dirname, extname, resolve } from 'pathe'
@@ -82,6 +83,12 @@ interface WeappWebVitePlugin {
     id: string,
   ) => WebTransformResult | Promise<WebTransformResult>
 }
+
+const requireFromWebRuntime = createRequire(import.meta.url)
+const WEB_RUNTIME_MODULES = new Map([
+  ['lit', requireFromWebRuntime.resolve('lit')],
+  ['lit/directives/repeat.js', requireFromWebRuntime.resolve('lit/directives/repeat.js')],
+])
 
 function isTemplateFile(id: string) {
   const lower = id.toLowerCase()
@@ -286,6 +293,10 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       }
     },
     resolveId(id: string, importer?: string) {
+      const runtimeModule = WEB_RUNTIME_MODULES.get(id)
+      if (runtimeModule) {
+        return runtimeModule
+      }
       if (id === '/@weapp-vite/web/entry' || id === '@weapp-vite/web/entry') {
         return ENTRY_ID
       }

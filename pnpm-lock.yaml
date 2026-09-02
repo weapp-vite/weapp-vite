@@ -2964,9 +2964,6 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
-      lit:
-        specifier: ^3.3.3
-        version: 3.3.3
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.3
@@ -2976,9 +2973,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
-      vite:
-        specifier: 'catalog:'
-        version: 8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.0(supports-color@10.2.2))(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.34.1)(tsx@4.23.13)(yaml@2.9.0)
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.11(typescript@6.0.3)
@@ -3006,9 +3000,6 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
-      lit:
-        specifier: ^3.3.3
-        version: 3.3.3
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.3

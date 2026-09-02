@@ -38,11 +38,9 @@
     "@types/node": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "eslint": "catalog:",
-    "lit": "^3.3.3",
     "miniprogram-api-typings": "catalog:",
     "stylelint": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "vue-tsc": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"

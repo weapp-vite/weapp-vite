@@ -17,6 +17,17 @@ async function readRepoFile(relativePath: string) {
   return await fs.readFile(path.join(REPO_ROOT, relativePath), 'utf8')
 }
 
+interface PackageManifest {
+  dependencies?: Record<string, string>
+  devDependencies?: Record<string, string>
+  optionalDependencies?: Record<string, string>
+  peerDependencies?: Record<string, string>
+}
+
+async function readRepoPackageManifest(relativePath: string) {
+  return JSON.parse(await readRepoFile(relativePath)) as PackageManifest
+}
+
 describe('tutorial e2e contracts', () => {
   it('keeps tutorial docs and scenario registry aligned', async () => {
     for (const contract of TUTORIAL_DOC_CONTRACTS) {
@@ -35,6 +46,23 @@ describe('tutorial e2e contracts', () => {
     }
     for (const platform of Object.keys(MINIAPP_PLATFORM_OUTPUTS)) {
       expect(content).toContain(`pnpm build:${platform}`)
+    }
+  })
+
+  it('keeps multi-platform templates free of runtime-owned direct dependencies', async () => {
+    for (const template of MULTI_PLATFORM_TEMPLATES) {
+      const manifest = await readRepoPackageManifest(
+        `templates/weapp-vite-${template}-template/package.json`,
+      )
+      const directDependencies = {
+        ...manifest.dependencies,
+        ...manifest.devDependencies,
+        ...manifest.optionalDependencies,
+        ...manifest.peerDependencies,
+      }
+
+      expect(directDependencies).not.toHaveProperty('lit')
+      expect(directDependencies).not.toHaveProperty('vite')
     }
   })
 

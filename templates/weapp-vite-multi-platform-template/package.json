@@ -38,7 +38,6 @@
     "@types/node": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "eslint": "catalog:",
-    "lit": "^3.3.3",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",
     "stylelint": "catalog:",

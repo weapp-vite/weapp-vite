@@ -117,6 +117,9 @@ describe('weapp web plugin hook matrix', () => {
 
     expect(await resolveId('/@weapp-vite/web/entry')).toBe(ENTRY_ID)
     expect(await resolveId('@weapp-vite/web/entry')).toBe(ENTRY_ID)
+    expect(normalizePath(await resolveId('lit') as string)).toMatch(/\/lit\/index\.js$/)
+    expect(normalizePath(await resolveId('lit/directives/repeat.js') as string))
+      .toMatch(/\/lit\/directives\/repeat\.js$/)
     expect(await resolveId(AUTO_ROUTES_ID)).toBe(RESOLVED_AUTO_ROUTES_ID)
     expect(await resolveId('/@weapp-vite/web/component/missing')).toBeNull()
     expect(await resolveId('./standalone', join(srcRoot, 'importer.vue'))).toBe(normalizePath(join(srcRoot, 'standalone.vue')))

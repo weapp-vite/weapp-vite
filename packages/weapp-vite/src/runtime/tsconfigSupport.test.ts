@@ -78,7 +78,8 @@ describe('tsconfig support', () => {
     }))
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
 
-    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'vite/client']))
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client']))
+    expect(app.compilerOptions.types).not.toContain('vite/client')
     expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['./typed-components.d.ts'])
     expect(app.compilerOptions.paths['@weapp-vite/web']).toEqual(['../../../packages-runtime/web/src/index.ts'])
     expect(app.vueCompilerOptions.lib).toBe('wevu')
@@ -255,7 +256,8 @@ describe('tsconfig support', () => {
     }))
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
 
-    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'vite/client', 'custom-env']))
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'custom-env']))
+    expect(app.compilerOptions.types).not.toContain('vite/client')
   })
 
   it('omits deprecated baseUrl from managed and user app compiler options', async () => {
