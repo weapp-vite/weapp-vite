@@ -59,7 +59,7 @@ export interface ComponentOptions {
 }
 
 export type NormalizedComponentOptions = Omit<ComponentOptions, 'properties'> & {
-  properties?: Record<string, PropertyOption>
+  properties: Record<string, PropertyOption>
 }
 
 export interface DefineComponentOptions {

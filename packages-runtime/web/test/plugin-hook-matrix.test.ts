@@ -112,8 +112,12 @@ describe('weapp web plugin hook matrix', () => {
   it('resolves virtual, component, extensionless and SFC style module ids', async () => {
     const { root, srcRoot } = await createPluginFixture()
     const plugin = weappWebPlugin({ srcDir: 'src' })
-    await plugin.configResolved?.call({ warn: vi.fn() }, { root, command: 'serve' } as any)
     const resolveId = plugin.resolveId!
+
+    expect(await resolveId('lit')).toBeNull()
+    expect(await resolveId('lit/directives/repeat.js')).toBeNull()
+
+    await plugin.configResolved?.call({ warn: vi.fn() }, { root, command: 'serve' } as any)
 
     expect(await resolveId('/@weapp-vite/web/entry')).toBe(ENTRY_ID)
     expect(await resolveId('@weapp-vite/web/entry')).toBe(ENTRY_ID)

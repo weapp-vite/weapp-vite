@@ -78,7 +78,7 @@ describe('component behavior normalization contract', () => {
     result.lifetimes!.detached!.call(instance)
     result.pageLifetimes!.show!.call(instance)
     result.pageLifetimes!.hide!.call(instance)
-    result.pageLifetimes!.resize!.call(instance, {} as any)
+    result.pageLifetimes!.resize!.call(instance)
     expect(calls).toEqual([
       'first:created',
       'second:created',

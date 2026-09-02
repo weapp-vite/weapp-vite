@@ -21,7 +21,7 @@ describe('runtime entry boundary contracts', () => {
     const symbol = Symbol('runtime')
     const target = { own: 'value', [symbol]: true } as any
     const runtimePrototype = {
-      runtimeMethod() {
+      runtimeMethod(this: { own: string }): string {
         return this.own
       },
       runtimeValue: 1,
@@ -109,7 +109,7 @@ describe('runtime entry boundary contracts', () => {
     expect(attributes).not.toContain('hidden=')
     expect(stripControlAttributes({ 'wx:if': 'ready', 'id': 'root' })).toEqual({ id: 'root' })
     expect(isConditionalElement({ type: 'text' } as Node)).toBe(false)
-    expect(isConditionalElement({ type: 'tag', attribs: { 'wx:elif': 'ready' } } as Element)).toBe(true)
+    expect(isConditionalElement({ type: 'tag', attribs: { 'wx:elif': 'ready' } } as unknown as Element)).toBe(true)
   })
 
   it('normalizes empty and updated component runtime state', () => {

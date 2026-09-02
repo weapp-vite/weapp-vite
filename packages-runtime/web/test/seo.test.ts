@@ -151,8 +151,8 @@ describe('web runtime document head', () => {
     expect(documentRef.title).toBe('pages/home')
     syncWebDocumentHead({})
 
-    const headless = new FakeDocument() as FakeDocument & { head?: FakeElement }
-    headless.head = undefined
+    const headless = new FakeDocument()
+    Object.defineProperty(headless, 'head', { configurable: true, value: undefined })
     Object.assign(globalThis, {
       document: headless,
       window: { location: { href: 'https://example.test/headless?query=1' } },

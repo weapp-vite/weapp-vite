@@ -62,7 +62,7 @@ describe('component infrastructure contracts', () => {
     const target = document.createElement('span') as ComponentPublicInstance
     const root = document.createElement('section')
     root.append(target)
-    const instance = { renderRoot: root } as ComponentPublicInstance & { renderRoot: ParentNode }
+    const instance = { renderRoot: root } as unknown as ComponentPublicInstance & { renderRoot: ParentNode }
 
     expect(selectRuntimeComponent(instance, 'span')).toBe(target)
     expect(selectRuntimeComponents(instance, 'span')).toEqual([target])
@@ -116,7 +116,7 @@ describe('component infrastructure contracts', () => {
     const instance = {
       properties: { title: 'after', profile: { items: [{ name: 'Ada' }] } },
       data: { count: 1 },
-    } as ComponentPublicInstance
+    } as unknown as ComponentPublicInstance
 
     runComponentObservers(component, instance, ['title', 'profile.items[0].name'], { title: 'before' })
 
@@ -138,7 +138,7 @@ describe('component infrastructure contracts', () => {
   it('skips observers when there are no changed keys', () => {
     const observer = vi.fn()
     const instance = { properties: {}, data: {} } as ComponentPublicInstance
-    runComponentObservers({ observers: { '**': observer } }, instance, [])
+    runComponentObservers({ properties: {}, observers: { '**': observer } }, instance, [])
     expect(observer).not.toHaveBeenCalled()
   })
 
@@ -146,7 +146,7 @@ describe('component infrastructure contracts', () => {
     const parentTag = slugify('components/parent/index', 'wv-component')
     const parent = document.createElement(parentTag) as ComponentPublicInstance
     const slot = document.createElement('slot')
-    const child = document.createElement('div') as ComponentPublicInstance
+    const child = document.createElement('div') as unknown as ComponentPublicInstance
     Object.defineProperty(child, 'assignedSlot', { configurable: true, value: slot })
     parent.append(slot)
 
@@ -159,7 +159,7 @@ describe('component infrastructure contracts', () => {
     } as unknown as ComponentPublicInstance
     expect(resolveRelationNodes(detached, 'components/child/index', '../parent/index', 'ancestor')).toEqual([host])
 
-    const orphan = document.createElement('div') as ComponentPublicInstance
+    const orphan = document.createElement('div') as unknown as ComponentPublicInstance
     expect(resolveRelationNodes(orphan, 'components/child/index', '../parent/index', 'ancestor')).toEqual([])
   })
 
@@ -193,7 +193,10 @@ describe('component infrastructure contracts', () => {
     const element = document.createElement('wv-lit-lifecycle-contract') as ComponentPublicInstance & {
       updateComplete: Promise<boolean>
       invalid?: unknown
+      attributeChangedCallback: (name: string, oldValue: string | null, newValue: string | null) => void
+      connectedCallback: () => void
       selectOwnerComponent: () => unknown
+      tap?: (...args: unknown[]) => unknown
       __weappSync: (methods: undefined) => void
       __weappInvokePageLifetime: (type: 'resize') => void
     }

@@ -33,7 +33,7 @@ describe('WXML attribute contracts', () => {
 
   it('identifies conditional elements and strips every control attribute', () => {
     expect(isConditionalElement({ type: 'text', data: 'text' })).toBe(false)
-    expect(isConditionalElement({ type: 'element', name: 'view' })).toBe(false)
+    expect(isConditionalElement({ type: 'element', name: 'view' } as never)).toBe(false)
     expect(isConditionalElement({ type: 'element', name: 'view', attribs: { 'wx:if': 'ready' } })).toBe(true)
     expect(isConditionalElement({ type: 'element', name: 'view', attribs: { 'a:elif': 'ready' } })).toBe(true)
     expect(isConditionalElement({ type: 'element', name: 'view', attribs: { 'tt:else': '' } })).toBe(true)

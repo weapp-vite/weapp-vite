@@ -43,7 +43,7 @@ describe('runtime low-level capability contracts', () => {
   })
 
   it('normalizes vibration durations and battery snapshots', async () => {
-    const vibrate = vi.fn(() => true)
+    const vibrate = vi.fn((_duration: number) => true)
     vi.stubGlobal('navigator', { vibrate })
     vibrateDevice('heavy')
     vibrateDevice('medium')
@@ -81,7 +81,7 @@ describe('runtime low-level capability contracts', () => {
     delete runtimeGlobal[WEAPP_VITE_WEB_SCAN_CODE_RESULT_KEY]
     expect(resolveScanCodeResult(() => null)).toBeNull()
 
-    setWebRuntimeHost({ clipboard: {} })
+    setWebRuntimeHost({ clipboard: {} as never })
     vi.stubGlobal('document', undefined)
     await expect(writeClipboardData('missing')).rejects.toThrow('Clipboard API is unavailable')
     await expect(readClipboardData()).rejects.toThrow('Clipboard API is unavailable')

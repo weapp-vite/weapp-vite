@@ -44,8 +44,8 @@ describe('polyfill entry installation contract', () => {
       expect((globalThis as Record<string, unknown>)[key]).toBe(bridge)
     }
     expect(bridge.env.USER_DATA_PATH).toBe('/existing/user-data')
-    expect(globalThis.getApp).toBe(getApp)
-    expect(globalThis.getCurrentPages).toBe(getCurrentPages)
+    expect((globalThis as Record<string, unknown>).getApp).toBe(getApp)
+    expect((globalThis as Record<string, unknown>).getCurrentPages).toBe(getCurrentPages)
 
     await expect(api.setNavigationBarTitle({ title: 'Title' })).resolves.toBeUndefined()
     await expect(api.setNavigationBarColor({ backgroundColor: '#fff' })).resolves.toBeUndefined()
