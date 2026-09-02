@@ -17,6 +17,7 @@ import {
   select,
   zoom,
   zoomIdentity,
+  zoomTransform,
 } from 'd3'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { createAnalyzeChunkGraph, createAnalyzeChunkGraphView } from '../utils/analyzeChunkGraph'
@@ -53,13 +54,13 @@ let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | undefined
 
 const graph = computed(() => createAnalyzeChunkGraph(props.result))
 const packageOptions = computed(() => graph.value.nodes.filter(node => node.kind === 'package'))
-const selectedNode = computed(() => graph.value.nodes.find(node => node.id === selectedNodeId.value) ?? null)
 const visibleGraph = computed(() => createAnalyzeChunkGraphView(graph.value, {
   maxEdges: searchQuery.value.trim() ? 320 : MAX_VISIBLE_EDGES,
   maxNodes: searchQuery.value.trim() ? MAX_SEARCH_NODES : MAX_VISIBLE_NODES,
   packageId: packageFilter.value,
   query: searchQuery.value,
 }))
+const selectedNode = computed(() => visibleGraph.value.nodes.find(node => node.id === selectedNodeId.value) ?? null)
 
 const packageColorById = computed(() => {
   const palette = props.theme === 'dark'
@@ -168,6 +169,7 @@ async function renderGraph() {
     .scaleExtent([0.2, 5])
     .on('zoom', event => viewport.attr('transform', event.transform.toString()))
   svg.call(zoomBehavior)
+  viewport.attr('transform', zoomTransform(element).toString())
 
   const nodes: RenderedGraphNode[] = visibleGraph.value.nodes.map((graphNode) => {
     const radius = graphNode.kind === 'package'
@@ -278,7 +280,12 @@ onBeforeUnmount(() => {
   simulation = undefined
 })
 
-watch([visibleGraph, packageColorById], () => void renderGraph(), { deep: true })
+watch([visibleGraph, packageColorById], ([view]) => {
+  if (selectedNodeId.value && !view.nodes.some(node => node.id === selectedNodeId.value)) {
+    selectedNodeId.value = null
+  }
+  void renderGraph()
+}, { deep: true })
 watch(() => props.theme, () => void renderGraph())
 </script>
 
@@ -295,12 +302,15 @@ watch(() => props.theme, () => void renderGraph())
             type="search"
           >
         </label>
-        <select v-model="packageFilter" class="h-8 w-full min-w-0 truncate rounded border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2 text-xs">
-          <option value="all">全部 package</option>
-          <option v-for="item in packageOptions" :key="item.id" :value="item.packageId">
-            {{ item.packageLabel }}
-          </option>
-        </select>
+        <label class="min-w-0">
+          <span class="sr-only">筛选依赖图 package</span>
+          <select v-model="packageFilter" class="h-8 w-full min-w-0 truncate rounded border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2 text-xs">
+            <option value="all">全部 package</option>
+            <option v-for="item in packageOptions" :key="item.id" :value="item.packageId">
+              {{ item.packageLabel }}
+            </option>
+          </select>
+        </label>
         <div class="flex items-center gap-1" role="group" aria-label="依赖图视图控制">
           <button class="h-8 w-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:ring-2 focus-visible:ring-(--dashboard-accent)" type="button" aria-label="缩小依赖图" title="缩小（-）" @click="zoomGraph(0.8)">
             −

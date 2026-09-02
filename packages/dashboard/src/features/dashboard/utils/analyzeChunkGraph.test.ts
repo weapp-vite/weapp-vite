@@ -89,6 +89,38 @@ describe('analyze chunk graph', () => {
     ]))
   })
 
+  it('expands only direct neighbors independent of edge order', () => {
+    const nodes = ['a', 'b', 'c'].map((name, index) => ({
+      id: `chunk:${name}.js`,
+      kind: 'chunk' as const,
+      label: `${name}.js`,
+      packageId: '__main__',
+      packageLabel: '主包',
+      size: 3 - index,
+    }))
+    const edges = [
+      { id: 'a-b', kind: 'static-import' as const, source: 'chunk:a.js', target: 'chunk:b.js' },
+      { id: 'b-c', kind: 'static-import' as const, source: 'chunk:b.js', target: 'chunk:c.js' },
+    ]
+    const options = {
+      maxEdges: 10,
+      maxNodes: 10,
+      packageId: 'all',
+      query: 'a.js',
+    }
+    const base = {
+      dynamicImportCount: 0,
+      staticImportCount: 2,
+      unresolvedImportCount: 0,
+      nodes,
+    }
+    const forward = createAnalyzeChunkGraphView({ ...base, edges }, options)
+    const reversed = createAnalyzeChunkGraphView({ ...base, edges: [...edges].reverse() }, options)
+
+    expect(forward.nodes.map(node => node.id)).toEqual(['chunk:a.js', 'chunk:b.js'])
+    expect(reversed.nodes.map(node => node.id)).toEqual(['chunk:a.js', 'chunk:b.js'])
+  })
+
   it('enforces final node and edge budgets after expanding neighbors', () => {
     const chunks = Array.from({ length: 300 }, (_, index) => ({
       id: `chunk:chunk-${index}.js`,
@@ -138,7 +170,7 @@ describe('analyze chunk graph', () => {
 
     expect(view.nodes.length).toBeLessThanOrEqual(220)
     expect(view.edges.length).toBeLessThanOrEqual(100)
-    expect(view.truncatedNodeCount).toBeGreaterThan(0)
-    expect(view.truncatedEdgeCount).toBeGreaterThan(0)
+    expect(view.truncatedNodeCount).toBe(81)
+    expect(view.truncatedEdgeCount).toBe(499)
   })
 })
