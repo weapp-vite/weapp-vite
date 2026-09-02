@@ -1,67 +1,54 @@
 import type { AnalyzeBudgetConfig, AnalyzeSubpackagesResult, ResolvedTheme } from '../types'
 
 const defaultWarningRatio = 0.85
-const healthPalettes = {
-  light: {
-    green: '#8fd3ad',
-    yellow: '#ead486',
-    red: '#eaa39b',
+export type TreemapNodeDepth = 'package' | 'file' | 'leaf'
+
+const depthColorSettings = {
+  package: {
+    saturation: 48,
+    light: 76,
+    dark: 28,
   },
-  dark: {
-    green: '#166853',
-    yellow: '#75601f',
-    red: '#81323a',
+  file: {
+    saturation: 44,
+    light: 82,
+    dark: 33,
   },
-} satisfies Record<ResolvedTheme, Record<'green' | 'yellow' | 'red', string>>
+  leaf: {
+    saturation: 40,
+    light: 87,
+    dark: 38,
+  },
+} satisfies Record<TreemapNodeDepth, { saturation: number, light: number, dark: number }>
 const wevuRuntimeRiskScoreLimit = 0.5
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value))
 }
 
-function parseHexColor(color: string) {
-  const value = Number.parseInt(color.slice(1), 16)
-  return {
-    red: (value >> 16) & 255,
-    green: (value >> 8) & 255,
-    blue: value & 255,
+function hashGroupKey(value: string) {
+  let hash = 0
+  for (let index = 0; index < value.length; index++) {
+    hash = ((hash << 5) - hash + value.charCodeAt(index)) | 0
   }
+  return Math.abs(hash)
 }
 
-function mixColor(from: string, to: string, ratio: number) {
-  const progress = clamp(ratio)
-  const fromRgb = Object.values(parseHexColor(from))
-  const toRgb = Object.values(parseHexColor(to))
-  const mixed = fromRgb.map((channel, index) => Math.round(channel + (toRgb[index] - channel) * progress))
-  return `#${mixed.map(channel => channel.toString(16).padStart(2, '0')).join('')}`
-}
-
-function createRiskColor(score: number, theme: ResolvedTheme) {
-  const normalizedScore = clamp(score)
-  const healthPalette = healthPalettes[theme]
-  if (normalizedScore <= 0.5) {
-    return mixColor(healthPalette.green, healthPalette.yellow, normalizedScore / 0.5)
-  }
-  return mixColor(healthPalette.yellow, healthPalette.red, (normalizedScore - 0.5) / 0.5)
+function createGroupColor(groupKey: string, theme: ResolvedTheme, depth: TreemapNodeDepth) {
+  const settings = depthColorSettings[depth]
+  const hue = hashGroupKey(groupKey) % 360
+  const lightness = theme === 'dark' ? settings.dark : settings.light
+  return `hsl(${hue} ${settings.saturation}% ${lightness}%)`
 }
 
 function createRiskBorderColor(score: number, theme: ResolvedTheme) {
-  if (theme === 'dark') {
-    if (score >= 0.82) {
-      return '#fda4af'
-    }
-    if (score >= 0.5) {
-      return '#fde68a'
-    }
-    return '#5eead4'
-  }
   if (score >= 0.82) {
-    return '#c6756f'
+    return theme === 'dark' ? '#fb7185' : '#be123c'
   }
-  if (score >= 0.5) {
-    return '#c3a24d'
+  if (score >= 0.58) {
+    return theme === 'dark' ? '#fbbf24' : '#a16207'
   }
-  return '#5caf82'
+  return theme === 'dark' ? 'rgba(226, 232, 240, 0.18)' : 'rgba(15, 23, 42, 0.16)'
 }
 
 function isWevuRuntimeReference(...references: Array<string | undefined>) {
@@ -85,50 +72,50 @@ function normalizeRuntimeRiskScore(score: number, ...references: Array<string | 
   return score
 }
 
-function getReadableTextColor(backgroundColor: string) {
-  const { red, green, blue } = parseHexColor(backgroundColor)
-  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
-  return luminance > 0.56 ? '#17231d' : '#f8fafc'
-}
-
-function createRiskLabelStyle(backgroundColor: string, emphasis = false) {
-  const color = getReadableTextColor(backgroundColor)
-  const isDarkText = color === '#17231d'
-  const contrastStyle = emphasis
-    ? {
-        textBorderWidth: 0,
-        textShadowBlur: 1,
-        textShadowColor: isDarkText ? 'rgba(255, 255, 255, 0.32)' : 'rgba(15, 23, 42, 0.34)',
-      }
-    : {
-        backgroundColor: isDarkText ? 'rgba(255, 255, 255, 0.58)' : 'rgba(15, 23, 42, 0.46)',
-        borderRadius: 3,
-        padding: [1, 4],
-        textBorderWidth: 0,
-      }
-
+function createNodeLabelStyle(theme: ResolvedTheme, emphasis = false) {
   return {
-    color,
+    color: theme === 'dark' ? '#f8fafc' : '#0f172a',
     ellipsis: '…',
-    fontSize: 12,
-    fontWeight: emphasis ? 700 : 600,
-    lineHeight: 16,
-    minMargin: 4,
+    fontSize: emphasis ? 12 : 11,
+    fontWeight: emphasis ? 650 : 500,
+    lineHeight: emphasis ? 17 : 15,
+    minMargin: 5,
     overflow: 'truncate',
-    ...contrastStyle,
+    textBorderWidth: 0,
+    textShadowBlur: theme === 'dark' ? 2 : 0,
+    textShadowColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.48)' : 'transparent',
   }
 }
 
-export function createRiskNodeStyle(score: number, theme: ResolvedTheme) {
-  const color = createRiskColor(score, theme)
-
+export function createTreemapNodeStyle(
+  score: number,
+  theme: ResolvedTheme,
+  groupKey: string,
+  depth: TreemapNodeDepth,
+  showLabel = true,
+  showUpperLabel = true,
+) {
+  const color = createGroupColor(groupKey, theme, depth)
+  const borderColor = createRiskBorderColor(score, theme)
   return {
     itemStyle: {
       color,
-      borderColor: createRiskBorderColor(score, theme),
+      borderColor,
     },
-    label: createRiskLabelStyle(color),
-    upperLabel: createRiskLabelStyle(color, true),
+    label: {
+      ...createNodeLabelStyle(theme),
+      show: showLabel,
+    },
+    upperLabel: {
+      ...createNodeLabelStyle(theme, true),
+      show: showUpperLabel,
+    },
+    emphasis: {
+      itemStyle: {
+        color,
+        borderColor,
+      },
+    },
   }
 }
 

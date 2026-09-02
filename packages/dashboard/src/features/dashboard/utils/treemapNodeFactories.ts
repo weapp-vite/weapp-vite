@@ -5,10 +5,11 @@ import {
   createTreemapFileNodeId,
   createTreemapModuleNodeId,
   createTreemapPackageNodeId,
+  formatTreemapNodeLabel,
 } from './treemap'
 import {
-  createRiskNodeStyle,
   createShareRiskScore,
+  createTreemapNodeStyle,
   normalizeTreemapRiskScore,
 } from './treemapRisk'
 
@@ -32,7 +33,7 @@ export function createModuleTreemapNode(
   const normalizedRiskScore = normalizeTreemapRiskScore(riskScore, module.id, module.source, fileName)
   return {
     id: nodeId,
-    name: formatModuleIdentifier(module.source),
+    name: formatTreemapNodeLabel(module.source),
     value,
     meta: {
       kind: 'module',
@@ -46,7 +47,7 @@ export function createModuleTreemapNode(
       originalBytes: module.originalBytes,
       packageCount: usageCount,
     },
-    ...createRiskNodeStyle(normalizedRiskScore, theme),
+    ...createTreemapNodeStyle(normalizedRiskScore, theme, packageId, 'leaf', value >= 2 * 1024),
   }
 }
 
@@ -63,7 +64,7 @@ export function createAssetTreemapNode(
   const riskScore = normalizeTreemapRiskScore(createShareRiskScore(value, packageBytes), file.file, file.source, packageId, packageLabel)
   return {
     id: nodeId,
-    name: file.source ?? fileName,
+    name: formatTreemapNodeLabel(file.source ?? fileName),
     value,
     meta: {
       kind: 'asset',
@@ -74,7 +75,7 @@ export function createAssetTreemapNode(
       source: file.source ?? fileName,
       bytes: file.size,
     },
-    ...createRiskNodeStyle(riskScore, theme),
+    ...createTreemapNodeStyle(riskScore, theme, packageId, 'leaf', value >= 2 * 1024),
   }
 }
 
@@ -100,7 +101,7 @@ export function createFileTreemapNode(
   )
   return {
     id: nodeId,
-    name: file.file,
+    name: formatTreemapNodeLabel(file.file),
     value: fileValue,
     meta: {
       kind: 'file',
@@ -113,7 +114,7 @@ export function createFileTreemapNode(
       type: file.type,
       bytes: file.size,
     },
-    ...createRiskNodeStyle(riskScore, theme),
+    ...createTreemapNodeStyle(riskScore, theme, packageId, 'file', true, fileValue >= 4 * 1024),
     children: children.length > 0 ? children : undefined,
   }
 }
@@ -141,7 +142,7 @@ export function createPackageTreemapNode(
       fileCount: pkg.files.length,
       totalBytes,
     },
-    ...createRiskNodeStyle(normalizedRiskScore, theme),
+    ...createTreemapNodeStyle(normalizedRiskScore, theme, pkg.id, 'package'),
     children: fileNodes,
   }
 }

@@ -23,17 +23,17 @@ const emit = defineEmits<{
 }>()
 
 const chartTitle = 'Treemap'
-const chartDescription = '从包体到文件再到模块，直接定位体积热点。'
-const healthLegend = computed(() => props.theme === 'dark'
+const chartDescription = '面积代表体积，颜色区分分包，风险仅由边框标记；点击节点可下钻。'
+const riskLegend = computed(() => props.theme === 'dark'
   ? [
-      { label: '健康', color: '#166853' },
-      { label: '关注', color: '#75601f' },
-      { label: '急需改进', color: '#81323a' },
+      { label: '普通', color: '#64748b' },
+      { label: '关注', color: '#fbbf24' },
+      { label: '高风险', color: '#fb7185' },
     ]
   : [
-      { label: '健康', color: '#8fd3ad' },
-      { label: '关注', color: '#ead486' },
-      { label: '急需改进', color: '#eaa39b' },
+      { label: '普通', color: '#94a3b8' },
+      { label: '关注', color: '#a16207' },
+      { label: '高风险', color: '#be123c' },
     ])
 
 function getChartBadgeClassName(): string {
@@ -91,12 +91,13 @@ function handleChartRef(element: Element | ComponentPublicInstance | null) {
         </button>
       </div>
       <div class="flex flex-wrap items-center gap-2 text-[11px] text-(--dashboard-text-soft)">
+        <span class="font-medium text-(--dashboard-text-muted)">风险边框</span>
         <span
-          v-for="item in healthLegend"
+          v-for="item in riskLegend"
           :key="item.label"
           class="inline-flex items-center gap-1.5"
         >
-          <span class="h-2.5 w-2.5 rounded-full border border-(--dashboard-border)" :style="{ backgroundColor: item.color }" />
+          <span class="h-2.5 w-2.5 rounded-full border-2 bg-transparent" :style="{ borderColor: item.color }" />
           {{ item.label }}
         </span>
       </div>
