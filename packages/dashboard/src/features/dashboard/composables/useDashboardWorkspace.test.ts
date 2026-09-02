@@ -1,6 +1,7 @@
 import type { AnalyzeSubpackagesResult } from '../types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
+import { createAnalyzeHistorySnapshot } from '../utils/analyzeHistory'
 import { dashboardAnalyzeSnapshot } from '../utils/dashboardDevframe'
 import { createDashboardWorkspace } from './useDashboardWorkspace'
 
@@ -38,6 +39,7 @@ describe('dashboard workspace project identity', () => {
   afterEach(() => {
     dashboardAnalyzeSnapshot.value = null
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('clears comparison and baseline state when the transport switches projects', async () => {
@@ -52,6 +54,42 @@ describe('dashboard workspace project identity', () => {
     await nextTick()
 
     expect(workspace.resultRef.value).toBe(projectB)
+    expect(workspace.previousResultRef.value).toBeNull()
+    expect(workspace.historySnapshots.value).toHaveLength(1)
+    expect(workspace.historySnapshots.value[0]?.result.metadata?.projectName).toBe('@project/b')
+    expect(workspace.baselineSnapshotId.value).toBeNull()
+    expect(workspace.comparisonMode.value).toBe('previous')
+    scope.stop()
+  })
+
+  it('clears a stored foreign baseline when the first live payload arrives', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const projectA = createResult('@project/a', 100)
+    const projectB = createResult('@project/b', 200)
+    const projectASnapshot = createAnalyzeHistorySnapshot(projectA, '2026-09-01T00:00:00.000Z')
+    const storage = new Map<string, string>([[
+      'weapp-vite-dashboard:analyze-result-history',
+      JSON.stringify({
+        current: projectA,
+        previous: projectA,
+        snapshots: [projectASnapshot],
+        baselineSnapshotId: projectASnapshot.id,
+        comparisonMode: 'baseline',
+      }),
+    ]])
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+      },
+    })
+    dashboardAnalyzeSnapshot.value = null
+    const scope = effectScope()
+    const workspace = scope.run(() => createDashboardWorkspace())!
+
+    dashboardAnalyzeSnapshot.value = { current: projectB, previous: null }
+    await nextTick()
+
     expect(workspace.previousResultRef.value).toBeNull()
     expect(workspace.historySnapshots.value).toHaveLength(1)
     expect(workspace.historySnapshots.value[0]?.result.metadata?.projectName).toBe('@project/b')

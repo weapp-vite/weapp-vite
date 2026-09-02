@@ -174,7 +174,7 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     })
     historySnapshots.value = nextSnapshots
     if (baselineSnapshotId.value && !nextSnapshots.some(snapshot => snapshot.id === baselineSnapshotId.value)) {
-      baselineSnapshotId.value = nextSnapshots[nextSnapshots.length - 1]?.id ?? null
+      baselineSnapshotId.value = null
     }
     if (comparisonMode.value === 'baseline' && !baselineSnapshotId.value) {
       comparisonMode.value = 'previous'
