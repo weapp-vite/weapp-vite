@@ -1,6 +1,7 @@
 import type { AnalyzeSubpackagesResult } from '../types'
+import type { AnalyzeChunkGraphModel } from './analyzeChunkGraph'
 import { describe, expect, it } from 'vitest'
-import { createAnalyzeChunkGraph } from './analyzeChunkGraph'
+import { createAnalyzeChunkGraph, createAnalyzeChunkGraphView } from './analyzeChunkGraph'
 
 function createResult(): AnalyzeSubpackagesResult {
   return {
@@ -71,5 +72,73 @@ describe('analyze chunk graph', () => {
     expect(graph.staticImportCount).toBe(2)
     expect(graph.dynamicImportCount).toBe(1)
     expect(graph.unresolvedImportCount).toBe(1)
+  })
+
+  it('filters by search while retaining directly connected chunks', () => {
+    const view = createAnalyzeChunkGraphView(createAnalyzeChunkGraph(createResult()), {
+      maxEdges: 20,
+      maxNodes: 20,
+      packageId: 'all',
+      query: 'lazy',
+    })
+
+    expect(view.nodes.map(node => node.id)).toEqual(expect.arrayContaining([
+      'package:__main__',
+      'chunk:app.js',
+      'chunk:lazy.js',
+    ]))
+  })
+
+  it('enforces final node and edge budgets after expanding neighbors', () => {
+    const chunks = Array.from({ length: 300 }, (_, index) => ({
+      id: `chunk:chunk-${index}.js`,
+      kind: 'chunk' as const,
+      label: `chunk-${index}.js`,
+      packageId: '__main__',
+      packageLabel: '主包',
+      size: 300 - index,
+    }))
+    const graph: AnalyzeChunkGraphModel = {
+      dynamicImportCount: 0,
+      staticImportCount: 299,
+      unresolvedImportCount: 0,
+      nodes: [
+        {
+          id: 'package:__main__',
+          kind: 'package',
+          label: '主包',
+          packageId: '__main__',
+          packageLabel: '主包',
+          size: 45_000,
+          fileCount: 300,
+        },
+        ...chunks,
+      ],
+      edges: [
+        ...chunks.map(node => ({
+          id: `package:__main__->${node.id}:contains`,
+          kind: 'contains' as const,
+          source: 'package:__main__',
+          target: node.id,
+        })),
+        ...chunks.slice(1).map(node => ({
+          id: `chunk:chunk-0.js->${node.id}:static-import`,
+          kind: 'static-import' as const,
+          source: 'chunk:chunk-0.js',
+          target: node.id,
+        })),
+      ],
+    }
+    const view = createAnalyzeChunkGraphView(graph, {
+      maxEdges: 100,
+      maxNodes: 220,
+      packageId: 'all',
+      query: '',
+    })
+
+    expect(view.nodes.length).toBeLessThanOrEqual(220)
+    expect(view.edges.length).toBeLessThanOrEqual(100)
+    expect(view.truncatedNodeCount).toBeGreaterThan(0)
+    expect(view.truncatedEdgeCount).toBeGreaterThan(0)
   })
 })

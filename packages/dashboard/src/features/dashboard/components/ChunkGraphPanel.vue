@@ -19,7 +19,7 @@ import {
   zoomIdentity,
 } from 'd3'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { createAnalyzeChunkGraph } from '../utils/analyzeChunkGraph'
+import { createAnalyzeChunkGraph, createAnalyzeChunkGraphView } from '../utils/analyzeChunkGraph'
 import { formatBytes } from '../utils/format'
 
 interface RenderedGraphNode extends SimulationNodeDatum {
@@ -40,7 +40,9 @@ const props = defineProps<{
   theme: ResolvedTheme
 }>()
 
-const MAX_VISIBLE_CHUNKS = 220
+const MAX_VISIBLE_NODES = 220
+const MAX_VISIBLE_EDGES = 900
+const MAX_SEARCH_NODES = 80
 const svgRef = shallowRef<SVGSVGElement>()
 const packageFilter = ref('all')
 const searchQuery = ref('')
@@ -52,37 +54,12 @@ let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | undefined
 const graph = computed(() => createAnalyzeChunkGraph(props.result))
 const packageOptions = computed(() => graph.value.nodes.filter(node => node.kind === 'package'))
 const selectedNode = computed(() => graph.value.nodes.find(node => node.id === selectedNodeId.value) ?? null)
-const visibleGraph = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase()
-  const packageNodes = graph.value.nodes.filter(node => node.kind === 'package')
-  let chunkNodes = graph.value.nodes.filter(node => node.kind === 'chunk')
-  if (packageFilter.value !== 'all') {
-    chunkNodes = chunkNodes.filter(node => node.packageId === packageFilter.value)
-  }
-  if (query) {
-    chunkNodes = chunkNodes.filter(node => node.label.toLowerCase().includes(query))
-  }
-  chunkNodes = chunkNodes
-    .sort((left, right) => right.size - left.size)
-    .slice(0, MAX_VISIBLE_CHUNKS)
-
-  const visibleIds = new Set(chunkNodes.map(node => node.id))
-  const relatedEdges = graph.value.edges.filter(edge =>
-    edge.kind !== 'contains' && (visibleIds.has(edge.source) || visibleIds.has(edge.target)),
-  )
-  for (const edge of relatedEdges) {
-    visibleIds.add(edge.source)
-    visibleIds.add(edge.target)
-  }
-
-  const relatedChunks = graph.value.nodes.filter(node => node.kind === 'chunk' && visibleIds.has(node.id))
-  const visiblePackageIds = new Set(relatedChunks.map(node => node.packageId))
-  const relatedPackages = packageNodes.filter(node => visiblePackageIds.has(node.packageId))
-  const nodes = [...relatedPackages, ...relatedChunks]
-  const nodeIds = new Set(nodes.map(node => node.id))
-  const edges = graph.value.edges.filter(edge => nodeIds.has(edge.source) && nodeIds.has(edge.target))
-  return { edges, nodes }
-})
+const visibleGraph = computed(() => createAnalyzeChunkGraphView(graph.value, {
+  maxEdges: searchQuery.value.trim() ? 320 : MAX_VISIBLE_EDGES,
+  maxNodes: searchQuery.value.trim() ? MAX_SEARCH_NODES : MAX_VISIBLE_NODES,
+  packageId: packageFilter.value,
+  query: searchQuery.value,
+}))
 
 const packageColorById = computed(() => {
   const palette = props.theme === 'dark'
@@ -100,6 +77,10 @@ function resolveLinkNode(
   nodeById: Map<string, RenderedGraphNode>,
 ) {
   return typeof value === 'string' ? nodeById.get(value) : value
+}
+
+function resolveNodeStrokeWidth(node: RenderedGraphNode) {
+  return node.graphNode.kind === 'package' ? 3 : node.graphNode.isEntry ? 2.5 : 1.5
 }
 
 function selectNode(node: RenderedGraphNode) {
@@ -129,6 +110,25 @@ function bindNodeDrag(
   }
   node.fx = null
   node.fy = null
+}
+
+function zoomGraph(factor: number) {
+  if (svgRef.value && zoomBehavior) {
+    select(svgRef.value).call(zoomBehavior.scaleBy, factor)
+  }
+}
+
+function panGraph(x: number, y: number) {
+  if (svgRef.value && zoomBehavior) {
+    select(svgRef.value).call(zoomBehavior.translateBy, x, y)
+  }
+}
+
+function resetGraphView() {
+  selectedNodeId.value = null
+  if (svgRef.value && zoomBehavior) {
+    select(svgRef.value).call(zoomBehavior.transform, zoomIdentity)
+  }
 }
 
 async function renderGraph() {
@@ -211,15 +211,7 @@ async function renderGraph() {
     .data(nodes, node => node.id)
     .join('g')
     .attr('cursor', 'pointer')
-    .attr('role', 'button')
-    .attr('tabindex', 0)
     .on('click', (_event, node) => selectNode(node))
-    .on('keydown', (event, node) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault()
-        selectNode(node)
-      }
-    })
     .call(
       drag<SVGGElement, RenderedGraphNode>()
         .on('start', (event, node) => bindNodeDrag(event, node, 'start'))
@@ -231,7 +223,7 @@ async function renderGraph() {
     .attr('r', node => node.radius)
     .attr('fill', node => node.graphNode.kind === 'package' ? node.color : `${node.color}cc`)
     .attr('stroke', node => node.graphNode.kind === 'package' ? node.color : props.theme === 'dark' ? '#11141a' : '#ffffff')
-    .attr('stroke-width', node => node.graphNode.kind === 'package' ? 3 : node.graphNode.isEntry ? 2.5 : 1.5)
+    .attr('stroke-width', node => resolveNodeStrokeWidth(node))
 
   nodeSelection.append('title')
     .text(node => `${node.graphNode.label}\n${node.graphNode.packageLabel}\n${formatBytes(node.graphNode.size)}`)
@@ -272,14 +264,6 @@ async function renderGraph() {
     })
 }
 
-function resetGraphView() {
-  selectedNodeId.value = null
-  if (svgRef.value && zoomBehavior) {
-    select(svgRef.value).call(zoomBehavior.transform, zoomIdentity)
-  }
-  void renderGraph()
-}
-
 onMounted(() => {
   if (svgRef.value) {
     resizeObserver = new ResizeObserver(() => void renderGraph())
@@ -317,11 +301,19 @@ watch(() => props.theme, () => void renderGraph())
             {{ item.packageLabel }}
           </option>
         </select>
-        <button class="h-8 whitespace-nowrap rounded border border-(--dashboard-border) px-2.5 text-xs hover:bg-(--dashboard-panel-muted)" type="button" @click="resetGraphView">
-          重置视图
-        </button>
+        <div class="flex items-center gap-1" role="group" aria-label="依赖图视图控制">
+          <button class="h-8 w-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:ring-2 focus-visible:ring-(--dashboard-accent)" type="button" aria-label="缩小依赖图" title="缩小（-）" @click="zoomGraph(0.8)">
+            −
+          </button>
+          <button class="h-8 w-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:ring-2 focus-visible:ring-(--dashboard-accent)" type="button" aria-label="放大依赖图" title="放大（+）" @click="zoomGraph(1.25)">
+            +
+          </button>
+          <button class="h-8 whitespace-nowrap rounded border border-(--dashboard-border) px-2 text-xs hover:bg-(--dashboard-panel-muted) focus-visible:ring-2 focus-visible:ring-(--dashboard-accent)" type="button" aria-label="适配依赖图视图" title="适配视图（0）" @click="resetGraphView">
+            适配
+          </button>
+        </div>
       </header>
-      <svg ref="svgRef" class="block h-full min-h-0 w-full min-w-0 max-w-full touch-none overflow-hidden" aria-label="Chunk dependency graph" role="img" />
+      <svg ref="svgRef" class="block h-full min-h-0 w-full min-w-0 max-w-full touch-none overflow-hidden" aria-hidden="true" focusable="false" />
     </div>
 
     <aside class="grid min-w-0 overflow-hidden border-t border-(--dashboard-border) bg-(--dashboard-panel-muted) sm:grid-cols-2 xl:block xl:border-t-0 xl:border-l">
@@ -333,6 +325,22 @@ watch(() => props.theme, () => void renderGraph())
           <div><dt class="text-(--dashboard-text-soft)">Static</dt><dd class="font-mono text-blue-500">{{ graph.staticImportCount }}</dd></div>
           <div><dt class="text-(--dashboard-text-soft)">Dynamic</dt><dd class="font-mono text-amber-500">{{ graph.dynamicImportCount }}</dd></div>
         </dl>
+        <label class="mt-3 grid min-w-0 gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-(--dashboard-text-soft)">
+          节点选择
+          <select v-model="selectedNodeId" class="min-h-32 w-full min-w-0 rounded border border-(--dashboard-border) bg-(--dashboard-panel) p-1.5 text-xs normal-case tracking-normal text-(--dashboard-text)" size="6">
+            <option v-for="node in visibleGraph.nodes" :key="node.id" :value="node.id">
+              {{ node.label }} · {{ node.packageLabel }}
+            </option>
+          </select>
+        </label>
+        <div class="mt-3 grid grid-cols-3 gap-1" role="group" aria-label="依赖图平移控制">
+          <span aria-hidden="true" />
+          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向上平移依赖图" @click="panGraph(0, -40)">↑</button>
+          <span aria-hidden="true" />
+          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向左平移依赖图" @click="panGraph(-40, 0)">←</button>
+          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向下平移依赖图" @click="panGraph(0, 40)">↓</button>
+          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向右平移依赖图" @click="panGraph(40, 0)">→</button>
+        </div>
       </div>
 
       <div v-if="selectedNode" class="min-w-0 border-l-0 border-(--dashboard-border) px-3 py-3 sm:border-l xl:border-l-0">
@@ -349,11 +357,14 @@ watch(() => props.theme, () => void renderGraph())
         </dl>
       </div>
       <div v-else class="min-w-0 border-l-0 border-(--dashboard-border) px-3 py-5 text-xs leading-5 text-(--dashboard-text-soft) sm:border-l xl:border-l-0">
-        点击节点查看 package、体积和模块数。滚轮缩放，拖动画布平移；蓝色实线是静态 import，橙色虚线是动态 import。
+        使用节点选择器查看 package、体积和模块数；图中仍可滚轮缩放与拖动画布。蓝色实线是静态 import，橙色虚线是动态 import。
       </div>
 
       <div v-if="graph.unresolvedImportCount" class="border-t border-(--dashboard-border) px-3 py-3 text-[11px] text-amber-500 sm:col-span-2 xl:col-auto">
         {{ graph.unresolvedImportCount }} 条 import 指向未输出或外部 chunk。
+      </div>
+      <div v-if="visibleGraph.truncatedNodeCount || visibleGraph.truncatedEdgeCount" class="border-t border-(--dashboard-border) px-3 py-3 text-[11px] text-(--dashboard-text-soft) sm:col-span-2 xl:col-auto">
+        为保持交互流畅，当前隐藏 {{ visibleGraph.truncatedNodeCount }} 个节点与 {{ visibleGraph.truncatedEdgeCount }} 条边。
       </div>
     </aside>
   </section>

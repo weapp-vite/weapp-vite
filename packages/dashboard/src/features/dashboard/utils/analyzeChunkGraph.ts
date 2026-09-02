@@ -146,3 +146,69 @@ export function createAnalyzeChunkGraph(result: AnalyzeSubpackagesResult): Analy
     unresolvedImportCount,
   }
 }
+
+export interface AnalyzeChunkGraphView {
+  edges: AnalyzeChunkGraphEdge[]
+  nodes: AnalyzeChunkGraphNode[]
+  truncatedEdgeCount: number
+  truncatedNodeCount: number
+}
+
+export function createAnalyzeChunkGraphView(
+  graph: AnalyzeChunkGraphModel,
+  options: {
+    maxEdges: number
+    maxNodes: number
+    packageId: string
+    query: string
+  },
+): AnalyzeChunkGraphView {
+  const packageNodes = graph.nodes.filter(node => node.kind === 'package')
+  const normalizedQuery = options.query.trim().toLowerCase()
+  const matchingChunks = graph.nodes
+    .filter(node => node.kind === 'chunk')
+    .filter(node => options.packageId === 'all' || node.packageId === options.packageId)
+    .filter(node => !normalizedQuery || node.label.toLowerCase().includes(normalizedQuery))
+    .sort((left, right) => right.size - left.size)
+  const chunkBudget = Math.max(0, options.maxNodes - packageNodes.length)
+  const initialChunks = matchingChunks.slice(0, chunkBudget)
+  const visibleIds = new Set(initialChunks.map(node => node.id))
+  let remainingNodeBudget = chunkBudget - visibleIds.size
+  let skippedNeighborCount = 0
+
+  for (const edge of graph.edges) {
+    if (edge.kind === 'contains') {
+      continue
+    }
+    const sourceVisible = visibleIds.has(edge.source)
+    const targetVisible = visibleIds.has(edge.target)
+    if (sourceVisible === targetVisible) {
+      continue
+    }
+    const neighborId = sourceVisible ? edge.target : edge.source
+    if (remainingNodeBudget > 0) {
+      visibleIds.add(neighborId)
+      remainingNodeBudget -= 1
+    }
+    else {
+      skippedNeighborCount += 1
+    }
+  }
+
+  const visibleChunks = graph.nodes.filter(node => node.kind === 'chunk' && visibleIds.has(node.id))
+  const visiblePackageIds = new Set(visibleChunks.map(node => node.packageId))
+  const visiblePackages = packageNodes.filter(node => visiblePackageIds.has(node.packageId))
+  const nodes = [...visiblePackages, ...visibleChunks].slice(0, options.maxNodes)
+  const nodeIds = new Set(nodes.map(node => node.id))
+  const candidateEdges = graph.edges
+    .filter(edge => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+    .sort((left, right) => Number(left.kind === 'contains') - Number(right.kind === 'contains'))
+  const edges = candidateEdges.slice(0, options.maxEdges)
+
+  return {
+    edges,
+    nodes,
+    truncatedEdgeCount: Math.max(0, candidateEdges.length - edges.length),
+    truncatedNodeCount: Math.max(0, matchingChunks.length - initialChunks.length) + skippedNeighborCount,
+  }
+}
