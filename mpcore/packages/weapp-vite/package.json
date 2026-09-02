@@ -1,7 +1,7 @@
 {
   "name": "@mpcore/weapp-vite",
   "type": "module",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "weapp-vite artifact adapter for @mpcore/test",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",

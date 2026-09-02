@@ -33,6 +33,10 @@
   intents:
     - first-party-i18n
     - shared-css-runtime-constants
+"@weapp-core/constants@0.2.1":
+  dir: "@weapp-core/constants"
+  intents:
+    - initial-navigation-timeout
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
@@ -319,6 +323,11 @@ create-weapp-vite@2.8.8:
     - fix-issue-911-lifecycle-gate
     - issue-911-initial-router-guard
     - issue-911-page-runtime-gate
+create-weapp-vite@2.8.9:
+  dir: packages/create-weapp-vite
+  intents:
+    - initial-navigation-timeout
+    - router-guard-sync
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -417,6 +426,10 @@ weapp-vite@7.0.0:
   dir: packages/weapp-vite
   intents:
     - fix-issue-910-require-async-path
+weapp-vite@7.0.1:
+  dir: packages/weapp-vite
+  intents:
+    - catalog-auto-generated
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -453,3 +466,8 @@ wevu@7.0.0:
     - fix-issue-911-lifecycle-gate
     - issue-911-initial-router-guard
     - issue-911-page-runtime-gate
+wevu@7.0.1:
+  dir: packages-runtime/wevu
+  intents:
+    - initial-navigation-timeout
+    - router-guard-sync
