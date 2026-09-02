@@ -24,6 +24,8 @@ describe('analyze subpackages output', () => {
           fileName: 'app.js',
           code: 'const message = "hello dashboard";\n'.repeat(20),
           isEntry: true,
+          imports: ['shared.js'],
+          dynamicImports: ['lazy.js'],
           modules: {
             '/project/src/pages/index.ts': {
               renderedLength: 24,
@@ -49,6 +51,8 @@ describe('analyze subpackages output', () => {
     expect(chunk.size).toBeGreaterThan(0)
     expect(chunk.gzipSize).toBeGreaterThan(0)
     expect(chunk.brotliSize).toBeGreaterThan(0)
+    expect(chunk.imports).toEqual(['shared.js'])
+    expect(chunk.dynamicImports).toEqual(['lazy.js'])
     expect(asset.size).toBeGreaterThan(0)
     expect(asset.gzipSize).toBeGreaterThan(0)
     expect(asset.brotliSize).toBeGreaterThan(0)

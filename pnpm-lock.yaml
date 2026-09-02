@@ -48,6 +48,9 @@ catalogs:
     '@tailwindcss/vite':
       specifier: ^4.3.3
       version: 4.3.3
+    '@types/d3':
+      specifier: ^7.4.3
+      version: 7.4.3
     '@types/node':
       specifier: ^26.4.0
       version: 26.4.0
@@ -102,6 +105,9 @@ catalogs:
     comment-json:
       specifier: ^5.0.0
       version: 5.0.0
+    d3:
+      specifier: ^7.9.0
+      version: 7.9.0
     dayjs:
       specifier: ^1.11.23
       version: 1.11.23
@@ -2602,9 +2608,15 @@ importers:
       '@iconify/tailwind4':
         specifier: 'catalog:'
         version: 1.2.3(tailwindcss@4.3.3)
+      '@types/d3':
+        specifier: 'catalog:'
+        version: 7.4.3
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 6.0.8(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.0(supports-color@10.2.2))(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.34.1)(tsx@4.23.13)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
+      d3:
+        specifier: 'catalog:'
+        version: 7.9.0
       devframe:
         specifier: 'catalog:'
         version: 0.9.8(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/server@2.0.0)(cac@7.0.0)(srvx@0.12.7)

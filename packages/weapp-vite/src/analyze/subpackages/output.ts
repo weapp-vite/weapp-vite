@@ -51,6 +51,13 @@ function processChunk(
     modules: [],
   }
 
+  if (chunk.imports.length > 0) {
+    chunkEntry.imports = [...chunk.imports].sort((a, b) => a.localeCompare(b))
+  }
+  if (chunk.dynamicImports.length > 0) {
+    chunkEntry.dynamicImports = [...chunk.dynamicImports].sort((a, b) => a.localeCompare(b))
+  }
+
   const moduleEntries = Object.entries(chunk.modules ?? {})
   for (const [rawModuleId, info] of moduleEntries) {
     const absoluteId = normalizeModuleId(rawModuleId)

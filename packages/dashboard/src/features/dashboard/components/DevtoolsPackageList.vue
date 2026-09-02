@@ -25,9 +25,14 @@ defineProps<{
           当前构建产物按体积排序
         </p>
       </div>
-      <RouterLink class="text-xs font-medium text-(--dashboard-accent) hover:underline" to="/analyze?tab=packages">
-        查看全部
-      </RouterLink>
+      <div class="flex items-center gap-3">
+        <RouterLink class="text-xs font-medium text-(--dashboard-accent) hover:underline" to="/analyze?tab=graph">
+          依赖图
+        </RouterLink>
+        <RouterLink class="text-xs font-medium text-(--dashboard-accent) hover:underline" to="/analyze?tab=packages">
+          查看全部
+        </RouterLink>
+      </div>
     </header>
 
     <div v-if="rows.length" class="divide-y divide-(--dashboard-border)">

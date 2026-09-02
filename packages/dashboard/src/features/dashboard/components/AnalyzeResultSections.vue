@@ -4,6 +4,7 @@ import type {
   AnalyzeBudgetConfig,
   AnalyzeComparisonMode,
   AnalyzeHistorySnapshot,
+  AnalyzeSubpackagesResult,
   AnalyzeTreemapFilterMode,
   AnalyzeTreemapFilterOption,
   AnalyzeWorkQueueItem,
@@ -22,6 +23,7 @@ import type {
   TreemapNodeMeta,
 } from '../types'
 import type { PrReviewChecklistItem, PrReviewChecklistSummary } from '../utils/prReviewChecklist'
+import { defineAsyncComponent } from 'vue'
 import AnalyzeDetailsPanel from './AnalyzeDetailsPanel.vue'
 import AnalyzeDiagnosticsSection from './AnalyzeDiagnosticsSection.vue'
 import AnalyzeDraggableGrid from './AnalyzeDraggableGrid.vue'
@@ -61,6 +63,7 @@ defineProps<{
   prReviewChecklist: PrReviewChecklistSummary
   queuedActionKeys: string[]
   reviewLayoutItems: Array<{ id: string, label: string }>
+  result: AnalyzeSubpackagesResult
   selectedTreemapFocusNodeId: string | null
   selectedTreemapMeta: TreemapNodeMeta | null
   selectedActionKey: string | null
@@ -97,6 +100,8 @@ const emit = defineEmits<{
   toggleWorkQueueItem: [id: string]
   updateTreemapFilterMode: [mode: AnalyzeTreemapFilterMode]
 }>()
+
+const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue'))
 </script>
 
 <template>
@@ -161,6 +166,10 @@ const emit = defineEmits<{
         />
       </template>
     </AnalyzeDraggableGrid>
+  </section>
+
+  <section v-else-if="activeTab === 'graph'" class="min-h-0">
+    <ChunkGraphPanel :result="result" :theme="theme" />
   </section>
 
   <section v-else-if="activeTab === 'treemap'" class="min-h-0">

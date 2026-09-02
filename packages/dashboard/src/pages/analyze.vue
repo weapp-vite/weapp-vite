@@ -136,6 +136,7 @@ const {
       :pr-review-checklist="prReviewChecklist"
       :queued-action-keys="queuedActionKeys"
       :review-layout-items="reviewLayoutItems"
+      :result="resultRef"
       :selected-action-key="selectedActionKey"
       :selected-file-modules="selectedFileModules"
       :selected-treemap-focus-node-id="selectedTreemapFocusNodeId"

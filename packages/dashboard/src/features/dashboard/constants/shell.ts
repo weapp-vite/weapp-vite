@@ -24,15 +24,17 @@ export const workspaceNavigation: DashboardNavItem[] = [
           ? '预算、增量和历史基线'
           : tab.key === 'review'
             ? 'PR 风险和评审清单'
-            : tab.key === 'treemap'
-              ? '产物体积地图'
-              : tab.key === 'files'
-                ? '文件、预算和模块明细'
-                : tab.key === 'source'
-                  ? '源码与产物 Diff'
-                  : tab.key === 'packages'
-                    ? '包体和产物列表'
-                    : '模块复用与来源',
+            : tab.key === 'graph'
+              ? 'Chunk 静态与动态依赖'
+              : tab.key === 'treemap'
+                ? '产物体积地图'
+                : tab.key === 'files'
+                  ? '文件、预算和模块明细'
+                  : tab.key === 'source'
+                    ? '源码与产物 Diff'
+                    : tab.key === 'packages'
+                      ? '包体和产物列表'
+                      : '模块复用与来源',
       iconName: tab.iconName,
     })),
   },

@@ -38,6 +38,8 @@ export interface PackageFileEntry {
   gzipSize?: number
   brotliSize?: number
   isEntry?: boolean
+  imports?: string[]
+  dynamicImports?: string[]
   modules?: ModuleInFile[]
   source?: string
 }

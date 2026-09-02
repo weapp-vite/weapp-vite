@@ -49,7 +49,9 @@
   "devDependencies": {
     "@iconify-json/mdi": "catalog:",
     "@iconify/tailwind4": "catalog:",
+    "@types/d3": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "d3": "catalog:",
     "devframe": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
