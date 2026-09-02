@@ -32,7 +32,9 @@ export type DashboardFileKind = 'artifact' | 'source'
 
 interface DashboardContentRoots {
   artifactRoot?: string
-  sourceRoot?: string
+  pluginRoot?: string
+  projectRoot?: string
+  srcRoot?: string
 }
 
 interface ResolvedDashboardContentPath {
@@ -40,7 +42,7 @@ interface ResolvedDashboardContentPath {
   relativePath: string
 }
 
-type DashboardSourceRootKind = 'project' | 'src'
+type DashboardSourceRootKind = 'plugin' | 'project' | 'src'
 
 interface DashboardContentAllowlist {
   artifactPaths: Set<string>
@@ -121,7 +123,11 @@ function createDashboardContentAllowlist(result: AnalyzeSubpackagesResult): Dash
       addDashboardAllowedPath(artifactPaths, file.file)
       addDashboardAllowedSourcePath(sourcePaths, file.source, 'src')
       for (const module of file.modules ?? []) {
-        addDashboardAllowedSourcePath(sourcePaths, module.source, module.sourceType === 'src' ? 'src' : 'project')
+        addDashboardAllowedSourcePath(
+          sourcePaths,
+          module.source,
+          module.sourceType === 'src' ? 'src' : module.sourceType === 'plugin' ? 'plugin' : 'project',
+        )
       }
     }
   }
@@ -163,13 +169,10 @@ function resolveDashboardContentPath(
 }
 
 function resolveDashboardSourceContentPaths(
-  sourceRoot: string | undefined,
+  roots: DashboardContentRoots,
   requestPath: string,
   allowedPaths: Map<string, Set<DashboardSourceRootKind>>,
 ): ResolvedDashboardContentPath[] {
-  if (!sourceRoot) {
-    return []
-  }
   const normalizedRequestPath = normalizeDashboardRelativePath(stripDashboardFileQuery(requestPath))
   const rootKinds = allowedPaths.get(normalizedRequestPath)
   if (!rootKinds || rootKinds.size !== 1) {
@@ -178,19 +181,42 @@ function resolveDashboardSourceContentPaths(
 
   const [rootKind] = rootKinds
   if (rootKind === 'project') {
-    const resolved = resolveDashboardContentPath(sourceRoot, normalizedRequestPath, {
+    const resolved = resolveDashboardContentPath(roots.projectRoot, normalizedRequestPath, {
       allowParent: true,
       allowedPaths: new Set([normalizedRequestPath]),
     })
     return resolved ? [resolved] : []
   }
+  if (rootKind === 'plugin') {
+    if (!roots.pluginRoot) {
+      return []
+    }
+    const pluginBase = path.basename(roots.pluginRoot)
+    if (normalizedRequestPath !== pluginBase && !normalizedRequestPath.startsWith(`${pluginBase}/`)) {
+      return []
+    }
+    const pluginRelativePath = normalizedRequestPath === pluginBase
+      ? ''
+      : normalizedRequestPath.slice(pluginBase.length + 1)
+    const resolved = resolveDashboardContentPath(roots.pluginRoot, pluginRelativePath, {
+      allowedPaths: new Set([pluginRelativePath]),
+    })
+    return resolved
+      ? [{
+          ...resolved,
+          relativePath: normalizedRequestPath,
+        }]
+      : []
+  }
+  if (!roots.srcRoot) {
+    return []
+  }
 
-  const sourceRootPath = path.resolve(sourceRoot, 'src')
   const relativePaths = normalizedRequestPath.startsWith('src/')
     ? [normalizedRequestPath, normalizedRequestPath.slice(4)]
     : [normalizedRequestPath]
   const candidates = relativePaths.flatMap((relativePath) => {
-    const resolved = resolveDashboardContentPath(sourceRootPath, relativePath, {
+    const resolved = resolveDashboardContentPath(roots.srcRoot, relativePath, {
       allowedPaths: new Set([relativePath]),
     })
     return resolved
@@ -291,7 +317,7 @@ export async function readDashboardFileContent(
     : undefined
   const resolvedCandidates = request.kind === 'artifact'
     ? artifactPath ? [artifactPath] : []
-    : resolveDashboardSourceContentPaths(roots.sourceRoot, request.path, allowlist.sourcePaths)
+    : resolveDashboardSourceContentPaths(roots, request.path, allowlist.sourcePaths)
 
   if (resolvedCandidates.length === 0) {
     throw new Error('必须传入合法的 kind 和相对路径。')

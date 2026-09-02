@@ -141,7 +141,8 @@ describe('dashboard Devframe protocol', () => {
     ])
     const roots = {
       artifactRoot: project.artifactRoot,
-      sourceRoot: project.projectRoot,
+      projectRoot: project.projectRoot,
+      srcRoot: path.join(project.projectRoot, 'src'),
     }
 
     await expect(readDashboardFileContent({ kind: 'source', path: 'src/pages/index.ts' }, roots, result)).resolves.toMatchObject({
@@ -179,6 +180,72 @@ describe('dashboard Devframe protocol', () => {
       path: '../secret.txt',
     }, roots, result)).rejects.toThrow('必须传入合法的 kind 和相对路径。')
   })
+  it('resolves source files from a configured non-default srcRoot', async () => {
+    const project = await createTemporaryProject()
+    const customSrcRoot = path.join(project.projectRoot, 'miniprogram')
+    await fs.mkdir(customSrcRoot, { recursive: true })
+    await fs.writeFile(path.join(customSrcRoot, 'app.ts'), 'export const customApp = true\n', 'utf8')
+    const result = createAnalyzeResult([
+      {
+        file: 'app.js',
+        type: 'chunk',
+        from: 'main',
+        modules: [
+          {
+            id: 'app.ts',
+            source: 'app.ts',
+            sourceType: 'src',
+          },
+        ],
+      },
+    ])
+
+    await expect(readDashboardFileContent({
+      kind: 'source',
+      path: 'app.ts',
+    }, {
+      projectRoot: project.projectRoot,
+      srcRoot: customSrcRoot,
+    }, result)).resolves.toMatchObject({
+      path: 'app.ts',
+      content: 'export const customApp = true\n',
+    })
+  })
+
+  it('resolves plugin files from an external configured pluginRoot', async () => {
+    const project = await createTemporaryProject()
+    const pluginRoot = path.resolve(project.projectRoot, '..', '..', 'plugin-root')
+    const pluginFile = path.join(pluginRoot, 'components', 'plugin.ts')
+    await fs.mkdir(path.dirname(pluginFile), { recursive: true })
+    await fs.writeFile(pluginFile, 'export const plugin = true\n', 'utf8')
+    const result = createAnalyzeResult([
+      {
+        file: 'plugin.js',
+        type: 'chunk',
+        from: 'main',
+        modules: [
+          {
+            id: 'plugin-root/components/plugin.ts',
+            source: 'plugin-root/components/plugin.ts',
+            sourceType: 'plugin',
+          },
+        ],
+      },
+    ])
+
+    await expect(readDashboardFileContent({
+      kind: 'source',
+      path: 'plugin-root/components/plugin.ts',
+    }, {
+      pluginRoot,
+      projectRoot: project.projectRoot,
+      srcRoot: path.join(project.projectRoot, 'src'),
+    }, result)).resolves.toMatchObject({
+      path: 'plugin-root/components/plugin.ts',
+      content: 'export const plugin = true\n',
+    })
+  })
+
   it('rejects a source path with ambiguous semantic roots', async () => {
     const project = await createTemporaryProject()
     await fs.writeFile(path.join(project.projectRoot, 'app.ts'), 'export const projectApp = true\n', 'utf8')
@@ -206,7 +273,8 @@ describe('dashboard Devframe protocol', () => {
       kind: 'source',
       path: 'app.ts',
     }, {
-      sourceRoot: project.projectRoot,
+      projectRoot: project.projectRoot,
+      srcRoot: path.join(project.projectRoot, 'src'),
     }, result)).rejects.toThrow('必须传入合法的 kind 和相对路径。')
   })
 
@@ -234,7 +302,7 @@ describe('dashboard Devframe protocol', () => {
       kind: 'source',
       path: 'src/app.ts',
     }, {
-      sourceRoot: project.projectRoot,
+      srcRoot: path.join(project.projectRoot, 'src'),
     }, result)).rejects.toThrow('源码路径存在多个候选文件，已拒绝读取。')
   })
 
@@ -261,7 +329,7 @@ describe('dashboard Devframe protocol', () => {
       kind: 'source',
       path: 'src/oversized.ts',
     }, {
-      sourceRoot: project.projectRoot,
+      srcRoot: path.join(project.projectRoot, 'src'),
     }, result)).rejects.toThrow(`文件超过 ${MAX_DASHBOARD_FILE_CONTENT_BYTES} 字节`)
   })
 })

@@ -10,7 +10,9 @@ interface MockDashboardDevframeOptions {
   getRuntimeEvents: () => unknown[]
   roots: {
     artifactRoot?: string
-    sourceRoot?: string
+    pluginRoot?: string
+    projectRoot?: string
+    srcRoot?: string
   }
 }
 
@@ -227,7 +229,9 @@ describe('analyze dashboard', () => {
     ]))
     expect(devframeOptions?.roots).toEqual({
       artifactRoot: '/project/dist',
-      sourceRoot: '/project',
+      pluginRoot: undefined,
+      projectRoot: '/project',
+      srcRoot: '/project/src',
     })
     expect(devframeViteBridgeMock).toHaveBeenCalledWith(
       { id: 'weapp-vite' },

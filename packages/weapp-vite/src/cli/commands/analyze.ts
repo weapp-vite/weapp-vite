@@ -536,6 +536,8 @@ export function registerAnalyzeCommand(cli: CAC) {
             artifactRoot: ctx.configService.outDir,
             cwd: ctx.configService.cwd,
             packageManagerAgent: ctx.configService.packageManager.agent,
+            pluginRoot: ctx.configService.absolutePluginRoot,
+            srcRoot: ctx.configService.absoluteSrcRoot,
             previousResult,
           })
         }

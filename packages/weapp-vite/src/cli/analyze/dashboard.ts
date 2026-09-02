@@ -237,6 +237,8 @@ export async function startAnalyzeDashboard(
     watch?: boolean
     cwd?: string
     packageManagerAgent?: PackageManagerAgent
+    pluginRoot?: string
+    srcRoot?: string
     silentStartupLog?: boolean
     initialEvents?: DashboardRuntimeEventInput[]
     previousResult?: AnalyzeSubpackagesResult | null
@@ -268,7 +270,9 @@ export async function startAnalyzeDashboard(
     getRuntimeEvents: () => runtimeEvents.current,
     roots: {
       artifactRoot: options?.artifactRoot ?? (options?.cwd ? path.resolve(options.cwd, 'dist') : undefined),
-      sourceRoot: options?.cwd,
+      pluginRoot: options?.pluginRoot,
+      projectRoot: options?.cwd,
+      srcRoot: options?.srcRoot ?? (options?.cwd ? path.resolve(options.cwd, 'src') : undefined),
     },
   })
   const plugins = [
