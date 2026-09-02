@@ -26,6 +26,8 @@ keywords:
 
 ## 从多平台模板开始 {#template-quick-start}
 
+<!-- tutorial-e2e:multi-platform:start -->
+
 脚手架提供两条并列路线，默认模板保持不变：
 
 | 模板                 | 适用场景                             | 页面与组件                                |
@@ -129,6 +131,8 @@ pnpm build:web
 | Web    | 必过           | 浏览器 Runtime 必过                                   | 验证路由、平台标识、点击状态与浏览器错误        |
 
 仓库维护者可以使用 `pnpm e2e:platform:build` 运行六端构建矩阵；真实 IDE E2E 必须全局串行，不能和其他 DevTools、E2E、dev server 或 watcher 重叠。
+
+<!-- tutorial-e2e:multi-platform:end -->
 
 ## 目标声明 {#targets}
 
