@@ -1,5 +1,7 @@
 # @weapp-vite/dashboard
 
+## 7.0.1
+
 ## 7.0.0
 
 ## 6.25.1

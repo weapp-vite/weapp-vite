@@ -1,5 +1,18 @@
 # wevu
 
+## 7.0.1
+
+### Patch Changes
+
+- 修复首屏异步路由守卫长期等待、异常和页面卸载后的迟到回调问题。首屏导航默认改为 `eager`，页面先挂载渲染；需要在守卫完成前阻止挂载时，可通过 `initialNavigationMode: 'blocking'` 显式开启，并使用 `initialNavigationTimeout` 防止永久等待。统一清理导航状态，避免页面假死、元素缺失和实例泄漏。
+
+- 修复路由托管导航与页面初始导航并发时重复执行全局守卫的问题，并去重迟到的宿主路由同步事件。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.1
+  - @wevu/compiler@7.0.1
+  - @wevu/web-apis@1.2.39
+
 ## 7.0.0
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @wevu/compiler
 
+## 7.0.1
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.1
+  - @weapp-vite/ast@7.0.1
+
 ## 7.0.0
 
 ### Major Changes

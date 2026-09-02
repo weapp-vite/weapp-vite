@@ -1,5 +1,20 @@
 # weapp-vite
 
+## 7.0.1
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：oxc-parser。命名 catalog 变更键：无。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.1
+  - @weapp-vite/ast@7.0.1
+  - @weapp-vite/i18n@0.2.1
+  - @weapp-vite/web@1.4.18
+  - @wevu/web-apis@1.2.39
+  - wevu@7.0.1
+
 ## 7.0.0
 
 ### Patch Changes
