@@ -44,6 +44,8 @@ export const dashboardConnectionStatus = shallowRef<DevframeConnectionStatus>('c
 export const dashboardRuntimeEvents = shallowRef<DashboardRuntimeEvent[]>([])
 
 let clientPromise: Promise<DevframeRpcClient> | undefined
+let connectPromise: Promise<void> | undefined
+let disposeConnectionListeners: (() => void) | undefined
 let connected = false
 let refreshPromise: Promise<void> | undefined
 let refreshPending = false
@@ -93,38 +95,66 @@ function syncConnectionState(client: DevframeRpcClient) {
   dashboardConnectionError.value = client.connectionError
 }
 
+async function initializeDashboardDevframe() {
+  const client = await getTrustedDashboardDevframeClient()
+  const dashboard = client.scope(DEVFRAME_ID)
+  const sharedState = await dashboard.rpc.sharedState('dashboard')
+  const initialState = sharedState.value()
+  let revision = initialState.revision
+
+  syncConnectionState(client)
+  dashboardRuntimeEvents.value = normalizeRuntimeEvents(initialState.runtimeEvents)
+  await refreshAnalyzeSnapshot(client)
+
+  const latestState = sharedState.value()
+  const missedRevision = latestState.revision !== revision
+  revision = latestState.revision
+  dashboardRuntimeEvents.value = normalizeRuntimeEvents(latestState.runtimeEvents)
+
+  const disposeSharedState = sharedState.on('updated', (state) => {
+    dashboardRuntimeEvents.value = normalizeRuntimeEvents(state.runtimeEvents)
+    if (state.revision === revision) {
+      return
+    }
+    revision = state.revision
+    void refreshAnalyzeSnapshot(client).catch((error) => {
+      dashboardConnectionStatus.value = 'error'
+      dashboardConnectionError.value = error instanceof Error ? error : new Error(String(error))
+    })
+  })
+  const disposeStatus = client.events.on('connection:status', () => {
+    syncConnectionState(client)
+  })
+  const disposeError = client.events.on('connection:error', (error) => {
+    dashboardConnectionError.value = error
+  })
+  disposeConnectionListeners = () => {
+    disposeSharedState()
+    disposeStatus()
+    disposeError()
+  }
+
+  if (missedRevision) {
+    await refreshAnalyzeSnapshot(client)
+  }
+  connected = true
+}
+
 export async function connectDashboardDevframe() {
   if (connected) {
     return
   }
 
+  connectPromise ??= initializeDashboardDevframe()
   try {
-    const client = await getTrustedDashboardDevframeClient()
-    const dashboard = client.scope(DEVFRAME_ID)
-    const sharedState = await dashboard.rpc.sharedState('dashboard')
-    let revision = sharedState.value().revision
-
-    connected = true
-    syncConnectionState(client)
-    dashboardRuntimeEvents.value = normalizeRuntimeEvents(sharedState.value().runtimeEvents)
-    await refreshAnalyzeSnapshot(client)
-
-    sharedState.on('updated', (state) => {
-      dashboardRuntimeEvents.value = normalizeRuntimeEvents(state.runtimeEvents)
-      if (state.revision === revision) {
-        return
-      }
-      revision = state.revision
-      void refreshAnalyzeSnapshot(client)
-    })
-    client.events.on('connection:status', () => {
-      syncConnectionState(client)
-    })
-    client.events.on('connection:error', (error) => {
-      dashboardConnectionError.value = error
-    })
+    await connectPromise
+    connectPromise = undefined
   }
   catch (error) {
+    disposeConnectionListeners?.()
+    disposeConnectionListeners = undefined
+    connected = false
+    connectPromise = undefined
     dashboardConnectionStatus.value = 'error'
     dashboardConnectionError.value = error instanceof Error ? error : new Error(String(error))
     throw dashboardConnectionError.value

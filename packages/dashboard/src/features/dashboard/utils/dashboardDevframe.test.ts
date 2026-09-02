@@ -109,6 +109,117 @@ describe('dashboard Devframe client', () => {
     expect(call).toHaveBeenNthCalledWith(2, 'weapp-vite:get-analyze-state')
   })
 
+  it('refetches when shared state advances during the initial query', async () => {
+    const { promise: initialQuery, resolve: resolveInitialQuery } = Promise.withResolvers<unknown>()
+    let sharedValue = {
+      revision: 0,
+      runtimeEvents: [
+        {
+          id: 'initial',
+          kind: 'command',
+          level: 'info',
+          title: 'initial',
+          detail: 'initial',
+          timestamp: '10:00:00',
+          source: 'weapp-vite',
+        },
+      ],
+    }
+    const initialSnapshot = {
+      current: { packages: [], modules: [], subPackages: [], glassEasel: null },
+      previous: null,
+    }
+    const nextSnapshot = {
+      current: { packages: [{ id: 'main' }], modules: [], subPackages: [], glassEasel: null },
+      previous: initialSnapshot.current,
+    }
+    const call = vi.fn()
+      .mockReturnValueOnce(initialQuery)
+      .mockResolvedValueOnce(nextSnapshot)
+    const sharedState = {
+      value: vi.fn(() => sharedValue),
+      on: vi.fn(() => vi.fn()),
+    }
+    const fakeClient = {
+      connectionError: null,
+      events: { on: vi.fn(() => vi.fn()) },
+      ensureTrusted: vi.fn(async () => true),
+      call,
+      scope: vi.fn(() => ({
+        rpc: {
+          sharedState: vi.fn(async () => sharedState),
+        },
+      })),
+      status: 'connected',
+    }
+    connectDevframeMock.mockResolvedValue(fakeClient as unknown as DevframeRpcClient)
+
+    // 每个用例重新加载模块，隔离模块级 Devframe 连接单例。
+    const transport = await import('./dashboardDevframe')
+    const connecting = transport.connectDashboardDevframe()
+    await vi.waitFor(() => expect(call).toHaveBeenCalledTimes(1))
+
+    sharedValue = {
+      revision: 1,
+      runtimeEvents: [
+        {
+          id: 'next',
+          kind: 'build',
+          level: 'success',
+          title: 'next',
+          detail: 'next',
+          timestamp: '10:00:01',
+          source: 'weapp-vite',
+        },
+      ],
+    }
+    resolveInitialQuery(initialSnapshot)
+    await connecting
+
+    expect(call).toHaveBeenCalledTimes(2)
+    expect(transport.dashboardAnalyzeSnapshot.value).toEqual(nextSnapshot)
+    expect(transport.dashboardRuntimeEvents.value).toEqual([
+      expect.objectContaining({ id: 'next' }),
+    ])
+  })
+
+  it('allows a second connection attempt after the initial query fails', async () => {
+    const snapshot = {
+      current: { packages: [], modules: [], subPackages: [], glassEasel: null },
+      previous: null,
+    }
+    const call = vi.fn()
+      .mockRejectedValueOnce(new Error('initial query failed'))
+      .mockResolvedValueOnce(snapshot)
+    const sharedState = {
+      value: vi.fn(() => ({ revision: 0, runtimeEvents: [] })),
+      on: vi.fn(() => vi.fn()),
+    }
+    const fakeClient = {
+      connectionError: null,
+      events: { on: vi.fn(() => vi.fn()) },
+      ensureTrusted: vi.fn(async () => true),
+      call,
+      scope: vi.fn(() => ({
+        rpc: {
+          sharedState: vi.fn(async () => sharedState),
+        },
+      })),
+      status: 'connected',
+    }
+    connectDevframeMock.mockResolvedValue(fakeClient as unknown as DevframeRpcClient)
+
+    // 每个用例重新加载模块，隔离模块级 Devframe 连接单例。
+    const transport = await import('./dashboardDevframe')
+    await expect(transport.connectDashboardDevframe()).rejects.toThrow('initial query failed')
+    await expect(transport.connectDashboardDevframe()).resolves.toBeUndefined()
+
+    expect(call).toHaveBeenCalledTimes(2)
+    expect(transport.dashboardAnalyzeSnapshot.value).toEqual(snapshot)
+    expect(transport.dashboardConnectionStatus.value).toBe('connected')
+    expect(transport.dashboardConnectionError.value).toBeNull()
+  })
+
   it('reads source content through the Devframe RPC client', async () => {
     const fileContent = {
       kind: 'source',

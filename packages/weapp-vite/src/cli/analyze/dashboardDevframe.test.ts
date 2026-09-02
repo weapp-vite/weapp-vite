@@ -179,6 +179,36 @@ describe('dashboard Devframe protocol', () => {
       path: '../secret.txt',
     }, roots, result)).rejects.toThrow('必须传入合法的 kind 和相对路径。')
   })
+  it('rejects a source path with ambiguous semantic roots', async () => {
+    const project = await createTemporaryProject()
+    await fs.writeFile(path.join(project.projectRoot, 'app.ts'), 'export const projectApp = true\n', 'utf8')
+    const result = createAnalyzeResult([
+      {
+        file: 'app.js',
+        type: 'chunk',
+        from: 'main',
+        modules: [
+          {
+            id: 'src/app.ts',
+            source: 'app.ts',
+            sourceType: 'src',
+          },
+          {
+            id: 'workspace/app.ts',
+            source: 'app.ts',
+            sourceType: 'workspace',
+          },
+        ],
+      },
+    ])
+
+    await expect(readDashboardFileContent({
+      kind: 'source',
+      path: 'app.ts',
+    }, {
+      sourceRoot: project.projectRoot,
+    }, result)).rejects.toThrow('必须传入合法的 kind 和相对路径。')
+  })
 
   it('rejects allowlisted files that exceed the content limit', async () => {
     const project = await createTemporaryProject()
