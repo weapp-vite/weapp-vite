@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import process from 'node:process'
 import { devframeViteBridge } from '@devframes/vite/single'
-import { buildOtpAuthUrl } from 'devframe/node/auth'
+import { buildOtpAuthUrl, refreshTempAuthCode } from 'devframe/node/auth'
 import { resolveCommand } from 'package-manager-detector/commands'
 import path from 'pathe'
 import { createServer } from 'vite'
@@ -316,7 +316,8 @@ export async function startAnalyzeDashboard(
       ...(resolved.network ?? []),
     ]
   })()
-  const authenticatedUrls = urls.map(url => buildOtpAuthUrl(url))
+  const authCode = refreshTempAuthCode()
+  const authenticatedUrls = urls.map(url => buildOtpAuthUrl(url, authCode))
 
   const waitPromise = waitForServerExit(server)
 

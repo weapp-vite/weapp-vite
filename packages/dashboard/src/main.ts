@@ -4,7 +4,7 @@ import { connectDashboardDevframe } from './features/dashboard/utils/dashboardDe
 import { router } from './router'
 import './style.css'
 
-function bootstrap() {
+async function bootstrap() {
   const app = createApp(App)
 
   app.config.errorHandler = (err, _instance, info) => {
@@ -15,22 +15,23 @@ function bootstrap() {
   }
 
   app.use(router)
+  await router.isReady()
   app.mount('#app')
 
-  void connectDashboardDevframe().catch((error) => {
+  try {
+    await connectDashboardDevframe()
+  }
+  catch (error) {
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.error('[weapp-vite dashboard] Devframe 连接失败：', error)
     }
-  })
+  }
 }
 
-try {
-  bootstrap()
-}
-catch (error) {
+void bootstrap().catch((error) => {
   if (import.meta.env.DEV) {
     // eslint-disable-next-line no-console
     console.error('[weapp-vite analyze] failed to bootstrap dashboard', error)
   }
-}
+})
