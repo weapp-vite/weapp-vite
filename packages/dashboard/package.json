@@ -50,6 +50,7 @@
     "@iconify-json/mdi": "catalog:",
     "@iconify/tailwind4": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "devframe": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
     "vite": "catalog:",

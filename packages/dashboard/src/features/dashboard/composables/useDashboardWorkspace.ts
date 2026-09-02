@@ -9,7 +9,7 @@ import type {
   WorkspaceSignalItem,
 } from '../types'
 import type { DashboardWorkspaceContext } from './dashboardWorkspaceContext'
-import { computed, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
+import { computed, inject, onBeforeUnmount, provide, shallowRef, watch } from 'vue'
 import {
   createAnalyzeHistorySnapshot,
   isSameAnalyzeResult,
@@ -18,6 +18,7 @@ import {
   resolveInitialPreviousResult,
   writeStoredAnalyzeHistory,
 } from '../utils/analyzeHistory'
+import { dashboardAnalyzeSnapshot } from '../utils/dashboardDevframe'
 import {
   createWorkspaceActivityItems,
   createWorkspaceCommands,
@@ -33,8 +34,8 @@ import {
 } from './useDashboardRuntimeEventStream'
 
 export function createDashboardWorkspace(): DashboardWorkspaceContext {
-  const initialPayload = window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null
-  const initialPreviousPayload = window.__WEAPP_VITE_PREVIOUS_ANALYZE_RESULT__ ?? null
+  const initialPayload = dashboardAnalyzeSnapshot.value?.current ?? null
+  const initialPreviousPayload = dashboardAnalyzeSnapshot.value?.previous ?? null
   const storedHistory = readStoredAnalyzeHistory()
   const resultRef = shallowRef<AnalyzeSubpackagesResult | null>(initialPayload)
   const previousResultRef = shallowRef<AnalyzeSubpackagesResult | null>(
@@ -115,13 +116,13 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     summary: summary.value,
   }))
 
-  const syncFromWindow = () => {
-    const incoming = window.__WEAPP_VITE_ANALYZE_RESULT__
+  const syncFromTransport = (payload: typeof dashboardAnalyzeSnapshot.value) => {
+    const incoming = payload?.current
     if (!incoming) {
       return
     }
 
-    const previousFromWindow = window.__WEAPP_VITE_PREVIOUS_ANALYZE_RESULT__ ?? null
+    const previousFromTransport = payload.previous
     const stored = readStoredAnalyzeHistory()
     let previousResult = stored?.previous ?? previousResultRef.value
     if (stored?.current && !isSameAnalyzeResult(incoming, stored.current)) {
@@ -130,8 +131,8 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     if (resultRef.value && !isSameAnalyzeResult(incoming, resultRef.value)) {
       previousResult = resultRef.value
     }
-    if (previousFromWindow && !isSameAnalyzeResult(incoming, previousFromWindow)) {
-      previousResult = previousFromWindow
+    if (previousFromTransport && !isSameAnalyzeResult(incoming, previousFromTransport)) {
+      previousResult = previousFromTransport
     }
 
     previousResultRef.value = isSameAnalyzeResult(incoming, previousResult)
@@ -189,14 +190,8 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     persistHistoryPreferences()
   }
 
-  onMounted(() => {
-    window.addEventListener('weapp-analyze:update', syncFromWindow)
-    syncFromWindow()
-  })
-
-  onBeforeUnmount(() => {
-    window.removeEventListener('weapp-analyze:update', syncFromWindow)
-  })
+  const stopAnalyzeSync = watch(dashboardAnalyzeSnapshot, syncFromTransport, { immediate: true })
+  onBeforeUnmount(stopAnalyzeSync)
 
   return {
     resultRef,

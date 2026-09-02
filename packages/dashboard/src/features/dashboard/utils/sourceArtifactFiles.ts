@@ -1,19 +1,15 @@
 import type { LargestFileEntry } from '../types'
+import type { DashboardFileKind } from './dashboardDevframe'
 import EditorWorker from 'monaco-editor/editor/editor.worker?worker'
 import CssWorker from 'monaco-editor/language/css/css.worker?worker'
 import HtmlWorker from 'monaco-editor/language/html/html.worker?worker'
 import JsonWorker from 'monaco-editor/language/json/json.worker?worker'
 import TypeScriptWorker from 'monaco-editor/language/typescript/ts.worker?worker'
+import { readDashboardFileContent } from './dashboardDevframe'
 
-type DashboardFileKind = 'source' | 'artifact'
+export type { DashboardFileContent } from './dashboardDevframe'
+
 type MonacoWorkerConstructor = new () => Worker
-
-export interface DashboardFileContent {
-  content: string
-  language: string
-  path: string
-  size: number
-}
 
 const workerByLabel: Record<string, MonacoWorkerConstructor> = {
   css: CssWorker,
@@ -58,12 +54,7 @@ function stripFileQuery(filePath: string) {
 }
 
 export async function fetchDashboardFileContent(kind: DashboardFileKind, filePath: string) {
-  const query = new URLSearchParams({ kind, path: filePath })
-  const response = await fetch(`/__weapp_vite_file_content?${query.toString()}`)
-  const payload = await response.json() as DashboardFileContent & { message?: string }
-  if (!response.ok) {
-    throw new Error(payload.message || '文件读取失败')
-  }
+  const payload = await readDashboardFileContent(kind, filePath)
   return {
     ...payload,
     language: normalizeLanguage(payload.language, payload.path),

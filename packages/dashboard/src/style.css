@@ -8,51 +8,49 @@
   :root {
     color-scheme: light dark;
 
-    --dashboard-bg: #f4f7fb;
-    --dashboard-bg-accent:
-      linear-gradient(180deg, rgb(241 245 249 / 92%), rgb(248 250 252 / 9600%) 38%, rgb(236 241 246 / 9000%)),
-      linear-gradient(90deg, rgb(15 118 110 / 7%), transparent 34%, rgb(202 138 4 / 6%));
-    --dashboard-panel: rgb(255 255 255 / 90%);
-    --dashboard-panel-strong: rgb(255 255 255 / 98%);
-    --dashboard-panel-muted: rgb(248 250 252 / 72%);
-    --dashboard-border: rgb(100 116 139 / 20%);
-    --dashboard-border-strong: rgb(15 118 110 / 26%);
-    --dashboard-text: #0f172a;
-    --dashboard-text-muted: #475569;
-    --dashboard-text-soft: #64748b;
+    --dashboard-bg: #f6f7f9;
+    --dashboard-panel: #fff;
+    --dashboard-panel-strong: #fff;
+    --dashboard-panel-muted: #f1f3f6;
+    --dashboard-border: #d9dee7;
+    --dashboard-border-strong: #b8c1cf;
+    --dashboard-text: #1d2430;
+    --dashboard-text-muted: #4b5565;
+    --dashboard-text-soft: #7a8494;
     --dashboard-accent: #0f766e;
-    --dashboard-accent-soft: rgb(15 118 110 / 12%);
-    --dashboard-shadow: 0 14px 34px rgb(15 23 42 / 8%);
+    --dashboard-accent-soft: rgb(15 118 110 / 10%);
+    --dashboard-shadow: 0 1px 2px rgb(15 23 42 / 6%);
+    --dashboard-code: 'SFMono-Regular', consolas, 'Liberation Mono', monospace;
   }
 
   :root[data-theme='dark'] {
-    --dashboard-bg: #020617;
-    --dashboard-bg-accent:
-      linear-gradient(180deg, rgb(15 23 42 / 96%), rgb(2 6 23 / 9800%) 42%, rgb(15 23 42 / 9400%)),
-      linear-gradient(90deg, rgb(20 184 166 / 10%), transparent 36%, rgb(217 119 6 / 8%));
-    --dashboard-panel: rgb(15 23 42 / 84%);
-    --dashboard-panel-strong: rgb(15 23 42 / 96%);
-    --dashboard-panel-muted: rgb(15 23 42 / 64%);
-    --dashboard-border: rgb(148 163 184 / 16%);
-    --dashboard-border-strong: rgb(45 212 191 / 22%);
-    --dashboard-text: #e2e8f0;
-    --dashboard-text-muted: #cbd5e1;
-    --dashboard-text-soft: #94a3b8;
-    --dashboard-accent: #67e8f9;
-    --dashboard-accent-soft: rgb(34 211 238 / 12%);
-    --dashboard-shadow: 0 18px 44px rgb(2 6 23 / 34%);
+    --dashboard-bg: #0c0e12;
+    --dashboard-panel: #11141a;
+    --dashboard-panel-strong: #141820;
+    --dashboard-panel-muted: #191e27;
+    --dashboard-border: #292f3a;
+    --dashboard-border-strong: #3a4351;
+    --dashboard-text: #e7eaf0;
+    --dashboard-text-muted: #b1b8c5;
+    --dashboard-text-soft: #7f8999;
+    --dashboard-accent: #5eead4;
+    --dashboard-accent-soft: rgb(45 212 191 / 11%);
+    --dashboard-shadow: 0 1px 2px rgb(0 0 0 / 28%);
   }
 
   body {
     min-height: 100vh;
     margin: 0;
-    overflow: hidden auto;
+    overflow: hidden;
     font-family: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
     color: var(--dashboard-text);
     background-color: var(--dashboard-bg);
-    background-image: var(--dashboard-bg-accent);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  .font-mono {
+    font-family: var(--dashboard-code);
   }
 
   #app {

@@ -1,87 +1,126 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
-import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
-import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
-import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
-import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
-import WorkspaceActivityTimeline from '../features/dashboard/components/WorkspaceActivityTimeline.vue'
-import WorkspaceCommandCenter from '../features/dashboard/components/WorkspaceCommandCenter.vue'
-import WorkspaceReadinessPanel from '../features/dashboard/components/WorkspaceReadinessPanel.vue'
+import DevtoolsMetricStrip from '../features/dashboard/components/DevtoolsMetricStrip.vue'
+import DevtoolsPackageList from '../features/dashboard/components/DevtoolsPackageList.vue'
+import DevtoolsRuntimeFeed from '../features/dashboard/components/DevtoolsRuntimeFeed.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
-import { releaseChecklist, workspaceNavigation } from '../features/dashboard/constants/shell'
-import { createWorkspaceReadinessSummary } from '../features/dashboard/utils/workspaceReadiness'
+import {
+  dashboardConnectionError,
+  dashboardConnectionStatus,
+} from '../features/dashboard/utils/dashboardDevframe'
+import { formatBytes } from '../features/dashboard/utils/format'
 
-const { activityItems, commandItems, diagnostics, lastUpdatedAt, resultRef, runtimeEvents, signals, updateCount } = useDashboardWorkspace()
+const {
+  lastUpdatedAt,
+  resultRef,
+  runtimeEvents,
+  updateCount,
+} = useDashboardWorkspace()
 
-const readinessSummary = computed(() => createWorkspaceReadinessSummary({
-  result: resultRef.value,
-  runtimeEvents: runtimeEvents.value,
-  diagnostics: diagnostics.value,
-  updateCount: updateCount.value,
-  lastUpdatedAt: lastUpdatedAt.value,
-}))
+const totalBytes = computed(() =>
+  resultRef.value?.packages.reduce((packageTotal, packageReport) =>
+    packageTotal + packageReport.files.reduce((fileTotal, file) => fileTotal + (file.size ?? 0), 0), 0) ?? 0,
+)
+const metricItems = computed(() => [
+  {
+    label: 'Session',
+    value: dashboardConnectionStatus.value === 'connected' ? 'Connected' : dashboardConnectionStatus.value,
+    detail: resultRef.value ? 'Analyze payload 已同步' : '等待 Devframe 数据',
+  },
+  {
+    label: 'Output',
+    value: formatBytes(totalBytes.value),
+    detail: `${resultRef.value?.packages.length ?? 0} packages`,
+  },
+  {
+    label: 'Modules',
+    value: String(resultRef.value?.modules.length ?? 0),
+    detail: `${resultRef.value?.subPackages.length ?? 0} subpackages`,
+  },
+  {
+    label: 'Last update',
+    value: lastUpdatedAt.value,
+    detail: `${updateCount.value} syncs`,
+  },
+])
+const packageRows = computed(() =>
+  (resultRef.value?.packages ?? [])
+    .map(packageReport => ({
+      id: packageReport.id,
+      label: packageReport.label,
+      type: packageReport.type,
+      fileCount: packageReport.files.length,
+      bytes: packageReport.files.reduce((total, file) => total + (file.size ?? 0), 0),
+    }))
+    .sort((left, right) => right.bytes - left.bytes)
+    .map(packageReport => ({
+      ...packageReport,
+      size: formatBytes(packageReport.bytes),
+    })),
+)
+const blockingEvents = computed(() =>
+  runtimeEvents.value.filter(event => event.level === 'error' || event.level === 'warning').slice(0, 5),
+)
 </script>
 
 <template>
-  <div class="grid min-h-[calc(100dvh-8rem)] items-start gap-3 xl:grid-cols-[minmax(0,1.12fr)_minmax(24rem,0.72fr)] xl:items-stretch">
-    <AppSurfaceCard
-      eyebrow="Status"
-      title="当前工作区"
-      icon-name="status-live"
-      tone="strong"
-      padding="md"
-      content-class="min-h-[46rem]"
-    >
-      <div class="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-3 overflow-hidden">
-        <AppInsetPanel>
-          <ul class="grid gap-2 text-sm md:grid-cols-2">
-            <li
-              v-for="item in signals"
-              :key="item.label"
-              class="flex items-center justify-between gap-3 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-3"
-            >
-              <span class="inline-flex min-w-0 items-center gap-2">
-                <span class="h-4.5 w-4.5 shrink-0 text-(--dashboard-accent)">
-                  <DashboardIcon :name="item.iconName" />
-                </span>
-                <span class="truncate">{{ item.label }}</span>
-              </span>
-              <strong class="shrink-0 text-(--dashboard-text)">{{ item.value }}</strong>
+  <div class="grid gap-3">
+    <DevtoolsMetricStrip :items="metricItems" />
+
+    <div class="grid min-h-0 gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(21rem,0.85fr)]">
+      <div class="grid min-h-0 gap-3">
+        <DevtoolsPackageList :rows="packageRows" />
+
+        <section class="overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel)">
+          <header class="flex h-11 items-center justify-between border-b border-(--dashboard-border) px-3.5">
+            <div>
+              <h2 class="text-sm font-semibold text-(--dashboard-text)">
+                Diagnostics
+              </h2>
+              <p class="text-[11px] text-(--dashboard-text-soft)">
+                当前会话的阻塞项和恢复入口
+              </p>
+            </div>
+            <RouterLink class="text-xs font-medium text-(--dashboard-accent) hover:underline" to="/analyze?tab=diagnostics">
+              打开诊断
+            </RouterLink>
+          </header>
+
+          <div v-if="dashboardConnectionError" class="border-b border-(--dashboard-border) bg-red-500/8 px-3.5 py-3">
+            <p class="text-xs font-semibold text-red-600 dark:text-red-300">
+              Devframe connection error
+            </p>
+            <p class="mt-1 break-words font-mono text-[11px] leading-5 text-(--dashboard-text-muted)">
+              {{ dashboardConnectionError.message }}
+            </p>
+          </div>
+
+          <ul v-if="blockingEvents.length" class="divide-y divide-(--dashboard-border)">
+            <li v-for="event in blockingEvents" :key="event.id" class="px-3.5 py-2.5">
+              <div class="flex items-center justify-between gap-3">
+                <p class="truncate text-xs font-medium text-(--dashboard-text)">
+                  {{ event.title }}
+                </p>
+                <span class="font-mono text-[10px] uppercase text-(--dashboard-text-soft)">{{ event.level }}</span>
+              </div>
+              <p class="mt-1 line-clamp-2 text-[11px] leading-5 text-(--dashboard-text-muted)">
+                {{ event.detail }}
+              </p>
             </li>
           </ul>
-        </AppInsetPanel>
 
-        <div class="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
-          <RouterLink v-for="item in workspaceNavigation" :key="item.to" :to="item.to">
-            <AppIconFeatureCard
-              :icon-name="item.iconName"
-              :title="item.label"
-              interactive
-            />
-          </RouterLink>
-        </div>
-
-        <WorkspaceActivityTimeline
-          :items="activityItems"
-          :checklist="releaseChecklist"
-        />
+          <div v-else-if="!dashboardConnectionError" class="flex items-center gap-2.5 px-3.5 py-5">
+            <span class="h-2 w-2 rounded-full bg-emerald-500" />
+            <span>
+              <span class="block text-xs font-medium text-(--dashboard-text)">No blocking diagnostics</span>
+              <span class="mt-0.5 block text-[11px] text-(--dashboard-text-soft)">当前连接、构建和运行事件没有错误或警告。</span>
+            </span>
+          </div>
+        </section>
       </div>
-    </AppSurfaceCard>
 
-    <section class="grid min-h-[46rem] grid-rows-[auto_minmax(34rem,1fr)] gap-3">
-      <WorkspaceReadinessPanel :summary="readinessSummary" />
-
-      <AppSurfaceCard tone="default" padding="md" content-class="min-h-0 overflow-hidden">
-        <AppSectionHeading
-          eyebrow="Commands"
-          title="常用操作"
-        />
-        <div class="mt-4 h-full min-h-0">
-          <WorkspaceCommandCenter :commands="commandItems" />
-        </div>
-      </AppSurfaceCard>
-    </section>
+      <DevtoolsRuntimeFeed :events="runtimeEvents" />
+    </div>
   </div>
 </template>

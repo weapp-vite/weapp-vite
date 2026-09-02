@@ -1,7 +1,6 @@
 import type {
   DashboardIconFeatureItem,
   DashboardNavItem,
-  DashboardRuntimeEvent,
   DashboardTokenGroup,
   WorkspaceActivityItem,
   WorkspaceCommandItem,
@@ -10,11 +9,11 @@ import type {
 import { dashboardTabs } from './view'
 
 export const workspaceNavigation: DashboardNavItem[] = [
-  { to: '/', label: '工作台', caption: '应用入口与状态总览', iconName: 'nav-home' },
+  { to: '/', label: '概览', caption: '当前构建与运行会话', iconName: 'nav-home' },
   {
     to: '/analyze',
-    label: '分析视图',
-    caption: '包体、模块与分包结构',
+    label: '构建分析',
+    caption: '包、模块、文件和分包',
     iconName: 'nav-analyze',
     children: dashboardTabs.map(tab => ({
       to: tab.key === 'overview' ? '/analyze' : `/analyze?tab=${tab.key}`,
@@ -37,8 +36,8 @@ export const workspaceNavigation: DashboardNavItem[] = [
       iconName: tab.iconName,
     })),
   },
-  { to: '/activity', label: '活动流', caption: '命令、诊断与运行事件', iconName: 'nav-activity' },
-  { to: '/tokens', label: '设计令牌', caption: '主题、表面与组件状态', iconName: 'nav-tokens' },
+  { to: '/activity', label: '运行事件', caption: 'Build、HMR、命令和错误', iconName: 'nav-activity' },
+  { to: '/tokens', label: '界面令牌', caption: '主题、表面和组件状态', iconName: 'nav-tokens' },
 ]
 
 export const workspaceHighlights: DashboardIconFeatureItem[] = [
@@ -96,44 +95,10 @@ export const activityFeed: WorkspaceActivityItem[] = [
 ]
 
 export const diagnosticsQueue: WorkspaceDiagnosticItem[] = [
-  { label: 'CLI 注入链路', detail: '保留 `window.__WEAPP_VITE_ANALYZE_RESULT__` 兼容层。', status: '兼容' },
+  { label: 'Devframe 协议链路', detail: 'Analyze 查询、运行事件和文件读取统一通过 Devframe 传输。', status: '已落地' },
   { label: '路由拓展性', detail: '页面采用文件路由，主路由表保持稳定。', status: '可扩展' },
   { label: '组件复用', detail: '通用卡片与区块标题已独立，避免页面继续拷贝结构。', status: '已落地' },
   { label: '视觉令牌', detail: '颜色、表面、排版预览集中在 tokens 页面统一检查。', status: '可验证' },
-]
-
-export const sampleRuntimeEvents: DashboardRuntimeEvent[] = [
-  {
-    id: 'evt-command-build-ui',
-    kind: 'command',
-    level: 'success',
-    title: 'build --ui completed',
-    detail: '示例事件: dashboard 已经准备好承接来自 CLI 的真实命令生命周期事件。',
-    timestamp: '10:18:12',
-    source: 'cli',
-    durationMs: 842,
-    tags: ['build', 'ui'],
-  },
-  {
-    id: 'evt-hmr-shell',
-    kind: 'hmr',
-    level: 'info',
-    title: 'workspace shell hot updated',
-    detail: '工作台页面已完成一次热更新并记录到事件流。',
-    timestamp: '10:19:44',
-    source: 'vite-hmr',
-    tags: ['hmr', 'shell'],
-  },
-  {
-    id: 'evt-diagnostic-payload',
-    kind: 'diagnostic',
-    level: 'warning',
-    title: 'analyze payload pending',
-    detail: '当前页面支持在没有 payload 时进入空态。',
-    timestamp: '10:20:07',
-    source: 'dashboard',
-    tags: ['diagnostic'],
-  },
 ]
 
 export const tokenGroups: DashboardTokenGroup[] = [
