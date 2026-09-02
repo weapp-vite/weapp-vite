@@ -97,6 +97,12 @@ export function formatBuildOrigin(origin: string) {
   return origin === 'independent' ? '独立构建' : '主构建'
 }
 
+export function formatModuleIdentifier(identifier: string) {
+  const queryIndex = identifier.indexOf('?')
+  const path = queryIndex === -1 ? identifier : identifier.slice(0, queryIndex)
+  return path.replaceAll('\\', '/').replace(/^\0/, '')
+}
+
 export function formatSourceType(type: string) {
   switch (type) {
     case 'src':

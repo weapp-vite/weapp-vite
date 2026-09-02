@@ -246,7 +246,7 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
 
   <section v-else class="min-h-0">
     <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:overflow-hidden"
+      grid-class="grid h-full min-h-0 min-w-0 items-start gap-2 overflow-x-hidden overflow-y-auto"
       :items="modulesLayoutItems"
       storage-key="weapp-vite:dashboard:analyze-layout:modules"
     >

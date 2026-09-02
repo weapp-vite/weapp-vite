@@ -78,17 +78,15 @@ const {
                 class="w-full rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5 text-left transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
                 @click="emit('selectAction', item)"
               >
-                <div class="flex min-w-0 items-start justify-between gap-3">
+                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                   <div class="min-w-0">
-                    <div class="flex min-w-0 items-center gap-2">
-                      <span :class="getToneClassName(item.tone)">
-                        {{ getToneLabel(item.tone) }}
-                      </span>
-                      <p class="truncate text-sm font-medium text-(--dashboard-text)">
-                        {{ item.title }}
-                      </p>
-                    </div>
-                    <p class="mt-1 truncate text-xs text-(--dashboard-text-soft)">
+                    <span :class="getToneClassName(item.tone)">
+                      {{ getToneLabel(item.tone) }}
+                    </span>
+                    <p class="mt-2 line-clamp-2 break-words text-sm font-medium leading-5 text-(--dashboard-text)">
+                      {{ item.title }}
+                    </p>
+                    <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-(--dashboard-text-soft)">
                       {{ item.meta }}
                     </p>
                   </div>

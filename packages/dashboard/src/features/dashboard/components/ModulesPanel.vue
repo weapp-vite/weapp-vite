@@ -40,8 +40,13 @@ const {
 </script>
 
 <template>
-  <section class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:h-full xl:grid-cols-[minmax(0,1.24fr)_minmax(0,0.76fr)] xl:overflow-hidden">
-    <div :class="surfaceStyles({ padding: 'md' })" class="min-h-0 min-w-0 overflow-visible xl:overflow-hidden">
+  <section
+    class="grid min-h-0 min-w-0 items-start gap-3 overflow-visible"
+    :class="duplicateModules.length
+      ? 'xl:grid-cols-[minmax(0,1.24fr)_minmax(0,0.76fr)]'
+      : 'xl:grid-cols-[minmax(20rem,0.72fr)_minmax(0,1.28fr)]'"
+  >
+    <div :class="surfaceStyles({ padding: 'md' })" class="min-h-0 min-w-0 overflow-hidden">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <AppPanelHeader
           icon-name="duplicate-modules"

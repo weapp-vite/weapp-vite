@@ -1,6 +1,7 @@
 import type { AnalyzeSubpackagesResult, IncrementAttributionEntry, IncrementAttributionSummary, ModuleSourceType } from '../types'
 import type { FileComparisonMaps } from './analyzeDataShared'
 import { createFileKey, createModulePlacementMap, getFileSize } from './analyzeDataShared'
+import { formatModuleIdentifier } from './format'
 
 function classifyIncrementCategory(source: string, sourceType?: ModuleSourceType) {
   if (source.includes('wevu') || source.includes('@weapp-vite/dashboard')) {
@@ -81,7 +82,7 @@ export function createIncrementAttribution(options: {
     }
     const previousModule = options.previousMaps.moduleBytes.get(id)
     const currentModule = currentModulePlacementMap.get(id)
-    const label = currentModule?.source ?? previousModule?.source ?? id
+    const label = formatModuleIdentifier(currentModule?.source ?? previousModule?.source ?? id)
     const category = classifyIncrementCategory(label, currentModule?.sourceType ?? mod.sourceType)
     items.push({
       key: `module:${id}`,

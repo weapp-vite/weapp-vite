@@ -38,7 +38,7 @@ const {
       icon-name="hero-commands"
       content-class="min-h-[36rem] min-w-0"
     >
-      <div class="grid min-h-0 min-w-0 grid-rows-[auto_auto_minmax(14rem,1fr)] gap-3 overflow-visible xl:h-full xl:grid-rows-[minmax(0,9rem)_auto_minmax(6rem,1fr)] xl:overflow-hidden">
+      <div class="grid min-h-0 min-w-0 grid-rows-[auto_auto_minmax(14rem,1fr)] gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(6rem,1fr)] xl:overflow-hidden">
         <AppEventFilterPanel
           class="min-h-0 min-w-0"
           :search-query="searchQuery"

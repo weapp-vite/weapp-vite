@@ -128,24 +128,24 @@ const {
             class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5 transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
             :class="activeKey === item.key ? 'border-(--dashboard-accent) bg-(--dashboard-accent-soft)' : undefined"
           >
-            <div class="flex items-start justify-between gap-3">
+            <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
               <button
                 type="button"
                 class="min-w-0 text-left"
                 @click="emit('select', item)"
               >
-                <div class="flex min-w-0 items-center gap-2">
+                <div class="flex min-w-0 flex-wrap items-center gap-2">
                   <span :class="getToneClassName(item.tone)">
                     {{ getToneLabel(item.tone) }}
                   </span>
-                  <span class="rounded-full bg-(--dashboard-accent-soft) px-2 py-0.5 text-[11px] text-(--dashboard-text-muted)">
+                  <span class="shrink-0 whitespace-nowrap rounded-full bg-(--dashboard-accent-soft) px-2 py-0.5 text-[11px] text-(--dashboard-text-muted)">
                     {{ getKindLabel(item.kind) }}
                   </span>
-                  <p class="truncate text-sm font-medium text-(--dashboard-text)">
-                    {{ item.title }}
-                  </p>
                 </div>
-                <p class="mt-1 truncate text-xs text-(--dashboard-text-soft)">
+                <p class="mt-2 line-clamp-2 break-words text-sm font-medium leading-5 text-(--dashboard-text)">
+                  {{ item.title }}
+                </p>
+                <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-(--dashboard-text-soft)">
                   {{ item.meta }}
                 </p>
               </button>

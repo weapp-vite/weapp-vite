@@ -1,4 +1,5 @@
 import type { AnalyzeSubpackagesResult, ResolvedTheme, TreemapNode } from '../types'
+import { formatModuleIdentifier } from './format'
 import {
   createTreemapAssetNodeId,
   createTreemapFileNodeId,
@@ -31,7 +32,7 @@ export function createModuleTreemapNode(
   const normalizedRiskScore = normalizeTreemapRiskScore(riskScore, module.id, module.source, fileName)
   return {
     id: nodeId,
-    name: module.source,
+    name: formatModuleIdentifier(module.source),
     value,
     meta: {
       kind: 'module',
@@ -39,7 +40,7 @@ export function createModuleTreemapNode(
       packageId,
       packageLabel,
       fileName,
-      source: module.source,
+      source: formatModuleIdentifier(module.source),
       sourceType: module.sourceType,
       bytes: module.bytes,
       originalBytes: module.originalBytes,
