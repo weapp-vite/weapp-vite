@@ -32,19 +32,39 @@ describe('treemap presentation', () => {
   })
 
   it('uses group color for fill and risk only for the border', () => {
-    const healthy = createTreemapNodeStyle(0.2, 'dark', 0, 'leaf')
-    const risky = createTreemapNodeStyle(0.9, 'dark', 0, 'leaf')
-    const otherPackage = createTreemapNodeStyle(0.2, 'dark', 1, 'leaf')
-    const hiddenLabel = createTreemapNodeStyle(0.2, 'dark', 0, 'leaf', false)
-    const groupColors = Array.from({ length: 6 }, (_, index) =>
-      createTreemapNodeStyle(0.2, 'dark', index, 'leaf').itemStyle.color)
+    const packageIds = [
+      '__main__',
+      'centerPages',
+      'coursePages',
+      'homePages',
+      'improvePages',
+      'managePages',
+      'accountPages',
+      'reportPages',
+      'settingsPages',
+      'sharedPages',
+    ]
+    const colorById = new Map(packageIds.map(id => [
+      id,
+      createTreemapNodeStyle(0.2, 'dark', id, 'leaf').itemStyle.color,
+    ]))
+    const reorderedColorById = new Map([...packageIds].reverse().map(id => [
+      id,
+      createTreemapNodeStyle(0.2, 'dark', id, 'leaf').itemStyle.color,
+    ]))
+    const healthy = createTreemapNodeStyle(0.2, 'dark', '__main__', 'leaf')
+    const risky = createTreemapNodeStyle(0.9, 'dark', '__main__', 'leaf')
+    const otherPackage = createTreemapNodeStyle(0.2, 'dark', 'centerPages', 'leaf')
+    const hiddenLabel = createTreemapNodeStyle(0.2, 'dark', '__main__', 'leaf', false)
+    const hiddenUpperLabel = createTreemapNodeStyle(0.2, 'dark', '__main__', 'file', true, false)
 
-    const hiddenUpperLabel = createTreemapNodeStyle(0.2, 'dark', 0, 'file', true, false)
-
+    expect(new Set(colorById.values()).size).toBe(packageIds.length)
+    for (const packageId of packageIds) {
+      expect(reorderedColorById.get(packageId)).toBe(colorById.get(packageId))
+    }
     expect(healthy.itemStyle.color).toBe(risky.itemStyle.color)
     expect(healthy.itemStyle.borderColor).not.toBe(risky.itemStyle.borderColor)
     expect(healthy.itemStyle.color).not.toBe(otherPackage.itemStyle.color)
-    expect(new Set(groupColors).size).toBe(6)
     expect(healthy.itemStyle.color).toMatch(/^hsl\(\d+, 40%, 31%\)$/)
     expect(hiddenLabel.label.show).toBe(false)
     expect(hiddenUpperLabel.upperLabel.show).toBe(false)

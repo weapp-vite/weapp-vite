@@ -20,16 +20,25 @@ const depthColorSettings = {
     dark: 31,
   },
 } satisfies Record<TreemapNodeDepth, { saturation: number, light: number, dark: number }>
-const groupHues = [174, 218, 38, 326, 272, 12, 196, 88] as const
 const wevuRuntimeRiskScoreLimit = 0.5
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value))
 }
 
-function createGroupColor(groupIndex: number, theme: ResolvedTheme, depth: TreemapNodeDepth) {
+function hashGroupKey(value: string) {
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index++) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  const mixed = Math.imul((hash ^ (hash >>> 4)) >>> 0, 3266489909) >>> 0
+  return Math.round(((mixed / 0x100000000) * 360 + 247) % 360)
+}
+
+function createGroupColor(groupKey: string, theme: ResolvedTheme, depth: TreemapNodeDepth) {
   const settings = depthColorSettings[depth]
-  const hue = groupHues[groupIndex % groupHues.length]!
+  const hue = hashGroupKey(groupKey)
   const lightness = theme === 'dark' ? settings.dark : settings.light
   return `hsl(${hue}, ${settings.saturation}%, ${lightness}%)`
 }
@@ -83,12 +92,12 @@ function createNodeLabelStyle(theme: ResolvedTheme, emphasis = false) {
 export function createTreemapNodeStyle(
   score: number,
   theme: ResolvedTheme,
-  groupIndex: number,
+  groupKey: string,
   depth: TreemapNodeDepth,
   showLabel = true,
   showUpperLabel = true,
 ) {
-  const color = createGroupColor(groupIndex, theme, depth)
+  const color = createGroupColor(groupKey, theme, depth)
   const borderColor = createRiskBorderColor(score, theme)
   return {
     itemStyle: {

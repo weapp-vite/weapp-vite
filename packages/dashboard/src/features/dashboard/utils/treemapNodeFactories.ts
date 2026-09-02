@@ -15,7 +15,6 @@ import {
 
 export function createModuleTreemapNode(
   packageId: string,
-  packageColorIndex: number,
   packageLabel: string,
   fileName: string,
   fileBytes: number,
@@ -48,13 +47,12 @@ export function createModuleTreemapNode(
       originalBytes: module.originalBytes,
       packageCount: usageCount,
     },
-    ...createTreemapNodeStyle(normalizedRiskScore, theme, packageColorIndex, 'leaf', value >= 2 * 1024),
+    ...createTreemapNodeStyle(normalizedRiskScore, theme, packageId, 'leaf', value >= 2 * 1024),
   }
 }
 
 export function createAssetTreemapNode(
   packageId: string,
-  packageColorIndex: number,
   packageLabel: string,
   fileName: string,
   file: AnalyzeSubpackagesResult['packages'][number]['files'][number],
@@ -77,14 +75,13 @@ export function createAssetTreemapNode(
       source: file.source ?? fileName,
       bytes: file.size,
     },
-    ...createTreemapNodeStyle(riskScore, theme, packageColorIndex, 'leaf', value >= 2 * 1024),
+    ...createTreemapNodeStyle(riskScore, theme, packageId, 'leaf', value >= 2 * 1024),
   }
 }
 
 export function createFileTreemapNode(
   packageLabel: string,
   packageId: string,
-  packageColorIndex: number,
   packageLabelMap: Map<string, string>,
   file: AnalyzeSubpackagesResult['packages'][number]['files'][number],
   children: TreemapNode[],
@@ -117,14 +114,13 @@ export function createFileTreemapNode(
       type: file.type,
       bytes: file.size,
     },
-    ...createTreemapNodeStyle(riskScore, theme, packageColorIndex, 'file', true, fileValue >= 4 * 1024),
+    ...createTreemapNodeStyle(riskScore, theme, packageId, 'file', true, fileValue >= 4 * 1024),
     children: children.length > 0 ? children : undefined,
   }
 }
 
 export function createPackageTreemapNode(
   pkg: AnalyzeSubpackagesResult['packages'][number],
-  packageColorIndex: number,
   totalBytes: number,
   fileNodes: TreemapNode[],
   riskScore: number,
@@ -146,7 +142,7 @@ export function createPackageTreemapNode(
       fileCount: pkg.files.length,
       totalBytes,
     },
-    ...createTreemapNodeStyle(normalizedRiskScore, theme, packageColorIndex, 'package'),
+    ...createTreemapNodeStyle(normalizedRiskScore, theme, pkg.id, 'package'),
     children: fileNodes,
   }
 }
