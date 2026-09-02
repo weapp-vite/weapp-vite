@@ -2,6 +2,8 @@ import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRouter, parseQuery, resolveRouteLocation, stringifyQuery, useRoute, useRouter } from '@/router'
 import { clearActiveRouter } from '@/router/instance'
+import { notifyRouteStateSync } from '@/router/routeSync'
+import { createRouteStateController } from '@/router/useRoute'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 import { bindCurrentPageInstance } from '@/runtime/register/component/lifecycle/platform'
 
@@ -247,6 +249,44 @@ describe('router api', () => {
     expect(route.query).toEqual({
       from: 'activity',
     })
+  })
+
+  it('limits page route sync broadcasts to the activated page controller', () => {
+    const page1 = {
+      route: 'pages/home/index',
+      options: {},
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+    } as any
+    const page2 = {
+      route: 'pages/detail/index',
+      options: {},
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+    } as any
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [page1, page2])
+
+    const syncCalls: string[] = []
+    setCurrentInstance(page1)
+    setCurrentSetupContext({ instance: page1, emit: vi.fn(), attrs: {}, slots: {} })
+    createRouteStateController({
+      beforeRouteStateSync: () => syncCalls.push('page1'),
+    })
+
+    setCurrentInstance(page2)
+    setCurrentSetupContext({ instance: page2, emit: vi.fn(), attrs: {}, slots: {} })
+    createRouteStateController({
+      beforeRouteStateSync: () => syncCalls.push('page2'),
+    })
+
+    notifyRouteStateSync({
+      page: page2,
+      source: 'page',
+    })
+
+    expect(syncCalls).toEqual(['page2'])
+    callHookList(page1, 'onUnload', [])
+    callHookList(page2, 'onUnload', [])
   })
 
   it('useRoute infers name from an existing named router instance', () => {

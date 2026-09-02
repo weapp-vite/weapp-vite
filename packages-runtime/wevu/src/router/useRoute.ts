@@ -5,6 +5,7 @@ import type { LocationQueryRaw, RouteLocationNormalizedLoaded } from './types'
 import { reactive, readonly } from '../reactivity'
 import { cloneLocationQuery, cloneRouteLocationRedirectedFrom, cloneRouteMeta, cloneRouteParams, cloneRouteRecordMatchedList, resolveCurrentRoute, resolvePageRoute } from '../routerInternal/shared'
 import { getCurrentSetupContext, onLoad, onReady, onRouteDone, onShow, onUnload } from '../runtime/hooks'
+import { getCurrentMiniProgramPages } from '../runtime/platform'
 import {
   useNativePageRouter as useNativePageRouterInternal,
   useNativeRouter as useNativeRouterInternal,
@@ -26,6 +27,33 @@ interface RouteStateControllerOptions extends UseRouteOptions {
 
 export interface RouteStateController {
   route: Readonly<RouteLocationNormalizedLoaded>
+}
+
+function isPageLikeInstance(instance: Record<string, any>): boolean {
+  return typeof instance.route === 'string' || typeof instance.__route__ === 'string'
+}
+
+function shouldSyncRouteStateForInstance(
+  instance: Record<string, any>,
+  isPageController: boolean,
+  payload: RouteStateSyncPayload | undefined,
+): boolean {
+  if (payload?.source === 'router') {
+    return true
+  }
+
+  // 页面级 route controller 只处理当前页面的广播，避免 DevTools 在 onUnload/onShow
+  // 交错时让隐藏页面重复执行导航守卫。组件级 controller 仍接收全局同步。
+  if (!isPageController) {
+    return true
+  }
+
+  if (payload?.page) {
+    return payload.page === instance
+  }
+
+  const pages = getCurrentMiniProgramPages()
+  return pages[pages.length - 1] === instance
 }
 
 function applyRouteState(
@@ -79,6 +107,8 @@ export function createRouteStateController(options: RouteStateControllerOptions 
   const resolveRoute = options.resolveRoute
     ?? ((route: RouteLocationNormalizedLoaded) => getActiveRouter()?.resolve(route) ?? route)
   const currentRoute = resolveRoute(resolveCurrentRoute(undefined, fallbackPage))
+  const isPageController = isPageLikeInstance(fallbackPage)
+    || getCurrentMiniProgramPages().includes(fallbackPage)
   const routeState = reactive<RouteLocationNormalizedLoaded>({
     path: currentRoute.path,
     fullPath: currentRoute.fullPath,
@@ -115,6 +145,9 @@ export function createRouteStateController(options: RouteStateControllerOptions 
     syncRoute()
   })
   const unregisterRouteStateSync = registerRouteStateSyncHandler((payload) => {
+    if (!shouldSyncRouteStateForInstance(fallbackPage, isPageController, payload)) {
+      return
+    }
     if (payload?.route) {
       syncRoute(undefined, payload.route, payload)
       return
