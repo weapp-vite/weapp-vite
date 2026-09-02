@@ -1,7 +1,7 @@
 import type {} from 'devframe'
 import type { DevframeConnectionStatus, DevframeRpcClient } from 'devframe/client'
 import type { AnalyzeSubpackagesResult, DashboardRuntimeEvent } from '../types'
-import { connectDevframe } from 'devframe/client'
+import { connectDevframe, consumeOtpFromUrl } from 'devframe/client'
 import { shallowRef } from 'vue'
 import { normalizeRuntimeEvents } from './runtimeEvents'
 
@@ -137,6 +137,7 @@ async function initializeDashboardDevframe() {
   if (missedRevision) {
     await refreshAnalyzeSnapshot(client)
   }
+  consumeOtpFromUrl()
   connected = true
 }
 

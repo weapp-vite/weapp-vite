@@ -33,6 +33,7 @@ const createAnalyzeDashboardDevframeMock = vi.hoisted(() => vi.fn((_options: Moc
 const devframeViteBridgeMock = vi.hoisted(() => vi.fn(() => ({
   name: 'weapp-vite-dashboard-devframe',
 })))
+const buildOtpAuthUrlMock = vi.hoisted(() => vi.fn((url: string) => `${url}#devframe_otp=123456`))
 const createServerMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
@@ -70,6 +71,10 @@ vi.mock('vite', () => ({
 
 vi.mock('@devframes/vite/single', () => ({
   devframeViteBridge: devframeViteBridgeMock,
+}))
+
+vi.mock('devframe/node/auth', () => ({
+  buildOtpAuthUrl: buildOtpAuthUrlMock,
 }))
 
 vi.mock('./dashboardDevframe', () => ({
@@ -210,11 +215,12 @@ describe('analyze dashboard', () => {
 
     expect(handle).toBeDefined()
     expect(handle?.urls).toEqual([
-      'http://127.0.0.1:4173/',
-      'http://192.168.0.2:4173/',
+      'http://127.0.0.1:4173/#devframe_otp=123456',
+      'http://192.168.0.2:4173/#devframe_otp=123456',
     ])
     expect(server.listen).toHaveBeenCalledTimes(1)
-    expect(server.printUrls).toHaveBeenCalledTimes(1)
+    expect(server.printUrls).not.toHaveBeenCalled()
+    expect(buildOtpAuthUrlMock).toHaveBeenCalledTimes(2)
     expect(createAnalyzeDashboardDevframeMock).toHaveBeenCalledTimes(1)
     const devframeOptions = createAnalyzeDashboardDevframeMock.mock.calls[0]?.[0]
     expect(devframeOptions?.getAnalyzeSnapshot()).toEqual({
@@ -293,7 +299,7 @@ describe('analyze dashboard', () => {
     await handle?.waitForExit()
     expect(server.close).toHaveBeenCalledTimes(2)
     expect(loggerMock.info).toHaveBeenCalledWith('weapp-vite UI 已启动（分析视图，实时模式），按 Ctrl+C 退出。')
-    expect(loggerMock.info).toHaveBeenCalledWith('  ➜  http://127.0.0.1:4173/')
+    expect(loggerMock.info).toHaveBeenCalledWith('  ➜  http://127.0.0.1:4173/#devframe_otp=123456')
   })
 
   it('prefers dashboard source root when the local package exposes a dev config', async () => {

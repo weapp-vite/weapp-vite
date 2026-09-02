@@ -2,9 +2,11 @@ import type { DevframeRpcClient } from 'devframe/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const connectDevframeMock = vi.hoisted(() => vi.fn())
+const consumeOtpFromUrlMock = vi.hoisted(() => vi.fn())
 
 vi.mock('devframe/client', () => ({
   connectDevframe: connectDevframeMock,
+  consumeOtpFromUrl: consumeOtpFromUrlMock,
 }))
 
 afterEach(() => {
@@ -79,6 +81,7 @@ describe('dashboard Devframe client', () => {
     // 每个用例重新加载模块，隔离模块级 Devframe 连接单例。
     const transport = await import('./dashboardDevframe')
     await transport.connectDashboardDevframe()
+    expect(consumeOtpFromUrlMock).toHaveBeenCalledTimes(1)
 
     expect(transport.dashboardAnalyzeSnapshot.value).toEqual(initialSnapshot)
     expect(transport.dashboardRuntimeEvents.value).toEqual([

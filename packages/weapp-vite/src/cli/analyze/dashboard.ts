@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import process from 'node:process'
 import { devframeViteBridge } from '@devframes/vite/single'
+import { buildOtpAuthUrl } from 'devframe/node/auth'
 import { resolveCommand } from 'package-manager-detector/commands'
 import path from 'pathe'
 import { createServer } from 'vite'
@@ -305,7 +306,6 @@ export async function startAnalyzeDashboard(
     ? serverOptions.server.port
     : undefined
   await server.listen(requestedPort)
-  server.printUrls()
   const urls = (() => {
     const resolved = server.resolvedUrls
     if (!resolved) {
@@ -316,6 +316,7 @@ export async function startAnalyzeDashboard(
       ...(resolved.network ?? []),
     ]
   })()
+  const authenticatedUrls = urls.map(url => buildOtpAuthUrl(url))
 
   const waitPromise = waitForServerExit(server)
 
@@ -350,7 +351,7 @@ export async function startAnalyzeDashboard(
     close: async () => {
       await server.close()
     },
-    urls,
+    urls: authenticatedUrls,
   }
 
   if (options?.watch) {
