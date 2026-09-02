@@ -210,6 +210,34 @@ describe('dashboard Devframe protocol', () => {
     }, result)).rejects.toThrow('必须传入合法的 kind 和相对路径。')
   })
 
+  it('rejects an src-prefixed path when both source encodings exist', async () => {
+    const project = await createTemporaryProject()
+    const nestedSourceFile = path.join(project.projectRoot, 'src', 'src', 'app.ts')
+    await fs.mkdir(path.dirname(nestedSourceFile), { recursive: true })
+    await fs.writeFile(nestedSourceFile, 'export const nestedApp = true\n', 'utf8')
+    const result = createAnalyzeResult([
+      {
+        file: 'app.js',
+        type: 'chunk',
+        from: 'main',
+        modules: [
+          {
+            id: 'src/app.ts',
+            source: 'src/app.ts',
+            sourceType: 'src',
+          },
+        ],
+      },
+    ])
+
+    await expect(readDashboardFileContent({
+      kind: 'source',
+      path: 'src/app.ts',
+    }, {
+      sourceRoot: project.projectRoot,
+    }, result)).rejects.toThrow('源码路径存在多个候选文件，已拒绝读取。')
+  })
+
   it('rejects allowlisted files that exceed the content limit', async () => {
     const project = await createTemporaryProject()
     const oversizedFile = path.join(project.projectRoot, 'src', 'oversized.ts')

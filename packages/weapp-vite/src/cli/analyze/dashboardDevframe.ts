@@ -35,6 +35,11 @@ interface DashboardContentRoots {
   sourceRoot?: string
 }
 
+interface ResolvedDashboardContentPath {
+  absolutePath: string
+  relativePath: string
+}
+
 type DashboardSourceRootKind = 'project' | 'src'
 
 interface DashboardContentAllowlist {
@@ -131,7 +136,7 @@ function resolveDashboardContentPath(
   root: string | undefined,
   requestPath: string,
   options: { allowParent?: boolean, allowedPaths: Set<string> },
-) {
+): ResolvedDashboardContentPath | undefined {
   if (!root || !requestPath || requestPath.includes('\0')) {
     return undefined
   }
@@ -157,38 +162,46 @@ function resolveDashboardContentPath(
   }
 }
 
-function resolveDashboardSourceContentPath(
+function resolveDashboardSourceContentPaths(
   sourceRoot: string | undefined,
   requestPath: string,
   allowedPaths: Map<string, Set<DashboardSourceRootKind>>,
-) {
+): ResolvedDashboardContentPath[] {
   if (!sourceRoot) {
-    return undefined
+    return []
   }
   const normalizedRequestPath = normalizeDashboardRelativePath(stripDashboardFileQuery(requestPath))
   const rootKinds = allowedPaths.get(normalizedRequestPath)
   if (!rootKinds || rootKinds.size !== 1) {
-    return undefined
+    return []
   }
 
   const [rootKind] = rootKinds
-  const relativePath = rootKind === 'src' && normalizedRequestPath.startsWith('src/')
-    ? normalizedRequestPath.slice(4)
-    : normalizedRequestPath
-  const resolved = resolveDashboardContentPath(
-    rootKind === 'src' ? path.resolve(sourceRoot, 'src') : sourceRoot,
-    relativePath,
-    {
-      allowParent: rootKind === 'project',
+  if (rootKind === 'project') {
+    const resolved = resolveDashboardContentPath(sourceRoot, normalizedRequestPath, {
+      allowParent: true,
+      allowedPaths: new Set([normalizedRequestPath]),
+    })
+    return resolved ? [resolved] : []
+  }
+
+  const sourceRootPath = path.resolve(sourceRoot, 'src')
+  const relativePaths = normalizedRequestPath.startsWith('src/')
+    ? [normalizedRequestPath, normalizedRequestPath.slice(4)]
+    : [normalizedRequestPath]
+  const candidates = relativePaths.flatMap((relativePath) => {
+    const resolved = resolveDashboardContentPath(sourceRootPath, relativePath, {
       allowedPaths: new Set([relativePath]),
-    },
-  )
-  return resolved
-    ? {
-        ...resolved,
-        relativePath: normalizedRequestPath,
-      }
-    : undefined
+    })
+    return resolved
+      ? [{
+          ...resolved,
+          relativePath: normalizedRequestPath,
+        }]
+      : []
+  })
+  const uniqueCandidates = new Map(candidates.map(candidate => [candidate.absolutePath, candidate]))
+  return [...uniqueCandidates.values()]
 }
 
 async function readDashboardFileHandle(handle: FileHandle) {
@@ -271,19 +284,44 @@ export async function readDashboardFileContent(
 ): Promise<DashboardFileContent> {
   const request = normalizeDashboardFileRequest(input)
   const allowlist = createDashboardContentAllowlist(result)
-  const resolved = request.kind === 'artifact'
+  const artifactPath = request.kind === 'artifact'
     ? resolveDashboardContentPath(roots.artifactRoot, request.path, {
         allowedPaths: allowlist.artifactPaths,
       })
-    : resolveDashboardSourceContentPath(roots.sourceRoot, request.path, allowlist.sourcePaths)
+    : undefined
+  const resolvedCandidates = request.kind === 'artifact'
+    ? artifactPath ? [artifactPath] : []
+    : resolveDashboardSourceContentPaths(roots.sourceRoot, request.path, allowlist.sourcePaths)
 
-  if (!resolved) {
+  if (resolvedCandidates.length === 0) {
     throw new Error('必须传入合法的 kind 和相对路径。')
   }
 
-  let handle: FileHandle | undefined
+  const openedCandidates: Array<{ handle: FileHandle, resolved: ResolvedDashboardContentPath }> = []
   try {
-    handle = await fs.promises.open(resolved.absolutePath, 'r')
+    for (const resolved of resolvedCandidates) {
+      try {
+        const handle = await fs.promises.open(resolved.absolutePath, 'r')
+        openedCandidates.push({ handle, resolved })
+      }
+      catch (error) {
+        const code = typeof error === 'object' && error && 'code' in error
+          ? String(error.code)
+          : ''
+        if (code !== 'ENOENT') {
+          throw new Error('读取文件失败。')
+        }
+      }
+    }
+
+    if (openedCandidates.length === 0) {
+      throw new Error('文件不存在。')
+    }
+    if (openedCandidates.length > 1) {
+      throw new Error('源码路径存在多个候选文件，已拒绝读取。')
+    }
+
+    const [{ handle, resolved }] = openedCandidates
     const file = await readDashboardFileHandle(handle)
     return {
       kind: request.kind,
@@ -295,18 +333,18 @@ export async function readDashboardFileContent(
   }
   catch (error) {
     if (error instanceof Error && (
-      error.message === '目标路径不是文件。'
+      error.message === '文件不存在。'
+      || error.message === '读取文件失败。'
+      || error.message === '源码路径存在多个候选文件，已拒绝读取。'
+      || error.message === '目标路径不是文件。'
       || error.message.startsWith('文件超过 ')
     )) {
       throw error
     }
-    const code = typeof error === 'object' && error && 'code' in error
-      ? String(error.code)
-      : ''
-    throw new Error(code === 'ENOENT' ? '文件不存在。' : '读取文件失败。')
+    throw new Error('读取文件失败。')
   }
   finally {
-    await handle?.close()
+    await Promise.allSettled(openedCandidates.map(candidate => candidate.handle.close()))
   }
 }
 
