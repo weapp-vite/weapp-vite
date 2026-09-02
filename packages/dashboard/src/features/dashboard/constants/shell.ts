@@ -8,6 +8,8 @@ import type {
 } from '../types'
 import { dashboardTabs } from './view'
 
+export const dashboardDevtoolsName = 'weapp-vite DevTools'
+
 export const workspaceNavigation: DashboardNavItem[] = [
   { to: '/', label: '概览', caption: '当前构建与运行会话', iconName: 'nav-home' },
   {

@@ -46,7 +46,6 @@ defineProps<{
   canUseSelectedPackageFilter: boolean
   comparisonMode: AnalyzeComparisonMode
   copyStatus: string
-  diagnosticsLayoutItems: Array<{ id: string, label: string }>
   filteredDuplicateModules: DuplicateModuleEntry[]
   filteredLargestFiles: LargestFileEntry[]
   historySnapshots: AnalyzeHistorySnapshot[]
@@ -134,7 +133,6 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
       :baseline-snapshot-id="baselineSnapshotId"
       :comparison-mode="comparisonMode"
       :history-snapshots="historySnapshots"
-      :layout-items="diagnosticsLayoutItems"
       :queued-action-keys="queuedActionKeys"
       :selected-action-key="selectedActionKey"
       :work-queue-items="workQueueItems"

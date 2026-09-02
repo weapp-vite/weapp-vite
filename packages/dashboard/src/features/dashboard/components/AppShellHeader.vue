@@ -3,6 +3,7 @@ import type { DevframeConnectionStatus } from 'devframe/client'
 import type { DashboardTitleBlock, ThemeOption, ThemePreference } from '../types'
 import { computed } from 'vue'
 import { cn } from '../../../lib/cn'
+import { dashboardDevtoolsName } from '../constants/shell'
 import DashboardIcon from './DashboardIcon.vue'
 
 const props = defineProps<{
@@ -25,7 +26,7 @@ const currentThemeIconName = computed(() =>
 )
 const connectionLabel = computed(() => {
   if (props.connectionStatus === 'connected') {
-    return 'Devframe connected'
+    return `${dashboardDevtoolsName} connected`
   }
   if (props.connectionStatus === 'unauthorized') {
     return 'Authorization required'

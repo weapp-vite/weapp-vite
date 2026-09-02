@@ -71,6 +71,39 @@
     max-width: 100%;
   }
 
+  #app :where(select:not([multiple], [size], #dashboard-global-theme)) {
+    padding-right: 2.25rem !important;
+    color: var(--dashboard-text);
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m4 6 4 4 4-4' stroke='%237f8999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.625rem center;
+    background-size: 1rem;
+    border-color: var(--dashboard-border);
+    border-radius: 0.375rem;
+    box-shadow: inset 0 0 0 1px transparent;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease,
+      background-color 150ms ease;
+  }
+
+  #app :where(select:not([multiple], [size], #dashboard-global-theme)):hover {
+    border-color: var(--dashboard-border-strong);
+  }
+
+  #app :where(select:not([multiple], [size], #dashboard-global-theme)):focus-visible {
+    border-color: var(--dashboard-accent);
+    box-shadow: 0 0 0 2px var(--dashboard-accent-soft);
+  }
+
+  #app :where(select:not([multiple], [size], #dashboard-global-theme)):disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
   ::selection {
     background: rgb(20 184 166 / 28%);
   }

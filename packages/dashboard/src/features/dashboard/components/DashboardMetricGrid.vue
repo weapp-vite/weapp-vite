@@ -23,7 +23,7 @@ interface DashboardMetricCardRow extends DashboardMetricCard {
 function getMetricCardClassName(card: DashboardMetricCard): string[] {
   return [
     surfaceStyles({ padding: props.compact ? 'sm' : 'md' }),
-    'min-w-0',
+    'h-full min-w-0',
     card.wide ? 'xl:col-span-2' : 'xl:col-span-1',
   ]
 }
@@ -40,7 +40,7 @@ const metricCardRows = computed<DashboardMetricCardRow[]>(() => props.cards.map(
 </script>
 
 <template>
-  <section :class="compact ? 'grid min-h-0 items-start gap-2 md:grid-cols-3 xl:grid-cols-6' : 'grid items-start gap-2.5 md:grid-cols-2 xl:grid-cols-6'">
+  <section :class="compact ? 'grid min-h-0 items-stretch gap-2 md:grid-cols-3 xl:grid-cols-6' : 'grid items-stretch gap-2.5 md:grid-cols-2 xl:grid-cols-6'">
     <article
       v-for="card in metricCardRows"
       :key="card.label"

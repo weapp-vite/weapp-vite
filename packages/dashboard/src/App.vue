@@ -8,7 +8,7 @@ import DashboardIcon from './features/dashboard/components/DashboardIcon.vue'
 import { provideDashboardTheme } from './features/dashboard/composables/useDashboardTheme'
 import { createDashboardWorkspace, provideDashboardWorkspace } from './features/dashboard/composables/useDashboardWorkspace'
 import { useThemeMode } from './features/dashboard/composables/useThemeMode'
-import { workspaceNavigation } from './features/dashboard/constants/shell'
+import { dashboardDevtoolsName, workspaceNavigation } from './features/dashboard/constants/shell'
 import { themeOptions } from './features/dashboard/constants/view'
 import { dashboardConnectionStatus } from './features/dashboard/utils/dashboardDevframe'
 
@@ -17,6 +17,7 @@ const mobileNavOpen = ref(false)
 const { themePreference, resolvedTheme, setThemePreference } = useThemeMode()
 const workspace = createDashboardWorkspace()
 const hasPayload = computed(() => Boolean(workspace.resultRef.value))
+const projectName = computed(() => workspace.resultRef.value?.metadata?.projectName ?? '未命名小程序')
 const currentAnalyzeTab = computed(() => typeof route.query.tab === 'string' ? route.query.tab : 'overview')
 
 provideDashboardTheme({
@@ -76,8 +77,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
             </span>
           </span>
           <span class="min-w-0">
-            <strong class="block truncate text-[13px] font-semibold">weapp-vite DevTools</strong>
-            <span class="block truncate font-mono text-[10px] text-(--dashboard-text-soft)">mini-program workspace</span>
+            <strong class="block truncate text-[13px] font-semibold">{{ dashboardDevtoolsName }}</strong>
+            <span class="block truncate font-mono text-[10px] text-(--dashboard-text-soft)">{{ projectName }}</span>
           </span>
         </div>
 
@@ -96,7 +97,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
               :class="dashboardConnectionStatus === 'connected' ? 'bg-emerald-500' : dashboardConnectionStatus === 'error' ? 'bg-red-500' : 'bg-amber-500'"
             />
             <span class="truncate text-(--dashboard-text-muted)">
-              {{ dashboardConnectionStatus === 'connected' ? 'Devframe connected' : dashboardConnectionStatus }}
+              {{ dashboardConnectionStatus === 'connected' ? `${dashboardDevtoolsName} connected` : dashboardConnectionStatus }}
             </span>
           </div>
           <p class="mt-1 truncate font-mono text-[10px] text-(--dashboard-text-soft)">

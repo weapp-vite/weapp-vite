@@ -50,7 +50,7 @@ function handleChartRef(element: Element | ComponentPublicInstance | null) {
 </script>
 
 <template>
-  <div :class="surfaceStyles({ padding: 'sm' })" class="flex min-h-[36rem] min-w-0 flex-col overflow-hidden xl:h-full xl:min-h-0">
+  <div :class="surfaceStyles({ padding: 'sm' })" class="flex h-full min-h-[36rem] min-w-0 flex-col overflow-hidden">
     <AppPanelHeader
       class="mb-2 px-2"
       icon-name="treemap"
@@ -104,7 +104,7 @@ function handleChartRef(element: Element | ComponentPublicInstance | null) {
     <div class="relative min-h-0 flex-1 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-2">
       <div
         :ref="handleChartRef"
-        class="h-full min-h-0 w-full"
+        class="absolute inset-2"
       />
       <AppEmptyState
         v-if="isEmpty"

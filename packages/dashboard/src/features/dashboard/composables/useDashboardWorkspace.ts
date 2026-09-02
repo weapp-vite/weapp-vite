@@ -12,6 +12,7 @@ import type { DashboardWorkspaceContext } from './dashboardWorkspaceContext'
 import { computed, inject, onBeforeUnmount, provide, shallowRef, watch } from 'vue'
 import {
   createAnalyzeHistorySnapshot,
+  isSameAnalyzeProject,
   isSameAnalyzeResult,
   normalizeHistorySnapshots,
   readStoredAnalyzeHistory,
@@ -124,8 +125,9 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
 
     const previousFromTransport = payload.previous
     const stored = readStoredAnalyzeHistory()
-    let previousResult = stored?.previous ?? previousResultRef.value
-    if (stored?.current && !isSameAnalyzeResult(incoming, stored.current)) {
+    const storedMatchesProject = stored?.current && isSameAnalyzeProject(incoming, stored.current)
+    let previousResult = storedMatchesProject ? stored.previous : previousResultRef.value
+    if (storedMatchesProject && !isSameAnalyzeResult(incoming, stored.current)) {
       previousResult = stored.current
     }
     if (resultRef.value && !isSameAnalyzeResult(incoming, resultRef.value)) {
@@ -143,7 +145,7 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     const nextSnapshots = normalizeHistorySnapshots({
       current: incoming,
       previous: previousResultRef.value,
-      snapshots: [incomingSnapshot, ...historySnapshots.value],
+      snapshots: [incomingSnapshot, ...historySnapshots.value.filter(snapshot => isSameAnalyzeProject(incoming, snapshot.result))],
     })
     historySnapshots.value = nextSnapshots
     if (baselineSnapshotId.value && !nextSnapshots.some(snapshot => snapshot.id === baselineSnapshotId.value)) {

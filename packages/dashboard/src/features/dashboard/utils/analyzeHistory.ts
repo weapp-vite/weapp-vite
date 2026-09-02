@@ -32,6 +32,18 @@ export function createAnalyzeResultKey(result: AnalyzeSubpackagesResult | null |
   })
 }
 
+export function isSameAnalyzeProject(
+  left: AnalyzeSubpackagesResult | null | undefined,
+  right: AnalyzeSubpackagesResult | null | undefined,
+) {
+  const leftName = left?.metadata?.projectName
+  const rightName = right?.metadata?.projectName
+  if (!leftName && !rightName) {
+    return true
+  }
+  return leftName === rightName
+}
+
 export function isSameAnalyzeResult(
   left: AnalyzeSubpackagesResult | null | undefined,
   right: AnalyzeSubpackagesResult | null | undefined,
@@ -135,7 +147,13 @@ export function resolveInitialPreviousResult(
   if (initialPreviousPayload) {
     return initialPreviousPayload
   }
-  if (initialPayload && storedHistory?.current && !isSameAnalyzeResult(initialPayload, storedHistory.current)) {
+  if (!initialPayload) {
+    return null
+  }
+  if (storedHistory?.current && !isSameAnalyzeProject(initialPayload, storedHistory.current)) {
+    return null
+  }
+  if (storedHistory?.current && !isSameAnalyzeResult(initialPayload, storedHistory.current)) {
     return storedHistory.current
   }
   return storedHistory?.previous ?? null

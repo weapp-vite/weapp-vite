@@ -24,12 +24,6 @@ export function useTreemapChartInstance(options: {
     chart = undefined
   }
 
-  function bindChartRef(element: Element | null) {
-    chartRef.value = element instanceof HTMLDivElement
-      ? element
-      : undefined
-  }
-
   function focusTreemapNode(nodeId: string) {
     chart?.dispatchAction({
       type: 'treemapRootToNode',
@@ -69,6 +63,14 @@ export function useTreemapChartInstance(options: {
 
     chart.setOption(options.treemapOption.value, true)
     chart.resize()
+  }
+  function bindChartRef(element: Element | null) {
+    chartRef.value = element instanceof HTMLDivElement
+      ? element
+      : undefined
+    if (chartRef.value) {
+      void ensureChart()
+    }
   }
 
   watch(

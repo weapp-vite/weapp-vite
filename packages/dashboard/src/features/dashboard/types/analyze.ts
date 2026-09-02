@@ -25,6 +25,7 @@ export interface AnalyzeHistoryMetadata {
 }
 
 export interface AnalyzeSubpackagesMetadata {
+  projectName?: string
   generatedAt: string
   budgets: AnalyzeBudgetConfig
   history: AnalyzeHistoryMetadata

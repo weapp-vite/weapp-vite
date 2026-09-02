@@ -38,6 +38,20 @@ function createIncrementAdvice(category: string, isNew: boolean) {
   return isNew ? '确认分包归属和懒加载边界。' : '对比新增引用和共享模块。'
 }
 
+interface CanonicalModuleGrowth {
+  id: string
+  label: string
+  sourceType: ModuleSourceType
+  currentBytes: number
+  packageId?: string
+  packageLabel: string
+  file?: string
+}
+
+function createModuleComparisonKey(label: string, sourceType: ModuleSourceType) {
+  return `${sourceType}\u0000${label}`
+}
+
 export function createIncrementAttribution(options: {
   result: AnalyzeSubpackagesResult | null
   previousResult?: AnalyzeSubpackagesResult | null
@@ -74,26 +88,51 @@ export function createIncrementAttribution(options: {
     }
   }
 
+  const previousModuleBytes = new Map<string, number>()
+  for (const [id, mod] of options.previousMaps.moduleBytes) {
+    const label = formatModuleIdentifier(mod.source ?? id)
+    const key = createModuleComparisonKey(label, mod.sourceType)
+    previousModuleBytes.set(key, Math.max(previousModuleBytes.get(key) ?? 0, mod.bytes))
+  }
+
+  const currentModules = new Map<string, CanonicalModuleGrowth>()
   for (const [id, mod] of options.moduleInfoMap) {
-    const previousBytes = options.previousMaps.moduleBytes.get(id)?.bytes ?? 0
-    const deltaBytes = mod.bytes - previousBytes
+    const placement = currentModulePlacementMap.get(id)
+    const sourceType = placement?.sourceType ?? mod.sourceType
+    const label = formatModuleIdentifier(placement?.source ?? id)
+    const key = createModuleComparisonKey(label, sourceType)
+    const existing = currentModules.get(key)
+    if (existing && existing.currentBytes >= mod.bytes) {
+      continue
+    }
+    currentModules.set(key, {
+      id,
+      label,
+      sourceType,
+      currentBytes: mod.bytes,
+      packageId: placement?.packageId,
+      packageLabel: placement?.packageLabel ?? '',
+      file: placement?.file,
+    })
+  }
+
+  for (const [key, mod] of currentModules) {
+    const previousBytes = previousModuleBytes.get(key) ?? 0
+    const deltaBytes = mod.currentBytes - previousBytes
     if (deltaBytes <= 0) {
       continue
     }
-    const previousModule = options.previousMaps.moduleBytes.get(id)
-    const currentModule = currentModulePlacementMap.get(id)
-    const label = formatModuleIdentifier(currentModule?.source ?? previousModule?.source ?? id)
-    const category = classifyIncrementCategory(label, currentModule?.sourceType ?? mod.sourceType)
+    const category = classifyIncrementCategory(mod.label, mod.sourceType)
     items.push({
-      key: `module:${id}`,
-      label,
+      key: `module:${mod.id}`,
+      label: mod.label,
       category,
-      packageId: currentModule?.packageId ?? previousModule?.packageId,
-      packageLabel: currentModule?.packageLabel ?? previousModule?.packageLabel ?? '',
-      file: currentModule?.file ?? previousModule?.file,
-      moduleId: id,
-      sourceType: currentModule?.sourceType ?? mod.sourceType,
-      currentBytes: mod.bytes,
+      packageId: mod.packageId,
+      packageLabel: mod.packageLabel,
+      file: mod.file,
+      moduleId: mod.id,
+      sourceType: mod.sourceType,
+      currentBytes: mod.currentBytes,
       previousBytes,
       deltaBytes,
       advice: createIncrementAdvice(category, previousBytes === 0),
