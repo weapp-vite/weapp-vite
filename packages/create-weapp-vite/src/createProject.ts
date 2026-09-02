@@ -352,7 +352,8 @@ export async function createProject(
   await upsertTailwindcssVersion(pkgJson)
 
   await writeJsonFile(packageJsonPath, pkgJson)
-  await fs.writeFile(path.resolve(targetDir, 'AGENTS.md'), createAgentsGuidelines(templateName))
+  // eslint-disable-next-line ts/no-use-before-define
+  await writeAgentsGuidelines(targetDir, templateName)
   await updateGitIgnore({ root: targetDir, write: true })
 
   if (options.installSkills) {
@@ -372,8 +373,21 @@ export async function createProject(
   logger.log('✨ 创建模板成功!')
 }
 
+async function writeAgentsGuidelines(targetDir: string, templateName: TemplateName) {
+  const agentsPath = path.resolve(targetDir, 'AGENTS.md')
+  if (await fs.pathExists(agentsPath)) {
+    const current = await fs.readFile(agentsPath, 'utf8')
+    if (!current.includes('<!-- agents-generated: v1 -->')) {
+      logger.warn('检测到已有非生成的 AGENTS.md，已保留原文件；请将自定义规则移到 AGENTS.local.md 后再运行生成。')
+      return
+    }
+  }
+  await fs.writeFile(agentsPath, createAgentsGuidelines(templateName))
+}
+
 export const __internal = {
   createAgentsGuidelines,
+  writeAgentsGuidelines,
   copyTemplateDir,
   ensureDotGitignore,
   rewriteProjectConfigAppId,

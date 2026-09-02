@@ -1,5 +1,17 @@
 # AGENTS Guidelines for @weapp-vite/dashboard
 
+<!-- agents-generated: v1 -->
+<!-- source: document:packages/dashboard/AGENTS.md; manifest-version: 1; generator-version: 1 -->
+
+## Local Docs First
+
+- Prefer repository-local documentation and generated package docs before relying on stale model memory or external pages.
+
+## Local Overlay
+
+- If `AGENTS.local.md` exists in this project or directory, read it after this file and apply its project-specific additions.
+- Keep generated `AGENTS.md` files managed by the repository tooling; put user-owned custom rules in `AGENTS.local.md`.
+
 本目录是 `weapp-vite` 的 Web Analyze Dashboard 包。它不是小程序运行时包，Vue SFC 类型检查必须按浏览器 Vue 应用处理。
 
 ## Required Checks

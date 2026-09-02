@@ -44,6 +44,8 @@ keywords:
 
 ## 1. 使用官方模板
 
+<!-- tutorial-e2e:guide-create:start -->
+
 ### 1. 创建项目
 
 执行以下命令，创建一个集成了 `weapp-vite` 的项目：
@@ -113,6 +115,8 @@ npx skills add sonofmagic/skills
 ```
 
 同时会在项目根目录生成 `AGENTS.md`，把当前模板推荐的 AI 工作流一并带上。如果你先跳过 skills 安装，后续也可以手动执行这条命令。
+
+脚手架生成的 `AGENTS.md` 带有可识别的生成标记，项目定制规则请放在 `AGENTS.local.md`，这样后续重新生成时不会被覆盖。
 
 ### 2. 安装依赖
 
@@ -198,6 +202,8 @@ bun open
 
 > [!TIP]
 > 如果命令行提示 “请先在微信开发者工具中开启服务端口”，请回到「微信开发者工具 → 设置 → 安全设置」重新勾选该选项，并重启开发者工具后再次运行命令。
+
+<!-- tutorial-e2e:guide-create:end -->
 
 ## 2. 手动接入现有项目
 
