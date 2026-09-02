@@ -105,7 +105,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-3 shadow-(--dashboard-shadow)">
+  <section class="grid min-h-0 min-w-0 gap-3 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-3 shadow-(--dashboard-shadow) xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
     <div class="grid gap-3">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -193,7 +193,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="min-h-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted)">
+    <div class="min-h-96 min-w-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) xl:min-h-0">
       <div v-show="sourceContent && artifactContent" ref="editorElement" class="h-full min-h-96" />
       <AppEmptyState v-if="!sourceContent || !artifactContent" class="m-3 h-[calc(100%-1.5rem)]">
         {{ loadError || '暂无可对比文件。' }}

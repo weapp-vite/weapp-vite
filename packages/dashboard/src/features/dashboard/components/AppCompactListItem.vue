@@ -35,7 +35,7 @@ const emit = defineEmits<{
       </div>
       <span
         v-if="value"
-        class="whitespace-nowrap font-medium text-(--dashboard-accent)"
+        class="max-w-[40%] shrink-0 truncate font-medium text-(--dashboard-accent)"
       >
         {{ value }}
       </span>
@@ -62,7 +62,7 @@ const emit = defineEmits<{
         </div>
         <span
           v-if="value"
-          class="whitespace-nowrap font-medium text-(--dashboard-accent)"
+          class="max-w-[40%] shrink-0 truncate font-medium text-(--dashboard-accent)"
         >
           {{ value }}
         </span>

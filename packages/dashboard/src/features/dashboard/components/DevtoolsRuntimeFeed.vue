@@ -23,16 +23,16 @@ function resolveEventTone(level: DashboardRuntimeEvent['level']) {
 
 <template>
   <section class="min-w-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel)">
-    <header class="flex h-11 items-center justify-between border-b border-(--dashboard-border) px-3.5">
-      <div>
+    <header class="flex min-h-11 min-w-0 items-center justify-between gap-2 border-b border-(--dashboard-border) px-3.5 py-2">
+      <div class="min-w-0">
         <h2 class="text-sm font-semibold text-(--dashboard-text)">
           Runtime events
         </h2>
-        <p class="text-[11px] text-(--dashboard-text-soft)">
+        <p class="truncate text-[11px] text-(--dashboard-text-soft)">
           Build、HMR 与诊断的最新状态
         </p>
       </div>
-      <RouterLink class="text-xs font-medium text-(--dashboard-accent) hover:underline" to="/activity">
+      <RouterLink class="shrink-0 text-xs font-medium text-(--dashboard-accent) hover:underline" to="/activity">
         打开事件流
       </RouterLink>
     </header>

@@ -48,7 +48,7 @@ const metricCardRows = computed<DashboardMetricCardRow[]>(() => props.cards.map(
     >
       <div :class="compact ? 'relative h-full min-w-0 pr-8' : 'flex h-full min-w-0 items-start justify-between gap-2'">
         <div class="min-w-0">
-          <p :class="compact ? 'whitespace-nowrap text-[11px] leading-4 text-(--dashboard-text-soft)' : 'text-[11px] uppercase tracking-[0.22em] text-(--dashboard-text-soft)'">
+          <p :class="compact ? 'truncate text-[11px] leading-4 text-(--dashboard-text-soft)' : 'text-[11px] uppercase tracking-[0.22em] text-(--dashboard-text-soft)'">
             {{ card.label }}
           </p>
           <p :class="compact ? 'mt-1 text-xl font-semibold leading-6' : 'mt-2 text-2xl font-semibold md:text-[1.65rem]'">

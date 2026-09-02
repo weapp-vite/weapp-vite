@@ -16,16 +16,16 @@ defineProps<{
 
 <template>
   <section class="min-w-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel)">
-    <header class="flex h-11 items-center justify-between border-b border-(--dashboard-border) px-3.5">
-      <div>
+    <header class="flex min-h-11 min-w-0 items-center justify-between gap-2 border-b border-(--dashboard-border) px-3.5 py-2">
+      <div class="min-w-0">
         <h2 class="text-sm font-semibold text-(--dashboard-text)">
           Packages
         </h2>
-        <p class="text-[11px] text-(--dashboard-text-soft)">
+        <p class="truncate text-[11px] text-(--dashboard-text-soft)">
           当前构建产物按体积排序
         </p>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex shrink-0 items-center gap-3">
         <RouterLink class="text-xs font-medium text-(--dashboard-accent) hover:underline" to="/analyze?tab=graph">
           依赖图
         </RouterLink>
@@ -39,7 +39,7 @@ defineProps<{
       <RouterLink
         v-for="row in rows"
         :key="row.id"
-        class="grid grid-cols-[minmax(0,1fr)_5.5rem_4rem] items-center gap-3 px-3.5 py-2.5 text-sm transition hover:bg-(--dashboard-panel-muted)"
+        class="grid grid-cols-[minmax(0,1fr)_5rem] items-center gap-2 px-3.5 py-2.5 text-sm transition hover:bg-(--dashboard-panel-muted) sm:grid-cols-[minmax(0,1fr)_5.5rem_4rem] sm:gap-3"
         to="/analyze?tab=packages"
       >
         <span class="min-w-0">
@@ -47,7 +47,7 @@ defineProps<{
           <span class="mt-0.5 block truncate font-mono text-[11px] text-(--dashboard-text-soft)">{{ row.id }} · {{ row.type }}</span>
         </span>
         <span class="text-right font-mono text-xs text-(--dashboard-text)">{{ row.size }}</span>
-        <span class="text-right text-xs text-(--dashboard-text-soft)">{{ row.fileCount }} files</span>
+        <span class="hidden text-right text-xs text-(--dashboard-text-soft) sm:block">{{ row.fileCount }} files</span>
       </RouterLink>
     </div>
 

@@ -34,7 +34,7 @@ const {
 </script>
 
 <template>
-  <section :class="surfaceStyles({ padding: 'md' })" class="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden">
+  <section :class="surfaceStyles({ padding: 'md' })" class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:overflow-hidden">
     <AppPanelHeader icon-name="metric-health" title="问题中心">
       <template #meta>
         <button
@@ -113,7 +113,7 @@ const {
       </div>
     </div>
 
-    <div class="mt-3 min-h-0 overflow-hidden">
+    <div class="mt-3 max-h-[36rem] min-h-0 overflow-y-auto xl:max-h-none xl:overflow-hidden">
       <AppEmptyState v-if="filteredActions.length === 0" compact>
         暂无匹配当前筛选条件的事项。
       </AppEmptyState>
@@ -151,7 +151,7 @@ const {
               </button>
               <span
                 v-if="item.value"
-                class="whitespace-nowrap text-sm font-medium text-(--dashboard-accent)"
+                class="max-w-28 shrink-0 truncate text-sm font-medium text-(--dashboard-accent)"
               >
                 {{ item.value }}
               </span>

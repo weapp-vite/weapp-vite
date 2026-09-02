@@ -73,16 +73,16 @@ const blockingEvents = computed(() =>
         <DevtoolsPackageList :rows="packageRows" />
 
         <section class="overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel)">
-          <header class="flex h-11 items-center justify-between border-b border-(--dashboard-border) px-3.5">
-            <div>
+          <header class="flex min-h-11 min-w-0 items-center justify-between gap-2 border-b border-(--dashboard-border) px-3.5 py-2">
+            <div class="min-w-0">
               <h2 class="text-sm font-semibold text-(--dashboard-text)">
                 Diagnostics
               </h2>
-              <p class="text-[11px] text-(--dashboard-text-soft)">
+              <p class="truncate text-[11px] text-(--dashboard-text-soft)">
                 当前会话的阻塞项和恢复入口
               </p>
             </div>
-            <RouterLink class="text-xs font-medium text-(--dashboard-accent) hover:underline" to="/analyze?tab=diagnostics">
+            <RouterLink class="shrink-0 text-xs font-medium text-(--dashboard-accent) hover:underline" to="/analyze?tab=diagnostics">
               打开诊断
             </RouterLink>
           </header>

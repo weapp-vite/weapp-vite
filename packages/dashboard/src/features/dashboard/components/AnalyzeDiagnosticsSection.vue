@@ -38,7 +38,7 @@ const emit = defineEmits<{
 
 <template>
   <AnalyzeDraggableGrid
-    grid-class="grid h-full min-h-0 gap-2 overflow-y-auto pr-1 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.38fr)_minmax(20rem,0.38fr)] xl:overflow-hidden xl:pr-0"
+    grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:grid-cols-[minmax(0,1fr)_minmax(16rem,0.38fr)_minmax(16rem,0.38fr)] xl:overflow-hidden xl:pr-0"
     :items="layoutItems"
     storage-key="weapp-vite:dashboard:analyze-layout:diagnostics"
   >

@@ -46,7 +46,7 @@ const hasHeader = Boolean(props.title || props.description || slots.header)
           <p v-if="eyebrow" class="text-[11px] uppercase tracking-[0.24em] text-(--dashboard-accent)">
             {{ eyebrow }}
           </p>
-          <h2 v-if="title" class="text-lg font-semibold tracking-tight sm:whitespace-nowrap">
+          <h2 v-if="title" class="truncate text-lg font-semibold tracking-tight" :title="title">
             {{ title }}
           </h2>
           <p v-if="description" class="mt-1 w-full text-sm leading-6 text-(--dashboard-text-muted)">

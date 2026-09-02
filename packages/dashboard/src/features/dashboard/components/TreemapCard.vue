@@ -50,7 +50,7 @@ function handleChartRef(element: Element | ComponentPublicInstance | null) {
 </script>
 
 <template>
-  <div :class="surfaceStyles({ padding: 'sm' })" class="flex h-full min-h-0 flex-col overflow-hidden">
+  <div :class="surfaceStyles({ padding: 'sm' })" class="flex min-h-[36rem] min-w-0 flex-col overflow-hidden xl:h-full xl:min-h-0">
     <AppPanelHeader
       class="mb-2 px-2"
       icon-name="treemap"

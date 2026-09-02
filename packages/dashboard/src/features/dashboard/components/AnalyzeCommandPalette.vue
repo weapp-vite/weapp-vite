@@ -113,7 +113,7 @@ const {
                     </div>
                     <span
                       v-if="item.value"
-                      class="whitespace-nowrap text-sm font-medium text-(--dashboard-accent)"
+                      class="max-w-36 shrink-0 truncate text-sm font-medium text-(--dashboard-accent)"
                     >
                       {{ item.value }}
                     </span>

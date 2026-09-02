@@ -25,8 +25,8 @@ const {
 </script>
 
 <template>
-  <div class="grid h-full min-h-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(16rem,0.62fr)]">
-    <div class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
+  <div class="grid min-w-0 gap-3 xl:h-[40rem] xl:min-h-0 xl:grid-cols-[minmax(0,1fr)_minmax(16rem,0.62fr)]">
+    <div class="grid min-w-0 gap-3 overflow-visible xl:min-h-0 xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
       <div class="grid gap-3 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-3">
         <div class="grid gap-2 md:grid-cols-[minmax(0,1fr)_11rem]">
           <label class="grid gap-1.5 text-xs font-medium uppercase tracking-[0.16em] text-(--dashboard-text-soft)">
@@ -65,7 +65,7 @@ const {
         当前筛选条件下没有匹配令牌。
       </AppEmptyState>
 
-      <div v-else class="grid min-h-0 gap-2 overflow-y-auto pr-1">
+      <div v-else class="grid max-h-96 min-w-0 gap-2 overflow-y-auto pr-1 xl:max-h-none xl:min-h-0">
         <button
           v-for="token in filteredTokens"
           :key="token.key"
@@ -94,7 +94,7 @@ const {
       </div>
     </div>
 
-    <aside class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-4">
+    <aside class="grid min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-visible rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-4 xl:min-h-0 xl:overflow-hidden">
       <div class="flex items-start justify-between gap-3">
         <div>
           <p class="text-[11px] uppercase tracking-[0.2em] text-(--dashboard-accent)">
@@ -122,10 +122,10 @@ const {
         />
 
         <div class="grid gap-2">
-          <code class="rounded-md bg-slate-950 px-3 py-2 font-mono text-xs leading-6 text-slate-100 dark:bg-slate-900">
+          <code class="block max-w-full overflow-x-auto whitespace-nowrap rounded-md bg-slate-950 px-3 py-2 font-mono text-xs leading-6 text-slate-100 dark:bg-slate-900">
             {{ selectedToken.name }}
           </code>
-          <code class="rounded-md bg-slate-950 px-3 py-2 font-mono text-xs leading-6 text-slate-100 dark:bg-slate-900">
+          <code class="block max-w-full overflow-x-auto whitespace-nowrap rounded-md bg-slate-950 px-3 py-2 font-mono text-xs leading-6 text-slate-100 dark:bg-slate-900">
             {{ selectedToken.sample }}
           </code>
         </div>

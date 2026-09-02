@@ -56,6 +56,19 @@
   #app {
     min-height: 100vh;
     min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  #app :where(main, section, article, aside, header, footer, nav, div, ul, ol, li) {
+    min-width: 0;
+  }
+
+  #app :where(p, h1, h2, h3, h4, h5, h6, dt, dd, li, td, th) {
+    overflow-wrap: anywhere;
+  }
+
+  #app :where(input, select, button, textarea, svg, canvas, img, table) {
+    max-width: 100%;
   }
 
   ::selection {
