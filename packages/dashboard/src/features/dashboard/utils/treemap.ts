@@ -128,7 +128,7 @@ export function formatTreemapTooltip(meta: TreemapNodeMeta | undefined) {
   else if (meta.kind === 'module') {
     lines.push(...createTooltipHeading(meta.source))
     lines.push(`所属：${escapeTreemapTooltipValue(meta.packageLabel)} → ${escapeTreemapTooltipValue(meta.fileName)}`)
-    lines.push(`源码类型：${formatSourceType(meta.sourceType)}`)
+    lines.push(`源码类型：${escapeTreemapTooltipValue(formatSourceType(meta.sourceType))}`)
     lines.push(`模块体积：${formatBytes(meta.bytes ?? meta.originalBytes)}`)
     if (meta.packageCount > 1) {
       lines.push(`跨包复用：${escapeTreemapTooltipValue(meta.packageCount)} 次`)
