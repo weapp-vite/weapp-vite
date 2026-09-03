@@ -1,5 +1,12 @@
 # @weapp-vite/ast
 
+## 7.0.3
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/shared@3.2.1
+
 ## 7.0.2
 
 ## 7.0.1
