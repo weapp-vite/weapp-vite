@@ -77,10 +77,14 @@ function getReadableTextColor(background: number[]) {
   const backgroundLuminance = getRelativeLuminance(background)
   const lightTextLuminance = getRelativeLuminance([248 / 255, 250 / 255, 252 / 255])
   const darkTextLuminance = getRelativeLuminance([15 / 255, 23 / 255, 42 / 255])
-  return getContrastRatio(backgroundLuminance, lightTextLuminance)
-    >= getContrastRatio(backgroundLuminance, darkTextLuminance)
-    ? '#f8fafc'
-    : '#0f172a'
+  const lightContrast = getContrastRatio(backgroundLuminance, lightTextLuminance)
+  const darkContrast = getContrastRatio(backgroundLuminance, darkTextLuminance)
+  if (Math.max(lightContrast, darkContrast) >= 4.5) {
+    return lightContrast >= darkContrast ? '#f8fafc' : '#0f172a'
+  }
+  return getContrastRatio(backgroundLuminance, 1) >= getContrastRatio(backgroundLuminance, 0)
+    ? '#ffffff'
+    : '#000000'
 }
 
 function getGroupPresentation(groupKey: string, depth: TreemapNodeDepth) {
@@ -106,7 +110,7 @@ function createRiskBorderColor(score: number) {
   if (score >= 0.58) {
     return '#fbbf24'
   }
-  return 'rgba(15, 23, 42, 0.3)'
+  return '#475569'
 }
 
 function isWevuRuntimeReference(...references: Array<string | undefined>) {
@@ -131,7 +135,7 @@ function normalizeRuntimeRiskScore(score: number, ...references: Array<string | 
 }
 
 function createNodeLabelStyle(textColor: string, emphasis = false) {
-  const usesLightText = textColor === '#f8fafc'
+  const usesLightText = textColor === '#f8fafc' || textColor === '#ffffff'
   return {
     color: textColor,
     ellipsis: '…',

@@ -38,7 +38,7 @@ export function useTreemapData(
     const mutedTextColor = isDark ? '#94a3b8' : '#64748b'
     const panelColor = isDark ? '#141820' : '#ffffff'
     const borderColor = isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(71, 85, 105, 0.18)'
-    const nodeBorderColor = 'rgba(15, 23, 42, 0.3)'
+    const nodeBorderColor = '#475569'
 
     return {
       backgroundColor: 'transparent',

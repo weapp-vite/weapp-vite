@@ -2,6 +2,54 @@ import { describe, expect, it } from 'vitest'
 import { formatTreemapNodeLabel, formatTreemapTooltip } from './treemap'
 import { createTreemapNodeStyle } from './treemapRisk'
 
+function convertHslColor(value: string) {
+  const match = value.match(/^hsl\((\d+), (\d+)%, (\d+)%\)$/)
+  if (!match) {
+    throw new Error(`Unexpected HSL color: ${value}`)
+  }
+  const hue = Number(match[1])
+  const saturation = Number(match[2]) / 100
+  const lightness = Number(match[3]) / 100
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation
+  const secondary = chroma * (1 - Math.abs(((hue / 60) % 2) - 1))
+  const offset = lightness - chroma / 2
+  const [red, green, blue] = hue < 60
+    ? [chroma, secondary, 0]
+    : hue < 120
+      ? [secondary, chroma, 0]
+      : hue < 180
+        ? [0, chroma, secondary]
+        : hue < 240
+          ? [0, secondary, chroma]
+          : hue < 300
+            ? [secondary, 0, chroma]
+            : [chroma, 0, secondary]
+  return [red + offset, green + offset, blue + offset]
+}
+
+function convertHexColor(value: string) {
+  const color = Number.parseInt(value.slice(1), 16)
+  return [
+    ((color >> 16) & 255) / 255,
+    ((color >> 8) & 255) / 255,
+    (color & 255) / 255,
+  ]
+}
+
+function getLuminance(channels: number[]) {
+  const [red, green, blue] = channels.map(channel => channel <= 0.04045
+    ? channel / 12.92
+    : ((channel + 0.055) / 1.055) ** 2.4)
+  return 0.2126 * red! + 0.7152 * green! + 0.0722 * blue!
+}
+
+function getContrastRatio(background: string, foreground: string) {
+  const backgroundLuminance = getLuminance(convertHslColor(background))
+  const foregroundLuminance = getLuminance(convertHexColor(foreground))
+  return (Math.max(backgroundLuminance, foregroundLuminance) + 0.05)
+    / (Math.min(backgroundLuminance, foregroundLuminance) + 0.05)
+}
+
 describe('treemap presentation', () => {
   it('uses compact labels while preserving package context', () => {
     expect(formatTreemapNodeLabel(
@@ -61,6 +109,13 @@ describe('treemap presentation', () => {
     expect(new Set(colorById.values()).size).toBe(packageIds.length)
     for (const packageId of packageIds) {
       expect(reorderedColorById.get(packageId)).toBe(colorById.get(packageId))
+    }
+    for (const packageId of packageIds) {
+      for (const depth of ['package', 'file', 'leaf'] as const) {
+        const style = createTreemapNodeStyle(0.2, packageId, depth)
+        expect(getContrastRatio(style.itemStyle.color, style.label.color)).toBeGreaterThanOrEqual(4.5)
+        expect(style.upperLabel.backgroundColor).toBe(style.itemStyle.color)
+      }
     }
     expect(healthy.itemStyle.color).toBe(risky.itemStyle.color)
     expect(healthy.itemStyle.borderColor).not.toBe(risky.itemStyle.borderColor)

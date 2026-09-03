@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import type { AnalyzeTreemapFilterMode, AnalyzeTreemapFilterOption, ResolvedTheme } from '../types'
-import { computed } from 'vue'
+import type { AnalyzeTreemapFilterMode, AnalyzeTreemapFilterOption } from '../types'
 import { pillButtonStyles, surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
@@ -13,7 +12,6 @@ const props = defineProps<{
   filterOptions: AnalyzeTreemapFilterOption[]
   canUseSelectedPackageFilter: boolean
   isEmpty: boolean
-  theme: ResolvedTheme
 }>()
 
 const emit = defineEmits<{
@@ -24,17 +22,11 @@ const emit = defineEmits<{
 
 const chartTitle = 'Treemap'
 const chartDescription = '面积代表体积，颜色区分分包，风险仅由边框标记；点击节点可下钻。'
-const riskLegend = computed(() => props.theme === 'dark'
-  ? [
-      { label: '普通', color: '#64748b' },
-      { label: '关注', color: '#fbbf24' },
-      { label: '高风险', color: '#fb7185' },
-    ]
-  : [
-      { label: '普通', color: '#94a3b8' },
-      { label: '关注', color: '#a16207' },
-      { label: '高风险', color: '#be123c' },
-    ])
+const riskLegend = [
+  { label: '普通', color: '#475569' },
+  { label: '关注', color: '#fbbf24' },
+  { label: '高风险', color: '#fb7185' },
+]
 
 function getChartBadgeClassName(): string {
   return pillButtonStyles({ kind: 'badge' })

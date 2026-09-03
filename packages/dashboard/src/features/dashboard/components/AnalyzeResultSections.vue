@@ -184,7 +184,6 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
           :filter-options="treemapFilterOptions"
           :can-use-selected-package-filter="canUseSelectedPackageFilter"
           :is-empty="isTreemapEmpty"
-          :theme="theme"
           @focus-selected="emit('focusTreemapSelection')"
           @reset-focus="emit('resetTreemapFocus')"
           @update-filter-mode="emit('updateTreemapFilterMode', $event)"
