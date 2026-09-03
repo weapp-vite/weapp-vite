@@ -308,7 +308,7 @@ describe('analyze dashboard', () => {
     expect(loggerMock.info).toHaveBeenCalledWith('  ➜  http://127.0.0.1:4173/#devframe_otp=654321')
   })
 
-  it('prefers dashboard source root when the local package exposes a dev config', async () => {
+  it('prefers dashboard source root in watch mode when the local package exposes a dev config', async () => {
     const server = createMockServer()
 
     readFileSyncMock.mockImplementation((value: string) => {
@@ -348,6 +348,50 @@ describe('analyze dashboard', () => {
     await handle?.close()
     server.httpServer?.emit('close')
     await handle?.waitForExit()
+  })
+
+  it('prefers built dashboard assets in static mode when a local dev root is also available', async () => {
+    const server = createMockServer()
+
+    readFileSyncMock.mockImplementation((value: string) => {
+      if (value !== '/mock/dashboard/package.json') {
+        return undefined
+      }
+      return `{
+        "weappViteDashboard": {
+          "devRoot": ".",
+          "devConfigFile": "vite.config.ts",
+          "distDir": "dist"
+        }
+      }`
+    })
+    existsSyncMock.mockImplementation((value: string) => {
+      return value === '/mock/dashboard'
+        || value === '/mock/dashboard/vite.config.ts'
+        || value === '/mock/dashboard/dist'
+        || value === '/mock/dashboard/package.json'
+        ? true
+        : undefined
+    })
+    createServerMock.mockImplementation(async (options: any) => {
+      for (const plugin of options.plugins ?? []) {
+        plugin?.configureServer?.(server as any)
+      }
+      return server
+    })
+
+    vi.useFakeTimers()
+    const runPromise = startAnalyzeDashboard(createAnalyzeResult('static-dist'), { cwd: '/project' })
+    setTimeout(() => {
+      server.httpServer?.emit('close')
+    }, 0)
+    await vi.runAllTimersAsync()
+    await expect(runPromise).resolves.toBeUndefined()
+    vi.useRealTimers()
+
+    const createServerArg = createServerMock.mock.calls[0]?.[0] as any
+    expect(createServerArg.root).toBe('/mock/dashboard/dist')
+    expect(createServerArg.configFile).toBe(false)
   })
 
   it('starts in static mode and resolves with empty urls when vite does not expose resolvedUrls', async () => {

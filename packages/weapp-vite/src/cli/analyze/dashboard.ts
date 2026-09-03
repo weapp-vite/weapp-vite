@@ -173,13 +173,12 @@ function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: Pa
 
   if (dashboardPackageRoot) {
     const devResolved = resolveDashboardDevRoot(dashboardPackageRoot, dashboardManifest)
-    if (devResolved) {
-      return devResolved
-    }
-
     const distResolved = resolveDashboardDistRoot(dashboardPackageRoot, dashboardManifest)
-    if (distResolved) {
-      return distResolved
+    const resolved = options?.watch
+      ? devResolved ?? distResolved
+      : distResolved ?? devResolved
+    if (resolved) {
+      return resolved
     }
   }
 
