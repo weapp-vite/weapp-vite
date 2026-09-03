@@ -10,7 +10,6 @@ import type {
 import type { ArtifactSource, RuntimeKernel } from '../kernel'
 import type { HeadlessPluginDescriptor } from '../project'
 import path from 'node:path'
-import process from 'node:process'
 import vm from 'node:vm'
 import { normalize } from 'pathe'
 import {
@@ -21,6 +20,7 @@ import {
   registerExportedComponentDefinition,
   registerPageDefinition,
 } from '../host'
+import { createMiniProgramRuntimeGlobals } from './runtimeGlobals'
 
 export interface HeadlessModuleLoader {
   close: () => void
@@ -217,7 +217,7 @@ function createExecutionContext(
 ) {
   const wx = createHeadlessWx(wxDriver)
 
-  return {
+  return createMiniProgramRuntimeGlobals({
     App(definition: HeadlessAppDefinition) {
       return registerAppDefinition(registries, definition)
     },
@@ -239,17 +239,14 @@ function createExecutionContext(
     getApp,
     getCurrentPages,
     globalThis: undefined as any,
-    process,
     require: undefined as any,
     setInterval: kernel.scheduler.setInterval.bind(kernel.scheduler),
     setTimeout: kernel.scheduler.setTimeout.bind(kernel.scheduler),
     TextDecoder: globalThis.TextDecoder,
     TextEncoder: globalThis.TextEncoder,
     URL: globalThis.URL,
-    URLSearchParams: globalThis.URLSearchParams,
     wx,
-    ...globals,
-  }
+  }, globals)
 }
 
 export function createModuleLoader(

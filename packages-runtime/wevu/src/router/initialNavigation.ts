@@ -1,6 +1,7 @@
 import type { MiniProgramPageLike } from '../routerInternal/shared'
 import type { InitialNavigationMode, LocationQueryRaw, NavigationFailure } from './types'
 import { WEVU_INITIAL_NAVIGATION_TIMEOUT_MARKER } from '@weapp-core/constants'
+import { queueMicrotaskPolyfill } from '@wevu/web-apis'
 import { getActiveRouter } from './instance'
 
 export const DEFAULT_INITIAL_NAVIGATION_TIMEOUT = 10_000
@@ -51,10 +52,11 @@ function snapshotQuery(query: LocationQueryRaw | undefined): LocationQueryRaw | 
   if (!query || typeof query !== 'object') {
     return undefined
   }
-  return Object.fromEntries(Object.entries(query).map(([key, value]) => [
-    key,
-    Array.isArray(value) ? [...value] : value,
-  ]))
+  const snapshot: LocationQueryRaw = {}
+  for (const [key, value] of Object.entries(query)) {
+    snapshot[key] = Array.isArray(value) ? [...value] : value
+  }
+  return snapshot
 }
 
 export function registerInitialNavigationRunner(
@@ -147,7 +149,7 @@ export function ensureInitialNavigation(
     page = undefined
     initialQuery = undefined
     resolveNavigation(shouldMount)
-    queueMicrotask(() => {
+    queueMicrotaskPolyfill(() => {
       if (currentStatus !== 'allowed' && currentStatus !== 'timed-out') {
         return
       }
@@ -167,7 +169,7 @@ export function ensureInitialNavigation(
     subscribe(callback) {
       const entry = { callback, active: true }
       if (currentStatus !== 'idle' && currentStatus !== 'running') {
-        queueMicrotask(() => {
+        queueMicrotaskPolyfill(() => {
           if (entry.active && (currentStatus === 'allowed' || currentStatus === 'timed-out')) {
             callback(currentStatus === 'allowed' || currentStatus === 'timed-out')
             entry.active = false

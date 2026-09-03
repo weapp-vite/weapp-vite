@@ -13,7 +13,7 @@ function isTriggerEventOptions(value: unknown): value is TriggerEventOptions {
 }
 
 export function normalizeEmitEventName(eventName: string) {
-  return eventName.includes(':') ? eventName.replaceAll(':', '-').toLowerCase() : hyphenate(eventName)
+  return eventName.includes(':') ? eventName.replace(/:/g, '-').toLowerCase() : hyphenate(eventName)
 }
 
 export function normalizeEmitPayload(args: any[]): { detail: any, options: TriggerEventOptions | undefined } {

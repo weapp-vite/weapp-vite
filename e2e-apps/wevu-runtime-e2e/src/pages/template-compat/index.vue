@@ -32,7 +32,11 @@ async function runE2E() {
     key,
     value,
   }))
-  summaryMap.value = Object.fromEntries(entries.value)
+  const nextSummaryMap: Record<string, string> = {}
+  for (const [key, value] of entries.value) {
+    nextSummaryMap[key] = value
+  }
+  summaryMap.value = nextSummaryMap
 
   await nextTick()
 

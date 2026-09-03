@@ -47,6 +47,50 @@ describe('HeadlessSession', () => {
     expect(session.getCurrentPages()).toHaveLength(1)
   })
 
+  it('does not leak Node globals and allows explicit runtime overrides', () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    globals: {
+      btoa: typeof btoa,
+      crypto: typeof crypto,
+      CustomEvent: typeof CustomEvent,
+      Event: typeof Event,
+      global: typeof global,
+      location: typeof location,
+      process: typeof process,
+      self: typeof self,
+      Buffer: typeof Buffer,
+      URLSearchParams: typeof URLSearchParams,
+      queueMicrotask: typeof queueMicrotask,
+      injected: typeof injectedRuntimeApi,
+    },
+  },
+})
+`)
+    const session = createHeadlessSession({
+      projectPath,
+      globals: { injectedRuntimeApi: () => 'ready' },
+    })
+
+    expect(session.reLaunch('/pages/index/index').data.globals).toEqual({
+      btoa: 'undefined',
+      crypto: 'undefined',
+      CustomEvent: 'undefined',
+      Event: 'undefined',
+      global: 'undefined',
+      location: 'undefined',
+      process: 'undefined',
+      self: 'undefined',
+      Buffer: 'undefined',
+      URLSearchParams: 'undefined',
+      queueMicrotask: 'undefined',
+      injected: 'function',
+    })
+  })
+
   it('loads static ESM imports for app and page artifacts', () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)

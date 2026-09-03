@@ -151,6 +151,7 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'subpackages/require-async/**',
   ],
   'github-issues.runtime.issue911.test.ts': [
+    'pages/issue-550/**',
     'pages/issue-911/**',
     'shared/issue911.ts',
   ],

@@ -20,7 +20,7 @@ function createMultipartBoundary() {
 }
 
 function escapeMultipartName(value: string) {
-  return String(value).replaceAll('\\', '\\\\').replaceAll('"', '\\"').replaceAll('\r', '%0D').replaceAll('\n', '%0A')
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r/g, '%0D').replace(/\n/g, '%0A')
 }
 
 function concatArrayBuffers(buffers: ArrayBuffer[]) {

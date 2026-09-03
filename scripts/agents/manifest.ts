@@ -22,6 +22,7 @@ export const agentManifest: AgentManifest = {
   sections: {
     'shared.docs-first': { id: 'shared.docs-first', contentFile: content('shared-docs-first.md') },
     'shared.local-overlay': { id: 'shared.local-overlay', contentFile: content('shared-local-overlay.md') },
+    'shared.template-runtime-host': { id: 'shared.template-runtime-host', contentFile: content('shared-template-runtime-host.md') },
     'root.intro': { id: 'root.intro', contentFile: content('root-intro.md') },
     'root.routing': { id: 'root.routing', contentFile: content('root-01-1-monorepo-routing.md') },
     'root.fast-path': { id: 'root.fast-path', contentFile: content('root-02-2-fast-path-commands-prefer-smallest-verificatio.md') },
@@ -64,6 +65,9 @@ export const agentManifest: AgentManifest = {
       base: 'shared',
       include: ['weapp-vite.intro', 'weapp-vite.paths', 'weapp-vite.tests', 'weapp-vite.invariants', 'weapp-vite.guardrails', 'weapp-vite.runtime'],
     },
+    'template-runtime-host': {
+      include: ['shared.template-runtime-host'],
+    },
   },
   documents: [
     { path: 'AGENTS.md', title: 'AGENTS Guidelines (Global Baseline)', layer: 'root' },
@@ -84,6 +88,7 @@ for (const name of Object.keys(agentManifest.templates)) {
     contentFile: content(`template-${name}.md`),
   }
   agentManifest.layers[`template:${name}`] = {
+    base: 'template-runtime-host',
     include: [sectionId],
   }
 }

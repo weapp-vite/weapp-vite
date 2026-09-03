@@ -40,7 +40,7 @@
 
 ## 静态兼容检查
 
-Wevu 模板默认接入 `@weapp-vite/eslint` 的 `wevuCompatibilityRecommended`，用于禁止静态可确定的不支持 API，并警告同名但参数、时序或宿主语义不同的 API。动态访问和第三方依赖内部代码不在完整判定范围内；旧项目可继续使用 `weapp-vite/eslint` 兼容入口。
+Wevu 模板默认接入 `@weapp-vite/eslint` 的 `wevuCompatibilityRecommended` 与 `miniProgramRuntimeRecommended`。前者检查 Vue 生态兼容性，后者禁止不可移植的 DOM/Node 全局和现代内建，并警告必须通过 `weapp.appPrelude.webRuntime` 或显式兼容层提供的 API。不要假定微信运行时存在 `queueMicrotask`；新增宿主 API 前要在目标真实 IDE AppService、基础库和 renderer 中探测。旧项目可继续使用 `weapp-vite/eslint` 兼容入口。
 
 ## 什么时候看这篇
 

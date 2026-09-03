@@ -89,7 +89,7 @@ async function waitForIndexPageRendered(miniProgram: any, timeoutMs = 30_000) {
   return page
 }
 
-async function collectAppLogs(root: string) {
+async function collectAppSnapshot(root: string) {
   const miniProgram = await launchFreshMiniProgram(root)
   try {
     const page = await waitForIndexPageRendered(miniProgram)
@@ -97,14 +97,95 @@ async function collectAppLogs(root: string) {
       throw new Error(`Failed to render ${INDEX_ROUTE}`)
     }
     await page.waitFor(300)
-    const logs = await miniProgram.evaluate(() => {
+    const toolInfo = await miniProgram.toolInfo()
+    const snapshot = await miniProgram.evaluate(async () => {
       const app = getApp()
       if (typeof app?.finalizeLifecycleLogs === 'function') {
         app.finalizeLifecycleLogs()
       }
-      return app?.globalData?.__lifecycleLogs ?? []
+      const systemInfo = wx.getSystemInfoSync()
+      const capabilityNames = [
+        'queueMicrotask',
+        'fetch',
+        'Headers',
+        'Request',
+        'Response',
+        'AbortController',
+        'AbortSignal',
+        'XMLHttpRequest',
+        'WebSocket',
+        'URL',
+        'URLSearchParams',
+        'Blob',
+        'File',
+        'FormData',
+        'TextEncoder',
+        'TextDecoder',
+        'atob',
+        'btoa',
+        'performance',
+        'crypto',
+        'Event',
+        'CustomEvent',
+        'window',
+        'document',
+        'navigator',
+        'self',
+        'global',
+        'location',
+        'process',
+        'Buffer',
+        'localStorage',
+        'sessionStorage',
+        'setImmediate',
+        'structuredClone',
+      ]
+      const globals: Record<string, string> = {}
+      for (const name of capabilityNames) {
+        globals[name] = typeof (globalThis as Record<string, unknown>)[name]
+      }
+
+      const microtaskOrder = ['sync']
+      if (typeof queueMicrotask === 'function') {
+        await new Promise<void>((resolve) => {
+          queueMicrotask(() => {
+            microtaskOrder.push('microtask')
+            resolve()
+          })
+        })
+      }
+      else {
+        microtaskOrder.push('missing')
+      }
+
+      return {
+        capabilities: {
+          globals,
+          metadata: {
+            SDKVersion: systemInfo.SDKVersion,
+            platform: systemInfo.platform,
+            renderer: (systemInfo as Record<string, unknown>).renderer ?? 'unknown',
+          },
+          semantics: {
+            arrayAt: [1, 2].at(-1),
+            arrayFlat: [[1], [2]].flat().join(','),
+            arrayFlatMap: [1, 2].flatMap(value => [value, value]).join(','),
+            objectFromEntries: Object.fromEntries([['ready', true]]).ready,
+            objectHasOwn: Object.hasOwn({ ready: true }, 'ready'),
+            promiseAllSettled: (await Promise.allSettled([Promise.resolve('ready')]))[0]?.status,
+            promiseAny: await Promise.any([Promise.resolve('ready')]),
+            replaceAll: 'a:a'.replaceAll(':', '-'),
+          },
+          microtaskOrder,
+        },
+        logs: app?.globalData?.__lifecycleLogs ?? [],
+      }
     })
-    return logs ?? []
+    return {
+      capabilities: snapshot?.capabilities,
+      logs: snapshot?.logs ?? [],
+      toolInfo,
+    }
   }
   finally {
     await miniProgram.close().catch(() => {})
@@ -140,12 +221,42 @@ describe.sequential('app lifecycle compare (e2e)', () => {
   })
 
   it('compares wevu app lifecycle logs against native', async () => {
-    const nativeLogs = await collectAppLogs(APP_NATIVE_ROOT)
-    const wevuTsLogs = await collectAppLogs(APP_WEVU_TS_ROOT)
-    const wevuVueLogs = await collectAppLogs(APP_WEVU_VUE_ROOT)
+    const native = await collectAppSnapshot(APP_NATIVE_ROOT)
+    const wevuTs = await collectAppSnapshot(APP_WEVU_TS_ROOT)
+    const wevuVue = await collectAppSnapshot(APP_WEVU_VUE_ROOT)
 
-    expect(nativeLogs.length).toBeGreaterThan(0)
-    expect(normalizeEntries(wevuTsLogs)).toEqual(normalizeEntries(nativeLogs))
-    expect(normalizeEntries(wevuVueLogs)).toEqual(normalizeEntries(nativeLogs))
+    expect(native.logs.length).toBeGreaterThan(0)
+    expect(normalizeEntries(wevuTs.logs)).toEqual(normalizeEntries(native.logs))
+    expect(normalizeEntries(wevuVue.logs)).toEqual(normalizeEntries(native.logs))
+
+    const capability = native.capabilities!
+    process.stdout.write(`[app-service-capabilities] ${JSON.stringify({
+      devtoolsVersion: native.toolInfo?.version,
+      ...capability.metadata,
+      globals: capability.globals,
+    })}\n`)
+    expect(capability.globals).toMatchObject({
+      fetch: 'undefined',
+      process: 'undefined',
+      Buffer: 'undefined',
+      URLSearchParams: 'undefined',
+      structuredClone: 'undefined',
+    })
+    expect(capability.globals.queueMicrotask).toMatch(/^(function|undefined)$/)
+    expect(capability.microtaskOrder).toEqual(
+      capability.globals.queueMicrotask === 'function'
+        ? ['sync', 'microtask']
+        : ['sync', 'missing'],
+    )
+    expect(capability.semantics).toEqual({
+      arrayAt: 2,
+      arrayFlat: '1,2',
+      arrayFlatMap: '1,1,2,2',
+      objectFromEntries: true,
+      objectHasOwn: true,
+      promiseAllSettled: 'fulfilled',
+      promiseAny: 'ready',
+      replaceAll: 'a-a',
+    })
   })
 })

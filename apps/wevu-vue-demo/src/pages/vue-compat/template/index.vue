@@ -59,7 +59,13 @@ const panelClass = computed(() => {
   }
 })
 
-const summaryMap = computed(() => Object.fromEntries(entries.value))
+const summaryMap = computed(() => {
+  const summary: Record<string, string> = {}
+  for (const [key, value] of entries.value) {
+    summary[key] = value
+  }
+  return summary
+})
 
 function setMode(next: 'all' | 'done' | 'todo') {
   mode.value = next

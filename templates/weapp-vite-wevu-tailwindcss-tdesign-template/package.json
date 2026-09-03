@@ -41,6 +41,7 @@
     "@iconify/tailwind4": "catalog:",
     "@types/node": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
+    "@weapp-vite/eslint": "workspace:*",
     "eslint": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",

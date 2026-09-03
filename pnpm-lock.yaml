@@ -2925,6 +2925,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -2961,6 +2964,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -2997,6 +3003,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -3034,6 +3043,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -3089,6 +3101,9 @@ importers:
       '@types/react-reconciler':
         specifier: 'catalog:'
         version: 0.33.0(@types/react@19.2.18)
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -3135,6 +3150,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -3183,6 +3201,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -3235,6 +3256,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -3277,6 +3301,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -3326,6 +3353,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -3375,6 +3405,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
@@ -3420,6 +3453,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@weapp-vite/eslint':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       eslint:
         specifier: 'catalog:'
         version: 10.9.1(jiti@2.7.0)(supports-color@10.2.2)
