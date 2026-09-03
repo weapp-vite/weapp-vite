@@ -22,6 +22,7 @@ import {
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { createAnalyzeChunkGraph, createAnalyzeChunkGraphView } from '../utils/analyzeChunkGraph'
 import { formatBytes } from '../utils/format'
+import AppSelect from './AppSelect.vue'
 
 interface RenderedGraphNode extends SimulationNodeDatum {
   color: string
@@ -54,6 +55,13 @@ let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | undefined
 
 const graph = computed(() => createAnalyzeChunkGraph(props.result))
 const packageOptions = computed(() => graph.value.nodes.filter(node => node.kind === 'package'))
+const packageFilterOptions = computed(() => [
+  { label: '全部 package', value: 'all' },
+  ...packageOptions.value.map(option => ({
+    label: option.packageLabel,
+    value: option.packageId,
+  })),
+])
 const visibleGraph = computed(() => createAnalyzeChunkGraphView(graph.value, {
   maxEdges: searchQuery.value.trim() ? 320 : MAX_VISIBLE_EDGES,
   maxNodes: searchQuery.value.trim() ? MAX_SEARCH_NODES : MAX_VISIBLE_NODES,
@@ -302,15 +310,13 @@ watch(() => props.theme, () => void renderGraph())
             type="search"
           >
         </label>
-        <label class="min-w-0">
-          <span class="sr-only">筛选依赖图 package</span>
-          <select v-model="packageFilter" class="h-8 w-full min-w-0 truncate rounded border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2 text-xs">
-            <option value="all">全部 package</option>
-            <option v-for="item in packageOptions" :key="item.id" :value="item.packageId">
-              {{ item.packageLabel }}
-            </option>
-          </select>
-        </label>
+        <AppSelect
+          v-model="packageFilter"
+          class="min-w-0"
+          label="筛选依赖图 package"
+          :options="packageFilterOptions"
+          size="sm"
+        />
         <div class="flex items-center gap-1" role="group" aria-label="依赖图视图控制">
           <button class="h-8 w-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:ring-2 focus-visible:ring-(--dashboard-accent)" type="button" aria-label="缩小依赖图" title="缩小（-）" @click="zoomGraph(0.8)">
             −

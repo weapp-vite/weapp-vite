@@ -4,6 +4,7 @@ import { useActionCenterPanel } from '../composables/useActionCenterPanel'
 import { surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
+import AppSelect from './AppSelect.vue'
 import DashboardIcon from './DashboardIcon.vue'
 
 const props = defineProps<{
@@ -22,14 +23,15 @@ const {
   actionKindFilter,
   actionQuery,
   actionSortMode,
+  actionSortOptions,
   actionToneFilter,
   filteredActions,
   getKindLabel,
   getToneClassName,
   getToneLabel,
   isQueued,
-  kindOptions,
-  toneOptions,
+  kindFilterOptions,
+  toneFilterOptions,
 } = useActionCenterPanel(props)
 </script>
 
@@ -63,53 +65,21 @@ const {
         >
       </div>
       <div class="grid gap-2 md:grid-cols-3">
-        <select
+        <AppSelect
           v-model="actionToneFilter"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option value="all">
-            全部严重度
-          </option>
-          <option
-            v-for="tone in toneOptions"
-            :key="tone"
-            :value="tone"
-          >
-            {{ getToneLabel(tone) }}
-          </option>
-        </select>
-        <select
+          label="按严重度筛选"
+          :options="toneFilterOptions"
+        />
+        <AppSelect
           v-model="actionKindFilter"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option value="all">
-            全部类型
-          </option>
-          <option
-            v-for="kind in kindOptions"
-            :key="kind"
-            :value="kind"
-          >
-            {{ getKindLabel(kind) }}
-          </option>
-        </select>
-        <select
+          label="按问题类型筛选"
+          :options="kindFilterOptions"
+        />
+        <AppSelect
           v-model="actionSortMode"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option value="priority">
-            按优先级
-          </option>
-          <option value="severity">
-            按严重度
-          </option>
-          <option value="title">
-            按标题
-          </option>
-          <option value="value">
-            按数值
-          </option>
-        </select>
+          label="排序处理项"
+          :options="actionSortOptions"
+        />
       </div>
     </div>
 

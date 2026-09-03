@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import type { PackageType } from '../types'
+import { computed } from 'vue'
 import { formatPackageType } from '../utils/format'
+import AppSelect from './AppSelect.vue'
 
 type PackageFilterType = 'all' | PackageType
 type PackageBudgetFilter = 'all' | 'warning' | 'normal'
 type PackageSortMode = 'health' | 'size' | 'compressed' | 'delta' | 'duplicates' | 'files' | 'name'
 
-defineProps<{
+const props = defineProps<{
   filteredCount: number
   totalCount: number
   typeOptions: PackageType[]
@@ -23,6 +25,28 @@ const query = defineModel<string>('query', { required: true })
 const typeFilter = defineModel<PackageFilterType>('typeFilter', { required: true })
 const budgetFilter = defineModel<PackageBudgetFilter>('budgetFilter', { required: true })
 const sortMode = defineModel<PackageSortMode>('sortMode', { required: true })
+
+const typeFilterOptions = computed(() => [
+  { label: '全部类型', value: 'all' as const },
+  ...props.typeOptions.map(type => ({
+    label: formatPackageType(type),
+    value: type,
+  })),
+])
+const budgetFilterOptions = [
+  { label: '全部预算', value: 'all' },
+  { label: '仅告警', value: 'warning' },
+  { label: '预算正常', value: 'normal' },
+] satisfies Array<{ label: string, value: PackageBudgetFilter }>
+const sortOptions = [
+  { label: '按健康分', value: 'health' },
+  { label: '按体积', value: 'size' },
+  { label: '按压缩后', value: 'compressed' },
+  { label: '按增量', value: 'delta' },
+  { label: '按重复模块', value: 'duplicates' },
+  { label: '按产物数', value: 'files' },
+  { label: '按名称', value: 'name' },
+] satisfies Array<{ label: string, value: PackageSortMode }>
 </script>
 
 <template>
@@ -58,61 +82,24 @@ const sortMode = defineModel<PackageSortMode>('sortMode', { required: true })
         placeholder="搜索包名或类型"
         type="search"
       >
-      <select
+      <AppSelect
         v-model="typeFilter"
-        class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-      >
-        <option value="all">
-          全部类型
-        </option>
-        <option
-          v-for="type in typeOptions"
-          :key="type"
-          :value="type"
-        >
-          {{ formatPackageType(type) }}
-        </option>
-      </select>
-      <select
+        class="w-28"
+        label="筛选包类型"
+        :options="typeFilterOptions"
+      />
+      <AppSelect
         v-model="budgetFilter"
-        class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-      >
-        <option value="all">
-          全部预算
-        </option>
-        <option value="warning">
-          仅告警
-        </option>
-        <option value="normal">
-          预算正常
-        </option>
-      </select>
-      <select
+        class="w-28"
+        label="筛选包预算状态"
+        :options="budgetFilterOptions"
+      />
+      <AppSelect
         v-model="sortMode"
-        class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-      >
-        <option value="health">
-          按健康分
-        </option>
-        <option value="size">
-          按体积
-        </option>
-        <option value="compressed">
-          按压缩后
-        </option>
-        <option value="delta">
-          按增量
-        </option>
-        <option value="duplicates">
-          按重复模块
-        </option>
-        <option value="files">
-          按产物数
-        </option>
-        <option value="name">
-          按名称
-        </option>
-      </select>
+        class="w-32"
+        label="排序包"
+        :options="sortOptions"
+      />
     </div>
   </div>
 </template>

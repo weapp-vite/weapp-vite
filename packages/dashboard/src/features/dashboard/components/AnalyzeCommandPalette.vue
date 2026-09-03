@@ -2,6 +2,7 @@
 import type { AnalyzeCommandPaletteItem } from '../types'
 import { useAnalyzeCommandPaletteDialog } from '../composables/useAnalyzeCommandPaletteDialog'
 import AppEmptyState from './AppEmptyState.vue'
+import AppSelect from './AppSelect.vue'
 import DashboardIcon from './DashboardIcon.vue'
 
 const props = defineProps<{
@@ -64,18 +65,13 @@ const {
               <p class="text-xs text-(--dashboard-text-soft)">
                 {{ resultSummary }}
               </p>
-              <select
+              <AppSelect
                 v-model="kindFilter"
-                class="h-8 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-border-strong)"
-              >
-                <option
-                  v-for="option in kindOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </option>
-              </select>
+                class="w-40"
+                label="筛选搜索结果类型"
+                :options="kindOptions"
+                size="sm"
+              />
             </div>
           </div>
 

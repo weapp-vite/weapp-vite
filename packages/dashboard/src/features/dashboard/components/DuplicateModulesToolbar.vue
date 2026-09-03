@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { ModuleSourceType } from '../types'
+import { computed } from 'vue'
+import AppSelect from './AppSelect.vue'
 
 type DuplicateModuleSourceFilter = 'all' | ModuleSourceType
 type DuplicateModuleSortMode = 'saving' | 'packages' | 'size' | 'source'
 
-defineProps<{
+const props = defineProps<{
   filteredCount: number
   totalCount: number
   sourceOptions: ModuleSourceType[]
@@ -20,6 +22,20 @@ const emit = defineEmits<{
 const query = defineModel<string>('query', { required: true })
 const sourceFilter = defineModel<DuplicateModuleSourceFilter>('sourceFilter', { required: true })
 const sortMode = defineModel<DuplicateModuleSortMode>('sortMode', { required: true })
+
+const sourceFilterOptions = computed(() => [
+  { label: '全部来源', value: 'all' as const },
+  ...props.sourceOptions.map(sourceType => ({
+    label: sourceType,
+    value: sourceType,
+  })),
+])
+const sortOptions = [
+  { label: '按可节省', value: 'saving' },
+  { label: '按包数量', value: 'packages' },
+  { label: '按单份体积', value: 'size' },
+  { label: '按路径', value: 'source' },
+] satisfies Array<{ label: string, value: DuplicateModuleSortMode }>
 </script>
 
 <template>
@@ -52,37 +68,17 @@ const sortMode = defineModel<DuplicateModuleSortMode>('sortMode', { required: tr
       placeholder="搜索模块、包或文件"
       type="search"
     >
-    <select
+    <AppSelect
       v-model="sourceFilter"
-      class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-    >
-      <option value="all">
-        全部来源
-      </option>
-      <option
-        v-for="sourceType in sourceOptions"
-        :key="sourceType"
-        :value="sourceType"
-      >
-        {{ sourceType }}
-      </option>
-    </select>
-    <select
+      class="w-28"
+      label="筛选重复模块来源"
+      :options="sourceFilterOptions"
+    />
+    <AppSelect
       v-model="sortMode"
-      class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-    >
-      <option value="saving">
-        按可节省
-      </option>
-      <option value="packages">
-        按包数量
-      </option>
-      <option value="size">
-        按单份体积
-      </option>
-      <option value="source">
-        按路径
-      </option>
-    </select>
+      class="w-30"
+      label="排序重复模块"
+      :options="sortOptions"
+    />
   </div>
 </template>

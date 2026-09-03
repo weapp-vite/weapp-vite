@@ -4,6 +4,7 @@ import type { DashboardTitleBlock, ThemeOption, ThemePreference } from '../types
 import { computed } from 'vue'
 import { cn } from '../../../lib/cn'
 import { dashboardDevtoolsName } from '../constants/shell'
+import AppSelect from './AppSelect.vue'
 import DashboardIcon from './DashboardIcon.vue'
 
 const props = defineProps<{
@@ -33,17 +34,6 @@ const connectionLabel = computed(() => {
   }
   return props.connectionStatus
 })
-
-function handleThemeChange(event: Event): void {
-  const target = event.target
-  if (!(target instanceof HTMLSelectElement)) {
-    return
-  }
-  const option = props.themeOptions.find(item => item.value === target.value)
-  if (option) {
-    emit('setTheme', option.value)
-  }
-}
 </script>
 
 <template>
@@ -84,29 +74,19 @@ function handleThemeChange(event: Event): void {
       <span class="hidden rounded border border-(--dashboard-border) px-2 py-1 font-mono text-[10px] text-(--dashboard-text-soft) md:inline-flex">
         {{ hasPayload ? `${packageCount} packages` : 'no payload' }}
       </span>
-      <label
-        class="inline-flex h-8 items-center gap-1.5 rounded border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2 text-[11px] text-(--dashboard-text-muted)"
-        for="dashboard-global-theme"
-      >
+      <div class="inline-flex items-center gap-1.5 text-[11px] text-(--dashboard-text-muted)">
         <span class="h-3.5 w-3.5 text-(--dashboard-text-soft)">
           <DashboardIcon :name="currentThemeIconName" />
         </span>
-        <select
-          id="dashboard-global-theme"
-          class="w-17 bg-transparent text-(--dashboard-text) outline-none"
-          :value="themePreference"
-          aria-label="主题"
-          @change="handleThemeChange"
-        >
-          <option
-            v-for="option in themeOptions"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+        <AppSelect
+          class="w-24"
+          label="主题"
+          :model-value="themePreference"
+          :options="themeOptions"
+          size="sm"
+          @update:model-value="emit('setTheme', $event)"
+        />
+      </div>
     </div>
   </header>
 </template>

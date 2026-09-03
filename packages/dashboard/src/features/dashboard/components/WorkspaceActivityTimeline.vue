@@ -3,6 +3,7 @@ import type { WorkspaceActivityItem } from '../types'
 import { computed, ref } from 'vue'
 import AppEmptyState from './AppEmptyState.vue'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
+import AppSelect from './AppSelect.vue'
 
 type ActivityToneFilter = 'all' | WorkspaceActivityItem['tone']
 
@@ -69,18 +70,11 @@ const activitySummary = computed(() => {
 
           <label class="grid gap-1.5 text-xs font-medium uppercase tracking-[0.16em] text-(--dashboard-text-soft)">
             状态
-            <select
+            <AppSelect
               v-model="toneFilter"
-              class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) px-2.5 text-sm normal-case tracking-normal text-(--dashboard-text) outline-none transition focus:border-(--dashboard-border-strong)"
-            >
-              <option
-                v-for="option in toneOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </select>
+              label="筛选动态状态"
+              :options="toneOptions"
+            />
           </label>
         </div>
 
