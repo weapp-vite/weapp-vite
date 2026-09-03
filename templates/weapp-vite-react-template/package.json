@@ -30,7 +30,6 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-reconciler": "catalog:",
-    "@weapp-vite/eslint": "workspace:*",
     "eslint": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "stylelint": "catalog:",

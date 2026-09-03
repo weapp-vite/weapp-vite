@@ -87,7 +87,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - 避免把同一份源码上的多个小 AST 查询拆成多个 N-API 调用；如果必须细粒度调用，先证明真实 HMR/build 热路径有净收益。
    - native fast path 必须显式启用、可选依赖、失败回退 Babel/Oxc/Vue compiler，并配 correctness 对齐测试与 profile。
 7. 验证按最小范围进行；若改了 `packages/*/src/**`，下游验证前先重建对应包，并明确 `dist sync: rebuilt weapp-vite before downstream validation`。
-8. 新增小程序 runtime API 前，先在目标真实 IDE AppService、基础库和 renderer 中验证存在性与最小调用语义；不要用浏览器、Node、类型声明或 headless 结果替代。项目源码接入 `@weapp-vite/eslint` 的 `miniProgramRuntimeRecommended`，且不要假定微信运行时存在 `queueMicrotask`。
+8. 新增小程序 runtime API 前，先在目标真实 IDE AppService、基础库和 renderer 中验证存在性与最小调用语义；不要用浏览器、Node、类型声明或 headless 结果替代。项目源码通过共享 ESLint 配置统一接入 `@weapp-vite/eslint` 的 `miniProgramRuntimeRecommended`，模板不要单独增加 workspace 依赖，且不要假定微信运行时存在 `queueMicrotask`。
 
 ## 近期能力决策
 

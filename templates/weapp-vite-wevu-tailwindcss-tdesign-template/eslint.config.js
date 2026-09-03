@@ -1,5 +1,4 @@
 import { icebreaker } from '@icebreakers/eslint-config'
-import { createMiniProgramRuntimeConfig } from '@weapp-vite/eslint'
 
 export default icebreaker({
   miniProgram: true,
@@ -17,4 +16,4 @@ export default icebreaker({
     'better-tailwindcss/no-conflicting-classes': 'off',
     'better-tailwindcss/no-unknown-classes': 'off',
   },
-}, createMiniProgramRuntimeConfig())
+})

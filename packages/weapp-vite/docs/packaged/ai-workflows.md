@@ -26,7 +26,7 @@
 
 不要根据浏览器、Node.js、类型声明或 headless simulator 推断 AppService 能力。新增 `queueMicrotask`、Web API、DOM/Node 全局或现代内建前，先在目标平台真实 IDE、目标基础库和 renderer 中验证存在性及最小调用语义。
 
-微信不同运行时版本不能统一假定存在 `queueMicrotask`。业务代码应接入 `@weapp-vite/eslint` 的 `miniProgramRuntimeRecommended`，框架代码应使用显式兼容层；需要 request globals 时明确配置 `weapp.appPrelude.webRuntime`。
+微信不同运行时版本不能统一假定存在 `queueMicrotask`。业务代码应通过共享 ESLint 配置统一接入 `@weapp-vite/eslint` 的 `miniProgramRuntimeRecommended`，模板不要单独增加 workspace 依赖；框架代码应使用显式兼容层，需要 request globals 时明确配置 `weapp.appPrelude.webRuntime`。
 
 ## Rust / Native 加速约束
 
