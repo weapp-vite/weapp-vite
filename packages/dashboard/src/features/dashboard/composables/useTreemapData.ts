@@ -29,7 +29,6 @@ export function useTreemapData(
       packageLabelMap: packageLabelMap.value,
       moduleUsageCount: moduleUsageCount.value,
       filter: filterRef?.value ?? createDefaultTreemapFilterState(),
-      theme: resolvedTheme.value,
     })
   })
 
@@ -39,6 +38,7 @@ export function useTreemapData(
     const mutedTextColor = isDark ? '#94a3b8' : '#64748b'
     const panelColor = isDark ? '#141820' : '#ffffff'
     const borderColor = isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(71, 85, 105, 0.18)'
+    const nodeBorderColor = 'rgba(15, 23, 42, 0.3)'
 
     return {
       backgroundColor: 'transparent',
@@ -113,7 +113,7 @@ export function useTreemapData(
             textBorderWidth: 0,
           },
           itemStyle: {
-            borderColor,
+            borderColor: nodeBorderColor,
             borderWidth: 1,
             gapWidth: 1,
           },

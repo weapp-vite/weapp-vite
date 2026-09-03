@@ -1,26 +1,24 @@
-import type { AnalyzeBudgetConfig, AnalyzeSubpackagesResult, ResolvedTheme } from '../types'
+import type { AnalyzeBudgetConfig, AnalyzeSubpackagesResult } from '../types'
 
 const defaultWarningRatio = 0.85
 export type TreemapNodeDepth = 'package' | 'file' | 'leaf'
 
 const depthColorSettings = {
   package: {
-    saturation: 48,
-    light: 76,
-    dark: 24,
+    saturation: 50,
+    lightness: 34,
   },
   file: {
-    saturation: 44,
-    light: 82,
-    dark: 28,
+    saturation: 46,
+    lightness: 40,
   },
   leaf: {
-    saturation: 40,
-    light: 87,
-    dark: 31,
+    saturation: 42,
+    lightness: 46,
   },
-} satisfies Record<TreemapNodeDepth, { saturation: number, light: number, dark: number }>
+} satisfies Record<TreemapNodeDepth, { saturation: number, lightness: number }>
 const wevuRuntimeRiskScoreLimit = 0.5
+const groupPresentationCache = new Map<string, { color: string, textColor: string }>()
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value))
@@ -36,21 +34,79 @@ function hashGroupKey(value: string) {
   return Math.round(((mixed / 0x100000000) * 360 + 247) % 360)
 }
 
-function createGroupColor(groupKey: string, theme: ResolvedTheme, depth: TreemapNodeDepth) {
-  const settings = depthColorSettings[depth]
-  const hue = hashGroupKey(groupKey)
-  const lightness = theme === 'dark' ? settings.dark : settings.light
-  return `hsl(${hue}, ${settings.saturation}%, ${lightness}%)`
+function convertHslToRgb(hue: number, saturation: number, lightness: number) {
+  const normalizedSaturation = saturation / 100
+  const normalizedLightness = lightness / 100
+  const chroma = (1 - Math.abs(2 * normalizedLightness - 1)) * normalizedSaturation
+  const hueSegment = hue / 60
+  const secondary = chroma * (1 - Math.abs((hueSegment % 2) - 1))
+  const offset = normalizedLightness - chroma / 2
+  const [red, green, blue] = hueSegment < 1
+    ? [chroma, secondary, 0]
+    : hueSegment < 2
+      ? [secondary, chroma, 0]
+      : hueSegment < 3
+        ? [0, chroma, secondary]
+        : hueSegment < 4
+          ? [0, secondary, chroma]
+          : hueSegment < 5
+            ? [secondary, 0, chroma]
+            : [chroma, 0, secondary]
+  return [red + offset, green + offset, blue + offset]
 }
 
-function createRiskBorderColor(score: number, theme: ResolvedTheme) {
+function toLinearChannel(channel: number) {
+  return channel <= 0.04045
+    ? channel / 12.92
+    : ((channel + 0.055) / 1.055) ** 2.4
+}
+
+function getRelativeLuminance([red, green, blue]: number[]) {
+  return 0.2126 * toLinearChannel(red)
+    + 0.7152 * toLinearChannel(green)
+    + 0.0722 * toLinearChannel(blue)
+}
+
+function getContrastRatio(first: number, second: number) {
+  const lighter = Math.max(first, second)
+  const darker = Math.min(first, second)
+  return (lighter + 0.05) / (darker + 0.05)
+}
+
+function getReadableTextColor(background: number[]) {
+  const backgroundLuminance = getRelativeLuminance(background)
+  const lightTextLuminance = getRelativeLuminance([248 / 255, 250 / 255, 252 / 255])
+  const darkTextLuminance = getRelativeLuminance([15 / 255, 23 / 255, 42 / 255])
+  return getContrastRatio(backgroundLuminance, lightTextLuminance)
+    >= getContrastRatio(backgroundLuminance, darkTextLuminance)
+    ? '#f8fafc'
+    : '#0f172a'
+}
+
+function getGroupPresentation(groupKey: string, depth: TreemapNodeDepth) {
+  const cacheKey = `${groupKey}\u0000${depth}`
+  const cached = groupPresentationCache.get(cacheKey)
+  if (cached) {
+    return cached
+  }
+  const settings = depthColorSettings[depth]
+  const hue = hashGroupKey(groupKey)
+  const presentation = {
+    color: `hsl(${hue}, ${settings.saturation}%, ${settings.lightness}%)`,
+    textColor: getReadableTextColor(convertHslToRgb(hue, settings.saturation, settings.lightness)),
+  }
+  groupPresentationCache.set(cacheKey, presentation)
+  return presentation
+}
+
+function createRiskBorderColor(score: number) {
   if (score >= 0.82) {
-    return theme === 'dark' ? '#fb7185' : '#be123c'
+    return '#fb7185'
   }
   if (score >= 0.58) {
-    return theme === 'dark' ? '#fbbf24' : '#a16207'
+    return '#fbbf24'
   }
-  return theme === 'dark' ? 'rgba(226, 232, 240, 0.18)' : 'rgba(15, 23, 42, 0.16)'
+  return 'rgba(15, 23, 42, 0.3)'
 }
 
 function isWevuRuntimeReference(...references: Array<string | undefined>) {
@@ -74,9 +130,10 @@ function normalizeRuntimeRiskScore(score: number, ...references: Array<string | 
   return score
 }
 
-function createNodeLabelStyle(theme: ResolvedTheme, emphasis = false) {
+function createNodeLabelStyle(textColor: string, emphasis = false) {
+  const usesLightText = textColor === '#f8fafc'
   return {
-    color: theme === 'dark' ? '#f8fafc' : '#0f172a',
+    color: textColor,
     ellipsis: '…',
     fontSize: emphasis ? 12 : 11,
     fontWeight: emphasis ? 650 : 500,
@@ -84,32 +141,33 @@ function createNodeLabelStyle(theme: ResolvedTheme, emphasis = false) {
     minMargin: 5,
     overflow: 'truncate',
     textBorderWidth: 0,
-    textShadowBlur: theme === 'dark' ? 2 : 0,
-    textShadowColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.48)' : 'transparent',
+    textShadowBlur: usesLightText ? 2 : 0,
+    textShadowColor: usesLightText ? 'rgba(0, 0, 0, 0.48)' : 'transparent',
   }
 }
 
 export function createTreemapNodeStyle(
   score: number,
-  theme: ResolvedTheme,
   groupKey: string,
   depth: TreemapNodeDepth,
   showLabel = true,
   showUpperLabel = true,
 ) {
-  const color = createGroupColor(groupKey, theme, depth)
-  const borderColor = createRiskBorderColor(score, theme)
+  const { color, textColor } = getGroupPresentation(groupKey, depth)
+  const borderColor = createRiskBorderColor(score)
   return {
     itemStyle: {
       color,
       borderColor,
     },
     label: {
-      ...createNodeLabelStyle(theme),
+      ...createNodeLabelStyle(textColor),
       show: showLabel,
     },
     upperLabel: {
-      ...createNodeLabelStyle(theme, true),
+      ...createNodeLabelStyle(textColor, true),
+      backgroundColor: color,
+      padding: [0, 4],
       show: showUpperLabel,
     },
     emphasis: {

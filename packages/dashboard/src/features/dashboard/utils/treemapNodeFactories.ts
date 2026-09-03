@@ -1,4 +1,4 @@
-import type { AnalyzeSubpackagesResult, ResolvedTheme, TreemapNode } from '../types'
+import type { AnalyzeSubpackagesResult, TreemapNode } from '../types'
 import { formatModuleIdentifier } from './format'
 import {
   createTreemapAssetNodeId,
@@ -20,7 +20,6 @@ export function createModuleTreemapNode(
   fileBytes: number,
   moduleUsageCount: Map<string, number>,
   module: NonNullable<AnalyzeSubpackagesResult['packages'][number]['files'][number]['modules']>[number],
-  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapModuleNodeId(packageId, fileName, module.id)
   const value = Math.max(module.bytes ?? module.originalBytes ?? 1, 1)
@@ -47,7 +46,7 @@ export function createModuleTreemapNode(
       originalBytes: module.originalBytes,
       packageCount: usageCount,
     },
-    ...createTreemapNodeStyle(normalizedRiskScore, theme, packageId, 'leaf', value >= 2 * 1024),
+    ...createTreemapNodeStyle(normalizedRiskScore, packageId, 'leaf', value >= 2 * 1024),
   }
 }
 
@@ -57,7 +56,6 @@ export function createAssetTreemapNode(
   fileName: string,
   file: AnalyzeSubpackagesResult['packages'][number]['files'][number],
   packageBytes: number,
-  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapAssetNodeId(packageId, fileName)
   const value = Math.max(file.size ?? 1, 1)
@@ -75,7 +73,7 @@ export function createAssetTreemapNode(
       source: file.source ?? fileName,
       bytes: file.size,
     },
-    ...createTreemapNodeStyle(riskScore, theme, packageId, 'leaf', value >= 2 * 1024),
+    ...createTreemapNodeStyle(riskScore, packageId, 'leaf', value >= 2 * 1024),
   }
 }
 
@@ -88,7 +86,6 @@ export function createFileTreemapNode(
   value: number,
   packageBytes: number,
   packageRiskScore: number,
-  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapFileNodeId(packageId, file.file)
   const fileValue = Math.max(value, 1)
@@ -114,7 +111,7 @@ export function createFileTreemapNode(
       type: file.type,
       bytes: file.size,
     },
-    ...createTreemapNodeStyle(riskScore, theme, packageId, 'file', true, fileValue >= 4 * 1024),
+    ...createTreemapNodeStyle(riskScore, packageId, 'file', true, fileValue >= 4 * 1024),
     children: children.length > 0 ? children : undefined,
   }
 }
@@ -124,7 +121,6 @@ export function createPackageTreemapNode(
   totalBytes: number,
   fileNodes: TreemapNode[],
   riskScore: number,
-  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapPackageNodeId(pkg.id)
   const normalizedRiskScore = normalizeTreemapRiskScore(riskScore, pkg.id, pkg.label)
@@ -142,7 +138,7 @@ export function createPackageTreemapNode(
       fileCount: pkg.files.length,
       totalBytes,
     },
-    ...createTreemapNodeStyle(normalizedRiskScore, theme, pkg.id, 'package'),
+    ...createTreemapNodeStyle(normalizedRiskScore, pkg.id, 'package'),
     children: fileNodes,
   }
 }

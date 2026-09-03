@@ -46,17 +46,17 @@ describe('treemap presentation', () => {
     ]
     const colorById = new Map(packageIds.map(id => [
       id,
-      createTreemapNodeStyle(0.2, 'dark', id, 'leaf').itemStyle.color,
+      createTreemapNodeStyle(0.2, id, 'leaf').itemStyle.color,
     ]))
     const reorderedColorById = new Map([...packageIds].reverse().map(id => [
       id,
-      createTreemapNodeStyle(0.2, 'dark', id, 'leaf').itemStyle.color,
+      createTreemapNodeStyle(0.2, id, 'leaf').itemStyle.color,
     ]))
-    const healthy = createTreemapNodeStyle(0.2, 'dark', '__main__', 'leaf')
-    const risky = createTreemapNodeStyle(0.9, 'dark', '__main__', 'leaf')
-    const otherPackage = createTreemapNodeStyle(0.2, 'dark', 'centerPages', 'leaf')
-    const hiddenLabel = createTreemapNodeStyle(0.2, 'dark', '__main__', 'leaf', false)
-    const hiddenUpperLabel = createTreemapNodeStyle(0.2, 'dark', '__main__', 'file', true, false)
+    const healthy = createTreemapNodeStyle(0.2, '__main__', 'leaf')
+    const risky = createTreemapNodeStyle(0.9, '__main__', 'leaf')
+    const otherPackage = createTreemapNodeStyle(0.2, 'centerPages', 'leaf')
+    const hiddenLabel = createTreemapNodeStyle(0.2, '__main__', 'leaf', false)
+    const hiddenUpperLabel = createTreemapNodeStyle(0.2, '__main__', 'file', true, false)
 
     expect(new Set(colorById.values()).size).toBe(packageIds.length)
     for (const packageId of packageIds) {
@@ -65,7 +65,7 @@ describe('treemap presentation', () => {
     expect(healthy.itemStyle.color).toBe(risky.itemStyle.color)
     expect(healthy.itemStyle.borderColor).not.toBe(risky.itemStyle.borderColor)
     expect(healthy.itemStyle.color).not.toBe(otherPackage.itemStyle.color)
-    expect(healthy.itemStyle.color).toMatch(/^hsl\(\d+, 40%, 31%\)$/)
+    expect(healthy.itemStyle.color).toMatch(/^hsl\(\d+, 42%, 46%\)$/)
     expect(hiddenLabel.label.show).toBe(false)
     expect(hiddenUpperLabel.upperLabel.show).toBe(false)
   })
