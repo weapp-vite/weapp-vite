@@ -100,7 +100,32 @@ export function formatBuildOrigin(origin: string) {
 export function formatModuleIdentifier(identifier: string) {
   const queryIndex = identifier.indexOf('?')
   const path = queryIndex === -1 ? identifier : identifier.slice(0, queryIndex)
-  return path.replaceAll('\\', '/').replace(/^\0/, '')
+  const normalized = path.replaceAll('\\', '/').replace(/^\0/, '')
+  const nodeModulesMarker = '/node_modules/'
+  const nodeModulesIndex = normalized.lastIndexOf(nodeModulesMarker)
+  if (nodeModulesIndex >= 0) {
+    return normalized.slice(nodeModulesIndex + nodeModulesMarker.length)
+  }
+  if (normalized.startsWith('node_modules/')) {
+    return normalized.slice('node_modules/'.length)
+  }
+
+  const wevuWorkspaceMarker = '/packages-runtime/wevu/'
+  const wevuWorkspaceIndex = normalized.lastIndexOf(wevuWorkspaceMarker)
+  if (wevuWorkspaceIndex >= 0) {
+    return `wevu/${normalized.slice(wevuWorkspaceIndex + wevuWorkspaceMarker.length)}`
+  }
+
+  const scopedWorkspaceMatch = normalized.match(/\/(@[^/]+\/[^/]+)\/(dist\/.*)$/)
+  if (scopedWorkspaceMatch) {
+    return `${scopedWorkspaceMatch[1]}/${scopedWorkspaceMatch[2]}`
+  }
+
+  const sourceIndex = normalized.lastIndexOf('/src/')
+  if (sourceIndex >= 0) {
+    return normalized.slice(sourceIndex + '/src/'.length)
+  }
+  return normalized.replace(/^(?:\.\.\/)+/, '')
 }
 
 export function formatSourceType(type: string) {

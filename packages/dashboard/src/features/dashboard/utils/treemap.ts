@@ -59,6 +59,7 @@ export function createTreemapAssetNodeId(packageId: string, fileName: string) {
 }
 
 export function formatTreemapNodeLabel(value: string) {
+  const rawNormalized = value.replaceAll('\\', '/')
   const normalized = formatModuleIdentifier(value)
     .replace(/^(?:\.\.\/)+/, '')
   const segments = normalized.split('/').filter(Boolean)
@@ -66,13 +67,11 @@ export function formatTreemapNodeLabel(value: string) {
     return normalized
   }
 
-  const nodeModulesIndex = segments.lastIndexOf('node_modules')
-  if (nodeModulesIndex >= 0 && segments[nodeModulesIndex + 1]) {
-    const firstPackageSegment = segments[nodeModulesIndex + 1]!
-    const packageName = firstPackageSegment.startsWith('@') && segments[nodeModulesIndex + 2]
-      ? `${firstPackageSegment}/${segments[nodeModulesIndex + 2]}`
+  if (rawNormalized.includes('/node_modules/')) {
+    const firstPackageSegment = segments[0]!
+    return firstPackageSegment.startsWith('@') && segments[1]
+      ? `${firstPackageSegment}/${segments[1]}`
       : firstPackageSegment
-    return packageName
   }
 
   if (segments.length > 2) {

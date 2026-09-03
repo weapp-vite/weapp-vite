@@ -48,8 +48,11 @@ interface CanonicalModuleGrowth {
   file?: string
 }
 
-function createModuleComparisonKey(label: string, sourceType: ModuleSourceType) {
-  return `${sourceType}\u0000${label}`
+function createModuleComparisonKey(source: string, sourceType: ModuleSourceType) {
+  const origin = sourceType === 'node_modules' || sourceType === 'workspace'
+    ? 'dependency'
+    : sourceType
+  return `${origin}\0${formatModuleIdentifier(source)}`
 }
 
 export function createIncrementAttribution(options: {
@@ -90,8 +93,7 @@ export function createIncrementAttribution(options: {
 
   const previousModuleBytes = new Map<string, number>()
   for (const [id, mod] of options.previousMaps.moduleBytes) {
-    const label = formatModuleIdentifier(mod.source ?? id)
-    const key = createModuleComparisonKey(label, mod.sourceType)
+    const key = createModuleComparisonKey(mod.source ?? id, mod.sourceType)
     previousModuleBytes.set(key, Math.max(previousModuleBytes.get(key) ?? 0, mod.bytes))
   }
 
@@ -100,7 +102,7 @@ export function createIncrementAttribution(options: {
     const placement = currentModulePlacementMap.get(id)
     const sourceType = placement?.sourceType ?? mod.sourceType
     const label = formatModuleIdentifier(placement?.source ?? id)
-    const key = createModuleComparisonKey(label, sourceType)
+    const key = createModuleComparisonKey(placement?.source ?? id, sourceType)
     const existing = currentModules.get(key)
     if (existing && existing.currentBytes >= mod.bytes) {
       continue

@@ -4,4 +4,4 @@
 "create-weapp-vite": minor
 ---
 
-将 `--ui` 调试链路迁移到 Devframe RPC 与 shared state，保留受限文件读取，并把 Dashboard 重构为面向构建、包体、运行事件和诊断的高密度 DevTools 工作台，新增基于 D3 的可缩放 Chunk 静态/动态依赖图，同时修正 mixed vendor 的稳定命名，避免业务依赖被误归属到 `wevu-runtime` 产物。
+将 `--ui` 调试链路迁移到 Devframe RPC 与 shared state，保留受限文件读取，并把 Dashboard 重构为面向构建、包体、运行事件和诊断的高密度 DevTools 工作台，新增基于 D3 的可缩放 Chunk 静态/动态依赖图，同时修正 mixed vendor 稳定命名、增量模块身份归一化和 WXSS 中的 Vite 资源占位符替换，避免业务依赖被误归属到 `wevu-runtime` 产物、同一依赖因 workspace 与 pnpm 安装路径差异产生虚假增长，以及相对静态资源在最终产物中残留内部占位符。

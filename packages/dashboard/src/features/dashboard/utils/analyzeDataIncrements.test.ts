@@ -1,11 +1,11 @@
-import type { AnalyzeSubpackagesResult } from '../types'
+import type { AnalyzeSubpackagesResult, ModuleSourceType } from '../types'
 import { describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 import { useAnalyzeActionCenter } from '../composables/useAnalyzeActionCenter'
 import { createIncrementAttribution } from './analyzeDataIncrements'
 import { createComparisonMaps, createModuleInfoMap } from './analyzeDataShared'
 
-function createResult(modules: Array<{ id: string, source: string, bytes: number }>): AnalyzeSubpackagesResult {
+function createResult(modules: Array<{ id: string, source: string, bytes: number, sourceType?: ModuleSourceType }>): AnalyzeSubpackagesResult {
   return {
     packages: [
       {
@@ -20,7 +20,7 @@ function createResult(modules: Array<{ id: string, source: string, bytes: number
             size: 10_000,
             modules: modules.map(module => ({
               ...module,
-              sourceType: 'src',
+              sourceType: module.sourceType ?? 'src',
             })),
           },
         ],
@@ -29,7 +29,7 @@ function createResult(modules: Array<{ id: string, source: string, bytes: number
     modules: modules.map(module => ({
       id: module.id,
       source: module.source,
-      sourceType: 'src',
+      sourceType: module.sourceType ?? 'src',
       packages: [{ packageId: '__main__', files: ['app.js'] }],
     })),
     subPackages: [],
@@ -71,6 +71,66 @@ describe('analyze increment attribution', () => {
       previousBytes: 4_000,
       currentBytes: 5_000,
       deltaBytes: 1_000,
+    })
+  })
+
+  it('matches installed and workspace copies of the same package module', () => {
+    const previous = createResult([{
+      id: '/workspace/packages-runtime/wevu/dist/runtime/app/context.mjs',
+      source: '../../../weapp-vite/packages-runtime/wevu/dist/runtime/app/context.mjs',
+      sourceType: 'workspace',
+      bytes: 7_159,
+    }])
+    const current = createResult([{
+      id: '/workspace/node_modules/wevu/dist/runtime/app/context.mjs',
+      source: '../../node_modules/.pnpm/wevu@6.23.0_typescript@6.0.3/node_modules/wevu/dist/runtime/app/context.mjs',
+      sourceType: 'node_modules',
+      bytes: 7_254,
+    }])
+
+    const items = createIncrementAttribution({
+      result: current,
+      previousResult: previous,
+      previousMaps: createComparisonMaps(previous),
+      moduleInfoMap: createModuleInfoMap(current),
+    })
+
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({
+      label: 'wevu/dist/runtime/app/context.mjs',
+      previousBytes: 7_159,
+      currentBytes: 7_254,
+      deltaBytes: 95,
+    })
+  })
+
+  it('does not merge application source with a dependency sharing its display path', () => {
+    const previous = createResult([{
+      id: '/workspace/src/wevu/dist/runtime/app/context.mjs',
+      source: 'src/wevu/dist/runtime/app/context.mjs',
+      sourceType: 'src',
+      bytes: 7_159,
+    }])
+    const current = createResult([{
+      id: '/workspace/node_modules/wevu/dist/runtime/app/context.mjs',
+      source: 'node_modules/wevu/dist/runtime/app/context.mjs',
+      sourceType: 'node_modules',
+      bytes: 7_254,
+    }])
+
+    const items = createIncrementAttribution({
+      result: current,
+      previousResult: previous,
+      previousMaps: createComparisonMaps(previous),
+      moduleInfoMap: createModuleInfoMap(current),
+    })
+
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({
+      label: 'wevu/dist/runtime/app/context.mjs',
+      previousBytes: 0,
+      currentBytes: 7_254,
+      deltaBytes: 7_254,
     })
   })
 
