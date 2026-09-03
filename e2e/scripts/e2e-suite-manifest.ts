@@ -592,7 +592,7 @@ export function getFullRegressionTasks() {
     {
       label: 'e2e:ide:full',
       command: 'node',
-      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-e2e-suite.ts'), 'ide-full'],
+      args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-sleep-inhibited-e2e-suite.ts'), 'ide-full'],
     },
   ] satisfies SuiteTask[]
 }

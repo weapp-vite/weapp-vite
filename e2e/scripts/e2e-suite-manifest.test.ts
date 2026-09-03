@@ -1,8 +1,20 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
+  it('routes every IDE full package script through the sleep-inhibited runner', () => {
+    const packageJson = JSON.parse(
+      fs.readFileSync(path.resolve(import.meta.dirname, '../../package.json'), 'utf8'),
+    ) as { scripts: Record<string, string> }
+    const ideFullScripts = Object.entries(packageJson.scripts)
+      .filter(([name]) => name.startsWith('e2e:ide:full'))
+
+    expect(ideFullScripts.length).toBeGreaterThan(0)
+    expect(ideFullScripts.every(([, command]) => command.includes('run-sleep-inhibited-e2e-suite.ts'))).toBe(true)
+  })
+
   it('runs the web suite through its dedicated Vitest config', () => {
     expect(getWebTasks()).toEqual([{
       label: 'web-runtime',
@@ -78,5 +90,6 @@ describe('e2e suite manifest', () => {
       'e2e:web',
       'e2e:ide:full',
     ])
+    expect(path.basename(getFullRegressionTasks().at(-1)!.args[2]!)).toBe('run-sleep-inhibited-e2e-suite.ts')
   })
 })
