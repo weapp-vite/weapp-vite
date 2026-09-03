@@ -1,6 +1,9 @@
+import { fs } from '@weapp-core/shared/node'
+import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
+  DIST_ROOT,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
@@ -32,6 +35,16 @@ async function readIssue911Trace(miniProgram: any) {
 describe.sequential('e2e app: github-issues / issue #911', () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
+    for (const relativePath of [
+      'pages/issue-911/index.js',
+      'pages/issue-911/index.json',
+      'pages/issue-911/index.wxml',
+      'pages/issue-550/index.js',
+      'pages/issue-550/index.json',
+      'pages/issue-550/index.wxml',
+    ]) {
+      await expect(fs.pathExists(path.join(DIST_ROOT, relativePath))).resolves.toBe(true)
+    }
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
   afterAll(async () => {

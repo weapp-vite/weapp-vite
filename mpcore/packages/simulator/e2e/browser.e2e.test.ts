@@ -168,6 +168,20 @@ describe.sequential('simulator browser e2e', () => {
 
     expect(parseJsonString<{ asyncResult: string }>(state.pageData).asyncResult)
       .toBe('async-default:async-named')
+    expect(parseJsonString<{ runtimeGlobals: Record<string, string> }>(state.pageData).runtimeGlobals).toEqual({
+      btoa: 'undefined',
+      crypto: 'undefined',
+      CustomEvent: 'undefined',
+      document: 'undefined',
+      Event: 'undefined',
+      fetch: 'undefined',
+      global: 'undefined',
+      location: 'undefined',
+      navigator: 'undefined',
+      queueMicrotask: 'undefined',
+      self: 'undefined',
+      window: 'undefined',
+    })
   })
 
   it('loads local plugin exports, components, and pages in the browser demo', async () => {

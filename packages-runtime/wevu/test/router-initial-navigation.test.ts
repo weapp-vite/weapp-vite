@@ -125,6 +125,24 @@ describe('router: initial navigation state machine', () => {
     expect(secondComplete).toHaveBeenCalledWith(true)
   })
 
+  it('completes without relying on a host queueMicrotask global', async () => {
+    const originalQueueMicrotask = globalThis.queueMicrotask
+    Object.defineProperty(globalThis, 'queueMicrotask', { configurable: true, value: undefined })
+    try {
+      const router = state.activeRouter!
+      registerInitialNavigationRunner(router, () => Promise.resolve(), 100)
+      const complete = vi.fn()
+      const pending = ensureInitialNavigation({}, {}, { onComplete: complete })
+
+      await expect(pending).resolves.toBe(true)
+      await Promise.resolve()
+      expect(complete).toHaveBeenCalledWith(true)
+    }
+    finally {
+      Object.defineProperty(globalThis, 'queueMicrotask', { configurable: true, value: originalQueueMicrotask })
+    }
+  })
+
   it('uses eager mode without a mount gate or timeout timer', async () => {
     const router = state.activeRouter!
     let resolveRunner!: () => void

@@ -25,14 +25,16 @@ function readRoutesFromWxConfig() {
       ? wxConfig.subpackages
       : []
 
-  const subPackageEntries = packageConfigs.flatMap((pkg) => {
+  const subPackageEntries: string[] = []
+  for (const pkg of packageConfigs) {
     const root = typeof pkg?.root === 'string' ? pkg.root : ''
     const pkgPages = normalizeRouteList(pkg?.pages)
     if (!root) {
-      return pkgPages
+      subPackageEntries.push(...pkgPages)
+      continue
     }
-    return pkgPages.map(page => `${root}/${page}`)
-  })
+    subPackageEntries.push(...pkgPages.map(page => `${root}/${page}`))
+  }
 
   return {
     pages,

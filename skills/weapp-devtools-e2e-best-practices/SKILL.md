@@ -46,6 +46,7 @@ description: 面向 weapp-vite 仓库的 WeChat DevTools 与 mpcore headless run
    - 需要视觉回归时再补 `wv screenshot --json`、`wv compare --json`、`wv ide logs --open`
 7. touched 场景优先通过 `WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools|headless` 复用；若无法直接复用，在 mpcore owning package 补 unit/integration、browser e2e，公开类型变化再补 type-contract test。
 8. DevTools 与 headless 语义不一致时，以稳定可复现的真实 DevTools 行为为准，修复 mpcore，不弱化真实断言。
+9. 新增 `queueMicrotask`、Web API、DOM/Node 全局或现代内建前，在未启用对应注入的原生 AppService fixture 中探测 `typeof` 和最小调用语义，并记录 DevTools、SDK、renderer 与 platform；Node、浏览器、类型声明和 headless 结果不能代替该证据。
 
 ## 环境治理与已知边界
 
@@ -64,6 +65,7 @@ description: 面向 weapp-vite 仓库的 WeChat DevTools 与 mpcore headless run
 - 不要在路由不稳定时先做截图对比。
 - 不要把环境问题误判成业务回归。
 - 不要只跑通过的一侧 provider，也不要把路径分隔符、CRLF、驱动器或临时目录写进跨平台断言。
+- 不要假定所有微信基础库都存在 `queueMicrotask`；单个 DevTools 版本探测为可用也不能替代兼容层。
 
 ## 输出
 

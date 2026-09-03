@@ -141,7 +141,11 @@ function normalizeChildren(
     return []
   }
   if (Array.isArray(resolved)) {
-    return resolved.flatMap(item => normalizeChildren(item, target, islandId, seed, adapters))
+    const children: WevuJsxIslandNode[] = []
+    for (const item of resolved) {
+      children.push(...normalizeChildren(item, target, islandId, seed, adapters))
+    }
+    return children
   }
   if (typeof resolved === 'object' && !isVNode(resolved)) {
     const slots = resolved as Record<string, unknown>

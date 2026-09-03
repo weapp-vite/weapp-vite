@@ -49,7 +49,7 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
 7. store 以小 domain 为先，解构 state/getters 用 `storeToRefs`，避免巨大跨页 store。
 8. 写法同时对照项目根 `AGENTS.md` 和本地 `dist/docs/wevu-authoring.md`。
 9. JSX/TSX 中保持小程序事件、class 和组件 tag 语义；编译后的自定义组件标签应为 kebab-case，可选链/空值合并不得残留为目标模板不支持的表达式。
-10. 项目使用 Wevu 模板时启用 `@weapp-vite/eslint` 的 `wevuCompatibilityRecommended`；它检查项目源码中静态可确定的不支持/风险 API，不代表能分析动态访问或依赖内部代码。旧项目可继续从 `weapp-vite/eslint` 兼容入口导入。
+10. Wevu 项目通过共享 ESLint 配置统一启用 `@weapp-vite/eslint` 的 `wevuCompatibilityRecommended` 与 `miniProgramRuntimeRecommended`，模板不要单独增加 workspace 依赖；后者限制 DOM/Node 全局、现代内建和隐式 polyfill。不要假定微信 runtime 存在 `queueMicrotask`，新增宿主 API 前先在目标真实 IDE AppService 中探测。旧项目可继续从 `weapp-vite/eslint` 兼容入口导入。
 11. glass-easel 项目保持静态文本、属性和 Mustache 边界使用标准 WXML 实体转义；迁移时运行 `wv analyze --glass-easel-check`，循环内 `<include>` 和旧式反斜杠引号转义需人工确认语义。
 
 ## Router 与平台边界

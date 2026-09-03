@@ -5,6 +5,55 @@ import {
 } from '../src/browser'
 
 describe('BrowserHeadlessSession', () => {
+  it('does not leak browser globals and allows explicit runtime overrides', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    globals: {
+      btoa: typeof btoa,
+      crypto: typeof crypto,
+      CustomEvent: typeof CustomEvent,
+      window: typeof window,
+      document: typeof document,
+      Event: typeof Event,
+      global: typeof global,
+      location: typeof location,
+      navigator: typeof navigator,
+      self: typeof self,
+      fetch: typeof fetch,
+      queueMicrotask: typeof queueMicrotask,
+      injected: typeof injectedRuntimeApi,
+    },
+  },
+})
+`],
+      ['pages/index/index.wxml', '<view>runtime globals</view>'],
+    ])
+    const session = createBrowserHeadlessSession({
+      files,
+      globals: { injectedRuntimeApi: () => 'ready' },
+    })
+
+    expect(session.reLaunch('/pages/index/index').data.globals).toEqual({
+      btoa: 'undefined',
+      crypto: 'undefined',
+      CustomEvent: 'undefined',
+      window: 'undefined',
+      document: 'undefined',
+      Event: 'undefined',
+      global: 'undefined',
+      location: 'undefined',
+      navigator: 'undefined',
+      self: 'undefined',
+      fetch: 'undefined',
+      queueMicrotask: 'undefined',
+      injected: 'function',
+    })
+  })
+
   it('preserves PascalCase component aliases while parsing WXML', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

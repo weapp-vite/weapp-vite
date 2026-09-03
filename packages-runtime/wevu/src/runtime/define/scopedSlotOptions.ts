@@ -127,10 +127,11 @@ function createSlotFunctionProxy(instance: any, descriptor: [string, string, unk
 }
 
 function resolveRuntimeSlotBindings(instance: any, bindings: Record<string, any>) {
-  return Object.fromEntries(Object.entries(bindings).map(([key, value]) => [
-    key,
-    isSlotFunctionDescriptor(value) ? createSlotFunctionProxy(instance, value) : value,
-  ]))
+  const resolved: Record<string, any> = {}
+  for (const [key, value] of Object.entries(bindings)) {
+    resolved[key] = isSlotFunctionDescriptor(value) ? createSlotFunctionProxy(instance, value) : value
+  }
+  return resolved
 }
 
 function resolveComputedContext(instance: any) {

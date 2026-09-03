@@ -78,9 +78,14 @@ const ORDERED_RUNTIME_GLOBAL_KEYS_BY_ROUTE_PRIORITY = getOrderedRuntimeGlobalKey
 /**
  * @description 小程序平台别名映射表。
  */
+const MINI_PROGRAM_PLATFORM_ALIAS_RECORD: Record<string, MpPlatform> = {}
+for (const [alias, platform] of MINI_PROGRAM_PLATFORM_ALIAS_TO_ID) {
+  MINI_PROGRAM_PLATFORM_ALIAS_RECORD[alias] = platform
+}
+
 export const MINI_PROGRAM_PLATFORM_ALIASES: Readonly<Record<string, MpPlatform>> = Object.freeze(
-  Object.fromEntries(MINI_PROGRAM_PLATFORM_ALIAS_TO_ID.entries()),
-) as Readonly<Record<string, MpPlatform>>
+  MINI_PROGRAM_PLATFORM_ALIAS_RECORD,
+)
 
 /**
  * @description 标准化平台输入。
