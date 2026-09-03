@@ -1,5 +1,11 @@
-import { createMiniProgramRuntimeConfig, miniProgramRuntimePlugin } from '@weapp-vite/eslint'
+import { createJiti } from 'jiti'
 import { defineEslintConfig } from 'repoctl/tooling'
+
+const jiti = createJiti(import.meta.url)
+const {
+  createMiniProgramRuntimeConfig,
+  miniProgramRuntimePlugin,
+} = await jiti.import('./packages/eslint/src/miniProgramRuntime.ts')
 
 export default await defineEslintConfig({
   options: {
