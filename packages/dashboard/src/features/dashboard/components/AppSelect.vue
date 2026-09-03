@@ -51,6 +51,7 @@ const {
       :aria-expanded="isOpen"
       aria-haspopup="listbox"
       :disabled="disabled"
+      :title="selectedOption?.label"
       @click="toggleMenu"
       @keydown="handleTriggerKeydown"
     >
@@ -100,6 +101,7 @@ const {
             :aria-selected="option.value === modelValue"
             :data-option-index="index"
             :disabled="option.disabled"
+            :title="option.label"
             @click="selectOption(option)"
             @mouseenter="setActiveIndex(index)"
             @mousedown.prevent
@@ -107,7 +109,7 @@ const {
             <span class="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
               <span v-if="option.value === modelValue" class="h-1.5 w-1.5 rounded-full bg-(--dashboard-accent)" />
             </span>
-            <span class="min-w-0 truncate">{{ option.label }}</span>
+            <span data-option-label class="min-w-0 break-all">{{ option.label }}</span>
           </button>
         </div>
       </Transition>

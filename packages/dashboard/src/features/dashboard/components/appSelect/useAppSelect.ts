@@ -1,6 +1,7 @@
 import type { AppSelectOption } from './options'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, useId, watch } from 'vue'
 import { resolveAppSelectActiveValue } from './options'
+import { resolveAppSelectMenuPosition } from './position'
 
 interface AppSelectProps<TValue extends string> {
   disabled: boolean
@@ -58,40 +59,9 @@ export function useAppSelect<TValue extends string>(
     if (!isOpen.value || !triggerRef.value || !menuRef.value) {
       return
     }
-
-    const triggerRect = triggerRef.value.getBoundingClientRect()
-    const menu = menuRef.value
-    const viewport = window.visualViewport
-    const viewportLeft = viewport?.offsetLeft ?? 0
-    const viewportTop = viewport?.offsetTop ?? 0
-    const viewportWidth = viewport?.width ?? window.innerWidth
-    const viewportHeight = viewport?.height ?? window.innerHeight
-    const viewportRight = viewportLeft + viewportWidth
-    const viewportBottom = viewportTop + viewportHeight
-    const margin = 8
-    const gap = 6
-    const availableBelow = viewportBottom - triggerRect.bottom - gap - margin
-    const availableAbove = triggerRect.top - viewportTop - gap - margin
-    const desiredHeight = Math.min(menu.scrollHeight + menu.offsetHeight - menu.clientHeight, 288)
-    const opensAbove = availableBelow < Math.min(desiredHeight, 160) && availableAbove > availableBelow
-    const availableHeight = Math.max(0, opensAbove ? availableAbove : availableBelow)
-    const renderedHeight = Math.min(desiredHeight, availableHeight)
-    const menuWidth = Math.max(0, Math.min(triggerRect.width, viewportWidth - margin * 2))
-    const left = Math.min(
-      Math.max(triggerRect.left, viewportLeft + margin),
-      viewportRight - menuWidth - margin,
-    )
-    const top = opensAbove
-      ? Math.max(viewportTop + margin, triggerRect.top - gap - renderedHeight)
-      : Math.min(triggerRect.bottom + gap, viewportBottom - renderedHeight - margin)
-
-    placement.value = opensAbove ? 'top' : 'bottom'
-    menuStyle.value = {
-      left: `${Math.round(left)}px`,
-      maxHeight: `${Math.floor(availableHeight)}px`,
-      top: `${Math.round(top)}px`,
-      width: `${Math.round(menuWidth)}px`,
-    }
+    const resolved = resolveAppSelectMenuPosition(triggerRef.value, menuRef.value)
+    placement.value = resolved.placement
+    menuStyle.value = resolved.style
   }
 
   async function openMenu(direction: 1 | -1 = 1) {
