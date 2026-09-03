@@ -1,5 +1,13 @@
 # @wevu/compiler
 
+## 7.0.2
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/ast@7.0.2
+  - rolldown-require@2.0.28
+
 ## 7.0.1
 
 ### Patch Changes
