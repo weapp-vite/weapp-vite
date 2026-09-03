@@ -44,6 +44,8 @@ describe('wevu module identity', () => {
   })
 
   it('recognizes hashed wevu ownership without claiming adjacent packages', () => {
+    expect(isWevuOwnedModuleId('wevu')).toBe(true)
+    expect(isWevuOwnedModuleId('wevu/router')).toBe(true)
     expect(isWevuOwnedModuleId(
       '/project/node_modules/wevu/dist/runtime-BD3I133J.mjs',
     )).toBe(true)
@@ -58,6 +60,12 @@ describe('wevu module identity', () => {
     )).toBe(false)
     expect(isWevuOwnedModuleId(
       '/project/node_modules/.pnpm/dayjs@1.11.23/node_modules/dayjs/dayjs.min.js',
+    )).toBe(false)
+    expect(isWevuOwnedModuleId(
+      '/project/node_modules/wevu/node_modules/dayjs/index.js',
+    )).toBe(false)
+    expect(isWevuOwnedModuleId(
+      '/project/packages-runtime/wevu/node_modules/dayjs/index.js',
     )).toBe(false)
   })
 

@@ -195,7 +195,10 @@ describe('sharedBuildConfig', () => {
     expect(resolveStableHashedDistChunkFileName(mixedChunk)).toBeUndefined()
     expect(output.chunkFileNames(mixedChunk)).toBe('[name].js')
     expect(resolveStableHashedDistChunkFileName({
-      moduleIds: [preservedRuntime, hashedRuntime],
+      moduleIds: ['wevu', dependency],
+    })).toBeUndefined()
+    expect(resolveStableHashedDistChunkFileName({
+      moduleIds: ['wevu', preservedRuntime, hashedRuntime],
     })).toBe('weapp-vendors/wevu-runtime.js')
   })
 
