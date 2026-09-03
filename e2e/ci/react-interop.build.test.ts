@@ -7,6 +7,16 @@ import { describe, expect, it } from 'vitest'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/react-runtime-spike')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-react-template')
+const RESTRICTED_RUNTIME_BUILTINS = [
+  ['Object.fromEntries', /\bObject\.fromEntries\s*\(/],
+  ['Object.hasOwn', /\bObject\.hasOwn\s*\(/],
+  ['Promise.any', /\bPromise\.any\s*\(/],
+  ['Promise.allSettled', /\bPromise\.allSettled\s*\(/],
+  ['Array.prototype.at', /\.at\s*\(/],
+  ['Array.prototype.flat', /\.flat\s*\(/],
+  ['Array.prototype.flatMap', /\.flatMap\s*\(/],
+  ['String.prototype.replaceAll', /\.replaceAll\s*\(/],
+] as const
 
 async function runBuild(root: string, mode?: string) {
   const args = [CLI_PATH, 'build', root, '--platform', 'weapp', '--skipNpm']
@@ -19,6 +29,17 @@ async function runBuild(root: string, mode?: string) {
 
 async function readText(root: string, file: string) {
   return await fs.readFile(path.join(root, 'dist', file), 'utf8')
+}
+
+async function assertNoRestrictedRuntimeBuiltins(root: string) {
+  const distRoot = path.join(root, 'dist')
+  const files = await fs.readdir(distRoot, { recursive: true }) as string[]
+  for (const file of files.filter(file => /\.(?:c|m)?js$/.test(file))) {
+    const code = await fs.readFile(path.join(distRoot, file), 'utf8')
+    for (const [api, pattern] of RESTRICTED_RUNTIME_BUILTINS) {
+      expect(code, `${file} must not depend on ${api} in AppService`).not.toMatch(pattern)
+    }
+  }
 }
 
 async function assertInteropAppOutput() {
@@ -62,6 +83,7 @@ async function assertInteropAppOutput() {
   expect(reactLeafWxml).toContain('<slot />')
   expect(reactLeafJs).toContain('../../renderer.js')
   expect(wevuLeafJs).toContain('../../weapp-vendors/wevu-runtime.js')
+  await assertNoRestrictedRuntimeBuiltins(APP_ROOT)
 }
 
 describe.sequential('React, Wevu and native component interoperability (build)', () => {
@@ -87,5 +109,6 @@ describe.sequential('React, Wevu and native component interoperability (build)',
     expect(pageWxml).toContain('<wevu-leaf')
     expect(pageWxml).toContain('bind:change="__weapp_vite_react_event"')
     expect(await readText(TEMPLATE_ROOT, 'components/wevu-leaf/index.wxml')).toContain('<slot />')
+    await assertNoRestrictedRuntimeBuiltins(TEMPLATE_ROOT)
   })
 })

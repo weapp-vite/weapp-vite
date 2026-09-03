@@ -114,7 +114,10 @@ async function _runE2E(action?: 'push' | 'switchTab') {
       wx.switchTab({
         url: '/pages/issue-705-tab/index',
         success() {
-          wx.setStorageSync(SWITCH_TAB_RESULT_STORAGE_KEY, createSnapshot())
+          wx.setStorageSync(SWITCH_TAB_RESULT_STORAGE_KEY, {
+            ...createSnapshot(),
+            pageStack: getCurrentPages().map(page => page.route),
+          })
           resolve()
         },
         fail: reject,

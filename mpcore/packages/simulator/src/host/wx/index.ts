@@ -310,9 +310,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     showToast: option => invokeWxApi(() => driver.showToast(option), option),
     startPullDownRefresh: option => invokeWxApi(() => driver.startPullDownRefresh(), option),
     stopPullDownRefresh: () => driver.stopPullDownRefresh(),
-    switchTab: option => invokeWxApi(() => {
-      driver.switchTab(option)
-    }, option),
+    switchTab: option => driver.switchTab(option),
     uploadFile: option => driver.uploadFile(option),
     removeTabBarBadge: option => invokeWxApi(() => driver.removeTabBarBadge(option), option),
     setTabBarBadge: option => invokeWxApi(() => driver.setTabBarBadge(option), option),

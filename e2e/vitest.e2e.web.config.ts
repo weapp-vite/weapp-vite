@@ -8,7 +8,10 @@ export default defineConfig({
     tsconfig: false,
   },
   test: {
-    include: [path.resolve(import.meta.dirname, './web-runtime/*.test.ts')],
+    include: [
+      path.resolve(import.meta.dirname, './utils/webDevServer.test.ts'),
+      path.resolve(import.meta.dirname, './web-runtime/*.test.ts'),
+    ],
     exclude: [path.resolve(import.meta.dirname, './web-runtime/web-browser-smoke.test.ts')],
     testTimeout: 180_000,
     hookTimeout: 180_000,

@@ -37,6 +37,31 @@ describe('headless testing bridge', () => {
     const miniProgram = await launch({ projectPath })
     const currentPage = await miniProgram.currentPage()
 
+    await expect(miniProgram.toolInfo()).resolves.toEqual({
+      version: 'mpcore-simulator',
+    })
+    await expect(miniProgram.evaluate(() => ({
+      // eslint-disable-next-line node/prefer-global/buffer -- 此处验证小程序执行上下文不会泄漏 Node Buffer。
+      Buffer: typeof globalThis['Buffer'],
+      fetch: typeof fetch,
+      process: typeof process,
+      queueMicrotask: typeof queueMicrotask,
+      setTimeout: typeof setTimeout,
+      structuredClone: typeof structuredClone,
+      URLSearchParams: typeof URLSearchParams,
+      wx: typeof wx,
+      wxFromGlobalThis: typeof globalThis.wx,
+    }))).resolves.toEqual({
+      Buffer: 'undefined',
+      fetch: 'undefined',
+      process: 'undefined',
+      queueMicrotask: 'undefined',
+      setTimeout: 'function',
+      structuredClone: 'undefined',
+      URLSearchParams: 'undefined',
+      wx: 'object',
+      wxFromGlobalThis: 'object',
+    })
     expect(currentPage?.path).toBe('pages/index/index')
     expect(await currentPage?.data('__e2eResult.status')).toBe('ready')
 

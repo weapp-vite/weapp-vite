@@ -517,7 +517,7 @@ describe('runtime buildPlugin service', () => {
       }),
     }))
 
-    const output = await snapshots.rebuild(['/project/src/pages/index.vue'])
+    const output = await snapshots.rebuild(['/project/src/pages/index.css'])
     const refreshOptions = buildMock.mock.calls[1]![0]
     expect(refreshOptions).toEqual(expect.objectContaining({
       build: expect.objectContaining({
@@ -526,6 +526,7 @@ describe('runtime buildPlugin service', () => {
         write: false,
       }),
     }))
+    expect(resetEmittedOutputCachesMock).toHaveBeenCalledTimes(2)
     expect(output).toEqual([{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }])
   })
 

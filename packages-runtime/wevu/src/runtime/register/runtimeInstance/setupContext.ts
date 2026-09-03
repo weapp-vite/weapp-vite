@@ -201,6 +201,25 @@ export function ensureSetupContextInstance(
   }
 
   const setupInstanceBridge: Record<string, any> = Object.create(null)
+  try {
+    Object.defineProperty(setupInstanceBridge, WEVU_NATIVE_INSTANCE_KEY, {
+      configurable: true,
+      enumerable: false,
+      get() {
+        const runtimeState = runtime?.state
+        const rawRuntimeState = runtimeState && typeof runtimeState === 'object'
+          ? toRaw(runtimeState as any)
+          : undefined
+        const nativeInstance = rawRuntimeState?.[WEVU_NATIVE_INSTANCE_KEY]
+        return nativeInstance && typeof nativeInstance === 'object'
+          ? nativeInstance
+          : target
+      },
+    })
+  }
+  catch {
+    setupInstanceBridge[WEVU_NATIVE_INSTANCE_KEY] = target
+  }
   const resolvePublicValue = (key: PropertyKey) => {
     const runtimeProxy = runtime?.proxy as Record<PropertyKey, any> | undefined
     if (runtimeProxy && Reflect.has(runtimeProxy, key)) {

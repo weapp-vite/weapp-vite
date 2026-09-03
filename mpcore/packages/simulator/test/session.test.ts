@@ -611,9 +611,9 @@ Page({
       'settings:onShow',
       'settings:onReady',
       'settings:onHide',
-      'settings:onUnload',
       'home:onShow',
     ])
+    expect(settingsPage?.data.logs.at(-1)).toBe('settings:onUnload')
 
     session.reLaunch('/pages/profile/index?mode=relaunch')
 
@@ -632,8 +632,8 @@ Page({
       'settings:onShow',
       'settings:onReady',
       'settings:onHide',
-      'settings:onUnload',
       'home:onShow',
+      'settings:onUnload',
       'home:onUnload',
       'profile:onLoad:{"mode":"relaunch"}',
       'profile:onShow',
@@ -674,6 +674,24 @@ Page({
     ])
     expect(homePage.options).toEqual({})
     expect(profilePage?.options).toEqual({})
+  })
+
+  it('commits the tab stack before running switchTab success', () => {
+    const projectPath = createNavigationFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const homePage = session.reLaunch('/pages/home/index')
+    homePage.goDetail()
+    const detailPage = session.getCurrentPages().at(-1)
+    homePage.goProfileWithCallbacks()
+
+    expect(session.getCurrentPages().map(page => page.route)).toEqual(['pages/profile/index'])
+    const successIndex = homePage.data.logs.indexOf('home:switchTab:success:pages/profile/index')
+    const unloadIndex = detailPage?.data.logs.indexOf('detail:onUnload') ?? -1
+    expect(successIndex).toBeGreaterThan(-1)
+    expect(unloadIndex).toBeGreaterThan(successIndex)
+    expect(homePage.data.logs.at(-1)).toBe('home:switchTab:complete')
   })
 
   it('rejects switchTab urls that contain query parameters', () => {

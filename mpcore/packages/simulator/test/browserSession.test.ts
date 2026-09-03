@@ -5,6 +5,56 @@ import {
 } from '../src/browser'
 
 describe('BrowserHeadlessSession', () => {
+  it('commits the tab stack before running switchTab success', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({
+        pages: ['pages/home/index', 'pages/profile/index'],
+        tabBar: {
+          list: [
+            { pagePath: 'pages/profile/index', text: 'Profile' },
+          ],
+        },
+      })],
+      ['app.js', 'App({})'],
+      ['pages/home/index.js', `
+Page({
+  data: { callbackRoute: '', completed: false, unloaded: false, unloadedBeforeSuccess: false },
+  openProfile() {
+    wx.switchTab({
+      url: '/pages/profile/index',
+      success: () => {
+        const pages = getCurrentPages()
+        this.setData({
+          callbackRoute: pages[pages.length - 1].route,
+          unloadedBeforeSuccess: this.data.unloaded,
+        })
+      },
+      complete: () => this.setData({ completed: true }),
+    })
+  },
+  onUnload() {
+    this.setData({ unloaded: true })
+  },
+})
+`],
+      ['pages/home/index.wxml', '<view>home</view>'],
+      ['pages/profile/index.js', 'Page({ data: { title: "Profile" } })'],
+      ['pages/profile/index.wxml', '<view>profile</view>'],
+    ])
+    const session = createBrowserHeadlessSession({ files })
+    const homePage = session.reLaunch('/pages/home/index')
+
+    homePage.openProfile()
+
+    expect(homePage.data).toMatchObject({
+      callbackRoute: 'pages/profile/index',
+      completed: true,
+      unloaded: true,
+      unloadedBeforeSuccess: false,
+    })
+    expect(session.getCurrentPages().map(page => page.route)).toEqual(['pages/profile/index'])
+  })
+
   it('does not leak browser globals and allows explicit runtime overrides', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

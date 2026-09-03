@@ -2,6 +2,7 @@ import type {
   HeadlessPluginDescriptor,
   HeadlessTestingRenderedNodeSnapshot,
   HeadlessTestingSessionHandle,
+  HeadlessTestingToolInfo,
   HeadlessWxDeviceInfoResult,
   HeadlessWxDownloadFileMockDefinition,
   HeadlessWxGetLocationResult,
@@ -805,6 +806,8 @@ launchResult.then((session) => {
   expectType<HeadlessTestingSessionHandle>(session.on('console', () => {}))
   expectType<HeadlessTestingSessionHandle>(session.removeListener('console', () => {}))
   expectType<HeadlessTestingSessionHandle>(session.off('console', () => {}))
+  expectType<Promise<HeadlessTestingToolInfo>>(session.toolInfo())
+  session.toolInfo().then(info => expectType<'mpcore-simulator'>(info.version))
   session.reLaunch('/pages/index/index').then((page) => {
     expectType<string>(page.path)
     expectType<Record<string, string>>(page.query)

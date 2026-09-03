@@ -1574,7 +1574,9 @@ describe.sequential('simulator browser e2e', () => {
     )
 
     const pageData = parseJsonString<Record<string, any>>(state.pageData)
+    const storageData = parseJsonString<Record<string, any>>(state.storageData)
     expect(state.pageStack).toEqual(['pages/settings/index'])
+    expect(storageData['route-maze-switch-tab-success-route']).toBe('pages/settings/index')
     expect(pageData.title).toBe('Settings Tab')
     expect(pageData.logs).toContain('settings-tab:onShow')
     expect(pageData.logs).not.toContain(expect.stringContaining('settings-tab:onTabItemTap:'))

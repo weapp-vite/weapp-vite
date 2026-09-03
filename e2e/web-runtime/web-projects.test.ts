@@ -1,9 +1,10 @@
 /* eslint-disable e18e/ban-dependencies -- Web 项目矩阵需要 execa 管理逐项目 dev server。 */
 import type { Subprocess } from 'execa'
+import type { Server } from 'node:http'
 import type { Browser, Page } from 'playwright'
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { get } from 'node:http'
+import { createServer, get } from 'node:http'
 import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as sleep } from 'node:timers/promises'
@@ -12,12 +13,11 @@ import { execa } from 'execa'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { discoverWebProjects } from '../../scripts/web-project-matrix'
+import { createWebDevServerEnv, resolveWebDevServerUrl } from '../utils/webDevServer'
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url))
 const CLI_PATH = fileURLToPath(new URL('../../packages/weapp-vite/dist/cli.mjs', import.meta.url))
 const WEB_HOST = '127.0.0.1'
-const WEB_PORT = Number(process.env.WEAPP_VITE_WEB_PROJECT_E2E_PORT ?? 5173)
-const WEB_URL = `http://${WEB_HOST}:${WEB_PORT}`
 const STARTUP_TIMEOUT = Number(process.env.WEAPP_VITE_WEB_PROJECT_STARTUP_TIMEOUT ?? 90_000)
 const RUNTIME_TIMEOUT = Number(process.env.WEAPP_VITE_WEB_PROJECT_RUNTIME_TIMEOUT ?? 45_000)
 const RUNTIME_STATE_ATTEMPTS = 3
@@ -70,29 +70,63 @@ async function stopServer(server: Subprocess | undefined, gracePeriod = 250) {
   }
 }
 
+async function occupyDefaultWebPort() {
+  const blocker = createServer((_request, response) => {
+    response.writeHead(204)
+    response.end()
+  })
+  try {
+    await new Promise<void>((resolve, reject) => {
+      blocker.once('error', reject)
+      blocker.listen(5173, WEB_HOST, resolve)
+    })
+    return blocker
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EADDRINUSE') {
+      return undefined
+    }
+    throw error
+  }
+}
+
+async function closeHttpServer(server: Server | undefined) {
+  if (!server) {
+    return
+  }
+  await new Promise<void>((resolve, reject) => {
+    server.close(error => error ? reject(error) : resolve())
+  })
+}
+
 async function waitForServer(server: Subprocess, logs: { value: string }) {
   const startedAt = Date.now()
   while (Date.now() - startedAt < STARTUP_TIMEOUT) {
     if (server.nodeChildProcess.exitCode !== null) {
       throw new Error(`Web dev server exited with ${server.nodeChildProcess.exitCode}.\n${logs.value}`)
     }
+    const webUrl = resolveWebDevServerUrl(logs.value)
+    if (!webUrl) {
+      await sleep(200)
+      continue
+    }
     try {
       const statusCode = await new Promise<number | undefined>((resolve, reject) => {
-        const request = get(WEB_URL, (response) => {
+        const request = get(webUrl, (response) => {
           response.resume()
           response.once('end', () => resolve(response.statusCode))
         })
         request.once('error', reject)
-        request.setTimeout(5_000, () => request.destroy(new Error(`Timed out requesting ${WEB_URL}.`)))
+        request.setTimeout(5_000, () => request.destroy(new Error(`Timed out requesting ${webUrl}.`)))
       })
       if (statusCode && statusCode >= 200 && statusCode < 400) {
-        return
+        return webUrl
       }
     }
     catch {}
     await sleep(200)
   }
-  throw new Error(`Timed out waiting for ${WEB_URL}.\n${logs.value}`)
+  throw new Error(`Timed out waiting for the resolved Web dev server URL.\n${logs.value}`)
 }
 
 async function readRuntimeState(page: Page) {
@@ -181,6 +215,28 @@ describeWeb.sequential('workspace Web project matrix', async () => {
     await browser?.close()
   })
 
+  it('uses the resolved URL when Vite falls back from occupied port 5173', async () => {
+    const blocker = await occupyDefaultWebPort()
+    const projectRoot = path.join(ROOT, 'e2e-apps/base')
+    const command = execa(process.execPath, [CLI_PATH, projectRoot, '--platform', 'web', '--host', WEB_HOST], {
+      cwd: ROOT,
+      env: createWebDevServerEnv(process.env),
+      extendEnv: false,
+    })
+    const logs = createServerLogger(command)
+    server = command
+
+    try {
+      const webUrl = await waitForServer(command, logs)
+      expect(new URL(webUrl).port).not.toBe('5173')
+    }
+    finally {
+      await stopServer(command)
+      server = undefined
+      await closeHttpServer(blocker)
+    }
+  })
+
   for (const project of projects) {
     it(project.relativeRoot, async () => {
       const mutableSnapshots = await Promise.all(
@@ -191,23 +247,21 @@ describeWeb.sequential('workspace Web project matrix', async () => {
       )
       const command = execa(process.execPath, [CLI_PATH, project.root, '--platform', 'web', '--host', WEB_HOST], {
         cwd: ROOT,
-        env: {
-          ...process.env,
-          BROWSER: 'none',
-        },
+        env: createWebDevServerEnv(process.env),
+        extendEnv: false,
       })
+      const logs = createServerLogger(command)
       const completion = command.then(
         result => result,
         error => error,
       )
       server = command
-      const logs = createServerLogger(command)
 
       try {
         if (project.expectation === 'startup-error') {
           const startup = await Promise.race([
             completion.then(result => ({ kind: 'exit' as const, result })),
-            waitForServer(command, logs).then(() => ({ kind: 'server' as const })),
+            waitForServer(command, logs).then(webUrl => ({ kind: 'server' as const, webUrl })),
           ])
           if (startup.kind === 'exit') {
             expect(`${String(startup.result)}\n${logs.value}`).toMatch(/withDefaults|defineProps|编译|compile/i)
@@ -219,7 +273,7 @@ describeWeb.sequential('workspace Web project matrix', async () => {
           const pageErrors: string[] = []
           page.on('pageerror', error => pageErrors.push(error.stack ?? error.message))
           try {
-            await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
+            await page.goto(startup.webUrl, { waitUntil: 'domcontentloaded' })
             await expect.poll(
               () => `${logs.value}\n${pageErrors.join('\n')}`,
               { timeout: 15_000 },
@@ -231,13 +285,13 @@ describeWeb.sequential('workspace Web project matrix', async () => {
           return
         }
 
-        await waitForServer(command, logs)
+        const webUrl = await waitForServer(command, logs)
         const context = await browser!.newContext()
         const page = await context.newPage()
         const pageErrors: string[] = []
         page.on('pageerror', error => pageErrors.push(error.stack ?? error.message))
         try {
-          await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
+          await page.goto(webUrl, { waitUntil: 'domcontentloaded' })
           let runtime: Awaited<ReturnType<typeof readRuntimeState>>
           try {
             runtime = await waitForExpectedRuntimeState(page, project.expectation)

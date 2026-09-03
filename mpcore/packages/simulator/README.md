@@ -11,6 +11,7 @@
 - 支持本地 `pluginRoot` 的 `requirePlugin`、`plugin://` 公开组件与插件页面导航
 - 提供测试节点句柄上的 `tap()`、`trigger()`、`input()`、`change()`、`blur()` 交互辅助方法
 - 提供测试页面/会话句柄上的 `waitForSelector()`、`waitForText()`、`waitForTextGone()`、`waitForData()`、`waitForCurrentPage()` 等轮询等待方法
+- 测试会话句柄提供与 `miniprogram-automator` 对齐的 `toolInfo()`，headless provider 返回稳定的 simulator 标识
 - 通过共享 `RuntimeKernel` 管理 artifact、独立执行 realm、timer、diagnostics 与平台适配边界
 - `close()` 会清理页面栈、组件 scope、observer、timer、事件和模块缓存，并使旧页面/节点 handle 失效
 
