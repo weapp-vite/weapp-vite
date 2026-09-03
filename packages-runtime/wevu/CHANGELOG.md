@@ -1,5 +1,12 @@
 # wevu
 
+## 7.0.2
+
+### Patch Changes
+
+- Updated dependencies:
+  - @wevu/compiler@7.0.2
+
 ## 7.0.1
 
 ### Patch Changes

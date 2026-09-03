@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 7.0.2
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/ast@7.0.2
+  - @weapp-vite/web@1.4.19
+  - rolldown-require@2.0.28
+  - wevu@7.0.2
+
 ## 7.0.1
 
 ### Patch Changes

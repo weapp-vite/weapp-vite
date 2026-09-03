@@ -176,6 +176,10 @@
   dir: packages-runtime/web
   intents:
     - catalog-auto-generated
+"@weapp-vite/web@1.4.19":
+  dir: packages-runtime/web
+  intents:
+    - lazy-web-runtime-module-resolution
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -261,6 +265,11 @@ create-weapp-vite@2.8.1:
     - steady-headless-runtime
     - steady-stateful-watch-polling
     - swift-workspace-dependencies
+create-weapp-vite@2.8.10:
+  dir: packages/create-weapp-vite
+  intents:
+    - agents-guidelines
+    - clean-multi-platform-template-deps
 create-weapp-vite@2.8.2:
   dir: packages/create-weapp-vite
   intents:
@@ -336,6 +345,10 @@ rolldown-require@2.0.27:
   dir: packages/rolldown-require
   intents:
     - calm-docs-domain
+rolldown-require@2.0.28:
+  dir: packages/rolldown-require
+  intents:
+    - catalog-auto-generated
 weapp-ide-cli@6.0.8:
   dir: packages/weapp-ide-cli
   intents:

@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.8.10
+
+### Patch Changes
+
+- 将项目级 AGENTS 指引改为由结构化规则生成，并保留用户维护的 AGENTS.local.md；新增 agents:check 与 agents:generate 校验和刷新命令。
+
+- 移除多平台模板中未被用户源码直接使用的 `lit` 与 `vite` 依赖，避免生成项目安装不必要的直接依赖。
+
 ## 2.8.9
 
 ### Patch Changes
