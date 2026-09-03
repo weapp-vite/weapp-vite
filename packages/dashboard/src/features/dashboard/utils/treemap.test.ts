@@ -25,6 +25,7 @@ function convertHslColor(value: string) {
             ? [secondary, 0, chroma]
             : [chroma, 0, secondary]
   return [red + offset, green + offset, blue + offset]
+    .map(channel => Math.round(channel * 255) / 255)
 }
 
 function convertHexColor(value: string) {
@@ -105,6 +106,7 @@ describe('treemap presentation', () => {
     const otherPackage = createTreemapNodeStyle(0.2, 'centerPages', 'leaf')
     const hiddenLabel = createTreemapNodeStyle(0.2, '__main__', 'leaf', false)
     const hiddenUpperLabel = createTreemapNodeStyle(0.2, '__main__', 'file', true, false)
+    const quantizedContrastEdge = createTreemapNodeStyle(0.2, 'pkg-69', 'leaf')
 
     expect(new Set(colorById.values()).size).toBe(packageIds.length)
     for (const packageId of packageIds) {
@@ -117,6 +119,10 @@ describe('treemap presentation', () => {
         expect(style.upperLabel.backgroundColor).toBe(style.itemStyle.color)
       }
     }
+    expect(getContrastRatio(
+      quantizedContrastEdge.itemStyle.color,
+      quantizedContrastEdge.label.color,
+    )).toBeGreaterThanOrEqual(4.5)
     expect(healthy.itemStyle.color).toBe(risky.itemStyle.color)
     expect(healthy.itemStyle.borderColor).not.toBe(risky.itemStyle.borderColor)
     expect(healthy.itemStyle.color).not.toBe(otherPackage.itemStyle.color)

@@ -53,6 +53,7 @@ function convertHslToRgb(hue: number, saturation: number, lightness: number) {
             ? [secondary, 0, chroma]
             : [chroma, 0, secondary]
   return [red + offset, green + offset, blue + offset]
+    .map(channel => Math.round(channel * 255) / 255)
 }
 
 function toLinearChannel(channel: number) {
