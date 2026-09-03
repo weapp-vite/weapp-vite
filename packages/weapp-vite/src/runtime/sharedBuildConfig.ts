@@ -1,4 +1,3 @@
-import type { CodeSplittingGroup } from 'rolldown'
 import type { InlineConfig } from 'vite'
 import type { SharedChunkMode, SharedChunkOverride } from '../types'
 import type { AdvancedChunkNameResolver } from './advancedChunks'
@@ -23,7 +22,6 @@ const REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID = /(?:^|[/\\])(?:@wevu[/\\]web-apis|w
 const REG_WEAPP_VITE_RUNTIME_VENDOR_ID = /(?:^|[/\\])weapp-vite[/\\](?:dist[/\\]runtime\.mjs|src[/\\]plugins[/\\]vue[/\\]runtime\.ts)(?:$|[?#])/
 const REG_HASHED_DIST_CHUNK_ID = /(?:^|[/\\])dist[/\\](?:dev[/\\])?([^/\\-]+)-([\w-]{6,})\.(?:m?js|cjs)(?:$|[?#])/
 const STABLE_HASHED_DIST_CHUNK_PRIORITY = ['src']
-const WEVU_STABLE_VENDOR_GROUP_PRIORITY = 90
 const STABLE_HASHED_DIST_CHUNK_PRIORITY_BY_PACKAGE: Record<string, string[]> = {
   wevu: [
     'index',
@@ -253,17 +251,6 @@ function isWeappViteRuntimeModuleId(id: string) {
   return REG_WEAPP_VITE_RUNTIME_VENDOR_ID.test(cleanedAbsoluteId)
 }
 
-function createWevuStableVendorGroup(): CodeSplittingGroup {
-  return {
-    test: id => Boolean(resolveWevuStableVendorFileName(id)),
-    name: id => resolveWevuStableVendorFileName(id)!.replace(/\.js$/, ''),
-    priority: WEVU_STABLE_VENDOR_GROUP_PRIORITY,
-    minShareCount: 1,
-    minSize: 0,
-    minModuleSize: 0,
-  }
-}
-
 function resolveStableHashedDistChunkFileName(
   chunk: { moduleIds?: string[] | readonly string[], facadeModuleId?: string | null },
 ) {
@@ -274,11 +261,12 @@ function resolveStableHashedDistChunkFileName(
   const matchedChunks: Array<{ baseName: string, fileName: string }> = []
   let facadeMatchedChunk: { baseName: string, fileName: string } | undefined
 
-  for (const id of candidateIds) {
-    const fileName = resolveWevuStableVendorFileName(id)
-    if (fileName) {
-      return fileName
-    }
+  const wevuVendorFileNames = candidateIds.map(id => resolveWevuStableVendorFileName(id))
+  const firstWevuVendorFileName = wevuVendorFileNames.find((fileName): fileName is string => Boolean(fileName))
+  if (firstWevuVendorFileName) {
+    return wevuVendorFileNames.some(fileName => !fileName)
+      ? undefined
+      : firstWevuVendorFileName
   }
 
   for (const id of candidateIds) {
@@ -431,7 +419,6 @@ export function createSharedBuildOutput(
     codeSplitting: {
       groups: [
         ...(preserveModulesGroup ? [preserveModulesGroup] : []),
-        createWevuStableVendorGroup(),
         ...configService.isDev
           ? [
               {

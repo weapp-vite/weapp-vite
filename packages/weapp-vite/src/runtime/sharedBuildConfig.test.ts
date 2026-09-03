@@ -174,7 +174,7 @@ describe('sharedBuildConfig', () => {
       preserveModules: ['utils/**'],
     }), () => [])
 
-    expect(output.codeSplitting.groups).toHaveLength(3)
+    expect(output.codeSplitting.groups).toHaveLength(2)
     expect(output.codeSplitting.groups[0]).toMatchObject({
       priority: 100,
       minShareCount: 1,
@@ -182,25 +182,18 @@ describe('sharedBuildConfig', () => {
     })
   })
 
-  it('isolates semantic wevu modules before generic production vendors', () => {
+  it('does not assign a wevu owner name to mixed vendor chunks', () => {
+    const chunk = {
+      name: 'common',
+      moduleIds: [
+        '/project/node_modules/wevu/dist/dev/internal-runtime.mjs',
+        '/project/node_modules/.pnpm/moment@2.30.1/node_modules/moment/dist/moment.js',
+      ],
+    }
     const output = createSharedBuildOutput(createConfigService(), () => [])
-    const group = output.codeSplitting.groups[0]!
 
-    expect(output.codeSplitting.groups).toHaveLength(2)
-    expect(group).toMatchObject({
-      priority: 90,
-      minShareCount: 1,
-      minSize: 0,
-      minModuleSize: 0,
-    })
-    expect(group.test?.('/project/node_modules/wevu/dist/dev/internal-runtime.mjs')).toBe(true)
-    expect(group.test?.('/project/node_modules/.pnpm/moment@2.30.1/node_modules/moment/dist/moment.js')).toBe(false)
-    expect(group.name(
-      '/project/node_modules/wevu/dist/dev/internal-runtime.mjs',
-    )).toBe('weapp-vendors/wevu-runtime')
-    expect(group.name(
-      '/project/node_modules/wevu/dist/reactivity/ref.mjs',
-    )).toBe('weapp-vendors/wevu-reactivity')
+    expect(resolveStableHashedDistChunkFileName(chunk)).toBeUndefined()
+    expect(output.chunkFileNames(chunk)).toBe('[name].js')
   })
 
   it('keeps web shared chunk names without changing miniprogram vendor naming', () => {
@@ -214,6 +207,8 @@ describe('sharedBuildConfig', () => {
       ],
     }
 
+    expect(miniprogramOutput.codeSplitting.groups).toHaveLength(1)
+    expect(webOutput.codeSplitting.groups).toHaveLength(1)
     expect(miniprogramOutput.chunkFileNames(chunk)).toBe('weapp-vendors/entities-decode.js')
     expect(webOutput.chunkFileNames(chunk)).toBe('[name].js')
   })
@@ -347,7 +342,7 @@ describe('sharedBuildConfig', () => {
     })).toBe('weapp-vendors/weapp-vite-runtime.js')
 
     const output = createSharedBuildOutput(createTestConfigService({}, { isDev: true }), () => [])
-    expect(output.codeSplitting.groups[1]!.name(
+    expect(output.codeSplitting.groups[0]!.name(
       '/project/node_modules/weapp-vite/dist/runtime.mjs',
     )).toBe('weapp-vendors/weapp-vite-runtime')
     expect(output.chunkFileNames({
