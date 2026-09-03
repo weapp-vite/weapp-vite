@@ -182,18 +182,21 @@ describe('sharedBuildConfig', () => {
     })
   })
 
-  it('does not assign a wevu owner name to mixed vendor chunks', () => {
-    const chunk = {
+  it('does not assign a wevu owner name to mixed semantic or hashed vendor chunks', () => {
+    const hashedRuntime = '/project/node_modules/wevu/dist/runtime-BD3I133J.mjs'
+    const preservedRuntime = '/project/node_modules/wevu/dist/dev/internal-runtime.mjs'
+    const dependency = '/project/node_modules/.pnpm/dayjs@1.11.23/node_modules/dayjs/dayjs.min.js'
+    const mixedChunk = {
       name: 'common',
-      moduleIds: [
-        '/project/node_modules/wevu/dist/dev/internal-runtime.mjs',
-        '/project/node_modules/.pnpm/moment@2.30.1/node_modules/moment/dist/moment.js',
-      ],
+      moduleIds: [hashedRuntime, dependency],
     }
     const output = createSharedBuildOutput(createConfigService(), () => [])
 
-    expect(resolveStableHashedDistChunkFileName(chunk)).toBeUndefined()
-    expect(output.chunkFileNames(chunk)).toBe('[name].js')
+    expect(resolveStableHashedDistChunkFileName(mixedChunk)).toBeUndefined()
+    expect(output.chunkFileNames(mixedChunk)).toBe('[name].js')
+    expect(resolveStableHashedDistChunkFileName({
+      moduleIds: [preservedRuntime, hashedRuntime],
+    })).toBe('weapp-vendors/wevu-runtime.js')
   })
 
   it('keeps web shared chunk names without changing miniprogram vendor naming', () => {

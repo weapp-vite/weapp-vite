@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  isWevuOwnedModuleId,
   isWevuStableVendorFileName,
   resolveWevuPreservedModulePath,
   resolveWevuRuntimeModuleFamily,
@@ -40,6 +41,24 @@ describe('wevu module identity', () => {
     expect(resolveWevuRuntimeModuleFamily(
       '/project/node_modules/wevu/dist/internal-template.mjs',
     )).toBe('template')
+  })
+
+  it('recognizes hashed wevu ownership without claiming adjacent packages', () => {
+    expect(isWevuOwnedModuleId(
+      '/project/node_modules/wevu/dist/runtime-BD3I133J.mjs',
+    )).toBe(true)
+    expect(isWevuOwnedModuleId(
+      '/project/node_modules/.pnpm/wevu@6.25.1/node_modules/wevu/dist/dev/watch-B46crqgs.mjs',
+    )).toBe(true)
+    expect(isWevuOwnedModuleId(
+      '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
+    )).toBe(true)
+    expect(isWevuOwnedModuleId(
+      '/project/node_modules/.pnpm/@wevu+web-apis@1.0.0/node_modules/@wevu/web-apis/dist/index.mjs',
+    )).toBe(false)
+    expect(isWevuOwnedModuleId(
+      '/project/node_modules/.pnpm/dayjs@1.11.23/node_modules/dayjs/dayjs.min.js',
+    )).toBe(false)
   })
 
   it('returns stable vendor names for every preserved module family', () => {

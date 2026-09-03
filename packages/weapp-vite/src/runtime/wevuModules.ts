@@ -65,6 +65,12 @@ function normalizeModuleId(id: string) {
   }).replaceAll('\\', '/')
 }
 
+export function isWevuOwnedModuleId(id: string) {
+  const normalized = normalizeModuleId(id)
+  return normalized.includes('/packages-runtime/wevu/')
+    || normalized.includes('/node_modules/wevu/')
+}
+
 export function resolveWevuPreservedModulePath(id: string) {
   const normalized = normalizeModuleId(id)
   const sourceMarker = '/packages-runtime/wevu/src/'
