@@ -42,6 +42,10 @@ Page({
   bounceSettings() {
     wx.switchTab({
       url: '/pages/settings/index',
+      success() {
+        const pages = getCurrentPages()
+        wx.setStorageSync('route-maze-switch-tab-success-route', pages[pages.length - 1]?.route)
+      },
     })
   },
 })

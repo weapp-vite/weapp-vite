@@ -16,6 +16,7 @@ import type {
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
+import { invokePreparedNavigationApi } from '../host/wx/navigation'
 import { RuntimeKernel } from '../kernel'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
@@ -346,7 +347,10 @@ export class BrowserHeadlessSession {
         showToast: option => this.wxState.showToast(option),
         startPullDownRefresh: () => this.startPullDownRefresh(),
         stopPullDownRefresh: () => this.stopPullDownRefresh(),
-        switchTab: option => this.switchTab(option.url),
+        switchTab: option => invokePreparedNavigationApi(
+          () => this.prepareSwitchTab(option.url),
+          option,
+        ),
         uploadFile: option => this.wxState.uploadFile(option),
         removeTabBarBadge: option => this.removeTabBarBadge(option.index),
         setTabBarBadge: option => this.setTabBarBadge(option.index, option.text),
@@ -1149,20 +1153,30 @@ export class BrowserHeadlessSession {
   }
 
   switchTab(url: string) {
+    const finalize = this.prepareSwitchTab(url)()
+    finalize()
+    return this.currentPageInstance
+  }
+
+  private prepareSwitchTab(url: string) {
     const target = this.resolveNavigationTarget(url)
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
     if (Object.keys(target.query).length > 0) {
       throw new Error(`wx.switchTab() url cannot contain query in browser simulator runtime: ${url}`)
     }
     if (!this.isTabBarRoute(target.routeRecord.route)) {
       throw new Error(`wx.switchTab() can only open a tabBar page in browser simulator runtime: ${url}`)
     }
+    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
 
+    return () => this.commitSwitchTab(target)
+  }
+
+  private commitSwitchTab(target: ResolvedNavigationTarget) {
     const current = this.currentPageInstance
     const cachedTarget = this.tabPages.get(target.routeRecord.route) ?? null
 
     if (current === cachedTarget && current) {
-      return current
+      return () => {}
     }
 
     if (current && current !== cachedTarget) {
@@ -1170,12 +1184,11 @@ export class BrowserHeadlessSession {
       this.runPageComponentLifetime(current.route, 'hide')
     }
 
-    for (const page of [...this.pages].reverse()) {
-      if (this.isTabBarRoute(stripLeadingSlash(page.route))) {
-        continue
-      }
+    const pagesToUnload = [...this.pages]
+      .reverse()
+      .filter(page => !this.isTabBarRoute(stripLeadingSlash(page.route)))
+    for (const page of pagesToUnload) {
       this.removePageInstance(page)
-      this.unloadPage(page)
     }
 
     let nextPage = cachedTarget
@@ -1197,7 +1210,11 @@ export class BrowserHeadlessSession {
       this.runPageComponentLifetime(nextPage.route, 'show')
     }
 
-    return nextPage
+    return () => {
+      for (const page of pagesToUnload) {
+        this.unloadPage(page)
+      }
+    }
   }
 
   pageScrollTo(option: {
