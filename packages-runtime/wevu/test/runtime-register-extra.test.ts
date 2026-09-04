@@ -1,5 +1,6 @@
 import type { InternalRuntimeState, RuntimeApp } from '@/runtime/types'
 import {
+  WEVU_EFFECT_SCOPE_KEY,
   WEVU_EXPOSED_KEY,
   WEVU_HOOKS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
@@ -288,6 +289,73 @@ describe('mountRuntimeInstance and teardown', () => {
     expect(() => teardownRuntimeInstance(target)).toThrow(failure)
     expect(cleanupAfterFailure).toHaveBeenCalledTimes(1)
     expect(unmount).toHaveBeenCalledTimes(1)
+    expect(target[WEVU_EFFECT_SCOPE_KEY]).toBeUndefined()
+    expect(target.__wevu).toBeUndefined()
+    expect(target[WEVU_PUBLIC_RUNTIME_KEY]).toBeUndefined()
+  })
+
+  it('preserves a setup failure when setup scope cleanup also fails', () => {
+    const app = createApp({})
+    const target: InternalRuntimeState = {
+      route: 'pages/setup-error/index',
+      setData: vi.fn(),
+    }
+    const setupFailure = new Error('setup failed')
+
+    expect(() => mountRuntimeInstance(target, app, undefined, () => {
+      onScopeDispose(() => {
+        throw new Error('setup scope cleanup failed')
+      })
+      throw setupFailure
+    })).toThrow(setupFailure)
+
+    expect(target[WEVU_EFFECT_SCOPE_KEY]).toBeUndefined()
+  })
+
+  it('continues teardown after template ref cleanup fails', () => {
+    const { app, runtime } = createRuntimeAppStub()
+    const target: InternalRuntimeState = {
+      route: 'pages/template-ref-error/index',
+      setData: vi.fn(),
+    }
+    const scopeCleanup = vi.fn()
+    const watchStop = Object.assign(vi.fn(), {
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+    })
+    const laterTemplateRef = vi.fn()
+    const templateRefFailure = new Error('template ref cleanup failed')
+
+    mountRuntimeInstance(target, app, undefined, () => {
+      onScopeDispose(scopeCleanup)
+      return {}
+    })
+    target[WEVU_TEMPLATE_REFS_KEY] = [
+      {
+        selector: '.failing',
+        inFor: false,
+        get: () => () => {
+          throw templateRefFailure
+        },
+      },
+      {
+        selector: '.later',
+        inFor: false,
+        get: () => laterTemplateRef,
+      },
+    ]
+    target[WEVU_HOOKS_KEY] = { onUnload: [] }
+    target[WEVU_WATCH_STOPS_KEY] = [watchStop]
+
+    expect(() => teardownRuntimeInstance(target)).toThrow(templateRefFailure)
+    expect(laterTemplateRef).toHaveBeenCalledWith(null)
+    expect(watchStop).toHaveBeenCalledTimes(1)
+    expect(scopeCleanup).toHaveBeenCalledTimes(1)
+    expect(runtime.unmount).toHaveBeenCalledTimes(1)
+    expect(target[WEVU_HOOKS_KEY]).toBeUndefined()
+    expect(target[WEVU_WATCH_STOPS_KEY]).toBeUndefined()
+    expect(target[WEVU_EFFECT_SCOPE_KEY]).toBeUndefined()
     expect(target.__wevu).toBeUndefined()
     expect(target[WEVU_PUBLIC_RUNTIME_KEY]).toBeUndefined()
   })

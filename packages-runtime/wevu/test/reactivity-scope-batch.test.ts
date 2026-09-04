@@ -1,5 +1,5 @@
 import type { EffectScope } from '@/reactivity'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { batch, effect, effectScope, onScopeDispose, reactive, watchEffect } from '@/reactivity'
 
 describe('reactivity (batch + effectScope)', () => {
@@ -106,5 +106,36 @@ describe('reactivity (batch + effectScope)', () => {
     expect(parent.active).toBe(false)
     expect(firstChild.active).toBe(false)
     expect(secondChild.active).toBe(false)
+
+    expect(() => parent.stop()).not.toThrow()
+    expect(calls).toHaveLength(6)
+  })
+
+  it('deactivates child scopes created while a parent teardown is running', () => {
+    const parent = effectScope()
+    let cleanupScope!: EffectScope
+    let nestedCleanupScope!: EffectScope
+    const escapedRun = vi.fn()
+
+    parent.run(() => {
+      onScopeDispose(() => {
+        cleanupScope = effectScope()
+        cleanupScope.run(escapedRun)
+      })
+
+      const child = effectScope()
+      child.run(() => {
+        onScopeDispose(() => {
+          nestedCleanupScope = effectScope()
+          nestedCleanupScope.run(escapedRun)
+        })
+      })
+    })
+
+    parent.stop()
+
+    expect(cleanupScope.active).toBe(false)
+    expect(nestedCleanupScope.active).toBe(false)
+    expect(escapedRun).not.toHaveBeenCalled()
   })
 })

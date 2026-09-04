@@ -248,8 +248,13 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     }
   }
   catch (error) {
-    instanceScope.stop()
     target[WEVU_EFFECT_SCOPE_KEY] = undefined
+    try {
+      instanceScope.stop()
+    }
+    catch {
+      // setup 异常优先，scope 清理异常不能覆盖原始失败。
+    }
     throw error
   }
   finally {

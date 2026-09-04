@@ -30,6 +30,7 @@ import { isDeepEqualValue } from '../app/setData/snapshot'
 import { callHookList } from '../hooks'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
 import { allocateOwnerId, attachOwnerSnapshot, mergeOwnerSnapshotProps, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
+import { runTeardownSteps } from '../teardown'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
 import { attachRuntimeProvideParentContext } from './runtimeInstance/provideContext'
@@ -656,66 +657,59 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
   const runtime = target.__wevu
   const ownerId = (target as any)[WEVU_RUNTIME_OWNER_ID_KEY]
     ?? (target as any)[WEVU_SLOT_OWNER_ID_KEY]
-  if (ownerId) {
-    removeOwner(ownerId)
-  }
-  clearTemplateRefs(target)
-  // 触发卸载钩子（仅在 teardown 首次执行时触发）
-  if (!options?.skipHooks && runtime && target[WEVU_HOOKS_KEY]) {
-    callHookList(target, 'onUnload', [])
-  }
-  // 清理注册的生命周期钩子
-  if (target[WEVU_HOOKS_KEY]) {
-    target[WEVU_HOOKS_KEY] = undefined
-  }
   const stops = target[WEVU_WATCH_STOPS_KEY]
-  if (Array.isArray(stops)) {
-    for (const stop of stops) {
-      try {
-        stop()
-      }
-      catch {
-        // 避免 teardown 中断：单个 stop 失败不阻塞其他清理
-      }
-    }
-  }
-  target[WEVU_WATCH_STOPS_KEY] = undefined
-  let firstError: unknown
-  let hasError = false
-  const recordError = (error: unknown) => {
-    if (hasError) {
-      return
-    }
-    firstError = error
-    hasError = true
-  }
-
   const effectScope = target[WEVU_EFFECT_SCOPE_KEY]
-  if (effectScope) {
-    try {
-      effectScope.stop()
-    }
-    catch (error) {
-      recordError(error)
-    }
-  }
-  target[WEVU_EFFECT_SCOPE_KEY] = undefined
-  if (runtime) {
-    try {
-      runtime.unmount()
-    }
-    catch (error) {
-      recordError(error)
-    }
-  }
-  delete target.__wevu
-  if (WEVU_PUBLIC_RUNTIME_KEY in target) {
-    delete (target as any)[WEVU_PUBLIC_RUNTIME_KEY]
-  }
 
-  if (hasError) {
-    throw firstError
-  }
+  runTeardownSteps([
+    () => {
+      if (ownerId) {
+        removeOwner(ownerId)
+      }
+    },
+    () => clearTemplateRefs(target),
+    () => {
+      // 触发卸载钩子（仅在 teardown 首次执行时触发）
+      if (!options?.skipHooks && runtime && target[WEVU_HOOKS_KEY]) {
+        callHookList(target, 'onUnload', [])
+      }
+    },
+    () => {
+      // 清理注册的生命周期钩子
+      if (target[WEVU_HOOKS_KEY]) {
+        target[WEVU_HOOKS_KEY] = undefined
+      }
+    },
+    () => {
+      if (Array.isArray(stops)) {
+        for (const stop of stops) {
+          try {
+            stop()
+          }
+          catch {
+            // 避免 teardown 中断：单个 stop 失败不阻塞其他清理
+          }
+        }
+      }
+    },
+    () => {
+      target[WEVU_WATCH_STOPS_KEY] = undefined
+    },
+    () => {
+      effectScope?.stop()
+    },
+    () => {
+      target[WEVU_EFFECT_SCOPE_KEY] = undefined
+    },
+    () => runtime?.unmount(),
+    () => {
+      delete target.__wevu
+    },
+    () => {
+      if (WEVU_PUBLIC_RUNTIME_KEY in target) {
+        delete (target as any)[WEVU_PUBLIC_RUNTIME_KEY]
+      }
+    },
+  ])
 }
 
 /**

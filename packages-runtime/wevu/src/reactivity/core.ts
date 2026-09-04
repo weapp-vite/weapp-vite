@@ -92,6 +92,10 @@ class EffectScopeImpl implements EffectScope {
 
   constructor(private detached = false) {
     if (!detached && activeEffectScope) {
+      if (!activeEffectScope.active) {
+        this.active = false
+        return
+      }
       this.parent = activeEffectScope
       ;(activeEffectScope.scopes ||= []).push(this)
     }
@@ -117,6 +121,9 @@ class EffectScopeImpl implements EffectScope {
       return
     }
     this.active = false
+    const prev = activeEffectScope
+    // eslint-disable-next-line ts/no-this-alias -- teardown 期间需要把新建 scope 绑定到当前停止中的 scope
+    activeEffectScope = this
 
     let firstError: unknown
     let hasError = false
@@ -128,47 +135,51 @@ class EffectScopeImpl implements EffectScope {
       hasError = true
     }
 
-    const effects = this.effects.splice(0)
-    for (const effect of effects) {
-      try {
-        stop(effect)
-      }
-      catch (error) {
-        recordError(error)
-      }
-    }
-
-    const cleanups = this.cleanups.splice(0)
-    for (const cleanup of cleanups) {
-      try {
-        cleanup()
-      }
-      catch (error) {
-        recordError(error)
-      }
-    }
-
-    const scopes = this.scopes
-    this.scopes = undefined
-    if (scopes) {
-      for (const scope of scopes) {
+    try {
+      const effects = this.effects.splice(0)
+      for (const effect of effects) {
         try {
-          scope.stop()
+          stop(effect)
         }
         catch (error) {
           recordError(error)
         }
       }
-      scopes.length = 0
-    }
 
-    if (this.parent?.scopes) {
-      const index = this.parent.scopes.indexOf(this)
-      if (index >= 0) {
-        this.parent.scopes.splice(index, 1)
+      const cleanups = this.cleanups.splice(0)
+      for (const cleanup of cleanups) {
+        try {
+          cleanup()
+        }
+        catch (error) {
+          recordError(error)
+        }
+      }
+
+      const scopes = this.scopes
+      this.scopes = undefined
+      if (scopes) {
+        for (const scope of scopes) {
+          try {
+            scope.stop()
+          }
+          catch (error) {
+            recordError(error)
+          }
+        }
+        scopes.length = 0
       }
     }
-    this.parent = undefined
+    finally {
+      if (this.parent?.scopes) {
+        const index = this.parent.scopes.indexOf(this)
+        if (index >= 0) {
+          this.parent.scopes.splice(index, 1)
+        }
+      }
+      this.parent = undefined
+      activeEffectScope = prev
+    }
 
     if (hasError) {
       throw firstError
