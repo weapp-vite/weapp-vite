@@ -6,6 +6,9 @@ export default defineConfig({
   format: ['esm'],
   clean: true,
   dts: true,
+  deps: {
+    resolveDepSubpath: true,
+  },
   outExtensions() {
     return {
       js: '.js',

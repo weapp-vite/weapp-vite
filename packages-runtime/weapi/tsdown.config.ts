@@ -9,6 +9,9 @@ export default defineConfig({
   format: ['esm'],
   dts: true,
   clean: true,
+  deps: {
+    resolveDepSubpath: true,
+  },
   target: 'node18',
   failOnWarn: false,
 })

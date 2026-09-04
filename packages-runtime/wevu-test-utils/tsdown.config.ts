@@ -9,6 +9,9 @@ export default defineConfig({
   minify: true,
   hash: false,
   unbundle: true,
+  deps: {
+    resolveDepSubpath: true,
+  },
   sourcemap: false,
   failOnWarn: false,
 })

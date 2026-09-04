@@ -149,7 +149,7 @@ export function createLibEntryFileNameResolver(libConfig: ResolvedWeappLibConfig
   if (!libConfig.fileName) {
     return undefined
   }
-  return (chunkInfo: { name: string, facadeModuleId?: string }) => {
+  return (chunkInfo: { name: string, facadeModuleId?: string | null }) => {
     const base = resolveOutputBase({
       entryName: chunkInfo.name,
       entryPath: chunkInfo.facadeModuleId ?? '',

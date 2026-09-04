@@ -25,6 +25,9 @@ export default defineConfig({
   env: {
     NODE_ENV: 'production',
   },
+  deps: {
+    resolveDepSubpath: true,
+  },
   target: 'node20',
   failOnWarn: false,
 })

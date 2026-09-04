@@ -22,6 +22,7 @@ export default defineConfig([
     },
     deps: {
       alwaysBundle: ['@weapp-core/constants'],
+      resolveDepSubpath: true,
     },
     failOnWarn: false,
   },
@@ -41,6 +42,7 @@ export default defineConfig([
     },
     deps: {
       alwaysBundle: ['@weapp-core/constants'],
+      resolveDepSubpath: true,
     },
     failOnWarn: false,
   },
@@ -59,6 +61,7 @@ export default defineConfig([
     },
     deps: {
       alwaysBundle: ['@weapp-core/constants'],
+      resolveDepSubpath: true,
     },
     copy: [{
       from: './miniprogram.package.json',
