@@ -116,12 +116,22 @@ describe('autoImport metadata helpers', () => {
       expect(definition.endsWith('\n')).toBe(true)
     })
 
-    it('falls back to index signature when component list is empty', () => {
+    it('emits a strict empty component map', () => {
       const definition = createTypedComponentsDefinition([], () => ({
         types: new Map(),
         docs: new Map(),
       }))
-      expect(definition).toContain('[component: string]: Record<string, any>;')
+      expect(definition).toContain('export interface ComponentProps {')
+      expect(definition).not.toContain('[component: string]')
+      expect(definition).toContain('ComponentProps[Name] : object')
+    })
+
+    it('uses object for a known component without discovered props', () => {
+      const definition = createTypedComponentsDefinition(['EmptyCard'], () => ({
+        types: new Map(),
+        docs: new Map(),
+      }))
+      expect(definition).toContain('EmptyCard: object;')
     })
   })
 
@@ -176,13 +186,13 @@ describe('autoImport metadata helpers', () => {
 
       expect(definition).toContain('declare module \'vue\'')
       expect(definition).toContain('AutoCard: typeof import("./src/components/AutoCard/index.vue")[\'default\'];')
-      expect(definition).toContain('NativeCard: __WeappComponentImport<typeof import("./src/components/native-card/index"), WeappComponent<{')
-      expect(definition).toContain('\'native-card\': __WeappComponentImport<typeof import("./src/components/native-card/index"), WeappComponent<{')
-      expect(definition).toContain('const NativeCard: __WeappComponentImport<typeof import("./src/components/native-card/index"), WeappComponent<{')
+      expect(definition).toContain('NativeCard: __WevuComponentImport<typeof import("./src/components/native-card/index"), WevuComponent<{')
+      expect(definition).toContain('\'native-card\': __WevuComponentImport<typeof import("./src/components/native-card/index"), WevuComponent<{')
+      expect(definition).toContain('const NativeCard: WevuComponent<{')
       expect(definition).toContain('readonly \'custom-prop\'?: string;')
-      expect(definition).toContain('const AutoCard: typeof import("./src/components/AutoCard/index.vue")[\'default\']')
-      expect(definition).toContain('type __WeappComponentProps<TComponent> = TComponent extends new (...args: any[]) => { $props: infer Props } ? Props : Record<string, any>')
-      expect(definition).toContain('type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component extends new (...args: infer Args) => infer Instance ? new (...args: Args) => Omit<Instance, \'$props\'> & { $props: __WeappComponentProps<Component> & __WeappComponentProps<Fallback> } : Fallback : Fallback')
+      expect(definition).toContain('const AutoCard: WevuComponent<{')
+      expect(definition).toContain('type __WevuComponentProps<TComponent> = TComponent extends new (...args: never[]) => { $props: infer Props } ? Props : object')
+      expect(definition).toContain('type __WevuComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component extends new (...args: infer Args) => infer Instance ? new (...args: Args) => Omit<Instance, \'$props\'> & { $props: __WevuComponentProps<Component> & __WevuComponentProps<Fallback> } : Fallback : Fallback')
     })
 
     it('uses typed component references and custom module name', () => {
@@ -207,7 +217,7 @@ describe('autoImport metadata helpers', () => {
       expect(definition).toContain('import type { ComponentProp } from \'weapp-vite/typed-components\'')
       expect(definition).toContain('declare module \'wevu\'')
       expect(definition).toContain('AutoCard: typeof import("./src/components/AutoCard/index.vue")[\'default\'];')
-      expect(definition).toContain('ResolverCard: __WeappComponentImport<typeof import("mock-ui/miniprogram_dist/card/index"), WeappComponent<ComponentProp<"ResolverCard">>>;')
+      expect(definition).toContain('ResolverCard: __WevuComponentImport<typeof import("mock-ui/miniprogram_dist/card/index"), WevuComponent<ComponentProp<"ResolverCard">>>;')
       expect(definition).not.toContain('readonly score?: number | string;')
     })
   })

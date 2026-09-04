@@ -1,5 +1,6 @@
 import type { MiniProgramPlatform } from '../platform'
 import { createMiniProgramDirectiveAttrs, normalizeMiniProgramEventName } from '../platform'
+import { TT_JSX_EVENT_NAME_ALIASES } from './generatedEventAliases'
 
 const eventMap: Record<string, string> = {
   click: 'tap',
@@ -72,7 +73,7 @@ export const ttPlatform: MiniProgramPlatform = {
   keyThisValue: '*this',
   keyAttr: value => `${directives.keyAttr}="${value}"`,
 
-  mapEventName: eventName => eventMap[eventName.toLowerCase()] || eventName,
+  mapEventName: eventName => TT_JSX_EVENT_NAME_ALIASES[eventName] ?? eventMap[eventName.toLowerCase()] ?? eventName,
   eventBindingAttr: (eventName) => {
     const { prefix, name } = parseEventBinding(eventName)
     const normalizedName = normalizeMiniProgramEventName(name)

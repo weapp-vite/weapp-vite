@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "jsx": "preserve",
+    "jsxImportSource": "wevu",
+    "ignoreDeprecations": "6.0",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true,
+    "paths": {
+      "wevu/jsx-runtime": [
+        "../../../dist/jsx-runtime.d.mts"
+      ]
+    },
+    "strict": true,
+    "types": [],
+    "typeRoots": [
+      "./types"
+    ]
+  },
+  "files": [
+    "./index.tsx"
+  ]
+}

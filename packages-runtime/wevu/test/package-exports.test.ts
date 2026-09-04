@@ -1,3 +1,4 @@
+import type { Plugin } from 'rolldown'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { rolldown } from 'rolldown'
@@ -24,13 +25,20 @@ function readExports() {
 const publicEntries = [
   ['.', 'index'],
   ['./compiler', 'compiler'],
-  ['./jsx-runtime', 'jsx-runtime'],
   ['./store', 'store'],
   ['./api', 'api'],
   ['./fetch', 'fetch'],
   ['./web-apis', 'web-apis'],
   ['./router', 'router'],
   ['./vue-demi', 'vue-demi'],
+] as const
+
+const typeOnlyEntries = [
+  ['./jsx-runtime', 'jsx-runtime'],
+  ['./weapp/jsx-runtime', 'weapp/jsx-runtime'],
+  ['./alipay/jsx-runtime', 'alipay/jsx-runtime'],
+  ['./tt/jsx-runtime', 'tt/jsx-runtime'],
+  ['./miniprogram/jsx-runtime', 'miniprogram/jsx-runtime'],
 ] as const
 
 function entryExport(fileName: string) {
@@ -74,6 +82,17 @@ describe('package exports', () => {
 
     for (const [exportName, fileName] of publicEntries) {
       expect(exportsField[exportName]).toEqual(entryExport(fileName))
+    }
+  })
+
+  it('declares the five JSX entries as isolated type-only exports', () => {
+    const exportsField = readExports()
+
+    for (const [exportName, fileName] of typeOnlyEntries) {
+      expect(exportsField[exportName]).toEqual({
+        types: `./dist/${fileName}.d.mts`,
+      })
+      expect(exportsField[`./dev/${exportName.slice(2)}`]).toBeUndefined()
     }
   })
 
@@ -136,22 +155,31 @@ describe('package exports', () => {
   })
 
   it('tree-shakes named imports from the built reactivity entry', async () => {
+    const distRoot = path.resolve(import.meta.dirname, '../dist')
     const entryPath = path.resolve(import.meta.dirname, '../dist/internal-reactivity.mjs')
+    const builtEntryPlugin: Plugin = {
+      name: 'wevu-built-entry',
+      resolveId(id, importer) {
+        if (id === VIRTUAL_ENTRY_ID) {
+          return id
+        }
+        if (id === entryPath) {
+          return id
+        }
+        if (importer?.startsWith(distRoot) && id.startsWith('.')) {
+          return path.resolve(path.dirname(importer), id)
+        }
+      },
+      load(id) {
+        if (id === VIRTUAL_ENTRY_ID) {
+          return `import { ref } from ${JSON.stringify(entryPath)}; console.log(ref(1))`
+        }
+      },
+    }
     const bundle = await rolldown({
+      external: [/^@/],
       input: VIRTUAL_ENTRY_ID,
-      plugins: [{
-        name: 'wevu-built-entry',
-        resolveId(id) {
-          if (id === VIRTUAL_ENTRY_ID) {
-            return id
-          }
-        },
-        load(id) {
-          if (id === VIRTUAL_ENTRY_ID) {
-            return `import { ref } from ${JSON.stringify(entryPath)}; console.log(ref(1))`
-          }
-        },
-      }],
+      plugins: [builtEntryPlugin],
       treeshake: true,
     })
 

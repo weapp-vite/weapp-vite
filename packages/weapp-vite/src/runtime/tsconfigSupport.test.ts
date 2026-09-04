@@ -33,6 +33,8 @@ describe('tsconfig support', () => {
     expect(sharedEmpty.content).toBe('export {}\n')
     expect(app.extends).toBe('./tsconfig.shared.json')
     expect(app.compilerOptions.lib).toEqual(['ES2023', 'DOM'])
+    expect(app.compilerOptions.jsx).toBe('preserve')
+    expect(app.compilerOptions).not.toHaveProperty('jsxImportSource')
     expect(app.compilerOptions.types).toContain('miniprogram-api-typings')
     expect(app.compilerOptions.types).toContain('weapp-vite/client')
     expect(app.compilerOptions.types).not.toContain('vite/client')
@@ -78,29 +80,129 @@ describe('tsconfig support', () => {
     }))
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
 
-    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client']))
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'wevu/weapp/jsx-runtime']))
     expect(app.compilerOptions.types).not.toContain('vite/client')
     expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['./typed-components.d.ts'])
+    expect(app.compilerOptions.jsx).toBe('preserve')
+    expect(app.compilerOptions.jsxImportSource).toBe('wevu/weapp')
     expect(app.compilerOptions.paths['@weapp-vite/web']).toEqual(['../../../packages-runtime/web/src/index.ts'])
     expect(app.vueCompilerOptions.lib).toBe('wevu')
     expect(app.vueCompilerOptions.target).toBe(3.5)
     expect(app.include).toContain('../playground/**/*.ts')
   })
 
-  it('prefers platform-specific typings for tt projects when the package is installed', async () => {
+  it.each([
+    ['weapp', 'wevu/weapp'],
+    ['alipay', 'wevu/alipay'],
+    ['tt', 'wevu/tt'],
+    ['swan', 'wevu'],
+    ['jd', 'wevu'],
+    ['xhs', 'wevu'],
+  ] as const)('selects the managed JSX type source for %s', async (platform, jsxImportSource) => {
     const files = await createManagedTsconfigFiles(createCtx({
       packageJson: {
-        devDependencies: {
-          '@douyin-microapp/typings': '^1.3.1',
+        dependencies: {
+          wevu: '^1.0.0',
         },
       },
+      weappViteConfig: {
+        platform,
+      },
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+    const platformBridge = files.find(file => file.path.endsWith('tsconfig.shared.empty.d.ts'))!.content
+
+    expect(app.compilerOptions.jsx).toBe('preserve')
+    expect(app.compilerOptions.jsxImportSource).toBe(jsxImportSource)
+    expect(app.compilerOptions.types).toContain(`${jsxImportSource}/jsx-runtime`)
+    if (jsxImportSource === 'wevu') {
+      expect(platformBridge).toBe('export {}\n')
+    }
+    else {
+      expect(platformBridge).toContain(`from '${jsxImportSource}/jsx-runtime'`)
+      expect(platformBridge).toContain('interface IntrinsicElements extends WevuPlatformJSX.IntrinsicElements')
+      expect(platformBridge).toContain('declare module \'wevu/jsx-runtime\'')
+    }
+  })
+
+  it('keeps an explicit JSX type source override', async () => {
+    const files = await createManagedTsconfigFiles(createCtx({
+      packageJson: {
+        dependencies: {
+          wevu: '^1.0.0',
+        },
+      },
+      weappViteConfig: {
+        platform: 'alipay',
+        typescript: {
+          app: {
+            compilerOptions: {
+              jsxImportSource: 'wevu/miniprogram',
+            },
+          },
+        },
+      },
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+    const platformBridge = files.find(file => file.path.endsWith('tsconfig.shared.empty.d.ts'))!.content
+
+    expect(app.compilerOptions.jsx).toBe('preserve')
+    expect(app.compilerOptions.jsxImportSource).toBe('wevu/miniprogram')
+    expect(app.compilerOptions.types).toContain('wevu/miniprogram/jsx-runtime')
+    expect(platformBridge).toContain('wevu/miniprogram/jsx-runtime')
+  })
+
+  it('does not bridge an explicit non-Wevu JSX source into Wevu declarations', async () => {
+    const files = await createManagedTsconfigFiles(createCtx({
+      packageJson: {
+        dependencies: {
+          wevu: '^1.0.0',
+        },
+      },
+      weappViteConfig: {
+        platform: 'weapp',
+        typescript: {
+          app: {
+            compilerOptions: {
+              jsxImportSource: 'react',
+            },
+          },
+        },
+      },
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+    const platformBridge = files.find(file => file.path.endsWith('tsconfig.shared.empty.d.ts'))!.content
+
+    expect(app.compilerOptions.jsxImportSource).toBe('react')
+    expect(app.compilerOptions.types).not.toContain('react/jsx-runtime')
+    expect(platformBridge).toBe('export {}\n')
+  })
+
+  it('does not inject a JSX type source without a wevu dependency', async () => {
+    const files = await createManagedTsconfigFiles(createCtx({
       weappViteConfig: {
         platform: 'tt',
       },
     }))
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+    const platformBridge = files.find(file => file.path.endsWith('tsconfig.shared.empty.d.ts'))!.content
 
-    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['@douyin-microapp/typings', 'weapp-vite/client']))
+    expect(app.compilerOptions).not.toHaveProperty('jsxImportSource')
+    expect(platformBridge).toBe('export {}\n')
+  })
+
+  it.each([
+    ['alipay', '@mini-types/alipay'],
+    ['tt', '@douyin-microapp/typings'],
+  ] as const)('keeps missing %s host typings actionable', async (platform, appTypesPackage) => {
+    const files = await createManagedTsconfigFiles(createCtx({
+      weappViteConfig: {
+        platform,
+      },
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining([appTypesPackage, 'weapp-vite/client']))
     expect(app.compilerOptions.types).not.toContain('miniprogram-api-typings')
   })
 

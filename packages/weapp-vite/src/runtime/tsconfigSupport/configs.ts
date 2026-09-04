@@ -8,10 +8,12 @@ import {
   DEFAULT_NODE_INCLUDE,
   getManagedTypeScriptConfig,
   hasDependency,
+  isWevuJsxImportSource,
   mergePaths,
   normalizeSrcRoot,
   rebaseManagedPaths,
   resolveManagedDir,
+  resolveWevuJsxImportSource,
   unique,
 } from './shared'
 
@@ -24,21 +26,38 @@ function omitDeprecatedCompilerOptions<T extends Record<string, any> | undefined
   return rest as T
 }
 
+export function resolveAppWevuJsxImportSource(
+  ctx: MutableCompilerContext,
+  legacyConfig?: LegacyManagedTypeScriptConfig,
+) {
+  const configService = requireConfigService(ctx, '解析 app JSX 类型入口前必须初始化 configService。')
+  if (!hasDependency(configService.packageJson, 'wevu')) {
+    return undefined
+  }
+  const configuredJsxImportSource = getManagedTypeScriptConfig(ctx)?.app?.compilerOptions?.jsxImportSource
+  const legacyJsxImportSource = legacyConfig?.app?.compilerOptions?.jsxImportSource
+  return typeof configuredJsxImportSource === 'string' && configuredJsxImportSource.trim()
+    ? configuredJsxImportSource.trim()
+    : typeof legacyJsxImportSource === 'string' && legacyJsxImportSource.trim()
+      ? legacyJsxImportSource.trim()
+      : resolveWevuJsxImportSource(configService.weappViteConfig.platform)
+}
+
 function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const configService = requireConfigService(ctx, '生成 app tsconfig 前必须初始化 configService。')
-  const packageJson = configService.packageJson
   const config = configService.weappViteConfig
   const userTypes = getManagedTypeScriptConfig(ctx)?.app?.compilerOptions?.types
   const legacyTypes = legacyConfig?.app?.compilerOptions?.types
 
-  const platformAppTypesPackage = getPlatformAppTypesPackage(config.platform)
   const types = [
-    platformAppTypesPackage !== 'miniprogram-api-typings' && hasDependency(packageJson, platformAppTypesPackage)
-      ? platformAppTypesPackage
-      : 'miniprogram-api-typings',
+    getPlatformAppTypesPackage(config.platform),
     'weapp-vite/client',
   ]
 
+  const jsxImportSource = resolveAppWevuJsxImportSource(ctx, legacyConfig)
+  if (isWevuJsxImportSource(jsxImportSource)) {
+    types.push(`${jsxImportSource}/jsx-runtime`)
+  }
   if (Array.isArray(legacyTypes) && legacyTypes.length > 0) {
     types.push(...legacyTypes)
   }
@@ -101,6 +120,9 @@ export function createSharedTsconfig(ctx: MutableCompilerContext, legacyConfig?:
 
 export function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const userConfig = getManagedTypeScriptConfig(ctx)
+  const configService = requireConfigService(ctx, '生成 app tsconfig 前必须初始化 configService。')
+  const hasWevu = hasDependency(configService.packageJson, 'wevu')
+  const jsxImportSource = resolveAppWevuJsxImportSource(ctx, legacyConfig)
   const legacyAppCompilerOptions = omitDeprecatedCompilerOptions(legacyConfig?.app?.compilerOptions) ?? {}
   const userAppCompilerOptions = omitDeprecatedCompilerOptions(userConfig?.app?.compilerOptions) ?? {}
   const compilerOptions = {
@@ -108,6 +130,7 @@ export function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: Le
     target: 'ES2023',
     lib: ['ES2023', 'DOM'],
     jsx: 'preserve',
+    ...(jsxImportSource ? { jsxImportSource } : {}),
     resolveJsonModule: true,
     allowJs: true,
     allowSyntheticDefaultImports: true,
@@ -121,7 +144,7 @@ export function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: Le
 
   const vueCompilerOptions = {
     plugins: ['weapp-vite/volar'],
-    ...(hasDependency(requireConfigService(ctx, '生成 Vue tsconfig 前必须初始化 configService。').packageJson, 'wevu') ? { lib: 'wevu' } : {}),
+    ...(hasWevu ? { lib: 'wevu' } : {}),
     ...(legacyConfig?.app?.vueCompilerOptions ?? {}),
     ...(userConfig?.app?.vueCompilerOptions ?? {}),
   }

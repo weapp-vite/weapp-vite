@@ -36,7 +36,7 @@ describe('runtime package aliases', () => {
 
     const aliases = resolveBuiltinPackageAliases()
 
-    expect(aliases).toHaveLength(14)
+    expect(aliases).toHaveLength(13)
     expect(aliases).toEqual(expect.arrayContaining([
       {
         find: '@weapp-core/shared/platforms',
@@ -75,6 +75,14 @@ describe('runtime package aliases', () => {
         replacement: '/project/node_modules/wevu/dist/vue-demi.mjs',
       },
     ]))
+    expect(aliases.map(alias => alias.find)).not.toEqual(expect.arrayContaining([
+      'wevu/jsx-runtime',
+      'wevu/weapp/jsx-runtime',
+      'wevu/alipay/jsx-runtime',
+      'wevu/tt/jsx-runtime',
+      'wevu/miniprogram/jsx-runtime',
+    ]))
+    expect(existsSyncMock).not.toHaveBeenCalledWith(expect.stringMatching(/jsx-runtime/))
   })
 
   it('uses development wevu entries in dev mode by default', () => {
@@ -131,7 +139,7 @@ describe('runtime package aliases', () => {
       return undefined
     })
     existsSyncMock.mockImplementation((filePath: string) =>
-      /\/project\/node_modules\/wevu\/dist\/dev\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
+      /\/project\/node_modules\/wevu\/dist\/dev\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
     )
 
     const aliases = resolveBuiltinPackageAliases({ isDev: true })
@@ -182,7 +190,7 @@ describe('runtime package aliases', () => {
     getPackageInfoSyncMock.mockReturnValue(undefined)
     existsSyncMock.mockImplementation((filePath: string) =>
       filePath === '/worktrees/feature/pnpm-workspace.yaml'
-      || /\/worktrees\/feature\/packages-runtime\/wevu\/dist\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
+      || /\/worktrees\/feature\/packages-runtime\/wevu\/dist\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
     )
 
     const aliases = resolveBuiltinPackageAliases({ cwd: '/worktrees/feature/apps/demo' })
@@ -200,7 +208,7 @@ describe('runtime package aliases', () => {
     getPackageInfoSyncMock.mockReturnValue(undefined)
     existsSyncMock.mockImplementation((filePath: string) =>
       (!filePath.startsWith('/external/project') && filePath.endsWith('/pnpm-workspace.yaml'))
-      || /\/packages-runtime\/wevu\/dist\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
+      || /\/packages-runtime\/wevu\/dist\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
     )
 
     const aliases = resolveBuiltinPackageAliases({ cwd: '/external/project' })
@@ -221,12 +229,12 @@ describe('runtime package aliases', () => {
     existsSyncMock.mockImplementation((filePath: string) =>
       filePath === '/project/node_modules/class-variance-authority/dist/index.js'
       || filePath.endsWith('/pnpm-workspace.yaml')
-      || /\/packages-runtime\/wevu\/dist\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
+      || /\/packages-runtime\/wevu\/dist\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
     )
 
     const aliases = resolveBuiltinPackageAliases()
 
-    expect(aliases).toHaveLength(13)
+    expect(aliases).toHaveLength(12)
     expect(aliases).toEqual(expect.arrayContaining([
       {
         find: 'class-variance-authority',
@@ -267,7 +275,7 @@ describe('runtime package aliases', () => {
     getPackageInfoSyncMock.mockReturnValue(undefined)
     existsSyncMock.mockImplementation((filePath: string) =>
       filePath.endsWith('/pnpm-workspace.yaml')
-      || /\/packages-runtime\/wevu\/dist\/dev\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
+      || /\/packages-runtime\/wevu\/dist\/dev\/(?:index|compiler|internal-reactivity|internal-runtime|internal-template|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
     )
 
     const aliases = resolveBuiltinPackageAliases({ isDev: true })

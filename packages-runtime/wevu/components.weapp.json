@@ -47,6 +47,12 @@
         ],
         "defaultValue": "400",
         "since": "1.0.0"
+      },
+      {
+        "name": "bindtap",
+        "type": {
+          "name": "eventhandle"
+        }
       }
     ],
     "tips": [
@@ -2512,6 +2518,12 @@
     ],
     "attrs": [
       {
+        "name": "bindtap",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
         "name": "size",
         "type": {
           "name": "string"
@@ -2766,6 +2778,7 @@
       },
       {
         "name": "bindgetuserinfo",
+        "jsxName": "onGetUserInfo",
         "type": {
           "name": "function",
           "returns": {
@@ -2784,6 +2797,7 @@
       },
       {
         "name": "createliveactivity",
+        "jsxName": "onCreateLiveActivity",
         "type": {
           "name": "function",
           "returns": {
@@ -2793,6 +2807,7 @@
       },
       {
         "name": "bindgetphonenumber",
+        "jsxName": "onGetPhoneNumber",
         "type": {
           "name": "function",
           "returns": {
@@ -2802,6 +2817,7 @@
       },
       {
         "name": "bindgetrealtimephonenumber",
+        "jsxName": "onGetRealtimePhoneNumber",
         "type": {
           "name": "function",
           "returns": {
@@ -2820,6 +2836,7 @@
       },
       {
         "name": "bindopensetting",
+        "jsxName": "onOpenSetting",
         "type": {
           "name": "function",
           "returns": {
@@ -2829,6 +2846,7 @@
       },
       {
         "name": "bindlaunchapp",
+        "jsxName": "onLaunchApp",
         "type": {
           "name": "function",
           "returns": {
@@ -2838,6 +2856,7 @@
       },
       {
         "name": "bindchooseavatar",
+        "jsxName": "onChooseAvatar",
         "type": {
           "name": "function",
           "returns": {
@@ -2847,6 +2866,7 @@
       },
       {
         "name": "bindagreeprivacyauthorization",
+        "jsxName": "onAgreePrivacyAuthorization",
         "type": {
           "name": "function",
           "returns": {
@@ -3358,6 +3378,7 @@
       },
       {
         "name": "bindkeyboardheightchange",
+        "jsxName": "onKeyboardHeightChange",
         "type": {
           "name": "function",
           "returns": {
@@ -3368,6 +3389,7 @@
       },
       {
         "name": "bindnicknamereview",
+        "jsxName": "onNicknameReview",
         "type": {
           "name": "function",
           "returns": {
@@ -9014,14 +9036,6 @@
           {
             "value": "to",
             "desc": "push 阶段采用目标页面节点作为飞跃物"
-          },
-          {
-            "value": "from",
-            "desc": "pop 阶段采用源页面节点作为飞跃物"
-          },
-          {
-            "value": "to",
-            "desc": "pop 阶段采用目标页面节点作为飞跃物"
           }
         ]
       },
@@ -9031,7 +9045,17 @@
           "name": "string"
         },
         "defaultValue": "to",
-        "since": "2.30.2"
+        "since": "2.30.2",
+        "enum": [
+          {
+            "value": "from",
+            "desc": "pop 阶段采用源页面节点作为飞跃物"
+          },
+          {
+            "value": "to",
+            "desc": "pop 阶段采用目标页面节点作为飞跃物"
+          }
+        ]
       },
       {
         "name": "worklet:onframe",

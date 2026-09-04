@@ -1,0 +1,4091 @@
+[
+  {
+    "name": "button",
+    "docLink": "https://opendocs.alipay.com/mini/component/button",
+    "attrs": [
+      {
+        "name": "size",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "有效值 default, mini（小尺寸）。 默认值： default"
+        ],
+        "enum": [
+          {
+            "value": "default"
+          },
+          {
+            "value": "mini"
+          }
+        ]
+      },
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "按钮的样式类型，有效值 primary、default、warn。 默认值： default"
+        ],
+        "enum": [
+          {
+            "value": "primary"
+          },
+          {
+            "value": "default"
+          },
+          {
+            "value": "warn"
+          }
+        ]
+      },
+      {
+        "name": "plain",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否镂空（ghost 与 plain 等效）。 默认值： false"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否禁用。 默认值： false"
+        ]
+      },
+      {
+        "name": "loading",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "按钮文字前是否带 loading 图标。 默认值： false"
+        ]
+      },
+      {
+        "name": "hover-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "按钮按下去的样式类。button-hover 默认为 {background-color: rgba(0, 0, 0, 0.1); opacity: 0.7;}，hover-class=\"none\" 时表示没有被点击效果。 默认值： button-hover"
+        ]
+      },
+      {
+        "name": "hover-start-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "按住后多少时间后出现点击状态，单位毫秒。 默认值： 20"
+        ]
+      },
+      {
+        "name": "hover-stay-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "手指松开后点击状态保留时间，单位毫秒。 默认值： 70"
+        ]
+      },
+      {
+        "name": "hover-stop-propagation",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否阻止当前元素的祖先元素出现被点击样式。 默认值： false 版本要求： 基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "form-type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "有效值：submit、 reset，用于 form 表单 组件，点击分别会触发 submit/reset 事件。"
+        ],
+        "enum": [
+          {
+            "value": "submit"
+          },
+          {
+            "value": "reset"
+          }
+        ]
+      },
+      {
+        "name": "open-type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "开放能力。 版本要求： 基础库 1.1.0 及以上"
+        ],
+        "enum": [
+          {
+            "value": "share"
+          },
+          {
+            "value": "getAuthorize"
+          },
+          {
+            "value": "contactShare"
+          },
+          {
+            "value": "lifestyle"
+          },
+          {
+            "value": "chooseAvatar"
+          }
+        ]
+      },
+      {
+        "name": "scope",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "当 open-type 为 getAuthorize 时有效。 版本要求： 基础库 1.11.0 及以上"
+        ],
+        "enum": [
+          {
+            "value": "phoneNumber"
+          }
+        ]
+      },
+      {
+        "name": "onTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击。 说明： 每点击一次会触发一次事件，建议自行使用代码防止重复点击,可以使用 js 防抖和节流实现。"
+        ]
+      },
+      {
+        "name": "public-id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "生活号 id，必须是当前小程序同主体且已关联的生活号，open-type=\"lifestyle\" 时有效。"
+        ]
+      },
+      {
+        "name": "onGetAuthorize",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当 open-type 为 getAuthorize 时有效。 当授权成功时触发。 版本要求：基础库 1.11.0 及以上"
+        ]
+      },
+      {
+        "name": "onFollowLifestyle",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当 open-type 为 lifestyle 时有效。 当点击按钮时触发。 event.detail = { followStatus } ，folllowStatus 合法值有 1、2、3，其中 1 表示已关注。2表示用户不允许关注。3表示发生未知错误； 已知问题：基础库 1.0，当用户在点击按钮前已关注生活号，event.detail.followStatus 的值为 true。 版本要求：基础库 1.11.0 及以上"
+        ]
+      },
+      {
+        "name": "onError",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当 open-type 为 getAuthorize 时有效。 当授权失败时触发。event.detail = {type, errorMessage} ，此时 type 的值为 getAuthorize。 版本要求：基础库 1.11.0 及以上"
+        ]
+      },
+      {
+        "name": "onGetUserInfo",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当 open-type 为 getAuthorize 且 scope 为 userInfo 时有效。 当授权成功时触发。 版本要求 ：基础库 2.8.0 及以上 event.detail = { userInfo: { avatar, // 头像 nickName, // 昵称 } }，"
+        ]
+      },
+      {
+        "name": "onGetPhoneNumber",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当 open-type 为 getAuthorize 且 scope 为 phoneNumber 时有效。 当授权成功时触发。 版本要求 ：基础库 2.8.0 及以上 成功获取用户信息后返回 event.detail = { encryptedData: '', // 加密后的手机号 sign: '', // 签名信息，如果在开放平台后台配置了加签方式后有此字段 }，"
+        ]
+      },
+      {
+        "name": "onChooseAvatar",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当 open-type 为 chooseAvatar 时有效。 当用户选择头像后触发。 版本要求：基础库 2.9.29 支付宝客户端 10.6.0 及以上。 event.detail = { avatarUrl // 头像临时文件链接 }"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "camera",
+    "docLink": "https://opendocs.alipay.com/mini/03qegu",
+    "attrs": [
+      {
+        "name": "mode",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "应用模式。 默认值：normal 版本要求：基础库 1.19.0 及以上。"
+        ]
+      },
+      {
+        "name": "device-position",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "摄像头朝向，前置或后置。可选值为 front、back。"
+        ]
+      },
+      {
+        "name": "flash",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "闪光灯。可选值为 auto、on、off。 默认值：auto 版本要求：基础库 1.18.0 及以上。"
+        ]
+      },
+      {
+        "name": "output-dimension",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "相机拍照，录制的分辨率。 有效值为 360P、540P、720P、1080P、max。 默认值：720P 版本要求：基础库 1.23.0 及以上。"
+        ]
+      },
+      {
+        "name": "frame-size",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "指定期望的相机帧数据尺寸。 默认值：medium 版本要求：基础库 1.19.0 及以上。"
+        ]
+      },
+      {
+        "name": "onReady",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "相机初始化成功时触发。event.detail = {maxZoom} 版本要求：基础库 1.24.3 及以上。 基础库 2.7.16 、客户端 10.2.58 开始支持返回 maxZoom 。"
+        ]
+      },
+      {
+        "name": "onStop",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "摄像头在非正常终止时触发，如页面隐藏、退出小程序、压后台等情况。"
+        ]
+      },
+      {
+        "name": "onError",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "用户不允许使用摄像头时触发。event.detail = { errorCode, errorMessage } 。"
+        ]
+      },
+      {
+        "name": "onScanCode",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "在扫码识别成功时触发，仅在 mode=\"scanCode\" 时生效。event.detail = { type, result } 。type 为码类型，result 为识别结果。 版本要求：基础库 1.19.0 及以上。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "canvas",
+    "docLink": "https://opendocs.alipay.com/mini/component/canvas",
+    "attrs": [
+      {
+        "name": "id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "组件唯一标识符。 注意：同一页面中的 id 不可重复。"
+        ]
+      },
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "类型。设置 type 属性后，会渲染成 native canvas。 可选值：2d、webgl 版本要求：基础库 2.7.0 及以上"
+        ]
+      },
+      {
+        "name": "onReady",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "canvas 组件初始化成功事件。 版本要求：基础库 2.7.0 及以上"
+        ]
+      },
+      {
+        "name": "width",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "画布宽度。默认值： 300px"
+        ]
+      },
+      {
+        "name": "height",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "画布高度。默认值： 225px"
+        ]
+      },
+      {
+        "name": "style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "-"
+        ]
+      },
+      {
+        "name": "class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "-"
+        ]
+      },
+      {
+        "name": "disable-scroll",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "禁止屏幕滚动以及下拉刷新。 默认值： false"
+        ]
+      },
+      {
+        "name": "onTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击事件。"
+        ]
+      },
+      {
+        "name": "onTouchStart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作开始事件。"
+        ]
+      },
+      {
+        "name": "onTouchMove",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸后移动事件。"
+        ]
+      },
+      {
+        "name": "onTouchEnd",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作结束事件。"
+        ]
+      },
+      {
+        "name": "onTouchCancel",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作被打断，如来电提醒，弹窗事件。"
+        ]
+      },
+      {
+        "name": "onLongTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "长按 500ms 之后触发，触发了长按事件后进行移动将不会触发屏幕的滚动。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "checkbox",
+    "docLink": "https://opendocs.alipay.com/mini/component/checkbox",
+    "attrs": [
+      {
+        "name": "value",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "组件值，选中时 change 事件会携带的 value。"
+        ]
+      },
+      {
+        "name": "checked",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "当前是否选中，可用来设置默认选中。 默认值： false"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否禁用。 默认值： false"
+        ]
+      },
+      {
+        "name": "onChange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "组件发生改变时触发，detail = {value: 该 checkbox 是否 checked }。"
+        ]
+      },
+      {
+        "name": "color",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "checkbox 的颜色，同 CSS 色值。 版本要求： 基础库 1.10.0 及以上"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "checkbox-group",
+    "docLink": "https://opendocs.alipay.com/mini/component/checkbox-group",
+    "attrs": [
+      {
+        "name": "name",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "组件名字，用于表单提交获取数据。"
+        ]
+      },
+      {
+        "name": "onChange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "中选中项发生改变时触发， detail = {value: 选中的 checkbox 项 value 的值} 。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "contact-button",
+    "docLink": "https://opendocs.alipay.com/mini/component/contact-button",
+    "attrs": [
+      {
+        "name": "tnt-inst-id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "必填。企业唯一编码，一个企业支付宝账号对应一个编码。"
+        ]
+      },
+      {
+        "name": "scene",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "必填。聊天窗编码，每个聊天窗的唯一编码。"
+        ]
+      },
+      {
+        "name": "size",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "选填。咨询按钮大小，正方形设置边长（如 2525 px）。 默认值： 25 版本要求： 基础库 1.9.0 及以上、支付宝客户端 1.12.0 以及上支持 rpx 单位"
+        ]
+      },
+      {
+        "name": "color",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "选填。咨询按钮颜色，默认白底蓝色。 默认值： #00A3FF 版本要求： 基础库 1.9.0 及以上"
+        ]
+      },
+      {
+        "name": "icon",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "选填。咨询按钮头像。 版本要求： 基础库 1.9.0 及以上"
+        ]
+      },
+      {
+        "name": "alipay-card-no",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "选填。支付宝访客用户 ID（2088 开头）。 说明： 客服回答问题时，如客户已离开咨询窗口，则通过推送消息到支付宝 card 中提醒客户。"
+        ]
+      },
+      {
+        "name": "ext-info",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "选填。该属性主要用于传递一些扩展信息给组件，以实现一些高级功能。该属性值的生成方式为：encodeURIComponent({\"字段名\":\"字段值\"})， 其中，字段名和字段值要根据实际使用的功能进行替换。 目前通过传入扩展信息可支持的 3 个功能： 1.访客名片。需传 cinfo 和 key 两个扩展字段，代码形如在云客服中进入 设置 > 服务窗配置，点击操作栏中的 部署 ，获取 tntInstId （企业编码）和 scene （聊天窗编码）。encodeURIComponent({\"cinfo\":\"生成的 cinfo\",\"key\":\"生成的key\"}) ，cinfo 和 key 的值说明 支付宝小程序接入访客名片； 2.聊天窗默认带出用户的小程序订单数据。需传 appId 字段，代码形如encodeURIComponent({\"appId\":\"商户小程序appid\"}) 3.未读客服消息同步至\"我的小程序-我的\"。同样需传 appId 字段，代码形如 encodeURIComponent({\"appId\":\"商户小程序appid\"}) 。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "cover-image",
+    "docLink": "https://opendocs.alipay.com/mini/component/cover-image",
+    "attrs": [
+      {
+        "name": "src",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "图片地址，支持的地址格式同 image 一致。 版本要求： 基础库 1.9.0 及以上"
+        ]
+      },
+      {
+        "name": "onTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击事件回调。 版本要求： 基础库 1.9.0 及以上"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "cover-view",
+    "docLink": "https://opendocs.alipay.com/mini/component/cover-view",
+    "attrs": [
+      {
+        "name": "onTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击事件回调。 版本要求：基础库 1.9.0 及以上"
+        ]
+      },
+      {
+        "name": "penetrateGuesture",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "cover-view 组件作为同层组件上方的覆盖元素时，配置该属性实现类似 pointer-events: none 的效果。 注意：仅对 iOS 平台生效，兼容 android 平台仍需配置覆盖元素的 pointer-events 属性为 none。详见：canvas 画布附录 版本要求：基础库 2.9.9 及以上，客户端 10.5.63 及以上"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "error-view",
+    "docLink": "https://opendocs.alipay.com/mini/component/error-view",
+    "attrs": [
+      {
+        "name": "fullscreen",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否展示全屏错误视图，状态图案及文案大小会有差异。"
+        ]
+      },
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "异常类型。 可选值：default、busy、error、network、trade 默认值：default"
+        ]
+      },
+      {
+        "name": "title",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "异常状态主要文案，详情可查看 默认界面及文案 。"
+        ]
+      },
+      {
+        "name": "message",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "异常状态次要文案，仅在全屏状态显示，详情可查看 全屏状态 。"
+        ]
+      },
+      {
+        "name": "title-color",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "异常状态主要文案的自定义颜色。"
+        ]
+      },
+      {
+        "name": "message-color",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "异常状态次要文案的自定义颜色。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "form",
+    "docLink": "https://opendocs.alipay.com/mini/component/form",
+    "attrs": [
+      {
+        "name": "report-submit",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "onSubmit 回调是否返回 formId。用于发送 消息 ，使用前可使用 canIUse ('form.report-submit')判断是否支持。 注意： formId 需要真机调试才会有返回值。 版本要求： 基础库 1.3.0 及以上"
+        ]
+      },
+      {
+        "name": "onSubmit",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "携带 form 中的数据触发 submit 事件，event.detail = {value : {'slider': '80'}, buttonTarget: {'dataset': 'buttonDataset'} } (可以在 submit 按钮上添加自定义参数)。 版本要求： buttonTarget 支持基础库 1.7.0 及以上"
+        ]
+      },
+      {
+        "name": "onReset",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "表单重置时会触发 reset 事件。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "icon",
+    "docLink": "https://opendocs.alipay.com/mini/component/icon",
+    "attrs": [
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "icon 类型。有效值： info、warn、waiting、cancel、download、search、clear、success、successnocircle、loading。 版本要求： loading 支持基础库 1.7.2 及以上"
+        ]
+      },
+      {
+        "name": "size",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "icon 大小，单位 px。 默认值： 23"
+        ]
+      },
+      {
+        "name": "color",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "icon 颜色，同 CSS 色值。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "image",
+    "docLink": "https://opendocs.alipay.com/mini/component/image",
+    "attrs": [
+      {
+        "name": "src",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "图片地址。"
+        ]
+      },
+      {
+        "name": "mode",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "图片模式。 默认值： scaleToFill"
+        ]
+      },
+      {
+        "name": "class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "外部样式。"
+        ]
+      },
+      {
+        "name": "style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "内联样式。"
+        ]
+      },
+      {
+        "name": "lazy-load",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "支持图片懒加载，不支持通过 css 来控制 image 展示隐藏的场景。 默认值： false 版本要求： 基础库 1.9.0 及以上"
+        ]
+      },
+      {
+        "name": "default-source",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "默认图片地址，若设置默认图片地址，会先显示默认图片，等 src 对应的图片加载成功后，再渲染对应的图片。 版本要求： 基础库 1.19.0 及以上"
+        ]
+      },
+      {
+        "name": "onLoad",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "图片载入完毕时触发，事件对象 event.detail = {height: '图片高度px', width: '图片宽度px'} 。"
+        ]
+      },
+      {
+        "name": "onError",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当图片加载错误时触发，事件对象 event.detail = {errMsg: 'something wrong' 。"
+        ]
+      },
+      {
+        "name": "onTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击图片时触发。"
+        ]
+      },
+      {
+        "name": "catchTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击图片时触发，阻止事件冒泡。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "input",
+    "docLink": "https://opendocs.alipay.com/mini/component/input",
+    "attrs": [
+      {
+        "name": "value",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "初始内容。"
+        ]
+      },
+      {
+        "name": "name",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "组件名字，用于表单提交获取数据。"
+        ]
+      },
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "input 的类型，有效值：text、 number、 idcard、 digit(可以唤起带有小数点的数字键盘)、numberpad、digitpad、 idcardpad、nickname。 默认值： text 注意： 当启用数字键盘时，在 Android 客户端上，脱离文档流（如设置了 float 或 position: fixed 等样式）并指定了 bottom 属性的元素会被影响（该元素会被键盘顶起）。可以采用如下方法来暂且避免这个问题：当 input 框聚焦后隐藏被影响的元素。"
+        ],
+        "enum": [
+          {
+            "value": "text"
+          },
+          {
+            "value": "number"
+          },
+          {
+            "value": "idcard"
+          },
+          {
+            "value": "digit"
+          },
+          {
+            "value": "numberpad"
+          },
+          {
+            "value": "digitpad"
+          },
+          {
+            "value": "idcardpad"
+          },
+          {
+            "value": "nickname"
+          }
+        ]
+      },
+      {
+        "name": "password",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否是密码类型。 默认值： false"
+        ]
+      },
+      {
+        "name": "placeholder",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "占位符。"
+        ]
+      },
+      {
+        "name": "placeholder-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "指定 placeholder 的样式，可设置间距。"
+        ]
+      },
+      {
+        "name": "placeholder-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "指定 placeholder 的样式类。"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否禁用。 默认值： false"
+        ]
+      },
+      {
+        "name": "maxlength",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "最大长度。 默认值： 140"
+        ]
+      },
+      {
+        "name": "focus",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "获取焦点。 默认值： false"
+        ]
+      },
+      {
+        "name": "confirm-type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "设置键盘右下角按钮的文字，有效值：done（显示“完成”）、go（显示“前往”）、next（显示“下一个”）、search（显示“搜索”）、send（显示“发送”），平台不同显示的文字略有差异。 注意： 只有在 type=text 时有效。 默认值： done"
+        ],
+        "enum": [
+          {
+            "value": "done"
+          },
+          {
+            "value": "go"
+          },
+          {
+            "value": "next"
+          },
+          {
+            "value": "search"
+          },
+          {
+            "value": "send"
+          }
+        ]
+      },
+      {
+        "name": "confirm-hold",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "点击键盘右下角按钮时是否保持键盘不收起状态。 默认值： false"
+        ]
+      },
+      {
+        "name": "cursor",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "指定 focus 时的光标位置。"
+        ]
+      },
+      {
+        "name": "selection-start",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "获取光标时，选中文本对应的焦点光标起始位置，需要和 selection-end 配合使用。 默认值： -1"
+        ]
+      },
+      {
+        "name": "selection-end",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "获取光标时，选中文本对应的焦点光标结束位置，需要和 selection-start 配合使用。 默认值： -1"
+        ]
+      },
+      {
+        "name": "random-number",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "当 type 为 number, digit, idcard 数字键盘是否随机排列。 默认值： false"
+        ]
+      },
+      {
+        "name": "controlled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否为受控组件。为 true 时，value 内容会完全受 setData 控制。 建议当 type 值为 text 时不要将 controlled 设置为 true，详见 Bugs & Tips。 默认值： false"
+        ]
+      },
+      {
+        "name": "always-system",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否强制使用系统键盘和 Web-view 创建的 input 元素。为 true 时，confirm-type、confirm-hold 可能失效。 默认值：false"
+        ]
+      },
+      {
+        "name": "onInput",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "键盘输入时触发 input 事件，event.detail = {value: value,cursor: cursor} 。"
+        ]
+      },
+      {
+        "name": "onConfirm",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击键盘完成时触发，event.detail = {value: value}"
+        ]
+      },
+      {
+        "name": "onFocus",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "聚焦时触发，event.detail = {value: value} 。"
+        ]
+      },
+      {
+        "name": "onBlur",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "失去焦点时触发（仅支持真机），event.detail = {value: value} 。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "join-group-chat",
+    "docLink": "https://opendocs.alipay.com/mini/05snwq",
+    "attrs": [
+      {
+        "name": "template-id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "必填，组件模板 ID，在商家平台生成。详情可查看下方 生成模板ID。 版本要求：基础库版本 2.8.3 及以上。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "label",
+    "docLink": "https://opendocs.alipay.com/mini/component/label",
+    "attrs": [
+      {
+        "name": "for",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "绑定组件的 ID。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "lifestyle",
+    "docLink": "https://opendocs.alipay.com/mini/component/lifestyle",
+    "attrs": [
+      {
+        "name": "public-id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "必填，生活号 ID（即生活号 APPID），必须是当前小程序同账号主体且已关联的生活号。 版本要求：基础库版本 1.3.0 及以上"
+        ]
+      },
+      {
+        "name": "onFollow",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当用户关注生活号成功后执行。 版本要求：基础库版本 1.10.0 及以上"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "lottie",
+    "docLink": "https://opendocs.alipay.com/mini/component/lottie",
+    "attrs": [
+      {
+        "name": "autoplay",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "path",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "speed",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "repeat-count",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "auto-reverse",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "assets-path",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "placeholder",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "true"
+        ]
+      },
+      {
+        "name": "md5",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "optimize",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "onDataReady",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "-"
+        ]
+      },
+      {
+        "name": "onDataFailed",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "-"
+        ]
+      },
+      {
+        "name": "onAnimationStart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "-"
+        ]
+      },
+      {
+        "name": "onAnimationEnd",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "-"
+        ]
+      },
+      {
+        "name": "onAnimationRepeat",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "-"
+        ]
+      },
+      {
+        "name": "onAnimationCancel",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "-"
+        ]
+      },
+      {
+        "name": "onDataLoadReady",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "-"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "map",
+    "docLink": "https://opendocs.alipay.com/mini/component/map",
+    "attrs": [
+      {
+        "name": "style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "内联样式。"
+        ]
+      },
+      {
+        "name": "class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "样式名。"
+        ]
+      },
+      {
+        "name": "latitude",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "中心纬度。 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "longitude",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "中心经度。 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "scale",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "缩放级别，取值范围为 5-18。 默认值：16 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "skew",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "倾斜角度，范围 0 ~ 40 , 关于 z 轴的倾角。 默认值：0 版本要求：基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "rotate",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "顺时针旋转的角度，范围 0 ~ 360。 默认值：0 版本要求：基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "markers",
+        "type": {
+          "name": "array"
+        },
+        "desc": [
+          "覆盖物，在地图上的一个点绘制图标。 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "polyline",
+        "type": {
+          "name": "array"
+        },
+        "desc": [
+          "覆盖物，多个连贯点的集合（路线）。 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "circles",
+        "type": {
+          "name": "array"
+        },
+        "desc": [
+          "覆盖物，圆。 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "controls",
+        "type": {
+          "name": "array"
+        },
+        "desc": [
+          "在地图 View 之上的一个控件。 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "polygon",
+        "type": {
+          "name": "array"
+        },
+        "desc": [
+          "覆盖物，多边形。 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "show-location",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否显示带有方向的当前定位点。 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "include-points",
+        "type": {
+          "name": "array"
+        },
+        "desc": [
+          "视野将进行小范围延伸包含传入的坐标。 [{ latitude: 30.279383, longitude: 120.131441, }] 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "include-padding",
+        "type": {
+          "name": "object"
+        },
+        "desc": [
+          "视野在地图 padding 范围内展示。 { left:0, right:0, top:0, bottom:0 } 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "ground-overlays",
+        "type": {
+          "name": "array"
+        },
+        "desc": [
+          "覆盖物，自定义贴图。 [{ // 刷新的时候需要变更id值 id:'0', // 右上，左下 'include-points':[{ latitude: 39.935029, longitude: 116.384377, },{ latitude: 39.939577, longitude: 116.388331, }], image:'/image/overlay.png', alpha:0.25, zIndex:1 }] 版本要求：基础库 1.11.0 及以上"
+        ]
+      },
+      {
+        "name": "tile-overlay",
+        "type": {
+          "name": "object"
+        },
+        "desc": [
+          "覆盖物，网格贴图。 { url:'http://xxx', type:0, // url类型 tileWidth:256, tileHeight:256, zIndex:1, } 版本要求：基础库 1.11.0 及以上"
+        ]
+      },
+      {
+        "name": "custom-map-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "设置地图样式。 + default：默认样式 + light：精简样式 版本要求：基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "panels",
+        "type": {
+          "name": "array"
+        },
+        "desc": [
+          "基于 map 高级定制渲染，设置覆盖在地图上的 view。 版本要求：基础库 1.23.0 及以上"
+        ]
+      },
+      {
+        "name": "setting",
+        "type": {
+          "name": "object"
+        },
+        "desc": [
+          "设置。 { // 手势 gestureEnable: 1, // 比例尺 showScale: 1, // 指南针 showCompass: 1, //双手下滑 tiltGesturesEnabled: 1, // 交通路况展示 trafficEnabled: 0, // 地图 POI 信息 showMapText: 0, // 高德地图 logo 位置 logoPosition: { centerX: 150, centerY: 90 } // 自定义地图样式 customMapStyleSrc: \"/resources/style/stylev7.data\" }"
+        ]
+      },
+      {
+        "name": "onMarkerTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击 Marker 时触发。 { markerId, latitude, longitude, } 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "onCalloutTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击 Marker 对应的 callout 时触发。 { markerId, latitude, longitude, } 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "onControlTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击 control 时触发。 { controlId } 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "onRegionChange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "视野发生变化时触发。 基础库 1.24.0 版本新增 skew、rotate、causedBy 返回； begin 阶段 causedBy 有效值为 update(接口触发)、gesture(手势触发)； end 阶段 causedBy 有效值为 update(接口触发)、drag/scale/skew/rotate (手势触发)。 { type: \"begin/end\", latitude, longitude, scale, skew, rotate, causedBy: \"update/gesture\" } 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "onTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击地图时触发。 { latitude, longitude, } 版本要求：基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "onPanelTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击 panel 时触发。 { panelId, layoutId, } 版本要求：基础库 1.23.0 及以上"
+        ]
+      },
+      {
+        "name": "show-compass",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "显示指南针。 版本要求：基础库 2.7.2 及以上"
+        ]
+      },
+      {
+        "name": "show-scale",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "显示比例尺。 版本要求：基础库 2.7.2 及以上"
+        ]
+      },
+      {
+        "name": "enable-overlooking",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "开启俯视。 版本要求：基础库 2.7.2 及以上"
+        ]
+      },
+      {
+        "name": "enable-zoom",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否支持缩放。 版本要求：基础库 2.7.2 及以上"
+        ]
+      },
+      {
+        "name": "enable-scroll",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否支持拖动。 版本要求：基础库 2.7.2 及以上"
+        ]
+      },
+      {
+        "name": "enable-rotate",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否支持旋转。 版本要求：基础库 2.7.2 及以上"
+        ]
+      },
+      {
+        "name": "enable-traffic",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否开启实时路况。 版本要求：基础库 2.7.2 及以上"
+        ]
+      },
+      {
+        "name": "enable-poi",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否展示 POI 点。 版本要求：基础库 2.7.2 及以上"
+        ]
+      },
+      {
+        "name": "enable-building",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否展示建筑物。 版本要求：基础库 2.7.2 及以上"
+        ]
+      },
+      {
+        "name": "enable-satellite",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否开启卫星图。 版本要求：基础库 2.7.2 及以上"
+        ]
+      },
+      {
+        "name": "onInitComplete",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "地图初始化完成即将开始渲染第一帧时触发。 版本要求：基础库 2.7.2 及以上"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "match-media",
+    "docLink": "https://opendocs.alipay.com/mini/02ycxe",
+    "attrs": [
+      {
+        "name": "min-width",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "页面最小宽度。单位为 px。"
+        ]
+      },
+      {
+        "name": "max-width",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "页面最大宽度。单位为 px。"
+        ]
+      },
+      {
+        "name": "width",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "页面宽度。单位为 px。"
+        ]
+      },
+      {
+        "name": "min-height",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "页面最小高度。单位为 px。"
+        ]
+      },
+      {
+        "name": "max-height",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "页面最大高度。单位为 px。"
+        ]
+      },
+      {
+        "name": "height",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "页面高度。单位为 px。"
+        ]
+      },
+      {
+        "name": "orientation",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "屏幕方向。 + landscape：横向 + portrait：纵向"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "movable-area",
+    "docLink": "https://opendocs.alipay.com/mini/component/movable-area",
+    "attrs": [
+      {
+        "name": "scale-area",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "否"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "movable-view",
+    "docLink": "https://opendocs.alipay.com/mini/component/movable-view",
+    "attrs": [
+      {
+        "name": "direction",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "movable-view 的移动方向，属性值有 all 、vertical 、horizontal 、none 。 默认值： none"
+        ]
+      },
+      {
+        "name": "inertia",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "movable-view 是否带有惯性。 默认值： false 版本要求： 基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "out-of-bounds",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "超过可移动区域后，movable-view 是否还可以移动。 默认值： false 版本要求： 基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "x",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "定义 x 轴方向的偏移，会换算为 left 属性，如果 x 的值不在可移动范围内，会自动移动到可移动范围。 默认值： 0"
+        ]
+      },
+      {
+        "name": "y",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "定义 y 轴方向的偏移，会换算为 top 属性，如果 y 的值不在可移动范围内，会自动移动到可移动范围。 默认值： 0"
+        ]
+      },
+      {
+        "name": "damping",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "阻尼系数，用于控制 x 或 y 改变时的动画和过界回弹的动画，值越大移动越快。 默认值： 20 版本要求： 基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "friction",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "摩擦系数，用于控制惯性滑动的动画，值越大摩擦力越大，滑动越快停止；必须大于 0，否则会被设置成默认值。 默认值： 2 版本要求： 基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否禁用。 默认值： false"
+        ]
+      },
+      {
+        "name": "scale",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否支持双指缩放，默认缩放手势生效区域是在 movable-view 内。 默认值： false 版本要求： 基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "scale-min",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "定义缩放倍数最小值。 默认值： 0.5 版本要求： 基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "scale-max",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "定义缩放倍数最大值。 默认值： 10 版本要求： 基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "scale-value",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "定义缩放倍数，取值范围为 0.5 - 10。 默认值： 1 版本要求： 基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "animation",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否使用动画。 默认值： false 版本要求： 基础库 1.20.0 及以上"
+        ]
+      },
+      {
+        "name": "onTouchStart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作开始，事件会向父节点传递。 版本要求： 基础库 1.11.5 及以上"
+        ]
+      },
+      {
+        "name": "catchTouchStart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作开始，事件仅作用于组件，不向父节点传递。 版本要求： 基础库 1.11.5 及以上"
+        ]
+      },
+      {
+        "name": "onTouchMove",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸移动事件，事件会向父节点传递。 版本要求： 基础库 1.11.5 及以上"
+        ]
+      },
+      {
+        "name": "catchTouchMove",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸移动事件，事件仅作用于组件，不向父节点传递。 版本要求： 基础库 1.11.5 及以上"
+        ]
+      },
+      {
+        "name": "onTouchEnd",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作结束，事件会向父节点传递。 版本要求： 基础库 1.11.5 及以上"
+        ]
+      },
+      {
+        "name": "catchTouchEnd",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作结束，事件仅作用于组件，不向父节点传递。 版本要求： 基础库 1.11.5 及以上"
+        ]
+      },
+      {
+        "name": "onTouchCancel",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作被打断，如来电提醒、弹窗。 版本要求： 基础库 1.11.5 及以上"
+        ]
+      },
+      {
+        "name": "onChange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "拖动过程中触发的事件，event.detail = {x: x, y: y, source: source} ，其中 source 表示产生移动的原因，值可为 touch（拖动）。"
+        ]
+      },
+      {
+        "name": "onChangeEnd",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "拖动结束触发的事件，event.detail = {x: x, y: y} 。"
+        ]
+      },
+      {
+        "name": "onScale",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "缩放过程中触发的事件，event.detail = {x, y, scale }。 版本要求： 基础库 1.20.0 及以上"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "navigator",
+    "docLink": "https://opendocs.alipay.com/mini/component/navigator",
+    "attrs": [
+      {
+        "name": "open-type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "跳转方式。 默认值： navigate"
+        ]
+      },
+      {
+        "name": "hover-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "点击后的样式类。 默认值： none"
+        ]
+      },
+      {
+        "name": "hover-start-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "按住后多少时间后出现点击状态，单位 ms。"
+        ]
+      },
+      {
+        "name": "hover-stay-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "手指松开后点击状态保留时间，单位 ms。"
+        ]
+      },
+      {
+        "name": "url",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "当前小程序内的跳转链接。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "page-container",
+    "docLink": "https://opendocs.alipay.com/mini/04ne6j",
+    "attrs": [
+      {
+        "name": "show",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否显示容器组件。 默认值： false"
+        ]
+      },
+      {
+        "name": "duration",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "动画时长，单位毫秒。 默认值： 300"
+        ]
+      },
+      {
+        "name": "z-index",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "z-index 层级。 默认值： 100"
+        ]
+      },
+      {
+        "name": "overlay",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否显示遮罩层。 默认值： true"
+        ]
+      },
+      {
+        "name": "position",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "弹出位置。 可选值： top、bottom、right、center。 默认值： bottom"
+        ]
+      },
+      {
+        "name": "round",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否显示圆角。 默认值： false"
+        ]
+      },
+      {
+        "name": "close-on-slide-down",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否在下滑一段距离后关闭。 默认值： false"
+        ]
+      },
+      {
+        "name": "overlay-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "自定义遮罩层样式。"
+        ]
+      },
+      {
+        "name": "custom-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "自定义弹出层样式。"
+        ]
+      },
+      {
+        "name": "onBeforeEnter",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "进入前触发。"
+        ]
+      },
+      {
+        "name": "onEnter",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "进入中触发。"
+        ]
+      },
+      {
+        "name": "onEnterCancelled",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "进入被打断时触发（通过 a: if 打断时不会触发）。"
+        ]
+      },
+      {
+        "name": "onAfterEnter",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "进入后触发。"
+        ]
+      },
+      {
+        "name": "onBeforeLeave",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "离开前触发。"
+        ]
+      },
+      {
+        "name": "onLeave",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "离开中触发。"
+        ]
+      },
+      {
+        "name": "onLeaveCancelled",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "离开被打断时触发（通过 a: if 打断时不会触发）。"
+        ]
+      },
+      {
+        "name": "onAfterLeave",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "离开后触发。"
+        ]
+      },
+      {
+        "name": "onClickOverlay",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击遮罩层时触发。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "page-meta",
+    "docLink": "https://opendocs.alipay.com/mini/component/pagemeta",
+    "attrs": [
+      {
+        "name": "background-color",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "窗口的背景色，必须为十六进制颜色值。"
+        ]
+      },
+      {
+        "name": "background-color-top",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "顶部窗口的背景色，必须为十六进制颜色值，仅 iOS 支持。"
+        ]
+      },
+      {
+        "name": "background-color-bottom",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "底部窗口的背景色，必须为十六进制颜色值，仅 iOS 支持。"
+        ]
+      },
+      {
+        "name": "root-background-color",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "页面内容的背景色，用于页面中的空白部分和页面大小变化 resize 动画期间的临时空闲区域。"
+        ]
+      },
+      {
+        "name": "scroll-top",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "滚动位置，可以使用 px 或者 rpx 为单位，在被设置时，页面会滚动到对应位置。"
+        ]
+      },
+      {
+        "name": "scroll-duration",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "滚动动画时长。 默认值： 300"
+        ]
+      },
+      {
+        "name": "page-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "页面根节点样式，页面根节点是所有页面节点的祖先节点，相当于 HTML 中的 body 节点。"
+        ]
+      },
+      {
+        "name": "page-font-size",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "页面 page 的字体大小，可以设置为system ，表示使用当前用户设置的支付宝字体大小。"
+        ]
+      },
+      {
+        "name": "root-font-size",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "页面的根字体大小，页面中的所有 rem 单位，将使用这个字体大小作为参考值，即 1rem 等于这个字体大小； 可以设置为 system ，表示使用当前用户设置的支付宝字体大小。"
+        ]
+      },
+      {
+        "name": "onScroll",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "页面滚动时触发，event.detail = { scrollTop }"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "picker",
+    "docLink": "https://opendocs.alipay.com/mini/component/picker",
+    "attrs": [
+      {
+        "name": "title",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "标题。"
+        ]
+      },
+      {
+        "name": "range",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "String[] 时表示可选择的字符串列表；Object[] 时需指定 range-key 表示可选择的字段。 默认值： []"
+        ]
+      },
+      {
+        "name": "range-key",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "当 range 为 Object[] 时，通过 range-key 来指定 Object 中 key 的值作为选择器显示内容。"
+        ]
+      },
+      {
+        "name": "value",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "表示选择了 range 中的第几个（下标从 0 开始）。"
+        ]
+      },
+      {
+        "name": "onChange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "value 改变时触发，event.detail = {value: value} 。"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否禁用。 默认值： false"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "picker-view",
+    "docLink": "https://opendocs.alipay.com/mini/component/picker-view",
+    "attrs": [
+      {
+        "name": "value",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "数组中的数字表示 picker-view-column 中对应的 index （从 0 开始）。 示例：value=“{{[2]}}”"
+        ]
+      },
+      {
+        "name": "indicator-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "选中框样式。"
+        ]
+      },
+      {
+        "name": "indicator-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "选中框的类名。 版本要求： 基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "mask-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "蒙层的样式。 版本要求： 基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "mask-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "蒙层的类名。 版本要求： 基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "immediate-change",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否在手指松开时立即触发 change 事件，若不开启则会在滚动动画结束后触发 change 事件。 默认值：false 版本要求：基础库 2.8.7 及以上。"
+        ]
+      },
+      {
+        "name": "onChange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "滚动选择 value 改变时触发，event.detail = {value: value} value 为数组，表示 picker-view 内的 picker-view-column index 索引 ，从 0 开始。"
+        ]
+      },
+      {
+        "name": "onPickStart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当滚动选择开始时候触发事件。 版本要求： 基础库 2.8.0 及以上。"
+        ]
+      },
+      {
+        "name": "onPickEnd",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当滚动选择结束时候触发事件。 版本要求： 基础库 2.8.0 及以上。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "picker-view-column",
+    "docLink": "https://opendocs.alipay.com/mini/component/picker-view-column",
+    "attrs": []
+  },
+  {
+    "name": "progress",
+    "docLink": "https://opendocs.alipay.com/mini/component/progress",
+    "attrs": [
+      {
+        "name": "percent",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "百分比(0~100)。"
+        ]
+      },
+      {
+        "name": "show-info",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "在右侧显示百分比值。 默认值： show-info=\"{{false}}\""
+        ]
+      },
+      {
+        "name": "stroke-width",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "线的粗细，单位 px。 默认值： 6"
+        ]
+      },
+      {
+        "name": "active-color",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "已选择的进度条颜色。 默认值： #09BB07"
+        ]
+      },
+      {
+        "name": "background-color",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "未选择的进度条颜色。"
+        ]
+      },
+      {
+        "name": "active",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否添加从 0% 开始加载的入场动画。 默认值：active=\"{{false}}\""
+        ]
+      }
+    ]
+  },
+  {
+    "name": "radio",
+    "docLink": "https://opendocs.alipay.com/mini/component/radio",
+    "attrs": [
+      {
+        "name": "value",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "组件值，选中时 change 事件会携带的 value。"
+        ]
+      },
+      {
+        "name": "checked",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "当前是否选中。 默认值： false"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否禁用。 默认值： false"
+        ]
+      },
+      {
+        "name": "color",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "radio 的颜色，同 CSS 色值。 版本要求： 基础库 1.10.0 及以上"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "radio-group",
+    "docLink": "https://opendocs.alipay.com/mini/component/radio-group",
+    "attrs": [
+      {
+        "name": "onChange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "选中项发生变化时触发，event.detail = {value: 选中项 radio 的 value} 。"
+        ]
+      },
+      {
+        "name": "name",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "组件名字，用于表单提交获取数据。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "rich-text",
+    "docLink": "https://opendocs.alipay.com/mini/component/rich-text",
+    "attrs": [
+      {
+        "name": "nodes",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "节点列表。基础库 2.8.5 开始支持 HTML String，2.8.5 以下版本可使用 mini-html-parser2 将 HTML String 转化为 nodes 数组。"
+        ]
+      },
+      {
+        "name": "space",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "显示连续空格。 有效值： + nbsp：根据字体设置的空格大小。 + emsp：中文字符空格大小。 + ensp：中文字符空格一半大小。 版本要求：基础库 2.8.7 及以上。"
+        ]
+      },
+      {
+        "name": "onTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸。"
+        ]
+      },
+      {
+        "name": "onTouchstart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作开始。"
+        ]
+      },
+      {
+        "name": "onTouchmove",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸移动事件。"
+        ]
+      },
+      {
+        "name": "onTouchcancel",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作被打断。"
+        ]
+      },
+      {
+        "name": "onTouchend",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作结束。"
+        ]
+      },
+      {
+        "name": "onLongtap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸后，超过 500ms 再离开。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "root-portal",
+    "docLink": "https://opendocs.alipay.com/mini/05snwp",
+    "attrs": [
+      {
+        "name": "enable",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "否"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "scroll-view",
+    "docLink": "https://opendocs.alipay.com/mini/component/scroll-view",
+    "attrs": [
+      {
+        "name": "class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "外部样式名。"
+        ]
+      },
+      {
+        "name": "style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "内联样式名。"
+        ]
+      },
+      {
+        "name": "scroll-x",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "允许横向滚动。 默认值： false"
+        ]
+      },
+      {
+        "name": "scroll-y",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "允许纵向滚动。 默认值： false"
+        ]
+      },
+      {
+        "name": "upper-threshold",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "距顶部/左边多远时（单位 px），触发 scrolltoupper 事件。 默认值： 50"
+        ]
+      },
+      {
+        "name": "lower-threshold",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "距底部/右边多远时（单位 px），触发 scrolltolower 事件。 默认值： 50"
+        ]
+      },
+      {
+        "name": "scroll-top",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "设置竖向滚动条位置。"
+        ]
+      },
+      {
+        "name": "scroll-left",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "设置横向滚动条位置。"
+        ]
+      },
+      {
+        "name": "scroll-into-view",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "滚动到子元素，值应为某子元素的 id。当滚动到该元素时，元素顶部对齐滚动区域顶部。 说明：scroll-into-view 的优先级高于 scroll-top 。"
+        ]
+      },
+      {
+        "name": "scroll-with-animation",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "在设置滚动条位置时使用动画过渡。 默认值： false"
+        ]
+      },
+      {
+        "name": "scroll-animation-duration",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "当 scroll-with-animation 设置为 true 时，可以设置 scroll-animation-duration 来控制动画的执行时间，单位 ms。"
+        ]
+      },
+      {
+        "name": "enable-back-to-top",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "当点击 iOS 顶部状态栏或者双击 Android 标题栏时，滚动条返回顶部，只支持竖向。 默认值： false"
+        ]
+      },
+      {
+        "name": "trap-scroll",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "纵向滚动时，当滚动到顶部或底部时，强制禁止触发页面滚动，仍然只触发 scroll-view 自身的滚动。 默认值： false"
+        ]
+      },
+      {
+        "name": "onScrollToUpper",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "滚动到顶部/左边，会触发 scrolltoupper 事件。"
+        ]
+      },
+      {
+        "name": "onScrollToLower",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "滚动到底部/右边，会触发 scrolltolower 事件。"
+        ]
+      },
+      {
+        "name": "onScroll",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "滚动时触发，event.detail = {scrollLeft, scrollTop, scrollHeight, scrollWidth} 。"
+        ]
+      },
+      {
+        "name": "onTouchStart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作开始。"
+        ]
+      },
+      {
+        "name": "onTouchMove",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸后移动。"
+        ]
+      },
+      {
+        "name": "onTouchEnd",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作结束。"
+        ]
+      },
+      {
+        "name": "onTouchCancel",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作被打断，如来电提醒、弹窗。"
+        ]
+      },
+      {
+        "name": "disable-lower-scroll",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "发生滚动前，对滚动方向进行判断，当方向是顶部/左边时，如果值为 always 将始终禁止滚动，如果值为 out-of-bounds 且当前已经滚动到顶部/左边，禁止滚动。"
+        ]
+      },
+      {
+        "name": "disable-upper-scroll",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "发生滚动前，对滚动方向进行判断，当方向是底部/右边时，如果值为 always 将始终禁止滚动，如果值为 out-of-bounds 且当前已经滚动到底部/右边，禁止滚动。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "share-element",
+    "docLink": "https://opendocs.alipay.com/mini/04y2ya",
+    "attrs": [
+      {
+        "name": "name",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "映射标记。"
+        ]
+      },
+      {
+        "name": "transform",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否进行动画。 默认值： false"
+        ]
+      },
+      {
+        "name": "duration",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "动画时长，单位毫秒。 默认值： 300"
+        ]
+      },
+      {
+        "name": "easing-function",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "CSS 缓动函数。 默认值： ease-out"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "slider",
+    "docLink": "https://opendocs.alipay.com/mini/component/slider",
+    "attrs": [
+      {
+        "name": "name",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "组件名字，用于表单提交获取数据。"
+        ]
+      },
+      {
+        "name": "min",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "最小值。 默认值： 0"
+        ]
+      },
+      {
+        "name": "max",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "最大值。 默认值： 100"
+        ]
+      },
+      {
+        "name": "step",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "步长，值必须大于 0，并可被（max-min）整除。 默认值： 1"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否禁用。 默认值： false"
+        ]
+      },
+      {
+        "name": "value",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "当前取值。 默认值： 0"
+        ]
+      },
+      {
+        "name": "show-value",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否显示当前 value。 默认值： false"
+        ]
+      },
+      {
+        "name": "active-color",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "已选择的颜色，同 CSS 色值。 默认值： #108ee9"
+        ]
+      },
+      {
+        "name": "background-color",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "背景条颜色，同 CSS 色值。 默认值： #ddd"
+        ]
+      },
+      {
+        "name": "track-size",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "轨道线条高度。 默认值： 4"
+        ]
+      },
+      {
+        "name": "handle-size",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "滑块大小。 默认值： 22"
+        ]
+      },
+      {
+        "name": "handle-color",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "滑块填充色，同 CSS 色值。 默认值： #fff"
+        ]
+      },
+      {
+        "name": "onChange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "完成一次拖动后触发，event.detail = {value: value} 。"
+        ]
+      },
+      {
+        "name": "onChanging",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "拖动过程中触发的事件，event.detail = {value: value} 。 版本要求： 基础库版本 1.5.0 及以上"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "subscribe-message",
+    "docLink": "https://opendocs.alipay.com/mini/05z9mt",
+    "attrs": [
+      {
+        "name": "template-id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "是"
+        ]
+      },
+      {
+        "name": "onComplete",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "swiper",
+    "docLink": "https://opendocs.alipay.com/mini/component/swiper",
+    "attrs": [
+      {
+        "name": "indicator-dots",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否显示指示点。 默认值： false"
+        ]
+      },
+      {
+        "name": "indicator-color",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "指示点颜色。 默认值： rgba(0, 0, 0, .3)"
+        ]
+      },
+      {
+        "name": "indicator-active-color",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "当前选中的指示点颜色。 默认值：#000"
+        ]
+      },
+      {
+        "name": "active-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "swiper-item 可见时的 class 。"
+        ]
+      },
+      {
+        "name": "changing-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "acceleration 设置为 {{true}} 时且处于滑动过程中，中间若干屏处于可见时的 class 。"
+        ]
+      },
+      {
+        "name": "autoplay",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否自动切换。 默认值： false"
+        ]
+      },
+      {
+        "name": "current",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "当前页面的 index，可以增加左右箭头来控制轮播滚动。 默认值： 0"
+        ]
+      },
+      {
+        "name": "duration",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "滑动动画时长。 默认值： 500(ms)"
+        ]
+      },
+      {
+        "name": "interval",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "自动切换时间间隔。 默认值： 5000(ms)"
+        ]
+      },
+      {
+        "name": "circular",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否启用无限滑动。 默认值： false"
+        ]
+      },
+      {
+        "name": "vertical",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "滑动方向是否为纵向。 默认值： false"
+        ]
+      },
+      {
+        "name": "previous-margin",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "前边距，单位 px，1.9.0 暂时只支持水平方向。 默认值： 0px 说明： 去除 previous-margin 的设置距离可删除 swiper 组件左右空白距离。"
+        ]
+      },
+      {
+        "name": "next-margin",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "后边距，单位 px，1.9.0 暂时只支持水平方向。 默认值： 0px 说明： 去除 next-margin 的设置距离可删除 swiper 组件左右空白距离。"
+        ]
+      },
+      {
+        "name": "acceleration",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "当开启时，会根据滑动速度，连续滑动多屏。 默认值： false"
+        ]
+      },
+      {
+        "name": "disable-programmatic-animation",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否禁用代码变动触发 swiper 切换时使用动画。 默认值： false"
+        ]
+      },
+      {
+        "name": "onChange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "current 改变时会触发，event.detail = {current, isChanging} ，其中 isChanging 需 acceleration 设置为 {{true}} 时才有值，当连续滑动多屏时，中间若干屏触发 onChange 事件时 isChanging 为 true ，最后一屏返回 false 。"
+        ]
+      },
+      {
+        "name": "onTransition",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "swiper 中 swiper-item 的位置发生改变时会触发 transition 事件。 其中{dx,dy} = event.detail 基础库 2.6.0 开始支持。"
+        ]
+      },
+      {
+        "name": "onAnimationEnd",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "动画结束时会触发 animationEnd 事件，event.detail = {current, source} ，其中 source 的值有 autoplay 和 touch 。"
+        ]
+      },
+      {
+        "name": "disable-touch",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否禁止用户 touch 操作。 默认值： false"
+        ]
+      },
+      {
+        "name": "swipe-ratio",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "滑动距离阈值，当滑动距离超过阈值时进行 swiper-item 切换。 默认值：0.2"
+        ]
+      },
+      {
+        "name": "swipe-speed",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "滑动综合速度阈值，当超过阈值时进行 swiper-item 切换，数值越小越敏感。 默认值：0.05"
+        ]
+      },
+      {
+        "name": "touch-angle",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "计算用户手势时所依赖的滑动角度。角度根据 touchstart 事件和首次 touchmove 事件的坐标计算得出。数值越小越对用户的滑动方向准确度要求越高。 默认值：45"
+        ]
+      },
+      {
+        "name": "display-multiple-items",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "同时显示的滑块数量。 默认值：1"
+        ]
+      },
+      {
+        "name": "easing-function",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "切换缓动动画类型。 默认值：default 属性值有default 、linear 、easeInCubic 、easeOutCubic 、easeInOutCubic"
+        ]
+      },
+      {
+        "name": "snap-to-edge",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "当 swiper-item 个数大于等于 2，关闭 circular 并且开启 previous-margin 或 next-margin 时，可以指定这个边距是否应用到第一个、最后一个元素。 默认值：false"
+        ]
+      },
+      {
+        "name": "adjust-height",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "自动以指定滑块的高度为整个容器的高度。当 vertical 为 true 时，默认不调整。可选值为： + first：第一个滑块。 + current：实时的当前滑块。 + highest：高度最大的滑块。 + none：不根据滑块调整高度，容器高度取决于自身样式。 默认值：first"
+        ]
+      },
+      {
+        "name": "adjust-vertical-height",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "vertical 为 true 时强制使 adjust-height 生效。 默认值：false"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "swiper-item",
+    "docLink": "https://opendocs.alipay.com/mini/component/swiper-item",
+    "attrs": []
+  },
+  {
+    "name": "switch",
+    "docLink": "https://opendocs.alipay.com/mini/component/switch",
+    "attrs": [
+      {
+        "name": "name",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "组件名字，用于表单提交获取数据。"
+        ]
+      },
+      {
+        "name": "checked",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否选中。"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否禁用。"
+        ]
+      },
+      {
+        "name": "color",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "组件颜色，同 CSS 色值。 版本要求： 基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "onChange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "checked 改变时触发，event.detail={ value:checked} 。"
+        ]
+      },
+      {
+        "name": "controlled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否为受控组件，为 true 时，checked 会完全受 setData 控制。 默认值： false 版本要求： 基础库 1.8.0 及以上"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "text",
+    "docLink": "https://opendocs.alipay.com/mini/component/text",
+    "attrs": [
+      {
+        "name": "selectable",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否可选。 默认值： false"
+        ]
+      },
+      {
+        "name": "space",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "以何种方式显示连续空格。"
+        ]
+      },
+      {
+        "name": "decode",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否解码。为 true 时表示对文本内容进行解码，可解析的 HTML 实体字符有： &lt;&gt;&amp;&apos;&ensp;&emsp; 。 默认值： false"
+        ]
+      },
+      {
+        "name": "number-of-lines",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "多行省略，值须大于等于 1，表现同 css 的 -webkit-line-clamp 属性一致。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "textarea",
+    "docLink": "https://opendocs.alipay.com/mini/component/textarea",
+    "attrs": [
+      {
+        "name": "name",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "组件名字，用于表单提交获取数据。"
+        ]
+      },
+      {
+        "name": "value",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "初始内容。"
+        ]
+      },
+      {
+        "name": "placeholder",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "占位符。"
+        ]
+      },
+      {
+        "name": "placeholder-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "指定 placeholder 的样式。 版本要求： 基础库 1.6.0 及以上"
+        ]
+      },
+      {
+        "name": "placeholder-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "指定 placeholder 的样式类。 版本要求： 基础库 1.6.0 及以上"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否禁用。 默认值： false"
+        ]
+      },
+      {
+        "name": "maxlength",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "最大长度，当设置为 -1 时不限制最大长度。 默认值： 140"
+        ]
+      },
+      {
+        "name": "focus",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "获取焦点。 默认值： false"
+        ]
+      },
+      {
+        "name": "auto-height",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否自动增高。 默认值： false"
+        ]
+      },
+      {
+        "name": "show-count",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否渲染字数统计功能（是否删除默认计数器/是否显示字数统计）。 默认值： true 版本要求： 基础库 1.8.0 及以上"
+        ]
+      },
+      {
+        "name": "controlled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否为受控组件。为 true 时，value 内容会完全受 setData 控制。 默认值： false 版本要求： 基础库 1.8.0 及以上"
+        ]
+      },
+      {
+        "name": "onInput",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "键盘输入时触发，event.detail = {value: value, cursor: cursor} 。 版本要求：cursor 字段基础库 1.17.0 及以上开始支持。"
+        ]
+      },
+      {
+        "name": "onFocus",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "输入框聚焦时触发 event.detail = {value: value} 。"
+        ]
+      },
+      {
+        "name": "onBlur",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "输入框失去焦点时触发，event.detail = {value: value} 。"
+        ]
+      },
+      {
+        "name": "onConfirm",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击完成时触发，event.detail = {value: value} 。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "video",
+    "docLink": "https://opendocs.alipay.com/mini/component/video",
+    "attrs": [
+      {
+        "name": "style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "内联样式。"
+        ]
+      },
+      {
+        "name": "class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "外部样式名。"
+        ]
+      },
+      {
+        "name": "src",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "要播放视频的资源地址，支持网络地址，支持生活号+视频ID（支付宝客户端 10.5.60及以上）。 src 支持的协议如下： apFilePath: https://resource/xxx.video xxx为获取的生活号+视频ID"
+        ]
+      },
+      {
+        "name": "poster",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "视频封面图的 url，支持 jpg、png 等图片，如 https://.jpg 。如果不传的话，默认取视频的首帧图作为封面图。"
+        ]
+      },
+      {
+        "name": "poster-size",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "当 poster 高宽比跟视频高宽不匹配时，如何显示 poster，设置规则同 background-size 一致。 默认值： contain"
+        ]
+      },
+      {
+        "name": "object-fit",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "当视频大小与 video 容器大小不一致时，视频的表现形式。contain：包含，fill：填充。 默认值： contain"
+        ]
+      },
+      {
+        "name": "initial-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "指定视频初始播放位置，单位 s。"
+        ]
+      },
+      {
+        "name": "duration",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "为无法读取时长的视频设置时长，单位 s。"
+        ]
+      },
+      {
+        "name": "controls",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否显示默认播放控件（底部工具条，包括播放/暂停按钮、播放进度、时间）。 默认值： true"
+        ]
+      },
+      {
+        "name": "autoplay",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否自动播放。 默认值： false"
+        ]
+      },
+      {
+        "name": "direction",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "设置全屏时视频的方向，不指定则根据宽高比自动判断。有效值为 0（正常竖向）, 90（屏幕逆时针 90 度）, -90（屏幕顺时针 90 度）"
+        ]
+      },
+      {
+        "name": "loop",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否循环播放。 默认值： false"
+        ]
+      },
+      {
+        "name": "muted",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否静音播放。 默认值： false"
+        ]
+      },
+      {
+        "name": "show-fullscreen-btn",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否显示全屏按钮。 默认值： true"
+        ]
+      },
+      {
+        "name": "show-play-btn",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否显示视频底部控制栏的播放按钮。 默认值： true"
+        ]
+      },
+      {
+        "name": "show-center-play-btn",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否显示视频中间的播放按钮。 默认值： true"
+        ]
+      },
+      {
+        "name": "show-mute-btn",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否展示工具栏上的静音按钮。 默认值： true"
+        ]
+      },
+      {
+        "name": "show-thin-progress-bar",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "当底部工具条隐藏时，是否显示细进度条（controls=false 时设置无效）。 默认值： false"
+        ]
+      },
+      {
+        "name": "enable-progress-gesture",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "全屏模式下是否开启控制进度的手势。 默认值： false"
+        ]
+      },
+      {
+        "name": "mobilenet-hint-type",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "移动网络提醒样式。 + 0 - 不提醒 + 1 - tip 提醒 + 2 - 阻塞提醒(无消耗流量大小) + 3 - 阻塞提醒(有消耗流量大小提醒) 默认值： 1"
+        ]
+      },
+      {
+        "name": "onPlay",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当开始/继续播放时触发 play 事件。"
+        ]
+      },
+      {
+        "name": "onPause",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当暂停播放时触发 pause 事件。"
+        ]
+      },
+      {
+        "name": "onEnded",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当播放到末尾时触发 ended 事件。"
+        ]
+      },
+      {
+        "name": "onTimeUpdate",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "播放进度变化时触发，event.detail = {currentTime: '当前播放时间',userPlayDuration:'用户实际观看时长',videoDuration:'视频总时长'} 。"
+        ]
+      },
+      {
+        "name": "onLoading",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "视频出现缓冲时触发。"
+        ]
+      },
+      {
+        "name": "onError",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "视频播放出错时触发（errorCode 见下面错误码表）。"
+        ]
+      },
+      {
+        "name": "onFullScreenChange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "视频进入和退出全屏时触发，event.detail = {fullScreen, direction} ，direction 取为 vertical 或 horizontal。"
+        ]
+      },
+      {
+        "name": "onTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击视频 view 时触发，event.detail = {ptInView:{x:0,y:0}} 。"
+        ]
+      },
+      {
+        "name": "onUserAction",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "用户操作事件，event.detail = {tag:\"mute\", value:0}，tag 为用户操作的元素，目前支持的 tag 有：play（底部播放按钮）、centerplay（中心播放按钮）、mute（静音按钮）、fullscreen（全屏按钮）、retry（重试按钮）、mobilenetplay（网络提醒的播放按钮）。"
+        ]
+      },
+      {
+        "name": "onStop",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "视频播放终止。"
+        ]
+      },
+      {
+        "name": "onRenderStart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当视频加载完真正开始播放时触发。"
+        ]
+      },
+      {
+        "name": "floating-mode",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "浮窗设置。暂时不支持全局浮窗。 可选值： + none：无浮窗。 + page：页面内浮窗。 默认值：none"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "view",
+    "docLink": "https://opendocs.alipay.com/mini/component/view",
+    "attrs": [
+      {
+        "name": "disable-scroll",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否阻止区域内滚动页面。 默认值： false 说明： 如果 view 中嵌套 view，外层 view 设置 disable-scroll 为 true 时禁止内部的滚动。"
+        ]
+      },
+      {
+        "name": "hover-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "触摸时添加的样式类。"
+        ]
+      },
+      {
+        "name": "hover-start-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "按住多久后出现点击状态，单位毫秒。"
+        ]
+      },
+      {
+        "name": "hover-stay-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "松开后点击状态保留时间，单位毫秒。"
+        ]
+      },
+      {
+        "name": "hidden",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否隐藏。 默认值： false"
+        ]
+      },
+      {
+        "name": "class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "自定义样式名。"
+        ]
+      },
+      {
+        "name": "style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "内联样式。"
+        ]
+      },
+      {
+        "name": "animation",
+        "type": {
+          "name": "object"
+        },
+        "desc": [
+          "用于动画，详见 my.createAnimation 。使用 my.createAnimation 生成的动画是通过过渡（Transition）实现的，只会触发 onTransitionEnd ，不会触发 onAnimationStart , onAnimationIteration , onAnimationEnd 。 默认值：{}"
+        ]
+      },
+      {
+        "name": "hover-stop-propagation",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "是否阻止当前元素的祖先元素出现点击态。 默认值： false 版本要求： 基础库 1.10.0 及以上"
+        ]
+      },
+      {
+        "name": "onTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "点击。"
+        ]
+      },
+      {
+        "name": "onTouchStart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作开始。"
+        ]
+      },
+      {
+        "name": "onTouchMove",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸后移动。"
+        ]
+      },
+      {
+        "name": "onTouchEnd",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作结束。"
+        ]
+      },
+      {
+        "name": "onTouchCancel",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "触摸动作被打断，如来电提醒，弹窗。"
+        ]
+      },
+      {
+        "name": "onLongTap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "长按 500ms 之后触发，触发了长按事件后进行移动将不会触发屏幕的滚动。"
+        ]
+      },
+      {
+        "name": "onTransitionEnd",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "过渡（Transition）结束时触发。 版本要求： 基础库 1.8.0 及以上"
+        ]
+      },
+      {
+        "name": "onAnimationIteration",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "每开启一次新的动画过程时触发。（第一次不触发） 版本要求：基础库 1.8.0 及以上"
+        ]
+      },
+      {
+        "name": "onAnimationStart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "动画开始时触发。 版本要求： 基础库 1.8.0 及以上"
+        ]
+      },
+      {
+        "name": "onAnimationEnd",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "动画结束时触发。 版本要求： 基础库 1.8.0 及以上"
+        ]
+      },
+      {
+        "name": "onAppear",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当前元素可见面积超过50%时触发。 版本要求： 基础库 1.9.0 及以上"
+        ]
+      },
+      {
+        "name": "onDisappear",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当前元素不可见面积超过50%时触发。 版本要求： 基础库 1.9.0 及以上"
+        ]
+      },
+      {
+        "name": "onFirstAppear",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "当前元素首次可见面积达到50%时触发。 版本要求： 基础库 1.9.4 及以上"
+        ]
+      },
+      {
+        "name": "role",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "表示组件的语义角色。设置为 img 时，组件聚焦后读屏软件会朗读出 图像 ；设置为 button 时，聚焦后读屏软件会朗读出 按钮 。详情请参见 aria-component 。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "web-view",
+    "docLink": "https://opendocs.alipay.com/mini/component/web-view",
+    "attrs": [
+      {
+        "name": "src",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "web-view 要渲染的 H5 网页 URL ，默认允许打开所有 https://render.alipay.com/p/ 开头的 URL（支付宝客户端 10.2.63 版本开始支持），其他网页需要在 开放平台控制台 > 对应小程序详情页 > 开发设置 > H5域名配置 进行 H5 域名白名单配置。 说明：src必须是标准的 H5 链接，任何包含例如 alipays://xx... 的链接都会导致重定向出错，从而无法展示页面，即使是 https://render.alipay.com 开头的 URL 也不能包含 alipays://xx... 此类内容。"
+        ]
+      },
+      {
+        "name": "onMessage",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "网页向小程序 postMessage 消息。e.detail = { data }"
+        ]
+      },
+      {
+        "name": "onLoad",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "网页加载成功时触发此事件。e.detail = { src } 版本要求：基础库 2.7.3 及以上"
+        ]
+      },
+      {
+        "name": "onError",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "网页加载失败时触发此事件。e.detail = { src } 版本要求：基础库 2.7.3 及以上"
+        ]
+      }
+    ]
+  }
+]

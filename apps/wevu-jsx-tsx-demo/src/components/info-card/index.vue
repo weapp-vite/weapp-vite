@@ -2,6 +2,7 @@
 interface Props {
   title: string
   description: string
+  onChange?: (event: { detail: string }) => void
 }
 
 defineProps<Props>()

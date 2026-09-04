@@ -1,3 +1,5 @@
+// 本文件由 components.weapp.json 自动生成，请勿直接编辑。
+
 import { WEAPP_BUILTIN_HTML_TAGS_ADS_AND_META } from './adsAndMeta'
 import { WEAPP_BUILTIN_HTML_TAGS_FORM_CONTROLS_PRIMARY } from './formControlsPrimary'
 import { WEAPP_BUILTIN_HTML_TAGS_FORM_CONTROLS_SELECTION } from './formControlsSelection'

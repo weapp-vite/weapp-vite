@@ -46,8 +46,10 @@
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
+    "@douyin-microapp/typings": "catalog:",
     "@egoist/tailwindcss-icons": "catalog:",
     "@iconify-json/mdi": "catalog:",
+    "@mini-types/alipay": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "miniprogram-api-typings": "catalog:",

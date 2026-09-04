@@ -1,5 +1,6 @@
 import type { MiniProgramPlatform } from '../platform'
 import { createMiniProgramDirectiveAttrs, normalizeMiniProgramEventName } from '../platform'
+import { WEAPP_JSX_EVENT_NAME_ALIASES } from './generatedEventAliases'
 
 const eventMap: Record<string, string> = {
   click: 'tap',
@@ -75,7 +76,7 @@ export const defaultMiniProgramPlatform: MiniProgramPlatform = {
   keyThisValue: '*this',
   keyAttr: value => `${directives.keyAttr}="${value}"`,
 
-  mapEventName: eventName => eventMap[eventName.toLowerCase()] || eventName,
+  mapEventName: eventName => WEAPP_JSX_EVENT_NAME_ALIASES[eventName] ?? eventMap[eventName.toLowerCase()] ?? eventName,
   eventBindingAttr: (eventName) => {
     const { prefix, name } = parseEventBinding(eventName)
     const normalizedName = normalizeMiniProgramEventName(name)

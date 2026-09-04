@@ -33,8 +33,10 @@
     "postinstall": "wv prepare -p weapp"
   },
   "devDependencies": {
+    "@douyin-microapp/typings": "catalog:",
     "@icebreakers/eslint-config": "catalog:",
     "@icebreakers/stylelint-config": "catalog:",
+    "@mini-types/alipay": "catalog:",
     "@types/node": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "eslint": "catalog:",

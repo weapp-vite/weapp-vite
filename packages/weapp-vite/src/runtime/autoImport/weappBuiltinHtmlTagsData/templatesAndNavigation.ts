@@ -1,30 +1,70 @@
-// 本文件由 components.json 自动生成，请勿直接编辑。
+// 本文件由 components.weapp.json 自动生成，请勿直接编辑。
 /* eslint-disable style/comma-dangle, style/quote-props, style/quotes */
 
 export const WEAPP_BUILTIN_HTML_TAGS_TEMPLATES_AND_NAVIGATION = [
   {
     "name": "functional-page-navigator",
-    "description": "这个组件从小程序基础库版本 [2.1.0](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html \"基础库 2.1.0 开始支持，低版本需做兼容处理。\") 开始支持。\n\n仅在插件的自定义组件中有效，用于跳转到插件功能页。",
+    "description": "仅在插件中有效，用于跳转到插件功能页。",
     "attributes": [
       {
         "name": "args",
-        "description": "Type: Object\n功能页参数，参数格式与具体功能页相关\nDefault: null\nSince: 2.1.0"
+        "description": "Type: Object"
+      },
+      {
+        "name": "bindcancel",
+        "description": "Type: function => any"
       },
       {
         "name": "bindfail",
-        "description": "Type: function => any\n功能页返回，且操作失败时触发， detail 格式与具体功能页相关\nSince: 2.1.0"
+        "description": "Type: function => any"
       },
       {
         "name": "bindsuccess",
-        "description": "Type: function => any\n功能页返回，且操作成功时触发， detail 格式与具体功能页相关\nSince: 2.1.0"
+        "description": "Type: function => any"
       },
       {
         "name": "name",
-        "description": "Type: string\n要跳转到的功能页\n目前支持的功能页和name可选值: {loginAndGetUserInfo => \"[用户信息功能页](https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/functional-pages/user-info.html)\"; requestPayment => \"[支付功能页](https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/functional-pages/request-payment.html)\"}\nSince: 2.1.0"
+        "description": "Type: string",
+        "values": [
+          {
+            "name": "loginAndGetUserInfo",
+            "description": "[用户信息功能页](https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/functional-pages/user-info.html)"
+          },
+          {
+            "name": "requestPayment",
+            "description": "[支付功能页](https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/functional-pages/request-payment.html)"
+          },
+          {
+            "name": "chooseAddress",
+            "description": "[收货地址功能页](https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/functional-pages/choose-address.html)"
+          },
+          {
+            "name": "chooseInvoice",
+            "description": "[获取发票功能页](https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/functional-pages/choose-invoice.html)"
+          },
+          {
+            "name": "chooseInvoiceTitle",
+            "description": "[获取发票抬头功能页](https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/functional-pages/choose-invoice-title.html)"
+          }
+        ]
       },
       {
         "name": "version",
-        "description": "Type: string\n跳转到的小程序版本，有效值 `develop`（开发版），`trial`（体验版），`release`（正式版）；**线上版本必须设置为 `release`**\nDefault: release\nSince: 2.1.0"
+        "description": "Type: string\nDefault: release",
+        "values": [
+          {
+            "name": "develop",
+            "description": "开发版"
+          },
+          {
+            "name": "trial",
+            "description": "体验版"
+          },
+          {
+            "name": "release",
+            "description": "正式版"
+          }
+        ]
       }
     ],
     "references": [
@@ -68,97 +108,121 @@ export const WEAPP_BUILTIN_HTML_TAGS_TEMPLATES_AND_NAVIGATION = [
   },
   {
     "name": "navigator",
-    "description": "页面链接。",
+    "description": "页面链接。\nnavigator 在 Skyline 下视为文本节点，只能嵌套文本节点（如 text），不能嵌套 view、button 等普通节点，如 <button> <navigator>foo</navigator> </button>\n新增 span 组件用于内联文本和图片，如 <span> <image> </image> <navigator>bar</navigator> </span>",
     "attributes": [
       {
         "name": "app-id",
-        "description": "Type: string\n当target=\"miniProgram\"时有效，要打开的小程序 appId\nSince: 2.0.7"
+        "description": "Type: string"
       },
       {
         "name": "bindcomplete",
-        "description": "Type: string\n当target=\"miniProgram\"时有效，跳转小程序完成\nSince: 2.0.7"
+        "description": "Type: string"
       },
       {
         "name": "bindfail",
-        "description": "Type: string\n当target=\"miniProgram\"时有效，跳转小程序失败\nSince: 2.0.7"
+        "description": "Type: string"
       },
       {
         "name": "bindsuccess",
-        "description": "Type: string\n当target=\"miniProgram\"时有效，跳转小程序成功\nSince: 2.0.7"
+        "description": "Type: string"
       },
       {
         "name": "delta",
-        "description": "Type: number\n当 open-type 为 'navigateBack' 时有效，表示回退的层数"
+        "description": "Type: number\nDefault: 1"
       },
       {
         "name": "extra-data",
-        "description": "Type: Object\n当target=\"miniProgram\"时有效，需要传递给目标小程序的数据，目标小程序可在 `App.onLaunch()`，`App.onShow()` 中获取到这份数据。[详情](https://developers.weixin.qq.com/miniprogram/dev/framework/app-service/app.html)\nSince: 2.0.7"
+        "description": "Type: Object"
       },
       {
         "name": "hover-class",
-        "description": "Type: string\n指定点击时的样式类，当`hover-class=\"none\"`时，没有点击态效果\nDefault: navigator-hover"
+        "description": "Type: string\nDefault: navigator-hover"
       },
       {
         "name": "hover-start-time",
-        "description": "Type: number\n按住后多久出现点击态，单位毫秒\nDefault: 50"
+        "description": "Type: number\nDefault: 50"
       },
       {
         "name": "hover-stay-time",
-        "description": "Type: number\n手指松开后点击态保留时间，单位毫秒\nDefault: 600"
+        "description": "Type: number\nDefault: 600"
       },
       {
         "name": "hover-stop-propagation",
-        "description": "Type: boolean\n指定是否阻止本节点的祖先节点出现点击态\nDefault: false\nSince: 1.5.0"
+        "description": "Type: boolean\nDefault: false"
       },
       {
         "name": "open-type",
-        "description": "Type: string\n跳转方式\nDefault: navigate",
+        "description": "Type: string\nDefault: navigate",
         "values": [
           {
             "name": "navigate",
-            "description": "对应 `wx.navigateTo` 或 `wx.navigateToMiniProgram` 的功能"
+            "description": "对应 [wx.navigateTo](https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.navigateTo.html) 或 [wx.navigateToMiniProgram](https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.navigateToMiniProgram.html) 的功能"
           },
           {
             "name": "redirect",
-            "description": "对应 `wx.redirectTo` 的功能"
+            "description": "对应 [wx.redirectTo](https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.redirectTo.html) 的功能"
           },
           {
             "name": "switchTab",
-            "description": "对应 `wx.switchTab` 的功能"
+            "description": "对应 [wx.switchTab](https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.switchTab.html) 的功能"
           },
           {
             "name": "reLaunch",
-            "description": "对应 `wx.reLaunch` 的功能"
+            "description": "对应 [wx.reLaunch](https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.reLaunch.html) 的功能"
           },
           {
             "name": "navigateBack",
-            "description": "对应 `wx.navigateBack` 的功能"
+            "description": "对应 [wx.navigateBack](https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.navigateBack.html) 或 [wx.navigateBackMiniProgram](https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.navigateBackMiniProgram.html) （基础库 2.24.4 版本支持）的功能"
           },
           {
             "name": "exit",
-            "description": "退出小程序，target=\"miniProgram\"时生效"
+            "description": "退出小程序，`target=\"miniProgram\"`时生效"
           }
         ]
       },
       {
         "name": "path",
-        "description": "Type: string\n当target=\"miniProgram\"时有效，打开的页面路径，如果为空则打开首页\nSince: 2.0.7"
+        "description": "Type: string"
       },
       {
         "name": "short-link",
-        "description": "Type: string\n当target=\"miniProgram\"时有效，当传递该参数后，可以不传 app-id 和 path。链接可以通过【小程序菜单】->【复制链接】获取。\nSince: 2.18.1"
+        "description": "Type: string"
       },
       {
         "name": "target",
-        "description": "Type: string\n在哪个目标上发生跳转，默认当前小程序，可选值self/miniProgram\nDefault: self\nSince: 2.0.7"
+        "description": "Type: string\nDefault: self",
+        "values": [
+          {
+            "name": "self",
+            "description": "当前小程序"
+          },
+          {
+            "name": "miniProgram",
+            "description": "其它小程序"
+          }
+        ]
       },
       {
         "name": "url",
-        "description": "Type: string\n当前小程序内的跳转链接"
+        "description": "Type: string"
       },
       {
         "name": "version",
-        "description": "Type: string\n当target=\"miniProgram\"时有效，要打开的小程序版本，有效值 develop（开发版），trial（体验版），release（正式版），仅在当前小程序为开发版或体验版时此参数有效；如果当前小程序是正式版，则打开的小程序必定是正式版。\nDefault: release\nSince: 2.0.7"
+        "description": "Type: string\nDefault: release",
+        "values": [
+          {
+            "name": "develop",
+            "description": "开发版"
+          },
+          {
+            "name": "trial",
+            "description": "体验版"
+          },
+          {
+            "name": "release",
+            "description": "正式版，仅在当前小程序为开发版或体验版时此参数有效；如果当前小程序是正式版，则打开的小程序必定是正式版。"
+          }
+        ]
       }
     ],
     "references": [
@@ -209,23 +273,23 @@ export const WEAPP_BUILTIN_HTML_TAGS_TEMPLATES_AND_NAVIGATION = [
   },
   {
     "name": "web-view",
-    "description": "web-view 组件是一个可以用来承载网页的容器，会自动铺满整个小程序页面。**个人类型与海外类型的小程序暂不支持使用。**",
+    "description": "承载网页的容器。会自动铺满整个小程序页面，个人类型的小程序暂不支持使用。\n客户端 6.7.2 版本开始，[`navigationStyle: custom`](https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/app.html) 对 [web-view](https://developers.weixin.qq.com/miniprogram/dev/component/web-view.html) 组件无效",
     "attributes": [
       {
         "name": "binderror",
-        "description": "Type: function => any\n网页加载失败的时候触发此事件。e.detail = { src }"
+        "description": "Type: function => any\n网页加载失败的时候触发此事件。e.detail = { url, fullUrl }，其中 fullUrl 为加载失败时的完整 url\nSince: 1.6.4"
       },
       {
         "name": "bindload",
-        "description": "Type: function => any\n网页加载成功时候触发此事件。e.detail = { src }"
+        "description": "Type: function => any\n网页加载成功时候触发此事件。e.detail = { src }\nSince: 1.6.4"
       },
       {
         "name": "bindmessage",
-        "description": "Type: function => any\n网页向小程序 postMessage 时，会在特定时机（小程序后退、组件销毁、分享）触发并收到消息。e.detail = { data }"
+        "description": "Type: function => any\n网页向小程序 postMessage 时，会在以下特定时机触发并收到消息：小程序后退、组件销毁、分享、复制链接（[2.31.1](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html)）。e.detail = { data }，data是多次 postMessage 的参数组成的数组。\nSince: 1.6.4"
       },
       {
         "name": "src",
-        "description": "Type: string\nwebview 指向网页的链接。可打开关联的公众号的文章，其它网页需登录[小程序管理后台](https://mp.weixin.qq.com/)配置业务域名。"
+        "description": "Type: string\nwebview 指向网页的链接。可打开关联的公众号的文章，其它网页需登录[小程序管理后台](https://mp.weixin.qq.com/)配置业务域名。\nSince: 1.6.4"
       }
     ],
     "references": [

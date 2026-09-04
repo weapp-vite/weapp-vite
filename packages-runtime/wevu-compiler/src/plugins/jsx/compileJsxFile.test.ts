@@ -413,6 +413,55 @@ export default defineComponent({
     expect(result.template).toContain(`${keyAttr}="index"`)
   })
 
+  it.each([
+    [
+      'weapp',
+      'onGetRealtimePhoneNumber={this.handleRealtimePhone}',
+      ['bindgetphonenumber="handlePhone"', 'bindgetrealtimephonenumber="handleRealtimePhone"'],
+    ],
+    ['tt', '', ['bindgetphonenumber="handlePhone"']],
+    ['alipay', '', ['onGetPhoneNumber="handlePhone"']],
+  ] as const)('uses the %s catalog event aliases for native JSX attributes', async (platform, extraAttribute, expectedAttrs) => {
+    const source = `
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  render() {
+    return <button onGetPhoneNumber={this.handlePhone} ${extraAttribute} />
+  },
+})
+`
+    const result = await compileJsxFile(source, `/project/src/pages/${platform}/events.tsx`, {
+      template: {
+        platform: getMiniProgramTemplatePlatform(platform),
+      },
+    })
+
+    for (const expectedAttr of expectedAttrs) {
+      expect(result.template).toContain(expectedAttr)
+    }
+  })
+
+  it('keeps non-aliased native JSX event casing significant', async () => {
+    const source = `
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  render() {
+    return <swiper onAnimationfinish={this.handleNative} onAnimationFinish={this.handleCamel} />
+  },
+})
+`
+    const result = await compileJsxFile(source, '/project/src/pages/weapp/animation.tsx', {
+      template: {
+        platform: getMiniProgramTemplatePlatform('weapp'),
+      },
+    })
+
+    expect(result.template).toContain('bindanimationfinish="handleNative"')
+    expect(result.template).toContain('bind:animation-finish="handleCamel"')
+  })
+
   it('extracts json macro config from tsx source', async () => {
     const source = `
 import { defineComponent } from 'wevu'

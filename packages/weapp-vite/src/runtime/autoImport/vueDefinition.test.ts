@@ -44,12 +44,18 @@ describe('createVueComponentsDefinition', () => {
       () => ({ types: new Map([['size', 'string']]), docs: new Map() }),
       { useTypedComponents: false },
     )
-    expect(code).toContain('import type { ComponentOptionsMixin, DefineComponent, PublicProps, WeappIntrinsicElementBaseAttributes } from \'wevu\'')
+    expect(code).toContain('import type { ComponentOptionsMixin, DefineComponent, PublicProps } from \'wevu\'')
+    expect(code).toContain('import type { WevuJsxHostAttributes } from \'wevu/jsx-runtime\'')
     expect(code).not.toContain('weapp-vite/typed-components')
     expect(code).toContain('readonly size?: string;')
-    expect(code).toContain('Props & WeappIntrinsicElementBaseAttributes')
+    expect(code).toContain('Props & WevuJsxHostAttributes')
     expect(code).toContain('InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin')
     expect(code).not.toContain('@ts-nocheck')
+    expect(code).toContain('declare module \'wevu/jsx-runtime\'')
+    expect(code.match(/^ {4}TAvatar: WevuComponent</gm)).toHaveLength(1)
+    expect(code.match(/^ {4}TAvatar: __WevuComponentProps<WevuComponent</gm)).toHaveLength(1)
+    expect(code.match(/^ {4}'t-avatar': WevuComponent</gm)).toHaveLength(1)
+    expect(code.match(/^ {4}'t-avatar': __WevuComponentProps<WevuComponent</gm)).toHaveLength(1)
   })
 
   it('references weapp-vite/typed-components when enabled', () => {
@@ -60,12 +66,12 @@ describe('createVueComponentsDefinition', () => {
     )
     expect(code).toContain('declare module \'vue\'')
     expect(code).toContain('import type { ComponentProp } from \'weapp-vite/typed-components\'')
-    expect(code).toContain('TAvatar: WeappComponent<ComponentProp<\"t-avatar\">>;')
-    expect(code).toContain('\'t-avatar\': WeappComponent<ComponentProp<\"t-avatar\">>;')
-    expect(code).toContain('VanButton: WeappComponent<ComponentProp<\"van-button\">>;')
-    expect(code).toContain('\'van-button\': WeappComponent<ComponentProp<\"van-button\">>;')
+    expect(code).toContain('TAvatar: WevuComponent<ComponentProp<\"t-avatar\">>;')
+    expect(code).toContain('\'t-avatar\': WevuComponent<ComponentProp<\"t-avatar\">>;')
+    expect(code).toContain('VanButton: WevuComponent<ComponentProp<\"van-button\">>;')
+    expect(code).toContain('\'van-button\': WevuComponent<ComponentProp<\"van-button\">>;')
     expect(code).not.toContain('readonly size?: string;')
-    expect(code).not.toContain('[component: string]: WeappComponent;')
+    expect(code).not.toContain('[component: string]')
   })
 
   it('uses custom module name when provided', () => {
@@ -86,9 +92,29 @@ describe('createVueComponentsDefinition', () => {
         resolveComponentImport: () => '@vant/weapp/lib/info/index.js',
       },
     )
-    expect(code).toContain('VanInfo: __WeappComponentImport<typeof import(\"@vant/weapp/lib/info/index.js\"), WeappComponent<ComponentProp<\"van-info\">>>;')
-    expect(code).toContain('type __WeappComponentProps<TComponent> = TComponent extends new (...args: any[]) => { $props: infer Props } ? Props : Record<string, any>')
-    expect(code).toContain('type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component extends new (...args: infer Args) => infer Instance ? new (...args: Args) => Omit<Instance, \'$props\'> & { $props: __WeappComponentProps<Component> & __WeappComponentProps<Fallback> } : Fallback : Fallback')
+    expect(code).toContain('VanInfo: __WevuComponentImport<typeof import(\"@vant/weapp/lib/info/index.js\"), WevuComponent<ComponentProp<\"van-info\">>>;')
+    expect(code.match(/typeof import\("@vant\/weapp\/lib\/info\/index\.js"\)/g)).toHaveLength(2)
+    expect(code).toContain('VanInfo: __WevuComponentProps<WevuComponent<ComponentProp<\"van-info\">>>;')
+    expect(code.slice(code.indexOf('declare module \'wevu/jsx-runtime\''))).not.toContain('@vant/weapp/lib/info/index.js')
+  })
+
+  it('sanitizes raw metadata identifiers before emitting inline props', () => {
+    const code = createVueComponentsDefinition(
+      ['filter-bar'],
+      () => ({
+        types: new Map([
+          ['filters', 'FilterItem[]'],
+          ['remote', 'ImportedFilter'],
+        ]),
+        docs: new Map(),
+      }),
+      { useTypedComponents: false },
+    )
+
+    expect(code).not.toContain('FilterItem')
+    expect(code).not.toContain('ImportedFilter')
+    expect(code).toContain('readonly filters?: unknown[];')
+    expect(code).toContain('readonly remote?: unknown;')
   })
 
   it('keeps base attrs like class for source-imported native components', () => {
@@ -113,8 +139,10 @@ describe('createVueComponentsDefinition', () => {
           'import type {} from \'vue\'',
           '',
           'const ok = <Tabbar class="text-red" active />',
+          'const bad = <Tabbar typo />',
           '',
           'void ok',
+          'void bad',
         ].join('\n'),
       ],
       [
@@ -127,7 +155,7 @@ describe('createVueComponentsDefinition', () => {
           '    }',
           '  }',
           '  export type ComponentPropName = keyof ComponentProps',
-          '  export type ComponentProp<Name extends string> = Name extends ComponentPropName ? ComponentProps[Name] : Record<string, any>',
+          '  export type ComponentProp<Name extends string> = Name extends ComponentPropName ? ComponentProps[Name] : object',
           '}',
         ].join('\n'),
       ],
@@ -149,7 +177,7 @@ describe('createVueComponentsDefinition', () => {
       module: ts.ModuleKind.ESNext,
       moduleResolution: ts.ModuleResolutionKind.Bundler,
       jsx: ts.JsxEmit.ReactJSX,
-      jsxImportSource: 'wevu',
+      jsxImportSource: 'wevu/weapp',
       strict: true,
       skipLibCheck: true,
       noEmit: true,
@@ -157,16 +185,19 @@ describe('createVueComponentsDefinition', () => {
     })
 
     const diagnostics = languageService.getSemanticDiagnostics(entryFile)
-    expect(diagnostics).toEqual([])
+    expect(diagnostics).toHaveLength(1)
+    expect(ts.flattenDiagnosticMessageText(diagnostics[0]!.messageText, '\n')).toContain('typo')
   })
 
-  it('adds index signature when component list is empty', () => {
+  it('emits strict empty component maps without an index signature', () => {
     const code = createVueComponentsDefinition(
       [],
       () => ({ types: new Map(), docs: new Map() }),
       { useTypedComponents: true },
     )
-    expect(code).toContain('[component: string]: WeappComponent;')
+    expect(code).toContain('interface GlobalComponents {')
+    expect(code).toContain('interface WevuJsxGlobalComponents {')
+    expect(code).not.toContain('[component: string]')
   })
 
   it('emits WevuPageLayoutMap augmentation when layout names are provided', () => {

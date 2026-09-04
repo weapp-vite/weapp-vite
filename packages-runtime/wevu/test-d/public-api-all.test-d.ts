@@ -31,15 +31,9 @@ import type {
   MiniProgramComponentPropertyOption,
   MiniProgramComponentRawOptions,
   MiniProgramComponentShortProperty,
-  MiniProgramCSSProperties,
-  MiniProgramDatasetAttributes,
-  MiniProgramHtmlAliasIntrinsicElements,
   MiniProgramInstance,
   MiniProgramIntersectionObserver,
   MiniProgramIntersectionObserverOptions,
-  MiniProgramIntrinsicElementBaseAttributes,
-  MiniProgramIntrinsicElements,
-  MiniProgramIntrinsicEventHandler,
   MiniProgramLaunchOptions,
   MiniProgramMemoryWarningResult,
   MiniProgramNavigateToOption,
@@ -96,16 +90,24 @@ import type {
   UseAsyncPullDownRefreshOptions,
   VNode,
   VNodeProps,
-  WeappCSSProperties,
-  WeappDatasetAttributes,
-  WeappHtmlAliasIntrinsicElements,
-  WeappIntrinsicElementBaseAttributes,
   WevuComponentConstructor,
   WevuPlugin,
   WevuTypedRouterRouteMap,
 } from 'wevu'
 import type * as wevu from 'wevu'
+import type { AlipayIntrinsicElementBaseAttributes, AlipayIntrinsicElements } from 'wevu/alipay/jsx-runtime'
 import type { MiniProgramRequestMethod, WxRequestMethod } from 'wevu/fetch'
+import type {
+  JSX as WevuJSX,
+  WevuJsxChild,
+  WevuJsxElement,
+  WevuJsxEventHandler,
+  WevuJsxGlobalComponents,
+  WevuJsxHostAttributes,
+} from 'wevu/jsx-runtime'
+import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicElements } from 'wevu/miniprogram/jsx-runtime'
+import type { TtIntrinsicElementBaseAttributes, TtIntrinsicElements } from 'wevu/tt/jsx-runtime'
+import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicElements } from 'wevu/weapp/jsx-runtime'
 import { expectType } from 'tsd'
 
 type CompilerEntry = typeof import('wevu/compiler')
@@ -327,15 +329,9 @@ type _TypeCoverage = [
   MiniProgramComponentShortProperty,
   MiniProgramComponentOptions,
   MiniProgramComponentRawOptions,
-  MiniProgramCSSProperties,
-  MiniProgramDatasetAttributes,
-  MiniProgramHtmlAliasIntrinsicElements,
   MiniProgramIntersectionObserver,
   MiniProgramIntersectionObserverOptions,
   MiniProgramInstance,
-  MiniProgramIntrinsicElementBaseAttributes,
-  MiniProgramIntrinsicElements,
-  MiniProgramIntrinsicEventHandler<unknown>,
   MiniProgramLaunchOptions,
   MiniProgramMemoryWarningResult,
   MiniProgramNodesRef,
@@ -392,11 +388,20 @@ type _TypeCoverage = [
   UseAsyncPullDownRefreshOptions,
   VNode,
   VNodeProps,
+  AlipayIntrinsicElementBaseAttributes,
+  AlipayIntrinsicElements,
+  MiniProgramIntrinsicElementBaseAttributes,
+  MiniProgramIntrinsicElements,
+  TtIntrinsicElementBaseAttributes,
+  TtIntrinsicElements,
   WeappIntrinsicElementBaseAttributes,
-  WeappCSSProperties,
-  WeappDatasetAttributes,
-  WeappHtmlAliasIntrinsicElements,
   WeappIntrinsicElements,
+  WevuJSX.Element,
+  WevuJsxChild,
+  WevuJsxElement,
+  WevuJsxEventHandler,
+  WevuJsxGlobalComponents,
+  WevuJsxHostAttributes,
   WevuTypedRouterRouteMap,
   WevuPlugin,
 ]

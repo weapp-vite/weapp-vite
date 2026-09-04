@@ -1,18 +1,19 @@
 import type { ComponentPropMap } from '../componentProps'
 import type { ComponentMetadata } from './metadata'
 import { formatPropertyKey, isValidIdentifierName } from './definitionFormat'
+import { normalizePortableComponentPropType } from './portablePropType'
 
 const VUE_SFC_IMPORT_RE = /\.vue(?:$|[?#])/i
 
 function formatPropsType(props?: ComponentPropMap) {
   if (!props || props.size === 0) {
-    return 'Record<string, any>'
+    return 'object'
   }
   const entries = Array.from(props.entries()).sort((a, b) => a[0].localeCompare(b[0]))
   const lines: string[] = ['{']
   for (const [propName, type] of entries) {
     const key = formatPropertyKey(propName)
-    lines.push(`  readonly ${key}?: ${type};`)
+    lines.push(`  readonly ${key}?: ${normalizePortableComponentPropType(type)};`)
   }
   lines.push('}')
   return lines.join('\n')
@@ -109,9 +110,9 @@ function toPascalCase(name: string) {
 function formatSourceImportType(importPath: string, fallbackType?: string) {
   const spec = JSON.stringify(importPath)
   if (!fallbackType) {
-    return `__WeappComponentImport<typeof import(${spec})>`
+    return `__WevuComponentImport<typeof import(${spec})>`
   }
-  return `__WeappComponentImport<typeof import(${spec}), ${fallbackType}>`
+  return `__WevuComponentImport<typeof import(${spec}), ${fallbackType}>`
 }
 
 function isVueSfcImport(importPath: string) {
@@ -130,7 +131,7 @@ function formatComponentTypeWithSourceImport(importPath: string, fallbackType: s
   return formatSourceImportType(importPath, fallbackType)
 }
 
-function formatWeappComponentTypeFromPropsType(propsType: string) {
+function formatWevuComponentTypeFromPropsType(propsType: string) {
   if (propsType.includes('\n')) {
     const indented = propsType
       .split('\n')
@@ -141,49 +142,30 @@ function formatWeappComponentTypeFromPropsType(propsType: string) {
         return `      ${line}`
       })
       .join('\n')
-    return `WeappComponent<${indented}>`
+    return `WevuComponent<${indented}>`
   }
-  return `WeappComponent<${propsType}>`
+  return `WevuComponent<${propsType}>`
 }
 
-function formatGlobalComponentEntry(
-  name: string,
+function formatGlobalComponentTypes(
   metadata: ComponentMetadata,
   sourceImport?: string,
 ) {
-  const key = formatPropertyKey(name)
   const propsType = formatPropsType(metadata.types)
-  const baseType = formatWeappComponentTypeFromPropsType(propsType)
-  const typeWithSource = sourceImport
-    ? formatComponentTypeWithSourceImport(sourceImport, baseType)
-    : baseType
-  return `    ${key}: ${typeWithSource};`
+  const baseType = formatWevuComponentTypeFromPropsType(propsType)
+  return {
+    baseType,
+    typeWithSource: sourceImport
+      ? formatComponentTypeWithSourceImport(sourceImport, baseType)
+      : baseType,
+  }
 }
 
-function formatGlobalConstEntry(name: string, metadata: ComponentMetadata, sourceImport?: string) {
+function formatGlobalConstEntry(name: string, metadata: ComponentMetadata) {
   if (!isValidIdentifierName(name)) {
     return undefined
   }
-  const propsType = formatPropsType(metadata.types)
-  const baseType = propsType.includes('\n')
-    ? (() => {
-        const indented = propsType
-          .split('\n')
-          .map((line, index) => {
-            if (index === 0) {
-              return line
-            }
-            return `    ${line}`
-          })
-          .join('\n')
-        return `WeappComponent<${indented}>`
-      })()
-    : `WeappComponent<${propsType}>`
-
-  const typeWithSource = sourceImport
-    ? formatComponentTypeWithSourceImport(sourceImport, baseType)
-    : baseType
-  return `  const ${name}: ${typeWithSource}`
+  return `  const ${name}: ${formatWevuComponentTypeFromPropsType(formatPropsType(metadata.types))}`
 }
 
 export function createVueComponentsDefinition(
@@ -195,13 +177,16 @@ export function createVueComponentsDefinition(
   const emittedComponentKeys = new Set<string>()
   const emittedGlobalConstKeys = new Set<string>()
   const globalConstLines: string[] = []
+  const globalComponentLines: string[] = []
+  const jsxGlobalComponentLines: string[] = []
   const lines: string[] = [
     '/* eslint-disable */',
     '// biome-ignore lint: disable',
     '// oxlint-disable',
     '// ------',
     '// 由 weapp-vite autoImportComponents 生成',
-    'import type { ComponentOptionsMixin, DefineComponent, PublicProps, WeappIntrinsicElementBaseAttributes } from \'wevu\'',
+    'import type { ComponentOptionsMixin, DefineComponent, PublicProps } from \'wevu\'',
+    'import type { WevuJsxHostAttributes } from \'wevu/jsx-runtime\'',
     ...(options.useTypedComponents
       ? [
           'import type { ComponentProp } from \'weapp-vite/typed-components\'',
@@ -210,18 +195,13 @@ export function createVueComponentsDefinition(
     '',
     'export {}',
     '',
-    'type WeappComponent<Props = Record<string, any>> = new (...args: any[]) => InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, Props & WeappIntrinsicElementBaseAttributes, {}>>',
-    'type __WeappComponentProps<TComponent> = TComponent extends new (...args: any[]) => { $props: infer Props } ? Props : Record<string, any>',
-    'type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component extends new (...args: infer Args) => infer Instance ? new (...args: Args) => Omit<Instance, \'$props\'> & { $props: __WeappComponentProps<Component> & __WeappComponentProps<Fallback> } : Fallback : Fallback',
+    'type WevuComponent<Props = object> = new (...args: never[]) => InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, Props & WevuJsxHostAttributes, {}>>',
+    'type __WevuComponentProps<TComponent> = TComponent extends new (...args: never[]) => { $props: infer Props } ? Props : object',
+    'type __WevuComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component extends new (...args: infer Args) => infer Instance ? new (...args: Args) => Omit<Instance, \'$props\'> & { $props: __WevuComponentProps<Component> & __WevuComponentProps<Fallback> } : Fallback : Fallback',
     '',
-    `declare module '${moduleName}' {`,
-    '  export interface GlobalComponents {',
   ]
 
-  if (componentNames.length === 0) {
-    lines.push('    [component: string]: WeappComponent;')
-  }
-  else {
+  if (componentNames.length > 0) {
     const emitGlobalConst = (keyName: string, sourceName: string) => {
       if (!isValidIdentifierName(keyName)) {
         return
@@ -232,17 +212,12 @@ export function createVueComponentsDefinition(
       emittedGlobalConstKeys.add(keyName)
 
       if (options.useTypedComponents) {
-        const sourceImport = options.resolveComponentImport?.(sourceName)
-        const baseType = `WeappComponent<ComponentProp<${JSON.stringify(sourceName)}>>`
-        const typeWithSource = sourceImport
-          ? formatComponentTypeWithSourceImport(sourceImport, baseType)
-          : baseType
-        globalConstLines.push(`  const ${keyName}: ${typeWithSource}`)
+        const baseType = `WevuComponent<ComponentProp<${JSON.stringify(sourceName)}>>`
+        globalConstLines.push(`  const ${keyName}: ${baseType}`)
         return
       }
-      const sourceImport = options.resolveComponentImport?.(sourceName)
       const metadata = getMetadata(sourceName)
-      globalConstLines.push(formatGlobalConstEntry(keyName, metadata, sourceImport)!)
+      globalConstLines.push(formatGlobalConstEntry(keyName, metadata)!)
     }
 
     const emitGlobalComponent = (keyName: string, sourceName: string) => {
@@ -253,17 +228,20 @@ export function createVueComponentsDefinition(
 
       const sourceImport = options.resolveComponentImport?.(sourceName)
       if (options.useTypedComponents) {
-        const baseType = `WeappComponent<ComponentProp<${JSON.stringify(sourceName)}>>`
+        const baseType = `WevuComponent<ComponentProp<${JSON.stringify(sourceName)}>>`
         const typeWithSource = sourceImport
           ? formatComponentTypeWithSourceImport(sourceImport, baseType)
           : baseType
-        lines.push(`    ${formatPropertyKey(keyName)}: ${typeWithSource};`)
+        globalComponentLines.push(`    ${formatPropertyKey(keyName)}: ${typeWithSource};`)
+        jsxGlobalComponentLines.push(`    ${formatPropertyKey(keyName)}: __WevuComponentProps<${baseType}>;`)
         emitGlobalConst(keyName, sourceName)
         return
       }
 
       const metadata = getMetadata(sourceName)
-      lines.push(formatGlobalComponentEntry(keyName, metadata, sourceImport))
+      const { baseType, typeWithSource } = formatGlobalComponentTypes(metadata, sourceImport)
+      globalComponentLines.push(`    ${formatPropertyKey(keyName)}: ${typeWithSource};`)
+      jsxGlobalComponentLines.push(`    ${formatPropertyKey(keyName)}: __WevuComponentProps<${baseType}>;`)
       emitGlobalConst(keyName, sourceName)
     }
 
@@ -281,6 +259,15 @@ export function createVueComponentsDefinition(
     }
   }
 
+  lines.push(`declare module '${moduleName}' {`)
+  lines.push('  export interface GlobalComponents {')
+  lines.push(...globalComponentLines)
+  lines.push('  }')
+  lines.push('}')
+  lines.push('')
+  lines.push('declare module \'wevu/jsx-runtime\' {')
+  lines.push('  export interface WevuJsxGlobalComponents {')
+  lines.push(...jsxGlobalComponentLines)
   lines.push('  }')
   lines.push('}')
   lines.push('')

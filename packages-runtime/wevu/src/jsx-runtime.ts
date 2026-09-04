@@ -1,26 +1,46 @@
-/// <reference types="miniprogram-api-typings" />
-import type { GlobalComponents } from 'wevu'
-import type { MiniProgramIntrinsicElements } from './miniprogramIntrinsicElements'
-import type { WevuJsxVNode } from './runtime/jsxIsland'
+import type { WevuJsxVNode } from './jsxTypes'
+
+interface WevuJsxClassObject {
+  [name: string]: boolean | null | undefined
+}
+type WevuJsxClassValue = WevuJsxClassObject | WevuJsxClassValue[] | false | null | string | undefined
+interface WevuJsxStyleObject {
+  [property: string]: null | number | string | undefined
+}
+type WevuJsxStyleValue = WevuJsxStyleObject | WevuJsxStyleValue[] | false | null | string | undefined
+type WevuJsxDatasetAttributes = {
+  [name in `data-${string}`]?: unknown
+}
 
 export type WevuJsxChild = WevuJsxElement | WevuJsxElement[]
 export type WevuJsxElement = WevuJsxVNode | boolean | null | number | string | undefined
+export type WevuJsxEventHandler<TReturn = unknown> = {
+  bivarianceHack: (...args: unknown[]) => TReturn
+}['bivarianceHack']
+export type WevuJsxHostAttributes = {
+  id?: number | string
+  class?: WevuJsxClassValue
+  className?: WevuJsxClassValue
+  style?: WevuJsxStyleValue
+  hidden?: boolean
+  key?: number | string
+} & WevuJsxDatasetAttributes
+
+export interface WevuJsxGlobalComponents {}
 
 // eslint-disable-next-line ts/no-namespace -- JSX 命名空间用于 jsxImportSource 类型推导。
 export declare namespace JSX {
   export type Element = WevuJsxElement
 
   export interface ElementClass {
-    $props: Record<string, any>
+    $props: unknown
   }
 
   export interface ElementAttributesProperty {
-    $props: Record<string, any>
+    $props: unknown
   }
 
-  export interface IntrinsicAttributes {
-    key?: number | string
-  }
+  export interface IntrinsicAttributes extends WevuJsxHostAttributes {}
 
-  export interface IntrinsicElements extends GlobalComponents, MiniProgramIntrinsicElements {}
+  export interface IntrinsicElements extends WevuJsxGlobalComponents {}
 }
