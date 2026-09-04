@@ -1385,6 +1385,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 invalidateFileCache(file)
               }
               resetRuntimeStateForFreshBuild(ctx.runtimeState)
+              resetEmittedOutputCaches(ctx.runtimeState)
               await configService.load(configService.loadOptions)
               await scanService.loadAppEntry()
               scanService.loadSubPackages()

@@ -23,6 +23,10 @@ const mocks = vi.hoisted(() => {
     resolvePageOptions: vi.fn(() => ({ from: 'resolved-options' })),
     notifyRouteStateSync: vi.fn(),
     getInitialNavigationRunner: vi.fn(),
+    ensureInitialNavigation: vi.fn(),
+    cancelInitialNavigation: vi.fn(),
+    getInitialNavigationPromise: vi.fn(),
+    initialNavigationControllers: new WeakMap<object, { promise: Promise<boolean>, start: (query?: unknown) => void, callbacks: Set<(shouldMount: boolean) => void> }>(),
   }
 })
 
@@ -32,6 +36,9 @@ vi.mock('@/router/routeSync', () => ({
 
 vi.mock('@/router/initialNavigation', () => ({
   getInitialNavigationRunner: mocks.getInitialNavigationRunner,
+  ensureInitialNavigation: mocks.ensureInitialNavigation,
+  cancelInitialNavigation: mocks.cancelInitialNavigation,
+  getInitialNavigationPromise: mocks.getInitialNavigationPromise,
 }))
 
 vi.mock('@/runtime/hooks', () => ({
@@ -64,18 +71,66 @@ vi.mock('@/runtime/register/component/lifecycle/platform', () => ({
 describe('runtime: component page lifecycle extra', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    mocks.initialNavigationControllers = new WeakMap()
     for (const mock of Object.values(mocks)) {
-      mock.mockReset?.()
+      ;(mock as any).mockReset?.()
     }
     mocks.scheduleTemplateRefUpdate.mockImplementation((_target: any, task: () => void) => task())
     mocks.resolvePageOptions.mockReturnValue({ from: 'resolved-options' })
     mocks.getInitialNavigationRunner.mockReturnValue(undefined)
+    mocks.ensureInitialNavigation.mockReturnValue(undefined)
+    mocks.getInitialNavigationPromise.mockReturnValue(undefined)
+    mocks.cancelInitialNavigation.mockReset()
     mocks.attachOptionalPageLifecycleHooks.mockImplementation((hooks: Record<string, any>, options: any) => {
       if (options?.enableOnRouteDone) {
         hooks.onRouteDone = vi.fn()
       }
       return hooks
     })
+    mocks.ensureInitialNavigation.mockImplementation((instance: object, query?: unknown, options?: { start?: boolean, onComplete?: (shouldMount: boolean) => void }) => {
+      const existing = mocks.initialNavigationControllers.get(instance)
+      if (existing) {
+        if (options?.onComplete) {
+          existing.callbacks.add(options.onComplete)
+        }
+        if (options?.start !== false) {
+          existing.start(query)
+        }
+        return existing.promise
+      }
+      const runner = mocks.getInitialNavigationRunner()
+      if (!runner) {
+        return undefined
+      }
+      let resolveResult!: (value: boolean) => void
+      let started = false
+      const callbacks = new Set<(shouldMount: boolean) => void>()
+      const promise = new Promise<boolean>((resolve) => {
+        resolveResult = resolve
+      })
+      const start = (startQuery?: unknown) => {
+        if (started) {
+          return
+        }
+        started = true
+        void runner(instance, startQuery ?? query).then((result: any) => {
+          const shouldMount = !(result && result.__wevuNavigationFailure)
+          resolveResult(shouldMount)
+          for (const callback of callbacks) {
+            callback(shouldMount)
+          }
+        })
+      }
+      mocks.initialNavigationControllers.set(instance, { promise, start, callbacks })
+      if (options?.onComplete) {
+        callbacks.add(options.onComplete)
+      }
+      if (options?.start !== false) {
+        start(query)
+      }
+      return promise
+    })
+    mocks.getInitialNavigationPromise.mockImplementation((instance: object) => mocks.initialNavigationControllers.get(instance)?.promise)
   })
 
   afterEach(() => {

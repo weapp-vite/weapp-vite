@@ -7,10 +7,18 @@ function flattenClassValues(value: any): string[] {
     return [value]
   }
   if (Array.isArray(value)) {
-    return value.flatMap(item => flattenClassValues(item))
+    const result: string[] = []
+    for (const item of value) {
+      result.push(...flattenClassValues(item))
+    }
+    return result
   }
   if (value && typeof value === 'object') {
-    return Object.values(value).flatMap(item => flattenClassValues(item))
+    const result: string[] = []
+    for (const item of Object.values(value)) {
+      result.push(...flattenClassValues(item))
+    }
+    return result
   }
   return []
 }
@@ -43,7 +51,10 @@ async function runE2E() {
   const current = currentPages[currentPages.length - 1] as any
   const data = current?.data || {}
   const classBindingEntries = Object.entries(data).filter(([key]) => /^__wv_cls_\d+$/.test(key))
-  const classValues = classBindingEntries.flatMap(([, value]) => flattenClassValues(value))
+  const classValues: string[] = []
+  for (const [, value] of classBindingEntries) {
+    classValues.push(...flattenClassValues(value))
+  }
 
   const hasClassToken = (token: string) => classValues.some((value) => {
     if (typeof value !== 'string') {

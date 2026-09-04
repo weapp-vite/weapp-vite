@@ -5,6 +5,20 @@
 ### Patch Changes
 
 - Updated dependencies:
+  - @wevu/web-apis@1.2.40
+
+## 0.0.28
+
+### Patch Changes
+
+- Updated dependencies:
+  - @wevu/web-apis@1.2.39
+
+## 0.0.28
+
+### Patch Changes
+
+- Updated dependencies:
   - @wevu/web-apis@1.2.38
 
 ## 0.0.28

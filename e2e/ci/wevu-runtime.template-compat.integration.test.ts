@@ -24,6 +24,7 @@ describe.sequential('wevu runtime template compat integration', () => {
     expect(wxml).toContain(`wx:for-item="value" wx:for-index="key"`)
 
     expect(wxml).not.toContain(`.  = `)
-    expect(script).toMatch(/Object\.fromEntries/)
+    expect(script).toContain('summaryMap')
+    expect(script).not.toContain('Object.fromEntries')
   })
 })

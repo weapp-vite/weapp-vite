@@ -25,6 +25,7 @@ jobs:
       timeout_minutes: 10
       main_command: |
         pnpm check:changeset:frontmatter
+        pnpm agents:check
         pnpm check:create-weapp-vite-changeset
         pnpm check:publishable-workspace-dependency-protocols
         pnpm check:weapp-core-constants-changeset
@@ -57,6 +58,7 @@ jobs:
       timeout_minutes: 10
       main_command: |
         pnpm check:changeset:frontmatter
+        pnpm agents:check
         pnpm check:create-weapp-vite-changeset
         pnpm check:publishable-workspace-dependency-protocols
         pnpm check:weapp-core-constants-changeset

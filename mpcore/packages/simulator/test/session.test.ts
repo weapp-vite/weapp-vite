@@ -47,6 +47,50 @@ describe('HeadlessSession', () => {
     expect(session.getCurrentPages()).toHaveLength(1)
   })
 
+  it('does not leak Node globals and allows explicit runtime overrides', () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    globals: {
+      btoa: typeof btoa,
+      crypto: typeof crypto,
+      CustomEvent: typeof CustomEvent,
+      Event: typeof Event,
+      global: typeof global,
+      location: typeof location,
+      process: typeof process,
+      self: typeof self,
+      Buffer: typeof Buffer,
+      URLSearchParams: typeof URLSearchParams,
+      queueMicrotask: typeof queueMicrotask,
+      injected: typeof injectedRuntimeApi,
+    },
+  },
+})
+`)
+    const session = createHeadlessSession({
+      projectPath,
+      globals: { injectedRuntimeApi: () => 'ready' },
+    })
+
+    expect(session.reLaunch('/pages/index/index').data.globals).toEqual({
+      btoa: 'undefined',
+      crypto: 'undefined',
+      CustomEvent: 'undefined',
+      Event: 'undefined',
+      global: 'undefined',
+      location: 'undefined',
+      process: 'undefined',
+      self: 'undefined',
+      Buffer: 'undefined',
+      URLSearchParams: 'undefined',
+      queueMicrotask: 'undefined',
+      injected: 'function',
+    })
+  })
+
   it('loads static ESM imports for app and page artifacts', () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)
@@ -567,9 +611,9 @@ Page({
       'settings:onShow',
       'settings:onReady',
       'settings:onHide',
-      'settings:onUnload',
       'home:onShow',
     ])
+    expect(settingsPage?.data.logs.at(-1)).toBe('settings:onUnload')
 
     session.reLaunch('/pages/profile/index?mode=relaunch')
 
@@ -588,8 +632,8 @@ Page({
       'settings:onShow',
       'settings:onReady',
       'settings:onHide',
-      'settings:onUnload',
       'home:onShow',
+      'settings:onUnload',
       'home:onUnload',
       'profile:onLoad:{"mode":"relaunch"}',
       'profile:onShow',
@@ -630,6 +674,24 @@ Page({
     ])
     expect(homePage.options).toEqual({})
     expect(profilePage?.options).toEqual({})
+  })
+
+  it('commits the tab stack before running switchTab success', () => {
+    const projectPath = createNavigationFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const homePage = session.reLaunch('/pages/home/index')
+    homePage.goDetail()
+    const detailPage = session.getCurrentPages().at(-1)
+    homePage.goProfileWithCallbacks()
+
+    expect(session.getCurrentPages().map(page => page.route)).toEqual(['pages/profile/index'])
+    const successIndex = homePage.data.logs.indexOf('home:switchTab:success:pages/profile/index')
+    const unloadIndex = detailPage?.data.logs.indexOf('detail:onUnload') ?? -1
+    expect(successIndex).toBeGreaterThan(-1)
+    expect(unloadIndex).toBeGreaterThan(successIndex)
+    expect(homePage.data.logs.at(-1)).toBe('home:switchTab:complete')
   })
 
   it('rejects switchTab urls that contain query parameters', () => {

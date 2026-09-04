@@ -67,6 +67,17 @@ $native-to-weapp-vite-wevu-migration
 
 如果项目本身就是通过 `create-weapp-vite` 创建的，还应优先读取项目根目录的 `AGENTS.md`。这个文件由脚手架自动生成，里面会把截图、截图对比、日志桥接等 AI 意图路由预先写好。
 
+### AGENTS.md 工程化
+
+本仓库将 `AGENTS.md` 作为可生成的项目级规则资产维护。规则源位于 `scripts/agents/`，通过显式 `base + overlay` 组合生成根目录、子目录和脚手架 profile：
+
+```sh
+pnpm agents:check     # 校验 schema、继承关系和生成文件漂移
+pnpm agents:generate  # 刷新全部 AGENTS.md 与脚手架内置模板
+```
+
+生成的 `AGENTS.md` 带有来源标记；项目自己的额外约束请写入同目录的 `AGENTS.local.md`，脚手架和后续刷新不会覆盖该文件。`AGENTS.md` 负责项目级约束，`skills/*` 负责可复用的任务流程，两者保持独立。
+
 ### AI 意图路由
 
 如果你希望 AI 在自然语言里稳定命中 mini-program runtime 能力，建议把下面这组映射写进项目级 `AGENTS.md`：

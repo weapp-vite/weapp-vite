@@ -1,4 +1,11 @@
+import { createJiti } from 'jiti'
 import { defineEslintConfig } from 'repoctl/tooling'
+
+const jiti = createJiti(import.meta.url)
+const {
+  createMiniProgramRuntimeConfig,
+  miniProgramRuntimePlugin,
+} = await jiti.import('./packages/eslint/src/miniProgramRuntime.ts')
 
 export default await defineEslintConfig({
   options: {
@@ -79,6 +86,44 @@ export default await defineEslintConfig({
         'vue/valid-v-on': ['error', { modifiers: ['catch', 'mut', 'capture'] }],
       },
     }, {
+      ...createMiniProgramRuntimeConfig({
+        files: [
+          'packages-runtime/react/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+          'packages-runtime/wevu/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+          'packages-runtime/web-apis/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+          '@weapp-core/shared/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+          'e2e-apps/*/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+          'templates/*/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+        ],
+      }),
+    }, {
+      files: [
+        'packages-runtime/react/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+        'packages-runtime/wevu/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+        '@weapp-core/shared/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+      ],
+      ignores: [
+        '**/*.test.*',
+        '**/*.spec.*',
+        '**/src/node.{js,mjs,cjs,jsx,ts,mts,cts,tsx}',
+      ],
+      plugins: {
+        'mini-program': miniProgramRuntimePlugin,
+      },
+      rules: {
+        'mini-program/no-unsupported-runtime-api': 'error',
+        'mini-program/no-implicit-runtime-polyfill': 'error',
+      },
+    }, {
+      files: ['packages-runtime/web-apis/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}'],
+      plugins: {
+        'mini-program': miniProgramRuntimePlugin,
+      },
+      rules: {
+        // web-apis 是显式兼容层实现，读取宿主能力后自行提供 fallback。
+        'mini-program/no-implicit-runtime-polyfill': 'off',
+      },
+    }, {
       files: [
         'packages/**/src/**/*.{js,ts,mjs,cjs,vue}',
         'packages-runtime/**/src/**/*.{js,ts,mjs,cjs,vue}',
@@ -90,19 +135,6 @@ export default await defineEslintConfig({
       rules: {
         'e18e/prefer-object-has-own': 'off',
         'prefer-object-has-own': 'off',
-        'no-restricted-syntax': ['error', {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.property.type="Identifier"][callee.property.name="at"]',
-          message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.computed=true][callee.property.value="at"]',
-          message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.property.type="Identifier"][callee.property.name="hasOwn"]',
-          message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.computed=true][callee.property.value="hasOwn"]',
-          message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
-        }],
       },
     }, {
       files: ['packages/**/src/**/*.{js,ts,mjs,cjs}', '@weapp-core/**/src/**/*.{js,ts,mjs,cjs}', 'scripts/**/*.{js,ts,mjs,cjs}'],
@@ -159,18 +191,6 @@ export default await defineEslintConfig({
         }, {
           selector: 'TemplateElement[value.raw*="\\x1b["]',
           message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.property.type="Identifier"][callee.property.name="at"]',
-          message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.computed=true][callee.property.value="at"]',
-          message: '小程序兼容代码不要使用 .at()，请改用 value[value.length - 1] 等兼容写法。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.property.type="Identifier"][callee.property.name="hasOwn"]',
-          message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
-        }, {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.type="Identifier"][callee.object.name="Object"][callee.computed=true][callee.property.value="hasOwn"]',
-          message: '小程序兼容代码不要使用 Object.hasOwn()，请改用 Object.prototype.hasOwnProperty.call(...) 封装 helper。',
         }],
       },
     }, {

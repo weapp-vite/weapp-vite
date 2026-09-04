@@ -11,6 +11,7 @@
 - 自动对齐 `weapp-vite` 与 `wevu` 版本
 - 自动处理 `.gitignore` 写入
 - 可选安装推荐的 AI skills（`sonofmagic/skills`）
+- 生成带来源标记的项目级 `AGENTS.md`，并保留用户维护的 `AGENTS.local.md`
 
 ## 安装
 

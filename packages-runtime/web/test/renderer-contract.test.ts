@@ -10,7 +10,7 @@ describe('WXML renderer contracts', () => {
   it('renders empty, text, unknown and self-closing nodes', () => {
     const renderer = new Renderer()
     expect(renderer.renderNodes([], 'scope', 'wxs')).toBe('""')
-    expect(renderer.renderNodes([{ type: 'text' }], 'scope', 'wxs')).toBe('""')
+    expect(renderer.renderNodes([{ type: 'text' } as unknown as RenderNode], 'scope', 'wxs')).toBe('""')
     expect(renderer.renderNodes([{ type: 'comment' } as unknown as RenderNode], 'scope', 'wxs')).toBe('""')
     expect(renderer.renderNodes([element('img', { src: '/cover.png' })], 'scope', 'wxs'))
       .toContain('<img')

@@ -1,5 +1,31 @@
 # @weapp-vite/web
 
+## 1.4.20
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/shared@3.2.1
+  - wevu@7.0.3
+
+## 1.4.19
+
+### Patch Changes
+
+- 将 Web 运行时依赖解析延迟到 Vite 插件配置阶段，避免 Node.js 专用模块泄漏到浏览器运行时产物；同时支持按小程序包的 `miniprogram` 字段解析组件，并让 Sass 查找 pnpm 提升后的工作区依赖。
+
+- Updated dependencies:
+  - rolldown-require@2.0.28
+  - wevu@7.0.2
+
+## 1.4.18
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.1
+  - wevu@7.0.1
+
 ## 1.4.17
 
 ### Patch Changes

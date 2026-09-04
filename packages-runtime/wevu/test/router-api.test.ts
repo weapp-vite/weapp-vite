@@ -1,9 +1,12 @@
-import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
+import { WEVU_HOOKS_KEY, WEVU_NATIVE_INSTANCE_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRouter, parseQuery, resolveRouteLocation, stringifyQuery, useRoute, useRouter } from '@/router'
 import { clearActiveRouter } from '@/router/instance'
+import { installRouteStateSyncOnNativeRouter, notifyRouteStateSync } from '@/router/routeSync'
+import { createRouteStateController } from '@/router/useRoute'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 import { bindCurrentPageInstance } from '@/runtime/register/component/lifecycle/platform'
+import { ensureSetupContextInstance } from '@/runtime/register/runtimeInstance/setupContext'
 
 describe('router api', () => {
   afterEach(() => {
@@ -247,6 +250,168 @@ describe('router api', () => {
     expect(route.query).toEqual({
       from: 'activity',
     })
+  })
+
+  it('limits page route sync broadcasts to the activated page controller', () => {
+    const page1 = {
+      route: 'pages/home/index',
+      options: {},
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+    } as any
+    const page2 = {
+      route: 'pages/detail/index',
+      options: {},
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+    } as any
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [page1, page2])
+
+    const syncCalls: string[] = []
+    setCurrentInstance(page1)
+    setCurrentSetupContext({ instance: page1, emit: vi.fn(), attrs: {}, slots: {} })
+    createRouteStateController({
+      beforeRouteStateSync: () => syncCalls.push('page1'),
+    })
+
+    setCurrentInstance(page2)
+    setCurrentSetupContext({ instance: page2, emit: vi.fn(), attrs: {}, slots: {} })
+    createRouteStateController({
+      beforeRouteStateSync: () => syncCalls.push('page2'),
+    })
+
+    notifyRouteStateSync({
+      page: page2,
+      source: 'page',
+    })
+
+    expect(syncCalls).toEqual(['page2'])
+    callHookList(page1, 'onUnload', [])
+    callHookList(page2, 'onUnload', [])
+  })
+
+  it('matches setup instance bridges to their activated native page', () => {
+    const page1 = {
+      route: 'pages/home/index',
+      options: {},
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+    } as any
+    const page2 = {
+      route: 'pages/detail/index',
+      options: {},
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+    } as any
+    const runtimeState1 = { [WEVU_NATIVE_INSTANCE_KEY]: page1 }
+    const runtimeState2 = { [WEVU_NATIVE_INSTANCE_KEY]: page2 }
+    const bridge1 = ensureSetupContextInstance(page1, {
+      state: runtimeState1,
+      proxy: Object.create(null),
+    } as any)
+    const bridge2 = ensureSetupContextInstance(page2, {
+      state: runtimeState2,
+      proxy: Object.create(null),
+    } as any)
+    let pages = [page1, page2]
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const syncCalls: string[] = []
+    setCurrentInstance(page1)
+    setCurrentSetupContext({ instance: bridge1, emit: vi.fn(), attrs: {}, slots: {} })
+    createRouteStateController({
+      beforeRouteStateSync: () => syncCalls.push('page1'),
+    })
+
+    setCurrentInstance(page2)
+    setCurrentSetupContext({ instance: bridge2, emit: vi.fn(), attrs: {}, slots: {} })
+    const { route } = createRouteStateController({
+      beforeRouteStateSync: () => syncCalls.push('page2'),
+    })
+
+    const nativePage1 = { route: page1.route, options: {} } as any
+    const nativePage2 = { route: page2.route, options: {} } as any
+    runtimeState1[WEVU_NATIVE_INSTANCE_KEY] = nativePage1
+    runtimeState2[WEVU_NATIVE_INSTANCE_KEY] = nativePage2
+    pages = [nativePage1, nativePage2]
+
+    notifyRouteStateSync({
+      source: 'native',
+      method: 'switchTab',
+      url: '/pages/issue-705-tab/index',
+    })
+
+    expect(syncCalls).toEqual(['page2'])
+    expect(route.path).toBe('pages/issue-705-tab/index')
+    callHookList(page1, 'onUnload', [])
+    callHookList(page2, 'onUnload', [])
+  })
+
+  it('syncs the source page controller after native navigation commits the target stack', () => {
+    const sourcePage = {
+      route: 'pages/home/index',
+      options: {},
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+    } as any
+    const targetPage = {
+      route: 'pages/profile/index',
+      options: {},
+    } as any
+    let pages = [sourcePage]
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+    const nativeRouter = {
+      switchTab: vi.fn((option: any) => {
+        pages = [targetPage]
+        option.success?.({})
+      }),
+    }
+
+    setCurrentInstance(sourcePage)
+    setCurrentSetupContext({ instance: sourcePage, emit: vi.fn(), attrs: {}, slots: {} })
+    const { route } = createRouteStateController()
+    installRouteStateSyncOnNativeRouter(nativeRouter)
+
+    nativeRouter.switchTab({ url: '/pages/profile/index' })
+
+    expect(route.path).toBe('pages/profile/index')
+    callHookList(sourcePage, 'onUnload', [])
+  })
+
+  it('restores the activated page controller after native back commits the target stack', () => {
+    const targetPage = {
+      route: 'pages/home/index',
+      options: {},
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+    } as any
+    const sourcePage = {
+      route: 'pages/detail/index',
+      options: {},
+    } as any
+    let pages = [targetPage]
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+    const nativeRouter = {
+      navigateBack: vi.fn((option: any) => {
+        pages = [targetPage]
+        option.success?.({})
+      }),
+    }
+
+    setCurrentInstance(targetPage)
+    setCurrentSetupContext({ instance: targetPage, emit: vi.fn(), attrs: {}, slots: {} })
+    const { route } = createRouteStateController()
+    installRouteStateSyncOnNativeRouter(nativeRouter)
+    pages = [targetPage, sourcePage]
+    notifyRouteStateSync({
+      route: resolveRouteLocation('/pages/detail/index'),
+      source: 'router',
+    })
+
+    nativeRouter.navigateBack({})
+
+    expect(route.path).toBe('pages/home/index')
+    callHookList(targetPage, 'onUnload', [])
   })
 
   it('useRoute infers name from an existing named router instance', () => {

@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/dashboard",
   "type": "module",
-  "version": "7.0.0",
+  "version": "7.0.3",
   "description": "Optional analyze dashboard for weapp-vite",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -44,7 +44,7 @@
     "tailwind-merge": "catalog:",
     "tailwind-variants": "catalog:",
     "vue": "catalog:",
-    "vue-router": "5.3.0"
+    "vue-router": "5.3.1"
   },
   "devDependencies": {
     "@iconify-json/mdi": "catalog:",

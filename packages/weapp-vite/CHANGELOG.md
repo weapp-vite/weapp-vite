@@ -1,5 +1,46 @@
 # weapp-vite
 
+## 7.0.3
+
+### Patch Changes
+
+- 修复 Wevu 首屏异步导航对宿主 `queueMicrotask` 和现代内建的隐式依赖，收紧 headless simulator 的 AppService 全局边界，并新增仅作用于小程序运行时代码的 ESLint API 门禁、模板配置与真实 DevTools 验证规范。
+
+- Updated dependencies:
+  - @weapp-core/init@6.0.17
+  - @weapp-core/shared@3.2.1
+  - @weapp-vite/ast@7.0.3
+  - @weapp-vite/eslint@0.2.3
+  - @weapp-vite/web@1.4.20
+  - @wevu/web-apis@1.2.40
+  - weapp-ide-cli@6.1.2
+  - wevu@7.0.3
+
+## 7.0.2
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/ast@7.0.2
+  - @weapp-vite/web@1.4.19
+  - rolldown-require@2.0.28
+  - wevu@7.0.2
+
+## 7.0.1
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：oxc-parser。命名 catalog 变更键：无。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.1
+  - @weapp-vite/ast@7.0.1
+  - @weapp-vite/i18n@0.2.1
+  - @weapp-vite/web@1.4.18
+  - @wevu/web-apis@1.2.39
+  - wevu@7.0.1
+
 ## 7.0.0
 
 ### Patch Changes

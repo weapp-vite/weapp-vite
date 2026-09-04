@@ -1,5 +1,17 @@
 # AGENTS Guidelines (packages/weapp-vite)
 
+<!-- agents-generated: v1 -->
+<!-- source: document:packages/weapp-vite/AGENTS.md; manifest-version: 1; generator-version: 1 -->
+
+## Local Docs First
+
+- Prefer repository-local documentation and generated package docs before relying on stale model memory or external pages.
+
+## Local Overlay
+
+- If `AGENTS.local.md` exists in this project or directory, read it after this file and apply its project-specific additions.
+- Keep generated `AGENTS.md` files managed by the repository tooling; put user-owned custom rules in `AGENTS.local.md`.
+
 Scope: everything under `packages/weapp-vite/`.
 
 Use this file as an optimization layer on top of root `AGENTS.md`.

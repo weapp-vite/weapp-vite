@@ -228,6 +228,16 @@ Page({
       url: '/pages/profile/index',
     })
   },
+  goProfileWithCallbacks() {
+    wx.switchTab({
+      url: '/pages/profile/index',
+      success: () => {
+        const pages = getCurrentPages()
+        this.push('home:switchTab:success:' + pages[pages.length - 1].route)
+      },
+      complete: () => this.push('home:switchTab:complete'),
+    })
+  },
   goProfileWithQueryCallbacks() {
     wx.switchTab({
       url: '/pages/profile/index?from=home',

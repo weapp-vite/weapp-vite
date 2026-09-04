@@ -18,14 +18,14 @@ describe('component registration entry contract', () => {
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     expect(() => defineComponent('wv-invalid-options', null as any)).toThrow(TypeError)
-    expect(() => defineComponent('wv-missing-template', {})).toThrow('需要提供模板渲染函数')
+    expect(() => defineComponent('wv-missing-template', {} as never)).toThrow('需要提供模板渲染函数')
 
     const constructor = defineComponent('wv-fallback-entry', {
       template: () => '',
       component: {},
     })
     expect(registry.get('wv-fallback-entry')).toBe(constructor)
-    expect(defineComponent('wv-fallback-entry', {})).toBe(constructor)
+    expect(defineComponent('wv-fallback-entry', {} as never)).toBe(constructor)
     expect(defineComponent('wv-fallback-entry', {
       template: () => 'updated',
       component: {},

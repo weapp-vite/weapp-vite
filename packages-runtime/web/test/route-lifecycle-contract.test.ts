@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import type { PageStackEntry } from '../src/runtime/polyfill/routeRuntime/options'
 import {
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
@@ -81,7 +82,7 @@ describe('route page lifecycle contract', () => {
     }, record as any)
     const instance = document.createElement('div') as any
     instance.setData = vi.fn()
-    const entry = { active: true, id: 'pages/home', query: { id: '7' } }
+    const entry: PageStackEntry = { active: true, id: 'pages/home', query: { id: '7' } }
     attachRouteMeta(instance, { entry, id: 'pages/home', query: entry.query } as any)
 
     component.lifetimes!.created!.call(instance)

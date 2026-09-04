@@ -165,3 +165,18 @@ export type {
   WevuCompatibilityUpstream,
 } from './compatibility'
 export { findWevuCompatibilityEntry, wevuCompatibilityCatalog } from './compatibility'
+export type {
+  MiniProgramRuntimeApiDiagnostic,
+  MiniProgramRuntimeApiEntry,
+  MiniProgramRuntimeApiKind,
+  MiniProgramRuntimeApiSupport,
+  MiniProgramRuntimeConfigOptions,
+} from './miniProgramRuntime'
+export {
+  createMiniProgramRuntimeConfig,
+  MINI_PROGRAM_RUNTIME_DEFAULT_FILES,
+  MINI_PROGRAM_RUNTIME_DEFAULT_IGNORES,
+  miniProgramRuntimeApiCatalog,
+  miniProgramRuntimePlugin,
+  miniProgramRuntimeRecommended,
+} from './miniProgramRuntime'

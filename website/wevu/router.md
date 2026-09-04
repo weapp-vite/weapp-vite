@@ -56,6 +56,21 @@ await router.replace('/pages/profile/index?tab=security')
 await router.back(1)
 ```
 
+## 2.1 首屏导航模式
+
+`createRouter()` 默认使用 `initialNavigationMode: 'eager'`。页面会先完成生命周期和首屏渲染，异步导航守卫在后台运行，因此不会因为网络鉴权或数据请求而白屏。守卫的 redirect、abort 和异常不会阻塞首次挂载；页面卸载后，迟到结果也不会重新触发生命周期或写入页面数据。
+
+只有确实要求“守卫完成前不挂载页面”时才使用 blocking：
+
+```ts
+const router = createRouter({
+  initialNavigationMode: 'blocking',
+  initialNavigationTimeout: 10_000,
+})
+```
+
+blocking 适合必须先完成的鉴权、租户选择或合规检查。默认超时为 `10_000ms`，超时后自动放行页面并输出稳定诊断 marker。普通网络数据预加载应在页面内使用 loading 或 skeleton 状态完成，不建议用 blocking 延迟首屏。
+
 ## 3. 在 App 中注册
 
 推荐在应用入口或 App 级 `setup()` 中创建一次 router：

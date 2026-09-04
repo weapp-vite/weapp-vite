@@ -23,6 +23,9 @@ import {
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_TEMPLATE_REFS_KEY,
 } from '@weapp-core/constants'
+import {
+  ensureInitialNavigation,
+} from '../../../router/initialNavigation'
 import { callHookList } from '../../hooks'
 import { registerRuntimeLayoutHosts, unregisterRuntimeLayoutHosts } from '../../layoutBridge'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../../pageLayout'
@@ -30,7 +33,6 @@ import { getMiniProgramRuntimeGlobalObject } from '../../platform'
 import { getOwnerProxy } from '../../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
-import { ensureInitialNavigation, getInitialNavigationPromise } from './lifecycle'
 import { registerNativeComponentDefinition } from './registerNativeDefinition'
 
 function scheduleOwnerTemplateRefUpdate(target: InternalRuntimeState) {
@@ -155,16 +157,17 @@ export function registerComponentDefinition<D extends object, C extends Computed
       task()
       return
     }
-    const initialNavigationPromise = ensureInitialNavigation(instance, undefined, { start: false })
+    const initialNavigationPromise = ensureInitialNavigation(instance as any, undefined, {
+      start: false,
+      onComplete: (shouldMount) => {
+        if (shouldMount) {
+          task()
+        }
+      },
+    })
     if (!initialNavigationPromise) {
       task()
-      return
     }
-    void initialNavigationPromise.then((shouldMount) => {
-      if (shouldMount) {
-        task()
-      }
-    }, () => {})
   }
 
   const ensureReadyRuntime = (instance: InternalRuntimeState) => {
@@ -305,14 +308,16 @@ export function registerComponentDefinition<D extends object, C extends Computed
       },
       ready: function ready(this: InternalRuntimeState, ...args: any[]) {
         if (isPage && !(this as any)[WEVU_READY_CALLED_KEY]) {
-          const initialNavigationPromise = ensureInitialNavigation(this, undefined, { start: true })
-          if (initialNavigationPromise && !(this as any).__wevuInitialNavigationReady) {
-            void initialNavigationPromise.then((shouldMount) => {
-              if (shouldMount) {
+          const initialNavigationPromise = ensureInitialNavigation(this as any, undefined, {
+            start: true,
+            onComplete: (shouldMount) => {
+              if (shouldMount && !(this as any).__wevuInitialNavigationReady) {
                 ;(this as any).__wevuInitialNavigationReady = true
                 componentDefinition.lifetimes.ready.call(this, ...args)
               }
-            }, () => {})
+            },
+          })
+          if (initialNavigationPromise && !(this as any).__wevuInitialNavigationReady) {
             return
           }
         }
@@ -322,15 +327,15 @@ export function registerComponentDefinition<D extends object, C extends Computed
           ;(pageLifecycleHooks as any).onReady.call(this, ...args)
           if (!wasReadyCalled) {
             const callMounted = () => callVueLifecycle(this, 'mounted', args)
-            const initialNavigationPromise = getInitialNavigationPromise(this)
-            if (initialNavigationPromise) {
-              void initialNavigationPromise.then((shouldMount) => {
+            const initialNavigationPromise = ensureInitialNavigation(this as any, undefined, {
+              start: false,
+              onComplete: (shouldMount) => {
                 if (shouldMount) {
                   callMounted()
                 }
-              }, () => {})
-            }
-            else {
+              },
+            })
+            if (!initialNavigationPromise) {
               callMounted()
             }
           }

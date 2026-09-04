@@ -16,6 +16,8 @@ date: 2026-05-03
 
 `Skills` 用来把仓库里的工程约束、验证路径和交付规则注入给 AI。它解决的不是“让 AI 多知道一个名词”，而是让 AI 在具体任务里按稳定流程工作。
 
+项目级 `AGENTS.md` 由 `scripts/agents/` 的结构化规则生成。修改规则后运行 `pnpm agents:generate`，提交前运行 `pnpm agents:check`；用户定制内容放在 `AGENTS.local.md`。
+
 ## 什么时候需要安装
 
 | 场景                                | 推荐动作                                    |

@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { onMounted } from 'wevu'
-import { ensureIssue911Guard, readIssue911Trace, recordIssue911Mounted } from '../../shared/issue911'
+import { onMounted, onUnmounted } from 'wevu'
+import { ensureIssue911Guard, readIssue911Trace, recordIssue911Mounted, recordIssue911Unmounted } from '../../shared/issue911'
 
 ensureIssue911Guard()
 
 onMounted(() => {
   recordIssue911Mounted()
+})
+
+onUnmounted(() => {
+  recordIssue911Unmounted()
 })
 
 function _runE2E() {

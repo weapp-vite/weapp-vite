@@ -19,6 +19,7 @@ import {
   registerExportedComponentDefinition,
   registerPageDefinition,
 } from '../host'
+import { createMiniProgramRuntimeGlobals } from '../runtime/runtimeGlobals'
 import { hasBrowserVirtualFile, readBrowserVirtualFile } from './virtualFiles'
 
 export interface BrowserModuleLoader {
@@ -75,7 +76,7 @@ function createExecutionContext(
 ) {
   const wx = createHeadlessWx(wxDriver)
 
-  return {
+  return createMiniProgramRuntimeGlobals({
     App(definition: HeadlessAppDefinition) {
       return registerAppDefinition(registries, definition)
     },
@@ -91,7 +92,6 @@ function createExecutionContext(
     Page(definition: HeadlessPageDefinition) {
       return registerPageDefinition(registries, definition)
     },
-    URLSearchParams,
     clearInterval: (handle: ReturnType<typeof setInterval>) => kernel.scheduler.clearInterval(handle),
     clearTimeout: (handle: ReturnType<typeof setTimeout>) => kernel.scheduler.clearTimeout(handle),
     console: kernel.diagnostics.createConsole(),
@@ -102,8 +102,7 @@ function createExecutionContext(
     setInterval: kernel.scheduler.setInterval.bind(kernel.scheduler),
     setTimeout: kernel.scheduler.setTimeout.bind(kernel.scheduler),
     wx,
-    ...globals,
-  }
+  }, globals)
 }
 
 export function createBrowserModuleLoader(

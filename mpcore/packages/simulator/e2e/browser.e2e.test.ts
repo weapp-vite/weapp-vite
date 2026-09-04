@@ -168,6 +168,20 @@ describe.sequential('simulator browser e2e', () => {
 
     expect(parseJsonString<{ asyncResult: string }>(state.pageData).asyncResult)
       .toBe('async-default:async-named')
+    expect(parseJsonString<{ runtimeGlobals: Record<string, string> }>(state.pageData).runtimeGlobals).toEqual({
+      btoa: 'undefined',
+      crypto: 'undefined',
+      CustomEvent: 'undefined',
+      document: 'undefined',
+      Event: 'undefined',
+      fetch: 'undefined',
+      global: 'undefined',
+      location: 'undefined',
+      navigator: 'undefined',
+      queueMicrotask: 'undefined',
+      self: 'undefined',
+      window: 'undefined',
+    })
   })
 
   it('loads local plugin exports, components, and pages in the browser demo', async () => {
@@ -1560,7 +1574,9 @@ describe.sequential('simulator browser e2e', () => {
     )
 
     const pageData = parseJsonString<Record<string, any>>(state.pageData)
+    const storageData = parseJsonString<Record<string, any>>(state.storageData)
     expect(state.pageStack).toEqual(['pages/settings/index'])
+    expect(storageData['route-maze-switch-tab-success-route']).toBe('pages/settings/index')
     expect(pageData.title).toBe('Settings Tab')
     expect(pageData.logs).toContain('settings-tab:onShow')
     expect(pageData.logs).not.toContain(expect.stringContaining('settings-tab:onTabItemTap:'))

@@ -142,14 +142,22 @@ function refreshSpecState() {
 }
 
 function initData() {
-  selectedSku.value = Object.fromEntries((props.specList || []).map(spec => [spec.specId, '']))
+  const selection: Record<string, string> = {}
+  for (const spec of props.specList || []) {
+    selection[spec.specId] = ''
+  }
+  selectedSku.value = selection
   specListState.value = cloneSpecList(props.specList)
   refreshSpecState()
 }
 
 function getSelectedSpecValues() {
   const selectedValueMap = selectedSku.value
-  return specListState.value.flatMap(spec => spec.specValueList.filter(valueItem => valueItem.specValueId === selectedValueMap[spec.specId]))
+  const selectedValues: SpecValueItem[] = []
+  for (const spec of specListState.value) {
+    selectedValues.push(...spec.specValueList.filter(valueItem => valueItem.specValueId === selectedValueMap[spec.specId]))
+  }
+  return selectedValues
 }
 
 function toChooseItem(e: any) {

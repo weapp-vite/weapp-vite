@@ -237,7 +237,7 @@ describe('advanced native custom elements', () => {
     const columnChange = vi.fn()
     picker.addEventListener('columnchange', columnChange)
     picker.open()
-    const second = picker.shadowRoot!.querySelectorAll<HTMLSelectElement>('select')[1]!
+    const second = picker.shadowRoot!.querySelectorAll('select')[1] as HTMLSelectElement
     second.value = '1'
     second.dispatchEvent(new Event('change'))
     expect(columnChange.mock.calls[0]?.[0].detail).toEqual({ column: 1, value: 1 })
@@ -771,7 +771,9 @@ describe('advanced native custom elements', () => {
     vi.useFakeTimers()
     const frameCallbacks = new Map<number, FrameRequestCallback>()
     let nextFrame = 0
-    const cancelAnimationFrame = vi.fn((id: number) => frameCallbacks.delete(id))
+    const cancelAnimationFrame = vi.fn((id: number) => {
+      frameCallbacks.delete(id)
+    })
     vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
       nextFrame += 1
       frameCallbacks.set(nextFrame, callback)
@@ -785,7 +787,7 @@ describe('advanced native custom elements', () => {
       entry![1](time)
     }
 
-    const progress = appendElement('weapp-progress', {
+    const progress = appendElement<HTMLElement & { connectedCallback: () => void }>('weapp-progress', {
       active: '',
       duration: '1',
       percent: '50',
@@ -858,7 +860,7 @@ describe('advanced native custom elements', () => {
       disconnect = disconnect
     })
 
-    const swiper = document.createElement('weapp-swiper')
+    const swiper = document.createElement('weapp-swiper') as HTMLElement & { connectedCallback: () => void }
     swiper.setAttribute('duration', '20')
     swiper.setAttribute('interval', '16')
     const first = document.createElement('weapp-swiper-item')
@@ -912,7 +914,7 @@ describe('advanced native custom elements', () => {
 
   it('moves movable-view within its area and renders cover primitives', () => {
     const area = appendElement('weapp-movable-area')
-    const view = document.createElement('weapp-movable-view')
+    const view = document.createElement('weapp-movable-view') as HTMLElement & { connectedCallback: () => void }
     view.setAttribute('direction', 'all')
     view.setAttribute('animation', '')
     Object.defineProperty(area, 'getBoundingClientRect', {

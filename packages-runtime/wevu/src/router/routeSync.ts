@@ -1,5 +1,6 @@
 import type { MiniProgramPageLike } from '../routerInternal/shared'
 import type { RouteLocationNormalizedLoaded } from './types'
+import { getCurrentMiniProgramPages } from '../runtime/platform'
 
 export interface RouteStateSyncPayload {
   page?: MiniProgramPageLike
@@ -34,7 +35,11 @@ export function notifyRouteStateSync(payload?: RouteStateSyncPayload) {
   }
 }
 
-function createNativeRouteStateSyncPayload(methodName: NativeRouterMethodName, option: unknown): RouteStateSyncPayload | undefined {
+function createNativeRouteStateSyncPayload(
+  methodName: NativeRouterMethodName,
+  option: unknown,
+  sourcePage: MiniProgramPageLike | undefined,
+): RouteStateSyncPayload | undefined {
   if (methodName === 'navigateBack') {
     return {
       method: methodName,
@@ -46,6 +51,7 @@ function createNativeRouteStateSyncPayload(methodName: NativeRouterMethodName, o
     if (typeof url === 'string') {
       return {
         method: methodName,
+        page: sourcePage,
         source: 'native',
         url,
       }
@@ -53,6 +59,7 @@ function createNativeRouteStateSyncPayload(methodName: NativeRouterMethodName, o
   }
   return {
     method: methodName,
+    page: sourcePage,
     source: 'native',
   }
 }
@@ -74,13 +81,15 @@ export function installRouteStateSyncOnNativeRouter(nativeRouter: unknown) {
     }
 
     router[methodName] = function routeStateSyncNativeRouterMethod(this: unknown, option?: unknown, ...args: any[]) {
+      const pages = getCurrentMiniProgramPages() as MiniProgramPageLike[]
+      const sourcePage = pages[pages.length - 1]
       let synced = false
       const syncRouteState = () => {
         if (synced) {
           return
         }
         synced = true
-        notifyRouteStateSync(createNativeRouteStateSyncPayload(methodName, option))
+        notifyRouteStateSync(createNativeRouteStateSyncPayload(methodName, option, sourcePage))
       }
 
       const nextOption = option && typeof option === 'object'

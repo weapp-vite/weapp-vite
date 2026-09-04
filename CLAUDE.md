@@ -100,6 +100,8 @@ Recommended remote install source for all public skills:
 npx skills add sonofmagic/skills
 ```
 
+项目级 `AGENTS.md` 由 `scripts/agents/` 的结构化规则生成。修改规则后运行 `pnpm agents:generate`，提交前运行 `pnpm agents:check`；项目定制约束放在 `AGENTS.local.md`，不要直接修改带生成标记的 `AGENTS.md`。
+
 To make this repository's latest local skills directly available in local CLI environments:
 
 ```bash

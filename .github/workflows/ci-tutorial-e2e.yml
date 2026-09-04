@@ -1,0 +1,111 @@
+name: Tutorial E2E
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/ci-tutorial-e2e.yml
+      - 'e2e/tutorials/**'
+      - 'packages/create-weapp-vite/**'
+      - 'packages/weapp-vite/**'
+      - 'packages-runtime/wevu/**'
+      - 'templates/**'
+      - website/guide/index.md
+      - website/guide/multi-platform.md
+      - website/handbook/index.md
+      - 'website/snippets/tutorial-e2e/**'
+      - scripts/project-lifecycle.mjs
+      - package.json
+      - pnpm-lock.yaml
+  schedule:
+    - cron: '30 4 * * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Tutorial package source
+        required: false
+        default: both
+        type: choice
+        options:
+          - both
+          - npm
+          - workspace
+      scenario:
+        description: Optional comma-separated tutorial scenario ids
+        required: false
+        default: all
+        type: string
+
+concurrency:
+  group: tutorial-e2e-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tutorial-e2e:
+    name: Tutorial E2E (${{ matrix.source }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        source: ${{ fromJSON(github.event_name == 'pull_request' && '["workspace"]' || github.event_name == 'schedule' && '["workspace","npm"]' || github.event.inputs.source == 'both' && '["workspace","npm"]' || format('["{0}"]', github.event.inputs.source || 'workspace')) }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Bun for guide package-manager coverage
+        if: matrix.source == 'npm'
+        uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
+        with:
+          bun-version: 1.2.21
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Rebuild workspace packages
+        if: matrix.source == 'workspace'
+        run: pnpm build:pkgs:ci
+
+      - name: Check tutorial contract
+        run: pnpm e2e:tutorial:contract
+
+      - name: Install Chromium for Web runtime coverage
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run tutorial E2E
+        env:
+          TUTORIAL_E2E_SKIP_WORKSPACE_BUILD: ${{ matrix.source == 'workspace' && '1' || '0' }}
+          TUTORIAL_E2E_SCENARIO: ${{ github.event.inputs.scenario || 'all' }}
+        run: |
+          mkdir -p .tmp/tutorial-e2e-report
+          pnpm e2e:tutorial --source "${{ matrix.source }}" --scenario "${TUTORIAL_E2E_SCENARIO}" --report-dir .tmp/tutorial-e2e-report
+
+      - name: Upload tutorial report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tutorial-e2e-${{ matrix.source }}
+          path: .tmp/tutorial-e2e-report
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Append tutorial report to summary
+        if: always()
+        shell: bash
+        run: |
+          report=".tmp/tutorial-e2e-report/tutorial-e2e-${{ matrix.source }}.md"
+          if [ -f "$report" ]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -1,3 +1,4 @@
+import { REQUEST_GLOBAL_PLACEHOLDER_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   AbortControllerPolyfill,
@@ -458,6 +459,21 @@ describe('web API contract matrix', () => {
     await Promise.resolve()
     expect(promiseCallback).toHaveBeenCalled()
     expect(() => queueMicrotaskPolyfill(null as never)).toThrow('callback must be a function')
+  })
+
+  it('ignores request-global placeholders and falls back to a promise microtask', async () => {
+    const placeholder = vi.fn(() => {
+      throw new Error('placeholder must not run')
+    }) as any
+    placeholder[REQUEST_GLOBAL_PLACEHOLDER_KEY] = true
+    setGlobal('queueMicrotask', placeholder)
+
+    const order = ['sync']
+    queueMicrotaskPolyfill(() => order.push('microtask'))
+    expect(order).toEqual(['sync'])
+    await Promise.resolve()
+    expect(order).toEqual(['sync', 'microtask'])
+    expect(placeholder).not.toHaveBeenCalled()
   })
 
   it('rethrows rejected microtask callbacks on a timer', async () => {

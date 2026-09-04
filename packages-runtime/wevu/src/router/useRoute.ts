@@ -2,9 +2,11 @@ import type { MiniProgramPageLifetime } from '../runtime/types'
 import type { SetupContextRouter } from '../runtime/types/props'
 import type { RouteStateSyncPayload } from './routeSync'
 import type { LocationQueryRaw, RouteLocationNormalizedLoaded } from './types'
+import { WEVU_NATIVE_INSTANCE_KEY } from '@weapp-core/constants'
 import { reactive, readonly } from '../reactivity'
 import { cloneLocationQuery, cloneRouteLocationRedirectedFrom, cloneRouteMeta, cloneRouteParams, cloneRouteRecordMatchedList, resolveCurrentRoute, resolvePageRoute } from '../routerInternal/shared'
 import { getCurrentSetupContext, onLoad, onReady, onRouteDone, onShow, onUnload } from '../runtime/hooks'
+import { getCurrentMiniProgramPages } from '../runtime/platform'
 import {
   useNativePageRouter as useNativePageRouterInternal,
   useNativeRouter as useNativeRouterInternal,
@@ -26,6 +28,41 @@ interface RouteStateControllerOptions extends UseRouteOptions {
 
 export interface RouteStateController {
   route: Readonly<RouteLocationNormalizedLoaded>
+}
+
+function isPageLikeInstance(instance: Record<string, any>): boolean {
+  return typeof instance.route === 'string' || typeof instance.__route__ === 'string'
+}
+
+function resolveRouteControllerInstance(instance: Record<string, any>): Record<string, any> {
+  const nativeInstance = instance[WEVU_NATIVE_INSTANCE_KEY]
+  return nativeInstance && typeof nativeInstance === 'object'
+    ? nativeInstance
+    : instance
+}
+
+function shouldSyncRouteStateForInstance(
+  instance: Record<string, any>,
+  isPageController: boolean,
+  payload: RouteStateSyncPayload | undefined,
+): boolean {
+  if (payload?.source === 'router') {
+    return true
+  }
+
+  // 页面级 route controller 只处理当前页面的广播，避免 DevTools 在 onUnload/onShow
+  // 交错时让隐藏页面重复执行导航守卫。组件级 controller 仍接收全局同步。
+  if (!isPageController) {
+    return true
+  }
+
+  const routeControllerInstance = resolveRouteControllerInstance(instance)
+  if (payload?.page) {
+    return payload.page === routeControllerInstance
+  }
+
+  const pages = getCurrentMiniProgramPages()
+  return pages[pages.length - 1] === routeControllerInstance
 }
 
 function applyRouteState(
@@ -76,9 +113,12 @@ export function createRouteStateController(options: RouteStateControllerOptions 
   }
 
   const fallbackPage = setupContext.instance
+  const initialRouteControllerInstance = resolveRouteControllerInstance(fallbackPage)
   const resolveRoute = options.resolveRoute
     ?? ((route: RouteLocationNormalizedLoaded) => getActiveRouter()?.resolve(route) ?? route)
   const currentRoute = resolveRoute(resolveCurrentRoute(undefined, fallbackPage))
+  const isPageController = isPageLikeInstance(initialRouteControllerInstance)
+    || getCurrentMiniProgramPages().includes(initialRouteControllerInstance)
   const routeState = reactive<RouteLocationNormalizedLoaded>({
     path: currentRoute.path,
     fullPath: currentRoute.fullPath,
@@ -115,16 +155,19 @@ export function createRouteStateController(options: RouteStateControllerOptions 
     syncRoute()
   })
   const unregisterRouteStateSync = registerRouteStateSyncHandler((payload) => {
+    if (!shouldSyncRouteStateForInstance(fallbackPage, isPageController, payload)) {
+      return
+    }
     if (payload?.route) {
       syncRoute(undefined, payload.route, payload)
       return
     }
-    if (payload?.page) {
-      syncRoute(undefined, resolvePageRoute(payload.page), payload)
-      return
-    }
     if (payload?.url) {
       syncRoute(undefined, resolveRouteLocation(payload.url, routeState.path), payload)
+      return
+    }
+    if (payload?.page) {
+      syncRoute(undefined, resolvePageRoute(payload.page), payload)
       return
     }
     syncRoute(undefined, undefined, payload)

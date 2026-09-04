@@ -1,5 +1,17 @@
 # AGENTS Guidelines for dashboard-ui-lab
 
+<!-- agents-generated: v1 -->
+<!-- source: document:apps/dashboard-ui-lab/AGENTS.md; manifest-version: 1; generator-version: 1 -->
+
+## Local Docs First
+
+- Prefer repository-local documentation and generated package docs before relying on stale model memory or external pages.
+
+## Local Overlay
+
+- If `AGENTS.local.md` exists in this project or directory, read it after this file and apply its project-specific additions.
+- Keep generated `AGENTS.md` files managed by the repository tooling; put user-owned custom rules in `AGENTS.local.md`.
+
 本目录是 `@weapp-vite/dashboard` 的真实 UI 验证项目。开发或优化 dashboard 页面时，优先使用本 app 反馈真实 analyze payload 和 CLI UI 链路，不要只启动 `packages/dashboard` 的包级 Vite dev server 作为最终判断依据。
 
 ## Required Workflow

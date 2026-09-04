@@ -201,7 +201,15 @@ describe.sequential('e2e app: github-issues / issue #705', () => {
 
       await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, 'switchTab', 12_000).catch(() => undefined)
       const switchTabResult = await waitForStorage(miniProgram, SWITCH_TAB_RESULT_STORAGE_KEY)
-      expect(switchTabResult.route.path).toBe('pages/issue-705-tab/index')
+      expect({
+        pageStack: switchTabResult.pageStack,
+        route: switchTabResult.route.path,
+        routerRoute: switchTabResult.routerRoute.path,
+      }).toEqual({
+        pageStack: ['pages/issue-705-tab/index'],
+        route: 'pages/issue-705-tab/index',
+        routerRoute: 'pages/issue-705-tab/index',
+      })
 
       const tabPage = await waitForCurrentPagePath(miniProgram, '/pages/issue-705-tab/index', 8_000)
       if (!tabPage) {

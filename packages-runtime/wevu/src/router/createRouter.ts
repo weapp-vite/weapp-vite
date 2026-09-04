@@ -2,6 +2,7 @@ import type { RouteResolveCodec } from '../routerInternal/shared'
 import type { NavigationRunResult } from './navigationResult'
 import type { RouteStateSyncPayload } from './routeSync'
 import type {
+  InitialNavigationMode,
   LocationQueryRaw,
   NavigationAfterEach,
   NavigationErrorHandler,
@@ -29,15 +30,15 @@ import {
   warnDuplicateRouteEntries,
 } from '../routerInternal/shared'
 import { getMiniProgramGlobalObject } from '../runtime/platform'
-import { runBackNavigationGuards } from './backNavigation'
-import { registerInitialNavigationRunner } from './initialNavigation'
+import { resolveBackNavigationTarget, runBackNavigationGuards } from './backNavigation'
+import { DEFAULT_INITIAL_NAVIGATION_TIMEOUT, registerInitialNavigationRunner } from './initialNavigation'
 import { setActiveRouter } from './instance'
 import { createNavigationApi } from './navigationApi'
 import { createNavigationResultController } from './navigationResult'
 import { navigateWithTarget } from './navigationTarget'
 import { resolveRouteLocation } from './resolve'
 import { createRouteRegistry } from './routeRegistry'
-import { installRouteStateSyncOnNativeRouter } from './routeSync'
+import { installRouteStateSyncOnNativeRouter, notifyRouteStateSync } from './routeSync'
 import { createRouteStateController, useNativeRouter } from './useRoute'
 
 /**
@@ -51,6 +52,10 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   const afterEachHooks = new Set<NavigationAfterEach>()
   const errorHandlers = new Set<NavigationErrorHandler>()
   const maxRedirects = options.maxRedirects ?? 10
+  const initialNavigationMode: InitialNavigationMode = options.initialNavigationMode === 'blocking' ? 'blocking' : 'eager'
+  const initialNavigationTimeout = Number.isFinite(options.initialNavigationTimeout) && (options.initialNavigationTimeout ?? 0) > 0
+    ? Math.max(1, Math.trunc(options.initialNavigationTimeout!))
+    : DEFAULT_INITIAL_NAVIGATION_TIMEOUT
   const paramsMode = options.paramsMode ?? 'loose'
   const rejectOnError = options.rejectOnError ?? true
   const routeResolveCodec: RouteResolveCodec = {
@@ -67,11 +72,16 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   const tabBarPathSet = new Set(normalizedTabBarEntries)
   const routeRegistry = createRouteRegistry(namedRouteLookup)
   let managedNavigationCount = 0
+  let activeManagedRoutePath: string | undefined
+  let pendingManagedRouteSyncPath: string | undefined
+  let pendingExternalRouteSyncPath: string | undefined
   const routerOptions = createRouterOptionsSnapshot(
     normalizedTabBarEntries,
     routeRegistry.getRoutes(),
     paramsMode,
     maxRedirects,
+    initialNavigationMode,
+    initialNavigationTimeout,
     routeResolveCodec,
     rejectOnError,
   )
@@ -124,14 +134,27 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     nextRoute: RouteLocationNormalizedLoaded,
     payload: RouteStateSyncPayload,
   ) {
-    if (
-      managedNavigationCount > 0
-      || !isExternalBackSync(payload)
-      || nextRoute.fullPath === route.fullPath
-    ) {
+    if (managedNavigationCount > 0 || !isExternalBackSync(payload)) {
       return
     }
 
+    if (pendingExternalRouteSyncPath !== undefined) {
+      return
+    }
+
+    if (pendingManagedRouteSyncPath !== undefined) {
+      const expectedPath = pendingManagedRouteSyncPath
+      pendingManagedRouteSyncPath = undefined
+      if (nextRoute.fullPath === expectedPath) {
+        return
+      }
+    }
+
+    if (nextRoute.fullPath === route.fullPath) {
+      return
+    }
+
+    pendingExternalRouteSyncPath = nextRoute.fullPath
     const from = snapshotRouteLocation(route)
     void runBackNavigationGuards({
       target: nextRoute,
@@ -142,6 +165,8 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
       resolveWithCodec,
     }).then((result) => {
       return emitObservedNavigationAfterEach?.(result)
+    }).finally(() => {
+      pendingExternalRouteSyncPath = undefined
     })
   }
 
@@ -176,21 +201,52 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     settleNavigationResult: navigationResultController.settleNavigationResult,
   })
 
-  async function runManagedNavigation<T>(navigation: () => Promise<T>): Promise<T> {
+  async function runManagedNavigation<T>(navigation: () => Promise<T>, targetPath?: string): Promise<T> {
+    const previousRoutePath = route.fullPath
+    if (targetPath) {
+      activeManagedRoutePath = targetPath
+    }
     managedNavigationCount += 1
     try {
-      return await navigation()
+      const result = await navigation()
+      if (route.fullPath !== previousRoutePath) {
+        pendingManagedRouteSyncPath = route.fullPath
+      }
+      return result
     }
     finally {
       managedNavigationCount -= 1
+      if (managedNavigationCount <= 0) {
+        activeManagedRoutePath = undefined
+      }
     }
   }
 
-  async function runInitialNavigation(page: Parameters<typeof resolveCurrentRoute>[1], query?: LocationQueryRaw) {
+  function resolveManagedRoutePath(to: RouteLocationRaw): string | undefined {
+    try {
+      return resolveWithCodec(to, route.path).fullPath
+    }
+    catch {
+      return undefined
+    }
+  }
+
+  async function runInitialNavigation(
+    page: Parameters<typeof resolveCurrentRoute>[1],
+    query?: LocationQueryRaw,
+    isActive: () => boolean = () => true,
+  ) {
     return runManagedNavigation(async () => {
       const from = snapshotRouteLocation(route)
       const target = enrichRouteRecordState(resolveCurrentRoute(query, page))
       if (!target.path) {
+        return undefined
+      }
+      if (activeManagedRoutePath === target.fullPath) {
+        notifyRouteStateSync({
+          route: target,
+          source: 'router',
+        })
         return undefined
       }
       const result = await navigateWithTarget({
@@ -208,6 +264,9 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
         executeNative: false,
         allowSameLocation: true,
       })
+      if (!isActive()) {
+        return undefined
+      }
       return navigationResultController.settleNavigationResult(result)
     })
   }
@@ -255,10 +314,18 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
     isReady(): Promise<void> {
       return readyPromise
     },
-    push: to => runManagedNavigation(() => navigationApi.push(to)),
-    replace: to => runManagedNavigation(() => navigationApi.replace(to)),
-    back: delta => runManagedNavigation(() => navigationApi.back(delta)),
-    go: delta => runManagedNavigation(() => navigationApi.go(delta)),
+    push: to => runManagedNavigation(() => navigationApi.push(to), resolveManagedRoutePath(to)),
+    replace: to => runManagedNavigation(() => navigationApi.replace(to), resolveManagedRoutePath(to)),
+    back: delta => runManagedNavigation(
+      () => navigationApi.back(delta),
+      resolveBackNavigationTarget(delta ?? 1, route, resolveWithCodec)?.fullPath,
+    ),
+    go: delta => runManagedNavigation(
+      () => navigationApi.go(delta),
+      delta < 0
+        ? resolveBackNavigationTarget(Math.abs(delta), route, resolveWithCodec)?.fullPath
+        : undefined,
+    ),
     forward: () => runManagedNavigation(() => navigationApi.forward()),
     hasRoute: routeRegistry.hasRoute,
     getRoutes: routeRegistry.getRoutes,
@@ -272,6 +339,6 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   }
 
   setActiveRouter(router)
-  registerInitialNavigationRunner(router, runInitialNavigation)
+  registerInitialNavigationRunner(router, runInitialNavigation, initialNavigationTimeout, initialNavigationMode)
   return router
 }

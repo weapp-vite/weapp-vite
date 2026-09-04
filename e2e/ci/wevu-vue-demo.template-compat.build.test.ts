@@ -65,7 +65,7 @@ describe.sequential('e2e app: wevu-vue-demo (template compat)', () => {
     expect(pageJs).toContain('entries')
     expect(pageJs).toContain('entryObjects')
     expect(pageJs).toContain('summaryMap')
-    expect(pageJs).toContain('Object.fromEntries')
+    expect(pageJs).not.toContain('Object.fromEntries')
     expect(pageJs).toContain('dynamic-')
     expect(pageJs).toContain('onNativeEventWithArgs')
     expect(pageJs).toMatch(/['"`]touchcancel['"`],\s*['"`]zone['"`],/)

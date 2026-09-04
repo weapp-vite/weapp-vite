@@ -102,9 +102,11 @@ export class StaticBindingState {
       if (fields.length === 0) {
         continue
       }
-      slots[element.sid] = Object.fromEntries(
-        fields.map(field => [field, readBindingValue(element, field)]),
-      )
+      const slot: Record<string, unknown> = {}
+      for (const field of fields) {
+        slot[field] = readBindingValue(element, field)
+      }
+      slots[element.sid] = slot
     }
     return slots
   }

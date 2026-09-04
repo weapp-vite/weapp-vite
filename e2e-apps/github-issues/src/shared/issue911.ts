@@ -6,11 +6,11 @@ const trace: string[] = []
 let guardInstalled = false
 let traceMode: string | undefined
 
-type Issue911Mode = 'default' | 'redirect' | 'redirect-target' | 'abort'
+type Issue911Mode = 'default' | 'redirect' | 'redirect-target' | 'abort' | 'never' | 'reject' | 'late'
 
 function resolveIssue911Mode(to: { query?: Record<string, unknown> }): Issue911Mode {
   const mode = String(to.query?.mode ?? 'default')
-  return mode === 'redirect' || mode === 'redirect-target' || mode === 'abort'
+  return mode === 'redirect' || mode === 'redirect-target' || mode === 'abort' || mode === 'never' || mode === 'reject' || mode === 'late'
     ? mode
     : 'default'
 }
@@ -42,8 +42,14 @@ export function ensureIssue911Guard() {
     }
     traceMode = mode
     recordIssue911Trace(mode, 'beforeEach:start')
-    await new Promise<void>(resolve => setTimeout(resolve, 100))
+    if (mode === 'never') {
+      await new Promise<void>(() => {})
+    }
+    await new Promise<void>(resolve => setTimeout(resolve, mode === 'late' ? 10_500 : 100))
     recordIssue911Trace(mode, 'beforeEach:done')
+    if (mode === 'reject') {
+      throw new Error('issue-911 guard rejected')
+    }
     if (mode === 'abort') {
       return false
     }
@@ -59,6 +65,19 @@ export function recordIssue911Mounted() {
   if (typeof wx !== 'undefined' && typeof wx.setStorageSync === 'function') {
     wx.setStorageSync(ISSUE_911_TRACE_STORAGE_KEY, {
       mode: traceMode ?? 'default',
+      trace: [...trace],
+    })
+  }
+}
+
+export function recordIssue911Unmounted() {
+  if (traceMode !== 'late') {
+    return
+  }
+  trace.push('unmounted')
+  if (typeof wx !== 'undefined' && typeof wx.setStorageSync === 'function') {
+    wx.setStorageSync(ISSUE_911_TRACE_STORAGE_KEY, {
+      mode: traceMode,
       trace: [...trace],
     })
   }

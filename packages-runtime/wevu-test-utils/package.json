@@ -1,7 +1,7 @@
 {
   "name": "@wevu/test-utils",
   "type": "module",
-  "version": "0.2.7",
+  "version": "0.2.10",
   "description": "Lightweight test utilities for Wevu Composition API logic",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",

@@ -2,15 +2,23 @@
 import { defineComponent, nextTick } from 'wevu'
 import { buildResult, stringifyResult } from '../../shared/e2e'
 
+function flattenValues(values: any[], flatten: (value: any) => string[]): string[] {
+  const result: string[] = []
+  for (const value of values) {
+    result.push(...flatten(value))
+  }
+  return result
+}
+
 function flattenClassValues(value: any): string[] {
   if (typeof value === 'string') {
     return [value]
   }
   if (Array.isArray(value)) {
-    return value.flatMap(item => flattenClassValues(item))
+    return flattenValues(value, flattenClassValues)
   }
   if (value && typeof value === 'object') {
-    return Object.values(value).flatMap(item => flattenClassValues(item))
+    return flattenValues(Object.values(value), flattenClassValues)
   }
   return []
 }
@@ -20,10 +28,10 @@ function flattenStyleValues(value: any): string[] {
     return [value]
   }
   if (Array.isArray(value)) {
-    return value.flatMap(item => flattenStyleValues(item))
+    return flattenValues(value, flattenStyleValues)
   }
   if (value && typeof value === 'object') {
-    return Object.entries(value).flatMap(([key, item]) => {
+    return flattenValues(Object.entries(value), ([key, item]) => {
       if (typeof item === 'string' || typeof item === 'number') {
         return [`${key}:${item}`]
       }
@@ -38,9 +46,9 @@ function readRuntimeBindings() {
   const currentPage = currentPages[currentPages.length - 1] as any
   const data = currentPage?.data || {}
   const classBindingEntries = Object.entries(data).filter(([key]) => /^__wv_cls_\d+$/.test(key))
-  const classValues = classBindingEntries.flatMap(([, value]) => flattenClassValues(value))
+  const classValues = flattenValues(classBindingEntries, ([, value]) => flattenClassValues(value))
   const styleBindingEntries = Object.entries(data).filter(([key]) => /^__wv_style_\d+$/.test(key))
-  const styleValues = styleBindingEntries.flatMap(([, value]) => flattenStyleValues(value))
+  const styleValues = flattenValues(styleBindingEntries, ([, value]) => flattenStyleValues(value))
   return {
     classBindingEntries,
     classValues,
@@ -58,7 +66,7 @@ async function waitForRuntimeBindings(includeRootGuard: boolean, timeoutMs = 3_0
   const start = Date.now()
   let latest = readRuntimeBindings()
   while (Date.now() - start <= timeoutMs) {
-    const classTokens = latest.classValues.flatMap(value => value.split(/\s+/))
+    const classTokens = flattenValues(latest.classValues, value => value.split(/\s+/))
     if (
       expectedClassTokens.every(token => classTokens.includes(token))
       && expectedStyleTexts.every(text => latest.styleValues.some(value => value.includes(text)))

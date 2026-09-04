@@ -1,10 +1,17 @@
-import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import {
+  cleanupChildProcessHandles,
+  createChildProcess,
+  formatCommand,
+  tail,
+  terminateProcess,
+  waitForChildClose,
+} from './project-lifecycle.mjs'
 
 const CREATE_PACKAGE_NAME = 'weapp-vite'
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url))
@@ -34,7 +41,6 @@ const REPORT_META = {
   runAttempt: process.env.GITHUB_RUN_ATTEMPT?.trim() || '',
 }
 const RESOLVED_CREATE_WEAPP_VITE_VERSION = process.env.CREATE_WEAPP_VITE_RESOLVED_VERSION?.trim() || ''
-const NEWLINE_RE = /\r?\n/
 const DEV_REBUILD_SUCCESS_RE = /小程序已重新构建/
 const TEMPLATE_DIR_MAP = {
   'default': 'weapp-vite-template',
@@ -78,21 +84,6 @@ function resolveEnabledScenarioNames() {
 }
 
 const ENABLED_SCENARIO_NAMES = resolveEnabledScenarioNames()
-
-function getExecutableName(command) {
-  return process.platform === 'win32' ? `${command}.cmd` : command
-}
-
-function createChildProcess(command, args, options) {
-  if (process.platform === 'win32') {
-    return spawn(formatCommand(getExecutableName(command), args), {
-      ...options,
-      shell: true,
-    })
-  }
-
-  return spawn(getExecutableName(command), args, options)
-}
 
 function isFilePresent(file) {
   return fs.access(file).then(() => true).catch(() => false)
@@ -340,15 +331,6 @@ const SCENARIOS = [
   },
 ].filter(scenario => ENABLED_SCENARIO_NAMES.has(scenario.name))
 
-function formatCommand(command, args) {
-  return [command, ...args].join(' ')
-}
-
-function tail(text, maxLines = 80) {
-  const lines = text.trim().split(NEWLINE_RE).filter(Boolean)
-  return lines.slice(-maxLines).join('\n')
-}
-
 async function runCommand({ cwd, command, args, timeoutMs, label }) {
   const stdoutChunks = []
   const stderrChunks = []
@@ -416,70 +398,6 @@ async function timedRunCommand(input) {
   const startedAt = Date.now()
   await runCommand(input)
   return Date.now() - startedAt
-}
-
-async function terminateProcess(child) {
-  if (!child.pid || child.killed || child.exitCode !== null) {
-    return
-  }
-
-  if (process.platform === 'win32') {
-    await new Promise((resolve) => {
-      const killer = spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], {
-        stdio: 'ignore',
-      })
-      killer.on('close', resolve)
-      killer.on('error', resolve)
-    })
-    return
-  }
-
-  try {
-    process.kill(-child.pid, 'SIGTERM')
-  }
-  catch {
-    child.kill('SIGTERM')
-  }
-  const start = Date.now()
-  while (child.exitCode === null && Date.now() - start < 10_000) {
-    await delay(200)
-  }
-  if (child.exitCode === null) {
-    try {
-      process.kill(-child.pid, 'SIGKILL')
-    }
-    catch {
-      child.kill('SIGKILL')
-    }
-  }
-}
-
-async function waitForChildClose(child, timeoutMs = 10_000) {
-  let settled = false
-  await Promise.race([
-    new Promise((resolve) => {
-      child.once('close', () => {
-        settled = true
-        resolve()
-      })
-      child.once('error', () => {
-        settled = true
-        resolve()
-      })
-    }),
-    delay(timeoutMs),
-  ])
-
-  return settled
-}
-
-function cleanupChildProcessHandles(child) {
-  child.removeAllListeners?.('close')
-  child.removeAllListeners?.('error')
-  child.stdout?.destroy?.()
-  child.stderr?.destroy?.()
-  child.stdin?.destroy?.()
-  child.unref?.()
 }
 
 async function distHasRequiredOutputs(projectDir) {

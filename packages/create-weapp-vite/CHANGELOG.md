@@ -1,5 +1,31 @@
 # create-weapp-vite
 
+## 2.8.11
+
+### Patch Changes
+
+- 修复 Wevu 首屏异步导航对宿主 `queueMicrotask` 和现代内建的隐式依赖，收紧 headless simulator 的 AppService 全局边界，并新增仅作用于小程序运行时代码的 ESLint API 门禁、模板配置与真实 DevTools 验证规范。
+
+- Updated dependencies:
+  - @weapp-core/init@6.0.17
+  - @weapp-core/shared@3.2.1
+
+## 2.8.10
+
+### Patch Changes
+
+- 将项目级 AGENTS 指引改为由结构化规则生成，并保留用户维护的 AGENTS.local.md；新增 agents:check 与 agents:generate 校验和刷新命令。
+
+- 移除多平台模板中未被用户源码直接使用的 `lit` 与 `vite` 依赖，避免生成项目安装不必要的直接依赖。
+
+## 2.8.9
+
+### Patch Changes
+
+- 修复首屏异步路由守卫长期等待、异常和页面卸载后的迟到回调问题。首屏导航默认改为 `eager`，页面先挂载渲染；需要在守卫完成前阻止挂载时，可通过 `initialNavigationMode: 'blocking'` 显式开启，并使用 `initialNavigationTimeout` 防止永久等待。统一清理导航状态，避免页面假死、元素缺失和实例泄漏。
+
+- 修复路由托管导航与页面初始导航并发时重复执行全局守卫的问题，并去重迟到的宿主路由同步事件。
+
 ## 2.8.8
 
 ### Patch Changes

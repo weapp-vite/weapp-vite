@@ -223,18 +223,19 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
   const userObservers = (restOptions as any).observers as Record<string, any> | undefined
   const setupLifecycle = (restOptions as any).setupLifecycle === 'created' ? 'created' : 'attached'
   delete (restOptions as any).setupLifecycle
-  const vueLifecycles = Object.fromEntries(
-    [
-      'beforeCreate',
-      'created',
-      'beforeMount',
-      'mounted',
-      'beforeUnmount',
-      'beforeDestroy',
-      'unmounted',
-      'destroyed',
-    ].map(key => [key, restOptions[key]]),
-  )
+  const vueLifecycles: Record<string, any> = {}
+  for (const key of [
+    'beforeCreate',
+    'created',
+    'beforeMount',
+    'mounted',
+    'beforeUnmount',
+    'beforeDestroy',
+    'unmounted',
+    'destroyed',
+  ]) {
+    vueLifecycles[key] = restOptions[key]
+  }
   delete restOptions.features
   for (const key of Object.keys(vueLifecycles)) {
     delete restOptions[key]

@@ -39,10 +39,6 @@ function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
     'weapp-vite/client',
   ]
 
-  if (config.web && config.web.enable !== false) {
-    types.push('vite/client')
-  }
-
   if (Array.isArray(legacyTypes) && legacyTypes.length > 0) {
     types.push(...legacyTypes)
   }

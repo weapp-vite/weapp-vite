@@ -13,6 +13,7 @@ import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, SCRIPT_EXTS, SFC_STY
 import { collectExternalComponentOptimizeDeps } from './dependencyScan'
 import { generateAutoRoutesModule, generateEntryModule } from './entry'
 import { wrapPageTemplate } from './layout'
+import { createMiniProgramPackageResolver, getAncestorNodeModulesPaths } from './packageResolution'
 import { cleanUrl, isHtmlEntry, isInsideDir, normalizePath, resolveFileWithExtensionsSync, resolveRuntimePolyfillPath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport, toViteFsImport } from './path'
 import { transformScriptModule } from './register'
 import { getStableWebComponentId, scanProject } from './scan'
@@ -83,6 +84,11 @@ interface WeappWebVitePlugin {
   ) => WebTransformResult | Promise<WebTransformResult>
 }
 
+const WEB_RUNTIME_MODULE_IDS = [
+  'lit',
+  'lit/directives/repeat.js',
+] as const
+
 function isTemplateFile(id: string) {
   const lower = id.toLowerCase()
   return TEMPLATE_EXTS.some(ext => lower.endsWith(ext))
@@ -146,7 +152,7 @@ function resolveStylePreprocessOptions(
     return undefined
   }
 
-  const nodeModules = resolve(root, 'node_modules')
+  const nodeModules = getAncestorNodeModulesPaths(root)
   return Object.fromEntries(Object.entries(options).map(([language, languageOptions]) => {
     if (!['sass', 'scss'].includes(language)) {
       return [language, languageOptions]
@@ -157,7 +163,7 @@ function resolveStylePreprocessOptions(
       : []
     return [language, {
       ...languageOptions,
-      loadPaths: Array.from(new Set([...loadPaths, nodeModules])),
+      loadPaths: Array.from(new Set([...loadPaths, ...nodeModules])),
     }]
   }))
 }
@@ -167,7 +173,9 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
   let srcRoot = resolve(root, options.srcDir ?? 'src')
   let enableHmr = false
   let resolveWebModuleId: ResolveWebModuleId | undefined
+  let resolveMiniProgramModuleId: ResolveWebModuleId | undefined
   let resolveWebAutoImportTag: ResolveWebAutoImportTag | undefined
+  const webRuntimeModules = new Map<string, string>()
   let stylePreprocessOptions: WebStylePreprocessOptions | undefined
   const componentImportIdMap = new Map<string, string>()
 
@@ -251,10 +259,25 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     },
     async configResolved(this: WebPluginContext, config: WebResolvedConfig) {
       root = config.root
+      const { createRequire } = await import('node:module')
+      const requireFromWebRuntime = createRequire(import.meta.url)
+      const requireFromProject = createRequire(resolve(root, 'package.json'))
+      for (const id of WEB_RUNTIME_MODULE_IDS) {
+        webRuntimeModules.set(id, requireFromWebRuntime.resolve(id))
+      }
+      resolveMiniProgramModuleId = createMiniProgramPackageResolver(requireFromProject.resolve)
       srcRoot = resolve(root, options.srcDir ?? 'src')
       stylePreprocessOptions = resolveStylePreprocessOptions(config.css?.preprocessorOptions, root)
       enableHmr = config.command === 'serve'
-      resolveWebModuleId = config.createResolver?.()
+      const resolveViteModuleId = config.createResolver?.()
+      resolveWebModuleId = resolveViteModuleId
+        ? async (source, importer) => {
+          const resolved = await resolveViteModuleId(source, importer)
+          return await resolveMiniProgramModuleId?.(resolved ?? source, importer)
+            ?? await resolveMiniProgramModuleId?.(source, importer)
+            ?? resolved
+        }
+        : undefined
       resolveWebAutoImportTag = createAutoImportTagResolver()
       await scan(this)
       const componentDependencies = await collectExternalComponentOptimizeDeps(state.scanResult.components)
@@ -276,7 +299,9 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       if (!resolveWebModuleId && this.resolve) {
         resolveWebModuleId = async (source, importer) => {
           const resolved = await this.resolve?.(source, importer, { skipSelf: true })
-          return resolved?.id
+          return await resolveMiniProgramModuleId?.(resolved?.id ?? source, importer)
+            ?? await resolveMiniProgramModuleId?.(source, importer)
+            ?? resolved?.id
         }
       }
       resolveWebAutoImportTag = createAutoImportTagResolver()
@@ -286,6 +311,10 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       }
     },
     resolveId(id: string, importer?: string) {
+      const runtimeModule = webRuntimeModules.get(id)
+      if (runtimeModule) {
+        return runtimeModule
+      }
       if (id === '/@weapp-vite/web/entry' || id === '@weapp-vite/web/entry') {
         return ENTRY_ID
       }
@@ -312,7 +341,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         }
         return id
       }
-      return null
+      return resolveMiniProgramModuleId?.(id, importer).then(resolved => resolved ?? null) ?? null
     },
     async load(this: WebPluginContext, id: string) {
       if (id === ENTRY_ID) {

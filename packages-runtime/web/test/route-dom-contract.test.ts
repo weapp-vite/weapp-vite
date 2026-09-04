@@ -79,12 +79,12 @@ describe('route DOM contract', () => {
     expect(empty.instance).toBeUndefined()
 
     const detached = createEntry()
-    detached.element = document.createElement('div') as PageStackEntry['element']
+    detached.element = document.createElement('div') as unknown as PageStackEntry['element']
     unmountEntryFromDom(detached)
     expect(detached.element).toBeUndefined()
 
     const attached = createEntry()
-    attached.element = document.createElement('div') as PageStackEntry['element']
+    attached.element = document.createElement('div') as unknown as PageStackEntry['element']
     document.body.append(attached.element!)
     unmountEntryFromDom(attached)
     expect(document.body.children).toHaveLength(0)
@@ -96,7 +96,7 @@ describe('route DOM contract', () => {
 
     mountEntryToDom({ active: true, id: 'pages/missing', query: {} }, registry, beforeMount)
     const existing = createEntry()
-    existing.element = document.createElement('div') as PageStackEntry['element']
+    existing.element = document.createElement('div') as unknown as PageStackEntry['element']
     mountEntryToDom(existing, registry, beforeMount)
 
     const withoutContainer = createEntry()

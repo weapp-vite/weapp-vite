@@ -9,6 +9,7 @@ import {
 import { getInitialNavigationRunner } from '@/router/initialNavigation'
 import { clearActiveRouter } from '@/router/instance'
 import { notifyRouteStateSync } from '@/router/routeSync'
+import { createRouteStateController } from '@/router/useRoute'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 
 describe('router navigation helpers', () => {
@@ -111,6 +112,28 @@ describe('router navigation helpers', () => {
     await pending
     expect(order).toEqual(['beforeEach:start', 'beforeEach:done'])
     expect(router.currentRoute.path).toBe('pages/home/index')
+  })
+
+  it('defaults initial navigation to eager and exposes blocking as an explicit option', () => {
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    const eagerRouter = createRouter()
+    expect(eagerRouter.options.initialNavigationMode).toBe('eager')
+
+    const blockingRouter = createRouter({ initialNavigationMode: 'blocking' })
+    expect(blockingRouter.options.initialNavigationMode).toBe('blocking')
   })
 
   it('resolves initial guard redirects before mounting the requested page', async () => {
@@ -3661,6 +3684,64 @@ describe('router navigation helpers', () => {
 
     await expect(router.push({ name: 'page2' })).resolves.toBeUndefined()
     expect(navigateTo).toHaveBeenCalledTimes(2)
+  })
+
+  it('ignores a delayed native sync for a managed navigation already settled by the router', async () => {
+    const page1 = {
+      route: 'pages/page1/index',
+      options: {},
+    }
+    const page2 = {
+      route: 'pages/page2/index',
+      options: {},
+    }
+    const pages = [page1]
+    const navigateTo = vi.fn((options: any) => {
+      pages.push(page2)
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const router = createRouter({
+      routes: [
+        { name: 'page1', path: '/pages/page1/index' },
+        { name: 'page2', path: '/pages/page2/index' },
+      ],
+    })
+    const guardCalls: any[] = []
+    const afterCalls: any[] = []
+    router.beforeEach((to, from) => {
+      guardCalls.push({ to, from })
+    })
+    router.afterEach((to, from) => {
+      afterCalls.push({ to, from })
+    })
+
+    await expect(router.push({ name: 'page2' })).resolves.toBeUndefined()
+    setCurrentInstance(page2 as any)
+    setCurrentSetupContext({ instance: page2, emit: vi.fn(), attrs: {}, slots: {} })
+    createRouteStateController({
+      beforeRouteStateSync: () => {},
+    })
+    notifyRouteStateSync({ page: page2, source: 'page' })
+    await Promise.resolve()
+
+    expect(guardCalls).toHaveLength(1)
+    expect(afterCalls).toHaveLength(1)
   })
 
   it('syncs currentRoute after native switchTab succeeds', async () => {

@@ -6,7 +6,7 @@ Page({
     issue792: {
       dev: import.meta.env.DEV,
       mode: import.meta.env.MODE,
-      // eslint-disable-next-line node/prefer-global/process -- issue #792 reproduces Vite's global process.env replacement.
+      // eslint-disable-next-line node/prefer-global/process, mini-program/no-unsupported-runtime-api -- issue #792 reproduces Vite's global process.env replacement.
       nodeEnv: process.env.NODE_ENV,
       prod: import.meta.env.PROD,
     },

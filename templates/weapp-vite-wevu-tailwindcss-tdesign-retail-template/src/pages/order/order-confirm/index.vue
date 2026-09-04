@@ -491,7 +491,11 @@ function handleCouponList(storeCouponList?: StoreCouponSelection[]) {
   if (!storeCouponList) {
     return []
   }
-  return storeCouponList.flatMap(item => item.couponList)
+  const coupons: StoreCouponSelection['couponList'] = []
+  for (const item of storeCouponList) {
+    coupons.push(...item.couponList)
+  }
+  return coupons
 }
 
 async function submitOrder() {

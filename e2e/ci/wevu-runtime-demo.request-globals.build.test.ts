@@ -1,5 +1,6 @@
 import type { TestJsFormat } from '../utils/jsFormat'
 import {
+  REQUEST_GLOBAL_BUNDLE_MARKER,
   REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
 } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
@@ -14,16 +15,13 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/wevu-runtime-demo
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const JS_FORMATS: TestJsFormat[] = ['cjs', 'esm']
 
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+function exposesRequestGlobalsInstaller(code: string) {
+  return /Object\.defineProperty\(exports,\s*(['"])installWebRuntimeGlobals\1/.test(code)
+    || /export\s*\{[^}]*\binstallWebRuntimeGlobals\b[^}]*\}/.test(code)
 }
 
-function expectOneModuleReference(code: string, specifiers: string[]) {
-  expect(specifiers.some((specifier) => {
-    const escapedSpecifier = escapeRegex(specifier)
-    const escapedGlobalModuleKey = escapeRegex(specifier.replace(/^(?:\.\.\/)+/, ''))
-    return new RegExp(`(?:require\\((['"\`])${escapedSpecifier}\\1\\)|from\\s+(['"\`])${escapedSpecifier}\\2|globalThis\\[(['"\`])__weappViteRequestGlobalsModule:${escapedGlobalModuleKey}\\3\\])`).test(code)
-  })).toBe(true)
+function invokesRequestGlobalsInstaller(code: string) {
+  return /installWebRuntimeGlobals["'\]]*\s*\(\{\s*targets\s*:/.test(code)
 }
 
 async function runBuild(jsFormat: TestJsFormat) {
@@ -87,27 +85,23 @@ describe.sequential('e2e app: wevu-runtime-demo request globals (build)', () => 
         DIST_ROOT,
         code =>
           code.includes('installWebRuntimeGlobals')
-          && code.includes('__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js'),
+          && code.includes(REQUEST_GLOBAL_BUNDLE_MARKER)
+          && exposesRequestGlobalsInstaller(code)
+          && invokesRequestGlobalsInstaller(code),
         'request globals runtime',
       )
 
       for (const target of FULL_REQUEST_GLOBAL_TARGETS) {
         expect(appJs).toContain(JSON.stringify(target))
       }
-      expect(requestGlobalsRuntimeJs).toMatch(/Object\.defineProperty\(exports,|export\s+\{/)
+      expect(exposesRequestGlobalsInstaller(requestGlobalsRuntimeJs)).toBe(true)
+      expect(invokesRequestGlobalsInstaller(requestGlobalsRuntimeJs)).toBe(true)
 
       for (const testCase of PAGE_CASES) {
         const pageJs = await fs.readFile(path.join(DIST_ROOT, testCase.fileName), 'utf8')
 
         expect(pageJs).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
-        expectOneModuleReference(pageJs, [
-          '../../request-globals-web-apis-shared.js',
-          '../../request-globals-wevu-web-apis-shared.js',
-          '../../weapp-vendors/request-globals-web-apis-shared.js',
-          '../../weapp-vendors/request-globals-wevu-web-apis-shared.js',
-          '../../weapp-vendors/request-globals-runtime.js',
-          '../../weapp-vendors/web-apis-shared.js',
-        ])
+        expect(invokesRequestGlobalsInstaller(pageJs)).toBe(true)
         for (const target of FULL_REQUEST_GLOBAL_TARGETS) {
           expect(pageJs).toContain(JSON.stringify(target))
         }

@@ -42,7 +42,11 @@ describe('location adapter contract', () => {
   })
 
   it('normalizes missing coordinates and forwards accuracy options', async () => {
-    const getCurrentPosition = vi.fn((success: (position: any) => void) => {
+    const getCurrentPosition = vi.fn((
+      success: (position: any) => void,
+      _failure?: PositionErrorCallback | null,
+      _options?: PositionOptions,
+    ) => {
       success({ coords: undefined })
     })
     vi.stubGlobal('navigator', { geolocation: { getCurrentPosition } })

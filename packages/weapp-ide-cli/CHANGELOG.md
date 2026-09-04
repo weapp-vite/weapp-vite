@@ -1,5 +1,12 @@
 # weapp-ide-cli
 
+## 6.1.2
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/shared@3.2.1
+
 ## 6.1.1
 
 ### Patch Changes

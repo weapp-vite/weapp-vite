@@ -121,6 +121,32 @@ describe('createProject', () => {
     expect(files).toContain('AGENTS.md')
   })
 
+  it('preserves a user-owned AGENTS.local.md across regeneration', async () => {
+    const root = await createTmpRoot('agents-overlay')
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+    await createProject(root, TemplateName.default)
+    await fs.writeFile(path.join(root, 'AGENTS.local.md'), '# Local rules\n- keep this\n')
+    const generatedBefore = await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')
+
+    await createProject(root, TemplateName.react)
+
+    expect(await fs.readFile(path.join(root, 'AGENTS.local.md'), 'utf8')).toContain('keep this')
+    expect(await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')).not.toBe(generatedBefore)
+    expect(await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')).toContain('agents-generated: v1')
+  })
+
+  it('does not overwrite a manually maintained AGENTS.md', async () => {
+    const root = await createTmpRoot('agents-manual')
+    await fs.writeFile(path.join(root, 'AGENTS.md'), '# User rules\n')
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+    await createProject(root, TemplateName.default)
+
+    expect(await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')).toBe('# User rules\n')
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('已有非生成的 AGENTS.md'))
+  })
+
   it.each(Object.values(TemplateName).filter(templateName => ![
     TemplateName.plugin,
     TemplateName.multiPlatform,
