@@ -1,5 +1,12 @@
 # @mpcore/test
 
+## 0.1.8
+
+### Patch Changes
+
+- Updated dependencies:
+  - @mpcore/simulator@0.4.3
+
 ## 0.1.7
 
 ### Patch Changes
