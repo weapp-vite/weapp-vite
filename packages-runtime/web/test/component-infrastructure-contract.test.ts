@@ -3,6 +3,7 @@
 import type { ComponentPublicInstance, NormalizedComponentOptions } from '../src/runtime/component/types'
 import { html } from 'lit'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, onError, onErrorCaptured, ref } from 'wevu'
 import { defineComponent } from '../src/runtime/component'
 import {
   createScopedSelectorQuery,
@@ -14,6 +15,7 @@ import {
 import { bindRuntimeEvents } from '../src/runtime/component/events'
 import { runComponentObservers } from '../src/runtime/component/observers'
 import { resolveRelationNodes } from '../src/runtime/component/relations'
+import { registerWebWevuComponent } from '../src/runtime/wevu'
 import { slugify } from '../src/shared/slugify'
 
 describe('component infrastructure contracts', () => {
@@ -226,6 +228,24 @@ describe('component infrastructure contracts', () => {
     expect(element.setData({ count: 1 }, unchangedCallback)).toBeUndefined()
     expect(unchangedCallback).toHaveBeenCalledOnce()
 
+    let rejectUpdate: ((cause: unknown) => void) | undefined
+    const rejectedUpdate = new Promise<boolean>((_resolve, reject) => {
+      rejectUpdate = reject
+    })
+    Object.defineProperty(element, 'updateComplete', {
+      configurable: true,
+      value: rejectedUpdate,
+    })
+    const failedUpdate = element.setData({ count: 2 })
+    const renderFailure = new Error('render failed')
+    rejectUpdate?.(renderFailure)
+    await expect(failedUpdate).rejects.toBe(renderFailure)
+    delete (element as any).updateComplete
+
+    const recoveryCallback = vi.fn()
+    await expect(element.setData({ count: 2 }, recoveryCallback)).resolves.toBeUndefined()
+    expect(recoveryCallback).toHaveBeenCalledOnce()
+
     element.setAttribute('title', 'from-attribute')
     expect(element.properties.title).toBe('from-attribute')
     element.attributeChangedCallback('unknown', null, 'value')
@@ -240,6 +260,54 @@ describe('component infrastructure contracts', () => {
 
     element.remove()
     expect(calls).toEqual(['created', 'attached', 'ready', 'attached', 'detached'])
+  })
+
+  it('reports rejected Lit updateComplete through the real Wevu Web adapter', async () => {
+    const errors: unknown[] = []
+    const capturedErrors: unknown[] = []
+    let increment: (() => void) | undefined
+    const id = 'components/wevu-web-commit/index'
+    registerWebWevuComponent({
+      setup() {
+        const count = ref(0)
+        increment = () => {
+          count.value += 1
+        }
+        onError(error => errors.push(error))
+        onErrorCaptured(error => capturedErrors.push(error))
+        return { count }
+      },
+    }, {
+      kind: 'component',
+      id,
+      template: state => html`<span>${state.count}</span>`,
+    })
+    const element = document.createElement(slugify(id, 'wv-component')) as ComponentPublicInstance & {
+      updateComplete: Promise<boolean>
+    }
+    document.body.append(element)
+    await element.updateComplete
+    let rejectUpdate: ((cause: unknown) => void) | undefined
+    const updateComplete = new Promise<boolean>((_resolve, reject) => {
+      rejectUpdate = reject
+    })
+    Object.defineProperty(element, 'updateComplete', {
+      configurable: true,
+      value: updateComplete,
+    })
+    increment?.()
+
+    await nextTick()
+    const cause = new Error('web render failed')
+    rejectUpdate?.(cause)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toBeInstanceOf(Error)
+    expect((errors[0] as Error & { cause?: unknown }).cause).toBe(cause)
+    expect(capturedErrors).toEqual(errors)
+    element.remove()
   })
 
   it('finds an owner through assigned slots and shadow roots', async () => {

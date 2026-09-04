@@ -21,6 +21,12 @@ export function createDiagnosticsLogger(mode: 'off' | 'fallback' | 'always') {
       `keys=${info.payloadKeys}`,
       `bytes=${bytesText}`,
     ]
+    if (typeof info.revision === 'number') {
+      parts.push(`revision=${info.revision}`)
+    }
+    if (typeof info.committedRevision === 'number') {
+      parts.push(`committedRevision=${info.committedRevision}`)
+    }
     if (typeof info.mergedSiblingParents === 'number') {
       parts.push(`mergedParents=${info.mergedSiblingParents}`)
     }
@@ -44,6 +50,9 @@ export function createDiagnosticsLogger(mode: 'off' | 'fallback' | 'always') {
           : `${binding.id}@${binding.sourceFile}`
       })
       parts.push(`bindings=${bindings.join(',')}`)
+    }
+    if (info.message) {
+      parts.push(`message=${info.message}`)
     }
     const message = `[wevu:setData] ${parts.join(' ')}`
     if (isFallbackReason(info.reason)) {

@@ -1,12 +1,12 @@
 import type { WatchStopHandle } from '../../../reactivity'
 import type {
   InternalRuntimeState,
-  MiniProgramAdapter,
   MiniProgramIntersectionObserverOptions,
   RuntimeInstance,
   SetupContextNativeInstance,
   TriggerEventOptions,
 } from '../../types'
+import type { AdapterWithSetData } from './utils'
 import {
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_PROPS_KEY,
@@ -20,11 +20,6 @@ import { markNoSetData } from '../../noSetData'
 import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../../platform'
 
 export { normalizeEmitPayload } from '../../emit'
-
-type AdapterWithSetData = Required<MiniProgramAdapter> & {
-  __wevu_enableSetData?: () => void
-  __wevu_setVisibility?: (visible: boolean) => void
-}
 
 export type SetupInstanceMethodName = 'triggerEvent' | 'createSelectorQuery' | 'createIntersectionObserver' | 'setData' | 'setUpdatePerformanceListener'
 

@@ -10,6 +10,7 @@ import type {
   RuntimeInstance,
   SetDataDebugInfo,
 } from '../types'
+import type { CommitAwareSetDataAdapter } from './setData/commitTracker'
 import {
   WEVU_ATTRS_KEY,
   WEVU_PROPS_DERIVED_KEYS_KEY,
@@ -48,7 +49,7 @@ type RuntimeInstanceWithSetupMethodsVersion<
 > = RuntimeInstance<D, C, M> & {
   __wevu_touchSetupMethodsVersion?: () => void
   __wevu_flushSetupSnapshotSync?: () => void
-  __wevu_cloneLatestSnapshot?: () => Record<string, any>
+  __wevu_cloneDispatchedSnapshot?: () => Record<string, any>
   __wevu_trackSetupReactiveKey?: (key: string) => void
 }
 
@@ -180,7 +181,12 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     const mergedDebug = (debug || diagnosticsLogger || loopWarningLogger)
       ? (info: SetDataDebugInfo) => {
           if (typeof debug === 'function') {
-            debug(info)
+            try {
+              debug(info)
+            }
+            catch {
+              // 用户调试回调不得阻止默认诊断。
+            }
           }
           diagnosticsLogger?.(info)
           if (info.reason === 'loopWarning') {
@@ -210,7 +216,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       setDataStrategy,
     })
 
-    const currentAdapter = adapter ?? { setData: () => {} }
+    const currentAdapter: CommitAwareSetDataAdapter = adapter ?? { setData: () => {} }
     const targetLabel = (currentAdapter as any).__wevu_targetLabel as string | undefined
     const stateRootRaw = toRaw(state as any) as object
     let tracker: ReturnType<typeof effect> | undefined
@@ -253,7 +259,9 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
         ? adapterInitialState
         : undefined,
     })
-    const job = () => scheduler.job(stateRootRaw)
+    const job = () => {
+      scheduler.job(stateRootRaw)
+    }
     const mutationRecorder = (record: MutationRecord) => scheduler.mutationRecorder(record, stateRootRaw)
 
     tracker = effect(
@@ -326,6 +334,13 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
         return
       }
       mounted = false
+      scheduler.dispose()
+      try {
+        currentAdapter.__wevu_disposeSetData?.()
+      }
+      catch {
+        // 卸载阶段继续清理其余运行时资源。
+      }
       stopHandles.forEach((handle) => {
         try {
           handle()
@@ -387,15 +402,15 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     }
 
     try {
-      Object.defineProperty(runtimeInstance, '__wevu_cloneLatestSnapshot', {
-        value: scheduler.cloneLatestSnapshot,
+      Object.defineProperty(runtimeInstance, '__wevu_cloneDispatchedSnapshot', {
+        value: scheduler.cloneDispatchedSnapshot,
         configurable: true,
         enumerable: false,
         writable: false,
       })
     }
     catch {
-      ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_cloneLatestSnapshot = scheduler.cloneLatestSnapshot
+      ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_cloneDispatchedSnapshot = scheduler.cloneDispatchedSnapshot
     }
 
     try {
