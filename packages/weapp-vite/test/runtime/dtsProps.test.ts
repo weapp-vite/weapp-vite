@@ -20,9 +20,9 @@ export interface MyComponent {
     expect(Object.fromEntries(props)).toEqual({
       'foo': 'string',
       'bar': 'number',
-      'baz': 'number',
+      'baz': 'import("some-pkg").Baz',
       'mixed': 'string | number',
-      'nil': 'any',
+      'nil': 'unknown',
       'kebab-case': 'boolean',
     })
   })
