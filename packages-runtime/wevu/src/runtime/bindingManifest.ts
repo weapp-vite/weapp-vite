@@ -1,9 +1,9 @@
 import type {
-  SourcePosition,
+  WevuBindingSourcePositionV1,
   WevuBindingUpdateMode,
   WevuRuntimeBindingManifestV1,
   WevuRuntimeBindingRecordV1,
-} from '@wevu/compiler'
+} from '@weapp-core/constants'
 import type { SetDataBindingDiagnostic } from './types'
 
 const BINDING_UPDATE_MODES: Record<string, true> = {
@@ -19,7 +19,7 @@ function isFiniteInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value)
 }
 
-function isSourcePosition(value: unknown): value is SourcePosition {
+function isSourcePosition(value: unknown): value is WevuBindingSourcePositionV1 {
   if (!value || typeof value !== 'object') {
     return false
   }

@@ -1,4 +1,4 @@
-import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import type { MutationRecord, WatchOptions, WatchStopHandle } from '../../reactivity'
 import type {
   AppConfig,

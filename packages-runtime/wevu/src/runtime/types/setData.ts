@@ -1,4 +1,4 @@
-import type { SourceSpan, WevuBindingUpdateMode } from '@wevu/compiler'
+import type { WevuBindingSourceSpanV1, WevuBindingUpdateMode } from '@weapp-core/constants'
 
 export interface SetDataSnapshotOptions {
   /**
@@ -238,7 +238,7 @@ export interface SetDataBindingDiagnostic {
   outputPath: string
   updateMode: WevuBindingUpdateMode
   sourceFile: string
-  sourceLocation?: SourceSpan
+  sourceLocation?: WevuBindingSourceSpanV1
 }
 
 export interface SetDataDebugInfo {

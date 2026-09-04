@@ -1,4 +1,4 @@
-import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import { WEVU_BINDING_MANIFEST_KEY } from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
 import { createApp } from '@/runtime/app'

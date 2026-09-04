@@ -183,3 +183,48 @@ export const WEAPP_VITE_WEB_UPDATE_MANAGER_KEY = '__weappViteWebUpdateManager'
 export const WEAPP_VITE_WEB_ANALYTICS_EVENTS_KEY = '__weappViteWebAnalyticsEvents'
 export const WEAPP_VITE_WEB_SCAN_CODE_RESULT_KEY = '__weappViteWebScanCodeResult'
 export const WEAPP_VITE_WEB_ACTION_SHEET_SELECT_INDEX_KEY = '__weappViteWebActionSheetSelectIndex'
+
+/**
+ * Binding Manifest 支持的更新粒度。
+ */
+export type WevuBindingUpdateMode = 'exact-path' | 'top-level' | 'snapshot-fallback'
+
+/**
+ * Binding Manifest 中的源码位置。
+ */
+export interface WevuBindingSourcePositionV1 {
+  offset: number
+  line: number
+  column: number
+}
+
+/**
+ * Binding Manifest 中的源码范围。
+ */
+export interface WevuBindingSourceSpanV1 {
+  start: WevuBindingSourcePositionV1
+  end: WevuBindingSourcePositionV1
+}
+
+/**
+ * 运行时更新和诊断所需的最小绑定记录。
+ */
+export interface WevuRuntimeBindingRecordV1 {
+  id: string
+  outputPath: string
+  updateMode?: WevuBindingUpdateMode
+  sourceRoots?: string[]
+  sourceLocation?: WevuBindingSourceSpanV1
+}
+
+/**
+ * 编译器和运行时共享的精简 Binding Manifest。
+ */
+export interface WevuRuntimeBindingManifestV1 {
+  version: 1
+  sourceFile: string
+  bindings: WevuRuntimeBindingRecordV1[]
+  features?: {
+    scopedSlots?: true
+  }
+}

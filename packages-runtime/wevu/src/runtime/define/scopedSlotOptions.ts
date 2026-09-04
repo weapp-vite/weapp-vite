@@ -1,4 +1,4 @@
-import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import type { InlineExpressionMap } from '../register/inline'
 import type { TemplateRefBinding } from '../templateRefs'
 import type { ComputedDefinitions } from '../types'

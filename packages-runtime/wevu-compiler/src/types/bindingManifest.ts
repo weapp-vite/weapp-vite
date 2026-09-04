@@ -1,4 +1,11 @@
+import type { WevuBindingUpdateMode } from '@weapp-core/constants'
 import type { SourceSpan } from './diagnostics'
+
+export type {
+  WevuBindingUpdateMode,
+  WevuRuntimeBindingManifestV1,
+  WevuRuntimeBindingRecordV1,
+} from '@weapp-core/constants'
 
 /**
  * 模板绑定的语义类型。
@@ -11,11 +18,6 @@ export type WevuBindingKind
     | 'if'
     | 'for'
     | 'component-prop'
-
-/**
- * 模板绑定可采用的更新粒度。
- */
-export type WevuBindingUpdateMode = 'exact-path' | 'top-level' | 'snapshot-fallback'
 
 /**
  * 单个源码依赖及其独立更新策略。
@@ -77,26 +79,3 @@ export interface WevuBindingManifestV1 {
  * 注入运行时的 Binding Manifest 精简级别。
  */
 export type WevuRuntimeBindingManifestMode = 'compact' | 'diagnostic'
-
-/**
- * 运行时更新和诊断所需的最小绑定记录。
- */
-export interface WevuRuntimeBindingRecordV1 {
-  id: string
-  outputPath: string
-  updateMode?: WevuBindingUpdateMode
-  sourceRoots?: string[]
-  sourceLocation?: SourceSpan
-}
-
-/**
- * 注入组件脚本的精简 Binding Manifest。
- */
-export interface WevuRuntimeBindingManifestV1 {
-  version: 1
-  sourceFile: string
-  bindings: WevuRuntimeBindingRecordV1[]
-  features?: {
-    scopedSlots?: true
-  }
-}

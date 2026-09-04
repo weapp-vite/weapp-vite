@@ -1,4 +1,4 @@
-import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import { WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
 import { shallowRef } from '@/reactivity'

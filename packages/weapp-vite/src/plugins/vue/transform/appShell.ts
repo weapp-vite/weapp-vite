@@ -77,7 +77,7 @@ export async function resolveAppShellForCompilation(
 ) {
   const configService = ctx.configService
   const scanService = ctx.scanService
-  if (!configService || !scanService) {
+  if (!configService || !scanService || configService.weappLibConfig?.enabled) {
     return undefined
   }
 
