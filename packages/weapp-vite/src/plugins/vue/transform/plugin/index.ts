@@ -11,13 +11,14 @@ import { createHmrProfileEventId, recordHmrProfileDuration, recordHmrProfileOper
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { VUE_PLUGIN_NAME } from '../../index'
+import { createCompilerAppShellSignature, resolveAppShellForCompilation } from '../appShell'
 import { emitVueBundleAssets } from '../bundle'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { invalidateResolvedPageLayoutsCache, isLayoutFile } from '../pageLayout'
 import { loadScopedSlotModule, resolveScopedSlotVirtualId } from '../scopedSlot'
 import { findFirstResolvedVueLikeEntry } from '../shared'
 import { parseWeappVueStyleRequest } from '../styleRequest'
-import { handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, isVueLikeId, loadTransformStyleBlock, preloadNativeLayoutEntries } from './shared'
+import { handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, invalidatePageLayoutCaches, isVueLikeId, loadTransformStyleBlock, preloadNativeLayoutEntries } from './shared'
 import { transformVueLikeFile } from './transformFile'
 
 const VUE_TRANSFORM_FILTER_RE = /\.(?:vue|tsx|jsx)(?:\?.*)?$/
@@ -55,7 +56,7 @@ export function invalidateComponentMetaCache(
 }
 
 export function createVueTransformPlugin(ctx: CompilerContext, options: { react?: boolean } = {}): Plugin {
-  const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, styleIndependentSignature?: string }>()
+  const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, styleIndependentSignature?: string, pageLayoutSignature?: string, appShellSignature?: string }>()
   let appShell: ResolvedAppShell | undefined
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
   let scanDirtySynced = false
@@ -68,6 +69,21 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
   const emittedScopedSlotChunks = new Set<string>()
   const classStyleRuntimeWarned = { value: false }
 
+  function updateAppShell(nextAppShell: ResolvedAppShell | undefined) {
+    if (createCompilerAppShellSignature(appShell) === createCompilerAppShellSignature(nextAppShell)) {
+      return
+    }
+    appShell = nextAppShell
+    if (ctx.configService) {
+      invalidatePageLayoutCaches(
+        ctx.configService,
+        compilationCache,
+        styleBlocksCache,
+        styleRefreshTokens,
+      )
+    }
+  }
+
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
 
@@ -77,6 +93,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
       compileOptionsCache.clear()
       componentMetaCache.clear()
 
+      updateAppShell(await resolveAppShellForCompilation(ctx, this))
       await preloadNativeLayoutEntries({
         pluginCtx: this,
         ctx,
@@ -143,7 +160,8 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
           code,
           id,
           compilationCache,
-          setAppShell: shell => (appShell = shell),
+          setAppShell: updateAppShell,
+          appShell,
           pageMatcher,
           setPageMatcher: matcher => (pageMatcher = matcher),
           scanDirtySynced,

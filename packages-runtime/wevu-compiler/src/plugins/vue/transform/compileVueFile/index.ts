@@ -1,9 +1,11 @@
 import type { CompileVueFileOptions, VueTransformResult } from './types'
 import { compileScript } from 'vue/compiler-sfc'
+import { getMiniProgramTemplatePlatform } from '../../compiler/template'
 import { generateScopedId } from '../scopedId'
 import { collectComponentSourceInfo } from './componentSources'
 import { compileConfigPhase } from './config'
 import { finalizeResult } from './finalize'
+import { applyCompilerTemplateWrappers, mergeCompilerLayoutUsingComponents } from './pageLayout'
 import { parseVueFile } from './parse'
 import { compileScriptPhase, resolveEffectivePropsDerivedKeys, resolveScriptSetupPropsAliases } from './script'
 import { compileStylePhase } from './style'
@@ -122,6 +124,7 @@ export async function compileVueFile(
     parsed.templateResolvedId,
     templateOptions,
     result,
+    options?.bindingManifestSourceFile,
   )
   if (templateCompiled?.diagnostics.length && options?.warn) {
     for (const diagnostic of templateCompiled.diagnostics) {
@@ -129,6 +132,16 @@ export async function compileVueFile(
     }
   }
 
+  if (templateCompiled && result.template && (options?.pageLayout || options?.appShell)) {
+    result.template = applyCompilerTemplateWrappers({
+      template: result.template,
+      manifest: templateCompiled.bindingManifest,
+      platform: templateOptions.platform ?? getMiniProgramTemplatePlatform(),
+      pageLayout: options.pageLayout,
+      appShell: options.appShell,
+    })
+    templateCompiled.code = result.template
+  }
   const scriptPhase = await compileScriptPhase(
     parsed.descriptor,
     parsed.descriptorForCompile,
@@ -144,11 +157,15 @@ export async function compileVueFile(
       propsDerivedKeys,
       cssModules: result.cssModules,
     },
+    source,
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap
   if (scriptPhase.template) {
     result.template = scriptPhase.template
+  }
+  if (scriptPhase.bindingManifest) {
+    result.bindingManifest = scriptPhase.bindingManifest
   }
   if (scriptPhase.diagnostics?.length) {
     result.diagnostics = [...(result.diagnostics ?? []), ...scriptPhase.diagnostics]
@@ -167,6 +184,11 @@ export async function compileVueFile(
     result,
     warn: options?.warn,
   })
+  result.config = mergeCompilerLayoutUsingComponents(
+    result.config,
+    options?.pageLayout,
+    options?.appShell,
+  )
 
   result.meta!.jsonConfigCache = {
     autoUsingComponentsMap: { ...scriptPhase.autoUsingComponentsMap },

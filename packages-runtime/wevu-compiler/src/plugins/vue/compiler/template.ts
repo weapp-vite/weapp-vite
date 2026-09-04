@@ -8,6 +8,7 @@ import {
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
 } from '@weapp-core/constants'
 
+import { createBindingManifest } from './template/bindingManifest'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
 import { warn } from './template/diagnostics'
 import { formatWxml } from './template/format'
@@ -133,6 +134,7 @@ export function compileVueTemplateToWxml(
       source: template,
       filename,
       diagnostics,
+      bindingManifest: createBindingManifest(filename),
       platform: options?.platform ?? getMiniProgramTemplatePlatform(),
       isPage: resolveTemplateIsPage(filename, options),
       propsAliases: options?.propsAliases,
@@ -152,6 +154,7 @@ export function compileVueTemplateToWxml(
       scopeStack: [],
       slotPropStack: [],
       rewriteScopedSlot: false,
+      hasSlotOutlet: false,
       classStyleRuntime: resolvedRuntime === 'wxs' ? 'wxs' : 'js',
       objectLiteralBindMode: options?.objectLiteralBindMode ?? 'runtime',
       mustacheInterpolation: options?.mustacheInterpolation ?? 'compact',
@@ -195,6 +198,7 @@ export function compileVueTemplateToWxml(
     const result: TemplateCompileResult = {
       code: wxml,
       diagnostics,
+      bindingManifest: context.bindingManifest,
     }
 
     if (context.scopedSlotComponents.length) {
@@ -225,13 +229,25 @@ export function compileVueTemplateToWxml(
     if (context.functionPropPaths.size) {
       result.functionPropPaths = [...context.functionPropPaths]
     }
+    if (context.hasSlotOutlet) {
+      result.hasSlotOutlet = true
+    }
 
     return result
   }
   catch (error) {
     warn({ diagnostics, filename }, `模板编译失败：${error}`, undefined, 'template', 'WV2002')
+    const bindingManifest = createBindingManifest(filename)
+    bindingManifest.bindings.push({
+      id: 'b0',
+      kind: 'text',
+      outputPath: '*',
+      sourceRoots: [],
+      updateMode: 'snapshot-fallback',
+    })
     return {
       code: template,
+      bindingManifest,
       diagnostics,
     }
   }

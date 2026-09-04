@@ -11,6 +11,7 @@ import { NodeTypes } from '@vue/compiler-core'
 import {
   WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_ATTR,
+  WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_PROPS_ATTR,
   WEVU_SLOT_SCOPE_ATTR,
@@ -18,10 +19,12 @@ import {
 } from '@weapp-core/constants'
 
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
+import { createBindingManifest, recordBindingExpression } from '../bindingManifest'
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
 import { warn } from '../diagnostics'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
+import { buildScopedSlotComponentScript } from '../scopedSlotScript'
 import {
   collectScopePropMapping,
   getBindDirectiveExpression,
@@ -54,6 +57,11 @@ export function renderSlotNameAttribute(
   }
   if (info.type === 'dynamic') {
     const expValue = normalizeWxmlExpressionWithContext(info.exp, context)
+    recordBindingExpression(context, {
+      kind: attrName === 'slot' ? 'component-prop' : 'attribute',
+      expression: info.exp,
+      sourceLocation: info.loc,
+    })
     return `${attrName}="${renderMustache(expValue, context)}"`
   }
   return undefined
@@ -175,22 +183,39 @@ export function createScopedSlotComponent(
   const index = context.scopedSlotComponents.length
   const id = `${slotKey}-${index}`
   const componentName = `scoped-slot-${ownerHash}-${slotKey}-${index}`
+  const bindingManifest = createBindingManifest(context.bindingManifest.sourceFile)
+  bindingManifest.features.scopedSlots = true
   const asset: ScopedSlotComponentAsset = {
     id,
     componentName,
     hostComponentName: options?.hostComponentName,
     slotKey,
     template: '',
+    script: '',
+    bindingManifest,
   }
   context.scopedSlotComponents.push(asset)
+  if (!context.bindingManifest.features.scopedSlots) {
+    context.bindingManifest.features.scopedSlots = true
+    context.bindingManifest.bindings.push({
+      id: `b${context.bindingManifest.bindings.length}`,
+      kind: 'component-prop',
+      outputPath: WEVU_SLOT_OWNER_ID_KEY,
+      sourceRoots: [WEVU_SLOT_OWNER_ID_KEY],
+      sourcePaths: [WEVU_SLOT_OWNER_ID_KEY],
+      updateMode: 'exact-path',
+    })
+  }
   const scopedContext: TransformContext = {
     ...context,
+    bindingManifest,
     scopedSlotComponents: context.scopedSlotComponents,
     componentGenerics: {},
     miniProgramComponentTags: context.miniProgramComponentTags,
     scopeStack: [],
     slotPropStack: [],
     rewriteScopedSlot: true,
+    hasSlotOutlet: false,
     classStyleBindings: [],
     classStyleWxs: false,
     forStack: [],
@@ -217,10 +242,13 @@ export function createScopedSlotComponent(
   }
   asset.template = template
   asset.componentGenerics = Object.keys(scopedContext.componentGenerics).length ? scopedContext.componentGenerics : undefined
-  asset.classStyleBindings = scopedContext.classStyleBindings.length ? scopedContext.classStyleBindings : undefined
   asset.classStyleWxs = scopedContext.classStyleWxs || undefined
-  asset.inlineExpressions = scopedContext.inlineExpressions.length ? scopedContext.inlineExpressions : undefined
-  asset.templateRefs = scopedContext.templateRefs.length ? scopedContext.templateRefs : undefined
+  asset.script = buildScopedSlotComponentScript({
+    classStyleBindings: scopedContext.classStyleBindings,
+    inlineExpressions: scopedContext.inlineExpressions,
+    templateRefs: scopedContext.templateRefs,
+    bindingManifest,
+  })
   return { componentName, slotKey }
 }
 
@@ -419,11 +447,33 @@ function renderSlotFallbackWrapperAttrs(wrapper: ResolvedSlotFallbackWrapper, co
       attrs.push(attr)
     }
   }
+  const classBindingCount = context.classStyleBindings.length
   const classAttr = renderClassAttribute(wrapper.staticClass, wrapper.dynamicClassExp, context)
+  if (wrapper.dynamicClassExp) {
+    const binding = context.classStyleBindings
+      .slice(classBindingCount)
+      .find(item => item.type === 'class')
+    recordBindingExpression(context, {
+      kind: 'class',
+      expression: wrapper.dynamicClassExp,
+      outputPath: binding?.name,
+    })
+  }
   if (classAttr) {
     attrs.push(classAttr)
   }
+  const styleBindingCount = context.classStyleBindings.length
   const styleAttr = renderStyleAttribute(wrapper.staticStyle, wrapper.dynamicStyleExp, undefined, context)
+  if (wrapper.dynamicStyleExp) {
+    const binding = context.classStyleBindings
+      .slice(styleBindingCount)
+      .find(item => item.type === 'style')
+    recordBindingExpression(context, {
+      kind: 'style',
+      expression: wrapper.dynamicStyleExp,
+      outputPath: binding?.name,
+    })
+  }
   if (styleAttr) {
     attrs.push(styleAttr)
   }
@@ -558,13 +608,46 @@ export function renderSlotFallback(
   return wrapCondition(`<${wrapper.tag} ${slotAttr}${wrapperAttrString}>${content}</${wrapper.tag}>`)
 }
 
+function recordSlotPropBindings(node: ElementNode, context: TransformContext) {
+  const hasForDirective = node.props.some(prop => prop.type === NodeTypes.DIRECTIVE && prop.name === 'for')
+  for (const prop of node.props) {
+    if (prop.type !== NodeTypes.DIRECTIVE || prop.name !== 'bind') {
+      continue
+    }
+    if (prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION) {
+      if (prop.arg.content === 'name' || (hasForDirective && prop.arg.content === 'key')) {
+        continue
+      }
+      const expression = getBindDirectiveExpression(prop)
+      if (expression) {
+        recordBindingExpression(context, {
+          kind: 'component-prop',
+          expression,
+          sourceLocation: prop.exp?.loc ?? prop.loc,
+        })
+      }
+      continue
+    }
+    if (prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
+      recordBindingExpression(context, {
+        kind: 'component-prop',
+        expression: prop.exp.content,
+        sourceLocation: prop.exp.loc,
+      })
+    }
+  }
+}
+
 export function transformSlotElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
+  context.hasSlotOutlet = true
+  context.bindingManifest.features.scopedSlots = true
   if (isScopedSlotsDisabled(context)) {
     // eslint-disable-next-line ts/no-use-before-define
     return transformSlotElementPlain(node, context, transformNode)
   }
   const slotNameInfo = resolveSlotNameFromSlotElement(node)
   let slotPropsExp = collectSlotBindingExpression(node, context)
+  recordSlotPropBindings(node, context)
 
   let fallbackContent = ''
   if (node.children.length > 0) {

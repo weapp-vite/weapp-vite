@@ -1,0 +1,256 @@
+import type { NodePath } from '@weapp-vite/ast/babelTraverse'
+import type { EncodedSourceMapLike } from '../../../utils/sourcemap'
+import {
+  WEVU_SLOT_NAMES_PROP,
+  WEVU_SLOT_OWNER_ID_PROP,
+  WEVU_SLOT_SCOPE_KEY,
+} from '@weapp-core/constants'
+import * as t from '@weapp-vite/ast/babelTypes'
+import { generate, parseJsLike, traverse } from '../../../utils/babel'
+
+function getObjectPropertyByKey(objectExpression: t.ObjectExpression, key: string): t.ObjectProperty | undefined {
+  for (const member of objectExpression.properties) {
+    if (member.type !== 'ObjectProperty') {
+      continue
+    }
+    if (member.key.type === 'Identifier' && member.key.name === key) {
+      return member
+    }
+    if (member.key.type === 'StringLiteral' && member.key.value === key) {
+      return member
+    }
+  }
+  return undefined
+}
+
+function hasCompiledWevuOptionsMarker(optionsObject: t.ObjectExpression) {
+  return Boolean(getObjectPropertyByKey(optionsObject, '__wevu_isPage'))
+}
+
+function unwrapExpression(node: t.Expression): t.Expression {
+  let current = node
+  while (true) {
+    if (current.type === 'TSAsExpression' || current.type === 'TSTypeAssertion' || current.type === 'TSNonNullExpression' || current.type === 'ParenthesizedExpression' || current.type === 'TSSatisfiesExpression') {
+      current = current.expression as t.Expression
+      continue
+    }
+    return current
+  }
+}
+
+function resolveOptionsObjectExpression(
+  expression: t.Expression | undefined,
+  scope: NodePath['scope'],
+): t.ObjectExpression | undefined {
+  if (!expression) {
+    return undefined
+  }
+  const unwrapped = unwrapExpression(expression)
+  if (unwrapped.type === 'ObjectExpression') {
+    return unwrapped
+  }
+  if (unwrapped.type === 'Identifier') {
+    const binding = scope.getBinding(unwrapped.name)
+    if (!binding || !binding.path.isVariableDeclarator()) {
+      return undefined
+    }
+    const init = binding.path.node.init
+    if (!init || (init.type !== 'ObjectExpression' && init.type !== 'CallExpression' && init.type !== 'Identifier')) {
+      return undefined
+    }
+    return resolveOptionsObjectExpression(init as t.Expression, binding.path.scope)
+  }
+  if (
+    unwrapped.type === 'CallExpression'
+    && unwrapped.callee.type === 'MemberExpression'
+    && !unwrapped.callee.computed
+    && unwrapped.callee.object.type === 'Identifier'
+    && unwrapped.callee.object.name === 'Object'
+    && unwrapped.callee.property.type === 'Identifier'
+    && unwrapped.callee.property.name === 'assign'
+  ) {
+    for (let index = unwrapped.arguments.length - 1; index >= 0; index -= 1) {
+      const argument = unwrapped.arguments[index]
+      if (argument.type === 'SpreadElement') {
+        continue
+      }
+      const resolved = resolveOptionsObjectExpression(argument as t.Expression, scope)
+      if (resolved) {
+        return resolved
+      }
+    }
+  }
+  return undefined
+}
+
+function isKnownNativeAssetComponentCallee(callee: t.CallExpression['callee']): boolean {
+  if (!t.isExpression(callee) && !t.isV8IntrinsicIdentifier(callee)) {
+    return false
+  }
+  if (callee.type === 'Identifier') {
+    return callee.name === 'Component'
+      || callee.name === 'createWevuComponent'
+      || callee.name === 'defineComponent'
+  }
+  if (callee.type !== 'MemberExpression' || callee.computed) {
+    return false
+  }
+  return callee.property.type === 'Identifier'
+    && (callee.property.name === 'createWevuComponent' || callee.property.name === 'defineComponent' || callee.property.name === 'so')
+}
+
+function createNativeScopedSlotHostPropertyDefinition(typeName: 'String' | 'null', value: string | null): t.ObjectExpression {
+  return {
+    type: 'ObjectExpression',
+    properties: [
+      {
+        type: 'ObjectProperty',
+        key: { type: 'Identifier', name: 'type' },
+        computed: false,
+        shorthand: false,
+        value: typeName === 'String' ? { type: 'Identifier', name: 'String' } : { type: 'NullLiteral' },
+      },
+      {
+        type: 'ObjectProperty',
+        key: { type: 'Identifier', name: 'value' },
+        computed: false,
+        shorthand: false,
+        value: value === null ? { type: 'NullLiteral' } : { type: 'StringLiteral', value },
+      },
+    ],
+  }
+}
+
+function createNativeScopedSlotHostProperties(): t.ObjectProperty[] {
+  return [
+    {
+      type: 'ObjectProperty',
+      key: { type: 'Identifier', name: WEVU_SLOT_NAMES_PROP },
+      computed: false,
+      shorthand: false,
+      value: createNativeScopedSlotHostPropertyDefinition('null', null),
+    },
+    {
+      type: 'ObjectProperty',
+      key: { type: 'Identifier', name: WEVU_SLOT_OWNER_ID_PROP },
+      computed: false,
+      shorthand: false,
+      value: createNativeScopedSlotHostPropertyDefinition('String', ''),
+    },
+    {
+      type: 'ObjectProperty',
+      key: { type: 'Identifier', name: WEVU_SLOT_SCOPE_KEY },
+      computed: false,
+      shorthand: false,
+      value: createNativeScopedSlotHostPropertyDefinition('null', null),
+    },
+  ]
+}
+
+function injectNativeScopedSlotHostPropertiesIntoObject(propertiesObject: t.ObjectExpression): boolean {
+  let changed = false
+  for (const property of createNativeScopedSlotHostProperties().reverse()) {
+    const key = property.key.type === 'Identifier' ? property.key.name : undefined
+    if (!key || getObjectPropertyByKey(propertiesObject, key)) {
+      continue
+    }
+    propertiesObject.properties.unshift(property)
+    changed = true
+  }
+  return changed
+}
+
+function injectNativeScopedSlotHostPropertiesIntoOptions(optionsObject: t.ObjectExpression): boolean {
+  const propertiesProperty = getObjectPropertyByKey(optionsObject, 'properties')
+  if (!propertiesProperty) {
+    optionsObject.properties.unshift({
+      type: 'ObjectProperty',
+      key: { type: 'Identifier', name: 'properties' },
+      computed: false,
+      shorthand: false,
+      value: {
+        type: 'ObjectExpression',
+        properties: createNativeScopedSlotHostProperties(),
+      },
+    })
+    return true
+  }
+
+  const propertiesValue = unwrapExpression(propertiesProperty.value as t.Expression)
+  if (propertiesValue.type === 'ObjectExpression') {
+    return injectNativeScopedSlotHostPropertiesIntoObject(propertiesValue)
+  }
+  if (propertiesValue.type === 'Identifier' || propertiesValue.type === 'MemberExpression' || propertiesValue.type === 'CallExpression') {
+    propertiesProperty.value = {
+      type: 'ObjectExpression',
+      properties: [
+        {
+          type: 'SpreadElement',
+          argument: propertiesValue,
+        },
+        ...createNativeScopedSlotHostProperties(),
+      ],
+    }
+    return true
+  }
+  return false
+}
+
+/**
+ * 仅为复制到产物中的原生 scoped slot 宿主脚本补齐桥接属性。
+ */
+export function injectNativeScopedSlotHostPropertiesInJs(
+  source: string,
+  options?: {
+    sourceMap?: boolean
+  },
+): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
+  if (!source.includes('Component') && !source.includes('createWevuComponent') && !source.includes('defineComponent') && !source.includes('.so(') && !source.includes('export default')) {
+    return { code: source, transformed: false }
+  }
+
+  const ast = parseJsLike(source)
+  const candidateOptions = new Set<t.ObjectExpression>()
+  traverse(ast, {
+    CallExpression(path) {
+      const firstArgument = path.node.arguments[0]
+      if (!firstArgument || firstArgument.type === 'SpreadElement' || !t.isExpression(firstArgument)) {
+        return
+      }
+      const resolvedOptions = resolveOptionsObjectExpression(firstArgument, path.scope)
+      if (resolvedOptions && (isKnownNativeAssetComponentCallee(path.node.callee) || hasCompiledWevuOptionsMarker(resolvedOptions))) {
+        candidateOptions.add(resolvedOptions)
+      }
+    },
+    ExportDefaultDeclaration(path) {
+      const declaration = path.node.declaration
+      if (!t.isExpression(declaration)) {
+        return
+      }
+      const resolvedOptions = resolveOptionsObjectExpression(declaration, path.scope)
+      if (resolvedOptions) {
+        candidateOptions.add(resolvedOptions)
+      }
+    },
+  })
+
+  let changed = false
+  for (const optionsObject of candidateOptions) {
+    changed = injectNativeScopedSlotHostPropertiesIntoOptions(optionsObject) || changed
+  }
+  if (!changed) {
+    return { code: source, transformed: false }
+  }
+
+  const sourceMap = options?.sourceMap !== false
+  const generated = generate(ast, {
+    retainLines: true,
+    sourceMaps: sourceMap,
+    sourceFileName: 'inline.js',
+  }, source)
+  return {
+    code: generated.code,
+    transformed: true,
+    map: sourceMap ? generated.map as EncodedSourceMapLike : null,
+  }
+}

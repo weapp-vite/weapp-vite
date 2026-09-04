@@ -1,6 +1,7 @@
 import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import { recordBindingExpression } from '../bindingManifest'
 import { transformBindDirective } from '../directives/bind'
 import { createForKeyProjection, resolveNativeForKeyValue } from '../directives/forKey'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
@@ -82,11 +83,23 @@ export function transformIfElement(node: ElementNode, context: TransformContext,
   if (dir.name === 'if' && dir.exp) {
     const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
     const expValue = resolveConditionExpression(rawExpValue, context, 'v-if')
+    recordBindingExpression(context, {
+      kind: 'if',
+      expression: rawExpValue,
+      outputPath: expValue.startsWith('__wv_bind_') ? expValue.split('[')[0] : undefined,
+      sourceLocation: dir.exp.loc,
+    })
     return context.platform.wrapIf(expValue, content, renderTemplateMustache)
   }
   else if (dir.name === 'else-if' && dir.exp) {
     const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
     const expValue = resolveConditionExpression(rawExpValue, context, 'v-else-if')
+    recordBindingExpression(context, {
+      kind: 'if',
+      expression: rawExpValue,
+      outputPath: expValue.startsWith('__wv_bind_') ? expValue.split('[')[0] : undefined,
+      sourceLocation: dir.exp.loc,
+    })
     return context.platform.wrapElseIf(expValue, content, renderTemplateMustache)
   }
   else if (dir.name === 'else') {
@@ -154,6 +167,16 @@ export function transformForElement(node: ElementNode, context: TransformContext
     const keyProjection = keyDirective
       ? createForKeyProjection(keyDirective, scopedForInfo, context)
       : null
+    const rawKeyExp = keyDirective ? getBindDirectiveExpression(keyDirective).trim() : ''
+    const projectedOutputPath = keyProjection?.listExp ?? (
+      listExp?.startsWith('__wv_bind_') ? listExp : undefined
+    )
+    recordBindingExpression(context, {
+      kind: 'for',
+      expression: rawKeyExp ? `(${rawListExp}, ${rawKeyExp})` : rawListExp ?? '',
+      outputPath: projectedOutputPath?.split('[')[0],
+      sourceLocation: forDirective.exp?.loc,
+    })
     if (keyProjection) {
       scopedForInfo.itemAccess = keyProjection.itemAccess
       const projectionContext: TransformContext = {

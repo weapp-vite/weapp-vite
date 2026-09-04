@@ -407,7 +407,7 @@ describe('scoped slot helpers', () => {
     })
   })
 
-  it('emits scoped slot chunk module without computed and inline overrides', () => {
+  it('emits the compiler-provided scoped slot script unchanged', () => {
     const emitFile = vi.fn()
     const scopedSlotModules = new Map<string, string>()
     const emittedScopedSlotChunks = new Set<string>()
@@ -415,6 +415,7 @@ describe('scoped slot helpers', () => {
       scopedSlotComponents: [
         {
           id: 'slot-plain',
+          script: 'const scopedPlain = true',
         },
       ],
     }
@@ -430,10 +431,7 @@ describe('scoped slot helpers', () => {
 
     const [virtualId] = Array.from(scopedSlotModules.keys())
     const code = scopedSlotModules.get(virtualId)!
-    expect(code).toContain(`import { createWevuScopedSlotComponent as _createWevuScopedSlotComponent } from 'virtual:weapp-vite/runtime';`)
-    expect(code).toContain('createWevuScopedSlotComponent();')
-    expect(code).not.toContain('__wevuComputed')
-    expect(code).not.toContain('__wevuInlineMap')
+    expect(code).toBe('const scopedPlain = true')
   })
 
   it('emits scoped slot chunks once and caches generated virtual modules', () => {
@@ -444,14 +442,8 @@ describe('scoped slot helpers', () => {
       scopedSlotComponents: [
         {
           id: 'slot-0',
-          classStyleBindings: [{ name: 'x', expression: 'y' }],
-          inlineExpressions: [
-            {
-              id: 'exp-0',
-              scopeKeys: ['item'],
-              expression: 'scope.item',
-            },
-          ],
+          script: 'const scopedWithBindings = true',
+          bindingManifest: { version: 1, sourceFile: 'src/pages/index.vue', bindings: [], features: {} },
         },
       ],
     }
@@ -480,11 +472,11 @@ describe('scoped slot helpers', () => {
     })
     const [virtualId] = Array.from(scopedSlotModules.keys())
     const code = scopedSlotModules.get(virtualId)!
-    expect(code).toContain('createWevuScopedSlotComponent')
+    expect(code).toBe('const scopedWithBindings = true')
     expect(loadScopedSlotModule(virtualId, scopedSlotModules)).toEqual({ code, map: null })
   })
 
-  it('passes scoped slot template ref metadata to the runtime component', () => {
+  it('emits each compiler-provided scoped slot script independently', () => {
     const emitFile = vi.fn()
     const scopedSlotModules = new Map<string, string>()
     const emittedScopedSlotChunks = new Set<string>()
@@ -492,14 +484,8 @@ describe('scoped slot helpers', () => {
       scopedSlotComponents: [
         {
           id: 'slot-ref',
-          templateRefs: [
-            {
-              selector: '.__wevu-ref-0',
-              inFor: false,
-              name: 'leaf',
-              kind: 'component',
-            },
-          ],
+          script: 'const scopedRef = "leaf"',
+          bindingManifest: { version: 1, sourceFile: 'src/pages/index.vue', bindings: [], features: {} },
         },
       ],
     }
@@ -515,8 +501,7 @@ describe('scoped slot helpers', () => {
 
     const [virtualId] = Array.from(scopedSlotModules.keys())
     const code = scopedSlotModules.get(virtualId)!
-    expect(code).toContain('const __wevuTemplateRefs = [{selector:".__wevu-ref-0",inFor:false,name:"leaf",kind:"component"}];')
-    expect(code).toContain('createWevuScopedSlotComponent({ templateRefs: __wevuTemplateRefs });')
+    expect(code).toBe('const scopedRef = "leaf"')
   })
 
   it('handles scoped slot virtual id helpers and cache guards', () => {

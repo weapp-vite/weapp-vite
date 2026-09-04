@@ -18,6 +18,8 @@ export async function finalizeVueTransform(options: {
   source: string
   autoRoutesSignature?: string
   result: VueTransformResultWithScriptMap
+  pageLayoutSignature: string
+  appShellSignature: string
   compilationCache: VueCompilationCache
   currentStyleIndependentSignature?: string
   previousStyleSignature?: string
@@ -45,6 +47,8 @@ export async function finalizeVueTransform(options: {
     source,
     autoRoutesSignature,
     result,
+    pageLayoutSignature,
+    appShellSignature,
     compilationCache,
     currentStyleIndependentSignature,
     previousStyleSignature,
@@ -119,6 +123,8 @@ export async function finalizeVueTransform(options: {
       source,
       autoRoutesSignature,
       result,
+      pageLayoutSignature,
+      appShellSignature,
       compilationCache,
       styleIndependentSignature: filename.endsWith('.vue')
         ? (currentStyleIndependentSignature ?? resolveVueSfcStyleIndependentSignature(source, filename))

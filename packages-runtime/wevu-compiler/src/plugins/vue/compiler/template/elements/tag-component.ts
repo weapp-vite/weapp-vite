@@ -9,12 +9,10 @@ import {
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_ATTR,
 } from '@weapp-core/constants'
-import { normalizeComponentHostName } from '../../../../../utils/text'
-import { transformAttribute } from '../attributes'
+import { recordBindingExpression } from '../bindingManifest'
 import { warn } from '../diagnostics'
-import { transformDirective } from '../directives'
 import { normalizeWxmlExpressionWithContext } from '../expression'
-import { registerRuntimeBindingExpression } from '../expression/runtimeBinding'
+import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes, isBuiltinTag } from './attrs'
@@ -204,9 +202,20 @@ function resolveTemplateSlotCondition(node: ElementNode, context: TransformConte
   }
   const rawExp = directive.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? directive.exp.content : ''
   const conditionKind = directive.name === 'else-if' ? 'else-if' : 'if'
+  const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExp, context.templateSafeCallNames))
+    ? registerRuntimeBindingExpression(rawExp, context, { hint: `template v-${conditionKind}` })
+    : null
+  if (rawExp) {
+    recordBindingExpression(context, {
+      kind: 'if',
+      expression: rawExp,
+      outputPath: runtimeExp?.split('[')[0],
+      sourceLocation: directive.exp?.loc,
+    })
+  }
   return {
     conditionKind,
-    condition: rawExp ? normalizeWxmlExpressionWithContext(rawExp, context) : undefined,
+    condition: runtimeExp ?? (rawExp ? normalizeWxmlExpressionWithContext(rawExp, context) : undefined),
   }
 }
 
@@ -272,6 +281,13 @@ function pushSlotNamesAttr(
   const slotNamesRef = registerRuntimeBindingExpression(`{${properties.join(',')}}`, context, {
     hint: 'vue-slots 元数据',
   })
+  if (slotNamesRef) {
+    recordBindingExpression(context, {
+      kind: 'component-prop',
+      expression: `{${properties.join(',')}}`,
+      outputPath: slotNamesRef.split('[')[0],
+    })
+  }
   if (slotNamesRef) {
     attrs.push(`${WEVU_SLOT_NAMES_ATTR}="${renderMustache(slotNamesRef, context)}"`)
   }
@@ -581,11 +597,19 @@ export function transformComponentWithSlots(
     const scopePropsExp = buildScopePropsExpression(context)
     if (scopePropsExp) {
       mergedAttrs.push(`${WEVU_SLOT_SCOPE_ATTR}="${renderMustache(scopePropsExp, context)}"`)
+      recordBindingExpression(context, {
+        kind: 'component-prop',
+        expression: scopePropsExp,
+      })
     }
     const ownerIdExp = context.rewriteScopedSlot
       ? `${WEVU_SLOT_OWNER_ID_PROP} || ${WEVU_SLOT_OWNER_ID_KEY} || ''`
       : `${WEVU_SLOT_OWNER_ID_KEY} || ''`
     mergedAttrs.push(`${WEVU_SLOT_OWNER_ID_ATTR}="${renderMustache(ownerIdExp, context)}"`)
+    recordBindingExpression(context, {
+      kind: 'component-prop',
+      expression: ownerIdExp,
+    })
   }
 
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
@@ -775,9 +799,13 @@ export function transformComponentElement(node: ElementNode, context: TransformC
     warn(context, '<component> 未提供 :is 绑定，将按普通元素处理。', isDirective.loc)
     return transformNormalElement(node, context, transformNode)
   }
+  recordBindingExpression(context, {
+    kind: 'component-prop',
+    expression: componentVar,
+    sourceLocation: isDirective.exp?.loc,
+  })
 
   const otherProps = node.props.filter(prop => prop !== isDirective)
-  const attrs: string[] = []
 
   const slotDirective = findSlotDirective(node)
   const templateSlotChildren = node.children.filter(
@@ -789,24 +817,17 @@ export function transformComponentElement(node: ElementNode, context: TransformC
     return transformComponentWithSlots(slotNode, context, transformNode, { extraAttrs: [`data-is="${renderMustache(componentVar, context)}"`] })
   }
 
-  for (const prop of otherProps) {
-    if (prop.type === NodeTypes.ATTRIBUTE) {
-      const attr = transformAttribute(prop, context, normalizeComponentHostName(prop.name))
-      if (attr) {
-        attrs.push(attr)
-      }
-    }
-    else if (prop.type === NodeTypes.DIRECTIVE) {
-      const dir = transformDirective(prop, context, node, undefined, { isComponent: true })
-      if (dir) {
-        attrs.push(dir)
-      }
-    }
-  }
-
-  const children = node.children
+  const componentNode = { ...node, props: otherProps } as ElementNode
+  const { attrs, vTextExp } = collectElementAttributes(componentNode, context, {
+    isComponent: true,
+    resolvedTag: 'component',
+  })
+  let children = node.children
     .map(child => transformNode(child, context))
     .join('')
+  if (vTextExp !== undefined) {
+    children = renderMustache(vTextExp, context)
+  }
 
   const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 

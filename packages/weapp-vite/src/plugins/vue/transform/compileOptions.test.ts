@@ -22,6 +22,7 @@ const resolveWevuDefaultsWithPresetMock = vi.hoisted(() => vi.fn(() => ({
   preset: 'default',
 })))
 const isWevuMinifyEnabledMock = vi.hoisted(() => vi.fn((_config: any, isDev = false) => !isDev))
+const isAutoSetDataPickEnabledWithPresetMock = vi.hoisted(() => vi.fn(() => true))
 
 vi.mock('../../../logger', () => ({
   default: {
@@ -51,6 +52,7 @@ vi.mock('./usingComponentResolver', () => ({
 vi.mock('./wevuPreset', () => ({
   resolveWevuDefaultsWithPreset: resolveWevuDefaultsWithPresetMock,
   isWevuMinifyEnabled: isWevuMinifyEnabledMock,
+  isAutoSetDataPickEnabledWithPreset: isAutoSetDataPickEnabledWithPresetMock,
 }))
 
 describe('resolveVueTemplatePlatformOptions', () => {
@@ -84,6 +86,16 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(alipayOptions.supportsWxs).toBe(true)
     expect(alipayOptions.wxsExtension).toBe('sjs')
     expect(alipayOptions.classStyleRuntime).toBe('wxs')
+
+    const ttOptions = resolveVueTemplatePlatformOptions({
+      platform: 'tt',
+      wxsEnabled: true,
+      wxsExtension: 'sjs',
+      classStyleRuntime: 'auto',
+      classStyleRuntimeWarned: { value: false },
+    })
+    expect(ttOptions.templatePlatform.name).toBe('tt')
+    expect(ttOptions.supportsWxs).toBe(true)
   })
 
   it('falls back to js runtime when wxs is disabled or unavailable', () => {

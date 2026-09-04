@@ -1,4 +1,5 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
+import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
 import type { SourcePosition } from '../../../../types/diagnostics'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../../compiler/template'
 import type { VueTransformResult } from './types'
@@ -72,6 +73,32 @@ function ownExternalTemplateDiagnostics(
     }
   }
 }
+function updateTemplateBindingManifests(
+  templateCompiled: TemplateCompileResult,
+  sourceFile: string,
+  remap?: (position: SourcePosition) => SourcePosition,
+) {
+  const updateManifest = (manifest: WevuBindingManifestV1) => {
+    manifest.sourceFile = sourceFile
+    if (!remap) {
+      return
+    }
+    for (const binding of manifest.bindings) {
+      if (binding.sourceLocation) {
+        binding.sourceLocation = {
+          start: remap(binding.sourceLocation.start),
+          end: remap(binding.sourceLocation.end),
+        }
+      }
+    }
+  }
+  updateManifest(templateCompiled.bindingManifest)
+  for (const asset of templateCompiled.scopedSlotComponents ?? []) {
+    const previousManifest = JSON.stringify(asset.bindingManifest)
+    updateManifest(asset.bindingManifest)
+    asset.script = asset.script.replace(previousManifest, JSON.stringify(asset.bindingManifest))
+  }
+}
 
 export function compileTemplatePhase(
   descriptor: Pick<SFCDescriptor, 'template'>,
@@ -80,6 +107,7 @@ export function compileTemplatePhase(
   templateResolvedId: string | undefined,
   options: TemplateCompileOptions | undefined,
   result: VueTransformResult,
+  bindingManifestSourceFile?: string,
 ): TemplateCompileResult | undefined {
   if (!descriptor.template) {
     return undefined
@@ -90,6 +118,29 @@ export function compileTemplatePhase(
     filename,
     options,
   )
+  const manifestSourceFile = descriptor.template.src || bindingManifestSourceFile || templateResolvedId || filename
+  if (descriptor.template.src) {
+    updateTemplateBindingManifests(templateCompiled, manifestSourceFile)
+  }
+  else {
+    const base = descriptor.template.loc.start
+    const lineStarts = [0]
+    for (const match of source.matchAll(/\r\n?|\n/g)) {
+      lineStarts.push(match.index + match[0].length)
+    }
+    updateTemplateBindingManifests(templateCompiled, manifestSourceFile, (position) => {
+      const line = base.line + position.line - 1
+      const column = position.line === 1
+        ? base.column + position.column - 1
+        : position.column
+      return {
+        offset: Math.min(source.length, (lineStarts[line - 1] ?? base.offset + position.offset) + column - 1),
+        line,
+        column,
+      }
+    })
+  }
+  result.bindingManifest = templateCompiled.bindingManifest
   result.template = templateCompiled.code
   if (templateCompiled.diagnostics.length) {
     if (descriptor.template.src) {

@@ -1,3 +1,5 @@
+import type { SourceSpan, WevuBindingUpdateMode } from '@wevu/compiler'
+
 export interface SetDataSnapshotOptions {
   /**
    * 开发态高频 setData 告警。
@@ -228,6 +230,17 @@ export interface SetDataSnapshotOptions {
   functionPaths?: string[]
 }
 
+/**
+ * 与本次 setData 诊断相关的编译期模板绑定。
+ */
+export interface SetDataBindingDiagnostic {
+  id: string
+  outputPath: string
+  updateMode: WevuBindingUpdateMode
+  sourceFile: string
+  sourceLocation?: SourceSpan
+}
+
 export interface SetDataDebugInfo {
   mode: 'patch' | 'diff'
   reason: 'patch' | 'diff' | 'needsFullSnapshot' | 'maxPatchKeys' | 'maxPayloadBytes' | 'loopWarning'
@@ -241,4 +254,8 @@ export interface SetDataDebugInfo {
   windowMs?: number
   targetLabel?: string
   message?: string
+  /**
+   * 根据实际 payload 或待处理路径解析出的相关编译期绑定。
+   */
+  bindings?: SetDataBindingDiagnostic[]
 }

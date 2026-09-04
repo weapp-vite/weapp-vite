@@ -1,11 +1,10 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
-import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import { compileVueStyleToWxss, generateScopedId } from 'wevu/compiler'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
 import { resolveSfcStylePreprocessOptions } from '../../compileOptions'
-import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
+import { resolvePageLayoutPlan } from '../../pageLayout'
 import { ensureSfcStyleBlocks, isAppEntry, loadTransformPageEntries } from './state'
 
 export async function handleTransformEntryPageLayoutFlow(options: {
@@ -13,7 +12,6 @@ export async function handleTransformEntryPageLayoutFlow(options: {
   ctx: CompilerContext
   filename: string
   source: string
-  result?: VueTransformResult
 }) {
   const configService = options.ctx.configService
   if (!configService) {
@@ -23,12 +21,6 @@ export async function handleTransformEntryPageLayoutFlow(options: {
   const resolvedLayoutPlan = await resolvePageLayoutPlan(options.source, options.filename, configService)
   if (!resolvedLayoutPlan) {
     return undefined
-  }
-
-  if (options.result) {
-    applyPageLayoutPlan(options.result, options.filename, resolvedLayoutPlan, {
-      platform: configService.platform,
-    })
   }
 
   await registerResolvedPageLayoutDependencies(options.ctx, options.filename, resolvedLayoutPlan.layouts)

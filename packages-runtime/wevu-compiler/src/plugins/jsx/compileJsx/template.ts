@@ -3,6 +3,7 @@ import type { CompileVueFileOptions } from '../../vue/transform/compileVueFile/t
 import type { JsxCompileContext } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
+import { createBindingManifest } from '../../vue/compiler/template/bindingManifest'
 import { formatWxml } from '../../vue/compiler/template/format'
 import { getMiniProgramTemplatePlatform } from '../../vue/compiler/template/platforms'
 import * as analysis from './analysis'
@@ -15,6 +16,7 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     mustacheInterpolation: options?.template?.mustacheInterpolation ?? 'compact',
     formatWxml: options?.template?.formatWxml ?? false,
     warnings: [],
+    bindingManifest: createBindingManifest(options?.bindingManifestSourceFile ?? ''),
     inlineExpressions: [],
     inlineExpressionSeed: 0,
     scopeStack: [],
@@ -52,6 +54,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
   const context = createJsxCompileContext(options)
   context.filename = filename
+  context.bindingManifest.sourceFile = options?.bindingManifestSourceFile ?? filename
   context.moduleResolver = createJsxModuleResolver(context.warnings)
   collectImportedBindings(ast, context)
 
@@ -65,6 +68,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
     return {
       template: undefined,
       warnings: context.warnings,
+      bindingManifest: context.bindingManifest,
       inlineExpressions: context.inlineExpressions,
       dynamicIslands: context.dynamicIslands,
     }
@@ -77,6 +81,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
   return {
     template: context.formatWxml ? formatWxml(template) : template,
     warnings: context.warnings,
+    bindingManifest: context.bindingManifest,
     inlineExpressions: context.inlineExpressions,
     dynamicIslands: context.dynamicIslands,
   }
@@ -97,6 +102,7 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
   const context = createJsxCompileContext(options)
   context.filename = filename
+  context.bindingManifest.sourceFile = options?.bindingManifestSourceFile ?? filename
   context.moduleResolver = createJsxModuleResolver(context.warnings)
   collectImportedBindings(ast, context)
 
@@ -123,6 +129,7 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
   return {
     template,
     warnings: context.warnings,
+    bindingManifest: context.bindingManifest,
     inlineExpressions: context.inlineExpressions,
     autoComponentContext,
     dynamicIslands: context.dynamicIslands,

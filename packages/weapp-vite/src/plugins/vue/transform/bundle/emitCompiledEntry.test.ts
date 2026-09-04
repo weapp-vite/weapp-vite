@@ -648,18 +648,21 @@ describe('emitCompiledEntry helpers', () => {
     )
   })
 
-  it('wraps compiled page templates with the app shell after page layouts', async () => {
-    handleCompiledEntryPageLayoutsMock.mockImplementation(async ({ result, emitLayouts }: any) => {
-      result.template = '<weapp-layout-default><view /></weapp-layout-default>'
-      result.config = JSON.stringify({
-        usingComponents: {
-          'weapp-layout-default': '/layouts/default',
-        },
-      })
+  it('emits compiler-owned page layout and app shell output unchanged', async () => {
+    handleCompiledEntryPageLayoutsMock.mockImplementation(async ({ emitLayouts }: any) => {
       await emitLayouts([{ kind: 'native', file: '/project/src/layouts/default' }])
     })
 
-    const result = { template: '<view />', script: 'Page({})' } as any
+    const result = {
+      template: '<weapp-app-shell __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"><weapp-layout-default><view /></weapp-layout-default></weapp-app-shell>',
+      script: 'Page({})',
+      config: JSON.stringify({
+        usingComponents: {
+          'weapp-layout-default': '/layouts/default',
+          'weapp-app-shell': '/__weapp_vite_app_shell',
+        },
+      }),
+    } as any
     await emitResolvedCompiledVueEntryAssets({
       bundle: {},
       state: {

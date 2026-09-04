@@ -2,6 +2,8 @@ import type { CompileVueFileOptions, ResolvedUsingComponentPath, VueTransformRes
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { isAutoImportCandidateTag } from '../../utils/vueTemplateTags'
+import { getMiniProgramTemplatePlatform } from '../vue/compiler/template'
+import { applyCompilerTemplateWrappers, mergeCompilerLayoutUsingComponents } from '../vue/transform/compileVueFile/pageLayout'
 import { extractJsonMacroFromScriptSetup, mayContainJsonMacro } from '../vue/transform/jsonMacros'
 import { createJsonMerger } from '../vue/transform/jsonMerge'
 import { transformScript } from '../vue/transform/script'
@@ -60,7 +62,15 @@ export async function compileJsxFile(
     }
   }
 
-  const { template: rawTemplate, warnings: templateWarnings, inlineExpressions, autoComponentContext, dynamicIslands, dependencies } = compileJsxTemplateAndCollectComponents(source, filename, options)
+  const {
+    template: rawTemplate,
+    warnings: templateWarnings,
+    bindingManifest,
+    inlineExpressions,
+    autoComponentContext,
+    dynamicIslands,
+    dependencies,
+  } = compileJsxTemplateAndCollectComponents(source, filename, options)
 
   const autoUsingComponentsMap: Record<string, string> = {}
   const localComponentAliases = new Map<string, string>()
@@ -121,6 +131,23 @@ export async function compileJsxFile(
     }
   }
 
+  let compiledTemplateStr = rawTemplate
+  for (const [from, to] of localComponentAliases) {
+    if (compiledTemplateStr) {
+      compiledTemplateStr = compiledTemplateStr
+        .replaceAll(`<${from}`, `<${to}`)
+        .replaceAll(`</${from}>`, `</${to}>`)
+    }
+  }
+  if (compiledTemplateStr && (options?.pageLayout || options?.appShell)) {
+    compiledTemplateStr = applyCompilerTemplateWrappers({
+      template: compiledTemplateStr,
+      manifest: bindingManifest,
+      platform: options?.template?.platform ?? getMiniProgramTemplatePlatform(),
+      pageLayout: options?.pageLayout,
+      appShell: options?.appShell,
+    })
+  }
   const normalizedScriptSource = injectDynamicIslandRuntime(
     stripRenderOptionFromScript(scriptSource, filename, templateWarnings),
     dynamicIslands,
@@ -135,6 +162,9 @@ export async function compileJsxFile(
     warn: options?.warn,
     wevuDefaults: options?.wevuDefaults,
     inlineExpressions,
+    bindingManifest: options?.isApp ? undefined : bindingManifest,
+    autoSetDataPick: !options?.isApp && options?.autoSetDataPick,
+    pageLayout: options?.isApp ? undefined : options?.pageLayout,
   })
 
   const diagnostics = templateWarnings.length
@@ -180,24 +210,21 @@ export async function compileJsxFile(
   if (scriptMacroConfig && Object.keys(scriptMacroConfig).length > 0) {
     configObj = mergeJson(configObj ?? {}, scriptMacroConfig, 'macro')
   }
-
-  let compiledTemplateStr = rawTemplate
-  for (const [from, to] of localComponentAliases) {
-    if (compiledTemplateStr) {
-      compiledTemplateStr = compiledTemplateStr
-        .replaceAll(`<${from}`, `<${to}`)
-        .replaceAll(`</${from}>`, `</${to}>`)
-    }
-  }
+  const config = mergeCompilerLayoutUsingComponents(
+    configObj && Object.keys(configObj).length > 0
+      ? JSON.stringify(configObj, null, 2)
+      : undefined,
+    options?.pageLayout,
+    options?.appShell,
+  )
 
   const result: VueTransformResult = {
     script: transformedScript.code,
     scriptMap: transformedScript.map ?? vueJsxTransformed.map,
     template: compiledTemplateStr,
     diagnostics,
-    config: configObj && Object.keys(configObj).length > 0
-      ? JSON.stringify(configObj, null, 2)
-      : undefined,
+    bindingManifest,
+    config,
     meta: {
       hasScriptSetup: false,
       hasSetupOption: SETUP_CALL_RE.test(normalizedScriptSource),

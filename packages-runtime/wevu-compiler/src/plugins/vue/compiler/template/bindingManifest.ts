@@ -1,0 +1,268 @@
+import type { WevuBindingKind, WevuBindingManifestV1, WevuBindingUpdateMode } from '../../../../types/bindingManifest'
+import type { SourceSpan } from '../../../../types/diagnostics'
+import type { TransformContext } from './types'
+import * as t from '@weapp-vite/ast/babelTypes'
+import { traverse } from '../../../../utils/babel'
+import { INLINE_GLOBALS } from './expression/inlineShared'
+import { parseBabelExpressionFile } from './expression/parse'
+import { normalizeWxmlExpressionWithContext } from './expression/scopedSlot'
+
+interface BindingDependency {
+  root: string
+  path?: string
+  mode: Exclude<WevuBindingUpdateMode, 'snapshot-fallback'>
+}
+
+interface RecordBindingOptions {
+  kind: WevuBindingKind
+  expression: string
+  outputPath?: string
+  sourceLocation?: SourceSpan
+}
+
+const INTERNAL_GLOBALS: Record<string, true> = {
+  undefined: true,
+  Infinity: true,
+  NaN: true,
+  arguments: true,
+}
+
+function cloneSourceSpan(location: SourceSpan | undefined): SourceSpan | undefined {
+  if (!location) {
+    return undefined
+  }
+  return {
+    start: { ...location.start },
+    end: { ...location.end },
+  }
+}
+
+function getStaticPropertyName(node: t.MemberExpression | t.OptionalMemberExpression): string | null {
+  if (!node.computed && t.isIdentifier(node.property)) {
+    return node.property.name
+  }
+  if (node.computed && (t.isStringLiteral(node.property) || t.isNumericLiteral(node.property))) {
+    return String(node.property.value)
+  }
+  return null
+}
+
+function resolveMemberDependency(node: t.Expression): BindingDependency | null {
+  const segments: string[] = []
+  let current = node
+  let dynamic = false
+  while (t.isMemberExpression(current) || t.isOptionalMemberExpression(current)) {
+    const property = getStaticPropertyName(current)
+    if (property === null) {
+      dynamic = true
+    }
+    else {
+      segments.unshift(property)
+    }
+    if (!t.isExpression(current.object)) {
+      return null
+    }
+    current = current.object
+  }
+  if (!t.isIdentifier(current) || INLINE_GLOBALS.has(current.name) || INTERNAL_GLOBALS[current.name]) {
+    return null
+  }
+  if (dynamic) {
+    return { root: current.name, mode: 'top-level' }
+  }
+  const path = [current.name, ...segments].join('.')
+  return { root: current.name, path, mode: 'exact-path' }
+}
+
+function collectDependencies(
+  expression: string,
+  context?: TransformContext,
+  additionalLocals?: Iterable<string>,
+): { dependencies: BindingDependency[], snapshotFallback: boolean } | null {
+  const normalized = context
+    ? normalizeWxmlExpressionWithContext(expression, context)
+    : expression
+  const parsed = parseBabelExpressionFile(normalized)
+  if (!parsed) {
+    return null
+  }
+
+  const localNames = new Set<string>()
+  for (const scope of context?.scopeStack ?? []) {
+    for (const name of scope) {
+      localNames.add(name)
+    }
+  }
+  for (const name of additionalLocals ?? []) {
+    localNames.add(name)
+  }
+  const dependencies = new Map<string, BindingDependency>()
+  let snapshotFallback = false
+  const addDependency = (dependency: BindingDependency) => {
+    if (localNames.has(dependency.root) || INLINE_GLOBALS.has(dependency.root) || INTERNAL_GLOBALS[dependency.root]) {
+      return
+    }
+    const key = `${dependency.root}:${dependency.path ?? ''}:${dependency.mode}`
+    dependencies.set(key, dependency)
+  }
+
+  traverse(parsed.ast, {
+    Identifier(path) {
+      if (!path.isReferencedIdentifier() || path.scope.hasBinding(path.node.name)) {
+        return
+      }
+      const parent = path.parentPath
+      if (
+        (parent.isMemberExpression() || parent.isOptionalMemberExpression())
+        && parent.node.object === path.node
+      ) {
+        let outer = parent
+        while (
+          (outer.parentPath.isMemberExpression() || outer.parentPath.isOptionalMemberExpression())
+          && outer.parentPath.node.object === outer.node
+        ) {
+          outer = outer.parentPath as typeof parent
+        }
+        const dependency = resolveMemberDependency(outer.node as t.Expression)
+        if (dependency) {
+          addDependency(dependency)
+        }
+        return
+      }
+      if (
+        (parent.isMemberExpression() || parent.isOptionalMemberExpression())
+        && parent.node.property === path.node
+        && !parent.node.computed
+      ) {
+        return
+      }
+      addDependency({ root: path.node.name, path: path.node.name, mode: 'exact-path' })
+    },
+    CallExpression(path) {
+      if (
+        t.isIdentifier(path.node.callee)
+        && context?.templateSafeCallNames.has(path.node.callee.name)
+      ) {
+        return
+      }
+      snapshotFallback = true
+    },
+    OptionalCallExpression() {
+      snapshotFallback = true
+    },
+    NewExpression() {
+      snapshotFallback = true
+    },
+    Function() {
+      snapshotFallback = true
+    },
+    SpreadElement() {
+      snapshotFallback = true
+    },
+  })
+
+  if (localNames.size && context) {
+    for (const forInfo of context.forStack) {
+      const listExpression = forInfo.rawListExp ?? forInfo.listExp
+      if (!listExpression) {
+        continue
+      }
+      const outerAnalysis = collectDependencies(listExpression, {
+        ...context,
+        scopeStack: [],
+        forStack: [],
+      })
+      for (const dependency of outerAnalysis?.dependencies ?? []) {
+        addDependency(dependency)
+      }
+      snapshotFallback ||= outerAnalysis?.snapshotFallback ?? false
+    }
+  }
+
+  return {
+    dependencies: [...dependencies.values()],
+    snapshotFallback,
+  }
+}
+
+function recordBindingManifestExpression(
+  manifest: WevuBindingManifestV1,
+  options: RecordBindingOptions,
+  context?: TransformContext,
+  additionalLocals?: Iterable<string>,
+) {
+  const analysis = collectDependencies(options.expression, context, additionalLocals)
+  const sourceLocation = cloneSourceSpan(options.sourceLocation)
+  if (!analysis) {
+    manifest.bindings.push({
+      id: `b${manifest.bindings.length}`,
+      kind: options.kind,
+      outputPath: options.outputPath ?? '*',
+      sourceRoots: [],
+      updateMode: 'snapshot-fallback',
+      sourceLocation,
+    })
+    return
+  }
+  const { dependencies, snapshotFallback } = analysis
+  if (options.outputPath) {
+    const sourceRoots = [...new Set(dependencies.map(dependency => dependency.root))]
+    const sourcePaths = dependencies.flatMap(dependency => dependency.path ? [dependency.path] : [])
+    const updateMode = snapshotFallback
+      ? 'snapshot-fallback'
+      : dependencies.some(dependency => dependency.mode === 'top-level')
+        ? 'top-level'
+        : 'exact-path'
+    manifest.bindings.push({
+      id: `b${manifest.bindings.length}`,
+      kind: options.kind,
+      outputPath: options.outputPath,
+      sourceRoots,
+      sourcePaths: sourcePaths.length ? [...new Set(sourcePaths)] : undefined,
+      updateMode,
+      sourceLocation,
+    })
+    return
+  }
+  for (const dependency of dependencies) {
+    manifest.bindings.push({
+      id: `b${manifest.bindings.length}`,
+      kind: options.kind,
+      outputPath: dependency.mode === 'exact-path' ? dependency.path! : dependency.root,
+      sourceRoots: [dependency.root],
+      sourcePaths: dependency.path ? [dependency.path] : undefined,
+      updateMode: snapshotFallback ? 'snapshot-fallback' : dependency.mode,
+      sourceLocation,
+    })
+  }
+}
+
+/**
+ * 为一次模板编译创建空的版本化绑定清单。
+ */
+export function createBindingManifest(sourceFile: string): WevuBindingManifestV1 {
+  return {
+    version: 1,
+    sourceFile,
+    bindings: [],
+    features: {},
+  }
+}
+
+/**
+ * 在模板遍历期间记录一个输出绑定。
+ */
+export function recordBindingExpression(context: TransformContext, options: RecordBindingOptions) {
+  recordBindingManifestExpression(context.bindingManifest, options, context)
+}
+
+/**
+ * 为编译器合成的模板片段记录绑定。
+ */
+export function recordSyntheticBindingExpression(
+  manifest: WevuBindingManifestV1,
+  options: RecordBindingOptions,
+  localNames?: Iterable<string>,
+) {
+  recordBindingManifestExpression(manifest, options, undefined, localNames)
+}

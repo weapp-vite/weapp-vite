@@ -26,7 +26,6 @@ import { collectFeatureFlagsFromCode } from '../packages/ast/src/operations/feat
 import { mayContainPlatformApiAccess } from '../packages/ast/src/operations/platformApi'
 import { mayContainStaticRequireLiteral } from '../packages/ast/src/operations/require'
 import { createTransformHook } from '../packages/weapp-vite/src/plugins/core/lifecycle/transform'
-import { injectSetDataPickInJs } from '../packages/weapp-vite/src/plugins/vue/transform/injectSetDataPick'
 
 const ITERATIONS = 160
 const WARMUP = 20
@@ -88,35 +87,6 @@ function onTap(index: number, count: { value: number }, event: unknown) {
 .group { padding: 12rpx; }
 </style>
 `.trim()
-}
-
-function createSetDataFixture() {
-  const methods: string[] = []
-  const templateBindings: string[] = []
-  for (let i = 0; i < 60; i++) {
-    methods.push(`const value${i} = ref(${i})`)
-    templateBindings.push(`key${i}`)
-  }
-  const source = `
-import { ref } from 'vue'
-${methods.join('\n')}
-const sharedOptions = {
-  data: { ready: true },
-}
-export default defineComponent(Object.assign({}, sharedOptions, {
-  setData: {
-    throttle: 16,
-  },
-  setup() {
-    return {
-      ${templateBindings.map(key => `${key}: ${key.replace('key', 'value')}.value`).join(',\n      ')}
-    }
-  },
-}))
-`.trim()
-
-  const pickKeys = Array.from({ length: 60 }, (_, index) => `key${index}`)
-  return { source, pickKeys }
 }
 
 function createLifecycleFixture() {
@@ -298,6 +268,8 @@ function profileTransformScriptPhases(source: string, options: TransformScriptOp
     transformed: false,
     defineComponentAliases: new Set<string>([WE_VU_RUNTIME_APIS.defineComponent, '_defineComponent']),
     defineComponentDecls: new Map(),
+    useSlotsAliases: new Set(),
+    usesSlots: false,
     defaultExportPath: null,
   }
 
@@ -516,7 +488,6 @@ async function main() {
   const filename = '/project/src/pages/profile/index.vue'
   const source = createVueSfcFixture()
   const transformCase = await createTransformScriptCase()
-  const setDataCase = createSetDataFixture()
   const lifecycleCode = createLifecycleFixture()
   const analysisOnlyCode = createAnalysisOnlyFixture()
   const lifecycleTransform = createTransformHook({
@@ -573,10 +544,6 @@ async function main() {
     compileConfigPhase: average(compileVueSamples.map(sample => sample.phases.compileConfigPhase)),
     finalizeResult: average(compileVueSamples.map(sample => sample.phases.finalizeResult)),
   }
-
-  const setDataAvg = measureSync(() => {
-    injectSetDataPickInJs(setDataCase.source, setDataCase.pickKeys)
-  })
 
   const lifecycleAvg = await measureAsync(async () => {
     await lifecycleTransform(lifecycleCode, '/project/src/pages/profile/index.ts')
@@ -694,7 +661,6 @@ async function main() {
 
   console.log('\nweapp-vite hot paths')
   console.table({
-    injectSetDataPickInJs: formatMs(setDataAvg),
     createTransformHook_transform: formatMs(lifecycleAvg),
   })
 

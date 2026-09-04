@@ -59,6 +59,29 @@ export default defineComponent({
     expect(result.script).not.toContain('createVNode')
   })
 
+  it('returns the typed binding manifest from the direct JSX compiler', async () => {
+    const source = `
+import { defineComponent, ref } from 'wevu'
+export default defineComponent({
+  setup() {
+    const title = ref('page')
+    return () => <view title={title.value}>{title.value}</view>
+  },
+})
+`
+    const result = await compileJsxFile(source, '/project/src/pages/manifest/index.tsx')
+
+    expect(result.bindingManifest).toMatchObject({
+      version: 1,
+      sourceFile: '/project/src/pages/manifest/index.tsx',
+    })
+    expect(result.bindingManifest?.bindings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'attribute', outputPath: 'title.value' }),
+      expect.objectContaining({ kind: 'text', outputPath: 'title.value' }),
+    ]))
+    expect(result.script).toContain('__wevuBindingManifest')
+  })
+
   it('keeps setup captures required by an extracted JSX template', async () => {
     const source = `
 import { defineComponent, ref } from 'wevu'

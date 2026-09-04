@@ -1,3 +1,4 @@
+import type { WevuBindingManifestV1 } from '@wevu/compiler'
 import type { WatchMap } from '../register/watch'
 import type {
   ComputedDefinitions,
@@ -5,6 +6,7 @@ import type {
   MiniProgramComponentRawOptions,
   SetDataSnapshotOptions,
 } from '../types'
+import { WEVU_BINDING_MANIFEST_KEY } from '@weapp-core/constants'
 import { createApp } from '../app'
 import { INTERNAL_DEFAULTS_SCOPE_KEY } from '../defaults'
 import { registerComponent } from '../register'
@@ -14,6 +16,7 @@ export interface RuntimeComponentDefinitionOptions {
   computed: ComputedDefinitions
   methods: MethodDefinitions
   setData: SetDataSnapshotOptions | undefined
+  bindingManifest?: WevuBindingManifestV1
   watch: WatchMap | undefined
   setup: ((props: any, ctx: any) => any) | undefined
   mpOptions: MiniProgramComponentRawOptions
@@ -31,6 +34,7 @@ export function createRuntimeComponentDefinition(
     computed: options.computed,
     methods: options.methods,
     setData: options.setData,
+    [WEVU_BINDING_MANIFEST_KEY]: options.bindingManifest,
     [INTERNAL_DEFAULTS_SCOPE_KEY]: 'component',
   } as any)
   const lifecycleDefinition = registerComponent(

@@ -1,7 +1,9 @@
+import type { WevuBindingManifestV1 } from '@wevu/compiler'
 import type { InlineExpressionMap } from '../register/inline'
 import type { TemplateRefBinding } from '../templateRefs'
 import type { ComputedDefinitions } from '../types'
 import {
+  WEVU_BINDING_MANIFEST_KEY,
   WEVU_INLINE_HANDLER,
   WEVU_INLINE_MAP_KEY,
   WEVU_OWNER_HANDLER,
@@ -445,6 +447,7 @@ export function createScopedSlotOptions(
     computed?: ComputedDefinitions
     inlineMap?: InlineExpressionMap
     templateRefs?: TemplateRefBinding[]
+    [WEVU_BINDING_MANIFEST_KEY]?: WevuBindingManifestV1
   },
 ) {
   const scopedSlotComputed = overrides?.computed
@@ -554,6 +557,9 @@ export function createScopedSlotOptions(
   }
   if (templateRefs?.length) {
     ;(baseOptions as any)[WEVU_TEMPLATE_REFS_KEY] = templateRefs
+  }
+  if (overrides?.[WEVU_BINDING_MANIFEST_KEY]) {
+    ;(baseOptions as Record<string, unknown>)[WEVU_BINDING_MANIFEST_KEY] = overrides[WEVU_BINDING_MANIFEST_KEY]
   }
 
   return baseOptions

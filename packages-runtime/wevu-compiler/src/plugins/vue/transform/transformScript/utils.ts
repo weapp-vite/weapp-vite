@@ -1,4 +1,6 @@
 import type { NodePath } from '@weapp-vite/ast/babelTraverse'
+import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
+import type { CompilerPageLayoutPlan } from '../../../../types/pageLayout'
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { ClassStyleBinding, ClassStyleRuntime, InlineExpressionAsset, LayoutHostBinding, TemplateRefBinding } from '../../compiler/template/types'
@@ -76,6 +78,18 @@ export interface TransformScriptOptions {
    */
   inlineExpressions?: InlineExpressionAsset[]
   /**
+   * 模板遍历产生的版本化绑定清单。
+   */
+  bindingManifest?: WevuBindingManifestV1
+  /**
+   * 是否根据绑定清单自动合并 setData.pick。
+   */
+  autoSetDataPick?: boolean
+  /**
+   * 当前页面的编译期布局计划。
+   */
+  pageLayout?: CompilerPageLayoutPlan
+  /**
    * 模板中作为组件 prop 传递的函数候选路径。
    */
   functionPropPaths?: string[]
@@ -106,6 +120,8 @@ export interface TransformState {
   transformed: boolean
   defineComponentAliases: Set<string>
   defineComponentDecls: Map<string, t.ObjectExpression>
+  useSlotsAliases: Set<string>
+  usesSlots: boolean
   defaultExportPath: NodePath<t.ExportDefaultDeclaration> | null
 }
 

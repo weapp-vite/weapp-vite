@@ -109,6 +109,13 @@ export {
 } from './plugins/wevu/pageFeatures'
 export type { ModuleResolver, WevuPageFeatureFlag, WevuPageHookName } from './plugins/wevu/pageFeatures'
 export type {
+  WevuBindingKind,
+  WevuBindingManifestFeaturesV1,
+  WevuBindingManifestV1,
+  WevuBindingRecordV1,
+  WevuBindingUpdateMode,
+} from './types/bindingManifest'
+export type {
   CompilerDiagnostic,
   CompilerDiagnosticCode,
   CompilerDiagnosticSeverity,
@@ -117,6 +124,12 @@ export type {
   SourceSpan,
 } from './types/diagnostics'
 export type { JsonConfig, JsonMergeContext, JsonMergeStage, JsonMergeStrategy } from './types/json'
+export type {
+  CompilerAppShell,
+  CompilerLayoutPropValue,
+  CompilerPageLayout,
+  CompilerPageLayoutPlan,
+} from './types/pageLayout'
 
 export type { MpPlatform } from './types/platform'
 export type { WevuDefaults } from './types/wevu'

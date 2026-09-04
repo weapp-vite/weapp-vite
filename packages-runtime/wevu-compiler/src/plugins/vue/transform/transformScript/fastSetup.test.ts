@@ -1,3 +1,4 @@
+import { WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { transformScript } from './index'
 
@@ -92,6 +93,28 @@ describe('transformScript fast compiled script setup path', () => {
 
     expect(result.code).toContain('__weapp_vite_inline_map')
     expect(result.code).not.toContain('Object.defineProperty(__returned__')
+  })
+
+  it('injects slot host properties only for imported useSlots calls', () => {
+    const imported = transformScript(`
+import { useSlots as useSetupSlots } from 'wevu'
+export default {
+  setup() {
+    useSetupSlots()
+  },
+}
+    `.trim(), { sourceMap: false })
+    const local = transformScript(`
+const useSlots = () => ({})
+export default {
+  setup() {
+    useSlots()
+  },
+}
+    `.trim(), { sourceMap: false })
+
+    expect(imported.code).toContain(WEVU_SLOT_OWNER_ID_PROP)
+    expect(local.code).not.toContain(WEVU_SLOT_OWNER_ID_PROP)
   })
 
   it('falls back to the Babel path for TypeScript SFC output', () => {

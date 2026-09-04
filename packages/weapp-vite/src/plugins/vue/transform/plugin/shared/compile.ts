@@ -3,7 +3,6 @@ import type { CompileVueFileOptions, VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { EncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import type { ResolvedAppShell } from '../../appShell'
-import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import MagicString from 'magic-string'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { resolveAstEngine } from '../../../../../ast'
@@ -15,15 +14,12 @@ import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/
 import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
 import { hasAppShellTemplate, resolveAppShellLayout } from '../../appShell'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
-import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs, mayNeedScopedSlotHostPropertiesForSetupSlotsInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from '../../injectSetDataPick'
 import { registerVueTemplateToken, resolveVueOutputBase } from '../../shared'
 import { buildWeappVueStyleRequests } from '../../styleRequest'
 import { isWevuMinifyEnabled } from '../../wevuPreset'
-import { handleTransformEntryPageLayoutFlow } from './layout'
 import {
   mayNeedTransformPageFeatureInjection,
   mayNeedTransformPageScrollDiagnostics,
-  mayNeedTransformSetDataPick,
   resolveScriptlessVueEntryStub,
 } from './state'
 
@@ -44,11 +40,10 @@ export async function finalizeTransformEntryScript(options: {
   pluginCtx: any
   configService: NonNullable<CompilerContext['configService']>
   isPage: boolean
-  isApp: boolean
   forcePageFeatureInjection?: boolean
   sourceMap?: boolean
 }) {
-  const { result, filename, pluginCtx, configService, isPage, isApp, forcePageFeatureInjection = false, sourceMap = true } = options
+  const { result, filename, pluginCtx, configService, isPage, forcePageFeatureInjection = false, sourceMap = true } = options
 
   if (isPage && result.script) {
     if (mayNeedTransformPageScrollDiagnostics(result.script)) {
@@ -69,59 +64,6 @@ export async function finalizeTransformEntryScript(options: {
         result.script = injected.code
         result.scriptMap = composeSourceMaps(injected.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
       }
-    }
-  }
-
-  const shouldAutoSetDataPick = !isApp
-    && result.script
-    && result.template
-    && isAutoSetDataPickEnabled(configService.weappViteConfig)
-    && mayNeedTransformSetDataPick(result.template, {
-      platform: configService.platform,
-    })
-    && mayNeedInjectSetDataPickInJs(result.script)
-  const shouldInjectScopedSlotOwnerPick = !isApp
-    && result.script
-    && result.template?.includes(WEVU_SLOT_OWNER_ID_ATTR)
-    && mayNeedInjectSetDataPickInJs(result.script)
-
-  if (shouldAutoSetDataPick) {
-    const keys = collectSetDataPickKeysFromTemplate(result.template!, {
-      astEngine: resolveAstEngine(configService.weappViteConfig),
-    })
-    const scopedSlotPickKeys = shouldUseScopedSlotOwnerOnlySetDataPick(keys)
-      ? pruneScopedSlotOwnerAutoSetDataPickKeys(keys)
-      : keys
-    const injectedPick = shouldInjectScopedSlotOwnerPick
-      ? injectScopedSlotOwnerSetDataPickInJs(result.script!, scopedSlotPickKeys, { sourceMap })
-      : injectSetDataPickInJs(result.script!, keys, { sourceMap })
-    if (injectedPick.transformed) {
-      result.script = injectedPick.code
-      result.scriptMap = composeSourceMaps(injectedPick.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
-    }
-  }
-  else if (shouldInjectScopedSlotOwnerPick) {
-    const keys = collectSetDataPickKeysFromTemplate(result.template!, {
-      astEngine: resolveAstEngine(configService.weappViteConfig),
-    })
-    const injectedPick = injectScopedSlotOwnerSetDataPickInJs(
-      result.script!,
-      pruneScopedSlotOwnerAutoSetDataPickKeys(keys),
-      { sourceMap },
-    )
-    if (injectedPick.transformed) {
-      result.script = injectedPick.code
-      result.scriptMap = composeSourceMaps(injectedPick.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
-    }
-  }
-
-  const hasScopedSlotHostGenerics = Boolean(result.componentGenerics && Object.keys(result.componentGenerics).length > 0)
-  const needsSetupSlotHostProperties = result.script && mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(result.script)
-  if (!isPage && !isApp && result.script && (hasScopedSlotHostGenerics || result.template?.includes(WEVU_SLOT_OWNER_ID_PROP) || result.template?.includes('<slot') || result.template?.includes('vueSlots') || needsSetupSlotHostProperties)) {
-    const injectedProps = injectScopedSlotHostPropertiesInJs(result.script, { sourceMap })
-    if (injectedProps.transformed) {
-      result.script = injectedProps.code
-      result.scriptMap = composeSourceMaps(injectedProps.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
     }
   }
 
@@ -205,8 +147,10 @@ export async function finalizeTransformCompiledResult(options: {
   source: string
   autoRoutesSignature?: string
   result: VueTransformResult
-  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number, styleIndependentSignature?: string }>
+  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number, styleIndependentSignature?: string, pageLayoutSignature?: string, appShellSignature?: string }>
   styleIndependentSignature?: string
+  pageLayoutSignature: string
+  appShellSignature: string
   setAppShell?: (shell: ResolvedAppShell | undefined) => void
   configService: NonNullable<CompilerContext['configService']>
   isPage: boolean
@@ -237,21 +181,13 @@ export async function finalizeTransformCompiledResult(options: {
     isPage,
     isApp,
     sourceMap,
+    pageLayoutSignature,
+    appShellSignature,
     scopedSlotModules,
     emittedScopedSlotChunks,
     emitScopedSlotChunks,
   } = options
   const transformResult = result as VueTransformResultWithScriptMap
-
-  if (isPage && result.template) {
-    await handleTransformEntryPageLayoutFlow({
-      pluginCtx,
-      ctx,
-      filename,
-      source,
-      result,
-    })
-  }
 
   if (isApp) {
     setAppShell?.(
@@ -278,7 +214,6 @@ export async function finalizeTransformCompiledResult(options: {
     pluginCtx,
     configService,
     isPage,
-    isApp,
     sourceMap,
   })
 
@@ -289,6 +224,8 @@ export async function finalizeTransformCompiledResult(options: {
     autoRoutesSignature,
     refreshToken: 0,
     styleIndependentSignature,
+    pageLayoutSignature,
+    appShellSignature,
   })
   if (configService.isDev && filename.endsWith('.vue')) {
     const normalizedFilename = normalizeFsResolvedId(filename)
