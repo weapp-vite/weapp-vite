@@ -187,7 +187,7 @@
     "catalog:sync:workspace": "node scripts/postinstall-sync.mjs --mode sync",
     "catalog:sync:weapi": "pnpm --filter @weapp-core/api catalog:sync",
     "catalog:sync:create-weapp-vite": "node --import tsx packages/create-weapp-vite/scripts/generate-template-catalog.ts",
-    "deps:up": "node --import tsx scripts/upgrade-workspace-deps.ts",
+    "up:pkg": "node --import tsx scripts/upgrade-workspace-deps.ts",
     "git:index-lock:doctor": "node scripts/git-index-lock-doctor.mjs doctor",
     "git:index-lock:clean": "node scripts/git-index-lock-doctor.mjs clean",
     "test:packages": "turbo run test",
