@@ -11,6 +11,7 @@ export interface ReactiveEffect<T = any> {
   active: boolean
   _running: boolean
   _fn: () => T
+  _computed?: boolean
   onStop?: () => void
 }
 
@@ -20,19 +21,49 @@ let activeEffect: ReactiveEffect | null = null
 const effectStack: ReactiveEffect[] = []
 
 let batchDepth = 0
+let isFlushingBatch = false
+const batchedComputedEffects = new Set<ReactiveEffect>()
 const batchedEffects = new Set<ReactiveEffect>()
+
+function runScheduledEffect(ef: ReactiveEffect) {
+  if (ef.scheduler) {
+    const previousScope = activeEffectScope
+    activeEffectScope = (ef as ScopedReactiveEffect)._scope
+    try {
+      ef.scheduler()
+    }
+    finally {
+      activeEffectScope = previousScope
+    }
+    return
+  }
+  ef()
+}
 
 export function startBatch() {
   batchDepth++
 }
 
 function flushBatchedEffects() {
-  while (batchedEffects.size) {
-    const effects = [...batchedEffects]
-    batchedEffects.clear()
-    for (const ef of effects) {
-      ef()
+  isFlushingBatch = true
+  try {
+    while (batchedComputedEffects.size || batchedEffects.size) {
+      while (batchedComputedEffects.size) {
+        const effects = [...batchedComputedEffects]
+        batchedComputedEffects.clear()
+        for (const ef of effects) {
+          runScheduledEffect(ef)
+        }
+      }
+      const effects = [...batchedEffects]
+      batchedEffects.clear()
+      for (const ef of effects) {
+        runScheduledEffect(ef)
+      }
     }
+  }
+  finally {
+    isFlushingBatch = false
   }
 }
 
@@ -288,22 +319,12 @@ export function track(target: object, key: PropertyKey) {
 }
 
 function scheduleEffect(ef: ReactiveEffect) {
-  if (ef.scheduler) {
-    const previousScope = activeEffectScope
-    activeEffectScope = (ef as ScopedReactiveEffect)._scope
-    try {
-      ef.scheduler()
-    }
-    finally {
-      activeEffectScope = previousScope
-    }
+  if (batchDepth > 0 || isFlushingBatch) {
+    const queue = ef._computed ? batchedComputedEffects : batchedEffects
+    queue.add(ef)
     return
   }
-  if (batchDepth > 0) {
-    batchedEffects.add(ef)
-    return
-  }
-  ef()
+  runScheduledEffect(ef)
 }
 
 export function trigger(target: object, key: PropertyKey) {

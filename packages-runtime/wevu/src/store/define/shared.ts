@@ -41,3 +41,42 @@ export function createSafeNotifier<S>(
     }
   }
 }
+
+export function createStoreMutationTransaction(notify: (type: MutationType) => void) {
+  let depth = 0
+  let pendingType: MutationType | undefined
+
+  return {
+    get active() {
+      return depth > 0
+    },
+    notify(type: MutationType) {
+      if (depth === 0) {
+        notify(type)
+        return
+      }
+      // 基础 API 最后记录外层 mutation 类型，避免内层 patch/reset 泄漏类型。
+      pendingType = type
+    },
+    run<T>(operation: () => T): T {
+      const isOutermost = depth === 0
+      let succeeded = false
+      depth++
+      try {
+        const result = operation()
+        succeeded = true
+        return result
+      }
+      finally {
+        depth--
+        if (isOutermost) {
+          const type = pendingType
+          pendingType = undefined
+          if (succeeded && type) {
+            notify(type)
+          }
+        }
+      }
+    },
+  }
+}
