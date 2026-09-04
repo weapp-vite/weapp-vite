@@ -1,6 +1,6 @@
 import type { EffectScope } from '@/reactivity'
 import { describe, expect, it } from 'vitest'
-import { batch, effect, effectScope, onScopeDispose, reactive, watchEffect } from '@/reactivity'
+import { batch, computed, effect, effectScope, onScopeDispose, reactive, watchEffect, watchSyncEffect } from '@/reactivity'
 
 describe('reactivity (batch + effectScope)', () => {
   it('batch dedupes sync effects', () => {
@@ -22,6 +22,44 @@ describe('reactivity (batch + effectScope)', () => {
 
     // 整个批量更新只需要重新执行一次
     expect(runs).toBe(2)
+  })
+
+  it('batch defers scheduled effects until the final state', () => {
+    const state = reactive({ a: 0, b: 0 })
+    const snapshots: string[] = []
+
+    watchSyncEffect(() => {
+      snapshots.push(`${state.a}:${state.b}`)
+    })
+
+    batch(() => {
+      state.a = 1
+      state.b = 2
+    })
+
+    expect(snapshots).toEqual(['0:0', '1:2'])
+  })
+
+  it('invalidates computed values before flushing their consumers', () => {
+    const state = reactive({ a: 0, b: 0 })
+    const total = computed(() => state.a + state.b)
+    const rawFirst: string[] = []
+    const computedFirst: string[] = []
+
+    effect(() => {
+      rawFirst.push(`${state.a}:${total.value}`)
+    })
+    effect(() => {
+      computedFirst.push(`${total.value}:${state.a}`)
+    })
+
+    batch(() => {
+      state.a = 1
+      state.b = 2
+    })
+
+    expect(rawFirst).toEqual(['0:0', '1:3'])
+    expect(computedFirst).toEqual(['0:0', '3:1'])
   })
 
   it('effectScope stops inner effects/watchers', async () => {

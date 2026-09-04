@@ -67,5 +67,6 @@ export function computed<T>(
       }
     },
   })
+  runner._computed = true
   return (onlyGetter ? obj as ComputedRef<T> : obj as WritableComputedRef<T>)
 }

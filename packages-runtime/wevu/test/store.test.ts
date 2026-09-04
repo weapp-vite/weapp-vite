@@ -1,5 +1,9 @@
+import type { InternalRuntimeState } from '@/runtime/types'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, effectScope, reactive, ref } from '@/reactivity'
+import { computed, effect, effectScope, reactive, ref, watchSyncEffect } from '@/reactivity'
+import { createApp } from '@/runtime/app'
+import { mountRuntimeInstance, teardownRuntimeInstance } from '@/runtime/register/runtimeInstance'
+import { nextTick } from '@/scheduler'
 import { createStore, defineStore, storeToRefs } from '@/store'
 
 describe('store (setup)', () => {
@@ -64,6 +68,32 @@ describe('store (setup)', () => {
     expect(s.info.tags).toEqual(['x'])
     expect(s.plain).toBe(1)
     expect(calls.at(-1)).toBe('patch object')
+  })
+
+  it('$reset batches setup store effects', () => {
+    const useProfile = defineStore('setup-reset-batch', () => ({
+      firstName: ref('Ada'),
+      lastName: ref('Lovelace'),
+    }))
+    const store = useProfile()
+    const mutations: string[] = []
+    store.$subscribe(mutation => mutations.push(mutation.type))
+    let effectRuns = 0
+    let fullName = ''
+    effect(() => {
+      effectRuns++
+      fullName = `${store.firstName.value} ${store.lastName.value}`
+    })
+
+    store.firstName.value = 'Grace'
+    store.lastName.value = 'Hopper'
+    mutations.length = 0
+    effectRuns = 0
+    store.$reset()
+
+    expect(effectRuns).toBe(1)
+    expect(fullName).toBe('Ada Lovelace')
+    expect(mutations).toEqual(['patch object'])
   })
 
   it('$onAction supports after/onError for sync/async', async () => {
@@ -156,6 +186,177 @@ describe('store (options)', () => {
       ['patch object', 2],
       ['patch object', 1], // reset to initial snapshot
     ])
+  })
+
+  it('$patch and $reset batch options store effects', () => {
+    const useProfile = defineStore('options-patch-reset-batch', {
+      state: () => ({
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+      }),
+    })
+    const store = useProfile()
+    const mutations: string[] = []
+    let effectRuns = 0
+    let fullName = ''
+    effect(() => {
+      effectRuns++
+      fullName = `${store.firstName} ${store.lastName}`
+    })
+    store.$subscribe(mutation => mutations.push(mutation.type))
+
+    store.$patch({
+      firstName: 'Grace',
+      lastName: 'Hopper',
+    })
+
+    expect(effectRuns).toBe(2)
+    expect(fullName).toBe('Grace Hopper')
+    expect(mutations).toEqual(['patch object'])
+
+    store.$patch((state) => {
+      state.firstName = 'Katherine'
+      state.lastName = 'Johnson'
+    })
+
+    expect(effectRuns).toBe(3)
+    expect(fullName).toBe('Katherine Johnson')
+
+    expect(mutations).toEqual(['patch object', 'patch function'])
+
+    mutations.length = 0
+    effectRuns = 0
+    store.$reset()
+
+    expect(effectRuns).toBe(1)
+    expect(fullName).toBe('Ada Lovelace')
+    expect(mutations).toEqual(['patch object'])
+  })
+
+  it('$patch flushes effects before notifying subscribers', () => {
+    const useProfile = defineStore('options-patch-notify-order', {
+      state: () => ({
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+      }),
+    })
+    const store = useProfile()
+    const calls: string[] = []
+    watchSyncEffect(() => {
+      calls.push(`effect:${store.firstName} ${store.lastName}`)
+    })
+    store.$subscribe((mutation) => {
+      calls.push(`subscriber:${mutation.type}`)
+    })
+    calls.length = 0
+
+    store.$patch({
+      firstName: 'Grace',
+      lastName: 'Hopper',
+    })
+
+    expect(calls).toEqual([
+      'effect:Grace Hopper',
+      'subscriber:patch object',
+    ])
+  })
+
+  it('$patch notifies once with final state after nested patch and reset', () => {
+    const useProfile = defineStore('options-nested-patch-batch', {
+      state: () => ({
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+      }),
+    })
+    const store = useProfile()
+    const calls: string[] = []
+    effect(() => {
+      calls.push(`effect:${store.firstName} ${store.lastName}`)
+    })
+    store.$subscribe((mutation, state) => {
+      calls.push(`subscriber:${mutation.type}:${state.firstName} ${state.lastName}`)
+    })
+    calls.length = 0
+
+    store.$patch((state) => {
+      state.firstName = 'Grace'
+      store.$patch({ lastName: 'Hopper' })
+      store.$reset()
+      state.firstName = 'Katherine'
+      state.lastName = 'Johnson'
+    })
+
+    expect(store.firstName).toBe('Katherine')
+    expect(store.lastName).toBe('Johnson')
+    expect(calls).toEqual([
+      'effect:Katherine Johnson',
+      'subscriber:patch function:Katherine Johnson',
+    ])
+  })
+
+  it('$patch releases the batch after a callback throws', () => {
+    const useProfile = defineStore('options-patch-error-batch', {
+      state: () => ({
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+      }),
+    })
+    const store = useProfile()
+    const mutations: string[] = []
+    let effectRuns = 0
+    effect(() => {
+      effectRuns++
+      void store.firstName
+      void store.lastName
+    })
+    store.$subscribe(mutation => mutations.push(mutation.type))
+
+    expect(() => store.$patch((state) => {
+      state.firstName = 'Grace'
+      store.$patch({ lastName: 'Byron' })
+      throw new Error('patch failed')
+    })).toThrow('patch failed')
+    expect(effectRuns).toBe(2)
+    expect(mutations).toEqual([])
+
+    store.lastName = 'Hopper'
+    expect(effectRuns).toBe(3)
+    expect(mutations).toEqual(['direct'])
+  })
+
+  it('$patch produces one runtime setData dispatch', async () => {
+    const useProfile = defineStore('store-set-data-batch', {
+      state: () => ({
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+      }),
+    })
+    const store = useProfile()
+    const app = createApp({})
+    const data: Record<string, unknown> = {
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+    }
+    const setData = vi.fn((payload: Record<string, unknown>) => {
+      Object.assign(data, payload)
+    })
+    const target = { data, setData } as unknown as InternalRuntimeState
+    mountRuntimeInstance(target, app, undefined, () => storeToRefs(store))
+    await nextTick()
+    setData.mockClear()
+
+    store.$patch({
+      firstName: 'Grace',
+      lastName: 'Hopper',
+    })
+    await nextTick()
+
+    expect(setData).toHaveBeenCalledTimes(1)
+    expect(setData).toHaveBeenCalledWith({
+      firstName: 'Grace',
+      lastName: 'Hopper',
+    })
+    teardownRuntimeInstance(target)
   })
 
   it('createStore().use(plugin) extends store on create', () => {
