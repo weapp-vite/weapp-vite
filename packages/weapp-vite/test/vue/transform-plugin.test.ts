@@ -139,7 +139,9 @@ describe('vue transform plugin', () => {
         outputExtensions: {},
         weappViteConfig: {},
       },
-      scanService: {},
+      scanService: {
+        loadAppEntry: vi.fn(async () => ({ path: path.join(tmpDir!, 'app.json') })),
+      },
       runtimeState: {
         scan: { isDirty: false },
       },
@@ -797,20 +799,19 @@ onPageScroll(() => {
           componentName: 'scoped-slot-test',
           slotKey: 'default',
           template: '<view />',
-          classStyleBindings: [
-            {
-              name: '__wv_cls_0',
-              type: 'class',
-              exp: 'event.active ? \'on\' : \'off\'',
-              forStack: [
-                {
-                  listExp: 'events',
-                  item: 'event',
-                  index: 'index',
-                },
-              ],
-            },
-          ],
+          script: [
+            `import { createWevuScopedSlotComponent } from '${WEAPP_VITE_RUNTIME_VIRTUAL_ID}'`,
+            `import { normalizeClass } from '${WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID}'`,
+            `import { unref as __wevuUnref } from '${WEAPP_VITE_RUNTIME_REACTIVITY_VIRTUAL_ID}'`,
+            'const active = normalizeClass(__wevuUnref(event.active))',
+            'createWevuScopedSlotComponent({ computed: { active } })',
+          ].join('\n'),
+          bindingManifest: {
+            version: 1,
+            sourceFile: 'src/pages/slot.vue',
+            bindings: [],
+            features: { scopedSlots: true },
+          },
         },
       ],
     })
@@ -865,7 +866,10 @@ onPageScroll(() => {
         outputExtensions: { js: 'js', json: 'json', wxml: 'wxml', wxss: 'wxss' },
         weappViteConfig: {},
       },
-      scanService: { appEntry: { json: { pages: ['pages/native/index'] } } },
+      scanService: {
+        appEntry: { json: { pages: ['pages/native/index'] } },
+        loadAppEntry: vi.fn(async () => ({ path: path.join(tmpDir!, 'app.json') })),
+      },
     })
     const plugin = createVueTransformPlugin(ctx as any)
     const emitFile = vi.fn()
