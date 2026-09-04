@@ -24,6 +24,7 @@ function normalizeWevuRuntimeBindings(value: string) {
   }
 
   return value
+    .replace(/\brequire_templateRef\.[A-Za-z_$][\w$]*\(\);/g, 'require_templateRef.__wevuInstallScopedSlots();')
     .replace(/\brequire_templateRef\.[A-Za-z_$][\w$]*/g, 'require_templateRef.__wevuScopedSlotCreator')
     .replace(/\brequire_common\.[A-Za-z_$][\w$]*/g, 'require_common.$')
 }
@@ -43,7 +44,9 @@ function normalizeOutputContent(file: string, content: string) {
       .replace(/module\.exports = __wevuOptions;/g, 'exports.default = __wevuOptions;')
       .replace(/\brequire_src_\w+\b/g, 'require_src')
       .replace(/\brequire_templateRef_\w+\b/g, 'require_templateRef')
+      .replace(/\brequire_templateRef\.[A-Za-z_$][\w$]*\(\);/g, 'require_templateRef.__wevuInstallScopedSlots();')
       .replace(/require\("([^"]*wevu-runtime\.js)"\)\.to\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
+      .replace(/require\("([^"]*wevu-runtime\.js)"\)\.[A-Za-z_$][\w$]*\(\);/g, 'require("$1").__wevuInstallScopedSlots();')
       .replace(/require\("([^"]*wevu-runtime\.js)"\)\.__wevuCreateWevuComponent\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
       .replace(/require\("([^"]*wevu-runtime\.js)"\)\.__wevuCreatePage\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
       .replace(/require\("([^"]*wevu-runtime\.js)"\)\.[A-Za-z_$][\w$]*\(\{/g, 'require("$1").__wevuCreatePage({')

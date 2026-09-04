@@ -49,7 +49,7 @@ describe('web script registration transform contract', () => {
     expect(result.code).not.toContain('hot.accept')
   })
 
-  it('adds template, inline style, navigation, wevu alias, and HMR metadata', () => {
+  it('adds template, inline style, navigation, public wevu factory, and HMR metadata', () => {
     const result = transformScriptModule({
       cleanId: '/src/components/card.ts',
       code: 'import wevuDefault, { defineComponent as defineCard, ref } from \'wevu\'; void wevuDefault; void ref; defineCard({})',
@@ -63,7 +63,9 @@ describe('web script registration transform contract', () => {
       },
     })!
 
-    expect(result.code).toContain('registerWebWevuComponent')
+    expect(result.code).toContain('installWebModuleRegistration')
+    expect(result.code).toContain('defineCard({})')
+    expect(result.code).not.toContain('registerWebWevuComponent')
     expect(result.code).toContain('card.scss?inline')
     expect(result.code).toContain('card.wxml?weapp-web-template')
     expect(result.code).toContain('navigationBar: {"title":"Card"}')
