@@ -59,10 +59,11 @@ describe('e2e app: github-issues / issue #829', { concurrent: false }, () => {
       expect(pageNodes).toHaveLength(1)
       const pageNode = pageNodes[0]
       expect(pageNode).toEqual(expect.objectContaining({
-        dataset: expect.objectContaining({ queryResolveCount: 2 }),
+        dataset: expect.objectContaining({ queryResolveCount: expect.anything() }),
         height: expect.any(Number),
         width: expect.any(Number),
       }))
+      expect(Number(pageNode!.dataset?.queryResolveCount)).toBe(2)
       expect(pageNode!.height).toBeGreaterThan(0)
       expect(pageNode!.width).toBeGreaterThan(0)
 

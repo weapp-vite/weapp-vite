@@ -168,6 +168,8 @@ describe('automatic classic HMR in real WeChat DevTools', { concurrent: false },
 
     await miniProgram.disconnect()
     miniProgram = await connectAutomatorSession()
+    // 重连 bridge 后宿主可能只恢复 path 而丢失 query，显式重放完整 route 保持断言身份稳定。
+    await miniProgram.reLaunch(NATIVE_ROUTE)
     const reloaded = await waitForRuntimeState(state => (
       state.marker === 'STATEFUL-NATIVE-PATCHED'
       && state.source === 'classic-auto-e2e'

@@ -72,10 +72,18 @@ async function callIssue642Runtime(ctx: { skip: (message?: string) => void }, ..
 async function waitForIssue642Runtime(ctx: { skip: (message?: string) => void }, expectedBase: number, timeoutMs = 30_000) {
   const startedAt = Date.now()
   let latest: any
+  const miniProgram = await getSharedMiniProgram(ctx)
 
   while (Date.now() - startedAt < timeoutMs) {
     try {
-      latest = await callIssue642Runtime(ctx)
+      // 页面已由用例启动；持续重新 reLaunch 会打断 DevTools 异步 setData，
+      // 使 scoped slot owner marker 在真实渲染完成前被反复清空。
+      latest = await callRoutePageMethodWithOptions(miniProgram, ISSUE_642_ROUTE, '_runE2E', {
+        protocolTimeoutMs: 12_000,
+        readiness: 'route',
+        recoveryAttempts: 3,
+        retries: 10,
+      })
     }
     catch {
       await delay(160)

@@ -7,6 +7,7 @@ import {
   mergeStatefulHmrSnapshotAssets,
   redirectNativeComponentRegistration,
   requiresStatefulHmrSnapshot,
+  shouldRebuildStatefulDependency,
   shouldResetStatefulHmrRetention,
   shouldRestartStatefulHmrServer,
   shouldUseStatefulHmrSnapshotOnly,
@@ -120,6 +121,38 @@ describe('stateful hmr session', () => {
     expect(shouldRestartStatefulHmrServer(['C:\\project\\shared.config.ts'], ['C:/project/shared.config.ts'])).toBe(true)
     expect(shouldRestartStatefulHmrServer(['/project/src/pages/index/view.tsx'], [], true)).toBe(true)
     expect(shouldRestartStatefulHmrServer(['/project/src/pages/index/view.tsx'], [], { renderMode: 'dynamic' })).toBe(false)
+  })
+
+  it('rebuilds changed non-entry dependencies when they affect a registered entry', () => {
+    const entries = new Set(['/project/src/pages/index.vue'])
+    expect(shouldRebuildStatefulDependency(
+      '/project/src/bootstrap/index.ts',
+      entries,
+      new Set(['/project/src/pages/index.vue']),
+    )).toBe(true)
+    expect(shouldRebuildStatefulDependency(
+      '/project/src/pages/index.vue',
+      entries,
+      new Set(['/project/src/pages/index.vue']),
+    )).toBe(false)
+    expect(shouldRebuildStatefulDependency(
+      '/project/src/unused.ts',
+      entries,
+      new Set(),
+    )).toBe(false)
+    expect(shouldRebuildStatefulDependency(
+      '/project/src/bootstrap/index.ts',
+      entries,
+      new Set(),
+      true,
+    )).toBe(true)
+    expect(shouldRebuildStatefulDependency(
+      '/project/src/bootstrap/index.ts',
+      entries,
+      new Set(),
+      false,
+      true,
+    )).toBe(true)
   })
 
   it('schedules snapshots for sidecars and unsafe script or Vue updates', () => {

@@ -92,3 +92,36 @@ pnpm --filter weapp-vite build
 - `pnpm e2e:ci` 会显式串行执行 `hmr-guard:full`、`hmr-guard:auto-import-vue-sfc`、`hmr-guard:auto-routes-hmr`、`hmr-guard:shared-chunks-auto`；若新增 HMR case 没被这四条入口覆盖，应视为 CI 漏挂。
 - CI workflow 会把常规小程序 E2E 与 HMR guard 拆成独立 job：常规 job 使用 `pnpm e2e:ci:non-hmr`，HMR job 使用 `pnpm e2e:ci:hmr`。这样保留跨平台 HMR 覆盖，同时避免 Windows 单个 job 被常规 E2E 与全量 HMR guard 共同耗尽超时预算。
 - `e2e:hmr:guard` 与 `e2e:hmr:guard:smoke` 由 `e2e/scripts/run-hmr-guard-suite.ts` 统一驱动，采用“单文件 `vitest run` 串行 + 每段前显式 cleanup”的方式执行；不要把整组 HMR dev-watch 用例直接塞进同一个 Vitest 进程，否则不同文件的清理逻辑容易互相污染。
+
+## 执行顺序与环境治理
+
+1. 先清理残留 DevTools、automator、dev-watch 和本地验证 server 进程。
+2. 修改 package 源码后先执行 `pnpm --filter <package> build`，再运行下游 fixture、headless 或 IDE 验证。
+3. 用 `--allow-failures` 做故障发现，定位完成后用严格模式重新执行作为验收。
+4. 先跑 headless/provider-compatible runtime，具备真实 IDE 基础设施时再跑 WeChat DevTools；同一 e2e-app 在一个 suite 内只启动一次 automator，通过 `miniProgram.reLaunch(...)` 切换场景。
+5. macOS 长时间 IDE suite 使用 `caffeinate -dimsu -- ...`，避免休眠造成假失败。
+
+真实 DevTools 的可观察 runtime 结果是最终验收标准。模拟器、服务端口、登录、协议连接失败等宿主能力或基础设施限制必须单独记录，不得改写成产品通过；headless 只能用于缩小问题范围和保持 provider-compatible 覆盖。
+
+## 断言边界
+
+- 断言实际 emitted JS 中的公开 marker、最终执行结果和模块语义；扫描全部 `.js` 文件，不绑定 `common.js`、chunk hash、压缩名或内部 helper。
+- alias 依赖必须进入 Rolldown/module graph，初始构建和 app/layout/page/dependency HMR 后都不能留下可执行的 `require("@/...")` 或 alias import。
+- 旧 marker 必须在更新后的 emitted 输出中清除，避免 stale shared chunk 被误认为通过。
+- `fetch`、`queueMicrotask`、`URL` 等能力通过 DevTools/SDK 探针记录。缺失宿主能力、服务端口、模拟器或协议连接失败单独记录为环境限制，不弱化真实 runtime 断言。
+- `app-vue-hmr-alias` 的 headless mpcore provider 当前只覆盖首屏和构建产物语义，不提供 stateful HMR transport payload 拉取；该 provider 下明确跳过 transport 场景，真实 WeChat DevTools 仍必须完整通过。
+
+## 运行建议
+
+- 改动 `packages/weapp-vite/src/plugins/core/**`、`packages/weapp-vite/src/plugins/hooks/useLoadEntry/**`、`packages/weapp-vite/src/plugins/autoRoutes.ts`、auto-import 或 watcher 相关逻辑后，至少运行 `pnpm run e2e:hmr:guard:smoke`。
+- 如果改动涉及 dev watch、HMR 发射范围、共享 chunk、`usingComponents`、路由生成或 `app.json` 同步，运行 `pnpm run e2e:hmr:guard`。
+- 若先修改了 `packages/weapp-vite/src/**`，在跑 app/template/e2e 之前执行：
+
+```bash
+pnpm --filter weapp-vite build
+```
+
+## 维护补充
+
+- 新增或修复 issue 时，先在隔离 worktree 中用最小 fixture 复现，再同步 unit、headless 和真实 IDE（可用时）覆盖。
+- 真实 DevTools 与 `mpcore` 出现差异时保留 IDE 断言，并在对应 `mpcore/packages/*` 增加等价回归；不得通过跳过或归一化有意义的行为来消除差异。

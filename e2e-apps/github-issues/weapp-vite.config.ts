@@ -344,7 +344,13 @@ function resolveGithubIssuesAutoRoutes() {
   }
 
   return {
-    include: [...new Set([...githubIssuesWarmupRoutes, ...matchedRoutes])],
+    // Components are compiled through page imports; including them as auto-route
+    // roots would incorrectly emit component files into app.json.pages and make
+    // the Vue page matcher treat them as page entries.
+    include: [...new Set([
+      ...githubIssuesWarmupRoutes,
+      ...matchedRoutes.filter(route => !route.startsWith('components/')),
+    ])],
   }
 }
 

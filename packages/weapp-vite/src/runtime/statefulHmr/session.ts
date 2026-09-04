@@ -79,6 +79,7 @@ export async function runStatefulHmrDev(
   }
   const server = await createServer({
     ...buildOptions,
+    root: buildOptions.root ?? configService.cwd,
     appType: 'custom',
     configFile: false,
     define: {
@@ -134,6 +135,7 @@ class StatefulHmrSession {
   private outputChain: Promise<void> = Promise.resolve()
   private restartTimer?: ReturnType<typeof setTimeout>
   private snapshotAssets = new Map<string, StatefulHmrOutputFile>()
+  private readonly emittedSourceIds: Set<string>
   private readonly sourceChangeListener = (file: string, dirtyReasonSummary: string[]) => {
     this.handleSourceUpdate(file, dirtyReasonSummary)
   }
@@ -146,6 +148,7 @@ class StatefulHmrSession {
     private readonly snapshots: StatefulHmrSnapshots,
     devWatchOptions: { compareContentsForPolling?: boolean, pollInterval?: number, usePolling?: boolean },
   ) {
+    this.emittedSourceIds = collectStatefulHmrEmittedSourceIds(snapshots.initial, server.config.root)
     this.replaceSnapshotAssets(snapshots.initial)
     this.transport = new StatefulHmrTransport(
       server,
@@ -211,6 +214,17 @@ class StatefulHmrSession {
     if (normalizedFile === normalizedOutDir || normalizedFile.startsWith(`${normalizedOutDir}/`)) {
       return
     }
+    const affectedEntries = this.ctx.moduleGraphService.collectAffectedEntries(normalizedFile)
+    const hasTrackedModule = (this.server.moduleGraph.getModulesByFile(normalizedFile)?.size ?? 0) > 0
+    const isEmittedDependency = this.emittedSourceIds.has(normalizedFile)
+    if (isEmittedDependency && !this.entryIds.has(normalizedFile)) {
+      this.requestServerRestart()
+      return
+    }
+    if (shouldRebuildStatefulDependency(normalizedFile, this.entryIds, affectedEntries, hasTrackedModule, isEmittedDependency)) {
+      this.requestFullBuild([normalizedFile])
+      return
+    }
     if (shouldRestartStatefulHmrServer(
       [normalizedFile],
       this.ctx.configService?.configFileDependencies,
@@ -239,6 +253,9 @@ class StatefulHmrSession {
       const compatibleOutput = await transformOutput(output)
       const fullBuild = compatibleOutput.some(item => item.fileName === 'app.js')
       if (fullBuild) {
+        for (const sourceId of collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root)) {
+          this.emittedSourceIds.add(sourceId)
+        }
         mergeStatefulHmrSnapshotAssets(compatibleOutput, this.snapshotAssets.values())
         const buildId = this.transport.createBuildId()
         this.transport.commitFullBuild(buildId)
@@ -400,6 +417,30 @@ export function shouldRestartStatefulHmrServer(
     normalizedConfigDependencies.has(normalizeFsResolvedId(file))
     || isReactStaticTemplateSource(react, file),
   )
+}
+
+export function shouldRebuildStatefulDependency(
+  file: string,
+  entryIds: ReadonlySet<string>,
+  affectedEntries: ReadonlySet<string>,
+  hasTrackedModule = false,
+  isEmittedDependency = false,
+): boolean {
+  return !entryIds.has(normalizeFsResolvedId(file)) && (affectedEntries.size > 0 || hasTrackedModule || isEmittedDependency)
+}
+
+function collectStatefulHmrEmittedSourceIds(output: StatefulHmrOutputFile[], root: string): Set<string> {
+  const sourceIds = new Set<string>()
+  for (const item of output) {
+    if (item.type !== 'chunk') {
+      continue
+    }
+    for (const moduleId of Object.keys(item.modules ?? {})) {
+      const sourceId = moduleId.split('?')[0]!
+      sourceIds.add(normalizeFsResolvedId(path.isAbsolute(sourceId) ? sourceId : path.resolve(root, sourceId)))
+    }
+  }
+  return sourceIds
 }
 
 export function mergeStatefulHmrSnapshotAssets(
@@ -593,6 +634,7 @@ async function transformJavaScript(code: string, filename: string): Promise<stri
     lang: 'js',
     sourcemap: false,
     target: 'es2018',
+    tsconfig: false,
   })
   return result.code
 }
