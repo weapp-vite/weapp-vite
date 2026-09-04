@@ -312,6 +312,58 @@ export default {}
     expect(runtimeOnly.code).not.toContain(WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY)
   })
 
+  it('derives runtime capabilities after applying page layout wrappers', async () => {
+    const result = await compileVueFile(
+      '<template><view /></template>',
+      '/project/src/pages/index/index.vue',
+      {
+        isPage: true,
+        pageLayout: {
+          currentLayout: {
+            importPath: '/layouts/default/index',
+            layoutName: 'default',
+            tagName: 'weapp-layout-default',
+          },
+          dynamicSwitch: false,
+          layouts: [{
+            importPath: '/layouts/default/index',
+            layoutName: 'default',
+            tagName: 'weapp-layout-default',
+          }],
+          dynamicPropKeys: [],
+        },
+        sourceMap: false,
+      },
+    )
+
+    expect(result.bindingManifest?.features).toMatchObject({
+      layout: true,
+      scopedSlots: true,
+    })
+    expect(result.meta?.runtimeCapabilities).toEqual({
+      required: ['templateRefs', 'scopedSlots', 'layout'],
+    })
+    expectCanonicalCalls(result.script ?? '', ['templateRefs', 'scopedSlots', 'layout'])
+
+    const appShellResult = await compileVueFile(
+      '<template><view /></template>',
+      '/project/src/pages/app-shell/index.vue',
+      {
+        appShell: {
+          importPath: '/__weapp_vite_app_shell',
+          tagName: 'weapp-app-shell',
+        },
+        isPage: true,
+        sourceMap: false,
+      },
+    )
+    expect(appShellResult.bindingManifest?.features.scopedSlots).toBe(true)
+    expect(appShellResult.meta?.runtimeCapabilities).toEqual({
+      required: ['scopedSlots'],
+    })
+    expectCanonicalCalls(appShellResult.script ?? '', ['scopedSlots'])
+  })
+
   it('uses resolved app and component defaults, including performance preset values', () => {
     const presetResult = transformScript('export default {}', {
       isApp: true,

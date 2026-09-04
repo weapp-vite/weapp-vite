@@ -1,5 +1,6 @@
 import type { CompileVueFileOptions, VueTransformResult } from './types'
 import { compileScript } from 'vue/compiler-sfc'
+import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
 import { getMiniProgramTemplatePlatform } from '../../compiler/template'
 import { generateScopedId } from '../scopedId'
 import { collectComponentSourceInfo } from './componentSources'
@@ -143,6 +144,9 @@ export async function compileVueFile(
       appShell: options.appShell,
     })
     templateCompiled.code = result.template
+    templateCompiled.runtimeCapabilities = createWevuRuntimeCapabilityMetadataFromBindingManifest(
+      templateCompiled.bindingManifest,
+    )
   }
   const scriptPhase = await compileScriptPhase(
     parsed.descriptor,

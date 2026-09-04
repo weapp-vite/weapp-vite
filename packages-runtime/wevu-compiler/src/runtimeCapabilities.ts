@@ -1,3 +1,5 @@
+import type { WevuBindingManifestV1 } from './types/bindingManifest'
+
 /**
  * wevu 编译器内部使用的运行时能力规范顺序。
  *
@@ -66,6 +68,31 @@ export function createWevuRuntimeCapabilityMetadata(
     required: sortedRequired,
     ...(sortedConservative.length ? { conservative: sortedConservative } : {}),
   }
+}
+
+/**
+ * 从最终 Binding Manifest 派生内部运行时能力。
+ *
+ * @internal
+ */
+export function createWevuRuntimeCapabilityMetadataFromBindingManifest(
+  manifest: WevuBindingManifestV1,
+): WevuRuntimeCapabilityMetadata | undefined {
+  const required: WevuRuntimeCapabilityName[] = []
+  const features = manifest.features
+  if (features.templateRefs) {
+    required.push('templateRefs')
+  }
+  if (features.inlineEvents) {
+    required.push('inlineEvents')
+  }
+  if (features.scopedSlots) {
+    required.push('scopedSlots')
+  }
+  if (features.layout) {
+    required.push('layout')
+  }
+  return createWevuRuntimeCapabilityMetadata(required)
 }
 
 /**
