@@ -30,10 +30,10 @@ export function recordJsxBinding(
     : undefined
   const scopes: WevuBindingScopeV1[] = [
     { kind: 'root', depth: 0 },
-    ...context.bindingScopeStack.map((locals, index) => ({
+    ...context.bindingScopeStack.map((scope, index) => ({
       kind: 'for' as const,
       depth: index + 1,
-      locals: [...locals],
+      locals: [...scope.locals],
     })),
   ]
   recordSyntheticBindingExpression(
@@ -44,6 +44,10 @@ export function recordJsxBinding(
       outputPath,
       sourceLocation,
       scopes,
+      scopeDependencies: context.bindingScopeStack.map(scope => ({
+        expression: scope.sourceExpression,
+        locals: scope.sourceLocals,
+      })),
     },
     context.scopeStack,
   )

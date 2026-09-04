@@ -33,6 +33,10 @@ interface RecordBindingOptions {
   outputPath?: string
   sourceLocation?: SourceSpan
   scopes?: WevuBindingScopeV1[]
+  scopeDependencies?: Array<{
+    expression: string
+    locals: string[]
+  }>
 }
 
 const INTERNAL_GLOBALS: Record<string, true> = {
@@ -267,13 +271,45 @@ function resolveBindingScopes(
   return scopes
 }
 
+function mergeBindingScopeDependencies(
+  analysis: NonNullable<ReturnType<typeof collectDependencies>>,
+  scopeDependencies: Array<{
+    expression: string
+    locals: string[]
+  }>,
+) {
+  const dependencies = new Map<string, BindingDependency>()
+  const addDependency = (dependency: BindingDependency) => {
+    const key = `${dependency.root}:${dependency.path ?? ''}:${dependency.mode}`
+    dependencies.set(key, dependency)
+  }
+  analysis.dependencies.forEach(addDependency)
+  let snapshotFallback = analysis.snapshotFallback
+  for (const scope of scopeDependencies) {
+    const scopeAnalysis = collectDependencies(scope.expression, undefined, scope.locals)
+    if (!scopeAnalysis) {
+      snapshotFallback = true
+      continue
+    }
+    scopeAnalysis.dependencies.forEach(addDependency)
+    snapshotFallback ||= scopeAnalysis.snapshotFallback
+  }
+  return {
+    dependencies: [...dependencies.values()],
+    snapshotFallback,
+  }
+}
+
 function recordBindingManifestExpression(
   manifest: WevuBindingManifestV1,
   options: RecordBindingOptions,
   context?: TransformContext,
   additionalLocals?: Iterable<string>,
 ) {
-  const analysis = collectDependencies(options.expression, context, additionalLocals)
+  const initialAnalysis = collectDependencies(options.expression, context, additionalLocals)
+  const analysis = initialAnalysis && options.scopeDependencies?.length
+    ? mergeBindingScopeDependencies(initialAnalysis, options.scopeDependencies)
+    : initialAnalysis
   const sourceLocation = cloneSourceSpan(options.sourceLocation)
   if (!analysis) {
     manifest.bindings.push({

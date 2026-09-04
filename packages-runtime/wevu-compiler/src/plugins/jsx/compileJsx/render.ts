@@ -245,7 +245,7 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
   const index = t.isIdentifier(indexParam) ? indexParam.name : undefined
 
   const addedScope = [item, index].filter((name): name is string => !!name)
-  pushScope(context, addedScope)
+  pushScope(context, addedScope, listExp)
 
   let bodyExp: Expression | null = null
   if (t.isBlockStatement(callback.body)) {

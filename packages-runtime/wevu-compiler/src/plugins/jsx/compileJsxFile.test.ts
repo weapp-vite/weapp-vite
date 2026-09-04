@@ -88,22 +88,60 @@ import { defineComponent, ref } from 'wevu'
 export default defineComponent({
   setup() {
     const rows = ref([{ title: 'row' }])
-    const suffix = ref('!')
-    return () => <view>{rows.value.map((row, index) => <text>{row.title + suffix.value + index}</text>)}</view>
+    return () => <view>{rows.value.map((row, index) => <text>{row.title + index}</text>)}</view>
   },
 })
 `
     const result = await compileJsxFile(source, '/project/src/pages/scopes/index.tsx')
-    const binding = result.bindingManifest?.bindings.find(item => item.outputPath === 'suffix.value')
+    const binding = result.bindingManifest?.bindings.find((item) => {
+      return item.kind === 'text' && item.outputPath === 'rows.value'
+    })
 
     expect(binding?.dependencies).toEqual([{
-      root: 'suffix',
-      path: 'suffix.value',
+      root: 'rows',
+      path: 'rows.value',
       updateMode: 'exact-path',
     }])
     expect(binding?.scopes).toEqual([
       { kind: 'root', depth: 0 },
       { kind: 'for', depth: 1, locals: ['row', 'index'] },
+    ])
+  })
+
+  it('keeps outer loop dependencies when nested JSX locals shadow their roots', async () => {
+    const source = `
+import { defineComponent, ref } from 'wevu'
+export default defineComponent({
+  setup() {
+    const items = ref([{ children: [{ name: 'child' }] }])
+    return () => (
+      <view>
+        {items.value.map((rows, rowIndex) => (
+          <view>
+            {rows.children.map((items, itemIndex) => (
+              <text>{items.name + itemIndex + rowIndex}</text>
+            ))}
+          </view>
+        ))}
+      </view>
+    )
+  },
+})
+`
+    const result = await compileJsxFile(source, '/project/src/pages/nested-scopes/index.tsx')
+    const binding = result.bindingManifest?.bindings.find((item) => {
+      return item.kind === 'text' && item.outputPath === 'items.value'
+    })
+
+    expect(binding?.dependencies).toEqual([{
+      root: 'items',
+      path: 'items.value',
+      updateMode: 'exact-path',
+    }])
+    expect(binding?.scopes).toEqual([
+      { kind: 'root', depth: 0 },
+      { kind: 'for', depth: 1, locals: ['rows', 'rowIndex'] },
+      { kind: 'for', depth: 2, locals: ['items', 'itemIndex'] },
     ])
   })
 
