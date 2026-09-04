@@ -10,6 +10,7 @@ export default defineConfig({
   clean: true,
   deps: {
     onlyBundle: false,
+    resolveDepSubpath: true,
   },
   format: ['esm'],
   minify: false,

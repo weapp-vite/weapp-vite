@@ -8,6 +8,7 @@ export default defineConfig({
   dts: true,
   deps: {
     onlyBundle: false,
+    resolveDepSubpath: true,
   },
   outExtensions() {
     return {

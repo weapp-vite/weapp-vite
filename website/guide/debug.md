@@ -41,6 +41,7 @@ cd weapp-vite
    ```sh
    corepack pnpm@11 install
    ```
+   仓库源码构建需要 Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`。
 3. 仓库内的 `apps/` 目录准备了多个演示项目（`vite-native`、`vite-native-skyline` 等），可以任选一个作为调试入口。
 4. VS Code 用户可以直接使用仓库内置的 `.vscode/launch.json`，也可以在“调试和运行”面板选择需要的配置，一键启动并命中 TypeScript 源码断点。
 
