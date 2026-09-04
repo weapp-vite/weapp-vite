@@ -196,6 +196,33 @@ describe('binding manifest', () => {
     expect(child?.script).not.toContain('"sourceLocation"')
   })
 
+  it('remaps scoped-slot runtime manifests after SFC source ownership changes', async () => {
+    const source = `<script setup>
+const suffix = '!'
+</script>
+<template>
+  <Provider>
+    <template #default="{ label }"><text>{{ label }}{{ suffix }}</text></template>
+  </Provider>
+</template>`
+    const result = await compileVueFile(source, '/project/src/pages/scoped-remap.vue', {
+      bindingManifestSourceFile: 'src/pages/scoped-remap.vue',
+      runtimeBindingManifest: 'diagnostic',
+      template: {
+        scopedSlotsCompiler: 'augmented',
+        scopedSlotsRequireProps: false,
+        wevuComponentTags: ['Provider'],
+      },
+    })
+    const child = result.scopedSlotComponents?.[0]
+
+    expect(child?.bindingManifest.sourceFile).toBe('src/pages/scoped-remap.vue')
+    expect(child?.bindingManifest.bindings[0]?.sourceLocation?.start.line).toBe(6)
+    expect(child?.script).toContain('"sourceFile":"src/pages/scoped-remap.vue"')
+    expect(child?.script).toContain('"line":6')
+    expect(child?.script).not.toContain('"sourceFile":"/project/src/pages/scoped-remap.vue"')
+  })
+
   it('projects the complete compiler IR to compact runtime metadata', async () => {
     const source = '<template><view>{{ user.name }}</view></template><script setup>const user = { name: "Ada" }</script>'
     const result = await compileVueFile(source, '/src/pages/runtime-manifest.vue', {

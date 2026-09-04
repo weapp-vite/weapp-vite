@@ -1,8 +1,9 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
-import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
+import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { SourcePosition } from '../../../../types/diagnostics'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../../compiler/template'
 import type { VueTransformResult } from './types'
+import { createRuntimeBindingManifest } from '../../../../bindingManifest'
 import { compileVueTemplateToWxml } from '../../compiler/template'
 
 function remapTemplateDiagnostics(
@@ -76,7 +77,8 @@ function ownExternalTemplateDiagnostics(
 function updateTemplateBindingManifests(
   templateCompiled: TemplateCompileResult,
   sourceFile: string,
-  remap?: (position: SourcePosition) => SourcePosition,
+  remap: ((position: SourcePosition) => SourcePosition) | undefined,
+  runtimeBindingManifest: WevuRuntimeBindingManifestMode,
 ) {
   const updateManifest = (manifest: WevuBindingManifestV1) => {
     manifest.sourceFile = sourceFile
@@ -94,9 +96,10 @@ function updateTemplateBindingManifests(
   }
   updateManifest(templateCompiled.bindingManifest)
   for (const asset of templateCompiled.scopedSlotComponents ?? []) {
-    const previousManifest = JSON.stringify(asset.bindingManifest)
+    const previousManifest = JSON.stringify(createRuntimeBindingManifest(asset.bindingManifest, runtimeBindingManifest))
     updateManifest(asset.bindingManifest)
-    asset.script = asset.script.replace(previousManifest, JSON.stringify(asset.bindingManifest))
+    const nextManifest = JSON.stringify(createRuntimeBindingManifest(asset.bindingManifest, runtimeBindingManifest))
+    asset.script = asset.script.replace(previousManifest, nextManifest)
   }
 }
 
@@ -119,8 +122,9 @@ export function compileTemplatePhase(
     options,
   )
   const manifestSourceFile = descriptor.template.src || bindingManifestSourceFile || templateResolvedId || filename
+  const runtimeBindingManifest = options?.runtimeBindingManifest ?? 'compact'
   if (descriptor.template.src) {
-    updateTemplateBindingManifests(templateCompiled, manifestSourceFile)
+    updateTemplateBindingManifests(templateCompiled, manifestSourceFile, undefined, runtimeBindingManifest)
   }
   else {
     const base = descriptor.template.loc.start
@@ -138,7 +142,7 @@ export function compileTemplatePhase(
         line,
         column,
       }
-    })
+    }, runtimeBindingManifest)
   }
   result.bindingManifest = templateCompiled.bindingManifest
   result.template = templateCompiled.code
