@@ -1,5 +1,5 @@
 import type { NodePath } from '@weapp-vite/ast/babelTraverse'
-import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
+import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { CompilerPageLayoutPlan } from '../../../../types/pageLayout'
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
@@ -81,6 +81,10 @@ export interface TransformScriptOptions {
    * 模板遍历产生的版本化绑定清单。
    */
   bindingManifest?: WevuBindingManifestV1
+  /**
+   * 注入组件脚本的 Binding Manifest 精简级别。
+   */
+  runtimeBindingManifest?: WevuRuntimeBindingManifestMode
   /**
    * 是否根据绑定清单自动合并 setData.pick。
    */

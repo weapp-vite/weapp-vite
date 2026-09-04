@@ -1,6 +1,6 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { AstEngineName } from '../../../../ast/types'
-import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
+import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { JsonConfig, JsonMergeStrategy } from '../../../../types/json'
 import type { CompilerAppShell, CompilerPageLayoutPlan } from '../../../../types/pageLayout'
@@ -125,6 +125,10 @@ export interface CompileVueFileOptions {
    * 绑定清单中记录的源码文件名；默认使用当前编译文件名。
    */
   bindingManifestSourceFile?: string
+  /**
+   * 注入组件脚本的 Binding Manifest 精简级别；默认仅保留运行时必要字段。
+   */
+  runtimeBindingManifest?: WevuRuntimeBindingManifestMode
   /**
    * 构建工具预先解析的可序列化页面布局计划。
    */

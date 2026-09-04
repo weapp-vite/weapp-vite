@@ -1,4 +1,4 @@
-import type { WevuBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
 import type { WatchMap } from '../register/watch'
 import type {
   ComputedDefinitions,
@@ -16,7 +16,7 @@ export interface RuntimeComponentDefinitionOptions {
   computed: ComputedDefinitions
   methods: MethodDefinitions
   setData: SetDataSnapshotOptions | undefined
-  bindingManifest?: WevuBindingManifestV1
+  bindingManifest?: WevuRuntimeBindingManifestV1
   watch: WatchMap | undefined
   setup: ((props: any, ctx: any) => any) | undefined
   mpOptions: MiniProgramComponentRawOptions

@@ -20,6 +20,7 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     inlineExpressions: [],
     inlineExpressionSeed: 0,
     scopeStack: [],
+    bindingScopeStack: [],
     moduleResolver: undefined,
     importedBindings: new Map(),
     resolvingExports: new Set(),

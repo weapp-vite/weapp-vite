@@ -1,5 +1,5 @@
 import type { ObjectExpression } from '@weapp-vite/ast/babelTypes'
-import type { WevuBindingManifestV1 } from '../../../../../types/bindingManifest'
+import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../../types/bindingManifest'
 import type { CompilerPageLayoutPlan } from '../../../../../types/pageLayout'
 import {
   WEVU_BINDING_MANIFEST_KEY,
@@ -11,6 +11,7 @@ import {
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { createRuntimeBindingManifest } from '../../../../../bindingManifest'
 import { parseBabelExpression } from '../../../compiler/template/expression/parse'
 import { createStaticObjectKey, getObjectPropertyByKey } from '../utils'
 
@@ -121,8 +122,12 @@ function injectSetDataPick(componentOptions: ObjectExpression, keys: string[]) {
   return false
 }
 
-function injectManifestMetadata(componentOptions: ObjectExpression, manifest: WevuBindingManifestV1) {
-  const serialized = JSON.parse(JSON.stringify(manifest))
+function injectManifestMetadata(
+  componentOptions: ObjectExpression,
+  manifest: WevuBindingManifestV1,
+  mode: WevuRuntimeBindingManifestMode,
+) {
+  const serialized = createRuntimeBindingManifest(manifest, mode)
   const value = t.callExpression(
     t.memberExpression(t.identifier('Object'), t.identifier('freeze')),
     [t.valueToNode(serialized) as t.Expression],
@@ -196,13 +201,18 @@ export function injectBindingManifestContract(
     manifest?: WevuBindingManifestV1
     autoSetDataPick?: boolean
     pageLayout?: CompilerPageLayoutPlan
+    runtimeBindingManifest?: WevuRuntimeBindingManifestMode
   },
 ) {
   let changed = injectLayoutComputed(componentOptions, options.pageLayout)
   if (!options.manifest) {
     return changed
   }
-  changed = injectManifestMetadata(componentOptions, options.manifest) || changed
+  changed = injectManifestMetadata(
+    componentOptions,
+    options.manifest,
+    options.runtimeBindingManifest ?? 'compact',
+  ) || changed
   const pickKeys = resolveBindingManifestPickKeys(options.manifest, options.autoSetDataPick === true)
   changed = injectSetDataPick(componentOptions, pickKeys) || changed
   return changed

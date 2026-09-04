@@ -31,6 +31,7 @@ export interface JsxCompileContext {
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
   scopeStack: string[]
+  bindingScopeStack: string[][]
   filename?: string
   moduleResolver?: JsxModuleResolver
   importedBindings?: Map<string, { source: string, importedName: string }>

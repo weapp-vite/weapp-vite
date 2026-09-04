@@ -351,6 +351,7 @@ export function rewriteDefaultExport(
       manifest: options?.bindingManifest,
       autoSetDataPick: options?.autoSetDataPick,
       pageLayout: options?.pageLayout,
+      runtimeBindingManifest: options?.runtimeBindingManifest,
     }) || transformed
   }
 

@@ -1,6 +1,20 @@
-import type { WevuBindingKind, WevuBindingManifestV1, WevuBindingUpdateMode } from '../../../../types/bindingManifest'
+import type {
+  WevuBindingDependencyV1,
+  WevuBindingKind,
+  WevuBindingManifestV1,
+  WevuBindingScopeV1,
+  WevuBindingUpdateMode,
+} from '../../../../types/bindingManifest'
 import type { SourceSpan } from '../../../../types/diagnostics'
 import type { TransformContext } from './types'
+import {
+  WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_SLOT_OWNER_ID_PROP,
+  WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_OWNER_PROXY_KEY,
+  WEVU_SLOT_PROPS_DATA_KEY,
+  WEVU_SLOT_SCOPE_KEY,
+} from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { traverse } from '../../../../utils/babel'
 import { INLINE_GLOBALS } from './expression/inlineShared'
@@ -18,6 +32,7 @@ interface RecordBindingOptions {
   expression: string
   outputPath?: string
   sourceLocation?: SourceSpan
+  scopes?: WevuBindingScopeV1[]
 }
 
 const INTERNAL_GLOBALS: Record<string, true> = {
@@ -185,6 +200,73 @@ function collectDependencies(
   }
 }
 
+function resolveBindingDependencies(
+  dependencies: BindingDependency[],
+  snapshotFallback: boolean,
+): WevuBindingDependencyV1[] {
+  return dependencies.map(dependency => ({
+    root: dependency.root,
+    ...(dependency.path ? { path: dependency.path } : {}),
+    updateMode: snapshotFallback ? 'snapshot-fallback' : dependency.mode,
+  }))
+}
+
+function resolveBindingUpdateMode(dependencies: WevuBindingDependencyV1[]): WevuBindingUpdateMode {
+  if (dependencies.some(dependency => dependency.updateMode === 'snapshot-fallback')) {
+    return 'snapshot-fallback'
+  }
+  if (dependencies.some(dependency => dependency.updateMode === 'top-level')) {
+    return 'top-level'
+  }
+  return 'exact-path'
+}
+
+function resolveBindingScopes(
+  context: TransformContext | undefined,
+  dependencies: BindingDependency[],
+  explicitScopes?: WevuBindingScopeV1[],
+): WevuBindingScopeV1[] {
+  if (explicitScopes) {
+    return explicitScopes.map(scope => ({
+      ...scope,
+      ...(scope.locals ? { locals: [...scope.locals] } : {}),
+    }))
+  }
+
+  const scopes: WevuBindingScopeV1[] = [{ kind: 'root', depth: 0 }]
+  let forDepth = 1
+  if (context?.rewriteScopedSlot) {
+    const roots = new Set(dependencies.map(dependency => dependency.root))
+    if (roots.has(WEVU_SLOT_OWNER_KEY)
+      || roots.has(WEVU_SLOT_OWNER_PROXY_KEY)
+      || roots.has(WEVU_SLOT_OWNER_ID_KEY)
+      || roots.has(WEVU_SLOT_OWNER_ID_PROP)
+      || roots.has(WEVU_SLOT_SCOPE_KEY)) {
+      scopes.push({ kind: 'slot-owner', depth: 1 })
+      forDepth = 2
+    }
+    if (roots.has(WEVU_SLOT_PROPS_DATA_KEY)) {
+      scopes.push({ kind: 'slot-props', depth: 1 })
+      forDepth = 2
+    }
+  }
+
+  for (const [index, forInfo] of (context?.forStack ?? []).entries()) {
+    const locals = [
+      forInfo.item,
+      forInfo.index,
+      forInfo.key,
+      ...Object.keys(forInfo.itemAliases ?? {}),
+    ].filter(Boolean) as string[]
+    scopes.push({
+      kind: 'for',
+      depth: forDepth + index,
+      ...(locals.length ? { locals: [...new Set(locals)] } : {}),
+    })
+  }
+  return scopes
+}
+
 function recordBindingManifestExpression(
   manifest: WevuBindingManifestV1,
   options: RecordBindingOptions,
@@ -199,6 +281,8 @@ function recordBindingManifestExpression(
       kind: options.kind,
       outputPath: options.outputPath ?? '*',
       sourceRoots: [],
+      dependencies: [],
+      scopes: resolveBindingScopes(context, [], options.scopes),
       updateMode: 'snapshot-fallback',
       sourceLocation,
     })
@@ -208,30 +292,31 @@ function recordBindingManifestExpression(
   if (options.outputPath) {
     const sourceRoots = [...new Set(dependencies.map(dependency => dependency.root))]
     const sourcePaths = dependencies.flatMap(dependency => dependency.path ? [dependency.path] : [])
-    const updateMode = snapshotFallback
-      ? 'snapshot-fallback'
-      : dependencies.some(dependency => dependency.mode === 'top-level')
-        ? 'top-level'
-        : 'exact-path'
+    const bindingDependencies = resolveBindingDependencies(dependencies, snapshotFallback)
     manifest.bindings.push({
       id: `b${manifest.bindings.length}`,
       kind: options.kind,
       outputPath: options.outputPath,
       sourceRoots,
       sourcePaths: sourcePaths.length ? [...new Set(sourcePaths)] : undefined,
-      updateMode,
+      dependencies: bindingDependencies,
+      scopes: resolveBindingScopes(context, dependencies, options.scopes),
+      updateMode: resolveBindingUpdateMode(bindingDependencies),
       sourceLocation,
     })
     return
   }
   for (const dependency of dependencies) {
+    const [bindingDependency] = resolveBindingDependencies([dependency], snapshotFallback)
     manifest.bindings.push({
       id: `b${manifest.bindings.length}`,
       kind: options.kind,
       outputPath: dependency.mode === 'exact-path' ? dependency.path! : dependency.root,
       sourceRoots: [dependency.root],
       sourcePaths: dependency.path ? [dependency.path] : undefined,
-      updateMode: snapshotFallback ? 'snapshot-fallback' : dependency.mode,
+      dependencies: [bindingDependency],
+      scopes: resolveBindingScopes(context, [dependency], options.scopes),
+      updateMode: bindingDependency.updateMode,
       sourceLocation,
     })
   }

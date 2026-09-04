@@ -82,6 +82,31 @@ export default defineComponent({
     expect(result.script).toContain('__wevuBindingManifest')
   })
 
+  it('records JSX bindings with their active loop scope', async () => {
+    const source = `
+import { defineComponent, ref } from 'wevu'
+export default defineComponent({
+  setup() {
+    const rows = ref([{ title: 'row' }])
+    const suffix = ref('!')
+    return () => <view>{rows.value.map((row, index) => <text>{row.title + suffix.value + index}</text>)}</view>
+  },
+})
+`
+    const result = await compileJsxFile(source, '/project/src/pages/scopes/index.tsx')
+    const binding = result.bindingManifest?.bindings.find(item => item.outputPath === 'suffix.value')
+
+    expect(binding?.dependencies).toEqual([{
+      root: 'suffix',
+      path: 'suffix.value',
+      updateMode: 'exact-path',
+    }])
+    expect(binding?.scopes).toEqual([
+      { kind: 'root', depth: 0 },
+      { kind: 'for', depth: 1, locals: ['row', 'index'] },
+    ])
+  })
+
   it('keeps setup captures required by an extracted JSX template', async () => {
     const source = `
 import { defineComponent, ref } from 'wevu'

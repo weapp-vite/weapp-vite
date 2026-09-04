@@ -84,6 +84,7 @@ export async function compileVueFile(
     ? {
         ...options?.template,
         isPage: options?.isPage,
+        runtimeBindingManifest: options?.runtimeBindingManifest,
         propsAliases,
         propsDerivedKeys,
         scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
@@ -95,6 +96,7 @@ export async function compileVueFile(
     : {
         ...options?.template,
         isPage: options?.isPage,
+        runtimeBindingManifest: options?.runtimeBindingManifest,
         propsAliases,
         propsDerivedKeys,
         scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,

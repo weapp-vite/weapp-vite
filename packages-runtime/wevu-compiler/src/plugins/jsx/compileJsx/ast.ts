@@ -57,17 +57,19 @@ export function renderMustache(expression: string, context: Pick<JsxCompileConte
 }
 
 export function pushScope(context: JsxCompileContext, names: string[]) {
-  for (const name of names) {
-    if (!name) {
-      continue
-    }
-    context.scopeStack.push(name)
+  const scopedNames = names.filter(Boolean)
+  context.scopeStack.push(...scopedNames)
+  if (scopedNames.length) {
+    context.bindingScopeStack.push(scopedNames)
   }
 }
 
 export function popScope(context: JsxCompileContext, count: number) {
   for (let i = 0; i < count; i += 1) {
     context.scopeStack.pop()
+  }
+  if (count > 0) {
+    context.bindingScopeStack.pop()
   }
 }
 

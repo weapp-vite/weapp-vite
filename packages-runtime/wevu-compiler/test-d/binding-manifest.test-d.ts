@@ -2,12 +2,15 @@ import type {
   CompilerAppShell,
   CompilerPageLayoutPlan,
   CompileVueFileOptions,
+  WevuBindingDependencyV1,
   WevuBindingKind,
   WevuBindingManifestV1,
   WevuBindingRecordV1,
+  WevuBindingScopeV1,
   WevuBindingUpdateMode,
+  WevuRuntimeBindingManifestV1,
 } from '@wevu/compiler'
-import { compileSfc, compileTemplate } from '@wevu/compiler'
+import { compileSfc, compileTemplate, createRuntimeBindingManifest } from '@wevu/compiler'
 import { expectType } from 'tsd'
 
 const templateResult = compileTemplate(
@@ -21,6 +24,9 @@ expectType<string>(templateResult.bindingManifest.sourceFile)
 expectType<WevuBindingRecordV1[]>(templateResult.bindingManifest.bindings)
 expectType<WevuBindingKind>(templateResult.bindingManifest.bindings[0]!.kind)
 expectType<WevuBindingUpdateMode>(templateResult.bindingManifest.bindings[0]!.updateMode)
+expectType<WevuBindingDependencyV1[]>(templateResult.bindingManifest.bindings[0]!.dependencies)
+expectType<WevuBindingScopeV1[]>(templateResult.bindingManifest.bindings[0]!.scopes)
+expectType<WevuRuntimeBindingManifestV1>(createRuntimeBindingManifest(templateResult.bindingManifest))
 
 const pageLayout: CompilerPageLayoutPlan = {
   dynamicSwitch: false,
@@ -39,6 +45,7 @@ const appShell: CompilerAppShell = {
 const options: CompileVueFileOptions = {
   autoSetDataPick: true,
   bindingManifestSourceFile: 'src/pages/index.vue',
+  runtimeBindingManifest: 'diagnostic',
   pageLayout,
   appShell,
 }

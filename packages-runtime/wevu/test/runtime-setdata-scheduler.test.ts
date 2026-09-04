@@ -1,4 +1,4 @@
-import type { WevuBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
 import { WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
 import { shallowRef } from '@/reactivity'
@@ -164,16 +164,14 @@ describe('runtime: setData scheduler', () => {
       count: 1,
       fallbackRoot: { ready: true },
     }
-    const bindingManifest: WevuBindingManifestV1 = {
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
       version: 1,
       sourceFile: 'src/pages/home.vue',
       bindings: [
         {
           id: 'binding:user-name',
-          kind: 'text',
           outputPath: 'user.name',
           sourceRoots: ['user'],
-          updateMode: 'exact-path',
           sourceLocation: {
             start: { offset: 10, line: 2, column: 5 },
             end: { offset: 19, line: 2, column: 14 },
@@ -181,41 +179,34 @@ describe('runtime: setData scheduler', () => {
         },
         {
           id: 'binding:count',
-          kind: 'attribute',
           outputPath: 'count.value',
           sourceRoots: ['count'],
           updateMode: 'top-level',
         },
         {
           id: 'binding:fallback',
-          kind: 'if',
           outputPath: '__wv_bind_0',
           sourceRoots: ['fallbackRoot'],
           updateMode: 'snapshot-fallback',
         },
         {
           id: 'binding:unknown',
-          kind: 'component-prop',
           outputPath: '*',
           sourceRoots: [],
           updateMode: 'snapshot-fallback',
         },
         {
           id: 'binding:username',
-          kind: 'text',
           outputPath: 'username',
           sourceRoots: ['username'],
-          updateMode: 'exact-path',
         },
         {
           id: 'binding:user-name',
-          kind: 'style',
           outputPath: 'user',
           sourceRoots: ['user'],
           updateMode: 'top-level',
         },
       ],
-      features: {},
     }
     const scheduler = createSetDataScheduler({
       state,
@@ -291,11 +282,10 @@ describe('runtime: setData scheduler', () => {
 
   it('does not inspect manifest bindings when the debug event is filtered out', () => {
     let bindingReads = 0
-    const bindingManifest: WevuBindingManifestV1 = {
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
       version: 1,
       sourceFile: 'src/pages/quiet.vue',
       bindings: [],
-      features: {},
     }
     Object.defineProperty(bindingManifest, 'bindings', {
       configurable: true,
@@ -342,18 +332,13 @@ describe('runtime: setData scheduler', () => {
   })
 
   it('matches bracket and dot notation on the same binding path', () => {
-    const bindingManifest: WevuBindingManifestV1 = {
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
       version: 1,
       sourceFile: 'src/pages/list.vue',
       bindings: [{
         id: 'binding:list-item',
-        kind: 'text',
         outputPath: 'list.0.name',
-        sourceRoots: ['list'],
-        sourcePaths: ['list.0.name'],
-        updateMode: 'exact-path',
       }],
-      features: {},
     }
 
     expect(resolveBindingDiagnostics(bindingManifest, ['list[0].name'])).toEqual([

@@ -1,4 +1,4 @@
-import type { WevuBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
 import type { MutationRecord, WatchOptions, WatchStopHandle } from '../../reactivity'
 import type {
   AppConfig,
@@ -65,7 +65,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
   resolvedMethods: M
   appConfig: AppConfig
   setDataOptions: CreateAppOptions<D, C, M>['setData']
-  bindingManifest?: WevuBindingManifestV1
+  bindingManifest?: WevuRuntimeBindingManifestV1
 }) {
   const {
     data,

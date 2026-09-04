@@ -194,6 +194,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     )
 
     expect(options.template.platform.name).toBe('alipay')
+    expect(options.runtimeBindingManifest).toBe('diagnostic')
     expect(options.template.htmlTagToWxml).toEqual({
       div: 'view',
     })
@@ -313,6 +314,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     )
 
     expect(createOptions(layoutPath).skipComponentTransform).toBe(false)
+    expect(createOptions(layoutPath).runtimeBindingManifest).toBe('compact')
     expect(createOptions('/project/src/components/card.vue', {
       weappLibConfig: { enabled: true },
     }).skipComponentTransform).toBe(false)

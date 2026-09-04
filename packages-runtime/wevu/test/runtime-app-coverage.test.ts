@@ -1,4 +1,4 @@
-import type { WevuBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
 import { WEVU_BINDING_MANIFEST_KEY } from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
 import { createApp } from '@/runtime/app'
@@ -148,23 +148,20 @@ describe('runtime app - patch and debug branches', () => {
   it('supports built-in diagnostics logging', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
-    const bindingManifest: WevuBindingManifestV1 = {
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
       version: 1,
       sourceFile: 'src/pages/diagnostics.vue',
       bindings: [
         {
           id: 'binding:a-b',
-          kind: 'text',
           outputPath: 'a.b',
           sourceRoots: ['a'],
-          updateMode: 'exact-path',
           sourceLocation: {
             start: { offset: 42, line: 4, column: 9 },
             end: { offset: 45, line: 4, column: 12 },
           },
         },
       ],
-      features: {},
     }
     const app = createApp({
       [WEVU_BINDING_MANIFEST_KEY]: bindingManifest,

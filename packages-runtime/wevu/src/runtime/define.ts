@@ -1,4 +1,4 @@
-import type { WevuBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
 import type { RuntimeComponentDefinitionOptions } from './define/componentDefinition'
 import type { InlineExpressionMap } from './register/inline'
 import type { TemplateRefBinding } from './templateRefs'
@@ -69,13 +69,13 @@ function resolveInitialDataContext(properties: unknown, methods: MethodDefinitio
 
 function shouldDeclareNativeSlotOwnerId(
   setData: SetDataSnapshotOptions | undefined,
-  bindingManifest: WevuBindingManifestV1 | undefined,
+  bindingManifest: WevuRuntimeBindingManifestV1 | undefined,
 ) {
   return (
     Array.isArray(setData?.pick)
     && setData.pick.includes(WEVU_SLOT_OWNER_ID_KEY)
   ) || (
-    bindingManifest?.features.scopedSlots === true
+    bindingManifest?.features?.scopedSlots === true
     && hasBindingOutputPath(bindingManifest, WEVU_SLOT_OWNER_ID_KEY)
   )
 }
@@ -132,7 +132,7 @@ export interface ComponentDefinition<
     computed: C
     methods: M
     setData: import('./types').SetDataSnapshotOptions | undefined
-    bindingManifest?: WevuBindingManifestV1
+    bindingManifest?: WevuRuntimeBindingManifestV1
     watch: Record<string, any> | undefined
     setup: ((props: any, ctx: any) => any) | undefined
     mpOptions: MiniProgramComponentRawOptions
@@ -448,7 +448,7 @@ export function createWevuScopedSlotComponent(
     computed?: ComputedDefinitions
     inlineMap?: InlineExpressionMap
     templateRefs?: TemplateRefBinding[]
-    [WEVU_BINDING_MANIFEST_KEY]?: WevuBindingManifestV1
+    [WEVU_BINDING_MANIFEST_KEY]?: WevuRuntimeBindingManifestV1
   },
 ): void {
   const baseOptions = createScopedSlotOptions(overrides)

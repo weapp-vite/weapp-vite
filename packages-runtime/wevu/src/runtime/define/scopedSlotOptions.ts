@@ -1,4 +1,4 @@
-import type { WevuBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
 import type { InlineExpressionMap } from '../register/inline'
 import type { TemplateRefBinding } from '../templateRefs'
 import type { ComputedDefinitions } from '../types'
@@ -447,7 +447,7 @@ export function createScopedSlotOptions(
     computed?: ComputedDefinitions
     inlineMap?: InlineExpressionMap
     templateRefs?: TemplateRefBinding[]
-    [WEVU_BINDING_MANIFEST_KEY]?: WevuBindingManifestV1
+    [WEVU_BINDING_MANIFEST_KEY]?: WevuRuntimeBindingManifestV1
   },
 ) {
   const scopedSlotComputed = overrides?.computed

@@ -1,6 +1,7 @@
-import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
+import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { ClassStyleBinding, InlineExpressionAsset, TemplateRefBinding } from './types'
 import { WEVU_BINDING_MANIFEST_KEY, WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
+import { createRuntimeBindingManifest } from '../../../../bindingManifest'
 import {
   WE_VU_COMPILER_REACTIVITY_MODULE_ID,
   WE_VU_COMPILER_RUNTIME_MODULE_ID,
@@ -52,6 +53,7 @@ export function buildScopedSlotComponentScript(options: {
   inlineExpressions: InlineExpressionAsset[]
   templateRefs: TemplateRefBinding[]
   bindingManifest: WevuBindingManifestV1
+  runtimeBindingManifest: WevuRuntimeBindingManifestMode
 }) {
   const computedCode = options.classStyleBindings.length
     ? buildClassStyleComputedCode(options.classStyleBindings, {
@@ -86,7 +88,7 @@ export function buildScopedSlotComponentScript(options: {
     lines.push(`const __wevuTemplateRefs = ${templateRefsCode};`)
   }
   const overrideParts = [
-    `${JSON.stringify(WEVU_BINDING_MANIFEST_KEY)}:Object.freeze(${JSON.stringify(options.bindingManifest)})`,
+    `${JSON.stringify(WEVU_BINDING_MANIFEST_KEY)}:Object.freeze(${JSON.stringify(createRuntimeBindingManifest(options.bindingManifest, options.runtimeBindingManifest))})`,
   ]
   if (computedCode) {
     overrideParts.push('computed:__wevuComputed')

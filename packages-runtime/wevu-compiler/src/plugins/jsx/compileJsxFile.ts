@@ -164,6 +164,7 @@ export async function compileJsxFile(
     inlineExpressions,
     bindingManifest: options?.isApp ? undefined : bindingManifest,
     autoSetDataPick: !options?.isApp && options?.autoSetDataPick,
+    runtimeBindingManifest: options?.runtimeBindingManifest,
     pageLayout: options?.isApp ? undefined : options?.pageLayout,
   })
 

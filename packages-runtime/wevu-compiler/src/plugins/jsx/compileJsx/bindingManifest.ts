@@ -1,5 +1,5 @@
 import type { Expression } from '@weapp-vite/ast/babelTypes'
-import type { WevuBindingKind } from '../../../types/bindingManifest'
+import type { WevuBindingKind, WevuBindingScopeV1 } from '../../../types/bindingManifest'
 import type { JsxCompileContext } from './types'
 import { recordSyntheticBindingExpression } from '../../vue/compiler/template/bindingManifest'
 import { normalizeInterpolationExpression } from './ast'
@@ -28,6 +28,14 @@ export function recordJsxBinding(
         },
       }
     : undefined
+  const scopes: WevuBindingScopeV1[] = [
+    { kind: 'root', depth: 0 },
+    ...context.bindingScopeStack.map((locals, index) => ({
+      kind: 'for' as const,
+      depth: index + 1,
+      locals: [...locals],
+    })),
+  ]
   recordSyntheticBindingExpression(
     context.bindingManifest,
     {
@@ -35,6 +43,7 @@ export function recordJsxBinding(
       expression,
       outputPath,
       sourceLocation,
+      scopes,
     },
     context.scopeStack,
   )

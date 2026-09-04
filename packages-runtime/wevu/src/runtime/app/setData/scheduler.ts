@@ -1,4 +1,4 @@
-import type { WevuBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
 import type { MutationRecord } from '../../../reactivity'
 import type { SetDataDebugInfo } from '../../types'
 import { getReactiveVersion, isReactive, isRef, toRaw } from '../../../reactivity'
@@ -36,7 +36,7 @@ export function createSetDataScheduler(options: {
   debug: ((info: SetDataDebugInfo) => void) | undefined
   debugWhen: 'fallback' | 'always'
   debugSampleRate: number
-  bindingManifest?: WevuBindingManifestV1
+  bindingManifest?: WevuRuntimeBindingManifestV1
   loopWarning: false | {
     sampleWindowMs: number
     maxFlushes: number

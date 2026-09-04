@@ -181,7 +181,7 @@ setWevuDefaults({
 
 ### `setData.diagnostics` 与 binding 归因
 
-编译后的 Vue/JSX 组件会携带版本化 Binding Manifest。开启 `setData.diagnostics` 或 `setData.debug` 后，运行时会在已有的 patch、diff 和 fallback 诊断中附带命中 binding 的 `id`、输出路径、更新策略以及源文件行列；关闭诊断时不会执行 payload 到 binding 的匹配。
+编译后的 Vue/JSX 组件会携带版本化的精简 Binding Manifest。开启 `setData.diagnostics` 或 `setData.debug` 后，运行时会在已有的 patch、diff 和 fallback 诊断中附带命中 binding 的 `id`、输出路径、更新策略和源文件；开发构建额外携带源码行列，生产构建默认移除行列信息。关闭诊断时不会执行 payload 到 binding 的匹配。
 
 ```ts
 defineComponent({
@@ -196,7 +196,7 @@ defineComponent({
 })
 ```
 
-Binding Manifest 只用于归因，不替换现有 snapshot/diff 正确性 fallback。动态成员只能证明顶层依赖时会标记为 `top-level`，无法证明依赖路径时会标记为 `snapshot-fallback`。
+Binding Manifest 只用于归因，不替换现有 snapshot/diff 正确性 fallback。编译器完整 IR 会为同一输出的每个 dependency 分别记录 `exact-path`、`top-level` 或 `snapshot-fallback`；注入运行时的精简记录只保留调度和诊断实际读取的字段。
 
 ### 收到内存告警时的清理建议
 

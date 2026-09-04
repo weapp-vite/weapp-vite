@@ -333,8 +333,9 @@ export default defineConfig({
 - 仅对 `defineComponent/createWevuComponent` 产物生效，`app.vue` 不会注入。
 - 若组件已显式声明 `setData.pick` 数组，会与自动推导结果做去重合并。
 - 若 `setData` 为变量或表达式，例如 `setData: externalConfig`，会包裹为 `{ pick: [...], ...externalConfig }` 以保持兼容。
-- 编译器会在同一次模板 AST 遍历中记录 binding 的输出路径、源码依赖、更新策略和源码位置；`weapp-vite` 不再解析生成后的 WXML 来反推 key。
-- 无法静态证明依赖路径的表达式会显式标记为 `snapshot-fallback`，继续使用现有快照 diff 保证正确性。
+- 编译器会在同一次模板 AST 遍历中记录完整 IR：每个 binding 的输出路径、逐 dependency 更新策略、`root` / `for` / `slot-owner` / `slot-props` 作用域和源码位置；`weapp-vite` 不再解析生成后的 WXML 来反推 key。
+- 编译结果保留完整 IR，构建产物只注入运行时更新所需的精简 manifest；生产构建移除 binding 类型、dependency、scope 和源码行列，开发态额外保留源码行列用于诊断。
+- 无法静态证明依赖路径的 dependency 会显式标记为 `snapshot-fallback`，继续使用现有快照 diff 保证正确性。
 - scoped slot 的 binding 归属各自生成的子组件 manifest，不再依赖自动 binding 数量阈值做裁剪。
 - 建议在“状态很大但模板只使用少量字段”的页面优先开启；若模板几乎使用全部字段，收益通常不明显。
 

@@ -1,5 +1,5 @@
 import type { Expression } from '@weapp-vite/ast/babelTypes'
-import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
+import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { MiniProgramPlatform } from './platform'
@@ -77,6 +77,7 @@ export interface TransformContext {
   filename: string
   diagnostics: CompilerDiagnostic[]
   bindingManifest: WevuBindingManifestV1
+  runtimeBindingManifest: WevuRuntimeBindingManifestMode
   platform: MiniProgramPlatform
   isPage?: boolean
   /**
@@ -171,6 +172,7 @@ export interface TemplateCompileOptions {
   objectLiteralBindMode?: ObjectLiteralBindMode
   mustacheInterpolation?: MustacheInterpolationMode
   formatWxml?: boolean
+  runtimeBindingManifest?: WevuRuntimeBindingManifestMode
   wxsExtension?: string
   classStyleWxsSrc?: string
   functionPropNames?: Iterable<FunctionPropNameMatcher>

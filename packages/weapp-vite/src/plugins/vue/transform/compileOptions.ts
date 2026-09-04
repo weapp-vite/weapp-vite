@@ -321,6 +321,7 @@ function buildCompileVueFileOptions(
     skipComponentTransform: delegatesComponentRegistration,
     autoSetDataPick: isAutoSetDataPickEnabledWithPreset(configService.weappViteConfig),
     bindingManifestSourceFile: resolveBindingManifestSourceFile(vuePath, configService),
+    runtimeBindingManifest: configService.isDev ? 'diagnostic' : 'compact',
     pageLayout,
     appShell,
     warn: (message: string) => logger.warn(message),

@@ -1,6 +1,7 @@
 import type { CompilerPageLayoutPlan, WevuBindingManifestV1 } from '../../../index'
 import { WEVU_BINDING_MANIFEST_KEY, WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
+import { createRuntimeBindingManifest } from '../../../bindingManifest'
 import { compileVueFile } from '../transform/compileVueFile'
 import { applyCompilerTemplateWrappers } from '../transform/compileVueFile/pageLayout'
 import { remapJsxBindingManifestLocations } from '../transform/compileVueFile/script'
@@ -28,6 +29,12 @@ describe('binding manifest', () => {
       expect.objectContaining({ kind: 'if', outputPath: 'visible', updateMode: 'exact-path' }),
     ]))
     expect(result.bindingManifest.bindings.every(binding => binding.sourceLocation?.start.line === 1)).toBe(true)
+    const tableBinding = result.bindingManifest.bindings.find(binding => binding.outputPath === 'table')
+    expect(tableBinding?.dependencies).toEqual([{
+      root: 'table',
+      updateMode: 'top-level',
+    }])
+    expect(tableBinding?.scopes).toEqual([{ kind: 'root', depth: 0 }])
   })
 
   it('marks opaque calls as materialized snapshot fallbacks', () => {
@@ -43,6 +50,11 @@ describe('binding manifest', () => {
       sourcePaths: ['format', 'user.name'],
       updateMode: 'snapshot-fallback',
     }))
+    const binding = result.bindingManifest.bindings.find(item => item.outputPath === '__wv_bind_0')
+    expect(binding?.dependencies).toEqual([
+      { root: 'format', path: 'format', updateMode: 'snapshot-fallback' },
+      { root: 'user', path: 'user.name', updateMode: 'snapshot-fallback' },
+    ])
   })
 
   it('tracks native loop scope and scoped-slot owner attributes', () => {
@@ -57,6 +69,13 @@ describe('binding manifest', () => {
       expect.objectContaining({ kind: 'component-prop', outputPath: '__wvOwnerId' }),
     ]))
     expect(result.bindingManifest.bindings.some(binding => binding.sourceRoots.includes('row'))).toBe(false)
+    const loopBinding = result.bindingManifest.bindings.find((binding) => {
+      return binding.kind === 'text' && binding.outputPath === 'list'
+    })
+    expect(loopBinding?.scopes).toEqual([
+      { kind: 'root', depth: 0 },
+      { kind: 'for', depth: 1, locals: ['row', 'index'] },
+    ])
     expect(result.bindingManifest.features.scopedSlots).toBe(true)
   })
 
@@ -116,6 +135,13 @@ describe('binding manifest', () => {
         sourceRoots: ['items', 'suffix'],
       }),
     ]))
+    const functionPropBinding = result.bindingManifest.bindings.find((binding) => {
+      return binding.kind === 'component-prop' && binding.outputPath === '__wv_bind_0'
+    })
+    expect(functionPropBinding?.dependencies).toEqual([
+      { root: 'handlers', updateMode: 'top-level' },
+      { root: 'selected', path: 'selected', updateMode: 'exact-path' },
+    ])
     expect(result.bindingManifest.bindings.some(binding => binding.sourceRoots.includes('item'))).toBe(false)
     expect(result.bindingManifest.features.functionProps).toBe(true)
   })
@@ -137,7 +163,46 @@ describe('binding manifest', () => {
     expect(child?.bindingManifest.bindings).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: 'text', sourcePaths: ['__wvSlotPropsData.label'] }),
     ]))
+    expect(child?.bindingManifest.bindings[0]?.scopes).toEqual([
+      { kind: 'root', depth: 0 },
+      { kind: 'slot-props', depth: 1 },
+    ])
     expect(child?.script).toContain('__wevuBindingManifest')
+    expect(child?.script).not.toContain('"kind"')
+    expect(child?.script).not.toContain('"dependencies"')
+    expect(child?.script).not.toContain('"scopes"')
+    expect(child?.script).not.toContain('"sourceLocation"')
+  })
+
+  it('projects the complete compiler IR to compact runtime metadata', async () => {
+    const source = '<template><view>{{ user.name }}</view></template><script setup>const user = { name: "Ada" }</script>'
+    const result = await compileVueFile(source, '/src/pages/runtime-manifest.vue', {
+      bindingManifestSourceFile: 'src/pages/runtime-manifest.vue',
+    })
+    const manifest = result.bindingManifest!
+    const compact = createRuntimeBindingManifest(manifest)
+    const diagnostic = createRuntimeBindingManifest(manifest, 'diagnostic')
+
+    expect(compact).toEqual({
+      version: 1,
+      sourceFile: 'src/pages/runtime-manifest.vue',
+      bindings: [{
+        id: 'b0',
+        outputPath: 'user.name',
+      }],
+    })
+    expect(diagnostic.bindings[0]).toHaveProperty('sourceLocation')
+    expect(result.script).not.toContain('dependencies:')
+    expect(result.script).not.toContain('scopes:')
+    expect(result.script).not.toContain('sourceLocation:')
+
+    const diagnosticResult = await compileVueFile(source, '/src/pages/runtime-manifest.vue', {
+      bindingManifestSourceFile: 'src/pages/runtime-manifest.vue',
+      runtimeBindingManifest: 'diagnostic',
+    })
+    expect(diagnosticResult.script).toContain('sourceLocation:')
+    expect(diagnosticResult.script).not.toContain('dependencies:')
+    expect(diagnosticResult.script).not.toContain('scopes:')
   })
 
   it('keeps more than 200 automatic bindings inside the scoped-slot child manifest', () => {
@@ -170,6 +235,8 @@ describe('binding manifest', () => {
         kind: 'text',
         outputPath: '*',
         sourceRoots: [],
+        dependencies: [],
+        scopes: [{ kind: 'root', depth: 0 }],
         updateMode: 'snapshot-fallback',
       }],
       features: {},
@@ -259,6 +326,8 @@ export default {
         outputPath: 'title',
         sourceRoots: ['title'],
         sourcePaths: ['title'],
+        dependencies: [{ root: 'title', path: 'title', updateMode: 'exact-path' }],
+        scopes: [{ kind: 'root', depth: 0 }],
         updateMode: 'exact-path',
         sourceLocation: {
           start: { offset: 20, line: 2, column: 5 },

@@ -462,6 +462,7 @@ export async function compileScriptPhase(
       inlineExpressions: templateCompiled?.inlineExpressions,
       bindingManifest: isAppFile ? undefined : bindingManifest,
       autoSetDataPick: !isAppFile && options?.autoSetDataPick,
+      runtimeBindingManifest: options?.runtimeBindingManifest,
       pageLayout: isAppFile ? undefined : options?.pageLayout,
       functionPropPaths: templateCompiled?.functionPropPaths,
       propsAliases,

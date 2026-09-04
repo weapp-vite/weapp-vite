@@ -1,4 +1,4 @@
-import type { WevuBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
 import {
   WEVU_BINDING_MANIFEST_KEY,
   WEVU_INLINE_HANDLER,
@@ -301,16 +301,14 @@ describe('runtime: scoped slots', () => {
   })
 
   it('declares page owner data from the binding manifest without exposing compiler metadata', () => {
-    const bindingManifest: WevuBindingManifestV1 = {
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
       version: 1,
       sourceFile: 'src/pages/scoped-host.vue',
       bindings: [
         {
           id: 'binding:slot-owner',
-          kind: 'attribute',
           outputPath: WEVU_SLOT_OWNER_ID_KEY,
           sourceRoots: [WEVU_SLOT_OWNER_ID_KEY],
-          updateMode: 'exact-path',
         },
       ],
       features: {
@@ -336,13 +334,12 @@ describe('runtime: scoped slots', () => {
   })
 
   it('accepts scoped-slot manifest overrides without forwarding them to native options', () => {
-    const bindingManifest: WevuBindingManifestV1 = {
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
       version: 1,
       sourceFile: 'src/components/scoped-child.vue',
       bindings: [
         {
           id: 'binding:scoped-owner',
-          kind: 'if',
           outputPath: WEVU_SLOT_OWNER_ID_KEY,
           sourceRoots: [WEVU_SLOT_OWNER_ID_KEY],
           updateMode: 'top-level',

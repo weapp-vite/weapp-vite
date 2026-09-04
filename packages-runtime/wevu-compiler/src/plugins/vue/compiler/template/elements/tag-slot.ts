@@ -203,6 +203,12 @@ export function createScopedSlotComponent(
       outputPath: WEVU_SLOT_OWNER_ID_KEY,
       sourceRoots: [WEVU_SLOT_OWNER_ID_KEY],
       sourcePaths: [WEVU_SLOT_OWNER_ID_KEY],
+      dependencies: [{
+        root: WEVU_SLOT_OWNER_ID_KEY,
+        path: WEVU_SLOT_OWNER_ID_KEY,
+        updateMode: 'exact-path',
+      }],
+      scopes: [{ kind: 'root', depth: 0 }],
       updateMode: 'exact-path',
     })
   }
@@ -248,6 +254,7 @@ export function createScopedSlotComponent(
     inlineExpressions: scopedContext.inlineExpressions,
     templateRefs: scopedContext.templateRefs,
     bindingManifest,
+    runtimeBindingManifest: scopedContext.runtimeBindingManifest,
   })
   return { componentName, slotKey }
 }

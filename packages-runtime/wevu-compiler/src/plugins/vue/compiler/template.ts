@@ -135,6 +135,7 @@ export function compileVueTemplateToWxml(
       filename,
       diagnostics,
       bindingManifest: createBindingManifest(filename),
+      runtimeBindingManifest: options?.runtimeBindingManifest ?? 'compact',
       platform: options?.platform ?? getMiniProgramTemplatePlatform(),
       isPage: resolveTemplateIsPage(filename, options),
       propsAliases: options?.propsAliases,
@@ -243,6 +244,8 @@ export function compileVueTemplateToWxml(
       kind: 'text',
       outputPath: '*',
       sourceRoots: [],
+      dependencies: [],
+      scopes: [{ kind: 'root', depth: 0 }],
       updateMode: 'snapshot-fallback',
     })
     return {

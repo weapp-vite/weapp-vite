@@ -1,4 +1,4 @@
-import type { WevuBindingManifestV1 } from '@wevu/compiler'
+import type { WevuRuntimeBindingManifestV1 } from '@wevu/compiler'
 import type {
   AppConfig,
   ComputedDefinitions,
@@ -35,7 +35,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     setup: appSetup,
     ...mpOptions
   } = resolvedOptions
-  const bindingManifest: WevuBindingManifestV1 | undefined = resolveBindingManifest(rawBindingManifest)
+  const bindingManifest: WevuRuntimeBindingManifestV1 | undefined = resolveBindingManifest(rawBindingManifest)
   const resolvedMethods = methods ?? ({} as M)
   const resolvedComputed = computedOptions ?? ({} as C)
 
