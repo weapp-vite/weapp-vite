@@ -53,11 +53,12 @@ weapp-vite dev --analyze
 
 Dashboard 通过挂载在 `/__weapp-vite/` 下的 Devframe bridge 连接 CLI：
 
-- Analyze 初始数据通过只读 RPC 获取
-- revision 和最近运行事件通过 shared state 同步
-- 源码与产物内容通过保留 allowlist 和 2 MiB 上限的 RPC 读取
-- Devframe 默认使用 OTP；终端会输出可直接打开的 magic link
-- 页面不再依赖 HTML 全局变量、SSE 或 Vite HMR 作为业务数据通道
+- Analyze 数据通过带 revision、SHA-256 描述符和固定页上限的只读 RPC 分页获取
+- revision 与最近运行事件通过服务端单向通知同步；WebSocket 断开后会重连并重新查询权威状态
+- Dashboard 不创建可由客户端回写的业务 shared state，并拒绝通用 shared-state set/patch
+- 源码与产物内容通过按 revision 缓存的 allowlist RPC 读取，拒绝符号链接、读取竞态和超过 2 MiB 的文件
+- Devframe 显式启用 OTP 与 loopback Origin 门禁；终端会输出可直接打开的 magic link
+- 页面不再依赖 HTML 全局变量、业务 SSE 或 Vite HMR 作为业务数据通道
 
 微信开发者工具继续负责模拟器、原生调试和真机能力；Dashboard 是构建、HMR、包体、诊断和自动化状态的伴随 DevTools。
 

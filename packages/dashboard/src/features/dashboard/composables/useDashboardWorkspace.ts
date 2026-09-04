@@ -17,6 +17,7 @@ import {
   normalizeHistorySnapshots,
   readStoredAnalyzeHistory,
   resolveInitialPreviousResult,
+  resolveTrustedAnalyzePrevious,
   writeStoredAnalyzeHistory,
 } from '../utils/analyzeHistory'
 import { dashboardAnalyzeSnapshot } from '../utils/dashboardDevframe'
@@ -123,7 +124,7 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
       return
     }
 
-    const previousFromTransport = payload.previous
+    const previousFromTransport = resolveTrustedAnalyzePrevious(incoming, payload.previous)
     const currentProjectChanged = Boolean(
       resultRef.value && !isSameAnalyzeProject(incoming, resultRef.value),
     )
@@ -156,7 +157,6 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     }
     if (
       previousFromTransport
-      && isSameAnalyzeProject(incoming, previousFromTransport)
       && !isSameAnalyzeResult(incoming, previousFromTransport)
     ) {
       previousResult = previousFromTransport

@@ -39,12 +39,13 @@ describe('analyze project history', () => {
     })).toBeNull()
   })
 
-  it('fails closed for nameless legacy history and foreign transport history', () => {
+  it('adopts nameless trusted transport history but rejects foreign history', () => {
     const current = createResult('@varo/realworld-weapp')
     const legacy = createResult()
     const foreign = createResult('@other/project')
 
     expect(isSameAnalyzeProject(legacy, createResult())).toBe(false)
+    expect(resolveInitialPreviousResult(current, legacy, null)?.metadata?.projectName).toBe('@varo/realworld-weapp')
     expect(resolveInitialPreviousResult(current, foreign, null)).toBeNull()
   })
 

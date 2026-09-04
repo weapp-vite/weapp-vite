@@ -30,7 +30,7 @@ const createAnalyzeDashboardDevframeMock = vi.hoisted(() => vi.fn((_options: Moc
   notifyAnalyzeUpdate: notifyAnalyzeUpdateMock,
   syncRuntimeEvents: syncRuntimeEventsMock,
 })))
-const devframeViteBridgeMock = vi.hoisted(() => vi.fn(() => ({
+const createAnalyzeDashboardViteBridgeMock = vi.hoisted(() => vi.fn(() => ({
   name: 'weapp-vite-dashboard-devframe',
 })))
 const refreshTempAuthCodeMock = vi.hoisted(() => vi.fn(() => '654321'))
@@ -70,8 +70,8 @@ vi.mock('vite', () => ({
   createServer: createServerMock,
 }))
 
-vi.mock('@devframes/vite/single', () => ({
-  devframeViteBridge: devframeViteBridgeMock,
+vi.mock('./dashboardViteBridge', () => ({
+  createAnalyzeDashboardViteBridge: createAnalyzeDashboardViteBridgeMock,
 }))
 
 vi.mock('devframe/node/auth', () => ({
@@ -245,12 +245,8 @@ describe('analyze dashboard', () => {
       projectRoot: '/project',
       srcRoot: '/project/src',
     })
-    expect(devframeViteBridgeMock).toHaveBeenCalledWith(
+    expect(createAnalyzeDashboardViteBridgeMock).toHaveBeenCalledWith(
       { id: 'weapp-vite' },
-      {
-        base: '/__weapp-vite/',
-        mcp: false,
-      },
     )
     expect(server.ws?.send).not.toHaveBeenCalled()
 

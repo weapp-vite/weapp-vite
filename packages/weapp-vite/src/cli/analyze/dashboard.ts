@@ -3,7 +3,6 @@ import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import process from 'node:process'
-import { devframeViteBridge } from '@devframes/vite/single'
 import { buildOtpAuthUrl, refreshTempAuthCode } from 'devframe/node/auth'
 import { resolveCommand } from 'package-manager-detector/commands'
 import path from 'pathe'
@@ -11,6 +10,7 @@ import { createServer } from 'vite'
 import logger, { colors } from '../../logger'
 import { parseCommentJson } from '../../utils'
 import { createAnalyzeDashboardDevframe } from './dashboardDevframe'
+import { createAnalyzeDashboardViteBridge } from './dashboardViteBridge'
 
 const ANALYZE_DASHBOARD_PACKAGE_NAME = '@weapp-vite/dashboard'
 type PackageManagerAgent = Parameters<typeof resolveCommand>[0]
@@ -276,10 +276,7 @@ export async function startAnalyzeDashboard(
     },
   })
   const plugins = [
-    devframeViteBridge(devframe.definition, {
-      base: '/__weapp-vite/',
-      mcp: false,
-    }),
+    createAnalyzeDashboardViteBridge(devframe.definition),
   ]
 
   const serverOptions = {

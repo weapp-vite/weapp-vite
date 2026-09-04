@@ -42,6 +42,29 @@ export function isSameAnalyzeProject(
   return Boolean(leftName && rightName && leftName === rightName)
 }
 
+export function resolveTrustedAnalyzePrevious(
+  current: AnalyzeSubpackagesResult,
+  previous: AnalyzeSubpackagesResult | null | undefined,
+) {
+  if (!previous) {
+    return null
+  }
+  if (isSameAnalyzeProject(current, previous)) {
+    return previous
+  }
+  const projectName = current.metadata?.projectName
+  if (!projectName || previous.metadata?.projectName || !previous.metadata) {
+    return null
+  }
+  return {
+    ...previous,
+    metadata: {
+      ...previous.metadata,
+      projectName,
+    },
+  }
+}
+
 export function isSameAnalyzeResult(
   left: AnalyzeSubpackagesResult | null | undefined,
   right: AnalyzeSubpackagesResult | null | undefined,
@@ -146,8 +169,9 @@ export function resolveInitialPreviousResult(
   if (!initialPayload) {
     return null
   }
-  if (initialPreviousPayload && isSameAnalyzeProject(initialPayload, initialPreviousPayload)) {
-    return initialPreviousPayload
+  const transportPrevious = resolveTrustedAnalyzePrevious(initialPayload, initialPreviousPayload)
+  if (transportPrevious) {
+    return transportPrevious
   }
   if (storedHistory?.current && !isSameAnalyzeProject(initialPayload, storedHistory.current)) {
     return null

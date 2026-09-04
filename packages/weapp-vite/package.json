@@ -134,7 +134,6 @@
   "dependencies": {
     "@babel/preset-env": "^8.0.2",
     "@babel/preset-typescript": "^8.0.1",
-    "@devframes/vite": "catalog:",
     "@jridgewell/remapping": "^2.3.5",
     "@vercel/detect-agent": "^1.2.5",
     "@volar/typescript": "^2.4.28",

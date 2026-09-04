@@ -3,10 +3,13 @@ import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import { initDevframe } from 'devframe/initiate'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   createAnalyzeDashboardDevframe,
+  createDashboardFileReader,
+  MAX_DASHBOARD_ANALYZE_PAGE_CHARACTERS,
   MAX_DASHBOARD_FILE_CONTENT_BYTES,
   readDashboardFileContent,
 } from './dashboardDevframe'
@@ -66,9 +69,10 @@ afterEach(async () => {
 })
 
 describe('dashboard Devframe protocol', () => {
-  it('registers analyze query and revision-based shared state', async () => {
+  it('registers paged analyze queries without writable shared state', async () => {
     const current = createAnalyzeResult()
     const next = createAnalyzeResult()
+    next.packages[0]!.label = 'x'.repeat(MAX_DASHBOARD_ANALYZE_PAGE_CHARACTERS + 16)
     const snapshot = {
       current,
       previous: null as AnalyzeSubpackagesResult | null,
@@ -88,13 +92,30 @@ describe('dashboard Devframe protocol', () => {
 
     try {
       await instance.ready
-      const dashboard = (await instance.context).scope('weapp-vite')
-      await expect(dashboard.rpc.call('get-analyze-state')).resolves.toEqual(snapshot)
-      const sharedState = await dashboard.rpc.sharedState('dashboard')
-      expect(sharedState.value()).toMatchObject({
+      const context = await instance.context
+      const dashboard = context.scope('weapp-vite')
+      const initialState = await dashboard.rpc.call('get-dashboard-state')
+      expect(initialState).toMatchObject({
         revision: 0,
         runtimeEvents: [{ id: 'initial' }],
+        analyze: {
+          current: { pages: 1 },
+          previous: null,
+        },
       })
+      expect(context.rpc.sharedState.keys()).not.toContain('weapp-vite:dashboard')
+      await expect(dashboard.rpc.call(
+        'devframe:rpc:server-state:set',
+        'weapp-vite:dashboard',
+        { revision: 999 },
+        'malicious-set',
+      )).rejects.toThrow('只允许服务端修改')
+      await expect(dashboard.rpc.call(
+        'devframe:rpc:server-state:patch',
+        'weapp-vite:dashboard',
+        [{ op: 'replace', path: ['revision'], value: 999 }],
+        'malicious-patch',
+      )).rejects.toThrow('只允许服务端修改')
 
       snapshot.previous = current
       snapshot.current = next
@@ -102,11 +123,28 @@ describe('dashboard Devframe protocol', () => {
       controller.syncRuntimeEvents()
       controller.notifyAnalyzeUpdate()
 
-      expect(sharedState.value()).toMatchObject({
-        revision: 1,
-        runtimeEvents: [{ id: 'next' }, { id: 'initial' }],
-      })
-      await expect(dashboard.rpc.call('get-analyze-state')).resolves.toEqual(snapshot)
+      const nextState = await dashboard.rpc.call('get-dashboard-state')
+      expect(nextState.revision).toBe(1)
+      expect(nextState.runtimeEvents).toEqual([{ id: 'next' }, { id: 'initial' }])
+      expect(nextState.analyze.current.pages).toBeGreaterThan(1)
+      expect(nextState.analyze.previous).toMatchObject({ pages: 1 })
+
+      const content: string[] = []
+      for (let index = 0; index < nextState.analyze.current.pages; index++) {
+        const page = await dashboard.rpc.call('get-analyze-page', {
+          index,
+          revision: nextState.revision,
+          target: 'current',
+        })
+        expect(page.content.length).toBeLessThanOrEqual(MAX_DASHBOARD_ANALYZE_PAGE_CHARACTERS)
+        content.push(page.content)
+      }
+      expect(JSON.parse(content.join(''))).toEqual(next)
+      await expect(dashboard.rpc.call('get-analyze-page', {
+        index: 0,
+        revision: 0,
+        target: 'current',
+      })).rejects.toThrow('Analyze revision')
     }
     finally {
       await instance.close()
@@ -304,6 +342,70 @@ describe('dashboard Devframe protocol', () => {
     }, {
       srcRoot: path.join(project.projectRoot, 'src'),
     }, result)).rejects.toThrow('源码路径存在多个候选文件，已拒绝读取。')
+  })
+
+  it('caches the allowlist until the analyze revision changes', async () => {
+    const project = await createTemporaryProject()
+    const result = createAnalyzeResult([
+      {
+        file: 'pages/index/index.js',
+        type: 'chunk',
+        from: 'main',
+      },
+    ])
+    const reader = createDashboardFileReader({
+      artifactRoot: project.artifactRoot,
+    }, result)
+
+    await expect(reader.read({
+      kind: 'artifact',
+      path: 'pages/index/index.js',
+    })).resolves.toMatchObject({ content: 'Page({})\n' })
+    result.packages = []
+    await expect(reader.read({
+      kind: 'artifact',
+      path: 'pages/index/index.js',
+    })).resolves.toMatchObject({ content: 'Page({})\n' })
+
+    reader.update(result)
+    await expect(reader.read({
+      kind: 'artifact',
+      path: 'pages/index/index.js',
+    })).rejects.toThrow('必须传入合法的 kind 和相对路径。')
+  })
+
+  it('rejects allowlisted files reached through a linked directory', async () => {
+    const project = await createTemporaryProject()
+    const outsideDirectory = path.resolve(project.projectRoot, '..', '..', 'outside')
+    const linkedDirectory = path.resolve(project.projectRoot, 'src', 'linked')
+    const outsideFile = path.resolve(outsideDirectory, 'secret.ts')
+    await fs.mkdir(outsideDirectory, { recursive: true })
+    await fs.writeFile(outsideFile, 'export const secret = true\n', 'utf8')
+    await fs.symlink(
+      outsideDirectory,
+      linkedDirectory,
+      process.platform === 'win32' ? 'junction' : 'dir',
+    )
+    const result = createAnalyzeResult([
+      {
+        file: 'app.js',
+        type: 'chunk',
+        from: 'main',
+        modules: [{
+          id: path.resolve(linkedDirectory, 'secret.ts'),
+          source: 'linked/secret.ts',
+          sourceType: 'src',
+        }],
+      },
+    ])
+
+    await expect(readDashboardFileContent({
+      kind: 'source',
+      path: 'linked/secret.ts',
+    }, {
+      projectRoot: project.projectRoot,
+      srcRoot: path.resolve(project.projectRoot, 'src'),
+    }, result)).rejects.toThrow('文件路径包含不允许的符号链接。')
   })
 
   it('rejects allowlisted files that exceed the content limit', async () => {

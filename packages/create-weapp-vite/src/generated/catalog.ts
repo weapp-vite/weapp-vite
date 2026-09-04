@@ -7,7 +7,6 @@ export const TEMPLATE_CATALOG = {
   '@babel/parser': '^8.0.4',
   '@babel/traverse': '^8.0.4',
   '@babel/types': '^8.0.4',
-  '@devframes/vite': '0.9.8',
   '@douyin-microapp/typings': '^1.3.1',
   '@egoist/tailwindcss-icons': '^1.9.2',
   '@icebreakers/eslint-config': '^7.1.0',
