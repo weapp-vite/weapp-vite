@@ -119,7 +119,7 @@ weapp cache --clean all
 | 命令                             | 说明                      |
 | -------------------------------- | ------------------------- |
 | `weapp screenshot`               | 截图（base64 / 文件输出） |
-| `weapp compare`                  | 截图对比（pixelmatch）    |
+| `weapp compare`                  | 截图对比（blazediff）     |
 | `weapp navigate <url>`           | 保留栈跳转页面            |
 | `weapp redirect <url>`           | 重定向页面                |
 | `weapp back`                     | 页面返回                  |
@@ -162,19 +162,19 @@ weapp compare --baseline .screenshots/baseline/home.png --max-diff-pixels 100 --
 
 #### `weapp compare` 选项
 
-| 参数                        | 说明                             |
-| --------------------------- | -------------------------------- |
-| `-p, --project <path>`      | 项目路径，默认当前目录           |
-| `--baseline <path>`         | baseline 图片路径，必填          |
-| `--current-output <path>`   | 保存当前截图                     |
-| `--diff-output <path>`      | 保存 diff 图                     |
-| `--page <path>`             | 对比前先跳转页面                 |
-| `--threshold <number>`      | pixelmatch threshold，默认 `0.1` |
-| `--max-diff-pixels <count>` | 最大允许差异像素数               |
-| `--max-diff-ratio <number>` | 最大允许差异占比，范围 `0-1`     |
-| `-t, --timeout <ms>`        | 连接超时，默认 `30000`           |
-| `--json`                    | JSON 输出                        |
-| `--lang <lang>`             | 语言切换：`zh` / `en`            |
+| 参数                        | 说明                            |
+| --------------------------- | ------------------------------- |
+| `-p, --project <path>`      | 项目路径，默认当前目录          |
+| `--baseline <path>`         | baseline 图片路径，必填         |
+| `--current-output <path>`   | 保存当前截图                    |
+| `--diff-output <path>`      | 保存 diff 图                    |
+| `--page <path>`             | 对比前先跳转页面                |
+| `--threshold <number>`      | blazediff threshold，默认 `0.1` |
+| `--max-diff-pixels <count>` | 最大允许差异像素数              |
+| `--max-diff-ratio <number>` | 最大允许差异占比，范围 `0-1`    |
+| `-t, --timeout <ms>`        | 连接超时，默认 `30000`          |
+| `--json`                    | JSON 输出                       |
+| `--lang <lang>`             | 语言切换：`zh` / `en`           |
 
 对比规则：
 
