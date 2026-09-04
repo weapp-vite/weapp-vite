@@ -458,7 +458,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
 
     expect(inst.__wevu.setupState.ready.value).toBe(true)
     expect(inst.data.ready).toBe(true)
-    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ ready: true }))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ ready: true }), expect.any(Function))
   })
 
   it('keeps created lifecycle native data updates when deferred setData is enabled', async () => {
@@ -503,7 +503,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     expect(setData).toHaveBeenCalledWith(expect.objectContaining({
       count: 1,
       logs: ['created'],
-    }))
+    }), expect.any(Function))
     expect(inst.data.logs).toEqual(['created'])
   })
 

@@ -53,7 +53,7 @@ defineComponent({
     const local = ref(0)
 
     onMounted(() => {
-      nextTick(() => console.log('page ready'))
+      nextTick(() => console.log('reactive queue flushed'))
     })
     onPageScroll((e) => {
       console.log('scrollTop', e?.scrollTop)
@@ -148,8 +148,8 @@ const onActiveChange = bindModel.model<boolean>('isActive').onChange
 
 ## 调度与适配
 
-- 更新被批量加入微任务队列，`nextTick` 与 Vue 3 行为一致。
-- 对状态做快照 diff，只把变更路径传给 `setData`，避免大对象全量下发。
+- 更新被批量加入微任务队列；`nextTick` 只等待当前 JavaScript/响应式任务队列排空，不等待小程序 `setData` 回调或视图提交。
+- 对状态做快照 diff，只把变更路径传给 `setData`；宿主提交失败时，下一次响应式更新会发送完整恢复快照。
 - 提供 `batch`/`startBatch`/`endBatch` 用于同步更新合并触发；以及 `effectScope`/`getCurrentScope`/`onScopeDispose` 统一管理 effect/watch 的销毁，`setup()` 同步阶段内创建的副作用会自动归属到实例级 scope，便于避免泄漏。
 
 ## 开发产物与源码调试

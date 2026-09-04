@@ -157,6 +157,8 @@ export function queueJob(job: Job) {
 
 **唯一区别**：Vue 3 的 job 主要是执行 Virtual DOM patch，Wevu 的 job 是执行 diff + setData。
 
+`nextTick` 的边界只到 JavaScript/响应式队列排空。Wevu 的 job 会同步派发 `setData`，但不会把宿主回调、适配器 Promise 或视图提交并入 `nextTick`。
+
 ### 不同的部分
 
 #### 1. 渲染层（完全不同）
@@ -188,14 +190,21 @@ function patch(n1, n2) {
 // 文件：packages-runtime/wevu/src/runtime/app.ts
 
 function job() {
-  // 1. 收集快照（纯 JS 对象）
+  // 1. 收集当前目标快照（纯 JS 对象）
   const snapshot = collectSnapshot()
 
-  // 2. Diff 快照（不是 Virtual DOM）
-  const diff = diffSnapshots(latestSnapshot, snapshot)
+  // 2. 以已派发快照为基线计算最小变更
+  const payload = diffSnapshots(commitTracker.state.dispatchedSnapshot, snapshot)
 
-  // 3. 调用小程序 setData
-  adapter.setData(diff) // { 'user.name': 'Bob' }
+  // 3. 登记 revision；宿主确认成功后才推进已提交快照
+  commitTracker.dispatch({
+    mode: 'diff',
+    kind: 'delta',
+    reason: 'diff',
+    snapshot,
+    payload,
+    pendingPatchKeys: 0,
+  })
 }
 ```
 
@@ -392,13 +401,18 @@ export function mountRuntimeInstance<T extends object, C, M>(
 
 function job() {
   const snapshot = collectSnapshot()
-  const diff = diffSnapshots(latestSnapshot, snapshot)
+  const payload = diffSnapshots(commitTracker.state.dispatchedSnapshot, snapshot)
 
-  // 关键：调用 adapter.setData
-  // 实际上调用的是 target.setData()
-  if (typeof currentAdapter.setData === 'function') {
-    currentAdapter.setData(diff)
-  }
+  // commit tracker 统一登记 revision、调用 adapter 并观察宿主提交结果。
+  // Promise reject 或同步抛错会触发错误钩子，并让后续更新发送完整恢复快照。
+  commitTracker.dispatch({
+    mode: 'diff',
+    kind: 'delta',
+    reason: 'diff',
+    snapshot,
+    payload,
+    pendingPatchKeys: 0,
+  })
 }
 ```
 
@@ -459,7 +473,7 @@ function assignNestedDiff(
     const keys = new Set([...Object.keys(prev), ...Object.keys(next)])
 
     keys.forEach((key) => {
-      if (!Object.prototype.hasOwnProperty.call(next, key)) {
+      if (!Object.hasOwn(next, key)) {
         output[`${path}.${key}`] = null // 删除属性
         return
       }

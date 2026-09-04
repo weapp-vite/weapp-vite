@@ -179,7 +179,7 @@ describe('runtime: scoped slots', () => {
 
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: '987654321',
-    }))
+    }), expect.any(Function))
     expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
       [WEVU_SLOT_OWNER_PROXY_KEY]: proxy,
     }))
@@ -211,10 +211,10 @@ describe('runtime: scoped slots', () => {
 
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       [WEVU_SLOT_OWNER_ID_KEY]: expect.any(String),
-    }))
+    }), expect.any(Function))
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: { default: true },
-    }))
+    }), expect.any(Function))
   })
 
   it('flushes owner id and template slot bindings over native placeholder data in patch mode', async () => {
@@ -294,10 +294,10 @@ describe('runtime: scoped slots', () => {
     expect(first.data[WEVU_SLOT_OWNER_ID_KEY]).not.toBe(second.data[WEVU_SLOT_OWNER_ID_KEY])
     expect(first.setData).toHaveBeenCalledWith({
       [WEVU_SLOT_OWNER_ID_KEY]: first.data[WEVU_SLOT_OWNER_ID_KEY],
-    })
+    }, expect.any(Function))
     expect(second.setData).toHaveBeenCalledWith({
       [WEVU_SLOT_OWNER_ID_KEY]: second.data[WEVU_SLOT_OWNER_ID_KEY],
-    })
+    }, expect.any(Function))
   })
 
   it('declares page owner data from the binding manifest without exposing compiler metadata', () => {
@@ -449,7 +449,7 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).toHaveBeenCalledWith({ __wvOwner: { text: '123456789' } })
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: '987654321',
-    }))
+    }), expect.any(Function))
     expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
       [WEVU_SLOT_OWNER_PROXY_KEY]: proxy,
     }))
@@ -488,7 +488,7 @@ describe('runtime: scoped slots', () => {
     expect(inst.__wevu.state[WEVU_SLOT_OWNER_PROXY_KEY]).toEqual(proxy)
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: '987654321',
-    }))
+    }), expect.any(Function))
   })
 
   it('binds owner-proxy computed bindings from dedicated owner id prop', () => {
@@ -525,7 +525,7 @@ describe('runtime: scoped slots', () => {
 
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: '987654321',
-    }))
+    }), expect.any(Function))
   })
 
   it('does not register the legacy raw owner id attribute as a property', () => {
@@ -752,7 +752,7 @@ describe('runtime: scoped slots', () => {
     expect(inst.__wevu.state.__wvSlotPropsData).toEqual({ label: 'alpha' })
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: 'alpha',
-    }))
+    }), expect.any(Function))
 
     inst.setData.mockClear()
     opts.properties.__wvSlotProps.observer.call(inst, ['label', 'beta'])
@@ -761,7 +761,7 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).toHaveBeenCalledWith({ __wvSlotPropsData: { label: 'beta' } })
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: 'beta',
-    }))
+    }), expect.any(Function))
   })
 
   it('keeps slot props readable for computed bindings before attach', () => {

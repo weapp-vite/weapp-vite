@@ -50,6 +50,9 @@ export type {
 } from './miniprogramHost'
 
 export interface MiniProgramAdapter {
+  /**
+   * 下发视图数据。返回 `void` 表示同步完成；异步适配器必须返回在宿主提交后兑现的 Promise。
+   */
   setData?: (payload: Record<string, any>) => void | Promise<void>
 }
 

@@ -75,7 +75,7 @@ keywords:
 - `defineComponent()`：定义组件/页面（底层通过小程序 `Component()` 注册）
 - `createApp()`：创建应用实例
 - `getCurrentInstance()`：获取当前实例
-- `nextTick()`：在下一次更新后执行回调
+- `nextTick()`：等待当前 JavaScript/响应式调度队列排空，不等待 `setData` 回调或小程序视图提交
 
 ### 依赖注入（Dependency Injection）
 

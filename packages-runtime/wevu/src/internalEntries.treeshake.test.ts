@@ -8,6 +8,7 @@ const openBundles: Array<{ close: () => Promise<void> }> = []
 async function bundleVirtualEntry(source: string) {
   const bundle = await rolldown({
     input: virtualEntryId,
+    external: ['@weapp-core/shared/platforms'],
     plugins: [
       {
         name: 'virtual-entry',
@@ -53,6 +54,7 @@ nextTick(() => {
     expect(code).not.toContain('Component(')
     expect(code).not.toContain('WEVU_RUNTIME_APP_KEY')
     expect(code).not.toContain('WEVU_TEMPLATE_REFS_KEY')
+    expect(code).not.toContain('setData commit failed')
   })
 
   it('keeps template helper imports away from component runtime', async () => {

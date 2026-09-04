@@ -88,6 +88,7 @@ export function createComponentElementClass({
     #virtualHostClassTokens = new Set<string>()
     #virtualHostPartTokens = new Set<string>()
     #virtualHostRootElement: ClassAttributeElement | undefined
+    #needsSetDataRecovery = false
     readonly data!: DataRecord
     readonly properties!: DataRecord
 
@@ -140,11 +141,21 @@ export function createComponentElementClass({
 
     setData(patch: DataRecord, callback?: () => void) {
       const changed = this.#applyDataPatch(patch)
-      if (supportsLit && changed) {
+      if (supportsLit && (changed || this.#needsSetDataRecovery)) {
+        if (!changed) {
+          this.requestUpdate()
+        }
         const updateComplete = (this as unknown as { updateComplete: Promise<boolean> }).updateComplete
-        return updateComplete.then(() => {
-          callback?.()
-        })
+        this.#needsSetDataRecovery = false
+        return updateComplete.then(
+          () => {
+            callback?.()
+          },
+          (cause) => {
+            this.#needsSetDataRecovery = true
+            throw cause
+          },
+        )
       }
       callback?.()
     }

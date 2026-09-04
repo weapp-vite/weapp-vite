@@ -1,3 +1,4 @@
+import type { SetDataAdapterSettler, SetDataPayload } from '../../app/setData/commitTracker'
 import type {
   InternalRuntimeState,
   MiniProgramAdapter,
@@ -18,8 +19,11 @@ import { isNativeBridgeMethod } from '../../nativeBridge'
 
 export type AdapterWithSetData = Omit<Required<MiniProgramAdapter>, 'setData'> & {
   setData: (payload: Record<string, any>, callback?: () => void) => void | Promise<void> | undefined
+  __wevu_dispatchSetData: (payload: SetDataPayload, settle: SetDataAdapterSettler) => void
   __wevu_enableSetData?: (discardPending?: boolean) => void
   __wevu_setVisibility?: (visible: boolean) => void
+  __wevu_reportSetDataError?: (error: Error) => void
+  __wevu_disposeSetData?: () => void
 }
 
 export type NativeSetData = (payload: Record<string, any>, callback?: () => void) => void | Promise<void> | undefined

@@ -495,7 +495,7 @@ describe('runtime: vue compat helpers', () => {
 
     expect(() => opts.lifetimes.attached.call(inst)).not.toThrow()
     expect(inst.__wevu.proxy.childCount).toBe(1)
-    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ childCount: 1 }))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ childCount: 1 }), expect.any(Function))
   })
 
   it('exposes initial native props before the first computed snapshot', () => {

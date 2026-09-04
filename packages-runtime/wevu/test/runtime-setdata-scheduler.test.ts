@@ -1,49 +1,86 @@
 import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
+import type { MutationRecord } from '@/reactivity'
+import type { CommitAwareSetDataAdapter, SetDataPayload } from '@/runtime/app/setData/commitTracker'
+import type { SetDataDebugInfo } from '@/runtime/types'
 import { WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
-import { shallowRef } from '@/reactivity'
+import { reactive, shallowRef, toRaw } from '@/reactivity'
 import { createSetDataScheduler } from '@/runtime/app/setData/scheduler'
 import { resolveBindingDiagnostics, resolveBindingManifest } from '@/runtime/bindingManifest'
 
+function createScheduler(options: {
+  state: Record<string, unknown>
+  strategy: 'diff' | 'patch'
+  adapter: CommitAwareSetDataAdapter
+  initialSnapshot?: Record<string, unknown>
+  debug?: (info: SetDataDebugInfo) => void
+  debugSampleRate?: number
+}) {
+  const root = toRaw(options.state) as object
+  const scheduler = createSetDataScheduler({
+    state: options.state,
+    computedRefs: {},
+    dirtyComputedKeys: new Set(),
+    includeComputed: false,
+    functionPaths: [],
+    setDataStrategy: options.strategy,
+    computedCompare: 'reference',
+    computedCompareMaxDepth: 2,
+    computedCompareMaxKeys: 20,
+    currentAdapter: options.adapter,
+    shouldIncludeKey: () => true,
+    maxPatchKeys: 20,
+    maxPayloadBytes: 1024 * 32,
+    mergeSiblingThreshold: 4,
+    mergeSiblingMaxInflationRatio: 2,
+    mergeSiblingMaxParentBytes: 1024 * 8,
+    mergeSiblingSkipArray: false,
+    elevateTopKeyThreshold: 8,
+    toPlainMaxDepth: 8,
+    toPlainMaxKeys: 100,
+    debug: options.debug,
+    debugWhen: 'fallback',
+    debugSampleRate: options.debugSampleRate ?? 1,
+    loopWarning: false,
+    runTracker: () => {},
+    isMounted: () => true,
+    initialSnapshot: options.initialSnapshot,
+  })
+  return { root, scheduler }
+}
+
+interface PatchMutationRecorder {
+  mutationRecorder: (record: MutationRecord, stateRootRaw: object) => void
+}
+
+function recordPatch(
+  scheduler: PatchMutationRecorder,
+  root: object,
+  path: string,
+) {
+  scheduler.mutationRecorder({
+    root,
+    kind: 'property',
+    op: 'set',
+    path,
+  }, root)
+}
+
 describe('runtime: setData scheduler', () => {
   it('handles shallowRef null transitions when comparing value tokens', () => {
-    const current = shallowRef<any>(null)
+    const current = shallowRef<unknown>(null)
     const setData = vi.fn()
-    const scheduler = createSetDataScheduler({
+    const { scheduler, root } = createScheduler({
       state: { current },
-      computedRefs: {},
-      dirtyComputedKeys: new Set(),
-      includeComputed: false,
-      functionPaths: [],
-      setDataStrategy: 'diff',
-      computedCompare: 'reference',
-      computedCompareMaxDepth: 2,
-      computedCompareMaxKeys: 20,
-      currentAdapter: { setData },
-      shouldIncludeKey: () => true,
-      maxPatchKeys: 20,
-      maxPayloadBytes: 1024 * 32,
-      mergeSiblingThreshold: 4,
-      mergeSiblingMaxInflationRatio: 2,
-      mergeSiblingMaxParentBytes: 1024 * 8,
-      mergeSiblingSkipArray: false,
-      elevateTopKeyThreshold: 8,
-      toPlainMaxDepth: 4,
-      toPlainMaxKeys: 50,
-      debug: undefined,
-      debugWhen: 'fallback',
-      debugSampleRate: 1,
-      loopWarning: false,
-      runTracker: () => {},
-      isMounted: () => true,
+      strategy: 'diff',
+      adapter: { setData },
     })
 
-    expect(() => scheduler.job({})).not.toThrow()
+    expect(scheduler.job(root)).toBeUndefined()
     expect(setData).toHaveBeenCalledWith({ current: null })
 
     current.value = { id: 'native-ref' }
-
-    expect(() => scheduler.job({})).not.toThrow()
+    expect(scheduler.job(root)).toBeUndefined()
     expect(setData).toHaveBeenLastCalledWith({ current: { id: 'native-ref' } })
   })
 
@@ -408,5 +445,89 @@ describe('runtime: setData scheduler', () => {
       }],
       features: {},
     })).toBeUndefined()
+  })
+
+  for (const strategy of ['diff', 'patch'] as const) {
+    for (const failureKind of ['reject', 'throw'] as const) {
+      it(`${strategy} sends a full disjoint recovery after adapter ${failureKind}`, async () => {
+        const state = reactive({ branch: { a: 0, b: 0, c: 0 } })
+        const payloads: SetDataPayload[] = []
+        const reportError = vi.fn()
+        const debug = vi.fn()
+        let shouldFail = true
+        const cause = new Error(`${failureKind} boom`)
+        const adapter: CommitAwareSetDataAdapter = {
+          setData(payload) {
+            payloads.push(payload)
+            if (!shouldFail) {
+              return undefined
+            }
+            shouldFail = false
+            if (failureKind === 'throw') {
+              throw cause
+            }
+            return Promise.reject(cause)
+          },
+          __wevu_reportSetDataError: reportError,
+        }
+        const { scheduler, root } = createScheduler({
+          state,
+          strategy,
+          adapter,
+          initialSnapshot: { branch: { a: 0, b: 0, c: 0 } },
+          debug,
+          debugSampleRate: 0,
+        })
+        scheduler.job(root)
+        payloads.length = 0
+
+        state.branch.a = 1
+        if (strategy === 'patch') {
+          recordPatch(scheduler, root, 'branch.a')
+        }
+        expect(scheduler.job(root)).toBeUndefined()
+        await Promise.resolve()
+        await Promise.resolve()
+
+        expect(reportError).toHaveBeenCalledTimes(1)
+        expect(reportError).toHaveBeenCalledWith(expect.objectContaining({ cause }))
+        expect(debug).toHaveBeenCalledWith(expect.objectContaining({
+          reason: 'commitFailure',
+          revision: 1,
+          committedRevision: 0,
+        }))
+
+        state.branch.b = 1
+        if (strategy === 'patch') {
+          recordPatch(scheduler, root, 'branch.b')
+        }
+        expect(scheduler.job(root)).toBeUndefined()
+        expect(payloads.at(-1)).toEqual({
+          branch: { a: 1, b: 1, c: 0 },
+        })
+
+        state.branch.c = 1
+        if (strategy === 'patch') {
+          recordPatch(scheduler, root, 'branch.c')
+        }
+        scheduler.job(root)
+        expect(payloads.at(-1)).toEqual({ 'branch.c': 1 })
+      })
+    }
+  }
+
+  it('returns void while a Promise adapter remains pending', () => {
+    const state = reactive({ count: 0 })
+    const setData = vi.fn(() => new Promise<void>(() => {}))
+    const { scheduler, root } = createScheduler({
+      state,
+      strategy: 'diff',
+      adapter: { setData },
+      initialSnapshot: { count: 0 },
+    })
+
+    state.count = 1
+    expect(scheduler.job(root)).toBeUndefined()
+    expect(setData).toHaveBeenCalledWith({ count: 1 })
   })
 })

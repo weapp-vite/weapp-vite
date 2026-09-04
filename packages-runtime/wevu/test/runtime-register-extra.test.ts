@@ -1,3 +1,4 @@
+import type { SetDataAdapterSettlement, SetDataAdapterSettler } from '@/runtime/app/setData/commitTracker'
 import type { InternalRuntimeState, RuntimeApp } from '@/runtime/types'
 import {
   WEVU_EXPOSED_KEY,
@@ -8,8 +9,7 @@ import {
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getCurrentScope, nextTick, onScopeDispose, reactive, ref, setPageLayout, watch, watchEffect } from '@/index'
-import { createApp } from '@/runtime/app'
+import { createApp, getCurrentScope, nextTick, onError, onErrorCaptured, onScopeDispose, reactive, ref, setPageLayout, watch, watchEffect } from '@/index'
 import { callHookReturn, setCurrentInstance } from '@/runtime/hooks'
 import {
   mountRuntimeInstance,
@@ -18,6 +18,7 @@ import {
   runSetupFunction,
   teardownRuntimeInstance,
 } from '@/runtime/register'
+import { enableDeferredSetData } from '@/runtime/register/runtimeInstance'
 import { getOwnerSnapshot } from '@/runtime/scopedSlots'
 
 const componentCalls: Record<string, any>[] = []
@@ -133,7 +134,7 @@ describe('mountRuntimeInstance and teardown', () => {
 
     target.__wevu.adapter.setData({ a: 1 })
     target.__wevu.adapter.__wevu_enableSetData()
-    expect(target.setData).toHaveBeenCalledWith({ a: 1 })
+    expect(target.setData).toHaveBeenCalledWith({ a: 1 }, expect.any(Function))
 
     teardownRuntimeInstance(target)
   })
@@ -169,7 +170,7 @@ describe('mountRuntimeInstance and teardown', () => {
     expect(open).toHaveBeenCalledTimes(1)
   })
 
-  it('waits for native setData before resolving nextTick for conditional refs', async () => {
+  it('resolves nextTick after native dispatch and refreshes refs only after commit', async () => {
     const app = createApp({
       data: () => ({ visible: false }),
     })
@@ -192,25 +193,18 @@ describe('mountRuntimeInstance and teardown', () => {
     mountRuntimeInstance(target, app as any, undefined, undefined)
     target.__wevu.proxy.visible = true
     let settled = false
-    const tick = nextTick().then(() => {
+    await nextTick().then(() => {
       settled = true
     })
-    for (let attempt = 0; attempt < 10; attempt += 1) {
-      if (nativeCallback) {
-        break
-      }
-      await Promise.resolve()
-    }
 
-    expect(settled).toBe(false)
+    expect(settled).toBe(true)
     expect(nativeCallback).toBeTypeOf('function')
     expect(target.__wevu.state.$refs?.conditional).toBeUndefined()
     rendered = true
     nativeCallback?.()
-    await tick
+    await nextTick()
     await nextTick()
 
-    expect(settled).toBe(true)
     expect(target.__wevu.state.$refs.conditional.open).toBeTypeOf('function')
     target.__wevu.state.$refs.conditional.open()
     expect(conditional.open).toHaveBeenCalledTimes(1)
@@ -231,9 +225,320 @@ describe('mountRuntimeInstance and teardown', () => {
 
     adapter.__wevu_setVisibility(true)
     expect(target.setData).toHaveBeenCalledTimes(1)
-    expect(target.setData).toHaveBeenCalledWith({ a: 3, b: 2 })
+    expect(target.setData).toHaveBeenCalledWith({ a: 3, b: 2 }, expect.any(Function))
 
     teardownRuntimeInstance(target)
+  })
+
+  it('callback-gates native commits without refs and recovers from overtaken callbacks', async () => {
+    const app = createApp({
+      data: () => ({ branch: { a: 0, b: 0, c: 0 } }),
+    })
+    const nativeCallbacks: Array<() => void> = []
+    const target = {
+      data: { branch: { a: 0, b: 0, c: 0 } },
+      setData: vi.fn((_payload: Record<string, unknown>, callback: () => void) => {
+        nativeCallbacks.push(callback)
+      }),
+    } satisfies InternalRuntimeState
+
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    runtime.state.branch.a = 1
+    await nextTick()
+    runtime.state.branch.b = 1
+    await nextTick()
+
+    expect(nativeCallbacks).toHaveLength(2)
+    expect(target.setData).toHaveBeenNthCalledWith(1, { 'branch.a': 1 }, expect.any(Function))
+    expect(target.setData).toHaveBeenNthCalledWith(2, { 'branch.b': 1 }, expect.any(Function))
+    nativeCallbacks[1]!()
+    nativeCallbacks[0]!()
+
+    runtime.state.branch.c = 1
+    await nextTick()
+    expect(target.setData).toHaveBeenLastCalledWith(expect.objectContaining({
+      branch: { a: 1, b: 1, c: 1 },
+    }), expect.any(Function))
+    teardownRuntimeInstance(target)
+  })
+
+  it('prefers Web-shaped thenable rejection and reports it to both error hooks exactly once', async () => {
+    const cause = new Error('updateComplete rejected')
+    const errors: unknown[] = []
+    const capturedErrors: unknown[] = []
+    const debug = vi.fn()
+    const app = createApp({
+      data: () => ({ count: 0 }),
+      setData: {
+        debug,
+        debugWhen: 'always',
+      },
+    })
+    const target = {
+      data: { count: 0 },
+      setData: vi.fn((
+        _payload: Record<string, unknown>,
+        _callback?: () => void,
+      ) => Promise.reject(cause)),
+    } satisfies InternalRuntimeState
+
+    const runtime = mountRuntimeInstance(target, app, undefined, () => {
+      onError(error => errors.push(error))
+      onErrorCaptured(error => capturedErrors.push(error))
+      return {}
+    })
+    runtime.state.count = 1
+
+    await expect(nextTick()).resolves.toBeUndefined()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toBeInstanceOf(Error)
+    expect((errors[0] as Error & { cause?: unknown }).cause).toBe(cause)
+    expect(capturedErrors).toHaveLength(1)
+    expect(capturedErrors[0]).toBe(errors[0])
+    expect(debug).toHaveBeenCalledWith(expect.objectContaining({
+      reason: 'commitFailure',
+      revision: 1,
+      committedRevision: 0,
+    }))
+    teardownRuntimeInstance(target)
+  })
+
+  it('settles hidden revisions in order after one physical callback', () => {
+    const { app } = createRuntimeAppStub()
+    Object.defineProperty(app, '__wevuSetDataOptions', { value: { suspendWhenHidden: true } })
+    let nativeCallback: (() => void) | undefined
+    const target = {
+      setData: vi.fn((_payload: Record<string, unknown>, callback: () => void) => {
+        nativeCallback = callback
+      }),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    const adapter = runtime.adapter as {
+      __wevu_dispatchSetData: (payload: Record<string, unknown>, settle: SetDataAdapterSettler) => void
+      __wevu_setVisibility: (visible: boolean) => void
+    }
+    const settlements: Array<[number, SetDataAdapterSettlement]> = []
+    adapter.__wevu_setVisibility(false)
+    adapter.__wevu_dispatchSetData({ a: 1 }, settlement => settlements.push([1, settlement]))
+    adapter.__wevu_dispatchSetData({ b: 2 }, settlement => settlements.push([2, settlement]))
+
+    expect(target.setData).not.toHaveBeenCalled()
+    adapter.__wevu_setVisibility(true)
+    expect(target.setData).toHaveBeenCalledWith({ a: 1, b: 2 }, expect.any(Function))
+    expect(settlements).toEqual([])
+
+    nativeCallback?.()
+    expect(settlements).toEqual([
+      [1, 'committed'],
+      [2, 'committed'],
+    ])
+    teardownRuntimeInstance(target)
+  })
+
+  it('settles hidden tracked revisions when a buffered raw callback throws', () => {
+    const { app } = createRuntimeAppStub()
+    Object.defineProperty(app, '__wevuSetDataOptions', { value: { suspendWhenHidden: true } })
+    let nativeCallback: (() => void) | undefined
+    const target = {
+      setData: vi.fn((_payload: Record<string, unknown>, callback: () => void) => {
+        nativeCallback = callback
+      }),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    const adapter = runtime.adapter as {
+      setData: (payload: Record<string, unknown>, callback?: () => void) => void
+      __wevu_dispatchSetData: (payload: Record<string, unknown>, settle: SetDataAdapterSettler) => void
+      __wevu_setVisibility: (visible: boolean) => void
+    }
+    const settlement = vi.fn()
+    const callbackError = new Error('buffered callback failed')
+    adapter.__wevu_setVisibility(false)
+    adapter.setData({ raw: 1 }, () => {
+      throw callbackError
+    })
+    adapter.__wevu_dispatchSetData({ tracked: 1 }, settlement)
+
+    adapter.__wevu_setVisibility(true)
+    expect(() => nativeCallback?.()).toThrow(callbackError)
+    expect(settlement).toHaveBeenCalledWith('committed', undefined)
+    teardownRuntimeInstance(target)
+  })
+
+  it('coalesces hidden parent and child paths in chronological order', () => {
+    const { app } = createRuntimeAppStub()
+    Object.defineProperty(app, '__wevuSetDataOptions', { value: { suspendWhenHidden: true } })
+    let nativeCallback: (() => void) | undefined
+    const target = {
+      setData: vi.fn((_payload: Record<string, unknown>, callback: () => void) => {
+        nativeCallback = callback
+      }),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    const adapter = runtime.adapter as {
+      __wevu_dispatchSetData: (payload: Record<string, unknown>, settle: SetDataAdapterSettler) => void
+      __wevu_setVisibility: (visible: boolean) => void
+    }
+    const settlements = [vi.fn(), vi.fn(), vi.fn()]
+    adapter.__wevu_setVisibility(false)
+    adapter.__wevu_dispatchSetData({ branch: { value: 1 } }, settlements[0]!)
+    adapter.__wevu_dispatchSetData({ 'branch.value': 2 }, settlements[1]!)
+    adapter.__wevu_dispatchSetData({ branch: { value: 3 } }, settlements[2]!)
+
+    adapter.__wevu_setVisibility(true)
+    expect(target.setData).toHaveBeenCalledWith({ branch: { value: 3 } }, expect.any(Function))
+    nativeCallback?.()
+    for (const settle of settlements) {
+      expect(settle).toHaveBeenCalledWith('committed', undefined)
+    }
+    teardownRuntimeInstance(target)
+  })
+
+  it('fails one hidden physical commit and abandons the remaining revisions', async () => {
+    const { app } = createRuntimeAppStub()
+    Object.defineProperty(app, '__wevuSetDataOptions', { value: { suspendWhenHidden: true } })
+    const cause = new Error('hidden commit rejected')
+    const target = {
+      setData: vi.fn(() => Promise.reject(cause)),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    const adapter = runtime.adapter as {
+      __wevu_dispatchSetData: (payload: Record<string, unknown>, settle: SetDataAdapterSettler) => void
+      __wevu_setVisibility: (visible: boolean) => void
+    }
+    const settlements: Array<[number, SetDataAdapterSettlement, unknown?]> = []
+    adapter.__wevu_setVisibility(false)
+    adapter.__wevu_dispatchSetData({ a: 1 }, (settlement, error) => settlements.push([1, settlement, error]))
+    adapter.__wevu_dispatchSetData({ b: 2 }, (settlement, error) => settlements.push([2, settlement, error]))
+    adapter.__wevu_setVisibility(true)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(settlements).toEqual([
+      [1, 'failed', cause],
+      [2, 'abandoned', undefined],
+    ])
+    teardownRuntimeInstance(target)
+  })
+
+  it('abandons deferred revisions on discard and flushes retained revisions together', () => {
+    const { app } = createRuntimeAppStub()
+    const discardedTarget = { setData: vi.fn() } satisfies InternalRuntimeState
+    const discardedRuntime = mountRuntimeInstance(discardedTarget, app, undefined, undefined, { deferSetData: true })
+    const discardedAdapter = discardedRuntime.adapter as {
+      __wevu_dispatchSetData: (payload: Record<string, unknown>, settle: SetDataAdapterSettler) => void
+      __wevu_enableSetData: (discard?: boolean) => void
+    }
+    const discarded = vi.fn()
+    discardedAdapter.__wevu_dispatchSetData({ stale: 1 }, discarded)
+    discardedAdapter.__wevu_enableSetData(true)
+    expect(discarded).toHaveBeenCalledWith('abandoned', undefined)
+    expect(discardedTarget.setData).not.toHaveBeenCalled()
+    teardownRuntimeInstance(discardedTarget)
+
+    const { app: retainedApp } = createRuntimeAppStub()
+    let nativeCallback: (() => void) | undefined
+    const retainedTarget = {
+      setData: vi.fn((_payload: Record<string, unknown>, callback: () => void) => {
+        nativeCallback = callback
+      }),
+    } satisfies InternalRuntimeState
+    const retainedRuntime = mountRuntimeInstance(retainedTarget, retainedApp, undefined, undefined, { deferSetData: true })
+    const retainedAdapter = retainedRuntime.adapter as {
+      __wevu_dispatchSetData: (payload: Record<string, unknown>, settle: SetDataAdapterSettler) => void
+      __wevu_enableSetData: (discard?: boolean) => void
+    }
+    const first = vi.fn()
+    const second = vi.fn()
+    retainedAdapter.__wevu_dispatchSetData({ a: 1 }, first)
+    retainedAdapter.__wevu_dispatchSetData({ b: 2 }, second)
+    retainedAdapter.__wevu_enableSetData()
+    expect(retainedTarget.setData).toHaveBeenCalledTimes(1)
+    expect(retainedTarget.setData).toHaveBeenCalledWith({ a: 1, b: 2 }, expect.any(Function))
+    nativeCallback?.()
+    expect(first).toHaveBeenCalledWith('committed', undefined)
+    expect(second).toHaveBeenCalledWith('committed', undefined)
+    teardownRuntimeInstance(retainedTarget)
+  })
+
+  it('coalesces deferred child and parent paths in chronological order', () => {
+    const { app } = createRuntimeAppStub()
+    let nativeCallback: (() => void) | undefined
+    const target = {
+      setData: vi.fn((_payload: Record<string, unknown>, callback: () => void) => {
+        nativeCallback = callback
+      }),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined, { deferSetData: true })
+    const adapter = runtime.adapter as {
+      __wevu_dispatchSetData: (payload: Record<string, unknown>, settle: SetDataAdapterSettler) => void
+      __wevu_enableSetData: (discard?: boolean) => void
+    }
+    const settlements = [vi.fn(), vi.fn(), vi.fn()]
+    adapter.__wevu_dispatchSetData({ 'branch.value': 1 }, settlements[0]!)
+    adapter.__wevu_dispatchSetData({ branch: { value: 2 } }, settlements[1]!)
+    adapter.__wevu_dispatchSetData({ 'branch.value': 3 }, settlements[2]!)
+
+    adapter.__wevu_enableSetData()
+    expect(target.setData).toHaveBeenCalledWith({ branch: { value: 3 } }, expect.any(Function))
+    nativeCallback?.()
+    for (const settle of settlements) {
+      expect(settle).toHaveBeenCalledWith('committed', undefined)
+    }
+    teardownRuntimeInstance(target)
+  })
+
+  it('turns deferred discard into a full scheduler recovery payload', () => {
+    const app = createApp({
+      data: () => ({ count: 0, stable: 'keep' }),
+    })
+    const target = {
+      data: { count: 0, stable: 'keep' },
+      setData: vi.fn(),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined, { deferSetData: true })
+    runtime.state.count = 1
+    ;(runtime as typeof runtime & { __wevu_flushSetupSnapshotSync?: () => void }).__wevu_flushSetupSnapshotSync?.()
+    expect(target.setData).not.toHaveBeenCalled()
+
+    enableDeferredSetData(target)
+    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({
+      count: 1,
+      stable: 'keep',
+    }), expect.any(Function))
+    teardownRuntimeInstance(target)
+  })
+
+  it('disposes buffered host work and rejects new tracked dispatches as abandoned', () => {
+    const app = createApp({
+      data: () => ({ count: 0 }),
+      setData: {
+        suspendWhenHidden: true,
+      },
+    })
+    const target = {
+      data: { count: 0 },
+      setData: vi.fn(),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    const adapter = runtime.adapter as {
+      __wevu_dispatchSetData: (payload: Record<string, unknown>, settle: SetDataAdapterSettler) => void
+      __wevu_setVisibility: (visible: boolean) => void
+    }
+    const buffered = vi.fn()
+    adapter.__wevu_setVisibility(false)
+    adapter.__wevu_dispatchSetData({ count: 1 }, buffered)
+
+    teardownRuntimeInstance(target)
+    expect(target.setData).not.toHaveBeenCalled()
+    expect(buffered).not.toHaveBeenCalled()
+
+    const afterDispose = vi.fn()
+    adapter.__wevu_dispatchSetData({ count: 2 }, afterDispose)
+    expect(afterDispose).toHaveBeenCalledWith('abandoned')
+    expect(target.setData).not.toHaveBeenCalled()
   })
 
   it('bridges methods to instance and handles teardown errors', () => {
@@ -337,7 +642,7 @@ describe('mountRuntimeInstance and teardown', () => {
     })
 
     expect(target.setData).toHaveBeenCalledTimes(1)
-    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ value1: '111' }))
+    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ value1: '111' }), expect.any(Function))
 
     await nextTick()
 
@@ -437,7 +742,7 @@ describe('mountRuntimeInstance and teardown', () => {
     await nextTick()
 
     expect(getterCalls).toBe(0)
-    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ 'nested.count': 2 }))
+    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ 'nested.count': 2 }), expect.any(Function))
 
     teardownRuntimeInstance(target)
   })
@@ -472,7 +777,7 @@ describe('mountRuntimeInstance and teardown', () => {
     await nextTick()
 
     expect(getterCalls).toBe(0)
-    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ active: false }))
+    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ active: false }), expect.any(Function))
 
     teardownRuntimeInstance(target)
   })
@@ -510,13 +815,13 @@ describe('mountRuntimeInstance and teardown', () => {
 
     expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({
       'back.loading': false,
-    }))
+    }), expect.any(Function))
 
     await nextTick()
 
     expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({
       'back.state': [{ name: 'init' }, { name: '123' }, { name: '456' }],
-    }))
+    }), expect.any(Function))
 
     teardownRuntimeInstance(target)
   })
