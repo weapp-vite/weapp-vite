@@ -1,6 +1,6 @@
 import type { ComponentOptionsMixin, DefineComponent, MiniProgramAddToFavoritesOption, MiniProgramBoundingClientRectResult, MiniProgramIntersectionObserver, MiniProgramLaunchOptions, MiniProgramMemoryWarningResult, MiniProgramPageNotFoundOptions, MiniProgramPageResizeOption, MiniProgramPageScrollOption, MiniProgramScrollOffsetResult, MiniProgramShareAppMessageOption, MiniProgramTabItemTapOption, MiniProgramThemeChangeResult, MiniProgramUnhandledRejectionResult, ModelBindingPayload, PublicProps, RuntimeApp, SetupContextIntersectionObserver, SetupContextRouter, SetupContextSelectorQuery } from 'wevu'
 import { expectAssignable, expectType } from 'tsd'
-import { createApp, createWevuComponent, defineAppSetup, defineComponent, hasInjectionContext, inject, injectGlobal, nextTick, onActivated, onAddToFavorites, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onErrorCaptured, onHide, onLaunch, onMemoryWarning, onMounted, onPageNotFound, onPageScroll, onReady, onRouteDone, onSaveExitState, onShareAppMessage, onShareTimeline, onShow, onTabItemTap, onThemeChange, onUnhandledRejection, onUnmounted, onUpdated, provide, provideGlobal, registerApp, registerComponent, resetWevuDefaults, setWevuDefaults, shallowReadonly, useBoundingClientRect, useDisposables, useElementIntersectionObserver, useIntersectionObserver, useNativeInstance, useNativePageRouter, useNativeRouter, useNavigationBarMetrics, usePageScrollThrottle, usePageStack, useScrollOffset, useSelectorFields, useSelectorQuery, useUpdatePerformanceListener, version } from 'wevu'
+import { createApp, createWevuComponent, defineAppSetup, defineComponent, hasInjectionContext, inject, injectGlobal, mountRuntimeInstance, nextTick, onActivated, onAddToFavorites, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onErrorCaptured, onHide, onLaunch, onMemoryWarning, onMounted, onPageNotFound, onPageScroll, onReady, onRouteDone, onSaveExitState, onShareAppMessage, onShareTimeline, onShow, onTabItemTap, onThemeChange, onUnhandledRejection, onUnmounted, onUpdated, provide, provideGlobal, registerApp, registerComponent, resetWevuDefaults, setWevuDefaults, shallowReadonly, useBoundingClientRect, useDisposables, useElementIntersectionObserver, useIntersectionObserver, useNativeInstance, useNativePageRouter, useNativeRouter, useNavigationBarMetrics, usePageScrollThrottle, usePageStack, useScrollOffset, useSelectorFields, useSelectorQuery, useUpdatePerformanceListener, version } from 'wevu'
 
 const TOKEN = Symbol('token')
 type RT = RuntimeApp<Record<string, any>, Record<string, any>, Record<string, (...args: any[]) => any>>
@@ -211,6 +211,8 @@ createWevuComponent({
 
 registerApp(runtimeApp, {}, undefined as any, undefined, {})
 registerComponent(runtimeApp, {}, undefined as any, undefined, {})
+const lowLevelTarget = {} as Parameters<typeof mountRuntimeInstance>[0]
+mountRuntimeInstance(lowLevelTarget, runtimeApp, undefined, undefined)
 
 provideGlobal(TOKEN, 1)
 const globalVal = injectGlobal<number>(TOKEN, 2)

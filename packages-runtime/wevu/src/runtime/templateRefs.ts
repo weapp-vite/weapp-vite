@@ -1,3 +1,4 @@
+import type { TemplateRefBinding } from './capabilities'
 import type { InternalRuntimeState } from './types'
 import {
   WEVU_READY_CALLED_KEY,
@@ -18,13 +19,7 @@ import {
   updateTemplateRefMapValue,
 } from './templateRefs/helpers'
 
-export interface TemplateRefBinding {
-  selector: string
-  inFor: boolean
-  name?: string
-  get?: () => unknown
-  kind?: 'component' | 'element'
-}
+export type { TemplateRefBinding } from './capabilities'
 
 type TemplateRefUpdateCallback = () => void
 type TemplateRefUpdateRejection = (cause: unknown) => void

@@ -1,6 +1,7 @@
 import type { InlineExpressionMap } from '@/runtime/register/inline'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '@/index'
+import { installInlineEvents } from '@/internal-runtime'
 import { ref } from '@/reactivity'
 import { runInlineExpression } from '@/runtime/register/inline'
 
@@ -9,6 +10,8 @@ const registeredComponents: Record<string, any>[] = []
 ;(globalThis as any).Component = (options: Record<string, any>) => {
   registeredComponents.push(options)
 }
+
+installInlineEvents()
 
 function isQuantityEntry(value: unknown): value is { quantity: number } {
   return value !== null

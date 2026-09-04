@@ -1074,6 +1074,9 @@ onPageScroll(() => {
           componentName: 'scoped-slot-test',
           slotKey: 'default',
           template: '<t-cell></t-cell>',
+          runtimeCapabilities: {
+            required: ['scopedSlots'],
+          },
         },
       ],
     })
@@ -1129,6 +1132,9 @@ onPageScroll(() => {
           componentName: 'scoped-slot-test',
           slotKey: 'default',
           template: '<t-cell></t-cell>',
+          runtimeCapabilities: {
+            required: ['scopedSlots'],
+          },
         },
       ],
     })

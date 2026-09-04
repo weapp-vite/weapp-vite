@@ -1,4 +1,7 @@
+import { WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
+import { runtimeCapabilityRegistry } from '@/runtime/capabilities'
+import { installScopedSlots } from '@/runtime/features/scopedSlots'
 import { runInlineExpression } from '@/runtime/register/inline'
 import { runSetupFunction } from '@/runtime/register/setup'
 import { refreshOwnerSnapshotFromInstance } from '@/runtime/register/snapshot'
@@ -137,8 +140,12 @@ describe('runtime: register helpers', () => {
     const instance: any = {
       __wevu: runtime,
       __wvOwnerId: 'owner-1',
+      data: { [WEVU_SLOT_OWNER_ID_KEY]: 'owner-1' },
       properties: { foo: 'bar' },
     }
+
+    installScopedSlots()
+    runtimeCapabilityRegistry.scopedSlots?.prepareMount(instance)
 
     refreshOwnerSnapshotFromInstance(instance)
 

@@ -1,5 +1,4 @@
-import type { LayoutHostBinding } from '../../layoutBridge'
-import type { TemplateRefBinding } from '../../templateRefs'
+import type { LayoutHostBinding, TemplateRefBinding } from '../../capabilities'
 import type {
   ComponentPropsOptions,
   ComputedDefinitions,
@@ -11,46 +10,20 @@ import type {
 import type { WatchMap } from '../watch'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
-  WEVU_LAYOUT_HOST_BRIDGE_KEY,
-  WEVU_PAGE_LAYOUT_NAME_KEY,
-  WEVU_PAGE_LAYOUT_PROPS_KEY,
-  WEVU_PAGE_LAYOUT_SETTER_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_READY_CALLED_KEY,
   WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD,
   WEVU_RUNTIME_KEY,
-  WEVU_RUNTIME_OWNER_ID_KEY,
-  WEVU_SLOT_OWNER_ID_KEY,
-  WEVU_TEMPLATE_REFS_KEY,
 } from '@weapp-core/constants'
 import {
   ensureInitialNavigation,
 } from '../../../router/initialNavigation'
+import { requireRuntimeCapability, runtimeCapabilityRegistry } from '../../capabilities'
 import { callHookList } from '../../hooks'
-import { registerRuntimeLayoutHosts, unregisterRuntimeLayoutHosts } from '../../layoutBridge'
-import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../../pageLayout'
 import { getMiniProgramRuntimeGlobalObject } from '../../platform'
-import { getOwnerProxy } from '../../scopedSlots'
 import { runTeardownSteps } from '../../teardown'
-import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 import { registerNativeComponentDefinition } from './registerNativeDefinition'
-
-function scheduleOwnerTemplateRefUpdate(target: InternalRuntimeState) {
-  const selectOwnerComponent = (target as any).selectOwnerComponent
-  if (typeof selectOwnerComponent !== 'function') {
-    return
-  }
-  try {
-    const owner = selectOwnerComponent.call(target) as InternalRuntimeState | null | undefined
-    if (owner && owner !== target) {
-      scheduleTemplateRefUpdate(owner)
-    }
-  }
-  catch {
-    // 宿主不支持 owner 查询时保持当前组件生命周期正常执行。
-  }
-}
 
 export function registerComponentDefinition<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   runtimeApp: RuntimeApp<D, C, M>
@@ -99,6 +72,26 @@ export function registerComponentDefinition<D extends object, C extends Computed
     getRuntimeOwnerLabel,
     registerNative = true,
   } = options
+  const activeTemplateRefs = Array.isArray(templateRefs) && templateRefs.length > 0
+    ? templateRefs
+    : undefined
+  if (activeTemplateRefs) {
+    requireRuntimeCapability('templateRefs', 'registerComponentDefinition(template refs)')
+  }
+  const activeLayoutHosts = Array.isArray(layoutHosts) && layoutHosts.length > 0
+    ? layoutHosts
+    : undefined
+  const layoutHooks = activeLayoutHosts
+    ? requireRuntimeCapability('layout', 'registerComponentDefinition(layout hosts)')
+    : undefined
+
+  const scheduleTemplateRefs = (instance: InternalRuntimeState, onResolved?: () => void) => {
+    if (activeTemplateRefs) {
+      runtimeCapabilityRegistry.templateRefs?.schedule(instance, onResolved)
+      return
+    }
+    onResolved?.()
+  }
 
   const resolveRuntime = (instance: InternalRuntimeState) => {
     const directRuntime = (instance as any).__wevu ?? (instance as any)[WEVU_PUBLIC_RUNTIME_KEY]
@@ -112,21 +105,12 @@ export function registerComponentDefinition<D extends object, C extends Computed
     return undefined
   }
 
-  const resolveLifecycleOwnerId = (instance: InternalRuntimeState) => (instance as any)[WEVU_RUNTIME_OWNER_ID_KEY]
-    ?? (instance as any)[WEVU_SLOT_OWNER_ID_KEY]
-    ?? (instance as any).data?.[WEVU_SLOT_OWNER_ID_KEY]
-    ?? (instance as any).properties?.[WEVU_SLOT_OWNER_ID_KEY]
-
   const resolveLifecycleContext = (instance: InternalRuntimeState) => {
     const runtimeProxy = resolveRuntime(instance)?.proxy
     if (runtimeProxy) {
       return runtimeProxy
     }
-    const ownerId = resolveLifecycleOwnerId(instance)
-    if (typeof ownerId === 'string' && ownerId) {
-      return getOwnerProxy(ownerId) ?? instance
-    }
-    return instance
+    return runtimeCapabilityRegistry.scopedSlots?.resolveLifecycleProxy(instance) ?? instance
   }
 
   const mountMissingRuntime = (instance: InternalRuntimeState) => {
@@ -184,30 +168,13 @@ export function registerComponentDefinition<D extends object, C extends Computed
 
   const pageMethodBridges: Record<string, (...args: any[]) => any> = {}
   const attachRuntimeLayoutHosts = (instance: InternalRuntimeState) => {
-    if (!Array.isArray(layoutHosts) || !layoutHosts.length) {
-      return
-    }
-    if ((instance as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY]) {
-      return
-    }
-    const bridge = registerRuntimeLayoutHosts(layoutHosts, instance)
-    if (bridge) {
-      instance[WEVU_LAYOUT_HOST_BRIDGE_KEY] = bridge
+    if (activeLayoutHosts) {
+      layoutHooks?.attachHosts(activeLayoutHosts, instance)
     }
   }
   const attachPageLayoutSetter = (instance: InternalRuntimeState) => {
-    if (!isPage) {
-      return
-    }
-    instance[WEVU_PAGE_LAYOUT_SETTER_KEY] = (layout: string | false, props?: Record<string, any>) => {
-      const runtimeState = instance.__wevu?.state as Record<string, any> | undefined
-      if (!runtimeState || typeof runtimeState !== 'object') {
-        return
-      }
-      runtimeState[WEVU_PAGE_LAYOUT_NAME_KEY] = resolveRuntimePageLayoutName(layout)
-      const nextProps = layout === false ? {} : (props ?? {})
-      runtimeState[WEVU_PAGE_LAYOUT_PROPS_KEY] = nextProps
-      syncRuntimePageLayoutState(instance as Record<string, any>, layout, nextProps)
+    if (isPage && layoutHooks) {
+      layoutHooks?.attachPageSetter(instance)
     }
   }
   if (isPage) {
@@ -234,15 +201,10 @@ export function registerComponentDefinition<D extends object, C extends Computed
       ...userLifetimes,
       created: function created(this: InternalRuntimeState, ...args: any[]) {
         applyExtraInstanceFields(this)
-        if (Array.isArray(templateRefs) && templateRefs.length) {
-          Object.defineProperty(this, WEVU_TEMPLATE_REFS_KEY, {
-            value: templateRefs,
-            configurable: true,
-            enumerable: false,
-            writable: false,
-          })
-        }
         attachWevuPropKeys(this)
+        if (activeTemplateRefs) {
+          runtimeCapabilityRegistry.templateRefs?.attachBindings(this, activeTemplateRefs)
+        }
         const runCreated = () => {
           callVueLifecycle(this, 'beforeCreate', args)
           if (setupLifecycle === 'created') {
@@ -273,15 +235,10 @@ export function registerComponentDefinition<D extends object, C extends Computed
       },
       attached: function attached(this: InternalRuntimeState, ...args: any[]) {
         applyExtraInstanceFields(this)
-        if (Array.isArray(templateRefs) && templateRefs.length && !(this as any)[WEVU_TEMPLATE_REFS_KEY]) {
-          Object.defineProperty(this, WEVU_TEMPLATE_REFS_KEY, {
-            value: templateRefs,
-            configurable: true,
-            enumerable: false,
-            writable: false,
-          })
-        }
         attachWevuPropKeys(this)
+        if (activeTemplateRefs && !runtimeCapabilityRegistry.templateRefs?.hasBindings(this)) {
+          runtimeCapabilityRegistry.templateRefs?.attachBindings(this, activeTemplateRefs)
+        }
         deferPageUntilNavigation(this, () => {
           if (setupLifecycle !== 'created' || !(this as any).__wevu) {
             try {
@@ -348,8 +305,8 @@ export function registerComponentDefinition<D extends object, C extends Computed
         if (!(this as any)[WEVU_READY_CALLED_KEY]) {
           ;(this as any)[WEVU_READY_CALLED_KEY] = true
           syncWevuPropsFromInstance(this)
-          scheduleOwnerTemplateRefUpdate(this)
-          scheduleTemplateRefUpdate(this, () => {
+          runtimeCapabilityRegistry.templateRefs?.scheduleOwner(this)
+          scheduleTemplateRefs(this, () => {
             callHookList(this, 'onReady', args)
             callVueLifecycle(this, 'mounted', args)
             if (typeof (userLifetimes as any).ready === 'function') {
@@ -363,12 +320,11 @@ export function registerComponentDefinition<D extends object, C extends Computed
         }
       },
       detached: function detached(this: InternalRuntimeState, ...args: any[]) {
-        const layoutHostBridge = (this as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY]
         if (isPage && typeof (pageLifecycleHooks as any).onUnload === 'function') {
           runTeardownSteps([
             () => callVueLifecycle(this, 'beforeUnmount', args),
             () => callVueLifecycle(this, 'beforeDestroy', args),
-            () => scheduleOwnerTemplateRefUpdate(this),
+            () => runtimeCapabilityRegistry.templateRefs?.scheduleOwner(this),
             () => callHookList(this, 'onDetached', args),
             () => (pageLifecycleHooks as any).onUnload.call(this, ...args),
             () => {
@@ -384,16 +340,11 @@ export function registerComponentDefinition<D extends object, C extends Computed
         runTeardownSteps([
           () => callVueLifecycle(this, 'beforeUnmount', args),
           () => callVueLifecycle(this, 'beforeDestroy', args),
-          () => scheduleOwnerTemplateRefUpdate(this),
+          () => runtimeCapabilityRegistry.templateRefs?.scheduleOwner(this),
           () => callHookList(this, 'onDetached', args),
           () => {
-            if (Array.isArray(layoutHosts) && layoutHosts.length && layoutHostBridge) {
-              unregisterRuntimeLayoutHosts(layoutHosts, layoutHostBridge)
-            }
-          },
-          () => {
-            if (layoutHostBridge) {
-              delete (this as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY]
+            if (activeLayoutHosts) {
+              layoutHooks?.detachHosts(activeLayoutHosts, this)
             }
           },
           () => teardownRuntimeInstance(this),

@@ -1,4 +1,5 @@
 import type { Expression } from '@weapp-vite/ast/babelTypes'
+import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
@@ -20,6 +21,11 @@ export interface ScopedSlotComponentAsset {
   bindingManifest: WevuBindingManifestV1
   componentGenerics?: Record<string, true>
   classStyleWxs?: boolean
+  inlineExpressions?: InlineExpressionAsset[]
+  templateRefs?: TemplateRefBinding[]
+  layoutHosts?: LayoutHostBinding[]
+  /** @internal */
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
 }
 
 /**
@@ -65,6 +71,8 @@ export interface TemplateCompileResult {
   templateRefs?: TemplateRefBinding[]
   layoutHosts?: LayoutHostBinding[]
   inlineExpressions?: InlineExpressionAsset[]
+  /** @internal */
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
   functionPropPaths?: string[]
   hasSlotOutlet?: boolean
 }

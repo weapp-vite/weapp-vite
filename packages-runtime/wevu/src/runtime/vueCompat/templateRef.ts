@@ -2,6 +2,7 @@ import type { Ref, ShallowRef } from '../../reactivity'
 import type { InternalRuntimeState, TemplateRefs } from '../types'
 import { WEVU_TEMPLATE_REF_MAP_KEY } from '@weapp-core/constants'
 import { shallowRef } from '../../reactivity'
+import { installTemplateRefs } from '../features/templateRefs'
 import { getCurrentInstance } from '../hooks'
 
 type TemplateRefMap = Map<string, Ref<any>>
@@ -31,6 +32,7 @@ export type TemplateRef<T = unknown> = Readonly<ShallowRef<T | null>>
 export function useTemplateRef<K extends keyof TemplateRefs>(name: K): TemplateRef<TemplateRefs[K]>
 export function useTemplateRef<T = unknown>(name: string): TemplateRef<T>
 export function useTemplateRef<T = unknown>(name: string): TemplateRef<T> {
+  installTemplateRefs()
   const instance = getCurrentInstance()
   if (!instance) {
     throw new Error('useTemplateRef() 必须在 setup() 的同步阶段调用')

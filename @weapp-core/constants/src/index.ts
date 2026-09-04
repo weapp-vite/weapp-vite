@@ -95,6 +95,7 @@ export const WEVU_SLOT_SCOPE_ATTR = WEVU_SLOT_SCOPE_KEY
 export const WEVU_SLOT_NAMES_ATTR = 'vue-slots'
 export const WEVU_SCOPED_SLOT_OWNER_STORE_KEY = '__wevuScopedSlotOwnerStore'
 export const WEVU_SCOPED_SLOT_OWNER_SEED_KEY = '__wevuScopedSlotOwnerSeed'
+export const WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY = '__wevuScopedSlotOwnerRequired'
 export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME = 'weapp-slot-wrapper'
 export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE = 'weapp_vite_internal/slot-wrapper/index'
 export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_GLOBAL_PATH = `/${WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE}`

@@ -4,7 +4,10 @@ import { resolveWevuInternalImportModuleId } from '../../../constants'
 export function ensureRuntimeImport(program: t.Program, importedName: string, localName = importedName) {
   const runtimeImportPath = resolveWevuInternalImportModuleId(importedName)
   let targetImport = program.body.find(
-    node => t.isImportDeclaration(node) && node.source.value === runtimeImportPath,
+    node =>
+      t.isImportDeclaration(node)
+      && node.importKind !== 'type'
+      && node.source.value === runtimeImportPath,
   ) as t.ImportDeclaration | undefined
 
   if (!targetImport) {
@@ -18,7 +21,7 @@ export function ensureRuntimeImport(program: t.Program, importedName: string, lo
 
   const hasSpecifier = targetImport.specifiers.some(
     (spec) => {
-      if (!t.isImportSpecifier(spec)) {
+      if (!t.isImportSpecifier(spec) || spec.importKind === 'type') {
         return false
       }
       if (!t.isIdentifier(spec.imported, { name: importedName })) {

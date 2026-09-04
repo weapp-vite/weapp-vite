@@ -1,5 +1,5 @@
 import type { Ref } from '../../reactivity'
-import type { TemplateRefBinding } from '../templateRefs'
+import type { TemplateRefBinding } from '../capabilities'
 import type {
   InternalRuntimeState,
   MiniProgramNodesRef,

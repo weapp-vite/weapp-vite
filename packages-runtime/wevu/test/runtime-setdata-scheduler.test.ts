@@ -1,12 +1,35 @@
 import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
-import type { MutationRecord } from '@/reactivity'
-import type { CommitAwareSetDataAdapter, SetDataPayload } from '@/runtime/app/setData/commitTracker'
+import type { CommitAwareSetDataAdapter, SetDataAdapterSettler, SetDataPayload } from '@/runtime/app/setData/commitTracker'
+import type { SetDataSchedulerOptions } from '@/runtime/app/setData/scheduler'
+import type { SetDataScheduler } from '@/runtime/capabilities'
 import type { SetDataDebugInfo } from '@/runtime/types'
 import { WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
-import { describe, expect, it, vi } from 'vitest'
-import { reactive, shallowRef, toRaw } from '@/reactivity'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { reactive, shallowRef } from '@/reactivity'
 import { createSetDataScheduler } from '@/runtime/app/setData/scheduler'
+import { runtimeCapabilityRegistry } from '@/runtime/capabilities'
+import { installPatchStrategy } from '@/runtime/features/patchStrategy'
 import { resolveBindingDiagnostics, resolveBindingManifest } from '@/runtime/bindingManifest'
+
+const patchSchedulers = new Set<SetDataScheduler>()
+
+afterEach(() => {
+  for (const scheduler of patchSchedulers) {
+    scheduler.dispose?.()
+  }
+  patchSchedulers.clear()
+})
+
+function createPatchScheduler(options: SetDataSchedulerOptions): SetDataScheduler {
+  installPatchStrategy()
+  const patchStrategy = runtimeCapabilityRegistry.patchStrategy
+  if (!patchStrategy) {
+    throw new Error('patch strategy is not installed')
+  }
+  const scheduler = patchStrategy.createScheduler(options)
+  patchSchedulers.add(scheduler)
+  return scheduler
+}
 
 function createScheduler(options: {
   state: Record<string, unknown>
@@ -15,9 +38,8 @@ function createScheduler(options: {
   initialSnapshot?: Record<string, unknown>
   debug?: (info: SetDataDebugInfo) => void
   debugSampleRate?: number
-}) {
-  const root = toRaw(options.state) as object
-  const scheduler = createSetDataScheduler({
+}): SetDataScheduler {
+  const schedulerOptions: SetDataSchedulerOptions = {
     state: options.state,
     computedRefs: {},
     dirtyComputedKeys: new Set(),
@@ -45,42 +67,27 @@ function createScheduler(options: {
     runTracker: () => {},
     isMounted: () => true,
     initialSnapshot: options.initialSnapshot,
-  })
-  return { root, scheduler }
-}
-
-interface PatchMutationRecorder {
-  mutationRecorder: (record: MutationRecord, stateRootRaw: object) => void
-}
-
-function recordPatch(
-  scheduler: PatchMutationRecorder,
-  root: object,
-  path: string,
-) {
-  scheduler.mutationRecorder({
-    root,
-    kind: 'property',
-    op: 'set',
-    path,
-  }, root)
+  }
+  return options.strategy === 'patch'
+    ? createPatchScheduler(schedulerOptions)
+    : createSetDataScheduler(schedulerOptions)
 }
 
 describe('runtime: setData scheduler', () => {
   it('handles shallowRef null transitions when comparing value tokens', () => {
     const current = shallowRef<unknown>(null)
     const setData = vi.fn()
-    const { scheduler, root } = createScheduler({
+    const scheduler = createScheduler({
       state: { current },
       strategy: 'diff',
       adapter: { setData },
     })
 
-    expect(scheduler.job(root)).toBeUndefined()
+    expect(scheduler.job()).toBeUndefined()
     expect(setData).toHaveBeenCalledWith({ current: null })
 
     current.value = { id: 'native-ref' }
-    expect(scheduler.job(root)).toBeUndefined()
+    expect(scheduler.job()).toBeUndefined()
     expect(setData).toHaveBeenLastCalledWith({ current: { id: 'native-ref' } })
   })
 
@@ -90,7 +97,7 @@ describe('runtime: setData scheduler', () => {
       [WEVU_SLOT_OWNER_ID_KEY]: 'wv1',
       tick: 0,
     }
-    const scheduler = createSetDataScheduler({
+    const scheduler = createPatchScheduler({
       state,
       computedRefs: {
         __wv_bind_0: { value: { default: true } },
@@ -129,7 +136,7 @@ describe('runtime: setData scheduler', () => {
       },
     })
 
-    scheduler.job({})
+    scheduler.job()
 
     expect(state[WEVU_SLOT_OWNER_ID_KEY]).toBe('wv1')
     expect(setData).toHaveBeenCalledWith({
@@ -176,11 +183,11 @@ describe('runtime: setData scheduler', () => {
       isMounted: () => true,
     })
 
-    scheduler.job({})
+    scheduler.job()
     state.count = 1
-    scheduler.job({})
+    scheduler.job()
     state.count = 2
-    scheduler.job({})
+    scheduler.job()
 
     expect(debug).toHaveBeenCalledWith(expect.objectContaining({
       reason: 'loopWarning',
@@ -276,7 +283,7 @@ describe('runtime: setData scheduler', () => {
       isMounted: () => true,
     })
 
-    scheduler.job({})
+    scheduler.job()
     expect(setData).toHaveBeenCalledWith({
       user: { name: 'Ada' },
       count: 1,
@@ -363,7 +370,7 @@ describe('runtime: setData scheduler', () => {
       isMounted: () => true,
     })
 
-    scheduler.job({})
+    scheduler.job()
 
     expect(debug).not.toHaveBeenCalled()
     expect(bindingReads).toBe(0)
@@ -471,7 +478,7 @@ describe('runtime: setData scheduler', () => {
           },
           __wevu_reportSetDataError: reportError,
         }
-        const { scheduler, root } = createScheduler({
+        const scheduler = createScheduler({
           state,
           strategy,
           adapter,
@@ -479,14 +486,12 @@ describe('runtime: setData scheduler', () => {
           debug,
           debugSampleRate: 0,
         })
-        scheduler.job(root)
+        scheduler.job()
+        scheduler.start?.()
         payloads.length = 0
 
         state.branch.a = 1
-        if (strategy === 'patch') {
-          recordPatch(scheduler, root, 'branch.a')
-        }
-        expect(scheduler.job(root)).toBeUndefined()
+        expect(scheduler.job()).toBeUndefined()
         await Promise.resolve()
         await Promise.resolve()
 
@@ -499,28 +504,87 @@ describe('runtime: setData scheduler', () => {
         }))
 
         state.branch.b = 1
-        if (strategy === 'patch') {
-          recordPatch(scheduler, root, 'branch.b')
-        }
-        expect(scheduler.job(root)).toBeUndefined()
+        expect(scheduler.job()).toBeUndefined()
         expect(payloads.at(-1)).toEqual({
           branch: { a: 1, b: 1, c: 0 },
         })
 
         state.branch.c = 1
-        if (strategy === 'patch') {
-          recordPatch(scheduler, root, 'branch.c')
-        }
-        scheduler.job(root)
+        scheduler.job()
         expect(payloads.at(-1)).toEqual({ 'branch.c': 1 })
       })
     }
   }
 
+  it('routes patch updates and recovery through the core host ledger', () => {
+    const state = reactive({ branch: { a: 0, b: 0, c: 0 } })
+    const payloads: SetDataPayload[] = []
+    const settlements: SetDataAdapterSettler[] = []
+    const setData = vi.fn()
+    const reportError = vi.fn()
+    const scheduler = createScheduler({
+      state,
+      strategy: 'patch',
+      adapter: {
+        setData,
+        __wevu_dispatchSetData(payload, settle) {
+          payloads.push(payload)
+          settlements.push(settle)
+        },
+        __wevu_reportSetDataError: reportError,
+      },
+      initialSnapshot: { branch: { a: 0, b: 0, c: 0 } },
+    })
+    scheduler.job()
+    scheduler.start?.()
+
+    state.branch.a = 1
+    scheduler.job()
+    expect(payloads).toEqual([{ 'branch.a': 1 }])
+    expect(setData).not.toHaveBeenCalled()
+
+    const cause = new Error('host rejected patch')
+    settlements[0]?.('failed', cause)
+    expect(reportError).toHaveBeenCalledWith(expect.objectContaining({ cause }))
+
+    state.branch.b = 1
+    scheduler.job()
+    expect(payloads.at(-1)).toEqual({
+      branch: { a: 1, b: 1, c: 0 },
+    })
+    settlements[1]?.('committed')
+
+    state.branch.c = 1
+    scheduler.job()
+    expect(payloads.at(-1)).toEqual({ 'branch.c': 1 })
+  })
+
+  it('disposes pending patch commits before the recorder starts', () => {
+    let settle: SetDataAdapterSettler | undefined
+    const reportError = vi.fn()
+    const scheduler = createScheduler({
+      state: reactive({ count: 0 }),
+      strategy: 'patch',
+      adapter: {
+        __wevu_dispatchSetData(_payload, nextSettle) {
+          settle = nextSettle
+        },
+        __wevu_reportSetDataError: reportError,
+      },
+    })
+
+    scheduler.job()
+    expect(settle).toBeTypeOf('function')
+    scheduler.dispose?.()
+    settle?.('failed', new Error('late failure'))
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('returns void while a Promise adapter remains pending', () => {
     const state = reactive({ count: 0 })
     const setData = vi.fn(() => new Promise<void>(() => {}))
-    const { scheduler, root } = createScheduler({
+    const scheduler = createScheduler({
       state,
       strategy: 'diff',
       adapter: { setData },
@@ -528,7 +592,7 @@ describe('runtime: setData scheduler', () => {
     })
 
     state.count = 1
-    expect(scheduler.job(root)).toBeUndefined()
+    expect(scheduler.job()).toBeUndefined()
     expect(setData).toHaveBeenCalledWith({ count: 1 })
   })
 })
