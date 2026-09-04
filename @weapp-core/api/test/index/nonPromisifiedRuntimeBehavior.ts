@@ -5,6 +5,47 @@ import { createTestWeapi } from '../helpers/createTestWeapi'
  */
 export function registerWeapiIndexNonPromisifiedRuntimeBehaviorTests() {
   describe('weapi non-promisified runtime behavior', () => {
+    it('keeps all wx direct-return methods without a Sync suffix unwrapped', () => {
+      const directMethods = [
+        'checkIsPictureInPictureActive',
+        'createBufferURL',
+        'createCacheManager',
+        'createGlobalPayment',
+        'createInferenceSession',
+        'createVideoDecoder',
+        'getApiCategory',
+        'getAppAuthorizeSetting',
+        'getAppBaseInfo',
+        'getDeviceInfo',
+        'getPluginUpdateManager',
+        'getSystemSetting',
+        'getWindowInfo',
+        'isVKSupport',
+        'postMessageToReferrerMiniProgram',
+        'postMessageToReferrerPage',
+        'reportEvent',
+        'reportMonitor',
+        'reportPerformance',
+        'requestAppleSubscribeSign',
+        'revokeBufferURL',
+      ]
+      const directResults = new Map(directMethods.map(name => [name, { name }]))
+      const adapter = Object.fromEntries(
+        directMethods.map(name => [name, vi.fn(() => directResults.get(name))]),
+      )
+      const api = createTestWeapi({ adapter, platform: 'wx' }) as Record<string, any>
+
+      for (const name of directMethods) {
+        expect(api[name]()).toBe(directResults.get(name))
+        expect(api[name]()).not.toBeInstanceOf(Promise)
+      }
+
+      const options = { maxSize: 1 }
+      api.createCacheManager(options)
+      expect(adapter.createCacheManager).toHaveBeenLastCalledWith(options)
+      expect(options).toEqual({ maxSize: 1 })
+    })
+
     it('keeps synchronous utility and manager APIs as direct return values', () => {
       const updateManager = {
         onCheckForUpdate: vi.fn(),

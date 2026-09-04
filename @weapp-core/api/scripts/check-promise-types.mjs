@@ -9,6 +9,7 @@ const tsconfigPath = path.join(packageRoot, 'tsconfig.json')
 const rawSourcePath = path.join(packageRoot, 'src/core/miniProgramTypeSources.ts')
 const publicTypesPath = path.join(packageRoot, 'types/index.d.ts')
 const nonPromisifiedPath = path.join(packageRoot, 'src/core/nonPromisifiedMethods.ts')
+const wxDirectReturnMethodsPath = path.join(packageRoot, 'src/core/apiCatalog/wxDirectReturnMethods.ts')
 
 const platformConfigs = [
   {
@@ -66,9 +67,14 @@ if (!publicTypesModule || !rawSourceModule) {
 }
 
 const callbackKeys = ['success', 'fail', 'complete']
-const nonPromisifiedMethods = new Set(
-  [...fs.readFileSync(nonPromisifiedPath, 'utf8').matchAll(/'([^']+)'/g)].map(match => match[1]),
-)
+function readLiteralNames(filePath) {
+  return [...fs.readFileSync(filePath, 'utf8').matchAll(/'([^']+)'/g)].map(match => match[1])
+}
+
+const nonPromisifiedMethods = new Set([
+  ...readLiteralNames(nonPromisifiedPath),
+  ...readLiteralNames(wxDirectReturnMethodsPath),
+])
 const intrinsicFunctionMethods = new Set(['apply', 'bind', 'call', 'toString'])
 
 function getExportedType(moduleSymbol, name) {

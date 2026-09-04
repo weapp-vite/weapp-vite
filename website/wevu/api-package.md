@@ -155,7 +155,7 @@ wpi.request({
 
 ### 4. `*Sync` 直连调用
 
-对于同步 API，不会 Promise 化，直接保持宿主原语义：
+对于同步 API，不会 Promise 化，直接保持宿主原语义；这也包括部分没有 `Sync` 后缀、但宿主本身同步返回的 API：
 
 ```ts
 import { wpi } from 'wevu/api'

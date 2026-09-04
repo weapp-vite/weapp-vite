@@ -101,7 +101,7 @@ setup 会在业务模块静态导入前替换 `api` / `wpi`，并在每个测试
 ## 行为说明
 
 - 仅在未传回调时返回 Promise
-- `*Sync` 与 `onXxx/offXxx` 直连宿主 API
+- 同步直接返回 API（包括部分没有 `Sync` 后缀的宿主 API）、`*Sync` 与 `onXxx/offXxx` 直连宿主 API
 - 可通过 `resolveTarget()` / `supports()` 做能力探测
 - 缺失 API 时，Promise 风格会 `reject`，回调风格会触发 `fail`
 
