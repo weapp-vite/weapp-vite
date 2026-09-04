@@ -82,7 +82,7 @@ async function resolveFormPage(miniProgram: any) {
   return await miniProgram.switchTab(ROUTE)
 }
 
-describe.sequential('e2e app: template-wevu-tdesign-regression form', () => {
+describe('e2e app: template-wevu-tdesign-regression form', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

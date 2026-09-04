@@ -52,7 +52,7 @@ async function callInlineTap(miniProgram: any, inlineId: string) {
   }, inlineId)
 }
 
-describe.sequential('e2e app: github-issues / issue #621', () => {
+describe('e2e app: github-issues / issue #621', { concurrent: false }, () => {
   beforeAll(async () => {
     process.env[ISSUE_621_AUGMENTED_ENV] = 'true'
     await prepareGithubIssuesBuild()

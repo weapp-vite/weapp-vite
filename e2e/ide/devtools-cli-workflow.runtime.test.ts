@@ -399,7 +399,7 @@ async function expectHelpfulCliFailure(
   }
 }
 
-describe.sequential('DevTools CLI workflow runtime', () => {
+describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
   let miniProgram: any
   let ideInfraOutput: string | undefined
   let loginRequiredOutput: string | undefined

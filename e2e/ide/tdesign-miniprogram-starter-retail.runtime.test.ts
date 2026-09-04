@@ -500,7 +500,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('e2e app: tdesign-miniprogram-starter-retail', () => {
+describe('e2e app: tdesign-miniprogram-starter-retail', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   }, 30_000)

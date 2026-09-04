@@ -217,7 +217,7 @@ async function restartRouterMiniProgram() {
   return routerMiniProgram
 }
 
-describe.sequential('e2e app: wevu-features / router', () => {
+describe('e2e app: wevu-features / router', { concurrent: false }, () => {
   afterAll(async () => {
     if (routerMiniProgram) {
       const miniProgram = routerMiniProgram

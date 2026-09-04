@@ -1,6 +1,6 @@
 # @mpcore/vitest
 
-Vitest integration for `@mpcore/test`. Add `mpcoreTest()` to the Vitest plugin list, then use `createMpcoreTest()` for an isolated mini-program project fixture per test.
+Vitest 5 integration for `@mpcore/test`. Add `mpcoreTest()` to the Vitest plugin list, then use `createMpcoreTest()` for an isolated mini-program project fixture per test.
 
 ```ts
 import { createMpcoreTest } from '@mpcore/vitest'

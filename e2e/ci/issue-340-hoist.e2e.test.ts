@@ -29,7 +29,7 @@ async function runBuild() {
   })
 }
 
-describe.sequential('e2e app: issue-340-hoist (build)', () => {
+describe('e2e app: issue-340-hoist (build)', { concurrent: false }, () => {
   it('keeps cross-subpackage source imports stable when sharedStrategy is hoist', async () => {
     await runBuild()
 

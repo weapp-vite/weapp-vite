@@ -255,7 +255,7 @@ function expectBridgeWrapperProjectPath(sourceProjectPath: string, projectPath: 
   })
 }
 
-describe.sequential('automator launch resilience', () => {
+describe('automator launch resilience', { concurrent: false }, () => {
   let sandboxRoot = ''
 
   beforeEach(() => {

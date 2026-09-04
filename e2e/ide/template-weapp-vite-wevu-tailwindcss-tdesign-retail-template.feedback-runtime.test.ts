@@ -298,7 +298,7 @@ async function triggerHomeFeedbackAction(miniProgram: any, action: 'toast' | 'di
   return page
 }
 
-describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feedback runtime', () => {
+describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feedback runtime', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

@@ -57,7 +57,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('issue #893 multiple app style src assets', () => {
+describe('issue #893 multiple app style src assets', { concurrent: false }, () => {
   it('keeps author Sass and Tailwind utilities in production app.wxss', async () => {
     const fixtureRoot = await createIssue893Fixture()
     try {

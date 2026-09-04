@@ -11,7 +11,7 @@ import {
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
 
-describe.sequential('e2e app: github-issues / user subpackage', () => {
+describe('e2e app: github-issues / user subpackage', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

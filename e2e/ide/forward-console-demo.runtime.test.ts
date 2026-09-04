@@ -134,7 +134,7 @@ async function waitForForwardedMessage(
   throw new Error(`Timed out waiting for forwarded HMR message; recent output=${getOutput()}`)
 }
 
-describe.sequential('forward-console-demo in real WeChat DevTools', () => {
+describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, () => {
   let originalIndexTs = ''
   let originalIndexWxml = ''
   let devProcess: ReturnType<typeof startDevProcess> | undefined

@@ -12,7 +12,7 @@ async function readJson<T>(filePath: string) {
   return await fs.readJson(filePath) as T
 }
 
-describe.sequential('e2e app: donut-multi-end (build)', () => {
+describe('e2e app: donut-multi-end (build)', { concurrent: false }, () => {
   it('builds a WeChat Donut multi-end miniprogram fixture', async () => {
     await runWeappViteBuildWithLogCapture({
       cliPath: CLI_PATH,

@@ -76,7 +76,7 @@ async function navigateTo(page: Page, url: string) {
   }
 }
 
-describe.sequential('web runtime compatibility browser smoke', () => {
+describe('web runtime compatibility browser smoke', { concurrent: false }, () => {
   let server: Subprocess | undefined
   const browsers: Browser[] = []
 

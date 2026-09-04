@@ -111,7 +111,7 @@ async function waitForJsOutputContains(root: string, marker: string, timeoutMs =
   throw new Error(`watch build timed out, JS output missing marker: ${marker}`)
 }
 
-describe.sequential('issue #398 watch shared chunk rebuild', () => {
+describe('issue #398 watch shared chunk rebuild', { concurrent: false }, () => {
   it('rebuilds layout and component importers after editing a page that shares wevu chunk bindings', async () => {
     const fixtureSource = path.resolve(__dirname, '../../../e2e-apps/github-issues')
     const tempProject = await createTempFixtureProject(fixtureSource, 'issue-398-watch')

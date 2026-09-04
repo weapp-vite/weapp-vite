@@ -44,7 +44,7 @@ async function readStyle(element: any, property: string, route: string) {
   )
 }
 
-describe.sequential('e2e app: main-package shared styles', () => {
+describe('e2e app: main-package shared styles', { concurrent: false }, () => {
   beforeAll(async () => {
     if (resolveRuntimeProviderName() === 'devtools') {
       await cleanupResidualIdeProcesses()

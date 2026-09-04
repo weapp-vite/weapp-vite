@@ -197,7 +197,7 @@ async function assertProjectRuntimeContract(page: Page, relativeRoot: string) {
   }
 }
 
-describeWeb.sequential('workspace Web project matrix', async () => {
+describeWeb('workspace Web project matrix', { concurrent: false }, async () => {
   const projects = (await discoverWebProjects(ROOT))
     .filter(project => !DEDICATED_WEB_PROJECTS.has(project.relativeRoot))
   let browser: Browser | undefined

@@ -323,7 +323,7 @@ async function navigateToInteractiveFromHome(page: Page) {
   }, { timeout: 45_000 }).toBe(true)
 }
 
-describe.sequential('web runtime production build (weapp-vite-web-demo)', () => {
+describe('web runtime production build (weapp-vite-web-demo)', { concurrent: false }, () => {
   it('bundles only the selected web runtime without leaking virtual ids', async () => {
     await fs.remove(WEB_DIST_ROOT)
     await execa('node', [CLI_PATH, 'build', WEB_DEMO_ROOT, '--platform', 'web'], {
@@ -338,7 +338,7 @@ describe.sequential('web runtime production build (weapp-vite-web-demo)', () => 
   })
 })
 
-describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () => {
+describeWeb('web runtime browser baseline (weapp-vite-web-demo)', { concurrent: false }, () => {
   let browser: Browser | undefined
   let devServer: Subprocess | undefined
 

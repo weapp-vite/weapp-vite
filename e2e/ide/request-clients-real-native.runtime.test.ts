@@ -157,7 +157,7 @@ afterAll(async () => {
 })
 
 for (const jsFormat of JS_FORMATS) {
-  describe.sequential(`e2e app: request-clients-real-native [${jsFormat}]`, () => {
+  describe(`e2e app: request-clients-real-native [${jsFormat}]`, { concurrent: false }, () => {
     let miniProgram: any = null
 
     async function getMiniProgram(ctx: { skip: (message?: string) => void }) {

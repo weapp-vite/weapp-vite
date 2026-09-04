@@ -322,7 +322,7 @@ async function reconnectAutomatorAfterFullReload() {
   miniProgram = await connectAutomatorSession()
 }
 
-describe.sequential('app.vue alias import layout HMR runtime', () => {
+describe('app.vue alias import layout HMR runtime', { concurrent: false }, () => {
   beforeAll(async () => {
     previousAutomatorPostConnectRefresh = process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV]
     previousBridgePostConnectRefresh = process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]

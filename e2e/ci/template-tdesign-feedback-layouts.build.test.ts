@@ -50,7 +50,7 @@ function expectNoDonutFeedbackMarkers(output: string) {
   }
 }
 
-describe.sequential('template build: tdesign feedback layouts', () => {
+describe('template build: tdesign feedback layouts', { concurrent: false }, () => {
   beforeAll(async () => {
     await buildTemplate(BASE_TEMPLATE_ROOT, 'ci:tdesign-feedback-layouts:template-wevu-tdesign-regression')
     await buildTemplate(RETAIL_TEMPLATE_ROOT, 'ci:tdesign-feedback-layouts:retail')

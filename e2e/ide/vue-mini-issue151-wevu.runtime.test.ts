@@ -65,7 +65,7 @@ async function waitForIssue151Ready(miniProgram: any, page: any) {
   return runtimeResult
 }
 
-describe.sequential('e2e app: vue-mini issue #151 / wevu', () => {
+describe('e2e app: vue-mini issue #151 / wevu', { concurrent: false }, () => {
   beforeAll(async () => {
     await runBuild()
     sharedMiniProgram = await launchAutomator({

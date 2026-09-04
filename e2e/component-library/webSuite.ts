@@ -125,7 +125,7 @@ export function defineComponentLibraryWebSuite(options: ComponentLibraryWebSuite
     ? options.scenarios.filter(scenario => componentFilter.has(scenario.component))
     : options.scenarios
 
-  describe.sequential(options.suiteName, () => {
+  describe(options.suiteName, { concurrent: false }, () => {
     let server: Subprocess | undefined
     let browser: Browser | undefined
     let mobilePage: Page

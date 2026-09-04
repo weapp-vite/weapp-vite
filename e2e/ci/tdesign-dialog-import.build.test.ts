@@ -54,7 +54,7 @@ async function expectNoDonutOutputs() {
   }
 }
 
-describe.sequential('e2e app: tdesign-dialog-import (build)', () => {
+describe('e2e app: tdesign-dialog-import (build)', { concurrent: false }, () => {
   beforeAll(async () => {
     await buildApp()
   }, 120_000)

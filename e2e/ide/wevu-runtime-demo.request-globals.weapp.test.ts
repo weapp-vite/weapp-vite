@@ -97,7 +97,7 @@ async function invokeOrTap(page: any, methodName: string, tapIndex: number, ...a
 }
 
 for (const jsFormat of JS_FORMATS) {
-  describe.sequential(`wevu runtime demo request globals (weapp e2e) [${jsFormat}]`, () => {
+  describe(`wevu runtime demo request globals (weapp e2e) [${jsFormat}]`, { concurrent: false }, () => {
     let miniProgram: any
 
     async function getMiniProgram(ctx: { skip: (message?: string) => void }) {

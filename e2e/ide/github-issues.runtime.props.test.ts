@@ -43,7 +43,7 @@ async function waitForIssue600RenderedPage(page: any, expectedDataset: Record<st
   return page
 }
 
-describe.sequential('e2e app: github-issues / props', () => {
+describe('e2e app: github-issues / props', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

@@ -7,7 +7,7 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/issue-724-sfc-style-src')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 
-describe.sequential('issue #724 user reproduction repository', () => {
+describe('issue #724 user reproduction repository', { concurrent: false }, () => {
   it('builds an SFC whose style src is a bare package specifier', async () => {
     await fs.remove(DIST_ROOT)
 

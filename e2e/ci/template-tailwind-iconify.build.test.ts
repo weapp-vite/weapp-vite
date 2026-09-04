@@ -34,7 +34,7 @@ async function createTemplateFixture(templateRoot: string, templateName: string)
   return fixtureRoot
 }
 
-describe.sequential('template: Tailwind CSS Iconify build output', () => {
+describe('template: Tailwind CSS Iconify build output', { concurrent: false }, () => {
   const fixtureRoots: string[] = []
 
   afterAll(async () => {

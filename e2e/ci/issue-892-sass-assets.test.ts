@@ -34,7 +34,7 @@ function expectAssetUrl(style: string, selector: string) {
   expect(block).toMatch(/background-image:\s*url\(["']?\.\.\/assets\/images\/home\/goods-1\.png["']?\)/)
 }
 
-describe.sequential('issue #892 Sass asset placeholders', () => {
+describe('issue #892 Sass asset placeholders', { concurrent: false }, () => {
   beforeEach(async () => {
     await cleanupResidualDevProcesses()
   })

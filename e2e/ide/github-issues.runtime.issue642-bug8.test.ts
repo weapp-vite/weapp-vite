@@ -77,7 +77,7 @@ async function expectIssue642Bug8DistWxmlContract() {
   expect(wrappedSlotWxml).toContain('{{__wvSlotPropsData.io}}')
 }
 
-describe.sequential('e2e app: github-issues / issue #642 bug-8', () => {
+describe('e2e app: github-issues / issue #642 bug-8', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

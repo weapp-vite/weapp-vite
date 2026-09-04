@@ -76,7 +76,7 @@ async function waitForWorkerReady(page: any, timeoutMs = 12_000) {
   }
 }
 
-describe.sequential('e2e app: vite-native-ts worker runtime', () => {
+describe('e2e app: vite-native-ts worker runtime', { concurrent: false }, () => {
   afterAll(async () => {
     if (miniProgram) {
       await miniProgram.close()

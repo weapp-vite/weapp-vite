@@ -215,7 +215,7 @@ function normalizeEntries(entries: any[]) {
   return normalized
 }
 
-describe.sequential('app lifecycle compare (e2e)', () => {
+describe('app lifecycle compare (e2e)', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniPrograms()
   })

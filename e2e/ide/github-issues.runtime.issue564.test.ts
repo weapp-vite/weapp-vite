@@ -40,7 +40,7 @@ async function isIssue564RuntimeReady(miniProgram: any) {
   }
 }
 
-describe.sequential('e2e app: github-issues / issue #564', () => {
+describe('e2e app: github-issues / issue #564', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

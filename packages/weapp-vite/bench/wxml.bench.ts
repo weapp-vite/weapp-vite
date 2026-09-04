@@ -1,12 +1,12 @@
-import { bench, describe } from 'vitest'
+import { describe } from 'vitest'
 import { handleWxml } from '@/wxml/handle'
 import { scanWxml } from '@/wxml/scan'
-import { createWxmlFixture, defaultBenchOptions } from './utils'
+import { createWxmlFixture, defaultBenchOptions, defineBenchmark } from './utils'
 
 describe('wxml', () => {
   const wxml = createWxmlFixture()
 
-  bench(
+  defineBenchmark(
     'scanWxml (no cache key)',
     () => {
       scanWxml(wxml, {
@@ -21,7 +21,7 @@ describe('wxml', () => {
 
   const token = scanWxml(wxml, { platform: 'weapp' })
 
-  bench(
+  defineBenchmark(
     'scanWxml (cache hit)',
     () => {
       scanWxml(wxml, { platform: 'weapp' })
@@ -29,7 +29,7 @@ describe('wxml', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'handleWxml (warm cache hit)',
     () => {
       handleWxml(token, {
@@ -40,7 +40,7 @@ describe('wxml', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'scanWxml + handleWxml (end-to-end)',
     () => {
       const scanned = scanWxml(wxml, {

@@ -166,7 +166,7 @@ async function waitForIssue466MainRuntime(miniProgram: any, route: string, page:
   throw new Error(`Timed out waiting for issue-466 main runtime: ${JSON.stringify(lastRuntime, null, 2)}`)
 }
 
-describe.sequential('github-issues runtime issue-466', () => {
+describe('github-issues runtime issue-466', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

@@ -31,7 +31,7 @@ async function waitForFile(filePath: string, timeoutMs = 30_000) {
   throw new Error(`Timed out waiting for ${path.relative(APP_ROOT, filePath)}`)
 }
 
-describe.sequential('issue #862 generated output watch', () => {
+describe('issue #862 generated output watch', { concurrent: false }, () => {
   beforeEach(async () => {
     await cleanupResidualDevProcesses()
     await fs.remove(DIST_ROOT)

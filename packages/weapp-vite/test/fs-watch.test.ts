@@ -3,7 +3,7 @@ import chokidar from 'chokidar'
 import path from 'pathe'
 import { touch } from '@/utils/file'
 
-describe.sequential('fs-watch', () => {
+describe('fs-watch', { concurrent: false }, () => {
   it.skip('touch', async () => {
     let count = 0
     const watchFile = path.resolve(__dirname, './fixtures/touch/index.js')

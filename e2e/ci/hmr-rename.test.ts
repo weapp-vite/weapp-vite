@@ -57,7 +57,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR rename-style save (dev watch)', () => {
+describe('HMR rename-style save (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('通过 rename-save 更新 .wxml 模板文件 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const originalSource = await fs.readFile(SRC_TEMPLATE, 'utf8')

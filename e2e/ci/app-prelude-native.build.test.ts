@@ -71,7 +71,7 @@ async function runBuildWithRequestGlobalsPrelude(mode: 'inline' | 'entry' | 'req
   })
 }
 
-describe.sequential('e2e app: app-prelude-native (build)', () => {
+describe('e2e app: app-prelude-native (build)', { concurrent: false }, () => {
   it('uses require mode by default and emits one scoped prelude module per package scope', async () => {
     await runBuildWithDefaultMode()
 

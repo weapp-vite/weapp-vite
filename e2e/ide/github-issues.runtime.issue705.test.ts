@@ -149,7 +149,7 @@ async function callIssue550BackAction(miniProgram: any, targetPage: any, action:
   )
 }
 
-describe.sequential('e2e app: github-issues / issue #705', () => {
+describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

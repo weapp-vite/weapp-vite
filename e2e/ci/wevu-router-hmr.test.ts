@@ -61,7 +61,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('wevu/router HMR app fixture (dev watch)', () => {
+describe('wevu/router HMR app fixture (dev watch)', { concurrent: false }, () => {
   it('keeps router subpath imports rewritten after a page save refreshes the app entry', async () => {
     const originalPageSource = await fs.readFile(PAGE_VUE_PATH, 'utf8')
     const marker = createHmrMarker('WEVU-ROUTER-APP-ENTRY', 'weapp')

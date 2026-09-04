@@ -53,7 +53,7 @@ async function readDistText(...segments: string[]) {
   return await fs.readFile(path.join(DIST_ROOT, ...segments), 'utf8')
 }
 
-describe.sequential('e2e app: github-issues / slot fallback compiler off', () => {
+describe('e2e app: github-issues / slot fallback compiler off', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

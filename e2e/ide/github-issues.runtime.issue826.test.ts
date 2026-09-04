@@ -22,7 +22,7 @@ const SECOND_VALUE = [
   '__ISSUE_826_SERVICE_SHARED__',
 ].join('|')
 
-describe.sequential('e2e app: github-issues / issue #826', () => {
+describe('e2e app: github-issues / issue #826', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

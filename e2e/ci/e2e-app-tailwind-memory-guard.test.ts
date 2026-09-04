@@ -97,7 +97,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('Tailwind e2e app HMR memory guard', () => {
+describe('Tailwind e2e app HMR memory guard', { concurrent: false }, () => {
   for (const testCase of guardCases) {
     it(`does not retain leaked heap after Vue class HMR in ${testCase.name}`, async () => {
       const fixture = await createGuardFixture(testCase)

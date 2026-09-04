@@ -96,7 +96,7 @@ let devProcess: ReturnType<typeof startDevProcess> | undefined
 let originalPageSource = ''
 let sharedInfraUnavailableMessage: string | null = null
 
-describe.sequential('wevu/router HMR fixture runtime', () => {
+describe('wevu/router HMR fixture runtime', { concurrent: false }, () => {
   beforeAll(async () => {
     await cleanupResidualDevProcesses()
     originalPageSource = await fs.readFile(PAGE_VUE_PATH, 'utf8')

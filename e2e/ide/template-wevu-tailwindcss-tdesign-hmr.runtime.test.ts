@@ -91,7 +91,7 @@ async function waitForFileContains(file: string, expected: string, timeoutMs = 9
   return waitForFileMatch(file, source => source.includes(expected), `contain ${expected}`, timeoutMs)
 }
 
-describe.sequential('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', () => {
+describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { concurrent: false }, () => {
   let appWxssDist = ''
   let appJsonDist = ''
   let currentVue = ''

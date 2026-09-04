@@ -262,7 +262,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('e2e app: template-wevu-tdesign-regression class/style binding lab', () => {
+describe('e2e app: template-wevu-tdesign-regression class/style binding lab', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

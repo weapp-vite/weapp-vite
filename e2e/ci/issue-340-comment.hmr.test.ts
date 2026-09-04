@@ -113,7 +113,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('issue #340 comment regression (dev watch)', () => {
+describe('issue #340 comment regression (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('keeps app and cross-subpackage shared outputs stable after a shared-source edit (%s)', async (platform) => {
     await rm(DIST_ROOT, { recursive: true, force: true })
 

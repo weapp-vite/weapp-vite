@@ -145,7 +145,7 @@ async function launchReadyMiniProgram(jsFormat: TestJsFormat) {
 }
 
 for (const jsFormat of JS_FORMATS) {
-  describe.sequential(`wevu runtime (weapp e2e) [${jsFormat}]`, () => {
+  describe(`wevu runtime (weapp e2e) [${jsFormat}]`, { concurrent: false }, () => {
     let sharedMiniProgram: any = null
     let sharedBuildPrepared = false
 

@@ -30,7 +30,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR delete — page-level file deletions (dev watch)', () => {
+describe('HMR delete — page-level file deletions (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('删除 .wxml 模板文件 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const marker = createHmrMarker('DEL-TEMPLATE', platform)
@@ -173,7 +173,7 @@ describe.sequential('HMR delete — page-level file deletions (dev watch)', () =
   })
 })
 
-describe.sequential('HMR delete — component-level file deletions (dev watch)', () => {
+describe('HMR delete — component-level file deletions (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('删除组件 .wxml 模板文件 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const marker = createHmrMarker('DEL-COMP-TEMPLATE', platform)

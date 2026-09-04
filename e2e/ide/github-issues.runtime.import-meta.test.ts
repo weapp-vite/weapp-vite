@@ -10,7 +10,7 @@ import {
   relaunchPage,
 } from './github-issues.runtime.shared'
 
-describe.sequential('github-issues runtime import.meta bindings', () => {
+describe('github-issues runtime import.meta bindings', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

@@ -7,7 +7,7 @@ const TEMPLATE_ROOT = path.resolve(
   '../../templates/weapp-vite-multi-platform-sfc-template',
 )
 
-describe.sequential('template e2e: weapp-vite-multi-platform-sfc-template', () => {
+describe('template e2e: weapp-vite-multi-platform-sfc-template', { concurrent: false }, () => {
   it('renders and updates the WeChat SFC target', async () => {
     await runTemplateE2E({
       buildPlatform: 'weapp',

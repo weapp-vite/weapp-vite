@@ -16,7 +16,7 @@ async function runBuild(root: string) {
   })
 }
 
-describe.sequential('e2e app: template-wevu-regression auto-import dts', () => {
+describe('e2e app: template-wevu-regression auto-import dts', { concurrent: false }, () => {
   it('does not emit default support dts files during production build', async () => {
     await fs.remove(DIST_ROOT)
     await fs.remove(COMPONENTS_DTS)

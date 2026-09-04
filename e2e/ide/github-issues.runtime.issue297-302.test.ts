@@ -7,7 +7,7 @@ import {
   prepareGithubIssuesBuild,
 } from './github-issues.runtime.shared'
 
-describe.sequential('e2e app: github-issues / issue-297-302', () => {
+describe('e2e app: github-issues / issue-297-302', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

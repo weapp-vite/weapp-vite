@@ -44,7 +44,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR html template (dev watch)', () => {
+describe('HMR html template (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('修改 .html 模板文件 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const originalSource = await fs.readFile(HTML_SRC_PATH, 'utf8')

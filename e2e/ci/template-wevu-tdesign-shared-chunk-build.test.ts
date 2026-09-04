@@ -116,7 +116,7 @@ async function buildTemplate(projectRoot: string, label: string) {
   })
 }
 
-describe.sequential('template build: wevu tdesign shared chunks', () => {
+describe('template build: wevu tdesign shared chunks', { concurrent: false }, () => {
   beforeAll(async () => {
     await buildTemplate(TEMPLATE_ROOT, 'ci:template-wevu-tdesign-shared-chunks')
     await buildTemplate(REGRESSION_ROOT, 'ci:template-wevu-tdesign-regression-runtime-mode')

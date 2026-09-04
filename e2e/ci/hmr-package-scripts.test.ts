@@ -69,7 +69,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR package scripts — apps and e2e-apps dev entrypoints', () => {
+describe('HMR package scripts — apps and e2e-apps dev entrypoints', { concurrent: false }, () => {
   it.each(PACKAGE_SCRIPT_HMR_CASES)('$label keeps package-script dev HMR working', async (fixture) => {
     const distRoot = path.join(fixture.appRoot, 'dist')
     const originalSource = await fs.readFile(fixture.sourcePath, 'utf8')

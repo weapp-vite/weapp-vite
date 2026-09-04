@@ -39,7 +39,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "vitest": ">=4.0.0"
+    "vitest": ">=5.0.0"
   },
   "dependencies": {
     "@mpcore/test": "workspace:*"

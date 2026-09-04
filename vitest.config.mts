@@ -114,6 +114,7 @@ function resolveProjects(): string[] {
 
 const projects = [
   {
+    extends: false,
     oxc: {
       include: ['scripts/**/*.ts'],
     },
@@ -124,6 +125,7 @@ const projects = [
     },
   },
   {
+    extends: false,
     test: {
       name: 'e2e-hmr-infra',
       include: [
@@ -152,6 +154,7 @@ export default defineConfig(() => {
       globalSetup: ['./vitest.globalSetup.mjs'],
       maxWorkers: workspaceMaxWorkers,
       projects,
+      sharedViteServer: false,
       coverage: {
         enabled: false,
       },

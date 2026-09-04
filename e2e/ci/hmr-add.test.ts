@@ -30,7 +30,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR add — page-level file additions (dev watch)', () => {
+describe('HMR add — page-level file additions (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('新增 .wxml 模板文件 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const marker = createHmrMarker('ADD-TEMPLATE', platform)
@@ -162,7 +162,7 @@ describe.sequential('HMR add — page-level file additions (dev watch)', () => {
   })
 })
 
-describe.sequential('HMR add — component-level file additions (dev watch)', () => {
+describe('HMR add — component-level file additions (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('新增完整组件 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const marker = createHmrMarker('ADD-COMP', platform)

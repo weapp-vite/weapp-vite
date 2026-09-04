@@ -1,11 +1,11 @@
 import { collectComponentPropsFromCode, collectFeatureFlagsFromCode, collectOnPageScrollPerformanceWarnings, collectSetDataPickKeysFromTemplateCode } from '@weapp-vite/ast'
 import { parseSync } from 'oxc-parser'
-import { bench, describe } from 'vitest'
+import { describe } from 'vitest'
 import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../packages-runtime/wevu-compiler/src/constants'
 import { createModuleAnalysis, createModuleAnalysisFromCode } from '../../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis'
 import { collectTargetOptionsObjectsFromCode } from '../../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects'
 import { parseJsLike } from '../../../packages-runtime/wevu-compiler/src/utils/babel'
-import { defaultBenchOptions } from './utils'
+import { defaultBenchOptions, defineBenchmark } from './utils'
 
 function createSetDataPickTemplate(options?: {
   blockCount?: number
@@ -321,7 +321,7 @@ describe('ast hot paths: babel vs oxc', () => {
   let moduleAnalysisColdSeq = 0
   let optionsObjectsColdSeq = 0
 
-  bench(
+  defineBenchmark(
     'setDataPick / babel',
     () => {
       collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'babel' })
@@ -329,7 +329,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'setDataPick / oxc',
     () => {
       collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'oxc' })
@@ -337,7 +337,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'onPageScroll warnings / babel',
     () => {
       collectOnPageScrollPerformanceWarnings(pageScrollSource, '/src/pages/index.ts', { engine: 'babel' })
@@ -345,7 +345,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'onPageScroll warnings / oxc',
     () => {
       collectOnPageScrollPerformanceWarnings(pageScrollSource, '/src/pages/index.ts', { engine: 'oxc' })
@@ -353,7 +353,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'componentProps unrelated / babel',
     () => {
       collectComponentPropsFromCode(componentPropsUnrelatedSource, { astEngine: 'babel' })
@@ -361,7 +361,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'componentProps unrelated / oxc',
     () => {
       collectComponentPropsFromCode(componentPropsUnrelatedSource, { astEngine: 'oxc' })
@@ -369,7 +369,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'featureFlags unrelated / babel',
     () => {
       collectFeatureFlagsFromCode(componentPropsUnrelatedSource, {
@@ -381,7 +381,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'featureFlags unrelated / oxc',
     () => {
       collectFeatureFlagsFromCode(componentPropsUnrelatedSource, {
@@ -393,7 +393,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures moduleAnalysis / babel (cold)',
     () => {
       createModuleAnalysisFromCode(`/src/page-babel-${moduleAnalysisColdSeq++}.ts`, moduleSource, { astEngine: 'babel' })
@@ -401,7 +401,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures moduleAnalysis / oxc (cold)',
     () => {
       createModuleAnalysisFromCode(`/src/page-oxc-${moduleAnalysisColdSeq++}.ts`, moduleSource, { astEngine: 'oxc' })
@@ -409,7 +409,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures moduleAnalysis / oxc (js id, cold)',
     () => {
       createModuleAnalysisFromCode(`/src/page-oxc-js-${moduleAnalysisColdSeq++}.js`, moduleSource, { astEngine: 'oxc' })
@@ -417,7 +417,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures moduleAnalysis / babel (cached)',
     () => {
       createModuleAnalysisFromCode('/src/page.cached.ts', moduleSource, { astEngine: 'babel' })
@@ -425,7 +425,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures moduleAnalysis / oxc (cached)',
     () => {
       createModuleAnalysisFromCode('/src/page.cached.ts', moduleSource, { astEngine: 'oxc' })
@@ -433,7 +433,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures moduleAnalysis parse only / babel',
     () => {
       parseJsLike(moduleSource)
@@ -441,7 +441,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures moduleAnalysis parse only / oxc',
     () => {
       return parseSync('bench.ts', moduleSource).program
@@ -449,7 +449,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures moduleAnalysis parse only / oxc (js id)',
     () => {
       return parseSync('bench.js', moduleSource).program
@@ -457,7 +457,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures moduleAnalysis analysis only / babel',
     () => {
       createModuleAnalysis('/src/page.ts', parsedBabelModule)
@@ -465,7 +465,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures moduleAnalysis analysis only / oxc',
     () => {
       createModuleAnalysisWithParsedOxcAst('/src/page.ts', parsedOxcModule)
@@ -473,7 +473,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures optionsObjects unrelated / babel (cold)',
     () => {
       collectTargetOptionsObjectsFromCode(unrelatedSource, `/src/store-babel-${optionsObjectsColdSeq++}.ts`, { astEngine: 'babel' })
@@ -481,7 +481,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures optionsObjects unrelated / oxc fast reject (cold)',
     () => {
       collectTargetOptionsObjectsFromCode(unrelatedSource, `/src/store-oxc-${optionsObjectsColdSeq++}.ts`, { astEngine: 'oxc' })
@@ -489,7 +489,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures optionsObjects unrelated / oxc fast reject (cached)',
     () => {
       collectTargetOptionsObjectsFromCode(unrelatedSource, '/src/store.cached.ts', { astEngine: 'oxc' })
@@ -497,7 +497,7 @@ describe('ast hot paths: babel vs oxc', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pageFeatures optionsObjects imported-but-unused wevu factory / oxc fast reject (cold)',
     () => {
       collectTargetOptionsObjectsFromCode(importedButUnusedWevuFactorySource, `/src/store-wevu-unused-${optionsObjectsColdSeq++}.ts`, { astEngine: 'oxc' })

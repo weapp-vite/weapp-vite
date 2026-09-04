@@ -12,7 +12,7 @@ const DISABLED_FUNCTION_PROP_METADATA_RE = /__wevuFunctionPropPaths:\s*\[\s*"cal
 const DYNAMIC_FUNCTION_PROP_METADATA_RE = /__wevuFunctionPropPaths:\s*\[\s*"__wv_bind_\d+"\s*\]/
 const NON_FUNCTION_SELECTED_RUNTIME_BINDING_RE = /selected="\{\{__wv_bind_\d+\}\}"/
 
-describe.sequential('wevu runtime function props integration', () => {
+describe('wevu runtime function props integration', { concurrent: false }, () => {
   it('emits compiler metadata for auto function prop paths and preserves opt-out', async () => {
     await runBuild('weapp')
 

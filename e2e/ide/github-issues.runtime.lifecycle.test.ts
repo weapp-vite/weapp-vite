@@ -300,7 +300,7 @@ async function isLifecycleRuntimeReady(miniProgram: any, route: string) {
   }
 }
 
-describe.sequential('e2e app: github-issues / lifecycle', () => {
+describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

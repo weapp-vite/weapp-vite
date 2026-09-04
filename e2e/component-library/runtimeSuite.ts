@@ -222,7 +222,7 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
     }
   }
 
-  describe.sequential(`${options.suiteName} [${runtimeProvider}]`, () => {
+  describe(`${options.suiteName} [${runtimeProvider}]`, { concurrent: false }, () => {
     let miniProgram: any
     let runtimeErrorCollector: ReturnType<typeof attachRuntimeErrorCollector>
 

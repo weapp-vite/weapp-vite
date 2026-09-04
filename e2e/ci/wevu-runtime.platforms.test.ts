@@ -116,9 +116,9 @@ async function expectPlatformSnapshot(platform: RuntimePlatform, key: string, va
   expect(normalizedValue).toBe(normalizedExpectedValue)
 }
 
-const describeRuntimePlatforms = SHOULD_VALIDATE_RUNTIME_PLATFORM ? describe.sequential : describe.skip.sequential
+const describeRuntimePlatforms = SHOULD_VALIDATE_RUNTIME_PLATFORM ? describe : describe.skip
 
-describeRuntimePlatforms('wevu runtime platform outputs', () => {
+describeRuntimePlatforms('wevu runtime platform outputs', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('builds and snapshots %s outputs', async (platform) => {
     const config = await loadAppConfig()
     const pages = filterSnapshotPages(resolvePages(config))

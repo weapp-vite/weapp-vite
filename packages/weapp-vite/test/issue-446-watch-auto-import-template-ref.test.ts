@@ -126,7 +126,7 @@ async function readWevuComputedRuntime(outDir: string, exportName: string) {
   throw new Error(`watch build output missing wevu computed export: ${exportName}; vendor files: ${files.join(', ')}; computed candidates: ${computedCandidates.join(', ')}`)
 }
 
-describe.sequential('issue #446 watch auto-import component template ref', () => {
+describe('issue #446 watch auto-import component template ref', { concurrent: false }, () => {
   it('keeps computed exported after editing a page with auto-imported component refs', async () => {
     const fixtureSource = path.resolve(__dirname, '../../../e2e-apps/github-issues')
     const tempProject = await createTempFixtureProject(fixtureSource, 'issue-446-watch')

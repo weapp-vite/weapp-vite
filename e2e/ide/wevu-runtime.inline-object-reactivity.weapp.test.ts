@@ -376,7 +376,7 @@ async function runInlineObjectScenario(
   throw lastError
 }
 
-describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
+describe('wevu runtime inline object reactivity (weapp e2e)', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

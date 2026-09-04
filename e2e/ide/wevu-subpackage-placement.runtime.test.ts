@@ -83,7 +83,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('e2e app: wevu-subpackage-placement', () => {
+describe('e2e app: wevu-subpackage-placement', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

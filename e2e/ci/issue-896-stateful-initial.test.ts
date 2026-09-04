@@ -53,7 +53,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('issue #896 stateful initial build', () => {
+describe('issue #896 stateful initial build', { concurrent: false }, () => {
   it('compiles TypeScript SFC and style sidecars and reaches a ready output', async () => {
     const fixtureRoot = await createIssue896Fixture()
     const outputPath = path.join(fixtureRoot, 'dist/pages/wevu/index.wxss')

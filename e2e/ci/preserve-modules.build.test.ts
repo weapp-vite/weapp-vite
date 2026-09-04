@@ -33,7 +33,7 @@ async function runBuild(platform: 'weapp' | 'web') {
   })
 }
 
-describe.sequential('preserveModules CLI build e2e', () => {
+describe('preserveModules CLI build e2e', { concurrent: false }, () => {
   it('preserves stable module paths in main, worker and Web builds', async () => {
     const miniRoot = path.join(APP_ROOT, MINI_OUT_DIR)
     const webRoot = path.join(APP_ROOT, WEB_OUT_DIR)

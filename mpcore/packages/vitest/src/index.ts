@@ -68,12 +68,12 @@ export function registerMpcoreMatchers() {
 }
 
 declare module 'vitest' {
-  interface Assertion<T = any> {
-    toBeInTheMiniProgram: T extends MiniProgramNode ? () => void : never
-    toHaveAttribute: T extends MiniProgramNode ? (name: string, value?: string) => void : never
-    toHaveDataset: T extends MiniProgramNode ? (dataset: Record<string, unknown>) => void : never
-    toHaveEmitted: T extends MiniProgramEmissionSource ? (eventName: string, detail?: unknown) => void : never
-    toHaveTextContent: T extends MiniProgramNode ? (value: string | RegExp) => void : never
+  interface Matchers<R, T> {
+    toBeInTheMiniProgram: T extends MiniProgramNode ? () => R : never
+    toHaveAttribute: T extends MiniProgramNode ? (name: string, value?: string) => R : never
+    toHaveDataset: T extends MiniProgramNode ? (dataset: Record<string, unknown>) => R : never
+    toHaveEmitted: T extends MiniProgramEmissionSource ? (eventName: string, detail?: unknown) => R : never
+    toHaveTextContent: T extends MiniProgramNode ? (value: string | RegExp) => R : never
   }
 }
 

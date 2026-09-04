@@ -87,7 +87,7 @@ function assertPlatformTreeShaking(commonScript: string, platform: RuntimePlatfo
   }
 }
 
-describe.sequential('wevu runtime dependency modes (platform tree-shaking)', () => {
+describe('wevu runtime dependency modes (platform tree-shaking)', { concurrent: false }, () => {
   afterAll(async () => {
     await Promise.all(tempRoots.map(root => fs.remove(root)))
   })

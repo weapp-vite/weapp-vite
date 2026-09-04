@@ -210,7 +210,7 @@ function skipIfStatefulHmrTransportUnavailable(ctx: { skip: (message?: string) =
   return true
 }
 
-describe.sequential('stateful HMR in real WeChat DevTools', () => {
+describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   beforeAll(async () => {
     previousPostConnectRefresh = process.env[POST_CONNECT_REFRESH_ENV]
     delete process.env[POST_CONNECT_REFRESH_ENV]

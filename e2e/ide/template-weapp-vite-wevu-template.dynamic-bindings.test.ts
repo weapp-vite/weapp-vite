@@ -19,7 +19,7 @@ async function runBuild() {
   })
 }
 
-describe.sequential('e2e app: template-wevu-regression simplified portal', () => {
+describe('e2e app: template-wevu-regression simplified portal', { concurrent: false }, () => {
   it('emits the simplified portal structure and auto-imported component usage', async () => {
     await runBuild()
 

@@ -8,7 +8,7 @@ import {
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
 
-describe.sequential('e2e app: github-issues / issue #706', () => {
+describe('e2e app: github-issues / issue #706', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

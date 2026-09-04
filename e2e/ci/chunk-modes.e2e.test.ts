@@ -132,7 +132,7 @@ async function runBuildCapture(outDir: string, env: Record<string, string>) {
   return result.all ?? ''
 }
 
-describe.sequential('e2e chunk modes matrix', () => {
+describe('e2e chunk modes matrix', { concurrent: false }, () => {
   it('builds all combinations and validates chunk outputs', async () => {
     await fs.remove(DIST_ROOT)
 

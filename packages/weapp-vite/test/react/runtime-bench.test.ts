@@ -8,7 +8,7 @@ const REPO_ROOT = path.resolve(import.meta.dirname, '../../../..')
 const CLI_PATH = path.join(REPO_ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.join(REPO_ROOT, 'apps/runtime-bench-react')
 
-describe.sequential('React runtime benchmark build', () => {
+describe('React runtime benchmark build', { concurrent: false }, () => {
   it('keeps dynamic and static benchmark render modes distinct', async () => {
     await fs.remove(path.join(APP_ROOT, 'dist'))
     await execa('node', [CLI_PATH, 'build', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {

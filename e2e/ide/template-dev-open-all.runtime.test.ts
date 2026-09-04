@@ -344,7 +344,7 @@ async function openTemplateDevProcess(templateCase: TemplateCase) {
   throw lastError instanceof Error ? lastError : new Error(String(lastError))
 }
 
-describe.sequential('all templates dev:open IDE integration', () => {
+describe('all templates dev:open IDE integration', { concurrent: false }, () => {
   beforeAll(async () => {
     if (USE_PRESTARTED_TEMPLATE_DEV) {
       return

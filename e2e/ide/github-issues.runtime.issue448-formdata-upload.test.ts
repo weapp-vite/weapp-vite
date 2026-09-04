@@ -65,7 +65,7 @@ async function waitForFormDataUploadRuntime(miniProgram: any, route: string, tim
   throw new Error(`Timed out waiting issue-448 upload runtime; reason=${reason}; latest=${JSON.stringify(latest ?? {})}`)
 }
 
-describe.sequential('github-issues runtime issue #448 FormData upload', () => {
+describe('github-issues runtime issue #448 FormData upload', { concurrent: false }, () => {
   beforeAll(async () => {
     try {
       serverHandle = await startRequestClientsRealServer()

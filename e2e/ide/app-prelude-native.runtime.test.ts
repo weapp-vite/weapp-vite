@@ -481,7 +481,7 @@ async function collectRequestRuntimeState(
   }
 }
 
-describe.sequential('e2e app: app-prelude-native runtime', () => {
+describe('e2e app: app-prelude-native runtime', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

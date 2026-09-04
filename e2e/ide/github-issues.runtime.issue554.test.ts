@@ -20,7 +20,7 @@ const ISSUE_554_ROUTE_METHOD_OPTIONS = {
   recoveryAttempts: 2,
 }
 
-describe.sequential('e2e app: github-issues / issue #554', () => {
+describe('e2e app: github-issues / issue #554', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

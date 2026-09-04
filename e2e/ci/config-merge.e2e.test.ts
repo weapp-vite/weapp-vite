@@ -236,7 +236,7 @@ async function buildProject(projectRoot: string, label: string) {
   })
 }
 
-describe.sequential('config merge e2e', () => {
+describe('config merge e2e', { concurrent: false }, () => {
   afterAll(async () => {
     await Promise.all(tempRoots.map(root => fs.remove(root)))
   })

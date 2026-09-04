@@ -136,7 +136,7 @@ async function collectMarkerLocations(root: string, markers: string[]) {
   return { files, locations }
 }
 
-describe.sequential('e2e subpackage sharedStrategy complex matrix', () => {
+describe('e2e subpackage sharedStrategy complex matrix', { concurrent: false }, () => {
   it('keeps subpackage shared chunk routing stable under duplicate/hoist in complex graphs', async () => {
     for (const fixture of fixtureCases) {
       const distRoot = path.resolve(fixture.appRoot, 'dist-matrix')

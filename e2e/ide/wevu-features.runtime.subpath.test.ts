@@ -10,7 +10,7 @@ import {
 const SUBPATH_ROUTE = '/pages/subpath-entries/index'
 const SUBPATH_READY_TEXT = 'wevu 子路径入口综合场景'
 
-describe.sequential('e2e app: wevu-features / subpath', () => {
+describe('e2e app: wevu-features / subpath', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

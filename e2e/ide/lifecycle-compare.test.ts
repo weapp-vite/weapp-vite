@@ -455,7 +455,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('lifecycle compare (e2e)', () => {
+describe('lifecycle compare (e2e)', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

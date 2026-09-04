@@ -46,7 +46,7 @@ async function runRequireAsyncMode(ctx: any, mode: 'callback' | 'native' | 'prom
   }
 }
 
-describe.sequential('e2e app: github-issues / require async subpackage modules', () => {
+describe('e2e app: github-issues / require async subpackage modules', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

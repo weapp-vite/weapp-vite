@@ -127,7 +127,7 @@ async function waitForIndexPage(miniProgram: any, timeoutMs = ROUTE_READY_TIMEOU
     : new Error(`Timed out waiting for ${INDEX_ROUTE}`)
 }
 
-describe.sequential('template TailwindCSS TDesign HMR in real WeChat DevTools', () => {
+describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurrent: false }, () => {
   let initialWxml = ''
   let originalWxml = ''
   let miniProgram: any

@@ -265,7 +265,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('e2e baseline app', () => {
+describe('e2e baseline app', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

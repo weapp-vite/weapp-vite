@@ -148,7 +148,7 @@ async function waitForLayoutsOutputs(platform: string) {
   await waitForFileContains(LAYOUTS_PAGE_TEMPLATE_DIST(platform), 'weapp-layout-admin')
 }
 
-describe.sequential('HMR layouts matrix (dev watch)', () => {
+describe('HMR layouts matrix (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('updates layouts matrix for %s', async (platform) => {
     await fs.remove(DIST_ROOT)
 

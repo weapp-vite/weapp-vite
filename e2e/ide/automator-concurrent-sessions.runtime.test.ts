@@ -108,7 +108,7 @@ async function closeMiniProgram(miniProgram: any) {
   await miniProgram.close().catch(() => {})
 }
 
-describe.sequential('automator concurrent sessions', () => {
+describe('automator concurrent sessions', { concurrent: false }, () => {
   const miniPrograms: any[] = []
   let baseSnapshot: any
   let baseToolInfo: any

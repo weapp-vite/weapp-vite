@@ -91,7 +91,7 @@ async function createPreloadProject() {
   return root
 }
 
-describe.sequential('preload analyze CLI e2e', () => {
+describe('preload analyze CLI e2e', { concurrent: false }, () => {
   it('reports real package budgets and exits naturally', async () => {
     const root = await createPreloadProject()
 

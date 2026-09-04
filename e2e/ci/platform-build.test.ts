@@ -22,7 +22,7 @@ async function runBuild(root: string, platform: string, options: { skipNpm?: boo
   })
 }
 
-describe.sequential('platform build verification gate', () => {
+describe('platform build verification gate', { concurrent: false }, () => {
   it.each(BUILD_VERIFICATION_CAPABILITIES)('builds native base app for $id', async ({
     expectation: {
       platform,

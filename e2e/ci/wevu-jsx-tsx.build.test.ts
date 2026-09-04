@@ -21,7 +21,7 @@ const enabledPlatforms = resolvePlatformMatrix(['weapp', 'alipay', 'tt'], {
 })
 const enabledCases = PLATFORM_CASES.filter(item => enabledPlatforms.includes(item.platform))
 
-describe.sequential('wevu JSX/TSX build outputs', () => {
+describe('wevu JSX/TSX build outputs', { concurrent: false }, () => {
   it.each(enabledCases)('builds $platform $format JSX/TSX outputs', async ({ directive, format, platform }) => {
     await buildWevuJsxApp(platform, format)
 

@@ -5,8 +5,8 @@ import { print } from 'esrap'
 import ts from 'esrap/languages/ts'
 import { parseSync } from 'oxc-parser'
 import { walk } from 'oxc-walker'
-import { bench, describe } from 'vitest'
-import { createJsFixtureForOxc, defaultBenchOptions } from './utils'
+import { describe } from 'vitest'
+import { createJsFixtureForOxc, defaultBenchOptions, defineBenchmark } from './utils'
 
 interface RequireToken {
   start: number
@@ -85,7 +85,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
   const oxcParsed = parseSync('bench.ts', source).program
   const babelParsed = parseWithBabel(source)
 
-  bench(
+  defineBenchmark(
     'oxc parseSync',
     () => {
       parseSync('bench.ts', source)
@@ -93,7 +93,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'babel parse',
     () => {
       parseWithBabel(source)
@@ -101,7 +101,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'oxc parseSync + walk',
     () => {
       const parsed = parseSync('bench.ts', source)
@@ -110,7 +110,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'babel parse + traverse',
     () => {
       const parsed = parseWithBabel(source)
@@ -119,7 +119,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'oxc walk only',
     () => {
       collectRequireTokensWithOxc(oxcParsed)
@@ -127,7 +127,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'babel traverse only',
     () => {
       collectRequireTokensWithBabel(babelParsed)
@@ -135,7 +135,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'oxc parseSync + esrap print',
     () => {
       const parsed = parseSync('bench.ts', source)
@@ -144,7 +144,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'babel parse + generator',
     () => {
       const parsed = parseWithBabel(source)
@@ -153,7 +153,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'oxc parseSync + walk + esrap print',
     () => {
       const parsed = parseSync('bench.ts', source)
@@ -163,7 +163,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'babel parse + traverse + generator',
     () => {
       const parsed = parseWithBabel(source)
@@ -173,7 +173,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'esrap print only',
     () => {
       print(oxcParsed, ts())
@@ -181,7 +181,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'babel generator only',
     () => {
       generate(babelParsed, {})

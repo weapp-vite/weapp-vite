@@ -10,7 +10,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe.sequential('compileJsx template helpers', () => {
+describe('compileJsx template helpers', { concurrent: false }, () => {
   it('normalizes JavaScript numeric literals for WXML expressions', async () => {
     const { compileJsxTemplate } = await import('./template')
     const result = compileJsxTemplate(

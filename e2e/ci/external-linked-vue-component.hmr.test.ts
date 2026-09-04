@@ -295,7 +295,7 @@ afterEach(async () => {
   await fs.remove(TEMP_ROOT)
 })
 
-describe.sequential('external linked Vue component HMR', () => {
+describe('external linked Vue component HMR', { concurrent: false }, () => {
   it('updates srcRoot-external Vue components and emits external plain/config deps in dev', async () => {
     await fs.remove(DIST_ROOT)
 

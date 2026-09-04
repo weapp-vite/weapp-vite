@@ -8,7 +8,7 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/object-literal-bind-prop')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 
-describe.sequential('e2e app: object-literal-bind-prop', () => {
+describe('e2e app: object-literal-bind-prop', { concurrent: false }, () => {
   it('compiles static component object literal prop binding to IDE-safe inline mustache', async () => {
     await fs.remove(DIST_ROOT)
 

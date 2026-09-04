@@ -100,7 +100,7 @@ afterAll(async () => {
   await Promise.all(tempRoots.splice(0).map(root => fs.remove(root)))
 })
 
-describe.sequential('weapp-vite init native fixtures (build e2e)', () => {
+describe('weapp-vite init native fixtures (build e2e)', { concurrent: false }, () => {
   it.each(INIT_COMMANDS.flatMap(command => FIXTURES.map(fixture => ({
     cliPath: command.cliPath,
     commandLabel: command.commandLabel,

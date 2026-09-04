@@ -6,10 +6,7 @@ From repo root:
 
 - `pnpm -C packages/weapp-vite bench`
 
-Or with JSON output:
-
-- `pnpm -C packages/weapp-vite bench -- --outputJson bench/results.json`
-- `pnpm -C packages/weapp-vite bench -- --compare bench/results.json`
+Each run writes a timestamped JSON report to `packages/weapp-vite/bench/results/`.
 
 ## Notes
 

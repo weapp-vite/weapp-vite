@@ -1,10 +1,44 @@
 import { REQUEST_GLOBAL_ACTUALS_KEY, REQUEST_GLOBAL_PLACEHOLDER_KEY } from '@weapp-core/constants'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const wpiRequestMock = vi.hoisted(() => vi.fn())
 const wpiConnectSocketMock = vi.hoisted(() => vi.fn())
 const wpiGetAdapterMock = vi.hoisted(() => vi.fn())
 const wpiResolveTargetMock = vi.hoisted(() => vi.fn())
+
+const mutatedGlobalKeys = [
+  'fetch',
+  'Headers',
+  'Request',
+  'Response',
+  'TextEncoder',
+  'TextDecoder',
+  'AbortController',
+  'AbortSignal',
+  'XMLHttpRequest',
+  'WebSocket',
+  'Blob',
+  'File',
+  'FormData',
+  'atob',
+  'btoa',
+  'queueMicrotask',
+  'performance',
+  'crypto',
+  'Event',
+  'CustomEvent',
+  'wx',
+  'my',
+  'tt',
+  'swan',
+  'global',
+  'self',
+  'window',
+  REQUEST_GLOBAL_ACTUALS_KEY,
+] as const
+
+let runtime: typeof import('../src')
+let originalGlobalDescriptors: Map<PropertyKey, PropertyDescriptor | undefined>
 
 vi.mock('@wevu/api', () => ({
   wpi: {
@@ -100,36 +134,18 @@ function createMockSocketTask() {
 }
 
 describe('request globals runtime', () => {
-  beforeEach(async () => {
+  beforeAll(async () => {
+    runtime = await import('../src')
+    originalGlobalDescriptors = new Map(
+      mutatedGlobalKeys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]),
+    )
+  })
+
+  beforeEach(() => {
     wpiRequestMock.mockReset()
-    delete (globalThis as Record<string, any>).fetch
-    delete (globalThis as Record<string, any>).Headers
-    delete (globalThis as Record<string, any>).Request
-    delete (globalThis as Record<string, any>).Response
-    delete (globalThis as Record<string, any>).TextEncoder
-    delete (globalThis as Record<string, any>).TextDecoder
-    delete (globalThis as Record<string, any>).AbortController
-    delete (globalThis as Record<string, any>).AbortSignal
-    delete (globalThis as Record<string, any>).XMLHttpRequest
-    delete (globalThis as Record<string, any>).WebSocket
-    delete (globalThis as Record<string, any>).Blob
-    delete (globalThis as Record<string, any>).File
-    delete (globalThis as Record<string, any>).FormData
-    delete (globalThis as Record<string, any>).atob
-    delete (globalThis as Record<string, any>).btoa
-    delete (globalThis as Record<string, any>).queueMicrotask
-    delete (globalThis as Record<string, any>).performance
-    delete (globalThis as Record<string, any>).crypto
-    delete (globalThis as Record<string, any>).Event
-    delete (globalThis as Record<string, any>).CustomEvent
-    delete (globalThis as Record<string, any>).wx
-    delete (globalThis as Record<string, any>).my
-    delete (globalThis as Record<string, any>).tt
-    delete (globalThis as Record<string, any>).swan
-    delete (globalThis as Record<string, any>).global
-    delete (globalThis as Record<string, any>).self
-    delete (globalThis as Record<string, any>).window
-    delete (globalThis as Record<string, any>)[REQUEST_GLOBAL_ACTUALS_KEY]
+    for (const key of mutatedGlobalKeys) {
+      Reflect.deleteProperty(globalThis, key)
+    }
     wpiConnectSocketMock.mockReset()
     wpiGetAdapterMock.mockReset()
     wpiGetAdapterMock.mockReturnValue({
@@ -140,8 +156,18 @@ describe('request globals runtime', () => {
       supported: true,
       target: 'connectSocket',
     })
-    const { resetMiniProgramNetworkDefaults } = await import('../src')
-    resetMiniProgramNetworkDefaults()
+    runtime.resetMiniProgramNetworkDefaults()
+  })
+
+  afterEach(() => {
+    for (const [key, descriptor] of originalGlobalDescriptors) {
+      if (descriptor) {
+        Object.defineProperty(globalThis, key, descriptor)
+      }
+      else {
+        Reflect.deleteProperty(globalThis, key)
+      }
+    }
   })
 
   it('installs missing globals without overwriting existing ones', async () => {

@@ -32,7 +32,7 @@ async function readIssue911Trace(miniProgram: any) {
   }, ISSUE_911_TRACE_STORAGE_KEY).catch(() => undefined)
 }
 
-describe.sequential('e2e app: github-issues / issue #911', () => {
+describe('e2e app: github-issues / issue #911', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
     for (const relativePath of [
