@@ -39,7 +39,7 @@ export const coreApiDescriptions: Record<string, string> = {
   'isRaw()': '判断对象是否被标记为跳过响应式转换。',
   'isReadonly()': '判断对象是否为只读代理。',
   'isProxy()': '判断对象是否为响应式或只读代理。',
-  'nextTick()': '等待当前 JavaScript/响应式调度队列排空，不等待 setData 回调或视图提交。',
+  'nextTick()': '等待 JavaScript 响应式队列排空，不等待宿主视图提交。',
   'effect()': '创建底层响应式副作用并返回 runner。',
   'stop()': '停止指定的响应式 effect runner。',
   'batch()': '合并一段同步修改并集中触发依赖更新。',
