@@ -47,10 +47,10 @@
     "native:lint": "eslint package.json index.js index.d.ts native.vitest.config.ts test/**/*.test.ts"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.8.6",
+    "@napi-rs/cli": "^3.9.0",
     "@types/node": "catalog:",
     "eslint": "catalog:",
-    "vitest": "4.1.11"
+    "vitest": "5.0.0"
   },
   "napi": {
     "binaryName": "weapp_vite_ast_native",
