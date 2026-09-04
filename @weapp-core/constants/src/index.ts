@@ -58,6 +58,7 @@ export const WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY = '__WEAPP_VITE_STATEFUL_HMR_CO
 export const WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY = '__WEAPP_VITE_STATEFUL_HMR_CLIENT__'
 export const WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY = '__WEAPP_VITE_STATEFUL_HMR_BRIDGE__'
 
+export const WEVU_BINDING_MANIFEST_KEY = '__wevuBindingManifest'
 export const WEVU_PAGE_LAYOUT_SETTER_KEY = '__wevuSetPageLayout'
 export const WEVU_WEB_APIS_NETWORK_DEFAULTS_KEY = '__wevuWebApisNetworkDefaults'
 export const WEVU_PAGE_LAYOUT_NONE = '__wv_no_layout'
@@ -182,3 +183,48 @@ export const WEAPP_VITE_WEB_UPDATE_MANAGER_KEY = '__weappViteWebUpdateManager'
 export const WEAPP_VITE_WEB_ANALYTICS_EVENTS_KEY = '__weappViteWebAnalyticsEvents'
 export const WEAPP_VITE_WEB_SCAN_CODE_RESULT_KEY = '__weappViteWebScanCodeResult'
 export const WEAPP_VITE_WEB_ACTION_SHEET_SELECT_INDEX_KEY = '__weappViteWebActionSheetSelectIndex'
+
+/**
+ * Binding Manifest 支持的更新粒度。
+ */
+export type WevuBindingUpdateMode = 'exact-path' | 'top-level' | 'snapshot-fallback'
+
+/**
+ * Binding Manifest 中的源码位置。
+ */
+export interface WevuBindingSourcePositionV1 {
+  offset: number
+  line: number
+  column: number
+}
+
+/**
+ * Binding Manifest 中的源码范围。
+ */
+export interface WevuBindingSourceSpanV1 {
+  start: WevuBindingSourcePositionV1
+  end: WevuBindingSourcePositionV1
+}
+
+/**
+ * 运行时更新和诊断所需的最小绑定记录。
+ */
+export interface WevuRuntimeBindingRecordV1 {
+  id: string
+  outputPath: string
+  updateMode?: WevuBindingUpdateMode
+  sourceRoots?: string[]
+  sourceLocation?: WevuBindingSourceSpanV1
+}
+
+/**
+ * 编译器和运行时共享的精简 Binding Manifest。
+ */
+export interface WevuRuntimeBindingManifestV1 {
+  version: 1
+  sourceFile: string
+  bindings: WevuRuntimeBindingRecordV1[]
+  features?: {
+    scopedSlots?: true
+  }
+}

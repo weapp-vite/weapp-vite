@@ -9,7 +9,6 @@ export { collectRequireTokens, mayContainStaticRequireLiteral } from './operatio
 export type { DynamicImportToken, RequireCallbackToken, RequireToken } from './operations/require'
 export { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
 export type { ScriptSetupImport } from './operations/scriptSetupImports'
-export { collectSetDataPickKeysFromTemplateCode } from './operations/setDataPick'
 export { analyzeScript, analyzeScripts } from '@weapp-vite/ast'
 export { babelAstEngine, oxcAstEngine } from '@weapp-vite/ast'
 export { parseJsLikeWithEngine } from '@weapp-vite/ast'

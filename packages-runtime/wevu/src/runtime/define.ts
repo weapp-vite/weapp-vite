@@ -1,3 +1,4 @@
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import type { RuntimeComponentDefinitionOptions } from './define/componentDefinition'
 import type { InlineExpressionMap } from './register/inline'
 import type { TemplateRefBinding } from './templateRefs'
@@ -11,9 +12,11 @@ import type {
   MethodDefinitions,
   MiniProgramComponentPropertyOption,
   MiniProgramComponentRawOptions,
+  SetDataSnapshotOptions,
   ShallowUnwrapRef,
 } from './types'
 import {
+  WEVU_BINDING_MANIFEST_KEY,
   WEVU_CSS_MODULES_KEY,
   WEVU_FUNCTION_PROP_PATHS_KEY,
   WEVU_SCOPED_SLOT_CREATOR_KEY,
@@ -22,6 +25,7 @@ import {
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { hasOwn } from '../utils'
+import { hasBindingOutputPath, resolveBindingManifest } from './bindingManifest'
 import { applyWevuComponentDefaults } from './defaults'
 import {
   createRuntimeComponentDefinition,
@@ -63,20 +67,21 @@ function resolveInitialDataContext(properties: unknown, methods: MethodDefinitio
   return context
 }
 
-function shouldSeedNativeSlotOwnerId(
-  mpOptions: Record<string, any>,
-  setData: DefineComponentOptions<any, any, any, any, any>['setData'],
+function shouldDeclareNativeSlotOwnerId(
+  setData: SetDataSnapshotOptions | undefined,
+  bindingManifest: WevuRuntimeBindingManifestV1 | undefined,
 ) {
-  return Boolean((mpOptions as any).__wevu_isPage)
-    && Array.isArray(setData?.pick)
+  return (
+    Array.isArray(setData?.pick)
     && setData.pick.includes(WEVU_SLOT_OWNER_ID_KEY)
+  ) || (
+    bindingManifest?.features?.scopedSlots === true
+    && hasBindingOutputPath(bindingManifest, WEVU_SLOT_OWNER_ID_KEY)
+  )
 }
 
-function shouldDeclareNativeSlotOwnerId(
-  setData: DefineComponentOptions<any, any, any, any, any>['setData'],
-) {
-  return Array.isArray(setData?.pick)
-    && setData.pick.includes(WEVU_SLOT_OWNER_ID_KEY)
+function shouldSeedNativeSlotOwnerId(mpOptions: Record<string, unknown>) {
+  return Boolean(mpOptions.__wevu_isPage)
 }
 
 function hasScopedSlotHostProperties(mpOptions: Record<string, any>) {
@@ -127,6 +132,7 @@ export interface ComponentDefinition<
     computed: C
     methods: M
     setData: import('./types').SetDataSnapshotOptions | undefined
+    bindingManifest?: WevuRuntimeBindingManifestV1
     watch: Record<string, any> | undefined
     setup: ((props: any, ctx: any) => any) | undefined
     mpOptions: MiniProgramComponentRawOptions
@@ -255,9 +261,11 @@ function createComponentDefinition(
     inject: injectOptions,
     provide: provideOptions,
     allowFunctionProps,
+    [WEVU_BINDING_MANIFEST_KEY]: rawBindingManifest,
     [WEVU_CSS_MODULES_KEY]: cssModules,
     ...mpOptions
   } = resolvedOptions
+  const bindingManifest = resolveBindingManifest(rawBindingManifest)
 
   const rawFunctionPropPaths = (mpOptions as any)[WEVU_FUNCTION_PROP_PATHS_KEY]
   const functionPropPaths: string[] = Array.isArray(rawFunctionPropPaths)
@@ -323,11 +331,11 @@ function createComponentDefinition(
   const nativeData = typeof resolvedData === 'function'
     ? resolvedData()
     : resolvedData
-  const shouldDeclareOwnerId = shouldDeclareNativeSlotOwnerId(resolvedSetData)
+  const shouldDeclareOwnerId = shouldDeclareNativeSlotOwnerId(resolvedSetData, bindingManifest)
   const seededNativeData = shouldDeclareOwnerId
     ? {
         ...(nativeData && typeof nativeData === 'object' ? nativeData : {}),
-        [WEVU_SLOT_OWNER_ID_KEY]: shouldSeedNativeSlotOwnerId(mpOptions, resolvedSetData)
+        [WEVU_SLOT_OWNER_ID_KEY]: shouldSeedNativeSlotOwnerId(mpOptions)
           ? (nativeData as any)?.[WEVU_SLOT_OWNER_ID_KEY] || allocateOwnerId()
           : (nativeData as any)?.[WEVU_SLOT_OWNER_ID_KEY] || '',
       }
@@ -345,6 +353,7 @@ function createComponentDefinition(
     computed: computed as ComputedDefinitions,
     methods: methods as MethodDefinitions,
     setData: resolvedSetData,
+    bindingManifest,
     watch,
     setup: setupWrapper,
     mpOptions: mpOptionsWithProps as MiniProgramComponentRawOptions,
@@ -439,6 +448,7 @@ export function createWevuScopedSlotComponent(
     computed?: ComputedDefinitions
     inlineMap?: InlineExpressionMap
     templateRefs?: TemplateRefBinding[]
+    [WEVU_BINDING_MANIFEST_KEY]?: WevuRuntimeBindingManifestV1
   },
 ): void {
   const baseOptions = createScopedSlotOptions(overrides)

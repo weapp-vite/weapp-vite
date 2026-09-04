@@ -13,6 +13,8 @@ function createState(ast: any): TransformState {
     defineComponentAliases: new Set(['defineComponent', '_defineComponent']),
     defineComponentDecls: new Map(),
     defaultExportPath: null,
+    useSlotsAliases: new Set(),
+    usesSlots: false,
   }
   traverse(ast, createCollectVisitors(state) as any)
   return state
@@ -49,6 +51,8 @@ describe('rewriteDefaultExport', () => {
       defineComponentAliases: new Set(['defineComponent', '_defineComponent']),
       defineComponentDecls: new Map(),
       defaultExportPath: null,
+      useSlotsAliases: new Set(),
+      usesSlots: false,
     }
 
     const transformed = rewriteDefaultExport(

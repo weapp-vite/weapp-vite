@@ -2,7 +2,7 @@ import type { File as BabelFile, ObjectExpression } from '@weapp-vite/ast/babelT
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { WevuPageFeatureFlag } from '../../../wevu/pageFeatures'
 import type { TransformResult, TransformScriptOptions, TransformState } from './utils'
-import { WE_VU_RUNTIME_APIS } from '../../../../constants'
+import { isWevuRuntimeModuleId, WE_VU_RUNTIME_APIS } from '../../../../constants'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../../utils/babel'
 import { resolveWarnHandler } from '../../../../utils/warn'
 import { collectWevuPageFeatureFlags } from '../../../wevu/pageFeatures'
@@ -38,6 +38,8 @@ export function transformScript(source: string, options?: TransformScriptOptions
     transformed: false,
     defineComponentAliases: new Set<string>([WE_VU_RUNTIME_APIS.defineComponent, '_defineComponent']),
     defineComponentDecls: new Map<string, ObjectExpression>(),
+    useSlotsAliases: new Set<string>(),
+    usesSlots: false,
     defaultExportPath: null,
   }
 
@@ -61,12 +63,29 @@ export function transformScript(source: string, options?: TransformScriptOptions
     ...importVisitors,
     ...collectVisitors,
     ImportDeclaration(path: any) {
+      const source = path.node.source.value
+      const canProvideUseSlots = source === 'vue' || isWevuRuntimeModuleId(source)
+      for (const specifier of path.node.specifiers) {
+        if (
+          canProvideUseSlots
+          && specifier.type === 'ImportSpecifier'
+          && (
+            (specifier.imported.type === 'Identifier' && specifier.imported.name === 'useSlots')
+            || (specifier.imported.type === 'StringLiteral' && specifier.imported.value === 'useSlots')
+          )
+        ) {
+          state.useSlotsAliases.add(specifier.local.name)
+        }
+      }
       runVisitor(vueSfcVisitors.ImportDeclaration, path)
       if (!path.removed) {
         runVisitor(importVisitors.ImportDeclaration, path)
       }
     },
     CallExpression(path: any) {
+      if (path.node.callee.type === 'Identifier' && state.useSlotsAliases.has(path.node.callee.name)) {
+        state.usesSlots = true
+      }
       runVisitor(vueSfcVisitors.CallExpression, path)
       if (!path.removed) {
         runVisitor(macroVisitors.CallExpression, path)
@@ -81,10 +100,13 @@ export function transformScript(source: string, options?: TransformScriptOptions
     state.transformed = pruneTemplateComponentMeta(ast, options.templateComponentMeta) || state.transformed
   }
 
+  const rewriteOptions = state.usesSlots && !options?.scopedSlotHostProperties
+    ? { ...options, scopedSlotHostProperties: true }
+    : options
   state.transformed = rewriteDefaultExport(
     ast,
     state,
-    options,
+    rewriteOptions,
     enabledPageFeatures,
     serializedWevuDefaults,
     parsedWevuDefaults,

@@ -3,7 +3,7 @@
 import type { GithubIssuesBuildCaseContext } from './cases/types'
 import process from 'node:process'
 import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
-import { REQUEST_GLOBAL_PRELUDE_MARKER } from '@weapp-core/constants'
+import { REQUEST_GLOBAL_PRELUDE_MARKER, WEVU_BINDING_MANIFEST_KEY } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import { fdir } from 'fdir'
@@ -187,14 +187,6 @@ function expectSetDataPickKeys(code: string, keys: string[]) {
   expect(match?.[1]).toBeTruthy()
   for (const key of keys) {
     expect(match![1]).toContain(JSON.stringify(key))
-  }
-}
-
-function expectSetDataPickOmitsKeys(code: string, keys: string[]) {
-  const match = code.match(/setData\s*:\s*\{\s*pick\s*:\s*\[([\s\S]*?)\]/)
-  expect(match?.[1]).toBeTruthy()
-  for (const key of keys) {
-    expect(match![1]).not.toContain(JSON.stringify(key))
   }
 }
 
@@ -1189,7 +1181,7 @@ export function registerGithubIssuesBuildLegacyCases() {
     expect(pageJs).not.toContain('ctx.nestedState.count.value.value')
   })
 
-  it('issue #642: keeps slot bridge props available to performance setData pick', async () => {
+  it('issue #642: keeps compiler-owned props and slot bridge bindings in performance setData pick', async () => {
     await runIssue642Build()
 
     const pageWxmlPath = path.join(ISSUE_642_DIST_ROOT, 'pages/issue-642/index.wxml')
@@ -1214,7 +1206,7 @@ export function registerGithubIssuesBuildLegacyCases() {
     expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).toContain('generic:scoped-slots-default=')
     expectSetDataPickKeys(pageJs, ['vueSlots', '__wvSlotOwnerId', '__wvSlotScope'])
-    expectSetDataPickOmitsKeys(pageJs, ['__wv_bind_0', '__wv_bind_839'])
+    expectSetDataPickKeys(pageJs, ['__wv_bind_0', '__wv_bind_839'])
     expect(scopedSlotWxml).toContain('data-issue642-slot-state="scoped-provided"')
     expect(scopedSlotWxml).toContain('data-issue642-scoped-value="{{__wvSlotPropsData.io}}"')
     expect(scopedSlotWxml).toContain('{{__wvSlotPropsData.io}}')
@@ -1857,6 +1849,7 @@ export function registerGithubIssuesBuildLegacyCases() {
     const scopedSlotJson = await fs.readJson(scopedSlotJsonPath) as { component?: boolean, styleIsolation?: string }
     const scopedSlotWxml = stripGeneratedScopeAttrs(await fs.readFile(scopedSlotWxmlPath, 'utf-8'))
     const hostWxml = await fs.readFile(hostWxmlPath, 'utf-8')
+    const scopedSlotJs = await fs.readFile(scopedSlotWxmlPath.replace(/\.wxml$/, '.js'), 'utf-8')
 
     expect(pageWxml).toContain('issue-521 scoped slot flex layout')
     expect(pageWxml).toContain('generic:scoped-slots-default=')
@@ -1871,7 +1864,8 @@ export function registerGithubIssuesBuildLegacyCases() {
       styleIsolation: 'apply-shared',
     })
     expect(scopedSlotWxml).toContain('<flex-item label="A" value="{{__wvSlotPropsData.xyz}}" /><flex-item label="B" value="{{__wvSlotPropsData.xyz}}" />')
-    expect(await fs.readFile(scopedSlotWxmlPath.replace(/\.wxml$/, '.js'), 'utf-8')).toContain('createWevuScopedSlotComponent()')
+    expect(scopedSlotJs).toMatch(/createWevuScopedSlotComponent\(\s*\{/)
+    expect(scopedSlotJs).toContain(JSON.stringify(WEVU_BINDING_MANIFEST_KEY))
     expect(hostWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
     expect(runtime.code).toContain('virtualHost')
     expect(runtime.code).toMatch(/options:\s*\{\s*virtualHost:\s*(?:true|!0)\s*\}/)

@@ -21,7 +21,7 @@ import { applyOutputChunkTransform, replaceOutputChunkCode, resolveOutputChunkTr
 import { normalizePath, toPosixPath } from '../utils/path'
 import { normalizeEncodedSourceMapLike } from '../utils/sourcemap'
 import { emitAlipayGenericPlaceholderAssetsByBase, resolveWeappScopedSlotGenericPlaceholderBase } from './vue/transform/bundle/platform'
-import { injectScopedSlotHostPropertiesInJs } from './vue/transform/injectSetDataPick'
+import { injectNativeScopedSlotHostPropertiesInJs } from './vue/transform/injectNativeScopedSlotHostProperties'
 
 interface AssetPluginState {
   ctx: CompilerContext
@@ -180,7 +180,7 @@ function withScopedSlotHostProperties(
     return source
   }
 
-  const injected = injectScopedSlotHostPropertiesInJs(source, { sourceMap: false })
+  const injected = injectNativeScopedSlotHostPropertiesInJs(source, { sourceMap: false })
   if (injected.transformed) {
     return injected.code
   }
@@ -226,7 +226,7 @@ function patchScopedSlotHostAssetForBundle(
 
     const transformCode = resolveOutputChunkTransformCode(chunk)
     const hasSourceMap = Boolean(normalizeEncodedSourceMapLike(chunk.map)) || transformCode !== current
-    const injected = injectScopedSlotHostPropertiesInJs(transformCode, { sourceMap: hasSourceMap })
+    const injected = injectNativeScopedSlotHostPropertiesInJs(transformCode, { sourceMap: hasSourceMap })
     if (injected.transformed) {
       return applyOutputChunkTransform(chunk, injected.code, injected.map)
     }

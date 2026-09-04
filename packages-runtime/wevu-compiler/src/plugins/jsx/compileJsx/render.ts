@@ -28,6 +28,7 @@ import {
   unwrapTsExpression,
 } from './ast'
 import { compileJsxAttributes, extractJsxKeyExpression, isStaticClassStyleExpression, readJsxAttributeExpression } from './attributes'
+import { recordJsxBinding } from './bindingManifest'
 
 type JSXChild = JSXText | JSXExpressionContainer | JSXSpreadChild | JSXElement | JSXFragment
 const DYNAMIC_ISLAND_TEMPLATE_DEPTH = 8
@@ -49,6 +50,8 @@ function registerDynamicIsland(exp: Expression, context: JsxCompileContext, reas
   }
   const id = `i${context.dynamicIslandSeed ?? 0}`
   context.dynamicIslandSeed = (context.dynamicIslandSeed ?? 0) + 1
+  context.bindingManifest.features.jsxIslands = true
+  recordJsxBinding(context, exp, 'text', WEVU_JSX_ISLAND_DATA_KEY)
   const expression = normalizeInterpolationExpression(exp)
   const captures = new Set<string>()
   const file = t.file(t.program([t.expressionStatement(t.cloneNode(exp, true))]))
@@ -233,6 +236,7 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
     return null
   }
 
+  recordJsxBinding(context, callee.object as Expression, 'for')
   const listExp = compileListExpression(callee.object as Expression)
   const renderTemplateMustache = (expression: string) => renderMustache(expression, context)
   const itemParam = callback.params[0]
@@ -241,7 +245,7 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
   const index = t.isIdentifier(indexParam) ? indexParam.name : undefined
 
   const addedScope = [item, index].filter((name): name is string => !!name)
-  pushScope(context, addedScope)
+  pushScope(context, addedScope, listExp)
 
   let bodyExp: Expression | null = null
   if (t.isBlockStatement(callback.body)) {
@@ -287,6 +291,7 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
 
 function compileConditionalExpression(exp: t.ConditionalExpression, context: JsxCompileContext): string {
   const renderTemplateMustache = (expression: string) => renderMustache(expression, context)
+  recordJsxBinding(context, exp.test, 'if')
   const test = normalizeInterpolationExpression(exp.test)
   const consequent = compileRenderableExpression(exp.consequent, context)
   const alternate = compileRenderableExpression(exp.alternate, context)
@@ -300,6 +305,7 @@ function compileConditionalExpression(exp: t.ConditionalExpression, context: Jsx
 
 function compileLogicalExpression(exp: t.LogicalExpression, context: JsxCompileContext): string {
   const renderTemplateMustache = (expression: string) => renderMustache(expression, context)
+  recordJsxBinding(context, exp.left, 'if')
   if (exp.operator === '&&') {
     const test = normalizeInterpolationExpression(exp.left)
     const content = compileRenderableExpression(exp.right, context)
@@ -360,6 +366,7 @@ export function compileRenderableExpression(exp: Expression, context: JsxCompile
     return ''
   }
 
+  recordJsxBinding(context, node, 'text')
   return renderMustache(normalizeInterpolationExpression(node), context)
 }
 
@@ -496,16 +503,23 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
   }
   if (directives.has('v-for') || directives.has('v-slots') || directives.has('v-model') || directives.has('v-models')) {
     const directive = ['v-for', 'v-slots', 'v-model', 'v-models'].find(name => directives.has(name))!
+    if (directive === 'v-model' || directive === 'v-models') {
+      context.bindingManifest.features.model = true
+    }
     context.warnings.push(`JSX ${directive} 无法直接映射当前静态 WXML，已生成 dynamic island。`)
     return registerDynamicIsland(node as unknown as Expression, context, 'closure')
   }
   const attrs = compileJsxAttributes(node.openingElement.attributes, context, { isComponent })
   const showExpression = directives.get('v-show')
   if (showExpression) {
+    recordJsxBinding(context, showExpression, 'style')
     attrs.push(`hidden="${renderMustache(`!(${normalizeInterpolationExpression(showExpression)})`, context)}"`)
   }
   const attrsSegment = attrs.length ? ` ${attrs.join(' ')}` : ''
   const textExpression = directives.get('v-text')
+  if (textExpression) {
+    recordJsxBinding(context, textExpression, 'text')
+  }
   const content = textExpression
     ? renderMustache(normalizeInterpolationExpression(textExpression), context)
     : compileJsxChildren(node.children, context)
@@ -514,6 +528,7 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     : `<${tag}${attrsSegment}>${content}</${tag}>`
   const ifExpression = directives.get('v-if')
   if (ifExpression) {
+    recordJsxBinding(context, ifExpression, 'if')
     return context.platform.wrapIf(
       normalizeInterpolationExpression(ifExpression),
       element,

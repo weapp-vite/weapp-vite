@@ -33,6 +33,8 @@ function createSlotFunctionBinding(exp: string, context: TransformContext, locat
     warn(context, '作用域插槽函数参数编译失败。', location, 'expression')
     return null
   }
+  context.bindingManifest.features.functionProps = true
+  context.bindingManifest.features.inlineEvents = true
   const scopeBindings = `[${inline.scopeBindings.join(',')}]`
   const indexBindings = `[${inline.indexBindings.join(',')}]`
   return `[${toWxmlStringLiteral(WEVU_SLOT_FUNCTION_TOKEN)},${toWxmlStringLiteral(inline.id)},${scopeBindings},${indexBindings}]`

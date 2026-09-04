@@ -1,19 +1,24 @@
-import type { CompileVueFileOptions } from 'wevu/compiler'
+import type { CompilerAppShell, CompilerPageLayoutPlan, CompileVueFileOptions } from 'wevu/compiler'
 import type { CompilerContext } from '../../../context'
 import type { MpPlatform } from '../../../types'
+import type { ResolvedAppShell } from './appShell'
+import type { ResolvedPageLayoutPlan } from './pageLayout'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../logger'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../utils/entryResolve'
+import { toPosixPath } from '../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
 import { resolveRelativeOutputFileNameWithExtension } from '../../utils/outputFileName'
 import { createSfcResolveSrcOptions } from '../../utils/vueSfc'
+import { createCompilerAppShellSignature, toCompilerAppShell } from './appShell'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
+import { createCompilerPageLayoutPlanSignature, toCompilerPageLayoutPlan } from './pageLayout'
 import { createUsingComponentPathResolver } from './usingComponentResolver'
-import { isWevuMinifyEnabled, resolveWevuDefaultsWithPreset } from './wevuPreset'
+import { isAutoSetDataPickEnabledWithPreset, isWevuMinifyEnabled, resolveWevuDefaultsWithPreset } from './wevuPreset'
 
 export type CompileVueFileResolvedOptions = CompileVueFileOptions
 
@@ -39,8 +44,10 @@ export function getCompileVueFileOptionsCacheKey(
   isApp: boolean,
   delegatesComponentRegistration = false,
   emitResolvedComponentEntries = true,
+  pageLayoutSignature = 'null',
+  appShellSignature = 'null',
 ) {
-  return `${vuePath}::${isPage ? 'page' : 'component'}::${isApp ? 'app' : 'entry'}::${delegatesComponentRegistration ? 'logical-registration' : 'module-registration'}::${emitResolvedComponentEntries ? 'emit-entries' : 'resolve-only'}`
+  return `${vuePath}::${isPage ? 'page' : 'component'}::${isApp ? 'app' : 'entry'}::${delegatesComponentRegistration ? 'logical-registration' : 'module-registration'}::${emitResolvedComponentEntries ? 'emit-entries' : 'resolve-only'}::layout=${pageLayoutSignature}::app-shell=${appShellSignature}`
 }
 
 function shouldDelegateComponentRegistration(
@@ -115,6 +122,19 @@ export function resolveVueTemplatePlatformOptions(options: {
   } as const
 }
 
+/**
+ * 将编译入口规范化为相对 Vite 项目根目录的诊断来源路径。
+ */
+export function resolveBindingManifestSourceFile(
+  vuePath: string,
+  configService: Pick<NonNullable<CompilerContext['configService']>, 'cwd' | 'inlineConfig'>,
+) {
+  const projectRoot = path.resolve(configService.cwd, configService.inlineConfig?.root ?? '.')
+  const cleanPath = normalizeFsResolvedId(vuePath.split(/[?#]/, 1)[0])
+  const relativePath = toPosixPath(path.relative(projectRoot, cleanPath))
+  return relativePath.replace(/^\.\//, '') || '.'
+}
+
 function buildCompileVueFileOptions(
   ctx: CompilerContext,
   pluginCtx: any,
@@ -124,6 +144,8 @@ function buildCompileVueFileOptions(
   configService: NonNullable<CompilerContext['configService']>,
   state: CompileOptionsContext,
   delegatesComponentRegistration: boolean,
+  pageLayout: CompilerPageLayoutPlan | undefined,
+  appShell: CompilerAppShell | undefined,
 ): CompileVueFileResolvedOptions {
   const importerBaseName = removeExtensionDeep(vuePath)
   const autoImportResolveCache = new Map<string, {
@@ -297,6 +319,11 @@ function buildCompileVueFileOptions(
     isPage,
     isApp,
     skipComponentTransform: delegatesComponentRegistration,
+    autoSetDataPick: isAutoSetDataPickEnabledWithPreset(configService.weappViteConfig),
+    bindingManifestSourceFile: resolveBindingManifestSourceFile(vuePath, configService),
+    runtimeBindingManifest: configService.isDev ? 'diagnostic' : 'compact',
+    pageLayout,
+    appShell,
     warn: (message: string) => logger.warn(message),
     autoUsingComponents: {
       enabled: true,
@@ -388,6 +415,8 @@ export function createCompileVueFileOptions(
   isApp: boolean,
   configService: NonNullable<CompilerContext['configService']>,
   state: CompileOptionsContext,
+  resolvedPageLayout?: ResolvedPageLayoutPlan,
+  resolvedAppShell?: ResolvedAppShell,
 ) {
   const delegatesComponentRegistration = shouldDelegateComponentRegistration(
     ctx,
@@ -396,12 +425,18 @@ export function createCompileVueFileOptions(
     isApp,
     configService,
   )
+  const pageLayout = toCompilerPageLayoutPlan(resolvedPageLayout)
+  const pageLayoutSignature = createCompilerPageLayoutPlanSignature(resolvedPageLayout)
+  const appShell = isPage && !isApp ? toCompilerAppShell(resolvedAppShell) : undefined
+  const appShellSignature = createCompilerAppShellSignature(isPage && !isApp ? resolvedAppShell : undefined)
   const cacheKey = getCompileVueFileOptionsCacheKey(
     vuePath,
     isPage,
     isApp,
     delegatesComponentRegistration,
     state.emitResolvedComponentEntries !== false,
+    pageLayoutSignature,
+    appShellSignature,
   )
   const cached = state.compileOptionsCache?.get(cacheKey)
   if (cached) {
@@ -417,6 +452,8 @@ export function createCompileVueFileOptions(
     configService,
     state,
     delegatesComponentRegistration,
+    pageLayout,
+    appShell,
   )
   state.compileOptionsCache?.set(cacheKey, created)
   return created

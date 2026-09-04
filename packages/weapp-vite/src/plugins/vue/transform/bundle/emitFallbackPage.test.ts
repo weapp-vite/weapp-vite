@@ -127,6 +127,7 @@ describe('emitFallbackPage helpers', () => {
       pluginCtx,
       configService,
       compileOptionsState,
+      appShell: undefined,
     })
     expect(handleFallbackPageLayoutsMock).toHaveBeenCalledTimes(1)
     expect(emitBundlePageLayoutsIfNeededMock).toHaveBeenCalledWith({

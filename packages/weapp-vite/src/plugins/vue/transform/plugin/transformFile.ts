@@ -9,8 +9,10 @@ import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
+import { createCompilerAppShellSignature } from '../appShell'
 import { createCompileVueFileOptions, isVueTransformSourceMapEnabled } from '../compileOptions'
-import { compileTransformEntryResult, createTransformStageMeasurer, isVueCssImporterDirtyReasonSummary, isVueStyleOnlyDirtyReasonSummary, loadTransformSource, logTransformFileError, normalizeVueTransformResult, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+import { createCompilerPageLayoutPlanSignature } from '../pageLayout'
+import { compileTransformEntryResult, createTransformStageMeasurer, handleTransformEntryPageLayoutFlow, isVueCssImporterDirtyReasonSummary, isVueStyleOnlyDirtyReasonSummary, loadTransformSource, logTransformFileError, normalizeVueTransformResult, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 import { createSfcStyleBlocksSignature } from './styleOnlyRefresh'
 import { finalizeVueTransform } from './transformFile/finalize'
 import { tryRefreshJsonOnlyVueCompilation } from './transformFile/jsonOnly'
@@ -22,6 +24,7 @@ export async function transformVueLikeFile(options: {
   code: string
   id: string
   compilationCache: VueCompilationCache
+  appShell?: ResolvedAppShell
   setAppShell: (shell: ResolvedAppShell | undefined) => void
   pageMatcher: ReturnType<typeof createPageEntryMatcher> | null
   setPageMatcher: (matcher: ReturnType<typeof createPageEntryMatcher>) => void
@@ -44,6 +47,7 @@ export async function transformVueLikeFile(options: {
     code,
     id,
     compilationCache,
+    appShell,
     setAppShell,
     pageMatcher,
     setPageMatcher,
@@ -131,6 +135,26 @@ export async function transformVueLikeFile(options: {
       transformedSource = transformed.source
       autoRoutesSignature = transformed.signature
     }
+    const resolvedPageLayoutPlan = isPage
+      ? await measureStage('resolvePageLayout', async () => await handleTransformEntryPageLayoutFlow({
+          pluginCtx,
+          ctx,
+          filename,
+          source: transformedSource,
+        }))
+      : undefined
+    const pageLayoutSignature = createCompilerPageLayoutPlanSignature(resolvedPageLayoutPlan)
+    const appShellSignature = createCompilerAppShellSignature(isPage && !isApp ? appShell : undefined)
+    if (
+      cachedCompilation
+      && (
+        cachedCompilation.pageLayoutSignature !== pageLayoutSignature
+        || cachedCompilation.appShellSignature !== appShellSignature
+      )
+    ) {
+      cachedCompilation.source = undefined
+      cachedCompilation.styleIndependentSignature = undefined
+    }
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
     const isJsxTemplateDependencyDirty = Boolean(
@@ -173,12 +197,22 @@ export async function transformVueLikeFile(options: {
       }
     }
     const { currentStyleIndependentSignature } = reuseResult
-    const compileOptions = createCompileVueFileOptions(ctx, pluginCtx, filename, isPage, isApp, configService, {
-      reExportResolutionCache,
-      classStyleRuntimeWarned,
-      compileOptionsCache,
-      componentMetaCache,
-    })
+    const compileOptions = createCompileVueFileOptions(
+      ctx,
+      pluginCtx,
+      filename,
+      isPage,
+      isApp,
+      configService,
+      {
+        reExportResolutionCache,
+        classStyleRuntimeWarned,
+        compileOptionsCache,
+        componentMetaCache,
+      },
+      resolvedPageLayoutPlan,
+      appShell,
+    )
 
     const jsonOnlyResult = await measureVueHmrStage('refreshJsonConfig', 'vueCompileMs', async () => {
       return await tryRefreshJsonOnlyVueCompilation({
@@ -200,8 +234,10 @@ export async function transformVueLikeFile(options: {
         pluginCtx,
         filename,
         source: transformedSource,
+        appShellSignature,
         autoRoutesSignature,
         result: jsonOnlyResult,
+        pageLayoutSignature,
         compilationCache,
         currentStyleIndependentSignature: cachedCompilation?.styleIndependentSignature,
         previousStyleSignature,
@@ -240,8 +276,10 @@ export async function transformVueLikeFile(options: {
       pluginCtx,
       filename,
       source: transformedSource,
+      appShellSignature,
       autoRoutesSignature,
       result,
+      pageLayoutSignature,
       compilationCache,
       currentStyleIndependentSignature,
       previousStyleSignature,

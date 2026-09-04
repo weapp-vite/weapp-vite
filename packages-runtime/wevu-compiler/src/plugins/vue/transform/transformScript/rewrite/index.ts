@@ -8,6 +8,7 @@ import { resolveWarnHandler } from '../../../../../utils/warn'
 import { injectWevuPageFeatureFlagsIntoOptionsObject } from '../../../../wevu/pageFeatures'
 import { resolveComponentExpression, resolveComponentOptionsObject } from '../../scriptComponent'
 import { getObjectPropertyByKey } from '../utils'
+import { injectBindingManifestContract } from './bindingManifest'
 import { ensureClassStyleRuntimeImports, injectClassStyleComputed } from './classStyle'
 import { applyWevuDefaultsToComponentOptions, injectWevuDefaultsForApp } from './defaults'
 import { rewriteComponentExport } from './export'
@@ -344,6 +345,14 @@ export function rewriteDefaultExport(
   if (componentOptionsObject) {
     transformed = injectPropsAliases(componentOptionsObject, options?.propsAliases) || transformed
     transformed = injectPropsDerivedKeys(componentOptionsObject, options?.propsDerivedKeys) || transformed
+  }
+  if (componentOptionsObject && !options?.isApp) {
+    transformed = injectBindingManifestContract(componentOptionsObject, {
+      manifest: options?.bindingManifest,
+      autoSetDataPick: options?.autoSetDataPick,
+      pageLayout: options?.pageLayout,
+      runtimeBindingManifest: options?.runtimeBindingManifest,
+    }) || transformed
   }
 
   const classStyleBindings = options?.classStyleBindings ?? []

@@ -183,4 +183,4 @@ export interface TemplateRefValue {
 
 export type MiniProgramTemplateRefValue = TemplateRefValue
 
-export type { SetDataDebugInfo, SetDataSnapshotOptions } from './types/setData'
+export type { SetDataBindingDiagnostic, SetDataDebugInfo, SetDataSnapshotOptions } from './types/setData'

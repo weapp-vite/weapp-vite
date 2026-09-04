@@ -22,6 +22,7 @@ const resolveWevuDefaultsWithPresetMock = vi.hoisted(() => vi.fn(() => ({
   preset: 'default',
 })))
 const isWevuMinifyEnabledMock = vi.hoisted(() => vi.fn((_config: any, isDev = false) => !isDev))
+const isAutoSetDataPickEnabledWithPresetMock = vi.hoisted(() => vi.fn(() => true))
 
 vi.mock('../../../logger', () => ({
   default: {
@@ -51,6 +52,7 @@ vi.mock('./usingComponentResolver', () => ({
 vi.mock('./wevuPreset', () => ({
   resolveWevuDefaultsWithPreset: resolveWevuDefaultsWithPresetMock,
   isWevuMinifyEnabled: isWevuMinifyEnabledMock,
+  isAutoSetDataPickEnabledWithPreset: isAutoSetDataPickEnabledWithPresetMock,
 }))
 
 describe('resolveVueTemplatePlatformOptions', () => {
@@ -84,6 +86,16 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(alipayOptions.supportsWxs).toBe(true)
     expect(alipayOptions.wxsExtension).toBe('sjs')
     expect(alipayOptions.classStyleRuntime).toBe('wxs')
+
+    const ttOptions = resolveVueTemplatePlatformOptions({
+      platform: 'tt',
+      wxsEnabled: true,
+      wxsExtension: 'sjs',
+      classStyleRuntime: 'auto',
+      classStyleRuntimeWarned: { value: false },
+    })
+    expect(ttOptions.templatePlatform.name).toBe('tt')
+    expect(ttOptions.supportsWxs).toBe(true)
   })
 
   it('falls back to js runtime when wxs is disabled or unavailable', () => {
@@ -182,6 +194,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     )
 
     expect(options.template.platform.name).toBe('alipay')
+    expect(options.runtimeBindingManifest).toBe('diagnostic')
     expect(options.template.htmlTagToWxml).toEqual({
       div: 'view',
     })
@@ -301,6 +314,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     )
 
     expect(createOptions(layoutPath).skipComponentTransform).toBe(false)
+    expect(createOptions(layoutPath).runtimeBindingManifest).toBe('compact')
     expect(createOptions('/project/src/components/card.vue', {
       weappLibConfig: { enabled: true },
     }).skipComponentTransform).toBe(false)

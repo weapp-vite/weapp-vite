@@ -78,8 +78,7 @@ Component({
   "components/native-tabbar/__weapp_vite_scoped_slot_generic_component.wxml": "<view wx:if="{{false}}" />",
   "components/native-tabbar/index.js": "//#region <fixture>/src/components/native-tabbar/index.ts
 Component({ properties: { vueSlots: { type: null, value: null }, __wvSlotOwnerId: { type: String, value: "" }, __wvSlotScope: { type: null, value: null } }, options: { virtualHost: true } });
-//#endregion
-",
+//#endregion",
   "components/native-tabbar/index.json": "{
   "component": true,
   "componentGenerics": {
@@ -106,7 +105,36 @@ var __wevuComputed = { __wv_bind_0: function() {
 		}
 	})();
 } };
-if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotComponent({ computed: __wevuComputed });
+if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotComponent({
+	"__wevuBindingManifest": Object.freeze({
+		"version": 1,
+		"sourceFile": "src/pages/index/index.vue",
+		"bindings": [
+			{
+				"id": "b0",
+				"outputPath": "__wv_bind_0"
+			},
+			{
+				"id": "b1",
+				"outputPath": "__wvOwner.tabItems"
+			},
+			{
+				"id": "b2",
+				"outputPath": "__wvOwner.tabItems"
+			},
+			{
+				"id": "b3",
+				"outputPath": "__wvOwner.tabItems"
+			},
+			{
+				"id": "b4",
+				"outputPath": "__wvOwner.tabItems"
+			}
+		],
+		"features": { "scopedSlots": true }
+	}),
+	computed: __wevuComputed
+});
 //#endregion
 ",
   "pages/index/index.__scoped-slot-default-0.json": "{
@@ -151,7 +179,19 @@ var __wevuOptions = {
 			icon: "user",
 			to: { name: "user" }
 		}] };
-	}
+	},
+	"__wevuBindingManifest": Object.freeze({
+		version: 1,
+		sourceFile: "src/pages/index/index.vue",
+		bindings: [{
+			id: "b0",
+			outputPath: "__wvOwnerId"
+		}, {
+			id: "b1",
+			outputPath: "__wvOwnerId"
+		}],
+		features: { scopedSlots: true }
+	})
 };
 require_templateRef.__wevuScopedSlotCreator(__wevuOptions);
 //#endregion

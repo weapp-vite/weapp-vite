@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSidecarSourceSpecifier } from '../../../../moduleGraph/protocol'
+import { resolveAppShellForCompilation } from '../appShell'
 
 const preloadNativeLayoutEntriesMock = vi.hoisted(() => vi.fn(async () => {}))
 const loadTransformStyleBlockMock = vi.hoisted(() => vi.fn(async () => null))
@@ -157,9 +158,12 @@ describe('createVueTransformPlugin lifecycle', () => {
 
   it('preloads native layout entries during buildStart', async () => {
     const { createVueTransformPlugin } = await import('./index')
+    const scanService = {
+      loadAppEntry: vi.fn(async () => ({ path: '/project/src/app.json' })),
+    }
     const plugin = createVueTransformPlugin({
       configService: { cwd: '/project' },
-      scanService: { value: true },
+      scanService,
     } as any)
 
     await plugin.buildStart!.call({ meta: 'plugin-ctx' } as any)
@@ -169,10 +173,22 @@ describe('createVueTransformPlugin lifecycle', () => {
       pluginCtx: { meta: 'plugin-ctx' },
       ctx: expect.any(Object),
       configService: { cwd: '/project' },
-      scanService: { value: true },
+      scanService,
       pathExists: fsPathExistsMock,
       readFile: fsReadFileMock,
     }))
+  })
+
+  it('skips app shell discovery when building a component library', async () => {
+    const loadAppEntry = vi.fn()
+
+    await expect(resolveAppShellForCompilation({
+      configService: {
+        weappLibConfig: { enabled: true },
+      },
+      scanService: { loadAppEntry },
+    } as any, {} as any)).resolves.toBeUndefined()
+    expect(loadAppEntry).not.toHaveBeenCalled()
   })
 
   it('delegates load flow to shared style block loader', async () => {

@@ -36,6 +36,15 @@ export function createDiagnosticsLogger(mode: 'off' | 'fallback' | 'always') {
     if (info.targetLabel) {
       parts.push(`target=${info.targetLabel}`)
     }
+    if (info.bindings?.length) {
+      const bindings = info.bindings.map((binding) => {
+        const start = binding.sourceLocation?.start
+        return start
+          ? `${binding.id}@${binding.sourceFile}:${start.line}:${start.column}`
+          : `${binding.id}@${binding.sourceFile}`
+      })
+      parts.push(`bindings=${bindings.join(',')}`)
+    }
     const message = `[wevu:setData] ${parts.join(' ')}`
     if (isFallbackReason(info.reason)) {
       // eslint-disable-next-line no-console

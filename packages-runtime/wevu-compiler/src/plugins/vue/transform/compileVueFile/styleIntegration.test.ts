@@ -26,7 +26,9 @@ const extra = { padding: '2px' }
 <style module="theme">
 .active { font-weight: bold; }
 </style>
-    `.trim(), '/project/src/pages/style/index.vue')
+    `.trim(), '/project/src/pages/style/index.vue', {
+      bindingManifestSourceFile: 'src/pages/style/index.vue',
+    })
 
     const style = result.style ?? ''
     expect(style).not.toContain('v-bind(')
@@ -42,6 +44,7 @@ const extra = { padding: '2px' }
     expect(result.script).toContain(WEVU_CSS_MODULES_KEY)
     expect(result.script).toContain('useCssVars')
     expect(result.script).not.toContain('/project/src/pages/style/index.vue')
+    expect(result.script).toContain('src/pages/style/index.vue')
 
     const cssVarName = style.match(/var\(--([^)]+)\)/)?.[1]
     expect(cssVarName).toBeTruthy()

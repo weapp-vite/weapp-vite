@@ -2444,6 +2444,9 @@ importers:
       '@jridgewell/remapping':
         specifier: ^2.3.5
         version: 2.3.5
+      '@jridgewell/trace-mapping':
+        specifier: ^0.3.31
+        version: 0.3.31
       '@vue/babel-plugin-jsx':
         specifier: 'catalog:'
         version: 3.0.0(@babel/core@8.0.1)

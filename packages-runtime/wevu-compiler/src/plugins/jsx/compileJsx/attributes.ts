@@ -19,6 +19,7 @@ import {
   renderMustache,
   unwrapTsExpression,
 } from './ast'
+import { recordJsxBinding } from './bindingManifest'
 
 const ON_EVENT_RE = /^on[A-Z]/
 const CATCH_EVENT_RE = /^catch[A-Z]/
@@ -150,6 +151,7 @@ function compileEventAttribute(
     return [`${bindAttr}="${escapeAttr(exp.property.name)}"`]
   }
 
+  context.bindingManifest.features.inlineEvents = true
   const inline = registerInlineExpression(exp, context)
   const attrs = [`data-${INLINE_DATASET_KEY}-${eventSuffix}="${inline.id}"`, `${bindAttr}="${WEVU_INLINE_HANDLER}"`]
   inline.scopeKeys.forEach((scopeKey, index) => {
@@ -193,6 +195,17 @@ function compileNormalAttribute(
     }
   }
 
+  const kind = normalizedName === 'class'
+    ? 'class'
+    : normalizedName === 'style'
+      ? 'style'
+      : isComponent
+        ? 'component-prop'
+        : 'attribute'
+  recordJsxBinding(context, exp, kind)
+  if (isComponent && (t.isArrowFunctionExpression(exp) || t.isFunctionExpression(exp))) {
+    context.bindingManifest.features.functionProps = true
+  }
   const normalizedExp = normalizeInterpolationExpression(exp)
   return `${normalizedName}="${renderMustache(normalizedExp, context)}"`
 }

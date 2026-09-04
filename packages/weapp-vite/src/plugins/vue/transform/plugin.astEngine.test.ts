@@ -3,13 +3,6 @@ import { createModuleGraphService } from '../../../moduleGraph'
 
 const compileVueFileMock = vi.hoisted(() => vi.fn())
 const compileJsxFileMock = vi.hoisted(() => vi.fn())
-const collectSetDataPickKeysFromTemplateMock = vi.hoisted(() => vi.fn())
-const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn())
-const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn())
-const mayNeedInjectSetDataPickInJsMock = vi.hoisted(() => vi.fn(() => true))
-const mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock = vi.hoisted(() => vi.fn(() => false))
-const pruneScopedSlotOwnerAutoSetDataPickKeysMock = vi.hoisted(() => vi.fn((keys: string[]) => keys))
-const shouldUseScopedSlotOwnerOnlySetDataPickMock = vi.hoisted(() => vi.fn(() => false))
 const createCompileVueFileOptionsMock = vi.hoisted(() => vi.fn(() => ({ mock: true })))
 const isVueTransformSourceMapEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const readAndParseSfcMock = vi.hoisted(() => vi.fn())
@@ -39,16 +32,6 @@ vi.mock('wevu/compiler', async (importOriginal) => {
     compileJsxFile: compileJsxFileMock,
   }
 })
-
-vi.mock('./injectSetDataPick', () => ({
-  collectSetDataPickKeysFromTemplate: collectSetDataPickKeysFromTemplateMock,
-  injectSetDataPickInJs: injectSetDataPickInJsMock,
-  isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
-  mayNeedInjectSetDataPickInJs: mayNeedInjectSetDataPickInJsMock,
-  mayNeedScopedSlotHostPropertiesForSetupSlotsInJs: mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock,
-  pruneScopedSlotOwnerAutoSetDataPickKeys: pruneScopedSlotOwnerAutoSetDataPickKeysMock,
-  shouldUseScopedSlotOwnerOnlySetDataPick: shouldUseScopedSlotOwnerOnlySetDataPickMock,
-}))
 
 vi.mock('./compileOptions', () => ({
   createCompileVueFileOptions: createCompileVueFileOptionsMock,
@@ -136,20 +119,6 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       template: '<view>{{ count }}</view>',
       meta: {},
     })
-    isAutoSetDataPickEnabledMock.mockReturnValue(true)
-    collectSetDataPickKeysFromTemplateMock.mockReturnValue(['count'])
-    injectSetDataPickInJsMock.mockReturnValue({
-      transformed: false,
-      code: 'export default {}',
-    })
-    mayNeedInjectSetDataPickInJsMock.mockReset()
-    mayNeedInjectSetDataPickInJsMock.mockReturnValue(true)
-    mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock.mockReset()
-    mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock.mockReturnValue(false)
-    pruneScopedSlotOwnerAutoSetDataPickKeysMock.mockReset()
-    pruneScopedSlotOwnerAutoSetDataPickKeysMock.mockImplementation((keys: string[]) => keys)
-    shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReset()
-    shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReturnValue(false)
     isVueTransformSourceMapEnabledMock.mockReset()
     isVueTransformSourceMapEnabledMock.mockReturnValue(false)
     injectWevuPageFeaturesInJsWithViteResolverMock.mockClear()
@@ -207,7 +176,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     } as any, '<template><view /></template>', '/project/src/components/demo.vue')).resolves.toBeNull()
   })
 
-  it('passes resolved astEngine into setData pick collection', async () => {
+  it('passes resolved compile options to the compiler', async () => {
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
       moduleGraphService: createModuleGraphService(),
@@ -237,9 +206,11 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       addWatchFile: vi.fn(),
     } as any, '<template><view /></template>', '/project/src/components/demo.vue')
 
-    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{ count }}</view>', {
-      astEngine: 'oxc',
-    })
+    expect(compileVueFileMock).toHaveBeenCalledWith(
+      '<template><view /></template>',
+      '/project/src/components/demo.vue',
+      { mock: true },
+    )
     expect(result).toEqual({
       code: 'export default {}',
       map: null,
@@ -252,7 +223,6 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       template: '<view />',
       meta: {},
     })
-    isAutoSetDataPickEnabledMock.mockReturnValue(false)
 
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
@@ -285,7 +255,6 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     expect(result?.map).toBeTruthy()
     expect(result?.map?.sources).toEqual(['empty-shell.vue'])
     expect(readAndParseSfcMock).not.toHaveBeenCalled()
-    expect(collectSetDataPickKeysFromTemplateMock).not.toHaveBeenCalled()
   })
 
   it('reports vue transform timing when debug callback is configured', async () => {
@@ -360,50 +329,12 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     expect(readAndParseSfcMock).toHaveBeenCalledTimes(1)
   })
 
-  it('skips setData pick collection for static templates', async () => {
-    compileVueFileMock.mockResolvedValueOnce({
-      script: 'export default {}',
-      template: '<view>static</view>',
-      meta: {},
-    })
-    isAutoSetDataPickEnabledMock.mockReturnValue(true)
-
-    const { createVueTransformPlugin } = await import('./plugin')
-    const plugin = createVueTransformPlugin({
-      moduleGraphService: createModuleGraphService(),
-      configService: {
-        isDev: false,
-        cwd: '/project',
-        absoluteSrcRoot: '/project/src',
-        outputExtensions: {},
-        relativeOutputPath: vi.fn(() => undefined),
-        weappLibConfig: {
-          enabled: true,
-        },
-        weappViteConfig: {},
-      },
-      runtimeState: {
-        scan: {
-          isDirty: false,
-        },
-      },
-    } as any)
-
-    await getHookHandler(plugin.transform as any).call({
-      addWatchFile: vi.fn(),
-    } as any, '<template><view>static</view></template>', '/project/src/components/static-only.vue')
-
-    expect(collectSetDataPickKeysFromTemplateMock).not.toHaveBeenCalled()
-    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-  })
-
   it('skips page feature injection for pages without hook or wevu runtime hints', async () => {
     compileVueFileMock.mockResolvedValueOnce({
       script: 'export default { setup() { const count = 1; return { count } } }',
       template: '<view>{{ count }}</view>',
       meta: {},
     })
-    isAutoSetDataPickEnabledMock.mockReturnValue(false)
     pageMatcherIsPageFileMock.mockResolvedValue(true)
 
     const { createVueTransformPlugin } = await import('./plugin')
@@ -451,7 +382,6 @@ export default defineComponent({ setup() { usePageFeatureHooks() } })`,
       template: '<view />',
       meta: {},
     })
-    isAutoSetDataPickEnabledMock.mockReturnValue(false)
     pageMatcherIsPageFileMock.mockResolvedValue(true)
 
     const { createVueTransformPlugin } = await import('./plugin')
@@ -497,7 +427,6 @@ export default defineComponent({ setup() { usePageFeatureHooks() } })`,
       template: '<view />',
       meta: {},
     })
-    isAutoSetDataPickEnabledMock.mockReturnValue(false)
     pageMatcherIsPageFileMock.mockResolvedValue(true)
 
     const { createVueTransformPlugin } = await import('./plugin')

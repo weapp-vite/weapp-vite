@@ -4,7 +4,6 @@ import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
-import { applyAppShell } from '../appShell'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
 import { emitFallbackPageBundleAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEmitState, resolveVueBundleAssetContext } from './shared'
@@ -56,6 +55,7 @@ export async function emitResolvedFallbackPageEntryAssets(options: {
     pluginCtx: options.pluginCtx,
     configService: options.configService,
     compileOptionsState: options.compileOptionsState,
+    appShell: options.appShell,
   })
 
   await handleFallbackPageLayouts({
@@ -74,8 +74,6 @@ export async function emitResolvedFallbackPageEntryAssets(options: {
       })
     },
   })
-
-  applyAppShell(result, options.entryFilePath, options.appShell)
 
   await emitFallbackPageBundleAssets({
     bundle: options.bundle,

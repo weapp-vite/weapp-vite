@@ -1,10 +1,10 @@
-import type { VueTransformResult } from 'wevu/compiler'
+import type { CompilerAppShell, VueTransformResult } from 'wevu/compiler'
+import type { CompilerContext } from '../../../context'
 import type { ConfigService } from '../../../runtime/config/types'
-import type { LayoutTransformLikeResult, ResolvedPageLayout } from './pageLayout'
 import { WEVU_APP_SHELL_COMPONENT_BASE, WEVU_APP_SHELL_TAG_NAME } from '@weapp-core/constants'
 import path from 'pathe'
 import { normalizeWatchPath, toPosixPath } from '../../../utils/path'
-import { applyPageLayout } from './pageLayout'
+import { createReadAndParseSfcOptions, readAndParseSfc } from '../../utils/vueSfc'
 
 const APP_VUE_FILE_RE = /[\\/]app\.vue$/
 
@@ -35,7 +35,7 @@ export function resolveAppShellImportPath(configService: Pick<ConfigService, 're
   return relativeBase ? `/${toPosixPath(relativeBase)}` : undefined
 }
 
-export function resolveAppShellLayout(configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath'>): ResolvedPageLayout | undefined {
+export function resolveAppShellLayout(configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath'>): ResolvedAppShell | undefined {
   const importPath = resolveAppShellImportPath(configService)
   if (!importPath) {
     return undefined
@@ -44,26 +44,54 @@ export function resolveAppShellLayout(configService: Pick<ConfigService, 'absolu
   return {
     file: normalizeWatchPath(resolveAppShellBase(configService)),
     importPath,
-    kind: 'vue',
-    layoutName: 'app-shell',
     tagName: WEVU_APP_SHELL_TAG_NAME,
   }
 }
 
-export function applyAppShell(
-  result: LayoutTransformLikeResult,
-  filename: string,
-  appShell: ResolvedAppShell | undefined,
+/**
+ * 将应用壳信息投影为编译器可序列化输入。
+ */
+export function toCompilerAppShell(appShell: ResolvedAppShell | undefined): CompilerAppShell | undefined {
+  if (!appShell) {
+    return undefined
+  }
+  return {
+    importPath: appShell.importPath,
+    tagName: appShell.tagName,
+  }
+}
+
+/**
+ * 生成应用壳编译输入的稳定签名。
+ */
+export function createCompilerAppShellSignature(appShell: ResolvedAppShell | undefined) {
+  return JSON.stringify(toCompilerAppShell(appShell) ?? null)
+}
+
+/**
+ * 在页面编译前解析应用入口是否拥有模板应用壳。
+ */
+export async function resolveAppShellForCompilation(
+  ctx: Pick<CompilerContext, 'configService' | 'scanService'>,
+  pluginCtx: Parameters<typeof createReadAndParseSfcOptions>[0],
 ) {
-  if (!appShell || !result.template) {
-    return result
+  const configService = ctx.configService
+  const scanService = ctx.scanService
+  if (!configService || !scanService || configService.weappLibConfig?.enabled) {
+    return undefined
   }
 
-  return applyPageLayout(result as VueTransformResult, filename, {
-    file: appShell.file,
-    importPath: appShell.importPath,
-    kind: 'vue',
-    layoutName: 'app-shell',
-    tagName: appShell.tagName,
-  })
+  const appEntry = await scanService.loadAppEntry()
+  if (!isAppVueFile(appEntry.path)) {
+    return undefined
+  }
+
+  const { descriptor } = await readAndParseSfc(
+    appEntry.path,
+    createReadAndParseSfcOptions(pluginCtx, configService),
+  )
+  if (!descriptor.template?.content.trim()) {
+    return undefined
+  }
+  return resolveAppShellLayout(configService)
 }

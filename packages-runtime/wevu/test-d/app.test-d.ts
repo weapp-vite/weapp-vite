@@ -1,4 +1,4 @@
-import type { RuntimeApp, RuntimeInstance } from '@/index'
+import type { RuntimeApp, RuntimeInstance, SetDataBindingDiagnostic, SetDataDebugInfo } from '@/index'
 import { expectType } from 'tsd'
 import { createApp, version } from '@/index'
 
@@ -28,3 +28,18 @@ expectType<number>(instance.state.count)
 expectType<number>(instance.computed.double)
 expectType<void>(instance.methods.inc())
 expectType<Record<string, any>>(instance.snapshot())
+
+declare const debugInfo: SetDataDebugInfo
+expectType<SetDataBindingDiagnostic[] | undefined>(debugInfo.bindings)
+expectType<string | undefined>(debugInfo.bindings?.[0]?.id)
+expectType<string | undefined>(debugInfo.bindings?.[0]?.outputPath)
+expectType<'exact-path' | 'top-level' | 'snapshot-fallback' | undefined>(debugInfo.bindings?.[0]?.updateMode)
+expectType<string | undefined>(debugInfo.bindings?.[0]?.sourceFile)
+expectType<number | undefined>(debugInfo.bindings?.[0]?.sourceLocation?.start.line)
+
+declare const bindingDiagnostic: SetDataBindingDiagnostic
+expectType<string>(bindingDiagnostic.id)
+expectType<string>(bindingDiagnostic.outputPath)
+expectType<'exact-path' | 'top-level' | 'snapshot-fallback'>(bindingDiagnostic.updateMode)
+expectType<string>(bindingDiagnostic.sourceFile)
+expectType<number | undefined>(bindingDiagnostic.sourceLocation?.start.column)

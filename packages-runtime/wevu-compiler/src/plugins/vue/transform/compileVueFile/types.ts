@@ -1,7 +1,9 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { AstEngineName } from '../../../../ast/types'
+import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { JsonConfig, JsonMergeStrategy } from '../../../../types/json'
+import type { CompilerAppShell, CompilerPageLayoutPlan } from '../../../../types/pageLayout'
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { ResolveSfcBlockSrcOptions } from '../../../utils/vueSfc'
@@ -24,6 +26,7 @@ export interface VueTransformResult {
   template?: string
   style?: string
   config?: string
+  bindingManifest?: WevuBindingManifestV1
   diagnostics?: CompilerDiagnostic[]
   cssModules?: Record<string, Record<string, string>>
   scopedSlotComponents?: TemplateCompileResult['scopedSlotComponents']
@@ -114,6 +117,26 @@ export interface CompileVueFileOptions {
    * 是否生成脚本 sourcemap。默认开启；构建工具可在未启用 sourcemap 时显式关闭以减少 codegen 成本。
    */
   sourceMap?: boolean
+  /**
+   * 是否根据绑定清单自动合并 setData.pick。
+   */
+  autoSetDataPick?: boolean
+  /**
+   * 绑定清单中记录的源码文件名；默认使用当前编译文件名。
+   */
+  bindingManifestSourceFile?: string
+  /**
+   * 注入组件脚本的 Binding Manifest 精简级别；默认仅保留运行时必要字段。
+   */
+  runtimeBindingManifest?: WevuRuntimeBindingManifestMode
+  /**
+   * 构建工具预先解析的可序列化页面布局计划。
+   */
+  pageLayout?: CompilerPageLayoutPlan
+  /**
+   * 页面布局外层的应用外壳。
+   */
+  appShell?: CompilerAppShell
   warn?: (message: string) => void
   autoUsingComponents?: AutoUsingComponentsOptions
   autoImportTags?: AutoImportTagsOptions

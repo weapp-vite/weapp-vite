@@ -43,17 +43,15 @@ function buildComputedCode(bindings: NonNullable<ReturnType<typeof compileVueTem
 }
 
 function expectScopedSlotComputed(
-  bindings: NonNullable<ReturnType<typeof compileVueTemplateToWxml>['classStyleBindings']> | undefined,
-  expectedExp: string,
+  script: string | undefined,
+  _expectedExp: string,
   expectedFragments: string[],
 ) {
-  expect(bindings?.some(binding => binding.exp === expectedExp)).toBe(true)
-  const computedCode = buildComputedCode(bindings ?? [])
-  expect(computedCode).toBeTruthy()
+  expect(script).toBeTruthy()
   for (const fragment of expectedFragments) {
-    expect(computedCode).toContain(fragment)
+    expect(script).toContain(fragment)
   }
-  expect(computedCode).not.toContain('this.__wvOwner.func')
+  expect(script).not.toContain('this.__wvOwner.func')
 }
 
 describe('compileVueTemplateToWxml', () => {
@@ -1668,14 +1666,9 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('generic:scoped-slots-default="')
     expect(templateRefs).toBeUndefined()
     expect(scopedSlotComponents?.[0]?.template).toContain('class="__wv-ref-0"')
-    expect(scopedSlotComponents?.[0]?.templateRefs).toEqual([
-      {
-        selector: '.__wv-ref-0',
-        inFor: false,
-        name: 'leaf',
-        kind: 'component',
-      },
-    ])
+    expect(scopedSlotComponents?.[0]?.script).toContain('selector:".__wv-ref-0"')
+    expect(scopedSlotComponents?.[0]?.script).toContain('name:"leaf"')
+    expect(scopedSlotComponents?.[0]?.script).toContain('kind:"component"')
   })
 
   it('keeps unknown plain default component children native when augmented slots require no props', () => {
@@ -1960,41 +1953,38 @@ describe('compileVueTemplateToWxml', () => {
     const defaultSlots = scopedSlotComponents?.filter(slot => slot.slotKey === 'default') ?? []
     const footerSlot = scopedSlotComponents?.find(slot => slot.slotKey === 'footer')
     const headerSlot = scopedSlotComponents?.find(slot => slot.slotKey === 'header')
-    const findDefaultSlotByBinding = (exp: string) => {
-      return defaultSlots.find(slot => slot.classStyleBindings?.some(binding => binding.exp === exp))
-    }
-    const explicitDefault = findDefaultSlotByBinding('func(defaultText)')
-    const defaultScoped = findDefaultSlotByBinding('func(label + \'-\' + count + \'-\' + text)')
-    const listScoped = findDefaultSlotByBinding('func(item.label + \'-\' + index + \'-\' + text)')
+    const explicitDefault = defaultSlots.find(slot => slot.script.includes('this.__wvOwnerProxy.defaultText'))
+    const defaultScoped = defaultSlots.find(slot => slot.script.includes('this.__wvSlotPropsData.label'))
+    const listScoped = defaultSlots.find(slot => slot.script.includes('this.__wvSlotPropsData.item'))
 
     expect(headerSlot?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expect(explicitDefault?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expect(footerSlot?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expect(defaultScoped?.template).toContain('<block wx:if="{{__wv_bind_1}}"><text>{{__wv_bind_0}}</text></block>')
     expect(listScoped?.template).toContain('<text>{{__wv_bind_0}}</text>')
-    expectScopedSlotComputed(headerSlot?.classStyleBindings, 'func(headerText)', [
+    expectScopedSlotComputed(headerSlot?.script, 'func(headerText)', [
       'this.__wvOwnerProxy.func',
       'this.__wvOwnerProxy.headerText',
     ])
-    expectScopedSlotComputed(explicitDefault?.classStyleBindings, 'func(defaultText)', [
+    expectScopedSlotComputed(explicitDefault?.script, 'func(defaultText)', [
       'this.__wvOwnerProxy.func',
       'this.__wvOwnerProxy.defaultText',
     ])
-    expectScopedSlotComputed(footerSlot?.classStyleBindings, 'func(text + suffix)', [
+    expectScopedSlotComputed(footerSlot?.script, 'func(text + suffix)', [
       'this.__wvOwnerProxy.func',
       'this.__wvOwnerProxy.text',
       'this.__wvSlotPropsData.suffix',
     ])
-    expectScopedSlotComputed(defaultScoped?.classStyleBindings, 'func(label + \'-\' + count + \'-\' + text)', [
+    expectScopedSlotComputed(defaultScoped?.script, 'func(label + \'-\' + count + \'-\' + text)', [
       'this.__wvOwnerProxy.func',
       'this.__wvOwnerProxy.text',
       'this.__wvSlotPropsData.label',
       'this.__wvSlotPropsData.count',
     ])
-    expectScopedSlotComputed(defaultScoped?.classStyleBindings, 'visible', [
+    expectScopedSlotComputed(defaultScoped?.script, 'visible', [
       'this.__wvOwnerProxy.visible',
     ])
-    expectScopedSlotComputed(listScoped?.classStyleBindings, 'func(item.label + \'-\' + index + \'-\' + text)', [
+    expectScopedSlotComputed(listScoped?.script, 'func(item.label + \'-\' + index + \'-\' + text)', [
       'this.__wvOwnerProxy.func',
       'this.__wvOwnerProxy.text',
       'this.__wvSlotPropsData.item',
