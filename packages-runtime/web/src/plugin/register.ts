@@ -117,18 +117,6 @@ export function transformScriptModule({
   }
 
   const s = new MagicString(code)
-  const wevuDefineComponentNames = new Set<string>()
-  for (const statement of ast.program.body) {
-    if (!t.isImportDeclaration(statement) || statement.source.value !== 'wevu') {
-      continue
-    }
-    for (const specifier of statement.specifiers) {
-      if (t.isImportSpecifier(specifier)
-        && t.isIdentifier(specifier.imported, { name: 'defineComponent' })) {
-        wevuDefineComponentNames.add(specifier.local.name)
-      }
-    }
-  }
 
   const imports: string[] = []
   const runtimePolyfillId = runtimeModuleId ?? toViteFsImport(resolveRuntimePolyfillPath())
@@ -152,11 +140,6 @@ export function transformScriptModule({
         return
       }
       const name = path.node.callee.name
-      if (wevuDefineComponentNames.has(name) && meta.kind !== 'app') {
-        registerImports.add('registerWebWevuComponent')
-        overwriteCall(path, meta, 'registerWebWevuComponent', templateIdent, styleIdent, s, true)
-        return
-      }
       const registerName = getRegisterName(meta.kind, name)
       if (registerName) {
         registerImports.add(registerName)
