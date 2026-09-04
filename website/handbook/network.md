@@ -101,68 +101,49 @@ export function getOrderDetail(id: string) {
 
 ## 第 3 层：store 或页面组合逻辑
 
-页面真正关心的是：
-
-- 当前列表数据
-- 是否 loading
-- 是否需要下拉刷新
-- 出错后怎么展示
-
-这些更适合放在 store 或 composable 里：
+页面真正关心的是首次加载、刷新、成功值和错误状态。这些状态不需要在每个业务里重复手写；静态 WXML 页面可以直接使用 `useAsyncDerivation()` 的显式状态机：
 
 ```ts
-import { ref } from 'wevu'
+// stores/order.ts
+import { useAsyncDerivation } from 'wevu'
 import { getOrderList } from '../services/order'
 
 export function useOrderListStore() {
-  const list = ref<OrderListItem[]>([])
-  const loading = ref(false)
-  const errorMessage = ref('')
-
-  async function fetchList() {
-    loading.value = true
-    errorMessage.value = ''
-
-    try {
-      list.value = await getOrderList()
-    }
-    catch (error) {
-      errorMessage.value = '订单列表加载失败'
-    }
-    finally {
-      loading.value = false
-    }
-  }
-
-  return {
-    list,
-    loading,
-    errorMessage,
-    fetchList,
-  }
+  return useAsyncDerivation<OrderListItem[]>(() => getOrderList())
 }
 ```
 
 ## 页面里应该剩下什么
 
-页面最好只做“编排”，而不是自己处理所有接口细节。
+页面只负责把状态编排成静态模板，并把下拉刷新连接到同一个 `refresh()`：
 
 ```vue
 <script setup lang="ts">
-import { onLoad } from 'wevu'
+import { useAsyncPullDownRefresh } from 'wevu'
 import { useOrderListStore } from '../../stores/order'
 
-const { list, loading, fetchList } = useOrderListStore()
-
-onLoad(fetchList)
+const orders = useOrderListStore()
+useAsyncPullDownRefresh(orders.refresh)
 </script>
+
+<template>
+  <view v-if="orders.status === 'initial-pending'">订单加载中</view>
+  <view v-else-if="orders.status === 'error' && !orders.value">
+    订单列表加载失败
+  </view>
+  <block v-else>
+    <view v-if="orders.status === 'refreshing'">正在刷新</view>
+    <view v-if="orders.status === 'error'">刷新失败，继续显示上次结果</view>
+    <view v-for="order in orders.value" :key="order.id">
+      {{ order.title }}
+    </view>
+  </block>
+</template>
 ```
 
-这样页面职责就很明确：
+`immediate` 默认是 `true`，所以页面不需要再用 `onLoad()` 启动首个请求。`initial-pending` 没有历史值；`refreshing` 会保留上次成功值；刷新失败进入 `error` 但仍保留该值。加载错误通过 `orders.status/orders.error` 表达，`orders.refresh()` 本身会正常完成，适合交给下拉刷新流程统一收尾。
 
-- 负责什么时候触发加载
-- 负责把状态渲染出来
-- 不负责底层请求细节
+模板仍由编译器生成静态 WXML，没有运行时 loading 组件或异步渲染边界。加载函数也不会像同步 `computed()` 一样自动追踪依赖；筛选条件变化时应显式调用 `orders.refresh()`。如果底层请求支持取消，可把加载函数收到的 `signal` 继续传给 service。
 
 ## 登录态刷新要不要一开始就做
 

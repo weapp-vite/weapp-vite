@@ -1,6 +1,17 @@
-import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref, WatchStopHandle } from 'wevu'
+import type {
+  AsyncDerivation,
+  AsyncDerivationContext,
+  AsyncDerivationState,
+  AsyncDerivationStatus,
+  ComputedRef,
+  MaybeRef,
+  MaybeRefOrGetter,
+  Ref,
+  UseAsyncDerivationOptions,
+  WatchStopHandle,
+} from 'wevu'
 import { expectError, expectType } from 'tsd'
-import { computed, effect, getDeepWatchStrategy, isProxy, isRaw, isReactive, isReadonly, isRef, isShallowReactive, isShallowRef, markRaw, reactive, readonly, ref, setDeepWatchStrategy, shallowReactive, shallowRef, stop, toRaw, toRef, toRefs, touchReactive, toValue, traverse, triggerRef, unref, watch, watchEffect, watchPostEffect, watchSyncEffect } from 'wevu'
+import { computed, effect, getDeepWatchStrategy, isProxy, isRaw, isReactive, isReadonly, isRef, isShallowReactive, isShallowRef, markRaw, reactive, readonly, ref, setDeepWatchStrategy, shallowReactive, shallowRef, stop, toRaw, toRef, toRefs, touchReactive, toValue, traverse, triggerRef, unref, useAsyncDerivation, watch, watchEffect, watchPostEffect, watchSyncEffect } from 'wevu'
 
 const n = ref(1)
 expectType<number>(n.value)
@@ -95,3 +106,33 @@ expectType<number>(shallowObject.nested.count)
 const readonlyArray = readonly([1, 2])
 expectError(readonlyArray[0] = 3)
 expectError(readonlyArray.push(3))
+
+const asyncOptions: UseAsyncDerivationOptions = { immediate: false }
+const asyncDerivation = useAsyncDerivation(async ({ signal }) => {
+  expectType<AbortSignal>(signal)
+  return { id: 1 }
+}, asyncOptions)
+expectType<AsyncDerivation<{ id: number }>>(asyncDerivation)
+expectType<AsyncDerivationStatus>(asyncDerivation.status)
+expectType<Promise<void>>(asyncDerivation.refresh())
+expectType<void>(asyncDerivation.dispose())
+declare const asyncContext: AsyncDerivationContext
+expectType<AbortSignal>(asyncContext.signal)
+expectError(asyncDerivation.status = 'disposed')
+expectError(asyncDerivation.value = { id: 2 })
+expectError(asyncDerivation.error = new Error('readonly'))
+expectError(useAsyncDerivation(async () => 'value', { immediate: 'yes' }))
+
+const asyncState: AsyncDerivationState<{ id: number }> = asyncDerivation
+if (asyncState.status === 'ready' || asyncState.status === 'refreshing') {
+  expectType<{ id: number }>(asyncState.value)
+  expectType<undefined>(asyncState.error)
+}
+else if (asyncState.status === 'error') {
+  expectType<{ id: number } | undefined>(asyncState.value)
+  expectType<unknown>(asyncState.error)
+}
+else {
+  expectType<undefined>(asyncState.value)
+  expectType<undefined>(asyncState.error)
+}

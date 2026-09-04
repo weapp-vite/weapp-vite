@@ -32,7 +32,7 @@ const value = 1
 
   it('moves known wevu value imports to scoped internal entries and keeps unknown imports', () => {
     const ast = parseJsLike(`
-import { ref, onLoad, fetch, type Ref } from 'wevu'
+import { ref, useAsyncDerivation as derive, onLoad, fetch, type Ref } from 'wevu'
 const value = ref(1)
     `.trim())
 
@@ -50,6 +50,7 @@ const value = ref(1)
     expect(code).toContain('virtual:weapp-vite/runtime/reactivity')
     expect(code).toContain('virtual:weapp-vite/runtime')
     expect(code).toContain('ref')
+    expect(code).toContain('useAsyncDerivation as derive')
     expect(code).toContain('onLoad')
     expect(code).toContain(`import { fetch } from 'wevu'`)
     expect(code).not.toContain('type Ref')

@@ -319,30 +319,25 @@ useElementIntersectionObserver({
 - 说明：默认调用 `wpi.stopPullDownRefresh()`；可通过 `stopPullDownRefresh` 注入自定义停止函数，便于测试或平台差异适配。
 - 源码：`runtime/pullDownRefresh.ts`。
 
-示例：
+示例使用静态 WXML 直接读取异步派生状态；下拉刷新只负责等待同一个 `refresh()`：
 
 ```vue
 <script setup lang="ts">
-import { ref, useAsyncPullDownRefresh } from 'wevu'
+import { useAsyncDerivation, useAsyncPullDownRefresh } from 'wevu'
 
-const loading = ref(false)
-
-async function reload() {
-  loading.value = true
-  try {
-    await fetchList()
-  }
-  finally {
-    loading.value = false
-  }
-}
-
-useAsyncPullDownRefresh(reload, {
-  onError(error) {
-    console.warn('refresh failed:', error)
-  },
-})
+const list = useAsyncDerivation(() => fetchList())
+useAsyncPullDownRefresh(list.refresh)
 </script>
+
+<template>
+  <view v-if="list.status === 'initial-pending'">加载中</view>
+  <view v-else-if="list.status === 'error' && !list.value">加载失败</view>
+  <block v-else>
+    <view v-if="list.status === 'refreshing'">刷新中</view>
+    <view v-if="list.status === 'error'">刷新失败，已保留上次结果</view>
+    <view v-for="item in list.value" :key="item.id">{{ item.title }}</view>
+  </block>
+</template>
 ```
 
 ### 本组示例 {#example-setup-host-tools}

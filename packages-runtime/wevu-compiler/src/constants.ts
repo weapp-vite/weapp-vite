@@ -140,6 +140,7 @@ export const WE_VU_INTERNAL_REACTIVITY_APIS = [
   'traverse',
   'triggerRef',
   'unref',
+  'useAsyncDerivation',
   'watch',
   'watchEffect',
   'watchPostEffect',

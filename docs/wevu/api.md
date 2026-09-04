@@ -9,7 +9,7 @@ wevu 暴露的核心能力与入口如下，详细说明请参见对应文档：
   - 应用：`onLaunch`、`onShow`、`onHide`、`onError`、`onPageNotFound`、`onUnhandledRejection`、`onThemeChange`
   - 页面/页面组件：`onLoad`、`onShow`、`onHide`、`onUnload`、`onReady`、`onPullDownRefresh`、`onReachBottom`、`onPageScroll`、`onRouteDone`、`onResize`、`onTabItemTap`、`onShareAppMessage`、`onShareTimeline`、`onAddToFavorites`、`onSaveExitState` 等
 - 响应式与工具
-  - `ref`、`reactive`、`computed`、`watch`、`watchEffect`、`watchPostEffect`、`watchSyncEffect`、`readonly`、`shallowReadonly`、`getCurrentInstance` 等
+  - `ref`、`reactive`、`computed`、`useAsyncDerivation`、`watch`、`watchEffect`、`watchPostEffect`、`watchSyncEffect`、`readonly`、`shallowReadonly`、`getCurrentInstance` 等
 - 双向绑定
   - `bindModel`（setup ctx 上的绑定能力）
   - `useBindModel`（`<script setup>` 里获取 `bindModel` 的便捷方式）
@@ -69,6 +69,7 @@ import {
   resolveLayoutBridge,
   resolveLayoutHost,
   storeToRefs,
+  useAsyncDerivation,
   useAsyncPullDownRefresh,
   useBindModel,
   useBoundingClientRect,
@@ -83,6 +84,25 @@ import {
   watchSyncEffect
 } from 'wevu'
 ```
+
+## `useAsyncDerivation()`
+
+`useAsyncDerivation(loader, options?)` 为静态 WXML 数据绑定提供明确的异步状态：
+
+| `status`          | `value`                        | 含义                        |
+| ----------------- | ------------------------------ | --------------------------- |
+| `idle`            | `undefined`                    | `immediate: false` 尚未刷新 |
+| `initial-pending` | `undefined`                    | 首次成功值到达前正在加载    |
+| `ready`           | 最近一次成功值                 | 最新任务成功                |
+| `refreshing`      | 保留最近一次成功值             | 正在重新加载                |
+| `error`           | 首次失败为空，刷新失败保留旧值 | 最新任务失败                |
+| `disposed`        | `undefined`                    | 已清理，不再启动或提交任务  |
+
+加载函数会收到当前 generation 的 `signal`。新一次 `refresh()` 会取消旧任务并只允许最新 generation 提交；旧任务即使忽略取消并永久不结束，也不会阻塞等待最新任务的调用者。加载失败只写入 `status/error`，`refresh(): Promise<void>` 仍正常完成。
+
+返回对象自动归属创建时的 effect scope；scope 停止或手动调用幂等的 `dispose()` 时，会取消当前任务、清空保留值与错误并结束等待。`status/value/error` 是仅有的可枚举数据字段，继续由现有 `setData` 序列化链路投影；`refresh/dispose` 不进入模板数据。
+
+它不是 Promise 版 `computed()`：加载函数不会自动收集响应式依赖。输入变化后需要显式调用 `refresh()`；普通 `computed()` 仍保持同步、惰性和缓存语义。模板应使用 `v-if` 读取上述显式状态，不依赖运行时 loading 组件。
 
 提示
 

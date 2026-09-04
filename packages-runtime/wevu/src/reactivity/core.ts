@@ -19,6 +19,8 @@ const targetMap = new WeakMap<object, Map<PropertyKey, Dep>>()
 
 let activeEffect: ReactiveEffect | null = null
 const effectStack: ReactiveEffect[] = []
+let shouldTrack = true
+let activeEffectScope: EffectScopeImpl | undefined
 
 let batchDepth = 0
 let isFlushingBatch = false
@@ -111,8 +113,6 @@ export interface EffectScope {
   run: <T>(fn: () => T) => T | undefined
   stop: () => void
 }
-
-let activeEffectScope: EffectScopeImpl | undefined
 
 class EffectScopeImpl implements EffectScope {
   active = true
@@ -236,6 +236,21 @@ export function onScopeDispose(fn: () => void): void {
   }
 }
 
+/**
+ * 在不把读取记录到当前副作用的情况下执行函数。
+ * 函数内部主动运行的新副作用仍会正常收集自己的依赖。
+ */
+export function runWithoutTracking<T>(fn: () => T): T {
+  const previousShouldTrack = shouldTrack
+  shouldTrack = false
+  try {
+    return fn()
+  }
+  finally {
+    shouldTrack = previousShouldTrack
+  }
+}
+
 function recordEffectScope(effect: ReactiveEffect) {
   if (!activeEffectScope) {
     return
@@ -264,7 +279,9 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
     cleanupEffect(effect)
     const previousScope = activeEffectScope
     activeEffectScope = effect._scope
+    const previousShouldTrack = shouldTrack
     try {
+      shouldTrack = true
       effect._running = true
       effectStack.push(effect)
       activeEffect = effect
@@ -275,6 +292,7 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
       activeEffect = effectStack[effectStack.length - 1] ?? null
       effect._running = false
       activeEffectScope = previousScope
+      shouldTrack = previousShouldTrack
     }
   } as ScopedReactiveEffect<T>
 
@@ -299,7 +317,7 @@ export function effect<T = any>(fn: () => T, options: EffectOptions = {}): React
 }
 
 export function track(target: object, key: PropertyKey) {
-  if (!activeEffect) {
+  if (!shouldTrack || !activeEffect) {
     return
   }
   let depsMap = targetMap.get(target)
@@ -346,7 +364,7 @@ export function trigger(target: object, key: PropertyKey) {
 }
 
 export function trackEffects(dep: Dep) {
-  if (!activeEffect) {
+  if (!shouldTrack || !activeEffect) {
     return
   }
   if (!dep.has(activeEffect)) {
