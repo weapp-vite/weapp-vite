@@ -95,6 +95,7 @@ Component({ properties: { vueSlots: { type: null, value: null }, __wvSlotOwnerId
   "pages/index/index.__scoped-slot-default-0.js": "const require_common = require("../../weapp-vendors/wevu-runtime.js");
 const require_templateRef = require("../../weapp-vendors/wevu-runtime.js");
 //#region \\0weapp-vite:scoped-slot:pages/index/index.__scoped-slot-default-0
+require_templateRef.__wevuInstallScopedSlots();
 var createWevuScopedSlotComponent = (typeof globalThis !== "undefined" ? globalThis : void 0)?.__weapp_vite_createScopedSlotComponent ?? require_templateRef.__wevuScopedSlotCreator;
 var __wevuComputed = { __wv_bind_0: function() {
 	return (() => {
@@ -148,6 +149,7 @@ if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotCom
   "pages/index/index.__scoped-slot-default-0.wxml": "<van-tabbar-item wx:for="{{__wv_bind_0}}" wx:for-item="__wv_item_0" wx:for-index="__wv_index_1" wx:key="label" icon="{{__wv_item_0.icon}}" name="{{__wv_item_0.to.name}}" replace to="{{__wv_item_0.to}}">{{__wv_item_0.label}}</van-tabbar-item>",
   "pages/index/index.js": "const require_templateRef = require("../../weapp-vendors/wevu-runtime.js");
 //#region <fixture>/src/pages/index/index.vue
+require("../../weapp-vendors/wevu-runtime.js").__wevuInstallScopedSlots();
 var __wevuOptions = {
 	setData: { pick: [
 		"__wvOwnerId",
@@ -180,6 +182,7 @@ var __wevuOptions = {
 			to: { name: "user" }
 		}] };
 	},
+	__wevuScopedSlotOwnerRequired: true,
 	"__wevuBindingManifest": Object.freeze({
 		version: 1,
 		sourceFile: "src/pages/index/index.vue",
