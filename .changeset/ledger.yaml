@@ -16,10 +16,19 @@
   dir: mpcore/packages/simulator
   intents:
     - calm-runtime-gates
+"@mpcore/simulator@0.4.3":
+  dir: mpcore/packages/simulator
+  intents:
+    - calm-runtimes-agree
 "@mpcore/vitest@0.1.3":
   dir: mpcore/packages/vitest
   intents:
     - fresh-tailwind-catalog
+"@mpcore/vitest@0.2.0":
+  dir: mpcore/packages/vitest
+  intents:
+    - dependency-upgrade-auto-generated
+    - vitest-five-matchers
 "@mpcore/weapp-vite@0.1.10":
   dir: mpcore/packages/weapp-vite
   intents:
@@ -86,6 +95,10 @@
   dir: packages/ast-native
   intents:
     - structured-compiler-diagnostics
+"@weapp-vite/ast-native@0.1.2":
+  dir: packages/ast-native
+  intents:
+    - dependency-upgrade-auto-generated
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
@@ -160,6 +173,10 @@
   dir: packages-runtime/react
   intents:
     - calm-docs-domain
+"@weapp-vite/react@0.2.4":
+  dir: packages-runtime/react
+  intents:
+    - calm-runtimes-agree
 "@weapp-vite/volar@2.1.5":
   dir: packages/volar
   intents:
@@ -235,6 +252,10 @@
   dir: packages-runtime/wevu-compiler
   intents:
     - structured-compiler-diagnostics
+"@wevu/compiler@7.0.4":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - catalog-auto-generated
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -290,6 +311,10 @@ create-weapp-vite@2.8.11:
   dir: packages/create-weapp-vite
   intents:
     - calm-runtime-gates
+create-weapp-vite@2.8.12:
+  dir: packages/create-weapp-vite
+  intents:
+    - calm-runtimes-agree
 create-weapp-vite@2.8.2:
   dir: packages/create-weapp-vite
   intents:
@@ -467,6 +492,10 @@ weapp-vite@7.0.3:
   dir: packages/weapp-vite
   intents:
     - calm-runtime-gates
+weapp-vite@7.0.4:
+  dir: packages/weapp-vite
+  intents:
+    - calm-runtimes-agree
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -512,3 +541,7 @@ wevu@7.0.3:
   dir: packages-runtime/wevu
   intents:
     - calm-runtime-gates
+wevu@7.0.4:
+  dir: packages-runtime/wevu
+  intents:
+    - calm-runtimes-agree

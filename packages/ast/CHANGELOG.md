@@ -1,5 +1,7 @@
 # @weapp-vite/ast
 
+## 7.0.4
+
 ## 7.0.3
 
 ### Patch Changes

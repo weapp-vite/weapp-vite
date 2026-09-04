@@ -1,5 +1,15 @@
 # @weapp-vite/ast-native
 
+## 0.1.2
+
+### Patch Changes
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.vitest
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli、devDependencies.vitest
+  - @weapp-vite/eslint：devDependencies.vitest
+
 ## 0.1.1
 
 ### Patch Changes
