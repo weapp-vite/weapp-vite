@@ -63,7 +63,7 @@ export interface WeapiCrossPlatformMethodDocsChooseVideoToOpenDocumentChooseVide
    *
    * 示例：
    * ```ts
-   * const info = await wpi.getWindowInfo()
+   * const info = wpi.getWindowInfo()
    *
    * console.log(info.windowWidth, info.windowHeight)
    * ```

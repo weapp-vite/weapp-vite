@@ -410,6 +410,7 @@ describe('suiteRunner', () => {
       'ide/github-issues.runtime.issue642-bug8.test.ts',
       'ide/github-issues.runtime.require-async.test.ts',
       'ide/github-issues.runtime.issue911.test.ts',
+      'ide/github-issues.runtime.issue941.test.ts',
       'ide/github-issues.runtime.issue852.test.ts',
       'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
       'ide/github-issues.runtime.subpackage-item.test.ts',
