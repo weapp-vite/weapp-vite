@@ -163,6 +163,9 @@ export async function compileVueFile(
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap
+  if (scriptPhase.runtimeCapabilities) {
+    result.meta!.runtimeCapabilities = scriptPhase.runtimeCapabilities
+  }
   if (scriptPhase.template) {
     result.template = scriptPhase.template
   }

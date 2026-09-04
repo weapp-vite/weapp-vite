@@ -9,7 +9,9 @@ import { getCurrentInstance, getCurrentSetupContext } from './hooks'
 import { getCurrentMiniProgramPages } from './platform'
 import { getCurrentPageInstance } from './register/component/lifecycle/platform'
 
-type PageLayoutSetter = (layout: string | false, props?: Record<string, any>) => void
+type PageLayoutProps = object
+
+type PageLayoutSetter = (layout: string | false, props?: PageLayoutProps) => void
 
 export interface WevuPageLayoutMap {}
 
@@ -19,7 +21,7 @@ type ResolveTypedPageLayoutName = keyof WevuPageLayoutMap extends never
 
 type ResolveTypedPageLayoutProps<Name extends string> = Name extends keyof WevuPageLayoutMap
   ? WevuPageLayoutMap[Name]
-  : Record<string, any>
+  : PageLayoutProps
 
 type PageLayoutNamedState = {
   [Name in ResolveTypedPageLayoutName]: {
@@ -79,7 +81,7 @@ export function usePageLayout(): Readonly<PageLayoutState> {
   return readonly(pageLayoutState) as Readonly<PageLayoutState>
 }
 
-export function syncRuntimePageLayoutState(target: Record<string, any>, layout: string | false, props: Record<string, any>) {
+export function syncRuntimePageLayoutState(target: Record<string, any>, layout: string | false, props: PageLayoutProps) {
   const state = target.__wevuPageLayoutState as MutablePageLayoutState | undefined
   if (!state) {
     return
@@ -104,7 +106,7 @@ export function setPageLayout<Name extends ResolveTypedPageLayoutName>(layout: N
 /**
  * 显式切换当前页面使用的 layout。
  */
-export function setPageLayout(layout: string | false, props?: Record<string, any>): void {
+export function setPageLayout(layout: string | false, props?: PageLayoutProps): void {
   const currentInstance = getCurrentInstance() as Record<string, any> | undefined
   const directSetter = currentInstance?.[WEVU_PAGE_LAYOUT_SETTER_KEY] as PageLayoutSetter | undefined
   if (typeof directSetter === 'function') {

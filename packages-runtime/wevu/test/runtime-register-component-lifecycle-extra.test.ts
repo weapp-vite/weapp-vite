@@ -5,6 +5,7 @@ import {
 } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { registerRuntimeCapability } from '@/runtime/capabilities'
 import { createPageLifecycleHooks } from '@/runtime/register/component/lifecycle'
 
 const mocks = vi.hoisted(() => {
@@ -45,10 +46,6 @@ vi.mock('@/runtime/hooks', () => ({
   callHookList: mocks.callHookList,
 }))
 
-vi.mock('@/runtime/templateRefs', () => ({
-  scheduleTemplateRefUpdate: mocks.scheduleTemplateRefUpdate,
-}))
-
 vi.mock('@/runtime/register/runtimeInstance', () => ({
   mountRuntimeInstance: mocks.mountRuntimeInstance,
   enableDeferredSetData: mocks.enableDeferredSetData,
@@ -76,6 +73,17 @@ describe('runtime: component page lifecycle extra', () => {
       ;(mock as any).mockReset?.()
     }
     mocks.scheduleTemplateRefUpdate.mockImplementation((_target: any, task: () => void) => task())
+    registerRuntimeCapability('templateRefs', {
+      attachBindings() {},
+      hasBindings(target) {
+        return Array.isArray(target.__wevuTemplateRefs) && target.__wevuTemplateRefs.length > 0
+      },
+      schedule(target, onResolved) {
+        mocks.scheduleTemplateRefUpdate(target, onResolved ?? (() => {}))
+      },
+      scheduleOwner() {},
+      clear() {},
+    })
     mocks.resolvePageOptions.mockReturnValue({ from: 'resolved-options' })
     mocks.getInitialNavigationRunner.mockReturnValue(undefined)
     mocks.ensureInitialNavigation.mockReturnValue(undefined)
@@ -398,7 +406,7 @@ describe('runtime: component page lifecycle extra', () => {
     expect(mocks.teardownRuntimeInstance).toHaveBeenCalledWith(instance)
   })
 
-  it('schedules ready callback once and falls back to routeDone only when still pending', async () => {
+  it('schedules active template refs before ready and falls back to routeDone only when still pending', async () => {
     const userOnReady = vi.fn(() => 'ready-result')
     const hooks = createPageLifecycleHooks({
       runtimeApp: {} as any,
@@ -430,10 +438,17 @@ describe('runtime: component page lifecycle extra', () => {
       hasHook: vi.fn(() => false),
     } as any)
 
-    const instance: any = {}
+    const instance: any = {
+      [WEVU_ON_LOAD_CALLED_KEY]: true,
+      __wevuTemplateRefs: [
+        { selector: '.leaf', inFor: false, name: 'leaf', kind: 'component' },
+      ],
+    }
     expect(hooks.onReady.call(instance, 'first')).toBeUndefined()
     expect(instance[WEVU_READY_CALLED_KEY]).toBe(true)
     expect(mocks.scheduleTemplateRefUpdate).toHaveBeenCalledTimes(1)
+    expect(mocks.scheduleTemplateRefUpdate.mock.invocationCallOrder[0])
+      .toBeLessThan(mocks.callHookList.mock.invocationCallOrder[0])
     expect(mocks.callHookList).toHaveBeenCalledWith(instance, 'onReady', ['first'])
     expect(userOnReady).toHaveBeenCalledWith('first')
 

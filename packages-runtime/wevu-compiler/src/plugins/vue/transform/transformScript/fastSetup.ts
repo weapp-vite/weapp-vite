@@ -6,6 +6,9 @@ const COMPILED_DEFINE_COMPONENT_IMPORT_RE = /^import\s+\{\s*defineComponent\s+as
 const EXPORT_DEFAULT_PURE_RE = /export\s+default\s+\/\*@__PURE__\*\/\s*/
 const JSON_MACRO_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
 const PAGE_META_RE = /\bdefinePageMeta\s*\(/
+const OPTION_CAPABILITY_RE = /\b(?:createApp|createWevuComponent|setData|setWevuDefaults)\b/
+const WEVU_RUNTIME_IMPORT_RE = /\bfrom\s*['"](?:wevu(?:\/internal-runtime)?|virtual:weapp-vite\/runtime)['"]/
+const DYNAMIC_OPTIONS_PROPERTY_RE = /\.\.\.|\[/
 
 function hasMetadataInjectionOptions(source: string, options: TransformScriptOptions | undefined) {
   const hasWevuDefaults = options?.wevuDefaults && Object.keys(options.wevuDefaults).length > 0
@@ -21,6 +24,7 @@ function hasMetadataInjectionOptions(source: string, options: TransformScriptOpt
     || options?.templateRefs?.length
     || options?.layoutHosts?.length
     || options?.inlineExpressions?.length
+    || options?.runtimeCapabilities?.required.length
     || options?.functionPropPaths?.length
     || options?.propsAliases
     || options?.propsDerivedKeys?.length
@@ -147,6 +151,15 @@ export function tryFastTransformCompiledScriptSetup(
   }
 
   const componentOptions = stripCompiledScriptSetupMarkers(afterImport.slice(openParenIndex + 1, callEnd).trim())
+  if (
+    !componentOptions.startsWith('{')
+    || !componentOptions.endsWith('}')
+    || OPTION_CAPABILITY_RE.test(source)
+    || DYNAMIC_OPTIONS_PROPERTY_RE.test(componentOptions)
+    || WEVU_RUNTIME_IMPORT_RE.test(source)
+  ) {
+    return undefined
+  }
   const pageMarker = ` __wevu_isPage: ${options?.isPage === true},\n`
   const code = [
     `import { ${WE_VU_RUNTIME_APIS.createWevuComponent} } from "${RUNTIME_IMPORT_PATH}";`,

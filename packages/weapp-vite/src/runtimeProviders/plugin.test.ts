@@ -28,6 +28,29 @@ describe('runtime provider plugin', () => {
     expect(resolve).toHaveBeenCalledWith('wevu/internal-runtime', '/project/src/app.vue', { skipSelf: true })
   })
 
+  it('keeps every runtime capability on the existing provider entry', () => {
+    expect(WEAPP_VITE_RUNTIME_CONTRACT_VERSION).toBe(1)
+    expect(WEAPP_VITE_RUNTIME_VIRTUAL_IDS).toEqual({
+      runtime: 'virtual:weapp-vite/runtime',
+      reactivity: 'virtual:weapp-vite/runtime/reactivity',
+      template: 'virtual:weapp-vite/runtime/template',
+    })
+    expect(wevuMiniprogramRuntimeProvider.descriptor.entries.runtime).toEqual({
+      development: 'wevu/internal-runtime',
+      production: 'wevu/internal-runtime',
+    })
+    expect(Object.keys(wevuMiniprogramRuntimeProvider.descriptor.entries).sort()).toEqual([
+      'reactivity',
+      'runtime',
+      'template',
+    ])
+    expect(Object.keys(webRuntimeProvider.descriptor.entries).sort()).toEqual([
+      'reactivity',
+      'runtime',
+      'template',
+    ])
+  })
+
   it('reports missing entries without falling back to another runtime', async () => {
     const plugin = createRuntimeProviderPlugin(wevuMiniprogramRuntimeProvider, 'production') as Plugin
 

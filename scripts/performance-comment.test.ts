@@ -29,7 +29,10 @@ describe('performance comment report', () => {
     expect(normalized.platforms[0].platform).toBe('ubuntu-latest')
     expect(normalized.autoImport.build.results[0].delta.extraMs).toBe(20)
     expect(normalized.runtimeSize.current.targets).toHaveLength(2)
-    expect(reportStatus(normalized)).toBe('passed')
+    expect(normalized.runtimeSize.current.targets[0].tiers[0].production.retainedModules.entry).toBe(
+      'wevu-runtime-size-weapp-tier-0-production.mjs',
+    )
+    expect(normalized.runtimeSize.baseline.targets[0].tiers[0].production.retainedModules).toBeUndefined()
 
     const body = renderPerformanceComment({
       data: normalized,
@@ -119,8 +122,8 @@ function createAutoImportReport() {
 }
 
 function createRuntimeArtifact() {
-  const report = (commit: string, offset: number) => ({
-    version: 2,
+  const report = (commit: string, offset: number, includeRetainedModules = true) => ({
+    version: 3,
     commit,
     targets: ['weapp', 'web'].map(id => ({
       id,
@@ -128,9 +131,20 @@ function createRuntimeArtifact() {
       tiers: Array.from({ length: 5 }, (_, index) => ({
         id: `tier-${index}`,
         dev: { bytes: 1000 + offset },
-        production: { bytes: 800 + offset, ...(id === 'web' ? { gzipBytes: 400 + offset } : {}) },
+        production: {
+          bytes: 800 + offset,
+          ...(id === 'web' ? { gzipBytes: 400 + offset } : {}),
+          ...(includeRetainedModules
+            ? {
+                retainedModules: {
+                  entry: `wevu-runtime-size-${id}-tier-${index}-production.mjs`,
+                  modules: [],
+                },
+              }
+            : {}),
+        },
       })),
     })),
   })
-  return { version: 2, kind: 'wevu-runtime-size-pr-report', repository: 'owner/repo', prNumber: 42, headSha: 'a'.repeat(40), baseSha: 'b'.repeat(40), current: report('a'.repeat(12), 100), baseline: report('b'.repeat(12), 0) }
+  return { version: 3, kind: 'wevu-runtime-size-pr-report', repository: 'owner/repo', prNumber: 42, headSha: 'a'.repeat(40), baseSha: 'b'.repeat(40), current: report('a'.repeat(12), 100), baseline: report('b'.repeat(12), 0, false) }
 }

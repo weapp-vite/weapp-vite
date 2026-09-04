@@ -153,12 +153,12 @@ function normalizeRuntimeSize(value) {
 }
 
 function validateRuntimeArtifact(value, expected = {}) {
-  if (value.version !== 2 || !isObject(value.current) || !isObject(value.baseline)) { throw new Error('unsupported runtime-size artifact') }
+  if (![2, 3].includes(value.version) || !isObject(value.current) || !isObject(value.baseline)) { throw new Error('unsupported runtime-size artifact') }
   if (expected.repository && value.repository !== expected.repository) { throw new Error('repository does not match') }
   if (expected.prNumber != null && value.prNumber !== expected.prNumber) { throw new Error('PR number does not match') }
   if (expected.headSha && value.headSha !== expected.headSha) { throw new Error('head SHA does not match') }
   for (const report of [value.current, value.baseline]) {
-    if (report.version !== 2 || !Array.isArray(report.targets) || report.targets.length !== 2) { throw new Error('invalid runtime-size report') }
+    if (report.version !== value.version || !Array.isArray(report.targets) || report.targets.length !== 2) { throw new Error('invalid runtime-size report') }
     for (const target of report.targets) {
       if (!Array.isArray(target.tiers) || target.tiers.length !== 5) { throw new Error('invalid runtime-size tiers') }
       for (const tier of target.tiers) {

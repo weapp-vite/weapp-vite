@@ -1,3 +1,4 @@
+import type { WevuRuntimeCapabilityName } from '../../../runtimeCapabilities'
 import type { CompilerDiagnostic } from '../../../types/diagnostics'
 import type { ResolvedSlotFallbackWrapperConfig, SlotFallbackWrapperComponentAsset, SlotFallbackWrapperStrategy, TemplateCompileOptions, TemplateCompileResult, TransformContext } from './template/types'
 import {
@@ -7,6 +8,7 @@ import {
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE,
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
 } from '@weapp-core/constants'
+import { createWevuRuntimeCapabilityMetadata } from '../../../runtimeCapabilities'
 
 import { createBindingManifest } from './template/bindingManifest'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
@@ -232,6 +234,24 @@ export function compileVueTemplateToWxml(
     }
     if (context.hasSlotOutlet) {
       result.hasSlotOutlet = true
+    }
+    const requiredCapabilities: WevuRuntimeCapabilityName[] = []
+    const manifestFeatures = context.bindingManifest.features
+    if (manifestFeatures.templateRefs) {
+      requiredCapabilities.push('templateRefs')
+    }
+    if (manifestFeatures.layout) {
+      requiredCapabilities.push('layout')
+    }
+    if (manifestFeatures.inlineEvents) {
+      requiredCapabilities.push('inlineEvents')
+    }
+    if (manifestFeatures.scopedSlots) {
+      requiredCapabilities.push('scopedSlots')
+    }
+    const runtimeCapabilities = createWevuRuntimeCapabilityMetadata(requiredCapabilities)
+    if (runtimeCapabilities) {
+      result.runtimeCapabilities = runtimeCapabilities
     }
 
     return result

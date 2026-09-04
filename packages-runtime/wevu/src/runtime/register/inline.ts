@@ -1,4 +1,5 @@
 import { isRef } from '../../reactivity'
+import { decodeWxmlEntities, resolveDatasetEventValue, resolveDatasetIndex } from '../inlineDataset'
 
 export interface InlineExpressionEntry {
   keys: string[]
@@ -14,118 +15,6 @@ interface InlineExpressionScopeResolver {
 }
 
 export type InlineExpressionMap = Record<string, InlineExpressionEntry>
-
-const AMP_RE = /&amp;/g
-const QUOT_RE = /&quot;/g
-const NUM_QUOT_RE = /&#34;/g
-const APOS_RE = /&apos;/g
-const NUM_APOS_RE = /&#39;/g
-const LT_RE = /&lt;/g
-const GT_RE = /&gt;/g
-
-export function decodeWxmlEntities(value: string) {
-  return value
-    .replace(AMP_RE, '&')
-    .replace(QUOT_RE, '"')
-    .replace(NUM_QUOT_RE, '"')
-    .replace(APOS_RE, '\'')
-    .replace(NUM_APOS_RE, '\'')
-    .replace(LT_RE, '<')
-    .replace(GT_RE, '>')
-}
-const DATASET_ARRAY_INDEX_RE = /^(?:0|[1-9]\d*)$/
-
-function normalizeDatasetIndex(value: unknown): number | string | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value
-  }
-  if (typeof value === 'string' && value.trim()) {
-    const trimmed = value.trim()
-    return DATASET_ARRAY_INDEX_RE.test(trimmed) ? Number(trimmed) : trimmed
-  }
-  return undefined
-}
-
-const NON_ALNUM_RE = /[^a-z0-9]+/gi
-const LEADING_TRAILING_DASH_RE = /^-+|-+$/g
-
-function normalizeEventToken(value: string): string {
-  return value
-    .trim()
-    .replace(NON_ALNUM_RE, '-')
-    .replace(LEADING_TRAILING_DASH_RE, '')
-    .toLowerCase()
-}
-
-const DASH_ALNUM_RE = /-([a-z0-9])/g
-const DATASET_KEY_SEPARATOR_RE = /[-_]/g
-
-function resolveNormalizedDatasetValue(dataset: Record<string, any>, key: string) {
-  const normalizedKey = key.replace(DATASET_KEY_SEPARATOR_RE, '').toLowerCase()
-  for (const [datasetKey, value] of Object.entries(dataset ?? {})) {
-    if (datasetKey.replace(DATASET_KEY_SEPARATOR_RE, '').toLowerCase() === normalizedKey) {
-      return value
-    }
-  }
-  return undefined
-}
-
-function resolveEventDatasetKey(baseKey: string, event: any): string | undefined {
-  const eventType = typeof event?.type === 'string' ? event.type : ''
-  const token = normalizeEventToken(eventType)
-  if (!token) {
-    return undefined
-  }
-  const camelToken = token.replace(DASH_ALNUM_RE, (_, ch: string) => ch.toUpperCase())
-  if (!camelToken) {
-    return undefined
-  }
-  return `${baseKey}${camelToken[0].toUpperCase()}${camelToken.slice(1)}`
-}
-
-const DATASET_KEY_ALIASES: Record<string, string[]> = {
-  wvEventDetail: ['wd', 'wvEventDetail'],
-  wvHandler: ['wh', 'wvHandler'],
-  wvInlineId: ['wi', 'wvInlineId'],
-}
-
-function resolveDatasetValueByBaseKey(
-  dataset: Record<string, any>,
-  baseKey: string,
-  event: any,
-) {
-  const aliasKeys = DATASET_KEY_ALIASES[baseKey] ?? [baseKey]
-  for (const aliasKey of aliasKeys) {
-    const specificKey = resolveEventDatasetKey(aliasKey, event)
-    if (specificKey && dataset?.[specificKey] !== undefined) {
-      return dataset[specificKey]
-    }
-    if (specificKey) {
-      const normalizedValue = resolveNormalizedDatasetValue(dataset, specificKey)
-      if (normalizedValue !== undefined) {
-        return normalizedValue
-      }
-    }
-  }
-  for (const aliasKey of aliasKeys) {
-    if (dataset?.[aliasKey] !== undefined) {
-      return dataset[aliasKey]
-    }
-    const normalizedValue = resolveNormalizedDatasetValue(dataset, aliasKey)
-    if (normalizedValue !== undefined) {
-      return normalizedValue
-    }
-  }
-  return undefined
-}
-
-export function resolveDatasetEventValue(
-  dataset: Record<string, any>,
-  baseKey: string,
-  event: any,
-): any {
-  return resolveDatasetValueByBaseKey(dataset, baseKey, event)
-}
 
 function shouldUseDetailPayload(dataset: Record<string, any>, event: any): boolean {
   const flag = resolveDatasetEventValue(dataset, 'wvEventDetail', event)
@@ -176,7 +65,7 @@ export function runInlineExpression(
   const dataset = (event?.currentTarget as any)?.dataset ?? (event?.target as any)?.dataset ?? {}
   const inlineEvent = resolveInlineEventArg(event, dataset)
   const inlineId = resolveDatasetEventValue(dataset, 'wvInlineId', event)
-  if (inlineId && inlineMap) {
+  if (typeof inlineId === 'string' && inlineId && inlineMap) {
     const entry = inlineMap[inlineId]
     if (entry && typeof entry.fn === 'function') {
       const scope: Record<string, any> = {}
@@ -188,7 +77,7 @@ export function runInlineExpression(
       const indexKeys = Array.isArray(entry.indexKeys) ? entry.indexKeys : []
       for (let i = 0; i < indexKeys.length; i += 1) {
         const indexKey = indexKeys[i]
-        const indexValue = normalizeDatasetIndex(dataset?.[`wvI${i}`])
+        const indexValue = resolveDatasetIndex(dataset?.[`wvI${i}`])
         if (indexValue !== undefined) {
           scope[indexKey] = indexValue
         }

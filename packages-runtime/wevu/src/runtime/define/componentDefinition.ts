@@ -6,12 +6,16 @@ import type {
   MiniProgramComponentRawOptions,
   SetDataSnapshotOptions,
 } from '../types'
-import { WEVU_BINDING_MANIFEST_KEY } from '@weapp-core/constants'
+import {
+  WEVU_BINDING_MANIFEST_KEY,
+  WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY,
+} from '@weapp-core/constants'
 import { createApp } from '../app'
 import { INTERNAL_DEFAULTS_SCOPE_KEY } from '../defaults'
 import { registerComponent } from '../register'
 
 export interface RuntimeComponentDefinitionOptions {
+  scopedSlotOwnerRequired: boolean
   data: (() => Record<string, any>) | undefined
   computed: ComputedDefinitions
   methods: MethodDefinitions
@@ -35,6 +39,7 @@ export function createRuntimeComponentDefinition(
     methods: options.methods,
     setData: options.setData,
     [WEVU_BINDING_MANIFEST_KEY]: options.bindingManifest,
+    [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: options.scopedSlotOwnerRequired,
     [INTERNAL_DEFAULTS_SCOPE_KEY]: 'component',
   } as any)
   const lifecycleDefinition = registerComponent(

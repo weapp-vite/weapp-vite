@@ -30,6 +30,7 @@ import {
   hasInjectionContext,
   inject,
   injectGlobal,
+  mountRuntimeInstance,
   nextTick,
   onActivated,
   onAddToFavorites,
@@ -288,6 +289,8 @@ createWevuComponent({
 
 registerApp(runtimeApp, {}, undefined as any, undefined, {})
 registerComponent(runtimeApp, {}, undefined as any, undefined, {})
+const lowLevelTarget = {} as Parameters<typeof mountRuntimeInstance>[0]
+mountRuntimeInstance(lowLevelTarget, runtimeApp, undefined, undefined)
 
 provideGlobal(TOKEN, 1)
 const globalVal = injectGlobal<number>(TOKEN, 2)

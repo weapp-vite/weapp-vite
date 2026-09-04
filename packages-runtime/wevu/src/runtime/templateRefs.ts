@@ -1,3 +1,4 @@
+import type { TemplateRefBinding } from './capabilities'
 import type { InternalRuntimeState } from './types'
 import {
   WEVU_READY_CALLED_KEY,
@@ -18,13 +19,7 @@ import {
   updateTemplateRefMapValue,
 } from './templateRefs/helpers'
 
-export interface TemplateRefBinding {
-  selector: string
-  inFor: boolean
-  name?: string
-  get?: () => unknown
-  kind?: 'component' | 'element'
-}
+export type { TemplateRefBinding } from './capabilities'
 
 type TemplateRefUpdateCallback = () => void
 
@@ -33,7 +28,7 @@ export function updateTemplateRefs(
   onResolved?: TemplateRefUpdateCallback,
   assignmentTarget: InternalRuntimeState = target,
 ) {
-  const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as TemplateRefBinding[] | undefined
+  const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as readonly TemplateRefBinding[] | undefined
   if (!bindings || !bindings.length) {
     onResolved?.()
     return
@@ -161,7 +156,7 @@ export function scheduleTemplateRefUpdate(
   onResolved?: TemplateRefUpdateCallback,
   assignmentTarget: InternalRuntimeState = target,
 ) {
-  const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as TemplateRefBinding[] | undefined
+  const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as readonly TemplateRefBinding[] | undefined
   if (!bindings || !bindings.length) {
     onResolved?.()
     return
@@ -206,7 +201,7 @@ export function clearTemplateRefs(
   target: InternalRuntimeState,
   assignmentTarget: InternalRuntimeState = target,
 ) {
-  const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as TemplateRefBinding[] | undefined
+  const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as readonly TemplateRefBinding[] | undefined
   if (!bindings || !bindings.length) {
     return
   }

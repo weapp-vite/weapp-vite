@@ -1,4 +1,5 @@
 import type { NodePath } from '@weapp-vite/ast/babelTraverse'
+import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { CompilerPageLayoutPlan } from '../../../../types/pageLayout'
 import type { WevuDefaults } from '../../../../types/wevu'
@@ -14,6 +15,8 @@ export interface TransformResult {
   code: string
   transformed: boolean
   map?: EncodedSourceMapLike | null
+  /** @internal */
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
 }
 
 export interface TransformScriptOptions {
@@ -93,6 +96,8 @@ export interface TransformScriptOptions {
    * 当前页面的编译期布局计划。
    */
   pageLayout?: CompilerPageLayoutPlan
+  /** @internal */
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
   /**
    * 模板中作为组件 prop 传递的函数候选路径。
    */

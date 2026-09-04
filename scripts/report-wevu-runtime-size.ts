@@ -1,8 +1,10 @@
 import { appendFile, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import { x } from 'tinyexec'
 import {
+  assertRuntimeSizeReport,
   collectRuntimeSizeReport,
   createRuntimeSizePrArtifact,
   readRuntimeSizeReport,
@@ -10,9 +12,10 @@ import {
   writeJson,
 } from './runtime-size'
 
-interface CliOptions {
+export interface RuntimeSizeCliOptions {
   root: string
   build: boolean
+  check: boolean
   currentJson?: string
   baselineJson?: string
   outputJson?: string
@@ -25,26 +28,42 @@ interface CliOptions {
   githubSummary: boolean
 }
 
-function readArgValue(name: string) {
-  const prefix = `${name}=`
-  return process.argv.slice(2).find(value => value.startsWith(prefix))?.slice(prefix.length)
+export interface RuntimeSizeCliDependencies {
+  appendText: typeof appendFile
+  buildRuntimeDependencies: typeof buildRuntimeDependencies
+  collectReport: typeof collectRuntimeSizeReport
+  ensureParentDirectory: typeof ensureParentDirectory
+  readCommit: typeof readCommit
+  readReport: typeof readRuntimeSizeReport
+  writeJson: typeof writeJson
+  writeStdout: (contents: string) => void
+  writeText: typeof writeFile
 }
 
-function parseOptions(): CliOptions {
-  const prNumberValue = readArgValue('--pr-number')
+function readArgValue(args: readonly string[], name: string) {
+  const prefix = `${name}=`
+  return args.find(value => value.startsWith(prefix))?.slice(prefix.length)
+}
+
+export function parseRuntimeSizeCliOptions(
+  args: readonly string[] = process.argv.slice(2),
+  cwd = process.cwd(),
+): RuntimeSizeCliOptions {
+  const prNumberValue = readArgValue(args, '--pr-number')
   return {
-    root: path.resolve(readArgValue('--root') ?? process.cwd()),
-    build: process.argv.includes('--build'),
-    currentJson: readArgValue('--current-json'),
-    baselineJson: readArgValue('--baseline-json'),
-    outputJson: readArgValue('--output-json'),
-    outputMarkdown: readArgValue('--output-markdown'),
-    artifactJson: readArgValue('--artifact-json'),
-    repository: readArgValue('--repository'),
+    root: path.resolve(cwd, readArgValue(args, '--root') ?? '.'),
+    build: args.includes('--build'),
+    check: args.includes('--check'),
+    currentJson: readArgValue(args, '--current-json'),
+    baselineJson: readArgValue(args, '--baseline-json'),
+    outputJson: readArgValue(args, '--output-json'),
+    outputMarkdown: readArgValue(args, '--output-markdown'),
+    artifactJson: readArgValue(args, '--artifact-json'),
+    repository: readArgValue(args, '--repository'),
     prNumber: prNumberValue ? Number.parseInt(prNumberValue, 10) : undefined,
-    headSha: readArgValue('--head-sha'),
-    baseSha: readArgValue('--base-sha'),
-    githubSummary: process.argv.includes('--github-summary'),
+    headSha: readArgValue(args, '--head-sha'),
+    baseSha: readArgValue(args, '--base-sha'),
+    githubSummary: args.includes('--github-summary'),
   }
 }
 
@@ -66,7 +85,7 @@ async function readCommit(root: string) {
   return result.stdout.trim()
 }
 
-function assertArtifactOptions(options: CliOptions) {
+function assertArtifactOptions(options: RuntimeSizeCliOptions) {
   if (
     !options.repository
     || !options.prNumber
@@ -78,38 +97,53 @@ function assertArtifactOptions(options: CliOptions) {
   }
 }
 
-async function main() {
-  const options = parseOptions()
+const defaultCliDependencies: RuntimeSizeCliDependencies = {
+  appendText: appendFile,
+  buildRuntimeDependencies,
+  collectReport: collectRuntimeSizeReport,
+  ensureParentDirectory,
+  readCommit,
+  readReport: readRuntimeSizeReport,
+  writeJson,
+  writeStdout: contents => process.stdout.write(contents),
+  writeText: writeFile,
+}
+
+export async function runRuntimeSizeCli(
+  options: RuntimeSizeCliOptions,
+  injectedDependencies: Partial<RuntimeSizeCliDependencies> = {},
+) {
+  const dependencies = { ...defaultCliDependencies, ...injectedDependencies }
   if (options.build) {
-    await buildRuntimeDependencies(options.root)
+    await dependencies.buildRuntimeDependencies(options.root)
   }
 
   const current = options.currentJson
-    ? await readRuntimeSizeReport(options.currentJson)
-    : await collectRuntimeSizeReport({
+    ? await dependencies.readReport(options.currentJson)
+    : await dependencies.collectReport({
         root: options.root,
-        commit: await readCommit(options.root),
+        commit: await dependencies.readCommit(options.root),
       })
   const baseline = options.baselineJson
-    ? await readRuntimeSizeReport(options.baselineJson)
+    ? await dependencies.readReport(options.baselineJson)
     : undefined
   const markdown = renderRuntimeSizeMarkdown(current, baseline)
 
   if (options.outputJson) {
-    await ensureParentDirectory(options.outputJson)
-    await writeJson(options.outputJson, current)
+    await dependencies.ensureParentDirectory(options.outputJson)
+    await dependencies.writeJson(options.outputJson, current)
   }
   if (options.outputMarkdown) {
-    await ensureParentDirectory(options.outputMarkdown)
-    await writeFile(path.resolve(options.outputMarkdown), markdown, 'utf8')
+    await dependencies.ensureParentDirectory(options.outputMarkdown)
+    await dependencies.writeText(path.resolve(options.outputMarkdown), markdown, 'utf8')
   }
   if (options.artifactJson) {
     assertArtifactOptions(options)
     if (!baseline) {
       throw new Error('Artifact output requires --baseline-json.')
     }
-    await ensureParentDirectory(options.artifactJson)
-    await writeJson(options.artifactJson, createRuntimeSizePrArtifact({
+    await dependencies.ensureParentDirectory(options.artifactJson)
+    await dependencies.writeJson(options.artifactJson, createRuntimeSizePrArtifact({
       repository: options.repository!,
       prNumber: options.prNumber!,
       headSha: options.headSha!,
@@ -119,12 +153,22 @@ async function main() {
     }))
   }
   if (options.githubSummary && process.env.GITHUB_STEP_SUMMARY) {
-    await appendFile(process.env.GITHUB_STEP_SUMMARY, markdown, 'utf8')
+    await dependencies.appendText(process.env.GITHUB_STEP_SUMMARY, markdown, 'utf8')
   }
-  process.stdout.write(markdown)
+  dependencies.writeStdout(markdown)
+
+  if (options.check) {
+    assertRuntimeSizeReport(current)
+  }
 }
 
-main().catch((error) => {
-  process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`)
-  process.exitCode = 1
-})
+function isDirectRun() {
+  return process.argv[1] != null && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
+}
+
+if (isDirectRun()) {
+  void runRuntimeSizeCli(parseRuntimeSizeCliOptions()).catch((error) => {
+    process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`)
+    process.exitCode = 1
+  })
+}

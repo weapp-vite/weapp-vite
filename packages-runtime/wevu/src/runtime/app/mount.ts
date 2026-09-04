@@ -1,5 +1,5 @@
 import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
-import type { MutationRecord, WatchOptions, WatchStopHandle } from '../../reactivity'
+import type { WatchOptions, WatchStopHandle } from '../../reactivity'
 import type {
   AppConfig,
   ComputedDefinitions,
@@ -16,11 +16,11 @@ import {
   WEVU_PROPS_KEY,
   WEVU_SETUP_STATE_KEY,
 } from '@weapp-core/constants'
-import { addMutationRecorder, effect, isReactive, prelinkReactiveTree, reactive, removeMutationRecorder, shallowReactive, stop, toRaw, touchReactive, watch } from '../../reactivity'
-import { clearPatchIndices } from '../../reactivity/reactive'
+import { effect, isReactive, reactive, shallowReactive, stop, touchReactive, watch } from '../../reactivity'
 import { queueJob } from '../../scheduler'
 import { hasOwn } from '../../utils'
 import { createBindModel } from '../bindModel'
+import { requireRuntimeCapability } from '../capabilities'
 import { hasTrackableSetupBinding, touchSetupBinding } from '../setupTracking'
 import { createRuntimeContext } from './context'
 import { createDiagnosticsLogger } from './diagnostics'
@@ -77,6 +77,9 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
   } = options
 
   return (adapter?: MiniProgramAdapter): RuntimeInstance<D, C, M> => {
+    if (setDataOptions?.strategy === 'patch') {
+      requireRuntimeCapability('patchStrategy', 'createRuntimeMount(setData.strategy="patch")')
+    }
     const rawState = resolveDataOption(data)
     const adapterInitialProps = (adapter as any)?.__wevu_initialProps
     // 预置 props 容器，确保编译器生成的 this.__wevuProps 回退表达式
@@ -212,9 +215,8 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
 
     const currentAdapter = adapter ?? { setData: () => {} }
     const targetLabel = (currentAdapter as any).__wevu_targetLabel as string | undefined
-    const stateRootRaw = toRaw(state as any) as object
     let tracker: ReturnType<typeof effect> | undefined
-    const scheduler = createSetDataScheduler({
+    const schedulerOptions = {
       state: state as any,
       setupState: setupState as any,
       snapshotOmitKeys,
@@ -234,6 +236,8 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       mergeSiblingMaxParentBytes,
       mergeSiblingSkipArray,
       elevateTopKeyThreshold,
+      prelinkMaxDepth,
+      prelinkMaxKeys,
       toPlainMaxDepth,
       toPlainMaxKeys,
       includeFunctions,
@@ -252,9 +256,12 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       initialState: adapterInitialState && typeof adapterInitialState === 'object'
         ? adapterInitialState
         : undefined,
-    })
-    const job = () => scheduler.job(stateRootRaw)
-    const mutationRecorder = (record: MutationRecord) => scheduler.mutationRecorder(record, stateRootRaw)
+    }
+    const scheduler = setDataStrategy === 'patch'
+      ? requireRuntimeCapability('patchStrategy', 'createRuntimeMount(setData.strategy="patch")')
+          .createScheduler(schedulerOptions)
+      : createSetDataScheduler(schedulerOptions)
+    const job = () => scheduler.job()
 
     tracker = effect(
       () => {
@@ -290,11 +297,9 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     }
 
     stopHandles.push(createWatchStopHandle(() => stop(tracker)))
-    if (setDataStrategy === 'patch') {
-      prelinkReactiveTree(state as any, { shouldIncludeTopKey: shouldIncludeKey, maxDepth: prelinkMaxDepth, maxKeys: prelinkMaxKeys })
-      addMutationRecorder(mutationRecorder)
-      stopHandles.push(createWatchStopHandle(() => removeMutationRecorder(mutationRecorder)))
-      stopHandles.push(createWatchStopHandle(() => clearPatchIndices(state as any)))
+    scheduler.start?.()
+    if (scheduler.dispose) {
+      stopHandles.push(createWatchStopHandle(scheduler.dispose))
     }
 
     function registerWatch<T>(

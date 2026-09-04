@@ -1,14 +1,16 @@
 import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
+import type { LayoutHostBinding, TemplateRefBinding } from '../capabilities'
 import type { InlineExpressionMap } from '../register/inline'
-import type { TemplateRefBinding } from '../templateRefs'
 import type { ComputedDefinitions } from '../types'
 import {
   WEVU_BINDING_MANIFEST_KEY,
   WEVU_INLINE_HANDLER,
   WEVU_INLINE_MAP_KEY,
+  WEVU_LAYOUT_HOSTS_KEY,
   WEVU_OWNER_HANDLER,
   WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY,
   WEVU_SLOT_FUNCTION_TOKEN,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
@@ -21,9 +23,9 @@ import {
 } from '@weapp-core/constants'
 import { hasOwn } from '../../utils'
 import { cloneSnapshotValue, isDeepEqualValue } from '../app/setData/snapshot'
-import { resolveDatasetEventValue, runInlineExpression } from '../register/inline'
+import { requireRuntimeCapability, runtimeCapabilityRegistry } from '../capabilities'
+import { decodeWxmlEntities, resolveDatasetEventValue } from '../inlineDataset'
 import { getOwnerProxy, getOwnerSnapshot, getOwnerTarget, subscribeOwner } from '../scopedSlots'
-import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 
 const SCOPED_SLOT_SNAPSHOT_OMIT_KEYS = [
   WEVU_SLOT_OWNER_ID_KEY,
@@ -34,25 +36,6 @@ const SCOPED_SLOT_SNAPSHOT_OMIT_KEYS = [
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_SCOPE_KEY,
 ]
-
-const AMP_RE = /&amp;/g
-const QUOT_RE = /&quot;/g
-const NUM_QUOT_RE = /&#34;/g
-const APOS_RE = /&apos;/g
-const NUM_APOS_RE = /&#39;/g
-const LT_RE = /&lt;/g
-const GT_RE = /&gt;/g
-
-function decodeWxmlEntities(value: string) {
-  return value
-    .replace(AMP_RE, '&')
-    .replace(QUOT_RE, '"')
-    .replace(NUM_QUOT_RE, '"')
-    .replace(APOS_RE, '\'')
-    .replace(NUM_APOS_RE, '\'')
-    .replace(LT_RE, '<')
-    .replace(GT_RE, '>')
-}
 
 function parseInlineArgs(event: any) {
   const dataset = event?.currentTarget?.dataset ?? event?.target?.dataset ?? {}
@@ -446,17 +429,30 @@ export function createScopedSlotOptions(
   overrides?: {
     computed?: ComputedDefinitions
     inlineMap?: InlineExpressionMap
+    layoutHosts?: LayoutHostBinding[]
     templateRefs?: TemplateRefBinding[]
     [WEVU_BINDING_MANIFEST_KEY]?: WevuRuntimeBindingManifestV1
   },
 ) {
   const scopedSlotComputed = overrides?.computed
+  const layoutHosts = overrides?.layoutHosts
   const templateRefs = overrides?.templateRefs
+  if (templateRefs?.length) {
+    requireRuntimeCapability('templateRefs', 'createWevuScopedSlotComponent(templateRefs)')
+  }
+  const hasInlineMap = Boolean(overrides?.inlineMap && Object.keys(overrides.inlineMap).length)
+  if (hasInlineMap) {
+    requireRuntimeCapability('inlineEvents', 'createWevuScopedSlotComponent(inlineMap)')
+  }
+  if (layoutHosts?.length) {
+    requireRuntimeCapability('layout', 'createWevuScopedSlotComponent(layoutHosts)')
+  }
   const resolveTemplateRefOwner = (instance: any) => {
     const ownerId = resolveBoundOwnerId(instance)
     return ownerId ? getOwnerTarget(ownerId) : undefined
   }
   const baseOptions = {
+    [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: true,
     options: {
       virtualHost: true,
     },
@@ -503,14 +499,14 @@ export function createScopedSlotOptions(
         syncScopedSlotBindings(this, scopedSlotComputed)
         flushScopedSlotComputedBindings(this, scopedSlotComputed, { force: true })
         const owner = resolveTemplateRefOwner(this)
-        if (owner) {
-          scheduleTemplateRefUpdate(this, undefined, owner)
+        if (owner && templateRefs?.length) {
+          runtimeCapabilityRegistry.templateRefs?.schedule(this, undefined, owner)
         }
       },
       detached(this: any) {
         const owner = resolveTemplateRefOwner(this)
-        if (owner) {
-          clearTemplateRefs(this, owner)
+        if (owner && templateRefs?.length) {
+          runtimeCapabilityRegistry.templateRefs?.clear(this, owner)
         }
         if (typeof this.__wvOwnerUnsub === 'function') {
           this.__wvOwnerUnsub()
@@ -524,9 +520,11 @@ export function createScopedSlotOptions(
       [WEVU_OWNER_HANDLER](this: any, event: any) {
         const owner = this[WEVU_SLOT_OWNER_PROXY_KEY]
         const inlineMap = (this as any).__wevu?.methods?.[WEVU_INLINE_MAP_KEY]
-        const result = runInlineExpression(owner, undefined, event, inlineMap)
-        if (result !== undefined) {
-          return result
+        if (hasInlineMap) {
+          const result = runtimeCapabilityRegistry.inlineEvents?.run(owner, undefined, event, inlineMap)
+          if (result !== undefined) {
+            return result
+          }
         }
         if (!owner) {
           return undefined
@@ -557,6 +555,9 @@ export function createScopedSlotOptions(
   }
   if (templateRefs?.length) {
     ;(baseOptions as any)[WEVU_TEMPLATE_REFS_KEY] = templateRefs
+  }
+  if (layoutHosts?.length) {
+    ;(baseOptions as Record<string, unknown>)[WEVU_LAYOUT_HOSTS_KEY] = layoutHosts
   }
   if (overrides?.[WEVU_BINDING_MANIFEST_KEY]) {
     ;(baseOptions as Record<string, unknown>)[WEVU_BINDING_MANIFEST_KEY] = overrides[WEVU_BINDING_MANIFEST_KEY]

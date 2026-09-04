@@ -12,15 +12,9 @@ export type {
   WeappIntrinsicElements,
   WeappIntrinsicEventHandler,
 } from '../miniprogramIntrinsicElements'
-export * from './app'
 export { useCssModule } from './css'
-export { resetWevuDefaults, setWevuDefaults } from './defaults'
+export { resetWevuDefaults } from './defaults'
 export type { WevuDefaults } from './defaults'
-export {
-  createWevuComponent,
-  createWevuScopedSlotComponent,
-  defineComponent,
-} from './define'
 export type {
   ComponentDefinition,
   DefineComponentTypePropsOptions,
@@ -32,16 +26,29 @@ export type {
 } from './define'
 export * from './disposables'
 export * from './elementIntersectionObserver'
+export * from './features/publicLayout'
 export * from './hooks'
 export * from './intersectionObserver'
-export * from './layoutBridge'
 export * from './noSetData'
 export * from './pageEnvironment'
-export * from './pageLayout'
 export * from './pageScroll'
 export * from './provide'
+export { createApp } from './publicRuntime'
+export { setWevuDefaults } from './publicRuntime'
+export {
+  createWevuComponent,
+  createWevuScopedSlotComponent,
+  defineComponent,
+  mountRuntimeInstance,
+  registerApp,
+  registerComponent,
+} from './publicRuntime'
 export * from './pullDownRefresh'
-export * from './register'
+export {
+  runSetupFunction,
+  setRuntimeSetDataVisibility,
+  teardownRuntimeInstance,
+} from './register'
 export * from './selectorQuery'
 export * from './template'
 export { resolvePropValue } from './template'
