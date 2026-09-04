@@ -1,5 +1,6 @@
+import type { EffectScope } from '@/reactivity'
 import { describe, expect, it } from 'vitest'
-import { batch, effect, effectScope, reactive, watchEffect } from '@/reactivity'
+import { batch, effect, effectScope, onScopeDispose, reactive, watchEffect } from '@/reactivity'
 
 describe('reactivity (batch + effectScope)', () => {
   it('batch dedupes sync effects', () => {
@@ -46,5 +47,64 @@ describe('reactivity (batch + effectScope)', () => {
     state.n++
     await Promise.resolve()
     expect(runs).toBe(2)
+  })
+
+  it('stops every effect, cleanup, and nested scope before rethrowing the first failure', () => {
+    const parent = effectScope()
+    const calls: string[] = []
+    const firstFailure = new Error('effect stop failed')
+    const cleanupFailure = new Error('scope cleanup failed')
+    const childFailure = new Error('child scope cleanup failed')
+    let firstChild!: EffectScope
+    let secondChild!: EffectScope
+
+    parent.run(() => {
+      effect(() => 0, {
+        onStop() {
+          calls.push('effect:first')
+          throw firstFailure
+        },
+      })
+      effect(() => 0, {
+        onStop() {
+          calls.push('effect:second')
+        },
+      })
+      onScopeDispose(() => {
+        calls.push('parent:first')
+        throw cleanupFailure
+      })
+      onScopeDispose(() => {
+        calls.push('parent:second')
+      })
+
+      firstChild = effectScope()
+      firstChild.run(() => {
+        onScopeDispose(() => {
+          calls.push('child:first')
+          throw childFailure
+        })
+      })
+
+      secondChild = effectScope()
+      secondChild.run(() => {
+        onScopeDispose(() => {
+          calls.push('child:second')
+        })
+      })
+    })
+
+    expect(() => parent.stop()).toThrow(firstFailure)
+    expect(calls).toEqual([
+      'effect:first',
+      'effect:second',
+      'parent:first',
+      'parent:second',
+      'child:first',
+      'child:second',
+    ])
+    expect(parent.active).toBe(false)
+    expect(firstChild.active).toBe(false)
+    expect(secondChild.active).toBe(false)
   })
 })

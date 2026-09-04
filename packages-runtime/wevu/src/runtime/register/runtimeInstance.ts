@@ -680,14 +680,41 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
     }
   }
   target[WEVU_WATCH_STOPS_KEY] = undefined
-  target[WEVU_EFFECT_SCOPE_KEY]?.stop()
+  let firstError: unknown
+  let hasError = false
+  const recordError = (error: unknown) => {
+    if (hasError) {
+      return
+    }
+    firstError = error
+    hasError = true
+  }
+
+  const effectScope = target[WEVU_EFFECT_SCOPE_KEY]
+  if (effectScope) {
+    try {
+      effectScope.stop()
+    }
+    catch (error) {
+      recordError(error)
+    }
+  }
   target[WEVU_EFFECT_SCOPE_KEY] = undefined
   if (runtime) {
-    runtime.unmount()
+    try {
+      runtime.unmount()
+    }
+    catch (error) {
+      recordError(error)
+    }
   }
   delete target.__wevu
   if (WEVU_PUBLIC_RUNTIME_KEY in target) {
     delete (target as any)[WEVU_PUBLIC_RUNTIME_KEY]
+  }
+
+  if (hasError) {
+    throw firstError
   }
 }
 
