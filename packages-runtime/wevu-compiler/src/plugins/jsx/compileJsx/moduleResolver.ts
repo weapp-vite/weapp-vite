@@ -139,7 +139,10 @@ export function createJsxModuleResolver(warnings?: string[]): JsxModuleResolver 
     if (cached?.code === code) {
       return cached.exports
     }
-    const ast = parse(code, BABEL_TS_MODULE_PARSER_OPTIONS) as File
+    const ast = parse(code, {
+      ...BABEL_TS_MODULE_PARSER_OPTIONS,
+      sourceFilename: filename,
+    }) as File
     const collected = collectExports(ast)
     cache.set(filename, { code, exports: collected })
     return collected

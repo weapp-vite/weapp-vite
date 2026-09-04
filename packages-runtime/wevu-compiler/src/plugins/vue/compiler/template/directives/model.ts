@@ -12,6 +12,7 @@ import {
   normalizeEventDatasetSuffix,
 } from '../../../../../inlineDataset'
 import { normalizeComponentHostName } from '../../../../../utils/text'
+import { recordBindingExpression } from '../bindingManifest'
 import { warn } from '../diagnostics'
 import { getBindDirectiveExpression } from '../elements/helpers'
 import {
@@ -175,6 +176,14 @@ function transformComponentModelDirective(
         { hint: 'v-model modifiers' },
       )
     : null
+  if (modifiersRef) {
+    recordBindingExpression(context, {
+      kind: 'component-prop',
+      expression: `{${modifierProperties}}`,
+      outputPath: modifiersRef.split('[')[0],
+      sourceLocation: node.loc,
+    })
+  }
   const modifierAttr = modifiersRef
     ? `${modifiersProp}="${renderMustache(modifiersRef, context)}"`
     : null

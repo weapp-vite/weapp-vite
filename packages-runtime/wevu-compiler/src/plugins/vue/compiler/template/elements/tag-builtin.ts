@@ -1,4 +1,4 @@
-import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
+import type { AttributeNode, DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 
@@ -12,6 +12,29 @@ import { transformForElement, transformIfElement } from './tag-structural'
 
 const TEMPLATE_OPEN_RE = /<template/g
 const TEMPLATE_CLOSE_RE = /<\/template>/g
+const MUSTACHE_EXPRESSION_RE = /\{\{([\s\S]*?)\}\}/g
+const TEMPLATE_DATA_SPREAD_RE = /^\.\.\./
+
+function recordTemplateAttributeBindings(
+  prop: AttributeNode,
+  context: TransformContext,
+) {
+  const value = prop.value?.content
+  if (!value?.includes('{{')) {
+    return
+  }
+  for (const match of value.matchAll(MUSTACHE_EXPRESSION_RE)) {
+    const expression = match[1]?.trim().replace(TEMPLATE_DATA_SPREAD_RE, '')
+    if (!expression) {
+      continue
+    }
+    recordBindingExpression(context, {
+      kind: 'attribute',
+      expression,
+      sourceLocation: prop.value?.loc,
+    })
+  }
+}
 
 function resolveConditionExpression(rawExpValue: string, context: TransformContext, hint: string) {
   const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExpValue, context.templateSafeCallNames))
@@ -64,12 +87,15 @@ export function transformTemplateElement(node: ElementNode, context: TransformCo
       }
     }
     if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'name') {
+      recordTemplateAttributeBindings(prop, context)
       nameAttr = prop.value && prop.value.type === NodeTypes.TEXT ? prop.value.content : ''
     }
     if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'is') {
+      recordTemplateAttributeBindings(prop, context)
       isAttr = prop.value && prop.value.type === NodeTypes.TEXT ? prop.value.content : ''
     }
     if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'data') {
+      recordTemplateAttributeBindings(prop, context)
       dataAttr = prop.value && prop.value.type === NodeTypes.TEXT ? prop.value.content : ''
     }
   }

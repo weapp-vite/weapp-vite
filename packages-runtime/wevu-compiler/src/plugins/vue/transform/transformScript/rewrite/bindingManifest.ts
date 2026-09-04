@@ -12,6 +12,7 @@ import {
 } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { createRuntimeBindingManifest } from '../../../../../bindingManifest'
+import { isBindingManifestComplete } from '../../../compiler/template/bindingManifest'
 import { parseBabelExpression } from '../../../compiler/template/expression/parse'
 import { createStaticObjectKey, getObjectPropertyByKey } from '../utils'
 
@@ -38,6 +39,9 @@ export function resolveBindingManifestPickKeys(
   autoSetDataPick: boolean,
 ) {
   const keys: string[] = []
+  if (!isBindingManifestComplete(manifest)) {
+    return keys
+  }
   const outputRoots = manifest.bindings.flatMap((binding) => {
     const root = resolveOutputRoot(binding.outputPath)
     return root ? [root] : []
