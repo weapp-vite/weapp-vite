@@ -81,6 +81,7 @@ const WEVU_INTERNAL_REACTIVITY_EXPORTS = [
   'traverse',
   'triggerRef',
   'unref',
+  'useAsyncDerivation',
   'watch',
   'watchEffect',
   'watchPostEffect',

@@ -96,6 +96,26 @@ watch 停止句柄类型。
 
 可接收值、Ref 或 getter 的联合类型。
 
+### `AsyncDerivationStatus` {#asyncderivationstatus}
+
+`useAsyncDerivation()` 的公开状态联合：`idle | initial-pending | ready | refreshing | error | disposed`。
+
+### `AsyncDerivationContext` {#asyncderivationcontext}
+
+异步加载函数接收的上下文，包含当前 generation 对应的只读 `AbortSignal`。
+
+### `UseAsyncDerivationOptions` {#useasyncderivationoptions}
+
+`useAsyncDerivation()` 的选项类型；`immediate` 默认为 `true`，设为 `false` 时保持 `idle`，直到手动调用 `refresh()`。
+
+### `AsyncDerivationState<T>` {#asyncderivationstate}
+
+以 `status` 为判别字段的只读状态联合。`ready` 与 `refreshing` 可读取 `T`；首次失败的 `value` 为 `undefined`，刷新失败则保留最近一次成功值。
+
+### `AsyncDerivation<T>` {#asyncderivation}
+
+`AsyncDerivationState<T>` 与 `refresh(): Promise<void>`、`dispose(): void` 的组合类型。两个控制方法不可枚举，不会作为模板数据提交。
+
 ### `ExtractPropTypes<T>` {#extractproptypes}
 
 从 Wevu `ComponentPropsOptions` 推导组件内部可见的 props 类型，required/default 判定按小程序 properties 归一化规则处理。

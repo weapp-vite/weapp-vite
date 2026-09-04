@@ -7,24 +7,26 @@ export interface RequestGlobalsEventLike {
   currentTarget?: unknown
 }
 
+export type RequestGlobalsEventListener
+  = | ((event: RequestGlobalsEventLike) => void)
+    | { handleEvent: (event: RequestGlobalsEventLike) => void }
+
 export interface RequestGlobalsEventTargetLike {
-  addEventListener: (type: string, listener: (event: RequestGlobalsEventLike) => void) => void
-  removeEventListener: (type: string, listener: (event: RequestGlobalsEventLike) => void) => void
+  addEventListener: (type: string, listener: RequestGlobalsEventListener) => void
+  removeEventListener: (type: string, listener: RequestGlobalsEventListener) => void
   dispatchEvent: (event: RequestGlobalsEventLike) => boolean
 }
 
-type EventListener = (event: RequestGlobalsEventLike) => void
-
 export class RequestGlobalsEventTarget implements RequestGlobalsEventTargetLike {
-  private readonly listeners = new Map<string, Set<EventListener>>()
+  private readonly listeners = new Map<string, Set<RequestGlobalsEventListener>>()
 
-  addEventListener(type: string, listener: EventListener) {
-    const set = this.listeners.get(type) ?? new Set<EventListener>()
+  addEventListener(type: string, listener: RequestGlobalsEventListener) {
+    const set = this.listeners.get(type) ?? new Set<RequestGlobalsEventListener>()
     set.add(listener)
     this.listeners.set(type, set)
   }
 
-  removeEventListener(type: string, listener: EventListener) {
+  removeEventListener(type: string, listener: RequestGlobalsEventListener) {
     this.listeners.get(type)?.delete(listener)
   }
 
@@ -36,13 +38,18 @@ export class RequestGlobalsEventTarget implements RequestGlobalsEventTargetLike 
     }
 
     for (const listener of this.listeners.get(event.type) ?? []) {
-      listener(payload)
+      if (typeof listener === 'function') {
+        listener(payload)
+      }
+      else {
+        listener.handleEvent(payload)
+      }
     }
 
     const handlerKey = `on${event.type}` as keyof this
     const handler = this[handlerKey]
     if (typeof handler === 'function') {
-      ;(handler as EventListener)(payload)
+      ;(handler as (event: RequestGlobalsEventLike) => void)(payload)
     }
 
     return true

@@ -1,4 +1,13 @@
-import type { MaybeRef, MaybeRefOrGetter, Ref } from '@/index'
+import type {
+  AsyncDerivation,
+  AsyncDerivationContext,
+  AsyncDerivationState,
+  AsyncDerivationStatus,
+  MaybeRef,
+  MaybeRefOrGetter,
+  Ref,
+  UseAsyncDerivationOptions,
+} from '@/index'
 import { expectError, expectType } from 'tsd'
 import {
   computed,
@@ -27,6 +36,7 @@ import {
   traverse,
   triggerRef,
   unref,
+  useAsyncDerivation,
   watch,
   watchEffect,
   watchPostEffect,
@@ -117,3 +127,33 @@ traverse(state)
 
 const runner = effect(() => n.value)
 expectType<() => void>(() => stop(runner))
+
+const asyncOptions: UseAsyncDerivationOptions = { immediate: false }
+const asyncDerivation = useAsyncDerivation(async ({ signal }) => {
+  expectType<AbortSignal>(signal)
+  return { id: 1 }
+}, asyncOptions)
+expectType<AsyncDerivation<{ id: number }>>(asyncDerivation)
+expectType<AsyncDerivationStatus>(asyncDerivation.status)
+expectType<Promise<void>>(asyncDerivation.refresh())
+expectType<void>(asyncDerivation.dispose())
+declare const asyncContext: AsyncDerivationContext
+expectType<AbortSignal>(asyncContext.signal)
+expectError(asyncDerivation.status = 'disposed')
+expectError(asyncDerivation.value = { id: 2 })
+expectError(asyncDerivation.error = new Error('readonly'))
+expectError(useAsyncDerivation(async () => 'value', { immediate: 'yes' }))
+
+const asyncState: AsyncDerivationState<{ id: number }> = asyncDerivation
+if (asyncState.status === 'ready' || asyncState.status === 'refreshing') {
+  expectType<{ id: number }>(asyncState.value)
+  expectType<undefined>(asyncState.error)
+}
+else if (asyncState.status === 'error') {
+  expectType<{ id: number } | undefined>(asyncState.value)
+  expectType<unknown>(asyncState.error)
+}
+else {
+  expectType<undefined>(asyncState.value)
+  expectType<undefined>(asyncState.error)
+}
