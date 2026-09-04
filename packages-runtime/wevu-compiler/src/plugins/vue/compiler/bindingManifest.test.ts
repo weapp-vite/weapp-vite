@@ -79,6 +79,22 @@ describe('binding manifest', () => {
     expect(result.bindingManifest.features.scopedSlots).toBe(true)
   })
 
+  it('keeps static bracket paths in automatic pick roots', () => {
+    const result = compileVueTemplateToWxml(
+      '<view v-for="row in sections[0].rows">{{ row.title }}</view>',
+      '/src/pages/static-bracket.vue',
+    )
+    const loopBinding = result.bindingManifest.bindings.find(binding => binding.kind === 'for')
+
+    expect(loopBinding).toMatchObject({
+      outputPath: 'sections.0.rows',
+      sourceRoots: ['sections'],
+      sourcePaths: ['sections.0.rows'],
+      updateMode: 'exact-path',
+    })
+    expect(resolveBindingManifestPickKeys(result.bindingManifest, true)).toContain('sections')
+  })
+
   it('marks declarative layout hosts in manifest features', () => {
     const result = compileVueTemplateToWxml(
       '<NativeCard layout-host="main" />',
@@ -148,7 +164,7 @@ describe('binding manifest', () => {
 
   it('keeps scoped-slot child bindings in the child manifest and script', () => {
     const result = compileVueTemplateToWxml(
-      '<Provider><template #default="{ label }"><text>{{ label }}</text></template></Provider>',
+      '<Provider><template #default="{ label }"><text>{{ label }}{{ suffix }}</text></template></Provider>',
       '/src/pages/slots.vue',
       {
         scopedSlotsCompiler: 'augmented',
@@ -163,9 +179,15 @@ describe('binding manifest', () => {
     expect(child?.bindingManifest.bindings).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: 'text', sourcePaths: ['__wvSlotPropsData.label'] }),
     ]))
-    expect(child?.bindingManifest.bindings[0]?.scopes).toEqual([
+    const slotPropsBinding = child?.bindingManifest.bindings.find(binding => binding.sourcePaths?.includes('__wvSlotPropsData.label'))
+    const slotOwnerBinding = child?.bindingManifest.bindings.find(binding => binding.sourcePaths?.includes('__wvOwner.suffix'))
+    expect(slotPropsBinding?.scopes).toEqual([
       { kind: 'root', depth: 0 },
       { kind: 'slot-props', depth: 1 },
+    ])
+    expect(slotOwnerBinding?.scopes).toEqual([
+      { kind: 'root', depth: 0 },
+      { kind: 'slot-owner', depth: 1 },
     ])
     expect(child?.script).toContain('__wevuBindingManifest')
     expect(child?.script).not.toContain('"kind"')
