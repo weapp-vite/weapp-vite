@@ -108,6 +108,7 @@ describe('runtime/lib', () => {
       fileName: ({ name }: { name: string }) => `esm/${name}`,
     }))!
     expect(resolverByFn({ name: 'entry', facadeModuleId: '/project/src/entry.ts' })).toBe('esm/entry.js')
+    expect(resolverByFn({ name: 'entry', facadeModuleId: null })).toBe('esm/entry.js')
 
     const invalidFn = createLibEntryFileNameResolver(createResolvedLibConfig({
       fileName: () => 1 as any,

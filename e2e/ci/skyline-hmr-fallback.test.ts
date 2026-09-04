@@ -65,7 +65,7 @@ afterEach(async () => {
   await fs.remove(APP_ROOT)
 })
 
-describe.sequential('Skyline HMR compatibility fallback', () => {
+describe('Skyline HMR compatibility fallback', { concurrent: false }, () => {
   it('disables DevTools hot reload and keeps classic rebuilds working', async () => {
     const originalSource = await fs.readFile(SOURCE_WXML_PATH, 'utf8')
     const marker = createHmrMarker('SKYLINE', 'CLASSIC-FALLBACK')

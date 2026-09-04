@@ -116,7 +116,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('app shell HMR (dev watch)', () => {
+describe('app shell HMR (dev watch)', { concurrent: false }, () => {
   it('updates app.vue template shell assets and keeps page wrappers in sync', async () => {
     const originalAppSource = await fs.readFile(APP_VUE_PATH, 'utf8')
     const restoreCompileHotReload = await disableProjectCompileHotReload(APP_ROOT)

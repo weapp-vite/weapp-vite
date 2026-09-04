@@ -8,6 +8,7 @@ export default defineConfig({
   },
   clean: true,
   deps: {
+    resolveDepSubpath: true,
     neverBundle: ['vscode'],
   },
   dts: false,

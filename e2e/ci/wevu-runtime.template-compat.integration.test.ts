@@ -3,7 +3,7 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { DIST_ROOT, runBuild } from '../wevu-runtime.utils'
 
-describe.sequential('wevu runtime template compat integration', () => {
+describe('wevu runtime template compat integration', { concurrent: false }, () => {
   it('compiles v-else-if and v-for destructure variants', async () => {
     await runBuild('weapp')
 

@@ -39,7 +39,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR modify — page-level file changes (dev watch)', () => {
+describe('HMR modify — page-level file changes (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('修改 .wxml 模板文件 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const originalSource = await fs.readFile(SRC_TEMPLATE, 'utf8')
@@ -257,7 +257,7 @@ const COMP_SRC_STYLE = path.join(COMP_SRC_DIR, 'index.wxss')
 const COMP_SRC_SCRIPT = path.join(COMP_SRC_DIR, 'index.ts')
 const COMP_SRC_JSON = path.join(COMP_SRC_DIR, 'index.json')
 
-describe.sequential('HMR modify — component-level file changes (dev watch)', () => {
+describe('HMR modify — component-level file changes (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('修改组件 .wxml 模板文件 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const originalSource = await fs.readFile(COMP_SRC_TEMPLATE, 'utf8')
@@ -481,7 +481,7 @@ function expectSfcKeepImportResolved(content: string) {
   expect(content).not.toContain(SFC_KEEP_IMPORT_DIRECTIVE)
 }
 
-describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
+describe('HMR modify — Vue SFC changes (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('修改 .vue SFC template 部分 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const originalSource = await fs.readFile(SFC_SRC_PATH, 'utf8')

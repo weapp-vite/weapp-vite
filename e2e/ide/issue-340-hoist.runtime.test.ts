@@ -255,7 +255,7 @@ async function callCurrentRouteE2E(miniProgram: any, expectedRoute: string) {
   return result
 }
 
-describe.sequential('e2e app: issue-340-hoist runtime', () => {
+describe('e2e app: issue-340-hoist runtime', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

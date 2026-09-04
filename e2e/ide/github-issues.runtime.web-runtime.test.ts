@@ -11,7 +11,7 @@ async function readDistFile(relativePath: string) {
   return await fs.readFile(path.join(DIST_ROOT, relativePath), 'utf8')
 }
 
-describe.sequential('github-issues runtime web runtime globals', () => {
+describe('github-issues runtime web runtime globals', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

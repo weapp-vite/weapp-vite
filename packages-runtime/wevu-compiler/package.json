@@ -1,7 +1,7 @@
 {
   "name": "@wevu/compiler",
   "type": "module",
-  "version": "7.0.3",
+  "version": "7.0.4",
   "description": "wevu 编译器基础包，面向小程序模板的编译与转换",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -53,6 +53,7 @@
   },
   "dependencies": {
     "@jridgewell/remapping": "^2.3.5",
+    "@jridgewell/trace-mapping": "^0.3.31",
     "@vue/babel-plugin-jsx": "catalog:",
     "@vue/compiler-core": "catalog:",
     "@vue/compiler-dom": "catalog:",

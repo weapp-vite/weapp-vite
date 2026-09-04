@@ -1,7 +1,9 @@
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import { WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
 import { shallowRef } from '@/reactivity'
 import { createSetDataScheduler } from '@/runtime/app/setData/scheduler'
+import { resolveBindingDiagnostics, resolveBindingManifest } from '@/runtime/bindingManifest'
 
 describe('runtime: setData scheduler', () => {
   it('handles shallowRef null transitions when comparing value tokens', () => {
@@ -152,5 +154,259 @@ describe('runtime: setData scheduler', () => {
       targetLabel: 'component:scoped-slot-default',
       message: expect.stringContaining('component:scoped-slot-default'),
     }))
+  })
+
+  it('attributes debug events to manifest bindings from actual payload paths', () => {
+    const debug = vi.fn()
+    const setData = vi.fn()
+    const state = {
+      user: { name: 'Ada' },
+      count: 1,
+      fallbackRoot: { ready: true },
+    }
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
+      version: 1,
+      sourceFile: 'src/pages/home.vue',
+      bindings: [
+        {
+          id: 'binding:user-name',
+          outputPath: 'user.name',
+          sourceRoots: ['user'],
+          sourceLocation: {
+            start: { offset: 10, line: 2, column: 5 },
+            end: { offset: 19, line: 2, column: 14 },
+          },
+        },
+        {
+          id: 'binding:count',
+          outputPath: 'count.value',
+          sourceRoots: ['count'],
+          updateMode: 'top-level',
+        },
+        {
+          id: 'binding:fallback',
+          outputPath: '__wv_bind_0',
+          sourceRoots: ['fallbackRoot'],
+          updateMode: 'snapshot-fallback',
+        },
+        {
+          id: 'binding:unknown',
+          outputPath: '*',
+          sourceRoots: [],
+          updateMode: 'snapshot-fallback',
+        },
+        {
+          id: 'binding:username',
+          outputPath: 'username',
+          sourceRoots: ['username'],
+        },
+        {
+          id: 'binding:user-name',
+          outputPath: 'user',
+          sourceRoots: ['user'],
+          updateMode: 'top-level',
+        },
+      ],
+    }
+    const scheduler = createSetDataScheduler({
+      state,
+      computedRefs: {},
+      dirtyComputedKeys: new Set(),
+      includeComputed: false,
+      functionPaths: [],
+      setDataStrategy: 'diff',
+      computedCompare: 'reference',
+      computedCompareMaxDepth: 2,
+      computedCompareMaxKeys: 20,
+      currentAdapter: { setData },
+      shouldIncludeKey: () => true,
+      maxPatchKeys: 20,
+      maxPayloadBytes: 1024 * 32,
+      mergeSiblingThreshold: 4,
+      mergeSiblingMaxInflationRatio: 2,
+      mergeSiblingMaxParentBytes: 1024 * 8,
+      mergeSiblingSkipArray: false,
+      elevateTopKeyThreshold: 8,
+      toPlainMaxDepth: 4,
+      toPlainMaxKeys: 50,
+      debug,
+      debugWhen: 'always',
+      debugSampleRate: 1,
+      bindingManifest,
+      loopWarning: false,
+      runTracker: () => {},
+      isMounted: () => true,
+    })
+
+    scheduler.job({})
+    expect(setData).toHaveBeenCalledWith({
+      user: { name: 'Ada' },
+      count: 1,
+      fallbackRoot: { ready: true },
+    })
+
+    expect(debug).toHaveBeenCalledWith(expect.objectContaining({
+      reason: 'diff',
+      bindings: [
+        {
+          id: 'binding:user-name',
+          outputPath: 'user.name',
+          updateMode: 'exact-path',
+          sourceFile: 'src/pages/home.vue',
+          sourceLocation: {
+            start: { offset: 10, line: 2, column: 5 },
+            end: { offset: 19, line: 2, column: 14 },
+          },
+        },
+        {
+          id: 'binding:count',
+          outputPath: 'count.value',
+          updateMode: 'top-level',
+          sourceFile: 'src/pages/home.vue',
+        },
+        {
+          id: 'binding:fallback',
+          outputPath: '__wv_bind_0',
+          updateMode: 'snapshot-fallback',
+          sourceFile: 'src/pages/home.vue',
+        },
+        {
+          id: 'binding:unknown',
+          outputPath: '*',
+          updateMode: 'snapshot-fallback',
+          sourceFile: 'src/pages/home.vue',
+        },
+      ],
+    }))
+  })
+
+  it('does not inspect manifest bindings when the debug event is filtered out', () => {
+    let bindingReads = 0
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
+      version: 1,
+      sourceFile: 'src/pages/quiet.vue',
+      bindings: [],
+    }
+    Object.defineProperty(bindingManifest, 'bindings', {
+      configurable: true,
+      get() {
+        bindingReads += 1
+        return []
+      },
+    })
+    const debug = vi.fn()
+    const scheduler = createSetDataScheduler({
+      state: { count: 1 },
+      computedRefs: {},
+      dirtyComputedKeys: new Set(),
+      includeComputed: false,
+      functionPaths: [],
+      setDataStrategy: 'diff',
+      computedCompare: 'reference',
+      computedCompareMaxDepth: 2,
+      computedCompareMaxKeys: 20,
+      currentAdapter: { setData: vi.fn() },
+      shouldIncludeKey: () => true,
+      maxPatchKeys: 20,
+      maxPayloadBytes: 1024 * 32,
+      mergeSiblingThreshold: 4,
+      mergeSiblingMaxInflationRatio: 2,
+      mergeSiblingMaxParentBytes: 1024 * 8,
+      mergeSiblingSkipArray: false,
+      elevateTopKeyThreshold: 8,
+      toPlainMaxDepth: 4,
+      toPlainMaxKeys: 50,
+      debug,
+      debugWhen: 'fallback',
+      debugSampleRate: 1,
+      bindingManifest,
+      loopWarning: false,
+      runTracker: () => {},
+      isMounted: () => true,
+    })
+
+    scheduler.job({})
+
+    expect(debug).not.toHaveBeenCalled()
+    expect(bindingReads).toBe(0)
+  })
+
+  it('matches bracket and dot notation on the same binding path', () => {
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
+      version: 1,
+      sourceFile: 'src/pages/list.vue',
+      bindings: [{
+        id: 'binding:list-item',
+        outputPath: 'list.0.name',
+      }],
+    }
+
+    expect(resolveBindingDiagnostics(bindingManifest, ['list[0].name'])).toEqual([
+      expect.objectContaining({ id: 'binding:list-item' }),
+    ])
+  })
+
+  it('rejects malformed and unknown binding manifests', () => {
+    expect(resolveBindingManifest({ version: 1 })).toBeUndefined()
+    expect(resolveBindingManifest({
+      version: 2,
+      sourceFile: 'src/pages/index.vue',
+      bindings: [],
+      features: {},
+    })).toBeUndefined()
+    expect(resolveBindingManifest({
+      version: 1,
+      sourceFile: 'src/pages/index.vue',
+      bindings: [{
+        id: 'b0',
+        kind: 'text',
+        outputPath: 'title',
+        sourceRoots: ['title'],
+        updateMode: 'exact-path',
+        sourceLocation: {
+          start: { offset: 0, line: '1', column: 1 },
+          end: { offset: 5, line: 1, column: 6 },
+        },
+      }],
+      features: {},
+    })).toBeUndefined()
+    expect(resolveBindingManifest({
+      version: 1,
+      sourceFile: 'src/pages/index.vue',
+      bindings: [],
+      features: { scopedSlots: false },
+    })).toBeUndefined()
+    expect(resolveBindingManifest({
+      version: 1,
+      sourceFile: 'src/pages/index.vue',
+      bindings: [{
+        id: 'b0',
+        kind: 'text',
+        outputPath: 'title',
+        sourceRoots: ['title'],
+        updateMode: 'exact-path',
+        sourceLocation: {
+          start: { offset: Number.NaN, line: 0, column: 1.5 },
+          end: { offset: 5, line: 1, column: 6 },
+        },
+      }],
+      features: {},
+    })).toBeUndefined()
+    expect(resolveBindingManifest({
+      version: 1,
+      sourceFile: 'src/pages/index.vue',
+      bindings: [{
+        id: 'b0',
+        kind: 'text',
+        outputPath: 'title',
+        sourceRoots: ['title'],
+        updateMode: 'exact-path',
+        sourceLocation: {
+          start: { offset: 6, line: 1, column: 7 },
+          end: { offset: 5, line: 1, column: 6 },
+        },
+      }],
+      features: {},
+    })).toBeUndefined()
   })
 })

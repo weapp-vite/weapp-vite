@@ -39,7 +39,7 @@ async function waitForPageRuntime(miniProgram: any, expected: Record<string, unk
   return latest
 }
 
-describe.sequential('e2e app: github-issues / issues #553 and #555', () => {
+describe('e2e app: github-issues / issues #553 and #555', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

@@ -1,3 +1,4 @@
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import type {
   AppConfig,
   ComputedDefinitions,
@@ -6,9 +7,11 @@ import type {
   RuntimeApp,
   WevuPlugin,
 } from './types'
+import { WEVU_BINDING_MANIFEST_KEY } from '@weapp-core/constants'
 import { version } from '../version'
 import { createRuntimeMount } from './app/mount'
 import { setPendingRuntimeAppRegistration } from './app/pending'
+import { resolveBindingManifest } from './bindingManifest'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { getMiniProgramGlobalObject } from './platform'
 import { ensureRuntimeAppProvides, setRuntimeAppProvidedValue } from './provideContext'
@@ -23,6 +26,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     : applyWevuAppDefaults(options)
   const {
     [INTERNAL_DEFAULTS_SCOPE_KEY]: _ignoredDefaultsScope,
+    [WEVU_BINDING_MANIFEST_KEY]: rawBindingManifest,
     data,
     computed: computedOptions,
     methods,
@@ -31,6 +35,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     setup: appSetup,
     ...mpOptions
   } = resolvedOptions
+  const bindingManifest: WevuRuntimeBindingManifestV1 | undefined = resolveBindingManifest(rawBindingManifest)
   const resolvedMethods = methods ?? ({} as M)
   const resolvedComputed = computedOptions ?? ({} as C)
 
@@ -44,6 +49,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     resolvedMethods,
     appConfig,
     setDataOptions,
+    bindingManifest,
   })
 
   const runtimeApp: RuntimeApp<D, C, M> = {

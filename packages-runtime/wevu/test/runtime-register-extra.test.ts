@@ -1,4 +1,4 @@
-import type { RuntimeApp } from '@/runtime/types'
+import type { InternalRuntimeState, RuntimeApp } from '@/runtime/types'
 import {
   WEVU_EXPOSED_KEY,
   WEVU_HOOKS_KEY,
@@ -258,6 +258,55 @@ describe('mountRuntimeInstance and teardown', () => {
 
     teardownRuntimeInstance(target)
     expect(runtime.unmount).toHaveBeenCalled()
+  })
+
+  it('finishes runtime teardown before rethrowing a scope cleanup failure', () => {
+    const app = createApp({})
+    const target: InternalRuntimeState = {
+      route: 'pages/scope-error/index',
+      setData: vi.fn(),
+    }
+    const cleanupAfterFailure = vi.fn()
+    const failure = new Error('scope cleanup failed')
+
+    mountRuntimeInstance(target, app, undefined, () => {
+      onScopeDispose(() => {
+        throw failure
+      })
+      onScopeDispose(cleanupAfterFailure)
+      return {}
+    })
+    const runtime = target.__wevu
+    if (!runtime) {
+      throw new Error('Expected runtime instance to be mounted')
+    }
+    const unmountFailure = new Error('runtime unmount failed')
+    const unmount = vi.spyOn(runtime, 'unmount').mockImplementation(() => {
+      throw unmountFailure
+    })
+
+    expect(() => teardownRuntimeInstance(target)).toThrow(failure)
+    expect(cleanupAfterFailure).toHaveBeenCalledTimes(1)
+    expect(unmount).toHaveBeenCalledTimes(1)
+    expect(target.__wevu).toBeUndefined()
+    expect(target[WEVU_PUBLIC_RUNTIME_KEY]).toBeUndefined()
+  })
+
+  it('clears runtime fields before rethrowing an unmount failure', () => {
+    const { app, runtime } = createRuntimeAppStub()
+    const target: InternalRuntimeState = {
+      setData: vi.fn(),
+    }
+    const failure = new Error('runtime unmount failed')
+    runtime.unmount.mockImplementation(() => {
+      throw failure
+    })
+
+    mountRuntimeInstance(target, app, undefined, undefined)
+
+    expect(() => teardownRuntimeInstance(target)).toThrow(failure)
+    expect(target.__wevu).toBeUndefined()
+    expect(target[WEVU_PUBLIC_RUNTIME_KEY]).toBeUndefined()
   })
 
   it('handles frozen runtime objects', () => {

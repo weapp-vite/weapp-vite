@@ -126,7 +126,7 @@ function createRequirePattern(importerPath: string, importedPath: string) {
   return new RegExp(`require\\((['"])${escapeRegExp(request)}\\1\\)`)
 }
 
-describe.sequential('issue #391 watch shared chunk rebuild', () => {
+describe('issue #391 watch shared chunk rebuild', { concurrent: false }, () => {
   it('keeps the shared runtime chunk import after editing one importer page', async () => {
     const fixtureSource = path.resolve(__dirname, '../../../e2e-apps/github-issues')
     const tempProject = await createTempFixtureProject(fixtureSource, 'issue-391-watch')

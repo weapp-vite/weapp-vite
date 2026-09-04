@@ -223,7 +223,7 @@ async function expectRepeatedMessageTap(miniProgram: any, page: any, collector: 
   )
 }
 
-describe.sequential('layout-power-demo message feedback in real WeChat DevTools', () => {
+describe('layout-power-demo message feedback in real WeChat DevTools', { concurrent: false }, () => {
   let miniProgram: any
   let runtimeErrorCollector: RuntimeErrorCollector | undefined
   let devProcess: ReturnType<typeof startDevProcess> | undefined

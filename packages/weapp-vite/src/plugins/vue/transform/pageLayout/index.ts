@@ -1,9 +1,12 @@
 export {
-  applyPageLayout,
-  applyPageLayoutPlan,
   applyPageLayoutPlanToNativePage,
   injectNativePageLayoutRuntime,
 } from './apply'
+
+export {
+  createCompilerPageLayoutPlanSignature,
+  toCompilerPageLayoutPlan,
+} from './compiler'
 
 export {
   collectSetPageLayoutPropKeys,

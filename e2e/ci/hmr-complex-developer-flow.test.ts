@@ -97,7 +97,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR complex developer flows (dev watch)', () => {
+describe('HMR complex developer flows (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('converges after mixed page, sfc, json and shared dependency saves (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
 

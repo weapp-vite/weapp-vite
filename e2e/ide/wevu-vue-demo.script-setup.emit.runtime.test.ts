@@ -107,7 +107,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('wevu-vue-demo script setup emit runtime', () => {
+describe('wevu-vue-demo script setup emit runtime', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

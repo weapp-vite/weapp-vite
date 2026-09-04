@@ -7,6 +7,9 @@ export default defineConfig({
   },
   dts: true,
   clean: true,
+  deps: {
+    resolveDepSubpath: true,
+  },
   format: ['esm'],
   outExtensions() {
     return {

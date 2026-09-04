@@ -1,4 +1,6 @@
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import {
+  WEVU_BINDING_MANIFEST_KEY,
   WEVU_INLINE_HANDLER,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_SLOT_FUNCTION_TOKEN,
@@ -296,6 +298,65 @@ describe('runtime: scoped slots', () => {
     expect(second.setData).toHaveBeenCalledWith({
       [WEVU_SLOT_OWNER_ID_KEY]: second.data[WEVU_SLOT_OWNER_ID_KEY],
     })
+  })
+
+  it('declares page owner data from the binding manifest without exposing compiler metadata', () => {
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
+      version: 1,
+      sourceFile: 'src/pages/scoped-host.vue',
+      bindings: [
+        {
+          id: 'binding:slot-owner',
+          outputPath: WEVU_SLOT_OWNER_ID_KEY,
+          sourceRoots: [WEVU_SLOT_OWNER_ID_KEY],
+        },
+      ],
+      features: {
+        scopedSlots: true,
+      },
+    }
+    const definition = defineComponent({
+      [WEVU_BINDING_MANIFEST_KEY]: bindingManifest,
+      __wevu_isPage: true,
+      data: () => ({
+        tick: 0,
+      }),
+      setData: {
+        strategy: 'patch',
+      },
+    })
+
+    const opts = registeredComponents.pop()!
+
+    expect(opts.data[WEVU_SLOT_OWNER_ID_KEY]).toMatch(/^wv\d+$/)
+    expect(definition.__wevu_options.bindingManifest).toBe(bindingManifest)
+    expect(opts).not.toHaveProperty(WEVU_BINDING_MANIFEST_KEY)
+  })
+
+  it('accepts scoped-slot manifest overrides without forwarding them to native options', () => {
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
+      version: 1,
+      sourceFile: 'src/components/scoped-child.vue',
+      bindings: [
+        {
+          id: 'binding:scoped-owner',
+          outputPath: WEVU_SLOT_OWNER_ID_KEY,
+          sourceRoots: [WEVU_SLOT_OWNER_ID_KEY],
+          updateMode: 'top-level',
+        },
+      ],
+      features: {
+        scopedSlots: true,
+      },
+    }
+
+    createWevuScopedSlotComponent({
+      [WEVU_BINDING_MANIFEST_KEY]: bindingManifest,
+    })
+    const opts = registeredComponents.pop()!
+
+    expect(opts.data[WEVU_SLOT_OWNER_ID_KEY]).toBe('')
+    expect(opts).not.toHaveProperty(WEVU_BINDING_MANIFEST_KEY)
   })
 
   it('seeds page slot owner id and static slot metadata in native initial data', () => {

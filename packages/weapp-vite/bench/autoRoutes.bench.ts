@@ -1,6 +1,6 @@
-import { afterAll, beforeAll, bench, describe } from 'vitest'
+import { afterAll, beforeAll, describe } from 'vitest'
 import { _collectAutoRouteCandidates } from '@/runtime/autoRoutesPlugin'
-import { createAutoRoutesFixture, defaultBenchOptions } from './utils'
+import { createAutoRoutesFixture, defaultBenchOptions, defineBenchmark } from './utils'
 
 describe('auto routes', () => {
   let absoluteSrcRoot = ''
@@ -16,7 +16,7 @@ describe('auto routes', () => {
     await cleanup?.()
   })
 
-  bench(
+  defineBenchmark(
     'collectCandidates (filesystem)',
     async () => {
       await _collectAutoRouteCandidates(absoluteSrcRoot)

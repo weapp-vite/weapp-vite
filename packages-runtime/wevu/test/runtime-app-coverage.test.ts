@@ -1,3 +1,5 @@
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
+import { WEVU_BINDING_MANIFEST_KEY } from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
 import { createApp } from '@/runtime/app'
 import { inject } from '@/runtime/provide'
@@ -146,7 +148,23 @@ describe('runtime app - patch and debug branches', () => {
   it('supports built-in diagnostics logging', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const bindingManifest: WevuRuntimeBindingManifestV1 = {
+      version: 1,
+      sourceFile: 'src/pages/diagnostics.vue',
+      bindings: [
+        {
+          id: 'binding:a-b',
+          outputPath: 'a.b',
+          sourceRoots: ['a'],
+          sourceLocation: {
+            start: { offset: 42, line: 4, column: 9 },
+            end: { offset: 45, line: 4, column: 12 },
+          },
+        },
+      ],
+    }
     const app = createApp({
+      [WEVU_BINDING_MANIFEST_KEY]: bindingManifest,
       data: () => ({ a: { b: 1 } }),
       setData: {
         strategy: 'patch',
@@ -160,6 +178,7 @@ describe('runtime app - patch and debug branches', () => {
     await nextTick()
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('[wevu:setData]'))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('binding:a-b@src/pages/diagnostics.vue:4:9'))
     expect(infoSpy).not.toHaveBeenCalled()
 
     warnSpy.mockRestore()

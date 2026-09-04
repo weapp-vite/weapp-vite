@@ -1,7 +1,7 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
+import type { ResolvedAppShell } from '../../appShell'
 import type { CompilationCacheEntry, VueBundleCompileOptionsState } from './types'
-import { WEVU_SLOT_OWNER_ID_ATTR, WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import { compileJsxFile, compileVueFile, resolveVueSfcHmrSignatures, resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
 import { storeVueSfcHmrSignatures } from '../../../../../runtime/storeVueSfcHmrSignatures'
@@ -10,8 +10,7 @@ import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLa
 import { readAndParseSfc } from '../../../../utils/vueSfc'
 import { createCompileVueFileOptions, resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
-import { collectSetDataPickKeysFromTemplate, injectScopedSlotHostPropertiesInJs, injectScopedSlotOwnerSetDataPickInJs, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs, mayNeedScopedSlotHostPropertiesForSetupSlotsInJs, pruneScopedSlotOwnerAutoSetDataPickKeys, shouldUseScopedSlotOwnerOnlySetDataPick } from '../../injectSetDataPick'
-import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
+import { resolvePageLayoutPlan } from '../../pageLayout'
 import { isVueStyleOnlyDirtyReasonSummary, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource } from '../../plugin/shared'
 import { refreshStyleOnlyVueTransformResult } from '../../styleOnly'
 import { isWevuMinifyEnabled } from '../../wevuPreset'
@@ -27,6 +26,7 @@ export async function compileVueLikeFile(options: {
   isApp: boolean
   configService: NonNullable<CompilerContext['configService']>
   compileOptionsState: VueBundleCompileOptionsState
+  appShell?: ResolvedAppShell
 }) {
   const {
     source,
@@ -39,19 +39,30 @@ export async function compileVueLikeFile(options: {
     compileOptionsState,
   } = options
 
-  const compileOptions = createCompileVueFileOptions(ctx, pluginCtx, filename, isPage, isApp, configService, compileOptionsState)
+  const resolvedPageLayoutPlan = isPage
+    ? await resolvePageLayoutPlan(source, filename, configService)
+    : undefined
+  if (resolvedPageLayoutPlan) {
+    await registerResolvedPageLayoutDependencies(ctx, filename, resolvedPageLayoutPlan.layouts)
+  }
+  const compileOptions = createCompileVueFileOptions(
+    ctx,
+    pluginCtx,
+    filename,
+    isPage,
+    isApp,
+    configService,
+    compileOptionsState,
+    resolvedPageLayoutPlan,
+    options.appShell,
+  )
+  const result = filename.endsWith('.vue')
+    ? await compileVueFile(source, filename, compileOptions)
+    : await compileJsxFile(source, filename, compileOptions)
+  if (resolvedPageLayoutPlan) {
+    setVueBundlePageLayoutPlan(result, resolvedPageLayoutPlan)
+  }
   if (filename.endsWith('.vue')) {
-    const result = await compileVueFile(source, filename, compileOptions)
-    if (isPage && result.template) {
-      const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
-      if (resolvedLayoutPlan) {
-        setVueBundlePageLayoutPlan(result, resolvedLayoutPlan)
-        applyPageLayoutPlan(result, filename, resolvedLayoutPlan, {
-          platform: configService.platform,
-        })
-        await registerResolvedPageLayoutDependencies(ctx, filename, resolvedLayoutPlan.layouts)
-      }
-    }
     const hmr = ctx.runtimeState?.build?.hmr
     if (configService.isDev && hmr) {
       storeVueSfcHmrSignatures(
@@ -59,18 +70,6 @@ export async function compileVueLikeFile(options: {
         normalizeFsResolvedId(filename),
         resolveVueSfcHmrSignatures(source, filename),
       )
-    }
-    return result
-  }
-  const result = await compileJsxFile(source, filename, compileOptions)
-  if (isPage && result.template) {
-    const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
-    if (resolvedLayoutPlan) {
-      setVueBundlePageLayoutPlan(result, resolvedLayoutPlan)
-      applyPageLayoutPlan(result, filename, resolvedLayoutPlan, {
-        platform: configService.platform,
-      })
-      await registerResolvedPageLayoutDependencies(ctx, filename, resolvedLayoutPlan.layouts)
     }
   }
   return result
@@ -84,7 +83,7 @@ export async function finalizeCompiledVueLikeResult(options: {
   isPage: boolean
   isApp: boolean
 }) {
-  const { result, filename, pluginCtx, configService, isPage, isApp } = options
+  const { result, filename, pluginCtx, configService, isPage } = options
 
   if (isPage && result.script) {
     const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
@@ -94,49 +93,6 @@ export async function finalizeCompiledVueLikeResult(options: {
     })
     if (injected.transformed) {
       result.script = injected.code
-    }
-  }
-
-  const shouldAutoSetDataPick = !isApp
-    && result.script
-    && result.template
-    && isAutoSetDataPickEnabled(configService.weappViteConfig)
-    && mayNeedInjectSetDataPickInJs(result.script)
-  const shouldInjectScopedSlotOwnerPick = !isApp
-    && result.script
-    && result.template?.includes(WEVU_SLOT_OWNER_ID_ATTR)
-    && mayNeedInjectSetDataPickInJs(result.script)
-
-  if (shouldAutoSetDataPick) {
-    const keys = collectSetDataPickKeysFromTemplate(result.template!)
-    const scopedSlotPickKeys = shouldUseScopedSlotOwnerOnlySetDataPick(keys)
-      ? pruneScopedSlotOwnerAutoSetDataPickKeys(keys)
-      : keys
-    const injectedPick = shouldInjectScopedSlotOwnerPick
-      ? injectScopedSlotOwnerSetDataPickInJs(result.script!, scopedSlotPickKeys, { sourceMap: false })
-      : injectSetDataPickInJs(result.script!, keys, { sourceMap: false })
-    if (injectedPick.transformed) {
-      result.script = injectedPick.code
-    }
-  }
-  else if (shouldInjectScopedSlotOwnerPick) {
-    const keys = collectSetDataPickKeysFromTemplate(result.template!)
-    const injectedPick = injectScopedSlotOwnerSetDataPickInJs(
-      result.script!,
-      pruneScopedSlotOwnerAutoSetDataPickKeys(keys),
-      { sourceMap: false },
-    )
-    if (injectedPick.transformed) {
-      result.script = injectedPick.code
-    }
-  }
-
-  const hasScopedSlotHostGenerics = Boolean(result.componentGenerics && Object.keys(result.componentGenerics).length > 0)
-  const needsSetupSlotHostProperties = result.script && mayNeedScopedSlotHostPropertiesForSetupSlotsInJs(result.script)
-  if (!isPage && !isApp && result.script && (hasScopedSlotHostGenerics || result.template?.includes(WEVU_SLOT_OWNER_ID_PROP) || result.template?.includes('<slot') || result.template?.includes('vueSlots') || needsSetupSlotHostProperties)) {
-    const injectedProps = injectScopedSlotHostPropertiesInJs(result.script, { sourceMap: false })
-    if (injectedProps.transformed) {
-      result.script = injectedProps.code
     }
   }
 
@@ -152,6 +108,7 @@ export async function compileAndFinalizeVueLikeFile(options: {
   isApp: boolean
   configService: NonNullable<CompilerContext['configService']>
   compileOptionsState: VueBundleCompileOptionsState
+  appShell?: ResolvedAppShell
 }) {
   const result = await compileVueLikeFile(options)
   return await finalizeCompiledVueLikeResult({
@@ -171,6 +128,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
   pluginCtx: any
   configService: NonNullable<CompilerContext['configService']>
   compileOptionsState: VueBundleCompileOptionsState
+  appShell?: ResolvedAppShell
 }) {
   const { filename, cached, ctx, pluginCtx, configService, compileOptionsState } = options
   if (!configService.isDev) {
@@ -245,6 +203,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
       isApp,
       configService,
       compileOptionsState,
+      appShell: options.appShell,
     })
 
     const nextStyleIndependentSignature = filename.endsWith('.vue')
@@ -273,6 +232,7 @@ export async function resolveCompiledEntryEmitState(options: {
   pluginCtx: any
   configService: NonNullable<CompilerContext['configService']>
   compileOptionsState: VueBundleCompileOptionsState
+  appShell?: ResolvedAppShell
 }) {
   const result = await refreshCompiledVueEntryCacheInDev({
     filename: options.filename,
@@ -281,6 +241,7 @@ export async function resolveCompiledEntryEmitState(options: {
     pluginCtx: options.pluginCtx,
     configService: options.configService,
     compileOptionsState: options.compileOptionsState,
+    appShell: options.appShell,
   })
 
   const baseName = getEntryBaseName(options.filename)
@@ -301,6 +262,7 @@ export async function loadFallbackPageEntryCompilation(options: {
   pluginCtx: any
   configService: NonNullable<CompilerContext['configService']>
   compileOptionsState: VueBundleCompileOptionsState
+  appShell?: ResolvedAppShell
 }) {
   const source = await fs.readFile(options.entryFilePath, 'utf-8')
   const result = await compileAndFinalizeVueLikeFile({
@@ -312,6 +274,7 @@ export async function loadFallbackPageEntryCompilation(options: {
     isApp: false,
     configService: options.configService,
     compileOptionsState: options.compileOptionsState,
+    appShell: options.appShell,
   })
 
   return {

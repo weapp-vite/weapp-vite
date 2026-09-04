@@ -289,7 +289,7 @@ async function resolveHostPage(miniProgram: any) {
   return page
 }
 
-describe.sequential('plugin-demo runtime (ide)', () => {
+describe('plugin-demo runtime (ide)', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

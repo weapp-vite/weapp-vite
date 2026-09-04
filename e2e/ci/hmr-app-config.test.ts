@@ -28,7 +28,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR app.json config (dev watch)', () => {
+describe('HMR app.json config (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('修改 app.json window 配置 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const originalSource = await fs.readFile(APP_JSON_SRC, 'utf8')

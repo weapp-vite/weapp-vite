@@ -18,24 +18,6 @@ const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(as
   transformed: false,
   code,
 })))
-const collectSetDataPickKeysFromTemplateMock = vi.hoisted(() => vi.fn(() => ['title']))
-const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
-  transformed: false,
-  code,
-})))
-const injectScopedSlotOwnerSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
-  transformed: false,
-  code,
-})))
-const injectScopedSlotHostPropertiesInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
-  transformed: false,
-  code,
-})))
-const mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock = vi.hoisted(() => vi.fn(() => false))
-const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
-const mayNeedInjectSetDataPickInJsMock = vi.hoisted(() => vi.fn(() => true))
-const pruneScopedSlotOwnerAutoSetDataPickKeysMock = vi.hoisted(() => vi.fn((keys: string[]) => keys.filter(key => !key.startsWith('__wv_bind_'))))
-const shouldUseScopedSlotOwnerOnlySetDataPickMock = vi.hoisted(() => vi.fn(() => false))
 const readFileMock = vi.hoisted(() => vi.fn(async () => ''))
 const compileVueFileMock = vi.hoisted(() => vi.fn(async () => ({
   template: '<view />',
@@ -46,7 +28,6 @@ const compileJsxFileMock = vi.hoisted(() => vi.fn(async () => ({
   script: 'Page({})',
 })))
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
-const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn((result: any) => result))
 const registerResolvedPageLayoutDependenciesMock = vi.hoisted(() => vi.fn(async () => {}))
 const resolveVueSfcStyleIndependentSignatureMock = vi.hoisted(() => vi.fn((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, '')))
 
@@ -77,23 +58,10 @@ vi.mock('../injectPageFeatures', () => ({
   injectWevuPageFeaturesInJsWithViteResolver: injectWevuPageFeaturesInJsWithViteResolverMock,
 }))
 
-vi.mock('../injectSetDataPick', () => ({
-  collectSetDataPickKeysFromTemplate: collectSetDataPickKeysFromTemplateMock,
-  injectScopedSlotHostPropertiesInJs: injectScopedSlotHostPropertiesInJsMock,
-  injectScopedSlotOwnerSetDataPickInJs: injectScopedSlotOwnerSetDataPickInJsMock,
-  injectSetDataPickInJs: injectSetDataPickInJsMock,
-  isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
-  mayNeedInjectSetDataPickInJs: mayNeedInjectSetDataPickInJsMock,
-  mayNeedScopedSlotHostPropertiesForSetupSlotsInJs: mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock,
-  pruneScopedSlotOwnerAutoSetDataPickKeys: pruneScopedSlotOwnerAutoSetDataPickKeysMock,
-  shouldUseScopedSlotOwnerOnlySetDataPick: shouldUseScopedSlotOwnerOnlySetDataPickMock,
-}))
-
 vi.mock('../pageLayout', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../pageLayout')>()
   return {
     ...actual,
-    applyPageLayoutPlan: applyPageLayoutPlanMock,
     resolvePageLayoutPlan: resolvePageLayoutPlanMock,
   }
 })
@@ -154,33 +122,6 @@ describe('emitSharedVueEntryAssets', () => {
       transformed: false,
       code: 'Component({})',
     })
-    collectSetDataPickKeysFromTemplateMock.mockReset()
-    collectSetDataPickKeysFromTemplateMock.mockReturnValue(['title'])
-    injectSetDataPickInJsMock.mockReset()
-    injectSetDataPickInJsMock.mockImplementation((code: string) => ({
-      transformed: false,
-      code,
-    }))
-    injectScopedSlotOwnerSetDataPickInJsMock.mockReset()
-    injectScopedSlotOwnerSetDataPickInJsMock.mockImplementation((code: string) => ({
-      transformed: false,
-      code,
-    }))
-    injectScopedSlotHostPropertiesInJsMock.mockReset()
-    injectScopedSlotHostPropertiesInJsMock.mockImplementation((code: string) => ({
-      transformed: false,
-      code,
-    }))
-    mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock.mockReset()
-    mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock.mockReturnValue(false)
-    isAutoSetDataPickEnabledMock.mockReset()
-    isAutoSetDataPickEnabledMock.mockReturnValue(false)
-    mayNeedInjectSetDataPickInJsMock.mockReset()
-    mayNeedInjectSetDataPickInJsMock.mockReturnValue(true)
-    pruneScopedSlotOwnerAutoSetDataPickKeysMock.mockReset()
-    pruneScopedSlotOwnerAutoSetDataPickKeysMock.mockImplementation((keys: string[]) => keys.filter(key => !key.startsWith('__wv_bind_')))
-    shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReset()
-    shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReturnValue(false)
     readFileMock.mockReset()
     readFileMock.mockResolvedValue('')
     compileVueFileMock.mockReset()
@@ -195,8 +136,6 @@ describe('emitSharedVueEntryAssets', () => {
     })
     resolvePageLayoutPlanMock.mockReset()
     resolvePageLayoutPlanMock.mockResolvedValue(undefined)
-    applyPageLayoutPlanMock.mockReset()
-    applyPageLayoutPlanMock.mockImplementation((result: any) => result)
     registerResolvedPageLayoutDependenciesMock.mockReset()
     registerResolvedPageLayoutDependenciesMock.mockResolvedValue(undefined)
     resolveVueSfcStyleIndependentSignatureMock.mockReset()
@@ -754,16 +693,11 @@ describe('emitSharedVueEntryAssets', () => {
     expect(emitSfcStyleIfMissingMock).not.toHaveBeenCalled()
   })
 
-  it('finalizes compiled page results with page feature and setDataPick injections', async () => {
+  it('finalizes compiled page results with page feature injection only', async () => {
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
       transformed: true,
       code: 'Page({ onReachBottom() {}, data: { ready: true } })',
     })
-    injectSetDataPickInJsMock.mockReturnValue({
-      transformed: true,
-      code: 'Page({ onReachBottom() {}, data: { ready: true }, __setDataPick: ["title"] })',
-    })
-    isAutoSetDataPickEnabledMock.mockReturnValue(true)
 
     const result = await finalizeCompiledVueLikeResult({
       result: {
@@ -781,192 +715,26 @@ describe('emitSharedVueEntryAssets', () => {
     })
 
     expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
-    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{title}}</view>')
-    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {}, data: { ready: true } })', ['title'], { sourceMap: false })
-    expect(result.script).toBe('Page({ onReachBottom() {}, data: { ready: true }, __setDataPick: ["title"] })')
+    expect(result.script).toBe('Page({ onReachBottom() {}, data: { ready: true } })')
   })
 
-  it('injects scoped slot owner setDataPick even when auto pick is disabled', async () => {
-    injectScopedSlotOwnerSetDataPickInJsMock.mockReturnValue({
-      transformed: true,
-      code: 'Page({ __slotOwnerPick: true })',
-    })
-
-    const result = await finalizeCompiledVueLikeResult({
-      result: {
-        template: '<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />',
-        script: 'Page({})',
-      } as any,
-      filename: '/project/src/pages/index/index.vue',
-      pluginCtx: { emitFile: vi.fn() },
-      configService: {
-        isDev: true,
-        weappViteConfig: {
-          wevu: {
-            autoSetDataPick: false,
-          },
-        },
-      } as any,
-      isPage: true,
-      isApp: false,
-    })
-
-    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />')
-    expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(['title'])
-    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['title'], { sourceMap: false })
-    expect(result.script).toBe('Page({ __slotOwnerPick: true })')
-  })
-
-  it('uses scoped slot owner setDataPick when auto pick collects too many bind keys', async () => {
-    const keys = ['currentStep', ...Array.from({ length: 201 }, (_, index) => `__wv_bind_${index}`), 'formState']
-    collectSetDataPickKeysFromTemplateMock.mockReturnValue(keys)
-    isAutoSetDataPickEnabledMock.mockReturnValue(true)
-    shouldUseScopedSlotOwnerOnlySetDataPickMock.mockReturnValue(true)
-    injectScopedSlotOwnerSetDataPickInJsMock.mockReturnValue({
-      transformed: true,
-      code: 'Page({ __slotOwnerPick: true })',
-    })
-
-    const result = await finalizeCompiledVueLikeResult({
-      result: {
-        template: '<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />',
-        script: 'Page({})',
-      } as any,
-      filename: '/project/src/pages/index/index.vue',
-      pluginCtx: { emitFile: vi.fn() },
-      configService: {
-        isDev: true,
-        weappViteConfig: {},
-      } as any,
-      isPage: true,
-      isApp: false,
-    })
-
-    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" p0="{{__wv_bind_0}}" />')
-    expect(shouldUseScopedSlotOwnerOnlySetDataPickMock).toHaveBeenCalledWith(keys)
-    expect(pruneScopedSlotOwnerAutoSetDataPickKeysMock).toHaveBeenCalledWith(keys)
-    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['currentStep', 'formState'], { sourceMap: false })
-    expect(result.script).toBe('Page({ __slotOwnerPick: true })')
-  })
-
-  it('injects scoped slot owner setDataPick when template has only owner id binding', async () => {
-    isAutoSetDataPickEnabledMock.mockReturnValue(true)
-    collectSetDataPickKeysFromTemplateMock.mockReturnValue([])
-    injectScopedSlotOwnerSetDataPickInJsMock.mockReturnValue({
-      transformed: true,
-      code: 'Page({ __slotOwnerPick: true })',
-    })
-
-    const result = await finalizeCompiledVueLikeResult({
-      result: {
-        template: '<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" />',
-        script: 'Page({})',
-      } as any,
-      filename: '/project/src/pages/index/index.vue',
-      pluginCtx: { emitFile: vi.fn() },
-      configService: {
-        isDev: true,
-        weappViteConfig: {},
-      } as any,
-      isPage: true,
-      isApp: false,
-    })
-
-    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<SlotCell __wvSlotOwnerId="{{__wvOwnerId || \'\'}}" />')
-    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
-    expect(injectScopedSlotOwnerSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', [], { sourceMap: false })
-    expect(result.script).toBe('Page({ __slotOwnerPick: true })')
-  })
-
-  it('injects scoped slot host properties when componentGenerics are emitted', async () => {
-    injectScopedSlotHostPropertiesInJsMock.mockReturnValue({
-      transformed: true,
-      code: 'Component({ properties: { __wvSlotOwnerId: String } })',
-    })
-
-    const result = await finalizeCompiledVueLikeResult({
-      result: {
-        template: '<view><scoped-slots-footer /></view>',
-        script: 'Component({ setup() { return {} } })',
-        componentGenerics: {
-          'scoped-slots-footer': true,
-        },
-      } as any,
-      filename: '/project/src/components/NamedSlotCard/index.vue',
-      pluginCtx: { emitFile: vi.fn() },
-      configService: {
-        isDev: true,
-        weappViteConfig: {},
-      } as any,
-      isPage: false,
-      isApp: false,
-    })
-
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })', { sourceMap: false })
-    expect(result.script).toContain('__wvSlotOwnerId')
-  })
-
-  it('injects slot presence host properties when native slot fallback uses vueSlots', async () => {
-    injectScopedSlotHostPropertiesInJsMock.mockReturnValue({
-      transformed: true,
-      code: 'Component({ properties: { vueSlots: { type: null, value: null } } })',
-    })
-
-    const result = await finalizeCompiledVueLikeResult({
-      result: {
-        template: '<block wx:if="{{vueSlots&&vueSlots.default}}"><slot /></block>',
-        script: 'Component({ setup() { return {} } })',
-      } as any,
-      filename: '/project/src/components/PlainSlotCard/index.vue',
-      pluginCtx: { emitFile: vi.fn() },
-      configService: {
-        isDev: true,
-        weappViteConfig: {},
-      } as any,
-      isPage: false,
-      isApp: false,
-    })
-
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith('Component({ setup() { return {} } })', { sourceMap: false })
-    expect(result.script).toContain('vueSlots')
-  })
-
-  it('injects slot host properties when setup uses slots without template vueSlots fallback', async () => {
-    mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock.mockReturnValue(true)
-    injectScopedSlotHostPropertiesInJsMock.mockReturnValue({
-      transformed: true,
-      code: 'Component({ properties: { vueSlots: { type: null, value: null } } })',
-    })
-
-    const result = await finalizeCompiledVueLikeResult({
-      result: {
-        template: '<view><slot /></view>',
-        script: 'import { useSlots } from "wevu/internal-runtime"; Component({ setup() { return { slots: useSlots() } } })',
-      } as any,
-      filename: '/project/src/components/SlotProbe/index.vue',
-      pluginCtx: { emitFile: vi.fn() },
-      configService: {
-        isDev: true,
-        weappViteConfig: {},
-      } as any,
-      isPage: false,
-      isApp: false,
-    })
-
-    expect(mayNeedScopedSlotHostPropertiesForSetupSlotsInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'))
-    expect(injectScopedSlotHostPropertiesInJsMock).toHaveBeenCalledWith(expect.stringContaining('useSlots'), { sourceMap: false })
-    expect(result.script).toContain('vueSlots')
-  })
-
-  it('compiles vue page entries and applies resolved layout plans', async () => {
+  it('passes resolved layout, app shell, policy, source file, and platform to Vue compilation', async () => {
+    const resolvedLayout = {
+      kind: 'native' as const,
+      file: '/project/src/layouts/default/index',
+      importPath: '/layouts/default/index',
+      layoutName: 'default',
+      tagName: 'weapp-layout-default',
+    }
     resolvePageLayoutPlanMock.mockResolvedValue({
-      layouts: [{ kind: 'native', file: '/layouts/default/index' }],
+      currentLayout: resolvedLayout,
+      dynamicSwitch: false,
+      layouts: [resolvedLayout],
+      dynamicPropKeys: [],
     })
 
     const pluginCtx = { emitFile: vi.fn() }
-    const result = await compileVueLikeFile({
+    await compileVueLikeFile({
       source: '<view />',
       filename: '/project/src/pages/index/index.vue',
       ctx: {} as any,
@@ -976,10 +744,22 @@ describe('emitSharedVueEntryAssets', () => {
       configService: {
         platform: 'weapp',
         relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        cwd: '/project',
+        inlineConfig: {},
+        weappViteConfig: {
+          wevu: {
+            autoSetDataPick: false,
+          },
+        },
       } as any,
       compileOptionsState: {
         reExportResolutionCache: new Map(),
         classStyleRuntimeWarned: { value: false },
+      },
+      appShell: {
+        file: '/project/src/__weapp_vite_app_shell',
+        importPath: '/__weapp_vite_app_shell',
+        tagName: 'weapp-app-shell',
       },
     })
 
@@ -988,26 +768,37 @@ describe('emitSharedVueEntryAssets', () => {
       '<view />',
       '/project/src/pages/index/index.vue',
       expect.objectContaining({
+        autoSetDataPick: false,
+        bindingManifestSourceFile: 'src/pages/index/index.vue',
+        appShell: {
+          importPath: '/__weapp_vite_app_shell',
+          tagName: 'weapp-app-shell',
+        },
+        pageLayout: {
+          currentLayout: {
+            importPath: '/layouts/default/index',
+            layoutName: 'default',
+            tagName: 'weapp-layout-default',
+          },
+          dynamicSwitch: false,
+          layouts: [{
+            importPath: '/layouts/default/index',
+            layoutName: 'default',
+            tagName: 'weapp-layout-default',
+          }],
+          dynamicPropKeys: [],
+        },
         template: expect.objectContaining({
+          platform: expect.objectContaining({ name: 'wechat' }),
           scopedSlotsRequireProps: false,
         }),
       }),
     )
     expect(compileJsxFileMock).not.toHaveBeenCalled()
-    expect(applyPageLayoutPlanMock).toHaveBeenCalledWith(
-      result,
-      '/project/src/pages/index/index.vue',
-      {
-        layouts: [{ kind: 'native', file: '/layouts/default/index' }],
-      },
-      {
-        platform: 'weapp',
-      },
-    )
     expect(registerResolvedPageLayoutDependenciesMock).toHaveBeenCalledWith(
       expect.anything(),
       '/project/src/pages/index/index.vue',
-      [{ kind: 'native', file: '/layouts/default/index' }],
+      [resolvedLayout],
     )
   })
 
@@ -1090,8 +881,18 @@ describe('emitSharedVueEntryAssets', () => {
   })
 
   it('compiles jsx-like page entries through shared jsx branch', async () => {
+    const resolvedLayout = {
+      kind: 'vue' as const,
+      file: '/layouts/default/index.vue',
+      importPath: '/layouts/default/index',
+      layoutName: 'default',
+      tagName: 'weapp-layout-default',
+    }
     resolvePageLayoutPlanMock.mockResolvedValue({
-      layouts: [{ kind: 'vue', file: '/layouts/default/index.vue' }],
+      currentLayout: resolvedLayout,
+      dynamicSwitch: false,
+      layouts: [resolvedLayout],
+      dynamicPropKeys: [],
     })
 
     const pluginCtx = { emitFile: vi.fn() }
@@ -1105,6 +906,9 @@ describe('emitSharedVueEntryAssets', () => {
       configService: {
         platform: 'weapp',
         relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        cwd: '/project',
+        inlineConfig: {},
+        weappViteConfig: {},
       } as any,
       compileOptionsState: {
         reExportResolutionCache: new Map(),
@@ -1114,10 +918,26 @@ describe('emitSharedVueEntryAssets', () => {
 
     expect(compileJsxFileMock).toHaveBeenCalledTimes(1)
     expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(compileJsxFileMock).toHaveBeenCalledWith(
+      'export default () => <view />',
+      '/project/src/pages/index/index.tsx',
+      expect.objectContaining({
+        bindingManifestSourceFile: 'src/pages/index/index.tsx',
+        pageLayout: expect.objectContaining({
+          dynamicSwitch: false,
+          layouts: [expect.objectContaining({
+            importPath: '/layouts/default/index',
+          })],
+        }),
+        template: expect.objectContaining({
+          platform: expect.objectContaining({ name: 'wechat' }),
+        }),
+      }),
+    )
     expect(registerResolvedPageLayoutDependenciesMock).toHaveBeenCalledWith(
       expect.anything(),
       '/project/src/pages/index/index.tsx',
-      [{ kind: 'vue', file: '/layouts/default/index.vue' }],
+      [resolvedLayout],
     )
   })
 
@@ -1151,9 +971,7 @@ describe('emitSharedVueEntryAssets', () => {
     expect(result.script).toBe('Page({ fromPipeline: true })')
   })
 
-  it('skips setDataPick injection for app entries', async () => {
-    isAutoSetDataPickEnabledMock.mockReturnValue(true)
-
+  it('leaves compiled app scripts unchanged', async () => {
     const result = await finalizeCompiledVueLikeResult({
       result: {
         template: '<view>{{title}}</view>',
@@ -1170,8 +988,6 @@ describe('emitSharedVueEntryAssets', () => {
     })
 
     expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
-    expect(collectSetDataPickKeysFromTemplateMock).not.toHaveBeenCalled()
-    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
     expect(result.script).toBe('App({})')
   })
 
@@ -1860,7 +1676,7 @@ describe('emitSharedVueEntryAssets', () => {
     ])
   })
 
-  it('handles compiled entry page layouts through shared resolve-apply-and-emit flow', async () => {
+  it('resolves and emits compiled entry page layout assets without mutating compiler output', async () => {
     const emitLayouts = vi.fn(async () => {})
     const result = {
       template: '<view />',
@@ -1884,18 +1700,7 @@ describe('emitSharedVueEntryAssets', () => {
       '/project/src/pages/demo/index.vue',
       expect.anything(),
     )
-    expect(applyPageLayoutPlanMock).toHaveBeenCalledWith(
-      result,
-      '/project/src/pages/demo/index.vue',
-      {
-        layouts: [
-          { kind: 'native', file: '/layouts/default/index' },
-        ],
-      },
-      {
-        platform: undefined,
-      },
-    )
+    expect(result.template).toBe('<view />')
     expect(emitLayouts).toHaveBeenCalledWith([
       { kind: 'native', file: '/layouts/default/index' },
     ])
@@ -1928,18 +1733,7 @@ describe('emitSharedVueEntryAssets', () => {
         { kind: 'native', file: '/layouts/cached/index' },
       ],
     })
-    expect(applyPageLayoutPlanMock).toHaveBeenCalledWith(
-      result,
-      '/project/src/pages/demo/index.vue',
-      {
-        layouts: [
-          { kind: 'native', file: '/layouts/cached/index' },
-        ],
-      },
-      {
-        platform: undefined,
-      },
-    )
+    expect(result.template).toBe('<view />')
     expect(emitLayouts).toHaveBeenCalledWith([
       { kind: 'native', file: '/layouts/cached/index' },
     ])

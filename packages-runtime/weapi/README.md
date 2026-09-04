@@ -27,6 +27,8 @@ await hostApi.request({
 import { createWeapi, wpi } from '@wevu/api'
 ```
 
+同步直接返回 API（包括部分没有 `Sync` 后缀的宿主 API）会保留原始返回值；异步 API 才会在未传回调时返回 Promise。
+
 `@wevu/api` 不再维护独立实现，所有能力、平台适配、类型声明与兼容性修复均由 `@weapp-core/api` 提供。
 
 ## Vitest mock

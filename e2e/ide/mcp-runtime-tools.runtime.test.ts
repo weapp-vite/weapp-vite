@@ -77,7 +77,7 @@ async function createRuntimeTools(miniProgram: any): Promise<RuntimeToolsContext
   }
 }
 
-describe.sequential('MCP runtime tools in real WeChat DevTools', () => {
+describe('MCP runtime tools in real WeChat DevTools', { concurrent: false }, () => {
   let miniProgram: any
   let runtimeTools: RuntimeToolsContext
 

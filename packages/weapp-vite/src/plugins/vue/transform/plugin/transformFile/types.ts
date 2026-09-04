@@ -9,6 +9,8 @@ export interface VueCompilationCacheEntry {
   autoRoutesSignature?: string
   refreshToken?: number
   styleIndependentSignature?: string
+  pageLayoutSignature?: string
+  appShellSignature?: string
 }
 
 export type VueCompilationCache = Map<string, VueCompilationCacheEntry>

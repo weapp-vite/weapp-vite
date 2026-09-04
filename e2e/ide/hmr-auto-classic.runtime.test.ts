@@ -77,7 +77,7 @@ async function connectAutomatorSession() {
   })
 }
 
-describe.sequential('automatic classic HMR in real WeChat DevTools', () => {
+describe('automatic classic HMR in real WeChat DevTools', { concurrent: false }, () => {
   beforeAll(async () => {
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()

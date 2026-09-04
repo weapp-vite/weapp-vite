@@ -190,7 +190,7 @@ async function hideWebNavigationBar(page: Page) {
   })
 }
 
-describeWeb.sequential('web runtime visual parity', () => {
+describeWeb('web runtime visual parity', { concurrent: false }, () => {
   let browser: Browser | undefined
   let devServer: Subprocess | undefined
   let manifest: VisualManifest

@@ -5,6 +5,13 @@
 ### Patch Changes
 
 - Updated dependencies:
+  - @weapp-vite/react@0.2.4
+
+## 0.0.1
+
+### Patch Changes
+
+- Updated dependencies:
   - @weapp-vite/react@0.2.3
 
 ## 0.0.1

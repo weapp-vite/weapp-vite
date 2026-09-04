@@ -24,7 +24,7 @@ describe('@mpcore/vitest', () => {
         return true
       },
       textContent: 'count: 2',
-    } as MiniProgramNode
+    } as unknown as MiniProgramNode
     const emissions: MiniProgramEmissionSource = {
       emitted: eventName => eventName === 'change' ? [{ value: 2 }] : [],
     }

@@ -2,7 +2,7 @@ import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { ResolvedPageLayout } from '../../pageLayout'
 import type { CompilationCacheEntry } from './types'
-import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
+import { resolvePageLayoutPlan } from '../../pageLayout'
 import { findFirstResolvedVueLikeEntry } from '../../shared'
 import { getVueBundlePageLayoutPlan } from './types'
 
@@ -88,12 +88,6 @@ export async function handleCompiledEntryPageLayouts(options: {
       options.filename,
       options.configService,
     )
-
-  if (resolvedLayoutPlan) {
-    applyPageLayoutPlan(options.result, options.filename, resolvedLayoutPlan, {
-      platform: options.configService.platform,
-    })
-  }
 
   await options.emitLayouts(resolvedLayoutPlan?.layouts)
 }

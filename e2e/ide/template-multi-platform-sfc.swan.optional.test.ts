@@ -14,9 +14,9 @@ const TEMPLATE_ROOT = path.resolve(
 const PROJECT_ROOT = path.join(TEMPLATE_ROOT, 'dist/swan')
 const INDEX_ROUTE = '/pages/index/index'
 
-const describeSwanRuntime = SWAN_ENDPOINT ? describe.sequential : describe.skip.sequential
+const describeSwanRuntime = SWAN_ENDPOINT ? describe : describe.skip
 
-describeSwanRuntime('optional multi-platform SFC template Baidu runtime smoke', () => {
+describeSwanRuntime('optional multi-platform SFC template Baidu runtime smoke', { concurrent: false }, () => {
   let device: any
   let smartapp: any
 

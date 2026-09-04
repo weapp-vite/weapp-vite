@@ -222,7 +222,7 @@ async function withMinimalDevWatch<T>(
   }
 }
 
-describe.sequential('retail template HMR keeps wevu vendor exports intact', () => {
+describe('retail template HMR keeps wevu vendor exports intact', { concurrent: false }, () => {
   it('updates the minimal template tag text without dropping app vendor exports', async () => {
     const originalSource = await fs.readFile(MINIMAL_INDEX_SOURCE_PATH, 'utf8')
     const marker = 'wevu321312'

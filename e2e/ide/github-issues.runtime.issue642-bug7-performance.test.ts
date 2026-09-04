@@ -6,7 +6,7 @@ import {
   prepareGithubIssuesBuild,
 } from './github-issues.runtime.shared'
 
-describe.sequential('e2e app: github-issues / issue #642 bug-7 performance mode', () => {
+describe('e2e app: github-issues / issue #642 bug-7 performance mode', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

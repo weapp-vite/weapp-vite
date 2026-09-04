@@ -11,9 +11,9 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const INDEX_ROUTE = '/pages/index/index'
 
-const describeSwanRuntime = SWAN_ENDPOINT ? describe.sequential : describe.skip.sequential
+const describeSwanRuntime = SWAN_ENDPOINT ? describe : describe.skip
 
-describeSwanRuntime('optional Baidu runtime smoke', () => {
+describeSwanRuntime('optional Baidu runtime smoke', { concurrent: false }, () => {
   let device: any
   let smartapp: any
 

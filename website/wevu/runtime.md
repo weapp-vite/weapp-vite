@@ -179,6 +179,25 @@ setWevuDefaults({
 })
 ```
 
+### `setData.diagnostics` 与 binding 归因
+
+编译后的 Vue/JSX 组件会携带版本化的精简 Binding Manifest。开启 `setData.diagnostics` 或 `setData.debug` 后，运行时会在已有的 patch、diff 和 fallback 诊断中附带命中 binding 的 `id`、输出路径、更新策略和源文件；开发构建额外携带源码行列，生产构建默认移除行列信息。关闭诊断时不会执行 payload 到 binding 的匹配。
+
+```ts
+defineComponent({
+  setData: {
+    diagnostics: 'fallback',
+    debug(info) {
+      for (const binding of info.bindings ?? []) {
+        console.info(binding.id, binding.sourceFile, binding.sourceLocation)
+      }
+    },
+  },
+})
+```
+
+Binding Manifest 只用于归因，不替换现有 snapshot/diff 正确性 fallback。编译器完整 IR 会为同一输出的每个 dependency 分别记录 `exact-path`、`top-level` 或 `snapshot-fallback`；注入运行时的精简记录只保留调度和诊断实际读取的字段。
+
 ### 收到内存告警时的清理建议
 
 `wevu` 支持在 `App setup` 中通过 `onMemoryWarning()` 监听系统内存告警（底层基于 `wx.onMemoryWarning`）：

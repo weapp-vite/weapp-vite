@@ -1,14 +1,14 @@
 import type { AliasOptions } from '@/types'
-import { bench, describe } from 'vitest'
+import { describe } from 'vitest'
 import { analyzeAppJson, analyzeCommonJson } from '@/plugins/utils/analyze'
 import { getAliasEntries, parseCommentJson, resolveJson } from '@/utils/json'
-import { createJsoncFixture, defaultBenchOptions } from './utils'
+import { createJsoncFixture, defaultBenchOptions, defineBenchmark } from './utils'
 
 describe('json', () => {
   const jsonc = createJsoncFixture()
   const parsed = parseCommentJson(jsonc) as any
 
-  bench(
+  defineBenchmark(
     'parseCommentJson (jsonc)',
     () => {
       parseCommentJson(jsonc)
@@ -27,7 +27,7 @@ describe('json', () => {
   }
   const aliasEntries = getAliasEntries(aliasOptions)
 
-  bench(
+  defineBenchmark(
     'resolveJson (usingComponents + aliases)',
     () => {
       resolveJson(
@@ -42,7 +42,7 @@ describe('json', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'analyzeAppJson',
     () => {
       analyzeAppJson(parsed)
@@ -50,7 +50,7 @@ describe('json', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'analyzeCommonJson',
     () => {
       analyzeCommonJson(parsed)

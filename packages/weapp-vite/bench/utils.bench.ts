@@ -1,11 +1,11 @@
-import { bench, describe } from 'vitest'
+import { describe } from 'vitest'
 import { getCssRealPath, parseRequest } from '@/plugins/utils/parse'
 import { changeFileExtension } from '@/utils/file'
 import { regExpTest } from '@/utils/regexp'
-import { defaultBenchOptions } from './utils'
+import { defaultBenchOptions, defineBenchmark } from './utils'
 
 describe('utils', () => {
-  bench(
+  defineBenchmark(
     'parseRequest',
     () => {
       parseRequest('/src/pages/index/index.ts?wxss')
@@ -15,7 +15,7 @@ describe('utils', () => {
 
   const parsed = parseRequest('/src/pages/index/index.ts?wxss')
 
-  bench(
+  defineBenchmark(
     'getCssRealPath',
     () => {
       getCssRealPath(parsed)
@@ -23,7 +23,7 @@ describe('utils', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'changeFileExtension',
     () => {
       changeFileExtension('/src/pages/index/index.ts', 'wxml')
@@ -39,7 +39,7 @@ describe('utils', () => {
     /pages\/(.*)\/(index|home)/,
   ]
 
-  bench(
+  defineBenchmark(
     'regExpTest',
     () => {
       regExpTest(patterns, '/src/pages/index/index.ts', { exact: false })

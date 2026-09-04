@@ -5,7 +5,7 @@ import {
   registerGithubIssuesBuildLegacyCases,
 } from './githubIssuesBuild/legacy'
 
-describe.sequential('e2e app: github-issues (build)', () => {
+describe('e2e app: github-issues (build)', { concurrent: false }, () => {
   registerGithubIssuesBuildCases(createGithubIssuesBuildCaseContext())
   registerGithubIssuesBuildLegacyCases()
 })

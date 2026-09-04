@@ -1,4 +1,5 @@
 import type { Expression, JSXElement, JSXFragment } from '@weapp-vite/ast/babelTypes'
+import type { WevuBindingManifestV1 } from '../../../types/bindingManifest'
 import type { InlineExpressionAsset, TemplateCompileOptions } from '../../vue/compiler/template/types'
 
 export interface JsxModuleExport {
@@ -26,9 +27,15 @@ export interface JsxCompileContext {
   mustacheInterpolation: NonNullable<TemplateCompileOptions['mustacheInterpolation']>
   formatWxml: boolean
   warnings: string[]
+  bindingManifest: WevuBindingManifestV1
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
   scopeStack: string[]
+  bindingScopeStack: Array<{
+    locals: string[]
+    sourceExpression: string
+    sourceLocals: string[]
+  }>
   filename?: string
   moduleResolver?: JsxModuleResolver
   importedBindings?: Map<string, { source: string, importedName: string }>

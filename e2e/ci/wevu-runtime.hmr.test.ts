@@ -63,7 +63,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('wevu runtime hmr (dev watch)', () => {
+describe('wevu runtime hmr (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('updates dist template after source change (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const originalSource = await fs.readFile(HMR_SOURCE_TEMPLATE_PATH, 'utf8')

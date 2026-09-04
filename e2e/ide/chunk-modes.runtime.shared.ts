@@ -377,7 +377,7 @@ async function runRouteCaseWithRecovery(
 }
 
 export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: RuntimeMatrixCase[]) {
-  describe.sequential(suiteName, () => {
+  describe(suiteName, { concurrent: false }, () => {
     afterAll(async () => {
       await closeSharedMiniProgram()
     })

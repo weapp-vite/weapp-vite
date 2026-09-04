@@ -174,6 +174,7 @@ export default defineProject({
     globals: true,
     globalSetup: ['../../vitest.globalSetup.mjs'],
     hookTimeout: 60_000,
+    sharedViteServer: false,
     testTimeout: 120_000,
     projects: [
       {

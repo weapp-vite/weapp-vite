@@ -1,5 +1,22 @@
 # @mpcore/vitest
 
+## 0.2.0
+
+### Minor Changes
+
+- 适配 Vitest 5 的自定义 matcher 类型契约，并将最低支持版本提升至 Vitest 5，确保同步与异步断言返回类型正确传播。
+
+### Patch Changes
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.vitest
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli、devDependencies.vitest
+  - @weapp-vite/eslint：devDependencies.vitest
+
+- Updated dependencies:
+  - @mpcore/test@0.1.8
+
 ## 0.1.7
 
 ### Patch Changes

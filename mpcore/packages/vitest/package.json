@@ -1,7 +1,7 @@
 {
   "name": "@mpcore/vitest",
   "type": "module",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "Vitest integration for @mpcore/test",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -39,13 +39,13 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "vitest": ">=4.0.0"
+    "vitest": ">=5.0.0"
   },
   "dependencies": {
     "@mpcore/test": "workspace:*"
   },
   "devDependencies": {
-    "vitest": "~4.1.11"
+    "vitest": "~5.0.0"
   },
   "publishConfig": {
     "access": "public",

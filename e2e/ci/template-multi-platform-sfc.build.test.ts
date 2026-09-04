@@ -40,7 +40,7 @@ async function buildTemplate(platform: string) {
   })
 }
 
-describe.sequential('multi-platform SFC template build matrix', () => {
+describe('multi-platform SFC template build matrix', { concurrent: false }, () => {
   it.each(BUILD_VERIFICATION_CAPABILITIES)(
     'builds the SFC template for $id with stable platform semantics',
     async ({ id, expectation }) => {

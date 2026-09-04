@@ -10,6 +10,7 @@ describe('subpackage-shared-chunks app', () => {
   const distDir = path.resolve(cwd, 'dist')
   let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
   let warnSpy: ReturnType<typeof vi.spyOn>
+  let warningMessages: unknown[]
 
   beforeAll(async () => {
     await fs.remove(distDir)
@@ -23,6 +24,7 @@ describe('subpackage-shared-chunks app', () => {
       },
     })
     await ctx.buildService.build()
+    warningMessages = warnSpy.mock.calls.map(([message]) => message)
   }, 60000)
 
   afterAll(async () => {
@@ -44,7 +46,7 @@ describe('subpackage-shared-chunks app', () => {
   })
 
   it('warns and skips the invalid shared style entry', () => {
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(warningMessages).toContain(
       '[分包] 分包 packages/order 样式入口 `../shared/styles/components.scss` 对应文件不存在，已忽略。',
     )
   })

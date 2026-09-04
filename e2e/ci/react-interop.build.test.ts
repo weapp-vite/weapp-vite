@@ -86,7 +86,7 @@ async function assertInteropAppOutput() {
   await assertNoRestrictedRuntimeBuiltins(APP_ROOT)
 }
 
-describe.sequential('React, Wevu and native component interoperability (build)', () => {
+describe('React, Wevu and native component interoperability (build)', { concurrent: false }, () => {
   it('emits the six interop edges in baseline and compiler modes', async () => {
     for (const mode of ['baseline', 'react-compiler']) {
       await runBuild(APP_ROOT, mode)

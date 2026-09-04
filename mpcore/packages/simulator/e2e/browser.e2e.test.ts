@@ -95,7 +95,7 @@ function parseJsonString<T>(value: string): T {
   return JSON.parse(value) as T
 }
 
-describe.sequential('simulator browser e2e', () => {
+describe('simulator browser e2e', { concurrent: false }, () => {
   let app: VueApp | undefined
   let defaultViewportSize = { height: 812, width: 375 }
   let mountNode: HTMLDivElement | undefined

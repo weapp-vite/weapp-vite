@@ -182,7 +182,7 @@ function expectRelativeWevuVendorRequireForBinding(files: GeneratedJsFile[], bin
   }
 }
 
-describe.sequential('wevu app runtime HMR', () => {
+describe('wevu app runtime HMR', { concurrent: false }, () => {
   it('keeps published app runtime imports resolved after editing a layout in dev watch mode', async () => {
     const fixtureSource = path.resolve(__dirname, '../../../e2e-apps/github-issues')
     const tempProject = await createTempFixtureProject(fixtureSource, 'wevu-app-runtime-hmr')

@@ -104,7 +104,7 @@ async function waitForUpdatedComputedProbeState(miniProgram: any, timeoutMs = 20
   throw new Error(`Timed out waiting for updated miniprogram-computed runtime: ${JSON.stringify(lastRuntime, null, 2)}`)
 }
 
-describe.sequential('github-issues runtime miniprogram-computed', () => {
+describe('github-issues runtime miniprogram-computed', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

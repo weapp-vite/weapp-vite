@@ -9,7 +9,7 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/plugin-demo')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const PLUGIN_DIST_ROOT = path.join(APP_ROOT, 'dist-plugin')
 
-describe.sequential('plugin-demo build e2e', () => {
+describe('plugin-demo build e2e', { concurrent: false }, () => {
   afterAll(async () => {
     await fs.remove(DIST_ROOT)
     await fs.remove(PLUGIN_DIST_ROOT)

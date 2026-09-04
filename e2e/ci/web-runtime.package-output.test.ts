@@ -15,7 +15,7 @@ async function runBuild() {
   })
 }
 
-describe.sequential('e2e package: @weapp-vite/web (build output)', () => {
+describe('e2e package: @weapp-vite/web (build output)', { concurrent: false }, () => {
   it('issue #456: keeps entry output readable and emits sourcemaps', async () => {
     await runBuild()
 

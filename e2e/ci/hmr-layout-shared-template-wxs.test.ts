@@ -128,7 +128,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR layout shared template and wxs dependencies (dev watch)', () => {
+describe('HMR layout shared template and wxs dependencies (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('updates shared deps imported by layouts (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
 

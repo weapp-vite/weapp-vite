@@ -80,7 +80,7 @@ async function expectNoVueQueryRuntimeExpressionErrorsAfterSettled(
   expectNoVueQueryRuntimeExpressionErrors(runtimeErrors.getSince(marker))
 }
 
-describe.sequential('wevu runtime demo vue-query (weapp e2e)', () => {
+describe('wevu runtime demo vue-query (weapp e2e)', { concurrent: false }, () => {
   let miniProgram: any
   let runtimeErrors: ReturnType<typeof attachRuntimeErrorCollector> | undefined
 

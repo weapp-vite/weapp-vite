@@ -48,7 +48,7 @@ const SOURCE_CASES = [
 const originals = new Map<string, string>()
 let devProcess: ReturnType<typeof startDevProcess> | undefined
 
-describe.sequential('wevu JSX/TSX disk HMR', () => {
+describe('wevu JSX/TSX disk HMR', { concurrent: false }, () => {
   beforeAll(async () => {
     await cleanupResidualDevProcesses()
     await fs.remove(WEVU_JSX_DIST_ROOT)

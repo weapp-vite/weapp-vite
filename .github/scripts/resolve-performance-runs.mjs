@@ -1,20 +1,27 @@
 /* eslint-disable style/max-statements-per-line */
 import { appendFile } from 'node:fs/promises'
 import process from 'node:process'
-
-const token = required('GITHUB_TOKEN')
-const repository = required('GITHUB_REPOSITORY')
-const apiUrl = process.env.GITHUB_API_URL ?? 'https://api.github.com'
-const event = JSON.parse(required('WORKFLOW_EVENT_JSON'))
-const currentRun = event.workflow_run
-const headSha = requiredValue(currentRun?.head_sha, 'workflow_run.head_sha')
-const preferredPr = currentRun?.pull_requests?.[0]?.number
+import { pathToFileURL } from 'node:url'
 
 async function main() {
-  const pullRequest = await resolvePullRequest(headSha, preferredPr)
-  const runs = await listRuns(headSha)
-  const performanceRun = latestRun(runs, 'CI Performance', currentRun)
-  const runtimeRun = latestRun(runs, 'Wevu Runtime Size', currentRun)
+  const token = required('GITHUB_TOKEN')
+  const repository = required('GITHUB_REPOSITORY')
+  const apiUrl = process.env.GITHUB_API_URL ?? 'https://api.github.com'
+  const event = JSON.parse(required('WORKFLOW_EVENT_JSON'))
+  const currentRun = event.workflow_run
+  const headSha = requiredValue(currentRun?.head_sha, 'workflow_run.head_sha')
+  const pullRequest = await resolvePullRequest({
+    apiUrl,
+    headBranch: currentRun?.head_branch,
+    headRepository: currentRun?.head_repository?.full_name,
+    headSha,
+    preferredNumber: currentRun?.pull_requests?.[0]?.number,
+    repository,
+    token,
+  })
+  const runs = await listRuns({ apiUrl, headSha, repository, token })
+  const performanceRun = latestRun(runs, 'CI Performance', currentRun, headSha)
+  const runtimeRun = latestRun(runs, 'Wevu Runtime Size', currentRun, headSha)
   const outputs = {
     pr_number: String(pullRequest.number),
     head_sha: headSha,
@@ -33,21 +40,33 @@ async function main() {
   await appendFile(outputPath, `${Object.entries(outputs).map(([key, value]) => `${key}=${value}`).join('\n')}\n`, 'utf8')
 }
 
-async function resolvePullRequest(sha, preferredNumber) {
-  const pulls = await githubRequest(`/repos/${repository}/commits/${sha}/pulls`)
-  const matching = pulls.find(pull => pull.number === preferredNumber && pull.head?.sha === sha)
-    ?? pulls.find(pull => pull.state === 'open' && pull.head?.sha === sha)
-    ?? pulls.find(pull => pull.head?.sha === sha)
-  if (!matching) { throw new Error(`No pull request found for ${sha}.`) }
+export async function resolvePullRequest({ apiUrl, headBranch, headRepository, headSha, preferredNumber, repository, token, request = githubRequest }) {
+  if (headRepository && headBranch) {
+    const [headOwner] = headRepository.split('/', 1)
+    const head = `${headOwner}:${headBranch}`
+    const pulls = await request(apiUrl, token, `/repos/${repository}/pulls?state=all&head=${encodeURIComponent(head)}&per_page=100`)
+    const matching = findMatchingPullRequest(pulls, headSha, preferredNumber)
+    if (matching) { return matching }
+  }
+
+  const pulls = await request(apiUrl, token, `/repos/${repository}/commits/${headSha}/pulls`)
+  const matching = findMatchingPullRequest(pulls, headSha, preferredNumber)
+  if (!matching) { throw new Error(`No pull request found for ${headSha}.`) }
   return matching
 }
 
-async function listRuns(sha) {
-  const result = await githubRequest(`/repos/${repository}/actions/runs?event=pull_request&head_sha=${encodeURIComponent(sha)}&per_page=100`)
+async function listRuns({ apiUrl, headSha, repository, token }) {
+  const result = await githubRequest(apiUrl, token, `/repos/${repository}/actions/runs?event=pull_request&head_sha=${encodeURIComponent(headSha)}&per_page=100`)
   return Array.isArray(result.workflow_runs) ? result.workflow_runs : []
 }
 
-function latestRun(runs, workflowName, current) {
+function findMatchingPullRequest(pulls, headSha, preferredNumber) {
+  return pulls.find(pull => pull.number === preferredNumber && pull.head?.sha === headSha)
+    ?? pulls.find(pull => pull.state === 'open' && pull.head?.sha === headSha)
+    ?? pulls.find(pull => pull.head?.sha === headSha)
+}
+
+function latestRun(runs, workflowName, current, headSha) {
   const candidates = runs.filter(run => run.name === workflowName && run.head_sha === headSha && run.status === 'completed')
   if (current?.name === workflowName && current.head_sha === headSha && current.status === 'completed') { candidates.push(current) }
   return candidates.sort((a, b) => Date.parse(b.updated_at ?? b.created_at ?? '') - Date.parse(a.updated_at ?? a.created_at ?? ''))[0]
@@ -60,7 +79,7 @@ function durationMs(run) {
   return Number.isFinite(start) && Number.isFinite(end) && end >= start ? end - start : 0
 }
 
-async function githubRequest(pathname) {
+async function githubRequest(apiUrl, token, pathname) {
   const response = await fetch(`${apiUrl}${pathname}`, {
     headers: {
       'accept': 'application/vnd.github+json',
@@ -83,7 +102,9 @@ function requiredValue(value, name) {
   return value
 }
 
-main().catch((error) => {
-  process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`)
-  process.exitCode = 1
-})
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`)
+    process.exitCode = 1
+  })
+}

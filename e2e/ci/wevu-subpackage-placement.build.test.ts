@@ -57,7 +57,7 @@ async function runBuild(jsFormat: TestJsFormat) {
   })
 }
 
-describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
+describe('e2e app: wevu-subpackage-placement (build)', { concurrent: false }, () => {
   for (const jsFormat of JS_FORMATS) {
     it(`emits vue sfc outputs for main package, normal subpackage, and independent subpackage in ${jsFormat}`, async () => {
       await runBuild(jsFormat)

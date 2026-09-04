@@ -1,7 +1,9 @@
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import type { MutationRecord } from '../../../reactivity'
 import type { SetDataDebugInfo } from '../../types'
 import { getReactiveVersion, isReactive, isRef, toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
+import { resolveBindingDiagnostics } from '../../bindingManifest'
 import { diffSnapshots, toPlain } from '../../diff'
 import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runPatchUpdate } from './patchScheduler'
@@ -34,6 +36,7 @@ export function createSetDataScheduler(options: {
   debug: ((info: SetDataDebugInfo) => void) | undefined
   debugWhen: 'fallback' | 'always'
   debugSampleRate: number
+  bindingManifest?: WevuRuntimeBindingManifestV1
   loopWarning: false | {
     sampleWindowMs: number
     maxFlushes: number
@@ -72,6 +75,7 @@ export function createSetDataScheduler(options: {
     debug,
     debugWhen,
     debugSampleRate,
+    bindingManifest,
     loopWarning,
     targetLabel,
     runTracker,
@@ -234,7 +238,10 @@ export function createSetDataScheduler(options: {
     return matches
   }
 
-  const emitDebug = (info: SetDataDebugInfo) => {
+  const emitDebug = (
+    info: SetDataDebugInfo,
+    pathSource?: Iterable<string> | (() => Iterable<string>),
+  ) => {
     if (!debug) {
       return
     }
@@ -245,8 +252,21 @@ export function createSetDataScheduler(options: {
     if (debugSampleRate < 1 && Math.random() > debugSampleRate) {
       return
     }
+    let debugInfo = info
+    if (bindingManifest) {
+      const paths = typeof pathSource === 'function'
+        ? pathSource()
+        : pathSource ?? []
+      const wholeSnapshotFallback = info.reason === 'needsFullSnapshot'
+        || info.reason === 'maxPatchKeys'
+        || info.reason === 'maxPayloadBytes'
+      debugInfo = {
+        ...info,
+        bindings: resolveBindingDiagnostics(bindingManifest, paths, wholeSnapshotFallback),
+      }
+    }
     try {
-      debug(info)
+      debug(debugInfo)
     }
     catch {
       // 忽略异常
@@ -280,7 +300,11 @@ export function createSetDataScheduler(options: {
       windowMs: loopWarning.sampleWindowMs,
       targetLabel,
       message: `${targetLabel ? `${targetLabel} ` : ''}疑似运行时更新循环：${flushTimes.length} 次 setData flush/${loopWarning.sampleWindowMs}ms`,
-    })
+    }, () => [
+      ...pendingPatches.keys(),
+      ...fallbackTopKeys,
+      ...(includeComputed ? dirtyComputedKeys : []),
+    ])
   }
 
   const collect = () => collectSnapshot({
@@ -418,6 +442,7 @@ export function createSetDataScheduler(options: {
           }
         })()
       : diffSnapshots(latestSnapshot, snapshot)
+    const diffPaths = Object.keys(diff)
     latestSnapshot = snapshot
     needsFullSnapshot.value = false
     pendingPatches.clear()
@@ -431,7 +456,7 @@ export function createSetDataScheduler(options: {
       }
       dirtyComputedKeys.clear()
     }
-    if (!Object.keys(diff).length) {
+    if (!diffPaths.length) {
       return
     }
     if (typeof currentAdapter.setData === 'function') {
@@ -444,8 +469,8 @@ export function createSetDataScheduler(options: {
       mode: 'diff',
       reason,
       pendingPatchKeys: 0,
-      payloadKeys: Object.keys(diff).length,
-    })
+      payloadKeys: diffPaths.length,
+    }, diffPaths)
   }
 
   const mutationRecorder = (record: MutationRecord, stateRootRaw: object) => {
@@ -523,6 +548,7 @@ export function createSetDataScheduler(options: {
         latestSnapshot,
         latestComputedSnapshot,
         needsFullSnapshot,
+        bindingDiagnosticsEnabled: Boolean(debug && bindingManifest),
         emitDebug,
         runDiffUpdate,
       })

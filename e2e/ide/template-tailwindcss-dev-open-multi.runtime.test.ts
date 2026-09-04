@@ -108,7 +108,7 @@ async function waitForPageText(miniProgram: any, route: string, text: string, ti
   throw new Error(`Timed out waiting for rendered text "${text}".${timeoutDetail}\nLatest route: ${latestRoute || '<unknown>'}\nLatest WXML:\n${latestWxml.slice(0, 1000)}`)
 }
 
-describe.sequential('template TailwindCSS dev:open multi-project IDE integration', () => {
+describe('template TailwindCSS dev:open multi-project IDE integration', { concurrent: false }, () => {
   it.each(ACTIVE_TEMPLATE_CASES)('$name renders after the previous dev:open process exits', async (templateCase) => {
     expect(USE_PRESTARTED_TEMPLATE_DEV, '该场景必须通过外层 template dev:open runner 执行').toBe(true)
     expect(ACTIVE_TEMPLATE_CASES).toHaveLength(1)

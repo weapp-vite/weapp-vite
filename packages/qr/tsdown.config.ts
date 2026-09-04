@@ -7,6 +7,7 @@ export default defineConfig({
   clean: true,
   deps: {
     onlyBundle: false,
+    resolveDepSubpath: true,
   },
   target: 'node20',
   failOnWarn: false,

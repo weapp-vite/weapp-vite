@@ -1283,7 +1283,7 @@ export default {
     readFileSpy.mockRestore()
   })
 
-  it('wraps page templates for default and named vue layouts and respects layout false', async () => {
+  it('emits compiler-wrapped page templates for default and named vue layouts', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')
     await fs.ensureDir(path.join(srcRoot, 'layouts'))
@@ -1324,8 +1324,13 @@ export default {
         {
           source: '<template><view>default page</view></template>',
           result: {
-            template: '<view>default page</view>',
-            config: JSON.stringify({ navigationBarTitleText: 'default' }),
+            template: '<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"><view>default page</view></weapp-layout-default>',
+            config: JSON.stringify({
+              navigationBarTitleText: 'default',
+              usingComponents: {
+                'weapp-layout-default': '/layouts/default',
+              },
+            }),
             script: 'export default {}',
           },
           isPage: true,
@@ -1336,8 +1341,13 @@ export default {
         {
           source: '<script setup>const layoutTitle = computed(() => \'Dashboard\'); definePageMeta({ layout: { name: \'admin\', props: { sidebar: true, title: layoutTitle.value } } })</script><template><view>admin page</view></template>',
           result: {
-            template: '<view>admin page</view>',
-            config: JSON.stringify({ navigationBarTitleText: 'admin' }),
+            template: '<weapp-layout-admin __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}" sidebar="{{true}}" title="{{__wv_layout_bind_title}}"><view>admin page</view></weapp-layout-admin>',
+            config: JSON.stringify({
+              navigationBarTitleText: 'admin',
+              usingComponents: {
+                'weapp-layout-admin': '/layouts/admin',
+              },
+            }),
             script: 'export default {}',
           },
           isPage: true,
@@ -1395,7 +1405,7 @@ export default {
     })
   })
 
-  it('uses app.vue template as an app shell outside page layouts without emitting app.wxml', async () => {
+  it('emits compiler-wrapped app shell pages without emitting app.wxml', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')
     await fs.ensureDir(path.join(srcRoot, 'layouts'))
@@ -1448,8 +1458,14 @@ export default {
         {
           source: '<template><view>page content</view></template>',
           result: {
-            template: '<view>page content</view>',
-            config: JSON.stringify({ navigationBarTitleText: 'shell' }),
+            template: '<weapp-app-shell __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"><weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"><view>page content</view></weapp-layout-default></weapp-app-shell>',
+            config: JSON.stringify({
+              navigationBarTitleText: 'shell',
+              usingComponents: {
+                'weapp-app-shell': '/__weapp_vite_app_shell',
+                'weapp-layout-default': '/layouts/default',
+              },
+            }),
             script: 'Page({})',
           },
           isPage: true,
@@ -1460,8 +1476,13 @@ export default {
         {
           source: '<script setup>definePageMeta({ layout: false })</script><template><view>plain content</view></template>',
           result: {
-            template: '<view>plain content</view>',
-            config: JSON.stringify({ navigationBarTitleText: 'plain' }),
+            template: '<weapp-app-shell __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"><view>plain content</view></weapp-app-shell>',
+            config: JSON.stringify({
+              navigationBarTitleText: 'plain',
+              usingComponents: {
+                'weapp-app-shell': '/__weapp_vite_app_shell',
+              },
+            }),
             script: 'Page({})',
           },
           isPage: true,
@@ -1683,7 +1704,7 @@ export default {
     expect(assets.get('layouts/default.js')).toBe('Component({})')
   })
 
-  it('applies layout defaults from weapp.routeRules when page meta is absent', async () => {
+  it('registers routeRules layout defaults for compiler-wrapped pages', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')
     await fs.ensureDir(path.join(srcRoot, 'layouts'))
@@ -1730,8 +1751,13 @@ export default {
         {
           source: '<template><view>rule page</view></template>',
           result: {
-            template: '<view>rule page</view>',
-            config: JSON.stringify({ navigationBarTitleText: 'route-rule' }),
+            template: '<weapp-layout-dashboard __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}" title="Rule Layout"><view>rule page</view></weapp-layout-dashboard>',
+            config: JSON.stringify({
+              navigationBarTitleText: 'route-rule',
+              usingComponents: {
+                'weapp-layout-dashboard': '/layouts/dashboard',
+              },
+            }),
             script: 'export default {}',
           },
           isPage: true,
@@ -1765,7 +1791,7 @@ export default {
     })
   })
 
-  it('prefers specific routeRules over wildcard routeRules in bundle emission', async () => {
+  it('registers the most specific routeRules layout for compiler-wrapped pages', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')
     await fs.ensureDir(path.join(srcRoot, 'layouts'))
@@ -1807,8 +1833,13 @@ export default {
         {
           source: '<template><view>settings page</view></template>',
           result: {
-            template: '<view>settings page</view>',
-            config: JSON.stringify({ navigationBarTitleText: 'settings' }),
+            template: '<weapp-layout-admin __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}"><view>settings page</view></weapp-layout-admin>',
+            config: JSON.stringify({
+              navigationBarTitleText: 'settings',
+              usingComponents: {
+                'weapp-layout-admin': '/layouts/admin',
+              },
+            }),
             script: 'export default {}',
           },
           isPage: true,
@@ -1842,7 +1873,7 @@ export default {
     })
   })
 
-  it('emits dynamic layout branches for pages using setPageLayout', async () => {
+  it('emits compiler-generated dynamic layout branches for setPageLayout', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')
     await fs.ensureDir(path.join(srcRoot, 'layouts'))
@@ -1880,8 +1911,14 @@ export default {
         {
           source: '<script setup>import { setPageLayout } from \'wevu\'; setPageLayout(\'dashboard\', { title: dynamicTitle.value, sidebar: true })</script><template><view>dynamic page</view></template>',
           result: {
-            template: '<view>dynamic page</view>',
-            config: JSON.stringify({ navigationBarTitleText: 'dynamic' }),
+            template: '<block wx:if="{{__wv_page_layout_name === \'admin\'}}"><weapp-layout-admin __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}" sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}" title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"><view>dynamic page</view></weapp-layout-admin></block><block wx:elif="{{__wv_page_layout_name === \'dashboard\'}}"><weapp-layout-dashboard __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}" sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}" title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"><view>dynamic page</view></weapp-layout-dashboard></block><block wx:else><view>dynamic page</view></block>',
+            config: JSON.stringify({
+              navigationBarTitleText: 'dynamic',
+              usingComponents: {
+                'weapp-layout-admin': '/layouts/admin',
+                'weapp-layout-dashboard': '/layouts/dashboard',
+              },
+            }),
             script: 'export default {}',
           },
           isPage: true,
@@ -1909,7 +1946,7 @@ export default {
     const template = assets.get('pages/dynamic-layout/index.wxml')!
     expect(template).toContain(`${getPlatformLayoutConditionalDirective(0, 'weapp')}="{{__wv_page_layout_name === 'admin'}}"`)
     expect(template).toContain(`${getPlatformLayoutConditionalDirective(1, 'weapp')}="{{__wv_page_layout_name === 'dashboard'}}"`)
-    expect(template).toContain('<weapp-layout-dashboard __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}" title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}" sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}">')
+    expect(template).toContain('<weapp-layout-dashboard __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}" sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}" title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}">')
     expect(template).toContain(`title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"`)
     expect(template).toContain(`sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}"`)
     expect(JSON.parse(assets.get('pages/dynamic-layout/index.json')!)).toEqual({
@@ -1963,8 +2000,13 @@ export default {
         {
           source: '<script setup>const layoutTitle = computed(() => \'Native Dashboard\'); definePageMeta({ layout: { name: \'native-shell\', props: { sidebar: true, title: layoutTitle.value } } })</script><template><view>native page</view></template>',
           result: {
-            template: '<view>native page</view>',
-            config: JSON.stringify({ navigationBarTitleText: 'native' }),
+            template: '<weapp-layout-native-shell __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || \'\'}}" sidebar="{{true}}" title="{{__wv_layout_bind_title}}"><view>native page</view></weapp-layout-native-shell>',
+            config: JSON.stringify({
+              navigationBarTitleText: 'native',
+              usingComponents: {
+                'weapp-layout-native-shell': '/layouts/native-shell/index',
+              },
+            }),
             script: 'export default {}',
           },
           isPage: true,

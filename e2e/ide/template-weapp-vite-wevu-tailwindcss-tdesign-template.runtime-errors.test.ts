@@ -83,7 +83,7 @@ function attachConsoleWarningCollector(miniProgram: any) {
   }
 }
 
-describe.sequential('e2e app: template-wevu-tdesign-regression runtime errors', () => {
+describe('e2e app: template-wevu-tdesign-regression runtime errors', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

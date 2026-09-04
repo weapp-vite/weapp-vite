@@ -26,7 +26,7 @@ async function expectNoDonutOutputs() {
   }
 }
 
-describe.sequential('e2e app: auto-routes defineAppJson', () => {
+describe('e2e app: auto-routes defineAppJson', { concurrent: false }, () => {
   it('builds with routes.pages, generates mutable tuple typings, and shares routes to runtime globalData', async () => {
     await fs.remove(DIST_ROOT)
     await fs.remove(TYPED_ROUTER_PATH)

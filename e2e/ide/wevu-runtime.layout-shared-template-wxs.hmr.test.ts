@@ -295,7 +295,7 @@ afterAll(async () => {
   }
 })
 
-describe.sequential('wevu runtime layout shared template/wxs hmr (ide)', () => {
+describe('wevu runtime layout shared template/wxs hmr (ide)', { concurrent: false }, () => {
   it('updates layout runtime output in DevTools after shared template/include/wxs edits', async () => {
     await fs.remove(DIST_ROOT)
 

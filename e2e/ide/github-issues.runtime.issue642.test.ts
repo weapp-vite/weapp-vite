@@ -101,7 +101,7 @@ async function waitForIssue642Runtime(ctx: { skip: (message?: string) => void },
   return latest
 }
 
-describe.sequential('e2e app: github-issues / issue #642', () => {
+describe('e2e app: github-issues / issue #642', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

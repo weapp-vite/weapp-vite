@@ -33,6 +33,7 @@ export default defineConfig({
   },
   deps: {
     onlyBundle: false,
+    resolveDepSubpath: true,
     neverBundle: [
       '@swc/core',
       '@weapp-vite/ast',

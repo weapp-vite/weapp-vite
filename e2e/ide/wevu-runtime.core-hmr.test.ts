@@ -540,7 +540,7 @@ async function waitForSharedStoreMarker(marker: string, retrySource: string) {
   }
 }
 
-describe.sequential('wevu runtime core hmr matrix (ide)', () => {
+describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
   beforeAll(() => {
     previousBridgePostConnectRefresh = process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
     process.env[BRIDGE_POST_CONNECT_REFRESH_ENV] = '1'

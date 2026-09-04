@@ -36,7 +36,8 @@ export function runPatchUpdate(options: {
   latestSnapshot: Record<string, any>
   latestComputedSnapshot: Record<string, any>
   needsFullSnapshot: { value: boolean }
-  emitDebug: (info: SetDataDebugInfo) => void
+  bindingDiagnosticsEnabled: boolean
+  emitDebug: (info: SetDataDebugInfo, paths?: Iterable<string>) => void
   runDiffUpdate: (reason?: SetDataDebugInfo['reason']) => void | Promise<void>
 }) {
   const {
@@ -67,13 +68,15 @@ export function runPatchUpdate(options: {
     latestSnapshot,
     latestComputedSnapshot,
     needsFullSnapshot,
+    bindingDiagnosticsEnabled,
     emitDebug,
     runDiffUpdate,
   } = options
 
   if (pendingPatches.size > maxPatchKeys) {
-    needsFullSnapshot.value = true
     const pendingCount = pendingPatches.size
+    const pendingPaths = bindingDiagnosticsEnabled ? [...pendingPatches.keys()] : undefined
+    needsFullSnapshot.value = true
     pendingPatches.clear()
     dirtyComputedKeys.clear()
     emitDebug({
@@ -81,7 +84,7 @@ export function runPatchUpdate(options: {
       reason: 'maxPatchKeys',
       pendingPatchKeys: pendingCount,
       payloadKeys: 0,
-    })
+    }, pendingPaths)
     return runDiffUpdate('maxPatchKeys')
   }
 
@@ -200,23 +203,24 @@ export function runPatchUpdate(options: {
   }
   const sizeCheck = checkPayloadSize(collapsedPayload, maxPayloadBytes)
   const shouldFallback = sizeCheck.fallback
+  const payloadPaths = Object.keys(collapsedPayload)
   emitDebug({
     mode: shouldFallback ? 'diff' : 'patch',
     reason: shouldFallback ? 'maxPayloadBytes' : 'patch',
     pendingPatchKeys: patchEntries.length,
-    payloadKeys: Object.keys(collapsedPayload).length,
+    payloadKeys: payloadPaths.length,
     mergedSiblingParents: mergedSiblingParents || undefined,
     computedDirtyKeys: computedDirtyProcessed || undefined,
     estimatedBytes: sizeCheck.estimatedBytes,
     bytes: sizeCheck.bytes,
-  })
+  }, payloadPaths)
   if (shouldFallback) {
     needsFullSnapshot.value = true
     pendingPatches.clear()
     dirtyComputedKeys.clear()
     return runDiffUpdate('maxPayloadBytes')
   }
-  if (!Object.keys(collapsedPayload).length) {
+  if (!payloadPaths.length) {
     return
   }
 
@@ -242,6 +246,6 @@ export function runPatchUpdate(options: {
     mode: 'patch',
     reason: 'patch',
     pendingPatchKeys: patchEntries.length,
-    payloadKeys: Object.keys(collapsedPayload).length,
-  })
+    payloadKeys: payloadPaths.length,
+  }, payloadPaths)
 }

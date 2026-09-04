@@ -34,7 +34,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('wevu runtime class computed (weapp e2e)', () => {
+describe('wevu runtime class computed (weapp e2e)', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

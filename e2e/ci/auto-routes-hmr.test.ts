@@ -143,7 +143,7 @@ afterEach(async () => {
   await fs.remove(ADDED_ROUTE_VUE_PATH)
 })
 
-describe.sequential('auto-routes HMR (dev watch)', () => {
+describe('auto-routes HMR (dev watch)', { concurrent: false }, () => {
   it('keeps typed-router in sync when route file is added, deleted, recreated and modified', async () => {
     const addMarker = createHmrMarker('AUTO-ROUTES-ADD', 'weapp')
     const modifyMarker = createHmrMarker('AUTO-ROUTES-MODIFY', 'weapp')

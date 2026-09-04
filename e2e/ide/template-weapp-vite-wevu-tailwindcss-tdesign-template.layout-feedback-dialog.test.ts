@@ -97,7 +97,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('e2e app: template-wevu-tdesign-regression layout feedback dialog', () => {
+describe('e2e app: template-wevu-tdesign-regression layout feedback dialog', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

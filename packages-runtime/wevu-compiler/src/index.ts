@@ -1,4 +1,5 @@
 export { builtinComponentsSet, isBuiltinComponent } from './auto-import-components/builtin'
+export { createRuntimeBindingManifest } from './bindingManifest'
 export * from './constants'
 export { compileJsxFile } from './plugins/jsx/compileJsxFile'
 export { isUniAppCompatibilityFile, transformUniAppConditionalCode, transformUniAppSource } from './plugins/uniApp'
@@ -109,6 +110,18 @@ export {
 } from './plugins/wevu/pageFeatures'
 export type { ModuleResolver, WevuPageFeatureFlag, WevuPageHookName } from './plugins/wevu/pageFeatures'
 export type {
+  WevuBindingDependencyV1,
+  WevuBindingKind,
+  WevuBindingManifestFeaturesV1,
+  WevuBindingManifestV1,
+  WevuBindingRecordV1,
+  WevuBindingScopeV1,
+  WevuBindingUpdateMode,
+  WevuRuntimeBindingManifestMode,
+  WevuRuntimeBindingManifestV1,
+  WevuRuntimeBindingRecordV1,
+} from './types/bindingManifest'
+export type {
   CompilerDiagnostic,
   CompilerDiagnosticCode,
   CompilerDiagnosticSeverity,
@@ -117,6 +130,12 @@ export type {
   SourceSpan,
 } from './types/diagnostics'
 export type { JsonConfig, JsonMergeContext, JsonMergeStage, JsonMergeStrategy } from './types/json'
+export type {
+  CompilerAppShell,
+  CompilerLayoutPropValue,
+  CompilerPageLayout,
+  CompilerPageLayoutPlan,
+} from './types/pageLayout'
 
 export type { MpPlatform } from './types/platform'
 export type { WevuDefaults } from './types/wevu'

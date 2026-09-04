@@ -34,7 +34,7 @@ async function createTemplateFixture() {
   return fixtureRoot
 }
 
-describe.sequential('template: Tailwind CSS v4 @source build output', () => {
+describe('template: Tailwind CSS v4 @source build output', { concurrent: false }, () => {
   let fixtureRoot: string
 
   beforeAll(async () => {

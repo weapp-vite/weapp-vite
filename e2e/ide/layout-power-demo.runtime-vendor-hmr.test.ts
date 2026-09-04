@@ -384,7 +384,7 @@ async function expectLayoutFeedback(miniProgram: any, page: any, collector: Runt
   )
 }
 
-describe.sequential('layout-power-demo runtime vendor HMR in real WeChat DevTools', () => {
+describe('layout-power-demo runtime vendor HMR in real WeChat DevTools', { concurrent: false }, () => {
   let originalScript = ''
   let originalTemplate = ''
   let originalCommandLayoutStyle = ''

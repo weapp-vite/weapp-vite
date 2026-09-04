@@ -16,7 +16,7 @@ async function runBuild() {
   })
 }
 
-describe.sequential('e2e app: wevu-vue-demo (script setup emit compat)', () => {
+describe('e2e app: wevu-vue-demo (script setup emit compat)', { concurrent: false }, () => {
   it('compiles component emits with Vue-style payload handler semantics', async () => {
     await runBuild()
 

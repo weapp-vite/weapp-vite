@@ -41,7 +41,7 @@ async function waitForBuild(watcher: WatcherInstance) {
   })
 }
 
-describe.skip.sequential('watch rebuilds', () => {
+describe.skip('watch rebuilds', { concurrent: false }, () => {
   it('rebuilds on consecutive edits of the same template', async () => {
     const watchHistory: string[][] = []
     const cwd = getFixture('watch-no-subpackage')

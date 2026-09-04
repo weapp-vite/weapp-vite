@@ -2,6 +2,7 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 
+import { recordBindingExpression } from '../bindingManifest'
 import { warn } from '../diagnostics'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
@@ -88,11 +89,23 @@ export function transformTemplateElement(node: ElementNode, context: TransformCo
       if (dir.name === 'if' && dir.exp) {
         const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
         const expValue = resolveConditionExpression(rawExpValue, context, 'template v-if')
+        recordBindingExpression(context, {
+          kind: 'if',
+          expression: rawExpValue,
+          outputPath: expValue.startsWith('__wv_bind_') ? expValue.split('[')[0] : undefined,
+          sourceLocation: dir.exp.loc,
+        })
         return context.platform.wrapIf(expValue, children, renderTemplateMustache)
       }
       if (dir.name === 'else-if' && dir.exp) {
         const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
         const expValue = resolveConditionExpression(rawExpValue, context, 'template v-else-if')
+        recordBindingExpression(context, {
+          kind: 'if',
+          expression: rawExpValue,
+          outputPath: expValue.startsWith('__wv_bind_') ? expValue.split('[')[0] : undefined,
+          sourceLocation: dir.exp.loc,
+        })
         return context.platform.wrapElseIf(expValue, children, renderTemplateMustache)
       }
       if (dir.name === 'else') {

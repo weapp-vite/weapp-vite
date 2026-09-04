@@ -27,7 +27,7 @@ async function waitForPathExists(
   throw new Error(`Timed out waiting for path to exist: ${targetPath}`)
 }
 
-describe.skipIf(CI.isCI).sequential('subPackages', () => {
+describe.skipIf(CI.isCI)('subPackages', { concurrent: false }, () => {
   const cwd = getFixture('subPackages')
   const distDir = path.resolve(cwd, 'dist')
   // beforeAll(async () => {

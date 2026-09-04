@@ -1,9 +1,9 @@
 import { promises as fs } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { afterAll, beforeAll, bench, describe } from 'vitest'
+import { afterAll, beforeAll, describe } from 'vitest'
 import { clearFileCaches, loadCache, pathExists, readFile } from '@/plugins/utils/cache'
-import { defaultBenchOptions } from './utils'
+import { defaultBenchOptions, defineBenchmark } from './utils'
 
 describe('plugins/utils/cache', () => {
   const root = path.join(os.tmpdir(), 'weapp-vite-bench')
@@ -24,7 +24,7 @@ describe('plugins/utils/cache', () => {
     catch {}
   })
 
-  bench(
+  defineBenchmark(
     'loadCache.get (cache hit)',
     () => {
       loadCache.get(fixture)
@@ -32,7 +32,7 @@ describe('plugins/utils/cache', () => {
     defaultBenchOptions,
   )
 
-  bench(
+  defineBenchmark(
     'pathExists (cache hit)',
     async () => {
       await pathExists(fixture, { ttlMs: 60_000 })

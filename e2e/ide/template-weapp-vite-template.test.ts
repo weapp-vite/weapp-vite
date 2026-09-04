@@ -4,7 +4,7 @@ import { runTemplateE2E } from '../template-e2e.utils'
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-template')
 const JS_FORMATS = ['esm', 'cjs'] as const
 
-describe.sequential('template e2e: weapp-vite-template', () => {
+describe('template e2e: weapp-vite-template', { concurrent: false }, () => {
   for (const jsFormat of JS_FORMATS) {
     it(`renders all pages from app config in ${jsFormat}`, async () => {
       await runTemplateE2E({

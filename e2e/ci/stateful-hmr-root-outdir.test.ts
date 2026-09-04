@@ -78,7 +78,7 @@ async function waitForCompleteInitialBundle(timeoutMs = 90_000) {
   throw new Error(`Timed out waiting for complete stateful HMR initial bundle: ${incompleteOutputs.filter(Boolean).join(', ')}`)
 }
 
-describe.sequential('stateful HMR with root source directory', () => {
+describe('stateful HMR with root source directory', { concurrent: false }, () => {
   beforeEach(async () => {
     await cleanupResidualDevProcesses()
     await fs.remove(DIST_ROOT)

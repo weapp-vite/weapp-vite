@@ -40,7 +40,7 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs =
   throw new Error(`watch build timed out, output missing marker: ${marker}`)
 }
 
-describe.skip.sequential('watch rebuilds template', () => {
+describe.skip('watch rebuilds template', { concurrent: false }, () => {
   it('rebuilds when the index page script changes', async () => {
     const fixtureSource = path.resolve(templatesDir, 'weapp-vite-template')
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-template-'))

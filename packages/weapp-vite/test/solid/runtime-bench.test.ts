@@ -8,7 +8,7 @@ const REPO_ROOT = path.resolve(import.meta.dirname, '../../../..')
 const CLI_PATH = path.join(REPO_ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.join(REPO_ROOT, 'apps/runtime-bench-solid')
 
-describe.sequential('Solid-style JSX runtime benchmark POC build', () => {
+describe('Solid-style JSX runtime benchmark POC build', { concurrent: false }, () => {
   it('emits a native WXML list without a dynamic host tree template', async () => {
     await fs.remove(path.join(APP_ROOT, 'dist'))
     await execa('node', [CLI_PATH, 'build', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {

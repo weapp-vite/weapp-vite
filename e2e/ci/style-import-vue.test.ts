@@ -80,7 +80,7 @@ async function waitForFileWithSourceHeartbeat<T>(
   return await task()
 }
 
-describe.sequential('vue style @import resolution (e2e)', () => {
+describe('vue style @import resolution (e2e)', { concurrent: false }, () => {
   it('build inlines css/scss/src imports into wxss', async () => {
     await fs.remove(DIST_ROOT)
     await runBuild(APP_ROOT)

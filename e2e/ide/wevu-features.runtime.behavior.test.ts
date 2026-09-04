@@ -81,7 +81,7 @@ async function runPageE2E(session: SharedRuntimeSession, page: any, method = 'ru
   return result
 }
 
-describe.sequential('e2e app: wevu-features / behavior', () => {
+describe('e2e app: wevu-features / behavior', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

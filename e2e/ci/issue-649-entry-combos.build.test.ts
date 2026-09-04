@@ -156,7 +156,7 @@ afterAll(async () => {
   await Promise.all(tempRoots.splice(0).map(root => fs.remove(root)))
 })
 
-describe.sequential('issue 649 entry config combinations', () => {
+describe('issue 649 entry config combinations', { concurrent: false }, () => {
   it('builds when app.vue provides the app config', async () => {
     const root = await createAppVueProject()
 

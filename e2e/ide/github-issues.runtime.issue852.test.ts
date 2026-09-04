@@ -26,7 +26,7 @@ async function readAppJson() {
   }
 }
 
-describe.sequential('e2e app: github-issues / issue #852', () => {
+describe('e2e app: github-issues / issue #852', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

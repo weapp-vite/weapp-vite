@@ -188,7 +188,7 @@ async function launchReactRuntimeSpikeAutomator() {
   throw lastError instanceof Error ? lastError : new Error(String(lastError ?? 'React runtime spike startup failed'))
 }
 
-describe.sequential('react runtime spike (weapp e2e)', () => {
+describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
   beforeAll(async () => {
     await cleanupResidualIdeProcesses()
     await cleanDevtoolsCache('all', { cwd: APP_ROOT })

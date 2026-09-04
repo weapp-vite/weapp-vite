@@ -61,7 +61,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR shared template and wxs dependencies (dev watch)', () => {
+describe('HMR shared template and wxs dependencies (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('updates all importers when shared template or wxs changes (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
 

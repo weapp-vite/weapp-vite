@@ -50,7 +50,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR rapid modifications (dev watch)', () => {
+describe('HMR rapid modifications (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('连续快速修改 .wxml 模板文件 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
     const originalSource = await fs.readFile(SRC_TEMPLATE, 'utf8')

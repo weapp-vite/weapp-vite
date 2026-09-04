@@ -7,7 +7,7 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
 const DIST_ROOT = path.join(APP_ROOT, 'dist-issue-779')
 
-describe.sequential('issue #779 CSS pre transform', () => {
+describe('issue #779 CSS pre transform', { concurrent: false }, () => {
   it('passes the in-memory pre-transformed SFC style into the emitted wxss sidecar', async () => {
     await fs.remove(DIST_ROOT)
 

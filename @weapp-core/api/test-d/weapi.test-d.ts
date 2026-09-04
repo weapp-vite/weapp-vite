@@ -54,6 +54,7 @@ import type {
   WeapiWechatMethodName,
   WeapiWechatMiniProgramRawAdapterSource,
   WeapiWechatRawAdapter,
+  WeapiWxRawAdapter,
 } from '@weapp-core/api'
 import {
   api,
@@ -668,6 +669,27 @@ const customCallbackReturn = custom.customError({
 expectType<number>(customCallbackReturn)
 
 const wechat = createWeapi({ adapter: wx })
+expectType<WeapiWxRawAdapter['checkIsPictureInPictureActive']>(wechat.checkIsPictureInPictureActive)
+expectType<WeapiWxRawAdapter['createBufferURL']>(wechat.createBufferURL)
+expectType<WeapiWxRawAdapter['createCacheManager']>(wechat.createCacheManager)
+expectType<WeapiWxRawAdapter['createGlobalPayment']>(wechat.createGlobalPayment)
+expectType<WeapiWxRawAdapter['createInferenceSession']>(wechat.createInferenceSession)
+expectType<WeapiWxRawAdapter['createVideoDecoder']>(wechat.createVideoDecoder)
+expectType<WeapiWxRawAdapter['getApiCategory']>(wechat.getApiCategory)
+expectType<WeapiWxRawAdapter['getAppAuthorizeSetting']>(wechat.getAppAuthorizeSetting)
+expectType<WeapiWxRawAdapter['getAppBaseInfo']>(wechat.getAppBaseInfo)
+expectType<WeapiWxRawAdapter['getDeviceInfo']>(wechat.getDeviceInfo)
+expectType<WeapiWxRawAdapter['getPluginUpdateManager']>(wechat.getPluginUpdateManager)
+expectType<WeapiWxRawAdapter['getSystemSetting']>(wechat.getSystemSetting)
+expectType<WeapiWxRawAdapter['getWindowInfo']>(wechat.getWindowInfo)
+expectType<WeapiWxRawAdapter['isVKSupport']>(wechat.isVKSupport)
+expectType<WeapiWxRawAdapter['postMessageToReferrerMiniProgram']>(wechat.postMessageToReferrerMiniProgram)
+expectType<WeapiWxRawAdapter['postMessageToReferrerPage']>(wechat.postMessageToReferrerPage)
+expectType<WeapiWxRawAdapter['reportEvent']>(wechat.reportEvent)
+expectType<WeapiWxRawAdapter['reportMonitor']>(wechat.reportMonitor)
+expectType<WeapiWxRawAdapter['reportPerformance']>(wechat.reportPerformance)
+expectType<WeapiWxRawAdapter['requestAppleSubscribeSign']>(wechat.requestAppleSubscribeSign)
+expectType<WeapiWxRawAdapter['revokeBufferURL']>(wechat.revokeBufferURL)
 wechat.getRendererUserAgent({
   fail: (error) => {
     expectType<WechatMiniprogram.GeneralCallbackResult & { errno?: number }>(error)

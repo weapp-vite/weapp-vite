@@ -1,11 +1,11 @@
-import { bench, describe } from 'vitest'
+import { describe } from 'vitest'
 import { transformWxsCode } from '@/wxs'
-import { createWxsFixture, defaultBenchOptions } from './utils'
+import { createWxsFixture, defaultBenchOptions, defineBenchmark } from './utils'
 
 describe('wxs', () => {
   const code = createWxsFixture()
 
-  bench(
+  defineBenchmark(
     'transformWxsCode',
     () => {
       transformWxsCode(code, { filename: 'bench.wxs.ts' })

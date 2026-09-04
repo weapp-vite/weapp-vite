@@ -64,7 +64,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('wevu root import HMR regression (dev watch)', () => {
+describe('wevu root import HMR regression (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('keeps root wevu hook and reactivity imports stable after repeated page json saves (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
 

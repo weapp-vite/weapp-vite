@@ -49,7 +49,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
+describe('HMR shared runtime dependencies (dev watch)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)('keeps shared runtime exports stable after rename-save updates (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
 

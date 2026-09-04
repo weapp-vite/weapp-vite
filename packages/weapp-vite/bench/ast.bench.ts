@@ -1,12 +1,12 @@
 import { parseSync } from 'oxc-parser'
-import { bench, describe } from 'vitest'
+import { describe } from 'vitest'
 import { collectRequireTokens } from '@/plugins/utils/ast'
-import { createJsFixtureForOxc, defaultBenchOptions } from './utils'
+import { createJsFixtureForOxc, defaultBenchOptions, defineBenchmark } from './utils'
 
 describe('oxc parser + require token walk', () => {
   const source = createJsFixtureForOxc()
 
-  bench(
+  defineBenchmark(
     'oxc parseSync',
     () => {
       parseSync('bench.ts', source)
@@ -21,7 +21,7 @@ describe('oxc parser + require token walk', () => {
   const parsed = parseSync('bench.ts', source)
   const program = parsed.program
 
-  bench(
+  defineBenchmark(
     'collectRequireTokens (walk only)',
     () => {
       collectRequireTokens(program)

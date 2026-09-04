@@ -163,7 +163,7 @@ async function resolveRuntimeChunkPath(distRoot: string) {
   throw new Error(`failed to resolve request globals runtime chunk under ${distRoot}`)
 }
 
-describe.sequential('e2e app: request clients request runtime (build)', () => {
+describe('e2e app: request clients request runtime (build)', { concurrent: false }, () => {
   for (const testCase of CASES) {
     for (const jsFormat of JS_FORMATS) {
       it(`emits installer runtime chunk and top-level bindings for ${testCase.label} in ${jsFormat}`, async () => {

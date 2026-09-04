@@ -279,7 +279,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close().catch(() => {})
 }
 
-describe.sequential('e2e app: template-wevu-regression layouts runtime', () => {
+describe('e2e app: template-wevu-regression layouts runtime', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

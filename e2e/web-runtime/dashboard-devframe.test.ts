@@ -102,7 +102,7 @@ async function launchDashboardBrowser() {
   }
 }
 
-describe.sequential('Dashboard Devframe browser regression', () => {
+describe('Dashboard Devframe browser regression', () => {
   let browser: Browser | undefined
   let context: BrowserContext | undefined
   let page: Page | undefined

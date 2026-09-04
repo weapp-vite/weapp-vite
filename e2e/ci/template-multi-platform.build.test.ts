@@ -26,7 +26,7 @@ async function buildTemplate(platform: string) {
   })
 }
 
-describe.sequential('multi-platform template build matrix', () => {
+describe('multi-platform template build matrix', { concurrent: false }, () => {
   it.each(BUILD_VERIFICATION_CAPABILITIES)(
     'builds the template for $id with stable platform semantics',
     async ({ id, expectation }) => {

@@ -35,7 +35,7 @@ function expectNoDonutLayoutMarkers(output: string) {
   }
 }
 
-describe.sequential('layout runtime switching build integration', () => {
+describe('layout runtime switching build integration', { concurrent: false }, () => {
   beforeAll(async () => {
     await buildTemplate(TEMPLATE_ROOT, 'ci:layouts-runtime-switching:template-wevu-regression')
     await runWevuRuntimeBuild('weapp')

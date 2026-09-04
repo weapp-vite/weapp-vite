@@ -42,7 +42,7 @@ async function runRouteE2E(miniProgram: any, route: string) {
   return result
 }
 
-describe.sequential('wevu runtime function props (weapp e2e)', () => {
+describe('wevu runtime function props (weapp e2e)', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

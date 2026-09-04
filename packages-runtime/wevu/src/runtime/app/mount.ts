@@ -1,3 +1,4 @@
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import type { MutationRecord, WatchOptions, WatchStopHandle } from '../../reactivity'
 import type {
   AppConfig,
@@ -64,6 +65,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
   resolvedMethods: M
   appConfig: AppConfig
   setDataOptions: CreateAppOptions<D, C, M>['setData']
+  bindingManifest?: WevuRuntimeBindingManifestV1
 }) {
   const {
     data,
@@ -71,6 +73,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     resolvedMethods,
     appConfig,
     setDataOptions,
+    bindingManifest,
   } = options
 
   return (adapter?: MiniProgramAdapter): RuntimeInstance<D, C, M> => {
@@ -238,6 +241,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
       debug: mergedDebug,
       debugWhen: mergedDebugWhen,
       debugSampleRate,
+      bindingManifest,
       loopWarning,
       targetLabel,
       runTracker: () => tracker?.(),

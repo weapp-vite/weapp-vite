@@ -25,7 +25,7 @@ function isBridgeWrapperInfraError(error: unknown) {
   return isDevtoolsHttpPortError(error) || isDevtoolsSimulatorBootError(error)
 }
 
-describe.sequential('automator bridge wrapper hmr (ide)', () => {
+describe('automator bridge wrapper hmr (ide)', { concurrent: false }, () => {
   let dev: ReturnType<typeof startDevProcess> | undefined
   let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
   let originalWxml = ''

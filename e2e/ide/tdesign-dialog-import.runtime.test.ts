@@ -325,7 +325,7 @@ afterAll(async () => {
   await resetMiniProgram()
 })
 
-describe.sequential('e2e app: tdesign-dialog-import (runtime)', () => {
+describe('e2e app: tdesign-dialog-import (runtime)', { concurrent: false }, () => {
   it('keeps bare dialog import callable in DevTools runtime', async (ctx) => {
     const opened = await openRenderedDialogPage(ctx, '/pages/dialog-bare/index', '#dialog-bare-root')
     const collector = attachRuntimeErrorCollector(opened.miniProgram)

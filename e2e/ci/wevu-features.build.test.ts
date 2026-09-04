@@ -15,7 +15,7 @@ async function runBuild() {
   })
 }
 
-describe.sequential('e2e app: wevu-features (build)', () => {
+describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
   it('builds useAttrs showcase app and emits expected outputs', async () => {
     await runBuild()
 

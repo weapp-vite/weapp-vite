@@ -74,7 +74,7 @@ vi.mock('../scopedSlot', () => ({
 }))
 
 function createBaseOptions(overrides: Record<string, any> = {}) {
-  return {
+  const options = {
     ctx: {
       moduleGraphService: createModuleGraphService(),
       configService: {
@@ -128,6 +128,11 @@ function createBaseOptions(overrides: Record<string, any> = {}) {
     createReadAndParseSfcOptions: vi.fn(),
     ...overrides,
   } as any
+  for (const cached of options.compilationCache.values()) {
+    cached.pageLayoutSignature ??= 'null'
+    cached.appShellSignature ??= 'null'
+  }
+  return options
 }
 
 describe('transformVueLikeFile cache reuse', () => {

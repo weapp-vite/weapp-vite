@@ -58,7 +58,7 @@ function resolvePlatforms() {
 const PLATFORM_LIST = resolvePlatforms()
 const describeAutoImportSuite = SHOULD_SKIP_UNSUPPORTED_PLATFORM
   ? describe.skip
-  : describe.sequential
+  : describe
 
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
@@ -341,7 +341,7 @@ function expectTargetedHmrEmit(output: string) {
   expect(Number(pendingCount)).toBeLessThan(Number(resolvedCount))
 }
 
-describeAutoImportSuite('auto import local components (e2e)', () => {
+describeAutoImportSuite('auto import local components (e2e)', { concurrent: false }, () => {
   it.each(PLATFORM_LIST)(
     'covers local/resolver auto-import for %s build output',
     async (platform) => {

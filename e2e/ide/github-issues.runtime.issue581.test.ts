@@ -88,7 +88,7 @@ async function expectIssue581DistWxmlContract() {
   expect(pageWxml).toContain('data-issue581-name="{{value.name}}"')
 }
 
-describe.sequential('e2e app: github-issues / issue #581', () => {
+describe('e2e app: github-issues / issue #581', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

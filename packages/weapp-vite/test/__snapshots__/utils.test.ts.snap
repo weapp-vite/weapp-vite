@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`utils > getProjectConfig > 'vite-native' 1`] = `
+exports[`utils > getProjectConfig > vite-native 1`] = `
 [
   {
     "op": "add",
@@ -19,7 +19,7 @@ exports[`utils > getProjectConfig > 'vite-native' 1`] = `
 ]
 `;
 
-exports[`utils > getProjectConfig > 'vite-native-skyline' 1`] = `
+exports[`utils > getProjectConfig > vite-native-skyline 1`] = `
 [
   {
     "op": "add",
@@ -38,7 +38,7 @@ exports[`utils > getProjectConfig > 'vite-native-skyline' 1`] = `
 ]
 `;
 
-exports[`utils > getProjectConfig > 'vite-native-ts' 1`] = `
+exports[`utils > getProjectConfig > vite-native-ts 1`] = `
 [
   {
     "op": "add",
@@ -50,7 +50,7 @@ exports[`utils > getProjectConfig > 'vite-native-ts' 1`] = `
 ]
 `;
 
-exports[`utils > getProjectConfig > 'vite-native-ts-skyline' 1`] = `
+exports[`utils > getProjectConfig > vite-native-ts-skyline 1`] = `
 [
   {
     "op": "add",

@@ -52,7 +52,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('wevu watch controls (e2e)', () => {
+describe('wevu watch controls (e2e)', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

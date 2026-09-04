@@ -104,7 +104,7 @@ afterEach(async () => {
   await fs.remove(HMR_PROFILE_PATH)
 })
 
-describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
+describe('hmr sharedChunks auto diagnostics (dev watch)', { concurrent: false }, () => {
   it('keeps direct page edits scoped across stable shared chunks', async () => {
     await fs.remove(DIST_ROOT)
     const originalConfig = await fs.readFile(CONFIG_PATH, 'utf8')

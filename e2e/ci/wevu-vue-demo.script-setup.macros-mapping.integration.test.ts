@@ -16,7 +16,7 @@ async function runBuild() {
   })
 }
 
-describe.sequential('e2e app: wevu-vue-demo (script setup macros mapping)', () => {
+describe('e2e app: wevu-vue-demo (script setup macros mapping)', { concurrent: false }, () => {
   it('maps defineProps/withDefaults/defineEmits/defineExpose and imported components to mini-program outputs', async () => {
     await runBuild()
 

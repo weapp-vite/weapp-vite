@@ -75,7 +75,7 @@ const PAGE_CASES = [
   },
 ] as const
 
-describe.sequential('e2e app: wevu-runtime-demo request globals (build)', () => {
+describe('e2e app: wevu-runtime-demo request globals (build)', { concurrent: false }, () => {
   for (const jsFormat of JS_FORMATS) {
     it(`keeps top-level request globals bindings and resolves wevu/web-apis usage for request-globals pages in ${jsFormat}`, async () => {
       await runBuild(jsFormat)

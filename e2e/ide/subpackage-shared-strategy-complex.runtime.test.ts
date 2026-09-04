@@ -170,7 +170,7 @@ function createRuntimeSuite(options: FixtureSuiteOptions) {
     throw new Error(`Failed to launch route ${routeCase.route}: ${compactErrorMessage(lastError ?? 'route data not ready')}`)
   }
 
-  describe.sequential(suiteName, () => {
+  describe(suiteName, { concurrent: false }, () => {
     afterAll(async () => {
       await closeSharedMiniProgram()
     })

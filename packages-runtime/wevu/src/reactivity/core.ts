@@ -118,21 +118,48 @@ class EffectScopeImpl implements EffectScope {
     }
     this.active = false
 
-    for (const effect of this.effects) {
-      stop(effect)
-    }
-    this.effects.length = 0
-
-    for (const cleanup of this.cleanups) {
-      cleanup()
-    }
-    this.cleanups.length = 0
-
-    if (this.scopes) {
-      for (const scope of this.scopes) {
-        scope.stop()
+    let firstError: unknown
+    let hasError = false
+    const recordError = (error: unknown) => {
+      if (hasError) {
+        return
       }
-      this.scopes.length = 0
+      firstError = error
+      hasError = true
+    }
+
+    const effects = this.effects.splice(0)
+    for (const effect of effects) {
+      try {
+        stop(effect)
+      }
+      catch (error) {
+        recordError(error)
+      }
+    }
+
+    const cleanups = this.cleanups.splice(0)
+    for (const cleanup of cleanups) {
+      try {
+        cleanup()
+      }
+      catch (error) {
+        recordError(error)
+      }
+    }
+
+    const scopes = this.scopes
+    this.scopes = undefined
+    if (scopes) {
+      for (const scope of scopes) {
+        try {
+          scope.stop()
+        }
+        catch (error) {
+          recordError(error)
+        }
+      }
+      scopes.length = 0
     }
 
     if (this.parent?.scopes) {
@@ -142,6 +169,10 @@ class EffectScopeImpl implements EffectScope {
       }
     }
     this.parent = undefined
+
+    if (hasError) {
+      throw firstError
+    }
   }
 }
 

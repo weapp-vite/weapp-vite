@@ -49,6 +49,7 @@ function createBaseOptions(): {
       latestSnapshot,
       latestComputedSnapshot: Object.create(null),
       needsFullSnapshot,
+      bindingDiagnosticsEnabled: false,
       emitDebug,
       runDiffUpdate,
     } satisfies PatchUpdateOptions,

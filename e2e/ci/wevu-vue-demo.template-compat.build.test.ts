@@ -16,7 +16,7 @@ async function runBuild() {
   })
 }
 
-describe.sequential('e2e app: wevu-vue-demo (template compat)', () => {
+describe('e2e app: wevu-vue-demo (template compat)', { concurrent: false }, () => {
   it('compiles tuple/object destructuring, object-map v-for and array mutations', async () => {
     await runBuild()
 

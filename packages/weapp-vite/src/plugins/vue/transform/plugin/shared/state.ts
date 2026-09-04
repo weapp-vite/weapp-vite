@@ -1,19 +1,14 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
-import type { MpPlatform } from '../../../../../types'
-import { escapeStringRegexp } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { getWxmlDirectivePrefix } from '../../../../../platform'
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { toAbsoluteId } from '../../../../../utils/toAbsoluteId'
 import { mayNeedWevuPageFeatureAnalysis } from '../../../../wevuPageFeatureHints'
 import { isVueLikeFile } from '../../shared'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
-const TEMPLATE_MUSTACHE_HINT = '{{'
-const TEMPLATE_EVENT_HINT_RE = /\b(?:bind|catch)[A-Za-z:_-]+=/
 const PAGE_SCROLL_HOOK_HINT = 'onPageScroll'
 
 interface VueTransformCacheEntry {
@@ -23,6 +18,8 @@ interface VueTransformCacheEntry {
   autoRoutesSignature?: string
   refreshToken?: number
   styleIndependentSignature?: string
+  pageLayoutSignature?: string
+  appShellSignature?: string
 }
 
 export function resolveScriptlessVueEntryStub(isPage: boolean) {
@@ -69,24 +66,6 @@ export function isVueStyleOnlyDirtyReasonSummary(dirtyReasonSummary: string[] | 
 
 export function isVueCssImporterDirtyReasonSummary(dirtyReasonSummary: string[] | undefined) {
   return dirtyReasonSummary?.some(item => item.startsWith('css-importer')) === true
-}
-
-export function mayNeedTransformSetDataPick(
-  template: string,
-  options?: {
-    platform?: MpPlatform
-  },
-) {
-  if (template.includes(TEMPLATE_MUSTACHE_HINT)) {
-    return true
-  }
-
-  const directivePrefix = getWxmlDirectivePrefix(options?.platform)
-  if (new RegExp(`${escapeStringRegexp(directivePrefix)}:`).test(template)) {
-    return true
-  }
-
-  return TEMPLATE_EVENT_HINT_RE.test(template)
 }
 
 export function mayNeedTransformPageFeatureInjection(script: string) {

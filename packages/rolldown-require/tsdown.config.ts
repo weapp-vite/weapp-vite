@@ -12,6 +12,7 @@ export default defineConfig({
     }
   },
   deps: {
+    resolveDepSubpath: true,
     neverBundle: ['#module-sync-enabled'],
   },
   target: 'node20',

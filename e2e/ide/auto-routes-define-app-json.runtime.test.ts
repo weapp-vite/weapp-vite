@@ -327,7 +327,7 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('auto-routes define app json runtime (weapp e2e)', () => {
+describe('auto-routes define app json runtime (weapp e2e)', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

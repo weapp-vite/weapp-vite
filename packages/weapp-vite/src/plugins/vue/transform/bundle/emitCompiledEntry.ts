@@ -2,7 +2,7 @@ import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleStat
 import { WEAPP_VITE_RUNTIME_VIRTUAL_IDS } from '@weapp-core/constants'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { rewriteWevuInternalRuntimeImportCode } from '../../../core/helpers'
-import { applyAppShell, hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
+import { hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
 import { emitSfcScriptAssetReplacingBundleEntry } from '../emitAssets'
 import { assertTemplateHasDefaultSlot, isLayoutFile } from '../pageLayout'
 import {
@@ -141,7 +141,6 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
         })
       },
     })
-    applyAppShell(result, filename, state.appShell)
   }
 
   if (isLayoutFile(filename, configService)) {
@@ -236,6 +235,7 @@ export async function emitCompiledVueEntryAssets(
     pluginCtx,
     configService,
     compileOptionsState,
+    appShell: state.appShell,
   })
   if (!emitState) {
     return

@@ -806,7 +806,7 @@ async function dumpCapturedWxml(
   ])
 }
 
-describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template parity', () => {
+describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template parity', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedProjectSessions()
   })

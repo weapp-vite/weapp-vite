@@ -13,7 +13,7 @@ const APP_ROOT = path.join(
   'test/fixture-projects/weapp-vite/subPackages-shared-styles',
 )
 
-describe.sequential('main-package shared styles build e2e', () => {
+describe('main-package shared styles build e2e', { concurrent: false }, () => {
   it.each(BUILD_VERIFICATION_CAPABILITIES)(
     'emits and injects shared style entries for $id',
     async ({ id, expectation: { platform, styleExt } }) => {

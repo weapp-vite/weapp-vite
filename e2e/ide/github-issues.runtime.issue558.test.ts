@@ -63,7 +63,7 @@ async function readIssue558WxmlBundle() {
   return contents.join('\n')
 }
 
-describe.sequential('e2e app: github-issues / issue #558', () => {
+describe('e2e app: github-issues / issue #558', { concurrent: false }, () => {
   beforeAll(async () => {
     process.env[ISSUE_558_AUGMENTED_ENV] = 'true'
     await prepareGithubIssuesBuild()

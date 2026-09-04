@@ -66,7 +66,7 @@ async function assertCoverageForRoute(miniProgram: any, route: string) {
   expect(details.failedApis).toEqual([])
 }
 
-describe.sequential('wevu composition api (weapp e2e)', () => {
+describe('wevu composition api (weapp e2e)', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

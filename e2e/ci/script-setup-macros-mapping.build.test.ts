@@ -21,7 +21,7 @@ async function runBuild() {
   })
 }
 
-describe.sequential('e2e app: script-setup-macros-mapping (build)', () => {
+describe('e2e app: script-setup-macros-mapping (build)', { concurrent: false }, () => {
   it('covers native component + wevu SFC script setup macro mappings in TS/JS variants', async () => {
     await runBuild()
 

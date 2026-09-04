@@ -39,7 +39,7 @@ async function isRenderedMarkerReady(page: any, selector: string, dataset: Recor
   }
 }
 
-describe.sequential('e2e app: github-issues / app shell runtime', () => {
+describe('e2e app: github-issues / app shell runtime', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

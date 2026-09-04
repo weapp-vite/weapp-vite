@@ -40,7 +40,7 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-describe.sequential('app vue hmr alias watch shared chunk rebuild', () => {
+describe('app vue hmr alias watch shared chunk rebuild', { concurrent: false }, () => {
   it('rewrites common.js after editing the aliased bootstrap dependency', async () => {
     const fixtureSource = path.resolve(__dirname, '../../../e2e-apps/app-vue-hmr-alias')
     const tempProject = await createTempFixtureProject(fixtureSource, 'app-vue-hmr-alias-watch')

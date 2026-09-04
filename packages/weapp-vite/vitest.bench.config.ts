@@ -19,6 +19,10 @@ export default defineProject({
       },
     ],
     globals: true,
+    outputFile: {
+      json: `./bench/results/${Date.now()}.json`,
+    },
+    reporters: ['default', 'json'],
     testTimeout: 60_000,
     coverage: {
       enabled: false,
@@ -31,7 +35,6 @@ export default defineProject({
         '**/node_modules/**',
         '**/dist/**',
       ],
-      outputJson: `./bench/results/${Date.now()}.json`,
     },
   },
 })

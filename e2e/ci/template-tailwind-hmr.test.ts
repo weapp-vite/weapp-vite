@@ -161,7 +161,7 @@ afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
 
-describe.sequential('template Tailwind CSS HMR (dev watch)', () => {
+describe('template Tailwind CSS HMR (dev watch)', { concurrent: false }, () => {
   for (const testCase of hmrCases) {
     it(`updates generated CSS after class changes in ${testCase.name}`, async () => {
       const fixture = await createTemplateFixture(testCase)

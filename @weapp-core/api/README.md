@@ -388,7 +388,7 @@ resetApiMock(localWpi)
 ## 行为说明
 
 - **只在不传回调时返回 Promise**
-- 同步 API（`*Sync`）与事件 API（`onXxx/offXxx`）直接透传
+- 同步直接返回 API（包括无 `Sync` 后缀的宿主同步 API）、`*Sync` API 与事件 API（`onXxx/offXxx`）直接透传
 - 可通过 `api.resolveTarget('showModal')` 查看当前平台目标方法与可用性
 - 可通过 `api.supports('showModal')` 快速判断当前平台是否支持调用
 - 缺失 API 时：

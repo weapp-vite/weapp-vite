@@ -307,7 +307,7 @@ export default defineConfig({
 ## `weapp.wevu.autoSetDataPick` {#weapp-wevu-auto-setdata-pick}
 - **类型**：`boolean`
 - **默认值**：`false`
-- **作用**：在编译阶段从模板表达式自动提取渲染相关顶层 key，并注入到组件/页面的 `setData.pick`，减少非渲染字段参与快照与下发。
+- **作用**：由 `@wevu/compiler` 在生成模板时同步产出版本化 Binding Manifest，并据此向组件/页面注入 `setData.pick`，减少非渲染字段参与快照与下发。
 
 > [!IMPORTANT]
 > 该能力默认关闭，不会在未配置时自动开启。只有显式设置 `weapp.wevu.autoSetDataPick: true` 才会生效。
@@ -333,6 +333,10 @@ export default defineConfig({
 - 仅对 `defineComponent/createWevuComponent` 产物生效，`app.vue` 不会注入。
 - 若组件已显式声明 `setData.pick` 数组，会与自动推导结果做去重合并。
 - 若 `setData` 为变量或表达式，例如 `setData: externalConfig`，会包裹为 `{ pick: [...], ...externalConfig }` 以保持兼容。
+- 编译器会在同一次模板 AST 遍历中记录完整 IR：每个 binding 的输出路径、逐 dependency 更新策略、`root` / `for` / `slot-owner` / `slot-props` 作用域和源码位置；`weapp-vite` 不再解析生成后的 WXML 来反推 key。
+- 编译结果保留完整 IR，构建产物只注入运行时更新所需的精简 manifest；生产构建移除 binding 类型、dependency、scope 和源码行列，开发态额外保留源码行列用于诊断。
+- 无法静态证明依赖路径的 dependency 会显式标记为 `snapshot-fallback`，继续使用现有快照 diff 保证正确性。
+- scoped slot 的 binding 归属各自生成的子组件 manifest，不再依赖自动 binding 数量阈值做裁剪。
 - 建议在“状态很大但模板只使用少量字段”的页面优先开启；若模板几乎使用全部字段，收益通常不明显。
 
 ### FAQ
@@ -347,7 +351,7 @@ export default defineConfig({
 不会。自动推导结果会与已有 `setData.pick` 做去重合并，不会丢掉你手写的 key。
 
 #### Q: 怎么快速确认它是否生效？
-先执行一次构建，然后检查页面/组件产物 JS 中是否出现 `setData.pick`。若模板含调用表达式，通常也会看到 `__wv_bind_*` 被写入 `pick` 数组。
+先执行一次构建，然后检查页面/组件产物 JS 中是否同时包含 `version: 1` 的 binding manifest 与 `setData.pick`。模板调用表达式对应的 `__wv_bind_*` 会直接来自编译器 manifest，不再由构建工具解析 WXML 后补写。
 
 ## 关联阅读
 

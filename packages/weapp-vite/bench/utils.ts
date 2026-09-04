@@ -2,12 +2,23 @@ import type { Options } from 'tinybench'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { fs } from '@weapp-core/shared/fs'
+import { test } from 'vitest'
 
 export const defaultBenchOptions: Options = {
   time: 200,
   iterations: 20,
   warmupTime: 50,
   warmupIterations: 5,
+}
+
+export function defineBenchmark(
+  name: string,
+  task: () => unknown | Promise<unknown>,
+  options: Options = defaultBenchOptions,
+) {
+  test(name, async ({ bench }) => {
+    await bench(name, options, task).run()
+  })
 }
 
 export function createWxmlFixture(options?: {

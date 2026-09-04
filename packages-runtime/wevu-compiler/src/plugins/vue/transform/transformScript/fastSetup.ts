@@ -7,7 +7,7 @@ const EXPORT_DEFAULT_PURE_RE = /export\s+default\s+\/\*@__PURE__\*\/\s*/
 const JSON_MACRO_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
 const PAGE_META_RE = /\bdefinePageMeta\s*\(/
 
-function hasMetadataInjectionOptions(options: TransformScriptOptions | undefined) {
+function hasMetadataInjectionOptions(source: string, options: TransformScriptOptions | undefined) {
   const hasWevuDefaults = options?.wevuDefaults && Object.keys(options.wevuDefaults).length > 0
   return Boolean(
     options?.isTypeScript
@@ -25,7 +25,10 @@ function hasMetadataInjectionOptions(options: TransformScriptOptions | undefined
     || options?.propsAliases
     || options?.propsDerivedKeys?.length
     || options?.relaxStructuredTypeOnlyProps
-    || options?.scopedSlotHostProperties,
+    || options?.bindingManifest
+    || options?.pageLayout
+    || options?.scopedSlotHostProperties
+    || /\buseSlots\b/.test(source),
   )
 }
 
@@ -106,7 +109,7 @@ export function tryFastTransformCompiledScriptSetup(
   source: string,
   options: TransformScriptOptions | undefined,
 ): TransformResult | undefined {
-  if (hasMetadataInjectionOptions(options)) {
+  if (hasMetadataInjectionOptions(source, options)) {
     return undefined
   }
   if (JSON_MACRO_RE.test(source) || PAGE_META_RE.test(source)) {

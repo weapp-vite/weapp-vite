@@ -3,7 +3,7 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { DIST_ROOT, runBuild } from '../wevu-runtime.utils'
 
-describe.sequential('wevu runtime inline object reactivity integration', () => {
+describe('wevu runtime inline object reactivity integration', { concurrent: false }, () => {
   it('emits identity restore metadata for v-for inline object params', async () => {
     await runBuild('weapp')
 

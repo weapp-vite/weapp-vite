@@ -1,5 +1,7 @@
 import type { Expression } from '@weapp-vite/ast/babelTypes'
+import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
+import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { MiniProgramPlatform } from './platform'
 
 export type FunctionPropNameMatcher = string | RegExp
@@ -13,11 +15,11 @@ export interface ScopedSlotComponentAsset {
   hostComponentName?: string
   slotKey: string
   template: string
+  script: string
+  scriptMap?: EncodedSourceMapLike | null
+  bindingManifest: WevuBindingManifestV1
   componentGenerics?: Record<string, true>
-  classStyleBindings?: ClassStyleBinding[]
   classStyleWxs?: boolean
-  inlineExpressions?: InlineExpressionAsset[]
-  templateRefs?: TemplateRefBinding[]
 }
 
 /**
@@ -53,6 +55,7 @@ export interface InlineExpressionAsset {
 export interface TemplateCompileResult {
   code: string
   diagnostics: CompilerDiagnostic[]
+  bindingManifest: WevuBindingManifestV1
   scopedSlotComponents?: ScopedSlotComponentAsset[]
   slotFallbackWrapperComponent?: SlotFallbackWrapperComponentAsset
   componentGenerics?: Record<string, true>
@@ -63,6 +66,7 @@ export interface TemplateCompileResult {
   layoutHosts?: LayoutHostBinding[]
   inlineExpressions?: InlineExpressionAsset[]
   functionPropPaths?: string[]
+  hasSlotOutlet?: boolean
 }
 
 /**
@@ -72,6 +76,8 @@ export interface TransformContext {
   source: string
   filename: string
   diagnostics: CompilerDiagnostic[]
+  bindingManifest: WevuBindingManifestV1
+  runtimeBindingManifest: WevuRuntimeBindingManifestMode
   platform: MiniProgramPlatform
   isPage?: boolean
   /**
@@ -95,6 +101,7 @@ export interface TransformContext {
   scopeStack: Array<Set<string>>
   slotPropStack: Array<Record<string, string>>
   rewriteScopedSlot: boolean
+  hasSlotOutlet: boolean
   classStyleRuntime: ClassStyleRuntime
   objectLiteralBindMode: ObjectLiteralBindMode
   mustacheInterpolation: MustacheInterpolationMode
@@ -165,6 +172,7 @@ export interface TemplateCompileOptions {
   objectLiteralBindMode?: ObjectLiteralBindMode
   mustacheInterpolation?: MustacheInterpolationMode
   formatWxml?: boolean
+  runtimeBindingManifest?: WevuRuntimeBindingManifestMode
   wxsExtension?: string
   classStyleWxsSrc?: string
   functionPropNames?: Iterable<FunctionPropNameMatcher>

@@ -153,7 +153,7 @@ const count = 1
     }
   })
 
-  it('uses owner id pick for oversized scoped slot host pages even when autoSetDataPick is enabled', async () => {
+  it('keeps oversized scoped slot host bindings without heuristic pruning', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-setdata-pick-scoped-slot-large-'))
     const srcRoot = path.join(root, 'src')
     const attrs = Array.from({ length: 201 }, (_, index) => `:p${index}="{ value: count + ${index} }"`).join('\n    ')
@@ -187,8 +187,8 @@ const count = 1
       expect(pickSection).toContain(`"${WEVU_SLOT_OWNER_ID_PROP}"`)
       expect(pickSection).toContain(`"${WEVU_SLOT_SCOPE_KEY}"`)
       expect(pickSection).toContain('"count"')
-      expect(pickSection).not.toContain('"__wv_bind_0"')
-      expect(pickSection).not.toContain('"__wv_bind_200"')
+      expect(pickSection).toContain('"__wv_bind_0"')
+      expect(pickSection).toContain('"__wv_bind_200"')
     }
     finally {
       await fs.remove(root)

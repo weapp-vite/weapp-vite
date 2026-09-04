@@ -26,7 +26,7 @@ async function readScopedSlotWxml() {
   return contents.join('\n')
 }
 
-describe.sequential('e2e app: github-issues / issue #829', () => {
+describe('e2e app: github-issues / issue #829', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)

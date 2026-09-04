@@ -12,7 +12,7 @@ import {
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
 
-describe.sequential('e2e app: github-issues / issue #627', () => {
+describe('e2e app: github-issues / issue #627', { concurrent: false }, () => {
   let miniProgram: any = null
 
   beforeAll(async () => {

@@ -44,7 +44,7 @@ async function readRuntimeState() {
   }) as { count: number, identity: string, route: string }
 }
 
-describe.sequential('wevu JSX/TSX stateful HMR in real WeChat DevTools', () => {
+describe('wevu JSX/TSX stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   beforeAll(async () => {
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()

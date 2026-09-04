@@ -33,7 +33,7 @@ async function waitForData(page: any, path: string, expected: unknown, timeoutMs
   throw new Error(`Timed out waiting ${path}=${JSON.stringify(expected)}; latest=${JSON.stringify(latest)}`)
 }
 
-describe.sequential(`wevu JSX/TSX runtime [${runtimeProvider}]`, () => {
+describe(`wevu JSX/TSX runtime [${runtimeProvider}]`, { concurrent: false }, () => {
   beforeAll(async () => {
     await buildWevuJsxApp('weapp', 'cjs')
     miniProgram = await launchAutomator({
