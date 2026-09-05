@@ -192,11 +192,24 @@ export function createAnalyzeChunkGraphView(
   const desiredChunks = [...new Map(
     [...matchingChunks, ...neighborChunks].map(node => [node.id, node]),
   ).values()]
-  const chunkBudget = Math.max(0, options.maxNodes - packageNodes.length)
-  const visibleChunks = desiredChunks.slice(0, chunkBudget)
-  const visiblePackageIds = new Set(visibleChunks.map(node => node.packageId))
+  const packageIds = new Set(packageNodes.map(node => node.packageId))
+  const visibleChunks: AnalyzeChunkGraphNode[] = []
+  const visiblePackageIds = new Set<string>()
+  let remainingNodes = options.maxNodes
+  for (const chunk of desiredChunks) {
+    const addsPackage = packageIds.has(chunk.packageId) && !visiblePackageIds.has(chunk.packageId)
+    const nodeCost = addsPackage ? 2 : 1
+    if (nodeCost > remainingNodes) {
+      continue
+    }
+    visibleChunks.push(chunk)
+    if (addsPackage) {
+      visiblePackageIds.add(chunk.packageId)
+    }
+    remainingNodes -= nodeCost
+  }
   const visiblePackages = packageNodes.filter(node => visiblePackageIds.has(node.packageId))
-  const nodes = [...visiblePackages, ...visibleChunks].slice(0, options.maxNodes)
+  const nodes = [...visiblePackages, ...visibleChunks]
   const nodeIds = new Set(nodes.map(node => node.id))
   const desiredPackageIds = new Set(desiredChunks.map(node => node.packageId))
   const desiredNodeIds = new Set([

@@ -236,16 +236,15 @@ async function initializeDashboardDevframe() {
     baseURL: DASHBOARD_DEVFRAME_BASE,
     callTimeout: 30_000,
   })
-  if (!await client.ensureTrusted()) {
-    client.close?.()
-    dashboardConnectionStatus.value = 'unauthorized'
-    throw new DashboardAuthorizationError('Devframe 未授权当前 Dashboard 连接。')
-  }
-
-  const session = createDashboardSession(client)
-  activeSession = session
-  syncConnectionState(client)
+  let session: DashboardConnectionSession | undefined
   try {
+    if (!await client.ensureTrusted()) {
+      throw new DashboardAuthorizationError('Devframe 未授权当前 Dashboard 连接。')
+    }
+
+    session = createDashboardSession(client)
+    activeSession = session
+    syncConnectionState(client)
     await hydrateDashboardState(session)
     if (session.disposed) {
       throw new Error('Devframe Dashboard 连接在初始化期间断开。')
@@ -255,7 +254,12 @@ async function initializeDashboardDevframe() {
   }
   catch (error) {
     const unauthorized = client.status === 'unauthorized'
-    disposeSession(session, true)
+    if (session) {
+      disposeSession(session, true)
+    }
+    else {
+      client.close?.()
+    }
     if (unauthorized && !(error instanceof DashboardAuthorizationError)) {
       throw new DashboardAuthorizationError('Devframe 未授权当前 Dashboard 连接。', { cause: error })
     }

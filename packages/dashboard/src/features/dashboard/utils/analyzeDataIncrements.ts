@@ -52,7 +52,26 @@ function createModuleComparisonKey(source: string, sourceType: ModuleSourceType)
   const origin = sourceType === 'node_modules' || sourceType === 'workspace'
     ? 'dependency'
     : sourceType
-  return `${origin}\0${formatModuleIdentifier(source)}`
+  const queryIndex = source.indexOf('?')
+  let canonicalSource = (queryIndex === -1 ? source : source.slice(0, queryIndex))
+    .replaceAll('\\', '/')
+    .replace(/^\0/, '')
+  if (origin === 'dependency') {
+    const nodeModulesMarker = '/node_modules/'
+    const nodeModulesIndex = canonicalSource.lastIndexOf(nodeModulesMarker)
+    if (nodeModulesIndex >= 0) {
+      canonicalSource = canonicalSource.slice(nodeModulesIndex + nodeModulesMarker.length)
+    }
+    else if (canonicalSource.startsWith('node_modules/')) {
+      canonicalSource = canonicalSource.slice('node_modules/'.length)
+    }
+    else if (sourceType === 'workspace') {
+      const workspaceMatch = canonicalSource.match(/(?:^|\/)packages-runtime\/(wevu\/.*)$/)
+        ?? canonicalSource.match(/(?:^|\/)(@[^/]+\/[^/]+\/dist\/.*)$/)
+      canonicalSource = workspaceMatch?.[1] ?? canonicalSource
+    }
+  }
+  return `${origin}\0${canonicalSource}`
 }
 
 export function createIncrementAttribution(options: {

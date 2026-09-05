@@ -137,7 +137,9 @@ function createFakeClient(
     get status() {
       return status
     },
-    close: vi.fn(),
+    close: vi.fn(() => {
+      status = 'disconnected'
+    }),
     ensureTrusted: vi.fn(async () => true),
     events: {
       on: vi.fn((event: string, listener: unknown) => {
@@ -347,6 +349,91 @@ describe('dashboard Devframe client', () => {
     expect(transport.dashboardConnectionStatus.value).toBe('unauthorized')
   })
 
+  it('closes a cancelled authorization when ensureTrusted times out without reconnecting', async () => {
+    vi.useFakeTimers()
+    const control = createFakeClient(createResult('unauthorized'))
+    const timeoutError = new Error('Timed out waiting for trust')
+    vi.mocked(control.client.ensureTrusted).mockImplementation(() => {
+      const { promise, reject } = Promise.withResolvers<boolean>()
+      setTimeout(reject, 60_000, timeoutError)
+      return promise
+    })
+    connectDevframeMock.mockResolvedValue(control.client)
+
+    const transport = await loadDashboardTransport()
+    const rejection = expect(transport.connectDashboardDevframe()).rejects.toMatchObject({
+      name: 'DashboardAuthorizationError',
+      cause: timeoutError,
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    control.emitStatus('unauthorized')
+    expect(control.client.close).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(60_000)
+    await rejection
+    expect(control.client.close).toHaveBeenCalledTimes(1)
+    expect(transport.dashboardConnectionStatus.value).toBe('unauthorized')
+    expect(transport.dashboardAnalyzeSnapshot.value).toBeNull()
+
+    control.emitStatus('connected')
+    control.emitDashboardState()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(connectDevframeMock).toHaveBeenCalledTimes(1)
+    expect(transport.dashboardConnectionStatus.value).toBe('unauthorized')
+    expect(transport.dashboardAnalyzeSnapshot.value).toBeNull()
+  })
+
+  it('allows OTP authorization to recover an initially unauthorized connection', async () => {
+    vi.useFakeTimers()
+    const authorized = createResult('authorized')
+    const control = createFakeClient(authorized)
+    vi.mocked(control.client.ensureTrusted).mockImplementation(() => new Promise((resolve) => {
+      control.emitStatus('unauthorized')
+      setTimeout(() => {
+        control.emitStatus('connected')
+        resolve(true)
+      }, 100)
+    }))
+    connectDevframeMock.mockResolvedValue(control.client)
+
+    const transport = await loadDashboardTransport()
+    const connection = transport.connectDashboardDevframe()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(control.client.close).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(100)
+    await connection
+    expect(transport.dashboardAnalyzeSnapshot.value?.current).toEqual(authorized)
+    expect(transport.dashboardConnectionStatus.value).toBe('connected')
+    expect(control.client.close).not.toHaveBeenCalled()
+    expect(connectDevframeMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes and retries a transport failure while waiting for trust', async () => {
+    vi.useFakeTimers()
+    const failed = createFakeClient(createResult('failed'))
+    const recovered = createFakeClient(createResult('recovered'))
+    const transportError = new Error('connection lost')
+    vi.mocked(failed.client.ensureTrusted).mockImplementation(async () => {
+      failed.emitStatus('disconnected', transportError)
+      throw transportError
+    })
+    connectDevframeMock
+      .mockResolvedValueOnce(failed.client)
+      .mockResolvedValueOnce(recovered.client)
+
+    const transport = await loadDashboardTransport()
+    await expect(transport.connectDashboardDevframe()).rejects.toBe(transportError)
+    expect(failed.client.close).toHaveBeenCalledTimes(1)
+    expect(transport.dashboardConnectionStatus.value).toBe('error')
+
+    await vi.advanceTimersByTimeAsync(250)
+    expect(connectDevframeMock).toHaveBeenCalledTimes(2)
+    expect(transport.dashboardAnalyzeSnapshot.value?.current.packages[0]?.id).toBe('recovered')
+    expect(transport.dashboardConnectionStatus.value).toBe('connected')
+    expect(transport.dashboardConnectionError.value).toBeNull()
+  })
+
   it('allows an immediate retry after the initial state query fails', async () => {
     const failed = createFakeClient(createResult('failed'))
     failed.call.mockRejectedValueOnce(new Error('initial query failed'))
@@ -358,6 +445,13 @@ describe('dashboard Devframe client', () => {
     const transport = await loadDashboardTransport()
     await expect(transport.connectDashboardDevframe()).rejects.toThrow('initial query failed')
     await expect(transport.connectDashboardDevframe()).resolves.toBeUndefined()
+
+    expect(failed.client.close).toHaveBeenCalledTimes(1)
+    failed.emitStatus('connected', new Error('stale connection event'))
+    failed.emitDashboardState()
+    await vi.waitFor(() => {
+      expect(transport.dashboardConnectionError.value).toBeNull()
+    })
 
     expect(connectDevframeMock).toHaveBeenCalledTimes(2)
     expect(transport.dashboardAnalyzeSnapshot.value?.current.packages[0]?.id).toBe('recovered')

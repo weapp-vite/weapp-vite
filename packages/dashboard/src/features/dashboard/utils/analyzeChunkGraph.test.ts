@@ -89,6 +89,96 @@ describe('analyze chunk graph', () => {
     ]))
   })
 
+  it.each([
+    { packageCount: 80, maxNodes: 80, packageId: 'all', query: 'pkg-0/entry.js', visiblePackages: 1, truncatedNodes: 0 },
+    { packageCount: 80, maxNodes: 80, packageId: 'pkg-0', query: 'pkg-0/entry.js', visiblePackages: 1, truncatedNodes: 0 },
+    { packageCount: 221, maxNodes: 220, packageId: 'all', query: '', visiblePackages: 110, truncatedNodes: 222 },
+  ])('budgets only displayed packages with $packageCount packages and filter $packageId/$query', ({
+    packageCount,
+    maxNodes,
+    packageId,
+    query,
+    visiblePackages,
+    truncatedNodes,
+  }) => {
+    const result: AnalyzeSubpackagesResult = {
+      packages: Array.from({ length: packageCount }, (_, index) => ({
+        id: `pkg-${index}`,
+        label: `pkg-${index}`,
+        type: 'subPackage',
+        files: [{
+          file: `pkg-${index}/entry.js`,
+          type: 'chunk',
+          from: 'main',
+          size: packageCount - index,
+        }],
+      })),
+      modules: [],
+      subPackages: [],
+    }
+    const view = createAnalyzeChunkGraphView(createAnalyzeChunkGraph(result), {
+      maxEdges: 900,
+      maxNodes,
+      packageId,
+      query,
+    })
+    const visibleIds = Array.from({ length: visiblePackages }, (_, index) => `pkg-${index}`)
+
+    expect(view.nodes.map(node => node.id)).toEqual([
+      ...visibleIds.map(id => `package:${id}`),
+      ...visibleIds.map(id => `chunk:${id}/entry.js`),
+    ])
+    expect(view.edges).toEqual(visibleIds.map(id => ({
+      id: `package:${id}->chunk:${id}/entry.js:contains`,
+      kind: 'contains',
+      source: `package:${id}`,
+      target: `chunk:${id}/entry.js`,
+    })))
+    expect(view.nodes.length).toBeLessThanOrEqual(maxNodes)
+    expect(view.truncatedNodeCount).toBe(truncatedNodes)
+    expect(view.truncatedEdgeCount).toBe(truncatedNodes / 2)
+  })
+
+  it('prioritizes matching chunks over larger neighbors when only the match and package fit', () => {
+    const view = createAnalyzeChunkGraphView(createAnalyzeChunkGraph(createResult()), {
+      maxEdges: 20,
+      maxNodes: 2,
+      packageId: 'all',
+      query: 'lazy',
+    })
+
+    expect(view.nodes.map(node => node.id)).toEqual(['package:__main__', 'chunk:lazy.js'])
+    expect(view.edges).toEqual([{
+      id: 'package:__main__->chunk:lazy.js:contains',
+      kind: 'contains',
+      source: 'package:__main__',
+      target: 'chunk:lazy.js',
+    }])
+    expect(view.truncatedNodeCount).toBe(1)
+    expect(view.truncatedEdgeCount).toBe(2)
+  })
+
+  it('uses remaining capacity for an existing package when another package cannot fit', () => {
+    const result = createResult()
+    result.packages[1]!.files[0]!.size = 100
+    const view = createAnalyzeChunkGraphView(createAnalyzeChunkGraph(result), {
+      maxEdges: 20,
+      maxNodes: 3,
+      packageId: 'all',
+      query: '',
+    })
+
+    expect(view.nodes.map(node => node.id)).toEqual([
+      'package:__main__',
+      'chunk:app.js',
+      'chunk:shared.js',
+    ])
+    expect(view.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'chunk:app.js', target: 'chunk:shared.js', kind: 'static-import' }),
+    ]))
+    expect(view.truncatedNodeCount).toBe(3)
+  })
+
   it('expands only direct neighbors independent of edge order', () => {
     const nodes = ['a', 'b', 'c'].map((name, index) => ({
       id: `chunk:${name}.js`,

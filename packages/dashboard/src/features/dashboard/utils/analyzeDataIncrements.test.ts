@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 import { useAnalyzeActionCenter } from '../composables/useAnalyzeActionCenter'
 import { createIncrementAttribution } from './analyzeDataIncrements'
+import { createPackageInsights } from './analyzeDataPackages'
 import { createComparisonMaps, createModuleInfoMap } from './analyzeDataShared'
+import { createTreemapModuleNodeId } from './treemap'
 
 function createResult(modules: Array<{ id: string, source: string, bytes: number, sourceType?: ModuleSourceType }>): AnalyzeSubpackagesResult {
   return {
@@ -37,7 +39,7 @@ function createResult(modules: Array<{ id: string, source: string, bytes: number
 }
 
 describe('analyze increment attribution', () => {
-  it('compares internal module variants by their stable display source', () => {
+  it('compares internal module variants by their canonical source path', () => {
     const previous = createResult([
       {
         id: 'v-select?old-sidecar',
@@ -132,6 +134,57 @@ describe('analyze increment attribution', () => {
       currentBytes: 7_254,
       deltaBytes: 7_254,
     })
+  })
+
+  it.each([
+    { sourceType: 'src', sources: ['features/editor/src/index.ts', 'features/player/src/index.ts'] },
+    { sourceType: 'plugin', sources: ['plugins/editor/src/index.ts', 'plugins/player/src/index.ts'] },
+    { sourceType: 'workspace', sources: ['../../editor/src/index.ts', '../../player/src/index.ts'] },
+    { sourceType: 'workspace', sources: ['../shared/index.ts', '../../shared/index.ts'] },
+    { sourceType: 'node_modules', sources: ['node_modules/editor/src/index.ts', 'node_modules/player/src/index.ts'] },
+  ] as const)('preserves independent module growth and actions for $sourceType sources $sources', ({ sourceType, sources }) => {
+    const previous = createResult([
+      { id: 'editor', source: sources[0], sourceType, bytes: 1_000 },
+      { id: 'player', source: sources[1], sourceType, bytes: 5_000 },
+    ])
+    const current = createResult([
+      { id: 'editor', source: sources[0], sourceType, bytes: 1_100 },
+      { id: 'player', source: sources[1], sourceType, bytes: 5_000 },
+    ])
+    const previousMaps = createComparisonMaps(previous)
+    const items = createIncrementAttribution({
+      result: current,
+      previousResult: previous,
+      previousMaps,
+      moduleInfoMap: createModuleInfoMap(current),
+    })
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        moduleId: 'editor',
+        previousBytes: 1_000,
+        currentBytes: 1_100,
+        deltaBytes: 100,
+      }),
+    ])
+    const { actionItems } = useAnalyzeActionCenter({
+      budgetWarnings: computed(() => []),
+      incrementAttribution: computed(() => items),
+      duplicateModules: computed(() => []),
+      largestFiles: computed(() => []),
+      packageInsights: computed(() => createPackageInsights(current, previousMaps)),
+    })
+    expect(actionItems.value).toEqual([
+      expect.objectContaining({
+        key: 'increment:module:editor',
+        kind: 'increment',
+        tab: 'modules',
+        moduleMeta: expect.objectContaining({
+          nodeId: createTreemapModuleNodeId('__main__', 'app.js', 'editor'),
+          bytes: 1_100,
+        }),
+      }),
+    ])
   })
 
   it('classifies growth as informational without an explicit budget threshold', () => {
