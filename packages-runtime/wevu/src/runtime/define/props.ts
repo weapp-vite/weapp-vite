@@ -37,32 +37,36 @@ function toNativePropertyType(candidate: unknown) {
   return NATIVE_PROPERTY_TYPE_MAP.get(candidate)
 }
 
+function collectNativePropertyTypeCandidates(
+  raw: unknown,
+  normalized: NormalizedNativePropertyType[] = [],
+) {
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      collectNativePropertyTypeCandidates(item, normalized)
+    }
+    return normalized
+  }
+  const mapped = toNativePropertyType(raw)
+  if (mapped !== undefined && !normalized.includes(mapped)) {
+    normalized.push(mapped)
+  }
+  return normalized
+}
+
 function normalizeTypeCandidates(raw: unknown) {
   if (raw === undefined) {
     return []
   }
-  const source = Array.isArray(raw) ? raw : [raw]
-  const normalized: NormalizedNativePropertyType[] = []
-  source.forEach((item) => {
-    const mapped = toNativePropertyType(item)
-    if (mapped === undefined) {
-      return
-    }
-    if (!normalized.includes(mapped)) {
-      normalized.push(mapped)
-    }
-  })
+  const normalized = collectNativePropertyTypeCandidates(raw)
   const requiredNativeTypes = normalized.filter((item): item is Exclude<NormalizedNativePropertyType, null> => item !== null)
   if (requiredNativeTypes.length > 0) {
     return requiredNativeTypes
   }
-  if (normalized.includes(null)) {
-    return [null]
-  }
   return [null]
 }
 
-function applyTypeOptions(target: Record<string, any>, rawType: unknown) {
+function applyTypeOptions(target: Record<string, unknown>, rawType: unknown) {
   const candidates = normalizeTypeCandidates(rawType)
   if (candidates.length === 0) {
     return
@@ -70,7 +74,7 @@ function applyTypeOptions(target: Record<string, any>, rawType: unknown) {
 
   target.type = candidates[0]
   if (candidates.length > 1) {
-    const optionalTypes: any[] = []
+    const optionalTypes: NormalizedNativePropertyType[] = []
     for (const candidate of candidates.slice(1)) {
       if (!optionalTypes.includes(candidate)) {
         optionalTypes.push(candidate)
@@ -82,104 +86,55 @@ function applyTypeOptions(target: Record<string, any>, rawType: unknown) {
   }
 }
 
-function appendOptionalType(target: Record<string, any>, candidate: unknown) {
-  if (candidate === undefined || target.type === candidate) {
+function preserveImplicitNativeDefault(target: Record<string, unknown>) {
+  if (hasOwn(target, 'value')) {
     return
   }
-  const optionalTypes = Array.isArray(target.optionalTypes)
-    ? [...target.optionalTypes]
-    : []
-  if (optionalTypes.includes(candidate)) {
-    return
+  if (target.type === String) {
+    target.value = ''
   }
-  optionalTypes.push(candidate)
-  target.optionalTypes = optionalTypes
+  else if (target.type === Number) {
+    target.value = 0
+  }
+  else if (target.type === Boolean) {
+    target.value = false
+  }
+  else if (target.type === Array) {
+    target.value = []
+  }
 }
 
-function normalizeOptionalTypeCandidates(raw: unknown) {
-  if (!Array.isArray(raw)) {
-    return []
-  }
-  const normalized: Array<Exclude<NormalizedNativePropertyType, null>> = []
-  raw.forEach((item) => {
-    const mapped = toNativePropertyType(item)
-    if (mapped === undefined || mapped === null || normalized.includes(mapped)) {
-      return
-    }
-    normalized.push(mapped)
-  })
-  return normalized
-}
-
-function normalizeExplicitPropertyDefinition(
+function applyNullableTransportOptions(
+  target: Record<string, unknown>,
   definition: unknown,
   allowNullPropInput: boolean,
 ) {
-  if (definition === undefined) {
-    return undefined
+  if (!allowNullPropInput || target.type === null) {
+    return
   }
-  if (definition === null) {
-    return { type: null }
-  }
-  if (Array.isArray(definition) || typeof definition === 'function') {
-    const propOptions: Record<string, any> = {}
-    applyTypeOptions(propOptions, definition)
-    if (allowNullPropInput && propOptions.type !== null) {
-      appendOptionalType(propOptions, null)
-    }
-    if (!hasOwn(propOptions, 'type')) {
-      propOptions.type = null
-    }
-    return propOptions
-  }
-  if (typeof definition !== 'object') {
-    return definition
-  }
-
-  const propOptions: Record<string, any> = {
-    ...(definition as Record<string, any>),
+  const definitionRecord = definition && typeof definition === 'object' && !Array.isArray(definition)
+    ? (definition as Record<string, unknown>)
+    : undefined
+  const candidates = collectNativePropertyTypeCandidates(
+    definitionRecord
+      ? [definitionRecord.type, definitionRecord.optionalTypes]
+      : definition,
+  )
+  const explicitlyNullable = candidates.includes(null)
+  const nativeTypes = candidates.filter(candidate => candidate !== null)
+  const acceptsMultipleNativeTypes = nativeTypes.length > 1
+  const acceptsMissingInput = definitionRecord?.required !== true
+  // glass-easel 会先按主 type 校验并转换，optionalTypes 无法保护合法的联合值与空值传输。
+  if (!explicitlyNullable && !acceptsMultipleNativeTypes && !acceptsMissingInput) {
+    return
   }
 
-  if ('type' in propOptions) {
-    const normalizedTypes = normalizeTypeCandidates(propOptions.type)
-    propOptions.type = normalizedTypes[0] ?? null
-    const existingOptionalTypes = normalizeOptionalTypeCandidates(propOptions.optionalTypes)
-    for (const candidate of normalizedTypes.slice(1)) {
-      if (candidate !== null && !existingOptionalTypes.includes(candidate)) {
-        existingOptionalTypes.push(candidate)
-      }
-    }
-    if (existingOptionalTypes.length > 0) {
-      propOptions.optionalTypes = existingOptionalTypes
-    }
-    else {
-      delete propOptions.optionalTypes
-    }
+  // 显式声明的 null 必须保持可观察；其余降级场景则保留原主类型的宿主隐式默认值。
+  if (!explicitlyNullable) {
+    preserveImplicitNativeDefault(target)
   }
-
-  if (!hasOwn(propOptions, 'type')) {
-    propOptions.type = null
-  }
-
-  if (allowNullPropInput && propOptions.type !== null) {
-    appendOptionalType(propOptions, null)
-  }
-
-  return propOptions
-}
-
-function normalizeExplicitProperties(
-  properties: MiniProgramComponentPropertyOption,
-  allowNullPropInput: boolean,
-) {
-  const normalizedProperties: Record<string, any> = {}
-  Object.entries(properties).forEach(([key, definition]) => {
-    const normalizedDefinition = normalizeExplicitPropertyDefinition(definition, allowNullPropInput)
-    if (normalizedDefinition !== undefined) {
-      normalizedProperties[key] = normalizedDefinition
-    }
-  })
-  return normalizedProperties
+  target.type = null
+  delete target.optionalTypes
 }
 
 function normalizeVueProps(
@@ -200,14 +155,12 @@ function normalizeVueProps(
       return
     }
     if (Array.isArray(definition) || typeof definition === 'function') {
-      const propOptions: Record<string, any> = {}
+      const propOptions: Record<string, unknown> = {}
       applyTypeOptions(propOptions, definition)
-      if (allowNullPropInput && propOptions.type !== null) {
-        appendOptionalType(propOptions, null)
-      }
       if (!hasOwn(propOptions, 'type')) {
         propOptions.type = null
       }
+      applyNullableTransportOptions(propOptions, definition, allowNullPropInput)
       properties[key] = propOptions
       return
     }
@@ -217,7 +170,7 @@ function normalizeVueProps(
         properties[key] = { type: Object, value: {} }
         return
       }
-      const propOptions: Record<string, any> = {}
+      const propOptions: Record<string, unknown> = {}
       if ('type' in definition && definition.type !== undefined) {
         applyTypeOptions(propOptions, (definition as any).type)
       }
@@ -225,7 +178,7 @@ function normalizeVueProps(
         const optionalTypes = (definition as any).optionalTypes.map((item: unknown) => toNativePropertyType(item)).filter((item: unknown): item is Exclude<NormalizedNativePropertyType, null> => item !== undefined && item !== null)
         if (optionalTypes.length > 0) {
           const existingOptionalTypes = Array.isArray(propOptions.optionalTypes)
-            ? propOptions.optionalTypes as any[]
+            ? propOptions.optionalTypes as NormalizedNativePropertyType[]
             : []
           for (const optionalType of optionalTypes) {
             if (optionalType === propOptions.type) {
@@ -247,12 +200,10 @@ function normalizeVueProps(
       if (defaultValue !== undefined) {
         propOptions.value = typeof defaultValue === 'function' ? (defaultValue as any)() : defaultValue
       }
-      if (allowNullPropInput && propOptions.type !== null) {
-        appendOptionalType(propOptions, null)
-      }
       if (!hasOwn(propOptions, 'type')) {
         propOptions.type = null
       }
+      applyNullableTransportOptions(propOptions, definition, allowNullPropInput)
       properties[key] = propOptions
     }
   })
@@ -304,10 +255,6 @@ export function normalizeProps(
       ...rest
     } = normalizedBaseOptions
     const normalizedExplicitProperties = resolvedExplicit
-      ? allowNullPropInput
-        ? normalizeExplicitProperties(resolvedExplicit as any, allowNullPropInput)
-        : (resolvedExplicit as any)
-      : undefined
     const normalizedVueProps = normalizeVueProps(props, allowNullPropInput)
     return {
       ...rest,
