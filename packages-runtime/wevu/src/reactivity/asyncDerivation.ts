@@ -168,7 +168,7 @@ export function useAsyncDerivation<T>(
 
     let task: Promise<T>
     try {
-      task = Promise.resolve(runWithoutTracking(() => loader({ signal: controller.signal })))
+      task = runWithoutTracking(() => Promise.resolve(loader({ signal: controller.signal })))
     }
     catch (error) {
       task = Promise.reject(error)
