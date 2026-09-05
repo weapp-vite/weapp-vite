@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { reactive } from '@/reactivity'
+import { batch, effect, reactive } from '@/reactivity'
 import { createComputedAccessors } from '@/runtime/app/computed'
 import { resolveSetDataOptions } from '@/runtime/app/setDataOptions'
 
@@ -48,5 +48,30 @@ describe('runtime: app helpers', () => {
     state.count += 1
     expect(dirtyComputedKeys.has('count')).toBe(true)
     expect(computedRefs.count.value).toBe(1)
+  })
+
+  it('invalidates runtime computed values before batch consumers', () => {
+    const state = reactive({ alternate: false, primary: 0, secondary: 0 })
+    const { computedRefs, computedProxy, createTrackedComputed } = createComputedAccessors({
+      includeComputed: true,
+      setDataStrategy: 'patch',
+    })
+    computedRefs.value = createTrackedComputed(
+      'value',
+      () => state.alternate ? state.secondary : state.primary,
+    )
+    const snapshots: string[] = []
+
+    effect(() => {
+      snapshots.push(`${state.secondary}:${(computedProxy as any).value}`)
+    })
+    state.alternate = true
+    snapshots.length = 0
+
+    batch(() => {
+      state.secondary = 1
+    })
+
+    expect(snapshots).toEqual(['1:1'])
   })
 })

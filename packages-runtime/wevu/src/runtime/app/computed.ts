@@ -1,6 +1,5 @@
 import type { ComputedRef } from '../../reactivity'
-import { effect } from '../../reactivity'
-import { track, trigger } from '../../reactivity/core'
+import { createComputedEffect, track, trigger } from '../../reactivity/core'
 import { markAsRef } from '../../reactivity/ref'
 
 interface ComputedOptions {
@@ -38,7 +37,7 @@ export function createComputedAccessors(options: ComputedOptions) {
       },
     }
     markAsRef(obj)
-    runner = effect(getter, {
+    runner = createComputedEffect(getter, {
       lazy: true,
       scheduler: () => {
         if (!dirty) {
