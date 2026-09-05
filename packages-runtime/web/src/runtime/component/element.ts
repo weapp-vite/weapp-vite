@@ -101,7 +101,7 @@ export function createComponentElementClass({
       this.#state = { ...cloneValue(this.#properties), ...cloneValue(dataOption) }
       Object.defineProperty(this.#state, '$slots', {
         configurable: true,
-        enumerable: false,
+        enumerable: true,
         value: createWebSlotsProxy(() => this.#state.vueSlots),
       })
       Object.defineProperties(this, {
@@ -322,7 +322,7 @@ export function createComponentElementClass({
       for (const [path, value] of Object.entries(patch)) {
         const segments = parseDataPath(path)
         const topKey = segments[0]
-        if (!topKey || Object.is(resolveDataPath(this.#state, segments), value)) {
+        if (!topKey || topKey === '$slots' || Object.is(resolveDataPath(this.#state, segments), value)) {
           continue
         }
         if (hasOwn(this.#properties, topKey) && !hasOwn(previousProperties, topKey)) {

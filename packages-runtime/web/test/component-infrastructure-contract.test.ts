@@ -220,7 +220,7 @@ describe('component infrastructure contracts', () => {
     expect(tap).toHaveBeenCalledOnce()
 
     const slotFacade = element.data.$slots
-    await expect(element.setData({ ...element.data, count: 1 })).resolves.toBeUndefined()
+    await expect(element.setData({ ...element.data, $slots: slotFacade, count: 1 })).resolves.toBeUndefined()
     expect(element.data.$slots).toBe(slotFacade)
 
     const callback = vi.fn()
