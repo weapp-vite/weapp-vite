@@ -310,6 +310,14 @@ describe('mountRuntimeInstance and teardown', () => {
     })).toThrow(setupFailure)
 
     expect(target[WEVU_EFFECT_SCOPE_KEY]).toBeUndefined()
+    expect(target.__wevu).toBeUndefined()
+    expect(target[WEVU_PUBLIC_RUNTIME_KEY]).toBeUndefined()
+    expect(target[WEVU_WATCH_STOPS_KEY]).toBeUndefined()
+
+    const remounted = mountRuntimeInstance(target, app, undefined, () => ({ ready: true }))
+    expect(target.__wevu).toBeDefined()
+    expect((remounted.state as Record<string, unknown>).ready).toBe(true)
+    teardownRuntimeInstance(target)
   })
 
   it('continues teardown after template ref cleanup fails', () => {

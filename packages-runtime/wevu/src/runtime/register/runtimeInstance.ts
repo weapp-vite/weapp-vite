@@ -463,22 +463,34 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   }
 
   if (setup) {
-    runRuntimeSetupPhase({
-      target,
-      runtime,
-      runtimeWithDefaults,
-      runtimeState: runtimeState as Record<string, any>,
-      runtimeProxy: runtimeProxy as Record<string, any>,
-      setup,
-    })
-    if (!options?.deferSetData) {
-      runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
+    try {
+      runRuntimeSetupPhase({
+        target,
+        runtime,
+        runtimeWithDefaults,
+        runtimeState: runtimeState as Record<string, any>,
+        runtimeProxy: runtimeProxy as Record<string, any>,
+        setup,
+      })
+      if (!options?.deferSetData) {
+        runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
+      }
+      if (!options?.deferSetData) {
+        refreshOwnerSnapshot()
+      }
+      for (const stop of watchStops) {
+        stop.resume()
+      }
     }
-    if (!options?.deferSetData) {
-      refreshOwnerSnapshot()
-    }
-    for (const stop of watchStops) {
-      stop.resume()
+    catch (error) {
+      try {
+        // eslint-disable-next-line ts/no-use-before-define -- setup 失败后复用统一 teardown 回滚已安装运行时
+        teardownRuntimeInstance(target, { skipHooks: true })
+      }
+      catch {
+        // setup 异常优先，回滚异常不能覆盖原始失败。
+      }
+      throw error
     }
   }
   else if (

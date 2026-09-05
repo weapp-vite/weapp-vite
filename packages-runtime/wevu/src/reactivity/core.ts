@@ -202,9 +202,14 @@ export function onScopeDispose(fn: () => void): void {
 }
 
 function recordEffectScope(effect: ReactiveEffect) {
-  if (activeEffectScope?.active) {
-    activeEffectScope.effects.push(effect)
+  if (!activeEffectScope) {
+    return
   }
+  if (activeEffectScope.active) {
+    activeEffectScope.effects.push(effect)
+    return
+  }
+  stop(effect)
 }
 
 export interface EffectOptions {

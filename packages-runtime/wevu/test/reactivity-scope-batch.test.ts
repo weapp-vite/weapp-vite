@@ -1,4 +1,5 @@
 import type { EffectScope } from '@/reactivity'
+import type { ReactiveEffect } from '@/reactivity/core'
 import { describe, expect, it, vi } from 'vitest'
 import { batch, effect, effectScope, onScopeDispose, reactive, watchEffect } from '@/reactivity'
 
@@ -137,5 +138,29 @@ describe('reactivity (batch + effectScope)', () => {
     expect(cleanupScope.active).toBe(false)
     expect(nestedCleanupScope.active).toBe(false)
     expect(escapedRun).not.toHaveBeenCalled()
+  })
+
+  it('deactivates effects created while a scope teardown is running', () => {
+    const state = reactive({ count: 0 })
+    const scope = effectScope()
+    let escapedEffect!: ReactiveEffect
+    let runs = 0
+
+    scope.run(() => {
+      onScopeDispose(() => {
+        escapedEffect = effect(() => {
+          void state.count
+          runs++
+        })
+      })
+    })
+
+    scope.stop()
+
+    expect(escapedEffect.active).toBe(false)
+    expect(runs).toBe(1)
+
+    state.count++
+    expect(runs).toBe(1)
   })
 })
