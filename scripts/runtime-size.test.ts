@@ -30,7 +30,7 @@ function createReport(options: {
     }
   })
   return {
-    version: 3 as const,
+    version: 2 as const,
     generatedAt: '2026-07-30T00:00:00.000Z',
     commit: options.commit,
     targets: [
@@ -166,7 +166,7 @@ describe('collectRuntimeSizeReport', () => {
       bundle,
     })
 
-    expect(report.version).toBe(3)
+    expect(report.version).toBe(2)
     expect(bundle).toHaveBeenCalledTimes(runtimeSizeTargets.length * runtimeSizeTiers.length * 2)
     expect(report.targets).toHaveLength(2)
     expect(report.targets[0]).toMatchObject({
@@ -219,7 +219,7 @@ describe('runtime size report rendering', () => {
       current,
       baseline,
     })).toEqual(expect.objectContaining({
-      version: 3,
+      version: 2,
       kind: 'wevu-runtime-size-pr-report',
       repository: 'owner/repo',
       prNumber: 42,

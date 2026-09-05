@@ -1,4 +1,4 @@
-export const RUNTIME_SIZE_REPORT_VERSION = 3 as const
+export const RUNTIME_SIZE_REPORT_VERSION = 2 as const
 
 export type RuntimeSizeEntryKind = 'runtime' | 'reactivity' | 'template'
 

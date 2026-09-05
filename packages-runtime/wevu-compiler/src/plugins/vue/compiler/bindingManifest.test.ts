@@ -315,13 +315,13 @@ const suffix = '!'
     expect(result.script).not.toContain('setData')
   })
 
-  it('declares slot host properties without bundler template inspection', async () => {
+  it('declares slot host properties without retaining scoped-slot runtime', async () => {
     const result = await compileVueFile(
       '<template><slot><text>fallback</text></slot></template>',
       '/src/components/SlotHost.vue',
     )
 
-    expect(result.bindingManifest?.features.scopedSlots).toBe(true)
+    expect(result.bindingManifest?.features.scopedSlots).toBeUndefined()
     expect(result.script).toContain('properties')
     expect(result.script).toContain(WEVU_SLOT_NAMES_PROP)
     expect(result.script).not.toContain('setData')
@@ -337,7 +337,7 @@ const suffix = '!'
       },
     )
 
-    expect(result.bindingManifest?.features.scopedSlots).toBe(true)
+    expect(result.bindingManifest?.features.scopedSlots).toBeUndefined()
     expect(result.script).not.toContain(WEVU_BINDING_MANIFEST_KEY)
     expect(result.script).not.toContain('setData')
   })

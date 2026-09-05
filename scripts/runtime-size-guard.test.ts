@@ -16,7 +16,7 @@ import {
 
 function createReport(): RuntimeSizeReport {
   return {
-    version: 3,
+    version: 2,
     generatedAt: '2026-09-04T00:00:00.000Z',
     commit: 'abc1234',
     targets: runtimeSizeTargets.map(target => ({

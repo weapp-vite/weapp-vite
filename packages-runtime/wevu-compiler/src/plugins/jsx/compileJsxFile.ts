@@ -1,6 +1,7 @@
 import type { CompileVueFileOptions, ResolvedUsingComponentPath, VueTransformResult } from '../vue/transform/compileVueFile/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
+import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../runtimeCapabilities'
 import { isAutoImportCandidateTag } from '../../utils/vueTemplateTags'
 import { getMiniProgramTemplatePlatform } from '../vue/compiler/template'
 import { applyCompilerTemplateWrappers, mergeCompilerLayoutUsingComponents } from '../vue/transform/compileVueFile/pageLayout'
@@ -153,6 +154,7 @@ export async function compileJsxFile(
     dynamicIslands,
   )
   const vueJsxTransformed = transformVueJsxScript(normalizedScriptSource, filename, options?.sourceMap !== false)
+  const runtimeCapabilities = createWevuRuntimeCapabilityMetadataFromBindingManifest(bindingManifest)
   const transformedScript = transformScript(vueJsxTransformed.code, {
     skipComponentTransform: options?.skipComponentTransform ?? options?.isApp,
     isApp: options?.isApp,
@@ -166,6 +168,7 @@ export async function compileJsxFile(
     autoSetDataPick: !options?.isApp && options?.autoSetDataPick,
     runtimeBindingManifest: options?.runtimeBindingManifest,
     pageLayout: options?.isApp ? undefined : options?.pageLayout,
+    runtimeCapabilities,
   })
 
   const diagnostics = templateWarnings.length
