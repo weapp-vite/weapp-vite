@@ -74,4 +74,28 @@ describe('runtime: app helpers', () => {
 
     expect(snapshots).toEqual(['1:1'])
   })
+
+  it('reads fresh runtime computed values within a batch', () => {
+    const state = reactive({ count: 1, saved: 0 })
+    const { computedRefs, computedProxy, createTrackedComputed } = createComputedAccessors({
+      includeComputed: true,
+      setDataStrategy: 'patch',
+    })
+    computedRefs.doubled = createTrackedComputed('doubled', () => state.count * 2)
+    // 此测试只注册 doubled，访问器返回值由上面的 getter 确定。
+    const proxy = computedProxy as { doubled: number }
+    const snapshots: number[] = []
+    effect(() => {
+      snapshots.push(proxy.doubled)
+    })
+
+    batch(() => {
+      state.count = 2
+      state.saved = proxy.doubled
+      expect(state.saved).toBe(4)
+      expect(snapshots).toEqual([2])
+    })
+
+    expect(snapshots).toEqual([2, 4])
+  })
 })

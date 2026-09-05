@@ -1,5 +1,6 @@
 import type { MutationType, SubscriptionCallback } from '../types'
 import { isReactive, isRef, toRaw } from '../../reactivity'
+import { queueBatchCallback } from '../../reactivity/core'
 import { cloneDeep } from '../utils'
 
 export function isTrackableRef(value: unknown) {
@@ -45,13 +46,26 @@ export function createSafeNotifier<S>(
 export function createStoreMutationTransaction(notify: (type: MutationType) => void) {
   let depth = 0
   let pendingType: MutationType | undefined
+  let pendingFlush = false
+
+  const publish = () => {
+    if (depth > 0) {
+      return
+    }
+    const type = pendingType
+    pendingType = undefined
+    pendingFlush = false
+    if (type) {
+      notify(type)
+    }
+  }
 
   return {
     get active() {
-      return depth > 0
+      return depth > 0 || pendingFlush
     },
     notify(type: MutationType) {
-      if (depth === 0) {
+      if (depth === 0 && !pendingFlush) {
         notify(type)
         return
       }
@@ -60,6 +74,7 @@ export function createStoreMutationTransaction(notify: (type: MutationType) => v
     },
     run<T>(operation: () => T): T {
       const isOutermost = depth === 0
+      const previousType = pendingType
       let succeeded = false
       depth++
       try {
@@ -70,11 +85,12 @@ export function createStoreMutationTransaction(notify: (type: MutationType) => v
       finally {
         depth--
         if (isOutermost) {
-          const type = pendingType
-          pendingType = undefined
-          if (succeeded && type) {
-            notify(type)
+          if (!succeeded) {
+            pendingType = previousType
           }
+          // 嵌套批次返回时消费者可能尚未执行，直到真正 flush 后才释放 mutation 来源。
+          pendingFlush = true
+          queueBatchCallback(publish)
         }
       }
     },

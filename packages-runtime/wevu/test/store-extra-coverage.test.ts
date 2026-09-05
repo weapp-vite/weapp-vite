@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { reactive, ref } from '@/reactivity'
+import { batch, effect, reactive, ref } from '@/reactivity'
 import { createStore, defineStore, storeToRefs } from '@/store'
 import { wrapAction } from '@/store/actions'
 import { createBaseApi } from '@/store/base'
@@ -84,7 +84,7 @@ describe('defineStore and storeToRefs', () => {
     unsubscribe()
   })
 
-  it('prevents re-entrant subscribe loops when callback mutates state', () => {
+  it.each([false, true])('prevents re-entrant setup subscriptions (batched: %s)', (batched) => {
     createStore()
     const useCounter = defineStore('counter-reentrant', () => ({
       count: ref(0),
@@ -95,6 +95,10 @@ describe('defineStore and storeToRefs', () => {
 
     const store = useCounter()
     const mutationTypes: string[] = []
+    let downstream = 0
+    effect(() => {
+      downstream = store.count.value
+    })
 
     store.$subscribe((mutation) => {
       mutationTypes.push(mutation.type)
@@ -103,13 +107,19 @@ describe('defineStore and storeToRefs', () => {
       }
     })
 
-    store.inc()
+    if (batched) {
+      batch(() => store.inc())
+    }
+    else {
+      store.inc()
+    }
 
     expect(store.count.value).toBe(2)
     expect(mutationTypes).toEqual(['direct'])
+    expect(downstream).toBe(2)
   })
 
-  it('prevents re-entrant notify loops in options store subscriptions', () => {
+  it.each([false, true])('prevents re-entrant options subscriptions (batched: %s)', (batched) => {
     createStore()
     const useCounter = defineStore('counter-options-reentrant', {
       state: () => ({
@@ -127,7 +137,14 @@ describe('defineStore and storeToRefs', () => {
       }
     })
 
-    store.count += 1
+    if (batched) {
+      batch(() => {
+        store.count += 1
+      })
+    }
+    else {
+      store.count += 1
+    }
 
     expect(store.count).toBe(2)
     expect(mutationTypes).toEqual(['direct'])
