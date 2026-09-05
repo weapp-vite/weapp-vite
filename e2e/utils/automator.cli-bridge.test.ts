@@ -6,6 +6,8 @@ import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutomatorViaHttp, extendProjectConfig, resolveBootstrapCliArgs, resolveCliSpawnOptions, waitForSocketReady } from './automator.cli-bridge'
 
+const opaqueToken = 'a'.repeat(32)
+
 function createMockChild(spawnfile = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli') {
   const stdout = new PassThrough()
   const stderr = new PassThrough()
@@ -254,7 +256,7 @@ describe('enableAutomatorViaHttp', () => {
     })).resolves.toBe(45678)
   })
 
-  it('rejects an unknown successful response shape', async () => {
+  it('uses the requested port for a DevTools opaque token response', async () => {
     const server = net.createServer((socket) => {
       socket.once('data', () => {
         socket.end([
@@ -262,7 +264,7 @@ describe('enableAutomatorViaHttp', () => {
           'Content-Type: application/json',
           'Connection: close',
           '',
-          JSON.stringify({ status: 'ok' }),
+          JSON.stringify(opaqueToken),
         ].join('\r\n'))
       })
     })
@@ -279,7 +281,60 @@ describe('enableAutomatorViaHttp', () => {
       autoPort: 45678,
       projectPath: '/repo/demo app',
       servicePort,
-    })).rejects.toThrow('unsupported response')
+    })).resolves.toBe(45678)
+  })
+
+  it.each([
+    {
+      body: opaqueToken,
+      expectedMessage: 'WeChat DevTools HTTP automator fallback failed with status 500',
+      status: '500 Internal Server Error',
+    },
+    {
+      body: opaqueToken,
+      expectedMessage: 'WeChat DevTools HTTP automator fallback returned invalid JSON',
+      status: '200 OK',
+    },
+    {
+      body: JSON.stringify({ autoPort: opaqueToken }),
+      expectedMessage: 'WeChat DevTools HTTP automator fallback returned invalid autoPort',
+      status: '200 OK',
+    },
+    {
+      body: JSON.stringify({ token: opaqueToken }),
+      expectedMessage: 'WeChat DevTools HTTP automator fallback returned unsupported response',
+      status: '200 OK',
+    },
+  ])('preserves response errors without disclosing their bodies', async ({ body, expectedMessage, status }) => {
+    const server = net.createServer((socket) => {
+      socket.once('data', () => {
+        socket.end([
+          `HTTP/1.1 ${status}`,
+          'Content-Type: application/json',
+          'Connection: close',
+          '',
+          body,
+        ].join('\r\n'))
+      })
+    })
+    servers.push(server)
+    const servicePort = await new Promise<number>((resolve, reject) => {
+      server.once('error', reject)
+      server.listen(0, '127.0.0.1', () => {
+        const address = server.address()
+        resolve(typeof address === 'object' && address ? address.port : 0)
+      })
+    })
+
+    const error = await enableAutomatorViaHttp({
+      autoPort: 45678,
+      projectPath: '/repo/demo app',
+      servicePort,
+    }).catch(error => error) as Error & { cause?: unknown }
+
+    expect(error.message).toBe(expectedMessage)
+    expect(String(error)).not.toContain(opaqueToken)
+    expect(error.cause).toBeUndefined()
   })
 })
 

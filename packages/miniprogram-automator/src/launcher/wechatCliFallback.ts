@@ -30,31 +30,29 @@ export async function enableAutomatorViaHttp(options: {
   const response = await fetch(endpoint, { redirect: 'follow' })
   const body = await response.text()
   if (!response.ok) {
-    throw new Error(`WeChat DevTools HTTP automator fallback failed with status ${response.status}${body.trim() ? `: ${body.trim().slice(0, 400)}` : ''}`)
+    throw new Error(`WeChat DevTools HTTP automator fallback failed with status ${response.status}`)
   }
 
   let result: unknown
   try {
     result = JSON.parse(body) as unknown
   }
-  catch (error) {
-    throw new Error('WeChat DevTools HTTP automator fallback returned invalid JSON', {
-      cause: error as Error,
-    })
+  catch {
+    throw new Error('WeChat DevTools HTTP automator fallback returned invalid JSON')
   }
   if (result && typeof result === 'object' && 'autoPort' in result) {
     const autoPort = Number(result.autoPort)
     if (!Number.isInteger(autoPort) || autoPort <= 0 || autoPort > 65535) {
-      throw new Error(`WeChat DevTools HTTP automator fallback returned invalid autoPort: ${String(result.autoPort)}`)
+      throw new Error('WeChat DevTools HTTP automator fallback returned invalid autoPort')
     }
     return autoPort
   }
 
-  if (typeof result === 'string' && /^s\d+$/.test(result)) {
+  if (typeof result === 'string' && (/^s\d+$/.test(result) || /^[0-9a-f]{32}$/i.test(result))) {
     return options.autoPort
   }
 
-  throw new Error(`WeChat DevTools HTTP automator fallback returned unsupported response: ${body.trim().slice(0, 400)}`)
+  throw new Error('WeChat DevTools HTTP automator fallback returned unsupported response')
 }
 
 const AUTOMATOR_VALUE_OPTIONS = new Set([

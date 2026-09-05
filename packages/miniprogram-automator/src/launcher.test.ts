@@ -6,6 +6,8 @@ import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveWechatDevtoolsBootstrapArgs } from './launcher/wechatCliFallback'
 
+const opaqueToken = 'a'.repeat(32)
+
 const spawnMock = vi.hoisted(() => vi.fn())
 const accessMock = vi.hoisted(() => vi.fn(async () => undefined))
 const readFileMock = vi.hoisted(() => vi.fn(async () => '{}'))
@@ -462,7 +464,10 @@ describe('Launcher', () => {
     expect(result).toEqual(secondCandidate)
   })
 
-  it('enables automator through the DevTools HTTP service after a successful cli exit', async () => {
+  it.each([
+    { response: { autoPort: 9527 }, expectedPort: 9527, format: 'legacy assigned-port' },
+    { response: opaqueToken, expectedPort: 9420, format: 'opaque-token requested-port' },
+  ])('connects using the $format HTTP fallback response', async ({ response, expectedPort }) => {
     const { default: Launcher } = await loadLauncherModule()
     const child = new EventEmitter() as EventEmitter & {
       stderr: PassThrough
@@ -473,7 +478,7 @@ describe('Launcher', () => {
     child.stdout = new PassThrough()
     child.unref = vi.fn()
     spawnMock.mockReturnValue(child)
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ autoPort: 9527 }))))
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(response))))
 
     const launcher = new Launcher()
     const candidate = {
@@ -509,16 +514,65 @@ describe('Launcher', () => {
     })
     expect(connectToolSpy).toHaveBeenNthCalledWith(2, {
       timeout: 3_000,
-      wsEndpoint: 'ws://127.0.0.1:9527',
+      wsEndpoint: `ws://127.0.0.1:${expectedPort}`,
     })
     expect(result).toEqual({
       ...candidate,
       __WEAPP_VITE_SESSION_METADATA: {
-        port: 9527,
+        port: expectedPort,
         projectPath: '/tmp/project',
-        wsEndpoint: 'ws://127.0.0.1:9527',
+        wsEndpoint: `ws://127.0.0.1:${expectedPort}`,
       },
     })
+  })
+
+  it('preserves a fallback protocol error without disclosing its response body', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    const child = new EventEmitter() as EventEmitter & {
+      stderr: PassThrough
+      stdout: PassThrough
+      unref: () => void
+    }
+    child.stderr = new PassThrough()
+    child.stdout = new PassThrough()
+    child.unref = vi.fn()
+    spawnMock.mockReturnValue(child)
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ token: opaqueToken }))))
+    const consoleSpies = [
+      vi.spyOn(console, 'error').mockImplementation(() => {}),
+      vi.spyOn(console, 'log').mockImplementation(() => {}),
+      vi.spyOn(console, 'warn').mockImplementation(() => {}),
+    ]
+
+    const launcher = new Launcher()
+    vi.spyOn(launcher as unknown as { connectTool: () => Promise<unknown> }, 'connectTool').mockImplementationOnce(async () => {
+      child.stdout.write('IDE server started successfully, listening on http://127.0.0.1:9420\n')
+      child.emit('exit', 0, null)
+      throw new Error('Failed connecting to ws://127.0.0.1:9420, check if target project window is opened with automation enabled')
+    })
+
+    try {
+      const error = await launcher.launch({
+        cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+        port: 9420,
+        projectPath: '/tmp/project',
+      }).catch(error => error) as Error & { cause?: unknown }
+
+      const loggedOutput = consoleSpies
+        .flatMap(spy => spy.mock.calls)
+        .flat()
+        .map(value => value instanceof Error ? `${value.message}\n${value.stack ?? ''}` : String(value))
+        .join('\n')
+      expect(error.message).toBe('WeChat DevTools HTTP automator fallback returned unsupported response')
+      expect(String(error)).not.toContain(opaqueToken)
+      expect(error.cause).toBeUndefined()
+      expect(loggedOutput).not.toContain(opaqueToken)
+    }
+    finally {
+      for (const spy of consoleSpies) {
+        spy.mockRestore()
+      }
+    }
   })
 
   it('retries automatic launch when cli exits before the automator socket is ready', async () => {
