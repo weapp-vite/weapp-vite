@@ -403,3 +403,8 @@ type _TypeCoverage = [
 
 declare const typeCoverage: _TypeCoverage
 expectType<_TypeCoverage>(typeCoverage)
+
+declare const setDataDebugInfo: SetDataDebugInfo
+expectType<number | undefined>(setDataDebugInfo.revision)
+expectType<number | undefined>(setDataDebugInfo.committedRevision)
+expectType<SetDataDebugInfo['reason']>('commitFailure')

@@ -53,7 +53,7 @@ The following APIs work exactly like Vue 3:
 - `createApp()` - Create app instances
 - `getCurrentInstance()` - Get current instance
 - `getCurrentScope()` - Get current setup effect scope
-- `nextTick()` - Execute after update
+- `nextTick()` - Execute after the current JavaScript/reactive queue drains; it does not wait for `setData` callbacks or host view commit
 
 #### Dependency Injection
 

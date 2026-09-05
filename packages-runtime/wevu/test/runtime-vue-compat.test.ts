@@ -1,4 +1,4 @@
-import { WEVU_PUBLIC_RUNTIME_KEY, WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD, WEVU_RUNTIME_APP_KEY, WEVU_SCOPED_SLOT_OWNER_STORE_KEY, WEVU_SLOT_NAMES_PROP } from '@weapp-core/constants'
+import { WEVU_HOST_COMMIT_PROMISE_KEY, WEVU_PUBLIC_RUNTIME_KEY, WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD, WEVU_RUNTIME_APP_KEY, WEVU_SCOPED_SLOT_OWNER_STORE_KEY, WEVU_SLOT_NAMES_PROP } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, createWevuComponent, defineComponent, getCurrentInstance, mergeModels, nextTick, toRaw, useAttrs, useBindModel, useChangeModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, useNativePageRouter, useNativeRouter, usePageScrollThrottle, useSlots, useUpdatePerformanceListener } from '@/index'
 import { normalizeStyle, resolvePropValue } from '@/runtime/template'
@@ -91,7 +91,9 @@ describe('runtime: vue compat helpers', () => {
 
     const opts = registeredComponents[0]
     const inst: any = {
-      setData() {},
+      setData(_payload: Record<string, unknown>, callback?: () => void) {
+        callback?.()
+      },
       triggerEvent: vi.fn(),
       properties: {},
     }
@@ -105,6 +107,50 @@ describe('runtime: vue compat helpers', () => {
     expect('$nextTick' in proxy).toBe(true)
   })
 
+  it('waits for the provider host commit before an instance nextTick callback', async () => {
+    defineComponent({})
+
+    const opts = registeredComponents[0]
+    let resolveHostCommit!: () => void
+    const hostCommit = new Promise<void>((resolve) => {
+      resolveHostCommit = resolve
+    })
+    interface RuntimeTestInstance {
+      __wevu?: {
+        proxy: {
+          $nextTick: (callback?: () => unknown) => Promise<unknown>
+        }
+      }
+      properties: Record<string, unknown>
+      setData: () => void
+      triggerEvent: (...args: unknown[]) => unknown
+      [WEVU_HOST_COMMIT_PROMISE_KEY]: Promise<void>
+    }
+    const inst: RuntimeTestInstance = {
+      setData() {},
+      triggerEvent: vi.fn(),
+      properties: {},
+      [WEVU_HOST_COMMIT_PROMISE_KEY]: hostCommit,
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    const proxy = inst.__wevu?.proxy
+    expect(proxy).toBeDefined()
+    if (!proxy) {
+      throw new Error('expected mounted Wevu proxy')
+    }
+    const callback = vi.fn()
+    const pending = proxy.$nextTick(callback)
+    await nextTick()
+    await Promise.resolve()
+
+    expect(callback).not.toHaveBeenCalled()
+    resolveHostCommit()
+    await pending
+    expect(callback).toHaveBeenCalledOnce()
+  })
+
   it('exposes $nextTick inside Options API mounted hooks', async () => {
     const callback = vi.fn()
     defineComponent({
@@ -115,7 +161,9 @@ describe('runtime: vue compat helpers', () => {
 
     const opts = registeredComponents[0]
     const inst: any = {
-      setData() {},
+      setData(_payload: Record<string, unknown>, callback?: () => void) {
+        callback?.()
+      },
       triggerEvent: vi.fn(),
       properties: {},
     }
@@ -138,7 +186,9 @@ describe('runtime: vue compat helpers', () => {
     const opts = registeredComponents[0]
     const inst: any = {
       data: {},
-      setData() {},
+      setData(_payload: Record<string, unknown>, callback?: () => void) {
+        callback?.()
+      },
       triggerEvent: vi.fn(),
       properties: {},
     }
@@ -435,7 +485,9 @@ describe('runtime: vue compat helpers', () => {
 
     const parentOptions = registeredComponents[0]
     const childOptions = registeredComponents[1]
-    const parentSetData = vi.fn()
+    const parentSetData = vi.fn((_payload: Record<string, unknown>, callback?: () => void) => {
+      callback?.()
+    })
     const parent: any = {
       setData: parentSetData,
       triggerEvent: vi.fn(),
@@ -495,7 +547,7 @@ describe('runtime: vue compat helpers', () => {
 
     expect(() => opts.lifetimes.attached.call(inst)).not.toThrow()
     expect(inst.__wevu.proxy.childCount).toBe(1)
-    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ childCount: 1 }))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ childCount: 1 }), expect.any(Function))
   })
 
   it('exposes initial native props before the first computed snapshot', () => {

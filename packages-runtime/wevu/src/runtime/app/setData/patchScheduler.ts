@@ -1,4 +1,5 @@
 import type { SetDataDebugInfo } from '../../types'
+import type { SetDataPayload, SetDataSnapshot } from './commitTracker'
 import { toPlain } from '../../diff'
 import { checkPayloadSize, collapsePayload, mergeSiblingPayload } from './payload'
 import { applySnapshotUpdate, cloneSnapshotValue, isDeepEqualValue, isShallowEqualValue, normalizeSetDataValue } from './snapshot'
@@ -8,15 +9,29 @@ interface PatchEntry {
   op: 'set' | 'delete'
 }
 
-export function runPatchUpdate(options: {
-  state: Record<string, any>
-  computedRefs: Record<string, { value: any }>
+export type PatchPreparation
+  = | undefined
+    | {
+      type: 'fallback'
+      reason: 'maxPatchKeys' | 'maxPayloadBytes'
+      debug: SetDataDebugInfo
+    }
+    | {
+      type: 'patch'
+      payload: SetDataPayload
+      snapshot: SetDataSnapshot
+      computedUpdates?: SetDataSnapshot
+      debug: SetDataDebugInfo
+    }
+
+export interface PatchPrepareOptions {
+  state: Record<string, unknown>
+  computedRefs: Record<string, { value: unknown }>
   dirtyComputedKeys: Set<string>
   includeComputed: boolean
   computedCompare: 'reference' | 'shallow' | 'deep'
   computedCompareMaxDepth: number
   computedCompareMaxKeys: number
-  currentAdapter: { setData?: (payload: Record<string, any>) => void | Promise<void> }
   shouldIncludeKey: (key: string) => boolean
   maxPatchKeys: number
   maxPayloadBytes: number
@@ -29,17 +44,15 @@ export function runPatchUpdate(options: {
   toPlainMaxKeys: number
   includeFunctions?: boolean
   functionPaths: string[]
-  plainCache: WeakMap<object, { version: number, value: any }>
+  plainCache: WeakMap<object, { version: number, value: unknown }>
   plainCacheEligibility?: WeakMap<object, boolean>
   pendingPatches: Map<string, PatchEntry>
   fallbackTopKeys: Set<string>
-  latestSnapshot: Record<string, any>
-  latestComputedSnapshot: Record<string, any>
-  needsFullSnapshot: { value: boolean }
-  bindingDiagnosticsEnabled: boolean
-  emitDebug: (info: SetDataDebugInfo, paths?: Iterable<string>) => void
-  runDiffUpdate: (reason?: SetDataDebugInfo['reason']) => void | Promise<void>
-}) {
+  dispatchedSnapshot: SetDataSnapshot
+  dispatchedComputedSnapshot: SetDataSnapshot
+}
+
+export function preparePatchUpdate(options: PatchPrepareOptions): PatchPreparation {
   const {
     state,
     computedRefs,
@@ -48,7 +61,6 @@ export function runPatchUpdate(options: {
     computedCompare,
     computedCompareMaxDepth,
     computedCompareMaxKeys,
-    currentAdapter,
     shouldIncludeKey,
     maxPatchKeys,
     maxPayloadBytes,
@@ -65,38 +77,35 @@ export function runPatchUpdate(options: {
     plainCacheEligibility,
     pendingPatches,
     fallbackTopKeys,
-    latestSnapshot,
-    latestComputedSnapshot,
-    needsFullSnapshot,
-    bindingDiagnosticsEnabled,
-    emitDebug,
-    runDiffUpdate,
+    dispatchedSnapshot,
+    dispatchedComputedSnapshot,
   } = options
 
   if (pendingPatches.size > maxPatchKeys) {
     const pendingCount = pendingPatches.size
-    const pendingPaths = bindingDiagnosticsEnabled ? [...pendingPatches.keys()] : undefined
-    needsFullSnapshot.value = true
     pendingPatches.clear()
     dirtyComputedKeys.clear()
-    emitDebug({
-      mode: 'diff',
+    return {
+      type: 'fallback',
       reason: 'maxPatchKeys',
-      pendingPatchKeys: pendingCount,
-      payloadKeys: 0,
-    }, pendingPaths)
-    return runDiffUpdate('maxPatchKeys')
+      debug: {
+        mode: 'diff',
+        reason: 'maxPatchKeys',
+        pendingPatchKeys: pendingCount,
+        payloadKeys: 0,
+      },
+    }
   }
 
-  const seen = new WeakMap<object, any>()
-  const plainByPath = new Map<string, any>()
-  const payload: Record<string, any> = Object.create(null)
+  const seen = new WeakMap<object, unknown>()
+  const plainByPath = new Map<string, unknown>()
+  const payload: SetDataPayload = Object.create(null) as SetDataPayload
   const patchEntriesRaw = [...pendingPatches.entries()]
 
   if (Number.isFinite(elevateTopKeyThreshold) && elevateTopKeyThreshold > 0) {
     const counts = new Map<string, number>()
     for (const [path] of patchEntriesRaw) {
-      const top = path.split('.', 1)[0]
+      const top = path.split('.', 1)[0]!
       counts.set(top, (counts.get(top) ?? 0) + 1)
     }
     for (const [top, count] of counts) {
@@ -114,17 +123,17 @@ export function runPatchUpdate(options: {
     }
     return true
   })
-  const entryMap = new Map(patchEntries)
+  const entryMap = new Map<string, PatchEntry>(patchEntries)
   pendingPatches.clear()
 
   const getStateValueByPath = (path: string) => {
     const segments = path.split('.').filter(Boolean)
-    let current: any = state as any
-    for (const seg of segments) {
-      if (current == null) {
+    let current: unknown = state
+    for (const segment of segments) {
+      if (current == null || typeof current !== 'object') {
         return current
       }
-      current = current[seg]
+      current = Reflect.get(current, segment)
     }
     return current
   }
@@ -134,7 +143,15 @@ export function runPatchUpdate(options: {
       return plainByPath.get(path)
     }
     const value = normalizeSetDataValue(
-      toPlain(getStateValueByPath(path), seen, { cache: plainCache, cacheEligibility: plainCacheEligibility, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys, includeFunctions, functionPaths, _path: path }),
+      toPlain(getStateValueByPath(path), seen, {
+        cache: plainCache,
+        cacheEligibility: plainCacheEligibility,
+        maxDepth: toPlainMaxDepth,
+        maxKeys: toPlainMaxKeys,
+        includeFunctions,
+        functionPaths,
+        _path: path,
+      }),
     )
     plainByPath.set(path, value)
     return value
@@ -153,16 +170,14 @@ export function runPatchUpdate(options: {
 
   for (const [path, entry] of patchEntries) {
     const effectiveOp = entry.kind === 'array' ? 'set' : entry.op
-    if (effectiveOp === 'delete') {
-      payload[path] = null
-      continue
-    }
-    payload[path] = getPlainByPath(path)
+    payload[path] = effectiveOp === 'delete'
+      ? null
+      : getPlainByPath(path)
   }
 
   let computedDirtyProcessed = 0
+  const computedUpdates: SetDataSnapshot = Object.create(null) as SetDataSnapshot
   if (includeComputed && dirtyComputedKeys.size) {
-    const computedPatch: Record<string, any> = Object.create(null)
     const keys = [...dirtyComputedKeys]
     dirtyComputedKeys.clear()
     computedDirtyProcessed = keys.length
@@ -170,8 +185,16 @@ export function runPatchUpdate(options: {
       if (!shouldIncludeKey(key)) {
         continue
       }
-      const nextValue = toPlain(computedRefs[key].value, seen, { cache: plainCache, cacheEligibility: plainCacheEligibility, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys, includeFunctions, functionPaths, _path: key })
-      const prevValue = latestComputedSnapshot[key]
+      const nextValue = toPlain(computedRefs[key]!.value, seen, {
+        cache: plainCache,
+        cacheEligibility: plainCacheEligibility,
+        maxDepth: toPlainMaxDepth,
+        maxKeys: toPlainMaxKeys,
+        includeFunctions,
+        functionPaths,
+        _path: key,
+      })
+      const prevValue = dispatchedComputedSnapshot[key]
       const equal = computedCompare === 'deep'
         ? isDeepEqualValue(prevValue, nextValue, computedCompareMaxDepth, { keys: computedCompareMaxKeys })
         : computedCompare === 'shallow'
@@ -180,10 +203,9 @@ export function runPatchUpdate(options: {
       if (equal) {
         continue
       }
-      computedPatch[key] = normalizeSetDataValue(nextValue)
-      latestComputedSnapshot[key] = cloneSnapshotValue(nextValue)
+      payload[key] = normalizeSetDataValue(nextValue)
+      computedUpdates[key] = cloneSnapshotValue(nextValue)
     }
-    Object.assign(payload, computedPatch)
   }
 
   let collapsedPayload = collapsePayload(payload)
@@ -202,50 +224,46 @@ export function runPatchUpdate(options: {
     collapsedPayload = collapsePayload(mergedResult.out)
   }
   const sizeCheck = checkPayloadSize(collapsedPayload, maxPayloadBytes)
-  const shouldFallback = sizeCheck.fallback
-  const payloadPaths = Object.keys(collapsedPayload)
-  emitDebug({
-    mode: shouldFallback ? 'diff' : 'patch',
-    reason: shouldFallback ? 'maxPayloadBytes' : 'patch',
+  const payloadKeys = Object.keys(collapsedPayload).length
+  const debug: SetDataDebugInfo = {
+    mode: sizeCheck.fallback ? 'diff' : 'patch',
+    reason: sizeCheck.fallback ? 'maxPayloadBytes' : 'patch',
     pendingPatchKeys: patchEntries.length,
-    payloadKeys: payloadPaths.length,
+    payloadKeys,
     mergedSiblingParents: mergedSiblingParents || undefined,
     computedDirtyKeys: computedDirtyProcessed || undefined,
     estimatedBytes: sizeCheck.estimatedBytes,
     bytes: sizeCheck.bytes,
-  }, payloadPaths)
-  if (shouldFallback) {
-    needsFullSnapshot.value = true
-    pendingPatches.clear()
-    dirtyComputedKeys.clear()
-    return runDiffUpdate('maxPayloadBytes')
   }
-  if (!payloadPaths.length) {
-    return
+  if (sizeCheck.fallback) {
+    return {
+      type: 'fallback',
+      reason: 'maxPayloadBytes',
+      debug,
+    }
+  }
+  if (!payloadKeys) {
+    return undefined
   }
 
-  // 保持快照同步，确保 patch 模式可安全回退到 diff。
+  const snapshot: SetDataSnapshot = { ...dispatchedSnapshot }
+  const clonedParents = new WeakSet<object>()
   for (const [path, value] of Object.entries(collapsedPayload)) {
     const entry = entryMap.get(path)
-    if (entry) {
-      applySnapshotUpdate(latestSnapshot, path, value, entry.kind === 'array' ? 'set' : entry.op, { cloneValue: false })
-    }
-    else {
-      // 计算属性或 diffSnapshots 生成的顶层键。
-      applySnapshotUpdate(latestSnapshot, path, value, 'set', { cloneValue: false })
-    }
+    applySnapshotUpdate(
+      snapshot,
+      path,
+      value,
+      entry?.kind === 'array' ? 'set' : (entry?.op ?? 'set'),
+      { cloneValue: false, clonedParents },
+    )
   }
 
-  if (typeof currentAdapter.setData === 'function') {
-    const result = currentAdapter.setData(collapsedPayload)
-    if (result && typeof (result as Promise<any>).then === 'function') {
-      return (result as Promise<void>).catch(() => {})
-    }
+  return {
+    type: 'patch',
+    payload: collapsedPayload,
+    snapshot,
+    computedUpdates: Object.keys(computedUpdates).length ? computedUpdates : undefined,
+    debug,
   }
-  emitDebug({
-    mode: 'patch',
-    reason: 'patch',
-    pendingPatchKeys: patchEntries.length,
-    payloadKeys: payloadPaths.length,
-  }, payloadPaths)
 }

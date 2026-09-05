@@ -41,7 +41,7 @@ describe('runtime: setup returned ref triggers setData', () => {
     await Promise.resolve()
 
     expect(setData.mock.calls.length).toBeGreaterThan(beforeCalls)
-    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ active: false }))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ active: false }), expect.any(Function))
   })
 
   it('updates setup refs that overlap compiler-seeded data keys', async () => {
@@ -81,8 +81,8 @@ describe('runtime: setup returned ref triggers setData', () => {
     inst.markPassed()
     await Promise.resolve()
 
-    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ interactionCount: 1 }))
-    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ scenarioState: 'pass' }))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ interactionCount: 1 }), expect.any(Function))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ scenarioState: 'pass' }), expect.any(Function))
   })
 
   it('patch 模式下 setup computed 返回对象时，回到初始引用仍会触发更新', async () => {

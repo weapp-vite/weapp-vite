@@ -62,7 +62,7 @@ describe('runtime: props sync', () => {
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       'props.class': 'issue-627-updated-class',
       'props.style': 'font-size: 32rpx;',
-    }))
+    }), expect.any(Function))
   })
 
   it('syncs mp properties changes into setup returned props binding', async () => {
@@ -94,7 +94,7 @@ describe('runtime: props sync', () => {
     await nextTick()
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.title).toBe('Hello')
-    expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' })
+    expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' }, expect.any(Function))
   })
 
   it('keeps props identity stable for aliased bindings', async () => {
@@ -123,7 +123,7 @@ describe('runtime: props sync', () => {
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.newProps).toBe(initialRef)
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.newProps.title).toBe('Hello')
-    expect(inst.setData).toHaveBeenCalledWith({ 'newProps.title': 'Hello' })
+    expect(inst.setData).toHaveBeenCalledWith({ 'newProps.title': 'Hello' }, expect.any(Function))
   })
 
   it('does not depend on this.properties being updated inside observers', async () => {
@@ -147,7 +147,7 @@ describe('runtime: props sync', () => {
     await nextTick()
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.title).toBe('Hello')
-    expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' })
+    expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' }, expect.any(Function))
   })
 
   it('syncs latest properties on ready (late initial binding)', async () => {
@@ -175,7 +175,7 @@ describe('runtime: props sync', () => {
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.title).toBe('Hello')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.subtitle).toBe('Sub')
-    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ 'props.title': 'Hello', 'props.subtitle': 'Sub' }))
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ 'props.title': 'Hello', 'props.subtitle': 'Sub' }), expect.any(Function))
   })
 
   it('syncs latest properties on attached even without observers', async () => {
@@ -228,7 +228,7 @@ describe('runtime: props sync', () => {
     await nextTick()
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.boolText).toBe('true')
-    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ boolText: 'true' }))
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ boolText: 'true' }), expect.any(Function))
   })
 
   it('resolves props values with a compact runtime helper', async () => {
@@ -297,7 +297,7 @@ describe('runtime: props sync', () => {
     await nextTick()
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_cls_0).toBe('updated-data-title')
-    expect(inst.setData).toHaveBeenCalledWith({ __wv_cls_0: 'updated-data-title' })
+    expect(inst.setData).toHaveBeenCalledWith({ __wv_cls_0: 'updated-data-title' }, expect.any(Function))
   })
 
   it('prefers setup state over options data and props for compiled bindings', async () => {
@@ -343,7 +343,7 @@ describe('runtime: props sync', () => {
     await nextTick()
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.__wv_cls_0).toBe('updated-setup-title')
-    expect(inst.setData).toHaveBeenCalledWith({ __wv_cls_0: 'updated-setup-title' })
+    expect(inst.setData).toHaveBeenCalledWith({ __wv_cls_0: 'updated-setup-title' }, expect.any(Function))
   })
 
   it('exposes __wevuProps to computed bindings when component has no setup', async () => {
@@ -383,7 +383,7 @@ describe('runtime: props sync', () => {
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_cls_0: 'is-active',
       __wv_style_0: 'color: blue',
-    }))
+    }), expect.any(Function))
   })
 
   it('keeps setup bindings separate from props when names collide', async () => {
@@ -487,7 +487,7 @@ describe('runtime: props sync', () => {
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.y).toBe('next-props')
-    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'next-props' }))
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'next-props' }), expect.any(Function))
   })
 
   it('syncs page query props into compiled props aliases before first render', async () => {
@@ -515,7 +515,7 @@ describe('runtime: props sync', () => {
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.y).toBe('from-query')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('from-query')
-    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'from-query' }))
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'from-query' }), expect.any(Function))
   })
 
   it('syncs replayed page options into compiled props aliases', async () => {
@@ -548,7 +548,7 @@ describe('runtime: props sync', () => {
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.x).toBe('from-setup')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.y).toBe('from-options')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('from-options')
-    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'from-options' }))
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'from-options' }), expect.any(Function))
   })
 
   it('syncs aliased props-derived bindings from their source prop names', async () => {
@@ -575,7 +575,7 @@ describe('runtime: props sync', () => {
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.y).toBe('from-query')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.x).toBe('from-query')
-    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'from-query' }))
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ y: 'from-query' }), expect.any(Function))
   })
 
   it('syncs function props into setup props when declared as Function', async () => {
@@ -641,7 +641,7 @@ describe('runtime: props sync', () => {
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.title).toBe('Hello')
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props.title).toBe('Hello')
-    expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' })
+    expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' }, expect.any(Function))
 
     const payloads = inst.setData.mock.calls.map(([payload]: any[]) => payload ?? {})
     expect(payloads.some((payload: any) => Object.hasOwn(payload, 'title'))).toBe(false)
@@ -683,7 +683,7 @@ describe('runtime: props sync', () => {
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props[WEVU_SLOT_NAMES_PROP]).toBe(nextSlots)
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_NAMES_PROP]).toEqual(nextSlots)
-    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_NAMES_PROP]: nextSlots })
+    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_NAMES_PROP]: nextSlots }, expect.any(Function))
   })
 
   it('mirrors initially provided slot metadata before the first performance snapshot flush', async () => {
@@ -721,7 +721,7 @@ describe('runtime: props sync', () => {
     expect(inst.data[WEVU_SLOT_NAMES_PROP]).toBe(initialSlots)
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.props[WEVU_SLOT_NAMES_PROP]).toBe(initialSlots)
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_NAMES_PROP]).toEqual(initialSlots)
-    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_NAMES_PROP]: initialSlots })
+    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_NAMES_PROP]: initialSlots }, expect.any(Function))
   })
 
   it('mirrors scoped slot owner metadata props to top-level data for compiled outlets', async () => {
@@ -767,7 +767,7 @@ describe('runtime: props sync', () => {
     expect(inst.setData).toHaveBeenCalledWith({
       [WEVU_SLOT_OWNER_ID_PROP]: 'wv-owner-1',
       [WEVU_SLOT_SCOPE_KEY]: nextScope,
-    })
+    }, expect.any(Function))
   })
 
   it('mirrors initially provided scoped slot owner metadata before the first performance snapshot flush', async () => {
@@ -811,7 +811,7 @@ describe('runtime: props sync', () => {
     expect(inst.setData).toHaveBeenCalledWith({
       [WEVU_SLOT_OWNER_ID_PROP]: 'wv-owner-1',
       [WEVU_SLOT_SCOPE_KEY]: initialScope,
-    })
+    }, expect.any(Function))
   })
 
   it('mirrors initially provided slot metadata for compiled slot-only components without setup', async () => {
@@ -842,7 +842,7 @@ describe('runtime: props sync', () => {
 
     expect(inst.data[WEVU_SLOT_NAMES_PROP]).toBe(initialSlots)
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy[WEVU_SLOT_NAMES_PROP]).toEqual(initialSlots)
-    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_NAMES_PROP]: initialSlots })
+    expect(inst.setData).toHaveBeenCalledWith({ [WEVU_SLOT_NAMES_PROP]: initialSlots }, expect.any(Function))
   })
 
   it('mirrors initially provided scoped slot owner metadata for compiled slot-only components without setup', async () => {
@@ -880,7 +880,7 @@ describe('runtime: props sync', () => {
     expect(inst.setData).toHaveBeenCalledWith({
       [WEVU_SLOT_OWNER_ID_PROP]: 'wv-owner-1',
       [WEVU_SLOT_SCOPE_KEY]: initialScope,
-    })
+    }, expect.any(Function))
   })
 
   it('keeps alias-derived setup keys visible to template setData output', async () => {
@@ -909,6 +909,6 @@ describe('runtime: props sync', () => {
     await nextTick()
 
     expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.aliasTitle).toBe('Hello')
-    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ aliasTitle: 'Hello' }))
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ aliasTitle: 'Hello' }), expect.any(Function))
   })
 })
