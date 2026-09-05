@@ -117,7 +117,7 @@ Thanks to [all contributors](https://github.com/weapp-vite/weapp-vite/graphs/con
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=weapp-vite/weapp-vite&type=Date)](https://star-history.com/#weapp-vite/weapp-vite&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=weapp-vite/weapp-vite&type=Date)](https://star-history.dera.page/#weapp-vite/weapp-vite&Date)
 
 ## License
 
