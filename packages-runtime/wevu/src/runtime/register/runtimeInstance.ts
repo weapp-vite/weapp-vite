@@ -720,11 +720,11 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
     () => {
       target[WEVU_EFFECT_SCOPE_KEY] = undefined
     },
+    () => runtime?.unmount(),
     () => {
       delete (target as any)[WEVU_SETUP_CONTEXT_INSTANCE_KEY]
       delete (target as any)[WEVU_EXPOSED_KEY]
     },
-    () => runtime?.unmount(),
     () => {
       delete target.__wevu
     },

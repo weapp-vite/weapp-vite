@@ -328,6 +328,40 @@ describe('mountRuntimeInstance and teardown', () => {
     teardownRuntimeInstance(target)
   })
 
+  it('keeps the setup facade available until runtime unmount completes', () => {
+    const app = createApp({})
+    const target: InternalRuntimeState = {
+      route: 'pages/unmount-order/index',
+      setData: vi.fn(),
+    }
+    const exposed = { ready: true }
+
+    const setup: NonNullable<Parameters<typeof mountRuntimeInstance>[3]> = (
+      _props: unknown,
+      { expose }: { expose: (value: Record<string, unknown>) => void },
+    ) => {
+      expose(exposed)
+      return {}
+    }
+    mountRuntimeInstance(target, app, undefined, setup)
+    const runtime = target.__wevu
+    if (!runtime) {
+      throw new Error('Expected runtime instance to be mounted')
+    }
+    const originalUnmount = runtime.unmount
+    const unmount = vi.spyOn(runtime, 'unmount').mockImplementation(() => {
+      expect(target[WEVU_SETUP_CONTEXT_INSTANCE_KEY]).toBeDefined()
+      expect(target[WEVU_EXPOSED_KEY]).toBe(exposed)
+      originalUnmount()
+    })
+
+    teardownRuntimeInstance(target)
+
+    expect(unmount).toHaveBeenCalledTimes(1)
+    expect(target[WEVU_SETUP_CONTEXT_INSTANCE_KEY]).toBeUndefined()
+    expect(target[WEVU_EXPOSED_KEY]).toBeUndefined()
+  })
+
   it('continues teardown after template ref cleanup fails', () => {
     const { app, runtime } = createRuntimeAppStub()
     const target: InternalRuntimeState = {
