@@ -14,6 +14,7 @@ import type { WatchMap } from './watch'
 import {
   WEVU_EFFECT_SCOPE_KEY,
   WEVU_HOOKS_KEY,
+  WEVU_HOST_COMMIT_PROMISE_KEY,
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
   WEVU_PAGE_LAYOUT_SETTER_KEY,
@@ -226,6 +227,68 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   let pendingSettlementHead: BufferedSetDataSettlement | undefined
   let pendingSettlementTail: BufferedSetDataSettlement | undefined
   let pendingRawCallbacks: Array<() => void> = []
+  const ownsHostCommit = !(WEVU_HOST_COMMIT_PROMISE_KEY in target)
+  let pendingHostCommits = 0
+  let hostCommitFailed = false
+  let hostCommitCause: unknown
+  let hostCommitPromise: Promise<void> | undefined
+  let resolveHostCommit: (() => void) | undefined
+  let rejectHostCommit: ((cause: unknown) => void) | undefined
+
+  const resetHostCommitFailure = () => {
+    if (!pendingHostCommits && !pendingPayload && !hostCommitPromise) {
+      hostCommitFailed = false
+      hostCommitCause = undefined
+    }
+  }
+  const flushHostCommitWaiter = () => {
+    if (pendingHostCommits || pendingPayload) {
+      return
+    }
+    if (hostCommitFailed) {
+      rejectHostCommit?.(hostCommitCause)
+    }
+    else {
+      resolveHostCommit?.()
+    }
+    hostCommitPromise = undefined
+    resolveHostCommit = undefined
+    rejectHostCommit = undefined
+  }
+  const beginHostCommit = () => {
+    if (ownsHostCommit) {
+      pendingHostCommits += 1
+    }
+  }
+  const finishHostCommit = (settlement: SetDataAdapterSettlement = 'committed', cause?: unknown) => {
+    if (!ownsHostCommit || disposed) {
+      return
+    }
+    if (settlement === 'failed' && !hostCommitFailed) {
+      hostCommitFailed = true
+      hostCommitCause = cause
+    }
+    pendingHostCommits -= 1
+    flushHostCommitWaiter()
+  }
+  const failHostCommit = (cause: unknown) => finishHostCommit('failed', cause)
+  if (ownsHostCommit) {
+    Object.defineProperty(target, WEVU_HOST_COMMIT_PROMISE_KEY, {
+      configurable: true,
+      enumerable: false,
+      get: () => {
+        if (!pendingHostCommits && !pendingPayload) {
+          return hostCommitFailed ? Promise.reject(hostCommitCause) : undefined
+        }
+        // 只有实例 $nextTick 消费宿主屏障时才创建 Promise。
+        hostCommitPromise ??= new Promise<void>((resolve, reject) => {
+          resolveHostCommit = resolve
+          rejectHostCommit = reject
+        })
+        return hostCommitPromise
+      },
+    })
+  }
 
   const refreshOwnerSnapshot = () => {
     if (!runtimeRef) {
@@ -237,7 +300,15 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy, target)
   }
   const completeSuccessfulSetData = () => {
-    scheduleTemplateRefUpdate(target)
+    if (disposed) {
+      return
+    }
+    scheduleTemplateRefUpdate(
+      target,
+      ownsHostCommit ? finishHostCommit : undefined,
+      target,
+      ownsHostCommit ? failHostCommit : undefined,
+    )
   }
   const appendPendingSettlement = (settle: SetDataAdapterSettler) => {
     const record: BufferedSetDataSettlement = {
@@ -277,6 +348,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     settle: SetDataAdapterSettler,
   ) => {
     const generation = dispatchGeneration
+    beginHostCommit()
     refreshOwnerSnapshot()
     observeSetDataCompletion({
       invoke: (callback) => {
@@ -292,10 +364,20 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         if (disposed || generation !== dispatchGeneration) {
           return
         }
-        if (settlement === 'committed') {
-          completeSuccessfulSetData()
+        if (settlement !== 'committed') {
+          finishHostCommit(settlement, cause)
+          settle(settlement, cause)
+          return
         }
-        settle(settlement, cause)
+        // 物理提交已成功，但实例屏障仍需等待原始回调；回调失败不能回滚快照账本。
+        try {
+          settle(settlement, cause)
+        }
+        catch (error) {
+          finishHostCommit('failed', error)
+          throw error
+        }
+        completeSuccessfulSetData()
       },
     })
   }
@@ -332,8 +414,10 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     pendingSettlementTail = undefined
     pendingRawCallbacks = []
     settlePendingRecords(settlements, 'abandoned')
+    flushHostCommitWaiter()
   }
   const bufferPayload = (payload: SetDataPayload) => {
+    resetHostCommitFailure()
     pendingPayload = mergeBufferedSetDataPayload(pendingPayload, payload)
   }
 
@@ -350,9 +434,17 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       }
 
       refreshOwnerSnapshot()
+      resetHostCommitFailure()
+      beginHostCommit()
       const setData = resolveNativeSetData(target)
       if (!setData) {
-        callback?.()
+        try {
+          callback?.()
+        }
+        catch (cause) {
+          finishHostCommit('failed', cause)
+          throw cause
+        }
         completeSuccessfulSetData()
         return undefined
       }
@@ -361,6 +453,13 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       let callbackCalled = false
       let returnIsAuthoritative = false
       let successHandled = false
+      const handleFailure = (cause: unknown) => {
+        if (successHandled) {
+          return
+        }
+        successHandled = true
+        finishHostCommit('failed', cause)
+      }
       const handleSuccess = () => {
         if (successHandled) {
           return
@@ -369,7 +468,13 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         completeSuccessfulSetData()
       }
       const nativeCallback = () => {
-        callback?.()
+        try {
+          callback?.()
+        }
+        catch (cause) {
+          handleFailure(cause)
+          throw cause
+        }
         if (invoking) {
           callbackCalled = true
           return
@@ -378,13 +483,26 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
           handleSuccess()
         }
       }
-      const result = callNativeSetData(target, setData, payload, nativeCallback)
+      let result: void | Promise<void>
+      try {
+        result = callNativeSetData(target, setData, payload, nativeCallback)
+      }
+      catch (cause) {
+        handleFailure(cause)
+        throw cause
+      }
       invoking = false
       returnIsAuthoritative = Boolean(result && typeof result.then === 'function')
       if (result && typeof result.then === 'function') {
-        return result.then(() => {
-          handleSuccess()
-        })
+        return result.then(
+          () => {
+            handleSuccess()
+          },
+          (cause) => {
+            handleFailure(cause)
+            throw cause
+          },
+        )
       }
       if (callbackCalled) {
         handleSuccess()
@@ -403,6 +521,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         refreshOwnerSnapshot()
         return
       }
+      resetHostCommitFailure()
       dispatchPhysicalSetData(payload, settle)
     },
     __wevu_enableSetData(discardPending = false) {
@@ -429,6 +548,13 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       pendingSettlementHead = undefined
       pendingSettlementTail = undefined
       pendingRawCallbacks = []
+      pendingHostCommits = 0
+      hostCommitFailed = false
+      hostCommitCause = undefined
+      flushHostCommitWaiter()
+      if (ownsHostCommit) {
+        Reflect.deleteProperty(target, WEVU_HOST_COMMIT_PROMISE_KEY)
+      }
     },
   }
 

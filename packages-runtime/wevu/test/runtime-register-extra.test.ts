@@ -10,6 +10,7 @@ import {
 } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, getCurrentScope, nextTick, onError, onErrorCaptured, onScopeDispose, reactive, ref, setPageLayout, watch, watchEffect } from '@/index'
+import { createSetDataCommitTracker } from '@/runtime/app/setData/commitTracker'
 import { callHookReturn, setCurrentInstance } from '@/runtime/hooks'
 import {
   mountRuntimeInstance,
@@ -18,7 +19,7 @@ import {
   runSetupFunction,
   teardownRuntimeInstance,
 } from '@/runtime/register'
-import { enableDeferredSetData } from '@/runtime/register/runtimeInstance'
+import { enableDeferredSetData, setRuntimeSetDataVisibility } from '@/runtime/register/runtimeInstance'
 import { getOwnerSnapshot } from '@/runtime/scopedSlots'
 
 const componentCalls: Record<string, any>[] = []
@@ -139,75 +140,412 @@ describe('mountRuntimeInstance and teardown', () => {
     teardownRuntimeInstance(target)
   })
 
-  it('refreshes conditional component refs after the native setData callback', async () => {
-    const { app } = createRuntimeAppStub()
+  it('waits for raw adapter setData and conditional refs from instance nextTick', async () => {
+    const app = createApp({ data: () => ({ visible: false }) })
     let nativeCallback: (() => void) | undefined
     const open = vi.fn()
-    const target: any = {
+    let rendered = false
+    const target = {
       [WEVU_READY_CALLED_KEY]: true,
       [WEVU_TEMPLATE_REFS_KEY]: [
         { selector: '.conditional', inFor: false, name: 'conditional', kind: 'component' },
       ],
-      selectComponent: vi.fn(() => null),
-      setData: vi.fn((_payload, callback) => {
+      data: { visible: false },
+      selectComponent: () => rendered ? { open } : null,
+      setData: vi.fn((_payload: Record<string, unknown>, callback: () => void) => {
         nativeCallback = callback
       }),
-    }
+    } satisfies InternalRuntimeState
 
-    mountRuntimeInstance(target, app as any, undefined, undefined)
-    target.__wevu.adapter.setData({ visible: true })
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    runtime.adapter!.setData!({ visible: true })
+    const openAfterCommit = vi.fn(() => runtime.proxy.$refs.conditional.open())
+    const tick = runtime.proxy.$nextTick(openAfterCommit)
     await nextTick()
     await nextTick()
 
-    expect(target.__wevu.state.$refs?.conditional).toBeUndefined()
-    target.selectComponent.mockReturnValue({ open })
+    expect(openAfterCommit).not.toHaveBeenCalled()
+    rendered = true
     nativeCallback?.()
-    await nextTick()
-    await nextTick()
+    await tick
 
-    expect(target.__wevu.state.$refs.conditional.open).toBeTypeOf('function')
-    target.__wevu.state.$refs.conditional.open()
-    expect(open).toHaveBeenCalledTimes(1)
+    expect(open).toHaveBeenCalledOnce()
+    teardownRuntimeInstance(target)
   })
 
-  it('resolves nextTick after native dispatch and refreshes refs only after commit', async () => {
+  it('keeps exported nextTick queue-only while instance nextTick waits for conditional refs', async () => {
     const app = createApp({
       data: () => ({ visible: false }),
     })
     let nativeCallback: (() => void) | undefined
     let rendered = false
     const conditional = { open: vi.fn() }
-    const target: any = {
+    const target = {
       [WEVU_READY_CALLED_KEY]: true,
       [WEVU_TEMPLATE_REFS_KEY]: [
         { selector: '.conditional', inFor: false, name: 'conditional', kind: 'component' },
       ],
       data: { visible: false },
       selectComponent: vi.fn(() => rendered ? conditional : null),
-      setData: vi.fn((payload, callback) => {
+      setData: vi.fn((payload: Record<string, unknown>, callback: () => void) => {
         Object.assign(target.data, payload)
         nativeCallback = callback
       }),
-    }
+    } satisfies InternalRuntimeState
 
-    mountRuntimeInstance(target, app as any, undefined, undefined)
-    target.__wevu.proxy.visible = true
-    let settled = false
-    await nextTick().then(() => {
-      settled = true
-    })
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    runtime.proxy.visible = true
+    const openAfterCommit = vi.fn(() => runtime.proxy.$refs.conditional.open())
+    const instanceTick = runtime.proxy.$nextTick(openAfterCommit)
+    await nextTick()
+    await nextTick()
 
-    expect(settled).toBe(true)
-    expect(nativeCallback).toBeTypeOf('function')
-    expect(target.__wevu.state.$refs?.conditional).toBeUndefined()
+    expect(openAfterCommit).not.toHaveBeenCalled()
+    expect(runtime.proxy.$refs?.conditional).toBeUndefined()
     rendered = true
     nativeCallback?.()
+    await instanceTick
+
+    expect(openAfterCommit).toHaveBeenCalledOnce()
+    expect(conditional.open).toHaveBeenCalledOnce()
+    teardownRuntimeInstance(target)
+  })
+
+  it('waits for asynchronous selector ref assignment after the host callback', async () => {
+    const app = createApp({ data: () => ({ visible: false }) })
+    let nativeCallback: (() => void) | undefined
+    let resolveQuery: ((results: unknown[]) => void) | undefined
+    const target = {
+      [WEVU_READY_CALLED_KEY]: true,
+      [WEVU_TEMPLATE_REFS_KEY]: [
+        { selector: '.conditional', inFor: false, name: 'conditional', kind: 'element' },
+      ],
+      data: { visible: false },
+      setData: (_payload: Record<string, unknown>, callback: () => void) => {
+        nativeCallback = callback
+      },
+      createSelectorQuery: () => ({
+        select: () => ({ boundingClientRect() {} }),
+        exec: (callback: (results: unknown[]) => void) => {
+          resolveQuery = callback
+        },
+      }),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    runtime.proxy.visible = true
+    const readRef = vi.fn(() => runtime.proxy.$refs.conditional.boundingClientRect())
+    const instanceTick = runtime.proxy.$nextTick(readRef)
     await nextTick()
+    nativeCallback?.()
     await nextTick()
 
-    expect(target.__wevu.state.$refs.conditional.open).toBeTypeOf('function')
-    target.__wevu.state.$refs.conditional.open()
-    expect(conditional.open).toHaveBeenCalledTimes(1)
+    expect(readRef).not.toHaveBeenCalled()
+    resolveQuery?.([{ width: 120 }])
+    await nextTick()
+    resolveQuery?.([{ width: 120 }])
+    await expect(instanceTick).resolves.toEqual({ width: 120 })
+    teardownRuntimeInstance(target)
+  })
+
+  it('does not release a newer ref update when an earlier asynchronous query finishes', async () => {
+    const app = createApp({ data: () => ({ visible: false }) })
+    const hostCallbacks: Array<() => void> = []
+    const queryCallbacks: Array<(results: unknown[]) => void> = []
+    const target = {
+      [WEVU_READY_CALLED_KEY]: true,
+      [WEVU_TEMPLATE_REFS_KEY]: [
+        { selector: '.conditional', inFor: false, name: 'conditional', kind: 'element' },
+      ],
+      data: { visible: false },
+      setData: (_payload: Record<string, unknown>, callback: () => void) => {
+        hostCallbacks.push(callback)
+      },
+      createSelectorQuery: () => ({
+        select: () => ({ boundingClientRect() {} }),
+        exec: (callback: (results: unknown[]) => void) => {
+          queryCallbacks.push(callback)
+        },
+      }),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    runtime.proxy.visible = true
+    await nextTick()
+    hostCallbacks.shift()!()
+    await nextTick()
+    runtime.proxy.visible = false
+    const readRef = vi.fn(() => runtime.proxy.$refs.conditional)
+    const tick = runtime.proxy.$nextTick(readRef)
+    await nextTick()
+    hostCallbacks.shift()!()
+    await nextTick()
+
+    queryCallbacks[0]!([{ width: 120 }])
+    await nextTick()
+    expect(readRef).not.toHaveBeenCalled()
+    queryCallbacks[1]!([null])
+    await expect(tick).resolves.toBeNull()
+    teardownRuntimeInstance(target)
+  })
+
+  it('keeps instance nextTick pending across hidden buffering and physical commit', async () => {
+    const app = createApp({
+      data: () => ({ count: 0 }),
+      setData: { suspendWhenHidden: true },
+    })
+    let completeHost: (() => void) | undefined
+    let renderedCount = 0
+    const target = {
+      data: { count: 0 },
+      setData: (payload: Record<string, unknown>, callback: () => void) => {
+        completeHost = () => {
+          renderedCount = payload.count as number
+          callback()
+        }
+      },
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    setRuntimeSetDataVisibility(target, false)
+    runtime.proxy.count = 1
+    const readRendered = vi.fn(() => renderedCount)
+    const tick = runtime.proxy.$nextTick(readRendered)
+    await nextTick()
+    expect(readRendered).not.toHaveBeenCalled()
+    expect(renderedCount).toBe(0)
+
+    setRuntimeSetDataVisibility(target, true)
+    await nextTick()
+    expect(readRendered).not.toHaveBeenCalled()
+    completeHost?.()
+    await expect(tick).resolves.toBe(1)
+    teardownRuntimeInstance(target)
+  })
+
+  it('rejects a failed instance commit and allows a later successful commit', async () => {
+    const cause = new Error('host rejected')
+    const app = createApp({ data: () => ({ count: 0 }) })
+    let rejectHost: ((cause: unknown) => void) | undefined
+    let completeHost: (() => void) | undefined
+    const target = {
+      data: { count: 0 },
+      setData: (_payload: Record<string, unknown>, callback: () => void) => new Promise<void>((resolve, reject) => {
+        rejectHost = reject
+        completeHost = () => {
+          callback()
+          resolve()
+        }
+      }),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    runtime.proxy.count = 1
+    const failedCallback = vi.fn()
+    const failedTick = expect(runtime.proxy.$nextTick(failedCallback)).rejects.toBe(cause)
+    await nextTick()
+    rejectHost?.(cause)
+    await failedTick
+    expect(failedCallback).not.toHaveBeenCalled()
+
+    runtime.proxy.count = 2
+    const recoveredCallback = vi.fn(() => 'recovered')
+    const recoveredTick = runtime.proxy.$nextTick(recoveredCallback)
+    await nextTick()
+    expect(recoveredCallback).not.toHaveBeenCalled()
+    completeHost?.()
+    await expect(recoveredTick).resolves.toBe('recovered')
+    teardownRuntimeInstance(target)
+  })
+
+  it('retains a pending instance tick failure when hidden work transfers into a successful physical commit', async () => {
+    const cause = new Error('earlier host rejected')
+    const app = createApp({
+      data: () => ({ count: 0 }),
+      setData: { suspendWhenHidden: true },
+    })
+    const hosts: Array<{ resolve: () => void, reject: (cause: unknown) => void }> = []
+    const target = {
+      data: { count: 0 },
+      setData: () => new Promise<void>((resolve, reject) => {
+        hosts.push({ resolve, reject })
+      }),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    const firstDispatch = expect(runtime.adapter!.setData!({ count: 1 })).rejects.toBe(cause)
+    const afterCommit = vi.fn()
+    const rejected = vi.fn()
+    const originalTick = runtime.proxy.$nextTick(afterCommit).catch((error) => {
+      rejected(error)
+      return error
+    })
+    await nextTick()
+    setRuntimeSetDataVisibility(target, false)
+    runtime.adapter!.setData!({ count: 2 })
+    hosts[0]!.reject(cause)
+    await firstDispatch
+    await nextTick()
+    expect(rejected).not.toHaveBeenCalled()
+    expect(afterCommit).not.toHaveBeenCalled()
+
+    setRuntimeSetDataVisibility(target, true)
+    hosts[1]!.resolve()
+    await expect(originalTick).resolves.toBe(cause)
+    expect(rejected).toHaveBeenCalledExactlyOnceWith(cause)
+    expect(afterCommit).not.toHaveBeenCalled()
+
+    const recoveryDispatch = runtime.adapter!.setData!({ count: 3 })
+    const recovered = vi.fn(() => 'recovered')
+    const recoveryTick = runtime.proxy.$nextTick(recovered)
+    await nextTick()
+    expect(recovered).not.toHaveBeenCalled()
+    hosts[2]!.resolve()
+    await recoveryDispatch
+    await expect(recoveryTick).resolves.toBe('recovered')
+    teardownRuntimeInstance(target)
+  })
+
+  it('rejects a coalesced ref assignment failure and drains every host commit before later recovery', async () => {
+    const cause = new Error('component ref assignment failed')
+    const app = createApp({ data: () => ({ count: 0 }) })
+    const hosts: Array<() => void> = []
+    const child = { open: vi.fn(() => 'ready') }
+    let failAssignment = true
+    let assigned: typeof child | null = null
+    const target = {
+      [WEVU_READY_CALLED_KEY]: true,
+      [WEVU_TEMPLATE_REFS_KEY]: [{
+        selector: '.child',
+        inFor: false,
+        kind: 'component',
+        get: () => (value: unknown) => {
+          if (value && failAssignment) {
+            throw cause
+          }
+          assigned = value as typeof child | null
+        },
+      }],
+      data: { count: 0 },
+      selectComponent: () => child,
+      setData: (_payload: Record<string, unknown>, callback: () => void) => {
+        hosts.push(callback)
+      },
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    runtime.adapter!.setData!({ count: 1 })
+    runtime.adapter!.setData!({ count: 2 })
+    const afterCommit = vi.fn()
+    const failedTick = expect(runtime.proxy.$nextTick(afterCommit)).rejects.toBe(cause)
+    await nextTick()
+    hosts[0]!()
+    hosts[1]!()
+    await failedTick
+    expect(afterCommit).not.toHaveBeenCalled()
+
+    failAssignment = false
+    runtime.adapter!.setData!({ count: 3 })
+    const openAfterCommit = vi.fn(() => assigned?.open())
+    const recoveredTick = runtime.proxy.$nextTick(openAfterCommit)
+    await nextTick()
+    expect(openAfterCommit).not.toHaveBeenCalled()
+    hosts[2]!()
+    await expect(recoveredTick).resolves.toBe('ready')
+    expect(child.open).toHaveBeenCalledOnce()
+    teardownRuntimeInstance(target)
+  })
+
+  it('preserves the first asynchronous ref failure while overlapping host work finishes and later recovers', async () => {
+    const firstCause = new Error('first selector assignment failed')
+    const laterCause = new Error('later selector assignment failed')
+    let assignmentCause: Error | undefined = firstCause
+    let assigned: { boundingClientRect: () => unknown } | null = null
+    const hosts: Array<() => void> = []
+    const queries: Array<(results: unknown[]) => void> = []
+    const app = createApp({ data: () => ({ count: 0 }) })
+    const target = {
+      [WEVU_READY_CALLED_KEY]: true,
+      [WEVU_TEMPLATE_REFS_KEY]: [{
+        selector: '.child',
+        inFor: false,
+        kind: 'element',
+        get: () => (value: unknown) => {
+          if (value && assignmentCause) {
+            throw assignmentCause
+          }
+          assigned = value as typeof assigned
+        },
+      }],
+      data: { count: 0 },
+      setData: (_payload: Record<string, unknown>, callback: () => void) => {
+        hosts.push(callback)
+      },
+      createSelectorQuery: () => ({
+        select: () => ({ boundingClientRect() {} }),
+        exec: (callback: (results: unknown[]) => void) => {
+          queries.push(callback)
+        },
+      }),
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    runtime.adapter!.setData!({ count: 1 })
+    hosts[0]!()
+    await nextTick()
+    runtime.adapter!.setData!({ count: 2 })
+    const afterCommit = vi.fn()
+    const rejected = vi.fn()
+    const originalTick = runtime.proxy.$nextTick(afterCommit).catch((error) => {
+      rejected(error)
+      return error
+    })
+    await nextTick()
+    queries[0]!([{ width: 120 }])
+    await nextTick()
+    expect(rejected).not.toHaveBeenCalled()
+    expect(afterCommit).not.toHaveBeenCalled()
+
+    assignmentCause = laterCause
+    hosts[1]!()
+    await nextTick()
+    queries[1]!([{ width: 240 }])
+    await expect(originalTick).resolves.toBe(firstCause)
+    expect(rejected).toHaveBeenCalledExactlyOnceWith(firstCause)
+    expect(afterCommit).not.toHaveBeenCalled()
+
+    assignmentCause = undefined
+    runtime.adapter!.setData!({ count: 3 })
+    const readRef = vi.fn(() => assigned?.boundingClientRect())
+    const recoveredTick = runtime.proxy.$nextTick(readRef)
+    hosts[2]!()
+    await nextTick()
+    expect(readRef).not.toHaveBeenCalled()
+    queries[2]!([{ width: 360 }])
+    await nextTick()
+    queries[3]!([{ width: 360 }])
+    await expect(recoveredTick).resolves.toEqual({ width: 360 })
+    teardownRuntimeInstance(target)
+  })
+
+  it('releases an instance commit waiter on teardown and ignores late host callbacks', async () => {
+    const app = createApp({ data: () => ({ visible: false }) })
+    let completeHost: (() => void) | undefined
+    const target = {
+      [WEVU_READY_CALLED_KEY]: true,
+      [WEVU_TEMPLATE_REFS_KEY]: [
+        { selector: '.conditional', inFor: false, name: 'conditional', kind: 'component' },
+      ],
+      data: { visible: false },
+      selectComponent: vi.fn(() => ({ open() {} })),
+      setData: (_payload: Record<string, unknown>, callback: () => void) => {
+        completeHost = callback
+      },
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    runtime.proxy.visible = true
+    const afterTeardown = vi.fn(() => runtime.proxy.$refs.conditional)
+    const tick = runtime.proxy.$nextTick(afterTeardown)
+    await nextTick()
+    expect(afterTeardown).not.toHaveBeenCalled()
+    teardownRuntimeInstance(target)
+    await expect(tick).resolves.toBeNull()
+    completeHost?.()
+    await nextTick()
+    expect(target.selectComponent).not.toHaveBeenCalled()
   })
 
   it('buffers setData while hidden when suspendWhenHidden is enabled', () => {
@@ -338,11 +676,14 @@ describe('mountRuntimeInstance and teardown', () => {
     teardownRuntimeInstance(target)
   })
 
-  it('settles hidden tracked revisions when a buffered raw callback throws', () => {
-    const { app } = createRuntimeAppStub()
-    Object.defineProperty(app, '__wevuSetDataOptions', { value: { suspendWhenHidden: true } })
+  it('rejects instance nextTick without rolling back hidden tracked revisions when a buffered raw callback throws', async () => {
+    const app = createApp({
+      data: () => ({ raw: 0, tracked: 0 }),
+      setData: { suspendWhenHidden: true },
+    })
     let nativeCallback: (() => void) | undefined
     const target = {
+      data: { raw: 0, tracked: 0 },
       setData: vi.fn((_payload: Record<string, unknown>, callback: () => void) => {
         nativeCallback = callback
       }),
@@ -353,17 +694,74 @@ describe('mountRuntimeInstance and teardown', () => {
       __wevu_dispatchSetData: (payload: Record<string, unknown>, settle: SetDataAdapterSettler) => void
       __wevu_setVisibility: (visible: boolean) => void
     }
-    const settlement = vi.fn()
+    const commitFailure = vi.fn()
+    const tracker = createSetDataCommitTracker({
+      adapter,
+      initialSnapshot: { tracked: 0 },
+      onFailure: commitFailure,
+    })
     const callbackError = new Error('buffered callback failed')
     adapter.__wevu_setVisibility(false)
     adapter.setData({ raw: 1 }, () => {
       throw callbackError
     })
-    adapter.__wevu_dispatchSetData({ tracked: 1 }, settlement)
+    tracker.dispatch({
+      mode: 'diff',
+      kind: 'delta',
+      reason: 'diff',
+      snapshot: { tracked: 1 },
+      payload: { tracked: 1 },
+      pendingPatchKeys: 0,
+    })
+    const afterCommit = vi.fn()
+    const failedTick = expect(runtime.proxy.$nextTick(afterCommit)).rejects.toBe(callbackError)
+    await nextTick()
 
     adapter.__wevu_setVisibility(true)
     expect(() => nativeCallback?.()).toThrow(callbackError)
-    expect(settlement).toHaveBeenCalledWith('committed', undefined)
+    expect(tracker.state.committedRevision).toBe(1)
+    expect(tracker.state.committedSnapshot).toEqual({ tracked: 1 })
+    expect(tracker.state.needsFullSnapshot).toBe(false)
+    expect(commitFailure).not.toHaveBeenCalled()
+    await failedTick
+    expect(afterCommit).not.toHaveBeenCalled()
+
+    adapter.setData({ raw: 2 })
+    const recovered = vi.fn(() => 'recovered')
+    const recoveredTick = runtime.proxy.$nextTick(recovered)
+    await nextTick()
+    expect(recovered).not.toHaveBeenCalled()
+    nativeCallback?.()
+    await expect(recoveredTick).resolves.toBe('recovered')
+    expect(tracker.state.committedRevision).toBe(1)
+    expect(tracker.state.committedSnapshot).toEqual({ tracked: 1 })
+    tracker.dispose()
+    teardownRuntimeInstance(target)
+  })
+
+  it('keeps immediate raw callback failure synchronous and rejects the waiting instance tick', async () => {
+    const cause = new Error('immediate callback failed')
+    const app = createApp({ data: () => ({ count: 0 }) })
+    let nativeCallback: (() => void) | undefined
+    const target = {
+      data: { count: 0 },
+      setData: (_payload: Record<string, unknown>, callback: () => void) => {
+        nativeCallback = callback
+      },
+    } satisfies InternalRuntimeState
+    const runtime = mountRuntimeInstance(target, app, undefined, undefined)
+    const adapter = runtime.adapter as {
+      setData: (payload: Record<string, unknown>, callback?: () => void) => void
+    }
+    adapter.setData({ count: 1 }, () => {
+      throw cause
+    })
+    const afterCommit = vi.fn()
+    const failedTick = expect(runtime.proxy.$nextTick(afterCommit)).rejects.toBe(cause)
+    await nextTick()
+    expect(() => nativeCallback?.()).toThrow(cause)
+    await failedTick
+    expect(afterCommit).not.toHaveBeenCalled()
     teardownRuntimeInstance(target)
   })
 

@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
 
 import type { ComponentPublicInstance, NormalizedComponentOptions } from '../src/runtime/component/types'
-import { WEVU_HOST_COMMIT_PROMISE_KEY } from '@weapp-core/constants'
 import { html } from 'lit'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, onError, onErrorCaptured, ref } from 'wevu'
@@ -18,6 +17,31 @@ import { runComponentObservers } from '../src/runtime/component/observers'
 import { resolveRelationNodes } from '../src/runtime/component/relations'
 import { registerWebWevuComponent } from '../src/runtime/wevu'
 import { slugify } from '../src/shared/slugify'
+
+async function createHostCommitFixture(id: string) {
+  let waitForHostCommit!: (callback?: () => unknown) => Promise<unknown>
+  registerWebWevuComponent({
+    props: {
+      title: { type: String, default: 'initial' },
+    },
+    data: () => ({ count: 0 }),
+    mounted(this: { $nextTick: (callback?: () => unknown) => Promise<unknown> }) {
+      waitForHostCommit = this.$nextTick.bind(this)
+    },
+  }, {
+    kind: 'component',
+    id,
+    template: state => html`<span>${state.title}:${state.count}</span>`,
+  })
+  const element = document.createElement(slugify(id, 'wv-component')) as ComponentPublicInstance & {
+    updateComplete: Promise<boolean>
+    scheduleUpdate: () => void | Promise<unknown>
+    __weappSync: (methods: undefined) => void
+  }
+  document.body.append(element)
+  await element.updateComplete
+  return { element, waitForHostCommit }
+}
 
 describe('component infrastructure contracts', () => {
   afterEach(() => {
@@ -195,7 +219,6 @@ describe('component infrastructure contracts', () => {
 
     const element = document.createElement('wv-lit-lifecycle-contract') as ComponentPublicInstance & {
       updateComplete: Promise<boolean>
-      [WEVU_HOST_COMMIT_PROMISE_KEY]: Promise<unknown> | undefined
       invalid?: unknown
       attributeChangedCallback: (name: string, oldValue: string | null, newValue: string | null) => void
       connectedCallback: () => void
@@ -243,7 +266,6 @@ describe('component infrastructure contracts', () => {
       value: rejectedUpdate,
     })
     const failedUpdate = element.setData({ count: 2 })
-    expect(element[WEVU_HOST_COMMIT_PROMISE_KEY]).toBe(failedUpdate)
     const renderFailure = new Error('render failed')
     rejectUpdate?.(renderFailure)
     await expect(failedUpdate).rejects.toBe(renderFailure)
@@ -261,7 +283,6 @@ describe('component infrastructure contracts', () => {
     const concurrentCallback = vi.fn()
     const recoveryUpdate = element.setData({ count: 2 }, recoveryCallback)
     const concurrentUpdate = element.setData({ count: 2 }, concurrentCallback)
-    expect(element[WEVU_HOST_COMMIT_PROMISE_KEY]).toBe(concurrentUpdate)
     expect(concurrentUpdate).toBeInstanceOf(Promise)
     expect(recoveryCallback).not.toHaveBeenCalled()
     expect(concurrentCallback).not.toHaveBeenCalled()
@@ -374,6 +395,76 @@ describe('component infrastructure contracts', () => {
 
     expect(element.shadowRoot?.querySelector('[data-visible]')).not.toBeNull()
     element.remove()
+  })
+
+  it('recovers instance nextTick after a rejected setData update and a property-only render', async () => {
+    const { element, waitForHostCommit } = await createHostCommitFixture('components/commit-property-recovery/index')
+    let rejectUpdate!: (cause: unknown) => void
+    const pendingUpdate = new Promise<boolean>((_resolve, reject) => {
+      rejectUpdate = reject
+    })
+    Object.defineProperty(element, 'updateComplete', {
+      configurable: true,
+      value: pendingUpdate,
+    })
+    const cause = new Error('render failed')
+    const failedUpdate = expect(element.setData({ count: 1 })).rejects.toBe(cause)
+    const failedCallback = vi.fn()
+    const failedTick = expect(waitForHostCommit(failedCallback)).rejects.toBe(cause)
+    await nextTick()
+    rejectUpdate(cause)
+    await Promise.all([failedUpdate, failedTick])
+    expect(failedCallback).not.toHaveBeenCalled()
+    Reflect.deleteProperty(element, 'updateComplete')
+
+    element.title = 'recovered'
+    await element.updateComplete
+    await expect(waitForHostCommit(() => element.shadowRoot?.querySelector('span')?.textContent))
+      .resolves
+      .toBe('recovered:1')
+  })
+
+  it('waits for a newer pending attribute render after a successful setData commit', async () => {
+    const { element, waitForHostCommit } = await createHostCommitFixture('components/commit-attribute-pending/index')
+    await element.setData({ count: 1 })
+    let releaseUpdate!: () => void
+    const updateGate = new Promise<void>((resolve) => {
+      releaseUpdate = resolve
+    })
+    const scheduleUpdate = element.scheduleUpdate.bind(element)
+    vi.spyOn(element, 'scheduleUpdate').mockImplementation(async () => {
+      await updateGate
+      return scheduleUpdate()
+    })
+
+    element.setAttribute('title', 'later')
+    const readRendered = vi.fn(() => element.shadowRoot?.querySelector('span')?.textContent)
+    const tick = waitForHostCommit(readRendered)
+    await nextTick()
+    await nextTick()
+    expect(readRendered).not.toHaveBeenCalled()
+    expect(element.shadowRoot?.querySelector('span')?.textContent).toBe('initial:1')
+
+    releaseUpdate()
+    await expect(tick).resolves.toBe('later:1')
+  })
+
+  it('preserves setData callback rejection until a later HMR render recovers', async () => {
+    const { element, waitForHostCommit } = await createHostCommitFixture('components/commit-callback-recovery/index')
+    const cause = new Error('callback failed')
+    await expect(element.setData({ count: 1 }, () => {
+      throw cause
+    })).rejects.toBe(cause)
+    const skippedCallback = vi.fn()
+    await expect(waitForHostCommit(skippedCallback)).rejects.toBe(cause)
+    expect(skippedCallback).not.toHaveBeenCalled()
+    expect(element.shadowRoot?.querySelector('span')?.textContent).toBe('initial:1')
+
+    element.data.count = 2
+    element.__weappSync(undefined)
+    await expect(waitForHostCommit(() => element.shadowRoot?.querySelector('span')?.textContent))
+      .resolves
+      .toBe('initial:2')
   })
 
   it('finds an owner through assigned slots and shadow roots', async () => {

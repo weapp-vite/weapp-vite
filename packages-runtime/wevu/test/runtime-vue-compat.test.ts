@@ -91,7 +91,9 @@ describe('runtime: vue compat helpers', () => {
 
     const opts = registeredComponents[0]
     const inst: any = {
-      setData() {},
+      setData(_payload: Record<string, unknown>, callback?: () => void) {
+        callback?.()
+      },
       triggerEvent: vi.fn(),
       properties: {},
     }
@@ -159,7 +161,9 @@ describe('runtime: vue compat helpers', () => {
 
     const opts = registeredComponents[0]
     const inst: any = {
-      setData() {},
+      setData(_payload: Record<string, unknown>, callback?: () => void) {
+        callback?.()
+      },
       triggerEvent: vi.fn(),
       properties: {},
     }
@@ -182,7 +186,9 @@ describe('runtime: vue compat helpers', () => {
     const opts = registeredComponents[0]
     const inst: any = {
       data: {},
-      setData() {},
+      setData(_payload: Record<string, unknown>, callback?: () => void) {
+        callback?.()
+      },
       triggerEvent: vi.fn(),
       properties: {},
     }
@@ -479,7 +485,9 @@ describe('runtime: vue compat helpers', () => {
 
     const parentOptions = registeredComponents[0]
     const childOptions = registeredComponents[1]
-    const parentSetData = vi.fn()
+    const parentSetData = vi.fn((_payload: Record<string, unknown>, callback?: () => void) => {
+      callback?.()
+    })
     const parent: any = {
       setData: parentSetData,
       triggerEvent: vi.fn(),

@@ -91,6 +91,7 @@ export function createComponentElementClass({
     #virtualHostRootElement: ClassAttributeElement | undefined
     #needsSetDataRecovery = false
     #hostCommitPromise: Promise<void> | undefined
+    #hostCommitUpdate: Promise<boolean> | undefined
     readonly data!: DataRecord
     readonly properties!: DataRecord
 
@@ -142,15 +143,14 @@ export function createComponentElementClass({
     }
 
     get [WEVU_HOST_COMMIT_PROMISE_KEY]() {
-      if (this.#hostCommitPromise) {
-        return this.#hostCommitPromise
-      }
+      // 回调异常属于当前提交；后续属性更新或 HMR 必须等待自己的 Lit 提交。
       if (!supportsLit) {
         return undefined
       }
       // 动态 Lit 基类不会在静态声明中暴露 updateComplete。
       const litElement = this as unknown as { updateComplete: Promise<boolean> }
-      return litElement.updateComplete
+      const update = litElement.updateComplete
+      return this.#hostCommitUpdate === update ? this.#hostCommitPromise : update
     }
 
     setData(patch: DataRecord, callback?: () => void) {
@@ -161,7 +161,8 @@ export function createComponentElementClass({
         }
         // 动态 Lit 基类不会在静态声明中暴露 updateComplete。
         const litElement = this as unknown as { updateComplete: Promise<boolean> }
-        const commitPromise = litElement.updateComplete.then(
+        const update = litElement.updateComplete
+        const commitPromise = update.then(
           () => {
             this.#needsSetDataRecovery = false
             callback?.()
@@ -172,6 +173,7 @@ export function createComponentElementClass({
           },
         )
         this.#hostCommitPromise = commitPromise
+        this.#hostCommitUpdate = update
         return commitPromise
       }
       callback?.()
