@@ -103,10 +103,11 @@ export function remapJsxBindingManifestLocations(
     if (!mapped.hasMappedContent && !sourceFilesMatch(ownedSourceFile, manifest.sourceFile)) {
       return undefined
     }
-    let lineStarts = lineStartsCache.get(mapped.content)
+    const content = sourceFilesMatch(ownedSourceFile, manifest.sourceFile) ? source : mapped.content
+    let lineStarts = lineStartsCache.get(content)
     if (!lineStarts) {
-      lineStarts = createSourceLineStarts(mapped.content)
-      lineStartsCache.set(mapped.content, lineStarts)
+      lineStarts = createSourceLineStarts(content)
+      lineStartsCache.set(content, lineStarts)
     }
     return {
       position: {
