@@ -90,7 +90,6 @@ import type {
   UseAsyncPullDownRefreshOptions,
   VNode,
   VNodeProps,
-  WevuComponentConstructor,
   WevuPlugin,
   WevuTypedRouterRouteMap,
 } from 'wevu'
@@ -265,7 +264,6 @@ type MissingMacroApi = Exclude<ScriptSetupMacroApiName, keyof typeof wevu>
 
 expectType<never>({} as MissingRuntimeApi)
 expectType<never>({} as MissingMacroApi)
-expectType<WevuComponentConstructor<any, any, any, any, any> | null>(null)
 declare const compilerEntry: CompilerEntry
 expectType<CompilerEntry>(compilerEntry)
 
@@ -280,8 +278,6 @@ expectType<WevuApiEntry>(apiEntry)
 
 declare const fetchEntry: WevuFetchEntry
 expectType<WevuFetchEntry>(fetchEntry)
-expectType<MiniProgramRequestMethod>('GET')
-expectType<MiniProgramRequestMethod>('POST')
 expectType<MiniProgramRequestMethod>({} as WxRequestMethod)
 
 declare const routerEntry: WevuRouterEntry

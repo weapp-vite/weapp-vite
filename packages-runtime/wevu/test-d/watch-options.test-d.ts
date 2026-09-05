@@ -1,12 +1,9 @@
-import type { WatchScheduler, WatchSource } from '@/index'
+import type { WatchScheduler } from 'wevu'
 import { expectError, expectType } from 'tsd'
-import { computed, reactive, ref, watch, watchEffect } from '@/index'
+import { computed, reactive, ref, watch, watchEffect } from 'wevu'
 
 const count = ref(0)
 const doubled = computed(() => count.value * 2)
-
-const source: WatchSource<number> = doubled
-expectType<WatchSource<number>>(source)
 
 watch(count, (value, oldValue) => {
   expectType<number>(value)

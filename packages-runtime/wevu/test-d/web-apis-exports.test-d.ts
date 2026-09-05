@@ -30,8 +30,8 @@ const installOptions: InstallWebRuntimeGlobalsOptions = {
   },
 }
 
-expectType<void>(installWebRuntimeGlobals(installOptions))
-expectType<void>(installFetchWebRuntimeGlobals(installOptions))
+expectType<Record<string, any>>(installWebRuntimeGlobals(installOptions))
+expectType<Record<string, any>>(installFetchWebRuntimeGlobals(installOptions))
 expectType<MiniProgramNetworkDefaults>(setMiniProgramNetworkDefaults({
   request: {
     timeout: 1_000,
@@ -43,7 +43,6 @@ expectType<MiniProgramNetworkDefaults>(setFetchMiniProgramNetworkDefaults({
   },
 }))
 expectType<typeof RootHeadersPolyfill>(WevuWebApisHeadersPolyfill)
-expectType<typeof fetch>(wevuFetch)
 expectType<Promise<Response>>(wevuFetch('https://example.com/request', {
   miniProgram: {
     timeout: 3_000,

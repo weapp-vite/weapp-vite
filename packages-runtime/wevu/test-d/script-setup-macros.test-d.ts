@@ -1,9 +1,6 @@
-import type {
-  MiniProgramComponentAllProperty,
-  MiniProgramComponentInstance,
-} from '@/index'
+import type { MiniProgramComponentAllProperty, MiniProgramComponentInstance } from 'wevu'
 import { expectType } from 'tsd'
-import { defineEmits, defineModel, defineOptions, defineProps, withDefaults } from '@/index'
+import { defineEmits, defineModel, defineOptions, defineProps, withDefaults } from 'wevu'
 
 const propsByArray = defineProps(['foo', 'bar'])
 expectType<any>(propsByArray.foo)
@@ -201,6 +198,6 @@ defineOptions({
 
 defineOptions(async () => ({
   options: {
-    styleIsolation: 'shared',
+    styleIsolation: 'shared' as const,
   },
 }))

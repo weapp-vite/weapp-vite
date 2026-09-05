@@ -153,8 +153,11 @@ export type {
   PropOptions,
   PropType,
   SetupContext,
+  SetupContextIntersectionObserver,
+  SetupContextIntersectionObserverOptions,
   SetupContextNativeInstance,
   SetupContextRouter,
+  SetupContextSelectorQuery,
   SetupFunction,
   WevuTypedRouterRouteMap,
 } from './types/props'

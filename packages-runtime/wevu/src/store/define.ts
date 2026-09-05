@@ -13,6 +13,16 @@ import { createStore } from './manager'
 
 type SetupDefinition<T> = () => T
 
+type ActionResult<A> = Awaited<ReturnType<Extract<A[keyof A], (...args: any[]) => any>>>
+type OptionsStore<S extends Record<string, any>, G extends Record<string, any>, A extends Record<string, any>> = S & StoreGetters<G> & A & {
+  $id: string
+  $state: S
+  $patch: (patch: Partial<S> | ((state: S) => void)) => void
+  $reset: () => void
+  $subscribe: (cb: SubscriptionCallback<S>, opts?: StoreSubscribeOptions) => () => void
+  $onAction: (cb: ActionSubscriber<OptionsStore<S, G, A>, ActionResult<A>>) => () => void
+}
+
 /**
  * @description 定义一个 setup 风格的 store
  */
@@ -29,14 +39,7 @@ export function defineStore<T extends Record<string, any>>(id: string, setup: Se
 export function defineStore<S extends Record<string, any>, G extends Record<string, any>, A extends Record<string, any>>(
   id: string,
   options: DefineStoreOptions<S, G, A>,
-): () => S & StoreGetters<G> & A & {
-  $id: string
-  $state: S
-  $patch: (patch: Partial<S> | ((state: S) => void)) => void
-  $reset: () => void
-  $subscribe: (cb: SubscriptionCallback<S>, opts?: StoreSubscribeOptions) => () => void
-  $onAction: (cb: ActionSubscriber<S & StoreGetters<G> & A>) => () => void
-}
+): () => OptionsStore<S, G, A>
 export function defineStore(id: string, setupOrOptions: any) {
   let instance: any
   let created = false

@@ -1,5 +1,5 @@
 /** @jsxImportSource wevu/miniprogram */
-import type { MiniprogramIntrinsicElements, WevuJsxElement } from 'wevu/miniprogram/jsx-runtime'
+import type { MiniProgramIntrinsicElements, WevuJsxElement } from 'wevu/miniprogram/jsx-runtime'
 import { expectError, expectType } from 'tsd'
 
 const commonButton = (
@@ -22,7 +22,7 @@ expectType<WevuJsxElement>(commonText)
 expectError(<button type="warn" />)
 expectError(<input type="idcard" />)
 // JSX 允许未知连字符属性；用对象属性集合检查平台边界。
-expectError({ 'disable-scroll': true } satisfies MiniprogramIntrinsicElements['view'])
+expectError({ 'disable-scroll': true } satisfies MiniProgramIntrinsicElements['view'])
 expectError(<button open-type="getRealtimePhoneNumber" />)
 expectError(<button open-type="openAwemeUserProfile" />)
 expectError(<mask />)

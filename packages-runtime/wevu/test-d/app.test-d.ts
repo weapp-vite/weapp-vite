@@ -1,6 +1,6 @@
-import type { RuntimeApp, RuntimeInstance, SetDataBindingDiagnostic, SetDataDebugInfo } from '@/index'
+import type { RuntimeApp, RuntimeInstance, SetDataBindingDiagnostic, SetDataDebugInfo } from 'wevu'
 import { expectType } from 'tsd'
-import { createApp, version } from '@/index'
+import { createApp, version } from 'wevu'
 
 const app = createApp({
   data: () => ({ count: 0 }),
