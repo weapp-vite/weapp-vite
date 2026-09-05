@@ -11,6 +11,7 @@ export interface ReactiveEffect<T = any> {
   active: boolean
   _running: boolean
   _fn: () => T
+  _computed?: boolean
   onStop?: () => void
 }
 
@@ -20,19 +21,84 @@ let activeEffect: ReactiveEffect | null = null
 const effectStack: ReactiveEffect[] = []
 
 let batchDepth = 0
+let isFlushingBatch = false
 const batchedEffects = new Set<ReactiveEffect>()
+const batchedCallbacks = new Set<() => void>()
+
+function runScheduledEffect(ef: ReactiveEffect) {
+  if (!ef.active) {
+    return
+  }
+  if (ef.scheduler) {
+    ef.scheduler()
+    return
+  }
+  ef()
+}
+
+/** 在当前批次的同步副作用全部完成后执行包内通知。 */
+export function queueBatchCallback(callback: () => void) {
+  if (batchDepth > 0 || isFlushingBatch) {
+    batchedCallbacks.add(callback)
+    return
+  }
+  batchedCallbacks.delete(callback)
+  callback()
+}
 
 export function startBatch() {
   batchDepth++
 }
 
+function takeBatchedEffect(effects: Set<ReactiveEffect>): ReactiveEffect | undefined {
+  const next = effects.values().next()
+  if (next.done) {
+    return undefined
+  }
+  effects.delete(next.value)
+  return next.value
+}
+
 function flushBatchedEffects() {
-  while (batchedEffects.size) {
-    const effects = [...batchedEffects]
-    batchedEffects.clear()
-    for (const ef of effects) {
-      ef()
+  let firstError: unknown
+  let hasError = false
+  isFlushingBatch = true
+  try {
+    while (batchedEffects.size) {
+      const effect = takeBatchedEffect(batchedEffects)
+      if (!effect) {
+        continue
+      }
+      try {
+        runScheduledEffect(effect)
+      }
+      catch (error) {
+        if (!hasError) {
+          firstError = error
+          hasError = true
+        }
+      }
     }
+  }
+  finally {
+    isFlushingBatch = false
+  }
+  // 通知属于已完成批次之后的操作，保留订阅回调内同步变更的重入保护。
+  while (batchedCallbacks.size) {
+    const callback = batchedCallbacks.values().next().value!
+    batchedCallbacks.delete(callback)
+    try {
+      callback()
+    }
+    catch (error) {
+      if (!hasError) {
+        firstError = error
+        hasError = true
+      }
+    }
+  }
+  if (hasError) {
+    throw firstError
   }
 }
 
@@ -41,7 +107,7 @@ export function endBatch() {
     return
   }
   batchDepth--
-  if (batchDepth === 0) {
+  if (batchDepth === 0 && !isFlushingBatch) {
     flushBatchedEffects()
   }
 }
@@ -234,13 +300,29 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
   return effect
 }
 
-export function effect<T = any>(fn: () => T, options: EffectOptions = {}): ReactiveEffect<T> {
-  const _effect = createReactiveEffect(fn, options)
-  recordEffectScope(_effect)
+function createEffect<T>(
+  fn: () => T,
+  options: EffectOptions,
+  computed: boolean,
+): ReactiveEffect<T> {
+  const runner = createReactiveEffect(fn, options)
+  runner._computed = computed
+  recordEffectScope(runner)
   if (!options.lazy) {
-    _effect()
+    runner()
   }
-  return _effect
+  return runner
+}
+
+export function effect<T = any>(fn: () => T, options: EffectOptions = {}): ReactiveEffect<T> {
+  return createEffect(fn, options, false)
+}
+
+export function createComputedEffect<T>(
+  fn: () => T,
+  options: EffectOptions = {},
+): ReactiveEffect<T> {
+  return createEffect(fn, options, true)
 }
 
 export function track(target: object, key: PropertyKey) {
@@ -264,15 +346,19 @@ export function track(target: object, key: PropertyKey) {
 }
 
 function scheduleEffect(ef: ReactiveEffect) {
-  if (ef.scheduler) {
-    ef.scheduler()
+  if (ef._running) {
     return
   }
-  if (batchDepth > 0) {
+  // 计算属性只同步失效缓存，普通消费者仍由批处理队列合并。
+  if (ef._computed) {
+    runScheduledEffect(ef)
+    return
+  }
+  if (batchDepth > 0 || isFlushingBatch) {
     batchedEffects.add(ef)
     return
   }
-  ef()
+  runScheduledEffect(ef)
 }
 
 export function trigger(target: object, key: PropertyKey) {

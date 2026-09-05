@@ -1,12 +1,13 @@
+import type { MutationType } from '../types'
 import { effect, isReactive, isRef, touchReactive } from '../../reactivity'
 import { wrapAction } from '../actions'
 import { createBaseApi } from '../base'
 import { cloneDeep, resetObject } from '../utils'
-import { createSafeNotifier, isTrackableRef, snapshotValue } from './shared'
+import { createSafeNotifier, createStoreMutationTransaction, isTrackableRef, snapshotValue } from './shared'
 
 export function createSetupStyleStore(id: string, setupFactory: () => Record<string, any>, manager: any) {
   const result = setupFactory()
-  let notify: (type: any) => void = () => {}
+  let notifySubscribers: (type: MutationType) => void = () => {}
   const initialSnapshot = new Map<string, any>()
   Object.keys(result).forEach((k) => {
     const val = (result as any)[k]
@@ -41,36 +42,27 @@ export function createSetupStyleStore(id: string, setupFactory: () => Record<str
       }
       ;(instance as any)[key] = cloneDeep(snapValue)
     })
-    notify('patch object')
   }
 
-  const base = createBaseApi<any>(id, undefined, t => notify(t), resetImpl)
-  let isPatching = false
+  const transaction = createStoreMutationTransaction(type => notifySubscribers(type))
+  const base = createBaseApi<any>(id, undefined, transaction.notify, resetImpl)
   const rawPatch = base.api.$patch
   base.api.$patch = (patch: Record<string, any> | ((state: any) => void)) => {
-    isPatching = true
-    try {
+    transaction.run(() => {
       rawPatch(patch)
-    }
-    finally {
-      isPatching = false
-    }
+    })
   }
   if (typeof base.api.$reset === 'function') {
     const rawReset = base.api.$reset
     base.api.$reset = () => {
-      isPatching = true
-      try {
+      transaction.run(() => {
         rawReset()
-      }
-      finally {
-        isPatching = false
-      }
+      })
     }
   }
 
   instance = { ...result }
-  notify = createSafeNotifier(id, base.subs, () => instance)
+  notifySubscribers = createSafeNotifier(id, base.subs, () => instance)
 
   // 将 setup 返回值与基础 API 合并，同时保留每个 getter/setter 的描述符，避免覆写访问器行为
   for (const key of Object.getOwnPropertyNames(base.api)) {
@@ -84,13 +76,9 @@ export function createSetupStyleStore(id: string, setupFactory: () => Record<str
             return (base.api as any).$state
           },
           set(v: any) {
-            isPatching = true
-            try {
+            transaction.run(() => {
               ;(base.api as any).$state = v
-            }
-            finally {
-              isPatching = false
-            }
+            })
           },
         })
       }
@@ -128,8 +116,8 @@ export function createSetupStyleStore(id: string, setupFactory: () => Record<str
         },
         set(next: any) {
           innerValue = next
-          if (!isPatching) {
-            notify('direct')
+          if (!transaction.active) {
+            notifySubscribers('direct')
           }
         },
       })
@@ -152,12 +140,12 @@ export function createSetupStyleStore(id: string, setupFactory: () => Record<str
         initialized = true
         return
       }
-      if (isPatching || dispatchingDirect) {
+      if (transaction.active || dispatchingDirect) {
         return
       }
       dispatchingDirect = true
       try {
-        notify('direct')
+        notifySubscribers('direct')
       }
       finally {
         dispatchingDirect = false

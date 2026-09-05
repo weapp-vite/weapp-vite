@@ -1,4 +1,5 @@
 import type { ActionSubscriber, MutationType, SubscriptionCallback } from './types'
+import { batch } from '../reactivity'
 import { isObject, mergeShallow } from './utils'
 
 export function createBaseApi<S extends Record<string, any>>(
@@ -21,29 +22,24 @@ export function createBaseApi<S extends Record<string, any>>(
       }
     },
   })
-  api.$patch = (patch: Record<string, any> | ((state: S) => void)) => {
-    if (!stateObj) {
+  api.$patch = (patch: Record<string, unknown> | ((state: S) => void)) => {
+    const mutationType: MutationType = typeof patch === 'function' ? 'patch function' : 'patch object'
+    batch(() => {
+      const target = stateObj ?? (api as S)
       if (typeof patch === 'function') {
-        patch(api as S)
-        notify('patch function')
+        patch(target)
       }
       else {
-        mergeShallow(api as any, patch)
-        notify('patch object')
+        mergeShallow(target, patch)
       }
-      return
-    }
-    if (typeof patch === 'function') {
-      patch(stateObj)
-      notify('patch function')
-    }
-    else {
-      mergeShallow(stateObj, patch)
-      notify('patch object')
-    }
+    })
+    notify(mutationType)
   }
   if (resetImpl) {
-    api.$reset = () => resetImpl()
+    api.$reset = () => {
+      batch(resetImpl)
+      notify('patch object')
+    }
   }
   const subs = new Set<SubscriptionCallback<S>>()
   api.$subscribe = (cb: SubscriptionCallback<S>, _opts?: { detached?: boolean }) => {
