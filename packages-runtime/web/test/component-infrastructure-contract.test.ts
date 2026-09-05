@@ -217,6 +217,10 @@ describe('component infrastructure contracts', () => {
     button.dispatchEvent(new Event('click'))
     expect(tap).toHaveBeenCalledOnce()
 
+    const slotFacade = element.data.$slots
+    await expect(element.setData({ ...element.data, count: 1 })).resolves.toBeUndefined()
+    expect(element.data.$slots).toBe(slotFacade)
+
     const callback = vi.fn()
     await element.setData({ count: 1 }, callback)
     expect(callback).toHaveBeenCalledOnce()
@@ -242,9 +246,33 @@ describe('component infrastructure contracts', () => {
     await expect(failedUpdate).rejects.toBe(renderFailure)
     delete (element as any).updateComplete
 
+    let rejectRecovery: ((cause: unknown) => void) | undefined
+    const pendingRecovery = new Promise<boolean>((_resolve, reject) => {
+      rejectRecovery = reject
+    })
+    Object.defineProperty(element, 'updateComplete', {
+      configurable: true,
+      value: pendingRecovery,
+    })
     const recoveryCallback = vi.fn()
-    await expect(element.setData({ count: 2 }, recoveryCallback)).resolves.toBeUndefined()
-    expect(recoveryCallback).toHaveBeenCalledOnce()
+    const concurrentCallback = vi.fn()
+    const recoveryUpdate = element.setData({ count: 2 }, recoveryCallback)
+    const concurrentUpdate = element.setData({ count: 2 }, concurrentCallback)
+    expect(concurrentUpdate).toBeInstanceOf(Promise)
+    expect(recoveryCallback).not.toHaveBeenCalled()
+    expect(concurrentCallback).not.toHaveBeenCalled()
+
+    const recoveryFailure = new Error('recovery render failed')
+    rejectRecovery?.(recoveryFailure)
+    await expect(recoveryUpdate).rejects.toBe(recoveryFailure)
+    await expect(concurrentUpdate).rejects.toBe(recoveryFailure)
+    expect(recoveryCallback).not.toHaveBeenCalled()
+    expect(concurrentCallback).not.toHaveBeenCalled()
+    delete (element as any).updateComplete
+
+    const successfulRecoveryCallback = vi.fn()
+    await expect(element.setData({ count: 2 }, successfulRecoveryCallback)).resolves.toBeUndefined()
+    expect(successfulRecoveryCallback).toHaveBeenCalledOnce()
 
     element.setAttribute('title', 'from-attribute')
     expect(element.properties.title).toBe('from-attribute')

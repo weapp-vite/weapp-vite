@@ -99,7 +99,7 @@ export function createComponentElementClass({
       this.#state = { ...cloneValue(this.#properties), ...cloneValue(dataOption) }
       Object.defineProperty(this.#state, '$slots', {
         configurable: true,
-        enumerable: true,
+        enumerable: false,
         value: createWebSlotsProxy(() => this.#state.vueSlots),
       })
       Object.defineProperties(this, {
@@ -146,9 +146,9 @@ export function createComponentElementClass({
           this.requestUpdate()
         }
         const updateComplete = (this as unknown as { updateComplete: Promise<boolean> }).updateComplete
-        this.#needsSetDataRecovery = false
         return updateComplete.then(
           () => {
+            this.#needsSetDataRecovery = false
             callback?.()
           },
           (cause) => {
