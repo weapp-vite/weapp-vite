@@ -30,7 +30,7 @@ const OPTION_FACTORY_APIS: Record<Exclude<RuntimeOptionApiName, 'createWevuScope
 
 function addScopedSlotCreatorCapabilities(accumulator: CapabilityAccumulator) {
   accumulator.required.add('scopedSlots')
-  addConservativeCapabilities(accumulator, ['templateRefs', 'inlineEvents'])
+  addConservativeCapabilities(accumulator, ['templateRefs', 'inlineEvents', 'layout'])
 }
 
 /**

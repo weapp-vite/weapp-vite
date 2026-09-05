@@ -86,6 +86,27 @@ function overwriteCall(
   s.appendLeft(insertPosition, `, ${metaCode}`)
 }
 
+function overwriteWevuFactoryCall(
+  path: NodePath<CallExpression>,
+  meta: ModuleMeta,
+  templateIdent: string | undefined,
+  styleIdent: string | undefined,
+  s: MagicString,
+) {
+  const node = path.node
+  const identifier = node.callee as t.Identifier
+  const factoryName = identifier.name
+  const metaCode = createRegisterMetaCode(meta, templateIdent, styleIdent, true)
+  s.overwrite(identifier.start!, identifier.end!, 'registerWebWevuComponentFactory')
+  const firstArgument = node.arguments[0]
+  if (firstArgument && !t.isSpreadElement(firstArgument)) {
+    s.prependLeft(firstArgument.start!, `${factoryName}, `)
+    s.appendLeft(node.end! - 1, `, ${metaCode}`)
+    return
+  }
+  s.appendLeft(node.end! - 1, `${factoryName}, undefined, ${metaCode}`)
+}
+
 interface TransformScriptModuleOptions {
   code: string
   cleanId: string
@@ -117,6 +138,20 @@ export function transformScriptModule({
   }
 
   const s = new MagicString(code)
+  const wevuDefineComponentSpecifiers = new Map<string, t.ImportSpecifier>()
+  for (const statement of ast.program.body) {
+    if (!t.isImportDeclaration(statement) || statement.source.value !== 'wevu') {
+      continue
+    }
+    for (const specifier of statement.specifiers) {
+      if (
+        t.isImportSpecifier(specifier)
+        && t.isIdentifier(specifier.imported, { name: 'defineComponent' })
+      ) {
+        wevuDefineComponentSpecifiers.set(specifier.local.name, specifier)
+      }
+    }
+  }
 
   const imports: string[] = []
   const runtimePolyfillId = runtimeModuleId ?? toViteFsImport(resolveRuntimePolyfillPath())
@@ -140,6 +175,17 @@ export function transformScriptModule({
         return
       }
       const name = path.node.callee.name
+      const wevuFactorySpecifier = wevuDefineComponentSpecifiers.get(name)
+      const binding = path.scope.getBinding(name)
+      if (
+        wevuFactorySpecifier
+        && binding?.path.node === wevuFactorySpecifier
+        && meta.kind !== 'app'
+      ) {
+        registerImports.add('registerWebWevuComponentFactory')
+        overwriteWevuFactoryCall(path, meta, templateIdent, styleIdent, s)
+        return
+      }
       const registerName = getRegisterName(meta.kind, name)
       if (registerName) {
         registerImports.add(registerName)

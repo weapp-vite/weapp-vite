@@ -7,7 +7,7 @@ import { runtimeSizeTargets, runtimeSizeTiers } from './runtime-size'
 
 function createReport(commit: string, minimalBytes: number): RuntimeSizeReport {
   return {
-    version: 3,
+    version: 2,
     generatedAt: '2026-09-04T00:00:00.000Z',
     commit,
     targets: runtimeSizeTargets.map(target => ({
@@ -104,7 +104,7 @@ describe('runtime size report CLI', () => {
     expect(readReport).toHaveBeenNthCalledWith(2, 'baseline.json')
     expect(writtenJson[0]).toBe(current)
     expect(writtenJson[1]).toEqual(expect.objectContaining({
-      version: 3,
+      version: 2,
       kind: 'wevu-runtime-size-pr-report',
       current,
       baseline,

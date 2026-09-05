@@ -122,11 +122,16 @@ describe('runtime public capability compatibility', () => {
     const { runtimeCapabilityRegistry } = await import('@/runtime/capabilities')
     const { createWevuScopedSlotComponent } = await import('@/runtime/publicRuntime')
 
-    createWevuScopedSlotComponent()
+    createWevuScopedSlotComponent({
+      layoutHosts: [
+        { key: 'toast', selector: '#toast', kind: 'component' },
+      ],
+    })
 
     expect(runtimeCapabilityRegistry.scopedSlots).toBeTruthy()
     expect(runtimeCapabilityRegistry.inlineEvents).toBeTruthy()
     expect(runtimeCapabilityRegistry.templateRefs).toBeTruthy()
+    expect(runtimeCapabilityRegistry.layout).toBeTruthy()
     expect(registerComponent).toHaveBeenCalledTimes(1)
   })
 

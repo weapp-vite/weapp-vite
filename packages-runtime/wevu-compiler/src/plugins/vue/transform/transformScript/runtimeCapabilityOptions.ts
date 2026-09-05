@@ -107,6 +107,68 @@ function isStaticPrimitive(node: t.Expression) {
     || (t.isTemplateLiteral(node) && node.expressions.length === 0)
     || t.isIdentifier(node, { name: 'undefined' })
 }
+function applyResolvedProperty(current: PropertyState, next: PropertyState): PropertyState {
+  return next.kind === 'absent' ? current : next
+}
+
+function resolveInheritedSetData(
+  expression: t.Expression,
+  context: StaticAnalysisContext,
+  visited: Set<t.ObjectExpression>,
+): PropertyState {
+  const resolved = resolveStaticExpression(expression, context)
+  if (!resolved) {
+    return { kind: 'unknown' }
+  }
+  if (!t.isObjectExpression(resolved)) {
+    return isStaticPrimitive(resolved) || t.isFunction(resolved)
+      ? { kind: 'absent' }
+      : { kind: 'unknown' }
+  }
+  if (visited.has(resolved)) {
+    return { kind: 'absent' }
+  }
+  visited.add(resolved)
+
+  let state: PropertyState = { kind: 'absent' }
+  const inherited = resolveProperty(resolved, 'extends')
+  if (inherited.kind === 'unknown') {
+    state = inherited
+  }
+  else if (inherited.kind === 'value') {
+    state = applyResolvedProperty(
+      state,
+      resolveInheritedSetData(inherited.value, context, visited),
+    )
+  }
+
+  const mixins = resolveProperty(resolved, 'mixins')
+  if (mixins.kind === 'unknown') {
+    state = mixins
+  }
+  else if (mixins.kind === 'value') {
+    const resolvedMixins = resolveStaticExpression(mixins.value, context)
+    if (!resolvedMixins || !t.isArrayExpression(resolvedMixins)) {
+      state = { kind: 'unknown' }
+    }
+    else {
+      for (const element of resolvedMixins.elements) {
+        if (!element || t.isSpreadElement(element) || !t.isExpression(element)) {
+          state = { kind: 'unknown' }
+          continue
+        }
+        state = applyResolvedProperty(
+          state,
+          resolveInheritedSetData(element, context, visited),
+        )
+      }
+    }
+  }
+
+  state = applyResolvedProperty(state, resolveProperty(resolved, 'setData'))
+  visited.delete(resolved)
+  return state
+}
 
 function analyzeHighFrequencyWarning(
   state: PropertyState,
@@ -263,7 +325,7 @@ export function analyzeRuntimeFactoryOptions(
     }
     return
   }
-  analyzeSetData(resolveProperty(resolved, 'setData'), context, accumulator, defaultSetData)
+  analyzeSetData(resolveInheritedSetData(resolved, context, new Set()), context, accumulator, defaultSetData)
 }
 
 /**

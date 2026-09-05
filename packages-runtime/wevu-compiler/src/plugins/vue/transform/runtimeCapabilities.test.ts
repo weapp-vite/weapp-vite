@@ -139,17 +139,47 @@ createApp({
     expectCanonicalCalls(result.code, [capability])
   })
 
+  it('derives option capabilities through extends and mixins with runtime precedence', () => {
+    const inherited = transformScript(`
+import { defineComponent } from 'wevu'
+const patchMixin = { setData: { strategy: 'patch', highFrequencyWarning: false } }
+export default defineComponent({ mixins: [patchMixin] })
+    `.trim(), { sourceMap: false })
+    expect(inherited.runtimeCapabilities).toEqual({ required: ['patchStrategy'] })
+
+    const overridden = transformScript(`
+import { defineComponent } from 'wevu'
+const patchMixin = { setData: { strategy: 'patch', highFrequencyWarning: true } }
+export default defineComponent({
+  extends: { setData: { strategy: 'patch' } },
+  mixins: [patchMixin],
+  setData: { strategy: 'diff', highFrequencyWarning: false },
+})
+    `.trim(), { sourceMap: false })
+    expect(overridden.runtimeCapabilities).toBeUndefined()
+
+    const unresolved = transformScript(`
+import { defineComponent } from 'wevu'
+const unknownMixin = loadMixin()
+export default defineComponent({ mixins: [unknownMixin] })
+    `.trim(), { sourceMap: false })
+    expect(unresolved.runtimeCapabilities).toEqual({
+      required: ['patchStrategy', 'setDataHighFrequencyWarning'],
+      conservative: ['patchStrategy', 'setDataHighFrequencyWarning'],
+    })
+  })
+
   it.each([
     `import { createWevuScopedSlotComponent } from 'wevu'; createWevuScopedSlotComponent()`,
     `import { createWevuScopedSlotComponent as createSlot } from 'wevu'; createSlot()`,
     `import { createWevuScopedSlotComponent } from 'wevu'; const createSlot = createWevuScopedSlotComponent; createSlot()`,
   ])('retains scoped-slot compatibility for a direct or aliased creator: %s', (source) => {
     const result = transformScript(source, { sourceMap: false })
-    const required: WevuRuntimeCapabilityName[] = ['templateRefs', 'inlineEvents', 'scopedSlots']
+    const required: WevuRuntimeCapabilityName[] = ['templateRefs', 'inlineEvents', 'scopedSlots', 'layout']
 
     expect(result.runtimeCapabilities).toEqual({
       required,
-      conservative: ['templateRefs', 'inlineEvents'],
+      conservative: ['templateRefs', 'inlineEvents', 'layout'],
     })
     expectCanonicalCalls(result.code, required)
   })
@@ -165,6 +195,7 @@ createApp({
       'inlineEvents',
       'setDataHighFrequencyWarning',
       'scopedSlots',
+      'layout',
     ]
 
     expect(result.runtimeCapabilities).toEqual({
@@ -198,6 +229,17 @@ createApp({
 
     expect(result.runtimeCapabilities).toEqual({ required: ['templateRefs', 'layout'] })
     expectCanonicalCalls(result.code, ['templateRefs', 'layout'])
+  })
+
+  it('inserts installers before executable statements even when imports appear later', () => {
+    const result = transformScript(`
+import { createApp } from 'wevu'
+createApp({ setData: { strategy: 'patch' } })
+import './late.js'
+    `.trim(), { sourceMap: false })
+
+    expect(result.code.lastIndexOf('__wevuInstallPatchStrategy()'))
+      .toBeLessThan(result.code.lastIndexOf('createApp({'))
   })
 
   it('combines feature sources in canonical order before defaults and registration', () => {
@@ -312,6 +354,17 @@ export default {}
     expect(runtimeOnly.code).not.toContain(WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY)
   })
 
+  it('keeps a plain native slot free of scoped-slot runtime capabilities', async () => {
+    const result = await compileVueFile(
+      '<template><slot /></template>',
+      '/project/src/components/native-slot.vue',
+      { sourceMap: false },
+    )
+
+    expect(result.meta?.runtimeCapabilities).toBeUndefined()
+    expect(result.script).not.toContain(WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY)
+  })
+
   it('derives runtime capabilities after applying page layout wrappers', async () => {
     const result = await compileVueFile(
       '<template><view /></template>',
@@ -362,6 +415,58 @@ export default {}
       required: ['scopedSlots'],
     })
     expectCanonicalCalls(appShellResult.script ?? '', ['scopedSlots'])
+  })
+
+  it('derives wrapper capabilities for standalone JSX and selected SFC JSX manifests', async () => {
+    const pageLayout = {
+      currentLayout: {
+        importPath: '/layouts/default/index',
+        layoutName: 'default',
+        tagName: 'weapp-layout-default',
+      },
+      dynamicSwitch: false,
+      layouts: [{
+        importPath: '/layouts/default/index',
+        layoutName: 'default',
+        tagName: 'weapp-layout-default',
+      }],
+      dynamicPropKeys: [],
+    }
+    const standalone = await compileJsxFile(`
+import { defineComponent } from 'wevu'
+export default defineComponent({
+  render() {
+    return <view />
+  },
+})
+    `.trim(), '/project/src/pages/standalone/index.tsx', {
+      isPage: true,
+      pageLayout,
+      sourceMap: false,
+    })
+    expect(standalone.meta?.runtimeCapabilities).toEqual({
+      required: ['templateRefs', 'scopedSlots', 'layout'],
+    })
+    expectCanonicalCalls(standalone.script ?? '', ['templateRefs', 'scopedSlots', 'layout'])
+
+    const sfc = await compileVueFile(`
+<script lang="tsx">
+import { defineComponent } from 'wevu'
+export default defineComponent({
+  render() {
+    return <view />
+  },
+})
+</script>
+    `.trim(), '/project/src/pages/sfc-jsx/index.vue', {
+      isPage: true,
+      pageLayout,
+      sourceMap: false,
+    })
+    expect(sfc.meta?.runtimeCapabilities).toEqual({
+      required: ['templateRefs', 'scopedSlots', 'layout'],
+    })
+    expectCanonicalCalls(sfc.script ?? '', ['templateRefs', 'scopedSlots', 'layout'])
   })
 
   it('uses resolved app and component defaults, including performance preset values', () => {

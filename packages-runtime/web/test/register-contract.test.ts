@@ -64,8 +64,9 @@ describe('web script registration transform contract', () => {
     })!
 
     expect(result.code).toContain('installWebModuleRegistration')
-    expect(result.code).toContain('defineCard({})')
-    expect(result.code).not.toContain('registerWebWevuComponent')
+    expect(result.code).toContain('registerWebWevuComponentFactory')
+    expect(result.code).toContain('registerWebWevuComponentFactory(defineCard, {}')
+    expect(result.code).not.toContain('registerWebWevuComponent(')
     expect(result.code).toContain('card.scss?inline')
     expect(result.code).toContain('card.wxml?weapp-web-template')
     expect(result.code).toContain('navigationBar: {"title":"Card"}')

@@ -668,7 +668,6 @@ function recordSlotPropBindings(node: ElementNode, context: TransformContext) {
 
 export function transformSlotElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
   context.hasSlotOutlet = true
-  context.bindingManifest.features.scopedSlots = true
   if (isScopedSlotsDisabled(context)) {
     // eslint-disable-next-line ts/no-use-before-define
     return transformSlotElementPlain(node, context, transformNode)
@@ -717,6 +716,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     return slotTag
   }
 
+  context.bindingManifest.features.scopedSlots = true
   const hasScopeBindings = Boolean(slotPropsExp)
   const slotKey = resolveSlotKey(context, slotNameInfo)
   const genericKey = `scoped-slots-${slotKey}`

@@ -44,6 +44,14 @@ function resolveInstallerCallCapability(
   return undefined
 }
 
+function findLeadingImportEnd(program: t.Program) {
+  let index = 0
+  while (index < program.body.length && t.isImportDeclaration(program.body[index])) {
+    index += 1
+  }
+  return index
+}
+
 /**
  * 在导入之后按规范顺序插入一次能力安装调用。
  */
@@ -84,9 +92,7 @@ export function injectWevuRuntimeCapabilityInstallers(
   }
 
   const existingCalls: Partial<Record<WevuRuntimeCapabilityName, t.ExpressionStatement>> = {}
-  let prefixIndex = program.body.reduce((lastImportEnd, statement, index) => {
-    return t.isImportDeclaration(statement) ? index + 1 : lastImportEnd
-  }, 0)
+  let prefixIndex = findLeadingImportEnd(program)
   let previousCapabilityIndex = -1
   while (prefixIndex < program.body.length) {
     const statement = program.body[prefixIndex]!
@@ -128,9 +134,7 @@ export function injectWevuRuntimeCapabilityInstallers(
     ensureRuntimeImport(program, WE_VU_RUNTIME_CAPABILITY_INSTALLERS[capability], localName)
   }
 
-  let insertIndex = program.body.reduce((lastImportEnd, statement, index) => {
-    return t.isImportDeclaration(statement) ? index + 1 : lastImportEnd
-  }, 0)
+  let insertIndex = findLeadingImportEnd(program)
   const requiredCapabilities = new Set(metadata.required)
   let changed = false
   for (const capability of WE_VU_RUNTIME_CAPABILITY_ORDER) {

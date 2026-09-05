@@ -140,5 +140,6 @@ export function createWevuScopedSlotComponent(
   installTemplateRefs()
   installInlineEvents()
   installScopedSlots()
+  installLayout()
   createWevuScopedSlotComponentCore(overrides)
 }

@@ -8,6 +8,7 @@ import type { ComponentSourceInfo } from './componentSources'
 import type { AutoUsingComponentsOptions, CompileVueFileOptions } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
+import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
 import { createJsxDiagnostics } from '../../../jsx/compileJsx/diagnostics'
@@ -374,6 +375,9 @@ export async function compileScriptPhase(
     const effectiveInlineExpressions = jsxTemplate?.template
       ? jsxTemplate.inlineExpressions
       : templateCompiled?.inlineExpressions
+    const runtimeCapabilities = bindingManifest
+      ? createWevuRuntimeCapabilityMetadataFromBindingManifest(bindingManifest)
+      : templateCompiled?.runtimeCapabilities
     const transformed = transformScript(jsxTransformed.code, {
       isTypeScript: descriptor.script?.lang === 'ts'
         || descriptor.script?.lang === 'tsx'
@@ -396,7 +400,7 @@ export async function compileScriptPhase(
       autoSetDataPick: !isAppFile && options?.autoSetDataPick,
       runtimeBindingManifest: options?.runtimeBindingManifest,
       pageLayout: isAppFile ? undefined : options?.pageLayout,
-      runtimeCapabilities: templateCompiled?.runtimeCapabilities,
+      runtimeCapabilities,
       functionPropPaths: templateCompiled?.functionPropPaths,
       propsAliases,
       propsDerivedKeys,
