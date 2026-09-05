@@ -73,7 +73,7 @@
 **示例：** 见 [本组示例](/wevu/api/lifecycle#example-lifecycle-vue)。
 
 - 对齐语义：Vue `beforeUnmount`
-- 源码行为：在 `setup()` 内同步立即执行（小程序无对应原生 before-unmount）。
+- 源码行为：在实际卸载时、template refs、effect scope 和暴露方法清理前执行；setup 失败回滚不触发卸载生命周期。
 
 ### `onUnmounted()` {#onunmounted}
 

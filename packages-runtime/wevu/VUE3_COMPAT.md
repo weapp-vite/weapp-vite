@@ -42,7 +42,7 @@ The following APIs work exactly like Vue 3:
 - `onUnmounted()` - When component/page is unloaded
 - `onBeforeMount()` - Before mount (executes immediately)
 - `onBeforeUpdate()` - Before updates (called before setData)
-- `onBeforeUnmount()` - Before unmount (executes immediately)
+- `onBeforeUnmount()` - Before unload cleanup, while instance context and exposed methods remain available
 - `onActivated()` - Component activated (maps to onShow)
 - `onDeactivated()` - Component deactivated (maps to onHide)
 - `onErrorCaptured()` - Capture errors
@@ -207,7 +207,8 @@ Mini-programs have different lifecycles than web:
 - `onUnmounted()` maps to `onUnload` (pages) or `detached` (components)
 - `onActivated()` maps to `onShow`
 - `onDeactivated()` maps to `onHide`
-- `onBeforeMount()` / `onBeforeUnmount()` execute immediately in mini-programs
+- `onBeforeMount()` executes immediately during setup in mini-programs
+- `onBeforeUnmount()` runs during unload, before template refs, effects and exposed methods are cleared
 
 ### ❌ Not Applicable for Mini-Programs
 
@@ -404,7 +405,7 @@ To migrate from Vue 3 to wevu:
 
 2. **Lifecycle mappings**:
    - No changes needed for most lifecycles
-   - Remember `onBeforeMount` and `onBeforeUnmount` execute immediately
+   - `onBeforeMount` executes immediately during setup; `onBeforeUnmount` runs before unload cleanup
 
 3. **Template differences**:
    - Use WXML syntax instead of HTML

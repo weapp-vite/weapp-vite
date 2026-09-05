@@ -32,7 +32,7 @@ import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../../
 import { getMiniProgramRuntimeGlobalObject } from '../../platform'
 import { getOwnerProxy } from '../../scopedSlots'
 import { runTeardownSteps } from '../../teardown'
-import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
+import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 import { registerNativeComponentDefinition } from './registerNativeDefinition'
 
@@ -386,7 +386,6 @@ export function registerComponentDefinition<D extends object, C extends Computed
           () => callVueLifecycle(this, 'beforeDestroy', args),
           () => scheduleOwnerTemplateRefUpdate(this),
           () => callHookList(this, 'onDetached', args),
-          () => clearTemplateRefs(this),
           () => {
             if (Array.isArray(layoutHosts) && layoutHosts.length && layoutHostBridge) {
               unregisterRuntimeLayoutHosts(layoutHosts, layoutHostBridge)

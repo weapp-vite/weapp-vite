@@ -14,6 +14,7 @@ import {
   WEVU_EFFECT_SCOPE_KEY,
   WEVU_EXPOSED_KEY,
   WEVU_HOOKS_KEY,
+  WEVU_ON_BEFORE_UNMOUNT_HOOK,
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
   WEVU_PAGE_LAYOUT_SETTER_KEY,
@@ -675,6 +676,11 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
   const effectScope = target[WEVU_EFFECT_SCOPE_KEY]
 
   runTeardownSteps([
+    () => {
+      if (!options?.skipHooks && runtime) {
+        callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK)
+      }
+    },
     () => {
       if (ownerId) {
         removeOwner(ownerId)
