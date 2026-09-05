@@ -5,6 +5,7 @@ import {
   WEVU_HOOKS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_READY_CALLED_KEY,
+  WEVU_SETUP_CONTEXT_INSTANCE_KEY,
   WEVU_TEMPLATE_REFS_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
@@ -302,17 +303,24 @@ describe('mountRuntimeInstance and teardown', () => {
     }
     const setupFailure = new Error('setup failed')
 
-    expect(() => mountRuntimeInstance(target, app, undefined, () => {
+    const setup: NonNullable<Parameters<typeof mountRuntimeInstance>[3]> = (
+      _props: unknown,
+      { expose }: { expose: (exposed: Record<string, unknown>) => void },
+    ) => {
+      expose({ stale: true })
       onScopeDispose(() => {
         throw new Error('setup scope cleanup failed')
       })
       throw setupFailure
-    })).toThrow(setupFailure)
+    }
+    expect(() => mountRuntimeInstance(target, app, undefined, setup)).toThrow(setupFailure)
 
     expect(target[WEVU_EFFECT_SCOPE_KEY]).toBeUndefined()
     expect(target.__wevu).toBeUndefined()
     expect(target[WEVU_PUBLIC_RUNTIME_KEY]).toBeUndefined()
     expect(target[WEVU_WATCH_STOPS_KEY]).toBeUndefined()
+    expect(target[WEVU_SETUP_CONTEXT_INSTANCE_KEY]).toBeUndefined()
+    expect(target[WEVU_EXPOSED_KEY]).toBeUndefined()
 
     const remounted = mountRuntimeInstance(target, app, undefined, () => ({ ready: true }))
     expect(target.__wevu).toBeDefined()

@@ -12,6 +12,7 @@ import type { AdapterWithSetData } from './runtimeInstance/utils'
 import type { WatchMap } from './watch'
 import {
   WEVU_EFFECT_SCOPE_KEY,
+  WEVU_EXPOSED_KEY,
   WEVU_HOOKS_KEY,
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
@@ -21,6 +22,7 @@ import {
   WEVU_PROPS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_RUNTIME_OWNER_ID_KEY,
+  WEVU_SETUP_CONTEXT_INSTANCE_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_TEMPLATE_REFS_KEY,
   WEVU_WATCH_STOPS_KEY,
@@ -711,6 +713,10 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
     },
     () => {
       target[WEVU_EFFECT_SCOPE_KEY] = undefined
+    },
+    () => {
+      delete (target as any)[WEVU_SETUP_CONTEXT_INSTANCE_KEY]
+      delete (target as any)[WEVU_EXPOSED_KEY]
     },
     () => runtime?.unmount(),
     () => {
