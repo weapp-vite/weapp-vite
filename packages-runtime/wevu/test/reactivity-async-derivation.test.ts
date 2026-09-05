@@ -41,9 +41,10 @@ describe('useAsyncDerivation', () => {
     expect(immediate.status).toBe('initial-pending')
     expect(immediate.value).toBeUndefined()
     expect(immediateCalls).toBe(1)
-    await Promise.resolve()
-    expect(immediate.status).toBe('ready')
-    expect(immediate.value).toBe('loaded')
+    await vi.waitFor(() => {
+      expect(immediate.status).toBe('ready')
+      expect(immediate.value).toBe('loaded')
+    })
 
     let lazyCalls = 0
     const lazy = useAsyncDerivation(async () => {
@@ -69,9 +70,10 @@ describe('useAsyncDerivation', () => {
     const state = useAsyncDerivation(() => taskAt(tasks, callIndex++).promise)
 
     initial.resolve('initial')
-    await Promise.resolve()
-    expect(state.status).toBe('ready')
-    expect(state.value).toBe('initial')
+    await vi.waitFor(() => {
+      expect(state.status).toBe('ready')
+      expect(state.value).toBe('initial')
+    })
 
     const settled = state.refresh()
     expect(state.status).toBe('refreshing')
@@ -384,6 +386,150 @@ describe('useAsyncDerivation', () => {
     source.value = 2
     expect(effectRuns).toBe(1)
     stop(runner)
+  })
+
+  it('does not leak native Promise then access or subscription reads into the calling effect', async () => {
+    const accessorSource = ref(1)
+    const subscriptionSource = ref(1)
+    const promise = Promise.resolve('ready')
+    const subscribe = promise.then.bind(promise)
+    Object.defineProperty(promise, 'then', {
+      get() {
+        void accessorSource.value
+        return (...args: Parameters<Promise<string>['then']>) => {
+          void subscriptionSource.value
+          return subscribe(...args)
+        }
+      },
+    })
+    const state = useAsyncDerivation(() => promise, { immediate: false })
+    let effectRuns = 0
+    let settled!: Promise<void>
+    const runner = effect(() => {
+      effectRuns++
+      if (effectRuns === 1) {
+        settled = state.refresh()
+      }
+    })
+
+    try {
+      accessorSource.value++
+      expect(effectRuns).toBe(1)
+      await settled
+      expect(state.status).toBe('ready')
+      expect(state.value).toBe('ready')
+      subscriptionSource.value++
+      expect(effectRuns).toBe(1)
+    }
+    finally {
+      stop(runner)
+      state.dispose()
+    }
+  })
+
+  it.each(['accessor', 'subscription'] as const)('adopts native Promise %s errors asynchronously', async (failureAt) => {
+    const error = new Error('native Promise adoption failed')
+    const promise = Promise.resolve('unused')
+    Object.defineProperty(promise, 'then', {
+      get() {
+        if (failureAt === 'accessor') {
+          throw error
+        }
+        return () => {
+          throw error
+        }
+      },
+    })
+    const state = useAsyncDerivation(() => promise, { immediate: false })
+
+    const settled = state.refresh()
+    expect(state.status).toBe('initial-pending')
+    expect(state.error).toBeUndefined()
+    await expect(settled).resolves.toBeUndefined()
+    expect(state.status).toBe('error')
+    expect(state.error).toBe(error)
+    expect(state.value).toBeUndefined()
+    state.dispose()
+  })
+
+  it.each(['resolve', 'reject'] as const)('keeps the first native Promise %s callback authoritative and asynchronous', async (first) => {
+    const firstError = new Error('first rejection')
+    const promise = Promise.resolve('unused')
+    Object.defineProperty(promise, 'then', {
+      value: (resolve: (value: PromiseLike<string>) => void, reject: (error: unknown) => void) => {
+        if (first === 'reject') {
+          reject(firstError)
+        }
+        resolve(Promise.resolve('first success'))
+        reject(new Error('late rejection'))
+        throw new Error('late subscription failure')
+      },
+    })
+    const state = useAsyncDerivation(() => promise, { immediate: false })
+
+    const settled = state.refresh()
+    expect(state.status).toBe('initial-pending')
+    expect(state.value).toBeUndefined()
+    expect(state.error).toBeUndefined()
+    await expect(settled).resolves.toBeUndefined()
+    if (first === 'resolve') {
+      expect(state.status).toBe('ready')
+      expect(state.value).toBe('first success')
+      expect(state.error).toBeUndefined()
+    }
+    else {
+      expect(state.status).toBe('error')
+      expect(state.value).toBeUndefined()
+      expect(state.error).toBe(firstError)
+    }
+    state.dispose()
+  })
+
+  it('ignores a native Promise accessor failure after it starts a newer refresh', async () => {
+    const latest = createDeferred<string>()
+    const promise = Promise.resolve('stale')
+    let calls = 0
+    let latestWaiter!: Promise<void>
+    const state = useAsyncDerivation(() => ++calls === 1 ? promise : latest.promise, { immediate: false })
+    Object.defineProperty(promise, 'then', {
+      get() {
+        latestWaiter = state.refresh()
+        throw new Error('stale accessor failure')
+      },
+    })
+
+    const olderWaiter = state.refresh()
+    let settled = false
+    void olderWaiter.then(() => {
+      settled = true
+    })
+    await Promise.resolve()
+    expect(state.status).toBe('initial-pending')
+    expect(state.error).toBeUndefined()
+    expect(settled).toBe(false)
+
+    latest.resolve('latest')
+    await Promise.all([olderWaiter, latestWaiter])
+    expect(state.status).toBe('ready')
+    expect(state.value).toBe('latest')
+    expect(state.error).toBeUndefined()
+    state.dispose()
+  })
+
+  it('does not revive a derivation disposed by its native Promise then accessor', async () => {
+    const promise = Promise.resolve('late')
+    const state = useAsyncDerivation(() => promise, { immediate: false })
+    Object.defineProperty(promise, 'then', {
+      get() {
+        state.dispose()
+        throw new Error('disposed accessor failure')
+      },
+    })
+
+    await expect(state.refresh()).resolves.toBeUndefined()
+    expect(state.status).toBe('disposed')
+    expect(state.value).toBeUndefined()
+    expect(state.error).toBeUndefined()
   })
 
   it('keeps ordinary computed values synchronous', () => {

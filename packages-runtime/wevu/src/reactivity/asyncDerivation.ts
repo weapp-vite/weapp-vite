@@ -110,12 +110,16 @@ export function useAsyncDerivation<T>(
     }
     activeController = undefined
     hasValue = true
-    batch(() => {
-      state.status = 'ready'
-      state.value = value
-      state.error = undefined
-    })
-    settleLatestCycle(completedGeneration)
+    try {
+      batch(() => {
+        state.status = 'ready'
+        state.value = value
+        state.error = undefined
+      })
+    }
+    finally {
+      settleLatestCycle(completedGeneration)
+    }
   }
 
   function commitError(completedGeneration: number, error: unknown) {
@@ -123,14 +127,18 @@ export function useAsyncDerivation<T>(
       return
     }
     activeController = undefined
-    batch(() => {
-      state.status = 'error'
-      state.error = error
-      if (!hasValue) {
-        state.value = undefined
-      }
-    })
-    settleLatestCycle(completedGeneration)
+    try {
+      batch(() => {
+        state.status = 'error'
+        state.error = error
+        if (!hasValue) {
+          state.value = undefined
+        }
+      })
+    }
+    finally {
+      settleLatestCycle(completedGeneration)
+    }
   }
 
   function refresh(): Promise<void> {
@@ -166,18 +174,21 @@ export function useAsyncDerivation<T>(
       return cycle.promise
     }
 
-    let task: Promise<T>
-    try {
-      task = runWithoutTracking(() => Promise.resolve(loader({ signal: controller.signal })))
-    }
-    catch (error) {
-      task = Promise.reject(error)
-    }
-
-    void task.then(
-      value => commitValue(currentGeneration, value),
-      error => commitError(currentGeneration, error),
-    )
+    runWithoutTracking(() => {
+      // 自有 Promise 避免原生 Promise 的身份快路径把 then 访问移出收养边界。
+      const task = new Promise<T>((resolve) => {
+        resolve(loader({ signal: controller.signal }))
+      })
+      void task.then(
+        value => commitValue(currentGeneration, value),
+        error => commitError(currentGeneration, error),
+      ).catch((error) => {
+        // 观察者异常交给宿主报告，不改写加载结果，也不阻塞 refresh 的完成。
+        setTimeout(() => {
+          throw error
+        }, 0)
+      })
+    })
     return cycle.promise
   }
 
@@ -195,15 +206,19 @@ export function useAsyncDerivation<T>(
     catch {
       // dispose 必须完成状态清理和 waiter 结算，不能被 listener 异常中断。
     }
-    batch(() => {
-      state.status = 'disposed'
-      state.value = undefined
-      state.error = undefined
-    })
-    hasValue = false
-    const cycle = activeCycle
-    activeCycle = undefined
-    cycle?.resolve()
+    try {
+      batch(() => {
+        state.status = 'disposed'
+        state.value = undefined
+        state.error = undefined
+      })
+    }
+    finally {
+      hasValue = false
+      const cycle = activeCycle
+      activeCycle = undefined
+      cycle?.resolve()
+    }
   }
 
   Object.defineProperties(storage, {
