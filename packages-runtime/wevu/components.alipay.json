@@ -2285,7 +2285,7 @@
       {
         "name": "range",
         "type": {
-          "name": "string"
+          "name": "string[] | ArrayObject"
         },
         "desc": [
           "String[] 时表示可选择的字符串列表；Object[] 时需指定 range-key 表示可选择的字段。 默认值： []"
@@ -2336,7 +2336,7 @@
       {
         "name": "value",
         "type": {
-          "name": "number"
+          "name": "number[]"
         },
         "desc": [
           "数组中的数字表示 picker-view-column 中对应的 index （从 0 开始）。 示例：value=“{{[2]}}”"

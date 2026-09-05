@@ -1,4 +1,6 @@
 import path from 'node:path'
+import { proxyCreateProgram } from '@volar/typescript'
+import { createVueLanguagePlugin, getDefaultCompilerOptions } from '@vue/language-core'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { createVueComponentsDefinition } from './vueDefinition'
@@ -30,7 +32,7 @@ function createLanguageService(files: Map<string, string>, options: ts.CompilerO
     fileExists: targetFileName => snapshots.has(normalizeFileKey(targetFileName)) || ts.sys.fileExists(targetFileName),
     readFile: targetFileName => snapshots.get(normalizeFileKey(targetFileName)) ?? ts.sys.readFile(targetFileName),
     readDirectory: ts.sys.readDirectory,
-    directoryExists: ts.sys.directoryExists,
+    directoryExists: directory => fileNames.some(fileName => normalizeFileKey(fileName).startsWith(`${normalizeFileKey(directory)}/`)) || ts.sys.directoryExists(directory),
     getDirectories: ts.sys.getDirectories,
   }
 
@@ -38,97 +40,19 @@ function createLanguageService(files: Map<string, string>, options: ts.CompilerO
 }
 
 describe('createVueComponentsDefinition', () => {
-  it('inlines props when typed-components reuse is disabled', () => {
-    const code = createVueComponentsDefinition(
-      ['t-avatar'],
-      () => ({ types: new Map([['size', 'string']]), docs: new Map() }),
-      { useTypedComponents: false },
-    )
-    expect(code).toContain('import type { ComponentOptionsMixin, DefineComponent, PublicProps } from \'wevu\'')
-    expect(code).toContain('import type { WevuJsxHostAttributes } from \'wevu/jsx-runtime\'')
-    expect(code).not.toContain('weapp-vite/typed-components')
-    expect(code).toContain('readonly size?: string;')
-    expect(code).toContain('Props & WevuJsxHostAttributes')
-    expect(code).toContain('InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin')
-    expect(code).not.toContain('@ts-nocheck')
-    expect(code).toContain('declare module \'wevu/jsx-runtime\'')
-    expect(code.match(/^ {4}TAvatar: WevuComponent</gm)).toHaveLength(1)
-    expect(code.match(/^ {4}TAvatar: __WevuComponentProps<WevuComponent</gm)).toHaveLength(1)
-    expect(code.match(/^ {4}'t-avatar': WevuComponent</gm)).toHaveLength(1)
-    expect(code.match(/^ {4}'t-avatar': __WevuComponentProps<WevuComponent</gm)).toHaveLength(1)
-  })
-
-  it('references weapp-vite/typed-components when enabled', () => {
-    const code = createVueComponentsDefinition(
-      ['t-avatar', 'van-button'],
-      () => ({ types: new Map([['size', 'string']]), docs: new Map() }),
-      { useTypedComponents: true },
-    )
-    expect(code).toContain('declare module \'vue\'')
-    expect(code).toContain('import type { ComponentProp } from \'weapp-vite/typed-components\'')
-    expect(code).toContain('TAvatar: WevuComponent<ComponentProp<\"t-avatar\">>;')
-    expect(code).toContain('\'t-avatar\': WevuComponent<ComponentProp<\"t-avatar\">>;')
-    expect(code).toContain('VanButton: WevuComponent<ComponentProp<\"van-button\">>;')
-    expect(code).toContain('\'van-button\': WevuComponent<ComponentProp<\"van-button\">>;')
-    expect(code).not.toContain('readonly size?: string;')
-    expect(code).not.toContain('[component: string]')
-  })
-
-  it('uses custom module name when provided', () => {
-    const code = createVueComponentsDefinition(
-      ['t-empty'],
-      () => ({ types: new Map(), docs: new Map() }),
-      { useTypedComponents: true, moduleName: 'wevu' },
-    )
-    expect(code).toContain('declare module \'wevu\'')
-  })
-
-  it('adds source import types for navigation when provided', () => {
-    const code = createVueComponentsDefinition(
-      ['van-info'],
-      () => ({ types: new Map(), docs: new Map() }),
-      {
-        useTypedComponents: true,
-        resolveComponentImport: () => '@vant/weapp/lib/info/index.js',
-      },
-    )
-    expect(code).toContain('VanInfo: __WevuComponentImport<typeof import(\"@vant/weapp/lib/info/index.js\"), WevuComponent<ComponentProp<\"van-info\">>>;')
-    expect(code.match(/typeof import\("@vant\/weapp\/lib\/info\/index\.js"\)/g)).toHaveLength(2)
-    expect(code).toContain('VanInfo: __WevuComponentProps<WevuComponent<ComponentProp<\"van-info\">>>;')
-    expect(code.slice(code.indexOf('declare module \'wevu/jsx-runtime\''))).not.toContain('@vant/weapp/lib/info/index.js')
-  })
-
-  it('sanitizes raw metadata identifiers before emitting inline props', () => {
-    const code = createVueComponentsDefinition(
-      ['filter-bar'],
-      () => ({
-        types: new Map([
-          ['filters', 'FilterItem[]'],
-          ['remote', 'ImportedFilter'],
-        ]),
-        docs: new Map(),
-      }),
-      { useTypedComponents: false },
-    )
-
-    expect(code).not.toContain('FilterItem')
-    expect(code).not.toContain('ImportedFilter')
-    expect(code).toContain('readonly filters?: unknown[];')
-    expect(code).toContain('readonly remote?: unknown;')
-  })
-
-  it('keeps base attrs like class for source-imported native components', () => {
+  it.each([false, true])('keeps native source attributes and metadata fallback (typed=%s)', (useTypedComponents) => {
     const projectRoot = path.resolve(__dirname, '../../..')
     const entryFile = path.join(projectRoot, 'test/__virtual__/components-class-props.tsx')
     const typedComponentsFile = path.join(projectRoot, 'test/__virtual__/typed-components.d.ts')
     const vueComponentsFile = path.join(projectRoot, 'test/__virtual__/components.d.ts')
     const resolverComponentFile = path.join(projectRoot, 'test/__virtual__/vant-tabbar.d.ts')
+    const metadataComponentFile = path.join(projectRoot, 'test/__virtual__/metadata-card.d.ts')
     const vueComponentsCode = createVueComponentsDefinition(
-      ['Tabbar'],
+      ['Tabbar', 'MetadataCard'],
       () => ({ types: new Map([['active', 'boolean']]), docs: new Map() }),
       {
-        useTypedComponents: true,
-        resolveComponentImport: () => resolverComponentFile,
+        useTypedComponents,
+        resolveComponentImport: name => name === 'Tabbar' ? resolverComponentFile : metadataComponentFile,
       },
     )
     const files = new Map<string, string>([
@@ -139,6 +63,9 @@ describe('createVueComponentsDefinition', () => {
           'import type {} from \'vue\'',
           '',
           'const ok = <Tabbar class="text-red" active />',
+          'const metadata = <MetadataCard class="text-red" active />',
+          '// @ts-expect-error 元数据组件不允许未知属性。',
+          'const badMetadata = <MetadataCard typo />',
           'const bad = <Tabbar typo />',
           '',
           'void ok',
@@ -153,6 +80,7 @@ describe('createVueComponentsDefinition', () => {
           '    Tabbar: {',
           '      readonly active?: boolean;',
           '    }',
+          '    MetadataCard: { readonly active?: boolean }',
           '  }',
           '  export type ComponentPropName = keyof ComponentProps',
           '  export type ComponentProp<Name extends string> = Name extends ComponentPropName ? ComponentProps[Name] : object',
@@ -170,6 +98,7 @@ describe('createVueComponentsDefinition', () => {
           'export default _default',
         ].join('\n'),
       ],
+      [metadataComponentFile, 'export {}'],
       [vueComponentsFile, vueComponentsCode],
     ])
     const languageService = createLanguageService(files, {
@@ -189,15 +118,103 @@ describe('createVueComponentsDefinition', () => {
     expect(ts.flattenDiagnosticMessageText(diagnostics[0]!.messageText, '\n')).toContain('typo')
   })
 
-  it('emits strict empty component maps without an index signature', () => {
-    const code = createVueComponentsDefinition(
-      [],
-      () => ({ types: new Map(), docs: new Map() }),
-      { useTypedComponents: true },
-    )
-    expect(code).toContain('interface GlobalComponents {')
-    expect(code).toContain('interface WevuJsxGlobalComponents {')
-    expect(code).not.toContain('[component: string]')
+  it.each([false, true])('preserves source SFC contracts in TSX and templates (typed=%s)', (useTypedComponents) => {
+    const projectRoot = path.resolve(__dirname, '../../..')
+    const entryFile = path.join(projectRoot, 'test/source-contract.tsx')
+    const sourceFile = path.join(projectRoot, 'test/SourceCard.vue')
+    const genericSourceFile = path.join(projectRoot, 'test/GenericCard.vue')
+    const templateFile = path.join(projectRoot, 'test/Consumer.vue')
+    const definitionFile = path.join(projectRoot, 'test/components.d.ts')
+    const typedFile = path.join(projectRoot, 'test/typed-components.d.ts')
+    const files = new Map([
+      [sourceFile, [
+        '<script setup lang="ts">',
+        'defineProps<{ title: string }>()',
+        'defineEmits<{ change: [value: string] }>()',
+        '</script>',
+        '<template><slot /></template>',
+      ].join('\n')],
+      [genericSourceFile, [
+        '<script setup lang="ts" generic="T extends string">',
+        'defineProps<{ title: string; value?: T }>()',
+        'defineEmits<{ change: [value: T] }>()',
+        '</script>',
+        '<template><slot /></template>',
+      ].join('\n')],
+      [templateFile, '<template><SourceCard title="ok" /><source-card title="ok" /></template>'],
+      [entryFile, [
+        'const pascal = <SourceCard title="ok" hidden onTap={() => {}} onChange={value => value.toUpperCase()} />',
+        'const kebab = <source-card title="ok" hidden onTap={() => {}} onChange={value => value.toUpperCase()} />',
+        '// @ts-expect-error 必填 prop 不能被 metadata 可选化。',
+        'const missingPascal = <SourceCard />',
+        '// @ts-expect-error kebab 标签使用同一个源组件契约。',
+        'const missingKebab = <source-card />',
+        '// @ts-expect-error 事件参数必须保持源组件的 string 类型。',
+        'const wrongPascal = <SourceCard title="ok" onChange={(value: number) => {}} />',
+        '// @ts-expect-error kebab 标签同样校验事件参数。',
+        'const wrongKebab = <source-card title="ok" onChange={(value: number) => {}} />',
+        'const genericPascal = <GenericCard title="ok" value="hello" onChange={value => value.toUpperCase()} />',
+        'const genericKebab = <generic-card title="ok" value="hello" hidden onTap={() => {}} onChange={value => value.toUpperCase()} />',
+        '// @ts-expect-error 可调用的泛型组件仍然需要必填 prop。',
+        'const missingGeneric = <generic-card />',
+        '// @ts-expect-error 泛型组件的非泛型 prop 不能丢失。',
+        'const wrongGenericTitle = <generic-card title={123} />',
+        '// @ts-expect-error 泛型约束仍然限制组件值。',
+        'const wrongGenericValue = <generic-card title="ok" value={123} />',
+        '// @ts-expect-error 泛型事件参数必须保留约束。',
+        'const wrongGenericEvent = <generic-card title="ok" onChange={(value: number) => {}} />',
+        'export {}',
+      ].join('\n')],
+      [definitionFile, createVueComponentsDefinition(
+        ['source-card', 'generic-card'],
+        () => ({ types: new Map([['title', 'string']]), docs: new Map() }),
+        {
+          useTypedComponents,
+          resolveComponentImport: name => name === 'generic-card' ? './GenericCard.vue' : './SourceCard.vue',
+        },
+      )],
+      [typedFile, [
+        'declare module \'weapp-vite/typed-components\' {',
+        '  export type ComponentProp<Name extends string> = { readonly title?: string }',
+        '}',
+      ].join('\n')],
+    ])
+    const options: ts.CompilerOptions = {
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      jsx: ts.JsxEmit.ReactJSX,
+      jsxImportSource: 'wevu/weapp',
+      strict: true,
+      skipLibCheck: false,
+      noEmit: true,
+      allowNonTsExtensions: true,
+      types: [],
+    }
+    const host = ts.createCompilerHost(options)
+    const readFile = host.readFile.bind(host)
+    const fileExists = host.fileExists.bind(host)
+    const snapshots = new Map([...files].map(([name, content]) => [normalizeFileKey(name), content]))
+    host.readFile = fileName => snapshots.get(normalizeFileKey(fileName)) ?? readFile(fileName)
+    host.fileExists = fileName => snapshots.has(normalizeFileKey(fileName)) || fileExists(fileName)
+    host.getSourceFile = (fileName, languageVersion) => {
+      const source = host.readFile(fileName)
+      return source === undefined ? undefined : ts.createSourceFile(fileName, source, languageVersion)
+    }
+    const createProgram = proxyCreateProgram(ts, ts.createProgram, (tsInstance, programOptions) => ({
+      languagePlugins: [createVueLanguagePlugin<string>(
+        tsInstance,
+        programOptions.options,
+        { ...getDefaultCompilerOptions(), lib: 'vue', checkUnknownComponents: true },
+        id => id,
+      )],
+    }))
+    const program = createProgram({ host, rootNames: [...files.keys()], options })
+    const diagnostics = [...files.keys()].flatMap(fileName => ts.getPreEmitDiagnostics(
+      program,
+      program.getSourceFile(fileName),
+    ))
+    expect(diagnostics.map(diagnostic => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'))).toEqual([])
   })
 
   it('emits WevuPageLayoutMap augmentation when layout names are provided', () => {

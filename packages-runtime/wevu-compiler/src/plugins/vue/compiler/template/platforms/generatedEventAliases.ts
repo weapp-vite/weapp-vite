@@ -517,6 +517,8 @@ export const TT_JSX_EVENT_NAME_ALIASES: Readonly<Record<string, Readonly<Record<
   },
   picker: {
     cancel: 'bindcancel',
+    change: 'bindchange',
+    columnchange: 'bindcolumnchange',
   },
   'picker-view': {
     change: 'bindchange',

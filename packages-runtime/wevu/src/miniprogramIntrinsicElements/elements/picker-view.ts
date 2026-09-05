@@ -18,4 +18,5 @@ export type MiniProgramIntrinsicElementPickerView = MiniProgramIntrinsicElementB
   onChange?: WevuJsxEventHandler
   onPickEnd?: WevuJsxEventHandler
   onPickStart?: WevuJsxEventHandler
+  value?: number[]
 }

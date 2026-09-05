@@ -1,3 +1,4 @@
+import type { NodePath } from '@babel/traverse'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, generate, parse, traverse } from '../../utils/babel'
 
@@ -148,8 +149,6 @@ function createImportedTypeNode(
   binding: ImportedTypeBinding,
   referenceParts: string[],
   reference: t.TSTypeReference,
-  context: PortablePropTypeContext,
-  resolving: Set<string>,
 ): t.TSType {
   if (!isPortableImportSource(binding.source)) {
     return t.tsUnknownKeyword()
@@ -161,12 +160,8 @@ function createImportedTypeNode(
   if (!qualifier) {
     return t.tsUnknownKeyword()
   }
+  // 类型参数留给当前遍历处理，以保留调用位置的词法绑定。
   const typeArguments = reference.typeArguments
-    ? t.tsTypeParameterInstantiation(
-        // eslint-disable-next-line ts/no-use-before-define -- 类型引用递归归一化需要共享同一转换入口。
-        reference.typeArguments.params.map(param => createPortableTypeNode(param, context, resolving)),
-      )
-    : null
   return t.tsImportType(t.stringLiteral(binding.source), qualifier, typeArguments)
 }
 
@@ -203,6 +198,58 @@ function resolveLocalTypeNode(
     context,
     nextResolving,
   )
+}
+
+function containsInferParameter(node: t.Node, name: string): boolean {
+  if (t.isTSInferType(node)) {
+    return node.typeParameter.name.name === name
+  }
+  // 嵌套条件类型的 infer 只属于它自己的 true 分支。
+  if (t.isTSConditionalType(node)) {
+    return false
+  }
+  for (const key of t.VISITOR_KEYS[node.type] ?? []) {
+    const child = (node as unknown as Record<string, unknown>)[key]
+    if (Array.isArray(child)) {
+      if (child.some(entry => t.isNode(entry) && containsInferParameter(entry, name))) {
+        return true
+      }
+    }
+    else if (t.isNode(child) && containsInferParameter(child, name)) {
+      return true
+    }
+  }
+  return false
+}
+
+function isBoundTypeParameter(path: NodePath<t.TSTypeReference>, name: string) {
+  let child: NodePath = path
+  for (let parent: NodePath | null = path.parentPath; parent; parent = parent.parentPath) {
+    const node = parent.node
+    if (
+      'typeParameters' in node
+      && t.isTSTypeParameterDeclaration(node.typeParameters)
+      && node.typeParameters.params.some(parameter => parameter.name.name === name)
+    ) {
+      return true
+    }
+    if (
+      t.isTSMappedType(node)
+      && (child.key === 'nameType' || child.key === 'typeAnnotation')
+      && node.key.name === name
+    ) {
+      return true
+    }
+    if (
+      t.isTSConditionalType(node)
+      && child.key === 'trueType'
+      && containsInferParameter(node.extendsType, name)
+    ) {
+      return true
+    }
+    child = parent
+  }
+  return false
 }
 
 function createPortableTypeNode(
@@ -242,10 +289,13 @@ function createPortableTypeNode(
         return
       }
 
+      if (referenceParts.length === 1 && isBoundTypeParameter(path, rootName)) {
+        return
+      }
+
       const importedType = context.imports.get(rootName)
       if (importedType) {
-        path.replaceWith(createImportedTypeNode(importedType, referenceParts, path.node, context, resolving))
-        path.skip()
+        path.replaceWith(createImportedTypeNode(importedType, referenceParts, path.node))
         return
       }
 

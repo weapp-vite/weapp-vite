@@ -10,7 +10,7 @@ import type { AlipayIntrinsicElementBaseAttributes } from '../base'
 export type AlipayIntrinsicElementPicker = AlipayIntrinsicElementBaseAttributes & {
   disabled?: boolean
   onChange?: WevuJsxEventHandler
-  range?: string
+  range?: Record<string, unknown>[] | string[]
   'range-key'?: string
   title?: string
   value?: number

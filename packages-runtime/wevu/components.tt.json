@@ -1636,6 +1636,13 @@
         "type": {
           "name": "string"
         },
+        "enum": [
+          { "value": "selector", "desc": "普通选择器" },
+          { "value": "multiSelector", "desc": "多列选择器" },
+          { "value": "time", "desc": "时间选择器" },
+          { "value": "date", "desc": "日期选择器" },
+          { "value": "region", "desc": "地区选择器" }
+        ],
         "desc": [
           "\"selector\"否 选择器类型，详见 [mode 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/picker/#mode-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。1.0.0"
         ]
@@ -1657,6 +1664,56 @@
         "desc": [
           "无 否 取消选择收起 picker 时触发 1.0.0"
         ]
+      },
+      {
+        "name": "range",
+        "type": { "name": "(string | object)[] | (string | object)[][]" },
+        "desc": ["selector 使用一维选项数组，multiSelector 使用最多五列的二维选项数组。"]
+      },
+      {
+        "name": "range-key",
+        "type": { "name": "string" },
+        "desc": ["指定对象选项中用于显示的字段。"]
+      },
+      {
+        "name": "value",
+        "type": { "name": "number | number[] | string | string[]" },
+        "desc": ["selector 为选中下标，multiSelector 为各列下标，time/date 为时间或日期字符串，region 为地区字符串数组。"]
+      },
+      {
+        "name": "bindchange",
+        "type": { "name": "eventhandle" },
+        "desc": ["确认选择时触发。"]
+      },
+      {
+        "name": "bindcolumnchange",
+        "type": { "name": "eventhandle" },
+        "desc": ["multiSelector 某列变化时触发，event.detail 包含 column 和 value。"]
+      },
+      {
+        "name": "start",
+        "type": { "name": "string" },
+        "desc": ["time/date 的有效时间或日期范围起点。"]
+      },
+      {
+        "name": "end",
+        "type": { "name": "string" },
+        "desc": ["time/date 的有效时间或日期范围终点。"]
+      },
+      {
+        "name": "fields",
+        "type": { "name": "string" },
+        "enum": [
+          { "value": "year", "desc": "年" },
+          { "value": "month", "desc": "月" },
+          { "value": "day", "desc": "日" }
+        ],
+        "desc": ["date 选择器的粒度。"]
+      },
+      {
+        "name": "custom-item",
+        "type": { "name": "string" },
+        "desc": ["region 每列顶部的自定义选项。"]
       }
     ]
   },
@@ -1667,7 +1724,7 @@
       {
         "name": "value",
         "type": {
-          "name": "number"
+          "name": "number[]"
         },
         "desc": [
           "[]是 设置选择器中被选中的元素，`value[i]` 表示 picker-view 内的第 i 个 picker-view-column 选中第 `value[i]` 项元素（下标从 0 开始）。如果 `value[i]` 大于 picker-view-colum 可选项长度时，选择最后一项。1.0.0"

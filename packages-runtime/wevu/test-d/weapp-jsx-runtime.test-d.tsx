@@ -1,5 +1,5 @@
 /** @jsxImportSource wevu/weapp */
-import type { WevuJsxElement } from 'wevu/weapp/jsx-runtime'
+import type { WeappIntrinsicElements, WevuJsxElement } from 'wevu/weapp/jsx-runtime'
 import { expectError, expectType } from 'tsd'
 
 const nativeButton = (
@@ -28,8 +28,9 @@ const nativeStructure = (
 expectType<WevuJsxElement>(nativeButton)
 expectType<WevuJsxElement>(nativeView)
 expectType<WevuJsxElement>(nativeStructure)
-expectError(<view disable-scroll />)
+// JSX 允许未知连字符属性；用对象属性集合检查平台边界。
+expectError({ 'disable-scroll': true } satisfies WeappIntrinsicElements['view'])
 expectError(<button open-type="openAwemeUserProfile" />)
 expectError(<scroll-view onWorkletOnscrollstart={() => {}} />)
-expectError(<view unknown-attribute />)
+expectError(<view unknownAttribute />)
 expectError(<div />)

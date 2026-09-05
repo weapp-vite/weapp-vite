@@ -270,29 +270,17 @@ export const WEAPP_BUILTIN_HTML_TAGS_FORM_CONTROLS_PRIMARY = [
   },
   {
     "name": "checkbox-group",
-    "description": "多选项目。",
+    "description": "多项选择器，内部由多个 checkbox 组成。",
     "attributes": [
       {
-        "name": "checked",
-        "description": "Type: boolean\n当前是否选中，可用来设置默认选中\nDefault: false\nSince: 1.0.0"
-      },
-      {
-        "name": "color",
-        "description": "Type: string\ncheckbox的颜色，同css的color\nDefault: #09BB07\nSince: 1.0.0"
-      },
-      {
-        "name": "disabled",
-        "description": "Type: boolean\n是否禁用\nDefault: false\nSince: 1.0.0"
-      },
-      {
-        "name": "value",
-        "description": "Type: string\n[checkbox](https://developers.weixin.qq.com/miniprogram/dev/component/checkbox.html)标识，选中时触发[checkbox-group](https://developers.weixin.qq.com/miniprogram/dev/component/checkbox-group.html)的 change 事件，并携带 [checkbox](https://developers.weixin.qq.com/miniprogram/dev/component/checkbox.html) 的 value\nSince: 1.0.0"
+        "name": "bind:change",
+        "description": "Type: eventhandle\n选中项发生改变时触发 change 事件\nSince: 1.0.0"
       }
     ],
     "references": [
       {
         "name": "WeChat Mini Program docs",
-        "url": "https://developers.weixin.qq.com/miniprogram/dev/component/checkbox.html"
+        "url": "https://developers.weixin.qq.com/miniprogram/dev/component/checkbox-group.html"
       }
     ]
   },

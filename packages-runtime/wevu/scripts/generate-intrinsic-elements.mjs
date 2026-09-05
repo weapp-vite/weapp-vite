@@ -240,14 +240,42 @@ function normalizeTypeSegment(segment, location) {
   if (Object.hasOwn(TYPE_ALIAS_BY_NAME, lowered)) {
     return TYPE_ALIAS_BY_NAME[lowered]
   }
+  if (normalized.endsWith('[]')) {
+    const elementType = normalized.slice(0, -2).trim()
+    const inner = elementType.startsWith('(') && elementType.endsWith(')')
+      ? elementType.slice(1, -1)
+      : elementType
+
+    const segments = normalizeUnionType(inner, location)
+    return segments.length > 1 ? `(${segments.join(' | ')})[]` : `${segments[0]}[]`
+  }
   fail(`${location} uses unsupported type ${JSON.stringify(normalized)}`)
 }
 
 function normalizeUnionType(rawType, location) {
-  const normalizedRaw = rawType.trim().replace(/\s*\/\s*/g, ' | ')
-  const segments = normalizedRaw
-    .split('|')
-    .map(segment => normalizeTypeSegment(segment, location))
+  const segments = []
+  let depth = 0
+  let start = 0
+  for (let index = 0; index < rawType.length; index++) {
+    const character = rawType[index]
+    if (character === '(') {
+      depth++
+    }
+    else if (character === ')') {
+      depth--
+      if (depth < 0) {
+        fail(`${location} uses unbalanced type ${JSON.stringify(rawType)}`)
+      }
+    }
+    else if (depth === 0 && (character === '|' || character === '/')) {
+      segments.push(normalizeTypeSegment(rawType.slice(start, index), location))
+      start = index + 1
+    }
+  }
+  if (depth !== 0) {
+    fail(`${location} uses unbalanced type ${JSON.stringify(rawType)}`)
+  }
+  segments.push(normalizeTypeSegment(rawType.slice(start), location))
   return [...new Set(segments)].sort()
 }
 

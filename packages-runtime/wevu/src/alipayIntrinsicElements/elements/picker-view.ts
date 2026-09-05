@@ -16,5 +16,5 @@ export type AlipayIntrinsicElementPickerView = AlipayIntrinsicElementBaseAttribu
   onChange?: WevuJsxEventHandler
   onPickEnd?: WevuJsxEventHandler
   onPickStart?: WevuJsxEventHandler
-  value?: number
+  value?: number[]
 }

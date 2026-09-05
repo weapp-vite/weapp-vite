@@ -278,29 +278,17 @@ export const WEAPP_BUILTIN_HTML_TAGS_FORM_CONTROLS_SELECTION = [
   },
   {
     "name": "radio-group",
-    "description": "单选项目。",
+    "description": "单项选择器，内部由多个 radio 组成。",
     "attributes": [
       {
-        "name": "checked",
-        "description": "Type: boolean\n当前是否选中\nDefault: false\nSince: 1.0.0"
-      },
-      {
-        "name": "color",
-        "description": "Type: string\nradio的颜色，同css的color\nDefault: #09BB07\nSince: 1.0.0"
-      },
-      {
-        "name": "disabled",
-        "description": "Type: boolean\n是否禁用\nDefault: false\nSince: 1.0.0"
-      },
-      {
-        "name": "value",
-        "description": "Type: string\n[radio](https://developers.weixin.qq.com/miniprogram/dev/component/radio.html) 标识。当该[radio](https://developers.weixin.qq.com/miniprogram/dev/component/radio.html) 选中时，[radio-group](https://developers.weixin.qq.com/miniprogram/dev/component/radio-group.html) 的 change 事件会携带[radio](https://developers.weixin.qq.com/miniprogram/dev/component/radio.html)的value\nSince: 1.0.0"
+        "name": "bind:change",
+        "description": "Type: eventhandle\n选中项发生改变时触发 change 事件\nSince: 1.0.0"
       }
     ],
     "references": [
       {
         "name": "WeChat Mini Program docs",
-        "url": "https://developers.weixin.qq.com/miniprogram/dev/component/radio.html"
+        "url": "https://developers.weixin.qq.com/miniprogram/dev/component/radio-group.html"
       }
     ]
   },

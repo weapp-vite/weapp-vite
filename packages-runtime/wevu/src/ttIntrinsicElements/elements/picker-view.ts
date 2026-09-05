@@ -16,5 +16,5 @@ export type TtIntrinsicElementPickerView = TtIntrinsicElementBaseAttributes & {
   onChange?: WevuJsxEventHandler
   onPickEnd?: WevuJsxEventHandler
   onPickStart?: WevuJsxEventHandler
-  value?: number
+  value?: number[]
 }

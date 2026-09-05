@@ -260,7 +260,7 @@
     "build:types": "tsdown --dts",
     "test": "vitest run",
     "test:dev": "vitest",
-    "test:types": "pnpm build:types && tsd",
+    "test:types": "pnpm build:types && tsd --files \"test-d/**/*.test-d.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",

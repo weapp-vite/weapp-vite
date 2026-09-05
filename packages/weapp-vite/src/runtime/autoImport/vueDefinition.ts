@@ -147,27 +147,6 @@ function formatWevuComponentTypeFromPropsType(propsType: string) {
   return `WevuComponent<${propsType}>`
 }
 
-function formatGlobalComponentTypes(
-  metadata: ComponentMetadata,
-  sourceImport?: string,
-) {
-  const propsType = formatPropsType(metadata.types)
-  const baseType = formatWevuComponentTypeFromPropsType(propsType)
-  return {
-    baseType,
-    typeWithSource: sourceImport
-      ? formatComponentTypeWithSourceImport(sourceImport, baseType)
-      : baseType,
-  }
-}
-
-function formatGlobalConstEntry(name: string, metadata: ComponentMetadata) {
-  if (!isValidIdentifierName(name)) {
-    return undefined
-  }
-  return `  const ${name}: ${formatWevuComponentTypeFromPropsType(formatPropsType(metadata.types))}`
-}
-
 export function createVueComponentsDefinition(
   componentNames: string[],
   getMetadata: (name: string) => ComponentMetadata,
@@ -196,13 +175,13 @@ export function createVueComponentsDefinition(
     'export {}',
     '',
     'type WevuComponent<Props = object> = new (...args: never[]) => InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, Props & WevuJsxHostAttributes, {}>>',
-    'type __WevuComponentProps<TComponent> = TComponent extends new (...args: never[]) => { $props: infer Props } ? Props : object',
+    'type __WevuComponentProps<TComponent> = TComponent extends new (...args: never[]) => { $props: infer Props } ? Props : TComponent extends (props: infer Props, ...args: never[]) => unknown ? Props : object',
     'type __WevuComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component extends new (...args: infer Args) => infer Instance ? new (...args: Args) => Omit<Instance, \'$props\'> & { $props: __WevuComponentProps<Component> & __WevuComponentProps<Fallback> } : Fallback : Fallback',
     '',
   ]
 
   if (componentNames.length > 0) {
-    const emitGlobalConst = (keyName: string, sourceName: string) => {
+    const emitGlobalConst = (keyName: string, componentType: string) => {
       if (!isValidIdentifierName(keyName)) {
         return
       }
@@ -211,13 +190,7 @@ export function createVueComponentsDefinition(
       }
       emittedGlobalConstKeys.add(keyName)
 
-      if (options.useTypedComponents) {
-        const baseType = `WevuComponent<ComponentProp<${JSON.stringify(sourceName)}>>`
-        globalConstLines.push(`  const ${keyName}: ${baseType}`)
-        return
-      }
-      const metadata = getMetadata(sourceName)
-      globalConstLines.push(formatGlobalConstEntry(keyName, metadata)!)
+      globalConstLines.push(`  const ${keyName}: ${componentType}`)
     }
 
     const emitGlobalComponent = (keyName: string, sourceName: string) => {
@@ -227,22 +200,15 @@ export function createVueComponentsDefinition(
       emittedComponentKeys.add(keyName)
 
       const sourceImport = options.resolveComponentImport?.(sourceName)
-      if (options.useTypedComponents) {
-        const baseType = `WevuComponent<ComponentProp<${JSON.stringify(sourceName)}>>`
-        const typeWithSource = sourceImport
-          ? formatComponentTypeWithSourceImport(sourceImport, baseType)
-          : baseType
-        globalComponentLines.push(`    ${formatPropertyKey(keyName)}: ${typeWithSource};`)
-        jsxGlobalComponentLines.push(`    ${formatPropertyKey(keyName)}: __WevuComponentProps<${baseType}>;`)
-        emitGlobalConst(keyName, sourceName)
-        return
-      }
-
-      const metadata = getMetadata(sourceName)
-      const { baseType, typeWithSource } = formatGlobalComponentTypes(metadata, sourceImport)
+      const baseType = options.useTypedComponents
+        ? `WevuComponent<ComponentProp<${JSON.stringify(sourceName)}>>`
+        : formatWevuComponentTypeFromPropsType(formatPropsType(getMetadata(sourceName).types))
+      const typeWithSource = sourceImport
+        ? formatComponentTypeWithSourceImport(sourceImport, baseType)
+        : baseType
       globalComponentLines.push(`    ${formatPropertyKey(keyName)}: ${typeWithSource};`)
-      jsxGlobalComponentLines.push(`    ${formatPropertyKey(keyName)}: __WevuComponentProps<${baseType}>;`)
-      emitGlobalConst(keyName, sourceName)
+      jsxGlobalComponentLines.push(`    ${formatPropertyKey(keyName)}: __WevuComponentProps<${typeWithSource}> & WevuJsxHostAttributes;`)
+      emitGlobalConst(keyName, typeWithSource)
     }
 
     for (const name of componentNames) {
