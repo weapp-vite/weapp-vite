@@ -31,6 +31,7 @@ interface RecordBindingOptions {
   kind: WevuBindingKind
   expression: string
   outputPath?: string
+  sourceFile?: string
   sourceLocation?: SourceSpan
   scopes?: WevuBindingScopeV1[]
   scopeDependencies?: Array<{
@@ -45,6 +46,8 @@ const INTERNAL_GLOBALS: Record<string, true> = {
   NaN: true,
   arguments: true,
 }
+
+const completeBindingManifests = new WeakSet<WevuBindingManifestV1>()
 
 function cloneSourceSpan(location: SourceSpan | undefined): SourceSpan | undefined {
   if (!location) {
@@ -316,6 +319,7 @@ function recordBindingManifestExpression(
       id: `b${manifest.bindings.length}`,
       kind: options.kind,
       outputPath: options.outputPath ?? '*',
+      ...(options.sourceFile && options.sourceFile !== manifest.sourceFile ? { sourceFile: options.sourceFile } : {}),
       sourceRoots: [],
       dependencies: [],
       scopes: resolveBindingScopes(context, [], options.scopes),
@@ -333,6 +337,7 @@ function recordBindingManifestExpression(
       id: `b${manifest.bindings.length}`,
       kind: options.kind,
       outputPath: options.outputPath,
+      ...(options.sourceFile && options.sourceFile !== manifest.sourceFile ? { sourceFile: options.sourceFile } : {}),
       sourceRoots,
       sourcePaths: sourcePaths.length ? [...new Set(sourcePaths)] : undefined,
       dependencies: bindingDependencies,
@@ -348,6 +353,7 @@ function recordBindingManifestExpression(
       id: `b${manifest.bindings.length}`,
       kind: options.kind,
       outputPath: dependency.mode === 'exact-path' ? dependency.path! : dependency.root,
+      ...(options.sourceFile && options.sourceFile !== manifest.sourceFile ? { sourceFile: options.sourceFile } : {}),
       sourceRoots: [dependency.root],
       sourcePaths: dependency.path ? [dependency.path] : undefined,
       dependencies: [bindingDependency],
@@ -362,12 +368,28 @@ function recordBindingManifestExpression(
  * 为一次模板编译创建空的版本化绑定清单。
  */
 export function createBindingManifest(sourceFile: string): WevuBindingManifestV1 {
-  return {
+  const manifest: WevuBindingManifestV1 = {
     version: 1,
     sourceFile,
     bindings: [],
     features: {},
   }
+  completeBindingManifests.add(manifest)
+  return manifest
+}
+
+/**
+ * 判断清单是否由当前编译流程完整采集。
+ */
+export function isBindingManifestComplete(manifest: WevuBindingManifestV1) {
+  return completeBindingManifests.has(manifest)
+}
+
+/**
+ * 标记清单在降级输出中不再具备自动裁剪权威性。
+ */
+export function markBindingManifestIncomplete(manifest: WevuBindingManifestV1) {
+  completeBindingManifests.delete(manifest)
 }
 
 /**

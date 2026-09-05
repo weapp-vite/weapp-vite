@@ -186,6 +186,7 @@ describe('runtime: setData scheduler', () => {
         {
           id: 'binding:fallback',
           outputPath: '__wv_bind_0',
+          sourceFile: 'src/shared/fallback.tsx',
           sourceRoots: ['fallbackRoot'],
           updateMode: 'snapshot-fallback',
         },
@@ -268,7 +269,7 @@ describe('runtime: setData scheduler', () => {
           id: 'binding:fallback',
           outputPath: '__wv_bind_0',
           updateMode: 'snapshot-fallback',
-          sourceFile: 'src/pages/home.vue',
+          sourceFile: 'src/shared/fallback.tsx',
         },
         {
           id: 'binding:unknown',

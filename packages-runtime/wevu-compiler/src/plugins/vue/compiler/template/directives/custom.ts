@@ -2,6 +2,7 @@ import type { DirectiveNode, SourceLocation } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 
+import { recordBindingExpression } from '../bindingManifest'
 import { warn } from '../diagnostics'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
@@ -38,6 +39,11 @@ export function transformCustomDirective(
   const dataAttrName = `data-v-${name}`
 
   if (exp && exp.type === NodeTypes.SIMPLE_EXPRESSION) {
+    recordBindingExpression(context, {
+      kind: 'attribute',
+      expression: exp.content,
+      sourceLocation: exp.loc,
+    })
     const expValue = normalizeWxmlExpressionWithContext(exp.content, context)
     if (IDENTIFIER_RE.test(expValue)) {
       return `${dataAttrName}="${renderMustache(expValue, context)}"`

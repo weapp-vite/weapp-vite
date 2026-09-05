@@ -180,6 +180,41 @@ export default defineComponent({
     expect(result.meta?.jsxDependencies).toEqual([shared])
   })
 
+  it('keeps cross-file JSX binding ownership on the node that supplied the expression', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-binding-owner-'))
+    const shared = path.join(root, 'shared.tsx')
+    const entry = path.join(root, 'page.tsx')
+    await writeFile(shared, [
+      'export const sharedView = <text>{sharedState.label}</text>',
+      'export const createPanel = value => <view>{value}</view>',
+    ].join('\n'))
+    const source = `
+      import { sharedView, createPanel } from './shared'
+      import { defineComponent } from 'wevu'
+      export default defineComponent({
+        data() { return { localTitle: 'local', sharedState: { label: 'shared' } } },
+        render() { return <view>{sharedView}{createPanel(this.localTitle)}</view> },
+      })
+    `
+    await writeFile(entry, source)
+
+    const result = await compileJsxFile(source, entry, {
+      bindingManifestSourceFile: 'src/pages/page.tsx',
+      runtimeBindingManifest: 'diagnostic',
+    })
+    const sharedBinding = result.bindingManifest?.bindings.find(binding => binding.sourceRoots.includes('sharedState'))
+    const localBinding = result.bindingManifest?.bindings.find(binding => binding.sourceRoots.includes('localTitle'))
+
+    expect(sharedBinding).toMatchObject({
+      sourceFile: 'src/pages/shared.tsx',
+      sourceLocation: {
+        start: expect.objectContaining({ line: 1 }),
+      },
+    })
+    expect(localBinding?.sourceFile).toBeUndefined()
+    expect(result.script).toContain('src/pages/shared.tsx')
+  })
+
   it('resolves JSX fragments through re-export modules', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-reexport-'))
     const shared = path.join(root, 'shared.tsx')
