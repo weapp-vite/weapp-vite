@@ -83,6 +83,29 @@ describe('reactivity (batch + effectScope)', () => {
     expect(snapshots).toEqual(['0:0', '1:1'])
   })
 
+  it('keeps sibling effects in the outer flush across nested batches', () => {
+    const state = reactive({ source: 0 })
+    const snapshots: number[] = []
+    let staged = 0
+
+    effect(() => {
+      if (state.source > 0) {
+        batch(() => {})
+        staged = state.source
+      }
+    })
+    effect(() => {
+      void state.source
+      snapshots.push(staged)
+    })
+
+    batch(() => {
+      state.source = 1
+    })
+
+    expect(snapshots).toEqual([0, 1])
+  })
+
   it('drains reentrant effects before rethrowing a batch failure', () => {
     const state = reactive({ source: 0, downstream: 0 })
     const downstreamValues: number[] = []
