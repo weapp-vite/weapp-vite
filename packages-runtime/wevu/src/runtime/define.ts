@@ -293,7 +293,7 @@ function createComponentDefinition(
       .filter(path => !path.includes('.')),
   )
 
-  const normalizedMpOptions = normalizeProps(mpOptions, props)
+  const normalizedMpOptions = normalizeProps(mpOptions, props, mpOptions.properties)
   const initialDataContext = resolveInitialDataContext(normalizedMpOptions.properties, methods)
   const resolvedData = typeof data === 'function'
     ? () => data.call(initialDataContext)
@@ -420,23 +420,12 @@ export function createWevuComponent<
 >(
   options: DefineComponentOptions<P, D, C, M> & { properties?: MiniProgramComponentPropertyOption },
 ): void {
-  ensureScopedSlotComponentGlobal()
-  const {
-    properties,
-    props,
-    ...restOptions
-  } = options
-
-  const baseOptions = {
-    ...restOptions,
-    allowNullPropInput: (restOptions as any).allowNullPropInput ?? true,
-    __wevu_allowNullPropInput: true,
-  }
-
-  // 将 properties 合并到 mpOptions，保持小程序属性定义
-  const finalOptions = normalizeProps(baseOptions, props, properties)
-
-  defineComponent(finalOptions)
+  const allowNullPropInput = options.allowNullPropInput ?? true
+  defineComponent({
+    ...options,
+    allowNullPropInput,
+    __wevu_allowNullPropInput: allowNullPropInput,
+  })
 }
 
 /**

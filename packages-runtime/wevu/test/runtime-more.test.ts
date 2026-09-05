@@ -1,11 +1,12 @@
 import { WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, createWevuComponent, defineComponent } from '@/index'
+import { createApp, createWevuComponent, defineComponent, resetWevuDefaults, setWevuDefaults } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 const registeredApps: Record<string, any>[] = []
 
 beforeEach(() => {
+  resetWevuDefaults()
   registeredComponents.length = 0
   registeredApps.length = 0
   ;(globalThis as any).Component = vi.fn((options: Record<string, any>) => {
@@ -17,6 +18,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  resetWevuDefaults()
   delete (globalThis as any).Component
   delete (globalThis as any).App
 })
@@ -89,27 +91,113 @@ describe('runtime (component as page lifetimes mapping)', () => {
     expect(opts.data).toEqual({ value1: '111' })
   })
 
-  it('preserves first-paint seeds and nullable prop bridge for compiled SFC components', () => {
+  it('registers nullable and union SFC props without native primary-type coercion', () => {
+    const propObserver = vi.fn()
+    const nativeOverride = { type: String, value: 'native', observer: vi.fn() }
     createWevuComponent({
       data: () => ({
         value1: '111',
       }),
+      properties: {
+        nativeMode: nativeOverride,
+      },
       props: {
-        value: {
+        shorthand: String,
+        withoutRequired: { type: String },
+        content: {
+          type: [Number, String],
+          required: false,
+        },
+        observedContent: {
+          type: [String, Number],
+          required: true,
+          default: 'observed',
+          observer: propObserver,
+        },
+        nativeMode: {
+          type: [Number, String],
+          required: false,
+        },
+        src: {
           type: String,
-          default: '0.00',
+          required: false,
+          default: '',
+        },
+        strictCount: {
+          type: Number,
+          required: true,
         },
       },
       setup() {
         return {}
       },
-    } as any)
+    })
 
     const opts = registeredComponents[0]
     expect(opts.data).toEqual({ value1: '111' })
-    expect(opts.properties.value.type).toBe(String)
-    expect(opts.properties.value.value).toBe('0.00')
-    expect(opts.properties.value.optionalTypes).toEqual([null])
+    expect(opts.properties.content).toEqual({ type: null, value: 0 })
+    expect(opts.properties.observedContent).toEqual({
+      type: null,
+      value: 'observed',
+      observer: propObserver,
+    })
+    expect(opts.properties.nativeMode).toBe(nativeOverride)
+    expect(opts.properties.shorthand).toEqual({ type: null, value: '' })
+    expect(opts.properties.withoutRequired).toEqual({ type: null, value: '' })
+    expect(opts.properties.src).toEqual({ type: null, value: '' })
+    expect(opts.properties.strictCount).toEqual({ type: Number })
+    expect(opts.properties.__wvSlotOwnerId.type).toBe(String)
+    expect(opts.properties.__wvSlotScope.type).toBeNull()
+  })
+
+  it('honors the compiled SFC nullable transport opt-out', () => {
+    createWevuComponent({
+      allowNullPropInput: false,
+      props: {
+        shorthand: String,
+        withoutRequired: { type: String },
+        content: {
+          type: [Number, String],
+          required: false,
+        },
+        src: {
+          type: String,
+          required: false,
+          default: '',
+        },
+      },
+    })
+
+    const opts = registeredComponents[0]
+    expect(opts.properties.content).toEqual({
+      type: Number,
+      optionalTypes: [String],
+    })
+    expect(opts.properties.src).toEqual({ type: String, value: '' })
+    expect(opts.properties.shorthand).toEqual({ type: String })
+    expect(opts.properties.withoutRequired).toEqual({ type: String })
+  })
+
+  it.each([true, false])('preserves local nullable transport %s over global defaults for inherited props', (allowNullPropInput) => {
+    setWevuDefaults({
+      component: { allowNullPropInput: !allowNullPropInput },
+    })
+    createWevuComponent({
+      allowNullPropInput,
+      props: { local: String },
+      extends: { props: { fromExtends: String } },
+      mixins: [{ props: { fromMixin: String, nativeOverride: [String, Number] } }],
+      properties: { nativeOverride: String },
+    })
+
+    const properties = registeredComponents[0].properties
+    const expected = allowNullPropInput ? { type: null, value: '' } : { type: String }
+    expect(properties).toMatchObject({
+      local: expected,
+      fromExtends: expected,
+      fromMixin: expected,
+    })
+    expect(properties.nativeOverride).toBe(String)
   })
 })
 
