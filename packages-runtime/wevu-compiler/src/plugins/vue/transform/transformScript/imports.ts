@@ -126,6 +126,7 @@ const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
   'useAttrs',
   'useCssModule',
   'useCssVars',
+  'useAsyncDerivation',
   'useAsyncPullDownRefresh',
   'useBindModel',
   'useBoundingClientRect',

@@ -1,6 +1,10 @@
 import type {
   AllowedComponentProps,
   AppConfig,
+  AsyncDerivation,
+  AsyncDerivationContext,
+  AsyncDerivationState,
+  AsyncDerivationStatus,
   ComponentCustomProps,
   ComponentPropsOptions,
   ComputedDefinitions,
@@ -93,6 +97,7 @@ import type {
   SetupFunction,
   ShallowUnwrapRef,
   TriggerEventOptions,
+  UseAsyncDerivationOptions,
   UseAsyncPullDownRefreshOptions,
   VNode,
   VNodeProps,
@@ -224,6 +229,7 @@ type RuntimeApiName
     | 'triggerRef'
     | 'unref'
     | 'useAttrs'
+    | 'useAsyncDerivation'
     | 'useAsyncPullDownRefresh'
     | 'useBindModel'
     | 'useBoundingClientRect'
@@ -297,6 +303,10 @@ interface PublicApiNativePropsOptions extends NativePropsOptions {
 type _TypeCoverage = [
   AllowedComponentProps,
   AppConfig,
+  AsyncDerivation<unknown>,
+  AsyncDerivationContext,
+  AsyncDerivationState<unknown>,
+  AsyncDerivationStatus,
   ComponentCustomProps,
   ComponentPropsOptions,
   ComputedDefinitions,
@@ -390,6 +400,7 @@ type _TypeCoverage = [
   ShallowUnwrapRef<any>,
   TriggerEventOptions,
   UseAsyncPullDownRefreshOptions,
+  UseAsyncDerivationOptions,
   VNode,
   VNodeProps,
   WeappIntrinsicElementBaseAttributes,

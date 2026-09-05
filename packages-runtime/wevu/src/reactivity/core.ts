@@ -19,6 +19,7 @@ const targetMap = new WeakMap<object, Map<PropertyKey, Dep>>()
 
 let activeEffect: ReactiveEffect | null = null
 const effectStack: ReactiveEffect[] = []
+let shouldTrack = true
 
 let batchDepth = 0
 let isFlushingBatch = false
@@ -256,6 +257,21 @@ export function onScopeDispose(fn: () => void): void {
   }
 }
 
+/**
+ * 在不把读取记录到当前副作用的情况下执行函数。
+ * 函数内部主动运行的新副作用仍会正常收集自己的依赖。
+ */
+export function runWithoutTracking<T>(fn: () => T): T {
+  const previousShouldTrack = shouldTrack
+  shouldTrack = false
+  try {
+    return fn()
+  }
+  finally {
+    shouldTrack = previousShouldTrack
+  }
+}
+
 function recordEffectScope(effect: ReactiveEffect) {
   if (activeEffectScope?.active) {
     activeEffectScope.effects.push(effect)
@@ -277,7 +293,9 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
       return fn()
     }
     cleanupEffect(effect)
+    const previousShouldTrack = shouldTrack
     try {
+      shouldTrack = true
       effect._running = true
       effectStack.push(effect)
       activeEffect = effect
@@ -287,6 +305,7 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
       effectStack.pop()
       activeEffect = effectStack[effectStack.length - 1] ?? null
       effect._running = false
+      shouldTrack = previousShouldTrack
     }
   } as ReactiveEffect<T>
 
@@ -326,7 +345,7 @@ export function createComputedEffect<T>(
 }
 
 export function track(target: object, key: PropertyKey) {
-  if (!activeEffect) {
+  if (!shouldTrack || !activeEffect) {
     return
   }
   let depsMap = targetMap.get(target)
@@ -380,7 +399,7 @@ export function trigger(target: object, key: PropertyKey) {
 }
 
 export function trackEffects(dep: Dep) {
-  if (!activeEffect) {
+  if (!shouldTrack || !activeEffect) {
     return
   }
   if (!dep.has(activeEffect)) {
