@@ -214,23 +214,23 @@ class StatefulHmrSession {
     if (normalizedFile === normalizedOutDir || normalizedFile.startsWith(`${normalizedOutDir}/`)) {
       return
     }
-    const affectedEntries = this.ctx.moduleGraphService.collectAffectedEntries(normalizedFile)
-    const hasTrackedModule = (this.server.moduleGraph.getModulesByFile(normalizedFile)?.size ?? 0) > 0
-    const isEmittedDependency = this.emittedSourceIds.has(normalizedFile)
-    if (isEmittedDependency && !this.entryIds.has(normalizedFile)) {
-      this.requestServerRestart()
-      return
-    }
-    if (shouldRebuildStatefulDependency(normalizedFile, this.entryIds, affectedEntries, hasTrackedModule, isEmittedDependency)) {
-      this.requestFullBuild([normalizedFile])
-      return
-    }
     if (shouldRestartStatefulHmrServer(
       [normalizedFile],
       this.ctx.configService?.configFileDependencies,
       this.ctx.configService?.weappViteConfig?.react,
     )) {
       this.requestServerRestart()
+      return
+    }
+    const affectedEntries = this.ctx.moduleGraphService.collectAffectedEntries(normalizedFile)
+    const hasTrackedModule = (this.server.moduleGraph.getModulesByFile(normalizedFile)?.size ?? 0) > 0
+    const isEmittedDependency = this.emittedSourceIds.has(normalizedFile)
+    if (isStatefulHmrExecutableSource(normalizedFile) && isEmittedDependency && !this.entryIds.has(normalizedFile)) {
+      this.requestServerRestart()
+      return
+    }
+    if (shouldRebuildStatefulDependency(normalizedFile, this.entryIds, affectedEntries, hasTrackedModule, isEmittedDependency)) {
+      this.requestFullBuild([normalizedFile])
       return
     }
     if (requiresStatefulHmrSnapshot(
@@ -426,7 +426,10 @@ export function shouldRebuildStatefulDependency(
   hasTrackedModule = false,
   isEmittedDependency = false,
 ): boolean {
-  return !entryIds.has(normalizeFsResolvedId(file)) && (affectedEntries.size > 0 || hasTrackedModule || isEmittedDependency)
+  const normalizedFile = normalizeFsResolvedId(file)
+  return isStatefulHmrExecutableSource(normalizedFile)
+    && !entryIds.has(normalizedFile)
+    && (affectedEntries.size > 0 || hasTrackedModule || isEmittedDependency)
 }
 
 function collectStatefulHmrEmittedSourceIds(output: StatefulHmrOutputFile[], root: string): Set<string> {
@@ -437,10 +440,17 @@ function collectStatefulHmrEmittedSourceIds(output: StatefulHmrOutputFile[], roo
     }
     for (const moduleId of Object.keys(item.modules ?? {})) {
       const sourceId = moduleId.split('?')[0]!
+      if (!isStatefulHmrExecutableSource(sourceId)) {
+        continue
+      }
       sourceIds.add(normalizeFsResolvedId(path.isAbsolute(sourceId) ? sourceId : path.resolve(root, sourceId)))
     }
   }
   return sourceIds
+}
+
+function isStatefulHmrExecutableSource(file: string): boolean {
+  return /\.(?:[cm]?[jt]sx?|vue)$/.test(file.split('?')[0]!)
 }
 
 export function mergeStatefulHmrSnapshotAssets(

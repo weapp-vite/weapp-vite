@@ -153,6 +153,20 @@ describe('stateful hmr session', () => {
       false,
       true,
     )).toBe(true)
+    expect(shouldRebuildStatefulDependency(
+      '/project/src/pages/index.wxml',
+      entries,
+      new Set(['/project/src/pages/index.vue']),
+      true,
+      true,
+    )).toBe(false)
+    expect(shouldRebuildStatefulDependency(
+      '/project/src/pages/index.wxss',
+      entries,
+      new Set(['/project/src/pages/index.vue']),
+      true,
+      true,
+    )).toBe(false)
   })
 
   it('schedules snapshots for sidecars and unsafe script or Vue updates', () => {
