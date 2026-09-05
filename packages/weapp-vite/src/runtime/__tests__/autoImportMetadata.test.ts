@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { createHtmlCustomDataDefinition } from '../autoImport/htmlCustomData'
 import { extractJsonPropMetadata, mergePropMaps } from '../autoImport/metadata'
 import { createTypedComponentsDefinition } from '../autoImport/typedDefinition'
-import { createVueComponentsDefinition } from '../autoImport/vueDefinition'
 
 describe('autoImport metadata helpers', () => {
   describe('extractJsonPropMetadata', () => {
@@ -116,99 +115,22 @@ describe('autoImport metadata helpers', () => {
       expect(definition.endsWith('\n')).toBe(true)
     })
 
-    it('falls back to index signature when component list is empty', () => {
+    it('emits a strict empty component map', () => {
       const definition = createTypedComponentsDefinition([], () => ({
         types: new Map(),
         docs: new Map(),
       }))
-      expect(definition).toContain('[component: string]: Record<string, any>;')
+      expect(definition).toContain('export interface ComponentProps {')
+      expect(definition).not.toContain('[component: string]')
+      expect(definition).toContain('ComponentProps[Name] : object')
     })
-  })
 
-  describe('createVueComponentsDefinition', () => {
-    const metadata = new Map<string, { types: Map<string, string>, docs: Map<string, string> }>([
-      ['AutoCard', {
-        types: new Map([
-          ['title', 'string'],
-          ['score', 'number | string'],
-        ]),
-        docs: new Map(),
-      }],
-      ['native-card', {
-        types: new Map([
-          ['custom-prop', 'string'],
-        ]),
-        docs: new Map(),
-      }],
-      ['ResolverCard', {
+    it('uses object for a known component without discovered props', () => {
+      const definition = createTypedComponentsDefinition(['EmptyCard'], () => ({
         types: new Map(),
         docs: new Map(),
-      }],
-    ])
-
-    const getMetadata = (name: string) => {
-      const entry = metadata.get(name)
-      if (!entry) {
-        throw new Error(`缺少 ${name} 的元数据`)
-      }
-      return {
-        types: new Map(entry.types),
-        docs: new Map(entry.docs),
-      }
-    }
-
-    it('emits local source imports and both kebab/pascal entries', () => {
-      const definition = createVueComponentsDefinition(
-        ['AutoCard', 'native-card', 'ResolverCard'],
-        getMetadata,
-        {
-          resolveComponentImport: (name) => {
-            if (name === 'AutoCard') {
-              return './src/components/AutoCard/index.vue'
-            }
-            if (name === 'native-card') {
-              return './src/components/native-card/index'
-            }
-            return undefined
-          },
-        },
-      )
-
-      expect(definition).toContain('declare module \'vue\'')
-      expect(definition).toContain('AutoCard: typeof import("./src/components/AutoCard/index.vue")[\'default\'];')
-      expect(definition).toContain('NativeCard: __WeappComponentImport<typeof import("./src/components/native-card/index"), WeappComponent<{')
-      expect(definition).toContain('\'native-card\': __WeappComponentImport<typeof import("./src/components/native-card/index"), WeappComponent<{')
-      expect(definition).toContain('const NativeCard: __WeappComponentImport<typeof import("./src/components/native-card/index"), WeappComponent<{')
-      expect(definition).toContain('readonly \'custom-prop\'?: string;')
-      expect(definition).toContain('const AutoCard: typeof import("./src/components/AutoCard/index.vue")[\'default\']')
-      expect(definition).toContain('type __WeappComponentProps<TComponent> = TComponent extends new (...args: any[]) => { $props: infer Props } ? Props : Record<string, any>')
-      expect(definition).toContain('type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component extends new (...args: infer Args) => infer Instance ? new (...args: Args) => Omit<Instance, \'$props\'> & { $props: __WeappComponentProps<Component> & __WeappComponentProps<Fallback> } : Fallback : Fallback')
-    })
-
-    it('uses typed component references and custom module name', () => {
-      const definition = createVueComponentsDefinition(
-        ['AutoCard', 'ResolverCard'],
-        getMetadata,
-        {
-          useTypedComponents: true,
-          moduleName: 'wevu',
-          resolveComponentImport: (name) => {
-            if (name === 'AutoCard') {
-              return './src/components/AutoCard/index.vue'
-            }
-            if (name === 'ResolverCard') {
-              return 'mock-ui/miniprogram_dist/card/index'
-            }
-            return undefined
-          },
-        },
-      )
-
-      expect(definition).toContain('import type { ComponentProp } from \'weapp-vite/typed-components\'')
-      expect(definition).toContain('declare module \'wevu\'')
-      expect(definition).toContain('AutoCard: typeof import("./src/components/AutoCard/index.vue")[\'default\'];')
-      expect(definition).toContain('ResolverCard: __WeappComponentImport<typeof import("mock-ui/miniprogram_dist/card/index"), WeappComponent<ComponentProp<"ResolverCard">>>;')
-      expect(definition).not.toContain('readonly score?: number | string;')
+      }))
+      expect(definition).toContain('EmptyCard: object;')
     })
   })
 

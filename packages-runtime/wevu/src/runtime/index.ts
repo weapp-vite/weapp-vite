@@ -1,17 +1,3 @@
-export type {
-  MiniProgramCSSProperties,
-  MiniProgramDatasetAttributes,
-  MiniProgramHtmlAliasIntrinsicElements,
-  MiniProgramIntrinsicElementBaseAttributes,
-  MiniProgramIntrinsicElements,
-  MiniProgramIntrinsicEventHandler,
-  WeappCSSProperties,
-  WeappDatasetAttributes,
-  WeappHtmlAliasIntrinsicElements,
-  WeappIntrinsicElementBaseAttributes,
-  WeappIntrinsicElements,
-  WeappIntrinsicEventHandler,
-} from '../miniprogramIntrinsicElements'
 export * from './app'
 export { useCssModule } from './css'
 export { resetWevuDefaults, setWevuDefaults } from './defaults'

@@ -1,6 +1,6 @@
 /* eslint-disable ts/no-unused-vars */
 import { expectError, expectType } from 'tsd'
-import { defineComponent, ref } from '@/index'
+import { defineComponent, ref } from 'wevu'
 
 const Demo = defineComponent({
   setup() {

@@ -1,7 +1,8 @@
+// eslint-disable-next-line wevu/no-risky-api -- 类型契约需要直接验证 Wevu 的 Vue 兼容类型。
 import type { ComponentOptionsMixin, ComponentProvideOptions, DefineComponent, PublicProps } from 'vue'
-import type { MiniProgramTemplateRefValue, TemplateRef, TemplateRefValue } from '@/index'
+import type { MiniProgramTemplateRefValue, TemplateRef, TemplateRefValue } from 'wevu'
 import { expectError, expectType } from 'tsd'
-import { ref, useTemplateRef } from '@/index'
+import { ref, useTemplateRef } from 'wevu'
 
 type EmptyRecord = Record<string, never>
 
@@ -28,7 +29,7 @@ type ExposedPanel = DefineComponent<
   ComponentProvideOptions
 >
 
-declare module '@/index' {
+declare module 'wevu' {
   interface TemplateRefs {
     childRef: InstanceType<ExposedPanel>
     headerRef: { title: string }
@@ -44,7 +45,7 @@ expectError(header.value = { title: 'next' })
 const view = useTemplateRef('viewRef')
 expectType<TemplateRefValue | null>(view.value)
 expectType<MiniProgramTemplateRefValue | null>(view.value)
-expectType<string>(view.value!.id)
+expectType<string>(view.value!.selector)
 
 const child = useTemplateRef('childRef')
 expectType<(() => void) | undefined>(child.value?.open)
@@ -58,5 +59,11 @@ const unknownRef = useTemplateRef('missing')
 expectType<TemplateRef<unknown>>(unknownRef)
 
 type ViewElement = HTMLElementTagNameMap['view']
+type AlipayLottieElement = HTMLElementTagNameMap['lottie']
+type TtMaskElement = HTMLElementTagNameMap['mask']
+type WeappEditorElement = HTMLElementTagNameMap['editor']
 expectType<TemplateRefValue>({} as ViewElement)
 expectType<MiniProgramTemplateRefValue>({} as ViewElement)
+expectType<TemplateRefValue>({} as AlipayLottieElement)
+expectType<TemplateRefValue>({} as TtMaskElement)
+expectType<TemplateRefValue>({} as WeappEditorElement)

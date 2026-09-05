@@ -1,7 +1,10 @@
 /* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI，并使用 shared fs 简化产物与 fixture 读写。 */
+import { proxyCreateProgram } from '@volar/typescript'
+import { createVueLanguagePlugin, getDefaultCompilerOptions } from '@vue/language-core'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import path from 'pathe'
+import ts from 'typescript'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -428,46 +431,56 @@ describeAutoImportSuite('auto import local components (e2e)', { concurrent: fals
 
     await runBuild(APP_ROOT, PLATFORM_LIST[0])
 
-    const typedDts = await waitForFileRead(TYPED_COMPONENTS_DTS)
-    expect(typedDts).toContain('declare module \'weapp-vite/typed-components\'')
-    expect(typedDts).toContain('AutoCard: {')
-    expect(typedDts).toContain('readonly title?: string;')
-    expect(typedDts).toContain('readonly score?: number | string;')
-    expect(typedDts).toContain('readonly enabled?: boolean;')
-    expect(typedDts).toContain('readonly tags?: any[];')
-    expect(typedDts).toContain('readonly payload?: Record<string, any>;')
-    expect(typedDts).toContain('readonly mode?: string | number;')
-    expect(typedDts).toContain('readonly customProp?: string;')
+    await waitForFileRead(TYPED_COMPONENTS_DTS)
+    await waitForFileRead(VUE_COMPONENTS_DTS)
 
-    expect(typedDts).toContain('NativeCard: {')
-    expect(typedDts).toContain('readonly title?: string;')
-    expect(typedDts).toContain('readonly level?: number | string;')
-    expect(typedDts).toContain('readonly visible?: boolean;')
-    expect(typedDts).toContain('readonly meta?: Record<string, any>;')
-    expect(typedDts).toContain('readonly items?: any[];')
-    expect(typedDts).toContain('readonly anyValue?: any;')
-    expect(typedDts).toContain('readonly \'custom-prop\'?: string;')
-
-    expect(typedDts).toContain('ResolverCard: Record<string, any>;')
-
-    const vueDts = await waitForFileRead(VUE_COMPONENTS_DTS)
-    expect(
-      vueDts.includes('declare module \'vue\'')
-      || vueDts.includes('declare module \'wevu\''),
-    ).toBe(true)
-    expect(vueDts).toContain('GlobalComponents')
-    expect(vueDts).toMatch(
-      /AutoCard: typeof import\("\.\.?\/src\/components\/AutoCard\/index\.vue"\)\['default'\];/,
-    )
-    expect(vueDts).toMatch(
-      /NativeCard: __WeappComponentImport<typeof import\("\.\.?\/src\/components\/NativeCard\/index"\), WeappComponent<ComponentProp<"NativeCard">>>;/,
-    )
-    expect(vueDts).toContain('AutoCard:')
-    expect(vueDts).toContain('NativeCard:')
-    expect(vueDts).toContain('ResolverCard:')
-    expect(vueDts).not.toContain('ComponentProp<"AutoCard">')
-    expect(vueDts).toContain('ComponentProp<"NativeCard">')
-    expect(vueDts).toContain('ComponentProp<"ResolverCard">')
+    const consumerPath = path.join(APP_ROOT, 'auto-import-consumer.tsx')
+    const consumer = [
+      'const source = <AutoCard title="ok" score={42} mode={1} hidden onTap={() => {}} />',
+      'const native = <NativeCard title="ok" level="high" visible meta={{}} items={[]} />',
+      'const resolver = <ResolverCard hidden onTap={() => {}} />',
+      '// @ts-expect-error 源 SFC 的 prop 类型必须保留。',
+      'const invalidSource = <AutoCard title={123} />',
+      '// @ts-expect-error 原生组件仍须校验 metadata prop 类型。',
+      'const invalidNative = <NativeCard level={{}} />',
+      '// @ts-expect-error 未声明的组件不能被宽泛索引签名接受。',
+      'const invalidComponent = <MissingCard />',
+      'export {}',
+    ].join('\n')
+    const options: ts.CompilerOptions = {
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      jsx: ts.JsxEmit.ReactJSX,
+      moduleDetection: ts.ModuleDetectionKind.Force,
+      jsxImportSource: 'wevu/weapp',
+      strict: true,
+      skipLibCheck: false,
+      noEmit: true,
+      allowNonTsExtensions: true,
+      types: [],
+    }
+    const host = ts.createCompilerHost(options)
+    const readFile = host.readFile.bind(host)
+    const fileExists = host.fileExists.bind(host)
+    host.readFile = fileName => path.normalize(fileName) === consumerPath ? consumer : readFile(fileName)
+    host.fileExists = fileName => path.normalize(fileName) === consumerPath || fileExists(fileName)
+    host.getSourceFile = (fileName, languageVersion) => {
+      const source = host.readFile(fileName)
+      return source === undefined ? undefined : ts.createSourceFile(fileName, source, languageVersion)
+    }
+    const createProgram = proxyCreateProgram(ts, ts.createProgram, (tsInstance, programOptions) => ({
+      languagePlugins: [createVueLanguagePlugin<string>(
+        tsInstance,
+        programOptions.options,
+        { ...getDefaultCompilerOptions(), lib: 'vue', checkUnknownComponents: true },
+        id => id,
+      )],
+    }))
+    const rootNames = [consumerPath, TYPED_COMPONENTS_DTS, VUE_COMPONENTS_DTS]
+    const program = createProgram({ host, rootNames, options })
+    const diagnostics = rootNames.flatMap(fileName => ts.getPreEmitDiagnostics(program, program.getSourceFile(fileName)))
+    expect(diagnostics.map(diagnostic => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'))).toEqual([])
   })
 
   it.each(PLATFORM_LIST)(

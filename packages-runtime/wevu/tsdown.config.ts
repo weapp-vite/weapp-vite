@@ -6,7 +6,6 @@ const entry = {
   'internal-reactivity': './src/internal-reactivity',
   'internal-runtime': './src/internal-runtime',
   'internal-template': './src/internal-template',
-  'jsx-runtime': './src/jsx-runtime',
   'store': './src/store',
   'api': './src/api',
   'api/vitest': './src/apiVitest',
@@ -17,9 +16,18 @@ const entry = {
   'vue-demi': './src/vue-demi',
 }
 
+const declarationEntry = {
+  ...entry,
+  'jsx-runtime': './src/jsx-runtime',
+  'weapp/jsx-runtime': './src/weapp/jsx-runtime',
+  'alipay/jsx-runtime': './src/alipay/jsx-runtime',
+  'tt/jsx-runtime': './src/tt/jsx-runtime',
+  'miniprogram/jsx-runtime': './src/miniprogram/jsx-runtime',
+}
+
 export default defineConfig([
   {
-    entry,
+    entry: declarationEntry,
     format: ['esm'],
     target: 'es2018',
     dts: true,

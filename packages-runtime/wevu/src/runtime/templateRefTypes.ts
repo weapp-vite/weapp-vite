@@ -1,8 +1,11 @@
-import type { MiniProgramIntrinsicElements } from '../miniprogramIntrinsicElements'
+import type { AlipayIntrinsicElements } from '../alipayIntrinsicElements'
+import type { TtIntrinsicElements } from '../ttIntrinsicElements'
+import type { WeappIntrinsicElements } from '../weappIntrinsicElements'
 import type { TemplateRefValue } from './types'
 
+type MiniProgramTemplateRefTagName = keyof AlipayIntrinsicElements | keyof TtIntrinsicElements | keyof WeappIntrinsicElements
 type MiniProgramTemplateRefElements = {
-  [K in keyof MiniProgramIntrinsicElements]: TemplateRefValue
+  [K in MiniProgramTemplateRefTagName]: TemplateRefValue
 }
 
 declare global {

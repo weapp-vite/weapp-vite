@@ -76,13 +76,6 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
-    find: 'wevu/jsx-runtime',
-    packageName: 'wevu',
-    distEntry: 'dist/jsx-runtime.mjs',
-    devDistEntry: 'dist/dev/jsx-runtime.mjs',
-    fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
-  },
-  {
     find: 'wevu/store',
     packageName: 'wevu',
     distEntry: 'dist/store.mjs',

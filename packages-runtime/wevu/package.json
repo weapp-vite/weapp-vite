@@ -71,12 +71,19 @@
       }
     },
     "./jsx-runtime": {
-      "types": "./dist/jsx-runtime.d.mts",
-      "import": {
-        "types": "./dist/jsx-runtime.d.mts",
-        "development": "./dist/dev/jsx-runtime.mjs",
-        "default": "./dist/jsx-runtime.mjs"
-      }
+      "types": "./dist/jsx-runtime.d.mts"
+    },
+    "./weapp/jsx-runtime": {
+      "types": "./dist/weapp/jsx-runtime.d.mts"
+    },
+    "./alipay/jsx-runtime": {
+      "types": "./dist/alipay/jsx-runtime.d.mts"
+    },
+    "./tt/jsx-runtime": {
+      "types": "./dist/tt/jsx-runtime.d.mts"
+    },
+    "./miniprogram/jsx-runtime": {
+      "types": "./dist/miniprogram/jsx-runtime.d.mts"
     },
     "./store": {
       "types": "./dist/store.d.mts",
@@ -177,13 +184,6 @@
         "default": "./dist/dev/internal-template.mjs"
       }
     },
-    "./dev/jsx-runtime": {
-      "types": "./dist/jsx-runtime.d.mts",
-      "import": {
-        "types": "./dist/jsx-runtime.d.mts",
-        "default": "./dist/dev/jsx-runtime.mjs"
-      }
-    },
     "./dev/store": {
       "types": "./dist/store.d.mts",
       "import": {
@@ -260,7 +260,7 @@
     "build:types": "tsdown --dts",
     "test": "vitest run",
     "test:dev": "vitest",
-    "test:types": "tsd",
+    "test:types": "pnpm build:types && tsd --files \"test-d/**/*.test-d.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",

@@ -92,7 +92,7 @@ function navigateTo(url: string) {
               B
             </t-avatar>
           </t-badge>
-          <t-avatar-group max="3" size="small">
+          <t-avatar-group :max="3" size="small">
             <t-avatar>U1</t-avatar>
             <t-avatar>U2</t-avatar>
             <t-avatar>U3</t-avatar>
@@ -166,7 +166,7 @@ function navigateTo(url: string) {
           <text class="text-[22rpx] text-[#6f6b8a]">
             扫码体验
           </text>
-          <t-qrcode value="https://vite.weapp.dev" size="90" />
+          <t-qrcode value="https://vite.weapp.dev" :size="90" />
         </view>
       </view>
     </view>

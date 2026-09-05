@@ -41,6 +41,8 @@
     "build:ui": "wv build --ui -p weapp"
   },
   "devDependencies": {
+    "@douyin-microapp/typings": "catalog:",
+    "@mini-types/alipay": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",

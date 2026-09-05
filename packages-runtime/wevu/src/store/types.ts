@@ -23,19 +23,19 @@ export interface StoreSubscribeOptions {
 /**
  * @description Action 订阅回调上下文
  */
-export interface ActionContext<TStore = any> {
+export interface ActionContext<TStore = any, TResult = any> {
   name: string
   store: TStore
   args: any[]
-  after: (cb: (result: any) => void) => void
+  after: (cb: (result: TResult) => void) => void
   onError: (cb: (error: any) => void) => void
 }
 
 /**
  * @description Action 订阅回调类型
  */
-export interface ActionSubscriber<TStore = any> {
-  (context: ActionContext<TStore>): void
+export interface ActionSubscriber<TStore = any, TResult = any> {
+  (context: ActionContext<TStore, TResult>): void
 }
 
 /**

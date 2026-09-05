@@ -37,7 +37,7 @@ export default defineComponent({
     increaseIslandCount(this: { islandCount: number }) {
       this.islandCount += 1
     },
-    handleCardChange(this: { lastCardEvent: string }, event: WechatMiniprogram.CustomEvent<string>) {
+    handleCardChange(this: { lastCardEvent: string }, event: { detail: string }) {
       this.lastCardEvent = event.detail
     },
     runE2E(this: any) {

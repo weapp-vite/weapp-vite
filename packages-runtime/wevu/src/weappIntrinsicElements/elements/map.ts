@@ -1,12 +1,13 @@
-// 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
+// 此文件由 scripts/generate-intrinsic-elements.mjs 自动生成，请勿直接修改。 来源：components.weapp.json。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
+import type { WevuJsxEventHandler } from '../../jsx-runtime'
+import type { WeappIntrinsicElementBaseAttributes } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/map.html
  */
-export type MiniProgramIntrinsicElementMap = MiniProgramIntrinsicElementBaseAttributes & {
+export type WeappIntrinsicElementMap = WeappIntrinsicElementBaseAttributes & {
   alpha?: number
   anchor?: Record<string, unknown>
   anchorX?: number
@@ -15,20 +16,6 @@ export type MiniProgramIntrinsicElementMap = MiniProgramIntrinsicElementBaseAttr
   arrowIconPath?: string
   arrowLine?: boolean
   bgColor?: string
-  bindabilityfail?: MiniProgramIntrinsicEventHandler<unknown>
-  bindabilitysuccess?: MiniProgramIntrinsicEventHandler<unknown>
-  bindauthsuccess?: MiniProgramIntrinsicEventHandler<unknown>
-  bindcallouttap?: MiniProgramIntrinsicEventHandler<unknown>
-  bindcontroltap?: MiniProgramIntrinsicEventHandler<unknown>
-  binderror?: MiniProgramIntrinsicEventHandler<unknown>
-  bindinterpolatepoint?: MiniProgramIntrinsicEventHandler<unknown>
-  bindlabeltap?: MiniProgramIntrinsicEventHandler<unknown>
-  bindmarkertap?: MiniProgramIntrinsicEventHandler<unknown>
-  bindpoitap?: MiniProgramIntrinsicEventHandler<unknown>
-  bindpolylinetap?: MiniProgramIntrinsicEventHandler<unknown>
-  bindregionchange?: MiniProgramIntrinsicEventHandler<unknown>
-  bindtap?: MiniProgramIntrinsicEventHandler<unknown>
-  bindupdated?: MiniProgramIntrinsicEventHandler<unknown>
   borderColor?: string
   borderRadius?: number
   borderWidth?: number
@@ -75,6 +62,20 @@ export type MiniProgramIntrinsicElementMap = MiniProgramIntrinsicElementBaseAttr
   'max-scale'?: number
   'min-scale'?: number
   name?: string
+  onAbilityfail?: WevuJsxEventHandler
+  onAbilitysuccess?: WevuJsxEventHandler
+  onAuthsuccess?: WevuJsxEventHandler
+  onCalloutTap?: WevuJsxEventHandler
+  onControlTap?: WevuJsxEventHandler
+  onError?: WevuJsxEventHandler
+  onInterpolatepoint?: WevuJsxEventHandler
+  onLabeltap?: WevuJsxEventHandler
+  onMarkerTap?: WevuJsxEventHandler
+  onPoitap?: WevuJsxEventHandler
+  onPolylinetap?: WevuJsxEventHandler
+  onRegionChange?: WevuJsxEventHandler
+  onTap?: WevuJsxEventHandler
+  onUpdated?: WevuJsxEventHandler
   padding?: number
   points?: unknown[]
   polygons?: unknown[]
@@ -104,5 +105,3 @@ export type MiniProgramIntrinsicElementMap = MiniProgramIntrinsicElementBaseAttr
   y?: number
   zIndex?: number
 }
-
-export type WeappIntrinsicElementMap = MiniProgramIntrinsicElementMap

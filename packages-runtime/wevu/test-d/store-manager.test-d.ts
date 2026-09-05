@@ -1,5 +1,5 @@
 import { expectType } from 'tsd'
-import { createStore } from '@/index'
+import { createStore } from 'wevu'
 
 const manager = createStore()
 expectType<Map<string, any>>(manager._stores)

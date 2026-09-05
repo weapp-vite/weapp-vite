@@ -1,5 +1,6 @@
 import type { MiniProgramPlatform } from '../platform'
 import { createMiniProgramDirectiveAttrs, normalizeMiniProgramEventName } from '../platform'
+import { ALIPAY_JSX_EVENT_NAME_ALIASES } from './generatedEventAliases'
 
 const eventMap: Record<string, string> = {
   click: 'tap',
@@ -19,9 +20,9 @@ const eventMap: Record<string, string> = {
   scroll: 'scroll',
   scrolltoupper: 'scrolltoupper',
   scrolltolower: 'scrolltolower',
-  touchcancel: 'touchcancel',
-  longtap: 'longtap',
-  longpress: 'longpress',
+  touchcancel: 'touchCancel',
+  longtap: 'longTap',
+  longpress: 'longTap',
 }
 
 const PASCALIZE_EVENT_RE = /(^|-)([a-z0-9])/g
@@ -97,6 +98,7 @@ export const alipayPlatform: MiniProgramPlatform = {
   keyAttr: value => `${directives.keyAttr}="${value}"`,
 
   mapEventName: eventName => eventMap[eventName.toLowerCase()] || eventName,
+  eventBindingAlias: (eventName, tagName) => tagName ? ALIPAY_JSX_EVENT_NAME_ALIASES[tagName]?.[eventName] : undefined,
   eventBindingAttr: (eventName) => {
     const { prefix, name } = parseEventBinding(eventName)
     return toAlipayDirectiveEvent(prefix, normalizeMiniProgramEventName(name))

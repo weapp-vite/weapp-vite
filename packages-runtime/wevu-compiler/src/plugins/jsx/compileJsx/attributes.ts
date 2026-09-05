@@ -65,8 +65,15 @@ function resolveMappedEventName(rawName: string, context: JsxCompileContext, isC
   return resolveEvent(rawName.slice('on'.length))
 }
 
-function toEventBindingName(rawName: string, context: JsxCompileContext, isComponent: boolean) {
+function toEventBindingName(rawName: string, context: JsxCompileContext, isComponent: boolean, tagName?: string) {
   const eventName = resolveMappedEventName(rawName, context, isComponent)
+  if (ON_EVENT_RE.test(rawName) && !isComponent) {
+    const sourceEventName = lowerFirstEventName(rawName.slice('on'.length))
+    const exactBinding = context.platform.eventBindingAlias?.(sourceEventName, tagName)
+    if (exactBinding) {
+      return exactBinding
+    }
+  }
 
   if (CAPTURE_BIND_EVENT_RE.test(rawName)) {
     return context.platform.eventBindingAttr(`capture-bind:${eventName}`)
@@ -125,8 +132,9 @@ function compileEventAttribute(
   value: JSXAttribute['value'],
   context: JsxCompileContext,
   isComponent: boolean,
+  tagName?: string,
 ): string[] {
-  const bindAttr = toEventBindingName(name, context, isComponent)
+  const bindAttr = toEventBindingName(name, context, isComponent, tagName)
   const eventName = resolveMappedEventName(name, context, isComponent)
   const eventSuffix = normalizeEventDatasetSuffix(eventName)
   const exp = readJsxAttributeExpression(value)
@@ -215,6 +223,7 @@ function compileNamedAttribute(
   value: JSXAttribute['value'],
   context: JsxCompileContext,
   isComponent: boolean,
+  tagName?: string,
 ): string[] {
   if (name === 'key') {
     return []
@@ -239,7 +248,7 @@ function compileNamedAttribute(
     return []
   }
   if (isEventBinding(name)) {
-    return compileEventAttribute(name, value, context, isComponent)
+    return compileEventAttribute(name, value, context, isComponent, tagName)
   }
   const normalAttr = compileNormalAttribute(name, value, context, isComponent)
   return normalAttr ? [normalAttr] : []
@@ -248,7 +257,7 @@ function compileNamedAttribute(
 export function compileJsxAttributes(
   attributes: Array<JSXAttribute | JSXSpreadAttribute>,
   context: JsxCompileContext,
-  options?: { isComponent?: boolean },
+  options?: { isComponent?: boolean, tagName?: string },
 ): string[] {
   const isComponent = options?.isComponent === true
   const output: string[] = []
@@ -261,7 +270,7 @@ export function compileJsxAttributes(
             const value = property.value
             if (t.isExpression(value)) {
               const name = t.isIdentifier(property.key) ? property.key.name : property.key.value
-              output.push(...compileNamedAttribute(name, t.jsxExpressionContainer(value), context, isComponent))
+              output.push(...compileNamedAttribute(name, t.jsxExpressionContainer(value), context, isComponent, options?.tagName))
             }
           }
           else {
@@ -291,7 +300,7 @@ export function compileJsxAttributes(
     }
 
     const name = attr.name.name
-    output.push(...compileNamedAttribute(name, attr.value, context, isComponent))
+    output.push(...compileNamedAttribute(name, attr.value, context, isComponent, options?.tagName))
   }
   return output
 }
