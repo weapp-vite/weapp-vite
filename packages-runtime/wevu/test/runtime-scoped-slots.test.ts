@@ -3,6 +3,8 @@ import {
   WEVU_BINDING_MANIFEST_KEY,
   WEVU_INLINE_HANDLER,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_SCOPED_SLOT_CREATOR_KEY,
+  WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY,
   WEVU_SLOT_FUNCTION_TOKEN,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
@@ -190,6 +192,7 @@ describe('runtime: scoped slots', () => {
 
   it('keeps regular component owner id available for template runtime bindings', async () => {
     defineComponent({
+      [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: true,
       data: () => ({
         title: 'slot owner host',
       }),
@@ -903,14 +906,23 @@ describe('runtime: scoped slots', () => {
     }
   })
 
-  it('exposes createWevuScopedSlotComponent on global', () => {
-    const globalObject = globalThis as any
-    expect(globalObject.__weapp_vite_createScopedSlotComponent).toBe(createWevuScopedSlotComponent)
+  it('exposes a callable scoped slot creator on global', () => {
+    createWevuScopedSlotComponent()
+    const globalCreator = Reflect.get(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)
+    const registeredCount = registeredComponents.length
+
+    expect(typeof globalCreator).toBe('function')
+    if (typeof globalCreator !== 'function') {
+      throw new TypeError('expected scoped slot creator')
+    }
+    globalCreator()
+    expect(registeredComponents).toHaveLength(registeredCount + 1)
   })
 
   it('reinstates global scoped slot creator when missing', () => {
-    const globalObject = globalThis as any
-    delete globalObject.__weapp_vite_createScopedSlotComponent
+    createWevuScopedSlotComponent()
+    const expectedCreator = Reflect.get(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)
+    Reflect.deleteProperty(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)
 
     defineComponent({
       setup() {
@@ -918,12 +930,13 @@ describe('runtime: scoped slots', () => {
       },
     })
 
-    expect(globalObject.__weapp_vite_createScopedSlotComponent).toBe(createWevuScopedSlotComponent)
+    expect(Reflect.get(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)).toBe(expectedCreator)
   })
 
   it('refreshes stale global scoped slot creator', () => {
-    const globalObject = globalThis as any
-    globalObject.__weapp_vite_createScopedSlotComponent = vi.fn()
+    createWevuScopedSlotComponent()
+    const expectedCreator = Reflect.get(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)
+    Reflect.set(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY, vi.fn())
 
     defineComponent({
       setup() {
@@ -931,7 +944,7 @@ describe('runtime: scoped slots', () => {
       },
     })
 
-    expect(globalObject.__weapp_vite_createScopedSlotComponent).toBe(createWevuScopedSlotComponent)
+    expect(Reflect.get(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)).toBe(expectedCreator)
   })
 
   it('forwards events to owner handlers', () => {
@@ -1022,6 +1035,7 @@ describe('runtime: scoped slots', () => {
 
   it('refreshes owner snapshot on prop changes', () => {
     defineComponent({
+      [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: true,
       props: {
         title: { type: String, default: '' },
       } as any,
@@ -1049,6 +1063,7 @@ describe('runtime: scoped slots', () => {
 
   it('stores owner snapshots as plain objects for view-layer compatibility', () => {
     defineComponent({
+      [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: true,
       props: {
         title: { type: String, default: '' },
       } as any,

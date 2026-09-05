@@ -1,15 +1,14 @@
 import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
-import type { MutationRecord } from '../../../reactivity'
+import type { SetDataScheduler } from '../../capabilities'
 import type { SetDataDebugInfo } from '../../types'
 import { getReactiveVersion, isReactive, isRef, toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
 import { resolveBindingDiagnostics } from '../../bindingManifest'
 import { diffSnapshots, toPlain } from '../../diff'
 import { hasTrackableSetupBinding } from '../../setupTracking'
-import { runPatchUpdate } from './patchScheduler'
 import { collectSnapshot } from './snapshot'
 
-export function createSetDataScheduler(options: {
+export interface SetDataSchedulerOptions {
   state: Record<string, any>
   setupState?: Record<string, any>
   snapshotOmitKeys?: Set<string>
@@ -29,6 +28,8 @@ export function createSetDataScheduler(options: {
   mergeSiblingMaxParentBytes: number
   mergeSiblingSkipArray: boolean
   elevateTopKeyThreshold: number
+  prelinkMaxDepth?: number
+  prelinkMaxKeys?: number
   toPlainMaxDepth: number
   toPlainMaxKeys: number
   includeFunctions?: boolean
@@ -47,7 +48,22 @@ export function createSetDataScheduler(options: {
   isMounted: () => boolean
   initialSnapshot?: Record<string, any>
   initialState?: Record<string, any>
-}) {
+}
+
+export interface SetDataSchedulerInternals extends SetDataScheduler {
+  job: (stateRootRaw?: object) => void | Promise<void>
+  collect: () => Record<string, unknown>
+  emitDebug: (info: SetDataDebugInfo, pathSource?: Iterable<string> | (() => Iterable<string>)) => void
+  getLatestSnapshot: () => Record<string, unknown>
+  plainCache: WeakMap<object, { version: number, value: unknown }>
+  plainCacheEligibility: WeakMap<object, boolean>
+  prepareJob: (pendingPatchKeys?: number, pathSource?: Iterable<string> | (() => Iterable<string>)) => boolean
+  resolveTopKeysByRoot: (root: object) => string[]
+  runDiffUpdate: (reason?: SetDataDebugInfo['reason']) => void | Promise<void>
+  shouldIncludeSnapshotKey: (key: string) => boolean
+}
+
+export function createSetDataScheduler(options: SetDataSchedulerOptions): SetDataSchedulerInternals {
   const {
     state,
     setupState,
@@ -56,18 +72,8 @@ export function createSetDataScheduler(options: {
     dirtyComputedKeys,
     includeComputed,
     setDataStrategy,
-    computedCompare,
-    computedCompareMaxDepth,
-    computedCompareMaxKeys,
     currentAdapter,
     shouldIncludeKey,
-    maxPatchKeys,
-    maxPayloadBytes,
-    mergeSiblingThreshold,
-    mergeSiblingMaxInflationRatio,
-    mergeSiblingMaxParentBytes,
-    mergeSiblingSkipArray,
-    elevateTopKeyThreshold,
     toPlainMaxDepth,
     toPlainMaxKeys,
     includeFunctions = false,
@@ -87,12 +93,8 @@ export function createSetDataScheduler(options: {
   const plainCache = new WeakMap<object, { version: number, value: any }>()
   const plainCacheEligibility = new WeakMap<object, boolean>()
   let latestSnapshot: Record<string, any> = {}
-  let latestComputedSnapshot: Record<string, any> = Object.create(null)
   const latestStateTokens = Object.create(null) as Record<string, unknown>
   const latestComputedTokens = Object.create(null) as Record<string, unknown>
-  const needsFullSnapshot = { value: setDataStrategy === 'patch' }
-  const pendingPatches = new Map<string, { kind: 'property' | 'array', op: 'set' | 'delete' }>()
-  const fallbackTopKeys = new Set<string>()
   const flushTimes: number[] = []
   let lastLoopWarningAt = Number.NEGATIVE_INFINITY
   const initialStateKeys = new Set(
@@ -273,7 +275,10 @@ export function createSetDataScheduler(options: {
     }
   }
 
-  const recordFlushForLoopWarning = () => {
+  const recordFlushForLoopWarning = (
+    pendingPatchKeys = 0,
+    pathSource?: Iterable<string> | (() => Iterable<string>),
+  ) => {
     if (!loopWarning) {
       return
     }
@@ -293,18 +298,14 @@ export function createSetDataScheduler(options: {
     emitDebug({
       mode: setDataStrategy,
       reason: 'loopWarning',
-      pendingPatchKeys: pendingPatches.size + fallbackTopKeys.size,
+      pendingPatchKeys,
       payloadKeys: 0,
       computedDirtyKeys: includeComputed ? dirtyComputedKeys.size : 0,
       flushCount: flushTimes.length,
       windowMs: loopWarning.sampleWindowMs,
       targetLabel,
       message: `${targetLabel ? `${targetLabel} ` : ''}疑似运行时更新循环：${flushTimes.length} 次 setData flush/${loopWarning.sampleWindowMs}ms`,
-    }, () => [
-      ...pendingPatches.keys(),
-      ...fallbackTopKeys,
-      ...(includeComputed ? dirtyComputedKeys : []),
-    ])
+    }, pathSource)
   }
 
   const collect = () => collectSnapshot({
@@ -444,18 +445,6 @@ export function createSetDataScheduler(options: {
       : diffSnapshots(latestSnapshot, snapshot)
     const diffPaths = Object.keys(diff)
     latestSnapshot = snapshot
-    needsFullSnapshot.value = false
-    pendingPatches.clear()
-    if (setDataStrategy === 'patch' && includeComputed) {
-      latestComputedSnapshot = Object.create(null)
-      for (const key of Object.keys(computedRefs)) {
-        if (!shouldIncludeSnapshotKey(key)) {
-          continue
-        }
-        latestComputedSnapshot[key] = snapshot[key]
-      }
-      dirtyComputedKeys.clear()
-    }
     if (!diffPaths.length) {
       return
     }
@@ -473,99 +462,41 @@ export function createSetDataScheduler(options: {
     }, diffPaths)
   }
 
-  const mutationRecorder = (record: MutationRecord, stateRootRaw: object) => {
+  const prepareJob = (
+    pendingPatchKeys = 0,
+    pathSource?: Iterable<string> | (() => Iterable<string>),
+  ) => {
     if (!isMounted()) {
-      return
+      return false
     }
-    if (record.root !== stateRootRaw) {
-      const topKeys = resolveTopKeysByRoot(record.root)
-      if (topKeys.length) {
-        for (const key of topKeys) {
-          fallbackTopKeys.add(key)
-        }
-      }
-      return
-    }
-    if (!record.path) {
-      if (Array.isArray(record.fallbackTopKeys) && record.fallbackTopKeys.length) {
-        for (const key of record.fallbackTopKeys) {
-          fallbackTopKeys.add(key)
-        }
-      }
-      else {
-        needsFullSnapshot.value = true
-      }
-      return
-    }
-    const topKey = record.path.split('.', 1)[0]
-    if (!shouldIncludeSnapshotKey(topKey)) {
-      return
-    }
-    pendingPatches.set(record.path, { kind: record.kind, op: record.op })
-  }
-
-  const job = (_stateRootRaw: object) => {
-    if (!isMounted()) {
-      return
-    }
-    recordFlushForLoopWarning()
+    recordFlushForLoopWarning(pendingPatchKeys, pathSource)
     // 生成快照前刷新依赖（setup 中的 ref / 新增 key）
     runTracker()
+    return true
+  }
 
-    if (setDataStrategy === 'patch' && !needsFullSnapshot.value) {
-      const hasPatchSignal = pendingPatches.size > 0
-        || fallbackTopKeys.size > 0
-        || (includeComputed && dirtyComputedKeys.size > 0)
-      // setup 返回的 ref/computed 变更不会进入 mutation recorder，patch 信号为空时兜底走 diff。
-      if (!hasPatchSignal) {
-        return runDiffUpdate('diff')
-      }
-      return runPatchUpdate({
-        state,
-        computedRefs,
-        dirtyComputedKeys,
-        includeComputed,
-        computedCompare,
-        computedCompareMaxDepth,
-        computedCompareMaxKeys,
-        currentAdapter,
-        shouldIncludeKey: shouldIncludeSnapshotKey,
-        maxPatchKeys,
-        maxPayloadBytes,
-        mergeSiblingThreshold,
-        mergeSiblingMaxInflationRatio,
-        mergeSiblingMaxParentBytes,
-        mergeSiblingSkipArray,
-        elevateTopKeyThreshold,
-        toPlainMaxDepth,
-        toPlainMaxKeys,
-        includeFunctions,
-        functionPaths,
-        plainCache,
-        plainCacheEligibility,
-        pendingPatches,
-        fallbackTopKeys,
-        latestSnapshot,
-        latestComputedSnapshot,
-        needsFullSnapshot,
-        bindingDiagnosticsEnabled: Boolean(debug && bindingManifest),
-        emitDebug,
-        runDiffUpdate,
-      })
+  const job = (_stateRootRaw?: object) => {
+    if (!prepareJob()) {
+      return
     }
-    else {
-      return runDiffUpdate(needsFullSnapshot.value ? 'needsFullSnapshot' : 'diff')
-    }
+    return runDiffUpdate('diff')
   }
 
   const snapshot = () => (setDataStrategy === 'patch' ? collect() : ({ ...latestSnapshot }))
   const cloneLatestSnapshot = () => ({ ...latestSnapshot })
 
   return {
+    collect,
+    emitDebug,
+    getLatestSnapshot: () => latestSnapshot,
     job,
-    mutationRecorder,
+    plainCache,
+    plainCacheEligibility,
+    prepareJob,
+    resolveTopKeysByRoot,
+    runDiffUpdate,
+    shouldIncludeSnapshotKey,
     snapshot,
     cloneLatestSnapshot,
-    getLatestSnapshot: () => latestSnapshot,
   }
 }

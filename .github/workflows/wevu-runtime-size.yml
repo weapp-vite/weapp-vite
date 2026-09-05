@@ -69,21 +69,20 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           pnpm exec tsx scripts/report-wevu-runtime-size.ts \
-            --root=. \
-            --output-json=../runtime-size-artifact/head.json
-          pnpm exec tsx scripts/report-wevu-runtime-size.ts \
             --root=../baseline \
             --output-json=../runtime-size-artifact/baseline.json
           pnpm exec tsx scripts/report-wevu-runtime-size.ts \
-            --current-json=../runtime-size-artifact/head.json \
+            --root=. \
             --baseline-json=../runtime-size-artifact/baseline.json \
+            --output-json=../runtime-size-artifact/head.json \
             --output-markdown=../runtime-size-artifact/report.md \
             --artifact-json=../runtime-size-artifact/report.json \
             --repository="$REPOSITORY" \
             --pr-number="$PR_NUMBER" \
             --head-sha="$HEAD_SHA" \
             --base-sha="$BASE_SHA" \
-            --github-summary
+            --github-summary \
+            --check
 
       - name: Upload runtime size report
         if: always()

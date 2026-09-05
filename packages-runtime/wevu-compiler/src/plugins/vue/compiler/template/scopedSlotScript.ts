@@ -1,5 +1,6 @@
+import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
-import type { ClassStyleBinding, InlineExpressionAsset, TemplateRefBinding } from './types'
+import type { ClassStyleBinding, InlineExpressionAsset, LayoutHostBinding, TemplateRefBinding } from './types'
 import { WEVU_BINDING_MANIFEST_KEY, WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
 import { createRuntimeBindingManifest } from '../../../../bindingManifest'
 import {
@@ -8,6 +9,10 @@ import {
   WE_VU_COMPILER_TEMPLATE_MODULE_ID,
   WE_VU_RUNTIME_APIS,
 } from '../../../../constants'
+import {
+  WE_VU_RUNTIME_CAPABILITY_INSTALLERS,
+  WE_VU_RUNTIME_CAPABILITY_ORDER,
+} from '../../../../runtimeCapabilities'
 import { generate } from '../../../../utils/babel'
 import { buildClassStyleComputedCode } from '../../transform/classStyleComputed'
 
@@ -51,9 +56,11 @@ function buildTemplateRefsCode(templateRefs: TemplateRefBinding[]) {
 export function buildScopedSlotComponentScript(options: {
   classStyleBindings: ClassStyleBinding[]
   inlineExpressions: InlineExpressionAsset[]
+  layoutHosts: LayoutHostBinding[]
   templateRefs: TemplateRefBinding[]
   bindingManifest: WevuBindingManifestV1
   runtimeBindingManifest: WevuRuntimeBindingManifestMode
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
 }) {
   const computedCode = options.classStyleBindings.length
     ? buildClassStyleComputedCode(options.classStyleBindings, {
@@ -64,8 +71,19 @@ export function buildScopedSlotComponentScript(options: {
     : null
   const inlineMapCode = buildInlineExpressionMapCode(options.inlineExpressions)
   const templateRefsCode = buildTemplateRefsCode(options.templateRefs)
+  const layoutHostsCode = options.layoutHosts.length
+    ? JSON.stringify(options.layoutHosts)
+    : null
+  const requiredCapabilitySet = new Set(options.runtimeCapabilities?.required)
+  const installerNames = WE_VU_RUNTIME_CAPABILITY_ORDER
+    .filter(capability => requiredCapabilitySet.has(capability))
+    .map(capability => WE_VU_RUNTIME_CAPABILITY_INSTALLERS[capability])
+  const runtimeImports = [
+    `${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent`,
+    ...installerNames.map(installerName => `${installerName} as _${installerName}`),
+  ]
   const lines = [
-    `import { ${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent } from '${WE_VU_COMPILER_RUNTIME_MODULE_ID}';`,
+    `import { ${runtimeImports.join(', ')} } from '${WE_VU_COMPILER_RUNTIME_MODULE_ID}';`,
   ]
   if (computedCode) {
     lines.push(`import { normalizeClass as __wevuNormalizeClass, normalizeStyle as __wevuNormalizeStyle } from '${WE_VU_COMPILER_TEMPLATE_MODULE_ID}';`)
@@ -73,6 +91,7 @@ export function buildScopedSlotComponentScript(options: {
   if (computedCode || templateRefsCode) {
     lines.push(`import { unref as __wevuUnref } from '${WE_VU_COMPILER_REACTIVITY_MODULE_ID}';`)
   }
+  lines.push(...installerNames.map(installerName => `_${installerName}();`))
   lines.push(
     'const globalObject = typeof globalThis !== \'undefined\' ? globalThis : undefined;',
     `const createWevuScopedSlotComponent = globalObject?.${WEVU_SCOPED_SLOT_CREATOR_KEY}`,
@@ -87,11 +106,17 @@ export function buildScopedSlotComponentScript(options: {
   if (templateRefsCode) {
     lines.push(`const __wevuTemplateRefs = ${templateRefsCode};`)
   }
+  if (layoutHostsCode) {
+    lines.push(`const __wevuLayoutHosts = ${layoutHostsCode};`)
+  }
   const overrideParts = [
     `${JSON.stringify(WEVU_BINDING_MANIFEST_KEY)}:Object.freeze(${JSON.stringify(createRuntimeBindingManifest(options.bindingManifest, options.runtimeBindingManifest))})`,
   ]
   if (computedCode) {
     overrideParts.push('computed:__wevuComputed')
+  }
+  if (layoutHostsCode) {
+    overrideParts.push('layoutHosts:__wevuLayoutHosts')
   }
   if (inlineMapCode) {
     overrideParts.push('inlineMap:__wevuInlineMap')

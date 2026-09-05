@@ -7,30 +7,27 @@ import type {
   MethodDefinitions,
   RuntimeApp,
   RuntimeInstance,
+  SetDataSnapshotOptions,
 } from '../types'
 import type { AdapterWithSetData } from './runtimeInstance/utils'
 import type { WatchMap } from './watch'
 import {
   WEVU_EFFECT_SCOPE_KEY,
   WEVU_HOOKS_KEY,
-  WEVU_PAGE_LAYOUT_NAME_KEY,
-  WEVU_PAGE_LAYOUT_PROPS_KEY,
-  WEVU_PAGE_LAYOUT_SETTER_KEY,
   WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY,
   WEVU_PROPS_DERIVED_KEYS_KEY,
-  WEVU_PROPS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
-  WEVU_RUNTIME_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
-  WEVU_TEMPLATE_REFS_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
 import { isRef } from '../../reactivity'
 import { isDeepEqualValue } from '../app/setData/snapshot'
+import {
+  isSetDataHighFrequencyWarningRequested,
+  requireRuntimeCapability,
+  runtimeCapabilityRegistry,
+} from '../capabilities'
 import { callHookList } from '../hooks'
-import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
-import { allocateOwnerId, attachOwnerSnapshot, mergeOwnerSnapshotProps, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
-import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
 import { attachRuntimeProvideParentContext } from './runtimeInstance/provideContext'
 import {
@@ -47,7 +44,6 @@ import {
   ensureRuntimeProps,
   resolveNativeSetData,
 } from './runtimeInstance/utils'
-import { createSetDataHighFrequencyWarningMonitor } from './setDataFrequencyWarning'
 import { registerWatches } from './watch'
 
 function cloneInitialSnapshotValue(value: unknown, cache = new WeakMap<object, unknown>()): unknown {
@@ -126,24 +122,6 @@ type RuntimeInstanceWithSyncFlush<
   __wevu_trackSetupReactiveKey?: (key: string) => void
 }
 
-function attachPageLayoutSetter(target: InternalRuntimeState) {
-  if (typeof (target as any).route !== 'string' || !(target as any).route) {
-    return
-  }
-
-  target[WEVU_PAGE_LAYOUT_SETTER_KEY] = (layout: string | false, props?: Record<string, any>) => {
-    const runtimeState = target.__wevu?.state as Record<string, any> | undefined
-    if (!runtimeState || typeof runtimeState !== 'object') {
-      return
-    }
-
-    runtimeState[WEVU_PAGE_LAYOUT_NAME_KEY] = resolveRuntimePageLayoutName(layout)
-    const nextProps = layout === false ? {} : (props ?? {})
-    runtimeState[WEVU_PAGE_LAYOUT_PROPS_KEY] = nextProps
-    syncRuntimePageLayoutState(target as Record<string, any>, layout, nextProps)
-  }
-}
-
 /**
  * 挂载运行时实例（框架内部注册流程使用）。
  * @internal
@@ -158,21 +136,34 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   if (target.__wevu) {
     return target.__wevu as RuntimeInstance<D, C, M>
   }
+  const runtimeSetDataOptions = (
+    runtimeApp as typeof runtimeApp & { __wevuSetDataOptions?: SetDataSnapshotOptions }
+  ).__wevuSetDataOptions
+  const hasScopedSlotBindings = hasTemplateRuntimeBindings(runtimeApp)
+  const scopedSlotHooks = hasScopedSlotBindings
+    ? requireRuntimeCapability('scopedSlots', 'mountRuntimeInstance(scoped-slot bindings)')
+    : undefined
+  const scopedSlotState = scopedSlotHooks?.prepareMount(target)
+  const templateRefBindings = target.__wevuTemplateRefs
+  if (Array.isArray(templateRefBindings) && templateRefBindings.length) {
+    requireRuntimeCapability('templateRefs', 'mountRuntimeInstance(template refs)')
+  }
+  const highFrequencyWarningRequested = isSetDataHighFrequencyWarningRequested(
+    runtimeSetDataOptions?.highFrequencyWarning,
+  )
+  const highFrequencyWarningHooks = highFrequencyWarningRequested
+    ? requireRuntimeCapability('setDataHighFrequencyWarning', 'mountRuntimeInstance(setData.highFrequencyWarning)')
+    : undefined
   attachRuntimeProvideParentContext(target, runtimeApp as RuntimeApp<any, any, any>)
   safeMarkNoSetData(target)
-  const initialNativeOwnerId = (target as any).data?.[WEVU_SLOT_OWNER_ID_KEY]
-  const ownerId = typeof initialNativeOwnerId === 'string' && initialNativeOwnerId
-    ? initialNativeOwnerId
-    : allocateOwnerId()
-  const shouldFlushNativeOwnerId = typeof initialNativeOwnerId === 'string' && initialNativeOwnerId !== ownerId
-  const suspendWhenHidden = Boolean((runtimeApp as any)?.__wevuSetDataOptions?.suspendWhenHidden)
+  const suspendWhenHidden = Boolean(runtimeSetDataOptions?.suspendWhenHidden)
   const targetLabel = typeof (target as any).route === 'string' && (target as any).route
     ? `page:${(target as any).route}`
     : typeof (target as any).is === 'string' && (target as any).is
       ? `component:${(target as any).is}`
       : 'unknown-target'
-  const highFrequencyWarning = createSetDataHighFrequencyWarningMonitor({
-    option: (runtimeApp as any)?.__wevuSetDataOptions?.highFrequencyWarning,
+  const highFrequencyWarning = highFrequencyWarningHooks?.createMonitor({
+    option: runtimeSetDataOptions?.highFrequencyWarning,
     targetLabel,
     isInPageScrollHook: () => Number((target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 0) > 0,
   })
@@ -231,7 +222,6 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
           return undefined
         },
       }
-  let runtimeRef: RuntimeInstance<any, any, any> | undefined
   let visible = true
   let hiddenPendingPayload: Record<string, any> | undefined
 
@@ -240,32 +230,14 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     ...payload,
   })
   const refreshOwnerSnapshot = () => {
-    if (!runtimeRef) {
-      return
+    if (scopedSlotState) {
+      runtimeCapabilityRegistry.scopedSlots?.refresh(target, scopedSlotState)
     }
-    const snapshot = resolveOwnerSnapshot(runtimeRef)
-    const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
-    mergeOwnerSnapshotProps(snapshot, propsSource)
-    updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy, target)
   }
   const syncNativeOwnerId = () => {
-    if (!shouldFlushNativeOwnerId) {
-      return
+    if (scopedSlotState) {
+      scopedSlotHooks?.syncNativeOwnerId(target, scopedSlotState)
     }
-    const nativeData = (target as any).data
-    try {
-      if (nativeData && typeof nativeData === 'object') {
-        nativeData[WEVU_SLOT_OWNER_ID_KEY] = ownerId
-      }
-    }
-    catch {
-      // 忽略直接写入失败，后续 setData 仍会尝试同步。
-    }
-    const setData = resolveNativeSetData(target)
-    if (!setData) {
-      return
-    }
-    callNativeSetData(target, setData, { [WEVU_SLOT_OWNER_ID_KEY]: ownerId })
   }
   const adapter: AdapterWithSetData = {
     ...(baseAdapter as any),
@@ -274,23 +246,26 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       if (suspendWhenHidden && !visible) {
         hiddenPendingPayload = mergePendingPayload(hiddenPendingPayload, payload)
         refreshOwnerSnapshot()
-        scheduleTemplateRefUpdate(target)
+        if (Array.isArray(target.__wevuTemplateRefs) && target.__wevuTemplateRefs.length > 0) {
+          runtimeCapabilityRegistry.templateRefs?.schedule(target)
+        }
         return undefined
       }
-      const hasTemplateRefs = Array.isArray((target as any)[WEVU_TEMPLATE_REFS_KEY])
-        && (target as any)[WEVU_TEMPLATE_REFS_KEY].length > 0
+      const hasTemplateRefs = Array.isArray(target.__wevuTemplateRefs) && target.__wevuTemplateRefs.length > 0
       refreshOwnerSnapshot()
       if (hasTemplateRefs && resolveNativeSetData(target)) {
         return new Promise<void>((resolve) => {
           baseAdapter.setData(payload, () => {
             refreshOwnerSnapshot()
-            scheduleTemplateRefUpdate(target)
+            runtimeCapabilityRegistry.templateRefs?.schedule(target)
             resolve()
           })
         })
       }
       const result = baseAdapter.setData(payload)
-      scheduleTemplateRefUpdate(target)
+      if (hasTemplateRefs) {
+        runtimeCapabilityRegistry.templateRefs?.schedule(target)
+      }
       return result
     },
     __wevu_setVisibility(nextVisible: boolean) {
@@ -300,20 +275,21 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       }
       const payload = hiddenPendingPayload
       hiddenPendingPayload = undefined
-      const hasTemplateRefs = Array.isArray((target as any)[WEVU_TEMPLATE_REFS_KEY])
-        && (target as any)[WEVU_TEMPLATE_REFS_KEY].length > 0
+      const hasTemplateRefs = Array.isArray(target.__wevuTemplateRefs) && target.__wevuTemplateRefs.length > 0
       refreshOwnerSnapshot()
       if (hasTemplateRefs && resolveNativeSetData(target)) {
         return new Promise<void>((resolve) => {
           baseAdapter.setData(payload, () => {
             refreshOwnerSnapshot()
-            scheduleTemplateRefUpdate(target)
+            runtimeCapabilityRegistry.templateRefs?.schedule(target)
             resolve()
           })
         })
       }
       const result = baseAdapter.setData(payload)
-      scheduleTemplateRefUpdate(target)
+      if (hasTemplateRefs) {
+        runtimeCapabilityRegistry.templateRefs?.schedule(target)
+      }
       return result
     },
   }
@@ -347,9 +323,6 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const initialSnapshot = resolveInitialSnapshotFromNativeData(
     target,
     options?.snapshotOmitKeys,
-    hasTemplateRuntimeBindings(runtimeApp)
-      ? undefined
-      : { [WEVU_SLOT_OWNER_ID_KEY]: ownerId },
   )
   if (initialSnapshot && Object.keys(initialSnapshot).length) {
     Object.defineProperty(baseMountAdapter, '__wevu_initialSnapshot', {
@@ -359,12 +332,14 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       writable: false,
     })
   }
-  Object.defineProperty(baseMountAdapter, '__wevu_initialState', {
-    configurable: true,
-    enumerable: false,
-    value: { [WEVU_SLOT_OWNER_ID_KEY]: ownerId },
-    writable: false,
-  })
+  if (scopedSlotState) {
+    Object.defineProperty(baseMountAdapter, '__wevu_initialState', {
+      configurable: true,
+      enumerable: false,
+      value: { [WEVU_SLOT_OWNER_ID_KEY]: scopedSlotState.ownerId },
+      writable: false,
+    })
+  }
   const shouldDeferInitialSnapshot = Boolean(options?.deferSetData)
     || Boolean(setup)
     || Boolean(targetProperties && typeof targetProperties === 'object' && Object.keys(targetProperties).length > 0)
@@ -377,7 +352,6 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     })
   }
   const runtime = runtimeApp.mount(baseMountAdapter)
-  runtimeRef = runtime
   attachRuntimeInstance(runtime as RuntimeInstance<any, any, any>, target)
   const runtimeProxy = runtime?.proxy ?? {}
   const runtimeState = runtime?.state ?? {}
@@ -443,13 +417,12 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     writable: false,
   })
   target.__wevu = runtimeWithDefaults
-  attachPageLayoutSetter(target)
   const runtimeProps = ensureRuntimeProps(target, runtimeState as Record<string, any>)
   attachRuntimeSlots(runtimeState as Record<string, any>, runtimeProps)
 
-  attachOwnerSnapshot(target, runtimeWithDefaults as any, ownerId, {
-    deferSnapshot: options?.deferSetData,
-  })
+  if (scopedSlotState) {
+    scopedSlotHooks?.attachMount(target, runtimeWithDefaults, scopedSlotState, Boolean(options?.deferSetData))
+  }
   syncNativeOwnerId()
 
   const watchStops = watchMap
@@ -654,12 +627,10 @@ export function setRuntimeSetDataVisibility(target: InternalRuntimeState, visibl
  */
 export function teardownRuntimeInstance(target: InternalRuntimeState, options?: { skipHooks?: boolean }) {
   const runtime = target.__wevu
-  const ownerId = (target as any)[WEVU_RUNTIME_OWNER_ID_KEY]
-    ?? (target as any)[WEVU_SLOT_OWNER_ID_KEY]
-  if (ownerId) {
-    removeOwner(ownerId)
+  runtimeCapabilityRegistry.scopedSlots?.teardown(target)
+  if (Array.isArray(target.__wevuTemplateRefs) && target.__wevuTemplateRefs.length > 0) {
+    runtimeCapabilityRegistry.templateRefs?.clear(target)
   }
-  clearTemplateRefs(target)
   // 触发卸载钩子（仅在 teardown 首次执行时触发）
   if (!options?.skipHooks && runtime && target[WEVU_HOOKS_KEY]) {
     callHookList(target, 'onUnload', [])

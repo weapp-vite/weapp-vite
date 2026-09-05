@@ -1,5 +1,15 @@
+import type { OutputBundle } from 'rolldown'
 import { describe, expect, it } from 'vitest'
 import { filterPluginBundleOutputs, removeImplicitPagePreloads, rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess, syncChunkImportsFromRequireCalls } from './bundle'
+
+const WEVU_RUNTIME_INSTALLERS = [
+  'installPatchStrategy',
+  'installTemplateRefs',
+  'installInlineEvents',
+  'installSetDataHighFrequencyWarning',
+  'installScopedSlots',
+  'installLayout',
+] as const
 
 describe('core helper bundle', () => {
   it('keeps plugin assets intact in pluginOnly mode', () => {
@@ -186,6 +196,35 @@ describe('core helper bundle', () => {
     expect(bundle['app.js'].code).not.toContain('from "wevu/internal-runtime"')
     expect(bundle['app.js'].code).toContain('const { setWevuDefaults, createApp: createRuntimeApp } = require("./weapp-vendors/wevu-watch.js");')
     expect(bundle['app.js'].imports).toEqual(['weapp-vendors/wevu-watch.js'])
+  })
+
+  it.each([
+    'wevu/internal-runtime',
+    'virtual:weapp-vite/runtime',
+  ])('rewrites every Wevu runtime installer from %s', (moduleId) => {
+    const installerBindings = WEVU_RUNTIME_INSTALLERS.join(', ')
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        code: [
+          `import { ${installerBindings} } from "${moduleId}";`,
+          ...WEVU_RUNTIME_INSTALLERS.map(installerName => `${installerName}();`),
+        ].join('\n'),
+        imports: [],
+      },
+    }
+
+    rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, {
+      runtimeFileName: 'weapp-vendors/wevu-capabilities.js',
+    })
+
+    expect(bundle['pages/index/index.js'].code).toContain(`const { ${installerBindings} } = require("../../weapp-vendors/wevu-capabilities.js");`)
+    expect(bundle['pages/index/index.js'].code).not.toContain(`from "${moduleId}"`)
+    expect(bundle['pages/index/index.js'].imports).toEqual(['weapp-vendors/wevu-capabilities.js'])
+    for (const installerName of WEVU_RUNTIME_INSTALLERS) {
+      expect(bundle['pages/index/index.js'].code).toContain(`${installerName}();`)
+    }
   })
 
   it('rewrites bare wevu internal runtime imports to root shared chunk requires', () => {
@@ -733,6 +772,31 @@ describe('core helper bundle', () => {
     expect(runtimeFileNames.get('wevu/internal-runtime')).toBe('weapp-vendors/wevu-runtime.js')
   })
 
+  it.each(WEVU_RUNTIME_INSTALLERS)(
+    'uses the %s export marker to identify the single internal runtime chunk',
+    (installerName) => {
+      const runtimeFileNames = new Map<string, string>()
+      const bundle = {
+        'weapp-vendors/wevu-capability.js': {
+          type: 'chunk',
+          fileName: 'weapp-vendors/wevu-capability.js',
+          code: `Object.defineProperty(exports, "${installerName}", { enumerable: true, get: function() { return ${installerName}; } });`,
+          imports: [],
+        },
+      }
+
+      rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, {
+        onRuntimeModuleFileName(moduleId, fileName) {
+          runtimeFileNames.set(moduleId, fileName)
+        },
+      })
+
+      expect(runtimeFileNames).toEqual(new Map([
+        ['wevu/internal-runtime', 'weapp-vendors/wevu-capability.js'],
+      ]))
+    },
+  )
+
   it('rewrites multiple wevu internal imports from the indexed runtime chunks', () => {
     const bundle = {
       'pages/index/index.js': {
@@ -822,6 +886,7 @@ describe('core helper bundle', () => {
     expect(code).toContain('const { createApp } = require("../../weapp-vendors/wevu-watch.js");')
     expect(code).toContain('const { ref } = require("../../weapp-vendors/wevu-ref.js");')
     expect(code).toContain('const { normalizeClass } = require("../../weapp-vendors/wevu-template.js");')
+    expect(code).not.toContain('install')
     expect(bundle['pages/index/index.js'].imports).toEqual([
       'weapp-vendors/wevu-watch.js',
       'weapp-vendors/wevu-ref.js',

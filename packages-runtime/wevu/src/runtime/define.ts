@@ -1,7 +1,5 @@
 import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import type { RuntimeComponentDefinitionOptions } from './define/componentDefinition'
-import type { InlineExpressionMap } from './register/inline'
-import type { TemplateRefBinding } from './templateRefs'
 import type {
   ComponentPropsOptions,
   ComponentPublicInstance,
@@ -19,13 +17,14 @@ import {
   WEVU_BINDING_MANIFEST_KEY,
   WEVU_CSS_MODULES_KEY,
   WEVU_FUNCTION_PROP_PATHS_KEY,
-  WEVU_SCOPED_SLOT_CREATOR_KEY,
+  WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { hasOwn } from '../utils'
 import { hasBindingOutputPath, resolveBindingManifest } from './bindingManifest'
+import { requireRuntimeCapability } from './capabilities'
 import { applyWevuComponentDefaults } from './defaults'
 import {
   createRuntimeComponentDefinition,
@@ -34,25 +33,10 @@ import { resolveNativeInitialData } from './define/initialComputed'
 import { resolveVueComponentOptions } from './define/options'
 import { applyOptionsApiProvide, resolveOptionsApiInjections } from './define/optionsApi'
 import { normalizeProps } from './define/props'
-import { createScopedSlotOptions } from './define/scopedSlotOptions'
 import { applySetupResult } from './define/setupResult'
-import { getScopedSlotHostGlobalObject } from './platform'
 import { runSetupFunction } from './register'
-import { allocateOwnerId } from './scopedSlots'
 
-let scopedSlotCreator: (() => void) | undefined
 const componentLifecycleDefinitions = new WeakMap<object, Record<string, any>>()
-
-function ensureScopedSlotComponentGlobal() {
-  const globalObject = getScopedSlotHostGlobalObject()
-  if (!globalObject) {
-    return
-  }
-  const globalRecord = globalObject as Record<string, any>
-  if (scopedSlotCreator && globalRecord[WEVU_SCOPED_SLOT_CREATOR_KEY] !== scopedSlotCreator) {
-    globalRecord[WEVU_SCOPED_SLOT_CREATOR_KEY] = scopedSlotCreator
-  }
-}
 
 function resolveInitialDataContext(properties: unknown, methods: MethodDefinitions | undefined) {
   const context: Record<string, unknown> = { ...(methods ?? {}) }
@@ -128,6 +112,7 @@ export interface ComponentDefinition<
    * @internal
    */
   __wevu_options: {
+    scopedSlotOwnerRequired: boolean
     data: () => D
     computed: C
     methods: M
@@ -245,12 +230,10 @@ function createComponentDefinition(
   options: DefineComponentOptions<any, any, any, any, any>,
   registerNative: boolean,
 ) {
-  if (registerNative) {
-    ensureScopedSlotComponentGlobal()
-  }
   const resolvedOptions = resolveVueComponentOptions(applyWevuComponentDefaults(options))
   const {
     __typeProps: _typeProps,
+    [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: scopedSlotOwnerRequired,
     data,
     computed,
     methods,
@@ -264,7 +247,7 @@ function createComponentDefinition(
     [WEVU_BINDING_MANIFEST_KEY]: rawBindingManifest,
     [WEVU_CSS_MODULES_KEY]: cssModules,
     ...mpOptions
-  } = resolvedOptions
+  } = resolvedOptions as typeof resolvedOptions & { [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]?: boolean }
   const bindingManifest = resolveBindingManifest(rawBindingManifest)
 
   const rawFunctionPropPaths = (mpOptions as any)[WEVU_FUNCTION_PROP_PATHS_KEY]
@@ -331,13 +314,19 @@ function createComponentDefinition(
   const nativeData = typeof resolvedData === 'function'
     ? resolvedData()
     : resolvedData
+  const nativeOwnerId = nativeData && typeof nativeData === 'object'
+    ? Reflect.get(nativeData, WEVU_SLOT_OWNER_ID_KEY)
+    : undefined
   const shouldDeclareOwnerId = shouldDeclareNativeSlotOwnerId(resolvedSetData, bindingManifest)
+  const scopedSlotHooks = shouldDeclareOwnerId
+    ? requireRuntimeCapability('scopedSlots', 'defineComponent(scoped-slot owner metadata)')
+    : undefined
   const seededNativeData = shouldDeclareOwnerId
     ? {
         ...(nativeData && typeof nativeData === 'object' ? nativeData : {}),
         [WEVU_SLOT_OWNER_ID_KEY]: shouldSeedNativeSlotOwnerId(mpOptions)
-          ? (nativeData as any)?.[WEVU_SLOT_OWNER_ID_KEY] || allocateOwnerId()
-          : (nativeData as any)?.[WEVU_SLOT_OWNER_ID_KEY] || '',
+          ? nativeOwnerId || scopedSlotHooks?.allocateOwnerId()
+          : nativeOwnerId || '',
       }
     : nativeData
   const nativeInitialData = resolveNativeInitialData(seededNativeData, computed as ComputedDefinitions, resolvedSetData, methods as Record<string, any> | undefined)
@@ -349,6 +338,7 @@ function createComponentDefinition(
     : normalizedMpOptions
 
   const componentOptions: RuntimeComponentDefinitionOptions = {
+    scopedSlotOwnerRequired: scopedSlotOwnerRequired === true,
     data: resolvedData as () => Record<string, any>,
     computed: computed as ComputedDefinitions,
     methods: methods as MethodDefinitions,
@@ -420,7 +410,6 @@ export function createWevuComponent<
 >(
   options: DefineComponentOptions<P, D, C, M> & { properties?: MiniProgramComponentPropertyOption },
 ): void {
-  ensureScopedSlotComponentGlobal()
   const {
     properties,
     props,
@@ -438,22 +427,3 @@ export function createWevuComponent<
 
   defineComponent(finalOptions)
 }
-
-/**
- * scoped slot 兼容组件入口（编译产物内部使用）。
- * @internal
- */
-export function createWevuScopedSlotComponent(
-  overrides?: {
-    computed?: ComputedDefinitions
-    inlineMap?: InlineExpressionMap
-    templateRefs?: TemplateRefBinding[]
-    [WEVU_BINDING_MANIFEST_KEY]?: WevuRuntimeBindingManifestV1
-  },
-): void {
-  const baseOptions = createScopedSlotOptions(overrides)
-  createWevuComponent(baseOptions as any)
-}
-
-scopedSlotCreator = createWevuScopedSlotComponent
-ensureScopedSlotComponentGlobal()

@@ -188,5 +188,10 @@ export { getWebViewportWidth, resolveWebViewportConfig, setupWebViewport } from 
 export type { ResolvedWebViewportConfig, WebViewportConfig } from './viewport'
 export { setRuntimeWarningOptions } from './warning'
 export type { RuntimeWarningLevel, RuntimeWarningOptions } from './warning'
-export { installWebModuleRegistration, registerWebWevuApp, registerWebWevuComponent } from './wevu'
+export {
+  installWebModuleRegistration,
+  registerWebWevuApp,
+  registerWebWevuComponent,
+  registerWebWevuComponentFactory,
+} from './wevu'
 export * from 'wevu/internal-runtime'

@@ -1,5 +1,4 @@
-import type { LayoutHostBinding } from '../../layoutBridge'
-import type { TemplateRefBinding } from '../../templateRefs'
+import type { LayoutHostBinding, TemplateRefBinding } from '../../capabilities'
 import type { InternalRuntimeState, MiniProgramComponentRawOptions, PageFeatures } from '../../types'
 import { WEVU_COMPONENT_NAME_KEY, WEVU_PROPS_ALIASES_KEY, WEVU_PROPS_DERIVED_KEYS_KEY } from '@weapp-core/constants'
 import { hasOwn } from '../../../utils'

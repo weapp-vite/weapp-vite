@@ -1,4 +1,5 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
+import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
@@ -7,6 +8,7 @@ import type { ComponentSourceInfo } from './componentSources'
 import type { AutoUsingComponentsOptions, CompileVueFileOptions } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
+import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
 import { createJsxDiagnostics } from '../../../jsx/compileJsx/diagnostics'
@@ -31,6 +33,8 @@ export interface ScriptPhaseResult {
   diagnostics?: CompilerDiagnostic[]
   bindingManifest?: WevuBindingManifestV1
   inlineExpressions?: TemplateCompileResult['inlineExpressions']
+  /** @internal */
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
   autoUsingComponentsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
 }
@@ -368,6 +372,12 @@ export async function compileScriptPhase(
     const bindingManifest = jsxTemplate?.template
       ? jsxTemplate.bindingManifest
       : templateCompiled?.bindingManifest
+    const effectiveInlineExpressions = jsxTemplate?.template
+      ? jsxTemplate.inlineExpressions
+      : templateCompiled?.inlineExpressions
+    const runtimeCapabilities = bindingManifest
+      ? createWevuRuntimeCapabilityMetadataFromBindingManifest(bindingManifest)
+      : templateCompiled?.runtimeCapabilities
     const transformed = transformScript(jsxTransformed.code, {
       isTypeScript: descriptor.script?.lang === 'ts'
         || descriptor.script?.lang === 'tsx'
@@ -385,11 +395,12 @@ export async function compileScriptPhase(
       classStyleBindings: templateCompiled?.classStyleBindings,
       templateRefs: templateCompiled?.templateRefs,
       layoutHosts: templateCompiled?.layoutHosts,
-      inlineExpressions: templateCompiled?.inlineExpressions,
+      inlineExpressions: effectiveInlineExpressions,
       bindingManifest: isAppFile ? undefined : bindingManifest,
       autoSetDataPick: !isAppFile && options?.autoSetDataPick,
       runtimeBindingManifest: options?.runtimeBindingManifest,
       pageLayout: isAppFile ? undefined : options?.pageLayout,
+      runtimeCapabilities,
       functionPropPaths: templateCompiled?.functionPropPaths,
       propsAliases,
       propsDerivedKeys,
@@ -409,6 +420,7 @@ export async function compileScriptPhase(
       diagnostics: jsxDiagnostics,
       bindingManifest,
       inlineExpressions: jsxTemplate?.inlineExpressions,
+      runtimeCapabilities: transformed.runtimeCapabilities,
       autoUsingComponentsMap,
       autoComponentMeta,
     }

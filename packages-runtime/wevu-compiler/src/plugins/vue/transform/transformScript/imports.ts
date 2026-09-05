@@ -1,6 +1,7 @@
 import type { TransformState } from './utils'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWevuInternalImportModuleId, WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from '../../../../constants'
+import { WE_VU_RUNTIME_CAPABILITY_INSTALLERS } from '../../../../runtimeCapabilities'
 import { ensureRuntimeImport } from '../scriptRuntimeImport'
 
 const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
@@ -12,6 +13,7 @@ const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
   'createApp',
   'createWevuComponent',
   'createWevuScopedSlotComponent',
+  ...Object.values(WE_VU_RUNTIME_CAPABILITY_INSTALLERS),
   'customRef',
   'defineAppSetup',
   'defineComponent',

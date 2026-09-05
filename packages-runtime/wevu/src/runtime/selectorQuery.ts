@@ -5,6 +5,7 @@ import type {
   MiniProgramScrollOffsetResult,
   MiniProgramSelectorQuery,
 } from './types'
+import { installTemplateRefs } from './features/templateRefs'
 import { getCurrentInstance, getCurrentSetupContext } from './hooks'
 import { createSelectorQuery } from './templateRefs/helpers'
 
@@ -75,6 +76,7 @@ function runSelectorQuery<T>(
  * 创建绑定当前小程序实例的选择器查询工厂。
  */
 export function useSelectorQuery(options: UseSelectorQueryOptions = {}) {
+  installTemplateRefs()
   const context = resolveSetupContext('useSelectorQuery', options.context)
   return (): MiniProgramSelectorQuery | null => createSelectorQuery(context)
 }
@@ -89,6 +91,7 @@ export function useBoundingClientRect(
   options: UseAllBoundingClientRectOptions,
 ): (selector: string) => Promise<MiniProgramBoundingClientRectResult[] | null>
 export function useBoundingClientRect(options: UseBoundingClientRectOptions = {}) {
+  installTemplateRefs()
   const context = resolveSetupContext('useBoundingClientRect', options.context)
   const all = options.all ?? false
 
@@ -112,6 +115,7 @@ export function useSelectorFields(
   options: UseAllSelectorFieldsOptions,
 ): (selector: string) => Promise<Array<Record<string, any>> | null>
 export function useSelectorFields(options: UseSelectorFieldsOptions) {
+  installTemplateRefs()
   const context = resolveSetupContext('useSelectorFields', options.context)
   const all = options.all ?? false
 
@@ -133,6 +137,7 @@ export function useScrollOffset(
   options: UseAllScrollOffsetOptions,
 ): (selector: string) => Promise<MiniProgramScrollOffsetResult[] | null>
 export function useScrollOffset(options: UseScrollOffsetOptions = {}) {
+  installTemplateRefs()
   const context = resolveSetupContext('useScrollOffset', options.context)
   const all = options.all ?? false
 

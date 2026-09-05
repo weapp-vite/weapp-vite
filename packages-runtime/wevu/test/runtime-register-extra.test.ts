@@ -4,12 +4,16 @@ import {
   WEVU_HOOKS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_READY_CALLED_KEY,
+  WEVU_RUNTIME_OWNER_ID_KEY,
   WEVU_TEMPLATE_REFS_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getCurrentScope, nextTick, onScopeDispose, reactive, ref, setPageLayout, watch, watchEffect } from '@/index'
 import { createApp } from '@/runtime/app'
+import { installPatchStrategy } from '@/runtime/features/patchStrategy'
+import { installScopedSlots } from '@/runtime/features/scopedSlots'
+import { installTemplateRefs } from '@/runtime/features/templateRefs'
 import { callHookReturn, setCurrentInstance } from '@/runtime/hooks'
 import {
   mountRuntimeInstance,
@@ -18,12 +22,15 @@ import {
   runSetupFunction,
   teardownRuntimeInstance,
 } from '@/runtime/register'
-import { getOwnerSnapshot } from '@/runtime/scopedSlots'
+import { getOwnerSnapshot, updateOwnerSnapshot } from '@/runtime/scopedSlots'
 
 const componentCalls: Record<string, any>[] = []
 const appCalls: Record<string, any>[] = []
 
 beforeEach(() => {
+  installPatchStrategy()
+  installScopedSlots()
+  installTemplateRefs()
   componentCalls.length = 0
   appCalls.length = 0
   ;(globalThis as any).Component = (options: Record<string, any>) => {
@@ -260,6 +267,20 @@ describe('mountRuntimeInstance and teardown', () => {
     expect(runtime.unmount).toHaveBeenCalled()
   })
 
+  it('cleans up legacy scoped-slot owners without capability mount state', () => {
+    const ownerId = 'legacy-owner'
+    const target: any = {
+      [WEVU_RUNTIME_OWNER_ID_KEY]: ownerId,
+    }
+    updateOwnerSnapshot(ownerId, { value: 1 }, undefined, target)
+
+    expect(getOwnerSnapshot(ownerId)).toEqual({ value: 1 })
+
+    teardownRuntimeInstance(target)
+
+    expect(getOwnerSnapshot(ownerId)).toBeUndefined()
+  })
+
   it('finishes runtime teardown before rethrowing a scope cleanup failure', () => {
     const app = createApp({})
     const target: InternalRuntimeState = {
@@ -349,6 +370,7 @@ describe('mountRuntimeInstance and teardown', () => {
 
   it('refreshes owner snapshot after setup methods are injected', () => {
     const app = createApp({})
+    Object.defineProperty(app, '__wevuHasTemplateRuntimeBindings', { value: true })
     const target: any = {
       route: 'pages/issue-558/index',
       setData: vi.fn(),
@@ -387,6 +409,7 @@ describe('mountRuntimeInstance and teardown', () => {
       data: () => ({ a: shared, b: shared, big }),
       setData: { strategy: 'patch', includeComputed: false },
     })
+    Object.defineProperty(app, '__wevuHasTemplateRuntimeBindings', { value: true })
     const target: any = {
       route: 'pages/owner-snapshot/index',
       setData: vi.fn(),
@@ -636,8 +659,7 @@ describe('registerApp', () => {
     instance.__wevu = { methods: { ping: () => 'pong' }, proxy: {} }
     expect(options.ping.call(instance)).toBe('user')
 
-    const inlineResult = options.__weapp_vite_inline.call(instance, { currentTarget: { dataset: {} } })
-    expect(inlineResult).toBeUndefined()
+    expect(options.__weapp_vite_inline).toBeUndefined()
   })
 })
 
