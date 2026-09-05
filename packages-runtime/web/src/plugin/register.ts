@@ -97,14 +97,13 @@ function overwriteWevuFactoryCall(
   const identifier = node.callee as t.Identifier
   const factoryName = identifier.name
   const metaCode = createRegisterMetaCode(meta, templateIdent, styleIdent, true)
-  s.overwrite(identifier.start!, identifier.end!, 'registerWebWevuComponentFactory')
   const firstArgument = node.arguments[0]
-  if (firstArgument && !t.isSpreadElement(firstArgument)) {
-    s.prependLeft(firstArgument.start!, `${factoryName}, `)
-    s.appendLeft(node.end! - 1, `, ${metaCode}`)
+  s.overwrite(identifier.start!, identifier.end!, 'registerWebWevuComponentFactory')
+  if (firstArgument) {
+    s.prependLeft(firstArgument.start!, `${factoryName}, ${metaCode}, `)
     return
   }
-  s.appendLeft(node.end! - 1, `${factoryName}, undefined, ${metaCode}`)
+  s.appendLeft(node.end! - 1, `${factoryName}, ${metaCode}`)
 }
 
 interface TransformScriptModuleOptions {

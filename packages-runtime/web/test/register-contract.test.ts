@@ -65,13 +65,26 @@ describe('web script registration transform contract', () => {
 
     expect(result.code).toContain('installWebModuleRegistration')
     expect(result.code).toContain('registerWebWevuComponentFactory')
-    expect(result.code).toContain('registerWebWevuComponentFactory(defineCard, {}')
+    expect(result.code).toContain('registerWebWevuComponentFactory(defineCard, { id: "component/demo"')
     expect(result.code).not.toContain('registerWebWevuComponent(')
     expect(result.code).toContain('card.scss?inline')
     expect(result.code).toContain('card.wxml?weapp-web-template')
     expect(result.code).toContain('navigationBar: {"title":"Card"}')
     expect(result.code).toContain('kind: "component"')
     expect(result.code).toContain('import.meta.hot.accept()')
+  })
+
+  it('preserves spread and additional Wevu factory arguments in the module-local wrapper', () => {
+    const result = transformScriptModule({
+      cleanId: '/src/components/spread.ts',
+      code: 'import { defineComponent } from \'wevu\'; const args = [{}]; defineComponent(...args); defineComponent({}, "extra")',
+      enableHmr: false,
+      meta: createMeta('component'),
+      runtimeModuleId: 'virtual:web-runtime',
+    })!
+
+    expect(result.code).toContain('registerWebWevuComponentFactory(defineComponent, { id: "component/demo", kind: "component" }, ...args)')
+    expect(result.code).toContain('registerWebWevuComponentFactory(defineComponent, { id: "component/demo", kind: "component" }, {}, "extra")')
   })
 
   it('maps native component and app factories without treating app defineComponent as a component', () => {

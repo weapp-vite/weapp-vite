@@ -73,16 +73,16 @@ export function registerWebWevuComponent(options: Record<string, any>, meta: Wev
 /**
  * 保留公开 Wevu 工厂行为，并使用当前模块元数据完成 Web 注册。
  */
-export function registerWebWevuComponentFactory<T>(
-  factory: (options: Record<string, any>) => T,
-  options: Record<string, any>,
+export function registerWebWevuComponentFactory<TArgs extends unknown[], TResult>(
+  factory: (...args: TArgs) => TResult,
   meta: WevuRegisterMeta,
-): T {
+  ...args: TArgs
+): TResult {
   return withRuntimeConstructor('Component', (definition) => {
     return meta.kind === 'page'
       ? registerPage(definition, meta)
       : registerComponent(definition, meta)
-  }, () => factory(options))
+  }, () => factory(...args))
 }
 
 /**
