@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import type { ComponentPublicInstance, NormalizedComponentOptions } from '../src/runtime/component/types'
+import { WEVU_HOST_COMMIT_PROMISE_KEY } from '@weapp-core/constants'
 import { html } from 'lit'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, onError, onErrorCaptured, ref } from 'wevu'
@@ -194,6 +195,7 @@ describe('component infrastructure contracts', () => {
 
     const element = document.createElement('wv-lit-lifecycle-contract') as ComponentPublicInstance & {
       updateComplete: Promise<boolean>
+      [WEVU_HOST_COMMIT_PROMISE_KEY]: Promise<unknown> | undefined
       invalid?: unknown
       attributeChangedCallback: (name: string, oldValue: string | null, newValue: string | null) => void
       connectedCallback: () => void
@@ -241,10 +243,11 @@ describe('component infrastructure contracts', () => {
       value: rejectedUpdate,
     })
     const failedUpdate = element.setData({ count: 2 })
+    expect(element[WEVU_HOST_COMMIT_PROMISE_KEY]).toBe(failedUpdate)
     const renderFailure = new Error('render failed')
     rejectUpdate?.(renderFailure)
     await expect(failedUpdate).rejects.toBe(renderFailure)
-    delete (element as any).updateComplete
+    Reflect.deleteProperty(element, 'updateComplete')
 
     let rejectRecovery: ((cause: unknown) => void) | undefined
     const pendingRecovery = new Promise<boolean>((_resolve, reject) => {
@@ -258,6 +261,7 @@ describe('component infrastructure contracts', () => {
     const concurrentCallback = vi.fn()
     const recoveryUpdate = element.setData({ count: 2 }, recoveryCallback)
     const concurrentUpdate = element.setData({ count: 2 }, concurrentCallback)
+    expect(element[WEVU_HOST_COMMIT_PROMISE_KEY]).toBe(concurrentUpdate)
     expect(concurrentUpdate).toBeInstanceOf(Promise)
     expect(recoveryCallback).not.toHaveBeenCalled()
     expect(concurrentCallback).not.toHaveBeenCalled()
@@ -268,7 +272,7 @@ describe('component infrastructure contracts', () => {
     await expect(concurrentUpdate).rejects.toBe(recoveryFailure)
     expect(recoveryCallback).not.toHaveBeenCalled()
     expect(concurrentCallback).not.toHaveBeenCalled()
-    delete (element as any).updateComplete
+    Reflect.deleteProperty(element, 'updateComplete')
 
     const successfulRecoveryCallback = vi.fn()
     await expect(element.setData({ count: 2 }, successfulRecoveryCallback)).resolves.toBeUndefined()
@@ -335,6 +339,40 @@ describe('component infrastructure contracts', () => {
     expect(errors[0]).toBeInstanceOf(Error)
     expect((errors[0] as Error & { cause?: unknown }).cause).toBe(cause)
     expect(capturedErrors).toEqual(errors)
+    element.remove()
+  })
+
+  it('waits for a real Wevu Web host render from instance nextTick', async () => {
+    let reveal: (() => void) | undefined
+    let waitForHostCommit: (() => Promise<unknown>) | undefined
+    const id = 'components/wevu-web-next-tick/index'
+    registerWebWevuComponent({
+      mounted(this: { $nextTick: () => Promise<unknown> }) {
+        waitForHostCommit = () => this.$nextTick()
+      },
+      setup() {
+        const visible = ref(false)
+        reveal = () => {
+          visible.value = true
+        }
+        return { visible }
+      },
+    }, {
+      kind: 'component',
+      id,
+      template: state => state.visible ? html`<span data-visible></span>` : null,
+    })
+    const element = document.createElement(slugify(id, 'wv-component')) as HTMLElement & {
+      updateComplete: Promise<boolean>
+    }
+    document.body.append(element)
+    await element.updateComplete
+
+    expect(waitForHostCommit).toBeDefined()
+    reveal?.()
+    await waitForHostCommit?.()
+
+    expect(element.shadowRoot?.querySelector('[data-visible]')).not.toBeNull()
     element.remove()
   })
 

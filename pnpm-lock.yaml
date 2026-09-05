@@ -258,7 +258,7 @@ overrides:
   rolldown: 1.2.7
 
 patchedDependencies:
-  uview-plus@3.8.113: 3d8b8efde6f9eb007054a36d8986d211c950ff1e98c1cea65e507d001d5e56d8
+  uview-plus@3.8.113: 65917f1784a3ded1c4483daa760f73397945f689f390b1c2108d847c536fdb46
 
 importers:
 
@@ -2016,7 +2016,7 @@ importers:
     dependencies:
       uview-plus:
         specifier: 'catalog:'
-        version: 3.8.113(patch_hash=3d8b8efde6f9eb007054a36d8986d211c950ff1e98c1cea65e507d001d5e56d8)
+        version: 3.8.113(patch_hash=65917f1784a3ded1c4483daa760f73397945f689f390b1c2108d847c536fdb46)
       wevu:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
@@ -32082,7 +32082,7 @@ snapshots:
 
   uuid@9.0.1: {}
 
-  uview-plus@3.8.113(patch_hash=3d8b8efde6f9eb007054a36d8986d211c950ff1e98c1cea65e507d001d5e56d8): {}
+  uview-plus@3.8.113(patch_hash=65917f1784a3ded1c4483daa760f73397945f689f390b1c2108d847c536fdb46): {}
 
   valibot@1.4.2(typescript@6.0.3):
     optionalDependencies:

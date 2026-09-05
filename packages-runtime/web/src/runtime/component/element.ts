@@ -10,6 +10,7 @@ import type {
   TriggerEventOptions,
 } from './types'
 import type { ClassAttributeElement } from './virtualHost'
+import { WEVU_HOST_COMMIT_PROMISE_KEY } from '@weapp-core/constants'
 import { html } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import { createIntersectionObserverBridge } from '../polyfill/intersectionObserver'
@@ -89,6 +90,7 @@ export function createComponentElementClass({
     #virtualHostPartTokens = new Set<string>()
     #virtualHostRootElement: ClassAttributeElement | undefined
     #needsSetDataRecovery = false
+    #hostCommitPromise: Promise<void> | undefined
     readonly data!: DataRecord
     readonly properties!: DataRecord
 
@@ -139,14 +141,27 @@ export function createComponentElementClass({
       runtimeState.lifetimes.created?.call(this.#publicInstance)
     }
 
+    get [WEVU_HOST_COMMIT_PROMISE_KEY]() {
+      if (this.#hostCommitPromise) {
+        return this.#hostCommitPromise
+      }
+      if (!supportsLit) {
+        return undefined
+      }
+      // 动态 Lit 基类不会在静态声明中暴露 updateComplete。
+      const litElement = this as unknown as { updateComplete: Promise<boolean> }
+      return litElement.updateComplete
+    }
+
     setData(patch: DataRecord, callback?: () => void) {
       const changed = this.#applyDataPatch(patch)
       if (supportsLit && (changed || this.#needsSetDataRecovery)) {
         if (!changed) {
           this.requestUpdate()
         }
-        const updateComplete = (this as unknown as { updateComplete: Promise<boolean> }).updateComplete
-        return updateComplete.then(
+        // 动态 Lit 基类不会在静态声明中暴露 updateComplete。
+        const litElement = this as unknown as { updateComplete: Promise<boolean> }
+        const commitPromise = litElement.updateComplete.then(
           () => {
             this.#needsSetDataRecovery = false
             callback?.()
@@ -156,6 +171,8 @@ export function createComponentElementClass({
             throw cause
           },
         )
+        this.#hostCommitPromise = commitPromise
+        return commitPromise
       }
       callback?.()
     }
