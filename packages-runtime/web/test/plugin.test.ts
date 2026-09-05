@@ -266,7 +266,7 @@ describe('weappWebPlugin', () => {
 
     const transformed = await (plugin.transform as ((...args: any[]) => any)).call({}, pageSource, pagePath)
     expect(transformed.code).toContain('installWebModuleRegistration')
-    expect(transformed.code).toContain('registerWebWevuComponentFactory(defineWevuComponent, { data: () => ({ ready: true }) }')
+    expect(transformed.code).toContain('registerWebWevuComponentFactory(defineWevuComponent, { id: "pages/index/index"')
     expect(transformed.code).not.toContain('registerWebWevuComponent(')
     expect(transformed.code).toContain('kind: "page"')
   })
