@@ -1,5 +1,6 @@
 ---
 "wevu": major
+"@wevu/compiler": patch
 "weapp-vite": minor
 "create-weapp-vite": patch
 ---
