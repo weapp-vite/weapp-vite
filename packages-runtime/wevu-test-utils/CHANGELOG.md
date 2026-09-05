@@ -1,5 +1,14 @@
 # @wevu/test-utils
 
+## 0.2.12
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.2
+  - @wevu/compiler@8.0.0
+  - wevu@8.0.0
+
 ## 0.2.11
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @weapp-vite/web
 
+## 1.4.22
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.2
+  - wevu@8.0.0
+
 ## 1.4.21
 
 ### Patch Changes

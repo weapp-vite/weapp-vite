@@ -1,5 +1,12 @@
 # @mpcore/simulator
 
+## 0.4.4
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.2
+
 ## 0.4.3
 
 ### Patch Changes
