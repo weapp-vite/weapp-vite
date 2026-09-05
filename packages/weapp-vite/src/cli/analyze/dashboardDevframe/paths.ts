@@ -61,6 +61,18 @@ function addDashboardAllowedSourcePath(
   paths.set(normalizedPath, rootKinds)
 }
 
+function resolveDashboardSourceRootKind(
+  sourceType: AnalyzeSubpackagesResult['packages'][number]['files'][number]['sourceType'],
+): DashboardSourceRootKind {
+  if (sourceType === 'plugin') {
+    return 'plugin'
+  }
+  if (sourceType === 'workspace' || sourceType === 'node_modules') {
+    return 'project'
+  }
+  return 'src'
+}
+
 export function createDashboardContentAllowlist(result: AnalyzeSubpackagesResult): DashboardContentAllowlist {
   const artifactPaths = new Set<string>()
   const sourcePaths = new Map<string, Set<DashboardSourceRootKind>>()
@@ -68,7 +80,9 @@ export function createDashboardContentAllowlist(result: AnalyzeSubpackagesResult
   for (const packageReport of result.packages) {
     for (const file of packageReport.files) {
       addDashboardAllowedPath(artifactPaths, file.file)
-      addDashboardAllowedSourcePath(sourcePaths, file.source, 'src')
+      const fileSourceType = file.sourceType
+        ?? file.modules?.find(module => module.source === file.source)?.sourceType
+      addDashboardAllowedSourcePath(sourcePaths, file.source, resolveDashboardSourceRootKind(fileSourceType))
       for (const module of file.modules ?? []) {
         addDashboardAllowedSourcePath(
           sourcePaths,

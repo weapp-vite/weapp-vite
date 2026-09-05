@@ -49,6 +49,7 @@ export interface PackageFileEntry {
   dynamicImports?: string[]
   modules?: ModuleInFile[]
   source?: string
+  sourceType?: ModuleSourceType
 }
 
 export interface PackageReport {

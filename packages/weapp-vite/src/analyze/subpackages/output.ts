@@ -115,9 +115,16 @@ function processAsset(
     ...getCompressedSizes(assetBuffer),
   }
 
-  const assetSource = resolveAssetSource(asset.fileName, ctx)
+  let assetSource
+  for (const sourceFile of [...(asset.originalFileNames ?? []), asset.fileName]) {
+    assetSource = resolveAssetSource(sourceFile, ctx)
+    if (assetSource) {
+      break
+    }
+  }
   if (assetSource) {
     entry.source = assetSource.source
+    entry.sourceType = assetSource.sourceType
     registerModuleInPackage(
       modules,
       assetSource.absolute,

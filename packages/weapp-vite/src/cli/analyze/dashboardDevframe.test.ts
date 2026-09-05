@@ -259,15 +259,10 @@ describe('dashboard Devframe protocol', () => {
     const result = createAnalyzeResult([
       {
         file: 'plugin.js',
-        type: 'chunk',
+        type: 'asset',
         from: 'main',
-        modules: [
-          {
-            id: 'plugin-root/components/plugin.ts',
-            source: 'plugin-root/components/plugin.ts',
-            sourceType: 'plugin',
-          },
-        ],
+        source: 'plugin-root/components/plugin.ts',
+        sourceType: 'plugin',
       },
     ])
 

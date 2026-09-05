@@ -125,11 +125,13 @@ export function useAppSelect<TValue extends string>(
     if (event.key === 'Home' && isOpen.value) {
       event.preventDefault()
       setActiveIndex(findEnabledIndex(0, 1))
+      void nextTick(scrollActiveOptionIntoView)
       return
     }
     if (event.key === 'End' && isOpen.value) {
       event.preventDefault()
       setActiveIndex(findEnabledIndex(props.options.length - 1, -1))
+      void nextTick(scrollActiveOptionIntoView)
       return
     }
     if ((event.key === 'Enter' || event.key === ' ') && isOpen.value) {

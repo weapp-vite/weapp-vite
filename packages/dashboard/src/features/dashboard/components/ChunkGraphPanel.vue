@@ -69,6 +69,28 @@ const visibleGraph = computed(() => createAnalyzeChunkGraphView(graph.value, {
   query: searchQuery.value,
 }))
 const selectedNode = computed(() => visibleGraph.value.nodes.find(node => node.id === selectedNodeId.value) ?? null)
+const visibleNodeById = computed(() => new Map(visibleGraph.value.nodes.map(node => [node.id, node])))
+const selectedImportEdges = computed(() => {
+  const node = selectedNode.value
+  if (!node) {
+    return []
+  }
+  return visibleGraph.value.edges
+    .filter(edge => (
+      edge.kind !== 'contains'
+      && (edge.source === node.id || edge.target === node.id)
+    ))
+    .map((edge) => {
+      const outgoing = edge.source === node.id
+      const relatedNode = visibleNodeById.value.get(outgoing ? edge.target : edge.source)
+      return {
+        id: edge.id,
+        kind: edge.kind === 'dynamic-import' ? '动态' : '静态',
+        label: relatedNode?.label ?? (outgoing ? edge.target : edge.source),
+        relation: outgoing ? '导入' : '被导入',
+      }
+    })
+})
 
 const packageColorById = computed(() => {
   const palette = props.theme === 'dark'
@@ -288,6 +310,14 @@ onBeforeUnmount(() => {
   simulation = undefined
 })
 
+watch(packageOptions, (options) => {
+  if (
+    packageFilter.value !== 'all'
+    && !options.some(option => option.packageId === packageFilter.value)
+  ) {
+    packageFilter.value = 'all'
+  }
+})
 watch([visibleGraph, packageColorById], ([view]) => {
   if (selectedNodeId.value && !view.nodes.some(node => node.id === selectedNodeId.value)) {
     selectedNodeId.value = null
@@ -371,6 +401,20 @@ watch(() => props.theme, () => void renderGraph())
           <div v-if="selectedNode.moduleCount !== undefined" class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Modules</dt><dd class="min-w-0 truncate text-right font-mono">{{ selectedNode.moduleCount }}</dd></div>
           <div v-if="selectedNode.fileCount !== undefined" class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Files</dt><dd class="min-w-0 truncate text-right font-mono">{{ selectedNode.fileCount }}</dd></div>
         </dl>
+        <div class="mt-3 min-w-0">
+          <h4 class="text-[10px] font-medium uppercase tracking-[0.12em] text-(--dashboard-text-soft)">
+            Import edges
+          </h4>
+          <p v-if="!selectedImportEdges.length" class="mt-1 text-xs text-(--dashboard-text-soft)">
+            当前节点没有可见的静态或动态 import。
+          </p>
+          <ul v-else class="mt-1 grid max-h-32 gap-1 overflow-y-auto text-xs">
+            <li v-for="edge in selectedImportEdges" :key="edge.id" class="min-w-0">
+              <span class="font-medium">{{ edge.relation }} · {{ edge.kind }}</span>
+              <span class="ml-1 break-all text-(--dashboard-text-soft)">{{ edge.label }}</span>
+            </li>
+          </ul>
+        </div>
       </div>
       <div v-else class="min-w-0 border-l-0 border-(--dashboard-border) px-3 py-5 text-xs leading-5 text-(--dashboard-text-soft) sm:border-l xl:border-l-0">
         使用节点选择器查看 package、体积和模块数；图中仍可滚轮缩放与拖动画布。蓝色实线是静态 import，橙色虚线是动态 import。

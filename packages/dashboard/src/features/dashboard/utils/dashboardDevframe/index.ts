@@ -125,6 +125,16 @@ function handleSessionFailure(session: DashboardConnectionSession, error: unknow
   }
 }
 
+function handleRefreshFailure(session: DashboardConnectionSession, error: unknown) {
+  if (activeSession !== session || session.disposed) {
+    return
+  }
+  dashboardConnectionStatus.value = 'error'
+  dashboardConnectionError.value = error instanceof Error ? error : new Error(String(error))
+  disposeSession(session, true)
+  scheduleReconnect()
+}
+
 function isStaleAnalyzeRevisionError(error: unknown) {
   return error instanceof Error && STALE_DASHBOARD_ANALYZE_REVISION_RE.test(error.message)
 }
@@ -199,8 +209,7 @@ function createDashboardSession(client: DevframeRpcClient): DashboardConnectionS
         return
       }
       void hydrateDashboardState(session, state).catch((error) => {
-        dashboardConnectionStatus.value = 'error'
-        dashboardConnectionError.value = error instanceof Error ? error : new Error(String(error))
+        handleRefreshFailure(session, error)
       })
     },
   })

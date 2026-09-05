@@ -289,6 +289,34 @@ describe('dashboard Devframe client', () => {
     })
   })
 
+  it('reconnects after a post-connect pagination failure', async () => {
+    vi.useFakeTimers()
+    const first = createFakeClient(createResult('first'))
+    const recovered = createFakeClient(createResult('recovered'))
+    connectDevframeMock
+      .mockResolvedValueOnce(first.client)
+      .mockResolvedValueOnce(recovered.client)
+
+    const transport = await loadDashboardTransport()
+    await transport.connectDashboardDevframe()
+    first.setSnapshot(createResult('broken'), createResult('first'), 1)
+    first.call.mockRejectedValueOnce(new Error('refresh failed'))
+    first.emitDashboardState()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(transport.dashboardConnectionStatus.value).toBe('error')
+    expect(transport.dashboardConnectionError.value?.message).toBe('refresh failed')
+    expect(first.client.close).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(250)
+    await vi.waitFor(() => {
+      expect(connectDevframeMock).toHaveBeenCalledTimes(2)
+      expect(transport.dashboardAnalyzeSnapshot.value?.current.packages[0]?.id).toBe('recovered')
+      expect(transport.dashboardConnectionStatus.value).toBe('connected')
+      expect(transport.dashboardConnectionError.value).toBeNull()
+    })
+  })
+
   it('closes an established client when authorization is revoked', async () => {
     vi.useFakeTimers()
     const control = createFakeClient(createResult('authorized'))
