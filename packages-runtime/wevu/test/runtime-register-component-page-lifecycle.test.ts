@@ -60,7 +60,7 @@ function createRuntimeAppStub() {
     config: { globalProperties: {} },
   } as unknown as RuntimeApp<any, any, any>
 
-  return { app }
+  return { app, runtime }
 }
 
 describe('registerComponent (page lifecycles)', () => {
@@ -114,5 +114,99 @@ describe('registerComponent (page lifecycles)', () => {
     expect(userRouteDone).toHaveBeenCalledWith('r')
     expect(userReady).toHaveBeenCalledWith('d')
     expect(userDetached).toHaveBeenCalledWith('e')
+  })
+
+  it('finishes page detached phases before rethrowing the first failure', () => {
+    const { app } = createRuntimeAppStub()
+    const order: string[] = []
+    const firstFailure = new Error('page unload failed')
+    mockState.hooks.onUnload.mockImplementationOnce(() => {
+      order.push('page:onUnload')
+      throw firstFailure
+    })
+
+    registerComponent(app, {}, undefined, undefined, {
+      __wevu_isPage: true,
+      beforeUnmount() {
+        order.push('vue:beforeUnmount')
+      },
+      beforeDestroy() {
+        order.push('vue:beforeDestroy')
+      },
+      unmounted() {
+        order.push('vue:unmounted')
+        throw new Error('unmounted failed')
+      },
+      destroyed() {
+        order.push('vue:destroyed')
+      },
+      lifetimes: {
+        detached() {
+          order.push('user:detached')
+          throw new Error('detached failed')
+        },
+      },
+    } as any)
+
+    const options = componentCalls.pop()!
+    const instance: any = {}
+
+    expect(() => options.lifetimes.detached.call(instance)).toThrow(firstFailure)
+    expect(order).toEqual([
+      'vue:beforeUnmount',
+      'vue:beforeDestroy',
+      'page:onUnload',
+      'user:detached',
+      'vue:unmounted',
+      'vue:destroyed',
+    ])
+  })
+
+  it('finishes component detached phases after runtime teardown fails', () => {
+    const { app, runtime } = createRuntimeAppStub()
+    const order: string[] = []
+    const firstFailure = new Error('runtime unmount failed')
+    runtime.unmount.mockImplementation(() => {
+      order.push('runtime:unmount')
+      throw firstFailure
+    })
+
+    registerComponent(app, {}, undefined, undefined, {
+      __wevu_isPage: false,
+      beforeUnmount() {
+        order.push('vue:beforeUnmount')
+      },
+      beforeDestroy() {
+        order.push('vue:beforeDestroy')
+      },
+      unmounted() {
+        order.push('vue:unmounted')
+        throw new Error('unmounted failed')
+      },
+      destroyed() {
+        order.push('vue:destroyed')
+      },
+      lifetimes: {
+        detached() {
+          order.push('user:detached')
+          throw new Error('detached failed')
+        },
+      },
+    } as any)
+
+    const options = componentCalls.pop()!
+    const instance: any = { properties: {}, setData: vi.fn() }
+    options.lifetimes.created.call(instance)
+    options.lifetimes.attached.call(instance)
+
+    expect(() => options.lifetimes.detached.call(instance)).toThrow(firstFailure)
+    expect(order).toEqual([
+      'vue:beforeUnmount',
+      'vue:beforeDestroy',
+      'runtime:unmount',
+      'vue:unmounted',
+      'vue:destroyed',
+      'user:detached',
+    ])
   })
 })

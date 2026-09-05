@@ -31,7 +31,8 @@ import { registerRuntimeLayoutHosts, unregisterRuntimeLayoutHosts } from '../../
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../../pageLayout'
 import { getMiniProgramRuntimeGlobalObject } from '../../platform'
 import { getOwnerProxy } from '../../scopedSlots'
-import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
+import { runTeardownSteps } from '../../teardown'
+import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 import { registerNativeComponentDefinition } from './registerNativeDefinition'
 
@@ -362,30 +363,48 @@ export function registerComponentDefinition<D extends object, C extends Computed
         }
       },
       detached: function detached(this: InternalRuntimeState, ...args: any[]) {
-        callVueLifecycle(this, 'beforeUnmount', args)
-        callVueLifecycle(this, 'beforeDestroy', args)
-        scheduleOwnerTemplateRefUpdate(this)
-        callHookList(this, 'onDetached', args)
+        const layoutHostBridge = (this as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY]
         if (isPage && typeof (pageLifecycleHooks as any).onUnload === 'function') {
-          ;(pageLifecycleHooks as any).onUnload.call(this, ...args)
-          if (typeof (userLifetimes as any).detached === 'function') {
-            ;(userLifetimes as any).detached.apply(this, args)
-          }
-          callVueLifecycle(this, 'unmounted', args)
-          callVueLifecycle(this, 'destroyed', args)
+          runTeardownSteps([
+            () => callVueLifecycle(this, 'beforeUnmount', args),
+            () => callVueLifecycle(this, 'beforeDestroy', args),
+            () => scheduleOwnerTemplateRefUpdate(this),
+            () => callHookList(this, 'onDetached', args),
+            () => (pageLifecycleHooks as any).onUnload.call(this, ...args),
+            () => {
+              if (typeof (userLifetimes as any).detached === 'function') {
+                ;(userLifetimes as any).detached.apply(this, args)
+              }
+            },
+            () => callVueLifecycle(this, 'unmounted', args),
+            () => callVueLifecycle(this, 'destroyed', args),
+          ])
           return
         }
-        clearTemplateRefs(this)
-        if (Array.isArray(layoutHosts) && layoutHosts.length && (this as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY]) {
-          unregisterRuntimeLayoutHosts(layoutHosts, (this as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY])
-          delete (this as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY]
-        }
-        teardownRuntimeInstance(this)
-        callVueLifecycle(this, 'unmounted', args)
-        callVueLifecycle(this, 'destroyed', args)
-        if (typeof (userLifetimes as any).detached === 'function') {
-          ;(userLifetimes as any).detached.apply(this, args)
-        }
+        runTeardownSteps([
+          () => callVueLifecycle(this, 'beforeUnmount', args),
+          () => callVueLifecycle(this, 'beforeDestroy', args),
+          () => scheduleOwnerTemplateRefUpdate(this),
+          () => callHookList(this, 'onDetached', args),
+          () => {
+            if (Array.isArray(layoutHosts) && layoutHosts.length && layoutHostBridge) {
+              unregisterRuntimeLayoutHosts(layoutHosts, layoutHostBridge)
+            }
+          },
+          () => {
+            if (layoutHostBridge) {
+              delete (this as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY]
+            }
+          },
+          () => teardownRuntimeInstance(this),
+          () => callVueLifecycle(this, 'unmounted', args),
+          () => callVueLifecycle(this, 'destroyed', args),
+          () => {
+            if (typeof (userLifetimes as any).detached === 'function') {
+              ;(userLifetimes as any).detached.apply(this, args)
+            }
+          },
+        ])
       },
       error: function error(this: InternalRuntimeState, ...args: any[]) {
         callHookList(this, 'onError', args)
