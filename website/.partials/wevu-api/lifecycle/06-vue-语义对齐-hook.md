@@ -73,7 +73,7 @@
 **示例：** 见 [本组示例](/wevu/api/lifecycle#example-lifecycle-vue)。
 
 - 对齐语义：Vue `beforeUnmount`
-- 源码行为：在实际卸载时、template refs、effect scope 和暴露方法清理前执行；回调中新建的响应式资源归属当前实例，随后一并停止。setup 失败回滚不触发卸载生命周期。
+- 源码行为：在实际卸载时、template refs、effect scope 和暴露方法清理前执行；回调同步阶段中新建的响应式资源归属当前实例，随后一并停止。setup 失败回滚不触发卸载生命周期。
 
 ### `onUnmounted()` {#onunmounted}
 

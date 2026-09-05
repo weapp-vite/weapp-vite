@@ -1,6 +1,6 @@
 import type { InternalRuntimeState } from '@/runtime/types'
 import { describe, expect, it, vi } from 'vitest'
-import { onBeforeUnmount, onMounted, onScopeDispose, onUnmounted, ref, watchSyncEffect } from '@/index'
+import { getCurrentScope, onBeforeUnmount, onMounted, onScopeDispose, onUnmounted, ref, watchSyncEffect } from '@/index'
 import { createApp } from '@/runtime/app'
 import { callHookList } from '@/runtime/hooks'
 import { mountRuntimeInstance, teardownRuntimeInstance } from '@/runtime/register'
@@ -66,6 +66,31 @@ describe('runtime: before-unmount lifecycle', () => {
 
     expect(seen).toEqual([])
     teardownRuntimeInstance(target)
+    expect(seen).toEqual([0])
+    expect(disposed).toHaveBeenCalledTimes(1)
+    source.value++
+    expect(seen).toEqual([0])
+  })
+
+  it('runs before-unmount hooks after the instance scope was stopped early', () => {
+    const source = ref(0)
+    const seen: number[] = []
+    const disposed = vi.fn()
+    const target: InternalRuntimeState = { setData: vi.fn() }
+    let instanceScope = getCurrentScope()
+
+    mountRuntimeInstance(target, createApp({}), undefined, () => {
+      instanceScope = getCurrentScope()
+      onBeforeUnmount(() => {
+        watchSyncEffect(() => seen.push(source.value))
+        onScopeDispose(disposed)
+      })
+      return {}
+    })
+
+    instanceScope?.stop()
+    teardownRuntimeInstance(target)
+
     expect(seen).toEqual([0])
     expect(disposed).toHaveBeenCalledTimes(1)
     source.value++

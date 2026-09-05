@@ -28,7 +28,7 @@ import {
   WEVU_TEMPLATE_REFS_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
-import { isRef } from '../../reactivity'
+import { effectScope as createEffectScope, isRef } from '../../reactivity'
 import { isDeepEqualValue } from '../app/setData/snapshot'
 import { callHookList } from '../hooks'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
@@ -677,12 +677,16 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
 
   runTeardownSteps([
     () => {
-      if (!options?.skipHooks && runtime) {
-        if (effectScope) {
+      if (!options?.skipHooks && runtime && target[WEVU_HOOKS_KEY]?.[WEVU_ON_BEFORE_UNMOUNT_HOOK]) {
+        if (effectScope?.active) {
           effectScope.run(() => callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK))
         }
         else {
-          callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK)
+          const teardownScope = createEffectScope(true)
+          runTeardownSteps([
+            () => teardownScope.run(() => callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK)),
+            () => teardownScope.stop(),
+          ])
         }
       }
     },

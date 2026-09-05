@@ -191,6 +191,30 @@ describe('reactivity (batch + effectScope)', () => {
     expect(disposed).toHaveBeenCalledTimes(1)
   })
 
+  it('restores the owner scope while a raw effect reruns', () => {
+    const changed = ref(0)
+    const live = effectScope()
+    const dying = effectScope()
+    let child!: EffectScope
+    const disposed = vi.fn()
+
+    live.run(() => effect(() => {
+      if (changed.value === 0) {
+        return
+      }
+      child = effectScope()
+      child.run(() => onScopeDispose(disposed))
+    }))
+    dying.run(() => onScopeDispose(() => changed.value++))
+
+    dying.stop()
+    expect(child.active).toBe(true)
+    expect(disposed).not.toHaveBeenCalled()
+    live.stop()
+    expect(child.active).toBe(false)
+    expect(disposed).toHaveBeenCalledTimes(1)
+  })
+
   it('does not attach an unowned subscriber to the stopping scope', () => {
     const changed = ref(0)
     const input = ref(1)
