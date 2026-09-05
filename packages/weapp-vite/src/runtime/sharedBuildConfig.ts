@@ -21,6 +21,7 @@ const REG_COMMONJS_HELPERS = /commonjsHelpers\.js$/
 const REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID = /(?:^|[/\\])(?:@wevu[/\\]web-apis|web-apis[/\\]dist[/\\]index\.(?:m?js|cjs)|weapp-vite[/\\](?:dist[/\\]web-apis\.mjs|src[/\\](?:webApis\.ts|runtime[/\\]webApis[/\\]index\.ts)))(?:$|[?#])/
 const REG_WEAPP_VITE_RUNTIME_VENDOR_ID = /(?:^|[/\\])weapp-vite[/\\](?:dist[/\\]runtime\.mjs|src[/\\]plugins[/\\]vue[/\\]runtime\.ts)(?:$|[?#])/
 const REG_HASHED_DIST_CHUNK_ID = /(?:^|[/\\])dist[/\\](?:dev[/\\])?([^/\\-]+)-([\w-]{6,})\.(?:m?js|cjs)(?:$|[?#])/
+const REG_WEVU_RUNTIME_SUPPORT_ID = /(?:^|\/)@weapp-core\/(?:constants|shared)\/dist\//
 const STABLE_HASHED_DIST_CHUNK_PRIORITY = ['src']
 const STABLE_HASHED_DIST_CHUNK_PRIORITY_BY_PACKAGE: Record<string, string[]> = {
   wevu: [
@@ -251,6 +252,17 @@ function isWeappViteRuntimeModuleId(id: string) {
   return REG_WEAPP_VITE_RUNTIME_VENDOR_ID.test(cleanedAbsoluteId)
 }
 
+function isPackagedRuntimeModuleId(id: string) {
+  const cleanedAbsoluteId = normalizeSharedPathCandidate(id)
+  REG_NODE_MODULES_DIR.lastIndex = 0
+  return REG_NODE_MODULES_DIR.test(cleanedAbsoluteId)
+    || Boolean(resolveDistChunkPackageToken(cleanedAbsoluteId))
+}
+
+function isWevuRuntimeSupportModuleId(id: string) {
+  return REG_WEVU_RUNTIME_SUPPORT_ID.test(normalizeSharedPathCandidate(id))
+}
+
 function resolveStableHashedDistChunkFileName(
   chunk: { moduleIds?: string[] | readonly string[], facadeModuleId?: string | null },
 ) {
@@ -262,8 +274,14 @@ function resolveStableHashedDistChunkFileName(
   let facadeMatchedChunk: { baseName: string, fileName: string } | undefined
 
   const wevuOwnedCandidates = candidateIds.map(id => isWevuOwnedModuleId(id))
-  if (wevuOwnedCandidates.some(Boolean) && wevuOwnedCandidates.some(isOwned => !isOwned)) {
-    return undefined
+  const hasWevuOwnedCandidate = wevuOwnedCandidates.some(Boolean)
+  const hasOtherPackagedCandidate = candidateIds.some((id, index) => (
+    !wevuOwnedCandidates[index]
+    && !isWevuRuntimeSupportModuleId(id)
+    && isPackagedRuntimeModuleId(id)
+  ))
+  if (hasWevuOwnedCandidate && hasOtherPackagedCandidate) {
+    return 'weapp-vendors/common.js'
   }
   const firstWevuVendorFileName = candidateIds
     .map(id => resolveWevuStableVendorFileName(id))

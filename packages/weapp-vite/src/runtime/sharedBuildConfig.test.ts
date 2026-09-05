@@ -186,19 +186,26 @@ describe('sharedBuildConfig', () => {
     const hashedRuntime = '/project/node_modules/wevu/dist/runtime-BD3I133J.mjs'
     const preservedRuntime = '/project/node_modules/wevu/dist/dev/internal-runtime.mjs'
     const dependency = '/project/node_modules/.pnpm/dayjs@1.11.23/node_modules/dayjs/dayjs.min.js'
+    const runtimeSupport = '/project/node_modules/@weapp-core/constants/dist/index.js'
     const mixedChunk = {
       name: 'common',
       moduleIds: [hashedRuntime, dependency],
     }
     const output = createSharedBuildOutput(createConfigService(), () => [])
 
-    expect(resolveStableHashedDistChunkFileName(mixedChunk)).toBeUndefined()
-    expect(output.chunkFileNames(mixedChunk)).toBe('[name].js')
+    expect(resolveStableHashedDistChunkFileName(mixedChunk)).toBe('weapp-vendors/common.js')
+    expect(output.chunkFileNames(mixedChunk)).toBe('weapp-vendors/common.js')
     expect(resolveStableHashedDistChunkFileName({
       moduleIds: ['wevu', dependency],
-    })).toBeUndefined()
+    })).toBe('weapp-vendors/common.js')
     expect(resolveStableHashedDistChunkFileName({
       moduleIds: ['wevu', preservedRuntime, hashedRuntime],
+    })).toBe('weapp-vendors/wevu-runtime.js')
+    expect(resolveStableHashedDistChunkFileName({
+      moduleIds: [hashedRuntime, '/project/src/layouts/shared.ts'],
+    })).toBe('weapp-vendors/wevu-runtime.js')
+    expect(resolveStableHashedDistChunkFileName({
+      moduleIds: [hashedRuntime, runtimeSupport, '/project/src/layouts/shared.ts'],
     })).toBe('weapp-vendors/wevu-runtime.js')
   })
 
