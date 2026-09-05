@@ -678,7 +678,12 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
   runTeardownSteps([
     () => {
       if (!options?.skipHooks && runtime) {
-        callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK)
+        if (effectScope) {
+          effectScope.run(() => callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK))
+        }
+        else {
+          callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK)
+        }
       }
     },
     () => {

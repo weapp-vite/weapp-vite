@@ -1,6 +1,6 @@
 import type { InternalRuntimeState } from '@/runtime/types'
 import { describe, expect, it, vi } from 'vitest'
-import { onBeforeUnmount, onMounted, onScopeDispose, onUnmounted } from '@/index'
+import { onBeforeUnmount, onMounted, onScopeDispose, onUnmounted, ref, watchSyncEffect } from '@/index'
 import { createApp } from '@/runtime/app'
 import { callHookList } from '@/runtime/hooks'
 import { mountRuntimeInstance, teardownRuntimeInstance } from '@/runtime/register'
@@ -48,6 +48,28 @@ describe('runtime: before-unmount lifecycle', () => {
     teardownRuntimeInstance(target)
     expect(events).toEqual(['mounted', 'beforeUnmount', 'unmounted', 'disposed'])
     expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('owns reactive work and disposals registered by before-unmount hooks', () => {
+    const source = ref(0)
+    const seen: number[] = []
+    const disposed = vi.fn()
+    const target: InternalRuntimeState = { setData: vi.fn() }
+
+    mountRuntimeInstance(target, createApp({}), undefined, () => {
+      onBeforeUnmount(() => {
+        watchSyncEffect(() => seen.push(source.value))
+        onScopeDispose(disposed)
+      })
+      return {}
+    })
+
+    expect(seen).toEqual([])
+    teardownRuntimeInstance(target)
+    expect(seen).toEqual([0])
+    expect(disposed).toHaveBeenCalledTimes(1)
+    source.value++
+    expect(seen).toEqual([0])
   })
 
   it('rolls back a failed setup without firing unmount lifecycle hooks', () => {

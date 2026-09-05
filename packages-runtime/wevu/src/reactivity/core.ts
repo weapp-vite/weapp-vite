@@ -187,6 +187,10 @@ class EffectScopeImpl implements EffectScope {
   }
 }
 
+interface ScopedReactiveEffect<T = any> extends ReactiveEffect<T> {
+  _scope: EffectScopeImpl | undefined
+}
+
 export function effectScope(detached = false): EffectScope {
   return new EffectScopeImpl(detached)
 }
@@ -227,6 +231,8 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
       return fn()
     }
     cleanupEffect(effect)
+    const previousScope = activeEffectScope
+    activeEffectScope = effect._scope
     try {
       effect._running = true
       effectStack.push(effect)
@@ -237,8 +243,9 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
       effectStack.pop()
       activeEffect = effectStack[effectStack.length - 1] ?? null
       effect._running = false
+      activeEffectScope = previousScope
     }
-  } as ReactiveEffect<T>
+  } as ScopedReactiveEffect<T>
 
   effect.deps = []
   effect.scheduler = options.scheduler
@@ -246,6 +253,7 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
   effect.active = true
   effect._running = false
   effect._fn = fn
+  effect._scope = activeEffectScope
 
   return effect
 }
@@ -281,7 +289,14 @@ export function track(target: object, key: PropertyKey) {
 
 function scheduleEffect(ef: ReactiveEffect) {
   if (ef.scheduler) {
-    ef.scheduler()
+    const previousScope = activeEffectScope
+    activeEffectScope = (ef as ScopedReactiveEffect)._scope
+    try {
+      ef.scheduler()
+    }
+    finally {
+      activeEffectScope = previousScope
+    }
     return
   }
   if (batchDepth > 0) {

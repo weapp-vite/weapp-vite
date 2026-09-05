@@ -1,7 +1,7 @@
-import type { EffectScope } from '@/reactivity'
+import type { ComputedRef, EffectScope } from '@/reactivity'
 import type { ReactiveEffect } from '@/reactivity/core'
 import { describe, expect, it, vi } from 'vitest'
-import { batch, effect, effectScope, onScopeDispose, reactive, watchEffect } from '@/reactivity'
+import { batch, computed, effect, effectScope, onScopeDispose, reactive, ref, watch, watchEffect } from '@/reactivity'
 
 describe('reactivity (batch + effectScope)', () => {
   it('batch dedupes sync effects', () => {
@@ -162,5 +162,49 @@ describe('reactivity (batch + effectScope)', () => {
 
     state.count++
     expect(runs).toBe(1)
+  })
+
+  it('preserves the owner of live synchronous subscribers during another scope teardown', () => {
+    const changed = ref(0)
+    const input = ref(1)
+    const live = effectScope()
+    const dying = effectScope()
+    let derived!: ComputedRef<number>
+    let child!: EffectScope
+    const disposed = vi.fn()
+
+    live.run(() => watch(changed, () => {
+      derived = computed(() => input.value * 2)
+      child = effectScope()
+      child.run(() => onScopeDispose(disposed))
+    }, { flush: 'sync' }))
+    dying.run(() => onScopeDispose(() => changed.value++))
+
+    dying.stop()
+    expect(derived.value).toBe(2)
+    input.value = 2
+    expect(derived.value).toBe(4)
+    expect(child.active).toBe(true)
+    expect(disposed).not.toHaveBeenCalled()
+    live.stop()
+    expect(child.active).toBe(false)
+    expect(disposed).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not attach an unowned subscriber to the stopping scope', () => {
+    const changed = ref(0)
+    const input = ref(1)
+    let derived!: ComputedRef<number>
+    const stopWatch = watch(changed, () => {
+      derived = computed(() => input.value * 2)
+    }, { flush: 'sync' })
+    const dying = effectScope()
+    dying.run(() => onScopeDispose(() => changed.value++))
+
+    dying.stop()
+    expect(derived.value).toBe(2)
+    input.value = 2
+    expect(derived.value).toBe(4)
+    stopWatch()
   })
 })

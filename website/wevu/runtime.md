@@ -301,7 +301,7 @@ setWevuDefaults({
 - `onDeactivated` → `onHide`
 - `onErrorCaptured` → `onError`
 - `onBeforeMount`：在 `setup()` 同步阶段立即执行（小程序无精确对应时机）
-- `onBeforeUnmount`：在实际卸载时、template refs、effect scope 和暴露方法清理前执行
+- `onBeforeUnmount`：在实际卸载时、template refs、effect scope 和暴露方法清理前执行；回调中新建的响应式资源归属当前实例，随后一并停止
 - `onBeforeUpdate` / `onUpdated`：在每次 `setData` 前/后触发（小程序没有“更新生命周期”，Wevu 通过在更新链路里补齐语义）
 
 ## bindModel：模型绑定
