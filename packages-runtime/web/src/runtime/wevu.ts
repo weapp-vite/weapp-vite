@@ -63,11 +63,12 @@ export function registerWebWevuApp(options: Record<string, any>, meta: WevuRegis
  * 将 Wevu 页面或组件注册过程接入 Web 自定义元素。
  */
 export function registerWebWevuComponent(options: Record<string, any>, meta: WevuRegisterMeta): void {
+  // Web 依赖 prop 构造器解码 DOM 属性，不使用小程序宿主的 nullable transport 降级。
   withRuntimeConstructor('Component', (definition) => {
     return meta.kind === 'page'
       ? registerPage(definition, meta)
       : registerComponent(definition, meta)
-  }, () => createWevuComponent(options))
+  }, () => createWevuComponent({ ...options, allowNullPropInput: false }))
 }
 
 /**
