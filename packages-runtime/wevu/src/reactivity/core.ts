@@ -90,7 +90,7 @@ export function endBatch() {
     return
   }
   batchDepth--
-  if (batchDepth === 0) {
+  if (batchDepth === 0 && !isFlushingBatch) {
     flushBatchedEffects()
   }
 }
