@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const runWechatCliCommandMock = vi.hoisted(() => vi.fn())
+const openWechatIdeProjectByHttpMock = vi.hoisted(() => vi.fn())
 const resetWechatIdeFileUtilsByHttpMock = vi.hoisted(() => vi.fn())
 const withMiniProgramMock = vi.hoisted(() => vi.fn())
 
@@ -9,6 +10,7 @@ vi.mock('../src/cli/run-wechat-cli', () => ({
 }))
 
 vi.mock('../src/cli/http', () => ({
+  openWechatIdeProjectByHttp: openWechatIdeProjectByHttpMock,
   resetWechatIdeFileUtilsByHttp: resetWechatIdeFileUtilsByHttpMock,
 }))
 
@@ -29,6 +31,8 @@ describe('wechat command helpers', () => {
     vi.resetModules()
     runWechatCliCommandMock.mockReset()
     runWechatCliCommandMock.mockResolvedValue(undefined)
+    openWechatIdeProjectByHttpMock.mockReset()
+    openWechatIdeProjectByHttpMock.mockResolvedValue('OK')
     resetWechatIdeFileUtilsByHttpMock.mockReset()
     resetWechatIdeFileUtilsByHttpMock.mockResolvedValue(undefined)
     withMiniProgramMock.mockReset()
@@ -66,7 +70,23 @@ describe('wechat command helpers', () => {
     ])
   })
 
-  it('builds open argv with project locator and trust-project flag', async () => {
+  it('opens a project through http without invoking the official cli', async () => {
+    const { openWechatIde } = await import('../src/cli/wechat-commands')
+
+    await openWechatIde({
+      platform: 'weapp',
+      projectPath: './dist/dev/mp-weixin',
+      trustProject: true,
+    })
+
+    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith(
+      expect.stringMatching(createPathSuffixPattern('dist/dev/mp-weixin')),
+    )
+    expect(runWechatCliCommandMock).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the official cli when http project open fails', async () => {
+    openWechatIdeProjectByHttpMock.mockRejectedValue(new Error('service unavailable'))
     const { openWechatIde } = await import('../src/cli/wechat-commands')
 
     await openWechatIde({
@@ -82,6 +102,27 @@ describe('wechat command helpers', () => {
       '--platform',
       'weapp',
       '--trust-project',
+    ])
+  })
+
+  it('uses the official cli when opening by appid without a project path', async () => {
+    const { openWechatIde } = await import('../src/cli/wechat-commands')
+
+    await openWechatIde({
+      appid: 'wx123',
+      extAppid: 'wx456',
+      platform: 'weapp',
+    })
+
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith([
+      'open',
+      '--appid',
+      'wx123',
+      '--ext-appid',
+      'wx456',
+      '--platform',
+      'weapp',
     ])
   })
 
