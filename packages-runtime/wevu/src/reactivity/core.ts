@@ -38,26 +38,42 @@ export function startBatch() {
   batchDepth++
 }
 
+function takeBatchedEffect(effects: Set<ReactiveEffect>): ReactiveEffect | undefined {
+  const next = effects.values().next()
+  if (next.done) {
+    return undefined
+  }
+  effects.delete(next.value)
+  return next.value
+}
+
 function flushBatchedEffects() {
+  let firstError: unknown
+  let hasError = false
   isFlushingBatch = true
   try {
     while (batchedComputedEffects.size || batchedEffects.size) {
-      while (batchedComputedEffects.size) {
-        const effects = [...batchedComputedEffects]
-        batchedComputedEffects.clear()
-        for (const ef of effects) {
-          runScheduledEffect(ef)
-        }
+      const effect = takeBatchedEffect(batchedComputedEffects)
+        ?? takeBatchedEffect(batchedEffects)
+      if (!effect) {
+        continue
       }
-      const effects = [...batchedEffects]
-      batchedEffects.clear()
-      for (const ef of effects) {
-        runScheduledEffect(ef)
+      try {
+        runScheduledEffect(effect)
+      }
+      catch (error) {
+        if (!hasError) {
+          firstError = error
+          hasError = true
+        }
       }
     }
   }
   finally {
     isFlushingBatch = false
+  }
+  if (hasError) {
+    throw firstError
   }
 }
 
@@ -277,13 +293,29 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
   return effect
 }
 
-export function effect<T = any>(fn: () => T, options: EffectOptions = {}): ReactiveEffect<T> {
-  const _effect = createReactiveEffect(fn, options)
-  recordEffectScope(_effect)
+function createEffect<T>(
+  fn: () => T,
+  options: EffectOptions,
+  computed: boolean,
+): ReactiveEffect<T> {
+  const runner = createReactiveEffect(fn, options)
+  runner._computed = computed
+  recordEffectScope(runner)
   if (!options.lazy) {
-    _effect()
+    runner()
   }
-  return _effect
+  return runner
+}
+
+export function effect<T = any>(fn: () => T, options: EffectOptions = {}): ReactiveEffect<T> {
+  return createEffect(fn, options, false)
+}
+
+export function createComputedEffect<T>(
+  fn: () => T,
+  options: EffectOptions = {},
+): ReactiveEffect<T> {
+  return createEffect(fn, options, true)
 }
 
 export function track(target: object, key: PropertyKey) {

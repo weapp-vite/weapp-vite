@@ -62,6 +62,51 @@ describe('reactivity (batch + effectScope)', () => {
     expect(computedFirst).toEqual(['0:0', '3:1'])
   })
 
+  it('re-prioritizes computed effects between ordinary batch consumers', () => {
+    const state = reactive({ source: 0, derived: 0 })
+    const total = computed(() => state.derived)
+    const snapshots: string[] = []
+
+    effect(() => {
+      if (state.source > 0) {
+        state.derived = state.source
+      }
+    })
+    effect(() => {
+      snapshots.push(`${state.source}:${total.value}`)
+    })
+
+    batch(() => {
+      state.source = 1
+    })
+
+    expect(snapshots).toEqual(['0:0', '1:1'])
+  })
+
+  it('drains reentrant effects before rethrowing a batch failure', () => {
+    const state = reactive({ source: 0, downstream: 0 })
+    const downstreamValues: number[] = []
+    const failure = new Error('batch effect failed')
+
+    effect(() => {
+      if (state.source > 0) {
+        state.downstream = state.source
+        throw failure
+      }
+    })
+    effect(() => {
+      downstreamValues.push(state.downstream)
+    })
+
+    expect(() => batch(() => {
+      state.source = 1
+    })).toThrow(failure)
+    expect(downstreamValues).toEqual([0, 1])
+
+    expect(() => batch(() => {})).not.toThrow()
+    expect(downstreamValues).toEqual([0, 1])
+  })
+
   it('effectScope stops inner effects/watchers', async () => {
     const state = reactive({ n: 0 })
     const scope = effectScope()
