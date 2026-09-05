@@ -29,71 +29,105 @@ export function useTreemapData(
       packageLabelMap: packageLabelMap.value,
       moduleUsageCount: moduleUsageCount.value,
       filter: filterRef?.value ?? createDefaultTreemapFilterState(),
-      theme: resolvedTheme.value,
     })
   })
 
-  const treemapOption = computed(() => ({
-    backgroundColor: 'transparent',
-    tooltip: {
-      formatter: (params: { data?: { meta?: TreemapNodeMeta } }) => formatTreemapTooltip(params.data?.meta),
-      borderColor: resolvedTheme.value === 'dark' ? 'rgba(148, 163, 184, 0.16)' : 'rgba(71, 85, 105, 0.14)',
-      backgroundColor: resolvedTheme.value === 'dark' ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.96)',
-      textStyle: {
-        color: resolvedTheme.value === 'dark' ? '#e2e8f0' : '#0f172a',
+  const treemapOption = computed(() => {
+    const isDark = resolvedTheme.value === 'dark'
+    const textColor = isDark ? '#f8fafc' : '#0f172a'
+    const mutedTextColor = isDark ? '#94a3b8' : '#64748b'
+    const panelColor = isDark ? '#141820' : '#ffffff'
+    const borderColor = isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(71, 85, 105, 0.18)'
+    const nodeBorderColor = '#475569'
+
+    return {
+      backgroundColor: 'transparent',
+      tooltip: {
+        formatter: (params: { data?: { meta?: TreemapNodeMeta } }) => formatTreemapTooltip(params.data?.meta),
+        confine: true,
+        borderColor,
+        borderWidth: 1,
+        backgroundColor: isDark ? 'rgba(15, 18, 24, 0.96)' : 'rgba(255, 255, 255, 0.98)',
+        extraCssText: 'max-width: 26rem; white-space: normal; overflow-wrap: anywhere; border-radius: 8px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);',
+        padding: [10, 12],
+        textStyle: {
+          color: textColor,
+          fontSize: 12,
+          lineHeight: 19,
+        },
       },
-    },
-    series: [
-      {
-        type: 'treemap',
-        nodeClick: 'zoomToNode',
-        roam: 'move',
-        roamTrigger: 'global',
-        zoomToNodeRatio: 0.72,
-        breadcrumb: {
-          show: false,
-        },
-        visibleMin: 1,
-        label: {
-          show: true,
-          backgroundColor: 'rgba(255, 255, 255, 0.58)',
-          borderRadius: 3,
-          color: '#17231d',
-          formatter: '{b}',
-          fontSize: 12,
-          fontWeight: 600,
-          lineHeight: 16,
-          minMargin: 4,
-          overflow: 'truncate',
-          padding: [1, 4],
-          textBorderWidth: 0,
-        },
-        upperLabel: {
-          show: true,
-          color: '#17231d',
-          fontSize: 12,
-          fontWeight: 700,
-          lineHeight: 16,
-          overflow: 'truncate',
-          textBorderWidth: 0,
-          textShadowBlur: 1,
-          textShadowColor: 'rgba(255, 255, 255, 0.32)',
-        },
-        itemStyle: {
-          borderColor: resolvedTheme.value === 'dark' ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.92)',
-          borderWidth: 2,
-          gapWidth: 2,
-        },
-        emphasis: {
-          itemStyle: {
-            borderColor: resolvedTheme.value === 'dark' ? '#f8fafc' : '#0f172a',
+      series: [
+        {
+          type: 'treemap',
+          top: 8,
+          right: 8,
+          bottom: 38,
+          left: 8,
+          sort: 'desc',
+          squareRatio: (1 + Math.sqrt(5)) / 2,
+          nodeClick: 'zoomToNode',
+          roam: true,
+          roamTrigger: 'global',
+          zoomToNodeRatio: 0.82,
+          breadcrumb: {
+            show: true,
+            left: 8,
+            right: 8,
+            bottom: 6,
+            height: 24,
+            emptyItemWidth: 24,
+            itemStyle: {
+              color: panelColor,
+              borderColor,
+              borderWidth: 1,
+              textStyle: {
+                color: mutedTextColor,
+                fontSize: 11,
+              },
+            },
+            emphasis: {
+              itemStyle: {
+                color: isDark ? '#1d2530' : '#f1f5f9',
+              },
+            },
           },
+          visibleMin: 14,
+          label: {
+            show: true,
+            color: textColor,
+            formatter: '{b}',
+            fontSize: 11,
+            fontWeight: 500,
+            lineHeight: 15,
+            minMargin: 5,
+            overflow: 'truncate',
+            textBorderWidth: 0,
+          },
+          upperLabel: {
+            show: true,
+            color: textColor,
+            fontSize: 12,
+            fontWeight: 650,
+            lineHeight: 17,
+            overflow: 'truncate',
+            textBorderWidth: 0,
+          },
+          itemStyle: {
+            borderColor: nodeBorderColor,
+            borderWidth: 1,
+            gapWidth: 1,
+          },
+          emphasis: {
+            itemStyle: {
+              borderWidth: 2,
+            },
+          },
+          levels: TREEMAP_LEVELS,
+          data: treemapNodes.value,
         },
-        levels: TREEMAP_LEVELS,
-        data: treemapNodes.value,
-      },
-    ],
-  }))
+      ],
+    }
+  })
 
   return {
     treemapOption,

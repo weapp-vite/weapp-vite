@@ -24,6 +24,8 @@ describe('analyze subpackages output', () => {
           fileName: 'app.js',
           code: 'const message = "hello dashboard";\n'.repeat(20),
           isEntry: true,
+          imports: ['shared.js'],
+          dynamicImports: ['lazy.js'],
           modules: {
             '/project/src/pages/index.ts': {
               renderedLength: 24,
@@ -49,8 +51,42 @@ describe('analyze subpackages output', () => {
     expect(chunk.size).toBeGreaterThan(0)
     expect(chunk.gzipSize).toBeGreaterThan(0)
     expect(chunk.brotliSize).toBeGreaterThan(0)
+    expect(chunk.imports).toEqual(['shared.js'])
+    expect(chunk.dynamicImports).toEqual(['lazy.js'])
     expect(asset.size).toBeGreaterThan(0)
     expect(asset.gzipSize).toBeGreaterThan(0)
     expect(asset.brotliSize).toBeGreaterThan(0)
+  })
+
+  it('attributes emitted plugin assets from their original source file', () => {
+    const packages = new Map()
+    const modules = new Map()
+    const context = {
+      configService: {
+        absolutePluginRoot: '/project/plugin',
+        absoluteSrcRoot: '/project/miniprogram',
+        relativeAbsoluteSrcRoot: (value: string) => value
+          .replace('/project/plugin/', 'plugin/')
+          .replace('/project/miniprogram/', ''),
+      },
+    } as any
+
+    processOutput({
+      output: [
+        {
+          type: 'asset',
+          fileName: 'plugin/components/card.wxss',
+          originalFileNames: ['/project/plugin/components/card.wxss'],
+          source: '.card {}',
+        },
+      ],
+    } as unknown as RolldownOutput, 'main', context, {
+      subPackageRoots: new Set(),
+      independentRoots: new Set(),
+    }, packages, modules)
+
+    const asset = packages.get('__main__').files.get('plugin/components/card.wxss')
+    expect(asset.source).toBe('plugin/components/card.wxss')
+    expect(asset.sourceType).toBe('plugin')
   })
 })

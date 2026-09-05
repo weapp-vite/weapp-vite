@@ -5,6 +5,7 @@ $brand: red;
 // https://example.com
 .page {
   color: $brand;
+  background-image: url('./background.svg');
 
   .title {
     color: $brand;

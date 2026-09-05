@@ -31,8 +31,8 @@ const {
 </script>
 
 <template>
-  <section class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden">
-    <div class="grid gap-3">
+  <section class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
+    <div class="grid min-w-0 gap-3">
       <PackageHealthPanel :health="packageHealth" />
 
       <div :class="surfaceStyles({ padding: 'md' })" class="grid gap-3">
@@ -57,7 +57,7 @@ const {
       </div>
     </div>
 
-    <div class="grid min-h-0 auto-rows-max gap-3 overflow-y-auto pr-1 xl:grid-cols-2">
+    <div class="grid max-h-[48rem] min-h-0 min-w-0 auto-rows-max gap-3 overflow-y-auto pr-1 xl:max-h-none xl:grid-cols-2">
       <AppEmptyState v-if="filteredPackageInsightCards.length === 0" class="xl:col-span-2">
         没有匹配当前筛选条件的包。
       </AppEmptyState>
@@ -69,7 +69,7 @@ const {
           surfaceStyles({ padding: 'md' }),
           pkg.selected ? 'border-(--dashboard-accent)' : '',
         ]"
-        class="border transition"
+        class="min-w-0 max-w-full border transition"
       >
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">
@@ -82,7 +82,7 @@ const {
               {{ pkg.summaryText }}
             </p>
           </div>
-          <div class="text-right">
+          <div class="max-w-[45%] shrink-0 text-right">
             <p class="text-xl font-semibold text-(--dashboard-text)">
               {{ pkg.totalBytesLabel }}
             </p>

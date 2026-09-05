@@ -65,6 +65,31 @@ function normalizeModuleId(id: string) {
   }).replaceAll('\\', '/')
 }
 
+export function isWevuOwnedModuleId(id: string) {
+  if ((WEVU_RUNTIME_MODULE_IDS as readonly string[]).includes(id)) {
+    return true
+  }
+
+  const normalized = normalizeModuleId(id)
+  const workspaceMarker = '/packages-runtime/wevu/'
+  const workspaceIndex = normalized.lastIndexOf(workspaceMarker)
+  if (workspaceIndex >= 0) {
+    return !normalized
+      .slice(workspaceIndex + workspaceMarker.length)
+      .split('/')
+      .includes('node_modules')
+  }
+
+  const nodeModulesMarker = '/node_modules/'
+  const nodeModulesIndex = normalized.lastIndexOf(nodeModulesMarker)
+  if (nodeModulesIndex < 0) {
+    return false
+  }
+  return normalized
+    .slice(nodeModulesIndex + nodeModulesMarker.length)
+    .split('/', 1)[0] === 'wevu'
+}
+
 export function resolveWevuPreservedModulePath(id: string) {
   const normalized = normalizeModuleId(id)
   const sourceMarker = '/packages-runtime/wevu/src/'

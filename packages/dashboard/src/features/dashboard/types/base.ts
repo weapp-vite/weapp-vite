@@ -58,7 +58,7 @@ export type DashboardIconName
     | 'token-surface'
     | 'token-type'
 
-export type DashboardTab = 'overview' | 'diagnostics' | 'review' | 'treemap' | 'files' | 'source' | 'packages' | 'modules'
+export type DashboardTab = 'overview' | 'diagnostics' | 'review' | 'graph' | 'treemap' | 'files' | 'source' | 'packages' | 'modules'
 
 export interface ThemeOption {
   value: 'system' | 'light' | 'dark'

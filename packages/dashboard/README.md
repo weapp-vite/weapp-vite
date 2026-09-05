@@ -49,7 +49,18 @@ weapp-vite build --analyze
 weapp-vite dev --analyze
 ```
 
-`weapp-vite` 会在运行时检查当前项目中是否安装了 `@weapp-vite/dashboard`。如果存在，就读取本包 `dist/` 中的静态资源并启动本地分析页面。
+`weapp-vite` 会在运行时检查当前项目中是否安装了 `@weapp-vite/dashboard`。如果存在，就读取本包 `dist/` 中的静态资源并启动本地 DevTools 页面。
+
+Dashboard 通过挂载在 `/__weapp-vite/` 下的 Devframe bridge 连接 CLI：
+
+- Analyze 数据通过带 revision、SHA-256 描述符和固定页上限的只读 RPC 分页获取
+- revision 与最近运行事件通过服务端单向通知同步；WebSocket 断开后会重连并重新查询权威状态
+- Dashboard 不创建可由客户端回写的业务 shared state，并拒绝通用 shared-state set/patch
+- 源码与产物内容通过按 revision 缓存的 allowlist RPC 读取，拒绝符号链接、读取竞态和超过 2 MiB 的文件
+- Devframe 显式启用 OTP 与 loopback Origin 门禁；终端会输出可直接打开的 magic link
+- 页面不再依赖 HTML 全局变量、业务 SSE 或 Vite HMR 作为业务数据通道
+
+微信开发者工具继续负责模拟器、原生调试和真机能力；Dashboard 是构建、HMR、包体、诊断和自动化状态的伴随 DevTools。
 
 ## 项目结构
 
@@ -91,6 +102,7 @@ packages/dashboard
 - `echarts`
 - `tailwindcss`
 - `weapp-tailwindcss`（Web generator）
+- `devframe`
 
 ## 开发
 
@@ -100,6 +112,12 @@ packages/dashboard
 
 ```bash
 pnpm --filter @weapp-vite/dashboard dev
+```
+
+该命令只适合检查空态和组件。验证真实 Devframe、Analyze 和运行事件链路时使用：
+
+```bash
+pnpm --filter dashboard-ui-lab dev:ui
 ```
 
 生产构建：

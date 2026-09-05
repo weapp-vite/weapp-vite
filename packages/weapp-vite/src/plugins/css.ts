@@ -80,6 +80,30 @@ const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
 const TAILWIND_CONTENT_HMR_NONCE_RE = /\n\/\* weapp-vite tailwind-content [^*\n]+ \*\/$/
 const VITE_PREPROCESS_STYLE_RE = /\.(?:acss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
 const TAILWIND_GENERATOR_PLACEHOLDER = '/*! weapp-tailwindcss generator-placeholder */'
+const VITE_STYLE_ASSET_PLACEHOLDER_RE = /__VITE_ASSET__([\w$]+)__(?:\$_(.*?)__)?/g
+
+interface CssEmitPluginContext {
+  addWatchFile?: (id: string) => void
+  emitFile: (asset: { type: 'asset', fileName: string, source: string, originalFileName?: string }) => void
+  getFileName?: (referenceId: string) => string
+}
+
+function resolveViteStyleAssetPlaceholders(
+  source: string,
+  fileName: string,
+  pluginCtx: CssEmitPluginContext,
+) {
+  if (!source.includes('__VITE_ASSET__') || typeof pluginCtx.getFileName !== 'function') {
+    return source
+  }
+
+  return source.replace(VITE_STYLE_ASSET_PLACEHOLDER_RE, (_placeholder, referenceId: string, postfix = '') => {
+    const assetFileName = toPosixPath(pluginCtx.getFileName!(referenceId))
+    const relativePath = path.posix.relative(path.posix.dirname(toPosixPath(fileName)), assetFileName)
+    const assetUrl = relativePath.startsWith('.') ? relativePath : `./${relativePath}`
+    return `${encodeURI(assetUrl)}${postfix}`
+  })
+}
 
 const pendingOwnerStyleSources = new WeakMap<CompilerContext, Map<string, string[]>>()
 
@@ -313,7 +337,7 @@ function resolveFreshHmrStyleSourcePath(
 
 function emitCssAssetIfChanged(
   ctx: CompilerContext,
-  pluginCtx: { emitFile: (asset: { type: 'asset', fileName: string, source: string, originalFileName?: string }) => void },
+  pluginCtx: CssEmitPluginContext,
   bundle: OutputBundle,
   fileName: string,
   source: string,
@@ -325,7 +349,8 @@ function emitCssAssetIfChanged(
   const cache = ctx.runtimeState?.css?.emittedSource
   const existing = bundle[fileName]
   const forceEmit = hasTailwindContentDirtyReason(ctx)
-  const emittedSource = appendTailwindContentHmrNonce(ctx, source)
+  const resolvedSource = resolveViteStyleAssetPlaceholders(source, fileName, pluginCtx)
+  const emittedSource = appendTailwindContentHmrNonce(ctx, resolvedSource)
   if (existing?.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
     if (!forceEmit && isUnchangedDevHmrStyleAsset(ctx, normalizedFileName, current, emittedSource)) {
@@ -335,11 +360,11 @@ function emitCssAssetIfChanged(
     if (current !== emittedSource) {
       existing.source = emittedSource
     }
-    cache?.set(normalizedFileName, source)
+    cache?.set(normalizedFileName, resolvedSource)
     return true
   }
 
-  if (!forceEmit && cache?.get(normalizedFileName) === source) {
+  if (!forceEmit && cache?.get(normalizedFileName) === resolvedSource) {
     return false
   }
 
@@ -349,7 +374,7 @@ function emitCssAssetIfChanged(
     ...(options?.originalFileName ? { originalFileName: options.originalFileName } : {}),
     source: emittedSource,
   })
-  cache?.set(normalizedFileName, source)
+  cache?.set(normalizedFileName, resolvedSource)
   return true
 }
 
@@ -419,10 +444,7 @@ function analyzeBundleStyles(bundle: OutputBundle): BundleStyleAnalysis {
 
 export async function emitStyleSidecarAsset(
   ctx: CompilerContext,
-  pluginCtx: {
-    emitFile: (asset: { type: 'asset', fileName: string, source: string, originalFileName?: string }) => void
-    addWatchFile?: (id: string) => void
-  },
+  pluginCtx: CssEmitPluginContext,
   bundle: OutputBundle,
   stylePath: string,
   resolvedConfig?: ResolvedConfig,
@@ -604,7 +626,11 @@ async function handleBundleEntry(
           this.addWatchFile(normalizeWatchPath(dependency))
         }
       }
-      const processedCss = stripManagedTailwindcssOutputMarkers(await processCssWithCache(css, configService))
+      const processedCss = resolveViteStyleAssetPlaceholders(
+        stripManagedTailwindcssOutputMarkers(await processCssWithCache(css, configService)),
+        fileName,
+        this,
+      )
       if (fileName !== bundleKey) {
         delete bundle[bundleKey]
         emitCssAssetIfChanged(ctx, this, bundle, fileName, processedCss)

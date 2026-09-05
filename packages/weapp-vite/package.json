@@ -155,6 +155,7 @@
     "cac": "^7.0.0",
     "chokidar": "^5.0.0",
     "comment-json": "catalog:",
+    "devframe": "catalog:",
     "fdir": "catalog:",
     "htmlparser2": "catalog:",
     "local-pkg": "^1.2.1",

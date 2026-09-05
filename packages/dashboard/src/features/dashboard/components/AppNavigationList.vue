@@ -46,65 +46,61 @@ function isNavigationSectionActive(item: DashboardNavItem) {
 </script>
 
 <template>
-  <nav class="grid gap-2 overflow-y-auto pr-1">
+  <nav class="grid gap-0.5 overflow-y-auto px-2 py-2" aria-label="DevTools modules">
     <div
       v-for="item in items"
       :key="item.to"
-      class="grid gap-1"
+      class="grid gap-0.5"
     >
       <RouterLink
         :to="item.to"
         :class="cn(
-          'group rounded-md border px-3 py-3 transition',
+          'group relative flex min-h-9 items-center gap-2 rounded px-2.5 py-2 text-[13px] transition-colors',
           isNavigationSectionActive(item)
-            ? 'border-(--dashboard-border-strong) bg-(--dashboard-panel-strong) shadow-(--dashboard-shadow)'
-            : 'border-(--dashboard-border) bg-(--dashboard-panel-muted) hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)',
+            ? 'bg-(--dashboard-accent-soft) font-medium text-(--dashboard-text)'
+            : 'text-(--dashboard-text-muted) hover:bg-(--dashboard-panel-muted) hover:text-(--dashboard-text)',
         )"
         @click="emit('navigate')"
       >
-        <div class="flex items-start gap-3">
-          <span
-            :class="cn(
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-md',
-              isNavigationSectionActive(item)
-                ? 'bg-(--dashboard-accent-soft) text-(--dashboard-accent)'
-                : 'bg-(--dashboard-panel) text-(--dashboard-text-soft) group-hover:text-(--dashboard-accent)',
-            )"
-          >
-            <span class="h-5 w-5">
-              <DashboardIcon :name="item.iconName" />
-            </span>
-          </span>
-          <div class="min-w-0">
-            <p class="font-medium text-(--dashboard-text)">
-              {{ item.label }}
-            </p>
-            <p
-              class="text-xs leading-5 text-(--dashboard-text-soft)"
-              :class="mobile ? 'mt-1' : 'mt-0.5 truncate'"
-            >
-              {{ item.caption }}
-            </p>
-          </div>
-        </div>
+        <span
+          v-if="isNavigationSectionActive(item)"
+          class="absolute inset-y-1 left-0 w-0.5 rounded-full bg-(--dashboard-accent)"
+        />
+        <span
+          :class="cn(
+            'h-4 w-4 shrink-0',
+            isNavigationSectionActive(item) ? 'text-(--dashboard-accent)' : 'text-(--dashboard-text-soft)',
+          )"
+        >
+          <DashboardIcon :name="item.iconName" />
+        </span>
+        <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
       </RouterLink>
+
+      <p
+        v-if="mobile || isNavigationSectionActive(item)"
+        class="px-8 pb-1 text-[10px] leading-4 text-(--dashboard-text-soft)"
+      >
+        {{ item.caption }}
+      </p>
+
       <div
         v-if="item.children?.length && isNavigationSectionActive(item)"
-        class="ml-5 grid gap-1 border-l border-(--dashboard-border) pl-3"
+        class="ml-4 grid gap-0.5 border-l border-(--dashboard-border) pl-2"
       >
         <RouterLink
           v-for="child in item.children"
           :key="child.to"
           :to="child.to"
           :class="cn(
-            'group flex min-w-0 items-center gap-2 rounded-md px-2.5 py-2 text-sm transition',
+            'flex min-h-8 min-w-0 items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors',
             isNavigationItemActive(child.to)
-              ? 'bg-(--dashboard-accent-soft) text-(--dashboard-accent)'
+              ? 'bg-(--dashboard-panel-muted) font-medium text-(--dashboard-accent)'
               : 'text-(--dashboard-text-soft) hover:bg-(--dashboard-panel-muted) hover:text-(--dashboard-text)',
           )"
           @click="emit('navigate')"
         >
-          <span class="h-4 w-4 shrink-0">
+          <span class="h-3.5 w-3.5 shrink-0">
             <DashboardIcon :name="child.iconName" />
           </span>
           <span class="min-w-0 truncate">{{ child.label }}</span>

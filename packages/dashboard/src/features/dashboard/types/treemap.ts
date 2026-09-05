@@ -54,4 +54,5 @@ export interface TreemapNode {
   itemStyle?: Record<string, unknown>
   label?: Record<string, unknown>
   upperLabel?: Record<string, unknown>
+  emphasis?: Record<string, unknown>
 }

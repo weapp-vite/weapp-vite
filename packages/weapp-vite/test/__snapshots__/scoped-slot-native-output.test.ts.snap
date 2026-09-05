@@ -25,10 +25,6 @@ exports[`scoped slot native output snapshots > locks the emitted file tree and a
 
 exports[`scoped slot native output snapshots > locks the emitted file tree and app text outputs > text-outputs 1`] = `
 {
-  "app.js": "//#region <fixture>/src/app.ts
-App({});
-//#endregion
-",
   "app.json": "{
   "pages": [
     "pages/index/index"
@@ -39,26 +35,6 @@ App({});
   "subPackages": []
 }
 ",
-  "components/native-tabbar-item/index.js": "//#region <fixture>/src/components/native-tabbar-item/index.ts
-Component({
-	options: { virtualHost: true },
-	properties: {
-		icon: {
-			type: String,
-			value: ""
-		},
-		label: {
-			type: String,
-			value: ""
-		},
-		name: {
-			type: String,
-			value: ""
-		}
-	}
-});
-//#endregion
-",
   "components/native-tabbar-item/index.json": "{
   "component": true
 }
@@ -67,7 +43,6 @@ Component({
   <slot />
 </view>
 ",
-  "components/native-tabbar/__weapp_vite_scoped_slot_generic_component.js": "Component({})",
   "components/native-tabbar/__weapp_vite_scoped_slot_generic_component.json": "{
   "component": true,
   "options": {
@@ -76,9 +51,6 @@ Component({
 }
 ",
   "components/native-tabbar/__weapp_vite_scoped_slot_generic_component.wxml": "<view wx:if="{{false}}" />",
-  "components/native-tabbar/index.js": "//#region <fixture>/src/components/native-tabbar/index.ts
-Component({ properties: { vueSlots: { type: null, value: null }, __wvSlotOwnerId: { type: String, value: "" }, __wvSlotScope: { type: null, value: null } }, options: { virtualHost: true } });
-//#endregion",
   "components/native-tabbar/index.json": "{
   "component": true,
   "componentGenerics": {
@@ -92,51 +64,6 @@ Component({ properties: { vueSlots: { type: null, value: null }, __wvSlotOwnerId
   <slot /><scoped-slots-default wx:if="{{__wvSlotOwnerId}}" __wvSlotOwnerId="{{__wvSlotOwnerId}}" __wvSlotProps="{{[]}}" __wvSlotScope="{{__wvSlotScope}}" />
 </view>
 ",
-  "pages/index/index.__scoped-slot-default-0.js": "const require_common = require("../../weapp-vendors/wevu-runtime.js");
-const require_templateRef = require("../../weapp-vendors/wevu-runtime.js");
-//#region \\0weapp-vite:scoped-slot:pages/index/index.__scoped-slot-default-0
-var createWevuScopedSlotComponent = (typeof globalThis !== "undefined" ? globalThis : void 0)?.__weapp_vite_createScopedSlotComponent ?? require_templateRef.__wevuScopedSlotCreator;
-var __wevuComputed = { __wv_bind_0: function() {
-	return (() => {
-		try {
-			return require_common.$(this.__wvOwnerProxy.tabItems);
-		} catch (__wv_expr_err) {
-			return;
-		}
-	})();
-} };
-if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotComponent({
-	"__wevuBindingManifest": Object.freeze({
-		"version": 1,
-		"sourceFile": "src/pages/index/index.vue",
-		"bindings": [
-			{
-				"id": "b0",
-				"outputPath": "__wv_bind_0"
-			},
-			{
-				"id": "b1",
-				"outputPath": "__wvOwner.tabItems"
-			},
-			{
-				"id": "b2",
-				"outputPath": "__wvOwner.tabItems"
-			},
-			{
-				"id": "b3",
-				"outputPath": "__wvOwner.tabItems"
-			},
-			{
-				"id": "b4",
-				"outputPath": "__wvOwner.tabItems"
-			}
-		],
-		"features": { "scopedSlots": true }
-	}),
-	computed: __wevuComputed
-});
-//#endregion
-",
   "pages/index/index.__scoped-slot-default-0.json": "{
   "component": true,
   "styleIsolation": "apply-shared",
@@ -146,57 +73,6 @@ if (typeof createWevuScopedSlotComponent === "function") createWevuScopedSlotCom
 }
 ",
   "pages/index/index.__scoped-slot-default-0.wxml": "<van-tabbar-item wx:for="{{__wv_bind_0}}" wx:for-item="__wv_item_0" wx:for-index="__wv_index_1" wx:key="label" icon="{{__wv_item_0.icon}}" name="{{__wv_item_0.to.name}}" replace to="{{__wv_item_0.to}}">{{__wv_item_0.label}}</van-tabbar-item>",
-  "pages/index/index.js": "const require_templateRef = require("../../weapp-vendors/wevu-runtime.js");
-//#region <fixture>/src/pages/index/index.vue
-var __wevuOptions = {
-	setData: { pick: [
-		"__wvOwnerId",
-		"vueSlots",
-		"__wvSlotOwnerId",
-		"__wvSlotScope"
-	] },
-	data() {
-		return { tabItems: [{
-			label: "home",
-			icon: "home",
-			to: { name: "home" }
-		}, {
-			label: "user",
-			icon: "user",
-			to: { name: "user" }
-		}] };
-	},
-	allowNullPropInput: true,
-	__wevu_isPage: true,
-	setup(__props, { expose }) {
-		expose();
-		return { tabItems: [{
-			label: "home",
-			icon: "home",
-			to: { name: "home" }
-		}, {
-			label: "user",
-			icon: "user",
-			to: { name: "user" }
-		}] };
-	},
-	"__wevuBindingManifest": Object.freeze({
-		version: 1,
-		sourceFile: "src/pages/index/index.vue",
-		bindings: [{
-			id: "b0",
-			outputPath: "__wvOwnerId"
-		}, {
-			id: "b1",
-			outputPath: "__wvOwnerId"
-		}],
-		features: { scopedSlots: true }
-	})
-};
-require_templateRef.__wevuScopedSlotCreator(__wevuOptions);
-//#endregion
-exports.default = __wevuOptions;
-",
   "pages/index/index.json": "{
   "usingComponents": {
     "van-tabbar": "/components/native-tabbar/index",

@@ -134,7 +134,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-3 shadow-(--dashboard-shadow)">
+  <section class="grid min-h-0 min-w-0 gap-3 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-3 shadow-(--dashboard-shadow) xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
     <div class="mb-2 flex items-center justify-between gap-3">
       <div>
         <h3 class="text-sm font-semibold text-(--dashboard-text)">
@@ -149,8 +149,8 @@ onBeforeUnmount(() => {
       </span>
     </div>
 
-    <div class="grid min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] gap-3 overflow-hidden">
-      <div class="grid grid-cols-3 gap-2">
+    <div class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:grid-rows-[auto_auto_auto_minmax(0,1fr)] xl:overflow-hidden">
+      <div class="grid gap-2 sm:grid-cols-3">
         <button
           v-for="preset in budgetSandboxPresets"
           :key="preset.id"
@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <div class="grid grid-cols-2 gap-2">
+      <div class="grid gap-2 sm:grid-cols-2">
         <label class="grid gap-1 text-[11px] text-(--dashboard-text-soft)">
           总包 MB
           <input v-model.number="draft.totalMiB" class="h-8 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2 text-sm text-(--dashboard-text) outline-none focus:border-(--dashboard-accent)" min="0.01" step="0.01" type="number">
@@ -202,7 +202,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="min-h-0 overflow-y-auto pr-1">
+      <div class="max-h-80 min-h-0 overflow-y-auto pr-1 xl:max-h-none">
         <AppEmptyState v-if="projectedWarningItems.length === 0" compact>
           当前沙盘预算下没有预计告警。
         </AppEmptyState>

@@ -321,6 +321,8 @@ export function createAnalyzeController(options: {
         artifactRoot: configService.outDir,
         cwd: configService.cwd,
         packageManagerAgent: configService.packageManager.agent,
+        pluginRoot: configService.absolutePluginRoot,
+        srcRoot: configService.absoluteSrcRoot,
         silentStartupLog: true,
         previousResult: initialAnalyze.previousResult,
         initialEvents: [

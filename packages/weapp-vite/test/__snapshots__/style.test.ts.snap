@@ -34,6 +34,13 @@ exports[`build style > dist > app.wxss 1`] = `
 }"
 `;
 
+exports[`build style > dist > assets/background.svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2">
+  <path fill="#f00" d="M0 0h2v2H0z"/>
+</svg>
+"
+`;
+
 exports[`build style > dist > components/Navbar/Navbar.js 1`] = `
 "//#region test/fixture-projects/weapp-vite/style/src/components/Navbar/Navbar.ts
 Component({});
@@ -58,6 +65,13 @@ exports[`build style > dist > components/Navbar/Navbar.wxss 1`] = `
 ".navbar {
   color: red;
 }"
+`;
+
+exports[`build style > dist > pages/index/background.svg 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2">
+  <path fill="#f00" d="M0 0h2v2H0z"/>
+</svg>
+"
 `;
 
 exports[`build style > dist > pages/index/index.js 1`] = `
@@ -91,6 +105,7 @@ exports[`build style > dist > pages/index/index.wxss 1`] = `
 
 .page {
   color: red;
+  background-image: url("../../assets/background.svg");
 }
 
 .page .title {
@@ -124,10 +139,12 @@ exports[`build style > dist 1`] = `
   "app.js",
   "app.json",
   "app.wxss",
+  "assets/background.svg",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
   "components/Navbar/Navbar.wxss",
+  "pages/index/background.svg",
   "pages/index/index.js",
   "pages/index/index.json",
   "pages/index/index.wxml",
