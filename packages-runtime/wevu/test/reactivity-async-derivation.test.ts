@@ -354,6 +354,38 @@ describe('useAsyncDerivation', () => {
     stop(runner)
   })
 
+  it('does not leak thenable adoption reads into the effect that calls refresh', async () => {
+    const source = ref(1)
+    let thenGetterReads = 0
+    const thenable = {
+      get then() {
+        thenGetterReads++
+        void source.value
+        return (resolve: (value: string) => void) => {
+          resolve('ready')
+        }
+      },
+    } as unknown as PromiseLike<string>
+    const state = useAsyncDerivation(() => thenable, { immediate: false })
+    let effectRuns = 0
+    let settled!: Promise<void>
+    const runner = effect(() => {
+      effectRuns++
+      if (effectRuns === 1) {
+        settled = state.refresh()
+      }
+    })
+
+    await settled
+    expect(state.value).toBe('ready')
+    expect(thenGetterReads).toBe(1)
+    expect(effectRuns).toBe(1)
+
+    source.value = 2
+    expect(effectRuns).toBe(1)
+    stop(runner)
+  })
+
   it('keeps ordinary computed values synchronous', () => {
     const source = ref(2)
     const doubled = computed(() => source.value * 2)
