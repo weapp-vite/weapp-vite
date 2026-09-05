@@ -20,6 +20,9 @@ const eventMap: Record<string, string> = {
   scroll: 'scroll',
   scrolltoupper: 'scrolltoupper',
   scrolltolower: 'scrolltolower',
+  touchstart: 'touchstart',
+  touchmove: 'touchmove',
+  touchend: 'touchend',
   touchcancel: 'touchcancel',
   longtap: 'longtap',
   longpress: 'longpress',
@@ -73,7 +76,8 @@ export const ttPlatform: MiniProgramPlatform = {
   keyThisValue: '*this',
   keyAttr: value => `${directives.keyAttr}="${value}"`,
 
-  mapEventName: eventName => TT_JSX_EVENT_NAME_ALIASES[eventName] ?? eventMap[eventName.toLowerCase()] ?? eventName,
+  mapEventName: eventName => eventMap[eventName.toLowerCase()] ?? eventName,
+  eventBindingAlias: (eventName, tagName) => tagName ? TT_JSX_EVENT_NAME_ALIASES[tagName]?.[eventName] : undefined,
   eventBindingAttr: (eventName) => {
     const { prefix, name } = parseEventBinding(eventName)
     const normalizedName = normalizeMiniProgramEventName(name)

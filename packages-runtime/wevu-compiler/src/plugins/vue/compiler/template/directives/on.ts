@@ -70,6 +70,7 @@ export function transformOnDirective(
   context: TransformContext,
   options?: {
     isComponent?: boolean
+    tagName?: string
   },
 ): string | null {
   const { exp, arg } = node
@@ -94,7 +95,10 @@ export function transformOnDirective(
     : context.platform.mapEventName(argValue)
   const eventSuffix = normalizeEventDatasetSuffix(mappedEvent)
   const eventPrefix = resolveEventPrefix(node.modifiers)
-  const bindAttr = context.platform.eventBindingAttr(`${eventPrefix}:${mappedEvent}`)
+  const bindAttr = eventPrefix === 'bind' && options?.isComponent !== true
+    ? context.platform.eventBindingAlias?.(argValue, options?.tagName)
+    ?? context.platform.eventBindingAttr(`${eventPrefix}:${mappedEvent}`)
+    : context.platform.eventBindingAttr(`${eventPrefix}:${mappedEvent}`)
   const detailAttr = useDetailPayload ? `data-${INLINE_EVENT_DETAIL_KEY}-${eventSuffix}="1"` : ''
   if (context.rewriteScopedSlot) {
     if (inlineExpression) {

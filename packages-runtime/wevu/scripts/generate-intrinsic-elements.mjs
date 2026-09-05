@@ -171,45 +171,53 @@ function canonicalizeEventName(rawName, preferredSourceEventNames) {
   return preferredSourceEventNames.get(fallbackName.toLowerCase()) ?? fallbackName
 }
 
-function collectCompilerEventAliases(rawCatalog, platform) {
-  const aliases = new Map()
+function collectCompilerEventAliases(rawCatalog, platform, preferredSourceEventNames) {
+  const aliasesByComponent = new Map()
   for (const [componentIndex, component] of rawCatalog.entries()) {
     const attrs = Array.isArray(component?.attrs) ? component.attrs : []
+    const aliases = new Map()
     for (const [attrIndex, attr] of attrs.entries()) {
-      if (typeof attr?.jsxName !== 'string' || !/^on[A-Z]/.test(attr.jsxName)) {
+      const location = `${platform.id}[${componentIndex}].attrs[${attrIndex}]`
+      const normalized = normalizeAttribute(attr, location, preferredSourceEventNames)
+      if (normalized.type.kind !== 'event' || !/^on[A-Z]/.test(normalized.name)) {
         continue
       }
-      const flatBindMatch = /^bind([^:].*)$/i.exec(attr.name)
-      if (!flatBindMatch) {
-        continue
+      const sourceName = `${normalized.name.charAt(2).toLowerCase()}${normalized.name.slice(3)}`
+      if (!aliases.has(sourceName)) {
+        aliases.set(sourceName, normalized.rawName)
       }
-      const sourceName = `${attr.jsxName.charAt(2).toLowerCase()}${attr.jsxName.slice(3)}`
-      const hostName = flatBindMatch[1]
-      const existing = aliases.get(sourceName)
-      if (existing && existing !== hostName) {
-        fail(`${platform.id}[${componentIndex}].attrs[${attrIndex}] maps ${sourceName} to both ${existing} and ${hostName}`)
-      }
-      aliases.set(sourceName, hostName)
+    }
+    if (aliases.size > 0) {
+      aliasesByComponent.set(
+        component.name,
+        [...aliases.entries()].sort(([left], [right]) => compareText(left, right)),
+      )
     }
   }
-  return [...aliases.entries()].sort(([left], [right]) => compareText(left, right))
+  return [...aliasesByComponent.entries()].sort(([left], [right]) => compareText(left, right))
 }
 
-function renderCompilerEventAliases(rawCatalogs) {
+function renderCompilerEventAliases(rawCatalogs, preferredSourceEventNames) {
   const lines = [
     `${GENERATED_FILE_HEADER} 来源：${PLATFORM_CONFIGS.map(platform => `components.${platform.id}.json`).join('、')}。`,
+    '/* eslint-disable style/quote-props -- 生成的组件名需要保留宿主拼写。 */',
     '',
   ]
   for (const [index, platform] of PLATFORM_CONFIGS.entries()) {
     const exportName = `${platform.id.toUpperCase()}_JSX_EVENT_NAME_ALIASES`
-    const aliases = collectCompilerEventAliases(rawCatalogs[index], platform)
-    if (aliases.length === 0) {
-      lines.push(`export const ${exportName}: Readonly<Record<string, string>> = {}`, '')
+    const componentAliases = collectCompilerEventAliases(rawCatalogs[index], platform, preferredSourceEventNames)
+    const type = 'Readonly<Record<string, Readonly<Record<string, string>>>>'
+    if (componentAliases.length === 0) {
+      lines.push(`export const ${exportName}: ${type} = {}`, '')
       continue
     }
-    lines.push(`export const ${exportName}: Readonly<Record<string, string>> = {`)
-    for (const [sourceName, hostName] of aliases) {
-      lines.push(`  ${formatPropertyKey(sourceName)}: '${escapeSingleQuotes(hostName)}',`)
+    lines.push(`export const ${exportName}: ${type} = {`)
+    for (const [componentName, aliases] of componentAliases) {
+      lines.push(`  ${formatPropertyKey(componentName)}: {`)
+      for (const [sourceName, hostName] of aliases) {
+        lines.push(`    ${formatPropertyKey(sourceName)}: '${escapeSingleQuotes(hostName)}',`)
+      }
+      lines.push('  },')
     }
     lines.push('}', '')
   }
@@ -392,8 +400,10 @@ function intersectType(types) {
   if (types.every(type => type.kind === 'event')) {
     return { kind: 'event' }
   }
-  if (types.every(type => type.kind === 'enum')) {
-    const [first, ...rest] = types
+  const enumTypes = types.filter(type => type.kind === 'enum')
+  const unionTypes = types.filter(type => type.kind === 'union')
+  if (enumTypes.length > 0 && enumTypes.length + unionTypes.length === types.length) {
+    const [first, ...rest] = enumTypes
     const commonKeys = new Set(first.values.map(value => `${typeof value}:${String(value)}`))
     for (const type of rest) {
       const keys = new Set(type.values.map(value => `${typeof value}:${String(value)}`))
@@ -403,7 +413,15 @@ function intersectType(types) {
         }
       }
     }
-    const values = first.values.filter(value => commonKeys.has(`${typeof value}:${String(value)}`))
+    const values = first.values.filter((value) => {
+      if (!commonKeys.has(`${typeof value}:${String(value)}`)) {
+        return false
+      }
+      return unionTypes.every(type => (
+        type.segments.includes('unknown')
+        || type.segments.includes(typeof value)
+      ))
+    })
     return values.length > 0 ? { kind: 'enum', values } : undefined
   }
   if (types.every(type => type.kind === 'union')) {
@@ -608,7 +626,7 @@ for (const platform of renderConfigs) {
     expectedOutput.set(relativePath, content)
   }
 }
-expectedOutput.set(COMPILER_EVENT_ALIASES_OUTPUT, renderCompilerEventAliases(rawCatalogs))
+expectedOutput.set(COMPILER_EVENT_ALIASES_OUTPUT, renderCompilerEventAliases(rawCatalogs, preferredSourceEventNames))
 const outputDirectories = renderConfigs.map(platform => path.resolve(packageRoot, `src/${platform.id}IntrinsicElements`))
 if (CHECK_MODE) {
   await checkOutputs(expectedOutput, outputDirectories)

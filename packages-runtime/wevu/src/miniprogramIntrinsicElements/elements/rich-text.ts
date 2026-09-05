@@ -7,4 +7,6 @@ import type { MiniProgramIntrinsicElementBaseAttributes } from '../base'
  * @see https://opendocs.alipay.com/mini/component/rich-text
  * @see https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/basic-content/rich-text
  */
-export type MiniProgramIntrinsicElementRichText = MiniProgramIntrinsicElementBaseAttributes
+export type MiniProgramIntrinsicElementRichText = MiniProgramIntrinsicElementBaseAttributes & {
+  space?: 'emsp' | 'ensp' | 'nbsp'
+}

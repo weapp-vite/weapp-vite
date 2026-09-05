@@ -10,4 +10,5 @@ import type { MiniProgramIntrinsicElementBaseAttributes } from '../base'
 export type MiniProgramIntrinsicElementText = MiniProgramIntrinsicElementBaseAttributes & {
   decode?: boolean
   selectable?: boolean
+  space?: 'emsp' | 'ensp' | 'nbsp'
 }

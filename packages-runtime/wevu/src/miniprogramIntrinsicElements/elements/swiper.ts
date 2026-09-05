@@ -15,6 +15,7 @@ export type MiniProgramIntrinsicElementSwiper = MiniProgramIntrinsicElementBaseA
   current?: number
   'display-multiple-items'?: number
   duration?: number
+  'easing-function'?: 'default' | 'easeInCubic' | 'easeInOutCubic' | 'easeOutCubic' | 'linear'
   'indicator-dots'?: boolean
   interval?: number
   'next-margin'?: string

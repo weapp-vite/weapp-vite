@@ -16,6 +16,7 @@ export type MiniProgramIntrinsicElementVideo = MiniProgramIntrinsicElementBaseAt
   'initial-time'?: number
   loop?: boolean
   muted?: boolean
+  'object-fit'?: 'contain' | 'cover' | 'fill'
   onEnded?: WevuJsxEventHandler
   onError?: WevuJsxEventHandler
   onFullScreenChange?: WevuJsxEventHandler

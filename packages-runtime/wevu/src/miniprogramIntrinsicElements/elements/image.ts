@@ -11,6 +11,7 @@ import type { MiniProgramIntrinsicElementBaseAttributes } from '../base'
  */
 export type MiniProgramIntrinsicElementImage = MiniProgramIntrinsicElementBaseAttributes & {
   'lazy-load'?: boolean
+  mode?: 'aspectFill' | 'aspectFit' | 'bottom' | 'bottom left' | 'bottom right' | 'center' | 'heightFix' | 'left' | 'right' | 'scaleToFill' | 'top' | 'top left' | 'top right' | 'widthFix'
   onError?: WevuJsxEventHandler
   onLoad?: WevuJsxEventHandler
   src?: string

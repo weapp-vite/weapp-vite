@@ -24,6 +24,27 @@ export type WevuJsxHostAttributes = {
   style?: WevuJsxStyleValue
   hidden?: boolean
   key?: number | string
+  onTap?: WevuJsxEventHandler
+  catchTap?: WevuJsxEventHandler
+  captureBindTap?: WevuJsxEventHandler
+  captureCatchTap?: WevuJsxEventHandler
+  onLongPress?: WevuJsxEventHandler
+  onTouchStart?: WevuJsxEventHandler
+  onTouchMove?: WevuJsxEventHandler
+  onTouchEnd?: WevuJsxEventHandler
+  onTouchCancel?: WevuJsxEventHandler
+  catchTouchStart?: WevuJsxEventHandler
+  catchTouchMove?: WevuJsxEventHandler
+  catchTouchEnd?: WevuJsxEventHandler
+  catchTouchCancel?: WevuJsxEventHandler
+  captureBindTouchStart?: WevuJsxEventHandler
+  captureBindTouchMove?: WevuJsxEventHandler
+  captureBindTouchEnd?: WevuJsxEventHandler
+  captureBindTouchCancel?: WevuJsxEventHandler
+  captureCatchTouchStart?: WevuJsxEventHandler
+  captureCatchTouchMove?: WevuJsxEventHandler
+  captureCatchTouchEnd?: WevuJsxEventHandler
+  captureCatchTouchCancel?: WevuJsxEventHandler
 } & WevuJsxDatasetAttributes
 
 export interface WevuJsxGlobalComponents {}

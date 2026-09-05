@@ -434,8 +434,8 @@ describeAutoImportSuite('auto import local components (e2e)', { concurrent: fals
     expect(typedDts).toContain('readonly title?: string;')
     expect(typedDts).toContain('readonly score?: number | string;')
     expect(typedDts).toContain('readonly enabled?: boolean;')
-    expect(typedDts).toContain('readonly tags?: any[];')
-    expect(typedDts).toContain('readonly payload?: Record<string, any>;')
+    expect(typedDts).toContain('readonly tags?: unknown[];')
+    expect(typedDts).toContain('readonly payload?: Record<string, unknown>;')
     expect(typedDts).toContain('readonly mode?: string | number;')
     expect(typedDts).toContain('readonly customProp?: string;')
 
@@ -443,12 +443,12 @@ describeAutoImportSuite('auto import local components (e2e)', { concurrent: fals
     expect(typedDts).toContain('readonly title?: string;')
     expect(typedDts).toContain('readonly level?: number | string;')
     expect(typedDts).toContain('readonly visible?: boolean;')
-    expect(typedDts).toContain('readonly meta?: Record<string, any>;')
-    expect(typedDts).toContain('readonly items?: any[];')
-    expect(typedDts).toContain('readonly anyValue?: any;')
+    expect(typedDts).toContain('readonly meta?: Record<string, unknown>;')
+    expect(typedDts).toContain('readonly items?: unknown[];')
+    expect(typedDts).toContain('readonly anyValue?: unknown;')
     expect(typedDts).toContain('readonly \'custom-prop\'?: string;')
 
-    expect(typedDts).toContain('ResolverCard: Record<string, any>;')
+    expect(typedDts).toContain('ResolverCard: object;')
 
     const vueDts = await waitForFileRead(VUE_COMPONENTS_DTS)
     expect(
@@ -460,12 +460,12 @@ describeAutoImportSuite('auto import local components (e2e)', { concurrent: fals
       /AutoCard: typeof import\("\.\.?\/src\/components\/AutoCard\/index\.vue"\)\['default'\];/,
     )
     expect(vueDts).toMatch(
-      /NativeCard: __WeappComponentImport<typeof import\("\.\.?\/src\/components\/NativeCard\/index"\), WeappComponent<ComponentProp<"NativeCard">>>;/,
+      /NativeCard: __WevuComponentImport<typeof import\("\.\.?\/src\/components\/NativeCard\/index"\), WevuComponent<ComponentProp<"NativeCard">>>;/,
     )
     expect(vueDts).toContain('AutoCard:')
     expect(vueDts).toContain('NativeCard:')
     expect(vueDts).toContain('ResolverCard:')
-    expect(vueDts).not.toContain('ComponentProp<"AutoCard">')
+    expect(vueDts).toContain('__WevuComponentProps<WevuComponent<ComponentProp<"AutoCard">>>')
     expect(vueDts).toContain('ComponentProp<"NativeCard">')
     expect(vueDts).toContain('ComponentProp<"ResolverCard">')
   })

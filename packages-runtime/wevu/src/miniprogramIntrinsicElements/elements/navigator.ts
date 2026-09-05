@@ -12,5 +12,6 @@ export type MiniProgramIntrinsicElementNavigator = MiniProgramIntrinsicElementBa
   'hover-class'?: string
   'hover-start-time'?: number
   'hover-stay-time'?: number
+  'open-type'?: 'exit' | 'navigate' | 'navigateBack' | 'reLaunch' | 'redirect' | 'switchTab'
   url?: string
 }
