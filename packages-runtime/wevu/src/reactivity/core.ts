@@ -22,15 +22,28 @@ const effectStack: ReactiveEffect[] = []
 
 let batchDepth = 0
 let isFlushingBatch = false
-const batchedComputedEffects = new Set<ReactiveEffect>()
 const batchedEffects = new Set<ReactiveEffect>()
+const batchedCallbacks = new Set<() => void>()
 
 function runScheduledEffect(ef: ReactiveEffect) {
+  if (!ef.active) {
+    return
+  }
   if (ef.scheduler) {
     ef.scheduler()
     return
   }
   ef()
+}
+
+/** 在当前批次的同步副作用全部完成后执行包内通知。 */
+export function queueBatchCallback(callback: () => void) {
+  if (batchDepth > 0 || isFlushingBatch) {
+    batchedCallbacks.add(callback)
+    return
+  }
+  batchedCallbacks.delete(callback)
+  callback()
 }
 
 export function startBatch() {
@@ -51,9 +64,8 @@ function flushBatchedEffects() {
   let hasError = false
   isFlushingBatch = true
   try {
-    while (batchedComputedEffects.size || batchedEffects.size) {
-      const effect = takeBatchedEffect(batchedComputedEffects)
-        ?? takeBatchedEffect(batchedEffects)
+    while (batchedEffects.size) {
+      const effect = takeBatchedEffect(batchedEffects)
       if (!effect) {
         continue
       }
@@ -70,6 +82,20 @@ function flushBatchedEffects() {
   }
   finally {
     isFlushingBatch = false
+  }
+  // 通知属于已完成批次之后的操作，保留订阅回调内同步变更的重入保护。
+  while (batchedCallbacks.size) {
+    const callback = batchedCallbacks.values().next().value!
+    batchedCallbacks.delete(callback)
+    try {
+      callback()
+    }
+    catch (error) {
+      if (!hasError) {
+        firstError = error
+        hasError = true
+      }
+    }
   }
   if (hasError) {
     throw firstError
@@ -320,9 +346,16 @@ export function track(target: object, key: PropertyKey) {
 }
 
 function scheduleEffect(ef: ReactiveEffect) {
+  if (ef._running) {
+    return
+  }
+  // 计算属性只同步失效缓存，普通消费者仍由批处理队列合并。
+  if (ef._computed) {
+    runScheduledEffect(ef)
+    return
+  }
   if (batchDepth > 0 || isFlushingBatch) {
-    const queue = ef._computed ? batchedComputedEffects : batchedEffects
-    queue.add(ef)
+    batchedEffects.add(ef)
     return
   }
   runScheduledEffect(ef)
