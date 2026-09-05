@@ -14,7 +14,12 @@ export interface StaticAnalysisContext {
   safeBindingReferences?: ReadonlySet<t.Identifier>
 }
 
-type PropertyState = { kind: 'absent' } | { kind: 'unknown' } | { kind: 'value', value: t.Expression }
+interface StaticExpression {
+  value: t.Expression
+  context: StaticAnalysisContext
+}
+
+type PropertyState = { kind: 'absent' } | { kind: 'unknown' } | ({ kind: 'value' } & StaticExpression)
 
 export function createCapabilityAccumulator(): CapabilityAccumulator {
   return {
@@ -46,22 +51,20 @@ function unwrapExpression(node: t.Expression): t.Expression {
 function resolveStaticExpression(
   node: t.Expression,
   context: StaticAnalysisContext,
-  visited = new Set<string>(),
-): t.Expression | undefined {
+  visited = new Set<t.VariableDeclarator>(),
+): StaticExpression | undefined {
   const normalized = unwrapExpression(node)
   if (!t.isIdentifier(normalized) || normalized.name === 'undefined') {
-    return normalized
+    return { value: normalized, context }
   }
-  if (!context.scope || visited.has(normalized.name)) {
-    return undefined
-  }
-  const binding = context.scope.getBinding(normalized.name)
+  const binding = context.scope?.getBinding(normalized.name)
   if (
     !binding
     || !binding.constant
     || !binding.path.isVariableDeclarator()
     || !binding.path.parentPath?.isVariableDeclaration()
     || binding.path.parentPath.node.kind !== 'const'
+    || visited.has(binding.path.node)
   ) {
     return undefined
   }
@@ -72,13 +75,17 @@ function resolveStaticExpression(
   if (!referencesAreLocal || !binding.path.node.init || !t.isExpression(binding.path.node.init)) {
     return undefined
   }
-  visited.add(normalized.name)
-  return resolveStaticExpression(binding.path.node.init, context, visited)
+  visited.add(binding.path.node)
+  return resolveStaticExpression(binding.path.node.init, {
+    scope: binding.path.scope,
+    safeBindingReferences: context.safeBindingReferences,
+  }, visited)
 }
 
 function resolveProperty(
   object: t.ObjectExpression,
   key: string,
+  context: StaticAnalysisContext,
   initial: PropertyState = { kind: 'absent' },
 ): PropertyState {
   let state = initial
@@ -94,7 +101,7 @@ function resolveProperty(
       state = { kind: 'unknown' }
       continue
     }
-    state = { kind: 'value', value: property.value }
+    state = { kind: 'value', value: property.value, context }
   }
   return state
 }
@@ -116,10 +123,11 @@ function resolveInheritedSetData(
   context: StaticAnalysisContext,
   visited: Set<t.ObjectExpression>,
 ): PropertyState {
-  const resolved = resolveStaticExpression(expression, context)
-  if (!resolved) {
+  const result = resolveStaticExpression(expression, context)
+  if (!result) {
     return { kind: 'unknown' }
   }
+  const { value: resolved, context: resolvedContext } = result
   if (!t.isObjectExpression(resolved)) {
     return isStaticPrimitive(resolved) || t.isFunction(resolved)
       ? { kind: 'absent' }
@@ -131,48 +139,47 @@ function resolveInheritedSetData(
   visited.add(resolved)
 
   let state: PropertyState = { kind: 'absent' }
-  const inherited = resolveProperty(resolved, 'extends')
+  const inherited = resolveProperty(resolved, 'extends', resolvedContext)
   if (inherited.kind === 'unknown') {
     state = inherited
   }
   else if (inherited.kind === 'value') {
     state = applyResolvedProperty(
       state,
-      resolveInheritedSetData(inherited.value, context, visited),
+      resolveInheritedSetData(inherited.value, inherited.context, visited),
     )
   }
 
-  const mixins = resolveProperty(resolved, 'mixins')
+  const mixins = resolveProperty(resolved, 'mixins', resolvedContext)
   if (mixins.kind === 'unknown') {
     state = mixins
   }
   else if (mixins.kind === 'value') {
-    const resolvedMixins = resolveStaticExpression(mixins.value, context)
-    if (!resolvedMixins || !t.isArrayExpression(resolvedMixins)) {
+    const resolvedMixins = resolveStaticExpression(mixins.value, mixins.context)
+    if (!resolvedMixins || !t.isArrayExpression(resolvedMixins.value)) {
       state = { kind: 'unknown' }
     }
     else {
-      for (const element of resolvedMixins.elements) {
+      for (const element of resolvedMixins.value.elements) {
         if (!element || t.isSpreadElement(element) || !t.isExpression(element)) {
           state = { kind: 'unknown' }
           continue
         }
         state = applyResolvedProperty(
           state,
-          resolveInheritedSetData(element, context, visited),
+          resolveInheritedSetData(element, resolvedMixins.context, visited),
         )
       }
     }
   }
 
-  state = applyResolvedProperty(state, resolveProperty(resolved, 'setData'))
+  state = applyResolvedProperty(state, resolveProperty(resolved, 'setData', resolvedContext))
   visited.delete(resolved)
   return state
 }
 
 function analyzeHighFrequencyWarning(
   state: PropertyState,
-  context: StaticAnalysisContext,
   accumulator: CapabilityAccumulator,
 ) {
   if (state.kind === 'unknown') {
@@ -182,24 +189,25 @@ function analyzeHighFrequencyWarning(
   if (state.kind === 'absent') {
     return
   }
-  const value = resolveStaticExpression(state.value, context)
-  if (!value) {
+  const resolved = resolveStaticExpression(state.value, state.context)
+  if (!resolved) {
     addConservativeCapabilities(accumulator, ['setDataHighFrequencyWarning'])
     return
   }
+  const { value, context } = resolved
   if (t.isObjectExpression(value)) {
-    const enabled = resolveProperty(value, 'enabled')
+    const enabled = resolveProperty(value, 'enabled', context)
     if (enabled.kind === 'unknown') {
       addConservativeCapabilities(accumulator, ['setDataHighFrequencyWarning'])
       return
     }
     if (enabled.kind === 'value') {
-      const resolvedEnabled = resolveStaticExpression(enabled.value, context)
+      const resolvedEnabled = resolveStaticExpression(enabled.value, enabled.context)
       if (!resolvedEnabled) {
         addConservativeCapabilities(accumulator, ['setDataHighFrequencyWarning'])
         return
       }
-      if (t.isBooleanLiteral(resolvedEnabled, { value: false })) {
+      if (t.isBooleanLiteral(resolvedEnabled.value, { value: false })) {
         return
       }
     }
@@ -217,7 +225,6 @@ function analyzeHighFrequencyWarning(
 
 function analyzeSetData(
   state: PropertyState,
-  context: StaticAnalysisContext,
   accumulator: CapabilityAccumulator,
   defaults?: PropertyState,
 ) {
@@ -227,15 +234,15 @@ function analyzeSetData(
   }
   if (state.kind === 'absent') {
     if (defaults) {
-      analyzeSetData(defaults, context, accumulator)
+      analyzeSetData(defaults, accumulator)
     }
     return
   }
 
   const defaultValue = defaults?.kind === 'value'
-    ? resolveStaticExpression(defaults.value, context)
+    ? resolveStaticExpression(defaults.value, defaults.context)
     : undefined
-  const defaultObject = t.isObjectExpression(defaultValue) ? defaultValue : undefined
+  const defaultObject = defaultValue && t.isObjectExpression(defaultValue.value) ? defaultValue.value : undefined
   if (
     defaultObject
     && (t.isIdentifier(state.value) || t.isMemberExpression(state.value))
@@ -244,14 +251,15 @@ function analyzeSetData(
     return
   }
 
-  const value = resolveStaticExpression(state.value, context)
-  if (!value) {
+  const resolved = resolveStaticExpression(state.value, state.context)
+  if (!resolved) {
     addConservativeCapabilities(accumulator, ['patchStrategy', 'setDataHighFrequencyWarning'])
     return
   }
+  const { value, context } = resolved
   if (!t.isObjectExpression(value)) {
     if (defaultObject) {
-      analyzeSetData({ kind: 'value', value: defaultObject }, context, accumulator)
+      analyzeSetData({ kind: 'value', value: defaultObject, context: defaultValue!.context }, accumulator)
     }
     if (!isStaticPrimitive(value) && !t.isArrayExpression(value) && !t.isFunction(value)) {
       addConservativeCapabilities(accumulator, ['patchStrategy', 'setDataHighFrequencyWarning'])
@@ -261,14 +269,14 @@ function analyzeSetData(
 
   const mergedDefaults = t.isObjectExpression(state.value) ? defaultObject : undefined
   const defaultStrategy = mergedDefaults
-    ? resolveProperty(mergedDefaults, 'strategy')
+    ? resolveProperty(mergedDefaults, 'strategy', defaultValue!.context)
     : defaults?.kind === 'unknown' ? defaults : undefined
-  const strategy = resolveProperty(value, 'strategy', defaultStrategy)
+  const strategy = resolveProperty(value, 'strategy', context, defaultStrategy)
   if (strategy.kind === 'unknown') {
     addConservativeCapabilities(accumulator, ['patchStrategy'])
   }
   else if (strategy.kind === 'value') {
-    const resolvedStrategy = resolveStaticExpression(strategy.value, context)
+    const resolvedStrategy = resolveStaticExpression(strategy.value, strategy.context)?.value
     const isPatchStrategy = t.isStringLiteral(resolvedStrategy, { value: 'patch' })
       || (
         t.isTemplateLiteral(resolvedStrategy)
@@ -283,11 +291,10 @@ function analyzeSetData(
     }
   }
   const defaultHighFrequencyWarning = mergedDefaults
-    ? resolveProperty(mergedDefaults, 'highFrequencyWarning')
+    ? resolveProperty(mergedDefaults, 'highFrequencyWarning', defaultValue!.context)
     : defaults?.kind === 'unknown' ? defaults : undefined
   analyzeHighFrequencyWarning(
-    resolveProperty(value, 'highFrequencyWarning', defaultHighFrequencyWarning),
-    context,
+    resolveProperty(value, 'highFrequencyWarning', context, defaultHighFrequencyWarning),
     accumulator,
   )
 }
@@ -306,11 +313,11 @@ export function analyzeRuntimeFactoryOptions(
   )
   const defaultSetDataNode = hasDefaultSetData ? t.valueToNode(defaults?.setData) : undefined
   const defaultSetData: PropertyState | undefined = defaultSetDataNode && t.isExpression(defaultSetDataNode)
-    ? { kind: 'value', value: defaultSetDataNode }
+    ? { kind: 'value', value: defaultSetDataNode, context: {} }
     : undefined
   if (!expression) {
     if (defaultSetData) {
-      analyzeSetData(defaultSetData, context, accumulator)
+      analyzeSetData(defaultSetData, accumulator)
     }
     return
   }
@@ -319,13 +326,13 @@ export function analyzeRuntimeFactoryOptions(
     addConservativeCapabilities(accumulator, ['patchStrategy', 'setDataHighFrequencyWarning'])
     return
   }
-  if (!t.isObjectExpression(resolved)) {
-    if (!isStaticPrimitive(resolved) && !t.isArrayExpression(resolved) && !t.isFunction(resolved)) {
+  if (!t.isObjectExpression(resolved.value)) {
+    if (!isStaticPrimitive(resolved.value) && !t.isArrayExpression(resolved.value) && !t.isFunction(resolved.value)) {
       addConservativeCapabilities(accumulator, ['patchStrategy', 'setDataHighFrequencyWarning'])
     }
     return
   }
-  analyzeSetData(resolveInheritedSetData(resolved, context, new Set()), context, accumulator, defaultSetData)
+  analyzeSetData(resolveInheritedSetData(resolved.value, resolved.context, new Set()), accumulator, defaultSetData)
 }
 
 /**
@@ -340,17 +347,17 @@ export function analyzeRuntimeDefaults(
     return
   }
   const resolved = resolveStaticExpression(expression, context)
-  if (!resolved || !t.isObjectExpression(resolved)) {
+  if (!resolved || !t.isObjectExpression(resolved.value)) {
     addConservativeCapabilities(accumulator, ['patchStrategy', 'setDataHighFrequencyWarning'])
     return
   }
   for (const key of ['app', 'component'] as const) {
-    const branch = resolveProperty(resolved, key)
+    const branch = resolveProperty(resolved.value, key, resolved.context)
     if (branch.kind === 'unknown') {
       addConservativeCapabilities(accumulator, ['patchStrategy', 'setDataHighFrequencyWarning'])
     }
     else if (branch.kind === 'value') {
-      analyzeRuntimeFactoryOptions(branch.value, context, accumulator)
+      analyzeRuntimeFactoryOptions(branch.value, branch.context, accumulator)
     }
   }
 }

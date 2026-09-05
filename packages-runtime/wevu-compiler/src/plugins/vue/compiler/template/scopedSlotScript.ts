@@ -1,7 +1,7 @@
 import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { ClassStyleBinding, InlineExpressionAsset, LayoutHostBinding, TemplateRefBinding } from './types'
-import { WEVU_BINDING_MANIFEST_KEY, WEVU_LAYOUT_HOSTS_KEY, WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
+import { WEVU_BINDING_MANIFEST_KEY, WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
 import { createRuntimeBindingManifest } from '../../../../bindingManifest'
 import {
   WE_VU_COMPILER_REACTIVITY_MODULE_ID,
@@ -116,7 +116,7 @@ export function buildScopedSlotComponentScript(options: {
     overrideParts.push('computed:__wevuComputed')
   }
   if (layoutHostsCode) {
-    overrideParts.push(`${JSON.stringify(WEVU_LAYOUT_HOSTS_KEY)}:__wevuLayoutHosts`)
+    overrideParts.push('layoutHosts:__wevuLayoutHosts')
   }
   if (inlineMapCode) {
     overrideParts.push('inlineMap:__wevuInlineMap')

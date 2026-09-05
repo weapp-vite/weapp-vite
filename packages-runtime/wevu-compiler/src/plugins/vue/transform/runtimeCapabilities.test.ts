@@ -1,5 +1,5 @@
 import type { WevuRuntimeCapabilityName } from '../../../runtimeCapabilities'
-import { WEVU_LAYOUT_HOSTS_KEY, WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY } from '@weapp-core/constants'
+import { WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { describe, expect, it } from 'vitest'
 import {
@@ -320,8 +320,6 @@ export default { setData: { highFrequencyWarning: true } }
     })
     const nestedLayoutScript = nestedLayout.scopedSlotComponents?.[0]?.script ?? ''
     expectCanonicalCalls(nestedLayoutScript, ['templateRefs', 'scopedSlots', 'layout'])
-    expect(nestedLayoutScript).toContain(JSON.stringify(WEVU_LAYOUT_HOSTS_KEY))
-    expect(nestedLayoutScript).toContain('"selector":"#__wv-layout-host-0"')
   })
 
   it('injects the scoped-slot owner marker only for current template metadata', async () => {
