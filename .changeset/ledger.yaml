@@ -41,6 +41,10 @@
   dir: "@weapp-core/api"
   intents:
     - typed-wpi-vitest-mocks
+"@weapp-core/api@0.3.1":
+  dir: "@weapp-core/api"
+  intents:
+    - fix-wx-sync-api-promise
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -50,6 +54,11 @@
   dir: "@weapp-core/constants"
   intents:
     - initial-navigation-timeout
+"@weapp-core/constants@0.2.2":
+  dir: "@weapp-core/constants"
+  intents:
+    - bright-bindings-own
+    - tsdown-023-constants
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
@@ -185,6 +194,7 @@
   dir: extensions/vscode
   intents:
     - calm-docs-domain
+    - tsdown-023-constants
 "@weapp-vite/web@1.4.10":
   dir: packages-runtime/web
   intents:
@@ -222,6 +232,10 @@
   dir: packages-runtime/weapi
   intents:
     - typed-wpi-vitest-mocks
+"@wevu/api@0.3.1":
+  dir: packages-runtime/weapi
+  intents:
+    - fix-wx-sync-api-promise
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -256,6 +270,10 @@
   dir: packages-runtime/wevu-compiler
   intents:
     - catalog-auto-generated
+"@wevu/compiler@8.0.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - bright-bindings-own
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -315,6 +333,12 @@ create-weapp-vite@2.8.12:
   dir: packages/create-weapp-vite
   intents:
     - calm-runtimes-agree
+create-weapp-vite@2.8.13:
+  dir: packages/create-weapp-vite
+  intents:
+    - bright-bindings-own
+    - fix-vue-hmr-alias
+    - steady-scopes-finish
 create-weapp-vite@2.8.2:
   dir: packages/create-weapp-vite
   intents:
@@ -406,6 +430,10 @@ weapp-ide-cli@6.1.1:
   dir: packages/weapp-ide-cli
   intents:
     - catalog-auto-generated
+weapp-ide-cli@6.1.3:
+  dir: packages/weapp-ide-cli
+  intents:
+    - open-project-http-first
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -496,6 +524,11 @@ weapp-vite@7.0.4:
   dir: packages/weapp-vite
   intents:
     - calm-runtimes-agree
+weapp-vite@8.0.0:
+  dir: packages/weapp-vite
+  intents:
+    - bright-bindings-own
+    - fix-vue-hmr-alias
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -545,3 +578,8 @@ wevu@7.0.4:
   dir: packages-runtime/wevu
   intents:
     - calm-runtimes-agree
+wevu@8.0.0:
+  dir: packages-runtime/wevu
+  intents:
+    - bright-bindings-own
+    - steady-scopes-finish

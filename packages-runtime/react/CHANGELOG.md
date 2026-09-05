@@ -1,5 +1,12 @@
 # @weapp-vite/react
 
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.2
+
 ## 0.2.4
 
 ### Patch Changes

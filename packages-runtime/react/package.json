@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/react",
   "type": "module",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "React 19 runtime for weapp-vite mini programs",
   "license": "MIT",
   "repository": {
