@@ -122,6 +122,41 @@ describe('stateful HMR Vite adapter', () => {
     expect(options.experimental.devMode.implement).toContain('class WeappViteDevRuntime')
   })
 
+  it('passes resolved Vite string aliases to the Rolldown DevEngine', async () => {
+    const bundledDev = {
+      _devEngine: {},
+      getRolldownOptions: async () => ({ resolve: { alias: { existing: '/existing' } } }),
+      storeOutputFiles: () => {},
+    }
+    const adapter = new StatefulHmrViteAdapter(
+      {
+        root: '/project',
+        resolve: {
+          alias: [
+            { find: '@', replacement: '/project/src' },
+            { find: /^virtual:/, replacement: '/project/virtual' },
+          ],
+        },
+        build: { rolldownOptions: {} },
+      } as any,
+      { environments: { client: { bundledDev } } } as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+    )
+
+    adapter.install()
+    const options = await bundledDev.getRolldownOptions() as any
+
+    expect(options.resolve.alias).toEqual({
+      'existing': '/existing',
+      '@': '/project/src',
+    })
+  })
+
   it('only validates the common runtime on the initial full output', () => {
     const stored: any[][] = []
     const bundledDev = {

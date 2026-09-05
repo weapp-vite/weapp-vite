@@ -387,6 +387,13 @@ export function collectElementAttributes(
       sourceLocation: vShowLocation,
     })
   }
+  if (context.cssVars) {
+    recordBindingExpression(context, {
+      kind: 'style',
+      expression: WEVU_CSS_VARS_STYLE_KEY,
+      outputPath: generatedStyleBinding?.name,
+    })
+  }
   if (styleAttr) {
     attrs.unshift(styleAttr)
   }

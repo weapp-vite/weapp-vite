@@ -1,10 +1,10 @@
 import type { CompilerPageLayoutPlan, WevuBindingManifestV1 } from '../../../index'
-import { WEVU_BINDING_MANIFEST_KEY, WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
+import { WEVU_BINDING_MANIFEST_KEY, WEVU_CSS_VARS_STYLE_KEY, WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { createRuntimeBindingManifest } from '../../../bindingManifest'
 import { compileVueFile } from '../transform/compileVueFile'
+import { remapJsxBindingManifestLocations } from '../transform/compileVueFile/bindingManifestLocations'
 import { applyCompilerTemplateWrappers } from '../transform/compileVueFile/pageLayout'
-import { remapJsxBindingManifestLocations } from '../transform/compileVueFile/script'
 import { resolveBindingManifestPickKeys } from '../transform/transformScript/rewrite/bindingManifest'
 import { compileVueTemplateToWxml } from './template'
 import { createBindingManifest } from './template/bindingManifest'
@@ -276,20 +276,33 @@ const suffix = '!'
   })
 
   it('disables automatic pick when manifest collection is incomplete', async () => {
-    const wildcardManifest: WevuBindingManifestV1 = {
+    const externallyConstructedManifest: WevuBindingManifestV1 = {
       version: 1,
-      sourceFile: 'src/pages/fallback.vue',
+      sourceFile: 'src/pages/external.vue',
       bindings: [{
         id: 'b0',
         kind: 'text',
-        outputPath: '*',
-        sourceRoots: [],
-        dependencies: [],
+        outputPath: 'title',
+        sourceRoots: ['title'],
+        sourcePaths: ['title'],
+        dependencies: [{ root: 'title', path: 'title', updateMode: 'exact-path' }],
         scopes: [{ kind: 'root', depth: 0 }],
-        updateMode: 'snapshot-fallback',
+        updateMode: 'exact-path',
       }],
       features: {},
     }
+    expect(resolveBindingManifestPickKeys(externallyConstructedManifest, true)).toEqual([])
+
+    const wildcardManifest = createBindingManifest('src/pages/fallback.vue')
+    wildcardManifest.bindings.push({
+      id: 'b0',
+      kind: 'text',
+      outputPath: '*',
+      sourceRoots: [],
+      dependencies: [],
+      scopes: [{ kind: 'root', depth: 0 }],
+      updateMode: 'snapshot-fallback',
+    })
     expect(resolveBindingManifestPickKeys(wildcardManifest, true)).toEqual([])
 
     const failingPlatform = {
@@ -315,7 +328,92 @@ const suffix = '!'
     expect(result.script).not.toContain('setData')
   })
 
-  it('declares slot host properties without retaining scoped-slot runtime', async () => {
+  it('records every compiler-generated mustache dependency before automatic pick', async () => {
+    const result = await compileVueFile(`<script setup>
+const definitionName = 'issue930Card'
+const templateName = 'issue930Card'
+const templateData = { label: 'ready' }
+const records = { primary: { label: 'primary' } }
+const selected = 'primary'
+const modelValue = 'model'
+const themeColor = 'red'
+</script>
+<template>
+  <view v-probe="records[selected].label" />
+  <BindingProbe v-model.trim="modelValue" />
+  <template name="{{ definitionName }}"><text>{{ label }}</text></template>
+  <template is="{{ templateName }}" data="{{ templateData }}" />
+</template>
+<style>.root { color: v-bind(themeColor); }</style>`, '/src/pages/complete.vue', {
+      autoSetDataPick: true,
+    })
+    const manifest = result.bindingManifest!
+    const bindings = manifest.bindings
+    const pickKeys = resolveBindingManifestPickKeys(manifest, true)
+
+    expect(bindings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'style', sourceRoots: [WEVU_CSS_VARS_STYLE_KEY] }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'records', updateMode: 'top-level' }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'selected', updateMode: 'exact-path' }),
+      expect.objectContaining({ kind: 'component-prop', outputPath: expect.stringMatching(/^__wv_bind_\d+$/), sourceRoots: [] }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'definitionName' }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'templateName' }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'templateData' }),
+    ]))
+    const cssVarsBinding = bindings.find(binding => binding.sourceRoots.includes(WEVU_CSS_VARS_STYLE_KEY))
+    const modifierBinding = bindings.find((binding) => {
+      return binding.kind === 'component-prop'
+        && binding.outputPath.startsWith('__wv_bind_')
+        && binding.sourceRoots.length === 0
+    })
+    expect(cssVarsBinding?.outputPath).toMatch(/^__wv_style_\d+$/)
+    expect(pickKeys).toEqual(expect.arrayContaining([
+      cssVarsBinding!.outputPath,
+      modifierBinding!.outputPath,
+      'definitionName',
+      'records',
+      'selected',
+      'templateData',
+      'templateName',
+    ]))
+    expect(result.script).toContain('setData')
+  })
+
+  it.each([
+    ['wechat', wechatPlatform],
+    ['alipay', alipayPlatform],
+    ['tt', ttPlatform],
+  ])('keeps all generated mustache variants authoritative on %s', (_name, platform) => {
+    const result = compileVueTemplateToWxml(`
+<view v-probe="records[selected].label" />
+<BindingProbe v-model.trim="modelValue" />
+<template name="{{ definitionName }}"><text /></template>
+<template is="{{templateName}}" data="{{...templateData}}" />
+    `.trim(), '/src/pages/platform.vue', {
+      cssVars: true,
+      platform,
+    })
+    const pickKeys = resolveBindingManifestPickKeys(result.bindingManifest, true)
+
+    expect(result.bindingManifest.bindings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'style', sourceRoots: [WEVU_CSS_VARS_STYLE_KEY] }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'records', updateMode: 'top-level' }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'selected' }),
+      expect.objectContaining({ kind: 'component-prop', outputPath: expect.stringMatching(/^__wv_bind_\d+$/) }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'definitionName' }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'templateName' }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'templateData' }),
+    ]))
+    expect(pickKeys).toEqual(expect.arrayContaining([
+      'definitionName',
+      'records',
+      'selected',
+      'templateData',
+      'templateName',
+    ]))
+  })
+
+  it('declares slot host properties without bundler template inspection', async () => {
     const result = await compileVueFile(
       '<template><slot><text>fallback</text></slot></template>',
       '/src/components/SlotHost.vue',
@@ -391,6 +489,15 @@ export default {
     expect(manifest.sourceFile).toBe('./render.tsx')
     expect(manifest.bindings[0]?.sourceLocation).toBeUndefined()
 
+    manifest.bindings[0]!.sourceFile = 'src/shared/render.tsx'
+    manifest.bindings[0]!.sourceLocation = {
+      start: { offset: 20, line: 2, column: 5 },
+      end: { offset: 25, line: 2, column: 10 },
+    }
+    remapJsxBindingManifestLocations(manifest, undefined, undefined)
+    expect(manifest.bindings[0]?.sourceLocation?.start.line).toBe(2)
+
+    manifest.bindings[0]!.sourceFile = undefined
     manifest.bindings[0]!.sourceLocation = {
       start: { offset: 20, line: 2, column: 5 },
       end: { offset: 25, line: 2, column: 10 },
@@ -403,6 +510,44 @@ export default {
       mappings: [[null]],
     }, 'const title = true')).not.toThrow()
     expect(manifest.bindings[0]?.sourceLocation).toBeUndefined()
+  })
+
+  it('uses original source ownership and content while remapping JSX locations', () => {
+    const manifest = createBindingManifest('src/pages/Generated.vue')
+    manifest.bindings.push({
+      id: 'b0',
+      kind: 'text',
+      outputPath: 'title',
+      sourceRoots: ['title'],
+      sourcePaths: ['title'],
+      dependencies: [{ root: 'title', path: 'title', updateMode: 'exact-path' }],
+      scopes: [{ kind: 'root', depth: 0 }],
+      updateMode: 'exact-path',
+      sourceLocation: {
+        start: { offset: 0, line: 1, column: 1 },
+        end: { offset: 0, line: 1, column: 1 },
+      },
+    })
+
+    remapJsxBindingManifestLocations(manifest, {
+      version: 3,
+      names: [],
+      sources: ['shared/render.tsx'],
+      sourcesContent: ['first\nconst title = true'],
+      mappings: 'AACA',
+    }, 'wrong fallback source')
+
+    expect(manifest.bindings[0]).toMatchObject({
+      sourceFile: 'shared/render.tsx',
+      sourceLocation: {
+        start: { offset: 6, line: 2, column: 1 },
+        end: { offset: 6, line: 2, column: 1 },
+      },
+    })
+    expect(createRuntimeBindingManifest(manifest).bindings[0]).not.toHaveProperty('sourceFile')
+    expect(createRuntimeBindingManifest(manifest, 'diagnostic').bindings[0]).toMatchObject({
+      sourceFile: 'shared/render.tsx',
+    })
   })
 
   it('records template-level conditional bindings before pick injection', async () => {

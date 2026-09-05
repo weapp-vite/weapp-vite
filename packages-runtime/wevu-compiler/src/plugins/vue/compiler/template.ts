@@ -9,7 +9,7 @@ import {
 } from '@weapp-core/constants'
 import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../runtimeCapabilities'
 
-import { createBindingManifest } from './template/bindingManifest'
+import { createBindingManifest, markBindingManifestIncomplete } from './template/bindingManifest'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
 import { warn } from './template/diagnostics'
 import { formatWxml } from './template/format'
@@ -243,6 +243,7 @@ export function compileVueTemplateToWxml(
   catch (error) {
     warn({ diagnostics, filename }, `模板编译失败：${error}`, undefined, 'template', 'WV2002')
     const bindingManifest = createBindingManifest(filename)
+    markBindingManifestIncomplete(bindingManifest)
     bindingManifest.bindings.push({
       id: 'b0',
       kind: 'text',

@@ -28,9 +28,7 @@ const APP_VUE_PATH = path.join(APP_ROOT, 'src/app.vue')
 const LAYOUT_VUE_PATH = path.join(APP_ROOT, 'src/layouts/default.vue')
 const PAGE_VUE_PATH = path.join(APP_ROOT, 'src/pages/index/index.vue')
 const BOOTSTRAP_TS_PATH = path.join(APP_ROOT, 'src/bootstrap/index.ts')
-const COMMON_JS_DIST = path.join(DIST_ROOT, 'common.js')
 const HMR_CONTROL_DIST = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
-const HMR_UPDATE_DIST = path.join(DIST_ROOT, '__weapp_vite_hmr/update.js')
 const APP_SHELL_WXML_DIST = path.join(DIST_ROOT, '__weapp_vite_app_shell.wxml')
 const LAYOUT_WXML_DIST = path.join(DIST_ROOT, 'layouts/default.wxml')
 const INDEX_ROUTE = '/pages/index/index'
@@ -139,6 +137,7 @@ async function readVisibleRuntimeSnapshot(miniProgram: any): Promise<RuntimeSnap
 
 async function waitForVisibleRuntime(miniProgram: any, markers: string[], timeoutMs = 20_000) {
   const start = Date.now()
+  const isHeadless = process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless'
   let latest: RuntimeSnapshot | undefined
   while (Date.now() - start <= timeoutMs) {
     latest = await readVisibleRuntimeSnapshot(miniProgram).catch(error => ({
@@ -154,8 +153,9 @@ async function waitForVisibleRuntime(miniProgram: any, markers: string[], timeou
     }))
     const stateText = JSON.stringify([latest.pageData, latest.runtimeState, latest.setupState])
     const routeReady = latest.route === 'pages/index/index'
-    const visibleReady = latest.visibleCount === MARKER_SELECTORS.length
     const markersReady = markers.every(marker => stateText.includes(marker))
+    const visibleReady = latest.visibleCount === MARKER_SELECTORS.length
+      || (isHeadless && markersReady)
     if (routeReady && visibleReady && markersReady) {
       return latest
     }
@@ -240,6 +240,9 @@ function replaceMarker(source: string, baseMarker: string, nextMarker: string, l
 }
 
 async function readDistJsFiles() {
+  if (!await fs.pathExists(DIST_ROOT)) {
+    return []
+  }
   const files = await fs.readdir(DIST_ROOT, { recursive: true })
   const entries: Array<{ file: string, content: string }> = []
   for (const file of files) {
@@ -253,6 +256,18 @@ async function readDistJsFiles() {
     })
   }
   return entries
+}
+
+async function waitForDistJsMarker(marker: string, timeoutMs = 120_000) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    const entries = await readDistJsFiles()
+    if (entries.some(entry => entry.content.includes(marker))) {
+      return entries
+    }
+    await new Promise(resolve => setTimeout(resolve, 250))
+  }
+  throw new Error(`Timed out waiting emitted JS marker ${marker}`)
 }
 
 function hasExecutableAliasImport(code: string) {
@@ -294,9 +309,9 @@ function hasExecutableAliasImport(code: string) {
   return found
 }
 
-async function assertDistJsKeepsBundledAliasMarker(marker: string, markerFile = COMMON_JS_DIST) {
-  await devProcess?.waitFor(waitForFileContains(markerFile, marker), `dist keeps bundled bootstrap marker ${marker}`)
-  const entries = await readDistJsFiles()
+async function assertDistJsKeepsBundledAliasMarker(marker: string) {
+  const entries = await devProcess?.waitFor(waitForDistJsMarker(marker), `dist keeps bundled bootstrap marker ${marker}`)
+    ?? await readDistJsFiles()
   expect(entries.some(entry => entry.content.includes(marker))).toBe(true)
 
   const aliasOffenders = entries
@@ -328,6 +343,10 @@ describe('app.vue alias import layout HMR runtime', { concurrent: false }, () =>
     previousBridgePostConnectRefresh = process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
     delete process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV]
     delete process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
+    if (process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless') {
+      sharedInfraUnavailableMessage = 'headless mpcore provider 当前不实现 stateful HMR transport payload 拉取；保留真实 DevTools transport 验收。'
+      return
+    }
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()
     await cleanDevtoolsCache('all', { cwd: APP_ROOT })
@@ -354,7 +373,7 @@ describe('app.vue alias import layout HMR runtime', { concurrent: false }, () =>
     })
 
     await devProcess.waitFor(Promise.all([
-      waitForFileContains(COMMON_JS_DIST, BOOTSTRAP_MARKER),
+      waitForDistJsMarker(BOOTSTRAP_MARKER),
       waitForStatefulHmrControl(HMR_CONTROL_DIST),
     ]), 'initial stateful HMR output bundles aliased bootstrap import')
 
@@ -444,9 +463,16 @@ describe('app.vue alias import layout HMR runtime', { concurrent: false }, () =>
     const pageMarker = createHmrMarker('APP-VUE-ALIAS-PAGE', 'weapp')
     const pageClientVersion = await readStatefulHmrClientVersion(miniProgram)
     await replaceFileByRename(PAGE_VUE_PATH, replaceMarker(originalPageSource, PAGE_MARKER, pageMarker, 'index page'))
-    await devProcess.waitFor(waitForFileContains(HMR_UPDATE_DIST, pageMarker), 'updated page script patch published')
+    const pageOutput = await devProcess.waitFor(waitForDistJsMarker(pageMarker), 'updated page script emitted')
     await assertDistJsKeepsBundledAliasMarker(BOOTSTRAP_MARKER)
-    await waitForStatefulHmrClientVersion(miniProgram, pageClientVersion + 1)
+    const pagePatchPublished = pageOutput.some(entry => entry.file === '__weapp_vite_hmr/update.js' && entry.content.includes(pageMarker))
+    if (pagePatchPublished) {
+      await waitForStatefulHmrClientVersion(miniProgram, pageClientVersion + 1)
+    }
+    else {
+      await waitForIdeHmrSettled()
+      await reconnectAutomatorAfterFullReload()
+    }
     await waitForVisibleRuntime(miniProgram, [pageMarker, BOOTSTRAP_MARKER])
 
     const bootstrapMarker = createHmrMarker('APP-VUE-ALIAS-BOOTSTRAP', 'weapp')

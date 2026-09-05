@@ -75,6 +75,17 @@ type StatefulHmrDevWatchOptions = Pick<
   'compareContentsForPolling' | 'pollInterval' | 'usePolling'
 >
 
+function collectRolldownAliasEntries(config: ResolvedConfig) {
+  const aliases = Array.isArray(config.resolve?.alias) ? config.resolve.alias : []
+  const entries: Record<string, string> = {}
+  for (const alias of aliases) {
+    if (typeof alias.find === 'string' && typeof alias.replacement === 'string') {
+      entries[alias.find] = alias.replacement
+    }
+  }
+  return entries
+}
+
 interface BundledDevInternal {
   _devEngine?: StatefulHmrDevEngine
   getRolldownOptions: () => Promise<Record<string, any>>
@@ -184,6 +195,16 @@ export class StatefulHmrViteAdapter {
       const output = Array.isArray(options.output)
         ? (options.output[0] ??= {})
         : (options.output ??= {})
+      const aliases = collectRolldownAliasEntries(this.config)
+      if (Object.keys(aliases).length > 0) {
+        options.resolve = {
+          ...(options.resolve ?? {}),
+          alias: {
+            ...(options.resolve?.alias ?? {}),
+            ...aliases,
+          },
+        }
+      }
       const configuredOutput = this.config.build.rolldownOptions.output
       const desiredOutput = Array.isArray(configuredOutput) ? configuredOutput[0] : configuredOutput
       Object.assign(output, desiredOutput)

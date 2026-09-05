@@ -213,6 +213,8 @@ export interface WevuBindingSourceSpanV1 {
 export interface WevuRuntimeBindingRecordV1 {
   id: string
   outputPath: string
+  /** 仅在绑定源码归属不同于清单默认文件时记录。 */
+  sourceFile?: string
   updateMode?: WevuBindingUpdateMode
   sourceRoots?: string[]
   sourceLocation?: WevuBindingSourceSpanV1

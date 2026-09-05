@@ -1,4 +1,3 @@
-import type { InvalidOriginalMapping, OriginalMapping } from '@jridgewell/trace-mapping'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
@@ -7,7 +6,6 @@ import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { TemplateCompileResult } from '../../compiler/template'
 import type { ComponentSourceInfo } from './componentSources'
 import type { AutoUsingComponentsOptions, CompileVueFileOptions } from './types'
-import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
 import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
@@ -21,6 +19,7 @@ import { getMiniProgramTemplatePlatform } from '../../compiler/template'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
 import { generateScopedId } from '../scopedId'
 import { transformScript } from '../script'
+import { remapJsxBindingManifestLocations } from './bindingManifestLocations'
 import { applyCompilerTemplateWrappers } from './pageLayout'
 import { warnReservedScriptSetupProps } from './reservedProps'
 
@@ -258,79 +257,6 @@ export function resolveEffectivePropsDerivedKeys(
   }
 
   return keys.size ? [...keys] : undefined
-}
-
-function createSourceLineStarts(source: string) {
-  const lineStarts = [0]
-  for (const match of source.matchAll(/\r\n?|\n/g)) {
-    lineStarts.push(match.index + match[0].length)
-  }
-  return lineStarts
-}
-
-function clearBindingManifestLocations(manifest: WevuBindingManifestV1) {
-  for (const binding of manifest.bindings) {
-    binding.sourceLocation = undefined
-  }
-}
-
-export function remapJsxBindingManifestLocations(
-  manifest: WevuBindingManifestV1,
-  sourceMap: unknown,
-  source: string | undefined,
-  sourceFile?: string,
-) {
-  if (sourceFile) {
-    manifest.sourceFile = sourceFile
-  }
-  if (!source || !sourceMap) {
-    clearBindingManifestLocations(manifest)
-    return
-  }
-  let traceMap: TraceMap
-  try {
-    // compiler-sfc 的 RawSourceMap 与 trace-mapping 输入结构一致，但两者版本字段类型声明不同。
-    const traceMapInput = sourceMap as unknown as ConstructorParameters<typeof TraceMap>[0]
-    traceMap = new TraceMap(traceMapInput)
-  }
-  catch {
-    clearBindingManifestLocations(manifest)
-    return
-  }
-  const lineStarts = createSourceLineStarts(source)
-  const remap = (line: number, column: number) => {
-    let original: InvalidOriginalMapping | OriginalMapping
-    try {
-      original = originalPositionFor(traceMap, {
-        line,
-        column: Math.max(0, column - 1),
-      })
-    }
-    catch {
-      return undefined
-    }
-    if (original.source == null || original.line == null || original.column == null) {
-      return undefined
-    }
-    return {
-      offset: (lineStarts[original.line - 1] ?? 0) + original.column,
-      line: original.line,
-      column: original.column + 1,
-    }
-  }
-  for (const binding of manifest.bindings) {
-    const location = binding.sourceLocation
-    if (!location) {
-      continue
-    }
-    const start = remap(location.start.line, location.start.column)
-    const end = remap(location.end.line, location.end.column)
-    if (!start || !end) {
-      binding.sourceLocation = undefined
-      continue
-    }
-    binding.sourceLocation = { start, end }
-  }
 }
 
 export async function compileScriptPhase(
