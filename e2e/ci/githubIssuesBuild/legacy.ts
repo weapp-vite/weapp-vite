@@ -1145,6 +1145,7 @@ export function registerGithubIssuesBuildLegacyCases() {
     const scopedSlotWxml = await Promise.all(scopedSlotWxmlFiles.map(async file => await fs.readFile(path.join(DIST_ROOT, 'pages/issue-829', file), 'utf8')))
 
     expect(appJson.pages).toContain('pages/issue-466/index')
+    expect(appJson.pages?.some(page => page.startsWith('components/'))).toBe(false)
     expect(appJson.subPackages?.some(subPackage => subPackage.root === 'subpackages/issue-466')).toBe(true)
     await expect(fs.pathExists(issue466MainWxmlPath)).resolves.toBe(true)
     await expect(fs.pathExists(issue466SubpackageWxmlPath)).resolves.toBe(true)

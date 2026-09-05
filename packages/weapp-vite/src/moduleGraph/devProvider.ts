@@ -1,4 +1,4 @@
-import type { HotUpdateOptions, InlineConfig, Plugin, ViteDevServer } from 'vite'
+import type { HotUpdateOptions, InlineConfig, Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import type { CompilerContext, MutableCompilerContext } from '../context'
 import { createLogger, createServer, transformWithOxc } from 'vite'
 import { parse as parseSfc } from 'vue/compiler-sfc'
@@ -40,7 +40,7 @@ function collectResolverPlugins(config: InlineConfig) {
   return plugins.filter(plugin => !isInternalPlugin(plugin))
 }
 
-async function transformVueSource(code: string, id: string) {
+async function transformVueSource(code: string, id: string, config?: ResolvedConfig) {
   const { descriptor, errors } = parseSfc(code, { filename: id })
   if (errors.length) {
     throw errors[0]
@@ -54,7 +54,8 @@ async function transformVueSource(code: string, id: string) {
     lang,
     sourcemap: false,
     target: 'esnext',
-  })
+    tsconfig: false,
+  }, undefined, config)
 }
 
 async function isExternalRequest(
@@ -148,7 +149,7 @@ function createProviderPlugin(
       if (!id.endsWith('.vue')) {
         return null
       }
-      return await transformVueSource(code, id)
+      return await transformVueSource(code, id, this?.environment?.config)
     },
     async hotUpdate({ type, file, read }) {
       if (this.environment.name !== 'client' || type === 'delete') {
@@ -184,6 +185,7 @@ export async function createDevModuleGraphProvider(
     : userWatch?.ignored
   const server: ViteDevServer = await createServer({
     ...buildConfig,
+    root: buildConfig.root ?? configService?.cwd,
     appType: 'custom',
     configFile: false,
     customLogger: createLogger('silent'),
