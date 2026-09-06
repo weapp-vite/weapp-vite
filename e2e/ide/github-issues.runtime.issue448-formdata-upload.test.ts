@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
 import {
   callRoutePageMethodWithOptions,
@@ -10,6 +11,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { UPLOAD_CHECKPOINTS } from './githubIssuesDom/webApis'
 
 const LOCAL_SERVER_INFRA_ERROR_PATTERNS = [
   /listen EPERM/i,
@@ -90,6 +92,7 @@ describe('github-issues runtime issue #448 FormData upload', { concurrent: false
   }, 30_000)
 
   it('uploads wx.downloadFile data as Blob, File, and Request FormData bodies in real DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', UPLOAD_CHECKPOINTS)
     if (sharedInfraUnavailableMessage) {
       ctx.skip(sharedInfraUnavailableMessage)
     }
@@ -118,12 +121,16 @@ describe('github-issues runtime issue #448 FormData upload', { concurrent: false
       }
 
       const activeMiniProgram = await getSharedMiniProgram(ctx)
+      await dom.check('initial', activeMiniProgram, page)
       const started = await callRoutePageMethodWithOptions(activeMiniProgram, route, '_startFormDataUploadE2E', {
         protocolTimeoutMs: 12_000,
         retries: 1,
       })
       expect(started?.ok).toBe(true)
       const runtime = await waitForFormDataUploadRuntime(activeMiniProgram, route)
+      for (const checkpoint of UPLOAD_CHECKPOINTS.slice(1)) {
+        await dom.check(checkpoint.id, activeMiniProgram, page)
+      }
       await expect(page.waitForRendered({
         dataset: {
           formDataStatus: 'passed',

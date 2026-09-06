@@ -5,6 +5,7 @@ import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   clearRuntimeWarningLog,
+  initializeIdeWarningReportRun,
   resolveReportProjectPath,
   writeIdeWarningReport,
 } from './ideWarningReport'
@@ -28,6 +29,17 @@ describe('ideWarningReport', () => {
   afterEach(() => {
     delete process.env.WEAPP_VITE_E2E_REPORT_MARKERS
     vi.restoreAllMocks()
+  })
+
+  it('uses the OS temporary directory and keeps same-second invocation evidence separate', () => {
+    vi.spyOn(fs, 'writeFileSync').mockReturnValue(undefined)
+    vi.spyOn(fs, 'mkdirSync').mockReturnValue(undefined)
+    const now = new Date('2026-09-01T00:00:00.000Z')
+    const first = initializeIdeWarningReportRun(now)
+    const second = initializeIdeWarningReportRun(now)
+    expect(path.dirname(first.eventLogPath)).toBe(os.tmpdir())
+    expect(first.eventLogPath).not.toBe(second.eventLogPath)
+    expect(first.reportDir).not.toBe(second.reportDir)
   })
 
   it('resolves project paths relative to repository root', () => {

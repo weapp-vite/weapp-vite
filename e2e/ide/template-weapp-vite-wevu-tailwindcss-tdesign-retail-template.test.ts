@@ -6,6 +6,10 @@ import { extractConfigFromVue } from '../../packages/weapp-vite/src/utils/file'
 import { formatWxml, normalizeWxmlForSnapshot } from '../template-e2e.utils'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { assertTemplateRouteCoverage, resolveTemplateDomPlan, tapTemplateNode } from '../utils/templateAcceptance'
+import { RETAIL_TEMPLATE_DOM } from '../utils/templateAcceptance/retail'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -21,6 +25,7 @@ const ROUTE_QUERY_OVERRIDES = new Map<string, string>([
   ['pages/order/order-detail/index', 'orderNo=132381532610540875'],
   ['pages/order/apply-service/index', 'orderNo=132222623132329291&skuId=135691625&spuId=135691625'],
   ['pages/order/fill-tracking-no/index', 'rightsNo=123123423'],
+  ['pages/order/after-service-detail/index', 'rightsNo=123123423'],
   ['pages/order/delivery-detail/index', `data=${encodeURIComponent(JSON.stringify({
     nodes: [],
     company: '顺丰速运',
@@ -231,16 +236,6 @@ async function runBuild(projectRoot: string) {
     cwd: projectRoot,
     label: `ide:retail-parity:${path.basename(projectRoot)}`,
   })
-}
-
-async function disableBuiltLazyCodeLoading(projectRoot: string) {
-  const appJsonPath = path.resolve(projectRoot, 'dist/app.json')
-  const appJson = JSON.parse(await readFile(appJsonPath, 'utf8')) as Record<string, unknown>
-  if (!('lazyCodeLoading' in appJson)) {
-    return
-  }
-  delete appJson.lazyCodeLoading
-  await writeFile(appJsonPath, `${JSON.stringify(appJson, null, 2)}\n`, 'utf8')
 }
 
 async function loadTemplateAppConfig() {
@@ -640,6 +635,8 @@ async function captureRouteWxml(options: {
   errorCollector: RuntimeErrorCollector
   reloadSession?: () => Promise<SharedProjectSession>
   warningCollector: RuntimeWarningCollector
+  accept?: (miniProgram: any, page: any) => Promise<string | undefined>
+  captureWxml?: boolean
 }) {
   let { miniProgram, errorCollector, warningCollector } = options
   const { projectName, reloadSession, route, pagePath } = options
@@ -679,14 +676,20 @@ async function captureRouteWxml(options: {
         route,
         stage: 'after-route-wait',
       })
-      await waitForRouteReady({
-        page,
-        pagePath,
-        route,
-        errorCollector,
-        marker,
-        projectName,
-      })
+      let initialWxml: string | undefined
+      if (options.accept) {
+        initialWxml = await options.accept(miniProgram, page)
+      }
+      else {
+        await waitForRouteReady({
+          page,
+          pagePath,
+          route,
+          errorCollector,
+          marker,
+          projectName,
+        })
+      }
       ensureNoRuntimeErrors({
         errorCollector,
         marker,
@@ -724,9 +727,12 @@ async function captureRouteWxml(options: {
         route,
         stage: 'before-wxml-read',
       })
-      return await readNormalizedPageWxml(page)
+      return options.captureWxml === false ? '' : initialWxml ?? await readNormalizedPageWxml(page)
     }
     catch (error) {
+      if (options.accept) {
+        throw error
+      }
       lastError = error
       // eslint-disable-next-line no-console
       console.warn(
@@ -754,6 +760,8 @@ async function captureProjectPagesWxml(options: {
   projectName: string
   pages: string[]
   launchQueryMap: Map<string, string>
+  accept?: (miniProgram: any, page: any, pagePath: string) => Promise<string | undefined>
+  captureWxml?: boolean
 }) {
   const { projectRoot, projectName, pages, launchQueryMap } = options
   let session = await getSharedProjectSession(projectRoot)
@@ -771,6 +779,8 @@ async function captureProjectPagesWxml(options: {
         return session
       },
       warningCollector: session.warningCollector,
+      accept: options.accept ? (miniProgram, page) => options.accept!(miniProgram, page, pagePath) : undefined,
+      captureWxml: options.captureWxml,
     })
     pageWxmlMap.set(pagePath, wxml)
   }
@@ -811,7 +821,14 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
     await closeSharedProjectSessions()
   })
 
-  it('keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail', async () => {
+  it('keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail', async (context) => {
+    const allRoutes = resolveTemplateDomPlan(RETAIL_TEMPLATE_DOM, resolveRuntimeProviderName())
+    const onlyPage = process.env.RETAIL_PARITY_ONLY_PAGE?.trim()
+    if (onlyPage && process.env.WEAPP_VITE_E2E_DOM_ACCEPTANCE === '1') {
+      throw new Error('RETAIL_PARITY_ONLY_PAGE cannot satisfy full DOM acceptance')
+    }
+    const routes = onlyPage ? allRoutes.filter(route => normalizeSegment(route.route) === onlyPage) : allRoutes
+    const dom = createDomAcceptance(context, 'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template', routes.flatMap(route => route.steps))
     const [appConfig, templateAppConfig, projectConfig] = await Promise.all([
       readFile(APP_JSON_PATH, 'utf8').then(JSON.parse),
       loadTemplateAppConfig(),
@@ -819,8 +836,8 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
     ])
     const appPages = resolvePages(appConfig)
     const templatePages = resolvePages(templateAppConfig)
+    assertTemplateRouteCoverage(templatePages, allRoutes)
     expect(templatePages).toEqual(appPages)
-    const onlyPage = process.env.RETAIL_PARITY_ONLY_PAGE?.trim()
     const pagesToCompare = onlyPage ? appPages.filter(page => page === onlyPage) : appPages
     if (onlyPage) {
       expect(pagesToCompare.length).toBe(1)
@@ -832,7 +849,7 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
     }
 
     await Promise.all([
-      runBuild(APP_ROOT).then(() => disableBuiltLazyCodeLoading(APP_ROOT)),
+      runBuild(APP_ROOT),
       runBuild(TEMPLATE_ROOT),
     ])
 
@@ -851,13 +868,33 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
           projectRoot: APP_ROOT,
           pages: pagesToCompare,
         })
+    await closeSharedProjectSessions()
+    const runtimeTemplateWxml = await captureProjectPagesWxml({
+      projectRoot: TEMPLATE_ROOT,
+      projectName: 'template',
+      pages: routes.map(route => normalizeSegment(route.route)).filter(route => !onlyPage || route === onlyPage),
+      launchQueryMap,
+      captureWxml: useRuntimeParity,
+      async accept(miniProgram, page, pagePath) {
+        const route = routes.find(item => normalizeSegment(item.route) === pagePath)!
+        let initialWxml: string | undefined
+        for (const step of route.steps) {
+          if (step.method) {
+            await page.callMethod(step.method)
+          }
+          if (step.tap) {
+            await tapTemplateNode(page, step.tap)
+          }
+          await dom.check(step.id, miniProgram, page)
+          if (useRuntimeParity && step === route.steps[0]) {
+            initialWxml = await readNormalizedPageWxml(page)
+          }
+        }
+        return initialWxml
+      },
+    })
     const templateWxmlMap = useRuntimeParity
-      ? await captureProjectPagesWxml({
-          projectRoot: TEMPLATE_ROOT,
-          projectName: 'template',
-          pages: pagesToCompare,
-          launchQueryMap,
-        })
+      ? runtimeTemplateWxml
       : await captureBuiltProjectPagesWxml({
           projectRoot: TEMPLATE_ROOT,
           pages: pagesToCompare,

@@ -793,7 +793,12 @@ headlessPage?.wx.removeSavedFile({
   },
 })
 
-const launchResult = launch({ projectPath: '/tmp/project' })
+const launchResult = launch({
+  projectPath: '/tmp/project',
+  onSessionCreated(session) {
+    expectType<HeadlessTestingSessionHandle>(session)
+  },
+})
 launchResult.then((session) => {
   expectType<Promise<unknown>>(session.callWxMethod('getStorageSync', 'probe'))
   expectType<Promise<unknown>>(session.callWxMethodWithOptions('getStorageSync', {
@@ -810,6 +815,7 @@ launchResult.then((session) => {
   session.toolInfo().then(info => expectType<'mpcore-simulator'>(info.version))
   session.reLaunch('/pages/index/index').then((page) => {
     expectType<string>(page.path)
+    expectType<Promise<void>>(page.setData({ 'probe.status': 'updated' }))
     expectType<Record<string, string>>(page.query)
     expectType<Promise<unknown>>(page.callMethodWithOptions('runProbe', {
       fallback: false,

@@ -126,7 +126,8 @@ export function createPageInstance(
   }
 
   for (const [key, value] of Object.entries(definition)) {
-    if (key === 'data') {
+    // 页面 options 由宿主保存导航参数，不能被 Component 的配置对象覆盖。
+    if (key === 'data' || key === 'options') {
       continue
     }
     bindFunction(instance, key, value)

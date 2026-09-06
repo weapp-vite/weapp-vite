@@ -6,6 +6,8 @@ import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
 
 const DEVTOOLS_GLOBAL_SETUP = path.resolve(import.meta.dirname, './vitest.e2e.ide.global-setup.ts')
 const DEVTOOLS_SETUP_FILE = path.resolve(import.meta.dirname, './vitest.e2e.ide.setup.ts')
+const DOM_SETUP_FILE = path.resolve(import.meta.dirname, './vitest.e2e.dom.setup.ts')
+const DOM_REPORTER = path.resolve(import.meta.dirname, './scripts/domAcceptanceReport/reporter.ts')
 
 ensureIdeWarningReportEnv()
 
@@ -20,6 +22,7 @@ export default defineConfig({
     maxWorkers: resolveE2EMaxWorkers(),
     fileParallelism: false,
     globalSetup: [DEVTOOLS_GLOBAL_SETUP],
-    setupFiles: [DEVTOOLS_SETUP_FILE],
+    setupFiles: [DOM_SETUP_FILE, DEVTOOLS_SETUP_FILE],
+    reporters: ['default', DOM_REPORTER],
   },
 })

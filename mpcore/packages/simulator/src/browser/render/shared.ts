@@ -1,7 +1,11 @@
+import type { LoadWxsModule } from '../../view/wxs'
 import type { BrowserVirtualFiles } from '../virtualFiles'
 import type { BrowserRenderScope, DomNodeLike } from './types'
-import { parseDocument } from 'htmlparser2'
+import { dirname, join, normalize } from 'pathe'
 import { resolveTemplateExpression } from '../../view/templateExpression'
+import { createImportedTemplateState } from '../../view/templateImports'
+import { wxsScopeData } from '../../view/wxs'
+import { parseWxsTemplateDocument } from '../../view/wxsDocument'
 import { readBrowserVirtualFile } from '../virtualFiles'
 
 const TEMPLATE_INTERPOLATION_RE = /\{\{([^{}]+)\}\}/g
@@ -82,13 +86,27 @@ export function readTemplateSource(files: BrowserVirtualFiles, filePath: string)
 }
 
 export function parseTemplateDocument(templateSource: string) {
-  return parseDocument(`<page>${templateSource}</page>`, {
-    xmlMode: false,
-    decodeEntities: false,
-    lowerCaseAttributeNames: false,
-    lowerCaseTags: false,
-    recognizeSelfClosing: true,
-  }) as unknown as DomNodeLike
+  return parseWxsTemplateDocument(templateSource) as unknown as DomNodeLike
+}
+
+export function prepareTemplateRenderState(files: BrowserVirtualFiles, root: DomNodeLike, filePath: string, projectRoot: string, loadWxs: LoadWxsModule) {
+  return createImportedTemplateState(root, filePath, (owner, source) => {
+    const resolved = normalize(source.startsWith('/')
+      ? join(projectRoot, source.slice(1))
+      : join(dirname(owner), source))
+    const document = parseTemplateDocument(readTemplateSource(files, resolved))
+    return { filePath: resolved, root: document.children?.[0] ?? document }
+  }, (owner, node) => {
+    const source = node.attribs?.src
+    if (source) {
+      const resolved = normalize(source.startsWith('/')
+        ? join(projectRoot, source.slice(1))
+        : join(dirname(owner), source))
+      return loadWxs(resolved)
+    }
+    const inlineSource = (node.children ?? []).map(child => child.data ?? '').join('')
+    return loadWxs(`${owner}#wxs:${node.attribs?.module}`, inlineSource)
+  })
 }
 
 export function serializeDomNode(node: DomNodeLike): string {
@@ -123,23 +141,23 @@ export function isIgnorableTextNode(node: DomNodeLike) {
 function resolveAttributeValue(value: string, scope: BrowserRenderScope) {
   if (isMustacheOnly(value)) {
     const expression = value.trim().slice(2, -2)
-    return resolveValueByPath(scope.data, expression)
+    return resolveValueByPath(wxsScopeData(scope), expression)
   }
-  return interpolateTemplate(value, scope.data)
+  return interpolateTemplate(value, wxsScopeData(scope))
 }
 
 export function resolveComponentAttributeValue(value: string, scope: BrowserRenderScope) {
   if (isMustacheOnly(value)) {
     const expression = value.trim().slice(2, -2)
-    return resolveRawValueByPath(scope.data, expression)
+    return resolveRawValueByPath(wxsScopeData(scope), expression)
   }
-  return interpolateTemplate(value, scope.data)
+  return interpolateTemplate(value, wxsScopeData(scope))
 }
 
 export function applyNodeBindings(node: DomNodeLike, scope: BrowserRenderScope) {
   if (!isTagNode(node)) {
     if (node.type === 'text' && typeof node.data === 'string') {
-      node.data = interpolateTemplate(node.data, scope.data)
+      node.data = interpolateTemplate(node.data, wxsScopeData(scope))
     }
     return
   }
@@ -179,10 +197,10 @@ export function evaluateConditionalBranch(node: DomNodeLike, scope: BrowserRende
   if (condition == null) {
     return true
   }
-  return Boolean(resolveRawValueByPath(scope.data, condition))
+  return Boolean(resolveRawValueByPath(wxsScopeData(scope), condition))
 }
 
-export function createLoopScope(scope: BrowserRenderScope, itemName: string, indexName: string, item: unknown, index: number): BrowserRenderScope {
+export function createLoopScope(scope: BrowserRenderScope, itemName: string, indexName: string, item: unknown, index: number | string): BrowserRenderScope {
   return {
     ...scope,
     data: {

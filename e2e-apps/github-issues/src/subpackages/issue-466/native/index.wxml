@@ -2,7 +2,8 @@
   <text class="issue466-native-title">issue-466 native Dialog.confirm runtime</text>
   <text class="issue466-native-line">confirmType = {{confirmType}}</text>
   <text class="issue466-native-line">defaultConfirmType = {{defaultConfirmType}}</text>
-  <text class="issue466-native-line">lastAction = {{lastAction}}</text>
+  <text id="issue466-status" class="issue466-native-line">lastAction = {{lastAction}}</text>
+  <text id="issue466-counts" class="issue466-native-line">counts = open {{openCount}}, settle {{settleCount}}</text>
   <text class="issue466-native-line">lastError = {{lastError || 'none'}}</text>
   <text class="issue466-native-line">dialogVisible = {{dialogVisible}}</text>
   <text class="issue466-native-line">lastTitle = {{lastTitle || 'none'}}</text>

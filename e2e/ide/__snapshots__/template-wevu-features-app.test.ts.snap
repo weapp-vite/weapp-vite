@@ -2,7 +2,7 @@
 
 exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::app.wxss 1`] = `
 ".wevu-features-app-root {
-  color: inherit;
+    color: inherit;
 }
 "
 `;
@@ -27,9 +27,7 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   </view>
   <view class="router-subpackage-page__actions">
     <view class="router-subpackage-page__btn" data-wi-tap="i0">返回 coverage 首页</view>
-    <view
-      class="router-subpackage-page__btn router-subpackage-page__btn--secondary"
-      data-wi-tap="i1">
+    <view class="router-subpackage-page__btn router-subpackage-page__btn--secondary" data-wi-tap="i1">
       去主包页
     </view>
     <view class="router-subpackage-page__btn router-subpackage-page__btn--accent" data-wi-tap="i2">
@@ -51,14 +49,10 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   </view>
   <view class="router-independent-page__actions">
     <view class="router-independent-page__btn" data-wi-tap="i0">返回 coverage 首页</view>
-    <view
-      class="router-independent-page__btn router-independent-page__btn--secondary"
-      data-wi-tap="i1">
+    <view class="router-independent-page__btn router-independent-page__btn--secondary" data-wi-tap="i1">
       去主包页
     </view>
-    <view
-      class="router-independent-page__btn router-independent-page__btn--accent"
-      data-wi-tap="i2">
+    <view class="router-independent-page__btn router-independent-page__btn--accent" data-wi-tap="i2">
       去普通分包页
     </view>
   </view>
@@ -71,13 +65,7 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   <view class="feature-nav-title">wevu 特性展示</view>
   <view class="feature-nav-subtitle">选择一个特性场景进入</view>
   <view class="feature-nav-list">
-    <navigator
-      class="feature-nav-item"
-      wx:for="{{featureList}}"
-      wx:for-item="item"
-      wx:for-index="__wv_index_0"
-      wx:key="key"
-      url="{{item.path}}">
+    <navigator class="feature-nav-item" wx:for="{{featureList}}" wx:for-item="item" wx:for-index="__wv_index_0" wx:key="key" url="{{item.path}}">
       <view class="feature-nav-item-title">{{item.title}}</view>
       <view class="feature-nav-item-summary">{{item.summary}}</view>
     </navigator>
@@ -98,11 +86,7 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       count: {{count}}
     </view>
   </view>
-  <NativeUsesVue
-    title="原生组件引入 Vue 组件（static）"
-    subtitle="native -> vue static chain"
-    badge="static"
-    note="这段文本由原生组件传递给 Vue 组件。" />
+  <NativeUsesVue title="原生组件引入 Vue 组件（static）" subtitle="native -> vue static chain" badge="static" note="这段文本由原生组件传递给 Vue 组件。"/>
 </view>
 "
 `;
@@ -123,28 +107,15 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     </view>
   </view>
   <view class="router-coverage-page__section-title">页面跳转</view>
-  <view
-    class="router-coverage-page__card"
-    wx:for="{{ROUTER_COVERAGE_TARGETS}}"
-    wx:for-item="item"
-    wx:for-index="__wv_index_0"
-    wx:key="key">
+  <view class="router-coverage-page__card" wx:for="{{ROUTER_COVERAGE_TARGETS}}" wx:for-item="item" wx:for-index="__wv_index_0" wx:key="key">
     <view class="router-coverage-page__card-title">{{item.title}}</view>
     <view class="router-coverage-page__card-summary">{{item.summary}}</view>
     <view class="router-coverage-page__actions">
-      <view
-        class="router-coverage-page__btn"
-        data-wi-tap="i0"
-        data-wv-s0="{{item}}"
-        data-wv-i0="{{__wv_index_0}}">
+      <view class="router-coverage-page__btn" data-wi-tap="i0" data-wv-s0="{{item}}" data-wv-i0="{{__wv_index_0}}">
         push 到当前页
       </view>
       <block wx:if="{{item.key === 'independent'}}">
-        <view
-          class="router-coverage-page__btn router-coverage-page__btn--secondary"
-          data-wi-tap="i1"
-          data-wv-s0="{{item}}"
-          data-wv-i0="{{__wv_index_0}}">
+        <view class="router-coverage-page__btn router-coverage-page__btn--secondary" data-wi-tap="i1" data-wv-s0="{{item}}" data-wv-i0="{{__wv_index_0}}">
           replace 到当前页
         </view>
       </block>
@@ -155,16 +126,10 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     <view class="router-coverage-page__btn" id="router-coverage-blocked" data-wi-tap="i2">
       触发 beforeEach 阻断
     </view>
-    <view
-      class="router-coverage-page__btn router-coverage-page__btn--warn"
-      id="router-coverage-error"
-      data-wi-tap="i3">
+    <view class="router-coverage-page__btn router-coverage-page__btn--warn" id="router-coverage-error" data-wi-tap="i3">
       触发 beforeResolve 报错
     </view>
-    <view
-      class="router-coverage-page__btn router-coverage-page__btn--secondary"
-      id="router-coverage-back"
-      data-wi-tap="i4">
+    <view class="router-coverage-page__btn router-coverage-page__btn--secondary" id="router-coverage-back" data-wi-tap="i4">
       调用 router.back()
     </view>
   </view>
@@ -299,7 +264,7 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   <view class="router-sub-page__btn" id="router-sub-call-prev-page-router" data-wi-tap="i1">
     调用上页 pageRouter.navigateTo('./target/index')
   </view>
-  <RouterOriginProbe class="__wv-ref-0" title="component router origin probe" />
+  <RouterOriginProbe class="__wv-ref-0" title="component router origin probe"/>
   <view class="router-sub-page__btn" id="router-sub-call-component-router" data-wi-tap="i2">
     组件 this.router.navigateTo('./target/index')
   </view>
@@ -377,21 +342,12 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     <view style="{{__wv_style_0}}" class="{{__wv_cls_2}}" id="ctrl-toggle-border" data-wi-tap="i2">
       边框模式：{{controlState.strongBorder ? 'strong' : 'dash'}}
     </view>
-    <view
-      class="use-attrs-page__btn wevu-features-btn-bump-seed"
-      id="ctrl-bump-seed"
-      data-wi-tap="i3">
+    <view class="use-attrs-page__btn wevu-features-btn-bump-seed" id="ctrl-bump-seed" data-wi-tap="i3">
       递增 seed：{{controlState.seed}}
     </view>
   </view>
   <block wx:if="{{featureMounted}}">
-    <UseAttrsFeature
-      title="组件内 useAttrs()"
-      state-class="{{currentToneClass}}"
-      visible="{{controlState.visible}}"
-      badge-style="{{currentBadgeStyle}}"
-      extra-label="{{currentExtraLabel}}"
-      seed-tag="{{controlState.seed}}" />
+    <UseAttrsFeature title="组件内 useAttrs()" state-class="{{currentToneClass}}" visible="{{controlState.visible}}" badge-style="{{currentBadgeStyle}}" extra-label="{{currentExtraLabel}}" seed-tag="{{controlState.seed}}"/>
   </block>
 </view>
 "
@@ -416,15 +372,7 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   </view>
   <view class="use-model-page__value" id="model-parent-title">parent title = {{childTitle}}</view>
   <view class="use-model-page__value" id="model-log-size">emit logs = {{emitLogs.length}}</view>
-  <UseModelFeature
-    title="{{childTitle}}"
-    data-wd-update-title="1"
-    data-wi-update-title="i2"
-    bind:update-title="__weapp_vite_inline"
-    model-value="{{modelValue}}"
-    data-wd-update-modelvalue="1"
-    data-wi-update-modelvalue="i3"
-    bind:update-modelvalue="__weapp_vite_inline" />
+  <UseModelFeature title="{{childTitle}}" data-wd-update-title="1" data-wi-update-title="i2" bind:update-title="__weapp_vite_inline" model-value="{{modelValue}}" data-wd-update-modelvalue="1" data-wi-update-modelvalue="i3" bind:update-modelvalue="__weapp_vite_inline"/>
 </view>
 "
 `;
@@ -450,7 +398,7 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   <view class="use-provide-inject-page__line" id="provide-last-action">
     last action = {{sharedState.lastAction}}
   </view>
-  <UseProvideInjectFeature title="组件内 inject()" />
+  <UseProvideInjectFeature title="组件内 inject()"/>
 </view>
 "
 `;
@@ -462,11 +410,8 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     <view class="provide-inject-scope-page__line" id="scope-page-provider">
       page provide = page-provide-value
     </view>
-    <ProvideInjectScopeMiddle />
-    <ProvideInjectSlotProvider
-      generic:scoped-slots-default="scoped-slot-stable-default-0"
-      vue-slots="{{ {default:true} }}"
-      __wvSlotOwnerId="{{__wvOwnerId || ''}}" />
+    <ProvideInjectScopeMiddle/>
+    <ProvideInjectSlotProvider generic:scoped-slots-default="scoped-slot-stable-default-0" vue-slots="{{ {default:true} }}" __wvSlotOwnerId="{{__wvOwnerId || ''}}"/>
   </view>
 </weapp-layout-provide-inject-scope>
 "
@@ -490,10 +435,7 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   <view class="{{__wv_cls_2}}" id="slots-open-state">
     open state: {{controlState.open ? 'open' : 'closed'}}
   </view>
-  <UseSlotsFeature
-    title="组件内 useSlots()"
-    open="{{controlState.open}}"
-    vue-slots="{{ {header:true,default:true} }}">
+  <UseSlotsFeature title="组件内 useSlots()" open="{{controlState.open}}" vue-slots="{{ {header:true,default:true} }}">
     <weapp-slot-wrapper slot="header">
       <block wx:if="{{controlState.withHeader}}">
         <view class="use-slots-page__header">header slot content</view>

@@ -53,6 +53,13 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
     bindFunction(instance, key, value)
   }
 
+  Object.defineProperty(instance, '__data__', {
+    value: instance.data,
+    enumerable: true,
+    configurable: false,
+    writable: false,
+  })
+
   return instance
 }
 

@@ -11,6 +11,7 @@ import {
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   createHmrMarker,
   replaceFileByRename,
@@ -422,6 +423,31 @@ describe('app.vue alias import layout HMR runtime', { concurrent: false }, () =>
   })
 
   it('keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR', async (ctx) => {
+    const appMarker = createHmrMarker('APP-VUE-ALIAS-APP', 'weapp')
+    const layoutMarker = createHmrMarker('APP-VUE-ALIAS-LAYOUT', 'weapp')
+    const pageMarker = createHmrMarker('APP-VUE-ALIAS-PAGE', 'weapp')
+    const bootstrapMarker = createHmrMarker('APP-VUE-ALIAS-BOOTSTRAP', 'weapp')
+    const acceptance = createDomAcceptance(ctx, 'e2e-apps/app-vue-hmr-alias', [
+      ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER],
+      ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER],
+      ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER],
+      ['page-update', appMarker, layoutMarker, pageMarker, BOOTSTRAP_MARKER],
+      ['dependency-update', appMarker, layoutMarker, pageMarker, bootstrapMarker],
+    ].map(([id, appText, layoutText, pageText, bootstrapText]) => ({
+      id: id!,
+      action: id!,
+      route: INDEX_ROUTE,
+      nodes: [
+        { selector: '.app-vue-hmr-alias-app__marker', scope: [{ has: '.app-vue-hmr-alias-app__marker' }], text: appText!, visible: true },
+        { selector: '.app-vue-hmr-alias-layout__marker', scope: [{ has: '.app-vue-hmr-alias-layout__marker' }], text: layoutText!, visible: true },
+        { selector: '.app-vue-hmr-alias-page__label', text: pageText!, visible: true },
+        { selector: '.app-vue-hmr-alias-page__bootstrap', text: bootstrapText!, visible: true },
+      ],
+    })))
+    async function accept(id: string) {
+      const current = await waitForCurrentRoute(miniProgram)
+      await acceptance.check(id, miniProgram, current)
+    }
     if (sharedInfraUnavailableMessage) {
       ctx.skip(sharedInfraUnavailableMessage)
     }
@@ -442,8 +468,8 @@ describe('app.vue alias import layout HMR runtime', { concurrent: false }, () =>
     await page.waitFor(5_000)
     await waitForVisibleRuntime(miniProgram, [PAGE_MARKER, BOOTSTRAP_MARKER])
     await assertDistJsKeepsBundledAliasMarker(BOOTSTRAP_MARKER)
+    await accept('initial')
 
-    const appMarker = createHmrMarker('APP-VUE-ALIAS-APP', 'weapp')
     await replaceFileByRename(APP_VUE_PATH, replaceMarker(originalAppSource, BASE_APP_MARKER, appMarker, 'app.vue'))
     await devProcess.waitFor(waitForFileContains(APP_SHELL_WXML_DIST, appMarker), 'updated app shell emitted')
     await assertDistJsKeepsBundledAliasMarker(BOOTSTRAP_MARKER)
@@ -451,16 +477,16 @@ describe('app.vue alias import layout HMR runtime', { concurrent: false }, () =>
     // 不兼容更新会触发 DevTools 全量重载并关闭旧 bridge，恢复连接后继续检查同一项目。
     await reconnectAutomatorAfterFullReload()
     await waitForVisibleRuntime(miniProgram, [PAGE_MARKER, BOOTSTRAP_MARKER])
+    await accept('app-update')
 
-    const layoutMarker = createHmrMarker('APP-VUE-ALIAS-LAYOUT', 'weapp')
     await replaceFileByRename(LAYOUT_VUE_PATH, replaceLayoutMarker(originalLayoutSource, layoutMarker))
     await devProcess.waitFor(waitForFileContains(LAYOUT_WXML_DIST, layoutMarker), 'updated layout emitted')
     await assertDistJsKeepsBundledAliasMarker(BOOTSTRAP_MARKER)
     await waitForIdeHmrSettled()
     await reconnectAutomatorAfterFullReload()
     await waitForVisibleRuntime(miniProgram, [PAGE_MARKER, BOOTSTRAP_MARKER])
+    await accept('layout-update')
 
-    const pageMarker = createHmrMarker('APP-VUE-ALIAS-PAGE', 'weapp')
     const pageClientVersion = await readStatefulHmrClientVersion(miniProgram)
     await replaceFileByRename(PAGE_VUE_PATH, replaceMarker(originalPageSource, PAGE_MARKER, pageMarker, 'index page'))
     const pageOutput = await devProcess.waitFor(waitForDistJsMarker(pageMarker), 'updated page script emitted')
@@ -474,13 +500,14 @@ describe('app.vue alias import layout HMR runtime', { concurrent: false }, () =>
       await reconnectAutomatorAfterFullReload()
     }
     await waitForVisibleRuntime(miniProgram, [pageMarker, BOOTSTRAP_MARKER])
+    await accept('page-update')
 
-    const bootstrapMarker = createHmrMarker('APP-VUE-ALIAS-BOOTSTRAP', 'weapp')
     await replaceFileByRename(BOOTSTRAP_TS_PATH, replaceMarker(originalBootstrapSource, BOOTSTRAP_MARKER, bootstrapMarker, 'bootstrap alias module'))
     await assertDistJsKeepsBundledAliasMarker(bootstrapMarker)
     await waitForIdeHmrSettled()
     await reconnectAutomatorAfterFullReload()
     await waitForVisibleRuntime(miniProgram, [pageMarker, bootstrapMarker])
+    await accept('dependency-update')
 
     expect(devProcess.getOutput()).not.toMatch(ALIAS_MODULE_MISSING_RE)
   })

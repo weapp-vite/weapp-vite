@@ -8,6 +8,7 @@ import {
 } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import {
   cleanupResidualIdeProcesses,
@@ -78,6 +79,11 @@ describe('automator bridge wrapper hmr (ide)', { concurrent: false }, () => {
   }, 60_000)
 
   it('keeps the opened bridge wrapper project synced with dev dist updates', async (ctx) => {
+    const pageTemplateMarker = createHmrMarker('IDE-BRIDGE-WRAPPER-HMR', 'weapp')
+    const dom = createDomAcceptance(ctx, 'e2e-apps/wevu-runtime-e2e', [
+      { id: 'initial', route: '/pages/hmr/index', action: '首屏检查实际模板标题', nodes: [{ selector: '.title', text: 'HMR' }] },
+      { id: 'updated', route: '/pages/hmr/index', action: '模板更新后检查 bridge 项目的实际页面标题', nodes: [{ selector: '.title', text: pageTemplateMarker }] },
+    ])
     if (sharedInfraUnavailableMessage) {
       ctx.skip(sharedInfraUnavailableMessage)
       return
@@ -86,8 +92,9 @@ describe('automator bridge wrapper hmr (ide)', { concurrent: false }, () => {
     expect(wrapperProjectPath).toContain(path.join('.tmp', 'e2e-ide-bridge-projects'))
     const wrapperHmrWxml = path.join(wrapperProjectPath!, 'pages/hmr/index.wxml')
     await waitForFileContains(wrapperHmrWxml, '<view class="title">HMR</view>', 20_000)
+    const page = await miniProgram!.reLaunch('/pages/hmr/index')
+    await dom.check('initial', miniProgram!, page)
 
-    const pageTemplateMarker = createHmrMarker('IDE-BRIDGE-WRAPPER-HMR', 'weapp')
     const updatedWxml = originalWxml.replace(
       '<view class="title">HMR</view>',
       `<view class="title">${pageTemplateMarker}</view>`,
@@ -101,5 +108,6 @@ describe('automator bridge wrapper hmr (ide)', { concurrent: false }, () => {
       ]),
       'bridge wrapper hmr update synced',
     )
+    await dom.check('updated', miniProgram!, (await miniProgram!.currentPage())!)
   })
 })

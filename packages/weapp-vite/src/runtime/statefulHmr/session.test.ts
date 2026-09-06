@@ -245,11 +245,26 @@ describe('stateful hmr session', () => {
       { fileName: 'app.wxss', source: '.same{}', type: 'asset' },
       { fileName: 'pages/index/index.wxml', source: '<view class="updated"/>', type: 'asset' },
       { fileName: 'pages/about/index.wxml', source: '<view/>', type: 'asset' },
+      { fileName: 'layouts/default.js', code: 'plainComponent();', type: 'chunk', modules: {} },
     ])
 
     expect(changed).toEqual([
       { fileName: 'pages/index/index.wxml', source: '<view class="updated"/>', type: 'asset' },
       { fileName: 'pages/about/index.wxml', source: '<view/>', type: 'asset' },
+    ])
+  })
+
+  it('preserves executable DevEngine entries when snapshots contain script assets', () => {
+    const output = [
+      { code: 'statefulComponent();', fileName: 'layouts/default.js', type: 'chunk' },
+    ] as any
+    mergeStatefulHmrSnapshotAssets(output, [
+      { fileName: 'layouts/default.js', source: 'plainComponent();', type: 'asset' },
+      { fileName: '__weapp_vite_app_shell.js', source: 'Component({})', type: 'asset' },
+    ])
+    expect(output).toEqual([
+      { code: 'statefulComponent();', fileName: 'layouts/default.js', type: 'chunk' },
+      { fileName: '__weapp_vite_app_shell.js', source: 'Component({})', type: 'asset' },
     ])
   })
 })

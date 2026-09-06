@@ -21,6 +21,7 @@ import {
 } from '../host'
 import { createMiniProgramRuntimeGlobals } from '../runtime/runtimeGlobals'
 import { hasBrowserVirtualFile, readBrowserVirtualFile } from './virtualFiles'
+import { closeBrowserWxsLoader } from './wxs'
 
 export interface BrowserModuleLoader {
   close: () => void
@@ -213,9 +214,10 @@ export function createBrowserModuleLoader(
     return executeModule(entryPath, null).exports
   }
 
-  return {
+  const loader: BrowserModuleLoader = {
     close() {
       moduleCache.clear()
+      closeBrowserWxsLoader(loader)
     },
     executeAppModule(filePath) {
       executeModule(filePath, { kind: 'app' })
@@ -254,4 +256,5 @@ export function createBrowserModuleLoader(
     },
     wx: executionContext.wx,
   }
+  return loader
 }

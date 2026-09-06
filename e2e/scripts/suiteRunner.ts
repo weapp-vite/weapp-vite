@@ -1,9 +1,11 @@
 import type { SpawnOptions } from 'node:child_process'
-import type { SuiteTaskArtifact } from './suiteReport'
+import type { SuiteReportContext, SuiteTaskArtifact } from './suiteReport'
 import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT, ACCEPTANCE_RUN_ID_ENV, ACCEPTANCE_SHA_ENV, ACCEPTANCE_TASK_ENV, createAcceptanceIdentity, DOM_ACCEPTANCE_ENV, isStrictDomAcceptance } from './domAcceptanceReport/helpers'
+import { validateTaskAcceptance } from './domAcceptanceReport/task'
 import { createSuiteReport } from './suiteReport'
 
 const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
@@ -24,6 +26,8 @@ export interface SuiteTask {
   label: string
   command: string
   args: string[]
+  outOfScopeReason?: string
+  acceptanceTemplates?: string[]
 }
 
 export interface SuiteTaskResult {
@@ -31,6 +35,8 @@ export interface SuiteTaskResult {
   durationMs: number
   exitCode: number
   label: string
+  status?: 'passed' | 'failed' | 'blocked' | 'skipped'
+  reason?: string
 }
 
 interface RunSuiteOptions {
@@ -40,6 +46,7 @@ interface RunSuiteOptions {
   runTask?: (task: SuiteTask) => Promise<number>
   stopOnTaskFailure?: boolean
   writeReport?: boolean
+  reportContext?: SuiteReportContext
 }
 
 function formatDuration(durationMs: number) {
@@ -47,7 +54,7 @@ function formatDuration(durationMs: number) {
 }
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
-const REPORT_LINE_PATTERN = /^\[(ide-warning-report|e2e-suite-report)\]\s+index=(\S+)/
+const REPORT_LINE_PATTERN = /^\[(ide-warning-report|e2e-suite-report|dom-acceptance-report)\]\s+index=(\S+)/
 const DEVTOOLS_LAUNCH_SKIP_PATTERN = /\[runtime:launch-skip\]/
 const CRLF_PATTERN = /\r\n/g
 const NEWLINE_SPLIT_PATTERN = /\r?\n/
@@ -107,7 +114,7 @@ function createTaskArtifactCollector() {
         continue
       }
 
-      const kind = matched[1] as SuiteTaskArtifact['kind']
+      const kind = matched[1] === 'e2e-suite-report' ? 'suite-report' : matched[1] as SuiteTaskArtifact['kind']
       const indexPath = path.isAbsolute(matched[2])
         ? matched[2]
         : path.resolve(ROOT_DIR, matched[2])
@@ -413,11 +420,11 @@ async function defaultRunTask(task: SuiteTask) {
       maybeFinalize()
     }
 
-    child.stdout.on('data', (chunk) => {
+    child.stdout?.on('data', (chunk) => {
       stdoutForwarder.handleText(chunk.toString())
     })
 
-    child.stderr.on('data', (chunk) => {
+    child.stderr?.on('data', (chunk) => {
       stderrForwarder.handleText(chunk.toString())
     })
 
@@ -454,6 +461,12 @@ export async function runTaskSuite(
   const runTask = options.runTask ?? defaultRunTask
   const writeReport = options.writeReport ?? true
   const results: SuiteTaskResult[] = []
+  const reportContext = options.reportContext ?? {
+    ...createAcceptanceIdentity(),
+    strict: isStrictDomAcceptance() || suiteName === 'e2e:ide-full:exhaustive',
+    partial: false,
+    plannedTasks: tasks,
+  }
   let devtoolsLoginPreflightPassed = false
   let suiteReportArtifact: SuiteTaskArtifact | undefined
   const ideHmrCompanionSentinelPath = shouldShareIdeHmrCompanion(suiteName)
@@ -466,13 +479,27 @@ export async function runTaskSuite(
   }
 
   for (const [taskIndex, task] of tasks.entries()) {
+    if (task.outOfScopeReason) {
+      continue
+    }
     console.log(formatSuiteProgress(suiteName, results.length, tasks.length, 'running', task.label, taskIndex))
     console.log(`[${suiteName}] run ${task.label}`)
     const startedAt = Date.now()
     const stopHeartbeat = startTaskHeartbeat(suiteName, task.label, startedAt, results.length, tasks.length, taskIndex)
     let exitCode = 1
+    let reason: string | undefined
+    let blocked = false
 
     try {
+      task.env = {
+        ...task.env,
+        [ACCEPTANCE_RUN_ID_ENV]: reportContext.runId,
+        [ACCEPTANCE_SHA_ENV]: reportContext.commitSha,
+        [ACCEPTANCE_DIRTY_ENV]: reportContext.workingTreeDirty == null ? 'unknown' : reportContext.workingTreeDirty ? '1' : '0',
+        [ACCEPTANCE_TASK_ENV]: task.label,
+        [ACCEPTANCE_REPORT_DIR_ENV]: path.join(ACCEPTANCE_ROOT, 'docs/reports/dom-acceptance', reportContext.runId),
+        ...(reportContext.strict ? { [DOM_ACCEPTANCE_ENV]: '1' } : {}),
+      }
       if (devtoolsLoginPreflightPassed && isDevtoolsVitestTask(task)) {
         task.env = {
           ...task.env,
@@ -487,9 +514,22 @@ export async function runTaskSuite(
       }
       await options.beforeEachTask?.(task)
       exitCode = await runTask(task)
+      if (reportContext.strict) {
+        try {
+          await validateTaskAcceptance(task, reportContext)
+        }
+        catch (error) {
+          blocked = exitCode === 0 || !task.artifacts?.some(artifact => artifact.kind === 'dom-acceptance-report')
+          exitCode = 1
+          reason = error instanceof Error ? error.message : String(error)
+          console.error(`[${suiteName}] DOM acceptance: ${reason}`)
+        }
+      }
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
+      reason = message
+      blocked = true
       console.error(`[${suiteName}] task crashed: ${task.label}`)
       console.error(message)
     }
@@ -503,6 +543,8 @@ export async function runTaskSuite(
       label: task.label,
       exitCode,
       durationMs,
+      status: task.devtoolsLaunchSkipped ? 'blocked' : blocked ? 'blocked' : exitCode === 0 ? 'passed' : 'failed',
+      reason,
     })
 
     const status = exitCode === 0 ? 'pass' : 'fail'
@@ -528,7 +570,7 @@ export async function runTaskSuite(
 
   await options.afterAll?.()
   if (writeReport) {
-    const report = createSuiteReport(results, suiteName)
+    const report = createSuiteReport(results, suiteName, undefined, undefined, reportContext)
     suiteReportArtifact = {
       kind: 'suite-report',
       indexPath: path.join(report.reportDir, report.markdownFile),
@@ -550,7 +592,10 @@ export async function runTaskSuite(
     }
   }
 
-  if (failOnTaskFailure && results.some(result => result.exitCode !== 0)) {
+  const incomplete = reportContext.strict && (reportContext.partial
+    || results.length !== reportContext.plannedTasks.filter(task => !task.outOfScopeReason).length
+    || !results.length || results.some(result => result.status !== 'passed'))
+  if ((failOnTaskFailure || reportContext.strict) && (results.some(result => result.exitCode !== 0) || incomplete)) {
     process.exitCode = 1
     return 1
   }

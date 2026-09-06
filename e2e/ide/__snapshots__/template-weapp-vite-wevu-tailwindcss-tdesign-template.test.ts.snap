@@ -5,112 +5,109 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
 text,
 ::after,
 ::before {
-  --tw-font-weight:;
-  --tw-inset-ring-shadow: 0 0 #0000;
-  --tw-inset-shadow: 0 0 #0000;
-  --tw-leading:;
-  --tw-ring-offset-shadow: 0 0 #0000;
-  --tw-ring-shadow: 0 0 #0000;
-  --tw-shadow: 0 0 #0000;
-  --tw-shadow-color: initial;
-  border: 0 solid;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+    --tw-font-weight:;
+    --tw-inset-ring-shadow: 0 0 #0000;
+    --tw-inset-shadow: 0 0 #0000;
+    --tw-leading:;
+    --tw-ring-offset-shadow: 0 0 #0000;
+    --tw-ring-shadow: 0 0 #0000;
+    --tw-shadow: 0 0 #0000;
+    --tw-shadow-color: initial;
+    border: 0 solid;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 :host,
 page,
 .tw-root,
 wx-root-portal-content {
-  --color-white: #fff;
-  --default-font-family: var(--font-sans);
-  --default-mono-font-family: var(--font-mono);
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif,
+    --color-white: #fff;
+    --default-font-family: var(--font-sans);
+    --default-mono-font-family: var(--font-mono);
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-weight-semibold: 600;
+    --font-weight-semibold: 600;
 }
 .mt-_b12rpx_B {
-  margin-top: 12rpx;
+    margin-top: 12rpx;
 }
 .mt-_b16rpx_B {
-  margin-top: 16rpx;
+    margin-top: 16rpx;
 }
 .mt-_b24rpx_B {
-  margin-top: 24rpx;
+    margin-top: 24rpx;
 }
 .min-h-screen {
-  min-height: 100vh;
+    min-height: 100vh;
 }
 .rounded-_b20rpx_B {
-  border-radius: 20rpx;
+    border-radius: 20rpx;
 }
 .rounded-_b28rpx_B {
-  border-radius: 28rpx;
+    border-radius: 28rpx;
 }
 .bg-_b_hf4f6ff_B {
-  background-color: #f4f6ff;
+    background-color: #f4f6ff;
 }
 .bg-_b_hf6f7fb_B {
-  background-color: #f6f7fb;
+    background-color: #f6f7fb;
 }
 .bg-white {
-  background-color: var(--color-white);
+    background-color: var(--color-white);
 }
 .p-_b20rpx_B {
-  padding: 20rpx;
+    padding: 20rpx;
 }
 .p-_b28rpx_B {
-  padding: 28rpx;
+    padding: 28rpx;
 }
 .px-_b28rpx_B {
-  padding-left: 28rpx;
-  padding-right: 28rpx;
+    padding-left: 28rpx;
+    padding-right: 28rpx;
 }
 .py-_b32rpx_B {
-  padding-bottom: 32rpx;
-  padding-top: 32rpx;
+    padding-bottom: 32rpx;
+    padding-top: 32rpx;
 }
 .text-_b24rpx_B {
-  font-size: 24rpx;
+    font-size: 24rpx;
 }
 .text-_b38rpx_B {
-  font-size: 38rpx;
+    font-size: 38rpx;
 }
 .leading-_b1_d6_B {
-  --tw-leading: 1.6;
-  line-height: 1.6;
+    --tw-leading: 1.6;
+    line-height: 1.6;
 }
 .font-semibold {
-  --tw-font-weight: var(--font-weight-semibold);
-  font-weight: var(--font-weight-semibold);
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
 }
 .text-_b_h1f1a3f_B {
-  color: #1f1a3f;
+    color: #1f1a3f;
 }
 .text-_b_h51517c_B {
-  color: #51517c;
+    color: #51517c;
 }
 .text-_b_h64748b_B {
-  color: #64748b;
+    color: #64748b;
 }
 .shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B {
-  --tw-shadow: 0 18rpx 40rpx var(--tw-shadow-color, #11182714);
-  box-shadow:
-    var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
+    --tw-shadow: 0 18rpx 40rpx var(--tw-shadow-color, #11182714);
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
     var(--tw-shadow);
 }
 page {
-  background-color: #f6f7fb;
+    background-color: #f6f7fb;
 }
 "
 `;
 
 exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::pages/index/index 1`] = `
 "<view class="min-h-screen bg-_b_hf6f7fb_B px-_b28rpx_B py-_b32rpx_B text-_b_h1f1a3f_B">
-  <view
-    class="rounded-_b28rpx_B bg-white p-_b28rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+  <view class="rounded-_b28rpx_B bg-white p-_b28rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
     <t-tag theme="primary" variant="light">wevu</t-tag>
     <view class="mt-_b16rpx_B text-_b38rpx_B font-semibold">TDesign 最小模板</view>
     <view class="mt-_b12rpx_B text-_b24rpx_B leading-_b1_d6_B text-_b_h64748b_B">
@@ -120,12 +117,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       <text class="text-_b24rpx_B text-_b_h51517c_B" id="count-label">{{buttonText}}</text>
     </view>
     <view id="count-button">
-      <t-button
-        class="mt-_b24rpx_B count-button-control"
-        theme="primary"
-        block
-        data-wd-tap="1"
-        data-wi-tap="i0">
+      <t-button class="mt-_b24rpx_B count-button-control" theme="primary" block="" data-wd-tap="1" data-wi-tap="i0">
         点一下
       </t-button>
     </view>

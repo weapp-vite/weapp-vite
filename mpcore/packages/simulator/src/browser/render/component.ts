@@ -16,8 +16,9 @@ import {
 } from '../../runtime/componentInstance'
 import { collectMiniProgramEventBindings } from '../../view/eventBinding'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
-import { createTemplateRenderState } from '../../view/templateRuntime'
+import { wxsScopeData } from '../../view/wxs'
 import { readBrowserVirtualFile } from '../virtualFiles'
+import { getBrowserWxsLoader } from '../wxs'
 import {
   CLASS_SPLIT_RE,
   collectDataset,
@@ -26,6 +27,7 @@ import {
   JS_FILE_RE,
   LEADING_SLASH_RE,
   parseTemplateDocument,
+  prepareTemplateRenderState,
   readTemplateSource,
   resolveComponentAttributeValue,
 } from './shared'
@@ -250,7 +252,7 @@ export function createComponentScope(
       .map(item => item.trim())
       .filter(Boolean),
     data: createMergedScopeData(scope.data, componentInstance.properties, componentInstance.data),
-    dataset: collectDataset(clonedNode, scope.data),
+    dataset: collectDataset(clonedNode, wxsScopeData(scope)),
     eventBindings: collectComponentEventBindings(clonedNode),
     getMethod: (methodName: string) => {
       const method = componentInstance?.[methodName]
@@ -351,7 +353,7 @@ export function renderBrowserComponentTemplate(
   const componentTemplate = readTemplateSource(context.files, componentEntry.templatePath)
   const componentDocument = parseTemplateDocument(componentTemplate)
   const componentRoot = (componentDocument.children ?? [])[0] ?? componentDocument
-  const templateRenderState = createTemplateRenderState(componentRoot)
+  const templateRenderState = prepareTemplateRenderState(context.files, componentRoot, componentEntry.templatePath, context.project.miniprogramRootPath, getBrowserWxsLoader(context.moduleLoader, context.files))
   return renderNodeTree(
     componentRoot,
     componentScope,

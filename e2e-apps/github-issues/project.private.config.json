@@ -871,6 +871,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-911-result/index",
+          "pathName": "pages/issue-911-result/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
   callRoutePageMethod,
   callRoutePageMethodWithOptions,
@@ -13,6 +15,7 @@ import {
   releaseSharedMiniProgram,
   waitForCurrentPagePath,
 } from './github-issues.runtime.shared'
+import { GITHUB_LIFECYCLE_PLANS, slotFlexCheckpoint } from './githubIssuesDom/lifecycle'
 
 async function waitForIssue373Runtime(page: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
@@ -310,6 +313,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   }, 30_000)
 
   it('issue #309: triggers onLoad without requiring onPullDownRefresh hook', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue309)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-309/index', undefined, 45_000, {
@@ -322,6 +326,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       const runtimeResult = await callRoutePageMethod(activeMiniProgram, '/pages/issue-309/index', '_runE2E')
       expect(runtimeResult?.ok).toBe(true)
       expect(runtimeResult?.loadCount).toBeGreaterThanOrEqual(1)
+      await dom.check('initial', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -329,6 +334,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #309: triggers onLoad with created setupLifecycle and no pull-down hook', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue309Created)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-309-created/index', undefined, 45_000, {
@@ -341,6 +347,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       const runtimeResult = await callRoutePageMethod(activeMiniProgram, '/pages/issue-309-created/index', '_runE2E')
       expect(runtimeResult?.ok).toBe(true)
       expect(runtimeResult?.loadCount).toBeGreaterThanOrEqual(1)
+      await dom.check('initial', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -348,6 +355,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #312: updates computed object bindings after switching back to initial reference', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue312)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-312/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-312/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -380,6 +388,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(initialRuntime?.ok).toBe(true)
       expect(initialRuntime?.index).toBe(0)
       expect(initialRuntime?.label).toBe('选项1')
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
 
       const afterIncRuntime = await callRoutePageMethodWithOptions(miniProgram, '/pages/issue-312/index', '_runE2E', {
         readiness: issue312Readiness,
@@ -387,6 +396,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(afterIncRuntime?.ok).toBe(true)
       expect(afterIncRuntime?.index).toBe(1)
       expect(afterIncRuntime?.label).toBe('选项2')
+      await dom.check('incremented', await getSharedMiniProgram(ctx), issuePage)
 
       const afterDecRuntime = await callRoutePageMethodWithOptions(miniProgram, '/pages/issue-312/index', '_runE2E', {
         readiness: issue312Readiness,
@@ -394,6 +404,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(afterDecRuntime?.ok).toBe(true)
       expect(afterDecRuntime?.index).toBe(0)
       expect(afterDecRuntime?.label).toBe('选项1')
+      await dom.check('restored', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -401,6 +412,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #316: triggers kebab-case component event bindings at runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue316)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-316/index.wxml')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
     expect(issuePageWxml).toContain('issue-316 hyphen event binding')
@@ -422,6 +434,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       if (!issuePage) {
         throw new Error('Failed to launch issue-316 page')
       }
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
       const runtime = await issuePage.callMethod('_runE2E', 'trigger')
       expect(runtime?.triggered).toBe(true)
       await issuePage.waitForRendered({
@@ -429,6 +442,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
         dataset: { overlayCount: 1 },
         timeout: 8_000,
       })
+      await dom.check('updated', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -436,6 +450,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #318: keeps template call-expression rendering stable with auto setData.pick', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue318)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-318/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-318/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -449,10 +464,12 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       if (!issuePage) {
         throw new Error('Failed to launch issue-318 page')
       }
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
       const runtime = await callRoutePageMethod(miniProgram, '/pages/issue-318/index', '_runE2E', 'mutate')
       expect(runtime?.count).toBe(2)
       expect(runtime?.rows).toHaveLength(3)
       expect(runtime?.meta).toBe('meta-2-3')
+      await dom.check('updated', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -460,6 +477,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #320: supports runtime addRoute alias and redirect navigation', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue320)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-320/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-320/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -474,6 +492,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
         throw new Error('Failed to launch issue-320 page')
       }
       const activeMiniProgram = await getSharedMiniProgram(ctx)
+      await dom.check('initial', activeMiniProgram, issuePage)
       const navigationResult = await callRoutePageMethodWithOptions<Record<string, any>>(
         activeMiniProgram,
         '/pages/issue-320/index',
@@ -487,6 +506,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(navigationResult?.ok).toBe(true)
       const redirectedPage = await waitForCurrentPagePath(activeMiniProgram, '/pages/issue-309/index')
       expect(redirectedPage).toBeTruthy()
+      await dom.check('redirected', activeMiniProgram, redirectedPage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -494,6 +514,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #380: keeps custom tab bar out of default layout at runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue380)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-380/index')
@@ -502,6 +523,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       }
       const activeMiniProgram = await getSharedMiniProgram(ctx)
       expect(await waitForCurrentPagePath(activeMiniProgram, '/pages/issue-380/index')).toBeTruthy()
+      await dom.check('initial', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -509,6 +531,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #385: does not attach the page component twice after setPageLayout("default")', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue385)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-385/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-385/index.js')
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('<attach-probe id="attach-probe" />')
@@ -524,6 +547,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       const runtimeResult = await waitForIssue385Runtime(issuePage, 30_000)
       expect(runtimeResult?.layoutName).toBe('default')
       expect(runtimeResult?.componentAttachCount).toBe(1)
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -531,6 +555,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #398: keeps layout child components mounted through the shared wevu runtime path', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue398)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-398/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-398/index.js')
     const navbarJsPath = path.join(DIST_ROOT, 'components/issue-398/BaseNavbar/index.js')
@@ -559,6 +584,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(runtimeResult?.footerMounted).toBe(true)
       expect(runtimeResult?.navbarLabel).toBe('issue-398 navbar')
       expect(runtimeResult?.footerLabel).toBe('issue-398 footer')
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -566,6 +592,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #404: exposes page.onPageScroll on the runtime instance and receives page scroll updates', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue404)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-404/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-404/index.js')
 
@@ -582,6 +609,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       const activeMiniProgram = await getSharedMiniProgram(ctx)
       const initialRuntime = await waitForIssue404HookReady(activeMiniProgram)
       expect(initialRuntime?.hasInstanceOnPageScroll).toBe(true)
+      await dom.check('initial', activeMiniProgram, issuePage)
 
       await callRoutePageMethod(activeMiniProgram, '/pages/issue-404/index', '_runE2E', 'scroll')
       await issuePage.waitFor(240)
@@ -591,6 +619,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(Array.isArray(runtimeResult?.scrollLogs)).toBe(true)
       expect(runtimeResult?.scrollLogs?.some((value: number) => value > 0)).toBe(true)
       expect(Number(runtimeResult?.latestScrollTop ?? -1)).toBeGreaterThan(0)
+      await dom.check('updated', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -598,6 +627,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #418/#419: keeps third-party component template refs available in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue418419)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-418-419/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-418-419/index.js')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-418-419/index.json')
@@ -623,6 +653,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(runtimeResult?.descriptorConfigurable).toBe(true)
       expect(runtimeResult?.hasDataObject).toBe(true)
       expect(runtimeResult?.runtimeError).toBeNull()
+      await dom.check('initial', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -630,6 +661,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #446: keeps template refs and shortBind props available in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue446)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-446/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-446/index.js')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-446/index.json')
@@ -660,6 +692,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
         fooBar: 'issue-446-short-bind',
         summary: 'visible:issue-446-short-bind',
       })
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -667,6 +700,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #479: triggers indirect pull-down hook in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue479Pull)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-479/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-479/index.js')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-479/index.json')
@@ -677,21 +711,23 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
     expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('"enablePullDownRefresh": true')
 
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-479/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-479/index', undefined, 30_000, { forceRelaunch: true })
       if (!issuePage) {
         throw new Error('Failed to launch issue-479 page')
       }
       const activeMiniProgram = await getSharedMiniProgram(ctx)
       const initialRuntime = await waitForIssue479Ready(activeMiniProgram)
       expect(Array.isArray(initialRuntime?.logs)).toBe(true)
+      await dom.check('initial', activeMiniProgram, issuePage)
 
-      await callRoutePageMethod(activeMiniProgram, '/pages/issue-479/index', '_runE2E', 'pull')
+      await callRoutePageMethod(activeMiniProgram, '/pages/issue-479/index', 'onPullDownRefresh')
       await issuePage.waitFor(300)
 
       const runtimeResult = await waitForIssue479PullRuntime(activeMiniProgram)
       expect(runtimeResult?.hasPull).toBe(true)
       expect(runtimeResult?.logs).toContain('pull')
       expect(runtimeResult?.hasBottom).toBe(false)
+      await dom.check('updated', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -699,6 +735,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #479: triggers indirect reach-bottom hook through Component page method bridge', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue479Bottom)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-479/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-479/index.js')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-479/index.json')
@@ -709,17 +746,19 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
     expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('"onReachBottomDistance": 50')
 
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-479/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-479/index', undefined, 30_000, { forceRelaunch: true })
       if (!issuePage) {
         throw new Error('Failed to launch issue-479 page')
       }
       const activeMiniProgram = await getSharedMiniProgram(ctx)
-      await callRoutePageMethod(activeMiniProgram, '/pages/issue-479/index', '_runE2E', 'bottom')
+      await dom.check('initial', activeMiniProgram, issuePage)
+      await callRoutePageMethod(activeMiniProgram, '/pages/issue-479/index', 'onReachBottom')
       await issuePage.waitFor(300)
 
       const runtimeResult = await waitForIssue479BottomRuntime(activeMiniProgram)
       expect(runtimeResult?.hasBottom).toBe(true)
       expect(runtimeResult?.logs).toContain('bottom')
+      await dom.check('updated', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -727,6 +766,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #695: triggers direct pull-down hook through Component page method bridge', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue695)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-695/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-695/index.js')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-695/index.json')
@@ -744,6 +784,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       const activeMiniProgram = await getSharedMiniProgram(ctx)
       const initialRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/issue-695/index', '_runE2E')
       expect(initialRuntime?.hasPull).toBe(false)
+      await dom.check('initial', activeMiniProgram, issuePage)
 
       await callRoutePageMethod(activeMiniProgram, '/pages/issue-695/index', 'onPullDownRefresh')
 
@@ -752,6 +793,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(runtimeResult?.doubled).toBe(2)
       expect(runtimeResult?.logs).toContain('pull:1')
       expect(runtimeResult?.hasPull).toBe(true)
+      await dom.check('updated', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -759,6 +801,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('experiment: block nodes can provide named and default slot content in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.blockSlot)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/block-slot/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/block-slot/index.js')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/block-slot/index.json')
@@ -781,6 +824,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(initialRuntime?.ok).toBe(true)
       expect(initialRuntime?.headerLabel).toBe('ready')
       expect(initialRuntime?.bodyLabel).toBe('alpha')
+      await dom.check('initial', activeMiniProgram, issuePage)
 
       await callRoutePageMethod(activeMiniProgram, '/pages/block-slot/index', 'toggleLabels')
       await issuePage.waitFor(260)
@@ -788,6 +832,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       const updatedRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/block-slot/index', '_runE2E')
       expect(updatedRuntime?.headerLabel).toBe('updated')
       expect(updatedRuntime?.bodyLabel).toBe('beta')
+      await dom.check('updated', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -795,6 +840,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #494: plain template v-slot content unwraps to child slot attrs or block wrappers in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue494)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-494/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-494/index.js')
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-494/SlotHost/index.wxml')
@@ -819,6 +865,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(initialRuntime?.headerLabel).toBe('ready')
       expect(initialRuntime?.bodyLabel).toBe('alpha')
       expect(initialRuntime?.iconSrc).toBe('https://static.example.com/issue-494/icon.png')
+      await dom.check('initial', activeMiniProgram, issuePage)
 
       await callRoutePageMethod(activeMiniProgram, '/pages/issue-494/index', 'toggleLabels')
       await issuePage.waitFor(260)
@@ -826,6 +873,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       const updatedRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/issue-494/index', '_runE2E')
       expect(updatedRuntime?.headerLabel).toBe('updated')
       expect(updatedRuntime?.bodyLabel).toBe('beta')
+      await dom.check('updated', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -833,6 +881,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #500: missing inject default continues later setup code in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue500)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-500/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-500/index.js')
 
@@ -856,6 +905,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
         missingType: 'fallback',
         ok: true,
       })
+      await dom.check('initial', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -863,6 +913,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('experiment: flex parent keeps projected multi-node slot groups visible in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', slotFlexCheckpoint(resolveRuntimeProviderName()))
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/slot-flex-layout/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/slot-flex-layout/index.js')
     const componentWxmlPath = path.join(DIST_ROOT, 'components/slot-flex-host/index.wxml')
@@ -892,6 +943,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       if (!issuePage) {
         throw new Error('Failed to launch slot-flex-layout page')
       }
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -899,6 +951,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('experiment: native self-closing and paired slot tags render equivalently in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.slotTag)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/slot-tag-form/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/slot-tag-form/index.js')
     const selfHostWxmlPath = path.join(DIST_ROOT, 'components/slot-tag-self-host/index.wxml')
@@ -922,6 +975,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(initialRuntime?.ok).toBe(true)
       expect(initialRuntime?.sharedHeaderLabel).toBe('ready')
       expect(initialRuntime?.sharedBodyLabel).toBe('alpha')
+      await dom.check('initial', activeMiniProgram, issuePage)
 
       await callRoutePageMethod(activeMiniProgram, '/pages/slot-tag-form/index', 'toggleLabels')
       await issuePage.waitFor(260)
@@ -929,6 +983,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       const updatedRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/slot-tag-form/index', '_runE2E')
       expect(updatedRuntime?.sharedHeaderLabel).toBe('updated')
       expect(updatedRuntime?.sharedBodyLabel).toBe('beta')
+      await dom.check('updated', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -936,6 +991,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
   })
 
   it('issue #373: keeps shared store computed reactive after reLaunch tears down the first page', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GITHUB_LIFECYCLE_PLANS.issue373)
     const launchPageWxmlPath = path.join(DIST_ROOT, 'pages/issue-373/launch/index.wxml')
     const resultPageWxmlPath = path.join(DIST_ROOT, 'pages/issue-373/result/index.wxml')
     const launchPageJsPath = path.join(DIST_ROOT, 'pages/issue-373/launch/index.js')
@@ -967,6 +1023,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(launchRuntime?.doubled).toBe(2)
 
       const activeMiniProgram = await getSharedMiniProgram(ctx)
+      await dom.check('initial', activeMiniProgram, launchPage)
       await callRoutePageMethod(activeMiniProgram, '/pages/issue-373/launch/index', 'runRelaunch')
       const resultPage = await waitForCurrentPagePath(activeMiniProgram, '/pages/issue-373/result/index', 20_000)
       if (!resultPage) {
@@ -981,6 +1038,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(initialResult?.count).toBe(1)
       expect(initialResult?.doubled).toBe(2)
       expect(initialResult?.ok).toBe(true)
+      await dom.check('relaunch', activeMiniProgram, resultPage)
 
       await callRoutePageMethod(activeMiniProgram, '/pages/issue-373/result/index', 'increment')
       await resultPage.waitFor(260)
@@ -988,6 +1046,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       expect(runtimeResult?.count).toBe(2)
       expect(runtimeResult?.doubled).toBe(4)
       expect(runtimeResult?.ok).toBe(true)
+      await dom.check('incremented', activeMiniProgram, resultPage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

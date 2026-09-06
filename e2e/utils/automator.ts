@@ -1038,15 +1038,6 @@ function writeJsonObjectIfChanged(filePath: string, value: Record<string, any>) 
   return true
 }
 
-function normalizeBridgeWrapperRuntimeConfig(config: Record<string, any>) {
-  const normalized = { ...config }
-  if (normalized.setting && typeof normalized.setting === 'object') {
-    normalized.setting = { ...normalized.setting }
-    delete normalized.setting.es6
-  }
-  return normalized
-}
-
 function normalizeProjectRelativeRoot(rawRoot: unknown) {
   if (typeof rawRoot !== 'string') {
     return undefined
@@ -1607,18 +1598,13 @@ function prepareAutomatorBridgeWrapperProject(
   delete bridgePrivateConfig.qcloudRoot
   delete bridgePrivateConfig.srcMiniprogramRoot
   const wrapperProjectConfigPath = path.join(wrapperRoot, 'project.config.json')
-  const finalWrapperProjectConfig = normalizeBridgeWrapperRuntimeConfig(
-    createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig, {
-      miniprogramRoot: options.deferSyncUntilConnected ? AUTOMATOR_BRIDGE_RUNTIME_ROOT : undefined,
-    }),
-  )
+  const finalWrapperProjectConfig = createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig, {
+    miniprogramRoot: options.deferSyncUntilConnected ? AUTOMATOR_BRIDGE_RUNTIME_ROOT : undefined,
+  })
   const initialWrapperProjectConfig = options.deferSyncUntilConnected
     ? createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig, { bootstrap: true })
     : finalWrapperProjectConfig
-  const normalizedInitialWrapperProjectConfig = options.deferSyncUntilConnected
-    ? normalizeBridgeWrapperRuntimeConfig(initialWrapperProjectConfig)
-    : initialWrapperProjectConfig
-  writeJsonObject(wrapperProjectConfigPath, normalizedInitialWrapperProjectConfig)
+  writeJsonObject(wrapperProjectConfigPath, initialWrapperProjectConfig)
   const wrapperPrivateConfigPath = path.join(wrapperRoot, 'project.private.config.json')
   if (Object.keys(bridgePrivateConfig).length > 0) {
     writeJsonObject(wrapperPrivateConfigPath, bridgePrivateConfig)
@@ -2172,7 +2158,7 @@ function logRuntimeStats(meta: RuntimeLogMeta) {
   }
 }
 
-function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
+export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
   const meta = ensureRuntimeLogMeta(miniProgram, project)
   if (meta.closeWrapped) {
     return miniProgram
@@ -2990,6 +2976,19 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   if (provider === 'headless') {
     return launchHeadlessAutomator({
       projectPath: options.projectPath!,
+      onSessionCreated(session) {
+        enhanceMiniProgramWithRuntimeLogs(session, resolveReportProjectPath(options.projectPath!))
+      },
+    }).catch((error: unknown) => {
+      appendIdeReportEvent({
+        source: 'runtime',
+        kind: 'message',
+        project: resolveReportProjectPath(options.projectPath!),
+        level: 'error',
+        channel: 'launch',
+        text: error instanceof Error ? error.stack || error.message : normalizeRuntimeConsoleText(error),
+      })
+      throw error
     })
   }
   assertRuntimeProviderImplemented(provider)
@@ -3155,7 +3154,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         }
 
         if (!retryWarmupTimeout && (isWarmupRelaunchTimeoutError(error) || isWarmupPageRootTimeoutError(error))) {
-          throw error
+          handleLaunchError(error, project)
         }
 
         if (attempt < launchRetries) {

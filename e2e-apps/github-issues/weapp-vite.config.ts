@@ -158,6 +158,7 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue911.test.ts': [
     'pages/issue-550/**',
     'pages/issue-911/**',
+    'pages/issue-911-result/**',
     'shared/issue911.ts',
   ],
   'github-issues.runtime.issue581.test.ts': [

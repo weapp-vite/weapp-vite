@@ -1,6 +1,8 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
   closeSharedMiniProgram,
   DIST_ROOT,
@@ -45,6 +47,17 @@ describe('e2e app: github-issues / issue #930', { concurrent: false }, () => {
   })
 
   it('keeps every compiler-owned binding live on initial and subsequent setData', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ['initial', 'updated'].map(state => ({
+      id: state,
+      route: ISSUE_ROUTE,
+      action: state === 'initial' ? '检查首屏编译器拥有的绑定' : '更新成员表达式、model、template 和 CSS 变量后检查渲染',
+      nodes: [
+        { selector: '#issue-930-member', text: `member-${state}` },
+        { selector: '#issue-930-template-value', text: `template-${state}` },
+        { selector: '#issue-930-model-probe', scope: ['#issue-930-model-component'], text: `model-${state}`, attributes: { 'data-trim': 'true' } },
+        { selector: '#issue-930-root', attributes: { 'data-v-issue-probe': `directive-${state}` }, ...(resolveRuntimeProviderName() === 'devtools' ? { styles: { color: state === 'initial' ? 'rgb(255, 0, 0)' : 'rgb(0, 0, 255)' } } : {}) },
+      ],
+    })))
     const wxml = await fs.readFile(path.join(DIST_ROOT, 'pages/issue-930/index.wxml'), 'utf8')
     expect(wxml).toContain('data-v-issue-probe="{{directiveState}}"')
     expect(wxml).toMatch(/model-modifiers="\{\{__wv_bind_\d+\}\}"/)
@@ -67,7 +80,8 @@ describe('e2e app: github-issues / issue #930', { concurrent: false }, () => {
       const readRenderedState = async () => {
         const root = await page.$('#issue-930-root', { timeout: 2_000 })
         const member = await page.$('#issue-930-member', { timeout: 2_000 })
-        const model = await page.$('#issue-930-model-probe', { timeout: 2_000 })
+        const modelComponent = await page.$('#issue-930-model-component', { timeout: 2_000 })
+        const model = await modelComponent?.$('#issue-930-model-probe', { timeout: 2_000 })
         const template = await page.$('#issue-930-template-value', { timeout: 2_000 })
         return {
           cssVars: await readElementAttribute(root, 'style'),
@@ -87,6 +101,7 @@ describe('e2e app: github-issues / issue #930', { concurrent: false }, () => {
         template: 'template-initial',
         trim: 'true',
       })
+      await dom.check('initial', await getSharedMiniProgram(ctx), page)
 
       expect(await page.callMethod('_runE2E', 'mutate')).toEqual({
         directiveState: 'directive-updated',
@@ -103,6 +118,7 @@ describe('e2e app: github-issues / issue #930', { concurrent: false }, () => {
         template: 'template-updated',
         trim: 'true',
       })
+      await dom.check('updated', await getSharedMiniProgram(ctx), page)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

@@ -21,6 +21,7 @@ import {
   registerPageDefinition,
 } from '../host'
 import { createMiniProgramRuntimeGlobals } from './runtimeGlobals'
+import { closeRuntimeWxsLoader } from './wxs'
 
 export interface HeadlessModuleLoader {
   close: () => void
@@ -347,9 +348,10 @@ export function createModuleLoader(
     return executeModule(entryPath, null).exports
   }
 
-  return {
+  const loader: HeadlessModuleLoader = {
     close() {
       moduleCache.clear()
+      closeRuntimeWxsLoader(loader)
     },
     executeAppModule(filePath) {
       executeModule(filePath, { kind: 'app' })
@@ -388,4 +390,5 @@ export function createModuleLoader(
     },
     wx: executionContext.wx,
   }
+  return loader
 }

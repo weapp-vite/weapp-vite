@@ -4,6 +4,7 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForCurrentPagePath } from './github-issues.runtime.shared'
 
@@ -89,7 +90,8 @@ async function waitForIndexPageRendered(miniProgram: any, timeoutMs = 30_000) {
   return page
 }
 
-async function collectAppSnapshot(root: string) {
+async function collectAppSnapshot(root: string, variant: string, dom: ReturnType<typeof createDomAcceptance>) {
+  // 每个 fixture 使用不同 App 实现，必须分别冷启动才能比较 onLaunch。
   const miniProgram = await launchFreshMiniProgram(root)
   try {
     const page = await waitForIndexPageRendered(miniProgram)
@@ -97,6 +99,7 @@ async function collectAppSnapshot(root: string) {
       throw new Error(`Failed to render ${INDEX_ROUTE}`)
     }
     await page.waitFor(300)
+    await dom.check(`${variant}:initial`, miniProgram, page)
     const toolInfo = await miniProgram.toolInfo()
     const snapshot = await miniProgram.evaluate(async () => {
       const app = getApp()
@@ -181,6 +184,8 @@ async function collectAppSnapshot(root: string) {
         logs: app?.globalData?.__lifecycleLogs ?? [],
       }
     })
+    await page.callMethod('refreshLifecycleSummary')
+    await dom.check(`${variant}:finalized`, miniProgram, page)
     return {
       capabilities: snapshot?.capabilities,
       logs: snapshot?.logs ?? [],
@@ -220,10 +225,36 @@ describe('app lifecycle compare (e2e)', { concurrent: false }, () => {
     await closeSharedMiniPrograms()
   })
 
-  it('compares wevu app lifecycle logs against native', async () => {
-    const native = await collectAppSnapshot(APP_NATIVE_ROOT)
-    const wevuTs = await collectAppSnapshot(APP_WEVU_TS_ROOT)
-    const wevuVue = await collectAppSnapshot(APP_WEVU_VUE_ROOT)
+  it('compares wevu app lifecycle logs against native', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps', ['native', 'wevu-ts', 'wevu-vue'].flatMap(variant => [
+      {
+        id: `${variant}:initial`,
+        route: INDEX_ROUTE,
+        action: `冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态`,
+        nodes: [
+          { selector: '#app-lifecycle-route', text: variant === 'native' ? 'App lifecycle native' : 'App lifecycle wevu' },
+          { selector: '#app-hook-onLaunch', text: 'onLaunch: observed' },
+          { selector: '#app-hook-onShow', text: 'onShow: observed' },
+          { selector: '#app-hook-onError', text: 'onError: pending' },
+          { selector: '.app-hook-status', count: 7 },
+        ],
+      },
+      {
+        id: `${variant}:finalized`,
+        route: INDEX_ROUTE,
+        action: `归档 e2e-apps/app-lifecycle-${variant} 日志并刷新实际 hook 状态`,
+        nodes: [
+          { selector: '#app-hook-onLaunch', text: 'onLaunch: observed' },
+          { selector: '#app-hook-onShow', text: 'onShow: observed' },
+          { selector: '#app-hook-onError', text: 'onError: skipped' },
+          { selector: '#app-hook-onUnhandledRejection', text: 'onUnhandledRejection: skipped' },
+          { selector: '.app-hook-status', count: 7 },
+        ],
+      },
+    ]))
+    const native = await collectAppSnapshot(APP_NATIVE_ROOT, 'native', dom)
+    const wevuTs = await collectAppSnapshot(APP_WEVU_TS_ROOT, 'wevu-ts', dom)
+    const wevuVue = await collectAppSnapshot(APP_WEVU_VUE_ROOT, 'wevu-vue', dom)
 
     expect(native.logs.length).toBeGreaterThan(0)
     expect(normalizeEntries(wevuTs.logs)).toEqual(normalizeEntries(native.logs))

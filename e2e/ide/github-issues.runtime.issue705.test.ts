@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
@@ -9,6 +10,7 @@ import {
   releaseSharedMiniProgram,
   waitForCurrentPagePath,
 } from './github-issues.runtime.shared'
+import { ISSUE705_BACK, ISSUE705_TABS } from './githubIssuesDom/navigation'
 
 const PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_push_result__'
 const BACK_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_back_result__'
@@ -159,6 +161,7 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
   }, 30_000)
 
   it('keeps route state and hook origins synchronized across router and native tab navigation', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ISSUE705_TABS)
     let miniProgram = await getSharedMiniProgram(ctx)
     try {
       await Promise.all([
@@ -180,10 +183,12 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
         throw new Error('Failed to launch issue-705 page')
       }
       miniProgram = await getSharedMiniProgram(ctx)
+      await dom.check('initial', miniProgram, issuePage)
 
       await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, 'push', 12_000).catch(() => undefined)
       const pushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
       expectNavigationResult(pushResult, 'pages/issue-705/index')
+      await dom.check('pushed', miniProgram, await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT))
 
       const reloadedIssuePage = await relaunchPage(
         miniProgram,
@@ -198,6 +203,7 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
         throw new Error('Failed to relaunch issue-705 page')
       }
       miniProgram = await getSharedMiniProgram(ctx)
+      await dom.check('reloaded', miniProgram, reloadedIssuePage)
 
       await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, 'switchTab', 12_000).catch(() => undefined)
       const switchTabResult = await waitForStorage(miniProgram, SWITCH_TAB_RESULT_STORAGE_KEY)
@@ -218,10 +224,12 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
 
       const tabSnapshot = await waitForIssue705TabReady(miniProgram)
       expect(tabSnapshot.route.path).toBe('pages/issue-705-tab/index')
+      await dom.check('tab', miniProgram, tabPage)
 
       await callIssue705PageMethod(miniProgram, TAB_PAGE_PATH, 'push', 12_000).catch(() => undefined)
       const tabPushResult = await waitForStorage(miniProgram, TAB_PUSH_RESULT_STORAGE_KEY)
       expectNavigationResult(tabPushResult, 'pages/issue-705-tab/index')
+      await dom.check('tab-pushed', miniProgram, await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT))
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -229,6 +237,7 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
   })
 
   it('restores route state after every back path and allows pushing the same target again', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ISSUE705_BACK)
     let miniProgram = await getSharedMiniProgram(ctx)
     try {
       for (const backMode of ['router', 'native', 'system'] as const) {
@@ -249,6 +258,7 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
           throw new Error(`Failed to launch issue-705 page for ${backMode} back`)
         }
         miniProgram = await getSharedMiniProgram(ctx)
+        await dom.check(`${backMode}:initial`, miniProgram, issuePage)
 
         await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, 'push', 12_000).catch(() => undefined)
         const firstPushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
@@ -258,6 +268,7 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
         if (!targetPage) {
           throw new Error(`Failed to navigate to issue-705 target for ${backMode} back`)
         }
+        await dom.check(`${backMode}:pushed`, miniProgram, targetPage)
 
         if (backMode === 'system') {
           await callIssue550BackAction(miniProgram, targetPage, 'prepareBack', 5_000)
@@ -276,7 +287,7 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
           })
         }
 
-        await waitForIssue705Page(miniProgram)
+        const returnedPage = await waitForIssue705Page(miniProgram)
         const backResult = await waitForBackHooks(miniProgram)
         expect(backResult.hooks).toEqual([
           {
@@ -293,12 +304,13 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
         const returnedSnapshot = await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH)
         expect(returnedSnapshot.route.path).toBe('pages/issue-705/index')
         expect(returnedSnapshot.routerRoute.path).toBe('pages/issue-705/index')
+        await dom.check(`${backMode}:returned`, miniProgram, returnedPage)
 
         await removeStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
         await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, 'push', 12_000).catch(() => undefined)
         const secondPushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
         expectNavigationResult(secondPushResult, 'pages/issue-705/index')
-        expect(await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT)).toBeTruthy()
+        await dom.check(`${backMode}:repushed`, miniProgram, await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT))
       }
     }
     finally {

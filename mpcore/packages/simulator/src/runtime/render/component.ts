@@ -6,7 +6,7 @@ import path from 'node:path'
 import { resolvePluginRequest } from '../../project/plugins'
 import { collectMiniProgramEventBindings } from '../../view/eventBinding'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
-import { createTemplateRenderState } from '../../view/templateRuntime'
+import { wxsScopeData } from '../../view/wxs'
 import {
   cloneValue,
   createComponentInstance,
@@ -15,6 +15,7 @@ import {
   runComponentLifecycle,
   runComponentObservers,
 } from '../componentInstance'
+import { getRuntimeWxsLoader } from '../wxs'
 import {
   CLASS_SPLIT_RE,
   collectDataset,
@@ -23,6 +24,7 @@ import {
   JS_FILE_RE,
   LEADING_SLASH_RE,
   parseTemplateDocument,
+  prepareTemplateRenderState,
   readTemplateSource,
   resolveComponentAttributeValue,
 } from './shared'
@@ -250,7 +252,7 @@ export function createComponentScope(
       .map(item => item.trim())
       .filter(Boolean),
     data: createMergedScopeData(scope.data, componentInstance.properties, componentInstance.data),
-    dataset: collectDataset(clonedNode, scope.data),
+    dataset: collectDataset(clonedNode, wxsScopeData(scope)),
     eventBindings: collectComponentEventBindings(clonedNode),
     getMethod: (methodName: string) => {
       const method = componentInstance?.[methodName]
@@ -350,7 +352,7 @@ export function renderRuntimeComponentTemplate(
   const componentTemplate = readTemplateSource(context.artifactSource, componentEntry.absoluteTemplatePath)
   const componentDocument = parseTemplateDocument(componentTemplate)
   const componentRoot = (componentDocument.children ?? [])[0] ?? componentDocument
-  const templateRenderState = createTemplateRenderState(componentRoot)
+  const templateRenderState = prepareTemplateRenderState(context.artifactSource, componentRoot, componentEntry.absoluteTemplatePath, context.project.miniprogramRootPath, getRuntimeWxsLoader(context.moduleLoader, context.artifactSource))
   return renderNodeTree(
     componentRoot,
     componentScope,

@@ -1,0 +1,1917 @@
+# 微信 IDE DOM 验收清单
+
+本文件由 `e2e/scripts/domAcceptanceReport/inventory.ts` 从 exhaustive manifest 和 TypeScript AST 生成。它记录源码中的计划接入情况，不代表运行通过。最终验收以同一提交的严格 IDE JSON 报告为准。
+
+字面量参数表与模板 runner 子任务已展开；动态表会显式标注。一个 case 内的多路由操作保留在 routes/operations；模板的完整 route/checkpoint 定义见 plan source。GitHub aggregate 的直接测试导入递归展开。
+
+JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
+
+- 任务：89；微信：86；范围外：3。
+- 展开的 case 声明：222；已接入计划：130；缺计划：92。
+- 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
+
+重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
+
+## 任务覆盖
+
+| Task | Providers | Cases | Plans | Missing | Scope |
+| --- | --- | ---: | ---: | ---: | --- |
+| ide/app-lifecycle.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/app-prelude-native.runtime.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
+| ide/app-vue-hmr-alias.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/auto-routes-define-app-json.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/automator-bridge-wrapper-hmr.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/automator-concurrent-sessions.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/devtools-cli-workflow.runtime.test.ts | devtools | 2 | 0 | 2 | wechat |
+| ide/forward-console-demo.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/github-issues.runtime.aggregate.test.ts | devtools | 64 | 64 | 0 | wechat |
+| ide/github-issues.runtime.issue448-formdata-upload.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue547.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue558.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue615.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue621.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue642-bug7-default.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/github-issues.runtime.issue642-bug7-performance.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/github-issues.runtime.issue642-bug8.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue826.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue852.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue868.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue911.test.ts | devtools | 7 | 7 | 0 | wechat |
+| ide/github-issues.runtime.issue941.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.require-async.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.slot-fallback-compiler-off.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.subpackage-item.test.ts | devtools | 2 | 2 | 0 | wechat |
+| ide/github-issues.runtime.subpackage-user.test.ts | devtools | 2 | 2 | 0 | wechat |
+| ide/hmr-auto-classic.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/index.test.ts | devtools, headless | 1 | 0 | 1 | wechat |
+| ide/issue-340-hoist.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/layout-power-demo-message.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/layout-power-demo.runtime-vendor-hmr.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/lifecycle-compare.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
+| ide/mcp-runtime-tools.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/plugin-demo.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/react-runtime-spike.runtime.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
+| ide/request-clients-real-native.runtime.test.ts | devtools | 6 | 0 | 6 | wechat |
+| ide/request-clients-real.runtime.test.ts | devtools | 7 | 0 | 7 | wechat |
+| ide/shared-styles.runtime.test.ts | devtools, headless | 1 | 0 | 1 | wechat |
+| ide/stateful-hmr.runtime.test.ts | devtools | 3 | 3 | 0 | wechat |
+| ide/subpackage-shared-strategy-complex.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/swan-runtime.optional.test.ts | swan | 1 | 0 | - | out-of-scope |
+| ide/tdesign-dialog-import.runtime.test.ts | devtools | 2 | 0 | 2 | wechat |
+| ide/template-dev-open-all.runtime.test.ts | devtools | 11 | 0 | 11 | wechat |
+| ide/template-multi-platform-sfc.swan.optional.test.ts | swan | 1 | 0 | - | out-of-scope |
+| ide/template-multi-platform.swan.optional.test.ts | swan | 1 | 0 | - | out-of-scope |
+| ide/template-tailwindcss-dev-open-multi.runtime.test.ts | devtools | 3 | 0 | 3 | wechat |
+| ide/template-tailwindcss-tdesign-hmr.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/template-weapp-vite-multi-platform-sfc-template.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-multi-platform-template.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-tailwindcss-template.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-tailwindcss-vant-template.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-template.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts | devtools | 4 | 0 | 4 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts | devtools | 3 | 0 | 3 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts | devtools | 3 | 0 | 3 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/template-weapp-vite-wevu-template.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
+| ide/template-wevu-features-app.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/vite-native-ts.worker.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/vue-mini-issue151-wevu.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-composition-api.weapp.test.ts | devtools | 2 | 0 | 2 | wechat |
+| ide/wevu-features.runtime.behavior.test.ts | devtools, headless | 9 | 9 | 0 | wechat |
+| ide/wevu-features.runtime.router.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
+| ide/wevu-features.runtime.subpath.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-jsx-tsx.hmr.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-jsx-tsx.runtime.test.ts | devtools, headless | 3 | 0 | 3 | wechat |
+| ide/wevu-router-hmr.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-runtime-demo.request-globals.weapp.test.ts | devtools | 2 | 0 | 2 | wechat |
+| ide/wevu-runtime-demo.vue-query.weapp.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-runtime.class-computed.weapp.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-runtime.core-hmr.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-runtime.function-props.weapp.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-runtime.inline-object-reactivity.weapp.test.ts | devtools | 2 | 0 | 2 | wechat |
+| ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-runtime.shared-template-wxs.hmr.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-runtime.weapp.test.ts | devtools, headless | 6 | 0 | 6 | wechat |
+| ide/wevu-subpackage-placement.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-vue-demo.script-setup.emit.runtime.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/wevu-watch.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/chunk-modes.runtime.duplicate.test.ts | devtools | 2 | 0 | 2 | wechat |
+| ide/chunk-modes.runtime.extras.test.ts | devtools | 1 | 0 | 1 | wechat |
+| ide/chunk-modes.runtime.hoist.test.ts | devtools | 1 | 0 | 1 | wechat |
+
+## ide/app-lifecycle.test.ts
+
+### app lifecycle compare (e2e) > compares wevu app lifecycle logs against native
+
+- Source: `e2e/ide/app-lifecycle.test.ts:228`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps`; checkpoints: `['native', 'wevu-ts', 'wevu-vue'].flatMap(variant => [ { id: \`${variant}:initial\`, route: INDEX_ROUTE, action: \`冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态\`, nodes: [ { selector: '#app-lifecycle-route', text: variant === 'native' `; source: `e2e/ide/app-lifecycle.test.ts:229`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `callMethod(refreshLifecycleSummary)`
+
+
+## ide/app-prelude-native.runtime.test.ts
+
+### e2e app: app-prelude-native runtime > executes inline app prelude once even after relaunching main and subpackage pages
+
+- Source: `e2e/ide/app-prelude-native.runtime.test.ts:85`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-prelude-native`; checkpoints: `ROUTES.map(({ route, label }) => ({ id: label, route, action: \`reLaunch ${label} and inspect the prelude execution log\`, nodes: [ { selector: '#route', text: label }, { selector: '#prelude-log-count', text: '1' }, { selector: '.prelude-log-`; source: `e2e/ide/app-prelude-native.runtime.test.ts:60`
+- Operations: `reLaunch(route)`
+
+### e2e app: app-prelude-native runtime > keeps one prelude side effect per package scope under default require mode
+
+- Source: `e2e/ide/app-prelude-native.runtime.test.ts:89`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-prelude-native`; checkpoints: `ROUTES.map(({ route, label }) => ({ id: label, route, action: \`reLaunch ${label} and inspect the prelude execution log\`, nodes: [ { selector: '#route', text: label }, { selector: '#prelude-log-count', text: '1' }, { selector: '.prelude-log-`; source: `e2e/ide/app-prelude-native.runtime.test.ts:60`
+- Operations: `reLaunch(route)`
+
+### e2e app: app-prelude-native runtime > installs request runtime globals through app.prelude.js under default require mode
+
+- Source: `e2e/ide/app-prelude-native.runtime.test.ts:93`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-prelude-native`; checkpoints: `[{ id: 'request-runtime', route: ROUTES[0]!.route, action: 'inspect the installed request API constructors on the first page', nodes: Object.entries(REQUEST_RUNTIME).map(([name, type]) => ({ selector: \`#runtime-${name}\`, text: \`${name}=${ty`; source: `e2e/ide/app-prelude-native.runtime.test.ts:94`
+
+
+## ide/app-vue-hmr-alias.runtime.test.ts
+
+### app.vue alias import layout HMR runtime > keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR
+
+- Source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:425`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-vue-hmr-alias`; checkpoints: `[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa`; source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:430`
+- Routes: ``
+
+
+## ide/auto-routes-define-app-json.runtime.test.ts
+
+### auto-routes define app json runtime (weapp e2e) > renders routeLinks for home page with main package and subpackage routes
+
+- Source: `e2e/ide/auto-routes-define-app-json.runtime.test.ts:35`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/auto-routes-define-app-json`; checkpoints: `[{ id: 'route-links', route: HOME_ROUTE, action: 'reLaunch home and inspect all generated navigation links', nodes: [ { selector: '.title', text: 'auto-routes 导航中心' }, { selector: '.meta', text: '主包页面：4，总入口：6' }, { selector: 'navigator', co`; source: `e2e/ide/auto-routes-define-app-json.runtime.test.ts:36`
+- Routes: `/pages/home/index`
+- Operations: `reLaunch(/pages/home/index)`
+
+
+## ide/automator-bridge-wrapper-hmr.runtime.test.ts
+
+### automator bridge wrapper hmr (ide) > keeps the opened bridge wrapper project synced with dev dist updates
+
+- Source: `e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:81`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `[ { id: 'initial', route: '/pages/hmr/index', action: '首屏检查实际模板标题', nodes: [{ selector: '.title', text: 'HMR' }] }, { id: 'updated', route: '/pages/hmr/index', action: '模板更新后检查 bridge 项目的实际页面标题', nodes: [{ selector: '.title', text: pageTemp`; source: `e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:83`
+- Routes: `/pages/hmr/index`
+- Operations: `reLaunch(/pages/hmr/index)`
+
+
+## ide/automator-concurrent-sessions.runtime.test.ts
+
+### automator concurrent sessions > assigns independent automator session metadata to each project
+
+- Source: `e2e/ide/automator-concurrent-sessions.runtime.test.ts:157`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/devtools-cli-workflow.runtime.test.ts
+
+### DevTools CLI workflow runtime > opens with weapp-vite and weapp-ide-cli, screenshots, taps DOM, and exposes helpful diagnostics
+
+- Source: `e2e/ide/devtools-cli-workflow.runtime.test.ts:578`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### DevTools CLI workflow runtime > captures screenshots from the dev hotkey after dev -o opens the project
+
+- Source: `e2e/ide/devtools-cli-workflow.runtime.test.ts:701`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/forward-console-demo.runtime.test.ts
+
+### forward-console-demo in real WeChat DevTools > keeps forwarding console output after dev HMR updates the current page
+
+- Source: `e2e/ide/forward-console-demo.runtime.test.ts:206`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/github-issues.runtime.aggregate.test.ts
+
+### e2e app: github-issues / issue-289 > issue #289: compiles object-literal class bindings and runtime probe
+
+- Source: `e2e/ide/github-issues.runtime.issue289.test.ts:25`
+- Plan: registered in source; runtime verification required
+- Registration: `runGithubDom`; fixture: `e2e-apps/github-issues`; checkpoints: `OBJECT_CLASSES`; source: `e2e/ide/github-issues.runtime.issue289.test.ts:35`
+- Routes: `/pages/issue-289/object-literal/index`
+
+### e2e app: github-issues / issue-289 > issue #289: compiles map-class dynamic class bindings and runtime probe
+
+- Source: `e2e/ide/github-issues.runtime.issue289.test.ts:38`
+- Plan: registered in source; runtime verification required
+- Registration: `runGithubDom`; fixture: `e2e-apps/github-issues`; checkpoints: `MAP_CLASSES`; source: `e2e/ide/github-issues.runtime.issue289.test.ts:50`
+- Routes: `/pages/issue-289/map-class/index`
+
+### e2e app: github-issues / issue-289 > issue #289: compiles root-class bindings and runtime probe
+
+- Source: `e2e/ide/github-issues.runtime.issue289.test.ts:53`
+- Plan: registered in source; runtime verification required
+- Registration: `runGithubDom`; fixture: `e2e-apps/github-issues`; checkpoints: `ROOT_CLASSES`; source: `e2e/ide/github-issues.runtime.issue289.test.ts:62`
+- Routes: `/pages/issue-289/root-class/index`
+
+### e2e app: github-issues / issue-289 > issue #289: compiles computed-class dynamic class bindings and runtime probe
+
+- Source: `e2e/ide/github-issues.runtime.issue289.test.ts:65`
+- Plan: registered in source; runtime verification required
+- Registration: `runGithubDom`; fixture: `e2e-apps/github-issues`; checkpoints: `COMPUTED_CLASSES`; source: `e2e/ide/github-issues.runtime.issue289.test.ts:78`
+- Routes: `/pages/issue-289/computed-class/index`
+
+### e2e app: github-issues / issue-297-302 > issue #297: compiles complex call expressions
+
+- Source: `e2e/ide/github-issues.runtime.issue297-302.test.ts:21`
+- Plan: registered in source; runtime verification required
+- Registration: `runGithubDom`; fixture: `e2e-apps/github-issues`; checkpoints: `CALL_EXPRESSIONS`; source: `e2e/ide/github-issues.runtime.issue297-302.test.ts:51`
+- Routes: `/pages/issue-297/index`
+
+### e2e app: github-issues / issue-297-302 > issue #297: setup method call variants remain stable across expression contexts
+
+- Source: `e2e/ide/github-issues.runtime.issue297-302.test.ts:54`
+- Plan: registered in source; runtime verification required
+- Registration: `runGithubDom`; fixture: `e2e-apps/github-issues`; checkpoints: `SETUP_CALL_EXPRESSIONS`; source: `e2e/ide/github-issues.runtime.issue297-302.test.ts:88`
+- Routes: `/pages/issue-297-setup-method-calls/index`
+
+### e2e app: github-issues / issue-297-302 > issue #302: compiles v-for class bindings with active state updates
+
+- Source: `e2e/ide/github-issues.runtime.issue297-302.test.ts:91`
+- Plan: registered in source; runtime verification required
+- Registration: `runGithubDom`; fixture: `e2e-apps/github-issues`; checkpoints: `LOOP_CLASSES`; source: `e2e/ide/github-issues.runtime.issue297-302.test.ts:106`
+- Routes: `/pages/issue-302/index`
+
+### github-issues runtime web runtime globals > issue #448: compiles the next batch of web runtime globals for DevTools
+
+- Source: `e2e/ide/github-issues.runtime.web-runtime.test.ts:26`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `WEB_API_PLANS.issue448`; source: `e2e/ide/github-issues.runtime.web-runtime.test.ts:27`
+
+### github-issues runtime web runtime globals > issue #459: compiles directly imported web-apis polyfills for DevTools
+
+- Source: `e2e/ide/github-issues.runtime.web-runtime.test.ts:51`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `WEB_API_PLANS.issue459`; source: `e2e/ide/github-issues.runtime.web-runtime.test.ts:52`
+
+### github-issues runtime web runtime globals > issue #804: keeps web runtime platform exports available to custom components
+
+- Source: `e2e/ide/github-issues.runtime.web-runtime.test.ts:71`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `WEB_API_PLANS.issue804`; source: `e2e/ide/github-issues.runtime.web-runtime.test.ts:72`
+
+### github-issues runtime import.meta bindings > issue #431: renders supported native wxml import.meta bindings at runtime
+
+- Source: `e2e/ide/github-issues.runtime.import-meta.test.ts:23`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: '/pages/issue-431/index', action: '检查原生模板和脚本的环境变量、模块路径及资源属性替换', nodes: [ { selector: '#issue431-env-label', text: 'issue-431 native wxml env replacement' }, { selector: '#issue431-image', attributes: { src: 'https:/`; source: `e2e/ide/github-issues.runtime.import-meta.test.ts:24`
+- Routes: `/pages/issue-431/index`
+- Operations: `callMethod(_runE2E)`
+
+### github-issues runtime issue-466 > issue #466: keeps main-package tdesign Dialog.confirm callable through a user-facing page flow
+
+- Source: `e2e/ide/github-issues.runtime.issue466.test.ts:181`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `dialogCheckpoints('/pages/issue-466/index', '#issue466-main-dialog', MAIN_DIALOG_STEPS, resolveRuntimeProviderName())`; source: `e2e/ide/github-issues.runtime.issue466.test.ts:182`
+
+### github-issues runtime issue-466 > issue #466: keeps imported tdesign Dialog methods callable in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.issue466.test.ts:284`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `dialogCheckpoints('/subpackages/issue-466/index', '#issue466-dialog', steps, resolveRuntimeProviderName())`; source: `e2e/ide/github-issues.runtime.issue466.test.ts:286`
+
+### github-issues runtime issue-466 > issue #466: keeps native aliased tdesign Dialog.confirm callable in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.issue466.test.ts:453`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `dialogCheckpoints('/subpackages/issue-466/native/index', '#issue466-native-dialog', NATIVE_DIALOG_STEPS, resolveRuntimeProviderName())`; source: `e2e/ide/github-issues.runtime.issue466.test.ts:454`
+
+### e2e app: github-issues / issues #553 and #555 > issue #553: keeps component v-model arguments separate in DevTools
+
+- Source: `e2e/ide/github-issues.runtime.issue553-555.test.ts:53`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE553`; source: `e2e/ide/github-issues.runtime.issue553-555.test.ts:54`
+- Operations: `tap(<missing>)`
+
+### e2e app: github-issues / issues #553 and #555 > issue #555: renders and toggles v-if named slot content in DevTools
+
+- Source: `e2e/ide/github-issues.runtime.issue553-555.test.ts:122`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE555`; source: `e2e/ide/github-issues.runtime.issue553-555.test.ts:123`
+
+### e2e app: github-issues / issue #554 > renders default slot content from components with v-for in DevTools
+
+- Source: `e2e/ide/github-issues.runtime.issue554.test.ts:34`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_554_ROUTE, action: '检查循环组件投影的图片节点和资源路径', nodes: [{ selector: '.issue554-image', attributes: { src: ISSUE_554_EXPECTED_IMAGE, mode: 'aspectFit' }, ...(resolveRuntimeProviderName() === 'devtools' ? { visible: tr`; source: `e2e/ide/github-issues.runtime.issue554.test.ts:35`
+
+### e2e app: github-issues / issue #564 > renders native component default content without nested scoped slot components in DevTools
+
+- Source: `e2e/ide/github-issues.runtime.issue564.test.ts:53`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_564_ROUTE, action: '检查两个原生 tabbar item 接收的默认插槽文本', nodes: [ { selector: '#issue-564-home', text: 'issue-564-home' }, { selector: '#issue-564-user', text: 'issue-564-user' }, { selector: '.issue564-slot-label',`; source: `e2e/ide/github-issues.runtime.issue564.test.ts:54`
+
+### e2e app: github-issues / issue #581 > renders reactive array pushes after a sibling setup ref flushes first in DevTools
+
+- Source: `e2e/ide/github-issues.runtime.issue581.test.ts:102`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[arrayFlushCheckpoint('initial', ['init', '123', '456'])]`; source: `e2e/ide/github-issues.runtime.issue581.test.ts:103`
+
+### e2e app: github-issues / issue #581 > keeps repeated setup object requeues visible across multiple DevTools flushes
+
+- Source: `e2e/ide/github-issues.runtime.issue581.test.ts:131`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ arrayFlushCheckpoint('initial', ['init', '123', '456']), arrayFlushCheckpoint('second', ['init', '123', '456', '789', '999']), arrayFlushCheckpoint('third', ['init', '123', '456', '789', '999', 'abc']), ]`; source: `e2e/ide/github-issues.runtime.issue581.test.ts:132`
+
+### e2e app: github-issues / issue #627 > checks which host attributes are available as native and Vue SFC component props in DevTools
+
+- Source: `e2e/ide/github-issues.runtime.issue627.test.ts:35`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `RESERVED_PROPS_CHECKPOINTS`; source: `e2e/ide/github-issues.runtime.issue627.test.ts:36`
+- Operations: `callMethod(refreshMatrix)`
+
+### e2e app: github-issues / issue #642 > keeps vueSlots populated after many dynamic object props on the same component
+
+- Source: `e2e/ide/github-issues.runtime.issue642.test.ts:94`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE642`; source: `e2e/ide/github-issues.runtime.issue642.test.ts:95`
+- Operations: `tap(<missing>)`
+
+### e2e app: github-issues / issue #705 > keeps route state and hook origins synchronized across router and native tab navigation
+
+- Source: `e2e/ide/github-issues.runtime.issue705.test.ts:163`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE705_TABS`; source: `e2e/ide/github-issues.runtime.issue705.test.ts:164`
+- Routes: `pages/issue-705-tab/index`
+
+### e2e app: github-issues / issue #705 > restores route state after every back path and allows pushing the same target again
+
+- Source: `e2e/ide/github-issues.runtime.issue705.test.ts:239`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE705_BACK`; source: `e2e/ide/github-issues.runtime.issue705.test.ts:240`
+- Operations: `callMethodWithOptions(_runE2E)`
+
+### e2e app: github-issues / issue #706 > uses the app-service Page protocol when the DevTools page-frame channel is unavailable
+
+- Source: `e2e/ide/github-issues.runtime.issue706.test.ts:22`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `['ready', 'updated', 'method'].map(status => ({ id: status, route: '/pages/issue-706/index', action: status === 'ready' ? '检查首屏 RPC 提示和状态' : \`通过 ${status === 'updated' ? 'setData' : 'page method'} 更新并检查可见状态\`, nodes: [ { selector: '.hello', `; source: `e2e/ide/github-issues.runtime.issue706.test.ts:24`
+- Routes: `/pages/issue-706/index`
+- Operations: `callMethodWithOptions(_runE2E)`, `callMethodWithOptions(_setProbeStatus)`
+
+### e2e app: github-issues / issue #829 > preserves function props for direct and nested scoped-slot components
+
+- Source: `e2e/ide/github-issues.runtime.issue829.test.ts:39`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `['direct', 'nested'].map((kind) => { const scope = [ ...(kind === 'nested' ? ['#issue829-card', { has: '#issue-829-nested-query' }] : []), \`#issue-829-${kind}-query\`, { has: \`.issue829-${kind}-result\` }, ] return { id: kind, route: ISSUE_RO`; source: `e2e/ide/github-issues.runtime.issue829.test.ts:40`
+
+### e2e app: github-issues / issue #930 > keeps every compiler-owned binding live on initial and subsequent setData
+
+- Source: `e2e/ide/github-issues.runtime.issue930.test.ts:49`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `['initial', 'updated'].map(state => ({ id: state, route: ISSUE_ROUTE, action: state === 'initial' ? '检查首屏编译器拥有的绑定' : '更新成员表达式、model、template 和 CSS 变量后检查渲染', nodes: [ { selector: '#issue-930-member', text: \`member-${state}\` }, { selector: '#`; source: `e2e/ide/github-issues.runtime.issue930.test.ts:50`
+- Operations: `callMethod(_runE2E)`
+
+### e2e app: github-issues / lifecycle > issue #309: triggers onLoad without requiring onPullDownRefresh hook
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:315`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue309`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:316`
+
+### e2e app: github-issues / lifecycle > issue #309: triggers onLoad with created setupLifecycle and no pull-down hook
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:336`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue309Created`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:337`
+
+### e2e app: github-issues / lifecycle > issue #312: updates computed object bindings after switching back to initial reference
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:357`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue312`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:358`
+
+### e2e app: github-issues / lifecycle > issue #316: triggers kebab-case component event bindings at runtime
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:414`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue316`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:415`
+- Operations: `callMethod(_runE2E)`
+
+### e2e app: github-issues / lifecycle > issue #318: keeps template call-expression rendering stable with auto setData.pick
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:452`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue318`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:453`
+
+### e2e app: github-issues / lifecycle > issue #320: supports runtime addRoute alias and redirect navigation
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:479`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue320`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:480`
+
+### e2e app: github-issues / lifecycle > issue #380: keeps custom tab bar out of default layout at runtime
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:516`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue380`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:517`
+
+### e2e app: github-issues / lifecycle > issue #385: does not attach the page component twice after setPageLayout("default")
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:533`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue385`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:534`
+- Operations: `callMethod(_runE2E)`
+
+### e2e app: github-issues / lifecycle > issue #398: keeps layout child components mounted through the shared wevu runtime path
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:557`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue398`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:558`
+- Operations: `callMethod(_runE2E)`
+
+### e2e app: github-issues / lifecycle > issue #404: exposes page.onPageScroll on the runtime instance and receives page scroll updates
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:594`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue404`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:595`
+
+### e2e app: github-issues / lifecycle > issue #418/#419: keeps third-party component template refs available in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:629`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue418419`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:630`
+
+### e2e app: github-issues / lifecycle > issue #446: keeps template refs and shortBind props available in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:663`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue446`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:664`
+- Operations: `callMethod(_runE2E)`
+
+### e2e app: github-issues / lifecycle > issue #479: triggers indirect pull-down hook in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:702`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue479Pull`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:703`
+
+### e2e app: github-issues / lifecycle > issue #479: triggers indirect reach-bottom hook through Component page method bridge
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:737`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue479Bottom`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:738`
+
+### e2e app: github-issues / lifecycle > issue #695: triggers direct pull-down hook through Component page method bridge
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:768`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue695`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:769`
+
+### e2e app: github-issues / lifecycle > experiment: block nodes can provide named and default slot content in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:803`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.blockSlot`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:804`
+
+### e2e app: github-issues / lifecycle > issue #494: plain template v-slot content unwraps to child slot attrs or block wrappers in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:842`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue494`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:843`
+
+### e2e app: github-issues / lifecycle > issue #500: missing inject default continues later setup code in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:883`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue500`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:884`
+
+### e2e app: github-issues / lifecycle > experiment: flex parent keeps projected multi-node slot groups visible in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:915`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `slotFlexCheckpoint(resolveRuntimeProviderName())`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:916`
+
+### e2e app: github-issues / lifecycle > experiment: native self-closing and paired slot tags render equivalently in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:953`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.slotTag`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:954`
+
+### e2e app: github-issues / lifecycle > issue #373: keeps shared store computed reactive after reLaunch tears down the first page
+
+- Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:993`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GITHUB_LIFECYCLE_PLANS.issue373`; source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:994`
+- Operations: `callMethod(_runE2E)`
+
+### github-issues runtime miniprogram-computed > keeps build-npm cjs package miniprogram-computed working in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.miniprogram-computed.test.ts:119`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ { id: 'initial', route: ROUTE, action: '首屏检查 computed sum 和 summary', nodes: [ { selector: '#computed-sum', scope: ['#issue466-computed-probe'], text: 'sum = 3' }, { selector: '#computed-summary', scope: ['#issue466-computed-probe'], text`; source: `e2e/ide/github-issues.runtime.miniprogram-computed.test.ts:120`
+
+### e2e app: github-issues / props > issue #322: keeps static class and hidden v-show state on first render before errors object exists
+
+- Source: `e2e/ide/github-issues.runtime.props.test.ts:60`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `propsCheckpoints(resolveRuntimeProviderName()).issue322`; source: `e2e/ide/github-issues.runtime.props.test.ts:61`
+
+### e2e app: github-issues / props > issue #300: renders destructured boolean props in runtime call-expression bindings
+
+- Source: `e2e/ide/github-issues.runtime.props.test.ts:107`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `propsCheckpoints(resolveRuntimeProviderName()).issue300`; source: `e2e/ide/github-issues.runtime.props.test.ts:108`
+
+### e2e app: github-issues / props > issue #328: keeps setup ref string props out of null/default fallback on first paint
+
+- Source: `e2e/ide/github-issues.runtime.props.test.ts:154`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `propsCheckpoints(resolveRuntimeProviderName()).issue328`; source: `e2e/ide/github-issues.runtime.props.test.ts:155`
+
+### e2e app: github-issues / props > issue #955: preserves union values and nullable defaults without native prop coercion
+
+- Source: `e2e/ide/github-issues.runtime.props.test.ts:186`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `propsCheckpoints(resolveRuntimeProviderName()).issue955`; source: `e2e/ide/github-issues.runtime.props.test.ts:187`
+
+### e2e app: github-issues / props > issue #597: keeps v-if and v-else named slot branches intact in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.props.test.ts:294`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `propsCheckpoints(resolveRuntimeProviderName()).issue597`; source: `e2e/ide/github-issues.runtime.props.test.ts:295`
+
+### e2e app: github-issues / props > issue #613: compares forwarded slot outlets with view and native block wrappers in DevTools runtime
+
+- Source: `e2e/ide/github-issues.runtime.props.test.ts:324`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `propsCheckpoints(resolveRuntimeProviderName()).issue613`; source: `e2e/ide/github-issues.runtime.props.test.ts:325`
+
+### e2e app: github-issues / props > issue #599: renders props named data in computed style bindings
+
+- Source: `e2e/ide/github-issues.runtime.props.test.ts:382`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `propsCheckpoints(resolveRuntimeProviderName()).issue599`; source: `e2e/ide/github-issues.runtime.props.test.ts:383`
+
+### e2e app: github-issues / props > issue #600: renders renamed defineProps destructure aliases in template and computed bindings
+
+- Source: `e2e/ide/github-issues.runtime.props.test.ts:413`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `propsCheckpoints(resolveRuntimeProviderName()).issue600`; source: `e2e/ide/github-issues.runtime.props.test.ts:414`
+
+### e2e app: github-issues / app shell runtime > issue #563: renders app.vue shell, page layout, and page content in real DevTools
+
+- Source: `e2e/ide/github-issues.runtime.app-shell.test.ts:53`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `SHELL_CHECKPOINTS.default`; source: `e2e/ide/github-issues.runtime.app-shell.test.ts:54`
+
+### e2e app: github-issues / app shell runtime > issue #448/#563: keeps web runtime URL parsing and app shell when page layout is disabled
+
+- Source: `e2e/ide/github-issues.runtime.app-shell.test.ts:84`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `SHELL_CHECKPOINTS.disabled`; source: `e2e/ide/github-issues.runtime.app-shell.test.ts:85`
+
+### e2e app: github-issues / slot fallback > issue #520: renders slots passed to resolver-imported wevu components
+
+- Source: `e2e/ide/github-issues.runtime.slot-fallback.test.ts:35`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `fallbackPlans(resolveRuntimeProviderName()).issue520`; source: `e2e/ide/github-issues.runtime.slot-fallback.test.ts:36`
+- Operations: `callMethod(_runE2E)`
+
+### e2e app: github-issues / slot fallback > issue #521: keeps scoped slot flex children on the same row in DevTools
+
+- Source: `e2e/ide/github-issues.runtime.slot-fallback.test.ts:63`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `fallbackPlans(resolveRuntimeProviderName()).issue521`; source: `e2e/ide/github-issues.runtime.slot-fallback.test.ts:64`
+
+### e2e app: github-issues / slot fallback > issue #528: renders slot fallback only when parent slot content is absent
+
+- Source: `e2e/ide/github-issues.runtime.slot-fallback.test.ts:93`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `fallbackPlans(resolveRuntimeProviderName()).issue528`; source: `e2e/ide/github-issues.runtime.slot-fallback.test.ts:94`
+- Operations: `callMethod(_runE2E)`
+
+### e2e app: github-issues / slot fallback > issue #530: renders default slot fallback with short slot presence metadata
+
+- Source: `e2e/ide/github-issues.runtime.slot-fallback.test.ts:125`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `fallbackPlans(resolveRuntimeProviderName()).issue530`; source: `e2e/ide/github-issues.runtime.slot-fallback.test.ts:126`
+
+### e2e app: github-issues / slot fallback > scoped slot outlet fallback: renders native named slot projection in DevTools
+
+- Source: `e2e/ide/github-issues.runtime.slot-fallback.test.ts:149`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `fallbackPlans(resolveRuntimeProviderName()).outlet`; source: `e2e/ide/github-issues.runtime.slot-fallback.test.ts:150`
+
+
+## ide/github-issues.runtime.issue448-formdata-upload.test.ts
+
+### github-issues runtime issue #448 FormData upload > uploads wx.downloadFile data as Blob, File, and Request FormData bodies in real DevTools
+
+- Source: `e2e/ide/github-issues.runtime.issue448-formdata-upload.test.ts:94`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `UPLOAD_CHECKPOINTS`; source: `e2e/ide/github-issues.runtime.issue448-formdata-upload.test.ts:95`
+
+
+## ide/github-issues.runtime.issue547.test.ts
+
+### e2e app: github-issues / issue #547 > renders nested augmented default slot content in DevTools
+
+- Source: `e2e/ide/github-issues.runtime.issue547.test.ts:28`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: '/pages/issue-547/index', action: '检查两层 augmented 默认插槽内的最终组件文本', nodes: [ { selector: '.issue547-group__title', text: 'issue-547 nested slot group', scope: ['#issue547-group'] }, { selector: '.issue547-image', text:`; source: `e2e/ide/github-issues.runtime.issue547.test.ts:29`
+- Routes: `/pages/issue-547/index`
+
+
+## ide/github-issues.runtime.issue558.test.ts
+
+### e2e app: github-issues / issue #558 > renders owner-proxy bindings across augmented slot variants in DevTools
+
+- Source: `e2e/ide/github-issues.runtime.issue558.test.ts:79`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `AUGMENTED_SLOT_CHECKPOINTS`; source: `e2e/ide/github-issues.runtime.issue558.test.ts:80`
+- Operations: `callMethod(_runE2E)`
+
+
+## ide/github-issues.runtime.issue615.test.ts
+
+### e2e app: github-issues / issue #615 > renders scoped slot v-for owner list in DevTools without owner initialization errors
+
+- Source: `e2e/ide/github-issues.runtime.issue615.test.ts:40`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: '/pages/issue-615/index', action: '检查 scoped-slot v-for 三个实际标签及数量', nodes: [ ...['issue-615-tab-1', 'issue-615-tab-2', 'issue-615-tab-3'].map(label => ({ selector: \`#${label}\`, text: label, scope: [ '#issue615-tabba`; source: `e2e/ide/github-issues.runtime.issue615.test.ts:41`
+- Routes: `/pages/issue-615/index`
+
+
+## ide/github-issues.runtime.issue621.test.ts
+
+### e2e app: github-issues / issue #621 > keeps inline assignment events writable for setup refs in DevTools
+
+- Source: `e2e/ide/github-issues.runtime.issue621.test.ts:48`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `INLINE_ASSIGNMENT_CHECKPOINTS`; source: `e2e/ide/github-issues.runtime.issue621.test.ts:49`
+- Operations: `tap(<missing>)`
+
+
+## ide/github-issues.runtime.issue642-bug7-default.test.ts
+
+### e2e app: github-issues / issue #642 bug-7 default mode > renders bug-7 scoped and default slots in normal mode without runtime loops
+
+- Source: `e2e/ide/github-issues.runtime.issue642-bug7-default.test.ts:18`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/github-issues.runtime.issue642-bug7-performance.test.ts
+
+### e2e app: github-issues / issue #642 bug-7 performance mode > renders bug-7 scoped and default slots in performance mode without runtime loops
+
+- Source: `e2e/ide/github-issues.runtime.issue642-bug7-performance.test.ts:18`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/github-issues.runtime.issue642-bug8.test.ts
+
+### e2e app: github-issues / issue #642 bug-8 > keeps scoped slot owner id when scoped slot component is nested through another component
+
+- Source: `e2e/ide/github-issues.runtime.issue642-bug8.test.ts:91`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE642_BUG8`; source: `e2e/ide/github-issues.runtime.issue642-bug8.test.ts:92`
+
+
+## ide/github-issues.runtime.issue826.test.ts
+
+### e2e app: github-issues / issue #826 > executes preserved single, shared and barrel modules across page relaunches
+
+- Source: `e2e/ide/github-issues.runtime.issue826.test.ts:35`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'index', route: '/pages/issue-826/index', action: '首屏执行保留的 single、shared 和 barrel 模块', nodes: [{ selector: '#issue826-page', text: INDEX_VALUE }], }, { id: 'second', route: '/pages/issue-826/second', action: 'reLaunch 后检查共享模块与 barrel`; source: `e2e/ide/github-issues.runtime.issue826.test.ts:36`
+- Routes: `/pages/issue-826/index`, `/pages/issue-826/second`
+
+
+## ide/github-issues.runtime.issue852.test.ts
+
+### e2e app: github-issues / issue #852 > renders numeric separator bindings in real WeChat DevTools
+
+- Source: `e2e/ide/github-issues.runtime.issue852.test.ts:39`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_ROUTE, action: '检查组件属性和不同进制数字分隔符表达式的实际文本', nodes: [ { selector: '#issue-852-count', scope: ['#issue-852-count-component'], text: 'Count: 1000000' }, { selector: '#issue852-decimal', text: 'decimal: 10000000000`; source: `e2e/ide/github-issues.runtime.issue852.test.ts:40`
+
+
+## ide/github-issues.runtime.issue868.test.ts
+
+### e2e app: github-issues / issue #868 > renders projected keys and restores source identity in real runtime
+
+- Source: `e2e/ide/github-issues.runtime.issue868.test.ts:38`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `IDENTITY_CHECKPOINTS`; source: `e2e/ide/github-issues.runtime.issue868.test.ts:39`
+- Operations: `callMethodWithOptions(_runE2E)`
+
+
+## ide/github-issues.runtime.issue911.test.ts
+
+### e2e app: github-issues / issue #911 > waits for the initial async beforeEach guard before mounting
+
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:80`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.default`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:81`
+- Operations: `callMethod(resetTrace)`, `callMethodWithOptions(_runE2E)`
+
+### e2e app: github-issues / issue #911 > waits for an async guard before resolving a redirect and mounting the initial page
+
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:98`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.redirect`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:99`
+- Routes: `/pages/issue-911/index?mode=redirect`
+- Operations: `callMethod(resetTrace)`, `reLaunch(/pages/issue-911/index?mode=redirect)`
+
+### e2e app: github-issues / issue #911 > aborts after an async guard without mounting the target page
+
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:120`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.abort`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:121`
+- Routes: `/pages/issue-911/index?mode=abort`
+- Operations: `callMethod(resetTrace)`, `reLaunch(/pages/issue-911/index?mode=abort)`
+
+### e2e app: github-issues / issue #911 > does not run the issue guard for a subsequent non-target navigation
+
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:136`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.subsequent`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:137`
+- Operations: `callMethod(resetTrace)`
+
+### e2e app: github-issues / issue #911 > mounts after the default timeout when an initial guard never settles
+
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:156`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.never`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:157`
+- Routes: `/pages/issue-911/index?mode=never`
+- Operations: `callMethod(resetTrace)`, `reLaunch(/pages/issue-911/index?mode=never)`, `callMethodWithOptions(_runE2E)`
+
+### e2e app: github-issues / issue #911 > settles a rejected initial guard without leaving an unhandled promise gate
+
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:171`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.reject`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:172`
+- Routes: `/pages/issue-911/index?mode=reject`
+- Operations: `callMethod(resetTrace)`, `reLaunch(/pages/issue-911/index?mode=reject)`
+
+### e2e app: github-issues / issue #911 > cancels a late guard when the page is replaced quickly
+
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:185`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.late`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:186`
+- Routes: `/pages/issue-911/index?mode=late`, `/pages/issue-550/index`
+- Operations: `callMethod(resetTrace)`, `reLaunch(/pages/issue-911/index?mode=late)`, `reLaunch(/pages/issue-550/index)`
+
+
+## ide/github-issues.runtime.issue941.test.ts
+
+### e2e app: github-issues / issue #941 > keeps every wx direct-return API out of the Promise bridge
+
+- Source: `e2e/ide/github-issues.runtime.issue941.test.ts:32`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_941_ROUTE, action: '检查尚未执行 adapter 的首屏', nodes: [ { selector: '#issue941-title', text: 'issue-941 direct-return adapter' }, { selector: '#issue941-cache-options', text: 'cache options: pending' }, { selector: `; source: `e2e/ide/github-issues.runtime.issue941.test.ts:33`
+- Operations: `callMethodWithOptions(_runE2E)`
+
+
+## ide/github-issues.runtime.require-async.test.ts
+
+### e2e app: github-issues / require async subpackage modules > loads subpackage modules through callback, Promise, and native import APIs
+
+- Source: `e2e/ide/github-issues.runtime.require-async.test.ts:45`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ ['initial', 'ready', 'none', 'none'], ['callback', 'loaded', 'callback', 'require-async:callback'], ['promise', 'loaded', 'promise', 'require-async:promise'], ['native', 'loaded', 'native', 'require-async:native-default:require-async:nati`; source: `e2e/ide/github-issues.runtime.require-async.test.ts:46`
+- Operations: `callMethodWithOptions(_runE2E)`
+
+
+## ide/github-issues.runtime.slot-fallback-compiler-off.test.ts
+
+### e2e app: github-issues / slot fallback compiler off > renders plain slot fallback independently from scopedSlotsCompiler
+
+- Source: `e2e/ide/github-issues.runtime.slot-fallback-compiler-off.test.ts:68`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `fallbackPlans(resolveRuntimeProviderName()).compilerOff`; source: `e2e/ide/github-issues.runtime.slot-fallback-compiler-off.test.ts:69`
+
+
+## ide/github-issues.runtime.subpackage-item.test.ts
+
+### e2e app: github-issues / item subpackage > issue #317: loads duplicated shared chunks with localized runtime
+
+- Source: `e2e/ide/github-issues.runtime.subpackage-item.test.ts:24`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: '/subpackages/item/index', action: '检查 item 分包的共享 runtime 实例和 npm 模块结果', nodes: [ { selector: '.issue317-message', text: 'ITEM:ready:instance' }, { selector: '.issue317-npm-marker', text: 'issue317ItemNpmReady' }, ]`; source: `e2e/ide/github-issues.runtime.subpackage-item.test.ts:25`
+- Routes: `/subpackages/item/index`
+
+### e2e app: github-issues / item subpackage > issue #340: loads cross-subpackage source imports in item/login-required
+
+- Source: `e2e/ide/github-issues.runtime.subpackage-item.test.ts:50`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: '/subpackages/item/login-required/index', action: '检查 item 页面跨分包导入的实际执行结果', nodes: [ { selector: '.issue340-message', text: 'item-login-required:issue-340:shared' }, ], }]`; source: `e2e/ide/github-issues.runtime.subpackage-item.test.ts:51`
+- Routes: `/subpackages/item/login-required/index`
+
+
+## ide/github-issues.runtime.subpackage-user.test.ts
+
+### e2e app: github-issues / user subpackage > issue #317: loads duplicated shared chunks with localized runtime
+
+- Source: `e2e/ide/github-issues.runtime.subpackage-user.test.ts:24`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: '/subpackages/user/index', action: '检查 user 分包的共享 runtime 实例和 npm 模块结果', nodes: [ { selector: '.issue317-message', text: 'USER:ready:instance' }, { selector: '.issue317-npm-marker', text: 'Issue317 user npm ready' }`; source: `e2e/ide/github-issues.runtime.subpackage-user.test.ts:25`
+- Routes: `/subpackages/user/index`
+
+### e2e app: github-issues / user subpackage > issue #340: loads cross-subpackage source imports in user/register/form
+
+- Source: `e2e/ide/github-issues.runtime.subpackage-user.test.ts:50`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: '/subpackages/user/register/form', action: '检查 user 页面跨分包导入的实际执行结果', nodes: [ { selector: '.issue340-message', text: 'user-register-form:issue-340:shared' }, ], }]`; source: `e2e/ide/github-issues.runtime.subpackage-user.test.ts:51`
+- Routes: `/subpackages/user/register/form`
+
+
+## ide/hmr-auto-classic.runtime.test.ts
+
+### automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state
+
+- Source: `e2e/ide/hmr-auto-classic.runtime.test.ts:143`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `[ ['initial', 'STATEFUL-NATIVE-BASE', 0, ''], ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'classic-held-input'], ['reloaded', 'STATEFUL-NATIVE-PATCHED', 0, ''], ['updated', 'STATEFUL-NATIVE-PATCHED', 2, ''], ].map(([id, marker, count, input]) =`; source: `e2e/ide/hmr-auto-classic.runtime.test.ts:144`
+- Routes: `/pages/native/index`, `/pages/native/index?source=classic-auto-e2e`
+- Operations: `reLaunch(/pages/native/index?source=classic-auto-e2e)`
+
+
+## ide/index.test.ts
+
+### e2e baseline app > opens index page and keeps build output stable
+
+- Source: `e2e/ide/index.test.ts:273`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/issue-340-hoist.runtime.test.ts
+
+### e2e app: issue-340-hoist runtime > reLaunches both subpackage pages with hoisted shared imports intact
+
+- Source: `e2e/ide/issue-340-hoist.runtime.test.ts:263`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/layout-power-demo-message.runtime.test.ts
+
+### layout-power-demo message feedback in real WeChat DevTools > keeps repeated message taps stable after layout switches
+
+- Source: `e2e/ide/layout-power-demo-message.runtime.test.ts:299`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/layout-power-demo.runtime-vendor-hmr.test.ts
+
+### layout-power-demo runtime vendor HMR in real WeChat DevTools > keeps active runtime vendor chunks available after page script HMR
+
+- Source: `e2e/ide/layout-power-demo.runtime-vendor-hmr.test.ts:523`
+- Plan: MISSING
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/lifecycle-compare.test.ts
+
+### lifecycle compare (e2e) > compares page lifecycles (native vs wevu ts/vue)
+
+- Source: `e2e/ide/lifecycle-compare.test.ts:459`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `LIFECYCLE_FIXTURE`; checkpoints: `PAGE_VARIANTS.flatMap(lifecycleCheckpoints)`; source: `e2e/ide/lifecycle-compare.test.ts:460`
+- Routes: `/pages/blank/index`
+- Operations: `reLaunch(route)`, `reLaunch(/pages/blank/index)`, `switchTab(fallbackTab)`, `switchTab(pagePath)`, `callMethod(methodName)`
+
+### lifecycle compare (e2e) > compares component lifecycles (native vs wevu ts/vue)
+
+- Source: `e2e/ide/lifecycle-compare.test.ts:502`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `LIFECYCLE_FIXTURE`; checkpoints: `lifecycleCheckpoints('components')`; source: `e2e/ide/lifecycle-compare.test.ts:503`
+- Routes: `/pages/blank/index`
+- Operations: `reLaunch(route)`, `reLaunch(/pages/blank/index)`, `switchTab(fallbackTab)`, `switchTab(pagePath)`, `callMethod(methodName)`
+
+### lifecycle compare (e2e) > verifies bind event alias behavior for native view/native component/wevu sfc component
+
+- Source: `e2e/ide/lifecycle-compare.test.ts:532`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `LIFECYCLE_FIXTURE`; checkpoints: `Array.from({ length: 13 }, (_, index) => aliasCheckpoint(index))`; source: `e2e/ide/lifecycle-compare.test.ts:533`
+- Routes: `/pages/blank/index`
+- Operations: `reLaunch(route)`, `reLaunch(/pages/blank/index)`, `switchTab(fallbackTab)`, `switchTab(pagePath)`, `callMethod(methodName)`
+
+### lifecycle compare (e2e) > verifies triggerEvent hyphen/underscore event names with bind and bind: forms
+
+- Source: `e2e/ide/lifecycle-compare.test.ts:605`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `LIFECYCLE_FIXTURE`; checkpoints: `Array.from({ length: 13 }, (_, index) => namedEventCheckpoint(index))`; source: `e2e/ide/lifecycle-compare.test.ts:606`
+- Routes: `/pages/blank/index`
+- Operations: `reLaunch(route)`, `reLaunch(/pages/blank/index)`, `switchTab(fallbackTab)`, `switchTab(pagePath)`, `callMethod(methodName)`
+
+
+## ide/mcp-runtime-tools.runtime.test.ts
+
+### MCP runtime tools in real WeChat DevTools > covers every MCP runtime tool against the real IDE runtime
+
+- Source: `e2e/ide/mcp-runtime-tools.runtime.test.ts:150`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/plugin-demo.runtime.test.ts
+
+### plugin-demo runtime (ide) > loads host page, renders plugin public components, and opens plugin vue page without runtime errors
+
+- Source: `e2e/ide/plugin-demo.runtime.test.ts:297`
+- Plan: MISSING
+- Routes: `/pages/index/index`, `plugin://hello-plugin/hello-page`
+- Operations: `reLaunch(/pages/index/index)`, `callMethod(boostShowcase)`, `navigateTo(plugin://hello-plugin/hello-page)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/react-runtime-spike.runtime.test.ts
+
+### react runtime spike (weapp e2e) > renders React hooks and dispatches host events through generic WXML
+
+- Source: `e2e/ide/react-runtime-spike.runtime.test.ts:146`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `REACT_FIXTURE`; checkpoints: `[ counterCheckpoint({ id: 'initial', action: '首屏显示初始 hooks、context、输入和 keyed 列表', mode: 'generic', count: 0 }), counterCheckpoint({ id: 'incremented', action: '点击 increment 更新 count 和 memo doubled', mode: 'generic', count: 1 }), counterChec`; source: `e2e/ide/react-runtime-spike.runtime.test.ts:147`
+- Operations: `reLaunch(GENERIC_ROUTE)`, `tap(<missing>)`
+
+### react runtime spike (weapp e2e) > renders the compiled native WXML page with binding-only payloads
+
+- Source: `e2e/ide/react-runtime-spike.runtime.test.ts:168`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `REACT_FIXTURE`; checkpoints: `[ counterCheckpoint({ id: 'initial', action: '首屏显示静态绑定的 counter 和问候', mode: 'static', count: 0 }), counterCheckpoint({ id: 'incremented', action: '点击 increment 通过最小 setData payload 更新文本', mode: 'static', count: 1 }), counterCheckpoint({ id:`; source: `e2e/ide/react-runtime-spike.runtime.test.ts:169`
+- Operations: `reLaunch(STATIC_ROUTE)`, `tap(<missing>)`
+
+### react runtime spike (weapp e2e) > passes props, change events and default slots across all six interop edges
+
+- Source: `e2e/ide/react-runtime-spike.runtime.test.ts:216`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `REACT_FIXTURE`; checkpoints: `[ interopCheckpoint(0, runtimeProvider), ...INTEROP_EDGES.map((_, index) => interopCheckpoint(index + 1, runtimeProvider)), ]`; source: `e2e/ide/react-runtime-spike.runtime.test.ts:217`
+- Operations: `reLaunch(INTEROP_ROUTE)`, `tap(<missing>)`, `callMethodWithOptions(_readInteropE2E)`
+
+
+## ide/request-clients-real-native.runtime.test.ts
+
+### e2e app: request-clients-real-native [cjs] > covers app-level request globals probe from a native app entry
+
+- Source: `e2e/ide/request-clients-real-native.runtime.test.ts:267`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: request-clients-real-native [cjs] > covers fetch against a local real server
+
+- Source: `e2e/ide/request-clients-real-native.runtime.test.ts:285`
+- Plan: MISSING
+- Operations: `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: request-clients-real-native [cjs] > covers axios against a local real server
+
+- Source: `e2e/ide/request-clients-real-native.runtime.test.ts:302`
+- Plan: MISSING
+- Operations: `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: request-clients-real-native [cjs] > covers graphql-request against a local real server
+
+- Source: `e2e/ide/request-clients-real-native.runtime.test.ts:319`
+- Plan: MISSING
+- Operations: `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: request-clients-real-native [cjs] > covers socket.io-client against a local real realtime server
+
+- Source: `e2e/ide/request-clients-real-native.runtime.test.ts:336`
+- Plan: MISSING
+- Operations: `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: request-clients-real-native [cjs] > covers native WebSocket against a local real realtime server
+
+- Source: `e2e/ide/request-clients-real-native.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/request-clients-real.runtime.test.ts
+
+### e2e app: request-clients-real [cjs] > exposes request globals from the Vue app runtime entry
+
+- Source: `e2e/ide/request-clients-real.runtime.test.ts:268`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: request-clients-real [cjs] > covers fetch against a local real server
+
+- Source: `e2e/ide/request-clients-real.runtime.test.ts:298`
+- Plan: MISSING
+- Operations: `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: request-clients-real [cjs] > covers axios against a local real server
+
+- Source: `e2e/ide/request-clients-real.runtime.test.ts:315`
+- Plan: MISSING
+- Operations: `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: request-clients-real [cjs] > covers graphql-request against a local real server
+
+- Source: `e2e/ide/request-clients-real.runtime.test.ts:332`
+- Plan: MISSING
+- Operations: `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: request-clients-real [cjs] > covers vue-query with tab switch, refetch and query key rotation against a local real server
+
+- Source: `e2e/ide/request-clients-real.runtime.test.ts:349`
+- Plan: MISSING
+- Operations: `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: request-clients-real [cjs] > covers socket.io-client against a local real realtime server
+
+- Source: `e2e/ide/request-clients-real.runtime.test.ts:374`
+- Plan: MISSING
+- Operations: `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: request-clients-real [cjs] > covers native WebSocket against a local real realtime server
+
+- Source: `e2e/ide/request-clients-real.runtime.test.ts:401`
+- Plan: MISSING
+- Operations: `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/shared-styles.runtime.test.ts
+
+### e2e app: main-package shared styles > loads main, normal subpackage and independent subpackage styles in one session
+
+- Source: `e2e/ide/shared-styles.runtime.test.ts:74`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/stateful-hmr.runtime.test.ts
+
+### stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across a JavaScript patch
+
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:307`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('native')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:308`
+- Routes: `/pages/native/index?source=e2e`, `pages/native/index`
+- Operations: `reLaunch(/pages/native/index?source=e2e)`, `callMethod(increment)`
+
+### stateful HMR in real WeChat DevTools > rehydrates wevu setup refs while preserving the native page instance
+
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:348`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('wevu')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:349`
+- Routes: `/pages/wevu/index?source=e2e`, `pages/wevu/index`
+- Operations: `reLaunch(/pages/wevu/index?source=e2e)`, `callMethod(increment)`
+
+### stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch
+
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:390`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:391`
+- Routes: `/pages/component/index?source=e2e`, `pages/component/index`
+- Operations: `reLaunch(/pages/component/index?source=e2e)`, `callMethod(increment)`
+
+
+## ide/subpackage-shared-strategy-complex.runtime.test.ts
+
+### reLaunches all key routes and renders shared markers
+
+- Source: `e2e/ide/subpackage-shared-strategy-complex.runtime.test.ts:178`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/swan-runtime.optional.test.ts
+
+Optional Baidu host runtime is outside WeChat DOM acceptance
+
+### optional Baidu runtime smoke > reuses one session and relaunches the index route
+
+- Source: `e2e/ide/swan-runtime.optional.test.ts:42`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/tdesign-dialog-import.runtime.test.ts
+
+### e2e app: tdesign-dialog-import (runtime) > keeps bare dialog import callable in DevTools runtime
+
+- Source: `e2e/ide/tdesign-dialog-import.runtime.test.ts:329`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethod(_runE2E)`, `callMethod(_debugE2E)`, `callMethod(_resetE2E)`, `callMethod(method)`, `callMethod(_cancelDialogE2E)`, `callMethod(_openDialogE2E)`, `callMethod(_confirmDialogE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: tdesign-dialog-import (runtime) > keeps explicit /index dialog import callable in DevTools runtime
+
+- Source: `e2e/ide/tdesign-dialog-import.runtime.test.ts:348`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethod(_runE2E)`, `callMethod(_debugE2E)`, `callMethod(_resetE2E)`, `callMethod(method)`, `callMethod(_cancelDialogE2E)`, `callMethod(_openDialogE2E)`, `callMethod(_confirmDialogE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-dev-open-all.runtime.test.ts
+
+### all templates dev:open IDE integration > weapp-vite-plugin-template renders after dev:open without runtime errors
+
+- Source: `e2e/ide/template-dev-open-all.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### all templates dev:open IDE integration > weapp-vite-template renders after dev:open without runtime errors
+
+- Source: `e2e/ide/template-dev-open-all.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### all templates dev:open IDE integration > weapp-vite-multi-platform-template renders after dev:open without runtime errors
+
+- Source: `e2e/ide/template-dev-open-all.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### all templates dev:open IDE integration > weapp-vite-multi-platform-sfc-template renders after dev:open without runtime errors
+
+- Source: `e2e/ide/template-dev-open-all.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### all templates dev:open IDE integration > weapp-vite-lib-template renders after dev:open without runtime errors
+
+- Source: `e2e/ide/template-dev-open-all.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### all templates dev:open IDE integration > weapp-vite-tailwindcss-template renders after dev:open without runtime errors
+
+- Source: `e2e/ide/template-dev-open-all.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### all templates dev:open IDE integration > weapp-vite-tailwindcss-tdesign-template renders after dev:open without runtime errors
+
+- Source: `e2e/ide/template-dev-open-all.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### all templates dev:open IDE integration > weapp-vite-tailwindcss-vant-template renders after dev:open without runtime errors
+
+- Source: `e2e/ide/template-dev-open-all.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### all templates dev:open IDE integration > weapp-vite-wevu-template renders after dev:open without runtime errors
+
+- Source: `e2e/ide/template-dev-open-all.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### all templates dev:open IDE integration > weapp-vite-wevu-tailwindcss-tdesign-template renders after dev:open without runtime errors
+
+- Source: `e2e/ide/template-dev-open-all.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### all templates dev:open IDE integration > weapp-vite-wevu-tailwindcss-tdesign-retail-template renders after dev:open without runtime errors
+
+- Source: `e2e/ide/template-dev-open-all.runtime.test.ts:368`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-multi-platform-sfc.swan.optional.test.ts
+
+Optional Baidu host runtime is outside WeChat DOM acceptance
+
+### optional multi-platform SFC template Baidu runtime smoke > reuses one session and exposes the SFC runtime state
+
+- Source: `e2e/ide/template-multi-platform-sfc.swan.optional.test.ts:45`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-multi-platform.swan.optional.test.ts
+
+Optional Baidu host runtime is outside WeChat DOM acceptance
+
+### optional multi-platform template Baidu runtime smoke > reuses one session and exposes the template runtime state
+
+- Source: `e2e/ide/template-multi-platform.swan.optional.test.ts:45`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-tailwindcss-dev-open-multi.runtime.test.ts
+
+### template TailwindCSS dev:open multi-project IDE integration > weapp-vite-tailwindcss-template renders after the previous dev:open process exits
+
+- Source: `e2e/ide/template-tailwindcss-dev-open-multi.runtime.test.ts:112`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### template TailwindCSS dev:open multi-project IDE integration > weapp-vite-tailwindcss-tdesign-template renders after the previous dev:open process exits
+
+- Source: `e2e/ide/template-tailwindcss-dev-open-multi.runtime.test.ts:112`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### template TailwindCSS dev:open multi-project IDE integration > weapp-vite-tailwindcss-vant-template renders after the previous dev:open process exits
+
+- Source: `e2e/ide/template-tailwindcss-dev-open-multi.runtime.test.ts:112`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-tailwindcss-tdesign-hmr.runtime.test.ts
+
+### template TailwindCSS TDesign HMR in real WeChat DevTools > updates the visible Tailwind arbitrary background color through dev HMR
+
+- Source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:447`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-weapp-vite-multi-platform-sfc-template.test.ts
+
+### template e2e: weapp-vite-multi-platform-sfc-template > renders and updates the WeChat SFC target
+
+- Source: `e2e/ide/template-weapp-vite-multi-platform-sfc-template.test.ts:11`
+- Plan: registered in source; runtime verification required
+- Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `multiPlatformTemplateDom(true)`; source: `e2e/ide/template-weapp-vite-multi-platform-sfc-template.test.ts:12`
+
+
+## ide/template-weapp-vite-multi-platform-template.test.ts
+
+### template e2e: weapp-vite-multi-platform-template > renders and updates the WeChat target
+
+- Source: `e2e/ide/template-weapp-vite-multi-platform-template.test.ts:11`
+- Plan: registered in source; runtime verification required
+- Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `multiPlatformTemplateDom(false)`; source: `e2e/ide/template-weapp-vite-multi-platform-template.test.ts:12`
+
+
+## ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts
+
+### template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pages from app config
+
+- Source: `e2e/ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts:8`
+- Plan: registered in source; runtime verification required
+- Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `tailwindTemplateDom('tdesign')`; source: `e2e/ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts:9`
+
+
+## ide/template-weapp-vite-tailwindcss-template.test.ts
+
+### template e2e: weapp-vite-tailwindcss-template > renders all pages from app config
+
+- Source: `e2e/ide/template-weapp-vite-tailwindcss-template.test.ts:8`
+- Plan: registered in source; runtime verification required
+- Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `tailwindTemplateDom('tailwind')`; source: `e2e/ide/template-weapp-vite-tailwindcss-template.test.ts:9`
+
+
+## ide/template-weapp-vite-tailwindcss-vant-template.test.ts
+
+### template e2e: weapp-vite-tailwindcss-vant-template > renders all pages from app config
+
+- Source: `e2e/ide/template-weapp-vite-tailwindcss-vant-template.test.ts:8`
+- Plan: registered in source; runtime verification required
+- Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `tailwindTemplateDom('vant')`; source: `e2e/ide/template-weapp-vite-tailwindcss-vant-template.test.ts:9`
+
+
+## ide/template-weapp-vite-template.test.ts
+
+### template e2e: weapp-vite-template > renders all pages from app config in esm
+
+- Source: `e2e/ide/template-weapp-vite-template.test.ts:11`
+- Plan: registered in source; runtime verification required
+- Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `NATIVE_TEMPLATE_DOM`; source: `e2e/utils/templateAcceptance/native.ts`
+
+### template e2e: weapp-vite-template > renders all pages from app config in cjs
+
+- Source: `e2e/ide/template-weapp-vite-template.test.ts:11`
+- Plan: registered in source; runtime verification required
+- Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `NATIVE_TEMPLATE_DOM`; source: `e2e/utils/templateAcceptance/native.ts`
+
+
+## ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts
+
+### template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feedback runtime > renders the home page in WeChat DevTools
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts:306`
+- Plan: MISSING
+- Routes: `/pages/home/home`
+- Operations: `switchTab(/pages/home/home)`, `reLaunch(/pages/home/home)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feedback runtime > does not emit runtime warnings when layout toast is triggered from home page
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts:330`
+- Plan: MISSING
+- Routes: `/pages/home/home`
+- Operations: `switchTab(/pages/home/home)`, `reLaunch(/pages/home/home)`, `callMethodWithOptions(method)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feedback runtime > navigates from home goods card through component click event wiring
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts:351`
+- Plan: MISSING
+- Routes: `/pages/home/home`
+- Operations: `switchTab(/pages/home/home)`, `reLaunch(/pages/home/home)`, `navigateTo(url)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feedback runtime > does not emit runtime warnings when layout dialog is triggered from home page
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts:384`
+- Plan: MISSING
+- Routes: `/pages/home/home`
+- Operations: `switchTab(/pages/home/home)`, `reLaunch(/pages/home/home)`, `callMethodWithOptions(method)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts
+
+### template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template parity > keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts:824`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template`; checkpoints: `routes.flatMap(route => route.steps)`; source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts:831`
+- Operations: `reLaunch(route)`, `callMethod(step.method)`
+
+
+## ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts
+
+### e2e app: template-wevu-tdesign-regression class/style binding lab > covers class/style binding branches with interactive scenarios
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts:270`
+- Plan: MISSING
+- Operations: `callMethod(applyScenarioBase)`, `callMethodWithOptions(collectClassBindingSnapshot)`, `callMethod(applyScenarioAllOn)`, `callMethod(applyScenarioMixed)`, `callMethod(applyScenarioErrorGhost)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts
+
+### e2e app: template-wevu-tdesign-regression form > renders urgent controls and exposes initial urgent runtime state
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts:90`
+- Plan: MISSING
+- Routes: `/pages/form/index`
+- Operations: `switchTab(/pages/form/index)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts
+
+### e2e app: template-wevu-tdesign-regression layout feedback dialog > closes page alert dialog after confirming
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts:105`
+- Plan: MISSING
+- Operations: `callMethodWithOptions(method)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: template-wevu-tdesign-regression layout feedback dialog > closes page confirm dialog after canceling and confirming
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts:138`
+- Plan: MISSING
+- Operations: `callMethodWithOptions(method)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: template-wevu-tdesign-regression layout feedback dialog > can close dialog host via native confirm/cancel methods
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts:194`
+- Plan: MISSING
+- Operations: `callMethodWithOptions(method)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts
+
+### e2e app: template-wevu-tdesign-regression runtime errors > does not emit runtime console errors when opening layout pages
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts:91`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: template-wevu-tdesign-regression runtime errors > does not emit runtime console errors when homepage layout toast is triggered
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts:112`
+- Plan: MISSING
+- Operations: `callMethod(runLayoutToastE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### e2e app: template-wevu-tdesign-regression runtime errors > emits homepage KpiBoard scoped slot items without runtime errors
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts:141`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.test.ts
+
+### template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config
+
+- Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.test.ts:8`
+- Plan: registered in source; runtime verification required
+- Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `WEVU_TDESIGN_TEMPLATE_DOM`; source: `e2e/utils/templateAcceptance/wevu.ts`
+
+
+## ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts
+
+### e2e app: template-wevu-regression simplified portal > emits the simplified portal structure and auto-imported component usage
+
+- Source: `e2e/ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts:23`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts
+
+### e2e app: template-wevu-regression layouts runtime > switches between default/admin/none layouts at runtime
+
+- Source: `e2e/ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts:287`
+- Plan: MISSING
+- Routes: `/pages/layouts/index`
+- Operations: `reLaunch(/pages/layouts/index)`, `callMethod(methodName)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/template-weapp-vite-wevu-template.test.ts
+
+### template e2e: weapp-vite-wevu-template > renders all pages from app config in esm
+
+- Source: `e2e/ide/template-weapp-vite-wevu-template.test.ts:11`
+- Plan: registered in source; runtime verification required
+- Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `WEVU_TEMPLATE_DOM`; source: `e2e/utils/templateAcceptance/wevu.ts`
+
+### template e2e: weapp-vite-wevu-template > renders all pages from app config in cjs
+
+- Source: `e2e/ide/template-weapp-vite-wevu-template.test.ts:11`
+- Plan: registered in source; runtime verification required
+- Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `WEVU_TEMPLATE_DOM`; source: `e2e/utils/templateAcceptance/wevu.ts`
+
+
+## ide/template-wevu-features-app.test.ts
+
+### template e2e: wevu-features-app > renders all pages from app config
+
+- Source: `e2e/ide/template-wevu-features-app.test.ts:8`
+- Plan: registered in source; runtime verification required
+- Registration: `runTemplateE2E`; fixture: `APP_ROOT`; checkpoints: `WEVU_FEATURES_TEMPLATE_DOM`; source: `e2e/utils/templateAcceptance/features.ts`
+
+
+## ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts
+
+### template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack
+
+- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:309`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/vite-native-ts.worker.runtime.test.ts
+
+### e2e app: vite-native-ts worker runtime > preloads worker subpackage and receives the first worker message without runtime errors
+
+- Source: `e2e/ide/vite-native-ts.worker.runtime.test.ts:86`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/vue-mini-issue151-wevu.runtime.test.ts
+
+### e2e app: vue-mini issue #151 / wevu > keeps onReady hooks isolated from PageInstance __onReady__ in base lib 3.16.2
+
+- Source: `e2e/ide/vue-mini-issue151-wevu.runtime.test.ts:84`
+- Plan: MISSING
+- Routes: `/pages/issue-151/index`
+- Operations: `switchTab(/pages/issue-151/index)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-composition-api.weapp.test.ts
+
+### wevu composition api (weapp e2e) > covers all public composition APIs on the TS page
+
+- Source: `e2e/ide/wevu-composition-api.weapp.test.ts:74`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethodWithOptions(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### wevu composition api (weapp e2e) > covers all public composition APIs on the Vue SFC page
+
+- Source: `e2e/ide/wevu-composition-api.weapp.test.ts:85`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethodWithOptions(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-features.runtime.behavior.test.ts
+
+### e2e app: wevu-features / behavior > renders attrs changes and removes the conditional child content
+
+- Source: `e2e/ide/wevu-features.runtime.behavior.test.ts:24`
+- Plan: registered in source; runtime verification required
+- Registration: `withBehaviorPage`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ checkpoint('initial', '首屏渲染父控件和 attrs 子组件', attrsNodes(false)), checkpoint('updated', '切换 tone、visible、边框并递增 seed', attrsNodes(true)), checkpoint('visible-again', '重新显示 attrs 子节点并检查最新 seed', [ textNode('#ctrl-toggle-visible', '切换 visible：`; source: `e2e/ide/wevu-features.runtime.behavior.test.ts:25`
+- Routes: `/pages/use-attrs/index`
+
+### e2e app: wevu-features / behavior > renders slot removal and the updated default slot after reopening
+
+- Source: `e2e/ide/wevu-features.runtime.behavior.test.ts:44`
+- Plan: registered in source; runtime verification required
+- Registration: `withBehaviorPage`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ checkpoint('initial', '首屏展开 header 和 default slots', [ textNode('#slots-panel', 'panel: open', ['#slots-feature']), textNode('.use-slots-page__header', 'header slot content'), textNode('.use-slots-page__body', 'default slot content 1'), ]`; source: `e2e/ide/wevu-features.runtime.behavior.test.ts:45`
+- Routes: `/pages/use-slots/index`
+
+### e2e app: wevu-features / behavior > renders parent and child model updates in both directions
+
+- Source: `e2e/ide/wevu-features.runtime.behavior.test.ts:73`
+- Plan: registered in source; runtime verification required
+- Registration: `withBehaviorPage`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ checkpoint('initial', '首屏显示父子 model 和 title', modelNodes('seed-model', 0)), checkpoint('parent-update', '父页面设置 alpha model', modelNodes('alpha-from-parent', 1)), checkpoint('child-update', '子组件设置 model 并同步父页面', modelNodes('alpha-from-chil`; source: `e2e/ide/wevu-features.runtime.behavior.test.ts:74`
+- Routes: `/pages/use-model/index`
+
+### e2e app: wevu-features / behavior > renders null model input as empty text in both parent and child
+
+- Source: `e2e/ide/wevu-features.runtime.behavior.test.ts:91`
+- Plan: registered in source; runtime verification required
+- Registration: `withBehaviorPage`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ checkpoint('initial', '首屏 seed model', modelNodes('seed-model', 0)), checkpoint('null-cleared', '父页面写入 null 后父子文本同时清空', modelNodes('', 1)), ]`; source: `e2e/ide/wevu-features.runtime.behavior.test.ts:92`
+- Routes: `/pages/use-model/index`
+
+### e2e app: wevu-features / behavior > renders provide/inject state changes from both provider and consumer
+
+- Source: `e2e/ide/wevu-features.runtime.behavior.test.ts:103`
+- Plan: registered in source; runtime verification required
+- Registration: `withBehaviorPage`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ checkpoint('initial', '首屏 provider 与 inject 状态一致', provideNodes(1, 'teal', 'init:provider')), checkpoint('provider-update', 'provider 递增计数并切换主题', provideNodes(2, 'amber', 'theme:provider')), checkpoint('consumer-update', 'inject 组件递增共享计数'`; source: `e2e/ide/wevu-features.runtime.behavior.test.ts:104`
+- Routes: `/pages/use-provide-inject/index`
+
+### e2e app: wevu-features / behavior > renders app, layout, page, deep component and slot injection scopes
+
+- Source: `e2e/ide/wevu-features.runtime.behavior.test.ts:118`
+- Plan: registered in source; runtime verification required
+- Registration: `withBehaviorPage`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ checkpoint('initial', '首屏深层及 slot 组件实际渲染每层注入值', injectionScopeNodes()), checkpoint('scope-verified', '执行作用域语义检查后 DOM 值保持一致', injectionScopeNodes()), ]`; source: `e2e/ide/wevu-features.runtime.behavior.test.ts:119`
+- Routes: `/pages/use-provide-inject-scope/index`
+
+### e2e app: wevu-features / behavior > renders store mutations, computed values and resets as separate checkpoints
+
+- Source: `e2e/ide/wevu-features.runtime.behavior.test.ts:131`
+- Plan: registered in source; runtime verification required
+- Registration: `withBehaviorPage`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ checkpoint('initial', '首屏 setup/options stores 初始状态', storeNodes(false)), checkpoint('mutated', '执行 action、patch 和 storeToRefs 写入，保留 reset 前状态', storeNodes(true)), checkpoint('reset', 'reset 后计数、派生值、标签和集合恢复初始状态', storeNodes(false)), ]`; source: `e2e/ide/wevu-features.runtime.behavior.test.ts:132`
+- Routes: `/pages/use-store/index`
+
+### e2e app: wevu-features / behavior > renders static and reactive props across the native to Vue component boundary
+
+- Source: `e2e/ide/wevu-features.runtime.behavior.test.ts:168`
+- Plan: registered in source; runtime verification required
+- Registration: `withBehaviorPage`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ checkpoint('initial', '首屏静态链路和响应式链路的 Vue 内层文本', nativeNodes(false)), checkpoint('updated', '切换 mode 并递增 count 后内层 Vue 文本更新', nativeNodes(true)), ]`; source: `e2e/ide/wevu-features.runtime.behavior.test.ts:169`
+- Routes: `/pages/native-uses-vue/index`
+
+### e2e app: wevu-features / behavior > renders scoped CSS, CSS Modules and reactive CSS variables
+
+- Source: `e2e/ide/wevu-features.runtime.behavior.test.ts:180`
+- Plan: registered in source; runtime verification required
+- Registration: `withBehaviorPage`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ checkpoint('initial', '首屏 CSS Modules、scoped 节点和红色背景', styleNodes(false)), checkpoint('updated', '更新 CSS 变量后保持布局并渲染蓝色背景', styleNodes(true)), ]`; source: `e2e/ide/wevu-features.runtime.behavior.test.ts:181`
+- Routes: `/pages/sfc-styles/index`
+
+
+## ide/wevu-features.runtime.router.test.ts
+
+### e2e app: wevu-features / router > resolves component this.router.navigateTo relative route using component base path
+
+- Source: `e2e/ide/wevu-features.runtime.router.test.ts:81`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ routerCheckpoint('index', ROUTER_INDEX_ROUTE, '首屏显示进入 sub 页的操作', routerIndexNodes), routerCheckpoint('sub', ROUTER_SUB_ROUTE, '进入 sub 页并渲染 RouterOriginProbe 组件', routerSubNodes), routerCheckpoint('component-target', ROUTER_COMPONENT_TARGE`; source: `e2e/ide/wevu-features.runtime.router.test.ts:82`
+- Operations: `reLaunch(ROUTER_INDEX_ROUTE)`
+
+### e2e app: wevu-features / router > resolves pageRouter.navigateTo relative route using page base path
+
+- Source: `e2e/ide/wevu-features.runtime.router.test.ts:103`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ routerCheckpoint('index', ROUTER_INDEX_ROUTE, '首屏显示 pageRouter 相对导航操作', routerIndexNodes), routerCheckpoint('page-target', ROUTER_PAGE_TARGET, '相对导航后渲染页面目录目标路径和来源', routerTargetNodes('page')), ]`; source: `e2e/ide/wevu-features.runtime.router.test.ts:104`
+- Operations: `reLaunch(ROUTER_INDEX_ROUTE)`
+
+### e2e app: wevu-features / router > renders router query, resolved paths and aborted navigation results
+
+- Source: `e2e/ide/wevu-features.runtime.router.test.ts:119`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ routerCheckpoint('initial', SHOWCASE_ROUTE, '首屏展示未执行的 router showcase 结果', showcaseNodes(false)), routerCheckpoint('resolved', SHOWCASE_ROUTE, '执行 query、路由解析和不支持的导航后渲染每项结果', showcaseNodes(true)), ]`; source: `e2e/ide/wevu-features.runtime.router.test.ts:120`
+- Operations: `reLaunch(SHOWCASE_ROUTE)`
+
+### e2e app: wevu-features / router > renders dynamic route removal, options snapshot and guard failure results
+
+- Source: `e2e/ide/wevu-features.runtime.router.test.ts:146`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ routerCheckpoint('initial', DYNAMIC_ROUTE, '首屏展示未执行的 dynamic router 结果', dynamicNodes(false)), routerCheckpoint('completed', DYNAMIC_ROUTE, '动态路由增删和 guard 失败后渲染路径、计数及错误', dynamicNodes(true)), ]`; source: `e2e/ide/wevu-features.runtime.router.test.ts:148`
+- Operations: `reLaunch(DYNAMIC_ROUTE)`
+
+
+## ide/wevu-features.runtime.subpath.test.ts
+
+### e2e app: wevu-features / subpath > covers wevu subpath entries: router/store/api/fetch in one page scenario
+
+- Source: `e2e/ide/wevu-features.runtime.subpath.test.ts:18`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-jsx-tsx.hmr.runtime.test.ts
+
+### wevu JSX/TSX stateful HMR in real WeChat DevTools > preserves instance state while replacing shared TSX and island handlers
+
+- Source: `e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts:102`
+- Plan: MISSING
+- Routes: `/pages/tsx-basic/index`, `pages/tsx-basic/index`
+- Operations: `reLaunch(/pages/tsx-basic/index)`, `callMethodWithOptions(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-jsx-tsx.runtime.test.ts
+
+### wevu JSX/TSX runtime [${runtimeProvider}] > runs JSX and Vue-imported TSX option components
+
+- Source: `e2e/ide/wevu-jsx-tsx.runtime.test.ts:56`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethodWithOptions(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### wevu JSX/TSX runtime [${runtimeProvider}] > renders cross-file TSX and dispatches dynamic island and component events
+
+- Source: `e2e/ide/wevu-jsx-tsx.runtime.test.ts:74`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethodWithOptions(runE2E)`, `callMethodWithOptions(emitInfoCardChange)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### wevu JSX/TSX runtime [${runtimeProvider}] > runs setup render closures and SFC JSX/TSX script modes
+
+- Source: `e2e/ide/wevu-jsx-tsx.runtime.test.ts:93`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethodWithOptions(increment)`, `callMethodWithOptions(runE2E)`, `callMethodWithOptions(__weapp_vite_inline)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-router-hmr.runtime.test.ts
+
+### wevu/router HMR fixture runtime > keeps wevu/router resolved after saving a page in real DevTools HMR
+
+- Source: `e2e/ide/wevu-router-hmr.runtime.test.ts:152`
+- Plan: MISSING
+- Routes: `/pages/index/index`, `pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-runtime-demo.request-globals.weapp.test.ts
+
+### wevu runtime demo request globals (weapp e2e) [cjs] > exposes request globals from the app runtime and request-globals index page
+
+- Source: `e2e/ide/wevu-runtime-demo.request-globals.weapp.test.ts:129`
+- Plan: MISSING
+- Routes: `/pages/request-globals/index`, `/pages/request-globals/fetch`, `/pages/request-globals/graphql-request`, `/pages/request-globals/axios`
+- Operations: `reLaunch(/pages/request-globals/index)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### wevu runtime demo request globals (weapp e2e) [cjs] > supports fetch, graphql-request and axios in simulator runtime
+
+- Source: `e2e/ide/wevu-runtime-demo.request-globals.weapp.test.ts:179`
+- Plan: MISSING
+- Operations: `reLaunch(testCase.route)`, `callMethod(methodName)`, `tap(<missing>)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-runtime-demo.vue-query.weapp.test.ts
+
+### wevu runtime demo vue-query (weapp e2e) > resolves pending query and keeps query state reactive across tab switch and key rotation
+
+- Source: `e2e/ide/wevu-runtime-demo.vue-query.weapp.test.ts:117`
+- Plan: MISSING
+- Routes: `/pages/vue-query/index`
+- Operations: `reLaunch(/pages/vue-query/index)`, `callMethod(methodName)`, `tap(<missing>)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-runtime.class-computed.weapp.test.ts
+
+### wevu runtime class computed (weapp e2e) > resolves class ternary with refs and computed values
+
+- Source: `e2e/ide/wevu-runtime.class-computed.weapp.test.ts:42`
+- Plan: MISSING
+- Routes: `/pages/class-computed/index`
+- Operations: `reLaunch(/pages/class-computed/index)`, `callMethodWithOptions(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-runtime.core-hmr.test.ts
+
+### wevu runtime core hmr matrix (ide) > keeps DevTools runtime aligned with core page, sfc and layout hmr updates
+
+- Source: `e2e/ide/wevu-runtime.core-hmr.test.ts:564`
+- Plan: MISSING
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-runtime.function-props.weapp.test.ts
+
+### wevu runtime function props (weapp e2e) > passes compiler-marked function props and respects allowFunctionProps false
+
+- Source: `e2e/ide/wevu-runtime.function-props.weapp.test.ts:50`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethodWithOptions(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-runtime.inline-object-reactivity.weapp.test.ts
+
+### wevu runtime inline object reactivity (weapp e2e) > updates qty for minus/plus taps and enforces min bound
+
+- Source: `e2e/ide/wevu-runtime.inline-object-reactivity.weapp.test.ts:384`
+- Plan: MISSING
+- Routes: `/pages/wevu-inline-object-reactivity-repro/index`
+- Operations: `reLaunch(/pages/wevu-inline-object-reactivity-repro/index)`, `callMethodWithOptions(runE2E)`, `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### wevu runtime inline object reactivity (weapp e2e) > keeps qty stable under repeated taps
+
+- Source: `e2e/ide/wevu-runtime.inline-object-reactivity.weapp.test.ts:394`
+- Plan: MISSING
+- Routes: `/pages/wevu-inline-object-reactivity-repro/index`
+- Operations: `reLaunch(/pages/wevu-inline-object-reactivity-repro/index)`, `callMethodWithOptions(runE2E)`, `callMethod(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts
+
+### wevu runtime layout shared template/wxs hmr (ide) > updates layout runtime output in DevTools after shared template/include/wxs edits
+
+- Source: `e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:299`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethodWithOptions(applyAdminLayout)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-runtime.shared-template-wxs.hmr.test.ts
+
+### wevu runtime shared template/wxs hmr (ide) > updates runtime pages in DevTools after shared template/include/wxs edits
+
+- Source: `e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts:241`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-runtime.weapp.test.ts
+
+### wevu runtime (weapp e2e) [esm] > runs all pages and snapshots WXML
+
+- Source: `e2e/ide/wevu-runtime.weapp.test.ts:183`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethodWithOptions(methodName)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### wevu runtime (weapp e2e) [esm] > triggers page scroll and prints debug console logs
+
+- Source: `e2e/ide/wevu-runtime.weapp.test.ts:215`
+- Plan: MISSING
+- Routes: `/pages/runtime/index`
+- Operations: `reLaunch(/pages/runtime/index)`, `callMethod(getScrollDebugLogs)`, `callMethod(getHookLogs)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### wevu runtime (weapp e2e) [esm] > switches native page layouts between default/admin/none at runtime
+
+- Source: `e2e/ide/wevu-runtime.weapp.test.ts:268`
+- Plan: MISSING
+- Routes: `/pages/layouts/index`
+- Operations: `reLaunch(/pages/layouts/index)`, `callMethodWithOptions(applyAdminLayout)`, `callMethodWithOptions(clearLayout)`, `callMethodWithOptions(applyDefaultLayout)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### wevu runtime (weapp e2e) [cjs] > runs all pages and snapshots WXML
+
+- Source: `e2e/ide/wevu-runtime.weapp.test.ts:183`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethodWithOptions(methodName)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### wevu runtime (weapp e2e) [cjs] > triggers page scroll and prints debug console logs
+
+- Source: `e2e/ide/wevu-runtime.weapp.test.ts:215`
+- Plan: MISSING
+- Routes: `/pages/runtime/index`
+- Operations: `reLaunch(/pages/runtime/index)`, `callMethod(getScrollDebugLogs)`, `callMethod(getHookLogs)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+### wevu runtime (weapp e2e) [cjs] > switches native page layouts between default/admin/none at runtime
+
+- Source: `e2e/ide/wevu-runtime.weapp.test.ts:268`
+- Plan: MISSING
+- Routes: `/pages/layouts/index`
+- Operations: `reLaunch(/pages/layouts/index)`, `callMethodWithOptions(applyAdminLayout)`, `callMethodWithOptions(clearLayout)`, `callMethodWithOptions(applyDefaultLayout)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-subpackage-placement.runtime.test.ts
+
+### e2e app: wevu-subpackage-placement > reLaunches main, normal subpackage, and independent subpackage vue routes
+
+- Source: `e2e/ide/wevu-subpackage-placement.runtime.test.ts:91`
+- Plan: MISSING
+- Routes: `/pages/index/index`, `/subpackages/normal-wevu/pages/entry/index`, `/subpackages/normal-wevu/pages/detail/index`, `/subpackages/independent-wevu/pages/entry/index`, `/subpackages/independent-wevu/pages/detail/index`
+- Operations: `reLaunch(route)`, `callMethodWithOptions(runE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-vue-demo.script-setup.emit.runtime.test.ts
+
+### wevu-vue-demo script setup emit runtime > unwraps emitted detail for handler / $event / inline $event.title and preserves native event payloads
+
+- Source: `e2e/ide/wevu-vue-demo.script-setup.emit.runtime.test.ts:115`
+- Plan: MISSING
+- Operations: `reLaunch(route)`, `callMethodWithOptions(runEmitE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/wevu-watch.test.ts
+
+### wevu watch controls (e2e) > supports pause/resume/stop via destructuring
+
+- Source: `e2e/ide/wevu-watch.test.ts:60`
+- Plan: MISSING
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `callMethodWithOptions(runWatchE2E)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
+
+## ide/chunk-modes.runtime.duplicate.test.ts
+
+### e2e app: chunk-modes runtime duplicate matrix > runs without runtime errors in devtools for duplicate-common-none-preserve
+
+- Source: `e2e/ide/chunk-modes.runtime.shared.ts:386`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+- Chunk routes are selected by withIdeSmokeRoutes in e2e/ide/chunk-modes.runtime.shared.ts
+
+### e2e app: chunk-modes runtime duplicate matrix > runs without runtime errors in devtools for duplicate-inline-mixed-inline
+
+- Source: `e2e/ide/chunk-modes.runtime.shared.ts:386`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+- Chunk routes are selected by withIdeSmokeRoutes in e2e/ide/chunk-modes.runtime.shared.ts
+
+
+## ide/chunk-modes.runtime.extras.test.ts
+
+### e2e app: chunk-modes runtime extras matrix > runs without runtime errors in devtools for path-root-shared
+
+- Source: `e2e/ide/chunk-modes.runtime.shared.ts:386`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+- Chunk routes are selected by withIdeSmokeRoutes in e2e/ide/chunk-modes.runtime.shared.ts
+
+
+## ide/chunk-modes.runtime.hoist.test.ts
+
+### e2e app: chunk-modes runtime hoist matrix > runs without runtime errors in devtools for hoist-common-mixed-inline
+
+- Source: `e2e/ide/chunk-modes.runtime.shared.ts:386`
+- Plan: MISSING
+- Operations: `reLaunch(route)`
+- Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+- Chunk routes are selected by withIdeSmokeRoutes in e2e/ide/chunk-modes.runtime.shared.ts
+

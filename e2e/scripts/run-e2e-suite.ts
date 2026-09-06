@@ -2,6 +2,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { cleanDevtoolsCacheAndStop, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { createAcceptanceIdentity, isStrictDomAcceptance } from './domAcceptanceReport/helpers'
 import { getSuiteTasks, listE2ESuites, partitionE2ETasks } from './e2e-suite-manifest'
 import { runTaskSuite } from './suiteRunner'
 
@@ -126,6 +127,7 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
   }
 
   let tasks = await getSuiteTasks(mode)
+  const plannedTasks = [...tasks]
 
   if (tasks.length === 0) {
     console.error(`Unknown e2e suite: ${mode}`)
@@ -164,6 +166,12 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
     ...cleanupHooks,
     failOnTaskFailure: !allowFailures,
     stopOnTaskFailure: !allowFailures && shouldStopIdeSuiteAfterTaskFailure(mode),
+    reportContext: {
+      ...createAcceptanceIdentity(),
+      strict: mode === 'ide-full:exhaustive' || isStrictDomAcceptance(),
+      partial: Boolean(filter || from || shardIndex || shardTotal || process.env.WEAPP_VITE_E2E_TEMPLATE),
+      plannedTasks,
+    },
   })
 }
 

@@ -1,3 +1,5 @@
 <view id="require-async-page" class="require-async-page" data-e2e-route="require-async">
-  <text>{{status}}</text>
+  <text id="require-async-status">status: {{status}}</text>
+  <text id="require-async-mode">mode: {{mode}}</text>
+  <text id="require-async-marker">module: {{marker}}</text>
 </view>

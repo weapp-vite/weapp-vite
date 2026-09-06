@@ -3,6 +3,7 @@ import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
 import process from 'node:process'
 import fg from 'fast-glob'
+import { TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { HMR_GUARD_ALL_TESTS, HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
 
@@ -18,6 +19,11 @@ const TEMPLATE_DEV_OPEN_RUNNER_LABELS = new Set([
   'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
+export const IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS = new Set([
+  'ide/swan-runtime.optional.test.ts',
+  'ide/template-multi-platform.swan.optional.test.ts',
+  'ide/template-multi-platform-sfc.swan.optional.test.ts',
+])
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABELS = [
   IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
 ] as const
@@ -194,14 +200,26 @@ const IDE_GATE_TESTS = [
   'ide/lifecycle-compare.test.ts',
   'ide/wevu-features.runtime.behavior.test.ts',
 ].map(testPath => path.resolve(ROOT, testPath))
-const IDE_HEADLESS_FULL_TESTS = [
+const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/app-prelude-native.runtime.test.ts',
+  'ide/auto-routes-define-app-json.runtime.test.ts',
+  'ide/react-runtime-spike.runtime.test.ts',
+  'ide/wevu-features.runtime.behavior.test.ts',
+  'ide/wevu-features.runtime.router.test.ts',
+  'ide/template-weapp-vite-template.test.ts',
+  'ide/template-weapp-vite-wevu-template.test.ts',
+  'ide/template-weapp-vite-multi-platform-template.test.ts',
+  'ide/template-weapp-vite-multi-platform-sfc-template.test.ts',
+]
+const IDE_HEADLESS_FULL_TESTS = [...new Set([
   ...IDE_GATE_TESTS,
+  ...IDE_DOM_HEADLESS_PATTERNS.map(filePath => path.resolve(ROOT, filePath)),
   path.resolve(ROOT, 'ide/github-issues.runtime.issue705.test.ts'),
   path.resolve(ROOT, 'ide/github-issues.runtime.issue826.test.ts'),
   path.resolve(ROOT, 'ide/github-issues.runtime.require-async.test.ts'),
   path.resolve(ROOT, 'ide/shared-styles.runtime.test.ts'),
   path.resolve(ROOT, 'ide/wevu-jsx-tsx.runtime.test.ts'),
-]
+])]
 
 // PR 只验证最能代表构建、运行时、路由和平台契约的短路径；完整清单由 nightly 执行。
 const CI_PR_PATTERNS = [
@@ -328,6 +346,14 @@ function createIdeVitestTask(filePath: string) {
   if (TEMPLATE_DEV_OPEN_RUNNER_LABELS.has(task.label)) {
     task.command = 'node'
     task.args = ['--import', 'tsx', path.resolve(ROOT, 'scripts/run-template-dev-open-suite.ts')]
+    const isMultiTemplate = task.label === 'ide/template-tailwindcss-dev-open-multi.runtime.test.ts'
+    task.acceptanceTemplates = TEMPLATE_DEV_OPEN_CASES
+      .filter(item => !isMultiTemplate || [
+        'weapp-vite-tailwindcss-template',
+        'weapp-vite-tailwindcss-vant-template',
+        'weapp-vite-tailwindcss-tdesign-template',
+      ].includes(item.name))
+      .map(item => item.name)
   }
   const taskTimeoutMs = IDE_TASK_TIMEOUT_MS_BY_LABEL.get(task.label)
   if (taskTimeoutMs) {
@@ -441,7 +467,13 @@ export function getIdeExhaustiveTasks() {
     .filter(filePath => !IDE_MANUAL_DEVTOOLS_TEST_PATTERNS.has(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET.has(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_COMPONENT_LIBRARY_PATTERN_SET.has(toRelativeLabel(filePath)))
-    .map(filePath => createIdeVitestTask(filePath))
+    .map((filePath) => {
+      const task = createIdeVitestTask(filePath)
+      if (IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS.has(task.label)) {
+        task.outOfScopeReason = 'Optional Baidu host runtime is outside WeChat DOM acceptance'
+      }
+      return task
+    })
 
   return tasks.sort((left, right) => {
     const leftIsChunkModes = IDE_CHUNK_MODES_PATTERNS.includes(left.label)
@@ -650,6 +682,14 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ide-headless-full',
     description: 'Largest provider-compatible IDE suite backed by the headless runtime',
     tasks: getIdeHeadlessTasks,
+  },
+  'ide-dom-headless': {
+    name: 'ide-dom-headless',
+    description: 'Strict rendered checkpoint gate for provider-compatible IDE scenarios',
+    tasks: () => getHeadlessPatternTasks(IDE_DOM_HEADLESS_PATTERNS).map(task => ({
+      ...task,
+      env: { ...task.env, WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1' },
+    })),
   },
   'ide-full': {
     name: 'ide-full',

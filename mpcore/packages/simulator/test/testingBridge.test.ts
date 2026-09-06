@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { launch } from '../src/testing'
 import { cleanupTempDirs, createAsyncComponentFixture, createBaseFixture, createComponentFixture, createNavigationFixture, createNestedComponentFixture } from './helpers'
 
+declare const wx: unknown
+
 describe('headless testing bridge', () => {
   const tempDirs: string[] = []
 
@@ -50,7 +52,7 @@ describe('headless testing bridge', () => {
       structuredClone: typeof structuredClone,
       URLSearchParams: typeof URLSearchParams,
       wx: typeof wx,
-      wxFromGlobalThis: typeof globalThis.wx,
+      wxFromGlobalThis: typeof (globalThis as typeof globalThis & { wx?: unknown }).wx,
     }))).resolves.toEqual({
       Buffer: 'undefined',
       fetch: 'undefined',
@@ -74,6 +76,26 @@ describe('headless testing bridge', () => {
       height: 667,
       width: 375,
     })
+  })
+
+  it('updates rendered page data through the protocol without retaining caller objects', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({ projectPath })
+    try {
+      const page = await miniProgram.reLaunch('/pages/index/index')
+      const payload = { __e2eData: { greeting: 'Updated' } }
+      await page.setData(payload)
+      payload.__e2eData.greeting = 'caller mutation'
+      expect(await (await page.$('#greeting-button'))?.text()).toBe('Updated')
+      await page.setData({ '__e2eData.greeting': 'Restored' })
+      expect(await (await page.$('#greeting-button'))?.text()).toBe('Restored')
+      await miniProgram.close()
+      await expect(page.setData({})).rejects.toThrow()
+    }
+    finally {
+      await miniProgram.close()
+    }
   })
 
   it('calls page methods through the testing bridge', async () => {
@@ -612,6 +634,22 @@ Page({
     expect(await (await component?.pageScope())?.snapshot()).toMatchObject({
       type: 'page',
     })
+  })
+
+  it('queries rendered component hosts by id and preserves their scoped descendants', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({ projectPath })
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const hosts = await page.$$('#status-card')
+    expect(hosts).toHaveLength(1)
+    expect(await hosts[0]!.attr('class')).toBe('primary-card')
+    expect(await hosts[0]!.attr('data-role')).toBe('main')
+    expect(await (await hosts[0]!.$('#card-trigger'))?.text()).toBe('count: 2')
+    expect(await page.$$('component')).toHaveLength(1)
+    expect(await page.$$('status-card.primary-card')).toHaveLength(1)
+    await (await hosts[0]!.$('#card-trigger'))!.tap()
+    expect(await page.data('log')).toEqual(['status-card'])
   })
 
   it('clears stale component interaction targets before direct component method calls', async () => {

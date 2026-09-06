@@ -7,7 +7,9 @@ import {
   launchAutomator,
 } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { aliasCheckpoint, LIFECYCLE_FIXTURE, lifecycleCheckpoints, namedEventCheckpoint, PAGE_VARIANTS } from './lifecycleDom'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/lifecycle-compare')
@@ -227,28 +229,20 @@ async function openLifecyclePage(miniProgram: any, pagePath: string, query = '')
   )
 }
 
-async function triggerPageEvents(miniProgram: any, pagePath: string) {
+async function triggerPageEvents(miniProgram: any, pagePath: string, check: (stage: string, page: any) => Promise<unknown>) {
   process.stdout.write(`[lifecycle-compare:events] route=${pagePath}\n`)
   let page = await miniProgram.currentPage()
   await page?.waitFor(300)
 
-  try {
-    await miniProgram.callWxMethod('startPullDownRefresh')
-    await miniProgram.callWxMethod('stopPullDownRefresh')
-  }
-  catch {
-    // ignore
-  }
+  await miniProgram.callWxMethod('startPullDownRefresh')
+  await miniProgram.callWxMethod('stopPullDownRefresh')
+  await check('pulled', page)
 
-  try {
-    await miniProgram.pageScrollTo(600)
-    await page?.waitFor(150)
-    await miniProgram.pageScrollTo(2000)
-    await page?.waitFor(150)
-  }
-  catch {
-    // ignore
-  }
+  await miniProgram.pageScrollTo(600)
+  await page?.waitFor(150)
+  await miniProgram.pageScrollTo(2000)
+  await page?.waitFor(150)
+  await check('scrolled', page)
 
   const fallbackTab = TAB_PATHS.find(p => p !== pagePath)
   if (fallbackTab) {
@@ -258,6 +252,7 @@ async function triggerPageEvents(miniProgram: any, pagePath: string) {
       12_000,
       `switchTab fallback lifecycle page ${fallbackTab}`,
     )
+    await check('fallback', await miniProgram.currentPage())
     page = await withTimeout(
       miniProgram.switchTab(pagePath),
       12_000,
@@ -271,6 +266,7 @@ async function triggerPageEvents(miniProgram: any, pagePath: string) {
       `read lifecycle page after switchTab ${pagePath}`,
     )
     await page?.waitFor(200)
+    await check('returned', page)
   }
 
   return page
@@ -461,25 +457,32 @@ describe('lifecycle compare (e2e)', { concurrent: false }, () => {
   })
 
   it('compares page lifecycles (native vs wevu ts/vue)', async (ctx) => {
+    const dom = createDomAcceptance(ctx, LIFECYCLE_FIXTURE, PAGE_VARIANTS.flatMap(lifecycleCheckpoints))
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       await openLifecyclePage(miniProgram, '/pages/native/index', 'from=e2e')
+      await dom.check('native:initial', miniProgram, await miniProgram.currentPage())
       await callLifecyclePageMethod(await miniProgram.currentPage(), 'resetLifecycleLogs')
-      const nativeActive = (await triggerPageEvents(miniProgram, '/pages/native/index')) ?? await miniProgram.currentPage()
+      const nativeActive = (await triggerPageEvents(miniProgram, '/pages/native/index', (stage, page) => dom.check(`native:${stage}`, miniProgram, page))) ?? await miniProgram.currentPage()
       await callLifecyclePageMethod(nativeActive, 'finalizeLifecycleLogs')
+      await dom.check('native:finalized', miniProgram, nativeActive)
       const nativeLogs = (await nativeActive.data('__lifecycleLogs')) ?? []
       expect(nativeLogs.length).toBeGreaterThan(0)
 
       await openLifecyclePage(miniProgram, '/pages/wevu-ts/index', 'from=e2e')
+      await dom.check('wevu-ts:initial', miniProgram, await miniProgram.currentPage())
       await callLifecyclePageMethod(await miniProgram.currentPage(), 'resetLifecycleLogs')
-      const wevuTsActive = (await triggerPageEvents(miniProgram, '/pages/wevu-ts/index')) ?? await miniProgram.currentPage()
+      const wevuTsActive = (await triggerPageEvents(miniProgram, '/pages/wevu-ts/index', (stage, page) => dom.check(`wevu-ts:${stage}`, miniProgram, page))) ?? await miniProgram.currentPage()
       await callLifecyclePageMethod(wevuTsActive, 'finalizeLifecycleLogs')
+      await dom.check('wevu-ts:finalized', miniProgram, wevuTsActive)
       const wevuTsLogs = (await wevuTsActive.data('__lifecycleLogs')) ?? []
 
       await openLifecyclePage(miniProgram, '/pages/wevu-vue/index', 'from=e2e')
+      await dom.check('wevu-vue:initial', miniProgram, await miniProgram.currentPage())
       await callLifecyclePageMethod(await miniProgram.currentPage(), 'resetLifecycleLogs')
-      const wevuVueActive = (await triggerPageEvents(miniProgram, '/pages/wevu-vue/index')) ?? await miniProgram.currentPage()
+      const wevuVueActive = (await triggerPageEvents(miniProgram, '/pages/wevu-vue/index', (stage, page) => dom.check(`wevu-vue:${stage}`, miniProgram, page))) ?? await miniProgram.currentPage()
       await callLifecyclePageMethod(wevuVueActive, 'finalizeLifecycleLogs')
+      await dom.check('wevu-vue:finalized', miniProgram, wevuVueActive)
       const wevuVueLogs = (await wevuVueActive.data('__lifecycleLogs')) ?? []
 
       expect(normalizeEntries(wevuTsLogs)).toEqual(normalizeEntries(nativeLogs))
@@ -497,11 +500,14 @@ describe('lifecycle compare (e2e)', { concurrent: false }, () => {
   })
 
   it('compares component lifecycles (native vs wevu ts/vue)', async (ctx) => {
+    const dom = createDomAcceptance(ctx, LIFECYCLE_FIXTURE, lifecycleCheckpoints('components'))
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       await openLifecyclePage(miniProgram, '/pages/components/index', 'from=e2e')
-      const componentsActive = (await triggerPageEvents(miniProgram, '/pages/components/index')) ?? await miniProgram.currentPage()
+      await dom.check('components:initial', miniProgram, await miniProgram.currentPage())
+      const componentsActive = (await triggerPageEvents(miniProgram, '/pages/components/index', (stage, page) => dom.check(`components:${stage}`, miniProgram, page))) ?? await miniProgram.currentPage()
       await callLifecyclePageMethod(componentsActive, 'finalizeLifecycleLogs')
+      await dom.check('components:finalized', miniProgram, componentsActive)
       const componentLogs = (await componentsActive.data('__componentLogs')) ?? {}
 
       const nativeLogs = componentLogs.native ?? []
@@ -524,6 +530,7 @@ describe('lifecycle compare (e2e)', { concurrent: false }, () => {
   })
 
   it('verifies bind event alias behavior for native view/native component/wevu sfc component', async (ctx) => {
+    const dom = createDomAcceptance(ctx, LIFECYCLE_FIXTURE, Array.from({ length: 13 }, (_, index) => aliasCheckpoint(index)))
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const page = await openLifecyclePage(miniProgram, '/pages/components/index', 'from=e2e-event-binding')
@@ -533,6 +540,7 @@ describe('lifecycle compare (e2e)', { concurrent: false }, () => {
       await page.waitFor(500)
       await callLifecyclePageMethod(page, 'resetEventBindingStats')
       await page.waitFor(120)
+      await dom.check('alias:0', miniProgram, page)
 
       const componentsWxml = await fs.readFile(COMPONENTS_WXML_DIST, 'utf8')
       expect(componentsWxml).toContain('id="eventViewBindtap"')
@@ -544,9 +552,11 @@ describe('lifecycle compare (e2e)', { concurrent: false }, () => {
       expect(componentsWxml).toContain('id="eventViewBothReverse"')
       expect(componentsWxml).toContain('bindtap="onViewBothReverseBindtap"')
 
+      let operation = 0
       for (const bindingMode of ['bindtap', 'bindColon', 'both', 'bothReverse'] as const) {
         const triggered = await callLifecyclePageMethod<boolean>(page, 'triggerViewEventBinding', [bindingMode])
         expect(triggered).toBe(true)
+        await dom.check(`alias:${++operation}`, miniProgram, page)
       }
 
       for (const componentType of ['nativeComponent', 'wevuSfcComponent'] as const) {
@@ -554,6 +564,7 @@ describe('lifecycle compare (e2e)', { concurrent: false }, () => {
           const triggered = await callLifecyclePageMethod<boolean>(page, 'triggerComponentProbe', [componentType, bindingMode])
           expect(triggered).toBe(true)
           await page.waitFor(120)
+          await dom.check(`alias:${++operation}`, miniProgram, page)
         }
       }
 
@@ -592,6 +603,7 @@ describe('lifecycle compare (e2e)', { concurrent: false }, () => {
   })
 
   it('verifies triggerEvent hyphen/underscore event names with bind and bind: forms', async (ctx) => {
+    const dom = createDomAcceptance(ctx, LIFECYCLE_FIXTURE, Array.from({ length: 13 }, (_, index) => namedEventCheckpoint(index)))
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const page = await openLifecyclePage(miniProgram, '/pages/components/index', 'from=e2e-event-name-binding')
@@ -601,7 +613,9 @@ describe('lifecycle compare (e2e)', { concurrent: false }, () => {
       await page.waitFor(500)
       await callLifecyclePageMethod(page, 'resetNamedEventBindingStats')
       await page.waitFor(120)
+      await dom.check('named:0', miniProgram, page)
 
+      let operation = 0
       for (const eventNameType of ['hyphen', 'underscore'] as const) {
         for (const componentType of ['nativeComponent', 'wevuSfcComponent'] as const) {
           for (const bindingMode of ['bind', 'bindColon', 'both'] as const) {
@@ -612,6 +626,7 @@ describe('lifecycle compare (e2e)', { concurrent: false }, () => {
             )
             expect(triggered).toBe(true)
             await page.waitFor(120)
+            await dom.check(`named:${++operation}`, miniProgram, page)
           }
         }
       }

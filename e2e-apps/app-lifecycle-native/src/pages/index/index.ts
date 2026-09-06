@@ -13,6 +13,7 @@ interface LifecyclePageData {
   message: string
   __e2eSummary: LifecycleSummary
   __e2ePreview: AppLifecycleEntry[]
+  __e2eHooks: Array<{ name: string, status: string }>
 }
 
 interface LifecyclePageInstance {
@@ -41,6 +42,10 @@ function refreshE2eState(page: LifecyclePageInstance) {
   page.setData({
     __e2eSummary: summary,
     __e2ePreview: preview,
+    __e2eHooks: APP_HOOKS.map(name => ({
+      name,
+      status: appData.__lifecycleSeen?.[name] ? 'observed' : appData.__lifecycleLogs?.some(entry => entry.hook === name && entry.skipped) ? 'skipped' : 'pending',
+    })),
   })
 }
 
@@ -55,11 +60,15 @@ Page({
       lastHook: '',
     },
     __e2ePreview: [] as AppLifecycleEntry[],
+    __e2eHooks: [] as Array<{ name: string, status: string }>,
   },
   onReady() {
     refreshE2eState(this)
   },
   onShow() {
+    refreshE2eState(this)
+  },
+  refreshLifecycleSummary() {
     refreshE2eState(this)
   },
 })

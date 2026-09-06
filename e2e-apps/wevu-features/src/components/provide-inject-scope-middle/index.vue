@@ -7,7 +7,7 @@ import ProvideInjectScopeLevel01 from '../provide-inject-scope-level-01/index.vu
     <view class="provide-inject-scope-middle__title">
       middle component
     </view>
-    <ProvideInjectScopeLevel01 />
+    <ProvideInjectScopeLevel01 id="scope-level-01" />
   </view>
 </template>
 

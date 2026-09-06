@@ -8,8 +8,8 @@ interface DomNodeLike {
 }
 
 const WHITESPACE_RE = /\s+/
-const DATA_ATTR_SELECTOR_RE = /^\[data-([^=\]]+)="([^"]*)"\]$/
-const COMPOUND_SELECTOR_PART_RE = /#[\w-]+|\.[\w-]+|\[data-[^=\]]+="[^"]*"\]|[A-Za-z][\w-]*/g
+const ATTR_SELECTOR_RE = /^\[([\w-]+)="([^"]*)"\]$/
+const COMPOUND_SELECTOR_PART_RE = /#[\w-]+|\.[\w-]+|\[[\w-]+="[^"]*"\]|[A-Z][\w-]*/gi
 
 function getClassList(node: DomNodeLike) {
   return String(node.attribs?.class ?? '')
@@ -29,18 +29,21 @@ function matchesSimpleSelector(node: DomNodeLike, selector: string) {
   if (selector === '*') {
     return true
   }
+  if (selector === 'component') {
+    return Boolean(node.attribs?.['data-sim-component'])
+  }
   if (selector.startsWith('#')) {
     return node.attribs?.id === selector.slice(1)
   }
   if (selector.startsWith('.')) {
     return getClassList(node).includes(selector.slice(1))
   }
-  const dataAttrMatch = selector.match(DATA_ATTR_SELECTOR_RE)
-  if (dataAttrMatch) {
-    const [, key, value] = dataAttrMatch
-    return node.attribs?.[`data-${key}`] === value
+  const attrMatch = selector.match(ATTR_SELECTOR_RE)
+  if (attrMatch) {
+    const [, key, value] = attrMatch
+    return node.attribs?.[key!] === value
   }
-  return node.name === selector
+  return node.name === selector || node.attribs?.['data-sim-component'] === selector
 }
 
 function parseCompoundSelector(selector: string) {

@@ -1,6 +1,8 @@
+import type { TestContext } from 'vitest'
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { expect } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   delay,
   DIST_ROOT,
@@ -8,6 +10,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { ISSUE642_BUG7 } from './githubIssuesDom/scopedSlots'
 
 async function waitForIssue642Bug7Runtime(page: any, expectedTick: number, timeoutMs = 30_000) {
   const startedAt = Date.now()
@@ -58,7 +61,8 @@ async function readIssue642Bug7WxmlBundle() {
   return contents.join('\n')
 }
 
-export async function runIssue642Bug7RuntimeCase(ctx: { skip: (message?: string) => void }) {
+export async function runIssue642Bug7RuntimeCase(ctx: TestContext) {
+  const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ISSUE642_BUG7)
   const miniProgram = await getSharedMiniProgram(ctx)
   try {
     const issuePage = await relaunchPage(miniProgram, '/pages/issue-642-bug7/index', undefined, 45_000, {
@@ -104,6 +108,7 @@ export async function runIssue642Bug7RuntimeCase(ctx: { skip: (message?: string)
     expect(initialRuntime.scoped.dataSlotOwnerId).toBe(initialRuntime.owner.dataOwnerId)
     expect(initialRuntime.scoped.propsSlotOwnerId).toBe(initialRuntime.owner.dataOwnerId)
     expect(initialRuntime.provided.dataVueSlots).toEqual(initialRuntime.provided.propertyVueSlots)
+    await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
 
     await issuePage.callMethod('_runE2E', 'bump')
 
@@ -127,6 +132,7 @@ export async function runIssue642Bug7RuntimeCase(ctx: { skip: (message?: string)
     expect(updatedRuntime.provided.dataVueSlots).toEqual(updatedRuntime.provided.propertyVueSlots)
     expect(updatedRuntime.scoped.dataSlotOwnerId).toBe(initialRuntime.owner.dataOwnerId)
     expect(updatedRuntime.scoped.propsSlotOwnerId).toBe(initialRuntime.owner.dataOwnerId)
+    await dom.check('updated', await getSharedMiniProgram(ctx), issuePage)
   }
   finally {
     await releaseSharedMiniProgram(miniProgram)

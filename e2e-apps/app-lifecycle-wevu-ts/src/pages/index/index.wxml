@@ -1,5 +1,9 @@
 <view id="app-lifecycle-route" class="page" data-e2e-route="index">{{message}}</view>
 <view class="panel">
+  <view class="panel-title">Hook status</view>
+  <view id="app-hook-{{item.name}}" class="app-hook-status" wx:for="{{__e2eHooks}}" wx:key="name">{{item.name}}: {{item.status}}</view>
+</view>
+<view class="panel">
   <view class="panel-title">E2E Result</view>
   <view class="panel-row">Hooks: {{__e2eSummary.seen}}/{{__e2eSummary.total}}</view>
   <view class="panel-row">Skipped: {{__e2eSummary.skipped}}</view>

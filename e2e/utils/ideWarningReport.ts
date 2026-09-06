@@ -1,10 +1,12 @@
+import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
 const REPORTS_ROOT_DIR = path.join(ROOT_DIR, 'docs/reports')
-const REPORT_META_FILE = path.resolve('/tmp', 'weapp-vite-e2e-ide-warning-report-paths.json')
+const REPORT_META_FILE = path.join(os.tmpdir(), 'weapp-vite-e2e-ide-warning-report-paths.json')
 const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
 const EVENT_LOG_FILE_ENV = 'WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE'
 const REPORT_MARKDOWN_FILE_ENV = 'WEAPP_VITE_E2E_IDE_WARNING_REPORT_MD_FILE'
@@ -37,6 +39,7 @@ export interface IdeWarningReportPaths {
 }
 
 export interface IdeReportEvent {
+  acceptanceScope?: { id: string, caseId: string, checkpointId: string, boundary: 'start' | 'end' }
   source: IdeReportSource
   kind: IdeReportKind
   project: string
@@ -490,9 +493,10 @@ export function resolveReportProjectPath(projectPath: string | undefined) {
 
 export function initializeIdeWarningReportRun(now = new Date()): IdeWarningReportPaths {
   const { date, timestamp } = formatDateParts(now)
-  const reportSlug = `${date}-${timestamp.slice(-6)}-ide-warning-report`
+  const invocationId = randomUUID()
+  const reportSlug = `${date}-${timestamp.slice(-6)}-${invocationId}-ide-warning-report`
   const reportDir = path.join(REPORTS_ROOT_DIR, reportSlug)
-  const eventLogPath = path.resolve('/tmp', `weapp-vite-e2e-ide-report-${timestamp}.jsonl`)
+  const eventLogPath = path.join(os.tmpdir(), `weapp-vite-e2e-ide-report-${timestamp}-${invocationId}.jsonl`)
   const reportMarkdownPath = path.join(reportDir, 'index.md')
   const reportJsonPath = path.join(reportDir, 'index.json')
 

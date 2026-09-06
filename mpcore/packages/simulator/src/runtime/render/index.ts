@@ -2,8 +2,12 @@ import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { HeadlessPageInstance } from '../pageInstance'
 import type { DomNodeLike, RuntimeRenderedPageTree, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import path from 'node:path'
-import { createTemplateRenderState, isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
+import { selectConditionalChildren } from '../../view/conditionalChildren'
+import { resolveLoopEntries } from '../../view/loopEntries'
+import { isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
+import { wxsScopeData } from '../../view/wxs'
 import { runComponentLifecycle } from '../componentInstance'
+import { getRuntimeWxsLoader } from '../wxs'
 import {
   createComponentScope,
   createRuntimeComponentInstance,
@@ -18,14 +22,13 @@ import {
   cloneNode,
   createLoopScope,
   evaluateConditionalBranch,
-  isIgnorableTextNode,
   isTagNode,
   LEADING_SLASH_RE,
   parseTemplateDocument,
+  prepareTemplateRenderState,
   readTemplateSource,
   resolveRawValueByPath,
   serializeDomNode,
-  WX_ELSE_ATTRS,
 } from './shared'
 
 function expandNodeByFor(node: DomNodeLike, scope: RuntimeRenderScope) {
@@ -34,12 +37,12 @@ function expandNodeByFor(node: DomNodeLike, scope: RuntimeRenderScope) {
     return [{ node, scope, instanceSuffix: '' }]
   }
 
-  const list = resolveRawValueByPath(scope.data, forExpression)
-  const items = Array.isArray(list) ? list : []
+  const list = resolveRawValueByPath(wxsScopeData(scope), forExpression)
+  const items = resolveLoopEntries(list)
   const itemName = node.attribs?.['wx:for-item']?.trim() || 'item'
   const indexName = node.attribs?.['wx:for-index']?.trim() || 'index'
 
-  return items.map((item, index) => ({
+  return items.map(([index, item]) => ({
     node: cloneNode(node),
     scope: createLoopScope(scope, itemName, indexName, item, index),
     instanceSuffix: `:for-${index}`,
@@ -81,61 +84,13 @@ function renderChildren(
 ) {
   const renderedChildren: DomNodeLike[] = []
 
-  for (let index = 0; index < children.length; index += 1) {
-    const child = children[index]!
+  for (const { node: child, index } of selectConditionalChildren(children, node => evaluateConditionalBranch(node, scope))) {
     if (!isTagNode(child)) {
       renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState))
       continue
     }
 
-    if (isTemplateDefinition(child)) {
-      continue
-    }
-
-    const hasConditional = child.attribs?.['wx:if'] != null
-    const isElseBranch = child.attribs?.['wx:elif'] != null || child.attribs?.['wx:else'] != null
-
-    if (hasConditional) {
-      let branchMatched = false
-      let cursor = index
-      while (cursor < children.length) {
-        const branch = children[cursor]!
-        if (cursor !== index && isIgnorableTextNode(branch)) {
-          cursor += 1
-          continue
-        }
-        if (!isTagNode(branch)) {
-          break
-        }
-        if (cursor !== index && !WX_ELSE_ATTRS.has(Object.keys(branch.attribs ?? {}).find(key => key.startsWith('wx:')) ?? '')) {
-          break
-        }
-
-        const isElseOnly = branch.attribs?.['wx:else'] != null
-        const shouldRender = isElseOnly ? !branchMatched : (!branchMatched && evaluateConditionalBranch(branch, scope))
-        if (shouldRender) {
-          renderedChildren.push(...renderNodeVariants(branch, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${cursor}`, seenComponentScopes, templateRenderState))
-          branchMatched = true
-        }
-
-        let nextBranchIndex = cursor + 1
-        while (nextBranchIndex < children.length && isIgnorableTextNode(children[nextBranchIndex]!)) {
-          nextBranchIndex += 1
-        }
-        const nextBranch = children[nextBranchIndex]
-        const hasNextElseBranch = !!nextBranch
-          && isTagNode(nextBranch)
-          && (nextBranch.attribs?.['wx:elif'] != null || nextBranch.attribs?.['wx:else'] != null)
-        if (!hasNextElseBranch) {
-          break
-        }
-        cursor = nextBranchIndex
-      }
-      index = cursor
-      continue
-    }
-
-    if (isElseBranch) {
+    if (isTemplateDefinition(child) || child.name === 'import' || child.name === 'wxs') {
       continue
     }
 
@@ -200,6 +155,9 @@ function renderNodeTree(
   seenComponentScopes: Set<string>,
   templateRenderState: TemplateRenderState<DomNodeLike>,
 ): DomNodeLike {
+  if (scope.wxs !== templateRenderState.wxsModules) {
+    scope = { ...scope, wxs: templateRenderState.wxsModules }
+  }
   const clonedNode = cloneNode(node)
   if (!isTagNode(clonedNode)) {
     applyNodeBindings(clonedNode, scope)
@@ -215,12 +173,13 @@ function renderNodeTree(
     }
   }
 
-  const templateName = resolveTemplateCall(clonedNode, scope.data)
+  const templateName = resolveTemplateCall(clonedNode, wxsScopeData(scope))
   if (templateName) {
     const definition = templateRenderState.definitions.get(templateName)
     const templateScope = {
       ...scope,
-      data: resolveTemplateData(clonedNode, scope.data),
+      data: resolveTemplateData(clonedNode, wxsScopeData(scope)),
+      wxs: definition && templateRenderState.definitionWxsScopes?.get(definition),
     }
     const children = definition && !templateRenderState.stack.includes(templateName)
       ? renderChildren(
@@ -232,7 +191,10 @@ function renderNodeTree(
           `${instancePath}/template-${templateName}`,
           seenComponentScopes,
           {
-            definitions: templateRenderState.definitions,
+            definitions: templateRenderState.definitionScopes?.get(definition) ?? templateRenderState.definitions,
+            definitionScopes: templateRenderState.definitionScopes,
+            definitionWxsScopes: templateRenderState.definitionWxsScopes,
+            wxsModules: templateScope.wxs,
             stack: [...templateRenderState.stack, templateName],
           },
         )
@@ -252,16 +214,22 @@ function renderNodeTree(
     const slotName = clonedNode.attribs?.name?.trim() || 'default'
     const projected = scope.slots?.get(slotName) ?? []
     const children = projected.length
-      ? projected.flatMap(entry => renderNodeVariants(
-          entry.node,
-          entry.scope,
-          context,
-          entry.ownerJsonPath,
-          entry.ownerFilePath,
-          entry.instancePath,
-          seenComponentScopes,
-          entry.templateRenderState,
-        ))
+      ? selectConditionalChildren(
+          projected.map(entry => entry.node),
+          (node, index) => evaluateConditionalBranch(node, projected[index]!.scope),
+        ).flatMap(({ index }) => {
+          const entry = projected[index]!
+          return renderNodeVariants(
+            entry.node,
+            entry.scope,
+            context,
+            entry.ownerJsonPath,
+            entry.ownerFilePath,
+            entry.instancePath,
+            seenComponentScopes,
+            entry.templateRenderState,
+          )
+        })
       : renderChildren(
           clonedNode.children ?? [],
           scope,
@@ -352,6 +320,8 @@ function renderNodeTree(
       seenComponentScopes,
     )
     if (renderedComponentRoot.attribs) {
+      applyNodeBindings(clonedNode, scope)
+      renderedComponentRoot.attribs = { ...clonedNode.attribs, ...renderedComponentRoot.attribs }
       renderedComponentRoot.attribs['data-sim-component'] = clonedNode.name
       renderedComponentRoot.attribs['data-sim-node'] = instancePath
       renderedComponentRoot.attribs['data-sim-scope'] = componentScopeId
@@ -399,11 +369,15 @@ export function renderRuntimePageTree(
     getScopeId: () => pageScopeId,
     id: 'page-root',
   }
-  context.componentScopes.clear()
+  for (const scopeId of context.componentScopes.keys()) {
+    if (scopeId === pageScopeId || scopeId.startsWith(`${pageScopeId}/`)) {
+      context.componentScopes.delete(scopeId)
+    }
+  }
   context.componentScopes.set(pageScopeId, pageScope)
   const seenComponentScopes = new Set<string>()
   const root = (document.children ?? [])[0] ?? document
-  const templateRenderState = createTemplateRenderState(root)
+  const templateRenderState = prepareTemplateRenderState(context.artifactSource, root, templatePath, context.project.miniprogramRootPath, getRuntimeWxsLoader(context.moduleLoader, context.artifactSource))
   const renderedRoot = renderNodeTree(
     root,
     pageScope,
@@ -416,7 +390,8 @@ export function renderRuntimePageTree(
   )
 
   for (const [scopeId, instance] of [...context.componentCache.entries()]) {
-    if (!seenComponentScopes.has(scopeId)) {
+    // 隐藏的 tab 与导航栈页面仍拥有组件；只有当前页面的消失节点由本次渲染卸载。
+    if (scopeId.startsWith(`${pageScopeId}/`) && !seenComponentScopes.has(scopeId)) {
       runComponentLifecycle(instance, 'detached')
       context.componentCache.delete(scopeId)
       context.componentScopes.delete(scopeId)

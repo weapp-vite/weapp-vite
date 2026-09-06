@@ -232,13 +232,13 @@ async function _runMainDialogFlowE2E() {
     </text>
     <text class="issue466-main-line">confirmType = {{ confirmType }}</text>
     <text class="issue466-main-line">defaultConfirmType = {{ defaultConfirmType }}</text>
-    <text class="issue466-main-line">lastAction = {{ lastAction }}</text>
+    <text id="issue466-status" class="issue466-main-line">lastAction = {{ lastAction }}</text>
     <text class="issue466-main-line">lastTrigger = {{ lastTrigger }}</text>
     <text class="issue466-main-line">lastPayload = {{ lastPayload || 'none' }}</text>
     <text class="issue466-main-line">lastError = {{ lastError || 'none' }}</text>
     <text class="issue466-main-line">dialogVisible = {{ dialogVisible }}</text>
     <text class="issue466-main-line">lastTitle = {{ lastTitle || 'none' }}</text>
-    <text class="issue466-main-line">counts = open {{ openCount }}, settle {{ settleCount }}</text>
+    <text id="issue466-counts" class="issue466-main-line">counts = open {{ openCount }}, settle {{ settleCount }}</text>
     <button id="issue466-main-open" class="issue466-main-button" @tap="handleOpenConfirmTap">
       打开 confirm
     </button>

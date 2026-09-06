@@ -2,6 +2,7 @@ import type { HeadlessComponentDefinition } from '../../host'
 import type { HeadlessProjectDescriptor } from '../../project/createProjectDescriptor'
 import type { HeadlessComponentInstance } from '../../runtime/componentInstance'
 import type { TemplateRenderState } from '../../view/templateRuntime'
+import type { WxsModuleBindings } from '../../view/wxs'
 import type { BrowserModuleLoader } from '../moduleLoader'
 import type { BrowserVirtualFiles } from '../virtualFiles'
 
@@ -15,6 +16,7 @@ export interface DomNodeLike {
 }
 
 export interface BrowserRenderScope {
+  wxs?: WxsModuleBindings
   alias?: string
   classList?: string[]
   data: Record<string, any>

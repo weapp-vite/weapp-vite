@@ -6,12 +6,14 @@ import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   replaceFileByRename,
   waitForFileContains,
   waitForStatefulHmrControl,
 } from '../utils/hmr-helpers'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { statefulHmrCheckpoints } from './statefulHmrDom'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.join(ROOT, 'e2e-apps/stateful-hmr')
@@ -84,13 +86,15 @@ async function readRuntimeState(page?: any): Promise<RuntimeState> {
 }
 
 async function prepareRuntimeState(identity: string) {
-  return await miniProgram.evaluate((payload: { identity: string }) => {
+  await miniProgram.evaluate((payload: { identity: string }) => {
     const pages = getCurrentPages()
     const page = pages[pages.length - 1] as any
     page.__statefulHmrIdentity = payload.identity
-    page.setData({ input: 'held-input' })
-    return page.data
   }, { identity })
+  const page = await miniProgram.currentPage()
+  const inputs = await page.$$('.input', { fallback: false })
+  expect(inputs).toHaveLength(1)
+  await inputs[0].input('held-input')
 }
 
 async function triggerIncrement(runtime: 'component' | 'native' | 'wevu', page?: any): Promise<unknown> {
@@ -301,13 +305,16 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   })
 
   it('preserves native Page identity, data, input, route, and query across a JavaScript patch', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('native'))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
     }
     const page = await miniProgram.reLaunch(NATIVE_ROUTE)
     await waitForPatchedBehavior(0, page)
+    await dom.check('initial', miniProgram, page)
     await prepareRuntimeState('native-instance')
     await triggerIncrement('native', page)
+    await dom.check('prepared', miniProgram, page)
     expect(await readRuntimeState(page)).toEqual({
       count: 1,
       identity: 'native-instance',
@@ -324,8 +331,11 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'this.data.count + 2'), 'native literal patch published')
     await waitForClientVersion(clientVersion + 1)
 
+    await dom.check('patched', miniProgram, await miniProgram.currentPage())
+
     await triggerIncrement('native', page)
     const state = await waitForPatchedBehavior(3, page)
+    await dom.check('updated', miniProgram, await miniProgram.currentPage())
     expect(state).toEqual({
       count: 3,
       identity: 'native-instance',
@@ -336,14 +346,17 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   })
 
   it('rehydrates wevu setup refs while preserving the native page instance', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('wevu'))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
     }
     const page = await miniProgram.reLaunch(WEVU_ROUTE)
     await waitForPatchedBehavior(0, page)
+    await dom.check('initial', miniProgram, page)
     await prepareRuntimeState('wevu-instance')
     await triggerIncrement('wevu', page)
     await triggerIncrement('wevu', page)
+    await dom.check('prepared', miniProgram, page)
     expect(await waitForPatchedBehavior(2, page)).toEqual({
       count: 2,
       identity: 'wevu-instance',
@@ -360,8 +373,11 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'count.value += 2'), 'wevu literal patch published')
     await waitForClientVersion(clientVersion + 1)
 
+    await dom.check('patched', miniProgram, await miniProgram.currentPage())
+
     await triggerIncrement('wevu', page)
     const state = await waitForPatchedBehavior(4, page)
+    await dom.check('updated', miniProgram, await miniProgram.currentPage())
     expect(state).toEqual({
       count: 4,
       identity: 'wevu-instance',
@@ -372,13 +388,16 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   })
 
   it('preserves native Component identity, data, input, route, and query across a JavaScript patch', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('component'))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
     }
     const page = await miniProgram.reLaunch(COMPONENT_ROUTE)
     await waitForPatchedBehavior(0, page)
+    await dom.check('initial', miniProgram, page)
     await prepareRuntimeState('component-instance')
     await triggerIncrement('component', page)
+    await dom.check('prepared', miniProgram, page)
     expect(await waitForPatchedBehavior(1, page)).toEqual({
       count: 1,
       identity: 'component-instance',
@@ -395,7 +414,10 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'this.data.count + 2'), 'component literal patch published')
     await waitForClientVersion(clientVersion + 1)
 
+    await dom.check('patched', miniProgram, await miniProgram.currentPage())
+
     await triggerIncrement('component', page)
+    await dom.check('updated', miniProgram, await miniProgram.currentPage())
     expect(await waitForPatchedBehavior(3, page)).toEqual({
       count: 3,
       identity: 'component-instance',

@@ -107,6 +107,15 @@ export class HeadlessTestingPageHandle {
     return cloneProtocolValue(this.resolveDataByPath(path))
   }
 
+  async setData(data: Record<string, unknown>): Promise<void> {
+    this.assertActive()
+    const payload = cloneProtocolValue(data) as Record<string, unknown>
+    await new Promise<void>((resolve) => {
+      this.page.setData(payload, resolve)
+    })
+    this.session?.renderCurrentPage()
+  }
+
   async selectComponent(selector: string) {
     this.assertActive()
     const normalizedSelector = selector.trim()

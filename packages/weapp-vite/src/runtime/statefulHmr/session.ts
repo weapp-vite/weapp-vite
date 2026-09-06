@@ -463,6 +463,10 @@ export function mergeStatefulHmrSnapshotAssets(
     }
     const index = output.findIndex(item => item.fileName === asset.fileName)
     if (index >= 0) {
+      // DevEngine 入口包含注册桥和 HMR 模块上下文，静态快照不得覆盖其执行契约。
+      if (output[index]?.type === 'chunk') {
+        continue
+      }
       output[index] = asset
     }
     else {
@@ -480,7 +484,7 @@ export function getChangedStatefulHmrSnapshotAssets(
   )
   return Array.from(next).filter((item) => {
     if (item.type !== 'asset') {
-      return true
+      return false
     }
     const previousSource = previousAssets.get(item.fileName)
     return previousSource === undefined || !statefulHmrAssetSourcesEqual(previousSource, item.source)
