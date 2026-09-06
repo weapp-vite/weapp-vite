@@ -66,61 +66,87 @@ describe('runtime: define helpers', () => {
     expect(result.properties.__wvSlotScope).toBeTruthy()
   })
 
-  it('allows null as an optional native input for compiled vue props', () => {
+  it('keeps inferred nullable transport values out of native type coercion without losing defaults or observers', () => {
+    const unionObserver = vi.fn()
+    const nullableObserver = vi.fn()
     const result = normalizeProps({
       data: () => ({}),
       __wevu_allowNullPropInput: true,
     }, {
-      name: String,
-      count: { type: Number, default: 2 },
-      mode: [String, Number],
-      anyValue: null,
+      optionalShorthand: String,
+      optionalWithoutRequired: { type: String },
+      shorthandUnion: [String, Number],
+      requiredName: { type: String, required: true },
+      optionalName: { type: String, required: false },
+      optionalCount: { type: Number, required: false },
+      optionalEnabled: { type: Boolean, required: false },
+      optionalItems: { type: Array, required: false },
+      content: { type: [Number, String], required: false, observer: unionObserver },
+      optionalTypesUnion: { type: Number, optionalTypes: [String], required: true },
+      src: { type: String, required: false, default: '' },
+      nullableLabel: { type: [String, null], required: true, observer: nullableObserver },
+      unionWithDefault: { type: [String, Number], required: true, default: 'ready' },
     })
 
-    expect(result.properties.name.type).toBe(String)
-    expect(result.properties.name.optionalTypes).toEqual([null])
-    expect(result.properties.count.type).toBe(Number)
-    expect(result.properties.count.optionalTypes).toEqual([null])
-    expect(result.properties.mode.type).toBe(String)
-    expect(result.properties.mode.optionalTypes).toEqual([Number, null])
-    expect(result.properties.anyValue.type).toBeNull()
-    expect(result.properties.anyValue.optionalTypes).toBeUndefined()
+    expect(result.properties.requiredName).toEqual({ type: String })
+    expect(result.properties.optionalShorthand).toEqual({ type: null, value: '' })
+    expect(result.properties.optionalWithoutRequired).toEqual({ type: null, value: '' })
+    expect(result.properties.shorthandUnion).toEqual({ type: null, value: '' })
+    expect(result.properties.optionalName).toEqual({ type: null, value: '' })
+    expect(result.properties.optionalCount).toEqual({ type: null, value: 0 })
+    expect(result.properties.optionalEnabled).toEqual({ type: null, value: false })
+    expect(result.properties.optionalItems).toEqual({ type: null, value: [] })
+    expect(result.properties.content).toEqual({
+      type: null,
+      value: 0,
+      observer: unionObserver,
+    })
+    expect(result.properties.optionalTypesUnion).toEqual({ type: null, value: 0 })
+    expect(result.properties.src).toEqual({ type: null, value: '' })
+    expect(result.properties.nullableLabel).toEqual({
+      type: null,
+      observer: nullableObserver,
+    })
+    expect(result.properties.unionWithDefault).toEqual({ type: null, value: 'ready' })
   })
 
-  it('allows null as an optional native input for explicit properties', () => {
-    const result = normalizeProps({
-      data: () => ({}),
-      allowNullPropInput: true,
-    }, undefined, {
+  it('preserves explicit native property definitions when nullable transport is enabled', () => {
+    const observer = vi.fn()
+    const explicitProperties = {
       name: String,
       count: { type: Number, value: 2 },
+      mode: { type: Number, optionalTypes: [String], observer },
       anyValue: null,
-    })
+    }
+    const result = normalizeProps({
+      data: () => ({}),
+      allowNullPropInput: true,
+    }, undefined, explicitProperties)
 
-    expect(result.properties.name.type).toBe(String)
-    expect(result.properties.name.optionalTypes).toEqual([null])
-    expect(result.properties.count.type).toBe(Number)
-    expect(result.properties.count.value).toBe(2)
-    expect(result.properties.count.optionalTypes).toEqual([null])
-    expect(result.properties.anyValue.type).toBeNull()
-    expect(result.properties.anyValue.optionalTypes).toBeUndefined()
+    expect(result.properties).toMatchObject(explicitProperties)
+    expect(result.properties.name).toBe(String)
+    expect(result.properties.count).toBe(explicitProperties.count)
+    expect(result.properties.mode).toBe(explicitProperties.mode)
   })
 
-  it('merges explicit internal properties with compiled Vue props', () => {
+  it('keeps explicit overrides and internal properties while widening inferred props', () => {
+    const titleObserver = vi.fn()
     const ownerObserver = vi.fn()
+    const explicitTitle = { type: String, value: 'native-title', observer: titleObserver }
     const result = normalizeProps({
       data: () => ({}),
       allowNullPropInput: true,
     }, {
-      title: { type: String, required: true },
+      title: { type: [Number, String], required: false },
       items: { type: null, default: () => [] },
     }, {
+      title: explicitTitle,
       __wvSlotOwnerId: { type: String, value: '', observer: ownerObserver },
       __wvSlotScope: { type: null, value: null },
     })
 
-    expect(result.properties.title.type).toBe(String)
-    expect(result.properties.title.optionalTypes).toEqual([null])
+    expect(result.properties.title).toBe(explicitTitle)
+    expect(result.properties.title.observer).toBe(titleObserver)
     expect(result.properties.items.type).toBeNull()
     expect(result.properties.items.value).toEqual([])
     expect(result.properties.__wvSlotOwnerId.observer).toBe(ownerObserver)
@@ -149,8 +175,11 @@ describe('runtime: define helpers', () => {
     expect(second.properties).toEqual({})
   })
 
-  it('normalizes Vue inferred union arrays to native type and optionalTypes', () => {
-    const result = normalizeProps({ data: () => ({}) }, {
+  it('keeps native union descriptors when nullable transport compatibility is disabled', () => {
+    const result = normalizeProps({
+      data: () => ({}),
+      allowNullPropInput: false,
+    }, {
       mixed: { type: [Number, String] },
       literalUnion: { type: [String, Number] },
       multiNative: { type: [String, Number, Boolean, Object, Array] },

@@ -198,9 +198,11 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-613/**',
     'pages/issue-599/**',
     'pages/issue-600/**',
+    'pages/issue-955/**',
     'components/issue-597/**',
     'components/issue-613/**',
     'components/issue-599/**',
+    'components/issue-955/**',
   ],
   'github-issues.runtime.subpackage-item.test.ts': [
     'subpackages/item/**',

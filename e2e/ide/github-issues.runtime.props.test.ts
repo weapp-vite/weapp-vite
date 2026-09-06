@@ -15,6 +15,8 @@ import {
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const ISSUE_600_ROUTE = '/pages/issue-600/index'
+const ISSUE_955_ROUTE = '/pages/issue-955/index'
+const ISSUE_955_TYPE_WARNING_RE = /type-uncompatible|property ["'](?:content|src)["'][^\n]*(?:expected|got|get) /i
 
 function createIssue600Readiness(expectedSummary: string) {
   return async (_page: any, miniProgram: any) => Boolean(await miniProgram.evaluate((summary: string) => {
@@ -163,6 +165,108 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
       })
     }
     finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #955: preserves union values and nullable defaults without native prop coercion', async (ctx) => {
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-955/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-955/index.js')
+    const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-955/index.json')
+    const probeJsPath = path.join(DIST_ROOT, 'components/issue-955/NativePropsProbe/index.js')
+    expect(await fs.readFile(pageWxmlPath, 'utf-8')).toContain('issue-955 native nullable and union props')
+    expect(await fs.readFile(pageJsPath, 'utf-8')).toContain('_runE2E')
+    expect(await fs.readFile(pageJsonPath, 'utf-8')).toContain('native-props-probe')
+    expect(await fs.readFile(probeJsPath, 'utf-8')).toContain('snapshot')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    const runtimeErrors = attachRuntimeErrorCollector(miniProgram)
+    try {
+      const marker = runtimeErrors.mark()
+      const issuePage = await relaunchPage(miniProgram, ISSUE_955_ROUTE, undefined, 45_000, { readiness: 'route' })
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-955 page')
+      }
+      await issuePage.waitForRendered({
+        dataset: {
+          summary: 'string:SALE|string:',
+        },
+        selector: '.issue955-probe',
+        timeout: 15_000,
+      })
+
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const initial = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E')
+      expect(initial).toEqual({
+        ready: true,
+        parent: {
+          content: 'string:SALE',
+          src: 'undefined',
+        },
+        child: {
+          content: 'string:SALE',
+          src: 'string:',
+          nullable: 'null',
+          initialSummary: 'string:SALE|string:',
+        },
+      })
+
+      const numberValue = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E', 'number')
+      expect(numberValue).toMatchObject({
+        parent: {
+          content: 'number:42',
+          src: 'string:number.png',
+        },
+        child: {
+          content: 'number:42',
+          src: 'string:number.png',
+          nullable: 'string:number-label',
+        },
+      })
+
+      const nullValue = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E', 'null')
+      expect(nullValue).toMatchObject({
+        parent: {
+          content: 'null',
+          src: 'null',
+        },
+        child: {
+          content: 'number:0',
+          src: 'string:',
+          nullable: 'null',
+        },
+      })
+
+      const undefinedValue = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E', 'undefined')
+      expect(undefinedValue).toMatchObject({
+        parent: {
+          content: 'undefined',
+          src: 'undefined',
+        },
+        child: {
+          content: 'number:0',
+          src: 'string:',
+          nullable: 'null',
+        },
+      })
+
+      const stringValue = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E', 'string')
+      expect(stringValue).toMatchObject({
+        parent: {
+          content: 'string:PROMO',
+          src: 'string:string.png',
+        },
+        child: {
+          content: 'string:PROMO',
+          src: 'string:string.png',
+          nullable: 'string:string-label',
+        },
+      })
+      expect(stringValue.child.initialSummary).toBe('string:SALE|string:')
+      expect(runtimeErrors.getLogsSince(marker).filter(log => ISSUE_955_TYPE_WARNING_RE.test(log))).toEqual([])
+    }
+    finally {
+      runtimeErrors.dispose()
       await releaseSharedMiniProgram(miniProgram)
     }
   })

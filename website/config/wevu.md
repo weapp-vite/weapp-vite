@@ -89,9 +89,11 @@ export default defineConfig({
 })
 ```
 
-它的作用是兼容小程序运行时把传入的 `undefined` 视为 `null` 的行为，减少 `String`、`Number` 等已声明类型 props 在微信开发者工具里反复出现的 `null` 类型告警。
+它兼容小程序运行时把传入的 `undefined` 视为 `null` 的行为。对 Vue `props` 推导出的可选属性（未设置 `required: true`，包含 `String` 等构造器简写）、显式可空类型和多种原生类型的联合类型，启用后会使用 `type: null`，避免微信开发者工具先按主类型校验而将合法字符串转换为 `0`，或对临时 `null` 输出类型告警。已有默认值和 observer 会保留；非显式可空属性还会保留原生类型的隐式默认值。
 
-如果你的项目明确希望保持“`null` 一律视为非法输入”的旧行为，也可以显式关闭：
+必填、不可空的单一类型属性仍保留原生类型约束。显式声明的原生 `properties` 原样传递，并优先于同名 Vue `props`，不受此开关影响。
+
+如果你的项目明确希望保持推导属性原有的主类型和 `optionalTypes` 校验行为，可以显式关闭；Vue SFC 也会尊重此设置：
 
 ```ts
 export default defineConfig({
