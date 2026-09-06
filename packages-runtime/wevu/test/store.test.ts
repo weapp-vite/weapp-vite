@@ -616,7 +616,7 @@ describe('store (options)', () => {
     await nextTick()
 
     expect(setData).toHaveBeenCalledTimes(1)
-    expect(setData).toHaveBeenCalledWith({
+    expect(setData.mock.calls[0]?.[0]).toEqual({
       firstName: 'Grace',
       lastName: 'Hopper',
     })

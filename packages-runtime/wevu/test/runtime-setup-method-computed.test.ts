@@ -38,7 +38,7 @@ describe('runtime: setup method used by computed binding', () => {
     const inst: any = { setData }
 
     expect(() => opts.lifetimes.attached.call(inst)).not.toThrow()
-    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ __wv_bind_0: '123' }))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ __wv_bind_0: '123' }), expect.any(Function))
     expect(setData).toHaveBeenCalledTimes(1)
 
     await flushJobs()

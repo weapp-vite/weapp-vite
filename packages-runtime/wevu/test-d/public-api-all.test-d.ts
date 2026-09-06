@@ -112,7 +112,7 @@ import type {
 import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicElements } from 'wevu/miniprogram/jsx-runtime'
 import type { TtIntrinsicElementBaseAttributes, TtIntrinsicElements } from 'wevu/tt/jsx-runtime'
 import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicElements } from 'wevu/weapp/jsx-runtime'
-import { expectType } from 'tsd'
+import { expectAssignable, expectType } from 'tsd'
 
 type CompilerEntry = typeof import('wevu/compiler')
 type WevuJsxRuntime = typeof import('wevu/jsx-runtime')
@@ -415,3 +415,8 @@ type _TypeCoverage = [
 
 declare const typeCoverage: _TypeCoverage
 expectType<_TypeCoverage>(typeCoverage)
+
+declare const setDataDebugInfo: SetDataDebugInfo
+expectType<number | undefined>(setDataDebugInfo.revision)
+expectType<number | undefined>(setDataDebugInfo.committedRevision)
+expectAssignable<SetDataDebugInfo['reason']>('commitFailure')

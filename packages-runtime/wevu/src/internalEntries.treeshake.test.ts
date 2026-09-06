@@ -56,6 +56,7 @@ nextTick(() => {
     expect(code).not.toContain('Component(')
     expect(code).not.toContain('WEVU_RUNTIME_APP_KEY')
     expect(code).not.toContain('WEVU_TEMPLATE_REFS_KEY')
+    expect(code).not.toContain('setData commit failed')
   })
 
   it('keeps template helper imports away from component runtime', async () => {
