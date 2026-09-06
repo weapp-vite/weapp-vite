@@ -440,7 +440,7 @@ const themeColor = 'red'
     expect(result.script).not.toContain('setData')
   })
 
-  it('maps SFC JSX binding locations back to the original component', async () => {
+  it.each(['\n', '\r\n'])('maps SFC JSX binding locations back to the original component with %j line endings', async (lineEnding) => {
     const source = `<script lang="tsx">
 const title = 'ready'
 export default {
@@ -448,7 +448,7 @@ export default {
     return <view>{title}</view>
   },
 }
-</script>`
+</script>`.replaceAll('\n', lineEnding)
     const result = await compileVueFile(
       source,
       '/src/components/RenderCard.vue',
