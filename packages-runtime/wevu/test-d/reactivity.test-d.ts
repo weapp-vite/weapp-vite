@@ -123,7 +123,7 @@ expectError(asyncDerivation.value = { id: 2 })
 expectError(asyncDerivation.error = new Error('readonly'))
 expectError(useAsyncDerivation(async () => 'value', { immediate: 'yes' }))
 
-const asyncState: AsyncDerivationState<{ id: number }> = asyncDerivation
+declare const asyncState: AsyncDerivationState<{ id: number }>
 if (asyncState.status === 'ready' || asyncState.status === 'refreshing') {
   expectType<{ id: number }>(asyncState.value)
   expectType<undefined>(asyncState.error)
@@ -136,3 +136,6 @@ else {
   expectType<undefined>(asyncState.value)
   expectType<undefined>(asyncState.error)
 }
+
+declare const readyState: Extract<AsyncDerivationState<{ id: number }>, { status: 'ready' }>
+expectType<{ id: number }>(readyState.value)

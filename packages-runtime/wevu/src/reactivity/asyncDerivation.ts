@@ -22,14 +22,14 @@ export interface UseAsyncDerivationOptions {
   immediate?: boolean
 }
 
-type AsyncDerivationIdleState = Readonly<{
-  status: 'idle' | 'initial-pending' | 'disposed'
+type AsyncDerivationIdleState<TStatus extends 'idle' | 'initial-pending' | 'disposed'> = Readonly<{
+  status: TStatus
   value: undefined
   error: undefined
 }>
 
-type AsyncDerivationReadyState<T> = Readonly<{
-  status: 'ready' | 'refreshing'
+type AsyncDerivationReadyState<T, TStatus extends 'ready' | 'refreshing'> = Readonly<{
+  status: TStatus
   value: T
   error: undefined
 }>
@@ -42,8 +42,11 @@ type AsyncDerivationErrorState<T> = Readonly<{
 
 /** 模板可观察的只读异步派生状态。 */
 export type AsyncDerivationState<T>
-  = | AsyncDerivationIdleState
-    | AsyncDerivationReadyState<T>
+  = | AsyncDerivationIdleState<'idle'>
+    | AsyncDerivationIdleState<'initial-pending'>
+    | AsyncDerivationIdleState<'disposed'>
+    | AsyncDerivationReadyState<T, 'ready'>
+    | AsyncDerivationReadyState<T, 'refreshing'>
     | AsyncDerivationErrorState<T>
 
 type AsyncDerivationControls = Readonly<{
