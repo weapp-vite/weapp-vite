@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computed, effect, reactive, toRaw } from '@/reactivity'
+import { computed, effect, reactive } from '@/reactivity'
 import { createSetDataScheduler } from '@/runtime/app/setData/scheduler'
 import {
   applySnapshotUpdate,
@@ -206,10 +206,10 @@ describe('runtime: setData snapshot helpers', () => {
       void setupState.styleObject.value
     }, {
       lazy: true,
-      scheduler: () => scheduler.job(toRaw(state) as object),
+      scheduler: () => scheduler.job(),
     })
 
-    scheduler.job(toRaw(state) as object)
+    scheduler.job()
     payloads.length = 0
     setupState.hasError.value = true
 

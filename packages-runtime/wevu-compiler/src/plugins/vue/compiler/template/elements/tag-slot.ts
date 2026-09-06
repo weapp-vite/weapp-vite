@@ -1,4 +1,5 @@
 import type { AttributeNode, DirectiveNode, ElementNode, SourceLocation } from '@vue/compiler-core'
+import type { WevuRuntimeCapabilityName } from '../../../../../runtimeCapabilities'
 import type {
   ResolvedSlotFallbackWrapper,
   ScopedSlotComponentAsset,
@@ -17,6 +18,7 @@ import {
   WEVU_SLOT_SCOPE_ATTR,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
+import { createWevuRuntimeCapabilityMetadata } from '../../../../../runtimeCapabilities'
 
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { createBindingManifest, recordBindingExpression } from '../bindingManifest'
@@ -230,6 +232,8 @@ export function createScopedSlotComponent(
     inlineExpressionSeed: 0,
     templateRefs: [],
     templateRefIndexSeed: 0,
+    layoutHosts: [],
+    layoutHostIndexSeed: 0,
     functionPropPaths: new Set(),
     functionPropNames: context.functionPropNames,
   }
@@ -249,12 +253,29 @@ export function createScopedSlotComponent(
   asset.template = template
   asset.componentGenerics = Object.keys(scopedContext.componentGenerics).length ? scopedContext.componentGenerics : undefined
   asset.classStyleWxs = scopedContext.classStyleWxs || undefined
+  asset.inlineExpressions = scopedContext.inlineExpressions.length ? scopedContext.inlineExpressions : undefined
+  asset.templateRefs = scopedContext.templateRefs.length ? scopedContext.templateRefs : undefined
+  asset.layoutHosts = scopedContext.layoutHosts.length ? scopedContext.layoutHosts : undefined
+  const requiredCapabilities: WevuRuntimeCapabilityName[] = ['scopedSlots']
+  if (bindingManifest.features.templateRefs) {
+    requiredCapabilities.push('templateRefs')
+  }
+  if (bindingManifest.features.inlineEvents) {
+    requiredCapabilities.push('inlineEvents')
+  }
+  if (bindingManifest.features.layout) {
+    requiredCapabilities.push('layout')
+  }
+  const runtimeCapabilities = createWevuRuntimeCapabilityMetadata(requiredCapabilities)
+  asset.runtimeCapabilities = runtimeCapabilities
   asset.script = buildScopedSlotComponentScript({
     classStyleBindings: scopedContext.classStyleBindings,
     inlineExpressions: scopedContext.inlineExpressions,
+    layoutHosts: scopedContext.layoutHosts,
     templateRefs: scopedContext.templateRefs,
     bindingManifest,
     runtimeBindingManifest: scopedContext.runtimeBindingManifest,
+    runtimeCapabilities,
   })
   return { componentName, slotKey }
 }
@@ -647,7 +668,6 @@ function recordSlotPropBindings(node: ElementNode, context: TransformContext) {
 
 export function transformSlotElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
   context.hasSlotOutlet = true
-  context.bindingManifest.features.scopedSlots = true
   if (isScopedSlotsDisabled(context)) {
     // eslint-disable-next-line ts/no-use-before-define
     return transformSlotElementPlain(node, context, transformNode)
@@ -696,6 +716,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     return slotTag
   }
 
+  context.bindingManifest.features.scopedSlots = true
   const hasScopeBindings = Boolean(slotPropsExp)
   const slotKey = resolveSlotKey(context, slotNameInfo)
   const genericKey = `scoped-slots-${slotKey}`

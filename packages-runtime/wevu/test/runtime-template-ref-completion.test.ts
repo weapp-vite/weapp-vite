@@ -1,8 +1,9 @@
 import type { TemplateRefBinding } from '@/runtime/templateRefs'
 import type { InternalRuntimeState } from '@/runtime/types'
 import { WEVU_READY_CALLED_KEY, WEVU_TEMPLATE_REFS_KEY } from '@weapp-core/constants'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '@/runtime/app'
+import { installTemplateRefs } from '@/runtime/features/templateRefs'
 import { mountRuntimeInstance, teardownRuntimeInstance } from '@/runtime/register/runtimeInstance'
 import { clearTemplateRefs, scheduleTemplateRefUpdate, updateTemplateRefs } from '@/runtime/templateRefs'
 import { nextTick } from '@/scheduler'
@@ -33,6 +34,10 @@ function mountRefRuntime(bindings: TemplateRefBinding[]) {
   targets.push(target)
   return { app, target, runtime, hostCallbacks, queryCallbacks }
 }
+
+beforeEach(() => {
+  installTemplateRefs()
+})
 
 afterEach(() => {
   for (const target of targets.splice(0)) {
@@ -197,6 +202,25 @@ describe('runtime: template ref completion ownership', () => {
     expect(emptyResolved).toHaveBeenCalledOnce()
     queryCallbacks[0]!([{ width: 120 }])
     expect(oldResolved).toHaveBeenCalledOnce()
+    expect(runtime.proxy.$refs?.child).toBeUndefined()
+  })
+
+  it('invalidates an in-flight ref query when the next host commit removes all bindings', async () => {
+    const { target, runtime, hostCallbacks, queryCallbacks } = mountRefRuntime([elementBinding])
+    runtime.proxy.count = 1
+    await nextTick()
+    hostCallbacks.shift()!()
+    await nextTick()
+
+    target[WEVU_TEMPLATE_REFS_KEY] = []
+    runtime.proxy.count = 2
+    const tick = runtime.proxy.$nextTick(() => runtime.proxy.$refs?.child)
+    await nextTick()
+    hostCallbacks.shift()!()
+    await nextTick()
+
+    queryCallbacks[0]!([{ width: 120 }])
+    await expect(tick).resolves.toBeUndefined()
     expect(runtime.proxy.$refs?.child).toBeUndefined()
   })
 

@@ -96,6 +96,7 @@ function hasDynamicLayoutWrapper(
 
 function recordLayoutBindings(manifest: WevuBindingManifestV1, plan: CompilerPageLayoutPlan) {
   manifest.features.layout = true
+  manifest.features.scopedSlots = true
   recordSyntheticBindingExpression(manifest, {
     kind: 'attribute',
     expression: LAYOUT_OWNER_EXPRESSION,
@@ -157,6 +158,7 @@ function unwrapOuterWrapper(template: string, tagName: string) {
 }
 
 function recordAppShellBinding(manifest: WevuBindingManifestV1) {
+  manifest.features.scopedSlots = true
   recordSyntheticBindingExpression(manifest, {
     kind: 'attribute',
     expression: LAYOUT_OWNER_EXPRESSION,

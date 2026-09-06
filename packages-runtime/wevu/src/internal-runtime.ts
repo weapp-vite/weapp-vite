@@ -1,5 +1,15 @@
 export { createApp } from './runtime/app'
 export { takePendingRuntimeAppRegistration } from './runtime/app/pending'
+export type {
+  HighFrequencyWarningMonitorOptions,
+  LayoutHostBinding,
+  RuntimeCapabilityName,
+  RuntimeCapabilityRegistry,
+  ScopedSlotMountState,
+  SetDataScheduler,
+  SetDataSchedulerOptions,
+  TemplateRefBinding,
+} from './runtime/capabilities'
 export { useCssModule, useCssVars } from './runtime/css'
 export {
   INTERNAL_DEFAULTS_SCOPE_KEY,
@@ -10,12 +20,34 @@ export {
   createIsolatedWevuComponentDefinition,
   createWevuComponent,
   createWevuComponentDefinition,
-  createWevuScopedSlotComponent,
   defineComponent,
   getWevuComponentLifecycleDefinition,
 } from './runtime/define'
 export { useDisposables } from './runtime/disposables'
 export { useElementIntersectionObserver } from './runtime/elementIntersectionObserver'
+export { installInlineEvents } from './runtime/features/inlineEvents'
+export { installLayout } from './runtime/features/layout'
+export { installPatchStrategy } from './runtime/features/patchStrategy'
+export {
+  resolveLayoutBridge,
+  resolveLayoutHost,
+  useLayoutBridge,
+  useLayoutHosts,
+  waitForLayoutHost,
+} from './runtime/features/publicLayout'
+export {
+  resolveRuntimePageLayoutName,
+  setPageLayout,
+  syncRuntimePageLayoutState,
+  syncRuntimePageLayoutStateFromRuntime,
+  usePageLayout,
+} from './runtime/features/publicLayout'
+export {
+  createWevuScopedSlotComponent,
+  installScopedSlots,
+} from './runtime/features/scopedSlots'
+export { installSetDataHighFrequencyWarning } from './runtime/features/setDataHighFrequencyWarning'
+export { installTemplateRefs } from './runtime/features/templateRefs'
 export {
   callHookList,
   callHookReturn,
@@ -58,7 +90,9 @@ export {
   setCurrentInstance,
   setCurrentSetupContext,
 } from './runtime/hooks'
+
 export { useIntersectionObserver } from './runtime/intersectionObserver'
+
 export {
   createTextVNode,
   createVNode,
@@ -76,15 +110,6 @@ export {
   vShow,
   withDirectives,
 } from './runtime/jsxIsland'
-
-export {
-  resolveLayoutBridge,
-  resolveLayoutHost,
-  useLayoutBridge,
-  useLayoutHosts,
-  waitForLayoutHost,
-} from './runtime/layoutBridge'
-
 export { isNoSetData, markNoSetData } from './runtime/noSetData'
 export {
   getCurrentPageStackSnapshot,
@@ -92,13 +117,6 @@ export {
   useNavigationBarMetrics,
   usePageStack,
 } from './runtime/pageEnvironment'
-export {
-  resolveRuntimePageLayoutName,
-  setPageLayout,
-  syncRuntimePageLayoutState,
-  syncRuntimePageLayoutStateFromRuntime,
-  usePageLayout,
-} from './runtime/pageLayout'
 export { usePageScrollThrottle } from './runtime/pageScroll'
 export {
   hasInjectionContext,

@@ -18,6 +18,20 @@ export interface RuntimeSizeTier {
   targetImports?: Partial<Record<RuntimeSizeTarget['id'], Partial<Record<RuntimeSizeEntryKind, readonly string[]>>>>
 }
 
+export interface RuntimeSizeBudget {
+  target: RuntimeSizeTarget['id']
+  tier: RuntimeSizeTier['id']
+  mode: 'production'
+  ceilingBytes: number
+}
+
+export interface RuntimeSizeDenyRule {
+  target: RuntimeSizeTarget['id']
+  mode: 'production'
+  suffix: string
+  allowedTiers: readonly RuntimeSizeTier['id'][]
+}
+
 export const runtimeSizeTargets: readonly RuntimeSizeTarget[] = [
   {
     id: 'weapp',
@@ -101,3 +115,49 @@ export const runtimeSizeTiers: readonly RuntimeSizeTier[] = [
     description: '端侧 runtime provider 暴露的全部能力上限',
   },
 ] as const
+
+export const runtimeSizeBudgets: readonly RuntimeSizeBudget[] = [
+  { target: 'weapp', tier: 'minimal-app', mode: 'production', ceilingBytes: 93_535 },
+  { target: 'weapp', tier: 'typical-page', mode: 'production', ceilingBytes: 160_182 },
+  // main 75aabf000 实测 258,363 B，保留 5% 余量并向上取整。
+  { target: 'weapp', tier: 'full-provider', mode: 'production', ceilingBytes: 271_282 },
+]
+
+export const runtimeSizeDenyRules: readonly RuntimeSizeDenyRule[] = [
+  {
+    target: 'weapp',
+    mode: 'production',
+    suffix: '/runtime/app/setData/patchScheduler.mjs',
+    allowedTiers: ['complex-component', 'full-provider'],
+  },
+  {
+    target: 'weapp',
+    mode: 'production',
+    suffix: '/runtime/app/setData/payload.mjs',
+    allowedTiers: ['complex-component', 'full-provider'],
+  },
+  {
+    target: 'weapp',
+    mode: 'production',
+    suffix: '/runtime/templateRefs/helpers.mjs',
+    allowedTiers: ['complex-component', 'full-provider'],
+  },
+  {
+    target: 'weapp',
+    mode: 'production',
+    suffix: '/runtime/register/inline.mjs',
+    allowedTiers: ['complex-component', 'full-provider'],
+  },
+  {
+    target: 'weapp',
+    mode: 'production',
+    suffix: '/runtime/register/setDataFrequencyWarning.mjs',
+    allowedTiers: ['complex-component', 'full-provider'],
+  },
+  {
+    target: 'weapp',
+    mode: 'production',
+    suffix: '/runtime/scopedSlots.mjs',
+    allowedTiers: ['complex-component', 'full-provider'],
+  },
+]

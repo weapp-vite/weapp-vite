@@ -8,7 +8,7 @@ import {
   validateArtifact,
 } from '../.github/scripts/upsert-runtime-size-comment.mjs'
 
-function createArtifact() {
+function createArtifact(version = 3) {
   const tiers = [
     'reactivity-core',
     'minimal-app',
@@ -16,8 +16,8 @@ function createArtifact() {
     'complex-component',
     'full-provider',
   ]
-  const createReport = (commit, offset = 0) => ({
-    version: 2,
+  const createReport = (commit, offset = 0, includeRetainedModules = true) => ({
+    version,
     generatedAt: '2026-07-30T00:00:00.000Z',
     commit,
     targets: [
@@ -28,7 +28,17 @@ function createArtifact() {
           id,
           label: 'artifact tier label is ignored',
           dev: { bytes: 2048 + index * 1024 + offset },
-          production: { bytes: 1024 + index * 512 + offset },
+          production: {
+            bytes: 1024 + index * 512 + offset,
+            ...(includeRetainedModules
+              ? {
+                  retainedModules: {
+                    entry: `wevu-runtime-size-weapp-${id}-production.mjs`,
+                    modules: [],
+                  },
+                }
+              : {}),
+          },
         })),
       },
       {
@@ -38,20 +48,31 @@ function createArtifact() {
           id,
           label: 'artifact tier label is ignored',
           dev: { bytes: 4096 + index * 1024 + offset },
-          production: { bytes: 2048 + index * 512 + offset, gzipBytes: 1024 + index * 256 + offset },
+          production: {
+            bytes: 2048 + index * 512 + offset,
+            gzipBytes: 1024 + index * 256 + offset,
+            ...(includeRetainedModules
+              ? {
+                  retainedModules: {
+                    entry: `wevu-runtime-size-web-${id}-production.mjs`,
+                    modules: [],
+                  },
+                }
+              : {}),
+          },
         })),
       },
     ],
   })
   return {
-    version: 2,
+    version,
     kind: 'wevu-runtime-size-pr-report',
     repository: 'owner/repo',
     prNumber: 42,
     headSha: 'a'.repeat(40),
     baseSha: 'b'.repeat(40),
-    current: createReport('c'.repeat(12), 1024),
-    baseline: createReport('d'.repeat(12)),
+    current: createReport('c'.repeat(12), 1024, version === 3),
+    baseline: createReport('d'.repeat(12), 0, false),
   }
 }
 
@@ -62,6 +83,10 @@ describe('runtime size PR comment', () => {
       prNumber: 42,
       headSha: 'a'.repeat(40),
     })
+    expect(artifact.current.targets[0].tiers[0].production.retainedModules.entry).toBe(
+      'wevu-runtime-size-weapp-reactivity-core-production.mjs',
+    )
+    expect(artifact.baseline.targets[0].tiers[0].production.retainedModules).toBeUndefined()
     const body = renderSuccessComment(artifact)
 
     expect(body).toContain(COMMENT_MARKER)
@@ -69,6 +94,32 @@ describe('runtime size PR comment', () => {
     expect(body).toContain('| 响应式核心 | 3.00 KiB (+1.00 KiB, +50.00%) | 2.00 KiB (+1.00 KiB, +100.00%) | 不适用 |')
     expect(body).toContain('| 复杂组件 |')
     expect(body).toContain('| Web |')
+  })
+
+  it('accepts coherent v2 and v3 artifacts and rejects mixed or unsupported versions', () => {
+    const expected = {
+      repository: 'owner/repo',
+      prNumber: 42,
+      headSha: 'a'.repeat(40),
+    }
+    const v2 = validateArtifact(createArtifact(2), expected)
+    const v3 = validateArtifact(createArtifact(3), expected)
+
+    expect(v2.current.version).toBe(2)
+    expect(v2.current.targets[0].tiers[0].production.retainedModules).toBeUndefined()
+    expect(v3.current.version).toBe(3)
+    expect(v3.current.targets[0].tiers[0].production.retainedModules.entry).toBe(
+      'wevu-runtime-size-weapp-reactivity-core-production.mjs',
+    )
+
+    const mixed = createArtifact(3)
+    mixed.baseline.version = 2
+    expect(() => validateArtifact(mixed, expected)).toThrow(
+      'artifact.baseline.version must match artifact.version (3)',
+    )
+    expect(() => validateArtifact(createArtifact(4), expected)).toThrow(
+      'Unsupported runtime size artifact',
+    )
   })
 
   it('rejects mismatched metadata and invalid gzip fields', () => {

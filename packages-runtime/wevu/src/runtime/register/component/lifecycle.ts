@@ -11,9 +11,9 @@ import {
   ensureInitialNavigation,
 } from '../../../router/initialNavigation'
 import { notifyRouteStateSync } from '../../../router/routeSync'
+import { runtimeCapabilityRegistry } from '../../capabilities'
 import { callHookList } from '../../hooks'
 import { runTeardownSteps } from '../../teardown'
-import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 import { attachOptionalPageLifecycleHooks } from './lifecycle/optionalHooks'
 import { bindCurrentPageInstance, ensureMiniProgramGlobalPatched, ensurePageShareMenus, releaseCurrentPageInstance, resolvePageOptions } from './lifecycle/platform'
@@ -217,7 +217,13 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
             userOnReady.apply(this, args)
           }
         }
-        const scheduleReadyHooks = () => scheduleTemplateRefUpdate(this, callReadyHooks)
+        const scheduleReadyHooks = () => {
+          if (Array.isArray(this.__wevuTemplateRefs) && this.__wevuTemplateRefs.length > 0) {
+            runtimeCapabilityRegistry.templateRefs?.schedule(this, callReadyHooks)
+            return
+          }
+          callReadyHooks()
+        }
         const initialNavigationPromise = isPage
           ? ensureInitialNavigation(this as MiniProgramPageLike, undefined, {
               start: false,

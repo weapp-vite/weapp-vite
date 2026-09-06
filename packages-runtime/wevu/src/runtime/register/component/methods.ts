@@ -9,9 +9,9 @@ import {
   WEVU_RESERVED_METHOD_PREFIX,
   WEVU_RUNTIME_KEY,
 } from '@weapp-core/constants'
+import { requireRuntimeCapability, runtimeCapabilityRegistry } from '../../capabilities'
 import { parseModelEventValue } from '../../internal'
 import { runJsxIslandHandler } from '../../jsxIsland'
-import { runInlineExpression } from '../inline'
 
 export function createComponentMethods(options: {
   userMethods: Record<string, (...args: any[]) => any>
@@ -22,13 +22,17 @@ export function createComponentMethods(options: {
     ...userMethods,
   }
 
-  if (!finalMethods[WEVU_INLINE_HANDLER]) {
-    finalMethods[WEVU_INLINE_HANDLER] = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
-      const runtime = (this as any).__wevu
-      const ctx = runtime?.proxy ?? this
-      const inlineMap = runtime?.methods?.[WEVU_INLINE_MAP_KEY]
-      return runInlineExpression(ctx, undefined, event, inlineMap)
-    }
+  const runtimeMethodRecord = (runtimeMethods ?? {}) as Record<string, unknown>
+  const inlineMap = runtimeMethodRecord[WEVU_INLINE_MAP_KEY]
+  const requiresInlineEvents = Object.prototype.hasOwnProperty.call(runtimeMethodRecord, WEVU_INLINE_MAP_KEY)
+    && inlineMap
+    && typeof inlineMap === 'object'
+    && Object.keys(inlineMap).length > 0
+  const inlineEvents = requiresInlineEvents
+    ? requireRuntimeCapability('inlineEvents', 'createComponentMethods(inline event metadata)')
+    : runtimeCapabilityRegistry.inlineEvents
+  if (!finalMethods[WEVU_INLINE_HANDLER] && inlineEvents) {
+    finalMethods[WEVU_INLINE_HANDLER] = inlineEvents.handler
   }
 
   if (!finalMethods[WEVU_MODEL_HANDLER]) {

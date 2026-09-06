@@ -1,6 +1,6 @@
 ---
 '@weapp-core/constants': patch
-'@wevu/compiler': major
+'@wevu/compiler': minor
 'create-weapp-vite': patch
 'weapp-vite': minor
 'wevu': minor

@@ -7,6 +7,7 @@ import {
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE,
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
 } from '@weapp-core/constants'
+import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../runtimeCapabilities'
 
 import { createBindingManifest, markBindingManifestIncomplete } from './template/bindingManifest'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
@@ -233,6 +234,9 @@ export function compileVueTemplateToWxml(
     if (context.hasSlotOutlet) {
       result.hasSlotOutlet = true
     }
+    result.runtimeCapabilities = createWevuRuntimeCapabilityMetadataFromBindingManifest(
+      context.bindingManifest,
+    )
 
     return result
   }

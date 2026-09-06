@@ -14,9 +14,9 @@ import {
   WEVU_INLINE_MAP_KEY,
   WEVU_IS_APP_INSTANCE_KEY,
 } from '@weapp-core/constants'
+import { requireRuntimeCapability } from '../capabilities'
 import { callHookList } from '../hooks'
 import { getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
-import { runInlineExpression } from './inline'
 import { mountRuntimeInstance } from './runtimeInstance'
 
 const APP_GLOBAL_LISTENER_STORE_KEY = '__wevuAppGlobalListeners'
@@ -169,13 +169,17 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
 
   appOptions.globalData = appOptions.globalData ?? {}
 
-  if (!appOptions[WEVU_INLINE_HANDLER]) {
-    appOptions[WEVU_INLINE_HANDLER] = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
-      const runtime = (this as any).__wevu
-      const ctx = runtime?.proxy ?? this
-      const inlineMap = runtime?.methods?.[WEVU_INLINE_MAP_KEY]
-      return runInlineExpression(ctx, undefined, event, inlineMap)
-    }
+  const methodRecord = (methods ?? {}) as Record<string, unknown>
+  const inlineMap = methodRecord[WEVU_INLINE_MAP_KEY]
+  const requiresInlineEvents = Object.prototype.hasOwnProperty.call(methodRecord, WEVU_INLINE_MAP_KEY)
+    && inlineMap
+    && typeof inlineMap === 'object'
+    && Object.keys(inlineMap).length > 0
+  if (!appOptions[WEVU_INLINE_HANDLER] && requiresInlineEvents) {
+    appOptions[WEVU_INLINE_HANDLER] = requireRuntimeCapability(
+      'inlineEvents',
+      'registerApp(inline event metadata)',
+    ).handler
   }
 
   const userOnLaunch = appOptions.onLaunch
