@@ -175,6 +175,29 @@ describe('runtime: template refs', () => {
     expect(refs.fallback).toBeNull()
   })
 
+  it('continues clearing template refs after a function ref throws', () => {
+    const failure = new Error('function ref cleanup failed')
+    const failingRef = vi.fn(() => {
+      throw failure
+    })
+    const laterRef = vi.fn()
+    const refTarget = ref<any>({ stale: true })
+    const instance: any = {
+      __wevu: { state: { $refs: { stale: true } }, proxy: {} },
+      __wevuTemplateRefs: [
+        { selector: '.failing', inFor: false, get: () => failingRef },
+        { selector: '.later', inFor: false, get: () => laterRef },
+        { selector: '.ref', inFor: false, get: () => refTarget },
+      ],
+    }
+
+    expect(() => clearTemplateRefs(instance)).toThrow(failure)
+    expect(failingRef).toHaveBeenCalledWith(null)
+    expect(laterRef).toHaveBeenCalledWith(null)
+    expect(refTarget.value).toBeNull()
+    expect(instance.__wevu.state.$refs.stale).toBeUndefined()
+  })
+
   it('resolves component template refs via selectComponent', () => {
     const headerKey = ref('hello')
     const setHeaderKey = vi.fn()

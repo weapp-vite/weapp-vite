@@ -1,6 +1,5 @@
 import type { WevuPlugin } from '@/runtime/types'
 import {
-  WEVU_HOOKS_KEY,
   WEVU_IS_APP_INSTANCE_KEY,
   WEVU_RUNTIME_APP_KEY,
 } from '@weapp-core/constants'
@@ -9,14 +8,6 @@ import { computed, reactive, ref, toRaw } from '@/reactivity'
 import { createBindModel } from '@/runtime/bindModel'
 import { toPlain } from '@/runtime/diff'
 import {
-  onActivated,
-  onBeforeMount,
-  onBeforeUnmount,
-  onBeforeUpdate,
-  onDeactivated,
-  onErrorCaptured,
-  onMounted,
-  onUpdated,
   setCurrentInstance,
   setCurrentSetupContext,
 } from '@/runtime/hooks'
@@ -352,27 +343,5 @@ describe('bindModel helpers', () => {
     expect(setupState.form.name).toBe('setup-next')
     expect(state.form.name).toBe('data-name')
     expect(binding.value).toBe('setup-next')
-  })
-})
-
-describe('hook aliases', () => {
-  it('registers vue-compatible lifecycle aliases', () => {
-    const instance: any = { [WEVU_HOOKS_KEY]: {} }
-    setCurrentInstance(instance)
-
-    const beforeMount = vi.fn()
-    const beforeUnmount = vi.fn()
-
-    onMounted(() => {})
-    onUpdated(() => {})
-    onBeforeUpdate(() => {})
-    onActivated(() => {})
-    onDeactivated(() => {})
-    onBeforeMount(beforeMount)
-    onBeforeUnmount(beforeUnmount)
-    onErrorCaptured(() => {})
-
-    expect(beforeMount).toHaveBeenCalledTimes(1)
-    expect(beforeUnmount).toHaveBeenCalledTimes(1)
   })
 })

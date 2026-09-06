@@ -12,6 +12,7 @@ import {
 } from '../../../router/initialNavigation'
 import { notifyRouteStateSync } from '../../../router/routeSync'
 import { callHookList } from '../../hooks'
+import { runTeardownSteps } from '../../teardown'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 import { attachOptionalPageLifecycleHooks } from './lifecycle/optionalHooks'
@@ -130,14 +131,22 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       return mountPage()
     },
     onUnload(this: InternalRuntimeState, ...args: any[]) {
-      cancelInitialNavigation(this as MiniProgramPageLike)
-      if (isPage) {
-        releaseCurrentPageInstance(this)
-      }
-      teardownRuntimeInstance(this)
-      if (typeof userOnUnload === 'function') {
-        return userOnUnload.apply(this, args)
-      }
+      let result: unknown
+      runTeardownSteps([
+        () => cancelInitialNavigation(this as MiniProgramPageLike),
+        () => {
+          if (isPage) {
+            releaseCurrentPageInstance(this)
+          }
+        },
+        () => teardownRuntimeInstance(this),
+        () => {
+          if (typeof userOnUnload === 'function') {
+            result = userOnUnload.apply(this, args)
+          }
+        },
+      ])
+      return result
     },
     onShow(this: InternalRuntimeState, ...args: any[]) {
       if (isPage) {

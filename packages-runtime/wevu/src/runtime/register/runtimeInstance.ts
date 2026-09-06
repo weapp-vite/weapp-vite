@@ -12,7 +12,9 @@ import type { AdapterWithSetData } from './runtimeInstance/utils'
 import type { WatchMap } from './watch'
 import {
   WEVU_EFFECT_SCOPE_KEY,
+  WEVU_EXPOSED_KEY,
   WEVU_HOOKS_KEY,
+  WEVU_ON_BEFORE_UNMOUNT_HOOK,
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
   WEVU_PAGE_LAYOUT_SETTER_KEY,
@@ -21,15 +23,17 @@ import {
   WEVU_PROPS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_RUNTIME_OWNER_ID_KEY,
+  WEVU_SETUP_CONTEXT_INSTANCE_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_TEMPLATE_REFS_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
-import { isRef } from '../../reactivity'
+import { effectScope as createEffectScope, isRef } from '../../reactivity'
 import { isDeepEqualValue } from '../app/setData/snapshot'
 import { callHookList } from '../hooks'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
 import { allocateOwnerId, attachOwnerSnapshot, mergeOwnerSnapshotProps, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
+import { runTeardownSteps } from '../teardown'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
 import { attachRuntimeProvideParentContext } from './runtimeInstance/provideContext'
@@ -462,22 +466,34 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   }
 
   if (setup) {
-    runRuntimeSetupPhase({
-      target,
-      runtime,
-      runtimeWithDefaults,
-      runtimeState: runtimeState as Record<string, any>,
-      runtimeProxy: runtimeProxy as Record<string, any>,
-      setup,
-    })
-    if (!options?.deferSetData) {
-      runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
+    try {
+      runRuntimeSetupPhase({
+        target,
+        runtime,
+        runtimeWithDefaults,
+        runtimeState: runtimeState as Record<string, any>,
+        runtimeProxy: runtimeProxy as Record<string, any>,
+        setup,
+      })
+      if (!options?.deferSetData) {
+        runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
+      }
+      if (!options?.deferSetData) {
+        refreshOwnerSnapshot()
+      }
+      for (const stop of watchStops) {
+        stop.resume()
+      }
     }
-    if (!options?.deferSetData) {
-      refreshOwnerSnapshot()
-    }
-    for (const stop of watchStops) {
-      stop.resume()
+    catch (error) {
+      try {
+        // eslint-disable-next-line ts/no-use-before-define -- setup 失败后复用统一 teardown 回滚已安装运行时
+        teardownRuntimeInstance(target, { skipHooks: true })
+      }
+      catch {
+        // setup 异常优先，回滚异常不能覆盖原始失败。
+      }
+      throw error
     }
   }
   else if (
@@ -656,66 +672,77 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
   const runtime = target.__wevu
   const ownerId = (target as any)[WEVU_RUNTIME_OWNER_ID_KEY]
     ?? (target as any)[WEVU_SLOT_OWNER_ID_KEY]
-  if (ownerId) {
-    removeOwner(ownerId)
-  }
-  clearTemplateRefs(target)
-  // 触发卸载钩子（仅在 teardown 首次执行时触发）
-  if (!options?.skipHooks && runtime && target[WEVU_HOOKS_KEY]) {
-    callHookList(target, 'onUnload', [])
-  }
-  // 清理注册的生命周期钩子
-  if (target[WEVU_HOOKS_KEY]) {
-    target[WEVU_HOOKS_KEY] = undefined
-  }
   const stops = target[WEVU_WATCH_STOPS_KEY]
-  if (Array.isArray(stops)) {
-    for (const stop of stops) {
-      try {
-        stop()
-      }
-      catch {
-        // 避免 teardown 中断：单个 stop 失败不阻塞其他清理
-      }
-    }
-  }
-  target[WEVU_WATCH_STOPS_KEY] = undefined
-  let firstError: unknown
-  let hasError = false
-  const recordError = (error: unknown) => {
-    if (hasError) {
-      return
-    }
-    firstError = error
-    hasError = true
-  }
-
   const effectScope = target[WEVU_EFFECT_SCOPE_KEY]
-  if (effectScope) {
-    try {
-      effectScope.stop()
-    }
-    catch (error) {
-      recordError(error)
-    }
-  }
-  target[WEVU_EFFECT_SCOPE_KEY] = undefined
-  if (runtime) {
-    try {
-      runtime.unmount()
-    }
-    catch (error) {
-      recordError(error)
-    }
-  }
-  delete target.__wevu
-  if (WEVU_PUBLIC_RUNTIME_KEY in target) {
-    delete (target as any)[WEVU_PUBLIC_RUNTIME_KEY]
-  }
 
-  if (hasError) {
-    throw firstError
-  }
+  runTeardownSteps([
+    () => {
+      if (!options?.skipHooks && runtime && target[WEVU_HOOKS_KEY]?.[WEVU_ON_BEFORE_UNMOUNT_HOOK]) {
+        if (effectScope?.active) {
+          effectScope.run(() => callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK))
+        }
+        else {
+          const teardownScope = createEffectScope(true)
+          runTeardownSteps([
+            () => teardownScope.run(() => callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK)),
+            () => teardownScope.stop(),
+          ])
+        }
+      }
+    },
+    () => {
+      if (ownerId) {
+        removeOwner(ownerId)
+      }
+    },
+    () => clearTemplateRefs(target),
+    () => {
+      // 触发卸载钩子（仅在 teardown 首次执行时触发）
+      if (!options?.skipHooks && runtime && target[WEVU_HOOKS_KEY]) {
+        callHookList(target, 'onUnload', [])
+      }
+    },
+    () => {
+      // 清理注册的生命周期钩子
+      if (target[WEVU_HOOKS_KEY]) {
+        target[WEVU_HOOKS_KEY] = undefined
+      }
+    },
+    () => {
+      if (Array.isArray(stops)) {
+        for (const stop of stops) {
+          try {
+            stop()
+          }
+          catch {
+            // 避免 teardown 中断：单个 stop 失败不阻塞其他清理
+          }
+        }
+      }
+    },
+    () => {
+      target[WEVU_WATCH_STOPS_KEY] = undefined
+    },
+    () => {
+      effectScope?.stop()
+    },
+    () => {
+      target[WEVU_EFFECT_SCOPE_KEY] = undefined
+    },
+    () => runtime?.unmount(),
+    () => {
+      delete (target as any)[WEVU_SETUP_CONTEXT_INSTANCE_KEY]
+      delete (target as any)[WEVU_EXPOSED_KEY]
+    },
+    () => {
+      delete target.__wevu
+    },
+    () => {
+      if (WEVU_PUBLIC_RUNTIME_KEY in target) {
+        delete (target as any)[WEVU_PUBLIC_RUNTIME_KEY]
+      }
+    },
+  ])
 }
 
 /**

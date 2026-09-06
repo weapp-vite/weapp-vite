@@ -23,6 +23,7 @@ import { hasOwn } from '../../utils'
 import { cloneSnapshotValue, isDeepEqualValue } from '../app/setData/snapshot'
 import { resolveDatasetEventValue, runInlineExpression } from '../register/inline'
 import { getOwnerProxy, getOwnerSnapshot, getOwnerTarget, subscribeOwner } from '../scopedSlots'
+import { runTeardownSteps } from '../teardown'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 
 const SCOPED_SLOT_SNAPSHOT_OMIT_KEYS = [
@@ -509,15 +510,23 @@ export function createScopedSlotOptions(
       },
       detached(this: any) {
         const owner = resolveTemplateRefOwner(this)
-        if (owner) {
-          clearTemplateRefs(this, owner)
-        }
-        if (typeof this.__wvOwnerUnsub === 'function') {
-          this.__wvOwnerUnsub()
-        }
-        this.__wvOwnerUnsub = undefined
-        this.__wvOwnerBoundId = ''
-        setOwnerProxy(this, undefined)
+        runTeardownSteps([
+          () => {
+            if (owner) {
+              clearTemplateRefs(this, owner)
+            }
+          },
+          () => {
+            if (typeof this.__wvOwnerUnsub === 'function') {
+              this.__wvOwnerUnsub()
+            }
+          },
+          () => {
+            this.__wvOwnerUnsub = undefined
+            this.__wvOwnerBoundId = ''
+          },
+          () => setOwnerProxy(this, undefined),
+        ])
       },
     },
     methods: {

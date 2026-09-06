@@ -247,11 +247,6 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
       ;(runtime as any).__wevu_touchSetupMethodsVersion?.()
     }
   }
-  catch (error) {
-    instanceScope.stop()
-    target[WEVU_EFFECT_SCOPE_KEY] = undefined
-    throw error
-  }
   finally {
     setCurrentSetupContext(undefined)
     setCurrentInstance(undefined)

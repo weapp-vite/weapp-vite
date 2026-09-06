@@ -886,6 +886,43 @@ describe('runtime: scoped slots', () => {
     expect(leafRef.value).toBeNull()
   })
 
+  it('finishes owner cleanup when scoped-slot function ref teardown throws', () => {
+    const failure = new Error('scoped-slot function ref cleanup failed')
+    const failingRef = vi.fn(() => {
+      throw failure
+    })
+    createWevuScopedSlotComponent({
+      templateRefs: [
+        { selector: '.__wevu-ref-0', inFor: false, get: () => failingRef },
+      ],
+    })
+    const opts = registeredComponents.pop()!
+    const ownerId = allocateOwnerId()
+    const owner: any = {
+      __wevu: {
+        state: {},
+        proxy: {},
+      },
+    }
+    updateOwnerSnapshot(ownerId, {}, owner.__wevu.proxy, owner)
+
+    const inst: any = {
+      data: typeof opts.data === 'function' ? opts.data() : {},
+      properties: { [WEVU_SLOT_OWNER_ID_PROP]: ownerId },
+      setData: vi.fn(),
+    }
+    opts.lifetimes.attached.call(inst)
+
+    expect(() => opts.lifetimes.detached.call(inst)).toThrow(failure)
+    expect(inst.__wvOwnerUnsub).toBeUndefined()
+    expect(inst.__wvOwnerBoundId).toBe('')
+    expect(inst[WEVU_SLOT_OWNER_PROXY_KEY]).toBeUndefined()
+
+    inst.setData.mockClear()
+    updateOwnerSnapshot(ownerId, { changed: true }, owner.__wevu.proxy, owner)
+    expect(inst.setData).not.toHaveBeenCalled()
+  })
+
   it('keeps slot prop observers on properties', () => {
     createWevuScopedSlotComponent()
     const opts = registeredComponents.pop()!

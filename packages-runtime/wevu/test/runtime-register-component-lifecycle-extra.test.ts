@@ -188,6 +188,51 @@ describe('runtime: component page lifecycle extra', () => {
     expect(mocks.teardownRuntimeInstance).toHaveBeenCalledWith(instance)
   })
 
+  it('attempts user unload after teardown fails and rethrows the teardown error', () => {
+    const firstFailure = new Error('runtime teardown failed')
+    const userOnUnload = vi.fn(() => {
+      throw new Error('user unload failed')
+    })
+    mocks.teardownRuntimeInstance.mockImplementation(() => {
+      throw firstFailure
+    })
+    const hooks = createPageLifecycleHooks({
+      runtimeApp: {} as any,
+      watch: undefined,
+      setup: undefined as any,
+      userOnUnload,
+      isPage: true,
+      enableOnSaveExitState: false,
+      enableOnPullDownRefresh: false,
+      enableOnReachBottom: false,
+      enableOnPageScroll: false,
+      enableOnRouteDone: false,
+      enableOnRouteDoneFallback: false,
+      enableOnTabItemTap: false,
+      enableOnResize: false,
+      enableOnShareAppMessage: false,
+      enableOnShareTimeline: false,
+      enableOnAddToFavorites: false,
+      effectiveOnSaveExitState: vi.fn(),
+      effectiveOnPullDownRefresh: vi.fn(),
+      effectiveOnReachBottom: vi.fn(),
+      effectiveOnPageScroll: vi.fn(),
+      effectiveOnRouteDone: vi.fn(),
+      effectiveOnTabItemTap: vi.fn(),
+      effectiveOnResize: vi.fn(),
+      effectiveOnShareAppMessage: vi.fn(),
+      effectiveOnShareTimeline: vi.fn(),
+      effectiveOnAddToFavorites: vi.fn(),
+      hasHook: vi.fn(() => false),
+    } as any)
+
+    const instance: any = {}
+    expect(() => hooks.onUnload.call(instance, 'unload')).toThrow(firstFailure)
+    expect(mocks.cancelInitialNavigation).toHaveBeenCalledWith(instance)
+    expect(mocks.releaseCurrentPageInstance).toHaveBeenCalledWith(instance)
+    expect(userOnUnload).toHaveBeenCalledWith('unload')
+  })
+
   it('makes onLoad idempotent and wires page-only lifecycle helpers', () => {
     const userOnLoad = vi.fn(() => 'load-result')
     const hooks = createPageLifecycleHooks({

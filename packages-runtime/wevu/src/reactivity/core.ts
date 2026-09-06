@@ -92,6 +92,10 @@ class EffectScopeImpl implements EffectScope {
 
   constructor(private detached = false) {
     if (!detached && activeEffectScope) {
+      if (!activeEffectScope.active) {
+        this.active = false
+        return
+      }
       this.parent = activeEffectScope
       ;(activeEffectScope.scopes ||= []).push(this)
     }
@@ -117,6 +121,9 @@ class EffectScopeImpl implements EffectScope {
       return
     }
     this.active = false
+    const prev = activeEffectScope
+    // eslint-disable-next-line ts/no-this-alias -- teardown 期间需要把新建 scope 绑定到当前停止中的 scope
+    activeEffectScope = this
 
     let firstError: unknown
     let hasError = false
@@ -128,52 +135,60 @@ class EffectScopeImpl implements EffectScope {
       hasError = true
     }
 
-    const effects = this.effects.splice(0)
-    for (const effect of effects) {
-      try {
-        stop(effect)
-      }
-      catch (error) {
-        recordError(error)
-      }
-    }
-
-    const cleanups = this.cleanups.splice(0)
-    for (const cleanup of cleanups) {
-      try {
-        cleanup()
-      }
-      catch (error) {
-        recordError(error)
-      }
-    }
-
-    const scopes = this.scopes
-    this.scopes = undefined
-    if (scopes) {
-      for (const scope of scopes) {
+    try {
+      const effects = this.effects.splice(0)
+      for (const effect of effects) {
         try {
-          scope.stop()
+          stop(effect)
         }
         catch (error) {
           recordError(error)
         }
       }
-      scopes.length = 0
-    }
 
-    if (this.parent?.scopes) {
-      const index = this.parent.scopes.indexOf(this)
-      if (index >= 0) {
-        this.parent.scopes.splice(index, 1)
+      const cleanups = this.cleanups.splice(0)
+      for (const cleanup of cleanups) {
+        try {
+          cleanup()
+        }
+        catch (error) {
+          recordError(error)
+        }
+      }
+
+      const scopes = this.scopes
+      this.scopes = undefined
+      if (scopes) {
+        for (const scope of scopes) {
+          try {
+            scope.stop()
+          }
+          catch (error) {
+            recordError(error)
+          }
+        }
+        scopes.length = 0
       }
     }
-    this.parent = undefined
+    finally {
+      if (this.parent?.scopes) {
+        const index = this.parent.scopes.indexOf(this)
+        if (index >= 0) {
+          this.parent.scopes.splice(index, 1)
+        }
+      }
+      this.parent = undefined
+      activeEffectScope = prev
+    }
 
     if (hasError) {
       throw firstError
     }
   }
+}
+
+interface ScopedReactiveEffect<T = any> extends ReactiveEffect<T> {
+  _scope: EffectScopeImpl | undefined
 }
 
 export function effectScope(detached = false): EffectScope {
@@ -191,9 +206,14 @@ export function onScopeDispose(fn: () => void): void {
 }
 
 function recordEffectScope(effect: ReactiveEffect) {
-  if (activeEffectScope?.active) {
-    activeEffectScope.effects.push(effect)
+  if (!activeEffectScope) {
+    return
   }
+  if (activeEffectScope.active) {
+    activeEffectScope.effects.push(effect)
+    return
+  }
+  stop(effect)
 }
 
 export interface EffectOptions {
@@ -211,6 +231,8 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
       return fn()
     }
     cleanupEffect(effect)
+    const previousScope = activeEffectScope
+    activeEffectScope = effect._scope
     try {
       effect._running = true
       effectStack.push(effect)
@@ -221,8 +243,9 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
       effectStack.pop()
       activeEffect = effectStack[effectStack.length - 1] ?? null
       effect._running = false
+      activeEffectScope = previousScope
     }
-  } as ReactiveEffect<T>
+  } as ScopedReactiveEffect<T>
 
   effect.deps = []
   effect.scheduler = options.scheduler
@@ -230,6 +253,7 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
   effect.active = true
   effect._running = false
   effect._fn = fn
+  effect._scope = activeEffectScope
 
   return effect
 }
@@ -265,7 +289,14 @@ export function track(target: object, key: PropertyKey) {
 
 function scheduleEffect(ef: ReactiveEffect) {
   if (ef.scheduler) {
-    ef.scheduler()
+    const previousScope = activeEffectScope
+    activeEffectScope = (ef as ScopedReactiveEffect)._scope
+    try {
+      ef.scheduler()
+    }
+    finally {
+      activeEffectScope = previousScope
+    }
     return
   }
   if (batchDepth > 0) {

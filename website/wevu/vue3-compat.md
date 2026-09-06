@@ -65,7 +65,7 @@ keywords:
 - `onUnmounted()`：组件/页面卸载
 - `onBeforeMount()`：挂载前（在小程序里会立即执行，见后文）
 - `onBeforeUpdate()`：更新前（在 `setData` 前触发）
-- `onBeforeUnmount()`：卸载前（在小程序里会立即执行，见后文）
+- `onBeforeUnmount()`：实际卸载清理前触发，此时实例上下文和暴露方法仍可用
 - `onActivated()`：组件激活（映射 `onShow`）
 - `onDeactivated()`：组件失活（映射 `onHide`）
 - `onErrorCaptured()`：错误捕获
@@ -163,7 +163,8 @@ defineComponent({
 - `onUnmounted()` 映射到页面 `onUnload` / 组件 `detached`
 - `onActivated()` 映射到 `onShow`
 - `onDeactivated()` 映射到 `onHide`
-- `onBeforeMount()` / `onBeforeUnmount()` 在小程序中会在 `setup()` 同步阶段立即执行，用于模拟语义
+- `onBeforeMount()` 在小程序中会在 `setup()` 同步阶段立即执行，用于模拟挂载前语义
+- `onBeforeUnmount()` 在实际卸载时、template refs、effect scope 和暴露方法清理前执行，不在 `setup()` 阶段执行
 
 ## ❌ 小程序不适用的 Vue 3 API
 
@@ -343,7 +344,7 @@ import type { ComponentPublicInstance, Ref, SetupContext } from 'wevu'
 ## 从 Vue 3 迁移到 Wevu（迁移要点）
 
 1. 替换导入：把 `from 'vue'` 改为 `from 'wevu'`
-2. 生命周期映射：大多数钩子无需改动，但请注意 `onBeforeMount/onBeforeUnmount` 在小程序里会立即执行
+2. 生命周期映射：大多数钩子无需改动；`onBeforeMount` 在 `setup()` 阶段立即执行，`onBeforeUnmount` 在实际卸载清理前执行
 3. 模板差异：使用 WXML（而非 HTML）；双向绑定建议使用 `bindModel()` 生成事件/属性绑定对象
 4. 组件注册：`wevu` 组件基于小程序 `Component()`；SFC 场景一般由构建侧（如 Weapp-vite）产出注册代码
 

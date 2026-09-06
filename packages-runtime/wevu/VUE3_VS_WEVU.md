@@ -713,7 +713,7 @@ export function onDeactivated(handler: () => void) {
 | `onMounted`       | `onReady`  | `ready`                | 页面/组件就绪                  |
 | `onBeforeUpdate`  | -          | -                      | setData 前立即执行             |
 | `onUpdated`       | -          | -                      | setData 后执行（自定义）       |
-| `onBeforeUnmount` | -          | -                      | 立即执行（小程序无卸载前钩子） |
+| `onBeforeUnmount` | `onUnload` | `detached`             | 实例卸载清理前执行             |
 | `onUnmounted`     | `onUnload` | `detached`             | 页面卸载/组件移除              |
 | `onActivated`     | `onShow`   | `show` (pageLifetimes) | 页面/组件显示                  |
 | `onDeactivated`   | `onHide`   | `hide` (pageLifetimes) | 页面/组件隐藏                  |

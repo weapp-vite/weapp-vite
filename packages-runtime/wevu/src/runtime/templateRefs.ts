@@ -7,6 +7,7 @@ import {
 } from '@weapp-core/constants'
 import { nextTick } from '../scheduler'
 import { markNoSetData } from './noSetData'
+import { runTeardownSteps } from './teardown'
 import {
   buildTemplateRefValue,
   createSelectorQuery,
@@ -215,27 +216,30 @@ export function clearTemplateRefs(
   const nextNames = new Set<string>()
   const templateRefMap = getTemplateRefMap(assignmentTarget)
 
-  for (const binding of bindings) {
-    const resolved = resolveTemplateRefTarget(assignmentTarget, binding, target)
-    const emptyValue = binding.inFor ? markNoSetData([]) : null
-    if (resolved.type === 'function') {
-      resolved.fn.call(proxy, null)
-      continue
-    }
-    if (resolved.type === 'ref') {
-      resolved.ref.value = emptyValue
-      continue
-    }
-    if (resolved.type === 'name') {
-      nextNames.add(resolved.name)
-      refsContainer[resolved.name] = emptyValue
-      updateTemplateRefMapValue(templateRefMap, resolved.name, emptyValue)
-    }
-  }
-
-  for (const key of Object.keys(refsContainer)) {
-    if (!nextNames.has(key)) {
-      delete refsContainer[key]
-    }
-  }
+  runTeardownSteps([
+    ...bindings.map(binding => () => {
+      const resolved = resolveTemplateRefTarget(assignmentTarget, binding, target)
+      const emptyValue = binding.inFor ? markNoSetData([]) : null
+      if (resolved.type === 'function') {
+        resolved.fn.call(proxy, null)
+        return
+      }
+      if (resolved.type === 'ref') {
+        resolved.ref.value = emptyValue
+        return
+      }
+      if (resolved.type === 'name') {
+        nextNames.add(resolved.name)
+        refsContainer[resolved.name] = emptyValue
+        updateTemplateRefMapValue(templateRefMap, resolved.name, emptyValue)
+      }
+    }),
+    () => {
+      for (const key of Object.keys(refsContainer)) {
+        if (!nextNames.has(key)) {
+          delete refsContainer[key]
+        }
+      }
+    },
+  ])
 }
