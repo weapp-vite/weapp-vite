@@ -25,11 +25,44 @@ export function createAnalyzeResultKey(result: AnalyzeSubpackagesResult | null |
     return ''
   }
   return JSON.stringify({
+    projectName: result.metadata?.projectName,
     packages: result.packages,
     modules: result.modules,
     subPackages: result.subPackages,
     budgets: result.metadata?.budgets,
   })
+}
+
+export function isSameAnalyzeProject(
+  left: AnalyzeSubpackagesResult | null | undefined,
+  right: AnalyzeSubpackagesResult | null | undefined,
+) {
+  const leftName = left?.metadata?.projectName
+  const rightName = right?.metadata?.projectName
+  return Boolean(leftName && rightName && leftName === rightName)
+}
+
+export function resolveTrustedAnalyzePrevious(
+  current: AnalyzeSubpackagesResult,
+  previous: AnalyzeSubpackagesResult | null | undefined,
+) {
+  if (!previous) {
+    return null
+  }
+  if (isSameAnalyzeProject(current, previous)) {
+    return previous
+  }
+  const projectName = current.metadata?.projectName
+  if (!projectName || previous.metadata?.projectName || !previous.metadata) {
+    return null
+  }
+  return {
+    ...previous,
+    metadata: {
+      ...previous.metadata,
+      projectName,
+    },
+  }
 }
 
 export function isSameAnalyzeResult(
@@ -75,9 +108,10 @@ export function createAnalyzeHistorySnapshot(
 }
 
 export function normalizeHistorySnapshots(history: StoredAnalyzeResultHistory): AnalyzeHistorySnapshot[] {
-  const snapshots = [...(history.snapshots ?? [])]
+  const snapshots = (history.snapshots ?? [])
+    .filter(snapshot => isSameAnalyzeProject(history.current, snapshot.result))
 
-  if (history.previous) {
+  if (history.previous && isSameAnalyzeProject(history.current, history.previous)) {
     snapshots.push(createAnalyzeHistorySnapshot(history.previous))
   }
   snapshots.push(createAnalyzeHistorySnapshot(history.current))
@@ -132,11 +166,20 @@ export function resolveInitialPreviousResult(
   initialPreviousPayload: AnalyzeSubpackagesResult | null,
   storedHistory: StoredAnalyzeResultHistory | null,
 ) {
-  if (initialPreviousPayload) {
-    return initialPreviousPayload
+  if (!initialPayload) {
+    return null
   }
-  if (initialPayload && storedHistory?.current && !isSameAnalyzeResult(initialPayload, storedHistory.current)) {
+  const transportPrevious = resolveTrustedAnalyzePrevious(initialPayload, initialPreviousPayload)
+  if (transportPrevious) {
+    return transportPrevious
+  }
+  if (storedHistory?.current && !isSameAnalyzeProject(initialPayload, storedHistory.current)) {
+    return null
+  }
+  if (storedHistory?.current && !isSameAnalyzeResult(initialPayload, storedHistory.current)) {
     return storedHistory.current
   }
-  return storedHistory?.previous ?? null
+  return storedHistory?.previous && isSameAnalyzeProject(initialPayload, storedHistory.previous)
+    ? storedHistory.previous
+    : null
 }

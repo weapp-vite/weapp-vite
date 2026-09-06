@@ -4,6 +4,7 @@ import type {
   AnalyzeBudgetConfig,
   AnalyzeComparisonMode,
   AnalyzeHistorySnapshot,
+  AnalyzeSubpackagesResult,
   AnalyzeTreemapFilterMode,
   AnalyzeTreemapFilterOption,
   AnalyzeWorkQueueItem,
@@ -22,6 +23,7 @@ import type {
   TreemapNodeMeta,
 } from '../types'
 import type { PrReviewChecklistItem, PrReviewChecklistSummary } from '../utils/prReviewChecklist'
+import { defineAsyncComponent } from 'vue'
 import AnalyzeDetailsPanel from './AnalyzeDetailsPanel.vue'
 import AnalyzeDiagnosticsSection from './AnalyzeDiagnosticsSection.vue'
 import AnalyzeDraggableGrid from './AnalyzeDraggableGrid.vue'
@@ -44,7 +46,6 @@ defineProps<{
   canUseSelectedPackageFilter: boolean
   comparisonMode: AnalyzeComparisonMode
   copyStatus: string
-  diagnosticsLayoutItems: Array<{ id: string, label: string }>
   filteredDuplicateModules: DuplicateModuleEntry[]
   filteredLargestFiles: LargestFileEntry[]
   historySnapshots: AnalyzeHistorySnapshot[]
@@ -61,6 +62,7 @@ defineProps<{
   prReviewChecklist: PrReviewChecklistSummary
   queuedActionKeys: string[]
   reviewLayoutItems: Array<{ id: string, label: string }>
+  result: AnalyzeSubpackagesResult
   selectedTreemapFocusNodeId: string | null
   selectedTreemapMeta: TreemapNodeMeta | null
   selectedActionKey: string | null
@@ -97,12 +99,14 @@ const emit = defineEmits<{
   toggleWorkQueueItem: [id: string]
   updateTreemapFilterMode: [mode: AnalyzeTreemapFilterMode]
 }>()
+
+const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue'))
 </script>
 
 <template>
   <section v-if="activeTab === 'overview'" class="min-h-0">
     <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+      grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:overflow-hidden"
       :items="overviewLayoutItems"
       storage-key="weapp-vite:dashboard:analyze-layout:overview"
     >
@@ -129,7 +133,6 @@ const emit = defineEmits<{
       :baseline-snapshot-id="baselineSnapshotId"
       :comparison-mode="comparisonMode"
       :history-snapshots="historySnapshots"
-      :layout-items="diagnosticsLayoutItems"
       :queued-action-keys="queuedActionKeys"
       :selected-action-key="selectedActionKey"
       :work-queue-items="workQueueItems"
@@ -148,7 +151,7 @@ const emit = defineEmits<{
 
   <section v-else-if="activeTab === 'review'" class="min-h-0">
     <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+      grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:overflow-hidden"
       :items="reviewLayoutItems"
       storage-key="weapp-vite:dashboard:analyze-layout:review"
     >
@@ -163,9 +166,13 @@ const emit = defineEmits<{
     </AnalyzeDraggableGrid>
   </section>
 
+  <section v-else-if="activeTab === 'graph'" class="min-h-0">
+    <ChunkGraphPanel :result="result" :theme="theme" />
+  </section>
+
   <section v-else-if="activeTab === 'treemap'" class="min-h-0">
     <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+      grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:overflow-hidden"
       :items="treemapLayoutItems"
       storage-key="weapp-vite:dashboard:analyze-layout:treemap"
     >
@@ -177,7 +184,6 @@ const emit = defineEmits<{
           :filter-options="treemapFilterOptions"
           :can-use-selected-package-filter="canUseSelectedPackageFilter"
           :is-empty="isTreemapEmpty"
-          :theme="theme"
           @focus-selected="emit('focusTreemapSelection')"
           @reset-focus="emit('resetTreemapFocus')"
           @update-filter-mode="emit('updateTreemapFilterMode', $event)"
@@ -204,7 +210,7 @@ const emit = defineEmits<{
 
   <section v-else-if="activeTab === 'source'" class="min-h-0">
     <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+      grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:overflow-hidden"
       :items="sourceLayoutItems"
       storage-key="weapp-vite:dashboard:analyze-layout:source"
     >
@@ -221,7 +227,7 @@ const emit = defineEmits<{
 
   <section v-else-if="activeTab === 'packages'" class="min-h-0">
     <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+      grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:overflow-hidden"
       :items="packagesLayoutItems"
       storage-key="weapp-vite:dashboard:analyze-layout:packages"
     >
@@ -237,7 +243,7 @@ const emit = defineEmits<{
 
   <section v-else class="min-h-0">
     <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 gap-2 overflow-hidden"
+      grid-class="grid h-full min-h-0 min-w-0 items-start gap-2 overflow-x-hidden overflow-y-auto"
       :items="modulesLayoutItems"
       storage-key="weapp-vite:dashboard:analyze-layout:modules"
     >

@@ -4,6 +4,7 @@ import { useActionCenterPanel } from '../composables/useActionCenterPanel'
 import { surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
+import AppSelect from './AppSelect.vue'
 import DashboardIcon from './DashboardIcon.vue'
 
 const props = defineProps<{
@@ -22,19 +23,20 @@ const {
   actionKindFilter,
   actionQuery,
   actionSortMode,
+  actionSortOptions,
   actionToneFilter,
   filteredActions,
   getKindLabel,
   getToneClassName,
   getToneLabel,
   isQueued,
-  kindOptions,
-  toneOptions,
+  kindFilterOptions,
+  toneFilterOptions,
 } = useActionCenterPanel(props)
 </script>
 
 <template>
-  <section :class="surfaceStyles({ padding: 'md' })" class="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden">
+  <section :class="surfaceStyles({ padding: 'md' })" class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:overflow-hidden">
     <AppPanelHeader icon-name="metric-health" title="问题中心">
       <template #meta>
         <button
@@ -62,58 +64,26 @@ const {
           type="search"
         >
       </div>
-      <div class="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
-        <select
+      <div class="grid gap-2 md:grid-cols-3">
+        <AppSelect
           v-model="actionToneFilter"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option value="all">
-            全部严重度
-          </option>
-          <option
-            v-for="tone in toneOptions"
-            :key="tone"
-            :value="tone"
-          >
-            {{ getToneLabel(tone) }}
-          </option>
-        </select>
-        <select
+          label="按严重度筛选"
+          :options="toneFilterOptions"
+        />
+        <AppSelect
           v-model="actionKindFilter"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option value="all">
-            全部类型
-          </option>
-          <option
-            v-for="kind in kindOptions"
-            :key="kind"
-            :value="kind"
-          >
-            {{ getKindLabel(kind) }}
-          </option>
-        </select>
-        <select
+          label="按问题类型筛选"
+          :options="kindFilterOptions"
+        />
+        <AppSelect
           v-model="actionSortMode"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option value="priority">
-            按优先级
-          </option>
-          <option value="severity">
-            按严重度
-          </option>
-          <option value="title">
-            按标题
-          </option>
-          <option value="value">
-            按数值
-          </option>
-        </select>
+          label="排序处理项"
+          :options="actionSortOptions"
+        />
       </div>
     </div>
 
-    <div class="mt-3 min-h-0 overflow-hidden">
+    <div class="mt-3 max-h-[36rem] min-h-0 overflow-y-auto xl:max-h-none xl:overflow-hidden">
       <AppEmptyState v-if="filteredActions.length === 0" compact>
         暂无匹配当前筛选条件的事项。
       </AppEmptyState>
@@ -128,30 +98,30 @@ const {
             class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5 transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
             :class="activeKey === item.key ? 'border-(--dashboard-accent) bg-(--dashboard-accent-soft)' : undefined"
           >
-            <div class="flex items-start justify-between gap-3">
+            <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
               <button
                 type="button"
                 class="min-w-0 text-left"
                 @click="emit('select', item)"
               >
-                <div class="flex min-w-0 items-center gap-2">
+                <div class="flex min-w-0 flex-wrap items-center gap-2">
                   <span :class="getToneClassName(item.tone)">
                     {{ getToneLabel(item.tone) }}
                   </span>
-                  <span class="rounded-full bg-(--dashboard-accent-soft) px-2 py-0.5 text-[11px] text-(--dashboard-text-muted)">
+                  <span class="shrink-0 whitespace-nowrap rounded-full bg-(--dashboard-accent-soft) px-2 py-0.5 text-[11px] text-(--dashboard-text-muted)">
                     {{ getKindLabel(item.kind) }}
                   </span>
-                  <p class="truncate text-sm font-medium text-(--dashboard-text)">
-                    {{ item.title }}
-                  </p>
                 </div>
-                <p class="mt-1 truncate text-xs text-(--dashboard-text-soft)">
+                <p class="mt-2 line-clamp-2 break-words text-sm font-medium leading-5 text-(--dashboard-text)">
+                  {{ item.title }}
+                </p>
+                <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-(--dashboard-text-soft)">
                   {{ item.meta }}
                 </p>
               </button>
               <span
                 v-if="item.value"
-                class="whitespace-nowrap text-sm font-medium text-(--dashboard-accent)"
+                class="max-w-28 shrink-0 truncate text-sm font-medium text-(--dashboard-accent)"
               >
                 {{ item.value }}
               </span>

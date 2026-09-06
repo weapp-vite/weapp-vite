@@ -31,6 +31,11 @@ function resolvePluginAssetAbsolute(
   if (!pluginRoot) {
     return undefined
   }
+  if (path.isAbsolute(normalizedFileName)) {
+    return isPathInside(pluginRoot, normalizedFileName)
+      ? normalizedFileName
+      : undefined
+  }
 
   const pluginBase = path.basename(pluginRoot)
   if (normalizedFileName !== pluginBase && !normalizedFileName.startsWith(`${pluginBase}/`)) {
@@ -127,7 +132,9 @@ export function resolveAssetSource(
 ): { absolute: string, source: string, sourceType: ModuleSourceType } | undefined {
   const { configService } = ctx
   const normalized = path.normalize(fileName)
-  const srcCandidate = path.resolve(configService.absoluteSrcRoot, normalized)
+  const srcCandidate = path.isAbsolute(normalized)
+    ? normalized
+    : path.resolve(configService.absoluteSrcRoot, normalized)
 
   if (isPathInside(configService.absoluteSrcRoot, srcCandidate)) {
     return {

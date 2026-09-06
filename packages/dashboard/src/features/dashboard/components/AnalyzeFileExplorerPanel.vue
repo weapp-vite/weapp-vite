@@ -5,6 +5,7 @@ import { createFileExplorerReport, createLargestFileItem, formatSelectedFileMeta
 import { copyText } from '../utils/clipboard'
 import AppCompactListItem from './AppCompactListItem.vue'
 import AppEmptyState from './AppEmptyState.vue'
+import AppSelect from './AppSelect.vue'
 
 type FileTypeFilter = 'all' | LargestFileEntry['type']
 type FileSortMode = 'size' | 'compressed' | 'delta' | 'modules' | 'name'
@@ -32,6 +33,18 @@ const fileTypeOptions = computed(() => {
   }
   return [...typeSet].sort((a, b) => a.localeCompare(b))
 })
+
+const fileTypeFilterOptions = computed(() => [
+  { label: '全部类型', value: 'all' as const },
+  ...fileTypeOptions.value.map(type => ({ label: type, value: type })),
+])
+const fileSortOptions = [
+  { label: '按体积', value: 'size' },
+  { label: '按压缩后', value: 'compressed' },
+  { label: '按增量', value: 'delta' },
+  { label: '按模块数', value: 'modules' },
+  { label: '按名称', value: 'name' },
+] satisfies Array<{ label: string, value: FileSortMode }>
 
 const largestFileItems = computed(() => {
   const keyword = fileQuery.value.trim().toLowerCase()
@@ -167,41 +180,16 @@ onBeforeUnmount(() => {
         type="search"
       >
       <div class="grid grid-cols-2 gap-2">
-        <select
+        <AppSelect
           v-model="fileTypeFilter"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option value="all">
-            全部类型
-          </option>
-          <option
-            v-for="type in fileTypeOptions"
-            :key="type"
-            :value="type"
-          >
-            {{ type }}
-          </option>
-        </select>
-        <select
+          label="筛选文件类型"
+          :options="fileTypeFilterOptions"
+        />
+        <AppSelect
           v-model="fileSortMode"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option value="size">
-            按体积
-          </option>
-          <option value="compressed">
-            按压缩后
-          </option>
-          <option value="delta">
-            按增量
-          </option>
-          <option value="modules">
-            按模块数
-          </option>
-          <option value="name">
-            按名称
-          </option>
-        </select>
+          label="排序文件"
+          :options="fileSortOptions"
+        />
       </div>
     </div>
     <div class="min-h-0 overflow-y-auto pr-1">

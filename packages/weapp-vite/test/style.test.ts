@@ -55,5 +55,11 @@ describe('build style', {
     expect(pageWxss).not.toContain('$brand')
     expect(pageWxss).not.toContain('// https://example.com')
     expect(pageWxss).not.toContain('.page {\n  .title')
+
+    const assetMatch = pageWxss.match(/background-image:\s*url\(([^)]+)\)/)
+    expect(assetMatch?.[1]).toBeTruthy()
+    const assetUrl = assetMatch![1]!.replace(/^['"]|['"]$/g, '')
+    expect(assetUrl).not.toContain('__VITE_ASSET__')
+    expect(await fs.exists(path.resolve(path.dirname(path.resolve(distDir, 'pages/index/index.wxss')), assetUrl))).toBe(true)
   })
 })

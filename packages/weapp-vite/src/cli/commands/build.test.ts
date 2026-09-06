@@ -493,6 +493,8 @@ describe('build cli command', () => {
     createCompilerContextMock.mockResolvedValueOnce({
       buildService: { build: vi.fn().mockResolvedValue([]) },
       configService: {
+        absolutePluginRoot: '/plugin-root',
+        absoluteSrcRoot: '/project/miniprogram',
         platform: 'weapp',
         cwd: '/project',
         mode: 'production',
@@ -512,7 +514,13 @@ describe('build cli command', () => {
     await createBuildActionHandler()('/project', { platform: 'weapp', ui: true })
 
     expect(logBuildPackageSizeReportMock).not.toHaveBeenCalled()
-    expect(startAnalyzeDashboardMock).toHaveBeenCalledTimes(1)
+    expect(startAnalyzeDashboardMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        pluginRoot: '/plugin-root',
+        srcRoot: '/project/miniprogram',
+      }),
+    )
   })
 
   it('skips analyze for a mini build when the UI is disabled', async () => {

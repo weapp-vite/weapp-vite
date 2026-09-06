@@ -175,6 +175,8 @@ export function registerBuildCommand(cli: CAC) {
                 artifactRoot: configService.outDir,
                 cwd: configService.cwd,
                 packageManagerAgent: configService.packageManager.agent,
+                pluginRoot: configService.absolutePluginRoot,
+                srcRoot: configService.absoluteSrcRoot,
                 previousResult: previousAnalyzeResult,
                 initialEvents: [
                   {

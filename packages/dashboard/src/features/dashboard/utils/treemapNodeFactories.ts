@@ -1,13 +1,15 @@
-import type { AnalyzeSubpackagesResult, ResolvedTheme, TreemapNode } from '../types'
+import type { AnalyzeSubpackagesResult, TreemapNode } from '../types'
+import { formatModuleIdentifier } from './format'
 import {
   createTreemapAssetNodeId,
   createTreemapFileNodeId,
   createTreemapModuleNodeId,
   createTreemapPackageNodeId,
+  formatTreemapNodeLabel,
 } from './treemap'
 import {
-  createRiskNodeStyle,
   createShareRiskScore,
+  createTreemapNodeStyle,
   normalizeTreemapRiskScore,
 } from './treemapRisk'
 
@@ -18,7 +20,6 @@ export function createModuleTreemapNode(
   fileBytes: number,
   moduleUsageCount: Map<string, number>,
   module: NonNullable<AnalyzeSubpackagesResult['packages'][number]['files'][number]['modules']>[number],
-  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapModuleNodeId(packageId, fileName, module.id)
   const value = Math.max(module.bytes ?? module.originalBytes ?? 1, 1)
@@ -31,7 +32,7 @@ export function createModuleTreemapNode(
   const normalizedRiskScore = normalizeTreemapRiskScore(riskScore, module.id, module.source, fileName)
   return {
     id: nodeId,
-    name: module.source,
+    name: formatTreemapNodeLabel(module.source),
     value,
     meta: {
       kind: 'module',
@@ -39,13 +40,13 @@ export function createModuleTreemapNode(
       packageId,
       packageLabel,
       fileName,
-      source: module.source,
+      source: formatModuleIdentifier(module.source),
       sourceType: module.sourceType,
       bytes: module.bytes,
       originalBytes: module.originalBytes,
       packageCount: usageCount,
     },
-    ...createRiskNodeStyle(normalizedRiskScore, theme),
+    ...createTreemapNodeStyle(normalizedRiskScore, packageId, 'leaf', value >= 2 * 1024),
   }
 }
 
@@ -55,14 +56,13 @@ export function createAssetTreemapNode(
   fileName: string,
   file: AnalyzeSubpackagesResult['packages'][number]['files'][number],
   packageBytes: number,
-  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapAssetNodeId(packageId, fileName)
   const value = Math.max(file.size ?? 1, 1)
   const riskScore = normalizeTreemapRiskScore(createShareRiskScore(value, packageBytes), file.file, file.source, packageId, packageLabel)
   return {
     id: nodeId,
-    name: file.source ?? fileName,
+    name: formatTreemapNodeLabel(file.source ?? fileName),
     value,
     meta: {
       kind: 'asset',
@@ -73,7 +73,7 @@ export function createAssetTreemapNode(
       source: file.source ?? fileName,
       bytes: file.size,
     },
-    ...createRiskNodeStyle(riskScore, theme),
+    ...createTreemapNodeStyle(riskScore, packageId, 'leaf', value >= 2 * 1024),
   }
 }
 
@@ -86,7 +86,6 @@ export function createFileTreemapNode(
   value: number,
   packageBytes: number,
   packageRiskScore: number,
-  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapFileNodeId(packageId, file.file)
   const fileValue = Math.max(value, 1)
@@ -99,7 +98,7 @@ export function createFileTreemapNode(
   )
   return {
     id: nodeId,
-    name: file.file,
+    name: formatTreemapNodeLabel(file.file),
     value: fileValue,
     meta: {
       kind: 'file',
@@ -112,7 +111,7 @@ export function createFileTreemapNode(
       type: file.type,
       bytes: file.size,
     },
-    ...createRiskNodeStyle(riskScore, theme),
+    ...createTreemapNodeStyle(riskScore, packageId, 'file', true, fileValue >= 4 * 1024),
     children: children.length > 0 ? children : undefined,
   }
 }
@@ -122,7 +121,6 @@ export function createPackageTreemapNode(
   totalBytes: number,
   fileNodes: TreemapNode[],
   riskScore: number,
-  theme: ResolvedTheme,
 ): TreemapNode {
   const nodeId = createTreemapPackageNodeId(pkg.id)
   const normalizedRiskScore = normalizeTreemapRiskScore(riskScore, pkg.id, pkg.label)
@@ -140,7 +138,7 @@ export function createPackageTreemapNode(
       fileCount: pkg.files.length,
       totalBytes,
     },
-    ...createRiskNodeStyle(normalizedRiskScore, theme),
+    ...createTreemapNodeStyle(normalizedRiskScore, pkg.id, 'package'),
     children: fileNodes,
   }
 }

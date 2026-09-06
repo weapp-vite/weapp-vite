@@ -22,7 +22,7 @@ const themeFeatureItems: DashboardIconFeatureItem[] = themeOptions.map(option =>
 </script>
 
 <template>
-  <div class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden">
+  <div class="grid min-w-0 gap-3">
     <AppSurfaceCard tone="strong" padding="md">
       <AppSectionHeading
         eyebrow="System"
@@ -37,13 +37,13 @@ const themeFeatureItems: DashboardIconFeatureItem[] = themeOptions.map(option =>
       </div>
     </AppSurfaceCard>
 
-    <section class="grid min-h-0 overflow-hidden">
+    <section class="grid min-w-0">
       <AppSurfaceCard
         eyebrow="Tokens"
         title="令牌检查器"
         icon-name="token-color"
         padding="md"
-        content-class="min-h-0 overflow-hidden"
+        content-class="min-h-0 min-w-0"
       >
         <TokenInspector :groups="tokenGroups" />
       </AppSurfaceCard>

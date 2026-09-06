@@ -5,6 +5,7 @@ import { copyText } from '../utils/clipboard'
 import { formatBytes } from '../utils/format'
 import AppCompactListItem from './AppCompactListItem.vue'
 import AppEmptyState from './AppEmptyState.vue'
+import AppSelect from './AppSelect.vue'
 
 type ModuleSourceFilter = 'all' | ModuleSourceType
 type ModuleSortMode = 'saving' | 'size' | 'duplicates' | 'source'
@@ -30,6 +31,20 @@ const moduleSourceOptions = computed(() => {
   }
   return [...sourceSet].sort((a, b) => a.localeCompare(b))
 })
+
+const moduleSourceFilterOptions = computed(() => [
+  { label: '全部来源', value: 'all' as const },
+  ...moduleSourceOptions.value.map(sourceType => ({
+    label: sourceType,
+    value: sourceType,
+  })),
+])
+const moduleSortOptions = [
+  { label: '按可节省', value: 'saving' },
+  { label: '按体积', value: 'size' },
+  { label: '按复用包', value: 'duplicates' },
+  { label: '按路径', value: 'source' },
+] satisfies Array<{ label: string, value: ModuleSortMode }>
 
 const filteredSelectedFileModules = computed(() => {
   const keyword = moduleQuery.value.trim().toLowerCase()
@@ -171,38 +186,16 @@ onBeforeUnmount(() => {
         type="search"
       >
       <div class="grid grid-cols-2 gap-2">
-        <select
+        <AppSelect
           v-model="moduleSourceFilter"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option value="all">
-            全部来源
-          </option>
-          <option
-            v-for="sourceType in moduleSourceOptions"
-            :key="sourceType"
-            :value="sourceType"
-          >
-            {{ sourceType }}
-          </option>
-        </select>
-        <select
+          label="筛选模块来源"
+          :options="moduleSourceFilterOptions"
+        />
+        <AppSelect
           v-model="moduleSortMode"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option value="saving">
-            按可节省
-          </option>
-          <option value="size">
-            按体积
-          </option>
-          <option value="duplicates">
-            按复用包
-          </option>
-          <option value="source">
-            按路径
-          </option>
-        </select>
+          label="排序文件模块"
+          :options="moduleSortOptions"
+        />
       </div>
     </div>
     <ul class="grid min-h-0 gap-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">

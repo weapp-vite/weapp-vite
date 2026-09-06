@@ -34,7 +34,7 @@ const {
 </script>
 
 <template>
-  <section :class="surfaceStyles({ padding: 'md' })" class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
+  <section :class="surfaceStyles({ padding: 'md' })" class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
     <AppPanelHeader icon-name="metric-history" title="历史基线">
       <template #meta>
         <div class="flex gap-1.5">
@@ -57,7 +57,7 @@ const {
       </template>
     </AppPanelHeader>
 
-    <div class="mt-3 grid min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] gap-2 overflow-hidden">
+    <div class="mt-3 grid min-h-0 min-w-0 gap-2 overflow-visible xl:grid-rows-[auto_auto_auto_minmax(0,1fr)] xl:overflow-hidden">
       <div class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2">
         <div class="flex items-center justify-between gap-3">
           <p class="text-xs text-(--dashboard-text-soft)">
@@ -107,7 +107,7 @@ const {
         暂无历史快照。
       </AppEmptyState>
 
-      <ol v-else class="grid min-h-0 gap-1.5 overflow-y-auto pr-1">
+      <ol v-else class="grid max-h-80 min-h-0 gap-1.5 overflow-y-auto pr-1 xl:max-h-none">
         <li
           v-for="snapshot in filteredSnapshots"
           :key="snapshot.id"

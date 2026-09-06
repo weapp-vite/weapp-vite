@@ -1,56 +1,16 @@
 import { fs } from '@weapp-core/shared/fs'
+import { parse, traverse } from '@weapp-vite/ast'
 import path from 'pathe'
 import { createTempFixtureProject, createTestCompilerContext, getFixture, scanFiles } from './utils'
 
 const TEXT_OUTPUT_RE = /\.(?:js|json|wxml|wxss)$/
 const RUNTIME_VENDOR_RE = /^weapp-vendors\//
 
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-function normalizeWevuRuntimeBindings(value: string) {
-  const aliases = Array.from(value.matchAll(
-    /const (require_[A-Za-z_$][\w$]*) = require\("[^"]*wevu-runtime\.js"\);/g,
-  ), match => match[1])
-
-  for (const alias of aliases) {
-    const escapedAlias = escapeRegExp(alias)
-    const isScopedSlotCreator = new RegExp(
-      `(?:\\?\\? ${escapedAlias}\\.|${escapedAlias}\\.[A-Za-z_$][\\w$]*\\(__wevuOptions\\))`,
-    ).test(value)
-    const stableAlias = isScopedSlotCreator ? 'require_templateRef' : 'require_common'
-    value = value.replace(new RegExp(`\\b${escapedAlias}\\b`, 'g'), stableAlias)
-  }
-
-  return value
-    .replace(/\brequire_templateRef\.[A-Za-z_$][\w$]*/g, 'require_templateRef.__wevuScopedSlotCreator')
-    .replace(/\brequire_common\.[A-Za-z_$][\w$]*/g, 'require_common.$')
-}
-
 function normalizeOutputContent(file: string, content: string) {
-  const normalizeStableNames = (value: string) => {
-    return value
-      .replace(/scoped-slot-[\w-]+-default-0/g, 'scoped-slot-hash-default-0')
-      .replace(/weapp-vendors\/wevu-[\w-]+\.js/g, 'weapp-vendors/wevu-runtime.js')
-  }
-  if (file.endsWith('.json')) {
-    return normalizeStableNames(`${JSON.stringify(JSON.parse(content), null, 2)}\n`)
-  }
-  if (file.endsWith('.js')) {
-    return normalizeWevuRuntimeBindings(normalizeStableNames(content))
-      .replace(/^\/\/#region .*\/src\//gm, '//#region <fixture>/src/')
-      .replace(/module\.exports = __wevuOptions;/g, 'exports.default = __wevuOptions;')
-      .replace(/\brequire_src_\w+\b/g, 'require_src')
-      .replace(/\brequire_templateRef_\w+\b/g, 'require_templateRef')
-      .replace(/require\("([^"]*wevu-runtime\.js)"\)\.to\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
-      .replace(/require\("([^"]*wevu-runtime\.js)"\)\.__wevuCreateWevuComponent\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
-      .replace(/require\("([^"]*wevu-runtime\.js)"\)\.__wevuCreatePage\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
-      .replace(/require\("([^"]*wevu-runtime\.js)"\)\.[A-Za-z_$][\w$]*\(\{/g, 'require("$1").__wevuCreatePage({')
-      .replace(/require\("([^"]*wevu-runtime\.js)"\)\.__wevuCreatePage\(\{/g, '(require("$1").__wevuCreateWevuComponent || require("$1").to)({')
-      .replace(/require_src\.[A-Za-z_$][\w$]*/g, 'require_src.__wevuScopedSlotCreator')
-  }
-  return normalizeStableNames(content)
+  const value = file.endsWith('.json')
+    ? `${JSON.stringify(JSON.parse(content), null, 2)}\n`
+    : content
+  return value.replace(/scoped-slot-[\w-]+-default-0/g, 'scoped-slot-hash-default-0')
 }
 
 describe('scoped slot native output snapshots', () => {
@@ -84,8 +44,6 @@ describe('scoped slot native output snapshots', () => {
     const runtimeVendorFiles = files.filter(file => RUNTIME_VENDOR_RE.test(file))
 
     expect(appFiles).toMatchSnapshot('file-tree')
-    expect(runtimeVendorFiles.length).toBeGreaterThan(0)
-    expect(runtimeVendorFiles.every(file => /^weapp-vendors\/wevu-[\w-]+\.js$/.test(file))).toBe(true)
     expect(files.filter(file => file.includes('__scoped-slot-default'))).toEqual([
       'pages/index/index.__scoped-slot-default-0.js',
       'pages/index/index.__scoped-slot-default-0.json',
@@ -93,17 +51,40 @@ describe('scoped slot native output snapshots', () => {
     ])
 
     const outputSnapshot: Record<string, string> = {}
+    const scripts: Record<string, string> = {}
+    const requiredVendors = new Set<string>()
     for (const file of files) {
-      if (RUNTIME_VENDOR_RE.test(file) || !TEXT_OUTPUT_RE.test(file)) {
+      if (!TEXT_OUTPUT_RE.test(file)) {
         continue
       }
       const content = await fs.readFile(path.join(distDir, file), 'utf-8')
-      outputSnapshot[file] = normalizeOutputContent(file, content)
+      if (file.endsWith('.js')) {
+        scripts[file] = content
+        traverse(parse(content), {
+          CallExpression({ node }) {
+            const request = node.arguments[0]
+            if (node.callee.type !== 'Identifier' || node.callee.name !== 'require'
+              || request?.type !== 'StringLiteral' || !request.value.startsWith('.')) {
+              return
+            }
+            const resolved = path.join(path.dirname(file), request.value)
+            const target = path.extname(resolved) ? resolved : `${resolved}.js`
+            expect(files, `${file} requires ${request.value}`).toContain(target)
+            if (RUNTIME_VENDOR_RE.test(target)) {
+              requiredVendors.add(target)
+            }
+          },
+        })
+      }
+      else if (!RUNTIME_VENDOR_RE.test(file)) {
+        outputSnapshot[file] = normalizeOutputContent(file, content)
+      }
     }
 
+    expect([...requiredVendors].sort()).toEqual(runtimeVendorFiles.sort())
     expect(outputSnapshot).toMatchSnapshot('text-outputs')
     expect(outputSnapshot['pages/index/index.wxml']).toContain('generic:scoped-slots-default')
-    expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.js']).toContain(
+    expect(scripts['pages/index/index.__scoped-slot-default-0.js']).toContain(
       'this.__wvOwnerProxy.tabItems',
     )
     expect(outputSnapshot['pages/index/index.__scoped-slot-default-0.wxml']).toContain(

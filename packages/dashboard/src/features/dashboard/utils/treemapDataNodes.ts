@@ -1,4 +1,4 @@
-import type { AnalyzeSubpackagesResult, AnalyzeTreemapFilterMode, ResolvedTheme, TreemapNode } from '../types'
+import type { AnalyzeSubpackagesResult, AnalyzeTreemapFilterMode, TreemapNode } from '../types'
 import {
   createAssetTreemapNode,
   createFileTreemapNode,
@@ -71,7 +71,6 @@ export function createTreemapNodes(options: {
   packageLabelMap: Map<string, string>
   moduleUsageCount: Map<string, number>
   filter: TreemapFilterState
-  theme: ResolvedTheme
 }): TreemapNode[] {
   const packageBudgetScores = new Map(options.result.packages.map((pkg) => {
     const totalBytes = pkg.files.reduce((sum, file) => sum + (file.size ?? 0), 0)
@@ -94,10 +93,10 @@ export function createTreemapNodes(options: {
       const fileBytes = Math.max(file.size ?? 1, 1)
       const moduleNodes = file.type === 'chunk'
         ? filterModules(options.filter, file.modules ?? []).map(module =>
-            createModuleTreemapNode(pkg.id, pkg.label, file.file, fileBytes, options.moduleUsageCount, module, options.theme),
+            createModuleTreemapNode(pkg.id, pkg.label, file.file, fileBytes, options.moduleUsageCount, module),
           )
         : shouldIncludeAsset(pkg.id, file, options.filter)
-          ? [createAssetTreemapNode(pkg.id, pkg.label, file.file, file, rawPackageBytes, options.theme)]
+          ? [createAssetTreemapNode(pkg.id, pkg.label, file.file, file, rawPackageBytes)]
           : []
 
       if (options.filter.mode !== 'all' && options.filter.mode !== 'selected-package' && moduleNodes.length === 0 && !fileHasGrowth) {
@@ -117,7 +116,6 @@ export function createTreemapNodes(options: {
         filteredValue,
         rawPackageBytes,
         packageBudgetScores.get(pkg.id) ?? 0,
-        options.theme,
       )]
     })
 
@@ -129,6 +127,6 @@ export function createTreemapNodes(options: {
       ? pkg.files.reduce((sum, file) => sum + (file.size ?? 0), 0)
       : sumTreemapNodeValues(fileNodes)
 
-    return [createPackageTreemapNode(pkg, totalBytes, fileNodes, packageBudgetScores.get(pkg.id) ?? 0, options.theme)]
+    return [createPackageTreemapNode(pkg, totalBytes, fileNodes, packageBudgetScores.get(pkg.id) ?? 0)]
   })
 }

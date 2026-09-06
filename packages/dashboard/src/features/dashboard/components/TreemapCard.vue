@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import type { AnalyzeTreemapFilterMode, AnalyzeTreemapFilterOption, ResolvedTheme } from '../types'
-import { computed } from 'vue'
+import type { AnalyzeTreemapFilterMode, AnalyzeTreemapFilterOption } from '../types'
 import { pillButtonStyles, surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
@@ -13,7 +12,6 @@ const props = defineProps<{
   filterOptions: AnalyzeTreemapFilterOption[]
   canUseSelectedPackageFilter: boolean
   isEmpty: boolean
-  theme: ResolvedTheme
 }>()
 
 const emit = defineEmits<{
@@ -23,18 +21,12 @@ const emit = defineEmits<{
 }>()
 
 const chartTitle = 'Treemap'
-const chartDescription = '从包体到文件再到模块，直接定位体积热点。'
-const healthLegend = computed(() => props.theme === 'dark'
-  ? [
-      { label: '健康', color: '#166853' },
-      { label: '关注', color: '#75601f' },
-      { label: '急需改进', color: '#81323a' },
-    ]
-  : [
-      { label: '健康', color: '#8fd3ad' },
-      { label: '关注', color: '#ead486' },
-      { label: '急需改进', color: '#eaa39b' },
-    ])
+const chartDescription = '面积代表体积，颜色区分分包，风险仅由边框标记；点击节点可下钻。'
+const riskLegend = [
+  { label: '普通', color: '#475569' },
+  { label: '关注', color: '#fbbf24' },
+  { label: '高风险', color: '#fb7185' },
+]
 
 function getChartBadgeClassName(): string {
   return pillButtonStyles({ kind: 'badge' })
@@ -50,7 +42,7 @@ function handleChartRef(element: Element | ComponentPublicInstance | null) {
 </script>
 
 <template>
-  <div :class="surfaceStyles({ padding: 'sm' })" class="flex h-full min-h-0 flex-col overflow-hidden">
+  <div :class="surfaceStyles({ padding: 'sm' })" class="flex h-full min-h-[36rem] min-w-0 flex-col overflow-hidden">
     <AppPanelHeader
       class="mb-2 px-2"
       icon-name="treemap"
@@ -91,12 +83,13 @@ function handleChartRef(element: Element | ComponentPublicInstance | null) {
         </button>
       </div>
       <div class="flex flex-wrap items-center gap-2 text-[11px] text-(--dashboard-text-soft)">
+        <span class="font-medium text-(--dashboard-text-muted)">风险边框</span>
         <span
-          v-for="item in healthLegend"
+          v-for="item in riskLegend"
           :key="item.label"
           class="inline-flex items-center gap-1.5"
         >
-          <span class="h-2.5 w-2.5 rounded-full border border-(--dashboard-border)" :style="{ backgroundColor: item.color }" />
+          <span class="h-2.5 w-2.5 rounded-full border-2 bg-transparent" :style="{ borderColor: item.color }" />
           {{ item.label }}
         </span>
       </div>
@@ -104,7 +97,7 @@ function handleChartRef(element: Element | ComponentPublicInstance | null) {
     <div class="relative min-h-0 flex-1 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-2">
       <div
         :ref="handleChartRef"
-        class="h-full min-h-0 w-full"
+        class="absolute inset-2"
       />
       <AppEmptyState
         v-if="isEmpty"

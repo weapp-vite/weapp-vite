@@ -25,17 +25,17 @@ const emit = defineEmits<{
       <div class="min-w-0">
         <p
           class="font-medium"
-          :class="monoTitle ? 'truncate font-mono text-xs text-(--dashboard-text)' : 'truncate text-(--dashboard-text)'"
+          :class="monoTitle ? 'line-clamp-2 break-all font-mono text-xs leading-5 text-(--dashboard-text)' : 'line-clamp-2 break-words leading-5 text-(--dashboard-text)'"
         >
           {{ title }}
         </p>
-        <p class="mt-1 text-xs text-(--dashboard-text-soft)">
+        <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-(--dashboard-text-soft)">
           {{ meta }}
         </p>
       </div>
       <span
         v-if="value"
-        class="whitespace-nowrap font-medium text-(--dashboard-accent)"
+        class="max-w-[40%] shrink-0 truncate font-medium text-(--dashboard-accent)"
       >
         {{ value }}
       </span>
@@ -52,17 +52,17 @@ const emit = defineEmits<{
         <div class="min-w-0">
           <p
             class="font-medium"
-            :class="monoTitle ? 'truncate font-mono text-xs text-(--dashboard-text)' : 'truncate text-(--dashboard-text)'"
+            :class="monoTitle ? 'line-clamp-2 break-all font-mono text-xs leading-5 text-(--dashboard-text)' : 'line-clamp-2 break-words leading-5 text-(--dashboard-text)'"
           >
             {{ title }}
           </p>
-          <p class="mt-1 text-xs text-(--dashboard-text-soft)">
+          <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-(--dashboard-text-soft)">
             {{ meta }}
           </p>
         </div>
         <span
           v-if="value"
-          class="whitespace-nowrap font-medium text-(--dashboard-accent)"
+          class="max-w-[40%] shrink-0 truncate font-medium text-(--dashboard-accent)"
         >
           {{ value }}
         </span>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppSelect from './AppSelect.vue'
+
 type HistorySnapshotSortMode = 'capturedAt' | 'total' | 'compressed' | 'modules' | 'duplicates'
 
 defineProps<{
@@ -14,6 +16,14 @@ const emit = defineEmits<{
 }>()
 
 const sortMode = defineModel<HistorySnapshotSortMode>({ required: true })
+
+const sortOptions = [
+  { label: '按时间', value: 'capturedAt' },
+  { label: '按体积', value: 'total' },
+  { label: '按压缩后', value: 'compressed' },
+  { label: '按模块数', value: 'modules' },
+  { label: '按复用模块', value: 'duplicates' },
+] satisfies Array<{ label: string, value: HistorySnapshotSortMode }>
 </script>
 
 <template>
@@ -41,26 +51,12 @@ const sortMode = defineModel<HistorySnapshotSortMode>({ required: true })
       >
         导出 JSON
       </button>
-      <select
+      <AppSelect
         v-model="sortMode"
-        class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-      >
-        <option value="capturedAt">
-          按时间
-        </option>
-        <option value="total">
-          按体积
-        </option>
-        <option value="compressed">
-          按压缩后
-        </option>
-        <option value="modules">
-          按模块数
-        </option>
-        <option value="duplicates">
-          按复用模块
-        </option>
-      </select>
+        class="w-30"
+        label="排序历史基线"
+        :options="sortOptions"
+      />
     </div>
   </div>
 </template>

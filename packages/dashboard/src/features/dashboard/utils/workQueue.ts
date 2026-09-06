@@ -2,7 +2,7 @@ import type { AnalyzeActionCenterItem, AnalyzeWorkQueueItem } from '../types'
 
 const targetKinds = ['action', 'file', 'budget']
 const tones = ['critical', 'warning', 'info', 'success']
-const tabs = ['overview', 'diagnostics', 'treemap', 'files', 'source', 'packages', 'modules']
+const tabs = ['overview', 'diagnostics', 'graph', 'treemap', 'files', 'source', 'packages', 'modules']
 
 function createTimestamp() {
   return new Date().toISOString()

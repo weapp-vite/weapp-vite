@@ -61,21 +61,23 @@ wv [root]
 
 参数：
 
-| 参数                        | 说明                                       |
-| --------------------------- | ------------------------------------------ |
-| `--skipNpm`                 | 跳过 npm 构建                              |
-| `-o, --open`                | 构建后尝试打开 IDE                         |
-| `-p, --platform <platform>` | 目标平台（`weapp` \| `web`）               |
-| `--project-config <path>`   | 小程序 `project.config.json` 路径          |
-| `--host [host]`             | Web dev server host（`web` 场景）          |
-| `--analyze`                 | 启动分包分析仪表盘（实验特性，小程序场景） |
-| `--scope <scope>`           | 局部构建范围，例如 `main,packages/order`   |
+| 参数                        | 说明                                     |
+| --------------------------- | ---------------------------------------- |
+| `--skipNpm`                 | 跳过 npm 构建                            |
+| `-o, --open`                | 构建后尝试打开 IDE                       |
+| `-p, --platform <platform>` | 目标平台（`weapp` \| `web`）             |
+| `--project-config <path>`   | 小程序 `project.config.json` 路径        |
+| `--host [host]`             | Web dev server host（`web` 场景）        |
+| `--ui`                      | 启动 Devframe Dashboard（小程序场景）    |
+| `--analyze`                 | `--ui` 的兼容参数                        |
+| `--scope <scope>`           | 局部构建范围，例如 `main,packages/order` |
 
 补充说明：
 
 - 当目标平台为 `weapp` 且启用了 `weapp.forwardConsole` 时，`wv dev --open` 会在打开微信开发者工具后，自动尝试把小程序 `console` 日志桥接到当前终端。
 - 默认配置是 `enabled: 'auto'`，也就是仅在检测到 AI 终端时自动启用。
 - `--scope` 会只保留主包和指定分包进入开发构建，适合日常只调试某几个业务分包。产物 `app.json.subPackages` 也只包含参与 scope 的分包。
+- `--ui` 仅监听 `127.0.0.1`，终端会输出带一次性 OTP 的 magic link；Dashboard 通过分页只读 RPC 获取 Analyze 数据，并在连接中断后自动重连。
 
 ### 2) `build`
 
@@ -99,7 +101,8 @@ wv build [root]
 | `-w, --watch`               | 监听并增量重建                                 |
 | `--skipNpm`                 | 跳过 npm 构建                                  |
 | `-o, --open`                | 构建后尝试打开 IDE                             |
-| `--analyze`                 | 输出分包分析仪表盘（小程序场景）               |
+| `--ui`                      | 构建后启动 Devframe Dashboard（小程序场景）    |
+| `--analyze`                 | `--ui` 的兼容参数                              |
 | `--scope <scope>`           | 局部构建范围，例如 `main,packages/order`       |
 
 局部构建示例：

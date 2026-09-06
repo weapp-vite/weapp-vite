@@ -3,6 +3,7 @@ import type { WorkspaceCommandItem } from '../types'
 import { useWorkspaceCommandCenter } from '../composables/useWorkspaceCommandCenter'
 import AppEmptyState from './AppEmptyState.vue'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
+import AppSelect from './AppSelect.vue'
 import DashboardIcon from './DashboardIcon.vue'
 
 const props = defineProps<{
@@ -42,18 +43,11 @@ const {
 
           <label class="grid gap-1.5 text-xs font-medium uppercase tracking-[0.16em] text-(--dashboard-text-soft)">
             分类
-            <select
+            <AppSelect
               v-model="categoryFilter"
-              class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) px-2.5 text-sm normal-case tracking-normal text-(--dashboard-text) outline-none transition focus:border-(--dashboard-border-strong)"
-            >
-              <option
-                v-for="option in categoryOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </select>
+              label="筛选命令分类"
+              :options="categoryOptions"
+            />
           </label>
         </div>
 

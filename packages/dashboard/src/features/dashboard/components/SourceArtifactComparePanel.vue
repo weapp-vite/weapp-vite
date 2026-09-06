@@ -8,6 +8,7 @@ import { formatBytes } from '../utils/format'
 import { createSourceCompareInsights, createSourceCompareReport, formatSignedBytes } from '../utils/sourceCompareSummary'
 import AppEmptyState from './AppEmptyState.vue'
 import AppMetricTile from './AppMetricTile.vue'
+import AppSelect from './AppSelect.vue'
 
 const props = defineProps<{
   activeFileKey: string | null
@@ -43,6 +44,15 @@ const {
     emit('selectFile', file)
   },
 })
+
+const sourceSelectOptions = computed(() => [
+  { label: '源码文件', value: '' },
+  ...sourceOptions.value.map(source => ({ label: source, value: source })),
+])
+const artifactSelectOptions = computed(() => artifactOptions.value.map(option => ({
+  label: option.label,
+  value: option.key,
+})))
 
 const compareMetricItems = computed(() => compareStats.value
   ? [
@@ -105,7 +115,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-3 shadow-(--dashboard-shadow)">
+  <section class="grid min-h-0 min-w-0 gap-3 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-3 shadow-(--dashboard-shadow) xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
     <div class="grid gap-3">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -139,25 +149,16 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="grid gap-2 lg:grid-cols-2">
-        <select
+        <AppSelect
           v-model="selectedSourcePath"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option value="">
-            源码文件
-          </option>
-          <option v-for="source in sourceOptions" :key="source" :value="source">
-            {{ source }}
-          </option>
-        </select>
-        <select
+          label="选择源码文件"
+          :options="sourceSelectOptions"
+        />
+        <AppSelect
           v-model="selectedArtifactKey"
-          class="h-9 min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-        >
-          <option v-for="item in artifactOptions" :key="item.key" :value="item.key">
-            {{ item.label }}
-          </option>
-        </select>
+          label="选择构建产物"
+          :options="artifactSelectOptions"
+        />
       </div>
       <div v-if="compareStats" class="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
         <div class="grid grid-cols-2 gap-2 xl:grid-cols-4">
@@ -193,7 +194,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="min-h-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted)">
+    <div class="min-h-96 min-w-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) xl:min-h-0">
       <div v-show="sourceContent && artifactContent" ref="editorElement" class="h-full min-h-96" />
       <AppEmptyState v-if="!sourceContent || !artifactContent" class="m-3 h-[calc(100%-1.5rem)]">
         {{ loadError || '暂无可对比文件。' }}

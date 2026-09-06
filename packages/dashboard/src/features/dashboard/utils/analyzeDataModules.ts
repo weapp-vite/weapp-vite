@@ -1,4 +1,5 @@
 import type { AnalyzeSubpackagesResult, DuplicateModuleEntry, ModuleSourceSummary, ModuleSourceType, PackageType } from '../types'
+import { formatModuleIdentifier } from './format'
 
 function createDuplicateModulePackageEntry(
   packageLabelMap: Map<string, string>,
@@ -83,12 +84,13 @@ export function createDuplicateModules(options: {
     .filter(mod => mod.packages.length > 1)
     .map((mod) => {
       const info = options.moduleInfoMap.get(mod.id)
+      const source = formatModuleIdentifier(mod.source)
       const packages = mod.packages.map(pkg => createDuplicateModulePackageEntry(options.packageLabelMap, pkg))
       const bytes = info?.bytes ?? info?.originalBytes ?? 0
       const estimatedSavingBytes = bytes * Math.max(mod.packages.length - 1, 0)
       return {
         id: mod.id,
-        source: mod.source,
+        source,
         sourceType: mod.sourceType,
         packageCount: mod.packages.length,
         bytes,

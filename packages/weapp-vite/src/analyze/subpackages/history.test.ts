@@ -18,6 +18,9 @@ async function createTempRoot() {
 function createConfigService(root: string, overrides: Record<string, any> = {}): ConfigService {
   return {
     cwd: root,
+    packageJson: {
+      name: '@test/analyze-project',
+    },
     relativeCwd: (input: string) => path.relative(root, input) || '.',
     weappViteConfig: {
       analyze: {
@@ -84,6 +87,13 @@ function createResult(root: string, label = '主包') {
 describe('analyze history and report', () => {
   afterEach(async () => {
     await Promise.all(tempRoots.splice(0).map(root => rm(root, { recursive: true, force: true })))
+  })
+
+  it('includes the analyzed package name in metadata', async () => {
+    const root = await createTempRoot()
+    const metadata = createAnalyzeMetadata(createConfigService(root), new Date('2026-01-01T00:00:00.000Z'))
+
+    expect(metadata.projectName).toBe('@test/analyze-project')
   })
 
   it('writes latest snapshot and trims stale files', async () => {

@@ -39,7 +39,7 @@ function getToneClassName(tone: PrReviewChecklistItem['tone']) {
 </script>
 
 <template>
-  <section class="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden">
+  <section class="grid min-h-0 min-w-0 gap-2 overflow-visible xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
     <div class="rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-4 shadow-(--dashboard-shadow)">
       <AppPanelHeader icon-name="metric-bookmark" title="PR 风险清单">
         <template #meta>
@@ -84,7 +84,7 @@ function getToneClassName(tone: PrReviewChecklistItem['tone']) {
       </div>
     </div>
 
-    <div class="grid min-h-0 gap-2 overflow-y-auto pr-1 xl:grid-cols-3 xl:overflow-hidden xl:pr-0">
+    <div class="grid max-h-[40rem] min-h-0 min-w-0 gap-2 overflow-y-auto pr-1 xl:max-h-none xl:grid-cols-3 xl:overflow-hidden xl:pr-0">
       <section
         v-for="lane in checklist.lanes"
         :key="lane.key"

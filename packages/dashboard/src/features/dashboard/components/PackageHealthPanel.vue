@@ -27,7 +27,7 @@ function getStatusClassName(status: PackageHealthItem['status']) {
     />
 
     <div class="mt-3 grid gap-3 xl:grid-cols-[minmax(0,0.45fr)_minmax(0,1fr)]">
-      <div class="grid grid-cols-3 gap-2">
+      <div class="grid gap-2 sm:grid-cols-3">
         <AppMetricTile label="平均分" :value="health.averageScore" />
         <AppMetricTile label="高风险" :value="health.riskCount" />
         <AppMetricTile label="需关注" :value="health.watchCount" />

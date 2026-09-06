@@ -37,7 +37,7 @@ const {
 </script>
 
 <template>
-  <section class="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-2 overflow-hidden">
+  <section class="grid min-h-0 min-w-0 gap-2 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:overflow-hidden">
     <DashboardMetricGrid compact :cards="cards" :package-type-summary="packageTypeSummary" />
 
     <ReleaseGatePanel
@@ -46,7 +46,7 @@ const {
       @copy="copyReleaseGateReport"
     />
 
-    <div class="grid min-h-0 gap-2 overflow-hidden xl:grid-cols-[minmax(0,0.95fr)_minmax(0,0.85fr)_minmax(0,0.9fr)]">
+    <div class="grid min-h-0 min-w-0 gap-2 overflow-visible xl:grid-cols-[minmax(0,0.95fr)_minmax(0,0.85fr)_minmax(0,0.9fr)] xl:overflow-hidden">
       <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
         <AppPanelHeader icon-name="metric-health" title="处理队列">
           <template #meta>
@@ -78,21 +78,19 @@ const {
                 class="w-full rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5 text-left transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
                 @click="emit('selectAction', item)"
               >
-                <div class="flex min-w-0 items-start justify-between gap-3">
+                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                   <div class="min-w-0">
-                    <div class="flex min-w-0 items-center gap-2">
-                      <span :class="getToneClassName(item.tone)">
-                        {{ getToneLabel(item.tone) }}
-                      </span>
-                      <p class="truncate text-sm font-medium text-(--dashboard-text)">
-                        {{ item.title }}
-                      </p>
-                    </div>
-                    <p class="mt-1 truncate text-xs text-(--dashboard-text-soft)">
+                    <span :class="getToneClassName(item.tone)">
+                      {{ getToneLabel(item.tone) }}
+                    </span>
+                    <p class="mt-2 line-clamp-2 break-words text-sm font-medium leading-5 text-(--dashboard-text)">
+                      {{ item.title }}
+                    </p>
+                    <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-(--dashboard-text-soft)">
                       {{ item.meta }}
                     </p>
                   </div>
-                  <span v-if="item.value" class="shrink-0 whitespace-nowrap text-sm font-semibold text-(--dashboard-accent)">
+                  <span v-if="item.value" class="max-w-28 shrink-0 truncate text-sm font-semibold text-(--dashboard-accent)">
                     {{ item.value }}
                   </span>
                 </div>

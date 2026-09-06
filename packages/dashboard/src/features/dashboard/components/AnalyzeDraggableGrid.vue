@@ -86,7 +86,7 @@ watch(
     <article
       v-for="item in orderedItems"
       :key="item.id"
-      class="relative min-h-0 rounded-lg border border-dashed border-transparent pt-2 transition"
+      class="relative min-h-0 min-w-0 max-w-full rounded-lg border border-dashed border-transparent pt-2 transition"
       :class="[item.className, draggingId === item.id ? 'border-(--dashboard-accent) opacity-70' : '']"
       @dragover.prevent
       @drop="handleDrop(item)"
@@ -118,7 +118,7 @@ watch(
           </span>
         </button>
       </div>
-      <div class="min-h-0">
+      <div class="min-h-0 min-w-0 max-w-full">
         <slot :name="item.id" :item="item" />
       </div>
     </article>

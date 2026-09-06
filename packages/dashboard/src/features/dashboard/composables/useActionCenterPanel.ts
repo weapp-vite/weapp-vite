@@ -13,6 +13,13 @@ const toneRank: Record<AnalyzeActionCenterTone, number> = {
   success: 1,
 }
 
+const actionSortOptions = [
+  { label: '按优先级', value: 'priority' },
+  { label: '按严重度', value: 'severity' },
+  { label: '按标题', value: 'title' },
+  { label: '按数值', value: 'value' },
+] satisfies Array<{ label: string, value: ActionSortMode }>
+
 interface ActionCenterPanelProps {
   actions: AnalyzeActionCenterItem[]
   queuedActionKeys: string[]
@@ -97,6 +104,22 @@ export function useActionCenterPanel(props: ActionCenterPanelProps) {
     return [...kindSet].sort((a, b) => getActionKindLabel(a).localeCompare(getActionKindLabel(b)))
   })
 
+  const toneFilterOptions = computed(() => [
+    { label: '全部严重度', value: 'all' as const },
+    ...toneOptions.value.map(tone => ({
+      label: getActionToneLabel(tone),
+      value: tone,
+    })),
+  ])
+
+  const kindFilterOptions = computed(() => [
+    { label: '全部类型', value: 'all' as const },
+    ...kindOptions.value.map(kind => ({
+      label: getActionKindLabel(kind),
+      value: kind,
+    })),
+  ])
+
   const filteredActions = computed(() => {
     const keyword = actionQuery.value.trim().toLowerCase()
     const actions = props.actions.filter((item) => {
@@ -128,15 +151,16 @@ export function useActionCenterPanel(props: ActionCenterPanelProps) {
 
   return {
     actionKindFilter,
+    actionSortOptions,
     actionQuery,
     actionSortMode,
     actionToneFilter,
     filteredActions,
+    kindFilterOptions,
     getKindLabel: getActionKindLabel,
     getToneClassName: getActionToneClassName,
     getToneLabel: getActionToneLabel,
     isQueued,
-    kindOptions,
-    toneOptions,
+    toneFilterOptions,
   }
 }

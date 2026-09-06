@@ -31,16 +31,16 @@ const {
 </script>
 
 <template>
-  <div class="grid min-h-[46rem] items-start gap-3 xl:grid-cols-[minmax(0,1.25fr)_minmax(22rem,0.75fr)] xl:items-stretch">
+  <div class="grid min-h-[40rem] min-w-0 items-start gap-3 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)] xl:items-stretch">
     <AppSurfaceCard
       eyebrow="Event Feed"
       title="事件控制台"
       icon-name="hero-commands"
-      content-class="min-h-[42rem] overflow-hidden"
+      content-class="min-h-[36rem] min-w-0"
     >
-      <div class="grid h-full min-h-0 grid-rows-[minmax(0,9rem)_auto_minmax(6rem,1fr)] gap-3 overflow-hidden">
+      <div class="grid min-h-0 min-w-0 grid-rows-[auto_auto_minmax(14rem,1fr)] gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(6rem,1fr)] xl:overflow-hidden">
         <AppEventFilterPanel
-          class="min-h-0 overflow-y-auto"
+          class="min-h-0 min-w-0"
           :search-query="searchQuery"
           :preset-description="presetDescription"
           :filter-presets="filterPresets"

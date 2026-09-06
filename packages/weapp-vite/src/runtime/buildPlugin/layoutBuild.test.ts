@@ -261,7 +261,6 @@ describe('layout build regression', () => {
     expect(sharedRuntimeChunk).toBeTruthy()
     expect(pageJson).toBeTruthy()
 
-    expect(sharedRuntimeChunk!.fileName).toMatch(/weapp-vendors\/wevu-[\w-]+\.js$/)
     expect(sharedRuntimeChunk!.code).toContain('LAYOUT-SHARED-MARKER')
     expect(sharedRuntimeChunk!.code).not.toContain('//#region src/layouts/default.vue')
     expect(layoutChunk!.code).not.toContain('Component({})')

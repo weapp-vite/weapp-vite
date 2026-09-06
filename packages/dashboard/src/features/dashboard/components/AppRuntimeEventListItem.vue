@@ -24,16 +24,16 @@ const panelClassName = computed(() =>
     class="rounded-md border bg-(--dashboard-panel-muted) px-4 py-3 transition"
     :class="panelClassName"
   >
-    <div class="flex items-start justify-between gap-3">
-      <div>
-        <p class="font-medium text-(--dashboard-text)">
+    <div class="flex min-w-0 items-start justify-between gap-3">
+      <div class="min-w-0">
+        <p class="truncate font-medium text-(--dashboard-text)" :title="props.event.title">
           {{ props.event.title }}
         </p>
         <AppMetaLabel class="mt-1">
           {{ eventMeta }}
         </AppMetaLabel>
       </div>
-      <AppRuntimeBadge v-bind="badge" />
+      <AppRuntimeBadge class="shrink-0" v-bind="badge" />
     </div>
   </li>
 </template>
