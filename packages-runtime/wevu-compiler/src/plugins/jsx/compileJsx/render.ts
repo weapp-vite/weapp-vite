@@ -509,7 +509,7 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     context.warnings.push(`JSX ${directive} 无法直接映射当前静态 WXML，已生成 dynamic island。`)
     return registerDynamicIsland(node as unknown as Expression, context, 'closure')
   }
-  const attrs = compileJsxAttributes(node.openingElement.attributes, context, { isComponent })
+  const attrs = compileJsxAttributes(node.openingElement.attributes, context, { isComponent, tagName: tag })
   const showExpression = directives.get('v-show')
   if (showExpression) {
     recordJsxBinding(context, showExpression, 'style')

@@ -1,0 +1,3145 @@
+[
+  {
+    "name": "ad",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/overview",
+    "attrs": []
+  },
+  {
+    "name": "aweme-data",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/open-capacity/aweme-data",
+    "attrs": [
+      {
+        "name": "aweme-id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "是 用户的抖音号，可以进入抖音 App 用户个人主页查看。只支持小程序绑定的抖音企业机构号 2.53.0"
+        ]
+      },
+      {
+        "name": "disable-default",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否禁用头像点击的默认行为。"
+        ]
+      },
+      {
+        "name": "default-avatar",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 获取信息失败时显示的默认头像 url 2.53.0"
+        ]
+      },
+      {
+        "name": "default-text",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 获取信息失败时显示的默认昵称文本 2.53.0"
+        ]
+      },
+      {
+        "name": "binderror",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 当错误发生时触发 2.53.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aweme-user-card",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/open-capacity/aweme-user-card",
+    "attrs": [
+      {
+        "name": "aweme-id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "是 引导关注的抖音号，只支持小程序绑定的品牌号、员工号。2.92.0"
+        ]
+      },
+      {
+        "name": "width",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "504 否 组件宽度（单位：rpx），最小值 544，最大值750 2.87.0"
+        ]
+      },
+      {
+        "name": "height",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "144 否 组件高度（单位：rpx），最小值 96，最大值288 2.87.0"
+        ]
+      },
+      {
+        "name": "left-right-padding",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "32 否 组件左右 padding（单位：rpx），最大值 96，最小值 0 2.87.0"
+        ]
+      },
+      {
+        "name": "fixed",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 组件是否为fixed布局 2.87.0"
+        ]
+      },
+      {
+        "name": "binderror",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 组件出现错误，event.detail = { errMsg: string }，具体说明可参考 错误说明 2.87.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "button",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/button",
+    "attrs": [
+      {
+        "name": "size",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "default 否 按钮的大小，详情见 [size 的合法值](https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/button/#size-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)1.0.0"
+        ],
+        "enum": [
+          {
+            "value": "default"
+          },
+          {
+            "value": "mini"
+          }
+        ]
+      },
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "default 否 按钮的样式类型，详情见 [type 的合法值](https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/button/#type-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)1.0.0"
+        ],
+        "enum": [
+          {
+            "value": "primary"
+          },
+          {
+            "value": "default"
+          }
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否禁用 1.0.0"
+        ]
+      },
+      {
+        "name": "loading",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否带 loading 图标 1.0.0"
+        ]
+      },
+      {
+        "name": "form-type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 用于嵌在 [form](https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/form) 组件中，控制 submit/reset，详情见 [form-type 的合法值](https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/button/#form-type-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)1.0.0"
+        ],
+        "enum": [
+          {
+            "value": "submit"
+          },
+          {
+            "value": "reset"
+          }
+        ]
+      },
+      {
+        "name": "open-type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 用于调用开放能力, 详情见 [open-type 的合法值](https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/button/#open-type-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)1.0.0"
+        ],
+        "enum": [
+          {
+            "value": "share"
+          },
+          {
+            "value": "getPhoneNumber"
+          },
+          {
+            "value": "uploadDouyinVideo"
+          },
+          {
+            "value": "joinGroup"
+          },
+          {
+            "value": "im"
+          },
+          {
+            "value": "privateMessage"
+          },
+          {
+            "value": "platformIm"
+          },
+          {
+            "value": "navigateToVideoView"
+          },
+          {
+            "value": "openAwemeUserProfile"
+          },
+          {
+            "value": "openWebcastRoom"
+          },
+          {
+            "value": "addShortcut"
+          },
+          {
+            "value": "authorizePrivateMessage"
+          },
+          {
+            "value": "addCalendarEvent"
+          },
+          {
+            "value": "agreePrivacyAuthorization"
+          },
+          {
+            "value": "openSubscribeMessageSetting"
+          }
+        ]
+      },
+      {
+        "name": "hover-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "button-hover 否 点击状态的样式类 1.0.0"
+        ]
+      },
+      {
+        "name": "hover-start-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "20 否 按住后多久出现点击态，单位毫秒 1.0.0"
+        ]
+      },
+      {
+        "name": "hover-stay-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "70 否 手指松开后点击态保留时间，单位毫秒 1.0.0"
+        ]
+      },
+      {
+        "name": "hover-stop-propagation",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 指定是否阻止本节点的祖先节点出现点击态 1.0.0"
+        ]
+      },
+      {
+        "name": "bindgetphonenumber",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 获取用户手机号回调，只在 `open-type=\"getPhoneNumber\"` 时有效 1.14.0"
+        ],
+        "jsxName": "onGetPhoneNumber"
+      },
+      {
+        "name": "bindagreeprivacyauthorization",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 授权隐私协议回调，只在 `open-type=\"agreePrivacyAuthorization\"` 时有效，详情见 [小程序隐私协议开发指南](https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/guide/security-requirements/privacy-authorize)3.19.0"
+        ],
+        "jsxName": "onAgreePrivacyAuthorization"
+      },
+      {
+        "name": "bindtap",
+        "type": {
+          "name": "eventhandle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "camera",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/camera",
+    "attrs": [
+      {
+        "name": "mode",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "normal 否 模式，不支持动态修改，详情见 [mode 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/camera/#mode-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。2.41.0"
+        ]
+      },
+      {
+        "name": "resolution",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "medium 否 分辨率，不支持动态修改，详情见 [resolution 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/camera/#resolution-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。1.78.0"
+        ]
+      },
+      {
+        "name": "device-position",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "back 否 摄像头朝向，详情见 [device-position 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/camera/#device-position-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。1.78.0"
+        ]
+      },
+      {
+        "name": "flash",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "off 否 闪光灯，详情见 [flash 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/camera/#flash-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。2.4.0"
+        ]
+      },
+      {
+        "name": "frame-size",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "medium 否 指定期望的相机帧数据尺寸，详情见 [frame-size 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/camera/#frame-size-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。1.78.0"
+        ]
+      },
+      {
+        "name": "bindinitdone",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 相机初始化完成时触发，e.detail = {maxZoom}。1.78.0"
+        ]
+      },
+      {
+        "name": "binderror",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 用户不允许使用摄像头或相机异常时触发。1.78.0"
+        ]
+      },
+      {
+        "name": "bindstop",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 摄像头在非正常终止时触发，如退出后台/跳转页面/电话中断等情况。1.78.0"
+        ]
+      },
+      {
+        "name": "bindscancode",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 在扫码识别成功时触发，仅在 mode=\"scanCode\" 时生效。2.41.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "canvas",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/canvas/canvas",
+    "attrs": [
+      {
+        "name": "canvas-id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "是[v1]canvas 组件的标识 1.0.0"
+        ]
+      },
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "是[v2]指定 canvas 类型，有效值为 \"2d\" 和 \"webgl\"1.78.0"
+        ]
+      },
+      {
+        "name": "bindtouchstart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否[v2]手指触摸动作开始 1.78.0"
+        ]
+      },
+      {
+        "name": "bindtouchmove",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否[v2]手指触摸后移动 1.78.0"
+        ]
+      },
+      {
+        "name": "bindtouchend",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否[v2]手指触摸动作结束 1.78.0"
+        ]
+      },
+      {
+        "name": "bindtouchcancel",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否[v2]手指触摸动作被打断 1.78.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "checkbox",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/checkbox",
+    "attrs": [
+      {
+        "name": "value",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 checkbox 标识，选中时触发 [checkbox-group](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/checkbox-group) 的 change 事件，并携带 checkbox 的 value。1.0.0"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否禁用。1.0.0"
+        ]
+      },
+      {
+        "name": "checked",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 当前是否选中，可用来设置默认选中。1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "checkbox-group",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/checkbox-group",
+    "attrs": [
+      {
+        "name": "name",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 用于 form 组件，在表单提交事件中作为提交数据的 key 值。"
+        ]
+      },
+      {
+        "name": "bindchange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 checkbox-group 中选中项发生改变时触发 change 事件。1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "draw-ad",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/open-capacity/draw-ad",
+    "attrs": [
+      {
+        "name": "unit-id",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "full-screen",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "scale",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "1.5"
+        ]
+      },
+      {
+        "name": "binderror",
+        "type": {
+          "name": "function"
+        }
+      },
+      {
+        "name": "bindplay",
+        "type": {
+          "name": "function"
+        }
+      },
+      {
+        "name": "bindstop",
+        "type": {
+          "name": "function"
+        }
+      }
+    ]
+  },
+  {
+    "name": "form",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/form",
+    "attrs": [
+      {
+        "name": "conversion-target",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "0 否 用于分发目的。取值：0 或 1，其中 0 表示默认，1 表示留资目标，需要和线索组件一起使用，详情见[线索组件配置](https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/open-capacity/operation/Clue/)2.88.0"
+        ]
+      },
+      {
+        "name": "clue-component-id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "\"\"否 用于分发目的。开发者在【[小程序开发者后台](https://developer.open-douyin.com/) ->进入目标小程序 -> 能力 -> 用户数据能力 -> 身份数据 -> 线索组件】申请能力后复制创建的配置 ID，需要和线索组件一起使用，详情见[线索组件配置](https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/open-capacity/operation/Clue/)2.88.0"
+        ]
+      },
+      {
+        "name": "bindsubmit",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 携带 form 中的数据触发 submit 事件，`event.detail = {value : {'name': 'value'} , ...}`。1.0.0"
+        ]
+      },
+      {
+        "name": "bindreset",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 表单重置时会触发 reset 事件。1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "icon",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/basic-content/icon",
+    "attrs": [
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "是 icon 的类型 1.0.0"
+        ]
+      },
+      {
+        "name": "size",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "24 否 icon 的大小，单位 px 1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "image",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/image",
+    "attrs": [
+      {
+        "name": "src",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 图片资源地址。1.0.0"
+        ]
+      },
+      {
+        "name": "mode",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "scaleToFill 否 图片剪裁方式，详情见 [mode 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/image/#mode-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。1.0.0"
+        ]
+      },
+      {
+        "name": "webp",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否解析 webp 格式 2.90.0"
+        ]
+      },
+      {
+        "name": "lazy-load",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 图片懒加载，在即将进入一定范围（上下左右三屏）时才开始加载。1.0.0"
+        ]
+      },
+      {
+        "name": "binderror",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 当错误发生时触发。1.0.0"
+        ]
+      },
+      {
+        "name": "bindload",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 当图片载入完毕时触发。1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "input",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input",
+    "attrs": [
+      {
+        "name": "value",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 输入框的初始值。1.0.0"
+        ]
+      },
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "text 否 input 的类型，详情见 [type 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input/#type-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。1.0.0"
+        ],
+        "enum": [
+          {
+            "value": "text"
+          },
+          {
+            "value": "number"
+          },
+          {
+            "value": "digit"
+          }
+        ]
+      },
+      {
+        "name": "password",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否是密码类型。1.0.0"
+        ]
+      },
+      {
+        "name": "placeholder",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 输入框为空时占位符。1.0.0"
+        ]
+      },
+      {
+        "name": "placeholder-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 指定 placeholder 的样式，只支持 `font-size`、`font-weight`、`color` 三个 CSS 特性。1.0.0"
+        ]
+      },
+      {
+        "name": "placeholder-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 指定 placeholder 的样式类。2.57.0"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否禁用。1.0.0"
+        ]
+      },
+      {
+        "name": "maxlength",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "140 否 最大输入长度。1.0.0"
+        ]
+      },
+      {
+        "name": "cursor-spacing",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "0 否 指定软键盘弹出时，与光标的距离是多少，单位是 px。1.0.0"
+        ]
+      },
+      {
+        "name": "focus",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 获取焦点，详情见 [Bug & Tip](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input/#bug-tip)。1.0.0"
+        ]
+      },
+      {
+        "name": "cursor",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "-1 否 指定 focus 时的光标位置，详情见[光标位置说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input/#%E5%85%89%E6%A0%87%E4%BD%8D%E7%BD%AE%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "selection-start",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "-1 否 指定 focus 时选中片段的起始位置，详情见[光标位置说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input/#%E5%85%89%E6%A0%87%E4%BD%8D%E7%BD%AE%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "selection-end",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "-1 否 指定 focus 时选中片段的结束位置，详情见[光标位置说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input/#%E5%85%89%E6%A0%87%E4%BD%8D%E7%BD%AE%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "adjust-position",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true 否 键盘弹起时，是否自动上推页面。1.0.0"
+        ]
+      },
+      {
+        "name": "confirm-type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "done 否 设置键盘右下角按钮的文字，仅在 `type='text'` 时生效，详情见 [confirm-type 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input/#confirm-type-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。1.0.0"
+        ],
+        "enum": [
+          {
+            "value": "send"
+          },
+          {
+            "value": "search"
+          },
+          {
+            "value": "next"
+          },
+          {
+            "value": "go"
+          },
+          {
+            "value": "done"
+          }
+        ]
+      },
+      {
+        "name": "confirm-hold",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 点击键盘右下角按钮时是否保持键盘不收起。2.57.0"
+        ]
+      },
+      {
+        "name": "hold-keyboard",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 focus 时，点击页面的时候不收起键盘。2.57.0"
+        ]
+      },
+      {
+        "name": "bindinput",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 键盘输入时触发，处理函数可以直接 return 一个字符串，将替换输入框的内容，详情见 [bindinput 说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input/#bindinput-%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "bindfocus",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 输入框聚焦时触发，详情见 [bindfocus 说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input/#bindfocus-%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "bindblur",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 输入框失去焦点时触发，详情见 [bindblur 说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input/#bindblur-%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "bindconfirm",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 用户点击键盘的完成按钮时触发，详情见 [bindconfirm 说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input/#bindconfirm-%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "bindkeyboardheightchange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 键盘高度发生变化的时候触发此事件，详情见 [bindkeyboardheightchange 说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/input/#bindkeyboardheightchange-%E8%AF%B4%E6%98%8E)。2.87.0"
+        ],
+        "jsxName": "onKeyboardHeightChange"
+      }
+    ]
+  },
+  {
+    "name": "label",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/label",
+    "attrs": [
+      {
+        "name": "for",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 绑定控件的 id 1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "live-player",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/live-player",
+    "attrs": [
+      {
+        "name": "src",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 是 视频地址。目前支持 flv、rtmp 和 hls，支持跨域。1.44.0"
+        ]
+      },
+      {
+        "name": "autoplay",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否自动播放 1.44.0"
+        ]
+      },
+      {
+        "name": "muted",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否静音 1.44.0"
+        ]
+      },
+      {
+        "name": "orientation",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "vertical 否 画面朝向，vertical 为竖直，horizontal 为水平，详情见 [orientation 的合法值](https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/live-player#orientation-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。1.44.0"
+        ]
+      },
+      {
+        "name": "object-fit",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "contain 否 填充模式，可选值有 contain，fillCrop，详情见[object-fit 的合法值。](https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/live-player#object-fit-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)1.44.0"
+        ]
+      },
+      {
+        "name": "show-casting-button",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否显示投屏按钮（当前仅支持 Android，iOS 敬请期待）2.48.0"
+        ]
+      },
+      {
+        "name": "bindstatechange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 播放状态变化事件，detail = {code}，code 取值见[状态码](https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/live-player#%E7%8A%B6%E6%80%81%E7%A0%81)1.44.0"
+        ]
+      },
+      {
+        "name": "bindfullscreenchange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 全屏变化事件，detail = {direction, fullScreen}。1.44.0"
+        ]
+      },
+      {
+        "name": "binderror",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 播放错误事件 1.44.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "live-preview",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/live-preview",
+    "attrs": [
+      {
+        "name": "aweme-id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "是 主播的抖音号（可在抖音app查看）2.81.0"
+        ]
+      },
+      {
+        "name": "title",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 直播描述文案，仅展示2行字符，超过则不展示，若未填写则采用直播间的标题文案 2.81.0"
+        ]
+      },
+      {
+        "name": "image-src",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 图片banner地址，仅支持本地地址"
+        ]
+      },
+      {
+        "name": "hide-header",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否隐藏组件头部，头部包含主播抖音头像，主播抖音名称 2.81.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "map",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/map/map",
+    "attrs": [
+      {
+        "name": "longitude",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "是 中心经度 1.63.0"
+        ]
+      },
+      {
+        "name": "latitude",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "是 中心纬度 1.63.0"
+        ]
+      },
+      {
+        "name": "scale",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "16 否 缩放级别，取值范围为 3-19 1.63.0"
+        ]
+      },
+      {
+        "name": "show-location",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否显示当前位置 1.63.0"
+        ]
+      },
+      {
+        "name": "bindtap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 点击地图时触发，`e.detail = { latitude, longitude}`1.71.0"
+        ]
+      },
+      {
+        "name": "bindmarkertap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 点击标记点时触发，`e.detail = {markerId, latitude, longitude}`1.71.0"
+        ]
+      },
+      {
+        "name": "bindcallouttap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 点击标记点对应的气泡时触发, `e.detail = {markerId}`1.71.0"
+        ]
+      },
+      {
+        "name": "bindregionchange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 视野发生变化时触发 1.71.0"
+        ]
+      },
+      {
+        "name": "rotate",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "0 否 顺时针旋转角度，范围 0 ~ 360，旋转原点为地图容器中心点 2.34.0"
+        ]
+      },
+      {
+        "name": "skew",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "0 否 倾斜角度，范围 0 ~ 40 , 关于 z 轴的倾角 2.34.0"
+        ]
+      },
+      {
+        "name": "show-compass",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 显示指南针 2.34.0"
+        ]
+      },
+      {
+        "name": "enable-overlooking",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 开启俯视手势支持，双指上下滑调整俯仰角 2.34.0"
+        ]
+      },
+      {
+        "name": "enable-rotate",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 开启旋转手势支持，双指旋转调整旋转角度 2.34.0"
+        ]
+      },
+      {
+        "name": "min-scale",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "3 否 最小缩放级别，取值范围为 3 - `max-scale`2.42.0"
+        ]
+      },
+      {
+        "name": "max-scale",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "19 否 最大缩放级别，取值范围为 `min-scale` - 19 2.42.0"
+        ]
+      },
+      {
+        "name": "enable-3D",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否展示 3D 楼块，该属性 IOS 不支持 2.42.0"
+        ]
+      },
+      {
+        "name": "show-scale",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否显示比例尺 2.42.0"
+        ]
+      },
+      {
+        "name": "enable-zoom",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true 否 是否支持缩放 2.42.0"
+        ]
+      },
+      {
+        "name": "enable-scroll",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true 否 是否支持拖动 2.42.0"
+        ]
+      },
+      {
+        "name": "enable-satellite",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否开启卫星图 2.42.0"
+        ]
+      },
+      {
+        "name": "enable-traffic",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否开启实时路况，在该属性为 true 时，`enable- building` 和 `enable-3D` 无效 2.42.0"
+        ]
+      },
+      {
+        "name": "enable-poi",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true 否 是否显示地名 2.42.0"
+        ]
+      },
+      {
+        "name": "enable-building",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true 否 是否展示建筑物 2.42.0"
+        ]
+      },
+      {
+        "name": "bindlabeltap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 点击 label 时触发，`e.detail = {markerId}`2.42.0"
+        ]
+      },
+      {
+        "name": "bindupdated",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 在地图渲染更新完成时触发 2.42.0"
+        ]
+      },
+      {
+        "name": "bindanchorpointtap",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 点击定位标时触发，`e.detail = {longitude, latitude}`2.42.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "mask",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/view-container/mask",
+    "attrs": [
+      {
+        "name": "hidden",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否隐藏蒙层，默认展示。1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "match-media",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/view-container/component-match-media",
+    "attrs": [
+      {
+        "name": "minWidth",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "否 页面最小宽度(px为单位)3.63.0"
+        ]
+      },
+      {
+        "name": "maxWidth",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "否 页面最大宽度(px为单位)3.63.0"
+        ]
+      },
+      {
+        "name": "width",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "否 页面宽度(px为单位)3.63.0"
+        ]
+      },
+      {
+        "name": "minHeight",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "否 页面最小高度(px为单位)3.63.0"
+        ]
+      },
+      {
+        "name": "maxHeight",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "否 页面最大高度(px为单位)3.63.0"
+        ]
+      },
+      {
+        "name": "height",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "否 页面高度(px为单位)3.63.0"
+        ]
+      },
+      {
+        "name": "orientation",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 屏幕方向，可选值为'portrait' | 'portraitupsidedown' | 'landscapeleft' | 'landscaperight'3.63.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "movable-area",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/view-container/movable-area",
+    "attrs": [
+      {
+        "name": "scale-area",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 当里面的 movable-view 设置为支持双指缩放时，设置此值可将缩放手势生效区域修改为整个 movable-area。2.25.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "movable-view",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/view-container/movable-view",
+    "attrs": [
+      {
+        "name": "direction",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "inertia",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "out-of-bounds",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "x",
+        "type": {
+          "name": "number | string"
+        }
+      },
+      {
+        "name": "y",
+        "type": {
+          "name": "number | string"
+        }
+      },
+      {
+        "name": "damping",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "friction",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "scale",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "scale-min",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "scale-max",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "scale-value",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "animation",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "bindchange",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
+        "name": "bindscale",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
+        "name": "bindhtouchmove",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
+        "name": "bindvtouchmove",
+        "type": {
+          "name": "eventhandle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "navigator",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/navigation/navigator",
+    "attrs": [
+      {
+        "name": "url",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 是 跳转地址。1.0.0"
+        ]
+      },
+      {
+        "name": "delta",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "1 否 当 open-type 为 'navigateBack' 时有效，表示回退的层数。1.0.0"
+        ]
+      },
+      {
+        "name": "open-type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "navigate 否 跳转方式，详情见 [open-type 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/navigation/navigator/#open-type-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。1.0.0"
+        ]
+      },
+      {
+        "name": "hover-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "navigator-hover 否 指定点击时的样式类，当 `hover-class=\"none\"` 时，没有点击态效果类。1.0.0"
+        ]
+      },
+      {
+        "name": "hover-start-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "50 否 按住后多久出现点击态，单位毫秒。1.0.0"
+        ]
+      },
+      {
+        "name": "hover-stay-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "400 否 手指松开后点击态保留时间，单位毫秒。1.0.0"
+        ]
+      },
+      {
+        "name": "hover-stop-propagation",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 指定是否阻止本节点的祖先节点出现点击态。1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "open-data",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/open-capacity/open-data",
+    "attrs": [
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "是 开放数据类型 2.30.0"
+        ]
+      },
+      {
+        "name": "default-text",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 文本数据为空时的默认内容 2.30.0"
+        ]
+      },
+      {
+        "name": "default-avatar",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 用户头像为空时的默认图片，支持相对路径和网络图片路径 2.30.0"
+        ]
+      },
+      {
+        "name": "use-empty-value",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "false 否 当数据为空且未设置默认值时，是否显示官方默认值 2.30.0"
+        ]
+      },
+      {
+        "name": "binderror",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 出现错误时触发 2.30.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "picker",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/picker",
+    "attrs": [
+      {
+        "name": "mode",
+        "type": {
+          "name": "string"
+        },
+        "enum": [
+          { "value": "selector", "desc": "普通选择器" },
+          { "value": "multiSelector", "desc": "多列选择器" },
+          { "value": "time", "desc": "时间选择器" },
+          { "value": "date", "desc": "日期选择器" },
+          { "value": "region", "desc": "地区选择器" }
+        ],
+        "desc": [
+          "\"selector\"否 选择器类型，详见 [mode 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/picker/#mode-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。1.0.0"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否禁用 1.0.0"
+        ]
+      },
+      {
+        "name": "bindcancel",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 取消选择收起 picker 时触发 1.0.0"
+        ]
+      },
+      {
+        "name": "range",
+        "type": { "name": "(string | object)[] | (string | object)[][]" },
+        "desc": ["selector 使用一维选项数组，multiSelector 使用最多五列的二维选项数组。"]
+      },
+      {
+        "name": "range-key",
+        "type": { "name": "string" },
+        "desc": ["指定对象选项中用于显示的字段。"]
+      },
+      {
+        "name": "value",
+        "type": { "name": "number | number[] | string | string[]" },
+        "desc": ["selector 为选中下标，multiSelector 为各列下标，time/date 为时间或日期字符串，region 为地区字符串数组。"]
+      },
+      {
+        "name": "bindchange",
+        "type": { "name": "eventhandle" },
+        "desc": ["确认选择时触发。"]
+      },
+      {
+        "name": "bindcolumnchange",
+        "type": { "name": "eventhandle" },
+        "desc": ["multiSelector 某列变化时触发，event.detail 包含 column 和 value。"]
+      },
+      {
+        "name": "start",
+        "type": { "name": "string" },
+        "desc": ["time/date 的有效时间或日期范围起点。"]
+      },
+      {
+        "name": "end",
+        "type": { "name": "string" },
+        "desc": ["time/date 的有效时间或日期范围终点。"]
+      },
+      {
+        "name": "fields",
+        "type": { "name": "string" },
+        "enum": [
+          { "value": "year", "desc": "年" },
+          { "value": "month", "desc": "月" },
+          { "value": "day", "desc": "日" }
+        ],
+        "desc": ["date 选择器的粒度。"]
+      },
+      {
+        "name": "custom-item",
+        "type": { "name": "string" },
+        "desc": ["region 每列顶部的自定义选项。"]
+      }
+    ]
+  },
+  {
+    "name": "picker-view",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/picker-view",
+    "attrs": [
+      {
+        "name": "value",
+        "type": {
+          "name": "number[]"
+        },
+        "desc": [
+          "[]是 设置选择器中被选中的元素，`value[i]` 表示 picker-view 内的第 i 个 picker-view-column 选中第 `value[i]` 项元素（下标从 0 开始）。如果 `value[i]` 大于 picker-view-colum 可选项长度时，选择最后一项。1.0.0"
+        ]
+      },
+      {
+        "name": "indicator-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 设置选择器中选中框的样式。1.0.0"
+        ]
+      },
+      {
+        "name": "indicator-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 设置选择器中间选中框的类名。2.61.0"
+        ]
+      },
+      {
+        "name": "mask-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 设置蒙层的样式。1.0.0"
+        ]
+      },
+      {
+        "name": "mask-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 设置蒙层的类名。2.61.0"
+        ]
+      },
+      {
+        "name": "immediate-change",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 设置是否在手指松开时立即触发 change 事件。若将 immediate-change 设置为 false，则会在滚动动画结束时触发 change 事件。2.61.0"
+        ]
+      },
+      {
+        "name": "bindchange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 滚动选择时触发 change 事件回调。1.0.0"
+        ]
+      },
+      {
+        "name": "bindpickstart",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 当滚动选择开始时触发 pickstart 事件回调。2.61.0"
+        ]
+      },
+      {
+        "name": "bindpickend",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 当滚动动画结束时触发 pickend 事件回调（在 change 事件回调之后触发）。2.61.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "picker-view-column",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/picker-view-column",
+    "attrs": []
+  },
+  {
+    "name": "progress",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/basic-content/progress",
+    "attrs": [
+      {
+        "name": "percent",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "0 否 进度 1.0.0"
+        ]
+      },
+      {
+        "name": "stroke-width",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "6 否 进度条的垂直宽度 1.0.0"
+        ]
+      },
+      {
+        "name": "active",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 进度条动画 1.0.0"
+        ]
+      },
+      {
+        "name": "active-mode",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "backwards 否•backwards：动画从头播"
+        ]
+      },
+      {
+        "name": "duration",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "30 否 进度增加1%所需毫秒数，仅在 active 为 true 时生效 2.86.0"
+        ]
+      },
+      {
+        "name": "bindactiveend",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 动画完成后执行的事件，仅在 active 为 true 时执行 2.86.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "radio",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/radio",
+    "attrs": [
+      {
+        "name": "value",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 radio 标识。当该 radio 选中时，[radio-group](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/radio-group/) 的 change 事件会携带 radio 的 value。1.0.0"
+        ]
+      },
+      {
+        "name": "checked",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 当前是否选中。1.0.0"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否禁用。1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "radio-group",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/radio-group",
+    "attrs": [
+      {
+        "name": "name",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 用于 form 组件，在表单提交事件中作为提交数据的 key 值。"
+        ]
+      },
+      {
+        "name": "bindchange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 radio-group 中的选中项发生变化时触发 change 事件。1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "rich-text",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/basic-content/rich-text",
+    "attrs": [
+      {
+        "name": "space",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 显示连续空格。"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "rtc-room",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/rtc-room",
+    "attrs": [
+      {
+        "name": "user-id",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "mode",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "binderror",
+        "type": {
+          "name": "eventhandle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "scroll-view",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/view-container/scroll-view",
+    "attrs": [
+      {
+        "name": "scroll-x",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "scroll-y",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "scroll-with-animation",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "upper-threshold",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "lower-threshold",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "scroll-top",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "scroll-left",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "scroll-into-view",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "refresher-enabled",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "refresher-default-style",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "refresher-background",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "refresher-threshold",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "refresher-triggered",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "enhanced",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "bounces",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "bindscroll",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
+        "name": "bindscrolltoupper",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
+        "name": "bindscrolltolower",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
+        "name": "bindrefresherpulling",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
+        "name": "bindrefresherrefresh",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
+        "name": "bindrefresherrestore",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
+        "name": "bindrefresherabort",
+        "type": {
+          "name": "eventhandle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "slider",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/slider",
+    "attrs": [
+      {
+        "name": "min",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "0 否 最小值 1.0.0"
+        ]
+      },
+      {
+        "name": "max",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "100 否 最大值 1.0.0"
+        ]
+      },
+      {
+        "name": "step",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "1 否 步长，取值必须大于 0，并且可被（max-min）整除。1.0.0"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否禁用 1.0.0"
+        ]
+      },
+      {
+        "name": "value",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "0 否 当前取值 1.0.0"
+        ]
+      },
+      {
+        "name": "block-size",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "28 否 滑块的大小，取值范围为 12 ~ 28。1.0.0"
+        ]
+      },
+      {
+        "name": "show-value",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否显示当前 value 1.0.0"
+        ]
+      },
+      {
+        "name": "bindchange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 完成一次拖动后触发的事件，event.detail = {value: value}。1.0.0"
+        ]
+      },
+      {
+        "name": "bindchanging",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 拖动过程中触发的事件，event.detail = {value: value}。1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "swiper",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/view-container/swiper",
+    "attrs": [
+      {
+        "name": "indicator-dots",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "indicator-color",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "indicator-active-color",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "autoplay",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "current",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "current-item-id",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "interval",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "previous-margin",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "next-margin",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "display-multiple-items",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "duration",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "circular",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "vertical",
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "name": "easing-function",
+        "type": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "bindchange",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
+        "name": "bindanimationfinish",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
+        "name": "bindtransition",
+        "type": {
+          "name": "eventhandle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "swiper-item",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/view-container/swiper-item",
+    "attrs": [
+      {
+        "name": "item-id",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 该 swiper-item 的标识符 1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "switch",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/switch",
+    "attrs": [
+      {
+        "name": "checked",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否选中 1.0.0"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否禁用 1.0.0"
+        ]
+      },
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "switch 否 样式，详见 [type 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/switch#type-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。1.0.0"
+        ]
+      },
+      {
+        "name": "bindchange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 checked 改变时触发该事件，`event.detail={value:checked}`。1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "text",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/basic-content/text",
+    "attrs": [
+      {
+        "name": "selectable",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否可以选中文字。1.0.0"
+        ]
+      },
+      {
+        "name": "space",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "否 是否显示连续的空格，可以取值`ensp``emsp``nbsp`，详见 space 的合法值。1.0.0"
+        ]
+      },
+      {
+        "name": "decode",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否转义。1.0.0"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "textarea",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea",
+    "attrs": [
+      {
+        "name": "value",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 输入框的内容 1.0.0"
+        ]
+      },
+      {
+        "name": "placeholder",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 输入框为空时占位符 1.0.0"
+        ]
+      },
+      {
+        "name": "placeholder-style",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 指定 placeholder 的样式，只支持 `font-size`、`font-weight`、`color` 三个 CSS 特性。1.0.0"
+        ]
+      },
+      {
+        "name": "placeholder-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无 否 指定 placeholder 的样式类 2.43.0"
+        ]
+      },
+      {
+        "name": "disabled",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否禁用 1.0.0"
+        ]
+      },
+      {
+        "name": "maxlength",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "140 否 最大输入长度，设置为 `-1` 的时候不限制最大长度。1.0.0"
+        ]
+      },
+      {
+        "name": "focus",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否获得焦点，详情见 [Bug & Tip](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea#bug-tip)。1.0.0"
+        ]
+      },
+      {
+        "name": "auto-height",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 是否自动增高，设置 auto-height 时，设置 height 样式不生效。1.0.0"
+        ]
+      },
+      {
+        "name": "cursor-spacing",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "0 否 指定软键盘弹出时，与光标的距离是多少，单位是 px。1.0.0"
+        ]
+      },
+      {
+        "name": "cursor",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "-1 否 指定 focus 时的光标位置，详情见[光标位置说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea#%E5%85%89%E6%A0%87%E4%BD%8D%E7%BD%AE%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "selection-start",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "-1 否 指定 focus 时选中片段的起始位置，详情见[光标位置说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea#%E5%85%89%E6%A0%87%E4%BD%8D%E7%BD%AE%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "selection-end",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "-1 否 指定 focus 时选中片段的结束位置，详情见[光标位置说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea#%E5%85%89%E6%A0%87%E4%BD%8D%E7%BD%AE%E8%AF%B4%E6%98%8E)，1.0.0"
+        ]
+      },
+      {
+        "name": "adjust-position",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true 否 键盘弹起时，是否自动上推页面。2.43.0"
+        ]
+      },
+      {
+        "name": "hold-keyboard",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 focus 时，点击页面的时候不收起键盘。2.43.0"
+        ]
+      },
+      {
+        "name": "disable-default-padding",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true 否 是否去掉 iOS 下的默认内边距。2.24.0"
+        ]
+      },
+      {
+        "name": "confirm-type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "return 否 设置键盘右下角按钮的文字，详情见 [confirm-type 的合法值](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea#confirm-type-%E7%9A%84%E5%90%88%E6%B3%95%E5%80%BC)。2.43.0"
+        ]
+      },
+      {
+        "name": "confirm-hold",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 点击键盘右下角按钮时是否保持键盘不收起。2.43.0"
+        ]
+      },
+      {
+        "name": "show-confirm-bar",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true 否 是否显示键盘上方带有”完成“按钮那一栏。2.43.0"
+        ]
+      },
+      {
+        "name": "bindinput",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 键盘输入时触发，详情见 [bindinput 说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea#bindinput-%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "bindfocus",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 输入框聚焦时触发，详情见 [bindfocus 说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea#bindfocus-%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "bindblur",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 输入框失去焦点时触发，详情见 [bindblur 说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea#bindblur-%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "bindconfirm",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 用户点击键盘的完成按钮时触发，详情见 [bindconfirm 说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea#bindconfirm-%E8%AF%B4%E6%98%8E)。1.0.0"
+        ]
+      },
+      {
+        "name": "bindlinechange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 输入框行数变化时触发，详情见 [bindlinechange 说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea#bindlinechange-%E8%AF%B4%E6%98%8E)。2.43.0"
+        ]
+      },
+      {
+        "name": "bindkeyboardheightchange",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "无 否 键盘高度发生变化的时候触发此事件，详情见 [bindkeyboardheightchange 说明](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/list/textarea/#_bindkeyboardheightchange-%E8%AF%B4%E6%98%8E)。2.87.0"
+        ],
+        "jsxName": "onKeyboardHeightChange"
+      }
+    ]
+  },
+  {
+    "name": "video",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/media-component/video",
+    "attrs": [
+      {
+        "name": "src",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "autoplay",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "poster",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "loop",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "show-fullscreen-btn",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true"
+        ]
+      },
+      {
+        "name": "show-play-btn",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true"
+        ]
+      },
+      {
+        "name": "controls",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true"
+        ]
+      },
+      {
+        "name": "object-fit",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "contain"
+        ]
+      },
+      {
+        "name": "play-btn-position",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "center"
+        ]
+      },
+      {
+        "name": "vslide-gesture",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "vslide-gesture-in-fullscreen",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true"
+        ]
+      },
+      {
+        "name": "enable-progress-gesture",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "enable-play-gesture",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "muted",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "show-mute-btn",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "show-playback-rate-btn",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "direction",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "-90"
+        ]
+      },
+      {
+        "name": "enable-play-in-background",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "signature",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "initial-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "0"
+        ]
+      },
+      {
+        "name": "show-screen-lock-button",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "definition",
+        "type": {
+          "name": "unknown"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "show-progress",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true"
+        ]
+      },
+      {
+        "name": "show-bottom-progress",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "true"
+        ]
+      },
+      {
+        "name": "poster-size",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "contain"
+        ]
+      },
+      {
+        "name": "duration-limit",
+        "type": {
+          "name": "number"
+        }
+      },
+      {
+        "name": "bindplay",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindpause",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindended",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "binderror",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindtimeupdate",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindprogress",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindfullscreenchange",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindcontrolstoggle",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindwaiting",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindloadedmetadata",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindseekcomplete",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindplaybackratechange",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindmutechange",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindcontroltap",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindenterbackground",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindclosebackground",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "bindleavebackground",
+        "type": {
+          "name": "function"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "enable-dark-water-mark",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "encrypted-token",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "无"
+        ]
+      },
+      {
+        "name": "show-casting-button",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false"
+        ]
+      },
+      {
+        "name": "playback-rate-list",
+        "type": {
+          "name": "array"
+        },
+        "desc": [
+          "[0.75,1.0,1.25,1.5,2.0]"
+        ]
+      },
+      {
+        "name": "bindplaybackratelistchange",
+        "type": {
+          "name": "function"
+        }
+      }
+    ]
+  },
+  {
+    "name": "view",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/view-container/view",
+    "attrs": [
+      {
+        "name": "hover-class",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "none 否 指定按下去的样式类。当 hover-class=\"none\" 时，没有点击态效果。1.0.0"
+        ]
+      },
+      {
+        "name": "hover-stop-propagation",
+        "type": {
+          "name": "boolean"
+        },
+        "desc": [
+          "false 否 指定是否阻止本节点的祖先节点出现点击态。1.0.0"
+        ]
+      },
+      {
+        "name": "hover-start-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "50 否 按住后多久出现点击态，单位毫秒。1.0.0"
+        ]
+      },
+      {
+        "name": "hover-stay-time",
+        "type": {
+          "name": "number"
+        },
+        "desc": [
+          "400 否 手指松开后点击态保留时间，单位毫秒。1.0.0"
+        ]
+      },
+      {
+        "name": "bindtap",
+        "type": {
+          "name": "eventhandle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "web-view",
+    "docLink": "https://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/open-capacity/web-view",
+    "attrs": [
+      {
+        "name": "src",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "是 组件指向网页的链接。网页链接需登录字节小程序开发者平台[配置业务域名](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/open-capacity/web-view/#%E4%BD%BF%E7%94%A8-web-view-%E6%89%93%E5%BC%80%E9%99%90%E5%AE%9A%E5%9F%9F%E5%90%8D%E5%86%85%E7%9A%84%E7%BD%91%E9%A1%B5)。只支持 **https** 和 **wss** 协议。1.0.0"
+        ]
+      },
+      {
+        "name": "type",
+        "type": {
+          "name": "string"
+        },
+        "desc": [
+          "default 否 若使用web-view组件引入第三方客服，**必须填写type=\"im\"**。[业务域名配置](http://developer.open-douyin.com/docs/resource/zh-CN/mini-app/develop/component/open-capacity/web-view/#%E4%BD%BF%E7%94%A8-web-view-%E6%89%93%E5%BC%80%E9%99%90%E5%AE%9A%E5%9F%9F%E5%90%8D%E5%86%85%E7%9A%84%E7%BD%91%E9%A1%B5)流程及注意事项与普通H5页面接入一致 2.72.0"
+        ]
+      },
+      {
+        "name": "bindmessage",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 当网页通过 `tt.miniProgram.postMessage` 向小程序 postMessage 时，bindmessage 绑定的方法会在小程序的特定时机（小程序后退、组件销毁、分享）触发并收到消息。1.17.0"
+        ]
+      },
+      {
+        "name": "bindload",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 当网页加载完成时触发的消息 1.28.0"
+        ]
+      },
+      {
+        "name": "binderror",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "否 当网页加载失败时触发的消息 1.0.0"
+        ]
+      }
+    ]
+  }
+]

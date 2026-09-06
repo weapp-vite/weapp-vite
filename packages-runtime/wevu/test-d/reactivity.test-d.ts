@@ -1,37 +1,6 @@
-import type { MaybeRef, MaybeRefOrGetter, Ref } from '@/index'
+import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref, WatchStopHandle } from 'wevu'
 import { expectError, expectType } from 'tsd'
-import {
-  computed,
-  effect,
-  getDeepWatchStrategy,
-  isProxy,
-  isRaw,
-  isReactive,
-  isReadonly,
-  isRef,
-  isShallowReactive,
-  isShallowRef,
-  markRaw,
-  reactive,
-  readonly,
-  ref,
-  setDeepWatchStrategy,
-  shallowReactive,
-  shallowRef,
-  stop,
-  toRaw,
-  toRef,
-  toRefs,
-  touchReactive,
-  toValue,
-  traverse,
-  triggerRef,
-  unref,
-  watch,
-  watchEffect,
-  watchPostEffect,
-  watchSyncEffect,
-} from '@/index'
+import { computed, effect, getDeepWatchStrategy, isProxy, isRaw, isReactive, isReadonly, isRef, isShallowReactive, isShallowRef, markRaw, reactive, readonly, ref, setDeepWatchStrategy, shallowReactive, shallowRef, stop, toRaw, toRef, toRefs, touchReactive, toValue, traverse, triggerRef, unref, watch, watchEffect, watchPostEffect, watchSyncEffect } from 'wevu'
 
 const n = ref(1)
 expectType<number>(n.value)
@@ -44,13 +13,13 @@ expectType<Ref<number | undefined>>(empty)
 
 const doubled = computed(() => n.value * 2)
 expectType<number>(doubled.value)
-expectType<Ref<number>>(doubled)
+expectType<ComputedRef<number>>(doubled)
 
 const stopWatch = watch(n, (value, oldValue) => {
   expectType<number>(value)
   expectType<number>(oldValue)
 })
-expectType<() => void>(stopWatch)
+expectType<WatchStopHandle>(stopWatch)
 expectType<() => void>(stopWatch.stop)
 expectType<() => void>(stopWatch.pause)
 expectType<() => void>(stopWatch.resume)
@@ -58,12 +27,12 @@ expectType<() => void>(stopWatch.resume)
 const stopEffect = watchEffect((onCleanup) => {
   onCleanup(() => {})
 })
-expectType<() => void>(stopEffect)
+expectType<WatchStopHandle>(stopEffect)
 expectType<() => void>(stopEffect.stop)
 expectType<() => void>(stopEffect.pause)
 expectType<() => void>(stopEffect.resume)
-expectType<() => void>(watchPostEffect(() => {}))
-expectType<() => void>(watchSyncEffect(() => {}))
+expectType<WatchStopHandle>(watchPostEffect(() => {}))
+expectType<WatchStopHandle>(watchSyncEffect(() => {}))
 setDeepWatchStrategy('version')
 expectType<'version' | 'traverse'>(getDeepWatchStrategy())
 
@@ -75,7 +44,7 @@ expectType<number>(toValue(ro))
 expectType<boolean>(isReadonly(ro))
 expectType<boolean>(isProxy(ro))
 expectType<boolean>(isProxy(reactive({ count: 1 })))
-expectType<number>(toValue(1))
+expectType<1>(toValue(1))
 expectType<string>(toValue(() => 'label'))
 
 const writableComputed = computed({
@@ -117,3 +86,12 @@ traverse(state)
 
 const runner = effect(() => n.value)
 expectType<() => void>(() => stop(runner))
+
+const shallowObject = readonly({ count: 0, nested: { count: 0 } })
+expectError(shallowObject.count = 1)
+shallowObject.nested.count = 1
+expectType<number>(shallowObject.nested.count)
+
+const readonlyArray = readonly([1, 2])
+expectError(readonlyArray[0] = 3)
+expectError(readonlyArray.push(3))

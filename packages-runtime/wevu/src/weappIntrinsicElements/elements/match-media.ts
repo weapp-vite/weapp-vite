@@ -1,12 +1,12 @@
-// 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
+// 此文件由 scripts/generate-intrinsic-elements.mjs 自动生成，请勿直接修改。 来源：components.weapp.json。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { MiniProgramIntrinsicElementBaseAttributes } from '../base'
+import type { WeappIntrinsicElementBaseAttributes } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/match-media.html
  */
-export type MiniProgramIntrinsicElementMatchMedia = MiniProgramIntrinsicElementBaseAttributes & {
+export type WeappIntrinsicElementMatchMedia = WeappIntrinsicElementBaseAttributes & {
   height?: number
   'max-height'?: number
   'max-width'?: number
@@ -15,5 +15,3 @@ export type MiniProgramIntrinsicElementMatchMedia = MiniProgramIntrinsicElementB
   orientation?: string
   width?: number
 }
-
-export type WeappIntrinsicElementMatchMedia = MiniProgramIntrinsicElementMatchMedia

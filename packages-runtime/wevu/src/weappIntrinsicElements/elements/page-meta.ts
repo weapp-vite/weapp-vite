@@ -1,19 +1,20 @@
-// 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
+// 此文件由 scripts/generate-intrinsic-elements.mjs 自动生成，请勿直接修改。 来源：components.weapp.json。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
+import type { WevuJsxEventHandler } from '../../jsx-runtime'
+import type { WeappIntrinsicElementBaseAttributes } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/page-meta.html
  */
-export type MiniProgramIntrinsicElementPageMeta = MiniProgramIntrinsicElementBaseAttributes & {
+export type WeappIntrinsicElementPageMeta = WeappIntrinsicElementBaseAttributes & {
   'background-color'?: string
   'background-color-bottom'?: string
   'background-color-top'?: string
   'background-text-style'?: string
-  bindresize?: MiniProgramIntrinsicEventHandler<unknown>
-  bindscroll?: MiniProgramIntrinsicEventHandler<unknown>
-  bindscrolldone?: MiniProgramIntrinsicEventHandler<unknown>
+  onResize?: WevuJsxEventHandler
+  onScroll?: WevuJsxEventHandler
+  onScrolldone?: WevuJsxEventHandler
   'page-font-size'?: string
   'page-orientation'?: string
   'page-style'?: string
@@ -22,5 +23,3 @@ export type MiniProgramIntrinsicElementPageMeta = MiniProgramIntrinsicElementBas
   'scroll-duration'?: number
   'scroll-top'?: string
 }
-
-export type WeappIntrinsicElementPageMeta = MiniProgramIntrinsicElementPageMeta

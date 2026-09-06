@@ -1,12 +1,10 @@
-// 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
+// 此文件由 scripts/generate-intrinsic-elements.mjs 自动生成，请勿直接修改。 来源：components.weapp.json。
 
-import type { MiniProgramIntrinsicElementBaseAttributes } from '../base'
+import type { WeappIntrinsicElementBaseAttributes } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/framework/custom-component/wxml-wxss.html#%E7%BB%84%E4%BB%B6-wxml-%E7%9A%84-slot
  */
-export type MiniProgramIntrinsicElementSlot = MiniProgramIntrinsicElementBaseAttributes & {
+export type WeappIntrinsicElementSlot = WeappIntrinsicElementBaseAttributes & {
   name?: string
 }
-
-export type WeappIntrinsicElementSlot = MiniProgramIntrinsicElementSlot

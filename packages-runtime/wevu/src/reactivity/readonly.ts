@@ -61,7 +61,7 @@ function createReadonlyWrapper(target: any): any {
  * 选择浅层而非深层递归，是为了在小程序环境中保持实现和运行时开销最小，
  * 仅阻止直接属性写入/删除，嵌套对象仍按原样透传。
  */
-export function readonly<T extends object>(target: T): T
+export function readonly<T extends object>(target: T): Readonly<T>
 export function readonly<T>(target: Ref<T>): Readonly<Ref<T>>
 export function readonly(target: any): any {
   return createReadonlyWrapper(target)

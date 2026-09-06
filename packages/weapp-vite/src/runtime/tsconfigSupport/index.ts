@@ -3,14 +3,32 @@ import type { ManagedTsconfigFile } from './types'
 import { fs } from '@weapp-core/shared/fs'
 import { parse as parseJson } from 'comment-json'
 import path from 'pathe'
-import { createAppTsconfig, createNodeTsconfig, createServerTsconfig, createSharedTsconfig } from './configs'
-import { getLegacyManagedTypeScriptConfig, resolveManagedDir, toJson } from './shared'
+import { createAppTsconfig, createNodeTsconfig, createServerTsconfig, createSharedTsconfig, resolveAppWevuJsxImportSource } from './configs'
+import { getLegacyManagedTypeScriptConfig, isWevuJsxImportSource, resolveManagedDir, toJson } from './shared'
 
 export type { ManagedTsconfigFile } from './types'
 
 export async function createManagedTsconfigFiles(ctx: MutableCompilerContext): Promise<ManagedTsconfigFile[]> {
   const managedDir = resolveManagedDir(ctx)
   const legacyConfig = await getLegacyManagedTypeScriptConfig(ctx)
+  const jsxImportSource = resolveAppWevuJsxImportSource(ctx, legacyConfig)
+  const jsxPlatformBridgeSource = isWevuJsxImportSource(jsxImportSource) && jsxImportSource !== 'wevu'
+    ? jsxImportSource
+    : undefined
+  const sharedEmptyContent = jsxPlatformBridgeSource
+    ? [
+        `import type { JSX as WevuPlatformJSX } from '${jsxPlatformBridgeSource}/jsx-runtime'`,
+        '',
+        'export {}',
+        '',
+        'declare module \'wevu/jsx-runtime\' {',
+        '  export namespace JSX {',
+        '    export interface IntrinsicElements extends WevuPlatformJSX.IntrinsicElements {}',
+        '  }',
+        '}',
+        '',
+      ].join('\n')
+    : 'export {}\n'
   const sharedPath = path.join(managedDir, 'tsconfig.shared.json')
   const appPath = path.join(managedDir, 'tsconfig.app.json')
   const nodePath = path.join(managedDir, 'tsconfig.node.json')
@@ -22,7 +40,7 @@ export async function createManagedTsconfigFiles(ctx: MutableCompilerContext): P
   return [
     {
       path: sharedEmptyPath,
-      content: 'export {}\n',
+      content: sharedEmptyContent,
     },
     {
       path: uniAppTypesPath,

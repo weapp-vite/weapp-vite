@@ -1,6 +1,8 @@
+import type { HtmlCustomDataTag } from './htmlCustomDataTypes'
 import type { ComponentMetadata } from './metadata'
 import { describe, expect, it } from 'vitest'
 import { createHtmlCustomDataDefinition } from './htmlCustomData'
+import { loadWeappBuiltinHtmlTags } from './weappBuiltinHtmlTags'
 
 function createMetadata(options?: {
   types?: Record<string, string>
@@ -13,6 +15,21 @@ function createMetadata(options?: {
 }
 
 describe('createHtmlCustomDataDefinition', () => {
+  it('offers image and group attributes from the owning builtin catalog', () => {
+    const result = createHtmlCustomDataDefinition([], () => createMetadata(), loadWeappBuiltinHtmlTags())
+    const payload = JSON.parse(result) as { tags: HtmlCustomDataTag[] }
+    const tags = new Map(payload.tags.map(tag => [tag.name, tag]))
+    expect(tags.get('cover-image')?.attributes?.map(attr => attr.name)).toEqual([
+      'bind:error',
+      'bind:load',
+      'referrer-policy',
+      'src',
+    ])
+    expect(tags.get('cover-image')?.references?.[0]?.url).toBe('https://developers.weixin.qq.com/miniprogram/dev/component/cover-image.html')
+    expect(tags.get('checkbox-group')?.attributes?.map(attr => attr.name)).toEqual(['bind:change'])
+    expect(tags.get('radio-group')?.attributes?.map(attr => attr.name)).toEqual(['bind:change'])
+  })
+
   it('builds auto-import tags with sorted attributes and merged descriptions', () => {
     const result = createHtmlCustomDataDefinition(
       ['demo-card'],

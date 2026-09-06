@@ -127,10 +127,6 @@ export default defineProject({
         replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu-compiler/src/index.ts'),
       },
       {
-        find: /^wevu\/jsx-runtime$/,
-        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/jsx-runtime.ts'),
-      },
-      {
         find: /^wevu\/store$/,
         replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/store/index.ts'),
       },

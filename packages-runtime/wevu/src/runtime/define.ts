@@ -152,7 +152,7 @@ function materializeComponentDefinition(
   return definition
 }
 
-type SetupBindings<S> = Exclude<S, void> extends never ? Record<string, never> : Exclude<S, void>
+type SetupBindings<S> = Exclude<S, void> extends never ? Record<never, never> : Exclude<S, void>
 type ResolveProps<P> = P extends ComponentPropsOptions ? InferProps<P> : P
 
 export interface WevuComponentConstructor<
@@ -225,11 +225,11 @@ export function defineComponent<
   options: DefineComponentTypePropsOptions<TypeProps>,
 ): DefineComponentWithTypeProps<TypeProps>
 export function defineComponent<
-  P extends ComponentPropsOptions = ComponentPropsOptions,
-  D extends object = Record<string, any>,
-  C extends ComputedDefinitions = ComputedDefinitions,
-  M extends MethodDefinitions = MethodDefinitions,
-  S extends Record<string, any> | void = Record<string, any> | void,
+  P extends ComponentPropsOptions = Record<never, never>,
+  D extends object = Record<never, never>,
+  C extends ComputedDefinitions = Record<never, never>,
+  M extends MethodDefinitions = Record<never, never>,
+  S extends Record<string, any> | void = void,
 >(
   options: DefineComponentOptions<P, D, C, M, S>,
 ): WevuComponentConstructor<ResolveProps<P>, SetupBindings<S>, D, C, M> & ComponentDefinition<D, C, M>

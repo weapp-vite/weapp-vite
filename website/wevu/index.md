@@ -90,7 +90,7 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 - [wevu/api](/wevu/api-package)：透传 `@wevu/api`，用于统一多端小程序 API 调用
 - [wevu/fetch](/wevu/fetch)：基于 `wpi.request` 的 Fetch 风格接口
 - [wevu/router](/wevu/router)：更接近 Vue Router 心智的路由入口
-- [wevu/jsx-runtime](/wevu/jsx-runtime)：给 TSX / JSX 类型系统使用的入口
+- [Wevu JSX 类型入口](/wevu/jsx-runtime)：按微信、支付宝、抖音、中立或三端公共源码选择纯类型前缀
 
 ## 7. 开发产物与源码调试
 
@@ -159,7 +159,7 @@ export default defineConfig({
 - [wevu/api](/wevu/api-package)
 - [wevu/fetch](/wevu/fetch)
 - [wevu/router](/wevu/router)
-- [wevu/jsx-runtime](/wevu/jsx-runtime)
+- [Wevu JSX 类型入口](/wevu/jsx-runtime)
 - [兼容性与注意事项](/wevu/compatibility)
 - [Vue 3 兼容性说明（完整）](/wevu/vue3-compat)
 - [Wevu vs Vue 3（核心差异）](/wevu/vue3-vs-wevu)

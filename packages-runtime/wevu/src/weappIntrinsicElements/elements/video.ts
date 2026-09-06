@@ -1,38 +1,23 @@
-// 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
+// 此文件由 scripts/generate-intrinsic-elements.mjs 自动生成，请勿直接修改。 来源：components.weapp.json。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
+import type { WevuJsxEventHandler } from '../../jsx-runtime'
+import type { WeappIntrinsicElementBaseAttributes } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/video.html
  */
-export type MiniProgramIntrinsicElementVideo = MiniProgramIntrinsicElementBaseAttributes & {
+export type WeappIntrinsicElementVideo = WeappIntrinsicElementBaseAttributes & {
   'ad-unit-id'?: string
   'auto-pause-if-navigate'?: boolean
   'auto-pause-if-open-native'?: boolean
   autoplay?: boolean
   'background-poster'?: string
-  bindcastinginterrupt?: MiniProgramIntrinsicEventHandler<unknown>
-  bindcastingstatechange?: MiniProgramIntrinsicEventHandler<unknown>
-  bindcastinguserselect?: MiniProgramIntrinsicEventHandler<unknown>
-  bindcontrolstoggle?: MiniProgramIntrinsicEventHandler<unknown>
-  bindended?: MiniProgramIntrinsicEventHandler<unknown>
-  bindenterpictureinpicture?: MiniProgramIntrinsicEventHandler<unknown>
-  binderror?: MiniProgramIntrinsicEventHandler<unknown>
-  bindfullscreenchange?: MiniProgramIntrinsicEventHandler<unknown>
-  bindleavepictureinpicture?: MiniProgramIntrinsicEventHandler<unknown>
-  bindloadedmetadata?: MiniProgramIntrinsicEventHandler<unknown>
-  bindpause?: MiniProgramIntrinsicEventHandler<unknown>
-  bindplay?: MiniProgramIntrinsicEventHandler<unknown>
-  bindprogress?: MiniProgramIntrinsicEventHandler<unknown>
-  bindseekcomplete?: MiniProgramIntrinsicEventHandler<unknown>
-  bindtimeupdate?: MiniProgramIntrinsicEventHandler<unknown>
-  bindwaiting?: MiniProgramIntrinsicEventHandler<unknown>
   'certificate-url'?: string
   controls?: boolean
   'danmu-btn'?: boolean
   'danmu-list'?: Record<string, unknown>[]
-  direction?: '0' | '90' | '-90'
+  direction?: '-90' | '0' | '90'
   duration?: number
   'enable-auto-rotation'?: boolean
   'enable-danmu'?: boolean
@@ -44,17 +29,33 @@ export type MiniProgramIntrinsicElementVideo = MiniProgramIntrinsicElementBaseAt
   'license-url'?: string
   loop?: boolean
   muted?: boolean
-  'object-fit'?: 'contain' | 'fill' | 'cover'
+  'object-fit'?: 'contain' | 'cover' | 'fill'
+  onCastinginterrupt?: WevuJsxEventHandler
+  onCastingstatechange?: WevuJsxEventHandler
+  onCastinguserselect?: WevuJsxEventHandler
+  onControlstoggle?: WevuJsxEventHandler
+  onEnded?: WevuJsxEventHandler
+  onEnterpictureinpicture?: WevuJsxEventHandler
+  onError?: WevuJsxEventHandler
+  onFullScreenChange?: WevuJsxEventHandler
+  onLeavepictureinpicture?: WevuJsxEventHandler
+  onLoadedmetadata?: WevuJsxEventHandler
+  onPause?: WevuJsxEventHandler
+  onPlay?: WevuJsxEventHandler
+  onProgress?: WevuJsxEventHandler
+  onSeekcomplete?: WevuJsxEventHandler
+  onTimeUpdate?: WevuJsxEventHandler
+  onWaiting?: WevuJsxEventHandler
   'page-gesture'?: boolean
   'picture-in-picture-init-position'?: string
-  'picture-in-picture-mode'?: '[]' | 'push' | 'pop'
+  'picture-in-picture-mode'?: '[]' | 'pop' | 'push'
   'picture-in-picture-show-progress'?: boolean
   'play-btn-position'?: 'bottom' | 'center'
   poster?: string
   'poster-for-crawler'?: string
   'preferred-peak-bit-rate'?: number
   'provision-url'?: string
-  'referrer-policy'?: 'origin' | 'no-referrer'
+  'referrer-policy'?: 'no-referrer' | 'origin'
   'show-background-playback-button'?: boolean
   'show-bottom-progress'?: boolean
   'show-casting-button'?: boolean
@@ -70,5 +71,3 @@ export type MiniProgramIntrinsicElementVideo = MiniProgramIntrinsicElementBaseAt
   'vslide-gesture'?: boolean
   'vslide-gesture-in-fullscreen'?: boolean
 }
-
-export type WeappIntrinsicElementVideo = MiniProgramIntrinsicElementVideo

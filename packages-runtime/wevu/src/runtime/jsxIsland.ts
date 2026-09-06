@@ -1,12 +1,7 @@
+import type { WevuJsxVNode } from '../jsxTypes'
 import { WEVU_JSX_ISLAND_HANDLER_MAP_KEY } from '@weapp-core/constants'
 
 export const Fragment = Symbol.for('wevu.jsx.fragment')
-
-export interface WevuJsxVNode {
-  children?: unknown
-  props?: Record<string, any> | null
-  type: unknown
-}
 
 export interface WevuJsxIslandNode {
   children?: WevuJsxIslandNode[]
@@ -199,7 +194,7 @@ function normalizeNode(
     const eventName = eventNameFromProp(name)
     if (eventName && typeof raw === 'function') {
       const handlerId = `${islandId}:${seed.value++}`
-      handlers[handlerId] = raw
+      handlers[handlerId] = raw as unknown as (...args: unknown[]) => unknown
       events[eventName] = handlerId
       continue
     }

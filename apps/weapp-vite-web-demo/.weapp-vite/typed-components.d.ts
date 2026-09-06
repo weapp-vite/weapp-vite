@@ -1,5 +1,4 @@
 /* eslint-disable */
-// @ts-nocheck
 // biome-ignore lint: disable
 // oxlint-disable
 // ------
@@ -9,17 +8,17 @@ declare module 'weapp-vite/typed-components' {
     HelloWorld: {
       readonly description?: string;
       readonly docs?: string;
-      readonly links?: any[];
+      readonly links?: unknown[];
       readonly title?: string;
     };
     ScenarioPanel: {
-      readonly items?: any[];
+      readonly items?: unknown[];
       readonly selectedId?: string;
       readonly summary?: string;
       readonly title?: string;
     };
   }
   export type ComponentPropName = keyof ComponentProps;
-  export type ComponentProp<Name extends string> = Name extends ComponentPropName ? ComponentProps[Name] : Record<string, any>;
+  export type ComponentProp<Name extends string> = Name extends ComponentPropName ? ComponentProps[Name] : object;
   export const componentProps: ComponentProps;
 }

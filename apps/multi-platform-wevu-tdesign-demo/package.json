@@ -3,6 +3,12 @@
   "type": "module",
   "version": "1.0.0",
   "private": true,
+  "workspaceHmr": {
+    "thresholds": {
+      "maxScenarioMs": 1500,
+      "maxScenarioP95Ms": 1500
+    }
+  },
   "description": "weapp-vite + wevu 多平台示例",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -46,8 +52,10 @@
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
+    "@douyin-microapp/typings": "catalog:",
     "@egoist/tailwindcss-icons": "catalog:",
     "@iconify-json/mdi": "catalog:",
+    "@mini-types/alipay": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "miniprogram-api-typings": "catalog:",

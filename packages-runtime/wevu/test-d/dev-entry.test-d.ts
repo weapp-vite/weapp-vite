@@ -7,13 +7,15 @@ import { createStore, defineStore } from 'wevu/dev/store'
 const count = ref(0)
 expectType<number>(count.value)
 
-expectType<ReturnType<typeof defineComponent>>(defineComponent({
+const _Counter = defineComponent({
   setup() {
     return {
       count,
     }
   },
-}))
+})
+declare const counter: InstanceType<typeof _Counter>
+expectType<number>(counter.count)
 
 expectType<ReturnType<typeof createApp>>(createApp({ setup() {} }))
 expectType<RouterNavigation>(createRouter())

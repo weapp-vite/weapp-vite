@@ -24,7 +24,10 @@ export function transformDirective(
   }
 
   if (name === 'on') {
-    return transformOnDirective(node, context, options)
+    return transformOnDirective(node, context, {
+      ...options,
+      tagName: elementNode?.tag,
+    })
   }
 
   if (name === 'model') {

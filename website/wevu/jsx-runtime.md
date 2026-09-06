@@ -1,69 +1,150 @@
 ---
-title: wevu/jsx-runtime
-description: 说明 wevu/jsx-runtime 的用途、适用范围与 TypeScript JSX 配置方式。
+title: Wevu JSX 类型入口
+description: 介绍 Wevu 的五个 JSX 类型前缀、平台归属、公共子集与迁移方式。
 keywords:
   - wevu/jsx-runtime
+  - wevu/weapp
+  - wevu/alipay
+  - wevu/tt
+  - wevu/miniprogram
   - jsx
   - typescript
-  - wevu
 ---
 
-# `wevu/jsx-runtime`
+# Wevu JSX 类型入口
 
-`wevu/jsx-runtime` 主要是一个类型入口，用于让 TypeScript 在 `jsxImportSource: "wevu"` 场景下正确理解 Wevu 的 JSX 命名空间与小程序内建标签类型。
+Wevu 提供五个 `jsxImportSource` 前缀。它们都是**纯类型入口**：只负责 TypeScript 的 JSX 命名空间、内建标签和全局组件类型，不提供 `jsx`、`jsxs` 或其他运行时工厂。
 
-它不是一个面向业务的“运行时 API 集合”，更接近“给 JSX/TSX 类型系统用的入口”。
+`compilerOptions.jsx` 必须保持为 `"preserve"`。TypeScript 完成类型检查后保留 JSX，由现有 Wevu 编译链继续处理；不要因为这些入口的名称而改用需要运行时工厂的 JSX 输出模式。
 
-:::warning 安装方式
-在 `weapp-vite` 项目里，`wevu` 通常建议安装在 `devDependencies` 中：
+更换这些前缀只改变类型归属，不改变编译器输出的 WXML、AXML 或 TTML，也不改变运行时渲染行为。
 
-```sh
-pnpm add -D wevu
-```
+## 五个前缀
 
-若你是在其他 JSX/TSX 工程里单独消费 `wevu/jsx-runtime`，则应按自己的发布方式决定依赖落位。
-:::
+| `jsxImportSource`  | TypeScript 解析的类型入口      | 标签归属                                                                      |
+| ------------------ | ------------------------------ | ----------------------------------------------------------------------------- |
+| `wevu`             | `wevu/jsx-runtime`             | 中立入口，仅包含已声明的全局组件，不包含任何平台原生标签                      |
+| `wevu/weapp`       | `wevu/weapp/jsx-runtime`       | 微信小程序原生标签，类型映射为 `WeappIntrinsicElements`                       |
+| `wevu/alipay`      | `wevu/alipay/jsx-runtime`      | 支付宝小程序原生标签，类型映射为 `AlipayIntrinsicElements`                    |
+| `wevu/tt`          | `wevu/tt/jsx-runtime`          | 抖音小程序原生标签，类型映射为 `TtIntrinsicElements`                          |
+| `wevu/miniprogram` | `wevu/miniprogram/jsx-runtime` | 微信、支付宝和抖音三端严格公共子集，类型映射为 `MiniProgramIntrinsicElements` |
 
-## 1. 当前定位
+每个平台入口只拥有自己的原生标签映射，不从宿主 API 类型包借用 `IntrinsicElements`。`wevu/miniprogram` 也不是三端类型的联合：标签、属性和枚举值必须同时存在且兼容才会进入公共映射，因此适合约束真正可移植的源码。
 
-- 子路径：`wevu/jsx-runtime`
-- 主要导出：`JSX` 命名空间类型
-- 作用：补充 `IntrinsicElements`、`GlobalComponents` 与小程序标签的属性推导
+这些映射只接受已建模的标签和属性。事件使用 JSX 编译器识别的源码拼写，例如 `onTap`，而不是宿主模板中的 `bindtap`；编译器不支持的 HTML 别名也不会被类型入口放行。
 
-## 2. 什么时候需要它
+微信 `worklet:*` 命名属性目前不会进入 JSX 类型映射，因为 Wevu JSX 编译器尚不支持命名属性；类型声明不会把它们伪装成普通 `on*` 事件。
 
-- 你在项目里启用了 TSX / JSX
-- 你希望通过 `jsxImportSource: "wevu"` 获得更准确的类型提示
-- 你在做底层组件封装、类型实验或自定义编译链适配
+## 配置与选择规则
 
-如果你的项目主要是 `.vue` SFC 或传统小程序页面，不一定会直接接触这个子路径。
+Weapp-vite 生成受管 TypeScript 配置时，会保持 `jsx: "preserve"`。只有项目声明了 `wevu` 依赖，才会按目标平台选择 `wevu/weapp`、`wevu/alipay` 或 `wevu/tt`；未建模的平台使用中立的 `wevu`，不会静默获得微信标签类型。
 
-## 3. TypeScript 配置示例
+用户显式配置的 `weapp.typescript.app.compilerOptions.jsxImportSource` 优先级更高。需要三端可移植约束时，应明确覆盖为 `wevu/miniprogram`，它不会被自动当作未知平台的后备类型。
+
+### 微信小程序
 
 ```json
 {
   "compilerOptions": {
-    "jsx": "react-jsx",
+    "jsx": "preserve",
+    "jsxImportSource": "wevu/weapp"
+  }
+}
+```
+
+```tsx
+const content = <view className="panel" onTap={() => {}}>微信</view>
+```
+
+### 支付宝小程序
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "wevu/alipay"
+  }
+}
+```
+
+```tsx
+const content = <input controlled type="numberpad" onInput={() => {}} />
+```
+
+### 抖音小程序
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "wevu/tt"
+  }
+}
+```
+
+```tsx
+const content = <button open-type="openAwemeUserProfile">打开主页</button>
+```
+
+### 三端公共源码
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "wevu/miniprogram"
+  }
+}
+```
+
+```tsx
+const content = <button size="mini" type="primary" onTap={() => {}}>提交</button>
+```
+
+公共入口会拒绝只属于某一平台的标签、属性或枚举值。若目标平台尚未建模，请使用中立入口：
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "preserve",
     "jsxImportSource": "wevu"
   }
 }
 ```
 
-当配置为 `jsxImportSource: "wevu"` 时，TypeScript 会解析 `wevu/jsx-runtime` 的类型入口。
+此时已声明的全局组件仍有类型，`<view>` 等平台原生标签则不会被假定为微信类型。目标宿主 API 类型缺失时也应直接暴露对应的类型依赖错误，不能回退到微信类型。
 
-## 4. 它解决什么问题
+## 公开类型
 
-- 让 JSX 环境下的小程序标签有更合理的属性提示
-- 让全局组件类型可以合并进 `IntrinsicElements`
-- 避免 JSX 类型系统默认回落到不适合 Wevu 的 Web/Vue 语义
+中立入口 `wevu/jsx-runtime` 导出：
 
-## 5. 注意事项
+- `WevuJsxChild`
+- `WevuJsxElement`
+- `WevuJsxEventHandler`
+- `WevuJsxHostAttributes`
+- `WevuJsxGlobalComponents`
+- 中立的 `JSX` 命名空间
 
-- 这是“类型辅助入口”，不是常规运行时导入入口
-- 业务代码日常仍然优先从 `wevu` 主入口导入 API
-- 如果你没有启用 JSX/TSX，通常不需要显式导入它
+`WevuJsxHostAttributes` 只包含明确支持的公共属性和 `data-*` 属性，不提供任意字符串属性逃生口。`WevuJsxGlobalComponents` 可由生成的全局组件声明扩展；中立 `JSX.IntrinsicElements` 只由这些具名组件组成。
 
-## 6. 相关页面
+平台映射分别从所属入口导入：
+
+```ts
+import type { AlipayIntrinsicElements } from 'wevu/alipay/jsx-runtime'
+import type { MiniProgramIntrinsicElements } from 'wevu/miniprogram/jsx-runtime'
+import type { TtIntrinsicElements } from 'wevu/tt/jsx-runtime'
+import type { WeappIntrinsicElements } from 'wevu/weapp/jsx-runtime'
+```
+
+## 从旧类型入口迁移
+
+1. 如果原先用 `jsxImportSource: "wevu"` 获取微信原生标签，改为目标平台前缀；跨三端源码则显式改为 `wevu/miniprogram`。
+2. 把从 `wevu` 根入口导入的旧平台 intrinsic 类型，改为从上面的所属 `/jsx-runtime` 子路径导入。根入口不再兼容转出这些类型。
+3. 把 `bindtap` 等宿主模板属性改为 JSX 源码属性，例如 `onTap`。
+4. 删除依赖任意标签、任意属性或 HTML 标签别名的宽松声明，改用真实小程序标签和已建模属性。
+
+业务运行时 API 仍从 `wevu` 等对应业务入口导入；五个 JSX 类型入口不应作为运行时模块导入。
+
+## 相关页面
 
 - [Core API](/wevu/api/core)
-- [Vue SFC 基础](/wevu/vue-sfc/basics)

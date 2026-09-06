@@ -1,10 +1,19 @@
 import type { MutableCompilerContext } from '../../context'
+import type { MpPlatform } from '../../types'
 import type { LegacyManagedTsconfigFile, LegacyManagedTypeScriptConfig, ManagedTypeScriptConfig } from './types'
 import { fs } from '@weapp-core/shared/fs'
 import { parse as parseJson } from 'comment-json'
 import path from 'pathe'
 import { resolveBaseDir, WEAPP_VITE_INTERNAL_DIRNAME } from '../autoImport/config/base'
 import { requireConfigService } from '../utils/requireConfigService'
+
+const WEVU_JSX_IMPORT_SOURCES = new Set([
+  'wevu',
+  'wevu/alipay',
+  'wevu/miniprogram',
+  'wevu/tt',
+  'wevu/weapp',
+])
 
 export const DEFAULT_APP_EXTRA_INCLUDE = [
   '../types/**/*.d.ts',
@@ -39,6 +48,24 @@ export function hasDependency(packageJson: Record<string, any> | undefined, name
     || packageJson?.devDependencies?.[name]
     || packageJson?.peerDependencies?.[name],
   )
+}
+
+export function resolveWevuJsxImportSource(platform: MpPlatform | undefined) {
+  switch (platform) {
+    case undefined:
+    case 'weapp':
+      return 'wevu/weapp'
+    case 'alipay':
+      return 'wevu/alipay'
+    case 'tt':
+      return 'wevu/tt'
+    default:
+      return 'wevu'
+  }
+}
+
+export function isWevuJsxImportSource(value: string | undefined): value is string {
+  return Boolean(value && WEVU_JSX_IMPORT_SOURCES.has(value))
 }
 
 export function unique(values: string[]) {

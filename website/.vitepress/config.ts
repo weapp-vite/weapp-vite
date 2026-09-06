@@ -429,7 +429,7 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'wevu/api', link: '/wevu/api-package' },
       { text: 'wevu/fetch', link: '/wevu/fetch' },
       { text: 'wevu/router', link: '/wevu/router' },
-      { text: 'wevu/jsx-runtime', link: '/wevu/jsx-runtime' },
+      { text: 'JSX 类型入口', link: '/wevu/jsx-runtime' },
     ],
   },
   {

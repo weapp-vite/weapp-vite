@@ -1,7 +1,7 @@
 import { expectError } from 'tsd'
-import { defineComponent, useNativePageRouter, useNativeRouter } from '@/index'
+import { defineComponent, useNativePageRouter, useNativeRouter } from 'wevu'
 
-declare module '@/index' {
+declare module 'wevu' {
   interface WevuTypedRouterRouteMap {
     entries: 'pages/home/index' | 'packageA/pages/cat'
     tabBarEntries: 'pages/home/index'

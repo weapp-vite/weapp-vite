@@ -4,7 +4,7 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import path from 'pathe'
 
-const componentsPath = path.resolve(import.meta.dirname, '../components.json')
+const componentsPath = path.resolve(import.meta.dirname, '../components.weapp.json')
 
 const client = axios.create({
   headers: {
@@ -43,6 +43,10 @@ const MULTI_SPACE_RE = /\s+/g
 const ARRAY_GENERIC_RE = /^array\.?<(.+)>$/i
 const ATTR_NAME_RE = /^[a-z][\w:-]*$/i
 const MODE_ATTR_RE = /mode\\s*=\\s*([a-zA-Z]+)/
+const SOURCE_EVENT_ATTRIBUTES_BY_COMPONENT = {
+  button: ['bindtap'],
+  view: ['bindtap'],
+}
 
 function normalizeWhitespace(value) {
   return value
@@ -585,6 +589,17 @@ function sanitizeAttrs(attrs) {
     else if (attr.type?.name) {
       attr.type = normalizeType(attr.type.name) ?? attr.type
     }
+    if (Array.isArray(attr.enum)) {
+      const seenValues = new Set()
+      attr.enum = attr.enum.filter((entry) => {
+        const key = `${typeof entry?.value}:${String(entry?.value)}`
+        if (seenValues.has(key)) {
+          return false
+        }
+        seenValues.add(key)
+        return true
+      })
+    }
     sanitized.push(attr)
   }
   return sanitized
@@ -611,8 +626,24 @@ async function syncComponent(component) {
   const authorize = parseAuthorize($, baseUrl)
   const demoImages = parseDemoImages($, baseUrl)
   const attrs = parseAttributeTable($, baseUrl)
-
   const existingAttrs = new Map((component.attrs ?? []).map(attr => [attr.name, attr]))
+  for (const name of SOURCE_EVENT_ATTRIBUTES_BY_COMPONENT[component.name] ?? []) {
+    if (!attrs.some(attr => attr.name === name)) {
+      attrs.push(existingAttrs.get(name) ?? {
+        name,
+        type: { name: 'function', returns: { name: 'any' } },
+      })
+    }
+  }
+  for (const attr of attrs) {
+    const existing = existingAttrs.get(attr.name)
+    if (existing?.jsxName) {
+      attr.jsxName = existing.jsxName
+    }
+    if (!attr.enum && existing?.enum) {
+      attr.enum = existing.enum
+    }
+  }
   const mergedAttrs = attrs
   const sanitizedAttrs = sanitizeAttrs(mergedAttrs)
 

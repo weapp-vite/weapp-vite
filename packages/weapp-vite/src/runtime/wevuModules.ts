@@ -18,7 +18,6 @@ export type WevuRuntimeModuleFamily
   = | 'api'
     | 'compiler'
     | 'fetch'
-    | 'jsx-runtime'
     | 'reactivity'
     | 'router'
     | 'runtime'
@@ -125,6 +124,9 @@ export function resolveWevuRuntimeModuleFamily(id: string): WevuRuntimeModuleFam
   if (!modulePath) {
     return undefined
   }
+  if (modulePath === 'jsx-runtime' || modulePath.endsWith('/jsx-runtime')) {
+    return undefined
+  }
   if (modulePath.startsWith('reactivity/') || modulePath === 'scheduler') {
     return 'reactivity'
   }
@@ -140,7 +142,7 @@ export function resolveWevuRuntimeModuleFamily(id: string): WevuRuntimeModuleFam
   if (modulePath.startsWith('compiler/')) {
     return 'compiler'
   }
-  if (modulePath === 'jsx-runtime' || modulePath === 'vue-demi') {
+  if (modulePath === 'vue-demi') {
     return modulePath
   }
   if (modulePath === 'api' || modulePath === 'fetch' || modulePath === 'web-apis') {

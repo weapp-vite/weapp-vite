@@ -1,83 +1,6 @@
-import type {
-  ComponentOptionsMixin,
-  DefineComponent,
-  MiniProgramAddToFavoritesOption,
-  MiniProgramBoundingClientRectResult,
-  MiniProgramIntersectionObserver,
-  MiniProgramLaunchOptions,
-  MiniProgramMemoryWarningResult,
-  MiniProgramPageNotFoundOptions,
-  MiniProgramPageResizeOption,
-  MiniProgramPageScrollOption,
-  MiniProgramScrollOffsetResult,
-  MiniProgramShareAppMessageOption,
-  MiniProgramTabItemTapOption,
-  MiniProgramThemeChangeResult,
-  MiniProgramUnhandledRejectionResult,
-  ModelBindingPayload,
-  PublicProps,
-  RuntimeApp,
-  SetupContextIntersectionObserver,
-  SetupContextRouter,
-  SetupContextSelectorQuery,
-} from '@/index'
+import type { ComponentOptionsMixin, DefineComponent, MiniProgramAddToFavoritesOption, MiniProgramBoundingClientRectResult, MiniProgramIntersectionObserver, MiniProgramLaunchOptions, MiniProgramMemoryWarningResult, MiniProgramPageNotFoundOptions, MiniProgramPageResizeOption, MiniProgramPageScrollOption, MiniProgramScrollOffsetResult, MiniProgramShareAppMessageOption, MiniProgramTabItemTapOption, MiniProgramThemeChangeResult, MiniProgramUnhandledRejectionResult, ModelBindingPayload, PublicProps, RuntimeApp, SetupContextIntersectionObserver, SetupContextRouter, SetupContextSelectorQuery } from 'wevu'
 import { expectAssignable, expectType } from 'tsd'
-import {
-  createApp,
-  createWevuComponent,
-  defineAppSetup,
-  defineComponent,
-  hasInjectionContext,
-  inject,
-  injectGlobal,
-  nextTick,
-  onActivated,
-  onAddToFavorites,
-  onBeforeMount,
-  onBeforeUnmount,
-  onBeforeUpdate,
-  onDeactivated,
-  onErrorCaptured,
-  onHide,
-  onLaunch,
-  onMemoryWarning,
-  onMounted,
-  onPageNotFound,
-  onPageScroll,
-  onReady,
-  onRouteDone,
-  onSaveExitState,
-  onShareAppMessage,
-  onShareTimeline,
-  onShow,
-  onTabItemTap,
-  onThemeChange,
-  onUnhandledRejection,
-  onUnmounted,
-  onUpdated,
-  provide,
-  provideGlobal,
-  registerApp,
-  registerComponent,
-  resetWevuDefaults,
-  setWevuDefaults,
-  shallowReadonly,
-  useBoundingClientRect,
-  useDisposables,
-  useElementIntersectionObserver,
-  useIntersectionObserver,
-  useNativeInstance,
-  useNativePageRouter,
-  useNativeRouter,
-  useNavigationBarMetrics,
-  usePageScrollThrottle,
-  usePageStack,
-  useScrollOffset,
-  useSelectorFields,
-  useSelectorQuery,
-  useUpdatePerformanceListener,
-  version,
-} from '@/index'
+import { createApp, createWevuComponent, defineAppSetup, defineComponent, hasInjectionContext, inject, injectGlobal, nextTick, onActivated, onAddToFavorites, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onErrorCaptured, onHide, onLaunch, onMemoryWarning, onMounted, onPageNotFound, onPageScroll, onReady, onRouteDone, onSaveExitState, onShareAppMessage, onShareTimeline, onShow, onTabItemTap, onThemeChange, onUnhandledRejection, onUnmounted, onUpdated, provide, provideGlobal, registerApp, registerComponent, resetWevuDefaults, setWevuDefaults, shallowReadonly, useBoundingClientRect, useDisposables, useElementIntersectionObserver, useIntersectionObserver, useNativeInstance, useNativePageRouter, useNativeRouter, useNavigationBarMetrics, usePageScrollThrottle, usePageStack, useScrollOffset, useSelectorFields, useSelectorQuery, useUpdatePerformanceListener, version } from 'wevu'
 
 const TOKEN = Symbol('token')
 type RT = RuntimeApp<Record<string, any>, Record<string, any>, Record<string, (...args: any[]) => any>>
@@ -215,7 +138,7 @@ defineComponent({
     expectType<() => void>(stopPageScroll)
     expectType<SetupContextRouter>(router)
     expectType<SetupContextRouter>(pageRouter)
-    router.navigateTo({ url: '/pages/demo/index' })
+    router.navigateTo({ url: '/pages/home/index' })
     pageRouter.navigateBack({ delta: 1 })
     const io = useIntersectionObserver()
     expectType<MiniProgramIntersectionObserver>(io)

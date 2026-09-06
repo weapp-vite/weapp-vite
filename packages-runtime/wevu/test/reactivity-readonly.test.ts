@@ -20,7 +20,7 @@ describe('readonly - edge cases and boundary values', () => {
       const ro = readonly(original)
 
       expect(() => {
-        ro.value = 20
+        Reflect.set(ro, 'value', 20)
       }).toThrow('无法给只读 ref 赋值')
     })
 
@@ -110,7 +110,7 @@ describe('readonly - edge cases and boundary values', () => {
       const ro = readonly(arr)
 
       expect(() => {
-        ro[0] = 10
+        Reflect.set(ro, '0', 10)
       }).toThrow('无法在只读对象上设置属性')
     })
 
@@ -119,7 +119,7 @@ describe('readonly - edge cases and boundary values', () => {
       const ro = readonly(arr)
 
       expect(() => {
-        ro.push(4)
+        Array.prototype.push.call(ro, 4)
       }).toThrow('无法在只读对象上设置属性')
     })
 
@@ -128,7 +128,7 @@ describe('readonly - edge cases and boundary values', () => {
       const ro = readonly(arr)
 
       expect(() => {
-        delete ro[0]
+        Reflect.deleteProperty(ro, '0')
       }).toThrow('无法在只读对象上删除属性')
     })
 
@@ -148,7 +148,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(ro.length).toBe(0)
       expect(() => {
-        ro.push(1)
+        Array.prototype.push.call(ro, 1)
       }).toThrow('无法在只读对象上设置属性')
     })
 
@@ -278,7 +278,7 @@ describe('readonly - edge cases and boundary values', () => {
       expect(ro[0]).toBe(100)
 
       expect(() => {
-        ro[0] = 200
+        Reflect.set(ro, '0', 200)
       }).toThrow('无法在只读对象上设置属性')
     })
 
@@ -400,7 +400,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(ro.key).toBe('value')
       expect(() => {
-        ro.key = 'new value'
+        Reflect.set(ro, 'key', 'new value')
       }).toThrow('无法在只读对象上设置属性')
     })
   })

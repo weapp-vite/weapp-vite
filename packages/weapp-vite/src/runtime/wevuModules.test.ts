@@ -27,6 +27,24 @@ describe('wevu module identity', () => {
     )).toBe('router')
   })
 
+  it.each([
+    'jsx-runtime',
+    'weapp/jsx-runtime',
+    'alipay/jsx-runtime',
+    'tt/jsx-runtime',
+    'miniprogram/jsx-runtime',
+  ])('does not classify the type-only %s entry as runtime code', (modulePath) => {
+    const bareId = `wevu/${modulePath}`
+    const sourceId = `/project/packages-runtime/wevu/src/${modulePath}.ts`
+    const distId = `/project/node_modules/wevu/dist/${modulePath}.mjs`
+
+    expect(resolveWevuRuntimeModuleFamily(bareId)).toBeUndefined()
+    expect(resolveWevuRuntimeModuleFamily(sourceId)).toBeUndefined()
+    expect(resolveWevuRuntimeModuleFamily(distId)).toBeUndefined()
+    expect(resolveWevuStableVendorFileName(sourceId)).toBeUndefined()
+    expect(resolveWevuStableVendorFileName(distId)).toBeUndefined()
+  })
+
   it('keeps legacy hashed chunks on the legacy resolver path', () => {
     expect(resolveWevuPreservedModulePath(
       '/project/node_modules/wevu/dist/dev/watch-B46crqgs.mjs',

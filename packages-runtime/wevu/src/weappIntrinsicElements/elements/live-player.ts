@@ -1,38 +1,37 @@
-// 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
+// 此文件由 scripts/generate-intrinsic-elements.mjs 自动生成，请勿直接修改。 来源：components.weapp.json。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
+import type { WevuJsxEventHandler } from '../../jsx-runtime'
+import type { WeappIntrinsicElementBaseAttributes } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/live-player.html
  */
-export type MiniProgramIntrinsicElementLivePlayer = MiniProgramIntrinsicElementBaseAttributes & {
+export type WeappIntrinsicElementLivePlayer = WeappIntrinsicElementBaseAttributes & {
   'auto-pause-if-navigate'?: boolean
   'auto-pause-if-open-native'?: boolean
   autoplay?: boolean
   'background-mute'?: boolean
-  bindaudiovolumenotify?: MiniProgramIntrinsicEventHandler<unknown>
-  bindcastinginterrupt?: MiniProgramIntrinsicEventHandler<unknown>
-  bindcastingstatechange?: MiniProgramIntrinsicEventHandler<unknown>
-  bindcastinguserselect?: MiniProgramIntrinsicEventHandler<unknown>
-  bindenterpictureinpicture?: MiniProgramIntrinsicEventHandler<unknown>
-  bindfullscreenchange?: MiniProgramIntrinsicEventHandler<unknown>
-  bindleavepictureinpicture?: MiniProgramIntrinsicEventHandler<unknown>
-  bindnetstatus?: MiniProgramIntrinsicEventHandler<unknown>
-  bindstatechange?: MiniProgramIntrinsicEventHandler<unknown>
   'enable-auto-rotation'?: boolean
   'enable-casting'?: boolean
   'max-cache'?: number
   'min-cache'?: number
-  mode?: 'live' | 'RTC'
+  mode?: 'RTC' | 'live'
   muted?: boolean
   'object-fit'?: 'contain' | 'fillCrop'
-  orientation?: 'vertical' | 'horizontal'
+  onAudiovolumenotify?: WevuJsxEventHandler
+  onCastinginterrupt?: WevuJsxEventHandler
+  onCastingstatechange?: WevuJsxEventHandler
+  onCastinguserselect?: WevuJsxEventHandler
+  onEnterpictureinpicture?: WevuJsxEventHandler
+  onFullScreenChange?: WevuJsxEventHandler
+  onLeavepictureinpicture?: WevuJsxEventHandler
+  onNetstatus?: WevuJsxEventHandler
+  onStatechange?: WevuJsxEventHandler
+  orientation?: 'horizontal' | 'vertical'
   'picture-in-picture-init-position'?: string
-  'picture-in-picture-mode'?: '[]' | 'push' | 'pop'
-  'referrer-policy'?: 'origin' | 'no-referrer'
-  'sound-mode'?: 'speaker' | 'ear'
+  'picture-in-picture-mode'?: '[]' | 'pop' | 'push'
+  'referrer-policy'?: 'no-referrer' | 'origin'
+  'sound-mode'?: 'ear' | 'speaker'
   src?: string
 }
-
-export type WeappIntrinsicElementLivePlayer = MiniProgramIntrinsicElementLivePlayer

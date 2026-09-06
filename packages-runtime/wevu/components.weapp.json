@@ -47,6 +47,12 @@
         ],
         "defaultValue": "400",
         "since": "1.0.0"
+      },
+      {
+        "name": "bindtap",
+        "type": {
+          "name": "eventhandle"
+        }
       }
     ],
     "tips": [
@@ -1146,421 +1152,33 @@
   },
   {
     "desc": [
-      "滑块视图容器。其中只可放置[swiper-item](https://developers.weixin.qq.com/miniprogram/dev/component/swiper-item.html)组件，否则会导致未定义的行为。",
-      "使用 `worklet` 函数需要开启开发者工具 \"将 JS 编译成 ES5\" 或 \"编译 worklet 函数\" 选项。"
+      "仅可放置在 swiper 组件中，宽高自动设置为 100%。"
     ],
     "attrs": [
       {
-        "name": "indicator-dots",
-        "type": {
-          "name": "boolean"
-        },
-        "defaultValue": "false",
-        "since": "1.0.0"
-      },
-      {
-        "name": "indicator-color",
+        "name": "item-id",
         "type": {
           "name": "string"
         },
-        "defaultValue": "rgba(0, 0, 0, .3)",
-        "since": "1.1.0"
-      },
-      {
-        "name": "indicator-active-color",
-        "type": {
-          "name": "string"
-        },
-        "defaultValue": "#000000",
-        "since": "1.1.0"
-      },
-      {
-        "name": "autoplay",
-        "type": {
-          "name": "boolean"
-        },
-        "defaultValue": "false",
-        "since": "1.0.0"
-      },
-      {
-        "name": "current",
-        "type": {
-          "name": "number"
-        },
-        "defaultValue": "0",
-        "since": "1.0.0"
-      },
-      {
-        "name": "interval",
-        "type": {
-          "name": "number"
-        },
-        "defaultValue": "5000",
-        "since": "1.0.0"
-      },
-      {
-        "name": "duration",
-        "type": {
-          "name": "number"
-        },
-        "defaultValue": "500",
-        "since": "1.0.0"
-      },
-      {
-        "name": "circular",
-        "type": {
-          "name": "boolean"
-        },
-        "defaultValue": "false",
-        "since": "1.0.0"
-      },
-      {
-        "name": "vertical",
-        "type": {
-          "name": "boolean"
-        },
-        "defaultValue": "false",
-        "since": "1.0.0"
-      },
-      {
-        "name": "display-multiple-items",
-        "type": {
-          "name": "number"
-        },
-        "defaultValue": "1",
+        "desc": [
+          "该 swiper-item 的标识符"
+        ],
         "since": "1.9.0"
       },
       {
-        "name": "previous-margin",
-        "type": {
-          "name": "string"
-        },
-        "defaultValue": "\"0px\"",
-        "since": "1.9.0"
-      },
-      {
-        "name": "next-margin",
-        "type": {
-          "name": "string"
-        },
-        "defaultValue": "\"0px\"",
-        "since": "1.9.0"
-      },
-      {
-        "name": "easing-function",
-        "type": {
-          "name": "string"
-        },
-        "defaultValue": "\"default\"",
-        "since": "2.6.5",
-        "enum": [
-          {
-            "value": "default",
-            "desc": "默认缓动函数"
-          },
-          {
-            "value": "linear",
-            "desc": "线性动画"
-          },
-          {
-            "value": "easeInCubic",
-            "desc": "缓入动画"
-          },
-          {
-            "value": "easeOutCubic",
-            "desc": "缓出动画"
-          },
-          {
-            "value": "easeInOutCubic",
-            "desc": "缓入缓出动画"
-          }
-        ]
-      },
-      {
-        "name": "direction",
-        "type": {
-          "name": "string"
-        },
-        "defaultValue": "\"all\"",
-        "since": "3.8.10",
-        "enum": [
-          {
-            "value": "all",
-            "desc": "默认"
-          },
-          {
-            "value": "positive",
-            "desc": "如 vertical 为 true 时，允许用户下滑（swiper 内容向上滚动），为 false 时，允许用户右滑（swiper 内容向左滚动）"
-          },
-          {
-            "value": "negative",
-            "desc": "如 vertical 为 true 时，允许用户上滑（swiper 内容向下滚动），为 false 时，允许用户左滑（swiper 内容向右滚动）"
-          }
-        ]
-      },
-      {
-        "name": "bindchange",
-        "type": {
-          "name": "function",
-          "returns": {
-            "name": "any"
-          }
-        },
-        "since": "1.0.0"
-      },
-      {
-        "name": "bindtransition",
-        "type": {
-          "name": "function",
-          "returns": {
-            "name": "any"
-          }
-        },
-        "since": "2.4.3"
-      },
-      {
-        "name": "bindanimationfinish",
-        "type": {
-          "name": "function",
-          "returns": {
-            "name": "any"
-          }
-        },
-        "since": "1.9.0"
-      },
-      {
-        "name": "layout-type",
-        "type": {
-          "name": "string"
-        },
-        "defaultValue": "normal",
-        "since": "3.2.0",
-        "enum": [
-          {
-            "value": "normal",
-            "desc": "默认方式"
-          },
-          {
-            "value": "stackLeft",
-            "desc": "左向堆叠"
-          },
-          {
-            "value": "stackRight",
-            "desc": "右向堆叠"
-          },
-          {
-            "value": "tinder",
-            "desc": "滑动卡片"
-          },
-          {
-            "value": "transformer",
-            "desc": "过渡动画"
-          }
-        ]
-      },
-      {
-        "name": "transformer-type",
-        "type": {
-          "name": "string"
-        },
-        "defaultValue": "scaleAndFade",
-        "since": "3.2.0",
-        "enum": [
-          {
-            "value": "scaleAndFade"
-          },
-          {
-            "value": "accordion"
-          },
-          {
-            "value": "threeD"
-          },
-          {
-            "value": "zoomIn"
-          },
-          {
-            "value": "zoomOut"
-          },
-          {
-            "value": "deepthPage"
-          }
-        ]
-      },
-      {
-        "name": "indicator-type",
-        "type": {
-          "name": "string"
-        },
-        "defaultValue": "normal",
-        "since": "3.2.0",
-        "enum": [
-          {
-            "value": "normal"
-          },
-          {
-            "value": "worm"
-          },
-          {
-            "value": "wormThin"
-          },
-          {
-            "value": "wormUnderground"
-          },
-          {
-            "value": "wormThinUnderground"
-          },
-          {
-            "value": "expand"
-          },
-          {
-            "value": "jump"
-          },
-          {
-            "value": "jumpWithOffset"
-          },
-          {
-            "value": "scroll"
-          },
-          {
-            "value": "scrollFixedCenter"
-          },
-          {
-            "value": "slide"
-          },
-          {
-            "value": "slideUnderground"
-          },
-          {
-            "value": "scale"
-          },
-          {
-            "value": "swap"
-          },
-          {
-            "value": "swapYRotation"
-          },
-          {
-            "value": "color"
-          }
-        ]
-      },
-      {
-        "name": "indicator-margin",
-        "type": {
-          "name": "number"
-        },
-        "defaultValue": "10",
-        "since": "3.2.0"
-      },
-      {
-        "name": "indicator-spacing",
-        "type": {
-          "name": "number"
-        },
-        "defaultValue": "4",
-        "since": "3.2.0"
-      },
-      {
-        "name": "indicator-radius",
-        "type": {
-          "name": "number"
-        },
-        "defaultValue": "4",
-        "since": "3.2.0"
-      },
-      {
-        "name": "indicator-width",
-        "type": {
-          "name": "number"
-        },
-        "defaultValue": "8",
-        "since": "3.2.0"
-      },
-      {
-        "name": "indicator-height",
-        "type": {
-          "name": "number"
-        },
-        "defaultValue": "8",
-        "since": "3.2.0"
-      },
-      {
-        "name": "indicator-alignment",
-        "type": {
-          "name": "number[] | string"
-        },
-        "defaultValue": "auto",
-        "since": "3.2.0"
-      },
-      {
-        "name": "indicator-offset",
-        "type": {
-          "name": "number[]"
-        },
-        "defaultValue": "[0, 0]",
-        "since": "3.2.0"
-      },
-      {
-        "name": "scroll-with-animation",
-        "type": {
-          "name": "boolean"
-        },
-        "defaultValue": "true",
-        "since": "2.29.0"
-      },
-      {
-        "name": "cache-extent",
-        "type": {
-          "name": "number"
-        },
-        "defaultValue": "0",
-        "since": "2.29.0"
-      },
-      {
-        "name": "worklet:onscrollstart",
-        "type": {
-          "name": "function",
-          "returns": {
-            "name": "any"
-          }
-        }
-      },
-      {
-        "name": "worklet:onscrollupdate",
-        "type": {
-          "name": "function",
-          "returns": {
-            "name": "any"
-          }
-        }
-      },
-      {
-        "name": "worklet:onscrollend",
-        "type": {
-          "name": "function",
-          "returns": {
-            "name": "any"
-          }
-        }
-      },
-      {
-        "name": "snap-to-edge",
+        "name": "skip-hidden-item-layout",
         "type": {
           "name": "boolean"
         },
         "desc": [
-          "当 swiper-item 的个数大于等于 2，关闭 circular 并且开启 previous-margin 或 next-margin 的时候，可以指定这个边距是否应用到第一个、最后一个元素"
+          "是否跳过未显示的滑块布局"
         ],
         "defaultValue": "false",
-        "since": "2.12.1"
+        "since": "1.9.0"
       }
     ],
-    "tips": [
-      "`tip`: 如果在 `bindchange` 的事件回调函数中使用 `setData` 改变 `current` 值，则有可能导致 `setData` 被不停地调用，因而通常情况下请在改变 `current` 值前检测 `source` 字段来判断是否是由于用户触摸引起。",
-      "`tip`: 在 mac 小程序上，若当前组件所在的页面或全局开启了 `enablePassiveEvent` 配置项，该内置组件可能会出现非预期表现（详情参考 [enablePassiveEvent 文档](https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/app)）"
-    ],
     "name": "swiper-item",
-    "docLink": "https://developers.weixin.qq.com/miniprogram/dev/component/swiper.html"
+    "docLink": "https://developers.weixin.qq.com/miniprogram/dev/component/swiper-item.html"
   },
   {
     "desc": [
@@ -2033,47 +1651,51 @@
   },
   {
     "desc": [
-      "覆盖在原生组件之上的文本视图。",
-      "可覆盖的原生组件包括 [map](https://developers.weixin.qq.com/miniprogram/dev/component/map.html)、[video](https://developers.weixin.qq.com/miniprogram/dev/component/video.html)、[canvas](https://developers.weixin.qq.com/miniprogram/dev/component/canvas.html)、[camera](https://developers.weixin.qq.com/miniprogram/dev/component/camera.html)、[live-player](https://developers.weixin.qq.com/miniprogram/dev/component/live-player.html)、[live-pusher](https://developers.weixin.qq.com/miniprogram/dev/component/live-pusher.html)",
-      "只支持嵌套 [cover-view](https://developers.weixin.qq.com/miniprogram/dev/component/cover-view.html)、[cover-image](https://developers.weixin.qq.com/miniprogram/dev/component/cover-image.html)，可在 [cover-view](https://developers.weixin.qq.com/miniprogram/dev/component/cover-view.html) 中使用 [button](https://developers.weixin.qq.com/miniprogram/dev/component/button.html)。组件属性的长度单位默认为px，[2.4.0](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html)起支持传入单位(rpx/px)。"
+      "覆盖在原生组件之上的图片视图。"
     ],
     "attrs": [
       {
-        "name": "scroll-top",
+        "name": "src",
         "type": {
-          "name": "number | string"
+          "name": "string"
         },
         "desc": [
-          "设置顶部滚动偏移量，仅在设置了 overflow-y: scroll 成为滚动元素后生效"
+          "图标路径"
+        ],
+        "since": "1.4.0"
+      },
+      {
+        "name": "referrer-policy",
+        "type": {
+          "name": "string"
+        },
+        "defaultValue": "no-referrer",
+        "since": "2.13.0"
+      },
+      {
+        "name": "bind:load",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "图片加载成功时触发"
+        ],
+        "since": "2.1.0"
+      },
+      {
+        "name": "bind:error",
+        "type": {
+          "name": "eventhandle"
+        },
+        "desc": [
+          "图片加载失败时触发"
         ],
         "since": "2.1.0"
       }
     ],
-    "tips": [
-      "`tip`: [cover-view](https://developers.weixin.qq.com/miniprogram/dev/component/cover-view.html)和[cover-image](https://developers.weixin.qq.com/miniprogram/dev/component/cover-image.html)的`aria-role`仅可设置为`button`，读屏模式下才可以点击，并朗读出“按钮”；为空时可以聚焦，但不可点击",
-      "`tip`: 基础库 2.2.4 起支持 touch 相关事件，也可使用 hover-class 设置点击态",
-      "`tip`: 基础库 2.1.0 起支持设置 `scale` `rotate` 的 css 样式，包括 transition 动画",
-      "`tip`: 基础库 1.9.90 起 `cover-view` 支持 `overflow: scroll`，但不支持动态更新 `overflow`",
-      "`tip`: 基础库 1.9.90 起最外层 `cover-view` 支持 `position: fixed`",
-      "`tip`: 基础库 1.9.0 起支持插在 `view` 等标签下。在此之前只可嵌套在原生组件`map`、`video`、`canvas`、`camera`内，避免嵌套在其他组件内。",
-      "`tip`: 基础库 1.6.0 起支持css transition动画，`transition-property`只支持`transform (translateX, translateY)`与`opacity`。",
-      "`tip`: 基础库 1.6.0 起支持css opacity。",
-      "`tip`: 事件模型遵循冒泡模型，但不会冒泡到原生组件。",
-      "`tip`: 文本建议都套上cover-view标签，避免排版错误。",
-      "`tip`: 只支持基本的定位、布局、文本样式。不支持设置`单边的border`、`background-image`、`shadow`、`overflow: visible`等。",
-      "`tip`: 建议子节点不要溢出父节点",
-      "`tip`: 支持使用 z-index 控制层级",
-      "`tip`: 默认设置的样式有：`white-space: nowrap;` `line-height: 1.2;` `display: block;`"
-    ],
-    "bugs": [
-      "`bug`: 自定义组件嵌套 `cover-view` 时，自定义组件的 slot 及其父节点暂不支持通过 wx:if 控制显隐，否则会导致 `cover-view` 不显示"
-    ],
     "name": "cover-image",
-    "docLink": "https://developers.weixin.qq.com/miniprogram/dev/component/cover-view.html",
-    "since": "1.4.0",
-    "notices": [
-      "目前[原生组件](https://developers.weixin.qq.com/miniprogram/dev/component/native-component.html)均已支持同层渲染，建议使用 [view](https://developers.weixin.qq.com/miniprogram/dev/component/view.html) 替代"
-    ]
+    "docLink": "https://developers.weixin.qq.com/miniprogram/dev/component/cover-image.html",
+    "since": "1.4.0"
   },
   {
     "desc": [
@@ -2512,6 +2134,12 @@
     ],
     "attrs": [
       {
+        "name": "bindtap",
+        "type": {
+          "name": "eventhandle"
+        }
+      },
+      {
         "name": "size",
         "type": {
           "name": "string"
@@ -2766,6 +2394,7 @@
       },
       {
         "name": "bindgetuserinfo",
+        "jsxName": "onGetUserInfo",
         "type": {
           "name": "function",
           "returns": {
@@ -2784,6 +2413,7 @@
       },
       {
         "name": "createliveactivity",
+        "jsxName": "onCreateLiveActivity",
         "type": {
           "name": "function",
           "returns": {
@@ -2793,6 +2423,7 @@
       },
       {
         "name": "bindgetphonenumber",
+        "jsxName": "onGetPhoneNumber",
         "type": {
           "name": "function",
           "returns": {
@@ -2802,6 +2433,7 @@
       },
       {
         "name": "bindgetrealtimephonenumber",
+        "jsxName": "onGetRealtimePhoneNumber",
         "type": {
           "name": "function",
           "returns": {
@@ -2820,6 +2452,7 @@
       },
       {
         "name": "bindopensetting",
+        "jsxName": "onOpenSetting",
         "type": {
           "name": "function",
           "returns": {
@@ -2829,6 +2462,7 @@
       },
       {
         "name": "bindlaunchapp",
+        "jsxName": "onLaunchApp",
         "type": {
           "name": "function",
           "returns": {
@@ -2838,6 +2472,7 @@
       },
       {
         "name": "bindchooseavatar",
+        "jsxName": "onChooseAvatar",
         "type": {
           "name": "function",
           "returns": {
@@ -2847,6 +2482,7 @@
       },
       {
         "name": "bindagreeprivacyauthorization",
+        "jsxName": "onAgreePrivacyAuthorization",
         "type": {
           "name": "function",
           "returns": {
@@ -2883,55 +2519,22 @@
   },
   {
     "desc": [
-      "多选项目。"
+      "多项选择器，内部由多个 checkbox 组成。"
     ],
     "attrs": [
       {
-        "name": "value",
+        "name": "bind:change",
         "type": {
-          "name": "string"
+          "name": "eventhandle"
         },
         "desc": [
-          "[checkbox](https://developers.weixin.qq.com/miniprogram/dev/component/checkbox.html)标识，选中时触发[checkbox-group](https://developers.weixin.qq.com/miniprogram/dev/component/checkbox-group.html)的 change 事件，并携带 [checkbox](https://developers.weixin.qq.com/miniprogram/dev/component/checkbox.html) 的 value"
+          "选中项发生改变时触发 change 事件"
         ],
-        "since": "1.0.0"
-      },
-      {
-        "name": "disabled",
-        "type": {
-          "name": "boolean"
-        },
-        "desc": [
-          "是否禁用"
-        ],
-        "defaultValue": "false",
-        "since": "1.0.0"
-      },
-      {
-        "name": "checked",
-        "type": {
-          "name": "boolean"
-        },
-        "desc": [
-          "当前是否选中，可用来设置默认选中"
-        ],
-        "defaultValue": "false",
-        "since": "1.0.0"
-      },
-      {
-        "name": "color",
-        "type": {
-          "name": "string"
-        },
-        "desc": [
-          "checkbox的颜色，同css的color"
-        ],
-        "defaultValue": "#09BB07",
         "since": "1.0.0"
       }
     ],
     "name": "checkbox-group",
-    "docLink": "https://developers.weixin.qq.com/miniprogram/dev/component/checkbox.html"
+    "docLink": "https://developers.weixin.qq.com/miniprogram/dev/component/checkbox-group.html"
   },
   {
     "desc": [
@@ -3358,6 +2961,7 @@
       },
       {
         "name": "bindkeyboardheightchange",
+        "jsxName": "onKeyboardHeightChange",
         "type": {
           "name": "function",
           "returns": {
@@ -3368,6 +2972,7 @@
       },
       {
         "name": "bindnicknamereview",
+        "jsxName": "onNicknameReview",
         "type": {
           "name": "function",
           "returns": {
@@ -3901,55 +3506,22 @@
   },
   {
     "desc": [
-      "单选项目。"
+      "单项选择器，内部由多个 radio 组成。"
     ],
     "attrs": [
       {
-        "name": "value",
+        "name": "bind:change",
         "type": {
-          "name": "string"
+          "name": "eventhandle"
         },
         "desc": [
-          "[radio](https://developers.weixin.qq.com/miniprogram/dev/component/radio.html) 标识。当该[radio](https://developers.weixin.qq.com/miniprogram/dev/component/radio.html) 选中时，[radio-group](https://developers.weixin.qq.com/miniprogram/dev/component/radio-group.html) 的 change 事件会携带[radio](https://developers.weixin.qq.com/miniprogram/dev/component/radio.html)的value"
+          "选中项发生改变时触发 change 事件"
         ],
-        "since": "1.0.0"
-      },
-      {
-        "name": "checked",
-        "type": {
-          "name": "boolean"
-        },
-        "desc": [
-          "当前是否选中"
-        ],
-        "defaultValue": "false",
-        "since": "1.0.0"
-      },
-      {
-        "name": "disabled",
-        "type": {
-          "name": "boolean"
-        },
-        "desc": [
-          "是否禁用"
-        ],
-        "defaultValue": "false",
-        "since": "1.0.0"
-      },
-      {
-        "name": "color",
-        "type": {
-          "name": "string"
-        },
-        "desc": [
-          "radio的颜色，同css的color"
-        ],
-        "defaultValue": "#09BB07",
         "since": "1.0.0"
       }
     ],
     "name": "radio-group",
-    "docLink": "https://developers.weixin.qq.com/miniprogram/dev/component/radio.html"
+    "docLink": "https://developers.weixin.qq.com/miniprogram/dev/component/radio-group.html"
   },
   {
     "desc": [
@@ -9014,14 +8586,6 @@
           {
             "value": "to",
             "desc": "push 阶段采用目标页面节点作为飞跃物"
-          },
-          {
-            "value": "from",
-            "desc": "pop 阶段采用源页面节点作为飞跃物"
-          },
-          {
-            "value": "to",
-            "desc": "pop 阶段采用目标页面节点作为飞跃物"
           }
         ]
       },
@@ -9031,7 +8595,17 @@
           "name": "string"
         },
         "defaultValue": "to",
-        "since": "2.30.2"
+        "since": "2.30.2",
+        "enum": [
+          {
+            "value": "from",
+            "desc": "pop 阶段采用源页面节点作为飞跃物"
+          },
+          {
+            "value": "to",
+            "desc": "pop 阶段采用目标页面节点作为飞跃物"
+          }
+        ]
       },
       {
         "name": "worklet:onframe",
