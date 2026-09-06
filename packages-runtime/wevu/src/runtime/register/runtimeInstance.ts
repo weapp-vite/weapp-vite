@@ -296,7 +296,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       return
     }
     const bindings = target.__wevuTemplateRefs
-    if (!Array.isArray(bindings) || !bindings.length) {
+    if (!runtimeCapabilityRegistry.templateRefs && (!Array.isArray(bindings) || !bindings.length)) {
       if (ownsHostCommit) {
         finishHostCommit()
       }

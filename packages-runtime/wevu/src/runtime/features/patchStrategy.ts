@@ -18,14 +18,15 @@ function createPatchSetDataScheduler(options: SetDataSchedulerOptions): SetDataS
   let started = false
   let disposed = false
 
-  const syncComputedSnapshot = () => {
+  const syncComputedSnapshot = (
+    snapshot: Record<string, unknown>,
+  ) => {
     if (!options.includeComputed) {
       return
     }
     for (const key of Object.keys(dispatchedComputedSnapshot)) {
       delete dispatchedComputedSnapshot[key]
     }
-    const snapshot = scheduler.getLatestSnapshot()
     for (const key of Object.keys(options.computedRefs)) {
       if (scheduler.shouldIncludeSnapshotKey(key)) {
         dispatchedComputedSnapshot[key] = snapshot[key]
@@ -39,8 +40,7 @@ function createPatchSetDataScheduler(options: SetDataSchedulerOptions): SetDataS
     pendingPatches.clear()
     fallbackTopKeys.clear()
     requiresDiffCollection = false
-    scheduler.runDiffUpdate(reason, pendingPatchKeys)
-    syncComputedSnapshot()
+    scheduler.runDiffUpdate(reason, pendingPatchKeys, syncComputedSnapshot)
   }
 
   const mutationRecorder = (record: MutationRecord) => {

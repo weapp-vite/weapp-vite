@@ -53,7 +53,6 @@ export interface SetDataSchedulerOptions {
 }
 
 export interface SetDataSchedulerInternals extends SetDataScheduler {
-  job: (stateRootRaw?: object) => void | Promise<void>
   collect: () => Record<string, unknown>
   dispatchUpdate: (update: PreparedSetDataUpdate) => number
   dispose: () => void
@@ -64,7 +63,11 @@ export interface SetDataSchedulerInternals extends SetDataScheduler {
   plainCacheEligibility: WeakMap<object, boolean>
   prepareJob: (pendingPatchKeys?: number, pathSource?: Iterable<string> | (() => Iterable<string>)) => boolean
   resolveTopKeysByRoot: (root: object) => string[]
-  runDiffUpdate: (reason?: SetDataDebugInfo['reason'], pendingPatchKeys?: number) => void
+  runDiffUpdate: (
+    reason?: SetDataDebugInfo['reason'],
+    pendingPatchKeys?: number,
+    onSnapshotPrepared?: (snapshot: SetDataSnapshot) => void,
+  ) => void
   shouldIncludeSnapshotKey: (key: string) => boolean
 }
 
@@ -457,6 +460,7 @@ export function createSetDataScheduler(options: SetDataSchedulerOptions): SetDat
   const runDiffUpdate = (
     reason: SetDataDebugInfo['reason'] = 'diff',
     pendingPatchKeys = 0,
+    onSnapshotPrepared?: (snapshot: SetDataSnapshot) => void,
   ): void => {
     const diffCollection = setDataStrategy === 'diff' ? collectDiffSnapshot() : undefined
     const snapshot = diffCollection?.snapshot ?? collect()
@@ -479,6 +483,7 @@ export function createSetDataScheduler(options: SetDataSchedulerOptions): SetDat
             }
           })()
         : diffSnapshots(dispatchedSnapshot, snapshot)
+    onSnapshotPrepared?.(snapshot)
     const payloadKeys = Object.keys(payload).length
     if (!payloadKeys && !needsRecovery) {
       return

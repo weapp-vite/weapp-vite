@@ -7,9 +7,9 @@ import { WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { reactive, shallowRef } from '@/reactivity'
 import { createSetDataScheduler } from '@/runtime/app/setData/scheduler'
+import { resolveBindingDiagnostics, resolveBindingManifest } from '@/runtime/bindingManifest'
 import { runtimeCapabilityRegistry } from '@/runtime/capabilities'
 import { installPatchStrategy } from '@/runtime/features/patchStrategy'
-import { resolveBindingDiagnostics, resolveBindingManifest } from '@/runtime/bindingManifest'
 
 const patchSchedulers = new Set<SetDataScheduler>()
 
