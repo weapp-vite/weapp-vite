@@ -1,4 +1,12 @@
 export {
+  type AsyncDerivation,
+  type AsyncDerivationContext,
+  type AsyncDerivationState,
+  type AsyncDerivationStatus,
+  useAsyncDerivation,
+  type UseAsyncDerivationOptions,
+} from './asyncDerivation'
+export {
   computed,
   type ComputedGetter,
   type ComputedRef,

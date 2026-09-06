@@ -341,9 +341,10 @@ describe('core helper bundle', () => {
         type: 'chunk',
         fileName: 'pages/index/index.js',
         code: [
-          'import { ref, unref, onShareAppMessage } from "wevu";',
+          'import { ref, unref, useAsyncDerivation, onShareAppMessage } from "wevu";',
           'const count = ref(0);',
           'unref(count);',
+          'useAsyncDerivation(() => count.value);',
           'onShareAppMessage(() => ({}));',
         ].join('\n'),
         imports: [],
@@ -354,6 +355,7 @@ describe('core helper bundle', () => {
         code: [
           'Object.defineProperty(exports, "ref", { enumerable: true, get: function() { return ref; } });',
           'Object.defineProperty(exports, "unref", { enumerable: true, get: function() { return unref; } });',
+          'Object.defineProperty(exports, "useAsyncDerivation", { enumerable: true, get: function() { return useAsyncDerivation; } });',
         ].join('\n'),
         imports: [],
       },
@@ -371,7 +373,7 @@ describe('core helper bundle', () => {
     rewriteWevuInternalRuntimeImports(bundle)
 
     expect(bundle['pages/index/index.js'].code).not.toContain('from "wevu"')
-    expect(bundle['pages/index/index.js'].code).toContain('const { ref, unref } = require("../../weapp-vendors/wevu-ref.js");')
+    expect(bundle['pages/index/index.js'].code).toContain('const { ref, unref, useAsyncDerivation } = require("../../weapp-vendors/wevu-ref.js");')
     expect(bundle['pages/index/index.js'].code).toContain('const { onShareAppMessage } = require("../../weapp-vendors/wevu-watch.js");')
     expect(bundle['pages/index/index.js'].imports).toEqual([
       'weapp-vendors/wevu-ref.js',

@@ -101,8 +101,10 @@ describe('web API contract matrix', () => {
     }
     const listener = vi.fn()
     const removed = vi.fn()
+    const objectListener = { handleEvent: vi.fn() }
     target.addEventListener('change', listener)
     target.addEventListener('change', removed)
+    target.addEventListener('change', objectListener)
     target.removeEventListener('change', removed)
     target.onchange = vi.fn()
     const explicitTarget = { id: 'explicit' }
@@ -113,6 +115,10 @@ describe('web API contract matrix', () => {
       type: 'change',
     })).toBe(true)
     expect(listener).toHaveBeenCalledWith(expect.objectContaining({
+      currentTarget: explicitTarget,
+      target: explicitTarget,
+    }))
+    expect(objectListener.handleEvent).toHaveBeenCalledWith(expect.objectContaining({
       currentTarget: explicitTarget,
       target: explicitTarget,
     }))

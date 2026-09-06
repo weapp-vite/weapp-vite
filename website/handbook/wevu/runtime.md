@@ -188,6 +188,33 @@ await someWork()
 onLoad(() => {}) // 可能失效
 ```
 
+### 异步派生状态
+
+只读请求不必重复维护 `loading`、竞态版本和卸载清理。`useAsyncDerivation()` 提供显式、可序列化的状态；静态 WXML 继续通过 `v-if` 选择分支：
+
+```vue
+<script setup lang="ts">
+import { onLoad, useAsyncDerivation } from 'wevu'
+
+const goods = useAsyncDerivation(
+  ({ signal }) => getGoodsList({ signal }),
+  { immediate: false },
+)
+
+onLoad(() => goods.refresh())
+</script>
+
+<template>
+  <view v-if="goods.status === 'idle' || goods.status === 'initial-pending'">加载中</view>
+  <view v-else-if="goods.status === 'error'">加载失败</view>
+  <view v-else>
+    <view v-for="item in goods.value" :key="item.id">{{ item.name }}</view>
+  </view>
+</template>
+```
+
+再次调用 `refresh()` 时状态为 `refreshing`，并保留上一次成功值；旧请求不能覆盖新请求。`refresh()` 正常完成后读取 `status` / `error` 判断业务结果。分页追加、上传进度等命令式流程并非只读派生，仍应维护自己的事务状态。
+
 ## 一个完整的页面示例
 
 ```vue

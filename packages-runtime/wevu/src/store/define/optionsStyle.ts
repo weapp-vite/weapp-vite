@@ -1,44 +1,36 @@
+import type { MutationType } from '../types'
 import { computed, effect, reactive, toRaw, touchReactive } from '../../reactivity'
 import { wrapAction } from '../actions'
 import { createBaseApi } from '../base'
 import { cloneDeep, resetObject } from '../utils'
-import { createSafeNotifier } from './shared'
+import { createSafeNotifier, createStoreMutationTransaction } from './shared'
 
 export function createOptionsStyleStore(id: string, options: any, manager: any) {
   const rawState = options.state ? options.state() : {}
   const state = reactive(rawState)
   const initialSnapshot = cloneDeep(toRaw(rawState))
-  let notify: (type: any) => void = () => {}
-  const base = createBaseApi<typeof state>(id, state, t => notify(t), () => {
+  let notifySubscribers: (type: MutationType) => void = () => {}
+  const transaction = createStoreMutationTransaction(type => notifySubscribers(type))
+  const base = createBaseApi<typeof state>(id, state, transaction.notify, () => {
     resetObject(state as any, initialSnapshot)
-    notify('patch object')
   })
 
-  let isPatching = false
   const rawPatch = base.api.$patch
   base.api.$patch = (patch: Partial<typeof state> | ((nextState: typeof state) => void)) => {
-    isPatching = true
-    try {
+    transaction.run(() => {
       rawPatch(patch as any)
-    }
-    finally {
-      isPatching = false
-    }
+    })
   }
   if (typeof base.api.$reset === 'function') {
     const rawReset = base.api.$reset
     base.api.$reset = () => {
-      isPatching = true
-      try {
+      transaction.run(() => {
         rawReset()
-      }
-      finally {
-        isPatching = false
-      }
+      })
     }
   }
 
-  notify = createSafeNotifier(id, base.subs, () => state as any)
+  notifySubscribers = createSafeNotifier(id, base.subs, () => state as any)
 
   const store: Record<string, any> = {}
   for (const key of Object.getOwnPropertyNames(base.api)) {
@@ -52,13 +44,9 @@ export function createOptionsStyleStore(id: string, options: any, manager: any) 
             return (base.api as any).$state
           },
           set(v: any) {
-            isPatching = true
-            try {
+            transaction.run(() => {
               ;(base.api as any).$state = v
-            }
-            finally {
-              isPatching = false
-            }
+            })
           },
         })
       }
@@ -115,12 +103,12 @@ export function createOptionsStyleStore(id: string, options: any, manager: any) 
       initialized = true
       return
     }
-    if (isPatching || dispatchingDirect) {
+    if (transaction.active || dispatchingDirect) {
       return
     }
     dispatchingDirect = true
     try {
-      notify('direct')
+      notifySubscribers('direct')
     }
     finally {
       dispatchingDirect = false

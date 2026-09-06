@@ -6,7 +6,7 @@
 
 | 入口                           | 子路径                      | 类型导出总数 | 仅类型导出（推断） | 运行时同名导出 | 明细                        |
 | ------------------------------ | --------------------------- | -----------: | -----------------: | -------------: | --------------------------- |
-| `wevu`                         | `.`                         |          411 |                261 |            150 | [查看](wevu-root.md)        |
+| `wevu`                         | `.`                         |          417 |                266 |            151 | [查看](wevu-root.md)        |
 | `wevu/compiler`                | `./compiler`                |            0 |                  0 |              0 | [查看](wevu-compiler.md)    |
 | `wevu/jsx-runtime`             | `./jsx-runtime`             |            6 |                  6 |              0 | [查看](wevu-jsx-runtime.md) |
 | `wevu/weapp/jsx-runtime`       | `./weapp/jsx-runtime`       |            8 |                  8 |              0 | [查看](wevu-jsx-runtime.md) |
@@ -18,7 +18,7 @@
 | `wevu/fetch`                   | `./fetch`                   |            5 |                  4 |              1 | [查看](wevu-fetch.md)       |
 | `wevu/web-apis`                | `./web-apis`                |            2 |                  0 |              2 | [查看](wevu-web-apis.md)    |
 | `wevu/router`                  | `./router`                  |           54 |                 43 |             11 | [查看](wevu-router.md)      |
-| `wevu/vue-demi`                | `./vue-demi`                |          415 |                261 |            154 | [查看](wevu-vue-demi.md)    |
+| `wevu/vue-demi`                | `./vue-demi`                |          421 |                266 |            155 | [查看](wevu-vue-demi.md)    |
 
 ## 文档列表
 

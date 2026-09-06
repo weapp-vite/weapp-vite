@@ -18,6 +18,7 @@ export const coreApiDescriptions: Record<string, string> = {
   'readonly()': '创建禁止写入的深层只读代理。',
   'shallowReadonly()': '创建只限制第一层写入的只读代理。',
   'computed()': '根据响应式依赖创建缓存派生值。',
+  'useAsyncDerivation()': '管理静态模板可观察的异步派生状态。',
   'watch()': '监听指定数据源并在变化后执行回调。',
   'watchEffect()': '立即运行副作用并自动追踪其中的依赖。',
   'watchPostEffect()': '在更新后的调度阶段运行响应式副作用。',
