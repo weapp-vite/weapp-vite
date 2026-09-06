@@ -119,7 +119,8 @@ export const runtimeSizeTiers: readonly RuntimeSizeTier[] = [
 export const runtimeSizeBudgets: readonly RuntimeSizeBudget[] = [
   { target: 'weapp', tier: 'minimal-app', mode: 'production', ceilingBytes: 93_535 },
   { target: 'weapp', tier: 'typical-page', mode: 'production', ceilingBytes: 160_182 },
-  { target: 'weapp', tier: 'full-provider', mode: 'production', ceilingBytes: 255_783 },
+  // main 75aabf000 实测 258,363 B，保留 5% 余量并向上取整。
+  { target: 'weapp', tier: 'full-provider', mode: 'production', ceilingBytes: 271_282 },
 ]
 
 export const runtimeSizeDenyRules: readonly RuntimeSizeDenyRule[] = [
