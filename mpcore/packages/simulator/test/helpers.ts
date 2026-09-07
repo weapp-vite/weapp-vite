@@ -1715,13 +1715,51 @@ export function createAppLifecycleFixture() {
     miniprogramRoot: 'dist',
   })
   writeJson(path.join(root, 'dist/app.json'), {
-    pages: ['pages/home/index'],
+    pages: ['pages/home/index', 'pages/detail/index'],
   })
   writeScript(path.join(root, 'dist/app.js'), `
+const lifecycle = {
+  appHides: [],
+  appShows: [],
+  hideFirst: [],
+  hideLate: [],
+  hideRemoved: [],
+  launchShows: [],
+  showFirst: [],
+  showLate: [],
+  showRemoved: [],
+  timeline: [],
+}
+
+const lateShow = options => lifecycle.showLate.push(options)
+const removedShow = options => lifecycle.showRemoved.push(options)
+const firstShow = (options) => {
+  lifecycle.showFirst.push(options)
+  lifecycle.timeline.push('wx:onAppShow:' + JSON.stringify(options))
+  wx.offAppShow(removedShow)
+  wx.onAppShow(lateShow)
+}
+wx.onAppShow(firstShow)
+wx.onAppShow(firstShow)
+wx.onAppShow(removedShow)
+
+const lateHide = options => lifecycle.hideLate.push(options)
+const removedHide = options => lifecycle.hideRemoved.push(options)
+const firstHide = (options) => {
+  lifecycle.hideFirst.push(options)
+  lifecycle.timeline.push('wx:onAppHide:' + JSON.stringify(options))
+  wx.offAppHide(removedHide)
+  wx.onAppHide(lateHide)
+}
+wx.onAppHide(firstHide)
+wx.onAppHide(firstHide)
+wx.onAppHide(removedHide)
+
 App({
   globalData: {
     enterOptions: null,
     launchOptions: null,
+    lifecycle,
     logs: [],
     ready: true,
   },
@@ -1731,14 +1769,35 @@ App({
   captureLaunchOptions() {
     this.globalData.launchOptions = wx.getLaunchOptionsSync()
   },
+  clearHideListeners() {
+    wx.offAppHide()
+  },
+  clearShowListeners() {
+    wx.offAppShow()
+  },
+  removeFirstHideListener() {
+    wx.offAppHide(firstHide)
+  },
+  removeFirstShowListener() {
+    wx.offAppShow(firstShow)
+  },
   push(message) {
     this.globalData.logs.push(message)
   },
   onLaunch(options) {
     this.push('onLaunch:' + JSON.stringify(options))
+    lifecycle.timeline.push('app:onLaunch:' + JSON.stringify(options))
+    wx.onAppShow(nextOptions => lifecycle.launchShows.push(nextOptions))
   },
   onShow(options) {
     this.push('onShow:' + JSON.stringify(options))
+    lifecycle.appShows.push(options)
+    lifecycle.timeline.push('app:onShow:' + JSON.stringify(options))
+  },
+  onHide(options) {
+    this.push('onHide:' + JSON.stringify(options))
+    lifecycle.appHides.push(options)
+    lifecycle.timeline.push('app:onHide:' + JSON.stringify(options))
   },
   onPageNotFound(options) {
     this.push('onPageNotFound:' + JSON.stringify(options))
@@ -1749,6 +1808,16 @@ App({
 Page({
   data: {
     ok: true,
+  },
+  onLoad() {
+    getApp().globalData.lifecycle.timeline.push('page:home:onLoad')
+  },
+})
+`)
+  writeScript(path.join(root, 'dist/pages/detail/index.js'), `
+Page({
+  onLoad() {
+    getApp().globalData.lifecycle.timeline.push('page:detail:onLoad')
   },
 })
 `)

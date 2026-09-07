@@ -1,4 +1,5 @@
 import type { App as VueApp } from 'vue'
+import type { HeadlessWxAppHideOptions, HeadlessWxLaunchOptions } from '../src'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from 'vue'
 import SimulatorE2EApp from '../../../demos/web/src/e2e/SimulatorE2EApp.vue'
@@ -51,7 +52,9 @@ interface SimulatorE2EApi {
     deviceInfo: unknown
     directorySnapshot: string[]
     downloadFileLogs: unknown[]
+    enterOptions: HeadlessWxLaunchOptions | null
     fileSnapshot: Record<string, string>
+    launchOptions: HeadlessWxLaunchOptions | null
     modalLogs: unknown[]
     networkType: unknown
     previewImage: unknown
@@ -64,6 +67,8 @@ interface SimulatorE2EApi {
     toast: unknown
     uploadFileLogs: unknown[]
   }
+  triggerAppHide: (options: HeadlessWxAppHideOptions) => void
+  triggerAppShow: (options?: HeadlessWxLaunchOptions) => void
   triggerPullDownRefresh: () => void
   triggerReachBottom: () => void
   triggerResize: (width: number, height: number) => void
@@ -1401,6 +1406,17 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     bridge.triggerPullDownRefresh()
     bridge.triggerReachBottom()
     bridge.navigateBack(1)
+    const showOptions = {
+      path: 'package-flow/queue/index',
+      query: { from: 'app-resume' },
+      referrerInfo: {
+        appId: 'wx-browser-e2e',
+        extraData: {},
+      },
+      scene: 1037,
+    }
+    bridge.triggerAppHide({ reason: 2 })
+    bridge.triggerAppShow(showOptions)
 
     const state = await waitFor(
       () => bridge.getState(),
@@ -1408,7 +1424,16 @@ describe('simulator browser e2e', { concurrent: false }, () => {
       20_000,
     )
     expect(state.viewportSize).toEqual({ width: 390, height: 844 })
-    expect(parseJsonString<{ timeline: string[] }>(state.appData).timeline[0]).toContain('maze:onLaunch:')
+    const appTimeline = parseJsonString<{ timeline: string[] }>(state.appData).timeline
+    expect(appTimeline[0]).toContain('maze:onLaunch:')
+    expect(appTimeline.filter(entry => entry.startsWith('maze:onLaunch:'))).toHaveLength(1)
+    expect(appTimeline.filter(entry => entry.startsWith('maze:onHide:'))).toEqual([
+      'maze:onHide:{"reason":2}',
+    ])
+    expect(appTimeline.filter(entry => entry.startsWith('maze:onShow:'))).toEqual([
+      'maze:onShow:{"path":"pages/hub/index","query":{},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
+      `maze:onShow:${JSON.stringify(showOptions)}`,
+    ])
     const queuePageData = parseJsonString<Record<string, any>>(state.pageData)
     expect(queuePageData.title).toBe('Queue')
     expect(queuePageData.from).toBe('hub')
@@ -1416,6 +1441,16 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
 
     const snapshot = bridge.sessionSnapshot()
+    expect(snapshot.launchOptions).toEqual({
+      path: 'pages/hub/index',
+      query: {},
+      referrerInfo: {
+        appId: '',
+        extraData: {},
+      },
+      scene: 1001,
+    })
+    expect(snapshot.enterOptions).toEqual(showOptions)
     expect(Array.isArray(snapshot.requestLogs)).toBe(true)
     expect(snapshot.pullDownRefreshState).toEqual({
       active: true,

@@ -1,3 +1,4 @@
+import type { HeadlessWxAppHideOptions, HeadlessWxLaunchOptions } from '../../host'
 import type { HeadlessProjectDescriptor } from '../../project'
 import type { HeadlessSession } from '../../runtime'
 import type { HeadlessTestingWaitOptions } from '../pageWait'
@@ -207,6 +208,14 @@ export class HeadlessTestingSessionHandle {
 
   async pageScrollTo(scrollTop: number) {
     this.session.pageScrollTo({ scrollTop })
+  }
+
+  async triggerAppHide(options: HeadlessWxAppHideOptions) {
+    this.session.triggerAppHide(options)
+  }
+
+  async triggerAppShow(options?: HeadlessWxLaunchOptions) {
+    this.session.triggerAppShow(options)
   }
 
   async triggerPullDownRefresh() {

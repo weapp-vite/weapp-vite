@@ -11,6 +11,9 @@ App({
   onShow(options) {
     this.log('maze:onShow:' + JSON.stringify(options))
   },
+  onHide(options) {
+    this.log('maze:onHide:' + JSON.stringify(options))
+  },
   onPageNotFound(options) {
     this.log('maze:onPageNotFound:' + JSON.stringify(options))
   },

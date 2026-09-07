@@ -44,7 +44,7 @@
     "test:all": "pnpm test && pnpm test:types && pnpm test:e2e",
     "test:dev": "vitest",
     "test:e2e": "vitest run -c ./vitest.e2e.config.ts",
-    "test:types": "pnpm build && tsd",
+    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

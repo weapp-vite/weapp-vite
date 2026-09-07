@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { launch } from '../src/testing'
 import { cleanupTempDirs, createAsyncComponentFixture, createBaseFixture, createComponentFixture, createNavigationFixture, createNestedComponentFixture } from './helpers'
 
+declare const wx: unknown
+
 describe('headless testing bridge', () => {
   const tempDirs: string[] = []
 
@@ -50,7 +52,7 @@ describe('headless testing bridge', () => {
       structuredClone: typeof structuredClone,
       URLSearchParams: typeof URLSearchParams,
       wx: typeof wx,
-      wxFromGlobalThis: typeof globalThis.wx,
+      wxFromGlobalThis: typeof (globalThis as typeof globalThis & { wx: unknown }).wx,
     }))).resolves.toEqual({
       Buffer: 'undefined',
       fetch: 'undefined',

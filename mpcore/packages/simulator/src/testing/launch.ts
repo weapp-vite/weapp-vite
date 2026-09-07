@@ -1,8 +1,10 @@
+import type { HeadlessSession } from '../runtime'
 import { createHeadlessSession } from '../runtime'
 import { HeadlessTestingSessionHandle } from './sessionHandle'
 
 export interface HeadlessTestingLaunchOptions {
   projectPath: string
+  configureSession?: (session: HeadlessSession) => void | Promise<void>
 }
 
 function resolveInitialRoute(session: ReturnType<typeof createHeadlessSession>) {
@@ -19,10 +21,17 @@ export async function launch(options: HeadlessTestingLaunchOptions) {
   const session = createHeadlessSession({
     projectPath: options.projectPath,
   })
-  session.bootstrap()
-  const initialRoute = resolveInitialRoute(session)
-  if (initialRoute) {
-    session.reLaunch(`/${initialRoute}`)
+  try {
+    await options.configureSession?.(session)
+    session.bootstrap()
+    const initialRoute = resolveInitialRoute(session)
+    if (initialRoute) {
+      session.reLaunch(`/${initialRoute}`)
+    }
+    return new HeadlessTestingSessionHandle(session.project, session)
   }
-  return new HeadlessTestingSessionHandle(session.project, session)
+  catch (error) {
+    session.close()
+    throw error
+  }
 }

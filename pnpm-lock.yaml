@@ -2081,6 +2081,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      '@wevu/query':
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu-query
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2504,6 +2507,22 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
+
+  packages-runtime/wevu-query:
+    dependencies:
+      '@wevu/web-apis':
+        specifier: workspace:*
+        version: link:../web-apis
+    devDependencies:
+      '@wevu/test-utils':
+        specifier: workspace:*
+        version: link:../wevu-test-utils
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+      wevu:
+        specifier: workspace:*
+        version: link:../wevu
 
   packages-runtime/wevu-test-utils:
     dependencies:

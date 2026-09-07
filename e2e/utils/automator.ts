@@ -1,3 +1,4 @@
+import type { HeadlessAutomatorLaunchOptions } from './automator.headless'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import net from 'node:net'
@@ -356,6 +357,7 @@ interface LaunchAppConfigValidationResult {
 type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
+  configureHeadlessSession?: HeadlessAutomatorLaunchOptions['configureSession']
   deferBridgeWrapperSyncUntilConnected?: boolean
   disableRelaunchSessionRecovery?: boolean
   engineBuildFallbackSettleMs?: number
@@ -2989,13 +2991,14 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   const provider = resolveRuntimeProviderName()
   if (provider === 'headless') {
     return launchHeadlessAutomator({
+      configureSession: options.configureHeadlessSession,
       projectPath: options.projectPath!,
     })
   }
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { deferBridgeWrapperSyncUntilConnected, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { configureHeadlessSession: _configureHeadlessSession, deferBridgeWrapperSyncUntilConnected, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000

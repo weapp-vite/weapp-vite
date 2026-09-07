@@ -1,4 +1,11 @@
-import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType, HeadlessWxSavedFileInfo } from '../host'
+import type {
+  HeadlessAppDefinition,
+  HeadlessHostRegistries,
+  HeadlessWxAppHideOptions,
+  HeadlessWxLaunchOptions,
+  HeadlessWxNetworkType,
+  HeadlessWxSavedFileInfo,
+} from '../host'
 import type { RuntimeDiagnosticEntry } from '../kernel'
 import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
@@ -21,6 +28,7 @@ import { RuntimeKernel } from '../kernel'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
 import { createAppInstance } from '../runtime/appInstance'
+import { cloneHeadlessWxLaunchOptions, HeadlessAppLifecycle } from '../runtime/appLifecycle'
 import { runComponentPageLifetime } from '../runtime/componentInstance'
 import { createPageInstance } from '../runtime/pageInstance'
 import {
@@ -205,6 +213,7 @@ export class BrowserHeadlessSession {
 
   private appDefinition: HeadlessAppDefinition | null = null
   private appInstance: HeadlessAppInstance | null = null
+  private readonly appLifecycle = new HeadlessAppLifecycle()
   private readonly moduleLoader
   private readonly onRender?: () => void
   private readonly registries: HeadlessHostRegistries
@@ -295,10 +304,10 @@ export class BrowserHeadlessSession {
         getFileSystemManager: () => this.wxState.getFileSystemManager(),
         getSavedFileInfo: option => this.wxState.getSavedFileInfo(option),
         getSavedFileList: () => this.wxState.getSavedFileList(),
-        getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
+        getEnterOptionsSync: () => cloneHeadlessWxLaunchOptions(this.enterOptions),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         getDeviceInfo: () => deriveDeviceInfo(this.systemInfo),
-        getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
+        getLaunchOptionsSync: () => cloneHeadlessWxLaunchOptions(this.launchOptions),
         getClipboardData: () => this.wxState.getClipboardData(),
         getLocation: () => createDefaultLocationResult(),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
@@ -321,7 +330,11 @@ export class BrowserHeadlessSession {
         saveImageToPhotosAlbum: option => this.wxState.saveImageToPhotosAlbum(option),
         saveVideoToPhotosAlbum: option => this.wxState.saveVideoToPhotosAlbum(option),
         nextTick: callback => this.kernel.scheduler.queueMicrotask(() => callback?.()),
+        offAppHide: callback => this.appLifecycle.offAppHide(callback),
+        offAppShow: callback => this.appLifecycle.offAppShow(callback),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
+        onAppHide: callback => this.appLifecycle.onAppHide(callback),
+        onAppShow: callback => this.appLifecycle.onAppShow(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         previewImage: option => this.wxState.previewImage(option),
@@ -377,6 +390,7 @@ export class BrowserHeadlessSession {
     this.canvasContexts.clear()
     this.renderRequestCallbacks.length = 0
     this.renderRequestPending = false
+    this.appLifecycle.close()
     this.wxState.close()
     this.moduleLoader.close()
     this.kernel.close()
@@ -510,25 +524,11 @@ export class BrowserHeadlessSession {
   }
 
   getLaunchOptions() {
-    return {
-      ...this.launchOptions,
-      query: { ...this.launchOptions.query },
-      referrerInfo: {
-        ...this.launchOptions.referrerInfo,
-        extraData: { ...this.launchOptions.referrerInfo.extraData },
-      },
-    }
+    return cloneHeadlessWxLaunchOptions(this.launchOptions)
   }
 
   getEnterOptions() {
-    return {
-      ...this.enterOptions,
-      query: { ...this.enterOptions.query },
-      referrerInfo: {
-        ...this.enterOptions.referrerInfo,
-        extraData: { ...this.enterOptions.referrerInfo.extraData },
-      },
-    }
+    return cloneHeadlessWxLaunchOptions(this.enterOptions)
   }
 
   getMenuButtonBoundingClientRect() {
@@ -1067,13 +1067,13 @@ export class BrowserHeadlessSession {
       return this.appInstance
     }
 
-    this.launchOptions = createAppLaunchOptions(launchOptions.path, launchOptions.query)
-    this.enterOptions = createAppLaunchOptions(launchOptions.path, launchOptions.query)
+    this.launchOptions = cloneHeadlessWxLaunchOptions(launchOptions)
+    this.enterOptions = cloneHeadlessWxLaunchOptions(launchOptions)
     const appModulePath = join(this.project.miniprogramRootPath, 'app.js')
     this.appDefinition = this.moduleLoader.executeAppModule(appModulePath)
     this.appInstance = createAppInstance(this.appDefinition)
     this.appInstance.onLaunch?.(launchOptions)
-    this.appInstance.onShow?.(launchOptions)
+    this.appLifecycle.triggerAppShow(this.appInstance, launchOptions)
     return this.appInstance
   }
 
@@ -1244,6 +1244,26 @@ export class BrowserHeadlessSession {
     current.onPageScroll?.({
       scrollTop: current.__scrollTop__,
     })
+  }
+
+  triggerAppHide(options: HeadlessWxAppHideOptions) {
+    this.assertActive()
+    const app = this.appInstance ?? this.bootstrap()
+    this.appLifecycle.triggerAppHide(app, options)
+  }
+
+  triggerAppShow(options?: HeadlessWxLaunchOptions) {
+    this.assertActive()
+    if (!this.appInstance) {
+      this.bootstrap(options)
+      return
+    }
+
+    const nextOptions = options ?? cloneHeadlessWxLaunchOptions(this.enterOptions)
+    if (options) {
+      this.enterOptions = cloneHeadlessWxLaunchOptions(options)
+    }
+    this.appLifecycle.triggerAppShow(this.appInstance, nextOptions)
   }
 
   triggerPullDownRefresh() {
