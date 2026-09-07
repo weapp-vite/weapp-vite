@@ -2,6 +2,7 @@
  * @file 小程序实例控制能力。
  */
 import type Connection from './Connection'
+import type { ConsoleLogOptions } from './structuredConsole'
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
 import process from 'node:process'
@@ -9,6 +10,7 @@ import pkg from '../package.json'
 import { cmpVersion, isFn, isStr, startWith, trim } from './internal/compat'
 import Native from './Native'
 import Page from './Page'
+import { StructuredConsole } from './structuredConsole'
 import { decodeQrCode, extractPluginId, isPluginPath, printQrCode } from './util'
 
 interface IScreenshotOptions {
@@ -27,6 +29,7 @@ interface IToolClearCacheOptions {
 type AutomatorCallable = (...args: any[]) => any
 interface CurrentPageOptions {
   appFunctionFallback?: boolean
+  pageStackFallback?: boolean
   retries?: number
   timeout?: number
 }
@@ -253,10 +256,18 @@ function logChangeRouteDebug(message: string) {
 export default class MiniProgram extends EventEmitter {
   private appBindings = new Map<string, AutomatorCallable>()
   private logEnabled = false
+  private logEnabling?: Promise<void>
+  private structuredLogs = false
+  private structuredConsole: StructuredConsole
   private pageMap = new Map<number, Page>()
   private nativeIns?: Native
   constructor(private connection: Connection) {
     super()
+    this.structuredConsole = new StructuredConsole(
+      (method, params, options) => this.send(method, params, options),
+      entry => this.emit('console', entry),
+    )
+    connection.on('App.CDPEvent', this.structuredConsole.receive)
     connection.on('App.logAdded', this.onLogAdded)
     connection.on('App.bindingCalled', this.onBindingCalled)
     connection.on('App.exceptionThrown', this.onExceptionThrown)
@@ -318,7 +329,7 @@ export default class MiniProgram extends EventEmitter {
       }
     }
 
-    if (isCurrentPageProtocolTimeout(lastError) || isPageMetaMissingError(lastError) || isCurrentFrameTimedOutError(lastError)) {
+    if ((options.pageStackFallback ?? true) && (isCurrentPageProtocolTimeout(lastError) || isPageMetaMissingError(lastError) || isCurrentFrameTimedOutError(lastError))) {
       try {
         const { pageStack } = await this.send('App.getPageStack', {}, sendOptions) as { pageStack: ProtocolPagePayload[] }
         const page = pageStack[pageStack.length - 1]
@@ -449,17 +460,66 @@ export default class MiniProgram extends EventEmitter {
   }
 
   disconnect() {
+    this.structuredConsole.stop()
     this.connection.dispose()
   }
 
-  async enableLog(timeout?: number) {
-    if (timeout === undefined) {
-      await this.send('App.enableLog')
+  /** 等待已接收的结构化日志完成 Error 属性检查并发布。 */
+  async flushConsole() {
+    await this.structuredConsole.flush()
+  }
+
+  enableLog(timeout?: number, options: ConsoleLogOptions = {}): Promise<void> {
+    if (this.logEnabling) {
+      if (options.structured !== undefined && options.structured !== this.structuredLogs) {
+        return Promise.reject(new Error('Cannot change console format while logging is being enabled'))
+      }
+      return this.logEnabling
     }
-    else {
-      await this.send('App.enableLog', {}, { timeout })
+    this.structuredLogs = options.structured ?? this.structuredLogs
+    this.structuredConsole.enabled = this.structuredLogs
+    this.logEnabled = false
+    const startedAt = Date.now()
+    const request = async (method: string, params: Record<string, unknown> = {}) => {
+      if (timeout === undefined) {
+        return await this.send(method, params)
+      }
+      const remaining = timeout - (Date.now() - startedAt)
+      if (remaining <= 0) {
+        throw new Error(`Timed out enabling console logging within ${timeout}ms`)
+      }
+      return await this.send(method, params, { timeout: remaining })
     }
-    this.logEnabled = true
+    this.logEnabling = (async () => {
+      if (!this.structuredLogs) {
+        await request('App.enableLog')
+      }
+      let cdpMethod = this.structuredLogs ? 'App.CDPEnable' : 'App.CDPCommand'
+      try {
+        if (this.structuredLogs) {
+          // 显式建立原始事件通道，不依赖 CDPCommand 在部分 SDK 中的隐式订阅副作用。
+          await request(cdpMethod)
+          cdpMethod = 'App.CDPCommand'
+        }
+        // 新版基础库通过 inspector 转发日志，必须主动启用 Runtime 域。
+        await request('App.CDPCommand', { domain: 'Runtime', method: 'enable', params: {} })
+      }
+      catch (error) {
+        // 旧版基础库直接包装 console，仅兼容原生协议明确返回的不支持响应。
+        if (!(error instanceof Error) || error.message !== `appservice ${cdpMethod} unimplemented`) {
+          throw error
+        }
+        if (this.structuredLogs) {
+          this.structuredConsole.enabled = false
+          await request('App.enableLog')
+        }
+      }
+      this.logEnabled = true
+    })().finally(async () => {
+      await this.flushConsole()
+      this.logEnabling = undefined
+    })
+    return this.logEnabling
   }
 
   override on(event: string | symbol, listener: (...args: any[]) => void): this {
@@ -809,7 +869,9 @@ export default class MiniProgram extends EventEmitter {
   }
 
   private onLogAdded = (payload: any) => {
-    this.emit('console', payload)
+    if (!this.structuredConsole.enabled) {
+      this.emit('console', payload)
+    }
   }
 
   private onBindingCalled = (payload: {

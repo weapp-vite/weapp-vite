@@ -411,6 +411,7 @@ export async function emitCompiledEntryBundleAssets(options: {
         buildScope: options.configService.weappViteConfig?.buildScope,
         platform: options.configService.platform,
         routeRules: options.configService.weappViteConfig?.routeRules,
+        subPackages: options.configService.weappViteConfig?.subPackages,
       })
     : undefined
 

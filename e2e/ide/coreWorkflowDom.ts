@@ -40,7 +40,7 @@ export function sharedStyleCheckpoints(provider: DomProvider): DomCheckpoint[] {
       action: '切到普通分包检查共享页面样式和组件内容',
       nodes: [
         { selector: '#shared-styles-normal-page', ...pageStyles },
-        { selector: '#shared-styles-normal-component', scope: ['app-card'], text: 'foo' },
+        { selector: '#shared-styles-normal-component', scope: [{ has: '#shared-styles-normal-component' }], text: 'foo' },
       ],
     },
     {

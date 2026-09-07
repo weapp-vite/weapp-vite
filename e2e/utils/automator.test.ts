@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { describe, expect, it, vi } from 'vitest'
-import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveBridgeWarmupReadyTimeout, resolveLaunchRetryCount, resolveWarmupCurrentPageReadyTimeout, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, terminateBridgeCliProcess, validateLaunchProjectAssets } from './automator'
+import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, resolveWarmupCurrentPageReadyTimeout, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, terminateBridgeCliProcess, validateLaunchProjectAssets } from './automator'
 import { isResidualDevProcessCommand } from './dev-process-cleanup'
 
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'apps/demo' }))
@@ -190,13 +190,9 @@ describe('automator', () => {
     expect(resolveLaunchRetryCount(99)).toBe(resolveLaunchRetryCount(undefined))
   })
 
-  it('gives bridge cold compilation a separate warmup budget', () => {
-    expect(resolveBridgeWarmupReadyTimeout(undefined)).toBe(60_000)
-    expect(resolveBridgeWarmupReadyTimeout('90000')).toBe(90_000)
-    expect(resolveBridgeWarmupReadyTimeout('0')).toBe(60_000)
-    expect(resolveWarmupCurrentPageReadyTimeout(false, true, 60_000, 30_000)).toBe(60_000)
-    expect(resolveWarmupCurrentPageReadyTimeout(false, false, 60_000, 30_000)).toBe(300)
-    expect(resolveWarmupCurrentPageReadyTimeout(true, true, 60_000, 30_000)).toBe(300)
+  it('uses the full readiness budget when cold startup cannot relaunch', () => {
+    expect(resolveWarmupCurrentPageReadyTimeout(false, 30_000)).toBe(30_000)
+    expect(resolveWarmupCurrentPageReadyTimeout(true, 30_000)).toBe(300)
   })
 
   it('keeps an exhausted polling budget from closing an otherwise responsive warmup session', () => {
@@ -227,13 +223,13 @@ describe('automator', () => {
     )).toBe(false)
   })
 
-  it('can switch a deferred bridge wrapper to an isolated runtime root', () => {
+  it('normalizes an explicitly configured bridge runtime root', () => {
     const config = createBridgeWrapperProjectConfig({}, {}, {
-      miniprogramRoot: '__runtime__/',
+      miniprogramRoot: 'runtime/',
     })
 
-    expect(config.miniprogramRoot).toBe('__runtime__/')
-    expect(config.srcMiniprogramRoot).toBe('__runtime__/')
+    expect(config.miniprogramRoot).toBe('runtime/')
+    expect(config.srcMiniprogramRoot).toBe('runtime/')
     expect(createBridgeWrapperProjectConfig({}, {}, {
       miniprogramRoot: '../outside',
     }).miniprogramRoot).toBe('./')
@@ -319,7 +315,7 @@ describe('automator', () => {
     })
   })
 
-  it('uses the complete stable compiler settings in bootstrap bridge wrapper config', () => {
+  it('preserves simulator selection and compiler settings in snapshot bridge wrapper config', () => {
     const config = createBridgeWrapperProjectConfig({
       appid: 'wxb3d842a4a7e3440d',
       simulatorPluginLibVersion: {},
@@ -329,8 +325,6 @@ describe('automator', () => {
         postcss: true,
         urlCheck: false,
       },
-    }, {}, {
-      bootstrap: true,
     })
 
     expect(config).toMatchObject({

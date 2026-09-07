@@ -53,15 +53,15 @@ describe('rendered selector parity in the browser', () => {
     }
     try {
       session.reLaunch('/pages/index/index')
-      await (await render().$('#emit-direct-payload'))!.tap()
+      await (await (await render().$('emitter'))!.$('#emit-direct-payload'))!.tap()
       expect(await (await render().$('#emit-record-0 .emit-label'))?.text()).toBe('payload-1')
       expect(preview.querySelector('#emit-record-0 .emit-label')?.textContent).toBe('payload-1')
-      await (await render().$('#emit-direct-payload'))!.tap()
+      await (await (await render().$('emitter'))!.$('#emit-direct-payload'))!.tap()
       const root = render()
       expect(await (await root.$('#emit-record-0 > .emit-label'))?.text()).toBe('payload-2')
       expect(await (await root.$('#emit-record-0 + #emit-record-1 .emit-label'))?.text()).toBe('payload-1')
       expect(preview.querySelector('#emit-record-0 + #emit-record-1 .emit-label')?.textContent).toBe('payload-1')
-      await (await render().$('#emit-native'))!.tap()
+      await (await (await render().$('emitter'))!.$('#emit-native'))!.tap()
       expect(await (await render().$('#native-result'))?.text()).toBe('tap:undefined:number')
       expect(preview.querySelector('#native-result')?.textContent).toBe('tap:undefined:number')
     }

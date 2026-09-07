@@ -4,6 +4,7 @@ import type { BrowserRenderScope, DomNodeLike } from './types'
 import { dirname, join, normalize } from 'pathe'
 import { resolveTemplateExpression } from '../../view/templateExpression'
 import { createImportedTemplateState } from '../../view/templateImports'
+import { interpolateTemplateText } from '../../view/templateText'
 import { wxsScopeData } from '../../view/wxs'
 import { parseWxsTemplateDocument } from '../../view/wxsDocument'
 import { readBrowserVirtualFile } from '../virtualFiles'
@@ -149,7 +150,8 @@ function resolveAttributeValue(value: string, scope: BrowserRenderScope) {
 export function resolveComponentAttributeValue(value: string, scope: BrowserRenderScope) {
   if (isMustacheOnly(value)) {
     const expression = value.trim().slice(2, -2)
-    return resolveRawValueByPath(wxsScopeData(scope), expression)
+    // 存在 WXML 绑定但值为 undefined 时，宿主传入 null；省略属性仍由组件默认值处理。
+    return resolveRawValueByPath(wxsScopeData(scope), expression) ?? null
   }
   return interpolateTemplate(value, wxsScopeData(scope))
 }
@@ -157,7 +159,7 @@ export function resolveComponentAttributeValue(value: string, scope: BrowserRend
 export function applyNodeBindings(node: DomNodeLike, scope: BrowserRenderScope) {
   if (!isTagNode(node)) {
     if (node.type === 'text' && typeof node.data === 'string') {
-      node.data = interpolateTemplate(node.data, wxsScopeData(scope))
+      node.data = interpolateTemplateText(node.data, wxsScopeData(scope))
     }
     return
   }

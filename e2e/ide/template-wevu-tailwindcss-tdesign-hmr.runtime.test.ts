@@ -17,6 +17,7 @@ import { createDomAcceptance } from '../utils/domAcceptance'
 import { readEmittedStylesheet, waitForEmittedStylesheet } from '../utils/emittedStylesheet'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { createWevuTailwindHmrFileDiagnostics } from '../utils/wevuTailwindHmrDiagnostics'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
@@ -246,13 +247,13 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
         reject: false,
       })
       try {
+        await devProcess.waitForInitialBuild()
         const initialRuntime = await devProcess.waitFor(
           waitForAppRuntimeReady(),
           `wevu Tailwind stateful HMR initial runtime attempt ${attempt}`,
         )
         await waitForFileContains(path.join(fixtureRoot, 'dist/app.wxss'), `@import "./${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss";`)
         miniProgram = await launchAutomator({
-          deferBridgeWrapperSyncUntilConnected: true,
           engineBuildFallbackSettleMs: 5_000,
           launchMode: 'bridge',
           maxLaunchRetries: 1,
@@ -348,6 +349,7 @@ onLaunch(function (this: Record<string, unknown>) {
 
     const collector = attachRuntimeErrorCollector(miniProgram)
     const diagnostics = createHmrRuntimeDiagnostics(miniProgram, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template')
+    const fileDiagnostics = createWevuTailwindHmrFileDiagnostics(miniProgram, fixtureRoot, INDEX_ROUTE)
     const initialIdentity = await diagnostics.initialize()
     expect(initialIdentity.runtime?.appLaunchProbe).toEqual(expect.any(Number))
     const marker = collector.mark()
@@ -357,6 +359,7 @@ onLaunch(function (this: Record<string, unknown>) {
     try {
       for (const [updateIndex, update] of BACKGROUND_UPDATES.entries()) {
         await diagnostics.capture(`background:${updateIndex + 2}:before`)
+        await fileDiagnostics.capture(`background:${updateIndex + 2}:before`)
         const nextVue = updateRuntimeProbe(
           currentVue,
           previousClass,
@@ -371,20 +374,26 @@ onLaunch(function (this: Record<string, unknown>) {
         previousClass = update.className
         previousHex = update.hex
 
+        const captureReady = async (phase: string) => {
+          const readyAt = Date.now()
+          await fileDiagnostics.capture(`background:${updateIndex + 2}:${phase}`)
+          return readyAt
+        }
+
         const wxmlReady = waitForFileMatch(
           indexWxmlDist,
           source => update.escapedClass ? source.includes(update.escapedClass) : !source.includes(previousEscapedClass),
           update.escapedClass ? `contain ${update.escapedClass}` : 'remove the arbitrary background class',
-        ).then(() => Date.now())
+        ).then(() => captureReady('wxml-ready'))
         const wxssReady = update.css
-          ? waitForEmittedStylesheet(appWxssDist, update.css).then(() => Date.now())
+          ? waitForEmittedStylesheet(appWxssDist, update.css).then(() => captureReady('wxss-ready'))
           : wxmlReady
-        const runtimeReady = waitForRuntimeState(update.hex).then(() => Date.now())
-        const [wxmlReadyAt, wxssReadyAt, runtimeReadyAt] = await Promise.all([
+        const runtimeReady = waitForRuntimeState(update.hex).then(() => captureReady('dom-ready'))
+        const [wxmlReadyAt, wxssReadyAt, runtimeReadyAt] = await devProcess!.waitFor(Promise.all([
           wxmlReady,
           wxssReady,
           runtimeReady,
-        ])
+        ]), `Tailwind background ${update.action}: ${update.hex}`)
         const outputMs = Math.max(wxmlReadyAt, wxssReadyAt) - startedAt
         const runtimeMs = runtimeReadyAt - startedAt
         const devtoolsApplyMs = Math.max(0, runtimeReadyAt - Math.max(wxmlReadyAt, wxssReadyAt))
@@ -406,6 +415,7 @@ onLaunch(function (this: Record<string, unknown>) {
       expect(initialRuntime.runtime).toContain('Object.defineProperty(exports, "setWevuDefaults"')
     }
     finally {
+      await fileDiagnostics.capture('finally')
       await diagnostics.capture('finally')
       collector.dispose()
     }

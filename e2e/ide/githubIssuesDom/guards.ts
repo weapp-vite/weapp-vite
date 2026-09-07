@@ -22,6 +22,13 @@ function mounted(trace: string[]): DomCheckpoint {
   ] }
 }
 
+function blocked(mode: string): DomCheckpoint {
+  return { id: 'blocked', route: GUARD_ROUTE, action: `guard ${mode} 后宿主初始界面仍可见且 mounted 未更新内容`, nodes: [
+    text('#issue911-title', 'issue-911 async guard'),
+    text('#issue911-mounted-trace', 'pending'),
+  ] }
+}
+
 function other(id: string): DomCheckpoint {
   return { id, route: OTHER_ROUTE, action: '检查普通页面已渲染且旧目标内容不存在', nodes: [
     text('.issue550-probe', 'route name = pages/issue-550/index'),
@@ -36,9 +43,9 @@ const baseline = report('baseline', 'none', [])
 export const GUARD_PLANS = {
   default: [baseline, mounted(completeTrace)],
   redirect: [baseline, mounted(redirectTrace)],
-  abort: [baseline, { id: 'blocked', route: GUARD_ROUTE, action: 'guard abort 后目标模板未挂载', nodes: [{ selector: '#issue-911-page', count: 0 }] }, report('result', 'abort', ['beforeEach:start', 'beforeEach:done'])],
+  abort: [baseline, blocked('abort'), report('result', 'abort', ['beforeEach:start', 'beforeEach:done'])],
   subsequent: [baseline, mounted(completeTrace), other('other')],
   never: [baseline, mounted(['beforeEach:start', 'mounted'])],
-  reject: [baseline, { id: 'blocked', route: GUARD_ROUTE, action: 'guard reject 后目标模板未挂载', nodes: [{ selector: '#issue-911-page', count: 0 }] }, report('result', 'reject', ['beforeEach:start', 'beforeEach:done'])],
+  reject: [baseline, blocked('reject'), report('result', 'reject', ['beforeEach:start', 'beforeEach:done'])],
   late: [baseline, other('replaced'), other('settled'), report('result', 'late', ['beforeEach:start', 'beforeEach:done'])],
 } satisfies Record<string, DomCheckpoint[]>

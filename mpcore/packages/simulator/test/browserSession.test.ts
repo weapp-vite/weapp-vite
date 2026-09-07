@@ -2979,7 +2979,7 @@ Component({
     const page = session.reLaunch('/pages/lab/index')
     let rendered = session.renderCurrentPage()
     expect(rendered.wxml).toContain('"value":"stable"')
-    expect(rendered.wxml).not.toContain('"oldValue"')
+    expect(rendered.wxml).toContain('"oldValue":""')
 
     page.flip()
     rendered = session.renderCurrentPage()
@@ -4186,26 +4186,26 @@ Component({
     }
   },
   data: {
-    readyState: 'cold'
+    readyState: 'cold',
+    lifecycleTrace: ''
   },
   lifetimes: {
     created() {
-      this.setData({ readyState: 'created' })
+      this.setData({ readyState: 'created', lifecycleTrace: 'created' })
     },
     ready() {
-      this.setData({ readyState: 'ready' })
+      this.setData({ readyState: 'ready', lifecycleTrace: this.data.lifecycleTrace + ':ready' })
     }
   }
 })
 `],
-      ['components/mini-badge/index.wxml', '<view>{{label}}</view><view>{{readyState}}</view>'],
+      ['components/mini-badge/index.wxml', '<view>{{label}}</view><view>{{readyState}}</view><view>{{lifecycleTrace}}</view>'],
     ])
 
     const session = createBrowserHeadlessSession({ files })
     session.reLaunch('/pages/lab/index')
     let rendered = session.renderCurrentPage()
-    expect(rendered.wxml).toContain('created')
-    rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('created:ready')
     expect(rendered.wxml).toContain('ready')
 
     const scopeIds = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)

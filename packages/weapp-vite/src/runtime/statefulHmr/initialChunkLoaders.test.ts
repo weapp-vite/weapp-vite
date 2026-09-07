@@ -1,6 +1,8 @@
 import type { StatefulHmrOutputFile } from './outputWriter'
+import path from 'node:path'
 import { createContext, runInContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
+import { parseJsLike, traverse } from '../../utils/babel'
 import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 import { registerStatefulHmrInitialChunkLoaders } from './initialChunkLoaders'
 
@@ -20,11 +22,15 @@ function chunk(fileName: string, code: string, options: { isEntry?: boolean, imp
 
 function createRuntime(chunks: StatefulHmrOutputFile[], subPackageRoots: string[] = []) {
   const runtimeChunk = chunk('rolldown-runtime.js', createStatefulHmrRolldownRuntimeSource())
-  const output = [runtimeChunk, ...chunks]
+  const appChunk = chunks.find(item => item.fileName === 'app.js') ?? chunk('app.js', 'require("./rolldown-runtime.js");', { isEntry: true })
+  const output = [runtimeChunk, appChunk, ...chunks.filter(item => item !== appChunk)]
   const loads: string[] = []
   const context = createContext({
     console,
     require(specifier: string) {
+      if (specifier === './rolldown-runtime.js') {
+        return {}
+      }
       loads.push(specifier)
       const target = output.find(item => `./${item.fileName}` === specifier)
       if (!target || target.type !== 'chunk') {
@@ -35,14 +41,73 @@ function createRuntime(chunks: StatefulHmrOutputFile[], subPackageRoots: string[
   })
   registerStatefulHmrInitialChunkLoaders(output, subPackageRoots)
   runInContext(runtimeChunk.code, context, { timeout: 5_000 })
+  if (appChunk.type !== 'chunk') {
+    throw new Error('Expected application chunk')
+  }
+  runInContext(appChunk.code, context, { timeout: 5_000 })
   const runtime = runInContext('globalThis.__rolldown_runtime__', context) as Runtime
   return { runtime, loads }
 }
 
 describe('initial native chunk loaders', () => {
+  it('keeps the complete static require graph acyclic for lazy host dependency scanning', () => {
+    const runtime = chunk('rolldown-runtime.js', 'globalThis.__rolldown_runtime__ = { initialChunkLoaders: new Map() };')
+    const app = chunk('app.js', 'require("./rolldown-runtime.js"); globalThis.applicationStarted = true;', { isEntry: true })
+    const facade = chunk('vendor/facade.js', 'require("../rolldown-runtime.js"); __rolldown_runtime__.registerModule("facade");')
+    const output = [app, runtime, facade]
+    const originalRuntime = runtime.code
+    registerStatefulHmrInitialChunkLoaders(output, [])
+
+    const dependencies = new Map(output.map((file) => {
+      const requires: string[] = []
+      traverse(parseJsLike(file.code), {
+        CallExpression({ node }) {
+          if (node.callee.type === 'Identifier' && node.callee.name === 'require' && node.arguments[0]?.type === 'StringLiteral') {
+            requires.push(path.posix.normalize(path.posix.join(path.posix.dirname(file.fileName), node.arguments[0].value)))
+          }
+        },
+      })
+      return [file.fileName, requires] as const
+    }))
+    const visit = (file: string, ancestors: string[] = []) => {
+      expect(ancestors, `Static host dependency cycle reaching ${file}`).not.toContain(file)
+      for (const dependency of dependencies.get(file) ?? []) {
+        visit(dependency, [...ancestors, file])
+      }
+    }
+    visit('app.js')
+    expect(runtime.code).toBe(originalRuntime)
+    expect(dependencies.get('app.js')).toEqual(['rolldown-runtime.js', 'vendor/facade.js'])
+    const loads: string[] = []
+    const context = createContext({ require: (file: string) => loads.push(file) })
+    runInContext(runtime.code, context)
+    runInContext(app.code, context)
+    expect(loads).toEqual(['./rolldown-runtime.js'])
+    expect(runInContext('globalThis.applicationStarted', context)).toBe(true)
+    expect(runInContext('globalThis.__rolldown_runtime__.initialChunkLoaders.has("facade")', context)).toBe(true)
+  })
+
+  it('registers loaders before application code can request an isolated module', () => {
+    const { runtime, loads } = createRuntime([
+      chunk('app.js', 'require("./rolldown-runtime.js"); __rolldown_runtime__.initModule("facade");', { isEntry: true }),
+      chunk('vendor/facade.js', '__rolldown_runtime__.registerModule("facade", { exports: "ready" });'),
+    ])
+    expect(runtime.initModule('facade')).toBe('ready')
+    expect(loads).toEqual(['./vendor/facade.js'])
+  })
+
+  it.each(['missing app', 'missing runtime import'])('rejects an incompatible %s instead of losing orphan loading', (failure) => {
+    const output = [
+      chunk('rolldown-runtime.js', 'runtime'),
+      chunk('vendor/facade.js', '__rolldown_runtime__.registerModule("facade");'),
+      ...(failure === 'missing app' ? [] : [chunk('app.js', 'App({});', { isEntry: true })]),
+    ]
+    expect(() => registerStatefulHmrInitialChunkLoaders(output, [])).toThrow(/stateful HMR/)
+  })
+
   it('maps actual runtime registration IDs only for isolated main-package non-entry chunks', () => {
     const { runtime, loads } = createRuntime([
-      chunk('app.js', '__rolldown_runtime__.registerModule("app");', { isEntry: true, imports: ['vendor/imported.js'] }),
+      chunk('app.js', 'require("./rolldown-runtime.js"); __rolldown_runtime__.registerModule("app");', { isEntry: true, imports: ['vendor/imported.js'] }),
       chunk('pages/index.js', '__rolldown_runtime__.registerModule("page");', { isEntry: true }),
       chunk('vendor/imported.js', '__rolldown_runtime__.registerModule("imported");'),
       chunk('feature/vendor.js', '__rolldown_runtime__.registerModule("subpackage");'),

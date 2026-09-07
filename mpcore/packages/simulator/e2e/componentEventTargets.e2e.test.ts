@@ -14,13 +14,15 @@ it('retargets forwarded button events to the component host across a rendered di
       callMethod: (scopeId, method, event) => session.callScopeMethod(scopeId!, method, event),
       createPageHandle: () => ({ data: async () => session.getCurrentPages().at(-1)?.data }),
       createScopeHandle: () => null,
-      ownerScopeId: () => null,
+      ownerScopeId: scopeId => scopeId ? session.getScopeIdForComponent(session.selectOwnerComponent(scopeId)) : null,
     })
   }
   try {
     session.reLaunch('/pages/index/index')
     for (const kind of ['cancel', 'confirm']) {
-      await (await render().$(`#${kind}-native`))!.tap()
+      const dialog = (await render().$('dialog-box'))!
+      const host = (await dialog.$(`#${kind}-host`))!
+      await (await host.$(`#${kind}-native`))!.tap()
       const root = render()
       expect(preview.querySelector('#result')?.textContent).toBe(`${kind}/${kind}-host/${kind}-native`)
       expect(await (await root.$('#result'))?.text()).toBe(`${kind}/${kind}-host/${kind}-native`)

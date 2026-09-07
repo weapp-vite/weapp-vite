@@ -31,6 +31,8 @@
 ## 使用提示
 
 - 模板默认通过 `weapp.pluginRoot` 输出 `dist-plugin/**`
+- `project.config.json` 使用 `compileType: "plugin"`，`src/app.json` 中的 `hello-plugin.version` 使用 `"dev"`，调试当前 `pluginRoot` 内的本地插件
+- 插件产物由 `weapp-vite` 编译，项目设置 `setting.es6: false`，避免开发者工具重复 Babel 转译时生成越过插件根目录的 `@babel/runtime` helper 引用
 - `src/app.json` 里预置了与插件 AppID 一致的 `hello-plugin.provider`
 - 如果你要在自己的插件 AppID 下调试或上传，请先替换 `project.config.json` 的 `appid`，并同步修改 `src/app.json` 里的 `plugins.hello-plugin.provider`
 

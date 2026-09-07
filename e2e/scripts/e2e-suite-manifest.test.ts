@@ -4,6 +4,19 @@ import { describe, expect, it } from 'vitest'
 import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
+  it.each([
+    'ide/template-retail-checkout.runtime.test.ts',
+    'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
+  ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {
+    const headless = (await getSuiteTasks('ide-dom-headless')).find(task => task.label === label)
+    expect(headless?.env).toMatchObject({
+      WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
+      WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1',
+    })
+    expect(getIdeExhaustiveTasks().filter(task => task.label === label)).toHaveLength(1)
+    expect((await getSuiteTasks('ide-headless-full')).filter(task => task.label === label)).toHaveLength(1)
+  })
+
   it('keeps ordinary full within WeChat scope and only three optional Baidu tasks outside exhaustive', () => {
     const full = getIdeTasks()
     const exhaustive = getIdeExhaustiveTasks()

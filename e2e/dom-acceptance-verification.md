@@ -1,130 +1,244 @@
 # 微信 IDE DOM 验收规范与覆盖记录
 
-## 范围
+## 当前结论与范围
 
-`ide-full:exhaustive` 包含 89 个任务，微信范围为 86 个任务；3 个可选百度任务标记为范围外。当前 manifest 展开 223 个 case 声明，全部注册 DOM 验收计划，未发现缺失计划、未解析参数表或没有 case 的微信任务。
+**最终验收尚未完成。** 下表和历史索引保留局部通过与失败证据，不能据此宣称最终提交上的全量 IDE 或 PR CI 已通过。除明确标记的已提交运行外，本轮诊断报告来自未提交工作区；`workingTreeDirty: true` 时，报告中的 SHA 不代表这些修改已经进入该提交。
 
-以上数字表示静态接入，不表示测试通过。逐任务、fixture、路由、操作与计划来源见 [生成清单](./dom-acceptance-inventory.md) 和 [JSON 清单](./dom-acceptance-inventory.json)。新增 case 后重新运行生成器，不手工编辑清单。
+最新静态清单为 **91 个任务、88 个微信任务、3 个范围外百度任务、226 个展开 case**。226 个 case 均注册计划，缺计划、未解析参数化和没有 case 的微信任务均为零。数量变化来自新增结算和组件实例 API 正式场景；临时组件 API probe 已移除。组件库和人工 IDE 示例仍按原 manifest 排除。
 
-## Case 契约
+这是源码接入完整性，不是执行结果。任务、fixture、路由、操作和计划来源见 [生成清单](./dom-acceptance-inventory.md) 与 [JSON 清单](./dom-acceptance-inventory.json)。清单由源码生成，不手工维护统计值。
 
-每个 case 开始时通过 `createDomAcceptance` 注册独立期望与有序检查点。模板、聚合与参数化入口必须展开所有子 case；一个 case 内的多路由场景需要分别检查首屏及关键操作后的实际节点。
+## 验收规范
 
-检查内容包括文本、属性、数量、条件节点出现或消失，以及组件内部作用域。`page.data`、`runE2E().ok`、构建文件、dataset 和根节点存在不能单独证明界面正确。API、生命周期与事件场景应把实际执行结果呈现在 fixture 界面，并保留原语义断言。
+| 契约          | 必须满足的条件                                                                                                                                                                               |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Case 与检查点 | 每个 case 通过 `createDomAcceptance` 定义独立期望和有序检查点；聚合、参数表、模板子调用与多路由场景全部展开。首屏及关键操作后都检查实际节点。                                                |
+| 业务 DOM      | 检查文本、属性、数量、出现/消失及组件作用域。`page.data`、`runE2E().ok`、构建文件、dataset 或根节点存在不能单独证明业务界面正确。API/lifecycle 结果须呈现在 fixture 界面，同时保留语义断言。 |
+| 查询失败      | 能力缺失、协议异常或查询失败必须失败；只有成功返回空集合才证明节点不存在。优先语义 ID 和声明者作用域，避免依赖原生查询桥不支持的位置伪类。                                                   |
+| 样式与布局    | 使用真实 IDE 的计算样式、布局及本次窗口证据。headless 逻辑树或模拟尺寸不能作为布局通过证据。                                                                                                 |
+| HMR           | 修改前声明全部阶段期望。stateful 保留页面/App 身份、计数和共享状态，不通过重新导航或恢复数据满足断言；classic 完整刷新时先验首屏再导航。DOM 采集前后必须是同一真实页面身份。                 |
+| 会话与启动    | 同 app/suite 复用 automator，通过 `reLaunch` 切路由；独立冷启动写明原因。初次构建完成后启动完整快照，启动期间保留被动监听和唯一限时日志订阅，不清空 Console。                                |
+| 错误归属      | 预期错误按检查点精确声明来源、级别、通道、文本与次数，用 `act` 绑定边界。未分类、多余、缺失及边界外错误均不得消费。接口见 [检查点说明](./utils/domAcceptance/README.md)。                    |
+| 严格报告      | 记录 SHA、provider、IDE/基础库版本、case/checkpoint 结果和证据索引，区分通过、失败、阻塞、跳过、未执行及范围外。缺证据、错路由、过期证据、skip/todo、环境阻塞或提前终止不能完整通过。        |
+| 完整性        | 执行收集的模块与 case 名称逐项匹配源码声明，拒绝聚合遗漏、同数量替换和重复。筛选、断点及允许失败的诊断运行均为局部结果；运行日志渠道必须存在，缺日志不能当作没有错误。                       |
+| 证据与隐私    | 完整 JSON、截图和日志留在本机，PR 只提供脱敏摘要与索引。项目路径、用户目录、凭据和邮箱统一脱敏；源码及共享 helper 改动后重新生成包含内容摘要的清单。                                         |
 
-样式验收使用真实 IDE 的计算样式与布局证据。`rpx` 期望结合本次宿主窗口宽度换算，保留窗口证据和宿主取整容差；headless 的逻辑树不提供计算样式或布局验收。查询异常和缺失查询能力必须失败，只有成功返回空集合才支持节点不存在的结论。
+本机 E2E 全局串行，启动前检查残留进程，长任务保持系统唤醒。修改源码后重建受影响包；CLI 下游验证固定先运行 `pnpm --filter weapp-vite build`，确认 dist 同步后再执行 headless 和真实 IDE。任何最终 bundle 都由 Vite/Rolldown 输出，不手写 dist 修补。
 
-HMR 场景在修改前定义所有阶段期望。同一路由保留当前页面并验证更新内容及交互状态；切换路由使用同一 automator 的 `reLaunch`。独立启动需要说明原因。运行态失败不能降级为检查 dist 后记为通过。
+## 当前验证表
 
-`classic` 与 `stateful` 分别登记预期：classic 脚本/WXS 引起完整刷新时，先检查刷新后的首屏，再复用会话导航并验收新代码；模板局部更新仍验证原页面状态。stateful 场景检查计数、共享 store、响应式删除状态和新增默认值，不能通过重新导航或恢复测试数据来满足保状态断言。DOM 采集前后必须属于同一真实页面身份，避免同路由替换时误用旧页面证据。
+以下“局部通过”只覆盖所列文件、provider 和代码状态；后续相关修改需要重验。
 
-预期错误按检查点精确登记来源、级别、通道、文本与次数，通过 `act` 绑定操作边界；其他错误、缺失错误、多余错误及边界外错误均不能消费。错误日志仍保留在报告中，具体接口见 [检查点说明](./utils/domAcceptance/README.md)。
+| 验证项                          | 已有结果                                                                                                                                                         | 当前边界 / 下一步                                                                                                                                           |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 静态清单                        | 91 tasks / 88 微信 / 226 cases，全部有计划                                                                                                                       | 仅证明静态覆盖；最终生成后执行 `--check` 和 shared-launch 检查。                                                                                            |
+| `pnpm test`                     | 生命周期修复后无筛选完整运行 1277 文件 / 12106 tests 通过，12 文件 / 19 tests 跳过，退出码 0；`.tmp/pnpm-test-full-component-page.log`                           | 耗时 279.07 秒，对应本次未提交工作树，仍需最终 SHA 对应确认；原有单测跳过不能豁免严格 IDE case。                                                            |
+| `pnpm e2e:ci`                   | 新一轮无筛选完整运行 75/75 tasks 通过、退出码 0；含完整 HMR guard 26/26 及三个专项各 3/3，`.tmp/pnpm-e2e-ci-full-current.log`                                    | run `d6a385a1-67cf-4478-b688-da083a83eb52`，complete/passed，无失败、阻塞、跳过或未执行；对应运行时未提交工作树，仍非最终 SHA 证据。                        |
+| `pnpm e2e:ide:full`             | 最新无筛选严格运行 18/18 tasks、118/118 cases、378/378 checkpoints 通过，退出码 0；run `b51385c8-09f8-44b0-bb25-4acde5317aef`                                    | complete/passed；30 份 DOM 报告无验收错误，全部证据来自 devtools-page-frame。工作树 dirty，仍需最终提交证据；旧失败保留历史。                               |
+| 三平台构建门禁                  | `E2E_FULL_MATRIX=1 pnpm e2e:platform:build` 完整通过，6 files / 37 tests、35.24 秒、退出码 0                                                                     | 包含 wevu-runtime 的 weapp、alipay、tt；`.tmp/platform-build-full-current.log`。最终提交上的云端门禁仍需完成。                                              |
+| exhaustive IDE                  | 历史无筛选诊断执行 86 个微信任务，65 通过 / 21 失败，退出码 1                                                                                                    | 当时使用允许继续收集失败的诊断模式；新清单已增至 88 微信任务，须无筛选、无允许失败选项重跑。                                                                |
+| Headless 当前全量               | 严格 19/19 tasks、39/39 cases、147/147 checkpoints 通过，退出码 0，全部报告无错误；run `1124010a-49a3-486c-abab-80fa3f765214`                                    | 生命周期修复并重建后的完整运行；`.tmp/ide-dom-headless-full19-component-page.log`，逐 invocation 见下文。对应未提交工作树，不替代最终真实 IDE 全量验收。    |
+| 结算 headless                   | run `ea651762-f9f5-4887-a72a-530254753007` / invocation `5bbb79e4-b564-45a9-a2c6-9b5c80936b35`：1 case、4/4 checkpoints，严格报告 passed、无错误                 | `workingTreeDirty: true`。覆盖首页启动与 1→2→1 件结算；真实 IDE 正式场景仍需完成。                                                                          |
+| 组件实例 API headless           | run `dd2430b0-d1d6-406c-a48e-9dd84143a5df` / invocation `b0a03f76-c6d9-4d79-b755-c4e38711349b`：1 case、4/4 checkpoints，严格报告 passed、无错误                 | `workingTreeDirty: true`。真实 IDE 正式场景亦已通过，独立 invocation 见下方六任务记录。                                                                     |
+| 门户导航双 provider             | 正式 IDE 与 headless 均为 1 case / 7 checkpoints，严格报告 passed、无运行时错误；run 和 invocation 见下方门户记录                                                | 工作区未提交；同一 IDE run 的 Retail 失败，不能将该混合运行记为通过。                                                                                       |
+| Simulator 全量浏览器            | 生命周期修复后 30 files / 66 tests 全部通过，退出码 0；`.tmp/simulator-browser-component-page-full.log`                                                          | 已包含新增 componentPageLifecycle browser；该次未提交工作树完整结果，浏览器尺寸不替代微信布局证据。                                                         |
+| Wevu behavior 真实 IDE          | 9/9 cases、24/24 checkpoints，严格报告 passed；run `b2f05324-a979-430a-b41c-ecced7086916` / invocation `12bf032f-9e40-4fc4-b087-2b4a2a80cd45`                    | `.tmp/wevu-behavior-current-ide.log`。simulator 修复后同场景亦 9/9、24/24 通过，保留原真实 IDE 期望；两侧均为各次未提交工作树证据。                         |
+| Simulator 组件/页面生命周期     | 基础库 3.17.2 原生探针完成 8 步顺序及实际 DOM/WXML/截图；共享 helper、回归与中文 changeset 已落地，188 项单测、typecheck、lint 通过                              | `.tmp/component-page-lifecycle-probe/index.json`；`.tmp/simulator-component-page-build.log` 重建后 browser 全量和严格 headless 全量通过。根因与顺序见下文。 |
+| Simulator 公开类型              | 组件 API 变更后实际 tsd 通过；页面方法目标修复重建 dist 后再次显式执行实际 tsd 文件通过，`.tmp/simulator-page-method-tsd.log`                                    | 页面方法 browser 1/1 通过，`.tmp/simulator-page-method-browser.log`；类型通过不能替代 runtime。                                                             |
+| Automator 构建和公开类型        | 日志边界调整后已完成最终重建与实际 tsd：`.tmp/automator-console-final-build.log`、`.tmp/automator-console-final-tsd.log`                                         | 结构化日志已用于后续正式局部 IDE 验收；全量启动/HMR 与最终提交验收仍待完成。                                                                                |
+| 类型测试 CI 入口与 @mpcore/test | 新增 CI 类型覆盖回归 6/6 通过，`.tmp/public-type-test-coverage-current.log`；@mpcore/test 显式实际 build + tsd 通过，`.tmp/mpcore-test-actual-types-current.log` | 修复默认 tsd 对 `.d.mts` 的漏跑入口；六项回归为独立验证，不并入前次 pnpm test 统计。最终 PR 类型 job 仍需通过。                                             |
+| 原生 lazy HMR                   | 启动订阅 deadline 修复后，正式原配置 1 case / 5 checkpoints 通过、无验收错误；原页面/App 身份、交互状态及真实样式全部保持                                        | run `ebe142be-4441-468d-b40d-60b4d532fca9`，局部总入口因其余 87 tasks 未执行退出 1；本任务 passed，整体 incomplete，仍待最终 exhaustive。                   |
+| i18n fixture                    | Vue marker 与构建断言修正后定向构建 2 项通过，`.tmp/i18n-fixture-final-build-recheck.log`；Issue #868 正式 IDE 1 case / 2 checkpoints 通过，无运行时错误         | 独立 invocation 见下方六任务记录。构建另 92 项因筛选未执行，不表示整个构建 suite 通过。修正后的断言禁止残留 marker 并检查实际 behavior 引用。               |
+| Retail 全路由                   | 正式 IDE 单任务的 29 路由 / 36 checkpoints 全部通过，运行时错误 0；run 与 invocation 见下方零售记录                                                              | 严格局部总入口退出 1，因为完整范围另有 87 tasks 未执行；该任务 passed，整轮 incomplete，最终提交全量验收仍待完成。                                          |
+| PR 云端 CI                      | 远端旧提交的 CI E2E 有失败，本地后续修复尚待最终提交验证                                                                                                         | 最终 SHA 的全部适用自动检查和完整 OS/Node workflow 均需完成且通过；等待、取消或审批中不算通过。                                                             |
 
-## 严格报告
+### 最新真实 IDE 全量通过
 
-报告记录 run、invocation、提交 SHA、provider、IDE 和基础库版本，以及逐 case/checkpoint 结果。套件区分通过、失败、阻塞、跳过、未执行和范围外。缺失证据、错误路由、过期证据、查询异常、skip/todo、环境阻塞或提前终止都不能得到完整通过结论。严格验收完成时还要求运行日志渠道已配置且文件存在；空日志可以表示没有错误，缺失渠道不能表示没有错误。
+无筛选 `pnpm e2e:ide:full` 完整执行 **18/18 tasks、118/118 cases、378/378 checkpoints**，退出码 0。run `b51385c8-09f8-44b0-bb25-4acde5317aef` 的 suite 为 `strict: true`、`coverage: complete`、`acceptance: passed`，失败、阻塞、跳过、未执行均为 0。主日志 `.tmp/pnpm-e2e-ide-full-current.log`，suite 索引 `docs/reports/2026-09-08-043045-e2e-ide-full-f50958be-suite-report/index.json`。
 
-筛选或断点运行只产生局部结果。模板子调用必须完整且无重复；aggregate 导入必须与 manifest 的子任务一致。最终验收需要在最终提交上无筛选运行 `pnpm e2e:ide:full:exhaustive`，同时满足 `pnpm test`、`pnpm e2e:ci`、`pnpm e2e:ide:full` 和适用 CI checks 全部完成且通过。
+已逐份读取本次 30 份 DOM 报告：全部属于同一 run、同一 SHA，状态 passed，`errors` 为空；118 个 case 均 passed，有序计划与实际证据的 checkpoint ID 逐一相同且无重复。378 份证据全部来自 `devtools-page-frame`，无 headless 替代。IDE 为 `2.02.2608060`，各 fixture 实际基础库包括 `3.13.2`、`3.16.2`、`3.17.2`，以对应报告为准。报告 SHA `2dc0bce4b4f3b8dcf53b1d6fd46e06bbd7e6dbaa` 且 `workingTreeDirty: true`，因此证明运行时工作树通过，不是最终提交验收。
 
-严格任务结束后还会将实际收集的模块与 case 名称逐项对照源码声明清单。聚合遗漏、同数量替换、重复 case 或错误模块不能因为剩余测试通过而得到成功结论；参数化 provider 标题和模板子调用在比较前明确展开。
+下表计数覆盖本次 18-task suite；它不等于 exhaustive 的 88 个微信任务。原生 lazy 场景的后续正式修复和独立验收另列下文，不拼接为 exhaustive 通过。30 份独立 invocation 全部由 suite 的逐任务 artifacts 索引，位于 `docs/reports/dom-acceptance/b51385c8-09f8-44b0-bb25-4acde5317aef/`。
 
-运行证据保留在本机报告目录，PR 仅提供脱敏摘要与证据索引。报告中的项目路径、用户目录、凭据和邮箱由统一工具脱敏。静态清单只记录实际调用路径上可识别的计划接入；未调用的局部 helper 不计入覆盖，运行时 reporter 仍是执行完整性的判据。
+| 任务（相对 `e2e/ide/`）                                 | cases | checkpoints |
+| ------------------------------------------------------- | ----- | ----------- |
+| `app-lifecycle.test.ts`                                 | 1     | 6           |
+| `auto-routes-define-app-json.runtime.test.ts`           | 1     | 1           |
+| `devtools-cli-workflow.runtime.test.ts`                 | 2     | 5           |
+| `github-issues.runtime.aggregate.test.ts`               | 65    | 165         |
+| `github-issues.runtime.issue621.test.ts`                | 1     | 11          |
+| `github-issues.runtime.issue852.test.ts`                | 1     | 1           |
+| `github-issues.runtime.subpackage-item.test.ts`         | 2     | 2           |
+| `github-issues.runtime.subpackage-user.test.ts`         | 2     | 2           |
+| `lifecycle-compare.test.ts`                             | 4     | 50          |
+| `react-runtime-spike.runtime.test.ts`                   | 3     | 14          |
+| `shared-styles.runtime.test.ts`                         | 1     | 3           |
+| `stateful-hmr.runtime.test.ts`                          | 3     | 12          |
+| `subpackage-shared-strategy-complex.runtime.test.ts`    | 2     | 8           |
+| `template-dev-open-all.runtime.test.ts`                 | 11    | 11          |
+| `template-tailwindcss-dev-open-multi.runtime.test.ts`   | 3     | 3           |
+| `template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts` | 1     | 6           |
+| `wevu-features.runtime.behavior.test.ts`                | 9     | 24          |
+| `wevu-runtime.weapp.test.ts`                            | 6     | 54          |
 
-## 云端 Headless 覆盖
+### 云端覆盖与最终交付
 
-`ide-dom-headless` 只接入已有 headless 通过报告的任务，不据新增 DOM 计划推断 provider 兼容性。目前清单为 16 个任务、36 个 case：
+六任务严格 IDE 局部运行 `bcf801f9-4c6c-4d4f-a5ff-2e0607dcc242` 为 **4/6 通过，退出码 1**；IDE 版本 `2.02.2608060`、基础库 `3.17.2`，工作区未提交。这次结果不能作为全量通过：
 
-| 分组                                                         | 任务数 | Case 数 | 已有证据索引                                                                                   |
-| ------------------------------------------------------------ | -----: | ------: | ---------------------------------------------------------------------------------------------- |
-| app prelude、自动路由、React、Wevu behavior/router、4 个模板 |      9 |      26 | run `73a9dab2-76fe-488e-88d2-3c85bd429059`                                                     |
-| Wevu 模板布局、3 个 chunk 矩阵、complex A/B 分包             |      5 |       7 | run `faae4885-4035-45ea-aeb6-c9653b682f9f` / invocation `c356ee1b-8714-40bd-827f-3985ac738ab9` |
-| TDesign 弹窗两种导入、Wevu 组件 emit                         |      2 |       3 | run `6c674ce1-4221-4b49-90f2-cd9b2b80066a` / invocation `70adf223-c04d-4cf0-ae3a-fa60f3996616` |
+- wrapper HMR：1 case / 6 checkpoints，通过；invocation `5fdfe9bf-692a-4e3f-91bc-602342390fce`。
+- GitHub aggregate：65 cases / 165 checkpoints，通过且无运行时错误；invocation `9d4a25db-6ee4-4469-bca2-028b01f5aa9c`。
+- 组件实例 API：1 case / 4 checkpoints，通过且无运行时错误；invocation `fd390ba7-dd1a-4c98-aec3-73f5c29b1f87`。与当前 headless 的关系节点、生命周期、作用域查询和移除/恢复结果一致。
+- Issue #868：1 case / 2 checkpoints，通过且无运行时错误；invocation `3106ec4a-b113-4aed-8741-c771d9da07e9`。完整 fixture 的 i18n Behavior 注册错误未再出现。
+- Retail：在订单列表首屏期望 7 条、实际 5 条处失败，只完成 21/34 checkpoints；invocation `c2967b8f-b6a1-4053-9fd3-55409b2f5d2c`。随后补首屏与下一页独立验收，并修复后续金额组合 XPath；本次后续路由未执行，最新正式单任务通过见下方记录。
+- Portal：7/7 DOM checkpoints 完成，但有三次 `navigateTo:fail timeout`，严格报告仍为失败；invocation `bd0b9ccd-8c1d-4df1-b5a3-ad9739ad0f8d`。结构化 Error 采集恢复了实际错误消息和堆栈；随后已定位并修复导航完成时序，双 provider 正式结果见下文。
 
-这些是加入 CI 的历史运行依据，不是最终提交验收。后续源码或 fixture 变化仍需重建并重新执行对应 provider。HMR 和真实网络宿主场景没有因为静态计划接入而加入本清单；headless 尚不能覆盖的行为保留真实 IDE 验收与对应的 mpcore 回归。
+新增 Behavior 注册 browser 回归 1/1 通过，索引 `.tmp/simulator-behavior-browser-current.log`。随后 simulator 完整 browser 回归 29 文件 / 65 tests 通过，退出码 0，索引 `.tmp/simulator-browser-full-current.log`；此结果早于最新组件/页面生命周期修复，修复后的 30/66 结果见当前表。此前与 IDE 重叠的 `pnpm test` 已主动中断，退出码 130；该次运行不计通过，后续全量测试独立串行执行。
 
-最新完整 headless 运行 `7ff712c9-6cd0-4d39-8e20-2f922493f4a3` 已通过全部 16 个任务、36 个 case、142 个检查点，无失败、跳过或缺失检查点。该运行包含严格日志渠道检查，仍来自未提交工作区，不能代替最终提交上的真实 IDE 验收。云端三个新增验收任务组均在 PR 使用 Node 22，手动与定时完整运行覆盖三个 OS 的 Node 22/24。
+零售模板最新正式 IDE 局部任务通过：29 路由 / 36 checkpoints，运行时错误 0；run `bb8db787-6a65-4995-8549-9e6d46c8acfa`，invocation `e22ce3af-4dcb-4900-91fd-62251f848d50`，索引 `.tmp/retail-all-fixed-strict-ide.log`。订单检查独立定义的首屏 5 笔与加载后 7 笔订单和对应金额；售后先验类型选择，再点击退款并验表单。全范围计划仍有 87 个任务未在该次运行执行，严格局部总入口按设计退出 1、标为 incomplete；不能将该任务通过记为全量验收。
 
-### 真实网络与模拟请求边界
+随后独立运行的 `pnpm test` 为 1272 files / 12091 tests 通过、2 files / 3 tests 失败，另有原有 12 files / 19 tests 跳过；索引 `.tmp/pnpm-test-full-serial-current.log`。失败分别为生命周期 fixture 缺少 WXML 和 GitHub suite 固定清单遗漏组件 API。补齐后生命周期 5 项单测通过，suite 清单、reporter 和订单分页共 49 项工具回归通过（`.tmp/acceptance-three-regressions-current.log`）。再次独立全量运行通过：1275 files / 12096 tests，保留原有 12 files / 19 tests 跳过，退出码 0，耗时 284.20 秒；索引 `.tmp/pnpm-test-full-current-rerun.log`。
 
-请求组 headless 局部运行 `a215e2b1-4827-4ee8-9de3-c71abc6dfef0` / invocation `d8feb56f-8471-4286-8465-da0c9a39154f` 共 16 个 case，仅 5 个通过、11 个失败，该运行不通过。`wevu-runtime-demo.request-globals` 的 2 个 case 与 `vue-query` 的 1 个 case 完成了其 DOM 检查；这不表示 `request-clients-real` 和 `request-clients-real-native` 两套真实网络场景通过。
+门户导航已用同一真实按钮、同一路由完成对照：`.tmp/dynamic-navigation-settled.json` 在目标 DOM 出现后等待原生成功回调再返回，退出码 0；`.tmp/dynamic-navigation-immediate.json` 在目标 DOM 出现后立即 `reLaunch`，复现 `navigateTo:fail timeout`，退出码 1。前一组 DOM 完成比原生回调约早 393ms，说明可见目标页面不足以证明上一次导航已完成。正式测试已改为等待该次导航 Promise，再执行后续返回操作。
 
-当前 headless 的 `wx.request` 仅匹配显式注册的 response mock，不会转发到本地 HTTP 验证服务器。严格模式在未匹配时抛出 `No request mock matched in headless runtime`；非严格模式只调用失败与完成回调，也不会联网。`wx.connectSocket` 尚未实现，因此 WebSocket、Socket.IO 握手、服务端随机消息和真实 HTTP 往返仍需真实 IDE 验收。服务端已经监听成功不能消除这些 provider 能力限制。
+门户正式修复已通过两侧严格验收：IDE run `5fe89465-efa8-4b6d-a84e-c2a685ca5f07` / invocation `599a5a2e-f966-4be3-b887-a59d255e3072`，headless run `9c77b0ac-b811-4010-bdc9-ab2962a06558` / invocation `ae0d3b40-a580-4ea6-abe3-ec2f58b1cd94`，均为 1 case / 7 checkpoints、无运行时错误。测试使用 `routeOnly: true` 调用仍在页面栈中的原首页，等待点击发起的导航 Promise；默认 Page 协议不能调用非栈顶页面。对应 simulator 栈顶限制、页面身份、卸载后不误调用替代页的 43 项单测，以及 browser 和实际 tsd 文件均通过（`.tmp/simulator-page-method-browser.log`、`.tmp/simulator-page-method-tsd.log`）。同一 IDE run 的 Retail 仍因金额组合 XPath 失败，整轮仅 1/2 tasks 通过，不能整体记为通过。
 
-对应的 mpcore 回归保留模拟请求覆盖：`test/requestMocks.test.ts` 在 Node 与 browser session 中检查请求方法、body、header、状态码、回调顺序、取消与未匹配失败；`e2e/requestMocks.e2e.test.ts` 在浏览器中检查请求中节点消失、响应文本与状态码出现、取消错误呈现、失败时没有成功节点。共享 fixture 位于 `test/helpers/requestMocks.ts`。这些路径均相对 `mpcore/packages/simulator`。
+原生 lazy 的完整生产构建对照 `.tmp/native-lazy-production-build` 通过首屏 DOM，所有原始页面输出完整，未启动 dev/HMR。成功组同样有 IDE 双重 reload，排除了“双重 reload 本身必然失败”的推断。完整 classic dev 对照 `.tmp/native-lazy-dev-classic-hmr` 也通过，保留 development 条件导出与 lazy，差异进一步缩至 stateful。
 
-上述回归只证明 `wx.request` 模拟回调经 `setData` 后的渲染语义，不能替代 fetch、axios、graphql-request、vue-query 与真实 HTTP 服务交互，也不能证明 socket 传输或真实宿主兼容性。不得给真实网络 suite 注入 mock 后记为通过，不得静默开放默认联网。能力尚缺时保留原 IDE 断言、失败运行和未验收项，不把这两套任务加入 headless 已通过清单。
+通过 Vite/Rolldown 正常 banner/footer 添加 chunk 轨迹后，classic 对照 `.tmp/native-lazy-classic-startup-trace` 完成 DOM 并收到 14 个进入/退出事件；stateful 对照 `.tmp/native-lazy-stateful-startup-trace` 在 `App.CDPEnable` 超时，collector 没有事件，随后只读 App-service 探针亦超时。空的异步网络轨迹不能单独证明应用首行未执行；宿主主包同步装载和可能未刷出的执行事件仍需定位。两组只用于诊断，不能替代正式 HMR 验收。
 
-真实 WebSocket fixture 现在分别等待欢迎帧、本次请求的 echo、独立服务端推送和关闭事件，检查 echo 的 run 与本次发送一致，以及最终 readyState 为 3。推送不能代替缺失的 echo。共享校验器的 simulator 单测覆盖帧顺序、错误请求、解析失败、超时、提前关闭和清理；浏览器回归验证消息结果经页面更新后实际呈现。这些回归仍不代表 headless 已实现真实 socket 联网。
+后续将孤立加载入口临时从 app 移至第二页面的源码对照通过产物 audit，但真实 IDE 仍 CDP 超时，证据 `.tmp/native-lazy-second-page-loader-owner`。该实验已撤回，原文比对一致，CLI 已正常重建。此结果只用于缩小诊断范围，未作为交付修复，也不构成 HMR 通过证据。
 
-最新真实 IDE 请求运行 `3d0ee255-cd1f-4e09-be79-0aec085ed956` 完成 Vue 与原生两组，共 13 个 case、29 个检查点通过。此前运行 `a866b71d-7d92-448f-92ef-681a09abb23e` 的原生 Socket.IO 首屏验收读到主页路由并失败，失败检查点关联了白屏截图。后续两次原生运行通过，但尚未确认首次路由异常的根因，不能把重跑通过描述为该瞬时问题已修复。
+随后在 `viteAdapter.ts` 进行 whole-output compact/minify 临时诊断，构建阶段因缺少三项 runtime 契约被拒绝，未进入真实 IDE。源码已按 `.tmp/native-compact-source/restore.patch` 精确恢复并与原文比对一致，正常 CLI 重建退出 0，日志 `.tmp/native-compact-restored-build.log`。之后 vendor-only renderChunk 对照通过模块图与 runtime audit，vendor 从 664221 减至 450728 字节（减少 32.14%），真实 IDE 仍 `App.CDPEnable` 超时，未达 DOM；证据 `.tmp/native-lazy-vendor-render-compact-ide`。该对照未修改真实源码，输出变小不能作为修复或验收通过。
 
-## IDE 项目能力缓存恢复
+后续从已安装 IDE 只读提取实际 Babel 依赖并精确重放该 vendor：转换 29.146 秒、总进程 29.474 秒退出 0，CPU profile 的 92.6% 位于 function-name → scope rename 路径，支持冷编译超过早期约 10 秒日志协议预算的根因方向。诊断见 `.tmp/nativeBabelReplay/root-cause.md`；计时来自独立 Node 子进程，不等于 IDE 内实际计时，也不单独证明原始页面或 HMR 已通过。启动订阅 deadline 修复在上述 18-task 全量结束时尚未应用，随后已正式应用并完成以下原场景验收。
 
-`apps/layout-power-demo` 曾在 `wv open` 后出现 `Cannot read properties of undefined (reading 'MaxSubPackageLimit')`，模拟器无法显示页面，automator 的当前路由为空。IDE 的项目配置面板同时显示全部包大小额度为零。这类启动错误需要检查项目能力初始化，不能通过删除 `app.json` 中的 `subPackages` 或改用另一个临时项目来宣称原项目通过。
+### 原生 lazy/stateful 启动订阅修复已验收
 
-CLI 的旧信任预热流程会在首次导入前创建只有 `projectid`、`projectpath` 和 `isTrusted` 的本地项目记录。IDE 会把缺少的 `attr` 初始化为 `{}`，随后编译器读取 `attr.setting.MaxSubPackageLimit` 时失败。修复后，CLI 仅更新 IDE 已完整导入、包含 `appid` 和 `attr.setting` 的现有项目记录；缺失、损坏或半初始化记录保持原样，首次导入交由 IDE 处理。回归测试覆盖未创建项目索引、未生成另一种存储格式，以及已有能力信息不被覆盖。
+正式修复收敛于 `e2e/utils/runtimeLogSubscription.ts` 与 automator 启动编排：同一已连接会话仅对明确的日志订阅响应超时串行重试，保持原启动 attempt 的总截止时间；编译错误、协议不支持、断连及业务异常仍立即失败。取消后不再发起订阅请求，外层超时仅在对应阶段转换为 deadline 错误。工具回归 44 tests、launcher 回归 62 tests 和 ESLint 均退出 0。
 
-对已经存在的异常项目，使用 IDE 的正常界面恢复并记录每一步：
+正式 `template-tailwindcss-tdesign-hmr.runtime.test.ts` 使用原始项目配置，保留增强编译、lazy、stateful 与第二页面。同一连接在日志订阅阶段两次约 10 秒响应超时后成功，不重新启动项目。run `ebe142be-4441-468d-b40d-60b4d532fca9`、invocation `9d6551b4-10d6-489b-b612-025b8ef39691` 的严格 DOM 报告为 passed、**1 case / 5 checkpoints**、`errors: []`；IDE `2.02.2608060` / 基础库 `3.17.2`，五份证据全部来自 devtools-page-frame。
 
-1. 打开目标项目，记录编译错误、当前路由和模拟器状态。
-2. 打开顶部「详情 → 项目配置」。进入此标签会重新请求项目能力，也可点击「域名信息」标题右侧的刷新图标。
-3. 等待包大小额度从零恢复为有效值，关闭详情并点击「编译」。
-4. 重新读取当前路由，检查目标页面的实际节点，并保存恢复前后的截图和错误信息。
+验收实际覆盖浅色初始背景、暗色交互、HMR 后暗色状态保留、切回浅色显示新背景、再次暗色切换。各阶段真实计算样式和可见布局符合独立期望，HMR 后页面 ID、page marker 与 App marker 保持，原交互状态保留。主日志 `.tmp/native-tdesign-hmr-subscription-fixed.log`；完整证据 `docs/reports/dom-acceptance/ebe142be-4441-468d-b40d-60b4d532fca9/9d6551b4-10d6-489b-b612-025b8ef39691.json`。
 
-本轮通过 Computer Use 观察到：刷新项目配置后额度恢复，重新编译后路由变为 `pages/index/index`，模拟器显示真实布局页面。恢复过程没有删除或修改 IDE 私有缓存，也没有手工补写 `attr`。本机证据索引为 `docs/reports/dom-acceptance/ide-cache-recovery/layout-after-project-config-refresh.png`。
+这证明原生启动阻塞已在原配置下修复，不是关闭增强编译或换为 classic。该 run 仍是严格局部运行：总入口因其余 87 个 tasks 未执行而退出 1，本任务 passed，整体 incomplete。报告依旧对应 dirty HEAD `2dc0bce4b`；此前 18-task 完整运行早于订阅修复，最终提交仍需无筛选 exhaustive 及相应全量复验。以上历史失败、临时实验与 UUID 全部保留。
 
-该观察只证明项目能力刷新与页面恢复。手工 `wv open` 时未启动开发服务器，Console 中仍有对应开发服务请求失败；这些残留错误不能作为正式验收中的预期错误自动忽略，也不能据页面恢复就将 case 标记为通过。后续必须先重建 CLI 相关包，再通过正式 `dev -o` 场景验证启动、DOM 检查点、HMR 和错误报告。
+`ide-dom-headless` 的 19 个任务包含历史 16 个已验证入口，以及本轮结算、组件实例 API、门户动态绑定；对应场景均在 exhaustive IDE 清单内。headless 与 simulator browser jobs 在 PR 使用三 OS 的 Node 22，手动完整 workflow 使用三 OS 的 Node 22/24。Acceptance Contracts 检查 shared-launch、静态 inventory，以及 `e2e/scripts/**/*.test.ts` 和 `e2e/utils/**/*.test.ts`；CI full 自动发现其余 `e2e/ci` 回归。
 
-## 本轮阶段性验证
+生命周期修复前的 19 任务 headless 运行 `cbe769b4-284b-4f2a-a556-c6b537b7135d` 全部执行，18/19 通过，唯一失败是 Wevu behavior 的 attrs、provide/inject 和深层注入作用域三个 case；该任务 6/9 cases、16/24 checkpoints 完成，整体退出 1，日志 `.tmp/ide-dom-headless-full19-current.log`。对应真实 IDE 正式运行 9/9 cases、24/24 checkpoints 通过，原断言完整保留。
 
-以下结果来自尚有未提交改动的诊断工作区。所列 IDE 报告均记录 `workingTreeDirty: true`，其提交字段不能代表本次改动的最终提交；局部通过项不构成全量验收或 PR CI 通过。
+原生探针在 IDE `2.02.2608060` / 基础库 `3.17.2` 记录顺序：`child:created → page:created → page:attached → child:attached:page-provide-value → page:onLoad → page:onShow → child:ready → page:ready`。实际文本显示 `page-provide-value`，完整 WXML 与截图分别保存在 `.tmp/component-page-lifecycle-probe/index.json` 和 `.tmp/component-page-lifecycle-probe/screen.png`。simulator 将组件页面的 attached 时机对齐该顺序，保留原生子组件 created 与 ready 边界，修复初始 attrs 和注入作用域读取错误；共享 helper、Node/browser 回归及 `.changeset/simulator-component-page-attachment.md` 已沉淀。
 
-- `pnpm test` 最新完整运行通过：1236 个文件通过、12 个文件跳过；11867 个测试通过、19 个测试跳过，退出码为零，包含新增 WebSocket 消息与日志桥生命周期竞态回归。已修复先前的 simulator 自定义事件目标断言及独立快照上下文的旧 mock；跳过项属于原有单测范围，不能用来豁免严格微信 DOM 验收。
-- E2E 内部工具最新完整运行通过：41 个文件、360 个测试，包含缺失日志渠道、普通 `ide-full` 默认严格验收、局部运行不得完整通过和原生 PTY 的回归。微信、支付宝和抖音 runtime 平台构建快照的 3 个测试也全部通过，7 个页面的快照已同步业务 DOM 节点。此前 `e2e:ci` 诊断运行发现快照失败后被主动终止，不能计为完整通过。
-- 修复快照后，无筛选的 `pnpm e2e:ci` 已完整通过 75/75 个任务，退出码为零。其中完整 HMR guard 的 26 个子任务，以及自动导入、自动路由、共享 chunk 专项均通过。验收索引为 `2026-09-07-164003-e2e-ci-8837ec26-suite-report`；这仍是未提交工作区的结果，后续改动需重新验证受影响范围。
-- `pnpm e2e:ci` 不包含独立的 `pnpm audit:hmr:changed`。旧 CI 的 lifecycle-compare、wevu-features 和 Wevu 模板审计曾在等待 Vue script 更新 marker 时失败；修复更新批次判断后，三个项目已分别通过独立审计，详见下文复验记录。完整云端 workspace audit 仍待最终提交验证，不能由 HMR guard 或局部审计通过推断全部审计通过。
-- 无筛选的普通 `pnpm e2e:ide:full` 运行 `1c0c3955-31ec-4bc3-ab1f-2f6e6904ba65` 在第 3/18 个任务失败后停止，不能记为完整通过。生命周期和自动路由任务通过；CLI 打开、截图与 DOM 点击 case 通过，开发快捷键 case 在启动时遇到 `script: tcgetattr/ioctl: Operation not supported on socket`，两个 DOM 检查点均未执行。该失败发生在伪终端初始化阶段，尚未启动开发进程；保留失败报告并修复测试启动器后重跑。
-- Tailwind 与 JSX 真实 IDE 局部运行：run `3d541a7f-645c-4008-80a9-3c717bb3897f` / invocation `ce9fd28a-2f7e-486a-8c49-a07ba044e8bd`，3 个 case 中 2 个通过、1 个失败。原生与 Wevu 两个 Tailwind TDesign 模板的 HMR 检查完成，包含实际计算样式、布局与交互状态。JSX/TSX 仍失败：`tsx:page-updated` 期望 `pages/tsx-basic/index`，实际变成 `pages/jsx-basic/index`，不能把前面已通过的检查点算作该 case 通过。
-- Core 与 runtime vendor HMR 局部运行：run `8ae667fa-7e1a-4c92-885d-daee9e9ec5ae` / invocation `fe081526-1b4b-4a2a-ba78-db898d96e33c`，2 个 case 均失败。Core 的诊断显示，同次更新后 `routeOnly` AppService 方法仍返回 `LAYOUTS-PAGE-SCRIPT-BASE`，原生 `Page.callMethod` 返回 `HMR-IDE-CORE-LAYOUT-PAGE-SCRIPT-WEAPP`。此差异要求按真实页面身份检查调用来源并继续验证，不能由原生方法读到新值推断后续 DOM 和完整 HMR 矩阵通过；vendor case 同样保留失败状态。
-- 公开类型：修复 tsd 默认漏跑后，`pnpm --filter @mpcore/simulator test:types` 与 `pnpm --filter @weapp-vite/miniprogram-automator test:types` 均完成构建并显式执行全部 `test-d`，退出码为零；覆盖新增页面身份、导航与 XPath、渲染通知参数等契约。此结果仅证明本轮类型检查通过。
+修复后 188 项单测、typecheck、lint 通过，重建日志 `.tmp/simulator-component-page-build.log`；完整 browser 30 files / 66 tests、严格 headless 19 tasks / 39 cases / 147 checkpoints 均退出 0。完整 headless suite 索引为 `docs/reports/2026-09-08-033252-e2e-ide-dom-headless-7afee9f4-suite-report/index.json`，run `1124010a-49a3-486c-abab-80fa3f765214`，十九份报告均 passed、无错误，未跳过或遗漏。以下 invocation 均归属该 run：
 
-IDE JSON 证据分别位于 `docs/reports/dom-acceptance/<run>/<invocation>.json`。最终交付仍须在最终提交上完成无筛选全量 IDE 验收，重新确认三项主命令与所有适用 CI checks。
+| 任务（相对 `e2e/ide/`）                                      | invocation                             |
+| ------------------------------------------------------------ | -------------------------------------- |
+| `github-issues.runtime.component-instance-apis.test.ts`      | `b6b9b05a-a2d0-459b-8ca4-ef1edc576a40` |
+| `template-retail-checkout.runtime.test.ts`                   | `776f76cf-7c21-4511-9a20-ee58867f60d4` |
+| `app-prelude-native.runtime.test.ts`                         | `ef86c5cb-4029-49a4-bd92-12071986986f` |
+| `auto-routes-define-app-json.runtime.test.ts`                | `c356eb51-428d-4ec8-9857-b97d84f6564f` |
+| `react-runtime-spike.runtime.test.ts`                        | `557b6208-fbac-424b-ad31-ccbe536827dc` |
+| `wevu-features.runtime.behavior.test.ts`                     | `33658947-da8b-4747-9e16-d5924aaf9e7c` |
+| `wevu-features.runtime.router.test.ts`                       | `352f30ee-042d-4376-a198-632292adb67e` |
+| `template-weapp-vite-template.test.ts`                       | `b37f0354-51f1-44d5-b576-7ac6076502f7` |
+| `template-weapp-vite-wevu-template.test.ts`                  | `948b75bb-1e31-4b3b-94ba-137c31c2c035` |
+| `template-weapp-vite-multi-platform-template.test.ts`        | `037b676e-20c5-4e68-9a22-e738f8b4baa2` |
+| `template-weapp-vite-multi-platform-sfc-template.test.ts`    | `5b613a68-f140-4d3f-ab6f-2b60a327c057` |
+| `template-weapp-vite-wevu-template.layouts.runtime.test.ts`  | `3f1292a8-fb9a-4733-bc37-d1283154b31f` |
+| `chunk-modes.runtime.duplicate.test.ts`                      | `7e81946b-c0b8-435a-b1d0-daa8b1cfa795` |
+| `template-weapp-vite-wevu-template.dynamic-bindings.test.ts` | `85ebd76c-00b8-442e-8454-ccbe80f893bb` |
+| `chunk-modes.runtime.hoist.test.ts`                          | `dccb040b-dfaf-45af-8cba-a913add0315e` |
+| `chunk-modes.runtime.extras.test.ts`                         | `d5f9fd66-14b9-49b7-ac52-ac039676c3db` |
+| `subpackage-shared-strategy-complex.runtime.test.ts`         | `2aac2ee1-8d13-4efa-8d86-cb9fe099c06d` |
+| `tdesign-dialog-import.runtime.test.ts`                      | `e46a05b1-9497-4b24-a0b4-1ce8bc52c26a` |
+| `wevu-vue-demo.script-setup.emit.runtime.test.ts`            | `5fe5c4e2-99a4-4339-995b-5511f2ae4d0e` |
 
-## JSX 状态保持 HMR 后续验证
+最终需在同一提交上完成 `pnpm test`、`pnpm e2e:ci`、`pnpm e2e:ide:full` 和 `pnpm e2e:ide:full:exhaustive`。推送后保留 PR-only 构建、类型、Platform Gate、changed HMR、Runtime Size 等检查，同时触发完整 CI、CI E2E、Policy、Performance、Tutorial 与适用的 VSCode workflow，核对矩阵、分片和报告内容。模板 performance 已增加报告完整性门禁：构建/HMR 失败或缺项在保存报告后返回非零，workflow 始终上传报告并独立校验完整性；33 项回归通过，实际云端运行尚待验证。不自动合并或发布。
 
-真实 IDE 的页面补丁曾触发 `No factory registered for module ...internal-template.mjs`。初始构建将重导出直接折叠到 runtime chunk，独立的 template chunk 虽已生成，却未被入口加载；后续补丁仍按原始模块图初始化该依赖。仅检查补丁文件生成与 HTTP 发布无法发现此错误。
+## 已沉淀的宿主语义与修复边界
 
-`packages/weapp-vite/test/runtime/jsxStatefulHmr.test.ts` 现执行初始 bundle、真实 Rolldown runtime 和连续两批补丁，覆盖从共享片段到页面事件的完整更新。修复在原生加载层登记主包内孤立非入口 chunk 的惰性加载器，使用生成代码中的真实模块 ID，保留新工厂优先、循环检测与旧 chunk 覆盖保护。分包边界来自扫描服务的完整结果，覆盖仅在 app 配置或自动路由中声明的分包；AST 查询排除动态属性调用。分包与页面入口不进入该映射，产物仍由 Vite 写入。
+| 观察面           | 固定契约与覆盖                                                                                                                                                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| #955 属性和文本  | 真实 IDE 中显式 `null` 保留；动态属性绑定的 `undefined` 传递为 `null`，省略属性才应用默认值。`type: null` 不套缺省值；文本插值 null 显示为 `null`。首屏摘要保持 `string:SALE\|null`，后续变更不改写初始快照。                                    |
+| 原生组件生命周期 | created 先读默认值，随后原子写入全部输入，执行 data observer、声明顺序的 property observer，最后进入 attached。Node/browser fixture 对齐；#558、#615、#930 与 portal 后续 headless 局部复验消除了旧差异。                                        |
+| 原生插槽查询     | CSS 查询依照声明者作用域，不能用物理 DOM 层级推断接收 slot 的宿主可查询投影内容。原生默认插槽、泛型投影、命名/scoped 插槽分别保留作用域回归。                                                                                                    |
+| Guard 与首屏     | blocking guard 延迟 setup/mounted，不阻止初始静态 WXML 显示。abort/reject 阶段检查真实标题与 pending，结果页仍验 mounted 数量和完整轨迹。                                                                                                        |
+| `rpx` 计算       | 实测 390 CSS px 窗口下：`8rpx = 4px`，`192rpx = 99px`，`calc(8rpx * 24) = 96px`；字体 `40rpx = 20px`，`56rpx = 29px`，无单位 1.4 的行高为 28px。`rpxCalc` 先换算原子再乘倍数，不能提前折叠总量或放宽容差。证据 `.tmp/rpx-ide-measurements.log`。 |
+| 嵌套 CSS 变量    | 微信探针观测嵌套回退、动态覆盖与恢复；保留级联依赖。headless 检查节点/class，浏览器和 IDE 才检查实际样式。旧诊断 probe 有两条未分类错误，不能用其两个测试返回通过替代严格正式验收。                                                              |
+| Tailwind 输出    | 重发资产的对象身份不能充当内容去重；pending 标记必须保留到最终 CSS 注入。外部 SFC style src 按真实文件身份确认归属，不比较编译前后全文。定向 owner/HMR 回归通过，最终全量仍待完成。                                                              |
+| 零售迁移         | 保留 nullable 列表契约、真实事件 payload 和条件分支求值；嵌套 key 投影不能混用原始/投影数据。结算输入补商品标题、金额和数量，异常不得被 catch 后的 navigateBack 二次错误掩盖。                                                                   |
+| HMR 孤立模块     | JSX 重导出优化会留下未执行 facade，后续 patch 仍需按原始模块 ID 初始化。加载器保留新工厂优先、循环检测与旧 chunk 覆盖保护；由 app 持有静态依赖，核心 runtime 不反向引用 facade，产物仍由 Vite 写入。                                             |
+| 日志和恢复       | 启用 Runtime 域后订阅 console；只对明确不支持协议的旧宿主兼容，超时不得降级。启动/refresh/compile 错误保留至关闭；超长错误受 UTF-8/JSON 预算限制，不能使恢复请求超限。日志边界修改后已重建并通过实际类型与局部 IDE 验证，仍需最终全量验收。      |
 
-客户端错误信息和堆栈分别限制长度，为 JSON 转义和 UTF-8 编码预留请求预算。回归将包含控制字符、中文、引号与反斜杠的超长错误送入真实 transport：修复前返回 400 且不执行重建，修复后返回 202 并执行重建。诊断文本不能让恢复指令超过服务端 64 KiB 限制。
+`rpxCalc` 当前仅约定换算后至少一像素的正原子及正倍数，不外推最小像素、负值或其他 renderer。`wx.rpx2px` 和 Web 连续比例转换也不能替代 WXSS 计算样式。
 
-最新局部真实 IDE 运行 `2b142d1a-cb92-49dd-9439-c6de5ad248cb` / invocation `cce929dd-8c23-4872-b110-f47ecccd0d9b` 已通过 1 个 case、5 个 DOM 检查点。页面标题、共享文本与计数 `0 → 1 → 3` 符合预期，Page/App 身份保留，客户端版本 `0 → 1 → 2`，无运行时错误。热更新后的 `getCurrentPages()` 路由代理仍可能返回旧数据，计数语义断言使用原生 `Page.getData` 且关闭 fallback，同时保留真实 DOM 检查。
+### 网络与环境问题
 
-Core HMR 在 `7d051c26-c16a-42ed-9f6c-966702394612` / `c0013ee6-468d-4329-a0ef-bc2ff219bf08` 中通过；layout vendor HMR 在 `331f6f85-c227-4a52-b283-b307bece0525` / `c324a6b3-7010-49ee-adc6-705cc919673e` 中通过。这两次混合分组运行仍包含其他失败 case，整体报告不通过。
+真实 HTTP/socket 与 headless response mock 是不同验收面。历史请求组 headless 有 11 个失败；请求模拟与 WebSocket transcript 单测只证明已模拟回调、帧次序及渲染，不能替代 fetch/axios/graphql-request/vue-query、Socket.IO、服务端随机消息的真实往返。保留原 IDE 断言，不给真实网络套件注入 mock 后记为通过。
 
-上述证据均记录 `workingTreeDirty: true`，只能证明相应局部修复，不代表最终提交全量验收。验收身份已区分新生成的报告与源码改动；已跟踪报告的修改仍会标记 dirty。开发日志同时收集客户端重建原因及连续堆栈，防止应用重启丢失异常后被误记为无错误。
+`MaxSubPackageLimit` 启动错误来自 CLI 提前创建不完整项目记录。修复仅更新 IDE 已完整导入的信任记录，不补写私有 attr。已有坏记录用正常 IDE「详情 → 项目配置」刷新能力再编译，记录额度、路由、截图和错误；页面恢复不代表正式 case 通过。恢复截图：`docs/reports/dom-acceptance/ide-cache-recovery/layout-after-project-config-refresh.png`。
 
-## CLI 快捷键与独立 HMR 审计复验
+插件本地开发使用版本 `dev`。IDE 二次 Babel 转译的插件越界 helper 路径记录为 [issue #963](https://github.com/weapp-vite/weapp-vite/issues/963)，兼容配置仅在 IDE `2.02.2608060` / 基础库 `3.17.2` 验证，不表示宿主缺陷已修复。插件页面路径和 AppService 页面栈是不同观察面；CSS 查询失败时使用已证明可用的原生页面帧 XPath，并保留文本与数量断言。
 
-CLI 快捷键测试使用原生 PTY 直接启动 Node，拒绝降级到普通管道。真实进程回归覆盖无需换行的按键输入、启动提前退出和强制清理；测试进程的日志等级显式启用 info，避免继承 Vitest 测试环境后隐藏就绪提示。`dev -o` 的就绪提示早于 IDE 自动化端口初始化，测试复用 `waitForOpenedAutomator` 等待本次打开的会话，不重新启动项目。
+## 历史运行与证据索引
 
-真实 IDE 进一步暴露日志桥竞态：截图暂停时，后台日志桥尚在连接，旧实现会直接返回；稍后日志桥才开始占用会话。修复后暂停等待待完成连接，恢复也纳入同一生命周期，关闭后不能再恢复或并行建立第二条日志桥。四项单测先失败后通过，相关日志桥与快捷键单测、包级 typecheck 均通过；修改后已重建 CLI。
+下表保留诊断链，已被后续修改影响的通过项仍标为历史。JSON 默认位于 `docs/reports/dom-acceptance/<run>/<invocation>.json`；只有 run 时查看该目录内对应任务报告。同一混合运行内某 case 通过，不改变该运行整体失败状态。
 
-复验 run `fb9110c2-e21f-4ea0-b135-00009c4524dc` / invocation `114bcdad-fdbf-49a7-b220-ed5ca6c2ebd1` 中两个 CLI case、五个 DOM 检查点全部通过。真实按键完成整页截图，截图前后均检查目标页计数为 0；CLI 和 MCP 点击分别检查计数为 1、2。该运行有筛选，套件仍为局部结果并返回非零，不表示完整 IDE 验收通过。Computer Use 的失败后页面截图保留在 `docs/reports/dom-acceptance/cli-hotkey-diagnostics/after-fullpage-timeout.png`，显示目标路由和正常业务界面；单独截图诊断中无开发服务的旧 HMR 产物启动失败不计为本 case 通过证据。
+| 分组                     | 历史证据索引                                                                                                                                                      | 结论与后续状态                                                                                                                    |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Headless 初始接入        | `73a9dab2-76fe-488e-88d2-3c85bd429059`                                                                                                                            | 9 tasks / 26 cases。                                                                                                              |
+| Headless 布局/chunk/分包 | `faae4885-4035-45ea-aeb6-c9653b682f9f` / `c356ee1b-8714-40bd-827f-3985ac738ab9`                                                                                   | 5 tasks / 7 cases。                                                                                                               |
+| Headless 弹窗/emit       | `6c674ce1-4221-4b49-90f2-cd9b2b80066a` / `70adf223-c04d-4cf0-ae3a-fa60f3996616`                                                                                   | 2 tasks / 3 cases。                                                                                                               |
+| Headless 完整历史基线    | `7ff712c9-6cd0-4d39-8e20-2f922493f4a3`、`c2b195b0-ab93-40c4-99c4-f060bdadfa0c`                                                                                    | 每轮 16 tasks / 36 cases / 132 checkpoints；旧文 142 是统计笔误。                                                                 |
+| Headless 请求诊断        | `a215e2b1-4827-4ee8-9de3-c71abc6dfef0` / `d8feb56f-8471-4286-8465-da0c9a39154f`                                                                                   | 5/16 cases 通过、11 失败；真实网络未验收。                                                                                        |
+| IDE 请求                 | `a866b71d-7d92-448f-92ef-681a09abb23e` → `3d0ee255-cd1f-4e09-be79-0aec085ed956`                                                                                   | 前次原生 Socket.IO 路由异常；后次 13 cases / 29 checkpoints 通过。首次瞬时问题根因未确认。                                        |
+| 普通 IDE 初次运行        | `1c0c3955-31ec-4bc3-ab1f-2f6e6904ba65`                                                                                                                            | 第 3/18 task 因 PTY 初始化失败停止。                                                                                              |
+| CLI 快捷键复验           | `fb9110c2-e21f-4ea0-b135-00009c4524dc` / `114bcdad-fdbf-49a7-b220-ed5ca6c2ebd1`                                                                                   | 2 cases / 5 checkpoints 通过；筛选运行仍为局部。失败截图 `cli-hotkey-diagnostics/after-fullpage-timeout.png`。                    |
+| Tailwind/JSX 早期 HMR    | `3d541a7f-645c-4008-80a9-3c717bb3897f` / `ce9fd28a-2f7e-486a-8c49-a07ba044e8bd`                                                                                   | 2/3 cases 通过，JSX 路由错误；不是分组通过。                                                                                      |
+| JSX HMR 复验             | `2b142d1a-cb92-49dd-9439-c6de5ad248cb` / `cce929dd-8c23-4872-b110-f47ecccd0d9b`                                                                                   | 1 case / 5 checkpoints，计数 0→1→3、身份保留；后续 loader 边界变化仍需重验。                                                      |
+| Core/vendor HMR 早期失败 | `8ae667fa-7e1a-4c92-885d-daee9e9ec5ae` / `fe081526-1b4b-4a2a-ba78-db898d96e33c`                                                                                   | 2 cases 均失败；方法、DOM、storage 和页面身份需并列诊断。                                                                         |
+| Core/layout 局部复验     | `7d051c26-c16a-42ed-9f6c-966702394612` / `c0013ee6-468d-4329-a0ef-bc2ff219bf08`；`331f6f85-c227-4a52-b283-b307bece0525` / `c324a6b3-7010-49ee-adc6-705cc919673e`  | 对应 HMR case 通过，混合运行仍有其他失败。                                                                                        |
+| 已提交普通 IDE 完整运行  | `ad311335-e42b-4c9a-a4e8-80332b72d1e7`                                                                                                                            | dirty=false；前三任务通过，聚合 61/64 cases 后失败，14 tasks 未执行。#466 操作异步、#300 解构语义、#955 查询作用域后续分别修正。  |
+| IDE 断点运行             | `2cf2a659-8236-408a-802e-fd32f1ef2f74`                                                                                                                            | 选择 8 tasks，3 通过，插件启动失败后停止，4 未执行。                                                                              |
+| 插件白屏/恢复截图        | `abb86f51-8422-458d-9ea1-6ca772217d3c/36193cbd-bbd8-4258-a8e3-fd9d38b62d5d.png` → `a972f526-66e9-4054-90c3-ad62cdfd0098/acb108b8-bffb-4d71-b5c9-2aa4ad68af26.png` | 插件二次转译兼容诊断；不能替代正式验收。                                                                                          |
+| 模板入口                 | `a2032f97-4bc5-431f-8508-1aeff6a44269`                                                                                                                            | 11 个模板完成 DOM，参数化标题截短使严格报告失败；改用完整标题和 `it.for` 上下文。                                                 |
+| Wevu 后两组              | `7b0c47ba-9e1b-4611-a6f0-61dc406a3e49`                                                                                                                            | 15 cases 局部通过；其他重叠诊断运行已终止作废。                                                                                   |
+| 插件示例                 | `068a8c2b-4d2f-4455-9733-9b63e83c8e14`                                                                                                                            | 3 checkpoints 局部通过，含插件页 XPath。                                                                                          |
+| 无筛选继续收集失败       | `1ce7be6c-bb15-4ace-b36f-12eb6eb9177f`                                                                                                                            | 微信 65/86 tasks 通过、21 失败、3 范围外；退出码 1，不能作为最终验收。guard 失败截图 `c8896aab-8a16-40f1-9a61-f2f6636bf11a.png`。 |
+| Guard 与混合分组         | `073d4021-c5aa-4a38-8e78-559ef2385377` / `bdc42c41-ec52-4a8d-8632-2fec139a40e1`                                                                                   | #911 的 7 cases / 19 checkpoints 两 provider 局部通过；混合十项只有四项通过，其他启动错误保留失败。                               |
+| 独立分包 portal          | `8bbadef9-59d0-46cc-993a-64fed7f4831d`                                                                                                                            | 7 checkpoints 完成，但启动空错误使严格报告失败。                                                                                  |
+| Wevu TDesign style src   | `05aefac3-7621-40e8-8ebf-27de97f9a104`                                                                                                                            | 2 checkpoints 通过并同步快照；后续最终运行不得使用更新快照模式。                                                                  |
+| 原生模板选择器           | `90dbf15c-bd64-471f-89b1-1d6c56c2fad5`                                                                                                                            | TDesign/Vant 通过；普通 Tailwind 状态选择器误命中说明卡片，后续按 hero 作用域修正。                                               |
+| 模板与结算               | `a0c7599f-9c4b-420a-93ed-4e69de79c44c`                                                                                                                            | 普通 Tailwind/Wevu TDesign 无快照更新通过；结算金额 DOM 已出现但旧 XPath 失败，后续改用实际 `.pay-amount` 作用域。                |
+| 结算旧 headless          | `13025786-2beb-4177-a986-7958811f8bb4`                                                                                                                            | 4 checkpoints 完成但缺 getRelationNodes/createSelectorQuery，严格失败；新通过证据见当前表。                                       |
 
-三个旧 CI 失败项目已分别通过独立 HMR 审计：lifecycle-compare 的六个场景、wevu-features 的三个场景和 Wevu 模板的三个场景均观测到实际产物更新，无场景错误。使用 `pnpm audit:hmr:nightly` 加各项目的 `WORKSPACE_HMR_FILTER` 复验；完整云端 workspace audit 仍须在最终提交上通过。
+### 历史命令日志
 
-## 维护命令
+最新无筛选 CI 运行见 `.tmp/pnpm-e2e-ci-full-current.log` 与 `docs/reports/2026-09-08-035047-e2e-ci-e6adb7f1-suite-report/index.md`：75/75 tasks 通过、退出码 0；HMR guard 26/26，auto-import-vue-sfc、auto-routes-hmr、shared-chunks-auto 各 3/3。工作树 dirty，最终 SHA 尚待确认；下表继续保留早期诊断链。
+
+生命周期修复后无筛选单测 `.tmp/pnpm-test-full-component-page.log` 为 1277 files / 12106 tests 通过，原有 12 files / 19 tests 跳过，退出码 0，耗时 279.07 秒。它更新了前次 1275/12096 的阶段证据，旧日志继续保留，不将两次统计相加。
+
+| 索引                                                                                                                               | 覆盖与限制                                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `2026-09-07-164003-e2e-ci-8837ec26-suite-report`                                                                                   | 无筛选 CI 75/75 tasks 历史通过，包含 26 项完整 HMR guard 及专项；后续源码修改使其不能作为最终证据。                                          |
+| `.tmp/e2e-ci-current-complete-snapshot.log`                                                                                        | CI 74/75，HMR guard 24/26；发现其他工作区 E2E 残留，不能用作最终串行验收。                                                                   |
+| `.tmp/tailwind-hmr-owner-recheck.log`                                                                                              | 原六个 CSS HMR/内存失败 case 定向通过，未放宽阈值。                                                                                          |
+| `.tmp/pnpm-test-slot-guard.log`                                                                                                    | 历史完整 unit 1261 文件 / 11987 tests，早于 rpx 与后续改动。                                                                                 |
+| `.tmp/pnpm-test-checkout-variance-current.log`                                                                                     | 历史完整 unit 1266 文件 / 12021 tests 通过；早于后续宿主 API、HMR 和日志修改，最新完整运行失败见当前表。                                     |
+| `.tmp/simulator-three-browser-recheck.log`                                                                                         | 组件实例 API、结算、嵌套 CSS 变量 3 files / 3 tests 局部通过。                                                                               |
+| `.tmp/simulator-component-api-tsd.log`、`.tmp/automator-structured-tsd.log`                                                        | 对应修改阶段在新 dist 上显式运行实际 tsd 文件通过；后续最终构建与类型复验见当前表。                                                          |
+| `.tmp/simulator-browser-full-current.log`                                                                                          | 最新 browser 全量 29 files / 65 tests 通过、退出码 0；该日志已更新，不再指向此前 24 files / 60 tests 的历史内容。后续 simulator 修复需重验。 |
+| `.tmp/ide-template-reviewed-snapshots.log`                                                                                         | Wevu TDesign 和 features 局部通过；原生模板当时在 rpx 期望失败。                                                                             |
+| `.tmp/hmr-audit-lifecycle-final/report.json`、`.tmp/hmr-audit-wevu-final/report.json`、`.tmp/hmr-audit-template-final/report.json` | 三个旧 CI 失败项目的独立产物 HMR 审计，完整云端 workspace audit 仍待最终提交执行。                                                           |
+
+## 维护与最终确认命令
 
 ```sh
 node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write
 node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --check
 node --import tsx scripts/check-e2e-ide-shared-launch.ts
-pnpm exec vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/domAcceptanceReport e2e/utils/domAcceptance
+pnpm exec vitest run -c e2e/vitest.e2e.internal.config.ts
 ```
 
-`--check` 同时验证清单新鲜度和完整性；重新生成一个缺计划的清单不能使检查通过。工具层回归覆盖遗漏计划、错误路由、过期证据、查询异常、聚合遗漏、skip、提前终止、局部运行、预期错误消费和路径脱敏。
+`--check` 同时检查清单新鲜度与完整性，不能通过重新生成缺计划的清单绕过检查。内部工具回归覆盖缺证据、错路由、过期证据、查询异常、聚合遗漏、skip、提前终止、局部运行、错误消费和路径脱敏。
 
-所有本机 E2E 全局串行；先检查残留进程，长任务保持系统唤醒。修改源码后先重建受影响包，CLI 下游验证先执行 `pnpm --filter weapp-vite build`，再执行 headless 与真实 IDE。本文尚不宣称真实 IDE 全量验收或 PR CI 已通过。
-
-公开类型验收必须执行真实 `test-d` 文件。当前 tsd 版本的默认文件推导仅替换 `.d.ts`，遇到 `.d.mts` 会误将声明文件本身作为测试，不能据默认 `tsd` 返回零认定契约通过。simulator 与 automator 的 `test:types` 已显式指定 `--files "test-d/**/*.test-d.ts"`；需要复用已同步的 dist 而不触发构建时，使用 `pnpm --filter <package> exec tsd --files "test-d/**/*.test-d.ts"`。类型测试使用公开 `HeadlessWx`、session 和 page handle 契约，不通过页面任意字段的 `any` 访问验证宿主类型。
+公开类型必须执行真实 test-d 文件。当前 tsd 默认推导可能把 `.d.mts` 声明本身当作测试，不能以默认命令返回零证明契约通过。已同步 dist 后使用 `pnpm --filter <package> exec tsd --files "test-d/**/*.test-d.ts"`；含 TSX 的包按其脚本显式包含 TSX。正式交付保留构建、类型、runtime 和最终提交证据的对应关系。

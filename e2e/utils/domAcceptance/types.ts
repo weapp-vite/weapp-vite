@@ -1,7 +1,11 @@
 export type DomProvider = 'devtools' | 'headless'
 export type DomScope = string | { has: string }
 export type DomQuery = 'css' | 'xpath'
-export type DomStyleExpectation = string | { rpx: number }
+export interface DomRpxCalculation {
+  value: number
+  multiply: number
+}
+export type DomStyleExpectation = string | { rpx: number } | { rpxCalc: DomRpxCalculation }
 
 export interface DomNodeExpectation {
   selector: string

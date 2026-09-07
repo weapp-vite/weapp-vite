@@ -30,6 +30,8 @@ import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createAppInstance } from './appInstance'
+import { runComponentLifecycle } from './componentInstance'
+import { detachComponentRelations } from './componentInstance/relations'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
 import { runInitialPageLifecycles } from './pageLifecycle'
@@ -1303,7 +1305,7 @@ export class HeadlessSession {
 
   private runInitialPageLifecycles(pageInstance: HeadlessPageInstance, query: Record<string, string>) {
     runInitialPageLifecycles(pageInstance, query, this.kernel.scheduler, () =>
-      this.pages.includes(pageInstance) || this.tabPages.get(pageInstance.route) === pageInstance)
+      this.pages.includes(pageInstance) || this.tabPages.get(pageInstance.route) === pageInstance, () => this.renderCurrentPage())
   }
 
   private isTabBarRoute(route: string) {
@@ -1433,11 +1435,12 @@ export class HeadlessSession {
 
   private detachPageComponents(route: string) {
     const prefix = `page:${stripLeadingSlash(route)}`
-    for (const [scopeId, instance] of [...this.componentCache.entries()]) {
-      if (!scopeId.startsWith(prefix)) {
-        continue
-      }
-      instance.__definition__?.lifetimes?.detached?.call(instance)
+    const removed = [...this.componentCache].filter(([scopeId]) => scopeId.startsWith(prefix))
+    for (const [, instance] of removed) {
+      runComponentLifecycle(instance, 'detached')
+    }
+    detachComponentRelations(removed.map(([, instance]) => instance))
+    for (const [scopeId] of removed) {
       this.componentCache.delete(scopeId)
       this.componentScopes.delete(scopeId)
     }

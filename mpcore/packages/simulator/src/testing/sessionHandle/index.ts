@@ -2,6 +2,7 @@ import type { HeadlessProjectDescriptor } from '../../project'
 import type { HeadlessSession } from '../../runtime'
 import type { HeadlessTestingWaitOptions } from '../pageWait'
 import { HeadlessTestingPageHandle } from '../pageHandle'
+import { resolveTestingPagePath } from '../pagePath'
 import { HeadlessTestingScopeHandle } from './scope'
 import { normalizeNonEmptyInput, normalizeRoute, pollUntil, runWithTimeout } from './shared'
 
@@ -187,7 +188,7 @@ export class HeadlessTestingSessionHandle {
         if (!normalizedRoute) {
           return current
         }
-        if (normalizeRoute(currentPageInstance.route) === normalizeRoute(normalizedRoute)) {
+        if (normalizeRoute(current.path) === resolveTestingPagePath(normalizeRoute(normalizedRoute))) {
           return current
         }
         return null

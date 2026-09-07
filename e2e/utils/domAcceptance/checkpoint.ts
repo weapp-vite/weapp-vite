@@ -1,7 +1,7 @@
 import type { DomAcceptance, DomCheckpoint, DomCheckpointEvidence, DomPage, DomSession } from './types'
 import { setTimeout as delay } from 'node:timers/promises'
 import { isDeepStrictEqual } from 'node:util'
-import { assertResponsiveStyle } from './styles'
+import { assertResponsiveCalcStyle, assertResponsiveStyle } from './styles'
 
 export function normalizeDomRoute(route: string) {
   return route.replace(/^\/+|\/+$/g, '')
@@ -180,7 +180,13 @@ export async function captureDomCheckpoint(
                 }
                 windowWidth ??= (await session.systemInfo()).windowWidth
                 evidence.windowWidth = windowWidth
-                assertResponsiveStyle(node.styles[name], value.rpx, evidence.windowWidth, `${expected.selector} style ${name}`)
+                const label = `${expected.selector} style ${name}`
+                if ('rpxCalc' in value) {
+                  assertResponsiveCalcStyle(node.styles[name], value.rpxCalc, evidence.windowWidth, label)
+                }
+                else {
+                  assertResponsiveStyle(node.styles[name], value.rpx, evidence.windowWidth, label)
+                }
               }
             }
           }

@@ -8,23 +8,36 @@ text,
     --tw-border-style: solid;
     --tw-duration: initial;
     --tw-ease: initial;
-    --tw-font-weight:;
-    --tw-gradient-from: #0000;
+    --tw-font-weight: initial;
+    --tw-gradient-from: transparent;
     --tw-gradient-from-position: 0%;
     --tw-gradient-position: initial;
     --tw-gradient-stops: initial;
-    --tw-gradient-to: #0000;
+    --tw-gradient-to: transparent;
     --tw-gradient-to-position: 100%;
-    --tw-inset-ring-shadow: 0 0 #0000;
-    --tw-inset-shadow: 0 0 #0000;
-    --tw-leading:;
-    --tw-ring-offset-shadow: 0 0 #0000;
-    --tw-ring-shadow: 0 0 #0000;
-    --tw-shadow: 0 0 #0000;
+    --tw-gradient-via: transparent;
+    --tw-gradient-via-position: 50%;
+    --tw-inset-ring-color: initial;
+    --tw-inset-ring-shadow: 0 0 transparent;
+    --tw-inset-shadow: 0 0 transparent;
+    --tw-inset-shadow-alpha: 100%;
+    --tw-inset-shadow-color: initial;
+    --tw-leading: initial;
+    --tw-ring-color: initial;
+    --tw-ring-inset: initial;
+    --tw-ring-offset-color: #fff;
+    --tw-ring-offset-shadow: 0 0 transparent;
+    --tw-ring-offset-width: 0;
+    --tw-ring-shadow: 0 0 transparent;
+    --tw-scale-x: 1;
+    --tw-scale-y: 1;
+    --tw-scale-z: 1;
+    --tw-shadow: 0 0 transparent;
+    --tw-shadow-alpha: 100%;
     --tw-shadow-color: initial;
     --tw-space-x-reverse: 0;
     --tw-space-y-reverse: 0;
-    --tw-tracking:;
+    --tw-tracking: initial;
     border: 0 solid;
     box-sizing: border-box;
     margin: 0;
@@ -59,9 +72,10 @@ wx-root-portal-content {
     --default-mono-font-family: var(--font-mono);
     --default-transition-duration: 150ms;
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif,
-    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial,
+    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --font-weight-bold: 700;
     --font-weight-extrabold: 800;
     --font-weight-medium: 500;
@@ -150,29 +164,29 @@ wx-root-portal-content {
 .gap-4 {
     gap: calc(var(--spacing) * 4);
 }
-.space-y-4 > view + view,
-.space-y-4 > view + text,
-.space-y-4 > text + view,
-.space-y-4 > text + text {
+.space-y-4>view+view,
+.space-y-4>view+text,
+.space-y-4>text+view,
+.space-y-4>text+text {
     --tw-space-y-reverse: 0;
-    margin-bottom: calc(calc(var(--spacing) * 4) * var(--tw-space-y-reverse));
-    margin-top: calc(calc(var(--spacing) * 4) * calc(1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc((var(--spacing) * 4) * var(--tw-space-y-reverse));
+    margin-top: calc((var(--spacing) * 4) * (1 - var(--tw-space-y-reverse)));
 }
-.space-y-5 > view + view,
-.space-y-5 > view + text,
-.space-y-5 > text + view,
-.space-y-5 > text + text {
+.space-y-5>view+view,
+.space-y-5>view+text,
+.space-y-5>text+view,
+.space-y-5>text+text {
     --tw-space-y-reverse: 0;
-    margin-bottom: calc(calc(var(--spacing) * 5) * var(--tw-space-y-reverse));
-    margin-top: calc(calc(var(--spacing) * 5) * calc(1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc((var(--spacing) * 5) * var(--tw-space-y-reverse));
+    margin-top: calc((var(--spacing) * 5) * (1 - var(--tw-space-y-reverse)));
 }
-.space-x-8 > view + view,
-.space-x-8 > view + text,
-.space-x-8 > text + view,
-.space-x-8 > text + text {
+.space-x-8>view+view,
+.space-x-8>view+text,
+.space-x-8>text+view,
+.space-x-8>text+text {
     --tw-space-x-reverse: 0;
-    margin-left: calc(calc(var(--spacing) * 8) * calc(1 - var(--tw-space-x-reverse)));
-    margin-right: calc(calc(var(--spacing) * 8) * var(--tw-space-x-reverse));
+    margin-left: calc((var(--spacing) * 8) * (1 - var(--tw-space-x-reverse)));
+    margin-right: calc((var(--spacing) * 8) * var(--tw-space-x-reverse));
 }
 .rounded-2xl {
     border-radius: var(--radius-2xl);
@@ -234,30 +248,26 @@ wx-root-portal-content {
     --tw-gradient-position: to right;
     background-image: linear-gradient(var(--tw-gradient-stops));
 }
-.bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B {
+.bg-_burl_phttps_c_f_fvite_dweapp_ddev_flogo_dpng_P_B {
     background-image: url(https://vite.weapp.dev/logo.png);
 }
-.bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B {
+.bg-_burl_phttps_c_f_fvite_dweapp_ddev_ftw-logo_dpng_P_B {
     background-image: url(https://vite.weapp.dev/tw-logo.png);
 }
 .from-green-400 {
     --tw-gradient-from: var(--color-green-400);
-    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position)),
-    var(--tw-gradient-from) var(--tw-gradient-from-position,), var(--tw-gradient-to) var(--tw-gradient-to-position,);
+    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position)), var(--tw-gradient-from) var(--tw-gradient-from-position, ), var(--tw-gradient-to) var(--tw-gradient-to-position, );
 }
 .from-sky-50 {
     --tw-gradient-from: var(--color-sky-50);
-    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position)),
-    var(--tw-gradient-from) var(--tw-gradient-from-position,), var(--tw-gradient-to) var(--tw-gradient-to-position,);
+    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position)), var(--tw-gradient-from) var(--tw-gradient-from-position, ), var(--tw-gradient-to) var(--tw-gradient-to-position, );
 }
 .to-sky-400 {
-    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position)),
-    var(--tw-gradient-from) var(--tw-gradient-from-position,), var(--tw-gradient-to) var(--tw-gradient-to-position,);
+    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position)), var(--tw-gradient-from) var(--tw-gradient-from-position, ), var(--tw-gradient-to) var(--tw-gradient-to-position, );
     --tw-gradient-to: var(--color-sky-400);
 }
 .to-white {
-    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position)),
-    var(--tw-gradient-from) var(--tw-gradient-from-position,), var(--tw-gradient-to) var(--tw-gradient-to-position,);
+    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position)), var(--tw-gradient-from) var(--tw-gradient-from-position, ), var(--tw-gradient-to) var(--tw-gradient-to-position, );
     --tw-gradient-to: var(--color-white);
 }
 .bg-_blength_c100_v_100_v_B {
@@ -393,28 +403,23 @@ wx-root-portal-content {
 }
 .shadow-sm {
     --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, #0000001a), 0 1px 2px -1px var(--tw-shadow-color, #0000001a);
-    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
-    var(--tw-shadow);
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
 }
 .shadow-xl {
     --tw-shadow: 0 20px 25px -5px var(--tw-shadow-color, #0000001a), 0 8px 10px -6px var(--tw-shadow-color, #0000001a);
-    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
-    var(--tw-shadow);
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
 }
 .shadow-sky-200_f40 {
     --tw-shadow-color: #b8e6fe66;
 }
 .transition {
     transition-duration: var(--tw-duration, var(--default-transition-duration));
-    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from,
-    --tw-gradient-via, --tw-gradient-to, opacity, box-shadow, transform, translate, scale, rotate, filter,
-    backdrop-filter, display, content-visibility, overlay, pointer-events;
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to, opacity, box-shadow, transform, translate, scale, rotate, filter, backdrop-filter, display, content-visibility, overlay, pointer-events;
     transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
 }
 .transition-colors {
     transition-duration: var(--tw-duration, var(--default-transition-duration));
-    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from,
-    --tw-gradient-via, --tw-gradient-to;
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
     transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
 }
 .duration-500 {
@@ -454,152 +459,108 @@ wx-root-portal-content {
 `;
 
 exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from app config > weapp-vite-tailwindcss-template::pages/index/index 1`] = `
-"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
-  <view class="min-h-screen {{ mode === 'light'?'bg-gray-100 text-slate-800':'bg-gray-900 text-slate-200' }} transition-colors duration-500">
-    <view class="flex flex-col items-center pt-6 space-y-4">
-      <view class="flex space-x-8">
-        <view class="w-24 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"/>
-        <view class="w-32 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"/>
-      </view>
-      <view class="bg-linear-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
-        weapp-vite & weapp-tailwindcss
-      </view>
-      <view>
-        <HelloWorld title="{{hello.title}}" description="{{hello.description}}" docs="{{hello.docs}}" links="{{hello.links}}"/>
-      </view>
-      <view class="flex items-center">
-        <text>切换模式</text>
-        <view class="iconify {{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-4xl"/>
-      </view>
-      <view class="underline" mark:url="https://vite.weapp.dev">
-        https://vite.weapp.dev
-      </view>
-      <view class="underline" mark:url="https://tw.icebreaker.top/">
-        https://tw.icebreaker.top/
-      </view>
-      <button activity-type="0" entrance-path="" need-show-entrance="" class="rounded-full bg-sky-600 px-6 py-2 text-white">
-        打开布局演示页
-      </button>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"><view class="min-h-screen {{ mode === 'light'?'bg-gray-100 text-slate-800':'bg-gray-900 text-slate-200' }} transition-colors duration-500">
+  <view class="flex flex-col items-center pt-6 space-y-4">
+    <view class="flex space-x-8">
+      <view class="w-24 h-24 bg-_burl_phttps_c_f_fvite_dweapp_ddev_flogo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"/>
+      <view class="w-32 h-24 bg-_burl_phttps_c_f_fvite_dweapp_ddev_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"/>
     </view>
+    <view class="bg-linear-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
+      weapp-vite & weapp-tailwindcss
+    </view>
+    <view>
+      <HelloWorld title="{{hello.title}}" description="{{hello.description}}" docs="{{hello.docs}}" links="{{hello.links}}"/>
+    </view>
+    <view class="flex items-center">
+      <text>切换模式</text>
+      <view class="iconify {{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-4xl"/>
+    </view>
+    <view class="underline" mark:url="https://vite.weapp.dev">
+      https://vite.weapp.dev
+    </view>
+    <view class="underline" mark:url="https://tw.icebreaker.top/">
+      https://tw.icebreaker.top/
+    </view>
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="rounded-full bg-sky-600 px-6 py-2 text-white">
+      打开布局演示页
+    </button>
   </view>
-</weapp-layout-default>
-"
+</view>
+</weapp-layout-default>"
 `;
 
 exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from app config > weapp-vite-tailwindcss-template::pages/layouts/index 1`] = `
-"<block wx:if="{{__wv_page_layout_name === 'admin'}}">
-  <weapp-layout-admin __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}" title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}" subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
-    <view class="min-h-screen bg-slate-100 px-4 py-5">
-      <view class="rounded-2xl border border-sky-200 bg-linear-to-br from-sky-50 to-white p-5 shadow-sm">
-        <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-sky-700">
-          Native Layouts
-        </view>
-        <view class="mt-3 text-2xl font-bold text-slate-900">Tailwind 原生模板已接入 layouts</view>
-        <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
-      </view>
-
-      <view wx:for="{{cards}}" wx:key="title" class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <view class="text-lg font-bold text-slate-900">{{item.title}}</view>
-        <view class="mt-3 text-sm leading-7 text-slate-600">{{item.desc}}</view>
-      </view>
-
-      <view class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <button activity-type="0" entrance-path="" need-show-entrance="" class="_emt-0 rounded-full bg-slate-900 text-white">
-          使用 default 布局
-        </button>
-        <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-emerald-600 text-white">
-          切到 admin 布局
-        </button>
-        <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-slate-200 text-slate-900">
-          关闭布局
-        </button>
-        <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-sky-100 text-sky-700">
-          返回首页
-        </button>
-      </view>
-    </view>
-  </weapp-layout-admin>
-</block>
-<block wx:elif="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}">
-  <weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}" title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}" subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}">
-    <view class="min-h-screen bg-slate-100 px-4 py-5">
-      <view class="rounded-2xl border border-sky-200 bg-linear-to-br from-sky-50 to-white p-5 shadow-sm">
-        <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-sky-700">
-          Native Layouts
-        </view>
-        <view class="mt-3 text-2xl font-bold text-slate-900">Tailwind 原生模板已接入 layouts</view>
-        <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
-      </view>
-
-      <view wx:for="{{cards}}" wx:key="title" class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <view class="text-lg font-bold text-slate-900">{{item.title}}</view>
-        <view class="mt-3 text-sm leading-7 text-slate-600">{{item.desc}}</view>
-      </view>
-
-      <view class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <button activity-type="0" entrance-path="" need-show-entrance="" class="_emt-0 rounded-full bg-slate-900 text-white">
-          使用 default 布局
-        </button>
-        <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-emerald-600 text-white">
-          切到 admin 布局
-        </button>
-        <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-slate-200 text-slate-900">
-          关闭布局
-        </button>
-        <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-sky-100 text-sky-700">
-          返回首页
-        </button>
-      </view>
-    </view>
-  </weapp-layout-default>
-</block>
-<block wx:else="">
-  <view class="min-h-screen bg-slate-100 px-4 py-5">
-    <view class="rounded-2xl border border-sky-200 bg-linear-to-br from-sky-50 to-white p-5 shadow-sm">
-      <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-sky-700">
-        Native Layouts
-      </view>
-      <view class="mt-3 text-2xl font-bold text-slate-900">Tailwind 原生模板已接入 layouts</view>
-      <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
-    </view>
-
-    <view wx:for="{{cards}}" wx:key="title" class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <view class="text-lg font-bold text-slate-900">{{item.title}}</view>
-      <view class="mt-3 text-sm leading-7 text-slate-600">{{item.desc}}</view>
-    </view>
-
-    <view class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <button activity-type="0" entrance-path="" need-show-entrance="" class="_emt-0 rounded-full bg-slate-900 text-white">
-        使用 default 布局
-      </button>
-      <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-emerald-600 text-white">
-        切到 admin 布局
-      </button>
-      <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-slate-200 text-slate-900">
-        关闭布局
-      </button>
-      <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-sky-100 text-sky-700">
-        返回首页
-      </button>
-    </view>
+"<block wx:if="{{__wv_page_layout_name === 'admin'}}"><weapp-layout-admin __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}" title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}" subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}"><view class="min-h-screen bg-slate-100 px-4 py-5">
+  <view class="rounded-2xl border border-sky-200 bg-linear-to-br from-sky-50 to-white p-5 shadow-sm">
+    <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-sky-700">Native Layouts</view>
+    <view class="mt-3 text-2xl font-bold text-slate-900">Tailwind 原生模板已接入 layouts</view>
+    <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
   </view>
-</block>
-"
+
+  <view wx:for="{{cards}}" wx:key="title" class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <view class="text-lg font-bold text-slate-900">{{item.title}}</view>
+    <view class="mt-3 text-sm leading-7 text-slate-600">{{item.desc}}</view>
+  </view>
+
+  <view class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="_emt-0 rounded-full bg-slate-900 text-white">使用 default 布局</button>
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-emerald-600 text-white">切到 admin 布局</button>
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-slate-200 text-slate-900">关闭布局</button>
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-sky-100 text-sky-700">返回首页</button>
+  </view>
+</view>
+</weapp-layout-admin></block><block wx:elif="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}"><weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}" title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}" subtitle="{{(__wv_page_layout_props&&__wv_page_layout_props.subtitle)}}"><view class="min-h-screen bg-slate-100 px-4 py-5">
+  <view class="rounded-2xl border border-sky-200 bg-linear-to-br from-sky-50 to-white p-5 shadow-sm">
+    <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-sky-700">Native Layouts</view>
+    <view class="mt-3 text-2xl font-bold text-slate-900">Tailwind 原生模板已接入 layouts</view>
+    <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
+  </view>
+
+  <view wx:for="{{cards}}" wx:key="title" class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <view class="text-lg font-bold text-slate-900">{{item.title}}</view>
+    <view class="mt-3 text-sm leading-7 text-slate-600">{{item.desc}}</view>
+  </view>
+
+  <view class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="_emt-0 rounded-full bg-slate-900 text-white">使用 default 布局</button>
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-emerald-600 text-white">切到 admin 布局</button>
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-slate-200 text-slate-900">关闭布局</button>
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-sky-100 text-sky-700">返回首页</button>
+  </view>
+</view>
+</weapp-layout-default></block><block wx:else=""><view class="min-h-screen bg-slate-100 px-4 py-5">
+  <view class="rounded-2xl border border-sky-200 bg-linear-to-br from-sky-50 to-white p-5 shadow-sm">
+    <view class="text-xs font-semibold uppercase tracking-_b0_d2em_B text-sky-700">Native Layouts</view>
+    <view class="mt-3 text-2xl font-bold text-slate-900">Tailwind 原生模板已接入 layouts</view>
+    <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：{{currentLayout}}</view>
+  </view>
+
+  <view wx:for="{{cards}}" wx:key="title" class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <view class="text-lg font-bold text-slate-900">{{item.title}}</view>
+    <view class="mt-3 text-sm leading-7 text-slate-600">{{item.desc}}</view>
+  </view>
+
+  <view class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="_emt-0 rounded-full bg-slate-900 text-white">使用 default 布局</button>
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-emerald-600 text-white">切到 admin 布局</button>
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-slate-200 text-slate-900">关闭布局</button>
+    <button activity-type="0" entrance-path="" need-show-entrance="" class="mt-3 rounded-full bg-sky-100 text-sky-700">返回首页</button>
+  </view>
+</view>
+</block>"
 `;
 
 exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from app config > weapp-vite-tailwindcss-template::pages/profile/index 1`] = `
-"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}">
-  <view class="min-h-screen bg-gray-100 py-16">
-    <view class="flex flex-col items-center space-y-5">
-      <view>
-        <image class="w-_b200px_B h-_b190px_B" src="/logo.png"/>
-      </view>
-      <view class="text-lg font-semibold">ice breaker</view>
-      <view>
-        <HelloWorld title="{{hello.title}}" description="{{hello.description}}" docs="{{hello.docs}}" links="{{hello.links}}"/>
-      </view>
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"><view class="min-h-screen bg-gray-100 py-16">
+  <view class="flex flex-col items-center space-y-5">
+    <view>
+      <image class="w-_b200px_B h-_b190px_B" src="/logo.png"/>
+    </view>
+    <view class="text-lg font-semibold">ice breaker</view>
+    <view>
+      <HelloWorld title="{{hello.title}}" description="{{hello.description}}" docs="{{hello.docs}}" links="{{hello.links}}"/>
     </view>
   </view>
-</weapp-layout-default>
-"
+</view>
+</weapp-layout-default>"
 `;

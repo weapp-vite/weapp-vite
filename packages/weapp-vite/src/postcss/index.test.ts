@@ -53,14 +53,12 @@ describe('cssPostProcess', () => {
     expect(result).not.toContain('#ifndef')
   })
 
-  it('flattens nested CSS variable fallbacks for WXSS', async () => {
+  it('preserves nested CSS variable fallbacks and their runtime overrides for WXSS', async () => {
     const result = await cssPostProcess(
       '.wd-action-sheet-wrapper__popup { border-radius: var(--wot-action-sheet-radius, var(--wot-radius-large, var(--wot-n-8, 8px))); }',
       { platform: 'weapp' },
     )
 
-    expect(result).toContain('border-radius: var(--wot-action-sheet-radius, 8px)')
-    expect(result).not.toContain('var(--wot-radius-large')
-    expect(result).not.toContain('var(--wot-n-8')
+    expect(result).toContain('border-radius: var(--wot-action-sheet-radius, var(--wot-radius-large, var(--wot-n-8, 8px)))')
   })
 })

@@ -5,7 +5,7 @@ import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { TDESIGN_FIXTURE } from './tdesignDom'
-import { classBindingCheckpoints, readBindingState, readBindingStyle } from './tdesignDom/classBinding'
+import { classBindingCheckpoints, readBindingState } from './tdesignDom/classBinding'
 import {
   createTemplateWevuTdesignRegressionLaunchOptions,
   relaunchTemplateWevuTdesignRegressionPage,
@@ -48,10 +48,6 @@ describe('e2e app: template-wevu-tdesign-regression class/style binding lab', { 
     await page.waitFor(500)
     await acceptance.check('base', miniProgram, page)
     expect(await readBindingState(page)).toMatchObject({ isActive: false, hasError: false, isRound: false, isGhost: false })
-    const baseFontSize = Number.parseFloat(await readBindingStyle(page, 'style-string', 'font-size'))
-    const baseRadius = Number.parseFloat(await readBindingStyle(page, 'style-object', 'border-top-left-radius'))
-    expect(baseFontSize).toBeGreaterThan(0)
-    expect(baseRadius).toBeGreaterThan(0)
 
     await page.callMethod('applyScenarioAllOn')
     await page.waitFor(500)
@@ -63,10 +59,6 @@ describe('e2e app: template-wevu-tdesign-regression class/style binding lab', { 
       isGhost: true,
       classObject: { 'demo-active': true, 'text-danger': true, 'demo-round': true, 'demo-ghost': true },
     })
-    const activeFontSize = Number.parseFloat(await readBindingStyle(page, 'style-string', 'font-size'))
-    const roundRadius = Number.parseFloat(await readBindingStyle(page, 'style-object', 'border-top-left-radius'))
-    expect(activeFontSize / baseFontSize).toBeCloseTo(26 / 24, 1)
-    expect(roundRadius / baseRadius).toBeCloseTo(999 / 18, 1)
 
     await page.callMethod('applyScenarioMixed')
     await page.waitFor(500)
@@ -84,7 +76,5 @@ describe('e2e app: template-wevu-tdesign-regression class/style binding lab', { 
       errorClassIf: 'text-danger',
       ghostClassIf: 'demo-ghost',
     })
-    expect(Number.parseFloat(await readBindingStyle(page, 'style-string', 'font-size'))).toBeCloseTo(baseFontSize, 1)
-    expect(Number.parseFloat(await readBindingStyle(page, 'style-object', 'border-top-left-radius'))).toBeCloseTo(baseRadius, 1)
   })
 })

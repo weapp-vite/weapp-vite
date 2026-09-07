@@ -7,6 +7,7 @@ import {
   resolveInitialData,
   resolveInitialProperties,
 } from './properties'
+import { getComponentRelationNodes } from './relations'
 import { assignByPath, bindFunction, cloneValue, hasComponentPropertyValueChanged, parseDataPath } from './shared'
 
 export type { CreateComponentInstanceOptions, HeadlessComponentInstance } from './types'
@@ -25,6 +26,9 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
     data,
     __propertySnapshots__: {},
     properties,
+    getRelationNodes(key) {
+      return getComponentRelationNodes(instance, key)
+    },
     setData(patch, callback) {
       const changedKeys = Object.keys(patch)
       const dataKeys = [...new Set(changedKeys.map(key => parseDataPath(key)[0]!))]

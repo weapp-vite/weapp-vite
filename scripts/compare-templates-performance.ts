@@ -1,4 +1,5 @@
 /* eslint-disable ts/no-use-before-define */
+import type { TemplatesHmrReport } from './templates-performance-integrity'
 import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
@@ -7,6 +8,7 @@ import { stripVTControlCharacters } from 'node:util'
 import { execa } from 'execa'
 import path from 'pathe'
 import { createBenchmarkCheckoutPreparationCommands } from './benchmark-checkout-preparation'
+import { assertTemplatesPerformanceComplete, collectTemplatesPerformanceFailures, parseTemplatesHmrReport } from './templates-performance-integrity'
 
 const baselineDirInput = process.env.TEMPLATES_PERF_BASELINE_DIR
 const baselineDir = baselineDirInput ? path.resolve(baselineDirInput) : ''
@@ -35,6 +37,7 @@ async function main() {
   const baseline = await benchmarkCheckout('baseline', baselineDir)
   const optimized = await benchmarkCheckout('optimized', optimizedDir)
   const report = createReport(baseline, optimized)
+  report.integrity = collectTemplatesPerformanceFailures(report)
   const markdown = renderMarkdown(report)
 
   await writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8')
@@ -47,6 +50,7 @@ async function main() {
       flag: 'a',
     })
   }
+  assertTemplatesPerformanceComplete(report)
 }
 
 async function prepareBenchmarkRunner() {
@@ -72,7 +76,7 @@ async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutR
   const build = await benchmarkTemplateBuilds(id, cwd, templates)
 
   process.stdout.write(`[templates-perf] ${id} ${commit}: templates HMR benchmark (${hmrIterations}x)\n`)
-  await run('pnpm', ['exec', 'tsx', 'scripts/benchmark-templates-hmr.ts'], optimizedDir, {
+  const hmrCommand = await run('pnpm', ['exec', 'tsx', 'scripts/benchmark-templates-hmr.ts'], optimizedDir, {
     TEMPLATES_HMR_CLI_PATH: path.join(cwd, 'packages/weapp-vite/bin/weapp-vite.js'),
     TEMPLATES_HMR_ITERATIONS: String(hmrIterations),
     TEMPLATES_HMR_REPORT_DIR: hmrReportDir,
@@ -82,15 +86,27 @@ async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutR
     TEMPLATES_HMR_PROFILE_TIMEOUT_MS: String(hmrProfileTimeoutMs),
     TEMPLATES_HMR_STARTUP_TIMEOUT_MS: String(hmrStartupTimeoutMs),
     TEMPLATES_HMR_SAMPLE_MODE: hmrSampleMode,
-  })
+  }, true)
 
-  const hmr = JSON.parse(await readFile(path.join(hmrReportDir, 'report.json'), 'utf8')) as TemplatesHmrReport
+  const hmrErrors: string[] = []
+  if (hmrCommand.failed || hmrCommand.exitCode !== 0) {
+    hmrErrors.push(`HMR command failed (exit ${hmrCommand.exitCode ?? 'unavailable'}, signal ${hmrCommand.signal ?? 'none'})`)
+  }
+  let hmr: TemplatesHmrReport = { templates: [] }
+  try {
+    const rawReport: unknown = JSON.parse(await readFile(path.join(hmrReportDir, 'report.json'), 'utf8'))
+    hmr = parseTemplatesHmrReport(rawReport)
+  }
+  catch (error) {
+    hmrErrors.push(`HMR report unavailable or malformed: ${sanitizeCheckoutOutput(reportRootDir, error instanceof Error ? error.message : String(error))}`)
+  }
   return {
     id,
     commit,
     templates: templates.map(template => toReportTemplate(cwd, template)),
     build,
     hmr,
+    hmrError: hmrErrors.length ? hmrErrors.join('\n') : undefined,
   }
 }
 
@@ -122,7 +138,7 @@ async function benchmarkTemplateBuilds(id: CheckoutId, cwd: string, templates: T
         totalMs: performance.now() - startedAt,
         cliBuildMs: parseCliBuildMs(output),
         rssPeakBytes: memory.rssPeakBytes,
-        status: result.exitCode ?? 0,
+        status: result.exitCode ?? 1,
         error: result.exitCode === 0 ? undefined : summarizeCommandOutput(sanitizedOutput),
       }
       samples.push(sample)
@@ -183,10 +199,11 @@ async function prepareTemplates(id: CheckoutId, cwd: string, templates: Template
   }
 }
 
-async function run(command: string, args: string[], cwd: string, env: NodeJS.ProcessEnv = {}) {
-  await execa(command, args, {
+async function run(command: string, args: string[], cwd: string, env: NodeJS.ProcessEnv = {}, collectFailure = false) {
+  return await execa(command, args, {
     cwd,
     stdio: 'inherit',
+    reject: !collectFailure,
     env: {
       ...process.env,
       ...env,
@@ -457,6 +474,9 @@ function renderMarkdown(report: PerformanceReport) {
     `- HMR max scenarios/template：\`${report.maxHmrScenariosPerTemplate ?? 'all'}\``,
     `- HMR sample mode：\`${report.hmrSampleMode}\``,
     `- HMR startup timeout：\`${report.hmrStartupTimeoutMs}ms\``,
+    `- execution integrity: ${report.integrity?.length ? 'failed' : 'passed'}`,
+    ...(report.integrity ?? []).map(failure => `  - ${failure}`),
+    ...[report.baseline, report.optimized].flatMap(checkout => checkout.hmrError ? [`- ${checkout.id} HMR collection failed: ${checkout.hmrError.replaceAll('\n', '; ')}`] : []),
     '',
     '## 结论',
     '',
@@ -844,34 +864,10 @@ interface CheckoutResult {
     templates: TemplateBuildStats[]
   }
   hmr: TemplatesHmrReport
+  hmrError?: string
 }
 
-interface TemplatesHmrReport {
-  templates: TemplateHmrResult[]
-}
-
-interface TemplateHmrResult {
-  error?: string
-  id: string
-  scenarios: TemplateHmrScenario[]
-}
-
-interface TemplateHmrScenario {
-  error?: string
-  group: string
-  id: string
-  label: string
-  samples: Array<{
-    buildCoreMs?: number
-    emitMs?: number
-    heapUsedBytes?: number
-    rssBytes?: number
-    totalMs?: number
-    transformMs?: number
-    wallMs?: number
-    writeMs?: number
-  }>
-}
+type TemplateHmrScenario = TemplatesHmrReport['templates'][number]['scenarios'][number]
 
 interface FlatHmrScenario extends TemplateHmrScenario {
   key: string
@@ -971,6 +967,7 @@ interface HmrGroupAggregateStats extends HmrAggregateStats {
 }
 
 interface PerformanceReport {
+  integrity?: string[]
   generatedAt: string
   benchmark: string
   templateFilter: string[]

@@ -142,6 +142,7 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   ],
   'github-issues.runtime.issue930.test.ts': [
     'pages/issue-930/**',
+    'pages/css-nested-vars/**',
     'components/issue-930/**',
   ],
   'github-issues.runtime.issue852.test.ts': [
@@ -160,6 +161,11 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-911/**',
     'pages/issue-911-result/**',
     'shared/issue911.ts',
+  ],
+  'github-issues.runtime.component-instance-apis.test.ts': [
+    'pages/component-instance-apis/**',
+    'pages/component-instance-apis-baseline/**',
+    'components/component-instance-apis/**',
   ],
   'github-issues.runtime.issue581.test.ts': [
     'pages/issue-581/**',
@@ -647,6 +653,9 @@ function resolveGithubIssuesBuildConfig() {
 }
 
 const githubIssuesBuildConfig = resolveGithubIssuesBuildConfig()
+const githubIssuesAutoRoutes = resolveGithubIssuesAutoRoutes()
+// 完整示例包含使用 i18n behavior 的页面，必须同步启用对应运行时。
+const githubIssuesI18nEnabled = issue845I18nEnabled || githubIssuesAutoRoutes === true
 
 export default defineConfig({
   plugins: [
@@ -659,7 +668,7 @@ export default defineConfig({
     'import.meta.env.ISSUE_484_FLAG': '123456',
   },
   weapp: {
-    ...(issue845I18nEnabled
+    ...(githubIssuesI18nEnabled
       ? {
           i18n: {
             defaultLocale: 'zh-CN',
@@ -672,7 +681,7 @@ export default defineConfig({
       profileJson: true,
     },
     srcRoot: 'src',
-    autoRoutes: resolveGithubIssuesAutoRoutes(),
+    autoRoutes: githubIssuesAutoRoutes,
     subPackages: issue850OutputReplayEnabled
       ? {
           'subpackages/issue-850': {

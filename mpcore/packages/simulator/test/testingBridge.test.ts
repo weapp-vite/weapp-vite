@@ -558,7 +558,7 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const trigger = await page.$('#card-trigger')
+    const trigger = await (await page.$('#status-card'))!.$('#card-trigger')
 
     expect(trigger).not.toBeNull()
     await trigger?.tap()
@@ -574,7 +574,7 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const trigger = await page.$('#card-trigger')
+    const trigger = await (await page.$('#status-card'))!.$('#card-trigger')
 
     expect(trigger).not.toBeNull()
     await trigger!.tap({
@@ -672,7 +672,7 @@ Page({
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
     const component = await miniProgram.selectComponent('#status-card')
-    const input = await page.$('#card-input')
+    const input = await (await page.$('#status-card'))!.$('#card-input')
 
     expect(component).not.toBeNull()
     expect(input).not.toBeNull()
@@ -726,7 +726,7 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const input = await page.$('#card-input')
+    const input = await (await page.$('#status-card'))!.$('#card-input')
 
     expect(input).not.toBeNull()
 
@@ -964,7 +964,7 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const trigger = await page.$('#card-trigger')
+    const trigger = await (await page.$('#status-card'))!.$('#card-trigger')
     const scope = await trigger?.scope()
 
     expect(scope).not.toBeNull()
@@ -985,7 +985,7 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const trigger = await page.$('#card-trigger')
+    const trigger = await (await page.$('#status-card'))!.$('#card-trigger')
     const currentPage = await trigger?.page()
 
     expect(currentPage).not.toBeNull()
@@ -1000,7 +1000,7 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const trigger = await page.$('#card-trigger')
+    const trigger = await (await page.$('#status-card'))!.$('#card-trigger')
     const componentScope = await trigger?.componentScope()
     const pageScope = await trigger?.pageScope()
 
@@ -1021,7 +1021,8 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const badgeNode = await page.$('#mini-badge-inner')
+    const card = (await page.$('#status-card'))!
+    const badgeNode = await (await card.$('#mini-badge'))!.$('#mini-badge-inner')
     const ownerScope = await badgeNode?.ownerComponentScope()
 
     expect(ownerScope).not.toBeNull()

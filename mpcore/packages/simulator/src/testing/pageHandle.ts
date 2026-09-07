@@ -14,7 +14,9 @@ import type {
 import { getPageInstanceId } from '../runtime/pageInstance'
 import { renderPageTree } from '../view'
 import { createLogicalNode } from './logicalSnapshot'
+import { resolveTestingPageMethodTarget } from './pageMethodTarget'
 import { createPageRootNodeHandle } from './pageNodeAccess'
+import { resolveTestingPagePath } from './pagePath'
 import {
   waitForPageComponent,
   waitForPageComponents,
@@ -54,7 +56,7 @@ export class HeadlessTestingPageHandle {
 
   get path() {
     this.assertActive()
-    return this.page.route
+    return resolveTestingPagePath(this.page.route)
   }
 
   get query() {
@@ -96,8 +98,12 @@ export class HeadlessTestingPageHandle {
     this.assertActive()
     const normalizedMethodName = normalizeNonEmptyInput(methodName, 'Page method name')
     return await runWithTimeout(async () => {
+      const target = resolveTestingPageMethodTarget(this.page, this.session?.getCurrentPages(), options)
+      if (!target) {
+        return undefined
+      }
       this.session?.renderCurrentPage()
-      const method = this.page[normalizedMethodName]
+      const method = target[normalizedMethodName]
       if (typeof method !== 'function') {
         if (options.routeOnly) {
           return undefined
@@ -105,7 +111,7 @@ export class HeadlessTestingPageHandle {
         // Keep missing-method wording compatible with automator providers.
         throw new TypeError(`Method "${normalizedMethodName}" does not exist on headless page ${this.page.route}.`)
       }
-      return cloneProtocolValue(await method.apply(this.page, args))
+      return cloneProtocolValue(await method.apply(target, args))
     }, options.timeout, `Timed out calling page method "${normalizedMethodName}" in headless testing runtime.`)
   }
 

@@ -5,14 +5,13 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserProject, createBrowserVirtualFiles } from '../src/browser'
 import { createHeadlessSession } from '../src/runtime'
 import { cleanupTempDirs } from './helpers'
-import { npmModuleFiles } from './helpers/npmModules'
+import { npmComponentFiles, npmModuleFiles } from './helpers/npmModules'
 
 describe.each(['node', 'browser'] as const)('%s mini-program npm dependency resolution', (provider) => {
   const directories: string[] = []
   afterEach(() => cleanupTempDirs(directories))
 
-  function createSession(request?: string, omitNestedHelper = false) {
-    const files = npmModuleFiles(request).filter(([file]) => !omitNestedHelper || !file.includes('/ui/miniprogram_npm/tslib/'))
+  function createSessionFromFiles(files: Array<[string, string]>) {
     if (provider === 'browser') {
       const virtualFiles = createBrowserVirtualFiles(files)
       return createBrowserHeadlessSession({
@@ -29,6 +28,40 @@ describe.each(['node', 'browser'] as const)('%s mini-program npm dependency reso
     }
     return createHeadlessSession({ projectPath })
   }
+
+  function createSession(request?: string, omitNestedHelper = false) {
+    return createSessionFromFiles(npmModuleFiles(request).filter(([file]) => !omitNestedHelper || !file.includes('/ui/miniprogram_npm/tslib/')))
+  }
+
+  it('renders bare npm components with nested scoped dependencies and local references', () => {
+    const session = createSessionFromFiles(npmComponentFiles())
+    try {
+      session.reLaunch('/pages/index/index')
+      const markup = session.renderCurrentPage().wxml
+      for (const label of ['root dialog', 'relative popup', 'nested icon', 'scoped component', 'local component', 'root component']) {
+        expect(markup).toContain(`>${label}<`)
+      }
+      expect(markup).not.toContain('root icon')
+    }
+    finally {
+      session.close()
+    }
+  })
+
+  it('uses the nearest subpackage npm component while resolving shared components at the root', () => {
+    const session = createSessionFromFiles(npmComponentFiles())
+    try {
+      session.reLaunch('/sub/page/index')
+      const markup = session.renderCurrentPage().wxml
+      for (const label of ['subpackage dialog', 'scoped component', 'local component', 'root component']) {
+        expect(markup).toContain(`>${label}<`)
+      }
+      expect(markup).not.toContain('root dialog')
+    }
+    finally {
+      session.close()
+    }
+  })
 
   it.each([
     { omitNestedHelper: false, expected: 'nested-helper:root-shared:detail:json' },

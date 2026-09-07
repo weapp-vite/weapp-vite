@@ -8,6 +8,8 @@ ensureIdeWarningReportEnv()
 
 export default defineConfig({
   test: {
+    // 与真实 IDE 使用相同的完整 case 名称，避免验收清单身份漂移。
+    taskTitleValueFormatTruncate: Number.POSITIVE_INFINITY,
     include: resolveVitestIncludePatterns(import.meta.dirname, [
       path.resolve(import.meta.dirname, './ide/**/*.test.ts'),
     ]),

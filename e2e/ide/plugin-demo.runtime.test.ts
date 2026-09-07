@@ -298,19 +298,19 @@ describe('plugin-demo runtime (ide)', { concurrent: false }, () => {
   it('loads host page, renders plugin public components, and opens plugin vue page without runtime errors', async (ctx) => {
     const hostNodes = (value: number) => [
       { selector: '.hero__title', text: '插件能力混合演示' },
-      { selector: '.showcase-card__title', scope: ['hello-showcase'], text: '宿主直接渲染插件公开 Vue SFC 组件' },
-      { selector: '.showcase-card__item', scope: ['hello-showcase'], count: 4 },
-      { selector: '.native-meter__label', scope: ['native-meter'], text: 'Plugin Native Meter' },
-      { selector: '.native-meter__value', scope: ['native-meter'], text: `${value}%` },
+      { selector: '.showcase-card__title', scope: [{ has: '.showcase-card__title' }], text: '宿主直接渲染插件公开 Vue SFC 组件' },
+      { selector: '.showcase-card__item', scope: [{ has: '.showcase-card__title' }], count: 4 },
+      { selector: '.native-meter__label', scope: [{ has: '.native-meter__label' }], text: 'Plugin Native Meter' },
+      { selector: '.native-meter__value', scope: [{ has: '.native-meter__label' }], text: `${value}%` },
     ]
     const dom = createDomAcceptance(ctx, 'apps/plugin-demo', [
       { id: 'host', route: HOST_ROUTE, action: 'launch plugin host', nodes: hostNodes(78) },
       { id: 'host-updated', route: HOST_ROUTE, action: 'tap host progress button', nodes: hostNodes(84) },
-      { id: 'plugin-page', route: 'plugin-private://wxb3d842a4a7e3440d/pages/hello-page/index', action: 'open plugin Vue page', nodes: [
-        { selector: '.hero__title', text: '插件页直接使用 Vue SFC' },
-        { selector: '.overview__item', count: 4 },
-        { selector: '.meter__label', text: 'Vue SFC Page Score' },
-        { selector: '.meter__value', text: '94%' },
+      { id: 'plugin-page', route: '__plugin__/wxb3d842a4a7e3440d/pages/hello-page/index', action: 'open plugin Vue page', nodes: [
+        { selector: '//text[@class="hero__title"]', query: 'xpath', text: '插件页直接使用 Vue SFC' },
+        { selector: '//view[@class="overview__item"]', query: 'xpath', count: 4 },
+        { selector: '//text[@class="meter__label"]', query: 'xpath', text: 'Vue SFC Page Score' },
+        { selector: '//text[@class="meter__value"]', query: 'xpath', text: '94%' },
       ] },
     ])
     const miniProgram = await getSharedMiniProgram()

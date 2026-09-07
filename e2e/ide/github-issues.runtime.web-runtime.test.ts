@@ -22,7 +22,9 @@ describe('github-issues runtime web runtime globals', { concurrent: false }, () 
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
-  afterAll(closeSharedMiniProgram)
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
 
   it('issue #448: compiles the next batch of web runtime globals for DevTools', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', WEB_API_PLANS.issue448)

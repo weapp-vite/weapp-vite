@@ -1,9 +1,11 @@
 import type { OutputBundle } from 'rolldown'
 import { Buffer } from 'node:buffer'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { createSidecarModuleId } from '../moduleGraph/protocol'
 import { recordPendingOwnerStyleSource } from './css'
 import { createOutputFinalizerPlugin, mayNeedTemplateNormalization, normalizeGraphOnlyAssets, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
-import { registerManagedTailwindcssEntries } from './tailwindcssMarker'
+import { createManagedTailwindcssOutputMarker, registerManagedTailwindcssEntries } from './tailwindcssMarker'
 
 function createBundleAssetEmitter(bundle: OutputBundle) {
   return (asset: any) => {
@@ -128,6 +130,29 @@ describe('weapp-vite output finalizer', () => {
 
     expect(bundle['app.wxss']).toMatchObject({ source: '.flex{display:flex}' })
     expect(bundle['weapp_vite_external/graph/weapp-vite:sidecar:style:%2Fproject%2Fsrc%2Fapp.ts:%2Fproject%2Fsrc%2Fapp.css:module.wxss']).toBeUndefined()
+  })
+
+  it('preserves a pending Tailwind entry when reemitting its graph-only owner', () => {
+    const srcRoot = path.resolve('tailwind-owner-fixture/src')
+    const entry = path.join(srcRoot, 'app.css')
+    const moduleId = createSidecarModuleId(path.join(srcRoot, 'app.ts'), entry, 'style')
+    const graphAsset = `weapp_vite_external/graph/${moduleId.replace(/\.js$/, '.wxss')}`
+    const pending = createManagedTailwindcssOutputMarker(0)
+    const bundle = {
+      [graphAsset]: { type: 'asset', fileName: graphAsset, source: pending },
+    } as unknown as OutputBundle
+    const ctx = {
+      configService: {
+        outputExtensions: { wxss: 'wxss' },
+        relativeOutputPath: (file: string) => path.relative(srcRoot, file),
+      },
+    } as any
+    registerManagedTailwindcssEntries(ctx, [entry])
+
+    normalizeGraphOnlyAssets(ctx, bundle, createBundleAssetEmitter(bundle))
+
+    expect(bundle[graphAsset]).toBeUndefined()
+    expect(bundle['app.wxss']).toMatchObject({ source: pending })
   })
 
   it('drops duplicate preprocessor style assets', () => {

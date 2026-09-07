@@ -262,4 +262,9 @@ jobs:
         with:
           name: templates-performance-report-${{ matrix.os }}
           path: ${{ runner.temp }}/templates-performance-report
-          if-no-files-found: warn
+          if-no-files-found: error
+
+      - name: Verify templates performance report completeness
+        if: always()
+        working-directory: head
+        run: pnpm exec tsx scripts/check-templates-performance-report.ts

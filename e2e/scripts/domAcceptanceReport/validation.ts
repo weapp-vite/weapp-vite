@@ -1,7 +1,7 @@
 import type { DomAcceptance } from '../../utils/domAcceptance/types'
 import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
-import { assertResponsiveStyle } from '../../utils/domAcceptance/styles'
+import { assertResponsiveCalcStyle, assertResponsiveStyle } from '../../utils/domAcceptance/styles'
 import { runtimeDiagnosticSchema } from './runtimeDiagnostics'
 
 const strings = z.record(z.string(), z.string())
@@ -16,7 +16,11 @@ const expectation = z.object({
   count: z.number().int().nonnegative().optional(),
   text: z.string().optional(),
   attributes: strings.optional(),
-  styles: z.record(z.string(), z.union([z.string(), z.object({ rpx: z.number().finite() })])).optional(),
+  styles: z.record(z.string(), z.union([
+    z.string(),
+    z.object({ rpx: z.number().finite() }),
+    z.object({ rpxCalc: z.object({ value: z.number().finite().min(8), multiply: z.number().finite().positive() }) }),
+  ])).optional(),
   visible: z.boolean().optional(),
 })
 const node = z.object({
@@ -78,7 +82,13 @@ export function assertSerializedDomEvidence(plan: DomAcceptance) {
           }
           else {
             equal(plan.provider, 'devtools', `${checkpoint.id} responsive style provider`)
-            assertResponsiveStyle(captured.styles?.[key], value.rpx, evidence.windowWidth, `${checkpoint.id} style ${key}`)
+            const label = `${checkpoint.id} style ${key}`
+            if ('rpxCalc' in value) {
+              assertResponsiveCalcStyle(captured.styles?.[key], value.rpxCalc, evidence.windowWidth, label)
+            }
+            else {
+              assertResponsiveStyle(captured.styles?.[key], value.rpx, evidence.windowWidth, label)
+            }
           }
         }
         if (expected.visible !== undefined) {

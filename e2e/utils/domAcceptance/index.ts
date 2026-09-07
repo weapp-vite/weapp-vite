@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { flushRuntimeConsoleSessions } from '../runtimeConsoleSessions'
 import { resolveRuntimeProviderName } from '../runtimeProvider'
 import { captureDomCheckpoint, validateDomPlan } from './checkpoint'
 import { runDomCheckpointAction } from './errorScope'
@@ -49,6 +50,7 @@ export function createDomAcceptance(context: TestContext, fixture: string, check
         const info = await session.toolInfo()
         plan.runtime = { ideVersion: info.version ?? null, baseLibraryVersion: info.SDKVersion ?? null }
       }
+      await flushRuntimeConsoleSessions()
       let evidence
       try {
         evidence = await captureDomCheckpoint(session, page, checkpoint, plan.provider, timeout)
@@ -71,6 +73,9 @@ export function createDomAcceptance(context: TestContext, fixture: string, check
         plan.failures ??= []
         plan.failures.push(failure)
         throw error
+      }
+      finally {
+        await flushRuntimeConsoleSessions()
       }
       if (closed || context.task.meta.domAcceptance !== plan) {
         throw new Error('DOM checkpoint completed after its case ended')

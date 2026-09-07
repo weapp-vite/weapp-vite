@@ -160,6 +160,29 @@ describe('DOM acceptance report validation', () => {
     expect(() => assertAcceptanceReportPassed(null, identity)).toThrow('valid serialized report')
   })
 
+  it('preserves rpx calculation order when revalidating serialized reports', () => {
+    const report = createReport()
+    const plan = report.cases[0]!.acceptance!
+    plan.checkpoints[0]!.nodes[0]!.styles = { width: { rpxCalc: { value: 8, multiply: 24 } } }
+    plan.evidence[0]!.windowWidth = 390
+    plan.evidence[0]!.nodes[0]!.nodes[0]!.styles = { width: '96px' }
+    const identity = { runId: report.runId, commitSha: report.commitSha }
+    expect(() => assertAcceptanceReportPassed(JSON.parse(JSON.stringify(report)), identity)).not.toThrow()
+    for (const incorrect of ['99px', '99.84px']) {
+      plan.evidence[0]!.nodes[0]!.nodes[0]!.styles!.width = incorrect
+      expect(() => assertAcceptanceReportPassed(report, identity)).toThrow('DOM acceptance incomplete')
+    }
+    plan.evidence[0]!.nodes[0]!.nodes[0]!.styles!.width = '96px'
+    delete plan.evidence[0]!.windowWidth
+    expect(() => assertAcceptanceReportPassed(report, identity)).toThrow('DOM acceptance incomplete')
+  })
+
+  it('rejects unverified rpx calculation atoms in serialized plans', () => {
+    const report = createReport()
+    report.cases[0]!.acceptance!.checkpoints[0]!.nodes[0]!.styles = { width: { rpxCalc: { value: 1, multiply: 24 } } }
+    expect(() => assertAcceptanceReportPassed(report, { runId: report.runId, commitSha: report.commitSha })).toThrow('valid serialized report')
+  })
+
   it('preserves component scope and descendant filters through report serialization', () => {
     const report = createReport()
     const plan = report.cases[0]!.acceptance!

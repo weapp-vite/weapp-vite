@@ -29,6 +29,7 @@ describe('app lifecycle alignment', () => {
     const session = createHeadlessSession({ projectPath })
 
     session.reLaunch('/pages/home/index?from=entry')
+    expect(session.renderCurrentPage().wxml).toContain('>页面已启动</view>')
 
     const app = session.getApp()
     expect(app?.globalData.logs).toEqual([
@@ -43,6 +44,7 @@ describe('app lifecycle alignment', () => {
     const session = createHeadlessSession({ projectPath })
 
     session.reLaunch('/pages/home/index?from=entry')
+    expect(session.renderCurrentPage().wxml).toContain('>页面已启动</view>')
     const app = session.getApp()
 
     app?.captureLaunchOptions()

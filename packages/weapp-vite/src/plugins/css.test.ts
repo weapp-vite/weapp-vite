@@ -858,7 +858,7 @@ describe('css plugin shared style injection', () => {
     expect(bundle['app-shadow.css']).toBeUndefined()
     expect(appWxss).toContain('.flex{display:flex}')
     expect(appWxss).not.toContain('@plugin')
-    expect(appWxss).not.toContain('managed-tailwindcss-output')
+    expect(appWxss).toContain(createManagedTailwindcssOutputMarker(0))
   })
 
   it('reuses processed css asset source for multiple chunk owners', async () => {

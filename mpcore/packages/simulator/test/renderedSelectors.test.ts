@@ -34,17 +34,17 @@ describe('rendered dynamic ancestors', () => {
       try {
         session.reLaunch('/pages/index/index')
         expect(await root().$$('.emit-record')).toHaveLength(0)
-        const button = await root().$('#emit-direct-payload')
+        const button = await (await root().$('emitter'))!.$('#emit-direct-payload')
         expect(button).not.toBeNull()
         await button!.tap()
         expect(await root().$$('.emit-record')).toHaveLength(1)
         expect(await (await root().$('#emit-record-0 .emit-label'))?.text()).toBe('payload-1')
 
-        await (await root().$('#emit-direct-payload'))!.tap()
+        await (await (await root().$('emitter'))!.$('#emit-direct-payload'))!.tap()
         expect(await root().$$('.emit-record')).toHaveLength(2)
         expect(await (await root().$('#emit-record-0 > .emit-label'))?.text()).toBe('payload-2')
         expect(await (await root().$('#emit-record-0 + #emit-record-1 .emit-label'))?.text()).toBe('payload-1')
-        await (await root().$('#emit-native'))!.tap()
+        await (await (await root().$('emitter'))!.$('#emit-native'))!.tap()
         expect(await (await root().$('#native-result'))?.text()).toBe('tap:undefined:number')
       }
       finally {

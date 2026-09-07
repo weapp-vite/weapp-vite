@@ -97,8 +97,9 @@ async function runBuild(projectRoot: string, label: string) {
 async function launchProjectAutomator(projectPath: string) {
   return await launchAutomator({
     projectPath,
-    skipWarmup: true,
     timeout: LAUNCH_TIMEOUT,
+    warmupRoute: INDEX_ROUTE,
+    warmupRootSelectors: [projectPath === BASE_APP_ROOT ? '#base-greeting' : '#app-lifecycle-route'],
   })
 }
 

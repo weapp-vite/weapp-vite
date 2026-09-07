@@ -22,6 +22,27 @@
     "miniprogram": {
       "list": [
         {
+          "name": "component instance API trace baseline",
+          "pathName": "pages/component-instance-apis-baseline/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "native component relations and selector scope",
+          "pathName": "pages/component-instance-apis/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "native nested CSS variable fallbacks",
+          "pathName": "pages/css-nested-vars/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "issue 930 binding manifest completeness",
           "pathName": "pages/issue-930/index",
           "query": "",

@@ -1,6 +1,7 @@
 import type { HeadlessPageDefinition, HeadlessWxMediaQueryObserver } from '../host'
 import type { HeadlessBackgroundSnapshot, HeadlessBackgroundTextStyle, HeadlessNavigationBarSnapshot } from '../project/pageConfig'
 import type { HeadlessComponentInstance } from './componentInstance'
+import { bindComponentPageAttachment } from '../host/componentPageAttachment'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot } from '../project/pageConfig'
 
 const ARRAY_INDEX_PATH_RE = /\[(\d+)\]/g
@@ -160,5 +161,6 @@ export function createPageInstance(
     bindFunction(instance, key, value)
   }
 
+  bindComponentPageAttachment(instance, definition)
   return instance
 }

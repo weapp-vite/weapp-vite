@@ -5,6 +5,8 @@ declare const miniProgram: MiniProgram
 declare const page: Page
 
 expectType<Promise<Page>>(miniProgram.currentPage())
+expectType<Promise<Page>>(miniProgram.currentPage({ appFunctionFallback: false, pageStackFallback: false, retries: 1, timeout: 300 }))
+expectError(miniProgram.currentPage({ pageStackFallback: 'false' }))
 expectType<Promise<Page>>(miniProgram.reLaunch('/pages/index/index'))
 expectType<Promise<Page>>(miniProgram.navigateTo('/pages/detail/index'))
 expectType<Promise<Page>>(miniProgram.redirectTo('/pages/detail/index'))

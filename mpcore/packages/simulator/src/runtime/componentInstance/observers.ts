@@ -12,7 +12,11 @@ function runPropertyObservers(
     return
   }
 
-  for (const changedKey of new Set(changedKeys.map(key => parseDataPath(key)[0]!))) {
+  const changedRoots = new Set(changedKeys.map(key => parseDataPath(key)[0]!))
+  for (const changedKey of Object.keys(propOptions)) {
+    if (!changedRoots.has(changedKey)) {
+      continue
+    }
     const option = propOptions[changedKey]
     if (!option || typeof option !== 'object' || Array.isArray(option)) {
       continue
@@ -84,8 +88,6 @@ export function runComponentObservers(
     return
   }
 
-  runPropertyObservers(definition, instance, changedKeys, previousProperties)
-
   const observers = definition.observers
   if (observers && typeof observers === 'object' && !Array.isArray(observers)) {
     for (const [pattern, handler] of Object.entries(observers)) {
@@ -96,4 +98,6 @@ export function runComponentObservers(
       handler.call(instance, ...args)
     }
   }
+
+  runPropertyObservers(definition, instance, changedKeys, previousProperties)
 }

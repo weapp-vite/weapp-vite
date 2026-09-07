@@ -701,6 +701,35 @@ describe('scanPlugin service', () => {
     expect(resolveSubPackageEntriesMock).toHaveBeenCalledTimes(4)
   })
 
+  it('keeps scanned app config and package metadata consistent for configured independent packages', async () => {
+    findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
+    mockAppScriptEntries({ appPath: '/project/src/app.ts' })
+    findVueEntryMock.mockResolvedValue(undefined)
+    const source = {
+      pages: ['pages/index'],
+      subPackages: [
+        { root: 'pkgA', pages: ['pages/a'] },
+        { root: 'pkgB', pages: ['pages/b'], independent: false },
+      ],
+    }
+    const ctx = createCtx()
+    ctx.jsonService.read.mockResolvedValue(source)
+    ctx.configService.weappViteConfig.subPackages.pkgA.independent = true
+    ctx.configService.weappViteConfig.subPackages.pkgB = { independent: true }
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+    const entry = await service.loadAppEntry()
+    service.loadSubPackages()
+
+    expect(entry.json.subPackages).toEqual([
+      { root: 'pkgA', pages: ['pages/a'], independent: true },
+      { root: 'pkgB', pages: ['pages/b'], independent: false },
+    ])
+    expect(service.independentSubPackageMap.has('pkgA')).toBe(true)
+    expect(service.independentSubPackageMap.has('pkgB')).toBe(false)
+    expect(source.subPackages[0]).not.toHaveProperty('independent')
+  })
+
   it('uses subpackage config as the independent fallback without overriding app json', async () => {
     const ctx = createCtx()
     ctx.configService.weappViteConfig.subPackages.pkgA.independent = true

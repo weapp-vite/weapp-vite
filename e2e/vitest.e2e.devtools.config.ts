@@ -13,6 +13,8 @@ ensureIdeWarningReportEnv()
 
 export default defineConfig({
   test: {
+    // 参数化标题是 DOM 验收清单的 case 身份，必须保留完整名称。
+    taskTitleValueFormatTruncate: Number.POSITIVE_INFINITY,
     include: resolveVitestIncludePatterns(import.meta.dirname, [
       path.resolve(import.meta.dirname, './ide/**/*.test.ts'),
     ]),

@@ -15,6 +15,7 @@ import {
   runComponentLifecycle,
   runComponentObservers,
 } from '../componentInstance'
+import { resolveMiniProgramComponent } from '../componentResolution'
 import { getRuntimeWxsLoader } from '../wxs'
 import {
   CLASS_SPLIT_RE,
@@ -83,9 +84,12 @@ function resolveUsingComponents(
         continue
       }
       const pluginRequest = resolvePluginRequest(context.project.plugins, rawPath, 'publicComponent')
-      const basePath = pluginRequest?.resourcePath ?? (rawPath.startsWith('/')
-        ? rawPath.replace(LEADING_SLASH_RE, '')
-        : path.posix.normalize(path.posix.join(path.posix.dirname(ownerFilePath), rawPath)))
+      const basePath = pluginRequest?.resourcePath ?? resolveMiniProgramComponent(
+        ownerFilePath,
+        rawPath,
+        context.project.miniprogramRootPath,
+        candidate => context.artifactSource.readText(candidate) !== undefined,
+      )
       resolved.set(alias, basePath.replace(LEADING_SLASH_RE, ''))
     }
     return resolved
@@ -309,7 +313,6 @@ export function createRuntimeComponentInstance(
     : nextProperties
   const componentInstance = createComponentInstance({
     definition: componentEntry.definition,
-    properties: componentProperties,
     requestRender: callback => context.session.requestRender(callback),
     triggerEvent: buildComponentTrigger(componentScopeId, context, clonedNode),
   })
@@ -317,6 +320,7 @@ export function createRuntimeComponentInstance(
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
   componentInstance.createMediaQueryObserver = () => context.session.createMediaQueryObserver(componentInstance)
+  componentInstance.createSelectorQuery = () => context.moduleLoader.wx.createSelectorQuery().in(componentInstance)
   componentInstance.selectComponent = (selector: string) => context.session.selectComponentWithin(componentScopeId, selector)
   componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector)
   componentInstance.selectOwnerComponent = () => ownerScopeId
@@ -324,11 +328,10 @@ export function createRuntimeComponentInstance(
     : null
   context.componentCache.set(componentScopeId, componentInstance)
   runComponentLifecycle(componentInstance, 'created')
-  runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(componentProperties), {})
   componentInstance.__propertySnapshots = Object.fromEntries(
     Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
   )
-  runComponentLifecycle(componentInstance, 'attached')
+  syncComponentProperties(componentInstance, componentInstance.__definition__ ?? componentEntry.definition, componentProperties, {}, [])
   return componentInstance
 }
 

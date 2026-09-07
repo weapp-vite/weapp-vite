@@ -18,7 +18,8 @@ export function propsCheckpoints(provider: DomProvider) {
       ...[['primitive', 'Hello'], ['ref-object', 'RefHello'], ['reactive-object', 'ReactiveHello']].flatMap(([key, label]) => [
         text('.issue300-probe-destructured', `destructured: ${label} ${id === 'initial'}`, [`#issue300-${key}`]),
         text('.issue300-probe-props', `props: ${label} ${id === 'initial'}`, [`#issue300-${key}`]),
-        text('.issue300-probe-computed', `computed: ${id === 'initial'} / ${id === 'initial'}`, [`#issue300-${key}`]),
+        // 普通 props 别名解构保留初值快照，只有 props.bool 的计算属性持续响应更新。
+        text('.issue300-probe-computed', `computed: true / ${id === 'initial'}`, [`#issue300-${key}`]),
         text('.issue300-strict-probe', `${label} ${id === 'initial'}`, [`#issue300-strict-${key}`]),
       ]),
     ], id === 'initial' ? '首屏检查三种来源的 props 和解构值' : '切换布尔值后检查六个子组件同步更新')),
@@ -27,15 +28,16 @@ export function propsCheckpoints(provider: DomProvider) {
       checkpoint(328, 'updated', [text('.issue328-value', '222', [{ has: '.issue328-probe' }]), text('.issue328-history', '111|222', [{ has: '.issue328-probe' }])], '更新 ref 后检查值与 watch 历史'),
     ],
     issue955: [
-      ['initial', 'string:SALE|string:', 'null', 'SALE', '', ''],
+      ['initial', 'string:SALE|null', 'null', 'SALE', 'null', 'null'],
       ['number', 'number:42|string:number.png', 'string:number-label', '42', 'number.png', 'number-label'],
-      ['null', 'number:0|string:', 'null', '0', '', ''],
-      ['undefined', 'number:0|string:', 'null', '0', '', ''],
+      ['null', 'null|null', 'null', 'null', 'null', 'null'],
+      ['undefined', 'null|null', 'null', 'null', 'null', 'null'],
       ['string', 'string:PROMO|string:string.png', 'string:string-label', 'PROMO', 'string.png', 'string-label'],
     ].map(([id, summary, nullableType, content, src, nullable]) => checkpoint(955, id!, [
+      text('#issue955-ready', 'ready'),
       text('.issue955-probe__summary', summary!, [{ has: '.issue955-probe' }]),
       text('.issue955-probe__nullable-type', nullableType!, [{ has: '.issue955-probe' }]),
-      text('.issue955-probe__initial', 'string:SALE|string:', [{ has: '.issue955-probe' }]),
+      text('.issue955-probe__initial', 'string:SALE|null', [{ has: '.issue955-probe' }]),
       text('.issue955-probe__content', content!, [{ has: '.issue955-probe' }]),
       text('.issue955-probe__src', src!, [{ has: '.issue955-probe' }]),
       text('.issue955-probe__nullable', nullable!, [{ has: '.issue955-probe' }]),

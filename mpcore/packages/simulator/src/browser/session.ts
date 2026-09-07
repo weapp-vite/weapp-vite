@@ -21,7 +21,8 @@ import { RuntimeKernel } from '../kernel'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
 import { createAppInstance } from '../runtime/appInstance'
-import { runComponentPageLifetime } from '../runtime/componentInstance'
+import { runComponentLifecycle, runComponentPageLifetime } from '../runtime/componentInstance'
+import { detachComponentRelations } from '../runtime/componentInstance/relations'
 import { createPageInstance } from '../runtime/pageInstance'
 import { runInitialPageLifecycles } from '../runtime/pageLifecycle'
 import {
@@ -1398,7 +1399,7 @@ export class BrowserHeadlessSession {
 
   private runInitialPageLifecycles(pageInstance: HeadlessPageInstance, query: Record<string, string>) {
     runInitialPageLifecycles(pageInstance, query, this.kernel.scheduler, () =>
-      this.pages.includes(pageInstance) || this.tabPages.get(pageInstance.route) === pageInstance)
+      this.pages.includes(pageInstance) || this.tabPages.get(pageInstance.route) === pageInstance, () => this.renderCurrentPage())
   }
 
   private isTabBarRoute(route: string) {
@@ -1477,11 +1478,12 @@ export class BrowserHeadlessSession {
 
   private detachPageComponents(route: string) {
     const prefix = `page:${stripLeadingSlash(route)}`
-    for (const [scopeId, instance] of [...this.componentCache.entries()]) {
-      if (!scopeId.startsWith(prefix)) {
-        continue
-      }
-      instance.__definition__?.lifetimes?.detached?.call(instance)
+    const removed = [...this.componentCache].filter(([scopeId]) => scopeId.startsWith(prefix))
+    for (const [, instance] of removed) {
+      runComponentLifecycle(instance, 'detached')
+    }
+    detachComponentRelations(removed.map(([, instance]) => instance))
+    for (const [scopeId] of removed) {
       this.componentCache.delete(scopeId)
       this.componentScopes.delete(scopeId)
     }

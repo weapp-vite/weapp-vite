@@ -83,10 +83,31 @@ describe('static DOM plan inventory', () => {
     expect(cases[2]?.routes).toEqual(['/pages/use-attrs/index'])
   })
 
-  it('expands template invocation names but labels unresolved dynamic tables', () => {
-    const content = `it.each(ACTIVE_TEMPLATE_CASES)('$name renders', async () => {})`
+  it.each(['each', 'for'])('expands template %s invocation names but labels unresolved dynamic tables', (method) => {
+    const content = `it.${method}(ACTIVE_TEMPLATE_CASES)('$name renders', async () => {})`
     expect(analyzeCaseSource(content, 'e2e/ide/template.test.ts', ['template-a', 'template-b']).map(item => item.name)).toEqual(['template-a renders', 'template-b renders'])
-    expect(analyzeCaseSource(content, 'e2e/ide/template.test.ts')[0]?.notes).toContain('Dynamic each table: it.each(ACTIVE_TEMPLATE_CASES)')
+    expect(analyzeCaseSource(content, 'e2e/ide/template.test.ts')[0]?.notes).toContain(`Dynamic ${method} table: it.${method}(ACTIVE_TEMPLATE_CASES)`)
+  })
+
+  it('expands aliased generic for calls and retains context-based template registrations', () => {
+    const cases = analyzeCaseSource(`
+      import { test as scenario } from 'vitest'
+      scenario.skip.for<TemplateCase> (ACTIVE_TEMPLATE_CASES)('$name renders', async (templateCase, ctx) => {
+        await runTemplateE2E({ context: ctx, templateRoot: ROOT, acceptance: TEMPLATE_DOM })
+      })
+    `, 'e2e/ide/template.test.ts', ['template-a', 'template-b'])
+    expect(cases.map(item => item.name)).toEqual(['template-a renders', 'template-b renders'])
+    expect(cases.map(item => item.plans[0]?.registration)).toEqual(['runTemplateE2E', 'runTemplateE2E'])
+    expect(cases.every(item => item.notes.some(note => note.includes('skip')))).toBe(true)
+    expect(cases.every(item => item.notes.every(note => !note.startsWith('Dynamic')))).toBe(true)
+  })
+
+  it('does not infer parameterization from an argument expression', () => {
+    const cases = analyzeCaseSource(`
+      it.skipIf(enabled.for(TABLE))('single case', async () => {})
+    `, 'e2e/ide/template.test.ts', ['template-a', 'template-b'])
+    expect(cases.map(item => item.name)).toEqual(['single case'])
+    expect(cases[0]?.notes.every(note => !note.startsWith('Dynamic'))).toBe(true)
   })
 
   it('retains individual route operations within a single case', () => {

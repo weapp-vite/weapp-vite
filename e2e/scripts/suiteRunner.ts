@@ -1,9 +1,10 @@
-import type { SpawnOptions } from 'node:child_process'
+/* eslint-disable e18e/ban-dependencies -- suite runner 需要 execa 保留跨平台命令参数并正确解析 Windows pnpm.cmd。 */
+import type { Options } from 'execa'
 import type { SuiteReportContext, SuiteTaskArtifact } from './suiteReport'
-import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { execa } from 'execa'
 import { E2E_RUNTIME_PROVIDER_ENV, resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT, ACCEPTANCE_RUN_ID_ENV, ACCEPTANCE_SHA_ENV, ACCEPTANCE_TASK_ENV, createAcceptanceIdentity, DOM_ACCEPTANCE_ENV, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { validateTaskAcceptance } from './domAcceptanceReport/task'
@@ -242,7 +243,7 @@ function startTaskHeartbeat(
   }
 }
 
-export function getTaskSpawnOptions(task: SuiteTask, platform = process.platform): SpawnOptions {
+export function getTaskSpawnOptions(task: SuiteTask): Options {
   const shouldDefaultDevtoolsBridgeLaunch = isDevtoolsVitestTask(task)
     && process.env[AUTOMATOR_LAUNCH_MODE_ENV] == null
     && task.env?.[AUTOMATOR_LAUNCH_MODE_ENV] == null
@@ -270,7 +271,13 @@ export function getTaskSpawnOptions(task: SuiteTask, platform = process.platform
       ...task.env,
     },
     stdio: ['inherit', 'pipe', 'pipe'],
-    shell: platform === 'win32',
+    shell: false,
+    buffer: false,
+    reject: false,
+    killDescendants: true,
+    // runner 退出后无法等待升级计时器；退出清理必须直接终止整组进程。
+    killSignal: 'SIGKILL',
+    forceKillAfterDelay: false,
   }
 }
 
@@ -318,7 +325,7 @@ async function defaultRunTask(task: SuiteTask) {
   const taskTimeoutMs = resolveTaskTimeoutMs(task)
 
   return await new Promise<number>((resolve, reject) => {
-    const child = spawn(task.command, task.args, getTaskSpawnOptions(task))
+    const child = execa(task.command, task.args, getTaskSpawnOptions(task))
     const stdoutForwarder = createOutputForwarder(text => process.stdout.write(text), collector)
     const stderrForwarder = createOutputForwarder(text => process.stderr.write(text), collector)
     let exitCode: number | undefined
@@ -328,6 +335,9 @@ async function defaultRunTask(task: SuiteTask) {
     let taskTimeoutTimer: NodeJS.Timeout | undefined
     let forceKillTimer: NodeJS.Timeout | undefined
     let settled = false
+    let exited = false
+    let timedOut = false
+    let forceKillSent = false
 
     function clearGraceTimer() {
       if (stdioCloseGraceTimer) {
@@ -348,7 +358,7 @@ async function defaultRunTask(task: SuiteTask) {
     }
 
     function killChild(signal: NodeJS.Signals) {
-      if (child.killed) {
+      if (exited && !timedOut) {
         return
       }
       try {
@@ -387,7 +397,7 @@ async function defaultRunTask(task: SuiteTask) {
     }
 
     function maybeFinalize() {
-      if (settled || exitCode === undefined) {
+      if (settled || exitCode === undefined || (timedOut && !forceKillSent)) {
         return
       }
 
@@ -420,7 +430,11 @@ async function defaultRunTask(task: SuiteTask) {
     }
 
     function onExit(code: number | null) {
-      exitCode = code ?? 1
+      exited = true
+      if (!timedOut) {
+        clearTaskTimers()
+      }
+      exitCode = timedOut ? 1 : code ?? 1
       maybeFinalize()
     }
 
@@ -434,8 +448,9 @@ async function defaultRunTask(task: SuiteTask) {
 
     child.stdout?.on('close', onStdoutClose)
     child.stderr?.on('close', onStderrClose)
-    child.on('error', onError)
-    child.on('exit', onExit)
+    child.nodeChildProcess.on('error', onError)
+    child.nodeChildProcess.on('exit', onExit)
+    void child.then(() => {}, onError)
 
     if (taskTimeoutMs > 0) {
       taskTimeoutTimer = setTimeout(() => {
@@ -443,13 +458,15 @@ async function defaultRunTask(task: SuiteTask) {
           return
         }
         console.error(`[e2e] task timeout after ${formatDuration(taskTimeoutMs)}: ${task.label}`)
-        exitCode = 1
+        timedOut = true
+        clearGraceTimer()
         killChild('SIGTERM')
         forceKillTimer = setTimeout(() => {
+          forceKillSent = true
           killChild('SIGKILL')
-          finalize(1)
+          maybeFinalize()
         }, TASK_KILL_GRACE_MS)
-        forceKillTimer.unref?.()
+        // 入口退出后后代仍可能存活，必须保留计时器引用直到整组强杀完成。
       }, taskTimeoutMs)
       taskTimeoutTimer.unref?.()
     }

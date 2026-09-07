@@ -19,6 +19,8 @@ import {
   appendIdeReportEvent,
   resolveReportProjectPath,
 } from './ideWarningReport'
+import { registerRuntimeConsoleSession } from './runtimeConsoleSessions'
+import { createRuntimeLogSubscription } from './runtimeLogSubscription'
 import {
   assertRuntimeProviderImplemented,
   resolveRuntimeProviderName,
@@ -88,8 +90,6 @@ const DEFAULT_PAGE_ROOT_QUERY_TIMEOUT = 1_000
 const CURRENT_PAGE_READY_RETRY_DELAY = 220
 const ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT = 1_500
 const DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY = 5_000
-const DEFAULT_BRIDGE_WRAPPER_ASSET_SETTLE_DELAY = 2_000
-const DEFAULT_BRIDGE_WARMUP_READY_TIMEOUT = 60_000
 const DEVTOOLS_LOG_SCAN_INTERVAL = 500
 const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 const DEFAULT_WECHAT_CLI_WINDOWS_PATH = 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
@@ -103,7 +103,6 @@ const AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_D
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const AUTOMATOR_CLI_BRIDGE_PATH = path.resolve(import.meta.dirname, './automator.cli-bridge.ts')
 const AUTOMATOR_BRIDGE_WRAPPER_ROOT = path.resolve(import.meta.dirname, '../../.tmp/e2e-ide-bridge-projects')
-const AUTOMATOR_BRIDGE_RUNTIME_ROOT = 'weapp_vite_runtime'
 let bridgeWrapperLaunchSequence = 0
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
@@ -178,19 +177,14 @@ function resolvePositiveIntEnv(raw: string | undefined, fallback: number) {
   return parsed
 }
 
-export function resolveBridgeWarmupReadyTimeout(raw: string | undefined) {
-  return resolvePositiveIntEnv(raw, DEFAULT_BRIDGE_WARMUP_READY_TIMEOUT)
-}
-
 export function resolveWarmupCurrentPageReadyTimeout(
   allowRelaunch: boolean | undefined,
-  useBridgeWarmupBudget: boolean,
-  bridgeWarmupReadyTimeout: number,
   relaunchReadyTimeout: number,
 ) {
-  return allowRelaunch === false && useBridgeWarmupBudget
-    ? bridgeWarmupReadyTimeout
-    : Math.min(QUICK_CURRENT_ROUTE_READY_TIMEOUT, relaunchReadyTimeout)
+  if (allowRelaunch === false) {
+    return relaunchReadyTimeout
+  }
+  return Math.min(QUICK_CURRENT_ROUTE_READY_TIMEOUT, relaunchReadyTimeout)
 }
 
 function resolveNonNegativeInt(value: number | undefined, fallback: number) {
@@ -255,13 +249,6 @@ const BRIDGE_CONNECT_SETTLE_DELAY = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY,
   DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY,
 )
-const BRIDGE_WRAPPER_ASSET_SETTLE_DELAY = resolvePositiveIntEnv(
-  process.env.WEAPP_VITE_E2E_BRIDGE_WRAPPER_ASSET_SETTLE_DELAY,
-  DEFAULT_BRIDGE_WRAPPER_ASSET_SETTLE_DELAY,
-)
-const BRIDGE_WARMUP_READY_TIMEOUT = resolveBridgeWarmupReadyTimeout(
-  process.env.WEAPP_VITE_E2E_BRIDGE_WARMUP_READY_TIMEOUT,
-)
 const TRUST_ALL_PROJECTS = process.env.WEAPP_VITE_E2E_TRUST_PROJECT === '1'
 const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
   .split(ENV_LIST_SPLIT_PATTERN)
@@ -270,7 +257,6 @@ const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
   .map(item => normalizePathForMatch(item))
 
 let versionPatched = false
-let miniProgramOnPatched = false
 let loginPreflightPassed = false
 let localhostListenPatched = false
 const automator = new Automator()
@@ -324,9 +310,9 @@ interface LaunchProjectMeta {
 }
 
 interface BridgeWrapperProject {
-  activate?: () => boolean | Promise<boolean>
   distRoot: string
   path: string
+  runtimeRoot: string
   stopSync?: () => void
 }
 
@@ -357,7 +343,6 @@ interface LaunchAppConfigValidationResult {
 type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
-  deferBridgeWrapperSyncUntilConnected?: boolean
   disableRelaunchSessionRecovery?: boolean
   engineBuildFallbackSettleMs?: number
   launchMode?: 'bridge' | 'direct'
@@ -586,14 +571,20 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
     appendRuntimeLogEvent(runtimeEntry)
   }
 
-  miniProgram.on('console', onConsole)
-  miniProgram.on('exception', onException)
+  // SDK 的 on('console') 会隐式发起无超时订阅；先被动挂监听，由启动流程统一等待 enableLog。
+  const addListener = typeof miniProgram.addListener === 'function'
+    ? miniProgram.addListener.bind(miniProgram)
+    : miniProgram.on.bind(miniProgram)
+  addListener('console', onConsole)
+  addListener('exception', onException)
+  const unregisterConsoleSession = registerRuntimeConsoleSession(miniProgram, project)
 
   const meta: RuntimeLogMeta = {
     project,
     entries,
     stats,
     dispose() {
+      unregisterConsoleSession()
       miniProgram.removeListener('console', onConsole)
       miniProgram.removeListener('exception', onException)
     },
@@ -1025,20 +1016,6 @@ function writeJsonObject(filePath: string, value: Record<string, any>) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
 }
 
-function writeJsonObjectIfChanged(filePath: string, value: Record<string, any>) {
-  const nextSource = `${JSON.stringify(value, null, 2)}\n`
-  try {
-    if (fs.readFileSync(filePath, 'utf8') === nextSource) {
-      return false
-    }
-  }
-  catch {
-  }
-  fs.mkdirSync(path.dirname(filePath), { recursive: true })
-  fs.writeFileSync(filePath, nextSource, 'utf8')
-  return true
-}
-
 function normalizeProjectRelativeRoot(rawRoot: unknown) {
   if (typeof rawRoot !== 'string') {
     return undefined
@@ -1056,7 +1033,7 @@ function normalizeProjectRelativeRoot(rawRoot: unknown) {
 export function createBridgeWrapperProjectConfig(
   source: Record<string, any>,
   patch: Record<string, any> = {},
-  options: { bootstrap?: boolean, miniprogramRoot?: string, precompiled?: boolean } = {},
+  options: { miniprogramRoot?: string, precompiled?: boolean } = {},
 ) {
   const {
     miniprogramRoot: _miniprogramRoot,
@@ -1096,13 +1073,7 @@ export function createBridgeWrapperProjectConfig(
       ...stableRest,
       miniprogramRoot,
       srcMiniprogramRoot: miniprogramRoot,
-      setting: options.bootstrap
-        ? {
-            es6: false,
-            packNpmManually: false,
-            packNpmRelationList: [],
-          }
-        : finalSetting,
+      setting: finalSetting,
       condition: {
         ...(source.condition && typeof source.condition === 'object' ? source.condition : {}),
         ...(patch.condition && typeof patch.condition === 'object' ? patch.condition : {}),
@@ -1121,12 +1092,6 @@ export function createBridgeWrapperProjectConfig(
       ...(source.condition && typeof source.condition === 'object' ? source.condition : {}),
       ...(patch.condition && typeof patch.condition === 'object' ? patch.condition : {}),
     },
-  }
-  if (options.bootstrap) {
-    config.simulatorType = typeof config.simulatorType === 'string' && config.simulatorType.trim()
-      ? config.simulatorType
-      : 'wechat'
-    config.simulatorPluginLibVersion ??= {}
   }
   return config
 }
@@ -1223,22 +1188,6 @@ function copyProjectRootForBridgeWrapper(projectPath: string, wrapperRoot: strin
     return
   }
   copyDistEntryForBridgeWrapper(sourcePath, targetPath, entry.isDirectory())
-}
-
-function prepareBridgeWrapperBootstrap(wrapperRoot: string, route: string | undefined) {
-  const pageRoute = (route || '/pages/index/index').replace(LEADING_SLASH_PATTERN, '')
-  const pageRoot = path.join(wrapperRoot, pageRoute)
-  fs.rmSync(wrapperRoot, { force: true, recursive: true })
-  writeJsonObject(path.join(wrapperRoot, 'app.json'), {
-    pages: [pageRoute],
-    subPackages: [],
-  })
-  fs.writeFileSync(path.join(wrapperRoot, 'app.js'), 'App({})\n', 'utf8')
-  fs.writeFileSync(path.join(wrapperRoot, 'app.wxss'), '', 'utf8')
-  writeJsonObject(`${pageRoot}.json`, {})
-  fs.writeFileSync(`${pageRoot}.js`, 'Page({})\n', 'utf8')
-  fs.writeFileSync(`${pageRoot}.wxml`, '<view id="weapp-vite-automator-bootstrap">ready</view>\n', 'utf8')
-  fs.writeFileSync(`${pageRoot}.wxss`, '', 'utf8')
 }
 
 function isPathInsideRoot(root: string, candidate: string) {
@@ -1419,7 +1368,7 @@ function isReadablePageScript(source: string) {
     || source.includes('createWevuComponent')
 }
 
-async function waitForBridgeWrapperWarmupAsset(
+export async function waitForBridgeWrapperWarmupAsset(
   bridgeWrapperProject: BridgeWrapperProject | undefined,
   route: string | undefined,
   project: string,
@@ -1427,7 +1376,7 @@ async function waitForBridgeWrapperWarmupAsset(
   if (!bridgeWrapperProject?.stopSync || !route) {
     return
   }
-  const pageScriptPath = routeToPageScriptPath(bridgeWrapperProject.path, route)
+  const pageScriptPath = routeToPageScriptPath(bridgeWrapperProject.runtimeRoot, route)
   const sourcePageScriptPath = routeToPageScriptPath(bridgeWrapperProject.distRoot, route)
   if (!pageScriptPath || !sourcePageScriptPath) {
     return
@@ -1453,30 +1402,24 @@ async function waitForBridgeWrapperWarmupAsset(
   throw new Error(`Timed out waiting bridge wrapper warmup page script: ${resolveReportProjectPath(pageScriptPath)}\nLatest content:\n${latest.slice(0, 1000)}`)
 }
 
-function prepareAutomatorBridgeWrapperProject(
+export function prepareAutomatorBridgeWrapperProject(
   projectPath: string | undefined,
   projectMeta: LaunchProjectMeta | undefined,
-  options: {
-    deferSyncUntilConnected?: boolean
-    warmupRoute?: string
-  } = {},
 ): BridgeWrapperProject | undefined {
   if (!projectPath || !projectMeta) {
-    return projectPath ? { distRoot: '', path: projectPath } : undefined
+    return projectPath ? { distRoot: '', path: projectPath, runtimeRoot: projectPath } : undefined
   }
 
   const distRoot = path.dirname(projectMeta.appConfigPath)
   const projectConfig = resolveBridgeWrapperProjectConfig(projectPath)
   if (projectConfig.compileType === 'plugin' || !shouldUseAutomatorBridgeWrapper()) {
-    return { distRoot, path: projectPath }
+    return { distRoot, path: projectPath, runtimeRoot: distRoot }
   }
   if (!fs.existsSync(distRoot)) {
-    return { distRoot, path: projectPath }
+    return { distRoot, path: projectPath, runtimeRoot: distRoot }
   }
 
-  // DevTools keeps Builder state keyed by the project path. Reusing a wrapper
-  // path across launches can reopen a stale project before its bootstrap config
-  // is observed, which triggers a simulator rebuild during connection.
+  // DevTools 按项目路径缓存 Builder；每次启动使用独立完整快照，避免沿用旧编译状态。
   const wrapperLaunchId = `${Date.now()}-${process.pid}-${bridgeWrapperLaunchSequence += 1}`
   const hash = crypto
     .createHash('sha1')
@@ -1488,15 +1431,7 @@ function prepareAutomatorBridgeWrapperProject(
     .digest('hex')
     .slice(0, 16)
   const wrapperRoot = path.join(AUTOMATOR_BRIDGE_WRAPPER_ROOT, hash)
-  const wrapperRuntimeRoot = options.deferSyncUntilConnected
-    ? path.join(wrapperRoot, AUTOMATOR_BRIDGE_RUNTIME_ROOT)
-    : wrapperRoot
-  if (options.deferSyncUntilConnected) {
-    prepareBridgeWrapperBootstrap(wrapperRoot, options.warmupRoute)
-  }
-  else {
-    copyBridgeWrapperDistSnapshot(distRoot, wrapperRuntimeRoot)
-  }
+  copyBridgeWrapperDistSnapshot(distRoot, wrapperRoot)
 
   const pluginRoot = normalizeProjectRelativeRoot(projectConfig.pluginRoot)
   const preserveRoots = pluginRoot ? [pluginRoot] : []
@@ -1515,13 +1450,8 @@ function prepareAutomatorBridgeWrapperProject(
   delete bridgePrivateConfig.qcloudRoot
   delete bridgePrivateConfig.srcMiniprogramRoot
   const wrapperProjectConfigPath = path.join(wrapperRoot, 'project.config.json')
-  const finalWrapperProjectConfig = createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig, {
-    miniprogramRoot: options.deferSyncUntilConnected ? AUTOMATOR_BRIDGE_RUNTIME_ROOT : undefined,
-  })
-  const initialWrapperProjectConfig = options.deferSyncUntilConnected
-    ? createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig, { bootstrap: true })
-    : finalWrapperProjectConfig
-  writeJsonObject(wrapperProjectConfigPath, initialWrapperProjectConfig)
+  const wrapperProjectConfig = createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig)
+  writeJsonObject(wrapperProjectConfigPath, wrapperProjectConfig)
   const wrapperPrivateConfigPath = path.join(wrapperRoot, 'project.private.config.json')
   if (Object.keys(bridgePrivateConfig).length > 0) {
     writeJsonObject(wrapperPrivateConfigPath, bridgePrivateConfig)
@@ -1530,29 +1460,13 @@ function prepareAutomatorBridgeWrapperProject(
     fs.rmSync(wrapperPrivateConfigPath, { force: true })
   }
 
-  let stopSync: (() => void) | undefined
-  const activate = async () => {
-    if (stopSync || !options.deferSyncUntilConnected) {
-      return false
-    }
-    copyBridgeWrapperDistSnapshot(distRoot, wrapperRuntimeRoot, { preserveRoots })
-    process.stdout.write(`[info] [runtime:launch-step] bridge-wrapper-assets-ready project=${resolveReportProjectPath(projectPath)} settle=${BRIDGE_WRAPPER_ASSET_SETTLE_DELAY}ms\n`)
-    await sleep(BRIDGE_WRAPPER_ASSET_SETTLE_DELAY)
-    writeJsonObjectIfChanged(wrapperProjectConfigPath, finalWrapperProjectConfig)
-    process.stdout.write(`[info] [runtime:launch-step] bridge-wrapper-config-ready project=${resolveReportProjectPath(projectPath)} settle=${BRIDGE_WRAPPER_ASSET_SETTLE_DELAY}ms\n`)
-    await sleep(BRIDGE_WRAPPER_ASSET_SETTLE_DELAY)
-    stopSync = startBridgeWrapperDistSync(distRoot, wrapperRuntimeRoot, { preserveRoots })
-    return true
-  }
-  if (!options.deferSyncUntilConnected) {
-    stopSync = startBridgeWrapperDistSync(distRoot, wrapperRuntimeRoot, { preserveRoots })
-  }
+  const stopSync = startBridgeWrapperDistSync(distRoot, wrapperRoot, { preserveRoots })
 
   return {
-    activate,
     distRoot,
     path: wrapperRoot,
-    stopSync: () => stopSync?.(),
+    runtimeRoot: wrapperRoot,
+    stopSync,
   }
 }
 
@@ -1875,22 +1789,24 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
             // 旧版 DevTools 的 Page.getElement 可能不可用，但 selectorQuery 失败时仍继续走历史探测。
           }
         }
-        const remaining = Math.max(1, timeoutMs - (Date.now() - start))
-        const probeTimeout = Math.min(ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, remaining)
-        try {
-          const wxml = await runWithTimeout(
-            () => page.waitForRendered({
-              timeout: probeTimeout,
-            }),
-            probeTimeout + 500,
-            'wait rendered page wxml',
-          )
-          if (typeof wxml === 'string' && wxml.trim() && wxml.trim() !== '<text></text>') {
-            return { source: 'wxml' }
+        if (!hasExplicitRootSelectors) {
+          const remaining = Math.max(1, timeoutMs - (Date.now() - start))
+          const probeTimeout = Math.min(ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, remaining)
+          try {
+            const wxml = await runWithTimeout(
+              () => page.waitForRendered({
+                timeout: probeTimeout,
+              }),
+              probeTimeout + 500,
+              'wait rendered page wxml',
+            )
+            if (typeof wxml === 'string' && wxml.trim() && wxml.trim() !== '<text></text>') {
+              return { source: 'wxml' }
+            }
           }
-        }
-        catch {
-          // Page.getElement 在部分 DevTools 页面会短暂不可用，继续走其它探测。
+          catch {
+            // Page.getElement 在部分 DevTools 页面会短暂不可用，继续走其它探测。
+          }
         }
       }
       for (const selector of selectors) {
@@ -1914,18 +1830,6 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
         if (root) {
           return root
         }
-      }
-      if (!hasExplicitRootSelectors && typeof page?.data === 'function') {
-        const remaining = Math.max(1, timeoutMs - (Date.now() - start))
-        const queryTimeout = Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, remaining)
-        await runWithTimeout(
-          () => page.data(undefined, {
-            timeout: queryTimeout,
-          }),
-          queryTimeout + 500,
-          'read current page data',
-        )
-        return { source: 'runtime-data' }
       }
     }
     catch {
@@ -1963,6 +1867,9 @@ async function waitForCurrentRouteReady(
       const currentPage = await runWithTimeout(
         () => miniProgram.currentPage({
           appFunctionFallback: false,
+          pageStackFallback: false,
+          retries: 1,
+          timeout: queryTimeout,
         }),
         queryTimeout,
         label,
@@ -2006,6 +1913,9 @@ async function waitForAnyCurrentPageReady(
       const currentPage = await runWithTimeout(
         () => miniProgram.currentPage({
           appFunctionFallback: false,
+          pageStackFallback: false,
+          retries: 1,
+          timeout: queryTimeout,
         }),
         queryTimeout,
         label,
@@ -2104,7 +2014,29 @@ export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: str
     }
     meta.closed = true
     try {
-      return await rawClose(...args)
+      let flushFailed = false
+      let flushError: unknown
+      try {
+        await miniProgram.flushConsole?.()
+      }
+      catch (error) {
+        flushFailed = true
+        flushError = error
+      }
+      let result
+      try {
+        result = await rawClose(...args)
+      }
+      catch (error) {
+        if (flushFailed) {
+          throw new AggregateError([flushError, error], 'Console inspection and session close both failed')
+        }
+        throw error
+      }
+      if (flushFailed) {
+        throw flushError
+      }
+      return result
     }
     finally {
       meta.dispose()
@@ -2120,35 +2052,6 @@ export function resetAutomatorRuntimeLogs(miniProgram: any) {
   meta?.reset()
 }
 
-async function clearAutomatorStartupLogs(
-  miniProgram: any,
-  project: string,
-  checkDevtoolsLog: (label: string, force?: boolean) => void,
-) {
-  checkDevtoolsLog('bridge wrapper warmup', true)
-  if (typeof miniProgram?.evaluate !== 'function') {
-    throw new TypeError(`Automator cannot clear startup console after bridge wrapper warmup: ${project}`)
-  }
-
-  const cleared = await runWithTimeout(
-    () => miniProgram.evaluate(() => {
-      const runtimeConsole = Reflect.get(globalThis, 'console') as { clear?: () => void } | undefined
-      if (typeof runtimeConsole?.clear !== 'function') {
-        return false
-      }
-      runtimeConsole.clear()
-      return true
-    }),
-    5_000,
-    `clear startup console ${project}`,
-  )
-  if (!cleared) {
-    throw new Error(`Automator runtime does not support console.clear after bridge wrapper warmup: ${project}`)
-  }
-  resetAutomatorRuntimeLogs(miniProgram)
-  process.stdout.write(`[info] [runtime:launch-step] startup-logs-cleared project=${project}\n`)
-}
-
 async function resolveCurrentPageAfterWarmupFailure(
   miniProgram: any,
   route: string,
@@ -2161,11 +2064,15 @@ async function resolveCurrentPageAfterWarmupFailure(
   }
 
   try {
+    const queryTimeout = Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, RELAUNCH_READY_TIMEOUT)
     const currentPage = await runWithTimeout(
       () => miniProgram.currentPage({
         appFunctionFallback: false,
+        pageStackFallback: false,
+        retries: 1,
+        timeout: queryTimeout,
       }),
-      Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, RELAUNCH_READY_TIMEOUT),
+      queryTimeout,
       `read current page after warmup failure ${route}`,
     )
     const currentRoute = currentPage?.path ?? ''
@@ -2188,16 +2095,14 @@ async function resolveCurrentPageAfterWarmupFailure(
   }
 }
 
-async function warmupMiniProgramRoute(
+export async function warmupMiniProgramRoute(
   miniProgram: any,
   route: string,
   project: string,
-  options: { allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[], useBridgeWarmupBudget?: boolean } = {},
+  options: { allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[] } = {},
 ) {
   const currentPageReadyTimeout = resolveWarmupCurrentPageReadyTimeout(
     options.allowRelaunch,
-    options.useBridgeWarmupBudget === true,
-    BRIDGE_WARMUP_READY_TIMEOUT,
     RELAUNCH_READY_TIMEOUT,
   )
   if (options.allowRelaunch === false && options.allowAnyPage) {
@@ -2216,7 +2121,7 @@ async function warmupMiniProgramRoute(
   const currentPage = await waitForCurrentRouteReady(miniProgram, route, currentPageReadyTimeout, {
     checkDevtoolsLog: options.checkDevtoolsLog,
     closeOnQueryTimeout: options.allowRelaunch === false,
-    queryTimeoutMs: currentPageReadyTimeout,
+    queryTimeoutMs: Math.min(2_000, currentPageReadyTimeout),
     rootSelectors: options.rootSelectors,
   })
   if (currentPage) {
@@ -2227,7 +2132,7 @@ async function warmupMiniProgramRoute(
     const bootedPage = await waitForAnyCurrentPageReady(miniProgram, currentPageReadyTimeout, {
       checkDevtoolsLog: options.checkDevtoolsLog,
       closeOnQueryTimeout: !options.allowAnyPage,
-      queryTimeoutMs: currentPageReadyTimeout,
+      queryTimeoutMs: Math.min(2_000, currentPageReadyTimeout),
     })
     if (bootedPage) {
       process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page-any current=${bootedPage?.path ?? '<unknown>'} project=${project}\n`)
@@ -2313,13 +2218,7 @@ async function warmupMiniProgramRoute(
 
   const pageRoot = await waitForRelaunchPageRoot(page, RELAUNCH_READY_TIMEOUT, options.rootSelectors)
   if (!pageRoot) {
-    if (normalizeRouteForCompare(page?.path ?? '') === normalizeRouteForCompare(route)) {
-      if (options.rootSelectors?.length) {
-        throw new Error(`Timed out waiting page root after warmup reLaunch: ${route}`)
-      }
-      process.stdout.write(`[warn] [runtime:launch-step] warmup-page-root-missing route=${route} source=relaunch-page project=${project}\n`)
-      return
-    }
+    // reLaunch 可能返回已失效的同路由句柄；只接受重新查询后真实呈现目标节点的当前页。
     const currentPage = await waitForCurrentRouteReady(miniProgram, route, Math.min(RELAUNCH_READY_TIMEOUT, 8_000), {
       checkDevtoolsLog: options.checkDevtoolsLog,
       queryTimeoutMs: 1_500,
@@ -2681,22 +2580,6 @@ function patchAutomatorVersionCheck() {
   }
 }
 
-function patchMiniProgramOn() {
-  if (miniProgramOnPatched) {
-    return
-  }
-  miniProgramOnPatched = true
-  const rawOn = MiniProgram.prototype.on
-  MiniProgram.prototype.on = function onPatched(this: InstanceType<typeof MiniProgram>, eventName: string, listener: (...args: any[]) => void) {
-    if (eventName === 'console') {
-      void this.send('App.enableLog').catch(() => {})
-      this.addListener(eventName, listener)
-      return this
-    }
-    return rawOn.call(this, eventName, listener)
-  } as typeof MiniProgram.prototype.on
-}
-
 function isMissingProcessError(error: unknown) {
   return error instanceof Error && 'code' in error && error.code === 'ESRCH'
 }
@@ -2926,7 +2809,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { deferBridgeWrapperSyncUntilConnected, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
@@ -2935,13 +2818,12 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   const launchMode = requestedLaunchMode ?? resolveAutomatorLaunchMode()
   const completedRecoverySteps = new Set<string>()
   let forceProjectRefreshAfterRetry = false
-  if (launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE) {
-    patchMiniProgramOn()
-  }
   return (async () => {
     for (let attempt = 1; attempt <= launchRetries; attempt += 1) {
       let miniProgram: any = null
       let bridgeWrapperProject: BridgeWrapperProject | undefined
+      let runtimeLogSubscription: ReturnType<typeof createRuntimeLogSubscription> | undefined
+      const attemptDeadlineAt = performance.now() + launchAttemptTimeout
       try {
         return await runWithTimeout(
           async () => {
@@ -2959,10 +2841,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 }
               : undefined
             bridgeWrapperProject = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
-              ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta, {
-                  deferSyncUntilConnected: deferBridgeWrapperSyncUntilConnected,
-                  warmupRoute: resolvedWarmupRoute,
-                })
+              ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta)
               : undefined
             await waitForBridgeWrapperWarmupAsset(bridgeWrapperProject, resolvedWarmupRoute, project)
             const launchProjectPath = bridgeWrapperProject?.path ?? rest.projectPath
@@ -3003,19 +2882,28 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 )
             devtoolsLogMonitor.assertClean(`connect ${launchMode || 'direct'}`)
             process.stdout.write(`[info] [runtime:launch-step] connect-ready mode=${launchMode || 'direct'} project=${project}\n`)
-            if (launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE) {
-              patchMiniProgramOn()
-            }
-
             const withRuntimeLogs = await enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
+            // 订阅从本阶段开始计时，同时遵守原有整个启动 attempt 的截止时间。
+            const subscriptionDeadlineAt = Math.min(performance.now() + launchTimeout, attemptDeadlineAt)
+            const subscriptionTimeout = Math.max(1, Math.floor(subscriptionDeadlineAt - performance.now()))
+            runtimeLogSubscription = createRuntimeLogSubscription({
+              deadlineAt: subscriptionDeadlineAt,
+              timeoutMessages: [
+                `Timeout in runtime log subscription after ${subscriptionTimeout}ms`,
+                `Timeout in launch automator#${attempt} after ${launchAttemptTimeout}ms`,
+              ],
+              subscribe: timeoutMs => miniProgram.enableLog(timeoutMs, { structured: true }),
+              assertClean: () => devtoolsLogMonitor.assertClean('runtime log subscription', true),
+              onRetry: ({ attempt, elapsedMs, remainingMs }) => {
+                process.stdout.write(`[info] [runtime:log-subscription-retry] attempt=${attempt} elapsed=${Math.round(elapsedMs)}ms remaining=${remainingMs}ms project=${project}\n`)
+              },
+            })
             await runWithDevtoolsLogMonitor(
-              () => miniProgram.enableLog(Math.min(15_000, launchTimeout)),
-              Math.min(15_000, launchTimeout),
+              () => runtimeLogSubscription!.wait(),
+              subscriptionTimeout,
               'runtime log subscription',
               devtoolsLogMonitor,
-            )
-            const bridgeWrapperActivated = await bridgeWrapperProject?.activate?.() === true
-            devtoolsLogMonitor.assertClean('bridge wrapper activation')
+            ).finally(() => runtimeLogSubscription?.abort())
             const shouldRefreshProject = refreshProjectAfterConnect
               || shouldRefreshAutomatorBridgeProjectAfterConnect()
               || forceProjectRefreshAfterRetry
@@ -3031,10 +2919,10 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 refreshProject: true,
               })
               await compileMiniProgramProject(withRuntimeLogs, project)
-              resetAutomatorRuntimeLogs(withRuntimeLogs)
+              // 刷新和编译仍属于同次启动，保留此前错误供会话诊断与关闭摘要使用。
               forceProjectRefreshAfterRetry = false
             }
-            const shouldWarmup = bridgeWrapperActivated || !shouldSkipAutomatorWarmup(skipWarmup)
+            const shouldWarmup = !shouldSkipAutomatorWarmup(skipWarmup)
             if (resolvedWarmupRoute && shouldWarmup) {
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${resolvedWarmupRoute} project=${project}\n`)
               await warmupMiniProgramRoute(withRuntimeLogs, resolvedWarmupRoute, project, {
@@ -3042,14 +2930,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 allowRelaunch: warmupAllowRelaunch !== false,
                 checkDevtoolsLog: devtoolsLogMonitor.assertClean,
                 rootSelectors: warmupRootSelectors,
-                useBridgeWarmupBudget: bridgeWrapperActivated,
               })
-            }
-            else if (bridgeWrapperActivated) {
-              throw new Error(`Bridge wrapper activation requires a real app warmup route: ${project}`)
-            }
-            if (bridgeWrapperActivated) {
-              await clearAutomatorStartupLogs(withRuntimeLogs, project, devtoolsLogMonitor.assertClean)
             }
             const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs, {
               checkDevtoolsLog: devtoolsLogMonitor.assertClean,
@@ -3074,7 +2955,9 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
           },
         )
       }
-      catch (error) {
+      catch (caughtError) {
+        const error = runtimeLogSubscription?.normalizeError(caughtError) ?? caughtError
+        runtimeLogSubscription?.abort(error)
         if (
           isWarmupRelaunchTimeoutError(error)
           || isWarmupPageRootTimeoutError(error)
@@ -3089,6 +2972,11 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
           }
           catch {
           }
+        }
+
+        // 日志订阅已在同一连接内等待完整预算；失败时保留真实错误，不再重启 IDE 掩盖启动结果。
+        if (runtimeLogSubscription?.pending) {
+          handleLaunchError(error, project)
         }
 
         if (!retryWarmupTimeout && (isWarmupRelaunchTimeoutError(error) || isWarmupPageRootTimeoutError(error))) {

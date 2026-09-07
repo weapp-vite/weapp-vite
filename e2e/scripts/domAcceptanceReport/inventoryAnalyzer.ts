@@ -74,6 +74,19 @@ function callRoot(node: ts.Expression): string {
   return ''
 }
 
+function parameterizedMethod(node: ts.Expression): 'each' | 'for' | undefined {
+  if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+    const method = node.expression.name.text
+    if (method === 'each' || method === 'for') {
+      return method
+    }
+  }
+  if (ts.isPropertyAccessExpression(node) || ts.isCallExpression(node)) {
+    return parameterizedMethod(node.expression)
+  }
+  return undefined
+}
+
 function objectProperty(node: ts.Expression | undefined, name: string) {
   if (!node || !ts.isObjectLiteralExpression(unwrap(node))) {
     return undefined
@@ -277,11 +290,12 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
       }
       const literalName = readLiteral(node.arguments[0], bindings)
       if (['it', 'test'].includes(called) && typeof literalName === 'string') {
-        const names = expression(node.expression).includes('.each(') && templateNames.length
+        const method = parameterizedMethod(node.expression)
+        const names = method && templateNames.length
           ? templateNames.map(template => literalName.replaceAll('$name', template))
           : [literalName]
-        const caseNotes = expression(node.expression).includes('.each(') && !templateNames.length
-          ? [...notes, `Dynamic each table: ${expression(node.expression)}`]
+        const caseNotes = method && !templateNames.length
+          ? [...notes, `Dynamic ${method} table: ${expression(node.expression)}`]
           : notes
         for (const name of names) {
           inspectCase(node, [...suites, name].join(' > '), bindings, caseNotes)

@@ -11,6 +11,7 @@ import {
   replaceHmrSfcTitle,
   waitForFileContains,
 } from '../utils/hmr-helpers'
+import { captureHmrProbeFailure } from '../utils/hmrProbeFailureDiagnostics'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import {
   cleanDevtoolsCache,
@@ -169,6 +170,8 @@ async function assertRuntimeProbe<T>(options: {
   distPath: string
   label: string
   markers: string[]
+  miniProgram: any
+  storageKey: string
   probe: () => Promise<T>
   route: string
 }) {
@@ -176,6 +179,13 @@ async function assertRuntimeProbe<T>(options: {
     return await options.probe()
   }
   catch (error) {
+    await captureHmrProbeFailure({
+      miniProgram: options.miniProgram,
+      route: options.route,
+      storageKey: options.storageKey,
+      expected: options.markers.join(', '),
+      files: { distRoot: DIST_ROOT, relativePaths: [path.relative(DIST_ROOT, options.distPath)], markers: options.markers },
+    })
     if (!isDevtoolsRuntimeProbeUnavailable(error)) {
       throw error
     }
@@ -402,6 +412,8 @@ async function relaunchIdeRoute(
       await assertRuntimeProbe({
         distPath,
         label: 'template-probe',
+        miniProgram,
+        storageKey: resolveTemplateProbeStorageKey(route),
         markers: [readyText],
         probe: () => waitForTemplateProbeMarker(miniProgram, route, readyText, timeoutMs),
         route,
@@ -415,6 +427,8 @@ async function relaunchIdeRoute(
       await assertRuntimeProbe({
         ...contract,
         label: 'storage-probe',
+        miniProgram,
+        storageKey: options.storageReady.key,
         probe: () => options.storageReady?.requireOk
           ? waitForStorageResultOk(miniProgram, options.storageReady.key, options.storageReady.expected, timeoutMs)
           : waitForStorageField(

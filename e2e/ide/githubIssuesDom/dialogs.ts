@@ -74,6 +74,9 @@ export async function runDialogSteps(
         throw new Error(`Expected one dialog control: ${step.tap}`)
       }
       await controls[0].tap()
+      await check(step.id)
+      snapshots[step.id] = await call(step.method)
+      continue
     }
     snapshots[step.id] = await call(step.method)
     await check(step.id)

@@ -88,6 +88,7 @@ describe('e2e app: template-wevu-regression simplified portal', { concurrent: fa
 
     const indexWxml = await fs.readFile(indexWxmlPath, 'utf8')
     const indexJs = await fs.readFile(indexJsPath, 'utf8')
+    const indexConfig = await fs.readJson(path.join(DIST_ROOT, 'pages/index/index.json')) as { usingComponents: Record<string, string> }
     const appJson = await fs.readJson(appJsonPath) as { pages: string[], subPackages: unknown[] }
 
     expect(appJson.pages).toEqual([
@@ -103,13 +104,18 @@ describe('e2e app: template-wevu-regression simplified portal', { concurrent: fa
       {
         root: 'packageB',
         pages: ['pages/settings/index'],
+        independent: true,
       },
     ])
 
     expect(indexWxml).toContain('企业业务模板')
     expect(indexWxml).toContain('当前路由：{{routeSummary}}')
-    expect(indexWxml).toContain('<StatusPill')
-    expect(indexWxml).toContain('<InfoPanel')
+    expect(indexWxml).toContain('<status-pill')
+    expect(indexWxml).toContain('<info-panel')
+    expect(indexConfig.usingComponents).toMatchObject({
+      'status-pill': '/components/StatusPill/index',
+      'info-panel': '/components/InfoPanel/index',
+    })
 
     expect(indexJs).toContain('/pages/overview/index')
     expect(indexJs).toContain('/packageA/pages/workspace/index')
@@ -122,11 +128,15 @@ describe('e2e app: template-wevu-regression simplified portal', { concurrent: fa
     let page = await miniProgram.reLaunch('/pages/index/index')
     await dom.check('portal', miniProgram, page)
     for (const target of targets) {
+      const homePage = page
       const buttons = await page.$$('.entry-card .action-btn', { fallback: false })
       expect(buttons).toHaveLength(4)
       await buttons[target.index]!.tap()
       page = await waitForPage(miniProgram, target.route)
       await dom.check(target.id, miniProgram, page)
+      // 目标 DOM 可早于 navigateTo 的宿主回调；提前 reLaunch 会让同一次导航超时。
+      // 首页仍保留在页面栈中，但 Page 协议只能调用栈顶；显式通过 AppService 等待原首页的 Promise。
+      expect(await homePage.callMethodWithOptions('waitForNavigation', { routeOnly: true }, target.route)).toBe(target.route)
       page = await miniProgram.reLaunch('/pages/index/index')
       await dom.check(`${target.id}-return`, miniProgram, page)
     }

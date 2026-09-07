@@ -25,6 +25,30 @@ describe('testing evaluator runtime globals', () => {
     }
   })
 
+  it('keeps two project pages independently queryable after both sessions are ready', async () => {
+    const firstProject = createBaseFixture()
+    const secondProject = createBaseFixture()
+    roots.push(firstProject, secondProject)
+    const first = await launch({ projectPath: firstProject })
+    const second = await launch({ projectPath: secondProject })
+    try {
+      const firstPage = await first.waitForCurrentPage('/pages/index/index')
+      const secondPage = await second.waitForCurrentPage('/pages/index/index')
+      expect(await (await firstPage.$('#greeting-button'))!.text()).toBe('Hello')
+      expect(await (await secondPage.$('#greeting-button'))!.text()).toBe('Hello')
+      await first.evaluate('() => getCurrentPages()[0].setData({ "__e2eData.greeting": "First project" })')
+      expect(await (await firstPage.$('#greeting-button'))!.text()).toBe('First project')
+      expect(await (await secondPage.$('#greeting-button'))!.text()).toBe('Hello')
+      await second.close()
+      expect((await first.currentPage())?.pageId).toBe(firstPage.pageId)
+      expect(await (await firstPage.$('#greeting-button'))!.text()).toBe('First project')
+    }
+    finally {
+      await first.close()
+      await second.close()
+    }
+  })
+
   it('isolates application state between sessions and cancels evaluator timers on close', async () => {
     const projectPath = createBaseFixture()
     roots.push(projectPath)

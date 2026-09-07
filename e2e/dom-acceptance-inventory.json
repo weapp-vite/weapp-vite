@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 89,
-    "wechatTaskCount": 86,
+    "taskCount": 91,
+    "wechatTaskCount": 88,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 223,
-    "casesWithPlan": 223,
+    "expandedCaseDeclarations": 226,
+    "casesWithPlan": 226,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -191,14 +191,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:81",
-          "name": "automator bridge wrapper hmr (ide) > keeps the opened bridge wrapper project synced with dev dist updates",
+          "source": "e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:74",
+          "name": "automator bridge wrapper snapshot hmr (ide) > renders four same-length template updates while retaining page and app identity",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/wevu-runtime-e2e",
-              "checkpoints": "[ { id: 'initial', route: '/pages/hmr/index', action: '首屏检查实际模板标题', nodes: [{ selector: '.title', text: 'HMR' }] }, { id: 'updated', route: '/pages/hmr/index', action: '模板更新后检查 bridge 项目的实际页面标题', nodes: [{ selector: '.title', text: pageTemp",
-              "source": "e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:83"
+              "checkpoints": "[ { id: 'initial', route: '/pages/hmr/index', action: '首屏检查实际模板标题和初始交互状态', nodes: [{ selector: '.title', text: 'HMR' }, { selector: '#hmr-count', text: 'count: 0' }] }, ...TEMPLATE_TITLES.map((title, index) => ({ id: `retained:${index}`, ro",
+              "source": "e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:75"
             }
           ],
           "routes": [
@@ -207,7 +207,9 @@
           "operations": [
             "reLaunch(/pages/hmr/index)",
             "check(initial)",
-            "check(updated)"
+            "callMethod(increment)",
+            "check(retained:0)",
+            "check(retained:${index})"
           ],
           "notes": []
         }
@@ -223,14 +225,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/automator-concurrent-sessions.runtime.test.ts:150",
+          "source": "e2e/ide/automator-concurrent-sessions.runtime.test.ts:151",
           "name": "automator concurrent sessions > assigns independent automator session metadata to each project",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/base + e2e-apps/app-lifecycle-native",
               "checkpoints": "[ { id: 'base', route: INDEX_ROUTE, action: '启动第一个项目并检查其实际界面', nodes: [ { selector: '#base-greeting', text: 'Hello' }, { selector: '#base-target', text: 'Target: index snapshot' }, ], }, { id: 'native', route: INDEX_ROUTE, action: '保留第一连接并启",
-              "source": "e2e/ide/automator-concurrent-sessions.runtime.test.ts:151"
+              "source": "e2e/ide/automator-concurrent-sessions.runtime.test.ts:152"
             }
           ],
           "routes": [],
@@ -300,14 +302,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/forward-console-demo.runtime.test.ts:198",
+          "source": "e2e/ide/forward-console-demo.runtime.test.ts:221",
           "name": "forward-console-demo in real WeChat DevTools > keeps forwarding console output after dev HMR updates the current page",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/forward-console-demo",
               "checkpoints": "[ { id: 'initial', route: INDEX_ROUTE, action: '检查日志演示首屏', nodes: [ { selector: '.title', text: 'Forward Console Lab' }, { selector: '.description', text: INITIAL_DESCRIPTION }, { selector: '.status-pill text', text: '0 events' }, { selecto",
-              "source": "e2e/ide/forward-console-demo.runtime.test.ts:200"
+              "source": "e2e/ide/forward-console-demo.runtime.test.ts:223"
             }
           ],
           "routes": [],
@@ -450,14 +452,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:27",
+          "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:29",
           "name": "github-issues runtime web runtime globals > issue #448: compiles the next batch of web runtime globals for DevTools",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "WEB_API_PLANS.issue448",
-              "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:28"
+              "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:30"
             }
           ],
           "routes": [],
@@ -467,14 +469,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:53",
+          "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:55",
           "name": "github-issues runtime web runtime globals > issue #459: compiles directly imported web-apis polyfills for DevTools",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "WEB_API_PLANS.issue459",
-              "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:54"
+              "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:56"
             }
           ],
           "routes": [],
@@ -484,14 +486,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:74",
+          "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:76",
           "name": "github-issues runtime web runtime globals > issue #804: keeps web runtime platform exports available to custom components",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "WEB_API_PLANS.issue804",
-              "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:75"
+              "source": "e2e/ide/github-issues.runtime.web-runtime.test.ts:77"
             }
           ],
           "routes": [],
@@ -811,14 +813,32 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue930.test.ts:49",
+          "source": "e2e/ide/github-issues.runtime.issue930.test.ts:56",
+          "name": "e2e app: github-issues / issue #930 > preserves native nested CSS fallbacks through dynamic overrides and restoration",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "stages.map(stage => ({ id: `nested-vars:${stage}`, route: NESTED_VARS_ROUTE, action: stage === 'initial' ? '检查两层行高、三层圆角和渐变 fallback' : stage === 'updated' ? '点击覆盖变量后检查渲染与实际样式' : '再次点击恢复默认 fallback', nodes: [ { selector: '#vars-root', attrib",
+              "source": "e2e/ide/github-issues.runtime.issue930.test.ts:59"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "check(nested-vars:${stage})",
+            "tap(<missing>)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/github-issues.runtime.issue930.test.ts:117",
           "name": "e2e app: github-issues / issue #930 > keeps every compiler-owned binding live on initial and subsequent setData",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "['initial', 'updated'].map(state => ({ id: state, route: ISSUE_ROUTE, action: state === 'initial' ? '检查首屏编译器拥有的绑定' : '更新成员表达式、model、template 和 CSS 变量后检查渲染', nodes: [ { selector: '#issue-930-member', text: `member-${state}` }, { selector: '#",
-              "source": "e2e/ide/github-issues.runtime.issue930.test.ts:50"
+              "source": "e2e/ide/github-issues.runtime.issue930.test.ts:118"
             }
           ],
           "routes": [],
@@ -1309,14 +1329,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.props.test.ts:294",
+          "source": "e2e/ide/github-issues.runtime.props.test.ts:286",
           "name": "e2e app: github-issues / props > issue #597: keeps v-if and v-else named slot branches intact in DevTools runtime",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "propsCheckpoints(resolveRuntimeProviderName()).issue597",
-              "source": "e2e/ide/github-issues.runtime.props.test.ts:295"
+              "source": "e2e/ide/github-issues.runtime.props.test.ts:287"
             }
           ],
           "routes": [],
@@ -1327,14 +1347,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.props.test.ts:324",
+          "source": "e2e/ide/github-issues.runtime.props.test.ts:316",
           "name": "e2e app: github-issues / props > issue #613: compares forwarded slot outlets with view and native block wrappers in DevTools runtime",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "propsCheckpoints(resolveRuntimeProviderName()).issue613",
-              "source": "e2e/ide/github-issues.runtime.props.test.ts:325"
+              "source": "e2e/ide/github-issues.runtime.props.test.ts:317"
             }
           ],
           "routes": [],
@@ -1344,14 +1364,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.props.test.ts:382",
+          "source": "e2e/ide/github-issues.runtime.props.test.ts:374",
           "name": "e2e app: github-issues / props > issue #599: renders props named data in computed style bindings",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "propsCheckpoints(resolveRuntimeProviderName()).issue599",
-              "source": "e2e/ide/github-issues.runtime.props.test.ts:383"
+              "source": "e2e/ide/github-issues.runtime.props.test.ts:375"
             }
           ],
           "routes": [],
@@ -1361,14 +1381,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.props.test.ts:413",
+          "source": "e2e/ide/github-issues.runtime.props.test.ts:405",
           "name": "e2e app: github-issues / props > issue #600: renders renamed defineProps destructure aliases in template and computed bindings",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "propsCheckpoints(resolveRuntimeProviderName()).issue600",
-              "source": "e2e/ide/github-issues.runtime.props.test.ts:414"
+              "source": "e2e/ide/github-issues.runtime.props.test.ts:406"
             }
           ],
           "routes": [],
@@ -1496,6 +1516,40 @@
           "routes": [],
           "operations": [
             "check(initial)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/github-issues.runtime.component-instance-apis.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/github-issues.runtime.component-instance-apis.test.ts:25",
+          "name": "github issues: native component instance APIs > keeps native relation lifecycle order and component selector scopes across removal and restoration",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[ { id: 'baseline', route: BASELINE_ROUTE, action: '离开上轮组件后显式清空事件，检查独立准备页', nodes: [{ selector: '#baseline-title', text: '准备组件关系验收' }] }, ...stages.map(stage => ({ id: stage.id, route: ROUTE, action: stage.action, nodes: [ { selector: '#rel",
+              "source": "e2e/ide/github-issues.runtime.component-instance-apis.test.ts:31"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "act(baseline)",
+            "check(baseline)",
+            "act(initial)",
+            "act(stage.id)",
+            "callMethod(snapshot)",
+            "check(stage.id)"
           ],
           "notes": []
         }
@@ -2526,12 +2580,12 @@
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/plugin-demo",
-              "checkpoints": "[ { id: 'host', route: HOST_ROUTE, action: 'launch plugin host', nodes: hostNodes(78) }, { id: 'host-updated', route: HOST_ROUTE, action: 'tap host progress button', nodes: hostNodes(84) }, { id: 'plugin-page', route: 'plugin-private://wxb3",
+              "checkpoints": "[ { id: 'host', route: HOST_ROUTE, action: 'launch plugin host', nodes: hostNodes(78) }, { id: 'host-updated', route: HOST_ROUTE, action: 'tap host progress button', nodes: hostNodes(84) }, { id: 'plugin-page', route: '__plugin__/wxb3d842a4",
               "source": "e2e/ide/plugin-demo.runtime.test.ts:306"
             }
           ],
           "routes": [
-            "plugin-private://wxb3d842a4a7e3440d/pages/hello-page/index",
+            "__plugin__/wxb3d842a4a7e3440d/pages/hello-page/index",
             "/pages/index/index",
             "plugin://hello-plugin/hello-page"
           ],
@@ -3459,6 +3513,43 @@
       ]
     },
     {
+      "task": "ide/template-retail-checkout.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/template-retail-checkout.runtime.test.ts:57",
+          "name": "retail checkout nullable settlement rendering > renders nullable settlement results and refreshes quantity and amount after reLaunch",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template",
+              "checkpoints": "[{ id: 'home-ready', route: '/pages/home/home', action: '从首页启动并确认首屏商品已经呈现，再进入结算分包', nodes: [{ selector: '.goods-card__title', scope: [{ has: '.goods-list-wrap' }, '#home-goods-list-gd-0'], text: '白色短袖连衣裙荷叶边裙摆宽松韩版休闲纯白清爽优雅连衣裙', }], }, ...scen",
+              "source": "e2e/ide/template-retail-checkout.runtime.test.ts:63"
+            }
+          ],
+          "routes": [
+            "/pages/home/home",
+            "${RETAIL_CHECKOUT_ROUTE}?type=cart"
+          ],
+          "operations": [
+            "act(home-ready)",
+            "reLaunch(/pages/home/home)",
+            "check(home-ready)",
+            "act(scenario.id)",
+            "reLaunch(${RETAIL_CHECKOUT_ROUTE}?type=cart)",
+            "check(scenario.id)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
       "task": "ide/template-tailwindcss-dev-open-multi.runtime.test.ts",
       "scope": "wechat",
       "reason": null,
@@ -3537,20 +3628,20 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:465",
+          "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:204",
           "name": "template TailwindCSS TDesign HMR in real WeChat DevTools > updates the visible Tailwind arbitrary background color through dev HMR",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-tailwindcss-tdesign-template",
               "checkpoints": "[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'",
-              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:466"
+              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:205"
             }
           ],
           "routes": [],
           "operations": [
             "check(tailwind:initial)",
-            "callMethodWithOptions(switchMode)",
+            "tap(<missing>)",
             "check(tailwind:dark)",
             "check(tailwind:hmr-preserved)",
             "check(tailwind:updated)",
@@ -3845,14 +3936,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts:824",
+          "source": "e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts:813",
           "name": "template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template parity > keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template",
               "checkpoints": "routes.flatMap(route => route.steps)",
-              "source": "e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts:831"
+              "source": "e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts:820"
             }
           ],
           "routes": [],
@@ -4127,7 +4218,8 @@
       "scope": "wechat",
       "reason": null,
       "providers": [
-        "devtools"
+        "devtools",
+        "headless"
       ],
       "templates": [],
       "cases": [
@@ -4153,6 +4245,7 @@
             "check(portal)",
             "tap(<missing>)",
             "check(target.id)",
+            "callMethodWithOptions(waitForNavigation)",
             "check(${target.id}-return)"
           ],
           "notes": []
@@ -4275,14 +4368,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:332",
+          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:333",
           "name": "template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
               "checkpoints": "colors.map((color, index) => ({ id: `background:${index}`, route: INDEX_ROUTE, action: `背景阶段 ${index}：计算样式、布局与点击计数`, nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label', te",
-              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:334"
+              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:335"
             }
           ],
           "routes": [],
@@ -4999,14 +5092,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/wevu-runtime.core-hmr.test.ts:575",
+          "source": "e2e/ide/wevu-runtime.core-hmr.test.ts:589",
           "name": "wevu runtime core hmr matrix (ide) > keeps DevTools runtime aligned with core page, sfc and layout hmr updates",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/wevu-runtime-e2e",
               "checkpoints": "coreHmrPlan({ pageTemplateMarker, pageScriptMarker, pageStyleMarker, sfcTemplateMarker, sfcScriptMarker, sfcStyleMarker, layoutPageTemplateMarker, layoutPageScriptMarker, layoutPageStyleMarker, sharedStoreMarker, })",
-              "source": "e2e/ide/wevu-runtime.core-hmr.test.ts:586"
+              "source": "e2e/ide/wevu-runtime.core-hmr.test.ts:600"
             }
           ],
           "routes": [],
@@ -5155,14 +5248,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:253",
+          "source": "e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:264",
           "name": "wevu runtime layout shared template/wxs hmr (ide) > updates layout runtime output in DevTools after shared template/include/wxs edits",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/wevu-runtime-e2e",
               "checkpoints": "checkpoints",
-              "source": "e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:289"
+              "source": "e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:300"
             }
           ],
           "routes": [
@@ -5659,11 +5752,11 @@
     },
     {
       "file": "e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts",
-      "sha256": "c0a5e3657d7d0000fe19fbc7dd1326e9c9b74c37ce08c0264d63bd9188f52d8c"
+      "sha256": "cb7b3fa6547d407fbc35f90e18219f14d05be76adcd04587f970f8ef3d6a02ca"
     },
     {
       "file": "e2e/ide/automator-concurrent-sessions.runtime.test.ts",
-      "sha256": "6a3b25d7913a12f8d3c1c9d0fd2453a3377439bd007bdc678a04ee75a30ed9a4"
+      "sha256": "94975b1e10e38eb97424a2150a51ff49512226ff271a161705955f01de338287"
     },
     {
       "file": "e2e/ide/chunk-modes.runtime.duplicate.test.ts",
@@ -5687,7 +5780,7 @@
     },
     {
       "file": "e2e/ide/coreWorkflowDom.ts",
-      "sha256": "ac7800df55080590c09b760ce6296c0d7450b75cb35a67967b721ddaf86185d6"
+      "sha256": "e1fe5725ed53fb3c87a156b89c8806ee8a575b27b74f0cea8b065e8785e3a7d0"
     },
     {
       "file": "e2e/ide/devtools-cli-workflow.runtime.test.ts",
@@ -5703,7 +5796,7 @@
     },
     {
       "file": "e2e/ide/forward-console-demo.runtime.test.ts",
-      "sha256": "6576f9019c7abeb5d91c3802218f2bdc8e7d086c065c7fcb5eacfab1be9a380a"
+      "sha256": "9aa7ecd651b152aeae9272b383d4565898967e25cb07190ef2c78e554a73f174"
     },
     {
       "file": "e2e/ide/github-issues.runtime.aggregate.test.ts",
@@ -5712,6 +5805,10 @@
     {
       "file": "e2e/ide/github-issues.runtime.app-shell.test.ts",
       "sha256": "b5ef842d3287722c8068823d4044f293cf26dd1f96aa13e841044515ddfe52c2"
+    },
+    {
+      "file": "e2e/ide/github-issues.runtime.component-instance-apis.test.ts",
+      "sha256": "24d2599d5d248e9ac6646cf0c4734a1fb4adf053d8fa550fc928e8056c13c2f1"
     },
     {
       "file": "e2e/ide/github-issues.runtime.import-meta.test.ts",
@@ -5759,7 +5856,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue615.test.ts",
-      "sha256": "63e4e6ccdf67896e280a0087546dfe69969737d9b0bcde3ccde98e6cae1e4a5e"
+      "sha256": "9321cbe11cfbd62dbe2040af24ef7e05b43de0af14961c145f07ae993aee10f8"
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue621.test.ts",
@@ -5819,7 +5916,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue930.test.ts",
-      "sha256": "5188d9f0b6adfc6e0b3f92c1513040bbcb570d8ca3591486d72ff73246eb18ac"
+      "sha256": "8a09a1610fdbff26dc07be441497bddd5b4697590ec237f18e91871b61fbfa97"
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue941.test.ts",
@@ -5835,7 +5932,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.props.test.ts",
-      "sha256": "2f70f5fc5815f80769436b05528d7aee13aef20b87a9169a710cf3406322c966"
+      "sha256": "3d506e826ef00e2f3f34bb25a87bcdc01d7a6ac5d4f5bbdbbbdbb75a709805e8"
     },
     {
       "file": "e2e/ide/github-issues.runtime.require-async.test.ts",
@@ -5843,7 +5940,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.shared.ts",
-      "sha256": "8bfaa7fdba124289810a6f3b093946a27564add19050a31cc377fabaa2ac69c0"
+      "sha256": "f23f0dd95eb57f564fbdabff2bd9279248eb5c96d21c879ffd3bfb05f5b47345"
     },
     {
       "file": "e2e/ide/github-issues.runtime.slot-fallback-compiler-off.test.ts",
@@ -5863,11 +5960,11 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.web-runtime.test.ts",
-      "sha256": "8d4d49aae1d99674d6bf564dfe28dddf0244dc537555643a04b307e750131f54"
+      "sha256": "1c5c84d694a2610b7119b74768e147c335b279fdc09425791e512b59e43297de"
     },
     {
       "file": "e2e/ide/githubIssuesDom/augmentedSlots.ts",
-      "sha256": "28da0049b75f3222425d0db99aab73da924ca54dcf1a687b59b25f668efe68d4"
+      "sha256": "2cac30c5e041427f9729e737d62b0ca9d330f97f735042223fe9d4ec03e110e0"
     },
     {
       "file": "e2e/ide/githubIssuesDom/classes.ts",
@@ -5875,7 +5972,7 @@
     },
     {
       "file": "e2e/ide/githubIssuesDom/dialogs.ts",
-      "sha256": "bb8fd40dd7e7132daab50194dfbe05c9e37f498c3b1d827fe689d0c623b19984"
+      "sha256": "f170ccddd941df03c1e77e7d59f99e6e52058430989500780eab35158c983709"
     },
     {
       "file": "e2e/ide/githubIssuesDom/expressions.ts",
@@ -5891,7 +5988,7 @@
     },
     {
       "file": "e2e/ide/githubIssuesDom/guards.ts",
-      "sha256": "fff9edcc91bad1e672c87a5e632849768f4ed4326d6ca504c886c4e74824a2a8"
+      "sha256": "f9d19efa77416ffb01ff06164913e958cfc16762cb14e137e14824e1ef2b0a21"
     },
     {
       "file": "e2e/ide/githubIssuesDom/hostAndIdentity.ts",
@@ -5919,7 +6016,7 @@
     },
     {
       "file": "e2e/ide/githubIssuesDom/props.ts",
-      "sha256": "074b0fcef6a8637620eb8e47015e69acffddda6736de977c329ca1a7a336ca89"
+      "sha256": "cc9a11596039223a8335795974af9f59a753a9c3fd5b92da7d11d5f92fd985fe"
     },
     {
       "file": "e2e/ide/githubIssuesDom/reactivity.ts",
@@ -5983,7 +6080,7 @@
     },
     {
       "file": "e2e/ide/plugin-demo.runtime.test.ts",
-      "sha256": "10f20425c225c447b99cf82cabc7b21bffb3fafae591f5d0f00552b55638ce0f"
+      "sha256": "9f7b7ba3580fdc715caf78497af41e1769ea5f12675ff737bdd287b0c2c667f4"
     },
     {
       "file": "e2e/ide/react-runtime-spike.runtime.test.ts",
@@ -6011,7 +6108,7 @@
     },
     {
       "file": "e2e/ide/runtimeErrors.ts",
-      "sha256": "66fae4d0db53756df3a9bbbcee7877e1558d980a6c7ed96d101b846903400c76"
+      "sha256": "58948d503f6c85d282c09154e6a1fbef786ad9336a8eeaf172de891063981e0b"
     },
     {
       "file": "e2e/ide/shared-styles.runtime.test.ts",
@@ -6047,7 +6144,7 @@
     },
     {
       "file": "e2e/ide/tdesignDom/classBinding.ts",
-      "sha256": "d32a685eb9947a36d7da752f318f2e7d9564e579a2fdad94eeece90336cb5ffb"
+      "sha256": "5daed9275edd3ab8d7bbeaf5f4cbfb340b236187e3a70758eb202df30c8f29c2"
     },
     {
       "file": "e2e/ide/tdesignDom/index.ts",
@@ -6059,7 +6156,7 @@
     },
     {
       "file": "e2e/ide/template-dev-open-all.runtime.test.ts",
-      "sha256": "500c5cbdb10f40152cd39bf2035fdc6c4b439068bc1823d246ee1b7a9c3cf51a"
+      "sha256": "c6615a174032a11cc9dd865cca54531b8dbc495082c78273fa9f8a02d2ae0ebe"
     },
     {
       "file": "e2e/ide/template-dev-open-cases.ts",
@@ -6074,12 +6171,16 @@
       "sha256": "0fa4b2fd693209de7baa15a6a0f2c68f5be736d646064eaf7fe557aa6be0d190"
     },
     {
+      "file": "e2e/ide/template-retail-checkout.runtime.test.ts",
+      "sha256": "e13549de6233c6c9eb47816454be130e36d4fff60ff80f0017e99ab8aafb0eca"
+    },
+    {
       "file": "e2e/ide/template-tailwindcss-dev-open-multi.runtime.test.ts",
-      "sha256": "e879ffc4f79d1fbc995a7b4471b2431580697cf7fb939dcbd1ee1e9e9e217945"
+      "sha256": "82568b51f8ce60bd250f4501e1f3bd7c861a948784f2f721f28a9f57f4bdd423"
     },
     {
       "file": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "8fcb7464837df3f33a2bc2be74feffb353951493778bb60e0ddebf469fa539f0"
+      "sha256": "fc02bf130c390c8143d388fe6f28008f28887ab11cfbb8aabfef2c99c7fc35f3"
     },
     {
       "file": "e2e/ide/template-weapp-vite-multi-platform-sfc-template.test.ts",
@@ -6107,15 +6208,15 @@
     },
     {
       "file": "e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts",
-      "sha256": "8a645c1aa8cd184ba041739d719157b119726c3e487a9f2492ed39203ea5816e"
+      "sha256": "1dd6d2f1017b824460c7185fc218344a179851b01bbbc0a65215390c4f666026"
     },
     {
       "file": "e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts",
-      "sha256": "87954fd5dc3bcdf492f95eb019ddfd474bab54a18ac0142ca7ff298c5ba959ab"
+      "sha256": "d7c517d1fe17ae2b2e4352a8868116c15567256f11bd7d5b8d0bd38d2b9a21fc"
     },
     {
       "file": "e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts",
-      "sha256": "ec7a13e8062a6f1a673f0058fe9b8e3b9c656ae03e28bba465d592a0c99a48b3"
+      "sha256": "56fbd815701dac3cadbb7d25e39da427bd939bd8921efa61fd93fe61b9b4a7af"
     },
     {
       "file": "e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts",
@@ -6135,7 +6236,7 @@
     },
     {
       "file": "e2e/ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts",
-      "sha256": "c370de20f7fbfdd72672afd38239f77b1a7ab9ba1bb60ebbcb484a23f198053d"
+      "sha256": "0cf40204e80d8fe1fee671c91ebc475a41fb472f8f840623cde65b969007a3a1"
     },
     {
       "file": "e2e/ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts",
@@ -6151,7 +6252,7 @@
     },
     {
       "file": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "7463b23f3a42e67b328aae9336278c57f46b5321dba68af163a7517ce5079ca8"
+      "sha256": "c22b79b2ac5e104095cc6df7516571906dd49b09f1f0a2db66f541c03ba44c32"
     },
     {
       "file": "e2e/ide/template-wevu-tdesign-regression.shared.ts",
@@ -6159,7 +6260,7 @@
     },
     {
       "file": "e2e/ide/templateDevOpenDom.ts",
-      "sha256": "0f6116f2141e4f9d514180734d5b0efe9c8eb7f2910465738f47490f2f47e62f"
+      "sha256": "1bd2c68e5d7ced21dc5b67328adc6fb35d36d78e8e568655dfc0d238e4f38f77"
     },
     {
       "file": "e2e/ide/templateLayoutsDom/index.ts",
@@ -6195,7 +6296,7 @@
     },
     {
       "file": "e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts",
-      "sha256": "2cb03de3aaf714fd754345889335d64e9708a4a53a3641f76958ad2eeb47000b"
+      "sha256": "d997fd30fa7c0bde2ae38641ee90a101568803f32dcabe96151815d2ecc8ffb4"
     },
     {
       "file": "e2e/ide/wevu-jsx-tsx.runtime.test.ts",
@@ -6223,7 +6324,7 @@
     },
     {
       "file": "e2e/ide/wevu-runtime.core-hmr.test.ts",
-      "sha256": "bb10cafe235b6f7a8e855df6b8accfea5f92d1d502c7dfc7ca4a69830dbf72d5"
+      "sha256": "3deab49159ad0091b41593ac98d3e0e16faab479f70a723b7517cf2e8fd05663"
     },
     {
       "file": "e2e/ide/wevu-runtime.function-props.weapp.test.ts",
@@ -6235,7 +6336,7 @@
     },
     {
       "file": "e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts",
-      "sha256": "9b7ded917a4f6d40b7a82d2417c59effc53a71cb508acc60144a6d731d6fe47d"
+      "sha256": "7048bea21d93fc7d2fc8d412c5d086cbcfa2887bba723bd5807df8384fda2ed6"
     },
     {
       "file": "e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts",
@@ -6307,7 +6408,7 @@
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/inventoryAnalyzer.ts",
-      "sha256": "6c9f7e09cae109370fc2e38ecb1850553f71d23a8c3c7ab7a791696e4b3a33c9"
+      "sha256": "2653a889a1502ae789d2247ac4ade4948eb776cf44f5c5fee414ed822b7a6957"
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/inventorySources.ts",
@@ -6331,11 +6432,11 @@
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/validation.ts",
-      "sha256": "264f043bff87591685603618435ddd2ad5be3c385198a97e0085f3628f43359d"
+      "sha256": "1e2eda627e779f31b429264f97f906d1f64a5b6a3bce75a6be007073d4370e5e"
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "0ee25d8d236d3216e88828a2c028831e7fd06484079181eecb8f7d55fe7e6069"
+      "sha256": "f18dbd459a17f2d8aaadfc4d8441fea9b53826369a34b19841b703ac9c1226ed"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -6347,7 +6448,7 @@
     },
     {
       "file": "e2e/scripts/suiteRunner.ts",
-      "sha256": "2d82960e984a27041b1139b6509fe91ad5ac3b43a615bdee94173e8f9a9d1bc8"
+      "sha256": "fed4f917c51c61ac9e5fda23b9328cfdeb306a86b93390d105e418fff8a635cb"
     },
     {
       "file": "e2e/template-e2e.utils.ts",
@@ -6363,7 +6464,7 @@
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "33b52ac9605eadae1fc06f56d948d8c05f2e4fcff4d1c6caf28b5a285c8b6955"
+      "sha256": "b6ec2d9c5b6189fc3a964cb933c3969df3fbd7600cb9c6c2f31ed7c73ec2dc2d"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",
@@ -6371,7 +6472,11 @@
     },
     {
       "file": "e2e/utils/buildLog.ts",
-      "sha256": "aadf6c4c4bd9b4d51007be3ecf211b20dbc183c7c97f4db232424f1c238b137d"
+      "sha256": "7ea7ec95ed8f306b025a4fdb9dafecd0e88a22c08b11e5c7857ef58fef5c790b"
+    },
+    {
+      "file": "e2e/utils/componentInstanceApiContract.ts",
+      "sha256": "b8d24e35c6d79383f462a873c28a201f58083f962ef43f21a81b38f742ecde66"
     },
     {
       "file": "e2e/utils/dev-process-cleanup.ts",
@@ -6379,35 +6484,39 @@
     },
     {
       "file": "e2e/utils/dev-process-env.ts",
-      "sha256": "3542dab6aa27f7d67fdc01f54ef454795e9a25673ce92bbfbc018bf331b60dc0"
+      "sha256": "e0d0b464e608ad4724d4419433ba70bb0e87b4be7351a7d4c695d93a95ce967e"
     },
     {
       "file": "e2e/utils/dev-process.ts",
-      "sha256": "c3cafd7a061fa5d290dce1a93e82913cf53af05e11891bd9693f91143dfdfea4"
+      "sha256": "ed0de3b089ee3de9867b48e543f3a5d4428666a064509f2e6f6dae9d84e71c93"
     },
     {
       "file": "e2e/utils/devProcessDiagnostics.ts",
       "sha256": "4beec47926923d76a2dede312db5bd8019e9ee8f975f416d134a434135fc34e9"
     },
     {
+      "file": "e2e/utils/devProcessStdio.ts",
+      "sha256": "55c4c8f497414d800a790d0772700b33871575e37df0306653c9e818550e86cb"
+    },
+    {
       "file": "e2e/utils/domAcceptance/checkpoint.ts",
-      "sha256": "1fa3872f931e79fdf530226d4cffa890328f51e44c26080be8ec989d81adaa01"
+      "sha256": "dbfb9dc0f4f7636eb0a367d00645d3b3f583b3624c8e4710c6f3923d0038b211"
     },
     {
       "file": "e2e/utils/domAcceptance/errorScope.ts",
-      "sha256": "0e2957b5c9c7ba855c3637b01aa4b6947e288f1c35f5c1f0ae7c352b4732ad73"
+      "sha256": "8aa8053e182665b1f8dc5b6f36edfe886117a5be7d476cda2e49e1dbc4fb5bbb"
     },
     {
       "file": "e2e/utils/domAcceptance/index.ts",
-      "sha256": "80d671420205700b4114d218a963672ef1091add4e75201c71eb6b06d3a8f9ce"
+      "sha256": "01d3191a339089047a53faa0cf2ffc543120ba461867471e58ac0241012d7ef5"
     },
     {
       "file": "e2e/utils/domAcceptance/styles.ts",
-      "sha256": "3153e1e4511706b61caaadc894c022bed9ba6ba2911190ad0ff9aa4ff023c9fa"
+      "sha256": "2ff9625139a0ad38231dc3658b67ce882c623017026751e9f7e622e79ed2a9fc"
     },
     {
       "file": "e2e/utils/domAcceptance/types.ts",
-      "sha256": "3150766e002bd7d7159282045ba972d4fcdac1220fea65991f1169ceca383da0"
+      "sha256": "5479f58371aaf02a978869d440ee6d6b850c8e52b69947d77d74ac5084e5b527"
     },
     {
       "file": "e2e/utils/emittedStylesheet.ts",
@@ -6416,6 +6525,10 @@
     {
       "file": "e2e/utils/hmr-helpers.ts",
       "sha256": "e516f75d96d3e69e34c8e387e1f07074ea017d4d6222ea69fb45c37a72505072"
+    },
+    {
+      "file": "e2e/utils/hmrProbeFailureDiagnostics.ts",
+      "sha256": "d9046ee5aaf45fb838ca4a9d596867c11e588578dbc6e73c51c0f9ee34b67e33"
     },
     {
       "file": "e2e/utils/hmrRuntimeDiagnostics.ts",
@@ -6439,7 +6552,7 @@
     },
     {
       "file": "e2e/utils/opened-automator.ts",
-      "sha256": "102c639abd52076628c633bfbf177494914bc7761e77d5317f2c4c906ac9815e"
+      "sha256": "27ff9483498047451d8f2b823372da61440c9a4963dcfc4f0b75ef4fc444c037"
     },
     {
       "file": "e2e/utils/platform-matrix.ts",
@@ -6460,6 +6573,14 @@
     {
       "file": "e2e/utils/requestClientsRealServer.ts",
       "sha256": "381bda55ebc71414a4023fc67411ccd7479d863230e294faa88921b5254352a8"
+    },
+    {
+      "file": "e2e/utils/runtimeConsoleSessions.ts",
+      "sha256": "0360d8bac67e3c6c8d29fd8fe7849b6d5a4041038f0da7ea3798fc08a05e2e11"
+    },
+    {
+      "file": "e2e/utils/runtimeLogSubscription.ts",
+      "sha256": "10100f9c81e32d89cfa90bc709794e7fffbc29d86ef230c768aeaa3060420b39"
     },
     {
       "file": "e2e/utils/runtimeProvider.ts",
@@ -6483,11 +6604,15 @@
     },
     {
       "file": "e2e/utils/templateAcceptance/native.ts",
-      "sha256": "abf1224a7ebf6f015b3a2674697bb4edc670c5619c5ac7bfff4512543c8b1df1"
+      "sha256": "012bef80e14db3cb472a91c183cb6337927c355a1ea25c4b9c4bec2c998d54a3"
     },
     {
       "file": "e2e/utils/templateAcceptance/retail.ts",
-      "sha256": "0c8444a1ad791778dd795027ca9cfc5cecdf31a750d2a69ad06997eed96c6fd6"
+      "sha256": "45cf6a37e98125de221b55ac3fd41b47bcb4b0a8cf50c8be1c0b77b51fd90126"
+    },
+    {
+      "file": "e2e/utils/templateAcceptance/retailCheckout.ts",
+      "sha256": "31f98bba9f741194ee70405ffeca4971bc4d3c636d742a930591732a730e07ce"
     },
     {
       "file": "e2e/utils/templateAcceptance/wevu.ts",
@@ -6504,6 +6629,10 @@
     {
       "file": "e2e/utils/wevu-vendor.ts",
       "sha256": "27e1dbb4e8a7c3a278278f93f84ef17ac559cb0828d651beda85e40d660fb55d"
+    },
+    {
+      "file": "e2e/utils/wevuTailwindHmrDiagnostics.ts",
+      "sha256": "f18a37f00ae1a7f44bd83bde25e1c8dd7c337632efb7b9449484f0c4f283b5d1"
     },
     {
       "file": "e2e/wevu-runtime.utils.ts",

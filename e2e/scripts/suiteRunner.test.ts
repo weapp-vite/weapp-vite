@@ -2,6 +2,7 @@ import type { SuiteTask } from './suiteRunner'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import {
@@ -194,6 +195,7 @@ describe('suiteRunner', () => {
       ])
 
       expect(result).toBe(0)
+      expect(() => process.kill(Number(fs.readFileSync(pidFile, 'utf8')), 0)).not.toThrow()
     }
     finally {
       if (fs.existsSync(pidFile)) {
@@ -212,35 +214,221 @@ describe('suiteRunner', () => {
     }
   })
 
-  it('fails a task that exceeds the configured task timeout', async () => {
+  it.each(['default', 'graceful'] as const)('fails a %s task that exceeds the configured task timeout', async (termination) => {
     const previousExitCode = process.exitCode
-    const previousTimeout = process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-timeout-'))
+    const startedFile = path.join(tempRoot, 'started')
     process.exitCode = undefined
-    process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS = '200'
 
     try {
       const exitCode = await runTaskSuite('e2e:test', [
         {
           label: 'timeout-task',
           command: process.execPath,
-          args: ['-e', 'setTimeout(() => {}, 5000)'],
+          args: ['-e', `
+            const fs = require('node:fs');
+            if (${JSON.stringify(termination)} === 'graceful') {
+              process.on('SIGTERM', () => process.exit(0));
+            }
+            fs.writeFileSync(process.argv[1], 'started');
+            setInterval(() => {}, 5000);
+          `, startedFile],
+          env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '1000' },
         },
       ], {
         writeReport: false,
       })
 
       expect(exitCode).toBe(1)
+      expect(fs.readFileSync(startedFile, 'utf8')).toBe('started')
+      expect(consoleError).toHaveBeenCalledWith('[e2e] task timeout after 1.0s: timeout-task')
     }
     finally {
-      if (previousTimeout == null) {
-        delete process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS
-      }
-      else {
-        process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS = previousTimeout
-      }
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+      consoleError.mockRestore()
+      process.exitCode = previousExitCode
+    }
+  }, 15_000)
+
+  it.each(['node', 'pnpm'] as const)('preserves argument boundaries through %s', async (command) => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite runner arguments '))
+    const scriptPath = path.join(tempRoot, 'check arguments.cjs')
+    const resultPath = path.join(tempRoot, 'result.json')
+    const args = ['space separated', 'parentheses (kept)', 'quote "kept"', 'ampersand & pipe | redirect >', '', 'backslash\\']
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+    fs.writeFileSync(scriptPath, 'require("node:fs").writeFileSync(process.argv[2], JSON.stringify(process.argv.slice(3)))')
+
+    try {
+      const exitCode = await runTaskSuite('e2e:test', [{
+        label: `${command}-arguments`,
+        command: command === 'node' ? process.execPath : command,
+        args: [...(command === 'pnpm' ? ['exec', 'node'] : []), scriptPath, resultPath, ...args],
+      }], { writeReport: false })
+
+      expect(exitCode).toBe(0)
+      expect(JSON.parse(fs.readFileSync(resultPath, 'utf8'))).toEqual(args)
+    }
+    finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true })
       process.exitCode = previousExitCode
     }
   })
+
+  it('force kills a timed out task that ignores graceful termination', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-force-kill-'))
+    const pidFile = path.join(tempRoot, 'child.pid')
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+
+    try {
+      const exitCode = await runTaskSuite('e2e:test', [{
+        label: 'force-kill-task',
+        command: process.execPath,
+        args: ['-e', `
+          process.on('SIGTERM', () => {});
+          require('node:fs').writeFileSync(process.argv[1], String(process.pid));
+          setInterval(() => {}, 5000);
+        `, pidFile],
+        env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '1000' },
+      }], { writeReport: false })
+
+      const childPid = Number(fs.readFileSync(pidFile, 'utf8'))
+      expect(exitCode).toBe(1)
+      await expect.poll(() => {
+        try {
+          process.kill(childPid, 0)
+          return false
+        }
+        catch (error) {
+          return (error as NodeJS.ErrnoException).code === 'ESRCH'
+        }
+      }, { timeout: 1000 }).toBe(true)
+    }
+    finally {
+      if (fs.existsSync(pidFile)) {
+        try {
+          process.kill(Number(fs.readFileSync(pidFile, 'utf8')), 'SIGKILL')
+        }
+        catch {
+        }
+      }
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+      process.exitCode = previousExitCode
+    }
+  }, 15_000)
+
+  it('cleans up a timed out process tree after its entry process exits gracefully', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-process-tree-'))
+    const parentPidFile = path.join(tempRoot, 'parent.pid')
+    const childPidFile = path.join(tempRoot, 'child.pid')
+    const childScript = path.join(tempRoot, 'child.cjs')
+    const parentScript = path.join(tempRoot, 'parent.cjs')
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+    fs.writeFileSync(childScript, `
+      process.on('SIGTERM', () => {});
+      require('node:fs').writeFileSync(process.argv[2], String(process.pid));
+      setInterval(() => {}, 5000);
+    `)
+    fs.writeFileSync(parentScript, `
+      const fs = require('node:fs');
+      const { spawn } = require('node:child_process');
+      process.on('SIGTERM', () => process.exit(0));
+      fs.writeFileSync(process.argv[2], String(process.pid));
+      spawn(process.execPath, [process.argv[3], process.argv[4]], { stdio: 'ignore' });
+    `)
+
+    try {
+      const exitCode = await runTaskSuite('e2e:test', [{
+        label: 'process-tree-timeout',
+        command: process.execPath,
+        args: [parentScript, parentPidFile, childScript, childPidFile],
+        env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '2000' },
+      }], { writeReport: false })
+
+      expect(exitCode).toBe(1)
+      for (const pidFile of [parentPidFile, childPidFile]) {
+        const pid = Number(fs.readFileSync(pidFile, 'utf8'))
+        await expect.poll(() => {
+          try {
+            process.kill(pid, 0)
+            return false
+          }
+          catch (error) {
+            return (error as NodeJS.ErrnoException).code === 'ESRCH'
+          }
+        }, { timeout: 2000 }).toBe(true)
+      }
+    }
+    finally {
+      for (const pidFile of [parentPidFile, childPidFile]) {
+        if (fs.existsSync(pidFile)) {
+          try {
+            process.kill(Number(fs.readFileSync(pidFile, 'utf8')), 'SIGKILL')
+          }
+          catch {
+          }
+        }
+      }
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+      process.exitCode = previousExitCode
+    }
+  }, 20_000)
+
+  it('cleans up a task that ignores SIGTERM when its runner exits', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-exit-cleanup-'))
+    const childPidFile = path.join(tempRoot, 'child.pid')
+    const runnerScript = path.join(tempRoot, 'runner.mjs')
+    const suiteRunnerUrl = pathToFileURL(path.resolve(import.meta.dirname, 'suiteRunner.ts')).href
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+    fs.writeFileSync(runnerScript, `
+      import fs from 'node:fs';
+      import { runTaskSuite } from ${JSON.stringify(suiteRunnerUrl)};
+      const pidFile = process.argv[2];
+      void runTaskSuite('e2e:test', [{
+        label: 'ignores-termination',
+        command: process.execPath,
+        args: ['-e', 'process.on("SIGTERM", () => {}); require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 5000)', pidFile],
+      }], { writeReport: false });
+      setInterval(() => {
+        if (fs.existsSync(pidFile)) process.exit(0);
+      }, 10);
+    `)
+
+    try {
+      const exitCode = await runTaskSuite('e2e:test', [{
+        label: 'exiting-runner',
+        command: process.execPath,
+        args: ['--import', 'tsx', runnerScript, childPidFile],
+        env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '5000' },
+      }], { writeReport: false })
+      expect(exitCode).toBe(0)
+      const childPid = Number(fs.readFileSync(childPidFile, 'utf8'))
+      await expect.poll(() => {
+        try {
+          process.kill(childPid, 0)
+          return false
+        }
+        catch (error) {
+          return (error as NodeJS.ErrnoException).code === 'ESRCH'
+        }
+      }, { timeout: 2000 }).toBe(true)
+    }
+    finally {
+      if (fs.existsSync(childPidFile)) {
+        try {
+          process.kill(Number(fs.readFileSync(childPidFile, 'utf8')), 'SIGKILL')
+        }
+        catch {
+        }
+      }
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+      process.exitCode = previousExitCode
+    }
+  }, 15_000)
 
   it('keeps ide gate smaller than ide full and includes core runtime coverage', async () => {
     const ideSmokeTasks = await getSuiteTasks('ide-smoke')
@@ -398,6 +586,7 @@ describe('suiteRunner', () => {
     })
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
     expect(ideGithubIssuesLabels).toEqual([
+      'ide/github-issues.runtime.component-instance-apis.test.ts',
       ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
       'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
       'ide/github-issues.runtime.issue547.test.ts',
@@ -523,7 +712,7 @@ describe('suiteRunner', () => {
     expect(JSON.parse(json).reportDir).toBe(path.relative(process.cwd(), report.reportDir).replaceAll('\\', '/'))
   })
 
-  it('enables shell mode for Windows task commands so pnpm resolves correctly', () => {
+  it('keeps Windows task arguments out of shell command strings', () => {
     const options = getTaskSpawnOptions({
       label: 'ci/task',
       command: 'pnpm',
@@ -531,9 +720,11 @@ describe('suiteRunner', () => {
       env: {
         E2E_PLATFORM: 'weapp',
       },
-    }, 'win32')
+    })
 
-    expect(options.shell).toBe(true)
+    expect(options.shell).toBe(false)
+    expect(options.killDescendants).toBe(true)
+    expect(options.killSignal).toBe('SIGKILL')
     expect(options.env).toMatchObject({
       E2E_PLATFORM: 'weapp',
       WEAPP_VITE_E2E_REPORT_MARKERS: '1',

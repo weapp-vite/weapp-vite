@@ -32,12 +32,14 @@ describe.each(['node', 'browser'] as const)('%s component event targets', (provi
       callMethod: (scopeId, method, event) => session.callScopeMethod(scopeId!, method, event),
       createPageHandle: () => ({ data: async () => session.getCurrentPages().at(-1)?.data }),
       createScopeHandle: () => null,
-      ownerScopeId: () => null,
+      ownerScopeId: scopeId => scopeId ? session.getScopeIdForComponent(session.selectOwnerComponent(scopeId)) : null,
     })
     try {
       const page = session.reLaunch('/pages/index/index')
       for (const kind of ['cancel', 'confirm']) {
-        await (await render().$(`#${kind}-native`))!.tap()
+        const dialog = (await render().$('dialog-box'))!
+        const host = (await dialog.$(`#${kind}-host`))!
+        await (await host.$(`#${kind}-native`))!.tap()
         expect(await (await render().$('#result'))?.text()).toBe(`${kind}/${kind}-host/${kind}-native`)
         expect(page.data.result).toEqual({
           kind,

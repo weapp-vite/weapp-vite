@@ -159,13 +159,13 @@ export class HeadlessTestingNodeHandle {
   private query(selector: string) {
     const nodes = querySelectorAll(this.node, selector)
     const scope = this.node.attribs?.['data-sim-scope']
-    if (!this.node.attribs?.['data-sim-component'] || !scope || !this.interactions) {
+    if (!scope || !this.interactions) {
       return nodes
     }
     return nodes.filter((node) => {
       const nodeScope = node.attribs?.['data-sim-scope']
       return nodeScope === scope || (node.attribs?.['data-sim-component']
-        && this.interactions!.ownerScopeId(nodeScope ?? null) === scope)
+        && (this.interactions!.ownerScopeId(nodeScope ?? null) ?? resolvePageScopeId(nodeScope)) === scope)
     })
   }
 

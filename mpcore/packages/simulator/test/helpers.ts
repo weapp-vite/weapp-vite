@@ -1752,6 +1752,7 @@ Page({
   },
 })
 `)
+  writeText(path.join(root, 'dist/pages/home/index.wxml'), '<view id="launch-status">{{ok ? "页面已启动" : "页面未就绪"}}</view>\n')
 
   return root
 }

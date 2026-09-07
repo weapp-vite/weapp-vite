@@ -7,6 +7,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { captureHmrProbeFailure } from '../utils/hmrProbeFailureDiagnostics'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile, waitForVendorFileContains } from '../wevu-runtime.utils'
 import { CLASSIC_WXS_RELOAD_CHECKPOINT, waitForClassicWxsReload } from './wevuRuntimeDom/classicWxs'
@@ -142,6 +143,16 @@ async function waitForStorageMarker(miniProgram: any, storageKey: string, expect
     await new Promise(resolve => setTimeout(resolve, 220))
   }
   const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
+  await captureHmrProbeFailure({
+    miniProgram,
+    route: '/pages/layouts/index',
+    storageKey,
+    expected,
+    files: {
+      distRoot: DIST_ROOT,
+      relativePaths: ['shared-layout-hmr/layout-template.wxml', 'shared-layout-hmr/layout-include.wxml', 'shared-layout-hmr/layout-helper.wxs'],
+    },
+  })
   throw new Error(`Timed out waiting storage marker: key=${storageKey} expected=${expected}; reason=${reason}; lastState=${JSON.stringify(lastState)}`)
 }
 

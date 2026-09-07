@@ -49,8 +49,7 @@ describe('e2e app: github-issues / issue #615', { concurrent: false }, () => {
           scope: [
             '#issue615-tabbar',
             { has: '#issue615-item-issue-615-tab-1' },
-            `#issue615-item-${label}`,
-            { has: `#${label}` },
+            // text 声明在泛型组件中，不能从接收原生 slot 的 TabbarItem 查询。
           ],
         })),
         { selector: 'component', scope: ['#issue615-tabbar', { has: '#issue615-item-issue-615-tab-1' }], count: 3 },

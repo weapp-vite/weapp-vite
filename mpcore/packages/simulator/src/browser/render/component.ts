@@ -12,8 +12,8 @@ import {
   normalizeComponentPropertyValue,
   runComponentLifecycle,
   runComponentObservers,
-  runComponentPageLifetime,
 } from '../../runtime/componentInstance'
+import { resolveMiniProgramComponent } from '../../runtime/componentResolution'
 import { collectMiniProgramEventBindings } from '../../view/eventBinding'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
 import { wxsScopeData } from '../../view/wxs'
@@ -47,7 +47,7 @@ export function resolveComponentRegistryEntry(
 
   const filePath = `${componentBasePath}.js`
   const templatePath = `${componentBasePath}.wxml`
-  const definition = context.moduleLoader.executeComponentModule(filePath, componentBasePath)
+  const definition = context.moduleLoader.executeComponentModule(join(context.project.miniprogramRootPath, filePath), componentBasePath)
   return {
     definition,
     filePath,
@@ -74,7 +74,7 @@ function resolveUsingComponents(
   ownerFilePath: string,
 ) {
   try {
-    const parsed = readComponentConfig(context.files, ownerJsonPath)
+    const parsed = readComponentConfig(context.files, join(context.project.miniprogramRootPath, ownerJsonPath))
     const usingComponents = parsed.usingComponents
     if (!usingComponents || typeof usingComponents !== 'object' || Array.isArray(usingComponents)) {
       return new Map<string, string>()
@@ -86,9 +86,12 @@ function resolveUsingComponents(
         continue
       }
       const pluginRequest = resolvePluginRequest(context.project.plugins, rawPath, 'publicComponent')
-      const basePath = pluginRequest?.resourcePath ?? (rawPath.startsWith('/')
-        ? rawPath.replace(LEADING_SLASH_RE, '')
-        : normalize(join(dirname(ownerFilePath), rawPath)))
+      const basePath = pluginRequest?.resourcePath ?? resolveMiniProgramComponent(
+        ownerFilePath,
+        rawPath,
+        context.project.miniprogramRootPath,
+        candidate => readBrowserVirtualFile(context.files, candidate) !== undefined,
+      )
       resolved.set(alias, basePath.replace(LEADING_SLASH_RE, ''))
     }
     return resolved
@@ -105,7 +108,7 @@ export function resolveComponentGenerics(
   ownerFilePath: string,
   componentFilePath: string,
 ) {
-  const componentJsonPath = `${componentFilePath.replace(JS_FILE_RE, '')}.json`
+  const componentJsonPath = join(context.project.miniprogramRootPath, `${componentFilePath.replace(JS_FILE_RE, '')}.json`)
   const componentGenerics = readComponentConfig(context.files, componentJsonPath).componentGenerics
   if (!componentGenerics || typeof componentGenerics !== 'object' || Array.isArray(componentGenerics)) {
     return undefined
@@ -309,7 +312,6 @@ export function createBrowserComponentInstance(
     : nextProperties
   const componentInstance = createComponentInstance({
     definition: componentEntry.definition,
-    properties: componentProperties,
     requestRender: callback => context.session.requestRender(callback),
     triggerEvent: buildComponentTrigger(componentScopeId, context, clonedNode),
   })
@@ -317,6 +319,7 @@ export function createBrowserComponentInstance(
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
   componentInstance.createMediaQueryObserver = () => context.session.createMediaQueryObserver(componentInstance)
+  componentInstance.createSelectorQuery = () => context.moduleLoader.wx.createSelectorQuery().in(componentInstance)
   componentInstance.selectComponent = (selector: string) => context.session.selectComponentWithin(componentScopeId, selector)
   componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector)
   componentInstance.selectOwnerComponent = () => ownerScopeId
@@ -324,12 +327,10 @@ export function createBrowserComponentInstance(
     : null
   context.componentCache.set(componentScopeId, componentInstance)
   runComponentLifecycle(componentInstance, 'created')
-  runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(componentProperties), {})
   componentInstance.__propertySnapshots = Object.fromEntries(
     Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
   )
-  runComponentLifecycle(componentInstance, 'attached')
-  runComponentPageLifetime(componentInstance, 'show')
+  syncComponentProperties(componentInstance, componentInstance.__definition__ ?? componentEntry.definition, componentProperties, {}, [])
   return componentInstance
 }
 
@@ -350,10 +351,11 @@ export function renderBrowserComponentTemplate(
   componentScopeId: string,
   seenComponentScopes: Set<string>,
 ) {
-  const componentTemplate = readTemplateSource(context.files, componentEntry.templatePath)
+  const templatePath = join(context.project.miniprogramRootPath, componentEntry.templatePath)
+  const componentTemplate = readTemplateSource(context.files, templatePath)
   const componentDocument = parseTemplateDocument(componentTemplate)
   const componentRoot = (componentDocument.children ?? [])[0] ?? componentDocument
-  const templateRenderState = prepareTemplateRenderState(context.files, componentRoot, componentEntry.templatePath, context.project.miniprogramRootPath, getBrowserWxsLoader(context.moduleLoader, context.files))
+  const templateRenderState = prepareTemplateRenderState(context.files, componentRoot, templatePath, context.project.miniprogramRootPath, getBrowserWxsLoader(context.moduleLoader, context.files))
   return renderNodeTree(
     componentRoot,
     componentScope,

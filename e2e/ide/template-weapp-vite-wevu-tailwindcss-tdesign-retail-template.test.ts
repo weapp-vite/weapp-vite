@@ -10,6 +10,7 @@ import { createDomAcceptance } from '../utils/domAcceptance'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { assertTemplateRouteCoverage, resolveTemplateDomPlan, tapTemplateNode } from '../utils/templateAcceptance'
 import { RETAIL_TEMPLATE_DOM } from '../utils/templateAcceptance/retail'
+import { RETAIL_CHECKOUT_GOODS } from '../utils/templateAcceptance/retailCheckout'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -35,19 +36,7 @@ const ROUTE_QUERY_OVERRIDES = new Map<string, string>([
   ['pages/order/invoice/index', 'orderNo=132381532610540875'],
 ])
 
-const ORDER_CONFIRM_GOODS_REQUEST_LIST = JSON.stringify([
-  {
-    quantity: 1,
-    storeId: 1000,
-    uid: 'u1000',
-    saasId: 's1000',
-    spuId: 'spu1000',
-    goodsName: '测试商品',
-    skuId: 'sku1000',
-    storeName: '测试门店',
-    roomId: 'r1000',
-  },
-])
+const ORDER_CONFIRM_GOODS_REQUEST_LIST = JSON.stringify(RETAIL_CHECKOUT_GOODS)
 
 const STRUCTURE_SIMILARITY_THRESHOLD = Number.parseFloat(process.env.RETAIL_PARITY_STRUCTURE_THRESHOLD || '0.93')
 const STATIC_STRUCTURE_SIMILARITY_THRESHOLD = Number.parseFloat(process.env.RETAIL_PARITY_STATIC_STRUCTURE_THRESHOLD || '0.6')

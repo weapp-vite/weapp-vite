@@ -5,13 +5,21 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
 text,
 ::after,
 ::before {
-    --tw-font-weight:;
-    --tw-inset-ring-shadow: 0 0 #0000;
-    --tw-inset-shadow: 0 0 #0000;
-    --tw-leading:;
-    --tw-ring-offset-shadow: 0 0 #0000;
-    --tw-ring-shadow: 0 0 #0000;
-    --tw-shadow: 0 0 #0000;
+    --tw-font-weight: initial;
+    --tw-inset-ring-color: initial;
+    --tw-inset-ring-shadow: 0 0 transparent;
+    --tw-inset-shadow: 0 0 transparent;
+    --tw-inset-shadow-alpha: 100%;
+    --tw-inset-shadow-color: initial;
+    --tw-leading: initial;
+    --tw-ring-color: initial;
+    --tw-ring-inset: initial;
+    --tw-ring-offset-color: #fff;
+    --tw-ring-offset-shadow: 0 0 transparent;
+    --tw-ring-offset-width: 0;
+    --tw-ring-shadow: 0 0 transparent;
+    --tw-shadow: 0 0 transparent;
+    --tw-shadow-alpha: 100%;
     --tw-shadow-color: initial;
     border: 0 solid;
     box-sizing: border-box;
@@ -25,9 +33,10 @@ wx-root-portal-content {
     --color-white: #fff;
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif,
-    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial,
+    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --font-weight-semibold: 600;
 }
 .mt-_b12rpx_B {
@@ -38,6 +47,9 @@ wx-root-portal-content {
 }
 .mt-_b24rpx_B {
     margin-top: 24rpx;
+}
+.block {
+    display: block;
 }
 .min-h-screen {
     min-height: 100vh;
@@ -96,32 +108,9 @@ wx-root-portal-content {
 }
 .shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B {
     --tw-shadow: 0 18rpx 40rpx var(--tw-shadow-color, #11182714);
-    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
-    var(--tw-shadow);
-}
-page {
-    background-color: #f6f7fb;
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
 }
 "
 `;
 
-exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::pages/index/index 1`] = `
-"<view class="min-h-screen bg-_b_hf6f7fb_B px-_b28rpx_B py-_b32rpx_B text-_b_h1f1a3f_B">
-  <view class="rounded-_b28rpx_B bg-white p-_b28rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
-    <t-tag theme="primary" variant="light">wevu</t-tag>
-    <view class="mt-_b16rpx_B text-_b38rpx_B font-semibold">TDesign 最小模板</view>
-    <view class="mt-_b12rpx_B text-_b24rpx_B leading-_b1_d6_B text-_b_h64748b_B">
-      保留 Vue SFC、Tailwind CSS 与 TDesign 自动导入的最小组合，复杂验证场景已迁到 e2e-apps。
-    </view>
-    <view class="mt-_b24rpx_B rounded-_b20rpx_B bg-_b_hf4f6ff_B p-_b20rpx_B">
-      <text class="text-_b24rpx_B text-_b_h51517c_B" id="count-label">{{buttonText}}</text>
-    </view>
-    <view id="count-button">
-      <t-button class="mt-_b24rpx_B count-button-control" theme="primary" block="" data-wd-tap="1" data-wi-tap="i0">
-        点一下
-      </t-button>
-    </view>
-  </view>
-</view>
-"
-`;
+exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::pages/index/index 1`] = `"<view class="min-h-screen bg-_b_hf6f7fb_B px-_b28rpx_B py-_b32rpx_B text-_b_h1f1a3f_B"><view class="rounded-_b28rpx_B bg-white p-_b28rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B"><t-tag theme="primary" variant="light"> wevu </t-tag><view class="mt-_b16rpx_B text-_b38rpx_B font-semibold"> TDesign 最小模板 </view><view class="mt-_b12rpx_B text-_b24rpx_B leading-_b1_d6_B text-_b_h64748b_B"> 保留 Vue SFC、Tailwind CSS 与 TDesign 自动导入的最小组合，复杂验证场景已迁到 e2e-apps。 </view><view class="mt-_b24rpx_B rounded-_b20rpx_B bg-_b_hf4f6ff_B p-_b20rpx_B"><text class="text-_b24rpx_B text-_b_h51517c_B" id="count-label">{{buttonText}}</text></view><view id="count-button"><t-button class="mt-_b24rpx_B count-button-control" theme="primary" block="" data-wd-tap="1" data-wi-tap="i0"> 点一下 </t-button></view></view></view>"`;

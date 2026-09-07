@@ -546,6 +546,9 @@ describe('emitSharedVueEntryAssets', () => {
           buildScope: {
             include: ['subs'],
           },
+          subPackages: {
+            subs: { independent: true },
+          },
           json: {
             defaults: {
               app: {
@@ -635,6 +638,7 @@ describe('emitSharedVueEntryAssets', () => {
         {
           root: 'subs',
           pages: ['issue-793/index'],
+          independent: true,
         },
       ],
       tabBar: {

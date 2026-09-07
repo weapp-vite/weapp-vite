@@ -18,6 +18,22 @@ import {
 } from './helpers'
 import { RuntimeDiagnosticJournal } from './runtimeDiagnostics'
 
+function formatStrictAcceptanceFailure(report: AcceptanceReport) {
+  const summary = report.summary
+  const reasons = [...new Set([
+    ...report.errors,
+    ...report.cases.flatMap(item => item.status === 'passed'
+      ? []
+      : [`${item.name}: ${item.status}`, ...item.violations, ...(item.errors ?? [])]),
+  ].map(reason => String(sanitizeAcceptanceValue(reason)).replace(/\s+/g, ' ').trim()))]
+  return [
+    `Strict DOM acceptance failed: DOM cases ${summary.passedCount}/${summary.plannedCount} passed; checkpoints ${summary.capturedCheckpointCount}/${summary.plannedCheckpointCount} captured; run errors ${report.errors.length}`,
+    `Case coverage: failed=${summary.failedCount}, blocked=${summary.blockedCount}, skipped=${summary.skippedCount}, not-executed=${summary.notExecutedCount}`,
+    ...reasons.slice(0, 3).map(reason => `- ${reason.length > 600 ? `${reason.slice(0, 600)}…` : reason}`),
+    ...(reasons.length > 3 ? [`- ${reasons.length - 3} additional reasons in the DOM acceptance report`] : []),
+  ].join('\n')
+}
+
 export default class DomAcceptanceReporter implements Reporter {
   private readonly identity = createAcceptanceIdentity()
   private readonly invocationId = randomUUID()
@@ -77,7 +93,7 @@ export default class DomAcceptanceReporter implements Reporter {
     const report = this.persist(messages, new Date().toISOString())
     if (this.strict && report.status !== 'passed') {
       process.exitCode = 1
-      throw new Error(`Strict DOM acceptance failed: ${report.summary.passedCount}/${report.summary.plannedCount} cases accepted`)
+      throw new Error(formatStrictAcceptanceFailure(report))
     }
   }
 

@@ -1,6 +1,7 @@
 import type { DomAcceptance, DomCheckpoint, DomPage, DomSession } from './types'
 import { describe, expect, it, vi } from 'vitest'
 import { assertDomAcceptanceComplete, captureDomCheckpoint, validateDomPlan } from './checkpoint'
+import { createDomAcceptance } from './index'
 
 const checkpoint: DomCheckpoint = {
   id: 'initial',
@@ -31,6 +32,23 @@ function createPlan(): DomAcceptance {
 }
 
 describe('DOM acceptance evidence', () => {
+  it.for([
+    { name: 'weapp-vite-multi-platform-template-dom-acceptance-a' },
+    { name: 'weapp-vite-multi-platform-template-dom-acceptance-b' },
+  ])('registers $name with its Vitest parameter context', async ({ name }, context) => {
+    const { page, session } = createPage()
+    expect(context.task.name).toBe(`registers ${name} with its Vitest parameter context`)
+    expect(context.task.meta.domAcceptance).toBeUndefined()
+    const dom = createDomAcceptance(context, `templates/${name}`, [checkpoint])
+    await dom.check('initial', session, page, 100)
+    const plan = context.task.meta.domAcceptance!
+    expect(plan.fixture).toBe(`templates/${name}`)
+    expect(plan.evidence).toHaveLength(1)
+    expect(plan.evidence[0]).toMatchObject({ id: 'initial', route: 'pages/index/index' })
+    expect(() => assertDomAcceptanceComplete(plan)).not.toThrow()
+    expect(() => createDomAcceptance(context, `templates/${name}`, [checkpoint])).toThrow('exactly once')
+  })
+
   it('queries the actual frame and captures visible text', async () => {
     const { page, session } = createPage()
     const plan = createPlan()
@@ -212,6 +230,19 @@ describe('DOM acceptance evidence', () => {
     plan.provider = 'headless'
     plan.checkpoints[0]!.nodes[0]!.visible = true
     expect(() => validateDomPlan(plan)).toThrow('cannot provide layout')
+  })
+
+  it('captures rpx calculation evidence only from actual IDE window dimensions', async () => {
+    const { page, session } = createPage()
+    page.$$ = async () => [{ text: async () => 'ready', style: async () => '96px' }]
+    session.systemInfo = async () => ({ windowWidth: 390 })
+    const calculated: DomCheckpoint = { ...checkpoint, nodes: [{ selector: '#message', styles: { width: { rpxCalc: { value: 8, multiply: 24 } } } }] }
+    const evidence = await captureDomCheckpoint(session, page, calculated, 'devtools', 0)
+    expect(evidence.windowWidth).toBe(390)
+    expect(evidence.nodes[0]?.nodes[0]?.styles).toEqual({ width: '96px' })
+    await expect(captureDomCheckpoint(session, page, calculated, 'headless', 0)).rejects.toThrow('real IDE window dimensions')
+    session.systemInfo = async () => ({})
+    await expect(captureDomCheckpoint(session, page, calculated, 'devtools', 0)).rejects.toThrow('Invalid responsive calculation evidence')
   })
 
   it.each([{ scope: ['component'] }, { has: '.child' }])('rejects ambiguous CSS filters on XPath queries: %j', async (filter) => {

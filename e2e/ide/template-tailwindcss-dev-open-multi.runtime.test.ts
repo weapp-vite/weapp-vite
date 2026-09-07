@@ -111,7 +111,7 @@ async function waitForPageText(miniProgram: any, route: string, text: string, ti
 }
 
 describe('template TailwindCSS dev:open multi-project IDE integration', { concurrent: false }, () => {
-  it.each(ACTIVE_TEMPLATE_CASES)('$name renders after the previous dev:open process exits', async (templateCase, ctx) => {
+  it.for(ACTIVE_TEMPLATE_CASES)('$name renders after the previous dev:open process exits', async (templateCase, ctx) => {
     const dom = createDomAcceptance(ctx, `templates/${templateCase.name}`, [templateDevOpenCheckpoint(templateCase)])
     expect(USE_PRESTARTED_TEMPLATE_DEV, '该场景必须通过外层 template dev:open runner 执行').toBe(true)
     expect(ACTIVE_TEMPLATE_CASES).toHaveLength(1)

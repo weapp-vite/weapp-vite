@@ -111,10 +111,10 @@ describe('stateful session initial chunk package boundaries', () => {
     expect(ctx.configService!.weappViteConfig.subPackages).toBeUndefined()
 
     harness.output = [
-      { ...chunk('app.js', 'app'), isEntry: true },
+      { ...chunk('app.js', 'app'), code: 'require("./rolldown-runtime.js"); __rolldown_runtime__.registerModule("app");', isEntry: true },
       {
         ...chunk('rolldown-runtime.js', 'runtime'),
-        code: 'globalThis.__rolldown_runtime__ = { initialChunkLoaders: new Map() };',
+        code: 'globalThis.__rolldown_runtime__ = { initialChunkLoaders: new Map(), registerModule() {} };',
       },
       chunk('vendor/main.js', 'main-shared'),
       chunk('feature/vendor.js', 'feature-shared'),
@@ -132,13 +132,17 @@ describe('stateful session initial chunk package boundaries', () => {
       if (!runtime || runtime.type !== 'chunk') {
         throw new Error('Missing captured session runtime output')
       }
+      const app = files.find(file => file.type === 'chunk' && file.fileName === 'app.js')
+      if (!app || app.type !== 'chunk') {
+        throw new Error('Missing captured application output')
+      }
       const require = vi.fn()
       const nativePage = vi.fn()
-      const state = runInNewContext(`${runtime.code}\nglobalThis.__rolldown_runtime__`, { require, Page: nativePage }) as {
+      const state = runInNewContext(`${runtime.code}\n${app.code}\nglobalThis.__rolldown_runtime__`, { require, Page: nativePage }) as {
         initialChunkLoaders: Map<string, unknown>
       }
       expect([...state.initialChunkLoaders.keys()]).toEqual(['main-shared'])
-      expect(require).not.toHaveBeenCalled()
+      expect(require.mock.calls).toEqual([['./rolldown-runtime.js']])
       expect(nativePage).not.toHaveBeenCalled()
     }
     finally {

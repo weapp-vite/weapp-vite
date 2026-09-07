@@ -27,7 +27,7 @@ export function templateDevOpenCheckpoint(template: TemplateDevOpenCase): DomChe
       action: 'dev:open 后检查插件宿主呈现的 API 结果和插件入口',
       nodes: [
         { selector: '.hero__title', text: '插件能力混合演示' },
-        { selector: '.panel__line:nth-child(2)', text: 'plugin.answer = 42' },
+        { selector: '#plugin-answer', text: 'plugin.answer = 42' },
         { selector: 'navigator', count: 2 },
       ],
     }

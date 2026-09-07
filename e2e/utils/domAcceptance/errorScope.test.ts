@@ -1,12 +1,15 @@
 import type { DomAcceptance } from './types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { appendIdeReportEvent } from '../ideWarningReport'
+import { flushRuntimeConsoleSessions } from '../runtimeConsoleSessions'
 import { validateDomPlan } from './checkpoint'
 import { runDomCheckpointAction } from './errorScope'
 
 vi.mock('../ideWarningReport', () => ({ appendIdeReportEvent: vi.fn() }))
+vi.mock('../runtimeConsoleSessions', () => ({ flushRuntimeConsoleSessions: vi.fn(async () => {}) }))
 
 beforeEach(() => {
+  vi.mocked(flushRuntimeConsoleSessions).mockReset().mockResolvedValue(undefined)
   vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', 'runtime.jsonl')
 })
 
@@ -25,6 +28,45 @@ function createPlan(): DomAcceptance {
 }
 
 describe('DOM checkpoint diagnostic scopes', () => {
+  it('flushes previous errors before start and action errors before end', async () => {
+    vi.mocked(flushRuntimeConsoleSessions)
+      .mockImplementationOnce(async () => {
+        appendIdeReportEvent({ source: 'runtime', kind: 'message', level: 'error', text: 'previous error' })
+      })
+      .mockImplementationOnce(async () => {
+        await Promise.resolve()
+        appendIdeReportEvent({ source: 'runtime', kind: 'message', level: 'error', text: 'action error' })
+      })
+    await runDomCheckpointAction(createPlan(), 'case-a', 'reject', async () => {})
+    expect(vi.mocked(appendIdeReportEvent).mock.calls.map(([entry]) => entry.acceptanceScope?.boundary ?? entry.text)).toEqual([
+      'previous error',
+      'start',
+      'action error',
+      'end',
+    ])
+  })
+
+  it('does not open a scope when the previous boundary cannot flush', async () => {
+    const failure = new Error('previous flush failed')
+    vi.mocked(flushRuntimeConsoleSessions).mockRejectedValueOnce(failure)
+    const action = vi.fn(async () => {})
+    await expect(runDomCheckpointAction(createPlan(), 'case-a', 'reject', action)).rejects.toBe(failure)
+    expect(action).not.toHaveBeenCalled()
+    expect(appendIdeReportEvent).not.toHaveBeenCalled()
+  })
+
+  it('retains action and flush failures and closes the failed scope', async () => {
+    const actionFailure = new Error('action failed')
+    const flushFailure = new Error('flush failed')
+    vi.mocked(flushRuntimeConsoleSessions).mockResolvedValueOnce(undefined).mockRejectedValueOnce(flushFailure)
+    await expect(runDomCheckpointAction(createPlan(), 'case-a', 'reject', async () => {
+      throw actionFailure
+    })).rejects.toMatchObject({
+      errors: [actionFailure, flushFailure],
+    })
+    expect(vi.mocked(appendIdeReportEvent).mock.lastCall?.[0].acceptanceScope?.boundary).toBe('end')
+  })
+
   it('brackets the operation with its case and checkpoint identity', async () => {
     const plan = createPlan()
     const operation = vi.fn(async () => {

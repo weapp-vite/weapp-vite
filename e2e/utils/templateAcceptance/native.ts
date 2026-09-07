@@ -1,12 +1,11 @@
-import type { DomNodeExpectation } from '../domAcceptance/types'
+import type { DomNodeExpectation, DomScope } from '../domAcceptance/types'
 import type { TemplateDomRoute } from './index'
 import { renderedText, templatePage } from './index'
 
 const INDEX = '/pages/index/index'
 const LAYOUTS = '/pages/layouts/index'
 
-export function nativeLayouts(title: string, adminTitle: string, plain = false): TemplateDomRoute {
-  const statusSelector = plain ? '.hero__desc' : '.leading-7'
+export function nativeLayouts(title: string, adminTitle: string, plain = false, statusSelector = plain ? '.hero__desc' : '.leading-7'): TemplateDomRoute {
   const titleSelector = plain ? '.hero__title' : '.text-2xl'
   const status = (value: string) => renderedText(statusSelector, `当前状态：${value}`)
   return templatePage(LAYOUTS, [
@@ -58,7 +57,48 @@ export function tailwindTemplateDom(kind: 'tailwind' | 'tdesign' | 'vant'): Temp
   }
   const adminTitles = { tailwind: 'Tailwind Console', tdesign: 'TDesign Console', vant: 'Vant Console' }
   const titleSelector = kind === 'tailwind' ? '.text-xl' : '.text-3xl'
-  const content: DomNodeExpectation[] = [renderedText(titleSelector, titles[kind], [{ has: titleSelector }])]
+  const titleScope: DomScope[] = [{ has: titleSelector }]
+  const artworkScope: DomScope[] = kind === 'tdesign' ? titleScope : []
+  const content: DomNodeExpectation[] = [
+    {
+      ...renderedText(titleSelector, titles[kind], titleScope),
+      styles: {
+        'font-size': { rpx: kind === 'tailwind' ? 40 : 60 },
+        'line-height': { rpxCalc: { value: kind === 'tailwind' ? 40 : 60, multiply: kind === 'tailwind' ? 1.4 : 1.2 } },
+      },
+      visible: true,
+    },
+    {
+      ...renderedText('.bg-linear-to-r', 'weapp-vite & weapp-tailwindcss', artworkScope),
+      styles: {
+        'background-image': 'linear-gradient(to right, rgb(5, 223, 114) 0%, rgb(0, 187, 253) 100%)',
+      },
+      visible: true,
+    },
+    {
+      selector: '.w-24.h-24.bg-no-repeat',
+      scope: artworkScope,
+      count: 1,
+      styles: {
+        'background-image': 'url("https://vite.weapp.dev/logo.png")',
+        'width': { rpxCalc: { value: 8, multiply: 24 } },
+        'height': { rpxCalc: { value: 8, multiply: 24 } },
+      },
+      visible: true,
+    },
+    {
+      selector: '.w-32.h-24.bg-no-repeat',
+      scope: artworkScope,
+      count: 1,
+      styles: {
+        'background-image': 'url("https://vite.weapp.dev/tw-logo.png")',
+        'width': { rpxCalc: { value: 8, multiply: 32 } },
+        'height': { rpxCalc: { value: 8, multiply: 24 } },
+        'margin-left': { rpxCalc: { value: 8, multiply: 8 } },
+      },
+      visible: true,
+    },
+  ]
   const theme = (mode: 'light' | 'dark'): DomNodeExpectation => ({
     selector: mode === 'light' ? '.min-h-screen.bg-gray-100' : '.min-h-screen.bg-gray-900',
     styles: { 'background-color': mode === 'light' ? 'rgb(243, 244, 246)' : 'rgb(16, 24, 40)' },
@@ -75,7 +115,7 @@ export function tailwindTemplateDom(kind: 'tailwind' | 'tdesign' | 'vant'): Temp
       { selector: 'image', attributes: { src: '/logo.png' }, visible: true },
     ]))
   }
-  routes.push(nativeLayouts(layoutTitles[kind], adminTitles[kind]))
+  routes.push(nativeLayouts(layoutTitles[kind], adminTitles[kind], false, kind === 'tailwind' ? '.bg-linear-to-br .leading-7' : undefined))
   return routes
 }
 

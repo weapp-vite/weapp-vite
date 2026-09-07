@@ -65,6 +65,8 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
+  'ide/wevu-runtime.core-hmr.test.ts',
+  'ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
   'ide/github-issues.runtime.app-shell.test.ts',
@@ -90,6 +92,7 @@ export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
 ] as const
 const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
 const IDE_GITHUB_ISSUES_PATTERNS = [
+  'ide/github-issues.runtime.component-instance-apis.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   // wx.downloadFile 的域名校验依赖完整独立项目，不能复用聚合目标的裁剪构建。
   'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
@@ -122,6 +125,7 @@ const IDE_WEVU_FEATURES_PATTERNS = [
   'ide/wevu-router-hmr.runtime.test.ts',
 ]
 const IDE_TEMPLATES_PATTERNS = [
+  'ide/template-retail-checkout.runtime.test.ts',
   'ide/devtools-cli-workflow.runtime.test.ts',
   'ide/mcp-runtime-tools.runtime.test.ts',
   'ide/template-dev-open-all.runtime.test.ts',
@@ -201,6 +205,8 @@ const IDE_GATE_TESTS = [
   'ide/wevu-features.runtime.behavior.test.ts',
 ].map(testPath => path.resolve(ROOT, testPath))
 const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/github-issues.runtime.component-instance-apis.test.ts',
+  'ide/template-retail-checkout.runtime.test.ts',
   'ide/app-prelude-native.runtime.test.ts',
   'ide/auto-routes-define-app-json.runtime.test.ts',
   'ide/react-runtime-spike.runtime.test.ts',
@@ -212,6 +218,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/template-weapp-vite-multi-platform-sfc-template.test.ts',
   'ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts',
   'ide/chunk-modes.runtime.duplicate.test.ts',
+  'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
   'ide/chunk-modes.runtime.hoist.test.ts',
   'ide/chunk-modes.runtime.extras.test.ts',
   'ide/subpackage-shared-strategy-complex.runtime.test.ts',

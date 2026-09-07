@@ -79,13 +79,13 @@ describe('wevu JSX/TSX stateful HMR in real WeChat DevTools', { concurrent: fals
       env: createDevProcessEnv(),
       reject: false,
     })
+    await devProcess.waitForInitialBuild()
     await devProcess.waitFor(
       waitForStatefulHmrControl(CONTROL_OUTPUT),
       'JSX stateful HMR control ready',
     )
 
     miniProgram = await launchAutomator({
-      deferBridgeWrapperSyncUntilConnected: true,
       launchMode: 'bridge',
       maxLaunchRetries: 1,
       projectPath: WEVU_JSX_APP_ROOT,

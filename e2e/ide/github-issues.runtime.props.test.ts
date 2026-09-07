@@ -202,15 +202,9 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
       if (!issuePage) {
         throw new Error('Failed to launch issue-955 page')
       }
-      await issuePage.waitForRendered({
-        dataset: {
-          summary: 'string:SALE|string:',
-        },
-        selector: '.issue955-probe',
-        timeout: 15_000,
-      })
-
       const activeMiniProgram = await getSharedMiniProgram(ctx)
+      // 首屏就绪由组件作用域内的六项 DOM 断言确认，页面查询不能穿透原生组件边界。
+      await dom.check('initial', activeMiniProgram, issuePage)
       const initial = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E')
       expect(initial).toEqual({
         ready: true,
@@ -220,13 +214,11 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
         },
         child: {
           content: 'string:SALE',
-          src: 'string:',
+          src: 'null',
           nullable: 'null',
-          initialSummary: 'string:SALE|string:',
+          initialSummary: 'string:SALE|null',
         },
       })
-      await dom.check('initial', activeMiniProgram, issuePage)
-
       const numberValue = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E', 'number')
       expect(numberValue).toMatchObject({
         parent: {
@@ -248,8 +240,8 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
           src: 'null',
         },
         child: {
-          content: 'number:0',
-          src: 'string:',
+          content: 'null',
+          src: 'null',
           nullable: 'null',
         },
       })
@@ -262,8 +254,8 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
           src: 'undefined',
         },
         child: {
-          content: 'number:0',
-          src: 'string:',
+          content: 'null',
+          src: 'null',
           nullable: 'null',
         },
       })
@@ -281,7 +273,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
           nullable: 'string:string-label',
         },
       })
-      expect(stringValue.child.initialSummary).toBe('string:SALE|string:')
+      expect(stringValue.child.initialSummary).toBe('string:SALE|null')
       await dom.check('string', activeMiniProgram, issuePage)
       expect(runtimeErrors.getLogsSince(marker).filter(log => ISSUE_955_TYPE_WARNING_RE.test(log))).toEqual([])
     }

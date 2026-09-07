@@ -5,6 +5,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { createDevProcessDiagnostics } from './devProcessDiagnostics'
+import { captureDevProcessOutput } from './devProcessStdio'
 import { resolveReportProjectPath } from './ideWarningReport'
 
 interface DevProcessExitInfo {
@@ -17,6 +18,7 @@ interface DevProcessController {
   pid: number | undefined
   waitFor: <T>(task: Promise<T>, description: string) => Promise<T>
   waitForOutput: (matcher: string | RegExp, description: string, timeoutMs?: number) => Promise<string>
+  waitForInitialBuild: (timeoutMs?: number) => Promise<string>
   getOutput: () => string
   stop: (forceKillDelayMs?: number) => Promise<void>
 }
@@ -265,7 +267,7 @@ export function startDevProcess(
     cwd: options?.cwd,
   }
   const child = execa(command, args, {
-    ...options,
+    ...captureDevProcessOutput(options),
     env: options?.env ?? process.env,
     extendEnv: false,
   })
@@ -345,6 +347,9 @@ export function startDevProcess(
   }
 
   const waitForOutput = async (matcher: string | RegExp, description: string, timeoutMs = 90_000) => {
+    if (!child.all && !child.stdout && !child.stderr) {
+      throw new Error(appendRecentOutput(`Waiting for ${description} requires captured stdout or stderr; use pipe or inherit output`, outputChunks, spawnInfo))
+    }
     const start = Date.now()
     while (Date.now() - start < timeoutMs) {
       const output = outputChunks.join('')
@@ -379,6 +384,7 @@ export function startDevProcess(
     pid: child.pid,
     waitFor,
     waitForOutput,
+    waitForInitialBuild: (timeoutMs?: number) => waitForOutput('小程序初次构建完成', 'mini program initial build completion', timeoutMs),
     getOutput: () => outputChunks.join(''),
     stop,
   }

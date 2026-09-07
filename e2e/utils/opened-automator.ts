@@ -101,7 +101,7 @@ export async function waitForOpenedAutomator(
       }
       try {
         enhanceMiniProgramWithRuntimeLogs(miniProgram, resolveReportProjectPath(projectPath))
-        await miniProgram.enableLog(appReadyTimeoutMs)
+        await miniProgram.enableLog(appReadyTimeoutMs, { structured: true })
       }
       catch (error) {
         await closeStaleMiniProgram(miniProgram)

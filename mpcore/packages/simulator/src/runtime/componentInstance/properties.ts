@@ -48,6 +48,7 @@ export function normalizeComponentDefinition(definition: HeadlessComponentDefini
     observers: mergeRecord(...behaviors.map(item => item.observers), definition.observers),
     pageLifetimes: mergeRecord(...behaviors.map(item => item.pageLifetimes), definition.pageLifetimes),
     properties: mergeRecord(...behaviors.map(item => item.properties), definition.properties),
+    relations: mergeRecord(...behaviors.map(item => item.relations), definition.relations),
     lifetimes: mergeComponentLifetimes(behaviors, definition),
   }
 
@@ -256,6 +257,9 @@ export function normalizeComponentPropertyValue(
   rawValue: unknown,
 ) {
   const option = definition.properties?.[key]
+  if (rawValue === null && normalizePropertyType(option) === null) {
+    return null
+  }
   if (rawValue == null) {
     if (option && typeof option === 'object' && !Array.isArray(option) && 'value' in option) {
       return resolvePropertyDefaultValue(option, definition)

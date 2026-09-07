@@ -33,6 +33,11 @@ describe('application global state in browser sessions', () => {
       expect(render(first)).toBe('Count: 5')
       second.reLaunch('/pages/index/index')
       expect(render(second)).toBe('Count: 2')
+      expect(render(first)).toBe('Count: 5')
+      const retainedPage = first.getCurrentPages().at(-1)
+      second.close()
+      expect(first.getCurrentPages().at(-1)).toBe(retainedPage)
+      expect(render(first)).toBe('Count: 5')
     }
     finally {
       first.close()

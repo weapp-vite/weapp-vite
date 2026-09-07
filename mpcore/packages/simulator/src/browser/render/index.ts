@@ -2,7 +2,11 @@ import type { HeadlessPageInstance } from '../../runtime/pageInstance'
 import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { BrowserRenderedPageTree, BrowserRendererContext, BrowserRenderScope, BrowserSlotContent, DomNodeLike } from './types'
 import { join } from 'pathe'
-import { runComponentLifecycle } from '../../runtime/componentInstance'
+import { attachComponentPage, isComponentPageAttaching } from '../../host/componentPageAttachment'
+import { runComponentLifecycle, runComponentPageLifetime } from '../../runtime/componentInstance'
+import { flushComponentAttachments, flushComponentReady, hasPendingComponentAttachments } from '../../runtime/componentInstance/attachment'
+import { syncComponentRelations } from '../../runtime/componentInstance/relations'
+import { isPageBeforeReady } from '../../runtime/pageLifecycle'
 import { selectConditionalChildren } from '../../view/conditionalChildren'
 import { customTabBarHostScope, hasCustomTabBar } from '../../view/customTabBar'
 import { resolveLoopEntries } from '../../view/loopEntries'
@@ -324,10 +328,6 @@ function renderNodeTree(
       renderedComponentRoot.attribs['data-sim-component'] = clonedNode.name
       renderedComponentRoot.attribs['data-sim-scope'] = componentScopeId
     }
-    if (!componentInstance.__ready__) {
-      componentInstance.__ready__ = true
-      runComponentLifecycle(componentInstance, 'ready')
-    }
     return renderedComponentRoot
   }
 
@@ -399,13 +399,34 @@ export function renderBrowserPageTree(
     ))
   }
 
-  for (const [scopeId, instance] of [...context.componentCache.entries()]) {
-    // 隐藏的 tab 与导航栈页面仍拥有组件；只有当前页面的消失节点由本次渲染卸载。
-    if (scopeId.startsWith(`${pageScopeId}/`) && !seenComponentScopes.has(scopeId)) {
-      runComponentLifecycle(instance, 'detached')
-      context.componentCache.delete(scopeId)
-      context.componentScopes.delete(scopeId)
-    }
+  // Component 页面先创建子树，再执行页面 created/attached，最后统一挂载后代。
+  const pageAttached = attachComponentPage(page)
+  const pageAttaching = isComponentPageAttaching(page)
+  const attached = !pageAttaching && flushComponentAttachments(
+    [...seenComponentScopes].map(scopeId => context.componentCache.get(scopeId)!),
+    (instance) => {
+      runComponentLifecycle(instance, 'attached')
+      runComponentPageLifetime(instance, 'show')
+    },
+  )
+  // detached 仍能读取旧关系；真实宿主随后解除双方关系并调用 unlinked。
+  const removed = [...context.componentCache].filter(([scopeId]) => scopeId.startsWith(`${pageScopeId}/`) && !seenComponentScopes.has(scopeId))
+  for (const [, instance] of removed) {
+    runComponentLifecycle(instance, 'detached')
+  }
+  const instances = [...seenComponentScopes].map(scopeId => context.componentCache.get(scopeId)!)
+  const relationsChanged = !pageAttaching && !hasPendingComponentAttachments(instances) && syncComponentRelations(context.componentCache, seenComponentScopes, pageScopeId)
+  for (const [scopeId] of removed) {
+    context.componentCache.delete(scopeId)
+    context.componentScopes.delete(scopeId)
+  }
+
+  if (pageAttached || attached || relationsChanged) {
+    return renderBrowserPageTree(context, page)
+  }
+
+  if (!isPageBeforeReady(page) && flushComponentReady(instances, instance => runComponentLifecycle(instance, 'ready'))) {
+    return renderBrowserPageTree(context, page)
   }
 
   const treeRoot: DomNodeLike = roots.length > 1 ? { type: 'root', children: roots } : renderedRoot

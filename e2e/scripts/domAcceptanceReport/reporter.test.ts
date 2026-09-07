@@ -68,6 +68,40 @@ function readReports() {
 }
 
 describe('Vitest DOM reporter lifecycle', () => {
+  it('explains runtime failures when all DOM checkpoints passed', () => {
+    const reporter = new DomAcceptanceReporter()
+    const test = createTest('passed')
+    reporter.onTestCaseReady(test)
+    const event = { source: 'runtime', kind: 'message', project: 'base', level: 'error', channel: 'runtime', text: 'navigateTo:fail timeout' }
+    fs.appendFileSync(path.join(reportDir, 'runtime.jsonl'), `${[event, event, event].map(item => JSON.stringify(item)).join('\n')}\n`)
+    let message = ''
+    try {
+      reporter.onTestRunEnd([createModule([test])], [], 'passed')
+    }
+    catch (error) {
+      message = (error as Error).message
+    }
+    expect(message).toContain('DOM cases 1/1 passed; checkpoints 1/1 captured; run errors 3')
+    expect(message).toContain('Unclassified IDE runtime error')
+    expect(message).toContain('navigateTo:fail timeout')
+    expect(message).not.toContain('cases accepted')
+    expect(readReports()[0]).toMatchObject({ status: 'failed', summary: { passedCount: 1 } })
+  })
+
+  it('explains incomplete case coverage separately from DOM pass counts', () => {
+    const reporter = new DomAcceptanceReporter()
+    let message = ''
+    try {
+      reporter.onTestRunEnd([createModule([createTest('passed'), createTest('skipped', 'missing route')])], [], 'passed')
+    }
+    catch (error) {
+      message = (error as Error).message
+    }
+    expect(message).toContain('DOM cases 1/2 passed')
+    expect(message).toContain('skipped=1')
+    expect(message).toContain('missing route: skipped')
+  })
+
   it.each(['unconfigured', 'missing'] as const)('rejects an %s diagnostic journal only when strict acceptance finishes', (state) => {
     vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', state === 'unconfigured' ? undefined : path.join(reportDir, 'missing.jsonl'))
     const reporter = new DomAcceptanceReporter()

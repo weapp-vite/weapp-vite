@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import process from 'node:process'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   resolveProjectAutomatorPort,
@@ -14,6 +15,7 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { waitForFileContains } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { appendIdeReportEvent } from '../utils/ideWarningReport'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.resolve(WORKSPACE_ROOT, 'apps/forward-console-demo')
@@ -94,6 +96,27 @@ async function emitLogClick(miniProgram: any) {
   const buttons = await page.$$('.action-log', { fallback: false })
   expect(buttons).toHaveLength(1)
   await buttons[0].tap()
+}
+
+async function captureForwardConsoleFailure(miniProgram: any, rawEventCount: number, forwardedCount: number) {
+  const page = await miniProgram.currentPage()
+  const observations = await Promise.allSettled([
+    Promise.resolve(page.path),
+    page.data('eventCount'),
+    page.$('.action-log').then((button: any) => button.attribute('data-level')),
+    page.$('.status-pill text').then((element: any) => element.text()),
+    page.$('.terminal-line').then((element: any) => element.text()),
+  ])
+  const text = JSON.stringify({
+    rawEventCount,
+    forwardedCount,
+    observations: Object.fromEntries(['route', 'eventCount', 'buttonLevel', 'statusText', 'terminalText'].map((key, index) => {
+      const result = observations[index]!
+      return [key, result.status === 'fulfilled' ? result.value : { error: String(result.reason) }]
+    })),
+  })
+  appendIdeReportEvent({ source: 'runtime', kind: 'message', level: 'info', channel: 'forward-console-diagnostics', project: 'apps/forward-console-demo', text })
+  process.stdout.write(`[forward-console-diagnostics] ${text}\n`)
 }
 
 function replaceSourceLogMessage(source: string, nextMessage: string) {
@@ -226,7 +249,7 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
         nodes: [
           { selector: '.terminal-line', text: hmrMessage },
           { selector: '.terminal-level', text: 'log' },
-          { selector: '.timeline-item:first-child .timeline-terminal', text: hmrMessage },
+          { selector: '(//view[@class="timeline-item"])[1]//view[@class="timeline-terminal"]', query: 'xpath', text: hmrMessage },
         ],
       },
     ])
@@ -235,6 +258,8 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
     }
     const initialPage = await waitForPageDescription(miniProgram, INITIAL_DESCRIPTION)
     await dom.check('initial', miniProgram, initialPage)
+    // 关闭 Runtime 事件域，模拟尚未打开 IDE Console 的状态，验证订阅会显式恢复事件域。
+    await miniProgram.send('App.CDPCommand', { domain: 'Runtime', method: 'disable', params: {} })
     const forwardedMessages: string[] = []
     forwardConsoleSession = await startForwardConsole({
       miniProgram,
@@ -246,9 +271,23 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
       },
     })
 
-    await emitLogClick(miniProgram)
-    await waitForOutputAfter(() => forwardedMessages.join('\n'), 0, LOG_CLICKED_RE)
-    await dom.check('clicked', miniProgram, await miniProgram.currentPage())
+    let rawEventCount = 0
+    const onRawConsole = () => {
+      rawEventCount += 1
+    }
+    miniProgram.on('console', onRawConsole)
+    try {
+      await emitLogClick(miniProgram)
+      await dom.check('clicked', miniProgram, await miniProgram.currentPage())
+      await waitForOutputAfter(() => forwardedMessages.join('\n'), 0, LOG_CLICKED_RE)
+    }
+    catch (error) {
+      await captureForwardConsoleFailure(miniProgram, rawEventCount, forwardedMessages.length).catch(() => {})
+      throw error
+    }
+    finally {
+      miniProgram.off('console', onRawConsole)
+    }
 
     await fs.writeFile(INDEX_TS, replaceSourceLogMessage(originalIndexTs, hmrMessage), 'utf8')
     await devProcess.waitFor(

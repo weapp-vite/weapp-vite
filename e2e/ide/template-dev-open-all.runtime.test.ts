@@ -367,7 +367,7 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
     await cleanupResidualIdeProcesses()
   }, 180_000)
 
-  it.each(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', async (templateCase, ctx) => {
+  it.for(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', async (templateCase, ctx) => {
     const dom = createDomAcceptance(ctx, `templates/${templateCase.name}`, [templateDevOpenCheckpoint(templateCase)])
     let lastError: unknown
     for (let attempt = 1; attempt <= 2; attempt += 1) {

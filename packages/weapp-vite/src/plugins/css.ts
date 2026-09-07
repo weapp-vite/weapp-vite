@@ -24,7 +24,6 @@ import {
   findManagedTailwindcssEntryMarker,
   hasManagedTailwindcssOutputMarker,
   isManagedTailwindcssEntry,
-  stripManagedTailwindcssOutputMarkers,
 } from './tailwindcssMarker'
 import { pathExists as pathExistsCached } from './utils/cache'
 import { syncCssImportDependencies } from './utils/invalidateEntry'
@@ -261,6 +260,10 @@ function isUnchangedDevHmrStyleAsset(
   current: string,
   source: string,
 ) {
+  // 待生成入口的文本相同不代表最终 CSS 相同，须交给 Tailwind 输出阶段完成内容生成。
+  if (hasManagedTailwindcssOutputMarker(source)) {
+    return false
+  }
   const hmrState = ctx.runtimeState?.build?.hmr
   const currentHmrFile = hmrState?.profile.file
   if (typeof currentHmrFile === 'string') {
@@ -324,7 +327,7 @@ function emitCssAssetIfChanged(
   const normalizedFileName = toPosixPath(fileName)
   const cache = ctx.runtimeState?.css?.emittedSource
   const existing = bundle[fileName]
-  const forceEmit = hasTailwindContentDirtyReason(ctx)
+  const forceEmit = hasTailwindContentDirtyReason(ctx) || hasManagedTailwindcssOutputMarker(source)
   const emittedSource = appendTailwindContentHmrNonce(ctx, source)
   if (existing?.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
@@ -511,7 +514,7 @@ async function handleBundleEntry(
             this.addWatchFile(normalizeWatchPath(dependency))
           }
         }
-        const processedCss = stripManagedTailwindcssOutputMarkers(await processCssWithCache(css, configService))
+        const processedCss = await processCssWithCache(css, configService)
         return {
           processedCss,
         }
@@ -604,7 +607,7 @@ async function handleBundleEntry(
           this.addWatchFile(normalizeWatchPath(dependency))
         }
       }
-      const processedCss = stripManagedTailwindcssOutputMarkers(await processCssWithCache(css, configService))
+      const processedCss = await processCssWithCache(css, configService)
       if (fileName !== bundleKey) {
         delete bundle[bundleKey]
         emitCssAssetIfChanged(ctx, this, bundle, fileName, processedCss)

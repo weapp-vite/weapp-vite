@@ -53,6 +53,7 @@ export {
   resolveClassStyleWxsLocation,
 } from './plugins/vue/compiler/template/classStyleRuntime'
 export type {
+  BindingCondition,
   ClassStyleBinding,
   ClassStyleRuntime,
   ForParseResult,

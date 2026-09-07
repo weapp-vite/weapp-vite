@@ -316,7 +316,7 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feed
         await acceptance.check('initial', miniProgram, page)
         await page.callMethodWithOptions('showLayoutDialogProbe', { routeOnly: true, timeout: 12_000 })
         await acceptance.check('dialog-open', miniProgram, page)
-        await tapRendered(page, `${xpathClass('t-dialog__footer')}//*[@data-type="cancel"]`)
+        await tapRendered(page, `${xpathClass('t-dialog__footer')}//button[descendant::*[text()="取消"]]`)
         await acceptance.check('dialog-closed', miniProgram, page)
 
         expect(collector.getSince(marker)).toEqual([])

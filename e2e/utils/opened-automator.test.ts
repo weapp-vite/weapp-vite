@@ -50,7 +50,7 @@ describe('opened automator', () => {
       retries: 1,
       timeout: 17,
     })
-    expect(miniProgram.enableLog).toHaveBeenCalledWith(17)
+    expect(miniProgram.enableLog).toHaveBeenCalledWith(17, { structured: true })
   })
 
   it('uses the expected route as the readiness probe when provided', async () => {
