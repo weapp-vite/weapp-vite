@@ -1,14 +1,17 @@
 export type DomProvider = 'devtools' | 'headless'
 export type DomScope = string | { has: string }
+export type DomQuery = 'css' | 'xpath'
+export type DomStyleExpectation = string | { rpx: number }
 
 export interface DomNodeExpectation {
   selector: string
+  query?: DomQuery
   has?: string
   scope?: DomScope[]
   count?: number
   text?: string
   attributes?: Record<string, string>
-  styles?: Record<string, string>
+  styles?: Record<string, DomStyleExpectation>
   visible?: boolean
 }
 
@@ -30,6 +33,7 @@ export interface DomExpectedError {
 
 export interface DomNodeEvidence {
   selector: string
+  query: DomQuery
   has?: string
   scope?: DomScope[]
   count: number
@@ -46,6 +50,7 @@ export interface DomCheckpointEvidence {
   route: string
   source: 'devtools-page-frame' | 'headless-logical-tree'
   capturedAt: string
+  windowWidth?: number
   nodes: DomNodeEvidence[]
 }
 
@@ -70,12 +75,15 @@ export interface DomElement {
 }
 
 export interface DomPage {
+  readonly pageId: number
   path: string
   $$: (selector: string, options: { fallback: false, timeout: number }) => Promise<DomElement[]>
+  getElementsByXpath?: (selector: string, options: { fallback: false, timeout: number }) => Promise<DomElement[]>
 }
 
 export interface DomSession {
-  currentPage: () => Promise<{ path: string } | undefined | null>
+  currentPage: (options?: { appFunctionFallback?: boolean }) => Promise<DomPage | undefined | null>
   toolInfo?: () => Promise<{ version?: string, SDKVersion?: string }>
+  systemInfo?: () => Promise<{ windowWidth?: number }>
   screenshot?: (options: { path: string }) => Promise<unknown>
 }

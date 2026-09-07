@@ -19,8 +19,9 @@ import {
   registerExportedComponentDefinition,
   registerPageDefinition,
 } from '../host'
+import { resolveMiniProgramModule } from '../runtime/moduleResolution'
 import { createMiniProgramRuntimeGlobals } from '../runtime/runtimeGlobals'
-import { hasBrowserVirtualFile, readBrowserVirtualFile } from './virtualFiles'
+import { readBrowserVirtualFile } from './virtualFiles'
 import { closeBrowserWxsLoader } from './wxs'
 
 export interface BrowserModuleLoader {
@@ -45,28 +46,6 @@ function createRequireNotFoundError(request: string, importer: string) {
   return new Error(`Cannot resolve require("${request}") from ${normalize(importer)} in browser simulator runtime.`)
 }
 
-function resolveRequiredModulePath(files: BrowserVirtualFiles, importer: string, request: string) {
-  if (!request.startsWith('.')) {
-    throw createRequireNotFoundError(request, importer)
-  }
-
-  const basePath = normalize(join(dirname(importer), request))
-  const candidates = [
-    basePath,
-    `${basePath}.js`,
-    `${basePath}.json`,
-    join(basePath, 'index.js'),
-  ]
-
-  for (const candidate of candidates) {
-    if (hasBrowserVirtualFile(files, candidate)) {
-      return candidate
-    }
-  }
-
-  throw createRequireNotFoundError(request, importer)
-}
-
 function createExecutionContext(
   registries: HeadlessHostRegistries,
   getCurrentPages: () => any[],
@@ -75,7 +54,8 @@ function createExecutionContext(
   kernel: RuntimeKernel,
   globals: Record<string, unknown>,
 ) {
-  const wx = createHeadlessWx(wxDriver)
+  const runtimeConsole = kernel.diagnostics.createConsole()
+  const wx = createHeadlessWx(wxDriver, runtimeConsole)
 
   return createMiniProgramRuntimeGlobals({
     App(definition: HeadlessAppDefinition) {
@@ -95,7 +75,7 @@ function createExecutionContext(
     },
     clearInterval: (handle: ReturnType<typeof setInterval>) => kernel.scheduler.clearInterval(handle),
     clearTimeout: (handle: ReturnType<typeof setTimeout>) => kernel.scheduler.clearTimeout(handle),
-    console: kernel.diagnostics.createConsole(),
+    console: runtimeConsole,
     getApp,
     getCurrentPages,
     globalThis: undefined as any,
@@ -154,7 +134,15 @@ export function createBrowserModuleLoader(
     registries.currentLoadContext = loadContext
 
     const localRequire = ((request: string) => {
-      const requiredPath = resolveRequiredModulePath(files, resolvedPath, request)
+      const requiredPath = resolveMiniProgramModule(
+        resolvedPath,
+        request,
+        options.miniprogramRootPath,
+        candidate => readBrowserVirtualFile(files, candidate) !== undefined,
+      )
+      if (!requiredPath) {
+        throw createRequireNotFoundError(request, resolvedPath)
+      }
       if (requiredPath.endsWith('.json')) {
         const content = readBrowserVirtualFile(files, requiredPath)
         if (typeof content !== 'string') {
@@ -197,6 +185,10 @@ export function createBrowserModuleLoader(
       ])]
       return module
     }
+    catch (error) {
+      moduleCache.delete(resolvedPath)
+      throw error
+    }
     finally {
       registries.currentLoadContext = previousLoadContext
     }
@@ -221,10 +213,7 @@ export function createBrowserModuleLoader(
     },
     executeAppModule(filePath) {
       executeModule(filePath, { kind: 'app' })
-      if (!registries.appDefinition) {
-        throw new Error(`App() was not registered while executing ${normalize(filePath)} in browser simulator runtime.`)
-      }
-      return registries.appDefinition
+      return registries.appDefinition ?? registerAppDefinition(registries, {})
     },
     executePageModule(filePath, route) {
       const componentDefinitions: HeadlessComponentDefinition[] = []

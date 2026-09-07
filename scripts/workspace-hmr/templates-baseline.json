@@ -228,6 +228,32 @@
         }
       }
     },
+    "templates/weapp-vite-multi-platform-template": {
+      "startupMs": 3549,
+      "scenarios": {
+        "native-template": {
+          "totalMs": 192,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "native-script": {
+          "totalMs": 174,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        },
+        "native-style": {
+          "totalMs": 188,
+          "dirtyCount": 1,
+          "pendingCount": 1,
+          "emittedCount": 1,
+          "impactFiles": 1
+        }
+      }
+    },
     "templates/weapp-vite-plugin-template": {
       "startupMs": 753,
       "scenarios": {

@@ -25,7 +25,7 @@ export default class DomAcceptanceReporter implements Reporter {
   private readonly strict = isStrictDomAcceptance()
   private readonly cases = new Map<string, AcceptanceCaseInput>()
   private readonly startedCases = new Map<string, number>()
-  private readonly diagnostics = new RuntimeDiagnosticJournal(process.env.WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE)
+  private readonly diagnostics = new RuntimeDiagnosticJournal(process.env.WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE, this.strict)
   private activeCase: string | null = null
   private readonly reportFile = path.join(
     process.env[ACCEPTANCE_REPORT_DIR_ENV] || path.join(ACCEPTANCE_ROOT, 'docs/reports/dom-acceptance', this.identity.runId),

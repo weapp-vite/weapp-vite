@@ -14,6 +14,13 @@ export function statefulHmrCheckpoints(runtime: 'native' | 'component' | 'wevu')
     nodes: [
       { selector: '.count', text: String(count) },
       { selector: '.input', attributes: { value: String(input) } },
+      ...(runtime === 'wevu'
+        ? [
+            { selector: '.store-count', text: String(count) },
+            id === 'initial' ? { selector: '.removed-field', text: 'initial' } : { selector: '.removed-field', count: 0 },
+            id === 'patched' || id === 'updated' ? { selector: '.added-field', text: 'new default' } : { selector: '.added-field', count: 0 },
+          ]
+        : []),
       ...(id === 'initial' ? [{ selector: '.marker', text: `STATEFUL-${runtime.toUpperCase()}-BASE` }] : []),
     ],
   }))

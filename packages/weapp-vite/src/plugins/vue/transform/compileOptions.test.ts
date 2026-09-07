@@ -633,6 +633,64 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(emitFile).not.toHaveBeenCalled()
   })
 
+  it('emits discovered component chunks with the current transform context after HMR', async () => {
+    const resolvedVueEntry = '/project/src/components/card.vue'
+    const externalComponentEntryMap = new Map<string, string>()
+    const ctx = { runtimeState: { build: { hmr: { externalComponentEntryMap } } } } as any
+    const configService = {
+      platform: 'weapp',
+      outputExtensions: {},
+      absoluteSrcRoot: '/project/src',
+      weappViteConfig: {},
+      relativeOutputPath: () => 'components/card',
+    } as any
+    const state = {
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+      compileOptionsCache: new Map(),
+    }
+    createUsingComponentPathResolverMock.mockReturnValue(async () => ({
+      resolvedId: resolvedVueEntry,
+      from: '/components/card',
+      sourceType: 'wevu-sfc' as const,
+    }))
+    const expiredEmit = vi.fn(() => {
+      throw new Error('Cannot emit chunks after the previous transform hook completed')
+    })
+    createCompileVueFileOptions(
+      ctx,
+      { emitFile: expiredEmit },
+      '/project/src/pages/index.tsx',
+      true,
+      false,
+      configService,
+      state,
+    )
+    const currentEmit = vi.fn()
+    const options = createCompileVueFileOptions(
+      ctx,
+      { emitFile: currentEmit },
+      '/project/src/pages/index.tsx',
+      true,
+      false,
+      configService,
+      state,
+    )
+
+    await expect(options.autoUsingComponents?.resolveUsingComponentPath?.('./card.vue', '/project/src/pages/index.tsx', {
+      localName: 'Card',
+      importedName: 'default',
+      kind: 'default',
+    })).resolves.toMatchObject({ resolvedId: resolvedVueEntry })
+    expect(expiredEmit).not.toHaveBeenCalled()
+    expect(currentEmit).toHaveBeenCalledWith({
+      type: 'chunk',
+      id: createLogicalEntryId(resolvedVueEntry, 'component'),
+      fileName: 'components/card.js',
+      preserveSignature: 'exports-only',
+    })
+  })
+
   it('does not emit logical component entries without the shared external component registry', async () => {
     const resolvedVueEntry = '/project/src/components/RoutingProbe.vue'
     const emitFile = vi.fn()
@@ -1058,10 +1116,11 @@ describe('resolveVueTemplatePlatformOptions', () => {
       classStyleRuntimeWarned: { value: false },
       compileOptionsCache: new Map(),
     }
+    const pluginCtx = {}
 
     const first = createCompileVueFileOptions(
       {} as any,
-      {} as any,
+      pluginCtx,
       '/project/src/components/card.vue',
       false,
       false,
@@ -1076,7 +1135,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
 
     const second = createCompileVueFileOptions(
       {} as any,
-      {} as any,
+      pluginCtx,
       '/project/src/components/card.vue',
       false,
       false,

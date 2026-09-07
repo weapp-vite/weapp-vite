@@ -76,6 +76,7 @@ interface MockPage {
 
 interface MockMiniProgramRuntime {
   compile: ReturnType<typeof vi.fn>
+  enableLog: ReturnType<typeof vi.fn>
   evaluate: ReturnType<typeof vi.fn>
   on: ReturnType<typeof vi.fn>
   removeListener: ReturnType<typeof vi.fn>
@@ -111,6 +112,7 @@ function createMockMiniProgram(options?: { currentPage?: MockPage, reLaunchError
     : vi.fn(async () => page)
   const miniProgram = {
     compile: rawCompile,
+    enableLog: vi.fn(async () => {}),
     evaluate: vi.fn(async () => true),
     on: vi.fn(),
     removeListener: vi.fn(),
@@ -260,6 +262,12 @@ describe('automator launch resilience', { concurrent: false }, () => {
 
   beforeEach(() => {
     sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weapp-vite-automator-launch-'))
+    const reportDir = path.join(sandboxRoot, 'report')
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_SLUG', 'automator-launch-unit')
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_DIR', reportDir)
+    vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', path.join(reportDir, 'events.jsonl'))
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_MD_FILE', path.join(reportDir, 'index.md'))
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_JSON_FILE', path.join(reportDir, 'index.json'))
     captureDevtoolsLogBaselineMock.mockReset()
     cleanupResidualDevtoolsProcessesMock.mockReset()
     connectMock.mockReset()
@@ -292,6 +300,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     finally {
       clearLaunchEnv()
       vi.resetModules()
+      vi.unstubAllEnvs()
       fs.rmSync(sandboxRoot, { recursive: true, force: true })
     }
   })
@@ -309,6 +318,29 @@ describe('automator launch resilience', { concurrent: false }, () => {
 
     expect(lifecycle).toEqual(['close', 'remove'])
     expect(miniProgram.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('establishes the runtime log subscription before probing the real page', async () => {
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const miniProgram = createMockMiniProgram()
+    launchMock.mockResolvedValue(miniProgram)
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot, maxLaunchRetries: 1 })
+    expect(miniProgram.enableLog).toHaveBeenCalledTimes(1)
+    expect(miniProgram.enableLog.mock.invocationCallOrder[0]).toBeLessThan(miniProgram.__rawCurrentPage.mock.invocationCallOrder[0]!)
+  })
+
+  it('rejects log subscription failure before warmup and closes the session', async () => {
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const miniProgram = createMockMiniProgram()
+    miniProgram.enableLog.mockRejectedValue(new Error('App.enableLog unavailable'))
+    launchMock.mockResolvedValue(miniProgram)
+    const { launchAutomator } = await import('../utils/automator')
+    await expect(launchAutomator({ projectPath: sandboxRoot, maxLaunchRetries: 1 })).rejects.toThrow('App.enableLog unavailable')
+    expect(miniProgram.__rawCurrentPage).not.toHaveBeenCalled()
+    expect(miniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    const journal = fs.readFileSync(path.join(sandboxRoot, 'report/events.jsonl'), 'utf8')
+    expect(journal).toContain('App.enableLog unavailable')
   })
 
   it('extracts DevTools service port from cli bridge output', async () => {
@@ -1474,12 +1506,12 @@ describe('automator launch resilience', { concurrent: false }, () => {
       wrapperProjectPath = payload.projectPath
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({
         setting: {
+          es6: true,
           packNpmManually: false,
           packNpmRelationList: [],
           postcss: true,
         },
       })
-      expect(readJson(path.join(wrapperProjectPath, 'project.config.json')).setting).not.toHaveProperty('es6')
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({ simulatorType: 'wechat' })
       expect(readJson(path.join(wrapperProjectPath, 'app.json'))).toEqual({
         pages: ['pages/index/index'],
@@ -1503,10 +1535,10 @@ describe('automator launch resilience', { concurrent: false }, () => {
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({
         miniprogramRoot: 'weapp_vite_runtime/',
         setting: {
+          es6: true,
           postcss: true,
         },
       })
-      expect(readJson(path.join(wrapperProjectPath, 'project.config.json')).setting).not.toHaveProperty('es6')
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({ simulatorType: 'wechat' })
       expect(readJson(path.join(wrapperProjectPath, 'weapp_vite_runtime/app.json'))).toMatchObject({
         window: {

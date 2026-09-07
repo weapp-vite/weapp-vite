@@ -24,6 +24,8 @@ export type CompileVueFileResolvedOptions = CompileVueFileOptions
 
 export type SfcStylePreprocessOptions = NonNullable<NonNullable<CompileVueFileOptions['style']>['preprocessOptions']>
 
+const compileOptionsOwners = new WeakMap<CompileVueFileResolvedOptions, object>()
+
 interface CompileOptionsContext {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   classStyleRuntimeWarned: { value: boolean }
@@ -439,7 +441,8 @@ export function createCompileVueFileOptions(
     appShellSignature,
   )
   const cached = state.compileOptionsCache?.get(cacheKey)
-  if (cached) {
+  // 解析回调持有当前 hook 的 resolve/emitFile，不能跨 HMR transform 复用旧上下文。
+  if (cached && compileOptionsOwners.get(cached) === pluginCtx) {
     return cached
   }
 
@@ -455,6 +458,7 @@ export function createCompileVueFileOptions(
     pageLayout,
     appShell,
   )
+  compileOptionsOwners.set(created, pluginCtx)
   state.compileOptionsCache?.set(cacheKey, created)
   return created
 }

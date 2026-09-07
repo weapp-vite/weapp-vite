@@ -19,7 +19,6 @@ import { getRuntimeWxsLoader } from '../wxs'
 import {
   CLASS_SPLIT_RE,
   collectDataset,
-  createMergedScopeData,
   isMustacheOnly,
   JS_FILE_RE,
   LEADING_SLASH_RE,
@@ -154,13 +153,12 @@ export function buildComponentTrigger(
     detail?: unknown,
     triggerOptions?: Record<string, any>,
   ) => {
-    const interactionTarget = instance.__lastInteractionEvent__?.target
-    const interactionCurrentTarget = instance.__lastInteractionEvent__?.currentTarget
-    const componentDataset = context.componentScopes.get(componentScopeId)?.dataset ?? hostDataset
+    const originScope = context.componentScopes.get(componentScopeId)
     const interactionMark = instance.__lastInteractionEvent__?.mark
+    // 自定义事件由组件宿主派发，转发的原生事件仅保留在 detail 中。
     const target = {
-      dataset: interactionTarget?.dataset ?? componentDataset,
-      id: interactionTarget?.id ?? hostId,
+      dataset: originScope?.dataset ?? hostDataset,
+      id: originScope?.hostId ?? hostId,
     }
     let currentScopeId: string | undefined = componentScopeId
 
@@ -180,8 +178,8 @@ export function buildComponentTrigger(
           capturePhase: false,
           composed: triggerOptions?.composed ?? false,
           currentTarget: {
-            dataset: currentScope?.dataset ?? interactionCurrentTarget?.dataset ?? hostDataset,
-            id: currentScope?.hostId ?? interactionCurrentTarget?.id ?? hostId,
+            dataset: currentScope?.dataset ?? hostDataset,
+            id: currentScope?.hostId ?? hostId,
           },
           detail,
           mark: interactionMark,
@@ -222,7 +220,9 @@ export function syncComponentProperties(
     if (hasComponentPropertyValueChanged(instance.properties[key], previousSnapshot, nextValue, bindingAffected)) {
       previousProperties[key] = instance.properties[key]
       instance.properties[key] = nextValue
-      instance.data[key] = nextValue
+      if (Object.hasOwn(definition.properties ?? {}, key)) {
+        instance.data[key] = nextValue
+      }
       changedRootKeys.push(key)
     }
     instance.__propertySnapshots ??= {}
@@ -251,7 +251,7 @@ export function createComponentScope(
       .split(CLASS_SPLIT_RE)
       .map(item => item.trim())
       .filter(Boolean),
-    data: createMergedScopeData(scope.data, componentInstance.properties, componentInstance.data),
+    data: { ...componentInstance.data },
     dataset: collectDataset(clonedNode, wxsScopeData(scope)),
     eventBindings: collectComponentEventBindings(clonedNode),
     getMethod: (methodName: string) => {

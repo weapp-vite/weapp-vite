@@ -342,6 +342,7 @@
     "vue-tsc": "catalog:",
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.9.0",
+    "zigpty": "0.2.1",
     "zod": "catalog:"
   },
   "publishConfig": {

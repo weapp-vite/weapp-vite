@@ -12,6 +12,7 @@ export interface CaseInventory {
 }
 
 type Bindings = Map<string, unknown>
+type LocalHelper = ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression
 
 function expression(node: ts.Node | undefined) {
   return node?.getText().replace(/\s+/g, ' ').slice(0, 240) ?? '<missing>'
@@ -42,6 +43,15 @@ function readLiteral(node: ts.Expression | undefined, bindings: Bindings): unkno
   if (ts.isArrayLiteralExpression(node)) {
     const items = node.elements.map(item => readLiteral(item as ts.Expression, bindings))
     return items.every(item => item !== undefined) ? items : undefined
+  }
+  if (ts.isObjectLiteralExpression(node)) {
+    const value: Record<string, unknown> = {}
+    for (const property of node.properties) {
+      if (ts.isPropertyAssignment(property) && (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name))) {
+        value[property.name.text] = readLiteral(property.initializer, bindings)
+      }
+    }
+    return value
   }
   if (ts.isTemplateExpression(node)) {
     let text = node.head.text
@@ -78,13 +88,16 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
   const cases: CaseInventory[] = []
   const globals: Bindings = new Map(Object.entries(initialBindings))
   const imports = new Map<string, { original: string, source: string }>()
-  const helpers = new Map<string, ts.FunctionDeclaration>()
+  const helpers = new Map<string, LocalHelper>()
   const position = (node: ts.Node) => `${file}:${source.getLineAndCharacterOfPosition(node.getStart()).line + 1}`
   const collectGlobals = (node: ts.Node) => {
     if (ts.isFunctionDeclaration(node) && node.name) {
       helpers.set(node.name.text, node)
     }
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+      if (node.initializer && (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer))) {
+        helpers.set(node.name.text, node.initializer)
+      }
       const value = readLiteral(node.initializer, globals)
       if (value !== undefined) {
         globals.set(node.name.text, value)
@@ -100,16 +113,59 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
     }
   }
   collectGlobals(source)
+  const invokedFactories = new Set(source.statements
+    .filter(ts.isExpressionStatement)
+    .map(statement => ts.isCallExpression(statement.expression) ? callRoot(statement.expression.expression) : '')
+    .filter(name => helpers.has(name)))
+
+  function resolveHelper(name: string, node: ts.Node) {
+    let scope: ts.Node | undefined = node.parent
+    while (scope) {
+      if (ts.isBlock(scope) || ts.isSourceFile(scope)) {
+        const helper = scope.statements.find(statement => ts.isFunctionDeclaration(statement) && statement.name?.text === name)
+        if (helper && ts.isFunctionDeclaration(helper)) {
+          return helper
+        }
+        for (const statement of scope.statements) {
+          if (!ts.isVariableStatement(statement)) {
+            continue
+          }
+          const declaration = statement.declarationList.declarations.find(item => ts.isIdentifier(item.name) && item.name.text === name)
+          if (declaration?.initializer && (ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer))) {
+            return declaration.initializer
+          }
+        }
+      }
+      scope = scope.parent
+    }
+    return helpers.get(name)
+  }
 
   function inspectCase(node: ts.CallExpression, name: string, bindings: Bindings, inheritedNotes: string[]) {
     const result: CaseInventory = { source: position(node), name, plans: [], routes: [], operations: [], notes: [...inheritedNotes] }
     const visitedHelpers = new Set<string>()
-    const visit = (child: ts.Node) => {
+    const visit = (child: ts.Node, activeBindings = bindings) => {
+      if (ts.isFunctionDeclaration(child) || (ts.isVariableDeclaration(child) && child.initializer
+        && (ts.isArrowFunction(child.initializer) || ts.isFunctionExpression(child.initializer)))) {
+        return
+      }
+      if (ts.isForOfStatement(child) && ts.isVariableDeclarationList(child.initializer)) {
+        const declaration = child.initializer.declarations[0]
+        const values = readLiteral(child.expression, activeBindings)
+        if (declaration && ts.isIdentifier(declaration.name) && Array.isArray(values)) {
+          for (const value of values) {
+            const next = new Map(activeBindings)
+            next.set(declaration.name.text, value)
+            visit(child.statement, next)
+          }
+          return
+        }
+      }
       if (ts.isCallExpression(child)) {
         const root = callRoot(child.expression)
         const called = imports.get(root)?.original ?? root
         if (called === 'createDomAcceptance') {
-          result.plans.push({ registration: 'createDomAcceptance', fixture: String(readLiteral(child.arguments[1], bindings) ?? expression(child.arguments[1])), checkpoints: expression(child.arguments[2]), source: position(child) })
+          result.plans.push({ registration: 'createDomAcceptance', fixture: String(readLiteral(child.arguments[1], activeBindings) ?? expression(child.arguments[1])), checkpoints: expression(child.arguments[2]), source: position(child) })
         }
         if (called === 'runTemplateE2E') {
           const options = child.arguments[0]
@@ -120,7 +176,7 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
           }
         }
         if (called === 'withBehaviorPage') {
-          const page = readLiteral(child.arguments[1], bindings)
+          const page = readLiteral(child.arguments[1], activeBindings)
           result.plans.push({ registration: 'withBehaviorPage', fixture: 'e2e-apps/wevu-features', checkpoints: expression(child.arguments[2]), source: position(child) })
           if (typeof page === 'string') {
             result.routes.push(`/pages/${page}/index`)
@@ -128,18 +184,25 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
         }
         if (called === 'runGithubDom' && imports.get(root)?.source.includes('githubIssuesDom')) {
           result.plans.push({ registration: called, fixture: 'e2e-apps/github-issues', checkpoints: expression(child.arguments[2]), source: position(child) })
-          const route = readLiteral(child.arguments[1], bindings)
+          const route = readLiteral(child.arguments[1], activeBindings)
           if (typeof route === 'string') {
             result.routes.push(route)
           }
         }
-        const helper = helpers.get(called)
+        const helper = resolveHelper(called, child)
         if (helper?.body && !visitedHelpers.has(called)) {
           visitedHelpers.add(called)
-          visit(helper.body)
+          const next = new Map(activeBindings)
+          for (const [index, parameter] of helper.parameters.entries()) {
+            if (ts.isIdentifier(parameter.name)) {
+              next.set(parameter.name.text, readLiteral(child.arguments[index], activeBindings))
+            }
+          }
+          visit(helper.body, next)
+          visitedHelpers.delete(called)
         }
-        if (ts.isPropertyAccessExpression(child.expression) && ['reLaunch', 'navigateTo', 'redirectTo', 'switchTab', 'callMethod', 'callMethodWithOptions', 'tap'].includes(child.expression.name.text)) {
-          const argument = readLiteral(child.arguments[0], bindings)
+        if (ts.isPropertyAccessExpression(child.expression) && ['reLaunch', 'navigateTo', 'redirectTo', 'switchTab', 'callMethod', 'callMethodWithOptions', 'tap', 'check', 'act'].includes(child.expression.name.text)) {
+          const argument = readLiteral(child.arguments[0], activeBindings)
           const operation = `${child.expression.name.text}(${typeof argument === 'string' ? argument : expression(child.arguments[0])})`
           result.operations.push(operation)
           if (['reLaunch', 'navigateTo', 'redirectTo', 'switchTab'].includes(child.expression.name.text) && typeof argument === 'string') {
@@ -150,7 +213,7 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
       if (ts.isPropertyAssignment(child) && child.name.getText() === 'route' && ts.isStringLiteral(child.initializer)) {
         result.routes.push(child.initializer.text)
       }
-      ts.forEachChild(child, visit)
+      ts.forEachChild(child, node => visit(node, activeBindings))
     }
     for (const argument of node.arguments.slice(1)) {
       visit(argument)
@@ -167,6 +230,23 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
   }
 
   function visit(node: ts.Node, bindings: Bindings, suites: string[], notes: string[]) {
+    if (ts.isFunctionDeclaration(node) && node.name && invokedFactories.has(node.name.text)) {
+      return
+    }
+    if (ts.isVariableDeclaration(node)) {
+      const value = readLiteral(node.initializer, bindings)
+      if (ts.isIdentifier(node.name) && value !== undefined) {
+        bindings.set(node.name.text, value)
+      }
+      if (ts.isObjectBindingPattern(node.name) && value && typeof value === 'object') {
+        for (const element of node.name.elements) {
+          if (ts.isIdentifier(element.name)) {
+            const property = element.propertyName?.getText() ?? element.name.text
+            bindings.set(element.name.text, (value as Record<string, unknown>)[property])
+          }
+        }
+      }
+    }
     if (ts.isForOfStatement(node) && ts.isVariableDeclarationList(node.initializer)) {
       const declaration = node.initializer.declarations[0]
       const values = readLiteral(node.expression, bindings)
@@ -184,6 +264,17 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
     if (ts.isCallExpression(node)) {
       const root = callRoot(node.expression)
       const called = imports.get(root)?.original ?? root
+      const factory = helpers.get(called)
+      if (factory?.body && invokedFactories.has(called)) {
+        const next = new Map(bindings)
+        for (const [index, parameter] of factory.parameters.entries()) {
+          if (ts.isIdentifier(parameter.name)) {
+            next.set(parameter.name.text, readLiteral(node.arguments[index], bindings))
+          }
+        }
+        visit(factory.body, next, suites, notes)
+        return
+      }
       const literalName = readLiteral(node.arguments[0], bindings)
       if (['it', 'test'].includes(called) && typeof literalName === 'string') {
         const names = expression(node.expression).includes('.each(') && templateNames.length

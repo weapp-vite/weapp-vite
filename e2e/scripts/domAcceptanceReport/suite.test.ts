@@ -18,6 +18,7 @@ afterEach(() => {
     fs.rmSync(root, { recursive: true, force: true })
   }
   process.exitCode = 0
+  vi.unstubAllEnvs()
   vi.restoreAllMocks()
 })
 
@@ -28,6 +29,21 @@ function temporaryRoot() {
 }
 
 describe('strict IDE suite acceptance', () => {
+  it.each([true, false])('defaults ordinary full to strict with failOnTaskFailure=%s', async (failOnTaskFailure) => {
+    vi.stubEnv('WEAPP_VITE_E2E_DOM_ACCEPTANCE', '0')
+    const task: SuiteTask = { label: 'missing-evidence', command: 'node', args: [] }
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const code = await runTaskSuite('e2e:ide-full', [task], {
+      runTask: async () => 0,
+      failOnTaskFailure,
+      writeReport: false,
+    })
+    expect(task.env?.WEAPP_VITE_E2E_DOM_ACCEPTANCE).toBe('1')
+    expect(code).toBe(1)
+    expect(process.exitCode).toBe(1)
+  })
+
   it('preserves unexecuted and out-of-scope tasks after an early failure', () => {
     const report = createSuiteReport([{ label: 'first', artifacts: [], durationMs: 1, exitCode: 1 }], 'ide-test', undefined, temporaryRoot(), {
       ...identity,

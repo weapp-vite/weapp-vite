@@ -3,7 +3,7 @@ import path from 'node:path'
 import { build } from 'vite'
 
 export type StatefulHmrOutputFile = Pick<OutputAsset, 'fileName' | 'source' | 'type'>
-  | Pick<OutputChunk, 'code' | 'fileName' | 'modules' | 'type'>
+  | (Pick<OutputChunk, 'code' | 'fileName' | 'modules' | 'type'> & Partial<Pick<OutputChunk, 'isEntry' | 'imports'>>)
 
 /**
  * @description 通过独立的 Vite write 阶段持久化 DevEngine 已生成的文件，不重新解析业务源码。

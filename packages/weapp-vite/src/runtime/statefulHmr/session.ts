@@ -19,8 +19,11 @@ import { logger } from '../../context/shared'
 import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
 import { isReactStaticTemplateSource } from '../../plugins/react'
 import { parseJsLike, traverse } from '../../utils/babel'
+import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
+import { createStatefulHmrGlobalStyleAssets } from './globalStyles'
+import { registerStatefulHmrInitialChunkLoaders } from './initialChunkLoaders'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
@@ -149,7 +152,11 @@ class StatefulHmrSession {
     devWatchOptions: { compareContentsForPolling?: boolean, pollInterval?: number, usePolling?: boolean },
   ) {
     this.emittedSourceIds = collectStatefulHmrEmittedSourceIds(snapshots.initial, server.config.root)
-    this.replaceSnapshotAssets(snapshots.initial)
+    this.replaceSnapshotAssets(createStatefulHmrGlobalStyleAssets(
+      snapshots.initial,
+      resolveOutputExtensions(ctx.configService?.outputExtensions).styleExtension,
+      { createIfMissing: true },
+    ))
     this.transport = new StatefulHmrTransport(
       server,
       async (buildId, source) => {
@@ -225,10 +232,6 @@ class StatefulHmrSession {
     const affectedEntries = this.ctx.moduleGraphService.collectAffectedEntries(normalizedFile)
     const hasTrackedModule = (this.server.moduleGraph.getModulesByFile(normalizedFile)?.size ?? 0) > 0
     const isEmittedDependency = this.emittedSourceIds.has(normalizedFile)
-    if (isStatefulHmrExecutableSource(normalizedFile) && isEmittedDependency && !this.entryIds.has(normalizedFile)) {
-      this.requestServerRestart()
-      return
-    }
     if (shouldRebuildStatefulDependency(normalizedFile, this.entryIds, affectedEntries, hasTrackedModule, isEmittedDependency)) {
       this.requestFullBuild([normalizedFile])
       return
@@ -250,9 +253,13 @@ class StatefulHmrSession {
       if (snapshotBatch?.isSuperseded()) {
         return
       }
-      const compatibleOutput = await transformOutput(output)
+      const compatibleOutput = createStatefulHmrGlobalStyleAssets(
+        await transformOutput(output),
+        resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
+      )
       const fullBuild = compatibleOutput.some(item => item.fileName === 'app.js')
       if (fullBuild) {
+        registerStatefulHmrInitialChunkLoaders(compatibleOutput, [...this.ctx.scanService!.subPackageMap.keys()])
         for (const sourceId of collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root)) {
           this.emittedSourceIds.add(sourceId)
         }
@@ -286,16 +293,13 @@ class StatefulHmrSession {
       files,
       output,
       dirtyReasonSummary,
-      this.entryIds,
-      this.server.config.root,
       { allowTailwindContent: allowTailwindContentPatch },
     )) {
       if (shouldRestartStatefulHmrServer(files, this.ctx.configService?.configFileDependencies)) {
         this.requestServerRestart()
       }
       else if (
-        this.snapshotScheduler.isPending()
-        || (files.length > 0 && files.every(isStatefulHmrAssetFile))
+        (files.length > 0 && files.every(isStatefulHmrAssetFile))
         || shouldUseStatefulHmrSnapshotOnly(this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary ?? [])
       ) {
         if (!this.snapshotScheduler.isPending()) {
@@ -364,7 +368,11 @@ class StatefulHmrSession {
     isSuperseded: () => boolean
     mode: 'full' | 'refresh'
   }): Promise<void> {
-    const output = await this.snapshots.rebuild(batch.files)
+    const output = createStatefulHmrGlobalStyleAssets(
+      await this.snapshots.rebuild(batch.files),
+      resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
+      { createIfMissing: true },
+    )
     if (batch.isSuperseded()) {
       return
     }
@@ -429,7 +437,10 @@ export function shouldRebuildStatefulDependency(
   const normalizedFile = normalizeFsResolvedId(file)
   return isStatefulHmrExecutableSource(normalizedFile)
     && !entryIds.has(normalizedFile)
-    && (affectedEntries.size > 0 || hasTrackedModule || isEmittedDependency)
+    && affectedEntries.size > 0
+    // 已进入 DevEngine 的模块由实际 Patch/FullReload 分类，避免 source watcher 抢先重启。
+    && !hasTrackedModule
+    && !isEmittedDependency
 }
 
 function collectStatefulHmrEmittedSourceIds(output: StatefulHmrOutputFile[], root: string): Set<string> {
@@ -573,19 +584,10 @@ export function isSafeJavaScriptPatch(
   files: string[],
   output: StatefulHmrDevEngineUpdate,
   dirtyReasonSummary: string[] = [],
-  entryIds?: Iterable<string>,
-  root?: string,
   options: { allowTailwindContent?: boolean } = {},
 ): output is Extract<StatefulHmrDevEngineUpdate, { type: 'Patch' }> {
-  const normalizedEntryIds = entryIds
-    ? new Set(Array.from(entryIds, entryId => normalizeFsResolvedId(entryId)))
-    : undefined
   return output.type === 'Patch'
     && files.every(file => /\.(?:[cm]?[jt]sx?|vue)$/.test(file))
-    && (!normalizedEntryIds || files.every((file) => {
-      const absoluteFile = path.isAbsolute(file) || !root ? file : path.resolve(root, file)
-      return normalizedEntryIds.has(normalizeFsResolvedId(absoluteFile))
-    }))
     && !output.changedIds?.some(isNonJavaScriptSidecarId)
     && !dirtyReasonSummary.some(reason => isUnsafeStatefulHmrReason(reason, options.allowTailwindContent === true))
 }
@@ -618,7 +620,7 @@ export function shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary: string[]): 
 
 function isNonJavaScriptSidecarId(id: string): boolean {
   const sidecar = parseSidecarSourceRequest(id) ?? parseSidecarModuleId(id)
-  return sidecar !== undefined && sidecar.kind !== 'script'
+  return sidecar !== undefined && sidecar.kind !== 'script' && sidecar.kind !== 'jsx'
 }
 
 export function shouldResetStatefulHmrRetention(

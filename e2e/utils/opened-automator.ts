@@ -1,4 +1,7 @@
+import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
 import { connectOpenedAutomator, resolveProjectAutomatorPort } from 'weapp-ide-cli'
+import { enhanceMiniProgramWithRuntimeLogs } from './automator'
+import { resolveReportProjectPath } from './ideWarningReport'
 
 interface OpenedAutomatorSessionMetadata {
   projectPath: string
@@ -16,6 +19,10 @@ interface WaitForOpenedAutomatorOptions {
 }
 
 const DEFAULT_APP_READY_TIMEOUT = 15_000
+
+function isOpenedMiniProgram(value: unknown): value is MiniProgram {
+  return !!value && typeof value === 'object' && typeof Reflect.get(value, 'currentPage') === 'function'
+}
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -89,6 +96,17 @@ export async function waitForOpenedAutomator(
         port,
         timeout: connectTimeoutMs,
       })
+      if (!isOpenedMiniProgram(miniProgram)) {
+        throw new TypeError('Opened automator did not return a MiniProgram session with currentPage().')
+      }
+      try {
+        enhanceMiniProgramWithRuntimeLogs(miniProgram, resolveReportProjectPath(projectPath))
+        await miniProgram.enableLog(appReadyTimeoutMs)
+      }
+      catch (error) {
+        await closeStaleMiniProgram(miniProgram)
+        throw new Error(`Opened automator runtime log subscription failed: ${formatOpenedAutomatorError(error)}`, { cause: error })
+      }
       if (!skipAppReady) {
         try {
           await waitForOpenedMiniProgramReady(miniProgram, appReadyTimeoutMs, readyRoute)

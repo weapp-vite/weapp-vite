@@ -80,4 +80,18 @@ describe('page layout helpers', () => {
       'alipay',
     )
   })
+
+  it('resolves independent layout output references back to the discovered source', async () => {
+    const externalComponentEntryMap = new Map<string, string>()
+    await registerResolvedPageLayoutDependencies({
+      runtimeState: { build: { hmr: { externalComponentEntryMap } } },
+      moduleGraphService: { replaceEntryDependencies: vi.fn() },
+      configService: { platform: 'weapp' },
+    } as any, '/project/src/packageB/pages/home/index.vue', [{
+      kind: 'vue',
+      file: '/project/src/layouts/admin.vue',
+      importPath: '/packageB/weapp-shared/layouts/admin',
+    }] as any)
+    expect(externalComponentEntryMap.get('packageB/weapp-shared/layouts/admin')).toBe('/project/src/layouts/admin.vue')
+  })
 })

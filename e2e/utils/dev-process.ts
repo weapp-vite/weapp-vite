@@ -2,7 +2,10 @@
 import type { Options } from 'execa'
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
+import { createDevProcessDiagnostics } from './devProcessDiagnostics'
+import { resolveReportProjectPath } from './ideWarningReport'
 
 interface DevProcessExitInfo {
   exitCode: number | null | undefined
@@ -270,14 +273,18 @@ export function startDevProcess(
     TRACKED_DEV_PIDS.add(child.pid)
   }
   const outputChunks: string[] = []
+  const projectPath = options?.cwd instanceof URL ? fileURLToPath(options.cwd) : options?.cwd
+  const diagnostics = createDevProcessDiagnostics(resolveReportProjectPath(projectPath))
 
   const appendOutput = (chunk: unknown) => {
     if (typeof chunk === 'string') {
       outputChunks.push(chunk)
+      diagnostics.write(chunk)
       return
     }
     if (chunk instanceof Uint8Array) {
       outputChunks.push(Buffer.from(chunk).toString('utf8'))
+      diagnostics.write(chunk)
     }
   }
 
@@ -311,6 +318,7 @@ export function startDevProcess(
     })
 
   void settledExit.finally(() => {
+    diagnostics.flush()
     if (typeof child.pid === 'number') {
       TRACKED_DEV_PIDS.delete(child.pid)
     }

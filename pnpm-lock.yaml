@@ -597,6 +597,9 @@ importers:
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
+      zigpty:
+        specifier: 0.2.1
+        version: 0.2.1
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -2247,6 +2250,15 @@ importers:
       '@weapp-core/constants':
         specifier: workspace:*
         version: link:../../../@weapp-core/constants
+      css-select:
+        specifier: ^6.0.0
+        version: 6.0.0
+      css-what:
+        specifier: ^7.0.0
+        version: 7.0.0
+      fontoxpath:
+        specifier: ^3.34.0
+        version: 3.34.0
       htmlparser2:
         specifier: 'catalog:'
         version: 12.0.0
@@ -12207,6 +12219,9 @@ packages:
       debug:
         optional: true
 
+  fontoxpath@3.34.0:
+    resolution: {integrity: sha512-7FgBQRohn4WR/2eVdYqZtKBFZkJNaiP4kGdfqS6bAg465og05ixGA2OgfMdxsO1mnX67+64JX/8JKclVqS+bzA==}
+
   for-each@0.3.5:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
     engines: {node: '>= 0.4'}
@@ -15259,6 +15274,9 @@ packages:
   prr@1.0.1:
     resolution: {integrity: sha512-yPw4Sng1gWghHQWj0B3ZggWUm4qVbPwPFcRG8KyxiU7J2OHFSoEHKS+EZ3fv5l1t9CyCiop6l/ZYeWbrgoQejw==}
 
+  prsc@4.0.0:
+    resolution: {integrity: sha512-OmXQ2v76RlXNx/gqv7+oB6jyKnudJ/rsMfAIVexhbDFxXAJPoWKMxJkZU2ohlu4miCiSQCG+horf2DV4/kNc1Q==}
+
   psl@1.15.0:
     resolution: {integrity: sha512-JZd3gMVBAVQkSs6HdNZo9Sdo0LNcQeMNP3CozBJb3JYC/QUYZTnKxP+f8oWRX4rHP5EurWxqAHTSwUCjlNKa1w==}
 
@@ -17464,6 +17482,9 @@ packages:
     engines: {node: '>=20.11'}
     hasBin: true
 
+  whynot@5.0.0:
+    resolution: {integrity: sha512-cGGfDPYYqoHoMWqXVc3G+N74u1FhFhrBa+pOO906b9ktRc/JFUdwroTkfPqjKzyoCLVcKr6yy6bYIcWT7jTg2A==}
+
   widest-line@3.1.0:
     resolution: {integrity: sha512-NsmoXalsWVDMGupxZ5R08ka9flZjjiLvHVAWYOKtiKM8ujtZWr9cRffak+uSE48+Ob8ObalXpwyeUiyDD6QFgg==}
     engines: {node: '>=8'}
@@ -17560,6 +17581,9 @@ packages:
 
   xregexp@2.0.0:
     resolution: {integrity: sha512-xl/50/Cf32VsGq/1R8jJE5ajH1yMCQkpmoS10QbFZWl2Oor4H0Me64Pu2yxvsRWK3m6soJbmGfzSR7BYmDcWAA==}
+
+  xspattern@3.1.0:
+    resolution: {integrity: sha512-rxtOX8ORJizRqswIdZ72G3thKrHd0Q+TvyUCMByc5VdjDz1nkuZKfPXM3xGdrGi0fwEy+DDJN7DqtAZ06Re4bA==}
 
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
@@ -26559,6 +26583,11 @@ snapshots:
     optionalDependencies:
       debug: 4.4.3(supports-color@10.2.2)
 
+  fontoxpath@3.34.0:
+    dependencies:
+      prsc: 4.0.0
+      xspattern: 3.1.0
+
   for-each@0.3.5:
     dependencies:
       is-callable: 1.2.7
@@ -29937,6 +29966,8 @@ snapshots:
   prr@1.0.1:
     optional: true
 
+  prsc@4.0.0: {}
+
   psl@1.15.0:
     dependencies:
       punycode: 2.3.1
@@ -32554,6 +32585,8 @@ snapshots:
 
   why-is-node-running@3.2.2: {}
 
+  whynot@5.0.0: {}
+
   widest-line@3.1.0:
     dependencies:
       string-width: 4.2.3
@@ -32656,6 +32689,10 @@ snapshots:
   xmlhttprequest-ssl@2.1.2: {}
 
   xregexp@2.0.0: {}
+
+  xspattern@3.1.0:
+    dependencies:
+      whynot: 5.0.0
 
   xtend@4.0.2: {}
 

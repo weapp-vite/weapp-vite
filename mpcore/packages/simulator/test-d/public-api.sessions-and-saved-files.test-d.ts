@@ -1,11 +1,14 @@
 import type {
   HeadlessPluginDescriptor,
+  HeadlessTestingPageHandle,
   HeadlessTestingRenderedNodeSnapshot,
   HeadlessTestingSessionHandle,
   HeadlessTestingToolInfo,
+  HeadlessWx,
   HeadlessWxDeviceInfoResult,
   HeadlessWxDownloadFileMockDefinition,
   HeadlessWxGetLocationResult,
+  HeadlessWxIntersectionObserver,
   HeadlessWxUploadFileMockDefinition,
 } from '..'
 import { expectType } from 'tsd'
@@ -36,6 +39,8 @@ expectType<ReturnType<typeof createHeadlessSession>>(createHeadlessSession({
 }))
 browserSession.reLaunch('/pages/index/index')
 const browserPage = browserSession.getCurrentPages()[0]
+// 页面自定义字段没有宿主类型保证，浏览器侧直接验证公开的宿主接口。
+declare const browserWx: HeadlessWx
 
 expectType<void>(browserSession.mockDownloadFile({
   fileContent: (option) => {
@@ -58,7 +63,7 @@ expectType<void>(browserSession.mockUploadFile({
 expectType<{
   errMsg: string
   tempFilePath: string
-}>(browserPage?.wx.canvasToTempFilePath({
+} | undefined>(browserWx.canvasToTempFilePath({
   canvasId: 'hero-canvas',
   component: browserPage,
   destHeight: 40,
@@ -80,7 +85,7 @@ expectType<{
       transformOrigin: string
     }
   }>
-}>(browserPage?.wx.createAnimation({
+}>(browserWx.createAnimation({
   duration: 120,
 }).opacity(0.4).step().export())
 expectType<{
@@ -142,38 +147,38 @@ expectType<{
   strokeRect: (x: number, y: number, width: number, height: number) => void
   strokeText: (text: string, x: number, y: number, maxWidth?: number) => void
   translate: (x: number, y: number) => void
-}>(browserPage?.wx.createCanvasContext('hero-canvas', browserPage))
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).arc(10, 12, 6, 0, Math.PI, false)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).arcTo(18, 6, 24, 12, 4)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).bezierCurveTo(10, 4, 14, 8, 18, 12)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).clip('evenodd')
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).closePath()
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).drawImage('/tmp/thumb.png', 2, 4)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).drawImage('/tmp/report.png', 4, 6, 12, 8)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).drawImage('/tmp/sprite.png', 0, 0, 24, 24, 8, 10, 12, 14)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).rect(2, 3, 16, 10)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).quadraticCurveTo(8, 4, 12, 16)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).restore()
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).rotate(0.5)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).save()
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).scale(1.2, 0.8)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setGlobalAlpha(0.6)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineCap('round')
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineDash([6, 3], 2)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineJoin('bevel')
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setMiterLimit(6)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setShadow(2, 3, 4, '#112233')
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).fill('evenodd')
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setTextAlign('center')
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setTextBaseline('middle')
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).strokeText('canvas', 6, 20)
-browserPage?.wx.createCanvasContext('hero-canvas', browserPage).translate(3, 4)
+}>(browserWx.createCanvasContext('hero-canvas', browserPage))
+browserWx.createCanvasContext('hero-canvas', browserPage).arc(10, 12, 6, 0, Math.PI, false)
+browserWx.createCanvasContext('hero-canvas', browserPage).arcTo(18, 6, 24, 12, 4)
+browserWx.createCanvasContext('hero-canvas', browserPage).bezierCurveTo(10, 4, 14, 8, 18, 12)
+browserWx.createCanvasContext('hero-canvas', browserPage).clip('evenodd')
+browserWx.createCanvasContext('hero-canvas', browserPage).closePath()
+browserWx.createCanvasContext('hero-canvas', browserPage).drawImage('/tmp/thumb.png', 2, 4)
+browserWx.createCanvasContext('hero-canvas', browserPage).drawImage('/tmp/report.png', 4, 6, 12, 8)
+browserWx.createCanvasContext('hero-canvas', browserPage).drawImage('/tmp/sprite.png', 0, 0, 24, 24, 8, 10, 12, 14)
+browserWx.createCanvasContext('hero-canvas', browserPage).rect(2, 3, 16, 10)
+browserWx.createCanvasContext('hero-canvas', browserPage).quadraticCurveTo(8, 4, 12, 16)
+browserWx.createCanvasContext('hero-canvas', browserPage).restore()
+browserWx.createCanvasContext('hero-canvas', browserPage).rotate(0.5)
+browserWx.createCanvasContext('hero-canvas', browserPage).save()
+browserWx.createCanvasContext('hero-canvas', browserPage).scale(1.2, 0.8)
+browserWx.createCanvasContext('hero-canvas', browserPage).setGlobalAlpha(0.6)
+browserWx.createCanvasContext('hero-canvas', browserPage).setLineCap('round')
+browserWx.createCanvasContext('hero-canvas', browserPage).setLineDash([6, 3], 2)
+browserWx.createCanvasContext('hero-canvas', browserPage).setLineJoin('bevel')
+browserWx.createCanvasContext('hero-canvas', browserPage).setMiterLimit(6)
+browserWx.createCanvasContext('hero-canvas', browserPage).setShadow(2, 3, 4, '#112233')
+browserWx.createCanvasContext('hero-canvas', browserPage).fill('evenodd')
+browserWx.createCanvasContext('hero-canvas', browserPage).setTextAlign('center')
+browserWx.createCanvasContext('hero-canvas', browserPage).setTextBaseline('middle')
+browserWx.createCanvasContext('hero-canvas', browserPage).strokeText('canvas', 6, 20)
+browserWx.createCanvasContext('hero-canvas', browserPage).translate(3, 4)
 
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
 expectType<HeadlessWxDeviceInfoResult>(browserSession.getDeviceInfo())
-expectType<HeadlessWxDeviceInfoResult | undefined>(browserPage?.wx.getDeviceInfo())
+expectType<HeadlessWxDeviceInfoResult>(browserWx.getDeviceInfo())
 expectType<HeadlessWxGetLocationResult>(browserSession.getLocation())
-expectType<HeadlessWxGetLocationResult | undefined>(browserPage?.wx.getLocation({
+expectType<HeadlessWxGetLocationResult | undefined>(browserWx.getLocation({
   isHighAccuracy: true,
   type: 'gcj02',
 }))
@@ -194,9 +199,9 @@ expectType<{
     intersectionRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
     relativeRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
   }) => void) => void
-  relativeTo: (selector: string, margins?: { bottom?: number, left?: number, right?: number, top?: number }) => any
-  relativeToViewport: (margins?: { bottom?: number, left?: number, right?: number, top?: number }) => any
-}>(browserPage?.createIntersectionObserver?.({ thresholds: [0, 1] }))
+  relativeTo: (selector: string, margins?: { bottom?: number, left?: number, right?: number, top?: number }) => HeadlessWxIntersectionObserver
+  relativeToViewport: (margins?: { bottom?: number, left?: number, right?: number, top?: number }) => HeadlessWxIntersectionObserver
+}>(browserWx.createIntersectionObserver(browserPage, { thresholds: [0, 1] }))
 expectType<{
   disconnect: () => void
   observe: (descriptor: {
@@ -208,7 +213,7 @@ expectType<{
     orientation?: string
     width?: number
   }, callback: (result: { matches: boolean }) => void) => void
-}>(browserPage?.createMediaQueryObserver?.())
+} | undefined>(browserPage?.createMediaQueryObserver?.())
 expectType<{
   exitFullScreen: () => void
   pause: () => void
@@ -216,32 +221,32 @@ expectType<{
   requestFullScreen: () => void
   seek: (position: number) => void
   stop: () => void
-}>(browserPage?.wx.createVideoContext('hero-video', browserPage))
-expectType<{ createTime: number, errMsg: string, size: number } | undefined>(browserPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
-expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(browserPage?.wx.getSavedFileList())
-expectType<{ digest: string, errMsg: string, size: number } | undefined>(browserPage?.wx.getFileInfo({
+}>(browserWx.createVideoContext('hero-video', browserPage))
+expectType<{ createTime: number, errMsg: string, size: number } | undefined>(browserWx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
+expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(browserWx.getSavedFileList())
+expectType<{ digest: string, errMsg: string, size: number } | undefined>(browserWx.getFileInfo({
   digestAlgorithm: 'md5',
   filePath: 'headless://wxfile/temp/0001',
 }))
-expectType<{ errMsg: string } | undefined>(browserPage?.wx.openDocument({
+expectType<{ errMsg: string } | undefined>(browserWx.openDocument({
   filePath: 'headless://wxfile/temp/0001.pdf',
   fileType: 'pdf',
   showMenu: true,
 }))
-expectType<{ errMsg: string } | undefined>(browserPage?.wx.startPullDownRefresh())
-expectType<{ errMsg: string } | undefined>(browserPage?.wx.setClipboardData({
+expectType<{ errMsg: string } | undefined>(browserWx.startPullDownRefresh())
+expectType<{ errMsg: string } | undefined>(browserWx.setClipboardData({
   data: 'clipboard',
 }))
-expectType<{ data: string, errMsg: string } | undefined>(browserPage?.wx.getClipboardData())
-expectType<{ errMsg: string } | undefined>(browserPage?.wx.showLoading({
+expectType<{ data: string, errMsg: string } | undefined>(browserWx.getClipboardData())
+expectType<{ errMsg: string } | undefined>(browserWx.showLoading({
   mask: true,
   title: 'loading',
 }))
-expectType<{ errMsg: string } | undefined>(browserPage?.wx.hideLoading())
-expectType<{ errMsg: string } | undefined>(browserPage?.wx.saveImageToPhotosAlbum({
+expectType<{ errMsg: string } | undefined>(browserWx.hideLoading())
+expectType<{ errMsg: string } | undefined>(browserWx.saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))
-expectType<{ errMsg: string } | undefined>(browserPage?.wx.saveVideoToPhotosAlbum({
+expectType<{ errMsg: string } | undefined>(browserWx.saveVideoToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))
 expectType<{
@@ -251,7 +256,7 @@ expectType<{
   path: string
   type: string
   width: number
-} | undefined>(browserPage?.wx.getImageInfo({
+} | undefined>(browserWx.getImageInfo({
   src: 'headless://wxfile/temp/0001',
 }))
 expectType<{
@@ -264,10 +269,10 @@ expectType<{
   size: number
   type: string
   width: number
-} | undefined>(browserPage?.wx.getVideoInfo({
+} | undefined>(browserWx.getVideoInfo({
   src: 'headless://wxfile/temp/0001.mp4',
 }))
-expectType<{ errMsg: string } | undefined>(browserPage?.wx.previewImage({
+expectType<{ errMsg: string } | undefined>(browserWx.previewImage({
   current: 'headless://wxfile/temp/0001',
   urls: ['headless://wxfile/temp/0001'],
 }))
@@ -275,7 +280,7 @@ expectType<{
   errMsg: string
   tempFilePaths: string[]
   tempFiles: Array<{ path: string, size: number }>
-} | undefined>(browserPage?.wx.chooseImage({
+} | undefined>(browserWx.chooseImage({
   count: 2,
   sizeType: ['compressed'],
   sourceType: ['album'],
@@ -289,7 +294,7 @@ expectType<{
     time: number
     type: string
   }>
-} | undefined>(browserPage?.wx.chooseMessageFile({
+} | undefined>(browserWx.chooseMessageFile({
   count: 3,
   extension: ['png', 'pdf', 'mp4'],
   type: 'all',
@@ -301,7 +306,7 @@ expectType<{
   size: number
   tempFilePath: string
   width: number
-} | undefined>(browserPage?.wx.chooseVideo({
+} | undefined>(browserWx.chooseVideo({
   compressed: true,
   maxDuration: 24,
   sourceType: ['album'],
@@ -318,7 +323,7 @@ expectType<{
     width: number
   }>
   type: 'image' | 'mix' | 'video'
-} | undefined>(browserPage?.wx.chooseMedia({
+} | undefined>(browserWx.chooseMedia({
   count: 2,
   maxDuration: 24,
   mediaType: ['image', 'video'],
@@ -328,13 +333,13 @@ expectType<{
 expectType<{
   errMsg: string
   tempFilePath: string
-} | undefined>(browserPage?.wx.compressImage({
+} | undefined>(browserWx.compressImage({
   compressedHeight: 48,
   compressedWidth: 64,
   quality: 70,
   src: 'headless://wxfile/temp/0001.jpg',
 }))
-expectType<{ abort: () => void }>(browserPage?.wx.downloadFile({
+expectType<{ abort: () => void }>(browserWx.downloadFile({
   url: 'https://mock.mpcore.dev/files/report.txt',
   success: (result) => {
     expectType<{ errMsg: string, statusCode: number, tempFilePath: string }>(result)
@@ -346,7 +351,7 @@ expectType<{ abort: () => void }>(browserPage?.wx.downloadFile({
     expectType<{ errMsg: string, statusCode: number, tempFilePath: string } | undefined>(result)
   },
 }) ?? { abort() {} })
-expectType<{ abort: () => void }>(browserPage?.wx.uploadFile({
+expectType<{ abort: () => void }>(browserWx.uploadFile({
   url: 'https://mock.mpcore.dev/upload/report',
   filePath: 'headless://wxfile/temp/0001',
   name: 'report',
@@ -361,7 +366,7 @@ expectType<{ abort: () => void }>(browserPage?.wx.uploadFile({
   },
 }) ?? { abort() {} })
 
-browserPage?.wx.saveFile({
+browserWx.saveFile({
   tempFilePath: 'headless://wxfile/temp/0001',
   success: (result) => {
     expectType<{ errMsg: string, savedFilePath: string }>(result)
@@ -374,7 +379,7 @@ browserPage?.wx.saveFile({
   },
 })
 
-browserPage?.wx.getSavedFileList({
+browserWx.getSavedFileList({
   success: (result) => {
     expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> }>(result)
   },
@@ -383,7 +388,7 @@ browserPage?.wx.getSavedFileList({
   },
 })
 
-browserPage?.wx.getSavedFileInfo({
+browserWx.getSavedFileInfo({
   filePath: 'headless://wxfile/saved/0001',
   success: (result) => {
     expectType<{ createTime: number, errMsg: string, size: number }>(result)
@@ -396,7 +401,7 @@ browserPage?.wx.getSavedFileInfo({
   },
 })
 
-browserPage?.wx.removeSavedFile({
+browserWx.removeSavedFile({
   filePath: 'headless://wxfile/saved/0001',
   success: (result) => {
     expectType<{ errMsg: string }>(result)
@@ -412,23 +417,23 @@ browserPage?.wx.removeSavedFile({
 const headlessSession = createHeadlessSession({ projectPath: '/tmp/project' })
 const headlessPage = headlessSession.getCurrentPages()[0]
 
-expectType<{ errMsg: string } | undefined>(headlessPage?.wx.loadFontFace({
+expectType<{ errMsg: string } | undefined>(headlessSession.getWx().loadFontFace({
   family: 'uview-icon',
   source: 'url("headless://font/uview.ttf")',
   success: (result) => {
     expectType<{ errMsg: string }>(result)
   },
 }))
-expectType<void>(headlessPage?.wx.$on('grid:update', (index: number) => {
+expectType<void>(headlessSession.getWx().$on('grid:update', (index: number) => {
   expectType<number>(index)
 }))
-expectType<void>(headlessPage?.wx.$once('grid:update', () => {}))
-expectType<void>(headlessPage?.wx.$emit('grid:update', 1))
-expectType<void>(headlessPage?.wx.$off('grid:update'))
-expectType<string | undefined>(headlessPage?.wx.getLocale())
-expectType<number | undefined>(headlessPage?.wx.rpx2px(100))
-expectType<number | undefined>(headlessPage?.wx.upx2px(100))
-expectType<number | undefined>(headlessPage?.wx.getWindowInfo().safeAreaInsets.bottom)
+expectType<void>(headlessSession.getWx().$once('grid:update', () => {}))
+expectType<void>(headlessSession.getWx().$emit('grid:update', 1))
+expectType<void>(headlessSession.getWx().$off('grid:update'))
+expectType<string>(headlessSession.getWx().getLocale())
+expectType<number>(headlessSession.getWx().rpx2px(100))
+expectType<number>(headlessSession.getWx().upx2px(100))
+expectType<number | undefined>(headlessSession.getWx().getWindowInfo()?.safeAreaInsets?.bottom)
 
 const headlessDownloadMock: HeadlessWxDownloadFileMockDefinition = {
   fileContent: 'downloaded report',
@@ -458,7 +463,7 @@ expectType<{
       transformOrigin: string
     }
   }>
-}>(headlessPage?.wx.createAnimation({
+}>(headlessSession.getWx().createAnimation({
   duration: 120,
 }).translateX(12).step().export())
 expectType<{
@@ -520,32 +525,32 @@ expectType<{
   strokeRect: (x: number, y: number, width: number, height: number) => void
   strokeText: (text: string, x: number, y: number, maxWidth?: number) => void
   translate: (x: number, y: number) => void
-}>(headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage))
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).arc(10, 12, 6, 0, Math.PI, false)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).arcTo(18, 6, 24, 12, 4)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).bezierCurveTo(10, 4, 14, 8, 18, 12)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).clip('evenodd')
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).closePath()
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).drawImage('/tmp/thumb.png', 2, 4)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).drawImage('/tmp/report.png', 4, 6, 12, 8)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).drawImage('/tmp/sprite.png', 0, 0, 24, 24, 8, 10, 12, 14)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).rect(2, 3, 16, 10)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).quadraticCurveTo(8, 4, 12, 16)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).restore()
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).rotate(0.5)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).save()
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).scale(1.2, 0.8)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setGlobalAlpha(0.6)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineCap('round')
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineDash([6, 3], 2)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineJoin('bevel')
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setMiterLimit(6)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setShadow(2, 3, 4, '#112233')
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).fill('evenodd')
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setTextAlign('center')
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setTextBaseline('middle')
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).strokeText('canvas', 6, 20)
-headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).translate(3, 4)
+}>(headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage))
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).arc(10, 12, 6, 0, Math.PI, false)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).arcTo(18, 6, 24, 12, 4)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).bezierCurveTo(10, 4, 14, 8, 18, 12)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).clip('evenodd')
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).closePath()
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).drawImage('/tmp/thumb.png', 2, 4)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).drawImage('/tmp/report.png', 4, 6, 12, 8)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).drawImage('/tmp/sprite.png', 0, 0, 24, 24, 8, 10, 12, 14)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).rect(2, 3, 16, 10)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).quadraticCurveTo(8, 4, 12, 16)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).restore()
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).rotate(0.5)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).save()
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).scale(1.2, 0.8)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).setGlobalAlpha(0.6)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).setLineCap('round')
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).setLineDash([6, 3], 2)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).setLineJoin('bevel')
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).setMiterLimit(6)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).setShadow(2, 3, 4, '#112233')
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).fill('evenodd')
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).setTextAlign('center')
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).setTextBaseline('middle')
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).strokeText('canvas', 6, 20)
+headlessSession.getWx().createCanvasContext('hero-canvas', headlessPage).translate(3, 4)
 
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())
 expectType<{ data: string }>(headlessSession.getClipboardData())
@@ -558,7 +563,7 @@ expectType<{ filePath: string, fileType: string, showMenu: boolean, visible: boo
 expectType<{
   errMsg: string
   tempFilePath: string
-}>(headlessPage?.wx.canvasToTempFilePath({
+} | undefined>(headlessSession.getWx().canvasToTempFilePath({
   canvasId: 'hero-canvas',
   component: headlessPage,
   destHeight: 40,
@@ -579,9 +584,9 @@ expectType<{
     intersectionRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
     relativeRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
   }) => void) => void
-  relativeTo: (selector: string, margins?: { bottom?: number, left?: number, right?: number, top?: number }) => any
-  relativeToViewport: (margins?: { bottom?: number, left?: number, right?: number, top?: number }) => any
-}>(headlessPage?.createIntersectionObserver?.({ thresholds: [0, 1] }))
+  relativeTo: (selector: string, margins?: { bottom?: number, left?: number, right?: number, top?: number }) => HeadlessWxIntersectionObserver
+  relativeToViewport: (margins?: { bottom?: number, left?: number, right?: number, top?: number }) => HeadlessWxIntersectionObserver
+}>(headlessSession.getWx().createIntersectionObserver(headlessPage, { thresholds: [0, 1] }))
 expectType<{
   disconnect: () => void
   observe: (descriptor: {
@@ -593,7 +598,7 @@ expectType<{
     orientation?: string
     width?: number
   }, callback: (result: { matches: boolean }) => void) => void
-}>(headlessPage?.createMediaQueryObserver?.())
+} | undefined>(headlessPage?.createMediaQueryObserver?.())
 expectType<{
   exitFullScreen: () => void
   pause: () => void
@@ -601,31 +606,31 @@ expectType<{
   requestFullScreen: () => void
   seek: (position: number) => void
   stop: () => void
-}>(headlessPage?.wx.createVideoContext('hero-video', headlessPage))
-expectType<{ createTime: number, errMsg: string, size: number } | undefined>(headlessPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
-expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(headlessPage?.wx.getSavedFileList())
-expectType<{ digest: string, errMsg: string, size: number } | undefined>(headlessPage?.wx.getFileInfo({
+}>(headlessSession.getWx().createVideoContext('hero-video', headlessPage))
+expectType<{ createTime: number, errMsg: string, size: number } | undefined>(headlessSession.getWx().getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
+expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(headlessSession.getWx().getSavedFileList())
+expectType<{ digest: string, errMsg: string, size: number } | undefined>(headlessSession.getWx().getFileInfo({
   digestAlgorithm: 'sha1',
   filePath: 'headless://wxfile/temp/0001',
 }))
-expectType<{ errMsg: string } | undefined>(headlessPage?.wx.openDocument({
+expectType<{ errMsg: string } | undefined>(headlessSession.getWx().openDocument({
   filePath: 'headless://wxfile/temp/0001.txt',
   showMenu: false,
 }))
-expectType<{ errMsg: string } | undefined>(headlessPage?.wx.startPullDownRefresh())
-expectType<{ errMsg: string } | undefined>(headlessPage?.wx.setClipboardData({
+expectType<{ errMsg: string } | undefined>(headlessSession.getWx().startPullDownRefresh())
+expectType<{ errMsg: string } | undefined>(headlessSession.getWx().setClipboardData({
   data: 'clipboard',
 }))
-expectType<{ data: string, errMsg: string } | undefined>(headlessPage?.wx.getClipboardData())
-expectType<{ errMsg: string } | undefined>(headlessPage?.wx.showLoading({
+expectType<{ data: string, errMsg: string } | undefined>(headlessSession.getWx().getClipboardData())
+expectType<{ errMsg: string } | undefined>(headlessSession.getWx().showLoading({
   mask: false,
   title: 'loading',
 }))
-expectType<{ errMsg: string } | undefined>(headlessPage?.wx.hideLoading())
-expectType<{ errMsg: string } | undefined>(headlessPage?.wx.saveImageToPhotosAlbum({
+expectType<{ errMsg: string } | undefined>(headlessSession.getWx().hideLoading())
+expectType<{ errMsg: string } | undefined>(headlessSession.getWx().saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))
-expectType<{ errMsg: string } | undefined>(headlessPage?.wx.saveVideoToPhotosAlbum({
+expectType<{ errMsg: string } | undefined>(headlessSession.getWx().saveVideoToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))
 expectType<{
@@ -635,7 +640,7 @@ expectType<{
   path: string
   type: string
   width: number
-} | undefined>(headlessPage?.wx.getImageInfo({
+} | undefined>(headlessSession.getWx().getImageInfo({
   src: 'headless://wxfile/temp/0001',
 }))
 expectType<{
@@ -648,10 +653,10 @@ expectType<{
   size: number
   type: string
   width: number
-} | undefined>(headlessPage?.wx.getVideoInfo({
+} | undefined>(headlessSession.getWx().getVideoInfo({
   src: 'headless://wxfile/temp/0001.mp4',
 }))
-expectType<{ errMsg: string } | undefined>(headlessPage?.wx.previewImage({
+expectType<{ errMsg: string } | undefined>(headlessSession.getWx().previewImage({
   current: 'headless://wxfile/temp/0001',
   urls: ['headless://wxfile/temp/0001'],
 }))
@@ -659,7 +664,7 @@ expectType<{
   errMsg: string
   tempFilePaths: string[]
   tempFiles: Array<{ path: string, size: number }>
-} | undefined>(headlessPage?.wx.chooseImage({
+} | undefined>(headlessSession.getWx().chooseImage({
   count: 2,
   sizeType: ['compressed'],
   sourceType: ['album'],
@@ -673,7 +678,7 @@ expectType<{
     time: number
     type: string
   }>
-} | undefined>(headlessPage?.wx.chooseMessageFile({
+} | undefined>(headlessSession.getWx().chooseMessageFile({
   count: 3,
   extension: ['png', 'pdf', 'mp4'],
   type: 'all',
@@ -685,7 +690,7 @@ expectType<{
   size: number
   tempFilePath: string
   width: number
-} | undefined>(headlessPage?.wx.chooseVideo({
+} | undefined>(headlessSession.getWx().chooseVideo({
   compressed: true,
   maxDuration: 24,
   sourceType: ['album'],
@@ -702,7 +707,7 @@ expectType<{
     width: number
   }>
   type: 'image' | 'mix' | 'video'
-} | undefined>(headlessPage?.wx.chooseMedia({
+} | undefined>(headlessSession.getWx().chooseMedia({
   count: 2,
   maxDuration: 24,
   mediaType: ['image', 'video'],
@@ -712,13 +717,13 @@ expectType<{
 expectType<{
   errMsg: string
   tempFilePath: string
-} | undefined>(headlessPage?.wx.compressImage({
+} | undefined>(headlessSession.getWx().compressImage({
   compressedHeight: 48,
   compressedWidth: 64,
   quality: 70,
   src: 'headless://wxfile/temp/0001.jpg',
 }))
-expectType<{ abort: () => void }>(headlessPage?.wx.downloadFile({
+expectType<{ abort: () => void }>(headlessSession.getWx().downloadFile({
   url: 'https://mock.mpcore.dev/files/report.txt',
   success: (result) => {
     expectType<{ errMsg: string, statusCode: number, tempFilePath: string }>(result)
@@ -730,7 +735,7 @@ expectType<{ abort: () => void }>(headlessPage?.wx.downloadFile({
     expectType<{ errMsg: string, statusCode: number, tempFilePath: string } | undefined>(result)
   },
 }) ?? { abort() {} })
-expectType<{ abort: () => void }>(headlessPage?.wx.uploadFile({
+expectType<{ abort: () => void }>(headlessSession.getWx().uploadFile({
   url: 'https://mock.mpcore.dev/upload/report',
   filePath: 'headless://wxfile/temp/0001',
   name: 'report',
@@ -745,7 +750,7 @@ expectType<{ abort: () => void }>(headlessPage?.wx.uploadFile({
   },
 }) ?? { abort() {} })
 
-headlessPage?.wx.saveFile({
+headlessSession.getWx().saveFile({
   tempFilePath: 'headless://wxfile/temp/0001',
   success: (result) => {
     expectType<{ errMsg: string, savedFilePath: string }>(result)
@@ -758,7 +763,7 @@ headlessPage?.wx.saveFile({
   },
 })
 
-headlessPage?.wx.getSavedFileList({
+headlessSession.getWx().getSavedFileList({
   success: (result) => {
     expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> }>(result)
   },
@@ -767,7 +772,7 @@ headlessPage?.wx.getSavedFileList({
   },
 })
 
-headlessPage?.wx.getSavedFileInfo({
+headlessSession.getWx().getSavedFileInfo({
   filePath: 'headless://wxfile/saved/0001',
   success: (result) => {
     expectType<{ createTime: number, errMsg: string, size: number }>(result)
@@ -780,7 +785,7 @@ headlessPage?.wx.getSavedFileInfo({
   },
 })
 
-headlessPage?.wx.removeSavedFile({
+headlessSession.getWx().removeSavedFile({
   filePath: 'headless://wxfile/saved/0001',
   success: (result) => {
     expectType<{ errMsg: string }>(result)
@@ -805,7 +810,7 @@ launchResult.then((session) => {
     timeout: 1_000,
   }, 'probe'))
   expectType<Promise<number>>(session.evaluate(() => 42))
-  expectType<Promise<string>>(session.evaluateWithOptions('(value) => String(value)', {
+  expectType<Promise<string>>(session.evaluateWithOptions<string>('(value) => String(value)', {
     timeout: 1_000,
   }, 'probe'))
   expectType<HeadlessTestingSessionHandle>(session.on('console', () => {}))
@@ -817,7 +822,7 @@ launchResult.then((session) => {
     expectType<string>(page.path)
     expectType<Promise<void>>(page.setData({ 'probe.status': 'updated' }))
     expectType<Record<string, string>>(page.query)
-    expectType<Promise<unknown>>(page.callMethodWithOptions('runProbe', {
+    expectType<Promise<any>>(page.callMethodWithOptions('runProbe', {
       fallback: false,
       routeOnly: true,
       timeout: 1_000,
@@ -828,19 +833,9 @@ launchResult.then((session) => {
       selector: '#probe',
     }))
   })
-  expectType<Promise<unknown>>(session.navigateTo('/pages/detail/index'))
-  expectType<Promise<unknown>>(session.redirectTo('/pages/detail/index'))
-  expectType<Promise<unknown>>(session.navigateBack())
-  expectType<Promise<unknown>>(session.switchTab('/pages/profile/index'))
+  expectType<Promise<HeadlessTestingPageHandle>>(session.navigateTo('/pages/detail/index'))
+  expectType<Promise<HeadlessTestingPageHandle>>(session.redirectTo('/pages/detail/index'))
+  expectType<Promise<HeadlessTestingPageHandle | null>>(session.navigateBack())
+  expectType<Promise<HeadlessTestingPageHandle>>(session.switchTab('/pages/profile/index'))
 })
-expectType<Promise<{
-  callWxMethod: <T = unknown>(methodName: string, ...args: any[]) => Promise<T>
-  callWxMethodWithOptions: <T = unknown>(methodName: string, options?: { timeout?: number }, ...args: any[]) => Promise<T>
-  currentPage: () => Promise<unknown>
-  pageScrollTo: (scrollTop: number) => Promise<void>
-  reLaunch: (route: string) => Promise<unknown>
-  scopeSnapshot: (scopeId: string) => Promise<unknown>
-  selectAllComponents: (selector: string) => Promise<Array<{ callMethod: (methodName: string, ...args: any[]) => Promise<unknown>, scopeId: string, snapshot: () => Promise<unknown> }>>
-  selectComponent: (selector: string) => Promise<{ callMethod: (methodName: string, ...args: any[]) => Promise<unknown>, scopeId: string, snapshot: () => Promise<unknown> } | null>
-  waitForComponent: (selector: string, options?: { interval?: number, timeout?: number }) => Promise<{ callMethod: (methodName: string, ...args: any[]) => Promise<unknown>, scopeId: string, snapshot: () => Promise<unknown> }>
-}>>(launchResult)
+expectType<Promise<HeadlessTestingSessionHandle>>(launchResult)

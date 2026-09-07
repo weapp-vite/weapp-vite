@@ -495,7 +495,9 @@ describe('simulator browser e2e', { concurrent: false }, () => {
 
     await waitFor(
       () => bridge.getState(),
-      state => state.currentScenarioId === 'component-page' && state.currentRoute === 'pages/index/index',
+      state => state.currentScenarioId === 'component-page'
+        && state.currentRoute === 'pages/index/index'
+        && parseJsonString<{ lifecycleLog?: string[] }>(state.pageData).lifecycleLog?.includes('routeDone:undefined') === true,
       20_000,
     )
     bridge.triggerRouteDone({ from: 'browser-e2e' })
@@ -509,9 +511,10 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     )
     expect(state.errorMessage).toBe('')
     expect(state.previewMarkup).toContain('data-scenario="component-page"')
+    expect(state.previewMarkup).toContain(`created|attached|load|show|${initialResizeMarker}|ready|routeDone:undefined|routeDone:browser-e2e|resize:412`)
     expect(parseJsonString<Record<string, any>>(state.pageData)).toMatchObject({
-      lifecycleLog: ['created', 'attached', 'load', 'show', 'ready', 'routeDone:undefined', initialResizeMarker, 'routeDone:browser-e2e', 'resize:412'],
-      snapshot: `created|attached|load|show|ready|routeDone:undefined|${initialResizeMarker}|routeDone:browser-e2e|resize:412`,
+      lifecycleLog: ['created', 'attached', 'load', 'show', initialResizeMarker, 'ready', 'routeDone:undefined', 'routeDone:browser-e2e', 'resize:412'],
+      snapshot: `created|attached|load|show|${initialResizeMarker}|ready|routeDone:undefined|routeDone:browser-e2e|resize:412`,
     })
 
     bridge.runPageMethod('openNext')
@@ -539,9 +542,9 @@ describe('simulator browser e2e', { concurrent: false }, () => {
         'attached',
         'load',
         'show',
+        initialResizeMarker,
         'ready',
         'routeDone:undefined',
-        initialResizeMarker,
         'routeDone:browser-e2e',
         'resize:412',
         'hide',

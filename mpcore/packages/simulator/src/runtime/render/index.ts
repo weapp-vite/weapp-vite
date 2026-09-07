@@ -3,7 +3,9 @@ import type { HeadlessPageInstance } from '../pageInstance'
 import type { DomNodeLike, RuntimeRenderedPageTree, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import path from 'node:path'
 import { selectConditionalChildren } from '../../view/conditionalChildren'
+import { customTabBarHostScope, hasCustomTabBar } from '../../view/customTabBar'
 import { resolveLoopEntries } from '../../view/loopEntries'
+import { linkRenderedParents } from '../../view/renderedTree'
 import { isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
 import { wxsScopeData } from '../../view/wxs'
 import { runComponentLifecycle } from '../componentInstance'
@@ -327,8 +329,8 @@ function renderNodeTree(
       renderedComponentRoot.attribs['data-sim-scope'] = componentScopeId
     }
     if (!componentInstance.__ready__) {
-      runComponentLifecycle(componentInstance, 'ready')
       componentInstance.__ready__ = true
+      runComponentLifecycle(componentInstance, 'ready')
       componentInstance.__definition__?.pageLifetimes?.show?.call(componentInstance)
     }
     return renderedComponentRoot
@@ -389,6 +391,20 @@ export function renderRuntimePageTree(
     templateRenderState,
   )
 
+  const roots = [renderedRoot]
+  if (hasCustomTabBar(context.project.appConfig, route)) {
+    roots.push(renderNodeTree(
+      { type: 'tag', name: 'custom-tab-bar', attribs: {}, children: [] },
+      customTabBarHostScope(),
+      context,
+      path.resolve(context.project.miniprogramRootPath, 'app.json'),
+      'app.js',
+      pageScopeId,
+      seenComponentScopes,
+      templateRenderState,
+    ))
+  }
+
   for (const [scopeId, instance] of [...context.componentCache.entries()]) {
     // 隐藏的 tab 与导航栈页面仍拥有组件；只有当前页面的消失节点由本次渲染卸载。
     if (scopeId.startsWith(`${pageScopeId}/`) && !seenComponentScopes.has(scopeId)) {
@@ -398,9 +414,11 @@ export function renderRuntimePageTree(
     }
   }
 
+  const treeRoot: DomNodeLike = roots.length > 1 ? { type: 'root', children: roots } : renderedRoot
+  linkRenderedParents(treeRoot)
   return {
-    root: renderedRoot,
-    wxml: serializeDomNode(renderedRoot),
+    root: treeRoot,
+    wxml: roots.map(serializeDomNode).join(''),
   }
 }
 

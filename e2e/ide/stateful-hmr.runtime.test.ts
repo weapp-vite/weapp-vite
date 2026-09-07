@@ -1,5 +1,6 @@
 import path from 'node:path'
 import process from 'node:process'
+import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
@@ -57,6 +58,8 @@ function normalizeFixtureSource(source: string, runtime: 'component' | 'native' 
     return source
       .replace('STATEFUL-WEVU-PATCHED', 'STATEFUL-WEVU-BASE')
       .replace('count.value += 2', 'count.value += 1')
+      .replace('store.increment(2)', 'store.increment(1)')
+      .replace('  added: \'new default\',\n', '')
   }
   const prefix = runtime === 'native' ? 'NATIVE' : 'COMPONENT'
   return source
@@ -69,13 +72,14 @@ async function readRuntimeState(page?: any): Promise<RuntimeState> {
     const pages = getCurrentPages()
     const currentPage = pages[pages.length - 1] as any
     return {
-      data: currentPage.data,
       identity: String(currentPage.__statefulHmrIdentity ?? ''),
       route: String(currentPage.route ?? currentPage.__route__ ?? ''),
       source: String(currentPage.options?.source ?? ''),
     }
   })
-  const data = metadata.data ?? (page ? await page.data() : undefined)
+  const current = await miniProgram.currentPage()
+  expect(current.path).toBe(page?.path ?? current.path)
+  const data = await current.data(undefined, { fallback: false })
   return {
     count: Number(data?.count),
     identity: metadata.identity,
@@ -97,41 +101,11 @@ async function prepareRuntimeState(identity: string) {
   await inputs[0].input('held-input')
 }
 
-async function triggerIncrement(runtime: 'component' | 'native' | 'wevu', page?: any): Promise<unknown> {
-  if (runtime === 'wevu') {
-    return await miniProgram.evaluate(() => {
-      const pages = getCurrentPages()
-      const page = pages[pages.length - 1] as any
-      if (typeof page.__weapp_vite_inline !== 'function') {
-        throw new TypeError('wevu inline handler is unavailable')
-      }
-      return page.__weapp_vite_inline({
-        type: 'tap',
-        currentTarget: {
-          dataset: {
-            wiTap: 'i0',
-          },
-        },
-      })
-    })
-  }
-  const result = await miniProgram.evaluate(() => {
-    const pages = getCurrentPages()
-    const currentPage = pages[pages.length - 1] as any
-    if (typeof currentPage.increment !== 'function') {
-      return { called: false, route: String(currentPage?.route ?? currentPage?.__route__ ?? '') }
-    }
-    currentPage.increment()
-    return { called: true, route: String(currentPage?.route ?? currentPage?.__route__ ?? '') }
-  }, runtime)
-  if (result?.called) {
-    return
-  }
-  if (page && typeof page.callMethod === 'function') {
-    await page.callMethod('increment')
-    return
-  }
-  throw new TypeError(`${runtime} page increment is unavailable on ${result?.route || 'unknown route'}`)
+async function triggerIncrement() {
+  const page = await miniProgram.currentPage()
+  const buttons = await page.$$('.increment', { fallback: false })
+  expect(buttons).toHaveLength(1)
+  await buttons[0].tap()
 }
 
 async function waitForPatchedBehavior(expectedCount: number, page?: any, timeoutMs = 30_000): Promise<RuntimeState> {
@@ -313,7 +287,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await waitForPatchedBehavior(0, page)
     await dom.check('initial', miniProgram, page)
     await prepareRuntimeState('native-instance')
-    await triggerIncrement('native', page)
+    await triggerIncrement()
     await dom.check('prepared', miniProgram, page)
     expect(await readRuntimeState(page)).toEqual({
       count: 1,
@@ -330,10 +304,10 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await replaceFileByRename(NATIVE_SOURCE, updatedSource)
     await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'this.data.count + 2'), 'native literal patch published')
     await waitForClientVersion(clientVersion + 1)
-
     await dom.check('patched', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 1, input: 'held-input', identity: 'native-instance' })
 
-    await triggerIncrement('native', page)
+    await triggerIncrement()
     const state = await waitForPatchedBehavior(3, page)
     await dom.check('updated', miniProgram, await miniProgram.currentPage())
     expect(state).toEqual({
@@ -345,7 +319,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     })
   })
 
-  it('rehydrates wevu setup refs while preserving the native page instance', async (ctx) => {
+  it('rehydrates wevu local and store refs while preserving the native page instance', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('wevu'))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
@@ -354,8 +328,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await waitForPatchedBehavior(0, page)
     await dom.check('initial', miniProgram, page)
     await prepareRuntimeState('wevu-instance')
-    await triggerIncrement('wevu', page)
-    await triggerIncrement('wevu', page)
+    await triggerIncrement()
+    await triggerIncrement()
     await dom.check('prepared', miniProgram, page)
     expect(await waitForPatchedBehavior(2, page)).toEqual({
       count: 2,
@@ -368,14 +342,22 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     const updatedSource = originalWevuSource
       .replace('STATEFUL-WEVU-BASE', 'STATEFUL-WEVU-PATCHED')
       .replace('count.value += 1', 'count.value += 2')
+      .replace('store.increment(1)', 'store.increment(2)')
+      .replace('  removed: \'initial\',', '  removed: \'initial\',\n  added: \'new default\',')
     const clientVersion = await readClientVersion()
     await replaceFileByRename(WEVU_SOURCE, updatedSource)
     await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'count.value += 2'), 'wevu literal patch published')
     await waitForClientVersion(clientVersion + 1)
+    try {
+      await dom.check('patched', miniProgram, await miniProgram.currentPage())
+    }
+    catch (error) {
+      const state = await miniProgram.evaluate((key: string) => (globalThis as any)[key]?.getDebugSnapshot(true), WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)
+      throw new Error(`Wevu HMR rendered state mismatch; bridge=${JSON.stringify(state)}`, { cause: error })
+    }
+    expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance' })
 
-    await dom.check('patched', miniProgram, await miniProgram.currentPage())
-
-    await triggerIncrement('wevu', page)
+    await triggerIncrement()
     const state = await waitForPatchedBehavior(4, page)
     await dom.check('updated', miniProgram, await miniProgram.currentPage())
     expect(state).toEqual({
@@ -396,7 +378,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await waitForPatchedBehavior(0, page)
     await dom.check('initial', miniProgram, page)
     await prepareRuntimeState('component-instance')
-    await triggerIncrement('component', page)
+    await triggerIncrement()
     await dom.check('prepared', miniProgram, page)
     expect(await waitForPatchedBehavior(1, page)).toEqual({
       count: 1,
@@ -416,7 +398,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
 
     await dom.check('patched', miniProgram, await miniProgram.currentPage())
 
-    await triggerIncrement('component', page)
+    await triggerIncrement()
     await dom.check('updated', miniProgram, await miniProgram.currentPage())
     expect(await waitForPatchedBehavior(3, page)).toEqual({
       count: 3,

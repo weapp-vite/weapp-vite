@@ -1,6 +1,7 @@
 import type { DomAcceptance, DomCheckpoint, DomCheckpointEvidence, DomPage, DomSession } from './types'
 import { setTimeout as delay } from 'node:timers/promises'
 import { isDeepStrictEqual } from 'node:util'
+import { assertResponsiveStyle } from './styles'
 
 export function normalizeDomRoute(route: string) {
   return route.replace(/^\/+|\/+$/g, '')
@@ -38,6 +39,12 @@ export function validateDomPlan(plan: DomAcceptance) {
       if (!node.selector || (node.count !== undefined && (!Number.isInteger(node.count) || node.count < 0))) {
         throw new Error(`Invalid DOM selector/count: ${checkpoint.id}`)
       }
+      if (node.query !== undefined && node.query !== 'css' && node.query !== 'xpath') {
+        throw new Error(`Invalid DOM query mode: ${checkpoint.id}`)
+      }
+      if (node.query === 'xpath' && (node.scope?.length || node.has)) {
+        throw new Error('DOM XPath queries must express scope and descendants in the XPath selector')
+      }
       if (plan.provider === 'headless' && (node.visible !== undefined || Object.keys(node.styles ?? {}).length)) {
         throw new Error('Headless logical nodes cannot provide layout or computed-style acceptance')
       }
@@ -54,8 +61,16 @@ function assertEqual(actual: unknown, expected: unknown, label: string) {
 async function assertRoute(session: DomSession, page: DomPage, checkpoint: DomCheckpoint) {
   const route = normalizeDomRoute(checkpoint.route)
   assertEqual(normalizeDomRoute(page.path), route, 'DOM page route')
-  const current = await session.currentPage()
+  const current = await session.currentPage({ appFunctionFallback: false })
   assertEqual(current && normalizeDomRoute(current.path), route, 'DOM active route')
+  return current!
+}
+
+function readPageIdentity(page: DomPage) {
+  if (!Number.isSafeInteger(page.pageId) || page.pageId < 0) {
+    throw new Error('DOM provider cannot identify the current rendered page')
+  }
+  return page.pageId
 }
 
 export async function captureDomCheckpoint(
@@ -67,9 +82,11 @@ export async function captureDomCheckpoint(
 ): Promise<DomCheckpointEvidence> {
   const deadline = Date.now() + timeout
   let lastError: unknown
+  let windowWidth: number | undefined
   do {
     try {
-      await assertRoute(session, page, checkpoint)
+      const currentPage = await assertRoute(session, page, checkpoint)
+      const pageId = readPageIdentity(currentPage)
       const evidence: DomCheckpointEvidence = {
         id: checkpoint.id,
         route: normalizeDomRoute(checkpoint.route),
@@ -78,8 +95,20 @@ export async function captureDomCheckpoint(
         nodes: [],
       }
       for (const expected of checkpoint.nodes) {
+        const queryMode = expected.query ?? 'css'
+        if (queryMode === 'xpath' && (expected.scope?.length || expected.has)) {
+          throw new Error('DOM XPath queries must express scope and descendants in the XPath selector')
+        }
+        if (queryMode === 'xpath' && !currentPage.getElementsByXpath) {
+          throw new Error('DOM provider cannot query XPath across rendered roots')
+        }
+        if (queryMode === 'css' && typeof currentPage.$$ !== 'function') {
+          throw new Error('DOM provider cannot query the current rendered page')
+        }
         // 禁止 AppService 降级把协议异常转换成空节点或数据源断言。
-        let query = (selector: string) => page.$$(selector, { fallback: false, timeout: Math.max(1, deadline - Date.now()) })
+        let query = (selector: string) => queryMode === 'xpath'
+          ? currentPage.getElementsByXpath!(selector, { fallback: false, timeout: Math.max(1, deadline - Date.now()) })
+          : currentPage.$$(selector, { fallback: false, timeout: Math.max(1, deadline - Date.now()) })
         for (const scope of expected.scope ?? []) {
           let parents = await query(typeof scope === 'string' ? scope : 'component')
           if (typeof scope !== 'string') {
@@ -142,7 +171,17 @@ export async function captureDomCheckpoint(
             node.styles = {}
             for (const [name, value] of Object.entries(expected.styles)) {
               node.styles[name] = await element.style(name)
-              assertEqual(node.styles[name], value, `${expected.selector} style ${name}`)
+              if (typeof value === 'string') {
+                assertEqual(node.styles[name], value, `${expected.selector} style ${name}`)
+              }
+              else {
+                if (provider !== 'devtools' || !session.systemInfo) {
+                  throw new Error('Responsive style acceptance requires real IDE window dimensions')
+                }
+                windowWidth ??= (await session.systemInfo()).windowWidth
+                evidence.windowWidth = windowWidth
+                assertResponsiveStyle(node.styles[name], value.rpx, evidence.windowWidth, `${expected.selector} style ${name}`)
+              }
             }
           }
           if (expected.visible !== undefined) {
@@ -159,9 +198,10 @@ export async function captureDomCheckpoint(
           }
           nodes.push(node)
         }
-        evidence.nodes.push({ selector: expected.selector, has: expected.has, scope: expected.scope, count: elements.length, nodes })
+        evidence.nodes.push({ selector: expected.selector, query: queryMode, has: expected.has, scope: expected.scope, count: elements.length, nodes })
       }
-      await assertRoute(session, page, checkpoint)
+      const finalPage = await assertRoute(session, page, checkpoint)
+      assertEqual(readPageIdentity(finalPage), pageId, 'DOM active page identity changed during capture')
       return evidence
     }
     catch (error) {

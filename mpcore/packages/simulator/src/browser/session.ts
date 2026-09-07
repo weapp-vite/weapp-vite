@@ -23,6 +23,7 @@ import { resolvePluginRequest } from '../project/plugins'
 import { createAppInstance } from '../runtime/appInstance'
 import { runComponentPageLifetime } from '../runtime/componentInstance'
 import { createPageInstance } from '../runtime/pageInstance'
+import { runInitialPageLifecycles } from '../runtime/pageLifecycle'
 import {
   applyResizeToSystemInfo,
   createDefaultLocationResult,
@@ -36,6 +37,7 @@ import { createHeadlessWxState } from '../runtime/wxState'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
 import { createHeadlessAnimation } from '../view/animation'
 import { createHeadlessCanvasContext } from '../view/canvasContext'
+import { customTabBarScopeId } from '../view/customTabBar'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
@@ -1376,11 +1378,18 @@ export class BrowserHeadlessSession {
     const pageInstance = createPageInstance(target.routeRecord.route, pageDefinition, target.query, {
       background: resolveBackgroundSnapshot(this.project.appConfig, pageConfig),
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
+      requestRender: callback => this.requestRender(callback),
     })
     pageInstance.createIntersectionObserver = (options?: Record<string, any>) => this.createIntersectionObserver(pageInstance, options)
     pageInstance.createMediaQueryObserver = () => this.createMediaQueryObserver(pageInstance)
     pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
     pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
+    pageInstance.getTabBar = () => {
+      if (this.currentPageInstance === pageInstance) {
+        this.renderCurrentPage()
+      }
+      return this.componentCache.get(customTabBarScopeId(pageInstance.route)) ?? null
+    }
     if (this.isTabBarRoute(target.routeRecord.route)) {
       this.tabPages.set(target.routeRecord.route, pageInstance)
     }
@@ -1388,10 +1397,8 @@ export class BrowserHeadlessSession {
   }
 
   private runInitialPageLifecycles(pageInstance: HeadlessPageInstance, query: Record<string, string>) {
-    pageInstance.onLoad?.(query)
-    pageInstance.onShow?.()
-    pageInstance.onReady?.()
-    pageInstance.onRouteDone?.({})
+    runInitialPageLifecycles(pageInstance, query, this.kernel.scheduler, () =>
+      this.pages.includes(pageInstance) || this.tabPages.get(pageInstance.route) === pageInstance)
   }
 
   private isTabBarRoute(route: string) {

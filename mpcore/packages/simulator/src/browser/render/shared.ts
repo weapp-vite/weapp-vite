@@ -180,18 +180,6 @@ export function applyNodeBindings(node: DomNodeLike, scope: BrowserRenderScope) 
   }
 }
 
-export function createMergedScopeData(
-  pageData: Record<string, any>,
-  componentProperties: Record<string, any>,
-  componentData: Record<string, any>,
-) {
-  return {
-    ...pageData,
-    ...componentProperties,
-    ...componentData,
-  }
-}
-
 export function evaluateConditionalBranch(node: DomNodeLike, scope: BrowserRenderScope) {
   const condition = node.attribs?.['wx:if'] ?? node.attribs?.['wx:elif']
   if (condition == null) {

@@ -12,6 +12,7 @@ import { setRuntimeWechatDevtoolsServicePort } from '../../packages/weapp-ide-cl
 import { normalizeRuntimeConsoleText } from '../ide/runtimeErrors'
 import { extractWechatDevtoolsServicePort } from './automator.cli-bridge'
 import { launchHeadlessAutomator } from './automator.headless'
+import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 import { captureDevtoolsLogBaseline, scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
 import {
@@ -575,9 +576,9 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
   }
 
   const onException = (entry: any) => {
-    const text = typeof entry?.exceptionDetails?.text === 'string'
+    const text = typeof entry?.exceptionDetails?.text === 'string' && entry.exceptionDetails.text.trim()
       ? entry.exceptionDetails.text
-      : normalizeRuntimeConsoleText(entry)
+      : normalizeRuntimeConsoleText(entry) || '<empty exception payload>'
     stats.exception += 1
     stats.total += 1
     const runtimeEntry = { level: 'exception', text } satisfies RuntimeLogEntry
@@ -1148,88 +1149,6 @@ function resolveBridgeWrapperProjectConfig(projectPath: string) {
   return readJsonObject(path.join(projectPath, 'project.config.json')) ?? {}
 }
 
-function safeStat(targetPath: string) {
-  try {
-    return fs.lstatSync(targetPath)
-  }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return undefined
-    }
-    throw error
-  }
-}
-
-function safeReadDirectory(directoryPath: string) {
-  try {
-    return fs.readdirSync(directoryPath, { withFileTypes: true })
-  }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return undefined
-    }
-    throw error
-  }
-}
-
-function copyDistEntryForBridgeWrapper(
-  sourcePath: string,
-  targetPath: string,
-  isDirectory: boolean,
-  options: { force?: boolean } = {},
-) {
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true })
-  try {
-    if (isDirectory) {
-      const targetStat = safeStat(targetPath)
-      if (targetStat && !targetStat.isDirectory()) {
-        fs.rmSync(targetPath, { recursive: true, force: true })
-      }
-      fs.mkdirSync(targetPath, { recursive: true })
-      const sourceEntries = safeReadDirectory(sourcePath) ?? []
-      const sourceNames = new Set(sourceEntries.map(entry => entry.name))
-      const targetEntries = safeReadDirectory(targetPath) ?? []
-      for (const entry of targetEntries) {
-        if (!sourceNames.has(entry.name)) {
-          fs.rmSync(path.join(targetPath, entry.name), { recursive: true, force: true })
-        }
-      }
-      for (const entry of sourceEntries) {
-        copyDistEntryForBridgeWrapper(
-          path.join(sourcePath, entry.name),
-          path.join(targetPath, entry.name),
-          entry.isDirectory(),
-          options,
-        )
-      }
-      return
-    }
-
-    const sourceStat = safeStat(sourcePath)
-    const targetStat = safeStat(targetPath)
-    if (
-      !options.force
-      && sourceStat?.isFile()
-      && targetStat?.isFile()
-      && sourceStat.size === targetStat.size
-      && Math.abs(targetStat.mtimeMs - sourceStat.mtimeMs) < 1
-    ) {
-      return
-    }
-
-    fs.rmSync(targetPath, { recursive: true, force: true })
-    fs.copyFileSync(sourcePath, targetPath)
-    if (sourceStat?.isFile()) {
-      fs.utimesSync(targetPath, sourceStat.atime, sourceStat.mtime)
-    }
-  }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      throw error
-    }
-  }
-}
-
 function shouldPreserveBridgeWrapperPath(relativePath: string, preserveRoots: string[]) {
   const normalized = relativePath.replace(/\\/g, '/')
   return normalized === 'project.config.json'
@@ -1338,9 +1257,7 @@ function copyBridgeWrapperDistPath(distRoot: string, wrapperRoot: string, source
   if (!sourceStat) {
     return
   }
-  copyDistEntryForBridgeWrapper(sourcePath, targetPath, sourceStat.isDirectory(), {
-    force: true,
-  })
+  copyDistEntryForBridgeWrapper(sourcePath, targetPath, sourceStat.isDirectory())
 }
 
 function removeBridgeWrapperDistPath(distRoot: string, wrapperRoot: string, sourcePath: string) {
@@ -2166,6 +2083,21 @@ export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: str
   meta.closeWrapped = true
 
   const rawClose = miniProgram.close.bind(miniProgram)
+  const rawDisconnect = typeof miniProgram.disconnect === 'function' ? miniProgram.disconnect.bind(miniProgram) : undefined
+  if (rawDisconnect) {
+    miniProgram.disconnect = (...args: any[]) => {
+      try {
+        return rawDisconnect(...args)
+      }
+      finally {
+        if (!meta.closed) {
+          meta.closed = true
+          meta.dispose()
+          logRuntimeStats(meta)
+        }
+      }
+    }
+  }
   miniProgram.close = async (...args: any[]) => {
     if (meta.closed) {
       return
@@ -3076,6 +3008,12 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             }
 
             const withRuntimeLogs = await enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
+            await runWithDevtoolsLogMonitor(
+              () => miniProgram.enableLog(Math.min(15_000, launchTimeout)),
+              Math.min(15_000, launchTimeout),
+              'runtime log subscription',
+              devtoolsLogMonitor,
+            )
             const bridgeWrapperActivated = await bridgeWrapperProject?.activate?.() === true
             devtoolsLogMonitor.assertClean('bridge wrapper activation')
             const shouldRefreshProject = refreshProjectAfterConnect

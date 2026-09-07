@@ -1,4 +1,5 @@
 import type { TestContext } from 'vitest'
+import { ok as assert } from 'node:assert'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -87,9 +88,9 @@ describe('e2e app: github-issues / issue #911', { concurrent: false }, () => {
       },
     })
 
-    expect(page).toBeTruthy()
+    assert(page, 'Expected issue-911 page')
     await expect.poll(
-      async () => await page?.callMethodWithOptions('_runE2E', { protocolTimeoutMs: 8_000 }),
+      async () => await page.callMethodWithOptions('_runE2E', { timeout: 8_000 }),
       { timeout: 10_000 },
     ).toEqual(['beforeEach:start', 'beforeEach:done', 'mounted'])
     await dom.check('mounted', await getSharedMiniProgram(ctx), page)
@@ -101,7 +102,7 @@ describe('e2e app: github-issues / issue #911', { concurrent: false }, () => {
     await clearIssue911Trace(miniProgram)
     await miniProgram.reLaunch(ISSUE_911_REDIRECT_ROUTE).catch(() => {})
     const page = await waitForCurrentPagePath(miniProgram, ISSUE_911_ROUTE, 10_000)
-    expect(page).toBeTruthy()
+    assert(page, 'Expected issue-911 redirect target page')
     await expect.poll(
       async () => (await readIssue911Trace(miniProgram))?.trace,
       { timeout: 10_000 },
@@ -129,6 +130,7 @@ describe('e2e app: github-issues / issue #911', { concurrent: false }, () => {
     ).toEqual(['beforeEach:start', 'beforeEach:done'])
     expect((await readIssue911Trace(miniProgram))?.mode).toBe('abort')
     const blockedPage = await waitForCurrentPagePath(miniProgram, ISSUE_911_ROUTE, 8_000)
+    assert(blockedPage, 'Expected blocked issue-911 page')
     await dom.check('blocked', miniProgram, blockedPage)
     await checkGuardResult(miniProgram, dom)
   })
@@ -142,12 +144,12 @@ describe('e2e app: github-issues / issue #911', { concurrent: false }, () => {
         return true
       },
     })
-    expect(page).toBeTruthy()
+    assert(page, 'Expected issue-911 page before navigation')
 
     await dom.check('mounted', await getSharedMiniProgram(ctx), page)
     await clearIssue911Trace(miniProgram)
     const nextPage = await relaunchPage(miniProgram, ISSUE_550_ROUTE, undefined, 45_000)
-    expect(nextPage).toBeTruthy()
+    assert(nextPage, 'Expected next page after issue-911 navigation')
     expect(await waitForCurrentPagePath(miniProgram, ISSUE_550_ROUTE, 8_000)).toBeTruthy()
     expect(['', undefined]).toContain(await readIssue911Trace(miniProgram))
     await dom.check('other', await getSharedMiniProgram(ctx), nextPage)
@@ -159,10 +161,10 @@ describe('e2e app: github-issues / issue #911', { concurrent: false }, () => {
     await clearIssue911Trace(miniProgram)
     await miniProgram.reLaunch(ISSUE_911_NEVER_ROUTE).catch(() => {})
     const page = await waitForCurrentPagePath(miniProgram, ISSUE_911_ROUTE, 15_000)
-    expect(page).toBeTruthy()
+    assert(page, 'Expected issue-911 page after guard timeout')
     await page?.waitForRendered({ selector: '#issue-911-page', timeout: 3_000 })
     await expect.poll(
-      async () => await page?.callMethodWithOptions('_runE2E', { protocolTimeoutMs: 3_000 }),
+      async () => await page.callMethodWithOptions('_runE2E', { timeout: 3_000 }),
       { timeout: 12_000 },
     ).toContain('mounted')
     await dom.check('mounted', miniProgram, page)
@@ -178,6 +180,7 @@ describe('e2e app: github-issues / issue #911', { concurrent: false }, () => {
       { timeout: 10_000 },
     ).toEqual(['beforeEach:start', 'beforeEach:done'])
     const blockedPage = await waitForCurrentPagePath(miniProgram, ISSUE_911_ROUTE, 8_000)
+    assert(blockedPage, 'Expected blocked issue-911 page')
     await dom.check('blocked', miniProgram, blockedPage)
     await checkGuardResult(miniProgram, dom)
   })
@@ -193,6 +196,7 @@ describe('e2e app: github-issues / issue #911', { concurrent: false }, () => {
     ).toEqual(['beforeEach:start'])
     await miniProgram.reLaunch(ISSUE_550_ROUTE).catch(() => {})
     const replacement = await waitForCurrentPagePath(miniProgram, ISSUE_550_ROUTE, 8_000)
+    assert(replacement, 'Expected replacement page after navigation')
     await dom.check('replaced', miniProgram, replacement)
     await launch
     await expect.poll(

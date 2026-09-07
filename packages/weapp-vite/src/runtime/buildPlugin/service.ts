@@ -41,6 +41,7 @@ import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
 import { runStatefulHmrDev } from '../statefulHmr/session'
+import { createStatefulHmrSnapshotOptions } from '../statefulHmr/snapshotBuild'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { createSidecarWatchOptions } from '../watch/options'
 import { createDevBuildWatcher } from './devBuildWatcher'
@@ -1364,12 +1365,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               for (const file of files) {
                 invalidateFileCache(file)
               }
-              resetRuntimeStateForFreshBuild(ctx.runtimeState)
-              resetEmittedOutputCaches(ctx.runtimeState)
-              await configService.load(configService.loadOptions)
-              await scanService.loadAppEntry()
-              scanService.loadSubPackages()
-              const snapshotOptions = createDevBuildOptions()
+              const snapshotOptions = appendHmrMetricsPlugin(await createStatefulHmrSnapshotOptions(configService.loadOptions))
               snapshotOptions.build = {
                 ...(snapshotOptions.build ?? {}),
                 emptyOutDir: false,

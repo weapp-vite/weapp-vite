@@ -3,11 +3,13 @@ import path from 'node:path'
 import process from 'node:process'
 import { describe, expect, it } from 'vitest'
 import { isLikelyRelaunchRetryableError } from '../utils/automator'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
 import {
   resolveTemplateDevOpenProjectRoot,
   TEMPLATE_DEV_OPEN_CASES,
 } from './template-dev-open-cases'
+import { templateDevOpenCheckpoint } from './templateDevOpenDom'
 
 const ACTIVE_TEMPLATE_NAME = process.env.WEAPP_VITE_E2E_TEMPLATE?.trim()
 const PREVIOUS_TEMPLATE_NAME = process.env.WEAPP_VITE_E2E_PREVIOUS_TEMPLATE?.trim()
@@ -109,7 +111,8 @@ async function waitForPageText(miniProgram: any, route: string, text: string, ti
 }
 
 describe('template TailwindCSS dev:open multi-project IDE integration', { concurrent: false }, () => {
-  it.each(ACTIVE_TEMPLATE_CASES)('$name renders after the previous dev:open process exits', async (templateCase) => {
+  it.each(ACTIVE_TEMPLATE_CASES)('$name renders after the previous dev:open process exits', async (templateCase, ctx) => {
+    const dom = createDomAcceptance(ctx, `templates/${templateCase.name}`, [templateDevOpenCheckpoint(templateCase)])
     expect(USE_PRESTARTED_TEMPLATE_DEV, '该场景必须通过外层 template dev:open runner 执行').toBe(true)
     expect(ACTIVE_TEMPLATE_CASES).toHaveLength(1)
 
@@ -126,6 +129,7 @@ describe('template TailwindCSS dev:open multi-project IDE integration', { concur
         srcMiniprogramRoot: 'dist/',
       })
       await waitForPageText(session.miniProgram, templateCase.route, templateCase.expectedText)
+      await dom.check('opened', session.miniProgram, await session.miniProgram.currentPage())
 
       if (PREVIOUS_TEMPLATE_NAME) {
         const previousTemplateCase = TEMPLATE_DEV_OPEN_CASES.find(item => item.name === PREVIOUS_TEMPLATE_NAME)

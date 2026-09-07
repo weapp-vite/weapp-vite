@@ -7,6 +7,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveBridgeWarmupReadyTimeout, resolveLaunchRetryCount, resolveWarmupCurrentPageReadyTimeout, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, terminateBridgeCliProcess, validateLaunchProjectAssets } from './automator'
 import { isResidualDevProcessCommand } from './dev-process-cleanup'
 
+vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'apps/demo' }))
+
 function waitForSpawn(child: ReturnType<typeof spawn>) {
   return new Promise<number>((resolve, reject) => {
     if (typeof child.pid === 'number' && child.pid > 0) {

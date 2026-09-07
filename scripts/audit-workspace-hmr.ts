@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-use-before-define */
 import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-hmr/baseline'
+import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { execFile as execFileCallback } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
@@ -9,6 +10,7 @@ import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
+import { sanitizeAcceptanceText, sanitizeAcceptanceValue } from '../e2e/scripts/domAcceptanceReport/helpers'
 import { startDevProcess } from '../e2e/utils/dev-process'
 import { cleanupResidualDevProcesses } from '../e2e/utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
@@ -28,6 +30,7 @@ import {
   resolveWorkspaceHmrRuntime,
 } from './workspace-hmr/scenarios'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
+import { waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
 
 const execFile = promisify(execFileCallback)
 
@@ -127,6 +130,11 @@ interface ScenarioResult {
   profile?: HmrProfileSample
   impact?: ImpactFile[]
   error?: string
+  diagnostics?: {
+    transport: StatefulHmrAuditEvent[]
+    output: { path: string, exists: boolean, sha256?: string, bytes?: number, containsMarker?: boolean }
+    recentDevOutput: string
+  }
 }
 
 interface ProjectResult {
@@ -249,7 +257,7 @@ async function main() {
     projects: results,
     thresholds: thresholdEvaluation,
   }
-  await writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8')
+  await writeFile(reportJsonPath, `${JSON.stringify(sanitizeAcceptanceValue(report), null, 2)}\n`, 'utf8')
   await writeFile(thresholdMdPath, `${thresholdMarkdown}\n`, 'utf8')
   await writeFile(reportMdPath, renderMarkdown(results, summary, thresholdMarkdown), 'utf8')
   await writeGitHubStepSummary(results, summary, thresholdMarkdown)
@@ -588,16 +596,16 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
 
     const scenarioResults: ScenarioResult[] = []
     for (const scenario of runnableScenarios) {
-      scenarioResults.push(await auditScenarioWithRetries(project, scenario, profilePath, distRoot))
+      scenarioResults.push(await auditScenarioWithRetries(project, scenario, profilePath, distRoot, () => dev.getOutput()))
     }
     result.scenarios = scenarioResults
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     const devOutput = dev.getOutput().trim()
-    result.error = devOutput
+    result.error = sanitizeAcceptanceText(devOutput
       ? `${message}\n\nRecent dev output:\n${devOutput.slice(-12_000)}`
-      : message
+      : message)
   }
   finally {
     await dev.stop(5_000).catch(() => {})
@@ -628,7 +636,7 @@ async function warmupProjectHmr(
   const profileLineCount = await countJsonlLines(profilePath)
   await writeScenarioSource(scenario.sourcePath, updated)
   if (scenario.statefulClient) {
-    await publishStatefulHmrUpdate(project)
+    await publishStatefulHmrUpdate(project, scenario.outputPath, expectedMarker, true)
   }
   await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
   if (project.hmrRuntime === 'standard') {
@@ -636,7 +644,7 @@ async function warmupProjectHmr(
   }
   await writeScenarioSource(scenario.sourcePath, original)
   if (scenario.statefulClient) {
-    await publishStatefulHmrUpdate(project)
+    await publishStatefulHmrUpdate(project, scenario.outputPath, expectedMarker, false)
   }
   await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs).catch(() => {})
   await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs)
@@ -649,11 +657,12 @@ async function auditScenarioWithRetries(
   scenario: ScenarioCase,
   profilePath: string,
   distRoot: string,
+  getDevOutput: () => string,
 ) {
-  let result = await auditScenario(project, scenario, profilePath, distRoot)
+  let result = await auditScenario(project, scenario, profilePath, distRoot, getDevOutput)
   for (let attempt = 1; result.error && attempt <= scenarioRetries; attempt++) {
     process.stdout.write(`[workspace-hmr] retry ${project.id} ${scenario.id}: ${result.error}\n`)
-    result = await auditScenario(project, scenario, profilePath, distRoot)
+    result = await auditScenario(project, scenario, profilePath, distRoot, getDevOutput)
   }
   return result
 }
@@ -663,11 +672,13 @@ async function auditScenario(
   scenario: ScenarioCase,
   profilePath: string,
   distRoot: string,
+  getDevOutput: () => string,
 ): Promise<ScenarioResult> {
   const original = await readFile(scenario.sourcePath, 'utf8')
   const marker = createMarker(project.id, scenario.id)
   const expectedMarker = scenario.expectedMarker?.(marker) ?? marker
   const updated = scenario.mutate(original, marker)
+  const transport: StatefulHmrAuditEvent[] = []
   const result: ScenarioResult = {
     id: scenario.id,
     label: scenario.label,
@@ -689,7 +700,12 @@ async function auditScenario(
     const startedAt = performance.now()
     await writeScenarioSource(scenario.sourcePath, updated)
     if (scenario.statefulClient) {
-      await publishStatefulHmrUpdate(project)
+      await publishStatefulHmrUpdate(project, scenario.outputPath, expectedMarker, true, (event) => {
+        transport.push(event)
+        if (transport.length > 32) {
+          transport.shift()
+        }
+      })
     }
     await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
     result.observedMs = performance.now() - startedAt
@@ -704,13 +720,25 @@ async function auditScenario(
     result.impact = diffDistSnapshots(before, after)
   }
   catch (error) {
-    result.error = error instanceof Error ? error.message : String(error)
+    result.error = sanitizeAcceptanceText(error instanceof Error ? error.message : String(error))
+    const output = await readFile(scenario.outputPath).catch(() => undefined)
+    result.diagnostics = {
+      transport,
+      output: {
+        path: formatProjectPath(scenario.outputPath),
+        exists: output !== undefined,
+        sha256: output && createHash('sha256').update(output).digest('hex'),
+        bytes: output?.byteLength,
+        containsMarker: output?.toString('utf8').includes(expectedMarker),
+      },
+      recentDevOutput: sanitizeAcceptanceText(getDevOutput().slice(-12_000)),
+    }
   }
   finally {
     const restoreProfileLineCount = await countJsonlLines(profilePath).catch(() => 0)
     await writeScenarioSource(scenario.sourcePath, original).catch(() => {})
     if (scenario.statefulClient) {
-      await publishStatefulHmrUpdate(project).catch(() => {})
+      await publishStatefulHmrUpdate(project, scenario.outputPath, expectedMarker, false).catch(() => {})
     }
     await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs).catch(() => {})
     if (project.hmrRuntime === 'standard') {
@@ -869,33 +897,23 @@ function resolveOutputPath(project: ProjectCase, sourcePath: string, outputExt: 
   return path.join(project.distRoot, parsed.dir, `${parsed.name}.${outputExt}`)
 }
 
-async function publishStatefulHmrUpdate(project: ProjectCase) {
+async function publishStatefulHmrUpdate(
+  project: ProjectCase,
+  outputPath: string,
+  marker: string,
+  contains: boolean,
+  onEvent?: (event: StatefulHmrAuditEvent) => void,
+) {
   const controlPath = path.join(project.distRoot, '__weapp_vite_hmr/control.js')
   const client = statefulHmrAuditClients.get(project.root) ?? new StatefulHmrAuditClient()
   statefulHmrAuditClients.set(project.root, client)
-  const deadline = Date.now() + scenarioTimeoutMs
-  let lastError: unknown
-  while (Date.now() < deadline) {
-    try {
-      const control = parseStatefulHmrControlSource(await readFile(controlPath, 'utf8'))
-      await client.ensureRegistered(control, Math.min(30_000, deadline - Date.now()))
-      while (Date.now() < deadline) {
-        const response = await client.poll(Math.min(30_000, deadline - Date.now()))
-        if (response.type === 'batch-published') {
-          return
-        }
-        if (response.type === 'rebuilding') {
-          break
-        }
-      }
-    }
-    catch (error) {
-      lastError = error
-    }
-    await sleep(100)
-  }
-  const detail = lastError instanceof Error ? ` Last error: ${lastError.message}` : ''
-  throw new Error(`Timed out waiting for the stateful HMR server to publish a patch batch.${detail}`)
+  await waitForStatefulHmrAuditUpdate({
+    client,
+    readControl: async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8')),
+    isCurrentUpdate: async () => (await readFile(outputPath, 'utf8')).includes(marker) === contains,
+    timeoutMs: scenarioTimeoutMs,
+    onEvent,
+  })
 }
 
 function scoreSourceFile(sourceRoot: string, filePath: string) {

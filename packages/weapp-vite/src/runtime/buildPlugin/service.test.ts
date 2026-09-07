@@ -55,6 +55,7 @@ const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn(async () => ({
   managedTsconfigWarnings: [],
 })))
 const runStatefulHmrDevMock = vi.hoisted(() => vi.fn())
+const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_options: unknown) => ({ build: {}, plugins: [] })))
 const devBuildWatcherQueue = vi.hoisted(() => [] as Array<{
   watcher: any
   emitEvent: ReturnType<typeof vi.fn>
@@ -116,6 +117,10 @@ vi.mock('../supportFiles', () => ({
 
 vi.mock('../statefulHmr/session', () => ({
   runStatefulHmrDev: runStatefulHmrDevMock,
+}))
+
+vi.mock('../statefulHmr/snapshotBuild', () => ({
+  createStatefulHmrSnapshotOptions: createStatefulHmrSnapshotOptionsMock,
 }))
 
 vi.mock('../../moduleGraph/devProvider', () => ({
@@ -518,6 +523,7 @@ describe('runtime buildPlugin service', () => {
     }))
 
     const output = await snapshots.rebuild(['/project/src/pages/index.css'])
+    expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenCalledExactlyOnceWith(ctx.configService.loadOptions)
     const refreshOptions = buildMock.mock.calls[1]![0]
     expect(refreshOptions).toEqual(expect.objectContaining({
       build: expect.objectContaining({
@@ -526,7 +532,7 @@ describe('runtime buildPlugin service', () => {
         write: false,
       }),
     }))
-    expect(resetEmittedOutputCachesMock).toHaveBeenCalledTimes(2)
+    expect(resetEmittedOutputCachesMock).toHaveBeenCalledTimes(1)
     expect(output).toEqual([{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }])
   })
 

@@ -1,3 +1,4 @@
+import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -203,7 +204,7 @@ async function recoverLifecyclePageDom(miniProgram: any, pagePath: string, route
   }
 }
 
-async function openLifecyclePage(miniProgram: any, pagePath: string, query = '') {
+async function openLifecyclePage(miniProgram: MiniProgram, pagePath: string, query = '') {
   const route = query ? `${pagePath}?${query}` : pagePath
   process.stdout.write(`[lifecycle-compare:open] route=${route}\n`)
   await withTimeout(

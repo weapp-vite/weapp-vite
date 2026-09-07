@@ -2,10 +2,25 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { assertDomAcceptanceInventoryComplete } from './inventory'
 import { analyzeCaseSource, importedTestSources } from './inventoryAnalyzer'
 import { collectInventorySources } from './inventorySources'
 
 describe('static DOM plan inventory', () => {
+  it.each(['casesMissingPlan', 'unresolvedParameterizations', 'tasksWithoutCaseDeclarations'] as const)('rejects a regenerated but incomplete inventory: %s', (field) => {
+    const summary = {
+      taskCount: 1,
+      wechatTaskCount: 1,
+      outOfScopeTaskCount: 0,
+      expandedCaseDeclarations: 1,
+      casesWithPlan: 1,
+      casesMissingPlan: 0,
+      unresolvedParameterizations: 0,
+      tasksWithoutCaseDeclarations: 0,
+    }
+    expect(() => assertDomAcceptanceInventoryComplete({ summary })).not.toThrow()
+    expect(() => assertDomAcceptanceInventoryComplete({ summary: { ...summary, [field]: 1 } })).toThrow('DOM inventory incomplete')
+  })
   it('follows invoked local plan helpers and known GitHub wrappers without counting unused helpers', () => {
     const cases = analyzeCaseSource(`
       import { createDomAcceptance } from '../utils/domAcceptance'
@@ -33,6 +48,25 @@ describe('static DOM plan inventory', () => {
     `, 'e2e/ide/sample.test.ts')
     expect(cases.map(item => item.name)).toEqual(['runtime [esm] > renders', 'runtime [cjs] > renders'])
     expect(cases.every(item => !item.plans.length)).toBe(true)
+  })
+
+  it('follows called local closures but does not count uncalled nested registrations', () => {
+    const cases = analyzeCaseSource(`
+      it('unused', ctx => {
+        function unused() { createDomAcceptance(ctx, 'unused-function', []) }
+        const unusedArrow = () => createDomAcceptance(ctx, 'unused-arrow', [])
+        const unusedExpression = function () { createDomAcceptance(ctx, 'unused-expression', []) }
+      })
+      it('called', ctx => {
+        const register = () => createDomAcceptance(ctx, 'e2e-apps/base', PLAN)
+        const check = id => dom.check(id, app, page)
+        register()
+        check('mounted')
+        check('updated')
+      })
+    `, 'e2e/ide/closures.test.ts')
+    expect(cases.map(item => item.plans.length)).toEqual([0, 1])
+    expect(cases[1]?.operations).toEqual(['check(mounted)', 'check(updated)'])
   })
 
   it('records direct, template and behavior registrations separately', () => {
@@ -78,6 +112,26 @@ describe('static DOM plan inventory', () => {
       }
     `, 'e2e/ide/shared.ts', [], { suiteName: 'matrix', runtimeCases: [{ id: 'hoist' }, { id: 'duplicate' }] })
     expect(cases.map(item => item.name)).toEqual(['matrix > renders hoist', 'matrix > renders duplicate'])
+  })
+
+  it('expands each local fixture factory invocation with its own name and plan', () => {
+    const cases = analyzeCaseSource(`
+      function createSuite(options) {
+        const { suiteName, fixture, checkpoints, routes } = options
+        function navigate(route) { return app.reLaunch(route) }
+        describe(suiteName, () => {
+          it('renders', async ctx => {
+            createDomAcceptance(ctx, fixture, checkpoints)
+            for (const route of routes) { await navigate(route.path) }
+          })
+        })
+      }
+      createSuite({ suiteName: 'complex A', fixture: 'e2e-apps/a', checkpoints: A_DOM, routes: [{ path: '/pages/main' }, { path: '/sub/a' }] })
+      createSuite({ suiteName: 'complex B', fixture: 'e2e-apps/b', checkpoints: B_DOM, routes: [{ path: '/pages/home' }, { path: '/sub/b' }] })
+    `, 'e2e/ide/complex.test.ts')
+    expect(cases.map(item => item.name)).toEqual(['complex A > renders', 'complex B > renders'])
+    expect(cases.map(item => item.plans[0]?.fixture)).toEqual(['e2e-apps/a', 'e2e-apps/b'])
+    expect(cases.map(item => item.routes)).toEqual([['/pages/main', '/sub/a'], ['/pages/home', '/sub/b']])
   })
 
   it('tracks helper changes without treating CRLF as a different inventory', () => {

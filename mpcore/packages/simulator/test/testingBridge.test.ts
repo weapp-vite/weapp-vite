@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { launch } from '../src/testing'
 import { cleanupTempDirs, createAsyncComponentFixture, createBaseFixture, createComponentFixture, createNavigationFixture, createNestedComponentFixture } from './helpers'
 
@@ -413,11 +413,13 @@ Page({
     if (!homePage) {
       throw new Error('Expected the configured home page to be active.')
     }
+    await vi.waitFor(async () => expect(await homePage.data('logs')).toContain('home:onReady'))
     await homePage.callMethod('goDetailLater')
 
     const detailPage = await miniProgram.waitForCurrentPage('/pages/detail/index')
 
     expect(detailPage).not.toBeNull()
+    await vi.waitFor(async () => expect(await detailPage?.data('logs')).toContain('detail:onReady'))
     expect(await detailPage?.data('logs')).toEqual([
       'home:onLoad:{}',
       'home:onShow',
@@ -564,7 +566,7 @@ Page({
     expect(await page.data('log')).toEqual(['status-card'])
   })
 
-  it('preserves component event target, currentTarget and mark through the testing bridge', async () => {
+  it('targets custom events at the component host and preserves mark through the testing bridge', async () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)
     const miniProgram = await launch({
@@ -574,15 +576,24 @@ Page({
     const page = await miniProgram.reLaunch('/pages/lab/index')
     const trigger = await page.$('#card-trigger')
 
-    await trigger?.tap({
+    expect(trigger).not.toBeNull()
+    await trigger!.tap({
       mark: {
         source: 'testing-bridge',
       },
     })
 
-    expect(await page.data('eventSnapshot')).toContain('"targetId":"card-trigger"')
-    expect(await page.data('eventSnapshot')).toContain('"currentTargetId":"status-card"')
-    expect(await page.data('eventSnapshot')).toContain('"source":"testing-bridge"')
+    const snapshot = await page.data('eventSnapshot') as string
+    expect(JSON.parse(snapshot) as unknown).toEqual({
+      currentTargetDataset: { role: 'main' },
+      currentTargetId: 'status-card',
+      mark: { source: 'testing-bridge' },
+      targetDataset: { role: 'main' },
+      targetId: 'status-card',
+    })
+    const views = await page.$$('view')
+    expect(await Promise.all(views.map(view => view.text()))).toContain(snapshot)
+    await miniProgram.close()
   })
 
   it('exposes scope snapshots through the testing bridge session handle', async () => {

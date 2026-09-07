@@ -128,6 +128,7 @@ jobs:
         run: pnpm exec playwright install ${{ inputs.playwright_browsers }}
 
       - name: Run command
+        shell: bash
         env:
           E2E_PLATFORM: ${{ inputs.e2e_platform }}
         run: ${{ inputs.main_command }}

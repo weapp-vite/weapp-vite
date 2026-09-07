@@ -1,3 +1,4 @@
+import { ok as assert } from 'node:assert'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -39,7 +40,7 @@ describe('e2e app: github-issues / item subpackage', { concurrent: false }, () =
       const page = await relaunchPage(miniProgram, '/subpackages/item/index', undefined, 45_000, {
         readiness: 'route',
       })
-      expect(page).toBeTruthy()
+      assert(page, 'Expected item subpackage page')
       await dom.check('initial', await getSharedMiniProgram(ctx), page)
     }
     finally {
@@ -61,6 +62,7 @@ describe('e2e app: github-issues / item subpackage', { concurrent: false }, () =
     expect(pageJs).toContain('item-login-required:issue-340:shared')
     const miniProgram = await getSharedMiniProgram(ctx)
     const page = await relaunchPage(miniProgram, '/subpackages/item/login-required/index', undefined, 45_000, { readiness: 'route' })
+    assert(page, 'Expected item login-required page')
     await dom.check('initial', await getSharedMiniProgram(ctx), page)
   })
 })

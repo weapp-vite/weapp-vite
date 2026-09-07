@@ -1,3 +1,4 @@
+import { ok as assert } from 'node:assert'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -82,10 +83,10 @@ describe('e2e app: github-issues / issue #941', { concurrent: false }, () => {
         return true
       },
     })
-    expect(page).toBeTruthy()
+    assert(page, 'Expected issue-941 page')
     await dom.check('initial', await getSharedMiniProgram(ctx), page)
 
-    const result = await page?.callMethodWithOptions('_runE2E', { protocolTimeoutMs: 8_000 })
+    const result = await page.callMethodWithOptions('_runE2E', { timeout: 8_000 })
     expect(result.resultMethods).toHaveLength(14)
     expect(result.resultMethods.every((item: any) => item.sameIdentity && !item.isPromise)).toBe(true)
     expect(result.voidMethods).toHaveLength(7)

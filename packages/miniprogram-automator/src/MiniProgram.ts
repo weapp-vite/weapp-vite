@@ -754,8 +754,10 @@ export default class MiniProgram extends EventEmitter {
   }
 
   private createPageFromPayload(page: ProtocolPagePayload, fallbackId = 1) {
+    const protocolId = page.pageId ?? page.__wxWebviewId__ ?? page.__webviewId__
     return Page.create(this.connection, {
       id: resolvePagePayloadId(page, fallbackId),
+      hasStableIdentity: typeof protocolId === 'number' && Number.isSafeInteger(protocolId) && protocolId >= 0,
       path: resolvePagePayloadPath(page),
       query: page.query ?? page.options ?? {},
     }, this.pageMap)
@@ -775,9 +777,9 @@ export default class MiniProgram extends EventEmitter {
         const { result } = await this.send('App.callFunction', {
           functionDeclaration: `function () {
             var pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
-            return pages.map(function (page, index) {
+            return pages.map(function (page) {
               return {
-                pageId: page.pageId || page.__wxWebviewId__ || page.__webviewId__ || index + 1,
+                pageId: page.pageId || page.__wxWebviewId__ || page.__webviewId__,
                 path: page.path || page.route || page.__route__ || '',
                 query: page.query || page.options || {}
               };

@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { afterAll, afterEach, beforeAll, describe, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   resolveProjectAutomatorPort,
   startForwardConsole,
@@ -11,6 +11,7 @@ import {
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { waitForFileContains } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
@@ -89,24 +90,15 @@ async function waitForPageDescription(miniProgram: any, expected: string, timeou
 }
 
 async function emitLogClick(miniProgram: any) {
-  await miniProgram.evaluate(() => {
-    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
-    const page = pages[pages.length - 1]
-    if (!page || typeof page.onEmitLog !== 'function') {
-      throw new Error('Current page does not expose onEmitLog')
-    }
-    return page.onEmitLog({
-      currentTarget: {
-        dataset: {
-          level: 'log',
-        },
-      },
-    })
-  })
+  const page = await miniProgram.currentPage()
+  const buttons = await page.$$('.action-log', { fallback: false })
+  expect(buttons).toHaveLength(1)
+  await buttons[0].tap()
 }
 
 function replaceSourceLogMessage(source: string, nextMessage: string) {
   const updated = source.replace(INITIAL_LOG_MESSAGE, JSON.stringify(nextMessage))
+    .replace('this.pushTimeline(action, nextCount)', `this.pushTimeline({ ...action, terminal: ${JSON.stringify(nextMessage)} }, nextCount)`)
   if (updated === source) {
     throw new Error(`Expected ${INDEX_TS} to contain the initial log message`)
   }
@@ -203,11 +195,46 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
     await cleanupTestState()
   }, 60_000)
 
-  it('keeps forwarding console output after dev HMR updates the current page', async () => {
+  it('keeps forwarding console output after dev HMR updates the current page', async (ctx) => {
+    const hmrMessage = `HMR forwardConsole ${Date.now()}`
+    const dom = createDomAcceptance(ctx, 'apps/forward-console-demo', [
+      {
+        id: 'initial',
+        route: INDEX_ROUTE,
+        action: '检查日志演示首屏',
+        nodes: [
+          { selector: '.title', text: 'Forward Console Lab' },
+          { selector: '.description', text: INITIAL_DESCRIPTION },
+          { selector: '.status-pill text', text: '0 events' },
+          { selector: '.action-button', count: 5 },
+        ],
+      },
+      {
+        id: 'clicked',
+        route: INDEX_ROUTE,
+        action: '点击 Log 并检查事件和终端行',
+        nodes: [
+          { selector: '.status-pill text', text: '1 events' },
+          { selector: '.terminal-line', text: '[mini:log] forward demo click' },
+          { selector: '.timeline-item', count: 2 },
+        ],
+      },
+      {
+        id: 'patched',
+        route: INDEX_ROUTE,
+        action: 'HMR 后点击 Log 并检查新函数产生的界面结果',
+        nodes: [
+          { selector: '.terminal-line', text: hmrMessage },
+          { selector: '.terminal-level', text: 'log' },
+          { selector: '.timeline-item:first-child .timeline-terminal', text: hmrMessage },
+        ],
+      },
+    ])
     if (!miniProgram) {
       throw new Error('Shared automator session is not initialized')
     }
-    await waitForPageDescription(miniProgram, INITIAL_DESCRIPTION)
+    const initialPage = await waitForPageDescription(miniProgram, INITIAL_DESCRIPTION)
+    await dom.check('initial', miniProgram, initialPage)
     const forwardedMessages: string[] = []
     forwardConsoleSession = await startForwardConsole({
       miniProgram,
@@ -221,8 +248,8 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
 
     await emitLogClick(miniProgram)
     await waitForOutputAfter(() => forwardedMessages.join('\n'), 0, LOG_CLICKED_RE)
+    await dom.check('clicked', miniProgram, await miniProgram.currentPage())
 
-    const hmrMessage = `HMR forwardConsole ${Date.now()}`
     await fs.writeFile(INDEX_TS, replaceSourceLogMessage(originalIndexTs, hmrMessage), 'utf8')
     await devProcess.waitFor(
       waitForFileContains(HMR_UPDATE_JS, hmrMessage, 90_000),
@@ -234,5 +261,6 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
       new RegExp(hmrMessage),
       90_000,
     )
+    await dom.check('patched', miniProgram, await miniProgram.currentPage())
   }, 360_000)
 })

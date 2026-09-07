@@ -1,8 +1,8 @@
 import type { TestContext } from 'vitest'
+import type { createDomAcceptance } from '../utils/domAcceptance'
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { expect } from 'vitest'
-import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   delay,
   DIST_ROOT,
@@ -10,7 +10,6 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
-import { ISSUE642_BUG7 } from './githubIssuesDom/scopedSlots'
 
 async function waitForIssue642Bug7Runtime(page: any, expectedTick: number, timeoutMs = 30_000) {
   const startedAt = Date.now()
@@ -61,8 +60,7 @@ async function readIssue642Bug7WxmlBundle() {
   return contents.join('\n')
 }
 
-export async function runIssue642Bug7RuntimeCase(ctx: TestContext) {
-  const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ISSUE642_BUG7)
+export async function runIssue642Bug7RuntimeCase(ctx: TestContext, dom: ReturnType<typeof createDomAcceptance>) {
   const miniProgram = await getSharedMiniProgram(ctx)
   try {
     const issuePage = await relaunchPage(miniProgram, '/pages/issue-642-bug7/index', undefined, 45_000, {

@@ -15,40 +15,68 @@ permissions:
   contents: read
 
 jobs:
+  simulator-browser:
+    if: ${{ !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
+    needs: [miniapp-e2e-build-pr, miniapp-e2e-build-full]
+    name: Simulator Browser E2E (${{ matrix.os }} / Node ${{ matrix.node-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ${{ fromJSON(github.event_name == 'pull_request' && '[22]' || '[22,24]') }}
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 20
+      consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
+      install_playwright: true
+      main_command: pnpm --filter @mpcore/simulator test:e2e
+      artifact_name: simulator-browser-${{ matrix.os }}-node-${{ matrix.node-version }}
+      artifact_path: docs/reports/simulator-browser/**
+    secrets: inherit
+
   ide-dom-headless:
     if: ${{ !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
     needs: [miniapp-e2e-build-pr, miniapp-e2e-build-full]
-    name: IDE DOM Headless (${{ matrix.os }} / Node 22)
+    name: IDE DOM Headless (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ${{ fromJSON(github.event_name == 'pull_request' && '[22]' || '[22,24]') }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ${{ matrix.os }}
-      node_version: '22'
+      node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
-      consume_build_artifact: miniapp-${{ matrix.os }}-node-22-weapp-build
+      consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
       main_command: node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
-      artifact_name: ide-dom-headless-${{ matrix.os }}
-      artifact_path: docs/reports/dom-acceptance/**
+      artifact_name: ide-dom-headless-${{ matrix.os }}-node-${{ matrix.node-version }}
+      artifact_path: |
+        docs/reports/dom-acceptance/**
+        docs/reports/*-e2e-ide-dom-headless-*-suite-report/**
     secrets: inherit
 
   ide-dom-acceptance-internal:
-    name: IDE DOM Acceptance Contracts (${{ matrix.os }} / Node 22)
+    if: ${{ !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
+    needs: [miniapp-e2e-build-pr, miniapp-e2e-build-full]
+    name: IDE DOM Acceptance Contracts (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ${{ fromJSON(github.event_name == 'pull_request' && '[22]' || '[22,24]') }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: ${{ matrix.os }}
-      node_version: '22'
+      node_version: '${{ matrix.node-version }}'
       timeout_minutes: 15
+      consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
       main_command: |
         node --import tsx scripts/check-e2e-ide-shared-launch.ts
         node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --check
-        pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/domAcceptanceReport e2e/scripts/suiteRunner.test.ts e2e/scripts/run-e2e-suite.test.ts e2e/utils/domAcceptance e2e/utils/automator.runtime-logs.test.ts e2e/utils/ideWarningReport.test.ts
+        pnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism
     secrets: inherit
 
   miniapp-platform-build-gate:

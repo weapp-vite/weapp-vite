@@ -3,6 +3,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { inflateSync } from 'node:zlib'
+import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
@@ -11,13 +12,17 @@ import {
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { waitForEmittedStylesheet } from '../utils/emittedStylesheet'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template')
 const DIST_ROOT = path.resolve(TEMPLATE_ROOT, 'dist')
 const INDEX_WXML = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.wxml')
+const APP_SOURCE = path.resolve(TEMPLATE_ROOT, 'src/app.ts')
 const INDEX_WXML_DIST = path.resolve(TEMPLATE_ROOT, 'dist/pages/index/index.wxml')
 const APP_WXSS_DIST = path.resolve(TEMPLATE_ROOT, 'dist/app.wxss')
 const INDEX_ROUTE = '/pages/index/index'
@@ -130,7 +135,9 @@ async function waitForIndexPage(miniProgram: any, timeoutMs = ROUTE_READY_TIMEOU
 describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurrent: false }, () => {
   let initialWxml = ''
   let originalWxml = ''
+  let originalAppSource = ''
   let miniProgram: any
+  let diagnostics: ReturnType<typeof createHmrRuntimeDiagnostics> | undefined
   let devProcess: ReturnType<typeof startDevProcess> | undefined
 
   beforeAll(async () => {
@@ -144,7 +151,13 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
       INITIAL_BACKGROUND_HEX,
     )
     initialWxml = originalWxml.replace(rootMarkupMatch[0], probedRootMarkup)
+      .replace('<view bind:tap="switchMode"', '<view id="tailwind-mode" bind:tap="switchMode"')
     await replaceFileByRename(INDEX_WXML, initialWxml)
+    originalAppSource = await fs.readFile(APP_SOURCE, 'utf8')
+    expect(originalAppSource.includes('onLaunch() {')).toBe(true)
+    await fs.writeFile(APP_SOURCE, originalAppSource.replace('onLaunch() {', `onLaunch() {
+    this.__e2eHmrLaunch = Date.now()
+    console.info('[hmr-diagnostics:app-launch]', this.__e2eHmrLaunch)`), 'utf8')
     await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
     await cleanupResidualIdeProcesses()
     await fs.rm(DIST_ROOT, { force: true, recursive: true })
@@ -167,10 +180,14 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
   }
 
   afterAll(async () => {
+    await diagnostics?.capture('finally')
+    await stopDevSession()
     if (originalWxml) {
       await fs.writeFile(INDEX_WXML, originalWxml, 'utf8').catch(() => {})
     }
-    await stopDevSession()
+    if (originalAppSource) {
+      await fs.writeFile(APP_SOURCE, originalAppSource, 'utf8')
+    }
     await cleanupTrackedDevProcesses()
   }, 60_000)
 
@@ -198,7 +215,8 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
     await devProcess.waitFor(
       Promise.all([
         waitForFileContains(INDEX_WXML_DIST, escapedClass),
-        waitForFileContains(APP_WXSS_DIST, backgroundCss),
+        waitForEmittedStylesheet(APP_WXSS_DIST, backgroundCss),
+        waitForFileContains(path.join(DIST_ROOT, 'app.wxss'), `@import "./${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss";`),
       ]),
       `tailwindcss tdesign ${label} dist ready`,
     )
@@ -444,14 +462,42 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
     }
   }
 
-  it('updates the visible Tailwind arbitrary background color through dev HMR', async () => {
+  it('updates the visible Tailwind arbitrary background color through dev HMR', async (context) => {
+    const dom = createDomAcceptance(context, 'templates/weapp-vite-tailwindcss-tdesign-template', [
+      { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [
+        { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true },
+        { selector: '#tailwind-mode', text: '当前模式 light 切换模式' },
+      ] },
+      { id: 'tailwind:dark', route: INDEX_ROUTE, action: '切换暗色模式并记录交互状态', nodes: [
+        { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(16, 24, 40)' }, visible: true },
+        { selector: '#tailwind-mode', text: '当前模式 dark 切换模式' },
+      ] },
+      { id: 'tailwind:hmr-preserved', route: INDEX_ROUTE, action: '修改浅色背景后保留当前暗色交互状态', nodes: [
+        { selector: `#${PROBE_ID}`, attributes: { 'data-e2e-bg': UPDATED_BACKGROUND_HEX }, styles: { 'background-color': 'rgb(16, 24, 40)' }, visible: true },
+        { selector: '#tailwind-mode', text: '当前模式 dark 切换模式' },
+      ] },
+      { id: 'tailwind:updated', route: INDEX_ROUTE, action: '切回浅色后验收更新背景和真实布局', nodes: [
+        { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(16, 185, 129)' }, visible: true },
+        { selector: '#tailwind-mode', text: '当前模式 light 切换模式' },
+      ] },
+      { id: 'tailwind:updated-dark', route: INDEX_ROUTE, action: '在原页面实例再次切换暗色并确认更新仍生效', nodes: [
+        { selector: `#${PROBE_ID}`, attributes: { 'data-e2e-bg': UPDATED_BACKGROUND_HEX }, styles: { 'background-color': 'rgb(16, 24, 40)' }, visible: true },
+        { selector: '#tailwind-mode', text: '当前模式 dark 切换模式' },
+      ] },
+    ])
     await startDevSession()
     await waitForFileContains(INDEX_WXML_DIST, PROBE_ID)
     await waitForFileContains(INDEX_WXML_DIST, `data-e2e-bg="${INITIAL_BACKGROUND_HEX}"`)
     await waitForFileContains(INDEX_WXML_DIST, INITIAL_ESCAPED_CLASS)
-    await waitForFileContains(APP_WXSS_DIST, INITIAL_BACKGROUND_CSS)
+    await waitForEmittedStylesheet(APP_WXSS_DIST, INITIAL_BACKGROUND_CSS)
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] dist-ready label=initial Tailwind background template=${INITIAL_ESCAPED_CLASS} css=${INITIAL_BACKGROUND_CSS}\n`)
     await waitForVisibleBackgroundWithRecovery(INITIAL_BACKGROUND_HEX, INITIAL_ESCAPED_CLASS, 'initial Tailwind background')
+    const page = await waitForIndexPage(miniProgram)
+    await dom.check('tailwind:initial', miniProgram, page)
+    await page.callMethodWithOptions('switchMode', { routeOnly: true })
+    await dom.check('tailwind:dark', miniProgram, page)
+    diagnostics = createHmrRuntimeDiagnostics(miniProgram, 'templates/weapp-vite-tailwindcss-tdesign-template')
+    const initialIdentity = await diagnostics.initialize()
 
     const updatedWxml = replaceLightBackgroundClass(
       initialWxml.replace(`data-e2e-bg="${INITIAL_BACKGROUND_HEX}"`, `data-e2e-bg="${UPDATED_BACKGROUND_HEX}"`),
@@ -461,12 +507,27 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
     await replaceFileByRename(INDEX_WXML, updatedWxml)
     await waitForFileContains(INDEX_WXML_DIST, `data-e2e-bg="${UPDATED_BACKGROUND_HEX}"`)
     await waitForFileContains(INDEX_WXML_DIST, UPDATED_ESCAPED_CLASS)
-    await waitForFileContains(APP_WXSS_DIST, UPDATED_BACKGROUND_CSS)
+    await waitForEmittedStylesheet(APP_WXSS_DIST, UPDATED_BACKGROUND_CSS)
+    await diagnostics.capture('tailwind:updated-output')
+    await dom.check('tailwind:hmr-preserved', miniProgram, await waitForIndexPage(miniProgram))
+    await diagnostics.capture('tailwind:preserved-rendered')
+    await page.callMethodWithOptions('switchMode', { routeOnly: true })
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] dist-ready label=updated Tailwind background template=${UPDATED_ESCAPED_CLASS} css=${UPDATED_BACKGROUND_CSS}\n`)
     await waitForVisibleBackgroundWithRecovery(
       UPDATED_BACKGROUND_HEX,
       UPDATED_ESCAPED_CLASS,
       'updated Tailwind background',
     )
+    await dom.check('tailwind:updated', miniProgram, await waitForIndexPage(miniProgram))
+    const updatedIdentity = await diagnostics.capture('tailwind:updated-rendered')
+    expect(updatedIdentity.errors).toEqual([])
+    expect(updatedIdentity.pageId).toBe(initialIdentity.pageId)
+    expect(updatedIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
+    await page.callMethodWithOptions('switchMode', { routeOnly: true })
+    await dom.check('tailwind:updated-dark', miniProgram, await waitForIndexPage(miniProgram))
+    const finalIdentity = await diagnostics.capture('tailwind:updated-dark-rendered')
+    expect(finalIdentity.errors).toEqual([])
+    expect(finalIdentity.pageId).toBe(initialIdentity.pageId)
+    expect(finalIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
   }, 420_000)
 })

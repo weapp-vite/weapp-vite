@@ -1,3 +1,4 @@
+import { ok as assert } from 'node:assert'
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -7,6 +8,7 @@ import {
   callRoutePageMethod,
   callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
+  delay,
   DIST_ROOT,
   getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
@@ -505,7 +507,7 @@ describe('e2e app: github-issues / lifecycle', { concurrent: false }, () => {
       )
       expect(navigationResult?.ok).toBe(true)
       const redirectedPage = await waitForCurrentPagePath(activeMiniProgram, '/pages/issue-309/index')
-      expect(redirectedPage).toBeTruthy()
+      assert(redirectedPage, 'Expected redirected issue-309 page')
       await dom.check('redirected', activeMiniProgram, redirectedPage)
     }
     finally {

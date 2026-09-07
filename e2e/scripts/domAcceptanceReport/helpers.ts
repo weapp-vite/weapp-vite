@@ -16,20 +16,27 @@ export const ACCEPTANCE_DIRTY_ENV = 'WEAPP_VITE_E2E_ACCEPTANCE_DIRTY'
 export const ACCEPTANCE_REPORT_DIR_ENV = 'WEAPP_VITE_E2E_ACCEPTANCE_REPORT_DIR'
 export const ACCEPTANCE_TASK_ENV = 'WEAPP_VITE_E2E_ACCEPTANCE_TASK'
 export const ACCEPTANCE_ROOT = path.resolve(import.meta.dirname, '../../..')
+const GENERATED_ACCEPTANCE_EVIDENCE_PREFIX = 'docs/reports/dom-acceptance/'
+const GENERATED_SUITE_REPORT_FILE = /^docs\/reports\/\d{4}-\d{2}-\d{2}-\d{6}-[\w.](?:[\w.-]*[\w.])?-suite-report\/index\.(?:md|json)$/
 
 export function isStrictDomAcceptance(env = process.env) {
   return env[DOM_ACCEPTANCE_ENV] === '1'
 }
 
+export function isStrictDomAcceptanceSuite(suiteName: string, env = process.env) {
+  const mode = suiteName.replace(/^e2e:/, '').split(/\s+/)[0]
+  return mode === 'ide-full' || mode === 'ide-full:exhaustive' || isStrictDomAcceptance(env)
+}
+
 function readGitOutput(args: string[]) {
-  return execFileSync('git', args, { cwd: ACCEPTANCE_ROOT, encoding: 'utf8' }).trim()
+  return execFileSync('git', args, { cwd: ACCEPTANCE_ROOT, encoding: 'utf8' })
 }
 
 export function createAcceptanceIdentity(env = process.env, readGit = readGitOutput): AcceptanceIdentity {
   let commitSha = 'unknown'
   let workingTreeDirty: boolean | null = env[ACCEPTANCE_DIRTY_ENV] === '1' ? true : env[ACCEPTANCE_DIRTY_ENV] === '0' ? false : null
   try {
-    commitSha = readGit(['rev-parse', 'HEAD'])
+    commitSha = readGit(['rev-parse', 'HEAD']).trim()
   }
   catch {
     commitSha = 'unknown'
@@ -39,7 +46,11 @@ export function createAcceptanceIdentity(env = process.env, readGit = readGitOut
   }
   if (env[ACCEPTANCE_DIRTY_ENV] === undefined) {
     try {
-      workingTreeDirty = Boolean(readGit(['status', '--porcelain', '--untracked-files=normal']))
+      const trackedChanges = readGit(['status', '--porcelain', '--untracked-files=no'])
+      // 只排除未跟踪的生成证据；同目录内已提交文件的变更仍属于工作区改动。
+      workingTreeDirty = Boolean(trackedChanges) || readGit(['ls-files', '--others', '--exclude-standard', '-z'])
+        .split('\0')
+        .some(file => file && !file.startsWith(GENERATED_ACCEPTANCE_EVIDENCE_PREFIX) && !GENERATED_SUITE_REPORT_FILE.test(file))
     }
     catch {
       workingTreeDirty = null

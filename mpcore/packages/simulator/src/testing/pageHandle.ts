@@ -11,6 +11,7 @@ import type {
   HeadlessTestingRenderedOptions,
   HeadlessTestingRenderedSelectorNodesSnapshot,
 } from './rendered'
+import { getPageInstanceId } from '../runtime/pageInstance'
 import { renderPageTree } from '../view'
 import { createLogicalNode } from './logicalSnapshot'
 import { createPageRootNodeHandle } from './pageNodeAccess'
@@ -44,6 +45,12 @@ export class HeadlessTestingPageHandle {
     private readonly page: HeadlessPageInstance,
     private readonly session?: HeadlessSession,
   ) {}
+
+  /** 返回底层页面实例身份；重新获取 handle 不会改变该身份。 */
+  get pageId() {
+    this.assertActive()
+    return getPageInstanceId(this.page)
+  }
 
   get path() {
     this.assertActive()
@@ -168,6 +175,19 @@ export class HeadlessTestingPageHandle {
       return [root]
     }
     return await root.$$(selector)
+  }
+
+  async getElementsByXpath(expression: string) {
+    this.assertActive()
+    const root = createPageRootNodeHandle({
+      assertActive: () => this.assertActive(),
+      createPageHandle: () => this,
+      includeHostRoots: true,
+      page: this.page,
+      project: this.project,
+      session: this.session,
+    })
+    return await root.getElementsByXpath(expression)
   }
 
   async renderedNodes(

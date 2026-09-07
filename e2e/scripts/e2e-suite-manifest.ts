@@ -210,6 +210,13 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/template-weapp-vite-wevu-template.test.ts',
   'ide/template-weapp-vite-multi-platform-template.test.ts',
   'ide/template-weapp-vite-multi-platform-sfc-template.test.ts',
+  'ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts',
+  'ide/chunk-modes.runtime.duplicate.test.ts',
+  'ide/chunk-modes.runtime.hoist.test.ts',
+  'ide/chunk-modes.runtime.extras.test.ts',
+  'ide/subpackage-shared-strategy-complex.runtime.test.ts',
+  'ide/tdesign-dialog-import.runtime.test.ts',
+  'ide/wevu-vue-demo.script-setup.emit.runtime.test.ts',
 ]
 const IDE_HEADLESS_FULL_TESTS = [...new Set([
   ...IDE_GATE_TESTS,

@@ -44,8 +44,8 @@ export const GITHUB_LIFECYCLE_PLANS = {
   ],
   issue380: initial('issue-380', [
     text('.issue-380-page', 'issue-380 page'),
-    text('.issue-380-custom-tab-bar', 'issue-380 custom tab bar', [{ has: '.issue-380-custom-tab-bar' }]),
-    { selector: 'component', has: '#github-issues-default-layout', scope: [{ has: '.issue-380-custom-tab-bar' }], count: 0 },
+    { selector: '//*[contains(@class, "issue-380-custom-tab-bar")]', query: 'xpath', text: 'issue-380 custom tab bar' },
+    { selector: '//*[@id="github-issues-default-layout"][descendant::*[contains(@class, "issue-380-custom-tab-bar")]]', query: 'xpath', count: 0 },
   ]),
   issue385: initial('issue-385', [
     text('.issue385-attach-probe', 'attach-count: 1', ['#attach-probe']),

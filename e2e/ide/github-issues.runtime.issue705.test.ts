@@ -1,3 +1,4 @@
+import { ok as assert } from 'node:assert'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import {
@@ -188,7 +189,9 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
       await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, 'push', 12_000).catch(() => undefined)
       const pushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
       expectNavigationResult(pushResult, 'pages/issue-705/index')
-      await dom.check('pushed', miniProgram, await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT))
+      const pushedPage = await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT)
+      assert(pushedPage, 'Expected target page after push')
+      await dom.check('pushed', miniProgram, pushedPage)
 
       const reloadedIssuePage = await relaunchPage(
         miniProgram,
@@ -229,7 +232,9 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
       await callIssue705PageMethod(miniProgram, TAB_PAGE_PATH, 'push', 12_000).catch(() => undefined)
       const tabPushResult = await waitForStorage(miniProgram, TAB_PUSH_RESULT_STORAGE_KEY)
       expectNavigationResult(tabPushResult, 'pages/issue-705-tab/index')
-      await dom.check('tab-pushed', miniProgram, await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT))
+      const tabPushedPage = await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT)
+      assert(tabPushedPage, 'Expected target page after tab push')
+      await dom.check('tab-pushed', miniProgram, tabPushedPage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -310,7 +315,9 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
         await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, 'push', 12_000).catch(() => undefined)
         const secondPushResult = await waitForStorage(miniProgram, PUSH_RESULT_STORAGE_KEY)
         expectNavigationResult(secondPushResult, 'pages/issue-705/index')
-        await dom.check(`${backMode}:repushed`, miniProgram, await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT))
+        const repushedPage = await waitForCurrentPagePath(miniProgram, TARGET_PAGE_PATH, STORAGE_TIMEOUT)
+        assert(repushedPage, 'Expected target page after repeated push')
+        await dom.check(`${backMode}:repushed`, miniProgram, repushedPage)
       }
     }
     finally {

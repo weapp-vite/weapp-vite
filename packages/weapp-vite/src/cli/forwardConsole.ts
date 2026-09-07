@@ -242,6 +242,11 @@ export async function startForwardConsoleBridge(options: StartForwardConsoleBrid
  * @description 暂停当前 DevTools 日志桥，并返回恢复函数。
  */
 export async function pauseActiveForwardConsole() {
+  const lifecycle = forwardConsoleLifecycle
+  await activeForwardConsoleStart
+  if (lifecycle !== forwardConsoleLifecycle) {
+    return undefined
+  }
   const session = activeForwardConsoleSession
   const bridgeOptions = activeForwardConsoleBridgeOptions
   if (!session || !bridgeOptions) {
@@ -253,20 +258,42 @@ export async function pauseActiveForwardConsole() {
   await session.close()
 
   return async () => {
+    if (lifecycle !== forwardConsoleLifecycle) {
+      return false
+    }
+    if (activeForwardConsoleStart) {
+      return await activeForwardConsoleStart
+    }
     if (activeForwardConsoleSession) {
       return true
     }
+    const startTask = (async () => {
+      try {
+        const resumedSession = await startForwardConsoleBridge(bridgeOptions)
+        if (lifecycle !== forwardConsoleLifecycle) {
+          await resumedSession.close()
+          return false
+        }
+        activeForwardConsoleSession = resumedSession
+        activeForwardConsoleBridgeOptions = bridgeOptions
+        return true
+      }
+      catch (error) {
+        if (lifecycle === forwardConsoleLifecycle) {
+          const message = error instanceof Error ? error.message : String(error)
+          logger.warn(`[forwardConsole] 恢复失败：${message}`)
+        }
+        return false
+      }
+    })()
+    activeForwardConsoleStart = startTask
     try {
-      activeForwardConsoleSession = await startForwardConsoleBridge(bridgeOptions)
-      activeForwardConsoleBridgeOptions = bridgeOptions
-      return true
+      return await startTask
     }
-    catch (error) {
-      activeForwardConsoleSession = undefined
-      activeForwardConsoleBridgeOptions = undefined
-      const message = error instanceof Error ? error.message : String(error)
-      logger.warn(`[forwardConsole] 恢复失败：${message}`)
-      return false
+    finally {
+      if (activeForwardConsoleStart === startTask) {
+        activeForwardConsoleStart = undefined
+      }
     }
   }
 }

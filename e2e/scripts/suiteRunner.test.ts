@@ -619,7 +619,7 @@ describe('suiteRunner', () => {
     ]
     const observedEnv = vi.fn<(task: SuiteTask) => void>()
 
-    await runTaskSuite('e2e:ide-full', tasks, {
+    await runTaskSuite('e2e:ide-companion-unit', tasks, {
       beforeEachTask: observedEnv,
       runTask: vi.fn().mockResolvedValue(0),
       writeReport: false,
@@ -631,7 +631,7 @@ describe('suiteRunner', () => {
     const secondSentinel = secondTask?.env?.WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL
 
     expect(firstTask?.label).toBe('ide/first.test.ts')
-    expect(firstSentinel?.replaceAll('\\', '/')).toContain('.tmp/e2e-ide-hmr-companion/e2e_ide-full.passed')
+    expect(firstSentinel?.replaceAll('\\', '/')).toContain('.tmp/e2e-ide-hmr-companion/e2e_ide-companion-unit.passed')
     expect(secondSentinel).toBe(firstSentinel)
     expect(secondTask).toMatchObject({
       env: {
@@ -657,7 +657,7 @@ describe('suiteRunner', () => {
     ]
     const observedEnv = vi.fn<(task: SuiteTask) => void>()
 
-    await runTaskSuite('e2e:ide-full', tasks, {
+    await runTaskSuite('e2e:ide-companion-unit', tasks, {
       beforeEachTask: observedEnv,
       runTask: vi
         .fn<(task: SuiteTask) => Promise<number>>()
@@ -674,7 +674,7 @@ describe('suiteRunner', () => {
 
     expect(tasks[0]?.devtoolsLaunchSkipped).toBe(true)
     expect(secondTask?.label).toBe('ide/second.test.ts')
-    expect(secondTask?.env?.WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL?.replaceAll('\\', '/')).toContain('.tmp/e2e-ide-hmr-companion/e2e_ide-full.passed')
+    expect(secondTask?.env?.WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL?.replaceAll('\\', '/')).toContain('.tmp/e2e-ide-hmr-companion/e2e_ide-companion-unit.passed')
     expect(secondTask?.env?.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK).toBeUndefined()
   })
 })

@@ -4,7 +4,8 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT, ACCEPTANCE_RUN_ID_ENV, ACCEPTANCE_SHA_ENV, ACCEPTANCE_TASK_ENV, createAcceptanceIdentity, DOM_ACCEPTANCE_ENV, isStrictDomAcceptance } from './domAcceptanceReport/helpers'
+import { E2E_RUNTIME_PROVIDER_ENV, resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT, ACCEPTANCE_RUN_ID_ENV, ACCEPTANCE_SHA_ENV, ACCEPTANCE_TASK_ENV, createAcceptanceIdentity, DOM_ACCEPTANCE_ENV, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { validateTaskAcceptance } from './domAcceptanceReport/task'
 import { createSuiteReport } from './suiteReport'
 
@@ -69,7 +70,10 @@ function shouldEmitReportMarkers(env = process.env) {
   return env[REPORT_MARKER_ENV] === '1'
 }
 
-function isDevtoolsVitestTask(task: SuiteTask) {
+export function isDevtoolsVitestTask(task: SuiteTask) {
+  if (resolveRuntimeProviderName(task.env?.[E2E_RUNTIME_PROVIDER_ENV] ?? process.env[E2E_RUNTIME_PROVIDER_ENV]) !== 'devtools') {
+    return false
+  }
   if (task.command === 'node' && task.args.some(arg => arg.endsWith(TEMPLATE_DEV_OPEN_RUNNER_BASENAME))) {
     return true
   }
@@ -463,7 +467,7 @@ export async function runTaskSuite(
   const results: SuiteTaskResult[] = []
   const reportContext = options.reportContext ?? {
     ...createAcceptanceIdentity(),
-    strict: isStrictDomAcceptance() || suiteName === 'e2e:ide-full:exhaustive',
+    strict: isStrictDomAcceptanceSuite(suiteName),
     partial: false,
     plannedTasks: tasks,
   }

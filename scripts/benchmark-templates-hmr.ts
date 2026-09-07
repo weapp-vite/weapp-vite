@@ -10,6 +10,7 @@ import { execa } from 'execa'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../e2e/utils/dev-memory'
 import { cleanupProcessesByCommandPatterns, startDevProcess } from '../e2e/utils/dev-process'
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
+import { waitForEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 
 type ScenarioGroup
@@ -564,7 +565,12 @@ async function benchmarkScenario(
       const lineCount = await countJsonlLines(profilePath)
       const startedAt = performance.now()
       await replaceFileByRename(scenario.sourceFile, updated)
-      await waitForFileContains(scenario.outputFile, expectedMarker, timeoutMs)
+      if (scenario.group === 'app-style') {
+        await waitForEmittedStylesheet(scenario.outputFile, expectedMarker, { timeoutMs, intervalMs: 100 })
+      }
+      else {
+        await waitForFileContains(scenario.outputFile, expectedMarker, timeoutMs)
+      }
       const wallMs = performance.now() - startedAt
       const profileSample = await waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs)
         .catch((): HmrProfileJsonSample => ({}))
@@ -574,7 +580,12 @@ async function benchmarkScenario(
       const restoreLineCount = await countJsonlLines(profilePath)
       const restoreStartedAt = performance.now()
       await replaceFileByRename(scenario.sourceFile, original)
-      await waitForFileNotContains(scenario.outputFile, expectedMarker, Math.min(timeoutMs, 2_000)).catch(() => {})
+      if (scenario.group === 'app-style') {
+        await waitForEmittedStylesheet(scenario.outputFile, expectedMarker, { absent: true, timeoutMs, intervalMs: 100 })
+      }
+      else {
+        await waitForFileNotContains(scenario.outputFile, expectedMarker, Math.min(timeoutMs, 2_000)).catch(() => {})
+      }
       const restoreWallMs = performance.now() - restoreStartedAt
       const restoreProfileSample = await waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs)
         .catch((): HmrProfileJsonSample => ({}))

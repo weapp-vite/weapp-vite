@@ -1,10 +1,12 @@
 import type { SuiteTask } from '../suiteRunner'
+import type { PlannedTaskCase } from './taskCases'
 import type { AcceptanceIdentity, AcceptanceReport } from './types'
 import fs from 'node:fs/promises'
 import process from 'node:process'
 import { assertAcceptanceReportPassed } from './helpers'
+import { assertTaskCaseCoverage, readPlannedTaskCases } from './taskCases'
 
-export async function validateTaskAcceptance(task: SuiteTask, identity: AcceptanceIdentity) {
+export async function validateTaskAcceptance(task: SuiteTask, identity: AcceptanceIdentity, plannedCases?: PlannedTaskCase[]) {
   const artifacts = task.artifacts?.filter(artifact => artifact.kind === 'dom-acceptance-report') ?? []
   if (!artifacts.length) {
     throw new Error('Missing DOM acceptance reporter output; task cannot be accepted from its exit code')
@@ -31,4 +33,5 @@ export async function validateTaskAcceptance(task: SuiteTask, identity: Acceptan
       throw new Error(`Template DOM acceptance invocations incomplete: expected ${expected.join(', ')}`)
     }
   }
+  assertTaskCaseCoverage(plannedCases ?? await readPlannedTaskCases(task, reports[0]!.provider), reports)
 }

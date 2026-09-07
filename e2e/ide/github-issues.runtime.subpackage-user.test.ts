@@ -1,3 +1,4 @@
+import { ok as assert } from 'node:assert'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -39,7 +40,7 @@ describe('e2e app: github-issues / user subpackage', { concurrent: false }, () =
       const page = await relaunchPage(miniProgram, '/subpackages/user/index', undefined, 45_000, {
         readiness: 'route',
       })
-      expect(page).toBeTruthy()
+      assert(page, 'Expected user subpackage page')
       await dom.check('initial', await getSharedMiniProgram(ctx), page)
     }
     finally {
@@ -61,6 +62,7 @@ describe('e2e app: github-issues / user subpackage', { concurrent: false }, () =
     expect(pageJs).toContain('user-register-form:issue-340:shared')
     const miniProgram = await getSharedMiniProgram(ctx)
     const page = await relaunchPage(miniProgram, '/subpackages/user/register/form', undefined, 45_000, { readiness: 'route' })
+    assert(page, 'Expected user registration page')
     await dom.check('initial', await getSharedMiniProgram(ctx), page)
   })
 })

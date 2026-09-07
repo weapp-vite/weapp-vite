@@ -3,6 +3,7 @@ import path from 'pathe'
 import { afterAll } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
@@ -126,14 +127,6 @@ describe('automator concurrent sessions', { concurrent: false }, () => {
       runBuild(BASE_APP_ROOT, 'ide:automator-concurrent-sessions:base'),
       runBuild(NATIVE_APP_ROOT, 'ide:automator-concurrent-sessions:native'),
     ])
-    // DevTools cache recovery 是进程全局清理；串行启动避免一个项目的恢复流程关闭另一个新会话。
-    const baseMiniProgram = await launchProjectAutomator(BASE_APP_ROOT)
-    miniPrograms.push(baseMiniProgram)
-    baseSnapshot = await readRuntimeSnapshot(baseMiniProgram, 'base')
-    baseToolInfo = await baseMiniProgram.toolInfo()
-
-    const nativeMiniProgram = await launchProjectAutomator(NATIVE_APP_ROOT)
-    miniPrograms.push(nativeMiniProgram)
   }, HOOK_TIMEOUT)
 
   afterAll(async () => {
@@ -154,8 +147,36 @@ describe('automator concurrent sessions', { concurrent: false }, () => {
     await cleanupResidualIdeProcesses()
   }, HOOK_TIMEOUT)
 
-  it('assigns independent automator session metadata to each project', async () => {
-    const [baseMiniProgram, nativeMiniProgram] = miniPrograms
+  it('assigns independent automator session metadata to each project', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/base + e2e-apps/app-lifecycle-native', [
+      {
+        id: 'base',
+        route: INDEX_ROUTE,
+        action: '启动第一个项目并检查其实际界面',
+        nodes: [
+          { selector: '#base-greeting', text: 'Hello' },
+          { selector: '#base-target', text: 'Target: index snapshot' },
+        ],
+      },
+      {
+        id: 'native',
+        route: INDEX_ROUTE,
+        action: '保留第一连接并启动第二个项目，检查独立项目界面',
+        nodes: [
+          { selector: '#app-lifecycle-route', text: 'App lifecycle native' },
+          { selector: '#app-hook-onLaunch', text: 'onLaunch: observed' },
+        ],
+      },
+    ])
+    // 此 case 验证跨项目连接，两个项目需要独立启动；全局缓存恢复仍串行执行。
+    const baseMiniProgram = await launchProjectAutomator(BASE_APP_ROOT)
+    miniPrograms.push(baseMiniProgram)
+    baseSnapshot = await readRuntimeSnapshot(baseMiniProgram, 'base')
+    baseToolInfo = await baseMiniProgram.toolInfo()
+    await dom.check('base', baseMiniProgram, await baseMiniProgram.currentPage())
+    const nativeMiniProgram = await launchProjectAutomator(NATIVE_APP_ROOT)
+    miniPrograms.push(nativeMiniProgram)
+    await dom.check('native', nativeMiniProgram, await nativeMiniProgram.currentPage())
 
     const baseMetadata = readSessionMetadata(baseMiniProgram)
     const nativeMetadata = readSessionMetadata(nativeMiniProgram)
@@ -174,5 +195,5 @@ describe('automator concurrent sessions', { concurrent: false }, () => {
     expect(baseSnapshot?.pageData?.__e2eResult?.status).toBe('ready')
     expect(baseSnapshot?.pageData?.__e2eData?.target).toBe('index snapshot')
     expect(baseToolInfo?.SDKVersion).toEqual(expect.any(String))
-  })
+  }, HOOK_TIMEOUT)
 })

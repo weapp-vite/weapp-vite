@@ -14,6 +14,7 @@ import { resolveMultiPlatformConfig } from '../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../platform'
 import { createImportMetaDefineRegistry, pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
 import { normalizeRelativePath, toPosixPath } from '../../utils/path'
+import { SUB_PACKAGE_SHARED_DIR } from '../chunkStrategy/constants'
 import { safeGetPackageInfoSync } from '../localPkg'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { resolveBuiltinPackageAliases } from '../packageAliases'
@@ -139,6 +140,16 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       return mapped
     }
     return normalizedRelative
+  }
+
+  const remapOutputPath = (relativePath: string) => {
+    const mapped = remapPluginRelativePath(relativePath)
+    const root = options.currentSubPackageRoot && normalizeRelativePath(options.currentSubPackageRoot)
+    if (!root || mapped === root || mapped.startsWith(`${root}/`)) {
+      return mapped
+    }
+    // 独立构建复用主包源码时，入口与静态资产必须共同归属包内，不能覆盖主包产物。
+    return path.join(root, SUB_PACKAGE_SHARED_DIR, mapped)
   }
 
   const resolveExternalOutputPath = (filePath: string) => {
@@ -453,7 +464,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
         return relative
       }
       if (relative.startsWith('..') || relative === 'node_modules' || relative.startsWith('node_modules/')) {
-        return resolveExternalOutputPath(p)
+        return remapOutputPath(resolveExternalOutputPath(p))
       }
       const libOutputMap = options.weappLibOutputMap
       if (libOutputMap && libOutputMap.size > 0) {
@@ -462,10 +473,10 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
         if (mapped) {
           const ext = path.extname(relative)
           const fileName = ext ? `${mapped}${ext}` : mapped
-          return remapPluginRelativePath(fileName)
+          return remapOutputPath(fileName)
         }
       }
-      return remapPluginRelativePath(relative)
+      return remapOutputPath(relative)
     },
   }
 }

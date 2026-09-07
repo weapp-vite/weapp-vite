@@ -6,7 +6,6 @@ import process from 'node:process'
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
 const REPORTS_ROOT_DIR = path.join(ROOT_DIR, 'docs/reports')
-const REPORT_META_FILE = path.join(os.tmpdir(), 'weapp-vite-e2e-ide-warning-report-paths.json')
 const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
 const EVENT_LOG_FILE_ENV = 'WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE'
 const REPORT_MARKDOWN_FILE_ENV = 'WEAPP_VITE_E2E_IDE_WARNING_REPORT_MD_FILE'
@@ -190,38 +189,6 @@ function ensureParentDir(filePath: string) {
 function resetFile(filePath: string) {
   ensureParentDir(filePath)
   fs.writeFileSync(filePath, '', 'utf8')
-}
-
-function writeReportMetaFile(paths: IdeWarningReportPaths) {
-  ensureParentDir(REPORT_META_FILE)
-  fs.writeFileSync(REPORT_META_FILE, `${JSON.stringify(paths, null, 2)}\n`, 'utf8')
-}
-
-function readReportMetaFile(): IdeWarningReportPaths | null {
-  try {
-    const raw = fs.readFileSync(REPORT_META_FILE, 'utf8')
-    const parsed = JSON.parse(raw) as Partial<IdeWarningReportPaths>
-    if (
-      typeof parsed.reportSlug !== 'string'
-      || typeof parsed.reportDir !== 'string'
-      || typeof parsed.eventLogPath !== 'string'
-      || typeof parsed.reportMarkdownPath !== 'string'
-      || typeof parsed.reportJsonPath !== 'string'
-    ) {
-      return null
-    }
-
-    return {
-      reportSlug: parsed.reportSlug,
-      reportDir: parsed.reportDir,
-      eventLogPath: parsed.eventLogPath,
-      reportMarkdownPath: parsed.reportMarkdownPath,
-      reportJsonPath: parsed.reportJsonPath,
-    }
-  }
-  catch {
-    return null
-  }
 }
 
 function normalizeSlash(value: string) {
@@ -529,7 +496,7 @@ export function resolveIdeWarningReportPathsFromEnv(): IdeWarningReportPaths | n
     }
   }
 
-  return readReportMetaFile()
+  return null
 }
 
 export function ensureIdeWarningReportEnv(now = new Date()) {
@@ -552,7 +519,6 @@ export function ensureIdeWarningReportEnv(now = new Date()) {
   process.env[REPORT_JSON_FILE_ENV] = paths.reportJsonPath
   process.env[REPORT_SLUG_ENV] = paths.reportSlug
   process.env[REPORT_DIR_ENV] = paths.reportDir
-  writeReportMetaFile(paths)
   return paths
 }
 

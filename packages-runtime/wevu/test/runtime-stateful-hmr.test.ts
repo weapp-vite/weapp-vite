@@ -1,6 +1,7 @@
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, onAttached, onUnload, ref } from '@/index'
+import { defineComponent, defineStore, nextTick, onAttached, onUnload, reactive, ref } from '@/index'
+import { applySnapshotUpdate } from '@/runtime/app/setData/snapshot'
 
 describe('runtime: stateful HMR', () => {
   let applying = false
@@ -148,5 +149,182 @@ describe('runtime: stateful HMR', () => {
     expect(instance.__wevu.setupState.input.value).toBe('held-input')
     expect(instance.__wevu.setupState.label).toBe('after')
     expect(instance.data).toMatchObject({ input: 'held-input', label: 'after' })
+  })
+
+  it.each([false, true])('restores explicit reactive snapshots with an existing runtime: %s', async (existingRuntime) => {
+    const attached = vi.fn()
+    const defineRuntime = (label: string, delta: number) => defineComponent({
+      setup() {
+        const count = ref(0)
+        const details = reactive({ count: 0 })
+        const items = reactive(['initial'])
+        onAttached(attached)
+        const increment = () => {
+          count.value += delta
+          details.count += delta
+          items.push('updated')
+        }
+        return { count, details, increment, items, label }
+      },
+    })
+    defineRuntime('before', 1)
+    const instance: any = {
+      data: { count: 0, details: { count: 0 }, items: ['initial'], label: 'before' },
+      properties: {},
+      setData(payload: Record<string, any>) {
+        for (const [key, value] of Object.entries(payload)) {
+          applySnapshotUpdate(this.data, key, value, 'set')
+        }
+      },
+    }
+    if (existingRuntime) {
+      registeredDefinition!.lifetimes.attached.call(instance)
+    }
+    const snapshot = { count: 2, details: { count: 3 }, items: ['held'], label: 'before' }
+    applying = true
+    defineRuntime('after', 2)
+    refresh!(instance, snapshot)
+    applying = false
+
+    expect(instance.__wevu.setupState.count.value).toBe(2)
+    expect(instance.__wevu.setupState.details).toEqual({ count: 3 })
+    expect(instance.__wevu.setupState.items).toEqual(['held'])
+    expect(instance.__wevu.setupState.label).toBe('after')
+    expect(instance.data).toMatchObject({ ...snapshot, label: 'after' })
+    instance.__wevu.methods.increment()
+    await nextTick()
+    await nextTick()
+    expect(instance.__wevu.setupState.count.value).toBe(4)
+    expect(instance.__wevu.setupState.details.count).toBe(5)
+    expect(instance.__wevu.setupState.items).toEqual(['held', 'updated'])
+    expect(instance.data).toMatchObject({ count: 4, details: { count: 5 }, items: ['held', 'updated'], label: 'after' })
+    expect(snapshot).toEqual({ count: 2, details: { count: 3 }, items: ['held'], label: 'before' })
+    expect(attached).toHaveBeenCalledTimes(existingRuntime ? 1 : 0)
+  })
+
+  it('preserves deleted reactive fields while adding defaults introduced by updated setup code', async () => {
+    const defineRuntime = (updated: boolean) => defineComponent({
+      setup() {
+        const details = reactive<Record<string, any>>({
+          count: 0,
+          selected: 'initial',
+          nested: { removed: 'initial', kept: 'initial', ...(updated ? { added: 'new nested default' } : {}) },
+          ...(updated ? { added: 'new default' } : {}),
+        })
+        const nested = details.nested
+        return {
+          details,
+          increment: () => {
+            details.count++
+            nested.kept = 'updated through closure'
+          },
+        }
+      },
+    })
+    defineRuntime(false)
+    const instance: any = {
+      data: {},
+      properties: {},
+      setData(payload: Record<string, any>) {
+        for (const [key, value] of Object.entries(payload)) {
+          applySnapshotUpdate(this.data, key, value, 'set')
+        }
+      },
+    }
+    registeredDefinition!.lifetimes.attached.call(instance)
+    const details = instance.__wevu.setupState.details
+    delete details.selected
+    delete details.nested.removed
+    details.count = 3
+    details.nested.kept = 'held'
+    await nextTick()
+    await nextTick()
+    const snapshot = { details: { count: 3, nested: { kept: 'held' } } }
+    applying = true
+    defineRuntime(true)
+    refresh!(instance, snapshot)
+    applying = false
+    expect(instance.__wevu.setupState.details).toEqual({
+      count: 3,
+      nested: { kept: 'held', added: 'new nested default' },
+      added: 'new default',
+    })
+    instance.__wevu.methods.increment()
+    await nextTick()
+    await nextTick()
+    expect(instance.data.details).toEqual({
+      count: 4,
+      nested: { kept: 'updated through closure', added: 'new nested default', removed: null },
+      added: 'new default',
+      selected: null,
+    })
+    expect(instance.__wevu.setupState.details).not.toHaveProperty('selected')
+    expect(instance.__wevu.setupState.details.nested).not.toHaveProperty('removed')
+    expect(snapshot).toEqual({ details: { count: 3, nested: { kept: 'held' } } })
+  })
+
+  it.each([
+    { replaceStore: false, serializedAction: false },
+    { replaceStore: false, serializedAction: true },
+    { replaceStore: true, serializedAction: false },
+    { replaceStore: true, serializedAction: true },
+  ])('keeps store refs and actions after HMR (module replacement: $replaceStore, null action: $serializedAction)', async ({ replaceStore, serializedAction }) => {
+    const createCounter = () => defineStore('hmr-counter', () => {
+      const count = ref(0)
+      return {
+        count,
+        increment: (delta: number) => { count.value += delta },
+      }
+    })
+    let useCounter = createCounter()
+    const defineRuntime = (delta: number) => defineComponent({
+      setup() {
+        const store = useCounter()
+        const count = ref(0)
+        return {
+          count,
+          store,
+          storeCount: store.count,
+          increment: () => {
+            count.value += delta
+            store.increment(delta)
+          },
+        }
+      },
+    })
+    defineRuntime(1)
+    const instance: any = {
+      data: {},
+      properties: {},
+      setData(payload: Record<string, any>) { Object.assign(this.data, payload) },
+    }
+    registeredDefinition!.lifetimes.attached.call(instance)
+    instance.__wevu.methods.increment()
+    instance.__wevu.methods.increment()
+    await nextTick()
+    await nextTick()
+    expect(instance.data).toMatchObject({ count: 2, storeCount: 2 })
+    if (replaceStore) {
+      useCounter = createCounter()
+    }
+    const storeRef = useCounter().count
+    const storeAction = useCounter().increment
+    applying = true
+    defineRuntime(2)
+    refresh!(instance, {
+      count: 2,
+      store: { count: 2, ...(serializedAction ? { increment: null } : {}) },
+      storeCount: 2,
+    })
+    applying = false
+    expect(useCounter().count).toBe(storeRef)
+    expect(useCounter().increment).toBe(storeAction)
+    expect(useCounter().count.value).toBe(2)
+    expect(instance.data).toMatchObject({ count: 2, storeCount: 2 })
+    instance.__wevu.methods.increment()
+    await nextTick()
+    await nextTick()
+    expect(instance.data).toMatchObject({ count: 4, storeCount: 4 })
+    expect(useCounter().count.value).toBe(4)
   })
 })

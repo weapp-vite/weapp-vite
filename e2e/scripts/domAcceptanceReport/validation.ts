@@ -1,19 +1,22 @@
 import type { DomAcceptance } from '../../utils/domAcceptance/types'
 import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
+import { assertResponsiveStyle } from '../../utils/domAcceptance/styles'
 import { runtimeDiagnosticSchema } from './runtimeDiagnostics'
 
 const strings = z.record(z.string(), z.string())
+const query = z.enum(['css', 'xpath'])
 const has = z.string().min(1).optional()
 const scope = z.array(z.union([z.string().min(1), z.object({ has: z.string().min(1) })])).optional()
 const expectation = z.object({
   selector: z.string().min(1),
+  query: query.optional(),
   has,
   scope,
   count: z.number().int().nonnegative().optional(),
   text: z.string().optional(),
   attributes: strings.optional(),
-  styles: strings.optional(),
+  styles: z.record(z.string(), z.union([z.string(), z.object({ rpx: z.number().finite() })])).optional(),
   visible: z.boolean().optional(),
 })
 const node = z.object({
@@ -38,7 +41,8 @@ export const serializedPlan = z.object({
     route: z.string().min(1),
     source: z.enum(['devtools-page-frame', 'headless-logical-tree']),
     capturedAt: z.iso.datetime(),
-    nodes: z.array(z.object({ selector: z.string().min(1), has, scope, count: z.number().int().nonnegative(), nodes: z.array(node) })),
+    windowWidth: z.number().finite().positive().optional(),
+    nodes: z.array(z.object({ selector: z.string().min(1), query, has, scope, count: z.number().int().nonnegative(), nodes: z.array(node) })),
   })),
 }).passthrough()
 
@@ -56,6 +60,7 @@ export function assertSerializedDomEvidence(plan: DomAcceptance) {
     for (const [nodeIndex, expected] of checkpoint.nodes.entries()) {
       const actual = evidence.nodes[nodeIndex]!
       equal(actual.selector, expected.selector, `${checkpoint.id} selector`)
+      equal(actual.query, expected.query ?? 'css', `${checkpoint.id} query`)
       equal(actual.has, expected.has, `${checkpoint.id} has`)
       equal(actual.scope ?? [], expected.scope ?? [], `${checkpoint.id} scope`)
       equal(actual.count, expected.count ?? 1, `${checkpoint.id} count`)
@@ -68,7 +73,13 @@ export function assertSerializedDomEvidence(plan: DomAcceptance) {
           equal(captured.attributes?.[key], value, `${checkpoint.id} attribute ${key}`)
         }
         for (const [key, value] of Object.entries(expected.styles ?? {})) {
-          equal(captured.styles?.[key], value, `${checkpoint.id} style ${key}`)
+          if (typeof value === 'string') {
+            equal(captured.styles?.[key], value, `${checkpoint.id} style ${key}`)
+          }
+          else {
+            equal(plan.provider, 'devtools', `${checkpoint.id} responsive style provider`)
+            assertResponsiveStyle(captured.styles?.[key], value.rpx, evidence.windowWidth, `${checkpoint.id} style ${key}`)
+          }
         }
         if (expected.visible !== undefined) {
           if (!captured.size || !captured.styles || ['display', 'visibility', 'opacity'].some(key => typeof captured.styles?.[key] !== 'string')) {

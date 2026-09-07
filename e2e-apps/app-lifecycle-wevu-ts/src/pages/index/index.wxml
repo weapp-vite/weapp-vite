@@ -1,4 +1,6 @@
 <view id="app-lifecycle-route" class="page" data-e2e-route="index">{{message}}</view>
+<view id="watch-result">watch results: {{__watchLogs.length}}</view>
+<view class="watch-result-value" wx:for="{{__watchLogs}}" wx:key="*this">{{item}}</view>
 <view class="panel">
   <view class="panel-title">Hook status</view>
   <view id="app-hook-{{item.name}}" class="app-hook-status" wx:for="{{__e2eHooks}}" wx:key="name">{{item.name}}: {{item.status}}</view>

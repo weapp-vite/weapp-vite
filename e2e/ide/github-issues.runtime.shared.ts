@@ -1,3 +1,4 @@
+import type { MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
 import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
@@ -171,7 +172,18 @@ function isEquivalentQueryValue(actual: unknown, expected: string) {
     || actualValue === encodeURIComponent(expected)
 }
 
-function isExpectedRoutePage(page: any, expectedPath: string) {
+type RoutePage = Pick<Page, 'path'> & Partial<Pick<Page, 'query'>>
+
+interface RouteSession {
+  currentPage: (options?: Parameters<MiniProgram['currentPage']>[0]) => Promise<RoutePage | null | undefined>
+  reLaunch?: (route: string) => Promise<RoutePage | null | undefined>
+  navigateTo?: (route: string) => Promise<RoutePage | null | undefined>
+}
+
+function isExpectedRoutePage<T extends RoutePage>(page: T | null | undefined, expectedPath: string): page is T {
+  if (!page) {
+    return false
+  }
   if (normalizeRoutePath(page?.path ?? '') !== normalizeRoutePath(expectedPath)) {
     return false
   }
@@ -1026,7 +1038,9 @@ function escapeRegExp(value: string) {
   return value.replace(REGEXP_ESCAPE_RE, '\\$&')
 }
 
-export async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, timeoutMs = 12_000) {
+export function waitForCurrentPagePath(miniProgram: MiniProgram, expectedPath: string, timeoutMs?: number): Promise<Page | null>
+export function waitForCurrentPagePath(miniProgram: RouteSession, expectedPath: string, timeoutMs?: number): Promise<RoutePage | null>
+export async function waitForCurrentPagePath(miniProgram: RouteSession, expectedPath: string, timeoutMs = 12_000) {
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
@@ -1190,14 +1204,28 @@ async function restartSharedMiniProgram(ctx?: { skip: (message?: string) => void
   return await getSharedMiniProgram(ctx)
 }
 
+export function relaunchPage(
+  miniProgram: MiniProgram,
+  route: string,
+  readyText?: string,
+  timeoutMs?: number,
+  options?: RelaunchPageOptions,
+): Promise<Page | null>
+export function relaunchPage(
+  miniProgram: RouteSession,
+  route: string,
+  readyText?: string,
+  timeoutMs?: number,
+  options?: RelaunchPageOptions,
+): Promise<RoutePage | null>
 export async function relaunchPage(
-  miniProgram: any,
+  miniProgram: RouteSession,
   route: string,
   readyText?: string,
   timeoutMs = 45_000,
   options: RelaunchPageOptions = {},
 ) {
-  async function waitForRoutePage(targetMiniProgram: any, phase: string, timeout: number) {
+  async function waitForRoutePage(targetMiniProgram: RouteSession, phase: string, timeout: number) {
     const page = await waitForCurrentPagePath(
       targetMiniProgram,
       route,
@@ -1210,7 +1238,7 @@ export async function relaunchPage(
     return null
   }
 
-  async function triggerRelaunch(targetMiniProgram: any, phase: 'primary' | 'restart') {
+  async function triggerRelaunch(targetMiniProgram: RouteSession, phase: 'primary' | 'restart') {
     const routeMethods = normalizeRoutePath(route).startsWith('subpackages/')
       ? ['navigateTo', 'reLaunch'] as const
       : ['reLaunch'] as const
@@ -1226,7 +1254,7 @@ export async function relaunchPage(
         process.stdout.write(`[github-issues:relaunch] ${routeMethod} route=${route} phase=${phase} attempt=${attempt}/3\n`)
         try {
           const relaunchedPage = await runWithTimeout(
-            () => targetMiniProgram[routeMethod](route),
+            () => targetMiniProgram[routeMethod]!(route),
             Math.max(timeoutMs, 45_000),
             `${routeMethod} ${route}`,
           )
@@ -1257,7 +1285,7 @@ export async function relaunchPage(
     return null
   }
 
-  async function runAttempts(targetMiniProgram: any, phase: 'primary' | 'restart') {
+  async function runAttempts(targetMiniProgram: RouteSession, phase: 'primary' | 'restart') {
     process.stdout.write(`[github-issues:relaunch] phase=${phase} route=${route}\n`)
     const alreadyCurrentPage = options.forceRelaunch
       ? null

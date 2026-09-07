@@ -3285,7 +3285,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/project/src/layouts/default',
+          id: '/project/src/layouts/default.vue',
         }),
       ]),
     )
@@ -3347,7 +3347,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/project/src/layouts/default',
+          id: '/project/src/layouts/default.vue',
         }),
       ]),
     )
@@ -3407,7 +3407,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/project/src/layouts/default',
+          id: '/project/src/layouts/default.vue',
         }),
       ]),
     )
@@ -3469,7 +3469,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/project/src/layouts/default',
+          id: '/project/src/layouts/default.vue',
         }),
       ]),
     )

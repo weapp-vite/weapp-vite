@@ -1,120 +1,95 @@
 import { readFile, rm, stat } from 'node:fs/promises'
+import vm from 'node:vm'
 import CI from 'ci-info'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
 import { getFixture, normalizeBuildOutputContent, scanFiles } from './utils'
 
-const jsExpectations: Record<string, Array<RegExp | string>> = {
-  'app.js': [/require\(["']\.\/rolldown-runtime\.js["']\)/, /\bApp\(/],
-  'app-bar/index.js': [
-    /require\(["']\.\.\/rolldown-runtime\.js["']\)/,
-    /\bComponent\(/,
-  ],
-  'async2.js': [
-    /require\(["']\.\/rolldown-runtime\.js["']\)/,
-    /exports\.async2/,
-    /exports\.default/,
-  ],
-  'components/Navbar/Navbar.js': [
-    /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /\bComponent\(/,
-    /require\.async\(["']\.\.\/\.\.\/pages\/index\/async\.js["']\)/,
-  ],
-  'components/Test/index.js': [
-    /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /\bComponent\(/,
-  ],
-  'custom-tab-bar/index.js': [
-    /require\(["']\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/weapp-vendors\/wevu-[\w-]+\.js["']\)\.require_other\(\)/,
-    /\bComponent\(/,
-    /require\.async\(["']\.\.\/pages\/index\/async\.js["']\)/,
-  ],
-  'pages/index/async.js': [/exports\.async/, /exports\.default/],
-  'pages/index/index.js': [
-    /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-[\w-]+\.js["']\)/,
-    /\.require_other\(\)/,
-    /\bPage\(/,
-    /require\.async\(["']\.\/async\.js["']\)/,
-  ],
-  'pages/index/vue.js': [
-    /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-[\w-]+|src-[\w-]+)\.js["']\)/,
-    /var __wevuOptions = \{/,
-    /\.[A-Za-z_$][\w$]*\(__wevuOptions\)/,
-    /(?:exports\.default|module\.exports) = /,
-  ],
-  'pages/index/vue-setup.js': [
-    /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-[\w-]+|src-[\w-]+)\.js["']\)/,
-    /var __wevuOptions = \{/,
-    /\.[A-Za-z_$][\w$]*\(__wevuOptions\)/,
-    /(?:exports\.default|module\.exports) = /,
-  ],
-  'weapp-vendors/wevu-shared.js': [
-    /__commonJS(?:Min)?/,
-    /require_other/,
-    /Object\.defineProperty\(exports, ["']require_other["']/,
-  ],
-  'wevu-runtime.js': [
-    /require\(["']\.\/(?:weapp-vendors\/)?wevu-[\w-]+\.js["']\)/,
-    /Object\.defineProperty\(exports, ["'][A-Za-z_$][\w$]*["']/,
-    /__wevu_runtime/,
-  ],
-  'weapp-vendors/wevu-src.js': [
-    /require\(["']\.\/wevu-[\w-]+\.js["']\)/,
-    /Object\.defineProperty\(exports, ["'][A-Za-z_$][\w$]*["']/,
-    /__wevu_runtime/,
-  ],
-  'rolldown-runtime.js': [/Object\.defineProperty/],
+interface FixtureDefinition {
+  onLoad?: () => Promise<void>
+  lifetimes?: { attached?: () => Promise<void> }
 }
 
-function normalizeDistFile(file: string, content = '') {
-  if (/^weapp-vendors\/wevu-[\w-]+\.js$/.test(file)) {
-    if (content.includes('__wevu_runtime')) {
-      return 'wevu-runtime.js'
-    }
-    if (content.includes('require_other')) {
-      return 'weapp-vendors/wevu-shared.js'
-    }
-  }
-  if (/^weapp-vendors\/wevu-src\.js$/.test(file)) {
-    return 'wevu-runtime.js'
-  }
-  if (/^weapp-vendors\/wevu-templateRef(?:-[\w-]+)?\.js$/.test(file)) {
-    return 'wevu-runtime.js'
-  }
-  if (/^weapp-vendors\/wevu-watch(?:-[\w-]+)?\.js$/.test(file)) {
-    return 'wevu-runtime.js'
-  }
-  if (/^weapp-vendors\/wevu-[\w-]+\.js$/.test(file)) {
-    return 'weapp-vendors/wevu-shared.js'
-  }
-  if (/^src-[\w-]+\.js$/.test(file)) {
-    return 'wevu-runtime.js'
-  }
-  return file
-}
+async function assertBundleRuntime(outputs: Array<{ file: string, content: string }>) {
+  const sources = new Map(outputs.filter(({ file }) => path.extname(file) === '.js').map(({ file, content }) => [file, content]))
+  const modules = new Map<string, { exports: Record<string, unknown> }>()
+  const app = vi.fn()
+  const page = vi.fn<(definition: FixtureDefinition) => void>()
+  const component = vi.fn<(definition: FixtureDefinition) => void>()
+  const log = vi.fn()
+  const context = vm.createContext({
+    App: app,
+    Page: page,
+    Component: component,
+    Behavior: (definition: unknown) => definition,
+    wx: {},
+    console: { log, warn: vi.fn(), error: vi.fn() },
+  })
 
-function assertJsContent(file: string, content: string) {
-  const patterns = jsExpectations[normalizeDistFile(file, content)]
-  expect(patterns, `Missing JS expectations for ${file}`).toBeDefined()
-  if (!patterns) {
-    return
-  }
-  for (const pattern of patterns) {
-    if (typeof pattern === 'string') {
-      expect(content).toContain(pattern)
-      continue
+  // 使用产物自己的依赖路径和缓存执行，兼容共享模块独立成块或与 runtime 合并。
+  function load(file: string): Record<string, unknown> {
+    const cached = modules.get(file)
+    if (cached) {
+      return cached.exports
     }
-    expect(content).toMatch(pattern)
+    const source = sources.get(file)
+    if (source === undefined) {
+      throw new Error(`Unresolved fixture bundle dependency: ${file}`)
+    }
+    const module = { exports: {} }
+    modules.set(file, module)
+    const requireModule = (specifier: string) => {
+      if (!specifier.startsWith('.')) {
+        throw new Error(`Unexpected external fixture dependency: ${specifier}`)
+      }
+      return load(path.normalize(path.join(path.dirname(file), specifier)))
+    }
+    const require = Object.assign(requireModule, {
+      async: async (specifier: string) => requireModule(specifier),
+    })
+    const execute = vm.runInContext(`(function(require, module, exports) {\n${source}\n})`, context, { filename: file })
+    execute(require, module, module.exports)
+    return module.exports
   }
+
+  load('app.js')
+  expect(app).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ globalData: {} }))
+  load('pages/index/index.js')
+  expect(page).toHaveBeenCalledTimes(1)
+  const pageDefinition = page.mock.calls[0]![0]
+  expect(pageDefinition.onLoad).toBeTypeOf('function')
+  await pageDefinition.onLoad!()
+  expect(log).toHaveBeenLastCalledWith('part', 'other', { async: 'async', default: 1 }, { async2: 'async2', default: 2 })
+
+  component.mockClear()
+  load('custom-tab-bar/index.js')
+  expect(component).toHaveBeenCalledTimes(1)
+  const tabBar = component.mock.calls[0]![0]
+  expect(tabBar.lifetimes?.attached).toBeTypeOf('function')
+  log.mockClear()
+  await tabBar.lifetimes!.attached!()
+  expect(log.mock.calls).toEqual([[{ other: 'other' }], [{ async: 'async', default: 1 }]])
+
+  component.mockClear()
+  load('components/Navbar/Navbar.js')
+  expect(component).toHaveBeenCalledTimes(1)
+  const navbar = component.mock.calls[0]![0]
+  expect(navbar.lifetimes?.attached).toBeTypeOf('function')
+  await navbar.lifetimes!.attached!()
+  expect(log).toHaveBeenLastCalledWith({ async: 'async', default: 1 })
+
+  for (const file of ['app-bar/index.js', 'components/Test/index.js', 'pages/index/vue.js', 'pages/index/vue-setup.js']) {
+    component.mockClear()
+    load(file)
+    expect(component, `${file} registers its component`).toHaveBeenCalledTimes(1)
+  }
+  expect(page).toHaveBeenCalledTimes(1)
+  expect(app).toHaveBeenCalledTimes(1)
+  expect([...modules.keys()].sort(), 'All emitted JavaScript is reachable through fixture entries').toEqual([...sources.keys()].sort())
 }
 
 vi.mock('@/logger', () => ({
-  // ...await importOriginal<typeof import('@/logger')>(),
   default: {
     warn: vi.fn(),
     success: vi.fn(),
@@ -122,7 +97,6 @@ vi.mock('@/logger', () => ({
     error: vi.fn(),
   },
   configureLogger: vi.fn(),
-  // warn: vi.fn(),
 }))
 
 describe.skipIf(CI.isCI)('tabbar-appbar', () => {
@@ -149,14 +123,12 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
       content: await readFile(path.resolve(distDir, file), 'utf-8'),
       file,
     })))
-    expect(outputs.map(({ content, file }) => normalizeDistFile(file, content)).sort()).toMatchSnapshot()
-    for (const { content, file } of outputs) {
-      if (path.extname(file) === '.js') {
-        assertJsContent(file, content)
-        continue
-      }
+    const nonJsOutputs = outputs.filter(({ file }) => path.extname(file) !== '.js')
+    expect(nonJsOutputs.map(({ file }) => file).sort()).toMatchSnapshot()
+    for (const { content, file } of nonJsOutputs) {
       expect(normalizeBuildOutputContent(content)).toMatchSnapshot(file)
     }
+    await assertBundleRuntime(outputs)
     expect(logger.success).toHaveBeenCalled()
   })
 })

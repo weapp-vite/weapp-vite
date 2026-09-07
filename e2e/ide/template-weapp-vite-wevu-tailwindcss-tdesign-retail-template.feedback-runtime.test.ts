@@ -3,8 +3,11 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
+import { classText, tapRendered, xpathClass } from './tdesignDom'
+import { RETAIL_FIRST_TITLE, RETAIL_FIXTURE, retailHomeCheckpoint } from './tdesignDom/retail'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
@@ -18,7 +21,6 @@ const GOODS_DETAIL_PATH = 'pages/goods/details/index'
 const HOME_STATE_STORAGE_KEY = '__weapp_vite_retail_home_state__'
 const CURRENT_PAGE_READ_TIMEOUT = 2_000
 const CURRENT_PAGE_READ_RETRIES = 1
-const RETAIL_PAGE_PROTOCOL_UNAVAILABLE_MESSAGE = '当前微信开发者工具未返回 retail 模板 App 页面协议，跳过 retail feedback IDE runtime。'
 
 interface RetailHomeSnapshot {
   firstSpuId?: string | number
@@ -81,70 +83,8 @@ async function closeSharedMiniProgram() {
   await miniProgram.close().catch(() => {})
 }
 
-function isRetailPageProtocolUnavailable(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return message.includes(`Failed to resolve home page: ${HOME_ROUTE}`)
-    || message.includes('Timeout in launch automator')
-    || message.includes('Timeout in warmup reLaunch')
-    || message.includes('Timeout in warmup current page')
-    || message.includes('Timed out waiting page root after warmup reLaunch')
-    || message.includes('DevTools did not respond to protocol method App.getCurrentPage')
-    || message.includes('DevTools did not respond to protocol method App.getPageStack')
-}
-
-function skipRetailPageProtocolUnavailable(ctx: { skip: (message?: string) => void }, error: unknown) {
-  if (!isRetailPageProtocolUnavailable(error)) {
-    return false
-  }
-  const reason = error instanceof Error ? error.message : String(error)
-  process.stdout.write(`[warn] [retail-feedback-runtime] skip reason=${reason}\n`)
-  ctx.skip(`${RETAIL_PAGE_PROTOCOL_UNAVAILABLE_MESSAGE}reason=${reason}`)
-  return true
-}
-
-function isRetailSessionRecoverableError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return message.includes('[loader] unexpected current frame status timedout')
-    || message.includes('unexpected current frame status timedout')
-    || message.includes('timeout waiting for automator response')
-    || message.includes('DEVTOOLS_PROTOCOL_TIMEOUT')
-    || message.includes('DevTools did not respond to protocol method App.callFunction')
-    || message.includes('DevTools did not respond to protocol method App.callWxMethod')
-    || message.includes('DevTools did not respond to protocol method App.getCurrentPage')
-    || message.includes('Operation timed out after')
-    || message.includes('Execution context was destroyed')
-    || message.includes('Target closed')
-    || message.includes('WebSocket is not open')
-    || message.includes('not connected')
-}
-
-async function runWithRetailSession<T>(ctx: { skip: (message?: string) => void }, factory: (miniProgram: any) => Promise<T>) {
-  let miniProgram: any
-  try {
-    miniProgram = await getSharedMiniProgram()
-  }
-  catch (error) {
-    if (skipRetailPageProtocolUnavailable(ctx, error)) {
-      return undefined as T
-    }
-    throw error
-  }
-  try {
-    return await factory(miniProgram)
-  }
-  catch (error) {
-    if (skipRetailPageProtocolUnavailable(ctx, error)) {
-      return undefined as T
-    }
-    if (!isRetailSessionRecoverableError(error)) {
-      throw error
-    }
-    process.stdout.write(`[warn] [retail-feedback-runtime] restart session after recoverable error=${error instanceof Error ? error.message : String(error)}\n`)
-    await closeSharedMiniProgram()
-    await cleanupResidualIdeProcesses()
-    miniProgram = await getSharedMiniProgram()
-    return await factory(miniProgram)
-  }
+async function runWithRetailSession<T>(factory: (miniProgram: any) => Promise<T>) {
+  return await factory(await getSharedMiniProgram())
 }
 
 function attachConsoleWarningCollector(miniProgram: any) {
@@ -258,59 +198,21 @@ async function ensureHomePage(miniProgram: any) {
   throw new Error(`Failed to resolve home page: ${HOME_ROUTE}`)
 }
 
-async function navigateToGoodsDetail(miniProgram: any, firstSpuId: string) {
-  const url = `/pages/goods/details/index?spuId=${encodeURIComponent(firstSpuId)}`
-  let commandError: unknown
-  let routePage: any = null
-  try {
-    routePage = await miniProgram.navigateTo(url)
-  }
-  catch (error) {
-    commandError = error
-  }
-
-  const currentPage = await waitForCurrentPagePath(miniProgram, GOODS_DETAIL_PATH, 12_000)
-  if (currentPage) {
-    if (commandError) {
-      const reason = commandError instanceof Error ? commandError.message : String(commandError)
-      process.stdout.write(`[warn] [retail-feedback-runtime] navigate-command-capability-limited route=${GOODS_DETAIL_PATH} reason=${reason}\n`)
-    }
-    return currentPage
-  }
-  if (String(routePage?.path ?? '').replace(/^\/+/, '') === GOODS_DETAIL_PATH) {
-    return routePage
-  }
-  if (commandError) {
-    throw commandError
-  }
-  throw new Error(`Failed to navigate to goods detail route: ${GOODS_DETAIL_PATH}`)
-}
-
-async function triggerHomeFeedbackAction(miniProgram: any, action: 'toast' | 'dialog') {
-  const homePage = await ensureHomePage(miniProgram)
-  const { page } = await waitForHomeReady(miniProgram, homePage)
-  const method = action === 'toast' ? 'goodListAddCartHandle' : 'showLayoutDialogProbe'
-  await page.callMethodWithOptions(method, {
-    routeOnly: true,
-    timeout: 12_000,
-  })
-  await waitForHomeReady(miniProgram, page)
-  return page
-}
-
 describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feedback runtime', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })
 
   it('renders the home page in WeChat DevTools', async (ctx) => {
-    await runWithRetailSession(ctx, async (miniProgram) => {
+    const acceptance = createDomAcceptance(ctx, RETAIL_FIXTURE, [retailHomeCheckpoint('initial', '打开首页检查四张商品卡、首件商品和分类')])
+    await runWithRetailSession(async (miniProgram) => {
       const collector = attachRuntimeErrorCollector(miniProgram)
 
       try {
         const marker = collector.mark()
         const homePage = await ensureHomePage(miniProgram)
         const { page, snapshot } = await waitForHomeReady(miniProgram, homePage)
+        await acceptance.check('initial', miniProgram, page)
         expect(page.path).toBe(HOME_ROUTE.slice(1))
         expect(snapshot.ready).toBe(true)
         expect(Number(snapshot.goodsCount)).toBeGreaterThan(0)
@@ -328,15 +230,23 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feed
   })
 
   it('does not emit runtime warnings when layout toast is triggered from home page', async (ctx) => {
-    await runWithRetailSession(ctx, async (miniProgram) => {
+    const acceptance = createDomAcceptance(ctx, RETAIL_FIXTURE, [
+      retailHomeCheckpoint('initial', '检查加入购物车前的商品列表'),
+      { id: 'cart-toast', route: HOME_ROUTE, action: '点击首件商品的购物车按钮并检查 layout Toast', nodes: [classText('t-toast__text', '点击加入购物车')] },
+      { id: 'toast-closed', route: HOME_ROUTE, action: 'Toast 关闭后商品列表仍然存在', nodes: [...retailHomeCheckpoint('unused', 'unused').nodes, { selector: xpathClass('t-toast__text'), query: 'xpath', count: 0 }] },
+    ])
+    await runWithRetailSession(async (miniProgram) => {
       const collector = attachRuntimeErrorCollector(miniProgram)
       const warningCollector = attachConsoleWarningCollector(miniProgram)
 
       try {
         const marker = collector.mark()
         const warningMarker = warningCollector.mark()
-        const page = await triggerHomeFeedbackAction(miniProgram, 'toast')
-        await page.waitFor(300)
+        const { page } = await waitForHomeReady(miniProgram, await ensureHomePage(miniProgram))
+        await acceptance.check('initial', miniProgram, page)
+        await tapRendered(page, '//*[@id="home-goods-list-gd-0-cart"]')
+        await acceptance.check('cart-toast', miniProgram, page)
+        await acceptance.check('toast-closed', miniProgram, page)
 
         expect(collector.getSince(marker)).toEqual([])
         expect(warningCollector.getSince(warningMarker)).toEqual([])
@@ -349,7 +259,11 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feed
   })
 
   it('navigates from home goods card through component click event wiring', async (ctx) => {
-    await runWithRetailSession(ctx, async (miniProgram) => {
+    const acceptance = createDomAcceptance(ctx, RETAIL_FIXTURE, [
+      retailHomeCheckpoint('initial', '检查准备点击的首件商品'),
+      { id: 'goods-detail', route: GOODS_DETAIL_PATH, action: '点击真实商品标题，通过 goods-card 和 goods-list 事件进入详情', nodes: [classText('goods-name', RETAIL_FIRST_TITLE), classText('desc-content__title--text', '详情介绍')] },
+    ])
+    await runWithRetailSession(async (miniProgram) => {
       const collector = attachRuntimeErrorCollector(miniProgram)
 
       try {
@@ -369,7 +283,11 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feed
         expect(firstSpuId).not.toBe('')
 
         const marker = collector.mark()
-        const detailPage = await navigateToGoodsDetail(miniProgram, firstSpuId)
+        await acceptance.check('initial', miniProgram, page)
+        await tapRendered(page, '//*[@id="home-goods-list-gd-0"]//*[contains(concat(" ", @class, " "), " goods-card__title ")]')
+        const detailPage = await waitForCurrentPagePath(miniProgram, GOODS_DETAIL_PATH, 12_000)
+        expect(detailPage, '商品点击应进入详情页').toBeTruthy()
+        await acceptance.check('goods-detail', miniProgram, detailPage)
 
         expect(page.path).toBe(HOME_ROUTE.slice(1))
         expect(detailPage.path).toBe(GOODS_DETAIL_PATH)
@@ -382,15 +300,24 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template feed
   })
 
   it('does not emit runtime warnings when layout dialog is triggered from home page', async (ctx) => {
-    await runWithRetailSession(ctx, async (miniProgram) => {
+    const acceptance = createDomAcceptance(ctx, RETAIL_FIXTURE, [
+      retailHomeCheckpoint('initial', '打开弹窗前检查首页商品列表'),
+      { id: 'dialog-open', route: HOME_ROUTE, action: '调用页面反馈操作并检查真实 layout 弹窗', nodes: [classText('t-dialog__header', '布局弹窗'), classText('t-dialog__body-text', '验证 layout dialog 选择器桥接'), { selector: xpathClass('t-popup'), query: 'xpath', count: 1 }] },
+      { id: 'dialog-closed', route: HOME_ROUTE, action: '点击弹窗取消按钮并检查弹窗消失', nodes: [...retailHomeCheckpoint('unused', 'unused').nodes, { selector: xpathClass('t-popup'), query: 'xpath', count: 0 }] },
+    ])
+    await runWithRetailSession(async (miniProgram) => {
       const collector = attachRuntimeErrorCollector(miniProgram)
       const warningCollector = attachConsoleWarningCollector(miniProgram)
 
       try {
         const marker = collector.mark()
         const warningMarker = warningCollector.mark()
-        const page = await triggerHomeFeedbackAction(miniProgram, 'dialog')
-        await page.waitFor(300)
+        const { page } = await waitForHomeReady(miniProgram, await ensureHomePage(miniProgram))
+        await acceptance.check('initial', miniProgram, page)
+        await page.callMethodWithOptions('showLayoutDialogProbe', { routeOnly: true, timeout: 12_000 })
+        await acceptance.check('dialog-open', miniProgram, page)
+        await tapRendered(page, `${xpathClass('t-dialog__footer')}//*[@data-type="cancel"]`)
+        await acceptance.check('dialog-closed', miniProgram, page)
 
         expect(collector.getSince(marker)).toEqual([])
         expect(warningCollector.getSince(warningMarker)).toEqual([])

@@ -2,13 +2,13 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
-import { chunkExtraCases, chunkMatrixCases, selectIdeRuntimeChunkExtraCases, selectIdeRuntimeChunkMatrixCases } from '../../chunk-modes.matrix'
+import { chunkExtraCases, chunkMatrixCases, runtimeBaseRoutes, selectIdeRuntimeChunkExtraCases, selectIdeRuntimeChunkMatrixCases } from '../../chunk-modes.matrix'
 import { getIdeExhaustiveTasks, getIdeHeadlessTasks } from '../e2e-suite-manifest'
 import { ACCEPTANCE_ROOT } from './helpers'
 import { analyzeCaseSource, readCaseInventory, readFactoryTitle } from './inventoryAnalyzer'
 import { collectInventorySources } from './inventorySources'
 
-function readTaskCases(root: string, label: string, templates?: string[]) {
+export function readTaskCases(root: string, label: string, templates?: string[]) {
   const file = `e2e/${label}`
   const cases = readCaseInventory(root, file, templates)
   const title = readFactoryTitle(fs.readFileSync(path.join(root, file), 'utf8'), file, 'createChunkModesRuntimeSuite')
@@ -19,8 +19,14 @@ function readTaskCases(root: string, label: string, templates?: string[]) {
     ? selectIdeRuntimeChunkExtraCases(chunkExtraCases)
     : selectIdeRuntimeChunkMatrixCases(chunkMatrixCases).filter(item => item.strategy === (label.includes('.duplicate.') ? 'duplicate' : 'hoist'))
   const factory = 'e2e/ide/chunk-modes.runtime.shared.ts'
-  return analyzeCaseSource(fs.readFileSync(path.join(root, factory), 'utf8'), factory, [], { suiteName: title, runtimeCases })
-    .map(item => ({ ...item, notes: [...item.notes, 'Chunk routes are selected by withIdeSmokeRoutes in e2e/ide/chunk-modes.runtime.shared.ts'] }))
+  return analyzeCaseSource(fs.readFileSync(path.join(root, factory), 'utf8'), factory, [], {
+    suiteName: title,
+    runtimeCases: runtimeCases.map(item => ({ ...item, routes: runtimeBaseRoutes })),
+  })
+    .map(item => ({
+      ...item,
+      notes: [...item.notes, 'Each chunk topology reLaunches every runtimeBaseRoutes page through withBaseRoutes'],
+    }))
 }
 
 export function createDomAcceptanceInventory(root = ACCEPTANCE_ROOT) {
@@ -59,6 +65,13 @@ export function createDomAcceptanceInventory(root = ACCEPTANCE_ROOT) {
 
 function cell(value: string) {
   return value.replaceAll('|', '\\|').replaceAll('\n', ' ').replaceAll('`', '\\`')
+}
+
+export function assertDomAcceptanceInventoryComplete(inventory: Pick<ReturnType<typeof createDomAcceptanceInventory>, 'summary'>) {
+  const { casesMissingPlan, unresolvedParameterizations, tasksWithoutCaseDeclarations } = inventory.summary
+  if (casesMissingPlan || unresolvedParameterizations || tasksWithoutCaseDeclarations) {
+    throw new Error(`DOM inventory incomplete: ${casesMissingPlan} cases missing plans, ${unresolvedParameterizations} unresolved parameterizations, ${tasksWithoutCaseDeclarations} tasks without cases`)
+  }
 }
 
 export function renderDomAcceptanceInventory(inventory: ReturnType<typeof createDomAcceptanceInventory>) {
@@ -113,16 +126,34 @@ export function renderDomAcceptanceInventory(inventory: ReturnType<typeof create
   return `${lines.join('\n')}\n`
 }
 
+export async function formatDomAcceptanceInventory(markdown: string, root = ACCEPTANCE_ROOT) {
+  const { ESLint } = await import('eslint')
+  const eslint = new ESLint({ cwd: root, fix: true })
+  const [result] = await eslint.lintText(markdown, { filePath: path.join(root, 'e2e/dom-acceptance-inventory.md') })
+  if (!result || result.errorCount) {
+    throw new Error(`DOM inventory Markdown formatting failed: ${result?.messages.map(message => message.message).join('; ') ?? 'missing ESLint result'}`)
+  }
+  return result.output ?? markdown
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const inventory = createDomAcceptanceInventory()
+  const markdownPath = path.join(ACCEPTANCE_ROOT, 'e2e/dom-acceptance-inventory.md')
+  const markdown = process.argv.includes('--write') || process.argv.includes('--check')
+    ? await formatDomAcceptanceInventory(renderDomAcceptanceInventory(inventory))
+    : undefined
   if (process.argv.includes('--write')) {
     fs.writeFileSync(path.join(ACCEPTANCE_ROOT, 'e2e/dom-acceptance-inventory.json'), `${JSON.stringify(inventory, null, 2)}\n`)
-    fs.writeFileSync(path.join(ACCEPTANCE_ROOT, 'e2e/dom-acceptance-inventory.md'), renderDomAcceptanceInventory(inventory))
+    fs.writeFileSync(markdownPath, markdown!)
   }
   if (process.argv.includes('--check')) {
+    assertDomAcceptanceInventoryComplete(inventory)
     const saved: unknown = JSON.parse(fs.readFileSync(path.join(ACCEPTANCE_ROOT, 'e2e/dom-acceptance-inventory.json'), 'utf8'))
     if (JSON.stringify(saved) !== JSON.stringify(inventory)) {
       throw new Error('DOM case inventory is stale; regenerate with --write after editing IDE cases or plans')
+    }
+    if (fs.readFileSync(markdownPath, 'utf8') !== markdown) {
+      throw new Error('DOM case Markdown inventory is stale; regenerate with --write')
     }
   }
   console.log(JSON.stringify(inventory.summary, null, 2))

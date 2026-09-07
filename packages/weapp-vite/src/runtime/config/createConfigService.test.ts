@@ -300,6 +300,22 @@ describe('createConfigService', () => {
     expect(service.relativeOutputPath('/project/src/plugin/pages/home/index.ts')).toBe('plugin-dist/pages/home/index.ts')
   })
 
+  it('isolates shared source outputs without changing independent package source paths', () => {
+    const main = createConfigService(createCtx())
+    const independent = createConfigService(createCtx({ currentSubPackageRoot: 'packageB' }))
+    for (const extension of ['js', 'json', 'wxml', 'wxss']) {
+      const shared = `/project/src/components/Card/index.${extension}`
+      const local = `/project/src/packageB/components/Card/index.${extension}`
+      expect(main.relativeOutputPath(shared)).toBe(`components/Card/index.${extension}`)
+      expect(independent.relativeOutputPath(shared)).toBe(`packageB/weapp-shared/components/Card/index.${extension}`)
+      expect(independent.relativeOutputPath(local)).toBe(`packageB/components/Card/index.${extension}`)
+      expect(independent.relativeAbsoluteSrcRoot(shared)).toBe(`components/Card/index.${extension}`)
+    }
+    expect(independent.relativeOutputPath('/project/src/layouts/admin.vue')).toBe('packageB/weapp-shared/layouts/admin.vue')
+    expect(independent.relativeOutputPath('/project/src/packageBExtra/card.vue')).toBe('packageB/weapp-shared/packageBExtra/card.vue')
+    expect(independent.relativeOutputPath('/project/node_modules/ui/card.vue')).toBe(`packageB/weapp-shared/${main.relativeOutputPath('/project/node_modules/ui/card.vue')}`)
+  })
+
   it('applies lib output mapping and handles plugin output fallback to source base', () => {
     const libMap = new Map<string, string>([
       ['plugin/pages/home/index', 'mapped/pages/home/index'],

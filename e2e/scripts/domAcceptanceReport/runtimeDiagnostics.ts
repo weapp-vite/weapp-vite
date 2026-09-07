@@ -30,17 +30,23 @@ export class RuntimeDiagnosticJournal {
   private partial = ''
   private scope: { id: string, caseId: string, checkpointId: string } | undefined
 
-  constructor(private readonly file: string | undefined) {
+  constructor(private readonly file: string | undefined, private readonly requireJournal = false) {
     this.offset = file && fs.existsSync(file) ? fs.statSync(file).size : 0
   }
 
   collect(caseId: string | null, finished = false) {
     if (!this.file) {
+      if (finished && this.requireJournal) {
+        this.errors.push('Strict DOM acceptance requires a configured IDE diagnostic event journal')
+      }
       return
     }
     if (!fs.existsSync(this.file)) {
       if (this.offset) {
         this.errors.push('IDE diagnostic event journal disappeared during acceptance')
+      }
+      else if (finished && this.requireJournal) {
+        this.errors.push('Strict DOM acceptance requires an existing IDE diagnostic event journal')
       }
       return
     }

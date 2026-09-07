@@ -32,6 +32,9 @@ export async function registerResolvedPageLayoutDependencies(
   ownerId: string,
   layouts: ResolvedPageLayout[],
 ) {
+  for (const layout of layouts) {
+    ctx.runtimeState?.build?.hmr?.externalComponentEntryMap?.set(layout.importPath.replace(/^\/+/, ''), layout.file)
+  }
   const dependencies = await expandResolvedPageLayoutFiles(layouts, ctx.configService.platform)
   const transitiveDependencies = new Set(dependencies)
   for (const file of dependencies) {

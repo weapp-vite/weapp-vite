@@ -21,6 +21,9 @@ beforeEach(() => {
   vi.stubEnv('WEAPP_VITE_E2E_ACCEPTANCE_SHA', commitSha)
   vi.stubEnv('WEAPP_VITE_E2E_DOM_ACCEPTANCE', '1')
   vi.stubEnv('WEAPP_VITE_E2E_ACCEPTANCE_TASK', 'template-suite')
+  const journalPath = path.join(reportDir, 'runtime.jsonl')
+  fs.writeFileSync(journalPath, '')
+  vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', journalPath)
   vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
 })
 
@@ -37,7 +40,7 @@ function createTest(state: 'passed' | 'skipped' | 'pending', name = 'renders tit
     fixture: 'e2e-apps/base',
     provider: 'devtools',
     checkpoints: [{ id: 'mount', action: 'launch', route: 'pages/index/index', nodes: [{ selector: '.title', text: 'Ready' }] }],
-    evidence: [{ id: 'mount', route: 'pages/index/index', source: 'devtools-page-frame', capturedAt: new Date().toISOString(), nodes: [{ selector: '.title', count: 1, nodes: [{ text: 'Ready' }] }] }],
+    evidence: [{ id: 'mount', route: 'pages/index/index', source: 'devtools-page-frame', capturedAt: new Date().toISOString(), nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
   }
   return {
     id: name,
@@ -65,6 +68,31 @@ function readReports() {
 }
 
 describe('Vitest DOM reporter lifecycle', () => {
+  it.each(['unconfigured', 'missing'] as const)('rejects an %s diagnostic journal only when strict acceptance finishes', (state) => {
+    vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', state === 'unconfigured' ? undefined : path.join(reportDir, 'missing.jsonl'))
+    const reporter = new DomAcceptanceReporter()
+    reporter.onTestRunStart()
+    expect(readReports()[0]?.errors).toEqual([])
+    expect(() => reporter.onTestRunEnd([createModule([createTest('passed')])], [], 'passed')).toThrow('Strict DOM acceptance failed')
+    expect(readReports()[0]?.errors).toContain(state === 'unconfigured'
+      ? 'Strict DOM acceptance requires a configured IDE diagnostic event journal'
+      : 'Strict DOM acceptance requires an existing IDE diagnostic event journal')
+  })
+
+  it('accepts an existing empty journal when no runtime errors occurred', () => {
+    const reporter = new DomAcceptanceReporter()
+    reporter.onTestRunEnd([createModule([createTest('passed')])], [], 'passed')
+    expect(readReports()[0]).toMatchObject({ status: 'passed', errors: [], runtimeDiagnostics: [] })
+  })
+
+  it.each(['unconfigured', 'missing'] as const)('preserves non-strict reporting with an %s diagnostic journal', (state) => {
+    vi.stubEnv('WEAPP_VITE_E2E_DOM_ACCEPTANCE', '0')
+    vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', state === 'unconfigured' ? undefined : path.join(reportDir, 'missing.jsonl'))
+    const reporter = new DomAcceptanceReporter()
+    reporter.onTestRunEnd([createModule([createTest('passed')])], [], 'passed')
+    expect(readReports()[0]).toMatchObject({ status: 'passed', strict: false, errors: [] })
+  })
+
   it('retains an unfinished snapshot before any test runs', () => {
     const reporter = new DomAcceptanceReporter()
     reporter.onTestRunStart()
@@ -147,10 +175,11 @@ describe('Vitest DOM reporter lifecycle', () => {
       args: [],
       label: 'template-suite',
       acceptanceTemplates: ['template-a', 'template-b'],
-      artifacts: fs.readdirSync(reportDir).map(file => ({ kind: 'dom-acceptance-report' as const, indexPath: path.join(reportDir, file) })),
+      artifacts: fs.readdirSync(reportDir).filter(file => file.endsWith('.json')).map(file => ({ kind: 'dom-acceptance-report' as const, indexPath: path.join(reportDir, file) })),
     }
     const identity = { runId: 'test-run', commitSha }
-    await expect(validateTaskAcceptance(task, identity)).resolves.toBeUndefined()
+    const plannedCases = reports.flatMap(report => report.cases.map(({ file, name }) => ({ file, name })))
+    await expect(validateTaskAcceptance(task, identity, plannedCases)).resolves.toBeUndefined()
     task.artifacts.pop()
     await expect(validateTaskAcceptance(task, identity)).rejects.toThrow('Template DOM acceptance invocations incomplete')
   })

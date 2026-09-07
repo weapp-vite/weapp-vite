@@ -12,12 +12,12 @@ function runPropertyObservers(
     return
   }
 
-  for (const changedKey of changedKeys) {
+  for (const changedKey of new Set(changedKeys.map(key => parseDataPath(key)[0]!))) {
     const option = propOptions[changedKey]
     if (!option || typeof option !== 'object' || Array.isArray(option)) {
       continue
     }
-    const observer = option.observer
+    const observer = typeof option.observer === 'string' ? instance[option.observer] : option.observer
     if (typeof observer !== 'function') {
       continue
     }

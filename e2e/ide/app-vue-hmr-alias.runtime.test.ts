@@ -1,3 +1,4 @@
+import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
 import { fs } from '@weapp-core/shared/node'
 import { parse as babelParse } from '@weapp-vite/ast/babel'
 import traverse from '@weapp-vite/ast/babelTraverse'
@@ -167,11 +168,11 @@ async function waitForVisibleRuntime(miniProgram: any, markers: string[], timeou
   throw new Error(`Timed out waiting visible runtime markers ${markers.join(', ')}. latest=${JSON.stringify(latest)}; runtimeState=${JSON.stringify(latest?.runtimeState)}; setupState=${JSON.stringify(latest?.setupState)}; bridgeSnapshot=${JSON.stringify(latest?.bridgeSnapshot)}; logs=${JSON.stringify(runtimeLogs)}; devOutput=${devOutput}`)
 }
 
-async function waitForCurrentRoute(miniProgram: any, timeoutMs = 15_000) {
+async function waitForCurrentRoute(miniProgram: MiniProgram, timeoutMs = 15_000) {
   const start = Date.now()
   let latest: unknown
   while (Date.now() - start <= timeoutMs) {
-    latest = await miniProgram.currentPage({ retries: 1, timeout: 5_000 }).catch((error: unknown) => {
+    const current = await miniProgram.currentPage({ retries: 1, timeout: 5_000 }).catch((error: unknown) => {
       if (isDevtoolsRouteInfraError(error)) {
         throw error
       }
@@ -179,8 +180,9 @@ async function waitForCurrentRoute(miniProgram: any, timeoutMs = 15_000) {
         error: error instanceof Error ? error.message : String(error),
       }
     })
-    if ((latest as { path?: string })?.path === 'pages/index/index') {
-      return latest
+    latest = current
+    if (current && 'path' in current && current.path === 'pages/index/index') {
+      return current
     }
     await new Promise(resolve => setTimeout(resolve, 500))
   }

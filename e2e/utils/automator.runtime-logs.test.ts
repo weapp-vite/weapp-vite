@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events'
 import process from 'node:process'
+import { Automator } from '@weapp-vite/miniprogram-automator'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { enhanceMiniProgramWithRuntimeLogs, launchAutomator, resetAutomatorRuntimeLogs } from './automator'
 import { launchHeadlessAutomator } from './automator.headless'
@@ -21,6 +22,7 @@ function createSession() {
 describe('automator runtime diagnostic lifecycle', () => {
   it('attaches headless console collection and preserves exceptions until close', async () => {
     vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', 'headless')
+    const launchDevtools = vi.spyOn(Automator.prototype, 'launch').mockRejectedValue(new Error('unexpected DevTools launch'))
     vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     const session = createSession()
     vi.mocked(launchHeadlessAutomator).mockImplementation(async (options) => {
@@ -29,6 +31,7 @@ describe('automator runtime diagnostic lifecycle', () => {
       return session as any
     })
     const launched = await launchAutomator({ projectPath: 'e2e-apps/base' })
+    expect(launchDevtools).not.toHaveBeenCalled()
     session.emit('console', { type: 'error', args: ['headless failure'] })
     session.emit('exception', { exceptionDetails: { text: 'headless exception' } })
     await launched.close()
@@ -58,5 +61,31 @@ describe('automator runtime diagnostic lifecycle', () => {
     expect(vi.mocked(appendIdeReportEvent).mock.calls.filter(call => call[0].text === 'startup failure')).toHaveLength(1)
     await session.close()
     expect(vi.mocked(appendIdeReportEvent).mock.calls.filter(call => call[0].text === 'startup failure')).toHaveLength(1)
+  })
+
+  it('retains exceptions whose protocol text is empty', async () => {
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const session = createSession()
+    enhanceMiniProgramWithRuntimeLogs(session, 'e2e-apps/base')
+    session.emit('exception', { exceptionDetails: { text: '' } })
+    expect(appendIdeReportEvent).toHaveBeenCalledWith(expect.objectContaining({
+      level: 'exception',
+      text: '{"exceptionDetails":{"text":""}}',
+    }))
+    await session.close()
+  })
+
+  it('disposes runtime subscriptions once when close also disconnects', async () => {
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const session = Object.assign(createSession(), { disconnect: vi.fn() })
+    const disconnect = session.disconnect
+    session.close.mockImplementation(async () => session.disconnect())
+    enhanceMiniProgramWithRuntimeLogs(session, 'e2e-apps/base')
+    await session.close()
+    await session.close()
+    expect(disconnect).toHaveBeenCalledTimes(1)
+    expect(session.listenerCount('console')).toBe(0)
+    expect(session.listenerCount('exception')).toBe(0)
+    expect(vi.mocked(appendIdeReportEvent).mock.calls.filter(([entry]) => entry.kind === 'stats')).toHaveLength(1)
   })
 })

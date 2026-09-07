@@ -1,14 +1,14 @@
 import type { DomAcceptance } from '../../utils/domAcceptance/types'
 import type { AcceptanceReport } from './types'
 import { describe, expect, it } from 'vitest'
-import { assertAcceptanceReportPassed, createAcceptanceIdentity, evaluateAcceptanceCase, sanitizeAcceptanceText, sanitizeAcceptanceValue, summarizeAcceptanceCases } from './helpers'
+import { assertAcceptanceReportPassed, createAcceptanceIdentity, evaluateAcceptanceCase, isStrictDomAcceptanceSuite, sanitizeAcceptanceText, sanitizeAcceptanceValue, summarizeAcceptanceCases } from './helpers'
 
 function createPlan(): DomAcceptance {
   return {
     fixture: 'e2e-apps/base',
     provider: 'devtools',
     checkpoints: [{ id: 'mounted', route: '/pages/index/index', action: 'launch', nodes: [{ selector: '.title', text: 'Ready' }] }],
-    evidence: [{ id: 'mounted', route: 'pages/index/index', source: 'devtools-page-frame', capturedAt: '2026-09-01T00:00:01.000Z', nodes: [{ selector: '.title', count: 1, nodes: [{ text: 'Ready' }] }] }],
+    evidence: [{ id: 'mounted', route: 'pages/index/index', source: 'devtools-page-frame', capturedAt: '2026-09-01T00:00:01.000Z', nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
   }
 }
 
@@ -42,6 +42,26 @@ function createReport(): AcceptanceReport {
 }
 
 describe('DOM acceptance report validation', () => {
+  it.each([
+    'ide-full',
+    'ide-full:exhaustive',
+    'e2e:ide-full',
+    'e2e:ide-full:exhaustive',
+    'e2e:ide-full shard=1-2',
+    'e2e:ide-full:exhaustive shard=2-3',
+  ])('requires strict evidence by default for %s', (suite) => {
+    expect(isStrictDomAcceptanceSuite(suite, {})).toBe(true)
+    expect(isStrictDomAcceptanceSuite(suite, { WEAPP_VITE_E2E_DOM_ACCEPTANCE: '0' })).toBe(true)
+  })
+
+  it.each(['ci', 'e2e:ci', 'ide-smoke', 'ide-gate', 'ide-headless-full', 'ide-component-libraries', 'ide-full:templates'])(
+    'preserves explicit strict opt-in for %s',
+    (suite) => {
+      expect(isStrictDomAcceptanceSuite(suite, {})).toBe(false)
+      expect(isStrictDomAcceptanceSuite(suite, { WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1' })).toBe(true)
+    },
+  )
+
   it('does not let an inherited SHA mislabel the current checkout', () => {
     expect(() => createAcceptanceIdentity({ WEAPP_VITE_E2E_ACCEPTANCE_SHA: 'old-commit' }, () => 'current-commit')).toThrow('current checkout')
     expect(createAcceptanceIdentity({ WEAPP_VITE_E2E_ACCEPTANCE_SHA: 'current-commit', WEAPP_VITE_E2E_ACCEPTANCE_DIRTY: '0' }, () => 'current-commit')).toMatchObject({ commitSha: 'current-commit', workingTreeDirty: false })
@@ -92,11 +112,38 @@ describe('DOM acceptance report validation', () => {
       (plan: DomAcceptance) => { plan.evidence[0]!.nodes[0]!.nodes[0]!.text = 'wrong text' },
       (plan: DomAcceptance) => { plan.evidence[0]!.nodes[0]!.nodes = [] },
       (plan: DomAcceptance) => { plan.evidence[0]!.nodes[0]!.scope = ['wrong-component'] },
+      (plan: DomAcceptance) => { plan.evidence[0]!.nodes[0]!.query = 'xpath' },
     ]) {
       const report = createReport()
       mutate(report.cases[0]!.acceptance!)
       expect(() => assertAcceptanceReportPassed(report, { runId: report.runId, commitSha: report.commitSha })).toThrow('DOM acceptance incomplete')
     }
+  })
+
+  it('preserves explicit XPath queries and rejects missing query evidence after serialization', () => {
+    const report = createReport()
+    const plan = report.cases[0]!.acceptance!
+    plan.checkpoints[0]!.nodes[0] = { selector: '//*[@id="title"]', query: 'xpath', text: 'Ready' }
+    plan.evidence[0]!.nodes[0] = { selector: '//*[@id="title"]', query: 'xpath', count: 1, nodes: [{ text: 'Ready' }] }
+    const identity = { runId: report.runId, commitSha: report.commitSha }
+    expect(() => assertAcceptanceReportPassed(JSON.parse(JSON.stringify(report)), identity)).not.toThrow()
+    const incomplete: unknown = JSON.parse(JSON.stringify(report, (key, value) => key === 'query' ? undefined : value))
+    expect(() => assertAcceptanceReportPassed(incomplete, identity)).toThrow('valid serialized report')
+  })
+
+  it('revalidates responsive computed style evidence using the recorded IDE viewport', () => {
+    const report = createReport()
+    const plan = report.cases[0]!.acceptance!
+    plan.checkpoints[0]!.nodes[0]!.styles = { 'font-size': { rpx: 24 } }
+    plan.evidence[0]!.windowWidth = 390
+    plan.evidence[0]!.nodes[0]!.nodes[0]!.styles = { 'font-size': '12px' }
+    const identity = { runId: report.runId, commitSha: report.commitSha }
+    expect(() => assertAcceptanceReportPassed(JSON.parse(JSON.stringify(report)), identity)).not.toThrow()
+    plan.evidence[0]!.nodes[0]!.nodes[0]!.styles!['font-size'] = '14px'
+    expect(() => assertAcceptanceReportPassed(report, identity)).toThrow('DOM acceptance incomplete')
+    plan.evidence[0]!.nodes[0]!.nodes[0]!.styles!['font-size'] = '12px'
+    delete plan.evidence[0]!.windowWidth
+    expect(() => assertAcceptanceReportPassed(report, identity)).toThrow('DOM acceptance incomplete')
   })
 
   it('rejects evidence captured outside the case and inconsistent serialized summaries', () => {

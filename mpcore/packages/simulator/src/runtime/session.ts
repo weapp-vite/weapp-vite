@@ -23,6 +23,7 @@ import { resolvePluginRequest } from '../project/plugins'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
 import { createHeadlessAnimation } from '../view/animation'
 import { createHeadlessCanvasContext } from '../view/canvasContext'
+import { customTabBarScopeId } from '../view/customTabBar'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
@@ -31,6 +32,7 @@ import { createHeadlessVideoContext } from '../view/videoContext'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
+import { runInitialPageLifecycles } from './pageLifecycle'
 import { renderRuntimePageTree } from './render'
 import {
   applyResizeToSystemInfo,
@@ -420,6 +422,12 @@ export class HeadlessSession {
   getWx() {
     this.assertActive()
     return this.moduleLoader.wx
+  }
+
+  /** 在当前小程序实例的上下文执行测试函数，复用应用全局对象与调度器。 */
+  evaluateRuntime<T = unknown>(source: string, args: any[] = []): T {
+    this.assertActive()
+    return this.moduleLoader.evaluate<T>(source, args)
   }
 
   callWxMethod(methodName: string, ...args: any[]) {
@@ -1275,11 +1283,18 @@ export class HeadlessSession {
     const pageInstance = createPageInstance(`/${target.routeRecord.route}`, pageDefinition, target.query, {
       background: resolveBackgroundSnapshot(this.project.appConfig, pageConfig),
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
+      requestRender: callback => this.requestRender(callback),
     })
     pageInstance.createIntersectionObserver = (options?: Record<string, any>) => this.createIntersectionObserver(pageInstance, options)
     pageInstance.createMediaQueryObserver = () => this.createMediaQueryObserver(pageInstance)
     pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
     pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
+    pageInstance.getTabBar = () => {
+      if (this.currentPageInstance === pageInstance) {
+        this.renderCurrentPage()
+      }
+      return this.componentCache.get(customTabBarScopeId(pageInstance.route)) ?? null
+    }
     if (this.isTabBarRoute(target.routeRecord.route)) {
       this.tabPages.set(target.routeRecord.route, pageInstance)
     }
@@ -1287,10 +1302,8 @@ export class HeadlessSession {
   }
 
   private runInitialPageLifecycles(pageInstance: HeadlessPageInstance, query: Record<string, string>) {
-    pageInstance.onLoad?.(query)
-    pageInstance.onShow?.()
-    pageInstance.onReady?.()
-    pageInstance.onRouteDone?.({})
+    runInitialPageLifecycles(pageInstance, query, this.kernel.scheduler, () =>
+      this.pages.includes(pageInstance) || this.tabPages.get(pageInstance.route) === pageInstance)
   }
 
   private isTabBarRoute(route: string) {
