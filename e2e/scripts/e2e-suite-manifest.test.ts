@@ -5,6 +5,7 @@ import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFu
 
 describe('e2e suite manifest', () => {
   it.each([
+    'ide/app-lifecycle.test.ts',
     'ide/template-retail-checkout.runtime.test.ts',
     'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
   ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {

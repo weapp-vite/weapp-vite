@@ -23,10 +23,13 @@ export async function launch(options: HeadlessTestingLaunchOptions) {
   const handle = new HeadlessTestingSessionHandle(session.project, session)
   try {
     await options.onSessionCreated?.(handle)
-    session.bootstrap()
     const initialRoute = resolveInitialRoute(session)
     if (initialRoute) {
+      // 首次导航负责以实际入口 path/query 启动 App，再挂载首屏；不能先锁定空启动参数。
       session.reLaunch(`/${initialRoute}`)
+    }
+    else {
+      session.bootstrap()
     }
     return handle
   }

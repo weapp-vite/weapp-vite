@@ -205,6 +205,7 @@ const IDE_GATE_TESTS = [
   'ide/wevu-features.runtime.behavior.test.ts',
 ].map(testPath => path.resolve(ROOT, testPath))
 const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/app-lifecycle.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',
   'ide/template-retail-checkout.runtime.test.ts',
   'ide/app-prelude-native.runtime.test.ts',

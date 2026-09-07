@@ -18,3 +18,10 @@
     {{item.order}}. {{item.hook}}{{item.skipped ? ' (skipped)' : ''}}
   </view>
 </view>
+<view class="panel">
+  <view class="panel-title">Cold launch inputs</view>
+  <view wx:for="{{__hostInputs}}" wx:key="hook">
+    <view id="app-host-input-{{item.hook}}" class="app-host-input">{{item.host}}</view>
+    <view id="app-hook-input-{{item.hook}}" class="app-hook-input">{{item.received}}</view>
+  </view>
+</view>

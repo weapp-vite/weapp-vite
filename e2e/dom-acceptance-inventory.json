@@ -23,21 +23,18 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/app-lifecycle.test.ts:228",
+          "source": "e2e/ide/app-lifecycle.test.ts:231",
           "name": "app lifecycle compare (e2e) > compares wevu app lifecycle logs against native",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps",
               "checkpoints": "['native', 'wevu-ts', 'wevu-vue'].flatMap(variant => [ { id: `${variant}:initial`, route: INDEX_ROUTE, action: `冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态`, nodes: [ { selector: '#app-lifecycle-route', text: variant === 'native' ",
-              "source": "e2e/ide/app-lifecycle.test.ts:229"
+              "source": "e2e/ide/app-lifecycle.test.ts:232"
             }
           ],
-          "routes": [
-            "/pages/index/index"
-          ],
+          "routes": [],
           "operations": [
-            "reLaunch(/pages/index/index)",
             "check(native:initial)",
             "callMethod(refreshLifecycleSummary)",
             "check(native:finalized)",
@@ -5736,7 +5733,7 @@
     },
     {
       "file": "e2e/ide/app-lifecycle.test.ts",
-      "sha256": "36bf921663b5383726ec259aa7bb1b41f878c678c198a2bec5c4ebcb21a567b1"
+      "sha256": "92c14591ee868889f5dd160c5f1765b52c354e681a44572515fe0d99bc505762"
     },
     {
       "file": "e2e/ide/app-prelude-native.runtime.test.ts",
@@ -6436,7 +6433,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "f18dbd459a17f2d8aaadfc4d8441fea9b53826369a34b19841b703ac9c1226ed"
+      "sha256": "e885209019acea1ac91afdcebb9a1fc943b8402ee6379a10b69dad661e9a72f5"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -6453,6 +6450,10 @@
     {
       "file": "e2e/template-e2e.utils.ts",
       "sha256": "97d7300358eddb91d2cc1121e3a7fb40d8efd09403a1f4406e0d8842ca7e3306"
+    },
+    {
+      "file": "e2e/utils/appLifecycleEvidence.ts",
+      "sha256": "4266b781919b8a4786db6019df14337417bea99c3f3602e61937c403bfc546f0"
     },
     {
       "file": "e2e/utils/automator.cli-bridge.ts",

@@ -122,7 +122,7 @@
 
 这证明原生启动阻塞已在原配置下修复，不是关闭增强编译或换为 classic。该 run 仍是严格局部运行：总入口因其余 87 个 tasks 未执行而退出 1，本任务 passed，整体 incomplete。报告依旧对应 dirty HEAD `2dc0bce4b`；此前 18-task 完整运行早于订阅修复，最终提交仍需无筛选 exhaustive 及相应全量复验。以上历史失败、临时实验与 UUID 全部保留。
 
-`ide-dom-headless` 的 19 个任务包含历史 16 个已验证入口，以及本轮结算、组件实例 API、门户动态绑定；对应场景均在 exhaustive IDE 清单内。headless 与 simulator browser jobs 在 PR 使用三 OS 的 Node 22，手动完整 workflow 使用三 OS 的 Node 22/24。Acceptance Contracts 检查 shared-launch、静态 inventory，以及 `e2e/scripts/**/*.test.ts` 和 `e2e/utils/**/*.test.ts`；CI full 自动发现其余 `e2e/ci` 回归。
+`ide-dom-headless` 的 20 个任务包含历史 16 个已验证入口，以及本轮结算、组件实例 API、门户动态绑定和 App 冷启动参数转发；对应场景均在 exhaustive IDE 清单内。上表 19 任务全量记录早于最后一项接入，最新 20 任务完整结果见下文。headless 与 simulator browser jobs 在 PR 使用三 OS 的 Node 22，手动完整 workflow 使用三 OS 的 Node 22/24。Acceptance Contracts 检查 shared-launch、静态 inventory，以及 `e2e/scripts/**/*.test.ts` 和 `e2e/utils/**/*.test.ts`；CI full 自动发现其余 `e2e/ci` 回归。
 
 生命周期修复前的 19 任务 headless 运行 `cbe769b4-284b-4f2a-a556-c6b537b7135d` 全部执行，18/19 通过，唯一失败是 Wevu behavior 的 attrs、provide/inject 和深层注入作用域三个 case；该任务 6/9 cases、16/24 checkpoints 完成，整体退出 1，日志 `.tmp/ide-dom-headless-full19-current.log`。对应真实 IDE 正式运行 9/9 cases、24/24 checkpoints 通过，原断言完整保留。
 
@@ -229,6 +229,16 @@
 | `.tmp/simulator-browser-full-current.log`                                                                                          | 最新 browser 全量 29 files / 65 tests 通过、退出码 0；该日志已更新，不再指向此前 24 files / 60 tests 的历史内容。后续 simulator 修复需重验。 |
 | `.tmp/ide-template-reviewed-snapshots.log`                                                                                         | Wevu TDesign 和 features 局部通过；原生模板当时在 rpx 期望失败。                                                                             |
 | `.tmp/hmr-audit-lifecycle-final/report.json`、`.tmp/hmr-audit-wevu-final/report.json`、`.tmp/hmr-audit-template-final/report.json` | 三个旧 CI 失败项目的独立产物 HMR 审计，完整云端 workspace audit 仍待最终提交执行。                                                           |
+
+## 首次冷启动参数验收
+
+候选提交 `c6c06bdbe` 的无筛选 exhaustive 运行 `bad9ef3e-42ec-4f33-a374-5af35c2a7264` 在 `app-lifecycle` 首项失败：6 个 DOM 检查点已采集，但原生 App 收到 `path: "" / scene: -1`，另一次 Wevu 冷启动收到 `path: "pages/index/index" / scene: 1001`，跨进程参数比较失败。其余 87 个微信任务未执行，3 个百度任务范围外，不能视为完整通过。证据索引为 `2026-09-08-045107-e2e-ide-full-exhaustive-5aa85de9-suite-report` 与 `.tmp/exhaustive-c6c06bdbe.log`。
+
+参数转发应验证同一次宿主调用：在原生 `App` 注册边界、进入 Wevu wrapper 之前同步保存原始参数，与该 fixture 的 hooks 日志完整比较；跨 fixture 比较生命周期顺序及状态。不能删除 `path`、`scene`，不能通过重编译、重启或重放 hook 丢弃首次输入。启动条件未初始化的宿主输入必须保留在证据中，不能改写成默认首页。后续修复仍需真实 IDE 和对应 headless 验收。
+
+边界断言修复后的真实 IDE 局部运行 `1933e865-9392-4ff7-b5ff-15b01882e48a` / invocation `0d0f316c-f692-49d9-b4ba-09035f6f9811` 为 1 case、6 DOM 检查点通过，三种 fixture 均只有一次 `onLaunch`；完整原始参数、对象身份与页面显示均通过，未使用启动恢复。日志 `.tmp/app-lifecycle-boundary-devtools.log`，suite 索引 `2026-09-08-051442-e2e-ide-regressions-a83f39ba-suite-report`。该定向 runner 因其余任务未执行而退出非零，不能记为 exhaustive 通过。同一 case 的 headless 局部运行 `.tmp/app-lifecycle-boundary-headless.log` 通过；observer 和 manifest 的 33 项回归通过，覆盖参数丢失、突变、等值克隆、回调身份、getter 副作用及注销参数保真。
+
+真实 IDE 的正常首次启动以首页路径和空 `referrerInfo` 调用 App。对应修复使 headless testing launcher 在解析首页后才启动 App，并让 Node/browser 共用启动参数复制逻辑，保留显式 scene 和来源字段；公开类型允许空或部分 referrerInfo。17 项定向单测、2 项 browser DOM、包级 typecheck 和显式 tsd 均通过。复用原生场景的 20 任务严格 headless 全量 `6bac3856-634e-469b-b32c-12cd0a16a7db` 为 40 cases / 153 checkpoints 全部通过、退出码 0，20 份报告无失败、阻塞、跳过、未执行或报告错误。日志 `.tmp/ide-dom-headless-full20-launch-options.log`，suite 索引 `2026-09-08-052710-e2e-ide-dom-headless-4a51ba2e-suite-report`，其中生命周期 invocation 为 `5512f01c-0dea-4c86-9f74-1dae4f07fca6`。这是提交前工作树结果，后续最终命令和真实 IDE 全量仍需绑定交付提交。
 
 ## 维护与最终确认命令
 

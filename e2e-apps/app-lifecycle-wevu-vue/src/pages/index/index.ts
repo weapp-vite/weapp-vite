@@ -1,4 +1,5 @@
 import type { AppLifecycleData, AppLifecycleEntry } from '../../shared/lifecycle'
+import { getHostLifecycleInputRows } from '../../../../shared/appLifecycle'
 import { APP_HOOKS } from '../../shared/lifecycle'
 
 interface LifecycleSummary {
@@ -10,6 +11,7 @@ interface LifecycleSummary {
 }
 
 interface LifecyclePageData {
+  __hostInputs: ReturnType<typeof getHostLifecycleInputRows>
   message: string
   __e2eSummary: LifecycleSummary
   __e2ePreview: AppLifecycleEntry[]
@@ -40,6 +42,7 @@ function refreshE2eState(page: LifecyclePageInstance) {
   const summary = buildSummary(appData)
   const preview = appData.__lifecycleLogs?.slice(-6) ?? []
   page.setData({
+    __hostInputs: getHostLifecycleInputRows(),
     __e2eSummary: summary,
     __e2ePreview: preview,
     __e2eHooks: APP_HOOKS.map(name => ({
@@ -51,6 +54,7 @@ function refreshE2eState(page: LifecyclePageInstance) {
 
 Page({
   data: {
+    __hostInputs: [] as ReturnType<typeof getHostLifecycleInputRows>,
     message: 'App lifecycle wevu',
     __e2eSummary: {
       total: APP_HOOKS.length,

@@ -51,4 +51,47 @@ Page({ data: { greeting: 'ready' }, onLoad() { console.info('page:load') } })
     })).rejects.toThrow('subscription failed')
     await expect(handle?.currentPage()).rejects.toThrow(/closed/i)
   })
+
+  it.each([
+    { entryPagePath: undefined, expectedRoute: 'pages/index/index' },
+    { entryPagePath: '/pages/entry/index', expectedRoute: 'pages/entry/index' },
+  ])('starts App with the selected initial route $expectedRoute before rendering it', async ({ entryPagePath, expectedRoute }) => {
+    const projectPath = createBaseFixture()
+    directories.push(projectPath)
+    fs.writeFileSync(path.join(projectPath, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index', 'pages/entry/index'],
+      entryPagePath,
+    }))
+    fs.writeFileSync(path.join(projectPath, 'dist/app.js'), `App({
+      globalData: { hooks: [] },
+      onLaunch(options) { this.globalData.hooks.push({ hook: 'onLaunch', options }) },
+      onShow(options) { this.globalData.hooks.push({ hook: 'onShow', options }) },
+    })`)
+    for (const route of ['pages/index/index', 'pages/entry/index']) {
+      const pageRoot = path.join(projectPath, 'dist', route)
+      fs.mkdirSync(path.dirname(pageRoot), { recursive: true })
+      fs.writeFileSync(`${pageRoot}.js`, `Page({
+        data: { hooks: '' },
+        onLoad(query) {
+          this.setData({ hooks: JSON.stringify(getApp().globalData.hooks), query: JSON.stringify(query) })
+        },
+      })`)
+      fs.writeFileSync(`${pageRoot}.wxml`, '<text id="hooks">{{hooks}}</text><text id="query">{{query}}</text>')
+    }
+    const session = await launch({ projectPath })
+    try {
+      const page = await session.currentPage()
+      expect(page?.path).toBe(expectedRoute)
+      expect(await (await page?.$('#query'))?.text()).toBe('{}')
+      const hooks = JSON.parse(await (await page?.$('#hooks'))!.text()) as unknown
+      const expectedOptions = { path: expectedRoute, query: {}, referrerInfo: {}, scene: 1001 }
+      expect(hooks).toEqual([
+        { hook: 'onLaunch', options: expectedOptions },
+        { hook: 'onShow', options: expectedOptions },
+      ])
+    }
+    finally {
+      await session.close()
+    }
+  })
 })
