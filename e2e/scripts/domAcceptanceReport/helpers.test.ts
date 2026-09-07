@@ -45,6 +45,9 @@ describe('DOM acceptance report validation', () => {
   it.each([
     'ide-full',
     'ide-full:exhaustive',
+    'ide-dom-headless',
+    'e2e:ide-dom-headless',
+    'e2e:ide-dom-headless shard=1-2',
     'e2e:ide-full',
     'e2e:ide-full:exhaustive',
     'e2e:ide-full shard=1-2',

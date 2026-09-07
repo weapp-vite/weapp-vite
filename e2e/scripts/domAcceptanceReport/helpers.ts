@@ -25,7 +25,7 @@ export function isStrictDomAcceptance(env = process.env) {
 
 export function isStrictDomAcceptanceSuite(suiteName: string, env = process.env) {
   const mode = suiteName.replace(/^e2e:/, '').split(/\s+/)[0]
-  return mode === 'ide-full' || mode === 'ide-full:exhaustive' || isStrictDomAcceptance(env)
+  return mode === 'ide-full' || mode === 'ide-full:exhaustive' || mode === 'ide-dom-headless' || isStrictDomAcceptance(env)
 }
 
 function readGitOutput(args: string[]) {

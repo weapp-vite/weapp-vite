@@ -36,7 +36,7 @@ afterEach(() => {
 })
 
 describe('IDE full CLI acceptance policy', () => {
-  it.each(['ide-full', 'ide-full:exhaustive'])('passes default strict policy for %s to the runner', async (mode) => {
+  it.each(['ide-full', 'ide-full:exhaustive', 'ide-dom-headless'])('passes default strict policy for %s to the runner', async (mode) => {
     await runE2ESuiteCli([mode])
     expect(runTaskSuite).toHaveBeenCalledOnce()
     const [, tasks, options] = vi.mocked(runTaskSuite).mock.calls[0]!

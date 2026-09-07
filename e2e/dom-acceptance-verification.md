@@ -240,6 +240,8 @@
 
 真实 IDE 的正常首次启动以首页路径和空 `referrerInfo` 调用 App。对应修复使 headless testing launcher 在解析首页后才启动 App，并让 Node/browser 共用启动参数复制逻辑，保留显式 scene 和来源字段；公开类型允许空或部分 referrerInfo。17 项定向单测、2 项 browser DOM、包级 typecheck 和显式 tsd 均通过。复用原生场景的 20 任务严格 headless 全量 `6bac3856-634e-469b-b32c-12cd0a16a7db` 为 40 cases / 153 checkpoints 全部通过、退出码 0，20 份报告无失败、阻塞、跳过、未执行或报告错误。日志 `.tmp/ide-dom-headless-full20-launch-options.log`，suite 索引 `2026-09-08-052710-e2e-ide-dom-headless-4a51ba2e-suite-report`，其中生命周期 invocation 为 `5512f01c-0dea-4c86-9f74-1dae4f07fca6`。这是提交前工作树结果，后续最终命令和真实 IDE 全量仍需绑定交付提交。
 
+上述 20 份 case 报告均为 `strict: true`，但进一步审计发现历史 suite 顶层为 `strict: false`，未强制验证任务报告缺失。已将 `ide-dom-headless` 纳入默认严格 suite，总门禁与逐 case 检查同时生效；即使子命令退出零、传入允许失败或将环境严格开关设为零，缺失验收报告仍失败。54 项相关回归通过，最终提交仍需完整重跑此 gate，不以历史 suite 顶层结果代替。
+
 ## 维护与最终确认命令
 
 ```sh

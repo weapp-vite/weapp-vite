@@ -29,12 +29,17 @@ function temporaryRoot() {
 }
 
 describe('strict IDE suite acceptance', () => {
-  it.each([true, false])('defaults ordinary full to strict with failOnTaskFailure=%s', async (failOnTaskFailure) => {
+  it.each([
+    ['e2e:ide-full', true],
+    ['e2e:ide-full', false],
+    ['e2e:ide-dom-headless', true],
+    ['e2e:ide-dom-headless', false],
+  ] as const)('requires evidence in %s with failOnTaskFailure=%s', async (suite, failOnTaskFailure) => {
     vi.stubEnv('WEAPP_VITE_E2E_DOM_ACCEPTANCE', '0')
     const task: SuiteTask = { label: 'missing-evidence', command: 'node', args: [] }
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    const code = await runTaskSuite('e2e:ide-full', [task], {
+    const code = await runTaskSuite(suite, [task], {
       runTask: async () => 0,
       failOnTaskFailure,
       writeReport: false,
