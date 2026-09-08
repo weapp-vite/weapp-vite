@@ -144,6 +144,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ inputs.artifact_name }}
+          include-hidden-files: true
           path: ${{ inputs.artifact_path }}
           if-no-files-found: warn
 
@@ -152,6 +153,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ inputs.build_artifact_name }}
+          include-hidden-files: true
           path: |
             packages/*/dist/**
             packages-runtime/*/dist/**
