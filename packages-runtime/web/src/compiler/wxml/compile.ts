@@ -106,6 +106,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   const importLines: string[] = [
     `import { html } from 'lit'`,
     `import { repeat } from 'lit/directives/repeat.js'`,
+    `import { bindRuntimeEvent } from '@weapp-vite/web/runtime'`,
   ]
   const bodyLines: string[] = []
   const directDependencies: string[] = []

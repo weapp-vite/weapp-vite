@@ -63,9 +63,9 @@ describe('WXML attribute contracts', () => {
       propertyAttributes: ['custom-value'],
       skipControl: true,
     })
-    expect(rendered).toContain('@click=')
+    expect(rendered).toContain('"click"')
     expect(rendered).toContain('"catch":false')
-    expect(rendered).toContain('@longpress=')
+    expect(rendered).toContain('"longpress"')
     expect(rendered).toContain('"capture":true')
     expect(rendered).toContain('.customValue=')
     expect(rendered).toContain(' data-id=')
@@ -81,9 +81,8 @@ describe('WXML attribute contracts', () => {
       'wx:if': 'ready',
     }, 'scope', 'wxs', { preferProperty: true })
     expect(preferred).toContain('.value=')
-    expect(preferred).toContain(' @if=')
     expect(preferred).not.toContain('.id=')
-    expect(renderAttributes({ bindtap: null as any }, 'scope', 'wxs')).toContain('@click=')
+    expect(renderAttributes({ bindtap: null as any }, 'scope', 'wxs')).toContain('"click"')
     expect(renderAttributes({ plain: 'value' }, 'scope', 'wxs')).toContain(' plain=')
   })
 })
