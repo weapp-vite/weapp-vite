@@ -20,6 +20,7 @@ import { handleWxml, scanWxml } from '../wxml'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 import { consumePendingOwnerStyleSources } from './css'
 import { transformI18nOutputTemplate } from './i18n'
+import { createOutputAssetTransaction } from './outputFinalizer/assets'
 import { flushIndependentOutputs } from './outputFinalizer/independent'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
 import { hasManagedTailwindcssOutputMarker, isManagedTailwindcssEntry } from './tailwindcssMarker'
@@ -423,12 +424,13 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
     generateBundle: {
       order: 'post',
       async handler(_options, bundle) {
-        const outputBundle = bundle as unknown as OutputBundle
+        const assets = createOutputAssetTransaction(bundle as unknown as OutputBundle)
+        const outputBundle = assets.bundle
         mergePendingOwnerStyleSources(ctx, outputBundle)
-        rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
-        stabilizeWevuRuntimeChunkAccess(bundle as unknown as OutputBundle)
+        rewriteWevuInternalRuntimeImports(outputBundle, wevuRuntimeRewriteOptions)
+        stabilizeWevuRuntimeChunkAccess(outputBundle)
         restoreNativePageLayoutOutputs(ctx, outputBundle)
-        normalizeGraphOnlyAssets(ctx, outputBundle, asset => this.emitFile(asset))
+        normalizeGraphOnlyAssets(ctx, outputBundle, assets.stage)
         const assetEntries = collectOutputFinalizerAssetEntries(outputBundle)
         if (ctx.configService.platform === 'weapp') {
           analyzeGlassEaselBundle(ctx, outputBundle)
@@ -437,13 +439,14 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
           outputBundle,
           assetEntries.preprocessorStyleAssets,
           ctx.configService.outputExtensions?.wxss,
-          asset => this.emitFile(asset),
+          assets.stage,
         )
         normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta)
         pruneUnchangedDevHmrOutputs(ctx, outputBundle, wevuRuntimeRewriteOptions, {
           runtimeRewriteDone: true,
         })
         syncOutputChunkSourceMapAssets(outputBundle)
+        assets.publish(asset => this.emitFile(asset))
         await flushIndependentOutputs(ctx, subPackageMeta, asset => this.emitFile(asset))
       },
     },
