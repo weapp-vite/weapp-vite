@@ -337,7 +337,7 @@ async function connectAutomatorSession() {
 }
 
 async function reconnectAutomatorAfterFullReload() {
-  await miniProgram?.disconnect?.().catch(() => {})
+  await miniProgram?.disconnect?.()
   miniProgram = await connectAutomatorSession()
 }
 

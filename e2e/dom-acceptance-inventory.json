@@ -5742,7 +5742,7 @@
     },
     {
       "file": "e2e/ide/app-vue-hmr-alias.runtime.test.ts",
-      "sha256": "44032a85b23d52c6da3ca2fe36bd2d764745a1ffe6d96a9253b1606194793a24"
+      "sha256": "21993f150500098d97c415386ffb869fe9e48bbf8c001dada3dcd7f515cb2ad8"
     },
     {
       "file": "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
