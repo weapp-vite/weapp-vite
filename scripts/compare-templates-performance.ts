@@ -1,4 +1,5 @@
 /* eslint-disable ts/no-use-before-define */
+import type { PeakRssSamplingStats } from './benchmarkTemplatesPerformance/peakRssSampler'
 import type { TemplatesHmrReport } from './templates-performance-integrity'
 import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
@@ -7,7 +8,9 @@ import { stripVTControlCharacters } from 'node:util'
 /* eslint-disable-next-line e18e/ban-dependencies -- CI 性能对比需要调度两个 checkout 的命令并收集报告。 */
 import { execa } from 'execa'
 import path from 'pathe'
-import { createBenchmarkCheckoutPreparationCommands } from './benchmark-checkout-preparation'
+import { createBenchmarkCheckoutPreparationCommands, createBenchmarkRunnerPreparationCommand } from './benchmark-checkout-preparation'
+import { createPeakRssSampler } from './benchmarkTemplatesPerformance/peakRssSampler'
+import { runRssSamplingCommand } from './benchmarkTemplatesPerformance/rssCommand'
 import { assertTemplatesPerformanceComplete, collectTemplatesPerformanceFailures, parseTemplatesHmrReport } from './templates-performance-integrity'
 
 const baselineDirInput = process.env.TEMPLATES_PERF_BASELINE_DIR
@@ -55,7 +58,8 @@ async function main() {
 
 async function prepareBenchmarkRunner() {
   process.stdout.write('[templates-perf] runner: build benchmark helper dependency dist\n')
-  await run('pnpm', ['--filter', '@weapp-core/shared', '--if-present', 'build'], optimizedDir)
+  const command = createBenchmarkRunnerPreparationCommand()
+  await run(command.command, command.args, optimizedDir)
 }
 
 async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutResult> {
@@ -125,8 +129,9 @@ async function benchmarkTemplateBuilds(id: CheckoutId, cwd: string, templates: T
         cwd,
         reject: false,
       })
-      const memorySampler = createPeakRssSampler(child.pid)
+      const memorySampler = createPeakRssSampler(async () => typeof child.pid === 'number' ? sampleProcessTreeRssBytes(child.pid) : null)
       const result = await child
+      const totalMs = performance.now() - startedAt
       const memory = await memorySampler.stop()
       const output = `${result.stdout}\n${result.stderr}`
       const sanitizedOutput = sanitizeCheckoutOutput(cwd, output)
@@ -135,9 +140,10 @@ async function benchmarkTemplateBuilds(id: CheckoutId, cwd: string, templates: T
         iteration: index + 1,
         template: template.id,
         packageName: template.packageName,
-        totalMs: performance.now() - startedAt,
+        totalMs,
         cliBuildMs: parseCliBuildMs(output),
         rssPeakBytes: memory.rssPeakBytes,
+        rssSampling: memory.rssSampling,
         status: result.exitCode ?? 1,
         error: result.exitCode === 0 ? undefined : summarizeCommandOutput(sanitizedOutput),
       }
@@ -211,33 +217,6 @@ async function run(command: string, args: string[], cwd: string, env: NodeJS.Pro
   })
 }
 
-function createPeakRssSampler(rootPid: number | undefined) {
-  let rssPeakBytes: number | null = null
-
-  const sample = async () => {
-    if (typeof rootPid !== 'number') {
-      return
-    }
-    const current = await sampleProcessTreeRssBytes(rootPid).catch(() => null)
-    if (current != null) {
-      rssPeakBytes = Math.max(rssPeakBytes ?? 0, current)
-    }
-  }
-
-  const timer = setInterval(() => {
-    void sample()
-  }, 100)
-  void sample()
-
-  return {
-    async stop() {
-      clearInterval(timer)
-      await sample()
-      return { rssPeakBytes }
-    },
-  }
-}
-
 async function sampleProcessTreeRssBytes(rootPid: number) {
   if (process.platform === 'win32') {
     return await sampleWindowsProcessTreeRssBytes(rootPid)
@@ -246,10 +225,10 @@ async function sampleProcessTreeRssBytes(rootPid: number) {
 }
 
 async function sampleUnixProcessTreeRssBytes(rootPid: number) {
-  const { stdout } = await execa('ps', ['-Ao', 'pid=,ppid=,rss='], {
-    reject: false,
-    stdin: 'ignore',
-  })
+  const stdout = await runRssSamplingCommand('ps', ['-Ao', 'pid=,ppid=,rss='])
+  if (stdout === null) {
+    return null
+  }
   const entries = stdout
     .split('\n')
     .map((line) => {
@@ -263,15 +242,12 @@ async function sampleUnixProcessTreeRssBytes(rootPid: number) {
 }
 
 async function sampleWindowsProcessTreeRssBytes(rootPid: number) {
-  const { stdout } = await execa('powershell', [
+  const stdout = await runRssSamplingCommand('powershell', [
     '-NoProfile',
     '-Command',
     'Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json -Compress',
-  ], {
-    reject: false,
-    stdin: 'ignore',
-  })
-  if (!stdout.trim()) {
+  ])
+  if (!stdout?.trim()) {
     return null
   }
   const parsed = JSON.parse(stdout) as unknown
@@ -830,6 +806,7 @@ interface TemplateBuildSample {
   totalMs: number
   cliBuildMs: number | null
   rssPeakBytes: number | null
+  rssSampling?: PeakRssSamplingStats
   error?: string
   status: number
 }

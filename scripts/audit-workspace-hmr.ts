@@ -14,6 +14,7 @@ import { sanitizeAcceptanceText, sanitizeAcceptanceValue } from '../e2e/scripts/
 import { startDevProcess } from '../e2e/utils/dev-process'
 import { cleanupResidualDevProcesses } from '../e2e/utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
+import { readEmittedStylesheet, waitForEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 import {
   createWorkspaceHmrBaseline,
@@ -21,14 +22,18 @@ import {
   parseThresholdOverrides,
   renderThresholdMarkdown,
 } from './workspace-hmr/baseline'
+import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable } from './workspace-hmr/cleanup'
+import { isDynamicReactTemplateOutput } from './workspace-hmr/reactTemplate'
 import {
   injectReactTemplateMarker,
+  injectVueStyleRule,
   isReactTemplateSource,
   parseStatefulHmrControlSource,
   resolveHmrScriptOutputPath,
   resolveReactTemplateOutputPath,
   resolveWorkspaceHmrRuntime,
 } from './workspace-hmr/scenarios'
+import { assertWorkspaceHmrSelection, selectWorkspaceHmrProjects } from './workspace-hmr/selection'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
 import { waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
 
@@ -130,9 +135,11 @@ interface ScenarioResult {
   profile?: HmrProfileSample
   impact?: ImpactFile[]
   error?: string
+  cleanupErrors?: string[]
   diagnostics?: {
     transport: StatefulHmrAuditEvent[]
     output: { path: string, exists: boolean, sha256?: string, bytes?: number, containsMarker?: boolean }
+    reachableStylesheet?: { containsMarker?: boolean, error?: string }
     recentDevOutput: string
   }
 }
@@ -212,8 +219,7 @@ async function main() {
   await cleanupResidualDevProcesses()
   await prepareReferencedWorkspaceTsconfigs()
 
-  const projects = (await selectProjectsForRunMode(await discoverProjects()))
-    .filter(project => !projectFilter || project.id.includes(projectFilter))
+  const projects = selectWorkspaceHmrProjects(await selectProjectsForRunMode(await discoverProjects()), projectFilter)
 
   const results: ProjectResult[] = []
   for (const project of projects) {
@@ -223,7 +229,7 @@ async function main() {
 
   const generatedAt = new Date().toISOString()
   let baseline = await readWorkspaceHmrBaseline(baselinePath)
-  if (writeBaseline) {
+  if (writeBaseline && projects.length) {
     baseline = createWorkspaceHmrBaseline(results, {
       generatedAt,
       mode: 'templates-baseline',
@@ -244,6 +250,11 @@ async function main() {
     generatedAt,
     mode: runMode,
     scope: workspaceHmrScope,
+    selection: {
+      filter: projectFilter,
+      status: projects.length ? 'selected' : 'empty',
+      projectCount: projects.length,
+    },
     baseline: baseline ? formatReportPath(baselinePath) : undefined,
     startupTimeoutMs,
     scenarioTimeoutMs,
@@ -273,6 +284,10 @@ async function main() {
   if (failedProjects.length) {
     process.stdout.write(`[workspace-hmr] failed projects: ${failedProjects.map(project => project.id).join(', ')}\n`)
   }
+  if (!projects.length) {
+    process.stdout.write('[workspace-hmr] no projects selected; this report contains no acceptance results.\n')
+  }
+  assertWorkspaceHmrSelection(projects.length, failOnError)
   if (failOnError && (failedProjects.length || thresholdEvaluation.issues.length)) {
     process.exitCode = 1
   }
@@ -572,7 +587,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       distRoot,
       '__weapp_vite_hmr/control.js',
     )))
-    scenarios = await discoverScenarios(project)
+    scenarios = await discoverScenarios(project, true)
     selectedScenarios = maxScenariosPerProject
       ? scenarios.slice(0, maxScenariosPerProject)
       : scenarios
@@ -584,9 +599,10 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     }))
     const runnableScenarios = []
     for (const scenario of selectedScenarios) {
-      if (await pathExists(scenario.outputPath)) {
-        runnableScenarios.push(scenario)
+      if (!(await pathExists(scenario.outputPath))) {
+        throw new Error(`Discovered HMR scenario ${scenario.id} did not produce initial output: ${formatProjectPath(scenario.outputPath)}`)
       }
+      runnableScenarios.push(scenario)
     }
     if (!runnableScenarios.length) {
       throw new Error('No discovered HMR scenario produced an initial output.')
@@ -596,7 +612,15 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
 
     const scenarioResults: ScenarioResult[] = []
     for (const scenario of runnableScenarios) {
-      scenarioResults.push(await auditScenarioWithRetries(project, scenario, profilePath, distRoot, () => dev.getOutput()))
+      const scenarioResult = await auditScenarioWithRetries(project, scenario, profilePath, distRoot, () => dev.getOutput())
+      scenarioResults.push(scenarioResult)
+      if (scenarioResult.cleanupErrors?.length) {
+        result.scenarios = [
+          ...scenarioResults,
+          ...result.scenarios.slice(scenarioResults.length).map(pending => ({ ...pending, error: 'Not executed: previous scenario did not restore its baseline.' })),
+        ]
+        throw new Error(`Cannot continue after ${scenario.id}: source/output restoration failed.`)
+      }
     }
     result.scenarios = scenarioResults
   }
@@ -608,12 +632,18 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       : message)
   }
   finally {
-    await dev.stop(5_000).catch(() => {})
-    for (const [filePath, source] of backups) {
-      await writeFile(filePath, source, 'utf8').catch(() => {})
+    const cleanupErrors = await collectWorkspaceHmrCleanupErrors([
+      { label: 'Failed to stop dev process', run: () => dev.stop(5_000) },
+      ...[...backups].map(([filePath, source]) => ({
+        label: `Failed to restore backup ${formatProjectPath(filePath)}`,
+        run: () => writeFile(filePath, source, 'utf8'),
+      })),
+      { label: 'Failed to clean residual dev processes', run: () => cleanupResidualDevProcesses() },
+    ])
+    if (cleanupErrors.length) {
+      result.error = [result.error, ...cleanupErrors.map(error => sanitizeAcceptanceText(error))].filter(Boolean).join('\n')
     }
     statefulHmrAuditClients.delete(project.root)
-    await cleanupResidualDevProcesses()
   }
 
   return result
@@ -633,6 +663,9 @@ async function warmupProjectHmr(
     return
   }
 
+  if (scenario.statefulClient) {
+    await prepareStatefulHmrAuditClient(project)
+  }
   const profileLineCount = await countJsonlLines(profilePath)
   await writeScenarioSource(scenario.sourcePath, updated)
   if (scenario.statefulClient) {
@@ -646,7 +679,7 @@ async function warmupProjectHmr(
   if (scenario.statefulClient) {
     await publishStatefulHmrUpdate(project, scenario.outputPath, expectedMarker, false)
   }
-  await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs).catch(() => {})
+  await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
   await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs)
   await rm(profilePath, { force: true }).catch(() => {})
   await sleep(settleMs)
@@ -660,7 +693,7 @@ async function auditScenarioWithRetries(
   getDevOutput: () => string,
 ) {
   let result = await auditScenario(project, scenario, profilePath, distRoot, getDevOutput)
-  for (let attempt = 1; result.error && attempt <= scenarioRetries; attempt++) {
+  for (let attempt = 1; isWorkspaceHmrScenarioRetryable(result) && attempt <= scenarioRetries; attempt++) {
     process.stdout.write(`[workspace-hmr] retry ${project.id} ${scenario.id}: ${result.error}\n`)
     result = await auditScenario(project, scenario, profilePath, distRoot, getDevOutput)
   }
@@ -695,6 +728,9 @@ async function auditScenario(
   }
 
   try {
+    if (scenario.statefulClient) {
+      await prepareStatefulHmrAuditClient(project)
+    }
     const profileLineCount = await countJsonlLines(profilePath)
     const before = await snapshotDist(distRoot)
     const startedAt = performance.now()
@@ -733,25 +769,39 @@ async function auditScenario(
       },
       recentDevOutput: sanitizeAcceptanceText(getDevOutput().slice(-12_000)),
     }
+    if (isStylesheetOutput(scenario.outputPath)) {
+      try {
+        result.diagnostics.reachableStylesheet = { containsMarker: (await readEmittedStylesheet(scenario.outputPath)).includes(expectedMarker) }
+      }
+      catch (error) {
+        result.diagnostics.reachableStylesheet = { error: sanitizeAcceptanceText(error instanceof Error ? error.message : String(error)) }
+      }
+    }
   }
   finally {
     const restoreProfileLineCount = await countJsonlLines(profilePath).catch(() => 0)
-    await writeScenarioSource(scenario.sourcePath, original).catch(() => {})
-    if (scenario.statefulClient) {
-      await publishStatefulHmrUpdate(project, scenario.outputPath, expectedMarker, false).catch(() => {})
+    const cleanupErrors = await collectWorkspaceHmrCleanupErrors([
+      { label: 'Failed to restore source', run: () => writeScenarioSource(scenario.sourcePath, original) },
+      ...(scenario.statefulClient
+        ? [{ label: 'Failed to publish restored state', run: () => publishStatefulHmrUpdate(project, scenario.outputPath, expectedMarker, false) }]
+        : []),
+      { label: 'Failed to restore emitted output', run: () => waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs) },
+      { label: 'Restored output did not settle', run: () => waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs) },
+    ])
+    if (cleanupErrors.length) {
+      result.cleanupErrors = cleanupErrors.map(error => sanitizeAcceptanceText(error))
+      result.error = [result.error, ...result.cleanupErrors].filter(Boolean).join('\n')
     }
-    await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs).catch(() => {})
     if (project.hmrRuntime === 'standard') {
       await waitForHmrProfileSample(project, profilePath, restoreProfileLineCount, scenario.sourcePath, 5_000).catch(() => {})
     }
-    await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs).catch(() => {})
     await sleep(settleMs)
   }
 
   return result
 }
 
-async function discoverScenarios(project: ProjectCase): Promise<ScenarioCase[]> {
+async function discoverScenarios(project: ProjectCase, requireOutputs = false): Promise<ScenarioCase[]> {
   const files = (await listFiles(project.sourceRoot))
     .sort((left, right) => scoreSourceFile(project.sourceRoot, left) - scoreSourceFile(project.sourceRoot, right)
       || left.localeCompare(right))
@@ -763,7 +813,7 @@ async function discoverScenarios(project: ProjectCase): Promise<ScenarioCase[]> 
   const reactTemplate = findPreferredSource(files, filePath => isReactTemplateSource(filePath) && isPageLikeSource(project.sourceRoot, filePath))
 
   if (reactTemplate) {
-    scenarios.push(createReactTemplateScenario(project, reactTemplate))
+    scenarios.push(await createReactTemplateScenario(project, reactTemplate, requireOutputs))
   }
   else if (nativeTemplate) {
     scenarios.push(createNativeTemplateScenario(project, nativeTemplate))
@@ -783,12 +833,15 @@ async function discoverScenarios(project: ProjectCase): Promise<ScenarioCase[]> 
   return dedupeScenarios(scenarios)
 }
 
-function createReactTemplateScenario(project: ProjectCase, sourcePath: string): ScenarioCase {
+async function createReactTemplateScenario(project: ProjectCase, sourcePath: string, requireOutput: boolean): Promise<ScenarioCase> {
+  const templateOutput = resolveReactTemplateOutputPath(project, sourcePath)
+  const dynamic = await isDynamicReactTemplateOutput(templateOutput, requireOutput)
   return {
     id: 'react-template',
-    label: 'React TSX template',
+    label: dynamic ? 'React TSX dynamic-render script' : 'React TSX static template',
     sourcePath,
-    outputPath: resolveReactTemplateOutputPath(project, sourcePath),
+    outputPath: dynamic ? resolveHmrScriptOutputPath(project, path.join(path.dirname(sourcePath), 'index.ts')) : templateOutput,
+    statefulClient: dynamic && project.hmrRuntime === 'stateful',
     mutate: injectReactTemplateMarker,
   }
 }
@@ -856,7 +909,7 @@ function createVueScenarios(project: ProjectCase, sourcePath: string, source: st
       sourcePath,
       outputPath: styleOutput,
       expectedMarker: marker => toCssIdent(marker),
-      mutate: (source, marker) => insertBeforeClosingTag(source, 'style', `\n.hmr-audit-${toCssIdent(marker)} { color: #0f766e; }\n`),
+      mutate: (source, marker) => injectVueStyleRule(source, `.hmr-audit-${toCssIdent(marker)} { color: #0f766e; }`),
     },
   ].filter((scenario) => {
     if (scenario.id === 'vue-template') {
@@ -905,8 +958,7 @@ async function publishStatefulHmrUpdate(
   onEvent?: (event: StatefulHmrAuditEvent) => void,
 ) {
   const controlPath = path.join(project.distRoot, '__weapp_vite_hmr/control.js')
-  const client = statefulHmrAuditClients.get(project.root) ?? new StatefulHmrAuditClient()
-  statefulHmrAuditClients.set(project.root, client)
+  const client = await prepareStatefulHmrAuditClient(project)
   await waitForStatefulHmrAuditUpdate({
     client,
     readControl: async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8')),
@@ -914,6 +966,15 @@ async function publishStatefulHmrUpdate(
     timeoutMs: scenarioTimeoutMs,
     onEvent,
   })
+}
+
+async function prepareStatefulHmrAuditClient(project: ProjectCase) {
+  const client = statefulHmrAuditClients.get(project.root) ?? new StatefulHmrAuditClient()
+  statefulHmrAuditClients.set(project.root, client)
+  const controlPath = path.join(project.distRoot, '__weapp_vite_hmr/control.js')
+  const control = parseStatefulHmrControlSource(await readFile(controlPath, 'utf8'))
+  await client.ensureRegistered(control, scenarioTimeoutMs)
+  return client
 }
 
 function scoreSourceFile(sourceRoot: string, filePath: string) {
@@ -1225,6 +1286,10 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs: 
     await waitForFile(filePath, timeoutMs)
     return
   }
+  if (isStylesheetOutput(filePath)) {
+    await waitForEmittedStylesheet(filePath, marker, { timeoutMs })
+    return
+  }
   const startedAt = Date.now()
   while (Date.now() - startedAt < timeoutMs) {
     if (await pathExists(filePath)) {
@@ -1243,6 +1308,10 @@ async function waitForFileNotContains(filePath: string, marker: string, timeoutM
     await waitForFile(filePath, timeoutMs)
     return
   }
+  if (isStylesheetOutput(filePath)) {
+    await waitForEmittedStylesheet(filePath, marker, { absent: true, timeoutMs })
+    return
+  }
   const startedAt = Date.now()
   while (Date.now() - startedAt < timeoutMs) {
     if (await pathExists(filePath)) {
@@ -1254,6 +1323,10 @@ async function waitForFileNotContains(filePath: string, marker: string, timeoutM
     await sleep(250)
   }
   throw new Error(`Timed out waiting for ${formatReportPath(filePath)} to remove marker: ${marker}`)
+}
+
+function isStylesheetOutput(filename: string) {
+  return ['.wxss', '.acss'].includes(path.extname(filename))
 }
 
 async function listFiles(root: string) {
@@ -1670,6 +1743,7 @@ async function writeGitHubStepSummary(results: ProjectResult[], summary: Workspa
     '',
     `- mode: ${runMode}`,
     `- scope: ${workspaceHmrScope}`,
+    `- selection: ${results.length ? 'selected' : 'empty (no acceptance results)'}`,
     `- projects: ${summary.projectCount}`,
     `- scenarios: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
     `- scenario P95: ${formatDuration(summary.scenarioP95Ms)}`,
@@ -1708,6 +1782,7 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
     '',
     `- mode: ${runMode}`,
     `- scope: ${workspaceHmrScope}`,
+    `- selection: ${results.length ? 'selected' : 'empty (no acceptance results)'}`,
     `- generated projects: ${summary.projectCount}`,
     `- scenarios: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
     `- scenario P50: ${formatDuration(summary.scenarioP50Ms)}`,
