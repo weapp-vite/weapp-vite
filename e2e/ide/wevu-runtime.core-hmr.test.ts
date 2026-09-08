@@ -355,6 +355,7 @@ async function ensureMiniProgram(ctx: { skip: (message?: string) => void }) {
       return sharedMiniProgram
     }
     sharedMiniProgram = await launchAutomator({
+      bridgeProjectMode: 'direct',
       projectPath: APP_ROOT,
       skipWarmup: true,
     })

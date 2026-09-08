@@ -122,14 +122,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:427",
+          "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:428",
           "name": "app.vue alias import layout HMR runtime > keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/app-vue-hmr-alias",
               "checkpoints": "[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa",
-              "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:432"
+              "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:433"
             }
           ],
           "routes": [
@@ -188,14 +188,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:74",
+          "source": "e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:75",
           "name": "automator bridge wrapper snapshot hmr (ide) > renders four same-length template updates while retaining page and app identity",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/wevu-runtime-e2e",
               "checkpoints": "[ { id: 'initial', route: '/pages/hmr/index', action: '首屏检查实际模板标题和初始交互状态', nodes: [{ selector: '.title', text: 'HMR' }, { selector: '#hmr-count', text: 'count: 0' }] }, ...TEMPLATE_TITLES.map((title, index) => ({ id: `retained:${index}`, ro",
-              "source": "e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:75"
+              "source": "e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:76"
             }
           ],
           "routes": [
@@ -299,14 +299,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/forward-console-demo.runtime.test.ts:221",
+          "source": "e2e/ide/forward-console-demo.runtime.test.ts:222",
           "name": "forward-console-demo in real WeChat DevTools > keeps forwarding console output after dev HMR updates the current page",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/forward-console-demo",
               "checkpoints": "[ { id: 'initial', route: INDEX_ROUTE, action: '检查日志演示首屏', nodes: [ { selector: '.title', text: 'Forward Console Lab' }, { selector: '.description', text: INITIAL_DESCRIPTION }, { selector: '.status-pill text', text: '0 events' }, { selecto",
-              "source": "e2e/ide/forward-console-demo.runtime.test.ts:223"
+              "source": "e2e/ide/forward-console-demo.runtime.test.ts:224"
             }
           ],
           "routes": [],
@@ -2237,14 +2237,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/hmr-auto-classic.runtime.test.ts:143",
+          "source": "e2e/ide/hmr-auto-classic.runtime.test.ts:144",
           "name": "automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "[ ['initial', 'STATEFUL-NATIVE-BASE', 0, ''], ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'classic-held-input'], ['reloaded', 'STATEFUL-NATIVE-PATCHED', 0, ''], ['updated', 'STATEFUL-NATIVE-PATCHED', 2, ''], ].map(([id, marker, count, input]) =",
-              "source": "e2e/ide/hmr-auto-classic.runtime.test.ts:144"
+              "source": "e2e/ide/hmr-auto-classic.runtime.test.ts:145"
             }
           ],
           "routes": [
@@ -3011,14 +3011,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:281",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:282",
           "name": "stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across a JavaScript patch",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('native')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:282"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:283"
             }
           ],
           "routes": [
@@ -3036,14 +3036,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:322",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:323",
           "name": "stateful HMR in real WeChat DevTools > rehydrates wevu local and store refs while preserving the native page instance",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('wevu')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:323"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:324"
             }
           ],
           "routes": [
@@ -3061,14 +3061,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:372",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:373",
           "name": "stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('component')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:373"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:374"
             }
           ],
           "routes": [
@@ -3625,14 +3625,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:204",
+          "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:205",
           "name": "template TailwindCSS TDesign HMR in real WeChat DevTools > updates the visible Tailwind arbitrary background color through dev HMR",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-tailwindcss-tdesign-template",
               "checkpoints": "[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'",
-              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:205"
+              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:206"
             }
           ],
           "routes": [],
@@ -4365,14 +4365,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:333",
+          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:335",
           "name": "template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
-              "checkpoints": "colors.map((color, index) => ({ id: `background:${index}`, route: INDEX_ROUTE, action: `背景阶段 ${index}：计算样式、布局与点击计数`, nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label', te",
-              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:335"
+              "checkpoints": "[...colors.map((color, index) => ({ id: `background:${index}`, route: INDEX_ROUTE, action: `背景阶段 ${index}：计算样式、布局与点击计数`, nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'",
+              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337"
             }
           ],
           "routes": [],
@@ -4380,7 +4380,8 @@
             "check(background:0)",
             "callMethodWithOptions(handleCountTap)",
             "check(background:1)",
-            "check(background:${updateIndex + 2})"
+            "check(background:${updateIndex + 2})",
+            "check(local-style-priority)"
           ],
           "notes": []
         }
@@ -4793,14 +4794,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts:119",
+          "source": "e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts:120",
           "name": "wevu JSX/TSX stateful HMR in real WeChat DevTools > preserves instance state while replacing shared TSX and island handlers",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/wevu-jsx-tsx-demo",
               "checkpoints": "[ { id: 'tsx:initial', route: ROUTE, action: '检查初始模板和动态岛计数', nodes: [ { selector: '.title', text: '纯 TSX（.tsx）' }, { selector: '#tsx-island-button', text: 'dynamic island: 0' }, ] }, { id: 'tsx:interacted', route: ROUTE, action: '动态岛交互后记录计数",
-              "source": "e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts:121"
+              "source": "e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts:122"
             }
           ],
           "routes": [
@@ -4925,14 +4926,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/wevu-router-hmr.runtime.test.ts:153",
+          "source": "e2e/ide/wevu-router-hmr.runtime.test.ts:154",
           "name": "wevu/router HMR fixture runtime > keeps wevu/router resolved after saving a page in real DevTools HMR",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/wevu-router-hmr",
               "checkpoints": "[ { id: 'router:initial', route: INDEX_ROUTE, action: '检查 router 页面标题与当前路由', nodes: [ { selector: '.title', text: BASE_MARKER }, { selector: '.route', text: INDEX_ROUTE }, ] }, { id: 'router:updated', route: INDEX_ROUTE, action: '保存后当前页面标题更",
-              "source": "e2e/ide/wevu-router-hmr.runtime.test.ts:155"
+              "source": "e2e/ide/wevu-router-hmr.runtime.test.ts:156"
             }
           ],
           "routes": [
@@ -5089,14 +5090,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/wevu-runtime.core-hmr.test.ts:589",
+          "source": "e2e/ide/wevu-runtime.core-hmr.test.ts:590",
           "name": "wevu runtime core hmr matrix (ide) > keeps DevTools runtime aligned with core page, sfc and layout hmr updates",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/wevu-runtime-e2e",
               "checkpoints": "coreHmrPlan({ pageTemplateMarker, pageScriptMarker, pageStyleMarker, sfcTemplateMarker, sfcScriptMarker, sfcStyleMarker, layoutPageTemplateMarker, layoutPageScriptMarker, layoutPageStyleMarker, sharedStoreMarker, })",
-              "source": "e2e/ide/wevu-runtime.core-hmr.test.ts:600"
+              "source": "e2e/ide/wevu-runtime.core-hmr.test.ts:601"
             }
           ],
           "routes": [],
@@ -5245,14 +5246,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:264",
+          "source": "e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:265",
           "name": "wevu runtime layout shared template/wxs hmr (ide) > updates layout runtime output in DevTools after shared template/include/wxs edits",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/wevu-runtime-e2e",
               "checkpoints": "checkpoints",
-              "source": "e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:300"
+              "source": "e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:301"
             }
           ],
           "routes": [
@@ -5283,14 +5284,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts:198",
+          "source": "e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts:199",
           "name": "wevu runtime shared template/wxs hmr (ide) > updates runtime pages in DevTools after shared template/include/wxs edits",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/wevu-runtime-e2e",
               "checkpoints": "checkpoints",
-              "source": "e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts:234"
+              "source": "e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts:235"
             }
           ],
           "routes": [
@@ -5741,7 +5742,7 @@
     },
     {
       "file": "e2e/ide/app-vue-hmr-alias.runtime.test.ts",
-      "sha256": "020c2dde7d6e48ee46bf26d16d1c66f04ac013fc03fdd538c70503ae01c88850"
+      "sha256": "44032a85b23d52c6da3ca2fe36bd2d764745a1ffe6d96a9253b1606194793a24"
     },
     {
       "file": "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
@@ -5749,7 +5750,7 @@
     },
     {
       "file": "e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts",
-      "sha256": "cb7b3fa6547d407fbc35f90e18219f14d05be76adcd04587f970f8ef3d6a02ca"
+      "sha256": "5414c22751638d0a6827d17466d2fa5e82e4fe8dbe58459f5a17a5b9b28330dc"
     },
     {
       "file": "e2e/ide/automator-concurrent-sessions.runtime.test.ts",
@@ -5793,7 +5794,7 @@
     },
     {
       "file": "e2e/ide/forward-console-demo.runtime.test.ts",
-      "sha256": "9aa7ecd651b152aeae9272b383d4565898967e25cb07190ef2c78e554a73f174"
+      "sha256": "2d17a7c385ca3b7b9475c4f25e5cc95f5c22a26ddaa7db695eb556dcad85ee08"
     },
     {
       "file": "e2e/ide/github-issues.runtime.aggregate.test.ts",
@@ -6029,7 +6030,7 @@
     },
     {
       "file": "e2e/ide/hmr-auto-classic.runtime.test.ts",
-      "sha256": "eb9f0afd20068dbd1d61d9d4ff4b54809a6e4627cc444bc686b929ea8df5c630"
+      "sha256": "59df54cf421bf7dbce571efcbbfcdfd60d60143affff2da5d387a9d43c242a6e"
     },
     {
       "file": "e2e/ide/index.test.ts",
@@ -6113,7 +6114,7 @@
     },
     {
       "file": "e2e/ide/stateful-hmr.runtime.test.ts",
-      "sha256": "311c148feb5375d12382b73b6f5548709de40c375dcbbbbb7adf34ee39b24716"
+      "sha256": "009ec28d452acd657009fc03948cd6844a191205757481a45650a4748df6efba"
     },
     {
       "file": "e2e/ide/statefulHmrDom/index.ts",
@@ -6177,7 +6178,7 @@
     },
     {
       "file": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "fc02bf130c390c8143d388fe6f28008f28887ab11cfbb8aabfef2c99c7fc35f3"
+      "sha256": "c74532f902d0ab63a8f5a75a2666a852302c0b8176bcb3c26668a85752687071"
     },
     {
       "file": "e2e/ide/template-weapp-vite-multi-platform-sfc-template.test.ts",
@@ -6249,7 +6250,7 @@
     },
     {
       "file": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "c22b79b2ac5e104095cc6df7516571906dd49b09f1f0a2db66f541c03ba44c32"
+      "sha256": "2c333cc406b1c54a954d2893d36e56afe0727263c0054db3874635a192cdea8e"
     },
     {
       "file": "e2e/ide/template-wevu-tdesign-regression.shared.ts",
@@ -6293,7 +6294,7 @@
     },
     {
       "file": "e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts",
-      "sha256": "d997fd30fa7c0bde2ae38641ee90a101568803f32dcabe96151815d2ecc8ffb4"
+      "sha256": "128684d3302395155461fa866fdda2cd739a5e9fabd2100cac50478c0e551a5f"
     },
     {
       "file": "e2e/ide/wevu-jsx-tsx.runtime.test.ts",
@@ -6301,7 +6302,7 @@
     },
     {
       "file": "e2e/ide/wevu-router-hmr.runtime.test.ts",
-      "sha256": "9bbcc78d21b167fbdaea20bb3b63d380d946b9390f981b7bd3a004432ff3f1a0"
+      "sha256": "c351a6251bdd13a7a4f391c58bbe4006a5f9c1e6dbc1e81d7cb5e259d649544d"
     },
     {
       "file": "e2e/ide/wevu-runtime-demo.request-globals.weapp.test.ts",
@@ -6321,7 +6322,7 @@
     },
     {
       "file": "e2e/ide/wevu-runtime.core-hmr.test.ts",
-      "sha256": "3deab49159ad0091b41593ac98d3e0e16faab479f70a723b7517cf2e8fd05663"
+      "sha256": "bda8ef66dd23a4b07e0580c5f4b9e6e19473fa5ec27f054ed61ba8883ab1df0f"
     },
     {
       "file": "e2e/ide/wevu-runtime.function-props.weapp.test.ts",
@@ -6333,11 +6334,11 @@
     },
     {
       "file": "e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts",
-      "sha256": "7048bea21d93fc7d2fc8d412c5d086cbcfa2887bba723bd5807df8384fda2ed6"
+      "sha256": "3c9d82a6665105302f8e6e15fa9fbf269adef6a404ba92f9372b9d7fc619ff4c"
     },
     {
       "file": "e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts",
-      "sha256": "892223ad872923ec194f900ae6b4ead5c9fc74ed5c33872ecce0b6d09001b06a"
+      "sha256": "31542defe4704b2a6c87ddf25f10bed99222c422d81d77c60bc549589fd16815"
     },
     {
       "file": "e2e/ide/wevu-runtime.weapp.test.ts",
@@ -6397,7 +6398,7 @@
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/helpers.ts",
-      "sha256": "c79b5093c8d56a50fd30e81793d05433eade2d0263c3e9fd6d6fb610e4b5ab94"
+      "sha256": "b07e349dd592c7408b43f463b217959226996313e3b9af6ea19d9c8690fb4c73"
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/inventory.ts",
@@ -6465,7 +6466,7 @@
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "b6ec2d9c5b6189fc3a964cb933c3969df3fbd7600cb9c6c2f31ed7c73ec2dc2d"
+      "sha256": "aea29cf48a8039ac0b30f235c758611b29e2286947d450ac13c474f544289c26"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",
@@ -6633,7 +6634,7 @@
     },
     {
       "file": "e2e/utils/wevuTailwindHmrDiagnostics.ts",
-      "sha256": "f18a37f00ae1a7f44bd83bde25e1c8dd7c337632efb7b9449484f0c4f283b5d1"
+      "sha256": "b61230ba6cd77e97f742c26c4773bb7cc145aafa002dbf9ceb4977e78187e217"
     },
     {
       "file": "e2e/wevu-runtime.utils.ts",

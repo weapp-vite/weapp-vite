@@ -167,6 +167,7 @@
     "pathe": "catalog:",
     "picomatch": "^4.0.7",
     "postcss": "catalog:",
+    "postcss-value-parser": "4.2.0",
     "rolldown": "catalog:",
     "rolldown-plugin-dts": "0.28.5",
     "rolldown-require": "workspace:*",

@@ -54,7 +54,8 @@
     "css-what": "^7.0.0",
     "fontoxpath": "^3.34.0",
     "htmlparser2": "catalog:",
-    "pathe": "catalog:"
+    "pathe": "catalog:",
+    "postcss": "catalog:"
   },
   "publishConfig": {
     "access": "public",

@@ -121,9 +121,9 @@ describe('stateful session initial chunk package boundaries', () => {
       chunk('independent/vendor.js', 'independent-shared'),
     ]
     const watcher = await runStatefulHmrDev(ctx, { root }, vi.fn(async () => {}), {
-      initial: [],
+      initial: { output: [], componentPageGlobalStyleRoutes: [] },
       entryIds: [],
-      rebuild: vi.fn(async () => []),
+      rebuild: vi.fn(async () => ({ output: [], componentPageGlobalStyleRoutes: [] })),
     })
     try {
       const files = harness.writeOutput.mock.calls.flatMap(([, output]) => output)

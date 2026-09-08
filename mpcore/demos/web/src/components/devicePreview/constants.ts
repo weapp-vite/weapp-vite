@@ -187,3 +187,10 @@ export const PREVIEW_SHADOW_CSS = `
     font-weight: 700;
   }
 `
+
+// 已加载真实页面样式时只保留容器和原生块元素基线，避免示例皮肤覆盖业务颜色与布局。
+export const PREVIEW_PAGE_CSS = `
+  :host { display: block; width: 100%; height: 100%; }
+  .sim-shadow-screen { width: 100%; height: 100%; overflow: auto; }
+  page, view { display: block; }
+`

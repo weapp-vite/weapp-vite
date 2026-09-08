@@ -485,8 +485,9 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
     }, delay);
   };
   const send = (action, failure) => {
-    activeRequest?.abort?.();
+    if (phase === 'stopped') return;
     const generation = ++requestGeneration;
+    activeRequest?.abort?.();
     activeRequest = wx.request({
       url: control.url,
       method: 'POST',
@@ -537,6 +538,8 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
     getTransportState() { return { phase, version, lastRequestError, lastResponse }; },
     stop() {
       phase = 'stopped';
+      requestGeneration++;
+      pendingBatch = undefined;
       if (timer) {
         clearTimeout(timer);
         timer = undefined;

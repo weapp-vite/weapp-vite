@@ -9,6 +9,66 @@ import { createStatefulHmrControlSource } from './runtimeSource'
 import { StatefulHmrTransport } from './transport'
 
 describe('stateful HMR client failure reporting', () => {
+  it.each(['sync', 'async'] as const)('keeps stopped clients inactive when abort reports a %s failure, allowing a new client to register', async (abortTiming) => {
+    vi.useFakeTimers()
+    const requests: any[] = []
+    const context: Record<string, any> = {
+      setTimeout,
+      clearTimeout,
+      wx: {
+        request(options: any) {
+          requests.push(options)
+          return {
+            abort() {
+              const fail = () => options.fail({ errMsg: 'request:fail abort' })
+              if (abortTiming === 'sync') {
+                fail()
+              }
+              else { setTimeout(fail, 0) }
+            },
+          }
+        },
+      },
+    }
+    const control = { buildId: 'build', token: 'test-token', url: 'http://localhost/hmr' }
+    const source = createStatefulHmrControlSource(control)
+    try {
+      runInNewContext(source, context)
+      const stopped = context[WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY]
+      const staleRequest = requests[0]
+      stopped.stop()
+      await vi.advanceTimersByTimeAsync(1500)
+      expect(requests).toHaveLength(1)
+      expect(stopped.getTransportState().phase).toBe('stopped')
+      expect(vi.getTimerCount()).toBe(0)
+
+      runInNewContext(source, context)
+      const current = context[WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY]
+      expect(current).not.toBe(stopped)
+      expect(requests).toHaveLength(2)
+      expect(requests[1].data.action).toBe('register')
+      staleRequest.success({ statusCode: 200, data: { type: 'registered' } })
+      const apply = vi.fn()
+      stopped.receiveBatch({ buildId: control.buildId, fromVersion: 0, targetVersion: 1, changedIds: [] }, apply)
+      await vi.advanceTimersByTimeAsync(1500)
+      expect(requests).toHaveLength(2)
+      expect(apply).not.toHaveBeenCalled()
+      expect(stopped.getTransportState().phase).toBe('stopped')
+
+      requests[1].success({ statusCode: 200, data: { type: 'registered' } })
+      expect(current.getTransportState().phase).toBe('polling')
+      expect(requests).toHaveLength(3)
+      expect(requests[2].data.action).toBe('poll')
+      current.stop()
+      await vi.advanceTimersByTimeAsync(1500)
+      expect(requests).toHaveLength(3)
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
   it.each(['\u0000', '\u4E2D"\\'])('keeps rebuild requests deliverable with oversized diagnostics (%j)', async (character) => {
     const use = vi.fn()
     const requestFullBuild = vi.fn()

@@ -192,6 +192,7 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
       'forward-console demo initial dist generated',
     )
     miniProgram = await launchAutomator({
+      bridgeProjectMode: 'direct',
       projectPath: APP_ROOT,
       port: APP_AUTOMATOR_PORT,
       retryWarmupTimeout: true,

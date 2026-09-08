@@ -55,7 +55,10 @@ const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn(async () => ({
   managedTsconfigWarnings: [],
 })))
 const runStatefulHmrDevMock = vi.hoisted(() => vi.fn())
-const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_options: unknown) => ({ build: {}, plugins: [] })))
+const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_options: unknown) => ({
+  options: { build: {}, plugins: [] },
+  getComponentPageStyleOptions: () => new Map(),
+})))
 const devBuildWatcherQueue = vi.hoisted(() => [] as Array<{
   watcher: any
   emitEvent: ReturnType<typeof vi.fn>
@@ -533,7 +536,10 @@ describe('runtime buildPlugin service', () => {
       }),
     }))
     expect(resetEmittedOutputCachesMock).toHaveBeenCalledTimes(1)
-    expect(output).toEqual([{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }])
+    expect(output).toEqual({
+      output: [{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }],
+      componentPageGlobalStyleRoutes: [],
+    })
   })
 
   it('keeps explicit classic runtime when WeChat hot reload is enabled', async () => {

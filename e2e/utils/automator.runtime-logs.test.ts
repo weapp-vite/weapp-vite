@@ -139,7 +139,11 @@ describe('automator runtime diagnostic lifecycle', () => {
       session.emit('console', { level: 'error', args: ['startup failure'] })
       return session as any
     })
-    const launched = await launchAutomator({ projectPath: 'e2e-apps/base' })
+    const launched = await launchAutomator({ bridgeProjectMode: 'direct', projectPath: 'e2e-apps/base' })
+    expect(launchHeadlessAutomator).toHaveBeenCalledExactlyOnceWith({
+      projectPath: 'e2e-apps/base',
+      onSessionCreated: expect.any(Function),
+    })
     expect(launchDevtools).not.toHaveBeenCalled()
     session.emit('console', { type: 'error', args: ['headless failure'] })
     session.emit('exception', { exceptionDetails: { text: 'headless exception' } })

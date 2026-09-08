@@ -342,7 +342,11 @@ interface LaunchAppConfigValidationResult {
 
 type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 
+export type AutomatorBridgeProjectMode = 'direct' | 'snapshot'
+
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
+  /** HMR 验收直连构建器输出；snapshot 仅用于需要独立项目快照的验收。 */
+  bridgeProjectMode?: AutomatorBridgeProjectMode
   disableRelaunchSessionRecovery?: boolean
   engineBuildFallbackSettleMs?: number
   launchMode?: 'bridge' | 'direct'
@@ -457,8 +461,8 @@ function shouldDisableAutomatorRelaunchCurrentReady() {
   return process.env[AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY_ENV] !== '0'
 }
 
-function shouldUseAutomatorBridgeWrapper() {
-  return process.env[AUTOMATOR_BRIDGE_WRAPPER_ENV] !== '0'
+export function resolveAutomatorBridgeProjectMode(requestedMode?: AutomatorBridgeProjectMode): AutomatorBridgeProjectMode {
+  return requestedMode ?? (process.env[AUTOMATOR_BRIDGE_WRAPPER_ENV] === '0' ? 'direct' : 'snapshot')
 }
 
 function resolveConsolePayload(entry: any) {
@@ -1405,14 +1409,19 @@ export async function waitForBridgeWrapperWarmupAsset(
 export function prepareAutomatorBridgeWrapperProject(
   projectPath: string | undefined,
   projectMeta: LaunchProjectMeta | undefined,
+  bridgeProjectMode?: AutomatorBridgeProjectMode,
 ): BridgeWrapperProject | undefined {
   if (!projectPath || !projectMeta) {
     return projectPath ? { distRoot: '', path: projectPath, runtimeRoot: projectPath } : undefined
   }
 
   const distRoot = path.dirname(projectMeta.appConfigPath)
+  // 保留 CLI bridge 连接能力，直接验收 Vite 输出，不创建第二个文件写入者或改写项目配置。
+  if (resolveAutomatorBridgeProjectMode(bridgeProjectMode) === 'direct') {
+    return { distRoot, path: projectPath, runtimeRoot: distRoot }
+  }
   const projectConfig = resolveBridgeWrapperProjectConfig(projectPath)
-  if (projectConfig.compileType === 'plugin' || !shouldUseAutomatorBridgeWrapper()) {
+  if (projectConfig.compileType === 'plugin') {
     return { distRoot, path: projectPath, runtimeRoot: distRoot }
   }
   if (!fs.existsSync(distRoot)) {
@@ -2809,7 +2818,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
@@ -2841,8 +2850,13 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 }
               : undefined
             bridgeWrapperProject = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
-              ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta)
+              ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta, bridgeProjectMode)
               : undefined
+            if (bridgeWrapperProject) {
+              const mode = bridgeWrapperProject.stopSync ? 'snapshot' : 'direct'
+              const runtimeRoot = resolveReportProjectPath(bridgeWrapperProject.runtimeRoot)
+              process.stdout.write(`[info] [runtime:launch-step] bridge-project-ready mode=${mode} runtimeRoot=${runtimeRoot} project=${project}\n`)
+            }
             await waitForBridgeWrapperWarmupAsset(bridgeWrapperProject, resolvedWarmupRoute, project)
             const launchProjectPath = bridgeWrapperProject?.path ?? rest.projectPath
             const launchRest = {

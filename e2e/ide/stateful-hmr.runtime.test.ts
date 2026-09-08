@@ -221,6 +221,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await devProcess.waitFor(waitForStatefulHmrControl(CONTROL_FILE), 'stateful HMR control ready')
 
     miniProgram = await launchAutomator({
+      bridgeProjectMode: 'direct',
       launchMode: 'bridge',
       projectPath: APP_ROOT,
       projectConfig: {

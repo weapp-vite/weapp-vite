@@ -13,6 +13,8 @@ export async function writeStatefulHmrOutput(outDir: string, output: StatefulHmr
   await build({
     configFile: false,
     logLevel: 'silent',
+    // writer 只持久化已生成资产，不能再次复制宿主项目的 public 目录。
+    publicDir: false,
     build: {
       emptyOutDir: false,
       minify: false,

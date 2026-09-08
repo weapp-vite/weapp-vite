@@ -4,6 +4,7 @@ import type { HeadlessComponentInstance } from '../../runtime/componentInstance'
 import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { WxsModuleBindings } from '../../view/wxs'
 import type { BrowserModuleLoader } from '../moduleLoader'
+import type { BrowserPageStyles } from '../styles'
 import type { BrowserVirtualFiles } from '../virtualFiles'
 
 export interface DomNodeLike {
@@ -49,6 +50,7 @@ export interface BrowserComponentRegistryEntry {
 
 export interface BrowserRenderedPageTree {
   root: DomNodeLike
+  styles: BrowserPageStyles
   wxml: string
 }
 

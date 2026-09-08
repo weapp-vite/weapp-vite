@@ -69,6 +69,7 @@ async function waitForRuntimeState(
 
 async function connectAutomatorSession() {
   return await launchAutomator({
+    bridgeProjectMode: 'direct',
     launchMode: 'bridge',
     projectPath: APP_ROOT,
     retryWarmupTimeout: true,

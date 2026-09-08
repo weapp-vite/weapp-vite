@@ -325,6 +325,7 @@ async function assertDistJsKeepsBundledAliasMarker(marker: string) {
 
 async function connectAutomatorSession() {
   return await launchAutomator({
+    bridgeProjectMode: 'direct',
     launchMode: 'bridge',
     refreshProjectAfterConnect: true,
     projectPath: APP_ROOT,

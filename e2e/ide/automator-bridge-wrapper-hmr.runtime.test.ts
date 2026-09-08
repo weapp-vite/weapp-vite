@@ -46,6 +46,7 @@ describe('automator bridge wrapper snapshot hmr (ide)', { concurrent: false }, (
     )
 
     miniProgram = await launchAutomator({
+      bridgeProjectMode: 'snapshot',
       projectPath: APP_ROOT,
       skipWarmup: true,
       warmupRoute: '/pages/hmr/index',

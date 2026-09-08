@@ -154,6 +154,7 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
 
   async function launchRuntimeAutomator() {
     miniProgram = await launchAutomator({
+      bridgeProjectMode: 'direct',
       launchMode: 'bridge',
       maxLaunchRetries: 1,
       projectPath: TEMPLATE_ROOT,

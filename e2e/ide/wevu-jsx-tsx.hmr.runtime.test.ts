@@ -86,6 +86,7 @@ describe('wevu JSX/TSX stateful HMR in real WeChat DevTools', { concurrent: fals
     )
 
     miniProgram = await launchAutomator({
+      bridgeProjectMode: 'direct',
       launchMode: 'bridge',
       maxLaunchRetries: 1,
       projectPath: WEVU_JSX_APP_ROOT,

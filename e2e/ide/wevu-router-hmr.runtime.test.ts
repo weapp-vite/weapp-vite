@@ -124,6 +124,7 @@ describe('wevu/router HMR fixture runtime', { concurrent: false }, () => {
 
     try {
       miniProgram = await launchAutomator({
+        bridgeProjectMode: 'direct',
         projectPath: APP_ROOT,
         skipRelaunchPageRootCheck: true,
         skipWarmup: true,

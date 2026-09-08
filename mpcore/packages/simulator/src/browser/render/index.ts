@@ -13,6 +13,8 @@ import { resolveLoopEntries } from '../../view/loopEntries'
 import { linkRenderedParents } from '../../view/renderedTree'
 import { isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
 import { wxsScopeData } from '../../view/wxs'
+import { resolveBrowserPageStyles } from '../styles'
+import { resolveBrowserComponentPageStyleIsolation } from '../styles/componentPage'
 import { getBrowserWxsLoader } from '../wxs'
 import {
   createBrowserComponentInstance,
@@ -433,6 +435,10 @@ export function renderBrowserPageTree(
   linkRenderedParents(treeRoot)
   return {
     root: treeRoot,
+    styles: resolveBrowserPageStyles(context.files, resourcePath, {
+      miniprogramRootPath: context.project.miniprogramRootPath,
+      styleIsolation: resolveBrowserComponentPageStyleIsolation(context.files, page, resourcePath, context.project.miniprogramRootPath),
+    }),
     wxml: roots.map(serializeDomNode).join(''),
   }
 }

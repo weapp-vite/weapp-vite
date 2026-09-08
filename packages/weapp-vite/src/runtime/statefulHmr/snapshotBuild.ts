@@ -9,8 +9,12 @@ export async function createStatefulHmrSnapshotOptions(loadOptions: LoadConfigOp
   await ctx.configService.load(loadOptions)
   await ctx.scanService.loadAppEntry()
   ctx.scanService.loadSubPackages()
-  return ctx.configService.merge(
+  const options = ctx.configService.merge(
     undefined,
     createSharedBuildConfig(ctx.configService, ctx.scanService),
   )
+  return {
+    options,
+    getComponentPageStyleOptions: () => ctx.runtimeState.build.hmr.componentPageStyleOptions,
+  }
 }

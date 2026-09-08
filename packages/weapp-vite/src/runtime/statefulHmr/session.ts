@@ -3,6 +3,7 @@
 import type { RolldownWatcher } from 'rolldown'
 import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../../context'
+import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { Buffer } from 'node:buffer'
@@ -36,8 +37,8 @@ const maxRetainedDeltaBytes = 16 * 1024 * 1024
 
 interface StatefulHmrSnapshots {
   entryIds: Iterable<string>
-  initial: StatefulHmrOutputFile[]
-  rebuild: (files: string[]) => Promise<StatefulHmrOutputFile[]>
+  initial: StatefulHmrSnapshot
+  rebuild: (files: string[]) => Promise<StatefulHmrSnapshot>
 }
 
 export async function runStatefulHmrDev(
@@ -130,7 +131,7 @@ export async function runStatefulHmrDev(
 }
 
 class StatefulHmrSession {
-  private activeSnapshotBatch?: { isSuperseded: () => boolean }
+  private activeSnapshotBatch?: { isSuperseded: () => boolean, snapshot: StatefulHmrSnapshot }
   private readonly adapter: StatefulHmrViteAdapter
   private readonly initialBundle = Promise.withResolvers<void>()
   private readonly snapshotScheduler: StatefulHmrSnapshotScheduler
@@ -138,6 +139,8 @@ class StatefulHmrSession {
   private outputChain: Promise<void> = Promise.resolve()
   private restartTimer?: ReturnType<typeof setTimeout>
   private snapshotAssets = new Map<string, StatefulHmrOutputFile>()
+  private componentPageGlobalStyleRoutes: string[] = []
+  private initialSnapshot?: StatefulHmrSnapshot
   private readonly emittedSourceIds: Set<string>
   private readonly sourceChangeListener = (file: string, dirtyReasonSummary: string[]) => {
     this.handleSourceUpdate(file, dirtyReasonSummary)
@@ -151,12 +154,8 @@ class StatefulHmrSession {
     private readonly snapshots: StatefulHmrSnapshots,
     devWatchOptions: { compareContentsForPolling?: boolean, pollInterval?: number, usePolling?: boolean },
   ) {
-    this.emittedSourceIds = collectStatefulHmrEmittedSourceIds(snapshots.initial, server.config.root)
-    this.replaceSnapshotAssets(createStatefulHmrGlobalStyleAssets(
-      snapshots.initial,
-      resolveOutputExtensions(ctx.configService?.outputExtensions).styleExtension,
-      { createIfMissing: true },
-    ))
+    this.emittedSourceIds = collectStatefulHmrEmittedSourceIds(snapshots.initial.output, server.config.root)
+    this.initialSnapshot = snapshots.initial
     this.transport = new StatefulHmrTransport(
       server,
       async (buildId, source) => {
@@ -253,19 +252,22 @@ class StatefulHmrSession {
       if (snapshotBatch?.isSuperseded()) {
         return
       }
+      const snapshot = snapshotBatch?.snapshot ?? this.initialSnapshot
+      const snapshotOutput = snapshot ? this.createSnapshotAssets(snapshot) : undefined
       const compatibleOutput = createStatefulHmrGlobalStyleAssets(
         await transformOutput(output),
         resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
+        { componentPageGlobalStyleRoutes: snapshot?.componentPageGlobalStyleRoutes ?? this.componentPageGlobalStyleRoutes },
       )
+      if (snapshotBatch?.isSuperseded()) {
+        return
+      }
       const fullBuild = compatibleOutput.some(item => item.fileName === 'app.js')
+      let buildId: string | undefined
       if (fullBuild) {
         registerStatefulHmrInitialChunkLoaders(compatibleOutput, [...this.ctx.scanService!.subPackageMap.keys()])
-        for (const sourceId of collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root)) {
-          this.emittedSourceIds.add(sourceId)
-        }
-        mergeStatefulHmrSnapshotAssets(compatibleOutput, this.snapshotAssets.values())
-        const buildId = this.transport.createBuildId()
-        this.transport.commitFullBuild(buildId)
+        mergeStatefulHmrSnapshotAssets(compatibleOutput, snapshotOutput ?? this.snapshotAssets.values())
+        buildId = this.transport.createBuildId()
         stampStatefulHmrFullBuild(compatibleOutput, buildId)
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE, createStatefulHmrControlSource({
           ...this.transport.createControl(),
@@ -275,7 +277,15 @@ class StatefulHmrSession {
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE, 'void 0;\n')
       }
       await writeStatefulHmrOutput(this.ctx.configService!.outDir, compatibleOutput)
-      if (fullBuild) {
+      if (buildId) {
+        this.transport.commitFullBuild(buildId)
+        if (snapshot && snapshotOutput) {
+          this.adoptSnapshot(snapshot, snapshotOutput)
+          this.initialSnapshot = undefined
+        }
+        for (const sourceId of collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root)) {
+          this.emittedSourceIds.add(sourceId)
+        }
         const moduleCount = await this.adapter.registerBundleModules(compatibleOutput)
         this.server.config.logger.info(`[weapp-vite] 微信状态保持 HMR 已就绪（${moduleCount} modules）`)
         this.initialBundle.resolve()
@@ -368,38 +378,49 @@ class StatefulHmrSession {
     isSuperseded: () => boolean
     mode: 'full' | 'refresh'
   }): Promise<void> {
-    const output = createStatefulHmrGlobalStyleAssets(
-      await this.snapshots.rebuild(batch.files),
-      resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
-      { createIfMissing: true },
-    )
+    const snapshot = await this.snapshots.rebuild(batch.files)
     if (batch.isSuperseded()) {
       return
     }
     if (batch.mode === 'full') {
-      this.replaceSnapshotAssets(output)
-      this.activeSnapshotBatch = batch
+      const activeBatch = { ...batch, snapshot }
+      this.activeSnapshotBatch = activeBatch
       try {
         await this.adapter.rebuild()
         await this.outputChain
       }
       finally {
-        if (this.activeSnapshotBatch === batch) {
+        if (this.activeSnapshotBatch === activeBatch) {
           this.activeSnapshotBatch = undefined
         }
       }
       return
     }
-    const changedOutput = getChangedStatefulHmrSnapshotAssets(this.snapshotAssets.values(), output)
-    this.replaceSnapshotAssets(output)
     await this.enqueueOutput(async () => {
-      if (!batch.isSuperseded()) {
-        await writeStatefulHmrOutput(this.ctx.configService!.outDir, changedOutput)
+      if (batch.isSuperseded()) {
+        return
       }
+      const output = this.createSnapshotAssets(snapshot)
+      const changedOutput = getChangedStatefulHmrSnapshotAssets(this.snapshotAssets.values(), output)
+      await writeStatefulHmrOutput(this.ctx.configService!.outDir, changedOutput)
+      this.adoptSnapshot(snapshot, output)
     })
   }
 
-  private replaceSnapshotAssets(output: StatefulHmrOutputFile[]): void {
+  private createSnapshotAssets(snapshot: StatefulHmrSnapshot): StatefulHmrOutputFile[] {
+    return createStatefulHmrGlobalStyleAssets(
+      snapshot.output,
+      resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
+      {
+        createIfMissing: true,
+        componentPageGlobalStyleRoutes: snapshot.componentPageGlobalStyleRoutes,
+        previousComponentPageGlobalStyleRoutes: this.componentPageGlobalStyleRoutes,
+      },
+    )
+  }
+
+  private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[]): void {
+    this.componentPageGlobalStyleRoutes = [...snapshot.componentPageGlobalStyleRoutes]
     this.snapshotAssets = new Map(
       output
         .filter(item => item.type === 'asset')

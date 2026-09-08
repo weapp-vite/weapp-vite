@@ -6,6 +6,7 @@ import { hasOwn } from '../../../../../utils/object'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { ensureRuntimeImport } from '../../scriptRuntimeImport'
 import { createStaticObjectKey, getObjectPropertyByKey, isPlainRecord } from '../utils'
+import { applyDefaultsToExpression } from './defaultsExpression'
 
 function mergePlainDefaultsIntoObjectExpression(
   target: t.ObjectExpression,
@@ -209,7 +210,7 @@ export function insertWevuDefaultsCall(program: t.Program, serializedDefaults: s
 }
 
 export function applyWevuDefaultsToComponentOptions(params: {
-  componentExpr: t.ObjectExpression
+  componentExpr: t.Expression
   parsedWevuDefaults: WevuDefaults
   options: TransformScriptOptions | undefined
 }) {
@@ -217,7 +218,7 @@ export function applyWevuDefaultsToComponentOptions(params: {
   let changed = false
 
   if (options?.isApp && parsedWevuDefaults.app && Object.keys(parsedWevuDefaults.app).length > 0) {
-    changed = applyWevuDefaultsToOptionsObject(componentExpr, parsedWevuDefaults.app) || changed
+    changed = applyDefaultsToExpression(componentExpr, parsedWevuDefaults.app, applyWevuDefaultsToOptionsObject) || changed
   }
 
   if (!options?.isApp && parsedWevuDefaults.component && Object.keys(parsedWevuDefaults.component).length > 0) {
@@ -225,7 +226,7 @@ export function applyWevuDefaultsToComponentOptions(params: {
       ? stripVirtualHostFromDefaults(parsedWevuDefaults.component as Record<string, any>)
       : (parsedWevuDefaults.component as Record<string, any>)
     if (Object.keys(componentDefaults).length > 0) {
-      changed = applyWevuDefaultsToOptionsObject(componentExpr, componentDefaults) || changed
+      changed = applyDefaultsToExpression(componentExpr, componentDefaults, applyWevuDefaultsToOptionsObject) || changed
     }
   }
 
@@ -235,7 +236,7 @@ export function applyWevuDefaultsToComponentOptions(params: {
     && isPlainRecord(componentOptionDefaults)
     && componentOptionDefaults.virtualHost === true
   ) {
-    changed = ensureNestedOptionValue(componentExpr, 'options', 'virtualHost', false) || changed
+    changed = applyDefaultsToExpression(componentExpr, { options: { virtualHost: false } }, applyWevuDefaultsToOptionsObject) || changed
   }
 
   return changed

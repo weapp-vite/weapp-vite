@@ -145,6 +145,7 @@ async function waitForInitialAppserviceReady() {
 async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
+      bridgeProjectMode: 'direct',
       projectPath: APP_ROOT,
       skipWarmup: true,
     })

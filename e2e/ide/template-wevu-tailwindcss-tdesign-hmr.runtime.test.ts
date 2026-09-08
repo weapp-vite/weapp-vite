@@ -253,7 +253,9 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
           `wevu Tailwind stateful HMR initial runtime attempt ${attempt}`,
         )
         await waitForFileContains(path.join(fixtureRoot, 'dist/app.wxss'), `@import "./${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss";`)
+        await waitForEmittedStylesheet(path.join(fixtureRoot, 'dist/pages/index/index.wxss'), 'background-color: #f6f7fb')
         miniProgram = await launchAutomator({
+          bridgeProjectMode: 'direct',
           engineBuildFallbackSettleMs: 5_000,
           launchMode: 'bridge',
           maxLaunchRetries: 1,
@@ -332,7 +334,7 @@ onLaunch(function (this: Record<string, unknown>) {
 
   it('serializes consecutive arbitrary background updates without reloading the page stack', async (context) => {
     const colors = ['rgb(246, 247, 251)', 'rgb(246, 247, 251)', 'rgb(219, 234, 254)', 'rgba(0, 0, 0, 0)', 'rgb(254, 243, 199)', 'rgb(252, 231, 243)']
-    const dom = createDomAcceptance(context, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', colors.map((color, index) => ({
+    const dom = createDomAcceptance(context, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', [...colors.map((color, index) => ({
       id: `background:${index}`,
       route: INDEX_ROUTE,
       action: `背景阶段 ${index}：计算样式、布局与点击计数`,
@@ -340,7 +342,16 @@ onLaunch(function (this: Record<string, unknown>) {
         { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true },
         { selector: '#count-label', text: `已点击 ${index === 0 ? 0 : 1} 次` },
       ],
-    })))
+    })), {
+      id: 'local-style-priority',
+      route: INDEX_ROUTE,
+      action: '新增页面局部样式后，验证局部优先级、全局背景与交互状态',
+      nodes: [
+        { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(252, 231, 243)' }, visible: true },
+        { selector: '#wevu-tailwind-local-probe', text: 'Local style', styles: { 'background-color': 'rgb(31, 41, 55)' }, visible: true },
+        { selector: '#count-label', text: '已点击 1 次' },
+      ],
+    }])
     const initialRuntime = await startDevSession()
     const initialPage = await waitForIndexPage()
     await dom.check('background:0', miniProgram, initialPage)
@@ -405,6 +416,14 @@ onLaunch(function (this: Record<string, unknown>) {
         await dom.check(`background:${updateIndex + 2}`, miniProgram, await waitForIndexPage())
         previousEscapedClass = update.escapedClass
       }
+
+      // 首轮无自有页面样式，完成后再新增局部规则，覆盖仅全局快照与局部样式共存两条路径。
+      currentVue = currentVue.replace('<t-tag ', '<view id="wevu-tailwind-local-probe" class="bg-[#fce7f3] local-priority">Local style</view>\n      <t-tag ')
+      currentVue += '\n<style>\n.local-priority { background-color: #1f2937; }\n</style>\n'
+      await fs.writeFile(indexVue, currentVue, 'utf8')
+      await waitForFileContains(indexWxmlDist, 'wevu-tailwind-local-probe')
+      await dom.check('local-style-priority', miniProgram, await waitForIndexPage())
+      await diagnostics.capture('local-style-priority:rendered')
 
       const runtimeErrors = collector.getSince(marker)
       expect(runtimeErrors).toEqual([])

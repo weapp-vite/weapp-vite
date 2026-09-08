@@ -17,13 +17,17 @@
 | 查询失败      | 能力缺失、协议异常或查询失败必须失败；只有成功返回空集合才证明节点不存在。优先语义 ID 和声明者作用域，避免依赖原生查询桥不支持的位置伪类。                                                   |
 | 样式与布局    | 使用真实 IDE 的计算样式、布局及本次窗口证据。headless 逻辑树或模拟尺寸不能作为布局通过证据。                                                                                                 |
 | HMR           | 修改前声明全部阶段期望。stateful 保留页面/App 身份、计数和共享状态，不通过重新导航或恢复数据满足断言；classic 完整刷新时先验首屏再导航。DOM 采集前后必须是同一真实页面身份。                 |
-| 会话与启动    | 同 app/suite 复用 automator，通过 `reLaunch` 切路由；独立冷启动写明原因。初次构建完成后启动完整快照，启动期间保留被动监听和唯一限时日志订阅，不清空 Console。                                |
+| 会话与启动    | 同 app/suite 复用 automator，通过 `reLaunch` 切路由；独立冷启动写明原因。等待初次完整构建后启动，产品 HMR 直接观察原项目；启动期间保留被动监听和唯一限时日志订阅，不清空 Console。           |
 | 错误归属      | 预期错误按检查点精确声明来源、级别、通道、文本与次数，用 `act` 绑定边界。未分类、多余、缺失及边界外错误均不得消费。接口见 [检查点说明](./utils/domAcceptance/README.md)。                    |
 | 严格报告      | 记录 SHA、provider、IDE/基础库版本、case/checkpoint 结果和证据索引，区分通过、失败、阻塞、跳过、未执行及范围外。缺证据、错路由、过期证据、skip/todo、环境阻塞或提前终止不能完整通过。        |
 | 完整性        | 执行收集的模块与 case 名称逐项匹配源码声明，拒绝聚合遗漏、同数量替换和重复。筛选、断点及允许失败的诊断运行均为局部结果；运行日志渠道必须存在，缺日志不能当作没有错误。                       |
 | 证据与隐私    | 完整 JSON、截图和日志留在本机，PR 只提供脱敏摘要与索引。项目路径、用户目录、凭据和邮箱统一脱敏；源码及共享 helper 改动后重新生成包含内容摘要的清单。                                         |
 
 本机 E2E 全局串行，启动前检查残留进程，长任务保持系统唤醒。修改源码后重建受影响包；CLI 下游验证固定先运行 `pnpm --filter weapp-vite build`，确认 dist 同步后再执行 headless 和真实 IDE。任何最终 bundle 都由 Vite/Rolldown 输出，不手写 dist 修补。
+
+产品 HMR 场景调用 `launchAutomator` 时必须在参数对象中显式指定 `bridgeProjectMode: 'direct'`，让 IDE 直接观察 Vite 写出的原项目。仅 `automator-bridge-wrapper-hmr.runtime.test.ts` 使用 `'snapshot'`，专门验证桥接快照。`layout-power-demo.runtime-vendor-hmr.test.ts` 经 CLI `dev -o` 和 `waitForOpenedAutomator` 连接原项目，是已审查的独立入口。内部 AST 守卫 `e2e/scripts/hmr-launch-mode.test.ts` 检查所有 `e2e/ide/**/*hmr*.test.ts` 及另列的 `forward-console-demo.runtime.test.ts` 调用，拒绝缺失、动态值和被后置展开覆盖的模式；新间接入口须单独审查，不从任意 dev 进程推断模式。
+
+同一正式 HMR 场景的七个检查点在桥接快照模式失败、原项目模式连续两次通过，说明启动观察面会影响验收。快照还会合并 private config，因此不能把差异仅归因于 `fs.watch`。最终仍须在正常运行的 HMR 客户端下检查首屏、每阶段 DOM/计算样式及应保留的交互状态；停止客户端后的隔离 probe 只能辅助诊断。
 
 ## 当前验证表
 
@@ -241,6 +245,16 @@
 真实 IDE 的正常首次启动以首页路径和空 `referrerInfo` 调用 App。对应修复使 headless testing launcher 在解析首页后才启动 App，并让 Node/browser 共用启动参数复制逻辑，保留显式 scene 和来源字段；公开类型允许空或部分 referrerInfo。17 项定向单测、2 项 browser DOM、包级 typecheck 和显式 tsd 均通过。复用原生场景的 20 任务严格 headless 全量 `6bac3856-634e-469b-b32c-12cd0a16a7db` 为 40 cases / 153 checkpoints 全部通过、退出码 0，20 份报告无失败、阻塞、跳过、未执行或报告错误。日志 `.tmp/ide-dom-headless-full20-launch-options.log`，suite 索引 `2026-09-08-052710-e2e-ide-dom-headless-4a51ba2e-suite-report`，其中生命周期 invocation 为 `5512f01c-0dea-4c86-9f74-1dae4f07fca6`。这是提交前工作树结果，后续最终命令和真实 IDE 全量仍需绑定交付提交。
 
 上述 20 份 case 报告均为 `strict: true`，但进一步审计发现历史 suite 顶层为 `strict: false`，未强制验证任务报告缺失。已将 `ide-dom-headless` 纳入默认严格 suite，总门禁与逐 case 检查同时生效；即使子命令退出零、传入允许失败或将环境严格开关设为零，缺失验收报告仍失败。54 项相关回归通过，最终提交仍需完整重跑此 gate，不以历史 suite 顶层结果代替。
+
+## Component 页面样式 HMR 对照验收
+
+产品 HMR 使用显式 `bridgeProjectMode: 'direct'`，由真实 IDE 直接观察 Vite 输出；镜像工具专项保留 `snapshot`。镜像同时引入文件同步及项目配置合并，因此不能只凭镜像与直连结果不同，把复制延迟认定为唯一根因。
+
+候选修复为已确认的 `apply-shared` Component 页面生成自包含全局 WXSS，保留最终 JSON 覆盖、独立分包边界和局部样式优先级。正式场景连续两次直连均完成 7/7 检查点；使用显式模式 API 后，产品场景和镜像专项共同完成 2 cases / 13 checkpoints，严格报告 `3895b4bd-e994-4520-bbdd-987c45251853` / `bcb70d86-71f5-4649-98d3-8a08d67c56f8` 通过。
+
+单变量对照临时关闭页面全局样式快照，仅移除新增产物的启动等待，保留全部 7 个 DOM 检查与 HMR client、页面/App 身份及计数断言。真实 IDE 删除背景类时重新创建了页面和 App，严格报告 `887b0fd7-cb02-4aec-8513-1ecc8fad6244` / `3ad67348-e814-4ddc-93e5-ff71e31449c8` 失败，停在 3/7 检查点。诊断改动已逐字恢复并重建，不进入提交。这些证据均来自未提交工作树，最终验收仍须对应交付 SHA。
+
+对应 simulator 覆盖真实 DevicePreview 的样式导入、页面内联快照、连续更新、局部优先级和交互状态；最终页面 JSON 的隔离选项覆盖 JS 注册值，普通 Page 不套用 Component 页面规则。compiler 静态元数据对对象展开 getter 的副作用保持保守，并以实际执行结果建立回归。
 
 ## 维护与最终确认命令
 

@@ -144,9 +144,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### app.vue alias import layout HMR runtime > keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR
 
-- Source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:427`
+- Source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:428`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-vue-hmr-alias`; checkpoints: `[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa`; source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:432`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-vue-hmr-alias`; checkpoints: `[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa`; source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:433`
 - Routes: ``
 - Operations: `check(initial)`, `check(app-update)`, `check(layout-update)`, `check(page-update)`, `check(dependency-update)`
 
@@ -164,9 +164,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### automator bridge wrapper snapshot hmr (ide) > renders four same-length template updates while retaining page and app identity
 
-- Source: `e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:74`
+- Source: `e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:75`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `[ { id: 'initial', route: '/pages/hmr/index', action: '首屏检查实际模板标题和初始交互状态', nodes: [{ selector: '.title', text: 'HMR' }, { selector: '#hmr-count', text: 'count: 0' }] }, ...TEMPLATE_TITLES.map((title, index) => ({ id: \`retained:${index}\`, ro`; source: `e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:75`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `[ { id: 'initial', route: '/pages/hmr/index', action: '首屏检查实际模板标题和初始交互状态', nodes: [{ selector: '.title', text: 'HMR' }, { selector: '#hmr-count', text: 'count: 0' }] }, ...TEMPLATE_TITLES.map((title, index) => ({ id: \`retained:${index}\`, ro`; source: `e2e/ide/automator-bridge-wrapper-hmr.runtime.test.ts:76`
 - Routes: `/pages/hmr/index`
 - Operations: `reLaunch(/pages/hmr/index)`, `check(initial)`, `callMethod(increment)`, `check(retained:0)`, `check(retained:${index})`
 
@@ -199,9 +199,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### forward-console-demo in real WeChat DevTools > keeps forwarding console output after dev HMR updates the current page
 
-- Source: `e2e/ide/forward-console-demo.runtime.test.ts:221`
+- Source: `e2e/ide/forward-console-demo.runtime.test.ts:222`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/forward-console-demo`; checkpoints: `[ { id: 'initial', route: INDEX_ROUTE, action: '检查日志演示首屏', nodes: [ { selector: '.title', text: 'Forward Console Lab' }, { selector: '.description', text: INITIAL_DESCRIPTION }, { selector: '.status-pill text', text: '0 events' }, { selecto`; source: `e2e/ide/forward-console-demo.runtime.test.ts:223`
+- Registration: `createDomAcceptance`; fixture: `apps/forward-console-demo`; checkpoints: `[ { id: 'initial', route: INDEX_ROUTE, action: '检查日志演示首屏', nodes: [ { selector: '.title', text: 'Forward Console Lab' }, { selector: '.description', text: INITIAL_DESCRIPTION }, { selector: '.status-pill text', text: '0 events' }, { selecto`; source: `e2e/ide/forward-console-demo.runtime.test.ts:224`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(clicked)`, `check(patched)`
 
 ## ide/github-issues.runtime.aggregate.test.ts
@@ -896,9 +896,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state
 
-- Source: `e2e/ide/hmr-auto-classic.runtime.test.ts:143`
+- Source: `e2e/ide/hmr-auto-classic.runtime.test.ts:144`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `[ ['initial', 'STATEFUL-NATIVE-BASE', 0, ''], ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'classic-held-input'], ['reloaded', 'STATEFUL-NATIVE-PATCHED', 0, ''], ['updated', 'STATEFUL-NATIVE-PATCHED', 2, ''], ].map(([id, marker, count, input]) =`; source: `e2e/ide/hmr-auto-classic.runtime.test.ts:144`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `[ ['initial', 'STATEFUL-NATIVE-BASE', 0, ''], ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'classic-held-input'], ['reloaded', 'STATEFUL-NATIVE-PATCHED', 0, ''], ['updated', 'STATEFUL-NATIVE-PATCHED', 2, ''], ].map(([id, marker, count, input]) =`; source: `e2e/ide/hmr-auto-classic.runtime.test.ts:145`
 - Routes: `/pages/native/index`, `/pages/native/index?source=classic-auto-e2e`
 - Operations: `reLaunch(/pages/native/index?source=classic-auto-e2e)`, `check(initial)`, `check(prepared)`, `check(reloaded)`, `check(updated)`
 
@@ -1126,25 +1126,25 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across a JavaScript patch
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:281`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:282`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('native')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:282`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('native')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:283`
 - Routes: `/pages/native/index?source=e2e`, `pages/native/index`
 - Operations: `reLaunch(/pages/native/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(updated)`
 
 ### stateful HMR in real WeChat DevTools > rehydrates wevu local and store refs while preserving the native page instance
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:322`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:323`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('wevu')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:323`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('wevu')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:324`
 - Routes: `/pages/wevu/index?source=e2e`, `pages/wevu/index`
 - Operations: `reLaunch(/pages/wevu/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(updated)`
 
 ### stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:372`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:373`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:373`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:374`
 - Routes: `/pages/component/index?source=e2e`, `pages/component/index`
 - Operations: `reLaunch(/pages/component/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(updated)`
 
@@ -1330,9 +1330,9 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### template TailwindCSS TDesign HMR in real WeChat DevTools > updates the visible Tailwind arbitrary background color through dev HMR
 
-- Source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:204`
+- Source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:205`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:205`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:206`
 - Operations: `check(tailwind:initial)`, `tap(<missing>)`, `check(tailwind:dark)`, `check(tailwind:hmr-preserved)`, `check(tailwind:updated)`, `check(tailwind:updated-dark)`
 
 ## ide/template-weapp-vite-multi-platform-sfc-template.test.ts
@@ -1554,10 +1554,10 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack
 
-- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:333`
+- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:335`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label', te`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:335`
-- Operations: `check(background:0)`, `callMethodWithOptions(handleCountTap)`, `check(background:1)`, `check(background:${updateIndex + 2})`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337`
+- Operations: `check(background:0)`, `callMethodWithOptions(handleCountTap)`, `check(background:1)`, `check(background:${updateIndex + 2})`, `check(local-style-priority)`
 
 ## ide/vite-native-ts.worker.runtime.test.ts
 
@@ -1704,9 +1704,9 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### wevu JSX/TSX stateful HMR in real WeChat DevTools > preserves instance state while replacing shared TSX and island handlers
 
-- Source: `e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts:119`
+- Source: `e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts:120`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-jsx-tsx-demo`; checkpoints: `[ { id: 'tsx:initial', route: ROUTE, action: '检查初始模板和动态岛计数', nodes: [ { selector: '.title', text: '纯 TSX（.tsx）' }, { selector: '#tsx-island-button', text: 'dynamic island: 0' }, ] }, { id: 'tsx:interacted', route: ROUTE, action: '动态岛交互后记录计数`; source: `e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts:121`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-jsx-tsx-demo`; checkpoints: `[ { id: 'tsx:initial', route: ROUTE, action: '检查初始模板和动态岛计数', nodes: [ { selector: '.title', text: '纯 TSX（.tsx）' }, { selector: '#tsx-island-button', text: 'dynamic island: 0' }, ] }, { id: 'tsx:interacted', route: ROUTE, action: '动态岛交互后记录计数`; source: `e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts:122`
 - Routes: `/pages/tsx-basic/index`, `pages/tsx-basic/index`
 - Operations: `reLaunch(/pages/tsx-basic/index)`, `check(tsx:initial)`, `callMethodWithOptions(runE2E)`, `check(tsx:interacted)`, `check(tsx:shared-updated)`, `check(tsx:page-updated)`, `tap(<missing>)`, `check(tsx:handler-updated)`
 
@@ -1740,9 +1740,9 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### wevu/router HMR fixture runtime > keeps wevu/router resolved after saving a page in real DevTools HMR
 
-- Source: `e2e/ide/wevu-router-hmr.runtime.test.ts:153`
+- Source: `e2e/ide/wevu-router-hmr.runtime.test.ts:154`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-router-hmr`; checkpoints: `[ { id: 'router:initial', route: INDEX_ROUTE, action: '检查 router 页面标题与当前路由', nodes: [ { selector: '.title', text: BASE_MARKER }, { selector: '.route', text: INDEX_ROUTE }, ] }, { id: 'router:updated', route: INDEX_ROUTE, action: '保存后当前页面标题更`; source: `e2e/ide/wevu-router-hmr.runtime.test.ts:155`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-router-hmr`; checkpoints: `[ { id: 'router:initial', route: INDEX_ROUTE, action: '检查 router 页面标题与当前路由', nodes: [ { selector: '.title', text: BASE_MARKER }, { selector: '.route', text: INDEX_ROUTE }, ] }, { id: 'router:updated', route: INDEX_ROUTE, action: '保存后当前页面标题更`; source: `e2e/ide/wevu-router-hmr.runtime.test.ts:156`
 - Routes: `/pages/index/index`, `pages/index/index`
 - Operations: `reLaunch(/pages/index/index)`, `check(router:initial)`, `check(router:updated)`
 
@@ -1788,9 +1788,9 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### wevu runtime core hmr matrix (ide) > keeps DevTools runtime aligned with core page, sfc and layout hmr updates
 
-- Source: `e2e/ide/wevu-runtime.core-hmr.test.ts:589`
+- Source: `e2e/ide/wevu-runtime.core-hmr.test.ts:590`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `coreHmrPlan({ pageTemplateMarker, pageScriptMarker, pageStyleMarker, sfcTemplateMarker, sfcScriptMarker, sfcStyleMarker, layoutPageTemplateMarker, layoutPageScriptMarker, layoutPageStyleMarker, sharedStoreMarker, })`; source: `e2e/ide/wevu-runtime.core-hmr.test.ts:600`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `coreHmrPlan({ pageTemplateMarker, pageScriptMarker, pageStyleMarker, sfcTemplateMarker, sfcScriptMarker, sfcStyleMarker, layoutPageTemplateMarker, layoutPageScriptMarker, layoutPageStyleMarker, sharedStoreMarker, })`; source: `e2e/ide/wevu-runtime.core-hmr.test.ts:601`
 - Operations: `check(page:initial)`, `callMethodWithOptions(increment)`, `check(page:interacted)`, `check(page:template)`, `check(page:script)`, `check(page:style)`, `check(sfc:initial)`, `check(sfc:template)`, `check(sfc:script)`, `check(sfc:style)`, `check(layout:initial)`, `callMethodWithOptions(applyAdminLayout)`, `check(layout:admin)`, `check(layout:template)`, `callMethodWithOptions(syncScriptMarker)`, `check(layout:script)`, `check(layout:script-admin)`, `check(layout:style)`, `check(store:initial)`, `check(store:updated)`, `check(store:shared)`
 
 ## ide/wevu-runtime.function-props.weapp.test.ts
@@ -1825,9 +1825,9 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### wevu runtime layout shared template/wxs hmr (ide) > updates layout runtime output in DevTools after shared template/include/wxs edits
 
-- Source: `e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:264`
+- Source: `e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:265`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `checkpoints`; source: `e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:300`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `checkpoints`; source: `e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:301`
 - Routes: `/pages/layouts/index`
 - Operations: `reLaunch(/pages/layouts/index)`, `check(layout-shared:0)`, `check(layout-shared:1)`, `check(layout-shared:2)`, `callMethodWithOptions(applyAdminLayout)`, `check(layout-shared:3)`, `check(CLASSIC_WXS_RELOAD_CHECKPOINT.id)`, `check(layout-shared:4)`, `check(layout-shared:5)`
 
@@ -1835,9 +1835,9 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### wevu runtime shared template/wxs hmr (ide) > updates runtime pages in DevTools after shared template/include/wxs edits
 
-- Source: `e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts:198`
+- Source: `e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts:199`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `checkpoints`; source: `e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts:234`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `checkpoints`; source: `e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts:235`
 - Routes: `/pages/hmr/index`, `/pages/hmr-sfc/index`
 - Operations: `reLaunch(/pages/hmr/index)`, `check(shared:0)`, `callMethodWithOptions(increment)`, `check(shared:1)`, `check(shared:2)`, `check(shared:3)`, `reLaunch(/pages/hmr-sfc/index)`, `check(shared:4)`, `check(shared:5)`, `check(CLASSIC_WXS_RELOAD_CHECKPOINT.id)`, `check(shared:6)`
 

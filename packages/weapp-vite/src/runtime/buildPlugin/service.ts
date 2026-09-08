@@ -40,6 +40,7 @@ import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
+import { resolveComponentPageGlobalStyleRoutes } from '../statefulHmr/componentPageStyles'
 import { runStatefulHmrDev } from '../statefulHmr/session'
 import { createStatefulHmrSnapshotOptions } from '../statefulHmr/snapshotBuild'
 import { syncProjectSupportFiles } from '../supportFiles'
@@ -1316,6 +1317,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           },
         }
         const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
+        const initialGlobalStyleRoutes = resolveComponentPageGlobalStyleRoutes(
+          initialSnapshot,
+          ctx.runtimeState.build.hmr.componentPageStyleOptions ?? new Map(),
+        )
         const initialEntryIds = collectStatefulHmrEntryIds(
           ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
         )
@@ -1360,12 +1365,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             logger.success('微信状态保持 HMR 构建已完成完整重载。')
           }, {
             entryIds: initialEntryIds,
-            initial: initialSnapshot,
+            initial: { output: initialSnapshot, componentPageGlobalStyleRoutes: initialGlobalStyleRoutes },
             rebuild: async (files) => {
               for (const file of files) {
                 invalidateFileCache(file)
               }
-              const snapshotOptions = appendHmrMetricsPlugin(await createStatefulHmrSnapshotOptions(configService.loadOptions))
+              const snapshot = await createStatefulHmrSnapshotOptions(configService.loadOptions)
+              const snapshotOptions = appendHmrMetricsPlugin(snapshot.options)
               snapshotOptions.build = {
                 ...(snapshotOptions.build ?? {}),
                 emptyOutDir: false,
@@ -1386,7 +1392,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                   },
                 },
               ]
-              return toStatefulHmrOutput(await build(snapshotOptions))
+              const output = toStatefulHmrOutput(await build(snapshotOptions))
+              return {
+                output,
+                componentPageGlobalStyleRoutes: resolveComponentPageGlobalStyleRoutes(output, snapshot.getComponentPageStyleOptions()),
+              }
             },
           }),
           workerPromise,
