@@ -29,11 +29,21 @@ export function createOutputAssetTransaction(bundle: OutputBundle) {
         emit({ ...asset, source: output.source })
       }
     }
-    // 后续规范化可能直接新增 source map 等资源，保留它们的 bundle 更新。
+    // 已有输出共享 bundler 对象，原位变更已生效；新增资源必须经 emitFile 发布。
     for (const [fileName, output] of Object.entries(normalized)) {
-      if (!staged.has(fileName)) {
-        bundle[fileName] = output
+      if (staged.has(fileName) || bundle[fileName]) {
+        continue
       }
+      if (output.type !== 'asset') {
+        throw new Error(`Output normalization cannot create a chunk during generateBundle: ${fileName}`)
+      }
+      emit({
+        type: 'asset',
+        fileName,
+        source: output.source,
+        name: output.names[0],
+        originalFileName: output.originalFileNames[0],
+      })
     }
   }
   return { bundle: normalized, stage, publish }

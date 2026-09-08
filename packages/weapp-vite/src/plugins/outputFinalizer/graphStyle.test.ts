@@ -28,8 +28,12 @@ describe.each(['graph-only', 'preprocessor'] as const)('output finalizer %s styl
       ? `weapp_vite_external/graph/${sidecarId.replace(/\.js$/, '.wxss')}`
       : 'pages/index/index.scss'
     const build = async (template: string, style = '.page{color:red}') => {
+      const diagnostics: Array<{ level: string, message: string }> = []
       const bundle = await rolldown({
         input: 'virtual:entry',
+        onLog(level, log) {
+          diagnostics.push({ level, message: log.message })
+        },
         plugins: [
           {
             name: 'fixture',
@@ -44,7 +48,9 @@ describe.each(['graph-only', 'preprocessor'] as const)('output finalizer %s styl
         ],
       })
       try {
-        return await bundle.generate({ format: 'es' })
+        const output = await bundle.generate({ format: 'es', sourcemap: true })
+        expect(diagnostics.filter(log => log.level === 'warn' || log.level === 'error')).toEqual([])
+        return output
       }
       finally {
         await bundle.close()
@@ -59,6 +65,9 @@ describe.each(['graph-only', 'preprocessor'] as const)('output finalizer %s styl
   it('does not rewrite unchanged styles during a template-only snapshot', async () => {
     const { build, beginUpdate, runtimeState } = createFixture()
     const initial = await build('<view>initial</view>')
+    const chunk = initial.output.find(output => output.type === 'chunk')
+    expect(chunk).toBeDefined()
+    expect(initial.output.find(output => output.fileName === `${chunk!.fileName}.map`)).toMatchObject({ type: 'asset' })
     expect(initial.output.find(output => output.fileName === 'pages/index/index.wxss')).toMatchObject({ source: '.page{color:red}' })
     expect(runtimeState.build.output.emittedSource.get('pages/index/index.wxss')).toBe('.page{color:red}')
     beginUpdate()
