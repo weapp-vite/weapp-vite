@@ -8,6 +8,7 @@ import type {
 } from './types'
 
 import { readFileSync } from 'node:fs'
+import { RUNTIME_ID } from '../../plugin/constants'
 import { addDependency, createDependencyContext, warnCircularTemplate, warnReadTemplate } from './dependency'
 import { buildNavigationBarAttrs, extractNavigationBarFromPageMeta } from './navigation'
 import { parseWxml } from './parser'
@@ -106,7 +107,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   const importLines: string[] = [
     `import { html } from 'lit'`,
     `import { repeat } from 'lit/directives/repeat.js'`,
-    `import { bindRuntimeEvent } from '@weapp-vite/web/runtime'`,
+    `import { bindRuntimeEvent } from '${RUNTIME_ID}'`,
   ]
   const bodyLines: string[] = []
   const directDependencies: string[] = []
