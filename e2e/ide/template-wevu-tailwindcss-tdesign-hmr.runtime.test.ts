@@ -362,6 +362,9 @@ onLaunch(function (this: Record<string, unknown>) {
     const diagnostics = createHmrRuntimeDiagnostics(miniProgram, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template')
     const fileDiagnostics = createWevuTailwindHmrFileDiagnostics(miniProgram, fixtureRoot, INDEX_ROUTE)
     const initialIdentity = await diagnostics.initialize()
+    expect(initialIdentity.errors).toEqual([])
+    expect(initialIdentity.pageId).toEqual(expect.any(Number))
+    expect(initialIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
     expect(initialIdentity.runtime?.appLaunchProbe).toEqual(expect.any(Number))
     const marker = collector.mark()
     let previousClass = INITIAL_BACKGROUND_CLASS
@@ -412,8 +415,11 @@ onLaunch(function (this: Record<string, unknown>) {
         expect(outputMs).toBeLessThan(45_000)
         expect(runtimeMs).toBeLessThan(45_000)
         expect((await miniProgram.currentPage({ retries: 1, timeout: 6_000 }))?.path).toBe(INDEX_ROUTE.slice(1))
-        await diagnostics.capture(`background:${updateIndex + 2}:rendered`)
         await dom.check(`background:${updateIndex + 2}`, miniProgram, await waitForIndexPage())
+        const renderedIdentity = await diagnostics.capture(`background:${updateIndex + 2}:rendered`)
+        expect(renderedIdentity.errors).toEqual([])
+        expect(renderedIdentity.pageId).toBe(initialIdentity.pageId)
+        expect(renderedIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
         previousEscapedClass = update.escapedClass
       }
 
@@ -423,7 +429,10 @@ onLaunch(function (this: Record<string, unknown>) {
       await fs.writeFile(indexVue, currentVue, 'utf8')
       await waitForFileContains(indexWxmlDist, 'wevu-tailwind-local-probe')
       await dom.check('local-style-priority', miniProgram, await waitForIndexPage())
-      await diagnostics.capture('local-style-priority:rendered')
+      const finalIdentity = await diagnostics.capture('local-style-priority:rendered')
+      expect(finalIdentity.errors).toEqual([])
+      expect(finalIdentity.pageId).toBe(initialIdentity.pageId)
+      expect(finalIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
 
       const runtimeErrors = collector.getSince(marker)
       expect(runtimeErrors).toEqual([])

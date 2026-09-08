@@ -6250,7 +6250,7 @@
     },
     {
       "file": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "2c333cc406b1c54a954d2893d36e56afe0727263c0054db3874635a192cdea8e"
+      "sha256": "dceaf6eb11a6943a3b6deaa5e7c462ae5461f33b743bdea797d8cdf9caea04e7"
     },
     {
       "file": "e2e/ide/template-wevu-tdesign-regression.shared.ts",
@@ -6322,7 +6322,7 @@
     },
     {
       "file": "e2e/ide/wevu-runtime.core-hmr.test.ts",
-      "sha256": "bda8ef66dd23a4b07e0580c5f4b9e6e19473fa5ec27f054ed61ba8883ab1df0f"
+      "sha256": "7e111622dd4e48e1d756448e76df1c56af4bb916ab3a802cabdcdc22ff7a09df"
     },
     {
       "file": "e2e/ide/wevu-runtime.function-props.weapp.test.ts",
@@ -6398,7 +6398,7 @@
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/helpers.ts",
-      "sha256": "b07e349dd592c7408b43f463b217959226996313e3b9af6ea19d9c8690fb4c73"
+      "sha256": "3ca16c3f813011676f1a245f9a3d9ffdde97fdc79d0f890d7db7df91798f3c6b"
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/inventory.ts",
@@ -6414,7 +6414,11 @@
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/runtimeDiagnostics.ts",
-      "sha256": "354fe2215b54197bf20d330981a0b24cb6c311225bccef6774ad4835d0643fcf"
+      "sha256": "9edc826c817d4b18abc5d83e3e666b6b7be415abb1217228042067845144ee19"
+    },
+    {
+      "file": "e2e/scripts/domAcceptanceReport/runtimeVersions.ts",
+      "sha256": "fa136c01ee7090a6fed6368c29aa2a4ceaea73ced75dbc878f4b149faea42603"
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/task.ts",
@@ -6430,7 +6434,7 @@
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/validation.ts",
-      "sha256": "1e2eda627e779f31b429264f97f906d1f64a5b6a3bce75a6be007073d4370e5e"
+      "sha256": "fae6df2989d7fd2a1a9c61d7d748aaa4a00c35cc5893f6b5ba8cfe7bda29571c"
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
@@ -6466,7 +6470,7 @@
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "223312793698d61e4409a975cd069aa55a4295889403cccff5acfa2fe8ab5ca2"
+      "sha256": "31c75a57115acedb96dc5cae8d8e1ba0fe0f926c09dff638865238e41c776f0a"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",
@@ -6514,7 +6518,7 @@
     },
     {
       "file": "e2e/utils/domAcceptance/index.ts",
-      "sha256": "01d3191a339089047a53faa0cf2ffc543120ba461867471e58ac0241012d7ef5"
+      "sha256": "8d411a4c2f4ac0dd7f49fc6f53d652a4accaadae6311058a73bb9b0f09f64e1e"
     },
     {
       "file": "e2e/utils/domAcceptance/styles.ts",
@@ -6550,7 +6554,7 @@
     },
     {
       "file": "e2e/utils/ideWarningReport.ts",
-      "sha256": "9c83c08f9bef93a1dd6fb438659d9d1677dd9be1419052950241095ccad4ac31"
+      "sha256": "899f660355538202c4de6f4080b859fc8e03d02b32f476629079998d54289c7f"
     },
     {
       "file": "e2e/utils/jsFormat.ts",
@@ -6558,7 +6562,7 @@
     },
     {
       "file": "e2e/utils/opened-automator.ts",
-      "sha256": "27ff9483498047451d8f2b823372da61440c9a4963dcfc4f0b75ef4fc444c037"
+      "sha256": "acaf2ce66076702a0c9bb06e9b5c7ee6d0a385f893ec162c2a2a60c463cf138a"
     },
     {
       "file": "e2e/utils/platform-matrix.ts",
@@ -6595,6 +6599,10 @@
     {
       "file": "e2e/utils/shared-hmr-fixture.ts",
       "sha256": "776365ad9af625fe587a2987e5b2996ed2e2eb6d89061744c561d915d2dce52d"
+    },
+    {
+      "file": "e2e/utils/startupProtocolDiagnostics.ts",
+      "sha256": "dc8c24d48ec04760c669ca05b9dbb512a8c3c955b3cfccabba2a1daeb3c3bf6b"
     },
     {
       "file": "e2e/utils/templateAcceptance/features.ts",

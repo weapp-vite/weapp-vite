@@ -841,6 +841,11 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       await check('layout:script')
       await refreshedLayoutPage.callMethodWithOptions('applyAdminLayout', { fallback: false })
       await check('layout:script-admin')
+      const layoutStyleDiagnostics = createHmrRuntimeDiagnostics(sharedMiniProgram, 'e2e-apps/wevu-runtime-e2e')
+      const layoutStyleIdentity = await layoutStyleDiagnostics.initialize()
+      expect(layoutStyleIdentity.errors).toEqual([])
+      expect(layoutStyleIdentity.pageId).toEqual(expect.any(Number))
+      expect(layoutStyleIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
       const updatedLayoutPageStyle = testSources
         .get(LAYOUT_PAGE_STYLE)!
         .replace(`'LAYOUTS-PAGE-STYLE-BASE'`, `'${layoutPageStyleMarker}'`)
@@ -856,15 +861,17 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       )
       expect(layoutPageStyleOutput).toContain(layoutPageStyleMarker)
       await waitForIdeRecompileSettled()
-      await relaunchIdeRoute('/pages/layouts/index', undefined, ctx, {
-        storageReady: {
-          expected: layoutPageScriptMarker,
-          field: 'marker',
-          key: LAYOUT_SCRIPT_PROBE_STORAGE_KEY,
-        },
-      })
-
-      await check('layout:style')
+      // 样式更新必须保留已交互的页面；DOM 轮询只等待当前路由，禁止导航恢复重置状态。
+      let renderedIdentity: Awaited<ReturnType<typeof layoutStyleDiagnostics.capture>>
+      try {
+        await dom.check('layout:style', sharedMiniProgram, refreshedLayoutPage)
+      }
+      finally {
+        renderedIdentity = await layoutStyleDiagnostics.capture('layout-style-rendered')
+      }
+      expect(renderedIdentity.errors).toEqual([])
+      expect(renderedIdentity.pageId).toBe(layoutStyleIdentity.pageId)
+      expect(renderedIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
       await relaunchIdeRoute('/pages/store/index', undefined, ctx)
       await check('store:initial')
       const updatedSharedStore = replaceSharedStoreName(
