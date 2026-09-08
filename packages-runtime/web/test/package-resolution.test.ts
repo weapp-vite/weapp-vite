@@ -14,7 +14,7 @@ describe('Web package resolution', () => {
       join(appRoot, 'node_modules'),
       join(dirname(appRoot), 'node_modules'),
       join(workspaceRoot, 'node_modules'),
-    ])
+    ].map(file => file.replaceAll('\\', '/')))
   })
 
   it('maps package subpaths through the miniprogram manifest field', async () => {
@@ -32,7 +32,7 @@ describe('Web package resolution', () => {
       throw new Error(`Unknown package: ${id}`)
     })
 
-    expect(await resolveModule('component-library/button/button')).toBe(componentPath)
+    expect(await resolveModule('component-library/button/button')).toBe(componentPath.replaceAll('\\', '/'))
     expect(await resolveModule('component-library')).toBeUndefined()
     expect(await resolveModule('./button/button')).toBeUndefined()
     expect(await resolveModule('missing-library/button/button')).toBeUndefined()
@@ -61,7 +61,7 @@ describe('Web package resolution', () => {
       'packages/app/node_modules/component-library/dist/dialog',
     )
 
-    expect(await resolveModule('component-library/dialog')).toBe(componentPath)
-    expect(await resolveModule(aliasedPath)).toBe(webComponentPath)
+    expect(await resolveModule('component-library/dialog')).toBe(componentPath.replaceAll('\\', '/'))
+    expect(await resolveModule(aliasedPath)).toBe(webComponentPath.replaceAll('\\', '/'))
   })
 })

@@ -14,6 +14,12 @@ export default defineConfig({
   oxc: {
     tsconfig: false,
   },
+  optimizeDeps: {
+    rolldownOptions: {
+      // Vite 的依赖扫描不继承 oxc 配置，避免扫描无关应用的 solution references。
+      tsconfig: false,
+    },
+  },
   plugins: [vue(), tailwindcss()],
   server: {
     fs: {

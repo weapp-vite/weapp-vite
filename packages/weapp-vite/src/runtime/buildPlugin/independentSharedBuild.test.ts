@@ -93,7 +93,10 @@ describe('independent shared component output ownership', () => {
     const result = await ctx.buildService.build()
     const outputs = Array.isArray(result) ? result.flatMap(item => item.output) : result.output
     const names = outputs.map(output => output.fileName)
-    expect(new Set(names).size).toBe(names.length)
+    const duplicates = outputs
+      .filter(output => names.indexOf(output.fileName) !== names.lastIndexOf(output.fileName))
+      .map(output => ({ fileName: output.fileName, type: output.type }))
+    expect(new Set(names).size, `Duplicate output owners: ${JSON.stringify(duplicates)}`).toBe(names.length)
     for (const entry of ['components/SharedCard', 'layouts/default']) {
       for (const extension of ['js', 'json', 'wxml', 'wxss']) {
         expect(names).toContain(`${entry}.${extension}`)

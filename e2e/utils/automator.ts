@@ -27,6 +27,7 @@ import {
   resolveRuntimeProviderName,
 } from './runtimeProvider'
 import { createStartupProtocolDiagnostics } from './startupProtocolDiagnostics'
+import { watchResolvedDirectory } from './watchResolvedDirectory'
 
 const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
@@ -1308,7 +1309,7 @@ function startBridgeWrapperDistSync(
       return
     }
 
-    const watcher = fs.watch(directoryPath, (_eventType, fileName) => {
+    const watcher = watchResolvedDirectory(directoryPath, (_eventType, fileName) => {
       if (!fileName) {
         syncSnapshot()
         return
@@ -1323,6 +1324,9 @@ function startBridgeWrapperDistSync(
       }
       schedule(changedPath)
     })
+    if (!watcher) {
+      return
+    }
     watcher.on('error', () => {
       watchers.delete(directoryPath)
       syncSnapshot()

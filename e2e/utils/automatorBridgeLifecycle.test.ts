@@ -38,9 +38,14 @@ describe('automator bridge wrapper lifecycle', () => {
     fs.writeFileSync(`${pageRoot}.js`, 'Page({ data: { title: "real page" } })')
     fs.writeFileSync(`${pageRoot}.json`, '{}')
     fs.writeFileSync(`${pageRoot}.wxml`, '<view>real page</view>')
+    const watch = vi.spyOn(fs, 'watch')
     const wrapper = prepareAutomatorBridgeWrapperProject(project, { appConfigPath: path.join(distRoot, 'app.json') }, 'snapshot')!
 
     try {
+      expect(watch).toHaveBeenCalledWith(fs.realpathSync.native(distRoot), expect.any(Function))
+      for (const [watchedPath] of watch.mock.calls) {
+        expect(watchedPath).toBe(fs.realpathSync.native(watchedPath))
+      }
       const configPath = path.join(wrapper.path, 'project.config.json')
       const initialConfigBytes = fs.readFileSync(configPath)
       const config = JSON.parse(initialConfigBytes.toString()) as { miniprogramRoot: string, srcMiniprogramRoot: string }

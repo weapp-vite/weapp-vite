@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { WEAPP_VITE_RUNTIME_VIRTUAL_IDS } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { compileTransformEntryResult, createTransformStageMeasurer, ensureSfcStyleBlocks, finalizeTransformCompiledResult, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, loadTransformStyleBlock, logTransformFileError, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, preloadNativeLayoutEntries, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
@@ -1074,6 +1075,8 @@ console.log(pages, routeSubPackages)
   })
 
   it('resolves transform entry flags with page matcher creation, dirty invalidation, and app detection', async () => {
+    const srcRoot = path.resolve('fixture-project/src').replaceAll('\\', '/')
+    const filename = `${srcRoot}/app.vue`
     const setPageMatcher = vi.fn()
     const setScanDirtySynced = vi.fn()
     const isPageFile = vi.fn(async () => true)
@@ -1088,7 +1091,7 @@ console.log(pages, routeSubPackages)
       setPageMatcher,
       createPageMatcher,
       configService: {
-        absoluteSrcRoot: '/project/src',
+        absoluteSrcRoot: srcRoot,
         weappLibConfig: {
           enabled: false,
         },
@@ -1105,12 +1108,12 @@ console.log(pages, routeSubPackages)
       scanDirty: true,
       scanDirtySynced: false,
       setScanDirtySynced,
-      filename: '/project/src/app.vue',
+      filename,
     })
 
     expect(createPageMatcher).toHaveBeenCalledTimes(1)
     expect(createPageMatcher).toHaveBeenCalledWith(expect.objectContaining({
-      srcRoot: '/project/src',
+      srcRoot,
     }))
     expect(setPageMatcher).toHaveBeenCalledWith(expect.objectContaining({
       isPageFile,
@@ -1118,7 +1121,7 @@ console.log(pages, routeSubPackages)
     }))
     expect(markDirty).toHaveBeenCalledTimes(1)
     expect(setScanDirtySynced).toHaveBeenCalledWith(true)
-    expect(isPageFile).toHaveBeenCalledWith('/project/src/app.vue')
+    expect(isPageFile).toHaveBeenCalledWith(filename)
     expect(resolved).toEqual({
       isPage: true,
       isApp: true,
@@ -1130,6 +1133,7 @@ console.log(pages, routeSubPackages)
   })
 
   it('matches plugin pages relative to the plugin root in plugin-only builds', async () => {
+    const root = path.resolve('fixture-project').replaceAll('\\', '/')
     const createPageMatcher = vi.fn(() => ({
       isPageFile: vi.fn(async () => true),
       markDirty: vi.fn(),
@@ -1140,8 +1144,8 @@ console.log(pages, routeSubPackages)
       setPageMatcher: vi.fn(),
       createPageMatcher,
       configService: {
-        absoluteSrcRoot: '/project/miniprogram',
-        absolutePluginRoot: '/project/plugin',
+        absoluteSrcRoot: `${root}/miniprogram`,
+        absolutePluginRoot: `${root}/plugin`,
         pluginOnly: true,
         weappLibConfig: {
           enabled: false,
@@ -1151,11 +1155,11 @@ console.log(pages, routeSubPackages)
       scanDirty: false,
       scanDirtySynced: false,
       setScanDirtySynced: vi.fn(),
-      filename: '/project/plugin/pages/hello/index.vue',
+      filename: `${root}/plugin/pages/hello/index.vue`,
     })
 
     expect(createPageMatcher).toHaveBeenCalledWith(expect.objectContaining({
-      srcRoot: '/project/plugin',
+      srcRoot: `${root}/plugin`,
     }))
     expect(resolved.isPage).toBe(true)
   })

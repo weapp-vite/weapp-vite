@@ -75,7 +75,7 @@ describe('HMR atomic rename save', () => {
 
   it('preserves the old target and cleans the complete temporary file when publication fails', async () => {
     await nodeFs.writeFile(target, oldContent)
-    const failure = Object.assign(new Error('simulated rename failure'), { code: 'EPERM' })
+    const failure = Object.assign(new Error('simulated rename failure'), { code: 'EIO' })
     const rename = vi.spyOn(nodeFs, 'rename').mockRejectedValueOnce(failure)
     await expect(replaceFileByRename(target, newContent)).rejects.toBe(failure)
     expect(rename).toHaveBeenCalledOnce()

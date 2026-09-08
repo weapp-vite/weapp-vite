@@ -1,9 +1,9 @@
 import type { RuntimePlatform } from '../wevu-runtime.utils'
 import { randomUUID } from 'node:crypto'
-import nodeFs from 'node:fs/promises'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '../../@weapp-core/constants/src'
+import { renameAtomicFile } from './hmrAtomicRename'
 import { resolvePlatformMatrix } from './platform-matrix'
 
 export type { RuntimePlatform }
@@ -265,7 +265,7 @@ export async function replaceFileByRename(filePath: string, content: string) {
 
   try {
     await fs.writeFile(temporaryPath, content, 'utf8')
-    await nodeFs.rename(temporaryPath, filePath)
+    await renameAtomicFile(temporaryPath, filePath)
   }
   finally {
     await fs.remove(temporaryPath)

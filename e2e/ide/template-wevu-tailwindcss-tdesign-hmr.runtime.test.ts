@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
@@ -21,6 +22,7 @@ import { createWevuTailwindHmrFileDiagnostics } from '../utils/wevuTailwindHmrDi
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
+const CLI_PATH = path.resolve(WORKSPACE_ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template')
 const FIXTURE_PARENT = path.resolve(WORKSPACE_ROOT, '.tmp/e2e/ide-wevu-tailwind-hmr')
 const INDEX_ROUTE = '/pages/index/index'
@@ -241,7 +243,7 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
       await cleanDevtoolsCache('compile', { cwd: fixtureRoot })
       await removeAutomatorSessionFiles()
       await delay(1_600)
-      devProcess = startDevProcess('pnpm', ['exec', 'wv', 'dev', '--non-interactive'], {
+      devProcess = startDevProcess(process.execPath, [CLI_PATH, 'dev', '--non-interactive'], {
         cwd: fixtureRoot,
         env: createDevProcessEnv(),
         reject: false,
