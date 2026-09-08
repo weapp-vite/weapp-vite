@@ -6,8 +6,10 @@ import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { postcss } from 'weapp-tailwindcss/core'
+import { createRuntimeState } from '../../runtime/runtimeState'
 import { createStatefulHmrGlobalStyleAssets } from '../../runtime/statefulHmr/globalStyles'
 import { css } from '../css'
+import { createOutputFinalizerPlugin } from '../outputFinalizer'
 import { createTailwindcssPlugin } from '../tailwindcss'
 import { createManagedTailwindcssEntryMarker } from '../tailwindcssMarker'
 
@@ -52,19 +54,11 @@ describe('published Core page style priority', () => {
         weappViteConfig: { tailwindcss: { cssEntries: ['src/app.css'] } },
       },
       scanService: { subPackageMap: new Map() },
-      runtimeState: {
-        css: {
-          emittedSource: new Map(),
-          importerToDependencies: new Map(),
-          dependencyToImporters: new Map(),
-          sidecarImports: new Set(),
-        },
-        build: { hmr: { profile: {} as { event?: string, dirtyReasonSummary?: string[] } } },
-      },
+      runtimeState: createRuntimeState(),
     }
     const [manager, output] = createTailwindcssPlugin(ctx as any)
     const owner = css(ctx as any)[0]!
-    const render = async (local: string) => {
+    const render = async (local: string, nativeSidecar = false) => {
       const bundle: OutputBundle = {
         'app.wxss': asset('app.wxss', createManagedTailwindcssEntryMarker(0), entry),
         'pages/index/index.wxml': asset('pages/index/index.wxml', markup),
@@ -72,9 +66,19 @@ describe('published Core page style priority', () => {
       if (local) {
         bundle['pages/index/index.wxss'] = asset('pages/index/index.wxss', local, path.join(src, 'pages/index/index.vue'))
       }
+      if (nativeSidecar) {
+        const nativePath = path.join(src, 'pages/index/index.wxss')
+        await writeFile(nativePath, '.native-sidecar { color: rgb(1, 2, 3); }')
+        ctx.runtimeState.css.sidecarImports.add(nativePath)
+        delete bundle['pages/index/index.wxss']
+        bundle['page.css'] = asset('page.css', `${local}\n${createManagedTailwindcssEntryMarker(0)}`, path.join(src, 'pages/index/index.vue'))
+      }
       await generate(manager!, bundle)
       await generate(owner, bundle)
       await generate(output!, bundle)
+      if (nativeSidecar) {
+        await generate(createOutputFinalizerPlugin(ctx as any), bundle)
+      }
       return { bundle, files: createStatefulHmrGlobalStyleAssets(Object.values(bundle), 'wxss', { componentPageGlobalStyleRoutes: ['pages/index/index'] }) }
     }
     try {
@@ -96,6 +100,13 @@ describe('published Core page style priority', () => {
         { selector: '.local-priority', color: '#1f2937', important: false },
       ])
       expect(String((updated.bundle['pages/index/index.wxml'] as OutputAsset).source)).toContain('bg-_b_hfce7f3_B local-priority')
+
+      const withNative = await render('.local-priority { background-color: #1f2937; }', true)
+      const nativeOutput = String((withNative.bundle['pages/index/index.wxss'] as OutputAsset).source)
+      expect(nativeOutput).toContain('.native-sidecar')
+      expect(nativeOutput).toContain('rgb(1, 2, 3)')
+      expect(nativeOutput).toContain('.local-priority')
+      expect(nativeOutput).not.toMatch(/managed[-_]tailwindcss|generator-placeholder/)
     }
     finally {
       const close = manager?.closeWatcher

@@ -3,6 +3,7 @@ import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import process from 'node:process'
 import { defineConfig } from 'weapp-vite'
+import { isIssue779CssContentRequest } from './config/issue779CssPre'
 
 const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
 const issue510AugmentedEnabled = process.env.WEAPP_GITHUB_ISSUE_510_AUGMENTED === 'true'
@@ -61,6 +62,7 @@ const issue615AugmentedEnabled = issue615AugmentedEnvEnabled || e2eTargetFile.en
 const issue804WebRuntimeEnabled = e2eTargetFile.endsWith('github-issues.runtime.web-runtime.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
+  'github-issues.runtime.issue779.test.ts': ['pages/issue-779/**'],
   'github-issues.runtime.app-shell.test.ts': [
     'pages/issue-338/**',
     'pages/issue-448/**',
@@ -542,18 +544,18 @@ const issue779CssPrePlugin = issue779CssPreEnabled
         name: 'github-issues:issue-779-css-pre',
         enforce: 'pre' as const,
         transform(_code: string, id: string) {
-          const normalizedId = id.replaceAll('\\', '/')
-          if (!normalizedId.includes('/src/pages/issue-779/') || !id.includes('weapp-vite-sidecar=style')) {
+          if (!isIssue779CssContentRequest(id)) {
             return null
           }
-          return `@import "tailwindcss";\n.issue-779-pre-marker { color: rgb(1, 2, 3); }`
+          return `@import "tailwindcss" source(none);\n.issue-779-pre-marker { @apply p-[13px]; color: rgb(1, 2, 3); }`
         },
       },
       {
         name: 'github-issues:issue-779-css-pipeline-probe',
+        enforce: 'pre' as const,
         transform(code: string, id: string) {
           const normalizedId = id.replaceAll('\\', '/')
-          if (!normalizedId.includes('/src/pages/issue-779/') || !id.includes('weapp-vite-sidecar=style')) {
+          if (!isIssue779CssContentRequest(id)) {
             return null
           }
           if (

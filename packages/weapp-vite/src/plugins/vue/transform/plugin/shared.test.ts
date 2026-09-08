@@ -880,6 +880,7 @@ console.log(pages, routeSubPackages)
     })).resolves.toEqual({
       code: '.card{}',
       map: null,
+      meta: { weappViteStyleSources: [] },
     })
 
     styleBlocksCache.set('/project/src/components/card.vue', [
@@ -908,6 +909,7 @@ console.log(pages, routeSubPackages)
     })).resolves.toEqual({
       code: '.external{}',
       map: null,
+      meta: { weappViteStyleSources: ['/project/src/components/vant/es/space/index.css'] },
     })
     expect(readAndParseSfc).toHaveBeenLastCalledWith('/project/src/components/card.vue', {})
     expect(styleBlocksCache.get('/project/src/components/card.vue')).toEqual([

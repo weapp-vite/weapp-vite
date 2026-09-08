@@ -125,7 +125,7 @@ describe('managed Tailwind integration', () => {
     const resolveId = getHookHandler(plugin.resolveId)
     const sidecar = createSidecarSourceSpecifier(path.join(root, 'src/app.vue'), entry, 'style')
 
-    expect(resolveId?.call({}, sidecar, undefined, {} as any)).toMatch(/managed-tailwindcss-entry:0\.css/)
+    expect(resolveId?.call({}, sidecar, undefined, {} as any)).toBe(sidecar)
   })
 
   it('does not auto-enable Tailwind v3 or when the package is missing', () => {
@@ -262,7 +262,8 @@ describe('managed Tailwind integration', () => {
     } as any)
     const sidecarEntry = createSidecarSourceSpecifier(path.join(root, 'src/app.ts'), entry, 'style')
     const virtualEntry = await getHookHandler(plugin.resolveId)?.call({} as any, sidecarEntry, undefined, {} as any)
-    const marker = await getHookHandler(plugin.load)?.call({} as any, virtualEntry)
+    const loaded = await getHookHandler(plugin.load)?.call({} as any, virtualEntry)
+    const marker = getHookHandler(plugin.transform)?.call({} as any, loaded, virtualEntry, {} as any)?.code
     const bundle = {
       'app.wxss': {
         type: 'asset',
@@ -337,18 +338,19 @@ describe('managed Tailwind integration', () => {
     expect(addWatchFile).toHaveBeenCalledWith(entry)
   })
 
-  it('only virtualizes managed style sidecars', () => {
+  it('keeps managed style sidecar request identity visible to user pre plugins', () => {
     const entry = '/project/src/app.css'
     const plugin = getPlugins({ cssEntries: [entry] })[0]
     const resolveId = getHookHandler(plugin.resolveId)
 
     expect(resolveId?.call({} as any, './app.css', '/project/src/app.vue', {} as any)).toBeNull()
+    const sidecar = createSidecarSourceSpecifier('/project/src/app.vue', entry, 'style')
     expect(resolveId?.call(
       {} as any,
-      createSidecarSourceSpecifier('/project/src/app.vue', entry, 'style'),
+      sidecar,
       undefined,
       {} as any,
-    )).toMatch(/^\0weapp-vite:managed-tailwindcss-entry:0\.css\?weapp-vite-sidecar-owner=/)
+    )).toBe(sidecar)
   })
 
   it('keeps dependency-only style requests out of every CSS generation hook', async () => {
@@ -466,11 +468,12 @@ describe('managed Tailwind integration', () => {
 
     expect(compiled.code).not.toBe(source)
     expect(resolve).toHaveBeenCalledWith('./app.css', filename.replaceAll('\\', '/'), { skipSelf: true })
-    expect(resolved).toMatch(/managed-tailwindcss-entry:0\.css.*hmr=2/)
+    expect(resolved).toBe(request)
     const loaded = await getHookHandler(plugin.load)?.call({} as any, resolved as string)
-    expect(loaded).toContain('managed_tailwindcss_entry_0')
-    expect(loaded).not.toContain('@import')
-    expect(loaded).not.toContain('background-color')
+    expect(loaded).toBeNull()
+    const transformed = getHookHandler(plugin.transform)?.call({} as any, compiled.code, resolved as string, {} as any)
+    expect(transformed?.code).toContain('managed_tailwindcss_entry_0')
+    expect(transformed?.code).not.toContain('@import')
   })
 
   it('resolves managed SFC styles by block index and alias instead of matching their contents', async () => {
@@ -487,7 +490,8 @@ describe('managed Tailwind integration', () => {
 
     expect(await resolveId.call({ resolve } as any, `${filename}?weapp-vite-vue&type=style&index=0&lang.css`, undefined, {} as any)).toBeNull()
     expect(resolve).not.toHaveBeenCalled()
-    expect(await resolveId.call({ resolve } as any, `${filename}?weapp-vite-vue&type=style&index=1&lang.css`, undefined, {} as any)).toMatch(/managed-tailwindcss-entry:0\.css/)
+    const request = `${filename}?weapp-vite-vue&type=style&index=1&lang.css`
+    expect(await resolveId.call({ resolve } as any, request, undefined, {} as any)).toBe(request)
     expect(resolve).toHaveBeenCalledWith('@/styles/global.css', filename.replaceAll('\\', '/'), { skipSelf: true })
   })
 

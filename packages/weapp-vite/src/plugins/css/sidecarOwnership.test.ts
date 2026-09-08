@@ -10,16 +10,19 @@ import { createLogicalEntryModuleCode, createSidecarModuleCode } from '../../mod
 import { createLogicalEntryId, parseLogicalEntryId, parseSidecarModuleId, resolveVirtualModuleId } from '../../moduleGraph/protocol'
 import { createModuleGraphService } from '../../moduleGraph/service'
 import { createRuntimeState } from '../../runtime/runtimeState'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { css } from '../css'
 import { createOutputFinalizerPlugin } from '../outputFinalizer'
 
 describe('warm graph style ownership', () => {
-  it('keeps a cached style dependency inert while actual imported CSS still updates', async () => {
+  it.each([false, true])('keeps graph dependencies inert and preserves transformed CSS with collected sidecars: %s', async (collectSidecar) => {
     const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-style-graph-')))
     const src = path.join(root, 'src')
     await mkdir(path.join(src, 'pages/index'), { recursive: true })
     const owner = path.join(src, 'pages/index/index.js')
     const style = path.join(src, 'pages/index/index.css')
+    const nativeStyle = path.join(src, 'pages/index/index.wxss')
+    await writeFile(nativeStyle, '.native { display: block; }\n')
     await writeFile(owner, 'import "./index.css"; export const count = 1')
     await writeFile(style, '.page { color: red; }\n')
     const runtimeState = createRuntimeState()
@@ -56,7 +59,20 @@ describe('warm graph style ownership', () => {
         moduleGraphService.bindBuildContext(graph, this)
       },
     }
-    const plugins = [graph, ...css(ctx), createOutputFinalizerPlugin(ctx)]
+    const preTransform: Plugin = {
+      name: 'fixture-css-pre-transform',
+      enforce: 'pre',
+      transform(code, id) {
+        if (normalizeFsResolvedId(id) === normalizeFsResolvedId(style) && !id.includes('?')) {
+          return code.replaceAll('.page', '.transformed-page')
+        }
+      },
+    }
+    if (collectSidecar) {
+      runtimeState.css.sidecarImports.add(style)
+      runtimeState.css.sidecarImports.add(nativeStyle)
+    }
+    const plugins = [graph, preTransform, ...css(ctx), createOutputFinalizerPlugin(ctx)]
     const render = async () => await build({
       root,
       configFile: false,
@@ -70,19 +86,28 @@ describe('warm graph style ownership', () => {
       },
     }) as RolldownOutput
     const styles = (output: RolldownOutput) => output.output.filter(asset => asset.type === 'asset' && asset.fileName.endsWith('.wxss'))
+    const prefix = collectSidecar ? '.native { display: block; }\n\n' : ''
     try {
-      expect(styles(await render())).toMatchObject([{ fileName: 'pages/index/index.wxss', source: '.page { color: red; }\n' }])
+      expect(styles(await render())).toMatchObject([{ fileName: 'pages/index/index.wxss', source: `${prefix}.transformed-page { color: red; }\n` }])
       // 首轮编译补全样式依赖后，snapshot 复用相同图服务与输出缓存。
       moduleGraphService.replaceEntryDependencies(owner, 'style', [style])
       runtimeState.build.hmr.profile = { event: 'update', file: path.join(src, 'pages/index/index.wxml'), dirtyReasonSummary: ['sidecar-direct:1'] }
       expect(styles(await render())).toEqual([])
-      expect(moduleGraphService.collectAffectedEntries(style)).toContain(owner)
+      expect(moduleGraphService.collectAffectedEntries(style)).toContain(normalizeFsResolvedId(owner))
 
       await writeFile(style, '.page { color: blue; }\n')
       runtimeState.build.hmr.profile = { event: 'update', file: style, dirtyReasonSummary: ['style-sidecar:1'] }
       const updated = styles(await render())
-      expect(updated).toMatchObject([{ fileName: 'pages/index/index.wxss', source: '.page { color: blue; }\n' }])
+      expect(updated).toMatchObject([{ fileName: 'pages/index/index.wxss', source: `${prefix}.transformed-page { color: blue; }\n` }])
       expect(runtimeState.css.transformedSidecarSource.has(style)).toBe(false)
+
+      // 下一轮移除真正 CSS 导入后，仍需补发磁盘 sidecar，不能沿用旧 owner 集合。
+      await writeFile(owner, 'export const count = 2')
+      runtimeState.css.sidecarImports.delete(nativeStyle)
+      const fallback = styles(await render())
+      expect(fallback).toMatchObject(collectSidecar
+        ? [{ fileName: 'pages/index/index.wxss', source: '.page { color: blue; }\n' }]
+        : [])
     }
     finally {
       await rm(root, { recursive: true, force: true })

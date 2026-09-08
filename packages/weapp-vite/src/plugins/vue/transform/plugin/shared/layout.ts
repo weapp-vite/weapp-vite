@@ -1,6 +1,7 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../../../../context'
 import { compileVueStyleToWxss, generateScopedId } from 'wevu/compiler'
+import { createStyleSourceMeta } from '../../../../css/styleOwnership'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
 import { resolveSfcStylePreprocessOptions } from '../../compileOptions'
@@ -245,5 +246,6 @@ export async function loadTransformStyleBlock(options: {
   return {
     code: compiled.code,
     map: compiled.map ? JSON.parse(compiled.map) : null,
+    meta: createStyleSourceMeta([...dependencies, ...(compiled.dependencies ?? [])]),
   }
 }

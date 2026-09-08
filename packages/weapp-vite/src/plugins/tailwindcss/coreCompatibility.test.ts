@@ -65,6 +65,33 @@ async function assertTransforms(compiler: Compiler, request: CompilerGenerateReq
 }
 
 describe('published Tailwind Core compatibility', () => {
+  it('compiles in-memory preprocessed CSS with its file identity instead of rereading disk', async () => {
+    const { root, compiler, entry, request } = await fixture()
+    await writeFile(entry, '.disk-marker { color: red; }')
+    const generate = async (padding: number) => await compiler.generate({
+      ...request,
+      sourceOptions: {
+        projectRoot: root,
+        cssSources: [{
+          css: `@import "tailwindcss" source(none); .pre-marker { @apply p-[${padding}px]; color: rgb(1, 2, 3); }`,
+          file: entry,
+          base: root,
+          dependencies: [entry],
+        }],
+        packageName: 'tailwindcss',
+      },
+    })
+    const initial = await generate(13)
+    expect(cssDeclarations(initial.css, 'padding')).toContain('13px')
+    expect(initial.css).toContain('.pre-marker')
+    expect(initial.css).not.toContain('.disk-marker')
+    expect(initial.css).not.toMatch(/@(?:apply|theme|tailwind|source|utility)\b/)
+    compiler.invalidate([entry])
+    const updated = await generate(17)
+    expect(cssDeclarations(updated.css, 'padding')).toContain('17px')
+    expect(cssDeclarations(updated.css, 'padding')).not.toContain('13px')
+  })
+
   it('decodes escaped source paths before scanning utilities', async () => {
     const { root, compiler, entry, request } = await fixture()
     const sourceDirectory = path.join(root, 'source pages')

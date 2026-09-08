@@ -13,11 +13,17 @@
 
 weapp-vite 使用自己的 Core adapter，继续由单个编译器拥有 Tailwind 生成，CSS 入口使用被项目实际导入的纯 CSS 文件，并从项目根目录解析为绝对路径。此次补丁升级不需要替换 API 或重复注册上游 Vite 插件。
 
+前置插件生成的 CSS 通过 Core 的 `sourceOptions.cssSources` 传入，保留 `file`、`base` 与依赖身份。adapter 在用户 pre 插件之后捕获内存源码，再生成入口标记；同一入口不会同时从磁盘重新读取。外链 SFC 样式保持原请求身份，热更新继续通过对应源文件失效。#779 回归以 pre 注入的 `@apply p-[13px]` 编译结果和真实 IDE 的 13px padding、文本及颜色共同验收，单纯存在普通 CSS 规则或已展开 Tailwind 导入不能证明编译完成。
+
+SFC 样式仍由 Vue loader 完成 scoped、预处理和依赖登记；引用同一 CSS 的不同 SFC 样式块分别保存转换源码，避免作用域互相覆盖。源文件失效后必须重新执行转换，生成阶段拒绝使用失效前的内存 CSS。转换后的样式来源会与 loader 元数据合并，继续由原 owner 交给 Vite/Rolldown 写出。
+
 上游官方 Vite 插件的 CSS 合并和缓存修复不能直接代表自研 adapter 已获得相同修复。微信 IDE 连续更新中 WXSS 编译缺失的 [跟踪项 #977](https://github.com/weapp-vite/weapp-vite/issues/977) 仍以真实 IDE 的计算样式、DOM 和状态保留结果独立验收。
 
 ## 验证入口
 
 现有 adapter、输出所有权和 HMR 单测验证调用契约，真实 Core 回归验证 CSS 路径和模板失效语义。下游覆盖使用：
+
+`packages/weapp-vite/test-d/config-define-config/tailwind-public.test-d.ts` 直接引用 `weapp-vite/config`、`weapp-vite/types` 和上游 Core 发布类型，校验编译器回调、内存 CSS 来源选项及错误类型负例。该测试已通过；它验证真实发布声明，不依赖配置示例的手写类型镜像。
 
 ```sh
 pnpm --filter weapp-vite typecheck

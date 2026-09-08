@@ -763,7 +763,7 @@ describe('css plugin shared style injection', () => {
     expect(appStyles[0]?.source).toContain('.text-red-500{color:red}')
   })
 
-  it('only keeps author styles before the generator placeholder', async () => {
+  it.each([false, true])('keeps author styles and independent native sidecars before the generator placeholder: %s', async (nativeSidecar) => {
     const appEntry = resolve(absoluteSrcRoot, 'app.vue')
     const plugin = css(ctx)[0]
     const bundle: Record<string, any> = {
@@ -803,11 +803,14 @@ describe('css plugin shared style injection', () => {
       },
     }
 
+    if (nativeSidecar) {
+      ;(ctx as any).runtimeState.css.sidecarImports.add(resolve(absoluteSrcRoot, 'app.wxss'))
+    }
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
     await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
 
     const pending = consumePendingOwnerStyleSources(ctx)?.get('app.wxss')
-    expect(pending).toEqual(['.author{color:#893a6d}'])
+    expect(pending).toEqual([nativeSidecar ? '.sidecar{color:red}\n.author{color:#893a6d}' : '.author{color:#893a6d}'])
     expect(pending?.join('\n')).not.toMatch(/@(plugin|source)\b/)
     expect(pending?.join('\n')).not.toContain('page { background: #f6f7fb; }')
   })

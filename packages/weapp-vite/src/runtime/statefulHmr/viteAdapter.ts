@@ -1,9 +1,8 @@
 /* eslint-disable ts/no-use-before-define */
 
-import type { DevEngine, DevOptions } from 'rolldown/experimental'
+import type { dev, DevEngine, DevOptions } from 'rolldown/experimental'
 import type { ResolvedConfig, ViteDevServer } from 'vite'
 import type { StatefulHmrOutputFile } from './outputWriter'
-import { createRequire } from 'node:module'
 import path from 'node:path'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
@@ -11,27 +10,11 @@ import {
   WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE,
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
-import { dev } from 'rolldown/experimental'
 import { assertStatefulHmrRuntimeOutput, createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
+import { createViteDevEngine } from './viteDevEngine'
 
 const clientId = 'weapp-vite-stateful-hmr'
 const initialBuildTimeoutMs = 60_000
-const require = createRequire(import.meta.url)
-
-function resolveViteDevEngine(): typeof dev {
-  try {
-    const vitePackagePath = require.resolve('vite/package.json')
-    const viteRequire = createRequire(vitePackagePath)
-    const viteRolldown = viteRequire('rolldown/experimental') as { dev?: typeof dev }
-    if (typeof viteRolldown.dev === 'function') {
-      return viteRolldown.dev
-    }
-  }
-  catch {
-    // Vite 未暴露 Rolldown 时回退到 weapp-vite 自身依赖。
-  }
-  return dev
-}
 
 async function withInitialBuildTimeout<T>(task: Promise<T>, timeoutMs = initialBuildTimeoutMs): Promise<T> {
   let timeout: ReturnType<typeof setTimeout> | undefined
@@ -108,7 +91,7 @@ export class StatefulHmrViteAdapter {
       waitForInitialBundle: () => Promise<void>
     },
     private readonly watchOptions: StatefulHmrDevWatchOptions = {},
-    private readonly createDevEngine: typeof dev = resolveViteDevEngine(),
+    private readonly createDevEngine: typeof dev = createViteDevEngine,
     private readonly initialBuildTimeout = initialBuildTimeoutMs,
   ) {}
 

@@ -67,11 +67,26 @@ describe('issue #892 Sass asset placeholders', { concurrent: false }, () => {
     )
 
     try {
-      const initialStyle = await waitForStyleOutput([
-        '.issue-892-unquoted',
-        '.issue-892-quoted',
-        'goods-1.png',
-      ])
+      // 首次就绪与样式检查共用同一个 60 秒窗口，不能先等待启动再重置样式预算。
+      const [initialStyle, initialOutput] = await devProcess.waitFor(Promise.all([
+        waitForStyleOutput([
+          '.issue-892-unquoted',
+          '.issue-892-quoted',
+          'goods-1.png',
+        ]),
+        devProcess.waitForInitialBuild(60_000),
+      ]), 'initial Sass output and stateful HMR readiness')
+      expect(initialOutput).toContain('HMR 模式：stateful-experimental')
+      expect(initialOutput).not.toMatch(/Parse failed|Undefined variable|Build failed|Build error/)
+      const app = await fs.readJSON(path.join(APP_ROOT, 'dist/app.json')) as {
+        pages?: string[]
+        subPackages?: unknown[]
+        subpackages?: unknown[]
+      }
+      expect(app.pages).toEqual(['pages/block-slot/index'])
+      expect(app.subPackages ?? app.subpackages ?? []).toEqual([])
+      expectAssetUrl(initialStyle, '.issue-892-unquoted')
+      expectAssetUrl(initialStyle, '.issue-892-quoted')
       expect(initialStyle).not.toContain('__VITE_ASSET__')
       expect(initialStyle).not.toContain('__VITE_PUBLIC_ASSET__')
 
@@ -79,13 +94,15 @@ describe('issue #892 Sass asset placeholders', { concurrent: false }, () => {
       expect(updatedSource).not.toBe(originalSource)
       await replaceFileByRename(STYLE_SOURCE_PATH, updatedSource)
 
-      const updatedStyle = await waitForStyleOutput(['color: #ac6824;'])
+      const updatedStyle = await devProcess.waitFor(
+        waitForStyleOutput(['color: #ac6824;']),
+        'renamed Sass source HMR output',
+      )
       expectAssetUrl(updatedStyle, '.issue-892-unquoted')
       expectAssetUrl(updatedStyle, '.issue-892-quoted')
       expect(updatedStyle).not.toContain('__VITE_ASSET__')
       expect(updatedStyle).not.toContain('__VITE_PUBLIC_ASSET__')
-      expect(devProcess.getOutput()).not.toContain('Undefined variable')
-      expect(devProcess.getOutput()).not.toContain('Build failed')
+      expect(devProcess.getOutput()).not.toMatch(/Parse failed|Undefined variable|Build failed|Build error/)
     }
     finally {
       await devProcess.stop(2_000)

@@ -1,7 +1,7 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { CompilerContext } from '../../../context'
 import { performance } from 'node:perf_hooks'
-import { normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { normalizeSourceId } from '../../../moduleGraph/traversal'
 import { resolveRelativeOutputFileNameWithExtension } from '../../utils/outputFileName'
 
 export interface ChunkEmitStats {
@@ -39,7 +39,7 @@ export function createChunkEmitter(
         return stats
       }
 
-      const normalizedId = normalizeFsResolvedId(resolvedId.id)
+      const normalizedId = normalizeSourceId(resolvedId.id)
       const entryChunkId = resolveEntryChunkId(normalizedId, resolvedId)
       const shouldPreload = !loadedEntrySet.has(normalizedId)
       if (!shouldPreload) {
