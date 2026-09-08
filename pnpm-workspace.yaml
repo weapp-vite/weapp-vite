@@ -20,7 +20,7 @@ packages:
 
 versioning:
   fixed:
-    - [ '@weapp-vite/ast', weapp-vite, '@weapp-vite/dashboard', wevu, '@wevu/compiler' ]
+    - ['@weapp-vite/ast', weapp-vite, '@weapp-vite/dashboard', wevu, '@wevu/compiler']
   changelog:
     storage: repository
 
@@ -100,7 +100,7 @@ catalog:
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.42
   vue-tsc: ^3.3.11
-  weapp-tailwindcss: ^5.5.1
+  weapp-tailwindcss: ^5.5.2
   zod: ^4.5.4
 
 catalogs:
@@ -114,7 +114,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.16.0
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.5.1
+    weapp-tailwindcss: 5.5.2
 
 gitChecks: false
 
