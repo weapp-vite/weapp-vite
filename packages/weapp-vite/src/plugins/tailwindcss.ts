@@ -202,6 +202,7 @@ function hasTailwindImport(code: string) {
 }
 
 export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
+  registerManagedTailwindcssEntries(ctx, [])
   const managedOptions = resolveManagedTailwindcssOptions(ctx)
   if (!managedOptions) {
     return []

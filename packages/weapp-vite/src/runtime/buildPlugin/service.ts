@@ -18,6 +18,7 @@ import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
+import { hasManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import {
   configSuffixes,
@@ -30,7 +31,6 @@ import {
   watchedTemplateSuffixes,
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
-import { touch } from '../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJsonEnvOption, resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
@@ -50,7 +50,7 @@ import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches } from './outputs'
 import { refreshSnapshotSources } from './snapshotSources'
-import { resolveTouchAppWxssEnabled } from './touchAppWxss'
+import { resolveTouchAppWxssEnabled, touchExistingAppStyle } from './touchAppWxss'
 import { buildWorkers, checkWorkersOptions, devWorkers, watchWorkers } from './workers'
 
 export interface BuildOptions {
@@ -1194,18 +1194,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   const buildState = ctx.runtimeState.build
   const { queue } = buildState
   const requestedConfigRestartBuilds = new Set<BuildTarget>()
-  let autoTouchResolved = false
-  let autoTouchChecked = false
-
-  function hasAutoTouchAppWxssReason() {
-    const dirtyReasonSummary = ctx.runtimeState.build.hmr.profile.dirtyReasonSummary ?? []
-    return dirtyReasonSummary.some((reason) => {
-      return reason.startsWith('tailwind-content:')
-        || reason.startsWith('style-sidecar:')
-        || reason.startsWith('entry-style-only:')
-    })
-  }
-
   const {
     buildIndependentBundle,
     getIndependentOutput,
@@ -1213,26 +1201,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   } = createIndependentBuilder(configService, buildState)
 
   function shouldTouchAppWxss() {
-    const option = configService.weappViteConfig.hmr?.touchAppWxss ?? 'auto'
-    if (option === true) {
-      return true
-    }
-    if (option === false) {
-      return false
-    }
-    if (!hasAutoTouchAppWxssReason()) {
-      return false
-    }
-    if (!autoTouchChecked) {
-      autoTouchChecked = true
-      autoTouchResolved = resolveTouchAppWxssEnabled({
-        option,
-        platform: configService.platform,
-        packageJson: configService.packageJson,
-        cwd: configService.cwd,
-      })
-    }
-    return autoTouchResolved
+    return resolveTouchAppWxssEnabled({
+      option: configService.weappViteConfig.hmr?.touchAppWxss,
+      platform: configService.platform,
+      dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
+      managedTailwindcss: hasManagedTailwindcssEntries(ctx),
+    })
   }
 
   function isDevOutputFile(filePath: string) {
@@ -1776,7 +1750,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             logger.success(formatHmrLogLine(durationMs))
             shouldLogSlowHmrTip()
             if (appWxssPath && shouldTouchAppWxss()) {
-              void touch(appWxssPath).catch(() => {})
+              await touchExistingAppStyle(appWxssPath)
             }
           }
           else {
@@ -1786,6 +1760,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           resolveWatcher(e)
         })().catch((error) => {
           resetHmrProfile()
+          logger.error(error)
           rejectWatcher(error)
         })
       }

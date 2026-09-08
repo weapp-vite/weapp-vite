@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { compileVueStyleToWxss, readAndParseSfc } from 'wevu/compiler'
 import { createSidecarSourceSpecifier } from '../moduleGraph/protocol'
 import { createTailwindcssPlugin, resolveManagedTailwindcssOptions } from './tailwindcss'
+import { hasManagedTailwindcssEntries } from './tailwindcssMarker'
 import { buildWeappVueStyleRequest } from './vue/transform/styleRequest'
 
 const mocks = vi.hoisted(() => ({
@@ -76,6 +77,15 @@ describe('managed Tailwind integration', () => {
     expect(resolveManagedTailwindcssOptions(createContext(false))).toBeUndefined()
     mocks.packageInfo = { version: '3.4.19' }
     expect(createTailwindcssPlugin(createContext(undefined))).toEqual([])
+  })
+
+  it('clears managed output ownership when configuration disables the integration', () => {
+    const ctx = createContext(true)
+    createTailwindcssPlugin(ctx)
+    expect(hasManagedTailwindcssEntries(ctx)).toBe(true)
+    ctx.configService.weappViteConfig.tailwindcss = false
+    expect(createTailwindcssPlugin(ctx)).toEqual([])
+    expect(hasManagedTailwindcssEntries(ctx)).toBe(false)
   })
 
   it('auto-detects Tailwind v4 but stays dormant until a CSS import is found', () => {

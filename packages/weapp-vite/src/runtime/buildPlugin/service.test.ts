@@ -1,6 +1,7 @@
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
+import { registerManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 
 import { createRuntimeState } from '../runtimeState'
 import { StatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
@@ -26,7 +27,6 @@ const disableProjectPrivateConfigHotReloadMock = vi.hoisted(() => vi.fn(async ()
 const syncProjectConfigToOutputMock = vi.hoisted(() => vi.fn(async () => {}))
 const generateLibDtsMock = vi.hoisted(() => vi.fn(async () => {}))
 const createSharedBuildConfigMock = vi.hoisted(() => vi.fn(() => ({ shared: true })))
-const resolveTouchAppWxssEnabledMock = vi.hoisted(() => vi.fn(() => true))
 const touchMock = vi.hoisted(() => vi.fn(async () => {}))
 const checkWorkersOptionsMock = vi.hoisted(() => vi.fn())
 const devWorkersMock = vi.hoisted(() => vi.fn(async () => {}))
@@ -142,8 +142,9 @@ vi.mock('../sharedBuildConfig', () => ({
   createSharedBuildConfig: createSharedBuildConfigMock,
 }))
 
-vi.mock('./touchAppWxss', () => ({
-  resolveTouchAppWxssEnabled: resolveTouchAppWxssEnabledMock,
+vi.mock('./touchAppWxss', async importOriginal => ({
+  ...await importOriginal<typeof import('./touchAppWxss')>(),
+  touchExistingAppStyle: touchMock,
 }))
 
 vi.mock('./workers', () => ({
@@ -151,11 +152,6 @@ vi.mock('./workers', () => ({
   devWorkers: devWorkersMock,
   watchWorkers: watchWorkersMock,
   buildWorkers: buildWorkersMock,
-}))
-
-vi.mock('../../utils/file', async importOriginal => ({
-  ...await importOriginal<typeof import('../../utils/file')>(),
-  touch: touchMock,
 }))
 
 vi.mock('../../context/shared', () => ({
@@ -585,7 +581,7 @@ describe('runtime buildPlugin service', () => {
     expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（自动降级：stateful HMR 运行时兼容性检查失败）')
   })
 
-  it('runs dev app build with workers and caches touchAppWxss auto decision', async () => {
+  it('runs dev app build with workers without a global refresh for local style updates', async () => {
     process.env.VITEST = 'false'
     delete process.env.NODE_ENV
 
@@ -594,7 +590,6 @@ describe('runtime buildPlugin service', () => {
       hasWorkersDir: true,
       workersDir: 'workers',
     })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     buildMock
       .mockResolvedValueOnce(watcher)
     const ctx = createMockContext()
@@ -609,7 +604,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('START')
     ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['style-sidecar:1']
     watcher.emit('END')
-    await waitForMockCalls(touchMock, 1)
+    await flushAsyncTasks()
 
     expect(process.env.NODE_ENV).toBe('development')
     expect(cleanOutputsMock).toHaveBeenCalledTimes(1)
@@ -623,18 +618,19 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.runtimeState.build.npmBuilt).toBe(true)
     expect(devWorkersMock).toHaveBeenCalledWith(ctx.configService, ctx.watcherService, 'workers')
     expect(watchWorkersMock).toHaveBeenCalledTimes(1)
-    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalledTimes(1)
-    expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
+    expect(touchMock).not.toHaveBeenCalled()
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(expect.any(Object), '/')
   })
 
-  it('touches app wxss for Tailwind content hmr updates', async () => {
+  it.each([false, true])('keeps one Tailwind output refresh owner when managed=%s', async (managed) => {
     const watcher = createManualWatcher()
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockResolvedValueOnce({ output: [] })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     const ctx = createMockContext()
+    if (managed) {
+      registerManagedTailwindcssEntries(ctx, ['app.css'])
+    }
     const service = createBuildService(ctx)
 
     const buildPromise = service.build({ skipNpm: true })
@@ -646,10 +642,34 @@ describe('runtime buildPlugin service', () => {
     ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['tailwind-content:1']
     watcher.emit('START')
     watcher.emit('END')
-    await waitForMockCalls(touchMock, 1)
+    await flushAsyncTasks()
 
-    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalledTimes(1)
-    expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
+    expect(touchMock).toHaveBeenCalledTimes(managed ? 0 : 1)
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-style-only:1']
+    watcher.emit('START')
+    watcher.emit('END')
+    await flushAsyncTasks()
+    expect(touchMock).toHaveBeenCalledTimes(managed ? 0 : 1)
+  })
+
+  it('reports a requested refresh failure instead of silently discarding it', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { touchAppWxss: true }
+    const service = createBuildService(ctx)
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    const failure = Object.assign(new Error('app style metadata denied'), { code: 'EACCES' })
+    touchMock.mockRejectedValueOnce(failure)
+    watcher.emit('START')
+    watcher.emit('END')
+    await waitForMockCalls(loggerErrorMock, 1)
+    expect(loggerErrorMock).toHaveBeenCalledWith(failure)
   })
 
   it('does not touch app wxss for shared css importer hmr updates in auto mode', async () => {
@@ -657,7 +677,6 @@ describe('runtime buildPlugin service', () => {
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockResolvedValueOnce({ output: [] })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
@@ -672,7 +691,6 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await flushAsyncTasks()
 
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).not.toHaveBeenCalled()
   })
 
@@ -681,7 +699,6 @@ describe('runtime buildPlugin service', () => {
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockResolvedValueOnce({ output: [] })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
@@ -696,7 +713,6 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await flushAsyncTasks()
 
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).not.toHaveBeenCalled()
   })
 
@@ -724,7 +740,6 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await waitForMockCalls(touchMock, 1)
 
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
   })
 
@@ -1953,7 +1968,6 @@ describe('runtime buildPlugin service', () => {
     await service.build({ skipNpm: true })
 
     expect(ctx.npmService.build).not.toHaveBeenCalled()
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).not.toHaveBeenCalled()
   })
 

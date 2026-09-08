@@ -17,7 +17,6 @@ const findJsEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: null })))
 const findVueEntryMock = vi.hoisted(() => vi.fn(async () => undefined))
 const invalidateSharedStyleCacheMock = vi.hoisted(() => vi.fn())
 const isTemplateMock = vi.hoisted(() => vi.fn(() => false))
-const resolveTouchAppWxssEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const collectAffectedEntriesMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
 const collectAffectedEntriesFromSharedChunksMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
 const collectAffectedSharedChunksMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
@@ -50,10 +49,6 @@ vi.mock('../../../utils/file', () => ({
   findJsEntry: findJsEntryMock,
   findVueEntry: findVueEntryMock,
   isTemplate: isTemplateMock,
-}))
-
-vi.mock('../../../runtime/buildPlugin/touchAppWxss', () => ({
-  resolveTouchAppWxssEnabled: resolveTouchAppWxssEnabledMock,
 }))
 
 vi.mock('../helpers', async () => {
@@ -177,7 +172,6 @@ describe('core lifecycle watch hook', () => {
     findCssEntryMock.mockResolvedValue({ path: null })
     findJsEntryMock.mockResolvedValue({ path: null })
     findVueEntryMock.mockResolvedValue(undefined)
-    resolveTouchAppWxssEnabledMock.mockReturnValue(false)
     collectAffectedScriptsAndImportersMock.mockResolvedValue({
       importers: new Set<string>(),
       scripts: new Set<string>(),
@@ -664,10 +658,9 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
   })
 
-  it('marks app entry dirty for Tailwind content hmr when app style exists', async () => {
+  it.each([false, true, 'auto'] as const)('compiles Tailwind content regardless of the global refresh option %s', async (touchAppWxss) => {
     const appEntryId = '/project/src/app.ts'
     const pageEntryId = '/project/src/pages/hmr/index.vue'
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
     vi.spyOn(fs, 'readFile').mockResolvedValue('@import "tailwindcss";')
     const state = createState({
@@ -678,11 +671,11 @@ describe('core lifecycle watch hook', () => {
       ]),
     })
     state.ctx.scanService.appEntry = { path: appEntryId }
+    state.ctx.configService.weappViteConfig = { hmr: { touchAppWxss } }
     const hook = createWatchChangeHook(state)
 
     await hook(pageEntryId, { event: 'update' })
 
-    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalled()
     expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId, 'weapp')
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
@@ -696,7 +689,6 @@ describe('core lifecycle watch hook', () => {
   it('skips Tailwind content hmr when app style is not a Tailwind source', async () => {
     const appEntryId = '/project/src/app.ts'
     const pageEntryId = '/project/src/pages/hmr/index.vue'
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     findCssEntryMock.mockResolvedValue({ path: '/project/src/app.scss' })
     vi.spyOn(fs, 'readFile').mockResolvedValue('.app { color: red; }')
     const state = createState({
@@ -711,7 +703,6 @@ describe('core lifecycle watch hook', () => {
 
     await hook(pageEntryId, { event: 'update' })
 
-    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalled()
     expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId, 'weapp')
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
     expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntryId, 'metadata')
@@ -729,7 +720,6 @@ const klass = 'text-red-500'
 
 <template><view :class="klass">{{ count }}</view></template>`
     const nextSource = previousSource.replace('const count = 1', 'const count = 2')
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
     const state = createState({
       loadedEntrySet: new Set([pageEntryId]),
@@ -763,7 +753,6 @@ const count = 1
 
 <template><view class="text-red-500">{{ count }}</view></template>`
     const nextSource = previousSource.replace('text-red-500', 'text-blue-500')
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
     const state = createState({
       loadedEntrySet: new Set([pageEntryId]),
@@ -794,7 +783,6 @@ const count = 1
   it('does not mark app entry dirty for Tailwind content hmr without app style', async () => {
     const appEntryId = '/project/src/app.ts'
     const pageEntryId = '/project/src/pages/hmr/index.vue'
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     findCssEntryMock.mockResolvedValue({ path: null })
     const state = createState({
       loadedEntrySet: new Set([pageEntryId]),

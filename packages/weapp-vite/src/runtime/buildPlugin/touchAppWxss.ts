@@ -1,30 +1,14 @@
-import type { PackageJson } from 'pkg-types'
 import type { MpPlatform } from '../../types'
-import { createRequire } from 'node:module'
 import { supportsMiniProgramAutoTouchAppStyle } from '@weapp-core/shared'
-import path from 'pathe'
+import { fs } from '@weapp-core/shared/fs'
 
 export type TouchAppWxssOption = boolean | 'auto' | undefined
-
-const tailwindPackageName = 'weapp-tailwindcss'
-
-export function hasTailwindcssDependency(packageJson: PackageJson) {
-  return Boolean(
-    packageJson.dependencies?.[tailwindPackageName]
-    || packageJson.devDependencies?.[tailwindPackageName],
-  )
-}
-
-export function shouldAutoTouchAppWxssForPlatform(platform: MpPlatform) {
-  return supportsMiniProgramAutoTouchAppStyle(platform)
-}
 
 export function resolveTouchAppWxssEnabled(options: {
   option?: TouchAppWxssOption
   platform: MpPlatform
-  packageJson: PackageJson
-  cwd: string
-  resolve?: (id: string) => string
+  dirtyReasonSummary?: readonly string[]
+  managedTailwindcss?: boolean
 }): boolean {
   const resolvedOption = options.option ?? 'auto'
   if (resolvedOption === true) {
@@ -33,19 +17,23 @@ export function resolveTouchAppWxssEnabled(options: {
   if (resolvedOption === false) {
     return false
   }
-  if (!shouldAutoTouchAppWxssForPlatform(options.platform)) {
-    return false
-  }
-  if (hasTailwindcssDependency(options.packageJson)) {
-    return true
-  }
-  const resolve = options.resolve
-    ?? createRequire(path.resolve(options.cwd, 'package.json')).resolve
+  // 内置 compiler 已通过原生 emit 更新样式，不再追加可能让 AppService 丢失状态的全局重载。
+  return supportsMiniProgramAutoTouchAppStyle(options.platform)
+    && !options.managedTailwindcss
+    && options.dirtyReasonSummary?.some(reason => reason.startsWith('tailwind-content:')) === true
+}
+
+/** 兼容显式全局刷新，只更新原生构建器已写出的产物时间戳，绝不补写空文件。 */
+export async function touchExistingAppStyle(filename: string) {
+  const time = new Date()
   try {
-    resolve(tailwindPackageName)
+    await fs.utimes(filename, time, time)
     return true
   }
-  catch {
-    return false
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return false
+    }
+    throw error
   }
 }
