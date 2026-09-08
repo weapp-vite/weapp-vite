@@ -2,6 +2,7 @@ import type { MutableCompilerContext } from '../../context'
 import { WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
 import MagicString from 'magic-string'
 import path from 'pathe'
+import { normalizeSourceId } from '../../moduleGraph/traversal'
 import { matchesSubPackageDependency, toRelativeRuntimeNpmImport } from '../../plugins/core/lifecycle/emit/rewrite'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { resolveNpmBuildCandidateDependencyRecordSync } from '../npmPlugin/service'
@@ -69,6 +70,7 @@ export function createStatefulHmrPatchImportResolver(
 ): StatefulHmrPatchImports['resolveImport'] {
   const config = ctx.configService!
   const dependencies = resolveNpmBuildCandidateDependencyRecordSync(ctx, config.packageJson)
+  const srcRoot = normalizeSourceId(config.absoluteSrcRoot)
   const localPackages = [...ctx.scanService?.subPackageMap.values() ?? []]
     .map(meta => meta.subPackage)
     .filter(meta => Array.isArray(meta.dependencies) && meta.dependencies.length > 0)
@@ -86,8 +88,8 @@ export function createStatefulHmrPatchImportResolver(
       throw new Error(`Stateful HMR external import has no unambiguous factory owner: ${specifier}`)
     }
     const sourcePackages = new Set(importers.map((file) => {
-      const source = path.resolve(config.cwd, file.split('?', 1)[0])
-      const relative = path.relative(config.absoluteSrcRoot, source)
+      const source = normalizeSourceId(path.resolve(config.cwd, file.split('?', 1)[0]))
+      const relative = path.relative(srcRoot, source)
       return localPackages.find(meta => relative.startsWith(`${meta.root}/`))
     }))
     const roots = new Set([...sourcePackages].map((meta) => {

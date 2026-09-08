@@ -4,11 +4,12 @@ import { tmpdir } from 'node:os'
 import path from 'pathe'
 import { dev } from 'rolldown/experimental'
 import { describe, expect, it, vi } from 'vitest'
+import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { createChunkEmitter } from './chunkEmitter'
 import { EntryChunkLifecycle } from './entryChunkLifecycle'
 
 describe('entry chunks in the real DevEngine partial scanner', () => {
-  it('reuses an independent component entry when an importer is loaded after the full scan', async () => {
+  it.each(['native', 'resolved-query-id'] as const)('reuses an independent component entry after the full scan with %s cache IDs', async (idStyle) => {
     const root = await realpath(await mkdtemp(path.join(tmpdir(), 'entry-chunk-scan-')))
     const main = path.join(root, 'main.js')
     const lazy = path.join(root, 'lazy.js')
@@ -25,6 +26,7 @@ describe('entry chunks in the real DevEngine partial scanner', () => {
       relativeOutputPath: (id: string) => path.relative(root, id),
     } as CompilerContext['configService'], new Set(), undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, lifecycle)
     const errors: Error[] = []
+    const lazyModuleIds = new Map<string, string>()
     const engine = await dev({
       input: main,
       experimental: { devMode: { lazy: true } },
@@ -32,10 +34,24 @@ describe('entry chunks in the real DevEngine partial scanner', () => {
         name: 'entry-chunk-scan-fixture',
         buildStart: () => lifecycle.beginBuild(),
         buildEnd: () => lifecycle.endBuild(),
+        moduleParsed(info) {
+          // compileEntry 消费引擎登记的完整 ID，不能用物理路径重建 cache key。
+          for (const id of info.dynamicallyImportedIds) {
+            lazyModuleIds.set(normalizeFsResolvedId(id), id)
+          }
+        },
+        resolveId(source, importer) {
+          if (idStyle !== 'resolved-query-id' || (!source.startsWith('.') && source !== main)) {
+            return null
+          }
+          const resolved = source === main ? main : path.resolve(path.dirname(normalizeFsResolvedId(importer ?? main)), source)
+          return source === main ? main : `${resolved}?cache-identity`
+        },
         async load(id) {
-          if (id === main || id === lazy) {
-            await Promise.all(emitter.call(this, [{ id: child, external: false }]))
-            return await readFile(id, 'utf8')
+          const source = normalizeFsResolvedId(id)
+          if (source === main || source === lazy) {
+            await Promise.all(emitter.call(this, [await this.resolve(child)]))
+            return await readFile(normalizeFsResolvedId(id), 'utf8')
           }
         },
       }],
@@ -55,7 +71,9 @@ describe('entry chunks in the real DevEngine partial scanner', () => {
       // 元数据扫描可能没有重放已缓存入口；注册权威仍是原生引擎的现存入口图。
       lifecycle.beginBuild()
       lifecycle.endBuild()
-      const output = await engine.compileEntry(`${lazy}?rolldown-lazy=1`, 'entry-chunk-test')
+      const lazyId = lazyModuleIds.get(lazy)
+      expect(lazyId, JSON.stringify([...lazyModuleIds.values()])).toBeTypeOf('string')
+      const output = await engine.compileEntry(lazyId!, 'entry-chunk-test')
       expect(output.code).toContain('lazy-owner')
     }
     finally {
@@ -84,6 +102,7 @@ describe('entry chunks in the real DevEngine partial scanner', () => {
     let components: string[] = []
     const outputs: string[][] = []
     const errors: Error[] = []
+    const lazyModuleIds = new Map<string, string>()
     const engine = await dev({
       input: main,
       experimental: { devMode: { lazy: true } },
@@ -91,10 +110,16 @@ describe('entry chunks in the real DevEngine partial scanner', () => {
         name: 'entry-chunk-topology-fixture',
         buildStart: () => lifecycle.beginBuild(),
         buildEnd: () => lifecycle.endBuild(),
+        moduleParsed(info) {
+          // compileEntry 消费引擎登记的完整 ID，不能用物理路径重建 cache key。
+          for (const id of info.dynamicallyImportedIds) {
+            lazyModuleIds.set(normalizeFsResolvedId(id), id)
+          }
+        },
         async load(id) {
-          if ([main, lazy, nextLazy].includes(id)) {
-            await Promise.all(emitter.call(this, components.map(id => ({ id, external: false }))))
-            return await readFile(id, 'utf8')
+          if ([main, lazy, nextLazy].includes(normalizeFsResolvedId(id))) {
+            await Promise.all(emitter.call(this, await Promise.all(components.map(id => this.resolve(id)))))
+            return await readFile(normalizeFsResolvedId(id), 'utf8')
           }
         },
       }],
@@ -120,7 +145,11 @@ describe('entry chunks in the real DevEngine partial scanner', () => {
       await engine.registerClient('topology-test')
       expect(outputs.at(-1)).not.toContain('child.js')
       components = [child]
-      await expect(engine.compileEntry(`${lazy}?rolldown-lazy=1`, 'topology-test')).resolves.toMatchObject({ code: expect.stringContaining('first-owner') })
+      const lazyId = lazyModuleIds.get(lazy)
+      const nextLazyId = lazyModuleIds.get(nextLazy)
+      expect(lazyId, JSON.stringify([...lazyModuleIds.values()])).toBeTypeOf('string')
+      expect(nextLazyId, JSON.stringify([...lazyModuleIds.values()])).toBeTypeOf('string')
+      await expect(engine.compileEntry(lazyId!, 'topology-test')).resolves.toMatchObject({ code: expect.stringContaining('first-owner') })
       expect(requestFullBuild).toHaveBeenCalledExactlyOnceWith(child)
       await rebuild()
       expect(outputs.at(-1)).toContain('child.js')
@@ -130,7 +159,7 @@ describe('entry chunks in the real DevEngine partial scanner', () => {
       components = [child]
       await rebuild()
       expect(outputs.at(-1)).toContain('child.js')
-      await expect(engine.compileEntry(`${nextLazy}?rolldown-lazy=1`, 'topology-test')).resolves.toMatchObject({ code: expect.stringContaining('next-owner') })
+      await expect(engine.compileEntry(nextLazyId!, 'topology-test')).resolves.toMatchObject({ code: expect.stringContaining('next-owner') })
       expect(requestFullBuild).toHaveBeenCalledTimes(1)
     }
     finally {

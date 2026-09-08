@@ -4,14 +4,10 @@ import type { CompilerContext } from '../context'
 import type { MpPlatform, SubPackageMetaValue } from '../types'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
 import { Buffer } from 'node:buffer'
-import {
-  WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX,
-  WEAPP_VITE_SIDECAR_RESOLVED_PREFIX,
-} from '@weapp-core/constants'
 import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
-import path from 'pathe'
 import { analyzeGlassEaselBundle } from '../analyze/glassEasel'
-import { parseLogicalEntryId, parseSidecarModuleId } from '../moduleGraph/protocol'
+import { parseGraphOutputModuleId, resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
+import { parseSidecarModuleId } from '../moduleGraph/protocol'
 import { getWxmlPlatformTransformOptions } from '../platform'
 import { changeFileExtension } from '../utils'
 import { syncOutputChunkSourceMapAssets } from '../utils/outputChunk'
@@ -56,31 +52,6 @@ interface OutputAssetEntry {
   output: Extract<OutputBundle[string], { type: 'asset' }>
 }
 
-const GRAPH_ONLY_OUTPUT_MARKERS = [
-  WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX,
-  WEAPP_VITE_SIDECAR_RESOLVED_PREFIX,
-]
-
-function parseGraphOnlyAssetModuleId(fileName: string) {
-  for (const marker of GRAPH_ONLY_OUTPUT_MARKERS) {
-    const markerIndex = fileName.indexOf(marker)
-    if (markerIndex < 0) {
-      continue
-    }
-    const request = fileName.slice(markerIndex)
-    const extension = path.extname(request)
-    const moduleId = `${extension ? request.slice(0, -extension.length) : request}.js`
-    return moduleId
-  }
-}
-
-function parseGraphOnlyAssetOwner(fileName: string) {
-  const moduleId = parseGraphOnlyAssetModuleId(fileName)
-  return moduleId
-    ? parseLogicalEntryId(moduleId)?.sourceId ?? parseSidecarModuleId(moduleId)?.ownerId
-    : undefined
-}
-
 export function normalizeGraphOnlyAssets(
   ctx: CompilerContext,
   bundle: OutputBundle,
@@ -91,7 +62,7 @@ export function normalizeGraphOnlyAssets(
       continue
     }
     const fileName = output.fileName || bundleFileName
-    const moduleId = parseGraphOnlyAssetModuleId(fileName)
+    const moduleId = parseGraphOutputModuleId(fileName)
     const sidecar = moduleId ? parseSidecarModuleId(moduleId) : undefined
     if (
       sidecar?.kind === 'style'
@@ -101,7 +72,7 @@ export function normalizeGraphOnlyAssets(
       delete bundle[bundleFileName]
       continue
     }
-    const ownerId = parseGraphOnlyAssetOwner(fileName)
+    const ownerId = resolveGraphOutputOwner(fileName)
     if (!ownerId) {
       continue
     }

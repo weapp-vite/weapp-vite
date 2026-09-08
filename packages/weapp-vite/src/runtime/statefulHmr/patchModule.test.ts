@@ -1,4 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import vm from 'node:vm'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -78,6 +80,28 @@ describe('stateful patch external modules', () => {
     expect(resolve('unmanaged-external', [])).toBe('unmanaged-external')
     expect(() => resolve('native-controls', ['src/feature/page.ts', 'src/page.ts'])).toThrow('different npm roots')
     expect(() => resolve('native-controls', [])).toThrow('no unambiguous factory owner')
+  })
+
+  it('keeps physical factory importers in their subpackage when the configured root is an alias', async () => {
+    const temporary = await realpath(await mkdtemp(path.join(tmpdir(), 'patch-import-identity-')))
+    const physicalRoot = path.join(temporary, 'project')
+    const aliasRoot = path.join(temporary, 'linked-project')
+    const importer = path.join(physicalRoot, 'src/feature/page.ts')
+    await mkdir(path.dirname(importer), { recursive: true })
+    await writeFile(importer, 'Page({})')
+    await symlink(physicalRoot, aliasRoot, 'junction')
+    try {
+      const ctx = createContext()
+      ctx.configService!.cwd = aliasRoot
+      ctx.configService!.absoluteSrcRoot = path.join(aliasRoot, 'src')
+      ctx.scanService!.subPackageMap.set('feature', { subPackage: { root: 'feature', dependencies: ['native-controls'] } } as never)
+      const resolve = createStatefulHmrPatchImportResolver(ctx, 'update.js')
+      expect(resolve('native-controls', [importer])).toBe('../feature/miniprogram_npm/native-controls/index')
+      expect(resolve('native-controls', ['src/feature/page.ts'])).toBe('../feature/miniprogram_npm/native-controls/index')
+    }
+    finally {
+      await rm(temporary, { recursive: true, force: true })
+    }
   })
 
   it('uses the invalidated factory importer even when a shared dependency triggered the patch', () => {

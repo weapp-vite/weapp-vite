@@ -5,7 +5,8 @@ import type { StyleEntry } from '../types'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { preprocessCSS } from 'vite'
-import { parseLogicalEntryId, parseSidecarSourceRequest } from '../moduleGraph/protocol'
+import { resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
+import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { isSourceStyleExtension } from '../platforms/sourceAssets'
 import { changeFileExtension, isJsOrTs } from '../utils'
 import { getPathExistsTtlMs } from '../utils/cachePolicy'
@@ -387,7 +388,7 @@ function injectSharedStyleImportsCached(
 }
 
 function resolveStyleOwnerId(id: string) {
-  return parseLogicalEntryId(id)?.sourceId ?? id
+  return resolveGraphOutputOwner(id) ?? id
 }
 
 function analyzeBundleStyles(bundle: OutputBundle): BundleStyleAnalysis {

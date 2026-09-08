@@ -1,6 +1,7 @@
 import type { ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SubPackageStyleEntry } from '../types'
+import { win32 } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dirname, relative, resolve } from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -717,6 +718,25 @@ describe('css plugin shared style injection', () => {
     const cssAsset = emitted.find(asset => asset.fileName === 'app.wxss')
     expect(cssAsset).toBeTruthy()
     expect(cssAsset?.source).toContain('.root{color:red}')
+  })
+
+  it('recovers a logical owner from Windows cross-drive Vite asset metadata after chunks are removed', async () => {
+    const sourceId = resolve(absoluteSrcRoot, 'pages/index/index.ts')
+    const logicalId = createLogicalEntryId(sourceId, 'page')
+    // Vite 按工作目录解析虚拟 facade，再对项目根执行 relative，跨盘时仍返回绝对路径。
+    const originalFileName = win32.relative('C:\\project', win32.resolve('D:\\runner', logicalId)).replaceAll('\\', '/').replaceAll('\0', '')
+    const bundle: Record<string, any> = {
+      'index.css': {
+        type: 'asset',
+        fileName: 'index.css',
+        originalFileNames: [originalFileName],
+        source: '.page{color:blue}',
+      },
+    }
+    const plugin = css(ctx)[0]
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+    expect(emitted).toEqual(expect.arrayContaining([expect.objectContaining({ fileName: 'pages/index/index.wxss', source: '.page{color:blue}' })]))
   })
 
   it('merges multiple app style src assets into one app wxss output', async () => {
