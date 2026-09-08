@@ -27,20 +27,10 @@ import {
   resolveComponentAttributeValue,
 } from './shared'
 
-export function resolveComponentRegistryEntry(
+export function resolveComponentRegistryEntryByPath(
   context: RuntimeRendererContext,
-  ownerJsonPath: string,
-  ownerFilePath: string,
-  alias: string,
-  genericComponentBasePath?: string,
+  componentBasePath: string,
 ) {
-  // eslint-disable-next-line ts/no-use-before-define
-  const usingComponents = resolveUsingComponents(context, ownerJsonPath, ownerFilePath)
-  const componentBasePath = genericComponentBasePath ?? usingComponents.get(alias)
-  if (!componentBasePath) {
-    return null
-  }
-
   const filePath = `${componentBasePath}.js`
   const templatePath = `${componentBasePath}.wxml`
   const absoluteFilePath = path.resolve(context.project.miniprogramRootPath, filePath)
@@ -51,7 +41,22 @@ export function resolveComponentRegistryEntry(
     filePath,
     templatePath,
     absoluteTemplatePath,
-  } satisfies RuntimeComponentRegistryEntry & { absoluteTemplatePath: string }
+  } satisfies RuntimeComponentRegistryEntry
+}
+
+export function resolveComponentRegistryEntry(
+  context: RuntimeRendererContext,
+  ownerJsonPath: string,
+  ownerFilePath: string,
+  alias: string,
+  genericComponentBasePath?: string,
+) {
+  // eslint-disable-next-line ts/no-use-before-define
+  const usingComponents = resolveUsingComponents(context, ownerJsonPath, ownerFilePath)
+  const componentBasePath = genericComponentBasePath ?? usingComponents.get(alias)
+  return componentBasePath
+    ? resolveComponentRegistryEntryByPath(context, componentBasePath)
+    : null
 }
 
 function readComponentConfig(artifactSource: RuntimeRendererContext['artifactSource'], jsonPath: string) {
@@ -294,9 +299,10 @@ export function createRuntimeComponentInstance(
   componentScopeId: string,
   context: RuntimeRendererContext,
   clonedNode: DomNodeLike,
-  componentEntry: NonNullable<ReturnType<typeof resolveComponentRegistryEntry>>,
+  componentEntry: RuntimeComponentRegistryEntry,
   nextProperties: Record<string, any>,
   ownerScopeId: string | undefined,
+  registerInstance?: (instance: HeadlessComponentInstance) => void,
 ) {
   const isWevuNativeDefinition = Object.keys(componentEntry.definition.methods ?? {}).some(key => key.startsWith('__weapp_vite_'))
     || Object.hasOwn(componentEntry.definition.properties ?? {}, '__wvSlotOwnerId')
@@ -321,6 +327,7 @@ export function createRuntimeComponentInstance(
     ? context.componentCache.get(ownerScopeId) ?? null
     : null
   context.componentCache.set(componentScopeId, componentInstance)
+  registerInstance?.(componentInstance)
   runComponentLifecycle(componentInstance, 'created')
   runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(componentProperties), {})
   componentInstance.__propertySnapshots = Object.fromEntries(
@@ -332,7 +339,7 @@ export function createRuntimeComponentInstance(
 
 export function renderRuntimeComponentTemplate(
   context: RuntimeRendererContext,
-  componentEntry: NonNullable<ReturnType<typeof resolveComponentRegistryEntry>>,
+  componentEntry: RuntimeComponentRegistryEntry,
   renderNodeTree: (
     node: DomNodeLike,
     scope: RuntimeRenderScope,

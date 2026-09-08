@@ -1,5 +1,6 @@
 import type { HeadlessPageDefinition, HeadlessWxMediaQueryObserver } from '../host'
 import type { HeadlessBackgroundSnapshot, HeadlessBackgroundTextStyle, HeadlessNavigationBarSnapshot } from '../project/pageConfig'
+import type { HeadlessComponentInstance } from './componentInstance'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot } from '../project/pageConfig'
 
 const ARRAY_INDEX_PATH_RE = /\[(\d+)\]/g
@@ -17,6 +18,7 @@ export interface HeadlessPageInstance extends Record<string, any> {
   data: Record<string, any>
   options: Record<string, string>
   route: string
+  getTabBar?: () => HeadlessComponentInstance
   createIntersectionObserver?: (options?: Record<string, any>) => any
   createMediaQueryObserver?: () => HeadlessWxMediaQueryObserver
   selectAllComponents?: (selector: string) => any[]

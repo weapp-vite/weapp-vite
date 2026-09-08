@@ -1,9 +1,11 @@
 import type { TemplateRenderState } from '../../view/templateRuntime'
+import type { HeadlessComponentInstance } from '../componentInstance'
 import type { HeadlessPageInstance } from '../pageInstance'
 import type { DomNodeLike, RuntimeRenderedPageTree, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import path from 'node:path'
 import { createTemplateRenderState, isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
 import { runComponentLifecycle } from '../componentInstance'
+import { CUSTOM_TAB_BAR_ALIAS, CUSTOM_TAB_BAR_COMPONENT_PATH, getCustomTabBarScopeId } from '../customTabBar'
 import {
   createComponentScope,
   createRuntimeComponentInstance,
@@ -11,6 +13,7 @@ import {
   resolveComponentGenerics,
   resolveComponentProperties,
   resolveComponentRegistryEntry,
+  resolveComponentRegistryEntryByPath,
   syncComponentProperties,
 } from './component'
 import {
@@ -379,9 +382,52 @@ function renderNodeTree(
   return clonedNode
 }
 
+function renderCustomTabBar(
+  context: RuntimeRendererContext,
+  page: HeadlessPageInstance,
+  pageScope: RuntimeRenderScope,
+  customTabBar: HeadlessComponentInstance,
+  seenComponentScopes: Set<string>,
+) {
+  const componentScopeId = getCustomTabBarScopeId(page.route)
+  const componentEntry = resolveComponentRegistryEntryByPath(context, CUSTOM_TAB_BAR_COMPONENT_PATH)
+  const hostNode: DomNodeLike = {
+    attribs: {},
+    children: [],
+    name: CUSTOM_TAB_BAR_ALIAS,
+    type: 'tag',
+  }
+  const componentScope = createComponentScope(
+    hostNode,
+    pageScope,
+    componentScopeId,
+    customTabBar,
+  )
+  context.componentScopes.set(componentScopeId, componentScope)
+  seenComponentScopes.add(componentScopeId)
+
+  const renderedRoot = renderRuntimeComponentTemplate(
+    context,
+    componentEntry,
+    renderNodeTree,
+    componentScope,
+    componentScopeId,
+    seenComponentScopes,
+  )
+  renderedRoot.attribs ??= {}
+  renderedRoot.attribs['data-sim-component'] = CUSTOM_TAB_BAR_ALIAS
+  renderedRoot.attribs['data-sim-scope'] = componentScopeId
+  if (!customTabBar.__ready__) {
+    runComponentLifecycle(customTabBar, 'ready')
+    customTabBar.__ready__ = true
+  }
+  return renderedRoot
+}
+
 export function renderRuntimePageTree(
   context: RuntimeRendererContext,
   page: HeadlessPageInstance,
+  customTabBar?: HeadlessComponentInstance,
 ): RuntimeRenderedPageTree {
   const route = page.route.replace(LEADING_SLASH_RE, '')
   const routeRecord = context.project.routes.find(item => item.route === route)
@@ -415,17 +461,28 @@ export function renderRuntimePageTree(
     templateRenderState,
   )
 
+  const renderedCustomTabBar = customTabBar
+    ? renderCustomTabBar(context, page, pageScope, customTabBar, seenComponentScopes)
+    : null
+  const combinedRoot: DomNodeLike = renderedCustomTabBar
+    ? {
+        children: [renderedRoot, renderedCustomTabBar],
+        type: 'root',
+      }
+    : renderedRoot
+
   for (const [scopeId, instance] of [...context.componentCache.entries()]) {
-    if (!seenComponentScopes.has(scopeId)) {
-      runComponentLifecycle(instance, 'detached')
-      context.componentCache.delete(scopeId)
-      context.componentScopes.delete(scopeId)
+    if (!scopeId.startsWith(`${pageScopeId}/`) || seenComponentScopes.has(scopeId)) {
+      continue
     }
+    runComponentLifecycle(instance, 'detached')
+    context.componentCache.delete(scopeId)
+    context.componentScopes.delete(scopeId)
   }
 
   return {
-    root: renderedRoot,
-    wxml: serializeDomNode(renderedRoot),
+    root: combinedRoot,
+    wxml: serializeDomNode(combinedRoot),
   }
 }
 

@@ -41,6 +41,7 @@ export interface RuntimeSlotContent {
 
 export interface RuntimeComponentRegistryEntry {
   definition: HeadlessComponentDefinition
+  absoluteTemplatePath: string
   filePath: string
   templatePath: string
 }

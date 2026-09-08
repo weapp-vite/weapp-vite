@@ -3,6 +3,7 @@ import type { RuntimeDiagnosticEntry } from '../kernel'
 import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
 import type { HeadlessAppInstance } from '../runtime/appInstance'
+import type { HeadlessComponentInstance } from '../runtime/componentInstance'
 import type { HeadlessPageInstance } from '../runtime/pageInstance'
 import type {
   HeadlessWxActionSheetMockDefinition,
@@ -13,6 +14,7 @@ import type {
   HeadlessWxRequestMockDefinition,
   HeadlessWxUploadFileMockDefinition,
 } from '../runtime/wxState'
+import type { BrowserRendererContext } from './render/types'
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
@@ -21,7 +23,8 @@ import { RuntimeKernel } from '../kernel'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
 import { createAppInstance } from '../runtime/appInstance'
-import { runComponentPageLifetime } from '../runtime/componentInstance'
+import { runComponentLifecycle, runComponentPageLifetime } from '../runtime/componentInstance'
+import { CUSTOM_TAB_BAR_ALIAS, CUSTOM_TAB_BAR_COMPONENT_PATH, getCustomTabBarScopeId, getPageComponentScopePrefix } from '../runtime/customTabBar'
 import { createPageInstance } from '../runtime/pageInstance'
 import {
   applyResizeToSystemInfo,
@@ -44,6 +47,7 @@ import { createHeadlessVideoContext } from '../view/videoContext'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
 import { renderBrowserPageTree } from './render'
+import { createBrowserComponentInstance, resolveComponentRegistryEntryByPath } from './render/component'
 import { readBrowserVirtualFile } from './virtualFiles'
 
 export interface BrowserHeadlessSessionOptions {
@@ -210,7 +214,8 @@ export class BrowserHeadlessSession {
   private readonly registries: HeadlessHostRegistries
   private currentPageInstance: HeadlessPageInstance | null = null
   private readonly pages: HeadlessPageInstance[] = []
-  private readonly componentCache = new Map<string, any>()
+  private readonly componentCache = new Map<string, HeadlessComponentInstance>()
+  private readonly customTabBars = new WeakMap<HeadlessPageInstance, HeadlessComponentInstance>()
   private readonly componentScopes = new Map<string, any>()
   private readonly selectorQueryScopeSnapshots = new WeakMap<Record<string, any>, {
     page: HeadlessPageInstance
@@ -880,11 +885,9 @@ export class BrowserHeadlessSession {
       .filter(Boolean)
   }
 
-  renderCurrentPage() {
-    this.assertActive()
-    const current = this.requireCurrentPage('renderCurrentPage()')
-    const rendered = renderBrowserPageTree({
-      changedPageKeys: current.__lastChangedKeys__ ?? [],
+  private createRendererContext(page: HeadlessPageInstance): BrowserRendererContext {
+    return {
+      changedPageKeys: page.__lastChangedKeys__ ?? [],
       componentCache: this.componentCache,
       componentScopes: this.componentScopes,
       files: this.files,
@@ -898,9 +901,19 @@ export class BrowserHeadlessSession {
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
       },
-    }, current)
+    }
+  }
+
+  renderCurrentPage() {
+    this.assertActive()
+    const current = this.requireCurrentPage('renderCurrentPage()')
+    const rendered = renderBrowserPageTree(
+      this.createRendererContext(current),
+      current,
+      this.customTabBars.get(current),
+    )
     current.__lastChangedKeys__ = []
-    const componentScopePrefix = `page:${stripLeadingSlash(current.route)}`
+    const componentScopePrefix = getPageComponentScopePrefix(current.route)
     for (const [scopeId, instance] of this.componentCache.entries()) {
       if (scopeId.startsWith(componentScopePrefix)) {
         this.selectorQueryScopeSnapshots.set(instance, {
@@ -1084,6 +1097,7 @@ export class BrowserHeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.mountCustomTabBar(pageInstance)
     this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
@@ -1106,6 +1120,7 @@ export class BrowserHeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.mountCustomTabBar(pageInstance)
     this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
@@ -1126,6 +1141,7 @@ export class BrowserHeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.mountCustomTabBar(pageInstance)
     this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
@@ -1203,6 +1219,7 @@ export class BrowserHeadlessSession {
     this.pages.push(nextPage)
     this.currentPageInstance = nextPage
     if (shouldRunInitialLifecycles) {
+      this.mountCustomTabBar(nextPage)
       this.runInitialPageLifecycles(nextPage, target.query)
     }
     else if (current !== nextPage) {
@@ -1223,22 +1240,11 @@ export class BrowserHeadlessSession {
     scrollTop?: number
   }) {
     const current = this.requireCurrentPage('wx.pageScrollTo()')
-    const rendered = renderBrowserPageTree({
-      changedPageKeys: current.__lastChangedKeys__ ?? [],
-      componentCache: this.componentCache,
-      componentScopes: this.componentScopes,
-      files: this.files,
-      moduleLoader: this.moduleLoader,
-      project: this.project,
-      session: {
-        createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
-        createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
-        requestRender: callback => this.requestRender(callback),
-        selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
-        selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
-        selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
-      },
-    }, current)
+    const rendered = renderBrowserPageTree(
+      this.createRendererContext(current),
+      current,
+      this.customTabBars.get(current),
+    )
     const selectorScrollTop = resolveSelectorScrollTop(rendered.root, option.selector)
     current.__scrollTop__ = Number(selectorScrollTop ?? option.scrollTop ?? 0)
     current.onPageScroll?.({
@@ -1331,22 +1337,11 @@ export class BrowserHeadlessSession {
     const scopeId = nativeScope && nativeScope !== current
       ? this.getComponentScopeId(nativeScope as import('../runtime').HeadlessComponentInstance)
       : null
-    const rendered = renderBrowserPageTree({
-      changedPageKeys: current.__lastChangedKeys__ ?? [],
-      componentCache: this.componentCache,
-      componentScopes: this.componentScopes,
-      files: this.files,
-      moduleLoader: this.moduleLoader,
-      project: this.project,
-      session: {
-        createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
-        createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
-        requestRender: callback => this.requestRender(callback),
-        selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
-        selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
-        selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
-      },
-    }, current)
+    const rendered = renderBrowserPageTree(
+      this.createRendererContext(current),
+      current,
+      this.customTabBars.get(current),
+    )
     return executeSelectorQueryRequests(requests, {
       page: current,
       resolveContext: (node) => {
@@ -1365,6 +1360,36 @@ export class BrowserHeadlessSession {
       root: resolveSelectorQueryScopeRoot(rendered.root, scopeId),
       windowInfo: this.getWindowInfo(),
     })
+  }
+
+  private mountCustomTabBar(page: HeadlessPageInstance) {
+    if (this.project.appConfig.tabBar?.custom !== true || !this.isTabBarRoute(page.route)) {
+      return
+    }
+
+    const componentScopeId = getCustomTabBarScopeId(page.route)
+    const rendererContext = this.createRendererContext(page)
+    const componentEntry = resolveComponentRegistryEntryByPath(rendererContext, CUSTOM_TAB_BAR_COMPONENT_PATH)
+    createBrowserComponentInstance(
+      componentScopeId,
+      rendererContext,
+      {
+        attribs: {},
+        children: [],
+        name: CUSTOM_TAB_BAR_ALIAS,
+        type: 'tag',
+      },
+      componentEntry,
+      {},
+      undefined,
+      {
+        registerInstance: (component) => {
+          this.customTabBars.set(page, component)
+          page.getTabBar = () => component
+        },
+        runInitialPageShow: false,
+      },
+    )
   }
 
   private createFreshPage(target: ResolvedNavigationTarget) {
@@ -1456,6 +1481,7 @@ export class BrowserHeadlessSession {
     page.onUnload?.()
     this.clearMediaQueryObservers(page)
     this.detachPageComponents(page.route)
+    this.customTabBars.delete(page)
     this.tabPages.delete(stripLeadingSlash(page.route))
   }
 
@@ -1469,12 +1495,12 @@ export class BrowserHeadlessSession {
   }
 
   private detachPageComponents(route: string) {
-    const prefix = `page:${stripLeadingSlash(route)}`
+    const prefix = getPageComponentScopePrefix(route)
     for (const [scopeId, instance] of [...this.componentCache.entries()]) {
       if (!scopeId.startsWith(prefix)) {
         continue
       }
-      instance.__definition__?.lifetimes?.detached?.call(instance)
+      runComponentLifecycle(instance, 'detached')
       this.componentCache.delete(scopeId)
       this.componentScopes.delete(scopeId)
     }
@@ -1503,9 +1529,10 @@ export class BrowserHeadlessSession {
     lifetimeName: 'hide' | 'resize' | 'show',
     payload?: unknown,
   ) {
-    const prefix = `page:${stripLeadingSlash(route)}`
+    const prefix = getPageComponentScopePrefix(route)
+    const customTabBarScopeId = getCustomTabBarScopeId(route)
     for (const [scopeId, instance] of this.componentCache.entries()) {
-      if (!scopeId.startsWith(prefix)) {
+      if (!scopeId.startsWith(prefix) || scopeId === customTabBarScopeId) {
         continue
       }
       runComponentPageLifetime(instance, lifetimeName, payload)

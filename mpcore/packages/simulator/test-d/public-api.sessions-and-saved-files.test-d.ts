@@ -1,4 +1,5 @@
 import type {
+  HeadlessComponentInstance,
   HeadlessPluginDescriptor,
   HeadlessTestingRenderedNodeSnapshot,
   HeadlessTestingSessionHandle,
@@ -36,6 +37,8 @@ expectType<ReturnType<typeof createHeadlessSession>>(createHeadlessSession({
 }))
 browserSession.reLaunch('/pages/index/index')
 const browserPage = browserSession.getCurrentPages()[0]
+expectType<(() => HeadlessComponentInstance) | undefined>(browserPage?.getTabBar)
+expectType<HeadlessComponentInstance | undefined>(browserPage?.getTabBar?.())
 
 expectType<void>(browserSession.mockDownloadFile({
   fileContent: (option) => {
@@ -411,6 +414,8 @@ browserPage?.wx.removeSavedFile({
 
 const headlessSession = createHeadlessSession({ projectPath: '/tmp/project' })
 const headlessPage = headlessSession.getCurrentPages()[0]
+expectType<(() => HeadlessComponentInstance) | undefined>(headlessPage?.getTabBar)
+expectType<HeadlessComponentInstance | undefined>(headlessPage?.getTabBar?.())
 
 expectType<{ errMsg: string } | undefined>(headlessPage?.wx.loadFontFace({
   family: 'uview-icon',

@@ -18,9 +18,9 @@ const emit = defineEmits<{
   updateViewport: [payload: { height: number, width: number }]
 }>()
 
-const preview = reactive(useDevicePreview(props, emit))
-const previewHost = preview.previewHost
-const previewStage = preview.previewStage
+const previewState = useDevicePreview(props, emit)
+const preview = reactive(previewState)
+const { previewHost, previewStage } = previewState
 </script>
 
 <template>

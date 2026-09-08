@@ -4,6 +4,7 @@ import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessAppInstance } from './appInstance'
 import type { HeadlessComponentInstance } from './componentInstance'
 import type { HeadlessPageInstance } from './pageInstance'
+import type { RuntimeRendererContext } from './render/types'
 import type {
   HeadlessWxActionSheetMockDefinition,
   HeadlessWxClipboardSnapshot,
@@ -29,9 +30,12 @@ import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createAppInstance } from './appInstance'
+import { runComponentLifecycle } from './componentInstance'
+import { CUSTOM_TAB_BAR_ALIAS, CUSTOM_TAB_BAR_COMPONENT_PATH, getCustomTabBarScopeId, getPageComponentScopePrefix } from './customTabBar'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
 import { renderRuntimePageTree } from './render'
+import { createRuntimeComponentInstance, resolveComponentRegistryEntryByPath } from './render/component'
 import {
   applyResizeToSystemInfo,
   createDefaultLocationResult,
@@ -203,6 +207,7 @@ export class HeadlessSession {
   private currentPageInstance: HeadlessPageInstance | null = null
   private readonly pages: HeadlessPageInstance[] = []
   private readonly componentCache = new Map<string, HeadlessComponentInstance>()
+  private readonly customTabBars = new WeakMap<HeadlessPageInstance, HeadlessComponentInstance>()
   private readonly componentScopes = new Map<string, any>()
   private readonly selectorQueryScopeSnapshots = new WeakMap<Record<string, any>, {
     page: HeadlessPageInstance
@@ -477,11 +482,9 @@ export class HeadlessSession {
     return this.wxState.getSavedFileList().fileList
   }
 
-  renderCurrentPage() {
-    this.assertActive()
-    const current = this.requireCurrentPage('renderCurrentPage()')
-    const rendered = renderRuntimePageTree({
-      changedPageKeys: current.__lastChangedKeys__ ?? [],
+  private createRendererContext(page: HeadlessPageInstance): RuntimeRendererContext {
+    return {
+      changedPageKeys: page.__lastChangedKeys__ ?? [],
       artifactSource: this.project.artifactSource,
       componentCache: this.componentCache,
       componentScopes: this.componentScopes,
@@ -495,8 +498,18 @@ export class HeadlessSession {
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
       },
-    }, current)
-    const componentScopePrefix = `page:${stripLeadingSlash(current.route)}`
+    }
+  }
+
+  renderCurrentPage() {
+    this.assertActive()
+    const current = this.requireCurrentPage('renderCurrentPage()')
+    const rendered = renderRuntimePageTree(
+      this.createRendererContext(current),
+      current,
+      this.customTabBars.get(current),
+    )
+    const componentScopePrefix = getPageComponentScopePrefix(current.route)
     for (const [scopeId, instance] of this.componentCache.entries()) {
       if (scopeId.startsWith(componentScopePrefix)) {
         this.selectorQueryScopeSnapshots.set(instance, {
@@ -1010,6 +1023,7 @@ export class HeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.mountCustomTabBar(pageInstance)
     this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
@@ -1032,6 +1046,7 @@ export class HeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.mountCustomTabBar(pageInstance)
     this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
@@ -1052,6 +1067,7 @@ export class HeadlessSession {
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
+    this.mountCustomTabBar(pageInstance)
     this.runInitialPageLifecycles(pageInstance, target.query)
     return pageInstance
   }
@@ -1129,6 +1145,7 @@ export class HeadlessSession {
     this.pages.push(nextPage)
     this.currentPageInstance = nextPage
     if (shouldRunInitialLifecycles) {
+      this.mountCustomTabBar(nextPage)
       this.runInitialPageLifecycles(nextPage, target.query)
     }
     else if (current !== nextPage) {
@@ -1266,6 +1283,33 @@ export class HeadlessSession {
     })
   }
 
+  private mountCustomTabBar(page: HeadlessPageInstance) {
+    if (this.project.appConfig.tabBar?.custom !== true || !this.isTabBarRoute(page.route)) {
+      return
+    }
+
+    const componentScopeId = getCustomTabBarScopeId(page.route)
+    const rendererContext = this.createRendererContext(page)
+    const componentEntry = resolveComponentRegistryEntryByPath(rendererContext, CUSTOM_TAB_BAR_COMPONENT_PATH)
+    createRuntimeComponentInstance(
+      componentScopeId,
+      rendererContext,
+      {
+        attribs: {},
+        children: [],
+        name: CUSTOM_TAB_BAR_ALIAS,
+        type: 'tag',
+      },
+      componentEntry,
+      {},
+      undefined,
+      (instance) => {
+        this.customTabBars.set(page, instance)
+        page.getTabBar = () => instance
+      },
+    )
+  }
+
   private createFreshPage(target: ResolvedNavigationTarget) {
     const resourcePath = target.routeRecord.resourcePath ?? target.routeRecord.route
     const pageModulePath = path.resolve(this.project.miniprogramRootPath, `${resourcePath}.js`)
@@ -1355,6 +1399,7 @@ export class HeadlessSession {
     page.onUnload?.()
     this.clearMediaQueryObservers(page)
     this.detachPageComponents(page.route)
+    this.customTabBars.delete(page)
     this.tabPages.delete(stripLeadingSlash(page.route))
   }
 
@@ -1419,12 +1464,12 @@ export class HeadlessSession {
   }
 
   private detachPageComponents(route: string) {
-    const prefix = `page:${stripLeadingSlash(route)}`
+    const prefix = getPageComponentScopePrefix(route)
     for (const [scopeId, instance] of [...this.componentCache.entries()]) {
       if (!scopeId.startsWith(prefix)) {
         continue
       }
-      instance.__definition__?.lifetimes?.detached?.call(instance)
+      runComponentLifecycle(instance, 'detached')
       this.componentCache.delete(scopeId)
       this.componentScopes.delete(scopeId)
     }
@@ -1453,9 +1498,10 @@ export class HeadlessSession {
     lifetimeName: 'hide' | 'resize' | 'show',
     payload?: unknown,
   ) {
-    const prefix = `page:${stripLeadingSlash(route)}`
+    const prefix = getPageComponentScopePrefix(route)
+    const customTabBarScopeId = getCustomTabBarScopeId(route)
     for (const [scopeId, instance] of this.componentCache.entries()) {
-      if (!scopeId.startsWith(prefix)) {
+      if (!scopeId.startsWith(prefix) || scopeId === customTabBarScopeId) {
         continue
       }
       instance.__definition__?.pageLifetimes?.[lifetimeName]?.call(instance, payload)

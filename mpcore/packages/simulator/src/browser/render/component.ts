@@ -30,6 +30,20 @@ import {
   resolveComponentAttributeValue,
 } from './shared'
 
+export function resolveComponentRegistryEntryByPath(
+  context: BrowserRendererContext,
+  componentBasePath: string,
+) {
+  const filePath = `${componentBasePath}.js`
+  const templatePath = `${componentBasePath}.wxml`
+  const definition = context.moduleLoader.executeComponentModule(filePath, componentBasePath)
+  return {
+    definition,
+    filePath,
+    templatePath,
+  } satisfies BrowserComponentRegistryEntry
+}
+
 export function resolveComponentRegistryEntry(
   context: BrowserRendererContext,
   ownerJsonPath: string,
@@ -40,18 +54,9 @@ export function resolveComponentRegistryEntry(
   // eslint-disable-next-line ts/no-use-before-define
   const usingComponents = resolveUsingComponents(context, ownerJsonPath, ownerFilePath)
   const componentBasePath = genericComponentBasePath ?? usingComponents.get(alias)
-  if (!componentBasePath) {
-    return null
-  }
-
-  const filePath = `${componentBasePath}.js`
-  const templatePath = `${componentBasePath}.wxml`
-  const definition = context.moduleLoader.executeComponentModule(filePath, componentBasePath)
-  return {
-    definition,
-    filePath,
-    templatePath,
-  } satisfies BrowserComponentRegistryEntry
+  return componentBasePath
+    ? resolveComponentRegistryEntryByPath(context, componentBasePath)
+    : null
 }
 
 function readComponentConfig(files: BrowserVirtualFiles, jsonPath: string) {
@@ -294,9 +299,13 @@ export function createBrowserComponentInstance(
   componentScopeId: string,
   context: BrowserRendererContext,
   clonedNode: DomNodeLike,
-  componentEntry: NonNullable<ReturnType<typeof resolveComponentRegistryEntry>>,
+  componentEntry: BrowserComponentRegistryEntry,
   nextProperties: Record<string, any>,
   ownerScopeId: string | undefined,
+  options?: {
+    registerInstance?: (instance: HeadlessComponentInstance) => void
+    runInitialPageShow?: boolean
+  },
 ) {
   const isWevuNativeDefinition = Object.keys(componentEntry.definition.methods ?? {}).some(key => key.startsWith('__weapp_vite_'))
     || Object.hasOwn(componentEntry.definition.properties ?? {}, '__wvSlotOwnerId')
@@ -321,19 +330,22 @@ export function createBrowserComponentInstance(
     ? context.componentCache.get(ownerScopeId) ?? null
     : null
   context.componentCache.set(componentScopeId, componentInstance)
+  options?.registerInstance?.(componentInstance)
   runComponentLifecycle(componentInstance, 'created')
   runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(componentProperties), {})
   componentInstance.__propertySnapshots = Object.fromEntries(
     Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
   )
   runComponentLifecycle(componentInstance, 'attached')
-  runComponentPageLifetime(componentInstance, 'show')
+  if (options?.runInitialPageShow !== false) {
+    runComponentPageLifetime(componentInstance, 'show')
+  }
   return componentInstance
 }
 
 export function renderBrowserComponentTemplate(
   context: BrowserRendererContext,
-  componentEntry: NonNullable<ReturnType<typeof resolveComponentRegistryEntry>>,
+  componentEntry: BrowserComponentRegistryEntry,
   renderNodeTree: (
     node: DomNodeLike,
     scope: BrowserRenderScope,
