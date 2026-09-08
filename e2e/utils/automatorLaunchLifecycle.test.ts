@@ -7,6 +7,29 @@ afterEach(() => {
 })
 
 describe('automator launch lifecycle', () => {
+  it('records timer expiration independently of the monotonic clock reading', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    const lifecycle = new AutomatorLaunchLifecycle(50, 'launch')
+    const result = lifecycle.run(() => new Promise<void>(() => {}))
+    const assertion = expect(result).rejects.toThrow('Timeout in launch after 50ms')
+    expect(lifecycle.timedOut).toBe(false)
+    await vi.advanceTimersByTimeAsync(50)
+    await assertion
+    expect(performance.now()).toBeLessThan(lifecycle.deadlineAt)
+    expect(lifecycle.timedOut).toBe(true)
+  })
+
+  it('does not classify another cancellation reason as its timeout', async () => {
+    const lifecycle = new AutomatorLaunchLifecycle(50, 'launch')
+    const reason = new Error('caller canceled launch')
+    const result = lifecycle.run(async () => {
+      lifecycle.controller.abort(reason)
+    })
+    await expect(result).rejects.toBe(reason)
+    expect(lifecycle.timedOut).toBe(false)
+  })
+
   it('disposes a result past the monotonic deadline before the timer callback runs', async () => {
     vi.useFakeTimers()
     let now = 0

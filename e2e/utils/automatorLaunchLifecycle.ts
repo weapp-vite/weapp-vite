@@ -17,6 +17,10 @@ export class AutomatorLaunchLifecycle {
     this.timeoutError = new Error(`Timeout in ${label} after ${timeoutMs}ms`)
   }
 
+  get timedOut() {
+    return this.signal.aborted && this.signal.reason === this.timeoutError
+  }
+
   throwIfAborted() {
     if (!this.signal.aborted && performance.now() >= this.deadlineAt) {
       this.controller.abort(this.timeoutError)

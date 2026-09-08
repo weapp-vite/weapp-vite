@@ -90,6 +90,26 @@ describe('waitForSocketReady', () => {
     }
   })
 
+  it('reports socket timeout even when the timer fires before the next monotonic deadline reading', async () => {
+    vi.useFakeTimers()
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0)
+    const socket = new EventEmitter() as EventEmitter & { destroy: ReturnType<typeof vi.fn> }
+    socket.destroy = vi.fn()
+    const connect = vi.spyOn(net, 'createConnection').mockReturnValue(socket as unknown as net.Socket)
+    try {
+      const task = waitForSocketReady({ port: 43210, timeoutMs: 50 })
+      const assertion = expect(task).rejects.toThrow('Timed out waiting for automator socket')
+      await vi.advanceTimersByTimeAsync(50)
+      await assertion
+      expect(socket.destroy).toHaveBeenCalledOnce()
+    }
+    finally {
+      connect.mockRestore()
+      now.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
   it('aborts the actual HTTP fallback within the original socket deadline', async () => {
     vi.useFakeTimers()
     const { child, stdout } = createMockChild()

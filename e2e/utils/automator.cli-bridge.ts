@@ -558,7 +558,7 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions): Pr
     return await lifecycle.run(() => pollForSocketReady(options, lifecycle))
   }
   catch (error) {
-    if (!options.signal?.aborted && performance.now() >= lifecycle.deadlineAt) {
+    if (lifecycle.timedOut) {
       throw new Error(`Timed out waiting for automator socket 127.0.0.1:${options.port}`, { cause: error })
     }
     throw error
