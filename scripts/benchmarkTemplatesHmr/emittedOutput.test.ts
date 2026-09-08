@@ -72,6 +72,15 @@ describe('template benchmark emitted ownership', () => {
     await expect(createEmittedScriptReader(entry, root)()).rejects.toThrow('escapes the output root')
   })
 
+  it('identifies malformed reachable payloads without exposing the workspace path', async () => {
+    const entry = await write('index.js', 'require("./hmr/update.js")')
+    await write('hmr/update.js', 'function payload() { export const invalid = true }')
+    const error = await createEmittedScriptReader(entry, root)().catch(error => error as Error)
+    expect(error).toBeInstanceOf(Error)
+    expect((error as Error).message).toContain('Cannot parse emitted script hmr/update.js:')
+    expect((error as Error).message).not.toContain(root)
+  })
+
   it('fails restoration if the reachable marker remains', async () => {
     const entry = await write('index.js', 'require("./update.js")')
     await write('update.js', 'console.log("old-marker")')

@@ -43,7 +43,13 @@ export function createEmittedScriptReader(entryFile: string, outputRoot: string)
       return cached.imports
     }
     const imports: string[] = []
-    const ast = parse(source, { sourceType: 'unambiguous', sourceFilename: label(filename) })
+    let ast: ReturnType<typeof parse>
+    try {
+      ast = parse(source, { sourceType: 'unambiguous', sourceFilename: label(filename) })
+    }
+    catch (error) {
+      throw new Error(`Cannot parse emitted script ${label(filename)}: ${error instanceof Error ? error.message : 'unknown syntax error'}`)
+    }
     traverse(ast, {
       CallExpression(nodePath) {
         const { callee, arguments: args } = nodePath.node

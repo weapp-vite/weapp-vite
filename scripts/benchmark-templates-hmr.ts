@@ -272,7 +272,6 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
     normalizePath(path.relative(repoRoot, template.workspaceRoot)),
     '--platform',
     'weapp',
-    '--skipNpm',
   ], {
     cwd: repoRoot,
     env: {
@@ -289,10 +288,19 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
 
   try {
     const startupStartedAt = performance.now()
-    await dev.waitFor(waitForBenchmarkInitialOutputs([
-      { filename: path.join(template.workspaceRoot, 'dist/app.json'), label: 'app.json' },
-      ...scenarios.map(scenario => ({ filename: scenario.outputFile, label: scenario.id })),
-    ], { timeoutMs: startupTimeoutMs }), `${template.id} initial outputs generated`)
+    // 入口文件可能先于原生 npm 依赖写出，完整 CLI 构建结束后才能开始采样。
+    await dev.waitFor(Promise.all([
+      dev.waitForInitialBuild(startupTimeoutMs),
+      waitForBenchmarkInitialOutputs([
+        { filename: path.join(template.workspaceRoot, 'dist/app.json'), label: 'app.json' },
+        ...scenarios.map(scenario => ({ filename: scenario.outputFile, label: scenario.id })),
+      ], { timeoutMs: startupTimeoutMs }),
+    ]), `${template.id} initial outputs generated`)
+    for (const scenario of scenarios) {
+      if (scenario.group === 'native-script' || scenario.group === 'vue-script') {
+        await createEmittedScriptReader(scenario.outputFile, path.join(template.workspaceRoot, 'dist'))()
+      }
+    }
     result.startupMs = performance.now() - startupStartedAt
     const inspectorUrl = await waitForInspectorUrl(dev.getOutput, `${template.id} dev inspector`)
 
