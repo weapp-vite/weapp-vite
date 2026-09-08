@@ -2609,14 +2609,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/react-runtime-spike.runtime.test.ts:146",
+          "source": "e2e/ide/react-runtime-spike.runtime.test.ts:148",
           "name": "react runtime spike (weapp e2e) > renders React hooks and dispatches host events through generic WXML",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "REACT_FIXTURE",
               "checkpoints": "[ counterCheckpoint({ id: 'initial', action: '首屏显示初始 hooks、context、输入和 keyed 列表', mode: 'generic', count: 0 }), counterCheckpoint({ id: 'incremented', action: '点击 increment 更新 count 和 memo doubled', mode: 'generic', count: 1 }), counterChec",
-              "source": "e2e/ide/react-runtime-spike.runtime.test.ts:147"
+              "source": "e2e/ide/react-runtime-spike.runtime.test.ts:149"
             }
           ],
           "routes": [],
@@ -2631,14 +2631,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/react-runtime-spike.runtime.test.ts:168",
+          "source": "e2e/ide/react-runtime-spike.runtime.test.ts:170",
           "name": "react runtime spike (weapp e2e) > renders the compiled native WXML page with binding-only payloads",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "REACT_FIXTURE",
               "checkpoints": "[ counterCheckpoint({ id: 'initial', action: '首屏显示静态绑定的 counter 和问候', mode: 'static', count: 0 }), counterCheckpoint({ id: 'incremented', action: '点击 increment 通过最小 setData payload 更新文本', mode: 'static', count: 1 }), counterCheckpoint({ id:",
-              "source": "e2e/ide/react-runtime-spike.runtime.test.ts:169"
+              "source": "e2e/ide/react-runtime-spike.runtime.test.ts:171"
             }
           ],
           "routes": [],
@@ -2652,14 +2652,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/react-runtime-spike.runtime.test.ts:216",
+          "source": "e2e/ide/react-runtime-spike.runtime.test.ts:218",
           "name": "react runtime spike (weapp e2e) > passes props, change events and default slots across all six interop edges",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "REACT_FIXTURE",
               "checkpoints": "[ interopCheckpoint(0, runtimeProvider), ...INTEROP_EDGES.map((_, index) => interopCheckpoint(index + 1, runtimeProvider)), ]",
-              "source": "e2e/ide/react-runtime-spike.runtime.test.ts:217"
+              "source": "e2e/ide/react-runtime-spike.runtime.test.ts:219"
             }
           ],
           "routes": [],
@@ -4365,14 +4365,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:335",
+          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337",
           "name": "template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
               "checkpoints": "[...colors.map((color, index) => ({ id: `background:${index}`, route: INDEX_ROUTE, action: `背景阶段 ${index}：计算样式、布局与点击计数`, nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'",
-              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337"
+              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:339"
             }
           ],
           "routes": [],
@@ -6082,7 +6082,7 @@
     },
     {
       "file": "e2e/ide/react-runtime-spike.runtime.test.ts",
-      "sha256": "2834b8345b8ba3db46b61b5ebb7bfe4f841b4028790a869376533c183ac5f98b"
+      "sha256": "5e920f1ae5d7b3056afce63ad8832790966d600ae2ca9bb3e54f8f95593b4c56"
     },
     {
       "file": "e2e/ide/reactRuntimeDom/index.ts",
@@ -6250,7 +6250,7 @@
     },
     {
       "file": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "dceaf6eb11a6943a3b6deaa5e7c462ae5461f33b743bdea797d8cdf9caea04e7"
+      "sha256": "7d9cc53b49169d3181237708013369deb6423b6ee90478978de05818fa39d061"
     },
     {
       "file": "e2e/ide/template-wevu-tdesign-regression.shared.ts",
@@ -6462,7 +6462,7 @@
     },
     {
       "file": "e2e/utils/automator.cli-bridge.ts",
-      "sha256": "0d173cc7f62c68450cbbdd2dafc36458781085d6f493bca42720fd37de695700"
+      "sha256": "84b191a81946da13023f88f0c6278878815866c45bf7ed5a803ae11ed8cf8404"
     },
     {
       "file": "e2e/utils/automator.headless.ts",
@@ -6470,7 +6470,7 @@
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "31c75a57115acedb96dc5cae8d8e1ba0fe0f926c09dff638865238e41c776f0a"
+      "sha256": "932cd474fb477bd1a9144d21ea9e30ff6ed26d75cfd1b1193d85a58413a46587"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",
@@ -6478,7 +6478,7 @@
     },
     {
       "file": "e2e/utils/automatorLaunchLifecycle.ts",
-      "sha256": "0494ffa2d647ac35913458a949bfe9c3e038e24cb99f0d79d598fbdeed5e2bb5"
+      "sha256": "a9f14e87906cfb622ce979a623af40571acbc916760d4898422dafb8171a7006"
     },
     {
       "file": "e2e/utils/buildLog.ts",
@@ -6534,7 +6534,11 @@
     },
     {
       "file": "e2e/utils/hmr-helpers.ts",
-      "sha256": "4b7f5a4af693263162fe584533634851a5e37adc94c133755ab45e658381ac8c"
+      "sha256": "113616d6315471721979fb1eb9b20bca9de7628a3fe63f3b3439842f07f0026f"
+    },
+    {
+      "file": "e2e/utils/hmrAtomicRename.ts",
+      "sha256": "07bcd6115412e2021bd24657ec5244454e2c664a982f876b15beba489c4e2499"
     },
     {
       "file": "e2e/utils/hmrProbeFailureDiagnostics.ts",
@@ -6635,6 +6639,10 @@
     {
       "file": "e2e/utils/vitestTargetFile.ts",
       "sha256": "745826d66d4c99cf3d5522b3b7b20b5f823eeaa9a9b50c855a7a39937b9e6867"
+    },
+    {
+      "file": "e2e/utils/watchResolvedDirectory.ts",
+      "sha256": "6e536366735395c61a22ca11ee9a56fd3fd29210bf25adc567b3b40f8513ab64"
     },
     {
       "file": "e2e/utils/wevu-jsx-tsx.ts",

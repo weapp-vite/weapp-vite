@@ -996,23 +996,23 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### react runtime spike (weapp e2e) > renders React hooks and dispatches host events through generic WXML
 
-- Source: `e2e/ide/react-runtime-spike.runtime.test.ts:146`
+- Source: `e2e/ide/react-runtime-spike.runtime.test.ts:148`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `REACT_FIXTURE`; checkpoints: `[ counterCheckpoint({ id: 'initial', action: '首屏显示初始 hooks、context、输入和 keyed 列表', mode: 'generic', count: 0 }), counterCheckpoint({ id: 'incremented', action: '点击 increment 更新 count 和 memo doubled', mode: 'generic', count: 1 }), counterChec`; source: `e2e/ide/react-runtime-spike.runtime.test.ts:147`
+- Registration: `createDomAcceptance`; fixture: `REACT_FIXTURE`; checkpoints: `[ counterCheckpoint({ id: 'initial', action: '首屏显示初始 hooks、context、输入和 keyed 列表', mode: 'generic', count: 0 }), counterCheckpoint({ id: 'incremented', action: '点击 increment 更新 count 和 memo doubled', mode: 'generic', count: 1 }), counterChec`; source: `e2e/ide/react-runtime-spike.runtime.test.ts:149`
 - Operations: `reLaunch(GENERIC_ROUTE)`, `check(initial)`, `tap(<missing>)`, `check(incremented)`, `check(appended)`, `check(input-updated)`
 
 ### react runtime spike (weapp e2e) > renders the compiled native WXML page with binding-only payloads
 
-- Source: `e2e/ide/react-runtime-spike.runtime.test.ts:168`
+- Source: `e2e/ide/react-runtime-spike.runtime.test.ts:170`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `REACT_FIXTURE`; checkpoints: `[ counterCheckpoint({ id: 'initial', action: '首屏显示静态绑定的 counter 和问候', mode: 'static', count: 0 }), counterCheckpoint({ id: 'incremented', action: '点击 increment 通过最小 setData payload 更新文本', mode: 'static', count: 1 }), counterCheckpoint({ id:`; source: `e2e/ide/react-runtime-spike.runtime.test.ts:169`
+- Registration: `createDomAcceptance`; fixture: `REACT_FIXTURE`; checkpoints: `[ counterCheckpoint({ id: 'initial', action: '首屏显示静态绑定的 counter 和问候', mode: 'static', count: 0 }), counterCheckpoint({ id: 'incremented', action: '点击 increment 通过最小 setData payload 更新文本', mode: 'static', count: 1 }), counterCheckpoint({ id:`; source: `e2e/ide/react-runtime-spike.runtime.test.ts:171`
 - Operations: `reLaunch(STATIC_ROUTE)`, `check(initial)`, `tap(<missing>)`, `check(incremented)`, `check(input-updated)`
 
 ### react runtime spike (weapp e2e) > passes props, change events and default slots across all six interop edges
 
-- Source: `e2e/ide/react-runtime-spike.runtime.test.ts:216`
+- Source: `e2e/ide/react-runtime-spike.runtime.test.ts:218`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `REACT_FIXTURE`; checkpoints: `[ interopCheckpoint(0, runtimeProvider), ...INTEROP_EDGES.map((_, index) => interopCheckpoint(index + 1, runtimeProvider)), ]`; source: `e2e/ide/react-runtime-spike.runtime.test.ts:217`
+- Registration: `createDomAcceptance`; fixture: `REACT_FIXTURE`; checkpoints: `[ interopCheckpoint(0, runtimeProvider), ...INTEROP_EDGES.map((_, index) => interopCheckpoint(index + 1, runtimeProvider)), ]`; source: `e2e/ide/react-runtime-spike.runtime.test.ts:219`
 - Operations: `reLaunch(INTEROP_ROUTE)`, `check(initial)`, `tap(<missing>)`, `check(edge.id)`, `callMethodWithOptions(_readInteropE2E)`
 
 ## ide/request-clients-real-native.runtime.test.ts
@@ -1554,9 +1554,9 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack
 
-- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:335`
+- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:339`
 - Operations: `check(background:0)`, `callMethodWithOptions(handleCountTap)`, `check(background:1)`, `check(background:${updateIndex + 2})`, `check(local-style-priority)`
 
 ## ide/vite-native-ts.worker.runtime.test.ts
