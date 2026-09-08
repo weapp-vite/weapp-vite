@@ -25,6 +25,20 @@ function splitPatterns(value: unknown) {
 }
 
 describe('CI artifact coverage', () => {
+  it('prepares imported fixture support files after restoring package artifacts and before internal tests', async () => {
+    const workflow = await readWorkflow('ci-e2e.yml')
+    const job = workflow.jobs['ide-dom-acceptance-internal']
+    expect(job.with?.consume_build_artifact).toBeTruthy()
+    const commands = splitPatterns(job.with?.main_command)
+    const testIndex = commands.findIndex(command => command.includes('vitest.e2e.internal.config.ts'))
+    expect(testIndex).toBeGreaterThanOrEqual(0)
+    for (const fixture of ['github-issues', 'template-wevu-regression']) {
+      const prepareIndex = commands.indexOf(`node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/${fixture} --platform weapp`)
+      expect(prepareIndex).toBeGreaterThanOrEqual(0)
+      expect(prepareIndex).toBeLessThan(testIndex)
+    }
+  })
+
   it('uploads the build identity manifest while restricting hidden files to build output paths', async () => {
     const workflow = await readWorkflow('reusable-node-command.yml')
     const steps = Object.values(workflow.jobs).flatMap(job => job.steps ?? [])

@@ -56,7 +56,7 @@ describe('HMR atomic rename save', () => {
     }
     expect(duringWrite).toBe(oldContent)
     expect(temporary).not.toBe(target)
-    expect(path.dirname(temporary)).toBe(root)
+    expect(path.resolve(path.dirname(temporary))).toBe(path.resolve(root))
     expect(await readTarget()).toBe(newContent)
     expect(await nodeFs.readdir(root)).toEqual(['index.ts'])
   })

@@ -74,6 +74,8 @@ jobs:
       timeout_minutes: 15
       consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
       main_command: |
+        node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/github-issues --platform weapp
+        node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/template-wevu-regression --platform weapp
         node --import tsx scripts/check-e2e-ide-shared-launch.ts
         node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --check
         pnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism

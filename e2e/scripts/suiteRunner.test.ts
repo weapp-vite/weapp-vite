@@ -20,6 +20,17 @@ import {
   runTaskSuite,
 } from './suiteRunner'
 
+function terminateTestChild(pid: number) {
+  try {
+    process.kill(pid)
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ESRCH') {
+      throw error
+    }
+  }
+}
+
 describe('suiteRunner', () => {
   it('formats failure summary with failed tasks', () => {
     const summary = formatSuiteSummary('e2e:ci', [
@@ -170,14 +181,24 @@ describe('suiteRunner', () => {
     process.exitCode = undefined
 
     const leakStdoutScriptPath = path.join(tempRoot, 'leak-stdio.cjs')
+    const descendantScriptPath = path.join(tempRoot, 'descendant.cjs')
+    fs.writeFileSync(descendantScriptPath, `
+      require('node:fs').writeFileSync(process.argv[2], String(process.pid));
+      setTimeout(() => {}, 10000);
+      process.send('ready');
+    `)
     fs.writeFileSync(leakStdoutScriptPath, `
-      const fs = require('node:fs');
       const { spawn } = require('node:child_process');
-      const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 3000)'], {
-        stdio: ['ignore', 1, 2],
+      const child = spawn(process.execPath, [${JSON.stringify(descendantScriptPath)}, ${JSON.stringify(pidFile)}], {
+        detached: true,
+        windowsHide: true,
+        stdio: ['ignore', 1, 2, 'ipc'],
       });
-      fs.writeFileSync(${JSON.stringify(pidFile)}, String(child.pid));
-      process.exit(0);
+      child.once('message', () => {
+        child.disconnect();
+        child.unref();
+        process.exit(0);
+      });
     `)
 
     try {
@@ -201,11 +222,7 @@ describe('suiteRunner', () => {
       if (fs.existsSync(pidFile)) {
         const childPid = Number(fs.readFileSync(pidFile, 'utf8'))
         if (Number.isInteger(childPid) && childPid > 0) {
-          try {
-            process.kill(childPid)
-          }
-          catch {
-          }
+          terminateTestChild(childPid)
         }
       }
 
