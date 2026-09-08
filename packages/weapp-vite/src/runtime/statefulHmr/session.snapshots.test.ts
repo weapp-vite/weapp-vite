@@ -22,6 +22,7 @@ const harness = vi.hoisted(() => ({
   createServer: vi.fn(),
   writeOutput: vi.fn<(outDir: string, output: StatefulHmrOutputFile[], initialPublicAssets?: StatefulHmrInitialPublicAssets) => Promise<void>>(),
   fullBuild: vi.fn<() => Promise<void>>(),
+  beforeInitialReady: vi.fn<() => Promise<void>>(),
 }))
 
 vi.mock('vite', async importOriginal => ({
@@ -58,7 +59,7 @@ function snapshot(color: string, routes: string[] = [route]): StatefulHmrSnapsho
 }
 
 async function start(initial = snapshot('red')) {
-  const rebuild = vi.fn(async () => snapshot('blue'))
+  const rebuild = vi.fn(async (_files: string[]) => snapshot('blue'))
   const ctx = {
     runtimeState: createRuntimeState(),
     configService: {
@@ -89,6 +90,7 @@ describe('stateful snapshot output transactions', () => {
     vi.useFakeTimers()
     vi.clearAllMocks()
     harness.writeOutput.mockReset().mockResolvedValue()
+    harness.beforeInitialReady.mockReset().mockResolvedValue()
     harness.fullBuild.mockReset().mockImplementation(async () => {
       harness.callbacks!.onOutput(appOutput())
     })
@@ -104,9 +106,10 @@ describe('stateful snapshot output transactions', () => {
         moduleGraph: { getModulesByFile: () => undefined },
         middlewares: { use: vi.fn() },
         httpServer: { address: () => undefined },
-        close: vi.fn(),
+        close: vi.fn().mockResolvedValue(undefined),
         async listen() {
           harness.callbacks!.onOutput(appOutput())
+          await harness.beforeInitialReady()
           await harness.callbacks!.waitForInitialBundle()
         },
       }
@@ -139,25 +142,16 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.writeOutput.mock.calls.every(([, , publicAssets]) => publicAssets === undefined)).toBe(true)
   })
 
-  it('retains initial public publication after a failed write and consumes it only after a successful retry', async () => {
+  it('rejects a failed initial publication and publishes public assets on the next startup', async () => {
     const commit = vi.spyOn(StatefulHmrTransport.prototype, 'commitFullBuild')
     const initialPublicAssets = { publicDir: path.join(root, 'static-assets'), copyPublicDir: true }
     harness.writeOutput.mockRejectedValueOnce(new Error('simulated initial public write failure'))
-    let ready = false
-    const starting = start().then((session) => {
-      ready = true
-      return session
-    })
-    await vi.advanceTimersByTimeAsync(1)
+    await expect(start()).rejects.toThrow('simulated initial public write failure')
 
     expect(harness.writeOutput).toHaveBeenCalledTimes(1)
     expect(harness.writeOutput.mock.calls[0]?.[2]).toEqual(initialPublicAssets)
     expect(commit).not.toHaveBeenCalled()
-    expect(ready).toBe(false)
-
-    // 模拟引擎在写入失败后重新交付完整产物，失败的发布不能消费首轮初始化配置。
-    harness.callbacks!.onOutput(appOutput())
-    const session = await starting
+    const session = await start()
     const completeOutputs = harness.writeOutput.mock.calls.filter(([, output]) => output.some(item => item.fileName === 'app.js'))
     expect(completeOutputs).toHaveLength(2)
     expect(completeOutputs.map(([, , publicAssets]) => publicAssets)).toEqual([initialPublicAssets, initialPublicAssets])
@@ -167,7 +161,6 @@ describe('stateful snapshot output transactions', () => {
       source: expect.stringContaining('.probe { color: red; }'),
     })
     expect(commit).toHaveBeenCalledTimes(1)
-    expect(ready).toBe(true)
 
     harness.writeOutput.mockClear()
     session.full()
@@ -175,6 +168,26 @@ describe('stateful snapshot output transactions', () => {
     expect(commit).toHaveBeenCalledTimes(2)
     expect(harness.writeOutput.mock.calls.some(([, output]) => output.some(item => item.fileName === 'app.js'))).toBe(true)
     expect(harness.writeOutput.mock.calls.every(([, , publicAssets]) => publicAssets === undefined)).toBe(true)
+  })
+
+  it('keeps the same output queue recoverable without consuming public assets before its first successful write', async () => {
+    const readyGate = Promise.withResolvers<void>()
+    harness.beforeInitialReady.mockImplementationOnce(() => readyGate.promise)
+    harness.writeOutput.mockRejectedValueOnce(new Error('initial write failed before ready subscription'))
+    const starting = expect(start()).rejects.toThrow('initial write failed before ready subscription')
+    await vi.advanceTimersByTimeAsync(1)
+    expect(harness.writeOutput).toHaveBeenCalledTimes(1)
+
+    // 引擎可在启动方收到失败前再次交付输出；队列恢复不应把首轮失败改成成功。
+    harness.callbacks!.onOutput(appOutput())
+    await vi.advanceTimersByTimeAsync(1)
+    expect(harness.writeOutput).toHaveBeenCalledTimes(2)
+    expect(harness.writeOutput.mock.calls.map(([, , publicAssets]) => publicAssets)).toEqual([
+      { publicDir: path.join(root, 'static-assets'), copyPublicDir: true },
+      { publicDir: path.join(root, 'static-assets'), copyPublicDir: true },
+    ])
+    readyGate.resolve()
+    await starting
   })
 
   it('uses initial snapshot routes and clears global-only styles when a refresh changes isolation', async () => {
@@ -235,16 +248,49 @@ describe('stateful snapshot output transactions', () => {
     expect(commit).toHaveBeenCalledTimes(1)
     session.rebuild.mockResolvedValue(snapshot('blue', []))
     harness.writeOutput.mockClear().mockRejectedValueOnce(new Error('simulated full write failure'))
+    const outputReady = Promise.withResolvers<void>()
+    harness.fullBuild.mockImplementationOnce(async () => {
+      // 对应 ensureLatestBuildOutput 在异步输出回调完成后才返回的边界。
+      await outputReady.promise
+      harness.callbacks!.onOutput(appOutput())
+    })
     session.full()
     await vi.advanceTimersByTimeAsync(50)
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    outputReady.resolve()
+    await vi.advanceTimersByTimeAsync(1)
     expect(commit).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(1)
     harness.writeOutput.mockClear()
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+    expect(session.rebuild.mock.calls[1]?.[0]).toEqual([
+      path.join(root, 'src/page.vue'),
+      path.join(root, 'src/page.wxss'),
+    ])
+    expect(commit).toHaveBeenCalledTimes(2)
     expect(writtenAssets()).toEqual(expect.arrayContaining([
       { type: 'asset', fileName: styleFile, source: '.probe { color: blue; }' },
       { type: 'asset', fileName: `${route}.wxss`, source: '' },
     ]))
+  })
+
+  it('retains a full batch when the adapter finishes without delivering output', async () => {
+    const session = await start()
+    harness.writeOutput.mockClear()
+    harness.fullBuild.mockResolvedValueOnce(undefined)
+    session.full()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(1)
+
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+    expect(harness.writeOutput.mock.calls.some(([, output]) => output.some(item => item.fileName === 'app.js'))).toBe(true)
   })
 
   it('discards superseded full snapshots before writing and adopts the replacement metadata atomically', async () => {

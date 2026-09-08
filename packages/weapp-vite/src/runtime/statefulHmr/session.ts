@@ -41,6 +41,12 @@ interface StatefulHmrSnapshots {
   rebuild: (files: string[]) => Promise<StatefulHmrSnapshot>
 }
 
+interface ActiveSnapshotBatch {
+  isSuperseded: () => boolean
+  outputTasks: Promise<void>[]
+  snapshot: StatefulHmrSnapshot
+}
+
 export async function runStatefulHmrDev(
   ctx: MutableCompilerContext,
   buildOptions: InlineConfig,
@@ -131,7 +137,7 @@ export async function runStatefulHmrDev(
 }
 
 class StatefulHmrSession {
-  private activeSnapshotBatch?: { isSuperseded: () => boolean, snapshot: StatefulHmrSnapshot }
+  private activeSnapshotBatch?: ActiveSnapshotBatch
   private readonly adapter: StatefulHmrViteAdapter
   private readonly initialBundle = Promise.withResolvers<void>()
   private readonly snapshotScheduler: StatefulHmrSnapshotScheduler
@@ -154,6 +160,8 @@ class StatefulHmrSession {
     private readonly snapshots: StatefulHmrSnapshots,
     devWatchOptions: { compareContentsForPolling?: boolean, pollInterval?: number, usePolling?: boolean },
   ) {
+    // DevEngine 可能先交付失败输出、随后才等待首轮就绪；保留拒绝结果但提前订阅。
+    void this.initialBundle.promise.catch(() => {})
     this.emittedSourceIds = collectStatefulHmrEmittedSourceIds(snapshots.initial.output, server.config.root)
     this.initialSnapshot = snapshots.initial
     this.transport = new StatefulHmrTransport(
@@ -248,7 +256,7 @@ class StatefulHmrSession {
 
   private handleOutput(output: StatefulHmrOutputFile[]): void {
     const snapshotBatch = this.activeSnapshotBatch
-    void this.enqueueOutput(async () => {
+    const outputTask = this.enqueueOutput(async () => {
       if (snapshotBatch?.isSuperseded()) {
         return
       }
@@ -295,6 +303,12 @@ class StatefulHmrSession {
         const moduleCount = await this.adapter.registerBundleModules(compatibleOutput)
         this.server.config.logger.info(`[weapp-vite] 微信状态保持 HMR 已就绪（${moduleCount} modules）`)
         this.initialBundle.resolve()
+      }
+    })
+    snapshotBatch?.outputTasks.push(outputTask)
+    void outputTask.catch((error) => {
+      if (!snapshotBatch && this.initialSnapshot) {
+        this.initialBundle.reject(error)
       }
     })
   }
@@ -373,10 +387,12 @@ class StatefulHmrSession {
   }
 
   private enqueueOutput(task: () => Promise<void>): Promise<void> {
-    this.outputChain = this.outputChain.then(task, task).catch((error) => {
+    const outputTask = this.outputChain.then(task)
+    // 队列尾部恢复只保证后续任务可执行，当前调用方仍需收到实际写入失败。
+    this.outputChain = outputTask.catch((error) => {
       this.server.config.logger.error(`[weapp-vite] stateful HMR output failed: ${formatStatefulHmrError(error)}`)
     })
-    return this.outputChain
+    return outputTask
   }
 
   private async executeSnapshotBatch(batch: {
@@ -389,11 +405,14 @@ class StatefulHmrSession {
       return
     }
     if (batch.mode === 'full') {
-      const activeBatch = { ...batch, snapshot }
+      const activeBatch: ActiveSnapshotBatch = { ...batch, snapshot, outputTasks: [] }
       this.activeSnapshotBatch = activeBatch
       try {
         await this.adapter.rebuild()
-        await this.outputChain
+        if (!activeBatch.outputTasks.length && !batch.isSuperseded()) {
+          throw new Error('微信状态保持 HMR 完整构建未交付可持久化的输出。')
+        }
+        await Promise.all(activeBatch.outputTasks)
       }
       finally {
         if (this.activeSnapshotBatch === activeBatch) {
