@@ -341,6 +341,20 @@ describe('managed Tailwind integration', () => {
     )).toMatch(/^\0weapp-vite:managed-tailwindcss-entry:0\.css\?weapp-vite-sidecar-owner=/)
   })
 
+  it('keeps dependency-only style requests out of every CSS generation hook', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tailwind-dependency-only-'))
+    temporaryRoots.push(root)
+    const entry = path.join(root, 'src/app.css')
+    await fs.mkdir(path.dirname(entry), { recursive: true })
+    await fs.writeFile(entry, '@import "tailwindcss";')
+    const plugin = getPlugins({ cssEntries: [entry] }, root)[0]!
+    const request = createSidecarSourceSpecifier(path.join(root, 'src/app.ts'), entry, 'style', true)
+    expect(getHookHandler(plugin.resolveId)?.call({} as any, request, undefined, {} as any)).toBeNull()
+    expect(getHookHandler(plugin.load)?.call({} as any, request)).toBeNull()
+    expect(getHookHandler(plugin.transform)?.call({} as any, 'export default "dependency";', request, {} as any)).toBeNull()
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
+  })
+
   it('invalidates only changed files and removes generated entries when deleted', async () => {
     const entry = '/project/src/app.css'
     const snapshot = {
@@ -441,7 +455,7 @@ describe('managed Tailwind integration', () => {
     const resolved = await getHookHandler(plugin.resolveId)?.call({ resolve } as any, request, undefined, {} as any)
 
     expect(compiled.code).not.toBe(source)
-    expect(resolve).toHaveBeenCalledWith('./app.css', filename, { skipSelf: true })
+    expect(resolve).toHaveBeenCalledWith('./app.css', filename.replaceAll('\\', '/'), { skipSelf: true })
     expect(resolved).toMatch(/managed-tailwindcss-entry:0\.css.*hmr=2/)
     const loaded = await getHookHandler(plugin.load)?.call({} as any, resolved as string)
     expect(loaded).toContain('managed_tailwindcss_entry_0')
@@ -464,7 +478,7 @@ describe('managed Tailwind integration', () => {
     expect(await resolveId.call({ resolve } as any, `${filename}?weapp-vite-vue&type=style&index=0&lang.css`, undefined, {} as any)).toBeNull()
     expect(resolve).not.toHaveBeenCalled()
     expect(await resolveId.call({ resolve } as any, `${filename}?weapp-vite-vue&type=style&index=1&lang.css`, undefined, {} as any)).toMatch(/managed-tailwindcss-entry:0\.css/)
-    expect(resolve).toHaveBeenCalledWith('@/styles/global.css', filename, { skipSelf: true })
+    expect(resolve).toHaveBeenCalledWith('@/styles/global.css', filename.replaceAll('\\', '/'), { skipSelf: true })
   })
 
   it('does not replace CSS outside the managed entry set', () => {

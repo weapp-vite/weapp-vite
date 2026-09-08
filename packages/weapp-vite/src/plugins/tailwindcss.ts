@@ -519,7 +519,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       return createVirtualEntryId(index, source)
     },
     load(id) {
-      if (resolved.options.generator === false) {
+      if (resolved.options.generator === false || parseSidecarSourceRequest(id)?.dependencyOnly) {
         return null
       }
       const virtualIndex = parseVirtualEntryIndex(id)
@@ -540,7 +540,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       return createManagedTailwindcssEntryMarker(index)
     },
     transform(code, id) {
-      if (resolved.options.generator === false) {
+      if (resolved.options.generator === false || parseSidecarSourceRequest(id)?.dependencyOnly) {
         return null
       }
       const index = parseManagedEntryIndex(id, entryIndex) ?? resolveAutoEntryIndex(id, code)
