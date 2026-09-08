@@ -18,9 +18,9 @@ export class EntryChunkLifecycle {
     this.scanning = false
   }
 
-  prepare(entryId: string, emitsChunk: boolean): boolean {
+  prepare(entryId: string, emitsChunk: boolean, isGraphEntry: () => boolean = () => false): boolean {
     if (!this.scanning) {
-      if (emitsChunk && !this.registered.has(entryId) && !this.deferred.has(entryId)) {
+      if (emitsChunk && !this.registered.has(entryId) && !isGraphEntry() && !this.deferred.has(entryId)) {
         this.deferred.add(entryId)
         this.requestFullBuild(entryId)
       }

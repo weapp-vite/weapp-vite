@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import process from 'node:process'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
@@ -184,6 +185,34 @@ describe('createConfigService', () => {
       aliasEntries: [],
       relativeSrcRoot: (p: string) => path.relative('/work/src', p) || '.',
     })
+  })
+
+  it.each([
+    ['omitted', undefined],
+    ['empty', ''],
+    ['current directory', '.'],
+    ['relative project', 'fixtures/../fixtures/demo'],
+    ['absolute project', path.join(process.cwd(), 'fixtures/demo')],
+  ])('resolves the %s root before loading config and resolving packages', async (_, cwd) => {
+    const expectedRoot = path.join(process.cwd(), cwd && cwd !== '.' ? 'fixtures/demo' : '')
+    loadConfigImplMock.mockImplementationOnce(async (input) => {
+      const config = { weapp: {} }
+      loadConfigFactoryOptionsMock.value.injectBuiltinAliases(config)
+      return createBaseOptions({ cwd: input.cwd, loadOptions: input, config })
+    })
+    const service = createConfigService(createCtx())
+    const input = { cwd, configFile: 'config/vite.config.ts' }
+
+    await service.load(input)
+
+    expect(loadConfigImplMock).toHaveBeenCalledWith(expect.objectContaining({
+      cwd: expectedRoot,
+      configFile: 'config/vite.config.ts',
+    }))
+    expect(resolveBuiltinPackageAliasesMock).toHaveBeenLastCalledWith(expect.objectContaining({ cwd: expectedRoot }))
+    expect(service.cwd).toBe(expectedRoot)
+    expect(service.loadOptions?.cwd).toBe(expectedRoot)
+    expect(input.cwd).toBe(cwd)
   })
 
   it('loads config, updates package manager and emits define env map', async () => {

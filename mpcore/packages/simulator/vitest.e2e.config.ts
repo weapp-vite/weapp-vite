@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
+import { createStatefulNativePageFiles } from './test/helpers/statefulNativePage'
 import { createStatefulVueComponentFiles } from './test/helpers/statefulVueComponent'
 
 const simulatorRoot = import.meta.dirname
@@ -25,13 +26,16 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
-      if (id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture') {
+      if (id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture') {
         return `\0${id}`
       }
     },
     async load(id) {
       if (id === '\0virtual:stateful-native-component-fixture') {
         return `export default ${JSON.stringify(createStatefulNativeComponentFiles())}`
+      }
+      if (id === '\0virtual:stateful-native-page-fixture') {
+        return `export default ${JSON.stringify(createStatefulNativePageFiles())}`
       }
       if (id === '\0virtual:stateful-vue-component-fixture') {
         return `export default ${JSON.stringify(await createStatefulVueComponentFiles())}`

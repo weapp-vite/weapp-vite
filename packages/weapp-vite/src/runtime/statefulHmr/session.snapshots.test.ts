@@ -87,12 +87,16 @@ async function start(initial = snapshot('red'), entryIds: string[] = []) {
   watchers.push(watcher)
   return {
     rebuild,
+    changeProfile(reasons: string[]) {
+      ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = reasons
+    },
     sourceChange(file: string, event = 'update', reasons: string[] = []) {
       changes.set(file, event)
       ctx.onStatefulHmrSourceChange!(file, reasons)
     },
     patch: (reasons: string[]) => {
-      ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = reasons
+      ctx.onStatefulHmrSourceChange!(path.join(root, 'src/page.vue'), reasons)
+      ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = []
       return harness.callbacks!.onPatch([path.join(root, 'src/page.vue')], { type: 'Patch', code: 'void 0', filename: 'update.js' })
     },
     refresh: () => ctx.onStatefulHmrSourceChange!(path.join(root, 'src/page.wxss'), []),
@@ -291,6 +295,73 @@ describe('stateful snapshot output transactions', () => {
       source: expect.stringContaining('color: blue'),
     }))
     expect(delta).toHaveBeenCalledTimes(1)
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('keeps source classifications across unrelated profile writes and consumes only the delivered files', async () => {
+    const component = path.join(root, 'src/component.vue')
+    const other = path.join(root, 'src/other.vue')
+    const session = await start(snapshot('red'), [component, other])
+    session.sourceChange(component, 'update', ['entry-style-only:1'])
+    session.sourceChange(other, 'update', ['entry-local-asset:1'])
+    session.changeProfile(['entry-direct:1'])
+    const patch = { type: 'Patch' as const, code: 'void 0', filename: 'update.js' }
+
+    expect(harness.callbacks!.onPatch([component], patch)).toBe(false)
+    expect(harness.callbacks!.onPatch([other], patch)).toBe(false)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([component, other])
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({
+      fileName: `${route}.wxss`,
+      source: expect.stringContaining('color: blue'),
+    }))
+  })
+
+  it('uses the latest same-file event rather than an earlier style classification', async () => {
+    const component = path.join(root, 'src/component.vue')
+    const session = await start(snapshot('red'), [component])
+    session.sourceChange(component, 'update', ['entry-style-only:1'])
+    session.sourceChange(component, 'update', ['entry-direct:1'])
+    session.changeProfile(['entry-style-only:1'])
+    expect(harness.callbacks!.onPatch([component], {
+      type: 'Patch',
+      code: 'void 0',
+      filename: 'update.js',
+    })).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('consumes classifications for Noop batches without retaining them for a later update', async () => {
+    const component = path.join(root, 'src/component.vue')
+    const session = await start(snapshot('red'), [component])
+    session.sourceChange(component, 'update', ['entry-style-only:1'])
+    expect(harness.callbacks!.onPatch([component], { type: 'Noop' })).toBe(false)
+    session.changeProfile(['entry-local-asset:1'])
+    expect(harness.callbacks!.onPatch([component], {
+      type: 'Patch',
+      code: 'void 0',
+      filename: 'update.js',
+    })).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('keeps the source classification until a native patch arrives after its snapshot', async () => {
+    const component = path.join(root, 'src/component.vue')
+    const session = await start(snapshot('red'), [component])
+    session.sourceChange(component, 'update', ['entry-style-only:1'])
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([component])
+    session.changeProfile(['entry-direct:1'])
+    expect(harness.callbacks!.onPatch([component], {
+      type: 'Patch',
+      code: 'void 0',
+      filename: 'update.js',
+      changedIds: [createSidecarSourceSpecifier(path.join(root, 'src/page.js'), component, 'using-component')],
+    })).toBe(false)
+    await vi.advanceTimersByTimeAsync(100)
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 

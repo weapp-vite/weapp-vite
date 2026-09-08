@@ -171,6 +171,8 @@ class StatefulHmrSession {
   private readonly directoryUpdates: StatefulHmrDirectoryUpdates
   private entryGraphRevision = 0
   private rebuiltEntryGraphRevision = 0
+  // 分类由实际源事件持有，避免其他侧车事件覆盖全局诊断信息后误判当前批次。
+  private readonly sourceDirtyReasons = new Map<string, { reasons: string[] }>()
   private readonly sourceChangeListener = (file: string, dirtyReasonSummary: string[]) => {
     this.handleSourceUpdate(file, dirtyReasonSummary)
   }
@@ -234,6 +236,7 @@ class StatefulHmrSession {
     }
     this.transport.close()
     await this.snapshotScheduler.close()
+    this.sourceDirtyReasons.clear()
     await this.outputChain
   }
 
@@ -262,6 +265,7 @@ class StatefulHmrSession {
       this.requestFullBuild([normalizedFile])
       return
     }
+    this.sourceDirtyReasons.set(normalizedFile, { reasons: [...dirtyReasonSummary] })
     if (shouldRestartStatefulHmrServer(
       [normalizedFile],
       this.ctx.configService?.configFileDependencies,
@@ -351,13 +355,18 @@ class StatefulHmrSession {
 
   private handlePatch(files: string[], output: StatefulHmrDevEngineUpdate): boolean {
     files = this.directoryUpdates.consume(files)
+    const dirtyReasonSummary = [...new Set(files.flatMap((file) => {
+      const source = normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file))
+      const reasons = this.sourceDirtyReasons.get(source)?.reasons ?? []
+      this.sourceDirtyReasons.delete(source)
+      return reasons
+    }))]
     if (this.entryGraphRevision !== this.rebuiltEntryGraphRevision) {
       return false
     }
     if (output.type === 'Noop' || files.length === 0) {
       return false
     }
-    const dirtyReasonSummary = this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary ?? []
     const allowTailwindContentPatch = dirtyReasonSummary.some(reason => reason.startsWith('tailwind-content:'))
     if (!isSafeJavaScriptPatch(
       files,
@@ -375,7 +384,7 @@ class StatefulHmrSession {
       }
       else if (
         (files.length > 0 && files.every(isStatefulHmrAssetFile))
-        || shouldUseStatefulHmrSnapshotOnly(this.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary ?? [])
+        || shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary)
       ) {
         if (!this.snapshotScheduler.isPending()) {
           this.requestSnapshotRefresh(files)
@@ -446,6 +455,18 @@ class StatefulHmrSession {
     mode: 'full' | 'refresh'
   }): Promise<void> {
     const entryGraphRevision = this.entryGraphRevision
+    // 完整构建只消费启动时捕获的事件；同一路径的新事件仍归后续批次所有。
+    const sourceChanges = new Map(batch.files.map(file => [file, this.sourceDirtyReasons.get(file)]))
+    const releaseSourceChanges = () => {
+      if (batch.isSuperseded()) {
+        return
+      }
+      for (const [file, change] of sourceChanges) {
+        if (this.sourceDirtyReasons.get(file) === change) {
+          this.sourceDirtyReasons.delete(file)
+        }
+      }
+    }
     const snapshot = await this.snapshots.rebuild(batch.files)
     if (batch.isSuperseded()) {
       return
@@ -477,6 +498,7 @@ class StatefulHmrSession {
         await Promise.all(activeBatch.outputTasks)
         if (!batch.isSuperseded()) {
           this.rebuiltEntryGraphRevision = entryGraphRevision
+          releaseSourceChanges()
         }
       }
       finally {
@@ -486,6 +508,7 @@ class StatefulHmrSession {
       }
       return
     }
+    // 资产快照不消费源分类，原生 patch 可能在快照写入完成后才抵达。
     await this.enqueueOutput(async () => {
       if (batch.isSuperseded()) {
         return

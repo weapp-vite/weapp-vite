@@ -44,7 +44,7 @@ export function createChunkEmitter(
       const normalizedId = normalizeSourceId(resolvedId.id)
       const entryChunkId = resolveEntryChunkId(normalizedId, resolvedId)
       const shouldEmitChunk = shouldEmitEntryChunk?.(normalizedId, resolvedId) ?? true
-      if (lifecycle && !lifecycle.prepare(normalizedId, shouldEmitChunk)) {
+      if (lifecycle && !lifecycle.prepare(normalizedId, shouldEmitChunk, () => this.getModuleInfo?.(entryChunkId)?.isEntry === true)) {
         stats.skippedLoadedCount += 1
         return stats
       }

@@ -66,6 +66,9 @@ export function createBuildEndHook(state: CorePluginState) {
       state.ctx.runtimeState.build.hmr.didEmitAllEntries = true
     }
     const pendingChanges = state.ctx.moduleGraphService.getPendingChanges()
+    // 发射计划保留当前构建的文件身份，诊断 profile 不参与业务选择。
+    const styleSidecarFiles = new Set<string>()
+    state.hmrState.styleSidecarFiles = styleSidecarFiles
     const affectedEntries = new Set<string>()
     const causes = new Map<string, number>()
     let metadataOnly = pendingChanges.length > 0
@@ -73,6 +76,9 @@ export function createBuildEndHook(state: CorePluginState) {
     for (const change of pendingChanges) {
       const affected = state.ctx.moduleGraphService.collectAffectedEntries(change.file)
       const cause = resolveChangeCause(state, change.file, affected)
+      if (cause === 'style-sidecar' && change.event !== 'delete') {
+        styleSidecarFiles.add(normalizeFsResolvedId(change.file))
+      }
       causes.set(cause, (causes.get(cause) ?? 0) + affected.size)
       if (cause === 'entry-direct' || cause === 'importer-graph' || cause === 'layout-script') {
         metadataOnly = false

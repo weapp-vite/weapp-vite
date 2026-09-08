@@ -172,6 +172,7 @@ describe('core lifecycle buildEnd hook', () => {
     })
 
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['css-importer:1'])
+    expect(state.hmrState.styleSidecarFiles).toEqual(new Set())
 
     const directStyle = '/project/src/pages/home/index.css'
     const direct = createState(directStyle, entryId)
@@ -190,5 +191,13 @@ describe('core lifecycle buildEnd hook', () => {
     })
 
     expect(direct.state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['style-sidecar:1'])
+    expect(direct.state.hmrState.styleSidecarFiles).toEqual(new Set([directStyle]))
+
+    direct.moduleGraphService.clearPendingChanges()
+    await createBuildEndHook(direct.state).call({
+      getModuleIds: () => directInfos.keys(),
+      getModuleInfo: (id: string) => directInfos.get(id),
+    })
+    expect(direct.state.hmrState.styleSidecarFiles).toEqual(new Set())
   })
 })

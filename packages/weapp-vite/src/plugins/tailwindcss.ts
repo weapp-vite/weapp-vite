@@ -214,7 +214,8 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   let compilerPromise: Promise<Compiler> | undefined
   let resolvedConfig: ResolvedConfig | undefined
   let loaded = false
-  let compilerDisposed = false
+  let persistentWatch = false
+  let compilerDisposal: Promise<void> | undefined
 
   function getSourceSlot(id: string, entry: number) {
     const style = parseWeappVueStyleRequest(id)
@@ -310,12 +311,8 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     return generated
   }
 
-  async function disposeCompiler() {
-    if (compilerDisposed) {
-      return
-    }
-    compilerDisposed = true
-    await compilerPromise?.then(compiler => compiler.dispose())
+  function disposeCompiler() {
+    return compilerDisposal ??= Promise.resolve(compilerPromise?.then(compiler => compiler.dispose()))
   }
 
   async function invalidateCompilerForFile(id: string, event: 'create' | 'update' | 'delete') {
@@ -500,6 +497,13 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     },
     configResolved(config) {
       resolvedConfig = config
+      // 开发语义的一次性快照没有 closeWatcher，资源寿命应由实际构建控制器决定。
+      persistentWatch = config.command === 'serve' || Boolean(config.build?.watch)
+    },
+    async buildEnd(error) {
+      if (error && !persistentWatch) {
+        await disposeCompiler()
+      }
     },
     resolveId(source) {
       if (resolved.options.generator === false) {
@@ -633,7 +637,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       },
     },
     async closeBundle() {
-      if (!ctx.configService.isDev) {
+      if (!persistentWatch) {
         await disposeCompiler()
       }
     },

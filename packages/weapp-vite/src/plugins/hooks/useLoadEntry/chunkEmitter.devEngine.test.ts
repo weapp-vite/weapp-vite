@@ -52,6 +52,9 @@ describe('entry chunks in the real DevEngine partial scanner', () => {
       await engine.ensureCurrentBuildFinish()
       expect(errors).toEqual([])
       await engine.registerClient('entry-chunk-test')
+      // 元数据扫描可能没有重放已缓存入口；注册权威仍是原生引擎的现存入口图。
+      lifecycle.beginBuild()
+      lifecycle.endBuild()
       const output = await engine.compileEntry(`${lazy}?rolldown-lazy=1`, 'entry-chunk-test')
       expect(output.code).toContain('lazy-owner')
     }

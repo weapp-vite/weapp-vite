@@ -246,6 +246,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       mode: 'development',
       emitDefaultAutoImportOutputs: true,
     })
+    input.cwd = path.resolve(defaultCwd, input.cwd)
 
     loadingOptions = input
     let rawConfig: LoadConfigResult

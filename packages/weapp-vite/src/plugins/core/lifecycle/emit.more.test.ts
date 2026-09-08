@@ -404,7 +404,10 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(emitJsonAssetsMock).toHaveBeenCalledTimes(1)
   })
 
-  it('emits changed style sidecar assets during metadata-only hmr', async () => {
+  it.each([
+    { files: ['/project/src/pages/hmr/index.wxss', '/project/src/pages/other/index.css'] },
+    { files: [] },
+  ])('emits only the current style plan despite stale script diagnostics ($files)', async ({ files }) => {
     const state = createState({
       ctx: {
         configService: {
@@ -422,7 +425,7 @@ describe('core lifecycle emit hook extra branches', () => {
           build: {
             hmr: {
               profile: {
-                file: '/project/src/pages/hmr/index.wxss',
+                file: '/project/src/pages/hmr/index.ts',
                 dirtyReasonSummary: ['style-sidecar:1'],
               },
             },
@@ -433,6 +436,7 @@ describe('core lifecycle emit hook extra branches', () => {
         },
       },
       hmrState: {
+        styleSidecarFiles: new Set(files),
         hasBuiltOnce: true,
         didEmitAllEntries: false,
       },
@@ -443,13 +447,16 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({ emitFile }, {}, bundle)
 
-    expect(emitStyleSidecarAssetMock).toHaveBeenCalledWith(
-      state.ctx,
-      expect.objectContaining({ emitFile }),
-      bundle,
-      '/project/src/pages/hmr/index.wxss',
-      undefined,
-    )
+    expect(emitStyleSidecarAssetMock).toHaveBeenCalledTimes(files.length)
+    for (const file of files) {
+      expect(emitStyleSidecarAssetMock).toHaveBeenCalledWith(
+        state.ctx,
+        expect.objectContaining({ emitFile }),
+        bundle,
+        file,
+        undefined,
+      )
+    }
   })
 
   it('returns early for plugin builds after filtering outputs', async () => {

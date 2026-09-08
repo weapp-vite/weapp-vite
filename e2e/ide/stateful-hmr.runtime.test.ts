@@ -26,6 +26,7 @@ const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const CONTROL_FILE = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
 const UPDATE_FILE = path.join(DIST_ROOT, '__weapp_vite_hmr/update.js')
 const NATIVE_SOURCE = path.join(APP_ROOT, 'src/pages/native/index.ts')
+const NATIVE_STYLE = path.join(APP_ROOT, 'src/pages/native/index.wxss')
 const COMPONENT_SOURCE = path.join(APP_ROOT, 'src/pages/component/index.ts')
 const CHILD_SOURCE = path.join(APP_ROOT, 'src/components/native-counter/index.js')
 const VUE_CHILD_SOURCE = path.join(APP_ROOT, 'src/components/vue-counter/index.vue')
@@ -49,6 +50,7 @@ let originalComponentSource = ''
 let originalChildSource = ''
 let originalVueChildSource = ''
 let originalNativeSource = ''
+let originalNativeStyle = ''
 let originalWevuSource = ''
 let previousPostConnectRefresh: string | undefined
 let sharedInfraUnavailableMessage = ''
@@ -208,12 +210,14 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     originalChildSource = (await fs.readFile(CHILD_SOURCE, 'utf8')).replace('this.data.count + 2', 'this.data.count + 1').replace('step:2', 'step:1')
     originalVueChildSource = (await fs.readFile(VUE_CHILD_SOURCE, 'utf8')).replace('count.value += 2', 'count.value += 1').replace('step:2', 'step:1')
     originalNativeSource = normalizeFixtureSource(await fs.readFile(NATIVE_SOURCE, 'utf8'), 'native')
+    originalNativeStyle = (await fs.readFile(NATIVE_STYLE, 'utf8')).replace('background-color: #dbeafe', 'background-color: #fff')
     originalWevuSource = normalizeFixtureSource(await fs.readFile(WEVU_SOURCE, 'utf8'), 'wevu')
     await Promise.all([
       fs.writeFile(COMPONENT_SOURCE, originalComponentSource, 'utf8'),
       fs.writeFile(CHILD_SOURCE, originalChildSource, 'utf8'),
       fs.writeFile(VUE_CHILD_SOURCE, originalVueChildSource, 'utf8'),
       fs.writeFile(NATIVE_SOURCE, originalNativeSource, 'utf8'),
+      fs.writeFile(NATIVE_STYLE, originalNativeStyle, 'utf8'),
       fs.writeFile(WEVU_SOURCE, originalWevuSource, 'utf8'),
     ])
     await fs.remove(DIST_ROOT)
@@ -276,6 +280,9 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     if (originalNativeSource) {
       await fs.writeFile(NATIVE_SOURCE, originalNativeSource, 'utf8')
     }
+    if (originalNativeStyle) {
+      await fs.writeFile(NATIVE_STYLE, originalNativeStyle, 'utf8')
+    }
     if (originalComponentSource) {
       await fs.writeFile(COMPONENT_SOURCE, originalComponentSource, 'utf8')
     }
@@ -298,7 +305,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await cleanupResidualIdeProcesses()
   })
 
-  it('preserves native Page identity, data, input, route, and query across a JavaScript patch', async (ctx) => {
+  it('preserves native Page identity, data, input, route, and query across style updates and JavaScript patches', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('native'))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
@@ -316,6 +323,13 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       route: 'pages/native/index',
       source: 'e2e',
     })
+
+    // 样式 sidecar 先通过真实 watcher 更新，再更新同名脚本，覆盖构建文件身份隔离。
+    const updatedStyle = originalNativeStyle.replace('background-color: #fff', 'background-color: #dbeafe')
+    expect(updatedStyle).not.toBe(originalNativeStyle)
+    await replaceFileByRename(NATIVE_STYLE, updatedStyle)
+    await dom.check('style-updated', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 1, input: 'held-input', identity: 'native-instance' })
 
     const updatedSource = originalNativeSource
       .replace('STATEFUL-NATIVE-BASE', 'STATEFUL-NATIVE-PATCHED')
@@ -337,6 +351,18 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       route: 'pages/native/index',
       source: 'e2e',
     })
+
+    const restoreVersion = await readClientVersion()
+    await replaceFileByRename(NATIVE_SOURCE, originalNativeSource)
+    await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'this.data.count + 1'), 'native original script restored')
+    await waitForClientVersion(restoreVersion + 1)
+    await replaceFileByRename(NATIVE_STYLE, originalNativeStyle)
+    await dom.check('restored', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 3, input: 'held-input', identity: 'native-instance' })
+    await triggerIncrement()
+    await waitForPatchedBehavior(4, page)
+    await dom.check('restored-updated', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 4, input: 'held-input', identity: 'native-instance' })
   })
 
   it('rehydrates wevu local and store refs while preserving the native page instance', async (ctx) => {

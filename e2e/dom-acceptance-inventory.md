@@ -1135,41 +1135,41 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ## ide/stateful-hmr.runtime.test.ts
 
-### stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across a JavaScript patch
+### stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across style updates and JavaScript patches
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:301`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:308`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('native')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:302`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('native')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:309`
 - Routes: `/pages/native/index?source=e2e`, `pages/native/index`
-- Operations: `reLaunch(/pages/native/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(updated)`
+- Operations: `reLaunch(/pages/native/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(style-updated)`, `check(patched)`, `check(updated)`, `check(restored)`, `check(restored-updated)`
 
 ### stateful HMR in real WeChat DevTools > rehydrates wevu local and store refs while preserving the native page instance
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:342`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:368`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('wevu')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:343`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('wevu')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:369`
 - Routes: `/pages/wevu/index?source=e2e`, `pages/wevu/index`
 - Operations: `reLaunch(/pages/wevu/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(template-b)`, `check(template-a)`, `check(patched)`, `check(updated)`, `check(mixed-style)`, `check(mixed-style-updated)`
 
 ### stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:418`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:444`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:419`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:445`
 - Routes: `/pages/component/index?source=e2e`, `pages/component/index`
 - Operations: `reLaunch(/pages/component/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(updated)`
 
 ### stateful HMR in real WeChat DevTools > preserves parent and native child DOM state across a child script patch and restoration
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:458`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:484`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `nativeChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:459`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `nativeChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:485`
 
 ### stateful HMR in real WeChat DevTools > preserves parent and Vue child DOM state across a child script patch and restoration
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:480`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:506`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `vueChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:481`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `vueChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:507`
 
 ## ide/subpackage-shared-strategy-complex.runtime.test.ts
 
