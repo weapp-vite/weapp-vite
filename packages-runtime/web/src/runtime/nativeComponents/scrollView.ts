@@ -69,14 +69,20 @@ export class WeappScrollView extends BaseElement {
     viewport.className = 'viewport'
     const slot = document.createElement('slot')
     viewport.append(slot)
-    viewport.addEventListener('scroll', () => {
+    viewport.addEventListener('scroll', (event) => {
+      if (event.target !== viewport) {
+        return
+      }
       const detail = createScrollEventDetail(viewport, {
         scrollLeft: this.#lastScrollLeft,
         scrollTop: this.#lastScrollTop,
       })
       this.#lastScrollLeft = viewport.scrollLeft
       this.#lastScrollTop = viewport.scrollTop
-      dispatchMiniProgramEvent(this, 'scroll', detail)
+      dispatchMiniProgramEvent(this, 'scroll', detail, {
+        bubbles: false,
+        composed: false,
+      })
     })
     root.append(style, viewport)
     this.#viewport = viewport
