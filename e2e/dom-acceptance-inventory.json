@@ -6458,7 +6458,7 @@
     },
     {
       "file": "e2e/utils/automator.cli-bridge.ts",
-      "sha256": "2c4c3584f8db57644a8228b4c236e4242f3c29fe2c245e7519cd29558ea01a47"
+      "sha256": "0d173cc7f62c68450cbbdd2dafc36458781085d6f493bca42720fd37de695700"
     },
     {
       "file": "e2e/utils/automator.headless.ts",
@@ -6466,11 +6466,15 @@
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "aea29cf48a8039ac0b30f235c758611b29e2286947d450ac13c474f544289c26"
+      "sha256": "223312793698d61e4409a975cd069aa55a4295889403cccff5acfa2fe8ab5ca2"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",
       "sha256": "e2172d103b75fd34e4b5b8f71c21f617d4c9f3062042f8220079d7d34f3d8886"
+    },
+    {
+      "file": "e2e/utils/automatorLaunchLifecycle.ts",
+      "sha256": "0494ffa2d647ac35913458a949bfe9c3e038e24cb99f0d79d598fbdeed5e2bb5"
     },
     {
       "file": "e2e/utils/buildLog.ts",

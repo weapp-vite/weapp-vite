@@ -142,6 +142,8 @@ jobs:
       e2e_platform: weapp
       increase_ulimit: true
       consume_build_artifact: miniapp-${{ matrix.os }}-node-22-weapp-build
+      artifact_name: miniapp-e2e-ci-pr-${{ matrix.os }}-node-22
+      artifact_path: docs/reports/*-e2e-ci-pr-*-suite-report/**
     secrets: inherit
 
   miniapp-hmr-ci-pr:
@@ -228,6 +230,8 @@ jobs:
       e2e_platform: weapp
       increase_ulimit: true
       consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
+      artifact_name: miniapp-e2e-ci-full-${{ matrix.os }}-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}
+      artifact_path: docs/reports/*-e2e-ci-full-*-suite-report/**
     secrets: inherit
 
   miniapp-hmr-ci-full:

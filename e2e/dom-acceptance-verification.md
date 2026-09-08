@@ -29,7 +29,33 @@
 
 同一正式 HMR 场景的七个检查点在桥接快照模式失败、原项目模式连续两次通过，说明启动观察面会影响验收。快照还会合并 private config，因此不能把差异仅归因于 `fs.watch`。最终仍须在正常运行的 HMR 客户端下检查首屏、每阶段 DOM/计算样式及应保留的交互状态；停止客户端后的隔离 probe 只能辅助诊断。
 
-## 当前验证表
+## 已提交版本复验与当前阻塞
+
+提交 `5d7216a0d71226cbf9214156f967ff3719d2a72f` 的干净工作树已完成以下无筛选验证；这些结果只证明该提交，不代替后续工具修复提交的重新验收。
+
+| 验证                     | 结果                                                                                            | 证据索引                                                                               |
+| ------------------------ | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `pnpm test`              | 1289 files / 12252 tests 通过，退出码 0；原有 12 files / 19 tests 跳过                          | `.tmp/final-5d7216a0d-test.log`                                                        |
+| `pnpm e2e:ci`            | 75/75 tasks，complete/passed，退出码 0                                                          | `docs/reports/2026-09-08-092342-e2e-ci-75c4df76-suite-report/index.json`               |
+| 严格 `ide-dom-headless`  | 20 tasks / 40 cases / 153 checkpoints 全通过；独立审计全部报告、947 个 selector、228 份源码摘要 | `docs/reports/2026-09-08-092610-e2e-ide-dom-headless-669406a7-suite-report/index.json` |
+| `pnpm e2e:ide:full` 首轮 | 9 passed / 1 failed / 8 not executed；React 启动超时，未进入 case                               | `docs/reports/2026-09-08-095034-e2e-ide-full-85d0d570-suite-report/index.json`         |
+| `pnpm e2e:ide:full` 复跑 | 0 passed / 1 failed / 17 not executed；原生 lifecycle 首屏协议查询超时，0/6 checkpoints         | `docs/reports/2026-09-08-100855-e2e-ide-full-9a2f40e8-suite-report/index.json`         |
+
+React 正式场景在同一干净提交、无源码修改下单独复验，3 cases / 14 checkpoints 全通过，耗时 39.03 秒；报告 `docs/reports/dom-acceptance/135c5e3e-a950-4f4d-a16b-a2c8e1993b63/7f532eaf-301a-4485-96c8-3dc406d525a9.json`。Computer Use 观察到 React 页面实际计数交互有效；原生 lifecycle 超时后也能看到首屏和 `onLaunch/onShow` 结果，Console 错误数为 0。截图分别保存在 `.tmp/react-ide-startup/` 与 `.tmp/lifecycle-warmup-timeout/`。这些是失败后的诊断观察，不能补记为正式 DOM 验收通过。
+
+独立假依赖反例证明启动工具另有取消缺口：外层超时后旧 factory 仍可继续产生副作用；HTTP `/auto` 没有取消信号，能超过声明预算继续等待。反例读取真实 helper，仅使用虚拟计时器、socket 和 fetch，不启动 IDE；见 `.tmp/bridge-cancellation-probe.mjs` 与 `.tmp/bridge-cancellation-probe.json`。它不证明两次 IDE 失败的根因，也不证明存在 OS 子进程泄漏。修复必须维持原有截止时间与断言，统一启动取消、迟到结果和清理所有权，再重新完整验证。
+
+启动工具现由独立 lifecycle 管理总截止时间、每阶段预算、取消和资源交接。bootstrap 通过 IPC 传递取消并等待 helper 退出；helper 取消 HTTP/socket 并清理 CLI 进程树，Windows 使用 `taskkill /T`。迟到会话不会进入后续刷新与 warmup，查询循环不能吞掉取消后继续切页。HTTP `/open`、fileutils reset 和 engine 使用阶段信号，取消后等待请求实际退出才进入恢复；这些约束不能撤销 IDE 已接受的操作，也不保证宿主必定在预算内启动。
+
+SDK `connect` 将 WebSocket 与版本检查放在同一原始预算内，失败时断开尚未交付的连接，不关闭用户项目。CLI HTTP/engine 的可选 `signal` 保留原始取消原因，阻止端口解析结束后、轮询等待中或 fallback 前的迟到请求；公开类型通过 `weapp-ide-cli test:types` 随云端根类型检查执行。新增回归还覆盖计时器尚未触发但单调时钟已经越界的资源交接，以及刷新超时后先退出请求再重试的顺序。
+
+engine CLI fallback 与 automator 的 engine/prebuild 均显式启用 Execa 子进程树清理，避免 Windows 批处理包装进程退出后遗留实际构建进程。取消契约回归保留请求退出顺序及原有阶段预算。
+
+启动取消修复后的提交前严格 headless 运行完成 20/20 tasks、40 cases、153 checkpoints，退出码 0；索引 `docs/reports/2026-09-08-110439-e2e-ide-dom-headless-0eace0d9-suite-report/index.json`。随后原生/Wevu 生命周期与 React 的真实 IDE 定向运行完成 4 cases、20 checkpoints，退出码 0、报告无错误；报告 `docs/reports/dom-acceptance/a87ec1b6-490a-48bd-aea7-1e130531f4e8/3c3711a5-cc67-4569-9775-ff5679af5c8b.json`。两次均为未提交工作树结果，早于最后的子进程树清理增强，不能替代最终提交全量验收。
+
+`e2e:ide:full:exhaustive` 及最终 PR 云端检查仍未完成。下列历史通过与失败记录保留原始提交、工作树和范围边界，不与本节结果拼接为全量通过。
+
+## 历史工作树验证表
 
 以下“局部通过”只覆盖所列文件、provider 和代码状态；后续相关修改需要重验。
 
@@ -56,7 +82,7 @@
 | Retail 全路由                   | 正式 IDE 单任务的 29 路由 / 36 checkpoints 全部通过，运行时错误 0；run 与 invocation 见下方零售记录                                                              | 严格局部总入口退出 1，因为完整范围另有 87 tasks 未执行；该任务 passed，整轮 incomplete，最终提交全量验收仍待完成。                                          |
 | PR 云端 CI                      | 远端旧提交的 CI E2E 有失败，本地后续修复尚待最终提交验证                                                                                                         | 最终 SHA 的全部适用自动检查和完整 OS/Node workflow 均需完成且通过；等待、取消或审批中不算通过。                                                             |
 
-### 最新真实 IDE 全量通过
+### 历史工作树真实 IDE 全量通过
 
 无筛选 `pnpm e2e:ide:full` 完整执行 **18/18 tasks、118/118 cases、378/378 checkpoints**，退出码 0。run `b51385c8-09f8-44b0-bb25-4acde5317aef` 的 suite 为 `strict: true`、`coverage: complete`、`acceptance: passed`，失败、阻塞、跳过、未执行均为 0。主日志 `.tmp/pnpm-e2e-ide-full-current.log`，suite 索引 `docs/reports/2026-09-08-043045-e2e-ide-full-f50958be-suite-report/index.json`。
 

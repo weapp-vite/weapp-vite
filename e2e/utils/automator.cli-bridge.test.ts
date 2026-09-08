@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import net from 'node:net'
 import os from 'node:os'
@@ -67,6 +68,69 @@ describe('waitForSocketReady', () => {
     while (closers.length > 0) {
       const close = closers.pop()
       await close?.()
+    }
+  })
+
+  it('destroys a pending socket when the bootstrap deadline expires', async () => {
+    vi.useFakeTimers()
+    const socket = new EventEmitter() as EventEmitter & { destroy: ReturnType<typeof vi.fn> }
+    socket.destroy = vi.fn()
+    const connect = vi.spyOn(net, 'createConnection').mockReturnValue(socket as unknown as net.Socket)
+    try {
+      const task = waitForSocketReady({ port: 43210, timeoutMs: 50 })
+      const assertion = expect(task).rejects.toThrow('Timed out waiting for automator socket')
+      await vi.advanceTimersByTimeAsync(50)
+      await assertion
+      expect(socket.destroy).toHaveBeenCalledOnce()
+      expect(socket.listenerCount('connect')).toBe(0)
+    }
+    finally {
+      connect.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
+  it('aborts the actual HTTP fallback within the original socket deadline', async () => {
+    vi.useFakeTimers()
+    const { child, stdout } = createMockChild()
+    const connect = vi.spyOn(net, 'createConnection').mockImplementation(() => {
+      const socket = new EventEmitter() as EventEmitter & { destroy: ReturnType<typeof vi.fn> }
+      socket.destroy = vi.fn()
+      queueMicrotask(() => socket.emit('error', new Error('ECONNREFUSED')))
+      return socket as unknown as net.Socket
+    })
+    let fetchSignal: AbortSignal | undefined
+    const fetchMock = vi.fn((_url: unknown, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      fetchSignal = init?.signal ?? undefined
+      fetchSignal?.addEventListener('abort', () => reject(fetchSignal?.reason), { once: true })
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      const task = waitForSocketReady({
+        child: child as any,
+        port: 43210,
+        timeoutMs: 50,
+        onSuccessfulCliExit: (servicePort, signal) => enableAutomatorViaHttp({
+          autoPort: 43210,
+          projectPath: 'fixture',
+          servicePort,
+          signal,
+        }),
+      })
+      const assertion = expect(task).rejects.toThrow('Timed out waiting for automator socket')
+      await Promise.resolve()
+      stdout.write('listening on http://127.0.0.1:9420')
+      child.emit('exit', 0, null)
+      // 让首次 TCP 失败后的下一次轮询在原预算内看到 CLI 退出。
+      await vi.advanceTimersByTimeAsync(50)
+      await assertion
+      expect(fetchSignal?.aborted).toBe(true)
+      expect(fetchMock).toHaveBeenCalledOnce()
+    }
+    finally {
+      connect.mockRestore()
+      vi.unstubAllGlobals()
+      vi.useRealTimers()
     }
   })
 
@@ -142,7 +206,7 @@ describe('waitForSocketReady', () => {
       servicePort: 9420,
     })
     expect(onSuccessfulCliExit).toHaveBeenCalledOnce()
-    expect(onSuccessfulCliExit).toHaveBeenCalledWith(9420)
+    expect(onSuccessfulCliExit).toHaveBeenCalledWith(9420, expect.any(AbortSignal))
   })
 
   it('does not fail fast on an early successful cli exit without a fatal error signature', async () => {

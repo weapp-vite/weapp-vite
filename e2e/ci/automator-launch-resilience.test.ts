@@ -1,3 +1,4 @@
+import type { WechatDevtoolsHttpCommandOptions } from '../../packages/weapp-ide-cli/src/cli/http'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -17,7 +18,7 @@ const { captureDevtoolsLogBaselineMock, cleanupResidualDevtoolsProcessesMock, co
     connectMock: vi.fn(),
     execaMock: vi.fn(),
     launchMock: vi.fn(),
-    openWechatIdeProjectByHttpMock: vi.fn(async () => ''),
+    openWechatIdeProjectByHttpMock: vi.fn<(projectPath: string, options?: WechatDevtoolsHttpCommandOptions) => Promise<string>>(async () => ''),
     resetWechatIdeFileUtilsByHttpMock: vi.fn(async () => ''),
     runWechatIdeEngineBuildByHttpMock: vi.fn(async () => ({ body: '{"status":"END"}', done: true, failed: false, status: 'END' })),
     scanRecentDevtoolsSimulatorBootIssuesMock: vi.fn(() => []),
@@ -212,7 +213,25 @@ function readBridgePayloadFromExecaCall(index = 0) {
   const call = execaMock.mock.calls[index]
   const args = call?.[1] as string[] | undefined
   const rawPayload = args?.find(arg => arg.startsWith('{'))
-  return rawPayload ? JSON.parse(rawPayload) as { projectPath?: string } : undefined
+  return rawPayload ? JSON.parse(rawPayload) as { projectPath?: string, timeout?: number } : undefined
+}
+
+function expectTimeoutWithinBudget(value: unknown, maximum: number) {
+  expect(Number.isInteger(value)).toBe(true)
+  expect(value).toBeGreaterThan(0)
+  expect(value).toBeLessThanOrEqual(maximum)
+  return value
+}
+
+function expectBridgeBootstrapCall(index: number, timeout: number) {
+  const [command, args, options] = execaMock.mock.calls[index] ?? []
+  expect(command).toBe('node')
+  expect((args as string[]).slice(0, 2)).toEqual(['--import', 'tsx'])
+  expect(options.reject).toBe(false)
+  expect(options.gracefulCancel).toBe(true)
+  expect(options.cancelSignal).toBeInstanceOf(AbortSignal)
+  expect(options).not.toHaveProperty('timeout')
+  expectTimeoutWithinBudget(readBridgePayloadFromExecaCall(index)?.timeout, timeout)
 }
 
 async function waitForJsonContains(target: string, expected: Record<string, any>, timeoutMs = 3_000) {
@@ -300,6 +319,143 @@ describe('automator launch resilience', { concurrent: false }, () => {
       vi.resetModules()
       vi.unstubAllEnvs()
       fs.rmSync(sandboxRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('terminates the complete CLI process tree on Windows', async () => {
+    const { terminateBridgeCliProcess } = await import('../utils/automator')
+    const platform = vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    execaMock.mockResolvedValue({ exitCode: 0 })
+    try {
+      await terminateBridgeCliProcess(12345)
+      expect(execaMock).toHaveBeenCalledWith('taskkill', ['/PID', '12345', '/T', '/F'], {
+        reject: false,
+        timeout: 5_000,
+        windowsHide: true,
+      })
+    }
+    finally {
+      platform.mockRestore()
+    }
+  })
+
+  it('drains a canceled bootstrap before recovery and never connects its late result', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+    process.env.WEAPP_VITE_E2E_LAUNCH_ATTEMPT_TIMEOUT = '1000'
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const { launchAutomator } = await import('../utils/automator')
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] })
+    const events: string[] = []
+    let started!: () => void
+    const bootstrapStarted = new Promise<void>((resolve) => {
+      started = resolve
+    })
+    execaMock.mockImplementation((_command, args, options) => {
+      if (!args.includes('--import')) {
+        events.push('recovery')
+        return Promise.resolve({ exitCode: 0, stdout: '', stderr: '' })
+      }
+      if (events.includes('exit')) {
+        return Promise.resolve({ exitCode: 1, stderr: 'intentional final bootstrap failure' })
+      }
+      expect(options.gracefulCancel).toBe(true)
+      return new Promise((resolve) => {
+        options.cancelSignal.addEventListener('abort', () => {
+          events.push('cancel')
+          setTimeout(() => {
+            events.push('exit')
+            resolve({ exitCode: 0, stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:43210' }) })
+          }, 25)
+        }, { once: true })
+        started()
+      })
+    })
+    cleanupResidualDevtoolsProcessesMock.mockImplementation(async () => {
+      events.push('recovery')
+    })
+    try {
+      const task = launchAutomator({ projectPath: sandboxRoot, timeout: 1_000, maxLaunchRetries: 2 })
+      const assertion = expect(task).rejects.toThrow('intentional final bootstrap failure')
+      await bootstrapStarted
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(events).toEqual(['cancel'])
+      expect(connectMock).not.toHaveBeenCalled()
+      expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(2_000)
+      await assertion
+      expect(events.indexOf('exit')).toBeLessThan(events.indexOf('recovery'))
+      expect(connectMock).not.toHaveBeenCalled()
+      expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('bounds an uncooperative direct launch and closes its late session without warmup', async () => {
+    process.env.WEAPP_VITE_E2E_LAUNCH_ATTEMPT_TIMEOUT = '1000'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const miniProgram = createMockMiniProgram()
+    const { launchAutomator } = await import('../utils/automator')
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] })
+    let connected!: (value: MockMiniProgramRuntime) => void
+    let started!: () => void
+    const launchStarted = new Promise<void>((resolve) => {
+      started = resolve
+    })
+    launchMock.mockImplementation(() => new Promise((resolve) => {
+      connected = resolve
+      started()
+    }))
+    try {
+      const result = launchAutomator({ projectPath: sandboxRoot, timeout: 1_000, maxLaunchRetries: 1, refreshProjectAfterConnect: true })
+      const assertion = expect(result).rejects.toThrow(/Timeout in (?:launch automator#1|connect direct)/)
+      await launchStarted
+      await vi.advanceTimersByTimeAsync(1_000)
+      await assertion
+      connected(miniProgram)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(miniProgram.__rawClose).toHaveBeenCalledOnce()
+      expect(miniProgram.enableLog).not.toHaveBeenCalled()
+      expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
+      expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stops warmup polling after launch cancellation without falling through to reLaunch', async () => {
+    process.env.WEAPP_VITE_E2E_LAUNCH_ATTEMPT_TIMEOUT = '100'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const miniProgram = createMockMiniProgram()
+    const { launchAutomator } = await import('../utils/automator')
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] })
+    let started!: () => void
+    const warmupStarted = new Promise<void>((resolve) => {
+      started = resolve
+    })
+    miniProgram.__rawCurrentPage.mockImplementation(() => {
+      started()
+      return new Promise(() => {})
+    })
+    launchMock.mockResolvedValue(miniProgram)
+    try {
+      const result = launchAutomator({ projectPath: sandboxRoot, timeout: 100, maxLaunchRetries: 1 })
+      const outcome = result.then(value => ({ value }), error => ({ error }))
+      await warmupStarted
+      await vi.advanceTimersByTimeAsync(100)
+      expect(await outcome).toMatchObject({ error: { message: 'Timeout in launch automator#1 after 100ms' } })
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(miniProgram.__rawCurrentPage).toHaveBeenCalledOnce()
+      expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
+      expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.useRealTimers()
     }
   })
 
@@ -622,10 +778,26 @@ describe('automator launch resilience', { concurrent: false }, () => {
 
     const firstMiniProgram = createMockMiniProgram()
     const secondMiniProgram = createMockMiniProgram()
-    openWechatIdeProjectByHttpMock.mockImplementationOnce(() => new Promise<string>(() => {}))
+    const events: string[] = []
+    openWechatIdeProjectByHttpMock.mockImplementationOnce((_projectPath, options) => new Promise<string>((_resolve, reject) => {
+      const signal = options?.signal
+      if (!signal) {
+        throw new Error('Project refresh must receive a cancellation signal')
+      }
+      signal.addEventListener('abort', () => {
+        events.push('abort-request')
+        setTimeout(() => {
+          events.push('request-settled')
+          reject(signal.reason)
+        }, 5)
+      }, { once: true })
+    }))
     launchMock
       .mockResolvedValueOnce(firstMiniProgram)
-      .mockResolvedValueOnce(secondMiniProgram)
+      .mockImplementationOnce(async () => {
+        events.push('retry-launch')
+        return secondMiniProgram
+      })
 
     const { launchAutomator } = await import('../utils/automator')
     await launchAutomator({ projectPath: sandboxRoot, warmupAllowRelaunch: false })
@@ -635,7 +807,9 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledTimes(2)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenNthCalledWith(1, sandboxRoot, {
       timeoutMs: 20,
+      signal: expect.any(AbortSignal),
     })
+    expect(events).toEqual(['abort-request', 'request-settled', 'retry-launch'])
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
   })
 
@@ -1066,7 +1240,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledTimes(1)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith(sandboxRoot, {
-      timeoutMs: 60_000,
+      timeoutMs: expectTimeoutWithinBudget(openWechatIdeProjectByHttpMock.mock.calls[0]?.[1]?.timeoutMs, 24_000),
+      signal: expect.any(AbortSignal),
     })
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledTimes(1)
     expect(runWechatIdeEngineBuildByHttpMock).toHaveBeenCalledTimes(1)
@@ -1299,6 +1474,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
       expect.objectContaining({
         reject: false,
         timeout: 70_000,
+        killDescendants: true,
       }),
     )
     expect(miniProgram.__rawCompile).toHaveBeenCalledWith({ force: true })
@@ -1337,6 +1513,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
         expect.objectContaining({
           reject: false,
           timeout: 70_000,
+          killDescendants: true,
         }),
       )
       expect(runWechatIdeEngineBuildByHttpMock).toHaveBeenCalledTimes(2)
@@ -1411,6 +1588,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
 
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith(sandboxRoot, {
       timeoutMs: 60_000,
+      signal: expect.any(AbortSignal),
     })
     expect(openWechatIdeProjectByHttpMock.mock.invocationCallOrder[0]).toBeLessThan(
       resetWechatIdeFileUtilsByHttpMock.mock.invocationCallOrder[0]!,
@@ -1514,6 +1692,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
       expect.objectContaining({
         reject: false,
         timeout: 70_000,
+        killDescendants: true,
+        cancelSignal: expect.any(AbortSignal),
       }),
     )
     expect(execaMock.mock.invocationCallOrder[0]).toBeLessThan(launchMock.mock.invocationCallOrder[0]!)
@@ -1617,6 +1797,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(execaMock).toHaveBeenCalledTimes(1)
     expectBridgeWrapperProjectPath(sandboxRoot, readBridgePayloadFromExecaCall()?.projectPath)
     expect(connectMock).toHaveBeenCalledWith({
+      timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
     expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
@@ -1756,6 +1937,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
       publicComponents: {},
     })
     expect(connectMock).toHaveBeenCalledWith({
+      timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
   })
@@ -2050,14 +2232,16 @@ describe('automator launch resilience', { concurrent: false }, () => {
       ['engine', 'build', prebuildProjectPath],
       expect.objectContaining({
         reject: false,
-        timeout: 70_000,
+        timeout: expectTimeoutWithinBudget(execaMock.mock.calls[0]?.[2]?.timeout, 24_000),
+        cancelSignal: expect.any(AbortSignal),
+        killDescendants: true,
       }),
     )
-    expect(execaMock).toHaveBeenNthCalledWith(2, 'node', expect.any(Array), expect.objectContaining({
-      reject: false,
-      timeout: 12_345,
-    }))
+    expectBridgeBootstrapCall(1, 12_345)
+    expect(execaMock).toHaveBeenCalledTimes(2)
+    expect(execaMock.mock.calls[0]?.[2]?.cancelSignal).toBe(execaMock.mock.calls[1]?.[2]?.cancelSignal)
     expect(connectMock).toHaveBeenCalledWith({
+      timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
     expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
@@ -2089,10 +2273,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
       ['engine', 'build', sandboxRoot],
       expect.anything(),
     )
-    expect(execaMock).toHaveBeenNthCalledWith(1, 'node', expect.any(Array), expect.objectContaining({
-      reject: false,
-      timeout: 12_345,
-    }))
+    expectBridgeBootstrapCall(0, 12_345)
     expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
@@ -2143,13 +2324,15 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(connectMock).toHaveBeenCalledTimes(2)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledTimes(2)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenNthCalledWith(1, firstWrapperProjectPath, {
-      timeoutMs: 60_000,
+      timeoutMs: expectTimeoutWithinBudget(openWechatIdeProjectByHttpMock.mock.calls[0]?.[1]?.timeoutMs, 24_000),
+      signal: expect.any(AbortSignal),
     })
     expect(openWechatIdeProjectByHttpMock).toHaveBeenNthCalledWith(
       2,
       expect.stringContaining(path.join('.tmp', 'e2e-ide-bridge-projects')),
       {
-        timeoutMs: 60_000,
+        timeoutMs: expectTimeoutWithinBudget(openWechatIdeProjectByHttpMock.mock.calls[1]?.[1]?.timeoutMs, 24_000),
+        signal: expect.any(AbortSignal),
       },
     )
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalledWith(sandboxRoot)
@@ -2196,19 +2379,14 @@ describe('automator launch resilience', { concurrent: false }, () => {
     const { launchAutomator } = await import('../utils/automator')
     await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
 
-    expect(execaMock).toHaveBeenNthCalledWith(1, 'node', expect.any(Array), expect.objectContaining({
-      reject: false,
-      timeout: 12_345,
-    }))
+    expectBridgeBootstrapCall(0, 12_345)
     expect(execaMock).toHaveBeenNthCalledWith(2, DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
       reject: false,
       timeout: 20_000,
     }))
-    expect(execaMock).toHaveBeenNthCalledWith(3, 'node', expect.any(Array), expect.objectContaining({
-      reject: false,
-      timeout: 12_345,
-    }))
+    expectBridgeBootstrapCall(2, 12_345)
     expect(connectMock).toHaveBeenCalledWith({
+      timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9527',
     })
     expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
