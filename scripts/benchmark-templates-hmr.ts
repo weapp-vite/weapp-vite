@@ -1,6 +1,5 @@
 /* eslint-disable ts/no-use-before-define */
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
-import { Buffer } from 'node:buffer'
 import { existsSync, statSync } from 'node:fs'
 import { access, cp, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -17,6 +16,7 @@ import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
 import { createEmittedScriptReader, waitForBenchmarkOutput } from './benchmarkTemplatesHmr/emittedOutput'
+import { captureBenchmarkFailureEvidence } from './benchmarkTemplatesHmr/failureEvidence'
 import { waitForBenchmarkInitialOutputs } from './benchmarkTemplatesHmr/initialOutput'
 import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntry'
 import { collectBenchmarkHmrProfile } from './benchmarkTemplatesHmr/profile'
@@ -101,8 +101,12 @@ interface ScenarioResult {
   diagnostics?: {
     phase: string
     transport: Array<StatefulHmrAuditEvent & { phase: string }>
-    output?: { bytes: number, containsMarker: boolean }
+    source?: { bytes: number, sha256: string, containsMarker: boolean }
+    sourceError?: string
+    output?: { bytes: number, sha256: string, containsMarker: boolean }
     outputError?: string
+    artifact?: string
+    artifactError?: string
   }
 }
 
@@ -661,11 +665,18 @@ async function benchmarkScenario(
   catch (error) {
     const diagnostics: NonNullable<ScenarioResult['diagnostics']> = { phase, transport: [...transport] }
     try {
-      const output = await readOutput()
-      diagnostics.output = { bytes: Buffer.byteLength(output), containsMarker: output.includes(expectedMarker) }
+      const artifact = `failures/${template.id}/${scenario.id}.json`
+      const evidence = await captureBenchmarkFailureEvidence({
+        readSource: () => readFile(scenario.sourceFile, 'utf8'),
+        readOutput,
+        marker: expectedMarker,
+        repoRoot,
+        artifactFile: path.join(reportRoot, artifact),
+      })
+      Object.assign(diagnostics, evidence, evidence.artifactError ? {} : { artifact })
     }
     catch (error) {
-      diagnostics.outputError = sanitizeBenchmarkDevLog(formatError(error), repoRoot)
+      diagnostics.artifactError = sanitizeBenchmarkDevLog(formatError(error), repoRoot)
     }
     failure = {
       ...createPendingScenarioResult(scenario),

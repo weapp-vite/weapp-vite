@@ -20,3 +20,13 @@ describe('template benchmark diagnostics', () => {
     expect(result).toBe('<repo>/src/index.ts <external-path>')
   })
 })
+
+it('redacts encoded graph protocol owners on Windows and POSIX', () => {
+  for (const root of ['C:/Users/tester/project', '/home/tester/project']) {
+    const owner = `${root}/src/pages/index.vue`
+    const value = `weapp-vite:logical-entry:page:${encodeURIComponent(owner)}.js`
+    const result = sanitizeBenchmarkDevLog(value, root)
+    expect(result).toBe('weapp-vite:logical-entry:page:<repo>/src/pages/index.vue.js')
+    expect(result).not.toMatch(/tester|%2f|%3a/i)
+  }
+})
