@@ -5,7 +5,7 @@ import { parseSidecarSourceRequest } from '../../moduleGraph/protocol'
 
 export function createStatefulHmrSidecarModuleCode(id: string, source: string): string | undefined {
   const request = parseSidecarSourceRequest(id)
-  if (!request || request.kind === 'style') {
+  if (!request || (request.kind === 'style' && !request.dependencyOnly)) {
     return
   }
   const digest = createHash('sha256').update(source).digest('hex')
@@ -27,7 +27,7 @@ export function createStatefulHmrSidecarPlugin(): Plugin {
       }
       this.addWatchFile(request.sourceId)
       const source = await readFile(request.sourceId, 'utf8')
-      if (request.kind === 'style') {
+      if (request.kind === 'style' && !request.dependencyOnly) {
         return source
       }
       const code = createStatefulHmrSidecarModuleCode(id, source)

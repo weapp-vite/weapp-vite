@@ -500,7 +500,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
           return createVirtualEntryId(index, source)
         })
       }
-      if (sidecar.kind !== 'style') {
+      if (sidecar.kind !== 'style' || sidecar.dependencyOnly) {
         return null
       }
       let index = entryIndex.get(normalizeManagedTailwindcssEntryPath(sidecar.sourceId))

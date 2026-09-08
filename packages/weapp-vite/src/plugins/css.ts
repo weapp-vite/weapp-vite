@@ -947,6 +947,8 @@ export function css(ctx: CompilerContext): Plugin[] {
         resolvedConfig = config
       },
       generateBundle: {
+        // Vite 必须先完成 CSS 分块、纯样式 chunk 清理和产物定稿，再把资产归属到小程序 owner。
+        order: 'post',
         async handler(_opts, bundle) {
           const rolldownBundle = bundle as unknown as OutputBundle
           if (shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle)) {
@@ -962,7 +964,7 @@ export function css(ctx: CompilerContext): Plugin[] {
       name: 'weapp-vite:css-sidecar-source',
       async transform(code, id) {
         const sidecar = parseSidecarSourceRequest(id)
-        if (!sidecar || sidecar.kind !== 'style') {
+        if (!sidecar || sidecar.kind !== 'style' || sidecar.dependencyOnly) {
           return null
         }
         const sourceId = normalizeFsResolvedId(sidecar.sourceId, { stripLeadingNullByte: true })
