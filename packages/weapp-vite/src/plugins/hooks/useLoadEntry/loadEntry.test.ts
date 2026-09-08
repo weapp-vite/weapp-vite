@@ -419,6 +419,19 @@ describe('createEntryLoader', () => {
     })
   })
 
+  it.each(['jsx', 'tsx'])('discovers a %s page without attaching its source watch to the app loader', async (extension) => {
+    const { loader, emitEntriesChunks } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const sourceId = `/project/src/pages/index.${extension}`
+    existsMock.mockImplementation(async (id: string) => id === sourceId)
+    mockExtractConfigFromVue.mockResolvedValue({ pages: [`pages/index.${extension}`] })
+
+    await loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    expect(emitEntriesChunks).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ id: sourceId })]))
+    expect(pluginCtx.addWatchFile).not.toHaveBeenCalledWith(sourceId)
+  })
+
   it('emits route-rule preload configuration in the final app json asset', async () => {
     const { loader, jsonService, registerJsonAsset, configService } = createLoader({
       weappViteConfig: {

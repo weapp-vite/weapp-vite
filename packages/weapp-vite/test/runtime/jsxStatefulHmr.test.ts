@@ -51,6 +51,9 @@ function createBundleRuntime(root: string) {
       runInContext(source, context, { filename: 'update.js', timeout: 5_000 })
       expect(rebuilds).toEqual([])
     },
+    getImporters(id: string) {
+      return runInContext(`globalThis.__rolldown_runtime__.getImporters(${JSON.stringify(id)})`, context) as string[]
+    },
     getVersion() {
       return runInContext(`globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].getVersion()`, context) as number
     },
@@ -99,6 +102,8 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     const runtime = createBundleRuntime(path.join(cwd, 'dist'))
     runtime.load('app.js')
     runtime.load('pages/index.js')
+    // 编译器 cwd 与 Vite root 不同时，首包依赖图仍须使用引擎的模块 ID。
+    expect(runtime.getImporters(path.relative(cwd, shared))).toContain(path.relative(cwd, source))
     const control = controlSpy.mock.results.at(-1)?.value as ReturnType<StatefulHmrTransport['createControl']>
     const report = async (action: 'register' | 'poll', version: number) => {
       const response = await fetch(control.url, {

@@ -23,7 +23,6 @@ import {
   resolveNativeLayoutStaticAssetEntries,
 } from '../../../utils/nativeLayout'
 import { expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
-import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { emitWxmlAssetFile, resolveWxmlEmitContext } from '../../../utils/wxmlEmit'
 import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectStyleImports } from './watch'
@@ -412,9 +411,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     const normalizedResolvedId = normalizeFsResolvedId(resolvedId.id)
     if (normalizedResolvedId && !isSkippableResolvedId(normalizedResolvedId)) {
       resolvedEntryMap.set(normalizedResolvedId, resolvedId)
-      if (/\.(?:jsx|tsx)$/.test(normalizedResolvedId)) {
-        addNormalizedWatchFile(pluginCtx, normalizedResolvedId)
-      }
+      // JSX 入口由 core physical source load 显式监听，不能挂到发现它的 app/component loader。
     }
 
     const isForcedEntry = forceEmitEntrySet?.has(entry) === true

@@ -115,9 +115,7 @@ function resolveProjects(): string[] {
 const projects = [
   {
     extends: false,
-    oxc: {
-      include: ['scripts/**/*.ts'],
-    },
+    // 只限制测试发现范围；保留 Vite 默认转换，让跨目录导入的 TypeScript 依赖同样完成类型剥离。
     test: {
       name: 'repo-scripts',
       include: ['scripts/**/*.test.ts'],

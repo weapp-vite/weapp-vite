@@ -12,6 +12,7 @@ import { getMiniProgramPlatformGlobalKey } from '../../../../utils/miniProgramGl
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
 import { getCssRealPath, parseRequest } from '../../../utils/parse'
+import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import {
   injectRequestGlobalsIntoLoadResult,
   resolvePassiveRequestGlobalsTargets,
@@ -49,6 +50,10 @@ export function createLoadHook(state: CorePluginState) {
   ) {
     const startedAt = performance.now()
     try {
+      // 自定义 load 返回源码时需显式监听；监听边只归属当前实际源码模块。
+      if (/\.(?:jsx|tsx)$/.test(sourceId)) {
+        addNormalizedWatchFile(pluginCtx, sourceId)
+      }
       return await loadEntry.call(pluginCtx, sourceId, type)
     }
     finally {

@@ -10,7 +10,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import { assertStatefulHmrRuntimeOutput, createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
-import { toStableModuleId } from './initialModuleGraph'
+import { resolveStatefulHmrModuleRoot, toStableModuleId } from './initialModuleGraph'
 import { createViteDevEngine } from './viteDevEngine'
 
 export { toStableModuleId } from './initialModuleGraph'
@@ -133,7 +133,7 @@ export class StatefulHmrViteAdapter {
         moduleIds.add(match[1]!)
       }
       for (const id of Object.keys(item.modules ?? {})) {
-        const normalized = toStableModuleId(id, this.config.root)
+        const normalized = toStableModuleId(id, resolveStatefulHmrModuleRoot(this.config.root, this.config.build?.rolldownOptions.cwd))
         if (!moduleIds.has(normalized)) {
           moduleIds.add(normalized)
         }
@@ -177,6 +177,7 @@ export class StatefulHmrViteAdapter {
     const original = bundledDev.getRolldownOptions.bind(bundledDev)
     bundledDev.getRolldownOptions = async () => {
       const options = await original()
+      options.cwd = resolveStatefulHmrModuleRoot(this.config.root, options.cwd)
       const output = Array.isArray(options.output)
         ? (options.output[0] ??= {})
         : (options.output ??= {})

@@ -28,7 +28,7 @@ import { isStatefulHmrBoundary } from './boundaries'
 import { StatefulHmrDirectoryUpdates } from './directoryUpdates'
 import { createStatefulHmrGlobalStyleAssets } from './globalStyles'
 import { registerStatefulHmrInitialChunkLoaders } from './initialChunkLoaders'
-import { createStatefulHmrInitialGraph } from './initialModuleGraph'
+import { createStatefulHmrInitialGraph, resolveStatefulHmrModuleRoot } from './initialModuleGraph'
 import { isChangedNativeComponentSidecar } from './nativeComponentSidecar'
 import { selectStatefulHmrAdditionalOutput } from './outputOwnership'
 import { writeStatefulHmrOutput } from './outputWriter'
@@ -67,12 +67,16 @@ export async function runStatefulHmrDev(
     throw new Error('weapp.hmr.runtime="stateful-experimental" 目前仅支持微信小程序平台。')
   }
   let session: StatefulHmrSession | undefined
+  let moduleGraphRoot = buildOptions.root ?? configService.cwd
   const entryIds = new Set(Array.from(snapshots.entryIds, id => normalizeFsResolvedId(id)))
   const delegatedComponentEntryIds = new Set(Array.from(snapshots.delegatedComponentEntryIds ?? [], id => normalizeFsResolvedId(id)))
   const pollingWatchOptions = resolvePollingWatchOptions(configService)
   const installPlugin: Plugin = {
     name: 'weapp-vite:stateful-hmr-session',
     enforce: 'post',
+    configResolved(config) {
+      moduleGraphRoot = resolveStatefulHmrModuleRoot(config.root, config.build.rolldownOptions.cwd)
+    },
     configureServer(server) {
       const currentSession = new StatefulHmrSession(ctx, server, restart, entryIds, snapshots, {
         compareContentsForPolling: pollingWatchOptions.usePolling === true ? true : undefined,
@@ -99,7 +103,7 @@ export async function runStatefulHmrDev(
     },
     renderChunk(code, chunk, options) {
       if (options.format === 'cjs' && chunk.moduleIds.length) {
-        return { code: `${code}${createStatefulHmrInitialGraph(chunk, this, configService.cwd)}`, map: null }
+        return { code: `${code}${createStatefulHmrInitialGraph(chunk, this, moduleGraphRoot)}`, map: null }
       }
     },
   }

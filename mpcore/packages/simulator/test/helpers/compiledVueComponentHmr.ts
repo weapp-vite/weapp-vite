@@ -1,9 +1,8 @@
-import type { InputOptions, RolldownOutput } from 'rolldown'
+import type { RolldownOutput } from 'rolldown'
 import type { StatefulHmrDevEngineUpdate } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/viteAdapter'
 import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { rolldown } from 'rolldown'
 import { dev } from 'rolldown/experimental'
 import { compileVueFile } from 'wevu/compiler'
 import { createLogicalEntryModuleCode } from '../../../../../packages/weapp-vite/src/moduleGraph/logicalEntry'
@@ -11,39 +10,10 @@ import { createLogicalEntryId } from '../../../../../packages/weapp-vite/src/mod
 import { isStatefulHmrBoundary } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/boundaries'
 import { createStatefulHmrRolldownRuntimeSource } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/commonRuntime'
 import { createStatefulHmrInitialGraph } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/initialModuleGraph'
-
-async function generate(options: InputOptions) {
-  const bundle = await rolldown(options)
-  try {
-    const { output } = await bundle.generate({ format: 'cjs' })
-    if (output.length !== 1 || output[0]?.type !== 'chunk') {
-      throw new Error('Expected one compiled Vue fixture chunk')
-    }
-    return { code: output[0].code }
-  }
-  finally {
-    await bundle.close()
-  }
-}
+import { compileVueSharedRuntime } from './compileVueSharedRuntime'
 
 async function collectVueComponentHmr(repoRoot: string, source: string) {
-  const runtime = await generate({
-    cwd: repoRoot,
-    input: 'virtual:vue-shared-runtime',
-    plugins: [{
-      name: 'shared-wevu-fixture-runtime',
-      resolveId: id => id === 'virtual:vue-shared-runtime' ? id : undefined,
-      load(id) {
-        if (id === 'virtual:vue-shared-runtime') {
-          return [
-            `export { createWevuComponent, installInlineEvents } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/internal-runtime.ts'))};`,
-            `export { ref } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/internal-reactivity.ts'))};`,
-            `export { nextTick } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/scheduler.ts'))};`,
-          ].join('\n')
-        }
-      },
-    }],
-  })
+  const runtime = await compileVueSharedRuntime(repoRoot)
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'vue-client-companion-')))
   const sourceId = path.join(root, 'index.vue').replaceAll('\\', '/')
   const ownerId = createLogicalEntryId(sourceId, 'component')

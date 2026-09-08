@@ -682,6 +682,8 @@ describe('runtime buildPlugin service', () => {
     expect(output).toEqual({
       output: [{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }],
       componentPageGlobalStyleRoutes: [],
+      entryIds: [],
+      delegatedComponentEntryIds: new Set(),
     })
   })
 
