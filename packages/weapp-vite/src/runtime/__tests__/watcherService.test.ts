@@ -2,7 +2,7 @@ import type { MutableCompilerContext } from '../../context'
 import type { WatcherInstance, WatcherService } from '../watcherPlugin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtimeState'
-import { createWatcherServicePlugin, retainWatcherService } from '../watcherPlugin'
+import { createWatcherServicePlugin, deferWatcherResourceCleanup, retainWatcherService } from '../watcherPlugin'
 
 describe('watcherService', () => {
   let ctx: MutableCompilerContext
@@ -179,6 +179,46 @@ describe('watcherService', () => {
       plugin.configResolved?.({ command: 'build', build: {} } as any)
       await plugin.closeBundle?.()
       expect(mockOldWatcher.close).toHaveBeenCalledTimes(1)
+    })
+
+    it('deduplicates resource cleanup and awaits it after the last controller exits', async () => {
+      const first = retainWatcherService(watcherService)
+      const last = retainWatcherService(watcherService)
+      let finish!: () => void
+      const cleanup = vi.fn(() => new Promise<void>((resolve) => {
+        finish = resolve
+      }))
+      expect(deferWatcherResourceCleanup(watcherService, cleanup)).toBe(true)
+      expect(deferWatcherResourceCleanup(watcherService, cleanup)).toBe(true)
+      await first()
+      expect(cleanup).not.toHaveBeenCalled()
+      let released = false
+      const release = last().then(() => {
+        released = true
+      })
+      await Promise.resolve()
+      expect(cleanup).toHaveBeenCalledOnce()
+      expect(released).toBe(false)
+      finish()
+      await release
+      await last()
+      expect(released).toBe(true)
+      expect(cleanup).toHaveBeenCalledOnce()
+      expect(deferWatcherResourceCleanup(watcherService, cleanup)).toBe(false)
+    })
+
+    it('releases every controller resource even if another cleanup fails', async () => {
+      const release = retainWatcherService(watcherService)
+      const failed = vi.fn(async () => {
+        throw new Error('compiler close failed')
+      })
+      const remaining = vi.fn(async () => {})
+      watcherService.sidecarWatcherMap.set('sidecar', mockWatcher)
+      deferWatcherResourceCleanup(watcherService, failed)
+      deferWatcherResourceCleanup(watcherService, remaining)
+      await expect(release()).rejects.toThrow('Development controller resource cleanup failed')
+      expect(remaining).toHaveBeenCalledOnce()
+      expect(mockWatcher.close).toHaveBeenCalledOnce()
     })
 
     it('does not close a controller from inside the snapshot it is waiting for', async () => {

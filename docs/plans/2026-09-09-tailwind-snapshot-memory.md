@@ -6,7 +6,7 @@
 
 `createStatefulHmrSnapshotOptions()` 为每次快照创建独立编译上下文。快照保留开发编译语义，但执行的是 `build({ watch: undefined, write: false })`。原 Tailwind 插件在 `closeBundle` 中以 `isDev` 决定是否释放 compiler，使这些一次性构建只能等待永远不会触发的 `closeWatcher`。
 
-修复后依据真实控制器判断资源寿命：`command === 'serve'` 或 `build.watch` 为长期控制器，其余构建在 `closeBundle` 或失败的 `buildEnd` 中释放资源；多次关闭共享同一个释放 Promise。编译产物仍由 Vite/Rolldown 生成与写入。
+资源寿命由实际控制器所有权决定，不能仅依据开发语义或 Vite 配置标志。`command === 'serve'` 与 `build.watch` 能识别 Vite 自带控制器；classic 模式则由框架持有 watcher service 租约，复用同一组插件反复执行一次性 Vite build。Tailwind 在构建结束时将释放回调登记到该租约，最后一个控制器关闭时等待释放。无控制器的一次性快照仍在 `closeBundle` 或失败的 `buildEnd` 及时释放；多次关闭共享同一个释放 Promise。编译产物仍由 Vite/Rolldown 生成与写入。
 
 ## 本机对照证据
 
@@ -37,3 +37,17 @@
 主泄漏已由真实对照证明显著收敛，但 CSS 源变化仍有可见的额外增长，当前证据未证明长期内存完全稳定。依赖中的 design-system/source 缓存需要后续独立保活链分析，不能仅凭两个 CSS 修改样本断言上游泄漏或通过放宽 heap 掩盖它。
 
 本次保留现有 Tailwind 插件文件结构，资源创建、关闭钩子与现有 compiler 缓存共用同一闭包；将新增回归独立放入 `tailwindcss/`，避免进一步扩大既有测试文件。
+
+## classic 全量回归补充
+
+提交 `0f3ad9456` 的全量 `e2e:ci` 在 `template-wevu-tdesign-retail-hmr-vendor.test.ts` 暴露了上述控制器判定的遗漏。三个 case 首次构建正常，首次 HMR 都在 Tailwind `invalidate` 抛出 `Compiler 已释放`，最终因输出 marker 缺失超时；运行模式明确为 classic。不能把这一失败解释成 stateful 补丁分类或原生入口图问题。
+
+修复复用 `retainWatcherService` 已有租约，由 `deferWatcherResourceCleanup` 按回调身份去重登记资源释放。最终 owner 退出时等待所有回调与 watcher service 关闭；一个回调失败仍执行其余资源清理，并将清理错误传回调用方。没有 owner 时返回给调用方立即清理，不增加 `isDev` 例外，也不重新创建已释放的 compiler 掩盖所有权错误。
+
+新增 `tailwindcss/classicLifecycle.test.ts` 使用真实 Vite build 与真实 Tailwind compiler，连续复用同一插件组，验证第二轮 `buildStart` 的失效通知和输出样式仍工作；两个控制器逐个退出，最后退出后实际 compiler 拒绝再使用。另一个真实构建覆盖无 owner 的开发快照仍在 bundle 关闭时释放。既有 watcher service 测试增加多 owner、异步清理等待、回调去重与单个清理失败后的完整回收。
+
+本次没有扩大编译器 API；新增清理登记函数是内部构建控制器边界。`watcherPlugin.ts` 保持小于 300 行，真实构建回归独立存放于 `tailwindcss/`。既有大文件 `tailwindcss.ts` 只将快照关闭策略收敛为一个闭包内函数，继续让 compiler 缓存及 dispose Promise 共用同一所有者。
+
+真实生命周期对照已完成：仅恢复修复前 Tailwind 关闭策略时，连续构建在第二轮 `buildStart -> invalidate` 稳定抛出 `Compiler 已释放`，一次性快照 case 仍通过；恢复控制器租约后，两个真实 Vite case 与既有纯生命周期覆盖共 3 个文件、28 个测试全部通过。证据为 `.tmp/tailwind-classic-real-red.log` 与 `.tmp/tailwind-classic-real-green.log`。拥有包 typecheck 和改动路径 ESLint 通过。
+
+重建 `weapp-vite` 后串行运行现成下游回归：零售模板 vendor HMR 的 3 个 case 通过；`issue-814-tailwind4` 内存守卫通过，post-GC 堆增长 1.0 MiB（上限 180 MiB）；全部 5 个 Tailwind 模板 HMR 通过，post-GC 堆增长依次为 90.3、84.2、108.1、69.2、12.7 MiB，均低于原有 160 MiB 上限。模板输出、CSS 更新及旧样式移除断言完整保留，未增加 heap、超时或性能预算。日志索引：`.tmp/tailwind-classic-retail.log`、`.tmp/tailwind-classic-memory.log`、`.tmp/tailwind-classic-templates.log`。这些是本次修复后的定向验证，最终提交全量验收另行执行。

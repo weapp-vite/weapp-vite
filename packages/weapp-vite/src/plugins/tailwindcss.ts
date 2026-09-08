@@ -16,6 +16,7 @@ import process from 'node:process'
 import path from 'pathe'
 import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { safeGetPackageInfoSync } from '../runtime/localPkg'
+import { deferWatcherResourceCleanup } from '../runtime/watcherPlugin'
 import { changeFileExtension } from '../utils'
 import { applyOutputChunkTransform } from '../utils/outputChunk'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
@@ -315,6 +316,12 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     return compilerDisposal ??= Promise.resolve(compilerPromise?.then(compiler => compiler.dispose()))
   }
 
+  async function closeSnapshotCompiler() {
+    if (!persistentWatch && !deferWatcherResourceCleanup(ctx.watcherService, disposeCompiler)) {
+      await disposeCompiler()
+    }
+  }
+
   async function invalidateCompilerForFile(id: string, event: 'create' | 'update' | 'delete') {
     const compiler = await getCompiler()
     const normalizedId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
@@ -501,8 +508,8 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       persistentWatch = config.command === 'serve' || Boolean(config.build?.watch)
     },
     async buildEnd(error) {
-      if (error && !persistentWatch) {
-        await disposeCompiler()
+      if (error) {
+        await closeSnapshotCompiler()
       }
     },
     resolveId(source) {
@@ -637,9 +644,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       },
     },
     async closeBundle() {
-      if (!persistentWatch) {
-        await disposeCompiler()
-      }
+      await closeSnapshotCompiler()
     },
   }
 

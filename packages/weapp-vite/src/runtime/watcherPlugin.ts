@@ -13,20 +13,45 @@ export interface WatcherService {
   closeAll: () => void | Promise<void>
 }
 
-const resourceOwners = new WeakMap<WatcherService, number>()
+interface WatcherResourceOwner {
+  count: number
+  cleanup: Set<() => void | Promise<void>>
+}
+
+const resourceOwners = new WeakMap<WatcherService, WatcherResourceOwner>()
+
+/** 将可复用构建资源交给现有控制器释放；没有控制器时由调用方立即释放。 */
+export function deferWatcherResourceCleanup(service: WatcherService | undefined, cleanup: () => void | Promise<void>): boolean {
+  const owner = service && resourceOwners.get(service)
+  if (!owner) {
+    return false
+  }
+  owner.cleanup.add(cleanup)
+  return true
+}
 
 /** 为长期运行的控制器保留共享资源，最后一个控制器退出时统一释放。 */
 export function retainWatcherService(service: WatcherService): () => Promise<void> {
-  resourceOwners.set(service, (resourceOwners.get(service) ?? 0) + 1)
+  const owner = resourceOwners.get(service) ?? { count: 0, cleanup: new Set<() => void | Promise<void>>() }
+  owner.count += 1
+  resourceOwners.set(service, owner)
   let releasing: Promise<void> | undefined
   return () => releasing ??= (async () => {
-    const remaining = (resourceOwners.get(service) ?? 1) - 1
-    if (remaining > 0) {
-      resourceOwners.set(service, remaining)
+    owner.count -= 1
+    if (owner.count > 0) {
       return
     }
     resourceOwners.delete(service)
-    await service.closeAll()
+    const cleanup = [...owner.cleanup]
+    owner.cleanup.clear()
+    const results = await Promise.allSettled([
+      ...cleanup.map(async close => await close()),
+      (async () => await service.closeAll())(),
+    ])
+    const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+    if (errors.length) {
+      throw new AggregateError(errors, 'Development controller resource cleanup failed')
+    }
   })()
 }
 
