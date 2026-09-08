@@ -48,6 +48,20 @@ function createState(file: string, entryId: string) {
 }
 
 describe('core lifecycle buildEnd hook', () => {
+  it.each([undefined, {}])('preserves full output only for one-shot builds that empty outDir (watch: %s)', async (watch) => {
+    const file = '/project/src/pages/home/index.json'
+    const entryId = '/project/src/pages/home/index.ts'
+    const { moduleGraphService, pluginContext, state } = createState(file, entryId)
+    state.resolvedConfig = { build: { emptyOutDir: true, watch } }
+    moduleGraphService.recordChangedFile(file, 'update')
+
+    await createBuildEndHook(state).call(pluginContext)
+
+    expect(state.hmrState.didEmitAllEntries).toBe(watch === undefined)
+    expect(state.hmrState.skipSharedChunkRefresh).toBe(watch !== undefined)
+    expect(state.ctx.runtimeState.build.hmr.didEmitAllEntries).toBe(watch === undefined ? true : undefined)
+  })
+
   it('resolves a pending sidecar through the active graph and refreshes metadata only', async () => {
     const file = '/project/src/pages/home/index.json'
     const entryId = '/project/src/pages/home/index.ts'

@@ -153,7 +153,8 @@ vi.mock('./workers', () => ({
   buildWorkers: buildWorkersMock,
 }))
 
-vi.mock('../../utils/file', () => ({
+vi.mock('../../utils/file', async importOriginal => ({
+  ...await importOriginal<typeof import('../../utils/file')>(),
   touch: touchMock,
 }))
 

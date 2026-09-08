@@ -83,11 +83,21 @@ function collectTemplateDependencies(state: CorePluginState, templatePath?: stri
     return []
   }
   const dependencies: LogicalEntryDependency[] = []
-  for (const sourceId of state.ctx.wxmlService?.depsMap?.get(templatePath) ?? []) {
-    dependencies.push({
-      kind: isTemplate(sourceId) ? 'template' : 'wxs',
-      sourceId: normalizeFsResolvedId(sourceId),
-    })
+  const visited = new Set([normalizeFsResolvedId(templatePath)])
+  const pending = [templatePath]
+  while (pending.length) {
+    const template = pending.pop()!
+    for (const dependency of state.ctx.wxmlService?.depsMap?.get(template) ?? []) {
+      const sourceId = normalizeFsResolvedId(dependency)
+      if (visited.has(sourceId)) {
+        continue
+      }
+      visited.add(sourceId)
+      dependencies.push({ kind: isTemplate(sourceId) ? 'template' : 'wxs', sourceId })
+      if (isTemplate(sourceId)) {
+        pending.push(sourceId)
+      }
+    }
   }
   return dependencies
 }

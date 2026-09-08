@@ -46,11 +46,6 @@ function resolveIncrementalHmrWxmlTargetIds(state: CorePluginState) {
   }
 
   const targets = new Set<string>()
-  const currentFile = ctx.runtimeState.build.hmr.profile.file
-  if (typeof currentFile === 'string' && isTemplate(currentFile)) {
-    targets.add(normalizeWatchPath(currentFile))
-  }
-
   const entryIds = hmrState.lastHmrEntryIds?.size
     ? hmrState.lastHmrEntryIds
     : hmrState.lastEmittedEntryIds
@@ -70,6 +65,18 @@ function resolveIncrementalHmrWxmlTargetIds(state: CorePluginState) {
     }
   }
 
+  // 目标属于当前已加载入口；不能读取构建期间继续增长的 watcher 事件队列。
+  const pending = [...targets]
+  while (pending.length) {
+    const current = pending.pop()!
+    for (const dependency of ctx.wxmlService?.depsMap?.get(current) ?? []) {
+      const template = normalizeWatchPath(dependency)
+      if (isTemplate(template) && !targets.has(template)) {
+        targets.add(template)
+        pending.push(template)
+      }
+    }
+  }
   return targets.size ? targets : undefined
 }
 
@@ -87,13 +94,14 @@ export function createRenderStartHook(state: CorePluginState) {
       if (shouldEmitJsonDuringRenderStart(state)) {
         emitJsonAssets.call(this, state)
       }
+      const targetIds = resolveIncrementalHmrWxmlTargetIds(state)
       state.watchFilesSnapshot = emitWxmlAssetsWithCache({
         runtime,
         compiler: ctx,
         subPackageMeta,
         emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
         buildTarget,
-        targetIds: resolveIncrementalHmrWxmlTargetIds(state),
+        targetIds,
       })
     }
     finally {

@@ -49,6 +49,7 @@ import { createDevBuildWatcher } from './devBuildWatcher'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches } from './outputs'
+import { refreshSnapshotSources } from './snapshotSources'
 import { resolveTouchAppWxssEnabled } from './touchAppWxss'
 import { buildWorkers, checkWorkersOptions, devWorkers, watchWorkers } from './workers'
 
@@ -1435,6 +1436,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = Promise.resolve(undefined)
     let devWatcherClosed = false
     let pendingSnapshotBatch: SnapshotBuildBatch | undefined
+    let failedSnapshotReasons: SnapshotBuildReason[] = []
     let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
     const devBuildWatcher = target === 'app' ? createDevBuildWatcher() : undefined
 
@@ -1496,10 +1498,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (devWatcherClosed) {
           return
         }
-        if (reason?.event || reason?.file) {
-          if (reason.file) {
-            invalidateFileCache(reason.file)
+        if (failedSnapshotReasons.length) {
+          batchReasons = [...failedSnapshotReasons, ...batchReasons]
+          failedSnapshotReasons = []
+          // 上次写入可能未完成，重放时不能依赖已生成阶段的输出去重缓存。
+          resetEmittedOutputCaches(ctx.runtimeState)
+        }
+        // 当前串行构建独占 graph pending；后续事件继续留在本地批次队列。
+        for (const batchReason of batchReasons) {
+          if (batchReason.file) {
+            ctx.moduleGraphService.recordChangedFile(batchReason.file, batchReason.event ?? 'update')
           }
+        }
+        if (reason?.event || reason?.file) {
           ctx.runtimeState.build.hmr.profile = {
             ...ctx.runtimeState.build.hmr.profile,
             eventId: createHmrProfileEventId(),
@@ -1529,6 +1540,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           || batchReason.event === 'create'
           || batchReason.event === 'delete',
         )
+        await refreshSnapshotSources(ctx, batchReasons.flatMap(batchReason => batchReason.file ? [batchReason.file] : []))
         if (!requiresFullRescan && graphAffectedEntries.size) {
           const dirtyReasons = batchReasons.map(resolveSnapshotDirtyReason)
           const dirtyReason = dirtyReasons.includes('direct')
@@ -1576,6 +1588,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return
         }
         markSnapshotEntriesFullDirty()
+        // 完整 snapshot 会清空 outDir，旧的已输出缓存不能阻止原字节资源恢复。
+        resetEmittedOutputCaches(ctx.runtimeState)
         process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS = '1'
         try {
           devBuildWatcher?.emitEvent({ code: 'START' })
@@ -1602,7 +1616,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
         }
       })
-      snapshotBuildChain = currentSnapshotBuild.catch(() => undefined)
+      snapshotBuildChain = currentSnapshotBuild.catch(() => {
+        failedSnapshotReasons.push(...batchReasons)
+        return undefined
+      })
       return currentSnapshotBuild
     }
 
@@ -1623,9 +1640,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     function scheduleSnapshotBuild(reason: SnapshotBuildReason, startedAt: number) {
       if (devWatcherClosed) {
         return
-      }
-      if (reason.file) {
-        ctx.moduleGraphService?.recordChangedFile(reason.file, reason.event ?? 'update')
       }
       if (pendingSnapshotBatch) {
         pendingSnapshotBatch.reasons.push(reason)
