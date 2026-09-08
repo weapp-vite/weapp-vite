@@ -92,6 +92,22 @@ describe('stateful hmr session', () => {
     expect(isSafeJavaScriptPatch(['src/pages/index.ts'], { type: 'FullReload', reason: 'boundary' } as any)).toBe(false)
   })
 
+  it('keeps safe mixed script and visual updates stateful while synchronizing assets', () => {
+    const reasons = ['entry-mixed-asset:1']
+    const file = 'src/pages/index.vue'
+    expect(requiresStatefulHmrSnapshot(file, reasons)).toBe(true)
+    expect(shouldUseStatefulHmrSnapshotOnly(reasons)).toBe(false)
+    expect(isSafeJavaScriptPatch([file], { type: 'Patch', code: 'void 0', filename: 'update.js' } as any, reasons)).toBe(true)
+  })
+
+  it('rebuilds both code and assets when a mixed SFC edit changes config', () => {
+    const reasons = ['entry-mixed-config:1']
+    const file = 'src/pages/index.vue'
+    expect(requiresStatefulHmrSnapshot(file, reasons)).toBe(true)
+    expect(shouldUseStatefulHmrSnapshotOnly(reasons)).toBe(false)
+    expect(isSafeJavaScriptPatch([file], { type: 'Patch', code: 'void 0', filename: 'update.js' } as any, reasons)).toBe(false)
+  })
+
   it('treats an omitted dirty reason summary as empty', () => {
     const patch = {
       type: 'Patch',

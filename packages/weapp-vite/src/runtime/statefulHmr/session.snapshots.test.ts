@@ -38,6 +38,8 @@ vi.mock('./viteAdapter', () => ({
 
     install() {}
     async registerBundleModules() { return 1 }
+    async registerPatchModules() {}
+    async markPayloadDelivered() {}
     async rebuild() { await harness.fullBuild() }
   },
 }))
@@ -76,6 +78,10 @@ async function start(initial = snapshot('red')) {
   watchers.push(watcher)
   return {
     rebuild,
+    patch: (reasons: string[]) => {
+      ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = reasons
+      return harness.callbacks!.onPatch([path.join(root, 'src/page.vue')], { type: 'Patch', code: 'void 0', filename: 'update.js' })
+    },
     refresh: () => ctx.onStatefulHmrSourceChange!(path.join(root, 'src/page.wxss'), []),
     full: () => harness.callbacks!.onPatch([path.join(root, 'src/page.vue')], { type: 'FullReload', reason: 'test boundary' }),
   }
@@ -123,6 +129,23 @@ describe('stateful snapshot output transactions', () => {
     await Promise.all(watchers.splice(0).map(watcher => watcher.close()))
     vi.restoreAllMocks()
     vi.useRealTimers()
+  })
+
+  it('publishes a mixed visual edit as a patch plus changed assets without a full build', async () => {
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+    const session = await start()
+    harness.writeOutput.mockClear()
+
+    expect(session.patch(['entry-mixed-asset:1'])).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(session.rebuild).toHaveBeenCalledTimes(1)
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({
+      fileName: `${route}.wxss`,
+      source: expect.stringContaining('color: blue'),
+    }))
+    expect(delta).toHaveBeenCalledTimes(1)
+    expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
   it('assigns resolved public publication only to the first complete output', async () => {

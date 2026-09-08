@@ -5,6 +5,7 @@ export default defineConfig({
     hmr: {
       logLevel: 'verbose',
     },
+    appPrelude: { webRuntime: true },
     srcRoot: 'src',
   },
 })

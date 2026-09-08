@@ -425,6 +425,22 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       ? ctx.autoRoutesService?.getSignature?.()
       : undefined
     const normalizedVueEntryPath = vueEntryPath ? normalizeFsResolvedId(vueEntryPath) : undefined
+    // SFC 的配置、watch 基线和返回给后续 transform 的代码共用本轮物理源码，避免异步期间二次读取到下一次保存。
+    if (vueEntryPath) {
+      const source = await readVueSource()
+      if (id.endsWith('.vue')) {
+        entryCodeSource = source
+      }
+      if (configService.isDev && source !== undefined) {
+        const signatureStartedAt = performance.now()
+        const signatures = resolveVueSfcHmrSignatures(source, vueEntryPath)
+        recordEntryDuration('entryVueSignatureMs', signatureStartedAt)
+        storeVueSfcHmrSignatures(ctx.runtimeState.build.hmr, normalizedVueEntryPath!, signatures)
+        if (type === 'app') {
+          appVueNonJsonSignature = signatures.nonJsonSignature
+        }
+      }
+    }
     const registerPageLayoutComponentEntries = async (
       layoutPlan: ResolvedPageLayoutPlan,
       options?: {
@@ -474,20 +490,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     if (type === 'app') {
-      if (configService.isDev && vueEntryPath) {
-        const vueSource = await readVueSource()
-        if (vueSource) {
-          const signatureStartedAt = performance.now()
-          const signatures = resolveVueSfcHmrSignatures(vueSource, vueEntryPath)
-          recordEntryDuration('entryVueSignatureMs', signatureStartedAt)
-          appVueNonJsonSignature = signatures.nonJsonSignature
-          storeVueSfcHmrSignatures(
-            ctx.runtimeState.build.hmr,
-            normalizedVueEntryPath!,
-            signatures,
-          )
-        }
-      }
       if (vueEntryPath && ctx.autoRoutesService?.isEnabled?.() && !ctx.runtimeState.autoRoutes.loadingAppConfig) {
         await ctx.autoRoutesService.ensureFresh()
         const refreshedConfigFromVue = await extractConfigFromVue(vueEntryPath, {
@@ -689,16 +691,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         }
         finally {
           recordEntryDuration('entryLayoutMs', layoutStartedAt)
-        }
-      }
-
-      if (configService.isDev && hasJsonEntry && vueEntryPath) {
-        const vueSource = await readVueSource()
-        if (vueSource) {
-          const signatureStartedAt = performance.now()
-          const signatures = resolveVueSfcHmrSignatures(vueSource, vueEntryPath)
-          recordEntryDuration('entryVueSignatureMs', signatureStartedAt)
-          storeVueSfcHmrSignatures(ctx.runtimeState.build.hmr, normalizedId, signatures)
         }
       }
 

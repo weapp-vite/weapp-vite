@@ -987,6 +987,29 @@ const count = 1
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
   })
 
+  it.each([
+    ['template', '<view>{{ count }}</view>', '<view>changed {{ count }}</view>', 'entry-mixed-asset'],
+    ['style', 'color: red', 'color: blue', 'entry-mixed-asset'],
+    ['config', 'navigationBarTitleText: \'首页\'', 'navigationBarTitleText: \'新标题\'', 'entry-mixed-config'],
+  ])('keeps mixed script and %s updates direct while requesting asset synchronization', async (_block, before, after, cause) => {
+    const entryId = '/project/src/pages/logs/index.vue'
+    const previousSource = `<script setup>
+definePageJson({ navigationBarTitleText: '首页' })
+const count = 1
+</script><template><view>{{ count }}</view></template><style>view { color: red }</style>`
+    const state = createState({ loadedEntrySet: new Set([entryId]) })
+    const onSourceChange = vi.fn()
+    state.ctx.onStatefulHmrSourceChange = onSourceChange
+    setVueEntrySfcSignatures(state, entryId, previousSource)
+    vi.spyOn(fs, 'readFile').mockResolvedValue(previousSource.replace('const count = 1', 'const count = 2').replace(before, after))
+
+    await createWatchChangeHook(state)(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([`${cause}:1`])
+    expect(onSourceChange).toHaveBeenCalledWith(entryId, [`${cause}:1`])
+  })
+
   it('normalizes transient create events on loaded vue entries back to metadata updates', async () => {
     const entryId = '/project/src/pages/logs/index.vue'
     const previousSource = `<script setup lang="ts">

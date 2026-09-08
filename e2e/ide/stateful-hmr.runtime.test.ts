@@ -57,8 +57,10 @@ function normalizeFixtureSource(source: string, runtime: 'component' | 'native' 
   if (runtime === 'wevu') {
     return source
       .replace('STATEFUL-WEVU-PATCHED', 'STATEFUL-WEVU-BASE')
-      .replace('count.value += 2', 'count.value += 1')
-      .replace('store.increment(2)', 'store.increment(1)')
+      .replace(/<view class="sfc-template">SFC-(?:TEMPLATE-B|MIXED-TEMPLATE)<\/view>\n {4}/, '')
+      .replace('\n  background-color: #dbeafe;', '')
+      .replace(/count\.value \+= [23]/, 'count.value += 1')
+      .replace(/store\.increment\([23]\)/, 'store.increment(1)')
       .replace('  added: \'new default\',\n', '')
   }
   const prefix = runtime === 'native' ? 'NATIVE' : 'COMPONENT'
@@ -340,7 +342,18 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       source: 'e2e',
     })
 
+    const templateSource = originalWevuSource.replace('<input v-model="input"', '<view class="sfc-template">SFC-TEMPLATE-B</view>\n    <input v-model="input"')
+    await replaceFileByRename(WEVU_SOURCE, templateSource)
+    await devProcess!.waitFor(waitForFileContains(path.join(DIST_ROOT, 'pages/wevu/index.wxml'), 'SFC-TEMPLATE-B'), 'SFC template B emitted')
+    await dom.check('template-b', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index' })
+
+    await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+    await dom.check('template-a', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index' })
+
     const updatedSource = originalWevuSource
+      .replace('<input v-model="input"', '<view class="sfc-template">SFC-MIXED-TEMPLATE</view>\n    <input v-model="input"')
       .replace('STATEFUL-WEVU-BASE', 'STATEFUL-WEVU-PATCHED')
       .replace('count.value += 1', 'count.value += 2')
       .replace('store.increment(1)', 'store.increment(2)')
@@ -368,6 +381,21 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       route: 'pages/wevu/index',
       source: 'e2e',
     })
+
+    const styleSource = updatedSource
+      .replace('count.value += 2', 'count.value += 3')
+      .replace('store.increment(2)', 'store.increment(3)')
+      .replace('.page {', '.page {\n  background-color: #dbeafe;')
+    const styleClientVersion = await readClientVersion()
+    await replaceFileByRename(WEVU_SOURCE, styleSource)
+    await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'count.value += 3'), 'mixed SFC script and style patch published')
+    await waitForClientVersion(styleClientVersion + 1)
+    await dom.check('mixed-style', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 4, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index', source: 'e2e' })
+    await triggerIncrement()
+    await waitForPatchedBehavior(7, page)
+    await dom.check('mixed-style-updated', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 7, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index', source: 'e2e' })
   })
 
   it('preserves native Component identity, data, input, route, and query across a JavaScript patch', async (ctx) => {

@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { waitForBenchmarkOutput } from '../../scripts/benchmarkTemplatesHmr/emittedOutput'
 import { readEmittedStylesheet, waitForEmittedStylesheet } from './emittedStylesheet'
 
 const temporaryDirectories: string[] = []
@@ -62,5 +63,18 @@ describe('emitted stylesheet graph', () => {
   it('fails closed when emitted imports cannot be parsed', async () => {
     const entry = await fixture({ 'app.wxss': '@import unsupported-target;' })
     await expect(readEmittedStylesheet(entry)).rejects.toThrow('Cannot parse emitted stylesheet imports: app.wxss')
+  })
+
+  it('checks benchmark edit and restoration through the page stylesheet import graph', async () => {
+    const entry = await fixture({
+      'app.wxss': '@import "shared.wxss";',
+      'shared.wxss': '.updated-marker { color: red; }',
+      'unused.wxss': '.unreachable-marker { color: red; }',
+    })
+    const read = () => readEmittedStylesheet(entry)
+    await expect(waitForBenchmarkOutput(read, 'updated-marker', { timeoutMs: 100 })).resolves.toContain('updated-marker')
+    await writeFile(path.join(path.dirname(entry), 'shared.wxss'), 'view { color: blue; }')
+    await expect(waitForBenchmarkOutput(read, 'updated-marker', { absent: true, timeoutMs: 100 })).resolves.toContain('blue')
+    await expect(waitForBenchmarkOutput(read, 'unreachable-marker', { timeoutMs: 30, intervalMs: 1 })).rejects.toThrow('Timed out')
   })
 })

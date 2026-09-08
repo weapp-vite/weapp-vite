@@ -3011,14 +3011,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:282",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:284",
           "name": "stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across a JavaScript patch",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('native')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:283"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:285"
             }
           ],
           "routes": [
@@ -3036,14 +3036,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:323",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:325",
           "name": "stateful HMR in real WeChat DevTools > rehydrates wevu local and store refs while preserving the native page instance",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('wevu')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:324"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:326"
             }
           ],
           "routes": [
@@ -3055,20 +3055,24 @@
             "check(initial)",
             "tap(<missing>)",
             "check(prepared)",
+            "check(template-b)",
+            "check(template-a)",
             "check(patched)",
-            "check(updated)"
+            "check(updated)",
+            "check(mixed-style)",
+            "check(mixed-style-updated)"
           ],
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:373",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:401",
           "name": "stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('component')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:374"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:402"
             }
           ],
           "routes": [
@@ -6114,11 +6118,11 @@
     },
     {
       "file": "e2e/ide/stateful-hmr.runtime.test.ts",
-      "sha256": "009ec28d452acd657009fc03948cd6844a191205757481a45650a4748df6efba"
+      "sha256": "25f001044be25adb8e5137939b0d467026a80a9046a30952113f12d4e3f0de2a"
     },
     {
       "file": "e2e/ide/statefulHmrDom/index.ts",
-      "sha256": "0ec2211ab28f38016312c89eef7a8c13f9a4e18f0f6b70ed46273b9252aa6f30"
+      "sha256": "a32de71ccdd2d8610543807139f2422da923899b08876174af10007ca6303e22"
     },
     {
       "file": "e2e/ide/subpackage-shared-strategy-complex.runtime.test.ts",

@@ -2,6 +2,7 @@ import type { PluginContext } from 'rolldown'
 import type { Mock } from 'vitest'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import logger from '../../../logger'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
@@ -697,6 +698,21 @@ describe('createEntryLoader', () => {
 
     expect(mockFindJsonEntry).not.toHaveBeenCalled()
     expect(mockFindVueEntry).not.toHaveBeenCalled()
+  })
+
+  it.each([undefined, { component: true }])('uses one physical Vue source version for HMR signatures and emitted code with config %j', async (config) => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const entryPath = '/project/src/pages/home/index.vue'
+    const source = '<script setup>const count = 1</script><template><view>A {{ count }}</view></template>'
+    const newerSource = source.replace('count = 1', 'count = 2')
+    readFileMock.mockResolvedValue(newerSource).mockResolvedValueOnce(source)
+    mockExtractConfigFromVue.mockResolvedValue(config)
+
+    const result = await loader.call(createPluginContext(), entryPath, 'page')
+
+    expect(result?.code).toBe(source)
+    expect(runtimeState.build.hmr.vueEntrySfcSignatures.get(entryPath)).toEqual(resolveVueSfcHmrSignatures(source, entryPath).blockSignatures)
+    expect(readFileMock.mock.calls.filter(([file]) => file === entryPath)).toHaveLength(1)
   })
 
   it('reuses cached vue json block config during direct script hmr', async () => {

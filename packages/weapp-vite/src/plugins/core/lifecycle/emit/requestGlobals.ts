@@ -36,12 +36,13 @@ import {
   REQUEST_GLOBAL_ENTRY_NAME_RE,
   REQUEST_GLOBAL_EXPORT_RE,
   REQUEST_GLOBAL_INSTALLER_RE,
+  REQUEST_GLOBAL_REQUIRE_CALL_RE,
   REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE,
   REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME,
 } from './constants'
+import { wouldCollapseSupportCreateCycle } from './requestGlobals/chunkGraph'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from './rewrite'
 
-const REQUEST_GLOBAL_REQUIRE_CALL_RE = /require\((`([^`]+)`|'([^']+)'|"([^"]+)")\)/g
 const REQUEST_GLOBAL_APP_MODULE_KEY_PREFIX = '__weappViteRequestGlobalsModule:'
 
 function resolveChunkRequestGlobalsTargets(
@@ -722,6 +723,10 @@ export function collapseRequestGlobalsRuntimeSupportChunk(bundle: OutputBundle) 
 
   const supportChunk = bundle[supportChunkFileName]
   if (!supportChunk || supportChunk.type !== 'chunk') {
+    return
+  }
+
+  if (wouldCollapseSupportCreateCycle(bundle, runtimeOutput.fileName, supportChunkFileName)) {
     return
   }
 

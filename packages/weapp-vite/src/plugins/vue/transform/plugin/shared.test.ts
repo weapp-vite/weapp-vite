@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { WEAPP_VITE_RUNTIME_VIRTUAL_IDS } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { compileTransformEntryResult, createTransformStageMeasurer, ensureSfcStyleBlocks, finalizeTransformCompiledResult, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, loadTransformStyleBlock, logTransformFileError, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, preloadNativeLayoutEntries, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
@@ -1017,7 +1018,7 @@ console.log(pages, routeSubPackages)
     )
   })
 
-  it('syncs vue sfc signatures after transform compilation', async () => {
+  it('does not overwrite physical SFC signatures with transformed compiler input', async () => {
     const result = {
       script: 'Component({})',
       template: '<view />',
@@ -1031,6 +1032,8 @@ console.log(pages, routeSubPackages)
       vueEntryTailwindScriptContentSignatures: new Map<string, string>(),
     }
     const source = '<template><view /></template><script setup>const count = 1</script>'
+    const rawSignatures = resolveVueSfcHmrSignatures(source, '/project/src/components/card.vue')
+    hmr.vueEntrySfcSignatures.set('/project/src/components/card.vue', rawSignatures.blockSignatures)
 
     await finalizeTransformCompiledResult({
       ctx: {
@@ -1045,7 +1048,7 @@ console.log(pages, routeSubPackages)
       } as any,
       pluginCtx: {},
       filename: '/project/src/components/card.vue',
-      source,
+      source: source.replace('const count', 'const injected = true; const count'),
       result,
       pageLayoutSignature: 'null',
       appShellSignature: 'null',
@@ -1064,14 +1067,7 @@ console.log(pages, routeSubPackages)
       emitScopedSlotChunks: vi.fn(),
     })
 
-    expect(hmr.vueEntryHasTemplate.get('/project/src/components/card.vue')).toBe(true)
-    expect(hmr.vueEntrySfcSignatures.get('/project/src/components/card.vue')).toEqual({
-      config: expect.any(String),
-      script: expect.any(String),
-      style: expect.any(String),
-      template: expect.any(String),
-    })
-    expect(hmr.vueEntryTailwindContentSignatures.get('/project/src/components/card.vue')).toEqual(expect.any(String))
+    expect(hmr.vueEntrySfcSignatures.get('/project/src/components/card.vue')).toEqual(rawSignatures.blockSignatures)
   })
 
   it('resolves transform entry flags with page matcher creation, dirty invalidation, and app detection', async () => {

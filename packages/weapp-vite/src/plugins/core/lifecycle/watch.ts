@@ -579,6 +579,8 @@ async function processChangedFile(
       && (vueEntryUpdateInspector ? await vueEntryUpdateInspector.isLocalAssetOnlyUpdate() : false)
     const isStyleOnlyVueEntryUpdate = isLocalAssetOnlyVueEntryUpdate
       && (vueEntryUpdateInspector ? await vueEntryUpdateInspector.isStyleOnlyUpdate() : false)
+    const changedVueBlocks = event === 'update' ? await vueEntryUpdateInspector?.getChangedBlocks() : undefined
+    const isMixedAssetVueEntryUpdate = changedVueBlocks?.includes('script') && changedVueBlocks.length > 1
     const directDirtyReason = sidecarDirtyCause
       ? 'metadata'
       : (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct'
@@ -591,7 +593,9 @@ async function processChangedFile(
             ? 'entry-direct'
             : isLocalAssetOnlyVueEntryUpdate
               ? isStyleOnlyVueEntryUpdate ? 'entry-style-only' : 'entry-local-asset'
-              : 'entry-direct')
+              : isMixedAssetVueEntryUpdate
+                ? changedVueBlocks?.includes('config') ? 'entry-mixed-config' : 'entry-mixed-asset'
+                : 'entry-direct')
     markChangedEntryDirty(
       directDirtyReason,
       directDirtyCause,

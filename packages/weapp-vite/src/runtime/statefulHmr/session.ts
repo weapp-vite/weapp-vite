@@ -341,8 +341,8 @@ class StatefulHmrSession {
       }
       return false
     }
-    if (allowTailwindContentPatch) {
-      // JS patch 与 Tailwind 样式快照可并行更新，避免仅脚本变更被错误降级为全量重建。
+    if (allowTailwindContentPatch || dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))) {
+      // 安全的 JS patch 与模板、样式快照分别同步，混合视觉更新不能无故重载并清空交互状态。
       this.requestSnapshotRefresh(files)
     }
     void this.adapter.registerPatchModules(output.code).then(async () => {
@@ -641,7 +641,7 @@ export function isSafeJavaScriptPatch(
 export function requiresStatefulHmrSnapshot(file: string, dirtyReasonSummary: string[] = []): boolean {
   return /\.(?:jsx|tsx)$/.test(file)
     || !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
-    || dirtyReasonSummary.some(reason => isUnsafeStatefulHmrReason(reason))
+    || dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:') || isUnsafeStatefulHmrReason(reason))
 }
 
 export function isStatefulHmrAssetFile(file: string): boolean {
@@ -652,7 +652,7 @@ function isUnsafeStatefulHmrReason(reason: string, allowTailwindContent = false)
   if (allowTailwindContent && reason.startsWith('tailwind-content:')) {
     return false
   }
-  return /^(?:entry-json-only|entry-local-asset|entry-style-only|react-template|tailwind-content):/.test(reason)
+  return /^(?:entry-json-only|entry-local-asset|entry-style-only|entry-mixed-config|react-template|tailwind-content):/.test(reason)
 }
 
 export function shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary: string[]): boolean {
