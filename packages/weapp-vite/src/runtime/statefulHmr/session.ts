@@ -32,6 +32,7 @@ import { createStatefulHmrInitialGraph, resolveStatefulHmrModuleRoot } from './i
 import { isChangedNativeComponentSidecar } from './nativeComponentSidecar'
 import { selectStatefulHmrAdditionalOutput } from './outputOwnership'
 import { writeStatefulHmrOutput } from './outputWriter'
+import { createStatefulHmrPatchImportResolver, transformStatefulHmrPatchImports } from './patchModule'
 import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
 import { StatefulHmrSnapshotScheduler } from './snapshotScheduler'
@@ -400,7 +401,11 @@ class StatefulHmrSession {
       this.requestSnapshotRefresh(files)
     }
     void this.adapter.registerPatchModules(output.code).then(async () => {
-      const code = await transformJavaScript(output.code, output.filename)
+      const moduleCode = transformStatefulHmrPatchImports(output.code, {
+        filename: output.filename,
+        resolveImport: createStatefulHmrPatchImportResolver(this.ctx, output.filename),
+      })
+      const code = await transformJavaScript(moduleCode, output.filename)
       if (
         shouldResetStatefulHmrRetention(
           this.transport.retainedDeltaCount,

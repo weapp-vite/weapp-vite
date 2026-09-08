@@ -15,11 +15,13 @@ import { waitForEmittedStylesheet } from '../utils/emittedStylesheet'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { createTdesignNativeScriptUpdate, tdesignNativeScriptCheckpoints } from './tdesignHmr/nativeScript'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template')
 const DIST_ROOT = path.resolve(TEMPLATE_ROOT, 'dist')
 const INDEX_WXML = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.wxml')
+const INDEX_SOURCE = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.ts')
 const APP_SOURCE = path.resolve(TEMPLATE_ROOT, 'src/app.ts')
 const INDEX_WXML_DIST = path.resolve(TEMPLATE_ROOT, 'dist/pages/index/index.wxml')
 const APP_WXSS_DIST = path.resolve(TEMPLATE_ROOT, 'dist/app.wxss')
@@ -97,32 +99,10 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
   let initialWxml = ''
   let originalWxml = ''
   let originalAppSource = ''
+  let originalIndexSource = ''
   let miniProgram: any
   let diagnostics: ReturnType<typeof createHmrRuntimeDiagnostics> | undefined
   let devProcess: ReturnType<typeof startDevProcess> | undefined
-
-  beforeAll(async () => {
-    originalWxml = await fs.readFile(INDEX_WXML, 'utf8')
-    const rootMarkupMatch = originalWxml.match(ROOT_MARKUP_RE)
-    if (!rootMarkupMatch) {
-      throw new Error(`Expected ${INDEX_WXML} to contain the Tailwind HMR root markup`)
-    }
-    const probedRootMarkup = replaceLightBackgroundClass(
-      rootMarkupMatch[0].replace('<view ', `<view id="${PROBE_ID}" data-e2e-bg="${INITIAL_BACKGROUND_HEX}" `),
-      INITIAL_BACKGROUND_HEX,
-    )
-    initialWxml = originalWxml.replace(rootMarkupMatch[0], probedRootMarkup)
-      .replace('<view bind:tap="switchMode"', '<view id="tailwind-mode" bind:tap="switchMode"')
-    await replaceFileByRename(INDEX_WXML, initialWxml)
-    originalAppSource = await fs.readFile(APP_SOURCE, 'utf8')
-    expect(originalAppSource.includes('onLaunch() {')).toBe(true)
-    await fs.writeFile(APP_SOURCE, originalAppSource.replace('onLaunch() {', `onLaunch() {
-    this.__e2eHmrLaunch = Date.now()
-    console.info('[hmr-diagnostics:app-launch]', this.__e2eHmrLaunch)`), 'utf8')
-    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
-    await cleanupResidualIdeProcesses()
-    await fs.rm(DIST_ROOT, { force: true, recursive: true })
-  }, 60_000)
 
   async function stopDevSession() {
     if (miniProgram) {
@@ -145,6 +125,9 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
     await stopDevSession()
     if (originalWxml) {
       await fs.writeFile(INDEX_WXML, originalWxml, 'utf8').catch(() => {})
+    }
+    if (originalIndexSource) {
+      await fs.writeFile(INDEX_SOURCE, originalIndexSource, 'utf8')
     }
     if (originalAppSource) {
       await fs.writeFile(APP_SOURCE, originalAppSource, 'utf8')
@@ -202,6 +185,59 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
     await controls[0].tap()
   }
 
+  beforeAll(async () => {
+    originalIndexSource = await fs.readFile(INDEX_SOURCE, 'utf8')
+    originalWxml = await fs.readFile(INDEX_WXML, 'utf8')
+    const rootMarkupMatch = originalWxml.match(ROOT_MARKUP_RE)
+    if (!rootMarkupMatch) {
+      throw new Error(`Expected ${INDEX_WXML} to contain the Tailwind HMR root markup`)
+    }
+    const probedRootMarkup = replaceLightBackgroundClass(
+      rootMarkupMatch[0].replace('<view ', `<view id="${PROBE_ID}" data-e2e-bg="${INITIAL_BACKGROUND_HEX}" `),
+      INITIAL_BACKGROUND_HEX,
+    )
+    initialWxml = originalWxml.replace(rootMarkupMatch[0], probedRootMarkup)
+      .replace('<view bind:tap="switchMode"', '<view id="tailwind-mode" bind:tap="switchMode"')
+    await replaceFileByRename(INDEX_WXML, initialWxml)
+    originalAppSource = await fs.readFile(APP_SOURCE, 'utf8')
+    expect(originalAppSource.includes('onLaunch() {')).toBe(true)
+    await fs.writeFile(APP_SOURCE, originalAppSource.replace('onLaunch() {', `onLaunch() {
+    this.__e2eHmrLaunch = Date.now()
+    console.info('[hmr-diagnostics:app-launch]', this.__e2eHmrLaunch)`), 'utf8')
+    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
+    await cleanupResidualIdeProcesses()
+    await fs.rm(DIST_ROOT, { force: true, recursive: true })
+    await startDevSession()
+    diagnostics = createHmrRuntimeDiagnostics(miniProgram, 'templates/weapp-vite-tailwindcss-tdesign-template')
+  }, 420_000)
+
+  it('updates and restores native Page methods with external npm while retaining rendered interaction state', async (context) => {
+    const dom = createDomAcceptance(context, 'templates/weapp-vite-tailwindcss-tdesign-template', tdesignNativeScriptCheckpoints)
+    await dom.check('native-script:initial', miniProgram, await waitForIndexPage(miniProgram))
+    await tapModeControl()
+    await dom.check('native-script:dark', miniProgram, await waitForIndexPage(miniProgram))
+    const initialIdentity = await diagnostics!.initialize()
+    const nativeScript = createTdesignNativeScriptUpdate({
+      diagnostics: diagnostics!,
+      initialIdentity,
+      miniProgram,
+      originalSource: originalIndexSource,
+      sourceFile: INDEX_SOURCE,
+    })
+    await nativeScript.patch()
+    await dom.check('native-script:patched-state', miniProgram, await waitForIndexPage(miniProgram))
+    await nativeScript.checkIdentity('native-script:patched-state')
+    await tapModeControl()
+    await dom.check('native-script:patched-tap', miniProgram, await waitForIndexPage(miniProgram))
+    await nativeScript.checkIdentity('native-script:patched-tap')
+    await nativeScript.restore()
+    await dom.check('native-script:restored-state', miniProgram, await waitForIndexPage(miniProgram))
+    await nativeScript.checkIdentity('native-script:restored-state')
+    await tapModeControl()
+    await dom.check('native-script:restored-tap', miniProgram, await waitForIndexPage(miniProgram))
+    await nativeScript.checkIdentity('native-script:restored-tap')
+  }, 420_000)
+
   it('updates the visible Tailwind arbitrary background color through dev HMR', async (context) => {
     const dom = createDomAcceptance(context, 'templates/weapp-vite-tailwindcss-tdesign-template', [
       { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [
@@ -225,7 +261,6 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
         { selector: '#tailwind-mode', text: '当前模式 dark 切换模式' },
       ] },
     ])
-    await startDevSession()
     await waitForFileContains(INDEX_WXML_DIST, PROBE_ID)
     await waitForFileContains(INDEX_WXML_DIST, `data-e2e-bg="${INITIAL_BACKGROUND_HEX}"`)
     await waitForFileContains(INDEX_WXML_DIST, INITIAL_ESCAPED_CLASS)
@@ -235,8 +270,7 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
     await dom.check('tailwind:initial', miniProgram, page)
     await tapModeControl()
     await dom.check('tailwind:dark', miniProgram, page)
-    diagnostics = createHmrRuntimeDiagnostics(miniProgram, 'templates/weapp-vite-tailwindcss-tdesign-template')
-    const initialIdentity = await diagnostics.initialize()
+    const initialIdentity = await diagnostics!.initialize()
 
     const updatedWxml = replaceLightBackgroundClass(
       initialWxml.replace(`data-e2e-bg="${INITIAL_BACKGROUND_HEX}"`, `data-e2e-bg="${UPDATED_BACKGROUND_HEX}"`),
@@ -247,22 +281,22 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
     await waitForFileContains(INDEX_WXML_DIST, `data-e2e-bg="${UPDATED_BACKGROUND_HEX}"`)
     await waitForFileContains(INDEX_WXML_DIST, UPDATED_ESCAPED_CLASS)
     await waitForEmittedStylesheet(APP_WXSS_DIST, UPDATED_BACKGROUND_CSS)
-    await diagnostics.capture('tailwind:updated-output')
+    await diagnostics!.capture('tailwind:updated-output')
     await dom.check('tailwind:hmr-preserved', miniProgram, await waitForIndexPage(miniProgram))
-    const preservedIdentity = await diagnostics.capture('tailwind:preserved-rendered')
+    const preservedIdentity = await diagnostics!.capture('tailwind:preserved-rendered')
     expect(preservedIdentity.errors).toEqual([])
     expect(preservedIdentity.pageId).toBe(initialIdentity.pageId)
     expect(preservedIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
     await tapModeControl()
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] dist-ready label=updated Tailwind background template=${UPDATED_ESCAPED_CLASS} css=${UPDATED_BACKGROUND_CSS}\n`)
     await dom.check('tailwind:updated', miniProgram, await waitForIndexPage(miniProgram))
-    const updatedIdentity = await diagnostics.capture('tailwind:updated-rendered')
+    const updatedIdentity = await diagnostics!.capture('tailwind:updated-rendered')
     expect(updatedIdentity.errors).toEqual([])
     expect(updatedIdentity.pageId).toBe(initialIdentity.pageId)
     expect(updatedIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
     await tapModeControl()
     await dom.check('tailwind:updated-dark', miniProgram, await waitForIndexPage(miniProgram))
-    const finalIdentity = await diagnostics.capture('tailwind:updated-dark-rendered')
+    const finalIdentity = await diagnostics!.capture('tailwind:updated-dark-rendered')
     expect(finalIdentity.errors).toEqual([])
     expect(finalIdentity.pageId).toBe(initialIdentity.pageId)
     expect(finalIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })

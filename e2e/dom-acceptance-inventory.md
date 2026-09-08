@@ -7,7 +7,7 @@
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
 - 任务：92；微信：89；范围外：3。
-- 展开的 case 声明：229；已接入计划：229；缺计划：0。
+- 展开的 case 声明：230；已接入计划：230；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -65,7 +65,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/template-multi-platform.swan.optional.test.ts                                         | swan               |     1 |     0 |       - | out-of-scope |
 | ide/template-retail-checkout.runtime.test.ts                                              | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/template-tailwindcss-dev-open-multi.runtime.test.ts                                   | devtools           |     3 |     3 |       0 | wechat       |
-| ide/template-tailwindcss-tdesign-hmr.runtime.test.ts                                      | devtools           |     1 |     1 |       0 | wechat       |
+| ide/template-tailwindcss-tdesign-hmr.runtime.test.ts                                      | devtools           |     2 |     2 |       0 | wechat       |
 | ide/template-weapp-vite-multi-platform-sfc-template.test.ts                               | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/template-weapp-vite-multi-platform-template.test.ts                                   | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts                              | devtools           |     1 |     1 |       0 | wechat       |
@@ -1351,11 +1351,18 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ## ide/template-tailwindcss-tdesign-hmr.runtime.test.ts
 
+### template TailwindCSS TDesign HMR in real WeChat DevTools > updates and restores native Page methods with external npm while retaining rendered interaction state
+
+- Source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:214`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `tdesignNativeScriptCheckpoints`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:215`
+- Operations: `check(native-script:initial)`, `tap(<missing>)`, `check(native-script:dark)`, `check(native-script:patched-state)`, `check(native-script:patched-tap)`, `check(native-script:restored-state)`, `check(native-script:restored-tap)`
+
 ### template TailwindCSS TDesign HMR in real WeChat DevTools > updates the visible Tailwind arbitrary background color through dev HMR
 
-- Source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:205`
+- Source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:241`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:206`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:242`
 - Operations: `check(tailwind:initial)`, `tap(<missing>)`, `check(tailwind:dark)`, `check(tailwind:hmr-preserved)`, `check(tailwind:updated)`, `check(tailwind:updated-dark)`
 
 ## ide/template-weapp-vite-multi-platform-sfc-template.test.ts

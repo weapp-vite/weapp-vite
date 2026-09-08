@@ -61,3 +61,47 @@ it('renders independent WXSS updates and real Page bridge patches without resett
     host.remove()
   }
 })
+
+it('renders mode changes from external CommonJS modules after native Page update and restoration', () => {
+  const files = createBrowserVirtualFiles(sources as Array<[string, string]>)
+  const session = createBrowserHeadlessSession({ files })
+  const host = document.createElement('div')
+  document.body.append(host)
+  const render = () => {
+    host.innerHTML = session.renderCurrentPage().wxml
+  }
+  const tap = () => {
+    render()
+    const control = host.querySelector('#mode')!
+    expect(control).not.toBeNull()
+    const method = control.getAttribute('data-sim-tap')
+    expect(method).toBe('switchMode')
+    session.callScopeMethod(control.getAttribute('data-sim-scope')!, method!, {})
+  }
+  try {
+    const page = session.reLaunch('/pages/external/index')
+    const app = session.getApp()
+    const check = (text: string) => {
+      render()
+      expect(host.querySelector('#mode')?.textContent).toBe(text)
+      expect(session.getCurrentPages()[0]).toBe(page)
+      expect(session.getApp()).toBe(app)
+      expect(page.route).toBe('pages/external/index')
+    }
+    check('当前模式 light 切换模式')
+    tap()
+    check('当前模式 dark 切换模式')
+    page.patchPage()
+    check('当前模式 dark 切换模式')
+    tap()
+    check('当前模式 npm-dark 切换模式')
+    page.restorePage()
+    check('当前模式 npm-dark 切换模式')
+    tap()
+    check('当前模式 light 切换模式')
+  }
+  finally {
+    session.close()
+    host.remove()
+  }
+})

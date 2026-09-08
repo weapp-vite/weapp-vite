@@ -63,4 +63,45 @@ describe.each(['node', 'browser'] as const)('%s native Page style and script HMR
       fs.rmSync(projectPath, { force: true, recursive: true })
     }
   })
+
+  it('executes external CommonJS behavior through native Page patches and restoration', () => {
+    const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'mpcore-external-page-hmr-'))
+    const files = createBrowserVirtualFiles(createStatefulNativePageFiles())
+    for (const [file, source] of files) {
+      const target = path.join(projectPath, file)
+      fs.mkdirSync(path.dirname(target), { recursive: true })
+      fs.writeFileSync(target, source)
+    }
+    const session = provider === 'node'
+      ? createHeadlessSession({ projectPath })
+      : createBrowserHeadlessSession({ files })
+    try {
+      const page = session.reLaunch('/pages/external/index')
+      const app = session.getApp()
+      const check = (text: string) => {
+        const document = parseDocument(session.renderCurrentPage().wxml)
+        const mode = selectOne('#mode', document.children)
+        expect(mode).not.toBeNull()
+        expect(textContent(mode!)).toBe(text)
+        expect(session.getCurrentPages()[0]).toBe(page)
+        expect(session.getApp()).toBe(app)
+        expect(page.route).toBe('pages/external/index')
+      }
+      check('当前模式 light 切换模式')
+      page.switchMode()
+      check('当前模式 dark 切换模式')
+      page.patchPage()
+      check('当前模式 dark 切换模式')
+      page.switchMode()
+      check('当前模式 npm-dark 切换模式')
+      page.restorePage()
+      check('当前模式 npm-dark 切换模式')
+      page.switchMode()
+      check('当前模式 light 切换模式')
+    }
+    finally {
+      session.close()
+      fs.rmSync(projectPath, { force: true, recursive: true })
+    }
+  })
 })

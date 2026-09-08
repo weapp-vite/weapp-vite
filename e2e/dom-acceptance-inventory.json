@@ -5,8 +5,8 @@
     "taskCount": 92,
     "wechatTaskCount": 89,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 229,
-    "casesWithPlan": 229,
+    "expandedCaseDeclarations": 230,
+    "casesWithPlan": 230,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -3692,14 +3692,37 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:205",
+          "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:214",
+          "name": "template TailwindCSS TDesign HMR in real WeChat DevTools > updates and restores native Page methods with external npm while retaining rendered interaction state",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-tailwindcss-tdesign-template",
+              "checkpoints": "tdesignNativeScriptCheckpoints",
+              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:215"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "check(native-script:initial)",
+            "tap(<missing>)",
+            "check(native-script:dark)",
+            "check(native-script:patched-state)",
+            "check(native-script:patched-tap)",
+            "check(native-script:restored-state)",
+            "check(native-script:restored-tap)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:241",
           "name": "template TailwindCSS TDesign HMR in real WeChat DevTools > updates the visible Tailwind arbitrary background color through dev HMR",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-tailwindcss-tdesign-template",
               "checkpoints": "[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'",
-              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:206"
+              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:242"
             }
           ],
           "routes": [],
@@ -6236,6 +6259,10 @@
       "sha256": "8903a7f93253457df6f9251644eabcf500a714ccb026856c83b8411c0ca07afc"
     },
     {
+      "file": "e2e/ide/tdesignHmr/nativeScript.ts",
+      "sha256": "efdcf8897e565a61f3bfe87b451409cdc959d8a2ff0dddaa2abe24044c8c5734"
+    },
+    {
       "file": "e2e/ide/template-dev-open-all.runtime.test.ts",
       "sha256": "c6615a174032a11cc9dd865cca54531b8dbc495082c78273fa9f8a02d2ae0ebe"
     },
@@ -6261,7 +6288,7 @@
     },
     {
       "file": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "c74532f902d0ab63a8f5a75a2666a852302c0b8176bcb3c26668a85752687071"
+      "sha256": "473f8430f93eef8de06dd39c3856aa472c8a49ca273887566f8531f2d8298905"
     },
     {
       "file": "e2e/ide/template-weapp-vite-multi-platform-sfc-template.test.ts",

@@ -207,7 +207,7 @@ export function renderBatch(
     fromVersion: batch.fromVersion,
     targetVersion: batch.targetVersion,
   }
-  const code = batch.deltas.map(delta => delta.code).join('\n')
+  const code = batch.deltas.map(delta => `(() => {\n${indent(delta.code, 2)}\n})();`).join('\n')
   return `// ${nonce}\nglobalThis.__WEAPP_VITE_STATEFUL_HMR_CLIENT__.receiveBatch(${JSON.stringify(metadata)}, () => {\n${indent(code, 2)}\n});\n`
 }
 
