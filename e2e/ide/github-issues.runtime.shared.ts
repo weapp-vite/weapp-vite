@@ -34,6 +34,7 @@ const DEVTOOLS_UNUSED_BUILD_ENTRIES = [
 ] as const
 const SLOT_FALLBACK_COMPILER_OFF_TARGET = 'github-issues.runtime.slot-fallback-compiler-off.test.ts'
 const ISSUE_826_TARGET = 'github-issues.runtime.issue826.test.ts'
+const ISSUE_779_TARGET = 'github-issues.runtime.issue779.test.ts'
 const SLOT_FALLBACK_COMPILER_OFF_ENV = 'WEAPP_GITHUB_SLOT_FALLBACK_COMPILER_OFF'
 const APP_SHELL_FREE_TARGETS = new Set([
   'github-issues.runtime.issue642-bug7-default.test.ts',
@@ -43,6 +44,7 @@ const APP_SHELL_FREE_TARGETS = new Set([
 const SOURCE_PROJECT_COPY_ENTRIES = [
   '.env',
   'auto-import-components.json',
+  'config',
   'mini.project.json',
   'package.json',
   'project.config.json',
@@ -71,6 +73,9 @@ function resolveGithubIssuesDistDir() {
   }
   if (targetFile.endsWith(ISSUE_826_TARGET)) {
     return 'dist-issue-826'
+  }
+  if (targetFile.endsWith(ISSUE_779_TARGET)) {
+    return 'dist-issue-779'
   }
   return 'dist'
 }

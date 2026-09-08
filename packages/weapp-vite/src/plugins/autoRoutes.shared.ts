@@ -82,7 +82,7 @@ export function createAutoRoutesSidecarWatcher(
   watcher: { close: () => unknown | Promise<unknown> },
 ) {
   return {
-    close: () => void watcher.close(),
+    close: async () => { await watcher.close() },
   }
 }
 

@@ -5,8 +5,12 @@ Component({
     count: 0,
     input: '',
     marker: componentMarker,
+    parentCount: 0,
   },
   methods: {
+    incrementParent() {
+      this.setData({ parentCount: this.data.parentCount + 1 })
+    },
     onInput(event: WechatMiniprogram.Input) {
       this.setData({ input: event.detail.value })
     },

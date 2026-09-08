@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-use-before-define */
 import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-hmr/baseline'
+import type { DynamicReactDeliveryEvidence, DynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { execFile as execFileCallback } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -16,6 +17,7 @@ import { cleanupResidualDevProcesses } from '../e2e/utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
 import { readEmittedStylesheet, waitForEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
+import { assertBenchmarkPrepareCompleted, assertBenchmarkTypeScriptPrepared, createBenchmarkPrepareArgs, discoverBenchmarkTypeScriptProjects } from './benchmarkCheckoutPreparation/typescript'
 import {
   createWorkspaceHmrBaseline,
   evaluateWorkspaceHmrThresholds,
@@ -23,7 +25,9 @@ import {
   renderThresholdMarkdown,
 } from './workspace-hmr/baseline'
 import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable } from './workspace-hmr/cleanup'
+import { prepareDynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
 import { isDynamicReactTemplateOutput } from './workspace-hmr/reactTemplate'
+import { renderWorkspaceHmrExecution, summarizeWorkspaceHmrExecution } from './workspace-hmr/report'
 import {
   injectReactTemplateMarker,
   injectVueStyleRule,
@@ -75,6 +79,7 @@ interface ScenarioCase {
   expectedMarker?: (marker: string) => string
   mutate: (source: string, marker: string) => string
   statefulClient?: boolean
+  dynamicReactEntry?: string
 }
 
 interface HmrProfileSample {
@@ -136,6 +141,9 @@ interface ScenarioResult {
   impact?: ImpactFile[]
   error?: string
   cleanupErrors?: string[]
+  delivery?: DynamicReactDeliveryEvidence['delivery']
+  deliveryEvidence?: DynamicReactDeliveryEvidence
+  restoreDelivery?: DynamicReactDeliveryEvidence
   diagnostics?: {
     transport: StatefulHmrAuditEvent[]
     output: { path: string, exists: boolean, sha256?: string, bytes?: number, containsMarker?: boolean }
@@ -153,6 +161,7 @@ interface ProjectResult {
   startupMs?: number
   thresholds?: WorkspaceHmrThresholds
   scenarios: ScenarioResult[]
+  warmup?: { scenario: string, update?: DynamicReactDeliveryEvidence, restore?: DynamicReactDeliveryEvidence }
   error?: string
 }
 
@@ -245,7 +254,7 @@ async function main() {
     overrides: parseThresholdOverrides(process.env),
   })
   const summary = summarizeProjectResults(results)
-  const thresholdMarkdown = renderThresholdMarkdown(thresholdEvaluation)
+  const thresholdMarkdown = renderThresholdMarkdown(thresholdEvaluation, summary)
   const report = {
     generatedAt,
     mode: runMode,
@@ -298,20 +307,19 @@ async function prepareReferencedWorkspaceTsconfigs() {
   if (!existsSync(workspaceTsconfigPath)) {
     return
   }
-  const parsed = JSON.parse(await readFile(workspaceTsconfigPath, 'utf8')) as { references?: Array<{ path?: unknown }> }
-  const projectRoots = (parsed.references ?? [])
-    .map(reference => typeof reference.path === 'string' ? reference.path : undefined)
-    .filter((referencePath): referencePath is string => Boolean(referencePath))
-    .map(referencePath => path.resolve(repoRoot, referencePath))
-    .filter(projectRoot => existsSync(path.join(projectRoot, 'package.json')))
-  for (const projectRoot of projectRoots) {
-    if (existsSync(path.join(projectRoot, '.weapp-vite/tsconfig.shared.json'))) {
-      continue
-    }
-    const managedDir = path.join(projectRoot, '.weapp-vite')
-    await mkdir(managedDir, { recursive: true })
-    await writeFile(path.join(managedDir, 'tsconfig.shared.json'), '{"files":[]}\n', 'utf8')
+  const projects = await discoverBenchmarkTypeScriptProjects(repoRoot)
+  for (const project of projects) {
+    process.stdout.write(`[workspace-hmr] prepare referenced project ${project.root}\n`)
+    const args = createBenchmarkPrepareArgs(project.root)
+    const result = await execFile(process.execPath, [cliPath, ...args.slice(1)], {
+      cwd: repoRoot,
+      maxBuffer: 10 * 1024 * 1024,
+    })
+    const output = `${result.stdout}\n${result.stderr}`
+    process.stdout.write(sanitizeAcceptanceText(output, repoRoot))
+    assertBenchmarkPrepareCompleted(project.root, { exitCode: 0, output })
   }
+  await assertBenchmarkTypeScriptPrepared(repoRoot, projects)
 }
 
 async function selectProjectsForRunMode(projects: ProjectCase[]) {
@@ -608,7 +616,11 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       throw new Error('No discovered HMR scenario produced an initial output.')
     }
     result.startupMs = performance.now() - startupStart
-    await warmupProjectHmr(project, runnableScenarios[0]!, profilePath, distRoot)
+    const warmupScenario = runnableScenarios[0]!
+    const warmup = await warmupProjectHmr(project, warmupScenario, profilePath, distRoot)
+    if (warmup?.update || warmup?.restore) {
+      result.warmup = { scenario: warmupScenario.id, ...warmup }
+    }
 
     const scenarioResults: ScenarioResult[] = []
     for (const scenario of runnableScenarios) {
@@ -663,26 +675,24 @@ async function warmupProjectHmr(
     return
   }
 
-  if (scenario.statefulClient) {
-    await prepareStatefulHmrAuditClient(project)
-  }
+  const mutation = await prepareScenarioMutation(project, scenario)
   const profileLineCount = await countJsonlLines(profilePath)
-  await writeScenarioSource(scenario.sourcePath, updated)
-  if (scenario.statefulClient) {
-    await publishStatefulHmrUpdate(project, scenario.outputPath, expectedMarker, true)
+  let delivery: DynamicReactDeliveryEvidence | undefined
+  let restore: DynamicReactDeliveryEvidence | undefined
+  try {
+    await writeScenarioSource(scenario.sourcePath, updated)
+    delivery = await waitForScenarioMutation(project, scenario, mutation, expectedMarker, true)
+    if (project.hmrRuntime === 'standard') {
+      await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
+    }
   }
-  await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
-  if (project.hmrRuntime === 'standard') {
-    await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
+  finally {
+    restore = await restoreScenarioMutation(project, scenario, original, expectedMarker)
   }
-  await writeScenarioSource(scenario.sourcePath, original)
-  if (scenario.statefulClient) {
-    await publishStatefulHmrUpdate(project, scenario.outputPath, expectedMarker, false)
-  }
-  await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
   await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs)
   await rm(profilePath, { force: true }).catch(() => {})
   await sleep(settleMs)
+  return { update: delivery, restore }
 }
 
 async function auditScenarioWithRetries(
@@ -728,22 +738,22 @@ async function auditScenario(
   }
 
   try {
-    if (scenario.statefulClient) {
-      await prepareStatefulHmrAuditClient(project)
-    }
+    const mutation = await prepareScenarioMutation(project, scenario)
     const profileLineCount = await countJsonlLines(profilePath)
     const before = await snapshotDist(distRoot)
     const startedAt = performance.now()
     await writeScenarioSource(scenario.sourcePath, updated)
-    if (scenario.statefulClient) {
-      await publishStatefulHmrUpdate(project, scenario.outputPath, expectedMarker, true, (event) => {
-        transport.push(event)
-        if (transport.length > 32) {
-          transport.shift()
-        }
-      })
+    const delivery = await waitForScenarioMutation(project, scenario, mutation, expectedMarker, true, (event) => {
+      transport.push(event)
+      if (transport.length > 32) {
+        transport.shift()
+      }
+    })
+    if (delivery) {
+      result.delivery = delivery.delivery
+      result.deliveryEvidence = delivery
+      result.output = formatProjectPath(path.join(project.distRoot, delivery.output))
     }
-    await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
     result.observedMs = performance.now() - startedAt
     await sleep(settleMs)
     const after = await snapshotDist(distRoot)
@@ -781,11 +791,12 @@ async function auditScenario(
   finally {
     const restoreProfileLineCount = await countJsonlLines(profilePath).catch(() => 0)
     const cleanupErrors = await collectWorkspaceHmrCleanupErrors([
-      { label: 'Failed to restore source', run: () => writeScenarioSource(scenario.sourcePath, original) },
-      ...(scenario.statefulClient
-        ? [{ label: 'Failed to publish restored state', run: () => publishStatefulHmrUpdate(project, scenario.outputPath, expectedMarker, false) }]
-        : []),
-      { label: 'Failed to restore emitted output', run: () => waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs) },
+      {
+        label: 'Failed to restore source and verify delivered output',
+        run: async () => {
+          result.restoreDelivery = await restoreScenarioMutation(project, scenario, original, expectedMarker)
+        },
+      },
       { label: 'Restored output did not settle', run: () => waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs) },
     ])
     if (cleanupErrors.length) {
@@ -842,6 +853,9 @@ async function createReactTemplateScenario(project: ProjectCase, sourcePath: str
     sourcePath,
     outputPath: dynamic ? resolveHmrScriptOutputPath(project, path.join(path.dirname(sourcePath), 'index.ts')) : templateOutput,
     statefulClient: dynamic && project.hmrRuntime === 'stateful',
+    dynamicReactEntry: dynamic && project.hmrRuntime === 'stateful'
+      ? path.join(path.dirname(templateOutput), 'index.js')
+      : undefined,
     mutate: injectReactTemplateMarker,
   }
 }
@@ -948,6 +962,64 @@ function resolveOutputPath(project: ProjectCase, sourcePath: string, outputExt: 
   const relative = path.relative(project.sourceRoot, sourcePath)
   const parsed = path.parse(relative)
   return path.join(project.distRoot, parsed.dir, `${parsed.name}.${outputExt}`)
+}
+
+async function prepareScenarioMutation(project: ProjectCase, scenario: ScenarioCase) {
+  if (scenario.dynamicReactEntry) {
+    if (scenario.id !== 'react-template' || !scenario.statefulClient) {
+      throw new Error('Full-reload delivery is restricted to explicit stateful dynamic React scenarios.')
+    }
+    const client = statefulHmrAuditClients.get(project.root) ?? new StatefulHmrAuditClient()
+    statefulHmrAuditClients.set(project.root, client)
+    return await prepareDynamicReactMutation({
+      client,
+      distRoot: project.distRoot,
+      entryFile: scenario.dynamicReactEntry,
+      timeoutMs: scenarioTimeoutMs,
+    })
+  }
+  if (scenario.statefulClient) {
+    await prepareStatefulHmrAuditClient(project)
+  }
+}
+
+async function waitForScenarioMutation(
+  project: ProjectCase,
+  scenario: ScenarioCase,
+  mutation: DynamicReactMutation | undefined,
+  marker: string,
+  contains: boolean,
+  onEvent?: (event: StatefulHmrAuditEvent) => void,
+) {
+  if (scenario.dynamicReactEntry) {
+    if (!mutation) {
+      throw new Error('Dynamic React mutation is missing its pre-mutation build identity.')
+    }
+    return await mutation.waitForDelivery(marker, contains, onEvent)
+  }
+  if (scenario.statefulClient) {
+    await publishStatefulHmrUpdate(project, scenario.outputPath, marker, contains, onEvent)
+  }
+  if (contains) {
+    await waitForFileContains(scenario.outputPath, marker, scenarioTimeoutMs)
+  }
+  else {
+    await waitForFileNotContains(scenario.outputPath, marker, scenarioTimeoutMs)
+  }
+}
+
+async function restoreScenarioMutation(project: ProjectCase, scenario: ScenarioCase, source: string, marker: string) {
+  let preparationError: unknown
+  const mutation = await prepareScenarioMutation(project, scenario).catch((error) => {
+    preparationError = error
+    return undefined
+  })
+  // 即使当前构建无法读取，也先恢复源码；缺失构建身份不能被当作恢复验收通过。
+  await writeScenarioSource(scenario.sourcePath, source)
+  if (preparationError) {
+    throw preparationError
+  }
+  return await waitForScenarioMutation(project, scenario, mutation, marker, false)
 }
 
 async function publishStatefulHmrUpdate(
@@ -1509,6 +1581,11 @@ interface WorkspaceHmrReportSummary {
   failedProjectCount: number
   scenarioCount: number
   measuredScenarioCount: number
+  executedScenarioCount: number
+  successfulScenarioCount: number
+  failedScenarioCount: number
+  notExecutedScenarioCount: number
+  compilerProfileSampleCount: number
   scenarioP50Ms?: number
   scenarioP95Ms?: number
   scenarioMaxMs?: number
@@ -1550,6 +1627,7 @@ function summarizeProjectResults(results: ProjectResult[]): WorkspaceHmrReportSu
   return {
     projectCount: results.length,
     failedProjectCount: failedProjects.length,
+    ...summarizeWorkspaceHmrExecution(results),
     scenarioCount: results.reduce((count, project) => count + project.scenarios.length, 0),
     measuredScenarioCount: measuredScenarioMs.length,
     scenarioP50Ms: percentile(measuredScenarioMs, 0.5),
@@ -1745,7 +1823,8 @@ async function writeGitHubStepSummary(results: ProjectResult[], summary: Workspa
     `- scope: ${workspaceHmrScope}`,
     `- selection: ${results.length ? 'selected' : 'empty (no acceptance results)'}`,
     `- projects: ${summary.projectCount}`,
-    `- scenarios: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
+    ...renderWorkspaceHmrExecution(summary, summary.scenarioCount),
+    `- timing threshold samples: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
     `- scenario P95: ${formatDuration(summary.scenarioP95Ms)}`,
     `- scenario max: ${formatDuration(summary.scenarioMaxMs)}`,
     `- failures: ${failedProjects.length}`,
@@ -1784,7 +1863,8 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
     `- scope: ${workspaceHmrScope}`,
     `- selection: ${results.length ? 'selected' : 'empty (no acceptance results)'}`,
     `- generated projects: ${summary.projectCount}`,
-    `- scenarios: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
+    ...renderWorkspaceHmrExecution(summary, summary.scenarioCount),
+    `- timing threshold samples: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
     `- scenario P50: ${formatDuration(summary.scenarioP50Ms)}`,
     `- scenario P95: ${formatDuration(summary.scenarioP95Ms)}`,
     `- scenario max: ${formatDuration(summary.scenarioMaxMs)}`,
@@ -1817,7 +1897,7 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
   lines.push('')
   lines.push('## Top Slow Scenarios', '')
   if (!slowScenarios.length) {
-    lines.push('No measured scenarios.', '')
+    lines.push('No timing threshold samples.', '')
   }
   else {
     lines.push('| project | scenario | total | observed | startup | pending/emitted | impact | top phase | suggestion |')
@@ -1861,11 +1941,16 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
       lines.push(`- project error: ${project.error}`, '')
       continue
     }
-    lines.push('| scenario | total(ms) | observed(ms) | build(ms) | transform(ms) | write(ms) | emit(ms) | dirty | pending | emitted | impact | error |')
-    lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |')
+    if (project.warmup) {
+      lines.push(`- warmup delivery: ${project.warmup.update?.delivery ?? '-'}; restore: ${project.warmup.restore?.delivery ?? '-'}`, '')
+    }
+    lines.push('| scenario | delivery | restore | total(ms) | observed(ms) | build(ms) | transform(ms) | write(ms) | emit(ms) | dirty | pending | emitted | impact | error |')
+    lines.push('| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |')
     for (const scenario of project.scenarios) {
       lines.push([
         scenario.id,
+        scenario.delivery ?? '-',
+        scenario.restoreDelivery?.delivery ?? '-',
         formatMetric(scenario.totalMs),
         formatMetric(scenario.observedMs),
         formatMetric(scenario.profile?.buildCoreMs),

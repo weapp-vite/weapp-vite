@@ -100,6 +100,8 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue558.test.ts',
   'ide/github-issues.runtime.issue615.test.ts',
   'ide/github-issues.runtime.issue621.test.ts',
+  // 预处理器使用独立构建配置，不能合入默认 github-issues 聚合会话。
+  'ide/github-issues.runtime.issue779.test.ts',
   'ide/github-issues.runtime.issue826.test.ts',
   'ide/github-issues.runtime.issue642-bug7-default.test.ts',
   'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
@@ -161,6 +163,7 @@ const IDE_FULL_CORE_PATTERNS = [
   'ide/devtools-cli-workflow.runtime.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   'ide/github-issues.runtime.issue621.test.ts',
+  'ide/github-issues.runtime.issue779.test.ts',
   'ide/github-issues.runtime.issue852.test.ts',
   'ide/github-issues.runtime.subpackage-item.test.ts',
   'ide/github-issues.runtime.subpackage-user.test.ts',
@@ -204,6 +207,7 @@ const IDE_GATE_TESTS = [
   'ide/lifecycle-compare.test.ts',
   'ide/wevu-features.runtime.behavior.test.ts',
 ].map(testPath => path.resolve(ROOT, testPath))
+// #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/app-lifecycle.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',

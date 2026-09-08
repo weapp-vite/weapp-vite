@@ -21,6 +21,7 @@ interface BuildLogStats {
 interface BuildCommandOptions {
   cliPath: string
   configFile?: string
+  projectConfigFile?: string
   jsFormat?: 'cjs' | 'esm'
   projectRoot: string
   platform: 'weapp' | 'alipay' | 'tt'
@@ -184,6 +185,7 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
   const {
     cliPath,
     configFile,
+    projectConfigFile,
     jsFormat,
     projectRoot,
     platform,
@@ -227,6 +229,9 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
   }
   if (configOverride.configFile) {
     args.push('--config', configOverride.configFile)
+  }
+  if (projectConfigFile) {
+    args.push('--project-config', projectConfigFile)
   }
 
   async function runBuildCommand() {

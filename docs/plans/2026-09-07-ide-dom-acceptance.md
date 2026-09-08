@@ -2,7 +2,7 @@
 
 ## 验收范围
 
-以 `e2e/scripts/e2e-suite-manifest.ts` 的 `ide-full:exhaustive` 为唯一任务来源。当前清单的 91 个任务中，3 个可选百度任务列为范围外，其余 88 个微信任务以及 aggregate 导入、参数化变体、多路由场景全部纳入验收。后续任务数量以生成的 `e2e/dom-acceptance-inventory.json` 为准。已有组件库和人工 IDE 示例排除范围不变。
+以 `e2e/scripts/e2e-suite-manifest.ts` 的 `ide-full:exhaustive` 为唯一任务来源。3 个可选百度任务列为范围外，所有微信任务以及 aggregate 导入、参数化变体、多路由场景全部纳入验收。任务和 case 数量以生成的 `e2e/dom-acceptance-inventory.json` 为准。已有组件库和人工 IDE 示例排除范围不变。
 
 任务数不等于 case 数。Vitest 收集树展开后的 case、模板格式子进程和每个 case 声明的检查点共同构成执行清单；报告必须保留未执行项。
 

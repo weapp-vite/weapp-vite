@@ -17,6 +17,9 @@ import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
 import { createEmittedScriptReader, waitForBenchmarkOutput } from './benchmarkTemplatesHmr/emittedOutput'
+import { waitForBenchmarkInitialOutputs } from './benchmarkTemplatesHmr/initialOutput'
+import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntry'
+import { collectBenchmarkHmrProfile } from './benchmarkTemplatesHmr/profile'
 import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
 import { injectVueStyleRule, parseStatefulHmrControlSource } from './workspace-hmr/scenarios'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
@@ -74,6 +77,8 @@ interface ScenarioCase {
 }
 
 interface ScenarioSample extends HmrProfileJsonSample {
+  profileStatus: Awaited<ReturnType<typeof collectBenchmarkHmrProfile>>['status']
+  timingSource: 'compiler-profile' | 'output-observation'
   phase?: SamplePhase
   heapUsedBytes?: number
   rssBytes?: number
@@ -284,23 +289,16 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
 
   try {
     const startupStartedAt = performance.now()
-    await dev.waitFor(waitForFile(path.join(template.workspaceRoot, 'dist/app.json'), startupTimeoutMs), `${template.id} app.json generated`)
+    await dev.waitFor(waitForBenchmarkInitialOutputs([
+      { filename: path.join(template.workspaceRoot, 'dist/app.json'), label: 'app.json' },
+      ...scenarios.map(scenario => ({ filename: scenario.outputFile, label: scenario.id })),
+    ], { timeoutMs: startupTimeoutMs }), `${template.id} initial outputs generated`)
     result.startupMs = performance.now() - startupStartedAt
     const inspectorUrl = await waitForInspectorUrl(dev.getOutput, `${template.id} dev inspector`)
 
-    const runnableScenarios = []
-    for (const scenario of scenarios) {
-      if (await pathExists(scenario.outputFile)) {
-        runnableScenarios.push(scenario)
-      }
-    }
-    if (!runnableScenarios.length) {
-      throw new Error('No discovered scenario produced an initial output.')
-    }
-
     const scenarioResults: ScenarioResult[] = []
     const statefulClient = new StatefulHmrAuditClient()
-    for (const scenario of runnableScenarios) {
+    for (const scenario of scenarios) {
       scenarioResults.push(await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl, statefulClient))
     }
     result.scenarios = scenarioResults
@@ -377,7 +375,8 @@ async function discoverScenarios(template: TemplateCase): Promise<ScenarioCase[]
   pushIfPresent(scenarios, await createFirstExistingStyleScenario(template, 'app-style', 'app-style', ['app.css', 'app.scss', 'app.less'], 'app.wxss'))
 
   pushIfPresent(scenarios, createNativeTemplateScenario(template, findPreferredSource(files, template.sourceRoot, isNativeTemplate)))
-  pushIfPresent(scenarios, createNativeScriptScenario(template, findPreferredSource(files, template.sourceRoot, isNativePageScript)))
+  const sourceFiles = new Set(files.map(normalizePath))
+  pushIfPresent(scenarios, createNativeScriptScenario(template, findPreferredSource(files, template.sourceRoot, file => isNativeBenchmarkScriptEntry(file, sourceFiles))))
   pushIfPresent(scenarios, createNativeStyleScenario(template, findPreferredSource(files, template.sourceRoot, isNativePageStyle)))
 
   pushIfPresent(deferredScenarios, await createJsonScenario(template, 'json-sitemap', 'json', 'sitemap.json', 'sitemap.json'))
@@ -588,7 +587,8 @@ async function benchmarkScenario(
       ? () => readEmittedStylesheet(scenario.outputFile)
       : () => readFile(scenario.outputFile, 'utf8')
   const controlPath = path.join(template.workspaceRoot, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
-  const usesStatefulScript = (scenario.group === 'native-script' || scenario.group === 'vue-script') && await pathExists(controlPath)
+  const runtime = await pathExists(controlPath) ? 'stateful' : 'standard'
+  const usesStatefulScript = (scenario.group === 'native-script' || scenario.group === 'vue-script') && runtime === 'stateful'
   const readControl = async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8'))
   const waitForOutput = async (marker: string, absent = false) => {
     if (usesStatefulScript) {
@@ -630,8 +630,7 @@ async function benchmarkScenario(
       await replaceFileByRename(scenario.sourceFile, updated)
       await waitForOutput(expectedMarker)
       const wallMs = performance.now() - startedAt
-      const profileSample = await waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs)
-        .catch((): HmrProfileJsonSample => ({}))
+      const profileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs))
       const editMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample)
 
@@ -641,8 +640,7 @@ async function benchmarkScenario(
       await replaceFileByRename(scenario.sourceFile, original)
       await waitForOutput(expectedMarker, true)
       const restoreWallMs = performance.now() - restoreStartedAt
-      const restoreProfileSample = await waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs)
-        .catch((): HmrProfileJsonSample => ({}))
+      const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs))
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample)
       const sample = sampleMode === 'edit-only' ? editSample : selectBestScenarioSample(editSample, restoreSample)
@@ -708,11 +706,12 @@ async function benchmarkScenario(
 
 function createScenarioSample(
   scenario: ScenarioCase,
-  profileSample: HmrProfileJsonSample,
+  profileResult: { profile: HmrProfileJsonSample, status: ScenarioSample['profileStatus'] },
   wallMs: number,
   phase: SamplePhase,
   memorySample?: { heapUsed: number, rss: number },
 ): ScenarioSample {
+  const profileSample = profileResult.profile
   return {
     ...profileSample,
     file: formatReportPath(profileSample.file ?? scenario.sourceFile),
@@ -721,6 +720,8 @@ function createScenarioSample(
     rssBytes: memorySample?.rss,
     sourceRootFile: profileSample.sourceRootFile,
     phase,
+    profileStatus: profileResult.status,
+    timingSource: typeof profileSample.totalMs === 'number' ? 'compiler-profile' : 'output-observation',
     totalMs: profileSample.totalMs ?? wallMs,
     wallMs,
   }
@@ -872,17 +873,6 @@ async function readJsonlSamplesSince(filePath: string, startLineCount: number) {
     .filter((sample): sample is HmrProfileJsonSample => sample !== undefined)
 }
 
-async function waitForFile(filePath: string, waitMs: number) {
-  const startedAt = Date.now()
-  while (Date.now() - startedAt < waitMs) {
-    if (await pathExists(filePath)) {
-      return
-    }
-    await sleep(100)
-  }
-  throw new Error(`Timed out waiting for file: ${formatReportPath(filePath)}`)
-}
-
 async function listFiles(root: string) {
   if (!(await pathExists(root))) {
     return []
@@ -979,10 +969,6 @@ function isPageLikeSource(sourceRoot: string, filePath: string) {
 
 function isNativeTemplate(filePath: string) {
   return filePath.endsWith('.wxml') || filePath.endsWith('.html')
-}
-
-function isNativePageScript(filePath: string) {
-  return !filePath.endsWith('.d.ts') && (filePath.endsWith('.ts') || filePath.endsWith('.js'))
 }
 
 function isNativePageStyle(filePath: string) {
@@ -1173,13 +1159,14 @@ function renderMarkdown(report: BenchmarkReport) {
     `- iterations: ${report.iterations}`,
     `- budget: ${report.budgetMs} ms`,
     `- timeout: ${report.timeoutMs} ms`,
-    `- max profile total: ${formatMs(report.summary.maxMs)}`,
+    `- max measured total: ${formatMs(report.summary.maxMs)}`,
+    '- total timing source: compiler-profile when available; otherwise output-observation. Each sample records timingSource and profileStatus.',
     `- max observed wall: ${formatMs(report.summary.maxWallMs)}`,
     `- over-budget scenarios: ${report.summary.overBudgetCount}/${report.summary.scenarioCount}`,
     `- failed templates: ${report.summary.failedTemplateCount}`,
     `- failed scenarios: ${report.summary.failedScenarioCount}`,
     '',
-    '| template | startup | scenarios | max profile | max wall | avg heap | avg rss | failures |',
+    '| template | startup | scenarios | max total | max wall | avg heap | avg rss | failures |',
     '| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ]
 
@@ -1205,7 +1192,7 @@ function renderMarkdown(report: BenchmarkReport) {
     if (template.error) {
       lines.push(`- project error: ${template.error}`, '')
     }
-    lines.push('| group | scenario | avg profile | max profile | avg wall | max wall | avg heap | avg rss | pending | emitted | dirty reason | pending reason | status |')
+    lines.push('| group | scenario | avg total | max total | avg wall | max wall | avg heap | avg rss | pending | emitted | dirty reason | pending reason | status |')
     lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |')
     for (const scenario of template.scenarios) {
       const latestSample = scenario.samples[scenario.samples.length - 1]
@@ -1255,7 +1242,7 @@ function readOptionalPositiveIntegerEnv(name: string) {
 }
 
 function formatError(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
+  return sanitizeBenchmarkDevLog(error instanceof Error ? error.message : String(error), repoRoot)
 }
 
 function sleep(ms: number) {

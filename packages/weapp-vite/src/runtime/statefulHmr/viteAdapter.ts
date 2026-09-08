@@ -3,7 +3,6 @@
 import type { dev, DevEngine, DevOptions } from 'rolldown/experimental'
 import type { ResolvedConfig, ViteDevServer } from 'vite'
 import type { StatefulHmrOutputFile } from './outputWriter'
-import path from 'node:path'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE,
@@ -11,7 +10,10 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import { assertStatefulHmrRuntimeOutput, createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
+import { toStableModuleId } from './initialModuleGraph'
 import { createViteDevEngine } from './viteDevEngine'
+
+export { toStableModuleId } from './initialModuleGraph'
 
 const clientId = 'weapp-vite-stateful-hmr'
 const initialBuildTimeoutMs = 60_000
@@ -318,13 +320,4 @@ export function createStatefulHmrFooter(chunk: { fileName: string, isEntry?: boo
     return ''
   }
   return `for (const definition of globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)}].takeNativeDefinitions('Component')) Component(definition);`
-}
-
-export function toStableModuleId(id: string, root: string): string {
-  const normalizedId = id.replaceAll('\\', '/')
-  const absolute = path.posix.isAbsolute(normalizedId) || /^[A-Z]:\//i.test(normalizedId)
-  if (normalizedId.startsWith('\0') || !absolute) {
-    return normalizedId
-  }
-  return path.posix.relative(root.replaceAll('\\', '/'), normalizedId)
 }

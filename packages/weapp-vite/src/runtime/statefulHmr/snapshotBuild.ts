@@ -1,4 +1,5 @@
 import type { LoadConfigOptions } from '../config/types'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 
@@ -15,6 +16,11 @@ export async function createStatefulHmrSnapshotOptions(loadOptions: LoadConfigOp
   )
   return {
     options,
+    getEntryIds: () => ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
+    getDelegatedComponentEntryIds: () => Array.from(ctx.runtimeState.build.hmr.resolvedEntryMap.keys()).filter(id =>
+      /\.(?:vue|jsx|tsx)$/.test(id)
+      && ctx.runtimeState.build.hmr.entriesMap.get(ctx.configService.relativeAbsoluteSrcRoot(removeExtensionDeep(id)))?.type === 'component',
+    ),
     getComponentPageStyleOptions: () => ctx.runtimeState.build.hmr.componentPageStyleOptions,
   }
 }

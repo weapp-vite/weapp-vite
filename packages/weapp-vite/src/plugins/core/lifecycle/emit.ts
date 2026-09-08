@@ -51,6 +51,14 @@ function resolveIncrementalHmrWxmlTargetIds(state: CorePluginState) {
     : hmrState.lastEmittedEntryIds
 
   for (const entryId of entryIds ?? []) {
+    // 原生 layout 通过组件包裹页面，不在页面 WXML 的 import/include 图中。
+    // 先纳入入口已登记的模板所有权，再统一展开其嵌套模板依赖。
+    for (const dependency of ctx.moduleGraphService?.getEntryDependencies(entryId) ?? []) {
+      const template = normalizeWatchPath(dependency.sourceId)
+      if (isTemplate(template)) {
+        targets.add(template)
+      }
+    }
     const candidates = [
       entryId,
       ctx.configService.relativeAbsoluteSrcRoot(entryId),

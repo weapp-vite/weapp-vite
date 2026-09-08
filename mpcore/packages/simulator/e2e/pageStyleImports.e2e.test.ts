@@ -5,7 +5,7 @@ import { createApp, defineComponent, h, nextTick, ref } from 'vue'
 import DevicePreview from '../../../demos/web/src/components/DevicePreview.vue'
 import { useWorkbenchSession } from '../../../demos/web/src/composables/useWorkbenchSession'
 import { createBrowserVirtualFiles } from '../src/browser'
-import { createPageStyleImportFiles, pageStyleGlobal, pageStylePage, pageStyleTemplate } from '../test/helpers/pageStyleImports'
+import { createIssue779StyleOutputFiles, createPageStyleImportFiles, pageStyleGlobal, pageStylePage, pageStyleTemplate } from '../test/helpers/pageStyleImports'
 
 function mountPageStyleWorkbench(source: PageStyleSource = 'imported', overrides: Array<[string, string]> = []) {
   const mount = document.createElement('div')
@@ -45,6 +45,34 @@ function mountPageStyleWorkbench(source: PageStyleSource = 'imported', overrides
     },
   }
 }
+
+it('renders issue #779 compiled stylesheet text, class and actual color through the real preview', async () => {
+  const preview = mountPageStyleWorkbench('imported', createIssue779StyleOutputFiles())
+  try {
+    await nextTick()
+    const session = preview.workbench.session.value!
+    const page = session.getCurrentPages()[0]
+    const probe = preview.element('#issue779-page')
+    expect(page.route).toBe('pages/issue-779/index')
+    expect((probe.getRootNode() as ShadowRoot).querySelectorAll('#issue779-page')).toHaveLength(1)
+    expect(probe.textContent).toBe('issue 779')
+    expect(probe.className).toBe('issue-779-page issue-779-pre-marker')
+    expect(getComputedStyle(probe).color).toBe('rgb(1, 2, 3)')
+    expect(getComputedStyle(probe).paddingTop).toBe('13px')
+    expect(session.renderCurrentPage().styles.dependencies).toContain('styles/issue-779-preprocessed.wxss')
+
+    // 验证浏览器读取最新编译输出；源 CSS 的预处理所有权由对应的 Vite integration 与 IDE case 覆盖。
+    preview.workbench.run(() => session.files.set('styles/issue-779-preprocessed.wxss', '.issue-779-pre-marker { color: rgb(4, 5, 6); }'))
+    await nextTick()
+    expect(preview.element('#issue779-page').textContent).toBe('issue 779')
+    expect(getComputedStyle(preview.element('#issue779-page')).color).toBe('rgb(4, 5, 6)')
+    expect(session.getCurrentPages()[0]).toBe(page)
+    expect(preview.workbench.errorMessage.value).toBe('')
+  }
+  finally {
+    preview.close()
+  }
+})
 
 it.each(['imported', 'inline'] as const)('mounts repeated %s WXSS and WXML updates through the real workbench preview without resetting state', async (source) => {
   const preview = mountPageStyleWorkbench(source)

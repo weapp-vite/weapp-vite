@@ -3,4 +3,8 @@
   <view class="count">{{count}}</view>
   <input class="input" value="{{input}}" bindinput="onInput" />
   <button class="increment" bindtap="increment">increment</button>
+  <view class="parent-count">{{parentCount}}</view>
+  <button class="parent-increment" bindtap="incrementParent">increment parent</button>
+  <native-counter id="native-counter" />
+  <vue-counter id="vue-counter" />
 </view>

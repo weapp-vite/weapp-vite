@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 91,
-    "wechatTaskCount": 88,
+    "taskCount": 92,
+    "wechatTaskCount": 89,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 226,
-    "casesWithPlan": 226,
+    "expandedCaseDeclarations": 229,
+    "casesWithPlan": 229,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -1780,6 +1780,36 @@
       ]
     },
     {
+      "task": "ide/github-issues.runtime.issue779.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/github-issues.runtime.issue779.test.ts:46",
+          "name": "e2e app: github-issues / issue #779 > renders the pre-transformed external SFC stylesheet instead of the original disk source",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[{ id: 'pre-transformed-style', route: '/pages/issue-779/index', action: '检查 SFC 外链样式经过 pre 插件和 Tailwind 编译后的实际文本与计算颜色', nodes: [{ selector: '#issue779-page', count: 1, text: 'issue 779', styles: { 'color': 'rgb(1, 2, 3)', 'padding-top': '1",
+              "source": "e2e/ide/github-issues.runtime.issue779.test.ts:47"
+            }
+          ],
+          "routes": [
+            "/pages/issue-779/index"
+          ],
+          "operations": [
+            "check(pre-transformed-style)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
       "task": "ide/github-issues.runtime.issue826.test.ts",
       "scope": "wechat",
       "reason": null,
@@ -3011,14 +3041,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:284",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:301",
           "name": "stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across a JavaScript patch",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('native')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:285"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:302"
             }
           ],
           "routes": [
@@ -3036,14 +3066,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:325",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:342",
           "name": "stateful HMR in real WeChat DevTools > rehydrates wevu local and store refs while preserving the native page instance",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('wevu')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:326"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:343"
             }
           ],
           "routes": [
@@ -3065,14 +3095,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:401",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:418",
           "name": "stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('component')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:402"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:419"
             }
           ],
           "routes": [
@@ -3087,6 +3117,36 @@
             "check(patched)",
             "check(updated)"
           ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:458",
+          "name": "stateful HMR in real WeChat DevTools > preserves parent and native child DOM state across a child script patch and restoration",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/stateful-hmr",
+              "checkpoints": "nativeChildCheckpoints",
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:459"
+            }
+          ],
+          "routes": [],
+          "operations": [],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:480",
+          "name": "stateful HMR in real WeChat DevTools > preserves parent and Vue child DOM state across a child script patch and restoration",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/stateful-hmr",
+              "checkpoints": "vueChildCheckpoints",
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:481"
+            }
+          ],
+          "routes": [],
+          "operations": [],
           "notes": []
         }
       ]
@@ -5897,6 +5957,10 @@
       "sha256": "99915410e3c1f22495fe1e30de60dcc279bf1b19913fea5b01e3cc9a18d09bfe"
     },
     {
+      "file": "e2e/ide/github-issues.runtime.issue779.test.ts",
+      "sha256": "24f95829ab5d501921d301d0bd2bc02fcf5bb72ef1198c7b9e79947aaafc0fa4"
+    },
+    {
       "file": "e2e/ide/github-issues.runtime.issue826.test.ts",
       "sha256": "060480ba6f466ae292552a78de6dc45c15e3699aa881356659f1fe3bbe88d099"
     },
@@ -5942,7 +6006,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.shared.ts",
-      "sha256": "f23f0dd95eb57f564fbdabff2bd9279248eb5c96d21c879ffd3bfb05f5b47345"
+      "sha256": "cd824055aa93c62877f6a566e117fc42a66369bdfe8e04c9576885ba62289e72"
     },
     {
       "file": "e2e/ide/github-issues.runtime.slot-fallback-compiler-off.test.ts",
@@ -6118,11 +6182,23 @@
     },
     {
       "file": "e2e/ide/stateful-hmr.runtime.test.ts",
-      "sha256": "25f001044be25adb8e5137939b0d467026a80a9046a30952113f12d4e3f0de2a"
+      "sha256": "518fc0f748a51dd6919dd90b0362913bd1be4382f846839ba90af5cabc0aabe3"
     },
     {
       "file": "e2e/ide/statefulHmrDom/index.ts",
       "sha256": "a32de71ccdd2d8610543807139f2422da923899b08876174af10007ca6303e22"
+    },
+    {
+      "file": "e2e/ide/statefulHmrDom/nativeChild.ts",
+      "sha256": "f2e8f7cedc6f54947ecaa0b30a4ee701e7fa975b55b4de3c1230ae173fc2ab55"
+    },
+    {
+      "file": "e2e/ide/statefulHmrDom/nativeChildCase.ts",
+      "sha256": "928bbf7b352694d63af2c6f2b398ce4af224a0cc8c836fa0938202d7c879a81b"
+    },
+    {
+      "file": "e2e/ide/statefulHmrDom/vueChild.ts",
+      "sha256": "137834fe04d2a1b268c22409580abb365b5b80bd310f2f73f353600e97a16073"
     },
     {
       "file": "e2e/ide/subpackage-shared-strategy-complex.runtime.test.ts",
@@ -6442,7 +6518,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "e885209019acea1ac91afdcebb9a1fc943b8402ee6379a10b69dad661e9a72f5"
+      "sha256": "fb7f525fd98e503c1a3345fb5409c45a027ea3858a2748747423dd65dbdcf56b"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -6486,7 +6562,7 @@
     },
     {
       "file": "e2e/utils/buildLog.ts",
-      "sha256": "7ea7ec95ed8f306b025a4fdb9dafecd0e88a22c08b11e5c7857ef58fef5c790b"
+      "sha256": "1c992ab9649f2a56fa6c37e3d7f9f4f02c254f3427999a51b26146e941419868"
     },
     {
       "file": "e2e/utils/componentInstanceApiContract.ts",

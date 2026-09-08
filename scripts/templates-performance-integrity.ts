@@ -11,6 +11,7 @@ export interface TemplatesHmrReport {
       label: string
       error?: string
       samples: Array<{
+        timingSource?: 'compiler-profile' | 'output-observation'
         buildCoreMs?: number
         emitMs?: number
         heapUsedBytes?: number

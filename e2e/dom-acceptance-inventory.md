@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：91；微信：88；范围外：3。
-- 展开的 case 声明：226；已接入计划：226；缺计划：0。
+- 任务：92；微信：89；范围外：3。
+- 展开的 case 声明：229；已接入计划：229；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -34,6 +34,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/github-issues.runtime.issue642-bug7-default.test.ts                                   | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue642-bug7-performance.test.ts                               | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue642-bug8.test.ts                                           | devtools           |     1 |     1 |       0 | wechat       |
+| ide/github-issues.runtime.issue779.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue826.test.ts                                                | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue852.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue868.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
@@ -55,7 +56,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/request-clients-real-native.runtime.test.ts                                           | devtools           |     6 |     6 |       0 | wechat       |
 | ide/request-clients-real.runtime.test.ts                                                  | devtools           |     7 |     7 |       0 | wechat       |
 | ide/shared-styles.runtime.test.ts                                                         | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/stateful-hmr.runtime.test.ts                                                          | devtools           |     3 |     3 |       0 | wechat       |
+| ide/stateful-hmr.runtime.test.ts                                                          | devtools           |     5 |     5 |       0 | wechat       |
 | ide/subpackage-shared-strategy-complex.runtime.test.ts                                    | devtools, headless |     2 |     2 |       0 | wechat       |
 | ide/swan-runtime.optional.test.ts                                                         | swan               |     1 |     0 |       - | out-of-scope |
 | ide/tdesign-dialog-import.runtime.test.ts                                                 | devtools, headless |     2 |     2 |       0 | wechat       |
@@ -745,6 +746,16 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE642_BUG8`; source: `e2e/ide/github-issues.runtime.issue642-bug8.test.ts:92`
 - Operations: `check(initial)`
 
+## ide/github-issues.runtime.issue779.test.ts
+
+### e2e app: github-issues / issue #779 > renders the pre-transformed external SFC stylesheet instead of the original disk source
+
+- Source: `e2e/ide/github-issues.runtime.issue779.test.ts:46`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'pre-transformed-style', route: '/pages/issue-779/index', action: '检查 SFC 外链样式经过 pre 插件和 Tailwind 编译后的实际文本与计算颜色', nodes: [{ selector: '#issue779-page', count: 1, text: 'issue 779', styles: { 'color': 'rgb(1, 2, 3)', 'padding-top': '1`; source: `e2e/ide/github-issues.runtime.issue779.test.ts:47`
+- Routes: `/pages/issue-779/index`
+- Operations: `check(pre-transformed-style)`
+
 ## ide/github-issues.runtime.issue826.test.ts
 
 ### e2e app: github-issues / issue #826 > executes preserved single, shared and barrel modules across page relaunches
@@ -1126,27 +1137,39 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across a JavaScript patch
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:284`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:301`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('native')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:285`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('native')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:302`
 - Routes: `/pages/native/index?source=e2e`, `pages/native/index`
 - Operations: `reLaunch(/pages/native/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(updated)`
 
 ### stateful HMR in real WeChat DevTools > rehydrates wevu local and store refs while preserving the native page instance
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:325`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:342`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('wevu')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:326`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('wevu')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:343`
 - Routes: `/pages/wevu/index?source=e2e`, `pages/wevu/index`
 - Operations: `reLaunch(/pages/wevu/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(template-b)`, `check(template-a)`, `check(patched)`, `check(updated)`, `check(mixed-style)`, `check(mixed-style-updated)`
 
 ### stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:401`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:418`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:402`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:419`
 - Routes: `/pages/component/index?source=e2e`, `pages/component/index`
 - Operations: `reLaunch(/pages/component/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(updated)`
+
+### stateful HMR in real WeChat DevTools > preserves parent and native child DOM state across a child script patch and restoration
+
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:458`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `nativeChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:459`
+
+### stateful HMR in real WeChat DevTools > preserves parent and Vue child DOM state across a child script patch and restoration
+
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:480`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `vueChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:481`
 
 ## ide/subpackage-shared-strategy-complex.runtime.test.ts
 

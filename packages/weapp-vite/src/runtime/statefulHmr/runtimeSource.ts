@@ -4,6 +4,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
 } from '@weapp-core/constants'
 import { nativeInstanceDefaultsSource } from './nativeInstanceDefaults'
+import { statefulHmrUpdatePropagationSource } from './updatePropagationSource'
 
 export interface StatefulHmrControl {
   buildId: string
@@ -65,7 +66,6 @@ class WeappViteDevRuntime extends BaseDevRuntime {
     const context = new WeappViteHotContext(moduleId);
     this.registrationModuleId = moduleId;
     if (previous) {
-      context.callbacks = previous.callbacks;
       context.data = previous.data;
     }
     this.contexts.set(moduleId, context);
@@ -97,6 +97,7 @@ class WeappViteDevRuntime extends BaseDevRuntime {
   }
   beginPatch() { this.applyingPatch = true; }
   endPatch() { this.applyingPatch = false; }
+${statefulHmrUpdatePropagationSource}
   applyUpdates(boundaries) {
     for (const [boundary, acceptedVia] of boundaries) {
       const context = this.contexts.get(boundary);
@@ -547,25 +548,10 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       activeRequest?.abort?.();
       activeRequest = undefined;
     },
-    applyChangedModules(changedIds) {
+    applyChangedModules(changedIds, preparedUpdate) {
       const runtime = globalThis.__rolldown_runtime__;
       if (!runtime || !Array.isArray(changedIds)) return;
-      const uniqueIds = [...new Set(changedIds.filter((id) => typeof id === 'string'))];
-      const summary = { changedIds: uniqueIds, initialized: [], missing: [], executedBefore: [], executedAfterRemove: [] };
-      for (const id of uniqueIds) {
-        if (typeof runtime.isExecuted === 'function' && runtime.isExecuted(id)) summary.executedBefore.push(id);
-        if (typeof runtime.removeModuleCache === 'function') runtime.removeModuleCache.call(runtime, id);
-        if (typeof runtime.isExecuted === 'function' && runtime.isExecuted(id)) summary.executedAfterRemove.push(id);
-      }
-      for (const id of uniqueIds) {
-        if (typeof runtime.hasFactory === 'function' && !runtime.hasFactory(id)) {
-          summary.missing.push(id);
-          continue;
-        }
-        if (typeof runtime.initModule === 'function') runtime.initModule.call(runtime, id);
-        summary.initialized.push(id);
-      }
-      this.lastApply = summary;
+      this.lastApply = runtime.applyPreparedUpdate(preparedUpdate ?? runtime.prepareUpdate(changedIds));
     },
     receiveBatch(meta, apply) {
       if (phase === 'registering') {
@@ -582,8 +568,9 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       }
       bridge.beginUpdate?.();
       try {
+        const preparedUpdate = globalThis.__rolldown_runtime__.prepareUpdate(meta.changedIds);
         apply();
-        globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].applyChangedModules(meta.changedIds);
+        globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].applyChangedModules(meta.changedIds, preparedUpdate);
         version = meta.targetVersion;
         phase = meta.compatible === false ? 'relaunching' : 'polling';
       } catch (error) {

@@ -57,7 +57,13 @@ exports[`build style > dist > components/Navbar/Navbar.wxml 1`] = `
 exports[`build style > dist > components/Navbar/Navbar.wxss 1`] = `
 ".navbar {
   color: red;
-}"
+}.navbar-css {
+  color: aliceblue;
+}
+.navbar-wxss {
+  color: antiquewhite;
+}
+"
 `;
 
 exports[`build style > dist > pages/index/index.js 1`] = `

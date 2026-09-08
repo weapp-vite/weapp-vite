@@ -8,9 +8,11 @@ import { stripVTControlCharacters } from 'node:util'
 /* eslint-disable-next-line e18e/ban-dependencies -- CI 性能对比需要调度两个 checkout 的命令并收集报告。 */
 import { execa } from 'execa'
 import path from 'pathe'
-import { createBenchmarkCheckoutPreparationCommands, createBenchmarkRunnerPreparationCommand } from './benchmark-checkout-preparation'
+import { createBenchmarkCheckoutPreparationCommands, createBenchmarkRunnerPreparationCommand, createBenchmarkTemplateDependenciesCommand } from './benchmark-checkout-preparation'
+import { assertBenchmarkPrepareCompleted, assertBenchmarkTypeScriptPrepared, createBenchmarkPrepareArgs, discoverBenchmarkTypeScriptProjects } from './benchmarkCheckoutPreparation/typescript'
 import { createPeakRssSampler } from './benchmarkTemplatesPerformance/peakRssSampler'
 import { runRssSamplingCommand } from './benchmarkTemplatesPerformance/rssCommand'
+import { renderHmrTimingSources } from './benchmarkTemplatesPerformance/timing'
 import { assertTemplatesPerformanceComplete, collectTemplatesPerformanceFailures, parseTemplatesHmrReport } from './templates-performance-integrity'
 
 const baselineDirInput = process.env.TEMPLATES_PERF_BASELINE_DIR
@@ -72,10 +74,16 @@ async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutR
   for (const command of createBenchmarkCheckoutPreparationCommands()) {
     await run(command.command, command.args, cwd)
   }
-  process.stdout.write(`[templates-perf] ${id} ${commit}: build weapp-vite dependency dist\n`)
-  await run('pnpm', ['--filter', 'weapp-vite...', '--if-present', 'build'], cwd)
-
   const templates = await discoverTemplates(cwd)
+  process.stdout.write(`[templates-perf] ${id} ${commit}: build CLI and selected template dependency dist\n`)
+  const dependencyBuild = createBenchmarkTemplateDependenciesCommand(templates.map(template => template.packageName))
+  await run(dependencyBuild.command, dependencyBuild.args, cwd)
+  const referencedProjects = await discoverBenchmarkTypeScriptProjects(cwd)
+  for (const project of referencedProjects) {
+    process.stdout.write(`[templates-perf] ${id}: prepare referenced project ${project.root}\n`)
+    await prepareTypeScriptProject(cwd, project.root)
+  }
+  await assertBenchmarkTypeScriptPrepared(cwd, referencedProjects)
   await prepareTemplates(id, cwd, templates)
   const build = await benchmarkTemplateBuilds(id, cwd, templates)
 
@@ -201,8 +209,14 @@ async function discoverTemplates(cwd: string): Promise<TemplateCase[]> {
 async function prepareTemplates(id: CheckoutId, cwd: string, templates: TemplateCase[]) {
   for (const template of templates) {
     process.stdout.write(`[templates-perf] ${id}: prepare ${template.id}\n`)
-    await run('pnpm', ['--filter', template.packageName, 'exec', 'wv', 'prepare'], cwd)
+    await prepareTypeScriptProject(cwd, path.relative(cwd, template.root))
   }
+}
+
+async function prepareTypeScriptProject(cwd: string, projectRoot: string) {
+  const result = await execa(process.execPath, createBenchmarkPrepareArgs(projectRoot), { cwd, all: true, reject: false })
+  process.stdout.write(sanitizeCheckoutOutput(cwd, result.all ?? ''))
+  assertBenchmarkPrepareCompleted(projectRoot, { exitCode: result.exitCode, output: result.all ?? '' })
 }
 
 async function run(command: string, args: string[], cwd: string, env: NodeJS.ProcessEnv = {}, collectFailure = false) {
@@ -460,13 +474,14 @@ function renderMarkdown(report: PerformanceReport) {
     `- Warm build：${formatMs(warmBuildBaseline.totalAverageMs)} -> ${formatMs(warmBuildOptimized.totalAverageMs)}（${formatPercent(fasterPercent(warmBuildBaseline.totalAverageMs, warmBuildOptimized.totalAverageMs))}）。`,
     `- Build 内存：峰值 RSS 均值 ${formatMemoryMiB(buildAggregate.rssPeakAverageBaselineBytes)} -> ${formatMemoryMiB(buildAggregate.rssPeakAverageOptimizedBytes)}（${formatPercent(buildAggregate.rssPeakReducedPercent)}）。`,
     `- HMR core：${hmrAggregate.scenarioCount} 个共同成功场景，build/transform/write/emit 平均 ${formatMs(hmrAggregate.coreAverageBaselineMs)} -> ${formatMs(hmrAggregate.coreAverageOptimizedMs)}（${formatPercent(hmrAggregate.coreFasterPercent)}），transform/plugin ${formatSmallMs(hmrAggregate.transformAverageBaselineMs)} -> ${formatSmallMs(hmrAggregate.transformAverageOptimizedMs)}（${formatPercent(hmrAggregate.transformFasterPercent)}）。`,
-    `- HMR profile 诊断：best ${formatMs(hmrAggregate.bestBaselineMs)} -> ${formatMs(hmrAggregate.bestOptimizedMs)}（${formatPercent(hmrAggregate.bestFasterPercent)}），平均 ${formatMs(hmrAggregate.averageBaselineMs)} -> ${formatMs(hmrAggregate.averageOptimizedMs)}（${formatPercent(hmrAggregate.averageFasterPercent)}）。`,
+    `- HMR total 诊断：best ${formatMs(hmrAggregate.bestBaselineMs)} -> ${formatMs(hmrAggregate.bestOptimizedMs)}（${formatPercent(hmrAggregate.bestFasterPercent)}），平均 ${formatMs(hmrAggregate.averageBaselineMs)} -> ${formatMs(hmrAggregate.averageOptimizedMs)}（${formatPercent(hmrAggregate.averageFasterPercent)}）。`,
+    ...renderHmrTimingSources(report.baseline.hmr, report.optimized.hmr),
     `- HMR wall 诊断：best ${formatMs(hmrAggregate.wallBestBaselineMs)} -> ${formatMs(hmrAggregate.wallBestOptimizedMs)}（${formatPercent(hmrAggregate.wallBestFasterPercent)}），平均 ${formatMs(hmrAggregate.wallAverageBaselineMs)} -> ${formatMs(hmrAggregate.wallAverageOptimizedMs)}（${formatPercent(hmrAggregate.wallFasterPercent)}）。`,
     `- HMR 内存：heapUsed 均值 ${formatMemoryMiB(hmrAggregate.heapUsedAverageBaselineBytes)} -> ${formatMemoryMiB(hmrAggregate.heapUsedAverageOptimizedBytes)}，RSS 均值 ${formatMemoryMiB(hmrAggregate.rssAverageBaselineBytes)} -> ${formatMemoryMiB(hmrAggregate.rssAverageOptimizedBytes)}。`,
     '',
     report.hmrSampleMode === 'edit-only'
-      ? '正数代表 optimized 更快，负数代表更慢。HMR core 来自 profile 的 build/transform/write/emit 分段，用于观察开发态保存后的核心处理路径；profile/wall 保留为 runner I/O 与文件监听抖动诊断。'
-      : '正数代表 optimized 更快，负数代表更慢。HMR core 来自 profile 的 build/transform/write/emit 分段，用于观察开发态快路径；profile best/average 与 wall 保留为 runner I/O 与文件监听抖动诊断。',
+      ? '正数代表 optimized 更快，负数代表更慢。HMR core 来自 profile 的 build/transform/write/emit 分段，用于观察开发态保存后的核心处理路径；total/wall 保留为 runner I/O 与文件监听抖动诊断。'
+      : '正数代表 optimized 更快，负数代表更慢。HMR core 来自 profile 的 build/transform/write/emit 分段，用于观察开发态快路径；total best/average 与 wall 保留为 runner I/O 与文件监听抖动诊断。',
     '',
     '## Build 汇总',
     '',
@@ -487,14 +502,14 @@ function renderMarkdown(report: PerformanceReport) {
     '',
     '## HMR 汇总',
     '',
-    '| 范围 | 场景数 | core 平均 | core 变化 | profile best | best 变化 | profile 平均 | avg 变化 | wall best 变化 | heap | rss | transform 变化 |',
+    '| 范围 | 场景数 | core 平均 | core 变化 | total best | best 变化 | total 平均 | avg 变化 | wall best 变化 | heap | rss | transform 变化 |',
     '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
     renderHmrAggregateRow('全部共同成功场景', hmrAggregate),
     ...report.hmr.groups.map(group => renderHmrAggregateRow(`group:${group.group}`, group)),
     '',
     '## HMR 场景明细',
     '',
-    '| template | scenario | core avg | core 变化 | profile best | best 变化 | profile avg | avg 变化 | wall best | wall best 变化 | heap | rss | transform | transform 变化 |',
+    '| template | scenario | core avg | core 变化 | total best | best 变化 | total avg | avg 变化 | wall best | wall best 变化 | heap | rss | transform | transform 变化 |',
     '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
     ...report.hmr.rows
       .filter(row => row.comparable)

@@ -8,6 +8,8 @@ import { createStatefulHmrStyleRebaser } from './globalStyles/rebase'
 export interface StatefulHmrSnapshot {
   output: StatefulHmrOutputFile[]
   componentPageGlobalStyleRoutes: string[]
+  entryIds?: string[]
+  delegatedComponentEntryIds?: string[]
 }
 
 function normalizeRoute(route: string): string {

@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { appendIdeReportEvent } from './ideWarningReport'
 import { waitForOpenedAutomator } from './opened-automator'
 
@@ -22,24 +22,36 @@ function createSession() {
   })
 }
 
+/** 纯模拟连接由虚拟时钟推进，避免宿主定时器粒度影响短截止时间的语义断言。 */
+async function advanceOpenedAutomatorTimers<T>(pending: Promise<T>) {
+  const [result] = await Promise.all([pending, vi.runAllTimersAsync()])
+  return result
+}
+
 describe('opened automator', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
     connectOpenedAutomatorMock.mockReset()
     resolveProjectAutomatorPortMock.mockReset()
     resolveProjectAutomatorPortMock.mockReturnValue(11074)
     vi.mocked(appendIdeReportEvent).mockClear()
   })
 
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+  })
+
   it('waits for a readable current page before returning an opened session', async () => {
     const miniProgram = createSession()
     connectOpenedAutomatorMock.mockResolvedValueOnce(miniProgram)
 
-    const session = await waitForOpenedAutomator('/workspace/project', {
+    const session = await advanceOpenedAutomatorTimers(waitForOpenedAutomator('/workspace/project', {
       appReadyTimeoutMs: 17,
       connectTimeoutMs: 5,
       intervalMs: 1,
       timeoutMs: 50,
-    })
+    }))
 
     expect(session.miniProgram).toBe(miniProgram)
     expect(session.metadata).toMatchObject({
@@ -66,13 +78,13 @@ describe('opened automator', () => {
       .mockResolvedValueOnce({ path: '/pages/index/index?source=launch' })
     connectOpenedAutomatorMock.mockResolvedValueOnce(miniProgram)
 
-    await waitForOpenedAutomator('/workspace/project', {
+    await advanceOpenedAutomatorTimers(waitForOpenedAutomator('/workspace/project', {
       appReadyTimeoutMs: 17,
       connectTimeoutMs: 5,
       intervalMs: 1,
       readyRoute: '/pages/index/index',
       timeoutMs: 50,
-    })
+    }))
 
     expect(miniProgram.reLaunch).not.toHaveBeenCalled()
     expect(miniProgram.currentPage).toHaveBeenCalledTimes(3)
@@ -86,12 +98,12 @@ describe('opened automator', () => {
     })
     const disconnect = miniProgram.disconnect
     connectOpenedAutomatorMock.mockResolvedValue(miniProgram)
-    await expect(waitForOpenedAutomator('/workspace/project', {
+    await expect(advanceOpenedAutomatorTimers(waitForOpenedAutomator('/workspace/project', {
       readyRoute: '/pages/index/index',
       appReadyTimeoutMs: 5,
       timeoutMs: 5,
       intervalMs: 1,
-    })).rejects.toThrow('Opened automator page is not ready: expected pages/index/index')
+    }))).rejects.toThrow('Opened automator page is not ready: expected pages/index/index')
     expect(miniProgram.reLaunch).not.toHaveBeenCalled()
     expect(disconnect).toHaveBeenCalled()
   })
@@ -108,12 +120,12 @@ describe('opened automator', () => {
       .mockResolvedValueOnce(staleMiniProgram)
       .mockResolvedValueOnce(readyMiniProgram)
 
-    const session = await waitForOpenedAutomator('/workspace/project', {
+    const session = await advanceOpenedAutomatorTimers(waitForOpenedAutomator('/workspace/project', {
       appReadyTimeoutMs: 7,
       connectTimeoutMs: 5,
       intervalMs: 1,
       timeoutMs: 50,
-    })
+    }))
 
     expect(session.miniProgram).toBe(readyMiniProgram)
     expect(staleDisconnect).toHaveBeenCalledTimes(1)
@@ -132,7 +144,7 @@ describe('opened automator', () => {
       return { path: 'pages/index/index' }
     })
     connectOpenedAutomatorMock.mockResolvedValue(miniProgram)
-    await waitForOpenedAutomator('/workspace/project', { timeoutMs: 50 })
+    await advanceOpenedAutomatorTimers(waitForOpenedAutomator('/workspace/project', { timeoutMs: 50 }))
     expect(appendIdeReportEvent).toHaveBeenCalledWith(expect.objectContaining({
       channel: 'runtime',
       level: 'error',
@@ -153,11 +165,11 @@ describe('opened automator', () => {
     const disconnect = miniProgram.disconnect
     miniProgram.enableLog.mockRejectedValue(new Error('App.enableLog unavailable'))
     connectOpenedAutomatorMock.mockResolvedValue(miniProgram)
-    await expect(waitForOpenedAutomator('/workspace/project', {
+    await expect(advanceOpenedAutomatorTimers(waitForOpenedAutomator('/workspace/project', {
       skipAppReady: true,
       timeoutMs: 5,
       intervalMs: 10,
-    })).rejects.toThrow('runtime log subscription failed: App.enableLog unavailable')
+    }))).rejects.toThrow('runtime log subscription failed: App.enableLog unavailable')
     expect(miniProgram.currentPage).not.toHaveBeenCalled()
     expect(disconnect).toHaveBeenCalledTimes(1)
     expect(miniProgram.listenerCount('console')).toBe(0)

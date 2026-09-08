@@ -1,8 +1,33 @@
 import { describe, expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles, resolveBrowserPageStyles } from '../src/browser'
-import { createPageStyleImportFiles, pageStyleGlobal, pageStylePage, pageStyleTemplate } from './helpers/pageStyleImports'
+import { createIssue779StyleOutputFiles, createPageStyleImportFiles, pageStyleGlobal, pageStylePage, pageStyleTemplate } from './helpers/pageStyleImports'
 
 describe('browser page WXSS dependencies', () => {
+  it('resolves issue #779 compiled styles and refreshes their emitted dependency without replacing the page', () => {
+    const files = createBrowserVirtualFiles(createIssue779StyleOutputFiles())
+    const session = createBrowserHeadlessSession({ files })
+    try {
+      const page = session.reLaunch('/pages/issue-779/index')
+      const rendered = session.renderCurrentPage()
+      expect(rendered.wxml).toContain('id="issue779-page"')
+      expect(rendered.wxml).toContain('class="issue-779-page issue-779-pre-marker"')
+      expect(rendered.wxml).toContain('issue 779')
+      expect(rendered.styles.dependencies).toEqual([
+        'app.wxss',
+        'pages/issue-779/index.wxss',
+        'styles/issue-779-preprocessed.wxss',
+      ])
+      expect(rendered.styles.cssText.trim()).toBe('.issue-779-pre-marker { padding: 13px; color: rgb(1, 2, 3); }')
+
+      files.set('styles/issue-779-preprocessed.wxss', '.issue-779-pre-marker { color: rgb(4, 5, 6); }')
+      expect(session.renderCurrentPage().styles.cssText.trim()).toBe('.issue-779-pre-marker { color: rgb(4, 5, 6); }')
+      expect(session.getCurrentPages()[0]).toBe(page)
+    }
+    finally {
+      session.close()
+    }
+  })
+
   it.each(['imported', 'inline'] as const)('reads %s page styles in cascade order without resetting instances', (source) => {
     const files = createBrowserVirtualFiles(createPageStyleImportFiles(source))
     const session = createBrowserHeadlessSession({ files })

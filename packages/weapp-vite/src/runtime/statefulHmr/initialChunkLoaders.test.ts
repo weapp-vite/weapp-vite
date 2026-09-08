@@ -14,6 +14,8 @@ interface Runtime {
   registerFactory: (id: string, kind: 'esm', factory: (id: string) => void) => void
   beginPatch: () => void
   endPatch: () => void
+  registerGraph: (graph: { ids: string[], localCount: number, edges: number[][], dynamicEdges: number[][] }) => void
+  getImporters: (id: string) => string[]
 }
 
 function chunk(fileName: string, code: string, options: { isEntry?: boolean, imports?: string[] } = {}): Extract<StatefulHmrOutputFile, { type: 'chunk' }> {
@@ -174,18 +176,22 @@ describe('initial native chunk loaders', () => {
     expect(loads).toEqual([])
   })
 
-  it('rejects a native chunk that would overwrite a previously patched sibling module', () => {
+  it('rejects a native chunk that would overwrite patched sibling exports and dependency edges', () => {
     const { runtime, loads } = createRuntime([
       chunk('vendor/facade.js', `
         __rolldown_runtime__.registerModule('changed', { exports: 'old' });
         __rolldown_runtime__.registerModule('sibling', { exports: 'sibling' });
+        __rolldown_runtime__.registerGraph({ ids: ['changed', 'old-dependency'], localCount: 1, edges: [[1]], dynamicEdges: [[]] });
       `),
     ])
+    runtime.registerGraph({ ids: ['changed', 'new-dependency'], localCount: 1, edges: [[1]], dynamicEdges: [[]] })
     runtime.registerFactory('changed', 'esm', id => runtime.registerModule(id, { exports: 'updated' }))
     runtime.beginPatch()
     expect(runtime.initModule('changed')).toBe('updated')
     runtime.endPatch()
     expect(() => runtime.initModule('sibling')).toThrow('Initial HMR chunk contains updated modules: sibling')
+    expect(runtime.getImporters('new-dependency')).toEqual(['changed'])
+    expect(runtime.getImporters('old-dependency')).toEqual([])
     expect(runtime.initModule('changed')).toBe('updated')
     expect(loads).toEqual([])
   })

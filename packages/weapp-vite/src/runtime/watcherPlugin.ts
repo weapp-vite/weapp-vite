@@ -10,7 +10,24 @@ export interface WatcherService {
   getRollupWatcher: (root?: string) => WatcherInstance | undefined
   setRollupWatcher: (watcher: WatcherInstance, root?: string) => void
   close: (root?: string) => void
-  closeAll: () => void
+  closeAll: () => void | Promise<void>
+}
+
+const resourceOwners = new WeakMap<WatcherService, number>()
+
+/** 为长期运行的控制器保留共享资源，最后一个控制器退出时统一释放。 */
+export function retainWatcherService(service: WatcherService): () => Promise<void> {
+  resourceOwners.set(service, (resourceOwners.get(service) ?? 0) + 1)
+  let releasing: Promise<void> | undefined
+  return () => releasing ??= (async () => {
+    const remaining = (resourceOwners.get(service) ?? 1) - 1
+    if (remaining > 0) {
+      resourceOwners.set(service, remaining)
+      return
+    }
+    resourceOwners.delete(service)
+    await service.closeAll()
+  })()
 }
 
 function createWatcherService(ctx: MutableCompilerContext): WatcherService {
@@ -27,16 +44,16 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       oldWatcher?.close()
       rollupWatcherMap.set(root, watcher)
     },
-    closeAll() {
-      rollupWatcherMap.forEach((watcher) => {
-        watcher.close()
-      })
+    async closeAll() {
+      const watchers = [...rollupWatcherMap.values(), ...sidecarWatcherMap.values()]
       rollupWatcherMap.clear()
-      sidecarWatcherMap.forEach((watcher) => {
-        Promise.resolve(watcher.close()).catch(() => {})
-      })
       sidecarWatcherMap.clear()
-      void ctx.webService?.close().catch(() => {})
+      const tasks = watchers.map(async watcher => await watcher.close())
+      if (ctx.webService) {
+        tasks.push((async () => await ctx.webService!.close())())
+      }
+      // 一个关闭失败不能中断其余资源回收；快照退出需等全部监听器停止。
+      await Promise.allSettled(tasks)
     },
     close(root: string = '/') {
       const watcher = rollupWatcherMap.get(root)
@@ -59,16 +76,25 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
 export function createWatcherServicePlugin(ctx: MutableCompilerContext): Plugin {
   const service = createWatcherService(ctx)
   ctx.watcherService = service
+  let persistentWatch = false
+  let closing: Promise<void> | undefined
+  const closeSnapshotResources = () => closing ??= Promise.resolve(service.closeAll())
 
   return {
     name: 'weapp-runtime:watcher-service',
-    closeBundle() {
-      const configService = ctx.configService
-      const isWatchMode = configService?.isDev
-        || Boolean(configService?.inlineConfig?.build?.watch)
-
-      if (!isWatchMode) {
-        service.closeAll()
+    configResolved(config) {
+      // isDev 决定编译语义，不能让开发模式的一次性快照持有常驻 watcher。
+      persistentWatch = config.command === 'serve' || Boolean(config.build.watch)
+      closing = undefined
+    },
+    async buildEnd(error) {
+      if (error && !persistentWatch && !resourceOwners.has(service)) {
+        await closeSnapshotResources()
+      }
+    },
+    async closeBundle() {
+      if (!persistentWatch && !resourceOwners.has(service)) {
+        await closeSnapshotResources()
       }
     },
   }

@@ -103,7 +103,6 @@ export default defineProject({
       groupOrder: 100,
     },
     dir: packageDir,
-    include: projectTestIncludes,
     exclude: projectTestExcludes,
     alias: [
       {

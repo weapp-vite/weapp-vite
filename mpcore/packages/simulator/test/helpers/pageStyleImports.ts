@@ -27,3 +27,16 @@ export function createPageStyleImportFiles(source: PageStyleSource = 'imported')
   ]
 }
 export type PageStyleSource = 'imported' | 'inline'
+
+export function createIssue779StyleOutputFiles(): Array<[string, string]> {
+  // 这里只接收编译产物；pre 插件不得被磁盘原文覆盖的契约由 weapp-vite 的真实 Vite integration 验证。
+  return [
+    ['app.json', '{"pages":["pages/issue-779/index"]}'],
+    ['app.js', 'App({})'],
+    ['app.wxss', ''],
+    ['pages/issue-779/index.js', 'Page({})'],
+    ['pages/issue-779/index.wxml', '<view id="issue779-page" class="issue-779-page issue-779-pre-marker">issue 779</view>'],
+    ['pages/issue-779/index.wxss', '@import "../../styles/issue-779-preprocessed.wxss";'],
+    ['styles/issue-779-preprocessed.wxss', '.issue-779-pre-marker { padding: 13px; color: rgb(1, 2, 3); }'],
+  ]
+}

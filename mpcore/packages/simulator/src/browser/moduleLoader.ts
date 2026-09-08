@@ -157,19 +157,17 @@ export function createBrowserModuleLoader(
     localRequire.async = request => Promise.resolve().then(() => localRequire(request))
 
     try {
-      const contextEntries = Object.entries(executionContext)
-      // eslint-disable-next-line no-new-func -- 浏览器 simulator 需要在隔离上下文执行已编译的 CommonJS 虚拟模块。
-      const runtime = new Function(
-        ...contextEntries.map(([key]) => key),
-        'exports',
-        'module',
-        'require',
-        '__filename',
-        '__dirname',
-        source,
-      )
-      runtime(
-        ...contextEntries.map(([, value]) => value),
+      // 对象环境保留 require 期间新增、替换的全局绑定；内层函数单独拥有 CommonJS 参数与模块局部声明。
+      // eslint-disable-next-line no-new-func -- 仅浏览器 simulator 执行边界使用动态编译，不进入小程序产物或修改浏览器全局对象。
+      const runtime = new Function(`
+        with (this) {
+          return function(exports, module, require, __filename, __dirname) {
+            ${source}
+          };
+        }
+      `).call(executionContext)
+      runtime.call(
+        executionContext,
         module.exports,
         module,
         localRequire,

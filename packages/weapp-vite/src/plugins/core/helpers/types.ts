@@ -11,6 +11,7 @@ export interface CorePluginState {
   loadedEntrySet: LoadEntryApi['loadedEntrySet']
   markEntryDirty: LoadEntryApi['markEntryDirty']
   emitDirtyEntries: LoadEntryApi['emitDirtyEntries']
+  entryChunkLifecycle?: LoadEntryApi['entryChunkLifecycle']
   entriesMap: LoadEntryApi['entriesMap']
   jsonEmitFilesMap: LoadEntryApi['jsonEmitFilesMap']
   resolvedEntryMap: LoadEntryApi['resolvedEntryMap']

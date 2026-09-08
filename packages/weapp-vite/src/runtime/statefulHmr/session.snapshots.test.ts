@@ -3,10 +3,14 @@ import type { MutableCompilerContext } from '../../context'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
+import { realpathSync } from 'node:fs'
+import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
+import { ENTRY_GRAPH_CHANGE_REASON } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
 import { createRuntimeState } from '../runtimeState'
 import { runStatefulHmrDev } from './session'
 import { StatefulHmrTransport } from './transport'
@@ -46,8 +50,9 @@ vi.mock('./viteAdapter', () => ({
 
 const route = 'pages/shared/index'
 const styleFile = `${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss`
-const root = path.join(tmpdir(), 'stateful-session-snapshots')
+const root = path.join(realpathSync(tmpdir()), 'stateful-session-snapshots')
 const watchers: Array<{ close: () => Promise<void> }> = []
+const temporaryDirectories: string[] = []
 
 function appOutput(): StatefulHmrOutputFile[] {
   return [{ type: 'chunk', fileName: 'app.js', code: 'App({});', modules: {} }]
@@ -60,8 +65,9 @@ function snapshot(color: string, routes: string[] = [route]): StatefulHmrSnapsho
   }
 }
 
-async function start(initial = snapshot('red')) {
+async function start(initial = snapshot('red'), entryIds: string[] = []) {
   const rebuild = vi.fn(async (_files: string[]) => snapshot('blue'))
+  const changes = new Map<string, string>()
   const ctx = {
     runtimeState: createRuntimeState(),
     configService: {
@@ -72,12 +78,19 @@ async function start(initial = snapshot('red')) {
       weappViteConfig: {},
     },
     scanService: { subPackageMap: new Map() },
-    moduleGraphService: { collectAffectedEntries: () => new Set() },
+    moduleGraphService: {
+      collectAffectedEntries: () => new Set(),
+      getPendingChanges: () => Array.from(changes, ([file, event]) => ({ file, event })),
+    },
   } as unknown as MutableCompilerContext
-  const watcher = await runStatefulHmrDev(ctx, { root }, vi.fn(async () => {}), { initial, entryIds: [], rebuild })
+  const watcher = await runStatefulHmrDev(ctx, { root }, vi.fn(async () => {}), { initial, entryIds, rebuild })
   watchers.push(watcher)
   return {
     rebuild,
+    sourceChange(file: string, event = 'update', reasons: string[] = []) {
+      changes.set(file, event)
+      ctx.onStatefulHmrSourceChange!(file, reasons)
+    },
     patch: (reasons: string[]) => {
       ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = reasons
       return harness.callbacks!.onPatch([path.join(root, 'src/page.vue')], { type: 'Patch', code: 'void 0', filename: 'update.js' })
@@ -125,10 +138,143 @@ describe('stateful snapshot output transactions', () => {
     })
   })
 
+  it('defers patches until a discovered entry graph has completed a full build', async () => {
+    const session = await start()
+    const child = path.join(root, 'src/added-child.js')
+    session.rebuild.mockResolvedValue({ ...snapshot('blue'), entryIds: [child] })
+    session.sourceChange(child, 'create', [ENTRY_GRAPH_CHANGE_REASON])
+    expect(session.patch([])).toBe(false)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(1)
+    expect(session.rebuild).toHaveBeenCalledWith([child])
+    expect(session.patch([])).toBe(true)
+  })
+
+  it('upgrades component additions and removals in metadata snapshots to full entry graph builds', async () => {
+    const page = path.join(root, 'src/page.js')
+    const child = path.join(root, 'src/added-child.js')
+    const session = await start(snapshot('red'), [page])
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, child] })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(1)
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('red'), entryIds: [page] })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page] })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+    expect(session.patch([])).toBe(true)
+  })
+
   afterEach(async () => {
     await Promise.all(watchers.splice(0).map(watcher => watcher.close()))
+    await Promise.all(temporaryDirectories.splice(0).map(directory => rm(directory, { force: true, recursive: true })))
     vi.restoreAllMocks()
     vi.useRealTimers()
+  })
+
+  it('delivers a native child component patch without rebuilding its parent page', async () => {
+    const component = path.join(root, 'src/counter.js')
+    const page = path.join(root, 'src/page.js')
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+    const session = await start(snapshot('red'), [component, page])
+    const changedIds = [
+      'src/counter.js',
+      createSidecarSourceSpecifier(page, 'src/counter.js', 'using-component'),
+    ]
+    expect(harness.callbacks!.onPatch([component], {
+      type: 'Patch',
+      code: 'Component({ methods: { increment() { return 2 } } });',
+      filename: 'update.js',
+      changedIds,
+    })).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(delta).toHaveBeenCalledWith(expect.stringContaining('increment'), changedIds)
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('keeps atomic child restoration as a patch when the watcher also reports parent directory metadata', async () => {
+    await mkdir(path.join(root, 'src'), { recursive: true })
+    const directory = await mkdtemp(path.join(root, 'src/child-restore-'))
+    temporaryDirectories.push(directory)
+    const component = path.join(directory, 'index.js')
+    const page = path.join(root, 'src/page.js')
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+    const session = await start(snapshot('red'), [component, page])
+    const patch = (step: number) => ({
+      type: 'Patch' as const,
+      code: `Component({ methods: { increment() { return ${step} } } });`,
+      filename: 'update.js',
+      changedIds: [component, createSidecarSourceSpecifier(page, component, 'using-component')],
+    })
+    await writeFile(component, 'Component({ step: 2 })')
+    session.sourceChange(component)
+    expect(harness.callbacks!.onPatch([component], patch(2))).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+
+    const temporary = path.join(directory, '.atomic-save.tmp')
+    await writeFile(temporary, 'Component({ step: 1 })')
+    await rename(temporary, component)
+    session.sourceChange(directory)
+    session.sourceChange(component)
+    expect(harness.callbacks!.onPatch([directory, component], patch(1))).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(delta).toHaveBeenCalledTimes(2)
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('preserves real directory creation and deletion after a metadata-only update', async () => {
+    await mkdir(path.join(root, 'src'), { recursive: true })
+    const directory = await mkdtemp(path.join(root, 'src/child-topology-'))
+    temporaryDirectories.push(directory)
+    const session = await start()
+    session.sourceChange(directory)
+    harness.callbacks!.onPatch([directory], { type: 'Noop' })
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.rebuild).not.toHaveBeenCalled()
+
+    session.sourceChange(directory, 'create')
+    harness.callbacks!.onPatch([directory], { type: 'FullReload' })
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.rebuild).toHaveBeenCalledTimes(1)
+    expect(session.rebuild).toHaveBeenLastCalledWith([directory])
+
+    await rm(directory, { recursive: true })
+    session.sourceChange(directory, 'delete')
+    harness.callbacks!.onPatch([directory], { type: 'FullReload' })
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.rebuild).toHaveBeenCalledTimes(2)
+    expect(session.rebuild).toHaveBeenLastCalledWith([directory])
+  })
+
+  it('keeps new sidecars and executable entry topology updates actionable after directory metadata', async () => {
+    await mkdir(path.join(root, 'src'), { recursive: true })
+    const directory = await mkdtemp(path.join(root, 'src/new-sidecar-'))
+    temporaryDirectories.push(directory)
+    const session = await start()
+    const style = path.join(directory, 'index.wxss')
+    await writeFile(style, '.new { color: red; }')
+    session.sourceChange(directory)
+    session.sourceChange(style, 'create')
+    harness.callbacks!.onPatch([directory, style], { type: 'FullReload' })
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([style])
+
+    session.rebuild.mockClear()
+    const source = path.join(directory, 'index.js')
+    await writeFile(source, 'Component({})')
+    session.sourceChange(directory)
+    session.sourceChange(source, 'create')
+    harness.callbacks!.onPatch([directory, source], { type: 'FullReload', reason: 'new entry topology' })
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([source])
+    expect(harness.fullBuild).toHaveBeenCalledTimes(1)
   })
 
   it('publishes a mixed visual edit as a patch plus changed assets without a full build', async () => {
@@ -145,6 +291,37 @@ describe('stateful snapshot output transactions', () => {
       source: expect.stringContaining('color: blue'),
     }))
     expect(delta).toHaveBeenCalledTimes(1)
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('keeps snapshot-owned component metadata intact when DevEngine delivers additional assets', async () => {
+    const componentJson: StatefulHmrOutputFile = {
+      type: 'asset',
+      fileName: 'components/leaf/index.json',
+      source: JSON.stringify({ component: true, options: { multipleSlots: true } }),
+    }
+    const initial = snapshot('red')
+    initial.output.push(componentJson)
+    const session = await start(initial)
+    session.rebuild.mockResolvedValue(initial)
+    const published = new Map(writtenAssets().map(asset => [asset.fileName, asset.source]))
+    harness.writeOutput.mockImplementation(async (_outDir, output) => {
+      for (const item of output) {
+        if (item.type === 'asset') {
+          published.set(item.fileName, item.source)
+        }
+      }
+    })
+    harness.callbacks!.onOutput([
+      { type: 'asset', fileName: componentJson.fileName, source: JSON.stringify({ options: { multipleSlots: true } }) },
+      { type: 'asset', fileName: 'assets/new.svg', source: '<svg />' },
+    ])
+    await vi.advanceTimersByTimeAsync(1)
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(published.get(componentJson.fileName)).toBe(componentJson.source)
+    expect(published.get('assets/new.svg')).toBe('<svg />')
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 

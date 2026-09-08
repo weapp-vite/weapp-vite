@@ -82,6 +82,7 @@ describe('stateful HMR client failure reporting', () => {
     const requests: any[] = []
     const context: Record<string, any> = {
       console: { error: vi.fn() },
+      __rolldown_runtime__: { prepareUpdate: vi.fn() },
       setTimeout: vi.fn(),
       clearTimeout: vi.fn(),
       wx: {
@@ -123,6 +124,7 @@ describe('stateful HMR client failure reporting', () => {
     const endUpdate = vi.fn()
     const context: Record<string, any> = {
       console: { error: vi.fn() },
+      __rolldown_runtime__: { prepareUpdate: vi.fn() },
       setTimeout: vi.fn(),
       clearTimeout: vi.fn(),
       wx: {

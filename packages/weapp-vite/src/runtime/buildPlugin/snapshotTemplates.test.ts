@@ -91,7 +91,7 @@ async function createFixture() {
       relativeCwd: (file: string) => path.relative(root, file),
       merge: () => ({}),
     },
-    watcherService: { rollupWatcherMap, sidecarWatcherMap: new Map(), setRollupWatcher: (watcher: RolldownWatcher, key: string) => rollupWatcherMap.set(key, watcher) },
+    watcherService: { rollupWatcherMap, sidecarWatcherMap: new Map(), closeAll: vi.fn(async () => {}), setRollupWatcher: (watcher: RolldownWatcher, key: string) => rollupWatcherMap.set(key, watcher) },
     npmService: {},
     scanService: { isMainPackageFileName: () => true },
   } as unknown as MutableCompilerContext

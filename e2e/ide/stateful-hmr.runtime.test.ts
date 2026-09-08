@@ -15,6 +15,9 @@ import {
 } from '../utils/hmr-helpers'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { statefulHmrCheckpoints } from './statefulHmrDom'
+import { nativeChildCheckpoints } from './statefulHmrDom/nativeChild'
+import { verifyNativeChildHmr } from './statefulHmrDom/nativeChildCase'
+import { vueChildCheckpoints } from './statefulHmrDom/vueChild'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.join(ROOT, 'e2e-apps/stateful-hmr')
@@ -24,6 +27,8 @@ const CONTROL_FILE = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
 const UPDATE_FILE = path.join(DIST_ROOT, '__weapp_vite_hmr/update.js')
 const NATIVE_SOURCE = path.join(APP_ROOT, 'src/pages/native/index.ts')
 const COMPONENT_SOURCE = path.join(APP_ROOT, 'src/pages/component/index.ts')
+const CHILD_SOURCE = path.join(APP_ROOT, 'src/components/native-counter/index.js')
+const VUE_CHILD_SOURCE = path.join(APP_ROOT, 'src/components/vue-counter/index.vue')
 const WEVU_SOURCE = path.join(APP_ROOT, 'src/pages/wevu/index.vue')
 const NATIVE_ROUTE = '/pages/native/index?source=e2e'
 const COMPONENT_ROUTE = '/pages/component/index?source=e2e'
@@ -41,6 +46,8 @@ interface RuntimeState {
 let miniProgram: any
 let devProcess: ReturnType<typeof startDevProcess> | undefined
 let originalComponentSource = ''
+let originalChildSource = ''
+let originalVueChildSource = ''
 let originalNativeSource = ''
 let originalWevuSource = ''
 let previousPostConnectRefresh: string | undefined
@@ -198,10 +205,14 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await cleanupResidualIdeProcesses()
     await cleanDevtoolsCache('all', { cwd: APP_ROOT })
     originalComponentSource = normalizeFixtureSource(await fs.readFile(COMPONENT_SOURCE, 'utf8'), 'component')
+    originalChildSource = (await fs.readFile(CHILD_SOURCE, 'utf8')).replace('this.data.count + 2', 'this.data.count + 1').replace('step:2', 'step:1')
+    originalVueChildSource = (await fs.readFile(VUE_CHILD_SOURCE, 'utf8')).replace('count.value += 2', 'count.value += 1').replace('step:2', 'step:1')
     originalNativeSource = normalizeFixtureSource(await fs.readFile(NATIVE_SOURCE, 'utf8'), 'native')
     originalWevuSource = normalizeFixtureSource(await fs.readFile(WEVU_SOURCE, 'utf8'), 'wevu')
     await Promise.all([
       fs.writeFile(COMPONENT_SOURCE, originalComponentSource, 'utf8'),
+      fs.writeFile(CHILD_SOURCE, originalChildSource, 'utf8'),
+      fs.writeFile(VUE_CHILD_SOURCE, originalVueChildSource, 'utf8'),
       fs.writeFile(NATIVE_SOURCE, originalNativeSource, 'utf8'),
       fs.writeFile(WEVU_SOURCE, originalWevuSource, 'utf8'),
     ])
@@ -267,6 +278,12 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     }
     if (originalComponentSource) {
       await fs.writeFile(COMPONENT_SOURCE, originalComponentSource, 'utf8')
+    }
+    if (originalChildSource) {
+      await fs.writeFile(CHILD_SOURCE, originalChildSource, 'utf8')
+    }
+    if (originalVueChildSource) {
+      await fs.writeFile(VUE_CHILD_SOURCE, originalVueChildSource, 'utf8')
     }
     if (originalWevuSource) {
       await fs.writeFile(WEVU_SOURCE, originalWevuSource, 'utf8')
@@ -435,6 +452,51 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       input: 'held-input',
       route: 'pages/component/index',
       source: 'e2e',
+    })
+  })
+
+  it('preserves parent and native child DOM state across a child script patch and restoration', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', nativeChildCheckpoints)
+    if (skipIfStatefulHmrTransportUnavailable(ctx)) {
+      return
+    }
+    const control = await fs.readFile(CONTROL_FILE, 'utf8')
+    await verifyNativeChildHmr({
+      dom,
+      miniProgram,
+      async patch(updated) {
+        const version = await readClientVersion()
+        const source = updated
+          ? originalChildSource.replace('this.data.count + 1', 'this.data.count + 2').replace('step:1', 'step:2')
+          : originalChildSource
+        await replaceFileByRename(CHILD_SOURCE, source)
+        await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, updated ? 'step:2' : 'step:1'), 'native child patch published')
+        await waitForClientVersion(version + 1)
+        expect(await fs.readFile(CONTROL_FILE, 'utf8')).toBe(control)
+      },
+    })
+  })
+
+  it('preserves parent and Vue child DOM state across a child script patch and restoration', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', vueChildCheckpoints)
+    if (skipIfStatefulHmrTransportUnavailable(ctx)) {
+      return
+    }
+    const control = await fs.readFile(CONTROL_FILE, 'utf8')
+    await verifyNativeChildHmr({
+      dom,
+      miniProgram,
+      childSelector: '#vue-counter',
+      async patch(updated) {
+        const version = await readClientVersion()
+        const source = updated
+          ? originalVueChildSource.replace('count.value += 1', 'count.value += 2').replace('step:1', 'step:2')
+          : originalVueChildSource
+        await replaceFileByRename(VUE_CHILD_SOURCE, source)
+        await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, updated ? 'step:2' : 'step:1'), 'Vue child patch published')
+        await waitForClientVersion(version + 1)
+        expect(await fs.readFile(CONTROL_FILE, 'utf8')).toBe(control)
+      },
     })
   })
 })

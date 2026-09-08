@@ -45,6 +45,7 @@ import { runStatefulHmrDev } from '../statefulHmr/session'
 import { createStatefulHmrSnapshotOptions } from '../statefulHmr/snapshotBuild'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { createSidecarWatchOptions } from '../watch/options'
+import { retainWatcherService } from '../watcherPlugin'
 import { createDevBuildWatcher } from './devBuildWatcher'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
@@ -1169,6 +1170,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     sidecarRoot: string
     waitForPendingSnapshotBuilds: () => Promise<unknown>
     markClosed: () => void
+    releaseResources?: () => Promise<void>
   }) {
     const { watcher, watcherRoot, sidecarRoot, waitForPendingSnapshotBuilds, markClosed } = options
     const originalClose = watcher.close.bind(watcher)
@@ -1185,7 +1187,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             await Promise.resolve(sidecarWatcher.close()).catch(() => {})
           }
           watcherService.rollupWatcherMap.delete(watcherRoot)
-          await originalClose()
+          try {
+            await originalClose()
+          }
+          finally {
+            await options.releaseResources?.()
+          }
         })()
       }
       return closePromise
@@ -1283,10 +1290,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (target === 'app' && hmrDecision.runtime === 'stateful-experimental') {
       try {
+        const snapshot = await createStatefulHmrSnapshotOptions(configService.loadOptions)
         const snapshotBuildOptions: InlineConfig = {
-          ...buildOptions,
+          ...appendHmrMetricsPlugin(snapshot.options),
           build: {
-            ...(buildOptions.build ?? {}),
+            ...(snapshot.options.build ?? {}),
             watch: undefined,
             write: false,
           },
@@ -1294,10 +1302,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
         const initialGlobalStyleRoutes = resolveComponentPageGlobalStyleRoutes(
           initialSnapshot,
-          ctx.runtimeState.build.hmr.componentPageStyleOptions ?? new Map(),
+          snapshot.getComponentPageStyleOptions(),
         )
         const initialEntryIds = collectStatefulHmrEntryIds(
-          ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
+          snapshot.getEntryIds(),
         )
         const skylineFiles = findSkylineRendererFiles(initialSnapshot)
         if (skylineFiles.length > 0) {
@@ -1340,6 +1348,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             logger.success('微信状态保持 HMR 构建已完成完整重载。')
           }, {
             entryIds: initialEntryIds,
+            delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
             initial: { output: initialSnapshot, componentPageGlobalStyleRoutes: initialGlobalStyleRoutes },
             rebuild: async (files) => {
               for (const file of files) {
@@ -1370,6 +1379,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               const output = toStatefulHmrOutput(await build(snapshotOptions))
               return {
                 output,
+                entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
+                delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
                 componentPageGlobalStyleRoutes: resolveComponentPageGlobalStyleRoutes(output, snapshot.getComponentPageStyleOptions()),
               }
             },
@@ -1658,6 +1669,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         })
       : undefined
 
+    // classic 的多轮一次性构建共用控制器资源，必须保留到正在执行的快照结束后再释放。
+    const releaseWatcherResources = devBuildWatcher ? retainWatcherService(watcherService) : undefined
     const watcherPromise = target === 'app'
       ? (async () => {
           devBuildWatcher!.emitEvent({ code: 'START' })
@@ -1672,7 +1685,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               error: error instanceof Error ? error : new Error(String(error)),
               result: undefined as never,
             })
-            await moduleGraphProvider?.close()
             throw error
           }
         })()
@@ -1680,7 +1692,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const workerPromise = target === 'app' && hasWorkersDir && workersDir
       ? devWorkers(configService, watcherService, workersDir)
       : Promise.resolve()
-    const [watcher] = await Promise.all([watcherPromise, workerPromise])
+    const startup = await Promise.allSettled([watcherPromise, workerPromise])
+    const startupErrors = startup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+    if (startupErrors.length > 0) {
+      // 等初次构建与 worker 启动都结束再回收；一个关闭失败不能遗留控制器租约。
+      const cleanup = await Promise.allSettled([
+        async () => await moduleGraphProvider?.close(),
+        async () => await devBuildWatcher?.watcher.close(),
+        async () => await releaseWatcherResources?.(),
+      ].map(async close => await close()))
+      const errors = [...startupErrors, ...cleanup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])]
+      throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development watcher startup failed')
+    }
+    const watcher = (startup[0] as PromiseFulfilledResult<RolldownWatcher>).value
     const isTestEnv = process.env.VITEST === 'true'
       || process.env.NODE_ENV === 'test'
 
@@ -1835,8 +1859,15 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         markClosed: () => {
           devWatcherClosed = true
         },
+        releaseResources: releaseWatcherResources,
       })
-      await waitForSidecarWatcherReady(snapshotWatcher)
+      try {
+        await waitForSidecarWatcherReady(snapshotWatcher)
+      }
+      catch (error) {
+        await watcher.close()
+        throw error
+      }
     }
     watcherService.setRollupWatcher(watcher, watcherRoot)
     return watcher
