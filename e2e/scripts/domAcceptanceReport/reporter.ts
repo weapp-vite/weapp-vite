@@ -17,6 +17,7 @@ import {
   summarizeAcceptanceCases,
 } from './helpers'
 import { RuntimeDiagnosticJournal } from './runtimeDiagnostics'
+import { evaluateRuntimeVersions } from './runtimeVersions'
 
 function formatStrictAcceptanceFailure(report: AcceptanceReport) {
   const summary = report.summary
@@ -116,6 +117,9 @@ export default class DomAcceptanceReporter implements Reporter {
     this.diagnostics.collect(this.activeCase, Boolean(finishedAt))
     errors = [...errors, ...this.diagnostics.errors, ...(finishedAt ? evaluateExpectedErrors([...this.cases.values()], this.diagnostics.entries) : [])]
     const cases = [...this.cases.values()].map(evaluateAcceptanceCase)
+    if (finishedAt && this.strict) {
+      errors.push(...evaluateRuntimeVersions(cases, process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless' ? 'headless' : 'devtools'))
+    }
     const summary = summarizeAcceptanceCases(cases)
     const report: AcceptanceReport = {
       schemaVersion: 1,

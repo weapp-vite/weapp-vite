@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import { z } from 'zod'
 
 const eventSchema = z.object({
+  recordedAt: z.iso.datetime().optional(),
   source: z.enum(['build', 'runtime']),
   kind: z.enum(['message', 'page-snapshot', 'stats']),
   project: z.string(),
@@ -13,6 +14,9 @@ const eventSchema = z.object({
 }).passthrough()
 
 export const runtimeDiagnosticSchema = z.object({
+  // 兼容读取旧报告；严格验收通过独立校验拒绝缺失的真实事件时间。
+  recordedAt: z.iso.datetime().nullable().optional(),
+  collectedAt: z.iso.datetime().optional(),
   observedAt: z.iso.datetime(),
   caseId: z.string().nullable(),
   phase: z.enum(['case', 'outside-case']),
@@ -22,6 +26,19 @@ export const runtimeDiagnosticSchema = z.object({
 })
 
 export type RuntimeDiagnostic = z.infer<typeof runtimeDiagnosticSchema>
+
+/** 旧事件不能以批量读取时间冒充实际发生时间。 */
+export function evaluateDiagnosticTimestamps(entries: RuntimeDiagnostic[]): string[] {
+  return entries.flatMap((entry) => {
+    if (!entry.recordedAt || !entry.collectedAt || entry.event.recordedAt !== entry.recordedAt
+      || entry.observedAt !== entry.recordedAt
+      || !Number.isFinite(Date.parse(entry.recordedAt)) || !Number.isFinite(Date.parse(entry.collectedAt))
+      || Date.parse(entry.recordedAt) > Date.parse(entry.collectedAt)) {
+      return ['IDE diagnostic event is missing a valid recordedAt/collectedAt boundary']
+    }
+    return []
+  })
+}
 
 export class RuntimeDiagnosticJournal {
   readonly entries: RuntimeDiagnostic[] = []
@@ -78,7 +95,12 @@ export class RuntimeDiagnosticJournal {
           }
         }
         const owner = this.scope?.caseId ?? caseId
-        this.entries.push({ observedAt: new Date().toISOString(), caseId: owner, phase: owner ? 'case' : 'outside-case', scopeId: this.scope?.id, checkpointId: this.scope?.checkpointId, event })
+        const collectedAt = new Date().toISOString()
+        const entry: RuntimeDiagnostic = { recordedAt: event.recordedAt ?? null, collectedAt, observedAt: event.recordedAt ?? collectedAt, caseId: owner, phase: owner ? 'case' : 'outside-case', scopeId: this.scope?.id, checkpointId: this.scope?.checkpointId, event }
+        this.entries.push(entry)
+        if (this.requireJournal) {
+          this.errors.push(...evaluateDiagnosticTimestamps([entry]))
+        }
       }
       catch {
         this.errors.push('IDE diagnostic event journal contains an invalid record')

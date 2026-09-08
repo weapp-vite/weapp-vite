@@ -71,7 +71,9 @@ describe('ideWarningReport', () => {
     try {
       expect(ensureIdeWarningReportEnv()).toEqual(paths)
       appendIdeReportEvent(event)
-      expect(JSON.parse(fs.readFileSync(paths.eventLogPath, 'utf8'))).toEqual(event)
+      const stored = JSON.parse(fs.readFileSync(paths.eventLogPath, 'utf8')) as IdeReportEvent
+      expect(stored).toEqual({ ...event, recordedAt: expect.any(String) })
+      expect(Number.isFinite(Date.parse(stored.recordedAt!))).toBe(true)
       expect(fs.readdirSync(tempRoot)).toEqual(['events.jsonl'])
     }
     finally {

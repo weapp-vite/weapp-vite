@@ -32,6 +32,7 @@ const node = z.object({
 export const serializedPlan = z.object({
   fixture: z.string().min(1),
   provider: z.enum(['devtools', 'headless']),
+  runtime: z.object({ ideVersion: z.string().nullable(), baseLibraryVersion: z.string().nullable() }).optional(),
   errorScopes: z.array(z.object({ checkpoint: z.string().min(1), id: z.string().min(1) })).optional(),
   checkpoints: z.array(z.object({
     id: z.string().min(1),

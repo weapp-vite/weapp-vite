@@ -67,3 +67,9 @@ IDE wrapper 仅从完整构建产物创建隔离快照，连接前完成复制�
 禁止 `reLaunch` 的冷启动验收使用完整就绪预算；300ms 快速探测只用于允许随后切页的场景。每次读取当前页面使用 `currentPage({ retries: 1, timeout, pageStackFallback: false, appFunctionFallback: false })`，由外层就绪循环统一重试，避免 SDK 内部延迟与回退请求超出单次探针期限。元数据短暂缺失可以继续探测，协议无响应和最终就绪超时仍然失败。
 
 真实 IDE 在 automator 连接前仍有协议订阅边界。开发进程转发只能补充 CLI 已收到的日志；宿主日志扫描只覆盖其明确识别的启动异常，不能替代 Console 的完整历史。不能以连接后的空日志证明启动期间无错误，IDE 中尚未诊断的错误仍须通过 Computer Use 读取并记录。来自开发进程和协议事件的证据使用不同通道，不能静默删除或合并以满足预期错误次数。
+
+严格 DevTools 报告要求每个已执行 case 都保留 `Tool.getInfo` 的实际 IDE 与基础库版本，各 case、检查点及报告环境摘要必须一致。配置文件中的 `libVersion` 不作为实际版本的后备值，headless 不伪造宿主版本。
+
+诊断事件由生产者写入 `recordedAt`，journal 另记 `collectedAt`；`observedAt` 保留为生产者时间的兼容别名。旧事件可以读取和展示，但缺少真实发生时间时不能通过严格验收。
+
+`startup-protocol` 仅记录 warmup 中已识别的 `App.getCurrentPage` 元数据暂态和协议超时：每次失败保留原始消息与尝试序号，实际页面节点就绪后记录 `recovered`；退出时未就绪则记录 `unresolved` error。它不等同于业务 AppService console/exception，恢复事件不删除、重置或消费任何业务异常。该诊断数量是启动轮询观察到的请求失败数，不宣称等于 IDE Console 的聚合错误数。

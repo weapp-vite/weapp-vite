@@ -39,6 +39,7 @@ function createTest(state: 'passed' | 'skipped' | 'pending', name = 'renders tit
   const acceptance: DomAcceptance = {
     fixture: 'e2e-apps/base',
     provider: 'devtools',
+    runtime: { ideVersion: '2.02.2608060', baseLibraryVersion: '3.17.2' },
     checkpoints: [{ id: 'mount', action: 'launch', route: 'pages/index/index', nodes: [{ selector: '.title', text: 'Ready' }] }],
     evidence: [{ id: 'mount', route: 'pages/index/index', source: 'devtools-page-frame', capturedAt: new Date().toISOString(), nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
   }
@@ -72,7 +73,7 @@ describe('Vitest DOM reporter lifecycle', () => {
     const reporter = new DomAcceptanceReporter()
     const test = createTest('passed')
     reporter.onTestCaseReady(test)
-    const event = { source: 'runtime', kind: 'message', project: 'base', level: 'error', channel: 'runtime', text: 'navigateTo:fail timeout' }
+    const event = { recordedAt: new Date().toISOString(), source: 'runtime', kind: 'message', project: 'base', level: 'error', channel: 'runtime', text: 'navigateTo:fail timeout' }
     fs.appendFileSync(path.join(reportDir, 'runtime.jsonl'), `${[event, event, event].map(item => JSON.stringify(item)).join('\n')}\n`)
     let message = ''
     try {
@@ -111,6 +112,17 @@ describe('Vitest DOM reporter lifecycle', () => {
     expect(readReports()[0]?.errors).toContain(state === 'unconfigured'
       ? 'Strict DOM acceptance requires a configured IDE diagnostic event journal'
       : 'Strict DOM acceptance requires an existing IDE diagnostic event journal')
+  })
+
+  it('rejects missing observed versions and mixed runtime versions at strict completion', () => {
+    const reporter = new DomAcceptanceReporter()
+    const first = createTest('passed', 'first')
+    const second = createTest('passed', 'second')
+    const secondPlan = (second.meta() as { domAcceptance: DomAcceptance }).domAcceptance
+    secondPlan.runtime = { ideVersion: '2.02.2608060', baseLibraryVersion: '3.15.0' }
+    expect(() => reporter.onTestRunEnd([createModule([first, second])], [], 'passed')).toThrow('Observed runtime versions differ')
+    delete secondPlan.runtime
+    expect(() => new DomAcceptanceReporter().onTestRunEnd([createModule([second])], [], 'passed')).toThrow('Missing observed')
   })
 
   it('accepts an existing empty journal when no runtime errors occurred', () => {
@@ -166,7 +178,7 @@ describe('Vitest DOM reporter lifecycle', () => {
     vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', journalPath)
     const reporter = new DomAcceptanceReporter()
     reporter.onTestRunStart()
-    fs.appendFileSync(journalPath, `${JSON.stringify({ source: 'runtime', kind: 'message', project: 'base', level: 'exception', text: 'Startup exception' })}\n`)
+    fs.appendFileSync(journalPath, `${JSON.stringify({ recordedAt: new Date().toISOString(), source: 'runtime', kind: 'message', project: 'base', level: 'exception', text: 'Startup exception' })}\n`)
     reporter.onTestCaseReady(createTest('passed'))
     expect(() => reporter.onTestRunEnd([createModule([createTest('passed')])], [], 'passed')).toThrow('Strict DOM acceptance failed')
     expect(readReports()[0]?.errors).toContain('Unclassified IDE runtime exception outside a case: Startup exception')
@@ -185,7 +197,7 @@ describe('Vitest DOM reporter lifecycle', () => {
     reporter.onTestCaseReady(test)
     const boundary = (phase: 'start' | 'end') => ({ source: 'runtime', kind: 'message', project: 'base', level: 'debug', acceptanceScope: { id: 'scope-a', caseId: test.id, checkpointId: 'mount', boundary: phase } })
     const events = [boundary('start'), { source: 'runtime', kind: 'message', project: 'base', level: 'error', channel: 'runtime', text: 'Expected rejection' }, boundary('end')]
-    fs.writeFileSync(journalPath, `${events.map(event => JSON.stringify(event)).join('\n')}\n`)
+    fs.writeFileSync(journalPath, `${events.map(event => JSON.stringify({ ...event, recordedAt: new Date().toISOString() })).join('\n')}\n`)
     reporter.onTestRunEnd([createModule([test])], [], 'passed')
     const report = readReports()[0]!
     const identity = { runId: 'test-run', commitSha }

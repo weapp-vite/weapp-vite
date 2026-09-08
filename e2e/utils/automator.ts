@@ -26,6 +26,7 @@ import {
   assertRuntimeProviderImplemented,
   resolveRuntimeProviderName,
 } from './runtimeProvider'
+import { createStartupProtocolDiagnostics } from './startupProtocolDiagnostics'
 
 const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
@@ -1867,7 +1868,7 @@ async function waitForCurrentRouteReady(
   miniProgram: any,
   route: string,
   timeoutMs = RELAUNCH_READY_TIMEOUT,
-  options: { signal?: AbortSignal, checkDevtoolsLog?: (label: string) => void, closeOnQueryTimeout?: boolean, queryTimeoutMs?: number, rootSelectors?: string[] } = {},
+  options: { onStartupProtocolError?: (error: unknown) => void, signal?: AbortSignal, checkDevtoolsLog?: (label: string) => void, closeOnQueryTimeout?: boolean, queryTimeoutMs?: number, rootSelectors?: string[] } = {},
 ) {
   if (typeof miniProgram?.currentPage !== 'function') {
     return null
@@ -1900,6 +1901,7 @@ async function waitForCurrentRouteReady(
       }
     }
     catch (error) {
+      options.onStartupProtocolError?.(error)
       options.signal?.throwIfAborted()
       if (shouldCloseCurrentPageQueryTimeout(options.closeOnQueryTimeout, queryTimeout) && isRunWithTimeoutError(error, label)) {
         await miniProgram.close?.().catch(() => {})
@@ -1916,7 +1918,7 @@ async function waitForCurrentRouteReady(
 async function waitForAnyCurrentPageReady(
   miniProgram: any,
   timeoutMs = RELAUNCH_READY_TIMEOUT,
-  options: { signal?: AbortSignal, checkDevtoolsLog?: (label: string) => void, closeOnQueryTimeout?: boolean, queryTimeoutMs?: number } = {},
+  options: { onStartupProtocolError?: (error: unknown) => void, signal?: AbortSignal, checkDevtoolsLog?: (label: string) => void, closeOnQueryTimeout?: boolean, queryTimeoutMs?: number } = {},
 ) {
   if (typeof miniProgram?.currentPage !== 'function') {
     return null
@@ -1946,6 +1948,7 @@ async function waitForAnyCurrentPageReady(
       }
     }
     catch (error) {
+      options.onStartupProtocolError?.(error)
       options.signal?.throwIfAborted()
       if (shouldCloseCurrentPageQueryTimeout(options.closeOnQueryTimeout, queryTimeout) && isRunWithTimeoutError(error, label)) {
         await miniProgram.close?.().catch(() => {})
@@ -2119,11 +2122,11 @@ async function resolveCurrentPageAfterWarmupFailure(
   }
 }
 
-export async function warmupMiniProgramRoute(
+async function warmupMiniProgramRouteImpl(
   miniProgram: any,
   route: string,
   project: string,
-  options: { signal?: AbortSignal, allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[] } = {},
+  options: { onStartupProtocolError?: (error: unknown) => void, signal?: AbortSignal, allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[] } = {},
 ) {
   options.signal?.throwIfAborted()
   const currentPageReadyTimeout = resolveWarmupCurrentPageReadyTimeout(
@@ -2132,6 +2135,7 @@ export async function warmupMiniProgramRoute(
   )
   if (options.allowRelaunch === false && options.allowAnyPage) {
     const bootedPage = await waitForAnyCurrentPageReady(miniProgram, currentPageReadyTimeout, {
+      onStartupProtocolError: options.onStartupProtocolError,
       checkDevtoolsLog: options.checkDevtoolsLog,
       signal: options.signal,
       closeOnQueryTimeout: false,
@@ -2140,12 +2144,13 @@ export async function warmupMiniProgramRoute(
     options.signal?.throwIfAborted()
     if (bootedPage) {
       process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page-any current=${bootedPage?.path ?? '<unknown>'} project=${project}\n`)
-      return
+      return true
     }
     process.stdout.write(`[warn] [runtime:launch-step] warmup-any-page-timeout route=${route} project=${project}\n`)
-    return
+    return false
   }
   const currentPage = await waitForCurrentRouteReady(miniProgram, route, currentPageReadyTimeout, {
+    onStartupProtocolError: options.onStartupProtocolError,
     checkDevtoolsLog: options.checkDevtoolsLog,
     signal: options.signal,
     closeOnQueryTimeout: options.allowRelaunch === false,
@@ -2155,10 +2160,11 @@ export async function warmupMiniProgramRoute(
   options.signal?.throwIfAborted()
   if (currentPage) {
     process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page project=${project}\n`)
-    return
+    return true
   }
   if (options.allowRelaunch === false) {
     const bootedPage = await waitForAnyCurrentPageReady(miniProgram, currentPageReadyTimeout, {
+      onStartupProtocolError: options.onStartupProtocolError,
       checkDevtoolsLog: options.checkDevtoolsLog,
       signal: options.signal,
       closeOnQueryTimeout: !options.allowAnyPage,
@@ -2167,11 +2173,11 @@ export async function warmupMiniProgramRoute(
     options.signal?.throwIfAborted()
     if (bootedPage) {
       process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page-any current=${bootedPage?.path ?? '<unknown>'} project=${project}\n`)
-      return
+      return true
     }
     if (options.allowAnyPage) {
       process.stdout.write(`[warn] [runtime:launch-step] warmup-any-page-timeout route=${route} project=${project}\n`)
-      return
+      return false
     }
     try {
       await miniProgram.close?.()
@@ -2257,6 +2263,7 @@ export async function warmupMiniProgramRoute(
   if (!pageRoot) {
     // reLaunch 可能返回已失效的同路由句柄；只接受重新查询后真实呈现目标节点的当前页。
     const currentPage = await waitForCurrentRouteReady(miniProgram, route, Math.min(RELAUNCH_READY_TIMEOUT, 8_000), {
+      onStartupProtocolError: options.onStartupProtocolError,
       checkDevtoolsLog: options.checkDevtoolsLog,
       signal: options.signal,
       queryTimeoutMs: 1_500,
@@ -2265,12 +2272,29 @@ export async function warmupMiniProgramRoute(
     options.signal?.throwIfAborted()
     if (currentPage) {
       process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page-after-root-timeout project=${project}\n`)
-      return
+      return true
     }
     throw new Error(`Timed out waiting page root after warmup reLaunch: ${route}`)
   }
 
   process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} project=${project}\n`)
+  return true
+}
+
+export async function warmupMiniProgramRoute(
+  miniProgram: any,
+  route: string,
+  project: string,
+  options: { signal?: AbortSignal, allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[] } = {},
+) {
+  const diagnostics = createStartupProtocolDiagnostics(project, route)
+  let ready = false
+  try {
+    ready = await warmupMiniProgramRouteImpl(miniProgram, route, project, { ...options, onStartupProtocolError: diagnostics.record })
+  }
+  finally {
+    diagnostics.finish(ready)
+  }
 }
 
 function isUnsupportedToolCompileError(error: unknown) {

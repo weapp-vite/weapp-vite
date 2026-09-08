@@ -46,9 +46,13 @@ export function createDomAcceptance(context: TestContext, fixture: string, check
       if (checkpoint?.id !== id) {
         throw new Error(`Expected DOM checkpoint ${checkpoint?.id ?? '<complete>'}, received ${id}`)
       }
-      if (plan.provider === 'devtools' && !plan.runtime && session.toolInfo) {
+      if (plan.provider === 'devtools' && session.toolInfo) {
         const info = await session.toolInfo()
-        plan.runtime = { ideVersion: info.version ?? null, baseLibraryVersion: info.SDKVersion ?? null }
+        const runtime = { ideVersion: info.version ?? null, baseLibraryVersion: info.SDKVersion ?? null }
+        if (plan.runtime && (plan.runtime.ideVersion !== runtime.ideVersion || plan.runtime.baseLibraryVersion !== runtime.baseLibraryVersion)) {
+          throw new Error('Observed runtime versions changed during a DOM acceptance case')
+        }
+        plan.runtime = runtime
       }
       await flushRuntimeConsoleSessions()
       let evidence

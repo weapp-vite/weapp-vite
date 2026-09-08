@@ -7,6 +7,8 @@ import process from 'node:process'
 import { isDeepStrictEqual } from 'node:util'
 import { assertDomAcceptanceComplete } from '../../utils/domAcceptance/checkpoint'
 import { evaluateExpectedErrors } from './expectedErrors'
+import { evaluateDiagnosticTimestamps } from './runtimeDiagnostics'
+import { evaluateRuntimeVersions } from './runtimeVersions'
 import { assertSerializedDomEvidence, serializedReport } from './validation'
 
 export const DOM_ACCEPTANCE_ENV = 'WEAPP_VITE_E2E_DOM_ACCEPTANCE'
@@ -153,6 +155,13 @@ export function assertAcceptanceReportPassed(value: unknown, identity: Acceptanc
   if (report.status !== 'passed' || !report.strict || !report.finishedAt || !report.cases.length || report.errors.length
     || evaluateExpectedErrors(report.cases, report.runtimeDiagnostics ?? []).length) {
     throw new Error('DOM acceptance did not finish all collected cases successfully')
+  }
+  const metadataErrors = [
+    ...evaluateRuntimeVersions(report.cases, report.provider, report.environment),
+    ...evaluateDiagnosticTimestamps(report.runtimeDiagnostics ?? []),
+  ]
+  if (metadataErrors.length) {
+    throw new Error(`DOM acceptance metadata incomplete: ${metadataErrors.join('; ')}`)
   }
   const start = Date.parse(report.startedAt)
   const end = Date.parse(report.finishedAt)

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { warmupMiniProgramRoute } from './automator'
+import { appendIdeReportEvent } from './ideWarningReport'
 
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'fixture' }))
 
@@ -7,6 +8,7 @@ describe('automator warmup readiness', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   it.each([{ rootSelectors: [] }, { rootSelectors: ['.title'] }])('rejects a matching route without a rendered root (selectors=$rootSelectors)', async ({ rootSelectors }) => {
@@ -53,6 +55,7 @@ describe('automator warmup readiness', () => {
     })
     await vi.advanceTimersByTimeAsync(1_000)
     await expect(warmup).resolves.toBeUndefined()
+    expect(vi.mocked(appendIdeReportEvent).mock.calls.map(([event]) => event.startupProtocol?.state)).toEqual(['retrying', 'retrying', 'recovered'])
     expect(miniProgram.currentPage).toHaveBeenCalledTimes(3)
     expect(miniProgram.currentPage).toHaveBeenCalledWith({
       appFunctionFallback: false,
@@ -76,6 +79,7 @@ describe('automator warmup readiness', () => {
     await vi.advanceTimersByTimeAsync(2_000)
     await assertion
     expect(miniProgram.close).toHaveBeenCalledOnce()
+    expect(appendIdeReportEvent).toHaveBeenLastCalledWith(expect.objectContaining({ level: 'error', startupProtocol: expect.objectContaining({ state: 'unresolved' }) }))
   })
 
   it('completes after the relaunched page exposes its rendered root', async () => {

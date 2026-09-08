@@ -7,6 +7,7 @@ function createPlan(): DomAcceptance {
   return {
     fixture: 'e2e-apps/base',
     provider: 'devtools',
+    runtime: { ideVersion: '2.02.2608060', baseLibraryVersion: '3.17.2' },
     checkpoints: [{ id: 'mounted', route: '/pages/index/index', action: 'launch', nodes: [{ selector: '.title', text: 'Ready' }] }],
     evidence: [{ id: 'mounted', route: 'pages/index/index', source: 'devtools-page-frame', capturedAt: '2026-09-01T00:00:01.000Z', nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
   }
@@ -31,7 +32,7 @@ function createReport(): AcceptanceReport {
     template: null,
     provider: 'devtools',
     strict: true,
-    environment: { nodeVersion: 'test', ideVersion: null, baseLibraryVersion: null },
+    environment: { nodeVersion: 'test', ideVersion: '2.02.2608060', baseLibraryVersion: '3.17.2' },
     startedAt: '2026-09-01T00:00:00.000Z',
     finishedAt: '2026-09-01T00:00:02.000Z',
     status: 'passed',
@@ -99,6 +100,16 @@ describe('DOM acceptance report validation', () => {
     expect(() => assertAcceptanceReportPassed({ ...report, commitSha: 'old-commit' }, identity)).toThrow('identity')
     expect(() => assertAcceptanceReportPassed({ ...report, runId: 'old-run' }, identity)).toThrow('identity')
     expect(() => assertAcceptanceReportPassed({ ...report, errors: ['runtime exception'] }, identity)).toThrow('did not finish')
+  })
+
+  it('rechecks observed version completeness and consistency independently of the report status', () => {
+    const report = createReport()
+    const identity = { runId: report.runId, commitSha: report.commitSha }
+    report.environment.baseLibraryVersion = '3.15.0'
+    expect(() => assertAcceptanceReportPassed(report, identity)).toThrow('do not match report environment')
+    report.environment.baseLibraryVersion = '3.17.2'
+    delete report.cases[0]!.acceptance!.runtime
+    expect(() => assertAcceptanceReportPassed(report, identity)).toThrow('Missing observed')
   })
 
   it('redacts Windows and Unix home paths, credentials and emails', () => {

@@ -38,6 +38,8 @@ export interface IdeWarningReportPaths {
 }
 
 export interface IdeReportEvent {
+  recordedAt?: string
+  startupProtocol?: { id: string, method: 'App.getCurrentPage', state: 'retrying' | 'recovered' | 'unresolved', attempts: number, firstFailureAt: string, lastFailureAt: string }
   acceptanceScope?: { id: string, caseId: string, checkpointId: string, boundary: 'start' | 'end' }
   source: IdeReportSource
   kind: IdeReportKind
@@ -534,6 +536,7 @@ export function appendIdeReportEvent(event: IdeReportEvent) {
 
   const sanitizedEvent: IdeReportEvent = {
     ...event,
+    recordedAt: new Date().toISOString(),
     project: sanitizeReportText(event.project) || '<unknown-project>',
     channel: typeof event.channel === 'string' ? sanitizeReportText(event.channel) : event.channel,
     label: typeof event.label === 'string' ? sanitizeReportText(event.label) : event.label,
