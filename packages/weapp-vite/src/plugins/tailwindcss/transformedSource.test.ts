@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { compileVueStyleToWxss, readAndParseSfc } from 'wevu/compiler'
 import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
 import { createRuntimeState } from '../../runtime/runtimeState'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { createTailwindcssPlugin } from '../tailwindcss'
 import { buildWeappVueStyleRequest } from '../vue/transform/styleRequest'
 
@@ -121,7 +122,7 @@ describe('Tailwind transformed source ownership', () => {
       await handler(manager.buildStart)?.call(pluginContext as any, {} as any)
       const resolved = await handler(manager.resolveId)?.call(pluginContext as any, request, undefined, {} as any)
       const requestId = kind === 'resolved-sfc'
-        ? `${owner}${request.slice(request.indexOf('?'))}`
+        ? `${normalizeFsResolvedId(owner)}${request.slice(request.indexOf('?'))}`
         : typeof resolved === 'string' ? resolved : resolved?.id ?? request
       if (kind === 'physical') {
         expect(await handler(manager.load)?.call(pluginContext as any, requestId)).toBe(diskSource)

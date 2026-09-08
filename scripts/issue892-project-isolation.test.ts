@@ -19,8 +19,8 @@ describe('issue #892 project output isolation', () => {
       for (const project of [build, dev]) {
         const isolatedConfig = await fs.readJSON(project.projectConfigFile) as Record<string, unknown>
         expect(isolatedConfig).toEqual({ ...config, miniprogramRoot: project.outDir })
-        expect(path.resolve(appRoot, String(isolatedConfig.miniprogramRoot))).toBe(project.distRoot)
-        expect(project.distRoot).not.toBe(path.join(appRoot, 'dist'))
+        expect(path.resolve(appRoot, String(isolatedConfig.miniprogramRoot))).toBe(path.resolve(project.distRoot))
+        expect(path.resolve(project.distRoot)).not.toBe(path.resolve(appRoot, 'dist'))
         await project.cleanup()
         await expect(fs.pathExists(project.projectConfigFile)).resolves.toBe(false)
       }
