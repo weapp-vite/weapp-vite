@@ -111,7 +111,7 @@ async function launchReactRuntimeSpikeAutomator() {
       const message = error instanceof Error ? error.message : String(error)
       process.stdout.write(`[react-runtime-spike:start-retry] attempt=${attempt}/${STARTUP_ATTEMPTS} reason=${message.replace(/\s+/g, ' ').slice(0, 240)}\n`)
       await closeReactRuntimeSpikeAutomator(app)
-      if (attempt < STARTUP_ATTEMPTS) {
+      if (attempt < STARTUP_ATTEMPTS && runtimeProvider === 'devtools') {
         await cleanDevtoolsCache('compile', { cwd: APP_ROOT }).catch(() => {})
         await cleanupResidualIdeProcesses().catch(() => {})
       }
@@ -123,8 +123,10 @@ async function launchReactRuntimeSpikeAutomator() {
 
 describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
   beforeAll(async () => {
-    await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+    if (runtimeProvider === 'devtools') {
+      await cleanupResidualIdeProcesses()
+      await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+    }
     await fs.rm(DIST_ROOT, { force: true, recursive: true })
     await runWeappViteBuildWithLogCapture({
       cliPath: CLI_PATH,

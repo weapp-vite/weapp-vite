@@ -8,7 +8,7 @@
 
 - `weapp-tailwindcss/core` 的编译器公开签名未变，现有 `createCompiler`、`generate`、snapshot 与失效生命周期继续适用。
 - 底层生成器使用 CSS tokenizer 解析导入和 `source()`，修复转义路径、Windows 路径序列化、删除文件时的符号链接身份处理，并补充 qxml 扫描。
-- PostCSS 依赖升级到 3.3.3，样式注入器升级到 1.0.5。
+- `@weapp-tailwindcss/postcss` 升级到 3.3.3，`weapp-style-injector` 升级到 1.0.5。
 - Node 要求保持 `^22.18.0 || >=24.11.0`，Tailwind CSS 继续使用 4.x。
 
 weapp-vite 使用自己的 Core adapter，继续由单个编译器拥有 Tailwind 生成，CSS 入口使用被项目实际导入的纯 CSS 文件，并从项目根目录解析为绝对路径。此次补丁升级不需要替换 API 或重复注册上游 Vite 插件。
