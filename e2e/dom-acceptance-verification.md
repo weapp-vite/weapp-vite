@@ -2,7 +2,7 @@
 
 ## 当前结论与范围
 
-**最终验收尚未完成。** 下表和历史索引保留局部通过与失败证据，不能据此宣称最终提交上的全量 IDE 或 PR CI 已通过。除明确标记的已提交运行外，本轮诊断报告来自未提交工作区；`workingTreeDirty: true` 时，报告中的 SHA 不代表这些修改已经进入该提交。
+本文件保留验收规范和提交前的诊断记录；**交付状态以 PR 中绑定最终 SHA 的验收摘要和云端 checks 为准**。下表和历史索引保留局部通过与失败证据，不能据此宣称最终提交上的全量 IDE 或 PR CI 已通过。除明确标记的已提交运行外，本轮诊断报告来自未提交工作区；`workingTreeDirty: true` 时，报告中的 SHA 不代表这些修改已经进入该提交。
 
 最新静态清单为 **91 个任务、88 个微信任务、3 个范围外百度任务、226 个展开 case**。226 个 case 均注册计划，缺计划、未解析参数化和没有 case 的微信任务均为零。数量变化来自新增结算和组件实例 API 正式场景；临时组件 API probe 已移除。组件库和人工 IDE 示例仍按原 manifest 排除。
 
@@ -27,9 +27,19 @@
 
 产品 HMR 场景调用 `launchAutomator` 时必须在参数对象中显式指定 `bridgeProjectMode: 'direct'`，让 IDE 直接观察 Vite 写出的原项目。仅 `automator-bridge-wrapper-hmr.runtime.test.ts` 使用 `'snapshot'`，专门验证桥接快照。`layout-power-demo.runtime-vendor-hmr.test.ts` 经 CLI `dev -o` 和 `waitForOpenedAutomator` 连接原项目，是已审查的独立入口。内部 AST 守卫 `e2e/scripts/hmr-launch-mode.test.ts` 检查所有 `e2e/ide/**/*hmr*.test.ts` 及另列的 `forward-console-demo.runtime.test.ts` 调用，拒绝缺失、动态值和被后置展开覆盖的模式；新间接入口须单独审查，不从任意 dev 进程推断模式。
 
+本仓库 fixture 已获授权运行时，在启动测试进程前将 `WEAPP_VITE_E2E_TRUST_PROJECTS` 设为当前仓库路径，或仅列出已授权的 fixture 根目录。该选项匹配原始 fixture 路径，再把明确的 `trustProject=true` 传给 IDE `/auto`；不修改全局安全设置。snapshot 每次生成新项目目录，旧目录的信任状态不会继承；未准备信任时，自动化端口可已连接而模拟器仍停在信任提示，不能将首屏超时记为业务通过。
+
 同一正式 HMR 场景的七个检查点在桥接快照模式失败、原项目模式连续两次通过，说明启动观察面会影响验收。快照还会合并 private config，因此不能把差异仅归因于 `fs.watch`。最终仍须在正常运行的 HMR 客户端下检查首屏、每阶段 DOM/计算样式及应保留的交互状态；停止客户端后的隔离 probe 只能辅助诊断。
 
 ## 已提交版本复验与当前阻塞
+
+后续提交 `672b1b31ce5d801896e131ddd13a306b534ba907` 的干净工作树完成 `pnpm test`（1293 files / 12275 tests，原有 12 files / 19 tests 跳过）、`pnpm e2e:ci`（75/75 tasks）和严格 headless（20 tasks / 40 cases / 153 checkpoints），均退出 0。索引分别为 `.tmp/final-672b1b31c-test.log`、`docs/reports/2026-09-08-114846-e2e-ci-f6d71d01-suite-report/index.json`、`docs/reports/2026-09-08-115127-e2e-ide-dom-headless-2c45e292-suite-report/index.json`。独立 headless 审计通过 947 个 selector、229 份源码摘要。
+
+该提交首轮 full 在 Wevu TS 首屏超时，报告 `2026-09-08-115320-e2e-ide-full-ce47a0ae-suite-report`；Computer Use 确认新的 snapshot 目录停在信任提示，确认运行后首屏立即呈现、Console Errors 为 0，截图保存在 `.tmp/lifecycle-trust-prompt/`。使用上述限定目录选项后，原生命周期场景的 1 case / 6 checkpoints 正式复验通过；该环境问题与此前取消工具缺口分别记录，不能混为同一根因。
+
+同一干净提交的下一轮 full 完成 11 个任务，在 stateful HMR 的 Component case 等待客户端版本 3 时观测到版本 4，DOM 只完成该 case 前 2/4 检查点；另 6 个任务未执行。报告 `2026-09-08-121820-e2e-ide-full-6c0f3c8a-suite-report` 保留失败。该场景随后一次无改动、五次带临时 DevEngine 记录的定向复验均通过；五轮各产生 3 个有序 Patch，未证明重复投递，临时源码已恢复并重建。
+
+独立检查发现测试保存工具先移走旧文件再原位写新文件，暴露缺失、空文件及部分写入窗口，不符合原子保存语义。保存工具改为同目录完整预写后 `rename` 替换；故障回归验证发布前旧内容完整、失败保留旧文件、最终新内容完整及临时文件清理。保留原版本、DOM、身份和交互状态断言，后续新提交仍须完整验证；不能将上述局部通过拼接成 full 或 exhaustive 通过。
 
 提交 `5d7216a0d71226cbf9214156f967ff3719d2a72f` 的干净工作树已完成以下无筛选验证；这些结果只证明该提交，不代替后续工具修复提交的重新验收。
 

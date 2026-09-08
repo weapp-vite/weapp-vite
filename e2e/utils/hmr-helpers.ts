@@ -1,4 +1,6 @@
 import type { RuntimePlatform } from '../wevu-runtime.utils'
+import { randomUUID } from 'node:crypto'
+import nodeFs from 'node:fs/promises'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '../../@weapp-core/constants/src'
@@ -250,7 +252,8 @@ export function replaceSharedStoreInitialName(source: string, marker: string) {
 }
 
 /**
- * 通过“先重命名旧文件，再写回同名新文件”的方式模拟 Windows 常见的原子保存流程。
+ * 在同目录完整写入临时文件，再通过原生 rename 发布，模拟编辑器原子保存。
+ * 不模拟先删除目标再原位分段写入；写入或发布失败时保留旧目标并清理临时文件。
  *
  * @param filePath - 目标文件路径
  * @param content - 写入的新内容
@@ -258,16 +261,13 @@ export function replaceSharedStoreInitialName(source: string, marker: string) {
 export async function replaceFileByRename(filePath: string, content: string) {
   const dir = path.dirname(filePath)
   const base = path.basename(filePath)
-  const backupPath = path.join(dir, `.${base}.hmr-backup-${Date.now()}-${Math.random().toString(36).slice(2)}`)
-
-  if (await fs.pathExists(filePath)) {
-    await fs.move(filePath, backupPath, { overwrite: true })
-  }
+  const temporaryPath = path.join(dir, `.${base}.hmr-save-${randomUUID()}`)
 
   try {
-    await fs.writeFile(filePath, content, 'utf8')
+    await fs.writeFile(temporaryPath, content, 'utf8')
+    await nodeFs.rename(temporaryPath, filePath)
   }
   finally {
-    await fs.remove(backupPath)
+    await fs.remove(temporaryPath)
   }
 }

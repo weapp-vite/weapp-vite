@@ -6530,7 +6530,7 @@
     },
     {
       "file": "e2e/utils/hmr-helpers.ts",
-      "sha256": "e516f75d96d3e69e34c8e387e1f07074ea017d4d6222ea69fb45c37a72505072"
+      "sha256": "4b7f5a4af693263162fe584533634851a5e37adc94c133755ab45e658381ac8c"
     },
     {
       "file": "e2e/utils/hmrProbeFailureDiagnostics.ts",
