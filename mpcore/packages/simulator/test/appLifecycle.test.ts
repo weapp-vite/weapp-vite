@@ -10,7 +10,7 @@ describe('app lifecycle alignment', () => {
     cleanupTempDirs(tempDirs)
   })
 
-  it('passes launch/show options into App hooks on bootstrap', () => {
+  it('passes launch/show options into App hooks and wx listeners on bootstrap', () => {
     const projectPath = createAppLifecycleFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
@@ -24,10 +24,10 @@ describe('app lifecycle alignment', () => {
     ])
     expect(session.getWx().canIUse('onAppShow')).toBe(true)
     expect(session.getWx().canIUse('onAppHide')).toBe(true)
-    expect(app.globalData.lifecycle.showFirst).toHaveLength(1)
-    expect(app.globalData.lifecycle.showRemoved).toHaveLength(1)
+    const launchOptions = session.getLaunchOptions()
+    expect(app.globalData.lifecycle.showFirst).toEqual([launchOptions, launchOptions])
     expect(app.globalData.lifecycle.showLate).toEqual([])
-    expect(app.globalData.lifecycle.launchShows).toHaveLength(1)
+    expect(app.globalData.lifecycle.launchShows).toEqual([launchOptions])
   })
 
   it('uses the first entered page as launch/show path when bootstrapped by navigation', () => {
@@ -119,7 +119,7 @@ describe('app lifecycle alignment', () => {
     ])
   })
 
-  it('uses the first explicit app show as a single cold-start transition', () => {
+  it('keeps the first explicit show in cold App-before-wx order', () => {
     const projectPath = createAppLifecycleFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
@@ -136,18 +136,28 @@ describe('app lifecycle alignment', () => {
     session.triggerAppShow(showOptions)
 
     const app = session.getApp()!
+    const serializedOptions = JSON.stringify(showOptions)
     expect(app.globalData.logs).toEqual([
-      `onLaunch:${JSON.stringify(showOptions)}`,
-      `onShow:${JSON.stringify(showOptions)}`,
+      `onLaunch:${serializedOptions}`,
+      `onShow:${serializedOptions}`,
+    ])
+    expect(app.globalData.lifecycle.timeline).toEqual([
+      `app:onLaunch:${serializedOptions}`,
+      `app:onShow:${serializedOptions}`,
+      `wx:onAppShow:mutate:${serializedOptions}`,
+      `wx:onAppShow:first:${serializedOptions}`,
+      `wx:onAppShow:first:${serializedOptions}`,
+      `wx:onAppShow:launch:${serializedOptions}`,
     ])
     expect(app.globalData.lifecycle.appShows).toEqual([showOptions])
-    expect(app.globalData.lifecycle.showFirst).toEqual([showOptions])
+    expect(app.globalData.lifecycle.showFirst).toEqual([showOptions, showOptions])
+    expect(app.globalData.lifecycle.showLate).toEqual([])
     expect(app.globalData.lifecycle.launchShows).toEqual([showOptions])
     expect(session.getLaunchOptions()).toEqual(showOptions)
     expect(session.getEnterOptions()).toEqual(showOptions)
   })
 
-  it('drives session-owned app transitions without changing launch options during navigation', () => {
+  it('preserves duplicate callback snapshots and native warm transition order', () => {
     const projectPath = createAppLifecycleFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
@@ -166,18 +176,28 @@ describe('app lifecycle alignment', () => {
       scene: 1037,
     }
 
+    lifecycle.timeline.length = 0
     session.triggerAppHide(hideOptions)
     session.triggerAppShow(showOptions)
 
+    const serializedHideOptions = JSON.stringify(hideOptions)
+    const serializedShowOptions = JSON.stringify(showOptions)
+    expect(lifecycle.timeline).toEqual([
+      `wx:onAppHide:mutate:${serializedHideOptions}`,
+      `wx:onAppHide:first:${serializedHideOptions}`,
+      `wx:onAppHide:first:${serializedHideOptions}`,
+      `app:onHide:${serializedHideOptions}`,
+      `wx:onAppShow:launch:${serializedShowOptions}`,
+      `wx:onAppShow:late:${serializedShowOptions}`,
+      `app:onShow:${serializedShowOptions}`,
+    ])
     expect(lifecycle.appHides).toEqual([hideOptions])
-    expect(lifecycle.hideFirst).toEqual([hideOptions])
-    expect(lifecycle.hideRemoved).toEqual([hideOptions])
+    expect(lifecycle.hideFirst).toEqual([hideOptions, hideOptions])
     expect(lifecycle.hideLate).toEqual([])
-    expect(lifecycle.appShows.at(-1)).toBe(showOptions)
-    expect(lifecycle.showFirst.at(-1)).toBe(showOptions)
-    expect(lifecycle.showRemoved).toHaveLength(1)
+    expect(lifecycle.appShows).toEqual([launchOptions, showOptions])
+    expect(lifecycle.showFirst).toEqual([launchOptions, launchOptions])
     expect(lifecycle.showLate).toEqual([showOptions])
-    expect(lifecycle.launchShows.at(-1)).toBe(showOptions)
+    expect(lifecycle.launchShows).toEqual([launchOptions, showOptions])
     expect(session.getLaunchOptions()).toEqual(launchOptions)
     expect(session.getEnterOptions()).toEqual(showOptions)
 
@@ -185,8 +205,8 @@ describe('app lifecycle alignment', () => {
     showOptions.referrerInfo.appId = 'mutated-app'
     session.navigateTo('/pages/detail/index?from=navigation')
 
-    expect(lifecycle.appShows).toHaveLength(2)
-    expect(lifecycle.showFirst).toHaveLength(2)
+    expect(lifecycle.appShows).toEqual([launchOptions, showOptions])
+    expect(lifecycle.showFirst).toEqual([launchOptions, launchOptions])
     expect(session.getLaunchOptions()).toEqual(launchOptions)
     expect(session.getEnterOptions()).toEqual({
       path: 'pages/detail/index',
@@ -198,34 +218,38 @@ describe('app lifecycle alignment', () => {
       scene: 1037,
     })
 
-    app.removeFirstShowListener()
-    session.triggerAppShow()
-    expect(lifecycle.showFirst).toHaveLength(2)
-    expect(lifecycle.showLate).toHaveLength(2)
-    expect(lifecycle.launchShows).toHaveLength(3)
-
-    app.clearShowListeners()
-    session.triggerAppShow()
-    expect(lifecycle.appShows).toHaveLength(4)
-    expect(lifecycle.showLate).toHaveLength(2)
-    expect(lifecycle.launchShows).toHaveLength(3)
-
     const secondHideOptions = { reason: 1 as const }
+    lifecycle.timeline.length = 0
     session.triggerAppHide(secondHideOptions)
-    expect(lifecycle.hideFirst).toEqual([hideOptions, secondHideOptions])
-    expect(lifecycle.hideRemoved).toEqual([hideOptions])
+    const serializedSecondHideOptions = JSON.stringify(secondHideOptions)
+    expect(lifecycle.timeline).toEqual([
+      `wx:onAppHide:late:${serializedSecondHideOptions}`,
+      `app:onHide:${serializedSecondHideOptions}`,
+    ])
+    expect(lifecycle.appHides).toEqual([hideOptions, secondHideOptions])
+    expect(lifecycle.hideFirst).toEqual([hideOptions, hideOptions])
     expect(lifecycle.hideLate).toEqual([secondHideOptions])
 
-    app.removeFirstHideListener()
-    const thirdHideOptions = { reason: 0 as const }
-    session.triggerAppHide(thirdHideOptions)
-    expect(lifecycle.hideFirst).toHaveLength(2)
-    expect(lifecycle.hideLate).toEqual([secondHideOptions, thirdHideOptions])
+    const clearedShowOptions = session.getEnterOptions()
+    lifecycle.timeline.length = 0
+    app.clearShowListeners()
+    session.triggerAppShow()
+    expect(lifecycle.timeline).toEqual([
+      `app:onShow:${JSON.stringify(clearedShowOptions)}`,
+    ])
+    expect(lifecycle.appShows).toEqual([launchOptions, showOptions, clearedShowOptions])
+    expect(lifecycle.showLate).toEqual([showOptions])
+    expect(lifecycle.launchShows).toEqual([launchOptions, showOptions])
 
+    const clearedHideOptions = { reason: 3 as const }
+    lifecycle.timeline.length = 0
     app.clearHideListeners()
-    session.triggerAppHide({ reason: 3 })
-    expect(lifecycle.appHides).toHaveLength(4)
-    expect(lifecycle.hideLate).toHaveLength(2)
+    session.triggerAppHide(clearedHideOptions)
+    expect(lifecycle.timeline).toEqual([
+      `app:onHide:${JSON.stringify(clearedHideOptions)}`,
+    ])
+    expect(lifecycle.appHides).toEqual([hideOptions, secondHideOptions, clearedHideOptions])
+    expect(lifecycle.hideLate).toEqual([secondHideOptions])
   })
 
   it('forwards app controls through the testing session handle', async () => {
@@ -249,12 +273,12 @@ describe('app lifecycle alignment', () => {
       appHides: Array<{ reason: number }>
       appShows: Array<{ path: string }>
       hideFirst: Array<{ reason: number }>
-      showFirst: Array<{ path: string }>
+      showLate: Array<{ path: string }>
     }>('() => getApp().globalData.lifecycle')
     expect(lifecycle.appHides.at(-1)).toEqual({ reason: 3 })
-    expect(lifecycle.hideFirst.at(-1)).toEqual({ reason: 3 })
+    expect(lifecycle.hideFirst).toEqual([{ reason: 3 }, { reason: 3 }])
     expect(lifecycle.appShows.at(-1)).toEqual(showOptions)
-    expect(lifecycle.showFirst.at(-1)).toEqual(showOptions)
+    expect(lifecycle.showLate).toEqual([showOptions])
 
     await miniProgram.close()
   })
@@ -265,6 +289,7 @@ describe('app lifecycle alignment', () => {
     const session = createHeadlessSession({ projectPath })
     session.reLaunch('/pages/home/index')
     const lifecycle = session.getApp()!.globalData.lifecycle
+    const launchOptions = session.getLaunchOptions()
 
     session.close()
 
@@ -273,6 +298,6 @@ describe('app lifecycle alignment', () => {
     expect(() => session.triggerAppHide({ reason: 0 })).toThrowError()
     expect(() => session.triggerAppShow()).toThrowError()
     expect(lifecycle.appHides).toEqual([])
-    expect(lifecycle.showFirst).toHaveLength(1)
+    expect(lifecycle.showFirst).toEqual([launchOptions, launchOptions])
   })
 })

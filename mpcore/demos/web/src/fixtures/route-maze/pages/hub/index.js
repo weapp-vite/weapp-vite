@@ -19,6 +19,9 @@ Page({
   onReady() {
     this.push('hub:onReady')
   },
+  removeAppLifecycleListeners() {
+    getApp().removeAppLifecycleListeners()
+  },
   openQueue() {
     wx.navigateTo({
       url: '/package-flow/queue/index?from=hub',

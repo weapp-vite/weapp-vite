@@ -2093,11 +2093,15 @@ Page({
     expect(page.data.appShowSupported).toBe(true)
     expect(page.data.appHideSupported).toBe(true)
     expect(lifecycle.appLaunches).toEqual([launchOptions])
-    expect(lifecycle.showEvents).toEqual([launchOptions])
+    expect(lifecycle.showEvents).toEqual([launchOptions, launchOptions])
     expect(lifecycle.launchShows).toEqual([launchOptions])
-    expect(lifecycle.timeline.findIndex((entry: string) => entry.startsWith('app:onLaunch:'))).toBeLessThan(pageLoadIndex)
-    expect(lifecycle.timeline.findIndex((entry: string) => entry.startsWith('app:onShow:'))).toBeLessThan(pageLoadIndex)
-    expect(lifecycle.timeline.findIndex((entry: string) => entry.startsWith('wx:onAppShow:'))).toBeLessThan(pageLoadIndex)
+    const launchOptionsJson = JSON.stringify(launchOptions)
+    expect(lifecycle.timeline.slice(0, pageLoadIndex)).toEqual([
+      `app:onLaunch:${launchOptionsJson}`,
+      `app:onShow:${launchOptionsJson}`,
+      `wx:onAppShow:${launchOptionsJson}`,
+      `wx:onAppShow:${launchOptionsJson}`,
+    ])
 
     const hideOptions = { reason: 1 as const }
     const showOptions = {
@@ -2109,39 +2113,69 @@ Page({
       },
       scene: 1044,
     }
+    const warmTimelineStart = lifecycle.timeline.length
     session.triggerAppHide(hideOptions)
     session.triggerAppShow(showOptions)
 
     expect(lifecycle.appHides.at(-1)).toBe(hideOptions)
+    expect(lifecycle.hideEvents).toHaveLength(2)
+    expect(lifecycle.hideEvents.at(-2)).toBe(hideOptions)
     expect(lifecycle.hideEvents.at(-1)).toBe(hideOptions)
     expect(lifecycle.appShows.at(-1)).toBe(showOptions)
+    expect(lifecycle.showEvents).toHaveLength(4)
+    expect(lifecycle.showEvents.at(-2)).toBe(showOptions)
     expect(lifecycle.showEvents.at(-1)).toBe(showOptions)
     expect(lifecycle.launchShows.at(-1)).toBe(showOptions)
+    expect(lifecycle.timeline.slice(warmTimelineStart)).toEqual([
+      `wx:onAppHide:${JSON.stringify(hideOptions)}`,
+      `wx:onAppHide:${JSON.stringify(hideOptions)}`,
+      `app:onHide:${JSON.stringify(hideOptions)}`,
+      `wx:onAppShow:${JSON.stringify(showOptions)}`,
+      `wx:onAppShow:${JSON.stringify(showOptions)}`,
+      `app:onShow:${JSON.stringify(showOptions)}`,
+    ])
     expect(session.getLaunchOptions()).toEqual(launchOptions)
     expect(session.getEnterOptions()).toEqual(showOptions)
 
     session.navigateTo('/pages/detail/index?from=navigation')
     expect(lifecycle.appLaunches).toHaveLength(1)
     expect(lifecycle.appShows).toHaveLength(2)
-    expect(lifecycle.showEvents).toHaveLength(2)
+    expect(lifecycle.showEvents).toHaveLength(4)
     expect(lifecycle.appHides).toHaveLength(1)
-    expect(lifecycle.hideEvents).toHaveLength(1)
+    expect(lifecycle.hideEvents).toHaveLength(2)
 
+    const removedHideOptions = { reason: 0 as const }
+    const removedTimelineStart = lifecycle.timeline.length
     app.removeListeners()
-    session.triggerAppHide({ reason: 0 })
+    session.triggerAppHide(removedHideOptions)
     session.triggerAppShow()
+    expect(lifecycle.timeline.slice(removedTimelineStart)).toEqual([
+      `app:onHide:${JSON.stringify(removedHideOptions)}`,
+      `app:onShow:${JSON.stringify(showOptions)}`,
+    ])
     expect(lifecycle.appHides).toHaveLength(2)
-    expect(lifecycle.hideEvents).toHaveLength(1)
+    expect(lifecycle.appHides.at(-1)).toBe(removedHideOptions)
+    expect(lifecycle.hideEvents).toHaveLength(2)
     expect(lifecycle.appShows).toHaveLength(3)
-    expect(lifecycle.showEvents).toHaveLength(2)
+    expect(lifecycle.appShows.at(-1)).toEqual(showOptions)
+    expect(lifecycle.showEvents).toHaveLength(4)
     expect(lifecycle.launchShows).toHaveLength(3)
 
+    const clearHideOptions = { reason: 3 as const }
+    const clearTimelineStart = lifecycle.timeline.length
     app.clearListeners()
-    session.triggerAppHide({ reason: 3 })
+    session.triggerAppHide(clearHideOptions)
     session.triggerAppShow()
+    expect(lifecycle.timeline.slice(clearTimelineStart)).toEqual([
+      `app:onHide:${JSON.stringify(clearHideOptions)}`,
+      `app:onShow:${JSON.stringify(showOptions)}`,
+    ])
     expect(lifecycle.appHides).toHaveLength(3)
-    expect(lifecycle.hideEvents).toHaveLength(1)
+    expect(lifecycle.appHides.at(-1)).toBe(clearHideOptions)
+    expect(lifecycle.hideEvents).toHaveLength(2)
     expect(lifecycle.appShows).toHaveLength(4)
+    expect(lifecycle.appShows.at(-1)).toEqual(showOptions)
+    expect(lifecycle.showEvents).toHaveLength(4)
     expect(lifecycle.launchShows).toHaveLength(3)
 
     session.close()

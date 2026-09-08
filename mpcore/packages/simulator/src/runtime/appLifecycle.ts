@@ -18,51 +18,76 @@ export function cloneHeadlessWxLaunchOptions(options: HeadlessWxLaunchOptions): 
 }
 
 export class HeadlessAppLifecycle {
-  private readonly hideCallbacks = new Set<HeadlessWxAppHideCallback>()
-  private readonly showCallbacks = new Set<HeadlessWxAppShowCallback>()
+  private readonly hideCallbacks: HeadlessWxAppHideCallback[] = []
+  private readonly showCallbacks: HeadlessWxAppShowCallback[] = []
+  private isInitialShow = true
 
   close() {
-    this.hideCallbacks.clear()
-    this.showCallbacks.clear()
+    this.hideCallbacks.length = 0
+    this.showCallbacks.length = 0
   }
 
   offAppHide(callback?: HeadlessWxAppHideCallback) {
-    if (callback) {
-      this.hideCallbacks.delete(callback)
+    if (!callback) {
+      this.hideCallbacks.length = 0
       return
     }
-    this.hideCallbacks.clear()
+
+    let retainedCount = 0
+    for (const registeredCallback of this.hideCallbacks) {
+      if (registeredCallback !== callback) {
+        this.hideCallbacks[retainedCount] = registeredCallback
+        retainedCount += 1
+      }
+    }
+    this.hideCallbacks.length = retainedCount
   }
 
   offAppShow(callback?: HeadlessWxAppShowCallback) {
-    if (callback) {
-      this.showCallbacks.delete(callback)
+    if (!callback) {
+      this.showCallbacks.length = 0
       return
     }
-    this.showCallbacks.clear()
+
+    let retainedCount = 0
+    for (const registeredCallback of this.showCallbacks) {
+      if (registeredCallback !== callback) {
+        this.showCallbacks[retainedCount] = registeredCallback
+        retainedCount += 1
+      }
+    }
+    this.showCallbacks.length = retainedCount
   }
 
   onAppHide(callback: HeadlessWxAppHideCallback) {
-    this.hideCallbacks.add(callback)
+    this.hideCallbacks.push(callback)
   }
 
   onAppShow(callback: HeadlessWxAppShowCallback) {
-    this.showCallbacks.add(callback)
+    this.showCallbacks.push(callback)
   }
 
   triggerAppHide(app: HeadlessAppInstance, options: HeadlessWxAppHideOptions) {
     const callbacks = [...this.hideCallbacks]
-    app.onHide?.(options)
     for (const callback of callbacks) {
       callback(options)
     }
+    app.onHide?.(options)
   }
 
   triggerAppShow(app: HeadlessAppInstance, options: HeadlessWxLaunchOptions) {
     const callbacks = [...this.showCallbacks]
-    app.onShow?.(options)
+    const isInitialShow = this.isInitialShow
+    this.isInitialShow = false
+
+    if (isInitialShow) {
+      app.onShow?.(options)
+    }
     for (const callback of callbacks) {
       callback(options)
+    }
+    if (!isInitialShow) {
+      app.onShow?.(options)
     }
   }
 }

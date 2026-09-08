@@ -1381,11 +1381,18 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     const bridge = getBridge()!
     bridge.pickScenario('route-maze')
 
-    await waitFor(
+    const initialState = await waitFor(
       () => bridge.getState(),
       state => state.currentScenarioId === 'route-maze',
       20_000,
     )
+    const launchOptionsJson = '{"path":"pages/hub/index","query":{},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}'
+    expect(parseJsonString<{ timeline: string[] }>(initialState.appData).timeline).toEqual([
+      `maze:onLaunch:${launchOptionsJson}`,
+      `maze:onShow:${launchOptionsJson}`,
+      `maze:wx:onAppShow:${launchOptionsJson}`,
+      `maze:wx:onAppShow:${launchOptionsJson}`,
+    ])
 
     bridge.runPageMethod('openQueue')
     await waitFor(
@@ -1417,6 +1424,33 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     }
     bridge.triggerAppHide({ reason: 2 })
     bridge.triggerAppShow(showOptions)
+    const warmTimeline = parseJsonString<{ timeline: string[] }>(bridge.getState().appData).timeline
+    expect(warmTimeline.slice(-6)).toEqual([
+      'maze:wx:onAppHide:{"reason":2}',
+      'maze:wx:onAppHide:{"reason":2}',
+      'maze:onHide:{"reason":2}',
+      `maze:wx:onAppShow:${JSON.stringify(showOptions)}`,
+      `maze:wx:onAppShow:${JSON.stringify(showOptions)}`,
+      `maze:onShow:${JSON.stringify(showOptions)}`,
+    ])
+
+    bridge.navigateBack(1)
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'pages/hub/index',
+      20_000,
+    )
+    bridge.runPageMethod('removeAppLifecycleListeners')
+    const removedHideOptions = { reason: 3 as const }
+    bridge.triggerAppHide(removedHideOptions)
+    bridge.triggerAppShow(showOptions)
+    const removedTimeline = parseJsonString<{ timeline: string[] }>(bridge.getState().appData).timeline
+    expect(removedTimeline.slice(-2)).toEqual([
+      `maze:onHide:${JSON.stringify(removedHideOptions)}`,
+      `maze:onShow:${JSON.stringify(showOptions)}`,
+    ])
+
+    bridge.runPageMethod('openQueue')
 
     const state = await waitFor(
       () => bridge.getState(),
@@ -1429,10 +1463,22 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     expect(appTimeline.filter(entry => entry.startsWith('maze:onLaunch:'))).toHaveLength(1)
     expect(appTimeline.filter(entry => entry.startsWith('maze:onHide:'))).toEqual([
       'maze:onHide:{"reason":2}',
+      'maze:onHide:{"reason":3}',
     ])
     expect(appTimeline.filter(entry => entry.startsWith('maze:onShow:'))).toEqual([
-      'maze:onShow:{"path":"pages/hub/index","query":{},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
+      `maze:onShow:${launchOptionsJson}`,
       `maze:onShow:${JSON.stringify(showOptions)}`,
+      `maze:onShow:${JSON.stringify(showOptions)}`,
+    ])
+    expect(appTimeline.filter(entry => entry.startsWith('maze:wx:onAppHide:'))).toEqual([
+      'maze:wx:onAppHide:{"reason":2}',
+      'maze:wx:onAppHide:{"reason":2}',
+    ])
+    expect(appTimeline.filter(entry => entry.startsWith('maze:wx:onAppShow:'))).toEqual([
+      `maze:wx:onAppShow:${launchOptionsJson}`,
+      `maze:wx:onAppShow:${launchOptionsJson}`,
+      `maze:wx:onAppShow:${JSON.stringify(showOptions)}`,
+      `maze:wx:onAppShow:${JSON.stringify(showOptions)}`,
     ])
     const queuePageData = parseJsonString<Record<string, any>>(state.pageData)
     expect(queuePageData.title).toBe('Queue')
