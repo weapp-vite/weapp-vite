@@ -19,10 +19,12 @@ export async function launch(options: HeadlessTestingLaunchOptions) {
   const session = createHeadlessSession({
     projectPath: options.projectPath,
   })
-  session.bootstrap()
   const initialRoute = resolveInitialRoute(session)
   if (initialRoute) {
     session.reLaunch(`/${initialRoute}`)
+  }
+  else {
+    session.bootstrap()
   }
   return new HeadlessTestingSessionHandle(session.project, session)
 }

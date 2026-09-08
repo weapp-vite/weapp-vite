@@ -120,14 +120,14 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
     projectLabel.value = label
     const firstRoute = nextSession.project.routes[0]?.route
     if (firstRoute) {
-      nextSession.reLaunch(`/${firstRoute}`)
+      const initialPage = nextSession.reLaunch(`/${firstRoute}`)
       nextSession.triggerResize({
         size: {
           windowHeight: viewportSize.value.height,
           windowWidth: viewportSize.value.width,
         },
       })
-      selectedScopeId.value = `page:${firstRoute}`
+      selectedScopeId.value = `page:${initialPage.route}`
     }
     touch()
   }

@@ -1003,9 +1003,19 @@ export class HeadlessSession {
     }
   }
 
+  private bootstrapNavigation(launchOptions = createAppLaunchOptions('', {})): HeadlessPageInstance | null {
+    const isLaunching = !this.appInstance
+    this.bootstrap(launchOptions)
+    // 启动钩子已提交导航时，由该页面接管首次入口，不能再覆盖它。
+    return isLaunching ? this.currentPageInstance : null
+  }
+
   reLaunch(url: string) {
     const target = this.resolveNavigationTarget(url)
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return launchedPage
+    }
     this.unloadAllPages()
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
@@ -1016,7 +1026,10 @@ export class HeadlessSession {
 
   navigateTo(url: string) {
     const target = this.resolveNavigationTarget(url)
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return launchedPage
+    }
     if (this.pages.length >= PAGE_STACK_LIMIT) {
       throw new Error(`Cannot navigateTo() beyond a ${PAGE_STACK_LIMIT}-page stack in headless runtime.`)
     }
@@ -1038,7 +1051,10 @@ export class HeadlessSession {
 
   redirectTo(url: string) {
     const target = this.resolveNavigationTarget(url)
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return launchedPage
+    }
     if (this.isTabBarRoute(target.routeRecord.route)) {
       throw new Error(`wx.redirectTo() cannot open a tabBar page in headless runtime: ${url}`)
     }
@@ -1057,7 +1073,10 @@ export class HeadlessSession {
   }
 
   navigateBack(delta = 1) {
-    this.bootstrap()
+    const launchedPage = this.bootstrapNavigation()
+    if (launchedPage) {
+      return launchedPage
+    }
     if (this.pages.length <= 1) {
       return this.currentPageInstance
     }
@@ -1092,7 +1111,10 @@ export class HeadlessSession {
     if (!this.isTabBarRoute(target.routeRecord.route)) {
       throw new Error(`wx.switchTab() can only open a tabBar page in headless runtime: ${url}`)
     }
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return () => () => {}
+    }
 
     return () => this.commitSwitchTab(target)
   }

@@ -49,6 +49,10 @@ const scenarioCatalog: Record<string, ScenarioMeta> = {
     name: 'Plugin Runtime',
     description: '验证 requirePlugin、本地插件公开组件和 plugin:// 页面导航。',
   },
+  'launch-redirect': {
+    name: 'Launch Redirect',
+    description: 'App 启动钩子重定向后保留登录页，避免初始入口覆盖导航。',
+  },
 }
 
 const rawScenarioModules = import.meta.glob('./fixtures/**/*', {
