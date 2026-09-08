@@ -85,6 +85,7 @@ describe('registration owners in actual DevEngine output', () => {
     try {
       await engine.registerClient('registration-owner')
       await engine.ensureCurrentBuildFinish()
+      await engine.getBundleState()
       const files = new Map(outputs.at(-1)!.output.filter(item => item.type === 'chunk').map(item => [item.fileName, item.code]))
       const context = createContext({ console, registrations: 0, setTimeout: () => {} })
       const loaded = new Map<string, { exports: unknown }>()
@@ -138,6 +139,9 @@ describe('registration owners in actual DevEngine output', () => {
         }
         finally { bridge.endUpdate() }
         await engine.notifyPayloadDelivered(changed.filename)
+        // 回调先于原生监听路径提交；下一次写文件必须等完整 coordinator 事务结束。
+        await engine.ensureCurrentBuildFinish()
+        await engine.getBundleState()
         if (kind === 'component') {
           expect(runtime.loadExports('index.vue').default.increment(1)).toBe(1 + step)
           expect(context.definition.increment(1)).toBe(1 + step)

@@ -84,6 +84,7 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
   try {
     await engine.registerClient('vue-client-companion')
     await engine.ensureCurrentBuildFinish()
+    await engine.getBundleState()
     if (buildError) {
       throw buildError
     }
@@ -105,6 +106,9 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
         }
         patches.push(patch)
         await engine.notifyPayloadDelivered(patch.filename)
+        // 回调先于原生监听路径提交；下一次写文件必须等完整 coordinator 事务结束。
+        await engine.ensureCurrentBuildFinish()
+        await engine.getBundleState()
       }
       finally {
         clearTimeout(timer)
