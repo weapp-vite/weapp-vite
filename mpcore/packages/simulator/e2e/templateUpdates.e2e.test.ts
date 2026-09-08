@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
 import { templateUpdateFiles, templateUpdateSource, templateUpdateTitles } from '../test/helpers/templateUpdates'
 
-it('renders four template file updates while preserving the interacted page and app', () => {
+it('renders template A to B to A and later file updates while preserving the interacted page and app', () => {
   const files = createBrowserVirtualFiles(templateUpdateFiles)
   const session = createBrowserHeadlessSession({ files })
   const preview = document.createElement('div')

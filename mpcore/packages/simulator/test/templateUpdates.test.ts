@@ -9,7 +9,7 @@ import { createHeadlessSession } from '../src/runtime'
 import { templateUpdateFiles, templateUpdateSource, templateUpdateTitles } from './helpers/templateUpdates'
 
 describe.each(['node', 'browser'] as const)('%s template file updates', (provider) => {
-  it('renders four equal-length file changes without replacing page or app instances', () => {
+  it('renders equal-length A to B to A and later file changes without replacing page or app instances', () => {
     const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'mpcore-template-updates-'))
     const files = createBrowserVirtualFiles(templateUpdateFiles)
     for (const [file, source] of templateUpdateFiles) {

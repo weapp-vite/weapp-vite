@@ -53,4 +53,34 @@ describe.each(['node', 'browser'] as const)('%s component event targets', (provi
       session.close()
     }
   })
+
+  it.each(['page', 'component'] as const)('binds a replaced %s event handler to its current instance', (owner) => {
+    const session = createSession()
+    try {
+      const page = session.reLaunch('/pages/index/index')
+      session.renderCurrentPage()
+      const dialog = session.selectComponent('dialog-box')!
+      const button = dialog.selectComponent('#confirm-host')!
+      const instance = owner === 'page' ? page : dialog
+      const methodName = owner === 'page' ? 'receive' : 'onButton'
+      const original = instance[methodName]
+      const receivers: unknown[] = []
+      instance[methodName] = function (event: unknown) {
+        receivers.push(this)
+        return original.call(this, event)
+      }
+      const buttonScope = session.getScopeIdForComponent(button)!
+      session.callScopeMethod(buttonScope, 'handleTap', {
+        target: { id: 'confirm-native', dataset: { native: 'confirm' } },
+      })
+      expect(receivers).toHaveLength(1)
+      expect(receivers[0]).toBe(instance)
+      expect(session.renderCurrentPage().wxml).toContain('confirm/confirm-host/confirm-native')
+      expect(session.getCurrentPages()[0]).toBe(page)
+      expect(session.selectComponent('dialog-box')).toBe(dialog)
+    }
+    finally {
+      session.close()
+    }
+  })
 })

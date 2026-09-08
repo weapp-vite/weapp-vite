@@ -33,6 +33,39 @@ describe('browser page WXSS dependencies', () => {
     }
   })
 
+  it.each(['callScopeMethod', 'callTapBinding', 'callTapBindingWithEvent'] as const)('dispatches the latest page handler through %s after mixed updates without resetting state', (dispatch) => {
+    const files = createBrowserVirtualFiles(createPageStyleImportFiles('inline'))
+    const session = createBrowserHeadlessSession({ files })
+    try {
+      const page = session.reLaunch('/pages/shared/index?source=hmr')
+      const app = session.getApp()
+      const tap = () => session[dispatch](`page:${page.route}`, 'increment', {})
+      session.renderCurrentPage()
+      tap()
+      expect(session.renderCurrentPage().wxml).toContain('count: 1')
+
+      // 编译器补丁替换当前实例的方法；宿主派发必须读取新方法，不能缓存旧处理器或重建页面。
+      page.increment = function () {
+        this.setData({ count: this.data.count + 2 })
+      }
+      files.set('pages/shared/index.wxml', pageStyleTemplate('mixed'))
+      files.set('pages/shared/index.wxss', pageStylePage('inline', 'mixed', 'rgb(219, 234, 254)'))
+      const rendered = session.renderCurrentPage()
+      expect(rendered.wxml).toContain('class="tone-mixed"')
+      expect(rendered.wxml).toContain('count: 1')
+      expect(rendered.styles.cssText).toContain('rgb(219, 234, 254)')
+      tap()
+      expect(session.renderCurrentPage().wxml).toContain('count: 3')
+      expect(session.getCurrentPages()[0]).toBe(page)
+      expect(page.route).toBe('pages/shared/index')
+      expect(page.options).toMatchObject({ source: 'hmr' })
+      expect(session.getApp()).toBe(app)
+    }
+    finally {
+      session.close()
+    }
+  })
+
   it('uses Component page options to disable implicit app styles, preserving explicit local styles', () => {
     const files = createBrowserVirtualFiles(createPageStyleImportFiles())
     const session = createBrowserHeadlessSession({ files })

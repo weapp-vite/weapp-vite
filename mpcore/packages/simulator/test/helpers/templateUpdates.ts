@@ -2,7 +2,7 @@ export function templateUpdateSource(title: string) {
   return `<view><text id="title">${title}</text><text id="count">count: {{count}}</text><button id="increment" bindtap="increment">Increment</button></view>`
 }
 
-export const templateUpdateTitles = ['HMR', 'ONE', 'TWO', 'SIX', 'TEN']
+export const templateUpdateTitles = ['HMR', 'ONE', 'HMR', 'SIX', 'TEN']
 
 export const templateUpdateFiles: Array<[string, string]> = [
   ['project.config.json', '{"appid":"wx123","miniprogramRoot":"."}'],

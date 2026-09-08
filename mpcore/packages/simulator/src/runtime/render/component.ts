@@ -260,7 +260,7 @@ export function createComponentScope(
     eventBindings: collectComponentEventBindings(clonedNode),
     getMethod: (methodName: string) => {
       const method = componentInstance?.[methodName]
-      return typeof method === 'function' ? method : undefined
+      return typeof method === 'function' ? method.bind(componentInstance) : undefined
     },
     getScopeId: () => componentScopeId,
     genericComponents,

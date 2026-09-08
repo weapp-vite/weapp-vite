@@ -362,7 +362,7 @@ export function renderBrowserPageTree(
     data: page.data,
     getMethod: (methodName: string) => {
       const method = page[methodName]
-      return typeof method === 'function' ? method : undefined
+      return typeof method === 'function' ? method.bind(page) : undefined
     },
     getScopeId: () => pageScopeId,
     id: 'page-root',
