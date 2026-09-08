@@ -1,3 +1,6 @@
 {
-  "miniprogramRoot": "."
+  "miniprogramRoot": ".",
+  "setting": {
+    "urlCheck": false
+  }
 }
