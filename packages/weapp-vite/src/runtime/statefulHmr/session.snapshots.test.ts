@@ -1,7 +1,7 @@
 import type { InlineConfig, Plugin } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { StatefulHmrSnapshot } from './globalStyles'
-import type { StatefulHmrOutputFile } from './outputWriter'
+import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { tmpdir } from 'node:os'
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
@@ -20,7 +20,7 @@ interface AdapterCallbacks {
 const harness = vi.hoisted(() => ({
   callbacks: undefined as AdapterCallbacks | undefined,
   createServer: vi.fn(),
-  writeOutput: vi.fn<(outDir: string, output: StatefulHmrOutputFile[]) => Promise<void>>(),
+  writeOutput: vi.fn<(outDir: string, output: StatefulHmrOutputFile[], initialPublicAssets?: StatefulHmrInitialPublicAssets) => Promise<void>>(),
   fullBuild: vi.fn<() => Promise<void>>(),
 }))
 
@@ -94,7 +94,13 @@ describe('stateful snapshot output transactions', () => {
     })
     harness.createServer.mockImplementation(async (options: InlineConfig) => {
       const server = {
-        config: { root: options.root, server: {}, logger: { info: vi.fn(), error: vi.fn() } },
+        config: {
+          root: options.root,
+          publicDir: path.join(root, 'static-assets'),
+          build: { copyPublicDir: true },
+          server: {},
+          logger: { info: vi.fn(), error: vi.fn() },
+        },
         moduleGraph: { getModulesByFile: () => undefined },
         middlewares: { use: vi.fn() },
         httpServer: { address: () => undefined },
@@ -114,6 +120,61 @@ describe('stateful snapshot output transactions', () => {
     await Promise.all(watchers.splice(0).map(watcher => watcher.close()))
     vi.restoreAllMocks()
     vi.useRealTimers()
+  })
+
+  it('assigns resolved public publication only to the first complete output', async () => {
+    const session = await start()
+    const initialOutput = harness.writeOutput.mock.calls.find(([, output]) => output.some(item => item.fileName === 'app.js'))
+    expect(initialOutput?.[2]).toEqual({ publicDir: path.join(root, 'static-assets'), copyPublicDir: true })
+    const controls = harness.writeOutput.mock.calls.filter(([, output]) => !output.some(item => item.fileName === 'app.js'))
+    expect(controls.every(([, , publicAssets]) => publicAssets === undefined)).toBe(true)
+
+    harness.writeOutput.mockClear()
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    session.full()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(harness.writeOutput.mock.calls.length).toBeGreaterThan(0)
+    expect(harness.writeOutput.mock.calls.some(([, output]) => output.some(item => item.fileName === 'app.js'))).toBe(true)
+    expect(harness.writeOutput.mock.calls.every(([, , publicAssets]) => publicAssets === undefined)).toBe(true)
+  })
+
+  it('retains initial public publication after a failed write and consumes it only after a successful retry', async () => {
+    const commit = vi.spyOn(StatefulHmrTransport.prototype, 'commitFullBuild')
+    const initialPublicAssets = { publicDir: path.join(root, 'static-assets'), copyPublicDir: true }
+    harness.writeOutput.mockRejectedValueOnce(new Error('simulated initial public write failure'))
+    let ready = false
+    const starting = start().then((session) => {
+      ready = true
+      return session
+    })
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(harness.writeOutput).toHaveBeenCalledTimes(1)
+    expect(harness.writeOutput.mock.calls[0]?.[2]).toEqual(initialPublicAssets)
+    expect(commit).not.toHaveBeenCalled()
+    expect(ready).toBe(false)
+
+    // 模拟引擎在写入失败后重新交付完整产物，失败的发布不能消费首轮初始化配置。
+    harness.callbacks!.onOutput(appOutput())
+    const session = await starting
+    const completeOutputs = harness.writeOutput.mock.calls.filter(([, output]) => output.some(item => item.fileName === 'app.js'))
+    expect(completeOutputs).toHaveLength(2)
+    expect(completeOutputs.map(([, , publicAssets]) => publicAssets)).toEqual([initialPublicAssets, initialPublicAssets])
+    expect(completeOutputs[1]?.[1]).toContainEqual({
+      type: 'asset',
+      fileName: `${route}.wxss`,
+      source: expect.stringContaining('.probe { color: red; }'),
+    })
+    expect(commit).toHaveBeenCalledTimes(1)
+    expect(ready).toBe(true)
+
+    harness.writeOutput.mockClear()
+    session.full()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(commit).toHaveBeenCalledTimes(2)
+    expect(harness.writeOutput.mock.calls.some(([, output]) => output.some(item => item.fileName === 'app.js'))).toBe(true)
+    expect(harness.writeOutput.mock.calls.every(([, , publicAssets]) => publicAssets === undefined)).toBe(true)
   })
 
   it('uses initial snapshot routes and clears global-only styles when a refresh changes isolation', async () => {

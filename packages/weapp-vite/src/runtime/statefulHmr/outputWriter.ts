@@ -5,17 +5,27 @@ import { build } from 'vite'
 export type StatefulHmrOutputFile = Pick<OutputAsset, 'fileName' | 'source' | 'type'>
   | (Pick<OutputChunk, 'code' | 'fileName' | 'modules' | 'type'> & Partial<Pick<OutputChunk, 'isEntry' | 'imports'>>)
 
+export interface StatefulHmrInitialPublicAssets {
+  publicDir: string | false
+  copyPublicDir: boolean
+}
+
 /**
  * @description 通过独立的 Vite write 阶段持久化 DevEngine 已生成的文件，不重新解析业务源码。
  */
-export async function writeStatefulHmrOutput(outDir: string, output: StatefulHmrOutputFile[]): Promise<void> {
+export async function writeStatefulHmrOutput(
+  outDir: string,
+  output: StatefulHmrOutputFile[],
+  initialPublicAssets?: StatefulHmrInitialPublicAssets,
+): Promise<void> {
   const virtualEntry = '\0weapp-vite-stateful-hmr-output'
   await build({
     configFile: false,
     logLevel: 'silent',
-    // writer 只持久化已生成资产，不能再次复制宿主项目的 public 目录。
-    publicDir: false,
+    // 首轮完整发布由 Vite 复制已解析的 public 目录；增量写入不重复覆盖静态资源。
+    publicDir: initialPublicAssets?.publicDir || false,
     build: {
+      copyPublicDir: initialPublicAssets?.copyPublicDir ?? false,
       emptyOutDir: false,
       minify: false,
       outDir,

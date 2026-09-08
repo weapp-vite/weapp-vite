@@ -148,6 +148,13 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue852.test.ts': [
     'pages/issue-852/**',
   ],
+  'github-issues.runtime.issue868.test.ts': [
+    'pages/issue-868/**',
+    'components/issue-868/**',
+  ],
+  'github-issues.runtime.issue941.test.ts': [
+    'pages/issue-941/**',
+  ],
   'github-issues.runtime.issue826.test.ts': [
     'pages/issue-826/**',
     'issue-fixtures/issue-826/**',
@@ -348,6 +355,10 @@ function resolveGithubIssuesAutoRoutes() {
     : undefined
 
   if (!matchedRoutes) {
+    const targetName = e2eTargetFile.split('/').at(-1) ?? ''
+    if (/^github-issues\.runtime\..+\.test\.ts$/.test(targetName)) {
+      throw new Error(`Missing github-issues runtime route group: ${targetName}`)
+    }
     return true
   }
 

@@ -43,33 +43,30 @@ async function closeStaleMiniProgram(miniProgram: unknown) {
   }
 }
 
-async function waitForOpenedMiniProgramReady(miniProgram: unknown, timeoutMs: number, readyRoute?: string) {
-  if (!miniProgram || typeof miniProgram !== 'object') {
-    return
-  }
+function normalizeRoute(route: string) {
+  return route.split(/[?#]/, 1)[0].replace(/^\/+|\/+$/g, '')
+}
 
-  const sendOptions = {
-    retries: 1,
-    timeout: timeoutMs,
-  }
-  if (readyRoute) {
-    const reLaunch = Reflect.get(miniProgram, 'reLaunch')
-    if (typeof reLaunch === 'function') {
-      await reLaunch.call(miniProgram, readyRoute)
+async function waitForOpenedMiniProgramReady(miniProgram: MiniProgram, timeoutMs: number, intervalMs: number, readyRoute?: string) {
+  const deadline = Date.now() + timeoutMs
+  const expectedRoute = readyRoute ? normalizeRoute(readyRoute) : undefined
+  let latestRoute = ''
+  while (Date.now() < deadline) {
+    // 启动和导航属于 dev:open；连接探针不能用 reLaunch 改写尚未完成的首屏加载。
+    const page = await miniProgram.currentPage({
+      retries: 1,
+      timeout: Math.max(1, deadline - Date.now()),
+    })
+    latestRoute = typeof page?.path === 'string' ? normalizeRoute(page.path) : ''
+    if (latestRoute && (!expectedRoute || latestRoute === expectedRoute)) {
       return
     }
+    const remaining = deadline - Date.now()
+    if (remaining > 0) {
+      await delay(Math.min(intervalMs, remaining))
+    }
   }
-
-  const currentPage = Reflect.get(miniProgram, 'currentPage')
-  if (typeof currentPage === 'function') {
-    await currentPage.call(miniProgram, sendOptions)
-    return
-  }
-
-  const waitForAppReady = Reflect.get(miniProgram, 'waitForAppReady')
-  if (typeof waitForAppReady === 'function') {
-    await waitForAppReady.call(miniProgram, timeoutMs)
-  }
+  throw new Error(`Opened automator page is not ready: expected ${expectedRoute ?? '<any route>'}, current ${latestRoute || '<none>'}`)
 }
 
 export async function waitForOpenedAutomator(
@@ -109,7 +106,7 @@ export async function waitForOpenedAutomator(
       }
       if (!skipAppReady) {
         try {
-          await waitForOpenedMiniProgramReady(miniProgram, appReadyTimeoutMs, readyRoute)
+          await waitForOpenedMiniProgramReady(miniProgram, Math.min(appReadyTimeoutMs, Math.max(1, timeoutMs - (Date.now() - start))), intervalMs, readyRoute)
         }
         catch (error) {
           lastError = error

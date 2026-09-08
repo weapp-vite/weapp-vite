@@ -64,7 +64,13 @@ describe('stateful session initial chunk package boundaries', () => {
     harness.writeOutput.mockResolvedValue()
     harness.createServer.mockImplementation(async (options: InlineConfig) => {
       const server = {
-        config: { root: options.root, server: {}, logger: { info: vi.fn(), error: vi.fn() } },
+        config: {
+          root: options.root,
+          publicDir: path.join(options.root!, 'static-assets'),
+          build: { copyPublicDir: true },
+          server: {},
+          logger: { info: vi.fn(), error: vi.fn() },
+        },
         middlewares: { use: vi.fn() },
         httpServer: { address: () => undefined },
         close: vi.fn(),

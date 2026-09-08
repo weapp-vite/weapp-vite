@@ -276,7 +276,13 @@ class StatefulHmrSession {
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, 'void 0;\n')
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE, 'void 0;\n')
       }
-      await writeStatefulHmrOutput(this.ctx.configService!.outDir, compatibleOutput)
+      await writeStatefulHmrOutput(
+        this.ctx.configService!.outDir,
+        compatibleOutput,
+        fullBuild && this.initialSnapshot
+          ? { publicDir: this.server.config.publicDir, copyPublicDir: this.server.config.build.copyPublicDir }
+          : undefined,
+      )
       if (buildId) {
         this.transport.commitFullBuild(buildId)
         if (snapshot && snapshotOutput) {

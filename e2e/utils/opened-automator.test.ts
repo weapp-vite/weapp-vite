@@ -15,7 +15,7 @@ vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveRep
 
 function createSession() {
   return Object.assign(new EventEmitter(), {
-    currentPage: vi.fn(),
+    currentPage: vi.fn(async (): Promise<{ path: string } | undefined> => ({ path: 'pages/index/index' })),
     close: vi.fn(async () => {}),
     disconnect: vi.fn(),
     enableLog: vi.fn(async () => {}),
@@ -48,15 +48,22 @@ describe('opened automator', () => {
     })
     expect(miniProgram.currentPage).toHaveBeenCalledWith({
       retries: 1,
-      timeout: 17,
+      timeout: expect.any(Number),
     })
+    const [readinessOptions] = vi.mocked(miniProgram.currentPage).mock.calls[0] as unknown as [{ timeout: number }]
+    expect(readinessOptions.timeout).toBeGreaterThan(0)
+    expect(readinessOptions.timeout).toBeLessThanOrEqual(17)
     expect(miniProgram.enableLog).toHaveBeenCalledWith(17, { structured: true })
   })
 
-  it('uses the expected route as the readiness probe when provided', async () => {
+  it('observes the expected route without navigating during startup', async () => {
     const miniProgram = Object.assign(createSession(), {
       reLaunch: vi.fn(),
     })
+    miniProgram.currentPage
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({ path: 'pages/previous/index' })
+      .mockResolvedValueOnce({ path: '/pages/index/index?source=launch' })
     connectOpenedAutomatorMock.mockResolvedValueOnce(miniProgram)
 
     await waitForOpenedAutomator('/workspace/project', {
@@ -67,8 +74,26 @@ describe('opened automator', () => {
       timeoutMs: 50,
     })
 
-    expect(miniProgram.reLaunch).toHaveBeenCalledWith('/pages/index/index')
-    expect(miniProgram.currentPage).not.toHaveBeenCalled()
+    expect(miniProgram.reLaunch).not.toHaveBeenCalled()
+    expect(miniProgram.currentPage).toHaveBeenCalledTimes(3)
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([undefined, { path: '' }, { path: 'pages/previous/index' }])('rejects an unready page without navigation: %j', async (page) => {
+    const miniProgram = Object.assign(createSession(), {
+      currentPage: vi.fn(async () => page),
+      reLaunch: vi.fn(),
+    })
+    const disconnect = miniProgram.disconnect
+    connectOpenedAutomatorMock.mockResolvedValue(miniProgram)
+    await expect(waitForOpenedAutomator('/workspace/project', {
+      readyRoute: '/pages/index/index',
+      appReadyTimeoutMs: 5,
+      timeoutMs: 5,
+      intervalMs: 1,
+    })).rejects.toThrow('Opened automator page is not ready: expected pages/index/index')
+    expect(miniProgram.reLaunch).not.toHaveBeenCalled()
+    expect(disconnect).toHaveBeenCalled()
   })
 
   it('retries when an opened session closes before the page is readable', async () => {
@@ -104,6 +129,7 @@ describe('opened automator', () => {
     })
     miniProgram.currentPage.mockImplementation(async () => {
       miniProgram.emit('exception', { exceptionDetails: { text: 'startup exception' } })
+      return { path: 'pages/index/index' }
     })
     connectOpenedAutomatorMock.mockResolvedValue(miniProgram)
     await waitForOpenedAutomator('/workspace/project', { timeoutMs: 50 })
