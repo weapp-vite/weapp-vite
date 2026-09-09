@@ -183,7 +183,7 @@
     "wevu": "workspace:*"
   },
   "optionalDependencies": {
-    "@swc/core": "^1.16.1"
+    "@swc/core": "^1.16.2"
   },
   "devDependencies": {
     "oxc-parser": "catalog:",
